@@ -1,11 +1,11 @@
 import { Logger } from '@nestjs/common';
-import { tool } from 'ai';
 import { z } from 'zod';
 
 import { DocReader } from '../../../core/doc';
 import { AccessController } from '../../../core/permission';
 import { Models, publicUserSelect } from '../../../models';
 import { toolError } from './error';
+import { defineTool } from './tool';
 import type { CopilotChatOptions } from './types';
 
 const logger = new Logger('DocReadTool');
@@ -72,7 +72,7 @@ export const buildDocContentGetter = (
 export const createDocReadTool = (
   getDoc: (targetId?: string) => Promise<object | undefined>
 ) => {
-  return tool({
+  return defineTool({
     description:
       'Return the complete text and basic metadata of a single document identified by docId; use this when the user needs the full content of a specific file rather than a search result.',
     inputSchema: z.object({

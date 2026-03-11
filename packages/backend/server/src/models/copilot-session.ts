@@ -10,6 +10,7 @@ import {
   CopilotSessionNotFound,
 } from '../base';
 import { getTokenEncoder } from '../native';
+import type { PromptAttachment } from '../plugins/copilot/providers/types';
 import { BaseModel } from './base';
 
 export enum SessionType {
@@ -24,7 +25,7 @@ type ChatPrompt = {
   model: string;
 };
 
-type ChatAttachment = { attachment: string; mimeType: string } | string;
+type ChatAttachment = PromptAttachment;
 
 type ChatStreamObject = {
   type: 'text-delta' | 'reasoning' | 'tool-call' | 'tool-result';
@@ -173,22 +174,105 @@ export class CopilotSessionModel extends BaseModel {
     }
 
     return attachments
-      .map(attachment =>
-        typeof attachment === 'string'
-          ? (this.sanitizeString(attachment) ?? '')
-          : {
-              attachment:
-                this.sanitizeString(attachment.attachment) ??
-                attachment.attachment,
+      .map(attachment => {
+        if (typeof attachment === 'string') {
+          return this.sanitizeString(attachment) ?? '';
+        }
+
+        if ('attachment' in attachment) {
+          return {
+            attachment:
+              this.sanitizeString(attachment.attachment) ??
+              attachment.attachment,
+            mimeType:
+              this.sanitizeString(attachment.mimeType) ?? attachment.mimeType,
+          };
+        }
+
+        switch (attachment.kind) {
+          case 'url':
+            return {
+              ...attachment,
+              url: this.sanitizeString(attachment.url) ?? attachment.url,
               mimeType:
                 this.sanitizeString(attachment.mimeType) ?? attachment.mimeType,
-            }
-      )
+              fileName:
+                this.sanitizeString(attachment.fileName) ?? attachment.fileName,
+              providerHint: attachment.providerHint
+                ? {
+                    provider:
+                      this.sanitizeString(attachment.providerHint.provider) ??
+                      attachment.providerHint.provider,
+                    kind:
+                      this.sanitizeString(attachment.providerHint.kind) ??
+                      attachment.providerHint.kind,
+                  }
+                : undefined,
+            };
+          case 'data':
+          case 'bytes':
+            return {
+              ...attachment,
+              data: this.sanitizeString(attachment.data) ?? attachment.data,
+              mimeType:
+                this.sanitizeString(attachment.mimeType) ?? attachment.mimeType,
+              fileName:
+                this.sanitizeString(attachment.fileName) ?? attachment.fileName,
+              providerHint: attachment.providerHint
+                ? {
+                    provider:
+                      this.sanitizeString(attachment.providerHint.provider) ??
+                      attachment.providerHint.provider,
+                    kind:
+                      this.sanitizeString(attachment.providerHint.kind) ??
+                      attachment.providerHint.kind,
+                  }
+                : undefined,
+            };
+          case 'file_handle':
+            return {
+              ...attachment,
+              fileHandle:
+                this.sanitizeString(attachment.fileHandle) ??
+                attachment.fileHandle,
+              mimeType:
+                this.sanitizeString(attachment.mimeType) ?? attachment.mimeType,
+              fileName:
+                this.sanitizeString(attachment.fileName) ?? attachment.fileName,
+              providerHint: attachment.providerHint
+                ? {
+                    provider:
+                      this.sanitizeString(attachment.providerHint.provider) ??
+                      attachment.providerHint.provider,
+                    kind:
+                      this.sanitizeString(attachment.providerHint.kind) ??
+                      attachment.providerHint.kind,
+                  }
+                : undefined,
+            };
+        }
+
+        return attachment;
+      })
       .filter(attachment => {
         if (typeof attachment === 'string') {
           return !!attachment;
         }
-        return !!attachment.attachment && !!attachment.mimeType;
+        if ('attachment' in attachment) {
+          return !!attachment.attachment && !!attachment.mimeType;
+        }
+
+        switch (attachment.kind) {
+          case 'url':
+            return !!attachment.url;
+          case 'data':
+          case 'bytes':
+            return !!attachment.data && !!attachment.mimeType;
+          case 'file_handle':
+            return !!attachment.fileHandle;
+        }
+
+        return false;
       });
   }
 

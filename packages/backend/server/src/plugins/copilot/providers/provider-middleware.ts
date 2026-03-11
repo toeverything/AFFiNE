@@ -51,13 +51,21 @@ const DEFAULT_MIDDLEWARE_BY_TYPE: Record<
     },
   },
   [CopilotProviderType.Gemini]: {
+    rust: {
+      request: ['normalize_messages', 'tool_schema_rewrite'],
+      stream: ['stream_event_normalize', 'citation_indexing'],
+    },
     node: {
-      text: ['callout'],
+      text: ['citation_footnote', 'callout'],
     },
   },
   [CopilotProviderType.GeminiVertex]: {
+    rust: {
+      request: ['normalize_messages', 'tool_schema_rewrite'],
+      stream: ['stream_event_normalize', 'citation_indexing'],
+    },
     node: {
-      text: ['callout'],
+      text: ['citation_footnote', 'callout'],
     },
   },
   [CopilotProviderType.FAL]: {},

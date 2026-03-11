@@ -1,5 +1,6 @@
 import z from 'zod';
 
+import { IMAGE_ATTACHMENT_CAPABILITY } from '../attachments';
 import { CopilotProviderType, ModelInputType, ModelOutputType } from '../types';
 import { AnthropicProvider } from './anthropic';
 
@@ -23,6 +24,7 @@ export class AnthropicOfficialProvider extends AnthropicProvider<AnthropicOffici
         {
           input: [ModelInputType.Text, ModelInputType.Image],
           output: [ModelOutputType.Text, ModelOutputType.Object],
+          attachments: IMAGE_ATTACHMENT_CAPABILITY,
         },
       ],
     },
@@ -33,6 +35,7 @@ export class AnthropicOfficialProvider extends AnthropicProvider<AnthropicOffici
         {
           input: [ModelInputType.Text, ModelInputType.Image],
           output: [ModelOutputType.Text, ModelOutputType.Object],
+          attachments: IMAGE_ATTACHMENT_CAPABILITY,
         },
       ],
     },
@@ -43,6 +46,7 @@ export class AnthropicOfficialProvider extends AnthropicProvider<AnthropicOffici
         {
           input: [ModelInputType.Text, ModelInputType.Image],
           output: [ModelOutputType.Text, ModelOutputType.Object],
+          attachments: IMAGE_ATTACHMENT_CAPABILITY,
         },
       ],
     },

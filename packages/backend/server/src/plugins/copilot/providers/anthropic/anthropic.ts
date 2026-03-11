@@ -1,5 +1,3 @@
-import type { ToolSet } from 'ai';
-
 import {
   CopilotProviderSideError,
   metrics,
@@ -11,6 +9,7 @@ import {
   type NativeLlmRequest,
 } from '../../../../native';
 import type { NodeTextMiddleware } from '../../config';
+import type { CopilotToolSet } from '../../tools';
 import { buildNativeRequest, NativeProviderAdapter } from '../native';
 import { CopilotProvider } from '../provider';
 import type {
@@ -20,7 +19,11 @@ import type {
   StreamObject,
 } from '../types';
 import { CopilotProviderType, ModelOutputType } from '../types';
-import { getGoogleAuth, getVertexAnthropicBaseUrl } from '../utils';
+import {
+  getGoogleAuth,
+  getVertexAnthropicBaseUrl,
+  type VertexAnthropicProviderConfig,
+} from '../utils';
 
 export abstract class AnthropicProvider<T> extends CopilotProvider<T> {
   private handleError(e: any) {
@@ -36,22 +39,16 @@ export abstract class AnthropicProvider<T> extends CopilotProvider<T> {
 
   private async createNativeConfig(): Promise<NativeLlmBackendConfig> {
     if (this.type === CopilotProviderType.AnthropicVertex) {
-      const auth = await getGoogleAuth(this.config as any, 'anthropic');
-      const headers = auth.headers();
-      const authorization =
-        headers.Authorization ||
-        (headers as Record<string, string | undefined>).authorization;
-      const token =
-        typeof authorization === 'string'
-          ? authorization.replace(/^Bearer\s+/i, '')
-          : '';
-      const baseUrl =
-        getVertexAnthropicBaseUrl(this.config as any) || auth.baseUrl;
+      const config = this.config as VertexAnthropicProviderConfig;
+      const auth = await getGoogleAuth(config, 'anthropic');
+      const { Authorization: authHeader } = auth.headers();
+      const token = authHeader.replace(/^Bearer\s+/i, '');
+      const baseUrl = getVertexAnthropicBaseUrl(config) || auth.baseUrl;
       return {
         base_url: baseUrl || '',
         auth_token: token,
-        request_layer: 'vertex',
-        headers,
+        request_layer: 'vertex_anthropic',
+        headers: { Authorization: authHeader },
       };
     }
 
@@ -65,7 +62,7 @@ export abstract class AnthropicProvider<T> extends CopilotProvider<T> {
 
   private createAdapter(
     backendConfig: NativeLlmBackendConfig,
-    tools: ToolSet,
+    tools: CopilotToolSet,
     nodeTextMiddleware?: NodeTextMiddleware[]
   ) {
     return new NativeProviderAdapter(
@@ -93,8 +90,12 @@ export abstract class AnthropicProvider<T> extends CopilotProvider<T> {
     options: CopilotChatOptions = {}
   ): Promise<string> {
     const fullCond = { ...cond, outputType: ModelOutputType.Text };
-    await this.checkParams({ cond: fullCond, messages, options });
-    const model = this.selectModel(fullCond);
+    const normalizedCond = await this.checkParams({
+      cond: fullCond,
+      messages,
+      options,
+    });
+    const model = this.selectModel(normalizedCond);
 
     try {
       metrics.ai.counter('chat_text_calls').add(1, this.metricLabels(model.id));
@@ -102,11 +103,13 @@ export abstract class AnthropicProvider<T> extends CopilotProvider<T> {
       const tools = await this.getTools(options, model.id);
       const middleware = this.getActiveProviderMiddleware();
       const reasoning = this.getReasoning(options, model.id);
+      const cap = this.getAttachCapability(model, ModelOutputType.Text);
       const { request } = await buildNativeRequest({
         model: model.id,
         messages,
         options,
         tools,
+        attachmentCapability: cap,
         reasoning,
         middleware,
       });
@@ -115,7 +118,7 @@ export abstract class AnthropicProvider<T> extends CopilotProvider<T> {
         tools,
         middleware.node?.text
       );
-      return await adapter.text(request, options.signal);
+      return await adapter.text(request, options.signal, messages);
     } catch (e: any) {
       metrics.ai
         .counter('chat_text_errors')
@@ -130,8 +133,12 @@ export abstract class AnthropicProvider<T> extends CopilotProvider<T> {
     options: CopilotChatOptions = {}
   ): AsyncIterable<string> {
     const fullCond = { ...cond, outputType: ModelOutputType.Text };
-    await this.checkParams({ cond: fullCond, messages, options });
-    const model = this.selectModel(fullCond);
+    const normalizedCond = await this.checkParams({
+      cond: fullCond,
+      messages,
+      options,
+    });
+    const model = this.selectModel(normalizedCond);
 
     try {
       metrics.ai
@@ -140,11 +147,13 @@ export abstract class AnthropicProvider<T> extends CopilotProvider<T> {
       const backendConfig = await this.createNativeConfig();
       const tools = await this.getTools(options, model.id);
       const middleware = this.getActiveProviderMiddleware();
+      const cap = this.getAttachCapability(model, ModelOutputType.Text);
       const { request } = await buildNativeRequest({
         model: model.id,
         messages,
         options,
         tools,
+        attachmentCapability: cap,
         reasoning: this.getReasoning(options, model.id),
         middleware,
       });
@@ -153,7 +162,11 @@ export abstract class AnthropicProvider<T> extends CopilotProvider<T> {
         tools,
         middleware.node?.text
       );
-      for await (const chunk of adapter.streamText(request, options.signal)) {
+      for await (const chunk of adapter.streamText(
+        request,
+        options.signal,
+        messages
+      )) {
         yield chunk;
       }
     } catch (e: any) {
@@ -170,8 +183,12 @@ export abstract class AnthropicProvider<T> extends CopilotProvider<T> {
     options: CopilotChatOptions = {}
   ): AsyncIterable<StreamObject> {
     const fullCond = { ...cond, outputType: ModelOutputType.Object };
-    await this.checkParams({ cond: fullCond, messages, options });
-    const model = this.selectModel(fullCond);
+    const normalizedCond = await this.checkParams({
+      cond: fullCond,
+      messages,
+      options,
+    });
+    const model = this.selectModel(normalizedCond);
 
     try {
       metrics.ai
@@ -180,11 +197,13 @@ export abstract class AnthropicProvider<T> extends CopilotProvider<T> {
       const backendConfig = await this.createNativeConfig();
       const tools = await this.getTools(options, model.id);
       const middleware = this.getActiveProviderMiddleware();
+      const cap = this.getAttachCapability(model, ModelOutputType.Object);
       const { request } = await buildNativeRequest({
         model: model.id,
         messages,
         options,
         tools,
+        attachmentCapability: cap,
         reasoning: this.getReasoning(options, model.id),
         middleware,
       });
@@ -193,7 +212,11 @@ export abstract class AnthropicProvider<T> extends CopilotProvider<T> {
         tools,
         middleware.node?.text
       );
-      for await (const chunk of adapter.streamObject(request, options.signal)) {
+      for await (const chunk of adapter.streamObject(
+        request,
+        options.signal,
+        messages
+      )) {
         yield chunk;
       }
     } catch (e: any) {

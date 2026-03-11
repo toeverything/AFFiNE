@@ -225,6 +225,20 @@ const checkStreamObjects = (result: string) => {
   }
 };
 
+const parseStreamObjects = (result: string): StreamObject[] => {
+  const streamObjects = JSON.parse(result);
+  return z.array(StreamObjectSchema).parse(streamObjects);
+};
+
+const getStreamObjectText = (result: string) =>
+  parseStreamObjects(result)
+    .filter(
+      (chunk): chunk is Extract<StreamObject, { type: 'text-delta' }> =>
+        chunk.type === 'text-delta'
+    )
+    .map(chunk => chunk.textDelta)
+    .join('');
+
 const retry = async (
   action: string,
   t: ExecutionContext<Tester>,
@@ -442,6 +456,49 @@ The term **“CRDT”** was first introduced by Marc Shapiro, Nuno Preguiça, Ca
     verifier: (t: ExecutionContext<Tester>, result: string) => {
       t.truthy(checkStreamObjects(result), 'should be valid stream objects');
     },
+    type: 'object' as const,
+  },
+  {
+    name: 'Gemini native text',
+    promptName: ['Chat With AFFiNE AI'],
+    messages: [
+      {
+        role: 'user' as const,
+        content:
+          'In one short sentence, explain what AFFiNE AI is and mention AFFiNE by name.',
+      },
+    ],
+    config: { model: 'gemini-2.5-flash' },
+    verifier: (t: ExecutionContext<Tester>, result: string) => {
+      assertNotWrappedInCodeBlock(t, result);
+      t.assert(
+        result.toLowerCase().includes('affine'),
+        'should mention AFFiNE'
+      );
+    },
+    prefer: CopilotProviderType.Gemini,
+    type: 'text' as const,
+  },
+  {
+    name: 'Gemini native stream objects',
+    promptName: ['Chat With AFFiNE AI'],
+    messages: [
+      {
+        role: 'user' as const,
+        content:
+          'Respond with one short sentence about AFFiNE AI and mention AFFiNE by name.',
+      },
+    ],
+    config: { model: 'gemini-2.5-flash' },
+    verifier: (t: ExecutionContext<Tester>, result: string) => {
+      t.truthy(checkStreamObjects(result), 'should be valid stream objects');
+      const assembledText = getStreamObjectText(result);
+      t.assert(
+        assembledText.toLowerCase().includes('affine'),
+        'should mention AFFiNE'
+      );
+    },
+    prefer: CopilotProviderType.Gemini,
     type: 'object' as const,
   },
   {
@@ -716,14 +773,13 @@ for (const {
         const { factory, prompt: promptService } = t.context;
         const prompt = (await promptService.get(promptName))!;
         t.truthy(prompt, 'should have prompt');
-        const provider = (await factory.getProviderByModel(prompt.model, {
+        const finalConfig = Object.assign({}, prompt.config, config);
+        const modelId = finalConfig.model || prompt.model;
+        const provider = (await factory.getProviderByModel(modelId, {
           prefer,
         }))!;
         t.truthy(provider, 'should have provider');
         await retry(`action: ${promptName}`, t, async t => {
-          const finalConfig = Object.assign({}, prompt.config, config);
-          const modelId = finalConfig.model || prompt.model;
-
           switch (type) {
             case 'text': {
               const result = await provider.text(
@@ -891,7 +947,7 @@ test(
   'should be able to rerank message chunks',
   runIfCopilotConfigured,
   async t => {
-    const { factory, prompt } = t.context;
+    const { factory } = t.context;
 
     await retry('rerank', t, async t => {
       const query = 'Is this content relevant to programming?';
@@ -908,14 +964,18 @@ test(
         'The stock market is experiencing significant fluctuations.',
       ];
 
-      const p = (await prompt.get('Rerank results'))!;
-      t.assert(p, 'should have prompt for rerank');
-      const provider = (await factory.getProviderByModel(p.model))!;
+      const provider = (await factory.getProviderByModel('gpt-5.2'))!;
       t.assert(provider, 'should have provider for rerank');
 
       const scores = await provider.rerank(
-        { modelId: p.model },
-        embeddings.map(e => p.finish({ query, doc: e }))
+        { modelId: 'gpt-5.2' },
+        {
+          query,
+          candidates: embeddings.map((text, index) => ({
+            id: String(index),
+            text,
+          })),
+        }
       );
 
       t.is(scores.length, 10, 'should return scores for all chunks');
