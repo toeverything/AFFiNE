@@ -1,55 +1,77 @@
-import {
-  createOpenAI,
-  openai,
-  type OpenAIProvider as VercelOpenAIProvider,
-  OpenAIResponsesProviderOptions,
-} from '@ai-sdk/openai';
-import {
-  createOpenAICompatible,
-  type OpenAICompatibleProvider as VercelOpenAICompatibleProvider,
-} from '@ai-sdk/openai-compatible';
-import {
-  AISDKError,
-  embedMany,
-  experimental_generateImage as generateImage,
-  generateObject,
-  generateText,
-  stepCountIs,
-  streamText,
-  Tool,
-} from 'ai';
 import { z } from 'zod';
 
 import {
   CopilotPromptInvalid,
-  CopilotProviderNotSupported,
   CopilotProviderSideError,
-  fetchBuffer,
   metrics,
   OneMB,
+  readResponseBufferWithLimit,
+  safeFetch,
   UserFriendlyError,
 } from '../../../base';
+import {
+  llmDispatchStream,
+  llmEmbeddingDispatch,
+  llmRerankDispatch,
+  llmStructuredDispatch,
+  type NativeLlmBackendConfig,
+  type NativeLlmEmbeddingRequest,
+  type NativeLlmRequest,
+  type NativeLlmRerankRequest,
+  type NativeLlmRerankResponse,
+  type NativeLlmStructuredRequest,
+} from '../../../native';
+import type { NodeTextMiddleware } from '../config';
+import type { CopilotTool, CopilotToolSet } from '../tools';
+import { IMAGE_ATTACHMENT_CAPABILITY } from './attachments';
+import {
+  buildNativeEmbeddingRequest,
+  buildNativeRequest,
+  buildNativeStructuredRequest,
+  NativeProviderAdapter,
+  parseNativeStructuredOutput,
+} from './native';
 import { CopilotProvider } from './provider';
 import type {
   CopilotChatOptions,
   CopilotChatTools,
   CopilotEmbeddingOptions,
   CopilotImageOptions,
-  CopilotProviderModel,
+  CopilotRerankRequest,
   CopilotStructuredOptions,
+  ModelCapability,
   ModelConditions,
   PromptMessage,
   StreamObject,
 } from './types';
 import { CopilotProviderType, ModelInputType, ModelOutputType } from './types';
-import {
-  chatToGPTMessage,
-  CitationParser,
-  StreamObjectParser,
-  TextStreamParser,
-} from './utils';
+import { promptAttachmentToUrl } from './utils';
 
 export const DEFAULT_DIMENSIONS = 256;
+
+const GPT_5_SAMPLING_UNSUPPORTED_MODELS = /^(gpt-5(?:$|[.-]))/;
+
+export function normalizeOpenAIOptionsForModel<
+  T extends {
+    frequencyPenalty?: number | null;
+    presencePenalty?: number | null;
+    temperature?: number | null;
+    topP?: number | null;
+  },
+>(options: T, model: string): T {
+  if (!GPT_5_SAMPLING_UNSUPPORTED_MODELS.test(model)) {
+    return options;
+  }
+
+  const normalizedOptions = { ...options };
+
+  delete normalizedOptions.frequencyPenalty;
+  delete normalizedOptions.presencePenalty;
+  delete normalizedOptions.temperature;
+  delete normalizedOptions.topP;
+
+  return normalizedOptions;
+}
 
 export type OpenAIConfig = {
   apiKey: string;
@@ -63,7 +85,12 @@ const ModelListSchema = z.object({
 
 const ImageResponseSchema = z.union([
   z.object({
-    data: z.array(z.object({ b64_json: z.string() })),
+    data: z.array(
+      z.object({
+        b64_json: z.string().optional(),
+        url: z.string().optional(),
+      })
+    ),
   }),
   z.object({
     error: z.object({
@@ -74,18 +101,65 @@ const ImageResponseSchema = z.union([
     }),
   }),
 ]);
-const LogProbsSchema = z.array(
-  z.object({
-    token: z.string(),
-    logprob: z.number(),
-    top_logprobs: z.array(
-      z.object({
-        token: z.string(),
-        logprob: z.number(),
-      })
-    ),
-  })
-);
+const TRUSTED_ATTACHMENT_HOST_SUFFIXES = ['cdn.affine.pro'];
+
+function normalizeImageFormatToMime(format?: string) {
+  switch (format?.toLowerCase()) {
+    case 'jpg':
+    case 'jpeg':
+      return 'image/jpeg';
+    case 'webp':
+      return 'image/webp';
+    case 'png':
+      return 'image/png';
+    case 'gif':
+      return 'image/gif';
+    default:
+      return 'image/png';
+  }
+}
+
+function normalizeImageResponseData(
+  data: { b64_json?: string; url?: string }[],
+  mimeType: string = 'image/png'
+) {
+  return data
+    .map(image => {
+      if (image.b64_json) {
+        return `data:${mimeType};base64,${image.b64_json}`;
+      }
+      return image.url;
+    })
+    .filter((value): value is string => typeof value === 'string');
+}
+
+function buildOpenAIRerankRequest(
+  model: string,
+  request: CopilotRerankRequest
+): NativeLlmRerankRequest {
+  return {
+    model,
+    query: request.query,
+    candidates: request.candidates.map(candidate => ({
+      ...(candidate.id ? { id: candidate.id } : {}),
+      text: candidate.text,
+    })),
+    ...(request.topK ? { top_n: request.topK } : {}),
+  };
+}
+
+function createOpenAIMultimodalCapability(
+  output: ModelCapability['output'],
+  options: Pick<ModelCapability, 'defaultForOutputType'> = {}
+): ModelCapability {
+  return {
+    input: [ModelInputType.Text, ModelInputType.Image],
+    output,
+    attachments: IMAGE_ATTACHMENT_CAPABILITY,
+    structuredAttachments: IMAGE_ATTACHMENT_CAPABILITY,
+    ...options,
+  };
+}
 
 export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
   readonly type = CopilotProviderType.OpenAI;
@@ -96,10 +170,10 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
       name: 'GPT 4o',
       id: 'gpt-4o',
       capabilities: [
-        {
-          input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Text, ModelOutputType.Object],
-        },
+        createOpenAIMultimodalCapability([
+          ModelOutputType.Text,
+          ModelOutputType.Object,
+        ]),
       ],
     },
     // FIXME(@darkskygit): deprecated
@@ -107,20 +181,20 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
       name: 'GPT 4o 2024-08-06',
       id: 'gpt-4o-2024-08-06',
       capabilities: [
-        {
-          input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Text, ModelOutputType.Object],
-        },
+        createOpenAIMultimodalCapability([
+          ModelOutputType.Text,
+          ModelOutputType.Object,
+        ]),
       ],
     },
     {
       name: 'GPT 4o Mini',
       id: 'gpt-4o-mini',
       capabilities: [
-        {
-          input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Text, ModelOutputType.Object],
-        },
+        createOpenAIMultimodalCapability([
+          ModelOutputType.Text,
+          ModelOutputType.Object,
+        ]),
       ],
     },
     // FIXME(@darkskygit): deprecated
@@ -128,153 +202,158 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
       name: 'GPT 4o Mini 2024-07-18',
       id: 'gpt-4o-mini-2024-07-18',
       capabilities: [
-        {
-          input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Text, ModelOutputType.Object],
-        },
+        createOpenAIMultimodalCapability([
+          ModelOutputType.Text,
+          ModelOutputType.Object,
+        ]),
       ],
     },
     {
       name: 'GPT 4.1',
       id: 'gpt-4.1',
       capabilities: [
-        {
-          input: [ModelInputType.Text, ModelInputType.Image],
-          output: [
+        createOpenAIMultimodalCapability(
+          [
             ModelOutputType.Text,
             ModelOutputType.Object,
+            ModelOutputType.Rerank,
             ModelOutputType.Structured,
           ],
-          defaultForOutputType: true,
-        },
+          { defaultForOutputType: true }
+        ),
       ],
     },
     {
       name: 'GPT 4.1 2025-04-14',
       id: 'gpt-4.1-2025-04-14',
       capabilities: [
-        {
-          input: [ModelInputType.Text, ModelInputType.Image],
-          output: [
-            ModelOutputType.Text,
-            ModelOutputType.Object,
-            ModelOutputType.Structured,
-          ],
-        },
+        createOpenAIMultimodalCapability([
+          ModelOutputType.Text,
+          ModelOutputType.Object,
+          ModelOutputType.Rerank,
+          ModelOutputType.Structured,
+        ]),
       ],
     },
     {
       name: 'GPT 4.1 Mini',
       id: 'gpt-4.1-mini',
       capabilities: [
-        {
-          input: [ModelInputType.Text, ModelInputType.Image],
-          output: [
-            ModelOutputType.Text,
-            ModelOutputType.Object,
-            ModelOutputType.Structured,
-          ],
-        },
+        createOpenAIMultimodalCapability([
+          ModelOutputType.Text,
+          ModelOutputType.Object,
+          ModelOutputType.Rerank,
+          ModelOutputType.Structured,
+        ]),
       ],
     },
     {
       name: 'GPT 4.1 Nano',
       id: 'gpt-4.1-nano',
       capabilities: [
-        {
-          input: [ModelInputType.Text, ModelInputType.Image],
-          output: [
-            ModelOutputType.Text,
-            ModelOutputType.Object,
-            ModelOutputType.Structured,
-          ],
-        },
+        createOpenAIMultimodalCapability([
+          ModelOutputType.Text,
+          ModelOutputType.Object,
+          ModelOutputType.Rerank,
+          ModelOutputType.Structured,
+        ]),
       ],
     },
     {
       name: 'GPT 5',
       id: 'gpt-5',
       capabilities: [
-        {
-          input: [ModelInputType.Text, ModelInputType.Image],
-          output: [
-            ModelOutputType.Text,
-            ModelOutputType.Object,
-            ModelOutputType.Structured,
-          ],
-        },
+        createOpenAIMultimodalCapability([
+          ModelOutputType.Text,
+          ModelOutputType.Object,
+          ModelOutputType.Structured,
+        ]),
       ],
     },
     {
       name: 'GPT 5 2025-08-07',
       id: 'gpt-5-2025-08-07',
       capabilities: [
-        {
-          input: [ModelInputType.Text, ModelInputType.Image],
-          output: [
-            ModelOutputType.Text,
-            ModelOutputType.Object,
-            ModelOutputType.Structured,
-          ],
-        },
+        createOpenAIMultimodalCapability([
+          ModelOutputType.Text,
+          ModelOutputType.Object,
+          ModelOutputType.Structured,
+        ]),
       ],
     },
     {
       name: 'GPT 5 Mini',
       id: 'gpt-5-mini',
       capabilities: [
-        {
-          input: [ModelInputType.Text, ModelInputType.Image],
-          output: [
-            ModelOutputType.Text,
-            ModelOutputType.Object,
-            ModelOutputType.Structured,
-          ],
-        },
+        createOpenAIMultimodalCapability([
+          ModelOutputType.Text,
+          ModelOutputType.Object,
+          ModelOutputType.Structured,
+        ]),
+      ],
+    },
+    {
+      name: 'GPT 5.2',
+      id: 'gpt-5.2',
+      capabilities: [
+        createOpenAIMultimodalCapability([
+          ModelOutputType.Text,
+          ModelOutputType.Object,
+          ModelOutputType.Rerank,
+          ModelOutputType.Structured,
+        ]),
+      ],
+    },
+    {
+      name: 'GPT 5.2 2025-12-11',
+      id: 'gpt-5.2-2025-12-11',
+      capabilities: [
+        createOpenAIMultimodalCapability([
+          ModelOutputType.Text,
+          ModelOutputType.Object,
+          ModelOutputType.Structured,
+        ]),
       ],
     },
     {
       name: 'GPT 5 Nano',
       id: 'gpt-5-nano',
       capabilities: [
-        {
-          input: [ModelInputType.Text, ModelInputType.Image],
-          output: [
-            ModelOutputType.Text,
-            ModelOutputType.Object,
-            ModelOutputType.Structured,
-          ],
-        },
+        createOpenAIMultimodalCapability([
+          ModelOutputType.Text,
+          ModelOutputType.Object,
+          ModelOutputType.Structured,
+        ]),
       ],
     },
     {
       name: 'GPT O1',
       id: 'o1',
       capabilities: [
-        {
-          input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Text, ModelOutputType.Object],
-        },
+        createOpenAIMultimodalCapability([
+          ModelOutputType.Text,
+          ModelOutputType.Object,
+        ]),
       ],
     },
     {
       name: 'GPT O3',
       id: 'o3',
       capabilities: [
-        {
-          input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Text, ModelOutputType.Object],
-        },
+        createOpenAIMultimodalCapability([
+          ModelOutputType.Text,
+          ModelOutputType.Object,
+        ]),
       ],
     },
     {
       name: 'GPT O4 Mini',
       id: 'o4-mini',
       capabilities: [
-        {
-          input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Text, ModelOutputType.Object],
-        },
+        createOpenAIMultimodalCapability([
+          ModelOutputType.Text,
+          ModelOutputType.Object,
+        ]),
       ],
     },
     // Embedding models
@@ -310,16 +389,12 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
     {
       id: 'gpt-image-1',
       capabilities: [
-        {
-          input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Image],
+        createOpenAIMultimodalCapability([ModelOutputType.Image], {
           defaultForOutputType: true,
-        },
+        }),
       ],
     },
   ];
-
-  #instance!: VercelOpenAIProvider | VercelOpenAICompatibleProvider;
 
   override configured(): boolean {
     return !!this.config.apiKey;
@@ -327,45 +402,17 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
 
   protected override setup() {
     super.setup();
-    this.#instance =
-      this.config.oldApiStyle && this.config.baseURL
-        ? createOpenAICompatible({
-            name: 'openai-compatible-old-style',
-            apiKey: this.config.apiKey,
-            baseURL: this.config.baseURL,
-          })
-        : createOpenAI({
-            apiKey: this.config.apiKey,
-            baseURL: this.config.baseURL,
-          });
   }
 
-  private handleError(
-    e: any,
-    model: string,
-    options: CopilotImageOptions = {}
-  ) {
+  private handleError(e: any) {
     if (e instanceof UserFriendlyError) {
       return e;
-    } else if (e instanceof AISDKError) {
-      if (e.message.includes('safety') || e.message.includes('risk')) {
-        metrics.ai
-          .counter('chat_text_risk_errors')
-          .add(1, { model, user: options.user || undefined });
-      }
-
-      return new CopilotProviderSideError({
-        provider: this.type,
-        kind: e.name || 'unknown',
-        message: e.message,
-      });
-    } else {
-      return new CopilotProviderSideError({
-        provider: this.type,
-        kind: 'unexpected_response',
-        message: e?.message || 'Unexpected openai response',
-      });
     }
+    return new CopilotProviderSideError({
+      provider: this.type,
+      kind: 'unexpected_response',
+      message: e?.message || 'Unexpected openai response',
+    });
   }
 
   override async refreshOnlineModels() {
@@ -389,18 +436,73 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
 
   override getProviderSpecificTools(
     toolName: CopilotChatTools,
-    model: string
-  ): [string, Tool?] | undefined {
-    if (
-      toolName === 'webSearch' &&
-      'responses' in this.#instance &&
-      !this.isReasoningModel(model)
-    ) {
-      return ['web_search_preview', openai.tools.webSearch({})];
-    } else if (toolName === 'docEdit') {
+    _model: string
+  ): [string, CopilotTool?] | undefined {
+    if (toolName === 'docEdit') {
       return ['doc_edit', undefined];
     }
     return;
+  }
+
+  private createNativeConfig(): NativeLlmBackendConfig {
+    const baseUrl = this.config.baseURL || 'https://api.openai.com/v1';
+    return {
+      base_url: baseUrl.replace(/\/v1\/?$/, ''),
+      auth_token: this.config.apiKey,
+    };
+  }
+
+  private getNativeProtocol() {
+    return this.config.oldApiStyle ? 'openai_chat' : 'openai_responses';
+  }
+
+  private createNativeAdapter(
+    tools: CopilotToolSet,
+    nodeTextMiddleware?: NodeTextMiddleware[]
+  ) {
+    return new NativeProviderAdapter(
+      (request: NativeLlmRequest, signal?: AbortSignal) =>
+        llmDispatchStream(
+          this.getNativeProtocol(),
+          this.createNativeConfig(),
+          request,
+          signal
+        ),
+      tools,
+      this.MAX_STEPS,
+      { nodeTextMiddleware }
+    );
+  }
+
+  protected createNativeStructuredDispatch(
+    backendConfig: NativeLlmBackendConfig
+  ) {
+    return (request: NativeLlmStructuredRequest) =>
+      llmStructuredDispatch(this.getNativeProtocol(), backendConfig, request);
+  }
+
+  protected createNativeEmbeddingDispatch(
+    backendConfig: NativeLlmBackendConfig
+  ) {
+    return (request: NativeLlmEmbeddingRequest) =>
+      llmEmbeddingDispatch(this.getNativeProtocol(), backendConfig, request);
+  }
+
+  protected createNativeRerankDispatch(backendConfig: NativeLlmBackendConfig) {
+    return (
+      request: NativeLlmRerankRequest
+    ): Promise<NativeLlmRerankResponse> =>
+      llmRerankDispatch('openai_chat', backendConfig, request);
+  }
+
+  private getReasoning(
+    options: NonNullable<CopilotChatOptions>,
+    model: string
+  ): Record<string, unknown> | undefined {
+    if (options.reasoning && this.isReasoningModel(model)) {
+      return { effort: 'medium' };
+    }
+    return undefined;
   }
 
   async text(
@@ -409,37 +511,39 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
     options: CopilotChatOptions = {}
   ): Promise<string> {
     const fullCond = { ...cond, outputType: ModelOutputType.Text };
-    await this.checkParams({ messages, cond: fullCond, options });
-    const model = this.selectModel(fullCond);
+    const normalizedCond = await this.checkParams({
+      messages,
+      cond: fullCond,
+      options,
+    });
+    const model = this.selectModel(normalizedCond);
 
     try {
-      metrics.ai.counter('chat_text_calls').add(1, { model: model.id });
-
-      const [system, msgs] = await chatToGPTMessage(messages);
-
-      const modelInstance =
-        'responses' in this.#instance
-          ? this.#instance.responses(model.id)
-          : this.#instance(model.id);
-
-      const { text } = await generateText({
-        model: modelInstance,
-        system,
-        messages: msgs,
-        temperature: options.temperature ?? 0,
-        maxOutputTokens: options.maxTokens ?? 4096,
-        providerOptions: {
-          openai: this.getOpenAIOptions(options, model.id),
-        },
-        tools: await this.getTools(options, model.id),
-        stopWhen: stepCountIs(this.MAX_STEPS),
-        abortSignal: options.signal,
+      metrics.ai.counter('chat_text_calls').add(1, this.metricLabels(model.id));
+      const tools = await this.getTools(options, model.id);
+      const middleware = this.getActiveProviderMiddleware();
+      const cap = this.getAttachCapability(model, ModelOutputType.Text);
+      const normalizedOptions = normalizeOpenAIOptionsForModel(
+        options,
+        model.id
+      );
+      const { request } = await buildNativeRequest({
+        model: model.id,
+        messages,
+        options: normalizedOptions,
+        tools,
+        attachmentCapability: cap,
+        include: options.webSearch ? ['citations'] : undefined,
+        reasoning: this.getReasoning(options, model.id),
+        middleware,
       });
-
-      return text.trim();
+      const adapter = this.createNativeAdapter(tools, middleware.node?.text);
+      return await adapter.text(request, options.signal, messages);
     } catch (e: any) {
-      metrics.ai.counter('chat_text_errors').add(1, { model: model.id });
-      throw this.handleError(e, model.id, options);
+      metrics.ai
+        .counter('chat_text_errors')
+        .add(1, this.metricLabels(model.id));
+      throw this.handleError(e);
     }
   }
 
@@ -452,42 +556,47 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
       ...cond,
       outputType: ModelOutputType.Text,
     };
-    await this.checkParams({ messages, cond: fullCond, options });
-    const model = this.selectModel(fullCond);
+    const normalizedCond = await this.checkParams({
+      messages,
+      cond: fullCond,
+      options,
+    });
+    const model = this.selectModel(normalizedCond);
 
     try {
-      metrics.ai.counter('chat_text_stream_calls').add(1, { model: model.id });
-      const fullStream = await this.getFullStream(model, messages, options);
-      const citationParser = new CitationParser();
-      const textParser = new TextStreamParser();
-      for await (const chunk of fullStream) {
-        switch (chunk.type) {
-          case 'text-delta': {
-            let result = textParser.parse(chunk);
-            result = citationParser.parse(result);
-            yield result;
-            break;
-          }
-          case 'finish': {
-            const footnotes = textParser.end();
-            const result =
-              citationParser.end() + (footnotes.length ? '\n' + footnotes : '');
-            yield result;
-            break;
-          }
-          default: {
-            yield textParser.parse(chunk);
-            break;
-          }
-        }
-        if (options.signal?.aborted) {
-          await fullStream.cancel();
-          break;
-        }
+      metrics.ai
+        .counter('chat_text_stream_calls')
+        .add(1, this.metricLabels(model.id));
+      const tools = await this.getTools(options, model.id);
+      const middleware = this.getActiveProviderMiddleware();
+      const cap = this.getAttachCapability(model, ModelOutputType.Text);
+      const normalizedOptions = normalizeOpenAIOptionsForModel(
+        options,
+        model.id
+      );
+      const { request } = await buildNativeRequest({
+        model: model.id,
+        messages,
+        options: normalizedOptions,
+        tools,
+        attachmentCapability: cap,
+        include: options.webSearch ? ['citations'] : undefined,
+        reasoning: this.getReasoning(options, model.id),
+        middleware,
+      });
+      const adapter = this.createNativeAdapter(tools, middleware.node?.text);
+      for await (const chunk of adapter.streamText(
+        request,
+        options.signal,
+        messages
+      )) {
+        yield chunk;
       }
     } catch (e: any) {
-      metrics.ai.counter('chat_text_stream_errors').add(1, { model: model.id });
-      throw this.handleError(e, model.id, options);
+      metrics.ai
+        .counter('chat_text_stream_errors')
+        .add(1, this.metricLabels(model.id));
+      throw this.handleError(e);
     }
   }
 
@@ -497,30 +606,47 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
     options: CopilotChatOptions = {}
   ): AsyncIterable<StreamObject> {
     const fullCond = { ...cond, outputType: ModelOutputType.Object };
-    await this.checkParams({ cond: fullCond, messages, options });
-    const model = this.selectModel(fullCond);
+    const normalizedCond = await this.checkParams({
+      cond: fullCond,
+      messages,
+      options,
+    });
+    const model = this.selectModel(normalizedCond);
 
     try {
       metrics.ai
         .counter('chat_object_stream_calls')
-        .add(1, { model: model.id });
-      const fullStream = await this.getFullStream(model, messages, options);
-      const parser = new StreamObjectParser();
-      for await (const chunk of fullStream) {
-        const result = parser.parse(chunk);
-        if (result) {
-          yield result;
-        }
-        if (options.signal?.aborted) {
-          await fullStream.cancel();
-          break;
-        }
+        .add(1, this.metricLabels(model.id));
+      const tools = await this.getTools(options, model.id);
+      const middleware = this.getActiveProviderMiddleware();
+      const cap = this.getAttachCapability(model, ModelOutputType.Object);
+      const normalizedOptions = normalizeOpenAIOptionsForModel(
+        options,
+        model.id
+      );
+      const { request } = await buildNativeRequest({
+        model: model.id,
+        messages,
+        options: normalizedOptions,
+        tools,
+        attachmentCapability: cap,
+        include: options.webSearch ? ['citations'] : undefined,
+        reasoning: this.getReasoning(options, model.id),
+        middleware,
+      });
+      const adapter = this.createNativeAdapter(tools, middleware.node?.text);
+      for await (const chunk of adapter.streamObject(
+        request,
+        options.signal,
+        messages
+      )) {
+        yield chunk;
       }
     } catch (e: any) {
       metrics.ai
         .counter('chat_object_stream_errors')
-        .add(1, { model: model.id });
-      throw this.handleError(e, model.id, options);
+        .add(1, this.metricLabels(model.id));
+      throw this.handleError(e);
     }
   }
 
@@ -530,154 +656,273 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
     options: CopilotStructuredOptions = {}
   ): Promise<string> {
     const fullCond = { ...cond, outputType: ModelOutputType.Structured };
-    await this.checkParams({ messages, cond: fullCond, options });
-    const model = this.selectModel(fullCond);
+    const normalizedCond = await this.checkParams({
+      messages,
+      cond: fullCond,
+      options,
+    });
+    const model = this.selectModel(normalizedCond);
 
     try {
       metrics.ai.counter('chat_text_calls').add(1, { model: model.id });
-
-      const [system, msgs, schema] = await chatToGPTMessage(messages);
-      if (!schema) {
-        throw new CopilotPromptInvalid('Schema is required');
-      }
-
-      const modelInstance =
-        'responses' in this.#instance
-          ? this.#instance.responses(model.id)
-          : this.#instance(model.id);
-
-      const { object } = await generateObject({
-        model: modelInstance,
-        system,
-        messages: msgs,
-        temperature: options.temperature ?? 0,
-        maxOutputTokens: options.maxTokens ?? 4096,
-        maxRetries: options.maxRetries ?? 3,
-        schema,
-        providerOptions: {
-          openai: options.user ? { user: options.user } : {},
-        },
-        abortSignal: options.signal,
+      const backendConfig = this.createNativeConfig();
+      const middleware = this.getActiveProviderMiddleware();
+      const cap = this.getAttachCapability(model, ModelOutputType.Structured);
+      const normalizedOptions = normalizeOpenAIOptionsForModel(
+        options,
+        model.id
+      );
+      const { request, schema } = await buildNativeStructuredRequest({
+        model: model.id,
+        messages,
+        options: normalizedOptions,
+        attachmentCapability: cap,
+        reasoning: this.getReasoning(options, model.id),
+        responseSchema: options.schema,
+        middleware,
       });
-
-      return JSON.stringify(object);
+      const response =
+        await this.createNativeStructuredDispatch(backendConfig)(request);
+      const parsed = parseNativeStructuredOutput(response);
+      const validated = schema.parse(parsed);
+      return JSON.stringify(validated);
     } catch (e: any) {
       metrics.ai.counter('chat_text_errors').add(1, { model: model.id });
-      throw this.handleError(e, model.id, options);
+      throw this.handleError(e);
     }
   }
 
   override async rerank(
     cond: ModelConditions,
-    chunkMessages: PromptMessage[][],
+    request: CopilotRerankRequest,
     options: CopilotChatOptions = {}
   ): Promise<number[]> {
-    const fullCond = { ...cond, outputType: ModelOutputType.Text };
-    await this.checkParams({ messages: [], cond: fullCond, options });
-    const model = this.selectModel(fullCond);
-    // get the log probability of "yes"/"no"
-    const instance =
-      'chat' in this.#instance
-        ? this.#instance.chat(model.id)
-        : this.#instance(model.id);
-
-    const scores = await Promise.all(
-      chunkMessages.map(async messages => {
-        const [system, msgs] = await chatToGPTMessage(messages);
-
-        const result = await generateText({
-          model: instance,
-          system,
-          messages: msgs,
-          temperature: 0,
-          maxOutputTokens: 16,
-          providerOptions: {
-            openai: {
-              ...this.getOpenAIOptions(options, model.id),
-              logprobs: 16,
-            },
-          },
-          abortSignal: options.signal,
-        });
-
-        const topMap: Record<string, number> = LogProbsSchema.parse(
-          result.providerMetadata?.openai?.logprobs
-        )[0].top_logprobs.reduce<Record<string, number>>(
-          (acc, { token, logprob }) => ({ ...acc, [token]: logprob }),
-          {}
-        );
-
-        const findLogProb = (token: string): number => {
-          // OpenAI often includes a leading space, so try matching '.yes', '_yes', ' yes' and 'yes'
-          return [...'_:. "-\t,(=_“'.split('').map(c => c + token), token]
-            .flatMap(v => [v, v.toLowerCase(), v.toUpperCase()])
-            .reduce<number>(
-              (best, key) =>
-                (topMap[key] ?? Number.NEGATIVE_INFINITY) > best
-                  ? topMap[key]
-                  : best,
-              Number.NEGATIVE_INFINITY
-            );
-        };
-
-        const logYes = findLogProb('Yes');
-        const logNo = findLogProb('No');
-
-        const pYes = Math.exp(logYes);
-        const pNo = Math.exp(logNo);
-        const prob = pYes + pNo === 0 ? 0 : pYes / (pYes + pNo);
-
-        return prob;
-      })
-    );
-
-    return scores;
-  }
-
-  private async getFullStream(
-    model: CopilotProviderModel,
-    messages: PromptMessage[],
-    options: CopilotChatOptions = {}
-  ) {
-    const [system, msgs] = await chatToGPTMessage(messages);
-    const modelInstance =
-      'responses' in this.#instance
-        ? this.#instance.responses(model.id)
-        : this.#instance(model.id);
-    const { fullStream } = streamText({
-      model: modelInstance,
-      system,
-      messages: msgs,
-      frequencyPenalty: options.frequencyPenalty ?? 0,
-      presencePenalty: options.presencePenalty ?? 0,
-      temperature: options.temperature ?? 0,
-      maxOutputTokens: options.maxTokens ?? 4096,
-      providerOptions: {
-        openai: this.getOpenAIOptions(options, model.id),
-      },
-      tools: await this.getTools(options, model.id),
-      stopWhen: stepCountIs(this.MAX_STEPS),
-      abortSignal: options.signal,
+    const fullCond = { ...cond, outputType: ModelOutputType.Rerank };
+    const normalizedCond = await this.checkParams({
+      messages: [],
+      cond: fullCond,
+      options,
     });
-    return fullStream;
+    const model = this.selectModel(normalizedCond);
+
+    try {
+      const backendConfig = this.createNativeConfig();
+      const nativeRequest = buildOpenAIRerankRequest(model.id, request);
+      const response =
+        await this.createNativeRerankDispatch(backendConfig)(nativeRequest);
+      return response.scores;
+    } catch (e: any) {
+      throw this.handleError(e);
+    }
   }
 
   // ====== text to image ======
+  private buildImageFetchOptions(url: URL) {
+    const baseOptions = { timeoutMs: 15_000, maxRedirects: 3 } as const;
+    const trustedOrigins = new Set<string>();
+    const protocol = this.AFFiNEConfig.server.https ? 'https:' : 'http:';
+    const port = this.AFFiNEConfig.server.port;
+    const isDefaultPort =
+      (protocol === 'https:' && port === 443) ||
+      (protocol === 'http:' && port === 80);
+
+    const addHostOrigin = (host: string) => {
+      if (!host) return;
+      try {
+        const parsed = new URL(`${protocol}//${host}`);
+        if (!parsed.port && !isDefaultPort) {
+          parsed.port = String(port);
+        }
+        trustedOrigins.add(parsed.origin);
+      } catch {
+        // ignore invalid host config entries
+      }
+    };
+
+    if (this.AFFiNEConfig.server.externalUrl) {
+      try {
+        trustedOrigins.add(
+          new URL(this.AFFiNEConfig.server.externalUrl).origin
+        );
+      } catch {
+        // ignore invalid external URL
+      }
+    }
+
+    addHostOrigin(this.AFFiNEConfig.server.host);
+    for (const host of this.AFFiNEConfig.server.hosts) {
+      addHostOrigin(host);
+    }
+
+    const hostname = url.hostname.toLowerCase();
+    const trustedByHost = TRUSTED_ATTACHMENT_HOST_SUFFIXES.some(
+      suffix => hostname === suffix || hostname.endsWith(`.${suffix}`)
+    );
+    if (trustedOrigins.has(url.origin) || trustedByHost) {
+      return { ...baseOptions, allowPrivateOrigins: new Set([url.origin]) };
+    }
+
+    return baseOptions;
+  }
+
+  private redactUrl(raw: string | URL): string {
+    try {
+      const parsed = raw instanceof URL ? raw : new URL(raw);
+      if (parsed.protocol === 'data:') return 'data:[redacted]';
+      const segments = parsed.pathname.split('/').filter(Boolean);
+      const redactedPath =
+        segments.length <= 2
+          ? parsed.pathname || '/'
+          : `/${segments[0]}/${segments[1]}/...`;
+      return `${parsed.origin}${redactedPath}`;
+    } catch {
+      return '[invalid-url]';
+    }
+  }
+
+  private async fetchImage(
+    url: string,
+    maxBytes: number,
+    signal?: AbortSignal
+  ): Promise<{ buffer: Buffer; type: string } | null> {
+    if (url.startsWith('data:')) {
+      let response: Response;
+      try {
+        response = await fetch(url, { signal });
+      } catch (error) {
+        this.logger.warn(
+          `Skip image attachment data URL due to read failure: ${
+            error instanceof Error ? error.message : String(error)
+          }`
+        );
+        return null;
+      }
+
+      if (!response.ok) {
+        this.logger.warn(
+          `Skip image attachment data URL due to invalid response: ${response.status}`
+        );
+        return null;
+      }
+
+      const type =
+        response.headers.get('content-type') || 'application/octet-stream';
+      if (!type.startsWith('image/')) {
+        await response.body?.cancel().catch(() => undefined);
+        this.logger.warn(
+          `Skip non-image attachment data URL with content-type ${type}`
+        );
+        return null;
+      }
+
+      try {
+        const buffer = await readResponseBufferWithLimit(response, maxBytes);
+        return { buffer, type };
+      } catch (error) {
+        this.logger.warn(
+          `Skip image attachment data URL due to read failure/size limit: ${
+            error instanceof Error ? error.message : String(error)
+          }`
+        );
+        return null;
+      }
+    }
+
+    let parsed: URL;
+    try {
+      parsed = new URL(url);
+    } catch {
+      this.logger.warn(
+        `Skip image attachment with invalid URL: ${this.redactUrl(url)}`
+      );
+      return null;
+    }
+    const redactedUrl = this.redactUrl(parsed);
+
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      this.logger.warn(
+        `Skip image attachment with unsupported protocol: ${redactedUrl}`
+      );
+      return null;
+    }
+
+    let response: Response;
+    try {
+      response = await safeFetch(
+        parsed,
+        { method: 'GET', signal },
+        this.buildImageFetchOptions(parsed)
+      );
+    } catch (error) {
+      this.logger.warn(
+        `Skip image attachment due to blocked/unreachable URL: ${redactedUrl}, reason: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+      return null;
+    }
+
+    if (!response.ok) {
+      this.logger.warn(
+        `Skip image attachment fetch failure ${response.status}: ${redactedUrl}`
+      );
+      return null;
+    }
+
+    const type =
+      response.headers.get('content-type') || 'application/octet-stream';
+    if (!type.startsWith('image/')) {
+      await response.body?.cancel().catch(() => undefined);
+      this.logger.warn(
+        `Skip non-image attachment with content-type ${type}: ${redactedUrl}`
+      );
+      return null;
+    }
+
+    const contentLength = Number(response.headers.get('content-length'));
+    if (Number.isFinite(contentLength) && contentLength > maxBytes) {
+      await response.body?.cancel().catch(() => undefined);
+      this.logger.warn(
+        `Skip oversized image attachment by content-length (${contentLength}): ${redactedUrl}`
+      );
+      return null;
+    }
+
+    try {
+      const buffer = await readResponseBufferWithLimit(response, maxBytes);
+      return { buffer, type };
+    } catch (error) {
+      this.logger.warn(
+        `Skip image attachment due to read failure/size limit: ${redactedUrl}, reason: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+      return null;
+    }
+  }
+
   private async *generateImageWithAttachments(
     model: string,
     prompt: string,
-    attachments: NonNullable<PromptMessage['attachments']>
+    attachments: NonNullable<PromptMessage['attachments']>,
+    signal?: AbortSignal
   ): AsyncGenerator<string> {
     const form = new FormData();
+    const outputFormat = 'webp';
+    const maxBytes = 10 * OneMB;
     form.set('model', model);
     form.set('prompt', prompt);
-    form.set('output_format', 'webp');
+    form.set('output_format', outputFormat);
 
     for (const [idx, entry] of attachments.entries()) {
-      const url = typeof entry === 'string' ? entry : entry.attachment;
+      const url = promptAttachmentToUrl(entry);
+      if (!url) continue;
       try {
-        const { buffer, type } = await fetchBuffer(url, 10 * OneMB, 'image/');
-        const file = new File([buffer], `${idx}.png`, { type });
+        const attachment = await this.fetchImage(url, maxBytes, signal);
+        if (!attachment) continue;
+        const { buffer, type } = attachment;
+        const extension = type.split(';')[0].split('/')[1] || 'png';
+        const file = new File([buffer], `${idx}.${extension}`, { type });
         form.append('image[]', file);
       } catch {
         continue;
@@ -703,17 +948,23 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
 
     const json = await res.json();
     const imageResponse = ImageResponseSchema.safeParse(json);
-    if (imageResponse.success) {
-      const data = imageResponse.data;
-      if ('error' in data) {
-        throw new Error(data.error.message);
-      } else {
-        for (const image of data.data) {
-          yield `data:image/webp;base64,${image.b64_json}`;
-        }
-      }
-    } else {
+    if (!imageResponse.success) {
       throw new Error(imageResponse.error.message);
+    }
+    const data = imageResponse.data;
+    if ('error' in data) {
+      throw new Error(data.error.message);
+    }
+
+    const images = normalizeImageResponseData(
+      data.data,
+      normalizeImageFormatToMime(outputFormat)
+    );
+    if (!images.length) {
+      throw new Error('No images returned from OpenAI');
+    }
+    for (const image of images) {
+      yield image;
     }
   }
 
@@ -723,15 +974,12 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
     options: CopilotImageOptions = {}
   ) {
     const fullCond = { ...cond, outputType: ModelOutputType.Image };
-    await this.checkParams({ messages, cond: fullCond, options });
-    const model = this.selectModel(fullCond);
-
-    if (!('image' in this.#instance)) {
-      throw new CopilotProviderNotSupported({
-        provider: this.type,
-        kind: 'image',
-      });
-    }
+    const normalizedCond = await this.checkParams({
+      messages,
+      cond: fullCond,
+      options,
+    });
+    const model = this.selectModel(normalizedCond);
 
     metrics.ai
       .counter('generate_images_stream_calls')
@@ -742,22 +990,27 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
 
     try {
       if (attachments && attachments.length > 0) {
-        yield* this.generateImageWithAttachments(model.id, prompt, attachments);
-      } else {
-        const modelInstance = this.#instance.image(model.id);
-        const result = await generateImage({
-          model: modelInstance,
+        yield* this.generateImageWithAttachments(
+          model.id,
           prompt,
-          providerOptions: {
-            openai: {
-              quality: options.quality || null,
-            },
-          },
-        });
-
-        const imageUrls = result.images.map(
-          image => `data:image/png;base64,${image.base64}`
+          attachments,
+          options.signal
         );
+      } else {
+        const response = await this.requestOpenAIJson('/images/generations', {
+          model: model.id,
+          prompt,
+          ...(options.quality ? { quality: options.quality } : {}),
+        });
+        const imageResponse = ImageResponseSchema.parse(response);
+        if ('error' in imageResponse) {
+          throw new Error(imageResponse.error.message);
+        }
+
+        const imageUrls = normalizeImageResponseData(imageResponse.data);
+        if (!imageUrls.length) {
+          throw new Error('No images returned from OpenAI');
+        }
 
         for (const imageUrl of imageUrls) {
           yield imageUrl;
@@ -769,7 +1022,7 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
       return;
     } catch (e: any) {
       metrics.ai.counter('generate_images_errors').add(1, { model: model.id });
-      throw this.handleError(e, model.id, options);
+      throw this.handleError(e);
     }
   }
 
@@ -778,54 +1031,59 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
     messages: string | string[],
     options: CopilotEmbeddingOptions = { dimensions: DEFAULT_DIMENSIONS }
   ): Promise<number[][]> {
-    messages = Array.isArray(messages) ? messages : [messages];
+    const input = Array.isArray(messages) ? messages : [messages];
     const fullCond = { ...cond, outputType: ModelOutputType.Embedding };
-    await this.checkParams({ embeddings: messages, cond: fullCond, options });
-    const model = this.selectModel(fullCond);
-
-    if (!('embedding' in this.#instance)) {
-      throw new CopilotProviderNotSupported({
-        provider: this.type,
-        kind: 'embedding',
-      });
-    }
+    const normalizedCond = await this.checkParams({
+      embeddings: input,
+      cond: fullCond,
+      options,
+    });
+    const model = this.selectModel(normalizedCond);
 
     try {
       metrics.ai
         .counter('generate_embedding_calls')
-        .add(1, { model: model.id });
-
-      const modelInstance = this.#instance.embedding(model.id);
-
-      const { embeddings } = await embedMany({
-        model: modelInstance,
-        values: messages,
-        providerOptions: {
-          openai: {
-            dimensions: options.dimensions || DEFAULT_DIMENSIONS,
-          },
-        },
-      });
-
-      return embeddings.filter(v => v && Array.isArray(v));
+        .add(1, this.metricLabels(model.id));
+      const backendConfig = this.createNativeConfig();
+      const response = await this.createNativeEmbeddingDispatch(backendConfig)(
+        buildNativeEmbeddingRequest({
+          model: model.id,
+          inputs: input,
+          dimensions: options.dimensions || DEFAULT_DIMENSIONS,
+        })
+      );
+      return response.embeddings;
     } catch (e: any) {
       metrics.ai
         .counter('generate_embedding_errors')
-        .add(1, { model: model.id });
-      throw this.handleError(e, model.id, options);
+        .add(1, this.metricLabels(model.id));
+      throw this.handleError(e);
     }
   }
 
-  private getOpenAIOptions(options: CopilotChatOptions, model: string) {
-    const result: OpenAIResponsesProviderOptions = {};
-    if (options?.reasoning && this.isReasoningModel(model)) {
-      result.reasoningEffort = 'medium';
-      result.reasoningSummary = 'detailed';
+  private async requestOpenAIJson(
+    path: string,
+    body: Record<string, unknown>,
+    signal?: AbortSignal
+  ): Promise<any> {
+    const baseUrl = this.config.baseURL || 'https://api.openai.com/v1';
+    const response = await fetch(`${baseUrl}${path}`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${this.config.apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+      signal,
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        `OpenAI API error ${response.status}: ${await response.text()}`
+      );
     }
-    if (options?.user) {
-      result.user = options.user;
-    }
-    return result;
+
+    return await response.json();
   }
 
   private isReasoningModel(model: string) {

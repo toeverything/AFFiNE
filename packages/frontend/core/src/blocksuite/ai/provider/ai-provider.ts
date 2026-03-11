@@ -152,6 +152,7 @@ export class AIProvider {
     }>(),
     // downstream can emit this slot to notify ai presets that user info has been updated
     userInfo: new Subject<AIUserInfo | null>(),
+    sessionReady: new BehaviorSubject<boolean>(false),
     previewPanelOpenChange: new Subject<boolean>(),
     /* eslint-enable rxjs/finnish */
   };
@@ -344,6 +345,7 @@ export class AIProvider {
     } else if (id === 'session') {
       AIProvider.instance.session =
         action as BlockSuitePresets.AISessionService;
+      AIProvider.instance.slots.sessionReady.next(true);
     } else if (id === 'context') {
       AIProvider.instance.context =
         action as BlockSuitePresets.AIContextService;

@@ -185,6 +185,9 @@ export class AISessionHistory extends WithDisposable(ShadowlessElement) {
   @state()
   private accessor hasMore = true;
 
+  @state()
+  private accessor selectedSessionId: string | undefined;
+
   private accessor currentOffset = 0;
 
   private readonly pageSize = 10;
@@ -267,7 +270,14 @@ export class AISessionHistory extends WithDisposable(ShadowlessElement) {
 
   override connectedCallback() {
     super.connectedCallback();
+    this.selectedSessionId = this.session?.sessionId ?? undefined;
     this.getRecentSessions().catch(console.error);
+  }
+
+  protected override willUpdate(changedProperties: PropertyValues) {
+    if (changedProperties.has('session')) {
+      this.selectedSessionId = this.session?.sessionId ?? undefined;
+    }
   }
 
   override firstUpdated(changedProperties: PropertyValues) {
@@ -294,9 +304,10 @@ export class AISessionHistory extends WithDisposable(ShadowlessElement) {
               class="ai-session-item"
               @click=${(e: MouseEvent) => {
                 e.stopPropagation();
+                this.selectedSessionId = session.sessionId;
                 this.onSessionClick(session.sessionId);
               }}
-              aria-selected=${this.session?.sessionId === session.sessionId}
+              aria-selected=${this.selectedSessionId === session.sessionId}
               data-session-id=${session.sessionId}
             >
               <div class="ai-session-title">
@@ -332,6 +343,7 @@ export class AISessionHistory extends WithDisposable(ShadowlessElement) {
       class="ai-session-doc"
       @click=${(e: MouseEvent) => {
         e.stopPropagation();
+        this.selectedSessionId = sessionId;
         this.onDocClick(docId, sessionId);
       }}
     >

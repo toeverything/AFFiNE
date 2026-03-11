@@ -46,6 +46,11 @@ export default defineConfig({
     },
   },
   test: {
+    projects: [
+      '.',
+      './packages/frontend/apps/electron',
+      './blocksuite/**/*/vitest.config.ts',
+    ],
     setupFiles: [
       resolve(rootDir, './scripts/setup/polyfill.ts'),
       resolve(rootDir, './scripts/setup/lit.ts'),
@@ -66,8 +71,7 @@ export default defineConfig({
     ],
     testTimeout: 5000,
     coverage: {
-      all: false,
-      provider: 'istanbul', // or 'c8'
+      provider: 'istanbul', // or 'istanbul'
       reporter: ['lcov'],
       reportsDirectory: resolve(rootDir, '.coverage/store'),
     },

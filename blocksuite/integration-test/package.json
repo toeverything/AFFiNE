@@ -6,7 +6,7 @@
     "dev": "vite",
     "build": "tsc",
     "test:unit": "vitest --browser.headless --run",
-    "test:debug": "PWDEBUG=1 npx vitest"
+    "test:debug": "PWDEBUG=1 npx vitest --browser.headless=false"
   },
   "sideEffects": false,
   "keywords": [],
@@ -41,10 +41,11 @@
   ],
   "devDependencies": {
     "@vanilla-extract/vite-plugin": "^5.0.0",
+    "@vitest/browser-playwright": "^4.0.18",
     "vite": "^7.2.7",
     "vite-plugin-istanbul": "^7.2.1",
     "vite-plugin-wasm": "^3.5.0",
-    "vitest": "^3.2.4"
+    "vitest": "^4.0.18"
   },
   "version": "0.26.3"
 }

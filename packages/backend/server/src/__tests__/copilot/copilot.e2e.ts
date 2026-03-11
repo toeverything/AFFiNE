@@ -6,25 +6,26 @@ import type { TestFn } from 'ava';
 import ava from 'ava';
 import Sinon from 'sinon';
 
-import { AppModule } from '../app.module';
-import { JobQueue } from '../base';
-import { ConfigModule } from '../base/config';
-import { AuthService } from '../core/auth';
-import { DocReader } from '../core/doc';
-import { CopilotContextService } from '../plugins/copilot/context';
+import { AppModule } from '../../app.module';
+import { JobQueue } from '../../base';
+import { ConfigModule } from '../../base/config';
+import { AuthService } from '../../core/auth';
+import { DocReader } from '../../core/doc';
+import { CopilotContextService } from '../../plugins/copilot/context';
 import {
   CopilotEmbeddingJob,
   MockEmbeddingClient,
-} from '../plugins/copilot/embedding';
-import { prompts, PromptService } from '../plugins/copilot/prompt';
+} from '../../plugins/copilot/embedding';
+import { ChatMessageCache } from '../../plugins/copilot/message';
+import { prompts, PromptService } from '../../plugins/copilot/prompt';
 import {
   CopilotProviderFactory,
   CopilotProviderType,
   GeminiGenerativeProvider,
   OpenAIProvider,
-} from '../plugins/copilot/providers';
-import { CopilotStorage } from '../plugins/copilot/storage';
-import { MockCopilotProvider } from './mocks';
+} from '../../plugins/copilot/providers';
+import { CopilotStorage } from '../../plugins/copilot/storage';
+import { MockCopilotProvider } from '../mocks';
 import {
   acceptInviteById,
   createTestingApp,
@@ -33,7 +34,7 @@ import {
   smallestPng,
   TestingApp,
   TestUser,
-} from './utils';
+} from '../utils';
 import {
   addContextDoc,
   addContextFile,
@@ -67,7 +68,7 @@ import {
   textToEventStream,
   unsplashSearch,
   updateCopilotSession,
-} from './utils/copilot';
+} from '../utils/copilot';
 
 const test = ava as TestFn<{
   auth: AuthService;
@@ -416,6 +417,7 @@ test('should be able to use test provider', async t => {
 
 test('should create message correctly', async t => {
   const { app } = t.context;
+  const messageCache = app.get(ChatMessageCache);
 
   {
     const { id } = await createWorkspace(app);
@@ -463,6 +465,19 @@ test('should create message correctly', async t => {
         new File([new Uint8Array(pngData)], '1.png', { type: 'image/png' })
       );
       t.truthy(messageId, 'should be able to create message with blob');
+
+      const message = await messageCache.get(messageId);
+      const attachment = message?.attachments?.[0] as
+        | { attachment: string; mimeType: string }
+        | undefined;
+      const payload = Buffer.from(
+        attachment?.attachment.split(',').at(1) || '',
+        'base64'
+      );
+
+      t.is(attachment?.mimeType, 'image/webp');
+      t.is(payload.subarray(0, 4).toString('ascii'), 'RIFF');
+      t.is(payload.subarray(8, 12).toString('ascii'), 'WEBP');
     }
 
     // with attachments
@@ -513,7 +528,11 @@ test('should be able to chat with api', async t => {
     );
     const messageId = await createCopilotMessage(app, sessionId);
     const ret = await chatWithText(app, sessionId, messageId);
-    t.is(ret, 'generate text to text', 'should be able to chat with text');
+    t.is(
+      ret,
+      'generate text to text stream',
+      'should be able to chat with text'
+    );
 
     const ret2 = await chatWithTextStream(app, sessionId, messageId);
     t.is(
@@ -657,7 +676,7 @@ test('should be able to retry with api', async t => {
     const histories = await getHistories(app, { workspaceId: id, docId });
     t.deepEqual(
       histories.map(h => h.messages.map(m => m.content)),
-      [['generate text to text', 'generate text to text']],
+      [['generate text to text stream', 'generate text to text stream']],
       'should be able to list history'
     );
   }
@@ -794,7 +813,7 @@ test('should be able to list history', async t => {
     const histories = await getHistories(app, { workspaceId, docId });
     t.deepEqual(
       histories.map(h => h.messages.map(m => m.content)),
-      [['hello', 'generate text to text']],
+      [['hello', 'generate text to text stream']],
       'should be able to list history'
     );
   }
@@ -807,7 +826,7 @@ test('should be able to list history', async t => {
     });
     t.deepEqual(
       histories.map(h => h.messages.map(m => m.content)),
-      [['generate text to text', 'hello']],
+      [['generate text to text stream', 'hello']],
       'should be able to list history'
     );
   }
@@ -858,7 +877,7 @@ test('should reject request that user have not permission', async t => {
     const histories = await getHistories(app, { workspaceId, docId });
     t.deepEqual(
       histories.map(h => h.messages.map(m => m.content)),
-      [['generate text to text']],
+      [['generate text to text stream']],
       'should able to list history'
     );
 

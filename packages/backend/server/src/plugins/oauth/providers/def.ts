@@ -84,8 +84,8 @@ export abstract class OAuthProvider {
     options?: { treatServerErrorAsInvalid?: boolean }
   ) {
     const response = await fetch(url, {
-      headers: { Accept: 'application/json', ...init?.headers },
       ...init,
+      headers: { ...init?.headers, Accept: 'application/json' },
     });
 
     const body = await response.text();

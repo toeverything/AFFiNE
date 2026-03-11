@@ -1,9 +1,9 @@
 import { Logger } from '@nestjs/common';
-import { tool } from 'ai';
 import { z } from 'zod';
 
 import { AccessController } from '../../../core/permission';
 import { toolError } from './error';
+import { defineTool } from './tool';
 import type { ContextSession, CopilotChatOptions } from './types';
 
 const logger = new Logger('ContextBlobReadTool');
@@ -32,16 +32,22 @@ export const buildBlobContentGetter = (
       return;
     }
 
+    const contextFile = context.files.find(
+      file => file.blobId === blobId || file.id === blobId
+    );
+    const canonicalBlobId = contextFile?.blobId ?? blobId;
+    const targetFileId = contextFile?.id;
     const [file, blob] = await Promise.all([
-      context?.getFileContent(blobId, chunk),
-      context?.getBlobContent(blobId, chunk),
+      targetFileId ? context.getFileContent(targetFileId, chunk) : undefined,
+      context.getBlobContent(canonicalBlobId, chunk),
     ]);
     const content = file?.trim() || blob?.trim();
-    if (!content) {
-      return;
-    }
+    if (!content) return;
+    const info = contextFile
+      ? { fileName: contextFile.name, fileType: contextFile.mimeType }
+      : {};
 
-    return { blobId, chunk, content };
+    return { blobId: canonicalBlobId, chunk, content, ...info };
   };
   return getBlobContent;
 };
@@ -52,7 +58,7 @@ export const createBlobReadTool = (
     chunk?: number
   ) => Promise<object | undefined>
 ) => {
-  return tool({
+  return defineTool({
     description:
       'Return the content and basic metadata of a single attachment identified by blobId; more inclined to use search tools rather than this tool.',
     inputSchema: z.object({

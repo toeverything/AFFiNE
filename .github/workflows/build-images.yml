@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ inputs.build-type }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Setup Version
         uses: ./.github/actions/setup-version
         with:
@@ -57,7 +57,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ inputs.build-type }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Setup Version
         uses: ./.github/actions/setup-version
         with:
@@ -89,7 +89,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ inputs.build-type }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Setup Version
         uses: ./.github/actions/setup-version
         with:
@@ -118,7 +118,7 @@ jobs:
 
   build-server-native:
     name: Build Server native - ${{ matrix.targets.name }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     environment: ${{ inputs.build-type }}
     strategy:
       fail-fast: false
@@ -132,7 +132,7 @@ jobs:
             file: server-native.armv7.node
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Setup Version
         uses: ./.github/actions/setup-version
         with:
@@ -166,7 +166,7 @@ jobs:
     needs:
       - build-server-native
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Setup Version
         uses: ./.github/actions/setup-version
         with:
@@ -202,7 +202,7 @@ jobs:
       - build-mobile
       - build-admin
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Download server dist
         uses: actions/download-artifact@v4
         with:
@@ -222,7 +222,7 @@ jobs:
       # setup node without cache configuration
       # Prisma cache is not compatible with docker build cache
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version-file: '.nvmrc'
           registry-url: https://npm.pkg.github.com

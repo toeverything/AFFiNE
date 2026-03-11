@@ -1,21 +1,17 @@
 import { Logger } from '@nestjs/common';
 import type { ModuleRef } from '@nestjs/core';
 
-import {
-  Config,
-  CopilotPromptNotFound,
-  CopilotProviderNotSupported,
-} from '../../../base';
+import { Config, CopilotProviderNotSupported } from '../../../base';
 import { CopilotFailedToGenerateEmbedding } from '../../../base/error/errors.gen';
 import {
   ChunkSimilarity,
   Embedding,
   EMBEDDING_DIMENSIONS,
 } from '../../../models';
-import { PromptService } from '../prompt/service';
 import { CopilotProviderFactory } from '../providers/factory';
 import type { CopilotProvider } from '../providers/provider';
 import {
+  type CopilotRerankRequest,
   type ModelFullConditions,
   ModelInputType,
   ModelOutputType,
@@ -23,24 +19,20 @@ import {
 import { EmbeddingClient, type ReRankResult } from './types';
 
 const EMBEDDING_MODEL = 'gemini-embedding-001';
-const RERANK_PROMPT = 'Rerank results';
-
+const RERANK_MODEL = 'gpt-5.2';
 class ProductionEmbeddingClient extends EmbeddingClient {
   private readonly logger = new Logger(ProductionEmbeddingClient.name);
 
   constructor(
     private readonly config: Config,
-    private readonly providerFactory: CopilotProviderFactory,
-    private readonly prompt: PromptService
+    private readonly providerFactory: CopilotProviderFactory
   ) {
     super();
   }
 
   override async configured(): Promise<boolean> {
     const embedding = await this.providerFactory.getProvider({
-      modelId: this.config.copilot?.scenarios?.override_enabled
-        ? this.config.copilot.scenarios.scenarios?.embedding || EMBEDDING_MODEL
-        : EMBEDDING_MODEL,
+      modelId: this.getEmbeddingModelId(),
       outputType: ModelOutputType.Embedding,
     });
     const result = Boolean(embedding);
@@ -65,9 +57,15 @@ class ProductionEmbeddingClient extends EmbeddingClient {
     return provider;
   }
 
+  private getEmbeddingModelId() {
+    return this.config.copilot?.scenarios?.override_enabled
+      ? this.config.copilot.scenarios.scenarios?.embedding || EMBEDDING_MODEL
+      : EMBEDDING_MODEL;
+  }
+
   async getEmbeddings(input: string[]): Promise<Embedding[]> {
     const provider = await this.getProvider({
-      modelId: EMBEDDING_MODEL,
+      modelId: this.getEmbeddingModelId(),
       outputType: ModelOutputType.Embedding,
     });
     this.logger.verbose(
@@ -110,15 +108,22 @@ class ProductionEmbeddingClient extends EmbeddingClient {
   ): Promise<ReRankResult> {
     if (!embeddings.length) return [];
 
-    const prompt = await this.prompt.get(RERANK_PROMPT);
-    if (!prompt) {
-      throw new CopilotPromptNotFound({ name: RERANK_PROMPT });
-    }
-    const provider = await this.getProvider({ modelId: prompt.model });
+    const provider = await this.getProvider({
+      modelId: RERANK_MODEL,
+      outputType: ModelOutputType.Rerank,
+    });
+
+    const rerankRequest: CopilotRerankRequest = {
+      query,
+      candidates: embeddings.map((embedding, index) => ({
+        id: String(index),
+        text: embedding.content,
+      })),
+    };
 
     const ranks = await provider.rerank(
-      { modelId: prompt.model },
-      embeddings.map(e => prompt.finish({ query, doc: e.content })),
+      { modelId: RERANK_MODEL },
+      rerankRequest,
       { signal }
     );
 
@@ -171,7 +176,7 @@ class ProductionEmbeddingClient extends EmbeddingClient {
     );
 
     try {
-      // 4.1 mini's context windows large enough to handle all embeddings
+      // The rerank prompt is expected to handle the full deduped candidate list.
       const ranks = await this.getEmbeddingRelevance(
         query,
         sortedEmbeddings,
@@ -217,9 +222,7 @@ export async function getEmbeddingClient(
   const providerFactory = moduleRef.get(CopilotProviderFactory, {
     strict: false,
   });
-  const prompt = moduleRef.get(PromptService, { strict: false });
-
-  const client = new ProductionEmbeddingClient(config, providerFactory, prompt);
+  const client = new ProductionEmbeddingClient(config, providerFactory);
   if (await client.configured()) {
     EMBEDDING_CLIENT = client;
   }

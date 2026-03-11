@@ -7,6 +7,7 @@ import { AiPromptRole } from '@prisma/client';
 import { pick } from 'lodash-es';
 
 import {
+  Config,
   CopilotActionTaken,
   CopilotMessageNotFound,
   CopilotPromptNotFound,
@@ -30,12 +31,15 @@ import { SubscriptionPlan, SubscriptionStatus } from '../payment/types';
 import { ChatMessageCache } from './message';
 import { ChatPrompt } from './prompt/chat-prompt';
 import { PromptService } from './prompt/service';
+import { promptAttachmentHasSource } from './providers/attachments';
 import { CopilotProviderFactory } from './providers/factory';
+import { buildProviderRegistry } from './providers/provider-registry';
 import {
   ModelOutputType,
   type PromptMessage,
   type PromptParams,
 } from './providers/types';
+import { promptAttachmentToUrl } from './providers/utils';
 import {
   type ChatHistory,
   type ChatMessage,
@@ -105,10 +109,31 @@ export class ChatSession implements AsyncDisposable {
     hasPayment: boolean,
     requestedModelId?: string
   ): Promise<string> {
+    const config = this.moduleRef.get(Config, { strict: false });
+    const registry = config
+      ? buildProviderRegistry(config.copilot.providers)
+      : null;
     const defaultModel = this.model;
-    const normalize = (m?: string) =>
-      !!m && this.optionalModels.includes(m) ? m : defaultModel;
-    const isPro = (m?: string) => !!m && this.proModels.includes(m);
+    const normalizeModel = (modelId?: string) => {
+      if (!modelId) return modelId;
+      const separatorIndex = modelId.indexOf('/');
+      if (separatorIndex <= 0) return modelId;
+      const providerId = modelId.slice(0, separatorIndex);
+      if (!registry?.profiles.has(providerId)) return modelId;
+      return modelId.slice(separatorIndex + 1);
+    };
+    const inModelList = (models: string[], modelId?: string) => {
+      if (!modelId) return false;
+      return (
+        models.includes(modelId) ||
+        models.includes(normalizeModel(modelId) ?? '')
+      );
+    };
+    const normalize = (m?: string) => {
+      if (inModelList(this.optionalModels, m)) return m;
+      return defaultModel;
+    };
+    const isPro = (m?: string) => inModelList(this.proModels, m);
 
     // try resolve payment subscription service lazily
     let paymentEnabled = hasPayment;
@@ -132,10 +157,19 @@ export class ChatSession implements AsyncDisposable {
     }
 
     if (paymentEnabled && !isUserAIPro && isPro(requestedModelId)) {
+      if (!defaultModel) {
+        throw new CopilotSessionInvalidInput(
+          'Model is required for AI subscription fallback'
+        );
+      }
       return defaultModel;
     }
 
-    return normalize(requestedModelId);
+    const resolvedModel = normalize(requestedModelId);
+    if (!resolvedModel) {
+      throw new CopilotSessionInvalidInput('Model is required');
+    }
+    return resolvedModel;
   }
 
   push(message: ChatMessage) {
@@ -240,11 +274,7 @@ export class ChatSession implements AsyncDisposable {
         lastMessage.attachments || [],
       ]
         .flat()
-        .filter(v =>
-          typeof v === 'string'
-            ? !!v.trim()
-            : v && v.attachment.trim() && v.mimeType
-        );
+        .filter(v => promptAttachmentHasSource(v));
       //insert all previous user message content before first user message
       finished.splice(firstUserMessageIndex, 0, ...messages);
 
@@ -434,8 +464,8 @@ export class ChatSessionService {
               messages: preload.concat(messages).map(m => ({
                 ...m,
                 attachments: m.attachments
-                  ?.map(a => (typeof a === 'string' ? a : a.attachment))
-                  .filter(a => !!a),
+                  ?.map(a => promptAttachmentToUrl(a))
+                  .filter((a): a is string => !!a),
               })),
             };
           } else {
