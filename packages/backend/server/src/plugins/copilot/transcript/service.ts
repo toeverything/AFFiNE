@@ -224,11 +224,10 @@ export class CopilotTranscriptionService {
     const config = Object.assign({}, prompt.config);
     if (schema) {
       const provider = await this.getProvider(prompt.model, true, prefer);
-      return provider.structure(
-        cond,
-        [...prompt.finish({ schema }), msg],
-        config
-      );
+      return provider.structure(cond, [...prompt.finish({}), msg], {
+        ...config,
+        schema,
+      });
     } else {
       const provider = await this.getProvider(prompt.model, false);
       return provider.text(cond, [...prompt.finish({}), msg], config);

@@ -8,38 +8,35 @@ import ava from 'ava';
 import { nanoid } from 'nanoid';
 import Sinon from 'sinon';
 
-import { EventBus, JobQueue } from '../base';
-import { ConfigModule } from '../base/config';
-import { AuthService } from '../core/auth';
-import { QuotaModule } from '../core/quota';
-import { StorageModule, WorkspaceBlobStorage } from '../core/storage';
+import { EventBus, JobQueue } from '../../base';
+import { ConfigModule } from '../../base/config';
+import { AuthService } from '../../core/auth';
+import { QuotaModule } from '../../core/quota';
+import { StorageModule, WorkspaceBlobStorage } from '../../core/storage';
 import {
   ContextCategories,
   CopilotSessionModel,
   WorkspaceModel,
-} from '../models';
-import { CopilotModule } from '../plugins/copilot';
-import { CopilotContextService } from '../plugins/copilot/context';
-import { CopilotCronJobs } from '../plugins/copilot/cron';
+} from '../../models';
+import { CopilotModule } from '../../plugins/copilot';
+import { CopilotContextService } from '../../plugins/copilot/context';
+import { CopilotCronJobs } from '../../plugins/copilot/cron';
 import {
   CopilotEmbeddingJob,
   MockEmbeddingClient,
-} from '../plugins/copilot/embedding';
-import { prompts, PromptService } from '../plugins/copilot/prompt';
+} from '../../plugins/copilot/embedding';
+import { prompts, PromptService } from '../../plugins/copilot/prompt';
 import {
   CopilotProviderFactory,
   CopilotProviderType,
   ModelInputType,
   ModelOutputType,
   OpenAIProvider,
-} from '../plugins/copilot/providers';
-import {
-  CitationParser,
-  TextStreamParser,
-} from '../plugins/copilot/providers/utils';
-import { ChatSessionService } from '../plugins/copilot/session';
-import { CopilotStorage } from '../plugins/copilot/storage';
-import { CopilotTranscriptionService } from '../plugins/copilot/transcript';
+} from '../../plugins/copilot/providers';
+import { TextStreamParser } from '../../plugins/copilot/providers/utils';
+import { ChatSessionService } from '../../plugins/copilot/session';
+import { CopilotStorage } from '../../plugins/copilot/storage';
+import { CopilotTranscriptionService } from '../../plugins/copilot/transcript';
 import {
   CopilotChatTextExecutor,
   CopilotWorkflowService,
@@ -48,7 +45,7 @@ import {
   WorkflowGraphExecutor,
   type WorkflowNodeData,
   WorkflowNodeType,
-} from '../plugins/copilot/workflow';
+} from '../../plugins/copilot/workflow';
 import {
   CopilotChatImageExecutor,
   CopilotCheckHtmlExecutor,
@@ -56,16 +53,16 @@ import {
   getWorkflowExecutor,
   NodeExecuteState,
   NodeExecutorType,
-} from '../plugins/copilot/workflow/executor';
-import { AutoRegisteredWorkflowExecutor } from '../plugins/copilot/workflow/executor/utils';
-import { WorkflowGraphList } from '../plugins/copilot/workflow/graph';
-import { CopilotWorkspaceService } from '../plugins/copilot/workspace';
-import { PaymentModule } from '../plugins/payment';
-import { SubscriptionService } from '../plugins/payment/service';
-import { SubscriptionStatus } from '../plugins/payment/types';
-import { MockCopilotProvider } from './mocks';
-import { createTestingModule, TestingModule } from './utils';
-import { WorkflowTestCases } from './utils/copilot';
+} from '../../plugins/copilot/workflow/executor';
+import { AutoRegisteredWorkflowExecutor } from '../../plugins/copilot/workflow/executor/utils';
+import { WorkflowGraphList } from '../../plugins/copilot/workflow/graph';
+import { CopilotWorkspaceService } from '../../plugins/copilot/workspace';
+import { PaymentModule } from '../../plugins/payment';
+import { SubscriptionService } from '../../plugins/payment/service';
+import { SubscriptionStatus } from '../../plugins/payment/types';
+import { MockCopilotProvider } from '../mocks';
+import { createTestingModule, TestingModule } from '../utils';
+import { WorkflowTestCases } from '../utils/copilot';
 
 type Context = {
   auth: AuthService;
@@ -364,6 +361,21 @@ test('should be able to manage chat session', async t => {
     });
     t.is(newSessionId, sessionId, 'should get same session id');
   }
+
+  // should create a fresh session when reuseLatestChat is explicitly disabled
+  {
+    const newSessionId = await session.create({
+      userId,
+      promptName,
+      ...commonParams,
+      reuseLatestChat: false,
+    });
+    t.not(
+      newSessionId,
+      sessionId,
+      'should create new session id when reuseLatestChat is false'
+    );
+  }
 });
 
 test('should be able to update chat session prompt', async t => {
@@ -645,6 +657,55 @@ test('should be able to generate with message id', async t => {
   }
 });
 
+test('should preserve file handle attachments when merging user content into prompt', async t => {
+  const { prompt, session } = t.context;
+
+  await prompt.set(promptName, 'model', [
+    { role: 'user', content: '{{content}}' },
+  ]);
+
+  const sessionId = await session.create({
+    docId: 'test',
+    workspaceId: 'test',
+    userId,
+    promptName,
+    pinned: false,
+  });
+  const s = (await session.get(sessionId))!;
+
+  const message = await session.createMessage({
+    sessionId,
+    content: 'Summarize this file',
+    attachments: [
+      {
+        kind: 'file_handle',
+        fileHandle: 'file_123',
+        mimeType: 'application/pdf',
+      },
+    ],
+  });
+
+  await s.pushByMessageId(message);
+  const finalMessages = s.finish({});
+
+  t.deepEqual(finalMessages, [
+    {
+      role: 'user',
+      content: 'Summarize this file',
+      attachments: [
+        {
+          kind: 'file_handle',
+          fileHandle: 'file_123',
+          mimeType: 'application/pdf',
+        },
+      ],
+      params: {
+        content: 'Summarize this file',
+      },
+    },
+  ]);
+});
+
 test('should save message correctly', async t => {
   const { prompt, session } = t.context;
 
@@ -879,6 +940,26 @@ test('should be able to get provider', async t => {
     });
     t.falsy(p, 'should not get provider');
   }
+});
+
+test('should resolve provider by prefixed model id', async t => {
+  const { factory } = t.context;
+
+  const provider = await factory.getProviderByModel('openai-default/test');
+  t.truthy(provider, 'should resolve prefixed model id');
+  t.is(provider?.type, CopilotProviderType.OpenAI);
+
+  const result = await provider?.text({ modelId: 'openai-default/test' }, [
+    { role: 'user', content: 'hello' },
+  ]);
+  t.is(result, 'generate text to text');
+});
+
+test('should fallback to null when prefixed provider id does not exist', async t => {
+  const { factory } = t.context;
+
+  const provider = await factory.getProviderByModel('unknown/test');
+  t.is(provider, null);
 });
 
 // ==================== workflow ====================
@@ -1188,149 +1269,6 @@ test('should be able to run image executor', async t => {
   }
 
   Sinon.restore();
-});
-
-test('CitationParser should replace citation placeholders with URLs', t => {
-  const content =
-    'This is [a] test sentence with [citations [1]] and [[2]] and [3].';
-  const citations = ['https://example1.com', 'https://example2.com'];
-
-  const parser = new CitationParser();
-  for (const citation of citations) {
-    parser.push(citation);
-  }
-
-  const result = parser.parse(content) + parser.end();
-
-  const expected = [
-    'This is [a] test sentence with [citations [^1]] and [^2] and [3].',
-    `[^1]: {"type":"url","url":"${encodeURIComponent(citations[0])}"}`,
-    `[^2]: {"type":"url","url":"${encodeURIComponent(citations[1])}"}`,
-  ].join('\n');
-
-  t.is(result, expected);
-});
-
-test('CitationParser should replace chunks of citation placeholders with URLs', t => {
-  const contents = [
-    '[[]]',
-    'This is [',
-    'a] test sentence ',
-    'with citations [1',
-    '] and [',
-    '[2]] and [[',
-    '3]] and [[4',
-    ']] and [[5]',
-    '] and [[6]]',
-    ' and [7',
-  ];
-  const citations = [
-    'https://example1.com',
-    'https://example2.com',
-    'https://example3.com',
-    'https://example4.com',
-    'https://example5.com',
-    'https://example6.com',
-    'https://example7.com',
-  ];
-
-  const parser = new CitationParser();
-  for (const citation of citations) {
-    parser.push(citation);
-  }
-
-  let result = contents.reduce((acc, current) => {
-    return acc + parser.parse(current);
-  }, '');
-  result += parser.end();
-
-  const expected = [
-    '[[]]This is [a] test sentence with citations [^1] and [^2] and [^3] and [^4] and [^5] and [^6] and [7',
-    `[^1]: {"type":"url","url":"${encodeURIComponent(citations[0])}"}`,
-    `[^2]: {"type":"url","url":"${encodeURIComponent(citations[1])}"}`,
-    `[^3]: {"type":"url","url":"${encodeURIComponent(citations[2])}"}`,
-    `[^4]: {"type":"url","url":"${encodeURIComponent(citations[3])}"}`,
-    `[^5]: {"type":"url","url":"${encodeURIComponent(citations[4])}"}`,
-    `[^6]: {"type":"url","url":"${encodeURIComponent(citations[5])}"}`,
-    `[^7]: {"type":"url","url":"${encodeURIComponent(citations[6])}"}`,
-  ].join('\n');
-  t.is(result, expected);
-});
-
-test('CitationParser should not replace citation already with URLs', t => {
-  const content =
-    'This is [a] test sentence with citations [1](https://example1.com) and [[2]](https://example2.com) and [[3](https://example3.com)].';
-  const citations = [
-    'https://example4.com',
-    'https://example5.com',
-    'https://example6.com',
-  ];
-
-  const parser = new CitationParser();
-  for (const citation of citations) {
-    parser.push(citation);
-  }
-
-  const result = parser.parse(content) + parser.end();
-
-  const expected = [
-    content,
-    `[^1]: {"type":"url","url":"${encodeURIComponent(citations[0])}"}`,
-    `[^2]: {"type":"url","url":"${encodeURIComponent(citations[1])}"}`,
-    `[^3]: {"type":"url","url":"${encodeURIComponent(citations[2])}"}`,
-  ].join('\n');
-  t.is(result, expected);
-});
-
-test('CitationParser should not replace chunks of citation already with URLs', t => {
-  const contents = [
-    'This is [a] test sentence with citations [1',
-    '](https://example1.com) and [[2]',
-    '](https://example2.com) and [[3](https://example3.com)].',
-  ];
-  const citations = [
-    'https://example4.com',
-    'https://example5.com',
-    'https://example6.com',
-  ];
-
-  const parser = new CitationParser();
-  for (const citation of citations) {
-    parser.push(citation);
-  }
-
-  let result = contents.reduce((acc, current) => {
-    return acc + parser.parse(current);
-  }, '');
-  result += parser.end();
-
-  const expected = [
-    contents.join(''),
-    `[^1]: {"type":"url","url":"${encodeURIComponent(citations[0])}"}`,
-    `[^2]: {"type":"url","url":"${encodeURIComponent(citations[1])}"}`,
-    `[^3]: {"type":"url","url":"${encodeURIComponent(citations[2])}"}`,
-  ].join('\n');
-  t.is(result, expected);
-});
-
-test('CitationParser should replace openai style reference chunks', t => {
-  const contents = [
-    'This is [a] test sentence with citations ',
-    '([example1.com](https://example1.com))',
-  ];
-
-  const parser = new CitationParser();
-
-  let result = contents.reduce((acc, current) => {
-    return acc + parser.parse(current);
-  }, '');
-  result += parser.end();
-
-  const expected = [
-    contents[0] + '[^1]',
-    `[^1]: {"type":"url","url":"${encodeURIComponent('https://example1.com')}"}`,
-  ].join('\n');
-  t.is(result, expected);
 });
 
 test('TextStreamParser should format different types of chunks correctly', t => {
@@ -2063,25 +2001,23 @@ test('should handle copilot cron jobs correctly', async t => {
 });
 
 test('should resolve model correctly based on subscription status and prompt config', async t => {
-  const { db, session, subscription } = t.context;
+  const { prompt, session, subscription } = t.context;
 
   // 1) Seed a prompt that has optionalModels and proModels in config
   const promptName = 'resolve-model-test';
-  await db.aiPrompt.create({
-    data: {
-      name: promptName,
-      model: 'gemini-2.5-flash',
-      messages: {
-        create: [{ idx: 0, role: 'system', content: 'test' }],
-      },
-      config: { proModels: ['gemini-2.5-pro', 'claude-sonnet-4-5@20250929'] },
+  await prompt.set(
+    promptName,
+    'gemini-2.5-flash',
+    [{ role: 'system', content: 'test' }],
+    { proModels: ['gemini-2.5-pro', 'claude-sonnet-4-5@20250929'] },
+    {
       optionalModels: [
         'gemini-2.5-flash',
         'gemini-2.5-pro',
         'claude-sonnet-4-5@20250929',
       ],
-    },
-  });
+    }
+  );
 
   // 2) Create a chat session with this prompt
   const sessionId = await session.create({
@@ -2106,6 +2042,16 @@ test('should resolve model correctly based on subscription status and prompt con
     const model1 = await s.resolveModel(false, 'gemini-2.5-pro');
     t.snapshot(model1, 'should honor requested pro model');
 
+    const model1WithPrefix = await s.resolveModel(
+      false,
+      'openai-default/gemini-2.5-pro'
+    );
+    t.is(
+      model1WithPrefix,
+      'openai-default/gemini-2.5-pro',
+      'should honor requested prefixed pro model'
+    );
+
     const model2 = await s.resolveModel(false, 'not-in-optional');
     t.snapshot(model2, 'should fallback to default model');
   }
@@ -2117,6 +2063,16 @@ test('should resolve model correctly based on subscription status and prompt con
     t.snapshot(
       model3,
       'should fallback to default model when requesting pro model during trialing'
+    );
+
+    const model3WithPrefix = await s.resolveModel(
+      true,
+      'openai-default/gemini-2.5-pro'
+    );
+    t.is(
+      model3WithPrefix,
+      'gemini-2.5-flash',
+      'should fallback to default model when requesting prefixed pro model during trialing'
     );
 
     const model4 = await s.resolveModel(true, 'gemini-2.5-flash');
@@ -2140,6 +2096,16 @@ test('should resolve model correctly based on subscription status and prompt con
 
     const model7 = await s.resolveModel(true, 'claude-sonnet-4-5@20250929');
     t.snapshot(model7, 'should honor requested pro model during active');
+
+    const model7WithPrefix = await s.resolveModel(
+      true,
+      'openai-default/claude-sonnet-4-5@20250929'
+    );
+    t.is(
+      model7WithPrefix,
+      'openai-default/claude-sonnet-4-5@20250929',
+      'should honor requested prefixed pro model during active'
+    );
 
     const model8 = await s.resolveModel(true, 'not-in-optional');
     t.snapshot(

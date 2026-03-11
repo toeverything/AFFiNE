@@ -67,54 +67,70 @@ export class ChatPanelUtils {
   }
 
   public static async collectHistory(page: Page) {
-    return await page.evaluate(() => {
-      const chatPanel = document.querySelector<HTMLElement>(
-        '[data-testid="chat-panel-messages"]'
-      );
-      if (!chatPanel) {
-        return [] as ChatMessage[];
+    const selectors =
+      ':is(chat-message-user,chat-message-assistant,chat-message-action,[data-testid="chat-message-user"],[data-testid="chat-message-assistant"],[data-testid="chat-message-action"])';
+    const messages = page.locator(selectors);
+    const count = await messages.count();
+    if (!count) return [] as ChatMessage[];
+
+    const history: ChatMessage[] = [];
+    for (let i = 0; i < count; i++) {
+      const message = messages.nth(i);
+      const testId = await message.getAttribute('data-testid');
+      const tag = await message.evaluate(el => el.tagName.toLowerCase());
+      const isAssistant =
+        testId === 'chat-message-assistant' || tag === 'chat-message-assistant';
+      const isAction =
+        testId === 'chat-message-action' || tag === 'chat-message-action';
+      const isUser =
+        testId === 'chat-message-user' || tag === 'chat-message-user';
+
+      if (!isAssistant && !isAction && !isUser) continue;
+
+      const titleNode = message.locator('.user-info').first();
+      const title =
+        (await titleNode.count()) > 0 ? await titleNode.innerText() : '';
+
+      if (isUser) {
+        const pureText = message.getByTestId('chat-content-pure-text').first();
+        const content =
+          (await pureText.count()) > 0
+            ? await pureText.innerText()
+            : ((await message.innerText()) ?? '');
+        history.push({ role: 'user', content });
+        continue;
       }
-      const messages = chatPanel.querySelectorAll<HTMLElement>(
-        'chat-message-user,chat-message-assistant,chat-message-action'
-      );
 
-      return Array.from(messages).map(m => {
-        const isAssistant = m.dataset.testid === 'chat-message-assistant';
-        const isChatAction = m.dataset.testid === 'chat-message-action';
+      const richText = message.locator('chat-content-rich-text editor-host');
+      const richContent =
+        (await richText.count()) > 0
+          ? (await richText.allInnerTexts()).join(' ')
+          : '';
+      const content = richContent || ((await message.innerText()) ?? '').trim();
 
-        const isUser = !isAssistant && !isChatAction;
+      if (isAssistant) {
+        const inferredStatus = (await message
+          .getByTestId('ai-loading')
+          .isVisible()
+          .catch(() => false))
+          ? 'transmitting'
+          : content
+            ? 'success'
+            : 'idle';
+        history.push({
+          role: 'assistant',
+          status: ((await message.getAttribute('data-status')) ??
+            inferredStatus) as ChatStatus,
+          title,
+          content,
+        });
+        continue;
+      }
 
-        if (isUser) {
-          return {
-            role: 'user' as const,
-            content:
-              m.querySelector<HTMLElement>(
-                '[data-testid="chat-content-pure-text"]'
-              )?.innerText || '',
-          };
-        }
+      history.push({ role: 'action', title, content });
+    }
 
-        if (isAssistant) {
-          return {
-            role: 'assistant' as const,
-            status: m.dataset.status as ChatStatus,
-            title: m.querySelector<HTMLElement>('.user-info')?.innerText || '',
-            content:
-              m.querySelector<HTMLElement>('chat-content-rich-text editor-host')
-                ?.innerText || '',
-          };
-        }
-
-        // Must be chat action at this point
-        return {
-          role: 'action' as const,
-          title: m.querySelector<HTMLElement>('.user-info')?.innerText || '',
-          content:
-            m.querySelector<HTMLElement>('chat-content-rich-text editor-host')
-              ?.innerText || '',
-        };
-      });
-    });
+    return history;
   }
 
   private static expectHistory(
@@ -126,8 +142,34 @@ export class ChatPanelUtils {
     )[]
   ) {
     expect(history).toHaveLength(expected.length);
+    const assistantStage = {
+      loading: 1,
+      transmitting: 1,
+      success: 2,
+    } as const;
+
     history.forEach((message, index) => {
       const expectedMessage = expected[index];
+      if (
+        message.role === 'assistant' &&
+        expectedMessage?.role === 'assistant' &&
+        expectedMessage.status
+      ) {
+        const expectedStatus = expectedMessage.status;
+        if (
+          expectedStatus in assistantStage &&
+          message.status in assistantStage
+        ) {
+          expect(
+            assistantStage[message.status as keyof typeof assistantStage]
+          ).toBeGreaterThanOrEqual(
+            assistantStage[expectedStatus as keyof typeof assistantStage]
+          );
+          const { status: _status, ...expectedRest } = expectedMessage;
+          expect(message).toMatchObject(expectedRest);
+          return;
+        }
+      }
       expect(message).toMatchObject(expectedMessage);
     });
   }

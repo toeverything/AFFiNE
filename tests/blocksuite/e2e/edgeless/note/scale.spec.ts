@@ -49,14 +49,13 @@ async function checkNoteScale(
   const edgelessNote = page.locator(
     `affine-edgeless-note[data-block-id="${noteId}"]`
   );
-  const noteContainer = edgelessNote.getByTestId('edgeless-note-container');
-  const style = await noteContainer.getAttribute('style');
+  const style = await edgelessNote.getAttribute('style');
 
   if (!style) {
     throw new Error('Style attribute not found');
   }
 
-  const scaleMatch = style.match(/transform:\s*scale\(([\d.]+)\)/);
+  const scaleMatch = style.match(/transform:[^;]*scale\(([\d.]+)\)/);
   if (!scaleMatch) {
     throw new Error('Scale transform not found in style');
   }

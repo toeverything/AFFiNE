@@ -1,10 +1,10 @@
 import { Logger } from '@nestjs/common';
-import { tool } from 'ai';
 import { z } from 'zod';
 
 import { DocWriter } from '../../../core/doc';
 import { AccessController } from '../../../core/permission';
 import { toolError } from './error';
+import { defineTool } from './tool';
 import type { CopilotChatOptions } from './types';
 
 const logger = new Logger('DocWriteTool');
@@ -141,7 +141,7 @@ export const buildDocUpdateMetaHandler = (
 export const createDocCreateTool = (
   createDoc: (title: string, content: string) => Promise<object>
 ) => {
-  return tool({
+  return defineTool({
     description:
       'Create a new document in the workspace with the given title and markdown content. Returns the ID of the created document. This tool not support insert or update database block and image yet.',
     inputSchema: z.object({
@@ -164,7 +164,7 @@ export const createDocCreateTool = (
 export const createDocUpdateTool = (
   updateDoc: (docId: string, content: string) => Promise<object>
 ) => {
-  return tool({
+  return defineTool({
     description:
       'Update an existing document with new markdown content (body only). Uses structural diffing to apply minimal changes. This does NOT update the document title. This tool not support insert or update database block and image yet.',
     inputSchema: z.object({
@@ -189,7 +189,7 @@ export const createDocUpdateTool = (
 export const createDocUpdateMetaTool = (
   updateDocMeta: (docId: string, title: string) => Promise<object>
 ) => {
-  return tool({
+  return defineTool({
     description: 'Update document metadata (currently title only).',
     inputSchema: z.object({
       doc_id: z.string().describe('The ID of the document to update'),

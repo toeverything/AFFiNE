@@ -411,6 +411,9 @@ declare global {
 
     interface AISessionService {
       createSession: (options: AICreateSessionOptions) => Promise<string>;
+      createSessionWithHistory: (
+        options: AICreateSessionOptions
+      ) => Promise<CopilotChatHistoryFragment | undefined>;
       getSession: (
         workspaceId: string,
         sessionId: string

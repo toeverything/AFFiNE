@@ -2,6 +2,7 @@
   "extends": "../../../tsconfig.web.json",
   "include": ["./src", "./src/config.json"],
   "compilerOptions": {
+    "types": ["build-config", "affine__env", "node"],
     "resolveJsonModule": true,
     "rootDir": "./src",
     "outDir": "./dist",

@@ -4,7 +4,6 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import {
   Args,
   Field,
-  Float,
   ID,
   InputType,
   Mutation,
@@ -15,7 +14,6 @@ import {
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
-import { AiPromptRole } from '@prisma/client';
 import { GraphQLJSON, SafeIntResolver } from 'graphql-scalars';
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 
@@ -26,6 +24,7 @@ import {
   CopilotProviderSideError,
   CopilotSessionNotFound,
   type FileUpload,
+  ImageFormatNotSupported,
   paginate,
   Paginated,
   PaginationInput,
@@ -41,6 +40,7 @@ import { DocReader } from '../../core/doc';
 import { AccessController, DocAction } from '../../core/permission';
 import { UserType } from '../../core/user';
 import type { ListSessionOptions, UpdateChatSession } from '../../models';
+import { processImage } from '../../native';
 import { CopilotCronJobs } from './cron';
 import { PromptService } from './prompt/service';
 import { CopilotProviderFactory } from './providers/factory';
@@ -50,6 +50,7 @@ import { CopilotStorage } from './storage';
 import { type ChatHistory, type ChatMessage, SubmittedMessage } from './types';
 
 export const COPILOT_LOCKER = 'copilot';
+const COPILOT_IMAGE_MAX_EDGE = 1536;
 
 // ================== Input Types ==================
 
@@ -311,57 +312,6 @@ class CopilotQuotaType {
 
   @Field(() => SafeIntResolver)
   used!: number;
-}
-
-registerEnumType(AiPromptRole, {
-  name: 'CopilotPromptMessageRole',
-});
-
-@InputType('CopilotPromptConfigInput')
-@ObjectType()
-class CopilotPromptConfigType {
-  @Field(() => Float, { nullable: true })
-  frequencyPenalty!: number | null;
-
-  @Field(() => Float, { nullable: true })
-  presencePenalty!: number | null;
-
-  @Field(() => Float, { nullable: true })
-  temperature!: number | null;
-
-  @Field(() => Float, { nullable: true })
-  topP!: number | null;
-}
-
-@InputType('CopilotPromptMessageInput')
-@ObjectType()
-class CopilotPromptMessageType {
-  @Field(() => AiPromptRole)
-  role!: AiPromptRole;
-
-  @Field(() => String)
-  content!: string;
-
-  @Field(() => GraphQLJSON, { nullable: true })
-  params!: Record<string, string> | null;
-}
-
-@ObjectType()
-class CopilotPromptType {
-  @Field(() => String)
-  name!: string;
-
-  @Field(() => String)
-  model!: string;
-
-  @Field(() => String, { nullable: true })
-  action!: string | null;
-
-  @Field(() => CopilotPromptConfigType, { nullable: true })
-  config!: CopilotPromptConfigType | null;
-
-  @Field(() => [CopilotPromptMessageType])
-  messages!: CopilotPromptMessageType[];
 }
 
 @ObjectType()
@@ -638,13 +588,8 @@ export class CopilotResolver {
     );
   }
 
-  @Mutation(() => String, {
-    description: 'Create a chat session',
-  })
-  @CallMetric('ai', 'chat_session_create')
-  async createCopilotSession(
-    @CurrentUser() user: CurrentUser,
-    @Args({ name: 'options', type: () => CreateChatSessionInput })
+  private async createCopilotSessionInternal(
+    user: CurrentUser,
     options: CreateChatSessionInput
   ): Promise<string> {
     // permission check based on session type
@@ -664,6 +609,42 @@ export class CopilotResolver {
       docId: options.docId ?? null,
       userId: user.id,
     });
+  }
+
+  @Mutation(() => String, {
+    description: 'Create a chat session',
+    deprecationReason: 'use `createCopilotSessionWithHistory` instead',
+  })
+  @CallMetric('ai', 'chat_session_create')
+  async createCopilotSession(
+    @CurrentUser() user: CurrentUser,
+    @Args({ name: 'options', type: () => CreateChatSessionInput })
+    options: CreateChatSessionInput
+  ): Promise<string> {
+    return await this.createCopilotSessionInternal(user, options);
+  }
+
+  @Mutation(() => CopilotHistoriesType, {
+    description: 'Create a chat session and return full session payload',
+  })
+  @CallMetric('ai', 'chat_session_create_with_history')
+  async createCopilotSessionWithHistory(
+    @CurrentUser() user: CurrentUser,
+    @Args({ name: 'options', type: () => CreateChatSessionInput })
+    options: CreateChatSessionInput
+  ): Promise<CopilotHistoriesType> {
+    const sessionId = await this.createCopilotSessionInternal(user, options);
+    const session = await this.chatSession.getSessionInfo(sessionId);
+    if (!session) {
+      throw new NotFoundException('Session not found');
+    }
+    return {
+      ...session,
+      messages: session.messages.map(message => ({
+        ...message,
+        id: message.id,
+      })) as ChatMessageType[],
+    };
   }
 
   @Mutation(() => String, {
@@ -799,19 +780,35 @@ export class CopilotResolver {
 
       for (const blob of blobs) {
         const uploaded = await this.storage.handleUpload(user.id, blob);
+        const detectedMime =
+          sniffMime(uploaded.buffer, blob.mimetype)?.toLowerCase() ||
+          blob.mimetype;
+        let attachmentBuffer = uploaded.buffer;
+        let attachmentMimeType = detectedMime;
+
+        if (detectedMime.startsWith('image/')) {
+          try {
+            attachmentBuffer = await processImage(
+              uploaded.buffer,
+              COPILOT_IMAGE_MAX_EDGE,
+              true
+            );
+            attachmentMimeType = 'image/webp';
+          } catch {
+            throw new ImageFormatNotSupported({ format: detectedMime });
+          }
+        }
+
         const filename = createHash('sha256')
-          .update(uploaded.buffer)
+          .update(attachmentBuffer)
           .digest('base64url');
         const attachment = await this.storage.put(
           user.id,
           workspaceId,
           filename,
-          uploaded.buffer
+          attachmentBuffer
         );
-        attachments.push({
-          attachment,
-          mimeType: sniffMime(uploaded.buffer, blob.mimetype) || blob.mimetype,
-        });
+        attachments.push({ attachment, mimeType: attachmentMimeType });
       }
     }
 
@@ -939,31 +936,10 @@ export class UserCopilotResolver {
   }
 }
 
-@InputType()
-class CreateCopilotPromptInput {
-  @Field(() => String)
-  name!: string;
-
-  @Field(() => String)
-  model!: string;
-
-  @Field(() => String, { nullable: true })
-  action!: string | null;
-
-  @Field(() => CopilotPromptConfigType, { nullable: true })
-  config!: CopilotPromptConfigType | null;
-
-  @Field(() => [CopilotPromptMessageType])
-  messages!: CopilotPromptMessageType[];
-}
-
 @Admin()
 @Resolver(() => String)
 export class PromptsManagementResolver {
-  constructor(
-    private readonly cron: CopilotCronJobs,
-    private readonly promptService: PromptService
-  ) {}
+  constructor(private readonly cron: CopilotCronJobs) {}
 
   @Mutation(() => Boolean, {
     description: 'Trigger generate missing titles cron job',
@@ -979,49 +955,5 @@ export class PromptsManagementResolver {
   async triggerCleanupTrashedDocEmbeddings() {
     await this.cron.triggerCleanupTrashedDocEmbeddings();
     return true;
-  }
-
-  @Query(() => [CopilotPromptType], {
-    description: 'List all copilot prompts',
-  })
-  async listCopilotPrompts() {
-    const prompts = await this.promptService.list();
-    return prompts.filter(
-      p =>
-        p.messages.length > 0 &&
-        // ignore internal prompts
-        !p.name.startsWith('workflow:') &&
-        !p.name.startsWith('debug:') &&
-        !p.name.startsWith('chat:') &&
-        !p.name.startsWith('action:')
-    );
-  }
-
-  @Mutation(() => CopilotPromptType, {
-    description: 'Create a copilot prompt',
-  })
-  async createCopilotPrompt(
-    @Args({ type: () => CreateCopilotPromptInput, name: 'input' })
-    input: CreateCopilotPromptInput
-  ) {
-    await this.promptService.set(
-      input.name,
-      input.model,
-      input.messages,
-      input.config
-    );
-    return this.promptService.get(input.name);
-  }
-
-  @Mutation(() => CopilotPromptType, {
-    description: 'Update a copilot prompt',
-  })
-  async updateCopilotPrompt(
-    @Args('name') name: string,
-    @Args('messages', { type: () => [CopilotPromptMessageType] })
-    messages: CopilotPromptMessageType[]
-  ) {
-    await this.promptService.update(name, { messages, modified: true });
-    return this.promptService.get(name);
   }
 }

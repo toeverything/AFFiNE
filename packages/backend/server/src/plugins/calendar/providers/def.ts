@@ -154,8 +154,8 @@ export abstract class CalendarProvider {
 
   protected async fetchJson<T>(url: string, init?: RequestInit) {
     const response = await fetch(url, {
-      headers: { Accept: 'application/json', ...init?.headers },
       ...init,
+      headers: { ...init?.headers, Accept: 'application/json' },
     });
     const body = await response.text();
     if (!response.ok) {

@@ -1,6 +1,7 @@
 import { test } from '@affine-test/kit/playwright';
 import {
   clickEdgelessModeButton,
+  dblclickNoteBody,
   locateEditorContainer,
   locateToolbar,
 } from '@affine-test/kit/utils/editor';
@@ -43,7 +44,7 @@ test('should close embed editing modal when editor switching to page mode by sho
 
 test('embed card should not overflow the edgeless note', async ({ page }) => {
   const note = page.locator('affine-edgeless-note');
-  await note.dblclick();
+  await dblclickNoteBody(page);
   await type(page, '/github');
   await pressEnter(page);
   await page

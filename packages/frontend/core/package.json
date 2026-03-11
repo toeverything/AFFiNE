@@ -112,6 +112,6 @@
     "fake-indexeddb": "^6.0.0",
     "happy-dom": "^20.3.0",
     "lodash-es": "^4.17.23",
-    "vitest": "^3.2.4"
+    "vitest": "^4.0.18"
   }
 }
