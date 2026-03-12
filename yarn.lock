@@ -2902,6 +2902,7 @@ __metadata:
     "@types/lodash-es": "npm:^4.17.12"
     fflate: "npm:^0.8.2"
     js-yaml: "npm:^4.1.1"
+    jszip: "npm:^3.10.1"
     lit: "npm:^3.2.0"
     lodash-es: "npm:^4.17.23"
     mammoth: "npm:^1.11.0"
