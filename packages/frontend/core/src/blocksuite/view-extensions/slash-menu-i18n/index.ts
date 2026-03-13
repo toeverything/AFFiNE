@@ -34,7 +34,6 @@ const nameKeyMap: Record<string, string> = {
   'Inline equation': 'com.affine.editor.slash-menu.inline-equation',
   Equation: 'com.affine.editor.slash-menu.equation',
   Callout: 'com.affine.editor.slash-menu.callout',
-  'Ask AI': 'com.affine.ai.ask-ai',
   'Fix spelling from above': 'com.affine.ai.fix-spelling-from-above',
   'Fix grammar from above': 'com.affine.ai.fix-grammar-from-above',
   'Continue writing': 'com.affine.ai.continue-writing',
@@ -49,6 +48,11 @@ const nameKeyMap: Record<string, string> = {
   'Find actions': 'com.affine.ai.find-actions',
 };
 
+/**
+ * Translation map from English descriptions to i18n keys.
+ * NOTE: This map must be kept in sync with BlockSuite slash menu items.
+ * Update when adding/removing menu items from BlockSuite.
+ */
 const descKeyMap: Record<string, string> = {
   'Start typing with plain text.':
     'com.affine.editor.slash-menu.text.description',

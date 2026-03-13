@@ -316,17 +316,17 @@ export class RichText extends WithDisposable(ShadowlessElement) {
 
     // When the block is empty, dir="auto" defaults to LTR.
     // Override with the document direction so RTL locales get the correct cursor position.
+    const yText = this._yText;
     const syncDir = () => {
       const container = this.inlineEditorContainer;
       if (!container) return;
-      if (this._yText.length === 0) {
+      if (yText.length === 0) {
         container.dir = document.documentElement.dir || 'auto';
       } else {
         container.dir = 'auto';
       }
     };
     syncDir();
-    const yText = this._yText;
     yText.observe(syncDir);
     inlineEditor.disposables.add({
       dispose: () => yText.unobserve(syncDir),
