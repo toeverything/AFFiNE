@@ -35,7 +35,7 @@ export class AskAIIcon extends WithDisposable(LitElement) {
       font-size: var(--affine-font-xs);
       svg {
         scale: 0.8;
-        margin-right: 2px;
+        margin-inline-end: 2px;
       }
     }
 
@@ -51,7 +51,7 @@ export class AskAIIcon extends WithDisposable(LitElement) {
     }
 
     .ask-ai-icon-button svg {
-      margin-right: 4px;
+      margin-inline-end: 4px;
       color: var(--affine-brand-color);
     }
   `;
