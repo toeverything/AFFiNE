@@ -318,7 +318,7 @@ export class MobileMenuComponent
         style="display:flex;align-items:center;height: 44px;"
         @mouseenter="${() => this.menu.closeSubMenu()}"
       >
-        <div style="width: 50px;flex-shrink: 0;margin-left: 10px;">
+        <div style="width: 50px;flex-shrink: 0;margin-inline-start: 10px;">
           ${title?.onBack
             ? html` <div
                 @click="${() => {
@@ -358,7 +358,7 @@ export class MobileMenuComponent
           color: ${unsafeCSSVarV2('button/primary')};
           width: 50px;
           flex-shrink: 0;
-          margin-right: 10px;
+          margin-inline-end: 10px;
          "
         >
           Done
