@@ -48,7 +48,7 @@ export const splitViewPanel = style({
     },
     '[data-client-border="false"] &:not([data-is-last="true"]):not([data-is-dragging="true"])':
       {
-        borderRight: `0.5px solid ${cssVarV2('layer/insideBorder/border')}`,
+        borderInlineEnd: `0.5px solid ${cssVarV2('layer/insideBorder/border')}`,
       },
     '[data-client-border="true"] &': {
       border: `0.5px solid ${cssVarV2('layer/insideBorder/border')}`,
@@ -120,16 +120,16 @@ export const resizeHandle = style({
       },
     },
     '&[data-edge="left"]': {
-      left: `calc(${resizeHandleWidth} * -0.5)`,
-      right: 'auto',
+      insetInlineStart: `calc(${resizeHandleWidth} * -0.5)`,
+      insetInlineEnd: 'auto',
     },
     '&[data-edge="right"]': {
-      left: 'auto',
-      right: `calc(${resizeHandleWidth} * -0.5)`,
+      insetInlineStart: 'auto',
+      insetInlineEnd: `calc(${resizeHandleWidth} * -0.5)`,
     },
     '&[data-edge="right"][data-is-last="true"]': {
-      right: 0,
-      left: 'auto',
+      insetInlineEnd: 0,
+      insetInlineStart: 'auto',
     },
     '[data-client-border="false"] &[data-is-last="true"][data-edge="right"]::before, [data-client-border="false"] &[data-is-last="true"][data-edge="right"]::after':
       {
@@ -140,7 +140,7 @@ export const resizeHandle = style({
       cursor: 'col-resize',
     },
     '[data-client-border="true"] &[data-edge="right"]': {
-      right: `calc(${resizeHandleWidth} * -0.5 - 0.5px - ${gap} / 2)`,
+      insetInlineEnd: `calc(${resizeHandleWidth} * -0.5 - 0.5px - ${gap} / 2)`,
     },
     [`.${splitViewPanel}[data-is-dragging="true"] &`]: {
       display: 'none',
