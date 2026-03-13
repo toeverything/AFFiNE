@@ -37,7 +37,7 @@ export const root = style({
         transform: `translateX(calc(${panelWidthVar} * -1))`,
       },
     '&[data-enable-animation="true"]': {
-      transition: `margin-left ${animationTimeout}, margin-right ${animationTimeout}, transform ${animationTimeout}, background ${animationTimeout}`,
+      transition: `margin-inline-start ${animationTimeout}, margin-inline-end ${animationTimeout}, transform ${animationTimeout}, background ${animationTimeout}`,
     },
     '&[data-transition-state="exited"]': {
       // avoid focus on hidden panel
@@ -59,7 +59,7 @@ export const panelContent = style({
 });
 export const resizeHandleContainer = style({
   position: 'absolute',
-  right: resizeHandleOffsetVar,
+  insetInlineEnd: resizeHandleOffsetVar,
   top: resizeHandleVerticalPadding,
   bottom: resizeHandleVerticalPadding,
   width: 8,
@@ -89,7 +89,7 @@ export const resizeHandleContainer = style({
     },
     '&[data-handle-position="left"]': {
       left: resizeHandleOffsetVar,
-      right: 'auto',
+      insetInlineEnd: 'auto',
       transform: 'translateX(-50%)',
     },
   },
