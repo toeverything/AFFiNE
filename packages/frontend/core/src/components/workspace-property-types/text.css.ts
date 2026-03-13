@@ -14,7 +14,7 @@ export const textarea = style({
   whiteSpace: 'break-spaces',
   wordBreak: 'break-word',
   padding: `6px`,
-  paddingLeft: '5px',
+  paddingInlineStart: '5px',
   overflow: 'hidden',
   fontSize: cssVar('fontSm'),
   lineHeight: '22px',

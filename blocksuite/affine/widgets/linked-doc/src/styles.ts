@@ -112,8 +112,8 @@ export const mobileLinkedDocMenuStyles = css`
 
     border-radius: 12px 12px 0px 0px;
     border-top: var(--border-style);
-    border-right: var(--border-style);
-    border-left: var(--border-style);
+    border-inline-end: var(--border-style);
+    border-inline-start: var(--border-style);
     background: ${unsafeCSSVarV2('layer/background/primary')};
     box-shadow: 0px -3px 10px 0px rgba(0, 0, 0, 0.07);
   }

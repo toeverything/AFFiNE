@@ -181,7 +181,7 @@ export const toggleGroup: MenuItemGroup<CodeBlockToolbarContext> = {
                 ${icon}
                 <span class="label">${label}</span>
                 <toggle-switch
-                  style="margin-left: auto;"
+                  style="margin-inline-start: auto;"
                   .on="${wrapped}"
                 ></toggle-switch>
               </editor-menu-action>
@@ -213,7 +213,7 @@ export const toggleGroup: MenuItemGroup<CodeBlockToolbarContext> = {
                 ${NumberedListIcon()}
                 <span class="label">${label}</span>
                 <toggle-switch
-                  style="margin-left: auto;"
+                  style="margin-inline-start: auto;"
                   .on="${lineNumber}"
                 ></toggle-switch>
               </editor-menu-action>

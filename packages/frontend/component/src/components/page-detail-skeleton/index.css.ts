@@ -39,7 +39,7 @@ export const content = style({
   },
 });
 export const loadingIcon = style({
-  marginRight: '8px',
+  marginInlineEnd: '8px',
 });
 export const title = style({
   fontSize: cssVar('fontBase'),

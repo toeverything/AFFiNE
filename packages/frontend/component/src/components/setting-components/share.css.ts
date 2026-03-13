@@ -93,7 +93,7 @@ globalStyle(`${settingRow} .desc`, {
 globalStyle(`${settingRow} .right-col`, {
   display: 'flex',
   justifyContent: 'flex-end',
-  paddingLeft: '15px',
+  paddingInlineStart: '15px',
   flexShrink: 0,
 });
 

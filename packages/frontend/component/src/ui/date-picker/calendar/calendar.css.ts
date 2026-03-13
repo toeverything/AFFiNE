@@ -113,25 +113,25 @@ export const headerLayoutCellOrigin = style({
   selectors: {
     '[data-is-left="true"] &': {
       justifyContent: 'flex-start',
-      marginLeft: '-24px',
+      marginInlineStart: '-24px',
     },
     '[data-is-right="true"] &': {
       justifyContent: 'flex-end',
-      marginRight: '-30px',
+      marginInlineEnd: '-30px',
     },
 
     '[data-mode="month"] [data-is-left="true"] &': {
-      marginLeft: '-36px',
+      marginInlineStart: '-36px',
     },
     '[data-mode="month"] [data-is-right="true"] &': {
-      marginRight: '-44px',
+      marginInlineEnd: '-44px',
     },
 
     '[data-mode="year"] [data-is-left="true"] &': {
-      marginLeft: '-48px',
+      marginInlineStart: '-48px',
     },
     '[data-mode="year"] [data-is-right="true"] &': {
-      marginRight: '-52px',
+      marginInlineEnd: '-52px',
     },
   },
 });

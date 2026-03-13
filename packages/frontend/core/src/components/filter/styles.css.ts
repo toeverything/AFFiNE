@@ -32,7 +32,7 @@ export const filterItemCloseStyle = style({
   alignItems: 'center',
   justifyContent: 'center',
   cursor: 'pointer',
-  marginLeft: '4px',
+  marginInlineStart: '4px',
 });
 
 export const selectHeaderContainer = style({
@@ -50,7 +50,7 @@ export const variableSelectTitleStyle = style({
   color: cssVar('textPrimaryColor'),
   selectors: {
     '&:first-child': {
-      marginLeft: '12px',
+      marginInlineStart: '12px',
     },
   },
 });

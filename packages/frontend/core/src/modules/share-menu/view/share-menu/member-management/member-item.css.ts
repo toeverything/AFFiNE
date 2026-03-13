@@ -62,7 +62,7 @@ export const tooltipContentStyle = style({
 
 export const menuTriggerStyle = style({
   padding: '4px',
-  paddingRight: '0',
+  paddingInlineEnd: '0',
   borderRadius: '4px',
   gap: '4px',
   display: 'flex',

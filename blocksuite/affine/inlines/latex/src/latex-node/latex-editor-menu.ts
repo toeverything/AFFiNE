@@ -69,7 +69,7 @@ export class LatexEditorMenu extends SignalWatcher(
       grid-area: confirm-box;
       display: flex;
       align-items: flex-end;
-      padding-left: 10px;
+      padding-inline-start: 10px;
     }
 
     .latex-editor-hint {

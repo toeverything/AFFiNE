@@ -5,7 +5,8 @@ export const settingSlideBar = style({
   width: '25%',
   maxWidth: '242px',
   background: cssVar('backgroundSecondaryColor'),
-  padding: '20px 0px 0px 12px',
+  padding: '20px 0px 0px',
+  paddingInlineStart: '12px',
   height: '100%',
   flexShrink: 0,
   display: 'flex',
@@ -56,7 +57,8 @@ export const sidebarSelectSubItem = style({
   display: 'flex',
   alignItems: 'center',
   margin: '0px 16px',
-  padding: '0px 8px 0px 32px',
+  padding: '0px 8px',
+  paddingInlineStart: '32px',
   height: '30px',
   flexShrink: 0,
   fontSize: cssVar('fontSm'),
@@ -75,7 +77,7 @@ export const sidebarSelectItemIcon = style({
   width: '16px',
   height: '16px',
   fontSize: '16px',
-  marginRight: '10px',
+  marginInlineEnd: '10px',
   flexShrink: 0,
   color: cssVarV2('icon/primary'),
   display: 'inline-flex',
@@ -123,7 +125,7 @@ export const sidebarGroup = style({
   display: 'flex',
   flexDirection: 'column',
   gap: '4px',
-  paddingRight: '12px',
+  paddingInlineEnd: '12px',
 });
 
 export const accountButton = style({

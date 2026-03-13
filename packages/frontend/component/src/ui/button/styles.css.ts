@@ -7,7 +7,7 @@ export const dropdownBtn = style({
   justifyContent: 'center',
   padding: '0 10px',
   // fix dropdown button click area
-  paddingRight: 0,
+  paddingInlineEnd: 0,
   color: cssVar('textPrimaryColor'),
   fontWeight: 600,
   background: cssVar('backgroundPrimaryColor'),
@@ -38,7 +38,7 @@ export const divider = style({
   background: cssVar('dividerColor'),
   // fix dropdown button click area
   margin: '0 4px',
-  marginRight: 0,
+  marginInlineEnd: 0,
 });
 
 export const dropdownWrapper = style({
@@ -47,8 +47,8 @@ export const dropdownWrapper = style({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  paddingLeft: '4px',
-  paddingRight: '10px',
+  paddingInlineStart: '4px',
+  paddingInlineEnd: '10px',
 });
 
 export const dropdownIcon = style({
