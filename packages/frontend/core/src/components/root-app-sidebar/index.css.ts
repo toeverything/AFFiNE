@@ -7,7 +7,7 @@ export const workspaceAndUserWrapper = style({
   gap: 8,
   width: 'calc(100% + 12px)',
   height: 42,
-  paddingRight: 6,
+  paddingInlineEnd: 6,
   alignSelf: 'center',
 });
 export const quickSearchAndNewPage = style({

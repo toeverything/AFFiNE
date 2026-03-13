@@ -9,10 +9,10 @@ export const list = style({
 
 export const menuContent = style({
   width: 280,
-  paddingRight: 0,
+  paddingInlineEnd: 0,
 });
 export const scrollableViewport = style({
-  paddingRight: 8,
+  paddingInlineEnd: 8,
   maxHeight: 360,
 });
 export const emptyIcon = style({

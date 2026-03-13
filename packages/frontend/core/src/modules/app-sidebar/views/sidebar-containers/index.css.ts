@@ -18,8 +18,8 @@ export const scrollableContainerRoot = style({
 export const scrollTopBorder = style({
   position: 'absolute',
   top: 0,
-  left: '16px',
-  right: '16px',
+  insetInlineStart: '16px',
+  insetInlineEnd: '16px',
   height: '1px',
   transition: 'opacity .3s .2s',
   opacity: 0,

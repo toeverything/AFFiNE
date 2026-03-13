@@ -18,7 +18,7 @@ export const root = style({
   ['WebkitAppRegion' as string]: 'drag',
   selectors: {
     '&[data-is-windows="false"]': {
-      paddingRight: 8,
+      paddingInlineEnd: 8,
     },
   },
 });
@@ -28,7 +28,7 @@ export const headerLeft = style({
   flexFlow: 'row',
   alignItems: 'center',
   justifyContent: 'space-between',
-  paddingRight: 12,
+  paddingInlineEnd: 12,
   gap: 10,
   flexShrink: 0,
   selectors: {
@@ -42,7 +42,7 @@ export const tabs = style({
   display: 'flex',
   flexDirection: 'row',
   alignItems: 'center',
-  paddingLeft: 8,
+  paddingInlineStart: 8,
   overflow: 'hidden',
   height: '100%',
   selectors: {
@@ -57,7 +57,7 @@ export const pinSeparator = style({
   width: 1,
   height: 16,
   flexShrink: 0,
-  marginRight: 8,
+  marginInlineEnd: 8,
 });
 
 export const splitViewSeparator = style({
@@ -94,7 +94,7 @@ export const tab = style({
   ['WebkitAppRegion' as string]: 'no-drag',
   selectors: {
     [`${tabWrapper} &`]: {
-      marginRight: 8,
+      marginInlineEnd: 8,
     },
     '&[data-active="true"]': {
       boxShadow: `0 0 0 1px ${cssVarV2('button/innerBlackBorder')}`,
@@ -125,7 +125,7 @@ export const splitViewLabel = style({
 export const tabCloseButtonWrapper = style({
   pointerEvents: 'none',
   position: 'absolute',
-  right: 0,
+  insetInlineEnd: 0,
   top: 0,
   bottom: 0,
   height: '100%',
@@ -133,7 +133,7 @@ export const tabCloseButtonWrapper = style({
   overflow: 'clip',
   display: 'flex',
   alignItems: 'center',
-  paddingRight: 6,
+  paddingInlineEnd: 6,
   justifyContent: 'flex-end',
   selectors: {
     [`${tab}:is([data-active=true], :hover) &:not(:empty)`]: {
@@ -202,7 +202,7 @@ export const splitViewLabelText = style({
   whiteSpace: 'nowrap',
   color: cssVarV2('tab/fontColor/default'),
   fontSize: cssVar('fontXs'),
-  paddingRight: 4,
+  paddingInlineEnd: 4,
   selectors: {
     [`${splitViewLabel}:hover &, ${tab}:has(${tabCloseButtonWrapper}:hover) ${splitViewLabel}:last-of-type &`]:
       {
@@ -215,7 +215,7 @@ export const splitViewLabelText = style({
       textOverflow: 'clip',
     },
     [`${splitViewLabel}:last-of-type [data-padding-right="true"]&`]: {
-      paddingRight: 32,
+      paddingInlineEnd: 32,
     },
   },
 });
@@ -225,7 +225,7 @@ export const spacer = style({
   height: '100%',
   display: 'flex',
   alignItems: 'center',
-  marginLeft: -8,
+  marginInlineStart: -8,
   position: 'relative',
   selectors: {
     '&[data-dragged-over=true]:after': {
@@ -233,8 +233,8 @@ export const spacer = style({
       position: 'absolute',
       top: 10,
       height: 32,
-      left: -5,
-      right: 0,
+      insetInlineStart: -5,
+      insetInlineEnd: 0,
       width: 2,
       borderRadius: 2,
       background: cssVar('primaryColor'),
@@ -262,7 +262,7 @@ export const dropIndicator = style({
       transform: 'translateX(-5px)',
     },
     '&[data-edge="right"]': {
-      right: 0,
+      insetInlineEnd: 0,
       opacity: 1,
       transform: 'translateX(-9px)',
     },

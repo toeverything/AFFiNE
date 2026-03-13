@@ -16,7 +16,7 @@ globalStyle(`${root} *`, {
 export const sidebar = style({
   flexShrink: 0,
   width: 240,
-  borderRight: `1px solid ${cssVarV2('layer/insideBorder/border')}`,
+  borderInlineEnd: `1px solid ${cssVarV2('layer/insideBorder/border')}`,
   display: 'flex',
   flexDirection: 'column',
   userSelect: 'none',
@@ -104,7 +104,7 @@ export const treeNodeContent = style({
   display: 'flex',
   flexDirection: 'column',
   gap: 2,
-  paddingLeft: 32,
+  paddingInlineStart: 32,
   paddingTop: 4,
   paddingBottom: 4,
 });

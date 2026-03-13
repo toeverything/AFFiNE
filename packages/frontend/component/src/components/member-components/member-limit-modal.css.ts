@@ -22,6 +22,6 @@ export const prefixDot = style({
   width: '5px',
   height: '5px',
   borderRadius: '50%',
-  marginRight: '12px',
+  marginInlineEnd: '12px',
   marginTop: '10px',
 });

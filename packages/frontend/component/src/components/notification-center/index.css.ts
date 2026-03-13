@@ -7,7 +7,7 @@ export const notificationCenterViewportStyle = style({
   position: 'fixed',
   height: '500px',
   bottom: '20px',
-  right: '20px',
+  insetInlineEnd: '20px',
   width: '380px',
   zIndex: 2147483647,
   outline: 'none',
@@ -110,8 +110,8 @@ export const notificationStyle = style({
 });
 export const notificationIconStyle = style({
   fontSize: '24px',
-  marginLeft: '18px',
-  marginRight: '8px',
+  marginInlineStart: '18px',
+  marginInlineEnd: '8px',
   color: cssVar('processingColor'),
   display: 'flex',
   justifyContent: 'center',
@@ -144,7 +144,7 @@ export const notificationContentStyle = style({
   transition: 'all 0.3s',
 });
 export const notificationTitleContactStyle = style({
-  marginRight: '22px',
+  marginInlineEnd: '22px',
   width: '200px',
   overflow: 'wrap',
   lineHeight: '24px',
@@ -169,14 +169,14 @@ export const notificationTimeStyle = style({
 });
 export const closeButtonStyle = style({
   fontSize: '22px',
-  marginRight: '19px',
-  marginLeft: '16px',
+  marginInlineEnd: '19px',
+  marginInlineStart: '16px',
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
 });
 export const closeButtonWithoutUndoStyle = style({
-  marginLeft: '92px',
+  marginInlineStart: '92px',
 });
 export const closeButtonWithMediaStyle = style({
   position: 'absolute',
@@ -184,7 +184,7 @@ export const closeButtonWithMediaStyle = style({
   height: '22px',
   fontSize: '16px',
   top: '6px',
-  right: '6px',
+  insetInlineEnd: '6px',
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
@@ -207,13 +207,13 @@ export const undoButtonStyle = style({
   cursor: 'pointer',
 });
 export const undoButtonWithMediaStyle = style({
-  marginLeft: 'auto',
-  marginRight: '16px',
+  marginInlineStart: 'auto',
+  marginInlineEnd: '16px',
 });
 export const messageStyle = style({
   fontSize: cssVar('fontSm'),
   width: '200px',
-  marginLeft: '50px',
+  marginInlineStart: '50px',
   lineHeight: '18px',
 });
 export const progressBarStyle = style({

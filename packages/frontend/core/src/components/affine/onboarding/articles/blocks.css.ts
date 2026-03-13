@@ -42,7 +42,7 @@ globalStyle(`${block} ol li::before`, {
   content: 'counter(section) "."',
   color: '#1C81D9',
   width: '24px',
-  marginRight: '4px',
+  marginInlineEnd: '4px',
 });
 globalStyle(`${block} ul`, {
   listStyleType: 'none',
@@ -52,7 +52,7 @@ globalStyle(`${block} ul`, {
 });
 globalStyle(`${block} ul li`, {
   position: 'relative',
-  paddingLeft: '24px',
+  paddingInlineStart: '24px',
 });
 globalStyle(`${block} ul li::before`, {
   vars: {
@@ -60,7 +60,7 @@ globalStyle(`${block} ul li::before`, {
   },
   content: '""',
   position: 'absolute',
-  left: 0,
+  insetInlineStart: 0,
   top: 0,
   width: '24px',
   height: '24px',
@@ -103,14 +103,14 @@ export const pageLinkLabel = style({
   },
 });
 export const quote = style({
-  paddingLeft: '17px',
+  paddingInlineStart: '17px',
   position: 'relative',
   selectors: {
     '&::before': {
       position: 'absolute',
       content: '""',
       top: 0,
-      left: 0,
+      insetInlineStart: 0,
       height: '100%',
       width: '2px',
       borderRadius: '1px',

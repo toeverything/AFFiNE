@@ -23,7 +23,7 @@ export const edgelessCardListTitle = style({
   lineHeight: '24px',
   fontWeight: 500,
   color: cssVarV2('text/secondary'),
-  paddingLeft: '8px',
+  paddingInlineStart: '8px',
   height: '40px',
   boxSizing: 'border-box',
   padding: '6px 8px',

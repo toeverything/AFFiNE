@@ -14,7 +14,7 @@ export const styles = css`
 
   .affine-drag-handle-container {
     top: 0;
-    left: 0;
+    inset-inline-start: 0;
     position: absolute;
     display: flex;
     justify-content: center;
@@ -48,6 +48,10 @@ export const styles = css`
     background-color: transparent;
     transform: translateX(-100%);
     transition: unset;
+  }
+
+  [dir='rtl'] .affine-drag-handle-grabber.dots {
+    transform: translateX(100%);
   }
 
   .affine-drag-handle-grabber.dots:hover {

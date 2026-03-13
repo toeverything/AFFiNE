@@ -158,7 +158,7 @@ export const pageItemLabel = style({
   fontWeight: 500,
   fontSize: cssVar('fontSm'),
   color: cssVar('textPrimaryColor'),
-  textAlign: 'left',
+  textAlign: 'start',
   selectors: {
     '[aria-selected="true"] &': {
       // TODO(@catsjuice): wait for design

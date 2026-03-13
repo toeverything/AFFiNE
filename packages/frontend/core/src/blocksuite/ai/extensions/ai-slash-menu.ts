@@ -1,3 +1,4 @@
+import { I18n } from '@affine/i18n';
 import { AIStarIcon } from '@blocksuite/affine/components/icons';
 import { DocModeProvider } from '@blocksuite/affine/shared/services';
 import {
@@ -76,7 +77,7 @@ export function AiSlashMenuConfigExtension() {
   let index = 0;
   const AIMenuItems: SlashMenuItem[] = [
     {
-      name: 'Ask AI',
+      name: I18n['com.affine.ai.ask-ai'](),
       icon: AIStarIcon,
       when: showWhenWrapper(),
       action: ({ std }) => {

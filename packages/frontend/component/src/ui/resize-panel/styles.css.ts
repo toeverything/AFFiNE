@@ -16,7 +16,7 @@ export const cornerHandle = style({
   height: HANDLE_SIZE,
   borderRadius: '50%',
   border: '2px solid transparent',
-  borderRightColor: 'rgba(100, 100, 100, 0.3)',
+  borderInlineEndColor: 'rgba(100, 100, 100, 0.3)',
   transform: 'rotate(45deg)',
   cursor: 'nwse-resize',
 });

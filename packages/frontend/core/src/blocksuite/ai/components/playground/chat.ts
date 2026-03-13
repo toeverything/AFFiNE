@@ -122,12 +122,12 @@ export class PlaygroundChat extends SignalWatcher(
       }
 
       .chat-panel-add {
-        margin-left: 8px;
-        margin-right: auto;
+        margin-inline-start: 8px;
+        margin-inline-end: auto;
       }
 
       .chat-panel-delete {
-        margin-left: 8px;
+        margin-inline-start: 8px;
         display: none;
       }
 

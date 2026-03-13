@@ -186,7 +186,7 @@ export const modalContent = style({
 export const closeButton = style({
   position: 'absolute',
   top: '22px',
-  right: '20px',
+  insetInlineEnd: '20px',
   zIndex: cssVar('zIndexModal'),
 });
 export const modalHeader = style({

@@ -183,12 +183,12 @@ export class TableViewUI extends DataViewUIBase<TableViewUILogic> {
   override render(): TemplateResult {
     const vPadding = this.logic.root.config.virtualPadding$.value;
     const wrapperStyle = styleMap({
-      marginLeft: `-${vPadding}px`,
-      marginRight: `-${vPadding}px`,
+      marginInlineStart: `-${vPadding}px`,
+      marginInlineEnd: `-${vPadding}px`,
     });
     const containerStyle = styleMap({
-      paddingLeft: `${vPadding}px`,
-      paddingRight: `${vPadding}px`,
+      paddingInlineStart: `${vPadding}px`,
+      paddingInlineEnd: `${vPadding}px`,
     });
     return html`
       ${this.logic.headerWidget
