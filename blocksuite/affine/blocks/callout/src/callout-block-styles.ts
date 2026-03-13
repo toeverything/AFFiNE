@@ -39,7 +39,7 @@ export const calloutEmojiStyles = css({
 export const calloutChildrenStyles = css({
   flex: 1,
   minWidth: 0,
-  paddingLeft: '10px',
+  paddingInlineStart: '10px',
 });
 
 export const iconPickerContainerStyles = css({
