@@ -14,7 +14,7 @@ export const InviteInput = ({ onFocus }: { onFocus: () => void }) => {
       className={styles.inputStyle}
       onFocus={onFocus}
       inputStyle={{
-        paddingLeft: '0',
+        paddingInlineStart: '0',
         fontSize: cssVar('fontSm'),
       }}
       placeholder={t['com.affine.share-menu.invite-editor.placeholder']()}

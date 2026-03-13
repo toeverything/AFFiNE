@@ -7,7 +7,7 @@ import { levelIndent } from '../tree/node.css';
 export const emptyChildren = style({
   fontSize: cssVar('fontSm'),
   color: cssVarV2('text/disable'),
-  textAlign: 'left',
+  textAlign: 'start',
   userSelect: 'none',
   lineHeight: '22px',
   padding: '4px 0px',
@@ -15,7 +15,7 @@ export const emptyChildren = style({
   // 48 = node.paddingLeft + node.collapsable.width + node.icon.width + node.icon.marginRight
   //    = 4 + 16 + 20 + 8
   // to align with node's content
-  paddingLeft: `calc(${fallbackVar(levelIndent, '20px')} + 48px)`,
+  paddingInlineStart: `calc(${fallbackVar(levelIndent, '20px')} + 48px)`,
   selectors: {
     '&[data-dragged-over="true"]': {
       background: cssVarV2('layer/background/hoverOverlay'),

@@ -2,7 +2,7 @@ import { cssVar } from '@toeverything/theme';
 import { style } from '@vanilla-extract/css';
 export const statusWrapper = style({
   position: 'absolute',
-  right: 10,
+  insetInlineEnd: 10,
 });
 export const tag = style({
   padding: '2px 15px',

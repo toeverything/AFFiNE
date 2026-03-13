@@ -42,7 +42,7 @@ export class TypstPreview extends SignalWatcher(
 
     details.typst-error-details {
       margin-top: 8px;
-      text-align: left;
+      text-align: start;
       border: 1px dashed ${unsafeCSSVarV2('layer/insideBorder/border')};
       border-radius: 6px;
       padding: 8px;

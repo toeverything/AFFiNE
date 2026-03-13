@@ -42,7 +42,7 @@ export class PresentationToolbar extends EdgelessToolbarToolMixin(
       width: 100%;
       height: 100%;
       gap: 8px;
-      padding-right: 2px;
+      padding-inline-end: 2px;
     }
     .full-divider {
       width: 8px;
@@ -78,7 +78,7 @@ export class PresentationToolbar extends EdgelessToolbarToolMixin(
       overflow: hidden;
       white-space: nowrap;
       text-overflow: ellipsis;
-      padding-right: 8px;
+      padding-inline-end: 8px;
     }
 
     .edgeless-frame-navigator-count {

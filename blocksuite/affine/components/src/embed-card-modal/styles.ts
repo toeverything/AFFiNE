@@ -55,8 +55,8 @@ export const embedCardModalStyles = css`
   }
   .embed-card-modal-input {
     display: flex;
-    padding-left: 10px;
-    padding-right: 10px;
+    padding-inline-start: 10px;
+    padding-inline-end: 10px;
     border-radius: 8px;
     border: 1px solid var(--affine-border-color);
     background: var(--affine-white-10);

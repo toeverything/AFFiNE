@@ -28,7 +28,7 @@ export const embedNoteContentStyles = css`
     height: 20px;
   }
   .affine-embed-doc-content-note-blocks affine-paragraph .quote {
-    padding-left: 15px;
+    padding-inline-start: 15px;
     padding-top: 8px;
     padding-bottom: 8px;
   }

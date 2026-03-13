@@ -20,10 +20,12 @@ import { AffineIconPickerExtension } from '@affine/core/blocksuite/view-extensio
 import { AffineLinkPreviewExtension } from '@affine/core/blocksuite/view-extensions/link-preview-service';
 import { MobileViewExtension } from '@affine/core/blocksuite/view-extensions/mobile';
 import { PdfViewExtension } from '@affine/core/blocksuite/view-extensions/pdf';
+import { SlashMenuI18nExtension } from '@affine/core/blocksuite/view-extensions/slash-menu-i18n';
 import { AffineThemeViewExtension } from '@affine/core/blocksuite/view-extensions/theme';
 import { TurboRendererViewExtension } from '@affine/core/blocksuite/view-extensions/turbo-renderer';
 import { PeekViewService } from '@affine/core/modules/peek-view';
 import { DebugLogger } from '@affine/debug';
+import { I18n } from '@affine/i18n';
 import { tracker } from '@affine/track';
 import { DatabaseViewExtension } from '@blocksuite/affine/blocks/database/view';
 import { ParagraphViewExtension } from '@blocksuite/affine/blocks/paragraph/view';
@@ -100,6 +102,7 @@ class ViewProvider {
       AffineLinkPreviewExtension,
       AffineDatabaseViewExtension,
       CommentViewExtension,
+      SlashMenuI18nExtension,
     ]);
   }
 
@@ -247,14 +250,14 @@ class ViewProvider {
     if (BUILD_CONFIG.isMobileEdition) {
       this._manager.configure(ParagraphViewExtension, {
         getPlaceholder: model => {
-          const placeholders = {
+          const placeholders: Record<string, string> = {
             text: '',
-            h1: 'Heading 1',
-            h2: 'Heading 2',
-            h3: 'Heading 3',
-            h4: 'Heading 4',
-            h5: 'Heading 5',
-            h6: 'Heading 6',
+            h1: I18n['com.affine.editor.placeholder.heading1'](),
+            h2: I18n['com.affine.editor.placeholder.heading2'](),
+            h3: I18n['com.affine.editor.placeholder.heading3'](),
+            h4: I18n['com.affine.editor.placeholder.heading4'](),
+            h5: I18n['com.affine.editor.placeholder.heading5'](),
+            h6: I18n['com.affine.editor.placeholder.heading6'](),
             quote: '',
           };
           return placeholders[model.props.type] ?? '';
@@ -263,14 +266,14 @@ class ViewProvider {
     } else if (enableAI) {
       this._manager.configure(ParagraphViewExtension, {
         getPlaceholder: model => {
-          const placeholders = {
-            text: "Type '/' for commands, 'space' for AI",
-            h1: 'Heading 1',
-            h2: 'Heading 2',
-            h3: 'Heading 3',
-            h4: 'Heading 4',
-            h5: 'Heading 5',
-            h6: 'Heading 6',
+          const placeholders: Record<string, string> = {
+            text: I18n['com.affine.editor.placeholder.type-commands-ai'](),
+            h1: I18n['com.affine.editor.placeholder.heading1'](),
+            h2: I18n['com.affine.editor.placeholder.heading2'](),
+            h3: I18n['com.affine.editor.placeholder.heading3'](),
+            h4: I18n['com.affine.editor.placeholder.heading4'](),
+            h5: I18n['com.affine.editor.placeholder.heading5'](),
+            h6: I18n['com.affine.editor.placeholder.heading6'](),
             quote: '',
           };
           return placeholders[model.props.type] ?? '';

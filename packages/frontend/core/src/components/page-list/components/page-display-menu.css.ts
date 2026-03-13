@@ -11,7 +11,7 @@ export const headerDisplayButton = style({
 });
 
 export const subMenuTrigger = style({
-  paddingRight: '8px',
+  paddingInlineEnd: '8px',
 });
 
 export const subMenuItem = style({

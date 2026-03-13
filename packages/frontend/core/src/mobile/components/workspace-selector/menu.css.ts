@@ -82,7 +82,7 @@ export const wsName = style([
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
     overflow: 'hidden',
-    textAlign: 'left',
+    textAlign: 'start',
   },
 ]);
 export const signInIcon = style({

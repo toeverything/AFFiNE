@@ -15,7 +15,7 @@ globalStyle(`${authHeaderWrapper} .logo`, {
   fontSize: cssVar('fontH3'),
   fontWeight: 600,
   color: cssVar('black'),
-  marginRight: '6px',
+  marginInlineEnd: '6px',
   verticalAlign: 'middle',
 });
 
@@ -109,9 +109,9 @@ globalStyle(`${authPageContainer} .content`, {
   maxWidth: '810px',
   '@media': {
     'screen and (min-width: 1024px)': {
-      marginLeft: '200px',
+      marginInlineStart: '200px',
       minWidth: '500px',
-      marginRight: '60px',
+      marginInlineEnd: '60px',
       flexGrow: 1,
       flexShrink: 0,
       flexBasis: 0,

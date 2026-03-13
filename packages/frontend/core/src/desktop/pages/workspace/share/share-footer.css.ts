@@ -11,13 +11,13 @@ export const footerContainer = style({
   maxWidth: cssVar('editorWidth'),
   marginLeft: 'auto',
   marginRight: 'auto',
-  paddingLeft: cssVar('editorSidePadding'),
-  paddingRight: cssVar('editorSidePadding'),
+  paddingInlineStart: cssVar('editorSidePadding'),
+  paddingInlineEnd: cssVar('editorSidePadding'),
   marginBottom: '200px',
   '@media': {
     'screen and (max-width: 800px)': {
-      paddingLeft: '24px',
-      paddingRight: '24px',
+      paddingInlineStart: '24px',
+      paddingInlineEnd: '24px',
     },
   },
 });

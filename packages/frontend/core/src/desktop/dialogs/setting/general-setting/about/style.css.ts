@@ -17,7 +17,7 @@ export const link = style({
 globalStyle(`${link} .icon`, {
   color: cssVar('iconColor'),
   fontSize: cssVar('fontBase'),
-  marginLeft: '5px',
+  marginInlineStart: '5px',
 });
 export const communityWrapper = style({
   display: 'grid',
@@ -57,7 +57,7 @@ export const checkUpdateDesc = style({
   },
 });
 globalStyle(`${checkUpdateDesc} svg`, {
-  marginRight: '4px',
+  marginInlineEnd: '4px',
 });
 export const appImageRow = style({
   flexDirection: 'row-reverse',
@@ -68,8 +68,8 @@ export const appImageRow = style({
   },
 });
 globalStyle(`${appImageRow} .right-col`, {
-  paddingLeft: '0',
-  paddingRight: '20px',
+  paddingInlineStart: '0',
+  paddingInlineEnd: '20px',
 });
 export const snapshotImportExportRow = style({
   marginTop: '12px',

@@ -94,7 +94,7 @@ export const docItem = css({
 export const docItemTitle = css({
   fontSize: '14px',
   fontWeight: 500,
-  paddingRight: '12px',
+  paddingInlineEnd: '12px',
   color: cssVar('textPrimaryColor'),
   display: 'flex',
   alignItems: 'center',
@@ -140,7 +140,7 @@ export const embeddingProgress = css({
 });
 
 export const embeddingProgressTitle = css({
-  textAlign: 'left',
+  textAlign: 'start',
   width: '100%',
   display: 'flex',
   alignItems: 'center',

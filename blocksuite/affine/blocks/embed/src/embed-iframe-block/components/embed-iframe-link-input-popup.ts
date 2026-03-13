@@ -180,7 +180,7 @@ export class EmbedIframeLinkInputPopup extends EmbedIframeLinkInputBase {
 
         .description {
           font-weight: 400;
-          text-align: left;
+          text-align: start;
           order: 2;
           padding: 11px 16px;
           color: ${unsafeCSSVarV2('text/secondary')};

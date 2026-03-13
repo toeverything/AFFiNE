@@ -52,7 +52,7 @@ export const thumb = style({
 export const label = style({
   width: '40px',
   fontSize: cssVar('fontSm'),
-  textAlign: 'right',
+  textAlign: 'end',
 });
 
 export const indicator = style({

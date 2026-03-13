@@ -38,8 +38,8 @@ export const filterableListStyles = css`
     flex: 1;
     overflow-y: scroll;
     padding-top: 5px;
-    padding-left: 4px;
-    padding-right: 4px;
+    padding-inline-start: 4px;
+    padding-inline-end: 4px;
   }
 
   editor-toolbar-separator {

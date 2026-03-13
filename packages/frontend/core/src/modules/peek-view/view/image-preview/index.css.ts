@@ -23,7 +23,7 @@ export const imagePreviewModalCloseButtonStyle = style({
   width: '36px',
   borderRadius: '10px',
   top: '0.5rem',
-  right: '0.5rem',
+  insetInlineEnd: '0.5rem',
   background: cssVar('white'),
   border: 'none',
   padding: '0.5rem',
@@ -32,7 +32,7 @@ export const imagePreviewModalCloseButtonStyle = style({
   transition: 'background 0.2s ease-in-out',
   zIndex: 1,
   marginTop: '38px',
-  marginRight: '38px',
+  marginInlineEnd: '38px',
 });
 export const imagePreviewModalGoStyle = style({
   color: cssVar('white'),

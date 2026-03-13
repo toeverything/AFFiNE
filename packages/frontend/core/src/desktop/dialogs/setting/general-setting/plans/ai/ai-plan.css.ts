@@ -57,8 +57,8 @@ export const learnAIButton = style([
   purchaseButton,
   {
     color: cssVar('textEmphasisColor'),
-    paddingLeft: 16,
-    paddingRight: 16,
+    paddingInlineStart: 16,
+    paddingInlineEnd: 16,
   },
 ]);
 export const agreement = style({
@@ -107,7 +107,7 @@ export const benefitItem = style({
   fontSize: cssVar('fontXs'),
   color: cssVar('textSecondaryColor'),
   lineHeight: '24px',
-  paddingLeft: 22,
+  paddingInlineStart: 22,
   position: 'relative',
   '::before': {
     content: '""',
@@ -116,7 +116,7 @@ export const benefitItem = style({
     borderRadius: 2,
     background: 'currentColor',
     position: 'absolute',
-    left: '10px',
+    insetInlineStart: '10px',
     top: '10px',
   },
 });

@@ -24,7 +24,7 @@ export class ChatMessageUser extends WithDisposable(ShadowlessElement) {
       justify-content: flex-end;
 
       .images-row {
-        margin-left: auto;
+        margin-inline-start: auto;
       }
     }
 

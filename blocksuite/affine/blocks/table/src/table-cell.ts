@@ -826,7 +826,7 @@ export const createRowDragPreview = (cells: TableCell[]) => {
     const div = document.createElement('div');
     const td = cell.querySelector('td');
     if (index !== 0) {
-      div.style.borderLeft = `1px solid ${cssVarV2.layer.insideBorder.border}`;
+      div.style.borderInlineStart = `1px solid ${cssVarV2.layer.insideBorder.border}`;
     }
     if (td) {
       div.style.width = `${td.getBoundingClientRect().width}px`;

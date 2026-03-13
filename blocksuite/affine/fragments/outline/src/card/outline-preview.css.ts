@@ -57,37 +57,37 @@ export const text = style({
 
 export const textGeneral = style({
   fontWeight: 400,
-  paddingLeft: '28px',
+  paddingInlineStart: '28px',
 });
 
 export const subtypeStyles = {
   title: style({
     fontWeight: 600,
-    paddingLeft: '0',
+    paddingInlineStart: '0',
   }),
   h1: style({
     fontWeight: 600,
-    paddingLeft: '0',
+    paddingInlineStart: '0',
   }),
   h2: style({
     fontWeight: 600,
-    paddingLeft: '4px',
+    paddingInlineStart: '4px',
   }),
   h3: style({
     fontWeight: 600,
-    paddingLeft: '12px',
+    paddingInlineStart: '12px',
   }),
   h4: style({
     fontWeight: 600,
-    paddingLeft: '16px',
+    paddingInlineStart: '16px',
   }),
   h5: style({
     fontWeight: 600,
-    paddingLeft: '20px',
+    paddingInlineStart: '20px',
   }),
   h6: style({
     fontWeight: 600,
-    paddingLeft: '24px',
+    paddingInlineStart: '24px',
   }),
 };
 
@@ -101,7 +101,7 @@ export const linkedDocText = style({
   fontSize: 'inherit',
   borderBottom: `0.5px solid ${cssVar('dividerColor')}`,
   whiteSpace: 'break-spaces',
-  marginRight: '2px',
+  marginInlineEnd: '2px',
 });
 
 export const linkedDocPreviewUnavailable = style({
