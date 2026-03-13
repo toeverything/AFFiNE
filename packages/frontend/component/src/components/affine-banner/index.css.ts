@@ -21,7 +21,7 @@ export const closeButtonStyle = style({
   justifyContent: 'flex-end',
   alignItems: 'center',
   position: 'absolute',
-  right: '16px',
+  insetInlineEnd: '16px',
 });
 export const closeIconStyle = style({
   width: '15px',
