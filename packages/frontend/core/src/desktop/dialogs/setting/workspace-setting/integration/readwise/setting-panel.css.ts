@@ -78,7 +78,7 @@ export const tagsPlaceholder = style({
   color: cssVarV2.text.placeholder,
 });
 export const tagsMenu = style({
-  left: -1,
+  insetInlineStart: -1,
   top: 'calc(-1px + var(--radix-popper-anchor-height) * -1)',
   width: 'calc(2px + var(--radix-popper-anchor-width))',
 });

@@ -7,7 +7,7 @@ export const container = style({
       display: 'block',
       content: '""',
       position: 'absolute',
-      left: '-8px',
+      insetInlineStart: '-8px',
       top: '0',
       width: '6px',
       height: '100%',

@@ -6,8 +6,8 @@ export const plansLayoutRoot = style({
   gap: '24px',
 });
 export const scrollArea = style({
-  marginLeft: 'calc(-1 * var(--setting-modal-gap-x))',
-  paddingLeft: 'var(--setting-modal-gap-x)',
+  marginInlineStart: 'calc(-1 * var(--setting-modal-gap-x))',
+  paddingInlineStart: 'var(--setting-modal-gap-x)',
   width: 'var(--setting-modal-width)',
   overflowX: 'auto',
   // scrollSnapType: 'x mandatory',

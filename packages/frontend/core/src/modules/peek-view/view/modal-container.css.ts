@@ -101,7 +101,7 @@ export const modalContent = style({
 
 export const modalControls = style({
   position: 'absolute',
-  right: -48,
+  insetInlineEnd: -48,
   top: 0,
   zIndex: -1,
   minWidth: '48px',
@@ -115,7 +115,7 @@ export const modalControls = style({
       padding: '8px',
     },
     'screen and (width > 640px) and (width <= 1024px)': {
-      paddingLeft: 0,
+      paddingInlineStart: 0,
     },
   },
 });

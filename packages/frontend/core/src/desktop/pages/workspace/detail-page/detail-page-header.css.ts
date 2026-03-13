@@ -39,7 +39,7 @@ export const dragHandle = style({
   position: 'absolute',
   top: 0,
   bottom: 0,
-  left: -16,
+  insetInlineStart: -16,
   width: 16,
   opacity: 0,
   selectors: {
