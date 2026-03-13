@@ -6,6 +6,6 @@ export const pageBlockTitle = style({
 
 globalStyle(`${pageBlockTitle} .doc-title-container`, {
   padding: '26px 0px',
-  marginLeft: 'unset',
-  marginRight: 'unset',
+  marginInlineStart: 'unset',
+  marginInlineEnd: 'unset',
 });
