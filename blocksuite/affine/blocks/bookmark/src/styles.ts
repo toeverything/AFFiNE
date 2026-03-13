@@ -142,7 +142,8 @@ export const styles = css`
   }
 
   .affine-bookmark-banner {
-    margin: 12px 12px 0px 0px;
+    margin-block-start: 12px;
+    margin-inline-end: 12px;
     width: 204px;
     max-width: 100%;
     height: 102px;
@@ -233,7 +234,7 @@ export const styles = css`
     .affine-bookmark-banner {
       width: 340px;
       height: 170px;
-      margin-left: 12px;
+      margin-inline-start: 12px;
     }
 
     .affine-bookmark-banner img,

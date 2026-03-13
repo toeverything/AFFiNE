@@ -16,8 +16,8 @@ export const scroll = style({
 });
 
 export const list = style({
-  paddingLeft: 16,
-  paddingRight: 16,
+  paddingInlineStart: 16,
+  paddingInlineEnd: 16,
   display: 'flex',
   gap: 10,
   width: 'fit-content',

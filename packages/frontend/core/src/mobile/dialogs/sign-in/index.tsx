@@ -36,7 +36,12 @@ export const SignInDialog = ({
       />
       <SafeArea
         top
-        style={{ position: 'absolute', top: 0, right: 0, paddingRight: 16 }}
+        style={{
+          position: 'absolute',
+          top: 0,
+          insetInlineEnd: 0,
+          paddingInlineEnd: 16,
+        }}
         topOffset={8}
       >
         <IconButton

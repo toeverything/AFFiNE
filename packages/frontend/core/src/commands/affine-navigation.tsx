@@ -43,7 +43,7 @@ export function registerAffineNavigationCommands({
       id: 'affine:goto-collection-list',
       category: 'affine:navigation',
       icon: <ArrowRightBigIcon />,
-      label: 'Go to Collection List',
+      label: t['com.affine.cmdk.affine.navigation.goto-collection-list'](),
       run() {
         track.$.cmdk.navigation.navigate({
           to: 'collectionList',
@@ -59,7 +59,7 @@ export function registerAffineNavigationCommands({
       id: 'affine:goto-tag-list',
       category: 'affine:navigation',
       icon: <ArrowRightBigIcon />,
-      label: 'Go to Tag List',
+      label: t['com.affine.cmdk.affine.navigation.goto-tag-list'](),
       run() {
         track.$.cmdk.navigation.navigate({
           to: 'tagList',

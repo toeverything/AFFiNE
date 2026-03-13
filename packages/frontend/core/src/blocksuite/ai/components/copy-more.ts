@@ -71,7 +71,7 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
         cursor: pointer;
 
         svg {
-          margin-left: 12px;
+          margin-inline-start: 12px;
         }
       }
 

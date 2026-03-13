@@ -114,7 +114,7 @@ export class DocEditTool extends WithDisposable(ShadowlessElement) {
           align-items: center;
           gap: 8px;
           cursor: pointer;
-          padding-right: 8px;
+          padding-inline-end: 8px;
           color: ${unsafeCSSVarV2('text/secondary')};
 
           button {

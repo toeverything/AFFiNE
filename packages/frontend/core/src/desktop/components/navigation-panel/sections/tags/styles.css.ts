@@ -17,7 +17,7 @@ export const iconContainer = style({
 
 export const createModalAnchor = style({
   top: 20,
-  left: 'auto',
-  right: 0,
+  insetInlineStart: 'auto',
+  insetInlineEnd: 0,
   transform: 'translateX(6px)',
 });

@@ -21,9 +21,9 @@ export const copyLinkButtonStyle = style({
   flex: 1,
   padding: '4px 12px',
   height: '30px',
-  paddingRight: '6px',
+  paddingInlineEnd: '6px',
   borderRadius: '4px',
-  borderRight: 'none',
+  borderInlineEnd: 'none',
   borderTopRightRadius: '0',
   borderBottomRightRadius: '0',
   color: 'transparent',
@@ -39,7 +39,7 @@ export const copyLinkButtonStyle = style({
 });
 export const copyLinkLabelContainerStyle = style({
   width: '100%',
-  borderRight: 'none',
+  borderInlineEnd: 'none',
   borderRadius: '4px',
   borderTopRightRadius: '0',
   borderBottomRightRadius: '0',
@@ -63,7 +63,7 @@ export const copyLinkShortcutStyle = style({
   position: 'absolute',
   textAlign: 'end',
   top: '50%',
-  right: '52px',
+  insetInlineEnd: '52px',
   transform: 'translateY(-50%)',
   opacity: 0.5,
   lineHeight: '20px',
@@ -83,7 +83,7 @@ export const copyLinkTriggerStyle = style({
   padding: '4px 12px 4px 8px',
   borderRadius: '4px',
   height: '30px',
-  borderLeft: 'none',
+  borderInlineStart: 'none',
   borderTopLeftRadius: '0',
   borderBottomLeftRadius: '0',
   ':hover': {
@@ -93,7 +93,7 @@ export const copyLinkTriggerStyle = style({
   '::after': {
     content: '""',
     position: 'absolute',
-    left: '0',
+    insetInlineStart: '0',
     top: '0',
     height: '100%',
     width: '1px',

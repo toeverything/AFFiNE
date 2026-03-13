@@ -34,7 +34,7 @@ export const ImportPage = ({
     <IconButton
       style={{
         position: 'absolute',
-        right: 6,
+        insetInlineEnd: 6,
         top: 6,
       }}
       onClick={() => {

@@ -116,7 +116,7 @@ export const pendingComment = style({
 export const previewContainer = style({
   fontSize: cssVar('fontSm'),
   color: cssVarV2('text/secondary'),
-  paddingLeft: '10px',
+  paddingInlineStart: '10px',
   position: 'relative',
   whiteSpace: 'nowrap',
   overflow: 'hidden',
@@ -171,7 +171,7 @@ export const readonlyCommentContainer = style({
   display: 'flex',
   flexDirection: 'column',
   gap: '4px',
-  paddingLeft: '8px',
+  paddingInlineStart: '8px',
   position: 'relative',
 });
 
@@ -188,7 +188,7 @@ export const commentInputContainer = style({
   alignItems: 'flex-start',
   justifyContent: 'flex-start',
   gap: '4px',
-  paddingLeft: '8px',
+  paddingInlineStart: '8px',
   maxWidth: '800px',
 });
 
@@ -210,7 +210,7 @@ export const collapsedReplies = style({
   justifyContent: 'flex-start',
   cursor: 'pointer',
   height: '28px',
-  paddingLeft: '42px',
+  paddingInlineStart: '42px',
   borderRadius: 8,
   selectors: {
     '&:hover': {

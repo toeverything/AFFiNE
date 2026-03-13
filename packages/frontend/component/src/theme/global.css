@@ -66,7 +66,7 @@ table {
 
 caption,
 th {
-  text-align: left;
+  text-align: start;
   font-weight: normal;
 }
 
@@ -231,7 +231,7 @@ editor-host *::-webkit-scrollbar {
 
 .editor-wrapper {
   position: relative;
-  padding-right: 0;
+  padding-inline-end: 0;
 }
 
 /* issue: https://github.com/toeverything/AFFiNE/issues/2004 */

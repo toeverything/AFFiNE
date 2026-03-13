@@ -6,7 +6,7 @@ export const content = style({
   // to avoid content clipped
   width: `calc(100% + 20px)`,
   padding: '10px 10px 20px 10px',
-  marginLeft: '-10px',
+  marginInlineStart: '-10px',
 });
 
 export const section = style({

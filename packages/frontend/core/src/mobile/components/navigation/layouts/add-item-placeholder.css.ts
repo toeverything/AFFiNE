@@ -11,7 +11,7 @@ export const wrapper = style([
   },
 ]);
 export const root = style({
-  paddingLeft: levelIndent,
+  paddingInlineStart: levelIndent,
 });
 
 export const iconWrapper = style([

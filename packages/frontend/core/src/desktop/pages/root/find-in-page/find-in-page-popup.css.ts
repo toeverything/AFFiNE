@@ -137,7 +137,7 @@ export const arrowButton = style({
   borderRadius: 0,
   selectors: {
     '&:first-child': {
-      borderRight: '1px solid',
+      borderInlineEnd: '1px solid',
       borderColor: cssVarV2('layer/insideBorder/border'),
     },
   },

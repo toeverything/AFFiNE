@@ -23,7 +23,7 @@ export const recurringToggleDiscount = style({
   color: cssVar('brandColor'),
 });
 export const radioButtonDiscount = style({
-  marginLeft: '4px',
+  marginInlineStart: '4px',
   color: cssVar('brandColor'),
   fontWeight: 400,
 });
@@ -42,7 +42,7 @@ export const cloudSelect = style({
 });
 globalStyle(`.${cloudSelect} > span`, { color: cssVar('textSecondaryColor') });
 export const planCardsWrapper = style({
-  paddingRight: 'calc(var(--setting-modal-gap-x) + 30px)',
+  paddingInlineEnd: 'calc(var(--setting-modal-gap-x) + 30px)',
   display: 'flex',
   gap: '16px',
   width: 'fit-content',
@@ -60,7 +60,7 @@ export const planCard = style({
     '&::before': {
       content: '',
       position: 'absolute',
-      right: 'calc(100% + var(--setting-modal-gap-x))',
+      insetInlineEnd: 'calc(100% + var(--setting-modal-gap-x))',
       scrollSnapAlign: 'start',
     },
     '&[data-current="true"]': {
@@ -110,7 +110,7 @@ export const proPlanTitle = style({
 });
 export const discountLabel = style({
   color: cssVar('textEmphasisColor'),
-  marginLeft: '8px',
+  marginInlineStart: '8px',
   lineHeight: '20px',
   fontSize: cssVar('fontXs'),
   fontWeight: 500,
@@ -159,7 +159,7 @@ export const planTitleTitleCaption = style({
   fontSize: cssVar('fontXs'),
   lineHeight: '20px',
   color: cssVar('textSecondaryColor'),
-  marginLeft: 4,
+  marginInlineStart: 4,
 });
 export const planPriceWrapper = style({
   minHeight: '28px',
@@ -169,7 +169,7 @@ export const planPriceWrapper = style({
 });
 export const planPrice = style({
   fontSize: cssVar('fontH5'),
-  marginRight: '8px',
+  marginInlineEnd: '8px',
 });
 export const planPriceDesc = style({
   color: cssVar('textSecondaryColor'),

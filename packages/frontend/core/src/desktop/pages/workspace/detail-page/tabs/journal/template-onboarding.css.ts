@@ -53,8 +53,8 @@ const animation = (tl: Timeline) => ({
 
 export const container = style({
   paddingTop: 8,
-  paddingLeft: 16,
-  paddingRight: 16,
+  paddingInlineStart: 16,
+  paddingInlineEnd: 16,
   paddingBottom: 8,
   marginBottom: 10,
   width: '100%',
@@ -105,7 +105,7 @@ export const title = style({
 export const close = style({
   position: 'absolute',
   top: 12,
-  right: 12,
+  insetInlineEnd: 12,
 });
 
 export const menu = style({
@@ -119,7 +119,7 @@ export const paper = style({
   alignItems: 'center',
   justifyContent: 'center',
   position: 'absolute',
-  right: 0,
+  insetInlineEnd: 0,
   bottom: 0,
   transformOrigin: '0% 100%',
   transform: timeline.paper.keyframes.from.transform,

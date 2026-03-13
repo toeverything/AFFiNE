@@ -38,11 +38,11 @@ export class DocTitle extends WithDisposable(ShadowlessElement) {
       margin-right: auto;
       padding: 38px 0;
 
-      padding-left: var(
+      padding-inline-start: var(
         --affine-editor-side-padding,
         ${DOC_BLOCK_CHILD_PADDING}px
       );
-      padding-right: var(
+      padding-inline-end: var(
         --affine-editor-side-padding,
         ${DOC_BLOCK_CHILD_PADDING}px
       );
@@ -56,8 +56,8 @@ export class DocTitle extends WithDisposable(ShadowlessElement) {
     @container viewport (width <= 640px) {
       .doc-icon-container,
       .doc-title-container {
-        padding-left: ${DOC_BLOCK_CHILD_PADDING}px;
-        padding-right: ${DOC_BLOCK_CHILD_PADDING}px;
+        padding-inline-start: ${DOC_BLOCK_CHILD_PADDING}px;
+        padding-inline-end: ${DOC_BLOCK_CHILD_PADDING}px;
       }
     }
 

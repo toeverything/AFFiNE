@@ -5,7 +5,7 @@ import { style } from '@vanilla-extract/css';
 export const numberPropertyValueInput = style({
   border: `1px solid transparent`,
   padding: `6px`,
-  paddingLeft: '5px',
+  paddingInlineStart: '5px',
   width: '100%',
   height: '100%',
   borderRadius: '4px',

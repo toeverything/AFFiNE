@@ -135,21 +135,21 @@ export class TableBlockComponent extends CaptionedBlockComponent<TableBlockModel
         contenteditable="false"
         class=${tableContainer}
         style=${styleMap({
-          marginLeft: `-${virtualPadding + 10}px`,
-          marginRight: `-${virtualPadding}px`,
+          marginInlineStart: `-${virtualPadding + 10}px`,
+          marginInlineEnd: `-${virtualPadding}px`,
           position: 'relative',
         })}
       >
         <div
           style=${styleMap({
-            paddingLeft: `${virtualPadding}px`,
-            paddingRight: `${virtualPadding}px`,
-            marginLeft:
+            paddingInlineStart: `${virtualPadding}px`,
+            paddingInlineEnd: `${virtualPadding}px`,
+            marginInlineStart:
               !this.model.props.textAlign$.value ||
               this.model.props.textAlign$?.value === 'left'
                 ? undefined
                 : 'auto',
-            marginRight:
+            marginInlineEnd:
               !this.model.props.textAlign$.value ||
               this.model.props.textAlign$?.value === 'right'
                 ? undefined

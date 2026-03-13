@@ -34,7 +34,7 @@ export class ToolResultCard extends SignalWatcher(
         justify-content: space-between;
         align-items: center;
         gap: 8px;
-        margin-right: 3px;
+        margin-inline-end: 3px;
         cursor: pointer;
       }
 
@@ -52,8 +52,8 @@ export class ToolResultCard extends SignalWatcher(
         font-size: 14px;
         font-weight: 500;
         line-height: 24px;
-        margin-left: 0px;
-        margin-right: auto;
+        margin-inline-start: 0px;
+        margin-inline-end: auto;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -67,7 +67,7 @@ export class ToolResultCard extends SignalWatcher(
           opacity 0.4s ease,
           margin-top 0.23s ease,
           transform 0.43s ease;
-        padding-left: 11px;
+        padding-inline-start: 11px;
         margin-top: 4px;
         transform-origin: bottom;
       }
@@ -86,8 +86,10 @@ export class ToolResultCard extends SignalWatcher(
       .ai-tool-results-content {
         display: flex;
         flex-direction: column;
-        padding: 4px 2px 4px 20px;
-        border-left: 1px solid ${unsafeCSSVarV2('layer/insideBorder/border')};
+        padding: 4px 2px;
+        padding-inline-start: 20px;
+        border-inline-start: 1px solid
+          ${unsafeCSSVarV2('layer/insideBorder/border')};
       }
 
       .result-item {
@@ -220,7 +222,7 @@ export class ToolResultCard extends SignalWatcher(
       }
 
       .footer-icon:not(:first-child) {
-        margin-left: -8px;
+        margin-inline-start: -8px;
       }
     }
     .ai-tool-result-wrapper:hover {

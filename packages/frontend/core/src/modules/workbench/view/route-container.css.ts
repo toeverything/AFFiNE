@@ -28,7 +28,7 @@ export const header = style({
   },
   selectors: {
     '&[data-show-switch=true]': {
-      paddingLeft: 8,
+      paddingInlineStart: 8,
     },
   },
 });

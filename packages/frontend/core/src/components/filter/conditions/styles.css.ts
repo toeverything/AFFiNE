@@ -43,7 +43,7 @@ export const ellipsisTextStyle = style({
 
 export const filterTypeIconStyle = style({
   fontSize: '18px',
-  marginRight: '6px',
+  marginInlineEnd: '6px',
   padding: '1px 0',
   display: 'flex',
   alignItems: 'center',
