@@ -1,4 +1,3 @@
-import { I18n } from '@affine/i18n';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
 import { WidgetComponent, WidgetViewExtension } from '@blocksuite/affine/std';
 import type { Store } from '@blocksuite/affine/store';
@@ -110,15 +109,11 @@ export class BlockDiffPlaygroundModal extends WithDisposable(LitElement) {
   override render() {
     return html`
       <div class="playground-modal">
-        <div class="playground-modal-title">
-          ${I18n['com.affine.ai.block-diff-playground.title']()}
-        </div>
+        <div class="playground-modal-title">Block Diff Playground</div>
         <div class="playground-modal-content">
           <textarea
             class="playground-textarea"
-            placeholder="${I18n[
-              'com.affine.ai.block-diff-playground.placeholder'
-            ]()}"
+            placeholder="Please input the markdown you want to apply."
             .value=${this.markdown}
             @input=${this.handleInput}
             @focus=${(e: FocusEvent) => e.stopPropagation()}
@@ -138,13 +133,13 @@ export class BlockDiffPlaygroundModal extends WithDisposable(LitElement) {
               class="playground-btn"
               @click=${this.handleInsertCurrentMarkdown}
             >
-              ${I18n['com.affine.ai.block-diff-playground.insert-current']()}
+              Insert Current Doc MD
             </button>
             <button class="playground-btn" @click=${this.handleClear}>
-              ${I18n['com.affine.ai.block-diff-playground.clear']()}
+              Clear
             </button>
             <button class="playground-btn primary" @click=${this.handleConfirm}>
-              ${I18n['com.affine.ai.block-diff-playground.confirm']()}
+              Confirm
             </button>
           </div>
         </div>
@@ -155,12 +150,9 @@ export class BlockDiffPlaygroundModal extends WithDisposable(LitElement) {
 
 export class BlockDiffPlayground extends WidgetComponent {
   static override styles = css`
-    :host {
-      direction: inherit;
-    }
     .playground-fab {
       position: fixed;
-      inset-inline-end: 32px;
+      right: 32px;
       bottom: 32px;
       z-index: 9999;
       width: 56px;
@@ -222,7 +214,7 @@ export class BlockDiffPlayground extends WidgetComponent {
         <div
           class="playground-fab"
           @click=${this.handleOpen}
-          title="${I18n['com.affine.ai.block-diff-playground.title']()}"
+          title="Block Diff Playground"
         >
           🧪
         </div>
