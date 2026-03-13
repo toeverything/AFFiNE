@@ -37,7 +37,7 @@ export const ExternalMenuLinkItem = ({
       <DualLinkIcon
         width={12}
         height={12}
-        style={{ marginLeft: 4, color: cssVarV2('icon/tertiary') }}
+        style={{ marginInlineStart: 4, color: cssVarV2('icon/tertiary') }}
       />
     </MenuLinkItem>
   );

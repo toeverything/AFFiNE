@@ -37,7 +37,7 @@ export const icon = style({
   width: 24,
   display: 'flex',
   placeItems: 'center',
-  marginRight: 10,
+  marginInlineEnd: 10,
 });
 globalStyle(`${icon} svg`, {
   width: '100%',
@@ -53,7 +53,7 @@ export const title = style({
   fontWeight: 400,
   lineHeight: '24px',
   fontSize: 15,
-  marginRight: 10,
+  marginInlineEnd: 10,
 });
 
 export const actionButton = style({
@@ -69,7 +69,7 @@ export const closeButton = style({
     '&[data-float="true"]': {
       position: 'absolute',
       top: 16,
-      right: 16,
+      insetInlineEnd: 16,
     },
   },
 });
@@ -84,7 +84,7 @@ export const main = style({
 
   selectors: {
     '[data-with-icon] &[data-align="title"]': {
-      paddingLeft: 34,
+      paddingInlineStart: 34,
     },
   },
 });

@@ -38,7 +38,7 @@ export const pdfThumbnails = style({
   boxSizing: 'border-box',
   width: '120px',
   padding: '12px 0',
-  right: '30px',
+  insetInlineEnd: '30px',
   bottom: '30px',
   maxHeight: 'calc(100% - 60px)',
   borderRadius: '8px',
@@ -121,7 +121,7 @@ export const pdfPlaceholder = style({
 export const pdfControls = style({
   position: 'absolute',
   bottom: '16px',
-  right: '14px',
+  insetInlineEnd: '14px',
   display: 'flex',
   flexDirection: 'column',
   gap: '10px',
@@ -157,7 +157,7 @@ export const pdfFooterItem = style({
 });
 
 export const pdfTitle = style({
-  marginLeft: '8px',
+  marginInlineStart: '8px',
   fontSize: '14px',
   fontWeight: 600,
   lineHeight: '22px',
@@ -180,7 +180,7 @@ export const pdfLoadingWrapper = style({
 
 export const pdfStatus = style({
   position: 'absolute',
-  left: '18px',
+  insetInlineStart: '18px',
   bottom: '18px',
 });
 

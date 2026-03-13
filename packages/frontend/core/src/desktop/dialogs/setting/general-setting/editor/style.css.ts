@@ -147,7 +147,7 @@ export const fontLabel = style({
 });
 export const selectedIcon = style({
   color: cssVarV2('button/primary'),
-  marginLeft: '8px',
+  marginInlineStart: '8px',
 });
 export const notFound = style({
   color: cssVarV2('text/secondary'),
@@ -179,5 +179,5 @@ export const fontSizeValue = style({
   fontSize: cssVar('fontSm'),
   color: cssVarV2('text/secondary'),
   minWidth: '40px',
-  textAlign: 'right',
+  textAlign: 'end',
 });

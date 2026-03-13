@@ -287,7 +287,7 @@ export const SettingDialog = ({
       open
       onOpenChange={() => close()}
       closeButtonOptions={{
-        style: { right: 14, top: 14 },
+        style: { insetInlineEnd: 14, top: 14 },
       }}
     >
       <Suspense fallback={<CenteredLoading />}>

@@ -98,7 +98,7 @@ export class AIChatInput extends SignalWatcher(
 
       .chat-selection-quote {
         padding: 4px 0px 8px 0px;
-        padding-left: 15px;
+        padding-inline-start: 15px;
         max-height: 56px;
         font-size: 14px;
         font-weight: 400;
@@ -138,7 +138,7 @@ export class AIChatInput extends SignalWatcher(
         height: calc(100% - 10px);
         margin-top: 5px;
         position: absolute;
-        left: 0;
+        inset-inline-start: 0;
         top: 0;
         background: var(--affine-quote-color);
         border-radius: 18px;
@@ -174,7 +174,7 @@ export class AIChatInput extends SignalWatcher(
       }
 
       .chat-input-icon:nth-child(2) {
-        margin-left: auto;
+        margin-inline-start: auto;
       }
 
       .chat-input-icon:hover {

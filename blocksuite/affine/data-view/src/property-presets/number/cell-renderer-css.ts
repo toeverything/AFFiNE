@@ -30,7 +30,7 @@ export const numberInputStyle = css({
   color: 'var(--affine-text-primary-color)',
   fontWeight: '400',
   backgroundColor: 'transparent',
-  textAlign: 'right',
+  textAlign: 'end',
   ':focus': {
     outline: 'none',
   },

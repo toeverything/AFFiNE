@@ -11,7 +11,7 @@ export const navWrapperStyle = style({
   paddingBottom: 8,
   selectors: {
     '&[data-has-border=true]': {
-      borderRight: `0.5px solid ${cssVarV2('layer/insideBorder/border')}`,
+      borderInlineEnd: `0.5px solid ${cssVarV2('layer/insideBorder/border')}`,
     },
     '&[data-is-floating="true"], &[data-is-electron="false"]': {
       backgroundColor: cssVarV2('layer/background/primary'),
@@ -24,7 +24,7 @@ export const hoverNavWrapperStyle = style({
       backgroundColor: cssVarV2('layer/background/primary'),
       height: 'calc(100% - 60px)',
       marginTop: '52px',
-      marginLeft: '4px',
+      marginInlineStart: '4px',
       boxShadow: cssVar('--affine-popover-shadow'),
       borderRadius: '6px',
     },
@@ -86,15 +86,15 @@ export const sidebarFloatMaskStyle = style({
   pointerEvents: 'none',
   position: 'fixed',
   top: 0,
-  left: 0,
-  right: '100%',
+  insetInlineStart: 0,
+  insetInlineEnd: '100%',
   bottom: 0,
   background: cssVarV2('layer/background/modal'),
   selectors: {
     '&[data-open="true"][data-is-floating="true"]': {
       opacity: 1,
       pointerEvents: 'auto',
-      right: '0',
+      insetInlineEnd: '0',
       zIndex: 3,
     },
   },

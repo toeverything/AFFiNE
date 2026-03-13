@@ -23,7 +23,7 @@ export const button = style({
     'screen and (width <= 640px)': {
       selectors: {
         [`[data-action-name="close"]&`]: {
-          marginLeft: 'auto',
+          marginInlineStart: 'auto',
           order: 0,
         },
       },

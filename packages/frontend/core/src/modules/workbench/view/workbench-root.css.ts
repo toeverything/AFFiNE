@@ -20,11 +20,11 @@ export const workbenchSidebar = style({
   right: 0,
   selectors: {
     [`&[data-client-border=true]`]: {
-      paddingLeft: 8,
+      paddingInlineStart: 8,
       borderRadius: 6,
     },
     [`&[data-client-border=false]`]: {
-      borderLeft: `0.5px solid ${cssVarV2.layer.insideBorder.border}`,
+      borderInlineStart: `0.5px solid ${cssVarV2.layer.insideBorder.border}`,
     },
   },
 });

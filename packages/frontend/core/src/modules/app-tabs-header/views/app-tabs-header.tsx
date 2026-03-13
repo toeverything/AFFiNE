@@ -502,10 +502,10 @@ export const AppTabsHeader = ({
       <div
         style={{
           transition: sidebarResizing ? 'none' : undefined,
-          paddingLeft: 12 + trafficLightOffset,
+          paddingInlineStart: 12 + trafficLightOffset,
           width: sidebarOpen ? sidebarWidth : 120 + trafficLightOffset,
           // minus 16 to account for the padding on the right side of the header (for box shadow)
-          marginRight: sidebarOpen ? -16 : 0,
+          marginInlineEnd: sidebarOpen ? -16 : 0,
         }}
         className={styles.headerLeft}
       >

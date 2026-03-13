@@ -65,7 +65,7 @@ export class SurfaceBlockComponent extends BlockComponent<SurfaceBlockModel> {
     }
 
     .affine-block-children-container.edgeless {
-      padding-left: 0;
+      padding-inline-start: 0;
       position: relative;
       overflow: hidden;
       height: 100%;

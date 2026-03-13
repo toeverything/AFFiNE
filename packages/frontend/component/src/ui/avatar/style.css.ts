@@ -120,7 +120,7 @@ export const DefaultAvatarTopItemStyle = style({
   width: '104%',
   height: '94%',
   position: 'absolute',
-  right: '-30%',
+  insetInlineEnd: '-30%',
   top: '-30%',
   opacity: '0.8',
   filter: `blur(${blurVar})`,
@@ -191,7 +191,7 @@ export const hoverWrapper = style({
 });
 export const removeButton = style({
   position: 'absolute',
-  right: '-8px',
+  insetInlineEnd: '-8px',
   top: '-2px',
   visibility: 'hidden',
   zIndex: '1',

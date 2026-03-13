@@ -117,7 +117,7 @@ export class IconButton extends LitElement {
     }
 
     ::slotted([slot='suffix']) {
-      margin-left: auto;
+      margin-inline-start: auto;
     }
   `;
 

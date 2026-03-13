@@ -33,7 +33,7 @@ export class EdgelessSlideMenu extends WithDisposable(LitElement) {
       position: relative;
       height: calc(var(--menu-height) + 1px);
       box-sizing: border-box;
-      padding-left: 10px;
+      padding-inline-start: 10px;
       scroll-snap-type: x mandatory;
     }
     .menu-container-scrollable {
@@ -41,7 +41,7 @@ export class EdgelessSlideMenu extends WithDisposable(LitElement) {
       overscroll-behavior: none;
       scrollbar-width: none;
       height: 100%;
-      padding-right: 10px;
+      padding-inline-end: 10px;
     }
     .slide-menu-content {
       display: flex;

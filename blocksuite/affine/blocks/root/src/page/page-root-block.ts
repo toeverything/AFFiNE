@@ -77,9 +77,9 @@ export class PageRootBlockComponent extends BlockComponent<RootBlockModel> {
       /* Leave a place for drag-handle */
       /* Do not use prettier format this style, or it will be broken */
       /* prettier-ignore */
-      padding-left: var(--affine-editor-side-padding, ${DOC_BLOCK_CHILD_PADDING}px);
+      padding-inline-start: var(--affine-editor-side-padding, ${DOC_BLOCK_CHILD_PADDING}px);
       /* prettier-ignore */
-      padding-right: var(--affine-editor-side-padding, ${DOC_BLOCK_CHILD_PADDING}px);
+      padding-inline-end: var(--affine-editor-side-padding, ${DOC_BLOCK_CHILD_PADDING}px);
       /* prettier-ignore */
       padding-bottom: var(--affine-editor-bottom-padding, ${DOC_BOTTOM_PADDING}px);
     }
@@ -87,8 +87,8 @@ export class PageRootBlockComponent extends BlockComponent<RootBlockModel> {
     /* Extra small devices (phones, 640px and down) */
     @container viewport (width <= 640px) {
       .affine-page-root-block-container {
-        padding-left: ${DOC_BLOCK_CHILD_PADDING}px;
-        padding-right: ${DOC_BLOCK_CHILD_PADDING}px;
+        padding-inline-start: ${DOC_BLOCK_CHILD_PADDING}px;
+        padding-inline-end: ${DOC_BLOCK_CHILD_PADDING}px;
       }
     }
 
