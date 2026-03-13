@@ -14,7 +14,7 @@ export const treeLine = style({
   position: 'absolute',
   top: 0,
   insetInlineEnd: 0,
-  left: horizontalIndent,
+  insetInlineStart: horizontalIndent,
   bottom: 0,
 
   // We don't want to cause any additional 'dragenter' events
@@ -88,7 +88,7 @@ export const outlineStyles = style({
   position: 'absolute',
   top: 0,
   insetInlineEnd: 0,
-  left: horizontalIndent,
+  insetInlineStart: horizontalIndent,
   bottom: 0,
 
   // We don't want to cause any additional 'dragenter' events

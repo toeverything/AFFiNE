@@ -86,7 +86,8 @@ export class ToolResultCard extends SignalWatcher(
       .ai-tool-results-content {
         display: flex;
         flex-direction: column;
-        padding: 4px 2px 4px 20px;
+        padding: 4px 2px;
+        padding-inline-start: 20px;
         border-inline-start: 1px solid
           ${unsafeCSSVarV2('layer/insideBorder/border')};
       }
