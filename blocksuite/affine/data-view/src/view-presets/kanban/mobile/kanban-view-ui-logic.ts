@@ -141,10 +141,10 @@ export class MobileKanbanViewUI extends DataViewUIBase<MobileKanbanViewUILogic> 
     );
     const vPadding = this.logic.root.config.virtualPadding$.value;
     const wrapperStyle = styleMap({
-      marginLeft: `-${vPadding}px`,
-      marginRight: `-${vPadding}px`,
-      paddingLeft: `${vPadding}px`,
-      paddingRight: `${vPadding}px`,
+      marginInlineStart: `-${vPadding}px`,
+      marginInlineEnd: `-${vPadding}px`,
+      paddingInlineStart: `${vPadding}px`,
+      paddingInlineEnd: `${vPadding}px`,
     });
     return html`
       ${renderUniLit(this.logic.headerWidget, {

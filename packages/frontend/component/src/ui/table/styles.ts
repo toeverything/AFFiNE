@@ -54,7 +54,7 @@ export const StyledTableCell = styled('td')<
   return {
     width,
     height: '52px',
-    paddingLeft: '16px',
+    paddingInlineStart: '16px',
     boxSizing: 'border-box',
     textAlign: align,
     verticalAlign: 'middle',

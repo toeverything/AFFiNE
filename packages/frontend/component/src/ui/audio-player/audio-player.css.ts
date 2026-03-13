@@ -51,7 +51,7 @@ export const nameLabel = style({
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
-  marginRight: 8,
+  marginInlineEnd: 8,
   fontSize: cssVar('fontSm'),
   fontWeight: 600,
 });
@@ -146,7 +146,7 @@ export const timeDisplay = style({
   color: cssVarV2('text/secondary'),
   minWidth: 48,
   ':last-of-type': {
-    textAlign: 'right',
+    textAlign: 'end',
   },
 });
 

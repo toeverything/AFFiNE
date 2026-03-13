@@ -22,11 +22,11 @@ export const root = style({
   selectors: {
     '&[data-open="false"][data-handle-position="right"],&[data-is-floating="true"][data-handle-position="right"]':
       {
-        marginLeft: `calc(${panelWidthVar} * -1)`,
+        marginInlineStart: `calc(${panelWidthVar} * -1)`,
       },
     '&[data-open="false"][data-handle-position="left"],&[data-is-floating="true"][data-handle-position="left"]':
       {
-        marginRight: `calc(${panelWidthVar} * -1)`,
+        marginInlineEnd: `calc(${panelWidthVar} * -1)`,
       },
     '&[data-open="true"][data-handle-position="right"][data-is-floating="true"]':
       {

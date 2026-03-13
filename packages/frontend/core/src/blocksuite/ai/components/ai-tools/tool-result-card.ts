@@ -87,7 +87,8 @@ export class ToolResultCard extends SignalWatcher(
         display: flex;
         flex-direction: column;
         padding: 4px 2px 4px 20px;
-        border-left: 1px solid ${unsafeCSSVarV2('layer/insideBorder/border')};
+        border-inline-start: 1px solid
+          ${unsafeCSSVarV2('layer/insideBorder/border')};
       }
 
       .result-item {

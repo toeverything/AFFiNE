@@ -84,7 +84,7 @@ export class RecordField extends SignalWatcher(
     }
 
     .field-content .affine-database-number {
-      text-align: left;
+      text-align: start;
       justify-content: start;
     }
 

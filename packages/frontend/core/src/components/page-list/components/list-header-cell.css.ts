@@ -13,7 +13,7 @@ export const headerCell = style({
       cursor: 'pointer',
     },
     '&:not(:last-child)': {
-      borderRight: `1px solid ${cssVar('hoverColorFilled')}`,
+      borderInlineEnd: `1px solid ${cssVar('hoverColorFilled')}`,
     },
   },
   alignItems: 'center',

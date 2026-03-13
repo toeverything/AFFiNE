@@ -41,7 +41,7 @@ export const styles = css`
     font-size: var(--affine-font-xs);
     font-weight: 500;
     line-height: var(--affine-line-height);
-    text-align: left;
+    text-align: start;
     color: var(
       --light-textColor-textSecondaryColor,
       var(--textColor-textSecondaryColor, #8e8d91)

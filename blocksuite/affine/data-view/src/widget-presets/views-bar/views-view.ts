@@ -54,11 +54,11 @@ export class DataViewHeaderViews extends WidgetBase {
       overflow: hidden;
       text-overflow: ellipsis;
       font-weight: 500;
-      padding-right: 2px;
+      padding-inline-end: 2px;
     }
 
     .database-view-button .icon {
-      margin-right: 6px;
+      margin-inline-end: 6px;
       display: block;
       flex-shrink: 0;
     }

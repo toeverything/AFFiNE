@@ -60,8 +60,8 @@ export const titlebarChild = style({
       display: 'flex',
       gap: '12px',
       alignItems: 'center',
-      paddingLeft: '12px',
-      paddingRight: '12px',
+      paddingInlineStart: '12px',
+      paddingInlineEnd: '12px',
     },
     '&.zoom:not(.show)': {
       display: 'none',

@@ -23,7 +23,7 @@ export const recurringToggleDiscount = style({
   color: cssVar('brandColor'),
 });
 export const radioButtonDiscount = style({
-  marginLeft: '4px',
+  marginInlineStart: '4px',
   color: cssVar('brandColor'),
   fontWeight: 400,
 });

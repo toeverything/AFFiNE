@@ -5,10 +5,10 @@ import { globalStyle, style } from '@vanilla-extract/css';
 export const container = style({
   width: '100%',
   maxWidth: cssVar('--affine-editor-width'),
-  marginLeft: 'auto',
-  marginRight: 'auto',
-  paddingLeft: cssVar('--affine-editor-side-padding', '24'),
-  paddingRight: cssVar('--affine-editor-side-padding', '24'),
+  marginInlineStart: 'auto',
+  marginInlineEnd: 'auto',
+  paddingInlineStart: cssVar('--affine-editor-side-padding', '24'),
+  paddingInlineEnd: cssVar('--affine-editor-side-padding', '24'),
   fontSize: cssVar('--affine-font-base'),
   '@container': {
     [`viewport (width <= 640px)`]: {

@@ -93,7 +93,7 @@ export const mainContainerStyle = style({
       },
     },
     '&[data-client-border="true"][data-side-bar-open="true"]': {
-      paddingLeft: 0,
+      paddingInlineStart: 0,
     },
     '&[data-client-border="true"][data-is-desktop="true"]': {
       paddingTop: 0,
@@ -104,7 +104,7 @@ export const mainContainerStyle = style({
       },
     '&[data-client-border="false"][data-is-desktop="true"]': {
       borderTop: `0.5px solid ${cssVar('borderColor')}`,
-      borderLeft: `0.5px solid ${cssVar('borderColor')}`,
+      borderInlineStart: `0.5px solid ${cssVar('borderColor')}`,
     },
     '&[data-transparent=true]': {
       backgroundColor: 'transparent',

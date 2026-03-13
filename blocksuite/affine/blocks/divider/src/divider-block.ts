@@ -26,7 +26,7 @@ export class DividerBlockComponent extends CaptionedBlockComponent<DividerBlockM
   override renderBlock() {
     const children = html`<div
       class="affine-block-children-container"
-      style="padding-left: ${BLOCK_CHILDREN_CONTAINER_PADDING_LEFT}px"
+      style="padding-inline-start: ${BLOCK_CHILDREN_CONTAINER_PADDING_LEFT}px"
     >
       ${this.renderChildren(this.model)}
     </div>`;
