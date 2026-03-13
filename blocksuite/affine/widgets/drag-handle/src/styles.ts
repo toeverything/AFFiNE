@@ -50,6 +50,10 @@ export const styles = css`
     transition: unset;
   }
 
+  [dir='rtl'] .affine-drag-handle-grabber.dots {
+    transform: translateX(100%);
+  }
+
   .affine-drag-handle-grabber.dots:hover {
     background-color: ${unsafeCSSVarV2('layer/background/hoverOverlay')};
   }
