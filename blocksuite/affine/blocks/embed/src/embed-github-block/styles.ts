@@ -327,7 +327,7 @@ export const styles = css`
     .affine-embed-github-banner {
       width: 340px;
       height: 170px;
-      margin-left: 12px;
+      margin-inline-start: 12px;
     }
 
     .affine-embed-github-banner img,
