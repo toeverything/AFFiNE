@@ -29,7 +29,7 @@ export const suggestionLink = style({
 });
 export const suggestionLinkIcon = style({
   color: cssVar('iconColor'),
-  marginRight: '12px',
+  marginInlineEnd: '12px',
   display: 'flex',
   margin: '3px 0',
 });
