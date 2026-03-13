@@ -326,9 +326,10 @@ export class RichText extends WithDisposable(ShadowlessElement) {
       }
     };
     syncDir();
-    this._yText.observe(syncDir);
+    const yText = this._yText;
+    yText.observe(syncDir);
     inlineEditor.disposables.add({
-      dispose: () => this._yText.unobserve(syncDir),
+      dispose: () => yText.unobserve(syncDir),
     });
   }
 
