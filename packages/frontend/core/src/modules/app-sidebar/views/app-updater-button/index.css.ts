@@ -25,7 +25,7 @@ export const root = style({
       content: "''",
       position: 'absolute',
       top: '-2px',
-      right: '-2px',
+      insetInlineEnd: '-2px',
       width: '8px',
       height: '8px',
       backgroundColor: cssVar('primaryColor'),
@@ -42,14 +42,14 @@ export const root = style({
   },
 });
 export const icon = style({
-  marginRight: '12px',
+  marginInlineEnd: '12px',
   color: cssVar('iconColor'),
   fontSize: '24px',
 });
 export const closeIcon = style({
   position: 'absolute',
   top: '4px',
-  right: '4px',
+  insetInlineEnd: '4px',
   height: '14px',
   width: '14px',
   display: 'flex',
@@ -122,7 +122,7 @@ export const versionLabel = style({
   fontSize: '10px',
   lineHeight: '18px',
   borderRadius: '4px',
-  marginLeft: '8px',
+  marginInlineStart: '8px',
   maxWidth: '100px',
   overflow: 'hidden',
   textOverflow: 'ellipsis',
@@ -150,7 +150,7 @@ export const progress = style({
 export const progressInner = style({
   position: 'absolute',
   top: 0,
-  left: 0,
+  insetInlineStart: 0,
   height: '100%',
   borderRadius: '12px',
   background: cssVar('primaryColor'),
@@ -165,7 +165,7 @@ export const particles = style({
   width: '100%',
   height: '100%',
   position: 'absolute',
-  left: 0,
+  insetInlineStart: 0,
   pointerEvents: 'none',
   display: 'none',
   selectors: {
