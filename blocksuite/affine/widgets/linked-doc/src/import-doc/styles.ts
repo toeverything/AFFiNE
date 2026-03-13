@@ -41,9 +41,9 @@ export const styles = css`
   }
 
   header icon-button {
-    margin-left: auto;
+    margin-inline-start: auto;
     position: relative;
-    left: 24px;
+    inset-inline-start: 24px;
   }
 
   .button-container {
@@ -74,7 +74,7 @@ export const styles = css`
 
   .button-suffix {
     display: flex;
-    margin-left: auto;
+    margin-inline-start: auto;
   }
 
   .overlay-mask {
