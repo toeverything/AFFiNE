@@ -97,7 +97,7 @@ export const slashItemToolTipStyle = css`
   }
 
   .tooltip-caption {
-    padding-left: 4px;
+    padding-inline-start: 4px;
     color: var(
       --light-textColor-textSecondaryColor,
       var(--textColor-textSecondaryColor, #8e8d91)

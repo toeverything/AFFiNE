@@ -64,7 +64,7 @@ export const linkedDocPopoverStyles = css`
   .linked-doc-popover .group-title .loading-icon {
     display: flex;
     align-items: center;
-    margin-left: 8px;
+    margin-inline-start: 8px;
   }
 
   .linked-doc-popover .group-title .loading-icon svg {
