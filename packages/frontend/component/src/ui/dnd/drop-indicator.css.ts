@@ -13,7 +13,7 @@ export const treeLine = style({
   // big as the whole tree item
   position: 'absolute',
   top: 0,
-  right: 0,
+  insetInlineEnd: 0,
   left: horizontalIndent,
   bottom: 0,
 
@@ -47,7 +47,7 @@ export const treeLine = style({
     background: indicatorColor,
     left: `calc(${terminalSize} / 2)`, // putting the line to the right of the terminal
     height: 2,
-    right: 0,
+    insetInlineEnd: 0,
   },
 
   selectors: {
@@ -87,7 +87,7 @@ export const outlineStyles = style({
   // big as the whole tree item
   position: 'absolute',
   top: 0,
-  right: 0,
+  insetInlineEnd: 0,
   left: horizontalIndent,
   bottom: 0,
 
@@ -103,7 +103,7 @@ export const outlineStyles = style({
 export const horizontal = style({
   height: 2,
   left: `calc(${terminalSize}/2)`,
-  right: 0,
+  insetInlineEnd: 0,
   '::before': {
     // Horizontal indicators have the terminal on the left
     left: `calc(-1 * ${terminalSize})`,

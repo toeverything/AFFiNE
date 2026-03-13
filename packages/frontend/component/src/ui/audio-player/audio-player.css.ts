@@ -195,7 +195,7 @@ export const miniProgressContainer = style({
 
 export const miniCloseButton = style({
   position: 'absolute',
-  right: 8,
+  insetInlineEnd: 8,
   top: 8,
   display: 'none',
   background: cssVarV2('layer/background/secondary'),

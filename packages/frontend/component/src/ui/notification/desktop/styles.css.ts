@@ -69,7 +69,7 @@ export const closeButton = style({
     '&[data-float="true"]': {
       position: 'absolute',
       top: 16,
-      right: 16,
+      insetInlineEnd: 16,
     },
   },
 });
@@ -84,7 +84,7 @@ export const main = style({
 
   selectors: {
     '[data-with-icon] &[data-align="title"]': {
-      paddingLeft: 34,
+      paddingInlineStart: 34,
     },
   },
 });
