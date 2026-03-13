@@ -3,7 +3,7 @@ import {
   type ViewExtensionContext,
   ViewExtensionProvider,
 } from '@blocksuite/affine/ext-loader';
-import type { Container } from '@blocksuite/affine/global/di';
+import type { Container, ServiceProvider } from '@blocksuite/affine/global/di';
 import {
   type SlashMenuConfig,
   SlashMenuConfigIdentifier,
@@ -13,6 +13,8 @@ import {
 
 /**
  * Translation map from English names to i18n keys.
+ * NOTE: This map must be kept in sync with BlockSuite slash menu items.
+ * Update when adding/removing menu items from BlockSuite.
  */
 const nameKeyMap: Record<string, string> = {
   Text: 'com.affine.editor.slash-menu.text',
@@ -29,7 +31,22 @@ const nameKeyMap: Record<string, string> = {
   Quote: 'com.affine.editor.slash-menu.quote',
   Divider: 'com.affine.editor.slash-menu.divider',
   'Other Headings': 'com.affine.editor.slash-menu.other-headings',
+  'Inline equation': 'com.affine.editor.slash-menu.inline-equation',
+  Equation: 'com.affine.editor.slash-menu.equation',
+  Callout: 'com.affine.editor.slash-menu.callout',
   'Ask AI': 'com.affine.ai.ask-ai',
+  'Fix spelling from above': 'com.affine.ai.fix-spelling-from-above',
+  'Fix grammar from above': 'com.affine.ai.fix-grammar-from-above',
+  'Continue writing': 'com.affine.ai.continue-writing',
+  Summarize: 'com.affine.ai.summarize',
+  'Action with above': 'com.affine.ai.action-with-above',
+  'Translate to': 'com.affine.ai.translate-to',
+  'Change tone to': 'com.affine.ai.change-tone-to',
+  'Improve writing': 'com.affine.ai.improve-writing',
+  'Make it longer': 'com.affine.ai.make-it-longer',
+  'Make it shorter': 'com.affine.ai.make-it-shorter',
+  'Generate outline': 'com.affine.ai.generate-outline',
+  'Find actions': 'com.affine.ai.find-actions',
 };
 
 const descKeyMap: Record<string, string> = {
@@ -59,6 +76,12 @@ const descKeyMap: Record<string, string> = {
     'com.affine.editor.slash-menu.quote.description',
   'Visually separate content.':
     'com.affine.editor.slash-menu.divider.description',
+  'Create a inline equation.':
+    'com.affine.editor.slash-menu.inline-equation.description',
+  'Create a equation block.':
+    'com.affine.editor.slash-menu.equation.description',
+  'Let your words stand out.':
+    'com.affine.editor.slash-menu.callout.description',
 };
 
 function translateItem(item: SlashMenuItem): SlashMenuItem {
@@ -103,10 +126,11 @@ function overrideConfig(di: Container, id: string) {
   const identifier = SlashMenuConfigIdentifier(id);
   const prev = di.getFactory(identifier);
   if (prev) {
-     
-    di.override(identifier, (provider: any) =>
+    di.override(identifier, (provider: ServiceProvider) =>
       translateConfig(prev(provider) as SlashMenuConfig)
     );
+  } else if (process.env.NODE_ENV === 'development') {
+    console.warn('[SlashMenuI18n] Config not found for id: ' + id);
   }
 }
 

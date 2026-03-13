@@ -354,6 +354,7 @@ export class ParagraphBlockComponent extends CaptionedBlockComponent<ParagraphBl
             : html`
                 <div
                   contenteditable="false"
+                  dir=${document.documentElement.dir || 'auto'}
                   class=${classMap({
                     'affine-paragraph-placeholder': true,
                     visible: this._displayPlaceholder.value,

@@ -141,6 +141,8 @@ export const paragraphBlockStyles = css`
     pointer-events: none;
     color: var(--affine-black-30);
     fill: var(--affine-black-30);
+    direction: inherit;
+    text-align: start;
   }
   @media print {
     .affine-paragraph-placeholder {

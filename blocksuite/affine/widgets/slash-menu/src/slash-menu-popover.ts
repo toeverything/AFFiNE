@@ -410,7 +410,10 @@ export class InnerSlashMenu extends WithDisposable(LitElement) {
         middleware: [
           offset(12),
           autoPlacement({
-            allowedPlacements: ['right-start', 'right-end'],
+            allowedPlacements:
+              document.documentElement.dir === 'rtl'
+                ? ['left-start', 'left-end']
+                : ['right-start', 'right-end'],
           }),
         ],
       },
@@ -501,7 +504,12 @@ export class InnerSlashMenu extends WithDisposable(LitElement) {
       }}
     >
       ${icon && html`<div class="slash-menu-item-icon">${icon}</div>`}
-      <div slot="suffix" style="transform: rotate(-90deg);">
+      <div
+        slot="suffix"
+        style="transform: rotate(${document.documentElement.dir === 'rtl'
+          ? '90deg'
+          : '-90deg'});"
+      >
         ${ArrowDownSmallIcon()}
       </div>
     </icon-button>`;
