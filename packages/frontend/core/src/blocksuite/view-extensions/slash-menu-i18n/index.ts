@@ -1,6 +1,9 @@
 import { I18n } from '@affine/i18n';
+import {
+  type ViewExtensionContext,
+  ViewExtensionProvider,
+} from '@blocksuite/affine/ext-loader';
 import type { Container } from '@blocksuite/affine/global/di';
-import type { ExtensionType } from '@blocksuite/affine/store';
 import {
   type SlashMenuConfig,
   SlashMenuConfigIdentifier,
@@ -108,13 +111,20 @@ function overrideConfig(di: Container, id: string) {
 }
 
 /**
- * Extension that intercepts slash menu configs and translates item names/descriptions.
- * Uses di.override to wrap existing configs with translation logic.
+ * View extension provider that intercepts slash menu configs and translates
+ * item names/descriptions using AFFiNE's i18n system.
  */
-export const SlashMenuI18nExtension: ExtensionType = {
-  setup: (di: Container) => {
-    overrideConfig(di, 'affine:note');
-    overrideConfig(di, 'default');
-    overrideConfig(di, 'ai');
-  },
-};
+export class SlashMenuI18nExtension extends ViewExtensionProvider {
+  name = 'affine-slash-menu-i18n';
+
+  setup(context: ViewExtensionContext) {
+    super.setup(context);
+    context.register({
+      setup: (di: Container) => {
+        overrideConfig(di, 'affine:note');
+        overrideConfig(di, 'default');
+        overrideConfig(di, 'ai');
+      },
+    });
+  }
+}
