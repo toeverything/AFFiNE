@@ -23,7 +23,7 @@ export const sidebarSwitchClip = style({
   ':after': {
     content: '""',
     position: 'absolute',
-    left: '19.75px',
+    insetInlineStart: '19.75px',
     top: '6.25px',
     zIndex: 2,
     width: '6px',

@@ -35,4 +35,9 @@ export const fallbackGroupItems = style({
 
 export const fallbackItemHeader = style({
   transform: 'translateX(-10px)',
+  selectors: {
+    'html[dir="rtl"] &': {
+      transform: 'translateX(10px)',
+    },
+  },
 });
