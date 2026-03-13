@@ -89,7 +89,7 @@ export class ArtifactPreviewPanel extends WithDisposable(ShadowlessElement) {
     }
 
     .artifact-panel-close {
-      margin-left: 4px;
+      margin-inline-start: 4px;
       display: flex;
       align-items: center;
       justify-content: center;

@@ -76,27 +76,27 @@ export class MobileOutlineMenu extends SignalWatcher(
 
     .outline-menu-item.title,
     .outline-menu-item.h1 {
-      padding-left: 8px;
+      padding-inline-start: 8px;
     }
 
     .outline-menu-item.h2 {
-      padding-left: 28px;
+      padding-inline-start: 28px;
     }
 
     .outline-menu-item.h3 {
-      padding-left: 48px;
+      padding-inline-start: 48px;
     }
 
     .outline-menu-item.h4 {
-      padding-left: 68px;
+      padding-inline-start: 68px;
     }
 
     .outline-menu-item.h5 {
-      padding-left: 88px;
+      padding-inline-start: 88px;
     }
 
     .outline-menu-item.h6 {
-      padding-left: 108px;
+      padding-inline-start: 108px;
     }
   `;
 

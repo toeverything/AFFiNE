@@ -136,7 +136,7 @@ export const historyList = style({
   height: '100%',
   width: historyListWidth,
   flexShrink: 0,
-  borderLeft: `1px solid ${cssVar('borderColor')}`,
+  borderInlineStart: `1px solid ${cssVar('borderColor')}`,
 });
 export const historyListScrollable = style({
   height: `calc(100% - ${headerHeight})`,
@@ -169,7 +169,7 @@ export const historyItemGroupContent = style({
   display: 'flex',
   flexDirection: 'column',
   gap: 8,
-  paddingLeft: 24,
+  paddingInlineStart: 24,
   '::before': {
     position: 'absolute',
     top: 0,
@@ -178,7 +178,7 @@ export const historyItemGroupContent = style({
     display: 'block',
     height: '100%',
     width: '1px',
-    borderLeft: `1px solid ${cssVar('borderColor')}`,
+    borderInlineStart: `1px solid ${cssVar('borderColor')}`,
   },
 });
 export const historyItemGroupTitle = style({
@@ -252,7 +252,7 @@ export const historyItemLoadMore = style([
     cursor: 'pointer',
     color: cssVarV2('text/secondary'),
     flexShrink: 0,
-    textAlign: 'left',
+    textAlign: 'start',
     alignItems: 'flex-start',
   },
 ]);

@@ -59,7 +59,7 @@ export class CitationCard extends SignalWatcher(WithDisposable(LitElement)) {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-        text-align: left;
+        text-align: start;
         line-height: 22px;
         color: ${unsafeCSSVarV2('text/primary')};
         font-size: var(--affine-font-sm);

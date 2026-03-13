@@ -38,8 +38,8 @@ export const title = style({
 export const playground = style({
   cursor: 'pointer',
   padding: '2px',
-  marginLeft: '8px',
-  marginRight: 'auto',
+  marginInlineStart: '8px',
+  marginInlineEnd: 'auto',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',

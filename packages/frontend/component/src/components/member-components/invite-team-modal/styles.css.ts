@@ -19,8 +19,8 @@ export const inviteModalButtonContainer = style({
 });
 
 export const inviteName = style({
-  marginLeft: '4px',
-  marginRight: '10px',
+  marginInlineStart: '4px',
+  marginInlineEnd: '10px',
   color: cssVarV2('text/primary'),
 });
 
@@ -104,8 +104,8 @@ export const errorHint = style({
 });
 
 export const contentStyle = style({
-  paddingLeft: '0',
-  paddingRight: '0',
+  paddingInlineStart: '0',
+  paddingInlineEnd: '0',
   overflowY: 'visible',
 });
 

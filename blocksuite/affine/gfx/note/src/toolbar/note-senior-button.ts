@@ -71,7 +71,7 @@ export class EdgelessNoteSeniorButton extends EdgelessToolbarToolMixin(
       color: var(--paper-foriegn-color);
       box-shadow: var(--paper-shadow);
       padding-top: 32px;
-      padding-left: 3px;
+      padding-inline-start: 3px;
       transition: transform 0.4s ease;
     }
     .edgeless-toolbar-note-icon {

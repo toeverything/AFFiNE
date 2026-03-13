@@ -101,8 +101,8 @@ export const backButton = style({
   alignSelf: 'start',
   fontWeight: 600,
   fontSize: 17,
-  paddingLeft: 0,
-  marginLeft: 20,
+  paddingInlineStart: 0,
+  marginInlineStart: 20,
   maxWidth: 'calc(100% - 20px)',
 });
 

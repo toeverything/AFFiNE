@@ -30,10 +30,10 @@ export const plainTextGroupHeader = style({
   gap: 4,
   display: 'flex',
   alignItems: 'center',
-  paddingLeft: 4,
+  paddingInlineStart: 4,
   selectors: {
     [`&:has(${plainTextGroupHeaderIcon})`]: {
-      paddingLeft: 0,
+      paddingInlineStart: 0,
     },
   },
 });
@@ -52,7 +52,7 @@ export const collapseButton = style([
   {
     width: 20,
     height: 20,
-    marginLeft: 2,
+    marginInlineStart: 2,
     fontSize: 16,
     flexShrink: 0,
     color: cssVarV2.icon.primary,
@@ -77,7 +77,7 @@ export const selectInfo = style({
   fontSize: 14,
   lineHeight: '22px',
   color: cssVarV2.text.tertiary,
-  marginLeft: 12,
+  marginInlineStart: 12,
 });
 
 export const content = style({

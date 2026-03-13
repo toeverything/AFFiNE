@@ -125,7 +125,7 @@ export class TextRenderer extends SignalWatcher(
         line-height: 22px;
 
         .h6 {
-          padding-left: 16px;
+          padding-inline-start: 16px;
           color: ${unsafeCSSVarV2('text/link')};
           font-size: var(--affine-font-base);
 

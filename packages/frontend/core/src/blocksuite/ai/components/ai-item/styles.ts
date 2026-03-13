@@ -69,7 +69,7 @@ export const menuItemStyles = css`
     color: ${unsafeCSSVarV2('text/secondary')};
     font-size: var(--affine-font-xs);
     font-weight: 500;
-    margin-left: 0.5em;
+    margin-inline-start: 0.5em;
   }
 
   .enter-icon,

@@ -73,7 +73,7 @@ export class ChatInputPreference extends SignalWatcher(
       font-size: 14px;
       color: ${unsafeCSSVarV2('text/secondary')};
       line-height: 22px;
-      margin-left: 40px;
+      margin-inline-start: 40px;
     }
     .ai-model-prefix {
       width: 20px;
@@ -89,7 +89,7 @@ export class ChatInputPreference extends SignalWatcher(
       font-size: 12px;
       color: ${unsafeCSSVarV2('text/tertiary')};
       line-height: 20px;
-      margin-right: 40px;
+      margin-inline-end: 40px;
     }
   `;
 
