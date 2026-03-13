@@ -80,7 +80,7 @@ export class ActionWrapper extends WithDisposable(LitElement) {
         flex: 1;
 
         div:last-child svg {
-          margin-left: auto;
+          margin-inline-start: auto;
         }
       }
     }
