@@ -4,7 +4,7 @@ import { style } from '@vanilla-extract/css';
 export const dropEffect = style({
   zIndex: 99999,
   position: 'fixed',
-  left: '10px',
+  insetInlineStart: '10px',
   top: '-20px',
   background: cssVar('--affine-background-primary-color'),
   boxShadow: cssVar('--affine-toolbar-shadow'),

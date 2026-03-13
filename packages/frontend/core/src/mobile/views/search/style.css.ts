@@ -54,8 +54,8 @@ const resBlockContent = style({
 export const resBlockListContent = style([
   resBlockContent,
   {
-    paddingLeft: 16,
-    paddingRight: 16,
+    paddingInlineStart: 16,
+    paddingInlineEnd: 16,
   },
 ]);
 export const resBlockScrollContent = style([

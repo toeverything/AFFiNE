@@ -42,7 +42,7 @@ export class FootNotePopupChip extends LitElement {
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      text-align: left;
+      text-align: start;
       height: 22px;
       line-height: 22px;
       color: ${unsafeCSSVarV2('text/primary')};

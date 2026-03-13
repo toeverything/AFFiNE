@@ -16,7 +16,7 @@ export const layout = style({
 });
 export const header = style({
   paddingTop: '24px',
-  paddingRight: '24px',
+  paddingInlineEnd: '24px',
   position: 'sticky',
   top: 0,
   display: 'flex',
@@ -26,7 +26,7 @@ export const header = style({
   selectors: {
     '&[data-is-windows-electron="true"]': {
       paddingTop: '0',
-      paddingRight: '0',
+      paddingInlineEnd: '0',
       gap: '16px',
     },
   },
@@ -93,7 +93,7 @@ export const checkBox = style({
 globalStyle(`${checkBox} svg`, {
   color: cssVar('brandColor'),
   flexShrink: 0,
-  marginRight: '8px',
+  marginInlineEnd: '8px',
 });
 export const label = style({
   fontSize: cssVar('fontBase'),
@@ -120,7 +120,7 @@ export const disableButton = style({
   pointerEvents: 'none',
 });
 export const windowsAppButton = style({
-  marginRight: '24px',
+  marginInlineEnd: '24px',
 });
 export const thankContainer = style({
   display: 'flex',

@@ -37,7 +37,7 @@ export const dndCell = style({
   marginLeft: -8,
   height: '100%',
   outline: 'none',
-  paddingLeft: 8,
+  paddingInlineStart: 8,
 });
 globalStyle(`[data-draggable=true] ${dndCell}:before`, {
   content: '""',
@@ -67,10 +67,10 @@ globalStyle(`[data-draggable=true][data-dragging=true] ${dndCell}:before`, {
 });
 
 globalStyle(`${root} > :first-child`, {
-  paddingLeft: '16px',
+  paddingInlineStart: '16px',
 });
 globalStyle(`${root} > :last-child`, {
-  paddingRight: '8px',
+  paddingInlineEnd: '8px',
 });
 export const titleIconsWrapper = style({
   padding: '5px',
@@ -100,7 +100,7 @@ export const titleCellMain = style({
   whiteSpace: 'nowrap',
   textOverflow: 'ellipsis',
   alignSelf: 'center',
-  paddingRight: '4px',
+  paddingInlineEnd: '4px',
 });
 export const titleCellPreview = style({
   overflow: 'hidden',

@@ -94,7 +94,7 @@ export const menuSpan = style({
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
-  textAlign: 'left',
+  textAlign: 'start',
 });
 export const menuItemIcon = style({
   display: 'flex',

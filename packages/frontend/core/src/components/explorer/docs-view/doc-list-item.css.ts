@@ -47,7 +47,7 @@ export const dragHandle = style({
 export const listDragHandle = style([
   dragHandle,
   {
-    left: -4,
+    insetInlineStart: -4,
     top: '50%',
     transform: 'translateY(-50%) translateX(-100%)',
     opacity: 0,
@@ -65,21 +65,21 @@ export const listSelect = style({
   padding: 2,
   // to make sure won't take place when hidden
   // 12 = gap + padding * 2
-  marginLeft: -12,
+  marginInlineStart: -12,
   flexShrink: 0,
   display: 'flex',
   color: cssVarV2.icon.primary,
   overflow: 'hidden',
   alignItems: 'center',
   justifyContent: 'end',
-  transition: 'width 0.25s ease, margin-left 0.25s ease',
+  transition: 'width 0.25s ease, margin-inline-start 0.25s ease',
   // when select mode is on, the whole item can be clicked,
   // the selection will be handled by the parent, the checkbox here just for the visual effect
   pointerEvents: 'none',
   selectors: {
     '&[data-select-mode="true"]': {
       width: 24,
-      marginLeft: 0,
+      marginInlineStart: 0,
     },
   },
 });
@@ -108,7 +108,7 @@ export const listBrief = style({
   display: 'flex',
   flexDirection: 'column',
   justifyContent: 'center',
-  marginLeft: 4,
+  marginInlineStart: 4,
   minWidth: 200,
 });
 export const listSpace = style({
@@ -265,7 +265,7 @@ export const cardViewCheckbox = style({
 export const cardDragHandle = style([
   dragHandle,
   {
-    left: -4,
+    insetInlineStart: -4,
     top: 0,
     transform: 'translateX(-100%)',
     opacity: 0,

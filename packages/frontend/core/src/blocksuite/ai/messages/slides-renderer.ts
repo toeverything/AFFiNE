@@ -169,7 +169,7 @@ export class AISlidesRenderer extends WithDisposable(LitElement) {
         }
 
         .affine-block-children-container.edgeless {
-          padding-left: 0;
+          padding-inline-start: 0;
           position: relative;
           overflow: hidden;
           height: 100%;

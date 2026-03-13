@@ -14,7 +14,7 @@ export const divider = style({
 });
 
 export const verticalDivider = style({
-  borderLeft: `1px solid ${cssVar('borderColor')}`,
+  borderInlineStart: `1px solid ${cssVar('borderColor')}`,
   width: 0,
   height: '100%',
   margin: `0 ${dividerSpace}`,

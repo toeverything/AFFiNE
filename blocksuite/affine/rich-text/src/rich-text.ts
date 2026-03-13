@@ -401,6 +401,7 @@ export class RichText extends WithDisposable(ShadowlessElement) {
 
     return html`<div
       contenteditable=${this.readonly ? 'false' : 'true'}
+      dir="auto"
       class=${classes}
     ></div>`;
   }

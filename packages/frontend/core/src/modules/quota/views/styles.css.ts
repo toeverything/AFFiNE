@@ -18,12 +18,12 @@ export const bullet = style({
   height: '6px',
   borderRadius: '50%',
   marginTop: '8px',
-  marginLeft: '4px',
-  marginRight: '12px',
+  marginInlineStart: '4px',
+  marginInlineEnd: '12px',
 });
 
 export const modalChildren = style({
-  paddingLeft: '0',
+  paddingInlineStart: '0',
 });
 
 export const modalTitle = style({

@@ -33,7 +33,7 @@ export const includeListTitle = style({
 export const rulesContainerRight = style({
   flex: 2,
   flexDirection: 'column',
-  borderLeft: `1px solid ${cssVarV2.layer.insideBorder.border}`,
+  borderInlineStart: `1px solid ${cssVarV2.layer.insideBorder.border}`,
   overflowX: 'hidden',
   overflowY: 'auto',
 });
@@ -113,7 +113,7 @@ export const collectionEditContainer = style({
   height: '100%',
 });
 export const confirmButton = style({
-  marginLeft: 20,
+  marginInlineStart: 20,
 });
 export const resultPages = style({
   width: '100%',

@@ -79,7 +79,7 @@ export const nameTooltip = style({
 export const nameTooltipContent = style({
   display: 'flex',
   gap: 8,
-  paddingRight: 8,
+  paddingInlineEnd: 8,
   alignItems: 'center',
 });
 export const nameTooltipIcon = style({

@@ -149,7 +149,7 @@ export const styles = css`
 
   .affine-attachment-embed-status {
     position: absolute;
-    left: 14px;
+    inset-inline-start: 14px;
     bottom: 64px;
   }
 

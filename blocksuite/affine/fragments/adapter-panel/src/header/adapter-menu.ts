@@ -29,7 +29,7 @@ export class AdapterMenu extends SignalWatcher(LitElement) {
       padding: 6px 8px;
       border: none;
       background: none;
-      text-align: left;
+      text-align: start;
       cursor: pointer;
       color: var(--affine-text-primary-color);
       font-family: var(--affine-font-family);

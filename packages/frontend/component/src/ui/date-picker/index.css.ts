@@ -24,11 +24,11 @@ export const headerLayoutCellOrigin = style({
   selectors: {
     '[data-is-left="true"] &': {
       justifyContent: 'flex-start',
-      marginLeft: '-12px',
+      marginInlineStart: '-12px',
     },
     '[data-is-right="true"] &': {
       justifyContent: 'flex-end',
-      marginRight: '-24px',
+      marginInlineEnd: '-24px',
     },
   },
 });
@@ -83,7 +83,7 @@ export const monthTitleStyle = style({
   fontSize: cssVar('fontSm'),
 });
 export const yearStyle = style({
-  marginLeft: '8px',
+  marginInlineStart: '8px',
   color: cssVar('textPrimaryColor'),
   fontWeight: '600',
   fontSize: cssVar('fontSm'),
@@ -172,7 +172,7 @@ export const dayStyle = style([
 export const arrowDownStyle = style({
   width: '16px',
   height: '16px',
-  marginLeft: '4px',
+  marginInlineStart: '4px',
   color: cssVar('iconColor'),
   fontSize: cssVar('fontSm'),
   cursor: 'pointer',

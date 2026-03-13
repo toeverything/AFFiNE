@@ -26,6 +26,12 @@ export class ToggleButton extends WithDisposable(ShadowlessElement) {
       transition: opacity 0.2s ease-in-out;
     }
 
+    [dir='rtl'] .toggle-icon {
+      left: auto;
+      right: 0;
+      transform: translateX(100%);
+    }
+
     .toggle-icon:hover {
       background: var(--affine-hover-color);
     }

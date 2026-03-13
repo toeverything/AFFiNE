@@ -39,14 +39,14 @@ const styles = css`
   .close-icon {
     display: flex;
     align-items: center;
-    padding-right: 8px;
+    padding-inline-end: 8px;
     height: 100%;
     cursor: pointer;
   }
 
   .affine-database-search-input-icon {
     position: absolute;
-    left: 0;
+    inset-inline-start: 0;
     font-size: 20px;
     display: flex;
     align-items: center;

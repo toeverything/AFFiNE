@@ -12,8 +12,8 @@ export const blockStyles = css`
   }
   affine-embed-synced-doc-block[data-page-mode] {
     width: calc(100% + var(--embed-padding) * 2);
-    margin-left: calc(-1 * var(--embed-padding));
-    margin-right: calc(-1 * var(--embed-padding));
+    margin-inline-start: calc(-1 * var(--embed-padding));
+    margin-inline-end: calc(-1 * var(--embed-padding));
   }
   .edgeless-block-portal-embed
     > affine-embed-synced-doc-block[data-nested-editor] {
@@ -109,7 +109,7 @@ export const blockStyles = css`
     font-size: 14px;
     font-weight: 600;
     line-height: 22px;
-    margin-left: 8px;
+    margin-inline-start: 8px;
     min-width: 0;
     white-space: nowrap;
     overflow: hidden;
@@ -136,7 +136,7 @@ export const blockStyles = css`
   .affine-embed-synced-doc-container.surface
     > .affine-embed-synced-doc-editor
     > .affine-embed-synced-doc-editor-empty {
-    left: 0;
+    inset-inline-start: 0;
     justify-content: center;
   }
 
@@ -437,7 +437,7 @@ export const cardStyles = css`
       justify-content: center;
       width: 100%;
       height: 267.5px;
-      margin-left: 12px;
+      margin-inline-start: 12px;
       flex-shrink: 0;
     }
     .affine-embed-synced-doc-card-banner img,
@@ -495,7 +495,7 @@ export const cardStyles = css`
     .affine-embed-synced-doc-card-banner {
       width: 340px;
       height: 170px;
-      margin-left: 12px;
+      margin-inline-start: 12px;
     }
     .affine-embed-synced-doc-card-banner img,
     .affine-embed-synced-doc-card-banner object,

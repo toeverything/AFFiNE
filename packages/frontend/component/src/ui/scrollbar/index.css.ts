@@ -11,8 +11,8 @@ export const scrollableContainerRoot = style({
 export const scrollTopBorder = style({
   position: 'absolute',
   top: 0,
-  left: '16px',
-  right: '16px',
+  insetInlineStart: '16px',
+  insetInlineEnd: '16px',
   height: '1px',
   transition: 'opacity .3s .2s',
   opacity: 0,
@@ -45,7 +45,7 @@ export const scrollbar = style({
   ':hover': {
     background: cssVar('backgroundSecondaryColor'),
     width: 'calc(var(--scrollbar-width) + 3px)',
-    borderLeft: `1px solid ${cssVar('borderColor')}`,
+    borderInlineStart: `1px solid ${cssVar('borderColor')}`,
   },
   selectors: {
     '&[data-state="hidden"]': {

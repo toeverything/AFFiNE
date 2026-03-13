@@ -9,7 +9,7 @@ export const itemRoot = style({
   display: 'inline-flex',
   alignItems: 'center',
   borderRadius: '4px',
-  textAlign: 'left',
+  textAlign: 'start',
   color: 'inherit',
   width: '100%',
   minHeight: '30px',
@@ -50,12 +50,12 @@ export const toggleIcon = style({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  marginRight: 12,
+  marginInlineEnd: 12,
 });
 export const itemRenameAnchor = style({
   pointerEvents: 'none',
   position: 'absolute',
-  left: 0,
+  insetInlineStart: 0,
   top: -10,
   width: 10,
   height: 10,
@@ -72,7 +72,7 @@ export const itemContent = style({
 export const postfix = style({
   display: 'flex',
   alignItems: 'center',
-  right: 0,
+  insetInlineEnd: 0,
   position: 'absolute',
   opacity: 0,
   pointerEvents: 'none',
@@ -171,7 +171,7 @@ const draggedOverAnimation = keyframes({
 
 export const contentContainer = style({
   marginTop: 2,
-  paddingLeft: levelIndent,
+  paddingInlineStart: levelIndent,
   position: 'relative',
 });
 
@@ -191,7 +191,7 @@ export const draggedOverEffect = style({
         position: 'absolute',
         zIndex: 1,
         background: cssVar('--affine-hover-color'),
-        left: levelIndent,
+        insetInlineStart: levelIndent,
         top: 0,
         width: `calc(100% - ${levelIndent})`,
         height: '100%',

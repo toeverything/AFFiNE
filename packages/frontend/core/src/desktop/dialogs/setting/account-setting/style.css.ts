@@ -1,7 +1,7 @@
 import { cssVar } from '@toeverything/theme';
 import { globalStyle, style } from '@vanilla-extract/css';
 export const profileInputWrapper = style({
-  marginLeft: '20px',
+  marginInlineStart: '20px',
 });
 globalStyle(`${profileInputWrapper} label`, {
   display: 'block',
@@ -47,8 +47,8 @@ export const successDeleteAccountContainer = style({
   gap: '12px',
 });
 export const confirmContent = style({
-  paddingLeft: '0',
-  paddingRight: '0',
+  paddingInlineStart: '0',
+  paddingInlineEnd: '0',
 });
 export const inputWrapper = style({
   marginTop: '12px',

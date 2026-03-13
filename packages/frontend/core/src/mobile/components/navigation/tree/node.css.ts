@@ -8,7 +8,7 @@ export const levelIndent = createVar();
 export const itemRoot = style({
   display: 'inline-flex',
   alignItems: 'center',
-  textAlign: 'left',
+  textAlign: 'start',
   color: 'inherit',
   width: '100%',
   minHeight: '30px',
@@ -38,7 +38,7 @@ export const itemRoot = style({
     background: cssVar('borderColor'),
     bottom: 0,
     position: 'absolute',
-    right: 0,
+    insetInlineEnd: 0,
   },
 });
 
@@ -106,7 +106,7 @@ export const itemContent = style([
 export const itemRenameAnchor = style({
   pointerEvents: 'none',
   position: 'absolute',
-  left: 0,
+  insetInlineStart: 0,
   top: -10,
   width: 10,
   height: 10,
@@ -114,7 +114,7 @@ export const itemRenameAnchor = style({
 
 export const contentContainer = style({
   marginTop: 0,
-  paddingLeft: levelIndent,
+  paddingInlineStart: levelIndent,
   position: 'relative',
 });
 
