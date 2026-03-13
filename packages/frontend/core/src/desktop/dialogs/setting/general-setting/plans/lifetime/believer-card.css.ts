@@ -104,12 +104,12 @@ globalStyle(`[data-theme='dark'] .${bg} > svg.icons-svg`, {
 
 // --------- style1 ---------
 globalStyle(`.${card}[data-type="1"] .${bg} > svg.affine-svg`, {
-  right: -150,
+  insetInlineEnd: -150,
   top: -100,
 });
 
 globalStyle(`.${card}[data-type="1"] .${bg} > svg.icons-svg`, {
-  right: -20,
+  insetInlineEnd: -20,
   top: 130,
   opacity: 0.5,
 });
@@ -117,14 +117,14 @@ globalStyle(`.${card}[data-type="1"] .${bg} > svg.icons-svg`, {
 // --------- style2 ---------
 globalStyle(`.${card}[data-type="2"] .${bg} > svg.affine-svg`, {
   position: 'absolute',
-  right: -140,
+  insetInlineEnd: -140,
   bottom: -130,
   transform: 'scale(0.58)',
 });
 
 globalStyle(`.${card}[data-type="2"] .${bg} > svg.icons-svg`, {
   position: 'absolute',
-  right: 148,
+  insetInlineEnd: 148,
   bottom: 16,
   opacity: 0.5,
 });

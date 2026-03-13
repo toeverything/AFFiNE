@@ -8,7 +8,7 @@ export const storageProgressContainer = style({
 });
 export const storageProgressWrapper = style({
   flexGrow: 1,
-  marginRight: '20px',
+  marginInlineEnd: '20px',
 });
 globalStyle(`${storageProgressWrapper} .storage-progress-desc`, {
   fontSize: cssVar('fontXs'),

@@ -183,7 +183,10 @@ export function NormalPageHeader({ page, workspace }: PageHeaderProps) {
       ) : null}
 
       {showDivider ? (
-        <Divider orientation="vertical" style={{ height: 20, marginLeft: 4 }} />
+        <Divider
+          orientation="vertical"
+          style={{ height: 20, marginInlineStart: 4 }}
+        />
       ) : null}
     </Header>
   );
