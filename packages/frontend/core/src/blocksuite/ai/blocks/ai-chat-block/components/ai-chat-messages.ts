@@ -28,7 +28,7 @@ export class AIChatBlockMessage extends LitElement {
     .ai-chat-content {
       display: block;
       width: calc(100% - 34px);
-      padding-left: 34px;
+      padding-inline-start: 34px;
       font-weight: 400;
     }
 

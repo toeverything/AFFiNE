@@ -35,8 +35,8 @@ export class ToolFailedCard extends WithDisposable(ShadowlessElement) {
         font-size: 14px;
         font-weight: 500;
         line-height: 24px;
-        margin-left: 0px;
-        margin-right: auto;
+        margin-inline-start: 0px;
+        margin-inline-end: auto;
         color: ${unsafeCSSVarV2('button/error')};
         overflow: hidden;
         text-overflow: ellipsis;

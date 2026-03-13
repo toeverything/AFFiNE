@@ -60,7 +60,7 @@ export class CodeHighlighter extends SignalWatcher(WithDisposable(LitElement)) {
     /* Line numbers */
     .code-highlighter .line-numbers {
       user-select: none;
-      text-align: right;
+      text-align: end;
       line-height: 20px;
       color: ${unsafeCSSVarV2('text/secondary')};
       white-space: nowrap;
