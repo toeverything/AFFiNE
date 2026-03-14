@@ -5,6 +5,7 @@ import type {
   DataViewWidgetProps,
 } from '../../core/widget/types.js';
 import { DataViewHeaderToolsFilter } from './presets/filter/filter.js';
+import { DataViewHeaderToolsGanttZoom } from './presets/gantt-zoom/gantt-zoom.js';
 import { DataViewHeaderToolsSearch } from './presets/search/search.js';
 import { DataViewHeaderToolsSort } from './presets/sort/sort.js';
 import { DataViewHeaderToolsAddRow } from './presets/table-add-row/add-row.js';
@@ -19,6 +20,7 @@ export const toolsWidgetPresets = {
     DataViewHeaderToolsViewOptions
   ),
   tableAddRow: createUniComponentFromWebComponent(DataViewHeaderToolsAddRow),
+  ganttZoom: createUniComponentFromWebComponent(DataViewHeaderToolsGanttZoom),
 };
 export const createWidgetTools = (
   toolsMap: Record<string, DataViewWidget[]>

@@ -839,6 +839,23 @@ const databaseToolGroup: KeyboardToolPanelGroup = {
           .run();
       },
     },
+    {
+      name: 'Gantt view',
+      icon: DatabaseTableViewIcon(),
+      showWhen: ({ std }) =>
+        std.store.schema.flavourSchemaMap.has('affine:database'),
+      action: ({ std }) => {
+        std.command
+          .chain()
+          .pipe(getSelectedModelsCommand)
+          .pipe(insertDatabaseBlockCommand, {
+            viewType: viewPresets.ganttViewMeta.type,
+            place: 'after',
+            removeEmptyLine: true,
+          })
+          .run();
+      },
+    },
   ],
 };
 

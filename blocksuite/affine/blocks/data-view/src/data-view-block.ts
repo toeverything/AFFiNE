@@ -211,6 +211,13 @@ export class DataViewBlockComponent extends CaptionedBlockComponent<DataViewBloc
       widgetPresets.tools.search,
       widgetPresets.tools.viewOptions,
     ],
+    gantt: [
+      widgetPresets.tools.ganttZoom,
+      widgetPresets.tools.filter,
+      widgetPresets.tools.search,
+      widgetPresets.tools.viewOptions,
+      widgetPresets.tools.tableAddRow,
+    ],
   });
 
   get dataSource(): DataSource {

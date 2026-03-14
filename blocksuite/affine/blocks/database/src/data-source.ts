@@ -24,7 +24,7 @@ import { propertyPresets } from '@blocksuite/data-view/property-presets';
 import { IS_MOBILE } from '@blocksuite/global/env';
 import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
 import type { EditorHost } from '@blocksuite/std';
-import { type BlockModel } from '@blocksuite/store';
+import { type BlockModel, nanoid } from '@blocksuite/store';
 import { computed, type ReadonlySignal, signal } from '@preact/signals-core';
 
 import { getIcon } from './block-icons.js';
@@ -624,11 +624,68 @@ export const databaseViewInitTemplate = (
   datasource: DatabaseBlockDataSource,
   viewType: string
 ) => {
+  if (viewType === 'gantt') {
+    initGanttTemplate(datasource);
+    return;
+  }
   Array.from({ length: 3 }).forEach(() => {
     datasource.rowAdd('end');
   });
   datasource.viewManager.viewAdd(viewType);
 };
+
+function initGanttTemplate(datasource: DatabaseBlockDataSource) {
+  // Add a Status (select) column with pre-defined options
+  const statusColId = datasource.propertyAdd('end', {
+    type: 'select',
+    name: 'Status',
+  });
+
+  if (statusColId) {
+    const options = [
+      { id: nanoid(), value: 'Not Started', color: 'var(--affine-tag-gray)' },
+      { id: nanoid(), value: 'In Progress', color: 'var(--affine-tag-blue)' },
+      { id: nanoid(), value: 'Done', color: 'var(--affine-tag-green)' },
+    ];
+    datasource.propertyDataSet(statusColId, { options });
+
+    // Add one pre-filled row
+    const rowId = datasource.rowAdd('end');
+
+    // Set the title text on the row
+    const model = datasource.doc.getBlock(rowId)?.model;
+    if (model && 'text' in model && model.text) {
+      model.text.insert('Sample Task', 0);
+    }
+
+    // Create the view (this auto-creates Start Date and End Date columns via defaultData)
+    const viewId = datasource.viewManager.viewAdd('gantt');
+
+    // Get the view data to find the date column IDs
+    const viewData = datasource.viewManager.viewDataGet(viewId) as
+      | { startDateColumnId?: string; endDateColumnId?: string }
+      | undefined;
+
+    if (viewData?.startDateColumnId && viewData?.endDateColumnId) {
+      const now = new Date();
+      now.setHours(0, 0, 0, 0);
+      const startTs = now.getTime();
+      const end = new Date(now);
+      end.setDate(end.getDate() + 7);
+      const endTs = end.getTime();
+
+      datasource.cellValueChange(rowId, viewData.startDateColumnId, startTs);
+      datasource.cellValueChange(rowId, viewData.endDateColumnId, endTs);
+    }
+
+    // Set status to "In Progress"
+    datasource.cellValueChange(rowId, statusColId, options[1].id);
+  } else {
+    // Fallback if column creation fails
+    datasource.rowAdd('end');
+    datasource.viewManager.viewAdd('gantt');
+  }
+}
 export const convertToDatabase = (host: EditorHost, viewType: string) => {
   const [_, ctx] = host.std.command.exec(getSelectedModelsCommand, {
     types: ['block', 'text'],

@@ -9,7 +9,11 @@ import {
 } from '@blocksuite/icons/lit';
 
 import { insertDatabaseBlockCommand } from '../commands';
-import { KanbanViewTooltip, TableViewTooltip } from './tooltips';
+import {
+  GanttViewTooltip,
+  KanbanViewTooltip,
+  TableViewTooltip,
+} from './tooltips';
 
 export const databaseSlashMenuConfig: SlashMenuConfig = {
   disableWhen: ({ model }) => model.flavour === 'affine:database',
@@ -65,6 +69,39 @@ export const databaseSlashMenuConfig: SlashMenuConfig = {
           .pipe(getSelectedModelsCommand)
           .pipe(insertDatabaseBlockCommand, {
             viewType: viewPresets.kanbanViewMeta.type,
+            place: 'after',
+            removeEmptyLine: true,
+          })
+          .pipe(({ insertedDatabaseBlockId }) => {
+            if (insertedDatabaseBlockId) {
+              const telemetry = std.getOptional(TelemetryProvider);
+              telemetry?.track('BlockCreated', {
+                blockType: 'affine:database',
+              });
+            }
+          })
+          .run();
+      },
+    },
+
+    {
+      name: 'Gantt View',
+      description: 'Plan tasks on a timeline.',
+      searchAlias: ['database', 'gantt', 'timeline'],
+      icon: DatabaseTableViewIcon(),
+      tooltip: {
+        figure: GanttViewTooltip,
+        caption: 'Gantt View',
+      },
+      group: '7_Database@3',
+      when: ({ model }) =>
+        !isInsideBlockByFlavour(model.store, model, 'affine:edgeless-text'),
+      action: ({ std }) => {
+        std.command
+          .chain()
+          .pipe(getSelectedModelsCommand)
+          .pipe(insertDatabaseBlockCommand, {
+            viewType: viewPresets.ganttViewMeta.type,
             place: 'after',
             removeEmptyLine: true,
           })

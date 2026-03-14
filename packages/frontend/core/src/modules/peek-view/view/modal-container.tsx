@@ -27,7 +27,9 @@ const contentOptions: Dialog.DialogContentProps = {
     if (
       el.closest('[data-peek-view-wrapper]') ||
       // workaround for slash menu click outside issue
-      el.closest('affine-slash-menu')
+      el.closest('affine-slash-menu') ||
+      // prevent portals (date picker, popups) from closing the peek view
+      el.closest('.blocksuite-portal')
     ) {
       e.preventDefault();
     }

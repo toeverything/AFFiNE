@@ -4,6 +4,7 @@ import { FilterBar } from './quick-setting-bar/filter/list-view.js';
 import { FilterRootView } from './quick-setting-bar/filter/root-panel-view.js';
 import { SortRootView } from './quick-setting-bar/sort/root-panel.js';
 import { DataViewHeaderToolsFilter } from './tools/presets/filter/filter.js';
+import { DataViewHeaderToolsGanttZoom } from './tools/presets/gantt-zoom/gantt-zoom.js';
 import { DataViewHeaderToolsSearch } from './tools/presets/search/search.js';
 import { DataViewHeaderToolsSort } from './tools/presets/sort/sort.js';
 import { DataViewHeaderToolsAddRow } from './tools/presets/table-add-row/add-row.js';
@@ -38,4 +39,8 @@ export function widgetPresetsEffects() {
   customElements.define('filter-root-view', FilterRootView);
   customElements.define('sort-root-view', SortRootView);
   customElements.define('data-view-header-views', DataViewHeaderViews);
+  customElements.define(
+    'data-view-header-tools-gantt-zoom',
+    DataViewHeaderToolsGanttZoom
+  );
 }

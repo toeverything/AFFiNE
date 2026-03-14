@@ -166,6 +166,32 @@ export const KanbanViewTooltip = html`<svg width="170" height="106" viewBox="0 0
 `;
 
 // prettier-ignore
+export const GanttViewTooltip = html`<svg width="170" height="106" viewBox="0 0 170 106" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="170" height="106" rx="2" fill="white"/>
+<mask id="mask0_gantt" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="170" height="106">
+<rect width="170" height="106" rx="2" fill="white"/>
+</mask>
+<g mask="url(#mask0_gantt)">
+<text fill="#8E8D91" xml:space="preserve" style="white-space: pre" font-family="Inter" font-size="10" letter-spacing="0px"><tspan x="8" y="16.6364">Plan tasks on a timeline.</tspan></text>
+<rect x="7.5" y="26.5" width="169" height="84" rx="3.5" fill="white" stroke="#E3E2E4"/>
+<text fill="#121212" xml:space="preserve" style="white-space: pre" font-family="Inter" font-size="9" font-weight="500" letter-spacing="0em"><tspan x="17" y="42.7727">Untitled Gantt</tspan></text>
+<line x1="17" y1="50.75" x2="176" y2="50.75" stroke="#E3E2E4" stroke-width="0.5"/>
+<line x1="55.25" y1="26" x2="55.25" y2="110" stroke="#E3E2E4" stroke-width="0.5"/>
+<text fill="#8E8D91" xml:space="preserve" style="white-space: pre" font-family="Inter" font-size="5" letter-spacing="0em"><tspan x="17" y="58.8182">Task 1</tspan></text>
+<text fill="#8E8D91" xml:space="preserve" style="white-space: pre" font-family="Inter" font-size="5" letter-spacing="0em"><tspan x="17" y="71.8182">Task 2</tspan></text>
+<text fill="#8E8D91" xml:space="preserve" style="white-space: pre" font-family="Inter" font-size="5" letter-spacing="0em"><tspan x="17" y="84.8182">Task 3</tspan></text>
+<text fill="#8E8D91" xml:space="preserve" style="white-space: pre" font-family="Inter" font-size="4" letter-spacing="0em"><tspan x="62" y="48.5">Mar 1</tspan><tspan x="82" y="48.5">Mar 8</tspan><tspan x="102" y="48.5">Mar 15</tspan><tspan x="125" y="48.5">Mar 22</tspan><tspan x="148" y="48.5">Mar 29</tspan></text>
+<rect x="62" y="55" width="40" height="8" rx="2" fill="#1E96EB" opacity="0.8"/>
+<rect x="75" y="68" width="50" height="8" rx="2" fill="#1E96EB" opacity="0.8"/>
+<rect x="90" y="81" width="35" height="8" rx="2" fill="#1E96EB" opacity="0.8"/>
+<line x1="17" y1="63.75" x2="176" y2="63.75" stroke="#E3E2E4" stroke-width="0.5"/>
+<line x1="17" y1="76.75" x2="176" y2="76.75" stroke="#E3E2E4" stroke-width="0.5"/>
+<line x1="17" y1="89.75" x2="176" y2="89.75" stroke="#E3E2E4" stroke-width="0.5"/>
+</g>
+</svg>
+`;
+
+// prettier-ignore
 export const ToDoListTooltip = html`<svg width="170" height="68" viewBox="0 0 170 68" fill="none" xmlns="http://www.w3.org/2000/svg">
 <rect width="170" height="68" rx="2" fill="white"/>
 <mask id="mask0_16460_960" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="170" height="68">

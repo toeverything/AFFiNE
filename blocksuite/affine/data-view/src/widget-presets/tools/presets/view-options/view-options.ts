@@ -9,6 +9,7 @@ import {
 import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
 import {
   ArrowRightSmallIcon,
+  DateTimeIcon,
   DeleteIcon,
   DuplicateIcon,
   FilterIcon,
@@ -39,6 +40,7 @@ import { popCreateSort } from '../../../../core/sort/add-sort.js';
 import { sortTraitKey } from '../../../../core/sort/manager.js';
 import { createSortUtils } from '../../../../core/sort/utils.js';
 import { WidgetBase } from '../../../../core/widget/widget-base.js';
+import type { GanttSingleView } from '../../../../view-presets/gantt/gantt-view-manager.js';
 import { popFilterRoot } from '../../../quick-setting-bar/filter/root-panel-view.js';
 import { popSortRoot } from '../../../quick-setting-bar/sort/root-panel.js';
 
@@ -326,6 +328,86 @@ const createSettingMenus = (
       })
     );
   }
+
+  // Gantt-specific settings
+  if (view.type === 'gantt') {
+    const ganttView = view as GanttSingleView;
+    const dateProperties = view.propertiesRaw$.value.filter(
+      p => p.type$.value === 'date'
+    );
+
+    // Start Date column picker
+    settingItems.push(
+      menu.subMenu({
+        name: 'Start Date',
+        prefix: DateTimeIcon(),
+        postfix: html`<div style="font-size: 14px;">
+          ${dateProperties.find(
+            p => p.id === ganttView.startDateColumnId$.value
+          )?.name$.value ?? 'None'}
+        </div>`,
+        options: {
+          items: dateProperties.map(prop =>
+            menu.action({
+              name: prop.name$.value,
+              isSelected: prop.id === ganttView.startDateColumnId$.value,
+              select: () => {
+                ganttView.setStartDateColumn(prop.id);
+              },
+            })
+          ),
+        },
+      })
+    );
+
+    // End Date column picker
+    settingItems.push(
+      menu.subMenu({
+        name: 'End Date',
+        prefix: DateTimeIcon(),
+        postfix: html`<div style="font-size: 14px;">
+          ${dateProperties.find(p => p.id === ganttView.endDateColumnId$.value)
+            ?.name$.value ?? 'None'}
+        </div>`,
+        options: {
+          items: dateProperties.map(prop =>
+            menu.action({
+              name: prop.name$.value,
+              isSelected: prop.id === ganttView.endDateColumnId$.value,
+              select: () => {
+                ganttView.setEndDateColumn(prop.id);
+              },
+            })
+          ),
+        },
+      })
+    );
+
+    // Time scale picker
+    const currentScale = ganttView.timeScale$.value;
+    const scaleLabels = { day: 'Day', week: 'Week', month: 'Month' } as const;
+    settingItems.push(
+      menu.subMenu({
+        name: 'Time Scale',
+        prefix: LayoutIcon(),
+        postfix: html`<div style="font-size: 14px;">
+          ${scaleLabels[currentScale]}
+        </div>`,
+        options: {
+          items: (['day', 'week', 'month'] as const).map(scale =>
+            menu.action({
+              name: scaleLabels[scale],
+              isSelected: scale === currentScale,
+              select: () => {
+                ganttView.setTimeScale(scale);
+              },
+            })
+          ),
+        },
+      })
+    );
+  }
+
   return settingItems;
 };
 export const popViewOptions = (
@@ -376,7 +458,7 @@ export const popViewOptions = (
                 const buttonData: MenuButtonData = {
                   content: () => html`
                     <div
-                      style="width:100%;display: flex;flex-direction: column;align-items: center;justify-content: center;padding: 6px 16px;white-space: nowrap"
+                      style="width:100%;display: flex;flex-direction: column;align-items: center;justify-content: center;padding: 6px 8px;white-space: nowrap"
                     >
                       <div style="${iconStyle}">
                         ${renderUniLit(meta.renderer.icon)}
@@ -421,7 +503,7 @@ export const popViewOptions = (
                 Layout
               </div>
             </div>
-            <div style="display:flex;gap:8px;margin-top:8px;">
+            <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
               ${viewTypeItems}
             </div>
           `;

@@ -185,6 +185,13 @@ export class RecordDetail extends SignalWatcher(
     this.dataset.widgetId = 'affine-detail-widget';
   }
 
+  override disconnectedCallback() {
+    // Clear selection so any active cell's beforeExitEditingMode() is called
+    // (e.g. to clean up date picker portals when the detail panel closes)
+    this.selection.selection = undefined;
+    super.disconnectedCallback();
+  }
+
   row$ = computed(() => {
     return this.view.rowGetOrCreate(this.rowId);
   });

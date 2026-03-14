@@ -51,6 +51,7 @@ export const previewIconMap = {
   image: ImageIcon(_16px),
   table: DatabaseTableViewIcon(_16px),
   kanban: DatabaseKanbanViewIcon(_16px),
+  gantt: DatabaseTableViewIcon(_16px),
   attachment: AttachmentIcon(_16px),
 };
 
