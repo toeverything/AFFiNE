@@ -1777,6 +1777,7 @@ export interface Mutation {
   removeWorkspaceFeature: Scalars['Boolean']['output'];
   /** Request to apply the subscription in advance */
   requestApplySubscription: Array<SubscriptionType>;
+  resendMemberInvite: Scalars['Boolean']['output'];
   /** Resolve a comment or not */
   resolveComment: Scalars['Boolean']['output'];
   resumeSubscription: SubscriptionType;
@@ -2122,6 +2123,11 @@ export interface MutationRemoveWorkspaceFeatureArgs {
 
 export interface MutationRequestApplySubscriptionArgs {
   transactionId: Scalars['String']['input'];
+}
+
+export interface MutationResendMemberInviteArgs {
+  inviteId: Scalars['String']['input'];
+  workspaceId: Scalars['String']['input'];
 }
 
 export interface MutationResolveCommentArgs {
@@ -7502,6 +7508,16 @@ export type GrantWorkspaceTeamMemberMutation = {
   grantMember: boolean;
 };
 
+export type ResendWorkspaceTeamMemberInviteMutationVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  inviteId: Scalars['String']['input'];
+}>;
+
+export type ResendWorkspaceTeamMemberInviteMutation = {
+  __typename?: 'Mutation';
+  resendMemberInvite: boolean;
+};
+
 export type Queries =
   | {
       name: 'listUserAccessTokensQuery';
@@ -8459,4 +8475,9 @@ export type Mutations =
       name: 'grantWorkspaceTeamMemberMutation';
       variables: GrantWorkspaceTeamMemberMutationVariables;
       response: GrantWorkspaceTeamMemberMutation;
+    }
+  | {
+      name: 'resendWorkspaceTeamMemberInviteMutation';
+      variables: ResendWorkspaceTeamMemberInviteMutationVariables;
+      response: ResendWorkspaceTeamMemberInviteMutation;
     };

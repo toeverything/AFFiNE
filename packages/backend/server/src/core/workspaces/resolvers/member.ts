@@ -234,6 +234,39 @@ export class WorkspaceMemberResolver {
     return results;
   }
 
+  @Mutation(() => Boolean)
+  async resendMemberInvite(
+    @CurrentUser() me: CurrentUser,
+    @Args('workspaceId') workspaceId: string,
+    @Args('inviteId') inviteId: string
+  ) {
+    await this.ac
+      .user(me.id)
+      .workspace(workspaceId)
+      .assert('Workspace.Users.Manage');
+
+    const role = await this.models.workspaceUser.getById(inviteId);
+
+    if (!role || role.workspaceId !== workspaceId) {
+      throw new MemberNotFoundInSpace({ spaceId: workspaceId });
+    }
+
+    if (role.status === WorkspaceMemberStatus.Accepted) {
+      throw new AlreadyInSpace({ spaceId: workspaceId });
+    }
+
+    if (role.status === WorkspaceMemberStatus.UnderReview) {
+      throw new InvalidInvitation();
+    }
+
+    this.event.emit('workspace.members.invite', {
+      inviteId,
+      inviterId: me.id,
+    });
+
+    return true;
+  }
+
   @ResolveField(() => InviteLink, {
     description: 'invite link for workspace',
     nullable: true,

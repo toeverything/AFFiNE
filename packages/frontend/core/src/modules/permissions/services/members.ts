@@ -59,4 +59,11 @@ export class WorkspaceMembersService extends Service {
       permission
     );
   }
+
+  async resendMemberInvite(inviteId: string) {
+    return await this.store.resendMemberInvite(
+      this.workspaceService.workspace.id,
+      inviteId
+    );
+  }
 }

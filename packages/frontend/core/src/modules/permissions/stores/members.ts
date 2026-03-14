@@ -5,6 +5,7 @@ import {
   grantWorkspaceTeamMemberMutation,
   inviteByEmailsMutation,
   type Permission,
+  resendWorkspaceTeamMemberInviteMutation,
   revokeInviteLinkMutation,
   revokeMemberPermissionMutation,
   type WorkspaceInviteLinkExpireTime,
@@ -137,5 +138,19 @@ export class WorkspaceMembersStore extends Store {
       },
     });
     return member.grantMember;
+  }
+
+  async resendMemberInvite(workspaceId: string, inviteId: string) {
+    if (!this.workspaceServerService.server) {
+      throw new Error('No Server');
+    }
+    const result = await this.workspaceServerService.server.gql({
+      query: resendWorkspaceTeamMemberInviteMutation,
+      variables: {
+        workspaceId,
+        inviteId,
+      },
+    });
+    return result.resendMemberInvite;
   }
 }

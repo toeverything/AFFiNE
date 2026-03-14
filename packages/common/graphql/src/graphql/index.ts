@@ -3105,3 +3105,11 @@ export const grantWorkspaceTeamMemberMutation = {
   grantMember(workspaceId: $workspaceId, userId: $userId, permission: $permission)
 }`,
 };
+
+export const resendWorkspaceTeamMemberInviteMutation = {
+  id: 'resendWorkspaceTeamMemberInviteMutation' as const,
+  op: 'resendWorkspaceTeamMemberInvite',
+  query: `mutation resendWorkspaceTeamMemberInvite($workspaceId: String!, $inviteId: String!) {
+  resendMemberInvite(workspaceId: $workspaceId, inviteId: $inviteId)
+}`,
+};

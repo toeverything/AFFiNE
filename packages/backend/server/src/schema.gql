@@ -1596,6 +1596,7 @@ type Mutation {
 
   """Request to apply the subscription in advance"""
   requestApplySubscription(transactionId: String!): [SubscriptionType!]!
+  resendMemberInvite(inviteId: String!, workspaceId: String!): Boolean!
 
   """Resolve a comment or not"""
   resolveComment(input: CommentResolveInput!): Boolean!

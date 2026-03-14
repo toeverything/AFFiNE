@@ -6,6 +6,7 @@ import {
   getMembersByWorkspaceIdQuery,
   inviteByEmailsMutation,
   leaveWorkspaceMutation,
+  resendWorkspaceTeamMemberInviteMutation,
   revokeMemberPermissionMutation,
   WorkspaceInviteLinkExpireTime,
   WorkspaceMemberStatus,
@@ -79,6 +80,40 @@ e2e('should invite a user', async t => {
     },
   });
   t.is(getInviteInfo2.status, WorkspaceMemberStatus.Accepted);
+});
+
+e2e('should resend invitation email for pending member', async t => {
+  const { owner, workspace } = await createWorkspace();
+  const member = await app.create(Mockers.User);
+
+  await app.login(owner);
+  const inviteResult = await app.gql({
+    query: inviteByEmailsMutation,
+    variables: {
+      emails: [member.email],
+      workspaceId: workspace.id,
+    },
+  });
+  const inviteId = inviteResult.inviteMembers[0].inviteId;
+  t.truthy(inviteId, 'failed to create invitation');
+
+  // consume initial invitation event
+  await app.queue.waitFor('notification.sendInvitation');
+
+  const { resendMemberInvite } = await app.gql({
+    query: resendWorkspaceTeamMemberInviteMutation,
+    variables: {
+      workspaceId: workspace.id,
+      inviteId: inviteId!,
+    },
+  });
+  t.true(resendMemberInvite, 'failed to resend invitation');
+
+  const resendInvitationNotification = await app.queue.waitFor(
+    'notification.sendInvitation'
+  );
+  t.is(resendInvitationNotification.payload.inviterId, owner.id);
+  t.is(resendInvitationNotification.payload.inviteId, inviteId);
 });
 
 e2e('should leave a workspace', async t => {
