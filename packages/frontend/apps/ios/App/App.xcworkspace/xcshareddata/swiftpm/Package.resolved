@@ -32,8 +32,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Lakr233/ListViewKit",
       "state" : {
-        "revision" : "5dea05a52a6c2c7bb013a5925c517d6e32940605",
-        "version" : "1.1.8"
+        "revision" : "07f7adfa0629f8647991e3c148b7d3e060fe2917",
+        "version" : "1.2.0"
       }
     },
     {
