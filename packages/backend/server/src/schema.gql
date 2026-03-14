@@ -1596,7 +1596,7 @@ type Mutation {
 
   """Request to apply the subscription in advance"""
   requestApplySubscription(transactionId: String!): [SubscriptionType!]!
-  resendMemberInvite(inviteId: String!, workspaceId: String!): Boolean!
+  resendMemberInvite(inviteId: String!, workspaceId: String!): ResendMemberInviteResult!
 
   """Resolve a comment or not"""
   resolveComment(input: CommentResolveInput!): Boolean!
@@ -2007,6 +2007,20 @@ type ReplyObjectType {
 input ReplyUpdateInput {
   content: JSONObject!
   id: ID!
+}
+
+type ResendMemberInviteResult {
+  """Whether the invitation resend is accepted and queued"""
+  allowed: Boolean!
+
+  """Current resend backoff attempt for this invitee email"""
+  attempt: Int!
+
+  """The next time resend is allowed"""
+  nextAllowedAt: DateTime!
+
+  """Milliseconds until resend is allowed again"""
+  retryAfterMs: Int!
 }
 
 type ResponseTooLargeErrorDataType {

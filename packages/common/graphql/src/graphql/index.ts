@@ -3110,6 +3110,11 @@ export const resendWorkspaceTeamMemberInviteMutation = {
   id: 'resendWorkspaceTeamMemberInviteMutation' as const,
   op: 'resendWorkspaceTeamMemberInvite',
   query: `mutation resendWorkspaceTeamMemberInvite($workspaceId: String!, $inviteId: String!) {
-  resendMemberInvite(workspaceId: $workspaceId, inviteId: $inviteId)
+  resendMemberInvite(workspaceId: $workspaceId, inviteId: $inviteId) {
+    allowed
+    attempt
+    retryAfterMs
+    nextAllowedAt
+  }
 }`,
 };

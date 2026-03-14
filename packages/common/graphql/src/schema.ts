@@ -1777,7 +1777,7 @@ export interface Mutation {
   removeWorkspaceFeature: Scalars['Boolean']['output'];
   /** Request to apply the subscription in advance */
   requestApplySubscription: Array<SubscriptionType>;
-  resendMemberInvite: Scalars['Boolean']['output'];
+  resendMemberInvite: ResendMemberInviteResult;
   /** Resolve a comment or not */
   resolveComment: Scalars['Boolean']['output'];
   resumeSubscription: SubscriptionType;
@@ -2706,6 +2706,18 @@ export interface ReplyObjectType {
 export interface ReplyUpdateInput {
   content: Scalars['JSONObject']['input'];
   id: Scalars['ID']['input'];
+}
+
+export interface ResendMemberInviteResult {
+  __typename?: 'ResendMemberInviteResult';
+  /** Whether the invitation resend is accepted and queued */
+  allowed: Scalars['Boolean']['output'];
+  /** Current resend backoff attempt for this invitee email */
+  attempt: Scalars['Int']['output'];
+  /** The next time resend is allowed */
+  nextAllowedAt: Scalars['DateTime']['output'];
+  /** Milliseconds until resend is allowed again */
+  retryAfterMs: Scalars['Int']['output'];
 }
 
 export interface ResponseTooLargeErrorDataType {
@@ -7515,7 +7527,13 @@ export type ResendWorkspaceTeamMemberInviteMutationVariables = Exact<{
 
 export type ResendWorkspaceTeamMemberInviteMutation = {
   __typename?: 'Mutation';
-  resendMemberInvite: boolean;
+  resendMemberInvite: {
+    __typename?: 'ResendMemberInviteResult';
+    allowed: boolean;
+    attempt: number;
+    retryAfterMs: number;
+    nextAllowedAt: string;
+  };
 };
 
 export type Queries =

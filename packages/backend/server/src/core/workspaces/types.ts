@@ -2,6 +2,7 @@ import {
   Field,
   ID,
   InputType,
+  Int,
   ObjectType,
   OmitType,
   PartialType,
@@ -181,6 +182,29 @@ export class InviteResult {
     description: 'Invite error',
   })
   error?: object;
+}
+
+@ObjectType()
+export class ResendMemberInviteResult {
+  @Field(() => Boolean, {
+    description: 'Whether the invitation resend is accepted and queued',
+  })
+  allowed!: boolean;
+
+  @Field(() => Int, {
+    description: 'Current resend backoff attempt for this invitee email',
+  })
+  attempt!: number;
+
+  @Field(() => Int, {
+    description: 'Milliseconds until resend is allowed again',
+  })
+  retryAfterMs!: number;
+
+  @Field(() => Date, {
+    description: 'The next time resend is allowed',
+  })
+  nextAllowedAt!: Date;
 }
 
 const Day = 24 * 60 * 60 * 1000;

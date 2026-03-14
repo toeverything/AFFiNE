@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+
 import {
   Args,
   Int,
@@ -46,9 +48,23 @@ import {
   InviteLink,
   InviteResult,
   InviteUserType,
+  ResendMemberInviteResult,
   WorkspaceInviteLinkExpireTime,
   WorkspaceType,
 } from '../types';
+
+const MEMBER_RESEND_INVITE_BACKOFF_KEY_PREFIX =
+  'workspace:member-resend-invite:backoff:';
+const MEMBER_RESEND_INVITE_BACKOFF_BASE_MS = 30 * 1000;
+const MEMBER_RESEND_INVITE_BACKOFF_MAX_MS = 60 * 60 * 1000;
+const MEMBER_RESEND_INVITE_BACKOFF_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const MEMBER_RESEND_INVITE_BACKOFF_RESET_AFTER_MS = 24 * 60 * 60 * 1000;
+
+type MemberResendInviteBackoffState = {
+  attempt: number;
+  nextAllowedAt: string;
+  lastSentAt: string;
+};
 
 /**
  * Workspace team resolver
@@ -67,6 +83,41 @@ export class WorkspaceMemberResolver {
     private readonly workspaceService: WorkspaceService,
     private readonly quota: QuotaService
   ) {}
+
+  private getMemberResendInviteBackoffKey(workspaceId: string, email: string) {
+    const normalizedEmail = email.trim().toLowerCase();
+    const emailHash = createHash('sha256')
+      .update(normalizedEmail)
+      .digest('hex');
+    return `${MEMBER_RESEND_INVITE_BACKOFF_KEY_PREFIX}${workspaceId}:${emailHash}`;
+  }
+
+  private async getMemberResendInviteBackoff(
+    workspaceId: string,
+    email: string
+  ) {
+    const key = this.getMemberResendInviteBackoffKey(workspaceId, email);
+    const value = await this.cache.get<MemberResendInviteBackoffState>(key);
+
+    if (!value || !value.attempt || !value.nextAllowedAt || !value.lastSentAt) {
+      return null;
+    }
+
+    const nextAllowedAt = new Date(value.nextAllowedAt);
+    const lastSentAt = new Date(value.lastSentAt);
+    if (
+      Number.isNaN(nextAllowedAt.getTime()) ||
+      Number.isNaN(lastSentAt.getTime())
+    ) {
+      return null;
+    }
+
+    return {
+      attempt: value.attempt,
+      nextAllowedAt,
+      lastSentAt,
+    };
+  }
 
   @ResolveField(() => UserType, {
     description: 'Owner of workspace',
@@ -234,7 +285,7 @@ export class WorkspaceMemberResolver {
     return results;
   }
 
-  @Mutation(() => Boolean)
+  @Mutation(() => ResendMemberInviteResult)
   async resendMemberInvite(
     @CurrentUser() me: CurrentUser,
     @Args('workspaceId') workspaceId: string,
@@ -259,12 +310,68 @@ export class WorkspaceMemberResolver {
       throw new InvalidInvitation();
     }
 
+    const invitee = await this.models.user.get(role.userId);
+    if (!invitee) {
+      throw new UserNotFound();
+    }
+
+    const backoff = await this.getMemberResendInviteBackoff(
+      workspaceId,
+      invitee.email
+    );
+    const now = new Date();
+    let attempt = backoff?.attempt ?? 0;
+
+    if (
+      backoff &&
+      now.getTime() - backoff.lastSentAt.getTime() >=
+        MEMBER_RESEND_INVITE_BACKOFF_RESET_AFTER_MS
+    ) {
+      attempt = 0;
+    } else if (backoff && now.getTime() < backoff.nextAllowedAt.getTime()) {
+      return {
+        allowed: false,
+        attempt,
+        retryAfterMs: Math.max(
+          backoff.nextAllowedAt.getTime() - now.getTime(),
+          0
+        ),
+        nextAllowedAt: backoff.nextAllowedAt,
+      };
+    }
+
+    const nextAttempt = attempt + 1;
+    const retryAfterMs = Math.min(
+      MEMBER_RESEND_INVITE_BACKOFF_BASE_MS * 2 ** (nextAttempt - 1),
+      MEMBER_RESEND_INVITE_BACKOFF_MAX_MS
+    );
+    const nextAllowedAt = new Date(now.getTime() + retryAfterMs);
+    const key = this.getMemberResendInviteBackoffKey(
+      workspaceId,
+      invitee.email
+    );
+
+    await this.cache.set(
+      key,
+      {
+        attempt: nextAttempt,
+        nextAllowedAt: nextAllowedAt.toISOString(),
+        lastSentAt: now.toISOString(),
+      },
+      { ttl: MEMBER_RESEND_INVITE_BACKOFF_TTL_MS }
+    );
+
     this.event.emit('workspace.members.invite', {
       inviteId,
       inviterId: me.id,
     });
 
-    return true;
+    return {
+      allowed: true,
+      attempt: nextAttempt,
+      retryAfterMs,
+      nextAllowedAt,
+    };
   }
 
   @ResolveField(() => InviteLink, {

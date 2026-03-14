@@ -4199,6 +4199,16 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.payment.member.team.revoke"](): string;
     /**
+      * `Resend invite`
+      */
+    ["com.affine.payment.member.team.resendInvite"](): string;
+    /**
+      * `Resend in {{second}}s`
+      */
+    ["com.affine.payment.member.team.resendInvite.hint"](options: {
+        readonly second: string;
+    }): string;
+    /**
       * `Approve`
       */
     ["com.affine.payment.member.team.approve"](): string;
@@ -4264,6 +4274,27 @@ export function useAFFiNEI18N(): {
     ["com.affine.payment.member.team.revoke.notify.message"](options: {
         readonly name: string;
     }): string;
+    /**
+      * `Invitation resent`
+      */
+    ["com.affine.payment.member.team.resendInvite.notify.title"](): string;
+    /**
+      * `You have resent the invitation for {{name}}`
+      */
+    ["com.affine.payment.member.team.resendInvite.notify.message"](options: {
+        readonly name: string;
+    }): string;
+    /**
+      * `Please wait before resending`
+      */
+    ["com.affine.payment.member.team.resendInvite.cooldown.notify.title"](): string;
+    /**
+      * `You can resend the invitation for {{name}} in {{second}}s`
+      */
+    ["com.affine.payment.member.team.resendInvite.cooldown.notify.message"](options: Readonly<{
+        name: string;
+        second: string;
+    }>): string;
     /**
       * `Request approved`
       */

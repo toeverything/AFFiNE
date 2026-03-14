@@ -5,5 +5,10 @@ mutation resendWorkspaceTeamMemberInvite(
   resendMemberInvite(
     workspaceId: $workspaceId
     inviteId: $inviteId
-  )
+  ) {
+    allowed
+    attempt
+    retryAfterMs
+    nextAllowedAt
+  }
 }

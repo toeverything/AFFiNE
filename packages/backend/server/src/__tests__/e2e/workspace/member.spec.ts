@@ -107,13 +107,32 @@ e2e('should resend invitation email for pending member', async t => {
       inviteId: inviteId!,
     },
   });
-  t.true(resendMemberInvite, 'failed to resend invitation');
+  t.true(resendMemberInvite.allowed, 'failed to resend invitation');
+  t.is(resendMemberInvite.attempt, 1);
+  t.true(resendMemberInvite.retryAfterMs > 0);
 
   const resendInvitationNotification = await app.queue.waitFor(
     'notification.sendInvitation'
   );
   t.is(resendInvitationNotification.payload.inviterId, owner.id);
   t.is(resendInvitationNotification.payload.inviteId, inviteId);
+
+  const invitationJobCount = app.queue.count('notification.sendInvitation');
+  const { resendMemberInvite: blockedResend } = await app.gql({
+    query: resendWorkspaceTeamMemberInviteMutation,
+    variables: {
+      workspaceId: workspace.id,
+      inviteId: inviteId!,
+    },
+  });
+  t.false(blockedResend.allowed);
+  t.is(blockedResend.attempt, 1);
+  t.true(blockedResend.retryAfterMs > 0);
+  t.is(
+    app.queue.count('notification.sendInvitation'),
+    invitationJobCount,
+    'should not enqueue invitation notification while in cooldown'
+  );
 });
 
 e2e('should leave a workspace', async t => {
