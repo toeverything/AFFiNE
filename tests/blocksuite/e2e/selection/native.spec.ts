@@ -1395,12 +1395,9 @@ test('should select with shift-click', async ({ page }) => {
 
   await focusRichText(page);
 
-  await page
-    .locator('rich-text')
-    .filter({ hasText: '456' })
-    .first()
-    .locator('[data-v-text]')
-    .click({ modifiers: ['Shift'] });
+  const targetRichText = page.locator('rich-text').filter({ hasText: /^456$/ });
+  await expect(targetRichText).toHaveCount(1);
+  await targetRichText.locator('[data-v-text]').click({ modifiers: ['Shift'] });
   expect(await getSelectedText(page)).toContain('4567');
 });
 
