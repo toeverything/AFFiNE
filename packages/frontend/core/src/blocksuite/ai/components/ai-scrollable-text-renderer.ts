@@ -45,7 +45,6 @@ export class AIScrollableTextRenderer extends WithDisposable(
   private readonly _throttledScrollToEnd = throttle(this._scrollToEnd, 300);
 
   private readonly _onWheel = (e: WheelEvent) => {
-    e.stopPropagation();
     if (this.state === 'generating') {
       e.preventDefault();
     }
