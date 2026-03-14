@@ -1,4 +1,3 @@
-import type { Tool, ToolSet } from 'ai';
 import { z } from 'zod';
 
 import {
@@ -12,30 +11,41 @@ import {
 } from '../../../base';
 import {
   llmDispatchStream,
+  llmEmbeddingDispatch,
+  llmRerankDispatch,
+  llmStructuredDispatch,
   type NativeLlmBackendConfig,
+  type NativeLlmEmbeddingRequest,
   type NativeLlmRequest,
+  type NativeLlmRerankRequest,
+  type NativeLlmRerankResponse,
+  type NativeLlmStructuredRequest,
 } from '../../../native';
 import type { NodeTextMiddleware } from '../config';
-import { buildNativeRequest, NativeProviderAdapter } from './native';
-import { CopilotProvider } from './provider';
+import type { CopilotTool, CopilotToolSet } from '../tools';
+import { IMAGE_ATTACHMENT_CAPABILITY } from './attachments';
 import {
-  normalizeRerankModel,
-  OPENAI_RERANK_MAX_COMPLETION_TOKENS,
-  OPENAI_RERANK_TOP_LOGPROBS_LIMIT,
-  usesRerankReasoning,
-} from './rerank';
+  buildNativeEmbeddingRequest,
+  buildNativeRequest,
+  buildNativeStructuredRequest,
+  NativeProviderAdapter,
+  parseNativeStructuredOutput,
+} from './native';
+import { CopilotProvider } from './provider';
 import type {
   CopilotChatOptions,
   CopilotChatTools,
   CopilotEmbeddingOptions,
   CopilotImageOptions,
+  CopilotRerankRequest,
   CopilotStructuredOptions,
+  ModelCapability,
   ModelConditions,
   PromptMessage,
   StreamObject,
 } from './types';
 import { CopilotProviderType, ModelInputType, ModelOutputType } from './types';
-import { chatToGPTMessage } from './utils';
+import { promptAttachmentToUrl } from './utils';
 
 export const DEFAULT_DIMENSIONS = 256;
 
@@ -91,19 +101,6 @@ const ImageResponseSchema = z.union([
     }),
   }),
 ]);
-const LogProbsSchema = z.array(
-  z.object({
-    token: z.string(),
-    logprob: z.number(),
-    top_logprobs: z.array(
-      z.object({
-        token: z.string(),
-        logprob: z.number(),
-      })
-    ),
-  })
-);
-
 const TRUSTED_ATTACHMENT_HOST_SUFFIXES = ['cdn.affine.pro'];
 
 function normalizeImageFormatToMime(format?: string) {
@@ -136,6 +133,34 @@ function normalizeImageResponseData(
     .filter((value): value is string => typeof value === 'string');
 }
 
+function buildOpenAIRerankRequest(
+  model: string,
+  request: CopilotRerankRequest
+): NativeLlmRerankRequest {
+  return {
+    model,
+    query: request.query,
+    candidates: request.candidates.map(candidate => ({
+      ...(candidate.id ? { id: candidate.id } : {}),
+      text: candidate.text,
+    })),
+    ...(request.topK ? { top_n: request.topK } : {}),
+  };
+}
+
+function createOpenAIMultimodalCapability(
+  output: ModelCapability['output'],
+  options: Pick<ModelCapability, 'defaultForOutputType'> = {}
+): ModelCapability {
+  return {
+    input: [ModelInputType.Text, ModelInputType.Image],
+    output,
+    attachments: IMAGE_ATTACHMENT_CAPABILITY,
+    structuredAttachments: IMAGE_ATTACHMENT_CAPABILITY,
+    ...options,
+  };
+}
+
 export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
   readonly type = CopilotProviderType.OpenAI;
 
@@ -145,10 +170,10 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
       name: 'GPT 4o',
       id: 'gpt-4o',
       capabilities: [
-        {
-          input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Text, ModelOutputType.Object],
-        },
+        createOpenAIMultimodalCapability([
+          ModelOutputType.Text,
+          ModelOutputType.Object,
+        ]),
       ],
     },
     // FIXME(@darkskygit): deprecated
@@ -156,20 +181,20 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
       name: 'GPT 4o 2024-08-06',
       id: 'gpt-4o-2024-08-06',
       capabilities: [
-        {
-          input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Text, ModelOutputType.Object],
-        },
+        createOpenAIMultimodalCapability([
+          ModelOutputType.Text,
+          ModelOutputType.Object,
+        ]),
       ],
     },
     {
       name: 'GPT 4o Mini',
       id: 'gpt-4o-mini',
       capabilities: [
-        {
-          input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Text, ModelOutputType.Object],
-        },
+        createOpenAIMultimodalCapability([
+          ModelOutputType.Text,
+          ModelOutputType.Object,
+        ]),
       ],
     },
     // FIXME(@darkskygit): deprecated
@@ -177,181 +202,158 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
       name: 'GPT 4o Mini 2024-07-18',
       id: 'gpt-4o-mini-2024-07-18',
       capabilities: [
-        {
-          input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Text, ModelOutputType.Object],
-        },
+        createOpenAIMultimodalCapability([
+          ModelOutputType.Text,
+          ModelOutputType.Object,
+        ]),
       ],
     },
     {
       name: 'GPT 4.1',
       id: 'gpt-4.1',
       capabilities: [
-        {
-          input: [ModelInputType.Text, ModelInputType.Image],
-          output: [
+        createOpenAIMultimodalCapability(
+          [
             ModelOutputType.Text,
             ModelOutputType.Object,
+            ModelOutputType.Rerank,
             ModelOutputType.Structured,
           ],
-          defaultForOutputType: true,
-        },
+          { defaultForOutputType: true }
+        ),
       ],
     },
     {
       name: 'GPT 4.1 2025-04-14',
       id: 'gpt-4.1-2025-04-14',
       capabilities: [
-        {
-          input: [ModelInputType.Text, ModelInputType.Image],
-          output: [
-            ModelOutputType.Text,
-            ModelOutputType.Object,
-            ModelOutputType.Structured,
-          ],
-        },
+        createOpenAIMultimodalCapability([
+          ModelOutputType.Text,
+          ModelOutputType.Object,
+          ModelOutputType.Rerank,
+          ModelOutputType.Structured,
+        ]),
       ],
     },
     {
       name: 'GPT 4.1 Mini',
       id: 'gpt-4.1-mini',
       capabilities: [
-        {
-          input: [ModelInputType.Text, ModelInputType.Image],
-          output: [
-            ModelOutputType.Text,
-            ModelOutputType.Object,
-            ModelOutputType.Structured,
-          ],
-        },
+        createOpenAIMultimodalCapability([
+          ModelOutputType.Text,
+          ModelOutputType.Object,
+          ModelOutputType.Rerank,
+          ModelOutputType.Structured,
+        ]),
       ],
     },
     {
       name: 'GPT 4.1 Nano',
       id: 'gpt-4.1-nano',
       capabilities: [
-        {
-          input: [ModelInputType.Text, ModelInputType.Image],
-          output: [
-            ModelOutputType.Text,
-            ModelOutputType.Object,
-            ModelOutputType.Structured,
-          ],
-        },
+        createOpenAIMultimodalCapability([
+          ModelOutputType.Text,
+          ModelOutputType.Object,
+          ModelOutputType.Rerank,
+          ModelOutputType.Structured,
+        ]),
       ],
     },
     {
       name: 'GPT 5',
       id: 'gpt-5',
       capabilities: [
-        {
-          input: [ModelInputType.Text, ModelInputType.Image],
-          output: [
-            ModelOutputType.Text,
-            ModelOutputType.Object,
-            ModelOutputType.Structured,
-          ],
-        },
+        createOpenAIMultimodalCapability([
+          ModelOutputType.Text,
+          ModelOutputType.Object,
+          ModelOutputType.Structured,
+        ]),
       ],
     },
     {
       name: 'GPT 5 2025-08-07',
       id: 'gpt-5-2025-08-07',
       capabilities: [
-        {
-          input: [ModelInputType.Text, ModelInputType.Image],
-          output: [
-            ModelOutputType.Text,
-            ModelOutputType.Object,
-            ModelOutputType.Structured,
-          ],
-        },
+        createOpenAIMultimodalCapability([
+          ModelOutputType.Text,
+          ModelOutputType.Object,
+          ModelOutputType.Structured,
+        ]),
       ],
     },
     {
       name: 'GPT 5 Mini',
       id: 'gpt-5-mini',
       capabilities: [
-        {
-          input: [ModelInputType.Text, ModelInputType.Image],
-          output: [
-            ModelOutputType.Text,
-            ModelOutputType.Object,
-            ModelOutputType.Structured,
-          ],
-        },
+        createOpenAIMultimodalCapability([
+          ModelOutputType.Text,
+          ModelOutputType.Object,
+          ModelOutputType.Structured,
+        ]),
       ],
     },
     {
       name: 'GPT 5.2',
       id: 'gpt-5.2',
       capabilities: [
-        {
-          input: [ModelInputType.Text, ModelInputType.Image],
-          output: [
-            ModelOutputType.Text,
-            ModelOutputType.Object,
-            ModelOutputType.Structured,
-          ],
-        },
+        createOpenAIMultimodalCapability([
+          ModelOutputType.Text,
+          ModelOutputType.Object,
+          ModelOutputType.Rerank,
+          ModelOutputType.Structured,
+        ]),
       ],
     },
     {
       name: 'GPT 5.2 2025-12-11',
       id: 'gpt-5.2-2025-12-11',
       capabilities: [
-        {
-          input: [ModelInputType.Text, ModelInputType.Image],
-          output: [
-            ModelOutputType.Text,
-            ModelOutputType.Object,
-            ModelOutputType.Structured,
-          ],
-        },
+        createOpenAIMultimodalCapability([
+          ModelOutputType.Text,
+          ModelOutputType.Object,
+          ModelOutputType.Structured,
+        ]),
       ],
     },
     {
       name: 'GPT 5 Nano',
       id: 'gpt-5-nano',
       capabilities: [
-        {
-          input: [ModelInputType.Text, ModelInputType.Image],
-          output: [
-            ModelOutputType.Text,
-            ModelOutputType.Object,
-            ModelOutputType.Structured,
-          ],
-        },
+        createOpenAIMultimodalCapability([
+          ModelOutputType.Text,
+          ModelOutputType.Object,
+          ModelOutputType.Structured,
+        ]),
       ],
     },
     {
       name: 'GPT O1',
       id: 'o1',
       capabilities: [
-        {
-          input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Text, ModelOutputType.Object],
-        },
+        createOpenAIMultimodalCapability([
+          ModelOutputType.Text,
+          ModelOutputType.Object,
+        ]),
       ],
     },
     {
       name: 'GPT O3',
       id: 'o3',
       capabilities: [
-        {
-          input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Text, ModelOutputType.Object],
-        },
+        createOpenAIMultimodalCapability([
+          ModelOutputType.Text,
+          ModelOutputType.Object,
+        ]),
       ],
     },
     {
       name: 'GPT O4 Mini',
       id: 'o4-mini',
       capabilities: [
-        {
-          input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Text, ModelOutputType.Object],
-        },
+        createOpenAIMultimodalCapability([
+          ModelOutputType.Text,
+          ModelOutputType.Object,
+        ]),
       ],
     },
     // Embedding models
@@ -387,11 +389,9 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
     {
       id: 'gpt-image-1',
       capabilities: [
-        {
-          input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Image],
+        createOpenAIMultimodalCapability([ModelOutputType.Image], {
           defaultForOutputType: true,
-        },
+        }),
       ],
     },
   ];
@@ -437,7 +437,7 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
   override getProviderSpecificTools(
     toolName: CopilotChatTools,
     _model: string
-  ): [string, Tool?] | undefined {
+  ): [string, CopilotTool?] | undefined {
     if (toolName === 'docEdit') {
       return ['doc_edit', undefined];
     }
@@ -452,14 +452,18 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
     };
   }
 
+  private getNativeProtocol() {
+    return this.config.oldApiStyle ? 'openai_chat' : 'openai_responses';
+  }
+
   private createNativeAdapter(
-    tools: ToolSet,
+    tools: CopilotToolSet,
     nodeTextMiddleware?: NodeTextMiddleware[]
   ) {
     return new NativeProviderAdapter(
       (request: NativeLlmRequest, signal?: AbortSignal) =>
         llmDispatchStream(
-          this.config.oldApiStyle ? 'openai_chat' : 'openai_responses',
+          this.getNativeProtocol(),
           this.createNativeConfig(),
           request,
           signal
@@ -468,6 +472,27 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
       this.MAX_STEPS,
       { nodeTextMiddleware }
     );
+  }
+
+  protected createNativeStructuredDispatch(
+    backendConfig: NativeLlmBackendConfig
+  ) {
+    return (request: NativeLlmStructuredRequest) =>
+      llmStructuredDispatch(this.getNativeProtocol(), backendConfig, request);
+  }
+
+  protected createNativeEmbeddingDispatch(
+    backendConfig: NativeLlmBackendConfig
+  ) {
+    return (request: NativeLlmEmbeddingRequest) =>
+      llmEmbeddingDispatch(this.getNativeProtocol(), backendConfig, request);
+  }
+
+  protected createNativeRerankDispatch(backendConfig: NativeLlmBackendConfig) {
+    return (
+      request: NativeLlmRerankRequest
+    ): Promise<NativeLlmRerankResponse> =>
+      llmRerankDispatch('openai_chat', backendConfig, request);
   }
 
   private getReasoning(
@@ -486,13 +511,18 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
     options: CopilotChatOptions = {}
   ): Promise<string> {
     const fullCond = { ...cond, outputType: ModelOutputType.Text };
-    await this.checkParams({ messages, cond: fullCond, options });
-    const model = this.selectModel(fullCond);
+    const normalizedCond = await this.checkParams({
+      messages,
+      cond: fullCond,
+      options,
+    });
+    const model = this.selectModel(normalizedCond);
 
     try {
       metrics.ai.counter('chat_text_calls').add(1, this.metricLabels(model.id));
       const tools = await this.getTools(options, model.id);
       const middleware = this.getActiveProviderMiddleware();
+      const cap = this.getAttachCapability(model, ModelOutputType.Text);
       const normalizedOptions = normalizeOpenAIOptionsForModel(
         options,
         model.id
@@ -502,12 +532,13 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
         messages,
         options: normalizedOptions,
         tools,
+        attachmentCapability: cap,
         include: options.webSearch ? ['citations'] : undefined,
         reasoning: this.getReasoning(options, model.id),
         middleware,
       });
       const adapter = this.createNativeAdapter(tools, middleware.node?.text);
-      return await adapter.text(request, options.signal);
+      return await adapter.text(request, options.signal, messages);
     } catch (e: any) {
       metrics.ai
         .counter('chat_text_errors')
@@ -525,8 +556,12 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
       ...cond,
       outputType: ModelOutputType.Text,
     };
-    await this.checkParams({ messages, cond: fullCond, options });
-    const model = this.selectModel(fullCond);
+    const normalizedCond = await this.checkParams({
+      messages,
+      cond: fullCond,
+      options,
+    });
+    const model = this.selectModel(normalizedCond);
 
     try {
       metrics.ai
@@ -534,6 +569,7 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
         .add(1, this.metricLabels(model.id));
       const tools = await this.getTools(options, model.id);
       const middleware = this.getActiveProviderMiddleware();
+      const cap = this.getAttachCapability(model, ModelOutputType.Text);
       const normalizedOptions = normalizeOpenAIOptionsForModel(
         options,
         model.id
@@ -543,12 +579,17 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
         messages,
         options: normalizedOptions,
         tools,
+        attachmentCapability: cap,
         include: options.webSearch ? ['citations'] : undefined,
         reasoning: this.getReasoning(options, model.id),
         middleware,
       });
       const adapter = this.createNativeAdapter(tools, middleware.node?.text);
-      for await (const chunk of adapter.streamText(request, options.signal)) {
+      for await (const chunk of adapter.streamText(
+        request,
+        options.signal,
+        messages
+      )) {
         yield chunk;
       }
     } catch (e: any) {
@@ -565,8 +606,12 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
     options: CopilotChatOptions = {}
   ): AsyncIterable<StreamObject> {
     const fullCond = { ...cond, outputType: ModelOutputType.Object };
-    await this.checkParams({ cond: fullCond, messages, options });
-    const model = this.selectModel(fullCond);
+    const normalizedCond = await this.checkParams({
+      cond: fullCond,
+      messages,
+      options,
+    });
+    const model = this.selectModel(normalizedCond);
 
     try {
       metrics.ai
@@ -574,6 +619,7 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
         .add(1, this.metricLabels(model.id));
       const tools = await this.getTools(options, model.id);
       const middleware = this.getActiveProviderMiddleware();
+      const cap = this.getAttachCapability(model, ModelOutputType.Object);
       const normalizedOptions = normalizeOpenAIOptionsForModel(
         options,
         model.id
@@ -583,12 +629,17 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
         messages,
         options: normalizedOptions,
         tools,
+        attachmentCapability: cap,
         include: options.webSearch ? ['citations'] : undefined,
         reasoning: this.getReasoning(options, model.id),
         middleware,
       });
       const adapter = this.createNativeAdapter(tools, middleware.node?.text);
-      for await (const chunk of adapter.streamObject(request, options.signal)) {
+      for await (const chunk of adapter.streamObject(
+        request,
+        options.signal,
+        messages
+      )) {
         yield chunk;
       }
     } catch (e: any) {
@@ -605,31 +656,34 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
     options: CopilotStructuredOptions = {}
   ): Promise<string> {
     const fullCond = { ...cond, outputType: ModelOutputType.Structured };
-    await this.checkParams({ messages, cond: fullCond, options });
-    const model = this.selectModel(fullCond);
+    const normalizedCond = await this.checkParams({
+      messages,
+      cond: fullCond,
+      options,
+    });
+    const model = this.selectModel(normalizedCond);
 
     try {
       metrics.ai.counter('chat_text_calls').add(1, { model: model.id });
-      const tools = await this.getTools(options, model.id);
+      const backendConfig = this.createNativeConfig();
       const middleware = this.getActiveProviderMiddleware();
+      const cap = this.getAttachCapability(model, ModelOutputType.Structured);
       const normalizedOptions = normalizeOpenAIOptionsForModel(
         options,
         model.id
       );
-      const { request, schema } = await buildNativeRequest({
+      const { request, schema } = await buildNativeStructuredRequest({
         model: model.id,
         messages,
         options: normalizedOptions,
-        tools,
+        attachmentCapability: cap,
         reasoning: this.getReasoning(options, model.id),
+        responseSchema: options.schema,
         middleware,
       });
-      if (!schema) {
-        throw new CopilotPromptInvalid('Schema is required');
-      }
-      const adapter = this.createNativeAdapter(tools, middleware.node?.text);
-      const text = await adapter.text(request, options.signal);
-      const parsed = JSON.parse(text);
+      const response =
+        await this.createNativeStructuredDispatch(backendConfig)(request);
+      const parsed = parseNativeStructuredOutput(response);
       const validated = schema.parse(parsed);
       return JSON.stringify(validated);
     } catch (e: any) {
@@ -640,71 +694,26 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
 
   override async rerank(
     cond: ModelConditions,
-    chunkMessages: PromptMessage[][],
+    request: CopilotRerankRequest,
     options: CopilotChatOptions = {}
   ): Promise<number[]> {
-    const fullCond = { ...cond, outputType: ModelOutputType.Text };
-    await this.checkParams({ messages: [], cond: fullCond, options });
-    const model = this.selectModel(fullCond);
+    const fullCond = { ...cond, outputType: ModelOutputType.Rerank };
+    const normalizedCond = await this.checkParams({
+      messages: [],
+      cond: fullCond,
+      options,
+    });
+    const model = this.selectModel(normalizedCond);
 
-    const scores = await Promise.all(
-      chunkMessages.map(async messages => {
-        const [system, msgs] = await chatToGPTMessage(messages);
-        const rerankModel = normalizeRerankModel(model.id);
-        const response = await this.requestOpenAIJson(
-          '/chat/completions',
-          {
-            model: rerankModel,
-            messages: this.toOpenAIChatMessages(system, msgs),
-            temperature: 0,
-            logprobs: true,
-            top_logprobs: OPENAI_RERANK_TOP_LOGPROBS_LIMIT,
-            ...(usesRerankReasoning(rerankModel)
-              ? {
-                  reasoning_effort: 'none' as const,
-                  max_completion_tokens: OPENAI_RERANK_MAX_COMPLETION_TOKENS,
-                }
-              : { max_tokens: OPENAI_RERANK_MAX_COMPLETION_TOKENS }),
-          },
-          options.signal
-        );
-
-        const logprobs = response?.choices?.[0]?.logprobs?.content;
-        if (!Array.isArray(logprobs) || logprobs.length === 0) {
-          return 0;
-        }
-
-        const parsedLogprobs = LogProbsSchema.parse(logprobs);
-        const topMap = parsedLogprobs[0].top_logprobs.reduce(
-          (acc, { token, logprob }) => ({ ...acc, [token]: logprob }),
-          {} as Record<string, number>
-        );
-
-        const findLogProb = (token: string): number => {
-          // OpenAI often includes a leading space, so try matching '.yes', '_yes', ' yes' and 'yes'
-          return [...'_:. "-\t,(=_“'.split('').map(c => c + token), token]
-            .flatMap(v => [v, v.toLowerCase(), v.toUpperCase()])
-            .reduce<number>(
-              (best, key) =>
-                (topMap[key] ?? Number.NEGATIVE_INFINITY) > best
-                  ? topMap[key]
-                  : best,
-              Number.NEGATIVE_INFINITY
-            );
-        };
-
-        const logYes = findLogProb('Yes');
-        const logNo = findLogProb('No');
-
-        const pYes = Math.exp(logYes);
-        const pNo = Math.exp(logNo);
-        const prob = pYes + pNo === 0 ? 0 : pYes / (pYes + pNo);
-
-        return prob;
-      })
-    );
-
-    return scores;
+    try {
+      const backendConfig = this.createNativeConfig();
+      const nativeRequest = buildOpenAIRerankRequest(model.id, request);
+      const response =
+        await this.createNativeRerankDispatch(backendConfig)(nativeRequest);
+      return response.scores;
+    } catch (e: any) {
+      throw this.handleError(e);
+    }
   }
 
   // ====== text to image ======
@@ -906,7 +915,8 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
     form.set('output_format', outputFormat);
 
     for (const [idx, entry] of attachments.entries()) {
-      const url = typeof entry === 'string' ? entry : entry.attachment;
+      const url = promptAttachmentToUrl(entry);
+      if (!url) continue;
       try {
         const attachment = await this.fetchImage(url, maxBytes, signal);
         if (!attachment) continue;
@@ -964,8 +974,12 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
     options: CopilotImageOptions = {}
   ) {
     const fullCond = { ...cond, outputType: ModelOutputType.Image };
-    await this.checkParams({ messages, cond: fullCond, options });
-    const model = this.selectModel(fullCond);
+    const normalizedCond = await this.checkParams({
+      messages,
+      cond: fullCond,
+      options,
+    });
+    const model = this.selectModel(normalizedCond);
 
     metrics.ai
       .counter('generate_images_stream_calls')
@@ -1017,63 +1031,34 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
     messages: string | string[],
     options: CopilotEmbeddingOptions = { dimensions: DEFAULT_DIMENSIONS }
   ): Promise<number[][]> {
-    messages = Array.isArray(messages) ? messages : [messages];
+    const input = Array.isArray(messages) ? messages : [messages];
     const fullCond = { ...cond, outputType: ModelOutputType.Embedding };
-    await this.checkParams({ embeddings: messages, cond: fullCond, options });
-    const model = this.selectModel(fullCond);
+    const normalizedCond = await this.checkParams({
+      embeddings: input,
+      cond: fullCond,
+      options,
+    });
+    const model = this.selectModel(normalizedCond);
 
     try {
       metrics.ai
         .counter('generate_embedding_calls')
-        .add(1, { model: model.id });
-      const response = await this.requestOpenAIJson('/embeddings', {
-        model: model.id,
-        input: messages,
-        dimensions: options.dimensions || DEFAULT_DIMENSIONS,
-      });
-      const data = Array.isArray(response?.data) ? response.data : [];
-      return data
-        .map((item: any) => item?.embedding)
-        .filter((embedding: unknown) => Array.isArray(embedding)) as number[][];
+        .add(1, this.metricLabels(model.id));
+      const backendConfig = this.createNativeConfig();
+      const response = await this.createNativeEmbeddingDispatch(backendConfig)(
+        buildNativeEmbeddingRequest({
+          model: model.id,
+          inputs: input,
+          dimensions: options.dimensions || DEFAULT_DIMENSIONS,
+        })
+      );
+      return response.embeddings;
     } catch (e: any) {
       metrics.ai
         .counter('generate_embedding_errors')
-        .add(1, { model: model.id });
+        .add(1, this.metricLabels(model.id));
       throw this.handleError(e);
     }
-  }
-
-  private toOpenAIChatMessages(
-    system: string | undefined,
-    messages: Awaited<ReturnType<typeof chatToGPTMessage>>[1]
-  ) {
-    const result: Array<{ role: string; content: string }> = [];
-    if (system) {
-      result.push({ role: 'system', content: system });
-    }
-
-    for (const message of messages) {
-      if (typeof message.content === 'string') {
-        result.push({ role: message.role, content: message.content });
-        continue;
-      }
-
-      const text = message.content
-        .filter(
-          part =>
-            part &&
-            typeof part === 'object' &&
-            'type' in part &&
-            part.type === 'text' &&
-            'text' in part
-        )
-        .map(part => String((part as { text: string }).text))
-        .join('\n');
-
-      result.push({ role: message.role, content: text || '[no content]' });
-    }
-
-    return result;
   }
 
   private async requestOpenAIJson(

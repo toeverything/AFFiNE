@@ -1,8 +1,8 @@
 import { Logger } from '@nestjs/common';
-import { tool } from 'ai';
 import { z } from 'zod';
 
 import { toolError } from './error';
+import { defineTool } from './tool';
 import type { CopilotProviderFactory, PromptService } from './types';
 
 const logger = new Logger('DocComposeTool');
@@ -11,7 +11,7 @@ export const createDocComposeTool = (
   promptService: PromptService,
   factory: CopilotProviderFactory
 ) => {
-  return tool({
+  return defineTool({
     description:
       'Write a new document with markdown content. This tool creates structured markdown content for documents including titles, sections, and formatting.',
     inputSchema: z.object({

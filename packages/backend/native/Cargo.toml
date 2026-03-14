@@ -21,7 +21,10 @@ image = { workspace = true }
 infer = { workspace = true }
 libwebp-sys = { workspace = true }
 little_exif = { workspace = true }
-llm_adapter = { workspace = true }
+llm_adapter = { workspace = true, default-features = false, features = [
+  "ureq-client",
+] }
+matroska = { workspace = true }
 mp4parse = { workspace = true }
 napi = { workspace = true, features = ["async"] }
 napi-derive = { workspace = true }

@@ -1,4 +1,3 @@
-import type { ToolSet } from 'ai';
 import { z } from 'zod';
 
 import type {
@@ -6,6 +5,11 @@ import type {
   NativeLlmStreamEvent,
   NativeLlmToolDefinition,
 } from '../../../native';
+import type {
+  CopilotTool,
+  CopilotToolExecuteOptions,
+  CopilotToolSet,
+} from '../tools';
 
 export type NativeDispatchFn = (
   request: NativeLlmRequest,
@@ -16,6 +20,8 @@ export type NativeToolCall = {
   id: string;
   name: string;
   args: Record<string, unknown>;
+  rawArgumentsText?: string;
+  argumentParseError?: string;
   thought?: string;
 };
 
@@ -28,8 +34,16 @@ type ToolExecutionResult = {
   callId: string;
   name: string;
   args: Record<string, unknown>;
+  rawArgumentsText?: string;
+  argumentParseError?: string;
   output: unknown;
   isError?: boolean;
+};
+
+type ParsedToolArguments = {
+  args: Record<string, unknown>;
+  rawArgumentsText?: string;
+  argumentParseError?: string;
 };
 
 export class ToolCallAccumulator {
@@ -51,12 +65,20 @@ export class ToolCallAccumulator {
   complete(event: Extract<NativeLlmStreamEvent, { type: 'tool_call' }>) {
     const state = this.#states.get(event.call_id);
     this.#states.delete(event.call_id);
+    const parsed =
+      event.arguments_text !== undefined || event.arguments_error !== undefined
+        ? {
+            args: event.arguments ?? {},
+            rawArgumentsText: event.arguments_text ?? state?.argumentsText,
+            argumentParseError: event.arguments_error,
+          }
+        : event.arguments
+          ? this.parseArgs(event.arguments, state?.argumentsText)
+          : this.parseJson(state?.argumentsText ?? '{}');
     return {
       id: event.call_id,
       name: event.name || state?.name || '',
-      args: this.parseArgs(
-        event.arguments ?? this.parseJson(state?.argumentsText ?? '{}')
-      ),
+      ...parsed,
       thought: event.thought,
     } satisfies NativeToolCall;
   }
@@ -70,51 +92,61 @@ export class ToolCallAccumulator {
       pending.push({
         id: callId,
         name: state.name,
-        args: this.parseArgs(this.parseJson(state.argumentsText)),
+        ...this.parseJson(state.argumentsText),
       });
     }
     this.#states.clear();
     return pending;
   }
 
-  private parseJson(jsonText: string): unknown {
+  private parseJson(jsonText: string): ParsedToolArguments {
     if (!jsonText.trim()) {
-      return {};
+      return { args: {} };
     }
     try {
-      return JSON.parse(jsonText);
-    } catch {
-      return {};
+      return this.parseArgs(JSON.parse(jsonText), jsonText);
+    } catch (error) {
+      return {
+        args: {},
+        rawArgumentsText: jsonText,
+        argumentParseError:
+          error instanceof Error
+            ? error.message
+            : 'Invalid tool arguments JSON',
+      };
     }
   }
 
-  private parseArgs(value: unknown): Record<string, unknown> {
+  private parseArgs(
+    value: unknown,
+    rawArgumentsText?: string
+  ): ParsedToolArguments {
     if (value && typeof value === 'object' && !Array.isArray(value)) {
-      return value as Record<string, unknown>;
+      return {
+        args: value as Record<string, unknown>,
+        rawArgumentsText,
+      };
     }
-    return {};
+    return {
+      args: {},
+      rawArgumentsText,
+      argumentParseError: 'Tool arguments must be a JSON object',
+    };
   }
 }
 
 export class ToolSchemaExtractor {
-  static extract(toolSet: ToolSet): NativeLlmToolDefinition[] {
+  static extract(toolSet: CopilotToolSet): NativeLlmToolDefinition[] {
     return Object.entries(toolSet).map(([name, tool]) => {
-      const unknownTool = tool as Record<string, unknown>;
-      const inputSchema =
-        unknownTool.inputSchema ?? unknownTool.parameters ?? z.object({});
-
       return {
         name,
-        description:
-          typeof unknownTool.description === 'string'
-            ? unknownTool.description
-            : undefined,
-        parameters: this.toJsonSchema(inputSchema),
+        description: tool.description,
+        parameters: this.toJsonSchema(tool.inputSchema ?? z.object({})),
       };
     });
   }
 
-  private static toJsonSchema(schema: unknown): Record<string, unknown> {
+  static toJsonSchema(schema: unknown): Record<string, unknown> {
     if (!(schema instanceof z.ZodType)) {
       if (schema && typeof schema === 'object' && !Array.isArray(schema)) {
         return schema as Record<string, unknown>;
@@ -228,14 +260,45 @@ export class ToolSchemaExtractor {
 export class ToolCallLoop {
   constructor(
     private readonly dispatch: NativeDispatchFn,
-    private readonly tools: ToolSet,
+    private readonly tools: CopilotToolSet,
     private readonly maxSteps = 20
   ) {}
 
+  private normalizeToolExecuteOptions(
+    signalOrOptions?: AbortSignal | CopilotToolExecuteOptions,
+    maybeMessages?: CopilotToolExecuteOptions['messages']
+  ): CopilotToolExecuteOptions {
+    if (
+      signalOrOptions &&
+      typeof signalOrOptions === 'object' &&
+      'aborted' in signalOrOptions
+    ) {
+      return {
+        signal: signalOrOptions,
+        messages: maybeMessages,
+      };
+    }
+
+    if (!signalOrOptions) {
+      return maybeMessages ? { messages: maybeMessages } : {};
+    }
+
+    return {
+      ...signalOrOptions,
+      signal: signalOrOptions.signal,
+      messages: signalOrOptions.messages ?? maybeMessages,
+    };
+  }
+
   async *run(
     request: NativeLlmRequest,
-    signal?: AbortSignal
+    signalOrOptions?: AbortSignal | CopilotToolExecuteOptions,
+    maybeMessages?: CopilotToolExecuteOptions['messages']
   ): AsyncIterableIterator<NativeLlmStreamEvent> {
+    const toolExecuteOptions = this.normalizeToolExecuteOptions(
+      signalOrOptions,
+      maybeMessages
+    );
     const messages = request.messages.map(message => ({
       ...message,
       content: [...message.content],
@@ -253,7 +316,7 @@ export class ToolCallLoop {
           stream: true,
           messages,
         },
-        signal
+        toolExecuteOptions.signal
       )) {
         switch (event.type) {
           case 'tool_call_delta': {
@@ -291,7 +354,10 @@ export class ToolCallLoop {
         throw new Error('ToolCallLoop max steps reached');
       }
 
-      const toolResults = await this.executeTools(toolCalls);
+      const toolResults = await this.executeTools(
+        toolCalls,
+        toolExecuteOptions
+      );
 
       messages.push({
         role: 'assistant',
@@ -300,6 +366,8 @@ export class ToolCallLoop {
           call_id: call.id,
           name: call.name,
           arguments: call.args,
+          arguments_text: call.rawArgumentsText,
+          arguments_error: call.argumentParseError,
           thought: call.thought,
         })),
       });
@@ -311,6 +379,10 @@ export class ToolCallLoop {
             {
               type: 'tool_result',
               call_id: result.callId,
+              name: result.name,
+              arguments: result.args,
+              arguments_text: result.rawArgumentsText,
+              arguments_error: result.argumentParseError,
               output: result.output,
               is_error: result.isError,
             },
@@ -321,6 +393,8 @@ export class ToolCallLoop {
           call_id: result.callId,
           name: result.name,
           arguments: result.args,
+          arguments_text: result.rawArgumentsText,
+          arguments_error: result.argumentParseError,
           output: result.output,
           is_error: result.isError,
         };
@@ -328,24 +402,28 @@ export class ToolCallLoop {
     }
   }
 
-  private async executeTools(calls: NativeToolCall[]) {
-    return await Promise.all(calls.map(call => this.executeTool(call)));
+  private async executeTools(
+    calls: NativeToolCall[],
+    options: CopilotToolExecuteOptions
+  ) {
+    return await Promise.all(
+      calls.map(call => this.executeTool(call, options))
+    );
   }
 
   private async executeTool(
-    call: NativeToolCall
+    call: NativeToolCall,
+    options: CopilotToolExecuteOptions
   ): Promise<ToolExecutionResult> {
-    const tool = this.tools[call.name] as
-      | {
-          execute?: (args: Record<string, unknown>) => Promise<unknown>;
-        }
-      | undefined;
+    const tool = this.tools[call.name] as CopilotTool | undefined;
 
     if (!tool?.execute) {
       return {
         callId: call.id,
         name: call.name,
         args: call.args,
+        rawArgumentsText: call.rawArgumentsText,
+        argumentParseError: call.argumentParseError,
         isError: true,
         output: {
           message: `Tool not found: ${call.name}`,
@@ -353,12 +431,30 @@ export class ToolCallLoop {
       };
     }
 
-    try {
-      const output = await tool.execute(call.args);
+    if (call.argumentParseError) {
       return {
         callId: call.id,
         name: call.name,
         args: call.args,
+        rawArgumentsText: call.rawArgumentsText,
+        argumentParseError: call.argumentParseError,
+        isError: true,
+        output: {
+          message: 'Invalid tool arguments JSON',
+          rawArguments: call.rawArgumentsText,
+          error: call.argumentParseError,
+        },
+      };
+    }
+
+    try {
+      const output = await tool.execute(call.args, options);
+      return {
+        callId: call.id,
+        name: call.name,
+        args: call.args,
+        rawArgumentsText: call.rawArgumentsText,
+        argumentParseError: call.argumentParseError,
         output: output ?? null,
       };
     } catch (error) {
@@ -371,6 +467,8 @@ export class ToolCallLoop {
         callId: call.id,
         name: call.name,
         args: call.args,
+        rawArgumentsText: call.rawArgumentsText,
+        argumentParseError: call.argumentParseError,
         isError: true,
         output: {
           message: 'Tool execution failed',

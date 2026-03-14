@@ -1,34 +1,39 @@
-import { GoogleVertexProviderSettings } from '@ai-sdk/google-vertex';
-import { GoogleVertexAnthropicProviderSettings } from '@ai-sdk/google-vertex/anthropic';
 import { Logger } from '@nestjs/common';
-import {
-  AssistantModelMessage,
-  FilePart,
-  ImagePart,
-  TextPart,
-  TextStreamPart,
-  UserModelMessage,
-} from 'ai';
 import { GoogleAuth, GoogleAuthOptions } from 'google-auth-library';
-import z, { ZodType } from 'zod';
+import z from 'zod';
 
-import {
-  bufferToArrayBuffer,
-  fetchBuffer,
-  OneMinute,
-  ResponseTooLargeError,
-  safeFetch,
-  SsrfBlockedError,
-} from '../../../base';
-import { CustomAITools } from '../tools';
-import { PromptMessage, StreamObject } from './types';
+import { OneMinute, safeFetch } from '../../../base';
+import { PromptAttachment, StreamObject } from './types';
 
-type ChatMessage = UserModelMessage | AssistantModelMessage;
+export type VertexProviderConfig = {
+  location?: string;
+  project?: string;
+  baseURL?: string;
+  googleAuthOptions?: GoogleAuthOptions;
+  fetch?: typeof fetch;
+};
 
-const ATTACHMENT_MAX_BYTES = 20 * 1024 * 1024;
+export type VertexAnthropicProviderConfig = VertexProviderConfig;
+
+type CopilotTextStreamPart =
+  | { type: 'text-delta'; text: string; id?: string }
+  | { type: 'reasoning-delta'; text: string; id?: string }
+  | {
+      type: 'tool-call';
+      toolCallId: string;
+      toolName: string;
+      input: Record<string, unknown>;
+    }
+  | {
+      type: 'tool-result';
+      toolCallId: string;
+      toolName: string;
+      input: Record<string, unknown>;
+      output: unknown;
+    }
+  | { type: 'error'; error: unknown };
+
 const ATTACH_HEAD_PARAMS = { timeoutMs: OneMinute / 12, maxRedirects: 3 };
-
-const SIMPLE_IMAGE_URL_REGEX = /^(https?:\/\/|data:image\/)/;
 const FORMAT_INFER_MAP: Record<string, string> = {
   pdf: 'application/pdf',
   mp3: 'audio/mpeg',
@@ -53,9 +58,39 @@ const FORMAT_INFER_MAP: Record<string, string> = {
   flv: 'video/flv',
 };
 
-async function fetchArrayBuffer(url: string): Promise<ArrayBuffer> {
-  const { buffer } = await fetchBuffer(url, ATTACHMENT_MAX_BYTES);
-  return bufferToArrayBuffer(buffer);
+function toBase64Data(data: string, encoding: 'base64' | 'utf8' = 'base64') {
+  return encoding === 'base64'
+    ? data
+    : Buffer.from(data, 'utf8').toString('base64');
+}
+
+export function promptAttachmentToUrl(
+  attachment: PromptAttachment
+): string | undefined {
+  if (typeof attachment === 'string') return attachment;
+  if ('attachment' in attachment) return attachment.attachment;
+  switch (attachment.kind) {
+    case 'url':
+      return attachment.url;
+    case 'data':
+      return `data:${attachment.mimeType};base64,${toBase64Data(
+        attachment.data,
+        attachment.encoding
+      )}`;
+    case 'bytes':
+      return `data:${attachment.mimeType};base64,${attachment.data}`;
+    case 'file_handle':
+      return;
+  }
+}
+
+export function promptAttachmentMimeType(
+  attachment: PromptAttachment,
+  fallbackMimeType?: string
+): string | undefined {
+  if (typeof attachment === 'string') return fallbackMimeType;
+  if ('attachment' in attachment) return attachment.mimeType;
+  return attachment.mimeType ?? fallbackMimeType;
 }
 
 export async function inferMimeType(url: string) {
@@ -69,346 +104,21 @@ export async function inferMimeType(url: string) {
     if (ext) {
       return ext;
     }
-    try {
-      const mimeType = await safeFetch(
-        url,
-        { method: 'HEAD' },
-        ATTACH_HEAD_PARAMS
-      ).then(res => res.headers.get('content-type'));
-      if (mimeType) return mimeType;
-    } catch {
-      // ignore and fallback to default
-    }
+  }
+  try {
+    const mimeType = await safeFetch(
+      url,
+      { method: 'HEAD' },
+      ATTACH_HEAD_PARAMS
+    ).then(res => res.headers.get('content-type'));
+    if (mimeType) return mimeType;
+  } catch {
+    // ignore and fallback to default
   }
   return 'application/octet-stream';
 }
 
-export async function chatToGPTMessage(
-  messages: PromptMessage[],
-  // TODO(@darkskygit): move this logic in interface refactoring
-  withAttachment: boolean = true,
-  // NOTE: some providers in vercel ai sdk are not able to handle url attachments yet
-  //       so we need to use base64 encoded attachments instead
-  useBase64Attachment: boolean = false
-): Promise<[string | undefined, ChatMessage[], ZodType?]> {
-  const hasSystem = messages[0]?.role === 'system';
-  const system = hasSystem ? messages[0] : undefined;
-  const normalizedMessages = hasSystem ? messages.slice(1) : messages;
-  const schema =
-    system?.params?.schema && system.params.schema instanceof ZodType
-      ? system.params.schema
-      : undefined;
-
-  // filter redundant fields
-  const msgs: ChatMessage[] = [];
-  for (let { role, content, attachments, params } of normalizedMessages.filter(
-    m => m.role !== 'system'
-  )) {
-    content = content.trim();
-    role = role as 'user' | 'assistant';
-    const mimetype = params?.mimetype;
-    if (Array.isArray(attachments)) {
-      const contents: (TextPart | ImagePart | FilePart)[] = [];
-      if (content.length) {
-        contents.push({ type: 'text', text: content });
-      }
-
-      if (withAttachment) {
-        for (let attachment of attachments) {
-          let mediaType: string;
-          if (typeof attachment === 'string') {
-            mediaType =
-              typeof mimetype === 'string'
-                ? mimetype
-                : await inferMimeType(attachment);
-          } else {
-            ({ attachment, mimeType: mediaType } = attachment);
-          }
-          if (SIMPLE_IMAGE_URL_REGEX.test(attachment)) {
-            const data =
-              attachment.startsWith('data:') || useBase64Attachment
-                ? await fetchArrayBuffer(attachment).catch(error => {
-                    // Avoid leaking internal details for blocked URLs.
-                    if (
-                      error instanceof SsrfBlockedError ||
-                      error instanceof ResponseTooLargeError
-                    ) {
-                      throw new Error('Attachment URL is not allowed');
-                    }
-                    throw error;
-                  })
-                : new URL(attachment);
-            if (mediaType.startsWith('image/')) {
-              contents.push({ type: 'image', image: data, mediaType });
-            } else {
-              contents.push({ type: 'file' as const, data, mediaType });
-            }
-          }
-        }
-      } else if (!content.length) {
-        // temp fix for pplx
-        contents.push({ type: 'text', text: '[no content]' });
-      }
-
-      msgs.push({ role, content: contents } as ChatMessage);
-    } else {
-      msgs.push({ role, content });
-    }
-  }
-
-  return [system?.content, msgs, schema];
-}
-
-// pattern types the callback will receive
-type Pattern =
-  | { kind: 'index'; value: number } // [123]
-  | { kind: 'link'; text: string; url: string } // [text](url)
-  | { kind: 'wrappedLink'; text: string; url: string }; // ([text](url))
-
-type NeedMore = { kind: 'needMore' };
-type Failed = { kind: 'fail'; nextPos: number };
-type Finished =
-  | { kind: 'ok'; endPos: number; text: string; url: string }
-  | { kind: 'index'; endPos: number; value: number };
-type ParseStatus = Finished | NeedMore | Failed;
-
-type PatternCallback = (m: Pattern) => string;
-
-export class StreamPatternParser {
-  #buffer = '';
-
-  constructor(private readonly callback: PatternCallback) {}
-
-  write(chunk: string): string {
-    this.#buffer += chunk;
-    const output: string[] = [];
-    let i = 0;
-
-    while (i < this.#buffer.length) {
-      const ch = this.#buffer[i];
-
-      //  [[[number]]] or [text](url) or ([text](url))
-      if (ch === '[' || (ch === '(' && this.peek(i + 1) === '[')) {
-        const isWrapped = ch === '(';
-        const startPos = isWrapped ? i + 1 : i;
-        const res = this.tryParse(startPos);
-        if (res.kind === 'needMore') break;
-        const { output: out, nextPos } = this.handlePattern(
-          res,
-          isWrapped,
-          startPos,
-          i
-        );
-        output.push(out);
-        i = nextPos;
-        continue;
-      }
-      output.push(ch);
-      i += 1;
-    }
-
-    this.#buffer = this.#buffer.slice(i);
-    return output.join('');
-  }
-
-  end(): string {
-    const rest = this.#buffer;
-    this.#buffer = '';
-    return rest;
-  }
-
-  // =========== helpers ===========
-
-  private peek(pos: number): string | undefined {
-    return pos < this.#buffer.length ? this.#buffer[pos] : undefined;
-  }
-
-  private tryParse(pos: number): ParseStatus {
-    const nestedRes = this.tryParseNestedIndex(pos);
-    if (nestedRes) return nestedRes;
-    return this.tryParseBracketPattern(pos);
-  }
-
-  private tryParseNestedIndex(pos: number): ParseStatus | null {
-    if (this.peek(pos + 1) !== '[') return null;
-
-    let i = pos;
-    let bracketCount = 0;
-
-    while (i < this.#buffer.length && this.#buffer[i] === '[') {
-      bracketCount++;
-      i++;
-    }
-
-    if (bracketCount >= 2) {
-      if (i >= this.#buffer.length) {
-        return { kind: 'needMore' };
-      }
-
-      let content = '';
-      while (i < this.#buffer.length && this.#buffer[i] !== ']') {
-        content += this.#buffer[i++];
-      }
-
-      let rightBracketCount = 0;
-      while (i < this.#buffer.length && this.#buffer[i] === ']') {
-        rightBracketCount++;
-        i++;
-      }
-
-      if (i >= this.#buffer.length && rightBracketCount < bracketCount) {
-        return { kind: 'needMore' };
-      }
-
-      if (
-        rightBracketCount === bracketCount &&
-        content.length > 0 &&
-        this.isNumeric(content)
-      ) {
-        if (this.peek(i) === '(') {
-          return { kind: 'fail', nextPos: i };
-        }
-        return { kind: 'index', endPos: i, value: Number(content) };
-      }
-    }
-
-    return null;
-  }
-
-  private tryParseBracketPattern(pos: number): ParseStatus {
-    let i = pos + 1; // skip '['
-    if (i >= this.#buffer.length) {
-      return { kind: 'needMore' };
-    }
-
-    let content = '';
-    while (i < this.#buffer.length && this.#buffer[i] !== ']') {
-      const nextChar = this.#buffer[i];
-      if (nextChar === '[') {
-        return { kind: 'fail', nextPos: i };
-      }
-      content += nextChar;
-      i += 1;
-    }
-
-    if (i >= this.#buffer.length) {
-      return { kind: 'needMore' };
-    }
-    const after = i + 1;
-    const afterChar = this.peek(after);
-
-    if (content.length > 0 && this.isNumeric(content) && afterChar !== '(') {
-      // [number] pattern
-      return { kind: 'index', endPos: after, value: Number(content) };
-    } else if (afterChar !== '(') {
-      // [text](url) pattern
-      return { kind: 'fail', nextPos: after };
-    }
-
-    i = after + 1; // skip '('
-    if (i >= this.#buffer.length) {
-      return { kind: 'needMore' };
-    }
-
-    let url = '';
-    while (i < this.#buffer.length && this.#buffer[i] !== ')') {
-      url += this.#buffer[i++];
-    }
-    if (i >= this.#buffer.length) {
-      return { kind: 'needMore' };
-    }
-    return { kind: 'ok', endPos: i + 1, text: content, url };
-  }
-
-  private isNumeric(str: string): boolean {
-    return !Number.isNaN(Number(str)) && str.trim() !== '';
-  }
-
-  private handlePattern(
-    pattern: Finished | Failed,
-    isWrapped: boolean,
-    start: number,
-    current: number
-  ): { output: string; nextPos: number } {
-    if (pattern.kind === 'fail') {
-      return {
-        output: this.#buffer.slice(current, pattern.nextPos),
-        nextPos: pattern.nextPos,
-      };
-    }
-
-    if (isWrapped) {
-      const afterLinkPos = pattern.endPos;
-      if (this.peek(afterLinkPos) !== ')') {
-        if (afterLinkPos >= this.#buffer.length) {
-          return { output: '', nextPos: current };
-        }
-        return { output: '(', nextPos: start };
-      }
-
-      const out =
-        pattern.kind === 'index'
-          ? this.callback({ ...pattern, kind: 'index' })
-          : this.callback({ ...pattern, kind: 'wrappedLink' });
-      return { output: out, nextPos: afterLinkPos + 1 };
-    } else {
-      const out =
-        pattern.kind === 'ok'
-          ? this.callback({ ...pattern, kind: 'link' })
-          : this.callback({ ...pattern, kind: 'index' });
-      return { output: out, nextPos: pattern.endPos };
-    }
-  }
-}
-
-export class CitationParser {
-  private readonly citations: string[] = [];
-
-  private readonly parser = new StreamPatternParser(p => {
-    switch (p.kind) {
-      case 'index': {
-        if (p.value <= this.citations.length) {
-          return `[^${p.value}]`;
-        }
-        return `[${p.value}]`;
-      }
-      case 'wrappedLink': {
-        const index = this.citations.indexOf(p.url);
-        if (index === -1) {
-          this.citations.push(p.url);
-          return `[^${this.citations.length}]`;
-        }
-        return `[^${index + 1}]`;
-      }
-      case 'link': {
-        return `[${p.text}](${p.url})`;
-      }
-    }
-  });
-
-  public push(citation: string) {
-    this.citations.push(citation);
-  }
-
-  public parse(content: string) {
-    return this.parser.write(content);
-  }
-
-  public end() {
-    return this.parser.end() + '\n' + this.getFootnotes();
-  }
-
-  private getFootnotes() {
-    const footnotes = this.citations.map((citation, index) => {
-      return `[^${index + 1}]: {"type":"url","url":"${encodeURIComponent(
-        citation
-      )}"}`;
-    });
-    return footnotes.join('\n');
-  }
-}
-
-export type CitationIndexedEvent = {
+type CitationIndexedEvent = {
   type: 'citation';
   index: number;
   url: string;
@@ -436,7 +146,7 @@ export class CitationFootnoteFormatter {
   }
 }
 
-type ChunkType = TextStreamPart<CustomAITools>['type'];
+type ChunkType = CopilotTextStreamPart['type'];
 
 export function toError(error: unknown): Error {
   if (typeof error === 'string') {
@@ -458,6 +168,14 @@ type DocEditFootnote = {
   intent: string;
   result: string;
 };
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return null;
+}
+
 export class TextStreamParser {
   private readonly logger = new Logger(TextStreamParser.name);
   private readonly CALLOUT_PREFIX = '\n[!]\n';
@@ -468,7 +186,7 @@ export class TextStreamParser {
 
   private readonly docEditFootnotes: DocEditFootnote[] = [];
 
-  public parse(chunk: TextStreamPart<CustomAITools>) {
+  public parse(chunk: CopilotTextStreamPart) {
     let result = '';
     switch (chunk.type) {
       case 'text-delta': {
@@ -517,7 +235,7 @@ export class TextStreamParser {
           }
           case 'doc_edit': {
             this.docEditFootnotes.push({
-              intent: chunk.input.instructions,
+              intent: String(chunk.input.instructions ?? ''),
               result: '',
             });
             break;
@@ -533,14 +251,12 @@ export class TextStreamParser {
         result = this.addPrefix(result);
         switch (chunk.toolName) {
           case 'doc_edit': {
-            const array =
-              chunk.output && typeof chunk.output === 'object'
-                ? chunk.output.result
-                : undefined;
+            const output = asRecord(chunk.output);
+            const array = output?.result;
             if (Array.isArray(array)) {
               result += array
                 .map(item => {
-                  return `\n${item.changedContent}\n`;
+                  return `\n${String(asRecord(item)?.changedContent ?? '')}\n`;
                 })
                 .join('');
               this.docEditFootnotes[this.docEditFootnotes.length - 1].result =
@@ -557,8 +273,11 @@ export class TextStreamParser {
             } else if (typeof output === 'string') {
               result += `\n${output}\n`;
             } else {
+              const message = asRecord(output)?.message;
               this.logger.warn(
-                `Unexpected result type for doc_semantic_search: ${output?.message || 'Unknown error'}`
+                `Unexpected result type for doc_semantic_search: ${
+                  typeof message === 'string' ? message : 'Unknown error'
+                }`
               );
             }
             break;
@@ -572,9 +291,11 @@ export class TextStreamParser {
             break;
           }
           case 'doc_compose': {
-            const output = chunk.output;
-            if (output && typeof output === 'object' && 'title' in output) {
-              result += `\nDocument "${output.title}" created successfully with ${output.wordCount} words.\n`;
+            const output = asRecord(chunk.output);
+            if (output && typeof output.title === 'string') {
+              result += `\nDocument "${output.title}" created successfully with ${String(
+                output.wordCount ?? 0
+              )} words.\n`;
             }
             break;
           }
@@ -654,7 +375,7 @@ export class TextStreamParser {
 }
 
 export class StreamObjectParser {
-  public parse(chunk: TextStreamPart<CustomAITools>) {
+  public parse(chunk: CopilotTextStreamPart) {
     switch (chunk.type) {
       case 'reasoning-delta': {
         return { type: 'reasoning' as const, textDelta: chunk.text };
@@ -747,9 +468,7 @@ function normalizeUrl(baseURL?: string) {
   }
 }
 
-export function getVertexAnthropicBaseUrl(
-  options: GoogleVertexAnthropicProviderSettings
-) {
+export function getVertexAnthropicBaseUrl(options: VertexProviderConfig) {
   const normalizedBaseUrl = normalizeUrl(options.baseURL);
   if (normalizedBaseUrl) return normalizedBaseUrl;
   const { location, project } = options;
@@ -758,7 +477,7 @@ export function getVertexAnthropicBaseUrl(
 }
 
 export async function getGoogleAuth(
-  options: GoogleVertexAnthropicProviderSettings | GoogleVertexProviderSettings,
+  options: VertexProviderConfig,
   publisher: 'anthropic' | 'google'
 ) {
   function getBaseUrl() {
@@ -777,7 +496,7 @@ export async function getGoogleAuth(
     }
     const auth = new GoogleAuth({
       scopes: ['https://www.googleapis.com/auth/cloud-platform'],
-      ...(options.googleAuthOptions as GoogleAuthOptions),
+      ...options.googleAuthOptions,
     });
     const client = await auth.getClient();
     const token = await client.getAccessToken();
