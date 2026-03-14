@@ -32,6 +32,7 @@ export const SUPPORTED_LANGUAGES: Record<
     name: string;
     originalName: string;
     flagEmoji: string;
+    rtl?: boolean;
     resource:
       | LanguageResource
       | (() => Promise<{ default: Partial<LanguageResource> }>);
@@ -149,18 +150,21 @@ export const SUPPORTED_LANGUAGES: Record<
     name: 'Urdu',
     originalName: 'اردو',
     flagEmoji: '🇵🇰',
+    rtl: true,
     resource: () => import('./ur.json'),
   },
   ar: {
     name: 'Arabic',
     originalName: 'العربية',
     flagEmoji: '🇸🇦',
+    rtl: true,
     resource: () => import('./ar.json'),
   },
   fa: {
     name: 'Persian',
     originalName: 'فارسی',
     flagEmoji: '🇮🇷',
+    rtl: true,
     resource: () => import('./fa.json'),
   },
   uk: {
