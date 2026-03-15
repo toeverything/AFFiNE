@@ -126,7 +126,7 @@ export const DayPicker = memo(function DayPicker(
           data-month={cursor.month()}
           data-year={cursor.year()}
         >
-          {monthNames.split(',')[cursor.month()]}
+          {monthNames.split(/[,،]/)[cursor.month()]}
         </button>
         <button
           className={styles.calendarHeaderTriggerButton}
@@ -172,7 +172,7 @@ export const DayPicker = memo(function DayPicker(
       <main className={styles.monthViewBody}>
         {/* weekDays */}
         <div className={styles.monthViewRow}>
-          {weekDays.split(',').map(day => (
+          {weekDays.split(/[,،]/).map(day => (
             <div
               key={day}
               className={clsx(
