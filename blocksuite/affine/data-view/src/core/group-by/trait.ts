@@ -19,7 +19,6 @@ import type { SingleView } from '../view-manager/single-view.js';
 import { compareDateKeys } from './compare-date-keys.js';
 import { defaultGroupBy } from './default.js';
 import { findGroupByConfigByName, getGroupByService } from './matcher.js';
-// Test
 import type { GroupByConfig } from './types.js';
 
 export type GroupInfo<
