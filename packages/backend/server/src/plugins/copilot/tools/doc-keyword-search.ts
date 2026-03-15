@@ -1,24 +1,39 @@
 import { z } from 'zod';
 
 import type { AccessController } from '../../../core/permission';
+import type { Models } from '../../../models';
 import type { IndexerService, SearchDoc } from '../../indexer';
+import { workspaceSyncRequiredError } from './doc-sync';
 import { toolError } from './error';
 import { defineTool } from './tool';
 import type { CopilotChatOptions } from './types';
 
 export const buildDocKeywordSearchGetter = (
   ac: AccessController,
-  indexerService: IndexerService
+  indexerService: IndexerService,
+  models: Models
 ) => {
   const searchDocs = async (options: CopilotChatOptions, query?: string) => {
     if (!options || !query?.trim() || !options.user || !options.workspace) {
-      return undefined;
+      return toolError(
+        'Doc Keyword Search Failed',
+        'Missing workspace, user, or query for doc_keyword_search.'
+      );
+    }
+    const workspace = await models.workspace.get(options.workspace);
+    if (!workspace) {
+      return workspaceSyncRequiredError();
     }
     const canAccess = await ac
       .user(options.user)
       .workspace(options.workspace)
       .can('Workspace.Read');
-    if (!canAccess) return undefined;
+    if (!canAccess) {
+      return toolError(
+        'Doc Keyword Search Failed',
+        'You do not have permission to access this workspace.'
+      );
+    }
     const docs = await indexerService.searchDocsByKeyword(
       options.workspace,
       query
@@ -29,13 +44,15 @@ export const buildDocKeywordSearchGetter = (
       .user(options.user)
       .workspace(options.workspace)
       .docs(docs, 'Doc.Read');
-    return readableDocs;
+    return readableDocs ?? [];
   };
   return searchDocs;
 };
 
 export const createDocKeywordSearchTool = (
-  searchDocs: (query: string) => Promise<SearchDoc[] | undefined>
+  searchDocs: (
+    query: string
+  ) => Promise<SearchDoc[] | ReturnType<typeof toolError>>
 ) => {
   return defineTool({
     description:
@@ -50,8 +67,8 @@ export const createDocKeywordSearchTool = (
     execute: async ({ query }) => {
       try {
         const docs = await searchDocs(query);
-        if (!docs) {
-          return;
+        if (!Array.isArray(docs)) {
+          return docs;
         }
         return docs.map(doc => ({
           docId: doc.docId,

@@ -3,12 +3,19 @@ import { z } from 'zod';
 
 import { DocReader } from '../../../core/doc';
 import { AccessController } from '../../../core/permission';
-import { Models, publicUserSelect } from '../../../models';
-import { toolError } from './error';
+import { Models } from '../../../models';
+import {
+  documentSyncPendingError,
+  workspaceSyncRequiredError,
+} from './doc-sync';
+import { type ToolError, toolError } from './error';
 import { defineTool } from './tool';
 import type { CopilotChatOptions } from './types';
 
 const logger = new Logger('DocReadTool');
+
+const isToolError = (result: ToolError | object): result is ToolError =>
+  'type' in result && result.type === 'error';
 
 export const buildDocContentGetter = (
   ac: AccessController,
@@ -17,8 +24,17 @@ export const buildDocContentGetter = (
 ) => {
   const getDoc = async (options: CopilotChatOptions, docId?: string) => {
     if (!options?.user || !options?.workspace || !docId) {
-      return;
+      return toolError(
+        'Doc Read Failed',
+        'Missing workspace, user, or document id for doc_read.'
+      );
     }
+
+    const workspace = await models.workspace.get(options.workspace);
+    if (!workspace) {
+      return workspaceSyncRequiredError();
+    }
+
     const canAccess = await ac
       .user(options.user)
       .workspace(options.workspace)
@@ -28,23 +44,15 @@ export const buildDocContentGetter = (
       logger.warn(
         `User ${options.user} does not have access to doc ${docId} in workspace ${options.workspace}`
       );
-      return;
+      return toolError(
+        'Doc Read Failed',
+        `You do not have permission to read document ${docId} in this workspace.`
+      );
     }
 
-    const docMeta = await models.doc.getSnapshot(options.workspace, docId, {
-      select: {
-        createdAt: true,
-        updatedAt: true,
-        createdByUser: {
-          select: publicUserSelect,
-        },
-        updatedByUser: {
-          select: publicUserSelect,
-        },
-      },
-    });
+    const docMeta = await models.doc.getAuthors(options.workspace, docId);
     if (!docMeta) {
-      return;
+      return documentSyncPendingError(docId);
     }
 
     const content = await docReader.getDocMarkdown(
@@ -53,7 +61,7 @@ export const buildDocContentGetter = (
       true
     );
     if (!content) {
-      return;
+      return documentSyncPendingError(docId);
     }
 
     return {
@@ -69,8 +77,12 @@ export const buildDocContentGetter = (
   return getDoc;
 };
 
+type DocReadToolResult = Awaited<
+  ReturnType<ReturnType<typeof buildDocContentGetter>>
+>;
+
 export const createDocReadTool = (
-  getDoc: (targetId?: string) => Promise<object | undefined>
+  getDoc: (targetId?: string) => Promise<DocReadToolResult>
 ) => {
   return defineTool({
     description:
@@ -81,13 +93,10 @@ export const createDocReadTool = (
     execute: async ({ doc_id }) => {
       try {
         const doc = await getDoc(doc_id);
-        if (!doc) {
-          return;
-        }
-        return { ...doc };
+        return isToolError(doc) ? doc : { ...doc };
       } catch (err: any) {
         logger.error(`Failed to read the doc ${doc_id}`, err);
-        return toolError('Doc Read Failed', err.message);
+        return toolError('Doc Read Failed', err.message ?? String(err));
       }
     },
   });
