@@ -13,6 +13,7 @@ const dryRun = args.includes('--dry-run');
 const targetPath = args.find(a => !a.startsWith('--')) || '.';
 
 const rules = [
+  // kebab-case (standard CSS)
   { from: /\bmargin-left\b/g,   to: 'margin-inline-start' },
   { from: /\bmargin-right\b/g,  to: 'margin-inline-end' },
   { from: /\bpadding-left\b/g,  to: 'padding-inline-start' },
@@ -23,6 +24,18 @@ const rules = [
   { from: /\bborder-right-width\b/g, to: 'border-inline-end-width' },
   { from: /\bborder-left-color\b/g,  to: 'border-inline-start-color' },
   { from: /\bborder-right-color\b/g, to: 'border-inline-end-color' },
+
+  // camelCase (vanilla-extract CSS-in-JS)
+  { from: /\bmarginLeft\b/g,         to: 'marginInlineStart' },
+  { from: /\bmarginRight\b/g,        to: 'marginInlineEnd' },
+  { from: /\bpaddingLeft\b/g,        to: 'paddingInlineStart' },
+  { from: /\bpaddingRight\b/g,       to: 'paddingInlineEnd' },
+  { from: /\bborderLeft\b/g,         to: 'borderInlineStart' },
+  { from: /\bborderRight\b/g,        to: 'borderInlineEnd' },
+  { from: /\bborderLeftWidth\b/g,    to: 'borderInlineStartWidth' },
+  { from: /\bborderRightWidth\b/g,   to: 'borderInlineEndWidth' },
+  { from: /\bborderLeftColor\b/g,    to: 'borderInlineStartColor' },
+  { from: /\bborderRightColor\b/g,   to: 'borderInlineEndColor' },
 ];
 
 const EXTENSIONS = ['.ts', '.tsx', '.css'];
@@ -58,7 +71,14 @@ function walkDir(dir) {
   }
 }
 
-console.log(`\nAFFiNE RTL Codemod ${dryRun ? '(DRY RUN)' : ''}\nTarget: ${path.resolve(targetPath)}\n`);
-fs.statSync(targetPath).isDirectory() ? walkDir(targetPath) : processFile(targetPath);
+const resolvedPath = path.resolve(targetPath);
+if (!fs.existsSync(resolvedPath)) {
+  console.error(`Error: Path does not exist: ${resolvedPath}`);
+  process.exit(1);
+}
+
+console.log(`\nAFFiNE RTL Codemod ${dryRun ? '(DRY RUN)' : ''}\nTarget: ${resolvedPath}\n`);
+const stat = fs.statSync(resolvedPath);
+stat.isDirectory() ? walkDir(resolvedPath) : processFile(resolvedPath);
 console.log(`\nFiles scanned: ${totalFiles} | Changed: ${changedFiles} | Total replacements: ${totalChanges}`);
 if (dryRun) console.log('(Dry run — no files modified)');
