@@ -35,6 +35,13 @@ The primary RTL work is converting physical CSS properties to logical equivalent
 | `text-align: right` | `text-align: end` |
 | `border-radius: X Y Z W` | `border-start-start-radius`, etc. |
 
+### Manual follow-up (not covered by codemod)
+
+The following require manual review and cannot be safely automated:
+- `left` / `right` in positioned elements — context-dependent, may affect layout logic
+- `text-align: left` / `text-align: right` — some are intentional LTR, need case-by-case review
+- `border-radius` directional cases — rare, search manually with: `grep -r "border-top-left-radius\|border-top-right-radius\|border-bottom-left-radius\|border-bottom-right-radius" packages/ blocksuite/`
+
 ### When NOT to convert
 
 Some physical properties are intentional and should stay:
