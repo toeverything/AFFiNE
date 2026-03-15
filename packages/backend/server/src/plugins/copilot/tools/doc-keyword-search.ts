@@ -14,7 +14,8 @@ export const buildDocKeywordSearchGetter = (
   models: Models
 ) => {
   const searchDocs = async (options: CopilotChatOptions, query?: string) => {
-    if (!options || !query?.trim() || !options.user || !options.workspace) {
+    const queryTrimmed = query?.trim();
+    if (!options || !queryTrimmed || !options.user || !options.workspace) {
       return toolError(
         'Doc Keyword Search Failed',
         'Missing workspace, user, or query for doc_keyword_search.'
@@ -36,7 +37,7 @@ export const buildDocKeywordSearchGetter = (
     }
     const docs = await indexerService.searchDocsByKeyword(
       options.workspace,
-      query
+      queryTrimmed
     );
 
     // filter current user readable docs
