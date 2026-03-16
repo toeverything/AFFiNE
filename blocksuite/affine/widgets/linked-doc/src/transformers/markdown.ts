@@ -235,6 +235,103 @@ type ImportMarkdownZipOptions = {
 };
 
 /**
+ * Filters hidden/system entries that should never participate in imports.
+ */
+export function isSystemImportPath(path: string) {
+  return path.includes('__MACOSX') || path.includes('.DS_Store');
+}
+
+/**
+ * Creates the doc CRUD bridge used by importer transformers.
+ */
+export function createCollectionDocCRUD(collection: Workspace) {
+  return {
+    create: (id: string) => collection.createDoc(id).getStore({ id }),
+    get: (id: string) => collection.getDoc(id)?.getStore({ id }) ?? null,
+    delete: (id: string) => collection.removeDoc(id),
+  };
+}
+
+type CreateMarkdownImportJobOptions = {
+  collection: Workspace;
+  schema: Schema;
+  preferredTitle?: string;
+  fullPath?: string;
+};
+
+/**
+ * Creates a markdown import job with the standard collection middlewares.
+ */
+export function createMarkdownImportJob({
+  collection,
+  schema,
+  preferredTitle,
+  fullPath,
+}: CreateMarkdownImportJobOptions) {
+  return new Transformer({
+    schema,
+    blobCRUD: collection.blobSync,
+    docCRUD: createCollectionDocCRUD(collection),
+    middlewares: [
+      defaultImageProxyMiddleware,
+      fileNameMiddleware(preferredTitle),
+      docLinkBaseURLMiddleware(collection.id),
+      ...(fullPath ? [filePathMiddleware(fullPath)] : []),
+    ],
+  });
+}
+
+type StageImportedAssetOptions = {
+  pendingAssets: AssetMap;
+  pendingPathBlobIdMap: PathBlobIdMap;
+  path: string;
+  content: Blob;
+  fileName: string;
+};
+
+/**
+ * Hashes a non-markdown import file and stages it into the shared asset maps.
+ */
+export async function stageImportedAsset({
+  pendingAssets,
+  pendingPathBlobIdMap,
+  path,
+  content,
+  fileName,
+}: StageImportedAssetOptions) {
+  const ext = path.split('.').at(-1) ?? '';
+  const mime = extMimeMap.get(ext.toLowerCase()) ?? '';
+  const key = await sha(await content.arrayBuffer());
+  pendingPathBlobIdMap.set(path, key);
+  pendingAssets.set(key, new File([content], fileName, { type: mime }));
+}
+
+/**
+ * Binds previously staged asset files into a transformer job before import.
+ */
+export function bindImportedAssetsToJob(
+  job: Transformer,
+  pendingAssets: AssetMap,
+  pendingPathBlobIdMap: PathBlobIdMap
+) {
+  const pathBlobIdMap = job.assetsManager.getPathBlobIdMap();
+  // Iterate over all assets to be imported
+  for (const [assetPath, key] of pendingPathBlobIdMap.entries()) {
+    // Get the relative path of the asset to the markdown file
+    // Store the path to blobId map
+    pathBlobIdMap.set(assetPath, key);
+    // Store the asset to assets, the key is the blobId, the value is the file object
+    // In block adapter, it will use the blobId to get the file object
+    const assetFile = pendingAssets.get(key);
+    if (assetFile) {
+      job.assets.set(key, assetFile);
+    }
+  }
+
+  return pathBlobIdMap;
+}
+
+/**
  * Exports a doc to a Markdown file or a zip archive containing Markdown and assets.
  * @param doc The doc to export
  * @returns A Promise that resolves when the export is complete
@@ -340,19 +437,10 @@ async function importMarkdownToDoc({
   const { content, meta } = parseFrontmatter(markdown);
   const preferredTitle = meta.title ?? fileName;
   const provider = getProvider(extensions);
-  const job = new Transformer({
+  const job = createMarkdownImportJob({
+    collection,
     schema,
-    blobCRUD: collection.blobSync,
-    docCRUD: {
-      create: (id: string) => collection.createDoc(id).getStore({ id }),
-      get: (id: string) => collection.getDoc(id)?.getStore({ id }) ?? null,
-      delete: (id: string) => collection.removeDoc(id),
-    },
-    middlewares: [
-      defaultImageProxyMiddleware,
-      fileNameMiddleware(preferredTitle),
-      docLinkBaseURLMiddleware(collection.id),
-    ],
+    preferredTitle,
   });
   const mdAdapter = new MarkdownAdapter(job, provider);
   const page = await mdAdapter.toDoc({
@@ -392,7 +480,7 @@ async function importMarkdownZip({
   // Iterate over all files in the zip
   for (const { path, content: blob } of unzip) {
     // Skip the files that are not markdown files
-    if (path.includes('__MACOSX') || path.includes('.DS_Store')) {
+    if (isSystemImportPath(path)) {
       continue;
     }
 
@@ -406,12 +494,13 @@ async function importMarkdownZip({
         fullPath: path,
       });
     } else {
-      // If the file is not a markdown file, store it to pendingAssets
-      const ext = path.split('.').at(-1) ?? '';
-      const mime = extMimeMap.get(ext) ?? '';
-      const key = await sha(await blob.arrayBuffer());
-      pendingPathBlobIdMap.set(path, key);
-      pendingAssets.set(key, new File([blob], fileName, { type: mime }));
+      await stageImportedAsset({
+        pendingAssets,
+        pendingPathBlobIdMap,
+        path,
+        content: blob,
+        fileName,
+      });
     }
   }
 
@@ -422,34 +511,13 @@ async function importMarkdownZip({
       const markdown = await contentBlob.text();
       const { content, meta } = parseFrontmatter(markdown);
       const preferredTitle = meta.title ?? fileNameWithoutExt;
-      const job = new Transformer({
+      const job = createMarkdownImportJob({
+        collection,
         schema,
-        blobCRUD: collection.blobSync,
-        docCRUD: {
-          create: (id: string) => collection.createDoc(id).getStore({ id }),
-          get: (id: string) => collection.getDoc(id)?.getStore({ id }) ?? null,
-          delete: (id: string) => collection.removeDoc(id),
-        },
-        middlewares: [
-          defaultImageProxyMiddleware,
-          fileNameMiddleware(preferredTitle),
-          docLinkBaseURLMiddleware(collection.id),
-          filePathMiddleware(fullPath),
-        ],
+        preferredTitle,
+        fullPath,
       });
-      const assets = job.assets;
-      const pathBlobIdMap = job.assetsManager.getPathBlobIdMap();
-      // Iterate over all assets to be imported
-      for (const [assetPath, key] of pendingPathBlobIdMap.entries()) {
-        // Get the relative path of the asset to the markdown file
-        // Store the path to blobId map
-        pathBlobIdMap.set(assetPath, key);
-        // Store the asset to assets, the key is the blobId, the value is the file object
-        // In block adapter, it will use the blobId to get the file object
-        if (pendingAssets.get(key)) {
-          assets.set(key, pendingAssets.get(key)!);
-        }
-      }
+      bindImportedAssetsToJob(job, pendingAssets, pendingPathBlobIdMap);
 
       const mdAdapter = new MarkdownAdapter(job, provider);
       const doc = await mdAdapter.toDoc({

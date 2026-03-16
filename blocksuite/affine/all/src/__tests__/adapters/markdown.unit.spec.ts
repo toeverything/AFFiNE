@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { basename, resolve } from 'node:path';
+
 import {
   MarkdownTransformer,
   ObsidianTransformer,
@@ -45,24 +48,20 @@ function withRelativePath(file: File, relativePath: string): File {
   return file;
 }
 
-function collectBlocksByFlavour(
-  snapshot: DocSnapshot,
-  flavour: string
-): BlockSnapshot[] {
-  const matches: BlockSnapshot[] = [];
-  const visit = (block: BlockSnapshot) => {
-    if (block.flavour === flavour) {
-      matches.push(block);
-    }
-
-    for (const child of block.children) {
-      visit(child);
-    }
-  };
-
-  visit(snapshot.blocks);
-
-  return matches;
+function markdownFixture(relativePath: string): File {
+  return withRelativePath(
+    new File(
+      [
+        readFileSync(
+          resolve(import.meta.dirname, 'fixtures/obsidian', relativePath),
+          'utf8'
+        ),
+      ],
+      basename(relativePath),
+      { type: 'text/markdown' }
+    ),
+    `vault/${relativePath}`
+  );
 }
 
 function exportSnapshot(doc: Store): DocSnapshot {
@@ -73,6 +72,104 @@ function exportSnapshot(doc: Store): DocSnapshot {
   const snapshot = job.docToSnapshot(doc);
   expect(snapshot).toBeTruthy();
   return snapshot!;
+}
+
+function normalizeDeltaForSnapshot(
+  delta: DeltaInsert<AffineTextAttributes>[],
+  titleById: ReadonlyMap<string, string>
+) {
+  return delta.map(item => {
+    const normalized: Record<string, unknown> = {
+      insert: item.insert,
+    };
+
+    if (item.attributes?.link) {
+      normalized.link = item.attributes.link;
+    }
+
+    if (item.attributes?.reference?.type === 'LinkedPage') {
+      normalized.reference = {
+        type: 'LinkedPage',
+        page: titleById.get(item.attributes.reference.pageId) ?? '<missing>',
+        ...(item.attributes.reference.title
+          ? { title: item.attributes.reference.title }
+          : {}),
+      };
+    }
+
+    if (item.attributes?.footnote) {
+      const reference = item.attributes.footnote.reference;
+      normalized.footnote = {
+        label: item.attributes.footnote.label,
+        reference:
+          reference.type === 'doc'
+            ? {
+                type: 'doc',
+                page: reference.docId
+                  ? (titleById.get(reference.docId) ?? '<missing>')
+                  : '<missing>',
+              }
+            : {
+                type: reference.type,
+                ...(reference.title ? { title: reference.title } : {}),
+                ...(reference.fileName ? { fileName: reference.fileName } : {}),
+              },
+      };
+    }
+
+    return normalized;
+  });
+}
+
+function simplifyBlockForSnapshot(
+  block: BlockSnapshot,
+  titleById: ReadonlyMap<string, string>
+): Record<string, unknown> {
+  const simplified: Record<string, unknown> = {
+    flavour: block.flavour,
+  };
+
+  if (block.flavour === 'affine:paragraph' || block.flavour === 'affine:list') {
+    simplified.type = block.props.type;
+    const text = block.props.text as
+      | { delta?: DeltaInsert<AffineTextAttributes>[] }
+      | undefined;
+    simplified.delta = normalizeDeltaForSnapshot(text?.delta ?? [], titleById);
+  }
+
+  if (block.flavour === 'affine:callout') {
+    simplified.emoji = block.props.emoji;
+  }
+
+  if (block.flavour === 'affine:attachment') {
+    simplified.name = block.props.name;
+    simplified.style = block.props.style;
+  }
+
+  if (block.flavour === 'affine:image') {
+    simplified.sourceId = '<asset>';
+  }
+
+  const children = (block.children ?? [])
+    .filter(child => child.flavour !== 'affine:surface')
+    .map(child => simplifyBlockForSnapshot(child, titleById));
+  if (children.length) {
+    simplified.children = children;
+  }
+
+  return simplified;
+}
+
+function snapshotDocByTitle(
+  collection: TestWorkspace,
+  title: string,
+  titleById: ReadonlyMap<string, string>
+) {
+  const meta = collection.meta.docMetas.find(meta => meta.title === title);
+  expect(meta).toBeTruthy();
+  const doc = collection.getDoc(meta!.id)?.getStore({ id: meta!.id });
+  expect(doc).toBeTruthy();
+  return simplifyBlockForSnapshot(exportSnapshot(doc!).blocks, titleById);
 }
 
 describe('snapshot to markdown', () => {
@@ -173,118 +270,44 @@ Hello world
     expect(meta?.tags).toEqual(['a', 'b']);
   });
 
-  test('imports obsidian vault links, embeds, and callouts', async () => {
+  test('imports obsidian vault fixtures', async () => {
     const schema = new Schema().register(AffineSchemas);
     const collection = new TestWorkspace();
     collection.storeExtensions = testStoreExtensions;
     collection.meta.initialize();
 
-    const home = withRelativePath(
-      new File(
-        [
-          `---
-title: 😀 Home
----
-# 😀 Home
-
-See [[guide/Note#Section|Alias]].
-
-![[assets/photo.png]]
-
-![[assets/manual.pdf]]
-
-> [!note]- Folded title
-> - item 1
-`,
-        ],
-        'Home.md',
-        { type: 'text/markdown' }
-      ),
-      'vault/Home.md'
-    );
-    const guide = withRelativePath(
-      new File(['# Note\n'], 'Note.md', { type: 'text/markdown' }),
-      'vault/guide/Note.md'
-    );
-    const duplicate = withRelativePath(
-      new File(['---\ntitle: Archive Note\n---\n# Archive Note\n'], 'Note.md', {
-        type: 'text/markdown',
-      }),
-      'vault/archive/Note.md'
-    );
-    const image = withRelativePath(
-      new File([new Uint8Array([137, 80, 78, 71])], 'photo.png', {
-        type: 'image/png',
-      }),
-      'vault/assets/photo.png'
-    );
     const attachment = withRelativePath(
-      new File([new Uint8Array([37, 80, 68, 70])], 'manual.pdf', {
-        type: 'application/pdf',
+      new File([new Uint8Array([80, 75, 3, 4])], 'archive.zip', {
+        type: 'application/zip',
       }),
-      'vault/assets/manual.pdf'
+      'vault/archive.zip'
     );
 
-    const { docIds, docEmojis } = await ObsidianTransformer.importObsidianVault(
-      {
-        collection,
-        schema,
-        importedFiles: [home, guide, duplicate, image, attachment],
-        extensions: testStoreExtensions,
-      }
+    const { docIds } = await ObsidianTransformer.importObsidianVault({
+      collection,
+      schema,
+      importedFiles: [
+        markdownFixture('entry.md'),
+        markdownFixture('linked.md'),
+        attachment,
+      ],
+      extensions: testStoreExtensions,
+    });
+    expect(docIds).toHaveLength(2);
+
+    const titleById = new Map(
+      collection.meta.docMetas.map(meta => [
+        meta.id,
+        meta.title ?? '<untitled>',
+      ])
     );
 
-    expect(docIds).toHaveLength(3);
-
-    const homeMeta = collection.meta.docMetas.find(
-      meta => meta.title === 'Home'
-    );
-    const guideMeta = collection.meta.docMetas.find(
-      meta => meta.title === 'Note'
-    );
-    expect(homeMeta).toBeTruthy();
-    expect(guideMeta).toBeTruthy();
-    expect(docEmojis.get(homeMeta!.id)).toBe('😀');
-
-    const homeDoc = collection
-      .getDoc(homeMeta!.id)
-      ?.getStore({ id: homeMeta!.id });
-    expect(homeDoc).toBeTruthy();
-
-    const snapshot = exportSnapshot(homeDoc!);
-    const paragraphs = collectBlocksByFlavour(snapshot, 'affine:paragraph');
-    const referenceDelta = paragraphs
-      .flatMap(paragraph => {
-        const text = paragraph.props.text as
-          | { delta?: DeltaInsert<AffineTextAttributes>[] }
-          | undefined;
-        return text?.delta ?? [];
-      })
-      .find(
-        delta =>
-          delta.attributes?.reference?.type === 'LinkedPage' &&
-          delta.attributes.reference.pageId === guideMeta!.id
-      );
-    expect(referenceDelta?.attributes?.reference?.title).toBe('Alias');
-
-    const imageBlocks = collectBlocksByFlavour(snapshot, 'affine:image');
-    expect(imageBlocks).toHaveLength(1);
-
-    const attachmentLink = paragraphs
-      .flatMap(paragraph => {
-        const text = paragraph.props.text as
-          | { delta?: DeltaInsert<AffineTextAttributes>[] }
-          | undefined;
-        return text?.delta ?? [];
-      })
-      .find(delta => delta.attributes?.link === 'vault/assets/manual.pdf');
-    expect(attachmentLink).toBeTruthy();
-
-    const calloutBlocks = collectBlocksByFlavour(snapshot, 'affine:callout');
-    expect(calloutBlocks).toHaveLength(1);
-    expect(
-      calloutBlocks[0].children.some(child => child.flavour === 'affine:list')
-    ).toBe(true);
+    expect({
+      titles: collection.meta.docMetas
+        .map(meta => meta.title)
+        .sort((a, b) => (a ?? '').localeCompare(b ?? '')),
+      entry: snapshotDocByTitle(collection, 'entry', titleById),
+    }).toMatchSnapshot();
   });
 
   test('paragraph', async () => {

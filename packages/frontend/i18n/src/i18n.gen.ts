@@ -2495,7 +2495,7 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.import.notion.tooltip"](): string;
     /**
-      * `Obsidian`
+      * `Obsidian Vault`
       */
     ["com.affine.import.obsidian"](): string;
     /**

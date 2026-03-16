@@ -1,25 +1,33 @@
+import { FootNoteReferenceParamsSchema } from '@blocksuite/affine-model';
 import {
-  defaultImageProxyMiddleware,
-  docLinkBaseURLMiddleware,
-  fileNameMiddleware,
-  filePathMiddleware,
+  BlockMarkdownAdapterExtension,
+  createAttachmentBlockSnapshot,
   FULL_FILE_PATH_KEY,
   getImageFullPath,
   MarkdownAdapter,
+  type MarkdownAST,
   MarkdownASTToDeltaExtension,
+  normalizeFilePathReference,
 } from '@blocksuite/affine-shared/adapters';
 import type { AffineTextAttributes } from '@blocksuite/affine-shared/types';
-import { sha } from '@blocksuite/global/utils';
 import type {
   DeltaInsert,
   ExtensionType,
   Schema,
   Workspace,
 } from '@blocksuite/store';
-import { extMimeMap, Transformer } from '@blocksuite/store';
-import type { Text } from 'mdast';
+import { extMimeMap, nanoid } from '@blocksuite/store';
+import type { Html, Text } from 'mdast';
 
-import { applyMetaPatch, getProvider, parseFrontmatter } from './markdown.js';
+import {
+  applyMetaPatch,
+  bindImportedAssetsToJob,
+  createMarkdownImportJob,
+  getProvider,
+  isSystemImportPath,
+  parseFrontmatter,
+  stageImportedAsset,
+} from './markdown.js';
 import type {
   AssetMap,
   MarkdownFileImportEntry,
@@ -56,26 +64,12 @@ const CALLOUT_TYPE_MAP: Record<string, string> = {
 };
 
 const AMBIGUOUS_PAGE_LOOKUP = '__ambiguous__';
-
-function decodePathSegment(value: string): string {
-  try {
-    return decodeURIComponent(value);
-  } catch {
-    return value;
-  }
-}
-
-function normalizePath(value: string): string {
-  return decodePathSegment(value)
-    .trim()
-    .replace(/\\/g, '/')
-    .replace(/^\.\/+/, '')
-    .replace(/^\/+/, '')
-    .replace(/\/+/g, '/');
-}
+const DEFAULT_CALLOUT_EMOJI = '💡';
+const OBSIDIAN_TEXT_FOOTNOTE_URL_PREFIX = 'data:text/plain;charset=utf-8,';
+const OBSIDIAN_ATTACHMENT_EMBED_TAG = 'obsidian-attachment';
 
 function normalizeLookupKey(value: string): string {
-  return normalizePath(value).toLowerCase();
+  return normalizeFilePathReference(value).toLowerCase();
 }
 
 function stripMarkdownExtension(value: string): string {
@@ -83,14 +77,14 @@ function stripMarkdownExtension(value: string): string {
 }
 
 function basename(value: string): string {
-  return normalizePath(value).split('/').pop() ?? value;
+  return normalizeFilePathReference(value).split('/').pop() ?? value;
 }
 
 function parseObsidianTarget(rawTarget: string): {
   path: string;
   fragment: string | null;
 } {
-  const normalizedTarget = normalizePath(rawTarget);
+  const normalizedTarget = normalizeFilePathReference(rawTarget);
   const match = normalizedTarget.match(/^([^#^]+)([#^].*)?$/);
 
   return {
@@ -137,7 +131,8 @@ function preprocessObsidianCallouts(markdown: string): string {
   return markdown.replace(
     /^(> *)\[!([^\]\n]+)\]([+-]?)([^\n]*)/gm,
     (_, prefix, type, _fold, rest) => {
-      const calloutToken = CALLOUT_TYPE_MAP[type.trim().toLowerCase()] ?? type;
+      const calloutToken =
+        CALLOUT_TYPE_MAP[type.trim().toLowerCase()] ?? DEFAULT_CALLOUT_EMOJI;
       const title = rest.trim();
       return title
         ? `${prefix}[!${calloutToken}] ${title}`
@@ -146,18 +141,113 @@ function preprocessObsidianCallouts(markdown: string): string {
   );
 }
 
+function isStructuredFootnoteDefinition(content: string): boolean {
+  try {
+    return FootNoteReferenceParamsSchema.safeParse(JSON.parse(content.trim()))
+      .success;
+  } catch {
+    return false;
+  }
+}
+
+function splitFootnoteTextContent(content: string): {
+  title: string;
+  description?: string;
+} {
+  const lines = content
+    .split('\n')
+    .map(line => line.trim())
+    .filter(Boolean);
+  const title = lines[0] ?? content.trim();
+  const description = lines.slice(1).join('\n').trim();
+
+  return {
+    title,
+    ...(description ? { description } : {}),
+  };
+}
+
+function createTextFootnoteDefinition(content: string): string {
+  const normalizedContent = content.trim();
+  const { title, description } = splitFootnoteTextContent(normalizedContent);
+
+  return JSON.stringify({
+    type: 'url',
+    url: encodeURIComponent(
+      `${OBSIDIAN_TEXT_FOOTNOTE_URL_PREFIX}${encodeURIComponent(
+        normalizedContent
+      )}`
+    ),
+    title,
+    ...(description ? { description } : {}),
+  });
+}
+
+function extractObsidianFootnotes(markdown: string): {
+  content: string;
+  footnotes: string[];
+} {
+  const lines = markdown.split('\n');
+  const output: string[] = [];
+  const footnotes: string[] = [];
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    const match = line.match(/^\[\^([^\]]+)\]:\s*(.*)$/);
+    if (!match) {
+      output.push(line);
+      continue;
+    }
+
+    const identifier = match[1];
+    const contentLines = [match[2]];
+
+    while (index + 1 < lines.length) {
+      const nextLine = lines[index + 1];
+      if (/^(?: {1,4}|\t)/.test(nextLine)) {
+        contentLines.push(nextLine.replace(/^(?: {1,4}|\t)/, ''));
+        index += 1;
+        continue;
+      }
+
+      if (
+        nextLine.trim() === '' &&
+        index + 2 < lines.length &&
+        /^(?: {1,4}|\t)/.test(lines[index + 2])
+      ) {
+        contentLines.push('');
+        index += 1;
+        continue;
+      }
+
+      break;
+    }
+
+    const content = contentLines.join('\n').trim();
+    footnotes.push(
+      `[^${identifier}]: ${
+        !content || isStructuredFootnoteDefinition(content)
+          ? content
+          : createTextFootnoteDefinition(content)
+      }`
+    );
+  }
+
+  return { content: output.join('\n'), footnotes };
+}
+
 function buildLookupKeys(
   targetPath: string,
   currentFilePath?: string
 ): string[] {
-  const parsedTargetPath = normalizePath(targetPath);
+  const parsedTargetPath = normalizeFilePathReference(targetPath);
   if (!parsedTargetPath) {
     return [];
   }
 
   const keys = new Set<string>();
   const addPathVariants = (value: string) => {
-    const normalizedValue = normalizePath(value);
+    const normalizedValue = normalizeFilePathReference(value);
     if (!normalizedValue) {
       return;
     }
@@ -271,10 +361,42 @@ function getEmbedLabel(
   return rawAlias.trim();
 }
 
+type ObsidianAttachmentEmbed = {
+  blobId: string;
+  fileName: string;
+  fileType: string;
+};
+
+function createObsidianAttach(embed: ObsidianAttachmentEmbed): string {
+  return `<!-- ${OBSIDIAN_ATTACHMENT_EMBED_TAG} ${encodeURIComponent(
+    JSON.stringify(embed)
+  )} -->`;
+}
+
+function parseObsidianAttach(value: string): ObsidianAttachmentEmbed | null {
+  const match = value.match(
+    new RegExp(`^<!-- ${OBSIDIAN_ATTACHMENT_EMBED_TAG} ([^ ]+) -->$`)
+  );
+  if (!match?.[1]) return null;
+
+  try {
+    const parsed = JSON.parse(
+      decodeURIComponent(match[1])
+    ) as ObsidianAttachmentEmbed;
+    if (!parsed.blobId || !parsed.fileName) {
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
 function preprocessObsidianEmbeds(
   markdown: string,
   filePath: string,
-  pageLookupMap: ReadonlyMap<string, string>
+  pageLookupMap: ReadonlyMap<string, string>,
+  pathBlobIdMap: ReadonlyMap<string, string>
 ): string {
   return markdown.replace(
     /!\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g,
@@ -302,10 +424,92 @@ function preprocessObsidianEmbeds(
       }
 
       const label = getEmbedLabel(rawAlias, path, true);
-      return `[${escapeMarkdownLabel(label)}](${encodedPath})`;
+      const blobId = pathBlobIdMap.get(assetPath);
+      if (!blobId) return `[${escapeMarkdownLabel(label)}](${encodedPath})`;
+
+      const extension = path.split('.').at(-1)?.toLowerCase() ?? '';
+      return createObsidianAttach({
+        blobId,
+        fileName: basename(path),
+        fileType: extMimeMap.get(extension) ?? '',
+      });
     }
   );
 }
+
+function preprocessObsidianMarkdown(
+  markdown: string,
+  filePath: string,
+  pageLookupMap: ReadonlyMap<string, string>,
+  pathBlobIdMap: ReadonlyMap<string, string>
+): string {
+  const { content: contentWithoutFootnotes, footnotes: extractedFootnotes } =
+    extractObsidianFootnotes(markdown);
+  const content = preprocessObsidianEmbeds(
+    contentWithoutFootnotes,
+    filePath,
+    pageLookupMap,
+    pathBlobIdMap
+  );
+  const normalizedMarkdown = preprocessTitleHeader(
+    preprocessObsidianCallouts(content)
+  );
+
+  if (extractedFootnotes.length === 0) {
+    return normalizedMarkdown;
+  }
+
+  const trimmedMarkdown = normalizedMarkdown.replace(/\s+$/, '');
+  return `${trimmedMarkdown}\n\n${extractedFootnotes.join('\n\n')}\n`;
+}
+
+function isObsidianAttachmentEmbedNode(node: MarkdownAST): node is Html {
+  return node.type === 'html' && !!parseObsidianAttach(node.value);
+}
+
+export const obsidianAttachmentEmbedMarkdownAdapterMatcher =
+  BlockMarkdownAdapterExtension({
+    flavour: 'obsidian:attachment-embed',
+    toMatch: o => isObsidianAttachmentEmbedNode(o.node),
+    fromMatch: () => false,
+    toBlockSnapshot: {
+      enter: (o, context) => {
+        if (!isObsidianAttachmentEmbedNode(o.node)) {
+          return;
+        }
+
+        const attachment = parseObsidianAttach(o.node.value);
+        if (!attachment) {
+          return;
+        }
+
+        const assetFile = context.assets?.getAssets().get(attachment.blobId);
+        context.walkerContext
+          .openNode(
+            createAttachmentBlockSnapshot({
+              id: nanoid(),
+              props: {
+                name: attachment.fileName,
+                size: assetFile?.size ?? 0,
+                type:
+                  attachment.fileType ||
+                  assetFile?.type ||
+                  'application/octet-stream',
+                sourceId: attachment.blobId,
+                embed: false,
+                style: 'horizontalThin',
+                footnoteIdentifier: null,
+              },
+            }),
+            'children'
+          )
+          .closeNode();
+        (o.node as unknown as { type: string }).type =
+          'obsidianAttachmentEmbed';
+      },
+    },
+    fromBlockSnapshot: {},
+  });
 
 export const obsidianWikilinkToDeltaMatcher = MarkdownASTToDeltaExtension({
   name: 'obsidian-wikilink',
@@ -388,7 +592,11 @@ export async function importObsidianVault({
   importedFiles,
   extensions,
 }: ImportObsidianVaultOptions): Promise<ImportObsidianVaultResult> {
-  const provider = getProvider([obsidianWikilinkToDeltaMatcher, ...extensions]);
+  const provider = getProvider([
+    obsidianWikilinkToDeltaMatcher,
+    obsidianAttachmentEmbedMarkdownAdapterMatcher,
+    ...extensions,
+  ]);
 
   const docIds: string[] = [];
   const docEmojis = new Map<string, string>();
@@ -399,12 +607,7 @@ export async function importObsidianVault({
 
   for (const file of importedFiles) {
     const filePath = file.webkitRelativePath || file.name;
-    const isSystemFile =
-      filePath.includes('__MACOSX') || filePath.includes('.DS_Store');
-
-    if (isSystemFile) {
-      continue;
-    }
+    if (isSystemImportPath(filePath)) continue;
 
     if (file.name.endsWith('.md')) {
       const fileNameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
@@ -441,11 +644,13 @@ export async function importObsidianVault({
         meta,
       });
     } else {
-      const ext = filePath.split('.').at(-1) ?? '';
-      const mime = extMimeMap.get(ext.toLowerCase()) ?? '';
-      const key = await sha(await file.arrayBuffer());
-      pendingPathBlobIdMap.set(filePath, key);
-      pendingAssets.set(key, new File([file], file.name, { type: mime }));
+      await stageImportedAsset({
+        pendingAssets,
+        pendingPathBlobIdMap,
+        path: filePath,
+        content: file,
+        fileName: file.name,
+      });
     }
   }
 
@@ -469,20 +674,11 @@ export async function importObsidianVault({
         meta,
       } = markdownFile;
 
-      const job = new Transformer({
+      const job = createMarkdownImportJob({
+        collection,
         schema,
-        blobCRUD: collection.blobSync,
-        docCRUD: {
-          create: id => collection.createDoc(id).getStore({ id }),
-          get: id => collection.getDoc(id)?.getStore({ id }) ?? null,
-          delete: id => collection.removeDoc(id),
-        },
-        middlewares: [
-          defaultImageProxyMiddleware,
-          fileNameMiddleware(preferredTitle),
-          docLinkBaseURLMiddleware(collection.id),
-          filePathMiddleware(fullPath),
-        ],
+        preferredTitle,
+        fullPath,
       });
 
       for (const [lookupKey, id] of pageLookupMap.entries()) {
@@ -495,24 +691,21 @@ export async function importObsidianVault({
         job.adapterConfigs.set('obsidian:pageEmoji:' + id, emoji);
       }
 
-      const pathBlobIdMap = job.assetsManager.getPathBlobIdMap();
-      for (const [assetPath, key] of pendingPathBlobIdMap.entries()) {
-        pathBlobIdMap.set(assetPath, key);
-        const assetFile = pendingAssets.get(key);
-        if (assetFile) {
-          job.assets.set(key, assetFile);
-        }
-      }
+      const pathBlobIdMap = bindImportedAssetsToJob(
+        job,
+        pendingAssets,
+        pendingPathBlobIdMap
+      );
 
+      const preprocessedMarkdown = preprocessObsidianMarkdown(
+        content,
+        fullPath,
+        pageLookupMap,
+        pathBlobIdMap
+      );
       const mdAdapter = new MarkdownAdapter(job, provider);
       const snapshot = await mdAdapter.toDocSnapshot({
-        file: preprocessTitleHeader(
-          preprocessObsidianEmbeds(
-            preprocessObsidianCallouts(content),
-            fullPath,
-            pageLookupMap
-          )
-        ),
+        file: preprocessedMarkdown,
         assets: job.assetsManager,
       });
 
