@@ -142,21 +142,27 @@ type AcceptTypes =
   | 'Docx'
   | 'MindMap';
 
-export async function openFilesWith(
-  acceptType: AcceptTypes = 'Any',
-  multiple: boolean = true
-): Promise<File[] | null> {
-  // Feature detection. The API needs to be supported
-  // and the app not run in an iframe.
-  const supportsFileSystemAccess =
-    'showOpenFilePicker' in window &&
+function canUseFileSystemAccessAPI(
+  api: 'showOpenFilePicker' | 'showDirectoryPicker'
+) {
+  return (
+    api in window &&
     (() => {
       try {
         return window.self === window.top;
       } catch {
         return false;
       }
-    })();
+    })()
+  );
+}
+
+export async function openFilesWith(
+  acceptType: AcceptTypes = 'Any',
+  multiple: boolean = true
+): Promise<File[] | null> {
+  const supportsFileSystemAccess =
+    canUseFileSystemAccessAPI('showOpenFilePicker');
 
   // If the File System Access API is supported…
   if (supportsFileSystemAccess && window.showOpenFilePicker) {
@@ -216,15 +222,9 @@ export async function openFilesWith(
 }
 
 export async function openDirectory(): Promise<File[] | null> {
-  const supportsFileSystemAccess =
-    'showDirectoryPicker' in window &&
-    (() => {
-      try {
-        return window.self === window.top;
-      } catch {
-        return false;
-      }
-    })();
+  const supportsFileSystemAccess = canUseFileSystemAccessAPI(
+    'showDirectoryPicker'
+  );
 
   if (supportsFileSystemAccess && window.showDirectoryPicker) {
     try {

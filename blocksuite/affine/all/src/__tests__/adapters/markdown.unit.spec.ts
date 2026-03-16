@@ -1,4 +1,7 @@
-import { MarkdownTransformer } from '@blocksuite/affine/widgets/linked-doc';
+import {
+  MarkdownTransformer,
+  ObsidianTransformer,
+} from '@blocksuite/affine/widgets/linked-doc';
 import {
   DefaultTheme,
   NoteDisplayMode,
@@ -8,13 +11,18 @@ import {
   CalloutAdmonitionType,
   CalloutExportStyle,
   calloutMarkdownExportMiddleware,
+  docLinkBaseURLMiddleware,
   embedSyncedDocMiddleware,
   MarkdownAdapter,
+  titleMiddleware,
 } from '@blocksuite/affine-shared/adapters';
+import type { AffineTextAttributes } from '@blocksuite/affine-shared/types';
 import type {
   BlockSnapshot,
+  DeltaInsert,
   DocSnapshot,
   SliceSnapshot,
+  Store,
   TransformerMiddleware,
 } from '@blocksuite/store';
 import { AssetsManager, MemoryBlobCRUD, Schema } from '@blocksuite/store';
@@ -28,6 +36,44 @@ import { nanoidReplacement } from '../utils/nanoid-replacement.js';
 import { testStoreExtensions } from '../utils/store.js';
 
 const provider = getProvider();
+
+function withRelativePath(file: File, relativePath: string): File {
+  Object.defineProperty(file, 'webkitRelativePath', {
+    value: relativePath,
+    writable: false,
+  });
+  return file;
+}
+
+function collectBlocksByFlavour(
+  snapshot: DocSnapshot,
+  flavour: string
+): BlockSnapshot[] {
+  const matches: BlockSnapshot[] = [];
+  const visit = (block: BlockSnapshot) => {
+    if (block.flavour === flavour) {
+      matches.push(block);
+    }
+
+    for (const child of block.children) {
+      visit(child);
+    }
+  };
+
+  visit(snapshot.blocks);
+
+  return matches;
+}
+
+function exportSnapshot(doc: Store): DocSnapshot {
+  const job = doc.getTransformer([
+    docLinkBaseURLMiddleware(doc.workspace.id),
+    titleMiddleware(doc.workspace.meta.docMetas),
+  ]);
+  const snapshot = job.docToSnapshot(doc);
+  expect(snapshot).toBeTruthy();
+  return snapshot!;
+}
 
 describe('snapshot to markdown', () => {
   test('code', async () => {
@@ -125,6 +171,120 @@ Hello world
     expect(meta?.updatedDate).toBe(Date.parse('2018-04-12T10:00:00'));
     expect(meta?.favorite).toBe(true);
     expect(meta?.tags).toEqual(['a', 'b']);
+  });
+
+  test('imports obsidian vault links, embeds, and callouts', async () => {
+    const schema = new Schema().register(AffineSchemas);
+    const collection = new TestWorkspace();
+    collection.storeExtensions = testStoreExtensions;
+    collection.meta.initialize();
+
+    const home = withRelativePath(
+      new File(
+        [
+          `---
+title: 😀 Home
+---
+# 😀 Home
+
+See [[guide/Note#Section|Alias]].
+
+![[assets/photo.png]]
+
+![[assets/manual.pdf]]
+
+> [!note]- Folded title
+> - item 1
+`,
+        ],
+        'Home.md',
+        { type: 'text/markdown' }
+      ),
+      'vault/Home.md'
+    );
+    const guide = withRelativePath(
+      new File(['# Note\n'], 'Note.md', { type: 'text/markdown' }),
+      'vault/guide/Note.md'
+    );
+    const duplicate = withRelativePath(
+      new File(['---\ntitle: Archive Note\n---\n# Archive Note\n'], 'Note.md', {
+        type: 'text/markdown',
+      }),
+      'vault/archive/Note.md'
+    );
+    const image = withRelativePath(
+      new File([new Uint8Array([137, 80, 78, 71])], 'photo.png', {
+        type: 'image/png',
+      }),
+      'vault/assets/photo.png'
+    );
+    const attachment = withRelativePath(
+      new File([new Uint8Array([37, 80, 68, 70])], 'manual.pdf', {
+        type: 'application/pdf',
+      }),
+      'vault/assets/manual.pdf'
+    );
+
+    const { docIds, docEmojis } = await ObsidianTransformer.importObsidianVault(
+      {
+        collection,
+        schema,
+        importedFiles: [home, guide, duplicate, image, attachment],
+        extensions: testStoreExtensions,
+      }
+    );
+
+    expect(docIds).toHaveLength(3);
+
+    const homeMeta = collection.meta.docMetas.find(
+      meta => meta.title === 'Home'
+    );
+    const guideMeta = collection.meta.docMetas.find(
+      meta => meta.title === 'Note'
+    );
+    expect(homeMeta).toBeTruthy();
+    expect(guideMeta).toBeTruthy();
+    expect(docEmojis.get(homeMeta!.id)).toBe('😀');
+
+    const homeDoc = collection
+      .getDoc(homeMeta!.id)
+      ?.getStore({ id: homeMeta!.id });
+    expect(homeDoc).toBeTruthy();
+
+    const snapshot = exportSnapshot(homeDoc!);
+    const paragraphs = collectBlocksByFlavour(snapshot, 'affine:paragraph');
+    const referenceDelta = paragraphs
+      .flatMap(paragraph => {
+        const text = paragraph.props.text as
+          | { delta?: DeltaInsert<AffineTextAttributes>[] }
+          | undefined;
+        return text?.delta ?? [];
+      })
+      .find(
+        delta =>
+          delta.attributes?.reference?.type === 'LinkedPage' &&
+          delta.attributes.reference.pageId === guideMeta!.id
+      );
+    expect(referenceDelta?.attributes?.reference?.title).toBe('Alias');
+
+    const imageBlocks = collectBlocksByFlavour(snapshot, 'affine:image');
+    expect(imageBlocks).toHaveLength(1);
+
+    const attachmentLink = paragraphs
+      .flatMap(paragraph => {
+        const text = paragraph.props.text as
+          | { delta?: DeltaInsert<AffineTextAttributes>[] }
+          | undefined;
+        return text?.delta ?? [];
+      })
+      .find(delta => delta.attributes?.link === 'vault/assets/manual.pdf');
+    expect(attachmentLink).toBeTruthy();
+
+    const calloutBlocks = collectBlocksByFlavour(snapshot, 'affine:callout');
+    expect(calloutBlocks).toHaveLength(1);
+    expect(
+      calloutBlocks[0].children.some(child => child.flavour === 'affine:list')
+    ).toBe(true);
   });
 
   test('paragraph', async () => {

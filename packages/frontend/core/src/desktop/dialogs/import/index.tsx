@@ -1,4 +1,10 @@
-import { Button, IconButton, IconType, Modal } from '@affine/component';
+import {
+  Button,
+  IconButton,
+  type IconData,
+  IconType,
+  Modal,
+} from '@affine/component';
 import { getStoreManager } from '@affine/core/blocksuite/manager/store';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { useNavigateHelper } from '@affine/core/components/hooks/use-navigate-helper';
@@ -113,10 +119,10 @@ function createFolderStructure(
           logger.debug('Icon data:', child.icon);
 
           try {
-            let iconData;
+            let iconData: IconData | undefined;
             if (child.icon.type === 'emoji') {
               iconData = {
-                type: IconType.Emoji as IconType.Emoji,
+                type: IconType.Emoji,
                 unicode: child.icon.content,
               };
               logger.debug('Created emoji icon data:', iconData);
@@ -198,6 +204,10 @@ type ImportResult = {
   entryId?: string;
   isWorkspaceFile?: boolean;
   rootFolderId?: string;
+};
+
+type ImportedWorkspacePayload = {
+  workspace: WorkspaceMetadata;
 };
 
 type ImportConfig = {
@@ -482,7 +492,7 @@ const importConfigs: Record<ImportType, ImportConfig> = {
           explorerIconService.setIcon({
             where: 'doc',
             id,
-            icon: { type: IconType.Emoji as IconType.Emoji, unicode: emoji },
+            icon: { type: IconType.Emoji, unicode: emoji },
           });
         }
       }
@@ -529,8 +539,8 @@ const importConfigs: Record<ImportType, ImportConfig> = {
           file
         )
       )
-        .filter((doc: any) => doc !== undefined)
-        .map((doc: any) => doc.id);
+        .filter((doc): doc is NonNullable<typeof doc> => doc !== undefined)
+        .map(doc => doc.id);
 
       return {
         docIds,
@@ -763,7 +773,7 @@ export const ImportDialog = ({
         globalDialogService.open(
           'import-workspace',
           undefined,
-          (payload: any) => {
+          (payload?: ImportedWorkspacePayload) => {
             if (payload) {
               handleCreatedWorkspace({ metadata: payload.workspace });
               resolve(payload.workspace);

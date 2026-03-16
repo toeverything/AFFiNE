@@ -3,6 +3,8 @@ import {
   docLinkBaseURLMiddleware,
   fileNameMiddleware,
   filePathMiddleware,
+  FULL_FILE_PATH_KEY,
+  getImageFullPath,
   MarkdownAdapter,
   MarkdownASTToDeltaExtension,
 } from '@blocksuite/affine-shared/adapters';
@@ -17,13 +19,12 @@ import type {
 import { extMimeMap, Transformer } from '@blocksuite/store';
 import type { Text } from 'mdast';
 
-import {
-  applyMetaPatch,
-  getProvider,
-  type ParsedFrontmatterMeta,
-  parseFrontmatter,
-} from './markdown.js';
-import type { AssetMap, ImportedFileEntry, PathBlobIdMap } from './type.js';
+import { applyMetaPatch, getProvider, parseFrontmatter } from './markdown.js';
+import type {
+  AssetMap,
+  MarkdownFileImportEntry,
+  PathBlobIdMap,
+} from './type.js';
 
 const CALLOUT_TYPE_MAP: Record<string, string> = {
   note: '💡',
@@ -54,22 +55,48 @@ const CALLOUT_TYPE_MAP: Record<string, string> = {
   faq: '❓',
 };
 
-function preprocessObsidianCallouts(markdown: string): string {
-  return markdown.replace(
-    /^(> *)\[!([^\]\n]+)\]([^\n]*)/gm,
-    (_, prefix, type, rest) => {
-      const emoji = CALLOUT_TYPE_MAP[type.trim().toLowerCase()] ?? '💡';
-      const title = rest.trim();
-      return title ? `${prefix}${emoji} **${title}**` : `${prefix}${emoji}`;
-    }
-  );
+const AMBIGUOUS_PAGE_LOOKUP = '__ambiguous__';
+
+function decodePathSegment(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
 }
 
-function preprocessBlockquoteLists(markdown: string): string {
-  return markdown.replace(
-    /^(> +)([-*+]|\d+\.) +(.+)$/gm,
-    (_, prefix, _bullet, content) => `${prefix}${content}`
-  );
+function normalizePath(value: string): string {
+  return decodePathSegment(value)
+    .trim()
+    .replace(/\\/g, '/')
+    .replace(/^\.\/+/, '')
+    .replace(/^\/+/, '')
+    .replace(/\/+/g, '/');
+}
+
+function normalizeLookupKey(value: string): string {
+  return normalizePath(value).toLowerCase();
+}
+
+function stripMarkdownExtension(value: string): string {
+  return value.replace(/\.md$/i, '');
+}
+
+function basename(value: string): string {
+  return normalizePath(value).split('/').pop() ?? value;
+}
+
+function parseObsidianTarget(rawTarget: string): {
+  path: string;
+  fragment: string | null;
+} {
+  const normalizedTarget = normalizePath(rawTarget);
+  const match = normalizedTarget.match(/^([^#^]+)([#^].*)?$/);
+
+  return {
+    path: match?.[1]?.trim() ?? normalizedTarget,
+    fragment: match?.[2] ?? null,
+  };
 }
 
 function extractTitleAndEmoji(rawTitle: string): {
@@ -106,12 +133,101 @@ function preprocessTitleHeader(markdown: string): string {
   );
 }
 
-function resolveWikilinkDisplayContent(
+function preprocessObsidianCallouts(markdown: string): string {
+  return markdown.replace(
+    /^(> *)\[!([^\]\n]+)\]([+-]?)([^\n]*)/gm,
+    (_, prefix, type, _fold, rest) => {
+      const calloutToken = CALLOUT_TYPE_MAP[type.trim().toLowerCase()] ?? type;
+      const title = rest.trim();
+      return title
+        ? `${prefix}[!${calloutToken}] ${title}`
+        : `${prefix}[!${calloutToken}]`;
+    }
+  );
+}
+
+function buildLookupKeys(
+  targetPath: string,
+  currentFilePath?: string
+): string[] {
+  const parsedTargetPath = normalizePath(targetPath);
+  if (!parsedTargetPath) {
+    return [];
+  }
+
+  const keys = new Set<string>();
+  const addPathVariants = (value: string) => {
+    const normalizedValue = normalizePath(value);
+    if (!normalizedValue) {
+      return;
+    }
+
+    keys.add(normalizedValue);
+    keys.add(stripMarkdownExtension(normalizedValue));
+
+    const fileName = basename(normalizedValue);
+    keys.add(fileName);
+    keys.add(stripMarkdownExtension(fileName));
+
+    const cleanTitle = extractTitleAndEmoji(
+      stripMarkdownExtension(fileName)
+    ).title;
+    if (cleanTitle) {
+      keys.add(cleanTitle);
+    }
+  };
+
+  addPathVariants(parsedTargetPath);
+
+  if (currentFilePath) {
+    addPathVariants(getImageFullPath(currentFilePath, parsedTargetPath));
+  }
+
+  return Array.from(keys).map(normalizeLookupKey);
+}
+
+function registerPageLookup(
+  pageLookupMap: Map<string, string>,
+  key: string,
+  pageId: string
+) {
+  const normalizedKey = normalizeLookupKey(key);
+  if (!normalizedKey) {
+    return;
+  }
+
+  const existing = pageLookupMap.get(normalizedKey);
+  if (existing && existing !== pageId) {
+    pageLookupMap.set(normalizedKey, AMBIGUOUS_PAGE_LOOKUP);
+    return;
+  }
+
+  pageLookupMap.set(normalizedKey, pageId);
+}
+
+function resolvePageIdFromLookup(
+  pageLookupMap: Pick<ReadonlyMap<string, string>, 'get'>,
+  rawTarget: string,
+  currentFilePath?: string
+): string | null {
+  const { path } = parseObsidianTarget(rawTarget);
+  for (const key of buildLookupKeys(path, currentFilePath)) {
+    const targetPageId = pageLookupMap.get(key);
+    if (!targetPageId || targetPageId === AMBIGUOUS_PAGE_LOOKUP) {
+      continue;
+    }
+    return targetPageId;
+  }
+
+  return null;
+}
+
+function resolveWikilinkDisplayTitle(
   rawAlias: string | undefined,
   pageEmoji: string | undefined
-): string {
+): string | undefined {
   if (!rawAlias) {
-    return ' ';
+    return undefined;
   }
 
   const { title: aliasTitle, emoji: aliasEmoji } =
@@ -122,6 +238,73 @@ function resolveWikilinkDisplayContent(
   }
 
   return rawAlias;
+}
+
+function isImageAssetPath(path: string): boolean {
+  const extension = path.split('.').at(-1)?.toLowerCase() ?? '';
+  return extMimeMap.get(extension)?.startsWith('image/') ?? false;
+}
+
+function encodeMarkdownPath(path: string): string {
+  return encodeURI(path).replaceAll('(', '%28').replaceAll(')', '%29');
+}
+
+function escapeMarkdownLabel(label: string): string {
+  return label.replace(/[[\]\\]/g, '\\$&');
+}
+
+function isObsidianSizeAlias(alias: string | undefined): boolean {
+  return !!alias && /^\d+(?:x\d+)?$/i.test(alias.trim());
+}
+
+function getEmbedLabel(
+  rawAlias: string | undefined,
+  targetPath: string,
+  fallbackToFileName: boolean
+): string {
+  if (!rawAlias || isObsidianSizeAlias(rawAlias)) {
+    return fallbackToFileName
+      ? stripMarkdownExtension(basename(targetPath))
+      : '';
+  }
+
+  return rawAlias.trim();
+}
+
+function preprocessObsidianEmbeds(
+  markdown: string,
+  filePath: string,
+  pageLookupMap: ReadonlyMap<string, string>
+): string {
+  return markdown.replace(
+    /!\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g,
+    (match, rawTarget: string, rawAlias?: string) => {
+      const targetPageId = resolvePageIdFromLookup(
+        pageLookupMap,
+        rawTarget,
+        filePath
+      );
+      if (targetPageId) {
+        return `[[${rawTarget}${rawAlias ? `|${rawAlias}` : ''}]]`;
+      }
+
+      const { path } = parseObsidianTarget(rawTarget);
+      if (!path) {
+        return match;
+      }
+
+      const assetPath = getImageFullPath(filePath, path);
+      const encodedPath = encodeMarkdownPath(assetPath);
+
+      if (isImageAssetPath(path)) {
+        const alt = getEmbedLabel(rawAlias, path, false);
+        return `![${escapeMarkdownLabel(alt)}](${encodedPath})`;
+      }
+
+      const label = getEmbedLabel(rawAlias, path, true);
+      return `[${escapeMarkdownLabel(label)}](${encodedPath})`;
+    }
+  );
 }
 
 export const obsidianWikilinkToDeltaMatcher = MarkdownASTToDeltaExtension({
@@ -149,24 +332,26 @@ export const obsidianWikilinkToDeltaMatcher = MarkdownASTToDeltaExtension({
 
       const targetPageName = linkMatch[1].trim();
       const alias = linkMatch[2]?.trim();
-
-      const cleanTargetTitle = extractTitleAndEmoji(targetPageName).title;
-      const targetPageId =
-        context.configs.get('obsidian:pageId:' + targetPageName) ||
-        context.configs.get('obsidian:pageId:' + cleanTargetTitle);
+      const currentFilePath = context.configs.get(FULL_FILE_PATH_KEY);
+      const targetPageId = resolvePageIdFromLookup(
+        { get: key => context.configs.get(`obsidian:pageId:${key}`) },
+        targetPageName,
+        typeof currentFilePath === 'string' ? currentFilePath : undefined
+      );
 
       if (targetPageId) {
         const pageEmoji = context.configs.get(
           'obsidian:pageEmoji:' + targetPageId
         );
-        const displayContent = resolveWikilinkDisplayContent(alias, pageEmoji);
+        const displayTitle = resolveWikilinkDisplayTitle(alias, pageEmoji);
 
         deltas.push({
-          insert: displayContent,
+          insert: ' ',
           attributes: {
             reference: {
               type: 'LinkedPage',
               pageId: targetPageId,
+              ...(displayTitle ? { title: displayTitle } : {}),
             },
           },
         });
@@ -197,13 +382,6 @@ export type ImportObsidianVaultResult = {
   docEmojis: Map<string, string>;
 };
 
-type MarkdownFileImportEntry = ImportedFileEntry & {
-  pageId: string;
-  preferredTitle: string;
-  content: string;
-  meta: ParsedFrontmatterMeta;
-};
-
 export async function importObsidianVault({
   collection,
   schema,
@@ -217,7 +395,7 @@ export async function importObsidianVault({
   const pendingAssets: AssetMap = new Map();
   const pendingPathBlobIdMap: PathBlobIdMap = new Map();
   const markdownBlobs: MarkdownFileImportEntry[] = [];
-  const titleToPageIdMap = new Map<string, string>();
+  const pageLookupMap = new Map<string, string>();
 
   for (const file of importedFiles) {
     const filePath = file.webkitRelativePath || file.name;
@@ -238,9 +416,16 @@ export async function importObsidianVault({
         extractTitleAndEmoji(documentTitleCandidate);
 
       const newPageId = collection.idGenerator();
-      titleToPageIdMap.set(documentTitleCandidate, newPageId);
-      titleToPageIdMap.set(preferredTitle, newPageId);
-      titleToPageIdMap.set(fileNameWithoutExt, newPageId);
+      registerPageLookup(pageLookupMap, filePath, newPageId);
+      registerPageLookup(
+        pageLookupMap,
+        stripMarkdownExtension(filePath),
+        newPageId
+      );
+      registerPageLookup(pageLookupMap, file.name, newPageId);
+      registerPageLookup(pageLookupMap, fileNameWithoutExt, newPageId);
+      registerPageLookup(pageLookupMap, documentTitleCandidate, newPageId);
+      registerPageLookup(pageLookupMap, preferredTitle, newPageId);
 
       if (leadingEmoji) {
         docEmojis.set(newPageId, leadingEmoji);
@@ -257,7 +442,7 @@ export async function importObsidianVault({
       });
     } else {
       const ext = filePath.split('.').at(-1) ?? '';
-      const mime = extMimeMap.get(ext) ?? '';
+      const mime = extMimeMap.get(ext.toLowerCase()) ?? '';
       const key = await sha(await file.arrayBuffer());
       pendingPathBlobIdMap.set(filePath, key);
       pendingAssets.set(key, new File([file], file.name, { type: mime }));
@@ -265,10 +450,12 @@ export async function importObsidianVault({
   }
 
   for (const existingDocMeta of collection.meta.docMetas) {
-    const titleExists =
-      existingDocMeta.title && !titleToPageIdMap.has(existingDocMeta.title);
-    if (titleExists) {
-      titleToPageIdMap.set(existingDocMeta.title!, existingDocMeta.id);
+    if (existingDocMeta.title) {
+      registerPageLookup(
+        pageLookupMap,
+        existingDocMeta.title,
+        existingDocMeta.id
+      );
     }
   }
 
@@ -298,8 +485,11 @@ export async function importObsidianVault({
         ],
       });
 
-      for (const [title, id] of titleToPageIdMap.entries()) {
-        job.adapterConfigs.set('obsidian:pageId:' + title, id);
+      for (const [lookupKey, id] of pageLookupMap.entries()) {
+        if (id === AMBIGUOUS_PAGE_LOOKUP) {
+          continue;
+        }
+        job.adapterConfigs.set(`obsidian:pageId:${lookupKey}`, id);
       }
       for (const [id, emoji] of docEmojis.entries()) {
         job.adapterConfigs.set('obsidian:pageEmoji:' + id, emoji);
@@ -317,7 +507,11 @@ export async function importObsidianVault({
       const mdAdapter = new MarkdownAdapter(job, provider);
       const snapshot = await mdAdapter.toDocSnapshot({
         file: preprocessTitleHeader(
-          preprocessBlockquoteLists(preprocessObsidianCallouts(content))
+          preprocessObsidianEmbeds(
+            preprocessObsidianCallouts(content),
+            fullPath,
+            pageLookupMap
+          )
         ),
         assets: job.assetsManager,
       });
@@ -326,7 +520,6 @@ export async function importObsidianVault({
         snapshot.meta.id = predefinedId;
         const doc = await job.snapshotToDoc(snapshot);
         if (doc) {
-          meta.title = preferredTitle;
           applyMetaPatch(collection, doc.id, {
             ...meta,
             title: preferredTitle,
