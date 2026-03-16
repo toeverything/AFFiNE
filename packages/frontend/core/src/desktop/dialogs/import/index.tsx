@@ -497,9 +497,7 @@ const importConfigs: Record<ImportType, ImportConfig> = {
         }
       }
 
-      return {
-        docIds,
-      };
+      return { docIds };
     },
   },
   docx: {

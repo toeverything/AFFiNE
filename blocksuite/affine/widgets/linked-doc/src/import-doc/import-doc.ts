@@ -3,6 +3,7 @@ import {
   ExportToHTMLIcon,
   ExportToMarkdownIcon,
   HelpIcon,
+  NewIcon,
   NotionIcon,
 } from '@blocksuite/affine-components/icons';
 import {
@@ -298,6 +299,9 @@ export class ImportDoc extends WithDisposable(LitElement) {
             @click="${this._importObsidian}"
           >
             ${ExportToMarkdownIcon}
+          </icon-button>
+          <icon-button class="button-item" text="Coming soon..." disabled>
+            ${NewIcon}
           </icon-button>
         </div>
         <!-- <div class="footer">
