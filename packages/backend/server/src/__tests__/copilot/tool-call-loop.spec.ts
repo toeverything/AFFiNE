@@ -1,12 +1,35 @@
 import test from 'ava';
 import { z } from 'zod';
 
+import type { DocReader } from '../../core/doc';
+import type { AccessController } from '../../core/permission';
+import type { Models } from '../../models';
 import { NativeLlmRequest, NativeLlmStreamEvent } from '../../native';
 import {
   ToolCallAccumulator,
   ToolCallLoop,
   ToolSchemaExtractor,
 } from '../../plugins/copilot/providers/loop';
+import {
+  buildBlobContentGetter,
+  createBlobReadTool,
+} from '../../plugins/copilot/tools/blob-read';
+import {
+  buildDocKeywordSearchGetter,
+  createDocKeywordSearchTool,
+} from '../../plugins/copilot/tools/doc-keyword-search';
+import {
+  buildDocContentGetter,
+  createDocReadTool,
+} from '../../plugins/copilot/tools/doc-read';
+import {
+  buildDocSearchGetter,
+  createDocSemanticSearchTool,
+} from '../../plugins/copilot/tools/doc-semantic-search';
+import {
+  DOCUMENT_SYNC_PENDING_MESSAGE,
+  LOCAL_WORKSPACE_SYNC_REQUIRED_MESSAGE,
+} from '../../plugins/copilot/tools/doc-sync';
 
 test('ToolCallAccumulator should merge deltas and complete tool call', t => {
   const accumulator = new ToolCallAccumulator();
@@ -284,5 +307,212 @@ test('ToolCallLoop should surface invalid JSON as tool error without executing',
           : undefined,
     },
     is_error: true,
+  });
+});
+
+test('doc_read should return specific sync errors for unavailable docs', async t => {
+  const cases = [
+    {
+      name: 'local workspace without cloud sync',
+      workspace: null,
+      authors: null,
+      markdown: null,
+      expected: {
+        type: 'error',
+        name: 'Workspace Sync Required',
+        message: LOCAL_WORKSPACE_SYNC_REQUIRED_MESSAGE,
+      },
+      docReaderCalled: false,
+    },
+    {
+      name: 'cloud workspace document not synced to server yet',
+      workspace: { id: 'ws-1' },
+      authors: null,
+      markdown: null,
+      expected: {
+        type: 'error',
+        name: 'Document Sync Pending',
+        message: DOCUMENT_SYNC_PENDING_MESSAGE('doc-1'),
+      },
+      docReaderCalled: false,
+    },
+    {
+      name: 'cloud workspace document markdown not ready yet',
+      workspace: { id: 'ws-1' },
+      authors: {
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
+        updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+        createdByUser: null,
+        updatedByUser: null,
+      },
+      markdown: null,
+      expected: {
+        type: 'error',
+        name: 'Document Sync Pending',
+        message: DOCUMENT_SYNC_PENDING_MESSAGE('doc-1'),
+      },
+      docReaderCalled: true,
+    },
+  ] as const;
+
+  const ac = {
+    user: () => ({
+      workspace: () => ({ doc: () => ({ can: async () => true }) }),
+    }),
+  } as unknown as AccessController;
+
+  for (const testCase of cases) {
+    let docReaderCalled = false;
+    const docReader = {
+      getDocMarkdown: async () => {
+        docReaderCalled = true;
+        return testCase.markdown;
+      },
+    } as unknown as DocReader;
+
+    const models = {
+      workspace: {
+        get: async () => testCase.workspace,
+      },
+      doc: {
+        getAuthors: async () => testCase.authors,
+      },
+    } as unknown as Models;
+
+    const getDoc = buildDocContentGetter(ac, docReader, models);
+    const tool = createDocReadTool(
+      getDoc.bind(null, {
+        user: 'user-1',
+        workspace: 'workspace-1',
+      })
+    );
+
+    const result = await tool.execute?.({ doc_id: 'doc-1' }, {});
+
+    t.is(docReaderCalled, testCase.docReaderCalled, testCase.name);
+    t.deepEqual(result, testCase.expected, testCase.name);
+  }
+});
+
+test('document search tools should return sync error for local workspace', async t => {
+  const ac = {
+    user: () => ({
+      workspace: () => ({
+        can: async () => true,
+        docs: async () => [],
+      }),
+    }),
+  } as unknown as AccessController;
+
+  const models = {
+    workspace: {
+      get: async () => null,
+    },
+  } as unknown as Models;
+
+  let keywordSearchCalled = false;
+  const indexerService = {
+    searchDocsByKeyword: async () => {
+      keywordSearchCalled = true;
+      return [];
+    },
+  } as unknown as Parameters<typeof buildDocKeywordSearchGetter>[1];
+
+  let semanticSearchCalled = false;
+  const contextService = {
+    matchWorkspaceAll: async () => {
+      semanticSearchCalled = true;
+      return [];
+    },
+  } as unknown as Parameters<typeof buildDocSearchGetter>[1];
+
+  const keywordTool = createDocKeywordSearchTool(
+    buildDocKeywordSearchGetter(ac, indexerService, models).bind(null, {
+      user: 'user-1',
+      workspace: 'workspace-1',
+    })
+  );
+
+  const semanticTool = createDocSemanticSearchTool(
+    buildDocSearchGetter(ac, contextService, null, models).bind(null, {
+      user: 'user-1',
+      workspace: 'workspace-1',
+    })
+  );
+
+  const keywordResult = await keywordTool.execute?.({ query: 'hello' }, {});
+  const semanticResult = await semanticTool.execute?.({ query: 'hello' }, {});
+
+  t.false(keywordSearchCalled);
+  t.false(semanticSearchCalled);
+  t.deepEqual(keywordResult, {
+    type: 'error',
+    name: 'Workspace Sync Required',
+    message: LOCAL_WORKSPACE_SYNC_REQUIRED_MESSAGE,
+  });
+  t.deepEqual(semanticResult, {
+    type: 'error',
+    name: 'Workspace Sync Required',
+    message: LOCAL_WORKSPACE_SYNC_REQUIRED_MESSAGE,
+  });
+});
+
+test('doc_semantic_search should return empty array when nothing matches', async t => {
+  const ac = {
+    user: () => ({
+      workspace: () => ({
+        can: async () => true,
+        docs: async () => [],
+      }),
+    }),
+  } as unknown as AccessController;
+
+  const models = {
+    workspace: {
+      get: async () => ({ id: 'workspace-1' }),
+    },
+  } as unknown as Models;
+
+  const contextService = {
+    matchWorkspaceAll: async () => [],
+  } as unknown as Parameters<typeof buildDocSearchGetter>[1];
+
+  const semanticTool = createDocSemanticSearchTool(
+    buildDocSearchGetter(ac, contextService, null, models).bind(null, {
+      user: 'user-1',
+      workspace: 'workspace-1',
+    })
+  );
+
+  const result = await semanticTool.execute?.({ query: 'hello' }, {});
+
+  t.deepEqual(result, []);
+});
+
+test('blob_read should return explicit error when attachment context is missing', async t => {
+  const ac = {
+    user: () => ({
+      workspace: () => ({
+        allowLocal: () => ({
+          can: async () => true,
+        }),
+      }),
+    }),
+  } as unknown as AccessController;
+
+  const blobTool = createBlobReadTool(
+    buildBlobContentGetter(ac, null).bind(null, {
+      user: 'user-1',
+      workspace: 'workspace-1',
+    })
+  );
+
+  const result = await blobTool.execute?.({ blob_id: 'blob-1' }, {});
+
+  t.deepEqual(result, {
+    type: 'error',
+    name: 'Blob Read Failed',
+    message:
+      'Missing workspace, user, blob id, or copilot context for blob_read.',
   });
 });

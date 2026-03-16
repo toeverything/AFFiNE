@@ -7,6 +7,7 @@ import {
   clearEmbeddingChunk,
   type Models,
 } from '../../../models';
+import { workspaceSyncRequiredError } from './doc-sync';
 import { toolError } from './error';
 import { defineTool } from './tool';
 import type {
@@ -27,14 +28,24 @@ export const buildDocSearchGetter = (
     signal?: AbortSignal
   ) => {
     if (!options || !query?.trim() || !options.user || !options.workspace) {
-      return `Invalid search parameters.`;
+      return toolError(
+        'Doc Semantic Search Failed',
+        'Missing workspace, user, or query for doc_semantic_search.'
+      );
+    }
+    const workspace = await models.workspace.get(options.workspace);
+    if (!workspace) {
+      return workspaceSyncRequiredError();
     }
     const canAccess = await ac
       .user(options.user)
       .workspace(options.workspace)
       .can('Workspace.Read');
     if (!canAccess)
-      return 'You do not have permission to access this workspace.';
+      return toolError(
+        'Doc Semantic Search Failed',
+        'You do not have permission to access this workspace.'
+      );
     const [chunks, contextChunks] = await Promise.all([
       context.matchWorkspaceAll(options.workspace, query, 10, signal),
       docContext?.matchFiles(query, 10, signal) ?? [],
@@ -53,7 +64,7 @@ export const buildDocSearchGetter = (
       fileChunks.push(...contextChunks);
     }
     if (!blobChunks.length && !docChunks.length && !fileChunks.length) {
-      return `No results found for "${query}".`;
+      return [];
     }
 
     const docIds = docChunks.map(c => ({
@@ -101,7 +112,7 @@ export const createDocSemanticSearchTool = (
   searchDocs: (
     query: string,
     signal?: AbortSignal
-  ) => Promise<ChunkSimilarity[] | string | undefined>
+  ) => Promise<ChunkSimilarity[] | ReturnType<typeof toolError>>
 ) => {
   return defineTool({
     description:

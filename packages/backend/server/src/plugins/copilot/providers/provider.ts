@@ -470,7 +470,8 @@ export abstract class CopilotProvider<C = any> {
               });
               const searchDocs = buildDocKeywordSearchGetter(
                 ac,
-                indexerService
+                indexerService,
+                models
               );
               tools.doc_keyword_search = createDocKeywordSearchTool(
                 searchDocs.bind(null, options)
