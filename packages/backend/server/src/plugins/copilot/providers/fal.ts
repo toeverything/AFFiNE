@@ -19,6 +19,7 @@ import type {
   PromptMessage,
 } from './types';
 import { CopilotProviderType, ModelInputType, ModelOutputType } from './types';
+import { promptAttachmentMimeType, promptAttachmentToUrl } from './utils';
 
 export type FalConfig = {
   apiKey: string;
@@ -183,13 +184,14 @@ export class FalProvider extends CopilotProvider<FalConfig> {
     return {
       model_name: options.modelName || undefined,
       image_url: attachments
-        ?.map(v =>
-          typeof v === 'string'
-            ? v
-            : v.mimeType.startsWith('image/')
-              ? v.attachment
-              : undefined
-        )
+        ?.map(v => {
+          const url = promptAttachmentToUrl(v);
+          const mediaType = promptAttachmentMimeType(
+            v,
+            typeof params?.mimetype === 'string' ? params.mimetype : undefined
+          );
+          return url && mediaType?.startsWith('image/') ? url : undefined;
+        })
         .find(v => !!v),
       prompt: content.trim(),
       loras: lora.length ? lora : undefined,

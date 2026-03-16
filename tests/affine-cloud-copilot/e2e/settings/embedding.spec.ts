@@ -189,20 +189,13 @@ test.describe('AISettings/Embedding', () => {
 
     await utils.settings.closeSettingsPanel(page);
 
-    await utils.chatPanel.makeChat(
-      page,
-      `What is Workspace${randomStr1}? What is Workspace${randomStr2}?`
-    );
+    const query = `Use semantic search across workspace and attached files, then tell me whether Workspace${randomStr1} is a cat or dog and whether Workspace${randomStr2} is a cat or dog. Answer with citations.`;
+
+    await utils.chatPanel.makeChat(page, query);
 
     await utils.chatPanel.waitForHistory(page, [
-      {
-        role: 'user',
-        content: `What is Workspace${randomStr1}? What is Workspace${randomStr2}?`,
-      },
-      {
-        role: 'assistant',
-        status: 'success',
-      },
+      { role: 'user', content: query },
+      { role: 'assistant', status: 'success' },
     ]);
 
     await expect(async () => {
