@@ -75,6 +75,9 @@ function getNativeModule(): NativeModule {
 }
 
 function cleanup() {
+  const nativeId = recordingStateMachine.status?.nativeId;
+  if (nativeId) cleanupAbandonedNativeRecording(nativeId);
+  recordingStatus$.next(null);
   shareableContent = null;
   appStateSubscribers.forEach(subscriber => {
     try {
@@ -186,9 +189,11 @@ function setupNewRunningAppGroup() {
   });
 
   const debounceStartRecording = debounce((appGroup: AppGroupInfo) => {
-    // check if the app is running again
-    if (appGroup.isRunning) {
-      startRecording(appGroup).catch(err => {
+    const currentGroup = appGroups$.value.find(
+      group => group.processGroupId === appGroup.processGroupId
+    );
+    if (currentGroup?.isRunning) {
+      startRecording(currentGroup).catch(err => {
         logger.error('failed to start recording', err);
       });
     }
@@ -452,7 +457,6 @@ export function setupRecordingFeature() {
 }
 
 export function disableRecordingFeature() {
-  recordingStatus$.next(null);
   cleanup();
 }
 
@@ -517,7 +521,7 @@ export async function startRecording(
     return nextState;
   } catch (error) {
     if (nativeId) {
-      await cleanupAbandonedNativeRecording(nativeId);
+      cleanupAbandonedNativeRecording(nativeId);
     }
     logger.error('failed to start recording', error);
     return recordingStateMachine.dispatch({
@@ -611,11 +615,11 @@ export async function readRecordingFile(filepath: string) {
   return fsp.readFile(normalizedPath);
 }
 
-async function cleanupAbandonedNativeRecording(nativeId: string) {
+function cleanupAbandonedNativeRecording(nativeId: string) {
   try {
     const artifact = getNativeModule().stopRecording(nativeId);
     const filepath = assertRecordingFilepath(artifact.filepath);
-    await fsp.rm(filepath, { force: true });
+    fs.removeSync(filepath);
   } catch (error) {
     logger.error('failed to cleanup abandoned native recording', error);
   }

@@ -15,6 +15,7 @@ use ogg::writing::{PacketWriteEndInfo, PacketWriter};
 use opus_codec::{Application, Channels, Encoder, FrameSize, SampleRate as OpusSampleRate};
 use rubato::Resampler;
 
+#[cfg(any(target_os = "macos", target_os = "windows"))]
 use crate::audio_callback::AudioCallback;
 #[cfg(target_os = "macos")]
 use crate::macos::screen_capture_kit::{ApplicationInfo, ShareableContent};
@@ -301,7 +302,7 @@ impl OggOpusWriter {
       )
       .map_err(|e| RecordingError::Encoding(format!("failed to finish stream: {e}")))?;
 
-    let _ = self.writer.inner_mut().flush();
+    self.writer.inner_mut().flush()?;
 
     let size = fs::metadata(&self.filepath)?.len() as i64;
     let duration_ms = (self.samples_written * 1000) as i64 / self.sample_rate.as_i32() as i64;
@@ -551,13 +552,21 @@ pub fn start_recording(opts: RecordingStartOptions) -> Result<RecordingSessionMe
 
 #[napi]
 pub fn stop_recording(id: String) -> Result<RecordingArtifact> {
-  let mut recordings = ACTIVE_RECORDINGS
-    .lock()
-    .map_err(|_| RecordingError::Start("lock poisoned".into()))?;
+  let mut entry = {
+    let mut recordings = ACTIVE_RECORDINGS
+      .lock()
+      .map_err(|_| RecordingError::Start("lock poisoned".into()))?;
 
-  let mut entry = recordings.remove(&id).ok_or(RecordingError::NotFound)?;
+    recordings.remove(&id).ok_or(RecordingError::NotFound)?
+  };
 
-  entry.capture.stop().map_err(|e| RecordingError::Start(e.to_string()))?;
+  if let Err(error) = entry.capture.stop() {
+    ACTIVE_RECORDINGS
+      .lock()
+      .map_err(|_| RecordingError::Start("lock poisoned".into()))?
+      .insert(id, entry);
+    return Err(RecordingError::Start(error.to_string()).into());
+  }
 
   drop(entry.sender.take());
 
