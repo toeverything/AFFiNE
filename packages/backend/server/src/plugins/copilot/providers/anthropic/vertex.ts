@@ -1,18 +1,14 @@
-import {
-  createVertexAnthropic,
-  type GoogleVertexAnthropicProvider,
-  type GoogleVertexAnthropicProviderSettings,
-} from '@ai-sdk/google-vertex/anthropic';
-
+import { IMAGE_ATTACHMENT_CAPABILITY } from '../attachments';
 import { CopilotProviderType, ModelInputType, ModelOutputType } from '../types';
 import {
   getGoogleAuth,
   getVertexAnthropicBaseUrl,
   VertexModelListSchema,
+  type VertexProviderConfig,
 } from '../utils';
 import { AnthropicProvider } from './anthropic';
 
-export type AnthropicVertexConfig = GoogleVertexAnthropicProviderSettings;
+export type AnthropicVertexConfig = VertexProviderConfig;
 
 export class AnthropicVertexProvider extends AnthropicProvider<AnthropicVertexConfig> {
   override readonly type = CopilotProviderType.AnthropicVertex;
@@ -25,6 +21,7 @@ export class AnthropicVertexProvider extends AnthropicProvider<AnthropicVertexCo
         {
           input: [ModelInputType.Text, ModelInputType.Image],
           output: [ModelOutputType.Text, ModelOutputType.Object],
+          attachments: IMAGE_ATTACHMENT_CAPABILITY,
         },
       ],
     },
@@ -35,6 +32,7 @@ export class AnthropicVertexProvider extends AnthropicProvider<AnthropicVertexCo
         {
           input: [ModelInputType.Text, ModelInputType.Image],
           output: [ModelOutputType.Text, ModelOutputType.Object],
+          attachments: IMAGE_ATTACHMENT_CAPABILITY,
         },
       ],
     },
@@ -45,21 +43,15 @@ export class AnthropicVertexProvider extends AnthropicProvider<AnthropicVertexCo
         {
           input: [ModelInputType.Text, ModelInputType.Image],
           output: [ModelOutputType.Text, ModelOutputType.Object],
+          attachments: IMAGE_ATTACHMENT_CAPABILITY,
         },
       ],
     },
   ];
 
-  protected instance!: GoogleVertexAnthropicProvider;
-
   override configured(): boolean {
     if (!this.config.location || !this.config.googleAuthOptions) return false;
     return !!this.config.project || !!getVertexAnthropicBaseUrl(this.config);
-  }
-
-  override setup() {
-    super.setup();
-    this.instance = createVertexAnthropic(this.config);
   }
 
   override async refreshOnlineModels() {

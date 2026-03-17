@@ -17,6 +17,8 @@ import { isNil, omitBy } from 'lodash-es';
 import {
   CannotDeleteOwnAccount,
   type FileUpload,
+  ImageFormatNotSupported,
+  OneMB,
   readBufferWithLimit,
   sniffMime,
   Throttle,
@@ -28,6 +30,7 @@ import {
   UserFeatureName,
   UserSettingsSchema,
 } from '../../models';
+import { processImage } from '../../native';
 import { Public } from '../auth/guard';
 import { sessionUser } from '../auth/service';
 import { CurrentUser } from '../auth/session';
@@ -115,16 +118,26 @@ export class UserResolver {
       throw new UserNotFound();
     }
 
-    const avatarBuffer = await readBufferWithLimit(avatar.createReadStream());
-    const contentType = sniffMime(avatarBuffer, avatar.mimetype);
+    const avatarBuffer = await readBufferWithLimit(
+      avatar.createReadStream(),
+      5 * OneMB
+    );
+    const contentType = sniffMime(avatarBuffer, avatar.mimetype)?.toLowerCase();
     if (!contentType || !contentType.startsWith('image/')) {
-      throw new Error(`Invalid file type: ${contentType || 'unknown'}`);
+      throw new ImageFormatNotSupported({ format: contentType || 'unknown' });
+    }
+
+    let processedAvatarBuffer: Buffer;
+    try {
+      processedAvatarBuffer = await processImage(avatarBuffer, 512, false);
+    } catch {
+      throw new ImageFormatNotSupported({ format: contentType });
     }
 
     const avatarUrl = await this.storage.put(
       `${user.id}-avatar-${Date.now()}`,
-      avatarBuffer,
-      { contentType }
+      processedAvatarBuffer,
+      { contentType: 'image/webp' }
     );
 
     if (user.avatarUrl) {

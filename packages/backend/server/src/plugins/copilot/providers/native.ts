@@ -1,37 +1,52 @@
-import type { ToolSet } from 'ai';
 import { ZodType } from 'zod';
 
+import { CopilotPromptInvalid } from '../../../base';
 import type {
   NativeLlmCoreContent,
   NativeLlmCoreMessage,
+  NativeLlmEmbeddingRequest,
   NativeLlmRequest,
   NativeLlmStreamEvent,
+  NativeLlmStructuredRequest,
+  NativeLlmStructuredResponse,
 } from '../../../native';
 import type { NodeTextMiddleware, ProviderMiddlewareConfig } from '../config';
-import { NativeDispatchFn, ToolCallLoop, ToolSchemaExtractor } from './loop';
-import type { CopilotChatOptions, PromptMessage, StreamObject } from './types';
+import type { CopilotToolSet } from '../tools';
 import {
-  CitationFootnoteFormatter,
-  inferMimeType,
-  TextStreamParser,
-} from './utils';
-
-const SIMPLE_IMAGE_URL_REGEX = /^(https?:\/\/|data:image\/)/;
+  canonicalizePromptAttachment,
+  type CanonicalPromptAttachment,
+} from './attachments';
+import { NativeDispatchFn, ToolCallLoop, ToolSchemaExtractor } from './loop';
+import type {
+  CopilotChatOptions,
+  CopilotStructuredOptions,
+  ModelAttachmentCapability,
+  PromptMessage,
+  StreamObject,
+} from './types';
+import { CitationFootnoteFormatter, TextStreamParser } from './utils';
 
 type BuildNativeRequestOptions = {
   model: string;
   messages: PromptMessage[];
-  options?: CopilotChatOptions;
-  tools?: ToolSet;
+  options?: CopilotChatOptions | CopilotStructuredOptions;
+  tools?: CopilotToolSet;
   withAttachment?: boolean;
+  attachmentCapability?: ModelAttachmentCapability;
   include?: string[];
   reasoning?: Record<string, unknown>;
+  responseSchema?: unknown;
   middleware?: ProviderMiddlewareConfig;
 };
 
 type BuildNativeRequestResult = {
   request: NativeLlmRequest;
   schema?: ZodType;
+};
+
+type BuildNativeStructuredRequestResult = {
+  request: NativeLlmStructuredRequest;
+  schema: ZodType;
 };
 
 type ToolCallMeta = {
@@ -68,9 +83,121 @@ function roleToCore(role: PromptMessage['role']) {
   }
 }
 
+function ensureAttachmentSupported(
+  attachment: CanonicalPromptAttachment,
+  attachmentCapability?: ModelAttachmentCapability
+) {
+  if (!attachmentCapability) return;
+
+  if (!attachmentCapability.kinds.includes(attachment.kind)) {
+    throw new CopilotPromptInvalid(
+      `Native path does not support ${attachment.kind} attachments${
+        attachment.mediaType ? ` (${attachment.mediaType})` : ''
+      }`
+    );
+  }
+
+  if (
+    attachmentCapability.sourceKinds?.length &&
+    !attachmentCapability.sourceKinds.includes(attachment.sourceKind)
+  ) {
+    throw new CopilotPromptInvalid(
+      `Native path does not support ${attachment.sourceKind} attachment sources`
+    );
+  }
+
+  if (attachment.isRemote && attachmentCapability.allowRemoteUrls === false) {
+    throw new CopilotPromptInvalid(
+      'Native path does not support remote attachment urls'
+    );
+  }
+}
+
+function resolveResponseSchema(
+  systemMessage: PromptMessage | undefined,
+  responseSchema?: unknown
+): ZodType | undefined {
+  if (responseSchema instanceof ZodType) {
+    return responseSchema;
+  }
+
+  if (systemMessage?.responseFormat?.schema instanceof ZodType) {
+    return systemMessage.responseFormat.schema;
+  }
+
+  return systemMessage?.params?.schema instanceof ZodType
+    ? systemMessage.params.schema
+    : undefined;
+}
+
+function resolveResponseStrict(
+  systemMessage: PromptMessage | undefined,
+  options?: CopilotStructuredOptions
+) {
+  return options?.strict ?? systemMessage?.responseFormat?.strict ?? true;
+}
+
+export class StructuredResponseParseError extends Error {}
+
+function normalizeStructuredText(text: string) {
+  const trimmed = text.replaceAll(/^ny\n/g, ' ').trim();
+  if (trimmed.startsWith('```') || trimmed.endsWith('```')) {
+    return trimmed
+      .replace(/```[\w\s-]*\n/g, '')
+      .replace(/\n```/g, '')
+      .trim();
+  }
+  return trimmed;
+}
+
+export function parseNativeStructuredOutput(
+  response: Pick<NativeLlmStructuredResponse, 'output_text'> & {
+    output_json?: unknown;
+  }
+) {
+  if (response.output_json !== undefined) {
+    return response.output_json;
+  }
+
+  const normalized = normalizeStructuredText(response.output_text);
+  const candidates = [
+    () => normalized,
+    () => {
+      const objectStart = normalized.indexOf('{');
+      const objectEnd = normalized.lastIndexOf('}');
+      return objectStart !== -1 && objectEnd > objectStart
+        ? normalized.slice(objectStart, objectEnd + 1)
+        : null;
+    },
+    () => {
+      const arrayStart = normalized.indexOf('[');
+      const arrayEnd = normalized.lastIndexOf(']');
+      return arrayStart !== -1 && arrayEnd > arrayStart
+        ? normalized.slice(arrayStart, arrayEnd + 1)
+        : null;
+    },
+  ];
+
+  for (const candidate of candidates) {
+    try {
+      const candidateText = candidate();
+      if (typeof candidateText === 'string') {
+        return JSON.parse(candidateText);
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  throw new StructuredResponseParseError(
+    `Unexpected structured response: ${normalized.slice(0, 200)}`
+  );
+}
+
 async function toCoreContents(
   message: PromptMessage,
-  withAttachment: boolean
+  withAttachment: boolean,
+  attachmentCapability?: ModelAttachmentCapability
 ): Promise<NativeLlmCoreContent[]> {
   const contents: NativeLlmCoreContent[] = [];
 
@@ -81,24 +208,12 @@ async function toCoreContents(
   if (!withAttachment || !Array.isArray(message.attachments)) return contents;
 
   for (const entry of message.attachments) {
-    let attachmentUrl: string;
-    let mediaType: string;
-
-    if (typeof entry === 'string') {
-      attachmentUrl = entry;
-      mediaType =
-        typeof message.params?.mimetype === 'string'
-          ? message.params.mimetype
-          : await inferMimeType(entry);
-    } else {
-      attachmentUrl = entry.attachment;
-      mediaType = entry.mimeType;
-    }
-
-    if (!SIMPLE_IMAGE_URL_REGEX.test(attachmentUrl)) continue;
-    if (!mediaType.startsWith('image/')) continue;
-
-    contents.push({ type: 'image', source: { url: attachmentUrl } });
+    const normalized = await canonicalizePromptAttachment(entry, message);
+    ensureAttachmentSupported(normalized, attachmentCapability);
+    contents.push({
+      type: normalized.kind,
+      source: normalized.source,
+    });
   }
 
   return contents;
@@ -110,8 +225,10 @@ export async function buildNativeRequest({
   options = {},
   tools = {},
   withAttachment = true,
+  attachmentCapability,
   include,
   reasoning,
+  responseSchema,
   middleware,
 }: BuildNativeRequestOptions): Promise<BuildNativeRequestResult> {
   const copiedMessages = messages.map(message => ({
@@ -123,10 +240,7 @@ export async function buildNativeRequest({
 
   const systemMessage =
     copiedMessages[0]?.role === 'system' ? copiedMessages.shift() : undefined;
-  const schema =
-    systemMessage?.params?.schema instanceof ZodType
-      ? systemMessage.params.schema
-      : undefined;
+  const schema = resolveResponseSchema(systemMessage, responseSchema);
 
   const coreMessages: NativeLlmCoreMessage[] = [];
   if (systemMessage?.content?.length) {
@@ -138,7 +252,11 @@ export async function buildNativeRequest({
 
   for (const message of copiedMessages) {
     if (message.role === 'system') continue;
-    const content = await toCoreContents(message, withAttachment);
+    const content = await toCoreContents(
+      message,
+      withAttachment,
+      attachmentCapability
+    );
     coreMessages.push({ role: roleToCore(message.role), content });
   }
 
@@ -153,11 +271,98 @@ export async function buildNativeRequest({
       tool_choice: Object.keys(tools).length ? 'auto' : undefined,
       include,
       reasoning,
+      response_schema: schema
+        ? ToolSchemaExtractor.toJsonSchema(schema)
+        : undefined,
       middleware: middleware?.rust
         ? { request: middleware.rust.request, stream: middleware.rust.stream }
         : undefined,
     },
     schema,
+  };
+}
+
+export async function buildNativeStructuredRequest({
+  model,
+  messages,
+  options = {},
+  withAttachment = true,
+  attachmentCapability,
+  reasoning,
+  responseSchema,
+  middleware,
+}: Omit<
+  BuildNativeRequestOptions,
+  'tools' | 'include'
+>): Promise<BuildNativeStructuredRequestResult> {
+  const copiedMessages = messages.map(message => ({
+    ...message,
+    attachments: message.attachments
+      ? [...message.attachments]
+      : message.attachments,
+  }));
+
+  const systemMessage =
+    copiedMessages[0]?.role === 'system' ? copiedMessages.shift() : undefined;
+  const schema = resolveResponseSchema(systemMessage, responseSchema);
+  const strict = resolveResponseStrict(systemMessage, options);
+
+  if (!schema) {
+    throw new CopilotPromptInvalid('Schema is required');
+  }
+
+  const coreMessages: NativeLlmCoreMessage[] = [];
+  if (systemMessage?.content?.length) {
+    coreMessages.push({
+      role: 'system',
+      content: [{ type: 'text', text: systemMessage.content }],
+    });
+  }
+
+  for (const message of copiedMessages) {
+    if (message.role === 'system') continue;
+    const content = await toCoreContents(
+      message,
+      withAttachment,
+      attachmentCapability
+    );
+    coreMessages.push({ role: roleToCore(message.role), content });
+  }
+
+  return {
+    request: {
+      model,
+      messages: coreMessages,
+      schema: ToolSchemaExtractor.toJsonSchema(schema),
+      max_tokens: options.maxTokens ?? undefined,
+      temperature: options.temperature ?? undefined,
+      reasoning,
+      strict,
+      response_mime_type: 'application/json',
+      middleware: middleware?.rust
+        ? { request: middleware.rust.request }
+        : undefined,
+    },
+    schema,
+  };
+}
+
+export function buildNativeEmbeddingRequest({
+  model,
+  inputs,
+  dimensions,
+  taskType = 'RETRIEVAL_DOCUMENT',
+}: {
+  model: string;
+  inputs: string[];
+  dimensions?: number;
+  taskType?: string;
+}): NativeLlmEmbeddingRequest {
+  return {
+    model,
+    inputs,
+    dimensions,
+    task_type: taskType,
   };
 }
 
@@ -244,7 +449,7 @@ export class NativeProviderAdapter {
 
   constructor(
     dispatch: NativeDispatchFn,
-    tools: ToolSet,
+    tools: CopilotToolSet,
     maxSteps = 20,
     options: NativeProviderAdapterOptions = {}
   ) {
@@ -259,9 +464,13 @@ export class NativeProviderAdapter {
       enabledNodeTextMiddlewares.has('citation_footnote');
   }
 
-  async text(request: NativeLlmRequest, signal?: AbortSignal) {
+  async text(
+    request: NativeLlmRequest,
+    signal?: AbortSignal,
+    messages?: PromptMessage[]
+  ) {
     let output = '';
-    for await (const chunk of this.streamText(request, signal)) {
+    for await (const chunk of this.streamText(request, signal, messages)) {
       output += chunk;
     }
     return output.trim();
@@ -269,7 +478,8 @@ export class NativeProviderAdapter {
 
   async *streamText(
     request: NativeLlmRequest,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    messages?: PromptMessage[]
   ): AsyncIterableIterator<string> {
     const textParser = this.#enableCallout ? new TextStreamParser() : null;
     const citationFormatter = this.#enableCitationFootnote
@@ -278,7 +488,7 @@ export class NativeProviderAdapter {
     const toolCalls = new Map<string, ToolCallMeta>();
     let streamPartId = 0;
 
-    for await (const event of this.#loop.run(request, signal)) {
+    for await (const event of this.#loop.run(request, signal, messages)) {
       switch (event.type) {
         case 'text_delta': {
           if (textParser) {
@@ -364,7 +574,8 @@ export class NativeProviderAdapter {
 
   async *streamObject(
     request: NativeLlmRequest,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    messages?: PromptMessage[]
   ): AsyncIterableIterator<StreamObject> {
     const toolCalls = new Map<string, ToolCallMeta>();
     const citationFormatter = this.#enableCitationFootnote
@@ -373,7 +584,7 @@ export class NativeProviderAdapter {
     const fallbackAttachmentFootnotes = new Map<string, AttachmentFootnote>();
     let hasFootnoteReference = false;
 
-    for await (const event of this.#loop.run(request, signal)) {
+    for await (const event of this.#loop.run(request, signal, messages)) {
       switch (event.type) {
         case 'text_delta': {
           if (event.text.includes('[^')) {

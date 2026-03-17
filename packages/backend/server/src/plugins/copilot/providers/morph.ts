@@ -1,5 +1,3 @@
-import type { ToolSet } from 'ai';
-
 import {
   CopilotProviderSideError,
   metrics,
@@ -11,6 +9,7 @@ import {
   type NativeLlmRequest,
 } from '../../../native';
 import type { NodeTextMiddleware } from '../config';
+import type { CopilotToolSet } from '../tools';
 import { buildNativeRequest, NativeProviderAdapter } from './native';
 import { CopilotProvider } from './provider';
 import type {
@@ -86,7 +85,7 @@ export class MorphProvider extends CopilotProvider<MorphConfig> {
   }
 
   private createNativeAdapter(
-    tools: ToolSet,
+    tools: CopilotToolSet,
     nodeTextMiddleware?: NodeTextMiddleware[]
   ) {
     return new NativeProviderAdapter(
@@ -108,12 +107,14 @@ export class MorphProvider extends CopilotProvider<MorphConfig> {
     messages: PromptMessage[],
     options: CopilotChatOptions = {}
   ): Promise<string> {
-    const fullCond = {
-      ...cond,
-      outputType: ModelOutputType.Text,
-    };
-    await this.checkParams({ messages, cond: fullCond, options });
-    const model = this.selectModel(fullCond);
+    const fullCond = { ...cond, outputType: ModelOutputType.Text };
+    const model = this.selectModel(
+      await this.checkParams({
+        messages,
+        cond: fullCond,
+        options,
+      })
+    );
 
     try {
       metrics.ai.counter('chat_text_calls').add(1, this.metricLabels(model.id));
@@ -127,7 +128,7 @@ export class MorphProvider extends CopilotProvider<MorphConfig> {
         middleware,
       });
       const adapter = this.createNativeAdapter(tools, middleware.node?.text);
-      return await adapter.text(request, options.signal);
+      return await adapter.text(request, options.signal, messages);
     } catch (e: any) {
       metrics.ai
         .counter('chat_text_errors')
@@ -141,12 +142,14 @@ export class MorphProvider extends CopilotProvider<MorphConfig> {
     messages: PromptMessage[],
     options: CopilotChatOptions = {}
   ): AsyncIterable<string> {
-    const fullCond = {
-      ...cond,
-      outputType: ModelOutputType.Text,
-    };
-    await this.checkParams({ messages, cond: fullCond, options });
-    const model = this.selectModel(fullCond);
+    const fullCond = { ...cond, outputType: ModelOutputType.Text };
+    const model = this.selectModel(
+      await this.checkParams({
+        messages,
+        cond: fullCond,
+        options,
+      })
+    );
 
     try {
       metrics.ai
@@ -162,7 +165,11 @@ export class MorphProvider extends CopilotProvider<MorphConfig> {
         middleware,
       });
       const adapter = this.createNativeAdapter(tools, middleware.node?.text);
-      for await (const chunk of adapter.streamText(request, options.signal)) {
+      for await (const chunk of adapter.streamText(
+        request,
+        options.signal,
+        messages
+      )) {
         yield chunk;
       }
     } catch (e: any) {

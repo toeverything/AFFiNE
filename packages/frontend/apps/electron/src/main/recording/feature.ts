@@ -4,7 +4,7 @@ import fsp from 'node:fs/promises';
 import path from 'node:path';
 
 // Should not load @affine/native for unsupported platforms
-import type { ShareableContent as ShareableContentType } from '@affine/native';
+import type * as NativeModuleType from '@affine/native';
 import { app, systemPreferences } from 'electron';
 import fs from 'fs-extra';
 import { debounce } from 'lodash-es';
@@ -64,9 +64,11 @@ export const SAVED_RECORDINGS_DIR = path.join(
   'recordings'
 );
 
-let shareableContent: ShareableContentType | null = null;
+type NativeModule = typeof NativeModuleType;
+type ShareableContentType = InstanceType<NativeModule['ShareableContent']>;
+type ShareableContentStatic = NativeModule['ShareableContent'];
 
-type NativeModule = typeof import('@affine/native');
+let shareableContent: ShareableContentType | null = null;
 
 function getNativeModule(): NativeModule {
   return require('@affine/native') as NativeModule;
@@ -108,7 +110,7 @@ export const recordingStatus$ = recordingStateMachine.status$;
 
 function createAppGroup(processGroupId: number): AppGroupInfo | undefined {
   // MUST require dynamically to avoid loading @affine/native for unsupported platforms
-  const SC: typeof ShareableContentType = getNativeModule().ShareableContent;
+  const SC: ShareableContentStatic = getNativeModule().ShareableContent;
   const groupProcess = SC?.applicationWithProcessId(processGroupId);
   if (!groupProcess) {
     return;

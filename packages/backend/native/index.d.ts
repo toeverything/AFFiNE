@@ -54,6 +54,12 @@ export declare function llmDispatch(protocol: string, backendConfigJson: string,
 
 export declare function llmDispatchStream(protocol: string, backendConfigJson: string, requestJson: string, callback: ((err: Error | null, arg: string) => void)): LlmStreamHandle
 
+export declare function llmEmbeddingDispatch(protocol: string, backendConfigJson: string, requestJson: string): string
+
+export declare function llmRerankDispatch(protocol: string, backendConfigJson: string, requestJson: string): string
+
+export declare function llmStructuredDispatch(protocol: string, backendConfigJson: string, requestJson: string): string
+
 /**
  * Merge updates in form like `Y.applyUpdate(doc, update)` way and return the
  * result binary.
@@ -83,6 +89,8 @@ export interface NativeCrawlResult {
 export interface NativeMarkdownResult {
   title: string
   markdown: string
+  knownUnsupportedBlocks: Array<string>
+  unknownBlocks: Array<string>
 }
 
 export interface NativePageDocContent {
@@ -109,6 +117,8 @@ export declare function parseDocToMarkdown(docBin: Buffer, docId: string, aiEdit
 export declare function parsePageDoc(docBin: Buffer, maxSummaryLength?: number | undefined | null): NativePageDocContent | null
 
 export declare function parseWorkspaceDoc(docBin: Buffer): NativeWorkspaceDocContent | null
+
+export declare function processImage(input: Buffer, maxEdge: number, keepExif: boolean): Promise<Buffer>
 
 export declare function readAllDocIdsFromRootDoc(docBin: Buffer, includeTrash?: boolean | undefined | null): Array<string>
 

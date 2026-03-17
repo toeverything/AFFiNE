@@ -1,5 +1,3 @@
-import type { ToolSet } from 'ai';
-
 import { CopilotProviderSideError, metrics } from '../../../base';
 import {
   llmDispatchStream,
@@ -7,6 +5,7 @@ import {
   type NativeLlmRequest,
 } from '../../../native';
 import type { NodeTextMiddleware } from '../config';
+import type { CopilotToolSet } from '../tools';
 import { buildNativeRequest, NativeProviderAdapter } from './native';
 import { CopilotProvider } from './provider';
 import {
@@ -87,7 +86,7 @@ export class PerplexityProvider extends CopilotProvider<PerplexityConfig> {
   }
 
   private createNativeAdapter(
-    tools: ToolSet,
+    tools: CopilotToolSet,
     nodeTextMiddleware?: NodeTextMiddleware[]
   ) {
     return new NativeProviderAdapter(
@@ -110,8 +109,13 @@ export class PerplexityProvider extends CopilotProvider<PerplexityConfig> {
     options: CopilotChatOptions = {}
   ): Promise<string> {
     const fullCond = { ...cond, outputType: ModelOutputType.Text };
-    await this.checkParams({ cond: fullCond, messages, options });
-    const model = this.selectModel(fullCond);
+    const normalizedCond = await this.checkParams({
+      cond: fullCond,
+      messages,
+      options,
+      withAttachment: false,
+    });
+    const model = this.selectModel(normalizedCond);
 
     try {
       metrics.ai.counter('chat_text_calls').add(1, this.metricLabels(model.id));
@@ -128,7 +132,7 @@ export class PerplexityProvider extends CopilotProvider<PerplexityConfig> {
         middleware,
       });
       const adapter = this.createNativeAdapter(tools, middleware.node?.text);
-      return await adapter.text(request, options.signal);
+      return await adapter.text(request, options.signal, messages);
     } catch (e: any) {
       metrics.ai
         .counter('chat_text_errors')
@@ -143,8 +147,13 @@ export class PerplexityProvider extends CopilotProvider<PerplexityConfig> {
     options: CopilotChatOptions = {}
   ): AsyncIterable<string> {
     const fullCond = { ...cond, outputType: ModelOutputType.Text };
-    await this.checkParams({ cond: fullCond, messages, options });
-    const model = this.selectModel(fullCond);
+    const normalizedCond = await this.checkParams({
+      cond: fullCond,
+      messages,
+      options,
+      withAttachment: false,
+    });
+    const model = this.selectModel(normalizedCond);
 
     try {
       metrics.ai
@@ -163,7 +172,11 @@ export class PerplexityProvider extends CopilotProvider<PerplexityConfig> {
         middleware,
       });
       const adapter = this.createNativeAdapter(tools, middleware.node?.text);
-      for await (const chunk of adapter.streamText(request, options.signal)) {
+      for await (const chunk of adapter.streamText(
+        request,
+        options.signal,
+        messages
+      )) {
         yield chunk;
       }
     } catch (e: any) {

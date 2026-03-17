@@ -1,9 +1,9 @@
 import { Logger } from '@nestjs/common';
-import { tool } from 'ai';
 import { z } from 'zod';
 
 import { AccessController } from '../../../core/permission';
 import { toolError } from './error';
+import { defineTool } from './tool';
 import type { ContextSession, CopilotChatOptions } from './types';
 
 const logger = new Logger('ContextBlobReadTool');
@@ -18,7 +18,10 @@ export const buildBlobContentGetter = (
     chunk?: number
   ) => {
     if (!options?.user || !options?.workspace || !blobId || !context) {
-      return;
+      return toolError(
+        'Blob Read Failed',
+        'Missing workspace, user, blob id, or copilot context for blob_read.'
+      );
     }
     const canAccess = await ac
       .user(options.user)
@@ -29,7 +32,10 @@ export const buildBlobContentGetter = (
       logger.warn(
         `User ${options.user} does not have access workspace ${options.workspace}`
       );
-      return;
+      return toolError(
+        'Blob Read Failed',
+        'You do not have permission to access this workspace attachment.'
+      );
     }
 
     const contextFile = context.files.find(
@@ -42,7 +48,12 @@ export const buildBlobContentGetter = (
       context.getBlobContent(canonicalBlobId, chunk),
     ]);
     const content = file?.trim() || blob?.trim();
-    if (!content) return;
+    if (!content) {
+      return toolError(
+        'Blob Read Failed',
+        `Attachment ${canonicalBlobId} is not available for reading in the current copilot context.`
+      );
+    }
     const info = contextFile
       ? { fileName: contextFile.name, fileType: contextFile.mimeType }
       : {};
@@ -53,12 +64,9 @@ export const buildBlobContentGetter = (
 };
 
 export const createBlobReadTool = (
-  getBlobContent: (
-    targetId?: string,
-    chunk?: number
-  ) => Promise<object | undefined>
+  getBlobContent: (targetId?: string, chunk?: number) => Promise<object>
 ) => {
-  return tool({
+  return defineTool({
     description:
       'Return the content and basic metadata of a single attachment identified by blobId; more inclined to use search tools rather than this tool.',
     inputSchema: z.object({
@@ -73,13 +81,10 @@ export const createBlobReadTool = (
     execute: async ({ blob_id, chunk }) => {
       try {
         const blob = await getBlobContent(blob_id, chunk);
-        if (!blob) {
-          return;
-        }
         return { ...blob };
       } catch (err: any) {
         logger.error(`Failed to read the blob ${blob_id} in context`, err);
-        return toolError('Blob Read Failed', err.message);
+        return toolError('Blob Read Failed', err.message ?? String(err));
       }
     },
   });

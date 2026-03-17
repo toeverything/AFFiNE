@@ -39,7 +39,7 @@
     "@types/react": "^19.0.1",
     "fake-indexeddb": "^6.0.0",
     "rxjs": "^7.8.2",
-    "vitest": "^3.2.4"
+    "vitest": "^4.0.18"
   },
   "peerDependencies": {
     "electron": "*",

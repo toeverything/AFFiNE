@@ -3,6 +3,7 @@ import {
   clickEdgelessModeButton,
   clickView,
   createEdgelessNoteBlock,
+  dblclickNoteBody,
   fitViewportToContent,
   focusDocTitle,
   getSelectedXYWH,
@@ -35,8 +36,7 @@ test.beforeEach(async ({ page }) => {
 test('should not show hidden note in embed view page mode', async ({
   page,
 }) => {
-  const note = page.locator('affine-edgeless-note');
-  await note.dblclick();
+  await dblclickNoteBody(page);
   await page.keyboard.type('visible content');
   await createEdgelessNoteBlock(page, [100, 100]);
   await page.keyboard.press('Enter');

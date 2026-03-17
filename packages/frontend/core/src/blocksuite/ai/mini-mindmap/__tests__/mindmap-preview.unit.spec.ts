@@ -99,4 +99,69 @@ describe('markdownToMindmap: convert markdown list to a mind map tree', () => {
 
     expect(nodes).toEqual(null);
   });
+
+  test('accepts leading plain text before the markdown list', () => {
+    const markdown = `Here is the regenerated mind map:
+
+- Text A
+  - Text B`;
+    const collection = new TestWorkspace();
+    collection.meta.initialize();
+    const doc = collection.createDoc().getStore();
+    const nodes = markdownToMindmap(markdown, doc, provider);
+
+    expect(nodes).toEqual({
+      text: 'Text A',
+      children: [
+        {
+          text: 'Text B',
+          children: [],
+        },
+      ],
+    });
+  });
+
+  test('accepts markdown lists wrapped in a code block', () => {
+    const markdown = `\`\`\`markdown
+- Text A
+  - Text B
+\`\`\``;
+    const collection = new TestWorkspace();
+    collection.meta.initialize();
+    const doc = collection.createDoc().getStore();
+    const nodes = markdownToMindmap(markdown, doc, provider);
+
+    expect(nodes).toEqual({
+      text: 'Text A',
+      children: [
+        {
+          text: 'Text B',
+          children: [],
+        },
+      ],
+    });
+  });
+
+  test('keeps inline markdown content inside node labels', () => {
+    const markdown = `
+- Root with [link](https://example.com) and [^1]
+  - Child with \`code\`
+
+[^1]: footnote
+`;
+    const collection = new TestWorkspace();
+    collection.meta.initialize();
+    const doc = collection.createDoc().getStore();
+    const nodes = markdownToMindmap(markdown, doc, provider);
+
+    expect(nodes).toEqual({
+      text: 'Root with link and',
+      children: [
+        {
+          text: 'Child with code',
+          children: [],
+        },
+      ],
+    });
+  });
 });

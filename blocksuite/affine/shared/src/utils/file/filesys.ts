@@ -20,7 +20,28 @@ declare global {
     showOpenFilePicker?: (
       options?: OpenFilePickerOptions
     ) => Promise<FileSystemFileHandle[]>;
+    // Window API: showDirectoryPicker
+    showDirectoryPicker?: (options?: {
+      id?: string;
+      mode?: 'read' | 'readwrite';
+      startIn?: FileSystemHandle | string;
+    }) => Promise<FileSystemDirectoryHandle>;
   }
+}
+
+// Minimal polyfill for FileSystemDirectoryHandle to iterate over files
+interface FileSystemDirectoryHandle {
+  kind: 'directory';
+  name: string;
+  values(): AsyncIterableIterator<
+    FileSystemFileHandle | FileSystemDirectoryHandle
+  >;
+}
+
+interface FileSystemFileHandle {
+  kind: 'file';
+  name: string;
+  getFile(): Promise<File>;
 }
 
 // See [Common MIME types](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types/Common_types)
@@ -121,21 +142,27 @@ type AcceptTypes =
   | 'Docx'
   | 'MindMap';
 
-export async function openFilesWith(
-  acceptType: AcceptTypes = 'Any',
-  multiple: boolean = true
-): Promise<File[] | null> {
-  // Feature detection. The API needs to be supported
-  // and the app not run in an iframe.
-  const supportsFileSystemAccess =
-    'showOpenFilePicker' in window &&
+function canUseFileSystemAccessAPI(
+  api: 'showOpenFilePicker' | 'showDirectoryPicker'
+) {
+  return (
+    api in window &&
     (() => {
       try {
         return window.self === window.top;
       } catch {
         return false;
       }
-    })();
+    })()
+  );
+}
+
+export async function openFilesWith(
+  acceptType: AcceptTypes = 'Any',
+  multiple: boolean = true
+): Promise<File[] | null> {
+  const supportsFileSystemAccess =
+    canUseFileSystemAccessAPI('showOpenFilePicker');
 
   // If the File System Access API is supported…
   if (supportsFileSystemAccess && window.showOpenFilePicker) {
@@ -186,6 +213,75 @@ export async function openFilesWith(
     // The `cancel` event fires when the user cancels the dialog.
     input.addEventListener('cancel', () => resolve(null));
     // Show the picker.
+    if ('showPicker' in HTMLInputElement.prototype) {
+      input.showPicker();
+    } else {
+      input.click();
+    }
+  });
+}
+
+export async function openDirectory(): Promise<File[] | null> {
+  const supportsFileSystemAccess = canUseFileSystemAccessAPI(
+    'showDirectoryPicker'
+  );
+
+  if (supportsFileSystemAccess && window.showDirectoryPicker) {
+    try {
+      const dirHandle = await window.showDirectoryPicker();
+      const files: File[] = [];
+
+      const readDirectory = async (
+        directoryHandle: FileSystemDirectoryHandle,
+        path: string
+      ) => {
+        for await (const handle of directoryHandle.values()) {
+          const relativePath = path ? `${path}/${handle.name}` : handle.name;
+          if (handle.kind === 'file') {
+            const fileHandle = handle as FileSystemFileHandle;
+            if (fileHandle.getFile) {
+              const file = await fileHandle.getFile();
+              Object.defineProperty(file, 'webkitRelativePath', {
+                value: relativePath,
+                writable: false,
+              });
+              files.push(file);
+            }
+          } else if (handle.kind === 'directory') {
+            await readDirectory(
+              handle as FileSystemDirectoryHandle,
+              relativePath
+            );
+          }
+        }
+      };
+
+      await readDirectory(dirHandle, '');
+      return files;
+    } catch (err) {
+      console.error(err);
+      return null;
+    }
+  }
+
+  return new Promise(resolve => {
+    const input = document.createElement('input');
+    input.classList.add('affine-upload-input');
+    input.style.display = 'none';
+    input.type = 'file';
+
+    input.setAttribute('webkitdirectory', '');
+    input.setAttribute('directory', '');
+
+    document.body.append(input);
+
+    input.addEventListener('change', () => {
+      input.remove();
+      resolve(input.files ? Array.from(input.files) : null);
+    });
+
+    input.addEventListener('cancel', () => resolve(null));
+
     if ('showPicker' in HTMLInputElement.prototype) {
       input.showPicker();
     } else {

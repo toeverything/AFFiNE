@@ -2495,6 +2495,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.import.notion.tooltip"](): string;
     /**
+      * `Obsidian Vault`
+      */
+    ["com.affine.import.obsidian"](): string;
+    /**
+      * `Import an Obsidian vault. Select a folder to import all notes, images, and assets with wikilinks resolved.`
+      */
+    ["com.affine.import.obsidian.tooltip"](): string;
+    /**
       * `Snapshot`
       */
     ["com.affine.import.snapshot"](): string;
@@ -8699,6 +8707,12 @@ export function useAFFiNEI18N(): {
       * `Email service is not configured.`
       */
     ["error.EMAIL_SERVICE_NOT_CONFIGURED"](): string;
+    /**
+      * `Image format not supported: {{format}}`
+      */
+    ["error.IMAGE_FORMAT_NOT_SUPPORTED"](options: {
+        readonly format: string;
+    }): string;
     /**
       * `Query is too long, max length is {{max}}.`
       */

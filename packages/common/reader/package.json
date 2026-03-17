@@ -19,7 +19,7 @@
   },
   "devDependencies": {
     "@blocksuite/affine": "workspace:*",
-    "vitest": "^3.2.4"
+    "vitest": "^4.0.18"
   },
   "peerDependencies": {
     "@blocksuite/affine": "workspace:*"

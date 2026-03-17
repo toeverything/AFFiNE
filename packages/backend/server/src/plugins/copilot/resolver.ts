@@ -24,6 +24,7 @@ import {
   CopilotProviderSideError,
   CopilotSessionNotFound,
   type FileUpload,
+  ImageFormatNotSupported,
   paginate,
   Paginated,
   PaginationInput,
@@ -39,6 +40,7 @@ import { DocReader } from '../../core/doc';
 import { AccessController, DocAction } from '../../core/permission';
 import { UserType } from '../../core/user';
 import type { ListSessionOptions, UpdateChatSession } from '../../models';
+import { processImage } from '../../native';
 import { CopilotCronJobs } from './cron';
 import { PromptService } from './prompt/service';
 import { CopilotProviderFactory } from './providers/factory';
@@ -48,6 +50,7 @@ import { CopilotStorage } from './storage';
 import { type ChatHistory, type ChatMessage, SubmittedMessage } from './types';
 
 export const COPILOT_LOCKER = 'copilot';
+const COPILOT_IMAGE_MAX_EDGE = 1536;
 
 // ================== Input Types ==================
 
@@ -777,19 +780,35 @@ export class CopilotResolver {
 
       for (const blob of blobs) {
         const uploaded = await this.storage.handleUpload(user.id, blob);
+        const detectedMime =
+          sniffMime(uploaded.buffer, blob.mimetype)?.toLowerCase() ||
+          blob.mimetype;
+        let attachmentBuffer = uploaded.buffer;
+        let attachmentMimeType = detectedMime;
+
+        if (detectedMime.startsWith('image/')) {
+          try {
+            attachmentBuffer = await processImage(
+              uploaded.buffer,
+              COPILOT_IMAGE_MAX_EDGE,
+              true
+            );
+            attachmentMimeType = 'image/webp';
+          } catch {
+            throw new ImageFormatNotSupported({ format: detectedMime });
+          }
+        }
+
         const filename = createHash('sha256')
-          .update(uploaded.buffer)
+          .update(attachmentBuffer)
           .digest('base64url');
         const attachment = await this.storage.put(
           user.id,
           workspaceId,
           filename,
-          uploaded.buffer
+          attachmentBuffer
         );
-        attachments.push({
-          attachment,
-          mimeType: sniffMime(uploaded.buffer, blob.mimetype) || blob.mimetype,
-        });
+        attachments.push({ attachment, mimeType: attachmentMimeType });
       }
     }
 

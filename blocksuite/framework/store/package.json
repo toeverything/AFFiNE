@@ -29,7 +29,7 @@
   "devDependencies": {
     "@types/lodash.clonedeep": "^4.5.9",
     "@types/lodash.merge": "^4.6.9",
-    "vitest": "^3.2.4"
+    "vitest": "^4.0.18"
   },
   "exports": {
     ".": "./src/index.ts",
