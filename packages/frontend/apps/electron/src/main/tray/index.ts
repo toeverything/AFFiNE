@@ -172,7 +172,9 @@ class TrayState implements Disposable {
               logger.info(
                 `User action: Start Recording Meeting (${appGroup.name})`
               );
-              startRecording(appGroup);
+              startRecording(appGroup).catch(err => {
+                logger.error('Failed to start recording:', err);
+              });
             },
           }));
 
@@ -188,7 +190,9 @@ class TrayState implements Disposable {
                     logger.info(
                       'User action: Start Recording Meeting (System audio)'
                     );
-                    startRecording();
+                    startRecording().catch(err => {
+                      logger.error('Failed to start recording:', err);
+                    });
                   },
                 },
                 ...appMenuItems,

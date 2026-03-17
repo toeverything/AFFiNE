@@ -4,7 +4,7 @@ import { appIconMap } from '@affine/core/utils';
 import { apis, events } from '@affine/electron-api';
 import { useI18n } from '@affine/i18n';
 import track from '@affine/track';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import * as styles from './styles.css';
 
@@ -53,6 +53,7 @@ const appIcon = appIconMap[BUILD_CONFIG.appBuildType];
 
 export function Recording() {
   const status = useRecordingStatus();
+  const trackedNewRecordingIdsRef = useRef<Set<number>>(new Set());
 
   const t = useI18n();
   const textElement = useMemo(() => {
@@ -101,42 +102,15 @@ export function Recording() {
   }, [status]);
 
   useEffect(() => {
-    let removed = false;
+    if (!status || status.status !== 'new') return;
+    if (trackedNewRecordingIdsRef.current.has(status.id)) return;
 
-    const handleRecordingStatusChanged = async (status: Status) => {
-      if (removed) {
-        return;
-      }
-      if (status?.status === 'new') {
-        track.popup.$.recordingBar.toggleRecordingBar({
-          type: 'Meeting record',
-          appName: status.appName || 'System Audio',
-        });
-      }
-    };
-
-    apis?.recording
-      .getCurrentRecording()
-      .then(status => {
-        if (status) {
-          return handleRecordingStatusChanged(status);
-        }
-        return;
-      })
-      .catch(console.error);
-
-    // allow processing stopped event in tray menu as well:
-    const unsubscribe = events?.recording.onRecordingStatusChanged(status => {
-      if (status) {
-        handleRecordingStatusChanged(status).catch(console.error);
-      }
+    trackedNewRecordingIdsRef.current.add(status.id);
+    track.popup.$.recordingBar.toggleRecordingBar({
+      type: 'Meeting record',
+      appName: status.appName || 'System Audio',
     });
-
-    return () => {
-      removed = true;
-      unsubscribe?.();
-    };
-  }, []);
+  }, [status]);
 
   const handleStartRecording = useAsyncCallback(async () => {
     if (!status) {

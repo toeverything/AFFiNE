@@ -156,8 +156,8 @@ impl InterleavedResampler {
         }
         let out_len = blocks[0].len();
         for i in 0..out_len {
-          for ch in 0..self.channels {
-            out.push(blocks[ch][i]);
+          for channel in blocks.iter().take(self.channels) {
+            out.push(channel[i]);
           }
         }
       }
@@ -186,6 +186,14 @@ impl OggOpusWriter {
     let channels = if channels > 1 { Channels::Stereo } else { Channels::Mono };
 
     let sample_rate = ENCODE_SAMPLE_RATE;
+    let mut encoder =
+      Encoder::new(sample_rate, channels, Application::Audio).map_err(|e| RecordingError::Encoding(e.to_string()))?;
+    let pre_skip = u16::try_from(
+      encoder
+        .lookahead()
+        .map_err(|e| RecordingError::Encoding(e.to_string()))?,
+    )
+    .map_err(|_| RecordingError::Encoding("invalid encoder lookahead".into()))?;
     let resampler = if source_sample_rate != sample_rate.as_i32() as u32 {
       Some(InterleavedResampler::new(
         source_sample_rate,
@@ -204,18 +212,16 @@ impl OggOpusWriter {
     let mut writer = PacketWriter::new(BufWriter::new(file));
 
     let stream_serial: u32 = rand::random();
-    write_opus_headers(&mut writer, stream_serial, channels, sample_rate)?;
+    write_opus_headers(&mut writer, stream_serial, channels, sample_rate, pre_skip)?;
 
     let frame_samples = FrameSize::Ms20.samples(sample_rate);
-    let encoder =
-      Encoder::new(sample_rate, channels, Application::Audio).map_err(|e| RecordingError::Encoding(e.to_string()))?;
 
     Ok(Self {
       writer,
       encoder,
       frame_samples,
       pending: Vec::new(),
-      granule_position: 0,
+      granule_position: u64::from(pre_skip),
       samples_written: 0,
       channels,
       sample_rate,
@@ -316,12 +322,13 @@ fn write_opus_headers(
   stream_serial: u32,
   channels: Channels,
   sample_rate: OpusSampleRate,
+  pre_skip: u16,
 ) -> RecordingResult<()> {
   let mut opus_head = Vec::with_capacity(19);
   opus_head.extend_from_slice(b"OpusHead");
   opus_head.push(1); // version
   opus_head.push(channels.as_usize() as u8);
-  opus_head.extend_from_slice(&0u16.to_le_bytes()); // pre-skip
+  opus_head.extend_from_slice(&pre_skip.to_le_bytes());
   opus_head.extend_from_slice(&(sample_rate.as_i32() as u32).to_le_bytes());
   opus_head.extend_from_slice(&0i16.to_le_bytes()); // output gain
   opus_head.push(0); // channel mapping
@@ -374,6 +381,7 @@ struct ActiveRecording {
 
 static ACTIVE_RECORDINGS: LazyLock<Mutex<HashMap<String, ActiveRecording>>> =
   LazyLock::new(|| Mutex::new(HashMap::new()));
+static START_RECORDING_LOCK: LazyLock<Mutex<()>> = LazyLock::new(|| Mutex::new(()));
 
 fn now_millis() -> i64 {
   SystemTime::now()
@@ -382,14 +390,18 @@ fn now_millis() -> i64 {
     .unwrap_or(0)
 }
 
+fn new_recording_id() -> String {
+  format!("{}-{:08x}", now_millis(), rand::random::<u32>())
+}
+
 fn sanitize_id(id: Option<String>) -> String {
-  let raw = id.unwrap_or_else(|| format!("{}", now_millis()));
+  let raw = id.unwrap_or_else(new_recording_id);
   let filtered: String = raw
     .chars()
     .filter(|c| c.is_ascii_alphanumeric() || *c == '-' || *c == '_')
     .collect();
   if filtered.is_empty() {
-    format!("{}", now_millis())
+    new_recording_id()
   } else {
     filtered
   }
@@ -427,13 +439,13 @@ fn start_capture(opts: &RecordingStartOptions, tx: Sender<Vec<f32>>) -> Result<(
     let session = if let Some(app_id) = opts.app_process_id {
       ShareableContent::tap_audio_with_callback(app_id, callback)?
     } else {
-      let excluded_apps = build_excluded_refs(opts.exclude_process_ids.as_ref().map(|v| v.as_slice()).unwrap_or(&[]))?;
+      let excluded_apps = build_excluded_refs(opts.exclude_process_ids.as_deref().unwrap_or(&[]))?;
       let excluded_refs: Vec<&ApplicationInfo> = excluded_apps.iter().collect();
       ShareableContent::tap_global_audio_with_callback(Some(excluded_refs), callback)?
     };
     let sample_rate = session.get_sample_rate()?.round().clamp(1.0, f64::MAX) as u32;
     let channels = session.get_channels()?;
-    return Ok((PlatformCapture::Mac(session), sample_rate, channels));
+    Ok((PlatformCapture::Mac(session), sample_rate, channels))
   }
 
   #[cfg(target_os = "windows")]
@@ -474,14 +486,28 @@ fn spawn_worker(
 
 #[napi]
 pub fn start_recording(opts: RecordingStartOptions) -> Result<RecordingSessionMeta> {
-  if let Some(fmt) = opts.format.as_deref() {
-    if fmt.to_ascii_lowercase() != "opus" {
-      return Err(RecordingError::InvalidFormat(fmt.to_string()).into());
+  if let Some(fmt) = opts.format.as_deref()
+    && !fmt.eq_ignore_ascii_case("opus")
+  {
+    return Err(RecordingError::InvalidFormat(fmt.to_string()).into());
+  }
+
+  let _start_lock = START_RECORDING_LOCK
+    .lock()
+    .map_err(|_| RecordingError::Start("lock poisoned".into()))?;
+  let output_dir = validate_output_dir(&opts.output_dir)?;
+  let id = sanitize_id(opts.id.clone());
+
+  {
+    let recordings = ACTIVE_RECORDINGS
+      .lock()
+      .map_err(|_| RecordingError::Start("lock poisoned".into()))?;
+
+    if recordings.contains_key(&id) {
+      return Err(RecordingError::Start("duplicate recording id".into()).into());
     }
   }
 
-  let output_dir = validate_output_dir(&opts.output_dir)?;
-  let id = sanitize_id(opts.id.clone());
   let filepath = output_dir.join(format!("{id}.opus"));
   if filepath.exists() {
     fs::remove_file(&filepath)?;
@@ -511,10 +537,6 @@ pub fn start_recording(opts: RecordingStartOptions) -> Result<RecordingSessionMe
     .lock()
     .map_err(|_| RecordingError::Start("lock poisoned".into()))?;
 
-  if recordings.contains_key(&id) {
-    return Err(RecordingError::Start("duplicate recording id".into()).into());
-  }
-
   recordings.insert(
     id,
     ActiveRecording {
@@ -540,7 +562,7 @@ pub fn stop_recording(id: String) -> Result<RecordingArtifact> {
   drop(entry.sender.take());
 
   let handle = entry.worker.take().ok_or(RecordingError::Join)?;
-  let artifact = handle.join().map_err(|_| RecordingError::Join)?.map_err(|e| e)?;
+  let artifact = handle.join().map_err(|_| RecordingError::Join)??;
 
   Ok(artifact)
 }

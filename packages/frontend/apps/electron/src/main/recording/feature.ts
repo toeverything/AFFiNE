@@ -476,14 +476,17 @@ export function newRecording(
 export async function startRecording(
   appGroup?: AppGroupInfo | number
 ): Promise<RecordingStatus | null> {
+  const previousState = recordingStateMachine.status;
   const state = recordingStateMachine.dispatch({
     type: 'START_RECORDING',
     appGroup: normalizeAppGroupInfo(appGroup),
   });
 
-  if (!state || state.status !== 'recording') {
+  if (!state || state.status !== 'recording' || state === previousState) {
     return state;
   }
+
+  let nativeId: string | undefined;
 
   try {
     fs.ensureDirSync(SAVED_RECORDINGS_DIR);
@@ -494,6 +497,7 @@ export async function startRecording(
       format: 'opus',
       id: String(state.id),
     });
+    nativeId = meta.id;
 
     const filepath = assertRecordingFilepath(meta.filepath);
     const nextState = recordingStateMachine.dispatch({
@@ -506,8 +510,15 @@ export async function startRecording(
       numberOfChannels: meta.channels,
     });
 
+    if (!nextState || nextState.nativeId !== meta.id) {
+      throw new Error('Failed to attach native recording metadata');
+    }
+
     return nextState;
   } catch (error) {
+    if (nativeId) {
+      await cleanupAbandonedNativeRecording(nativeId);
+    }
     logger.error('failed to start recording', error);
     return recordingStateMachine.dispatch({
       type: 'CREATE_BLOCK_FAILED',
@@ -598,6 +609,16 @@ function assertRecordingFilepath(filepath: string) {
 export async function readRecordingFile(filepath: string) {
   const normalizedPath = assertRecordingFilepath(filepath);
   return fsp.readFile(normalizedPath);
+}
+
+async function cleanupAbandonedNativeRecording(nativeId: string) {
+  try {
+    const artifact = getNativeModule().stopRecording(nativeId);
+    const filepath = assertRecordingFilepath(artifact.filepath);
+    await fsp.rm(filepath, { force: true });
+  } catch (error) {
+    logger.error('failed to cleanup abandoned native recording', error);
+  }
 }
 
 export async function handleBlockCreationSuccess(id: number) {
