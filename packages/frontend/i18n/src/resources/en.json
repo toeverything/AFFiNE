@@ -622,6 +622,8 @@
   "com.affine.import.modal.tip": "If you'd like to request support for additional file types, feel free to let us know on",
   "com.affine.import.notion": "Notion",
   "com.affine.import.notion.tooltip": "Import your Notion data. Supported import formats: HTML with subpages.",
+  "com.affine.import.obsidian": "Obsidian Vault",
+  "com.affine.import.obsidian.tooltip": "Import an Obsidian vault. Select a folder to import all notes, images, and assets with wikilinks resolved.",
   "com.affine.import.snapshot": "Snapshot",
   "com.affine.import.snapshot.tooltip": "Import your AFFiNE workspace and page snapshot file.",
   "com.affine.import.dotaffinefile": ".affine file",

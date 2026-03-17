@@ -63,7 +63,7 @@
       "groupName": "opentelemetry",
       "matchPackageNames": [
         "/^@opentelemetry/",
-        "/^@google-cloud\/opentelemetry-/"
+        "/^@google-cloud/opentelemetry-/"
       ]
     }
   ],
@@ -79,7 +79,7 @@
   "customManagers": [
     {
       "customType": "regex",
-      "fileMatch": ["^rust-toolchain\\.toml?$"],
+      "managerFilePatterns": ["/^rust-toolchain\\.toml?$/"],
       "matchStrings": [
         "channel\\s*=\\s*\"(?<currentValue>\\d+\\.\\d+(\\.\\d+)?)\""
       ],

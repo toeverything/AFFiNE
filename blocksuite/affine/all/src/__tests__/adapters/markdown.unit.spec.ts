@@ -1,4 +1,10 @@
-import { MarkdownTransformer } from '@blocksuite/affine/widgets/linked-doc';
+import { readFileSync } from 'node:fs';
+import { basename, resolve } from 'node:path';
+
+import {
+  MarkdownTransformer,
+  ObsidianTransformer,
+} from '@blocksuite/affine/widgets/linked-doc';
 import {
   DefaultTheme,
   NoteDisplayMode,
@@ -8,13 +14,18 @@ import {
   CalloutAdmonitionType,
   CalloutExportStyle,
   calloutMarkdownExportMiddleware,
+  docLinkBaseURLMiddleware,
   embedSyncedDocMiddleware,
   MarkdownAdapter,
+  titleMiddleware,
 } from '@blocksuite/affine-shared/adapters';
+import type { AffineTextAttributes } from '@blocksuite/affine-shared/types';
 import type {
   BlockSnapshot,
+  DeltaInsert,
   DocSnapshot,
   SliceSnapshot,
+  Store,
   TransformerMiddleware,
 } from '@blocksuite/store';
 import { AssetsManager, MemoryBlobCRUD, Schema } from '@blocksuite/store';
@@ -28,6 +39,138 @@ import { nanoidReplacement } from '../utils/nanoid-replacement.js';
 import { testStoreExtensions } from '../utils/store.js';
 
 const provider = getProvider();
+
+function withRelativePath(file: File, relativePath: string): File {
+  Object.defineProperty(file, 'webkitRelativePath', {
+    value: relativePath,
+    writable: false,
+  });
+  return file;
+}
+
+function markdownFixture(relativePath: string): File {
+  return withRelativePath(
+    new File(
+      [
+        readFileSync(
+          resolve(import.meta.dirname, 'fixtures/obsidian', relativePath),
+          'utf8'
+        ),
+      ],
+      basename(relativePath),
+      { type: 'text/markdown' }
+    ),
+    `vault/${relativePath}`
+  );
+}
+
+function exportSnapshot(doc: Store): DocSnapshot {
+  const job = doc.getTransformer([
+    docLinkBaseURLMiddleware(doc.workspace.id),
+    titleMiddleware(doc.workspace.meta.docMetas),
+  ]);
+  const snapshot = job.docToSnapshot(doc);
+  expect(snapshot).toBeTruthy();
+  return snapshot!;
+}
+
+function normalizeDeltaForSnapshot(
+  delta: DeltaInsert<AffineTextAttributes>[],
+  titleById: ReadonlyMap<string, string>
+) {
+  return delta.map(item => {
+    const normalized: Record<string, unknown> = {
+      insert: item.insert,
+    };
+
+    if (item.attributes?.link) {
+      normalized.link = item.attributes.link;
+    }
+
+    if (item.attributes?.reference?.type === 'LinkedPage') {
+      normalized.reference = {
+        type: 'LinkedPage',
+        page: titleById.get(item.attributes.reference.pageId) ?? '<missing>',
+        ...(item.attributes.reference.title
+          ? { title: item.attributes.reference.title }
+          : {}),
+      };
+    }
+
+    if (item.attributes?.footnote) {
+      const reference = item.attributes.footnote.reference;
+      normalized.footnote = {
+        label: item.attributes.footnote.label,
+        reference:
+          reference.type === 'doc'
+            ? {
+                type: 'doc',
+                page: reference.docId
+                  ? (titleById.get(reference.docId) ?? '<missing>')
+                  : '<missing>',
+              }
+            : {
+                type: reference.type,
+                ...(reference.title ? { title: reference.title } : {}),
+                ...(reference.fileName ? { fileName: reference.fileName } : {}),
+              },
+      };
+    }
+
+    return normalized;
+  });
+}
+
+function simplifyBlockForSnapshot(
+  block: BlockSnapshot,
+  titleById: ReadonlyMap<string, string>
+): Record<string, unknown> {
+  const simplified: Record<string, unknown> = {
+    flavour: block.flavour,
+  };
+
+  if (block.flavour === 'affine:paragraph' || block.flavour === 'affine:list') {
+    simplified.type = block.props.type;
+    const text = block.props.text as
+      | { delta?: DeltaInsert<AffineTextAttributes>[] }
+      | undefined;
+    simplified.delta = normalizeDeltaForSnapshot(text?.delta ?? [], titleById);
+  }
+
+  if (block.flavour === 'affine:callout') {
+    simplified.emoji = block.props.emoji;
+  }
+
+  if (block.flavour === 'affine:attachment') {
+    simplified.name = block.props.name;
+    simplified.style = block.props.style;
+  }
+
+  if (block.flavour === 'affine:image') {
+    simplified.sourceId = '<asset>';
+  }
+
+  const children = (block.children ?? [])
+    .filter(child => child.flavour !== 'affine:surface')
+    .map(child => simplifyBlockForSnapshot(child, titleById));
+  if (children.length) {
+    simplified.children = children;
+  }
+
+  return simplified;
+}
+
+function snapshotDocByTitle(
+  collection: TestWorkspace,
+  title: string,
+  titleById: ReadonlyMap<string, string>
+) {
+  const meta = collection.meta.docMetas.find(meta => meta.title === title);
+  expect(meta).toBeTruthy();
+  const doc = collection.getDoc(meta!.id)?.getStore({ id: meta!.id });
+  expect(doc).toBeTruthy();
+  return simplifyBlockForSnapshot(exportSnapshot(doc!).blocks, titleById);
+}
 
 describe('snapshot to markdown', () => {
   test('code', async () => {
@@ -125,6 +268,46 @@ Hello world
     expect(meta?.updatedDate).toBe(Date.parse('2018-04-12T10:00:00'));
     expect(meta?.favorite).toBe(true);
     expect(meta?.tags).toEqual(['a', 'b']);
+  });
+
+  test('imports obsidian vault fixtures', async () => {
+    const schema = new Schema().register(AffineSchemas);
+    const collection = new TestWorkspace();
+    collection.storeExtensions = testStoreExtensions;
+    collection.meta.initialize();
+
+    const attachment = withRelativePath(
+      new File([new Uint8Array([80, 75, 3, 4])], 'archive.zip', {
+        type: 'application/zip',
+      }),
+      'vault/archive.zip'
+    );
+
+    const { docIds } = await ObsidianTransformer.importObsidianVault({
+      collection,
+      schema,
+      importedFiles: [
+        markdownFixture('entry.md'),
+        markdownFixture('linked.md'),
+        attachment,
+      ],
+      extensions: testStoreExtensions,
+    });
+    expect(docIds).toHaveLength(2);
+
+    const titleById = new Map(
+      collection.meta.docMetas.map(meta => [
+        meta.id,
+        meta.title ?? '<untitled>',
+      ])
+    );
+
+    expect({
+      titles: collection.meta.docMetas
+        .map(meta => meta.title)
+        .sort((a, b) => (a ?? '').localeCompare(b ?? '')),
+      entry: snapshotDocByTitle(collection, 'entry', titleById),
+    }).toMatchSnapshot();
   });
 
   test('paragraph', async () => {

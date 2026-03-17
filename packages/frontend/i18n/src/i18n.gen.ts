@@ -2495,6 +2495,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.import.notion.tooltip"](): string;
     /**
+      * `Obsidian Vault`
+      */
+    ["com.affine.import.obsidian"](): string;
+    /**
+      * `Import an Obsidian vault. Select a folder to import all notes, images, and assets with wikilinks resolved.`
+      */
+    ["com.affine.import.obsidian.tooltip"](): string;
+    /**
       * `Snapshot`
       */
     ["com.affine.import.snapshot"](): string;
