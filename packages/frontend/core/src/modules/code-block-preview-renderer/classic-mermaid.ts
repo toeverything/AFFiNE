@@ -8,6 +8,7 @@ import type {
 } from '../mermaid/renderer';
 
 let mermaidPromise: Promise<Mermaid> | null = null;
+let mermaidRenderQueue: Promise<void> = Promise.resolve();
 
 function toTheme(theme: MermaidRenderTheme | undefined) {
   return theme === 'modern' ? ('base' as const) : ('default' as const);
@@ -39,12 +40,23 @@ function createDiagramId() {
   return `mermaid-diagram-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
+function enqueueClassicMermaidRender<T>(task: () => Promise<T>): Promise<T> {
+  const run = mermaidRenderQueue.then(task, task);
+  mermaidRenderQueue = run.then(
+    () => undefined,
+    () => undefined
+  );
+  return run;
+}
+
 export async function renderClassicMermaidSvg(
   request: MermaidRenderRequest
 ): Promise<MermaidRenderResult> {
-  const mermaid = await loadMermaid();
-  mermaid.initialize(createClassicMermaidConfig(request.options));
+  return enqueueClassicMermaidRender(async () => {
+    const mermaid = await loadMermaid();
+    mermaid.initialize(createClassicMermaidConfig(request.options));
 
-  const { svg } = await mermaid.render(createDiagramId(), request.code);
-  return { svg };
+    const { svg } = await mermaid.render(createDiagramId(), request.code);
+    return { svg };
+  });
 }

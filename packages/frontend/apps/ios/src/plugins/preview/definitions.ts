@@ -11,7 +11,6 @@ export interface PreviewPlugin {
     code: string;
     options?: {
       fontUrls?: string[];
-      theme?: 'light' | 'dark';
     };
   }): Promise<{ svg: string }>;
 }

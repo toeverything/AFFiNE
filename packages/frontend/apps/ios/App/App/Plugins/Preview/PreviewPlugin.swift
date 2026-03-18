@@ -1,6 +1,51 @@
 import Foundation
 import Capacitor
 
+private func resolveLocalFontDir(from fontURL: String) -> String? {
+  let path: String
+  if fontURL.hasPrefix("file://") {
+    guard let url = URL(string: fontURL), url.isFileURL else {
+      return nil
+    }
+    path = url.path
+  } else {
+    let candidate = (fontURL as NSString).standardizingPath
+    guard candidate.hasPrefix("/") else {
+      return nil
+    }
+    path = candidate
+  }
+
+  var isDirectory: ObjCBool = false
+  if FileManager.default.fileExists(atPath: path, isDirectory: &isDirectory),
+     isDirectory.boolValue
+  {
+    return path
+  }
+
+  let directory = (path as NSString).deletingLastPathComponent
+  return directory.isEmpty ? nil : directory
+}
+
+private func resolveTypstFontDirs(from options: [AnyHashable: Any]?) throws -> [String]? {
+  guard let fontUrls = options?["fontUrls"] as? [String] else {
+    return nil
+  }
+
+  return Array(Set(try fontUrls.map { fontURL in
+    guard let fontDir = resolveLocalFontDir(from: fontURL) else {
+      throw NSError(
+        domain: "PreviewPlugin",
+        code: 1,
+        userInfo: [
+          NSLocalizedDescriptionKey: "Typst preview on mobile only supports local font file URLs or absolute font directories."
+        ]
+      )
+    }
+    return fontDir
+  }))
+}
+
 @objc(PreviewPlugin)
 public class PreviewPlugin: CAPPlugin, CAPBridgedPlugin {
   public let identifier = "PreviewPlugin"
@@ -32,8 +77,10 @@ public class PreviewPlugin: CAPPlugin, CAPBridgedPlugin {
     DispatchQueue.global(qos: .userInitiated).async {
       do {
         let code = try call.getStringEnsure("code")
+        let options = call.getObject("options")
         let cacheDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first?.path
-        let svg = try renderTypstPreviewSvg(code: code, fontDirs: nil, cacheDir: cacheDir)
+        let fontDirs = try resolveTypstFontDirs(from: options)
+        let svg = try renderTypstPreviewSvg(code: code, fontDirs: fontDirs, cacheDir: cacheDir)
         call.resolve(["svg": svg])
       } catch {
         call.reject("Failed to render Typst preview, \(error)", nil, error)

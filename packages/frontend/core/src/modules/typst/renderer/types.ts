@@ -2,7 +2,6 @@ import type { OpSchema } from '@toeverything/infra/op';
 
 export type TypstRenderOptions = {
   fontUrls?: string[];
-  theme?: 'light' | 'dark';
 };
 
 export type TypstRenderRequest = {

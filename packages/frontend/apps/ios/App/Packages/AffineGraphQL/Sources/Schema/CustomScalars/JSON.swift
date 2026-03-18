@@ -9,21 +9,17 @@ import ApolloAPI
 
 /// The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
 public struct JSON: CustomScalarType, Hashable, ExpressibleByDictionaryLiteral {
-  public let object: ApolloAPI.JSONObject
+  public let value: JSONValue
 
   public init(_jsonValue value: JSONValue) throws {
-    object = try ApolloAPI.JSONObject(_jsonValue: value)
-  }
-
-  public init(_ object: ApolloAPI.JSONObject) {
-    self.object = object
+    self.value = value
   }
 
   public init(dictionaryLiteral elements: (String, JSONValue)...) {
-    object = .init(uniqueKeysWithValues: elements)
+    value = ApolloAPI.JSONObject(uniqueKeysWithValues: elements) as JSONValue
   }
 
   public var _jsonValue: JSONValue {
-    object
+    value
   }
 }

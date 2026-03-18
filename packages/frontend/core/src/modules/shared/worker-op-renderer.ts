@@ -7,6 +7,7 @@ export abstract class WorkerOpRenderer<
   Ops extends OpSchema,
 > extends OpClient<Ops> {
   private readonly worker: Worker;
+  private destroyed = false;
   private initPromise: Promise<void> | null = null;
 
   protected constructor(workerName: string) {
@@ -16,6 +17,7 @@ export abstract class WorkerOpRenderer<
   }
 
   protected ensureInitialized(task: InitTask) {
+    if (this.destroyed) return Promise.reject(new Error('renderer destroyed'));
     if (!this.initPromise) {
       this.initPromise = task()
         .then(() => undefined)
@@ -32,6 +34,8 @@ export abstract class WorkerOpRenderer<
   }
 
   override destroy() {
+    if (this.destroyed) return;
+    this.destroyed = true;
     super.destroy();
     this.worker.terminate();
     this.resetInitialization();

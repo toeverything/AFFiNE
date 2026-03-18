@@ -7,17 +7,7 @@ use typst::layout::{Abs, PagedDocument};
 use typst_as_lib::{TypstEngine, typst_kit_options::TypstKitFontOptions};
 
 #[napi(object)]
-pub struct MermaidTextMetrics {
-  pub ascii: f64,
-  pub cjk: f64,
-  pub space: f64,
-}
-
-#[napi(object)]
 pub struct MermaidRenderOptions {
-  pub fast_text: Option<bool>,
-  pub svg_only: Option<bool>,
-  pub text_metrics: Option<MermaidTextMetrics>,
   pub theme: Option<String>,
   pub font_family: Option<String>,
   pub font_size: Option<f64>,
@@ -65,7 +55,6 @@ pub fn render_mermaid_svg(request: MermaidRenderRequest) -> Result<MermaidRender
 #[napi(object)]
 pub struct TypstRenderOptions {
   pub font_urls: Option<Vec<String>>,
-  pub theme: Option<String>,
   pub font_dirs: Option<Vec<String>>,
 }
 
@@ -80,12 +69,40 @@ pub struct TypstRenderResult {
   pub svg: String,
 }
 
+fn resolve_local_font_dir(value: &str) -> Option<PathBuf> {
+  let path = if let Some(stripped) = value.strip_prefix("file://") {
+    PathBuf::from(stripped)
+  } else {
+    let path = PathBuf::from(value);
+    if !path.is_absolute() {
+      return None;
+    }
+    path
+  };
+
+  if path.is_dir() {
+    return Some(path);
+  }
+
+  path.parent().map(|parent| parent.to_path_buf())
+}
+
 fn resolve_typst_font_dirs(options: &Option<TypstRenderOptions>) -> Vec<PathBuf> {
-  options
+  let Some(options) = options.as_ref() else {
+    return Vec::new();
+  };
+
+  let mut font_dirs = options
+    .font_dirs
     .as_ref()
-    .and_then(|options| options.font_dirs.as_ref())
-    .map(|dirs| dirs.iter().map(PathBuf::from).collect())
-    .unwrap_or_default()
+    .map(|dirs| dirs.iter().map(PathBuf::from).collect::<Vec<_>>())
+    .unwrap_or_default();
+
+  if let Some(font_urls) = options.font_urls.as_ref() {
+    font_dirs.extend(font_urls.iter().filter_map(|url| resolve_local_font_dir(url)));
+  }
+
+  font_dirs
 }
 
 fn normalize_typst_svg(svg: String) -> String {

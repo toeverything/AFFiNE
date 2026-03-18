@@ -23,7 +23,11 @@ class TypstRendererBackend extends OpConsumer<TypstOps> {
       DEFAULT_TYPST_RENDER_OPTIONS,
       options
     );
-    await ensureTypstReady(this.options.fontUrls ?? []);
+    await ensureTypstReady(
+      this.options.fontUrls ?? [
+        ...(DEFAULT_TYPST_RENDER_OPTIONS.fontUrls ?? []),
+      ]
+    );
     return { ok: true } as const;
   }
 

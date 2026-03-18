@@ -41,7 +41,13 @@ type TypstWasmModuleUrls = {
   rendererWasmUrl?: string;
 };
 
-let typstInitPromise: Promise<void> | null = null;
+type TypstInitState = {
+  key: string;
+  promise: Promise<void>;
+};
+
+let typstInitState: TypstInitState | null = null;
+let typstRenderQueue: Promise<void> = Promise.resolve();
 
 function extractInputUrl(input: RequestInfo | URL): string | null {
   if (input instanceof URL) {
@@ -129,15 +135,36 @@ function getBeforeBuildHooks(fontUrls: string[]): BeforeBuildFn[] {
   ];
 }
 
+function createTypstInitKey(
+  fontUrls: string[],
+  wasmModuleUrls: TypstWasmModuleUrls
+) {
+  return JSON.stringify({
+    fontUrls,
+    compilerWasmUrl: wasmModuleUrls.compilerWasmUrl ?? compilerWasmUrl,
+    rendererWasmUrl: wasmModuleUrls.rendererWasmUrl ?? rendererWasmUrl,
+  });
+}
+
+function enqueueTypstRender<T>(task: () => Promise<T>): Promise<T> {
+  const run = typstRenderQueue.then(task, task);
+  typstRenderQueue = run.then(
+    () => undefined,
+    () => undefined
+  );
+  return run;
+}
+
 export async function ensureTypstReady(
   fontUrls: string[],
   wasmModuleUrls: TypstWasmModuleUrls = {}
 ) {
-  if (typstInitPromise) {
-    return typstInitPromise;
+  const key = createTypstInitKey(fontUrls, wasmModuleUrls);
+  if (typstInitState?.key === key) {
+    return typstInitState.promise;
   }
 
-  typstInitPromise = Promise.resolve()
+  const promise = Promise.resolve()
     .then(() => {
       const compilerBeforeBuild = getBeforeBuildHooks(fontUrls);
 
@@ -150,11 +177,14 @@ export async function ensureTypstReady(
       });
     })
     .catch(error => {
-      typstInitPromise = null;
+      if (typstInitState?.key === key) {
+        typstInitState = null;
+      }
       throw error;
     });
 
-  return typstInitPromise;
+  typstInitState = { key, promise };
+  return promise;
 }
 
 export async function renderTypstSvgWithOptions(
@@ -166,12 +196,14 @@ export async function renderTypstSvgWithOptions(
     DEFAULT_TYPST_RENDER_OPTIONS,
     options
   );
-  await ensureTypstReady(
-    resolvedOptions.fontUrls ?? [...DEFAULT_TYPST_FONT_URLS],
-    wasmModuleUrls
-  );
-  const svg = await $typst.svg({
-    mainContent: code,
+  return enqueueTypstRender(async () => {
+    await ensureTypstReady(
+      resolvedOptions.fontUrls ?? [...DEFAULT_TYPST_FONT_URLS],
+      wasmModuleUrls
+    );
+    const svg = await $typst.svg({
+      mainContent: code,
+    });
+    return { svg };
   });
-  return { svg };
 }
