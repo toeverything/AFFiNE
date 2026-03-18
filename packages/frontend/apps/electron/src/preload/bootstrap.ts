@@ -2,7 +2,7 @@ import '@sentry/electron/preload';
 
 import { contextBridge } from 'electron';
 
-import { isInternalUrl } from '../main/security-restrictions';
+import { isInternalUrl } from '../shared/internal-origin';
 import { apis, appInfo, events } from './electron-api';
 import { sharedStorage } from './shared-storage';
 import { listenWorkerApis } from './worker';

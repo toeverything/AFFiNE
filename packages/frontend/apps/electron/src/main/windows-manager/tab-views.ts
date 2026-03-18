@@ -24,9 +24,9 @@ import {
   type Unsubscribable,
 } from 'rxjs';
 
+import { mainWindowOrigin, shellViewUrl } from '../../shared/internal-origin';
 import { isMacOS } from '../../shared/utils';
 import { beforeAppQuit, onTabClose } from '../cleanup';
-import { mainWindowOrigin, shellViewUrl } from '../constants';
 import { ensureHelperProcess } from '../helper-process';
 import { logger } from '../logger';
 import {

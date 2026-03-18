@@ -55,7 +55,14 @@ test('application menu respects default new doc mode', async ({
       Menu.getApplicationMenu()?.getMenuItemById('affine:new-page');
     const focusedWindow = BrowserWindow.getFocusedWindow();
 
-    menuItem?.click(undefined, focusedWindow, focusedWindow?.webContents);
+    if (!menuItem) {
+      throw new Error('Missing application menu item: affine:new-page');
+    }
+    if (!focusedWindow) {
+      throw new Error('Missing focused window for application menu dispatch');
+    }
+
+    menuItem.click(undefined, focusedWindow, focusedWindow.webContents);
   });
 
   await ensureInEdgelessMode(page);

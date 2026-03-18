@@ -1,5 +1,3 @@
-import './security-restrictions';
-
 import path from 'node:path';
 
 import * as Sentry from '@sentry/electron/main';
@@ -15,6 +13,7 @@ import { registerHandlers } from './handlers';
 import { logger } from './logger';
 import { registerProtocol } from './protocol';
 import { setupRecordingFeature } from './recording/feature';
+import { registerSecurityRestrictions } from './security-restrictions';
 import { setupTrayState } from './tray';
 import { registerUpdater } from './updater';
 import { launch } from './windows-manager/launcher';
@@ -105,6 +104,7 @@ app.on('activate', () => {
 });
 
 setupDeepLink(app);
+registerSecurityRestrictions();
 
 /**
  * Create app window when background process will be ready
