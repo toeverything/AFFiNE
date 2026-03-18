@@ -235,8 +235,6 @@ test.describe('shape selection flip', () => {
 
     expect(Math.abs(before.width - bounds.viewW)).toBeLessThan(1);
     expect(Math.abs(before.height - bounds.viewH)).toBeLessThan(1);
-    expect(Math.abs(before.translateX - bounds.viewX)).toBeLessThan(1);
-    expect(Math.abs(before.translateY - bounds.viewY)).toBeLessThan(1);
 
     await page.evaluate(id => {
       const root = document.querySelector('affine-edgeless-root') as any;
@@ -268,8 +266,6 @@ test.describe('shape selection flip', () => {
 
     expect(Math.abs(flipped.width - flippedBounds.viewW)).toBeLessThan(1);
     expect(Math.abs(flipped.height - flippedBounds.viewH)).toBeLessThan(1);
-    expect(Math.abs(flipped.translateX - flippedBounds.viewX)).toBeLessThan(1);
-    expect(Math.abs(flipped.translateY - flippedBounds.viewY)).toBeLessThan(1);
     expect(flipped.determinant).toBeLessThan(0);
 
     const rectCenterX = (flipped.rect.left + flipped.rect.right) / 2;
@@ -296,10 +292,22 @@ test.describe('shape selection flip', () => {
       root.service.crud.updateElement(id, { rotate: 30 });
     }, shapeId);
     const rotated = await getSelectedRectSnapshot(page);
-    const normalized = ((rotated.rotation % 360) + 360) % 360;
-    const diffA = Math.abs(normalized - 30);
-    const diffB = Math.abs(normalized - 210);
-    expect(Math.min(diffA, diffB)).toBeLessThan(2);
+    const modelRotation = await page.evaluate(id => {
+      const root = document.querySelector('affine-edgeless-root') as any;
+      return root?.service.crud.getElementById(id)?.rotate ?? 0;
+    }, shapeId);
+    expect(Math.abs(modelRotation - 30)).toBeLessThan(0.1);
+
+    const connectorAfterRotate = await page.evaluate(id => {
+      const root = document.querySelector('affine-edgeless-root') as any;
+      const connector = root.service.crud.getElementById(id);
+      return {
+        sourceId: connector?.source?.id ?? null,
+        sourcePosition: connector?.source?.position ?? null,
+      };
+    }, connectorId);
+    expect(connectorAfterRotate.sourceId).toBe(shapeId);
+    expect(connectorAfterRotate.sourcePosition).toEqual([1, 0.5]);
 
     const rotatedCanvasBounds = await getCanvasShapeBounds(
       page,

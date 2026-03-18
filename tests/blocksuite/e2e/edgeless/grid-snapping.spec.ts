@@ -8,6 +8,7 @@ import {
   getEdgelessElementBound,
   resizeConnectorByStartCapitalHandler,
   setEdgelessTool,
+  ZOOM_BAR_RESPONSIVE_SCREEN_WIDTH,
 } from '../utils/actions/edgeless.js';
 import { test } from '../utils/playwright.js';
 
@@ -91,13 +92,33 @@ async function createShapeAt(
   return shapeId as string;
 }
 
+async function getGridMenuTrigger(page: Page) {
+  const currentSize = page.viewportSize();
+  if (
+    !currentSize ||
+    currentSize.width < ZOOM_BAR_RESPONSIVE_SCREEN_WIDTH + 1
+  ) {
+    await page.setViewportSize({
+      width: ZOOM_BAR_RESPONSIVE_SCREEN_WIDTH + 200,
+      height: currentSize?.height ?? 900,
+    });
+  }
+
+  const gridMenu = page.locator('edgeless-grid-menu').first();
+  await expect(gridMenu).toBeVisible();
+
+  const gridButton = gridMenu
+    .locator('button[title="Grid & Snap Settings"]')
+    .first();
+  await expect(gridButton).toBeVisible();
+  return gridButton;
+}
+
 test.describe('grid menu', () => {
   test('grid menu opens and shows options', async ({ page }) => {
     await edgelessCommonSetup(page);
 
-    const gridButton = page.locator('button[title="Grid & Snap Settings"]');
-    await expect(gridButton).toBeVisible();
-
+    const gridButton = await getGridMenuTrigger(page);
     await gridButton.click();
 
     const menu = page.locator('.grid-menu-dropdown');
@@ -121,14 +142,14 @@ test.describe('grid menu', () => {
     );
     await expect(verticalContainer).toBeVisible();
 
-    const gridButton = toolbar.locator('button[title="Grid & Snap Settings"]');
+    const gridButton = await getGridMenuTrigger(page);
     await expect(gridButton).toBeVisible();
   });
 
   test('grid menu toggles update stored settings', async ({ page }) => {
     await edgelessCommonSetup(page);
 
-    const gridButton = page.locator('button[title="Grid & Snap Settings"]');
+    const gridButton = await getGridMenuTrigger(page);
     await gridButton.click();
 
     const menu = page.locator('.grid-menu-dropdown');
@@ -170,7 +191,7 @@ test.describe('grid menu', () => {
   test('grid visibility toggle updates background grid', async ({ page }) => {
     await edgelessCommonSetup(page);
 
-    const gridButton = page.locator('button[title="Grid & Snap Settings"]');
+    const gridButton = await getGridMenuTrigger(page);
     await gridButton.click();
 
     const menu = page.locator('.grid-menu-dropdown');
@@ -192,7 +213,7 @@ test.describe('grid menu', () => {
   }) => {
     await edgelessCommonSetup(page);
 
-    const gridButton = page.locator('button[title="Grid & Snap Settings"]');
+    const gridButton = await getGridMenuTrigger(page);
     await gridButton.click();
 
     const menu = page.locator('.grid-menu-dropdown');
@@ -218,7 +239,7 @@ test.describe('grid menu', () => {
   test('snap to grid aligns shapes to grid intersections', async ({ page }) => {
     await edgelessCommonSetup(page);
 
-    const gridButton = page.locator('button[title="Grid & Snap Settings"]');
+    const gridButton = await getGridMenuTrigger(page);
     await gridButton.click();
 
     const menu = page.locator('.grid-menu-dropdown');
@@ -257,7 +278,7 @@ test.describe('grid menu', () => {
   test('disabling snap to grid allows off-grid placement', async ({ page }) => {
     await edgelessCommonSetup(page);
 
-    const gridButton = page.locator('button[title="Grid & Snap Settings"]');
+    const gridButton = await getGridMenuTrigger(page);
     await gridButton.click();
 
     const menu = page.locator('.grid-menu-dropdown');
@@ -296,7 +317,7 @@ test.describe('grid menu', () => {
   test('snap to guides aligns shapes when enabled', async ({ page }) => {
     await edgelessCommonSetup(page);
 
-    const gridButton = page.locator('button[title="Grid & Snap Settings"]');
+    const gridButton = await getGridMenuTrigger(page);
     await gridButton.click();
     const menu = page.locator('.grid-menu-dropdown');
     const snapToGrid = menu.getByLabel('Snap shape to grid');
@@ -340,7 +361,7 @@ test.describe('grid menu', () => {
   test('snap connector to grid aligns endpoint to grid', async ({ page }) => {
     await edgelessCommonSetup(page);
 
-    const gridButton = page.locator('button[title="Grid & Snap Settings"]');
+    const gridButton = await getGridMenuTrigger(page);
     await gridButton.click();
     const menu = page.locator('.grid-menu-dropdown');
     const snapConnectorToGrid = menu.getByLabel('Snap connector to grid');
@@ -369,7 +390,7 @@ test.describe('grid menu', () => {
   }) => {
     await edgelessCommonSetup(page);
 
-    const gridButton = page.locator('button[title="Grid & Snap Settings"]');
+    const gridButton = await getGridMenuTrigger(page);
     await gridButton.click();
     const menu = page.locator('.grid-menu-dropdown');
     const snapConnectorToGrid = menu.getByLabel('Snap connector to grid');
@@ -409,7 +430,7 @@ test.describe('grid menu', () => {
   }) => {
     await edgelessCommonSetup(page);
 
-    const gridButton = page.locator('button[title="Grid & Snap Settings"]');
+    const gridButton = await getGridMenuTrigger(page);
     await gridButton.click();
     const menu = page.locator('.grid-menu-dropdown');
     const snapConnectorToGrid = menu.getByLabel('Snap connector to grid');

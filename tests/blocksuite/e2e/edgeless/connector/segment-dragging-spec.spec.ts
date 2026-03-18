@@ -20,6 +20,8 @@ import {
   dragBetweenCoords,
   edgelessCommonSetup,
   getConnectorPath,
+  locatorComponentToolbarMoreButton,
+  selectElementsByService,
   setEdgelessTool,
   Shape,
   toViewCoord,
@@ -110,6 +112,21 @@ async function getSegmentHandleCursor(
 
   const handle = handles[handleIndex];
   return handle.evaluate(el => getComputedStyle(el).cursor);
+}
+
+async function getConnectorEndpoints(page: Page) {
+  return page.evaluate(() => {
+    const root = document.querySelector('affine-edgeless-root') as any;
+    if (!root) throw new Error('edgeless root not found');
+    const connector = root.service.crud.getElementsByType('connector')[0];
+    if (!connector) throw new Error('connector not found');
+    return {
+      sourceId: connector.source?.id ?? null,
+      targetId: connector.target?.id ?? null,
+      sourcePosition: connector.source?.position ?? null,
+      targetPosition: connector.target?.position ?? null,
+    };
+  });
 }
 
 async function clickAt(page: Page, x: number, y: number) {
@@ -1088,6 +1105,51 @@ test.describe('Scenario 6: Drag H left', () => {
   });
 });
 
+test.describe('Connector endpoints stay attached', () => {
+  test('dragging a middle segment keeps source/target IDs', async ({
+    page,
+  }) => {
+    await commonSetup(page);
+
+    const { sourceId, targetId, connectorId } = await page.evaluate(() => {
+      const root = document.querySelector('affine-edgeless-root') as any;
+      if (!root) throw new Error('edgeless root not found');
+      const sourceId = root.service.crud.addElement('shape', {
+        shapeType: 'rect',
+        xywh: JSON.stringify([0, 0, 120, 120]),
+      });
+      const targetId = root.service.crud.addElement('shape', {
+        shapeType: 'rect',
+        xywh: JSON.stringify([320, 0, 120, 120]),
+      });
+      const connectorId = root.service.crud.addElement('connector', {
+        source: { id: sourceId, position: [1, 0.5] },
+        target: { id: targetId, position: [0, 0.5] },
+      });
+      return { sourceId, targetId, connectorId };
+    });
+
+    await waitForPathUpdate(page);
+    await selectElementsByService(page, [connectorId]);
+
+    const before = await getConnectorEndpoints(page);
+    expect(before.sourceId).toBe(sourceId);
+    expect(before.targetId).toBe(targetId);
+
+    const handlePos = await getSegmentHandlePosition(page, 0);
+    expect(handlePos).not.toBeNull();
+    if (!handlePos) return;
+
+    await dragSegmentHandle(page, handlePos, 0, -60);
+
+    const after = await getConnectorEndpoints(page);
+    expect(after.sourceId).toBe(sourceId);
+    expect(after.targetId).toBe(targetId);
+    expect(after.sourcePosition).toEqual(before.sourcePosition);
+    expect(after.targetPosition).toEqual(before.targetPosition);
+  });
+});
+
 // =============================================================================
 // SCENARIO 7: CLEAR WAYPOINTS, CONNECTOR RETURNS TO ORIGINAL AUTOROUTED POISTION
 // =============================================================================
@@ -1148,42 +1210,27 @@ test.describe('Scenario 7: Clear waypoints', () => {
     await reselectConnectorOnPath(page);
 
     // Click 'More' button in connector toolbar
-    const moreButton = page.locator(
-      'edgeless-change-connector-button .more-button, [data-testid="connector-more-button"], button:has-text("More")'
-    );
-    const moreExists = (await moreButton.count()) > 0;
+    const moreButton = locatorComponentToolbarMoreButton(page);
+    await moreButton.evaluate(el => (el as any).show?.(true));
+    await moreButton.click({ force: true });
+    await waitForPathUpdate(page);
 
-    if (moreExists) {
-      await moreButton.first().click();
-      await waitForPathUpdate(page);
+    // Click 'Clear waypoints' menu item
+    const clearWaypointsItem = moreButton
+      .locator('editor-menu-action')
+      .filter({ hasText: 'Clear waypoints' });
+    await clearWaypointsItem.evaluate(el => (el as HTMLElement).click());
+    await waitForPathUpdate(page);
 
-      // Click 'Clear waypoints' menu item
-      const clearWaypointsItem = page.locator(
-        'text=Clear waypoints, [data-action="clear-waypoints"], button:has-text("Clear waypoints")'
-      );
-      const clearExists = (await clearWaypointsItem.count()) > 0;
+    // Verify waypoints are cleared
+    waypoints = await getConnectorWaypoints(page);
+    expect(waypoints === null || waypoints.length === 0).toBe(true);
+    console.log('Waypoints after clear:', waypoints);
 
-      if (clearExists) {
-        await clearWaypointsItem.first().click();
-        await waitForPathUpdate(page);
-
-        // Verify waypoints are cleared
-        waypoints = await getConnectorWaypoints(page);
-        expect(waypoints === null || waypoints.length === 0).toBe(true);
-        console.log('Waypoints after clear:', waypoints);
-
-        // Verify path returns to autorouted state
-        const clearedPath = await getConnectorPath(page);
-        console.log('Path length after clear:', clearedPath.length);
-        expect(clearedPath.length).toBeLessThanOrEqual(expandedPath.length);
-      } else {
-        console.log(
-          'Clear waypoints menu item not found - feature may need implementation'
-        );
-      }
-    } else {
-      console.log('More button not found - feature may need implementation');
-    }
+    // Verify path returns to autorouted state
+    const clearedPath = await getConnectorPath(page);
+    console.log('Path length after clear:', clearedPath.length);
+    expect(clearedPath.length).toBeLessThanOrEqual(expandedPath.length);
   });
 });
 

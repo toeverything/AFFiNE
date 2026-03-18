@@ -57,9 +57,24 @@ async function toViewPoints(page: Page, points: number[][]) {
 }
 
 async function getActivePaletteLabel(panel: ReturnType<Page['locator']>) {
-  const active = panel.locator('edgeless-color-button[active] .color-unit');
-  await expect(active.first()).toBeVisible();
-  return active.first().getAttribute('aria-label');
+  const label = await panel.evaluate(panelEl => {
+    const root = (panelEl as HTMLElement).shadowRoot;
+    if (!root) return null;
+    const buttons = Array.from(
+      root.querySelectorAll('edgeless-color-button')
+    ) as Array<HTMLElement & { label?: string }>;
+    const active = buttons.find(button => button.hasAttribute('active'));
+    if (!active) return null;
+    return (
+      active.label ||
+      active.getAttribute('label') ||
+      active.shadowRoot
+        ?.querySelector('.color-unit')
+        ?.getAttribute('aria-label')
+    );
+  });
+  expect(label).toBeTruthy();
+  return label;
 }
 
 async function openShapeMenu(page: Page) {

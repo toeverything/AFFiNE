@@ -20,6 +20,8 @@ import {
   edgelessCommonSetup as commonSetup,
   getConnectorPath,
   selectElementInEdgeless,
+  selectElementsByService,
+  setEdgelessTool,
   Shape,
   toViewCoord,
 } from '../../utils/actions/index.js';
@@ -394,6 +396,36 @@ test.describe('Phase 6: Edge Cases', () => {
       [0, 100],
       [0, 0],
     ]);
+  });
+
+  test('curve and straight connectors do not show segment handles', async ({
+    page,
+  }) => {
+    await commonSetup(page);
+
+    await setEdgelessTool(page, 'connector');
+    const menu = page.locator('edgeless-connector-menu');
+    await menu.waitFor({ state: 'visible' });
+
+    await menu
+      .locator('edgeless-tool-icon-button', { hasText: 'Curve' })
+      .click();
+    const curveId = await createConnectorElement(page, [120, 100], [360, 100]);
+    await selectElementsByService(page, [curveId]);
+    expect(await page.locator('.segment-handle').count()).toBe(0);
+
+    await setEdgelessTool(page, 'connector');
+    await menu.waitFor({ state: 'visible' });
+    await menu
+      .locator('edgeless-tool-icon-button', { hasText: 'Straight' })
+      .click();
+    const straightId = await createConnectorElement(
+      page,
+      [120, 160],
+      [360, 160]
+    );
+    await selectElementsByService(page, [straightId]);
+    expect(await page.locator('.segment-handle').count()).toBe(0);
   });
 });
 

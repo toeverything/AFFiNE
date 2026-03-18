@@ -440,6 +440,13 @@ export class PropertiesModal extends SignalWatcher(WithDisposable(LitElement)) {
     if (!this.model) return;
 
     const crud = this.host.std.get(EdgelessCRUDIdentifier);
+    if (this.model instanceof ShapeElementModel && key === 'radius') {
+      const nextValue = Number(value);
+      if (!Number.isFinite(nextValue)) return;
+      const clamped = Math.max(0, Math.min(1, nextValue));
+      crud.updateElement(this.model.id, { radius: clamped });
+      return;
+    }
     if (this.model instanceof ShapeElementModel && key === 'textResizing') {
       const nextValue = Number(value) as TextResizing;
       if (!Number.isFinite(nextValue)) return;

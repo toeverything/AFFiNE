@@ -20,15 +20,44 @@ async function openShapeBrowser(page: Page) {
   return browserPanel;
 }
 
+async function getCategoryShapeNames(
+  browserPanel: ReturnType<Page['locator']>,
+  categoryName: string
+) {
+  const categories = browserPanel.locator('.category-entry');
+  const target = categories.filter({ hasText: categoryName });
+  await expect(target).toBeVisible();
+  await target.first().click();
+
+  const names = browserPanel.locator('.shape-item .shape-name');
+  await expect(names.first()).toBeVisible();
+  return (await names.allTextContents()).map(text => text.trim());
+}
+
+async function getExpectedCategoryTooltips(
+  browserPanel: ReturnType<Page['locator']>,
+  categoryId: string
+) {
+  return browserPanel.evaluate((panel, targetCategory) => {
+    const element = panel as any;
+    if (!element?._getShapesForCategory) {
+      throw new Error('shape browser panel missing category helper');
+    }
+    const shapes = element._getShapesForCategory(targetCategory) as Array<{
+      tooltip: string;
+    }>;
+    return shapes.map(item => item.tooltip);
+  }, categoryId);
+}
+
 test.describe('shape browser', () => {
   test('shape menu opens without selecting a shape', async ({ page }) => {
     await edgelessCommonSetup(page);
 
     const beforeCount = await getCanvasElementsCount(page);
-    await openShapeMenuWithoutSelection(page);
+    const menu = await openShapeMenuWithoutSelection(page);
 
-    const menu = page.locator('edgeless-slide-menu');
-    await expect(menu).toBeVisible();
+    await expect(menu.first()).toBeVisible();
 
     const afterCount = await getCanvasElementsCount(page);
     expect(afterCount).toBe(beforeCount);
@@ -160,6 +189,73 @@ test.describe('shape browser', () => {
       extraIndexes.forEach(index => {
         expect(index).toBeGreaterThan(lastBaseIndex);
       });
+    }
+  });
+
+  test('shape browser closes when frame editor closes', async ({ page }) => {
+    await edgelessCommonSetup(page);
+    const browserPanel = await openShapeBrowser(page);
+
+    const frameId = await page.evaluate(async () => {
+      const root = document.querySelector('affine-edgeless-root') as any;
+      if (!root) throw new Error('edgeless root not found');
+      const { Bound } =
+        await import('/@fs/workspace/AFFiNE/blocksuite/framework/global/src/gfx/model/bound.ts');
+      const { EdgelessFrameManagerIdentifier } =
+        await import('/@fs/workspace/AFFiNE/blocksuite/affine/blocks/frame/src/frame-manager.ts');
+      const frameManager = root.service.std.getOptional(
+        EdgelessFrameManagerIdentifier
+      );
+      if (!frameManager) throw new Error('frame manager not found');
+      const frame = frameManager.createFrameOnBound(
+        new Bound(100, 100, 300, 200)
+      );
+      return frame?.id;
+    });
+    await expect(
+      page.locator(`affine-frame-title[data-id="${frameId}"]`)
+    ).toBeVisible();
+    await page.keyboard.press('Escape');
+
+    await expect(browserPanel).toBeHidden();
+  });
+
+  test('flowchart category includes all flowchart shapes', async ({ page }) => {
+    await edgelessCommonSetup(page);
+
+    const browserPanel = await openShapeBrowser(page);
+    const actual = await getCategoryShapeNames(browserPanel, 'Flowchart');
+    const expected = await getExpectedCategoryTooltips(
+      browserPanel,
+      'flowchart'
+    );
+
+    expect(new Set(actual)).toEqual(new Set(expected));
+  });
+
+  test('arrows category includes all arrow shapes', async ({ page }) => {
+    await edgelessCommonSetup(page);
+
+    const browserPanel = await openShapeBrowser(page);
+    const actual = await getCategoryShapeNames(browserPanel, 'Arrows');
+    const expected = await getExpectedCategoryTooltips(browserPanel, 'arrows');
+
+    expect(new Set(actual)).toEqual(new Set(expected));
+  });
+
+  test('shape menu auto-sizes on touch viewport', async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 720 });
+    await edgelessCommonSetup(page);
+
+    await setEdgelessTool(page, 'shape');
+    const menu = page.locator('edgeless-slide-menu').first();
+    await expect(menu).toBeVisible();
+
+    const box = await menu.boundingBox();
+    const viewport = page.viewportSize();
+    expect(box).toBeTruthy();
+    if (box && viewport) {
+      expect(box.width).toBeLessThanOrEqual(viewport.width);
     }
   });
 });

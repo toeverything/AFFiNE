@@ -272,6 +272,27 @@ async function sampleShapeGrid(
   return { gridX, gridY, values };
 }
 
+async function getShapeTextMetrics(page: Page, id: string) {
+  return page.evaluate(shapeId => {
+    const root = document.querySelector('affine-edgeless-root') as any;
+    if (!root) throw new Error('edgeless root not found');
+    const model = root.service.crud.getElementById(shapeId);
+    if (!model) throw new Error('shape not found');
+    const textBound = model.textBound;
+    if (!textBound) return null;
+    const [x, y, w, h] = JSON.parse(model.xywh);
+    return {
+      shape: { x, y, w, h },
+      text: {
+        x: textBound.x,
+        y: textBound.y,
+        w: textBound.w,
+        h: textBound.h,
+      },
+    };
+  }, id);
+}
+
 test.describe('shape flipping', () => {
   test.setTimeout(120000);
   test('flipX mirrors gradient across all shapes', async ({ page }) => {
@@ -510,5 +531,72 @@ test.describe('shape flipping', () => {
     }
 
     expect(failures, `FlipY failures: ${failures.join(', ')}`).toEqual([]);
+  });
+
+  test('shape text remains centered after flip', async ({ page }) => {
+    await edgelessCommonSetup(page);
+
+    const shapeId = await page.evaluate(() => {
+      const root = document.querySelector('affine-edgeless-root') as any;
+      if (!root) throw new Error('edgeless root not found');
+      return root.service.crud.addElement('shape', {
+        shapeType: 'rect',
+        xywh: JSON.stringify([120, 120, 240, 140]),
+        filled: true,
+        fillColor: '#fde68a',
+        strokeStyle: 'solid',
+        strokeWidth: 2,
+        text: 'Centered',
+        textDisplay: true,
+      });
+    });
+
+    const getCenters = async () => {
+      const metrics = await getShapeTextMetrics(page, shapeId);
+      if (!metrics) return null;
+      const shapeCenter = {
+        x: metrics.shape.x + metrics.shape.w / 2,
+        y: metrics.shape.y + metrics.shape.h / 2,
+      };
+      const textCenter = {
+        x: metrics.text.x + metrics.text.w / 2,
+        y: metrics.text.y + metrics.text.h / 2,
+      };
+      return { shapeCenter, textCenter };
+    };
+
+    await expect.poll(getCenters).not.toBeNull();
+    const before = await getCenters();
+    if (!before) return;
+
+    await page.evaluate(id => {
+      const root = document.querySelector('affine-edgeless-root') as any;
+      root.service.crud.updateElement(id, { flipX: true });
+    }, shapeId);
+
+    await expect.poll(getCenters).not.toBeNull();
+    const afterFlipX = await getCenters();
+    if (!afterFlipX) return;
+    expect(
+      Math.abs(afterFlipX.textCenter.x - afterFlipX.shapeCenter.x)
+    ).toBeLessThanOrEqual(1);
+    expect(
+      Math.abs(afterFlipX.textCenter.y - afterFlipX.shapeCenter.y)
+    ).toBeLessThanOrEqual(1);
+
+    await page.evaluate(id => {
+      const root = document.querySelector('affine-edgeless-root') as any;
+      root.service.crud.updateElement(id, { flipY: true });
+    }, shapeId);
+
+    await expect.poll(getCenters).not.toBeNull();
+    const afterFlipY = await getCenters();
+    if (!afterFlipY) return;
+    expect(
+      Math.abs(afterFlipY.textCenter.x - afterFlipY.shapeCenter.x)
+    ).toBeLessThanOrEqual(1);
+    expect(
+      Math.abs(afterFlipY.textCenter.y - afterFlipY.shapeCenter.y)
+    ).toBeLessThanOrEqual(1);
   });
 });

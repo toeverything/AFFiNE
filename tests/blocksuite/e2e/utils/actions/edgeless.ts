@@ -2191,10 +2191,9 @@ export async function setConnectorSnapToGrid(page: Page, enabled: boolean) {
 export async function openShapeMenuWithoutSelection(page: Page) {
   const shapeButton = await locatorEdgelessToolButton(page, 'shape', false);
   await shapeButton.click({ position: { x: 5, y: 5 } });
-  const menu = page.locator('edgeless-slide-menu');
-  const box = await menu.boundingBox();
-  if (!box) throw new Error('shape menu not found');
-  await page.mouse.click(box.x + 5, box.y + 5);
+  const menu = page.locator('edgeless-slide-menu, edgeless-shape-menu');
+  await menu.first().waitFor({ state: 'visible' });
+  return menu;
 }
 
 export async function createIntersectingConnectors(page: Page) {
