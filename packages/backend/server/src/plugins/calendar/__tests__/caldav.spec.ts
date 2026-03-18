@@ -9,7 +9,7 @@ import { CryptoHelper, GraphqlBadRequest, Mutex } from '../../../base';
 import { ConfigModule } from '../../../base/config';
 import { ServerConfigModule } from '../../../core/config';
 import { Models } from '../../../models';
-import { CalendarModule } from '..';
+import { CalendarModule } from '../index';
 import {
   CalDAVProvider,
   CalendarProviderFactory,

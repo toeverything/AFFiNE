@@ -1,7 +1,12 @@
 import { test } from '@affine-test/kit/electron';
 import {
+  ensureInEdgelessMode,
+  ensureInPageMode,
+} from '@affine-test/kit/utils/editor';
+import {
   clickNewPageButton,
   getBlockSuiteEditorTitle,
+  waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
 import { clickSideBarSettingButton } from '@affine-test/kit/utils/sidebar';
 import { createLocalWorkspace } from '@affine-test/kit/utils/workspace';
@@ -14,10 +19,53 @@ const historyShortcut = async (page: Page, command: 'goBack' | 'goForward') => {
   );
 };
 
+const setNewDocDefaultMode = async (
+  page: Page,
+  mode: 'page' | 'edgeless' | 'ask'
+) => {
+  const modeTriggerByValue = {
+    page: 'page-mode-trigger',
+    edgeless: 'edgeless-mode-trigger',
+    ask: 'ask-every-time-trigger',
+  } as const;
+
+  await clickSideBarSettingButton(page);
+  await page.getByTestId('editor-panel-trigger').click();
+  await page.getByTestId('new-doc-default-mode-trigger').click();
+  await page.getByTestId(modeTriggerByValue[mode]).click();
+  await page.getByTestId('modal-close-button').click();
+};
+
 test('new page', async ({ page, workspace }) => {
   await clickNewPageButton(page);
   const flavour = (await workspace.current()).meta.flavour;
   expect(flavour).toBe('local');
+});
+
+test('application menu respects default new doc mode', async ({
+  electronApp,
+  page,
+}) => {
+  await waitForEditorLoad(page);
+  await ensureInPageMode(page);
+
+  await setNewDocDefaultMode(page, 'edgeless');
+  await electronApp.evaluate(({ BrowserWindow, Menu }) => {
+    const menuItem =
+      Menu.getApplicationMenu()?.getMenuItemById('affine:new-page');
+    const focusedWindow = BrowserWindow.getFocusedWindow();
+
+    if (!menuItem) {
+      throw new Error('Missing application menu item: affine:new-page');
+    }
+    if (!focusedWindow) {
+      throw new Error('Missing focused window for application menu dispatch');
+    }
+
+    menuItem.click(undefined, focusedWindow, focusedWindow.webContents);
+  });
+
+  await ensureInEdgelessMode(page);
 });
 
 test('app sidebar router forward/back', async ({ page }) => {

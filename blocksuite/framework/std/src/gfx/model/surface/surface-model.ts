@@ -52,6 +52,12 @@ export type MiddlewareCtx = {
 export type SurfaceMiddleware = (ctx: MiddlewareCtx) => void;
 
 export class SurfaceBlockModel extends BlockModel<SurfaceBlockProps> {
+  private static readonly _groupBoundImpactKeys = new Set([
+    'xywh',
+    'rotate',
+    'hidden',
+  ]);
+
   protected _decoratorState = createDecoratorState();
 
   protected _elementCtorMap: Record<
@@ -308,6 +314,42 @@ export class SurfaceBlockModel extends BlockModel<SurfaceBlockProps> {
     Object.keys(payload.props).forEach(key => {
       model.propsUpdated.next({ key });
     });
+
+    this._refreshParentGroupBoundsForElement(model, payload);
+  }
+
+  private _refreshParentGroupBounds(id: string, local: boolean) {
+    const group = this.getGroup(id);
+
+    if (group instanceof GfxGroupLikeElementModel) {
+      group.refreshXYWH(local);
+    }
+  }
+
+  private _refreshParentGroupBoundsForElement(
+    model: GfxPrimitiveElementModel,
+    payload: ElementUpdatedData
+  ) {
+    if (
+      model instanceof GfxGroupLikeElementModel &&
+      ('childIds' in payload.props || 'childIds' in payload.oldValues)
+    ) {
+      model.refreshXYWH(payload.local);
+      return;
+    }
+
+    const affectedKeys = new Set([
+      ...Object.keys(payload.props),
+      ...Object.keys(payload.oldValues),
+    ]);
+
+    if (
+      Array.from(affectedKeys).some(key =>
+        SurfaceBlockModel._groupBoundImpactKeys.has(key)
+      )
+    ) {
+      this._refreshParentGroupBounds(model.id, payload.local);
+    }
   }
 
   private _initElementModels() {
@@ -458,6 +500,10 @@ export class SurfaceBlockModel extends BlockModel<SurfaceBlockProps> {
             );
           }
 
+          if (payload.model instanceof BlockModel) {
+            this._refreshParentGroupBounds(payload.id, payload.isLocal);
+          }
+
           break;
         case 'delete':
           if (isGfxGroupCompatibleModel(payload.model)) {
@@ -480,6 +526,13 @@ export class SurfaceBlockModel extends BlockModel<SurfaceBlockProps> {
             if (group && isGfxGroupCompatibleModel(group)) {
               this._syncGroupChildrenIndex(group.id, group.childIds);
             }
+          }
+
+          if (
+            payload.props.key &&
+            SurfaceBlockModel._groupBoundImpactKeys.has(payload.props.key)
+          ) {
+            this._refreshParentGroupBounds(payload.id, payload.isLocal);
           }
 
           break;

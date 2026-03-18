@@ -110,7 +110,7 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
       });
 
       if (isNewDoc) {
-        this.event.emit('doc.created', {
+        this.event.emitDetached('doc.created', {
           workspaceId,
           docId,
           editor: editorId,
@@ -334,7 +334,7 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
       });
 
       if (updatedSnapshot) {
-        this.event.emit('doc.snapshot.updated', {
+        this.event.emitDetached('doc.snapshot.updated', {
           workspaceId: snapshot.spaceId,
           docId: snapshot.docId,
           blob,

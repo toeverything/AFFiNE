@@ -90,10 +90,10 @@ Thanks for checking us out, we appreciate your interest and sincerely hope that 
 
 ## Contributing
 
-| Bug Reports                                                                                                                                         | Feature Requests                                                                                                                                               | Questions/Discussions                                                         | AFFiNE Community                                           |
-| --------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| [Create a bug report](https://github.com/toeverything/AFFiNE/issues/new?assignees=&labels=bug%2Cproduct-review&template=BUG-REPORT.yml&title=TITLE) | [Submit a feature request](https://github.com/toeverything/AFFiNE/issues/new?assignees=&labels=feat%2Cproduct-review&template=FEATURE-REQUEST.yml&title=TITLE) | [Check GitHub Discussion](https://github.com/toeverything/AFFiNE/discussions) | [Visit the AFFiNE Community](https://community.affine.pro) |
-| Something isn't working as expected                                                                                                                 | An idea for a new feature, or improvements                                                                                                                     | Discuss and ask questions                                                     | A place to ask, learn and engage with others               |
+| Bug Reports                                                                                                                                         | Feature Requests                                                                                                                                               | Questions/Discussions                                                         | AFFiNE Community                                                  |
+| --------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| [Create a bug report](https://github.com/toeverything/AFFiNE/issues/new?assignees=&labels=bug%2Cproduct-review&template=BUG-REPORT.yml&title=TITLE) | [Submit a feature request](https://github.com/toeverything/AFFiNE/issues/new?assignees=&labels=feat%2Cproduct-review&template=FEATURE-REQUEST.yml&title=TITLE) | [Check GitHub Discussion](https://github.com/toeverything/AFFiNE/discussions) | [Visit the AFFiNE's Discord](https://affine.pro/redirect/discord) |
+| Something isn't working as expected                                                                                                                 | An idea for a new feature, or improvements                                                                                                                     | Discuss and ask questions                                                     | A place to ask, learn and engage with others                      |
 
 Calling all developers, testers, tech writers and more! Contributions of all types are more than welcome, you can read more in [docs/types-of-contributions.md](docs/types-of-contributions.md). If you are interested in contributing code, read our [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) and feel free to check out our GitHub issues to get stuck in to show us what you’re made of.
 
@@ -101,11 +101,9 @@ Calling all developers, testers, tech writers and more! Contributions of all typ
 
 For **bug reports**, **feature requests** and other **suggestions** you can also [create a new issue](https://github.com/toeverything/AFFiNE/issues/new/choose) and choose the most appropriate template for your feedback.
 
-For **translation** and **language support** you can visit our [i18n General Space](https://community.affine.pro/c/i18n-general).
+For **translation** and **language support** you can visit our [Discord](https://affine.pro/redirect/discord).
 
-Looking for **other ways to contribute** and wondering where to start? Check out the [AFFiNE Ambassador program](https://community.affine.pro/c/start-here/affine-ambassador), we work closely with passionate community members and provide them with a wide range of support and resources.
-
-If you have questions, you are welcome to contact us. One of the best places to get more info and learn more is in the [AFFiNE Community](https://community.affine.pro) where you can engage with other like-minded individuals.
+If you have questions, you are welcome to contact us. One of the best places to get more info and learn more is in the [Discord](https://affine.pro/redirect/discord) where you can engage with other like-minded individuals.
 
 ## Templates
 
@@ -182,20 +180,16 @@ Begin with Docker to deploy your own feature-rich, unrestricted version of AFFiN
 
 [![Run on ClawCloud](https://raw.githubusercontent.com/ClawCloud/Run-Template/refs/heads/main/Run-on-ClawCloud.svg)](https://template.run.claw.cloud/?openapp=system-fastdeploy%3FtemplateName%3Daffine)
 
-## Hiring
-
-Some amazing companies, including AFFiNE, are looking for developers! Are you interested in joining AFFiNE or its partners? Check out our [Discord channel](https://affine.pro/redirect/discord) for some of the latest jobs available.
-
 ## Feature Request
 
-For feature requests, please see [community.affine.pro](https://community.affine.pro/c/feature-requests/).
+For feature requests, please see [discussions](https://github.com/toeverything/AFFiNE/discussions/categories/ideas).
 
 ## Building
 
 ### Codespaces
 
 From the GitHub repo main page, click the green "Code" button and select "Create codespace on master". This will open a new Codespace with the (supposedly auto-forked
-AFFiNE repo cloned, built, and ready to go.
+AFFiNE repo cloned, built, and ready to go).
 
 ### Local
 

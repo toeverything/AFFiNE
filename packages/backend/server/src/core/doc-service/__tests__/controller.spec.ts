@@ -402,6 +402,8 @@ test('should get doc markdown in json format', async t => {
     return {
       title: 'test title',
       markdown: 'test markdown',
+      knownUnsupportedBlocks: [],
+      unknownBlocks: [],
     };
   });
 
@@ -418,6 +420,8 @@ test('should get doc markdown in json format', async t => {
     .expect({
       title: 'test title',
       markdown: 'test markdown',
+      knownUnsupportedBlocks: [],
+      unknownBlocks: [],
     });
   t.pass();
 });

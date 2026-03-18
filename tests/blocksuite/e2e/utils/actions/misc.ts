@@ -1015,31 +1015,63 @@ export async function getIndexCoordinate(
   [richTextIndex, vIndex]: [number, number],
   coordOffSet: { x: number; y: number } = { x: 0, y: 0 }
 ) {
-  const coord = await page.evaluate(
-    ({ richTextIndex, vIndex, coordOffSet, currentEditorIndex }) => {
-      const editorHost =
-        document.querySelectorAll('editor-host')[currentEditorIndex];
-      const richText = editorHost.querySelectorAll('rich-text')[
-        richTextIndex
-      ] as any;
-      const domRange = richText.inlineEditor.toDomRange({
-        index: vIndex,
-        length: 0,
-      });
-      const pointBound = domRange.getBoundingClientRect();
-      return {
-        x: pointBound.left + coordOffSet.x,
-        y: pointBound.top + pointBound.height / 2 + coordOffSet.y,
-      };
-    },
-    {
-      richTextIndex,
-      vIndex,
-      coordOffSet,
-      currentEditorIndex,
+  for (let attempt = 0; attempt < 20; attempt++) {
+    const coord = await page.evaluate(
+      ({ richTextIndex, vIndex, coordOffSet, currentEditorIndex }) => {
+        const editorHost =
+          document.querySelectorAll('editor-host')[currentEditorIndex];
+        const richTexts = Array.from(
+          editorHost?.querySelectorAll('rich-text') ?? []
+        );
+        if (!richTexts.length) {
+          return null;
+        }
+        const richText = richTexts[
+          Math.min(richTextIndex, richTexts.length - 1)
+        ] as any;
+        const inlineEditor = richText?.inlineEditor;
+        if (!inlineEditor) {
+          return null;
+        }
+        const clampedIndex = Math.max(
+          0,
+          Math.min(vIndex, inlineEditor.yTextLength ?? vIndex)
+        );
+        const domRange = inlineEditor.toDomRange({
+          index: clampedIndex,
+          length: 0,
+        });
+        if (!domRange) {
+          return null;
+        }
+        const pointBound = domRange.getBoundingClientRect();
+        if (
+          !Number.isFinite(pointBound.left) ||
+          !Number.isFinite(pointBound.top)
+        ) {
+          return null;
+        }
+        return {
+          x: pointBound.left + coordOffSet.x,
+          y: pointBound.top + pointBound.height / 2 + coordOffSet.y,
+        };
+      },
+      {
+        richTextIndex,
+        vIndex,
+        coordOffSet,
+        currentEditorIndex,
+      }
+    );
+    if (coord) {
+      return coord;
     }
+    await page.waitForTimeout(50);
+  }
+
+  throw new Error(
+    `Failed to get index coordinate: richTextIndex=${richTextIndex}, vIndex=${vIndex}`
   );
-  return coord;
 }
 
 export function inlineEditorInnerTextToString(innerText: string): string {

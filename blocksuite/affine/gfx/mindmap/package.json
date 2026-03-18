@@ -34,7 +34,6 @@
     "@types/lodash-es": "^4.17.12",
     "lit": "^3.2.0",
     "lodash-es": "^4.17.23",
-    "minimatch": "^10.1.1",
     "rxjs": "^7.8.2",
     "simple-xml-to-json": "^1.2.2",
     "yjs": "^13.6.27",
@@ -51,5 +50,5 @@
     "!src/__tests__",
     "!dist/__tests__"
   ],
-  "version": "0.26.1"
+  "version": "0.26.3"
 }

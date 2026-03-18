@@ -11,6 +11,7 @@ import {
   createCopilotContextMutation,
   createCopilotMessageMutation,
   createCopilotSessionMutation,
+  createCopilotSessionWithHistoryMutation,
   forkCopilotSessionMutation,
   getCopilotHistoriesQuery,
   getCopilotHistoryIdsQuery,
@@ -41,7 +42,6 @@ import {
 } from './error';
 
 export enum Endpoint {
-  Stream = 'stream',
   StreamObject = 'stream-object',
   Workflow = 'workflow',
   Images = 'images',
@@ -96,7 +96,6 @@ export class CopilotClient {
     readonly gql: <Query extends GraphQLQuery>(
       options: QueryOptions<Query>
     ) => Promise<QueryResponse<Query>>,
-    readonly fetcher: (input: string, init?: RequestInit) => Promise<Response>,
     readonly eventSource: (
       url: string,
       eventSourceInitDict?: EventSourceInit
@@ -114,6 +113,20 @@ export class CopilotClient {
         },
       });
       return res.createCopilotSession;
+    } catch (err) {
+      throw resolveError(err);
+    }
+  }
+
+  async createSessionWithHistory(
+    options: OptionsField<typeof createCopilotSessionWithHistoryMutation>
+  ) {
+    try {
+      const res = await this.gql({
+        query: createCopilotSessionWithHistoryMutation,
+        variables: { options },
+      });
+      return res.createCopilotSessionWithHistory;
     } catch (err) {
       throw resolveError(err);
     }
@@ -150,7 +163,11 @@ export class CopilotClient {
   }
 
   async createMessage(
-    options: OptionsField<typeof createCopilotMessageMutation>
+    options: OptionsField<typeof createCopilotMessageMutation>,
+    requestOptions?: Pick<
+      RequestOptions<typeof createCopilotMessageMutation>,
+      'timeout' | 'signal'
+    >
   ) {
     try {
       const res = await this.gql({
@@ -158,6 +175,8 @@ export class CopilotClient {
         variables: {
           options,
         },
+        timeout: requestOptions?.timeout,
+        signal: requestOptions?.signal,
       });
       return res.createCopilotMessage;
     } catch (err) {
@@ -442,35 +461,6 @@ export class CopilotClient {
     return { files, docs };
   }
 
-  async chatText({
-    sessionId,
-    messageId,
-    reasoning,
-    modelId,
-    toolsConfig,
-    signal,
-  }: {
-    sessionId: string;
-    messageId?: string;
-    reasoning?: boolean;
-    modelId?: string;
-    toolsConfig?: AIToolsConfig;
-    signal?: AbortSignal;
-  }) {
-    let url = `/api/copilot/chat/${sessionId}`;
-    const queryString = this.paramsToQueryString({
-      messageId,
-      reasoning,
-      modelId,
-      toolsConfig,
-    });
-    if (queryString) {
-      url += `?${queryString}`;
-    }
-    const response = await this.fetcher(url.toString(), { signal });
-    return response.text();
-  }
-
   // Text or image to text
   chatTextStream(
     {
@@ -486,7 +476,7 @@ export class CopilotClient {
       modelId?: string;
       toolsConfig?: AIToolsConfig;
     },
-    endpoint = Endpoint.Stream
+    endpoint = Endpoint.StreamObject
   ) {
     let url = `/api/copilot/chat/${sessionId}/${endpoint}`;
     const queryString = this.paramsToQueryString({

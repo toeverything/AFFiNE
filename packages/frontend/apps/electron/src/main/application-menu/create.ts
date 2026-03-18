@@ -67,7 +67,7 @@ export function createApplicationMenu() {
           click: async () => {
             await initAndShowMainWindow();
             // fixme: if the window is just created, the new page action will not be triggered
-            applicationMenuSubjects.newPageAction$.next('page');
+            applicationMenuSubjects.newPageAction$.next('default');
           },
         },
       ],

@@ -8,7 +8,7 @@ import {
   WorkspaceMemberStatus,
   WorkspaceRole,
 } from '../../../models';
-import { PermissionModule } from '..';
+import { PermissionModule } from '../index';
 import { mapWorkspaceRoleToPermissions } from '../types';
 import { WorkspaceAccessController } from '../workspace';
 

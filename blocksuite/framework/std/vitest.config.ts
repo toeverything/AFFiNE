@@ -1,3 +1,4 @@
+import { playwright } from '@vitest/browser-playwright';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
@@ -9,13 +10,13 @@ export default defineConfig({
       enabled: true,
       headless: true,
       instances: [{ browser: 'chromium' }],
-      provider: 'playwright',
+      provider: playwright(),
       isolate: false,
     },
     include: ['src/__tests__/**/*.unit.spec.ts'],
     testTimeout: 500,
     coverage: {
-      provider: 'istanbul', // or 'c8'
+      provider: 'istanbul',
       reporter: ['lcov'],
       reportsDirectory: '../../../.coverage/std',
     },

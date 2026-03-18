@@ -121,7 +121,11 @@ export async function deleteAccount(app: TestingApp) {
   return res.deleteAccount.success;
 }
 
-export async function updateAvatar(app: TestingApp, avatar: Buffer) {
+export async function updateAvatar(
+  app: TestingApp,
+  avatar: Buffer,
+  options: { filename?: string; contentType?: string } = {}
+) {
   return app
     .POST('/graphql')
     .field(
@@ -138,7 +142,7 @@ export async function updateAvatar(app: TestingApp, avatar: Buffer) {
     )
     .field('map', JSON.stringify({ '0': ['variables.avatar'] }))
     .attach('0', avatar, {
-      filename: 'test.png',
-      contentType: 'image/png',
+      filename: options.filename || 'test.png',
+      contentType: options.contentType || 'image/png',
     });
 }

@@ -96,12 +96,20 @@ spec:
             httpGet:
               path: /info
               port: http
-            initialDelaySeconds: {{ .Values.probe.initialDelaySeconds }}
+            initialDelaySeconds: {{ default .Values.probe.initialDelaySeconds .Values.probe.liveness.initialDelaySeconds }}
+            timeoutSeconds: {{ default .Values.probe.timeoutSeconds .Values.probe.liveness.timeoutSeconds }}
+            periodSeconds: {{ default .Values.probe.periodSeconds .Values.probe.liveness.periodSeconds }}
+            failureThreshold: {{ default .Values.probe.failureThreshold .Values.probe.liveness.failureThreshold }}
+            successThreshold: {{ default .Values.probe.successThreshold .Values.probe.liveness.successThreshold }}
           readinessProbe:
             httpGet:
               path: /info
               port: http
-            initialDelaySeconds: {{ .Values.probe.initialDelaySeconds }}
+            initialDelaySeconds: {{ default .Values.probe.initialDelaySeconds .Values.probe.readiness.initialDelaySeconds }}
+            timeoutSeconds: {{ default .Values.probe.timeoutSeconds .Values.probe.readiness.timeoutSeconds }}
+            periodSeconds: {{ default .Values.probe.periodSeconds .Values.probe.readiness.periodSeconds }}
+            failureThreshold: {{ default .Values.probe.failureThreshold .Values.probe.readiness.failureThreshold }}
+            successThreshold: {{ default .Values.probe.successThreshold .Values.probe.readiness.successThreshold }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}

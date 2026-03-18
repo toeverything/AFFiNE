@@ -48,6 +48,7 @@ testem.log
 /typings
 tsconfig.tsbuildinfo
 .context
+/*.md
 
 # System Files
 .DS_Store

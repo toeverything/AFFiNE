@@ -14,6 +14,7 @@ import type {
 import { HTMLRewriter } from 'htmlrewriter';
 
 import {
+  applyAttachHeaders,
   BadRequest,
   Cache,
   readResponseBufferWithLimit,
@@ -127,15 +128,18 @@ export class WorkerController {
       if (buffer.length === 0) {
         return resp.status(404).header(getCorsHeaders(origin)).send();
       }
-      return resp
-        .status(200)
-        .header({
-          ...getCorsHeaders(origin),
-          ...(origin ? { Vary: 'Origin' } : {}),
-          'Access-Control-Allow-Methods': 'GET',
-          'Content-Type': 'image/*',
-        })
-        .send(buffer);
+      resp.header({
+        ...getCorsHeaders(origin),
+        ...(origin ? { Vary: 'Origin' } : {}),
+        'Access-Control-Allow-Methods': 'GET',
+      });
+      applyAttachHeaders(resp, { buffer });
+      const contentType = resp.getHeader('Content-Type') as string | undefined;
+      if (contentType?.startsWith('image/')) {
+        return resp.status(200).send(buffer);
+      } else {
+        throw new BadRequest('Invalid content type');
+      }
     }
 
     let response: Response;
@@ -171,39 +175,39 @@ export class WorkerController {
       throw new BadRequest('Failed to fetch image');
     }
     if (response.ok) {
-      const contentType = response.headers.get('Content-Type');
-      if (contentType?.startsWith('image/')) {
-        let buffer: Buffer;
-        try {
-          buffer = await readResponseBufferWithLimit(
-            response,
-            IMAGE_PROXY_MAX_BYTES
-          );
-        } catch (error) {
-          if (error instanceof ResponseTooLargeError) {
-            this.logger.warn('Image proxy response too large', {
-              url: imageURL,
-              limitBytes: error.data?.limitBytes,
-              receivedBytes: error.data?.receivedBytes,
-            });
-            throw new BadRequest('Response too large');
-          }
-          throw error;
+      let buffer: Buffer;
+      try {
+        buffer = await readResponseBufferWithLimit(
+          response,
+          IMAGE_PROXY_MAX_BYTES
+        );
+      } catch (error) {
+        if (error instanceof ResponseTooLargeError) {
+          this.logger.warn('Image proxy response too large', {
+            url: imageURL,
+            limitBytes: error.data?.limitBytes,
+            receivedBytes: error.data?.receivedBytes,
+          });
+          throw new BadRequest('Response too large');
         }
-        await this.cache.set(cachedUrl, buffer.toString('base64'), {
-          ttl: CACHE_TTL,
-        });
-        const contentDisposition = response.headers.get('Content-Disposition');
-        return resp
-          .status(200)
-          .header({
-            ...getCorsHeaders(origin),
-            ...(origin ? { Vary: 'Origin' } : {}),
-            'Access-Control-Allow-Methods': 'GET',
-            'Content-Type': contentType,
-            'Content-Disposition': contentDisposition,
-          })
-          .send(buffer);
+        throw error;
+      }
+      await this.cache.set(cachedUrl, buffer.toString('base64'), {
+        ttl: CACHE_TTL,
+      });
+      const contentDisposition = response.headers.get('Content-Disposition');
+      resp.header({
+        ...getCorsHeaders(origin),
+        ...(origin ? { Vary: 'Origin' } : {}),
+        'Access-Control-Allow-Methods': 'GET',
+      });
+      if (contentDisposition) {
+        resp.setHeader('Content-Disposition', contentDisposition);
+      }
+      applyAttachHeaders(resp, { buffer });
+      const contentType = resp.getHeader('Content-Type') as string | undefined;
+      if (contentType?.startsWith('image/')) {
+        return resp.status(200).send(buffer);
       } else {
         throw new BadRequest('Invalid content type');
       }

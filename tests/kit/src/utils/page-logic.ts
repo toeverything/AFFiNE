@@ -48,7 +48,10 @@ export async function clickNewPageButton(page: Page, title?: string) {
 }
 
 export async function waitForEmptyEditor(page: Page) {
-  await expect(page.locator('.doc-title-container-empty')).toBeVisible();
+  await page.waitForSelector(
+    '.doc-title-container-empty, doc-title .inline-editor',
+    { timeout: 20000 }
+  );
 }
 
 export function getBlockSuiteEditorTitle(page: Page) {

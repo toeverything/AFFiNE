@@ -1,4 +1,4 @@
-import { Button } from '@affine/component';
+import { Button, notify } from '@affine/component';
 import {
   AuthContainer,
   AuthContent,
@@ -8,6 +8,7 @@ import {
 } from '@affine/component/auth-components';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { ServersService } from '@affine/core/modules/cloud';
+import { UserFriendlyError } from '@affine/error';
 import { Trans, useI18n } from '@affine/i18n';
 import { useService } from '@toeverything/infra';
 import {
@@ -35,12 +36,14 @@ export const AddSelfhostedStep = ({
   state: SignInState;
   changeState: Dispatch<SetStateAction<SignInState>>;
 }) => {
+  const t = useI18n();
   const serversService = useService(ServersService);
   const [baseURL, setBaseURL] = useState(state.initialServerBaseUrl ?? '');
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<boolean>(false);
-
-  const t = useI18n();
+  const [errorHint, setErrorHint] = useState(
+    t['com.affine.auth.sign.add-selfhosted.error']()
+  );
 
   const urlValid = useMemo(() => {
     try {
@@ -51,10 +54,14 @@ export const AddSelfhostedStep = ({
     }
   }, [baseURL]);
 
-  const onBaseURLChange = useCallback((value: string) => {
-    setBaseURL(value);
-    setError(false);
-  }, []);
+  const onBaseURLChange = useCallback(
+    (value: string) => {
+      setBaseURL(value);
+      setError(false);
+      setErrorHint(t['com.affine.auth.sign.add-selfhosted.error']());
+    },
+    [t]
+  );
 
   const onConnect = useAsyncCallback(async () => {
     setIsConnecting(true);
@@ -69,11 +76,33 @@ export const AddSelfhostedStep = ({
       }));
     } catch (err) {
       console.error(err);
+      const userFriendlyError = UserFriendlyError.fromAny(err);
       setError(true);
-    }
+      if (userFriendlyError.is('TOO_MANY_REQUEST')) {
+        setErrorHint(t['error.TOO_MANY_REQUEST']());
+      } else if (
+        userFriendlyError.is('NETWORK_ERROR') ||
+        userFriendlyError.is('REQUEST_ABORTED')
+      ) {
+        setErrorHint(t['error.NETWORK_ERROR']());
+      } else {
+        setErrorHint(t['com.affine.auth.sign.add-selfhosted.error']());
+      }
 
-    setIsConnecting(false);
-  }, [baseURL, changeState, serversService]);
+      notify.error({
+        title: t['com.affine.auth.toast.title.failed'](),
+        message:
+          userFriendlyError.is('REQUEST_ABORTED') ||
+          userFriendlyError.is('NETWORK_ERROR')
+            ? t['error.NETWORK_ERROR']()
+            : userFriendlyError.is('TOO_MANY_REQUEST')
+              ? t['error.TOO_MANY_REQUEST']()
+              : t[`error.${userFriendlyError.name}`](userFriendlyError.data),
+      });
+    } finally {
+      setIsConnecting(false);
+    }
+  }, [baseURL, changeState, serversService, t]);
 
   useEffect(() => {
     if (state.initialServerBaseUrl) {
@@ -101,7 +130,7 @@ export const AddSelfhostedStep = ({
           placeholder="https://your-server.com"
           error={!!error}
           disabled={isConnecting}
-          errorHint={t['com.affine.auth.sign.add-selfhosted.error']()}
+          errorHint={errorHint}
           onEnter={onConnect}
         />
         <Button

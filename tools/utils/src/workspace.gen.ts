@@ -1444,6 +1444,7 @@ export const PackageList = [
     location: 'tests/blocksuite',
     name: '@affine-test/blocksuite',
     workspaceDependencies: [
+      'tests/kit',
       'blocksuite/affine/all',
       'blocksuite/integration-test',
     ],

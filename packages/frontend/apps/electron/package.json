@@ -1,7 +1,7 @@
 {
   "name": "@affine/electron",
   "private": true,
-  "version": "0.26.1",
+  "version": "0.26.3",
   "main": "./dist/main.js",
   "author": "toeverything",
   "repository": {
@@ -38,7 +38,6 @@
     "@affine/nbstore": "workspace:*",
     "@electron-forge/cli": "^7.10.2",
     "@electron-forge/core": "^7.10.2",
-    "@electron-forge/core-utils": "^7.10.2",
     "@electron-forge/maker-deb": "^7.10.2",
     "@electron-forge/maker-dmg": "^7.10.2",
     "@electron-forge/maker-flatpak": "^7.10.2",
@@ -47,10 +46,10 @@
     "@electron-forge/plugin-auto-unpack-natives": "^7.10.2",
     "@electron-forge/plugin-fuses": "^7.10.2",
     "@electron-forge/shared-types": "^7.10.2",
-    "@pengx17/electron-forge-maker-appimage": "^1.2.1",
-    "@sentry/electron": "^7.0.0",
-    "@sentry/esbuild-plugin": "^4.0.0",
-    "@sentry/react": "^9.47.1",
+    "@reforged/maker-appimage": "^5.2.0",
+    "@sentry/electron": "^7.9.0",
+    "@sentry/esbuild-plugin": "^5.1.1",
+    "@sentry/react": "^10.40.0",
     "@toeverything/infra": "workspace:*",
     "@types/set-cookie-parser": "^2.4.10",
     "@types/uuid": "^11.0.0",
@@ -72,9 +71,9 @@
     "rxjs": "^7.8.2",
     "semver": "^7.7.3",
     "tree-kill": "^1.2.2",
-    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3",
     "uuid": "^13.0.0",
-    "vitest": "^3.2.4",
+    "vitest": "^4.0.18",
     "zod": "^3.25.76"
   },
   "dependencies": {
@@ -94,8 +93,5 @@
         ]
       }
     ]
-  },
-  "peerDependencies": {
-    "ts-node": "*"
   }
 }

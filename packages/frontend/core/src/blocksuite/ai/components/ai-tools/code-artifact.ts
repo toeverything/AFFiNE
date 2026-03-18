@@ -40,14 +40,7 @@ interface CodeArtifactToolResult {
   toolCallId: string;
   toolName: string; // 'code_artifact'
   args: { title: string };
-  result:
-    | {
-        title: string;
-        html: string;
-        size: number;
-      }
-    | ToolError
-    | null;
+  result: { title: string; html: string; size: number } | ToolError | null;
 }
 
 export class CodeHighlighter extends SignalWatcher(WithDisposable(LitElement)) {
