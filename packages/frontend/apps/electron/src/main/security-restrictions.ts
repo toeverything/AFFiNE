@@ -1,22 +1,28 @@
 import { app } from 'electron';
 
-import { anotherHost, mainHost } from './constants';
+import { internalHosts } from './constants';
+import { logger } from './logger';
 import { openExternalSafely } from './security/open-external';
 import { validateRedirectProxyUrl } from './security/redirect-proxy';
 
+export const isInternalUrl = (url: string) => {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'assets:' && internalHosts.has(parsed.hostname);
+  } catch {}
+  return false;
+};
+
+export const checkSource = (
+  e: Electron.IpcMainInvokeEvent | Electron.IpcMainEvent
+) => {
+  const url = e.senderFrame?.url || e.sender.getURL();
+  const result = isInternalUrl(url);
+  if (!result) logger.error('invalid source', url);
+  return result;
+};
+
 app.on('web-contents-created', (_, contents) => {
-  const isInternalUrl = (url: string) => {
-    try {
-      const parsed = new URL(url);
-      if (
-        parsed.protocol === 'assets:' &&
-        (parsed.hostname === mainHost || parsed.hostname === anotherHost)
-      ) {
-        return true;
-      }
-    } catch {}
-    return false;
-  };
   /**
    * Block navigation to origins not on the allowlist.
    *

@@ -42,12 +42,21 @@ test('new page', async ({ page, workspace }) => {
   expect(flavour).toBe('local');
 });
 
-test('keyboard shortcut respects default new doc mode', async ({ page }) => {
+test('application menu respects default new doc mode', async ({
+  electronApp,
+  page,
+}) => {
   await waitForEditorLoad(page);
   await ensureInPageMode(page);
 
   await setNewDocDefaultMode(page, 'edgeless');
-  await page.keyboard.press('ControlOrMeta+N');
+  await electronApp.evaluate(({ BrowserWindow, Menu }) => {
+    const menuItem =
+      Menu.getApplicationMenu()?.getMenuItemById('affine:new-page');
+    const focusedWindow = BrowserWindow.getFocusedWindow();
+
+    menuItem?.click(undefined, focusedWindow, focusedWindow?.webContents);
+  });
 
   await ensureInEdgelessMode(page);
 });

@@ -1,5 +1,6 @@
 export const mainHost = '.';
 export const anotherHost = 'another-host';
+export const internalHosts = new Set([mainHost, anotherHost]);
 
 export const mainWindowOrigin = `assets://${mainHost}`;
 export const anotherOrigin = `assets://${anotherHost}`;
