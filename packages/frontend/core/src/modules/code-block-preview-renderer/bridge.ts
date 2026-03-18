@@ -1,14 +1,15 @@
 import {
-  getMermaidRenderer,
-  type MermaidRenderRequest,
-  type MermaidRenderResult,
+  renderMermaidSvgBackend,
+  renderTypstSvgBackend,
+} from '@affine/core/modules/code-block-preview-renderer/platform-backend';
+import type {
+  MermaidRenderRequest,
+  MermaidRenderResult,
 } from '@affine/core/modules/mermaid/renderer';
-import {
-  getTypstRenderer,
-  type TypstRenderRequest,
-  type TypstRenderResult,
+import type {
+  TypstRenderRequest,
+  TypstRenderResult,
 } from '@affine/core/modules/typst/renderer';
-import { apis } from '@affine/electron-api';
 import DOMPurify from 'dompurify';
 
 function removeForeignObject(root: ParentNode) {
@@ -46,43 +47,10 @@ export function sanitizeSvg(svg: string): string {
   return new XMLSerializer().serializeToString(sanitizedRoot).trim();
 }
 
-type DesktopPreviewHandlers = {
-  renderMermaidSvg?: (
-    request: MermaidRenderRequest
-  ) => Promise<MermaidRenderResult>;
-  renderTypstSvg?: (request: TypstRenderRequest) => Promise<TypstRenderResult>;
-};
-
-type DesktopPreviewApis = {
-  preview?: DesktopPreviewHandlers;
-};
-
-function getDesktopPreviewHandlers() {
-  if (!BUILD_CONFIG.isElectron || !apis) return null;
-
-  const previewApis = apis as unknown as DesktopPreviewApis;
-  return previewApis.preview ?? null;
-}
-
-function getRequiredDesktopHandler<Name extends keyof DesktopPreviewHandlers>(
-  name: Name
-): NonNullable<DesktopPreviewHandlers[Name]> {
-  const handlers = getDesktopPreviewHandlers();
-  const handler = handlers?.[name];
-  if (!handler) {
-    throw new Error(
-      `Electron preview handler "${String(name)}" is unavailable.`
-    );
-  }
-  return handler as NonNullable<DesktopPreviewHandlers[Name]>;
-}
-
 export async function renderMermaidSvg(
   request: MermaidRenderRequest
 ): Promise<MermaidRenderResult> {
-  const rendered = BUILD_CONFIG.isElectron
-    ? await getRequiredDesktopHandler('renderMermaidSvg')(request)
-    : await getMermaidRenderer().render(request);
+  const rendered = await renderMermaidSvgBackend(request);
 
   const sanitizedSvg = sanitizeSvg(rendered.svg);
   if (!sanitizedSvg) {
@@ -94,9 +62,7 @@ export async function renderMermaidSvg(
 export async function renderTypstSvg(
   request: TypstRenderRequest
 ): Promise<TypstRenderResult> {
-  const rendered = BUILD_CONFIG.isElectron
-    ? await getRequiredDesktopHandler('renderTypstSvg')(request)
-    : await getTypstRenderer().render(request);
+  const rendered = await renderTypstSvgBackend(request);
 
   return { svg: rendered.svg };
 }

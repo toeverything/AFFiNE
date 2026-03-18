@@ -36,7 +36,7 @@ resolver = "3"
   criterion2 = { version = "3", default-features = false }
   crossbeam-channel = "0.5"
   dispatch2 = "0.3"
-  docx-parser = { git = "https://github.com/toeverything/docx-parser" }
+  docx-parser = { git = "https://github.com/toeverything/docx-parser", rev = "380beea" }
   dotenvy = "0.15"
   file-format = { version = "0.28", features = ["reader"] }
   homedir = "0.3"
@@ -59,6 +59,7 @@ resolver = "3"
   lru = "0.16"
   matroska = "0.30"
   memory-indexer = "0.3.0"
+  mermaid-rs-renderer = { git = "https://github.com/toeverything/mermaid-rs-renderer", rev = "fba9097", default-features = false }
   mimalloc = "0.1"
   mp4parse = "0.17"
   nanoid = "0.4"
@@ -122,6 +123,14 @@ resolver = "3"
   tree-sitter-rust = { version = "0.24" }
   tree-sitter-scala = { version = "0.24" }
   tree-sitter-typescript = { version = "0.23" }
+  typst = "0.14.2"
+  typst-as-lib = { version = "0.15.4", default-features = false, features = [
+    "packages",
+    "typst-kit-embed-fonts",
+    "typst-kit-fonts",
+    "ureq",
+  ] }
+  typst-svg = "0.14.2"
   uniffi = "0.29"
   url = { version = "2.5" }
   uuid = "1.8"

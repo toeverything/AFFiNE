@@ -105,12 +105,34 @@ function getRspackBundleConfigs(pkg: Package): MultiRspackOptions {
       ] as MultiRspackOptions;
     }
     case '@affine/web':
-    case '@affine/mobile':
+    case '@affine/mobile': {
+      const workerConfigs = getBaseWorkerConfigs(
+        pkg,
+        createRspackWorkerTargetConfig
+      );
+      workerConfigs.push(
+        createRspackWorkerTargetConfig(
+          pkg,
+          pkg.srcPath.join('nbstore.worker.ts').value
+        )
+      );
+
+      return [
+        createRspackHTMLTargetConfig(
+          pkg,
+          pkg.srcPath.join('index.tsx').value,
+          {},
+          workerConfigs.map(config => config.name)
+        ),
+        ...workerConfigs,
+      ] as MultiRspackOptions;
+    }
     case '@affine/ios':
     case '@affine/android': {
       const workerConfigs = getBaseWorkerConfigs(
         pkg,
-        createRspackWorkerTargetConfig
+        createRspackWorkerTargetConfig,
+        { includeMermaidAndTypst: false }
       );
       workerConfigs.push(
         createRspackWorkerTargetConfig(

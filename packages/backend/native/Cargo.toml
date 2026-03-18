@@ -2,6 +2,7 @@
 edition      = "2024"
 license-file = "LICENSE"
 name         = "affine_server_native"
+publish      = false
 version      = "1.0.0"
 
 [lib]
