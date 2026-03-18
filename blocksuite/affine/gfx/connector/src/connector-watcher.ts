@@ -130,8 +130,8 @@ export const connectorWatcher: SurfaceMiddleware = (
         (props['mode'] !== undefined ||
           props['target'] ||
           props['source'] ||
-          props['waypoints'] !== undefined ||
-          props['jumpStyle'] !== undefined)
+          'waypoints' in props ||
+          'jumpStyle' in props)
       ) {
         addToUpdateList(element as ConnectorElementModel);
       }

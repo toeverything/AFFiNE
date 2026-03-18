@@ -133,6 +133,12 @@ async function createShapes(
 
 type PickedColor = { color: string; alpha: number };
 
+const MIN_VISIBLE_ALPHA = 32;
+
+function isVisibleSample(value: PickedColor) {
+  return value.alpha >= MIN_VISIBLE_ALPHA;
+}
+
 async function pickCanvasColors(page: Page, modelPoints: number[][]) {
   return page.evaluate(points => {
     const root = document.querySelector('affine-edgeless-root') as any;
@@ -210,7 +216,7 @@ async function findHorizontalSamplePair(page: Page, shape: ShapeInstance) {
         left,
         right,
       ]);
-      if (leftColor.alpha > 0 && rightColor.alpha > 0) {
+      if (isVisibleSample(leftColor) && isVisibleSample(rightColor)) {
         return {
           left,
           right,
@@ -237,7 +243,7 @@ async function findVerticalSamplePair(page: Page, shape: ShapeInstance) {
         top,
         bottom,
       ]);
-      if (topColor.alpha > 0 && bottomColor.alpha > 0) {
+      if (isVisibleSample(topColor) && isVisibleSample(bottomColor)) {
         return {
           top,
           bottom,
@@ -336,7 +342,7 @@ test.describe('shape flipping', () => {
         continue;
       }
       const grid = await sampleShapeGrid(page, shape);
-      const hasAlpha = [...grid.values.values()].some(value => value.alpha > 0);
+      const hasAlpha = [...grid.values.values()].some(isVisibleSample);
       if (!hasAlpha) {
         baselineFailures.push(`${shape.label} (gradient not detected)`);
         continue;
@@ -390,8 +396,8 @@ test.describe('shape flipping', () => {
             const beforeValue = grid.values.get(mirrorKey);
             const afterValue = after.values.get(key);
             if (!beforeValue || !afterValue) return;
-            const beforeVisible = beforeValue.alpha > 0;
-            const afterVisible = afterValue.alpha > 0;
+            const beforeVisible = isVisibleSample(beforeValue);
+            const afterVisible = isVisibleSample(afterValue);
             if (beforeVisible !== afterVisible) {
               mismatch += 1;
               return;
@@ -455,7 +461,7 @@ test.describe('shape flipping', () => {
         continue;
       }
       const grid = await sampleShapeGrid(page, shape);
-      const hasAlpha = [...grid.values.values()].some(value => value.alpha > 0);
+      const hasAlpha = [...grid.values.values()].some(isVisibleSample);
       if (!hasAlpha) {
         baselineFailures.push(`${shape.label} (gradient not detected)`);
         continue;
@@ -509,8 +515,8 @@ test.describe('shape flipping', () => {
             const beforeValue = grid.values.get(mirrorKey);
             const afterValue = after.values.get(key);
             if (!beforeValue || !afterValue) return;
-            const beforeVisible = beforeValue.alpha > 0;
-            const afterVisible = afterValue.alpha > 0;
+            const beforeVisible = isVisibleSample(beforeValue);
+            const afterVisible = isVisibleSample(afterValue);
             if (beforeVisible !== afterVisible) {
               mismatch += 1;
               return;

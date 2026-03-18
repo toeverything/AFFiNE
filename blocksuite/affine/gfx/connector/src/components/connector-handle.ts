@@ -24,7 +24,10 @@ import { css, html, LitElement, nothing, type TemplateResult } from 'lit';
 import { property, query } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
-import type { ConnectionOverlay } from '../connector-manager';
+import {
+  type ConnectionOverlay,
+  ConnectorPathGenerator,
+} from '../connector-manager';
 import {
   buildJumpOrder,
   updateConnectorJumps as calculateConnectorJumps,
@@ -105,6 +108,41 @@ export class EdgelessConnectorHandle extends WithDisposable(LitElement) {
 
   private _gridSize = 20;
 
+  private _normalizingPath = false;
+
+  private _syncConnectorModel() {
+    const latest = this.gfx.getElementById(this.connector.id);
+    if (latest && latest !== this.connector) {
+      this.connector = latest as ConnectorElementModel;
+    }
+  }
+
+  private _normalizePathIfWaypointsCleared() {
+    const { connector } = this;
+    if (this._draggingSegmentIndex >= 0 || this._normalizingPath) {
+      return;
+    }
+    const mode = connector.mode;
+    if (mode !== ConnectorMode.Orthogonal && mode !== ConnectorMode.Rounded) {
+      return;
+    }
+    const hasWaypoints =
+      'waypoints' in connector &&
+      Array.isArray(connector.waypoints) &&
+      connector.waypoints.length > 0;
+    if (hasWaypoints || connector.path.length <= 2) {
+      return;
+    }
+
+    this._normalizingPath = true;
+    connector.updatingPath = true;
+    ConnectorPathGenerator.updatePath(connector, null, id => {
+      return (this.gfx.getElementById(id) ?? this.doc.getModelById(id)) as any;
+    });
+    connector.updatingPath = false;
+    this._normalizingPath = false;
+  }
+
   get connectionOverlay() {
     return this.std.get(OverlayIdentifier('connection')) as ConnectionOverlay;
   }
@@ -163,8 +201,13 @@ export class EdgelessConnectorHandle extends WithDisposable(LitElement) {
       false;
     this._gridSize = editPropsStore.getStorage('edgelessGridSize') ?? 20;
 
-    // Capture state for undo BEFORE making any changes
-    this.doc.captureSync();
+    const undoManager = this.doc.history.undoManager as {
+      captureTimeout: number;
+      stopCapturing: () => void;
+    };
+    const previousCaptureTimeout = undoManager.captureTimeout;
+    undoManager.stopCapturing();
+    undoManager.captureTimeout = Number.MAX_SAFE_INTEGER;
 
     slots.elementResizeStart.next();
 
@@ -270,8 +313,10 @@ export class EdgelessConnectorHandle extends WithDisposable(LitElement) {
       // Update connector with new bounds and path
       // Setting updatingPath prevents path regeneration
       connector.updatingPath = true;
-      connector.xywh = newBound.serialize();
-      connector.path = newRelativePath;
+      this.gfx.updateElement(connector, {
+        xywh: newBound.serialize(),
+        path: newRelativePath,
+      });
       // Update jump rendering during drag when enabled.
       if (
         connector.jumpStyle !== 'none' &&
@@ -290,8 +335,9 @@ export class EdgelessConnectorHandle extends WithDisposable(LitElement) {
             allConnectors,
             this._jumpOrderMap
           );
-          connector.routedPoints =
-            routedPoints.length > 0 ? routedPoints : null;
+          this.gfx.updateElement(connector, {
+            routedPoints: routedPoints.length > 0 ? routedPoints : null,
+          });
         }
       }
       connector.updatingPath = false;
@@ -411,12 +457,10 @@ export class EdgelessConnectorHandle extends WithDisposable(LitElement) {
           .slice(1, -1)
           .map(p => [p[0], p[1]] as IVec);
 
-        // Only save waypoints if there are intermediate points
-        // This persists the user's segment modifications
-        if ('waypoints' in connector) {
-          (connector as ConnectorElementModel).waypoints =
-            waypoints.length > 0 ? waypoints : undefined;
-        }
+        const updateProps: Record<string, unknown> = {
+          waypoints: waypoints.length > 0 ? waypoints : undefined,
+        };
+
         if (absolutePath !== connector.absolutePath) {
           const absolutePathLocations = absolutePath.map(
             p => new PointLocation([p[0], p[1]])
@@ -426,15 +470,22 @@ export class EdgelessConnectorHandle extends WithDisposable(LitElement) {
             PointLocation.fromVec([p[0] - newBound.x, p[1] - newBound.y])
           );
 
-          connector.updatingPath = true;
-          connector.xywh = newBound.serialize();
-          connector.path = newRelativePath;
-          connector.updatingPath = false;
+          updateProps.xywh = newBound.serialize();
+          updateProps.path = newRelativePath;
         }
+
+        connector.updatingPath = true;
+        this.gfx.updateElement(connector, updateProps);
+        connector.updatingPath = false;
       } else if ('waypoints' in connector) {
         // Path has only 2 points, clear any existing waypoints
-        (connector as ConnectorElementModel).waypoints = undefined;
+        this.gfx.updateElement(connector, {
+          waypoints: undefined,
+        });
       }
+
+      undoManager.captureTimeout = previousCaptureTimeout;
+      undoManager.stopCapturing();
 
       // After drag ends, recompute jumps for all connectors so lines jumping
       // over this connector are updated without relying on path watchers.
@@ -458,7 +509,6 @@ export class EdgelessConnectorHandle extends WithDisposable(LitElement) {
         });
       }
 
-      this.doc.captureSync();
       _disposables.dispose();
       this._disposables = new DisposableGroup();
       this._bindEvent();
@@ -523,11 +573,55 @@ export class EdgelessConnectorHandle extends WithDisposable(LitElement) {
       }
     });
 
+    this._disposables.add(
+      this.connector.propsUpdated.subscribe(({ key }) => {
+        if (
+          key === 'path' ||
+          key === 'xywh' ||
+          key === 'waypoints' ||
+          key === 'mode'
+        ) {
+          this.requestUpdate();
+        }
+      })
+    );
+
+    this._disposables.add(
+      this.doc.history.onUpdated.subscribe(() => {
+        this.requestUpdate();
+        requestAnimationFrame(() => {
+          this.requestUpdate();
+          requestAnimationFrame(() => {
+            this.requestUpdate();
+          });
+        });
+        (
+          this.edgeless as unknown as { requestUpdate?: () => void }
+        ).requestUpdate?.();
+      })
+    );
+
+    const surface = this.gfx.surface;
+    if (surface) {
+      this._disposables.add(
+        surface.elementUpdated.subscribe(({ id, props }) => {
+          if (
+            id === this.connector.id &&
+            ('path' in props || 'waypoints' in props || 'xywh' in props)
+          ) {
+            this.requestUpdate();
+          }
+        })
+      );
+    }
+
     this._bindEvent();
   }
 
   override render() {
+    this._syncConnectorModel();
     const { gfx, connector } = this;
+    this._normalizePathIfWaypointsCleared();
     // path is relative to the element's xywh
     const { path, mode } = connector;
     const zoom = gfx.viewport.zoom;
