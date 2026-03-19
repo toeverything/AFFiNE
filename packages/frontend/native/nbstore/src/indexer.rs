@@ -5,7 +5,8 @@ use serde::Serialize;
 use sqlx::Row;
 use y_octo::DocOptions;
 
-// Increment this whenever there is a breaking change in the index format or how updates are applied
+// Increment this whenever there is a breaking change in the index format or how
+// updates are applied
 const NBSTORE_INDEXER_VERSION: u32 = 1;
 
 use super::{
