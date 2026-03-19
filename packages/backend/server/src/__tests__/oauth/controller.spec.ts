@@ -799,6 +799,7 @@ test('oidc discovery should remove oauth feature on failure and restore it after
   }) as typeof setTimeout);
   t.teardown(() => {
     provider.onModuleDestroy();
+    fetchStub.restore();
     setTimeoutStub.restore();
   });
 
