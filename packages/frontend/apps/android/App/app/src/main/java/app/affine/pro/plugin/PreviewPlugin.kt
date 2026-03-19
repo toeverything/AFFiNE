@@ -40,7 +40,12 @@ private fun resolveLocalFontDir(fontUrl: String): String? {
 }
 
 private fun JSObject.resolveTypstFontDirs(): List<String>? {
-    val fontUrls = optJSONArray("fontUrls") ?: return null
+    if (!has("fontUrls") || isNull("fontUrls")) {
+        return null
+    }
+
+    val fontUrls = optJSONArray("fontUrls")
+        ?: throw IllegalArgumentException("Typst preview fontUrls must be an array of strings.")
     val fontDirs = buildList(fontUrls.length()) {
         repeat(fontUrls.length()) { index ->
             val fontUrl = fontUrls.optString(index, null)

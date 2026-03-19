@@ -28,11 +28,35 @@ private func resolveLocalFontDir(from fontURL: String) -> String? {
 }
 
 private func resolveTypstFontDirs(from options: [AnyHashable: Any]?) throws -> [String]? {
-  guard let fontUrls = options?["fontUrls"] as? [String] else {
+  guard let rawFontUrls = options?["fontUrls"] else {
     return nil
   }
 
-  return Array(Set(try fontUrls.map { fontURL in
+  guard let fontUrls = rawFontUrls as? [Any] else {
+    throw NSError(
+      domain: "PreviewPlugin",
+      code: 1,
+      userInfo: [
+        NSLocalizedDescriptionKey: "Typst preview fontUrls must be an array of strings."
+      ]
+    )
+  }
+
+  var seenFontDirs = Set<String>()
+  var orderedFontDirs = [String]()
+  orderedFontDirs.reserveCapacity(fontUrls.count)
+
+  for fontUrl in fontUrls {
+    guard let fontURL = fontUrl as? String else {
+      throw NSError(
+        domain: "PreviewPlugin",
+        code: 1,
+        userInfo: [
+          NSLocalizedDescriptionKey: "Typst preview fontUrls must be strings."
+        ]
+      )
+    }
+
     guard let fontDir = resolveLocalFontDir(from: fontURL) else {
       throw NSError(
         domain: "PreviewPlugin",
@@ -42,8 +66,13 @@ private func resolveTypstFontDirs(from options: [AnyHashable: Any]?) throws -> [
         ]
       )
     }
-    return fontDir
-  }))
+
+    if seenFontDirs.insert(fontDir).inserted {
+      orderedFontDirs.append(fontDir)
+    }
+  }
+
+  return orderedFontDirs
 }
 
 @objc(PreviewPlugin)
