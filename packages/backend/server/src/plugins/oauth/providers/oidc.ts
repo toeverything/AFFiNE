@@ -1,9 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { createRemoteJWKSet, type JWTPayload, jwtVerify } from 'jose';
 import { omit } from 'lodash-es';
 import { z } from 'zod';
 
 import {
+  ExponentialBackoffScheduler,
   InvalidAuthState,
   InvalidOauthResponse,
   URLHelper,
@@ -56,14 +57,26 @@ const OIDCConfigurationSchema = z.object({
 
 type OIDCConfiguration = z.infer<typeof OIDCConfigurationSchema>;
 
+const OIDC_DISCOVERY_INITIAL_RETRY_DELAY = 1000;
+const OIDC_DISCOVERY_MAX_RETRY_DELAY = 60_000;
+
 @Injectable()
-export class OIDCProvider extends OAuthProvider {
+export class OIDCProvider extends OAuthProvider implements OnModuleDestroy {
   override provider = OAuthProviderName.OIDC;
   #endpoints: OIDCConfiguration | null = null;
   #jwks: ReturnType<typeof createRemoteJWKSet> | null = null;
+  readonly #retryScheduler = new ExponentialBackoffScheduler({
+    baseDelayMs: OIDC_DISCOVERY_INITIAL_RETRY_DELAY,
+    maxDelayMs: OIDC_DISCOVERY_MAX_RETRY_DELAY,
+  });
+  #validationGeneration = 0;
 
   constructor(private readonly url: URLHelper) {
     super();
+  }
+
+  onModuleDestroy() {
+    this.#retryScheduler.clear();
   }
 
   override get requiresPkce() {
@@ -89,56 +102,107 @@ export class OIDCProvider extends OAuthProvider {
   }
 
   protected override setup() {
-    const validate = async () => {
-      this.#endpoints = null;
-      this.#jwks = null;
+    const generation = ++this.#validationGeneration;
+    this.#retryScheduler.clear();
 
-      if (super.configured) {
-        const config = this.config as OAuthOIDCProviderConfig;
-        if (!config.issuer) {
-          this.logger.error('Missing OIDC issuer configuration');
-          super.setup();
-          return;
-        }
-
-        try {
-          const res = await fetch(
-            `${config.issuer}/.well-known/openid-configuration`,
-            {
-              method: 'GET',
-              headers: { Accept: 'application/json' },
-            }
-          );
-
-          if (res.ok) {
-            const configuration = OIDCConfigurationSchema.parse(
-              await res.json()
-            );
-            if (
-              this.normalizeIssuer(config.issuer) !==
-              this.normalizeIssuer(configuration.issuer)
-            ) {
-              this.logger.error(
-                `OIDC issuer mismatch, expected ${config.issuer}, got ${configuration.issuer}`
-              );
-            } else {
-              this.#endpoints = configuration;
-              this.#jwks = createRemoteJWKSet(new URL(configuration.jwks_uri));
-            }
-          } else {
-            this.logger.error(`Invalid OIDC issuer ${config.issuer}`);
-          }
-        } catch (e) {
-          this.logger.error('Failed to validate OIDC configuration', e);
-        }
-      }
-
-      super.setup();
-    };
-
-    validate().catch(() => {
+    this.validateAndSync(generation).catch(() => {
       /* noop */
     });
+  }
+
+  private async validateAndSync(generation: number) {
+    if (generation !== this.#validationGeneration) {
+      return;
+    }
+
+    if (!super.configured) {
+      this.resetState();
+      this.#retryScheduler.reset();
+      super.setup();
+      return;
+    }
+
+    const config = this.config as OAuthOIDCProviderConfig;
+    if (!config.issuer) {
+      this.logger.error('Missing OIDC issuer configuration');
+      this.resetState();
+      this.#retryScheduler.reset();
+      super.setup();
+      return;
+    }
+
+    try {
+      const res = await fetch(
+        `${config.issuer}/.well-known/openid-configuration`,
+        {
+          method: 'GET',
+          headers: { Accept: 'application/json' },
+        }
+      );
+
+      if (generation !== this.#validationGeneration) {
+        return;
+      }
+
+      if (!res.ok) {
+        this.logger.error(`Invalid OIDC issuer ${config.issuer}`);
+        this.onValidationFailure(generation);
+        return;
+      }
+
+      const configuration = OIDCConfigurationSchema.parse(await res.json());
+      if (
+        this.normalizeIssuer(config.issuer) !==
+        this.normalizeIssuer(configuration.issuer)
+      ) {
+        this.logger.error(
+          `OIDC issuer mismatch, expected ${config.issuer}, got ${configuration.issuer}`
+        );
+        this.onValidationFailure(generation);
+        return;
+      }
+
+      this.#endpoints = configuration;
+      this.#jwks = createRemoteJWKSet(new URL(configuration.jwks_uri));
+      this.#retryScheduler.reset();
+      super.setup();
+    } catch (e) {
+      if (generation !== this.#validationGeneration) {
+        return;
+      }
+      this.logger.error('Failed to validate OIDC configuration', e);
+      this.onValidationFailure(generation);
+    }
+  }
+
+  private onValidationFailure(generation: number) {
+    this.resetState();
+    super.setup();
+    this.scheduleRetry(generation);
+  }
+
+  private scheduleRetry(generation: number) {
+    if (generation !== this.#validationGeneration) {
+      return;
+    }
+
+    const delay = this.#retryScheduler.schedule(() => {
+      this.validateAndSync(generation).catch(() => {
+        /* noop */
+      });
+    });
+    if (delay === null) {
+      return;
+    }
+
+    this.logger.warn(
+      `OIDC discovery validation failed, retrying in ${delay}ms`
+    );
+  }
+
+  private resetState() {
+    this.#endpoints = null;
+    this.#jwks = null;
   }
 
   getAuthUrl(state: string): string {

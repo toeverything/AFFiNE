@@ -10,8 +10,10 @@ import { ConfigFactory, InvalidOauthResponse, URLHelper } from '../../base';
 import { ConfigModule } from '../../base/config';
 import { CurrentUser } from '../../core/auth';
 import { AuthService } from '../../core/auth/service';
+import { ServerFeature } from '../../core/config/types';
 import { Models } from '../../models';
 import { OAuthProviderName } from '../../plugins/oauth/config';
+import { OAuthProviderFactory } from '../../plugins/oauth/factory';
 import { GoogleOAuthProvider } from '../../plugins/oauth/providers/google';
 import { OIDCProvider } from '../../plugins/oauth/providers/oidc';
 import { OAuthService } from '../../plugins/oauth/service';
@@ -473,6 +475,53 @@ function mockOidcProvider(
   ).resolves(userinfo);
 }
 
+function createOidcRegistrationHarness(config?: {
+  clientId?: string;
+  clientSecret?: string;
+  issuer?: string;
+}) {
+  const server = {
+    enableFeature: Sinon.spy(),
+    disableFeature: Sinon.spy(),
+  };
+  const factory = new OAuthProviderFactory(server as any);
+  const affineConfig = {
+    server: {
+      externalUrl: 'https://affine.example',
+      host: 'localhost',
+      path: '',
+      https: true,
+      hosts: [],
+    },
+    oauth: {
+      providers: {
+        oidc: {
+          clientId: config?.clientId ?? 'oidc-client-id',
+          clientSecret: config?.clientSecret ?? 'oidc-client-secret',
+          issuer: config?.issuer ?? 'https://issuer.affine.dev',
+          args: {},
+        },
+      },
+    },
+  };
+  const provider = new OIDCProvider(new URLHelper(affineConfig as any));
+
+  (provider as any).factory = factory;
+  (provider as any).AFFiNEConfig = affineConfig;
+
+  return {
+    provider,
+    factory,
+    server,
+  };
+}
+
+async function flushAsyncWork(iterations = 5) {
+  for (let i = 0; i < iterations; i++) {
+    await new Promise(resolve => setImmediate(resolve));
+  }
+}
+
 test('should be able to sign up with oauth', async t => {
   const { app, db } = t.context;
 
@@ -702,4 +751,70 @@ test('oidc should reject responses without a usable email claim', async t => {
       'Missing valid email claim in OIDC response. Tried userinfo and ID token claims: "mail", "email"'
     )
   );
+});
+
+test('oidc discovery should remove oauth feature on failure and restore it after backoff retry succeeds', async t => {
+  const { provider, factory, server } = createOidcRegistrationHarness();
+  const fetchStub = Sinon.stub(globalThis, 'fetch');
+  const scheduledRetries: Array<() => void> = [];
+  const retryDelays: number[] = [];
+  const setTimeoutStub = Sinon.stub(globalThis, 'setTimeout').callsFake(((
+    callback: Parameters<typeof setTimeout>[0],
+    delay?: number
+  ) => {
+    retryDelays.push(Number(delay));
+    scheduledRetries.push(callback as () => void);
+    return Symbol('timeout') as unknown as ReturnType<typeof setTimeout>;
+  }) as typeof setTimeout);
+  t.teardown(() => {
+    provider.onModuleDestroy();
+    setTimeoutStub.restore();
+  });
+
+  fetchStub
+    .onFirstCall()
+    .rejects(new Error('temporary discovery failure'))
+    .onSecondCall()
+    .rejects(new Error('temporary discovery failure'))
+    .onThirdCall()
+    .resolves(
+      new Response(
+        JSON.stringify({
+          authorization_endpoint: 'https://issuer.affine.dev/auth',
+          token_endpoint: 'https://issuer.affine.dev/token',
+          userinfo_endpoint: 'https://issuer.affine.dev/userinfo',
+          issuer: 'https://issuer.affine.dev',
+          jwks_uri: 'https://issuer.affine.dev/jwks',
+        }),
+        {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      )
+    );
+
+  (provider as any).setup();
+
+  await flushAsyncWork();
+  t.deepEqual(factory.providers, []);
+  t.true(server.disableFeature.calledWith(ServerFeature.OAuth));
+  t.is(fetchStub.callCount, 1);
+  t.deepEqual(retryDelays, [1000]);
+
+  const firstRetry = scheduledRetries.shift();
+  t.truthy(firstRetry);
+  firstRetry!();
+  await flushAsyncWork();
+  t.is(fetchStub.callCount, 2);
+  t.deepEqual(factory.providers, []);
+  t.deepEqual(retryDelays, [1000, 2000]);
+
+  const secondRetry = scheduledRetries.shift();
+  t.truthy(secondRetry);
+  secondRetry!();
+  await flushAsyncWork();
+  t.is(fetchStub.callCount, 3);
+  t.deepEqual(factory.providers, [OAuthProviderName.OIDC]);
+  t.true(server.enableFeature.calledWith(ServerFeature.OAuth));
+  t.is(scheduledRetries.length, 0);
 });

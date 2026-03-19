@@ -13,6 +13,7 @@ import {
   buildOpenAppUrlRoute,
 } from '../../../modules/open-in-app';
 import { supportedClient } from './common';
+import { consumeOAuthFlowMode } from './oauth-flow';
 
 interface LoaderData {
   state: string;
@@ -69,6 +70,7 @@ export const Component = () => {
   // loader data from useLoaderData is not reactive, so that we can safely
   // assume the effect below is only triggered once
   const triggeredRef = useRef(false);
+  const flowModeRef = useRef(consumeOAuthFlowMode());
 
   const nav = useNavigate();
 
@@ -79,8 +81,13 @@ export const Component = () => {
     triggeredRef.current = true;
     auth
       .signInOauth(data.code, data.state, data.provider)
-      .then(() => {
-        window.close();
+      .then(({ redirectUri }) => {
+        if (flowModeRef.current === 'popup') {
+          window.close();
+          return;
+        }
+
+        location.replace(redirectUri ?? '/');
       })
       .catch(e => {
         nav(`/sign-in?error=${encodeURIComponent(e.message)}`);
