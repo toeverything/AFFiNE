@@ -96,6 +96,7 @@ export class LicenseService {
   }: Events['workspace.subscription.canceled']) {
     switch (plan) {
       case SubscriptionPlan.SelfHostedTeam:
+        await this.models.workspaceUser.deleteNonAccepted(workspaceId);
         await this.models.workspaceFeature.remove(workspaceId, 'team_plan_v1');
         break;
       default:

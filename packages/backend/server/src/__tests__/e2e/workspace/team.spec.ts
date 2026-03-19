@@ -5,6 +5,10 @@ import {
 } from '@affine/graphql';
 
 import { WorkspaceRole } from '../../../models';
+import {
+  SubscriptionPlan,
+  SubscriptionRecurring,
+} from '../../../plugins/payment/types';
 import { Mockers } from '../../mocks';
 import { app, e2e } from '../test';
 
@@ -165,3 +169,53 @@ e2e('should set all rests to NeedMoreSeat', async t => {
     WorkspaceMemberStatus.NeedMoreSeat
   );
 });
+
+e2e(
+  'should cleanup non-accepted members when team workspace is downgraded',
+  async t => {
+    const { workspace } = await createTeamWorkspace();
+
+    const pending = await app.create(Mockers.User);
+    await app.create(Mockers.WorkspaceUser, {
+      userId: pending.id,
+      workspaceId: workspace.id,
+      status: WorkspaceMemberStatus.Pending,
+    });
+
+    const allocating = await app.create(Mockers.User);
+    await app.create(Mockers.WorkspaceUser, {
+      userId: allocating.id,
+      workspaceId: workspace.id,
+      status: WorkspaceMemberStatus.AllocatingSeat,
+      source: 'Email',
+    });
+
+    const underReview = await app.create(Mockers.User);
+    await app.create(Mockers.WorkspaceUser, {
+      userId: underReview.id,
+      workspaceId: workspace.id,
+      status: WorkspaceMemberStatus.UnderReview,
+    });
+
+    await app.eventBus.emitAsync('workspace.subscription.canceled', {
+      workspaceId: workspace.id,
+      plan: SubscriptionPlan.Team,
+      recurring: SubscriptionRecurring.Monthly,
+    });
+
+    const [members] = await app.models.workspaceUser.paginate(workspace.id, {
+      first: 20,
+      offset: 0,
+    });
+
+    t.deepEqual(
+      members.map(member => member.status),
+      [
+        WorkspaceMemberStatus.Accepted,
+        WorkspaceMemberStatus.Accepted,
+        WorkspaceMemberStatus.Accepted,
+      ]
+    );
+    t.false(await app.models.workspace.isTeamWorkspace(workspace.id));
+  }
+);

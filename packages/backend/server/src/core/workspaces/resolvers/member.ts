@@ -585,6 +585,12 @@ export class WorkspaceMemberResolver {
   }
 
   private async acceptInvitationByEmail(role: WorkspaceUserRole) {
+    const hasSeat = await this.quota.tryCheckSeat(role.workspaceId, true);
+
+    if (!hasSeat) {
+      throw new NoMoreSeat({ spaceId: role.workspaceId });
+    }
+
     await this.models.workspaceUser.setStatus(
       role.workspaceId,
       role.userId,
