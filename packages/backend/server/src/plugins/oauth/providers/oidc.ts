@@ -35,7 +35,7 @@ const OIDCUserInfoSchema = z
   .object({
     sub: z.string(),
     preferred_username: z.string().optional(),
-    email: z.string().email(),
+    email: z.string().optional(),
     name: z.string().optional(),
     email_verified: z
       .union([z.boolean(), z.enum(['true', 'false', '1', '0', 'yes', 'no'])])
@@ -43,6 +43,8 @@ const OIDCUserInfoSchema = z
     groups: z.array(z.string()).optional(),
   })
   .passthrough();
+
+const OIDCEmailSchema = z.string().email();
 
 const OIDCConfigurationSchema = z.object({
   authorization_endpoint: z.string().url(),
@@ -291,6 +293,72 @@ export class OIDCProvider extends OAuthProvider {
     return undefined;
   }
 
+  private claimCandidates(
+    configuredClaim: string | undefined,
+    defaultClaim: string
+  ) {
+    return [
+      ...new Set(
+        [configuredClaim, defaultClaim].filter(
+          (claim): claim is string =>
+            typeof claim === 'string' && claim.length > 0
+        )
+      ),
+    ];
+  }
+
+  private formatClaimCandidates(claims: string[]) {
+    return claims.map(claim => `"${claim}"`).join(', ');
+  }
+
+  private resolveStringClaim(
+    claims: string[],
+    ...sources: Array<Record<string, unknown>>
+  ) {
+    for (const claim of claims) {
+      for (const source of sources) {
+        const value = this.extractString(source[claim]);
+        if (value) {
+          return value;
+        }
+      }
+    }
+
+    return undefined;
+  }
+
+  private resolveBooleanClaim(
+    claims: string[],
+    ...sources: Array<Record<string, unknown>>
+  ) {
+    for (const claim of claims) {
+      for (const source of sources) {
+        const value = this.extractBoolean(source[claim]);
+        if (value !== undefined) {
+          return value;
+        }
+      }
+    }
+
+    return undefined;
+  }
+
+  private resolveEmailClaim(
+    claims: string[],
+    ...sources: Array<Record<string, unknown>>
+  ) {
+    for (const claim of claims) {
+      for (const source of sources) {
+        const value = this.extractString(source[claim]);
+        if (value && OIDCEmailSchema.safeParse(value).success) {
+          return value;
+        }
+      }
+    }
+
+    return undefined;
+  }
+
   async getUser(tokens: Tokens, state: OAuthState): Promise<OAuthAccount> {
     if (!tokens.idToken) {
       throw new InvalidOauthResponse({
@@ -315,6 +383,8 @@ export class OIDCProvider extends OAuthProvider {
       { treatServerErrorAsInvalid: true }
     );
     const user = OIDCUserInfoSchema.parse(rawUser);
+    const userClaims = user as Record<string, unknown>;
+    const idTokenClaimsRecord = idTokenClaims as Record<string, unknown>;
 
     if (!user.sub || !idTokenClaims.sub) {
       throw new InvalidOauthResponse({
@@ -327,22 +397,29 @@ export class OIDCProvider extends OAuthProvider {
     }
 
     const args = this.config.args ?? {};
+    const idClaims = this.claimCandidates(args.claim_id, 'sub');
+    const emailClaims = this.claimCandidates(args.claim_email, 'email');
+    const nameClaims = this.claimCandidates(args.claim_name, 'name');
+    const emailVerifiedClaims = this.claimCandidates(
+      args.claim_email_verified,
+      'email_verified'
+    );
 
-    const claimsMap = {
-      id: args.claim_id || 'sub',
-      email: args.claim_email || 'email',
-      name: args.claim_name || 'name',
-      emailVerified: args.claim_email_verified || 'email_verified',
-    };
-
-    const accountId =
-      this.extractString(user[claimsMap.id]) ?? idTokenClaims.sub;
-    const email =
-      this.extractString(user[claimsMap.email]) ||
-      this.extractString(idTokenClaims.email);
-    const emailVerified =
-      this.extractBoolean(user[claimsMap.emailVerified]) ??
-      this.extractBoolean(idTokenClaims.email_verified);
+    const accountId = this.resolveStringClaim(
+      idClaims,
+      userClaims,
+      idTokenClaimsRecord
+    );
+    const email = this.resolveEmailClaim(
+      emailClaims,
+      userClaims,
+      idTokenClaimsRecord
+    );
+    const emailVerified = this.resolveBooleanClaim(
+      emailVerifiedClaims,
+      userClaims,
+      idTokenClaimsRecord
+    );
 
     if (!accountId) {
       throw new InvalidOauthResponse({
@@ -352,7 +429,7 @@ export class OIDCProvider extends OAuthProvider {
 
     if (!email) {
       throw new InvalidOauthResponse({
-        reason: 'Missing required claim for email',
+        reason: `Missing valid email claim in OIDC response. Tried userinfo and ID token claims: ${this.formatClaimCandidates(emailClaims)}`,
       });
     }
 
@@ -367,9 +444,11 @@ export class OIDCProvider extends OAuthProvider {
       email,
     };
 
-    const name =
-      this.extractString(user[claimsMap.name]) ||
-      this.extractString(idTokenClaims.name);
+    const name = this.resolveStringClaim(
+      nameClaims,
+      userClaims,
+      idTokenClaimsRecord
+    );
     if (name) {
       account.name = name;
     }

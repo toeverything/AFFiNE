@@ -6,13 +6,14 @@ import ava, { TestFn } from 'ava';
 import Sinon from 'sinon';
 
 import { AppModule } from '../../app.module';
-import { ConfigFactory, URLHelper } from '../../base';
+import { ConfigFactory, InvalidOauthResponse, URLHelper } from '../../base';
 import { ConfigModule } from '../../base/config';
 import { CurrentUser } from '../../core/auth';
 import { AuthService } from '../../core/auth/service';
 import { Models } from '../../models';
 import { OAuthProviderName } from '../../plugins/oauth/config';
 import { GoogleOAuthProvider } from '../../plugins/oauth/providers/google';
+import { OIDCProvider } from '../../plugins/oauth/providers/oidc';
 import { OAuthService } from '../../plugins/oauth/service';
 import { createTestingApp, currentUser, TestingApp } from '../utils';
 
@@ -34,6 +35,12 @@ test.before(async t => {
             google: {
               clientId: 'google-client-id',
               clientSecret: 'google-client-secret',
+            },
+            oidc: {
+              clientId: '',
+              clientSecret: '',
+              issuer: '',
+              args: {},
             },
           },
         },
@@ -432,6 +439,40 @@ function mockOAuthProvider(
   return clientNonce;
 }
 
+function mockOidcProvider(
+  provider: OIDCProvider,
+  {
+    args = {},
+    idTokenClaims,
+    userinfo,
+  }: {
+    args?: Record<string, string>;
+    idTokenClaims: Record<string, unknown>;
+    userinfo: Record<string, unknown>;
+  }
+) {
+  Sinon.stub(provider, 'config').get(() => ({
+    clientId: '',
+    clientSecret: '',
+    issuer: '',
+    args,
+  }));
+  Sinon.stub(
+    provider as unknown as { endpoints: { userinfo_endpoint: string } },
+    'endpoints'
+  ).get(() => ({
+    userinfo_endpoint: 'https://oidc.affine.dev/userinfo',
+  }));
+  Sinon.stub(
+    provider as unknown as { verifyIdToken: () => unknown },
+    'verifyIdToken'
+  ).resolves(idTokenClaims);
+  Sinon.stub(
+    provider as unknown as { fetchJson: () => unknown },
+    'fetchJson'
+  ).resolves(userinfo);
+}
+
 test('should be able to sign up with oauth', async t => {
   const { app, db } = t.context;
 
@@ -553,4 +594,112 @@ test('should be able to fullfil user with oauth sign in', async t => {
 
   t.truthy(account);
   t.is(account!.user.id, u3.id);
+});
+
+test('oidc should accept email from id token when userinfo email is missing', async t => {
+  const { app } = t.context;
+
+  const provider = app.get(OIDCProvider);
+  mockOidcProvider(provider, {
+    idTokenClaims: {
+      sub: 'oidc-user',
+      email: 'oidc-id-token@affine.pro',
+      name: 'OIDC User',
+    },
+    userinfo: {
+      sub: 'oidc-user',
+      name: 'OIDC User',
+    },
+  });
+
+  const user = await provider.getUser(
+    { accessToken: 'token', idToken: 'id-token' },
+    { token: 'nonce', provider: OAuthProviderName.OIDC }
+  );
+
+  t.is(user.id, 'oidc-user');
+  t.is(user.email, 'oidc-id-token@affine.pro');
+  t.is(user.name, 'OIDC User');
+});
+
+test('oidc should resolve custom email claim from userinfo', async t => {
+  const { app } = t.context;
+
+  const provider = app.get(OIDCProvider);
+  mockOidcProvider(provider, {
+    args: { claim_email: 'mail', claim_name: 'display_name' },
+    idTokenClaims: {
+      sub: 'oidc-user',
+    },
+    userinfo: {
+      sub: 'oidc-user',
+      mail: 'oidc-userinfo@affine.pro',
+      display_name: 'OIDC Custom',
+    },
+  });
+
+  const user = await provider.getUser(
+    { accessToken: 'token', idToken: 'id-token' },
+    { token: 'nonce', provider: OAuthProviderName.OIDC }
+  );
+
+  t.is(user.id, 'oidc-user');
+  t.is(user.email, 'oidc-userinfo@affine.pro');
+  t.is(user.name, 'OIDC Custom');
+});
+
+test('oidc should resolve custom email claim from id token', async t => {
+  const { app } = t.context;
+
+  const provider = app.get(OIDCProvider);
+  mockOidcProvider(provider, {
+    args: { claim_email: 'mail', claim_email_verified: 'mail_verified' },
+    idTokenClaims: {
+      sub: 'oidc-user',
+      mail: 'oidc-custom-id-token@affine.pro',
+      mail_verified: 'true',
+    },
+    userinfo: {
+      sub: 'oidc-user',
+    },
+  });
+
+  const user = await provider.getUser(
+    { accessToken: 'token', idToken: 'id-token' },
+    { token: 'nonce', provider: OAuthProviderName.OIDC }
+  );
+
+  t.is(user.id, 'oidc-user');
+  t.is(user.email, 'oidc-custom-id-token@affine.pro');
+});
+
+test('oidc should reject responses without a usable email claim', async t => {
+  const { app } = t.context;
+
+  const provider = app.get(OIDCProvider);
+  mockOidcProvider(provider, {
+    args: { claim_email: 'mail' },
+    idTokenClaims: {
+      sub: 'oidc-user',
+      mail: 'not-an-email',
+    },
+    userinfo: {
+      sub: 'oidc-user',
+      mail: 'still-not-an-email',
+    },
+  });
+
+  const error = await t.throwsAsync(
+    provider.getUser(
+      { accessToken: 'token', idToken: 'id-token' },
+      { token: 'nonce', provider: OAuthProviderName.OIDC }
+    )
+  );
+
+  t.true(error instanceof InvalidOauthResponse);
+  t.true(
+    error.message.includes(
+      'Missing valid email claim in OIDC response. Tried userinfo and ID token claims: "mail", "email"'
+    )
+  );
 });
