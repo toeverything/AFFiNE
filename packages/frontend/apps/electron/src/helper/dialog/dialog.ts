@@ -71,6 +71,30 @@ function getDefaultDBFileName(name: string, id: string) {
   return fileName.replace(/[/\\?%*:|"<>]/g, '-');
 }
 
+async function resolveExistingPath(path: string) {
+  if (!(await fs.pathExists(path))) {
+    return null;
+  }
+  try {
+    return await fs.realpath(path);
+  } catch {
+    return resolve(path);
+  }
+}
+
+async function isSameFilePath(sourcePath: string, targetPath: string) {
+  if (resolve(sourcePath) === resolve(targetPath)) {
+    return true;
+  }
+
+  const [sourceRealPath, targetRealPath] = await Promise.all([
+    resolveExistingPath(sourcePath),
+    resolveExistingPath(targetPath),
+  ]);
+
+  return !!sourceRealPath && sourceRealPath === targetRealPath;
+}
+
 /**
  * This function is called when the user clicks the "Save" button in the "Save Workspace" dialog.
  *
@@ -118,15 +142,23 @@ export async function saveDBFileAs(
       return { canceled: true };
     }
 
-    if (resolve(dbPath) === resolve(filePath)) {
+    if (await isSameFilePath(dbPath, filePath)) {
       return { error: 'DB_FILE_PATH_INVALID' };
     }
 
-    if (await fs.pathExists(filePath)) {
-      await fs.remove(filePath);
+    const tempFilePath = `${filePath}.${nanoid(6)}.tmp`;
+    if (await fs.pathExists(tempFilePath)) {
+      await fs.remove(tempFilePath);
     }
 
-    await pool.vacuumInto(universalId, filePath);
+    try {
+      await pool.vacuumInto(universalId, tempFilePath);
+      await fs.move(tempFilePath, filePath, { overwrite: true });
+    } finally {
+      if (await fs.pathExists(tempFilePath)) {
+        await fs.remove(tempFilePath);
+      }
+    }
     logger.log('saved', filePath);
     if (!fakedResult) {
       mainRPC.showItemInFolder(filePath).catch(err => {
@@ -273,7 +305,7 @@ async function cpV1DBFile(
 
   const internalFilePath = await getWorkspaceDBPath('workspace', workspaceId);
 
-  await fs.ensureDir(await getWorkspacesBasePath());
+  await fs.ensureDir(parse(internalFilePath).dir);
   await connection.vacuumInto(internalFilePath);
   logger.info(`loadDBFile, vacuum: ${originalPath} -> ${internalFilePath}`);
 

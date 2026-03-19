@@ -7,7 +7,8 @@ import { defineTool } from './tool';
 
 export const createExaSearchTool = (config: Config) => {
   return defineTool({
-    description: 'Search the web using Exa, one of the best web search APIs for AI',
+    description:
+      'Search the web using Exa, one of the best web search APIs for AI',
     inputSchema: z.object({
       query: z.string().describe('The query to search the web for.'),
       mode: z

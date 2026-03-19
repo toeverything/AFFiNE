@@ -11,6 +11,7 @@ pub struct ImportTableRule {
   pub name: &'static str,
   pub columns: &'static [&'static str],
   pub enforce_columns: bool,
+  pub required: bool,
 }
 
 pub struct ImportIndexRule {
@@ -26,51 +27,61 @@ pub const V2_IMPORT_SCHEMA_RULES: ImportSchemaRules = ImportSchemaRules {
       name: "meta",
       columns: &["space_id"],
       enforce_columns: true,
+      required: true,
     },
     ImportTableRule {
       name: "snapshots",
       columns: &["doc_id", "data", "created_at", "updated_at"],
       enforce_columns: true,
+      required: true,
     },
     ImportTableRule {
       name: "updates",
       columns: &["doc_id", "created_at", "data"],
       enforce_columns: true,
+      required: true,
     },
     ImportTableRule {
       name: "clocks",
       columns: &["doc_id", "timestamp"],
       enforce_columns: true,
+      required: true,
     },
     ImportTableRule {
       name: "blobs",
       columns: &["key", "data", "mime", "size", "created_at", "deleted_at"],
       enforce_columns: true,
+      required: true,
     },
     ImportTableRule {
       name: "peer_clocks",
       columns: &["peer", "doc_id", "remote_clock", "pulled_remote_clock", "pushed_clock"],
       enforce_columns: true,
+      required: true,
     },
     ImportTableRule {
       name: "peer_blob_sync",
       columns: &["peer", "blob_id", "uploaded_at"],
       enforce_columns: true,
+      required: false,
     },
     ImportTableRule {
       name: "idx_snapshots",
       columns: &["index_name", "data", "created_at"],
       enforce_columns: true,
+      required: false,
     },
     ImportTableRule {
       name: "indexer_sync",
       columns: &["doc_id", "indexed_clock", "indexer_version"],
       enforce_columns: true,
+      required: false,
     },
     ImportTableRule {
       name: "_sqlx_migrations",
       columns: &[],
       enforce_columns: false,
+      required: false,
     },
   ],
   indexes: &[
@@ -84,7 +95,7 @@ pub const V2_IMPORT_SCHEMA_RULES: ImportSchemaRules = ImportSchemaRules {
       name: "peer_blob_sync_peer",
       table: "peer_blob_sync",
       columns: &["peer"],
-      required: true,
+      required: false,
     },
   ],
 };
@@ -95,26 +106,31 @@ pub const V1_IMPORT_SCHEMA_RULES: ImportSchemaRules = ImportSchemaRules {
       name: "updates",
       columns: &["id", "timestamp", "data", "doc_id"],
       enforce_columns: true,
+      required: true,
     },
     ImportTableRule {
       name: "blobs",
       columns: &["key", "data", "timestamp"],
       enforce_columns: true,
+      required: true,
     },
     ImportTableRule {
       name: "version_info",
-      columns: &["version"],
+      columns: &["version", "timestamp"],
       enforce_columns: true,
+      required: true,
     },
     ImportTableRule {
       name: "server_clock",
       columns: &["key", "data", "timestamp"],
       enforce_columns: true,
+      required: true,
     },
     ImportTableRule {
       name: "sync_metadata",
       columns: &["key", "data", "timestamp"],
       enforce_columns: true,
+      required: true,
     },
   ],
   indexes: &[ImportIndexRule {
@@ -171,7 +187,12 @@ pub async fn validate_import_schema(pool: &Pool<Sqlite>, rules: &ImportSchemaRul
     }
   }
 
-  if rules.tables.iter().any(|rule| !seen_tables.contains(rule.name)) {
+  if rules
+    .tables
+    .iter()
+    .filter(|rule| rule.required)
+    .any(|rule| !seen_tables.contains(rule.name))
+  {
     return Ok(false);
   }
 

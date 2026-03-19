@@ -52,13 +52,16 @@ impl SqliteDocStorage {
   }
 
   pub async fn validate(&self) -> Result<bool> {
-    let Ok(pool) = self.open_readonly_pool().await else {
-      return Ok(false);
-    };
+    const QUERY_MIGRATION_STMT: &str = "SELECT name FROM sqlite_master WHERE type='table' AND name='_sqlx_migrations';";
+    let record = if self.path == ":memory:" {
+      sqlx::query(QUERY_MIGRATION_STMT).fetch_optional(&self.pool).await
+    } else {
+      let Ok(pool) = self.open_readonly_pool().await else {
+        return Ok(false);
+      };
 
-    let record = sqlx::query("SELECT * FROM _sqlx_migrations ORDER BY installed_on ASC LIMIT 1;")
-      .fetch_optional(&pool)
-      .await;
+      sqlx::query(QUERY_MIGRATION_STMT).fetch_optional(&pool).await
+    };
 
     match record {
       Ok(Some(row)) => {
@@ -70,6 +73,10 @@ impl SqliteDocStorage {
   }
 
   pub async fn validate_import_schema(&self) -> Result<bool> {
+    if self.path == ":memory:" {
+      return Ok(validate_import_schema(&self.pool, &V2_IMPORT_SCHEMA_RULES).await?);
+    }
+
     let Ok(pool) = self.open_readonly_pool().await else {
       return Ok(false);
     };
@@ -176,6 +183,11 @@ impl SqliteDocStorage {
   }
 
   pub async fn vacuum_into(&self, path: String) -> Result<()> {
+    if self.path == ":memory:" {
+      sqlx::query("VACUUM INTO ?;").bind(path).execute(&self.pool).await?;
+      return Ok(());
+    }
+
     let pool = self.open_readonly_pool().await?;
     sqlx::query("VACUUM INTO ?;").bind(path).execute(&pool).await?;
 
@@ -308,7 +320,7 @@ mod tests {
     storage
       .set_blob(crate::SetBlob {
         key: "large-blob".to_string(),
-        data: vec![7; 1024 * 1024].into(),
+        data: vec![7; 1024 * 1024],
         mime: "application/octet-stream".to_string(),
       })
       .await
@@ -339,6 +351,7 @@ mod tests {
     fs::create_dir_all(&base).unwrap();
 
     let source = base.join("storage.db");
+    fs::File::create(&source).unwrap();
     let storage = SqliteDocStorage::new(path_string(&source));
     storage.connect().await.unwrap();
 
@@ -348,6 +361,43 @@ mod tests {
       .unwrap();
 
     assert!(!storage.validate_import_schema().await.unwrap());
+
+    storage.close().await;
+    fs::remove_dir_all(base).unwrap();
+  }
+
+  #[tokio::test]
+  async fn validate_import_schema_accepts_initial_v2_schema() {
+    let base = std::env::temp_dir().join(format!("nbstore-v2-schema-{}", Uuid::new_v4()));
+    fs::create_dir_all(&base).unwrap();
+
+    let source = base.join("storage.db");
+    let source_path = path_string(&source);
+    let setup_pool = SqlitePoolOptions::new()
+      .max_connections(1)
+      .connect_with(
+        SqliteConnectOptions::new()
+          .filename(&source_path)
+          .create_if_missing(true)
+          .foreign_keys(false),
+      )
+      .await
+      .unwrap();
+
+    let mut migrations = get_migrator().migrations.to_vec();
+    migrations.truncate(1);
+    let migrator = Migrator {
+      migrations: Cow::Owned(migrations),
+      ..Migrator::DEFAULT
+    };
+
+    migrator.run(&setup_pool).await.unwrap();
+    setup_pool.close().await;
+
+    let storage = SqliteDocStorage::new(source_path);
+
+    assert!(storage.validate().await.unwrap());
+    assert!(storage.validate_import_schema().await.unwrap());
 
     storage.close().await;
     fs::remove_dir_all(base).unwrap();

@@ -476,7 +476,7 @@ impl SqliteConnection {
 
   #[napi]
   pub async fn validate_import_schema(&self) -> napi::Result<bool> {
-    let pool = open_readonly_pool(&self.path).await.map_err(anyhow::Error::from)?;
+    let pool = open_readonly_pool(&self.path).await?;
     Ok(
       validate_import_schema(&pool, &V1_IMPORT_SCHEMA_RULES)
         .await
@@ -517,7 +517,7 @@ impl SqliteConnection {
 
   #[napi]
   pub async fn vacuum_into(&self, path: String) -> napi::Result<()> {
-    let pool = open_readonly_pool(&self.path).await.map_err(anyhow::Error::from)?;
+    let pool = open_readonly_pool(&self.path).await?;
     sqlx::query("VACUUM INTO ?;")
       .bind(path)
       .execute(&pool)
@@ -562,6 +562,22 @@ mod tests {
   };
 
   use super::*;
+
+  #[tokio::test]
+  async fn validate_import_schema_accepts_current_v1_schema() {
+    let unique = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
+    let base = std::env::temp_dir().join(format!("sqlite-v1-schema-valid-{unique}"));
+    fs::create_dir_all(&base).unwrap();
+
+    let source = base.join("storage.db");
+    let connection = SqliteConnection::new(source.to_string_lossy().into_owned()).unwrap();
+    connection.connect().await.unwrap();
+
+    assert!(connection.validate_import_schema().await.unwrap());
+
+    connection.close().await;
+    fs::remove_dir_all(base).unwrap();
+  }
 
   #[tokio::test]
   async fn validate_import_schema_rejects_unexpected_schema_objects() {

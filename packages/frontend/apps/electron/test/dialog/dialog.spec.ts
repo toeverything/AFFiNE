@@ -5,6 +5,8 @@ const checkpoint = vi.fn();
 const poolVacuumInto = vi.fn();
 const pathExists = vi.fn();
 const remove = vi.fn();
+const move = vi.fn();
+const realpath = vi.fn();
 const copyFile = vi.fn();
 const ensureDir = vi.fn();
 const copy = vi.fn();
@@ -100,6 +102,8 @@ vi.doMock('fs-extra', () => ({
   default: {
     pathExists,
     remove,
+    move,
+    realpath,
     copyFile,
     ensureDir,
     copy,
@@ -115,10 +119,13 @@ describe('dialog export', () => {
   test('saveDBFileAs exports a vacuumed backup instead of copying the live db', async () => {
     const dbPath = '/tmp/workspace/storage.db';
     const exportPath = '/tmp/export.affine';
+    const tempExportPath = '/tmp/export.affine.workspace-1.tmp';
     const id = '@peer(local);@type(workspace);@id(workspace-1);';
 
-    pathExists.mockResolvedValue(true);
+    pathExists.mockImplementation(async path => path === dbPath);
+    realpath.mockImplementation(async path => path);
     getSpaceDBPath.mockResolvedValue(dbPath);
+    move.mockResolvedValue(undefined);
 
     const { saveDBFileAs, setFakeDialogResult } =
       await import('@affine/electron/helper/dialog/dialog');
@@ -130,8 +137,11 @@ describe('dialog export', () => {
     expect(result).toEqual({ filePath: exportPath });
     expect(connect).toHaveBeenCalledWith(id, dbPath);
     expect(checkpoint).toHaveBeenCalledWith(id);
-    expect(remove).toHaveBeenCalledWith(exportPath);
-    expect(poolVacuumInto).toHaveBeenCalledWith(id, exportPath);
+    expect(poolVacuumInto).toHaveBeenCalledWith(id, tempExportPath);
+    expect(move).toHaveBeenCalledWith(tempExportPath, exportPath, {
+      overwrite: true,
+    });
+    expect(remove).not.toHaveBeenCalledWith(exportPath);
     expect(copyFile).not.toHaveBeenCalled();
   });
 
@@ -152,6 +162,29 @@ describe('dialog export', () => {
     expect(result).toEqual({ error: 'DB_FILE_PATH_INVALID' });
     expect(poolVacuumInto).not.toHaveBeenCalled();
     expect(copyFile).not.toHaveBeenCalled();
+  });
+
+  test('saveDBFileAs rejects exporting to a symlink alias of the live database', async () => {
+    const dbPath = '/tmp/workspace/storage.db';
+    const exportPath = '/tmp/alias.affine';
+    const id = '@peer(local);@type(workspace);@id(workspace-1);';
+
+    pathExists.mockResolvedValue(true);
+    realpath.mockImplementation(async path =>
+      path === exportPath ? dbPath : path
+    );
+    getSpaceDBPath.mockResolvedValue(dbPath);
+
+    const { saveDBFileAs, setFakeDialogResult } =
+      await import('@affine/electron/helper/dialog/dialog');
+
+    setFakeDialogResult({ filePath: exportPath });
+
+    const result = await saveDBFileAs(id, 'My Space');
+
+    expect(result).toEqual({ error: 'DB_FILE_PATH_INVALID' });
+    expect(poolVacuumInto).not.toHaveBeenCalled();
+    expect(move).not.toHaveBeenCalled();
   });
 });
 
@@ -224,6 +257,7 @@ describe('dialog import', () => {
     expect(result).toEqual({ workspaceId: 'workspace-1' });
     expect(sqliteValidate).toHaveBeenCalledWith(originalPath);
     expect(sqliteValidateImportSchema).toHaveBeenCalledWith(originalPath);
+    expect(ensureDir).toHaveBeenCalledWith('/app/workspaces/workspace-1');
     expect(sqliteVacuumInto).toHaveBeenCalledWith(originalPath, internalPath);
     expect(storeWorkspaceMeta).toHaveBeenCalledWith('workspace-1', {
       id: 'workspace-1',
