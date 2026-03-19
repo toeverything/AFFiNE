@@ -145,7 +145,7 @@ export const MonthPicker = memo(function MonthPicker(
                       tabIndex={month.isSame(monthCursor, 'month') ? 0 : -1}
                       aria-label={monthValue}
                     >
-                      {monthNames.split(',')[month.month()]}
+                      {monthNames.split(/[,،]/)[month.month()]}
                     </button>
                   </div>
                 );
