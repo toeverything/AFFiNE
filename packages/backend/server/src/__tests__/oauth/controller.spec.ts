@@ -748,7 +748,38 @@ test('oidc should reject responses without a usable email claim', async t => {
   t.true(error instanceof InvalidOauthResponse);
   t.true(
     error.message.includes(
-      'Missing valid email claim in OIDC response. Tried userinfo and ID token claims: "mail", "email"'
+      'Missing valid email claim in OIDC response. Tried userinfo and ID token claims: "mail"'
+    )
+  );
+});
+
+test('oidc should not fall back to default email claim when custom claim is configured', async t => {
+  const { app } = t.context;
+
+  const provider = app.get(OIDCProvider);
+  mockOidcProvider(provider, {
+    args: { claim_email: 'mail' },
+    idTokenClaims: {
+      sub: 'oidc-user',
+      email: 'fallback@affine.pro',
+    },
+    userinfo: {
+      sub: 'oidc-user',
+      email: 'userinfo-fallback@affine.pro',
+    },
+  });
+
+  const error = await t.throwsAsync(
+    provider.getUser(
+      { accessToken: 'token', idToken: 'id-token' },
+      { token: 'nonce', provider: OAuthProviderName.OIDC }
+    )
+  );
+
+  t.true(error instanceof InvalidOauthResponse);
+  t.true(
+    error.message.includes(
+      'Missing valid email claim in OIDC response. Tried userinfo and ID token claims: "mail"'
     )
   );
 });

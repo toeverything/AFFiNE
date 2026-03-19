@@ -361,14 +361,10 @@ export class OIDCProvider extends OAuthProvider implements OnModuleDestroy {
     configuredClaim: string | undefined,
     defaultClaim: string
   ) {
-    return [
-      ...new Set(
-        [configuredClaim, defaultClaim].filter(
-          (claim): claim is string =>
-            typeof claim === 'string' && claim.length > 0
-        )
-      ),
-    ];
+    if (typeof configuredClaim === 'string' && configuredClaim.length > 0) {
+      return [configuredClaim];
+    }
+    return [defaultClaim];
   }
 
   private formatClaimCandidates(claims: string[]) {

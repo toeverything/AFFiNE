@@ -13,11 +13,16 @@ import {
   buildOpenAppUrlRoute,
 } from '../../../modules/open-in-app';
 import { supportedClient } from './common';
-import { consumeOAuthFlowMode } from './oauth-flow';
+import {
+  type OAuthFlowMode,
+  parseOAuthCallbackState,
+  resolveOAuthRedirect,
+} from './oauth-flow';
 
 interface LoaderData {
   state: string;
   code: string;
+  flow: OAuthFlowMode;
   provider: string;
 }
 
@@ -32,12 +37,18 @@ export const loader: LoaderFunction = async ({ request }) => {
   }
 
   try {
-    const { state, client, provider } = JSON.parse(stateStr);
+    const { state, client, flow, provider } = parseOAuthCallbackState(stateStr);
+
+    if (!state || !provider) {
+      return redirect('/sign-in?error=Invalid oauth callback parameters');
+    }
+
     stateStr = state;
 
     const payload: LoaderData = {
       state,
       code,
+      flow,
       provider,
     };
 
@@ -70,7 +81,6 @@ export const Component = () => {
   // loader data from useLoaderData is not reactive, so that we can safely
   // assume the effect below is only triggered once
   const triggeredRef = useRef(false);
-  const flowModeRef = useRef(consumeOAuthFlowMode());
 
   const nav = useNavigate();
 
@@ -82,12 +92,12 @@ export const Component = () => {
     auth
       .signInOauth(data.code, data.state, data.provider)
       .then(({ redirectUri }) => {
-        if (flowModeRef.current === 'popup') {
+        if (data.flow === 'popup') {
           window.close();
           return;
         }
 
-        location.replace(redirectUri ?? '/');
+        location.replace(resolveOAuthRedirect(redirectUri, location.origin));
       })
       .catch(e => {
         nav(`/sign-in?error=${encodeURIComponent(e.message)}`);

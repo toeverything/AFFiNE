@@ -12,7 +12,7 @@ import {
 import { z } from 'zod';
 
 import { supportedClient } from './common';
-import { rememberOAuthFlowMode, resolveOAuthFlowMode } from './oauth-flow';
+import { attachOAuthFlowToAuthUrl, resolveOAuthFlowMode } from './oauth-flow';
 
 const supportedProvider = z.nativeEnum(OAuthProviderType);
 const CSRF_COOKIE_NAME = 'affine_csrf_token';
@@ -95,9 +95,11 @@ export const Component = () => {
     auth
       .oauthPreflight(data.provider, data.client, data.redirectUri)
       .then(({ url }) => {
-        rememberOAuthFlowMode(resolveOAuthFlowMode(data.flow));
         // this is the url of oauth provider auth page, can't navigate with react-router
-        location.href = url;
+        location.href = attachOAuthFlowToAuthUrl(
+          url,
+          resolveOAuthFlowMode(data.flow)
+        );
       })
       .catch(e => {
         nav(`/sign-in?error=${encodeURIComponent(e.message)}`);
