@@ -15,6 +15,11 @@ describe('default tool', () => {
   let service!: EdgelessRootBlockComponent['service'];
 
   beforeEach(async () => {
+    localStorage.setItem('blocksuite:edgeless:snapToGrid', 'false');
+    localStorage.setItem('blocksuite:edgeless:connectorSnapToGrid', 'false');
+    localStorage.setItem('blocksuite:edgeless:snapToGuides', 'false');
+    localStorage.setItem('blocksuite:edgeless:gridSize', '20');
+
     const cleanup = await setupEditor('edgeless');
 
     edgeless = getDocRootBlock(doc, editor, 'edgeless');
