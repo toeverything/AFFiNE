@@ -46,6 +46,8 @@ export declare function verifyChallengeResponse(response: string, bits: number, 
 export declare class DocStorage {
   constructor(path: string)
   validate(): Promise<boolean>
+  validateImportSchema(): Promise<boolean>
+  vacuumInto(path: string): Promise<void>
   setSpaceId(spaceId: string): Promise<void>
 }
 
@@ -55,6 +57,7 @@ export declare class DocStoragePool {
   connect(universalId: string, path: string): Promise<void>
   disconnect(universalId: string): Promise<void>
   checkpoint(universalId: string): Promise<void>
+  vacuumInto(universalId: string, path: string): Promise<void>
   crawlDocData(universalId: string, docId: string): Promise<NativeCrawlResult>
   setSpaceId(universalId: string, spaceId: string): Promise<void>
   pushUpdate(universalId: string, docId: string, update: Uint8Array): Promise<Date>
@@ -196,11 +199,13 @@ export declare class SqliteConnection {
   close(): Promise<void>
   get isClose(): boolean
   static validate(path: string): Promise<ValidationResult>
+  validateImportSchema(): Promise<boolean>
   migrateAddDocId(): Promise<void>
   /** * Flush the WAL file to the database file.
    * See https://www.sqlite.org/pragma.html#pragma_wal_checkpoint:~:text=PRAGMA%20schema.wal_checkpoint%3B
    */
   checkpoint(): Promise<void>
+  vacuumInto(path: string): Promise<void>
 }
 
 export interface BlobRow {

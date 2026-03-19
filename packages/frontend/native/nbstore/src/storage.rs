@@ -1,6 +1,9 @@
 use std::sync::Arc;
 
-use affine_schema::get_migrator;
+use affine_schema::{
+  get_migrator,
+  import_validation::{V2_IMPORT_SCHEMA_RULES, validate_import_schema},
+};
 use memory_indexer::InMemoryIndex;
 use sqlx::{
   Pool, Row,
@@ -49,8 +52,12 @@ impl SqliteDocStorage {
   }
 
   pub async fn validate(&self) -> Result<bool> {
+    let Ok(pool) = self.open_readonly_pool().await else {
+      return Ok(false);
+    };
+
     let record = sqlx::query("SELECT * FROM _sqlx_migrations ORDER BY installed_on ASC LIMIT 1;")
-      .fetch_optional(&self.pool)
+      .fetch_optional(&pool)
       .await;
 
     match record {
@@ -60,6 +67,14 @@ impl SqliteDocStorage {
       }
       _ => Ok(false),
     }
+  }
+
+  pub async fn validate_import_schema(&self) -> Result<bool> {
+    let Ok(pool) = self.open_readonly_pool().await else {
+      return Ok(false);
+    };
+
+    Ok(validate_import_schema(&pool, &V2_IMPORT_SCHEMA_RULES).await?)
   }
 
   pub async fn connect(&self) -> Result<()> {
@@ -159,14 +174,36 @@ impl SqliteDocStorage {
 
     Ok(())
   }
+
+  pub async fn vacuum_into(&self, path: String) -> Result<()> {
+    let pool = self.open_readonly_pool().await?;
+    sqlx::query("VACUUM INTO ?;").bind(path).execute(&pool).await?;
+
+    Ok(())
+  }
+
+  async fn open_readonly_pool(&self) -> Result<Pool<Sqlite>> {
+    let sqlite_options = SqliteConnectOptions::new()
+      .filename(&self.path)
+      .foreign_keys(false)
+      .read_only(true);
+
+    Ok(
+      SqlitePoolOptions::new()
+        .max_connections(1)
+        .connect_with(sqlite_options)
+        .await?,
+    )
+  }
 }
 
 #[cfg(test)]
 mod tests {
-  use std::borrow::Cow;
+  use std::{borrow::Cow, fs, path::Path};
 
   use affine_schema::get_migrator;
   use sqlx::migrate::{Migration, Migrator};
+  use uuid::Uuid;
 
   use super::*;
 
@@ -255,5 +292,68 @@ mod tests {
     let checksum: Vec<u8> = row.get("checksum");
 
     assert_eq!(checksum, expected_checksum);
+  }
+
+  #[tokio::test]
+  async fn vacuum_into_exports_a_compacted_database() {
+    let base = std::env::temp_dir().join(format!("nbstore-vacuum-{}", Uuid::new_v4()));
+    fs::create_dir_all(&base).unwrap();
+
+    let source = base.join("storage.db");
+    let export = base.join("backup.affine");
+
+    let storage = SqliteDocStorage::new(path_string(&source));
+    storage.connect().await.unwrap();
+
+    storage
+      .set_blob(crate::SetBlob {
+        key: "large-blob".to_string(),
+        data: vec![7; 1024 * 1024].into(),
+        mime: "application/octet-stream".to_string(),
+      })
+      .await
+      .unwrap();
+    storage.delete_blob("large-blob".to_string(), true).await.unwrap();
+    storage.checkpoint().await.unwrap();
+
+    let source_len = fs::metadata(&source).unwrap().len();
+    assert!(source_len > 0);
+
+    storage.vacuum_into(path_string(&export)).await.unwrap();
+
+    let export_len = fs::metadata(&export).unwrap().len();
+    assert!(export_len < source_len);
+
+    let exported = SqliteDocStorage::new(path_string(&export));
+    exported.connect().await.unwrap();
+    assert!(exported.list_blobs().await.unwrap().is_empty());
+    exported.close().await;
+    storage.close().await;
+
+    fs::remove_dir_all(base).unwrap();
+  }
+
+  #[tokio::test]
+  async fn validate_import_schema_rejects_unexpected_schema_objects() {
+    let base = std::env::temp_dir().join(format!("nbstore-schema-{}", Uuid::new_v4()));
+    fs::create_dir_all(&base).unwrap();
+
+    let source = base.join("storage.db");
+    let storage = SqliteDocStorage::new(path_string(&source));
+    storage.connect().await.unwrap();
+
+    sqlx::query("CREATE VIEW rogue_view AS SELECT space_id FROM meta")
+      .execute(&storage.pool)
+      .await
+      .unwrap();
+
+    assert!(!storage.validate_import_schema().await.unwrap());
+
+    storage.close().await;
+    fs::remove_dir_all(base).unwrap();
+  }
+
+  fn path_string(path: &Path) -> String {
+    path.to_string_lossy().into_owned()
   }
 }
