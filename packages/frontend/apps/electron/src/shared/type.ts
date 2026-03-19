@@ -25,6 +25,7 @@ export type MainToHelper = Pick<
   | 'showSaveDialog'
   | 'openExternal'
   | 'showItemInFolder'
+  | 'openPath'
   | 'getPath'
 >;
 

@@ -24,6 +24,8 @@ import {
   DownloadIcon,
   DuplicateIcon,
   EditIcon,
+  ExpandFullIcon,
+  OpenInNewIcon,
   ReplaceIcon,
   ResetIcon,
 } from '@blocksuite/icons/lit';
@@ -37,6 +39,7 @@ import { keyed } from 'lit/directives/keyed.js';
 import { AttachmentBlockComponent } from '../attachment-block';
 import { RenameModal } from '../components/rename-model';
 import { AttachmentEmbedProvider } from '../embed';
+import { isAttachmentEditable } from '../utils';
 
 const trackBaseProps = {
   category: 'attachment',
@@ -149,6 +152,66 @@ export const attachmentViewDropdownMenu = {
   },
 } as const satisfies ToolbarActionGroup<ToolbarAction>;
 
+const openAction = {
+  id: 'b.open',
+  tooltip: 'Open',
+  icon: ExpandFullIcon(),
+  disabled(ctx) {
+    const block = ctx.getCurrentBlockByType(AttachmentBlockComponent);
+    if (!block) return true;
+
+    const { downloading = false, uploading = false } =
+      block.resourceController.state$.value;
+    return downloading || uploading;
+  },
+  run(ctx) {
+    const block = ctx.getCurrentBlockByType(AttachmentBlockComponent);
+    if (!block) return;
+    block.openPreview().catch(error => {
+      console.error('Failed to open preview:', error);
+    });
+  },
+} as const satisfies ToolbarAction;
+
+const openExternalAction = {
+  id: 'b.open-external',
+  tooltip: 'Open externally',
+  icon: OpenInNewIcon(),
+  run(ctx) {
+    const block = ctx.getCurrentBlockByType(AttachmentBlockComponent);
+    if (!block) return;
+    block.openExternal().catch(error => {
+      console.error('Failed to open externally:', error);
+    });
+  },
+} as const satisfies ToolbarAction;
+
+const editInlineAction = {
+  id: 'b.edit-inline',
+  tooltip: 'Edit attachment',
+  icon: EditIcon(),
+  disabled(ctx) {
+    const block = ctx.getCurrentBlockByType(AttachmentBlockComponent);
+    if (!block) return true;
+    const { downloading = false, uploading = false } =
+      block.resourceController.state$.value;
+    if (downloading || uploading) return true;
+    const name = block.model.props.name;
+    const type = block.model.props.type;
+    return !isAttachmentEditable(type, name);
+  },
+  run(ctx) {
+    const block = ctx.getCurrentBlockByType(AttachmentBlockComponent);
+    if (!block) {
+      console.error('No attachment block found for edit action');
+      return;
+    }
+    block.edit().catch(error => {
+      console.error('Error from edit action:', error);
+    });
+  },
+} as const satisfies ToolbarAction;
+
 const replaceAction = {
   id: 'c.replace',
   tooltip: 'Replace attachment',
@@ -236,6 +299,9 @@ const builtinToolbarConfig = {
         `;
       },
     },
+    openAction,
+    openExternalAction,
+    editInlineAction,
     attachmentViewDropdownMenu,
     replaceAction,
     downloadAction,
@@ -312,6 +378,9 @@ const builtinToolbarConfig = {
 const builtinSurfaceToolbarConfig = {
   actions: [
     attachmentViewDropdownMenu,
+    openAction,
+    openExternalAction,
+    editInlineAction,
     {
       id: 'c.style',
       actions: [

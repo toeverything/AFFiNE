@@ -6,7 +6,7 @@ import {
   getAttachmentFileIcon,
   LoadingIcon,
 } from '@blocksuite/affine-components/icons';
-import { Peekable } from '@blocksuite/affine-components/peek';
+import { Peekable, PeekViewProvider } from '@blocksuite/affine-components/peek';
 import {
   type ResolvedStateInfo,
   ResourceController,
@@ -29,6 +29,7 @@ import {
 } from '@blocksuite/affine-shared/utils';
 import {
   AttachmentIcon,
+  EditIcon,
   ResetIcon,
   UpgradeIcon,
   WarningIcon,
@@ -46,7 +47,13 @@ import { filter } from 'rxjs/operators';
 
 import { AttachmentEmbedProvider } from './embed';
 import { styles } from './styles';
-import { downloadAttachmentBlob, getFileType, refreshData } from './utils';
+import { dispatchAttachmentTrashEvent } from './trash';
+import {
+  downloadAttachmentBlob,
+  getFileType,
+  isAttachmentEditable,
+  refreshData,
+} from './utils';
 
 type AttachmentResolvedStateInfo = ResolvedStateInfo & {
   kind?: TemplateResult;
@@ -65,6 +72,14 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
   resourceController = new ResourceController(
     computed(() => this.model.props.sourceId$.value)
   );
+
+  // Store parent info early for trash functionality
+  // Note: Currently cached but not actively used - reserved for future trash restoration features
+  // private _cachedParentInfo: {
+  //   parentId: string | null;
+  //   prevId: string | null;
+  //   nextId: string | null;
+  // } | null = null;
 
   get blobUrl() {
     return this.resourceController.blobUrl$.value;
@@ -107,6 +122,21 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
       .convertTo(this.model, this._maxFileSize);
   };
 
+  edit = async () => {
+    try {
+      const module = await import('./editor.js');
+      if (module?.openAttachmentEditor) {
+        await module.openAttachmentEditor(this);
+      } else {
+        console.error('Attachment editor module not available');
+        toast(this.host, 'Editor not available');
+      }
+    } catch (error) {
+      console.error('Failed to open attachment editor:', error);
+      toast(this.host, 'Failed to open editor');
+    }
+  };
+
   copy = () => {
     const slice = Slice.fromModels(this.store, [this.model]);
     this.std.clipboard.copySlice(slice).catch(console.error);
@@ -126,10 +156,38 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
     );
   };
 
-  open = () => {
+  openExternal = async () => {
     const blobUrl = this.blobUrl;
     if (!blobUrl) return;
+
+    // Check if Electron API is available for opening temp files
+    if ((window as any).__apis?.file?.openTempFile) {
+      try {
+        const blob = await this.resourceController.blob();
+        if (blob) {
+          const buffer = new Uint8Array(await blob.arrayBuffer());
+          await (window as any).__apis.file.openTempFile(
+            Array.from(buffer),
+            this.model.props.name$.value
+          );
+          return;
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
     window.open(blobUrl, '_blank');
+  };
+
+  openPreview = async () => {
+    const peekView = this.std.getOptional(PeekViewProvider);
+    if (!peekView) return;
+    await peekView.peek({
+      docId: this.model.store.id,
+      blockIds: [this.blockId],
+      target: this,
+    });
   };
 
   // Refreshes data.
@@ -223,6 +281,48 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
     );
   };
 
+  // Commenting out this method as _cachedParentInfo is currently unused
+  // If needed in the future, this would need to use a different API to iterate all blocks
+  // since store.models is not available on the Store type
+  // private _cacheParentInfo() {
+  //   const store = this.model.store;
+  //   const parent = store.getParent(this.model);
+  //   const prev = store.getPrev(this.model);
+  //   const next = store.getNext(this.model);
+
+  //   let finalParentId = parent?.id ?? null;
+  //   let finalPrevId = prev?.id ?? null;
+  //   let finalNextId = next?.id ?? null;
+
+  //   // If parent is null, try to find it by checking note blocks
+  //   if (!parent) {
+  //     const notes = store.getModelsByFlavour('affine:note');
+
+  //     // Check if this attachment is in any note's children
+  //     for (const note of notes) {
+  //       if (note.children?.some(child => child.id === this.model.id)) {
+  //         finalParentId = note.id;
+  //         const childIndex = note.children.findIndex(
+  //           child => child.id === this.model.id
+  //         );
+  //         if (childIndex > 0) {
+  //           finalPrevId = note.children[childIndex - 1].id;
+  //         }
+  //         if (childIndex < note.children.length - 1) {
+  //           finalNextId = note.children[childIndex + 1].id;
+  //         }
+  //         break;
+  //       }
+  //     }
+  //   }
+
+  //   this._cachedParentInfo = {
+  //     parentId: finalParentId,
+  //     prevId: finalPrevId,
+  //     nextId: finalNextId,
+  //   };
+  // }
+
   override connectedCallback() {
     super.connectedCallback();
 
@@ -239,6 +339,41 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
       })
     );
 
+    // Note: Cache update logic commented out as _cacheParentInfo is currently unused
+    // Update cache when blocks are added (not on delete to avoid caching null)
+    // this.disposables.add(
+    //   this.model.store.slots.blockUpdated.subscribe(payload => {
+    //     // Only update cache when blocks are added, not when deleted
+    //     // (during deletion, parent relationships may already be broken)
+    //     if (payload.type === 'add') {
+    //       this._cacheParentInfo();
+    //     }
+    //   })
+    // );
+
+    // Only dispatch trash event for local deletions to avoid duplicates in shared workspaces
+    this.disposables.add(
+      this.std.store.slots.blockUpdated
+        .pipe(
+          filter(payload => {
+            if (!payload.isLocal) return false;
+
+            const { flavour, id, type } = payload;
+            if (
+              type !== 'delete' ||
+              flavour !== this.model.flavour ||
+              id !== this.model.id
+            )
+              return false;
+
+            return Boolean(this.model.props.sourceId);
+          })
+        )
+        .subscribe(() => {
+          dispatchAttachmentTrashEvent(this);
+        })
+    );
+
     if (!this.model.props.style && !this.store.readonly) {
       this.store.withoutTransact(() => {
         this.store.updateBlock(this.model, {
@@ -251,8 +386,13 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
   }
 
   override firstUpdated() {
+    // Note: Cache parent info commented out as _cacheParentInfo is currently unused
+    // Cache parent info now that the block is fully rendered and in the tree
+    // this._cacheParentInfo();
+
     // lazy bindings
     this.disposables.addFromEvent(this, 'click', this.onClick);
+    this.disposables.addFromEvent(this, 'dblclick', this._handleDoubleClick);
   }
 
   protected onClick(event: MouseEvent) {
@@ -265,6 +405,20 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
       this._selectBlock();
     }
   }
+
+  private readonly _handleDoubleClick = (event: MouseEvent) => {
+    event.stopPropagation();
+
+    // Check if the edit dialog is open - if so, don't open preview
+    const editDialogOpen = document.querySelector(
+      'affine-attachment-editor-dialog'
+    );
+    if (editDialogOpen) {
+      return;
+    }
+
+    this.openPreview().catch(console.error);
+  };
 
   protected renderUpgradeButton = () => {
     if (this.std.store.readonly) return null;
@@ -292,7 +446,7 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
                   module: 'attachment',
                   control: 'upgrade',
                   category: 'card',
-                  type: this.model.props.name.split('.').pop() ?? '',
+                  type: this.model.props.name$.value.split('.').pop() ?? '',
                 });
             }
           }}
@@ -343,6 +497,32 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
     `;
   };
 
+  protected renderInlineEditButton = () => {
+    if (this.std.store.readonly) return null;
+
+    const { downloading = false, uploading = false } =
+      this.resourceController.state$.value;
+    if (downloading || uploading) return null;
+
+    const name = this.model.props.name$.value;
+    const type = this.model.props.type$.value;
+    if (!isAttachmentEditable(type, name)) return null;
+
+    return html`
+      <button
+        class="affine-attachment-content-button"
+        @click=${(event: MouseEvent) => {
+          event.stopPropagation();
+          this.edit().catch(error => {
+            console.error('Error from inline edit button:', error);
+          });
+        }}
+      >
+        ${EditIcon()} Edit
+      </button>
+    `;
+  };
+
   protected renderWithHorizontal(
     classInfo: ClassInfo,
     {
@@ -372,6 +552,7 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
               ['error', () => this.renderNormalButton(needUpload)],
               ['error:oversize', this.renderUpgradeButton],
             ])}
+            ${this.renderInlineEditButton()}
           </div>
         </div>
 
@@ -412,6 +593,7 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
             ['error', () => this.renderNormalButton(needUpload)],
             ['error:oversize', this.renderUpgradeButton],
           ])}
+          ${this.renderInlineEditButton()}
         </div>
       </div>
     `;

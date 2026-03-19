@@ -25,6 +25,7 @@
     "@preact/signals-core": "^1.8.0",
     "@toeverything/theme": "^1.1.23",
     "file-type": "^21.0.0",
+    "jszip": "^3.10.1",
     "lit": "^3.2.0",
     "rxjs": "^7.8.2",
     "zod": "^3.25.76"
@@ -32,7 +33,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./store": "./src/store.ts",
-    "./view": "./src/view.ts"
+    "./view": "./src/view.ts",
+    "./trash": "./src/trash.ts"
   },
   "files": [
     "src",

@@ -1,4 +1,5 @@
 import type { AttachmentBlockModel } from '@blocksuite/affine/model';
+import { bundledLanguagesInfo } from 'shiki';
 
 const imageExts = new Set([
   'jpg',
@@ -25,6 +26,24 @@ const videoExts = new Set([
   '3gp',
 ]);
 
+const builtinTextExts = new Set(['txt', 'md', 'eml', 'log', 'json', 'csv']);
+
+function isTextExtension(ext: string): boolean {
+  if (builtinTextExts.has(ext)) {
+    return true;
+  }
+
+  if (
+    bundledLanguagesInfo.some(info =>
+      [info.id, info.name, ...(info.aliases ?? [])].includes(ext)
+    )
+  ) {
+    return true;
+  }
+
+  return true;
+}
+
 export function getAttachmentType(model: AttachmentBlockModel) {
   const type = model.props.type;
 
@@ -39,6 +58,10 @@ export function getAttachmentType(model: AttachmentBlockModel) {
 
   if (type.startsWith('video/')) {
     return 'video';
+  }
+
+  if (type.startsWith('text/') || type.startsWith('message/')) {
+    return 'text';
   }
 
   if (type === 'application/pdf') {
@@ -62,6 +85,10 @@ export function getAttachmentType(model: AttachmentBlockModel) {
 
   if (ext === 'pdf') {
     return 'pdf';
+  }
+
+  if (isTextExtension(ext)) {
+    return 'text';
   }
 
   return 'unknown';

@@ -1709,6 +1709,7 @@ __metadata:
     "@preact/signals-core": "npm:^1.8.0"
     "@toeverything/theme": "npm:^1.1.23"
     file-type: "npm:^21.0.0"
+    jszip: "npm:^3.10.1"
     lit: "npm:^3.2.0"
     rxjs: "npm:^7.8.2"
     zod: "npm:^3.25.76"

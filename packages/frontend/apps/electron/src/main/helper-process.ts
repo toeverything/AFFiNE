@@ -119,6 +119,7 @@ class HelperProcessManager {
     const shellMethods = {
       openExternal: openExternalSafely as typeof shell.openExternal,
       showItemInFolder: shell.showItemInFolder.bind(shell),
+      openPath: shell.openPath.bind(shell),
     };
     const appMethods = pickAndBind(app, ['getPath']);
 
