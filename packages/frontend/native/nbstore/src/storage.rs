@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use affine_schema::{
   get_migrator,
-  import_validation::{V2_IMPORT_SCHEMA_RULES, validate_import_schema},
+  import_validation::{V2_IMPORT_SCHEMA_RULES, validate_import_schema, validate_required_schema},
 };
 use memory_indexer::InMemoryIndex;
 use sqlx::{
@@ -52,24 +52,15 @@ impl SqliteDocStorage {
   }
 
   pub async fn validate(&self) -> Result<bool> {
-    const QUERY_MIGRATION_STMT: &str = "SELECT name FROM sqlite_master WHERE type='table' AND name='_sqlx_migrations';";
-    let record = if self.path == ":memory:" {
-      sqlx::query(QUERY_MIGRATION_STMT).fetch_optional(&self.pool).await
-    } else {
-      let Ok(pool) = self.open_readonly_pool().await else {
-        return Ok(false);
-      };
+    if self.path == ":memory:" {
+      return Ok(validate_required_schema(&self.pool, &V2_IMPORT_SCHEMA_RULES).await?);
+    }
 
-      sqlx::query(QUERY_MIGRATION_STMT).fetch_optional(&pool).await
+    let Ok(pool) = self.open_readonly_pool().await else {
+      return Ok(false);
     };
 
-    match record {
-      Ok(Some(row)) => {
-        let name: &str = row.try_get("description")?;
-        Ok(name == "init_v2")
-      }
-      _ => Ok(false),
-    }
+    Ok(validate_required_schema(&pool, &V2_IMPORT_SCHEMA_RULES).await?)
   }
 
   pub async fn validate_import_schema(&self) -> Result<bool> {

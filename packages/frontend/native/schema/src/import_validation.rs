@@ -142,10 +142,27 @@ pub const V1_IMPORT_SCHEMA_RULES: ImportSchemaRules = ImportSchemaRules {
 };
 
 pub async fn validate_import_schema(pool: &Pool<Sqlite>, rules: &ImportSchemaRules) -> sqlx::Result<bool> {
-  let rows =
-    sqlx::query("SELECT type, name, tbl_name FROM sqlite_schema WHERE type IN ('table', 'index', 'view', 'trigger')")
-      .fetch_all(pool)
-      .await?;
+  validate_schema(pool, rules, ValidationMode::Strict).await
+}
+
+pub async fn validate_required_schema(pool: &Pool<Sqlite>, rules: &ImportSchemaRules) -> sqlx::Result<bool> {
+  validate_schema(pool, rules, ValidationMode::RequiredOnly).await
+}
+
+#[derive(Clone, Copy)]
+enum ValidationMode {
+  Strict,
+  RequiredOnly,
+}
+
+async fn validate_schema(pool: &Pool<Sqlite>, rules: &ImportSchemaRules, mode: ValidationMode) -> sqlx::Result<bool> {
+  let query = match mode {
+    ValidationMode::Strict => {
+      "SELECT type, name, tbl_name FROM sqlite_schema WHERE type IN ('table', 'index', 'view', 'trigger')"
+    }
+    ValidationMode::RequiredOnly => "SELECT type, name, tbl_name FROM sqlite_schema WHERE type IN ('table', 'index')",
+  };
+  let rows = sqlx::query(query).fetch_all(pool).await?;
 
   let mut seen_tables = BTreeSet::new();
   let mut seen_indexes = BTreeSet::new();
@@ -162,7 +179,10 @@ pub async fn validate_import_schema(pool: &Pool<Sqlite>, rules: &ImportSchemaRul
     match object_type.as_str() {
       "table" => {
         let Some(rule) = rules.tables.iter().find(|rule| rule.name == name) else {
-          return Ok(false);
+          if matches!(mode, ValidationMode::Strict) {
+            return Ok(false);
+          }
+          continue;
         };
         if rule.enforce_columns && !table_columns_match(pool, rule).await? {
           return Ok(false);
@@ -175,7 +195,10 @@ pub async fn validate_import_schema(pool: &Pool<Sqlite>, rules: &ImportSchemaRul
           .iter()
           .find(|rule| rule.name == name && rule.table == table_name)
         else {
-          return Ok(false);
+          if matches!(mode, ValidationMode::Strict) {
+            return Ok(false);
+          }
+          continue;
         };
         if !index_columns_match(pool, rule).await? {
           return Ok(false);
