@@ -242,7 +242,7 @@ export const AccountSetting = ({
         {serverFeatures?.copilot && (
           <AIUsagePanel onChangeSettingState={onChangeSettingState} />
         )}
-        <IntegrationsPanel />
+        <IntegrationsPanel onChangeSettingState={onChangeSettingState} />
         <SettingRow
           name={t[`Sign out`]()}
           desc={t['com.affine.setting.sign.out.message']()}

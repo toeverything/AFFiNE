@@ -38,6 +38,8 @@ import {
 } from 'react';
 
 import { CollapsibleWrapper } from '../layout';
+import { CALENDAR_INTEGRATION_SCROLL_ANCHOR } from '../navigation-constants';
+import type { SettingState } from '../types';
 import * as styles from './integrations-panel.css';
 
 type CalendarAccount = NonNullable<
@@ -323,7 +325,11 @@ const CalDAVLinkDialog = ({
   );
 };
 
-export const IntegrationsPanel = () => {
+export const IntegrationsPanel = ({
+  onChangeSettingState,
+}: {
+  onChangeSettingState?: (settingState: SettingState) => void;
+}) => {
   const t = useI18n();
   const gqlService = useService(GraphQLService);
   const urlService = useService(UrlService);
@@ -393,6 +399,13 @@ export const IntegrationsPanel = () => {
       };
     });
   }, [providers]);
+
+  const handleOpenCalendarSetting = useCallback(() => {
+    onChangeSettingState?.({
+      activeTab: 'workspace:integrations',
+      scrollAnchor: CALENDAR_INTEGRATION_SCROLL_ANCHOR,
+    });
+  }, [onChangeSettingState]);
 
   const handleLink = useCallback(
     async (provider: CalendarProviderType) => {
@@ -535,7 +548,13 @@ export const IntegrationsPanel = () => {
                     ]();
 
                 return (
-                  <div key={account.id} className={styles.accountRow}>
+                  <div
+                    key={account.id}
+                    className={styles.accountRow}
+                    role="button"
+                    tabIndex={0}
+                    onClick={handleOpenCalendarSetting}
+                  >
                     <div className={styles.accountInfo}>
                       <div className={styles.accountIcon}>
                         {meta?.icon ?? <LinkIcon />}
@@ -562,7 +581,10 @@ export const IntegrationsPanel = () => {
                       <Button
                         variant="error"
                         disabled={unlinkingAccountId === account.id}
-                        onClick={() => void handleUnlink(account.id)}
+                        onClick={event => {
+                          event.stopPropagation();
+                          handleUnlink(account.id).catch(() => undefined);
+                        }}
                       >
                         {t['com.affine.integration.calendar.account.unlink']()}
                       </Button>
