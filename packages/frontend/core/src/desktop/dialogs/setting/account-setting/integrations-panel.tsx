@@ -40,6 +40,7 @@ import {
 import { CollapsibleWrapper } from '../layout';
 import { CALENDAR_INTEGRATION_SCROLL_ANCHOR } from '../navigation-constants';
 import type { SettingState } from '../types';
+import { buildCalendarOAuthRedirectUri } from './calendar-oauth-redirect';
 import * as styles from './integrations-panel.css';
 
 type CalendarAccount = NonNullable<
@@ -421,7 +422,7 @@ export const IntegrationsPanel = ({
           variables: {
             input: {
               provider,
-              redirectUri: window.location.href,
+              redirectUri: buildCalendarOAuthRedirectUri(window.location.href),
             },
           },
         });
@@ -551,8 +552,6 @@ export const IntegrationsPanel = ({
                   <div
                     key={account.id}
                     className={styles.accountRow}
-                    role="button"
-                    tabIndex={0}
                     onClick={handleOpenCalendarSetting}
                   >
                     <div className={styles.accountInfo}>
