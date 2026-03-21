@@ -1095,7 +1095,7 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.appearanceSettings.showLinkedDocInSidebar.description"](): string;
     /**
-      * `Your current email is {{email}}. We'll send a temporary verification link to this email.`
+      * `Your current email is {{email}}. We'll send a confirmation link there first so you can securely switch to a new email address.`
       */
     ["com.affine.auth.change.email.message"](options: {
         readonly email: string;
@@ -1427,7 +1427,7 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.auth.toast.title.signed-in"](): string;
     /**
-      * `Your current email is {{email}}. We'll send a temporary verification link to this email.`
+      * `Your current email is {{email}}. We'll send a verification link to this email so you can confirm it belongs to you.`
       */
     ["com.affine.auth.verify.email.message"](options: {
         readonly email: string;
@@ -9897,7 +9897,7 @@ export const TypedTrans: {
         ["2"]: JSX.Element;
     }>>;
     /**
-      * `<1>{{username}}</1> has accept your invitation`
+      * `<1>{{username}}</1> has accepted your invitation`
       */
     ["com.affine.notification.invitation-accepted"]: ComponentType<TypedTransProps<{
         readonly username: string;

@@ -19,6 +19,7 @@ import app.affine.pro.plugin.AFFiNEThemePlugin
 import app.affine.pro.plugin.AuthPlugin
 import app.affine.pro.plugin.HashCashPlugin
 import app.affine.pro.plugin.NbStorePlugin
+import app.affine.pro.plugin.PreviewPlugin
 import app.affine.pro.service.GraphQLService
 import app.affine.pro.service.SSEService
 import app.affine.pro.service.WebService
@@ -52,6 +53,7 @@ class MainActivity : BridgeActivity(), AIButtonPlugin.Callback, AFFiNEThemePlugi
                 AuthPlugin::class.java,
                 HashCashPlugin::class.java,
                 NbStorePlugin::class.java,
+                PreviewPlugin::class.java,
             )
         )
     }

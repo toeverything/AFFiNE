@@ -204,6 +204,7 @@ type ImportResult = {
   entryId?: string;
   isWorkspaceFile?: boolean;
   rootFolderId?: string;
+  importedWorkspace?: WorkspaceMetadata;
 };
 
 type ImportedWorkspacePayload = {
@@ -554,11 +555,12 @@ const importConfigs: Record<ImportType, ImportConfig> = {
       _organizeService,
       _explorerIconService
     ) => {
-      await handleImportAffineFile();
+      const workspace = await handleImportAffineFile();
       return {
         docIds: [],
         entryId: undefined,
         isWorkspaceFile: true,
+        importedWorkspace: workspace,
       };
     },
   },
@@ -773,7 +775,6 @@ export const ImportDialog = ({
           undefined,
           (payload?: ImportedWorkspacePayload) => {
             if (payload) {
-              handleCreatedWorkspace({ metadata: payload.workspace });
               resolve(payload.workspace);
             } else {
               reject(new Error('No workspace imported'));
@@ -782,7 +783,7 @@ export const ImportDialog = ({
         );
       });
     };
-  }, [globalDialogService, handleCreatedWorkspace]);
+  }, [globalDialogService]);
 
   const handleImport = useAsyncCallback(
     async (type: ImportType) => {
@@ -812,16 +813,27 @@ export const ImportDialog = ({
           });
         }
 
-        const { docIds, entryId, isWorkspaceFile, rootFolderId } =
-          await importConfig.importFunction(
-            docCollection,
-            files,
-            handleImportAffineFile,
-            organizeService,
-            explorerIconService
-          );
+        const {
+          docIds,
+          entryId,
+          isWorkspaceFile,
+          rootFolderId,
+          importedWorkspace,
+        } = await importConfig.importFunction(
+          docCollection,
+          files,
+          handleImportAffineFile,
+          organizeService,
+          explorerIconService
+        );
 
-        setImportResult({ docIds, entryId, isWorkspaceFile, rootFolderId });
+        setImportResult({
+          docIds,
+          entryId,
+          isWorkspaceFile,
+          rootFolderId,
+          importedWorkspace,
+        });
         setStatus('success');
         track.$.importModal.$.import({
           type,
@@ -855,9 +867,21 @@ export const ImportDialog = ({
     ]
   );
 
+  const finishImport = useCallback(() => {
+    if (importResult?.importedWorkspace) {
+      handleCreatedWorkspace({ metadata: importResult.importedWorkspace });
+    }
+    if (!importResult) {
+      close();
+      return;
+    }
+    const { importedWorkspace: _workspace, ...result } = importResult;
+    close(result);
+  }, [close, handleCreatedWorkspace, importResult]);
+
   const handleComplete = useCallback(() => {
-    close(importResult || undefined);
-  }, [importResult, close]);
+    finishImport();
+  }, [finishImport]);
 
   const handleRetry = () => {
     setStatus('idle');
@@ -875,7 +899,7 @@ export const ImportDialog = ({
       open
       onOpenChange={(open: boolean) => {
         if (!open) {
-          close(importResult || undefined);
+          finishImport();
         }
       }}
       width={480}

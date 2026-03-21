@@ -8,6 +8,7 @@ import {
 import fs from 'fs-extra';
 import { applyUpdate, Doc as YDoc } from 'yjs';
 
+import { assertPathComponent } from '../../shared/utils';
 import { logger } from '../logger';
 import { getDocStoragePool } from '../nbstore';
 import { ensureSQLiteDisconnected } from '../nbstore/v1/ensure-db';
@@ -260,7 +261,10 @@ export async function getDeletedWorkspaces() {
 
 export async function deleteBackupWorkspace(id: string) {
   const basePath = await getDeletedWorkspacesBasePath();
-  const workspacePath = path.join(basePath, id);
+  const workspacePath = path.join(
+    basePath,
+    assertPathComponent(id, 'workspace id')
+  );
   await fs.rmdir(workspacePath, { recursive: true });
   logger.info(
     'deleteBackupWorkspace',

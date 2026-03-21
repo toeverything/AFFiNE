@@ -452,6 +452,16 @@ void*_Nonnull uniffi_affine_mobile_native_fn_func_new_doc_storage_pool(RustCallS
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_AFFINE_MOBILE_NATIVE_FN_FUNC_RENDER_MERMAID_PREVIEW_SVG
+#define UNIFFI_FFIDEF_UNIFFI_AFFINE_MOBILE_NATIVE_FN_FUNC_RENDER_MERMAID_PREVIEW_SVG
+RustBuffer uniffi_affine_mobile_native_fn_func_render_mermaid_preview_svg(RustBuffer code, RustBuffer theme, RustBuffer font_family, RustBuffer font_size, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_AFFINE_MOBILE_NATIVE_FN_FUNC_RENDER_TYPST_PREVIEW_SVG
+#define UNIFFI_FFIDEF_UNIFFI_AFFINE_MOBILE_NATIVE_FN_FUNC_RENDER_TYPST_PREVIEW_SVG
+RustBuffer uniffi_affine_mobile_native_fn_func_render_typst_preview_svg(RustBuffer code, RustBuffer font_dirs, RustBuffer cache_dir, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_FFI_AFFINE_MOBILE_NATIVE_RUSTBUFFER_ALLOC
 #define UNIFFI_FFIDEF_FFI_AFFINE_MOBILE_NATIVE_RUSTBUFFER_ALLOC
 RustBuffer ffi_affine_mobile_native_rustbuffer_alloc(uint64_t size, RustCallStatus *_Nonnull out_status
@@ -741,6 +751,18 @@ uint16_t uniffi_affine_mobile_native_checksum_func_hashcash_mint(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_AFFINE_MOBILE_NATIVE_CHECKSUM_FUNC_NEW_DOC_STORAGE_POOL
 #define UNIFFI_FFIDEF_UNIFFI_AFFINE_MOBILE_NATIVE_CHECKSUM_FUNC_NEW_DOC_STORAGE_POOL
 uint16_t uniffi_affine_mobile_native_checksum_func_new_doc_storage_pool(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_AFFINE_MOBILE_NATIVE_CHECKSUM_FUNC_RENDER_MERMAID_PREVIEW_SVG
+#define UNIFFI_FFIDEF_UNIFFI_AFFINE_MOBILE_NATIVE_CHECKSUM_FUNC_RENDER_MERMAID_PREVIEW_SVG
+uint16_t uniffi_affine_mobile_native_checksum_func_render_mermaid_preview_svg(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_AFFINE_MOBILE_NATIVE_CHECKSUM_FUNC_RENDER_TYPST_PREVIEW_SVG
+#define UNIFFI_FFIDEF_UNIFFI_AFFINE_MOBILE_NATIVE_CHECKSUM_FUNC_RENDER_TYPST_PREVIEW_SVG
+uint16_t uniffi_affine_mobile_native_checksum_func_render_typst_preview_svg(void
     
 );
 #endif

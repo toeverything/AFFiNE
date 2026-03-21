@@ -1,6 +1,7 @@
 [package]
 edition = "2024"
 name    = "affine_media_capture"
+publish = false
 version = "0.0.0"
 
 [lib]
@@ -15,7 +16,7 @@ crossbeam-channel = { workspace = true }
 napi              = { workspace = true, features = ["napi4"] }
 napi-derive       = { workspace = true, features = ["type-def"] }
 ogg               = { workspace = true }
-opus-codec        = "0.1.2"
+opus-codec        = { git = "https://github.com/toeverything/opus-codec", rev = "c2afef2" }
 rand              = { workspace = true }
 rubato            = { workspace = true }
 symphonia         = { workspace = true, features = ["all", "opt-simd"] }

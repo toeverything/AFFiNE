@@ -1,3 +1,4 @@
+import { renderTypstSvg } from '@affine/core/modules/code-block-preview-renderer/bridge';
 import { CodeBlockPreviewExtension } from '@blocksuite/affine/blocks/code';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import type { CodeBlockModel } from '@blocksuite/affine/model';
@@ -7,8 +8,6 @@ import { css, html, nothing } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
 import { choose } from 'lit/directives/choose.js';
 import { styleMap } from 'lit/directives/style-map.js';
-
-import { ensureTypstReady, getTypst } from './typst';
 
 const RENDER_DEBOUNCE_MS = 200;
 
@@ -378,9 +377,7 @@ ${this.errorMessage}</pre
     }
 
     try {
-      await ensureTypstReady();
-      const typst = await getTypst();
-      const svg = await typst.svg({ mainContent: code });
+      const { svg } = await renderTypstSvg({ code });
       this.svgContent = svg;
       this.state = 'finish';
       this._resetView();

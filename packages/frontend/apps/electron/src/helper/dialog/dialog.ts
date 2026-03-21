@@ -1,4 +1,4 @@
-import { parse } from 'node:path';
+import { parse, resolve } from 'node:path';
 
 import { DocStorage, ValidationResult } from '@affine/native';
 import { parseUniversalId } from '@affine/nbstore';
@@ -38,31 +38,6 @@ export interface SelectDBFileLocationResult {
   canceled?: boolean;
 }
 
-// provide a backdoor to set dialog path for testing in playwright
-export interface FakeDialogResult {
-  canceled?: boolean;
-  filePath?: string;
-  filePaths?: string[];
-}
-
-// result will be used in the next call to showOpenDialog
-// if it is being read once, it will be reset to undefined
-let fakeDialogResult: FakeDialogResult | undefined = undefined;
-
-function getFakedResult() {
-  const result = fakeDialogResult;
-  fakeDialogResult = undefined;
-  return result;
-}
-
-export function setFakeDialogResult(result: FakeDialogResult | undefined) {
-  fakeDialogResult = result;
-  // for convenience, we will fill filePaths with filePath if it is not set
-  if (result?.filePaths === undefined && result?.filePath !== undefined) {
-    result.filePaths = [result.filePath];
-  }
-}
-
 const extension = 'affine';
 
 function getDefaultDBFileName(name: string, id: string) {
@@ -71,10 +46,34 @@ function getDefaultDBFileName(name: string, id: string) {
   return fileName.replace(/[/\\?%*:|"<>]/g, '-');
 }
 
+async function resolveExistingPath(path: string) {
+  if (!(await fs.pathExists(path))) {
+    return null;
+  }
+  try {
+    return await fs.realpath(path);
+  } catch {
+    return resolve(path);
+  }
+}
+
+async function isSameFilePath(sourcePath: string, targetPath: string) {
+  if (resolve(sourcePath) === resolve(targetPath)) {
+    return true;
+  }
+
+  const [resolvedSourcePath, resolvedTargetPath] = await Promise.all([
+    resolveExistingPath(sourcePath),
+    resolveExistingPath(targetPath),
+  ]);
+
+  return !!resolvedSourcePath && resolvedSourcePath === resolvedTargetPath;
+}
+
 /**
  * This function is called when the user clicks the "Save" button in the "Save Workspace" dialog.
  *
- * It will just copy the file to the given path
+ * It will export a compacted database file to the given path
  */
 export async function saveDBFileAs(
   universalId: string,
@@ -89,44 +88,53 @@ export async function saveDBFileAs(
     await pool.connect(universalId, dbPath);
     await pool.checkpoint(universalId); // make sure all changes (WAL) are written to db
 
-    const fakedResult = getFakedResult();
     if (!dbPath) {
       return {
         error: 'DB_FILE_PATH_INVALID',
       };
     }
 
-    const ret =
-      fakedResult ??
-      (await mainRPC.showSaveDialog({
-        properties: ['showOverwriteConfirmation'],
-        title: 'Save Workspace',
-        showsTagField: false,
-        buttonLabel: 'Save',
-        filters: [
-          {
-            extensions: [extension],
-            name: '',
-          },
-        ],
-        defaultPath: getDefaultDBFileName(name, id),
-        message: 'Save Workspace as a SQLite Database file',
-      }));
+    const ret = await mainRPC.showSaveDialog({
+      properties: ['showOverwriteConfirmation'],
+      title: 'Save Workspace',
+      showsTagField: false,
+      buttonLabel: 'Save',
+      filters: [
+        {
+          extensions: [extension],
+          name: '',
+        },
+      ],
+      defaultPath: getDefaultDBFileName(name, id),
+      message: 'Save Workspace as a SQLite Database file',
+    });
 
     const filePath = ret.filePath;
     if (ret.canceled || !filePath) {
-      return {
-        canceled: true,
-      };
+      return { canceled: true };
     }
 
-    await fs.copyFile(dbPath, filePath);
-    logger.log('saved', filePath);
-    if (!fakedResult) {
-      mainRPC.showItemInFolder(filePath).catch(err => {
-        console.error(err);
-      });
+    if (await isSameFilePath(dbPath, filePath)) {
+      return { error: 'DB_FILE_PATH_INVALID' };
     }
+
+    const tempFilePath = `${filePath}.${nanoid(6)}.tmp`;
+    if (await fs.pathExists(tempFilePath)) {
+      await fs.remove(tempFilePath);
+    }
+
+    try {
+      await pool.vacuumInto(universalId, tempFilePath);
+      await fs.move(tempFilePath, filePath, { overwrite: true });
+    } finally {
+      if (await fs.pathExists(tempFilePath)) {
+        await fs.remove(tempFilePath);
+      }
+    }
+    logger.log('saved', filePath);
+    mainRPC.showItemInFolder(filePath).catch(err => {
+      console.error(err);
+    });
     return { filePath };
   } catch (err) {
     logger.error('saveDBFileAs', err);
@@ -138,15 +146,13 @@ export async function saveDBFileAs(
 
 export async function selectDBFileLocation(): Promise<SelectDBFileLocationResult> {
   try {
-    const ret =
-      getFakedResult() ??
-      (await mainRPC.showOpenDialog({
-        properties: ['openDirectory'],
-        title: 'Set Workspace Storage Location',
-        buttonLabel: 'Select',
-        defaultPath: await mainRPC.getPath('documents'),
-        message: "Select a location to store the workspace's database file",
-      }));
+    const ret = await mainRPC.showOpenDialog({
+      properties: ['openDirectory'],
+      title: 'Set Workspace Storage Location',
+      buttonLabel: 'Select',
+      defaultPath: await mainRPC.getPath('documents'),
+      message: "Select a location to store the workspace's database file",
+    });
     const dir = ret.filePaths?.[0];
     if (ret.canceled || !dir) {
       return {
@@ -180,30 +186,21 @@ export async function loadDBFile(
   dbFilePath?: string
 ): Promise<LoadDBFileResult> {
   try {
-    const provided =
-      getFakedResult() ??
-      (dbFilePath
-        ? {
-            filePath: dbFilePath,
-            filePaths: [dbFilePath],
-            canceled: false,
-          }
-        : undefined);
-    const ret =
-      provided ??
-      (await mainRPC.showOpenDialog({
-        properties: ['openFile'],
-        title: 'Load Workspace',
-        buttonLabel: 'Load',
-        filters: [
-          {
-            name: 'SQLite Database',
-            // do we want to support other file format?
-            extensions: ['db', 'affine'],
-          },
-        ],
-        message: 'Load Workspace from a AFFiNE file',
-      }));
+    const ret = dbFilePath
+      ? { filePath: dbFilePath, filePaths: [dbFilePath], canceled: false }
+      : await mainRPC.showOpenDialog({
+          properties: ['openFile'],
+          title: 'Load Workspace',
+          buttonLabel: 'Load',
+          filters: [
+            {
+              name: 'SQLite Database',
+              // do we want to support other file format?
+              extensions: ['db', 'affine'],
+            },
+          ],
+          message: 'Load Workspace from a AFFiNE file',
+        });
     const originalPath = ret.filePaths?.[0];
     if (ret.canceled || !originalPath) {
       logger.info('loadDBFile canceled');
@@ -224,6 +221,10 @@ export async function loadDBFile(
       return await cpV1DBFile(originalPath, workspaceId);
     }
 
+    if (!(await storage.validateImportSchema())) {
+      return { error: 'DB_FILE_INVALID' };
+    }
+
     // v2 import logic
     const internalFilePath = await getSpaceDBPath(
       'local',
@@ -231,8 +232,8 @@ export async function loadDBFile(
       workspaceId
     );
     await fs.ensureDir(parse(internalFilePath).dir);
-    await fs.copy(originalPath, internalFilePath);
-    logger.info(`loadDBFile, copy: ${originalPath} -> ${internalFilePath}`);
+    await storage.vacuumInto(internalFilePath);
+    logger.info(`loadDBFile, vacuum: ${originalPath} -> ${internalFilePath}`);
 
     storage = new DocStorage(internalFilePath);
     await storage.setSpaceId(workspaceId);
@@ -260,17 +261,16 @@ async function cpV1DBFile(
     return { error: 'DB_FILE_INVALID' }; // invalid db file
   }
 
-  // checkout to make sure wal is flushed
   const connection = new SqliteConnection(originalPath);
-  await connection.connect();
-  await connection.checkpoint();
-  await connection.close();
+  if (!(await connection.validateImportSchema())) {
+    return { error: 'DB_FILE_INVALID' };
+  }
 
   const internalFilePath = await getWorkspaceDBPath('workspace', workspaceId);
 
-  await fs.ensureDir(await getWorkspacesBasePath());
-  await fs.copy(originalPath, internalFilePath);
-  logger.info(`loadDBFile, copy: ${originalPath} -> ${internalFilePath}`);
+  await fs.ensureDir(parse(internalFilePath).dir);
+  await connection.vacuumInto(internalFilePath);
+  logger.info(`loadDBFile, vacuum: ${originalPath} -> ${internalFilePath}`);
 
   await storeWorkspaceMeta(workspaceId, {
     id: workspaceId,

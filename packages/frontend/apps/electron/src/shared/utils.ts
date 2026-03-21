@@ -1,4 +1,5 @@
-import { join } from 'node:path';
+import { realpath } from 'node:fs/promises';
+import { isAbsolute, join, relative, resolve, sep } from 'node:path';
 
 import type { EventBasedChannel } from 'async-call-rpc';
 
@@ -46,6 +47,87 @@ export class MessageEventChannel implements EventBasedChannel {
 }
 
 export const resourcesPath = join(__dirname, `../resources`);
+
+function normalizeComparedPath(path: string, caseInsensitive: boolean) {
+  return caseInsensitive ? path.toLowerCase() : path;
+}
+
+export function isPathInsideBase(
+  basePath: string,
+  targetPath: string,
+  options: { caseInsensitive?: boolean } = {}
+) {
+  const { caseInsensitive = false } = options;
+  const normalizedBase = normalizeComparedPath(
+    resolve(basePath),
+    caseInsensitive
+  );
+  const normalizedTarget = normalizeComparedPath(
+    resolve(targetPath),
+    caseInsensitive
+  );
+  const rel = relative(normalizedBase, normalizedTarget);
+
+  return (
+    rel === '' ||
+    (!isAbsolute(rel) && rel !== '..' && !rel.startsWith(`..${sep}`))
+  );
+}
+
+export function resolvePathInBase(
+  basePath: string,
+  targetPath: string,
+  options: { caseInsensitive?: boolean; label?: string } = {}
+) {
+  const resolvedBase = resolve(basePath);
+  const resolvedTarget = resolve(resolvedBase, targetPath);
+
+  if (!isPathInsideBase(resolvedBase, resolvedTarget, options)) {
+    throw new Error(
+      options.label ? `Invalid ${options.label}` : 'Invalid path'
+    );
+  }
+
+  return resolvedTarget;
+}
+
+export async function resolveExistingPath(targetPath: string) {
+  try {
+    return await realpath(targetPath);
+  } catch {
+    return resolve(targetPath);
+  }
+}
+
+export async function resolveExistingPathInBase(
+  basePath: string,
+  targetPath: string,
+  options: { caseInsensitive?: boolean; label?: string } = {}
+) {
+  const [resolvedBase, resolvedTarget] = await Promise.all([
+    resolveExistingPath(basePath),
+    resolveExistingPath(targetPath),
+  ]);
+
+  if (!isPathInsideBase(resolvedBase, resolvedTarget, options)) {
+    throw new Error(
+      options.label ? `Invalid ${options.label}` : 'Invalid path'
+    );
+  }
+
+  return resolvedTarget;
+}
+
+export function assertPathComponent(
+  value: string,
+  label: string = 'path component'
+) {
+  if (!value || value === '.' || value === '..' || /[/\\]/.test(value)) {
+    throw new Error(`Invalid ${label}`);
+  }
+
+  return value;
+}
 
 // credit: https://github.com/facebook/fbjs/blob/main/packages/fbjs/src/core/shallowEqual.js
 export function shallowEqual<T>(objA: T, objB: T) {

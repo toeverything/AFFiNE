@@ -14,8 +14,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Recouse/EventSource",
       "state" : {
-        "revision" : "7b2f4f585d3927876bd76eaede9fdff779eff102",
-        "version" : "0.1.5"
+        "revision" : "713f8c0a0270a80a968c007ddc0d6067e80a5393",
+        "version" : "0.1.7"
       }
     },
     {
@@ -41,8 +41,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Lakr233/Litext",
       "state" : {
-        "revision" : "c7e83f2f580ce34a102ca9ba9d2bb24e507dccd9",
-        "version" : "0.5.6"
+        "revision" : "a2ed9b63ae623a20591effc72f9db7d04e41a64c",
+        "version" : "1.2.1"
       }
     },
     {
@@ -77,8 +77,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/RevenueCat/purchases-ios-spm.git",
       "state" : {
-        "revision" : "8f5df97653eb361a2097119479332afccf0aa816",
-        "version" : "5.58.0"
+        "revision" : "2913a336eb37dc06795cdbaa5b5de330b6707669",
+        "version" : "5.65.0"
       }
     },
     {

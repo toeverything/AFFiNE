@@ -1,6 +1,7 @@
 [package]
 edition = "2024"
 name    = "affine_sqlite_v1"
+publish = false
 version = "0.0.0"
 
 [lib]

@@ -2,11 +2,9 @@
 
 // Should not load @affine/native for unsupported platforms
 
-import path from 'node:path';
-
 import { shell } from 'electron';
 
-import { isMacOS } from '../../shared/utils';
+import { isMacOS, resolvePathInBase } from '../../shared/utils';
 import { openExternalSafely } from '../security/open-external';
 import type { NamespaceHandlers } from '../type';
 import {
@@ -91,15 +89,10 @@ export const recordingHandlers = {
     return false;
   },
   showSavedRecordings: async (_, subpath?: string) => {
-    const normalizedDir = path.normalize(
-      path.join(SAVED_RECORDINGS_DIR, subpath ?? '')
-    );
-    const normalizedBase = path.normalize(SAVED_RECORDINGS_DIR);
-
-    if (!normalizedDir.startsWith(normalizedBase)) {
-      throw new Error('Invalid directory');
-    }
-    return shell.showItemInFolder(normalizedDir);
+    const directory = resolvePathInBase(SAVED_RECORDINGS_DIR, subpath ?? '', {
+      label: 'directory',
+    });
+    return shell.showItemInFolder(directory);
   },
 } satisfies NamespaceHandlers;
 

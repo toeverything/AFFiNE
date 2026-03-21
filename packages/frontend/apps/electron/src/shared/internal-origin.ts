@@ -1,5 +1,6 @@
 export const mainHost = '.';
 export const anotherHost = 'another-host';
+export const internalHosts = new Set([mainHost, anotherHost]);
 
 export const mainWindowOrigin = `assets://${mainHost}`;
 export const anotherOrigin = `assets://${anotherHost}`;
@@ -13,3 +14,12 @@ export const customThemeViewUrl = `${mainWindowOrigin}/theme-editor`;
 // Notes from electron official docs:
 // "The zoom policy at the Chromium level is same-origin, meaning that the zoom level for a specific domain propagates across all instances of windows with the same domain. Differentiating the window URLs will make zoom work per-window."
 export const popupViewUrl = `${anotherOrigin}/popup.html`;
+
+export const isInternalUrl = (url: string) => {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'assets:' && internalHosts.has(parsed.hostname);
+  } catch {
+    return false;
+  }
+};

@@ -19,7 +19,12 @@ import {
 } from 'rxjs';
 import { filter, map, shareReplay } from 'rxjs/operators';
 
-import { isMacOS, isWindows, shallowEqual } from '../../shared/utils';
+import {
+  isMacOS,
+  isWindows,
+  resolveExistingPathInBase,
+  shallowEqual,
+} from '../../shared/utils';
 import { beforeAppQuit } from '../cleanup';
 import { logger } from '../logger';
 import {
@@ -503,7 +508,7 @@ export async function startRecording(
     });
     nativeId = meta.id;
 
-    const filepath = assertRecordingFilepath(meta.filepath);
+    const filepath = await assertRecordingFilepath(meta.filepath);
     const nextState = recordingStateMachine.dispatch({
       type: 'ATTACH_NATIVE_RECORDING',
       id: state.id,
@@ -559,7 +564,7 @@ export async function stopRecording(id: number) {
 
   try {
     const artifact = getNativeModule().stopRecording(recording.nativeId);
-    const filepath = assertRecordingFilepath(artifact.filepath);
+    const filepath = await assertRecordingFilepath(artifact.filepath);
     const readyStatus = recordingStateMachine.dispatch({
       type: 'SAVE_RECORDING',
       id,
@@ -599,27 +604,28 @@ export async function stopRecording(id: number) {
   }
 }
 
-function assertRecordingFilepath(filepath: string) {
-  const normalizedPath = path.normalize(filepath);
-  const normalizedBase = path.normalize(SAVED_RECORDINGS_DIR + path.sep);
-
-  if (!normalizedPath.toLowerCase().startsWith(normalizedBase.toLowerCase())) {
-    throw new Error('Invalid recording filepath');
-  }
-
-  return normalizedPath;
+async function assertRecordingFilepath(filepath: string) {
+  return await resolveExistingPathInBase(SAVED_RECORDINGS_DIR, filepath, {
+    caseInsensitive: isWindows(),
+    label: 'recording filepath',
+  });
 }
 
 export async function readRecordingFile(filepath: string) {
-  const normalizedPath = assertRecordingFilepath(filepath);
+  const normalizedPath = await assertRecordingFilepath(filepath);
   return fsp.readFile(normalizedPath);
 }
 
 function cleanupAbandonedNativeRecording(nativeId: string) {
   try {
     const artifact = getNativeModule().stopRecording(nativeId);
-    const filepath = assertRecordingFilepath(artifact.filepath);
-    fs.removeSync(filepath);
+    void assertRecordingFilepath(artifact.filepath)
+      .then(filepath => {
+        fs.removeSync(filepath);
+      })
+      .catch(error => {
+        logger.error('failed to validate abandoned recording filepath', error);
+      });
   } catch (error) {
     logger.error('failed to cleanup abandoned native recording', error);
   }

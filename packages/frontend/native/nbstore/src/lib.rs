@@ -130,6 +130,12 @@ impl DocStoragePool {
   }
 
   #[napi]
+  pub async fn vacuum_into(&self, universal_id: String, path: String) -> Result<()> {
+    self.pool.get(universal_id).await?.vacuum_into(path).await?;
+    Ok(())
+  }
+
+  #[napi]
   pub async fn crawl_doc_data(&self, universal_id: String, doc_id: String) -> Result<indexer::NativeCrawlResult> {
     let result = self.get(universal_id).await?.crawl_doc_data(&doc_id).await?;
     Ok(result)
@@ -483,6 +489,17 @@ impl DocStorage {
   #[napi]
   pub async fn validate(&self) -> Result<bool> {
     Ok(self.storage.validate().await?)
+  }
+
+  #[napi]
+  pub async fn validate_import_schema(&self) -> Result<bool> {
+    Ok(self.storage.validate_import_schema().await?)
+  }
+
+  #[napi]
+  pub async fn vacuum_into(&self, path: String) -> Result<()> {
+    self.storage.vacuum_into(path).await?;
+    Ok(())
   }
 
   #[napi]

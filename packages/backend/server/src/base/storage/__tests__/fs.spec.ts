@@ -111,3 +111,20 @@ test('delete', async t => {
 
   await t.throwsAsync(() => fs.access(join(config.path, provider.bucket, key)));
 });
+
+test('rejects unsafe object keys', async t => {
+  const provider = createProvider();
+
+  await t.throwsAsync(() => provider.put('../escape', Buffer.from('nope')));
+  await t.throwsAsync(() => provider.get('nested/../escape'));
+  await t.throwsAsync(() => provider.head('./escape'));
+  t.throws(() => provider.delete('nested//escape'));
+});
+
+test('rejects unsafe list prefixes', async t => {
+  const provider = createProvider();
+
+  await t.throwsAsync(() => provider.list('../escape'));
+  await t.throwsAsync(() => provider.list('nested/../../escape'));
+  await t.throwsAsync(() => provider.list('/absolute'));
+});

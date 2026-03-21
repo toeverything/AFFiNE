@@ -26,6 +26,7 @@ private extension InputBoxData {
 }
 
 public extension ChatManager {
+  @MainActor
   func startUserRequest(editorData: InputBoxData, sessionId: String) {
     append(sessionId: sessionId, UserMessageCellViewModel(
       id: .init(),
@@ -163,7 +164,7 @@ private extension ChatManager {
     assert(!Thread.isMainThread)
     print("[+] starting copilot response for session: \(sessionId)")
 
-    let messageParameters: [String: AnyHashable] = [
+    let messageParameters: AffineGraphQL.JSON = [
       // packages/frontend/core/src/blocksuite/ai/provider/setup-provider.tsx
       "docs": editorData.documentAttachments.map(\.documentID), // affine doc
       "files": [String](), // attachment in context, keep nil for now
@@ -193,18 +194,14 @@ private extension ChatManager {
       },
     ].flatMap(\.self)
     assert(uploadableAttachments.allSatisfy { !($0.data?.isEmpty ?? true) })
-    guard let input = try? CreateChatMessageInput(
+    let input = CreateChatMessageInput(
       attachments: [],
       blob: attachmentCount == 1 ? "" : .none,
       blobs: attachmentCount > 1 && attachmentCount != 0 ? .some([]) : .none,
       content: .some(contextSnippet.isEmpty ? editorData.text : "\(contextSnippet)\n\(editorData.text)"),
-      params: .some(AffineGraphQL.JSON(_jsonValue: messageParameters)),
+      params: .some(messageParameters),
       sessionId: sessionId
-    ) else {
-      report(sessionId, ChatError.unknownError)
-      assertionFailure() // very unlikely to happen
-      return
-    }
+    )
     let mutation = CreateCopilotMessageMutation(options: input)
     QLService.shared.client.upload(operation: mutation, files: uploadableAttachments) { result in
       print("[*] createCopilotMessage result: \(result)")
@@ -277,7 +274,7 @@ private extension ChatManager {
       let eventSource = EventSource()
       let dataTask = eventSource.dataTask(for: request)
       var document = ""
-      self.writeMarkdownContent(document + loadingIndicator, sessionId: sessionId, vmId: vmId)
+      await self.writeMarkdownContent(document + loadingIndicator, sessionId: sessionId, vmId: vmId)
       for await event in dataTask.events() {
         switch event {
         case .open:
@@ -287,7 +284,7 @@ private extension ChatManager {
         case let .event(event):
           guard let data = event.data else { continue }
           document += data
-          self.writeMarkdownContent(
+          await self.writeMarkdownContent(
             document + loadingIndicator,
             sessionId: sessionId,
             vmId: vmId
@@ -297,13 +294,13 @@ private extension ChatManager {
           print("[*] connection closed")
         }
       }
-      self.writeMarkdownContent(document, sessionId: sessionId, vmId: vmId)
+      await self.writeMarkdownContent(document, sessionId: sessionId, vmId: vmId)
       self.closeAll()
     }))
     self.closable.append(closable)
   }
 
-  private func writeMarkdownContent(
+  @MainActor private func writeMarkdownContent(
     _ document: String,
     sessionId: SessionID,
     vmId: UUID
