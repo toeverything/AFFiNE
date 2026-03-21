@@ -50,20 +50,58 @@ describe('path guards', () => {
     }
   );
 
-  test('assertPathComponent rejects traversal-like ids', () => {
-    expect(() => assertPathComponent('../../escape', 'workspace id')).toThrow(
-      'Invalid workspace id'
+  test('resolveExistingPathInBase falls back for missing descendants', async () => {
+    const baseDir = path.join(tmpDir, 'recordings');
+
+    await fs.mkdir(baseDir, { recursive: true });
+    const missingPath = path.join(
+      await fs.realpath(baseDir),
+      'pending',
+      'recording.opus'
     );
-    expect(() => assertPathComponent('nested/id', 'workspace id')).toThrow(
-      'Invalid workspace id'
-    );
+
+    await expect(
+      resolveExistingPathInBase(baseDir, missingPath, {
+        label: 'recording filepath',
+      })
+    ).resolves.toBe(path.resolve(missingPath));
   });
 
-  test('normalizeWorkspaceIdForPath applies one Windows-safe mapping', () => {
-    expect(
-      normalizeWorkspaceIdForPath('legacy:id*with?reserved.', {
-        windows: true,
-      })
-    ).toBe('legacy_id_with_reserved');
-  });
+  test.runIf(process.platform !== 'win32')(
+    'resolveExistingPathInBase preserves non-missing realpath errors',
+    async () => {
+      const baseDir = path.join(tmpDir, 'recordings');
+      const loopPath = path.join(baseDir, 'loop.opus');
+
+      await fs.mkdir(baseDir, { recursive: true });
+      await fs.symlink(path.basename(loopPath), loopPath);
+
+      await expect(
+        resolveExistingPathInBase(baseDir, loopPath, {
+          label: 'recording filepath',
+        })
+      ).rejects.toMatchObject({ code: 'ELOOP' });
+    }
+  );
+
+  test.each(['../../escape', 'nested/id'])(
+    'assertPathComponent rejects invalid workspace id %s',
+    input => {
+      expect(() => assertPathComponent(input, 'workspace id')).toThrow(
+        'Invalid workspace id'
+      );
+    }
+  );
+
+  test.each([
+    { input: 'legacy:id*with?reserved.', expected: 'legacy_id_with_reserved' },
+    { input: 'safe-workspace', expected: 'safe-workspace' },
+  ])(
+    'normalizeWorkspaceIdForPath maps $input to $expected on Windows',
+    ({ input, expected }) => {
+      expect(normalizeWorkspaceIdForPath(input, { windows: true })).toBe(
+        expected
+      );
+    }
+  );
 });

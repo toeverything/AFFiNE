@@ -94,8 +94,12 @@ export function resolvePathInBase(
 export async function resolveExistingPath(targetPath: string) {
   try {
     return await realpath(targetPath);
-  } catch {
-    return resolve(targetPath);
+  } catch (error) {
+    const code = (error as NodeJS.ErrnoException).code;
+    if (code === 'ENOENT' || code === 'ENOTDIR') {
+      return resolve(targetPath);
+    }
+    throw error;
   }
 }
 

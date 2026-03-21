@@ -172,6 +172,8 @@ struct OggOpusWriter {
   encoder: Encoder,
   frame_samples: usize,
   pending: Vec<f32>,
+  pending_packet: Option<Vec<u8>>,
+  pending_packet_granule_position: u64,
   granule_position: u64,
   samples_written: u64,
   channels: Channels,
@@ -221,6 +223,8 @@ impl OggOpusWriter {
       encoder,
       frame_samples,
       pending: Vec::new(),
+      pending_packet: None,
+      pending_packet_granule_position: 0,
       granule_position: u64::from(pre_skip),
       samples_written: 0,
       channels,
@@ -265,10 +269,34 @@ impl OggOpusWriter {
 
     let packet = out[..encoded].to_vec();
 
-    self
-      .writer
-      .write_packet(packet, self.stream_serial, end, self.granule_position)
-      .map_err(|e| RecordingError::Encoding(format!("failed to write packet: {e}")))?;
+    if let Some(previous_packet) = self.pending_packet.replace(packet) {
+      self
+        .writer
+        .write_packet(
+          previous_packet,
+          self.stream_serial,
+          PacketWriteEndInfo::NormalPacket,
+          self.pending_packet_granule_position,
+        )
+        .map_err(|e| RecordingError::Encoding(format!("failed to write packet: {e}")))?;
+    }
+    self.pending_packet_granule_position = self.granule_position;
+
+    if end == PacketWriteEndInfo::EndStream {
+      let final_packet = self
+        .pending_packet
+        .take()
+        .ok_or_else(|| RecordingError::Encoding("missing final packet".into()))?;
+      self
+        .writer
+        .write_packet(
+          final_packet,
+          self.stream_serial,
+          PacketWriteEndInfo::EndStream,
+          self.pending_packet_granule_position,
+        )
+        .map_err(|e| RecordingError::Encoding(format!("failed to write packet: {e}")))?;
+    }
 
     Ok(())
   }
@@ -279,27 +307,26 @@ impl OggOpusWriter {
       let mut frame = self.pending.clone();
       let samples_in_frame = frame.len() / self.channels.as_usize();
       frame.resize(frame_len, 0.0);
-      self.encode_frame(frame, samples_in_frame, PacketWriteEndInfo::NormalPacket)?;
+      self.encode_frame(frame, samples_in_frame, PacketWriteEndInfo::EndStream)?;
       self.pending.clear();
     }
 
-    // Mark end of stream with an empty packet if nothing was written, otherwise
-    // flag the last packet as end of stream.
     if self.samples_written == 0 {
       fs::remove_file(&self.filepath).ok();
       return Err(RecordingError::Empty);
     }
 
-    // Flush a final end-of-stream marker.
-    self
-      .writer
-      .write_packet(
-        Vec::<u8>::new(),
-        self.stream_serial,
-        PacketWriteEndInfo::EndStream,
-        self.granule_position,
-      )
-      .map_err(|e| RecordingError::Encoding(format!("failed to finish stream: {e}")))?;
+    if let Some(final_packet) = self.pending_packet.take() {
+      self
+        .writer
+        .write_packet(
+          final_packet,
+          self.stream_serial,
+          PacketWriteEndInfo::EndStream,
+          self.pending_packet_granule_position,
+        )
+        .map_err(|e| RecordingError::Encoding(format!("failed to finish stream: {e}")))?;
+    }
 
     self.writer.inner_mut().flush()?;
 
@@ -349,6 +376,49 @@ fn write_opus_headers(
     .map_err(|e| RecordingError::Encoding(format!("failed to write OpusTags: {e}")))?;
 
   Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+  use std::{env, fs::File, path::PathBuf};
+
+  use ogg::PacketReader;
+
+  use super::OggOpusWriter;
+
+  fn temp_recording_path() -> PathBuf {
+    env::temp_dir().join(format!("affine-recording-test-{}.opus", rand::random::<u64>()))
+  }
+
+  #[test]
+  fn finish_marks_last_audio_packet_as_end_of_stream() {
+    let path = temp_recording_path();
+    let samples = vec![0.0f32; 960 * 2];
+
+    let artifact = {
+      let mut writer = OggOpusWriter::new(path.clone(), 48_000, 2).expect("create writer");
+      writer.push_samples(&samples).expect("push samples");
+      writer.finish().expect("finish writer")
+    };
+
+    assert_eq!(artifact.filepath, path.to_string_lossy());
+    assert!(artifact.size > 0);
+    assert_eq!(artifact.sample_rate, 48_000);
+    assert_eq!(artifact.channels, 2);
+
+    let mut reader = PacketReader::new(File::open(&path).expect("open opus file"));
+    let mut packets = Vec::new();
+    while let Some(packet) = reader.read_packet().expect("read packet") {
+      packets.push(packet);
+    }
+
+    assert_eq!(packets.len(), 3);
+    assert_eq!(&packets[0].data[..8], b"OpusHead");
+    assert_eq!(&packets[1].data[..8], b"OpusTags");
+    assert!(!packets[2].data.is_empty());
+
+    std::fs::remove_file(path).ok();
+  }
 }
 
 enum PlatformCapture {
