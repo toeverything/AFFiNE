@@ -222,4 +222,35 @@ describe('recording effect', () => {
       expect.anything()
     );
   });
+
+  test('retries when the active-tab probe rejects', async () => {
+    const workspace = createWorkspaceRef();
+
+    isActiveTab
+      .mockRejectedValueOnce(new Error('probe failed'))
+      .mockResolvedValue(true);
+    getCurrentWorkspace.mockReturnValue(workspace.ref);
+
+    const { setupRecordingEvents } =
+      await import('../../../electron-renderer/src/app/effects/recording');
+
+    setupRecordingEvents({} as never);
+
+    onRecordingStatusChanged?.({
+      id: 9,
+      status: 'processing',
+      appName: 'Meet',
+      filepath: '/tmp/meeting.opus',
+      startTime: 1000,
+    });
+
+    await Promise.resolve();
+    expect(workspace.createDoc).not.toHaveBeenCalled();
+    expect(setRecordingBlockCreationStatus).not.toHaveBeenCalled();
+
+    await vi.advanceTimersByTimeAsync(1000);
+
+    expect(workspace.createDoc).toHaveBeenCalledTimes(1);
+    expect(setRecordingBlockCreationStatus).toHaveBeenCalledWith(9, 'success');
+  });
 });

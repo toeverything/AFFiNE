@@ -200,7 +200,16 @@ export function setupRecordingEvents(frameworkProvider: FrameworkProvider) {
       return;
     }
 
-    if (!(await apis?.ui.isActiveTab())) {
+    let isActiveTab = false;
+    try {
+      isActiveTab = !!(await apis?.ui.isActiveTab());
+    } catch (error) {
+      logger.error('Failed to probe active recording tab', error);
+      scheduleRetry();
+      return;
+    }
+
+    if (!isActiveTab) {
       scheduleRetry();
       return;
     }
