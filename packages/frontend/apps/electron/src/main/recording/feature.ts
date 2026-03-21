@@ -116,6 +116,15 @@ export const updateApplicationsPing$ = new Subject<number>();
 // There should be only one active recording at a time; state is managed by the state machine
 export const recordingStatus$ = recordingStateMachine.status$;
 
+function isRecordingSettled(
+  status: RecordingStatus | null | undefined
+): status is RecordingStatus & {
+  status: 'ready';
+  blockCreationStatus: 'success' | 'failed';
+} {
+  return status?.status === 'ready' && status.blockCreationStatus !== undefined;
+}
+
 function createAppGroup(processGroupId: number): AppGroupInfo | undefined {
   // MUST require dynamically to avoid loading @affine/native for unsupported platforms
   const SC: ShareableContentStatic = getNativeModule().ShareableContent;
@@ -224,8 +233,7 @@ function setupNewRunningAppGroup() {
         if (
           !recordingStatus ||
           recordingStatus.status === 'new' ||
-          recordingStatus.status === 'create-block-success' ||
-          recordingStatus.status === 'create-block-failed'
+          isRecordingSettled(recordingStatus)
         ) {
           if (MeetingsSettingsState.value.recordingMode === 'prompt') {
             newRecording(currentGroup);
@@ -250,7 +258,7 @@ function setupNewRunningAppGroup() {
           removeRecording(recordingStatus.id);
         }
 
-        // if the recording is stopped and we are recording it,
+        // if the watched app stops while we are recording it,
         // we should stop the recording
         if (
           recordingStatus?.status === 'recording' &&
@@ -284,11 +292,10 @@ export async function getRecording(id: number) {
 }
 
 // recording popup status
-// new: recording is started, popup is shown
-// recording: recording is started, popup is shown
-// stopped: recording is stopped, popup showing processing status
-// create-block-success: recording is ready, show "open app" button
-// create-block-failed: recording is failed, show "failed to save" button
+// new: waiting for user confirmation
+// recording: native recording is ongoing
+// processing: native stop or renderer import/transcription is ongoing
+// ready + blockCreationStatus: post-processing finished
 // null: hide popup
 function setupRecordingListeners() {
   subscribers.push(
@@ -303,25 +310,21 @@ function setupRecordingListeners() {
           });
         }
 
-        if (
-          status?.status === 'create-block-success' ||
-          status?.status === 'create-block-failed'
-        ) {
+        if (isRecordingSettled(status)) {
           // show the popup for 10s
           setTimeout(
             () => {
-              // check again if current status is still ready
+              const currentStatus = recordingStatus$.value;
               if (
-                (recordingStatus$.value?.status === 'create-block-success' ||
-                  recordingStatus$.value?.status === 'create-block-failed') &&
-                recordingStatus$.value.id === status.id
+                isRecordingSettled(currentStatus) &&
+                currentStatus.id === status.id
               ) {
                 popup.hide().catch(err => {
                   logger.error('failed to hide recording popup', err);
                 });
               }
             },
-            status?.status === 'create-block-failed' ? 30_000 : 10_000
+            status.blockCreationStatus === 'failed' ? 30_000 : 10_000
           );
         } else if (!status) {
           // status is removed, we should hide the popup
@@ -529,20 +532,12 @@ export async function startRecording(
       cleanupAbandonedNativeRecording(nativeId);
     }
     logger.error('failed to start recording', error);
-    return recordingStateMachine.dispatch({
-      type: 'CREATE_BLOCK_FAILED',
-      id: state.id,
-      error: error instanceof Error ? error : undefined,
-    });
+    return setRecordingBlockCreationStatus(
+      state.id,
+      'failed',
+      error instanceof Error ? error.message : undefined
+    );
   }
-}
-
-export function pauseRecording(id: number) {
-  return recordingStateMachine.dispatch({ type: 'PAUSE_RECORDING', id });
-}
-
-export function resumeRecording(id: number) {
-  return recordingStateMachine.dispatch({ type: 'RESUME_RECORDING', id });
 }
 
 export async function stopRecording(id: number) {
@@ -557,16 +552,23 @@ export async function stopRecording(id: number) {
     return;
   }
 
-  recordingStateMachine.dispatch({
+  const processingState = recordingStateMachine.dispatch({
     type: 'STOP_RECORDING',
     id,
   });
+  if (
+    !processingState ||
+    processingState.id !== id ||
+    processingState.status !== 'processing'
+  ) {
+    return serializeRecordingStatus(processingState ?? recording);
+  }
 
   try {
     const artifact = getNativeModule().stopRecording(recording.nativeId);
     const filepath = await assertRecordingFilepath(artifact.filepath);
     const readyStatus = recordingStateMachine.dispatch({
-      type: 'SAVE_RECORDING',
+      type: 'ATTACH_RECORDING_ARTIFACT',
       id,
       filepath,
       sampleRate: artifact.sampleRate,
@@ -591,11 +593,11 @@ export async function stopRecording(id: number) {
     return serializeRecordingStatus(readyStatus);
   } catch (error: unknown) {
     logger.error('Failed to stop recording', error);
-    const recordingStatus = recordingStateMachine.dispatch({
-      type: 'CREATE_BLOCK_FAILED',
+    const recordingStatus = await setRecordingBlockCreationStatus(
       id,
-      error: error instanceof Error ? error : undefined,
-    });
+      'failed',
+      error instanceof Error ? error.message : undefined
+    );
     if (!recordingStatus) {
       logger.error('No recording status to stop');
       return;
@@ -631,18 +633,16 @@ function cleanupAbandonedNativeRecording(nativeId: string) {
   }
 }
 
-export async function handleBlockCreationSuccess(id: number) {
-  recordingStateMachine.dispatch({
-    type: 'CREATE_BLOCK_SUCCESS',
+export async function setRecordingBlockCreationStatus(
+  id: number,
+  status: 'success' | 'failed',
+  errorMessage?: string
+) {
+  return recordingStateMachine.dispatch({
+    type: 'SET_BLOCK_CREATION_STATUS',
     id,
-  });
-}
-
-export async function handleBlockCreationFailed(id: number, error?: Error) {
-  recordingStateMachine.dispatch({
-    type: 'CREATE_BLOCK_FAILED',
-    id,
-    error,
+    status,
+    errorMessage,
   });
 }
 
@@ -653,6 +653,7 @@ export function removeRecording(id: number) {
 export interface SerializedRecordingStatus {
   id: number;
   status: RecordingStatus['status'];
+  blockCreationStatus?: RecordingStatus['blockCreationStatus'];
   appName?: string;
   // if there is no app group, it means the recording is for system audio
   appGroupId?: number;
@@ -669,6 +670,7 @@ export function serializeRecordingStatus(
   return {
     id: status.id,
     status: status.status,
+    blockCreationStatus: status.blockCreationStatus,
     appName: status.appGroup?.name,
     appGroupId: status.appGroup?.processGroupId,
     icon: status.appGroup?.icon,

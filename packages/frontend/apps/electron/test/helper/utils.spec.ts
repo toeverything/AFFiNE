@@ -7,6 +7,7 @@ import { afterEach, describe, expect, test } from 'vitest';
 
 import {
   assertPathComponent,
+  normalizeWorkspaceIdForPath,
   resolveExistingPathInBase,
   resolvePathInBase,
 } from '../../src/shared/utils';
@@ -56,5 +57,13 @@ describe('path guards', () => {
     expect(() => assertPathComponent('nested/id', 'workspace id')).toThrow(
       'Invalid workspace id'
     );
+  });
+
+  test('normalizeWorkspaceIdForPath applies one Windows-safe mapping', () => {
+    expect(
+      normalizeWorkspaceIdForPath('legacy:id*with?reserved.', {
+        windows: true,
+      })
+    ).toBe('legacy_id_with_reserved');
   });
 });

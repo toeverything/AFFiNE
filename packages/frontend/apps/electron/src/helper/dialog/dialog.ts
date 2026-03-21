@@ -5,6 +5,7 @@ import { parseUniversalId } from '@affine/nbstore';
 import fs from 'fs-extra';
 import { nanoid } from 'nanoid';
 
+import { isPathInsideBase } from '../../shared/utils';
 import { logger } from '../logger';
 import { mainRPC } from '../main-rpc';
 import { getDocStoragePool } from '../nbstore';
@@ -68,6 +69,27 @@ async function isSameFilePath(sourcePath: string, targetPath: string) {
   ]);
 
   return !!resolvedSourcePath && resolvedSourcePath === resolvedTargetPath;
+}
+
+async function normalizeImportDBPath(selectedPath: string) {
+  if (!(await fs.pathExists(selectedPath))) {
+    return null;
+  }
+
+  const [normalizedPath, workspacesBasePath] = await Promise.all([
+    resolveExistingPath(selectedPath),
+    resolveExistingPath(await getWorkspacesBasePath()),
+  ]);
+  const resolvedSelectedPath = normalizedPath ?? resolve(selectedPath);
+  const resolvedWorkspacesBasePath =
+    workspacesBasePath ?? resolve(await getWorkspacesBasePath());
+
+  if (isPathInsideBase(resolvedWorkspacesBasePath, resolvedSelectedPath)) {
+    logger.warn('loadDBFile: db file in app data dir');
+    return null;
+  }
+
+  return resolvedSelectedPath;
 }
 
 /**
@@ -182,34 +204,29 @@ export async function selectDBFileLocation(): Promise<SelectDBFileLocationResult
  * update the local workspace id list and then connect to it.
  *
  */
-export async function loadDBFile(
-  dbFilePath?: string
-): Promise<LoadDBFileResult> {
+export async function loadDBFile(): Promise<LoadDBFileResult> {
   try {
-    const ret = dbFilePath
-      ? { filePath: dbFilePath, filePaths: [dbFilePath], canceled: false }
-      : await mainRPC.showOpenDialog({
-          properties: ['openFile'],
-          title: 'Load Workspace',
-          buttonLabel: 'Load',
-          filters: [
-            {
-              name: 'SQLite Database',
-              // do we want to support other file format?
-              extensions: ['db', 'affine'],
-            },
-          ],
-          message: 'Load Workspace from a AFFiNE file',
-        });
-    const originalPath = ret.filePaths?.[0];
-    if (ret.canceled || !originalPath) {
+    const ret = await mainRPC.showOpenDialog({
+      properties: ['openFile'],
+      title: 'Load Workspace',
+      buttonLabel: 'Load',
+      filters: [
+        {
+          name: 'SQLite Database',
+          // do we want to support other file format?
+          extensions: ['db', 'affine'],
+        },
+      ],
+      message: 'Load Workspace from a AFFiNE file',
+    });
+    const selectedPath = ret.filePaths?.[0];
+    if (ret.canceled || !selectedPath) {
       logger.info('loadDBFile canceled');
       return { canceled: true };
     }
 
-    // the imported file should not be in app data dir
-    if (originalPath.startsWith(await getWorkspacesBasePath())) {
-      logger.warn('loadDBFile: db file in app data dir');
+    const originalPath = await normalizeImportDBPath(selectedPath);
+    if (!originalPath) {
       return { error: 'DB_FILE_PATH_INVALID' };
     }
 
@@ -262,22 +279,26 @@ async function cpV1DBFile(
   }
 
   const connection = new SqliteConnection(originalPath);
-  if (!(await connection.validateImportSchema())) {
-    return { error: 'DB_FILE_INVALID' };
+  try {
+    if (!(await connection.validateImportSchema())) {
+      return { error: 'DB_FILE_INVALID' };
+    }
+
+    const internalFilePath = await getWorkspaceDBPath('workspace', workspaceId);
+
+    await fs.ensureDir(parse(internalFilePath).dir);
+    await connection.vacuumInto(internalFilePath);
+    logger.info(`loadDBFile, vacuum: ${originalPath} -> ${internalFilePath}`);
+
+    await storeWorkspaceMeta(workspaceId, {
+      id: workspaceId,
+      mainDBPath: internalFilePath,
+    });
+
+    return {
+      workspaceId,
+    };
+  } finally {
+    await connection.close();
   }
-
-  const internalFilePath = await getWorkspaceDBPath('workspace', workspaceId);
-
-  await fs.ensureDir(parse(internalFilePath).dir);
-  await connection.vacuumInto(internalFilePath);
-  logger.info(`loadDBFile, vacuum: ${originalPath} -> ${internalFilePath}`);
-
-  await storeWorkspaceMeta(workspaceId, {
-    id: workspaceId,
-    mainDBPath: internalFilePath,
-  });
-
-  return {
-    workspaceId,
-  };
 }

@@ -165,4 +165,18 @@ describe('workspace db management', () => {
 
     expect(await fs.pathExists(outsideDir)).toBe(true);
   });
+
+  test('rejects unsafe ids when recovering backup workspaces', async () => {
+    const { recoverBackupWorkspace } =
+      await import('@affine/electron/helper/workspace/handlers');
+    const outsideDir = path.join(tmpDir, 'outside-recover-target');
+
+    await fs.ensureDir(outsideDir);
+
+    await expect(
+      recoverBackupWorkspace('../../outside-recover-target')
+    ).rejects.toThrow('Invalid workspace id');
+
+    expect(await fs.pathExists(outsideDir)).toBe(true);
+  });
 });

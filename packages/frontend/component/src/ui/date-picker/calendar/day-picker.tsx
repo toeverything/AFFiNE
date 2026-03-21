@@ -187,7 +187,6 @@ export const DayPicker = memo(function DayPicker(
         {/* Weeks in month */}
         {matrix.map((week, i) => {
           return (
-             
             <div key={i} className={clsx(styles.monthViewRow)}>
               {week.map(cell => {
                 const dateValue = cell.date.format(format);

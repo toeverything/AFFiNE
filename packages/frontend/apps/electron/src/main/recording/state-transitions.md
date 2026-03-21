@@ -1,88 +1,35 @@
 # Recording State Transitions
 
-This document visualizes the possible state transitions in the recording system.
+The desktop recording flow now has a single linear engine state and a separate post-process result.
 
-## States
+## Engine states
 
-The recording system has the following states:
+- `inactive`: no active recording
+- `new`: app detected, waiting for user confirmation
+- `recording`: native capture is running
+- `processing`: native capture has stopped and the artifact is being imported
+- `ready`: post-processing has finished
 
-- **inactive**: No active recording (null state)
-- **new**: A new recording has been detected but not yet started
-- **recording**: Audio is being recorded
-- **paused**: Recording is temporarily paused
-- **stopped**: Recording has been stopped and is processing
-- **ready**: Recording is processed and ready for use
+## Post-process result
 
-## Transitions
+`ready` recordings may carry `blockCreationStatus`:
 
-```
-┌───────────┐                ┌───────┐
-│           │                │       │
-│ inactive  │◀───────────────│ ready │
-│           │                │       │
-└─────┬─────┘                └───┬───┘
-      │                          │
-      │ NEW_RECORDING            │
-      ▼                          │
-┌───────────┐                    │
-│           │                    │
-│   new     │                    │
-│           │                    │
-└─────┬─────┘                    │
-      │                          │
-      │ START_RECORDING          │
-      ▼                          │
-┌───────────┐                    │
-│           │      STOP_RECORDING│
-│ recording │─────────────────┐  │
-│           │◀────────────┐   │  │
-└─────┬─────┘             │   │  │
-      │                   │   │  │
-      │ PAUSE_RECORDING   │   │  │
-      ▼                   │   │  │
-┌───────────┐             │   │  │
-│           │             │   │  │
-│  paused   │             │   │  │
-│           │             │   │  │
-└─────┬─────┘             │   │  │
-      │                   │   │  │
-      │ RESUME_RECORDING  │   │  │
-      └───────────────────┘   │  │
-                              │  │
-                              ▼  │
-                        ┌───────────┐
-                        │           │
-                        │ stopped   │
-                        │           │
-                        └─────┬─────┘
-                              │
-                              │ SAVE_RECORDING
-                              ▼
-                        ┌───────────┐
-                        │           │
-                        │  ready    │
-                        │           │
-                        └───────────┘
+- `success`: the recording block was created successfully
+- `failed`: the artifact was saved, but block creation/import failed
+
+## State flow
+
+```text
+inactive -> new -> recording -> processing -> ready
+                     ^                      |
+                     |                      |
+                     +------ start ---------+
 ```
 
-## Events
+- `START_RECORDING` creates or reuses a pending `new` recording.
+- `ATTACH_NATIVE_RECORDING` fills in native metadata while staying in `recording`.
+- `STOP_RECORDING` moves the flow to `processing`.
+- `ATTACH_RECORDING_ARTIFACT` attaches the finalized `.opus` artifact while staying in `processing`.
+- `SET_BLOCK_CREATION_STATUS` settles the flow as `ready`.
 
-The following events trigger state transitions:
-
-- `NEW_RECORDING`: Create a new recording when an app starts or is detected
-- `START_RECORDING`: Start recording audio
-- `PAUSE_RECORDING`: Pause the current recording
-- `RESUME_RECORDING`: Resume a paused recording
-- `STOP_RECORDING`: Stop the current recording
-- `SAVE_RECORDING`: Save and finalize a recording
-- `REMOVE_RECORDING`: Delete a recording
-
-## Error Handling
-
-Invalid state transitions are logged and prevented. For example:
-
-- Cannot start a new recording when one is already in progress
-- Cannot pause a recording that is not in the 'recording' state
-- Cannot resume a recording that is not in the 'paused' state
-
-Each transition function in the state machine validates the current state before allowing a transition.
+Only one recording can be active at a time. A new recording can start only after the previous one has been removed or its `ready` result has been settled.

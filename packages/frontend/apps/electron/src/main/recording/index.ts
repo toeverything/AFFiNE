@@ -13,15 +13,13 @@ import {
   checkRecordingAvailable,
   disableRecordingFeature,
   getRecording,
-  handleBlockCreationFailed,
-  handleBlockCreationSuccess,
-  pauseRecording,
   readRecordingFile,
   recordingStatus$,
   removeRecording,
   SAVED_RECORDINGS_DIR,
   type SerializedRecordingStatus,
   serializeRecordingStatus,
+  setRecordingBlockCreationStatus,
   setupRecordingFeature,
   startRecording,
   stopRecording,
@@ -41,20 +39,19 @@ export const recordingHandlers = {
   startRecording: async (_, appGroup?: AppGroupInfo | number) => {
     return startRecording(appGroup);
   },
-  pauseRecording: async (_, id: number) => {
-    return pauseRecording(id);
-  },
   stopRecording: async (_, id: number) => {
     return stopRecording(id);
   },
   readRecordingFile: async (_, filepath: string) => {
     return readRecordingFile(filepath);
   },
-  handleBlockCreationSuccess: async (_, id: number) => {
-    return handleBlockCreationSuccess(id);
-  },
-  handleBlockCreationFailed: async (_, id: number, error?: Error) => {
-    return handleBlockCreationFailed(id, error);
+  setRecordingBlockCreationStatus: async (
+    _,
+    id: number,
+    status: 'success' | 'failed',
+    errorMessage?: string
+  ) => {
+    return setRecordingBlockCreationStatus(id, status, errorMessage);
   },
   removeRecording: async (_, id: number) => {
     return removeRecording(id);

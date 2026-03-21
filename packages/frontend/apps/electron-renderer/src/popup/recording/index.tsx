@@ -10,14 +10,8 @@ import * as styles from './styles.css';
 
 type Status = {
   id: number;
-  status:
-    | 'new'
-    | 'recording'
-    | 'paused'
-    | 'stopped'
-    | 'ready'
-    | 'create-block-success'
-    | 'create-block-failed';
+  status: 'new' | 'recording' | 'processing' | 'ready';
+  blockCreationStatus?: 'success' | 'failed';
   appName?: string;
   appGroupId?: number;
   icon?: Buffer;
@@ -62,14 +56,19 @@ export function Recording() {
     }
     if (status.status === 'new') {
       return t['com.affine.recording.new']();
-    } else if (status.status === 'create-block-success') {
+    } else if (
+      status.status === 'ready' &&
+      status.blockCreationStatus === 'success'
+    ) {
       return t['com.affine.recording.success.prompt']();
-    } else if (status.status === 'create-block-failed') {
+    } else if (
+      status.status === 'ready' &&
+      status.blockCreationStatus === 'failed'
+    ) {
       return t['com.affine.recording.failed.prompt']();
     } else if (
       status.status === 'recording' ||
-      status.status === 'ready' ||
-      status.status === 'stopped'
+      status.status === 'processing'
     ) {
       if (status.appName) {
         return t['com.affine.recording.recording']({
@@ -155,7 +154,10 @@ export function Recording() {
           {t['com.affine.recording.stop']()}
         </Button>
       );
-    } else if (status.status === 'stopped' || status.status === 'ready') {
+    } else if (
+      status.status === 'processing' ||
+      (status.status === 'ready' && !status.blockCreationStatus)
+    ) {
       return (
         <Button
           variant="error"
@@ -164,13 +166,19 @@ export function Recording() {
           disabled
         />
       );
-    } else if (status.status === 'create-block-success') {
+    } else if (
+      status.status === 'ready' &&
+      status.blockCreationStatus === 'success'
+    ) {
       return (
         <Button variant="primary" onClick={handleDismiss}>
           {t['com.affine.recording.success.button']()}
         </Button>
       );
-    } else if (status.status === 'create-block-failed') {
+    } else if (
+      status.status === 'ready' &&
+      status.blockCreationStatus === 'failed'
+    ) {
       return (
         <>
           <Button variant="plain" onClick={handleDismiss}>

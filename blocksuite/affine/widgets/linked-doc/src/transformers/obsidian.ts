@@ -183,6 +183,32 @@ function createTextFootnoteDefinition(content: string): string {
   });
 }
 
+function parseFootnoteDefLine(line: string): {
+  identifier: string;
+  content: string;
+} | null {
+  if (!line.startsWith('[^')) return null;
+
+  const closeBracketIndex = line.indexOf(']:', 2);
+  if (closeBracketIndex <= 2) return null;
+
+  const identifier = line.slice(2, closeBracketIndex);
+  if (!identifier || identifier.includes(']')) return null;
+
+  let contentStart = closeBracketIndex + 2;
+  while (
+    contentStart < line.length &&
+    (line[contentStart] === ' ' || line[contentStart] === '\t')
+  ) {
+    contentStart += 1;
+  }
+
+  return {
+    identifier,
+    content: line.slice(contentStart),
+  };
+}
+
 function extractObsidianFootnotes(markdown: string): {
   content: string;
   footnotes: string[];
@@ -193,14 +219,14 @@ function extractObsidianFootnotes(markdown: string): {
 
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index];
-    const match = line.match(/^\[\^([^\]]+)\]:\s*(.*)$/);
-    if (!match) {
+    const definition = parseFootnoteDefLine(line);
+    if (!definition) {
       output.push(line);
       continue;
     }
 
-    const identifier = match[1];
-    const contentLines = [match[2]];
+    const { identifier } = definition;
+    const contentLines = [definition.content];
 
     while (index + 1 < lines.length) {
       const nextLine = lines[index + 1];
@@ -392,49 +418,119 @@ function parseObsidianAttach(value: string): ObsidianAttachmentEmbed | null {
   }
 }
 
+function parseWikiLinkAt(
+  source: string,
+  startIdx: number,
+  embedded: boolean
+): {
+  raw: string;
+  rawTarget: string;
+  rawAlias?: string;
+  endIdx: number;
+} | null {
+  const opener = embedded ? '![[' : '[[';
+  if (!source.startsWith(opener, startIdx)) return null;
+
+  const contentStart = startIdx + opener.length;
+  const closeIndex = source.indexOf(']]', contentStart);
+  if (closeIndex === -1) return null;
+
+  const inner = source.slice(contentStart, closeIndex);
+  const separatorIdx = inner.indexOf('|');
+  const rawTarget = separatorIdx === -1 ? inner : inner.slice(0, separatorIdx);
+  const rawAlias =
+    separatorIdx === -1 ? undefined : inner.slice(separatorIdx + 1);
+
+  if (
+    rawTarget.length === 0 ||
+    rawTarget.includes(']') ||
+    rawTarget.includes('|') ||
+    rawAlias?.includes(']')
+  ) {
+    return null;
+  }
+
+  return {
+    raw: source.slice(startIdx, closeIndex + 2),
+    rawTarget,
+    rawAlias,
+    endIdx: closeIndex + 2,
+  };
+}
+
+function replaceWikiLinks(
+  source: string,
+  embedded: boolean,
+  replacer: (match: {
+    raw: string;
+    rawTarget: string;
+    rawAlias?: string;
+  }) => string
+): string {
+  const opener = embedded ? '![[' : '[[';
+  let cursor = 0;
+  let output = '';
+
+  while (cursor < source.length) {
+    const matchStart = source.indexOf(opener, cursor);
+    if (matchStart === -1) {
+      output += source.slice(cursor);
+      break;
+    }
+
+    output += source.slice(cursor, matchStart);
+    const match = parseWikiLinkAt(source, matchStart, embedded);
+    if (!match) {
+      output += source.slice(matchStart, matchStart + opener.length);
+      cursor = matchStart + opener.length;
+      continue;
+    }
+
+    output += replacer(match);
+    cursor = match.endIdx;
+  }
+
+  return output;
+}
+
 function preprocessObsidianEmbeds(
   markdown: string,
   filePath: string,
   pageLookupMap: ReadonlyMap<string, string>,
   pathBlobIdMap: ReadonlyMap<string, string>
 ): string {
-  return markdown.replace(
-    /!\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g,
-    (match, rawTarget: string, rawAlias?: string) => {
-      const targetPageId = resolvePageIdFromLookup(
-        pageLookupMap,
-        rawTarget,
-        filePath
-      );
-      if (targetPageId) {
-        return `[[${rawTarget}${rawAlias ? `|${rawAlias}` : ''}]]`;
-      }
-
-      const { path } = parseObsidianTarget(rawTarget);
-      if (!path) {
-        return match;
-      }
-
-      const assetPath = getImageFullPath(filePath, path);
-      const encodedPath = encodeMarkdownPath(assetPath);
-
-      if (isImageAssetPath(path)) {
-        const alt = getEmbedLabel(rawAlias, path, false);
-        return `![${escapeMarkdownLabel(alt)}](${encodedPath})`;
-      }
-
-      const label = getEmbedLabel(rawAlias, path, true);
-      const blobId = pathBlobIdMap.get(assetPath);
-      if (!blobId) return `[${escapeMarkdownLabel(label)}](${encodedPath})`;
-
-      const extension = path.split('.').at(-1)?.toLowerCase() ?? '';
-      return createObsidianAttach({
-        blobId,
-        fileName: basename(path),
-        fileType: extMimeMap.get(extension) ?? '',
-      });
+  return replaceWikiLinks(markdown, true, ({ raw, rawTarget, rawAlias }) => {
+    const targetPageId = resolvePageIdFromLookup(
+      pageLookupMap,
+      rawTarget,
+      filePath
+    );
+    if (targetPageId) {
+      return `[[${rawTarget}${rawAlias ? `|${rawAlias}` : ''}]]`;
     }
-  );
+
+    const { path } = parseObsidianTarget(rawTarget);
+    if (!path) return raw;
+
+    const assetPath = getImageFullPath(filePath, path);
+    const encodedPath = encodeMarkdownPath(assetPath);
+
+    if (isImageAssetPath(path)) {
+      const alt = getEmbedLabel(rawAlias, path, false);
+      return `![${escapeMarkdownLabel(alt)}](${encodedPath})`;
+    }
+
+    const label = getEmbedLabel(rawAlias, path, true);
+    const blobId = pathBlobIdMap.get(assetPath);
+    if (!blobId) return `[${escapeMarkdownLabel(label)}](${encodedPath})`;
+
+    const extension = path.split('.').at(-1)?.toLowerCase() ?? '';
+    return createObsidianAttach({
+      blobId,
+      fileName: basename(path),
+      fileType: extMimeMap.get(extension) ?? '',
+    });
+  });
 }
 
 function preprocessObsidianMarkdown(
@@ -521,21 +617,31 @@ export const obsidianWikilinkToDeltaMatcher = MarkdownASTToDeltaExtension({
     }
 
     const nodeContent = textNode.value;
-    const wikilinkRegex = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
     const deltas: DeltaInsert<AffineTextAttributes>[] = [];
+    let cursor = 0;
 
-    let lastProcessedIndex = 0;
-    let linkMatch;
+    while (cursor < nodeContent.length) {
+      const matchStart = nodeContent.indexOf('[[', cursor);
+      if (matchStart === -1) {
+        deltas.push({ insert: nodeContent.substring(cursor) });
+        break;
+      }
 
-    while ((linkMatch = wikilinkRegex.exec(nodeContent)) !== null) {
-      if (linkMatch.index > lastProcessedIndex) {
+      if (matchStart > cursor) {
         deltas.push({
-          insert: nodeContent.substring(lastProcessedIndex, linkMatch.index),
+          insert: nodeContent.substring(cursor, matchStart),
         });
       }
 
-      const targetPageName = linkMatch[1].trim();
-      const alias = linkMatch[2]?.trim();
+      const linkMatch = parseWikiLinkAt(nodeContent, matchStart, false);
+      if (!linkMatch) {
+        deltas.push({ insert: '[[' });
+        cursor = matchStart + 2;
+        continue;
+      }
+
+      const targetPageName = linkMatch.rawTarget.trim();
+      const alias = linkMatch.rawAlias?.trim();
       const currentFilePath = context.configs.get(FULL_FILE_PATH_KEY);
       const targetPageId = resolvePageIdFromLookup(
         { get: key => context.configs.get(`obsidian:pageId:${key}`) },
@@ -560,14 +666,10 @@ export const obsidianWikilinkToDeltaMatcher = MarkdownASTToDeltaExtension({
           },
         });
       } else {
-        deltas.push({ insert: linkMatch[0] });
+        deltas.push({ insert: linkMatch.raw });
       }
 
-      lastProcessedIndex = wikilinkRegex.lastIndex;
-    }
-
-    if (lastProcessedIndex < nodeContent.length) {
-      deltas.push({ insert: nodeContent.substring(lastProcessedIndex) });
+      cursor = linkMatch.endIdx;
     }
 
     return deltas;

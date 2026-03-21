@@ -160,11 +160,7 @@ class TrayState implements Disposable {
 
         const recordingStatus = recordingStatus$.value;
 
-        if (
-          !recordingStatus ||
-          (recordingStatus?.status !== 'paused' &&
-            recordingStatus?.status !== 'recording')
-        ) {
+        if (!recordingStatus || recordingStatus.status !== 'recording') {
           const appMenuItems = runningAppGroups.map(appGroup => ({
             label: appGroup.name,
             icon: appGroup.icon || undefined,
@@ -205,7 +201,7 @@ class TrayState implements Disposable {
             ? `Recording (${recordingStatus.appGroup?.name})`
             : 'Recording';
 
-          // recording is either started or paused
+          // recording is active
           items.push(
             {
               label: recordingLabel,

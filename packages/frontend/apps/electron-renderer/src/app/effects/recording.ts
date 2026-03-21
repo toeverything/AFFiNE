@@ -55,16 +55,25 @@ async function saveRecordingBlob(blobEngine: BlobEngine, filepath: string) {
 export function setupRecordingEvents(frameworkProvider: FrameworkProvider) {
   events?.recording.onRecordingStatusChanged(status => {
     (async () => {
-      if ((await apis?.ui.isActiveTab()) && status?.status === 'ready') {
+      if (
+        (await apis?.ui.isActiveTab()) &&
+        status?.status === 'processing' &&
+        status.filepath &&
+        !status.blockCreationStatus
+      ) {
         using currentWorkspace = getCurrentWorkspace(frameworkProvider);
         if (!currentWorkspace) {
           // maybe the workspace is not ready yet, eg. for shared workspace view
-          await apis?.recording.handleBlockCreationFailed(status.id);
+          await apis?.recording.setRecordingBlockCreationStatus(
+            status.id,
+            'failed'
+          );
           return;
         }
         const { workspace } = currentWorkspace;
         const docsService = workspace.scope.get(DocsService);
         const aiEnabled = isAiEnabled(frameworkProvider);
+        const recordingFilepath = status.filepath;
 
         const timestamp = i18nTime(status.startTime, {
           absolute: {
@@ -76,72 +85,68 @@ export function setupRecordingEvents(frameworkProvider: FrameworkProvider) {
         const docProps: DocProps = {
           onStoreLoad: (doc, { noteId }) => {
             (async () => {
-              if (status.filepath) {
-                // it takes a while to save the blob, so we show the attachment first
-                const { blobId, blob } = await saveRecordingBlob(
-                  doc.workspace.blobSync,
-                  status.filepath
-                );
+              // it takes a while to save the blob, so we show the attachment first
+              const { blobId, blob } = await saveRecordingBlob(
+                doc.workspace.blobSync,
+                recordingFilepath
+              );
 
-                // name + timestamp(readable) + extension
-                const attachmentName =
-                  (status.appName ?? 'System Audio') +
-                  ' ' +
-                  timestamp +
-                  '.opus';
+              // name + timestamp(readable) + extension
+              const attachmentName =
+                (status.appName ?? 'System Audio') + ' ' + timestamp + '.opus';
 
-                // add size and sourceId to the attachment later
-                const attachmentId = doc.addBlock(
-                  'affine:attachment',
-                  {
-                    name: attachmentName,
-                    type: 'audio/opus',
-                    size: blob.size,
-                    sourceId: blobId,
-                    embed: true,
-                  },
-                  noteId
-                );
+              const attachmentId = doc.addBlock(
+                'affine:attachment',
+                {
+                  name: attachmentName,
+                  type: 'audio/opus',
+                  size: blob.size,
+                  sourceId: blobId,
+                  embed: true,
+                },
+                noteId
+              );
 
-                const model = doc.getBlock(attachmentId)
-                  ?.model as AttachmentBlockModel;
+              const model = doc.getBlock(attachmentId)
+                ?.model as AttachmentBlockModel;
 
-                if (!aiEnabled) {
-                  return;
-                }
-
-                using currentWorkspace = getCurrentWorkspace(frameworkProvider);
-                if (!currentWorkspace) {
-                  return;
-                }
-                const { workspace } = currentWorkspace;
-                using audioAttachment = workspace.scope
-                  .get(AudioAttachmentService)
-                  .get(model);
-                audioAttachment?.obj
-                  .transcribe()
-                  .then(() => {
-                    track.doc.editor.audioBlock.transcribeRecording({
-                      type: 'Meeting record',
-                      method: 'success',
-                      option: 'Auto transcribing',
-                    });
-                  })
-                  .catch(err => {
-                    logger.error('Failed to transcribe recording', err);
-                  });
-              } else {
-                throw new Error('No attachment model found');
+              if (!aiEnabled) {
+                return;
               }
+
+              using currentWorkspace = getCurrentWorkspace(frameworkProvider);
+              if (!currentWorkspace) {
+                return;
+              }
+              const { workspace } = currentWorkspace;
+              using audioAttachment = workspace.scope
+                .get(AudioAttachmentService)
+                .get(model);
+              audioAttachment?.obj
+                .transcribe()
+                .then(() => {
+                  track.doc.editor.audioBlock.transcribeRecording({
+                    type: 'Meeting record',
+                    method: 'success',
+                    option: 'Auto transcribing',
+                  });
+                })
+                .catch(err => {
+                  logger.error('Failed to transcribe recording', err);
+                });
             })()
               .then(async () => {
-                await apis?.recording.handleBlockCreationSuccess(status.id);
+                await apis?.recording.setRecordingBlockCreationStatus(
+                  status.id,
+                  'success'
+                );
               })
               .catch(error => {
                 logger.error('Failed to transcribe recording', error);
-                return apis?.recording.handleBlockCreationFailed(
+                return apis?.recording.setRecordingBlockCreationStatus(
                   status.id,
-                  error
+                  'failed',
+                  error instanceof Error ? error.message : undefined
                 );
               })
               .catch(error => {

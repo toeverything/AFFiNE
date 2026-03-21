@@ -116,7 +116,10 @@ async function handleFileRequest(request: Request) {
   // for relative path, load the file in resources
   if (!isAbsolutePath) {
     if (urlObject.pathname.split('/').at(-1)?.includes('.')) {
-      const decodedPath = decodeURIComponent(urlObject.pathname);
+      const decodedPath = decodeURIComponent(urlObject.pathname).replace(
+        /^\/+/,
+        ''
+      );
       filepath = resolvePathInBase(webStaticDir, decodedPath, {
         caseInsensitive: isWindows(),
         label: 'filepath',

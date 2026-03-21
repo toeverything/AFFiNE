@@ -20,22 +20,11 @@ export interface AppGroupInfo {
 
 export interface RecordingStatus {
   id: number; // corresponds to the recording id
-  // the status of the recording in a linear state machine
-  // new: an new app group is listening. note, if there are any active recording, the current recording will not change
-  // recording: the recording is ongoing
-  // paused: the recording is paused
-  // stopped: the recording is stopped (processing audio file for use in the editor)
-  // ready: the recording is ready to be used
-  // create-block-success: the recording is successfully created as a block
-  // create-block-failed: creating block failed
-  status:
-    | 'new'
-    | 'recording'
-    | 'paused'
-    | 'stopped'
-    | 'ready'
-    | 'create-block-success'
-    | 'create-block-failed';
+  // an app group is detected and waiting for user confirmation
+  // recording: the native recorder is running
+  // processing: recording has stopped and the artifact is being prepared/imported
+  // ready: the post-processing result has been settled
+  status: 'new' | 'recording' | 'processing' | 'ready';
   app?: TappableAppInfo;
   appGroup?: AppGroupInfo;
   startTime: number; // 0 means not started yet
@@ -43,4 +32,5 @@ export interface RecordingStatus {
   nativeId?: string;
   sampleRate?: number;
   numberOfChannels?: number;
+  blockCreationStatus?: 'success' | 'failed';
 }
