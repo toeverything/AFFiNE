@@ -33,8 +33,8 @@ const user = await module.create(Mockers.User);
 const workspace = await module.create(Mockers.Workspace);
 
 test.before(async () => {
-  await searchProvider.createTable(SearchTable.block, blockSQL);
-  await searchProvider.createTable(SearchTable.doc, docSQL);
+  await searchProvider.recreateTable(SearchTable.block, blockSQL);
+  await searchProvider.recreateTable(SearchTable.doc, docSQL);
 
   await searchProvider.write(
     SearchTable.block,
@@ -163,6 +163,135 @@ test('should provider is manticoresearch', t => {
   t.is(searchProvider.type, SearchProviderType.Manticoresearch);
 });
 
+test('should search doc title match chinese word segmentation', async t => {
+  const workspaceId = 'workspace-test-doc-title-chinese';
+  const docId = 'doc-chinese';
+  const title = 'AFFiNE 是一个基于云端的笔记应用';
+
+  await searchProvider.write(
+    SearchTable.doc,
+    [
+      {
+        workspace_id: workspaceId,
+        doc_id: docId,
+        title,
+      },
+    ],
+    {
+      refresh: true,
+    }
+  );
+
+  const result = await searchProvider.search(SearchTable.doc, {
+    _source: ['workspace_id', 'doc_id'],
+    query: {
+      bool: {
+        must: [
+          { term: { workspace_id: { value: workspaceId } } },
+          { match: { title: '笔记' } },
+        ],
+      },
+    },
+    fields: ['doc_id', 'title'],
+    sort: ['_score'],
+  });
+
+  t.true(result.total >= 1);
+  t.snapshot(
+    result.nodes
+      .filter(node => node._source.doc_id === docId)
+      .map(node => omit(node, ['_score']))
+  );
+});
+
+test('should search block content match korean ngram', async t => {
+  const workspaceId = 'workspace-test-block-content-korean';
+  const docId = 'doc-korean';
+  const blockId = 'block-korean';
+  const content = '다람쥐 헌 쳇바퀴에 타고파';
+
+  await searchProvider.write(
+    SearchTable.block,
+    [
+      {
+        workspace_id: workspaceId,
+        doc_id: docId,
+        block_id: blockId,
+        content,
+        flavour: 'affine:paragraph',
+      },
+    ],
+    {
+      refresh: true,
+    }
+  );
+
+  const result = await searchProvider.search(SearchTable.block, {
+    _source: ['workspace_id', 'doc_id'],
+    query: {
+      bool: {
+        must: [
+          { term: { workspace_id: { value: workspaceId } } },
+          { match: { content: '쥐' } },
+        ],
+      },
+    },
+    fields: ['block_id', 'content'],
+    sort: ['_score'],
+  });
+
+  t.true(result.total >= 1);
+  t.snapshot(
+    result.nodes
+      .filter(node => node.fields.block_id?.[0] === blockId)
+      .map(node => omit(node, ['_score']))
+  );
+});
+
+test('should search block content match japanese kana ngram', async t => {
+  const workspaceId = 'workspace-test-block-content-japanese';
+  const docId = 'doc-japanese';
+  const blockId = 'block-japanese';
+  const content = 'いろはにほへと ちりぬるを';
+
+  await searchProvider.write(
+    SearchTable.block,
+    [
+      {
+        workspace_id: workspaceId,
+        doc_id: docId,
+        block_id: blockId,
+        content,
+        flavour: 'affine:paragraph',
+      },
+    ],
+    {
+      refresh: true,
+    }
+  );
+
+  const result = await searchProvider.search(SearchTable.block, {
+    _source: ['workspace_id', 'doc_id'],
+    query: {
+      bool: {
+        must: [
+          { term: { workspace_id: { value: workspaceId } } },
+          { match: { content: 'へ' } },
+        ],
+      },
+    },
+    fields: ['block_id', 'content'],
+    sort: ['_score'],
+  });
+
+  t.true(result.total >= 1);
+  t.snapshot(
+    result.nodes
+      .filter(node => node.fields.block_id?.[0] === blockId)
+      .map(node => omit(node, ['_score']))
+  );
+});
+
 // #region write
 
 test('should write document work', async t => {
@@ -189,7 +318,7 @@ test('should write document work', async t => {
 
   let result = await searchProvider.search(SearchTable.block, {
     _source: ['workspace_id', 'doc_id'],
-    query: { match: { doc_id: docId } },
+    query: { term: { doc_id: { value: docId } } },
     fields: [
       'flavour',
       'flavour_indexed',
@@ -232,7 +361,7 @@ test('should write document work', async t => {
 
   result = await searchProvider.search(SearchTable.block, {
     _source: ['workspace_id', 'doc_id'],
-    query: { match: { doc_id: docId } },
+    query: { term: { doc_id: { value: docId } } },
     fields: ['flavour', 'block_id', 'content', 'ref_doc_id'],
     sort: ['_score'],
   });
@@ -263,7 +392,7 @@ test('should write document work', async t => {
 
   result = await searchProvider.search(SearchTable.block, {
     _source: ['workspace_id', 'doc_id'],
-    query: { match: { doc_id: docId } },
+    query: { term: { doc_id: { value: docId } } },
     fields: ['flavour', 'block_id', 'content', 'ref_doc_id'],
     sort: ['_score'],
   });
@@ -319,8 +448,8 @@ test('should handle ref_doc_id as string[]', async t => {
     query: {
       bool: {
         must: [
-          { match: { workspace_id: workspaceId } },
-          { match: { doc_id: docId } },
+          { term: { workspace_id: { value: workspaceId } } },
+          { term: { doc_id: { value: docId } } },
         ],
       },
     },
@@ -371,8 +500,8 @@ test('should handle ref_doc_id as string[]', async t => {
     query: {
       bool: {
         must: [
-          { match: { workspace_id: workspaceId } },
-          { match: { doc_id: docId } },
+          { term: { workspace_id: { value: workspaceId } } },
+          { term: { doc_id: { value: docId } } },
         ],
       },
     },
@@ -416,8 +545,8 @@ test('should handle content as string[]', async t => {
     query: {
       bool: {
         must: [
-          { match: { workspace_id: workspaceId } },
-          { match: { doc_id: docId } },
+          { term: { workspace_id: { value: workspaceId } } },
+          { term: { doc_id: { value: docId } } },
         ],
       },
     },
@@ -455,8 +584,8 @@ test('should handle content as string[]', async t => {
     query: {
       bool: {
         must: [
-          { match: { workspace_id: workspaceId } },
-          { match: { doc_id: docId } },
+          { term: { workspace_id: { value: workspaceId } } },
+          { term: { doc_id: { value: docId } } },
         ],
       },
     },
@@ -497,8 +626,8 @@ test('should handle blob as string[]', async t => {
     query: {
       bool: {
         must: [
-          { match: { workspace_id: workspaceId } },
-          { match: { doc_id: docId } },
+          { term: { workspace_id: { value: workspaceId } } },
+          { term: { doc_id: { value: docId } } },
         ],
       },
     },
@@ -534,8 +663,8 @@ test('should handle blob as string[]', async t => {
     query: {
       bool: {
         must: [
-          { match: { workspace_id: workspaceId } },
-          { match: { doc_id: docId } },
+          { term: { workspace_id: { value: workspaceId } } },
+          { term: { doc_id: { value: docId } } },
         ],
       },
     },
@@ -571,8 +700,8 @@ test('should handle blob as string[]', async t => {
     query: {
       bool: {
         must: [
-          { match: { workspace_id: workspaceId } },
-          { match: { doc_id: docId } },
+          { term: { workspace_id: { value: workspaceId } } },
+          { term: { doc_id: { value: docId } } },
         ],
       },
     },
@@ -682,8 +811,10 @@ test('should search query all and get next cursor work', async t => {
       'id',
     ],
     query: {
-      match: {
-        workspace_id: workspaceId,
+      term: {
+        workspace_id: {
+          value: workspaceId,
+        },
       },
     },
     fields: ['flavour', 'workspace_id', 'doc_id', 'block_id'],
@@ -708,8 +839,10 @@ test('should search query all and get next cursor work', async t => {
       'id',
     ],
     query: {
-      match: {
-        workspace_id: workspaceId,
+      term: {
+        workspace_id: {
+          value: workspaceId,
+        },
       },
     },
     fields: ['flavour', 'workspace_id', 'doc_id', 'block_id'],
@@ -734,8 +867,10 @@ test('should search query all and get next cursor work', async t => {
       'id',
     ],
     query: {
-      match: {
-        workspace_id: workspaceId,
+      term: {
+        workspace_id: {
+          value: workspaceId,
+        },
       },
     },
     fields: ['flavour', 'workspace_id', 'doc_id', 'block_id'],
@@ -780,16 +915,20 @@ test('should filter by workspace_id work', async t => {
       bool: {
         must: [
           {
-            match: {
-              workspace_id: workspaceId,
+            term: {
+              workspace_id: {
+                value: workspaceId,
+              },
             },
           },
           {
             bool: {
               must: [
                 {
-                  match: {
-                    doc_id: docId,
+                  term: {
+                    doc_id: {
+                      value: docId,
+                    },
                   },
                 },
               ],
