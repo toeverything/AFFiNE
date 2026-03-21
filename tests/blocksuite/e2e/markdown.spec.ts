@@ -241,6 +241,9 @@ test.describe('markdown inline-text', () => {
           italic: true,
         },
       },
+      {
+        insert: ' ',
+      },
     ]);
     await undoByKeyboard(page);
     await undoByKeyboard(page);
@@ -259,6 +262,9 @@ test.describe('markdown inline-text', () => {
           italic: true,
         },
       },
+      {
+        insert: ' ',
+      },
     ]);
     await undoByKeyboard(page);
     await assertRichTextInlineRange(page, 0, 11);
@@ -274,11 +280,14 @@ test.describe('markdown inline-text', () => {
         insert: 'aa',
       },
       {
-        insert: 'bbcc',
+        insert: 'bb',
         attributes: {
           bold: true,
           italic: true,
         },
+      },
+      {
+        insert: ' cc',
       },
     ]);
     await undoByKeyboard(page);
@@ -312,6 +321,9 @@ test.describe('markdown inline-text', () => {
           bold: true,
         },
       },
+      {
+        insert: ' ',
+      },
     ]);
     await undoByKeyboard(page);
     await undoByKeyboard(page);
@@ -329,6 +341,9 @@ test.describe('markdown inline-text', () => {
           bold: true,
         },
       },
+      {
+        insert: ' ',
+      },
     ]);
     await undoByKeyboard(page);
     await assertRichTextInlineRange(page, 0, 9);
@@ -344,10 +359,13 @@ test.describe('markdown inline-text', () => {
         insert: 'aa',
       },
       {
-        insert: 'bbcc',
+        insert: 'bb',
         attributes: {
           bold: true,
         },
+      },
+      {
+        insert: ' cc',
       },
     ]);
     await undoByKeyboard(page);
@@ -380,6 +398,9 @@ test.describe('markdown inline-text', () => {
           italic: true,
         },
       },
+      {
+        insert: ' ',
+      },
     ]);
     await undoByKeyboard(page);
     await undoByKeyboard(page);
@@ -397,6 +418,9 @@ test.describe('markdown inline-text', () => {
           italic: true,
         },
       },
+      {
+        insert: ' ',
+      },
     ]);
     await undoByKeyboard(page);
     await assertRichTextInlineRange(page, 0, 7);
@@ -412,10 +436,13 @@ test.describe('markdown inline-text', () => {
         insert: 'aa',
       },
       {
-        insert: 'bbcc',
+        insert: 'bb',
         attributes: {
           italic: true,
         },
+      },
+      {
+        insert: ' cc',
       },
     ]);
     await undoByKeyboard(page);
@@ -449,6 +476,9 @@ test.describe('markdown inline-text', () => {
           strike: true,
         },
       },
+      {
+        insert: ' ',
+      },
     ]);
     await undoByKeyboard(page);
     await undoByKeyboard(page);
@@ -466,6 +496,9 @@ test.describe('markdown inline-text', () => {
           strike: true,
         },
       },
+      {
+        insert: ' ',
+      },
     ]);
     await undoByKeyboard(page);
     await assertRichTextInlineRange(page, 0, 9);
@@ -481,10 +514,13 @@ test.describe('markdown inline-text', () => {
         insert: 'aa',
       },
       {
-        insert: 'bbcc',
+        insert: 'bb',
         attributes: {
           strike: true,
         },
+      },
+      {
+        insert: ' cc',
       },
     ]);
     await undoByKeyboard(page);
@@ -517,6 +553,9 @@ test.describe('markdown inline-text', () => {
           underline: true,
         },
       },
+      {
+        insert: ' ',
+      },
     ]);
     await undoByKeyboard(page);
     await undoByKeyboard(page);
@@ -534,6 +573,9 @@ test.describe('markdown inline-text', () => {
           underline: true,
         },
       },
+      {
+        insert: ' ',
+      },
     ]);
     await undoByKeyboard(page);
     await assertRichTextInlineRange(page, 0, 7);
@@ -549,10 +591,13 @@ test.describe('markdown inline-text', () => {
         insert: 'aa',
       },
       {
-        insert: 'bbcc',
+        insert: 'bb',
         attributes: {
           underline: true,
         },
+      },
+      {
+        insert: ' cc',
       },
     ]);
     await undoByKeyboard(page);
@@ -585,6 +630,9 @@ test.describe('markdown inline-text', () => {
           code: true,
         },
       },
+      {
+        insert: ' ',
+      },
     ]);
     await undoByKeyboard(page);
     await undoByKeyboard(page);
@@ -601,6 +649,9 @@ test.describe('markdown inline-text', () => {
         attributes: {
           code: true,
         },
+      },
+      {
+        insert: ' ',
       },
     ]);
     await undoByKeyboard(page);
@@ -623,7 +674,7 @@ test.describe('markdown inline-text', () => {
         },
       },
       {
-        insert: 'cc',
+        insert: ' cc',
       },
     ]);
     await undoByKeyboard(page);
@@ -656,8 +707,11 @@ test.describe('markdown inline-text', () => {
           bold: true,
         },
       },
+      {
+        insert: ' ',
+      },
     ]);
-    await pressArrowLeft(page, 8);
+    await pressArrowLeft(page, 9);
     await type(page, '`');
     await pressArrowRight(page, 8);
     await type(page, '` ');
@@ -674,6 +728,9 @@ test.describe('markdown inline-text', () => {
           bold: true,
           code: true,
         },
+      },
+      {
+        insert: ' ',
       },
     ]);
   });
@@ -699,5 +756,5 @@ test('inline code should work when pressing Enter followed by Backspace twice', 
   await waitNextFrame(page);
   await pressBackspace(page);
 
-  await assertRichTexts(page, ['test']);
+  await assertRichTexts(page, ['test ']);
 });

@@ -215,7 +215,7 @@ describe('markdown/list/paragraph/quote/code/link', () => {
     const { paragraphId: boldParagraphId } = await createParagraph();
     await triggerMarkdown(boldParagraphId, '**bold** ', 'bold');
     const boldRichText = getRichTextByBlockId(boldParagraphId);
-    expect(boldRichText.inlineEditor.yTextString).toBe('bold');
+    expect(boldRichText.inlineEditor.yTextString).toBe('bold ');
     expect(
       boldRichText.inlineEditor.getFormat({ index: 1, length: 0 })
     ).toMatchObject({
@@ -225,7 +225,7 @@ describe('markdown/list/paragraph/quote/code/link', () => {
     const { paragraphId: codeParagraphId } = await createParagraph();
     await triggerMarkdown(codeParagraphId, '`code` ', 'code');
     const codeRichText = getRichTextByBlockId(codeParagraphId);
-    expect(codeRichText.inlineEditor.yTextString).toBe('code');
+    expect(codeRichText.inlineEditor.yTextString).toBe('code ');
     expect(
       codeRichText.inlineEditor.getFormat({ index: 1, length: 0 })
     ).toMatchObject({

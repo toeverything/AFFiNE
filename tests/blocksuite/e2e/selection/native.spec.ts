@@ -1395,9 +1395,9 @@ test('should select with shift-click', async ({ page }) => {
 
   await focusRichText(page);
 
-  await page.click('[data-block-id="4"] [data-v-text]', {
-    modifiers: ['Shift'],
-  });
+  const targetRichText = page.locator('rich-text').filter({ hasText: /^456$/ });
+  await expect(targetRichText).toHaveCount(1);
+  await targetRichText.locator('[data-v-text]').click({ modifiers: ['Shift'] });
   expect(await getSelectedText(page)).toContain('4567');
 });
 
@@ -1762,7 +1762,9 @@ test('unexpected scroll when clicking padding area', async ({ page }) => {
   await type(page, '1. aaa\nbbb');
   await pressTab(page);
 
-  const list = page.locator('[data-block-id="34"]');
+  const list = page
+    .locator('affine-list:has(rich-text:has-text("aaa"))')
+    .first();
   const listRect = await list.boundingBox();
   if (!listRect) {
     throw new Error('listRect is not found');

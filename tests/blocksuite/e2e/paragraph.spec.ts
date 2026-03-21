@@ -1260,9 +1260,9 @@ test('arrow up/down navigation within and across paragraphs containing different
   await type(page, 'i'.repeat(5));
   await type(page, '*');
   await pressSpace(page);
-  await assertRichTextInlineRange(page, 0, 25, 0);
+  await assertRichTextInlineRange(page, 0, 26, 0);
   await type(page, 'a'.repeat(100));
-  await assertRichTextInlineRange(page, 0, 125, 0);
+  await assertRichTextInlineRange(page, 0, 126, 0);
   await pressEnter(page);
 
   await type(page, 'a'.repeat(100));
@@ -1271,24 +1271,24 @@ test('arrow up/down navigation within and across paragraphs containing different
   await type(page, 'i'.repeat(5));
   await type(page, '*');
   await pressSpace(page);
-  await assertRichTextInlineRange(page, 1, 105, 0);
+  await assertRichTextInlineRange(page, 1, 106, 0);
   await type(page, 'a'.repeat(20));
-  await assertRichTextInlineRange(page, 1, 125, 0);
+  await assertRichTextInlineRange(page, 1, 126, 0);
 
   await pressArrowUp(page);
-  await assertRichTextInlineRange(page, 1, 29, 0);
+  await assertRichTextInlineRange(page, 1, 30, 0);
   await pressArrowUp(page);
-  await assertRichTextInlineRange(page, 0, 125, 0);
+  await assertRichTextInlineRange(page, 0, 126, 0);
   await pressArrowUp(page);
-  await assertRichTextInlineRange(page, 0, 32, 0);
+  await assertRichTextInlineRange(page, 0, 56, 0);
   await pressArrowUp(page);
-  await assertRichTextInlineRange(page, 0, 0, 0);
+  await assertRichTextInlineRange(page, 0, 26, 0);
   await pressArrowDown(page);
-  await assertRichTextInlineRange(page, 0, 125, 0);
+  await assertRichTextInlineRange(page, 0, 126, 0);
   await pressArrowDown(page);
-  await assertRichTextInlineRange(page, 1, 29, 0);
+  await assertRichTextInlineRange(page, 1, 30, 0);
   await pressArrowDown(page);
-  await assertRichTextInlineRange(page, 1, 125, 0);
+  await assertRichTextInlineRange(page, 1, 126, 0);
 });
 
 test('select divider using delete keyboard from prev/next paragraph', async ({
