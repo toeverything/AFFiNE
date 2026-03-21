@@ -2,22 +2,24 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 const isActiveTab = vi.fn();
 const readRecordingFile = vi.fn();
-const setRecordingBlockCreationStatus = vi.fn();
+const claimRecordingImport = vi.fn();
+const completeRecordingImport = vi.fn();
+const failRecordingImport = vi.fn();
+const getRecordingImportQueue = vi.fn();
 const getCurrentWorkspace = vi.fn();
 const isAiEnabled = vi.fn();
 const transcribeRecording = vi.fn();
 
-let onRecordingStatusChanged:
-  | ((
-      status: {
-        id: number;
-        status: 'processing';
-        appName?: string;
-        filepath?: string;
-        startTime: number;
-        blockCreationStatus?: 'success' | 'failed';
-      } | null
-    ) => void)
+type RecordingImportStatus = {
+  id: number;
+  appName?: string;
+  filepath: string;
+  startTime: number;
+  importStatus: 'pending_import' | 'importing' | 'imported' | 'import_failed';
+};
+
+let onRecordingImportQueueChanged:
+  | ((queue: RecordingImportStatus[]) => void)
   | undefined;
 
 vi.mock('@affine/core/modules/doc', () => ({
@@ -46,16 +48,19 @@ vi.mock('@affine/electron-api', () => ({
     },
     recording: {
       readRecordingFile,
-      setRecordingBlockCreationStatus,
+      claimRecordingImport,
+      completeRecordingImport,
+      failRecordingImport,
+      getRecordingImportQueue,
     },
   },
   events: {
     recording: {
-      onRecordingStatusChanged: vi.fn(
-        (handler: typeof onRecordingStatusChanged) => {
-          onRecordingStatusChanged = handler;
+      onRecordingImportQueueChanged: vi.fn(
+        (handler: typeof onRecordingImportQueueChanged) => {
+          onRecordingImportQueueChanged = handler;
           return () => {
-            onRecordingStatusChanged = undefined;
+            onRecordingImportQueueChanged = undefined;
           };
         }
       ),
@@ -162,10 +167,12 @@ describe('recording effect', () => {
     vi.useFakeTimers();
     vi.clearAllMocks();
     vi.resetModules();
-    onRecordingStatusChanged = undefined;
+    onRecordingImportQueueChanged = undefined;
     readRecordingFile.mockResolvedValue(new Uint8Array([1, 2, 3]).buffer);
-    setRecordingBlockCreationStatus.mockResolvedValue(undefined);
+    completeRecordingImport.mockResolvedValue(undefined);
+    failRecordingImport.mockResolvedValue(undefined);
     isAiEnabled.mockReturnValue(false);
+    getRecordingImportQueue.mockResolvedValue([]);
   });
 
   afterEach(() => {
@@ -173,37 +180,43 @@ describe('recording effect', () => {
     vi.useRealTimers();
   });
 
-  test('retries processing until the active tab has a workspace', async () => {
+  test('retries pending imports until the active tab has a workspace', async () => {
     const workspace = createWorkspaceRef();
+    const pendingImport = {
+      id: 7,
+      importStatus: 'pending_import' as const,
+      appName: 'Zoom',
+      filepath: '/tmp/meeting.opus',
+      startTime: 1000,
+    };
 
     isActiveTab.mockResolvedValueOnce(false).mockResolvedValue(true);
     getCurrentWorkspace
       .mockReturnValueOnce(undefined)
       .mockReturnValue(workspace.ref);
+    claimRecordingImport.mockResolvedValue({
+      ...pendingImport,
+      importStatus: 'importing',
+    });
+    getRecordingImportQueue.mockResolvedValue([pendingImport]);
 
     const { setupRecordingEvents } =
       await import('../../../electron-renderer/src/app/effects/recording');
 
     setupRecordingEvents({} as never);
-
-    onRecordingStatusChanged?.({
-      id: 7,
-      status: 'processing',
-      appName: 'Zoom',
-      filepath: '/tmp/meeting.opus',
-      startTime: 1000,
-    });
-
     await Promise.resolve();
+
     expect(workspace.createDoc).not.toHaveBeenCalled();
-    expect(setRecordingBlockCreationStatus).not.toHaveBeenCalled();
+    expect(claimRecordingImport).not.toHaveBeenCalled();
 
     await vi.advanceTimersByTimeAsync(1000);
     expect(workspace.createDoc).not.toHaveBeenCalled();
-    expect(setRecordingBlockCreationStatus).not.toHaveBeenCalled();
+    expect(claimRecordingImport).not.toHaveBeenCalled();
 
+    onRecordingImportQueueChanged?.([pendingImport]);
     await vi.advanceTimersByTimeAsync(1000);
 
+    expect(claimRecordingImport).toHaveBeenCalledWith(7);
     expect(workspace.createDoc).toHaveBeenCalledTimes(1);
     expect(workspace.openDoc).toHaveBeenCalledWith('doc-1');
     expect(workspace.blobSet).toHaveBeenCalledTimes(1);
@@ -215,42 +228,51 @@ describe('recording effect', () => {
       expect.objectContaining({ type: 'audio/ogg' }),
       'note-1'
     );
-    expect(setRecordingBlockCreationStatus).toHaveBeenCalledWith(7, 'success');
-    expect(setRecordingBlockCreationStatus).not.toHaveBeenCalledWith(
-      7,
-      'failed',
-      expect.anything()
-    );
+    expect(completeRecordingImport).toHaveBeenCalledWith(7);
+    expect(failRecordingImport).not.toHaveBeenCalled();
   });
 
-  test('retries when the active-tab probe rejects', async () => {
-    const workspace = createWorkspaceRef();
+  test('marks imports as failed when the doc import throws and retries later', async () => {
+    const pendingImport = {
+      id: 9,
+      importStatus: 'import_failed' as const,
+      appName: 'Meet',
+      filepath: '/tmp/meeting.opus',
+      startTime: 1000,
+    };
 
-    isActiveTab
-      .mockRejectedValueOnce(new Error('probe failed'))
-      .mockResolvedValue(true);
+    const workspace = createWorkspaceRef();
+    workspace.createDoc.mockImplementationOnce(() => {
+      throw new Error('create doc failed');
+    });
+
+    isActiveTab.mockResolvedValue(true);
     getCurrentWorkspace.mockReturnValue(workspace.ref);
+    claimRecordingImport
+      .mockResolvedValueOnce({
+        ...pendingImport,
+        importStatus: 'importing',
+      })
+      .mockResolvedValueOnce({
+        ...pendingImport,
+        importStatus: 'importing',
+      });
+    getRecordingImportQueue.mockResolvedValue([pendingImport]);
 
     const { setupRecordingEvents } =
       await import('../../../electron-renderer/src/app/effects/recording');
 
     setupRecordingEvents({} as never);
-
-    onRecordingStatusChanged?.({
-      id: 9,
-      status: 'processing',
-      appName: 'Meet',
-      filepath: '/tmp/meeting.opus',
-      startTime: 1000,
-    });
-
     await Promise.resolve();
-    expect(workspace.createDoc).not.toHaveBeenCalled();
-    expect(setRecordingBlockCreationStatus).not.toHaveBeenCalled();
+    await Promise.resolve();
+    await vi.advanceTimersByTimeAsync(0);
 
+    expect(failRecordingImport).toHaveBeenCalledWith(9, 'create doc failed');
+    expect(completeRecordingImport).not.toHaveBeenCalled();
+
+    onRecordingImportQueueChanged?.([pendingImport]);
     await vi.advanceTimersByTimeAsync(1000);
 
-    expect(workspace.createDoc).toHaveBeenCalledTimes(1);
-    expect(setRecordingBlockCreationStatus).toHaveBeenCalledWith(9, 'success');
+    expect(claimRecordingImport).toHaveBeenCalledTimes(2);
   });
 });

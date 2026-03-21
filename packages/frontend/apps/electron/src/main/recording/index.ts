@@ -11,15 +11,20 @@ import {
   askForMeetingPermission,
   checkMeetingPermissions,
   checkRecordingAvailable,
+  claimRecordingImport,
+  completeRecordingImport,
   disableRecordingFeature,
+  failRecordingImport,
   getRecording,
+  getRecordingImportQueue,
   readRecordingFile,
+  recordingImportQueue$,
   recordingStatus$,
   removeRecording,
   SAVED_RECORDINGS_DIR,
+  type SerializedRecordingImportStatus,
   type SerializedRecordingStatus,
   serializeRecordingStatus,
-  setRecordingBlockCreationStatus,
   setupRecordingFeature,
   startRecording,
   stopRecording,
@@ -45,13 +50,17 @@ export const recordingHandlers = {
   readRecordingFile: async (_, filepath: string) => {
     return readRecordingFile(filepath);
   },
-  setRecordingBlockCreationStatus: async (
-    _,
-    id: number,
-    status: 'success' | 'failed',
-    errorMessage?: string
-  ) => {
-    return setRecordingBlockCreationStatus(id, status, errorMessage);
+  getRecordingImportQueue: async () => {
+    return getRecordingImportQueue();
+  },
+  claimRecordingImport: async (_, id: number) => {
+    return claimRecordingImport(id);
+  },
+  completeRecordingImport: async (_, id: number) => {
+    return completeRecordingImport(id);
+  },
+  failRecordingImport: async (_, id: number, errorMessage?: string) => {
+    return failRecordingImport(id, errorMessage);
   },
   removeRecording: async (_, id: number) => {
     return removeRecording(id);
@@ -99,6 +108,37 @@ export const recordingEvents = {
   ) => {
     const sub = recordingStatus$.subscribe(status => {
       fn(status ? serializeRecordingStatus(status) : null);
+    });
+    return () => {
+      try {
+        sub.unsubscribe();
+      } catch {
+        // ignore unsubscribe error
+      }
+    };
+  },
+  onRecordingImportQueueChanged: (
+    fn: (queue: SerializedRecordingImportStatus[]) => void
+  ) => {
+    const sub = recordingImportQueue$.subscribe(queue => {
+      fn(
+        queue.map(item => ({
+          id: item.id,
+          appName: item.appName,
+          startTime: item.startTime,
+          filepath: item.filepath,
+          sampleRate: item.sampleRate,
+          numberOfChannels: item.numberOfChannels,
+          durationMs: item.durationMs,
+          size: item.size,
+          degraded: item.degraded,
+          overflowCount: item.overflowCount,
+          importStatus: item.importStatus,
+          errorMessage: item.errorMessage,
+          createdAt: item.createdAt,
+          updatedAt: item.updatedAt,
+        }))
+      );
     });
     return () => {
       try {

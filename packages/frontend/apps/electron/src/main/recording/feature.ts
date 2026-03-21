@@ -35,8 +35,15 @@ import { globalStateStorage } from '../shared-storage/storage';
 import { getMainWindow } from '../windows-manager';
 import { popupManager } from '../windows-manager/popup';
 import { isAppNameAllowed } from './allow-list';
+import { recordingArtifactRegistry } from './artifact-registry';
 import { recordingStateMachine } from './state-machine';
-import type { AppGroupInfo, RecordingStatus, TappableAppInfo } from './types';
+import type {
+  AppGroupInfo,
+  RecordingImportStatus,
+  RecordingSessionStatus,
+  RecordingStatus,
+  TappableAppInfo,
+} from './types';
 
 export const MeetingsSettingsState = {
   $: globalStateStorage.watch<MeetingSettingsSchema>(MeetingSettingsKey).pipe(
@@ -74,14 +81,32 @@ type ShareableContentType = InstanceType<NativeModule['ShareableContent']>;
 type ShareableContentStatic = NativeModule['ShareableContent'];
 
 let shareableContent: ShareableContentType | null = null;
+let nativeModuleOverride: NativeModule | null = null;
 
 function getNativeModule(): NativeModule {
-  return require('@affine/native') as NativeModule;
+  return nativeModuleOverride ?? (require('@affine/native') as NativeModule);
+}
+
+async function getNativeModuleAsync(): Promise<NativeModule> {
+  if (nativeModuleOverride) {
+    return nativeModuleOverride;
+  }
+  return (await import('@affine/native')) as NativeModule;
+}
+
+export function setRecordingNativeModuleForTesting(
+  nativeModule: NativeModule | null
+) {
+  nativeModuleOverride = nativeModule;
 }
 
 function cleanup() {
   const nativeId = recordingStateMachine.status?.nativeId;
-  if (nativeId) cleanupAbandonedNativeRecording(nativeId);
+  if (nativeId) {
+    void cleanupAbandonedNativeRecording(nativeId).catch(error => {
+      logger.error('failed to cleanup abandoned native recording', error);
+    });
+  }
   recordingStatus$.next(null);
   shareableContent = null;
   appStateSubscribers.forEach(subscriber => {
@@ -113,16 +138,103 @@ export const appGroups$ = new BehaviorSubject<AppGroupInfo[]>([]);
 
 export const updateApplicationsPing$ = new Subject<number>();
 
-// There should be only one active recording at a time; state is managed by the state machine
-export const recordingStatus$ = recordingStateMachine.status$;
+export const recordingSessionStatus$ = recordingStateMachine.status$;
+export const recordingImportQueue$ = recordingArtifactRegistry.entries$;
+export const recordingStatus$ = new BehaviorSubject<RecordingStatus | null>(
+  null
+);
 
-function isRecordingSettled(
+function hasActiveRecordingSession(
+  status: RecordingSessionStatus | null | undefined
+) {
+  return (
+    status?.sessionStatus === 'starting' ||
+    status?.sessionStatus === 'recording' ||
+    status?.sessionStatus === 'finalizing'
+  );
+}
+
+function isTerminalPopupStatus(
   status: RecordingStatus | null | undefined
 ): status is RecordingStatus & {
-  status: 'ready';
-  blockCreationStatus: 'success' | 'failed';
+  status: 'imported' | 'import_failed' | 'finalize_failed';
 } {
-  return status?.status === 'ready' && status.blockCreationStatus !== undefined;
+  return (
+    status?.status === 'imported' ||
+    status?.status === 'import_failed' ||
+    status?.status === 'finalize_failed'
+  );
+}
+
+function serializeSessionStatus(
+  status: RecordingSessionStatus | null
+): RecordingStatus | null {
+  if (!status || status.sessionStatus === 'aborted') {
+    return null;
+  }
+
+  const artifact = status.artifact;
+  return {
+    id: status.id,
+    status:
+      status.sessionStatus === 'finalized'
+        ? 'pending_import'
+        : status.sessionStatus,
+    appName: status.appGroup?.name,
+    appGroupId: status.appGroup?.processGroupId,
+    icon: status.appGroup?.icon,
+    startTime: status.startTime,
+    filepath: artifact?.filepath,
+    sampleRate: artifact?.sampleRate,
+    numberOfChannels: artifact?.numberOfChannels,
+    durationMs: artifact?.durationMs,
+    size: artifact?.size,
+    degraded: artifact?.degraded,
+    overflowCount: artifact?.overflowCount,
+    errorMessage: status.errorMessage,
+  };
+}
+
+function serializeImportStatus(
+  status: RecordingImportStatus | null | undefined
+): RecordingStatus | null {
+  if (!status) {
+    return null;
+  }
+
+  return {
+    id: status.id,
+    status: status.importStatus,
+    appName: status.appName,
+    startTime: status.startTime,
+    filepath: status.filepath,
+    sampleRate: status.sampleRate,
+    numberOfChannels: status.numberOfChannels,
+    durationMs: status.durationMs,
+    size: status.size,
+    degraded: status.degraded,
+    overflowCount: status.overflowCount,
+    errorMessage: status.errorMessage,
+  };
+}
+
+function getProjectedRecordingStatus(): RecordingStatus | null {
+  const session = recordingStateMachine.status;
+  if (
+    session?.sessionStatus === 'new' ||
+    session?.sessionStatus === 'starting' ||
+    session?.sessionStatus === 'recording' ||
+    session?.sessionStatus === 'finalizing' ||
+    session?.sessionStatus === 'finalize_failed'
+  ) {
+    return serializeSessionStatus(session);
+  }
+
+  return serializeImportStatus(recordingArtifactRegistry.latest());
+}
+
+function emitRecordingStatus() {
+  recordingStatus$.next(getProjectedRecordingStatus());
 }
 
 function createAppGroup(processGroupId: number): AppGroupInfo | undefined {
@@ -193,10 +305,10 @@ function setupNewRunningAppGroup() {
   );
 
   appGroups$.value.forEach(group => {
-    const recordingStatus = recordingStatus$.value;
+    const recordingStatus = recordingStateMachine.status;
     if (
       group.isRunning &&
-      (!recordingStatus || recordingStatus.status === 'new')
+      (!recordingStatus || recordingStatus.sessionStatus === 'new')
     ) {
       newRecording(group);
     }
@@ -225,15 +337,13 @@ function setupNewRunningAppGroup() {
         return;
       }
 
-      const recordingStatus = recordingStatus$.value;
+      const recordingStatus = recordingStateMachine.status;
 
       if (currentGroup.isRunning) {
-        // when the app is running and there is no active recording popup
-        // we should show a new recording popup
         if (
           !recordingStatus ||
-          recordingStatus.status === 'new' ||
-          isRecordingSettled(recordingStatus)
+          recordingStatus.sessionStatus === 'new' ||
+          !hasActiveRecordingSession(recordingStatus)
         ) {
           if (MeetingsSettingsState.value.recordingMode === 'prompt') {
             newRecording(currentGroup);
@@ -251,7 +361,7 @@ function setupNewRunningAppGroup() {
         // when displaying in "new" state but the app is not running any more
         // we should remove the recording
         if (
-          recordingStatus?.status === 'new' &&
+          recordingStatus?.sessionStatus === 'new' &&
           currentGroup.bundleIdentifier ===
             recordingStatus.appGroup?.bundleIdentifier
         ) {
@@ -261,7 +371,7 @@ function setupNewRunningAppGroup() {
         // if the watched app stops while we are recording it,
         // we should stop the recording
         if (
-          recordingStatus?.status === 'recording' &&
+          recordingStatus?.sessionStatus === 'recording' &&
           recordingStatus.appGroup?.bundleIdentifier ===
             currentGroup.bundleIdentifier
         ) {
@@ -276,28 +386,49 @@ function setupNewRunningAppGroup() {
 
 export async function getRecording(id: number) {
   const recording = recordingStateMachine.status;
-  if (!recording || recording.id !== id) {
+  if (recording?.id === id) {
+    return {
+      id,
+      appGroup: recording.appGroup,
+      app: recording.app,
+      startTime: recording.startTime,
+      filepath: recording.artifact?.filepath,
+      sampleRate: recording.artifact?.sampleRate,
+      numberOfChannels: recording.artifact?.numberOfChannels,
+    };
+  }
+
+  const artifact = recordingArtifactRegistry.entries.find(
+    recordingArtifact => recordingArtifact.id === id
+  );
+  if (!artifact) {
     logger.error(`Recording ${id} not found`);
     return;
   }
+
   return {
     id,
-    appGroup: recording.appGroup,
-    app: recording.app,
-    startTime: recording.startTime,
-    filepath: recording.filepath,
-    sampleRate: recording.sampleRate,
-    numberOfChannels: recording.numberOfChannels,
+    startTime: artifact.startTime,
+    filepath: artifact.filepath,
+    sampleRate: artifact.sampleRate,
+    numberOfChannels: artifact.numberOfChannels,
   };
 }
 
-// recording popup status
-// new: waiting for user confirmation
-// recording: native recording is ongoing
-// processing: native stop or renderer import/transcription is ongoing
-// ready + blockCreationStatus: post-processing finished
-// null: hide popup
 function setupRecordingListeners() {
+  subscribers.push(
+    recordingSessionStatus$
+      .pipe(distinctUntilChanged(shallowEqual))
+      .subscribe(() => {
+        emitRecordingStatus();
+      }),
+    recordingImportQueue$
+      .pipe(distinctUntilChanged(shallowEqual))
+      .subscribe(() => {
+        emitRecordingStatus();
+      })
+  );
+
   subscribers.push(
     recordingStatus$
       .pipe(distinctUntilChanged(shallowEqual))
@@ -310,13 +441,12 @@ function setupRecordingListeners() {
           });
         }
 
-        if (isRecordingSettled(status)) {
-          // show the popup for 10s
+        if (isTerminalPopupStatus(status)) {
           setTimeout(
             () => {
               const currentStatus = recordingStatus$.value;
               if (
-                isRecordingSettled(currentStatus) &&
+                isTerminalPopupStatus(currentStatus) &&
                 currentStatus.id === status.id
               ) {
                 popup.hide().catch(err => {
@@ -324,10 +454,12 @@ function setupRecordingListeners() {
                 });
               }
             },
-            status.blockCreationStatus === 'failed' ? 30_000 : 10_000
+            status.status === 'import_failed' ||
+              status.status === 'finalize_failed'
+              ? 30_000
+              : 10_000
           );
         } else if (!status) {
-          // status is removed, we should hide the popup
           popupManager
             .get('recording')
             .hide()
@@ -452,11 +584,10 @@ export function setupRecordingFeature() {
       shareableContent = new ShareableContent();
       setupMediaListeners();
     }
-    // reset all states
-    recordingStatus$.next(null);
     setupAppGroups();
     setupNewRunningAppGroup();
     setupRecordingListeners();
+    emitRecordingStatus();
     return true;
   } catch (error) {
     logger.error('failed to setup recording feature', error);
@@ -479,10 +610,12 @@ function normalizeAppGroupInfo(
 export function newRecording(
   appGroup?: AppGroupInfo | number
 ): RecordingStatus | null {
-  return recordingStateMachine.dispatch({
+  const nextState = recordingStateMachine.dispatch({
     type: 'NEW_RECORDING',
     appGroup: normalizeAppGroupInfo(appGroup),
   });
+  emitRecordingStatus();
+  return serializeRecordingStatus(nextState);
 }
 
 export async function startRecording(
@@ -493,9 +626,10 @@ export async function startRecording(
     type: 'START_RECORDING',
     appGroup: normalizeAppGroupInfo(appGroup),
   });
+  emitRecordingStatus();
 
-  if (!state || state.status !== 'recording' || state === previousState) {
-    return state;
+  if (!state || state.sessionStatus !== 'starting' || state === previousState) {
+    return serializeRecordingStatus(state);
   }
 
   let nativeId: string | undefined;
@@ -503,7 +637,9 @@ export async function startRecording(
   try {
     fs.ensureDirSync(SAVED_RECORDINGS_DIR);
 
-    const meta = getNativeModule().startRecording({
+    logger.info(`recording ${state.id} starting`);
+    const nativeModule = await getNativeModuleAsync();
+    const meta = await nativeModule.startRecording({
       appProcessId: state.app?.processId,
       outputDir: SAVED_RECORDINGS_DIR,
       format: 'opus',
@@ -521,22 +657,30 @@ export async function startRecording(
       sampleRate: meta.sampleRate,
       numberOfChannels: meta.channels,
     });
+    emitRecordingStatus();
 
     if (!nextState || nextState.nativeId !== meta.id) {
       throw new Error('Failed to attach native recording metadata');
     }
 
-    return nextState;
+    logger.info(`recording ${state.id} started`, {
+      nativeId: meta.id,
+      sampleRate: meta.sampleRate,
+      channels: meta.channels,
+    });
+    return serializeRecordingStatus(nextState);
   } catch (error) {
     if (nativeId) {
-      cleanupAbandonedNativeRecording(nativeId);
+      await cleanupAbandonedNativeRecording(nativeId);
     }
     logger.error('failed to start recording', error);
-    return setRecordingBlockCreationStatus(
-      state.id,
-      'failed',
-      error instanceof Error ? error.message : undefined
-    );
+    const nextState = recordingStateMachine.dispatch({
+      type: 'START_RECORDING_FAILED',
+      id: state.id,
+      errorMessage: error instanceof Error ? error.message : undefined,
+    });
+    emitRecordingStatus();
+    return serializeRecordingStatus(nextState);
   }
 }
 
@@ -552,33 +696,57 @@ export async function stopRecording(id: number) {
     return;
   }
 
-  const processingState = recordingStateMachine.dispatch({
+  const finalizingState = recordingStateMachine.dispatch({
     type: 'STOP_RECORDING',
     id,
   });
+  emitRecordingStatus();
   if (
-    !processingState ||
-    processingState.id !== id ||
-    processingState.status !== 'processing'
+    !finalizingState ||
+    finalizingState.id !== id ||
+    finalizingState.sessionStatus !== 'finalizing'
   ) {
-    return serializeRecordingStatus(processingState ?? recording);
+    return serializeRecordingStatus(finalizingState ?? recording);
   }
 
   try {
-    const artifact = getNativeModule().stopRecording(recording.nativeId);
+    logger.info(`recording ${id} finalizing`, {
+      nativeId: recording.nativeId,
+    });
+    const nativeModule = await getNativeModuleAsync();
+    const artifact = await nativeModule.stopRecording(recording.nativeId);
     const filepath = await assertRecordingFilepath(artifact.filepath);
-    const readyStatus = recordingStateMachine.dispatch({
+    const finalizedStatus = recordingStateMachine.dispatch({
       type: 'ATTACH_RECORDING_ARTIFACT',
       id,
-      filepath,
-      sampleRate: artifact.sampleRate,
-      numberOfChannels: artifact.channels,
+      artifact: {
+        filepath,
+        sampleRate: artifact.sampleRate,
+        numberOfChannels: artifact.channels,
+        durationMs: artifact.durationMs,
+        size: artifact.size,
+        degraded: artifact.degraded,
+        overflowCount: artifact.overflowCount,
+      },
     });
+    emitRecordingStatus();
 
-    if (!readyStatus) {
+    if (!finalizedStatus) {
       logger.error('No recording status to save');
       return;
     }
+
+    const importEntry = recordingArtifactRegistry.enqueueFromSession(
+      finalizedStatus,
+      finalizedStatus.artifact ?? { filepath }
+    );
+    emitRecordingStatus();
+    logger.info(`recording ${id} finalized`, {
+      filepath,
+      degraded: artifact.degraded,
+      overflowCount: artifact.overflowCount,
+      importStatus: importEntry?.importStatus,
+    });
 
     getMainWindow()
       .then(mainWindow => {
@@ -590,19 +758,16 @@ export async function stopRecording(id: number) {
         logger.error('failed to bring up the window', err);
       });
 
-    return serializeRecordingStatus(readyStatus);
+    return serializeRecordingStatus(getProjectedRecordingStatus());
   } catch (error: unknown) {
     logger.error('Failed to stop recording', error);
-    const recordingStatus = await setRecordingBlockCreationStatus(
+    const nextState = recordingStateMachine.dispatch({
+      type: 'FINALIZE_RECORDING_FAILED',
       id,
-      'failed',
-      error instanceof Error ? error.message : undefined
-    );
-    if (!recordingStatus) {
-      logger.error('No recording status to stop');
-      return;
-    }
-    return serializeRecordingStatus(recordingStatus);
+      errorMessage: error instanceof Error ? error.message : undefined,
+    });
+    emitRecordingStatus();
+    return serializeRecordingStatus(nextState);
   }
 }
 
@@ -618,66 +783,137 @@ export async function readRecordingFile(filepath: string) {
   return fsp.readFile(normalizedPath);
 }
 
-function cleanupAbandonedNativeRecording(nativeId: string) {
+async function cleanupAbandonedNativeRecording(nativeId: string) {
   try {
-    const artifact = getNativeModule().stopRecording(nativeId);
-    void assertRecordingFilepath(artifact.filepath)
-      .then(filepath => {
-        fs.removeSync(filepath);
-      })
-      .catch(error => {
-        logger.error('failed to validate abandoned recording filepath', error);
-      });
+    const nativeModule = await getNativeModuleAsync();
+    await nativeModule.abortRecording(nativeId);
   } catch (error) {
     logger.error('failed to cleanup abandoned native recording', error);
   }
 }
 
-export async function setRecordingBlockCreationStatus(
-  id: number,
-  status: 'success' | 'failed',
-  errorMessage?: string
-) {
-  return recordingStateMachine.dispatch({
-    type: 'SET_BLOCK_CREATION_STATUS',
-    id,
-    status,
-    errorMessage,
+export function getRecordingImportQueue() {
+  return recordingArtifactRegistry.entries.flatMap(entry => {
+    const serialized = serializeRecordingImportStatus(entry);
+    return serialized ? [serialized] : [];
   });
+}
+
+export function claimRecordingImport(id: number) {
+  const status = recordingArtifactRegistry.claim(id);
+  if (status) {
+    logger.info(`recording import ${id} claimed`);
+  }
+  emitRecordingStatus();
+  return serializeRecordingImportStatus(status);
+}
+
+export function completeRecordingImport(id: number) {
+  logger.info(`recording import ${id} completed`);
+  const status = recordingArtifactRegistry.markImported(id);
+  emitRecordingStatus();
+  return serializeRecordingImportStatus(status);
+}
+
+export function failRecordingImport(id: number, errorMessage?: string) {
+  logger.error(`recording import ${id} failed`, errorMessage);
+  const status = recordingArtifactRegistry.markFailed(id, errorMessage);
+  emitRecordingStatus();
+  return serializeRecordingImportStatus(status);
 }
 
 export function removeRecording(id: number) {
   recordingStateMachine.dispatch({ type: 'REMOVE_RECORDING', id });
+  recordingArtifactRegistry.remove(id);
+  emitRecordingStatus();
 }
 
 export interface SerializedRecordingStatus {
   id: number;
   status: RecordingStatus['status'];
-  blockCreationStatus?: RecordingStatus['blockCreationStatus'];
   appName?: string;
-  // if there is no app group, it means the recording is for system audio
   appGroupId?: number;
   icon?: Buffer;
   startTime: number;
   filepath?: string;
   sampleRate?: number;
   numberOfChannels?: number;
+  durationMs?: number;
+  size?: number;
+  degraded?: boolean;
+  overflowCount?: number;
+  errorMessage?: string;
 }
 
 export function serializeRecordingStatus(
-  status: RecordingStatus
+  status: RecordingStatus | RecordingSessionStatus | null | undefined
 ): SerializedRecordingStatus | null {
+  const serialized =
+    !status || 'sessionStatus' in status
+      ? serializeSessionStatus(status ?? null)
+      : status;
+
+  if (!serialized) {
+    return null;
+  }
+
+  return {
+    id: serialized.id,
+    status: serialized.status,
+    appName: serialized.appName,
+    appGroupId: serialized.appGroupId,
+    icon: serialized.icon,
+    startTime: serialized.startTime,
+    filepath: serialized.filepath,
+    sampleRate: serialized.sampleRate,
+    numberOfChannels: serialized.numberOfChannels,
+    durationMs: serialized.durationMs,
+    size: serialized.size,
+    degraded: serialized.degraded,
+    overflowCount: serialized.overflowCount,
+    errorMessage: serialized.errorMessage,
+  };
+}
+
+export interface SerializedRecordingImportStatus {
+  id: number;
+  appName?: string;
+  startTime: number;
+  filepath: string;
+  sampleRate?: number;
+  numberOfChannels?: number;
+  durationMs?: number;
+  size?: number;
+  degraded?: boolean;
+  overflowCount?: number;
+  importStatus: RecordingImportStatus['importStatus'];
+  errorMessage?: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export function serializeRecordingImportStatus(
+  status: RecordingImportStatus | null | undefined
+): SerializedRecordingImportStatus | null {
+  if (!status) {
+    return null;
+  }
+
   return {
     id: status.id,
-    status: status.status,
-    blockCreationStatus: status.blockCreationStatus,
-    appName: status.appGroup?.name,
-    appGroupId: status.appGroup?.processGroupId,
-    icon: status.appGroup?.icon,
+    appName: status.appName,
     startTime: status.startTime,
     filepath: status.filepath,
     sampleRate: status.sampleRate,
     numberOfChannels: status.numberOfChannels,
+    durationMs: status.durationMs,
+    size: status.size,
+    degraded: status.degraded,
+    overflowCount: status.overflowCount,
+    importStatus: status.importStatus,
+    errorMessage: status.errorMessage,
+    createdAt: status.createdAt,
+    updatedAt: status.updatedAt,
   };
 }
 

@@ -2,17 +2,15 @@ import { BehaviorSubject } from 'rxjs';
 
 import { shallowEqual } from '../../shared/utils';
 import { logger } from '../logger';
-import type { AppGroupInfo, RecordingStatus } from './types';
+import type {
+  AppGroupInfo,
+  RecordingArtifactInfo,
+  RecordingSessionStatus,
+} from './types';
 
-/**
- * Recording state machine events
- */
 export type RecordingEvent =
   | { type: 'NEW_RECORDING'; appGroup?: AppGroupInfo }
-  | {
-      type: 'START_RECORDING';
-      appGroup?: AppGroupInfo;
-    }
+  | { type: 'START_RECORDING'; appGroup?: AppGroupInfo }
   | {
       type: 'ATTACH_NATIVE_RECORDING';
       id: number;
@@ -22,56 +20,33 @@ export type RecordingEvent =
       sampleRate: number;
       numberOfChannels: number;
     }
-  | {
-      type: 'STOP_RECORDING';
-      id: number;
-    }
+  | { type: 'START_RECORDING_FAILED'; id: number; errorMessage?: string }
+  | { type: 'STOP_RECORDING'; id: number }
   | {
       type: 'ATTACH_RECORDING_ARTIFACT';
       id: number;
-      filepath: string;
-      sampleRate?: number;
-      numberOfChannels?: number;
+      artifact: RecordingArtifactInfo;
     }
-  | {
-      type: 'SET_BLOCK_CREATION_STATUS';
-      id: number;
-      status: 'success' | 'failed';
-      errorMessage?: string;
-    }
+  | { type: 'FINALIZE_RECORDING_FAILED'; id: number; errorMessage?: string }
+  | { type: 'ABORT_RECORDING'; id: number }
   | { type: 'REMOVE_RECORDING'; id: number };
 
-/**
- * Recording State Machine
- * Handles state transitions for the recording process
- */
 export class RecordingStateMachine {
   private recordingId = 0;
   private readonly recordingStatus$ =
-    new BehaviorSubject<RecordingStatus | null>(null);
+    new BehaviorSubject<RecordingSessionStatus | null>(null);
 
-  /**
-   * Get the current recording status
-   */
-  get status(): RecordingStatus | null {
+  get status(): RecordingSessionStatus | null {
     return this.recordingStatus$.value;
   }
 
-  /**
-   * Get the BehaviorSubject for recording status
-   */
-  get status$(): BehaviorSubject<RecordingStatus | null> {
+  get status$(): BehaviorSubject<RecordingSessionStatus | null> {
     return this.recordingStatus$;
   }
 
-  /**
-   * Dispatch an event to the state machine
-   * @param event The event to dispatch
-   * @returns The new recording status after the event is processed
-   */
-  dispatch(event: RecordingEvent, emit = true): RecordingStatus | null {
+  dispatch(event: RecordingEvent, emit = true): RecordingSessionStatus | null {
     const currentStatus = this.recordingStatus$.value;
-    let newStatus: RecordingStatus | null = null;
+    let newStatus: RecordingSessionStatus | null = null;
 
     switch (event.type) {
       case 'NEW_RECORDING':
@@ -83,23 +58,29 @@ export class RecordingStateMachine {
       case 'ATTACH_NATIVE_RECORDING':
         newStatus = this.handleAttachNativeRecording(event);
         break;
+      case 'START_RECORDING_FAILED':
+        newStatus = this.handleStartRecordingFailed(
+          event.id,
+          event.errorMessage
+        );
+        break;
       case 'STOP_RECORDING':
         newStatus = this.handleStopRecording(event.id);
         break;
       case 'ATTACH_RECORDING_ARTIFACT':
         newStatus = this.handleAttachRecordingArtifact(
           event.id,
-          event.filepath,
-          event.sampleRate,
-          event.numberOfChannels
+          event.artifact
         );
         break;
-      case 'SET_BLOCK_CREATION_STATUS':
-        newStatus = this.handleSetBlockCreationStatus(
+      case 'FINALIZE_RECORDING_FAILED':
+        newStatus = this.handleFinalizeRecordingFailed(
           event.id,
-          event.status,
           event.errorMessage
         );
+        break;
+      case 'ABORT_RECORDING':
+        newStatus = this.handleAbortRecording(event.id);
         break;
       case 'REMOVE_RECORDING':
         this.handleRemoveRecording(event.id);
@@ -121,86 +102,104 @@ export class RecordingStateMachine {
     return newStatus;
   }
 
-  /**
-   * Handle the NEW_RECORDING event
-   */
-  private handleNewRecording(appGroup?: AppGroupInfo): RecordingStatus {
-    const recordingStatus: RecordingStatus = {
+  private hasActiveSession(status: RecordingSessionStatus | null | undefined) {
+    return (
+      status?.sessionStatus === 'starting' ||
+      status?.sessionStatus === 'recording' ||
+      status?.sessionStatus === 'finalizing'
+    );
+  }
+
+  private handleNewRecording(appGroup?: AppGroupInfo): RecordingSessionStatus {
+    return {
       id: this.recordingId++,
-      status: 'new',
+      sessionStatus: 'new',
       startTime: Date.now(),
       app: appGroup?.apps.find(app => app.isRunning),
       appGroup,
     };
-    return recordingStatus;
   }
 
-  /**
-   * Handle the START_RECORDING event
-   */
-  private handleStartRecording(appGroup?: AppGroupInfo): RecordingStatus {
+  private handleStartRecording(
+    appGroup?: AppGroupInfo
+  ): RecordingSessionStatus | null {
     const currentStatus = this.recordingStatus$.value;
-    if (
-      currentStatus?.status === 'recording' ||
-      currentStatus?.status === 'processing'
-    ) {
+    if (this.hasActiveSession(currentStatus)) {
       logger.error(
-        'Cannot start a new recording if there is already a recording'
+        'Cannot start a new recording while another session is active'
       );
       return currentStatus;
     }
 
     if (
+      currentStatus?.sessionStatus === 'new' &&
       appGroup &&
-      currentStatus?.appGroup?.processGroupId === appGroup.processGroupId &&
-      currentStatus.status === 'new'
+      currentStatus.appGroup?.processGroupId === appGroup.processGroupId
     ) {
       return {
         ...currentStatus,
-        status: 'recording',
-      };
-    } else {
-      const newStatus = this.handleNewRecording(appGroup);
-      return {
-        ...newStatus,
-        status: 'recording',
+        sessionStatus: 'starting',
+        errorMessage: undefined,
       };
     }
+
+    const nextStatus =
+      currentStatus?.sessionStatus === 'new' && !appGroup
+        ? currentStatus
+        : this.handleNewRecording(appGroup);
+
+    return {
+      ...nextStatus,
+      sessionStatus: 'starting',
+      errorMessage: undefined,
+    };
   }
 
-  /**
-   * Attach native recording metadata to the current recording
-   */
   private handleAttachNativeRecording(
     event: Extract<RecordingEvent, { type: 'ATTACH_NATIVE_RECORDING' }>
-  ): RecordingStatus | null {
+  ) {
     const currentStatus = this.recordingStatus$.value;
     if (!currentStatus || currentStatus.id !== event.id) {
       logger.error(`Recording ${event.id} not found for native attachment`);
       return currentStatus;
     }
 
-    if (currentStatus.status !== 'recording') {
+    if (currentStatus.sessionStatus !== 'starting') {
       logger.error(
-        `Cannot attach native metadata when recording is in ${currentStatus.status} state`
+        `Cannot attach native metadata when recording is in ${currentStatus.sessionStatus} state`
       );
       return currentStatus;
     }
 
     return {
       ...currentStatus,
+      sessionStatus: 'recording' as const,
       nativeId: event.nativeId,
       startTime: event.startTime,
-      filepath: event.filepath,
-      sampleRate: event.sampleRate,
-      numberOfChannels: event.numberOfChannels,
+      artifact: {
+        filepath: event.filepath,
+        sampleRate: event.sampleRate,
+        numberOfChannels: event.numberOfChannels,
+      },
     };
   }
 
-  /**
-   * Handle the STOP_RECORDING event
-   */
-  private handleStopRecording(id: number): RecordingStatus | null {
+  private handleStartRecordingFailed(id: number, errorMessage?: string) {
+    const currentStatus = this.recordingStatus$.value;
+
+    if (!currentStatus || currentStatus.id !== id) {
+      logger.error(`Recording ${id} not found for start failure`);
+      return currentStatus;
+    }
+
+    return {
+      ...currentStatus,
+      sessionStatus: 'finalize_failed' as const,
+      errorMessage,
+    };
+  }
+
+  private handleStopRecording(id: number) {
     const currentStatus = this.recordingStatus$.value;
 
     if (!currentStatus || currentStatus.id !== id) {
@@ -208,26 +207,24 @@ export class RecordingStateMachine {
       return currentStatus;
     }
 
-    if (currentStatus.status !== 'recording') {
-      logger.error(`Cannot stop recording in ${currentStatus.status} state`);
+    if (currentStatus.sessionStatus !== 'recording') {
+      logger.error(
+        `Cannot stop recording in ${currentStatus.sessionStatus} state`
+      );
       return currentStatus;
     }
 
     return {
       ...currentStatus,
-      status: 'processing',
+      sessionStatus: 'finalizing' as const,
+      errorMessage: undefined,
     };
   }
 
-  /**
-   * Attach the encoded artifact once native stop completes
-   */
   private handleAttachRecordingArtifact(
     id: number,
-    filepath: string,
-    sampleRate?: number,
-    numberOfChannels?: number
-  ): RecordingStatus | null {
+    artifact: RecordingArtifactInfo
+  ) {
     const currentStatus = this.recordingStatus$.value;
 
     if (!currentStatus || currentStatus.id !== id) {
@@ -235,66 +232,60 @@ export class RecordingStateMachine {
       return currentStatus;
     }
 
-    if (currentStatus.status !== 'processing') {
-      logger.error(`Cannot attach artifact in ${currentStatus.status} state`);
+    if (currentStatus.sessionStatus !== 'finalizing') {
+      logger.error(
+        `Cannot attach artifact in ${currentStatus.sessionStatus} state`
+      );
       return currentStatus;
     }
 
     return {
       ...currentStatus,
-      filepath,
-      sampleRate: sampleRate ?? currentStatus.sampleRate,
-      numberOfChannels: numberOfChannels ?? currentStatus.numberOfChannels,
+      sessionStatus: 'finalized' as const,
+      artifact: {
+        ...currentStatus.artifact,
+        ...artifact,
+      },
     };
   }
 
-  /**
-   * Set the renderer-side block creation result
-   */
-  private handleSetBlockCreationStatus(
-    id: number,
-    status: 'success' | 'failed',
-    errorMessage?: string
-  ): RecordingStatus | null {
+  private handleFinalizeRecordingFailed(id: number, errorMessage?: string) {
     const currentStatus = this.recordingStatus$.value;
 
     if (!currentStatus || currentStatus.id !== id) {
-      logger.error(`Recording ${id} not found for block creation status`);
-      return currentStatus;
-    }
-
-    if (currentStatus.status === 'new') {
-      logger.error(`Cannot settle recording ${id} before it starts`);
-      return currentStatus;
-    }
-
-    if (
-      currentStatus.status === 'ready' &&
-      currentStatus.blockCreationStatus !== undefined
-    ) {
+      logger.error(`Recording ${id} not found for finalize failure`);
       return currentStatus;
     }
 
     if (errorMessage) {
-      logger.error(`Recording ${id} create block failed: ${errorMessage}`);
+      logger.error(`Recording ${id} finalize failed: ${errorMessage}`);
     }
 
     return {
       ...currentStatus,
-      status: 'ready',
-      blockCreationStatus: status,
+      sessionStatus: 'finalize_failed' as const,
+      errorMessage,
     };
   }
 
-  /**
-   * Handle the REMOVE_RECORDING event
-   */
-  private handleRemoveRecording(id: number): void {
-    // Actual recording removal logic would be handled by the caller
-    // This just ensures the state is updated correctly
+  private handleAbortRecording(id: number) {
+    const currentStatus = this.recordingStatus$.value;
+
+    if (!currentStatus || currentStatus.id !== id) {
+      logger.error(`Recording ${id} not found for abort`);
+      return currentStatus;
+    }
+
+    return {
+      ...currentStatus,
+      sessionStatus: 'aborted' as const,
+      errorMessage: undefined,
+    };
+  }
+
+  private handleRemoveRecording(id: number) {
     logger.info(`Recording ${id} removed from state machine`);
   }
 }
 
-// Create and export a singleton instance
 export const recordingStateMachine = new RecordingStateMachine();

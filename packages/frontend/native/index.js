@@ -577,6 +577,7 @@ module.exports.ApplicationListChangedSubscriber = nativeBinding.ApplicationListC
 module.exports.ApplicationStateChangedSubscriber = nativeBinding.ApplicationStateChangedSubscriber
 module.exports.AudioCaptureSession = nativeBinding.AudioCaptureSession
 module.exports.ShareableContent = nativeBinding.ShareableContent
+module.exports.abortRecording = nativeBinding.abortRecording
 module.exports.decodeAudio = nativeBinding.decodeAudio
 module.exports.decodeAudioSync = nativeBinding.decodeAudioSync
 module.exports.startRecording = nativeBinding.startRecording

@@ -18,19 +18,76 @@ export interface AppGroupInfo {
   isRunning: boolean;
 }
 
-export interface RecordingStatus {
+export type RecordingSessionState =
+  | 'new'
+  | 'starting'
+  | 'recording'
+  | 'finalizing'
+  | 'finalized'
+  | 'finalize_failed'
+  | 'aborted';
+
+export type RecordingImportState =
+  | 'pending_import'
+  | 'importing'
+  | 'imported'
+  | 'import_failed';
+
+export interface RecordingArtifactInfo {
+  filepath: string;
+  sampleRate?: number;
+  numberOfChannels?: number;
+  durationMs?: number;
+  size?: number;
+  degraded?: boolean;
+  overflowCount?: number;
+}
+
+export interface RecordingSessionStatus {
   id: number; // corresponds to the recording id
-  // an app group is detected and waiting for user confirmation
-  // recording: the native recorder is running
-  // processing: recording has stopped and the artifact is being prepared/imported
-  // ready: the post-processing result has been settled
-  status: 'new' | 'recording' | 'processing' | 'ready';
+  sessionStatus: RecordingSessionState;
   app?: TappableAppInfo;
   appGroup?: AppGroupInfo;
   startTime: number; // 0 means not started yet
-  filepath?: string; // encoded file path
   nativeId?: string;
+  artifact?: RecordingArtifactInfo;
+  errorMessage?: string;
+}
+
+export interface RecordingImportStatus extends RecordingArtifactInfo {
+  id: number;
+  appName?: string;
+  startTime: number;
+  importStatus: RecordingImportState;
+  errorMessage?: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export type RecordingDisplayState =
+  | 'new'
+  | 'starting'
+  | 'recording'
+  | 'finalizing'
+  | 'pending_import'
+  | 'importing'
+  | 'imported'
+  | 'import_failed'
+  | 'finalize_failed';
+
+export interface RecordingStatus {
+  id: number;
+  status: RecordingDisplayState;
+  appName?: string;
+  appGroupId?: number;
+  icon?: Buffer;
+  startTime: number;
+  filepath?: string;
   sampleRate?: number;
   numberOfChannels?: number;
-  blockCreationStatus?: 'success' | 'failed';
+  durationMs?: number;
+  size?: number;
+  degraded?: boolean;
+  overflowCount?: number;
+  errorMessage?: string;
 }

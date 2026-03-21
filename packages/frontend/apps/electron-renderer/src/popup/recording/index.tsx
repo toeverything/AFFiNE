@@ -10,8 +10,16 @@ import * as styles from './styles.css';
 
 type Status = {
   id: number;
-  status: 'new' | 'recording' | 'processing' | 'ready';
-  blockCreationStatus?: 'success' | 'failed';
+  status:
+    | 'new'
+    | 'starting'
+    | 'recording'
+    | 'finalizing'
+    | 'pending_import'
+    | 'importing'
+    | 'imported'
+    | 'import_failed'
+    | 'finalize_failed';
   appName?: string;
   appGroupId?: number;
   icon?: Buffer;
@@ -56,19 +64,17 @@ export function Recording() {
     }
     if (status.status === 'new') {
       return t['com.affine.recording.new']();
-    } else if (
-      status.status === 'ready' &&
-      status.blockCreationStatus === 'success'
-    ) {
+    } else if (status.status === 'imported') {
       return t['com.affine.recording.success.prompt']();
     } else if (
-      status.status === 'ready' &&
-      status.blockCreationStatus === 'failed'
+      status.status === 'import_failed' ||
+      status.status === 'finalize_failed'
     ) {
       return t['com.affine.recording.failed.prompt']();
     } else if (
+      status.status === 'starting' ||
       status.status === 'recording' ||
-      status.status === 'processing'
+      status.status === 'finalizing'
     ) {
       if (status.appName) {
         return t['com.affine.recording.recording']({
@@ -77,6 +83,11 @@ export function Recording() {
       } else {
         return t['com.affine.recording.recording.unnamed']();
       }
+    } else if (
+      status.status === 'pending_import' ||
+      status.status === 'importing'
+    ) {
+      return t['com.affine.recording.success.prompt']();
     }
     return null;
   }, [status, t]);
@@ -155,8 +166,10 @@ export function Recording() {
         </Button>
       );
     } else if (
-      status.status === 'processing' ||
-      (status.status === 'ready' && !status.blockCreationStatus)
+      status.status === 'starting' ||
+      status.status === 'finalizing' ||
+      status.status === 'pending_import' ||
+      status.status === 'importing'
     ) {
       return (
         <Button
@@ -166,18 +179,15 @@ export function Recording() {
           disabled
         />
       );
-    } else if (
-      status.status === 'ready' &&
-      status.blockCreationStatus === 'success'
-    ) {
+    } else if (status.status === 'imported') {
       return (
         <Button variant="primary" onClick={handleDismiss}>
           {t['com.affine.recording.success.button']()}
         </Button>
       );
     } else if (
-      status.status === 'ready' &&
-      status.blockCreationStatus === 'failed'
+      status.status === 'import_failed' ||
+      status.status === 'finalize_failed'
     ) {
       return (
         <>

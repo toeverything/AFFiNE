@@ -1,6 +1,9 @@
-use std::sync::Arc;
+use std::sync::{
+  Arc,
+  atomic::{AtomicU64, Ordering},
+};
 
-use crossbeam_channel::Sender;
+use crossbeam_channel::{Sender, TrySendError};
 use napi::{
   bindgen_prelude::Float32Array,
   threadsafe_function::{ThreadsafeFunction, ThreadsafeFunctionCallMode},
@@ -11,7 +14,10 @@ use napi::{
 #[derive(Clone)]
 pub enum AudioCallback {
   Js(Arc<ThreadsafeFunction<Float32Array, ()>>),
-  Channel(Sender<Vec<f32>>),
+  Channel {
+    sender: Sender<Vec<f32>>,
+    overflow_count: Arc<AtomicU64>,
+  },
 }
 
 impl AudioCallback {
@@ -22,10 +28,16 @@ impl AudioCallback {
         // audio thread.
         let _ = func.call(Ok(samples.into()), ThreadsafeFunctionCallMode::NonBlocking);
       }
-      Self::Channel(sender) => {
-        // Drop the chunk if the channel is full to avoid blocking capture.
-        let _ = sender.try_send(samples);
-      }
+      Self::Channel { sender, overflow_count } => match sender.try_send(samples) {
+        Ok(()) => {}
+        Err(TrySendError::Full(_)) => {
+          let dropped = overflow_count.fetch_add(1, Ordering::Relaxed) + 1;
+          if dropped == 1 || dropped.is_power_of_two() {
+            eprintln!("[affine_media_capture] audio queue overflow, dropped {dropped} chunks");
+          }
+        }
+        Err(TrySendError::Disconnected(_)) => {}
+      },
     }
   }
 }

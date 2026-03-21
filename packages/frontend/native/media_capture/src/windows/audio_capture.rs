@@ -192,19 +192,26 @@ impl AudioCaptureSession {
     if self.stopped.load(Ordering::SeqCst) {
       return Ok(());
     }
+    self.stopped.store(true, Ordering::SeqCst);
+    let mut pause_errors = Vec::new();
     self
       .mic_stream
       .pause()
-      .map_err(|e| Error::new(Status::GenericFailure, format!("{e}")))?;
+      .map_err(|e| pause_errors.push(format!("pause mic stream: {e}")))
+      .ok();
     self
       .lb_stream
       .pause()
-      .map_err(|e| Error::new(Status::GenericFailure, format!("{e}")))?;
-    self.stopped.store(true, Ordering::SeqCst);
+      .map_err(|e| pause_errors.push(format!("pause loopback stream: {e}")))
+      .ok();
     if let Some(jh) = self.jh.take() {
       let _ = jh.join(); // ignore poison
     }
-    Ok(())
+    if pause_errors.is_empty() {
+      Ok(())
+    } else {
+      Err(Error::new(Status::GenericFailure, pause_errors.join("; ")))
+    }
   }
 }
 

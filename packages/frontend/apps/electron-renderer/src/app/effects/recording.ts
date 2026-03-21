@@ -13,16 +13,15 @@ import type { FrameworkProvider } from '@toeverything/infra';
 import { getCurrentWorkspace, isAiEnabled } from './utils';
 
 const logger = new DebugLogger('electron-renderer:recording');
-const RECORDING_PROCESS_RETRY_MS = 1000;
+const RECORDING_IMPORT_RETRY_MS = 1000;
 const NATIVE_RECORDING_MIME_TYPE = 'audio/ogg';
 
-type ProcessingRecordingStatus = {
+type RecordingImportStatus = {
   id: number;
-  status: 'processing';
   appName?: string;
-  blockCreationStatus?: undefined;
   filepath: string;
   startTime: number;
+  importStatus: 'pending_import' | 'importing' | 'imported' | 'import_failed';
 };
 
 type WorkspaceHandle = NonNullable<ReturnType<typeof getCurrentWorkspace>>;
@@ -65,24 +64,10 @@ async function saveRecordingBlob(blobEngine: BlobEngine, filepath: string) {
   return { blob, blobId };
 }
 
-function shouldProcessRecording(
-  status: unknown
-): status is ProcessingRecordingStatus {
-  return (
-    !!status &&
-    typeof status === 'object' &&
-    'status' in status &&
-    status.status === 'processing' &&
-    'filepath' in status &&
-    typeof status.filepath === 'string' &&
-    !('blockCreationStatus' in status && status.blockCreationStatus)
-  );
-}
-
 async function createRecordingDoc(
   frameworkProvider: FrameworkProvider,
   workspace: WorkspaceHandle['workspace'],
-  status: ProcessingRecordingStatus
+  status: RecordingImportStatus
 ) {
   const docsService = workspace.scope.get(DocsService);
   const aiEnabled = isAiEnabled(frameworkProvider);
@@ -99,13 +84,11 @@ async function createRecordingDoc(
     const docProps: DocProps = {
       onStoreLoad: (doc, { noteId }) => {
         void (async () => {
-          // it takes a while to save the blob, so we show the attachment first
           const { blobId, blob } = await saveRecordingBlob(
             doc.workspace.blobSync,
             recordingFilepath
           );
 
-          // name + timestamp(readable) + extension
           const attachmentName =
             (status.appName ?? 'System Audio') + ' ' + timestamp + '.opus';
 
@@ -163,7 +146,7 @@ async function createRecordingDoc(
 }
 
 export function setupRecordingEvents(frameworkProvider: FrameworkProvider) {
-  let pendingStatus: ProcessingRecordingStatus | null = null;
+  let importQueue: RecordingImportStatus[] = [];
   let retryTimer: ReturnType<typeof setTimeout> | null = null;
   let processingStatusId: number | null = null;
 
@@ -174,28 +157,48 @@ export function setupRecordingEvents(frameworkProvider: FrameworkProvider) {
     }
   };
 
-  const clearPending = (id?: number) => {
-    if (id === undefined || pendingStatus?.id === id) {
-      pendingStatus = null;
-      clearRetry();
-    }
-    if (id === undefined || processingStatusId === id) {
+  const updateQueue = (nextQueue: RecordingImportStatus[]) => {
+    importQueue = nextQueue;
+    if (
+      processingStatusId !== null &&
+      !importQueue.some(
+        status =>
+          status.id === processingStatusId &&
+          status.importStatus === 'importing'
+      )
+    ) {
       processingStatusId = null;
     }
   };
 
+  const updateLocalImportStatus = (
+    id: number,
+    importStatus: RecordingImportStatus['importStatus']
+  ) => {
+    importQueue = importQueue.map(status =>
+      status.id === id ? { ...status, importStatus } : status
+    );
+  };
+
+  const getNextImportCandidate = () =>
+    importQueue.find(
+      status =>
+        status.importStatus === 'pending_import' ||
+        status.importStatus === 'import_failed'
+    ) ?? null;
+
   const scheduleRetry = () => {
-    if (!pendingStatus || retryTimer !== null) {
+    if (!getNextImportCandidate() || retryTimer !== null) {
       return;
     }
     retryTimer = setTimeout(() => {
       retryTimer = null;
-      void processPendingStatus().catch(console.error);
-    }, RECORDING_PROCESS_RETRY_MS);
+      void processNextImport().catch(console.error);
+    }, RECORDING_IMPORT_RETRY_MS);
   };
 
-  const processPendingStatus = async () => {
-    const status = pendingStatus;
+  const processNextImport = async () => {
+    const status = getNextImportCandidate();
     if (!status || processingStatusId === status.id) {
       return;
     }
@@ -216,8 +219,12 @@ export function setupRecordingEvents(frameworkProvider: FrameworkProvider) {
 
     using currentWorkspace = getCurrentWorkspace(frameworkProvider);
     if (!currentWorkspace) {
-      // Workspace can lag behind the post-recording status update for a short
-      // time; keep retrying instead of permanently failing the import.
+      scheduleRetry();
+      return;
+    }
+
+    const claimed = await apis?.recording.claimRecordingImport(status.id);
+    if (!claimed) {
       scheduleRetry();
       return;
     }
@@ -228,47 +235,38 @@ export function setupRecordingEvents(frameworkProvider: FrameworkProvider) {
       await createRecordingDoc(
         frameworkProvider,
         currentWorkspace.workspace,
-        status
+        claimed
       );
-      await apis?.recording.setRecordingBlockCreationStatus(
-        status.id,
-        'success'
-      );
-      clearPending(status.id);
+      updateLocalImportStatus(status.id, 'imported');
+      await apis?.recording.completeRecordingImport(status.id);
     } catch (error) {
-      logger.error('Failed to create recording block', error);
-      try {
-        await apis?.recording.setRecordingBlockCreationStatus(
-          status.id,
-          'failed',
-          error instanceof Error ? error.message : undefined
-        );
-      } finally {
-        clearPending(status.id);
-      }
+      logger.error('Failed to import recording artifact', error);
+      updateLocalImportStatus(status.id, 'import_failed');
+      await apis?.recording.failRecordingImport(
+        status.id,
+        error instanceof Error ? error.message : undefined
+      );
     } finally {
-      if (pendingStatus?.id === status.id) {
-        processingStatusId = null;
-        scheduleRetry();
-      }
+      processingStatusId = null;
+      scheduleRetry();
     }
   };
 
-  events?.recording.onRecordingStatusChanged(status => {
-    if (shouldProcessRecording(status)) {
-      pendingStatus = status;
-      clearRetry();
-      void processPendingStatus().catch(console.error);
-      return;
-    }
+  if (apis?.recording) {
+    void apis.recording
+      .getRecordingImportQueue()
+      .then(queue => {
+        updateQueue(queue ?? []);
+        void processNextImport().catch(console.error);
+      })
+      .catch(error => {
+        logger.error('Failed to load recording import queue', error);
+      });
+  }
 
-    if (!status) {
-      clearPending();
-      return;
-    }
-
-    if (pendingStatus?.id === status.id) {
-      clearPending(status.id);
-    }
+  events?.recording.onRecordingImportQueueChanged(queue => {
+    updateQueue(queue);
+    clearRetry();
+    void processNextImport().catch(console.error);
   });
 }
