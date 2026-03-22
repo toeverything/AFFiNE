@@ -1,11 +1,44 @@
 import { interval, map, take, takeUntil } from 'rxjs';
 import Sinon from 'sinon';
 
-import { JobQueue } from '../../base';
-
 export class MockJobQueue {
-  add = Sinon.createStubInstance(JobQueue).add.resolves();
-  remove = Sinon.createStubInstance(JobQueue).remove.resolves();
+  private readonly jobs = new Map<
+    string,
+    { name: JobName; payload: Jobs[JobName] }
+  >();
+  add = Sinon.stub().callsFake(
+    async <Job extends JobName>(
+      name: Job,
+      payload: Jobs[Job],
+      opts?: { jobId?: string }
+    ) => {
+      if (opts?.jobId && this.jobs.has(opts.jobId)) {
+        return { id: opts.jobId, name };
+      }
+
+      if (opts?.jobId) {
+        this.jobs.set(opts.jobId, { name, payload });
+      }
+
+      return { id: opts?.jobId, name };
+    }
+  );
+
+  get = Sinon.stub().callsFake(
+    async <Job extends JobName>(jobId: string, name: Job) => {
+      const job = this.jobs.get(jobId);
+      if (!job || job.name !== name) {
+        return undefined;
+      }
+
+      return { id: jobId, name: job.name };
+    }
+  );
+
+  remove = Sinon.stub().callsFake(async (jobId: string) => {
+    this.jobs.delete(jobId);
+    return undefined;
+  });
 
   last<Job extends JobName>(name: Job): { name: Job; payload: Jobs[Job] } {
     const addJobName = this.add.lastCall?.args[0];
@@ -53,6 +86,8 @@ export class MockJobQueue {
   }
 
   count(name: JobName) {
-    return this.add.getCalls().filter(call => call.args[0] === name).length;
+    return this.add
+      .getCalls()
+      .filter((call: Sinon.SinonSpyCall) => call.args[0] === name).length;
   }
 }

@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+
 import { Injectable, Logger } from '@nestjs/common';
 import { getStreamAsBuffer } from 'get-stream';
 
@@ -90,11 +92,49 @@ export class WorkspaceService {
       inviteId,
     });
   }
+
+  private getInvitationNotificationJobId(workspaceId: string, email: string) {
+    const normalizedEmail = email.trim().toLowerCase();
+    const emailHash = createHash('sha256')
+      .update(normalizedEmail)
+      .digest('hex');
+    return `workspace:member-invite:${workspaceId}:${emailHash}`;
+  }
+
   async sendInvitationNotification(inviterId: string, inviteId: string) {
-    await this.queue.add('notification.sendInvitation', {
-      inviterId,
-      inviteId,
-    });
+    const invite = await this.models.workspaceUser.getById(inviteId);
+    if (!invite) {
+      return false;
+    }
+
+    const invitee = await this.models.user.get(invite.userId);
+    if (!invitee) {
+      return false;
+    }
+
+    const jobId = this.getInvitationNotificationJobId(
+      invite.workspaceId,
+      invitee.email
+    );
+    const queuedJob = await this.queue.get(
+      jobId,
+      'notification.sendInvitation'
+    );
+
+    if (queuedJob) {
+      return false;
+    }
+
+    await this.queue.add(
+      'notification.sendInvitation',
+      {
+        inviterId,
+        inviteId,
+      },
+      { jobId }
+    );
+
+    return true;
   }
 
   // ================ Team ================
@@ -265,10 +305,10 @@ export class WorkspaceService {
     const owner = await this.models.workspaceUser.getOwner(workspaceId);
     for (const member of pendings) {
       try {
-        await this.queue.add('notification.sendInvitation', {
-          inviterId: member.inviterId ?? owner.id,
-          inviteId: member.id,
-        });
+        await this.sendInvitationNotification(
+          member.inviterId ?? owner.id,
+          member.id
+        );
       } catch (e) {
         this.logger.error('Failed to send invitation notification', e);
       }

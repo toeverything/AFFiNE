@@ -107,15 +107,13 @@ e2e('should resend invitation email for pending member', async t => {
       inviteId: inviteId!,
     },
   });
-  t.true(resendMemberInvite.allowed, 'failed to resend invitation');
-  t.is(resendMemberInvite.attempt, 1);
-  t.true(resendMemberInvite.retryAfterMs > 0);
+  t.true(resendMemberInvite, 'failed to resend invitation');
 
   const resendInvitationNotification = await app.queue.waitFor(
     'notification.sendInvitation'
   );
   t.is(resendInvitationNotification.payload.inviterId, owner.id);
-  t.is(resendInvitationNotification.payload.inviteId, inviteId);
+  t.is(resendInvitationNotification.payload.inviteId, inviteId!);
 
   const invitationJobCount = app.queue.count('notification.sendInvitation');
   const { resendMemberInvite: blockedResend } = await app.gql({
@@ -125,9 +123,7 @@ e2e('should resend invitation email for pending member', async t => {
       inviteId: inviteId!,
     },
   });
-  t.false(blockedResend.allowed);
-  t.is(blockedResend.attempt, 1);
-  t.true(blockedResend.retryAfterMs > 0);
+  t.false(blockedResend);
   t.is(
     app.queue.count('notification.sendInvitation'),
     invitationJobCount,

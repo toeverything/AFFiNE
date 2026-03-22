@@ -7,7 +7,7 @@ import {
 import { Permission, WorkspaceMemberStatus } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 
 export const MemberOptions = ({
   member,
@@ -27,25 +27,6 @@ export const MemberOptions = ({
   const permission = useService(WorkspacePermissionService).permission;
   const isTeam = useLiveData(permission.isTeam$);
   const { openConfirmModal } = useConfirmModal();
-  useLiveData(membersService.resendMemberInviteBackoff$);
-  const [now, setNow] = useState(() => Date.now());
-
-  useEffect(() => {
-    setNow(Date.now());
-    const timer = setInterval(() => {
-      setNow(Date.now());
-    }, 1000);
-
-    return () => {
-      clearInterval(timer);
-    };
-  }, []);
-
-  const resendRetryAfterMs = membersService.getMemberResendInviteRetryAfterMs(
-    member.email ?? undefined,
-    now
-  );
-  const resendRetryAfterSeconds = Math.ceil(resendRetryAfterMs / 1000);
 
   const openRemoveConfirmModal = useCallback(
     (successNotify: { title: string; message: string }) => {
@@ -105,27 +86,10 @@ export const MemberOptions = ({
       return;
     }
 
-    if (resendRetryAfterMs > 0) {
-      notify({
-        title:
-          t[
-            'com.affine.payment.member.team.resendInvite.cooldown.notify.title'
-          ](),
-        message: t.t(
-          'com.affine.payment.member.team.resendInvite.cooldown.notify.message',
-          {
-            name: inviteeName,
-            second: resendRetryAfterSeconds.toString(),
-          }
-        ),
-      });
-      return;
-    }
-
     membersService
-      .resendMemberInvite(member.inviteId, member.email)
+      .resendMemberInvite(member.inviteId)
       .then(result => {
-        if (result.allowed) {
+        if (result) {
           notify.success({
             title:
               t['com.affine.payment.member.team.resendInvite.notify.title'](),
@@ -147,7 +111,7 @@ export const MemberOptions = ({
               'com.affine.payment.member.team.resendInvite.cooldown.notify.message',
               {
                 name: inviteeName,
-                second: Math.ceil(result.retryAfterMs / 1000).toString(),
+                second: '',
               }
             ),
           });
@@ -158,11 +122,8 @@ export const MemberOptions = ({
           title: 'Operation failed',
           message: error.message,
         });
-      })
-      .finally(() => {
-        setNow(Date.now());
       });
-  }, [member, membersService, resendRetryAfterMs, resendRetryAfterSeconds, t]);
+  }, [member, membersService, t]);
 
   const handleApprove = useCallback(() => {
     membersService
@@ -317,14 +278,8 @@ export const MemberOptions = ({
           ].includes(member.status),
       },
       {
-        label:
-          resendRetryAfterSeconds > 0
-            ? t.t('com.affine.payment.member.team.resendInvite.hint', {
-                second: resendRetryAfterSeconds.toString(),
-              })
-            : t['com.affine.payment.member.team.resendInvite'](),
+        label: t['com.affine.payment.member.team.resendInvite'](),
         onClick: handleResendInvite,
-        disabled: resendRetryAfterSeconds > 0,
         show:
           (isAdmin || isOwner) &&
           [WorkspaceMemberStatus.Pending].includes(member.status),
@@ -378,7 +333,6 @@ export const MemberOptions = ({
     isTeam,
     member.permission,
     member.status,
-    resendRetryAfterSeconds,
     t,
   ]);
 
@@ -386,11 +340,7 @@ export const MemberOptions = ({
     <>
       {operationButtonInfo.map(item =>
         item.show ? (
-          <MenuItem
-            key={item.label}
-            onSelect={item.onClick}
-            disabled={item.disabled}
-          >
+          <MenuItem key={item.label} onSelect={item.onClick}>
             {item.label}
           </MenuItem>
         ) : null
