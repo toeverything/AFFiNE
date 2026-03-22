@@ -38,6 +38,17 @@ const SupportIndexedAttributes = [
   'parent_block_id',
 ];
 
+const SupportExactTermFields = new Set([
+  'workspace_id',
+  'doc_id',
+  'block_id',
+  'flavour',
+  'parent_flavour',
+  'parent_block_id',
+  'created_by_user_id',
+  'updated_by_user_id',
+]);
+
 const ConvertEmptyStringToNullValueFields = new Set([
   'ref_doc_id',
   'ref',
@@ -55,21 +66,18 @@ export class ManticoresearchProvider extends ElasticsearchProvider {
     table: SearchTable,
     mapping: string
   ): Promise<void> {
-    const url = `${this.config.provider.endpoint}/cli`;
-    const response = await fetch(url, {
-      method: 'POST',
-      body: mapping,
-      headers: {
-        'Content-Type': 'text/plain',
-      },
-    });
-    // manticoresearch cli response is not json, so we need to handle it manually
-    const text = (await response.text()).trim();
-    if (!response.ok) {
-      this.logger.error(`failed to create table ${table}, response: ${text}`);
-      throw new InternalServerError();
-    }
+    const text = await this.#executeSQL(mapping);
     this.logger.log(`created table ${table}, response: ${text}`);
+  }
+
+  async dropTable(table: SearchTable): Promise<void> {
+    const text = await this.#executeSQL(`DROP TABLE IF EXISTS ${table}`);
+    this.logger.log(`dropped table ${table}, response: ${text}`);
+  }
+
+  async recreateTable(table: SearchTable, mapping: string): Promise<void> {
+    await this.dropTable(table);
+    await this.createTable(table, mapping);
   }
 
   override async write(
@@ -252,6 +260,12 @@ export class ManticoresearchProvider extends ElasticsearchProvider {
       // 1750389254 => new Date(1750389254 * 1000)
       return new Date(value * 1000);
     }
+    if (value && typeof value === 'string') {
+      const timestamp = Date.parse(value);
+      if (!Number.isNaN(timestamp)) {
+        return new Date(timestamp);
+      }
+    }
     return value;
   }
 
@@ -302,8 +316,10 @@ export class ManticoresearchProvider extends ElasticsearchProvider {
       //     workspace_id: 'workspaceId1'
       //   }
       // }
-      let termField = options?.termMappingField ?? 'term';
       let field = Object.keys(query.term)[0];
+      let termField =
+        options?.termMappingField ??
+        (SupportExactTermFields.has(field) ? 'equals' : 'term');
       let value = query.term[field];
       if (typeof value === 'object' && 'value' in value) {
         if ('boost' in value) {
@@ -431,5 +447,29 @@ export class ManticoresearchProvider extends ElasticsearchProvider {
       return JSON.stringify(value);
     }
     return value;
+  }
+
+  async #executeSQL(sql: string) {
+    const url = `${this.config.provider.endpoint}/cli`;
+    const headers: Record<string, string> = {
+      'Content-Type': 'text/plain',
+    };
+    if (this.config.provider.apiKey) {
+      headers.Authorization = `ApiKey ${this.config.provider.apiKey}`;
+    } else if (this.config.provider.password) {
+      headers.Authorization = `Basic ${Buffer.from(`${this.config.provider.username}:${this.config.provider.password}`).toString('base64')}`;
+    }
+
+    const response = await fetch(url, {
+      method: 'POST',
+      body: sql,
+      headers,
+    });
+    const text = (await response.text()).trim();
+    if (!response.ok) {
+      this.logger.error(`failed to execute SQL "${sql}", response: ${text}`);
+      throw new InternalServerError();
+    }
+    return text;
   }
 }

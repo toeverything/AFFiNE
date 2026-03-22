@@ -13,13 +13,11 @@ use cpal::{
   traits::{DeviceTrait, HostTrait, StreamTrait},
 };
 use crossbeam_channel::unbounded;
-use napi::{
-  Error, Status,
-  bindgen_prelude::{Float32Array, Result},
-  threadsafe_function::{ThreadsafeFunction, ThreadsafeFunctionCallMode},
-};
+use napi::{Error, Status, bindgen_prelude::Result};
 use napi_derive::napi;
 use rubato::{FastFixedIn, PolynomialDegree, Resampler};
+
+use crate::audio_callback::AudioCallback;
 
 const RESAMPLER_INPUT_CHUNK: usize = 1024; // samples per channel
 const TARGET_FRAME_SIZE: usize = 1024; // frame size returned to JS (in mono samples)
@@ -216,7 +214,10 @@ impl Drop for AudioCaptureSession {
   }
 }
 
-pub fn start_recording(audio_buffer_callback: ThreadsafeFunction<Float32Array, ()>) -> Result<AudioCaptureSession> {
+pub fn start_recording(
+  audio_buffer_callback: AudioCallback,
+  target_sample_rate: Option<SampleRate>,
+) -> Result<AudioCaptureSession> {
   let available_hosts = cpal::available_hosts();
   let host_id = available_hosts
     .first()
@@ -240,7 +241,7 @@ pub fn start_recording(audio_buffer_callback: ThreadsafeFunction<Float32Array, (
 
   let mic_sample_rate = mic_config.sample_rate();
   let lb_sample_rate = lb_config.sample_rate();
-  let target_rate = SampleRate(mic_sample_rate.min(lb_sample_rate).0);
+  let target_rate = target_sample_rate.unwrap_or(SampleRate(mic_sample_rate.min(lb_sample_rate).0));
 
   let mic_channels = mic_config.channels();
   let lb_channels = lb_config.channels();
@@ -332,7 +333,7 @@ pub fn start_recording(audio_buffer_callback: ThreadsafeFunction<Float32Array, (
         let lb_chunk: Vec<f32> = post_lb.drain(..TARGET_FRAME_SIZE).collect();
         let mixed = mix(&mic_chunk, &lb_chunk);
         if !mixed.is_empty() {
-          let _ = audio_buffer_callback.call(Ok(mixed.clone().into()), ThreadsafeFunctionCallMode::NonBlocking);
+          audio_buffer_callback.call(mixed);
         }
       }
 

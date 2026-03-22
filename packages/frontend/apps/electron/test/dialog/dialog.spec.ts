@@ -21,6 +21,11 @@ const docSetSpaceId = vi.fn();
 const sqliteValidate = vi.fn();
 const sqliteValidateImportSchema = vi.fn();
 const sqliteVacuumInto = vi.fn();
+const sqliteClose = vi.fn();
+const showOpenDialog = vi.fn();
+const showSaveDialog = vi.fn();
+const showItemInFolder = vi.fn(async () => undefined);
+const getPath = vi.fn();
 
 vi.doMock('nanoid', () => ({
   nanoid: () => 'workspace-1',
@@ -70,6 +75,10 @@ vi.doMock('@affine/native', () => {
       vacuumInto(path: string) {
         return sqliteVacuumInto(this.path, path);
       }
+
+      close() {
+        return sqliteClose(this.path);
+      }
     },
   };
 });
@@ -84,7 +93,10 @@ vi.doMock('@affine/electron/helper/nbstore', () => ({
 
 vi.doMock('@affine/electron/helper/main-rpc', () => ({
   mainRPC: {
-    showItemInFolder: vi.fn(),
+    getPath,
+    showItemInFolder,
+    showOpenDialog,
+    showSaveDialog,
   },
 }));
 
@@ -126,11 +138,10 @@ describe('dialog export', () => {
     realpath.mockImplementation(async path => path);
     getSpaceDBPath.mockResolvedValue(dbPath);
     move.mockResolvedValue(undefined);
+    showSaveDialog.mockResolvedValue({ canceled: false, filePath: exportPath });
 
-    const { saveDBFileAs, setFakeDialogResult } =
+    const { saveDBFileAs } =
       await import('@affine/electron/helper/dialog/dialog');
-
-    setFakeDialogResult({ filePath: exportPath });
 
     const result = await saveDBFileAs(id, 'My Space');
 
@@ -151,11 +162,10 @@ describe('dialog export', () => {
 
     pathExists.mockResolvedValue(false);
     getSpaceDBPath.mockResolvedValue(dbPath);
+    showSaveDialog.mockResolvedValue({ canceled: false, filePath: dbPath });
 
-    const { saveDBFileAs, setFakeDialogResult } =
+    const { saveDBFileAs } =
       await import('@affine/electron/helper/dialog/dialog');
-
-    setFakeDialogResult({ filePath: dbPath });
 
     const result = await saveDBFileAs(id, 'My Space');
 
@@ -174,11 +184,10 @@ describe('dialog export', () => {
       path === exportPath ? dbPath : path
     );
     getSpaceDBPath.mockResolvedValue(dbPath);
+    showSaveDialog.mockResolvedValue({ canceled: false, filePath: exportPath });
 
-    const { saveDBFileAs, setFakeDialogResult } =
+    const { saveDBFileAs } =
       await import('@affine/electron/helper/dialog/dialog');
-
-    setFakeDialogResult({ filePath: exportPath });
 
     const result = await saveDBFileAs(id, 'My Space');
 
@@ -193,6 +202,12 @@ describe('dialog import', () => {
     const originalPath = '/tmp/import.affine';
     const internalPath = '/app/workspaces/local/workspace-1/storage.db';
 
+    pathExists.mockResolvedValue(true);
+    realpath.mockImplementation(async path => path);
+    showOpenDialog.mockResolvedValue({
+      canceled: false,
+      filePaths: [originalPath],
+    });
     getWorkspacesBasePath.mockResolvedValue('/app/workspaces');
     getSpaceDBPath.mockResolvedValue(internalPath);
     docValidate.mockResolvedValue(true);
@@ -201,10 +216,8 @@ describe('dialog import', () => {
     docSetSpaceId.mockResolvedValue(undefined);
     ensureDir.mockResolvedValue(undefined);
 
-    const { loadDBFile, setFakeDialogResult } =
+    const { loadDBFile } =
       await import('@affine/electron/helper/dialog/dialog');
-
-    setFakeDialogResult({ filePath: originalPath });
 
     const result = await loadDBFile();
 
@@ -219,14 +232,18 @@ describe('dialog import', () => {
   test('loadDBFile rejects v2 imports with unexpected schema objects', async () => {
     const originalPath = '/tmp/import.affine';
 
+    pathExists.mockResolvedValue(true);
+    realpath.mockImplementation(async path => path);
+    showOpenDialog.mockResolvedValue({
+      canceled: false,
+      filePaths: [originalPath],
+    });
     getWorkspacesBasePath.mockResolvedValue('/app/workspaces');
     docValidate.mockResolvedValue(true);
     docValidateImportSchema.mockResolvedValue(false);
 
-    const { loadDBFile, setFakeDialogResult } =
+    const { loadDBFile } =
       await import('@affine/electron/helper/dialog/dialog');
-
-    setFakeDialogResult({ filePath: originalPath });
 
     const result = await loadDBFile();
 
@@ -239,6 +256,12 @@ describe('dialog import', () => {
     const originalPath = '/tmp/import-v1.affine';
     const internalPath = '/app/workspaces/workspace-1/storage.db';
 
+    pathExists.mockResolvedValue(true);
+    realpath.mockImplementation(async path => path);
+    showOpenDialog.mockResolvedValue({
+      canceled: false,
+      filePaths: [originalPath],
+    });
     getWorkspacesBasePath.mockResolvedValue('/app/workspaces');
     getWorkspaceDBPath.mockResolvedValue(internalPath);
     docValidate.mockResolvedValue(false);
@@ -247,10 +270,8 @@ describe('dialog import', () => {
     sqliteVacuumInto.mockResolvedValue(undefined);
     ensureDir.mockResolvedValue(undefined);
 
-    const { loadDBFile, setFakeDialogResult } =
+    const { loadDBFile } =
       await import('@affine/electron/helper/dialog/dialog');
-
-    setFakeDialogResult({ filePath: originalPath });
 
     const result = await loadDBFile();
 
@@ -263,6 +284,57 @@ describe('dialog import', () => {
       id: 'workspace-1',
       mainDBPath: internalPath,
     });
+    expect(sqliteClose).toHaveBeenCalledWith(originalPath);
     expect(copy).not.toHaveBeenCalled();
+  });
+
+  test('loadDBFile closes v1 connection when schema validation fails', async () => {
+    const originalPath = '/tmp/import-v1-invalid.affine';
+
+    pathExists.mockResolvedValue(true);
+    realpath.mockImplementation(async path => path);
+    showOpenDialog.mockResolvedValue({
+      canceled: false,
+      filePaths: [originalPath],
+    });
+    getWorkspacesBasePath.mockResolvedValue('/app/workspaces');
+    docValidate.mockResolvedValue(false);
+    sqliteValidate.mockResolvedValue('Valid');
+    sqliteValidateImportSchema.mockResolvedValue(false);
+
+    const { loadDBFile } =
+      await import('@affine/electron/helper/dialog/dialog');
+
+    const result = await loadDBFile();
+
+    expect(result).toEqual({ error: 'DB_FILE_INVALID' });
+    expect(sqliteClose).toHaveBeenCalledWith(originalPath);
+    expect(sqliteVacuumInto).not.toHaveBeenCalled();
+  });
+
+  test('loadDBFile rejects normalized paths inside app data', async () => {
+    const selectedPath = '/tmp/import.affine';
+    const normalizedPath = '/app/workspaces/local/existing/storage.db';
+
+    pathExists.mockResolvedValue(true);
+    realpath.mockImplementation(async path => {
+      if (path === selectedPath) {
+        return normalizedPath;
+      }
+      return path;
+    });
+    showOpenDialog.mockResolvedValue({
+      canceled: false,
+      filePaths: [selectedPath],
+    });
+    getWorkspacesBasePath.mockResolvedValue('/app/workspaces');
+
+    const { loadDBFile } =
+      await import('@affine/electron/helper/dialog/dialog');
+
+    const result = await loadDBFile();
+
+    expect(result).toEqual({ error: 'DB_FILE_PATH_INVALID' });
+    expect(docValidate).not.toHaveBeenCalled();
   });
 });

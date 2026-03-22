@@ -14,11 +14,38 @@ import {
 import { createLocalWorkspace } from '@affine-test/kit/utils/workspace';
 import { expect } from '@playwright/test';
 import fs from 'fs-extra';
+import type { ElectronApplication } from 'playwright';
 
 declare global {
   interface Window {
     __apis: typeof apis;
   }
+}
+
+async function mockNextSaveDialog(
+  electronApp: ElectronApplication,
+  filePath: string
+) {
+  await electronApp.evaluate(({ dialog }, mockedFilePath) => {
+    const original = dialog.showSaveDialog.bind(dialog);
+    dialog.showSaveDialog = async () => {
+      dialog.showSaveDialog = original;
+      return { canceled: false, filePath: mockedFilePath };
+    };
+  }, filePath);
+}
+
+async function mockNextOpenDialog(
+  electronApp: ElectronApplication,
+  filePath: string
+) {
+  await electronApp.evaluate(({ dialog }, mockedFilePath) => {
+    const original = dialog.showOpenDialog.bind(dialog);
+    dialog.showOpenDialog = async () => {
+      dialog.showOpenDialog = original;
+      return { canceled: false, filePaths: [mockedFilePath] };
+    };
+  }, filePath);
 }
 
 test('check workspace has a DB file', async ({ appInfo, workspace }) => {
@@ -34,7 +61,7 @@ test('check workspace has a DB file', async ({ appInfo, workspace }) => {
   expect(await fs.exists(dbPath)).toBe(true);
 });
 
-test('export then add', async ({ page, appInfo, workspace }) => {
+test('export then add', async ({ electronApp, page, appInfo, workspace }) => {
   await clickNewPageButton(page);
   const w = await workspace.current();
 
@@ -60,11 +87,7 @@ test('export then add', async ({ page, appInfo, workspace }) => {
   const tmpPath = path.join(appInfo.sessionData, w.meta.id + '-tmp.db');
 
   // export db file to tmp folder
-  await page.evaluate(tmpPath => {
-    return window.__apis?.dialog.setFakeDialogResult({
-      filePath: tmpPath,
-    });
-  }, tmpPath);
+  await mockNextSaveDialog(electronApp, tmpPath);
 
   await page.getByTestId('workspace-setting:storage').click();
   await page.getByTestId('export-affine-backup').click();
@@ -78,11 +101,7 @@ test('export then add', async ({ page, appInfo, workspace }) => {
   // in the codebase
   await clickSideBarCurrentWorkspaceBanner(page);
 
-  await page.evaluate(tmpPath => {
-    return window.__apis?.dialog.setFakeDialogResult({
-      filePath: tmpPath,
-    });
-  }, tmpPath);
+  await mockNextOpenDialog(electronApp, tmpPath);
 
   // load the db file
   await page.getByTestId('add-workspace').click();
