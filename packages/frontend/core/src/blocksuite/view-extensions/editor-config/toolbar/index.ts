@@ -44,7 +44,10 @@ import {
   EmbedSyncedDocModel,
   SurfaceRefBlockSchema,
 } from '@blocksuite/affine/model';
-import { getSelectedModelsCommand } from '@blocksuite/affine/shared/commands';
+import {
+  draftSelectedModelsCommand,
+  getSelectedModelsCommand,
+} from '@blocksuite/affine/shared/commands';
 import { ImageSelection } from '@blocksuite/affine/shared/selection';
 import {
   ActionPlacement,
@@ -71,11 +74,12 @@ import {
   GfxBlockElementModel,
   GfxPrimitiveElementModel,
 } from '@blocksuite/affine/std/gfx';
-import type { ExtensionType } from '@blocksuite/affine/store';
+import { type ExtensionType, Slice } from '@blocksuite/affine/store';
 import {
   CopyAsImgaeIcon,
   CopyIcon,
   EditIcon,
+  ExportToMarkdownIcon,
   LinkIcon,
   OpenInNewIcon,
 } from '@blocksuite/icons/lit';
@@ -87,6 +91,7 @@ import { keyed } from 'lit/directives/keyed.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
+import { getContentFromSlice } from '../../../utils/markdown-utils';
 import { openDocActions } from '../../editor-view/open-doc';
 import { copyAsImage, createCopyAsPngMenuItem } from './copy-as-image';
 
@@ -119,6 +124,12 @@ export function createToolbarMoreMenuConfig(framework: FrameworkProvider) {
           copyIndex + 1,
           0,
           createCopyAsPngMenuItem(framework)
+        );
+
+        clipboardGroup.items.splice(
+          copyIndex + 1,
+          0,
+          createCopyAsMarkdownMenuItem(framework)
         );
       }
 
@@ -209,6 +220,55 @@ function createCopyLinkToBlockMenuItem(
   };
 }
 
+function createCopyAsMarkdownMenuItem(
+  _framework: FrameworkProvider,
+  item = {
+    icon: ExportToMarkdownIcon({ width: '20', height: '20' }),
+    label: I18n['com.affine.export.copy-markdown'](),
+    type: 'copy-as-markdown',
+    when: (ctx: MenuContext) => {
+      if (ctx.isEmpty()) return false;
+      return true;
+    },
+  }
+) {
+  return {
+    ...item,
+    action: (ctx: MenuContext) => {
+      void (async () => {
+        const { std } = ctx;
+        const [ok, commandCtx] = std.command
+          .chain()
+          .pipe(getSelectedModelsCommand)
+          .pipe(draftSelectedModelsCommand)
+          .run();
+        const draftedModels = commandCtx.draftedModels;
+        if (!ok || !draftedModels) {
+          return;
+        }
+
+        const models = await draftedModels;
+        if (models.length > 0) {
+          const slice = Slice.fromModels(std.store, models);
+          const markdown = await getContentFromSlice(
+            std.host,
+            slice,
+            'markdown'
+          );
+          if (markdown) {
+            await navigator.clipboard.writeText(markdown);
+            toast(std.host, I18n['com.affine.export.copied-as-markdown']());
+          }
+        }
+      })()
+        .catch(console.error)
+        .finally(() => {
+          ctx.close();
+        });
+    },
+  };
+}
+
 function createToolbarMoreMenuConfigV2(baseUrl?: string) {
   return {
     actions: [
@@ -226,6 +286,46 @@ function createToolbarMoreMenuConfigV2(baseUrl?: string) {
               gfx.selection.selectedElements.length > 0,
             run: ({ std }) => {
               copyAsImage(std);
+            },
+          },
+          {
+            id: 'copy-as-markdown',
+            label: I18n['com.affine.export.copy-markdown'](),
+            icon: ExportToMarkdownIcon(),
+            when: ({ gfx, flags, isPageMode }) => {
+              if (flags.isHovering()) return false;
+              if (isPageMode) return true;
+              return gfx.selection.selectedElements.length > 0;
+            },
+            run: ({ std }) => {
+              void (async () => {
+                const [ok, ctx] = std.command
+                  .chain()
+                  .pipe(getSelectedModelsCommand)
+                  .pipe(draftSelectedModelsCommand)
+                  .run();
+                const draftedModels = ctx.draftedModels;
+                if (!ok || !draftedModels) {
+                  return;
+                }
+
+                const models = await draftedModels;
+                if (models.length > 0) {
+                  const slice = Slice.fromModels(std.store, models);
+                  const markdown = await getContentFromSlice(
+                    std.host,
+                    slice,
+                    'markdown'
+                  );
+                  if (markdown) {
+                    await navigator.clipboard.writeText(markdown);
+                    toast(
+                      std.host,
+                      I18n['com.affine.export.copied-as-markdown']()
+                    );
+                  }
+                }
+              })().catch(console.error);
             },
           },
           {

@@ -38,6 +38,7 @@ type ExportType =
   | 'html'
   | 'png'
   | 'markdown'
+  | 'copy-markdown'
   | 'snapshot'
   | 'pdf-export';
 
@@ -141,6 +142,36 @@ async function exportToMarkdown(doc: Store, std?: BlockStdScope) {
   }
 }
 
+async function copyAsMarkdown(doc: Store, std?: BlockStdScope) {
+  if (!std) {
+    return;
+  }
+  const transformer = new Transformer({
+    schema: getAFFiNEWorkspaceSchema(),
+    blobCRUD: doc.workspace.blobSync,
+    docCRUD: {
+      create: (id: string) => doc.workspace.createDoc(id).getStore({ id }),
+      get: (id: string) => doc.workspace.getDoc(id)?.getStore({ id }) ?? null,
+      delete: (id: string) => doc.workspace.removeDoc(id),
+    },
+    middlewares: [
+      docLinkBaseURLMiddleware(doc.workspace.id),
+      titleMiddleware(doc.workspace.meta.docMetas),
+      embedSyncedDocMiddleware('content'),
+    ],
+  });
+
+  const adapterFactory = std.store.provider.get(
+    MarkdownAdapterFactoryIdentifier
+  );
+  const adapter = adapterFactory.get(transformer);
+  const result = (await adapter.fromDoc(doc)) as AdapterResult;
+
+  if (result && result.file) {
+    await navigator.clipboard.writeText(result.file);
+  }
+}
+
 async function exportHandler({
   page,
   type,
@@ -156,6 +187,9 @@ async function exportHandler({
       return;
     case 'markdown':
       await exportToMarkdown(page, editorRoot?.std);
+      return;
+    case 'copy-markdown':
+      await copyAsMarkdown(page, editorRoot?.std);
       return;
     case 'snapshot':
       await ZipTransformer.exportDocs(
@@ -204,10 +238,16 @@ export const useExportPage = () => {
           type,
           editorContainer: originEditorContainer,
         });
-        notify.success({
-          title: t['com.affine.export.success.title'](),
-          message: t['com.affine.export.success.message'](),
-        });
+        if (type === 'copy-markdown') {
+          notify.success({
+            title: t['com.affine.export.copied-as-markdown'](),
+          });
+        } else {
+          notify.success({
+            title: t['com.affine.export.success.title'](),
+            message: t['com.affine.export.success.message'](),
+          });
+        }
       } catch (err) {
         console.error(err);
         notify.error({
