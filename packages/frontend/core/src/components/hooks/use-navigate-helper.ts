@@ -17,6 +17,24 @@ export enum RouteLogic {
   PUSH = 'push',
 }
 
+export function buildWorkspaceSettingsPath(
+  workspaceId: string,
+  options?: {
+    tab?: SettingTab;
+    scrollAnchor?: string;
+  }
+) {
+  const searchParams = new URLSearchParams();
+  if (options?.tab) {
+    searchParams.set('tab', options.tab);
+  }
+  if (options?.scrollAnchor) {
+    searchParams.set('scrollAnchor', options.scrollAnchor);
+  }
+  const query = searchParams.toString();
+  return `/workspace/${workspaceId}/settings${query ? `?${query}` : ''}`;
+}
+
 // TODO(@eyhn): add a name -> path helper in the results
 /**
  * Use this for over workbench navigate, for navigate in workbench, use `WorkbenchService`.
@@ -216,16 +234,9 @@ export function useNavigateHelper() {
       tab?: SettingTab,
       logic: RouteLogic = RouteLogic.PUSH
     ) => {
-      const searchParams = new URLSearchParams();
-      if (tab) {
-        searchParams.set('tab', tab);
-      }
-      return navigate(
-        `/workspace/${workspaceId}/settings?${searchParams.toString()}`,
-        {
-          replace: logic === RouteLogic.REPLACE,
-        }
-      );
+      return navigate(buildWorkspaceSettingsPath(workspaceId, { tab }), {
+        replace: logic === RouteLogic.REPLACE,
+      });
     },
     [navigate]
   );

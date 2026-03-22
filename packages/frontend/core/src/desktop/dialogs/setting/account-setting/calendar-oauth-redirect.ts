@@ -1,3 +1,5 @@
+import { buildWorkspaceSettingsPath } from '@affine/core/components/hooks/use-navigate-helper';
+
 import { CALENDAR_INTEGRATION_SCROLL_ANCHOR } from '../navigation-constants';
 
 export function buildCalendarOAuthRedirectUri(currentHref: string): string {
@@ -17,13 +19,16 @@ export function buildCalendarOAuthRedirectUri(currentHref: string): string {
   }
 
   const basePath = pathSegments.slice(0, workspaceSegmentIndex).join('/');
-  const redirectUrl = new URL(currentUrl.origin);
-  redirectUrl.pathname = `${basePath ? `/${basePath}` : ''}/workspace/${workspaceId}/settings`;
-  redirectUrl.searchParams.set('tab', 'workspace:integrations');
-  redirectUrl.searchParams.set(
-    'scrollAnchor',
-    CALENDAR_INTEGRATION_SCROLL_ANCHOR
+  const redirectUrl = new URL(
+    buildWorkspaceSettingsPath(workspaceId, {
+      tab: 'workspace:integrations',
+      scrollAnchor: CALENDAR_INTEGRATION_SCROLL_ANCHOR,
+    }),
+    currentUrl.origin
   );
+  if (basePath) {
+    redirectUrl.pathname = `/${basePath}${redirectUrl.pathname}`;
+  }
 
   return redirectUrl.toString();
 }
