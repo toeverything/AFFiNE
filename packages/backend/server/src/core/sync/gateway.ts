@@ -624,6 +624,7 @@ export class SpaceSyncGateway
     const { spaceType, spaceId, docId, update } = message;
     const adapter = this.selectAdapter(client, spaceType);
 
+    // Quota recovery mode is intentionally not applied to sync in this phase.
     // TODO(@forehalo): enable after frontend supporting doc revert
     // await this.ac.user(user.id).doc(spaceId, docId).assert('Doc.Update');
     const timestamp = await adapter.push(

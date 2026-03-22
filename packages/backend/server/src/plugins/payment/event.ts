@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
 import { EventBus, OnEvent } from '../../base';
+import { WorkspacePolicyService } from '../../core/permission';
 import { WorkspaceService } from '../../core/workspaces';
 import { Models } from '../../models';
 import { SubscriptionPlan, SubscriptionRecurring } from './types';
@@ -10,7 +11,8 @@ export class PaymentEventHandlers {
   constructor(
     private readonly workspace: WorkspaceService,
     private readonly models: Models,
-    private readonly event: EventBus
+    private readonly event: EventBus,
+    private readonly policy: WorkspacePolicyService
   ) {}
 
   @OnEvent('workspace.subscription.activated')
@@ -40,6 +42,7 @@ export class PaymentEventHandlers {
           // we only send emails when the team workspace is activated
           await this.workspace.sendTeamWorkspaceUpgradedEmail(workspaceId);
         }
+        await this.policy.reconcileWorkspaceQuotaState(workspaceId);
         break;
       }
       default:
@@ -55,7 +58,9 @@ export class PaymentEventHandlers {
     switch (plan) {
       case SubscriptionPlan.Team:
         await this.models.workspaceUser.deleteNonAccepted(workspaceId);
+        await this.models.workspaceUser.demoteAcceptedAdmins(workspaceId);
         await this.models.workspaceFeature.remove(workspaceId, 'team_plan_v1');
+        await this.policy.reconcileWorkspaceQuotaState(workspaceId);
         break;
       default:
         break;
@@ -82,6 +87,7 @@ export class PaymentEventHandlers {
           recurring === 'lifetime' ? 'lifetime_pro_plan_v1' : 'pro_plan_v1',
           'subscription activated'
         );
+        await this.policy.reconcileOwnedWorkspaces(userId);
         break;
       default:
         break;
@@ -106,6 +112,7 @@ export class PaymentEventHandlers {
             'free_plan_v1',
             'lifetime subscription canceled'
           );
+          await this.policy.reconcileOwnedWorkspaces(userId);
           break;
         }
 
@@ -122,6 +129,7 @@ export class PaymentEventHandlers {
             'free_plan_v1',
             'subscription canceled'
           );
+          await this.policy.reconcileOwnedWorkspaces(userId);
         }
         break;
       }

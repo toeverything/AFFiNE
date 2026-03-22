@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 
-import { PermissionModule } from '../permission';
 import { StorageModule } from '../storage';
 import { QuotaResolver } from './resolver';
 import { QuotaService } from './service';
@@ -12,7 +11,7 @@ import { QuotaService } from './service';
  * - quota statistics
  */
 @Module({
-  imports: [StorageModule, PermissionModule],
+  imports: [StorageModule],
   providers: [QuotaService, QuotaResolver],
   exports: [QuotaService],
 })
