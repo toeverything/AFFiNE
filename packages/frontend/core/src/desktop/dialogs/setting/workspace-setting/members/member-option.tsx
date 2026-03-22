@@ -81,7 +81,7 @@ export const MemberOptions = ({
     if (!member.email) {
       notify.error({
         title: 'Operation failed',
-        message: 'No email found for this member',
+        message: t['com.affine.payment.member.team.resendInvite.noEmail'](),
       });
       return;
     }

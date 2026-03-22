@@ -4217,6 +4217,10 @@ export function useAFFiNEI18N(): {
         readonly second: string;
     }): string;
     /**
+      * `No email found for this member`
+      */
+    ["com.affine.payment.member.team.resendInvite.noEmail"](): string;
+    /**
       * `Approve`
       */
     ["com.affine.payment.member.team.approve"](): string;

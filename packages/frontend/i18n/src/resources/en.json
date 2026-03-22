@@ -1045,6 +1045,7 @@
   "com.affine.payment.member.team.revoke": "Revoke invitation",
   "com.affine.payment.member.team.resendInvite": "Resend invite",
   "com.affine.payment.member.team.resendInvite.hint": "Resend in {{second}}s",
+  "com.affine.payment.member.team.resendInvite.noEmail": "No email found for this member",
   "com.affine.payment.member.team.approve": "Approve",
   "com.affine.payment.member.team.decline": "Decline",
   "com.affine.payment.member.team.remove": "Remove member",
