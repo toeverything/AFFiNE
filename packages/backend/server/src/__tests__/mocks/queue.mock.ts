@@ -31,7 +31,13 @@ export class MockJobQueue {
         return undefined;
       }
 
-      return { id: jobId, name: job.name };
+      return {
+        id: jobId,
+        name: job.name,
+        data: {
+          payload: job.payload,
+        },
+      };
     }
   );
 

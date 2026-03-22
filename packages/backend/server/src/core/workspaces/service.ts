@@ -122,7 +122,17 @@ export class WorkspaceService {
     );
 
     if (queuedJob) {
-      return false;
+      if (queuedJob.data.payload.inviteId === inviteId) {
+        return false;
+      }
+
+      const removed = await this.queue.remove(
+        jobId,
+        'notification.sendInvitation'
+      );
+      if (!removed) {
+        return false;
+      }
     }
 
     await this.queue.add(

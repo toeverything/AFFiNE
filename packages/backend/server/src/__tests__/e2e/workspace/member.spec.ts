@@ -127,7 +127,97 @@ e2e('should resend invitation email for pending member', async t => {
   t.is(
     app.queue.count('notification.sendInvitation'),
     invitationJobCount,
-    'should not enqueue invitation notification while in cooldown'
+    'should not enqueue duplicate invitation notifications'
+  );
+});
+
+e2e(
+  'should enqueue a fresh invite after revoking a queued invitation',
+  async t => {
+    const { owner, workspace } = await createWorkspace();
+    const member = await app.create(Mockers.User);
+
+    await app.login(owner);
+    const firstInvite = await app.gql({
+      query: inviteByEmailsMutation,
+      variables: {
+        emails: [member.email],
+        workspaceId: workspace.id,
+      },
+    });
+    const firstInviteId = firstInvite.inviteMembers[0].inviteId;
+    t.truthy(firstInviteId, 'failed to create initial invitation');
+
+    await app.queue.waitFor('notification.sendInvitation');
+
+    const { revokeMember } = await app.gql({
+      query: revokeMemberPermissionMutation,
+      variables: {
+        workspaceId: workspace.id,
+        userId: member.id,
+      },
+    });
+    t.true(revokeMember, 'failed to revoke initial invitation');
+
+    const secondInvite = await app.gql({
+      query: inviteByEmailsMutation,
+      variables: {
+        emails: [member.email],
+        workspaceId: workspace.id,
+      },
+    });
+    const secondInviteId = secondInvite.inviteMembers[0].inviteId;
+    t.truthy(secondInviteId, 'failed to create replacement invitation');
+    t.not(secondInviteId, firstInviteId);
+
+    t.is(
+      app.queue.count('notification.sendInvitation'),
+      2,
+      'should enqueue a replacement invitation notification'
+    );
+    const replacementNotification = app.queue.last(
+      'notification.sendInvitation'
+    );
+    t.is(replacementNotification.payload.inviteId, secondInviteId!);
+  }
+);
+
+e2e('should reject resend for non-pending team invite', async t => {
+  const owner = await app.create(Mockers.User);
+  const workspace = await app.create(Mockers.Workspace, {
+    owner: { id: owner.id },
+  });
+  await app.create(Mockers.TeamWorkspace, {
+    id: workspace.id,
+    quantity: 1,
+  });
+  const member = await app.create(Mockers.User);
+
+  await app.login(owner);
+  const inviteResult = await app.gql({
+    query: inviteByEmailsMutation,
+    variables: {
+      emails: [member.email],
+      workspaceId: workspace.id,
+    },
+  });
+  const inviteId = inviteResult.inviteMembers[0].inviteId;
+  t.truthy(inviteId, 'failed to create team invitation');
+
+  await t.throwsAsync(
+    app.gql({
+      query: resendWorkspaceTeamMemberInviteMutation,
+      variables: {
+        workspaceId: workspace.id,
+        inviteId: inviteId!,
+      },
+    })
+  );
+
+  t.is(
+    app.queue.count('notification.sendInvitation'),
+    0,
+    'should not enqueue invitation notification for non-pending invites'
   );
 });
 

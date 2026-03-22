@@ -255,7 +255,7 @@ export class WorkspaceMemberResolver {
       throw new AlreadyInSpace({ spaceId: workspaceId });
     }
 
-    if (role.status === WorkspaceMemberStatus.UnderReview) {
+    if (role.status !== WorkspaceMemberStatus.Pending) {
       throw new InvalidInvitation();
     }
 
