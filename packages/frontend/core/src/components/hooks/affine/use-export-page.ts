@@ -64,12 +64,8 @@ interface AdapterConfig {
   indexFileName: string;
 }
 
-async function exportDoc(
-  doc: Store,
-  std: BlockStdScope,
-  config: AdapterConfig
-) {
-  const transformer = new Transformer({
+function createTransformer(doc: Store) {
+  return new Transformer({
     schema: getAFFiNEWorkspaceSchema(),
     blobCRUD: doc.workspace.blobSync,
     docCRUD: {
@@ -83,6 +79,14 @@ async function exportDoc(
       embedSyncedDocMiddleware('content'),
     ],
   });
+}
+
+async function exportDoc(
+  doc: Store,
+  std: BlockStdScope,
+  config: AdapterConfig
+) {
+  const transformer = createTransformer(doc);
 
   const adapterFactory = std.store.provider.get(config.identifier);
   const adapter = adapterFactory.get(transformer);
@@ -148,21 +152,7 @@ async function copyAsMarkdown(doc: Store, std?: BlockStdScope) {
   }
 
   try {
-    const transformer = new Transformer({
-      schema: getAFFiNEWorkspaceSchema(),
-      blobCRUD: doc.workspace.blobSync,
-      docCRUD: {
-        create: (id: string) => doc.workspace.createDoc(id).getStore({ id }),
-        get: (id: string) => doc.workspace.getDoc(id)?.getStore({ id }) ?? null,
-        delete: (id: string) => doc.workspace.removeDoc(id),
-      },
-      middlewares: [
-        docLinkBaseURLMiddleware(doc.workspace.id),
-        titleMiddleware(doc.workspace.meta.docMetas),
-        embedSyncedDocMiddleware('content'),
-      ],
-    });
-
+    const transformer = createTransformer(doc);
     const adapterFactory = std.store.provider.get(
       MarkdownAdapterFactoryIdentifier
     );
@@ -185,7 +175,7 @@ async function exportHandler({
   page,
   type,
   editorContainer,
-}: ExportHandlerOptions) {
+}: ExportHandlerOptions): Promise<boolean> {
   const editorRoot = document.querySelector('editor-host');
   track.$.sharePanel.$.export({
     type,
@@ -218,6 +208,8 @@ async function exportHandler({
       return true;
     }
   }
+
+  return false;
 }
 
 export const useExportPage = () => {
@@ -246,14 +238,16 @@ export const useExportPage = () => {
           type,
           editorContainer: originEditorContainer,
         });
+
+        if (!success) {
+          notify.error({
+            title: t['com.affine.export.error.title'](),
+            message: t['com.affine.export.error.message'](),
+          });
+          return;
+        }
+
         if (type === 'copy-markdown') {
-          if (!success) {
-            notify.error({
-              title: t['com.affine.export.error.title'](),
-              message: t['com.affine.export.error.message'](),
-            });
-            return;
-          }
           notify.success({
             title: t['com.affine.export.copied-as-markdown'](),
           });
