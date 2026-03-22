@@ -144,31 +144,40 @@ async function exportToMarkdown(doc: Store, std?: BlockStdScope) {
 
 async function copyAsMarkdown(doc: Store, std?: BlockStdScope) {
   if (!std) {
-    return;
+    return false;
   }
-  const transformer = new Transformer({
-    schema: getAFFiNEWorkspaceSchema(),
-    blobCRUD: doc.workspace.blobSync,
-    docCRUD: {
-      create: (id: string) => doc.workspace.createDoc(id).getStore({ id }),
-      get: (id: string) => doc.workspace.getDoc(id)?.getStore({ id }) ?? null,
-      delete: (id: string) => doc.workspace.removeDoc(id),
-    },
-    middlewares: [
-      docLinkBaseURLMiddleware(doc.workspace.id),
-      titleMiddleware(doc.workspace.meta.docMetas),
-      embedSyncedDocMiddleware('content'),
-    ],
-  });
 
-  const adapterFactory = std.store.provider.get(
-    MarkdownAdapterFactoryIdentifier
-  );
-  const adapter = adapterFactory.get(transformer);
-  const result = (await adapter.fromDoc(doc)) as AdapterResult;
+  try {
+    const transformer = new Transformer({
+      schema: getAFFiNEWorkspaceSchema(),
+      blobCRUD: doc.workspace.blobSync,
+      docCRUD: {
+        create: (id: string) => doc.workspace.createDoc(id).getStore({ id }),
+        get: (id: string) => doc.workspace.getDoc(id)?.getStore({ id }) ?? null,
+        delete: (id: string) => doc.workspace.removeDoc(id),
+      },
+      middlewares: [
+        docLinkBaseURLMiddleware(doc.workspace.id),
+        titleMiddleware(doc.workspace.meta.docMetas),
+        embedSyncedDocMiddleware('content'),
+      ],
+    });
 
-  if (result && result.file) {
+    const adapterFactory = std.store.provider.get(
+      MarkdownAdapterFactoryIdentifier
+    );
+    const adapter = adapterFactory.get(transformer);
+    const result = (await adapter.fromDoc(doc)) as AdapterResult;
+
+    if (!result || result.file === undefined) {
+      return false;
+    }
+
     await navigator.clipboard.writeText(result.file);
+    return true;
+  } catch (err) {
+    console.error(err);
+    return false;
   }
 }
 
@@ -184,30 +193,29 @@ async function exportHandler({
   switch (type) {
     case 'html':
       await exportToHtml(page, editorRoot?.std);
-      return;
+      return true;
     case 'markdown':
       await exportToMarkdown(page, editorRoot?.std);
-      return;
+      return true;
     case 'copy-markdown':
-      await copyAsMarkdown(page, editorRoot?.std);
-      return;
+      return await copyAsMarkdown(page, editorRoot?.std);
     case 'snapshot':
       await ZipTransformer.exportDocs(
         page.workspace,
         getAFFiNEWorkspaceSchema(),
         [page]
       );
-      return;
+      return true;
     case 'pdf':
       await printToPdf(editorContainer);
-      return;
+      return true;
     case 'png': {
       await editorRoot?.std.get(ExportManager).exportPng();
-      return;
+      return true;
     }
     case 'pdf-export': {
       await PdfTransformer.exportDoc(page);
-      return;
+      return true;
     }
   }
 }
@@ -233,12 +241,19 @@ export const useExportPage = () => {
         key: globalLoadingID,
       });
       try {
-        await exportHandler({
+        const success = await exportHandler({
           page: blocksuiteDoc,
           type,
           editorContainer: originEditorContainer,
         });
         if (type === 'copy-markdown') {
+          if (!success) {
+            notify.error({
+              title: t['com.affine.export.error.title'](),
+              message: t['com.affine.export.error.message'](),
+            });
+            return;
+          }
           notify.success({
             title: t['com.affine.export.copied-as-markdown'](),
           });
