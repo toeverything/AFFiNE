@@ -1,3 +1,5 @@
+import type { OpSchema } from '@toeverything/infra/op';
+
 export type PageSize = {
   width: number;
   height: number;
@@ -21,3 +23,8 @@ export type RenderPageOpts = {
 export type RenderedPage = {
   bitmap: ImageBitmap;
 };
+
+export interface PDFOps extends OpSchema {
+  open: [{ data: ArrayBuffer }, PDFMeta];
+  render: [RenderPageOpts, RenderedPage];
+}

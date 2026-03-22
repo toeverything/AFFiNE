@@ -516,6 +516,9 @@ export const EdgelessNoteInteraction =
                   }
                 })
                 .catch(console.error);
+            } else if (multiSelect && alreadySelected && editing) {
+              // range selection using Shift-click when editing
+              return;
             } else {
               context.default(context);
             }

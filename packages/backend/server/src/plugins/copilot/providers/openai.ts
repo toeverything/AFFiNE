@@ -664,7 +664,7 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
     const model = this.selectModel(normalizedCond);
 
     try {
-      metrics.ai.counter('chat_text_calls').add(1, { model: model.id });
+      metrics.ai.counter('chat_text_calls').add(1, this.metricLabels(model.id));
       const backendConfig = this.createNativeConfig();
       const middleware = this.getActiveProviderMiddleware();
       const cap = this.getAttachCapability(model, ModelOutputType.Structured);
@@ -687,7 +687,9 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
       const validated = schema.parse(parsed);
       return JSON.stringify(validated);
     } catch (e: any) {
-      metrics.ai.counter('chat_text_errors').add(1, { model: model.id });
+      metrics.ai
+        .counter('chat_text_errors')
+        .add(1, this.metricLabels(model.id));
       throw this.handleError(e);
     }
   }
@@ -983,7 +985,7 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
 
     metrics.ai
       .counter('generate_images_stream_calls')
-      .add(1, { model: model.id });
+      .add(1, this.metricLabels(model.id));
 
     const { content: prompt, attachments } = [...messages].pop() || {};
     if (!prompt) throw new CopilotPromptInvalid('Prompt is required');
@@ -1021,7 +1023,9 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
       }
       return;
     } catch (e: any) {
-      metrics.ai.counter('generate_images_errors').add(1, { model: model.id });
+      metrics.ai
+        .counter('generate_images_errors')
+        .add(1, this.metricLabels(model.id));
       throw this.handleError(e);
     }
   }

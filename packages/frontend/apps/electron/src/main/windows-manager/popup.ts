@@ -8,7 +8,7 @@ import {
 } from 'electron';
 import { BehaviorSubject } from 'rxjs';
 
-import { popupViewUrl } from '../constants';
+import { popupViewUrl } from '../../shared/internal-origin';
 import { logger } from '../logger';
 import type { MainEventRegister, NamespaceHandlers } from '../type';
 import { buildWebPreferences } from '../web-preferences';

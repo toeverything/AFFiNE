@@ -1,13 +1,18 @@
 import path from 'node:path';
 
-import { DocStorage } from '@affine/native';
+import { DocStorage, ValidationResult } from '@affine/native';
 import {
   parseUniversalId,
   universalId as generateUniversalId,
 } from '@affine/nbstore';
 import fs from 'fs-extra';
+import { nanoid } from 'nanoid';
 import { applyUpdate, Doc as YDoc } from 'yjs';
 
+import {
+  normalizeWorkspaceIdForPath,
+  resolveExistingPathInBase,
+} from '../../shared/utils';
 import { logger } from '../logger';
 import { getDocStoragePool } from '../nbstore';
 import { ensureSQLiteDisconnected } from '../nbstore/v1/ensure-db';
@@ -18,6 +23,7 @@ import {
   getSpaceBasePath,
   getSpaceDBPath,
   getWorkspaceBasePathV1,
+  getWorkspaceDBPath,
   getWorkspaceMeta,
 } from './meta';
 
@@ -58,7 +64,7 @@ export async function trashWorkspace(universalId: string) {
 
   const dbPath = await getSpaceDBPath(peer, type, id);
   const basePath = await getDeletedWorkspacesBasePath();
-  const movedPath = path.join(basePath, `${id}`);
+  const movedPath = path.join(basePath, normalizeWorkspaceIdForPath(id));
   try {
     const storage = new DocStorage(dbPath);
     if (await storage.validate()) {
@@ -258,12 +264,88 @@ export async function getDeletedWorkspaces() {
   };
 }
 
+async function importLegacyWorkspaceDb(
+  originalPath: string,
+  workspaceId: string
+) {
+  const { SqliteConnection } = await import('@affine/native');
+
+  const validationResult = await SqliteConnection.validate(originalPath);
+  if (validationResult !== ValidationResult.Valid) {
+    return {};
+  }
+
+  const connection = new SqliteConnection(originalPath);
+  if (!(await connection.validateImportSchema())) {
+    return {};
+  }
+
+  const internalFilePath = await getWorkspaceDBPath('workspace', workspaceId);
+  await fs.ensureDir(path.parse(internalFilePath).dir);
+  await connection.vacuumInto(internalFilePath);
+  logger.info(
+    `recoverBackupWorkspace, vacuum: ${originalPath} -> ${internalFilePath}`
+  );
+
+  await storeWorkspaceMeta(workspaceId, {
+    id: workspaceId,
+    mainDBPath: internalFilePath,
+  });
+
+  return {
+    workspaceId,
+  };
+}
+
+async function importWorkspaceDb(originalPath: string) {
+  const workspaceId = nanoid(10);
+  let storage = new DocStorage(originalPath);
+
+  if (!(await storage.validate())) {
+    return await importLegacyWorkspaceDb(originalPath, workspaceId);
+  }
+
+  if (!(await storage.validateImportSchema())) {
+    return {};
+  }
+
+  const internalFilePath = await getSpaceDBPath(
+    'local',
+    'workspace',
+    workspaceId
+  );
+  await fs.ensureDir(path.parse(internalFilePath).dir);
+  await storage.vacuumInto(internalFilePath);
+  logger.info(
+    `recoverBackupWorkspace, vacuum: ${originalPath} -> ${internalFilePath}`
+  );
+
+  storage = new DocStorage(internalFilePath);
+  await storage.setSpaceId(workspaceId);
+
+  return {
+    workspaceId,
+  };
+}
+
 export async function deleteBackupWorkspace(id: string) {
   const basePath = await getDeletedWorkspacesBasePath();
-  const workspacePath = path.join(basePath, id);
+  const workspacePath = path.join(basePath, normalizeWorkspaceIdForPath(id));
   await fs.rmdir(workspacePath, { recursive: true });
   logger.info(
     'deleteBackupWorkspace',
     `Deleted backup workspace: ${workspacePath}`
   );
+}
+
+export async function recoverBackupWorkspace(id: string) {
+  const basePath = await getDeletedWorkspacesBasePath();
+  const workspacePath = path.join(basePath, normalizeWorkspaceIdForPath(id));
+  const dbPath = await resolveExistingPathInBase(
+    basePath,
+    path.join(workspacePath, 'storage.db'),
+    { label: 'backup workspace filepath' }
+  );
+
+  return await importWorkspaceDb(dbPath);
 }

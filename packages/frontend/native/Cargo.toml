@@ -1,6 +1,7 @@
 [package]
 edition = "2024"
 name    = "affine_native"
+publish = false
 version = "0.0.0"
 
 [lib]
@@ -24,6 +25,12 @@ sqlx = { workspace = true, default-features = false, features = [
 ] }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+mermaid-rs-renderer = { workspace = true }
+typst               = { workspace = true }
+typst-as-lib        = { workspace = true }
+typst-svg           = { workspace = true }
 
 [target.'cfg(not(target_os = "linux"))'.dependencies]
 mimalloc = { workspace = true }

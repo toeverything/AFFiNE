@@ -2,11 +2,9 @@
 
 // Should not load @affine/native for unsupported platforms
 
-import path from 'node:path';
-
 import { shell } from 'electron';
 
-import { isMacOS } from '../../shared/utils';
+import { isMacOS, resolvePathInBase } from '../../shared/utils';
 import { openExternalSafely } from '../security/open-external';
 import type { NamespaceHandlers } from '../type';
 import {
@@ -14,18 +12,14 @@ import {
   checkMeetingPermissions,
   checkRecordingAvailable,
   disableRecordingFeature,
-  getRawAudioBuffers,
   getRecording,
-  handleBlockCreationFailed,
-  handleBlockCreationSuccess,
-  pauseRecording,
   readRecordingFile,
-  readyRecording,
   recordingStatus$,
   removeRecording,
   SAVED_RECORDINGS_DIR,
   type SerializedRecordingStatus,
   serializeRecordingStatus,
+  setRecordingBlockCreationStatus,
   setupRecordingFeature,
   startRecording,
   stopRecording,
@@ -45,27 +39,19 @@ export const recordingHandlers = {
   startRecording: async (_, appGroup?: AppGroupInfo | number) => {
     return startRecording(appGroup);
   },
-  pauseRecording: async (_, id: number) => {
-    return pauseRecording(id);
-  },
   stopRecording: async (_, id: number) => {
     return stopRecording(id);
-  },
-  getRawAudioBuffers: async (_, id: number, cursor?: number) => {
-    return getRawAudioBuffers(id, cursor);
   },
   readRecordingFile: async (_, filepath: string) => {
     return readRecordingFile(filepath);
   },
-  // save the encoded recording buffer to the file system
-  readyRecording: async (_, id: number, buffer: Uint8Array) => {
-    return readyRecording(id, Buffer.from(buffer));
-  },
-  handleBlockCreationSuccess: async (_, id: number) => {
-    return handleBlockCreationSuccess(id);
-  },
-  handleBlockCreationFailed: async (_, id: number, error?: Error) => {
-    return handleBlockCreationFailed(id, error);
+  setRecordingBlockCreationStatus: async (
+    _,
+    id: number,
+    status: 'success' | 'failed',
+    errorMessage?: string
+  ) => {
+    return setRecordingBlockCreationStatus(id, status, errorMessage);
   },
   removeRecording: async (_, id: number) => {
     return removeRecording(id);
@@ -100,15 +86,10 @@ export const recordingHandlers = {
     return false;
   },
   showSavedRecordings: async (_, subpath?: string) => {
-    const normalizedDir = path.normalize(
-      path.join(SAVED_RECORDINGS_DIR, subpath ?? '')
-    );
-    const normalizedBase = path.normalize(SAVED_RECORDINGS_DIR);
-
-    if (!normalizedDir.startsWith(normalizedBase)) {
-      throw new Error('Invalid directory');
-    }
-    return shell.showItemInFolder(normalizedDir);
+    const directory = resolvePathInBase(SAVED_RECORDINGS_DIR, subpath ?? '', {
+      label: 'directory',
+    });
+    return shell.showItemInFolder(directory);
   },
 } satisfies NamespaceHandlers;
 

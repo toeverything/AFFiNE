@@ -13,25 +13,31 @@ export type RecordingEvent =
       type: 'START_RECORDING';
       appGroup?: AppGroupInfo;
     }
-  | { type: 'PAUSE_RECORDING'; id: number }
-  | { type: 'RESUME_RECORDING'; id: number }
+  | {
+      type: 'ATTACH_NATIVE_RECORDING';
+      id: number;
+      nativeId: string;
+      startTime: number;
+      filepath: string;
+      sampleRate: number;
+      numberOfChannels: number;
+    }
   | {
       type: 'STOP_RECORDING';
       id: number;
     }
   | {
-      type: 'SAVE_RECORDING';
+      type: 'ATTACH_RECORDING_ARTIFACT';
       id: number;
       filepath: string;
+      sampleRate?: number;
+      numberOfChannels?: number;
     }
   | {
-      type: 'CREATE_BLOCK_FAILED';
+      type: 'SET_BLOCK_CREATION_STATUS';
       id: number;
-      error?: Error;
-    }
-  | {
-      type: 'CREATE_BLOCK_SUCCESS';
-      id: number;
+      status: 'success' | 'failed';
+      errorMessage?: string;
     }
   | { type: 'REMOVE_RECORDING'; id: number };
 
@@ -74,23 +80,26 @@ export class RecordingStateMachine {
       case 'START_RECORDING':
         newStatus = this.handleStartRecording(event.appGroup);
         break;
-      case 'PAUSE_RECORDING':
-        newStatus = this.handlePauseRecording();
-        break;
-      case 'RESUME_RECORDING':
-        newStatus = this.handleResumeRecording();
+      case 'ATTACH_NATIVE_RECORDING':
+        newStatus = this.handleAttachNativeRecording(event);
         break;
       case 'STOP_RECORDING':
         newStatus = this.handleStopRecording(event.id);
         break;
-      case 'SAVE_RECORDING':
-        newStatus = this.handleSaveRecording(event.id, event.filepath);
+      case 'ATTACH_RECORDING_ARTIFACT':
+        newStatus = this.handleAttachRecordingArtifact(
+          event.id,
+          event.filepath,
+          event.sampleRate,
+          event.numberOfChannels
+        );
         break;
-      case 'CREATE_BLOCK_SUCCESS':
-        newStatus = this.handleCreateBlockSuccess(event.id);
-        break;
-      case 'CREATE_BLOCK_FAILED':
-        newStatus = this.handleCreateBlockFailed(event.id, event.error);
+      case 'SET_BLOCK_CREATION_STATUS':
+        newStatus = this.handleSetBlockCreationStatus(
+          event.id,
+          event.status,
+          event.errorMessage
+        );
         break;
       case 'REMOVE_RECORDING':
         this.handleRemoveRecording(event.id);
@@ -133,7 +142,7 @@ export class RecordingStateMachine {
     const currentStatus = this.recordingStatus$.value;
     if (
       currentStatus?.status === 'recording' ||
-      currentStatus?.status === 'stopped'
+      currentStatus?.status === 'processing'
     ) {
       logger.error(
         'Cannot start a new recording if there is already a recording'
@@ -160,46 +169,31 @@ export class RecordingStateMachine {
   }
 
   /**
-   * Handle the PAUSE_RECORDING event
+   * Attach native recording metadata to the current recording
    */
-  private handlePauseRecording(): RecordingStatus | null {
+  private handleAttachNativeRecording(
+    event: Extract<RecordingEvent, { type: 'ATTACH_NATIVE_RECORDING' }>
+  ): RecordingStatus | null {
     const currentStatus = this.recordingStatus$.value;
-
-    if (!currentStatus) {
-      logger.error('No active recording to pause');
-      return null;
+    if (!currentStatus || currentStatus.id !== event.id) {
+      logger.error(`Recording ${event.id} not found for native attachment`);
+      return currentStatus;
     }
 
     if (currentStatus.status !== 'recording') {
-      logger.error(`Cannot pause recording in ${currentStatus.status} state`);
+      logger.error(
+        `Cannot attach native metadata when recording is in ${currentStatus.status} state`
+      );
       return currentStatus;
     }
 
     return {
       ...currentStatus,
-      status: 'paused',
-    };
-  }
-
-  /**
-   * Handle the RESUME_RECORDING event
-   */
-  private handleResumeRecording(): RecordingStatus | null {
-    const currentStatus = this.recordingStatus$.value;
-
-    if (!currentStatus) {
-      logger.error('No active recording to resume');
-      return null;
-    }
-
-    if (currentStatus.status !== 'paused') {
-      logger.error(`Cannot resume recording in ${currentStatus.status} state`);
-      return currentStatus;
-    }
-
-    return {
-      ...currentStatus,
-      status: 'recording',
+      nativeId: event.nativeId,
+      startTime: event.startTime,
+      filepath: event.filepath,
+      sampleRate: event.sampleRate,
+      numberOfChannels: event.numberOfChannels,
     };
   }
 
@@ -214,26 +208,25 @@ export class RecordingStateMachine {
       return currentStatus;
     }
 
-    if (
-      currentStatus.status !== 'recording' &&
-      currentStatus.status !== 'paused'
-    ) {
+    if (currentStatus.status !== 'recording') {
       logger.error(`Cannot stop recording in ${currentStatus.status} state`);
       return currentStatus;
     }
 
     return {
       ...currentStatus,
-      status: 'stopped',
+      status: 'processing',
     };
   }
 
   /**
-   * Handle the SAVE_RECORDING event
+   * Attach the encoded artifact once native stop completes
    */
-  private handleSaveRecording(
+  private handleAttachRecordingArtifact(
     id: number,
-    filepath: string
+    filepath: string,
+    sampleRate?: number,
+    numberOfChannels?: number
   ): RecordingStatus | null {
     const currentStatus = this.recordingStatus$.value;
 
@@ -242,51 +235,54 @@ export class RecordingStateMachine {
       return currentStatus;
     }
 
-    return {
-      ...currentStatus,
-      status: 'ready',
-      filepath,
-    };
-  }
-
-  /**
-   * Handle the CREATE_BLOCK_SUCCESS event
-   */
-  private handleCreateBlockSuccess(id: number): RecordingStatus | null {
-    const currentStatus = this.recordingStatus$.value;
-
-    if (!currentStatus || currentStatus.id !== id) {
-      logger.error(`Recording ${id} not found for create-block-success`);
+    if (currentStatus.status !== 'processing') {
+      logger.error(`Cannot attach artifact in ${currentStatus.status} state`);
       return currentStatus;
     }
 
     return {
       ...currentStatus,
-      status: 'create-block-success',
+      filepath,
+      sampleRate: sampleRate ?? currentStatus.sampleRate,
+      numberOfChannels: numberOfChannels ?? currentStatus.numberOfChannels,
     };
   }
 
   /**
-   * Handle the CREATE_BLOCK_FAILED event
+   * Set the renderer-side block creation result
    */
-  private handleCreateBlockFailed(
+  private handleSetBlockCreationStatus(
     id: number,
-    error?: Error
+    status: 'success' | 'failed',
+    errorMessage?: string
   ): RecordingStatus | null {
     const currentStatus = this.recordingStatus$.value;
 
     if (!currentStatus || currentStatus.id !== id) {
-      logger.error(`Recording ${id} not found for create-block-failed`);
+      logger.error(`Recording ${id} not found for block creation status`);
       return currentStatus;
     }
 
-    if (error) {
-      logger.error(`Recording ${id} create block failed:`, error);
+    if (currentStatus.status === 'new') {
+      logger.error(`Cannot settle recording ${id} before it starts`);
+      return currentStatus;
+    }
+
+    if (
+      currentStatus.status === 'ready' &&
+      currentStatus.blockCreationStatus !== undefined
+    ) {
+      return currentStatus;
+    }
+
+    if (errorMessage) {
+      logger.error(`Recording ${id} create block failed: ${errorMessage}`);
     }
 
     return {
       ...currentStatus,
-      status: 'create-block-failed',
+      status: 'ready',
+      blockCreationStatus: status,
     };
   }
 

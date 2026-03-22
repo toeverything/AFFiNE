@@ -258,7 +258,7 @@ export class FalProvider extends CopilotProvider<FalConfig> {
     const model = this.selectModel(cond);
 
     try {
-      metrics.ai.counter('chat_text_calls').add(1, { model: model.id });
+      metrics.ai.counter('chat_text_calls').add(1, this.metricLabels(model.id));
 
       // by default, image prompt assumes there is only one message
       const prompt = this.extractPrompt(messages[messages.length - 1]);
@@ -283,7 +283,9 @@ export class FalProvider extends CopilotProvider<FalConfig> {
       }
       return data.output;
     } catch (e: any) {
-      metrics.ai.counter('chat_text_errors').add(1, { model: model.id });
+      metrics.ai
+        .counter('chat_text_errors')
+        .add(1, this.metricLabels(model.id));
       throw this.handleError(e);
     }
   }
@@ -296,12 +298,16 @@ export class FalProvider extends CopilotProvider<FalConfig> {
     const model = this.selectModel(cond);
 
     try {
-      metrics.ai.counter('chat_text_stream_calls').add(1, { model: model.id });
+      metrics.ai
+        .counter('chat_text_stream_calls')
+        .add(1, this.metricLabels(model.id));
       const result = await this.text(cond, messages, options);
 
       yield result;
     } catch (e) {
-      metrics.ai.counter('chat_text_stream_errors').add(1, { model: model.id });
+      metrics.ai
+        .counter('chat_text_stream_errors')
+        .add(1, this.metricLabels(model.id));
       throw e;
     }
   }
@@ -319,7 +325,7 @@ export class FalProvider extends CopilotProvider<FalConfig> {
     try {
       metrics.ai
         .counter('generate_images_stream_calls')
-        .add(1, { model: model.id });
+        .add(1, this.metricLabels(model.id));
 
       // by default, image prompt assumes there is only one message
       const prompt = this.extractPrompt(
@@ -376,7 +382,7 @@ export class FalProvider extends CopilotProvider<FalConfig> {
     } catch (e) {
       metrics.ai
         .counter('generate_images_stream_errors')
-        .add(1, { model: model.id });
+        .add(1, this.metricLabels(model.id));
       throw this.handleError(e);
     }
   }
