@@ -200,7 +200,9 @@ async function exportHandler({
       await printToPdf(editorContainer);
       return true;
     case 'png': {
-      await editorRoot?.std.get(ExportManager).exportPng();
+      const std = editorRoot?.std;
+      if (!std) return false;
+      await std.get(ExportManager).exportPng();
       return true;
     }
     case 'pdf-export': {
