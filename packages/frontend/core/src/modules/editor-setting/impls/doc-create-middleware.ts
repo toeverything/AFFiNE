@@ -1,10 +1,13 @@
 import { Service } from '@toeverything/infra';
+import { Array as YArray, Map as YMap } from 'yjs';
 
 import type { DocCreateMiddleware, DocRecord } from '../../doc';
 import type { DocCreateOptions } from '../../doc/types';
 import type { AppThemeService } from '../../theme';
+import type { WorkspaceService } from '../../workspace';
 import type { EdgelessDefaultTheme } from '../schema';
 import type { EditorSettingService } from '../services/editor-setting';
+import { getUniqueNewDocDateTitle } from '../utils/date-title';
 
 const getValueByDefaultTheme = (
   defaultTheme: EdgelessDefaultTheme,
@@ -30,20 +33,51 @@ export class EditorSettingDocCreateMiddleware
 {
   constructor(
     private readonly editorSettingService: EditorSettingService,
-    private readonly appThemeService: AppThemeService
+    private readonly appThemeService: AppThemeService,
+    private readonly workspaceService: WorkspaceService
   ) {
     super();
   }
+
+  private getCurrentDocTitles() {
+    const pages = this.workspaceService.workspace.rootYDoc
+      .getMap('meta')
+      .get('pages');
+
+    if (!(pages instanceof YArray)) {
+      return [];
+    }
+
+    return pages
+      .map(page => {
+        if (!(page instanceof YMap)) {
+          return '';
+        }
+        return (page.get('title') ?? '') as string;
+      })
+      .filter(Boolean);
+  }
+
   beforeCreate(docCreateOptions: DocCreateOptions): DocCreateOptions {
     // clone the docCreateOptions to avoid mutating the original object
     docCreateOptions = {
       ...docCreateOptions,
     };
 
-    const preferMode =
-      this.editorSettingService.editorSetting.settings$.value.newDocDefaultMode;
+    const settings = this.editorSettingService.editorSetting.settings$.value;
+    const preferMode = settings.newDocDefaultMode;
     const mode = preferMode === 'ask' ? 'page' : preferMode;
     docCreateOptions.primaryMode ??= mode;
+
+    if (
+      !docCreateOptions.title?.trim() &&
+      settings.autoTitleNewDocWithCurrentDate
+    ) {
+      docCreateOptions.title = getUniqueNewDocDateTitle({
+        existingTitles: this.getCurrentDocTitles(),
+        format: settings.newDocDateTitleFormat,
+      });
+    }
 
     docCreateOptions.docProps = {
       ...docCreateOptions.docProps,

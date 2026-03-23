@@ -165,6 +165,9 @@ export class DocsService extends Service {
     if (options.isTemplate) {
       docRecord.setProperty('isTemplate', true);
     }
+    if (options.title?.trim()) {
+      docRecord.setMeta({ title: options.title });
+    }
     for (const middleware of this.docCreateMiddlewares) {
       middleware.afterCreate?.(docRecord, options);
     }
