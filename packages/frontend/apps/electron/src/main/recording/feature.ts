@@ -157,11 +157,12 @@ function hasActiveRecordingSession(
 function isTerminalPopupStatus(
   status: RecordingStatus | null | undefined
 ): status is RecordingStatus & {
-  status: 'imported' | 'import_failed' | 'finalize_failed';
+  status: 'imported' | 'import_failed' | 'start_failed' | 'finalize_failed';
 } {
   return (
     status?.status === 'imported' ||
     status?.status === 'import_failed' ||
+    status?.status === 'start_failed' ||
     status?.status === 'finalize_failed'
   );
 }
@@ -223,6 +224,7 @@ function getProjectedRecordingStatus(): RecordingStatus | null {
   if (
     session?.sessionStatus === 'new' ||
     session?.sessionStatus === 'starting' ||
+    session?.sessionStatus === 'start_failed' ||
     session?.sessionStatus === 'recording' ||
     session?.sessionStatus === 'finalizing' ||
     session?.sessionStatus === 'finalized' ||
@@ -456,6 +458,7 @@ function setupRecordingListeners() {
               }
             },
             status.status === 'import_failed' ||
+              status.status === 'start_failed' ||
               status.status === 'finalize_failed'
               ? 30_000
               : 10_000

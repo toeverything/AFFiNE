@@ -1,6 +1,4 @@
 use std::{
-  cell::RefCell,
-  collections::HashMap,
   sync::{
     Arc,
     atomic::{AtomicBool, Ordering},
@@ -49,9 +47,33 @@ impl BufferedResampler {
     }
   }
 
+  fn append_output(&mut self, out_blocks: &[Vec<f32>], interleaved_out: &mut Vec<f32>, final_flush: bool) {
+    if out_blocks.is_empty() || out_blocks.len() != self.channels {
+      return;
+    }
+
+    if !self.initial_output_discarded && !final_flush {
+      self.initial_output_discarded = true;
+      return;
+    }
+
+    self.initial_output_discarded = true;
+    let out_len = out_blocks[0].len();
+    for i in 0..out_len {
+      for channel in out_blocks.iter().take(self.channels) {
+        interleaved_out.push(channel[i]);
+      }
+    }
+  }
+
+  fn process_chunk(&mut self, chunk: Vec<Vec<f32>>, interleaved_out: &mut Vec<f32>, final_flush: bool) {
+    if let Ok(out_blocks) = self.resampler.process(&chunk, None) {
+      self.append_output(&out_blocks, interleaved_out, final_flush);
+    }
+  }
+
   // Feed planar samples; returns interleaved output (may be empty)
   fn feed(&mut self, planar_in: &[Vec<f32>]) -> Vec<f32> {
-    // Push incoming samples into fifo buffers
     for (ch, data) in planar_in.iter().enumerate() {
       if ch < self.fifo.len() {
         self.fifo[ch].extend_from_slice(data);
@@ -68,44 +90,27 @@ impl BufferedResampler {
         chunk.push(tail);
       }
 
-      if let Ok(out_blocks) = self.resampler.process(&chunk, None) {
-        if !out_blocks.is_empty() && out_blocks.len() == self.channels {
-          if !self.initial_output_discarded {
-            self.initial_output_discarded = true;
-          } else {
-            let out_len = out_blocks[0].len();
-            for i in 0..out_len {
-              for ch in 0..self.channels {
-                interleaved_out.push(out_blocks[ch][i]);
-              }
-            }
-          }
-        }
-      }
+      self.process_chunk(chunk, &mut interleaved_out, false);
     }
 
     interleaved_out
   }
-}
 
-// Thread-local cache for resamplers keyed by (from, to, channels)
-thread_local! {
-    static RESAMPLER_CACHE: RefCell<HashMap<(u32, u32, usize), BufferedResampler>> = RefCell::new(HashMap::new());
-}
+  fn finish(&mut self) -> Vec<f32> {
+    let mut interleaved_out = Vec::new();
+    if self.fifo.first().is_none_or(|channel| channel.is_empty()) {
+      return interleaved_out;
+    }
 
-fn process_audio_with_resampler(samples: Vec<f32>, from_sample_rate: u32, to_sample_rate: u32) -> Vec<f32> {
-  if from_sample_rate == to_sample_rate {
-    return samples;
+    let mut chunk: Vec<Vec<f32>> = Vec::with_capacity(self.channels);
+    for ch in 0..self.channels {
+      let mut tail = std::mem::take(&mut self.fifo[ch]);
+      tail.resize(RESAMPLER_INPUT_CHUNK, 0.0);
+      chunk.push(tail);
+    }
+    self.process_chunk(chunk, &mut interleaved_out, true);
+    interleaved_out
   }
-
-  RESAMPLER_CACHE.with(|cache| {
-    let mut map = cache.borrow_mut();
-    let key = (from_sample_rate, to_sample_rate, 1usize); // mono resampler
-    let resampler = map
-      .entry(key)
-      .or_insert_with(|| BufferedResampler::new(from_sample_rate as f64, to_sample_rate as f64, 1));
-    resampler.feed(&[samples])
-  })
 }
 
 fn to_mono(frame: &[f32]) -> f32 {
@@ -159,6 +164,42 @@ struct AudioBuffer {
   data: Vec<f32>,
 }
 
+fn extend_post_buffer(post_buffer: &mut Vec<f32>, mono_samples: Vec<f32>, resampler: &mut Option<BufferedResampler>) {
+  if let Some(resampler) = resampler.as_mut() {
+    post_buffer.extend(resampler.feed(&[mono_samples]));
+  } else {
+    post_buffer.extend(mono_samples);
+  }
+}
+
+fn emit_mixed_frames(
+  post_mic: &mut Vec<f32>,
+  post_lb: &mut Vec<f32>,
+  audio_buffer_callback: &AudioCallback,
+  final_flush: bool,
+) {
+  while post_mic.len() >= TARGET_FRAME_SIZE && post_lb.len() >= TARGET_FRAME_SIZE {
+    let mic_chunk: Vec<f32> = post_mic.drain(..TARGET_FRAME_SIZE).collect();
+    let lb_chunk: Vec<f32> = post_lb.drain(..TARGET_FRAME_SIZE).collect();
+    let mixed = mix(&mic_chunk, &lb_chunk);
+    if !mixed.is_empty() {
+      audio_buffer_callback.call(mixed);
+    }
+  }
+
+  if final_flush && !post_mic.is_empty() && !post_lb.is_empty() {
+    let tail_len = post_mic.len().min(post_lb.len());
+    let mic_chunk: Vec<f32> = post_mic.drain(..tail_len).collect();
+    let lb_chunk: Vec<f32> = post_lb.drain(..tail_len).collect();
+    let mixed = mix(&mic_chunk, &lb_chunk);
+    if !mixed.is_empty() {
+      audio_buffer_callback.call(mixed);
+    }
+    post_mic.clear();
+    post_lb.clear();
+  }
+}
+
 #[napi]
 pub struct AudioCaptureSession {
   mic_stream: Option<cpal::Stream>,
@@ -183,8 +224,6 @@ where
     return Ok(());
   }
 
-  stop_requested.store(true, Ordering::SeqCst);
-
   let mic_stream = mic_stream.take();
   let lb_stream = lb_stream.take();
   let jh = jh.take();
@@ -202,6 +241,8 @@ where
       pause_errors.push(format!("pause loopback stream: {error}"));
     }
   }
+
+  stop_requested.store(true, Ordering::SeqCst);
 
   drop(mic_stream);
   drop(lb_stream);
@@ -323,21 +364,22 @@ pub fn start_recording(
   let stop_requested_flag = stop_requested.clone();
 
   let jh = std::thread::spawn(move || {
-    // Accumulators before and after resampling
-    let mut pre_mic: Vec<f32> = Vec::new();
-    let mut pre_lb: Vec<f32> = Vec::new();
     let mut post_mic: Vec<f32> = Vec::new();
     let mut post_lb: Vec<f32> = Vec::new();
+    let mut mic_resampler = (mic_sample_rate != target_rate)
+      .then(|| BufferedResampler::new(mic_sample_rate.0 as f64, target_rate.0 as f64, 1));
+    let mut lb_resampler =
+      (lb_sample_rate != target_rate).then(|| BufferedResampler::new(lb_sample_rate.0 as f64, target_rate.0 as f64, 1));
+    let mut flushed_tail = false;
 
-    while !stop_requested_flag.load(Ordering::SeqCst) {
-      // Gather input from channels
+    loop {
       while let Ok(buf) = rx_mic.try_recv() {
         let mono_samples: Vec<f32> = if mic_channels == 1 {
           buf.data
         } else {
           buf.data.chunks(mic_channels as usize).map(to_mono).collect()
         };
-        pre_mic.extend_from_slice(&mono_samples);
+        extend_post_buffer(&mut post_mic, mono_samples, &mut mic_resampler);
       }
 
       while let Ok(buf) = rx_lb.try_recv() {
@@ -346,44 +388,10 @@ pub fn start_recording(
         } else {
           buf.data.chunks(lb_channels as usize).map(to_mono).collect()
         };
-        pre_lb.extend_from_slice(&mono_samples);
+        extend_post_buffer(&mut post_lb, mono_samples, &mut lb_resampler);
       }
 
-      // Resample when enough samples are available
-      while pre_mic.len() >= RESAMPLER_INPUT_CHUNK {
-        let to_resample: Vec<f32> = pre_mic.drain(..RESAMPLER_INPUT_CHUNK).collect();
-        let processed = process_audio_with_resampler(to_resample, mic_sample_rate.0, target_rate.0);
-        if !processed.is_empty() {
-          post_mic.extend_from_slice(&processed);
-        }
-      }
-
-      while pre_lb.len() >= RESAMPLER_INPUT_CHUNK {
-        let to_resample: Vec<f32> = pre_lb.drain(..RESAMPLER_INPUT_CHUNK).collect();
-        let processed = process_audio_with_resampler(to_resample, lb_sample_rate.0, target_rate.0);
-        if !processed.is_empty() {
-          post_lb.extend_from_slice(&processed);
-        }
-      }
-
-      // Mix when we have TARGET_FRAME_SIZE samples available from both
-      while post_mic.len() >= TARGET_FRAME_SIZE && post_lb.len() >= TARGET_FRAME_SIZE {
-        let mic_chunk: Vec<f32> = post_mic.drain(..TARGET_FRAME_SIZE).collect();
-        let lb_chunk: Vec<f32> = post_lb.drain(..TARGET_FRAME_SIZE).collect();
-        let mixed = mix(&mic_chunk, &lb_chunk);
-        if !mixed.is_empty() {
-          audio_buffer_callback.call(mixed);
-        }
-      }
-
-      // Prevent unbounded growth – keep some slack
-      const MAX_PRE: usize = RESAMPLER_INPUT_CHUNK * 10;
-      if pre_mic.len() > MAX_PRE {
-        pre_mic.drain(..pre_mic.len() - MAX_PRE);
-      }
-      if pre_lb.len() > MAX_PRE {
-        pre_lb.drain(..pre_lb.len() - MAX_PRE);
-      }
+      emit_mixed_frames(&mut post_mic, &mut post_lb, &audio_buffer_callback, false);
 
       const MAX_POST: usize = TARGET_FRAME_SIZE * 10;
       if post_mic.len() > MAX_POST {
@@ -393,8 +401,24 @@ pub fn start_recording(
         post_lb.drain(..post_lb.len() - MAX_POST);
       }
 
-      // Sleep if nothing to do
-      if rx_mic.is_empty()
+      let stop_requested = stop_requested_flag.load(Ordering::SeqCst);
+      if stop_requested && !flushed_tail && rx_mic.is_empty() && rx_lb.is_empty() {
+        if let Some(mut resampler) = mic_resampler.take() {
+          post_mic.extend(resampler.finish());
+        }
+        if let Some(mut resampler) = lb_resampler.take() {
+          post_lb.extend(resampler.finish());
+        }
+        emit_mixed_frames(&mut post_mic, &mut post_lb, &audio_buffer_callback, true);
+        flushed_tail = true;
+      }
+
+      if stop_requested && flushed_tail && rx_mic.is_empty() && rx_lb.is_empty() {
+        break;
+      }
+
+      if !stop_requested
+        && rx_mic.is_empty()
         && rx_lb.is_empty()
         && post_mic.len() < TARGET_FRAME_SIZE
         && post_lb.len() < TARGET_FRAME_SIZE

@@ -13,6 +13,7 @@ type Status = {
   status:
     | 'new'
     | 'starting'
+    | 'start_failed'
     | 'recording'
     | 'finalizing'
     | 'pending_import'
@@ -68,6 +69,7 @@ export function Recording() {
       return t['com.affine.recording.success.prompt']();
     } else if (
       status.status === 'import_failed' ||
+      status.status === 'start_failed' ||
       status.status === 'finalize_failed'
     ) {
       return t['com.affine.recording.failed.prompt']();
@@ -183,6 +185,12 @@ export function Recording() {
       return (
         <Button variant="primary" onClick={handleDismiss}>
           {t['com.affine.recording.success.button']()}
+        </Button>
+      );
+    } else if (status.status === 'start_failed') {
+      return (
+        <Button variant="plain" onClick={handleDismiss}>
+          {t['com.affine.recording.dismiss']()}
         </Button>
       );
     } else if (

@@ -224,15 +224,15 @@ describe('recording feature', () => {
         get: (key: string) => storageState.get(key),
         set: (key: string, value: unknown) => {
           storageState.set(key, value);
-          const subject$ = watchSubjects.get(key);
-          subject$?.next(value);
+          const watchSubject$ = watchSubjects.get(key);
+          watchSubject$?.next(value);
         },
         watch: (key: string) => {
-          const subject$ =
+          const watchSubject$ =
             watchSubjects.get(key) ??
             new BehaviorSubject(storageState.get(key));
-          watchSubjects.set(key, subject$);
-          return subject$.asObservable();
+          watchSubjects.set(key, watchSubject$);
+          return watchSubject$.asObservable();
         },
       },
     }));
@@ -480,5 +480,43 @@ describe('recording feature', () => {
       status: 'recording',
     });
     expect(second!.id).toBeGreaterThan(first!.id);
+  });
+
+  test('start failure is reported as start_failed and does not block the next recording', async () => {
+    nativeStartRecording
+      .mockRejectedValueOnce(new Error('native start failed'))
+      .mockResolvedValueOnce({
+        id: 'native-2',
+        filepath: '/tmp/1.opus',
+        sampleRate: 48_000,
+        channels: 2,
+        startedAt: 456,
+      });
+
+    const {
+      recordingStatus$,
+      setRecordingNativeModuleForTesting,
+      startRecording,
+    } = await import('../../src/main/recording/feature');
+    setRecordingNativeModuleForTesting({
+      ShareableContent: class ShareableContent {},
+      startRecording: nativeStartRecording,
+      stopRecording: nativeStopRecording,
+      abortRecording: nativeAbortRecording,
+    } as never);
+
+    const failedStart = await startRecording();
+    expect(failedStart).toMatchObject({
+      status: 'start_failed',
+      errorMessage: 'native start failed',
+    });
+    expect(recordingStatus$.value).toMatchObject({
+      status: 'start_failed',
+    });
+
+    const next = await startRecording();
+    expect(next).toMatchObject({
+      status: 'recording',
+    });
   });
 });

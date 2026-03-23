@@ -194,7 +194,7 @@ export class RecordingStateMachine {
 
     return {
       ...currentStatus,
-      sessionStatus: 'finalize_failed' as const,
+      sessionStatus: 'start_failed' as const,
       errorMessage,
     };
   }

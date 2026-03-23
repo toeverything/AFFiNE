@@ -26,6 +26,16 @@ type RecordingImportStatus = {
 
 type WorkspaceHandle = NonNullable<ReturnType<typeof getCurrentWorkspace>>;
 
+class RecordingImportTerminalError extends Error {
+  override readonly cause: unknown;
+
+  constructor(message: string, cause: unknown) {
+    super(message);
+    this.name = 'RecordingImportTerminalError';
+    this.cause = cause;
+  }
+}
+
 async function readRecordingFile(filepath: string) {
   if (apis?.recording?.readRecordingFile) {
     try {
@@ -80,69 +90,83 @@ async function createRecordingDoc(
     },
   });
 
-  await new Promise<void>((resolve, reject) => {
-    const docProps: DocProps = {
-      onStoreLoad: (doc, { noteId }) => {
-        void (async () => {
-          const { blobId, blob } = await saveRecordingBlob(
-            doc.workspace.blobSync,
-            recordingFilepath
-          );
+  let docCreated = false;
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const docProps: DocProps = {
+        onStoreLoad: (doc, { noteId }) => {
+          void (async () => {
+            const { blobId, blob } = await saveRecordingBlob(
+              doc.workspace.blobSync,
+              recordingFilepath
+            );
 
-          const attachmentName =
-            (status.appName ?? 'System Audio') + ' ' + timestamp + '.opus';
+            const attachmentName =
+              (status.appName ?? 'System Audio') + ' ' + timestamp + '.opus';
 
-          const attachmentId = doc.addBlock(
-            'affine:attachment',
-            {
-              name: attachmentName,
-              type: NATIVE_RECORDING_MIME_TYPE,
-              size: blob.size,
-              sourceId: blobId,
-              embed: true,
-            },
-            noteId
-          );
+            const attachmentId = doc.addBlock(
+              'affine:attachment',
+              {
+                name: attachmentName,
+                type: NATIVE_RECORDING_MIME_TYPE,
+                size: blob.size,
+                sourceId: blobId,
+                embed: true,
+              },
+              noteId
+            );
 
-          const model = doc.getBlock(attachmentId)
-            ?.model as AttachmentBlockModel;
+            const model = doc.getBlock(attachmentId)
+              ?.model as AttachmentBlockModel;
 
-          if (!aiEnabled) {
-            return;
-          }
+            if (!aiEnabled) {
+              return;
+            }
 
-          using currentWorkspace = getCurrentWorkspace(frameworkProvider);
-          if (!currentWorkspace) {
-            return;
-          }
-          const { workspace } = currentWorkspace;
-          using audioAttachment = workspace.scope
-            .get(AudioAttachmentService)
-            .get(model);
-          audioAttachment?.obj
-            .transcribe()
-            .then(() => {
-              track.doc.editor.audioBlock.transcribeRecording({
-                type: 'Meeting record',
-                method: 'success',
-                option: 'Auto transcribing',
+            using currentWorkspace = getCurrentWorkspace(frameworkProvider);
+            if (!currentWorkspace) {
+              return;
+            }
+            const { workspace } = currentWorkspace;
+            using audioAttachment = workspace.scope
+              .get(AudioAttachmentService)
+              .get(model);
+            audioAttachment?.obj
+              .transcribe()
+              .then(() => {
+                track.doc.editor.audioBlock.transcribeRecording({
+                  type: 'Meeting record',
+                  method: 'success',
+                  option: 'Auto transcribing',
+                });
+              })
+              .catch(err => {
+                logger.error('Failed to transcribe recording', err);
               });
-            })
-            .catch(err => {
-              logger.error('Failed to transcribe recording', err);
-            });
-        })().then(resolve, reject);
-      },
-    };
+          })().then(resolve, reject);
+        },
+      };
 
-    const page = docsService.createDoc({
-      docProps,
-      title:
-        'Recording ' + (status.appName ?? 'System Audio') + ' ' + timestamp,
-      primaryMode: 'page',
+      const page = docsService.createDoc({
+        docProps,
+        title:
+          'Recording ' + (status.appName ?? 'System Audio') + ' ' + timestamp,
+        primaryMode: 'page',
+      });
+      docCreated = true;
+      workspace.scope.get(WorkbenchService).workbench.openDoc(page.id);
     });
-    workspace.scope.get(WorkbenchService).workbench.openDoc(page.id);
-  });
+  } catch (error) {
+    if (docCreated) {
+      throw new RecordingImportTerminalError(
+        `Recording import created a document before failing: ${
+          error instanceof Error ? error.message : 'unknown error'
+        }`,
+        error
+      );
+    }
+    throw error;
+  }
 }
 
 export function setupRecordingEvents(frameworkProvider: FrameworkProvider) {
@@ -182,11 +206,8 @@ export function setupRecordingEvents(frameworkProvider: FrameworkProvider) {
   };
 
   const getNextImportCandidate = () =>
-    importQueue.find(
-      status =>
-        status.importStatus === 'pending_import' ||
-        status.importStatus === 'import_failed'
-    ) ?? null;
+    importQueue.find(status => status.importStatus === 'pending_import') ??
+    null;
 
   const scheduleRetry = () => {
     if (!getNextImportCandidate() || retryTimer !== null) {
@@ -238,11 +259,17 @@ export function setupRecordingEvents(frameworkProvider: FrameworkProvider) {
         updateLocalImportStatus(status.id, 'imported');
         await apis?.recording.completeRecordingImport(status.id);
       } catch (error) {
-        logger.error('Failed to import recording artifact', error);
+        const importError =
+          error instanceof RecordingImportTerminalError
+            ? error
+            : error instanceof Error
+              ? error
+              : new Error('Failed to import recording artifact');
+        logger.error('Failed to import recording artifact', importError);
         updateLocalImportStatus(status.id, 'import_failed');
         await apis?.recording.failRecordingImport(
           status.id,
-          error instanceof Error ? error.message : undefined
+          importError.message
         );
       } finally {
         processingStatusId = null;

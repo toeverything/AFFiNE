@@ -242,31 +242,24 @@ describe('recording effect', () => {
     expect(failRecordingImport).not.toHaveBeenCalled();
   });
 
-  test('marks imports as failed when the doc import throws and retries later', async () => {
+  test('marks imports as failed without auto-retrying after doc creation starts', async () => {
     const pendingImport = {
       id: 9,
-      importStatus: 'import_failed' as const,
+      importStatus: 'pending_import' as const,
       appName: 'Meet',
       filepath: '/tmp/meeting.opus',
       startTime: 1000,
     };
 
     const workspace = createWorkspaceRef();
-    workspace.createDoc.mockImplementationOnce(() => {
-      throw new Error('create doc failed');
-    });
+    workspace.blobSet.mockRejectedValueOnce(new Error('blob import failed'));
 
     isActiveTab.mockResolvedValue(true);
     getCurrentWorkspace.mockReturnValue(workspace.ref);
-    claimRecordingImport
-      .mockResolvedValueOnce({
-        ...pendingImport,
-        importStatus: 'importing',
-      })
-      .mockResolvedValueOnce({
-        ...pendingImport,
-        importStatus: 'importing',
-      });
+    claimRecordingImport.mockResolvedValue({
+      ...pendingImport,
+      importStatus: 'importing',
+    });
     getRecordingImportQueue.mockResolvedValue([pendingImport]);
 
     const { setupRecordingEvents } =
@@ -277,13 +270,20 @@ describe('recording effect', () => {
     await Promise.resolve();
     await vi.advanceTimersByTimeAsync(0);
 
-    expect(failRecordingImport).toHaveBeenCalledWith(9, 'create doc failed');
+    expect(failRecordingImport).toHaveBeenCalledWith(
+      9,
+      'Recording import created a document before failing: blob import failed'
+    );
     expect(completeRecordingImport).not.toHaveBeenCalled();
+    expect(claimRecordingImport).toHaveBeenCalledTimes(1);
+    expect(workspace.createDoc).toHaveBeenCalledTimes(1);
 
-    onRecordingImportQueueChanged?.([pendingImport]);
+    onRecordingImportQueueChanged?.([
+      { ...pendingImport, importStatus: 'import_failed' },
+    ]);
     await vi.advanceTimersByTimeAsync(1000);
 
-    expect(claimRecordingImport).toHaveBeenCalledTimes(2);
+    expect(claimRecordingImport).toHaveBeenCalledTimes(1);
   });
 
   test('processes recording imports one at a time even when the queue changes mid-import', async () => {

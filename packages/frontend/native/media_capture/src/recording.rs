@@ -665,6 +665,48 @@ fn spawn_worker(
   })
 }
 
+fn finalize_worker_artifact(
+  worker_result: RecordingResult<RecordingArtifact>,
+  metrics: &RecordingQualityMetrics,
+) -> RecordingResult<RecordingArtifact> {
+  worker_result.map(|mut artifact| {
+    artifact.overflow_count = metrics.overflow_count();
+    artifact.degraded = artifact.overflow_count > 0;
+    artifact
+  })
+}
+
+fn resolve_stop_result(
+  stop_result: std::result::Result<(), Error>,
+  worker_result: RecordingResult<RecordingArtifact>,
+  metrics: &RecordingQualityMetrics,
+) -> RecordingResult<RecordingArtifact> {
+  match finalize_worker_artifact(worker_result, metrics) {
+    Ok(artifact) => Ok(artifact),
+    Err(worker_error) => match stop_result {
+      Ok(()) => Err(worker_error),
+      Err(error) => Err(RecordingError::Start(error.to_string())),
+    },
+  }
+}
+
+fn resolve_abort_result(
+  stop_result: std::result::Result<(), Error>,
+  worker_result: RecordingResult<RecordingArtifact>,
+) -> RecordingResult<()> {
+  match worker_result {
+    Ok(artifact) => {
+      fs::remove_file(&artifact.filepath).ok();
+      Ok(())
+    }
+    Err(RecordingError::Empty) => Ok(()),
+    Err(worker_error) => match stop_result {
+      Ok(()) => Err(worker_error),
+      Err(error) => Err(RecordingError::Start(error.to_string())),
+    },
+  }
+}
+
 fn spawn_recording_controller(
   id: String,
   filepath: PathBuf,
@@ -737,14 +779,7 @@ fn spawn_recording_controller(
             },
             None => Err(RecordingError::Join),
           };
-          let result = match stop_result {
-            Ok(()) => worker_result.map(|mut artifact| {
-              artifact.overflow_count = metrics.overflow_count();
-              artifact.degraded = artifact.overflow_count > 0;
-              artifact
-            }),
-            Err(error) => Err(RecordingError::Start(error.to_string())),
-          };
+          let result = resolve_stop_result(stop_result, worker_result, &metrics);
 
           let _ = reply_tx.send(result);
         }
@@ -758,17 +793,7 @@ fn spawn_recording_controller(
             },
             None => Err(RecordingError::Join),
           };
-          let result = match stop_result {
-            Ok(()) => match worker_result {
-              Ok(artifact) => {
-                fs::remove_file(&artifact.filepath).ok();
-                Ok(())
-              }
-              Err(RecordingError::Empty) => Ok(()),
-              Err(error) => Err(error),
-            },
-            Err(error) => Err(RecordingError::Start(error.to_string())),
-          };
+          let result = resolve_abort_result(stop_result, worker_result);
 
           let _ = reply_tx.send(result);
         }
@@ -951,13 +976,14 @@ pub async fn abort_recording(id: String) -> Result<()> {
 mod tests {
   use std::{env, fs::File, path::PathBuf, thread};
 
+  use napi::{Error, Status};
   use ogg::PacketReader;
   use tokio::runtime::Builder;
 
   use super::{
     ACTIVE_RECORDING, ActiveRecording, ControlMessage, OggOpusWriter, RecordingArtifact, RecordingError,
     RecordingQualityMetrics, START_RECORDING_LOCK, abort_recording_inner, bounded, convert_interleaved_channels, mpsc,
-    stop_recording_inner,
+    resolve_abort_result, resolve_stop_result, stop_recording_inner,
   };
   use crate::audio_callback::AudioCallback;
 
@@ -1144,5 +1170,53 @@ mod tests {
 
     let _ = receiver.recv().expect("queued audio");
     assert_eq!(metrics.overflow_count(), 1);
+  }
+
+  #[test]
+  fn stop_prefers_a_finished_artifact_over_teardown_errors() {
+    let metrics = RecordingQualityMetrics::default();
+    metrics.shared_counter().store(2, std::sync::atomic::Ordering::Relaxed);
+
+    let artifact = resolve_stop_result(
+      Err(Error::new(Status::GenericFailure, "pause failed")),
+      Ok(RecordingArtifact {
+        id: String::from("stop-success"),
+        filepath: String::from("/tmp/recording.opus"),
+        sample_rate: 48_000,
+        channels: 2,
+        duration_ms: 1_000,
+        size: 128,
+        degraded: false,
+        overflow_count: 0,
+      }),
+      &metrics,
+    )
+    .expect("artifact should be preserved");
+
+    assert_eq!(artifact.overflow_count, 2);
+    assert!(artifact.degraded);
+  }
+
+  #[test]
+  fn abort_cleans_artifacts_even_when_teardown_reports_an_error() {
+    let path = temp_recording_path();
+    std::fs::write(&path, b"artifact").expect("write temp artifact");
+
+    resolve_abort_result(
+      Err(Error::new(Status::GenericFailure, "pause failed")),
+      Ok(RecordingArtifact {
+        id: String::from("abort-success"),
+        filepath: path.to_string_lossy().into_owned(),
+        sample_rate: 48_000,
+        channels: 2,
+        duration_ms: 1_000,
+        size: 8,
+        degraded: false,
+        overflow_count: 0,
+      }),
+    )
+    .expect("abort should still clean up");
+
+    assert!(!path.exists());
   }
 }

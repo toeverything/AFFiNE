@@ -21,6 +21,7 @@ export interface AppGroupInfo {
 export type RecordingSessionState =
   | 'new'
   | 'starting'
+  | 'start_failed'
   | 'recording'
   | 'finalizing'
   | 'finalized'
@@ -67,6 +68,7 @@ export interface RecordingImportStatus extends RecordingArtifactInfo {
 export type RecordingDisplayState =
   | 'new'
   | 'starting'
+  | 'start_failed'
   | 'recording'
   | 'finalizing'
   | 'pending_import'
