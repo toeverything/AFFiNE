@@ -835,33 +835,21 @@ async fn send_control_message<T>(
   message: ControlMessage,
   reply_rx: oneshot::Receiver<RecordingResult<T>>,
 ) -> Result<T> {
-  let control_tx = {
-    let recording = ACTIVE_RECORDING.lock().await;
-    let active = recording.as_ref().ok_or(RecordingError::NotFound)?;
-    if active.id != id {
-      return Err(RecordingError::NotFound.into());
-    }
-    active.control_tx.clone()
-  };
+  let active_recording = take_active_recording(id).await?;
 
-  if control_tx.send(message).is_err() {
-    if let Ok(recording) = take_active_recording(id).await {
-      let _ = join_active_recording(recording).await;
-    }
+  if active_recording.control_tx.send(message).is_err() {
+    let _ = join_active_recording(active_recording).await;
     return Err(RecordingError::Join.into());
   }
 
   let response = match reply_rx.await {
     Ok(response) => response,
     Err(_) => {
-      if let Ok(recording) = take_active_recording(id).await {
-        let _ = join_active_recording(recording).await;
-      }
+      let _ = join_active_recording(active_recording).await;
       return Err(RecordingError::Join.into());
     }
   };
 
-  let active_recording = take_active_recording(id).await?;
   join_active_recording(active_recording).await?;
   map_recording_result(response)
 }
@@ -1152,6 +1140,53 @@ mod tests {
     });
 
     block_on(abort_recording_inner(id)).expect("abort should succeed");
+    assert!(ACTIVE_RECORDING.blocking_lock().is_none());
+  }
+
+  #[test]
+  fn concurrent_stop_and_abort_only_allow_one_owner() {
+    let _lock = START_RECORDING_LOCK.blocking_lock();
+    let id = String::from("concurrent-stop-abort");
+    let (control_tx, mut control_rx) = mpsc::unbounded_channel();
+    let (stop_started_tx, stop_started_rx) = std::sync::mpsc::channel();
+    let (finish_stop_tx, finish_stop_rx) = std::sync::mpsc::channel();
+    let controller = thread::spawn(move || {
+      let Some(ControlMessage::Stop { reply_tx }) = control_rx.blocking_recv() else {
+        panic!("expected stop");
+      };
+      stop_started_tx.send(()).expect("signal stop start");
+      finish_stop_rx.recv().expect("wait for stop completion");
+      let _ = reply_tx.send(Ok(RecordingArtifact {
+        id: String::from("concurrent-stop-abort"),
+        filepath: String::from("/tmp/recording.opus"),
+        sample_rate: 48_000,
+        channels: 2,
+        duration_ms: 1_000,
+        size: 128,
+        degraded: false,
+        overflow_count: 0,
+      }));
+    });
+
+    *ACTIVE_RECORDING.blocking_lock() = Some(ActiveRecording {
+      id: id.clone(),
+      control_tx,
+      controller: Some(controller),
+    });
+
+    let stop_id = id.clone();
+    let stop_thread = thread::spawn(move || block_on(stop_recording_inner(stop_id)));
+    stop_started_rx.recv().expect("stop should own the session");
+
+    let abort_error = block_on(abort_recording_inner(id)).expect_err("abort should lose ownership");
+    assert!(
+      abort_error.to_string().contains("not-found"),
+      "unexpected abort error: {abort_error}"
+    );
+
+    finish_stop_tx.send(()).expect("allow stop to finish");
+    let stop_result = stop_thread.join().expect("join stop thread");
+    assert!(stop_result.is_ok(), "stop should win ownership");
     assert!(ACTIVE_RECORDING.blocking_lock().is_none());
   }
 

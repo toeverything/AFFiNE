@@ -2081,6 +2081,7 @@
   "com.affine.audio.transcribe.non-owner.confirm.title": "无法检索他人的 AI 结果",
   "com.affine.audio.transcribe.non-owner.confirm.message": "请联系 <1>{{user}}</1> 提升 AI 权限或重新发送附件。",
   "com.affine.recording.new": "音频活动中",
+  "com.affine.recording.importing.prompt": "正在导入...",
   "com.affine.recording.success.prompt": "已完成",
   "com.affine.recording.success.button": "打开应用",
   "com.affine.recording.failed.prompt": "保存失败",

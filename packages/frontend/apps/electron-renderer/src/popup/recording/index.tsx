@@ -89,7 +89,7 @@ export function Recording() {
       status.status === 'pending_import' ||
       status.status === 'importing'
     ) {
-      return t['com.affine.recording.success.prompt']();
+      return t['com.affine.recording.importing.prompt']();
     }
     return null;
   }, [status, t]);

@@ -129,6 +129,8 @@ export const recordingEvents = {
         queue.map(item => ({
           id: item.id,
           appName: item.appName,
+          workspaceId: item.workspaceId,
+          docId: item.docId,
           startTime: item.startTime,
           filepath: item.filepath,
           sampleRate: item.sampleRate,

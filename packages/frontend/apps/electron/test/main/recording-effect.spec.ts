@@ -372,6 +372,83 @@ describe('recording effect', () => {
     expect(completeRecordingImport).not.toHaveBeenCalled();
   });
 
+  test('releases priority load when waiting for sync readiness fails', async () => {
+    const pendingImport = {
+      id: 10,
+      importStatus: 'pending_import' as const,
+      appName: 'Meet',
+      filepath: '/tmp/meeting.opus',
+      startTime: 1000,
+    };
+    const disposePriorityLoad = vi.fn();
+    const release = vi.fn();
+    const workspace = {
+      ref: {
+        workspace: {
+          id: 'workspace-1',
+          scope: {
+            get(token: { name?: string }) {
+              switch (token.name) {
+                case 'DocsService':
+                  return {
+                    createDoc: vi.fn(),
+                    open: vi.fn(() => ({
+                      doc: {
+                        blockSuiteDoc: {},
+                        addPriorityLoad: vi.fn(() => disposePriorityLoad),
+                        waitForSyncReady: vi
+                          .fn()
+                          .mockRejectedValue(new Error('sync failed')),
+                      },
+                      release,
+                    })),
+                    list: {
+                      ['doc$']: vi.fn(() => ({
+                        value: { id: 'recording-10' },
+                      })),
+                    },
+                  };
+                case 'WorkbenchService':
+                case 'AudioAttachmentService':
+                  return {};
+                default:
+                  throw new Error(`Unexpected token: ${token.name}`);
+              }
+            },
+          },
+          docCollection: {
+            blobSync: { set: vi.fn() },
+          },
+        },
+        dispose: vi.fn(),
+        [Symbol.dispose]: vi.fn(),
+      },
+    };
+
+    isActiveTab.mockResolvedValue(true);
+    getCurrentWorkspace.mockReturnValue(workspace.ref);
+    claimRecordingImport.mockResolvedValue({
+      ...withQueueMeta(pendingImport),
+      workspaceId: 'workspace-1',
+      docId: 'recording-10',
+      importStatus: 'importing',
+    });
+    getRecordingImportQueue.mockResolvedValue([withQueueMeta(pendingImport)]);
+
+    const { setupRecordingEvents } =
+      await import('../../../electron-renderer/src/app/effects/recording');
+
+    setupRecordingEvents({} as never);
+    await Promise.resolve();
+    await Promise.resolve();
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(disposePriorityLoad).toHaveBeenCalledTimes(1);
+    expect(release).toHaveBeenCalledTimes(1);
+    expect(failRecordingImport).toHaveBeenCalledWith(10, 'sync failed');
+    expect(completeRecordingImport).not.toHaveBeenCalled();
+  });
+
   test('processes recording imports one at a time even when the queue changes mid-import', async () => {
     const firstImport = {
       id: 7,

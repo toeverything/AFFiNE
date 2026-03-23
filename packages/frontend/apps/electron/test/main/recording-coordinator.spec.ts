@@ -184,6 +184,31 @@ describe('RecordingCoordinator', () => {
     expect(coordinator.currentStatus()).toBeNull();
   });
 
+  test('abortActive clears the local job even when native abort fails', async () => {
+    const startRecording = vi.fn().mockResolvedValue({
+      id: 'native-1',
+      filepath: '/tmp/0.opus',
+      sampleRate: 48_000,
+      channels: 2,
+      startedAt: 123,
+    });
+    const abortRecording = vi
+      .fn()
+      .mockRejectedValue(new Error('native abort failed'));
+    const { coordinator } = await createCoordinator({
+      startRecording,
+      abortRecording,
+    });
+
+    await coordinator.start();
+
+    await expect(coordinator.abortActive()).rejects.toThrow(
+      'native abort failed'
+    );
+    expect(coordinator.currentStatus()).toBeNull();
+    expect(coordinator.jobs).toEqual([]);
+  });
+
   test('start failures project to start_failed and release the active slot', async () => {
     const startRecording = vi
       .fn()

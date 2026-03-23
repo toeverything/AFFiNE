@@ -143,10 +143,14 @@ async function createRecordingDoc(
 
   const { doc, release } = docsService.open(targetDocId);
   const disposePriorityLoad = doc.addPriorityLoad(10);
-  await doc.waitForSyncReady();
-  disposePriorityLoad();
 
   try {
+    try {
+      await doc.waitForSyncReady();
+    } finally {
+      disposePriorityLoad();
+    }
+
     const noteId = ensureNoteId(doc.blockSuiteDoc);
     const existingAttachment = findExistingAttachment(
       doc.blockSuiteDoc,

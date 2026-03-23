@@ -615,8 +615,11 @@ export class RecordingCoordinator {
     }
 
     const nativeController = await this.getNativeController();
-    await nativeController.abortRecording(job.nativeId);
-    this.removeJob(job.id);
+    try {
+      await nativeController.abortRecording(job.nativeId);
+    } finally {
+      this.removeJob(job.id);
+    }
   }
 
   getRecording(id: number) {
