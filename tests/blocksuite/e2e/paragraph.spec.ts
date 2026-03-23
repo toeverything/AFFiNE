@@ -31,6 +31,7 @@ import {
   redoByClick,
   redoByKeyboard,
   resetHistory,
+  setInlineRangeInInlineEditor,
   setSelection,
   SHORT_KEY,
   switchReadonly,
@@ -87,10 +88,9 @@ test('init paragraph by page title enter in middle', async ({ page }) => {
   await waitDefaultPageLoaded(page);
   await focusTitle(page);
   await type(page, 'hello');
-  await page.keyboard.press('ArrowLeft');
-  await page.keyboard.press('ArrowLeft');
-  await page.keyboard.press('ArrowLeft');
+  await setInlineRangeInInlineEditor(page, { index: 2, length: 0 });
   await pressEnter(page);
+  await waitNextFrame(page, 200);
 
   await assertTitle(page, 'he');
   await assertRichTexts(page, ['llo', '']);
