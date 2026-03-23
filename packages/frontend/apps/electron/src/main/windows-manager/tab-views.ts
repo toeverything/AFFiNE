@@ -391,19 +391,85 @@ export class WebContentViewsManager {
 
     this.closedWorkbenches.push(targetWorkbench);
 
-    setTimeout(() => {
+    globalThis.setTimeout(() => {
       const view = this.tabViewsMap.get(id);
       this.tabViewsMap.delete(id);
 
-      if (this.mainWindow && view) {
-        this.mainWindow.contentView.removeChildView(view);
-        view?.webContents.close({
-          waitForBeforeUnload: true,
-        });
+      if (!view) {
+        return;
       }
+
+      void this.disposeTabView(id, view).catch(error => {
+        logger.warn('failed to dispose tab view', {
+          id,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      });
     }, 500); // delay a bit to get rid of the flicker
 
     onTabClose(id);
+  };
+
+  private readonly disposeTabView = async (
+    id: string,
+    view: WebContentsView
+  ) => {
+    const waitForDestroyed = () =>
+      new Promise<boolean>(resolve => {
+        if (view.webContents.isDestroyed()) {
+          resolve(true);
+          return;
+        }
+
+        const timeout = globalThis.setTimeout(() => {
+          resolve(false);
+        }, 1_000);
+
+        view.webContents.once('destroyed', () => {
+          globalThis.clearTimeout(timeout);
+          resolve(true);
+        });
+      });
+
+    if (this.mainWindow?.contentView.children.includes(view)) {
+      this.mainWindow.contentView.removeChildView(view);
+    }
+
+    if (view.webContents.isDestroyed()) {
+      return;
+    }
+
+    try {
+      view.webContents.close({
+        waitForBeforeUnload: true,
+      });
+    } catch {
+      return;
+    }
+
+    if (await waitForDestroyed()) return;
+
+    view.webContents.forcefullyCrashRenderer();
+
+    try {
+      view.webContents.close({
+        waitForBeforeUnload: false,
+      });
+    } catch {
+      return;
+    }
+
+    if (!view.webContents.isDestroyed() && !(await waitForDestroyed())) {
+      logger.warn('tab webContents is still alive after force close', {
+        id,
+        webContentsId: view.webContents.id,
+        url: view.webContents.getURL(),
+      });
+    }
+
+    if (this.mainWindow?.contentView.children.includes(view)) {
+      this.mainWindow.contentView.removeChildView(view);
+    }
   };
 
   undoCloseTab = async () => {

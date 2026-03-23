@@ -14,13 +14,51 @@ import {
   waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
 import type { ParagraphBlockComponent } from '@blocksuite/affine-block-paragraph';
-import { expect } from '@playwright/test';
+import { expect, type Locator } from '@playwright/test';
 
 test.beforeEach(async ({ page }) => {
   await openHomePage(page);
   await clickNewPageButton(page, 'Paragraph Test');
   await waitForEditorLoad(page);
 });
+
+async function expectParagraphState(
+  paragraphs: Locator,
+  index: number,
+  expectedType: string,
+  expectedText: string
+) {
+  await expect
+    .poll(async () => {
+      return await paragraphs
+        .nth(index)
+        .evaluate(
+          (
+            block: ParagraphBlockComponent,
+            expected: { type: string; text: string }
+          ) =>
+            block.model.props.type === expected.type &&
+            block.model.props.text.toString() === expected.text,
+          {
+            type: expectedType,
+            text: expectedText,
+          }
+        );
+    })
+    .toBeTruthy();
+}
+
+async function expectParagraphVisibility(
+  paragraphs: Locator,
+  index: number,
+  visible: boolean
+) {
+  await expect
+    .poll(async () => {
+      return await paragraphs.nth(index).isVisible();
+    })
+    .toBe(visible);
+}
 
 test('heading icon should be updated after change heading level', async ({
   page,
@@ -320,26 +358,9 @@ test('also move children when dedent collapsed heading', async ({ page }) => {
   await subParagraph.nth(0).click();
   await pressShiftTab(page);
   expect(await subParagraph.count()).toBe(0);
-  expect(
-    await paragraph
-      .nth(1)
-      .evaluate(
-        (block: ParagraphBlockComponent) =>
-          block.model.props.type === 'h1' &&
-          block.model.props.text.toString() === 'bbb'
-      )
-  ).toBeTruthy();
-  expect(
-    await paragraph
-      .nth(2)
-      .evaluate(
-        (block: ParagraphBlockComponent) =>
-          block.model.props.type === 'text' &&
-          block.model.props.text.toString() === 'ccc'
-      )
-  ).toBeTruthy();
-
-  expect(await paragraph.nth(2).isVisible()).toBeFalsy();
+  await expectParagraphState(paragraph, 1, 'h1', 'bbb');
+  await expectParagraphState(paragraph, 2, 'text', 'ccc');
+  await expectParagraphVisibility(paragraph, 2, false);
   await paragraph
     .nth(1)
     .locator('blocksuite-toggle-button .toggle-icon')
@@ -349,7 +370,7 @@ test('also move children when dedent collapsed heading', async ({ page }) => {
         y: 5,
       },
     });
-  expect(await paragraph.nth(2).isVisible()).toBeTruthy();
+  await expectParagraphVisibility(paragraph, 2, true);
 });
 
 test('also move collapsed siblings when indent collapsed heading', async ({
@@ -433,23 +454,19 @@ test('unfold collapsed heading when its other blocks indented to be its sibling'
    */
 
   const paragraph = page.locator('affine-note affine-paragraph');
-  expect(await paragraph.nth(2).isVisible()).toBeTruthy();
-  expect(
-    await paragraph
-      .nth(2)
-      .evaluate(
-        (block: ParagraphBlockComponent) =>
-          block.model.props.type === 'text' &&
-          block.model.props.text.toString() === 'ccc'
-      )
-  ).toBeTruthy();
+  await expectParagraphVisibility(paragraph, 2, true);
+  await expectParagraphState(paragraph, 2, 'text', 'ccc');
   await paragraph.locator('blocksuite-toggle-button .toggle-icon').click();
-  expect(await paragraph.nth(2).isVisible()).toBeFalsy();
+  await expectParagraphVisibility(paragraph, 2, false);
 
   await paragraph.nth(3).click(); // ddd
-  expect(await paragraph.nth(2).isVisible()).toBeFalsy();
-  expect(await paragraph.nth(0).locator('affine-paragraph').count()).toBe(2);
+  await expectParagraphVisibility(paragraph, 2, false);
+  await expect
+    .poll(() => paragraph.nth(0).locator('affine-paragraph').count())
+    .toBe(2);
   await pressTab(page);
-  expect(await paragraph.nth(0).locator('affine-paragraph').count()).toBe(3);
-  expect(await paragraph.nth(2).isVisible()).toBeTruthy();
+  await expect
+    .poll(() => paragraph.nth(0).locator('affine-paragraph').count())
+    .toBe(3);
+  await expectParagraphVisibility(paragraph, 2, true);
 });
