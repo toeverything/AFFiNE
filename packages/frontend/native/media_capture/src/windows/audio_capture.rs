@@ -161,12 +161,60 @@ struct AudioBuffer {
 
 #[napi]
 pub struct AudioCaptureSession {
-  mic_stream: cpal::Stream,
-  lb_stream: cpal::Stream,
-  stopped: Arc<AtomicBool>,
+  mic_stream: Option<cpal::Stream>,
+  lb_stream: Option<cpal::Stream>,
+  stop_requested: Arc<AtomicBool>,
   sample_rate: SampleRate,
   channels: u32,
   jh: Option<JoinHandle<()>>, // background mixing thread
+}
+
+fn teardown_audio_capture_resources<S, F>(
+  mic_stream: &mut Option<S>,
+  lb_stream: &mut Option<S>,
+  stop_requested: &Arc<AtomicBool>,
+  jh: &mut Option<JoinHandle<()>>,
+  pause_stream: F,
+) -> Result<()>
+where
+  F: Fn(&S) -> std::result::Result<(), String>,
+{
+  if mic_stream.is_none() && lb_stream.is_none() && jh.is_none() {
+    return Ok(());
+  }
+
+  stop_requested.store(true, Ordering::SeqCst);
+
+  let mic_stream = mic_stream.take();
+  let lb_stream = lb_stream.take();
+  let jh = jh.take();
+
+  let mut pause_errors = Vec::new();
+
+  if let Some(stream) = mic_stream.as_ref() {
+    if let Err(error) = pause_stream(stream) {
+      pause_errors.push(format!("pause mic stream: {error}"));
+    }
+  }
+
+  if let Some(stream) = lb_stream.as_ref() {
+    if let Err(error) = pause_stream(stream) {
+      pause_errors.push(format!("pause loopback stream: {error}"));
+    }
+  }
+
+  drop(mic_stream);
+  drop(lb_stream);
+
+  if let Some(jh) = jh {
+    let _ = jh.join(); // ignore poison
+  }
+
+  if pause_errors.is_empty() {
+    Ok(())
+  } else {
+    Err(Error::new(Status::GenericFailure, pause_errors.join("; ")))
+  }
 }
 
 #[napi]
@@ -189,29 +237,13 @@ impl AudioCaptureSession {
 
   #[napi]
   pub fn stop(&mut self) -> Result<()> {
-    if self.stopped.load(Ordering::SeqCst) {
-      return Ok(());
-    }
-    self.stopped.store(true, Ordering::SeqCst);
-    let mut pause_errors = Vec::new();
-    self
-      .mic_stream
-      .pause()
-      .map_err(|e| pause_errors.push(format!("pause mic stream: {e}")))
-      .ok();
-    self
-      .lb_stream
-      .pause()
-      .map_err(|e| pause_errors.push(format!("pause loopback stream: {e}")))
-      .ok();
-    if let Some(jh) = self.jh.take() {
-      let _ = jh.join(); // ignore poison
-    }
-    if pause_errors.is_empty() {
-      Ok(())
-    } else {
-      Err(Error::new(Status::GenericFailure, pause_errors.join("; ")))
-    }
+    teardown_audio_capture_resources(
+      &mut self.mic_stream,
+      &mut self.lb_stream,
+      &self.stop_requested,
+      &mut self.jh,
+      |stream| stream.pause().map_err(|error| error.to_string()),
+    )
   }
 }
 
@@ -257,7 +289,7 @@ pub fn start_recording(
   let mic_stream_config: cpal::StreamConfig = mic_config.clone().into();
   let lb_stream_config: cpal::StreamConfig = lb_config.clone().into();
 
-  let stopped = Arc::new(AtomicBool::new(false));
+  let stop_requested = Arc::new(AtomicBool::new(false));
 
   // Channels for passing raw buffers between callback and mixer thread
   let (tx_mic, rx_mic) = unbounded::<AudioBuffer>();
@@ -288,7 +320,7 @@ pub fn start_recording(
     )
     .map_err(|e| Error::new(Status::GenericFailure, format!("build_lb_stream: {e}")))?;
 
-  let stopped_flag = stopped.clone();
+  let stop_requested_flag = stop_requested.clone();
 
   let jh = std::thread::spawn(move || {
     // Accumulators before and after resampling
@@ -297,7 +329,7 @@ pub fn start_recording(
     let mut post_mic: Vec<f32> = Vec::new();
     let mut post_lb: Vec<f32> = Vec::new();
 
-    while !stopped_flag.load(Ordering::SeqCst) {
+    while !stop_requested_flag.load(Ordering::SeqCst) {
       // Gather input from channels
       while let Ok(buf) = rx_mic.try_recv() {
         let mono_samples: Vec<f32> = if mic_channels == 1 {
@@ -380,11 +412,62 @@ pub fn start_recording(
     .map_err(|e| Error::new(Status::GenericFailure, format!("{e}")))?;
 
   Ok(AudioCaptureSession {
-    mic_stream,
-    lb_stream,
-    stopped,
+    mic_stream: Some(mic_stream),
+    lb_stream: Some(lb_stream),
+    stop_requested,
     sample_rate: target_rate,
     channels: 1, // mono output
     jh: Some(jh),
   })
+}
+
+#[cfg(test)]
+mod tests {
+  use std::sync::{
+    Arc,
+    atomic::{AtomicBool, Ordering},
+  };
+
+  use super::teardown_audio_capture_resources;
+
+  #[test]
+  fn teardown_consumes_resources_even_when_pause_fails() {
+    let mut mic_stream = Some("mic");
+    let mut lb_stream = Some("loopback");
+    let stop_requested = Arc::new(AtomicBool::new(false));
+    let joined = Arc::new(AtomicBool::new(false));
+    let joined_flag = joined.clone();
+    let mut jh = Some(std::thread::spawn(move || {
+      joined_flag.store(true, Ordering::SeqCst);
+    }));
+
+    let result = teardown_audio_capture_resources(&mut mic_stream, &mut lb_stream, &stop_requested, &mut jh, |_| {
+      Err("pause failed".to_owned())
+    });
+
+    assert!(result.is_err());
+    assert!(stop_requested.load(Ordering::SeqCst));
+    assert!(mic_stream.is_none());
+    assert!(lb_stream.is_none());
+    assert!(jh.is_none());
+    assert!(joined.load(Ordering::SeqCst));
+  }
+
+  #[test]
+  fn teardown_is_idempotent_after_resources_are_consumed() {
+    let mut mic_stream: Option<&'static str> = None;
+    let mut lb_stream: Option<&'static str> = None;
+    let stop_requested = Arc::new(AtomicBool::new(true));
+    let mut jh = None;
+
+    let result = teardown_audio_capture_resources(
+      &mut mic_stream,
+      &mut lb_stream,
+      &stop_requested,
+      &mut jh,
+      |_| -> std::result::Result<(), String> { panic!("pause should not be called when resources are already gone") },
+    );
+
+    assert!(result.is_ok());
+  }
 }

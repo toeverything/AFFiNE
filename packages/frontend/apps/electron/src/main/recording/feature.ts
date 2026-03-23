@@ -225,6 +225,7 @@ function getProjectedRecordingStatus(): RecordingStatus | null {
     session?.sessionStatus === 'starting' ||
     session?.sessionStatus === 'recording' ||
     session?.sessionStatus === 'finalizing' ||
+    session?.sessionStatus === 'finalized' ||
     session?.sessionStatus === 'finalize_failed'
   ) {
     return serializeSessionStatus(session);

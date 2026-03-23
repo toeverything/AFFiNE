@@ -215,6 +215,7 @@ class TrayState implements Disposable {
             },
             {
               label: 'Stop',
+              disabled: recordingStatus.status !== 'recording',
               click: () => {
                 logger.info('User action: Stop Recording');
                 if (recordingStatus.status === 'recording') {

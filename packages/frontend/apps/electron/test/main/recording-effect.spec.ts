@@ -89,6 +89,16 @@ vi.mock('../../../electron-renderer/src/app/effects/utils', () => ({
   isAiEnabled,
 }));
 
+function createDeferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve, reject };
+}
+
 function createWorkspaceRef() {
   const blobSet = vi.fn(async () => 'blob-1');
   const addBlock = vi.fn(() => 'attachment-1');
@@ -274,5 +284,68 @@ describe('recording effect', () => {
     await vi.advanceTimersByTimeAsync(1000);
 
     expect(claimRecordingImport).toHaveBeenCalledTimes(2);
+  });
+
+  test('processes recording imports one at a time even when the queue changes mid-import', async () => {
+    const firstImport = {
+      id: 7,
+      importStatus: 'pending_import' as const,
+      appName: 'Zoom',
+      filepath: '/tmp/meeting-1.opus',
+      startTime: 1000,
+    };
+    const secondImport = {
+      id: 8,
+      importStatus: 'pending_import' as const,
+      appName: 'Meet',
+      filepath: '/tmp/meeting-2.opus',
+      startTime: 2000,
+    };
+    const firstRead = createDeferred<ArrayBuffer>();
+    const workspace = createWorkspaceRef();
+
+    isActiveTab.mockResolvedValue(true);
+    getCurrentWorkspace.mockReturnValue(workspace.ref);
+    readRecordingFile
+      .mockImplementationOnce(() => firstRead.promise)
+      .mockResolvedValueOnce(new Uint8Array([4, 5, 6]).buffer);
+    claimRecordingImport.mockImplementation(async (id: number) => ({
+      ...(id === firstImport.id ? firstImport : secondImport),
+      importStatus: 'importing' as const,
+    }));
+    getRecordingImportQueue.mockResolvedValue([firstImport, secondImport]);
+
+    const { setupRecordingEvents } =
+      await import('../../../electron-renderer/src/app/effects/recording');
+
+    setupRecordingEvents({} as never);
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(claimRecordingImport).toHaveBeenCalledTimes(1);
+    expect(claimRecordingImport).toHaveBeenCalledWith(firstImport.id);
+    expect(workspace.createDoc).toHaveBeenCalledTimes(1);
+
+    onRecordingImportQueueChanged?.([
+      { ...firstImport, importStatus: 'importing' },
+      secondImport,
+    ]);
+    await Promise.resolve();
+
+    expect(claimRecordingImport).toHaveBeenCalledTimes(1);
+    expect(workspace.createDoc).toHaveBeenCalledTimes(1);
+
+    firstRead.resolve(new Uint8Array([1, 2, 3]).buffer);
+    await Promise.resolve();
+    await Promise.resolve();
+    await vi.advanceTimersByTimeAsync(1000);
+
+    expect(claimRecordingImport).toHaveBeenCalledTimes(2);
+    expect(claimRecordingImport).toHaveBeenNthCalledWith(2, secondImport.id);
+    expect(workspace.createDoc).toHaveBeenCalledTimes(2);
+    expect(completeRecordingImport).toHaveBeenNthCalledWith(1, firstImport.id);
+    expect(completeRecordingImport).toHaveBeenNthCalledWith(2, secondImport.id);
   });
 });

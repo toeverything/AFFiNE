@@ -148,6 +148,7 @@ async function createRecordingDoc(
 export function setupRecordingEvents(frameworkProvider: FrameworkProvider) {
   let importQueue: RecordingImportStatus[] = [];
   let retryTimer: ReturnType<typeof setTimeout> | null = null;
+  let isProcessingImport = false;
   let processingStatusId: number | null = null;
 
   const clearRetry = () => {
@@ -198,56 +199,56 @@ export function setupRecordingEvents(frameworkProvider: FrameworkProvider) {
   };
 
   const processNextImport = async () => {
+    if (isProcessingImport) return;
     const status = getNextImportCandidate();
-    if (!status || processingStatusId === status.id) {
-      return;
-    }
+    if (!status) return;
 
-    let isActiveTab = false;
+    isProcessingImport = true;
     try {
-      isActiveTab = !!(await apis?.ui.isActiveTab());
-    } catch (error) {
-      logger.error('Failed to probe active recording tab', error);
-      scheduleRetry();
-      return;
-    }
+      let isActiveTab = false;
+      try {
+        isActiveTab = !!(await apis?.ui.isActiveTab());
+      } catch (error) {
+        logger.error('Failed to probe active recording tab', error);
+        return;
+      }
 
-    if (!isActiveTab) {
-      scheduleRetry();
-      return;
-    }
+      if (!isActiveTab) {
+        return;
+      }
 
-    using currentWorkspace = getCurrentWorkspace(frameworkProvider);
-    if (!currentWorkspace) {
-      scheduleRetry();
-      return;
-    }
+      using currentWorkspace = getCurrentWorkspace(frameworkProvider);
+      if (!currentWorkspace) {
+        return;
+      }
 
-    const claimed = await apis?.recording.claimRecordingImport(status.id);
-    if (!claimed) {
-      scheduleRetry();
-      return;
-    }
+      const claimed = await apis?.recording.claimRecordingImport(status.id);
+      if (!claimed) {
+        return;
+      }
 
-    processingStatusId = status.id;
+      processingStatusId = status.id;
 
-    try {
-      await createRecordingDoc(
-        frameworkProvider,
-        currentWorkspace.workspace,
-        claimed
-      );
-      updateLocalImportStatus(status.id, 'imported');
-      await apis?.recording.completeRecordingImport(status.id);
-    } catch (error) {
-      logger.error('Failed to import recording artifact', error);
-      updateLocalImportStatus(status.id, 'import_failed');
-      await apis?.recording.failRecordingImport(
-        status.id,
-        error instanceof Error ? error.message : undefined
-      );
+      try {
+        await createRecordingDoc(
+          frameworkProvider,
+          currentWorkspace.workspace,
+          claimed
+        );
+        updateLocalImportStatus(status.id, 'imported');
+        await apis?.recording.completeRecordingImport(status.id);
+      } catch (error) {
+        logger.error('Failed to import recording artifact', error);
+        updateLocalImportStatus(status.id, 'import_failed');
+        await apis?.recording.failRecordingImport(
+          status.id,
+          error instanceof Error ? error.message : undefined
+        );
+      } finally {
+        processingStatusId = null;
+      }
     } finally {
-      processingStatusId = null;
+      isProcessingImport = false;
       scheduleRetry();
     }
   };

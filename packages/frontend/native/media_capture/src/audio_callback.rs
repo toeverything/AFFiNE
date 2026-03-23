@@ -31,13 +31,35 @@ impl AudioCallback {
       Self::Channel { sender, overflow_count } => match sender.try_send(samples) {
         Ok(()) => {}
         Err(TrySendError::Full(_)) => {
-          let dropped = overflow_count.fetch_add(1, Ordering::Relaxed) + 1;
-          if dropped == 1 || dropped.is_power_of_two() {
-            eprintln!("[affine_media_capture] audio queue overflow, dropped {dropped} chunks");
-          }
+          overflow_count.fetch_add(1, Ordering::Relaxed);
         }
         Err(TrySendError::Disconnected(_)) => {}
       },
     }
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use std::sync::atomic::Ordering;
+
+  use crossbeam_channel::bounded;
+
+  use super::AudioCallback;
+
+  #[test]
+  fn channel_overflow_only_increments_the_counter() {
+    let (sender, _rx) = bounded(1);
+    let overflow_count = std::sync::Arc::new(std::sync::atomic::AtomicU64::new(0));
+    let callback = AudioCallback::Channel {
+      sender: sender.clone(),
+      overflow_count: overflow_count.clone(),
+    };
+
+    sender.send(vec![0.0]).unwrap();
+    callback.call(vec![1.0]);
+    callback.call(vec![2.0]);
+
+    assert_eq!(overflow_count.load(Ordering::Relaxed), 2);
   }
 }

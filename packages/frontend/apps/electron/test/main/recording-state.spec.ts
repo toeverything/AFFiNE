@@ -374,6 +374,66 @@ describe('recording feature', () => {
     ]);
   });
 
+  test('stop projection does not emit a null status between finalized and pending import', async () => {
+    nativeStartRecording.mockResolvedValue({
+      id: 'native-1',
+      filepath: '/tmp/0.opus',
+      sampleRate: 48_000,
+      channels: 2,
+      startedAt: 123,
+    });
+
+    const stopDeferred = createDeferred<{
+      id: string;
+      filepath: string;
+      sampleRate: number;
+      channels: number;
+      durationMs: number;
+      size: number;
+      degraded: boolean;
+      overflowCount: number;
+    }>();
+    nativeStopRecording.mockReturnValue(stopDeferred.promise);
+
+    const {
+      recordingStatus$,
+      setRecordingNativeModuleForTesting,
+      startRecording,
+      stopRecording,
+    } = await import('../../src/main/recording/feature');
+    setRecordingNativeModuleForTesting({
+      ShareableContent: class ShareableContent {},
+      startRecording: nativeStartRecording,
+      stopRecording: nativeStopRecording,
+      abortRecording: nativeAbortRecording,
+    } as never);
+
+    const started = await startRecording();
+    const seenStatuses: Array<string | null> = [];
+    const subscription = recordingStatus$.subscribe(status => {
+      seenStatuses.push(status?.status ?? null);
+    });
+
+    const stopPromise = stopRecording(started!.id);
+    stopDeferred.resolve({
+      id: 'native-1',
+      filepath: '/tmp/0.opus',
+      sampleRate: 48_000,
+      channels: 2,
+      durationMs: 2_000,
+      size: 256,
+      degraded: false,
+      overflowCount: 0,
+    });
+
+    await stopPromise;
+    subscription.unsubscribe();
+
+    expect(seenStatuses).toContain('finalizing');
+    expect(seenStatuses).toContain('pending_import');
+    expect(seenStatuses).not.toContain(null);
+  });
+
   test('stop failure releases the active slot for the next recording', async () => {
     nativeStartRecording
       .mockResolvedValueOnce({
