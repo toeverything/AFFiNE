@@ -160,11 +160,7 @@ class TrayState implements Disposable {
 
         const recordingStatus = recordingStatus$.value;
 
-        if (
-          !recordingStatus ||
-          (recordingStatus?.status !== 'paused' &&
-            recordingStatus?.status !== 'recording')
-        ) {
+        if (!recordingStatus || recordingStatus.status !== 'recording') {
           const appMenuItems = runningAppGroups.map(appGroup => ({
             label: appGroup.name,
             icon: appGroup.icon || undefined,
@@ -172,7 +168,9 @@ class TrayState implements Disposable {
               logger.info(
                 `User action: Start Recording Meeting (${appGroup.name})`
               );
-              startRecording(appGroup);
+              startRecording(appGroup).catch(err => {
+                logger.error('Failed to start recording:', err);
+              });
             },
           }));
 
@@ -188,7 +186,9 @@ class TrayState implements Disposable {
                     logger.info(
                       'User action: Start Recording Meeting (System audio)'
                     );
-                    startRecording();
+                    startRecording().catch(err => {
+                      logger.error('Failed to start recording:', err);
+                    });
                   },
                 },
                 ...appMenuItems,
@@ -201,7 +201,7 @@ class TrayState implements Disposable {
             ? `Recording (${recordingStatus.appGroup?.name})`
             : 'Recording';
 
-          // recording is either started or paused
+          // recording is active
           items.push(
             {
               label: recordingLabel,

@@ -76,6 +76,7 @@ resolver = "3"
   notify = { version = "8", features = ["serde"] }
   objc2 = "0.6"
   objc2-foundation = "0.3"
+  ogg = "0.9"
   once_cell = "1"
   ordered-float = "5"
   parking_lot = "0.12"

@@ -2,7 +2,7 @@ import path from 'node:path';
 
 import { type SpaceType } from '@affine/nbstore';
 
-import { isWindows } from '../../shared/utils';
+import { normalizeWorkspaceIdForPath } from '../../shared/utils';
 import { mainRPC } from '../main-rpc';
 import type { WorkspaceMeta } from '../type';
 
@@ -24,10 +24,11 @@ export async function getWorkspaceBasePathV1(
   spaceType: SpaceType,
   workspaceId: string
 ) {
+  const safeWorkspaceId = normalizeWorkspaceIdForPath(workspaceId);
   return path.join(
     await getAppDataPath(),
     spaceType === 'userspace' ? 'userspaces' : 'workspaces',
-    isWindows() ? workspaceId.replace(':', '_') : workspaceId
+    safeWorkspaceId
   );
 }
 
@@ -52,10 +53,11 @@ export async function getSpaceDBPath(
   spaceType: SpaceType,
   id: string
 ) {
+  const safeId = normalizeWorkspaceIdForPath(id);
   return path.join(
     await getSpaceBasePath(spaceType),
     escapeFilename(peer),
-    id,
+    safeId,
     'storage.db'
   );
 }

@@ -1,11 +1,10 @@
 /* oxlint-disable no-var-requires */
 import { execSync } from 'node:child_process';
-import { createHash } from 'node:crypto';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
 
 // Should not load @affine/native for unsupported platforms
-import type { ShareableContent as ShareableContentType } from '@affine/native';
+import type * as NativeModuleType from '@affine/native';
 import { app, systemPreferences } from 'electron';
 import fs from 'fs-extra';
 import { debounce } from 'lodash-es';
@@ -20,7 +19,12 @@ import {
 } from 'rxjs';
 import { filter, map, shareReplay } from 'rxjs/operators';
 
-import { isMacOS, isWindows, shallowEqual } from '../../shared/utils';
+import {
+  isMacOS,
+  isWindows,
+  resolveExistingPathInBase,
+  shallowEqual,
+} from '../../shared/utils';
 import { beforeAppQuit } from '../cleanup';
 import { logger } from '../logger';
 import {
@@ -32,12 +36,7 @@ import { getMainWindow } from '../windows-manager';
 import { popupManager } from '../windows-manager/popup';
 import { isAppNameAllowed } from './allow-list';
 import { recordingStateMachine } from './state-machine';
-import type {
-  AppGroupInfo,
-  Recording,
-  RecordingStatus,
-  TappableAppInfo,
-} from './types';
+import type { AppGroupInfo, RecordingStatus, TappableAppInfo } from './types';
 
 export const MeetingsSettingsState = {
   $: globalStateStorage.watch<MeetingSettingsSchema>(MeetingSettingsKey).pipe(
@@ -56,7 +55,12 @@ export const MeetingsSettingsState = {
   },
 };
 
+type Subscriber = {
+  unsubscribe: () => void;
+};
+
 const subscribers: Subscriber[] = [];
+let appStateSubscribers: Subscriber[] = [];
 
 // recordings are saved in the app data directory
 // may need a way to clean up old recordings
@@ -65,10 +69,29 @@ export const SAVED_RECORDINGS_DIR = path.join(
   'recordings'
 );
 
+type NativeModule = typeof NativeModuleType;
+type ShareableContentType = InstanceType<NativeModule['ShareableContent']>;
+type ShareableContentStatic = NativeModule['ShareableContent'];
+
 let shareableContent: ShareableContentType | null = null;
 
+function getNativeModule(): NativeModule {
+  return require('@affine/native') as NativeModule;
+}
+
 function cleanup() {
+  const nativeId = recordingStateMachine.status?.nativeId;
+  if (nativeId) cleanupAbandonedNativeRecording(nativeId);
+  recordingStatus$.next(null);
   shareableContent = null;
+  appStateSubscribers.forEach(subscriber => {
+    try {
+      subscriber.unsubscribe();
+    } catch {
+      // ignore unsubscribe error
+    }
+  });
+  appStateSubscribers = [];
   subscribers.forEach(subscriber => {
     try {
       subscriber.unsubscribe();
@@ -76,6 +99,9 @@ function cleanup() {
       // ignore unsubscribe error
     }
   });
+  subscribers.length = 0;
+  applications$.next([]);
+  appGroups$.next([]);
 }
 
 beforeAppQuit(() => {
@@ -87,18 +113,21 @@ export const appGroups$ = new BehaviorSubject<AppGroupInfo[]>([]);
 
 export const updateApplicationsPing$ = new Subject<number>();
 
-// recording id -> recording
-// recordings will be saved in memory before consumed and created as an audio block to user's doc
-const recordings = new Map<number, Recording>();
-
-// there should be only one active recording at a time
-// We'll now use recordingStateMachine.status$ instead of our own BehaviorSubject
+// There should be only one active recording at a time; state is managed by the state machine
 export const recordingStatus$ = recordingStateMachine.status$;
+
+function isRecordingSettled(
+  status: RecordingStatus | null | undefined
+): status is RecordingStatus & {
+  status: 'ready';
+  blockCreationStatus: 'success' | 'failed';
+} {
+  return status?.status === 'ready' && status.blockCreationStatus !== undefined;
+}
 
 function createAppGroup(processGroupId: number): AppGroupInfo | undefined {
   // MUST require dynamically to avoid loading @affine/native for unsupported platforms
-  const SC: typeof ShareableContentType =
-    require('@affine/native').ShareableContent;
+  const SC: ShareableContentStatic = getNativeModule().ShareableContent;
   const groupProcess = SC?.applicationWithProcessId(processGroupId);
   if (!groupProcess) {
     return;
@@ -174,9 +203,13 @@ function setupNewRunningAppGroup() {
   });
 
   const debounceStartRecording = debounce((appGroup: AppGroupInfo) => {
-    // check if the app is running again
-    if (appGroup.isRunning) {
-      startRecording(appGroup);
+    const currentGroup = appGroups$.value.find(
+      group => group.processGroupId === appGroup.processGroupId
+    );
+    if (currentGroup?.isRunning) {
+      startRecording(currentGroup).catch(err => {
+        logger.error('failed to start recording', err);
+      });
     }
   }, 1000);
 
@@ -200,8 +233,7 @@ function setupNewRunningAppGroup() {
         if (
           !recordingStatus ||
           recordingStatus.status === 'new' ||
-          recordingStatus.status === 'create-block-success' ||
-          recordingStatus.status === 'create-block-failed'
+          isRecordingSettled(recordingStatus)
         ) {
           if (MeetingsSettingsState.value.recordingMode === 'prompt') {
             newRecording(currentGroup);
@@ -226,7 +258,7 @@ function setupNewRunningAppGroup() {
           removeRecording(recordingStatus.id);
         }
 
-        // if the recording is stopped and we are recording it,
+        // if the watched app stops while we are recording it,
         // we should stop the recording
         if (
           recordingStatus?.status === 'recording' &&
@@ -242,100 +274,28 @@ function setupNewRunningAppGroup() {
   );
 }
 
-function getSanitizedAppId(bundleIdentifier?: string) {
-  if (!bundleIdentifier) {
-    return 'unknown';
-  }
-
-  return isWindows()
-    ? createHash('sha256')
-        .update(bundleIdentifier)
-        .digest('hex')
-        .substring(0, 8)
-    : bundleIdentifier;
-}
-
-export function createRecording(status: RecordingStatus) {
-  let recording = recordings.get(status.id);
-  if (recording) {
-    return recording;
-  }
-
-  const appId = getSanitizedAppId(status.appGroup?.bundleIdentifier);
-
-  const bufferedFilePath = path.join(
-    SAVED_RECORDINGS_DIR,
-    `${appId}-${status.id}-${status.startTime}.raw`
-  );
-
-  fs.ensureDirSync(SAVED_RECORDINGS_DIR);
-  const file = fs.createWriteStream(bufferedFilePath);
-
-  function tapAudioSamples(err: Error | null, samples: Float32Array) {
-    const recordingStatus = recordingStatus$.getValue();
-    if (
-      !recordingStatus ||
-      recordingStatus.id !== status.id ||
-      recordingStatus.status === 'paused'
-    ) {
-      return;
-    }
-
-    if (err) {
-      logger.error('failed to get audio samples', err);
-    } else {
-      // Writing raw Float32Array samples directly to file
-      // For stereo audio, samples are interleaved [L,R,L,R,...]
-      file.write(Buffer.from(samples.buffer));
-    }
-  }
-
-  // MUST require dynamically to avoid loading @affine/native for unsupported platforms
-  const SC: typeof ShareableContentType =
-    require('@affine/native').ShareableContent;
-
-  const stream = status.app
-    ? SC.tapAudio(status.app.processId, tapAudioSamples)
-    : SC.tapGlobalAudio(null, tapAudioSamples);
-
-  recording = {
-    id: status.id,
-    startTime: status.startTime,
-    app: status.app,
-    appGroup: status.appGroup,
-    file,
-    session: stream,
-  };
-
-  recordings.set(status.id, recording);
-
-  return recording;
-}
-
 export async function getRecording(id: number) {
-  const recording = recordings.get(id);
-  if (!recording) {
+  const recording = recordingStateMachine.status;
+  if (!recording || recording.id !== id) {
     logger.error(`Recording ${id} not found`);
     return;
   }
-  const rawFilePath = String(recording.file.path);
   return {
     id,
     appGroup: recording.appGroup,
     app: recording.app,
     startTime: recording.startTime,
-    filepath: rawFilePath,
-    sampleRate: recording.session.sampleRate,
-    numberOfChannels: recording.session.channels,
+    filepath: recording.filepath,
+    sampleRate: recording.sampleRate,
+    numberOfChannels: recording.numberOfChannels,
   };
 }
 
 // recording popup status
-// new: recording is started, popup is shown
-// recording: recording is started, popup is shown
-// stopped: recording is stopped, popup showing processing status
-// create-block-success: recording is ready, show "open app" button
-// create-block-failed: recording is failed, show "failed to save" button
+// new: waiting for user confirmation
+// recording: native recording is ongoing
+// processing: native stop or renderer import/transcription is ongoing
+// ready + blockCreationStatus: post-processing finished
 // null: hide popup
 function setupRecordingListeners() {
   subscribers.push(
@@ -350,36 +310,21 @@ function setupRecordingListeners() {
           });
         }
 
-        if (status?.status === 'recording') {
-          let recording = recordings.get(status.id);
-          // create a recording if not exists
-          if (!recording) {
-            recording = createRecording(status);
-          }
-        } else if (status?.status === 'stopped') {
-          const recording = recordings.get(status.id);
-          if (recording) {
-            recording.session.stop();
-          }
-        } else if (
-          status?.status === 'create-block-success' ||
-          status?.status === 'create-block-failed'
-        ) {
+        if (isRecordingSettled(status)) {
           // show the popup for 10s
           setTimeout(
             () => {
-              // check again if current status is still ready
+              const currentStatus = recordingStatus$.value;
               if (
-                (recordingStatus$.value?.status === 'create-block-success' ||
-                  recordingStatus$.value?.status === 'create-block-failed') &&
-                recordingStatus$.value.id === status.id
+                isRecordingSettled(currentStatus) &&
+                currentStatus.id === status.id
               ) {
                 popup.hide().catch(err => {
                   logger.error('failed to hide recording popup', err);
                 });
               }
             },
-            status?.status === 'create-block-failed' ? 30_000 : 10_000
+            status.blockCreationStatus === 'failed' ? 30_000 : 10_000
           );
         } else if (!status) {
           // status is removed, we should hide the popup
@@ -400,9 +345,7 @@ function getAllApps(): TappableAppInfo[] {
   }
 
   // MUST require dynamically to avoid loading @affine/native for unsupported platforms
-  const { ShareableContent } = require('@affine/native') as {
-    ShareableContent: typeof ShareableContentType;
-  };
+  const { ShareableContent } = getNativeModule();
 
   const apps = ShareableContent.applications().map(app => {
     try {
@@ -433,12 +376,8 @@ function getAllApps(): TappableAppInfo[] {
   return filteredApps;
 }
 
-type Subscriber = {
-  unsubscribe: () => void;
-};
-
 function setupMediaListeners() {
-  const ShareableContent = require('@affine/native').ShareableContent;
+  const ShareableContent = getNativeModule().ShareableContent;
   applications$.next(getAllApps());
   subscribers.push(
     interval(3000).subscribe(() => {
@@ -453,8 +392,6 @@ function setupMediaListeners() {
         applications$.next(getAllApps());
       })
   );
-
-  let appStateSubscribers: Subscriber[] = [];
 
   subscribers.push(
     applications$.subscribe(apps => {
@@ -484,15 +421,6 @@ function setupMediaListeners() {
       });
 
       appStateSubscribers = _appStateSubscribers;
-      return () => {
-        _appStateSubscribers.forEach(subscriber => {
-          try {
-            subscriber.unsubscribe();
-          } catch {
-            // ignore unsubscribe error
-          }
-        });
-      };
     })
   );
 }
@@ -502,7 +430,7 @@ function askForScreenRecordingPermission() {
     return false;
   }
   try {
-    const ShareableContent = require('@affine/native').ShareableContent;
+    const ShareableContent = getNativeModule().ShareableContent;
     // this will trigger the permission prompt
     new ShareableContent();
     return true;
@@ -519,7 +447,7 @@ export function setupRecordingFeature() {
   }
 
   try {
-    const ShareableContent = require('@affine/native').ShareableContent;
+    const ShareableContent = getNativeModule().ShareableContent;
     if (!shareableContent) {
       shareableContent = new ShareableContent();
       setupMediaListeners();
@@ -537,7 +465,6 @@ export function setupRecordingFeature() {
 }
 
 export function disableRecordingFeature() {
-  recordingStatus$.next(null);
   cleanup();
 }
 
@@ -558,222 +485,175 @@ export function newRecording(
   });
 }
 
-export function startRecording(
+export async function startRecording(
   appGroup?: AppGroupInfo | number
-): RecordingStatus | null {
-  const state = recordingStateMachine.dispatch(
-    {
-      type: 'START_RECORDING',
-      appGroup: normalizeAppGroupInfo(appGroup),
-    },
-    false
-  );
+): Promise<RecordingStatus | null> {
+  const previousState = recordingStateMachine.status;
+  const state = recordingStateMachine.dispatch({
+    type: 'START_RECORDING',
+    appGroup: normalizeAppGroupInfo(appGroup),
+  });
 
-  if (state?.status === 'recording') {
-    createRecording(state);
+  if (!state || state.status !== 'recording' || state === previousState) {
+    return state;
   }
 
-  recordingStateMachine.status$.next(state);
+  let nativeId: string | undefined;
 
-  return state;
-}
+  try {
+    fs.ensureDirSync(SAVED_RECORDINGS_DIR);
 
-export function pauseRecording(id: number) {
-  return recordingStateMachine.dispatch({ type: 'PAUSE_RECORDING', id });
-}
+    const meta = getNativeModule().startRecording({
+      appProcessId: state.app?.processId,
+      outputDir: SAVED_RECORDINGS_DIR,
+      format: 'opus',
+      id: String(state.id),
+    });
+    nativeId = meta.id;
 
-export function resumeRecording(id: number) {
-  return recordingStateMachine.dispatch({ type: 'RESUME_RECORDING', id });
+    const filepath = await assertRecordingFilepath(meta.filepath);
+    const nextState = recordingStateMachine.dispatch({
+      type: 'ATTACH_NATIVE_RECORDING',
+      id: state.id,
+      nativeId: meta.id,
+      startTime: meta.startedAt ?? state.startTime,
+      filepath,
+      sampleRate: meta.sampleRate,
+      numberOfChannels: meta.channels,
+    });
+
+    if (!nextState || nextState.nativeId !== meta.id) {
+      throw new Error('Failed to attach native recording metadata');
+    }
+
+    return nextState;
+  } catch (error) {
+    if (nativeId) {
+      cleanupAbandonedNativeRecording(nativeId);
+    }
+    logger.error('failed to start recording', error);
+    return setRecordingBlockCreationStatus(
+      state.id,
+      'failed',
+      error instanceof Error ? error.message : undefined
+    );
+  }
 }
 
 export async function stopRecording(id: number) {
-  const recording = recordings.get(id);
-  if (!recording) {
+  const recording = recordingStateMachine.status;
+  if (!recording || recording.id !== id) {
     logger.error(`stopRecording: Recording ${id} not found`);
     return;
   }
 
-  if (!recording.file.path) {
-    logger.error(`Recording ${id} has no file path`);
+  if (!recording.nativeId) {
+    logger.error(`stopRecording: Recording ${id} missing native id`);
     return;
   }
 
-  const { file, session: stream } = recording;
-
-  // First stop the audio stream to prevent more data coming in
-  try {
-    stream.stop();
-  } catch (err) {
-    logger.error('Failed to stop audio stream', err);
+  const processingState = recordingStateMachine.dispatch({
+    type: 'STOP_RECORDING',
+    id,
+  });
+  if (
+    !processingState ||
+    processingState.id !== id ||
+    processingState.status !== 'processing'
+  ) {
+    return serializeRecordingStatus(processingState ?? recording);
   }
 
-  // End the file with a timeout
-  file.end();
-
   try {
-    await Promise.race([
-      new Promise<void>((resolve, reject) => {
-        file.on('finish', () => {
-          // check if the file is empty
-          const stats = fs.statSync(file.path);
-          if (stats.size === 0) {
-            reject(new Error('Recording is empty'));
-            return;
-          }
-          resolve();
-        });
-
-        file.on('error', err => {
-          reject(err);
-        });
-      }),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('File writing timeout')), 10000)
-      ),
-    ]);
-
-    const recordingStatus = recordingStateMachine.dispatch({
-      type: 'STOP_RECORDING',
+    const artifact = getNativeModule().stopRecording(recording.nativeId);
+    const filepath = await assertRecordingFilepath(artifact.filepath);
+    const readyStatus = recordingStateMachine.dispatch({
+      type: 'ATTACH_RECORDING_ARTIFACT',
       id,
+      filepath,
+      sampleRate: artifact.sampleRate,
+      numberOfChannels: artifact.channels,
     });
 
-    if (!recordingStatus) {
-      logger.error('No recording status to stop');
+    if (!readyStatus) {
+      logger.error('No recording status to save');
       return;
     }
-    return serializeRecordingStatus(recordingStatus);
+
+    getMainWindow()
+      .then(mainWindow => {
+        if (mainWindow) {
+          mainWindow.show();
+        }
+      })
+      .catch(err => {
+        logger.error('failed to bring up the window', err);
+      });
+
+    return serializeRecordingStatus(readyStatus);
   } catch (error: unknown) {
     logger.error('Failed to stop recording', error);
-    const recordingStatus = recordingStateMachine.dispatch({
-      type: 'CREATE_BLOCK_FAILED',
+    const recordingStatus = await setRecordingBlockCreationStatus(
       id,
-      error: error instanceof Error ? error : undefined,
-    });
+      'failed',
+      error instanceof Error ? error.message : undefined
+    );
     if (!recordingStatus) {
       logger.error('No recording status to stop');
       return;
     }
     return serializeRecordingStatus(recordingStatus);
-  } finally {
-    // Clean up the file stream if it's still open
-    if (!file.closed) {
-      file.destroy();
-    }
   }
 }
 
-export async function getRawAudioBuffers(
-  id: number,
-  cursor?: number
-): Promise<{
-  buffer: Buffer;
-  nextCursor: number;
-}> {
-  const recording = recordings.get(id);
-  if (!recording) {
-    throw new Error(`getRawAudioBuffers: Recording ${id} not found`);
-  }
-  const start = cursor ?? 0;
-  const file = await fsp.open(recording.file.path, 'r');
-  const stats = await file.stat();
-  const buffer = Buffer.alloc(stats.size - start);
-  const result = await file.read(buffer, 0, buffer.length, start);
-  await file.close();
-
-  return {
-    buffer,
-    nextCursor: start + result.bytesRead,
-  };
-}
-
-function assertRecordingFilepath(filepath: string) {
-  const normalizedPath = path.normalize(filepath);
-  const normalizedBase = path.normalize(SAVED_RECORDINGS_DIR + path.sep);
-
-  if (!normalizedPath.toLowerCase().startsWith(normalizedBase.toLowerCase())) {
-    throw new Error('Invalid recording filepath');
-  }
-
-  return normalizedPath;
+async function assertRecordingFilepath(filepath: string) {
+  return await resolveExistingPathInBase(SAVED_RECORDINGS_DIR, filepath, {
+    caseInsensitive: isWindows(),
+    label: 'recording filepath',
+  });
 }
 
 export async function readRecordingFile(filepath: string) {
-  const normalizedPath = assertRecordingFilepath(filepath);
+  const normalizedPath = await assertRecordingFilepath(filepath);
   return fsp.readFile(normalizedPath);
 }
 
-export async function readyRecording(id: number, buffer: Buffer) {
-  logger.info('readyRecording', id);
-
-  const recordingStatus = recordingStatus$.value;
-  const recording = recordings.get(id);
-  if (!recordingStatus || recordingStatus.id !== id || !recording) {
-    logger.error(`readyRecording: Recording ${id} not found`);
-    return;
+function cleanupAbandonedNativeRecording(nativeId: string) {
+  try {
+    const artifact = getNativeModule().stopRecording(nativeId);
+    void assertRecordingFilepath(artifact.filepath)
+      .then(filepath => {
+        fs.removeSync(filepath);
+      })
+      .catch(error => {
+        logger.error('failed to validate abandoned recording filepath', error);
+      });
+  } catch (error) {
+    logger.error('failed to cleanup abandoned native recording', error);
   }
-
-  const rawFilePath = String(recording.file.path);
-
-  const filepath = rawFilePath.replace('.raw', '.opus');
-
-  if (!filepath) {
-    logger.error(`readyRecording: Recording ${id} has no filepath`);
-    return;
-  }
-
-  await fs.writeFile(filepath, buffer);
-
-  // can safely remove the raw file now
-  logger.info('remove raw file', rawFilePath);
-  if (rawFilePath) {
-    try {
-      await fs.unlink(rawFilePath);
-    } catch (err) {
-      logger.error('failed to remove raw file', err);
-    }
-  }
-  // Update the status through the state machine
-  recordingStateMachine.dispatch({
-    type: 'SAVE_RECORDING',
-    id,
-    filepath,
-  });
-
-  // bring up the window
-  getMainWindow()
-    .then(mainWindow => {
-      if (mainWindow) {
-        mainWindow.show();
-      }
-    })
-    .catch(err => {
-      logger.error('failed to bring up the window', err);
-    });
 }
 
-export async function handleBlockCreationSuccess(id: number) {
-  recordingStateMachine.dispatch({
-    type: 'CREATE_BLOCK_SUCCESS',
+export async function setRecordingBlockCreationStatus(
+  id: number,
+  status: 'success' | 'failed',
+  errorMessage?: string
+) {
+  return recordingStateMachine.dispatch({
+    type: 'SET_BLOCK_CREATION_STATUS',
     id,
-  });
-}
-
-export async function handleBlockCreationFailed(id: number, error?: Error) {
-  recordingStateMachine.dispatch({
-    type: 'CREATE_BLOCK_FAILED',
-    id,
-    error,
+    status,
+    errorMessage,
   });
 }
 
 export function removeRecording(id: number) {
-  recordings.delete(id);
   recordingStateMachine.dispatch({ type: 'REMOVE_RECORDING', id });
 }
 
 export interface SerializedRecordingStatus {
   id: number;
   status: RecordingStatus['status'];
+  blockCreationStatus?: RecordingStatus['blockCreationStatus'];
   appName?: string;
   // if there is no app group, it means the recording is for system audio
   appGroupId?: number;
@@ -787,18 +667,17 @@ export interface SerializedRecordingStatus {
 export function serializeRecordingStatus(
   status: RecordingStatus
 ): SerializedRecordingStatus | null {
-  const recording = recordings.get(status.id);
   return {
     id: status.id,
     status: status.status,
+    blockCreationStatus: status.blockCreationStatus,
     appName: status.appGroup?.name,
     appGroupId: status.appGroup?.processGroupId,
     icon: status.appGroup?.icon,
     startTime: status.startTime,
-    filepath:
-      status.filepath ?? (recording ? String(recording.file.path) : undefined),
-    sampleRate: recording?.session.sampleRate,
-    numberOfChannels: recording?.session.channels,
+    filepath: status.filepath,
+    sampleRate: status.sampleRate,
+    numberOfChannels: status.numberOfChannels,
   };
 }
 

@@ -433,7 +433,9 @@ export const NbStoreNativeDBApis: NativeDBApis = {
     id: string,
     docId: string
   ): Promise<DocIndexedClock | null> {
-    return NbStore.getDocIndexedClock({ id, docId });
+    return NbStore.getDocIndexedClock({ id, docId }).then(clock =>
+      clock ? { ...clock, timestamp: new Date(clock.timestamp) } : null
+    );
   },
   setDocIndexedClock: function (
     id: string,

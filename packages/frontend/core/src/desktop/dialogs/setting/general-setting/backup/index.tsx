@@ -81,7 +81,7 @@ const BackupWorkspaceItem = ({ item }: { item: BackupWorkspaceItem }) => {
   const handleImport = useAsyncCallback(async () => {
     setImporting(true);
     track.$.settingsPanel.archivedWorkspaces.recoverArchivedWorkspace();
-    const workspaceId = await backupService.recoverBackupWorkspace(item.dbPath);
+    const workspaceId = await backupService.recoverBackupWorkspace(item.id);
     if (!workspaceId) {
       setImporting(false);
       return;
@@ -102,7 +102,7 @@ const BackupWorkspaceItem = ({ item }: { item: BackupWorkspaceItem }) => {
     });
     setMenuOpen(false);
     setImporting(false);
-  }, [backupService, item.dbPath, jumpToPage, t]);
+  }, [backupService, item.id, jumpToPage, t]);
 
   const handleDelete = useCallback(
     (backupWorkspaceId: string) => {

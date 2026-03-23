@@ -5,22 +5,44 @@ import { app, net, protocol, session } from 'electron';
 import cookieParser from 'set-cookie-parser';
 
 import { anotherHost, mainHost } from '../shared/internal-origin';
-import { isWindows, resourcesPath } from '../shared/utils';
+import {
+  isPathInsideBase,
+  isWindows,
+  resolveExistingPathInBase,
+  resolvePathInBase,
+  resourcesPath,
+} from '../shared/utils';
 import { buildType, isDev } from './config';
 import { logger } from './logger';
 
 const webStaticDir = join(resourcesPath, 'web-static');
 const devServerBase = process.env.DEV_SERVER_URL;
 const localWhiteListDirs = [
-  path.resolve(app.getPath('sessionData')).toLowerCase(),
-  path.resolve(app.getPath('temp')).toLowerCase(),
+  path.resolve(app.getPath('sessionData')),
+  path.resolve(app.getPath('temp')),
 ];
 
 function isPathInWhiteList(filepath: string) {
-  const lowerFilePath = filepath.toLowerCase();
   return localWhiteListDirs.some(whitelistDir =>
-    lowerFilePath.startsWith(whitelistDir)
+    isPathInsideBase(whitelistDir, filepath, {
+      caseInsensitive: isWindows(),
+    })
   );
+}
+
+async function resolveWhitelistedLocalPath(filepath: string) {
+  for (const whitelistDir of localWhiteListDirs) {
+    try {
+      return await resolveExistingPathInBase(whitelistDir, filepath, {
+        caseInsensitive: isWindows(),
+        label: 'filepath',
+      });
+    } catch {
+      continue;
+    }
+  }
+
+  throw new Error('Invalid filepath');
 }
 
 const apiBaseByBuildType: Record<typeof buildType, string> = {
@@ -94,15 +116,14 @@ async function handleFileRequest(request: Request) {
   // for relative path, load the file in resources
   if (!isAbsolutePath) {
     if (urlObject.pathname.split('/').at(-1)?.includes('.')) {
-      // Sanitize pathname to prevent path traversal attacks
-      const decodedPath = decodeURIComponent(urlObject.pathname);
-      const normalizedPath = join(webStaticDir, decodedPath).normalize();
-      if (!normalizedPath.startsWith(webStaticDir)) {
-        // Attempted path traversal - reject by using empty path
-        filepath = join(webStaticDir, '');
-      } else {
-        filepath = normalizedPath;
-      }
+      const decodedPath = decodeURIComponent(urlObject.pathname).replace(
+        /^\/+/,
+        ''
+      );
+      filepath = resolvePathInBase(webStaticDir, decodedPath, {
+        caseInsensitive: isWindows(),
+        label: 'filepath',
+      });
     } else {
       // else, fallback to load the index.html instead
       filepath = join(webStaticDir, 'index.html');
@@ -113,10 +134,10 @@ async function handleFileRequest(request: Request) {
     if (isWindows()) {
       filepath = path.resolve(filepath.replace(/^\//, ''));
     }
-    // security check if the filepath is within app.getPath('sessionData')
     if (urlObject.host !== 'local-file' || !isPathInWhiteList(filepath)) {
       throw new Error('Invalid filepath');
     }
+    filepath = await resolveWhitelistedLocalPath(filepath);
   }
   return net.fetch(pathToFileURL(filepath).toString(), clonedRequest);
 }

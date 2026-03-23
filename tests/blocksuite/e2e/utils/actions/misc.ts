@@ -549,6 +549,7 @@ export async function focusRichText(
   await page.mouse.move(0, 0);
   const editor = getEditorHostLocator(page);
   const locator = editor.locator(RICH_TEXT_SELECTOR).nth(i);
+  await expect(locator).toBeVisible();
   // need to set `force` to true when clicking on `affine-selected-blocks`
   await locator.click({ force: true, position: options?.clickPosition });
 }
@@ -1229,43 +1230,37 @@ export async function getCurrentThemeCSSPropertyValue(
 }
 
 export async function scrollToTop(page: Page) {
-  await page.mouse.wheel(0, -1000);
-
-  await page.waitForFunction(() => {
-    const scrollContainer = document.querySelector('.affine-page-viewport');
-    if (!scrollContainer) {
-      throw new Error("Can't find scroll container");
-    }
-    return scrollContainer.scrollTop < 10;
+  const scrollContainer = page.locator('.affine-page-viewport');
+  await expect(scrollContainer).toBeVisible();
+  await scrollContainer.evaluate(node => {
+    (node as HTMLElement).scrollTop = 0;
   });
+  await expect
+    .poll(async () => {
+      return await scrollContainer.evaluate(node => {
+        return (node as HTMLElement).scrollTop;
+      });
+    })
+    .toBeLessThan(10);
 }
 
 export async function scrollToBottom(page: Page) {
-  // await page.mouse.wheel(0, 1000);
-
-  await page
-    .locator('.affine-page-viewport')
-    .evaluate(node =>
-      node.scrollTo({ left: 0, top: 1000, behavior: 'smooth' })
-    );
-  // TODO switch to `scrollend`
-  // See https://developer.chrome.com/en/blog/scrollend-a-new-javascript-event/
-  await page.waitForFunction(() => {
-    const scrollContainer = document.querySelector('.affine-page-viewport');
-    if (!scrollContainer) {
-      throw new Error("Can't find scroll container");
-    }
-
-    return (
-      // Wait for scrolled to the bottom
-      // Refer to https://stackoverflow.com/questions/3898130/check-if-a-user-has-scrolled-to-the-bottom-not-just-the-window-but-any-element
-      Math.abs(
-        scrollContainer.scrollHeight -
-          scrollContainer.scrollTop -
-          scrollContainer.clientHeight
-      ) < 10
-    );
+  const scrollContainer = page.locator('.affine-page-viewport');
+  await expect(scrollContainer).toBeVisible();
+  await scrollContainer.evaluate(node => {
+    const viewport = node as HTMLElement;
+    viewport.scrollTop = viewport.scrollHeight;
   });
+  await expect
+    .poll(async () => {
+      return await scrollContainer.evaluate(node => {
+        const viewport = node as HTMLElement;
+        return Math.abs(
+          viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight
+        );
+      });
+    })
+    .toBeLessThan(10);
 }
 
 export async function mockParseDocUrlService(
