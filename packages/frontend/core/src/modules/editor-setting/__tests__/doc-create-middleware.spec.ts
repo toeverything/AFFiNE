@@ -34,7 +34,7 @@ const createEditorSettingService = (overrides?: Record<string, unknown>) => {
         value: {
           newDocDefaultMode: 'page',
           autoTitleNewDocWithCurrentDate: false,
-          newDocDateTitleFormat: 'DD/MM/YYYY',
+          newDocDateTitleFormat: 'DD-MM-YYYY',
           ...overrides,
         },
       },
@@ -104,12 +104,12 @@ describe('EditorSettingDocCreateMiddleware', () => {
     const middleware = createMiddleware({
       settings: {
         autoTitleNewDocWithCurrentDate: true,
-        newDocDateTitleFormat: 'DD/MM/YYYY',
+        newDocDateTitleFormat: 'DD-MM-YYYY',
       },
     });
 
     expect(middleware.beforeCreate({})).toMatchObject({
-      title: '23/03/2026',
+      title: '23-03-2026',
       primaryMode: 'page',
     });
   });
@@ -131,7 +131,7 @@ describe('EditorSettingDocCreateMiddleware', () => {
       settings: {
         autoTitleNewDocWithCurrentDate: true,
       },
-      titles: ['23/03/2026'],
+      titles: ['23-03-2026'],
     });
 
     expect(
@@ -149,10 +149,10 @@ describe('EditorSettingDocCreateMiddleware', () => {
       settings: {
         autoTitleNewDocWithCurrentDate: true,
       },
-      titles: ['23/03/2026', '23/03/2026(2)'],
+      titles: ['23-03-2026', '23-03-2026(2)'],
     });
 
-    expect(middleware.beforeCreate({}).title).toBe('23/03/2026(3)');
+    expect(middleware.beforeCreate({}).title).toBe('23-03-2026(3)');
   });
 
   test('uses the selected format for the generated title', () => {
@@ -162,11 +162,11 @@ describe('EditorSettingDocCreateMiddleware', () => {
     const middleware = createMiddleware({
       settings: {
         autoTitleNewDocWithCurrentDate: true,
-        newDocDateTitleFormat: 'YYYY/MM/DD',
+        newDocDateTitleFormat: 'YYYY-MM-DD',
       },
     });
 
-    expect(middleware.beforeCreate({}).title).toBe('2026/03/23');
+    expect(middleware.beforeCreate({}).title).toBe('2026-03-23');
   });
 
   test('supports month-name formats for generated titles', () => {

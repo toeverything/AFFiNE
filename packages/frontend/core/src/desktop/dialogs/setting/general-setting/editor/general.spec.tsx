@@ -13,7 +13,7 @@ const editorSettingService = {
     ['settings$']: {
       value: {
         autoTitleNewDocWithCurrentDate: true,
-        newDocDateTitleFormat: 'DD/MM/YYYY',
+        newDocDateTitleFormat: 'DD-MM-YYYY',
       },
     },
     set: editorSettingSet,
@@ -114,11 +114,11 @@ vi.mock('@affine/i18n', () => {
     'com.affine.settings.editorSettings.general.auto-date-title.format.description':
       'Choose the date format used for automatic new doc titles.',
     'com.affine.settings.editorSettings.general.auto-date-title.format.dd-mm-yyyy':
-      'DD/MM/YYYY',
+      'DD-MM-YYYY',
     'com.affine.settings.editorSettings.general.auto-date-title.format.mm-dd-yyyy':
-      'MM/DD/YYYY',
+      'MM-DD-YYYY',
     'com.affine.settings.editorSettings.general.auto-date-title.format.yyyy-mm-dd':
-      'YYYY/MM/DD',
+      'YYYY-MM-DD',
     'com.affine.settings.editorSettings.general.auto-date-title.format.journal':
       'Journal style (localized)',
   };
@@ -162,7 +162,7 @@ describe('NewDocDateTitleSettings', () => {
     editorSettingSet.mockReset();
     editorSettingService.editorSetting['settings$'].value = {
       autoTitleNewDocWithCurrentDate: true,
-      newDocDateTitleFormat: 'DD/MM/YYYY',
+      newDocDateTitleFormat: 'DD-MM-YYYY',
     };
   });
 
@@ -185,11 +185,11 @@ describe('NewDocDateTitleSettings', () => {
   test('persists the selected date format through EditorSettingService', () => {
     render(<NewDocDateTitleSettings />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'YYYY/MM/DD' }));
+    fireEvent.click(screen.getByRole('button', { name: 'YYYY-MM-DD' }));
 
     expect(editorSettingSet).toHaveBeenCalledWith(
       'newDocDateTitleFormat',
-      'YYYY/MM/DD'
+      'YYYY-MM-DD'
     );
   });
 
@@ -198,12 +198,12 @@ describe('NewDocDateTitleSettings', () => {
 
     expect(
       screen.getByTestId('new-doc-date-title-format-trigger').textContent
-    ).toBe('DD/MM/YYYY');
-    expect(screen.getAllByRole('button', { name: 'DD/MM/YYYY' })).toHaveLength(
+    ).toBe('DD-MM-YYYY');
+    expect(screen.getAllByRole('button', { name: 'DD-MM-YYYY' })).toHaveLength(
       2
     );
-    expect(screen.getByRole('button', { name: 'MM/DD/YYYY' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'YYYY/MM/DD' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'MM-DD-YYYY' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'YYYY-MM-DD' })).toBeTruthy();
     expect(
       screen.getByRole('button', { name: 'Journal style (localized)' })
     ).toBeTruthy();
@@ -212,7 +212,7 @@ describe('NewDocDateTitleSettings', () => {
   test('hides the date format row when auto title is disabled', () => {
     editorSettingService.editorSetting['settings$'].value = {
       autoTitleNewDocWithCurrentDate: false,
-      newDocDateTitleFormat: 'DD/MM/YYYY',
+      newDocDateTitleFormat: 'DD-MM-YYYY',
     };
 
     render(<NewDocDateTitleSettings />);

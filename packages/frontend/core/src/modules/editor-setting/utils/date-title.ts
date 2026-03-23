@@ -32,7 +32,7 @@ export const getUniqueNewDocDateTitle = ({
     return baseTitle;
   }
 
-  let duplicateIndex = 1;
+  let duplicateIndex = 2;
   while (normalizedTitles.has(`${baseTitle}(${duplicateIndex})`)) {
     duplicateIndex += 1;
   }
