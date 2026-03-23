@@ -222,26 +222,6 @@ export const DocsExplorer = ({
   ]);
 
   useEffect(() => {
-    if (!selectMode) {
-      return;
-    }
-
-    const visibleDocIds = new Set(groups.flatMap(group => group.items));
-    const nextSelectedDocIds = selectedDocIds.filter(id =>
-      visibleDocIds.has(id)
-    );
-
-    if (nextSelectedDocIds.length !== selectedDocIds.length) {
-      contextValue.selectedDocIds$.next(nextSelectedDocIds);
-    }
-
-    if (nextSelectedDocIds.length === 0) {
-      contextValue.selectMode$?.next(false);
-      contextValue.prevCheckAnchorId$?.next(null);
-    }
-  }, [contextValue, groups, selectMode, selectedDocIds]);
-
-  useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         contextValue.selectMode$?.next(false);
