@@ -36,7 +36,11 @@ import {
 } from '../../../base';
 import { Models } from '../../../models';
 import { CurrentUser, Public } from '../../auth';
-import { AccessController, WorkspaceRole } from '../../permission';
+import {
+  AccessController,
+  WorkspacePolicyService,
+  WorkspaceRole,
+} from '../../permission';
 import { QuotaService } from '../../quota';
 import { UserType } from '../../user';
 import { validators } from '../../utils/validators';
@@ -64,6 +68,7 @@ export class WorkspaceMemberResolver {
     private readonly ac: AccessController,
     private readonly models: Models,
     private readonly mutex: RequestMutex,
+    private readonly policy: WorkspacePolicyService,
     private readonly workspaceService: WorkspaceService,
     private readonly quota: QuotaService
   ) {}
@@ -304,10 +309,11 @@ export class WorkspaceMemberResolver {
     @CurrentUser() user: CurrentUser,
     @Args('workspaceId') workspaceId: string
   ) {
-    await this.ac
-      .user(user.id)
-      .workspace(workspaceId)
-      .assert('Workspace.Users.Manage');
+    await this.policy.assertWorkspaceRoleAction(
+      user.id,
+      workspaceId,
+      'Workspace.Users.Manage'
+    );
 
     const cacheId = `workspace:inviteLink:${workspaceId}`;
     return await this.cache.delete(cacheId);
@@ -359,6 +365,7 @@ export class WorkspaceMemberResolver {
           role.id,
           me.id
         );
+        await this.policy.reconcileWorkspaceQuotaState(workspaceId);
       }
       return true;
     } else {
@@ -453,14 +460,7 @@ export class WorkspaceMemberResolver {
       throw new MemberNotFoundInSpace({ spaceId: workspaceId });
     }
 
-    await this.ac
-      .user(me.id)
-      .workspace(workspaceId)
-      .assert(
-        role.type === WorkspaceRole.Admin
-          ? 'Workspace.Administrators.Manage'
-          : 'Workspace.Users.Manage'
-      );
+    await this.policy.assertCanRevokeMember(me.id, workspaceId, role.type);
 
     await this.models.workspaceUser.delete(workspaceId, userId);
 
@@ -480,6 +480,7 @@ export class WorkspaceMemberResolver {
     this.event.emit('workspace.members.updated', {
       workspaceId,
     });
+    await this.policy.reconcileWorkspaceQuotaState(workspaceId);
 
     return true;
   }
@@ -580,11 +581,20 @@ export class WorkspaceMemberResolver {
     this.event.emit('workspace.members.updated', {
       workspaceId,
     });
+    await this.policy.reconcileWorkspaceQuotaState(workspaceId);
 
     return true;
   }
 
   private async acceptInvitationByEmail(role: WorkspaceUserRole) {
+    await this.policy.assertCanInviteMembers(role.workspaceId);
+
+    const hasSeat = await this.quota.tryCheckSeat(role.workspaceId, true);
+
+    if (!hasSeat) {
+      throw new NoMoreSeat({ spaceId: role.workspaceId });
+    }
+
     await this.models.workspaceUser.setStatus(
       role.workspaceId,
       role.userId,
@@ -596,6 +606,7 @@ export class WorkspaceMemberResolver {
         (await this.models.workspaceUser.getOwner(role.workspaceId)).id,
       role.id
     );
+    await this.policy.reconcileWorkspaceQuotaState(role.workspaceId);
   }
 
   private async acceptInvitationByLink(
@@ -603,6 +614,8 @@ export class WorkspaceMemberResolver {
     workspaceId: string,
     inviterId: string
   ) {
+    await this.policy.assertCanInviteMembers(workspaceId);
+
     let inviter = await this.models.user.getPublicUser(inviterId);
     if (!inviter) {
       inviter = await this.models.workspaceUser.getOwner(workspaceId);

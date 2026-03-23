@@ -2,10 +2,12 @@ import {
   acceptInviteByInviteIdMutation,
   approveWorkspaceTeamMemberMutation,
   createInviteLinkMutation,
+  deleteBlobMutation,
   getInviteInfoQuery,
   getMembersByWorkspaceIdQuery,
   inviteByEmailsMutation,
   leaveWorkspaceMutation,
+  releaseDeletedBlobsMutation,
   revokeMemberPermissionMutation,
   WorkspaceInviteLinkExpireTime,
   WorkspaceMemberStatus,
@@ -13,6 +15,11 @@ import {
 import { faker } from '@faker-js/faker';
 
 import { Models } from '../../../models';
+import { FeatureConfigs } from '../../../models/common/feature';
+import {
+  SubscriptionPlan,
+  SubscriptionRecurring,
+} from '../../../plugins/payment/types';
 import { Mockers } from '../../mocks';
 import { app, e2e } from '../test';
 
@@ -80,6 +87,175 @@ e2e('should invite a user', async t => {
   });
   t.is(getInviteInfo2.status, WorkspaceMemberStatus.Accepted);
 });
+
+e2e('should re-check seat when accepting an email invitation', async t => {
+  const { owner, workspace } = await createWorkspace();
+  const member = await app.create(Mockers.User);
+  await app.create(Mockers.TeamWorkspace, {
+    id: workspace.id,
+    quantity: 4,
+  });
+
+  await app.create(Mockers.WorkspaceUser, {
+    workspaceId: workspace.id,
+    userId: (await app.create(Mockers.User)).id,
+  });
+  await app.create(Mockers.WorkspaceUser, {
+    workspaceId: workspace.id,
+    userId: (await app.create(Mockers.User)).id,
+  });
+
+  await app.login(owner);
+  const invite = await app.gql({
+    query: inviteByEmailsMutation,
+    variables: {
+      emails: [member.email],
+      workspaceId: workspace.id,
+    },
+  });
+
+  await app.eventBus.emitAsync('workspace.members.allocateSeats', {
+    workspaceId: workspace.id,
+    quantity: 4,
+  });
+
+  await app.models.workspaceFeature.remove(workspace.id, 'team_plan_v1');
+
+  await app.login(member);
+  await t.throwsAsync(
+    app.gql({
+      query: acceptInviteByInviteIdMutation,
+      variables: {
+        workspaceId: workspace.id,
+        inviteId: invite.inviteMembers[0].inviteId!,
+      },
+    })
+  );
+
+  const { getInviteInfo } = await app.gql({
+    query: getInviteInfoQuery,
+    variables: {
+      inviteId: invite.inviteMembers[0].inviteId!,
+    },
+  });
+
+  t.is(getInviteInfo.status, WorkspaceMemberStatus.Pending);
+});
+
+e2e.serial(
+  'should block accepting pending invitations in readonly mode and recover after blob cleanup',
+  async t => {
+    const { owner, workspace } = await createWorkspace();
+    const member = await app.create(Mockers.User);
+    const freeStorageQuota = FeatureConfigs.free_plan_v1.configs.storageQuota;
+    const lifetimeStorageQuota =
+      FeatureConfigs.lifetime_pro_plan_v1.configs.storageQuota;
+
+    FeatureConfigs.free_plan_v1.configs.storageQuota = 1;
+    FeatureConfigs.lifetime_pro_plan_v1.configs.storageQuota = 2;
+    t.teardown(() => {
+      FeatureConfigs.free_plan_v1.configs.storageQuota = freeStorageQuota;
+      FeatureConfigs.lifetime_pro_plan_v1.configs.storageQuota =
+        lifetimeStorageQuota;
+    });
+
+    await app.models.userFeature.switchQuota(
+      owner.id,
+      'lifetime_pro_plan_v1',
+      'test setup'
+    );
+
+    await app.login(owner);
+    const invite = await app.gql({
+      query: inviteByEmailsMutation,
+      variables: {
+        emails: [member.email],
+        workspaceId: workspace.id,
+      },
+    });
+
+    await app.models.blob.upsert({
+      workspaceId: workspace.id,
+      key: 'overflow-blob',
+      mime: 'application/octet-stream',
+      size: 2,
+      status: 'completed',
+      uploadId: null,
+    });
+
+    await app.eventBus.emitAsync('user.subscription.canceled', {
+      userId: owner.id,
+      plan: SubscriptionPlan.Pro,
+      recurring: SubscriptionRecurring.Lifetime,
+    });
+
+    t.true(
+      await app.models.workspaceFeature.has(
+        workspace.id,
+        'quota_exceeded_readonly_workspace_v1'
+      )
+    );
+
+    await app.login(member);
+    await t.throwsAsync(
+      app.gql({
+        query: acceptInviteByInviteIdMutation,
+        variables: {
+          workspaceId: workspace.id,
+          inviteId: invite.inviteMembers[0].inviteId!,
+        },
+      })
+    );
+
+    const { getInviteInfo: pendingInvite } = await app.gql({
+      query: getInviteInfoQuery,
+      variables: {
+        inviteId: invite.inviteMembers[0].inviteId!,
+      },
+    });
+    t.is(pendingInvite.status, WorkspaceMemberStatus.Pending);
+
+    await app.login(owner);
+    await app.gql({
+      query: deleteBlobMutation,
+      variables: {
+        workspaceId: workspace.id,
+        key: 'overflow-blob',
+        permanently: false,
+      },
+    });
+    await app.gql({
+      query: releaseDeletedBlobsMutation,
+      variables: {
+        workspaceId: workspace.id,
+      },
+    });
+
+    t.false(
+      await app.models.workspaceFeature.has(
+        workspace.id,
+        'quota_exceeded_readonly_workspace_v1'
+      )
+    );
+
+    await app.login(member);
+    await app.gql({
+      query: acceptInviteByInviteIdMutation,
+      variables: {
+        workspaceId: workspace.id,
+        inviteId: invite.inviteMembers[0].inviteId!,
+      },
+    });
+
+    const { getInviteInfo: acceptedInvite } = await app.gql({
+      query: getInviteInfoQuery,
+      variables: {
+        inviteId: invite.inviteMembers[0].inviteId!,
+      },
+    });
+    t.is(acceptedInvite.status, WorkspaceMemberStatus.Accepted);
+  }
+);
 
 e2e('should leave a workspace', async t => {
   const { owner, workspace } = await createWorkspace();

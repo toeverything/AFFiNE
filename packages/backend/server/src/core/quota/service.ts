@@ -20,7 +20,10 @@ type UserQuotaWithUsage = Omit<UserQuotaType, 'humanReadable'>;
 type WorkspaceQuota = Omit<BaseWorkspaceQuota, 'seatQuota'> & {
   ownerQuota?: string;
 };
-type WorkspaceQuotaWithUsage = Omit<WorkspaceQuotaType, 'humanReadable'>;
+export type WorkspaceQuotaWithUsage = Omit<
+  WorkspaceQuotaType,
+  'humanReadable'
+> & { ownerQuota?: string };
 
 @Injectable()
 export class QuotaService {

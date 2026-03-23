@@ -21,6 +21,7 @@ rand              = { workspace = true }
 rubato            = { workspace = true }
 symphonia         = { workspace = true, features = ["all", "opt-simd"] }
 thiserror         = { workspace = true }
+tokio             = { workspace = true, features = ["rt", "sync"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 block2           = { workspace = true }

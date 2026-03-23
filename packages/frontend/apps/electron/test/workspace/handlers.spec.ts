@@ -132,51 +132,46 @@ describe('workspace db management', () => {
     ).toBe(false);
   });
 
-  test('rejects unsafe ids when deleting a workspace', async () => {
-    const { deleteWorkspace } =
-      await import('@affine/electron/helper/workspace/handlers');
-    const outsideDir = path.join(tmpDir, 'outside-delete-target');
+  test.each([
+    {
+      name: 'deleting a workspace',
+      outsideDirName: 'outside-delete-target',
+      call: async () => {
+        const { deleteWorkspace } =
+          await import('@affine/electron/helper/workspace/handlers');
+        return deleteWorkspace(
+          universalId({
+            peer: 'local',
+            type: 'workspace',
+            id: '../../outside-delete-target',
+          })
+        );
+      },
+    },
+    {
+      name: 'deleting backup workspaces',
+      outsideDirName: 'outside-backup-target',
+      call: async () => {
+        const { deleteBackupWorkspace } =
+          await import('@affine/electron/helper/workspace/handlers');
+        return deleteBackupWorkspace('../../outside-backup-target');
+      },
+    },
+    {
+      name: 'recovering backup workspaces',
+      outsideDirName: 'outside-recover-target',
+      call: async () => {
+        const { recoverBackupWorkspace } =
+          await import('@affine/electron/helper/workspace/handlers');
+        return recoverBackupWorkspace('../../outside-recover-target');
+      },
+    },
+  ])('rejects unsafe ids when $name', async ({ outsideDirName, call }) => {
+    const outsideDir = path.join(tmpDir, outsideDirName);
 
     await fs.ensureDir(outsideDir);
 
-    await expect(
-      deleteWorkspace(
-        universalId({
-          peer: 'local',
-          type: 'workspace',
-          id: '../../outside-delete-target',
-        })
-      )
-    ).rejects.toThrow('Invalid workspace id');
-
-    expect(await fs.pathExists(outsideDir)).toBe(true);
-  });
-
-  test('rejects unsafe ids when deleting backup workspaces', async () => {
-    const { deleteBackupWorkspace } =
-      await import('@affine/electron/helper/workspace/handlers');
-    const outsideDir = path.join(tmpDir, 'outside-backup-target');
-
-    await fs.ensureDir(outsideDir);
-
-    await expect(
-      deleteBackupWorkspace('../../outside-backup-target')
-    ).rejects.toThrow('Invalid workspace id');
-
-    expect(await fs.pathExists(outsideDir)).toBe(true);
-  });
-
-  test('rejects unsafe ids when recovering backup workspaces', async () => {
-    const { recoverBackupWorkspace } =
-      await import('@affine/electron/helper/workspace/handlers');
-    const outsideDir = path.join(tmpDir, 'outside-recover-target');
-
-    await fs.ensureDir(outsideDir);
-
-    await expect(
-      recoverBackupWorkspace('../../outside-recover-target')
-    ).rejects.toThrow('Invalid workspace id');
-
+    await expect(call()).rejects.toThrow('Invalid workspace id');
     expect(await fs.pathExists(outsideDir)).toBe(true);
   });
 });

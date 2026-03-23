@@ -37,7 +37,11 @@ import {
 import { CurrentUser } from '../../core/auth';
 import { Admin } from '../../core/common';
 import { DocReader } from '../../core/doc';
-import { AccessController, DocAction } from '../../core/permission';
+import {
+  AccessController,
+  DocAction,
+  WorkspacePolicyService,
+} from '../../core/permission';
 import { UserType } from '../../core/user';
 import type { ListSessionOptions, UpdateChatSession } from '../../models';
 import { processImage } from '../../native';
@@ -378,6 +382,7 @@ export class CopilotResolver {
   constructor(
     private readonly ac: AccessController,
     private readonly mutex: RequestMutex,
+    private readonly policy: WorkspacePolicyService,
     private readonly prompt: PromptService,
     private readonly chatSession: ChatSessionService,
     private readonly storage: CopilotStorage,
@@ -777,6 +782,10 @@ export class CopilotResolver {
       );
       delete options.blob;
       delete options.blobs;
+
+      if (blobs.length) {
+        await this.policy.assertCanUploadBlob(user.id, workspaceId);
+      }
 
       for (const blob of blobs) {
         const uploaded = await this.storage.handleUpload(user.id, blob);
