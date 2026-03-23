@@ -10,6 +10,7 @@ interface TestOps extends OpSchema {
   add: [{ a: number; b: number }, number];
   bin: [Uint8Array, Uint8Array];
   sub: [Uint8Array, number];
+  init: [{ fastText?: boolean } | undefined, { ok: true }];
 }
 
 declare module 'vitest' {
@@ -82,6 +83,55 @@ describe('op client', () => {
 
     await expect(result).resolves.toEqual(new Uint8Array([3, 2, 1]));
     expect(data.byteLength).toBe(0);
+  });
+
+  it('should send optional payload call with abort signal', async ctx => {
+    const abortController = new AbortController();
+    const result = ctx.producer.call(
+      'init',
+      { fastText: true },
+      abortController.signal
+    );
+
+    expect(ctx.postMessage.mock.calls[0][0]).toMatchInlineSnapshot(`
+      {
+        "id": "init:1",
+        "name": "init",
+        "payload": {
+          "fastText": true,
+        },
+        "type": "call",
+      }
+    `);
+
+    ctx.handlers.return({
+      type: 'return',
+      id: 'init:1',
+      data: { ok: true },
+    });
+
+    await expect(result).resolves.toEqual({ ok: true });
+  });
+
+  it('should send undefined payload for optional input call', async ctx => {
+    const result = ctx.producer.call('init', undefined);
+
+    expect(ctx.postMessage.mock.calls[0][0]).toMatchInlineSnapshot(`
+      {
+        "id": "init:1",
+        "name": "init",
+        "payload": undefined,
+        "type": "call",
+      }
+    `);
+
+    ctx.handlers.return({
+      type: 'return',
+      id: 'init:1',
+      data: { ok: true },
+    });
+
+    await expect(result).resolves.toEqual({ ok: true });
   });
 
   it('should cancel call', async ctx => {

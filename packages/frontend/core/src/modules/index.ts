@@ -13,6 +13,7 @@ import { configureAppSidebarModule } from './app-sidebar';
 import { configAtMenuConfigModule } from './at-menu-config';
 import { configureBlobManagementModule } from './blob-management';
 import { configureCloudModule } from './cloud';
+import { configureCodeBlockPreviewRendererModule } from './code-block-preview-renderer';
 import { configureCollectionModule } from './collection';
 import { configureCollectionRulesModule } from './collection-rules';
 import { configureCommentModule } from './comment';
@@ -77,6 +78,7 @@ export function configureCommonModules(framework: Framework) {
   configureGlobalContextModule(framework);
   configureLifecycleModule(framework);
   configureFeatureFlagModule(framework);
+  configureCodeBlockPreviewRendererModule(framework);
   configureCollectionModule(framework);
   configureNavigationModule(framework);
   configureTagModule(framework);

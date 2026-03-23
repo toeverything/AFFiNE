@@ -269,10 +269,13 @@ jobs:
       - name: Run playground build
         run: yarn workspace @blocksuite/playground build
 
-      - name: Run playwright tests
-        run: |
-          yarn workspace @blocksuite/integration-test test:unit
-          yarn workspace @affine-test/blocksuite test "cross-platform/" --forbid-only
+      - name: Run integration browser tests
+        timeout-minutes: 10
+        run: yarn workspace @blocksuite/integration-test test:unit
+
+      - name: Run cross-platform playwright tests
+        timeout-minutes: 10
+        run: yarn workspace @affine-test/blocksuite test "cross-platform/" --forbid-only
 
       - name: Upload test results
         if: always()

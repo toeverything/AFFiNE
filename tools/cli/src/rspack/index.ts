@@ -90,6 +90,22 @@ export function createHTMLTargetConfig(
   );
 
   const buildConfig = getBuildConfigFromEnv(pkg);
+  const codeBlockPreviewBackendFile =
+    buildConfig.distribution === 'desktop'
+      ? 'platform-backend.desktop.ts'
+      : buildConfig.distribution === 'ios' ||
+          buildConfig.distribution === 'android'
+        ? 'platform-backend.mobile.ts'
+        : 'platform-backend.ts';
+  const codeBlockPreviewBackendAlias = ProjectRoot.join(
+    'packages',
+    'frontend',
+    'core',
+    'src',
+    'modules',
+    'code-block-preview-renderer',
+    codeBlockPreviewBackendFile
+  ).value;
 
   console.log(
     `Building [${pkg.name}] for [${buildConfig.appBuildType}] channel in [${buildConfig.debug ? 'development' : 'production'}] mode.`
@@ -145,6 +161,8 @@ export function createHTMLTargetConfig(
           '@preact',
           'signals-core'
         ).value,
+        '@affine/core/modules/code-block-preview-renderer/platform-backend':
+          codeBlockPreviewBackendAlias,
       },
     },
     //#endregion

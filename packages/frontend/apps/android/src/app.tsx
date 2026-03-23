@@ -15,6 +15,7 @@ import {
   ServersService,
   ValidatorProvider,
 } from '@affine/core/modules/cloud';
+import { registerNativePreviewHandlers } from '@affine/core/modules/code-block-preview-renderer';
 import { DocsService } from '@affine/core/modules/doc';
 import { GlobalContextService } from '@affine/core/modules/global-context';
 import { I18nProvider } from '@affine/core/modules/i18n';
@@ -54,6 +55,7 @@ import { AIButton } from './plugins/ai-button';
 import { Auth } from './plugins/auth';
 import { HashCash } from './plugins/hashcash';
 import { NbStoreNativeDBApis } from './plugins/nbstore';
+import { Preview } from './plugins/preview';
 import { writeEndpointToken } from './proxy';
 
 const storeManagerClient = createStoreManagerClient();
@@ -84,6 +86,11 @@ framework.impl(NbstoreProvider, {
   },
 });
 const frameworkProvider = framework.provider();
+
+registerNativePreviewHandlers({
+  renderMermaidSvg: request => Preview.renderMermaidSvg(request),
+  renderTypstSvg: request => Preview.renderTypstSvg(request),
+});
 
 framework.impl(PopupWindowProvider, {
   open: (url: string) => {

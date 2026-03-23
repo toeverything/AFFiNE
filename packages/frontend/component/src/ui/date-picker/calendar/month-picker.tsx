@@ -126,7 +126,6 @@ export const MonthPicker = memo(function MonthPicker(
   const Body = useMemo(() => {
     return (
       <div className={styles.yearViewBody}>
-        {}
         {matrix.map((row, i) => {
           return (
             <div key={i} className={styles.yearViewRow}>

@@ -25,9 +25,47 @@ import {
 } from './provider';
 import { autoMetadata, toBuffer } from './utils';
 
-function escapeKey(key: string): string {
-  // avoid '../' and './' in key
-  return key.replace(/\.?\.[/\\]/g, '%');
+function normalizeStorageKey(key: string): string {
+  const normalized = key.replaceAll('\\', '/');
+  const segments = normalized.split('/');
+
+  if (
+    !normalized ||
+    normalized.startsWith('/') ||
+    segments.some(segment => !segment || segment === '.' || segment === '..')
+  ) {
+    throw new Error(`Invalid storage key: ${key}`);
+  }
+
+  return segments.join('/');
+}
+
+function normalizeStoragePrefix(prefix: string): string {
+  const normalized = prefix.replaceAll('\\', '/');
+  if (!normalized) {
+    return normalized;
+  }
+  if (normalized.startsWith('/')) {
+    throw new Error(`Invalid storage prefix: ${prefix}`);
+  }
+
+  const segments = normalized.split('/');
+  const lastSegment = segments.pop();
+
+  if (
+    lastSegment === undefined ||
+    segments.some(segment => !segment || segment === '.' || segment === '..') ||
+    lastSegment === '.' ||
+    lastSegment === '..'
+  ) {
+    throw new Error(`Invalid storage prefix: ${prefix}`);
+  }
+
+  if (lastSegment === '') {
+    return `${segments.join('/')}/`;
+  }
+
+  return [...segments, lastSegment].join('/');
 }
 
 export interface FsStorageConfig {
@@ -57,7 +95,7 @@ export class FsStorageProvider implements StorageProvider {
     body: BlobInputType,
     metadata: PutObjectMetadata = {}
   ): Promise<void> {
-    key = escapeKey(key);
+    key = normalizeStorageKey(key);
     const blob = await toBuffer(body);
 
     // write object
@@ -68,6 +106,7 @@ export class FsStorageProvider implements StorageProvider {
   }
 
   async head(key: string) {
+    key = normalizeStorageKey(key);
     const metadata = this.readMetadata(key);
     if (!metadata) {
       this.logger.verbose(`Object \`${key}\` not found`);
@@ -80,7 +119,7 @@ export class FsStorageProvider implements StorageProvider {
     body?: Readable;
     metadata?: GetObjectMetadata;
   }> {
-    key = escapeKey(key);
+    key = normalizeStorageKey(key);
 
     try {
       const metadata = this.readMetadata(key);
@@ -105,7 +144,7 @@ export class FsStorageProvider implements StorageProvider {
     // read dir recursively and filter out '.metadata.json' files
     let dir = this.path;
     if (prefix) {
-      prefix = escapeKey(prefix);
+      prefix = normalizeStoragePrefix(prefix);
       const parts = prefix.split(/[/\\]/);
       // for prefix `a/b/c`, move `a/b` to dir and `c` to key prefix
       if (parts.length > 1) {
@@ -152,7 +191,7 @@ export class FsStorageProvider implements StorageProvider {
   }
 
   delete(key: string): Promise<void> {
-    key = escapeKey(key);
+    key = normalizeStorageKey(key);
 
     try {
       rmSync(this.join(key), { force: true });

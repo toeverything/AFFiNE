@@ -40,7 +40,7 @@
     "*": "prettier --write --ignore-unknown --cache",
     "*.{ts,tsx,mjs,js,jsx}": [
       "prettier --ignore-unknown --write",
-      "cross-env NODE_OPTIONS=\"--max-old-space-size=8192\" eslint --cache --fix"
+      "cross-env NODE_OPTIONS=\"--max-old-space-size=16384\" eslint --cache --fix"
     ],
     "*.toml": [
       "taplo format"
@@ -92,7 +92,7 @@
     "vite": "^7.2.7",
     "vitest": "^4.0.18"
   },
-  "packageManager": "yarn@4.12.0",
+  "packageManager": "yarn@4.13.0",
   "resolutions": {
     "array-buffer-byte-length": "npm:@nolyfill/array-buffer-byte-length@^1",
     "array-includes": "npm:@nolyfill/array-includes@^1",

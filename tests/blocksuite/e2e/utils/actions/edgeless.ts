@@ -394,32 +394,39 @@ export async function setEdgelessTool(
         'shape',
         false
       );
-      // Avoid clicking on the shape-element (will trigger dragging mode)
-      await shapeToolButton.click({ position: { x: 5, y: 5 } });
-      const menuCandidates = page
-        .locator('edgeless-slide-menu')
-        .filter({ hasText: 'Rectangle' });
-      const menu = (await menuCandidates.count())
-        ? menuCandidates.first()
-        : page.locator('edgeless-slide-menu').first();
-      await menu.waitFor({ state: 'visible', timeout: 5000 });
-      const candidates = [
-        menu.locator('edgeless-tool-icon-button').filter({ hasText: shape }),
-        menu.getByLabel(shape, { exact: true }),
-        menu.getByRole('button', { name: shape }),
-      ];
-      let clicked = false;
-      for (const candidate of candidates) {
-        if (await candidate.count()) {
-          await candidate.first().click();
-          clicked = true;
-          break;
-        }
+      const shapeToolBox = await shapeToolButton.boundingBox();
+      if (!shapeToolBox) {
+        throw new Error('shapeToolBox is not found');
       }
-      if (!clicked) {
-        if (shape === Shape.Square) {
-          break;
-        }
+
+      // Avoid clicking on center of the button which may trigger drag behavior.
+      await page.mouse.click(shapeToolBox.x + 2, shapeToolBox.y + 2);
+
+      const shapeMenu = page
+        .locator('edgeless-shape-menu')
+        .or(page.locator('edgeless-slide-menu'))
+        .first();
+      await shapeMenu.waitFor({ state: 'visible', timeout: 5000 });
+
+      const shapeButton = shapeMenu
+        .locator('edgeless-tool-icon-button')
+        .filter({ hasText: shape })
+        .first();
+      if ((await shapeButton.count()) > 0) {
+        await expect(shapeButton).toBeVisible();
+        await shapeButton.click();
+        break;
+      }
+
+      const fallbackButton = shapeMenu
+        .getByRole('button', { name: shape })
+        .first();
+      if ((await fallbackButton.count()) > 0) {
+        await fallbackButton.click();
+        break;
+      }
+
+      if (shape !== Shape.Square) {
         throw new Error(`Shape option not found: ${shape}`);
       }
       break;

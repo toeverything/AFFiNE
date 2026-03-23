@@ -797,6 +797,10 @@ internal interface UniffiForeignFutureCompleteVoid : com.sun.jna.Callback {
 
 
 
+
+
+
+
 // For large crates we prevent `MethodTooLargeException` (see #2340)
 // N.B. the name of the extension is very misleading, since it is 
 // rather `InterfaceTooLargeException`, caused by too many methods 
@@ -815,6 +819,10 @@ internal interface IntegrityCheckingUniffiLib : Library {
     fun uniffi_affine_mobile_native_checksum_func_hashcash_mint(
 ): Short
 fun uniffi_affine_mobile_native_checksum_func_new_doc_storage_pool(
+): Short
+fun uniffi_affine_mobile_native_checksum_func_render_mermaid_preview_svg(
+): Short
+fun uniffi_affine_mobile_native_checksum_func_render_typst_preview_svg(
 ): Short
 fun uniffi_affine_mobile_native_checksum_method_docstoragepool_clear_clocks(
 ): Short
@@ -1017,6 +1025,10 @@ fun uniffi_affine_mobile_native_fn_func_hashcash_mint(`resource`: RustBuffer.ByV
 ): RustBuffer.ByValue
 fun uniffi_affine_mobile_native_fn_func_new_doc_storage_pool(uniffi_out_err: UniffiRustCallStatus, 
 ): Pointer
+fun uniffi_affine_mobile_native_fn_func_render_mermaid_preview_svg(`code`: RustBuffer.ByValue,`theme`: RustBuffer.ByValue,`fontFamily`: RustBuffer.ByValue,`fontSize`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+fun uniffi_affine_mobile_native_fn_func_render_typst_preview_svg(`code`: RustBuffer.ByValue,`fontDirs`: RustBuffer.ByValue,`cacheDir`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 fun ffi_affine_mobile_native_rustbuffer_alloc(`size`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 fun ffi_affine_mobile_native_rustbuffer_from_bytes(`bytes`: ForeignBytes.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -1147,6 +1159,12 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_affine_mobile_native_checksum_func_new_doc_storage_pool() != 32882.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_affine_mobile_native_checksum_func_render_mermaid_preview_svg() != 54334.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_affine_mobile_native_checksum_func_render_typst_preview_svg() != 42796.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_affine_mobile_native_checksum_method_docstoragepool_clear_clocks() != 51151.toShort()) {
@@ -3181,6 +3199,38 @@ public object FfiConverterOptionalLong: FfiConverterRustBuffer<kotlin.Long?> {
 /**
  * @suppress
  */
+public object FfiConverterOptionalDouble: FfiConverterRustBuffer<kotlin.Double?> {
+    override fun read(buf: ByteBuffer): kotlin.Double? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterDouble.read(buf)
+    }
+
+    override fun allocationSize(value: kotlin.Double?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterDouble.allocationSize(value)
+        }
+    }
+
+    override fun write(value: kotlin.Double?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterDouble.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalString: FfiConverterRustBuffer<kotlin.String?> {
     override fun read(buf: ByteBuffer): kotlin.String? {
         if (buf.get().toInt() == 0) {
@@ -3579,6 +3629,26 @@ public object FfiConverterSequenceTypeSearchHit: FfiConverterRustBuffer<List<Sea
     uniffiRustCall() { _status ->
     UniffiLib.INSTANCE.uniffi_affine_mobile_native_fn_func_new_doc_storage_pool(
         _status)
+}
+    )
+    }
+    
+
+    @Throws(UniffiException::class) fun `renderMermaidPreviewSvg`(`code`: kotlin.String, `theme`: kotlin.String?, `fontFamily`: kotlin.String?, `fontSize`: kotlin.Double?): kotlin.String {
+            return FfiConverterString.lift(
+    uniffiRustCallWithError(UniffiException) { _status ->
+    UniffiLib.INSTANCE.uniffi_affine_mobile_native_fn_func_render_mermaid_preview_svg(
+        FfiConverterString.lower(`code`),FfiConverterOptionalString.lower(`theme`),FfiConverterOptionalString.lower(`fontFamily`),FfiConverterOptionalDouble.lower(`fontSize`),_status)
+}
+    )
+    }
+    
+
+    @Throws(UniffiException::class) fun `renderTypstPreviewSvg`(`code`: kotlin.String, `fontDirs`: List<kotlin.String>?, `cacheDir`: kotlin.String?): kotlin.String {
+            return FfiConverterString.lift(
+    uniffiRustCallWithError(UniffiException) { _status ->
+    UniffiLib.INSTANCE.uniffi_affine_mobile_native_fn_func_render_typst_preview_svg(
+        FfiConverterString.lower(`code`),FfiConverterOptionalSequenceString.lower(`fontDirs`),FfiConverterOptionalString.lower(`cacheDir`),_status)
 }
     )
     }

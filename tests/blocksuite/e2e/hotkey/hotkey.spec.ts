@@ -33,6 +33,7 @@ import {
 } from '../utils/actions/index.js';
 import {
   assertBlockChildrenIds,
+  assertRichTextInlineDeltas,
   assertRichTextInlineRange,
   assertRichTextModelType,
   assertRichTexts,
@@ -162,20 +163,23 @@ test('use formatted cursor with hotkey', async ({ page }, testInfo) => {
   );
 });
 
-test('use formatted cursor with hotkey at empty line', async ({
-  page,
-}, testInfo) => {
+test('use formatted cursor with hotkey at empty line', async ({ page }) => {
   await enterPlaygroundRoom(page);
   await initEmptyParagraphState(page);
   await focusRichText(page);
 
   // format bold
   await page.keyboard.press(`${SHORT_KEY}+b`, { delay: 50 });
+  await waitNextFrame(page, 200);
   await type(page, 'aaa');
-
-  expect(await getPageSnapshot(page, true)).toMatchSnapshot(
-    `${testInfo.title}_bold.json`
-  );
+  await assertRichTextInlineDeltas(page, [
+    {
+      attributes: {
+        bold: true,
+      },
+      insert: 'aaa',
+    },
+  ]);
 });
 
 test('should single line format hotkey work', async ({ page }, testInfo) => {
@@ -264,6 +268,7 @@ test('format list to h1', async ({ page }) => {
   await type(page, 'aa');
   await focusRichText(page, 0);
   await updateBlockType(page, 'affine:paragraph', 'h1');
+  await waitNextFrame(page, 200);
   await assertRichTextModelType(page, 'h1');
   await undoByClick(page);
   await assertRichTextModelType(page, 'bulleted');
@@ -280,6 +285,8 @@ test('should cut work single line', async ({ page }, testInfo) => {
   await dragBetweenIndices(page, [0, 1], [0, 4]);
   // cut
   await page.keyboard.press(`${SHORT_KEY}+x`);
+  await waitNextFrame(page, 200);
+  await assertRichTexts(page, ['ho']);
   expect(await getPageSnapshot(page, true)).toMatchSnapshot(
     `${testInfo.title}_init.json`
   );
