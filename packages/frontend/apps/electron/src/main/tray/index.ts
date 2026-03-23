@@ -17,8 +17,8 @@ import {
   appGroups$,
   checkCanRecordMeeting,
   checkRecordingAvailable,
+  getCurrentRecordingStatus,
   MeetingsSettingsState,
-  recordingStatus$,
   startRecording,
   stopRecording,
   updateApplicationsPing$,
@@ -158,7 +158,7 @@ class TrayState implements Disposable {
           appGroup => appGroup.isRunning
         );
 
-        const recordingStatus = recordingStatus$.value;
+        const recordingStatus = getCurrentRecordingStatus();
 
         if (
           !recordingStatus ||

@@ -14,7 +14,9 @@ import {
   claimRecordingImport,
   completeRecordingImport,
   disableRecordingFeature,
+  dismissRecordingStatus,
   failRecordingImport,
+  getCurrentRecordingStatus,
   getRecording,
   getRecordingImportQueue,
   readRecordingFile,
@@ -37,9 +39,8 @@ export const recordingHandlers = {
   },
   getCurrentRecording: async () => {
     // not all properties are serializable, so we need to return a subset of the status
-    return recordingStatus$.value
-      ? serializeRecordingStatus(recordingStatus$.value)
-      : null;
+    const status = getCurrentRecordingStatus();
+    return status ? serializeRecordingStatus(status) : null;
   },
   startRecording: async (_, appGroup?: AppGroupInfo | number) => {
     return startRecording(appGroup);
@@ -53,11 +54,14 @@ export const recordingHandlers = {
   getRecordingImportQueue: async () => {
     return getRecordingImportQueue();
   },
-  claimRecordingImport: async (_, id: number) => {
-    return claimRecordingImport(id);
+  claimRecordingImport: async (_, id: number, workspaceId: string) => {
+    return claimRecordingImport(id, workspaceId);
   },
   completeRecordingImport: async (_, id: number) => {
     return completeRecordingImport(id);
+  },
+  dismissRecordingStatus: async (_, id: number) => {
+    return dismissRecordingStatus(id);
   },
   failRecordingImport: async (_, id: number, errorMessage?: string) => {
     return failRecordingImport(id, errorMessage);

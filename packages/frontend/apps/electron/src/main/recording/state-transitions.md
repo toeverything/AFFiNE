@@ -15,17 +15,16 @@ The desktop recording flow now uses two independent lifecycle models:
 - `finalizing`: native stop/finalize is in progress.
 - `finalized`: native finalized an artifact successfully.
 - `finalize_failed`: native finalize failed.
-- `aborted`: native session was discarded without producing an artifact.
 
 Only `starting`, `recording`, and `finalizing` occupy the active native slot.
-`start_failed`, `finalized`, `finalize_failed`, and `aborted` no longer block the next recording.
+`start_failed`, `finalized`, and `finalize_failed` no longer block the next recording.
 
 ## Recording Artifact Import State
 
 - `pending_import`: artifact is finalized and durable in main, waiting for a renderer to consume it.
 - `importing`: a renderer has claimed the artifact and is importing it into a doc.
 - `imported`: doc import finished successfully.
-- `import_failed`: doc import failed; the artifact remains available for retry.
+- `import_failed`: doc import failed after import work began; the saved artifact remains available, but automatic import stops to avoid duplicate docs.
 
 Artifacts are persisted in main process storage so renderer reloads or missing workspace context do not drop them.
 
@@ -44,7 +43,7 @@ inactive -> new -> starting -> recording -> finalizing -> finalized
 - `STOP_RECORDING` moves the session to `finalizing`.
 - `ATTACH_RECORDING_ARTIFACT` marks the session `finalized` with the native artifact metadata.
 - `FINALIZE_RECORDING_FAILED` marks the session `finalize_failed`.
-- `ABORT_RECORDING` marks the session `aborted`.
+- after enqueueing the artifact for renderer import, main clears the finalized session and lets the import registry become the sole source of truth.
 
 ## Import Flow
 
@@ -57,13 +56,15 @@ pending_import -> importing -> imported
 - main enqueues `pending_import` after native finalize succeeds.
 - renderer claims the artifact, moving it to `importing`.
 - renderer marks the artifact `imported` or `import_failed`.
-- automatic retry only covers missing UI preconditions before import work begins; once doc creation starts, failures stay `import_failed` to avoid duplicate docs.
+- `imported` is not kept in the durable queue; it is projected as a transient popup status and then dropped.
+- automatic retry only covers missing UI preconditions before import work begins; once doc creation starts, or completion cannot be persisted afterward, the entry stays `import_failed` to avoid duplicate docs.
 
 ## Popup Projection
 
 The popup still renders a single current status, but it is now a projection:
 
 - active session states map to `new`, `starting`, `start_failed`, `recording`, `finalizing`, `finalize_failed`.
-- otherwise the latest import entry maps to `pending_import`, `importing`, `imported`, `import_failed`.
+- otherwise active import queue entries map to `pending_import` or `importing`.
+- terminal import results (`imported`, `import_failed`) are shown through a transient popup projection instead of the durable queue.
 
 This keeps the UI simple without collapsing the underlying source-of-truth back into a single overloaded `processing` state.

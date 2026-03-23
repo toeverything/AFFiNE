@@ -84,6 +84,8 @@ enum RecordingError {
   Empty,
   #[error("start failure: {0}")]
   Start(String),
+  #[error("teardown failure: {0}")]
+  Teardown(String),
   #[error("join failure")]
   Join,
 }
@@ -100,6 +102,7 @@ impl RecordingError {
       RecordingError::NotFound => "not-found",
       RecordingError::Empty => "empty-recording",
       RecordingError::Start(_) => "start-failure",
+      RecordingError::Teardown(_) => "teardown-failure",
       RecordingError::Join => "join-failure",
     }
   }
@@ -685,7 +688,7 @@ fn resolve_stop_result(
     Ok(artifact) => Ok(artifact),
     Err(worker_error) => match stop_result {
       Ok(()) => Err(worker_error),
-      Err(error) => Err(RecordingError::Start(error.to_string())),
+      Err(error) => Err(RecordingError::Teardown(error.to_string())),
     },
   }
 }
@@ -702,7 +705,7 @@ fn resolve_abort_result(
     Err(RecordingError::Empty) => Ok(()),
     Err(worker_error) => match stop_result {
       Ok(()) => Err(worker_error),
-      Err(error) => Err(RecordingError::Start(error.to_string())),
+      Err(error) => Err(RecordingError::Teardown(error.to_string())),
     },
   }
 }
@@ -824,11 +827,7 @@ async fn cleanup_recording_controller(control_tx: &mpsc::UnboundedSender<Control
 }
 
 fn map_recording_result<T>(result: RecordingResult<T>) -> Result<T> {
-  match result {
-    Ok(value) => Ok(value),
-    Err(RecordingError::Start(message)) => Err(RecordingError::Start(message).into()),
-    Err(error) => Err(error.into()),
-  }
+  result.map_err(Into::into)
 }
 
 async fn send_control_message<T>(
@@ -1080,7 +1079,7 @@ mod tests {
       let Some(ControlMessage::Stop { reply_tx }) = control_rx.blocking_recv() else {
         panic!("expected stop");
       };
-      let _ = reply_tx.send(Err(RecordingError::Start(String::from("boom"))));
+      let _ = reply_tx.send(Err(RecordingError::Teardown(String::from("boom"))));
     });
 
     *ACTIVE_RECORDING.blocking_lock() = Some(ActiveRecording {
@@ -1094,7 +1093,7 @@ mod tests {
       Err(error) => error,
     };
     assert!(
-      error.to_string().contains("start failure: boom"),
+      error.to_string().contains("teardown failure: boom"),
       "unexpected error: {error}"
     );
     assert!(ACTIVE_RECORDING.blocking_lock().is_none());

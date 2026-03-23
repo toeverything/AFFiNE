@@ -95,6 +95,9 @@ export function Recording() {
   }, [status, t]);
 
   const handleDismiss = useAsyncCallback(async () => {
+    if (status) {
+      await apis?.recording?.dismissRecordingStatus(status.id);
+    }
     await apis?.popup?.dismissCurrentRecording();
     track.popup.$.recordingBar.dismissRecording({
       type: 'Meeting record',

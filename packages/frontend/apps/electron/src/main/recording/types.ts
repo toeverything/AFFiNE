@@ -18,15 +18,23 @@ export interface AppGroupInfo {
   isRunning: boolean;
 }
 
-export type RecordingSessionState =
+export type RecordingJobPhase =
   | 'new'
   | 'starting'
-  | 'start_failed'
   | 'recording'
   | 'finalizing'
-  | 'finalized'
-  | 'finalize_failed'
+  | 'recorded'
+  | 'importing'
+  | 'imported'
+  | 'failed'
   | 'aborted';
+
+export type RecordingFailureStage = 'start' | 'finalize' | 'import';
+
+export interface RecordingFailureInfo {
+  stage: RecordingFailureStage;
+  message: string;
+}
 
 export type RecordingImportState =
   | 'pending_import'
@@ -44,20 +52,37 @@ export interface RecordingArtifactInfo {
   overflowCount?: number;
 }
 
-export interface RecordingSessionStatus {
-  id: number; // corresponds to the recording id
-  sessionStatus: RecordingSessionState;
-  app?: TappableAppInfo;
-  appGroup?: AppGroupInfo;
-  startTime: number; // 0 means not started yet
-  nativeId?: string;
-  artifact?: RecordingArtifactInfo;
+export interface RecordingImportProgress {
+  workspaceId?: string;
+  docId?: string;
   errorMessage?: string;
+  leaseExpiresAt?: number;
+  startedAt?: number;
+  finishedAt?: number;
+}
+
+export interface RecordingJobStatus {
+  id: number;
+  phase: RecordingJobPhase;
+  appName?: string;
+  appGroupId?: number;
+  bundleIdentifier?: string;
+  appProcessId?: number;
+  nativeId?: string;
+  startTime: number;
+  createdAt: number;
+  updatedAt: number;
+  artifact?: RecordingArtifactInfo;
+  import?: RecordingImportProgress;
+  error?: RecordingFailureInfo;
+  dismissedAt?: number;
 }
 
 export interface RecordingImportStatus extends RecordingArtifactInfo {
   id: number;
   appName?: string;
+  workspaceId?: string;
+  docId?: string;
   startTime: number;
   importStatus: RecordingImportState;
   errorMessage?: string;

@@ -13,10 +13,31 @@ const transcribeRecording = vi.fn();
 type RecordingImportStatus = {
   id: number;
   appName?: string;
+  workspaceId?: string;
+  docId?: string;
   filepath: string;
   startTime: number;
+  sampleRate?: number;
+  numberOfChannels?: number;
+  durationMs?: number;
+  size?: number;
+  degraded?: boolean;
+  overflowCount?: number;
+  errorMessage?: string;
   importStatus: 'pending_import' | 'importing' | 'imported' | 'import_failed';
+  createdAt: number;
+  updatedAt: number;
 };
+
+function withQueueMeta(
+  status: Omit<RecordingImportStatus, 'createdAt' | 'updatedAt'>
+): RecordingImportStatus {
+  return {
+    createdAt: 1,
+    updatedAt: 1,
+    ...status,
+  };
+}
 
 let onRecordingImportQueueChanged:
   | ((queue: RecordingImportStatus[]) => void)
@@ -101,44 +122,85 @@ function createDeferred<T>() {
 
 function createWorkspaceRef() {
   const blobSet = vi.fn(async () => 'blob-1');
-  const addBlock = vi.fn(() => 'attachment-1');
-  const getBlock = vi.fn(() => ({ model: { id: 'attachment-1' } }));
   const openDoc = vi.fn();
+  const createdDocs = new Set<string>();
+  const attachments: Array<{
+    id: string;
+    props: { name: string; type: string };
+  }> = [];
 
-  type MockDoc = {
-    workspace: {
-      blobSync: {
-        set: typeof blobSet;
-      };
+  const blockSuiteDoc = {
+    getModelsByFlavour: vi.fn((flavour: string) => {
+      if (flavour === 'affine:page') {
+        return [{ id: 'page-1' }];
+      }
+      if (flavour === 'affine:note') {
+        return [{ id: 'note-1' }];
+      }
+      if (flavour === 'affine:attachment') {
+        return attachments;
+      }
+      return [];
+    }),
+    addBlock: vi.fn(
+      (
+        flavour: string,
+        props: { name?: string; type?: string },
+        _parentId?: string
+      ) => {
+        if (flavour === 'affine:attachment') {
+          const id = `attachment-${attachments.length + 1}`;
+          attachments.push({
+            id,
+            props: {
+              name: props.name ?? '',
+              type: props.type ?? '',
+            },
+          });
+          return id;
+        }
+        return `${flavour}-1`;
+      }
+    ),
+    getBlock: vi.fn((id: string) => {
+      const attachment = attachments.find(entry => entry.id === id);
+      return attachment ? { model: attachment } : null;
+    }),
+  };
+
+  const createDoc = vi.fn(({ id }: { id: string }) => {
+    createdDocs.add(id);
+    return { id };
+  });
+
+  const open = vi.fn((docId: string) => {
+    if (!createdDocs.has(docId)) {
+      throw new Error(`Doc ${docId} not found`);
+    }
+    return {
+      doc: {
+        workspace: { id: 'workspace-1' },
+        blockSuiteDoc,
+        addPriorityLoad: vi.fn(() => vi.fn()),
+        waitForSyncReady: vi.fn(async () => undefined),
+      },
+      release: vi.fn(),
     };
-    addBlock: typeof addBlock;
-    getBlock: typeof getBlock;
-  };
-
-  type MockDocProps = {
-    onStoreLoad: (doc: MockDoc, meta: { noteId: string }) => void;
-  };
-
-  const createDoc = vi.fn(({ docProps }: { docProps: MockDocProps }) => {
-    queueMicrotask(() => {
-      docProps.onStoreLoad(
-        {
-          workspace: { blobSync: { set: blobSet } },
-          addBlock,
-          getBlock,
-        },
-        { noteId: 'note-1' }
-      );
-    });
-
-    return { id: 'doc-1' };
   });
 
   const scope = {
     get(token: { name?: string }) {
       switch (token.name) {
         case 'DocsService':
-          return { createDoc };
+          return {
+            createDoc,
+            open,
+            list: {
+              ['doc$']: (docId: string) => ({
+                value: createdDocs.has(docId) ? { id: docId } : null,
+              }),
+            },
+          };
         case 'WorkbenchService':
           return { workbench: { openDoc } };
         case 'AudioAttachmentService':
@@ -160,15 +222,20 @@ function createWorkspaceRef() {
 
   return {
     ref: {
-      workspace: { scope },
+      workspace: {
+        id: 'workspace-1',
+        scope,
+        docCollection: {
+          blobSync: { set: blobSet },
+        },
+      },
       dispose,
       [Symbol.dispose]: dispose,
     },
     createDoc,
     openDoc,
     blobSet,
-    addBlock,
-    getBlock,
+    attachments,
   };
 }
 
@@ -190,7 +257,7 @@ describe('recording effect', () => {
     vi.useRealTimers();
   });
 
-  test('retries pending imports until the active tab has a workspace', async () => {
+  test('retries pending imports until the active tab has a workspace and claims with workspace binding', async () => {
     const workspace = createWorkspaceRef();
     const pendingImport = {
       id: 7,
@@ -205,10 +272,12 @@ describe('recording effect', () => {
       .mockReturnValueOnce(undefined)
       .mockReturnValue(workspace.ref);
     claimRecordingImport.mockResolvedValue({
-      ...pendingImport,
+      ...withQueueMeta(pendingImport),
+      workspaceId: 'workspace-1',
+      docId: 'recording-7',
       importStatus: 'importing',
     });
-    getRecordingImportQueue.mockResolvedValue([pendingImport]);
+    getRecordingImportQueue.mockResolvedValue([withQueueMeta(pendingImport)]);
 
     const { setupRecordingEvents } =
       await import('../../../electron-renderer/src/app/effects/recording');
@@ -223,44 +292,39 @@ describe('recording effect', () => {
     expect(workspace.createDoc).not.toHaveBeenCalled();
     expect(claimRecordingImport).not.toHaveBeenCalled();
 
-    onRecordingImportQueueChanged?.([pendingImport]);
+    onRecordingImportQueueChanged?.([withQueueMeta(pendingImport)]);
     await vi.advanceTimersByTimeAsync(1000);
 
-    expect(claimRecordingImport).toHaveBeenCalledWith(7);
-    expect(workspace.createDoc).toHaveBeenCalledTimes(1);
-    expect(workspace.openDoc).toHaveBeenCalledWith('doc-1');
-    expect(workspace.blobSet).toHaveBeenCalledTimes(1);
-    const [savedBlob] = workspace.blobSet.mock.calls[0] ?? [];
-    expect(savedBlob).toBeInstanceOf(Blob);
-    expect((savedBlob as Blob).type).toBe('audio/ogg');
-    expect(workspace.addBlock).toHaveBeenCalledWith(
-      'affine:attachment',
-      expect.objectContaining({ type: 'audio/ogg' }),
-      'note-1'
+    expect(claimRecordingImport).toHaveBeenCalledWith(7, 'workspace-1');
+    expect(workspace.createDoc).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'recording-7' })
     );
+    expect(workspace.openDoc).toHaveBeenCalledWith('recording-7');
+    expect(workspace.blobSet).toHaveBeenCalledTimes(1);
     expect(completeRecordingImport).toHaveBeenCalledWith(7);
     expect(failRecordingImport).not.toHaveBeenCalled();
   });
 
-  test('marks imports as failed without auto-retrying after doc creation starts', async () => {
+  test('reuses the same doc when a claimed import already carries docId', async () => {
+    const workspace = createWorkspaceRef();
     const pendingImport = {
-      id: 9,
+      id: 8,
       importStatus: 'pending_import' as const,
       appName: 'Meet',
       filepath: '/tmp/meeting.opus',
       startTime: 1000,
+      workspaceId: 'workspace-1',
+      docId: 'recording-8',
     };
 
-    const workspace = createWorkspaceRef();
-    workspace.blobSet.mockRejectedValueOnce(new Error('blob import failed'));
-
+    workspace.createDoc({ id: 'recording-8' });
     isActiveTab.mockResolvedValue(true);
     getCurrentWorkspace.mockReturnValue(workspace.ref);
     claimRecordingImport.mockResolvedValue({
-      ...pendingImport,
+      ...withQueueMeta(pendingImport),
       importStatus: 'importing',
     });
-    getRecordingImportQueue.mockResolvedValue([pendingImport]);
+    getRecordingImportQueue.mockResolvedValue([withQueueMeta(pendingImport)]);
 
     const { setupRecordingEvents } =
       await import('../../../electron-renderer/src/app/effects/recording');
@@ -270,20 +334,42 @@ describe('recording effect', () => {
     await Promise.resolve();
     await vi.advanceTimersByTimeAsync(0);
 
-    expect(failRecordingImport).toHaveBeenCalledWith(
-      9,
-      'Recording import created a document before failing: blob import failed'
-    );
-    expect(completeRecordingImport).not.toHaveBeenCalled();
-    expect(claimRecordingImport).toHaveBeenCalledTimes(1);
     expect(workspace.createDoc).toHaveBeenCalledTimes(1);
+    expect(workspace.blobSet).toHaveBeenCalledTimes(1);
+    expect(completeRecordingImport).toHaveBeenCalledWith(8);
+  });
 
-    onRecordingImportQueueChanged?.([
-      { ...pendingImport, importStatus: 'import_failed' },
-    ]);
-    await vi.advanceTimersByTimeAsync(1000);
+  test('marks imports as failed when blob import fails after claim', async () => {
+    const pendingImport = {
+      id: 9,
+      importStatus: 'pending_import' as const,
+      appName: 'Meet',
+      filepath: '/tmp/meeting.opus',
+      startTime: 1000,
+    };
+    const workspace = createWorkspaceRef();
+    workspace.blobSet.mockRejectedValueOnce(new Error('blob import failed'));
 
-    expect(claimRecordingImport).toHaveBeenCalledTimes(1);
+    isActiveTab.mockResolvedValue(true);
+    getCurrentWorkspace.mockReturnValue(workspace.ref);
+    claimRecordingImport.mockResolvedValue({
+      ...withQueueMeta(pendingImport),
+      workspaceId: 'workspace-1',
+      docId: 'recording-9',
+      importStatus: 'importing',
+    });
+    getRecordingImportQueue.mockResolvedValue([withQueueMeta(pendingImport)]);
+
+    const { setupRecordingEvents } =
+      await import('../../../electron-renderer/src/app/effects/recording');
+
+    setupRecordingEvents({} as never);
+    await Promise.resolve();
+    await Promise.resolve();
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(failRecordingImport).toHaveBeenCalledWith(9, 'blob import failed');
+    expect(completeRecordingImport).not.toHaveBeenCalled();
   });
 
   test('processes recording imports one at a time even when the queue changes mid-import', async () => {
@@ -311,9 +397,16 @@ describe('recording effect', () => {
       .mockResolvedValueOnce(new Uint8Array([4, 5, 6]).buffer);
     claimRecordingImport.mockImplementation(async (id: number) => ({
       ...(id === firstImport.id ? firstImport : secondImport),
+      workspaceId: 'workspace-1',
+      docId: `recording-${id}`,
       importStatus: 'importing' as const,
+      createdAt: 1,
+      updatedAt: 1,
     }));
-    getRecordingImportQueue.mockResolvedValue([firstImport, secondImport]);
+    getRecordingImportQueue.mockResolvedValue([
+      withQueueMeta(firstImport),
+      withQueueMeta(secondImport),
+    ]);
 
     const { setupRecordingEvents } =
       await import('../../../electron-renderer/src/app/effects/recording');
@@ -321,21 +414,26 @@ describe('recording effect', () => {
     setupRecordingEvents({} as never);
     await Promise.resolve();
     await Promise.resolve();
-    await Promise.resolve();
     await vi.advanceTimersByTimeAsync(0);
 
     expect(claimRecordingImport).toHaveBeenCalledTimes(1);
-    expect(claimRecordingImport).toHaveBeenCalledWith(firstImport.id);
-    expect(workspace.createDoc).toHaveBeenCalledTimes(1);
+    expect(claimRecordingImport).toHaveBeenCalledWith(
+      firstImport.id,
+      'workspace-1'
+    );
 
     onRecordingImportQueueChanged?.([
-      { ...firstImport, importStatus: 'importing' },
-      secondImport,
+      withQueueMeta({
+        ...firstImport,
+        workspaceId: 'workspace-1',
+        docId: 'recording-7',
+        importStatus: 'importing',
+      }),
+      withQueueMeta(secondImport),
     ]);
     await Promise.resolve();
 
     expect(claimRecordingImport).toHaveBeenCalledTimes(1);
-    expect(workspace.createDoc).toHaveBeenCalledTimes(1);
 
     firstRead.resolve(new Uint8Array([1, 2, 3]).buffer);
     await Promise.resolve();
@@ -343,8 +441,11 @@ describe('recording effect', () => {
     await vi.advanceTimersByTimeAsync(1000);
 
     expect(claimRecordingImport).toHaveBeenCalledTimes(2);
-    expect(claimRecordingImport).toHaveBeenNthCalledWith(2, secondImport.id);
-    expect(workspace.createDoc).toHaveBeenCalledTimes(2);
+    expect(claimRecordingImport).toHaveBeenNthCalledWith(
+      2,
+      secondImport.id,
+      'workspace-1'
+    );
     expect(completeRecordingImport).toHaveBeenNthCalledWith(1, firstImport.id);
     expect(completeRecordingImport).toHaveBeenNthCalledWith(2, secondImport.id);
   });
