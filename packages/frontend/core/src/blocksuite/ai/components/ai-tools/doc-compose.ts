@@ -11,7 +11,7 @@ import type { BlockStdScope } from '@blocksuite/std';
 import { css, html } from 'lit';
 import { property } from 'lit/decorators.js';
 
-import { getCustomPageEditorBlockSpecs } from '../text-renderer';
+import { getCustomPageEditorBlockSpecs } from '../page-editor-block-specs';
 import { ArtifactTool } from './artifact-tool';
 import type { ToolError } from './type';
 

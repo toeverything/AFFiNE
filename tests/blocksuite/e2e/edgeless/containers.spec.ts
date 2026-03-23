@@ -122,7 +122,7 @@ test.describe('containers', () => {
     const outsideId = await createRectShape(page, [460, 160, 80, 60]);
 
     const [ix, iy, iw, ih] = await getEdgelessElementBound(page, insideId);
-    const [ox, oy, ow, oh] = await getEdgelessElementBound(page, outsideId);
+    const [ox, oy, , oh] = await getEdgelessElementBound(page, outsideId);
     await createConnectorElement(
       page,
       [ix + iw, iy + ih / 2],

@@ -4,6 +4,7 @@ import type {
   ConnectorElementModel,
   GroupElementModel,
 } from '@blocksuite/affine/model';
+import { serializeXYWH } from '@blocksuite/global/gfx';
 import { beforeEach, describe, expect, test } from 'vitest';
 
 import { wait } from '../utils/common.js';
@@ -138,6 +139,29 @@ describe('group', () => {
 
     expect(group.childIds).toEqual([id]);
   });
+
+  test('group xywh should update when child xywh changes', () => {
+    const shapeId = model.addElement({
+      type: 'shape',
+      xywh: serializeXYWH(0, 0, 100, 100),
+    });
+    const groupId = model.addElement({
+      type: 'group',
+      children: {
+        [shapeId]: true,
+      },
+    });
+
+    const group = model.getElementById(groupId) as GroupElementModel;
+
+    expect(group.xywh).toBe(serializeXYWH(0, 0, 100, 100));
+
+    model.updateElement(shapeId, {
+      xywh: serializeXYWH(50, 60, 100, 100),
+    });
+
+    expect(group.xywh).toBe(serializeXYWH(50, 60, 100, 100));
+  });
 });
 
 describe('connector', () => {
@@ -233,6 +257,69 @@ describe('connector', () => {
 
     expect(model.getConnectors(id)).toEqual([]);
     expect(model.getConnectors(id2)).toEqual([]);
+  });
+
+  test('should update endpoint index when connector retargets', () => {
+    const id = model.addElement({
+      type: 'shape',
+    });
+    const id2 = model.addElement({
+      type: 'shape',
+    });
+    const id3 = model.addElement({
+      type: 'shape',
+    });
+    const connectorId = model.addElement({
+      type: 'connector',
+      source: {
+        id,
+      },
+      target: {
+        id: id2,
+      },
+    });
+    const connector = model.getElementById(connectorId)!;
+
+    expect(model.getConnectors(id).map(c => c.id)).toEqual([connector.id]);
+    expect(model.getConnectors(id2).map(c => c.id)).toEqual([connector.id]);
+
+    model.updateElement(connectorId, {
+      source: {
+        id: id3,
+      },
+      target: {
+        id: id2,
+      },
+    });
+
+    expect(model.getConnectors(id)).toEqual([]);
+    expect(model.getConnectors(id3).map(c => c.id)).toEqual([connector.id]);
+    expect(model.getConnectors(id2).map(c => c.id)).toEqual([connector.id]);
+  });
+
+  test('getConnectors should purge stale connector ids from endpoint cache', () => {
+    const shapeId = model.addElement({
+      type: 'shape',
+    });
+    const surfaceModel = model as any;
+    surfaceModel._connectorIdsByEndpoint.set(
+      shapeId,
+      new Set(['missing-connector-id'])
+    );
+    surfaceModel._connectorEndpoints.set('missing-connector-id', {
+      sourceId: shapeId,
+      targetId: null,
+    });
+
+    expect(model.getConnectors(shapeId)).toEqual([]);
+    expect(
+      surfaceModel._connectorIdsByEndpoint
+        .get(shapeId)
+        ?.has('missing-connector-id') ?? false
+    ).toBe(false);
+    expect(surfaceModel._connectorEndpoints.has('missing-connector-id')).toBe(
+      false
+    );
   });
 
   test('should return null if connector are deleted', async () => {

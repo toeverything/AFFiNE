@@ -6,6 +6,8 @@ import { TelemetryDeduper } from './deduper';
 import { Ga4Client } from './ga4-client';
 import { TelemetryAck, TelemetryBatch } from './types';
 
+const TELEMETRY_ROUTE_PATTERN = /\/api\/telemetry(?:\/|$)/;
+
 @Injectable()
 export class TelemetryService {
   private readonly logger = new Logger(TelemetryService.name);
@@ -69,6 +71,13 @@ export class TelemetryService {
     }
 
     return false;
+  }
+
+  getAllowedOrigins(routePath?: string): string[] {
+    if (routePath && TELEMETRY_ROUTE_PATTERN.test(routePath)) {
+      return [...this.allowedOrigins];
+    }
+    return [];
   }
 
   async collectBatch(batch: TelemetryBatch): Promise<TelemetryAck> {

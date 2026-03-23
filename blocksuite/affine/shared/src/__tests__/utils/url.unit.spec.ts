@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 
-import { isValidUrl } from '../../utils/url.js';
+import { isValidUrl, splitTextByUrl } from '../../utils/url.js';
 
 describe('isValidUrl: determining whether a URL is valid is very complicated', () => {
   test('basic case', () => {
@@ -83,5 +83,57 @@ describe('isValidUrl: determining whether a URL is valid is very complicated', (
 
   test('should allow ip address url when origin is same', () => {
     expect(isValidUrl('http://127.0.0.1', 'http://127.0.0.1')).toEqual(true);
+  });
+});
+
+describe('splitTextByUrl', () => {
+  test('should split text and keep url part as link segment', () => {
+    expect(splitTextByUrl('hi - https://google.com')).toEqual([
+      { text: 'hi - ' },
+      {
+        text: 'https://google.com',
+        link: 'https://google.com',
+      },
+    ]);
+  });
+
+  test('should support prefixed url token without swallowing prefix text', () => {
+    expect(splitTextByUrl('-https://google.com')).toEqual([
+      { text: '-' },
+      {
+        text: 'https://google.com',
+        link: 'https://google.com',
+      },
+    ]);
+  });
+
+  test('should trim tail punctuations from url token', () => {
+    expect(splitTextByUrl('visit https://google.com, now')).toEqual([
+      { text: 'visit ' },
+      {
+        text: 'https://google.com',
+        link: 'https://google.com',
+      },
+      { text: ', now' },
+    ]);
+  });
+
+  test('should convert domain token in plain text', () => {
+    expect(splitTextByUrl('google.com and text')).toEqual([
+      {
+        text: 'google.com',
+        link: 'https://google.com',
+      },
+      { text: ' and text' },
+    ]);
+  });
+
+  test('should normalize www domain token link while preserving display text', () => {
+    expect(splitTextByUrl('www.google.com')).toEqual([
+      {
+        text: 'www.google.com',
+        link: 'https://www.google.com',
+      },
+    ]);
   });
 });

@@ -1,13 +1,14 @@
-import { tool } from 'ai';
 import Exa from 'exa-js';
 import { z } from 'zod';
 
 import { Config } from '../../../base';
 import { toolError } from './error';
+import { defineTool } from './tool';
 
 export const createExaSearchTool = (config: Config) => {
-  return tool({
-    description: 'Search the web for information',
+  return defineTool({
+    description:
+      'Search the web using Exa, one of the best web search APIs for AI',
     inputSchema: z.object({
       query: z.string().describe('The query to search the web for.'),
       mode: z
@@ -18,10 +19,12 @@ export const createExaSearchTool = (config: Config) => {
       try {
         const { key } = config.copilot.exa;
         const exa = new Exa(key);
-        const result = await exa.searchAndContents(query, {
+        const result = await exa.search(query, {
+          contents: {
+            summary: true,
+            livecrawl: mode === 'MUST' ? 'always' : undefined,
+          },
           numResults: 10,
-          summary: true,
-          livecrawl: mode === 'MUST' ? 'always' : undefined,
         });
         return result.results.map(data => ({
           title: data.title,

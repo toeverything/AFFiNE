@@ -34,7 +34,7 @@ const BORDER_WIDTH = 1;
 export function mountConnectorLabelEditor(
   connector: ConnectorElementModel,
   edgeless: BlockComponent,
-  point?: IVec
+  _point?: IVec
 ) {
   const mountElm = edgeless.querySelector('.edgeless-mount-point');
   if (!mountElm) {

@@ -7,7 +7,7 @@ public class NotificationCountQuery: GraphQLQuery {
   public static let operationName: String = "notificationCount"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"query notificationCount { currentUser { __typename notificationCount } }"#
+      #"query notificationCount { currentUser { __typename notifications(pagination: { first: 1 }) { __typename totalCount } } }"#
     ))
 
   public init() {}
@@ -34,11 +34,27 @@ public class NotificationCountQuery: GraphQLQuery {
       public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.UserType }
       public static var __selections: [ApolloAPI.Selection] { [
         .field("__typename", String.self),
-        .field("notificationCount", Int.self),
+        .field("notifications", Notifications.self, arguments: ["pagination": ["first": 1]]),
       ] }
 
-      /// Get user notification count
-      public var notificationCount: Int { __data["notificationCount"] }
+      /// Get current user notifications
+      public var notifications: Notifications { __data["notifications"] }
+
+      /// CurrentUser.Notifications
+      ///
+      /// Parent Type: `PaginatedNotificationObjectType`
+      public struct Notifications: AffineGraphQL.SelectionSet {
+        public let __data: DataDict
+        public init(_dataDict: DataDict) { __data = _dataDict }
+
+        public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.PaginatedNotificationObjectType }
+        public static var __selections: [ApolloAPI.Selection] { [
+          .field("__typename", String.self),
+          .field("totalCount", Int.self),
+        ] }
+
+        public var totalCount: Int { __data["totalCount"] }
+      }
     }
   }
 }

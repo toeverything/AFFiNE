@@ -3,7 +3,6 @@ import { ShapeType } from '@blocksuite/affine-model';
 import { beforeEach, describe, expect, test } from 'vitest';
 
 import {
-  ConnectorEndpointLocationsOnCloud,
   ConnectorEndpointLocationsOnDiamond,
   ConnectorEndpointLocationsOnRectangle,
   getAnchors,

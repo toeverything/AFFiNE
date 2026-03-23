@@ -32,6 +32,8 @@ export interface WorkspaceDocInfo {
 export interface DocMarkdown {
   title: string;
   markdown: string;
+  knownUnsupportedBlocks: string[];
+  unknownBlocks: string[];
 }
 
 export abstract class DocReader {
@@ -185,12 +187,27 @@ export class DatabaseDocReader extends DocReader {
     if (!doc) {
       return null;
     }
-    return parseDocToMarkdownFromDocSnapshot(
-      workspaceId,
-      docId,
-      doc.bin,
-      aiEditable
-    );
+    try {
+      const markdown = parseDocToMarkdownFromDocSnapshot(
+        workspaceId,
+        docId,
+        doc.bin,
+        aiEditable
+      );
+
+      const unknownBlocks = markdown.unknownBlocks ?? [];
+      if (unknownBlocks.length > 0) {
+        this.logger.warn(
+          `Unknown blocks found when parsing markdown for ${workspaceId}/${docId}.`,
+          { unknownBlocks }
+        );
+      }
+
+      return markdown;
+    } catch (error) {
+      this.logger.error(`Failed to parse ${workspaceId}/${docId}.`, error);
+      throw error;
+    }
   }
 
   async getDocDiff(
@@ -257,12 +274,13 @@ export class RpcDocReader extends DatabaseDocReader {
     super(cache, models, blobStorage, workspace);
   }
 
-  private async fetch(
-    accessToken: string,
-    url: string,
-    method: 'GET' | 'POST',
-    body?: Uint8Array
-  ) {
+  private async fetch(url: string, method: 'GET' | 'POST', body?: Uint8Array) {
+    const { pathname } = new URL(url);
+    const accessToken = this.crypto.signInternalAccessToken({
+      method,
+      path: pathname,
+    });
+
     const headers: Record<string, string> = {
       'x-access-token': accessToken,
       'x-cloud-trace-context': getOrGenRequestId('rpc'),
@@ -293,9 +311,8 @@ export class RpcDocReader extends DatabaseDocReader {
     docId: string
   ): Promise<DocRecord | null> {
     const url = `${this.config.docService.endpoint}/rpc/workspaces/${workspaceId}/docs/${docId}`;
-    const accessToken = this.crypto.sign(docId);
     try {
-      const res = await this.fetch(accessToken, url, 'GET');
+      const res = await this.fetch(url, 'GET');
       if (!res) {
         return null;
       }
@@ -330,9 +347,8 @@ export class RpcDocReader extends DatabaseDocReader {
     aiEditable: boolean
   ): Promise<DocMarkdown | null> {
     const url = `${this.config.docService.endpoint}/rpc/workspaces/${workspaceId}/docs/${docId}/markdown?aiEditable=${aiEditable}`;
-    const accessToken = this.crypto.sign(docId);
     try {
-      const res = await this.fetch(accessToken, url, 'GET');
+      const res = await this.fetch(url, 'GET');
       if (!res) {
         return null;
       }
@@ -358,9 +374,8 @@ export class RpcDocReader extends DatabaseDocReader {
     stateVector?: Uint8Array
   ): Promise<DocDiff | null> {
     const url = `${this.config.docService.endpoint}/rpc/workspaces/${workspaceId}/docs/${docId}/diff`;
-    const accessToken = this.crypto.sign(docId);
     try {
-      const res = await this.fetch(accessToken, url, 'POST', stateVector);
+      const res = await this.fetch(url, 'POST', stateVector);
       if (!res) {
         return null;
       }
@@ -399,9 +414,8 @@ export class RpcDocReader extends DatabaseDocReader {
     fullContent = false
   ): Promise<PageDocContent | null> {
     const url = `${this.config.docService.endpoint}/rpc/workspaces/${workspaceId}/docs/${docId}/content?full=${fullContent}`;
-    const accessToken = this.crypto.sign(docId);
     try {
-      const res = await this.fetch(accessToken, url, 'GET');
+      const res = await this.fetch(url, 'GET');
       if (!res) {
         return null;
       }
@@ -427,9 +441,8 @@ export class RpcDocReader extends DatabaseDocReader {
     workspaceId: string
   ): Promise<WorkspaceDocInfo | null> {
     const url = `${this.config.docService.endpoint}/rpc/workspaces/${workspaceId}/content`;
-    const accessToken = this.crypto.sign(workspaceId);
     try {
-      const res = await this.fetch(accessToken, url, 'GET');
+      const res = await this.fetch(url, 'GET');
       if (!res) {
         return null;
       }
@@ -451,7 +464,7 @@ export class RpcDocReader extends DatabaseDocReader {
 export const DocReaderProvider: FactoryProvider = {
   provide: DocReader,
   useFactory: (ref: ModuleRef) => {
-    if (env.flavors.doc) {
+    if (env.flavors.doc || env.flavors.front) {
       return ref.create(DatabaseDocReader);
     }
     return ref.create(RpcDocReader);

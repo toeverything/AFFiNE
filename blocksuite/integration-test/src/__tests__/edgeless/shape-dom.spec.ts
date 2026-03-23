@@ -100,6 +100,14 @@ async function expectTextNotMirrored(
   }
 }
 
+function expectPxCloseTo(
+  value: string,
+  expected: number,
+  precision: number = 2
+) {
+  expect(Number.parseFloat(value)).toBeCloseTo(expected, precision);
+}
+
 describe('Shape rendering with DOM renderer', () => {
   beforeEach(async () => {
     const cleanup = await setupEditor('edgeless', [], {
@@ -154,7 +162,8 @@ describe('Shape rendering with DOM renderer', () => {
     );
 
     expect(shapeElement).not.toBeNull();
-    expect(shapeElement?.style.borderRadius).toBe('6px');
+    const zoom = surfaceView.renderer.viewport.zoom;
+    expectPxCloseTo(shapeElement!.style.borderRadius, 6 * zoom);
   });
 
   test('should remove shape DOM node when element is deleted', async () => {
@@ -205,8 +214,9 @@ describe('Shape rendering with DOM renderer', () => {
     );
 
     expect(shapeElement).not.toBeNull();
-    expect(shapeElement?.style.width).toBe('80px');
-    expect(shapeElement?.style.height).toBe('60px');
+    const zoom = surfaceView.renderer.viewport.zoom;
+    expectPxCloseTo(shapeElement!.style.width, 80 * zoom);
+    expectPxCloseTo(shapeElement!.style.height, 60 * zoom);
   });
 
   test('should correctly render triangle shape', async () => {
@@ -227,8 +237,9 @@ describe('Shape rendering with DOM renderer', () => {
     );
 
     expect(shapeElement).not.toBeNull();
-    expect(shapeElement?.style.width).toBe('80px');
-    expect(shapeElement?.style.height).toBe('60px');
+    const zoom = surfaceView.renderer.viewport.zoom;
+    expectPxCloseTo(shapeElement!.style.width, 80 * zoom);
+    expectPxCloseTo(shapeElement!.style.height, 60 * zoom);
   });
 
   test('horizontal flip keeps text direction for all known shapes', async () => {

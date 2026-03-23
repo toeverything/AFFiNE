@@ -301,6 +301,8 @@ const buildIconPaths = (stencilName: string) => {
           );
         case 'Z':
           return true;
+        default:
+          return false;
       }
     });
   const sanitizedPaths = basePaths

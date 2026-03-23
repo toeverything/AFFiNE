@@ -4,6 +4,7 @@ export * from './exhaustmap-with-trailing';
 export * from './fractional-indexing';
 export * from './merge-updates';
 export * from './object-pool';
+export * from './redirect-allowlist';
 export * from './stable-hash';
 export * from './throw-if-aborted';
 export * from './yjs-observable';

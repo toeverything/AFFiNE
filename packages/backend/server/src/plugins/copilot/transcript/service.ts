@@ -15,14 +15,10 @@ import {
   sniffMime,
 } from '../../../base';
 import { Models } from '../../../models';
-import { PromptService } from '../prompt';
-import {
-  CopilotProvider,
-  CopilotProviderFactory,
-  CopilotProviderType,
-  ModelOutputType,
-  PromptMessage,
-} from '../providers';
+import { PromptService } from '../prompt/service';
+import type { CopilotProvider, PromptMessage } from '../providers';
+import { CopilotProviderFactory } from '../providers/factory';
+import { CopilotProviderType, ModelOutputType } from '../providers/types';
 import { CopilotStorage } from '../storage';
 import {
   AudioBlobInfos,
@@ -171,7 +167,7 @@ export class CopilotTranscriptionService {
     if (payload.success) {
       let { url, mimeType, infos } = payload.data;
       infos = infos || [];
-      if (url && mimeType && !infos.find(i => i.url === url)) {
+      if (url && mimeType && !infos.some(i => i.url === url)) {
         infos.push({ url, mimeType });
       }
 
@@ -228,11 +224,10 @@ export class CopilotTranscriptionService {
     const config = Object.assign({}, prompt.config);
     if (schema) {
       const provider = await this.getProvider(prompt.model, true, prefer);
-      return provider.structure(
-        cond,
-        [...prompt.finish({ schema }), msg],
-        config
-      );
+      return provider.structure(cond, [...prompt.finish({}), msg], {
+        ...config,
+        schema,
+      });
     } else {
       const provider = await this.getProvider(prompt.model, false);
       return provider.text(cond, [...prompt.finish({}), msg], config);

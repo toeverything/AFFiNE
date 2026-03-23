@@ -1,6 +1,5 @@
 import { Separator } from '@affine/admin/components/ui/separator';
 import { adminWorkspaceQuery } from '@affine/graphql';
-import { cssVarV2 } from '@toeverything/theme/v2';
 import { useMemo } from 'react';
 
 import { useQuery } from '../../../use-query';
@@ -44,10 +43,7 @@ export function WorkspaceSharedLinksPanel({
           handleConfirm={onClose}
           canSave={false}
         />
-        <div
-          className="p-6 text-sm"
-          style={{ color: cssVarV2('text/secondary') }}
-        >
+        <div className="p-6 text-sm text-muted-foreground">
           Workspace not found.
         </div>
       </div>
@@ -55,23 +51,18 @@ export function WorkspaceSharedLinksPanel({
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex h-full flex-col bg-background">
       <RightPanelHeader
         title="Shared Links"
         handleClose={onClose}
         handleConfirm={onClose}
         canSave={false}
       />
-      <div className="p-4 flex flex-col gap-3 overflow-y-auto">
+      <div className="flex flex-col gap-3 overflow-y-auto p-4">
         {sharedLinks.length === 0 ? (
-          <div
-            className="text-sm"
-            style={{ color: cssVarV2('text/secondary') }}
-          >
-            No shared links.
-          </div>
+          <div className="text-sm text-muted-foreground">No shared links.</div>
         ) : (
-          <div className="flex flex-col divide-y rounded-md border">
+          <div className="flex flex-col divide-y rounded-xl border border-border/60 bg-card shadow-sm">
             {sharedLinks.map(link => (
               <SharedLinkItem key={link.docId} link={link} />
             ))}
@@ -91,9 +82,7 @@ function SharedLinkItem({ link }: { link: WorkspaceSharedLink }) {
       <div className="text-sm font-medium truncate">{title}</div>
       <div className="flex items-center gap-2 text-xs">
         <Separator className="h-3" orientation="vertical" />
-        <span style={{ color: cssVarV2('text/secondary') }}>
-          Shared on {sharedDate}
-        </span>
+        <span className="text-muted-foreground">Shared on {sharedDate}</span>
       </div>
     </div>
   );

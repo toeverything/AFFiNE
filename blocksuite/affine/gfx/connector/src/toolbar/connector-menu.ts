@@ -9,7 +9,7 @@ import {
   type Color,
   ConnectorMode,
   type JumpStyle,
-  LineWidth,
+  type LineWidth,
 } from '@blocksuite/affine-model';
 import {
   EditPropsStore,

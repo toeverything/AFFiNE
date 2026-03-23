@@ -6,7 +6,8 @@ textarea
   -webkit-app-region: no-drag;
 }
 
-#webpack-dev-server-client-overlay {
+#webpack-dev-server-client-overlay,
+#rspack-dev-server-client-overlay {
   -webkit-app-region: no-drag;
 }
 
@@ -22,4 +23,13 @@ html[data-active='false']:has([data-translucent='true']) {
 html[data-active='true']:has([data-translucent='true']) {
   opacity: 1;
   transition: opacity 0.2s;
+}
+
+/**
+ * Disable animations and transitions when on battery.
+ * We use :not(.playwright-test) to ensure tests (which rely on animations) don't break.
+ */
+body.on-battery:not(.playwright-test) * {
+  animation-duration: 0ms !important;
+  transition-duration: 0ms !important;
 }

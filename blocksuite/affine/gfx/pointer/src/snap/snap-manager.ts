@@ -8,10 +8,17 @@ import {
   InteractivityExtension,
 } from '@blocksuite/std/gfx';
 
+import { AdaptiveStrideController } from './adaptive-load-controller';
 import type { SnapOverlay } from './snap-overlay';
 
 export class SnapExtension extends InteractivityExtension {
   static override key = 'snap-manager';
+
+  private static readonly MAX_ALIGN_SKIP_STRIDE = 3;
+
+  private static readonly ALIGN_HEAVY_COST_MS = 5;
+
+  private static readonly ALIGN_RECOVERY_COST_MS = 2;
 
   get snapOverlay() {
     return this.std.getOptional(
@@ -29,6 +36,11 @@ export class SnapExtension extends InteractivityExtension {
         }
 
         let alignBound: Bound | null = null;
+        const alignStride = new AdaptiveStrideController({
+          heavyCostMs: SnapExtension.ALIGN_HEAVY_COST_MS,
+          maxStride: SnapExtension.MAX_ALIGN_SKIP_STRIDE,
+          recoveryCostMs: SnapExtension.ALIGN_RECOVERY_COST_MS,
+        });
 
         return {
           onDragStart() {
@@ -42,6 +54,7 @@ export class SnapExtension extends InteractivityExtension {
                 return pre;
               }, [] as GfxModel[])
             );
+            alignStride.reset();
           },
           onDragMove(context: ExtensionDragMoveContext) {
             if (
@@ -53,14 +66,22 @@ export class SnapExtension extends InteractivityExtension {
               return;
             }
 
+            if (alignStride.shouldSkip()) {
+              return;
+            }
+
             const currentBound = alignBound.moveDelta(context.dx, context.dy);
+            const alignStart = performance.now();
             const alignRst = snapOverlay.align(currentBound);
+            const alignCost = performance.now() - alignStart;
+            alignStride.reportCost(alignCost);
 
             context.dx = alignRst.dx + context.dx;
             context.dy = alignRst.dy + context.dy;
           },
           clear() {
             alignBound = null;
+            alignStride.reset();
             snapOverlay.clear();
           },
         };

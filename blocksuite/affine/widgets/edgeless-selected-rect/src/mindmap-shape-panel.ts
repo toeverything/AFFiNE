@@ -3,16 +3,16 @@ import {
   EdgelessCRUDIdentifier,
   getSurfaceBlock,
 } from '@blocksuite/affine-block-surface';
-import { mountShapeTextEditor } from '@blocksuite/affine-gfx-shape';
 import {
   MindmapBranchIcon,
   MindmapCentralIdeaIcon,
   MindmapSquareIcon,
   MindmapSubTopicIcon,
+  mountShapeTextEditor,
 } from '@blocksuite/affine-gfx-shape';
 import {
   ConnectorMode,
-  ShapeElementModel,
+  type ShapeElementModel,
   ShapeType,
 } from '@blocksuite/affine-model';
 import { EditPropsStore } from '@blocksuite/affine-shared/services';

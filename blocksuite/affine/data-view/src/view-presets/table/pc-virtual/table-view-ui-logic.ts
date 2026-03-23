@@ -24,12 +24,12 @@ import {
   DataViewUIBase,
   DataViewUILogicBase,
 } from '../../../core/view/data-view-base.js';
+import { LEFT_TOOL_BAR_WIDTH } from '../consts.js';
 import {
-  type TableSingleView,
   TableViewRowSelection,
   type TableViewSelectionWithType,
-} from '../../index.js';
-import { LEFT_TOOL_BAR_WIDTH } from '../consts.js';
+} from '../selection.js';
+import type { TableSingleView } from '../table-view-manager.js';
 import { TableClipboardController } from './controller/clipboard.js';
 import { TableDragController } from './controller/drag.js';
 import { TableHotkeysController } from './controller/hotkeys.js';

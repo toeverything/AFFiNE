@@ -1,0 +1,681 @@
+import { createRequire } from 'node:module';
+import path from 'node:path';
+
+import { getBuildConfig } from '@affine-tools/utils/build-config';
+import { Path, ProjectRoot } from '@affine-tools/utils/path';
+import { Package } from '@affine-tools/utils/workspace';
+import rspack, {
+  type Configuration as RspackConfiguration,
+} from '@rspack/core';
+import type { sentryWebpackPlugin as SentryWebpackPluginFactory } from '@sentry/webpack-plugin';
+import { VanillaExtractPlugin } from '@vanilla-extract/webpack-plugin';
+import cssnano from 'cssnano';
+import { compact, merge } from 'lodash-es';
+
+import { queuedashScopePostcssPlugin } from '../postcss/queuedash-scope.js';
+import { productionCacheGroups } from '../rspack-shared/cache-group.js';
+import {
+  type CreateHTMLPluginConfig,
+  createHTMLPlugins,
+} from '../rspack-shared/html-plugin.js';
+
+const require = createRequire(import.meta.url);
+
+const IN_CI = !!process.env.CI;
+const hasSentryBuildEnvs = () =>
+  !!(
+    process.env.SENTRY_AUTH_TOKEN &&
+    process.env.SENTRY_ORG &&
+    process.env.SENTRY_PROJECT
+  );
+
+function createSentryPlugin() {
+  if (!hasSentryBuildEnvs()) {
+    return null;
+  }
+
+  try {
+    const { sentryWebpackPlugin } = require('@sentry/webpack-plugin') as {
+      sentryWebpackPlugin: typeof SentryWebpackPluginFactory;
+    };
+
+    return sentryWebpackPlugin({
+      org: process.env.SENTRY_ORG!,
+      project: process.env.SENTRY_PROJECT!,
+      authToken: process.env.SENTRY_AUTH_TOKEN!,
+    });
+  } catch (error) {
+    const reason =
+      error instanceof Error ? error.message : 'unknown load error';
+    throw new Error(
+      `Failed to load @sentry/webpack-plugin while SENTRY_* envs are set: ${reason}`
+    );
+  }
+}
+
+const availableChannels = ['canary', 'beta', 'stable', 'internal'];
+function getBuildConfigFromEnv(pkg: Package) {
+  const channel = process.env.BUILD_TYPE ?? 'canary';
+  const dev = process.env.NODE_ENV === 'development';
+  if (!availableChannels.includes(channel)) {
+    throw new Error(
+      `BUILD_TYPE must be one of ${availableChannels.join(', ')}, received [${channel}]`
+    );
+  }
+
+  return getBuildConfig(pkg, {
+    // @ts-expect-error checked
+    channel,
+    mode: dev ? 'development' : 'production',
+  });
+}
+
+export function createHTMLTargetConfig(
+  pkg: Package,
+  entry: string | Record<string, string>,
+  htmlConfig: Partial<CreateHTMLPluginConfig> = {},
+  deps?: string[]
+): RspackConfiguration {
+  entry = typeof entry === 'string' ? { index: entry } : entry;
+
+  htmlConfig = merge(
+    {},
+    {
+      filename: 'index.html',
+      additionalEntryForSelfhost: true,
+      injectGlobalErrorHandler: true,
+      emitAssetsManifest: true,
+    },
+    htmlConfig
+  );
+
+  const buildConfig = getBuildConfigFromEnv(pkg);
+
+  console.log(
+    `Building [${pkg.name}] for [${buildConfig.appBuildType}] channel in [${buildConfig.debug ? 'development' : 'production'}] mode.`
+  );
+  console.log(
+    `Entry points: ${Object.entries(entry)
+      .map(([name, path]) => `${name}: ${path}`)
+      .join(', ')}`
+  );
+  console.log(`Output path: ${pkg.distPath.value}`);
+  console.log(`Config: ${JSON.stringify(buildConfig, null, 2)}`);
+
+  const config: RspackConfiguration = {
+    //#region basic bundler config
+    name: entry['index'],
+    dependencies: deps,
+    context: ProjectRoot.value,
+    experiments: {
+      topLevelAwait: true,
+      outputModule: false,
+      asyncWebAssembly: true,
+    },
+    entry,
+    output: {
+      environment: { module: true, dynamicImport: true },
+      filename: buildConfig.debug
+        ? 'js/[name].js'
+        : 'js/[name].[contenthash:8].js',
+      assetModuleFilename: buildConfig.debug
+        ? '[name].[contenthash:8][ext]'
+        : 'assets/[name].[contenthash:8][ext][query]',
+      path: pkg.distPath.value,
+      clean: false,
+      globalObject: 'globalThis',
+      // NOTE: always keep it '/'
+      publicPath: '/',
+    },
+    target: ['web', 'es2022'],
+    mode: buildConfig.debug ? 'development' : 'production',
+    devtool: buildConfig.debug ? 'cheap-module-source-map' : 'source-map',
+    resolve: {
+      symlinks: true,
+      extensionAlias: {
+        '.js': ['.js', '.tsx', '.ts'],
+        '.mjs': ['.mjs', '.mts'],
+      },
+      extensions: ['.js', '.ts', '.tsx'],
+      alias: {
+        yjs: ProjectRoot.join('node_modules', 'yjs').value,
+        lit: ProjectRoot.join('node_modules', 'lit').value,
+        '@preact/signals-core': ProjectRoot.join(
+          'node_modules',
+          '@preact',
+          'signals-core'
+        ).value,
+      },
+    },
+    //#endregion
+
+    //#region module config
+    module: {
+      parser: {
+        javascript: {
+          // Do not mock Node.js globals
+          node: false,
+          requireJs: false,
+          import: true,
+          // Treat as missing export as error
+          strictExportPresence: true,
+        },
+      },
+      //#region rules
+      rules: [
+        { test: /\.m?js?$/, resolve: { fullySpecified: false } },
+        {
+          test: /\.js$/,
+          enforce: 'pre',
+          include: /@blocksuite/,
+          use: ['source-map-loader'],
+        },
+        {
+          oneOf: [
+            {
+              test: /\.ts$/,
+              exclude: /node_modules/,
+              loader: 'swc-loader',
+              options: {
+                // https://swc.rs/docs/configuring-swc/
+                jsc: {
+                  preserveAllComments: true,
+                  parser: {
+                    syntax: 'typescript',
+                    dynamicImport: true,
+                    topLevelAwait: false,
+                    tsx: false,
+                    decorators: true,
+                  },
+                  target: 'es2022',
+                  externalHelpers: false,
+                  transform: {
+                    useDefineForClassFields: false,
+                    decoratorVersion: '2022-03',
+                  },
+                },
+                sourceMaps: true,
+                inlineSourcesContent: true,
+              },
+            },
+            {
+              test: /\.tsx$/,
+              exclude: /node_modules/,
+              loader: 'swc-loader',
+              options: {
+                // https://swc.rs/docs/configuring-swc/
+                jsc: {
+                  preserveAllComments: true,
+                  parser: {
+                    syntax: 'typescript',
+                    dynamicImport: true,
+                    topLevelAwait: false,
+                    tsx: true,
+                    decorators: true,
+                  },
+                  target: 'es2022',
+                  externalHelpers: false,
+                  transform: {
+                    react: { runtime: 'automatic' },
+                    useDefineForClassFields: false,
+                    decoratorVersion: '2022-03',
+                  },
+                },
+                sourceMaps: true,
+                inlineSourcesContent: true,
+              },
+            },
+            {
+              test: /\.(png|jpg|gif|svg|webp|mp4|zip)$/,
+              type: 'asset/resource',
+            },
+            { test: /\.(ttf|eot|woff|woff2)$/, type: 'asset/resource' },
+            { test: /\.txt$/, type: 'asset/source' },
+            { test: /\.inline\.svg$/, type: 'asset/inline' },
+            {
+              test: /\.css$/,
+              use: [
+                buildConfig.debug
+                  ? 'style-loader'
+                  : rspack.CssExtractRspackPlugin.loader,
+                {
+                  loader: 'css-loader',
+                  options: {
+                    url: true,
+                    sourceMap: false,
+                    modules: false,
+                    import: true,
+                    importLoaders: 1,
+                  },
+                },
+                {
+                  loader: 'postcss-loader',
+                  options: {
+                    postcssOptions: {
+                      plugins: pkg.join('tailwind.config.js').exists()
+                        ? [
+                            [
+                              '@tailwindcss/postcss',
+                              require(pkg.join('tailwind.config.js').value),
+                            ],
+                            ['autoprefixer'],
+                            ...(buildConfig.isAdmin
+                              ? [queuedashScopePostcssPlugin()]
+                              : []),
+                          ]
+                        : [
+                            cssnano({
+                              preset: ['default', { convertValues: false }],
+                            }),
+                          ],
+                    },
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      //#endregion
+    },
+    //#endregion
+
+    //#region plugins
+    plugins: compact([
+      !IN_CI && new rspack.ProgressPlugin(),
+      ...createHTMLPlugins(buildConfig, htmlConfig),
+      new rspack.DefinePlugin({
+        'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV),
+        ...Object.entries(buildConfig).reduce(
+          (def, [k, v]) => {
+            def[`BUILD_CONFIG.${k}`] = JSON.stringify(v);
+            return def;
+          },
+          {} as Record<string, string>
+        ),
+      }),
+      !buildConfig.debug &&
+        // todo: support multiple entry points
+        new rspack.CssExtractRspackPlugin({
+          filename: `[name].[contenthash:8].css`,
+          ignoreOrder: true,
+        }),
+      new VanillaExtractPlugin(),
+      !buildConfig.isAdmin &&
+        new rspack.CopyRspackPlugin({
+          patterns: [
+            {
+              // copy the shared public assets into dist
+              from: new Package('@affine/core').join('public').value,
+            },
+          ],
+        }),
+      createSentryPlugin(),
+      // sourcemap url like # sourceMappingURL=76-6370cd185962bc89.js.map wont load in electron
+      // this is because the default file:// protocol will be ignored by Chromium
+      // so we need to replace the sourceMappingURL to assets:// protocol
+      // for example:
+      // replace # sourceMappingURL=76-6370cd185962bc89.js.map
+      // to      # sourceMappingURL=assets://./{dir}/76-6370cd185962bc89.js.map
+      buildConfig.isElectron &&
+        new rspack.SourceMapDevToolPlugin({
+          append: (pathData: { filename?: string }) => {
+            return `\n//# sourceMappingURL=assets://./${pathData.filename ?? ''}.map`;
+          },
+          filename: '[file].map',
+        }),
+    ]),
+    //#endregion
+
+    stats: { errorDetails: true },
+
+    //#region optimization
+    optimization: {
+      minimize: !buildConfig.debug,
+      minimizer: [
+        new rspack.SwcJsMinimizerRspackPlugin({
+          extractComments: true,
+          minimizerOptions: {
+            ecma: 2020,
+            compress: { unused: true },
+            mangle: { keep_classnames: true },
+          },
+        }),
+      ],
+      removeEmptyChunks: true,
+      providedExports: true,
+      usedExports: true,
+      sideEffects: true,
+      removeAvailableModules: true,
+      runtimeChunk: { name: 'runtime' },
+      splitChunks: {
+        chunks: 'all',
+        minSize: 1,
+        minChunks: 1,
+        maxInitialRequests: Number.MAX_SAFE_INTEGER,
+        maxAsyncRequests: Number.MAX_SAFE_INTEGER,
+        cacheGroups: {
+          ...productionCacheGroups,
+          // Rspack tends to pull async node_modules into the initial vendor chunk
+          // when `vendor` is configured as `chunks: 'all'`.
+          vendor: {
+            ...productionCacheGroups.vendor,
+            chunks: 'initial',
+          },
+        },
+      },
+    },
+    //#endregion
+  };
+
+  if (buildConfig.debug && !IN_CI) {
+    config.optimization = {
+      ...config.optimization,
+      minimize: false,
+      runtimeChunk: false,
+      splitChunks: {
+        maxInitialRequests: Infinity,
+        chunks: 'all',
+        cacheGroups: {
+          defaultVendors: {
+            test: `[\\/]node_modules[\\/](?!.*vanilla-extract)`,
+            priority: -10,
+            reuseExistingChunk: true,
+          },
+          default: { minChunks: 2, priority: -20, reuseExistingChunk: true },
+          styles: {
+            name: 'styles',
+            type: 'css/mini-extract',
+            chunks: 'all',
+            enforce: true,
+          },
+        },
+      },
+    };
+  }
+
+  return config;
+}
+
+export function createWorkerTargetConfig(
+  pkg: Package,
+  entry: string
+): Omit<RspackConfiguration, 'name'> & { name: string } {
+  const workerName = path.basename(entry).replace(/\.worker\.ts$/, '');
+  const buildConfig = getBuildConfigFromEnv(pkg);
+
+  return {
+    name: entry,
+    context: ProjectRoot.value,
+    experiments: {
+      topLevelAwait: true,
+      outputModule: false,
+      asyncWebAssembly: true,
+    },
+    entry: { [workerName]: entry },
+    output: {
+      filename: `js/${workerName}-${buildConfig.appVersion}.worker.js`,
+      path: pkg.distPath.value,
+      clean: false,
+      globalObject: 'globalThis',
+      // NOTE: always keep it '/'
+      publicPath: '/',
+    },
+    target: ['webworker', 'es2022'],
+    mode: buildConfig.debug ? 'development' : 'production',
+    devtool: buildConfig.debug ? 'cheap-module-source-map' : 'source-map',
+    resolve: {
+      symlinks: true,
+      extensionAlias: { '.js': ['.js', '.ts'], '.mjs': ['.mjs', '.mts'] },
+      extensions: ['.js', '.ts'],
+      alias: { yjs: ProjectRoot.join('node_modules', 'yjs').value },
+    },
+
+    module: {
+      parser: {
+        javascript: {
+          // Do not mock Node.js globals
+          node: false,
+          requireJs: false,
+          import: true,
+          // Treat as missing export as error
+          strictExportPresence: true,
+        },
+      },
+      rules: [
+        { test: /\.m?js?$/, resolve: { fullySpecified: false } },
+        {
+          test: /\.js$/,
+          enforce: 'pre',
+          include: /@blocksuite/,
+          use: ['source-map-loader'],
+        },
+        {
+          oneOf: [
+            {
+              test: /\.ts$/,
+              exclude: /node_modules/,
+              loader: 'swc-loader',
+              options: {
+                // https://swc.rs/docs/configuring-swc/
+                jsc: {
+                  preserveAllComments: true,
+                  parser: {
+                    syntax: 'typescript',
+                    dynamicImport: true,
+                    topLevelAwait: false,
+                    tsx: false,
+                    decorators: true,
+                  },
+                  target: 'es2022',
+                  externalHelpers: false,
+                  transform: {
+                    useDefineForClassFields: false,
+                    decoratorVersion: '2022-03',
+                  },
+                },
+                sourceMaps: true,
+                inlineSourcesContent: true,
+              },
+            },
+          ],
+        },
+      ],
+    },
+    plugins: compact([
+      new rspack.DefinePlugin(
+        Object.entries(buildConfig).reduce(
+          (def, [k, v]) => {
+            def[`BUILD_CONFIG.${k}`] = JSON.stringify(v);
+            return def;
+          },
+          {} as Record<string, string>
+        )
+      ),
+      new rspack.optimize.LimitChunkCountPlugin({ maxChunks: 1 }),
+      createSentryPlugin(),
+    ]),
+    stats: { errorDetails: true },
+    optimization: {
+      minimize: !buildConfig.debug,
+      minimizer: [
+        new rspack.SwcJsMinimizerRspackPlugin({
+          extractComments: true,
+          minimizerOptions: {
+            ecma: 2020,
+            compress: { unused: true },
+            mangle: { keep_classnames: true },
+          },
+        }),
+      ],
+      removeEmptyChunks: true,
+      providedExports: true,
+      usedExports: true,
+      sideEffects: true,
+      removeAvailableModules: true,
+      runtimeChunk: false,
+      splitChunks: false,
+    },
+    performance: { hints: false },
+  };
+}
+
+export function createNodeTargetConfig(
+  pkg: Package,
+  entry: string,
+  options: {
+    outputFilename?: string;
+    decoratorVersion?: 'legacy' | '2022-03';
+    libraryType?: 'module' | 'commonjs2';
+    bundleAllDependencies?: boolean;
+    forceExternal?: string[];
+  } = {}
+): Omit<RspackConfiguration, 'name'> & { name: string } {
+  const dev = process.env.NODE_ENV === 'development';
+  const useLegacyDecorator = options.decoratorVersion !== '2022-03';
+  const forceExternal = options.forceExternal ?? [];
+  return {
+    name: entry,
+    context: ProjectRoot.value,
+    experiments: {
+      topLevelAwait: true,
+      outputModule: pkg.packageJson.type === 'module',
+      asyncWebAssembly: true,
+    },
+    entry: { index: entry },
+    output: {
+      filename: options.outputFilename ?? 'main.js',
+      path: pkg.distPath.value,
+      clean: true,
+      globalObject: 'globalThis',
+      ...(options.libraryType
+        ? { library: { type: options.libraryType } }
+        : {}),
+    },
+    target: ['node', 'es2022'],
+    externals: ((data: any, callback: (err: null, value: boolean) => void) => {
+      if (
+        data.request &&
+        forceExternal.some(
+          dep => data.request === dep || data.request.startsWith(`${dep}/`)
+        )
+      ) {
+        callback(null, true);
+      } else if (
+        data.request &&
+        // import ... from 'module'
+        /^[a-zA-Z@]/.test(data.request) &&
+        !options.bundleAllDependencies &&
+        // not workspace deps
+        !pkg.deps.some(dep => data.request!.startsWith(dep.name))
+      ) {
+        callback(null, true);
+      } else {
+        callback(null, false);
+      }
+    }) as any,
+    externalsPresets: { node: true },
+    node: { __dirname: false, __filename: false },
+    mode: dev ? 'development' : 'production',
+    devtool: 'source-map',
+    resolve: {
+      symlinks: true,
+      extensionAlias: { '.js': ['.js', '.ts'], '.mjs': ['.mjs', '.mts'] },
+      extensions: ['.js', '.ts', '.tsx', '.node'],
+      alias: { yjs: ProjectRoot.join('node_modules', 'yjs').value },
+    },
+    module: {
+      parser: {
+        javascript: { url: false, importMeta: false, createRequire: false },
+      },
+      rules: [
+        {
+          test: /\.js$/,
+          enforce: 'pre',
+          include: /@blocksuite/,
+          use: ['source-map-loader'],
+        },
+        {
+          test: /\.node$/,
+          loader: Path.dir(import.meta.url).join(
+            '../rspack-shared/node-loader.js'
+          ).value,
+        },
+        {
+          test: /\.tsx?$/,
+          exclude: /node_modules/,
+          loader: 'swc-loader',
+          options: {
+            // https://swc.rs/docs/configuring-swc/
+            jsc: {
+              preserveAllComments: true,
+              parser: {
+                syntax: 'typescript',
+                dynamicImport: true,
+                topLevelAwait: true,
+                tsx: true,
+                decorators: true,
+              },
+              target: 'es2022',
+              externalHelpers: false,
+              transform: {
+                ...(useLegacyDecorator
+                  ? {
+                      legacyDecorator: true,
+                      decoratorMetadata: true,
+                    }
+                  : {
+                      useDefineForClassFields: false,
+                      decoratorVersion: '2022-03',
+                    }),
+                react: { runtime: 'automatic' },
+              },
+            },
+            sourceMaps: true,
+            inlineSourcesContent: true,
+          },
+        },
+      ],
+    },
+    plugins: compact([
+      new rspack.optimize.LimitChunkCountPlugin({ maxChunks: 1 }),
+      new rspack.IgnorePlugin({
+        checkResource(resource) {
+          const lazyImports = [
+            '@nestjs/microservices',
+            '@nestjs/websockets/socket-module',
+            '@apollo/subgraph',
+            '@apollo/gateway',
+            '@as-integrations/fastify',
+            'ts-morph',
+            'class-validator',
+            'class-transformer',
+          ];
+          return lazyImports.some(lazyImport =>
+            resource.startsWith(lazyImport)
+          );
+        },
+      }),
+      new rspack.DefinePlugin({
+        'process.env.NODE_ENV': '"production"',
+      }),
+    ]),
+    stats: { errorDetails: true },
+    optimization: {
+      nodeEnv: false,
+      minimize: !dev,
+      minimizer: [
+        new rspack.SwcJsMinimizerRspackPlugin({
+          extractComments: true,
+          minimizerOptions: {
+            ecma: 2020,
+            compress: { unused: true },
+            mangle: { keep_classnames: true },
+          },
+        }),
+      ],
+    },
+    performance: { hints: false },
+    ignoreWarnings: [/^(?!CriticalDependenciesWarning$)/],
+  };
+}

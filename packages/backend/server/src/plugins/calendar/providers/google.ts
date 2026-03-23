@@ -1,16 +1,17 @@
 import { Injectable } from '@nestjs/common';
 
 import { CalendarProviderRequestError } from '../../../base';
-import { CalendarProvider } from './def';
 import {
+  CalendarProvider,
   CalendarProviderEvent,
+  CalendarProviderListCalendarsParams,
   CalendarProviderListEventsParams,
   CalendarProviderListEventsResult,
-  CalendarProviderName,
   CalendarProviderTokens,
   CalendarProviderWatchParams,
   CalendarProviderWatchResult,
 } from './def';
+import { CalendarProviderName } from './factory';
 
 export class CalendarSyncTokenInvalid extends Error {
   readonly code = 'calendar_sync_token_invalid';
@@ -171,7 +172,7 @@ export class GoogleCalendarProvider extends CalendarProvider {
     };
   }
 
-  async listCalendars(accessToken: string) {
+  async listCalendars(params: CalendarProviderListCalendarsParams) {
     const calendars: GoogleCalendarListResponse['items'] = [];
     let pageToken: string | undefined;
 
@@ -188,7 +189,7 @@ export class GoogleCalendarProvider extends CalendarProvider {
         url.toString(),
         {
           headers: {
-            Authorization: `Bearer ${accessToken}`,
+            Authorization: `Bearer ${params.accessToken}`,
           },
         }
       );

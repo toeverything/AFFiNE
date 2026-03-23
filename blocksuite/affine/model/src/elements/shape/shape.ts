@@ -1,5 +1,10 @@
-import type { IBound, IVec, SerializedXYWH } from '@blocksuite/global/gfx';
-import { Bound, PointLocation } from '@blocksuite/global/gfx';
+import type {
+  Bound,
+  IBound,
+  IVec,
+  PointLocation,
+  SerializedXYWH,
+} from '@blocksuite/global/gfx';
 import type { BaseElementProps, PointTestOptions } from '@blocksuite/std/gfx';
 import {
   field,

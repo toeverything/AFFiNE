@@ -1,4 +1,5 @@
 import { getStoreManager } from '@affine/core/blocksuite/manager/store';
+import { toArrayBuffer } from '@affine/core/utils/array-buffer';
 import { Container } from '@blocksuite/affine/global/di';
 import {
   customImageProxyMiddleware,
@@ -46,7 +47,9 @@ export class SnapshotHelper extends Service {
         get: async key => {
           const record =
             await this.workspaceService.workspace.engine.blob.get(key);
-          return record ? new Blob([record.data], { type: record.mime }) : null;
+          return record
+            ? new Blob([toArrayBuffer(record.data)], { type: record.mime })
+            : null;
         },
         set() {
           return Promise.resolve('');

@@ -354,30 +354,37 @@ export class DomRenderer {
     this._disposables.add(
       surfaceModel.elementAdded.subscribe(payload => {
         this._markElementDirty(payload.id, UpdateType.ELEMENT_ADDED);
+        this._markViewportDirty();
         this.refresh();
       })
     );
     this._disposables.add(
       surfaceModel.elementRemoved.subscribe(payload => {
         this._markElementDirty(payload.id, UpdateType.ELEMENT_REMOVED);
+        this._markViewportDirty();
         this.refresh();
       })
     );
     this._disposables.add(
       surfaceModel.localElementAdded.subscribe(payload => {
         this._markElementDirty(payload.id, UpdateType.ELEMENT_ADDED);
+        this._markViewportDirty();
         this.refresh();
       })
     );
     this._disposables.add(
       surfaceModel.localElementDeleted.subscribe(payload => {
         this._markElementDirty(payload.id, UpdateType.ELEMENT_REMOVED);
+        this._markViewportDirty();
         this.refresh();
       })
     );
     this._disposables.add(
       surfaceModel.localElementUpdated.subscribe(payload => {
         this._markElementDirty(payload.model.id, UpdateType.ELEMENT_UPDATED);
+        if (payload.props['index'] || payload.props['groupId']) {
+          this._markViewportDirty();
+        }
         this.refresh();
       })
     );
@@ -387,6 +394,9 @@ export class DomRenderer {
         // ignore externalXYWH update cause it's updated by the renderer
         if (payload.props['externalXYWH']) return;
         this._markElementDirty(payload.id, UpdateType.ELEMENT_UPDATED);
+        if (payload.props['index'] || payload.props['childIds']) {
+          this._markViewportDirty();
+        }
         this.refresh();
       })
     );

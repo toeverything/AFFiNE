@@ -23,7 +23,7 @@
     "fractional-indexing": "^3.2.0",
     "lib0": "^0.2.114",
     "lit": "^3.2.0",
-    "lodash-es": "^4.17.21",
+    "lodash-es": "^4.17.23",
     "lz-string": "^1.5.0",
     "rehype-parse": "^9.0.0",
     "rxjs": "^7.8.2",
@@ -33,7 +33,8 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
-    "vitest": "^3.2.4"
+    "@vitest/browser-playwright": "^4.0.18",
+    "vitest": "^4.0.18"
   },
   "exports": {
     ".": "./src/index.ts",
@@ -47,5 +48,5 @@
     "!src/__tests__",
     "!dist/__tests__"
   ],
-  "version": "0.26.0"
+  "version": "0.26.3"
 }

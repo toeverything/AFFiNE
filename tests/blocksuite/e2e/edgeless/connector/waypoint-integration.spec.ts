@@ -25,7 +25,6 @@ import {
   toViewCoord,
   undoByKeyboard,
 } from '../../utils/actions/index.js';
-import { assertConnectorPath } from '../../utils/asserts.js';
 import { test } from '../../utils/playwright.js';
 
 /**
@@ -309,7 +308,7 @@ test.describe('Path Generation with Waypoints', () => {
     }
 
     // Record waypoints
-    const waypointsBeforeMove = await getConnectorWaypoints(page);
+    const _waypointsBeforeMove = await getConnectorWaypoints(page);
 
     // Move one of the shapes (select and drag)
     // This should trigger path recalculation, but waypoints should be preserved
@@ -322,7 +321,7 @@ test.describe('Path Generation with Waypoints', () => {
     await commonSetup(page);
 
     // Create a connector
-    const connectorId = await createConnectorElement(page, [0, 0], [200, 200]);
+    const _connectorId = await createConnectorElement(page, [0, 0], [200, 200]);
     await waitForPathUpdate(page);
 
     // Set waypoints programmatically
@@ -470,13 +469,13 @@ test.describe('Edge Cases', () => {
     await commonSetup(page);
 
     // Create two shapes
-    const shape1Id = await createShapeElement(
+    const _shape1Id = await createShapeElement(
       page,
       [0, 0],
       [100, 100],
       Shape.Square
     );
-    const shape2Id = await createShapeElement(
+    const _shape2Id = await createShapeElement(
       page,
       [300, 0],
       [400, 100],
@@ -940,7 +939,7 @@ test.describe('Tail Segments Not Draggable', () => {
     await waitForPathUpdate(page);
 
     // Get initial path
-    const initialPath = await getConnectorPath(page);
+    const _initialPath = await getConnectorPath(page);
 
     // Drag middle to create S-shape
     const handlePos = await getSegmentHandlePosition(page, 0);
@@ -1110,13 +1109,13 @@ test.describe('Connector Shape Preservation', () => {
     await commonSetup(page);
 
     // Create two shapes
-    const shape1Id = await createShapeElement(
+    const _shape1Id = await createShapeElement(
       page,
       [0, 0],
       [100, 100],
       Shape.Square
     );
-    const shape2Id = await createShapeElement(
+    const _shape2Id = await createShapeElement(
       page,
       [300, 0],
       [400, 100],

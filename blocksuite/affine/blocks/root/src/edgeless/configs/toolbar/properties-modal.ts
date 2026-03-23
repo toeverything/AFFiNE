@@ -702,7 +702,7 @@ export class PropertiesModal extends SignalWatcher(WithDisposable(LitElement)) {
             try {
               onChange(JSON.parse(target.value));
               target.setCustomValidity('');
-            } catch (error) {
+            } catch {
               target.setCustomValidity('Invalid JSON');
             }
           }}

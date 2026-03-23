@@ -2,7 +2,7 @@ import {
   CanvasRenderer,
   EdgelessCRUDIdentifier,
   ExportManager,
-  SurfaceBlockComponent,
+  type SurfaceBlockComponent,
 } from '@blocksuite/affine-block-surface';
 import { toast } from '@blocksuite/affine-components/toast';
 import {
@@ -22,7 +22,6 @@ import {
   openSingleFileWith,
 } from '@blocksuite/affine-shared/utils';
 import { Bound, getCommonBoundWithRotation } from '@blocksuite/global/gfx';
-import { nextTick } from '@blocksuite/global/utils';
 import type { BlockStdScope } from '@blocksuite/std';
 import {
   getTopElements,
@@ -86,7 +85,10 @@ function fromBoundObject(bound?: BoundObject | null) {
 
 function sanitizeFileName(name: string) {
   return name
-    .replace(/[<>:"/\\|?*\u0000-\u001F]/g, ' ')
+    .replace(/[<>:"/\\|?*]/g, ' ')
+    .split('')
+    .map(char => (char.charCodeAt(0) <= 0x1f ? ' ' : char))
+    .join('')
     .replace(/\s+/g, ' ')
     .trim();
 }

@@ -7,7 +7,6 @@ import {
   Mutation,
   ObjectType,
   Parent,
-  Query,
   registerEnumType,
   ResolveField,
   Resolver,
@@ -33,7 +32,7 @@ import {
   MULTIPART_PART_SIZE,
   MULTIPART_THRESHOLD,
 } from '../../storage/constants';
-import { WorkspaceBlobSizes, WorkspaceType } from '../types';
+import { WorkspaceType } from '../types';
 
 enum BlobUploadMethod {
   GRAPHQL = 'GRAPHQL',
@@ -167,14 +166,6 @@ export class WorkspaceBlobResolver {
     @Args('partNumber', { type: () => Int }) partNumber: number
   ): Promise<BlobUploadPart> {
     return this.getUploadPart(user, workspace.id, key, uploadId, partNumber);
-  }
-
-  @Query(() => WorkspaceBlobSizes, {
-    deprecationReason: 'use `user.quotaUsage` instead',
-  })
-  async collectAllBlobSizes(@CurrentUser() user: CurrentUser) {
-    const size = await this.quota.getUserStorageUsage(user.id);
-    return { size };
   }
 
   @Mutation(() => String)
@@ -410,19 +401,6 @@ export class WorkspaceBlobResolver {
     }
 
     return key;
-  }
-
-  @Mutation(() => BlobUploadPart, {
-    deprecationReason: 'use WorkspaceType.blobUploadPartUrl',
-  })
-  async getBlobUploadPartUrl(
-    @CurrentUser() user: CurrentUser,
-    @Args('workspaceId') workspaceId: string,
-    @Args('key') key: string,
-    @Args('uploadId') uploadId: string,
-    @Args('partNumber', { type: () => Int }) partNumber: number
-  ): Promise<BlobUploadPart> {
-    return this.getUploadPart(user, workspaceId, key, uploadId, partNumber);
   }
 
   @Mutation(() => Boolean)

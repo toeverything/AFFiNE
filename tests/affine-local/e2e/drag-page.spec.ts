@@ -231,7 +231,7 @@ test('items in favourites can be reordered by dragging', async ({ page }) => {
 });
 
 // some how this test always timeout, so we skip it
-test.skip('drag a page link in editor to favourites', async ({ page }) => {
+test('drag a page link in editor to favourites', async ({ page }) => {
   await clickNewPageButton(page);
   await page.waitForTimeout(500);
   await page.keyboard.press('Enter');

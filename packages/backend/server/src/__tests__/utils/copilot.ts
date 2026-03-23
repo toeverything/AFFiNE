@@ -250,7 +250,6 @@ export async function listContext(
 export async function addContextFile(
   app: TestingApp,
   contextId: string,
-  blobId: string,
   fileName: string,
   content: Buffer
 ): Promise<{ id: string }> {
@@ -269,7 +268,7 @@ export async function addContextFile(
         `,
         variables: {
           content: null,
-          options: { contextId, blobId },
+          options: { contextId },
         },
       })
     )
@@ -630,14 +629,35 @@ export async function chatWithText(
   prefix = '',
   retry?: boolean
 ): Promise<string> {
+  const endpoint = prefix || '/stream';
   const query = messageId
     ? `?messageId=${messageId}` + (retry ? '&retry=true' : '')
     : '';
   const res = await app
-    .GET(`/api/copilot/chat/${sessionId}${prefix}${query}`)
+    .GET(`/api/copilot/chat/${sessionId}${endpoint}${query}`)
     .expect(200);
 
-  return res.text;
+  if (prefix) {
+    return res.text;
+  }
+
+  const events = sse2array(res.text);
+  const errorEvent = events.find(event => event.event === 'error');
+  if (errorEvent?.data) {
+    let message = errorEvent.data;
+    try {
+      const parsed = JSON.parse(errorEvent.data);
+      message = parsed.message || message;
+    } catch {
+      // noop: keep raw error data
+    }
+    throw new Error(message);
+  }
+
+  return events
+    .filter(event => event.event === 'message')
+    .map(event => event.data ?? '')
+    .join('');
 }
 
 export async function chatWithTextStream(

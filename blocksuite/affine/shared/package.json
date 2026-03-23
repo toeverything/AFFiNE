@@ -27,7 +27,7 @@
     "dompurify": "^3.3.0",
     "fractional-indexing": "^3.2.0",
     "lit": "^3.2.0",
-    "lodash-es": "^4.17.21",
+    "lodash-es": "^4.17.23",
     "mdast-util-gfm-autolink-literal": "^2.0.1",
     "mdast-util-gfm-footnote": "^2.1.0",
     "mdast-util-gfm-strikethrough": "^2.0.0",
@@ -39,7 +39,6 @@
     "micromark-extension-gfm-table": "^2.1.0",
     "micromark-extension-gfm-task-list-item": "^2.1.0",
     "micromark-util-combine-extensions": "^2.0.0",
-    "minimatch": "^10.1.1",
     "pdfmake": "^0.2.20",
     "quick-lru": "^7.3.0",
     "rehype-parse": "^9.0.0",
@@ -75,7 +74,7 @@
   ],
   "devDependencies": {
     "@types/pdfmake": "^0.2.12",
-    "vitest": "^3.2.4"
+    "vitest": "^4.0.18"
   },
-  "version": "0.26.0"
+  "version": "0.26.3"
 }

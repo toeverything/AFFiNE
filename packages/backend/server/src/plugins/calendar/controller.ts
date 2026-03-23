@@ -42,7 +42,7 @@ export class CalendarController {
       throw new MissingOauthQueryParameter({ name: 'provider' });
     }
 
-    if (!this.calendar.isProviderAvailable(providerName)) {
+    if (!this.calendar.isProviderAvailableFor(providerName, { oauth: true })) {
       throw new UnknownOauthProvider({ name: providerName });
     }
 
@@ -157,7 +157,8 @@ export class CalendarController {
 
   private getCallbackErrorMessage(error: unknown) {
     if (error instanceof CalendarProviderRequestError) {
-      if (error.status === 403) {
+      const status = error.data?.status ?? error.status;
+      if (status === 403) {
         return 'Calendar authorization failed: insufficient permissions. Please reauthorize and allow Calendar access.';
       }
       return 'Calendar authorization failed. Please try again.';

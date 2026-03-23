@@ -6,8 +6,8 @@ We recommend users to always use the latest major version. Security updates will
 
 | Version         | Supported          |
 | --------------- | ------------------ |
-| 0.25.x (stable) | :white_check_mark: |
-| < 0.25.x        | :x:                |
+| 0.26.x (stable) | :white_check_mark: |
+| < 0.26.x        | :x:                |
 
 ## Reporting a Vulnerability
 
@@ -22,5 +22,7 @@ We welcome you to provide us with bug reports via and email at [security@toevery
 3. Your classification or analysis of the vulnerability (optional)
 
 Since we are an open source project, we also welcome you to provide corresponding fix PRs, we will determine specific rewards based on the evaluation results.
+
+Due to limited resources, we do not accept and will not review any AI-generated security reports.
 
 If the vulnerability is caused by a library we depend on, we encourage you to submit a security report to the corresponding dependent library at the same time to benefit more users.

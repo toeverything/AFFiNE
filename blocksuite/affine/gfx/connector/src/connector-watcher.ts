@@ -190,6 +190,8 @@ export const connectorWatcher: SurfaceMiddleware = (
   updateJumpsForConnectors(new Set(initialConnectors));
 
   return () => {
+    pendingFlag = false;
+    pendingList.clear();
     disposables.forEach(d => d.unsubscribe());
   };
 };

@@ -17,6 +17,8 @@ import { isNil, omitBy } from 'lodash-es';
 import {
   CannotDeleteOwnAccount,
   type FileUpload,
+  ImageFormatNotSupported,
+  OneMB,
   readBufferWithLimit,
   sniffMime,
   Throttle,
@@ -28,6 +30,7 @@ import {
   UserFeatureName,
   UserSettingsSchema,
 } from '../../models';
+import { processImage } from '../../native';
 import { Public } from '../auth/guard';
 import { sessionUser } from '../auth/service';
 import { CurrentUser } from '../auth/session';
@@ -66,21 +69,27 @@ export class UserResolver {
   ): Promise<typeof UserOrLimitedUser | null> {
     validators.assertValidEmail(email);
 
-    // TODO(@forehalo): need to limit a user can only get another user witch is in the same workspace
+    // NOTE: prevent user enumeration. Only allow querying users within the same workspace scope.
+    if (!currentUser) {
+      return null;
+    }
+
     const user = await this.models.user.getUserByEmail(email);
 
     // return empty response when user not exists
     if (!user) return null;
 
-    if (currentUser) {
+    if (user.id === currentUser.id) {
       return sessionUser(user);
     }
 
-    // only return limited info when not logged in
-    return {
-      email: user.email,
-      hasPassword: !!user.password,
-    };
+    const allowed = await this.models.workspaceUser.hasSharedWorkspace(
+      currentUser.id,
+      user.id
+    );
+    if (!allowed) return null;
+
+    return sessionUser(user);
   }
 
   @Throttle('strict')
@@ -109,16 +118,26 @@ export class UserResolver {
       throw new UserNotFound();
     }
 
-    const avatarBuffer = await readBufferWithLimit(avatar.createReadStream());
-    const contentType = sniffMime(avatarBuffer, avatar.mimetype);
+    const avatarBuffer = await readBufferWithLimit(
+      avatar.createReadStream(),
+      5 * OneMB
+    );
+    const contentType = sniffMime(avatarBuffer, avatar.mimetype)?.toLowerCase();
     if (!contentType || !contentType.startsWith('image/')) {
-      throw new Error(`Invalid file type: ${contentType || 'unknown'}`);
+      throw new ImageFormatNotSupported({ format: contentType || 'unknown' });
+    }
+
+    let processedAvatarBuffer: Buffer;
+    try {
+      processedAvatarBuffer = await processImage(avatarBuffer, 512, false);
+    } catch {
+      throw new ImageFormatNotSupported({ format: contentType });
     }
 
     const avatarUrl = await this.storage.put(
       `${user.id}-avatar-${Date.now()}`,
-      avatarBuffer,
-      { contentType }
+      processedAvatarBuffer,
+      { contentType: 'image/webp' }
     );
 
     if (user.avatarUrl) {

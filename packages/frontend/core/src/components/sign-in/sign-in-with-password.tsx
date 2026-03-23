@@ -15,6 +15,7 @@ import {
 } from '@affine/core/modules/cloud';
 import type { AuthSessionStatus } from '@affine/core/modules/cloud/entities/session';
 import { Unreachable } from '@affine/env/constant';
+import { UserFriendlyError } from '@affine/error';
 import { ServerDeploymentType } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
@@ -46,6 +47,7 @@ export const SignInWithPasswordStep = ({
 
   const [password, setPassword] = useState('');
   const [passwordError, setPasswordError] = useState(false);
+  const [passwordErrorHint, setPasswordErrorHint] = useState('');
   const captchaService = useService(CaptchaService);
   const serverService = useService(ServerService);
   const isSelfhosted = useLiveData(
@@ -74,6 +76,10 @@ export const SignInWithPasswordStep = ({
     onAuthenticated?.(loginStatus);
   }, [loginStatus, onAuthenticated, t]);
 
+  useEffect(() => {
+    setPasswordErrorHint(t['com.affine.auth.password.error']());
+  }, [t]);
+
   const onSignIn = useAsyncCallback(async () => {
     if (isLoading || (!verifyToken && needCaptcha)) return;
     setIsLoading(true);
@@ -88,7 +94,23 @@ export const SignInWithPasswordStep = ({
       });
     } catch (err) {
       console.error(err);
-      setPasswordError(true);
+      const error = UserFriendlyError.fromAny(err);
+
+      if (
+        error.is('WRONG_SIGN_IN_CREDENTIALS') ||
+        error.is('PASSWORD_REQUIRED')
+      ) {
+        setPasswordError(true);
+        setPasswordErrorHint(t['com.affine.auth.password.error']());
+      } else {
+        setPasswordError(false);
+        notify.error({
+          title: t['com.affine.auth.toast.title.failed'](),
+          message: error.is('REQUEST_ABORTED')
+            ? t['error.NETWORK_ERROR']()
+            : t[`error.${error.name}`](error.data),
+        });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -101,6 +123,7 @@ export const SignInWithPasswordStep = ({
     email,
     password,
     challenge,
+    t,
   ]);
 
   const sendMagicLink = useCallback(() => {
@@ -126,11 +149,15 @@ export const SignInWithPasswordStep = ({
           label={t['com.affine.auth.password']()}
           value={password}
           type="password"
-          onChange={useCallback((value: string) => {
+          onChange={(value: string) => {
             setPassword(value);
-          }, [])}
+            if (passwordError) {
+              setPasswordError(false);
+              setPasswordErrorHint(t['com.affine.auth.password.error']());
+            }
+          }}
           error={passwordError}
-          errorHint={t['com.affine.auth.password.error']()}
+          errorHint={passwordErrorHint}
           onEnter={onSignIn}
         />
         {!isSelfhosted && (

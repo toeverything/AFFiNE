@@ -63,8 +63,92 @@ export interface AddContextDocInput {
 }
 
 export interface AddContextFileInput {
-  blobId?: InputMaybe<Scalars['String']['input']>;
   contextId: Scalars['String']['input'];
+}
+
+export interface AdminAllSharedLink {
+  __typename?: 'AdminAllSharedLink';
+  docId: Scalars['String']['output'];
+  docUpdatedAt: Maybe<Scalars['DateTime']['output']>;
+  guestViews: Maybe<Scalars['SafeInt']['output']>;
+  lastAccessedAt: Maybe<Scalars['DateTime']['output']>;
+  lastUpdaterId: Maybe<Scalars['String']['output']>;
+  publishedAt: Maybe<Scalars['DateTime']['output']>;
+  shareUrl: Scalars['String']['output'];
+  title: Maybe<Scalars['String']['output']>;
+  uniqueViews: Maybe<Scalars['SafeInt']['output']>;
+  views: Maybe<Scalars['SafeInt']['output']>;
+  workspaceId: Scalars['String']['output'];
+  workspaceOwnerId: Maybe<Scalars['String']['output']>;
+}
+
+export interface AdminAllSharedLinkEdge {
+  __typename?: 'AdminAllSharedLinkEdge';
+  cursor: Scalars['String']['output'];
+  node: AdminAllSharedLink;
+}
+
+export interface AdminAllSharedLinksFilterInput {
+  analyticsWindowDays?: InputMaybe<Scalars['Int']['input']>;
+  includeTotal?: InputMaybe<Scalars['Boolean']['input']>;
+  keyword?: InputMaybe<Scalars['String']['input']>;
+  orderBy?: InputMaybe<AdminSharedLinksOrder>;
+  updatedAfter?: InputMaybe<Scalars['DateTime']['input']>;
+  workspaceId?: InputMaybe<Scalars['String']['input']>;
+}
+
+export interface AdminDashboard {
+  __typename?: 'AdminDashboard';
+  blobStorageBytes: Scalars['SafeInt']['output'];
+  blobStorageHistory: Array<AdminDashboardValueDayPoint>;
+  copilotConversations: Scalars['SafeInt']['output'];
+  generatedAt: Scalars['DateTime']['output'];
+  storageWindow: TimeWindow;
+  syncActiveUsers: Scalars['Int']['output'];
+  syncActiveUsersTimeline: Array<AdminDashboardMinutePoint>;
+  syncWindow: TimeWindow;
+  topSharedLinks: Array<AdminSharedLinkTopItem>;
+  topSharedLinksWindow: TimeWindow;
+  workspaceStorageBytes: Scalars['SafeInt']['output'];
+  workspaceStorageHistory: Array<AdminDashboardValueDayPoint>;
+}
+
+export interface AdminDashboardInput {
+  sharedLinkWindowDays?: InputMaybe<Scalars['Int']['input']>;
+  storageHistoryDays?: InputMaybe<Scalars['Int']['input']>;
+  syncHistoryHours?: InputMaybe<Scalars['Int']['input']>;
+  timezone?: InputMaybe<Scalars['String']['input']>;
+}
+
+export interface AdminDashboardMinutePoint {
+  __typename?: 'AdminDashboardMinutePoint';
+  activeUsers: Scalars['Int']['output'];
+  minute: Scalars['DateTime']['output'];
+}
+
+export interface AdminDashboardValueDayPoint {
+  __typename?: 'AdminDashboardValueDayPoint';
+  date: Scalars['DateTime']['output'];
+  value: Scalars['SafeInt']['output'];
+}
+
+export interface AdminSharedLinkTopItem {
+  __typename?: 'AdminSharedLinkTopItem';
+  docId: Scalars['String']['output'];
+  guestViews: Scalars['SafeInt']['output'];
+  lastAccessedAt: Maybe<Scalars['DateTime']['output']>;
+  publishedAt: Maybe<Scalars['DateTime']['output']>;
+  shareUrl: Scalars['String']['output'];
+  title: Maybe<Scalars['String']['output']>;
+  uniqueViews: Scalars['SafeInt']['output'];
+  views: Scalars['SafeInt']['output'];
+  workspaceId: Scalars['String']['output'];
+}
+
+export enum AdminSharedLinksOrder {
+  PublishedAtDesc = 'PublishedAtDesc',
+  UpdatedAtDesc = 'UpdatedAtDesc',
+  ViewsDesc = 'ViewsDesc',
 }
 
 export interface AdminUpdateWorkspaceInput {
@@ -258,6 +342,14 @@ export interface CalendarAccountObjectType {
   refreshIntervalMinutes: Scalars['Int']['output'];
   status: Scalars['String']['output'];
   updatedAt: Scalars['DateTime']['output'];
+}
+
+export interface CalendarCalDavProviderPresetObjectType {
+  __typename?: 'CalendarCalDAVProviderPresetObjectType';
+  docsUrl: Maybe<Scalars['String']['output']>;
+  id: Scalars['String']['output'];
+  label: Scalars['String']['output'];
+  requiresAppPassword: Maybe<Scalars['Boolean']['output']>;
 }
 
 export interface CalendarEventObjectType {
@@ -633,51 +725,8 @@ export interface CopilotModelsType {
   proModels: Array<CopilotModelType>;
 }
 
-export interface CopilotPromptConfigInput {
-  frequencyPenalty?: InputMaybe<Scalars['Float']['input']>;
-  presencePenalty?: InputMaybe<Scalars['Float']['input']>;
-  temperature?: InputMaybe<Scalars['Float']['input']>;
-  topP?: InputMaybe<Scalars['Float']['input']>;
-}
-
-export interface CopilotPromptConfigType {
-  __typename?: 'CopilotPromptConfigType';
-  frequencyPenalty: Maybe<Scalars['Float']['output']>;
-  presencePenalty: Maybe<Scalars['Float']['output']>;
-  temperature: Maybe<Scalars['Float']['output']>;
-  topP: Maybe<Scalars['Float']['output']>;
-}
-
-export interface CopilotPromptMessageInput {
-  content: Scalars['String']['input'];
-  params?: InputMaybe<Scalars['JSON']['input']>;
-  role: CopilotPromptMessageRole;
-}
-
-export enum CopilotPromptMessageRole {
-  assistant = 'assistant',
-  system = 'system',
-  user = 'user',
-}
-
-export interface CopilotPromptMessageType {
-  __typename?: 'CopilotPromptMessageType';
-  content: Scalars['String']['output'];
-  params: Maybe<Scalars['JSON']['output']>;
-  role: CopilotPromptMessageRole;
-}
-
 export interface CopilotPromptNotFoundDataType {
   __typename?: 'CopilotPromptNotFoundDataType';
-  name: Scalars['String']['output'];
-}
-
-export interface CopilotPromptType {
-  __typename?: 'CopilotPromptType';
-  action: Maybe<Scalars['String']['output']>;
-  config: Maybe<CopilotPromptConfigType>;
-  messages: Array<CopilotPromptMessageType>;
-  model: Scalars['String']['output'];
   name: Scalars['String']['output'];
 }
 
@@ -792,14 +841,6 @@ export interface CreateCheckoutSessionInput {
   variant?: InputMaybe<SubscriptionVariant>;
 }
 
-export interface CreateCopilotPromptInput {
-  action?: InputMaybe<Scalars['String']['input']>;
-  config?: InputMaybe<CopilotPromptConfigInput>;
-  messages: Array<CopilotPromptMessageInput>;
-  model: Scalars['String']['input'];
-  name: Scalars['String']['input'];
-}
-
 export interface CreateUserInput {
   email: Scalars['String']['input'];
   name?: InputMaybe<Scalars['String']['input']>;
@@ -844,6 +885,19 @@ export interface DocHistoryType {
   workspaceId: Scalars['String']['output'];
 }
 
+export interface DocMemberLastAccess {
+  __typename?: 'DocMemberLastAccess';
+  lastAccessedAt: Scalars['DateTime']['output'];
+  lastDocId: Maybe<Scalars['String']['output']>;
+  user: PublicUserType;
+}
+
+export interface DocMemberLastAccessEdge {
+  __typename?: 'DocMemberLastAccessEdge';
+  cursor: Scalars['String']['output'];
+  node: DocMemberLastAccess;
+}
+
 /** Doc mode */
 export enum DocMode {
   edgeless = 'edgeless',
@@ -854,6 +908,35 @@ export interface DocNotFoundDataType {
   __typename?: 'DocNotFoundDataType';
   docId: Scalars['String']['output'];
   spaceId: Scalars['String']['output'];
+}
+
+export interface DocPageAnalytics {
+  __typename?: 'DocPageAnalytics';
+  generatedAt: Scalars['DateTime']['output'];
+  series: Array<DocPageAnalyticsPoint>;
+  summary: DocPageAnalyticsSummary;
+  window: TimeWindow;
+}
+
+export interface DocPageAnalyticsInput {
+  timezone?: InputMaybe<Scalars['String']['input']>;
+  windowDays?: InputMaybe<Scalars['Int']['input']>;
+}
+
+export interface DocPageAnalyticsPoint {
+  __typename?: 'DocPageAnalyticsPoint';
+  date: Scalars['DateTime']['output'];
+  guestViews: Scalars['SafeInt']['output'];
+  totalViews: Scalars['SafeInt']['output'];
+  uniqueViews: Scalars['SafeInt']['output'];
+}
+
+export interface DocPageAnalyticsSummary {
+  __typename?: 'DocPageAnalyticsSummary';
+  guestViews: Scalars['SafeInt']['output'];
+  lastAccessedAt: Maybe<Scalars['DateTime']['output']>;
+  totalViews: Scalars['SafeInt']['output'];
+  uniqueViews: Scalars['SafeInt']['output'];
 }
 
 export interface DocPermissions {
@@ -890,6 +973,8 @@ export enum DocRole {
 
 export interface DocType {
   __typename?: 'DocType';
+  /** Doc page analytics in a time window */
+  analytics: DocPageAnalytics;
   createdAt: Maybe<Scalars['DateTime']['output']>;
   /** Doc create user */
   createdBy: Maybe<PublicUserType>;
@@ -898,6 +983,8 @@ export interface DocType {
   /** paginated doc granted users list */
   grantedUsersList: PaginatedGrantedDocUserType;
   id: Scalars['String']['output'];
+  /** Paginated last accessed members of the current doc */
+  lastAccessedMembers: PaginatedDocMemberLastAccess;
   /** Doc last updated user */
   lastUpdatedBy: Maybe<PublicUserType>;
   lastUpdaterId: Maybe<Scalars['String']['output']>;
@@ -912,8 +999,18 @@ export interface DocType {
   workspaceId: Scalars['String']['output'];
 }
 
+export interface DocTypeAnalyticsArgs {
+  input?: InputMaybe<DocPageAnalyticsInput>;
+}
+
 export interface DocTypeGrantedUsersListArgs {
   pagination: PaginationInput;
+}
+
+export interface DocTypeLastAccessedMembersArgs {
+  includeTotal?: InputMaybe<Scalars['Boolean']['input']>;
+  pagination: PaginationInput;
+  query?: InputMaybe<Scalars['String']['input']>;
 }
 
 export interface DocTypeEdge {
@@ -959,6 +1056,7 @@ export type ErrorDataUnion =
   | ExpectToUpdateDocUserRoleDataType
   | GraphqlBadRequestDataType
   | HttpRequestErrorDataType
+  | ImageFormatNotSupportedDataType
   | InvalidAppConfigDataType
   | InvalidAppConfigInputDataType
   | InvalidEmailDataType
@@ -978,12 +1076,14 @@ export type ErrorDataUnion =
   | NoMoreSeatDataType
   | NotInSpaceDataType
   | QueryTooLongDataType
+  | ResponseTooLargeErrorDataType
   | RuntimeConfigNotFoundDataType
   | SameSubscriptionRecurringDataType
   | SpaceAccessDeniedDataType
   | SpaceNotFoundDataType
   | SpaceOwnerNotFoundDataType
   | SpaceShouldHaveOnlyOneOwnerDataType
+  | SsrfBlockedErrorDataType
   | SubscriptionAlreadyExistsDataType
   | SubscriptionNotExistsDataType
   | SubscriptionPlanNotFoundDataType
@@ -1063,6 +1163,7 @@ export enum ErrorNames {
   FAILED_TO_UPSERT_SNAPSHOT = 'FAILED_TO_UPSERT_SNAPSHOT',
   GRAPHQL_BAD_REQUEST = 'GRAPHQL_BAD_REQUEST',
   HTTP_REQUEST_ERROR = 'HTTP_REQUEST_ERROR',
+  IMAGE_FORMAT_NOT_SUPPORTED = 'IMAGE_FORMAT_NOT_SUPPORTED',
   INTERNAL_SERVER_ERROR = 'INTERNAL_SERVER_ERROR',
   INVALID_APP_CONFIG = 'INVALID_APP_CONFIG',
   INVALID_APP_CONFIG_INPUT = 'INVALID_APP_CONFIG_INPUT',
@@ -1107,6 +1208,7 @@ export enum ErrorNames {
   PASSWORD_REQUIRED = 'PASSWORD_REQUIRED',
   QUERY_TOO_LONG = 'QUERY_TOO_LONG',
   REPLY_NOT_FOUND = 'REPLY_NOT_FOUND',
+  RESPONSE_TOO_LARGE_ERROR = 'RESPONSE_TOO_LARGE_ERROR',
   RUNTIME_CONFIG_NOT_FOUND = 'RUNTIME_CONFIG_NOT_FOUND',
   SAME_EMAIL_PROVIDED = 'SAME_EMAIL_PROVIDED',
   SAME_SUBSCRIPTION_RECURRING = 'SAME_SUBSCRIPTION_RECURRING',
@@ -1116,6 +1218,7 @@ export enum ErrorNames {
   SPACE_NOT_FOUND = 'SPACE_NOT_FOUND',
   SPACE_OWNER_NOT_FOUND = 'SPACE_OWNER_NOT_FOUND',
   SPACE_SHOULD_HAVE_ONLY_ONE_OWNER = 'SPACE_SHOULD_HAVE_ONLY_ONE_OWNER',
+  SSRF_BLOCKED_ERROR = 'SSRF_BLOCKED_ERROR',
   STORAGE_QUOTA_EXCEEDED = 'STORAGE_QUOTA_EXCEEDED',
   SUBSCRIPTION_ALREADY_EXISTS = 'SUBSCRIPTION_ALREADY_EXISTS',
   SUBSCRIPTION_EXPIRED = 'SUBSCRIPTION_EXPIRED',
@@ -1211,6 +1314,11 @@ export interface GraphqlBadRequestDataType {
 export interface HttpRequestErrorDataType {
   __typename?: 'HttpRequestErrorDataType';
   message: Scalars['String']['output'];
+}
+
+export interface ImageFormatNotSupportedDataType {
+  __typename?: 'ImageFormatNotSupportedDataType';
+  format: Scalars['String']['output'];
 }
 
 export interface ImportUsersInput {
@@ -1463,6 +1571,13 @@ export interface LimitedUserType {
   hasPassword: Maybe<Scalars['Boolean']['output']>;
 }
 
+export interface LinkCalDavAccountInput {
+  displayName?: InputMaybe<Scalars['String']['input']>;
+  password: Scalars['String']['input'];
+  providerPresetId: Scalars['String']['input'];
+  username: Scalars['String']['input'];
+}
+
 export interface LinkCalendarAccountInput {
   provider: CalendarProviderType;
   redirectUri?: InputMaybe<Scalars['String']['input']>;
@@ -1593,10 +1708,13 @@ export interface Mutation {
   createCopilotContext: Scalars['String']['output'];
   /** Create a chat message */
   createCopilotMessage: Scalars['String']['output'];
-  /** Create a copilot prompt */
-  createCopilotPrompt: CopilotPromptType;
-  /** Create a chat session */
+  /**
+   * Create a chat session
+   * @deprecated use `createCopilotSessionWithHistory` instead
+   */
   createCopilotSession: Scalars['String']['output'];
+  /** Create a chat session and return full session payload */
+  createCopilotSessionWithHistory: CopilotHistories;
   /** Create a stripe customer portal to manage payment methods */
   createCustomerPortal: Scalars['String']['output'];
   createInviteLink: InviteLink;
@@ -1622,23 +1740,18 @@ export interface Mutation {
   forkCopilotSession: Scalars['String']['output'];
   generateLicenseKey: Scalars['String']['output'];
   generateUserAccessToken: RevealedAccessToken;
-  /** @deprecated use WorkspaceType.blobUploadPartUrl */
-  getBlobUploadPartUrl: BlobUploadPart;
   grantDocUserRoles: Scalars['Boolean']['output'];
   grantMember: Scalars['Boolean']['output'];
   /** import users */
   importUsers: Array<UserImportResultType>;
   installLicense: License;
-  /** @deprecated use [inviteMembers] instead */
-  inviteBatch: Array<InviteResult>;
   inviteMembers: Array<InviteResult>;
   leaveWorkspace: Scalars['Boolean']['output'];
+  linkCalDAVAccount: CalendarAccountObjectType;
   linkCalendarAccount: Scalars['String']['output'];
   /** mention user in a doc */
   mentionUser: Scalars['ID']['output'];
   publishDoc: DocType;
-  /** @deprecated use publishDoc instead */
-  publishPage: DocType;
   /** queue workspace doc embedding */
   queueWorkspaceEmbedding: Scalars['Boolean']['output'];
   /** mark all notifications as read */
@@ -1668,14 +1781,10 @@ export interface Mutation {
   resolveComment: Scalars['Boolean']['output'];
   resumeSubscription: SubscriptionType;
   retryAudioTranscription: Maybe<TranscriptionResultType>;
-  /** @deprecated use [revokeMember] instead */
-  revoke: Scalars['Boolean']['output'];
   revokeDocUserRoles: Scalars['Boolean']['output'];
   revokeInviteLink: Scalars['Boolean']['output'];
   revokeMember: Scalars['Boolean']['output'];
   revokePublicDoc: DocType;
-  /** @deprecated use revokePublicDoc instead */
-  revokePublicPage: DocType;
   revokeUserAccessToken: Scalars['Boolean']['output'];
   sendChangeEmail: Scalars['Boolean']['output'];
   sendChangePasswordEmail: Scalars['Boolean']['output'];
@@ -1695,8 +1804,6 @@ export interface Mutation {
   updateCalendarAccount: Maybe<CalendarAccountObjectType>;
   /** Update a comment content */
   updateComment: Scalars['Boolean']['output'];
-  /** Update a copilot prompt */
-  updateCopilotPrompt: CopilotPromptType;
   /** Update a chat session */
   updateCopilotSession: Scalars['String']['output'];
   updateDocDefaultRole: Scalars['Boolean']['output'];
@@ -1720,11 +1827,6 @@ export interface Mutation {
   uploadAvatar: UserType;
   /** Upload a comment attachment and return the access url */
   uploadCommentAttachment: Scalars['String']['output'];
-  /**
-   * validate app configuration
-   * @deprecated use Query.validateAppConfig
-   */
-  validateAppConfig: Array<AppConfigValidateResult>;
   verifyEmail: Scalars['Boolean']['output'];
 }
 
@@ -1853,11 +1955,11 @@ export interface MutationCreateCopilotMessageArgs {
   options: CreateChatMessageInput;
 }
 
-export interface MutationCreateCopilotPromptArgs {
-  input: CreateCopilotPromptInput;
+export interface MutationCreateCopilotSessionArgs {
+  options: CreateChatSessionInput;
 }
 
-export interface MutationCreateCopilotSessionArgs {
+export interface MutationCreateCopilotSessionWithHistoryArgs {
   options: CreateChatSessionInput;
 }
 
@@ -1925,13 +2027,6 @@ export interface MutationGenerateUserAccessTokenArgs {
   input: GenerateAccessTokenInput;
 }
 
-export interface MutationGetBlobUploadPartUrlArgs {
-  key: Scalars['String']['input'];
-  partNumber: Scalars['Int']['input'];
-  uploadId: Scalars['String']['input'];
-  workspaceId: Scalars['String']['input'];
-}
-
 export interface MutationGrantDocUserRolesArgs {
   input: GrantDocUserRolesInput;
 }
@@ -1951,12 +2046,6 @@ export interface MutationInstallLicenseArgs {
   workspaceId: Scalars['String']['input'];
 }
 
-export interface MutationInviteBatchArgs {
-  emails: Array<Scalars['String']['input']>;
-  sendInviteMail?: InputMaybe<Scalars['Boolean']['input']>;
-  workspaceId: Scalars['String']['input'];
-}
-
 export interface MutationInviteMembersArgs {
   emails: Array<Scalars['String']['input']>;
   workspaceId: Scalars['String']['input'];
@@ -1966,6 +2055,10 @@ export interface MutationLeaveWorkspaceArgs {
   sendLeaveMail?: InputMaybe<Scalars['Boolean']['input']>;
   workspaceId: Scalars['String']['input'];
   workspaceName?: InputMaybe<Scalars['String']['input']>;
+}
+
+export interface MutationLinkCalDavAccountArgs {
+  input: LinkCalDavAccountInput;
 }
 
 export interface MutationLinkCalendarAccountArgs {
@@ -1979,12 +2072,6 @@ export interface MutationMentionUserArgs {
 export interface MutationPublishDocArgs {
   docId: Scalars['String']['input'];
   mode?: InputMaybe<PublicDocMode>;
-  workspaceId: Scalars['String']['input'];
-}
-
-export interface MutationPublishPageArgs {
-  mode?: InputMaybe<PublicDocMode>;
-  pageId: Scalars['String']['input'];
   workspaceId: Scalars['String']['input'];
 }
 
@@ -2052,11 +2139,6 @@ export interface MutationRetryAudioTranscriptionArgs {
   workspaceId: Scalars['String']['input'];
 }
 
-export interface MutationRevokeArgs {
-  userId: Scalars['String']['input'];
-  workspaceId: Scalars['String']['input'];
-}
-
 export interface MutationRevokeDocUserRolesArgs {
   input: RevokeDocUserRoleInput;
 }
@@ -2071,11 +2153,6 @@ export interface MutationRevokeMemberArgs {
 }
 
 export interface MutationRevokePublicDocArgs {
-  docId: Scalars['String']['input'];
-  workspaceId: Scalars['String']['input'];
-}
-
-export interface MutationRevokePublicPageArgs {
   docId: Scalars['String']['input'];
   workspaceId: Scalars['String']['input'];
 }
@@ -2142,11 +2219,6 @@ export interface MutationUpdateCommentArgs {
   input: CommentUpdateInput;
 }
 
-export interface MutationUpdateCopilotPromptArgs {
-  messages: Array<CopilotPromptMessageInput>;
-  name: Scalars['String']['input'];
-}
-
 export interface MutationUpdateCopilotSessionArgs {
   options: UpdateChatSessionInput;
 }
@@ -2210,10 +2282,6 @@ export interface MutationUploadCommentAttachmentArgs {
   attachment: Scalars['Upload']['input'];
   docId: Scalars['String']['input'];
   workspaceId: Scalars['String']['input'];
-}
-
-export interface MutationValidateAppConfigArgs {
-  updates: Array<UpdateAppConfigInput>;
 }
 
 export interface MutationVerifyEmailArgs {
@@ -2307,6 +2375,14 @@ export interface PageInfo {
   startCursor: Maybe<Scalars['String']['output']>;
 }
 
+export interface PaginatedAdminAllSharedLink {
+  __typename?: 'PaginatedAdminAllSharedLink';
+  analyticsWindow: TimeWindow;
+  edges: Array<AdminAllSharedLinkEdge>;
+  pageInfo: PageInfo;
+  totalCount: Maybe<Scalars['Int']['output']>;
+}
+
 export interface PaginatedCommentChangeObjectType {
   __typename?: 'PaginatedCommentChangeObjectType';
   edges: Array<CommentChangeObjectTypeEdge>;
@@ -2333,6 +2409,13 @@ export interface PaginatedCopilotWorkspaceFileType {
   edges: Array<CopilotWorkspaceFileTypeEdge>;
   pageInfo: PageInfo;
   totalCount: Scalars['Int']['output'];
+}
+
+export interface PaginatedDocMemberLastAccess {
+  __typename?: 'PaginatedDocMemberLastAccess';
+  edges: Array<DocMemberLastAccessEdge>;
+  pageInfo: PageInfo;
+  totalCount: Maybe<Scalars['Int']['output']>;
 }
 
 export interface PaginatedDocType {
@@ -2401,8 +2484,10 @@ export interface PublicUserType {
 
 export interface Query {
   __typename?: 'Query';
-  /** @deprecated use currentUser.accessTokens */
-  accessTokens: Array<AccessToken>;
+  /** List all shared links across workspaces for admin panel */
+  adminAllSharedLinks: PaginatedAdminAllSharedLink;
+  /** Get aggregated dashboard metrics for admin panel */
+  adminDashboard: AdminDashboard;
   /** Get workspace detail for admin */
   adminWorkspace: Maybe<AdminWorkspace>;
   /** List workspaces for admin */
@@ -2416,25 +2501,11 @@ export interface Query {
    * @deprecated use Mutation.applyDocUpdates
    */
   applyDocUpdates: Scalars['String']['output'];
-  /** @deprecated use `user.quotaUsage` instead */
-  collectAllBlobSizes: WorkspaceBlobSizes;
   /** Get current user */
   currentUser: Maybe<UserType>;
   error: ErrorDataUnion;
   /** get workspace invitation info */
   getInviteInfo: InvitationType;
-  /**
-   * Get is admin of workspace
-   * @deprecated use WorkspaceType[role] instead
-   */
-  isAdmin: Scalars['Boolean']['output'];
-  /**
-   * Get is owner of workspace
-   * @deprecated use WorkspaceType[role] instead
-   */
-  isOwner: Scalars['Boolean']['output'];
-  /** List all copilot prompts */
-  listCopilotPrompts: Array<CopilotPromptType>;
   prices: Array<SubscriptionPrice>;
   /** Get public user by id */
   publicUserById: Maybe<PublicUserType>;
@@ -2467,6 +2538,15 @@ export interface Query {
   workspaces: Array<WorkspaceType>;
 }
 
+export interface QueryAdminAllSharedLinksArgs {
+  filter?: InputMaybe<AdminAllSharedLinksFilterInput>;
+  pagination: PaginationInput;
+}
+
+export interface QueryAdminDashboardArgs {
+  input?: InputMaybe<AdminDashboardInput>;
+}
+
 export interface QueryAdminWorkspaceArgs {
   id: Scalars['String']['input'];
 }
@@ -2492,14 +2572,6 @@ export interface QueryErrorArgs {
 
 export interface QueryGetInviteInfoArgs {
   inviteId: Scalars['String']['input'];
-}
-
-export interface QueryIsAdminArgs {
-  workspaceId: Scalars['String']['input'];
-}
-
-export interface QueryIsOwnerArgs {
-  workspaceId: Scalars['String']['input'];
 }
 
 export interface QueryPublicUserByIdArgs {
@@ -2628,6 +2700,12 @@ export interface ReplyObjectType {
 export interface ReplyUpdateInput {
   content: Scalars['JSONObject']['input'];
   id: Scalars['ID']['input'];
+}
+
+export interface ResponseTooLargeErrorDataType {
+  __typename?: 'ResponseTooLargeErrorDataType';
+  limitBytes: Scalars['Int']['output'];
+  receivedBytes: Scalars['Int']['output'];
 }
 
 export interface RevealedAccessToken {
@@ -2760,6 +2838,7 @@ export interface ServerConfigType {
   availableWorkspaceFeatures: Array<FeatureType>;
   /** server base url */
   baseUrl: Scalars['String']['output'];
+  calendarCalDAVProviders: Array<CalendarCalDavProviderPresetObjectType>;
   calendarProviders: Array<CalendarProviderType>;
   /** credentials requirement */
   credentialsRequirement: CredentialsRequirementType;
@@ -2810,6 +2889,11 @@ export interface SpaceOwnerNotFoundDataType {
 export interface SpaceShouldHaveOnlyOneOwnerDataType {
   __typename?: 'SpaceShouldHaveOnlyOneOwnerDataType';
   spaceId: Scalars['String']['output'];
+}
+
+export interface SsrfBlockedErrorDataType {
+  __typename?: 'SsrfBlockedErrorDataType';
+  reason: Scalars['String']['output'];
 }
 
 export interface StreamObject {
@@ -2904,6 +2988,21 @@ export interface SubscriptionType {
 export enum SubscriptionVariant {
   EA = 'EA',
   Onetime = 'Onetime',
+}
+
+export enum TimeBucket {
+  Day = 'Day',
+  Minute = 'Minute',
+}
+
+export interface TimeWindow {
+  __typename?: 'TimeWindow';
+  bucket: TimeBucket;
+  effectiveSize: Scalars['Int']['output'];
+  from: Scalars['DateTime']['output'];
+  requestedSize: Scalars['Int']['output'];
+  timezone: Scalars['String']['output'];
+  to: Scalars['DateTime']['output'];
 }
 
 export interface TranscriptionItemType {
@@ -3126,11 +3225,6 @@ export interface VersionRejectedDataType {
   version: Scalars['String']['output'];
 }
 
-export interface WorkspaceBlobSizes {
-  __typename?: 'WorkspaceBlobSizes';
-  size: Scalars['SafeInt']['output'];
-}
-
 export interface WorkspaceCalendarItemInput {
   colorOverride?: InputMaybe<Scalars['String']['input']>;
   sortOrder?: InputMaybe<Scalars['Int']['input']>;
@@ -3308,11 +3402,6 @@ export interface WorkspaceType {
   public: Scalars['Boolean']['output'];
   /** Get public docs of a workspace */
   publicDocs: Array<DocType>;
-  /**
-   * Get public page of a workspace by page id.
-   * @deprecated use [WorkspaceType.doc] instead
-   */
-  publicPage: Maybe<DocType>;
   /** quota of workspace */
   quota: WorkspaceQuotaType;
   /** Get recently updated docs of a workspace */
@@ -3375,10 +3464,6 @@ export interface WorkspaceTypeMembersArgs {
 }
 
 export interface WorkspaceTypePageMetaArgs {
-  pageId: Scalars['String']['input'];
-}
-
-export interface WorkspaceTypePublicPageArgs {
   pageId: Scalars['String']['input'];
 }
 
@@ -3456,6 +3541,124 @@ export type RevokeUserAccessTokenMutationVariables = Exact<{
 export type RevokeUserAccessTokenMutation = {
   __typename?: 'Mutation';
   revokeUserAccessToken: boolean;
+};
+
+export type AdminAllSharedLinksQueryVariables = Exact<{
+  pagination: PaginationInput;
+  filter?: InputMaybe<AdminAllSharedLinksFilterInput>;
+}>;
+
+export type AdminAllSharedLinksQuery = {
+  __typename?: 'Query';
+  adminAllSharedLinks: {
+    __typename?: 'PaginatedAdminAllSharedLink';
+    totalCount: number | null;
+    analyticsWindow: {
+      __typename?: 'TimeWindow';
+      from: string;
+      to: string;
+      timezone: string;
+      bucket: TimeBucket;
+      requestedSize: number;
+      effectiveSize: number;
+    };
+    pageInfo: {
+      __typename?: 'PageInfo';
+      hasNextPage: boolean;
+      hasPreviousPage: boolean;
+      startCursor: string | null;
+      endCursor: string | null;
+    };
+    edges: Array<{
+      __typename?: 'AdminAllSharedLinkEdge';
+      cursor: string;
+      node: {
+        __typename?: 'AdminAllSharedLink';
+        workspaceId: string;
+        docId: string;
+        title: string | null;
+        publishedAt: string | null;
+        docUpdatedAt: string | null;
+        workspaceOwnerId: string | null;
+        lastUpdaterId: string | null;
+        shareUrl: string;
+        views: number | null;
+        uniqueViews: number | null;
+        guestViews: number | null;
+        lastAccessedAt: string | null;
+      };
+    }>;
+  };
+};
+
+export type AdminDashboardQueryVariables = Exact<{
+  input?: InputMaybe<AdminDashboardInput>;
+}>;
+
+export type AdminDashboardQuery = {
+  __typename?: 'Query';
+  adminDashboard: {
+    __typename?: 'AdminDashboard';
+    syncActiveUsers: number;
+    copilotConversations: number;
+    workspaceStorageBytes: number;
+    blobStorageBytes: number;
+    generatedAt: string;
+    syncActiveUsersTimeline: Array<{
+      __typename?: 'AdminDashboardMinutePoint';
+      minute: string;
+      activeUsers: number;
+    }>;
+    syncWindow: {
+      __typename?: 'TimeWindow';
+      from: string;
+      to: string;
+      timezone: string;
+      bucket: TimeBucket;
+      requestedSize: number;
+      effectiveSize: number;
+    };
+    workspaceStorageHistory: Array<{
+      __typename?: 'AdminDashboardValueDayPoint';
+      date: string;
+      value: number;
+    }>;
+    blobStorageHistory: Array<{
+      __typename?: 'AdminDashboardValueDayPoint';
+      date: string;
+      value: number;
+    }>;
+    storageWindow: {
+      __typename?: 'TimeWindow';
+      from: string;
+      to: string;
+      timezone: string;
+      bucket: TimeBucket;
+      requestedSize: number;
+      effectiveSize: number;
+    };
+    topSharedLinks: Array<{
+      __typename?: 'AdminSharedLinkTopItem';
+      workspaceId: string;
+      docId: string;
+      title: string | null;
+      shareUrl: string;
+      publishedAt: string | null;
+      views: number;
+      uniqueViews: number;
+      guestViews: number;
+      lastAccessedAt: string | null;
+    }>;
+    topSharedLinksWindow: {
+      __typename?: 'TimeWindow';
+      from: string;
+      to: string;
+      timezone: string;
+      bucket: TimeBucket;
+      requestedSize: number;
+      effectiveSize: number;
+    };
+  };
 };
 
 export type AdminServerConfigQueryVariables = Exact<{ [key: string]: never }>;
@@ -3632,59 +3835,6 @@ export type CreateChangePasswordUrlMutation = {
 export type AppConfigQueryVariables = Exact<{ [key: string]: never }>;
 
 export type AppConfigQuery = { __typename?: 'Query'; appConfig: any };
-
-export type GetPromptsQueryVariables = Exact<{ [key: string]: never }>;
-
-export type GetPromptsQuery = {
-  __typename?: 'Query';
-  listCopilotPrompts: Array<{
-    __typename?: 'CopilotPromptType';
-    name: string;
-    model: string;
-    action: string | null;
-    config: {
-      __typename?: 'CopilotPromptConfigType';
-      frequencyPenalty: number | null;
-      presencePenalty: number | null;
-      temperature: number | null;
-      topP: number | null;
-    } | null;
-    messages: Array<{
-      __typename?: 'CopilotPromptMessageType';
-      role: CopilotPromptMessageRole;
-      content: string;
-      params: Record<string, string> | null;
-    }>;
-  }>;
-};
-
-export type UpdatePromptMutationVariables = Exact<{
-  name: Scalars['String']['input'];
-  messages: Array<CopilotPromptMessageInput> | CopilotPromptMessageInput;
-}>;
-
-export type UpdatePromptMutation = {
-  __typename?: 'Mutation';
-  updateCopilotPrompt: {
-    __typename?: 'CopilotPromptType';
-    name: string;
-    model: string;
-    action: string | null;
-    config: {
-      __typename?: 'CopilotPromptConfigType';
-      frequencyPenalty: number | null;
-      presencePenalty: number | null;
-      temperature: number | null;
-      topP: number | null;
-    } | null;
-    messages: Array<{
-      __typename?: 'CopilotPromptMessageType';
-      role: CopilotPromptMessageRole;
-      content: string;
-      params: Record<string, string> | null;
-    }>;
-  };
-};
 
 export type CreateUserMutationVariables = Exact<{
   input: CreateUserInput;
@@ -4026,6 +4176,35 @@ export type CalendarProvidersQuery = {
   serverConfig: {
     __typename?: 'ServerConfigType';
     calendarProviders: Array<CalendarProviderType>;
+    calendarCalDAVProviders: Array<{
+      __typename?: 'CalendarCalDAVProviderPresetObjectType';
+      id: string;
+      label: string;
+      requiresAppPassword: boolean | null;
+      docsUrl: string | null;
+    }>;
+  };
+};
+
+export type LinkCalDavAccountMutationVariables = Exact<{
+  input: LinkCalDavAccountInput;
+}>;
+
+export type LinkCalDavAccountMutation = {
+  __typename?: 'Mutation';
+  linkCalDAVAccount: {
+    __typename?: 'CalendarAccountObjectType';
+    id: string;
+    provider: CalendarProviderType;
+    providerAccountId: string;
+    displayName: string | null;
+    email: string | null;
+    status: string;
+    lastError: string | null;
+    refreshIntervalMinutes: number;
+    calendarsCount: number;
+    createdAt: string;
+    updatedAt: string;
   };
 };
 
@@ -5143,6 +5322,47 @@ export type CleanupCopilotSessionMutation = {
   cleanupCopilotSession: Array<string>;
 };
 
+export type CreateCopilotSessionWithHistoryMutationVariables = Exact<{
+  options: CreateChatSessionInput;
+}>;
+
+export type CreateCopilotSessionWithHistoryMutation = {
+  __typename?: 'Mutation';
+  createCopilotSessionWithHistory: {
+    __typename?: 'CopilotHistories';
+    sessionId: string;
+    workspaceId: string;
+    docId: string | null;
+    parentSessionId: string | null;
+    promptName: string;
+    model: string;
+    optionalModels: Array<string>;
+    action: string | null;
+    pinned: boolean;
+    title: string | null;
+    tokens: number;
+    createdAt: string;
+    updatedAt: string;
+    messages: Array<{
+      __typename?: 'ChatMessage';
+      id: string | null;
+      role: string;
+      content: string;
+      attachments: Array<string> | null;
+      createdAt: string;
+      streamObjects: Array<{
+        __typename?: 'StreamObject';
+        type: string;
+        textDelta: string | null;
+        toolCallId: string | null;
+        toolName: string | null;
+        args: Record<string, string> | null;
+        result: Record<string, string> | null;
+      }> | null;
+    }>;
+  };
+};
+
 export type CreateCopilotSessionMutationVariables = Exact<{
   options: CreateChatSessionInput;
 }>;
@@ -5652,24 +5872,6 @@ export type GetDocRolePermissionsQuery = {
   };
 };
 
-export type CopilotChatMessageFragment = {
-  __typename?: 'ChatMessage';
-  id: string | null;
-  role: string;
-  content: string;
-  attachments: Array<string> | null;
-  createdAt: string;
-  streamObjects: Array<{
-    __typename?: 'StreamObject';
-    type: string;
-    textDelta: string | null;
-    toolCallId: string | null;
-    toolName: string | null;
-    args: Record<string, string> | null;
-    result: Record<string, string> | null;
-  }> | null;
-};
-
 export type CopilotChatHistoryFragment = {
   __typename?: 'CopilotHistories';
   sessionId: string;
@@ -5702,6 +5904,52 @@ export type CopilotChatHistoryFragment = {
       result: Record<string, string> | null;
     }> | null;
   }>;
+};
+
+export type CredentialsRequirementsFragment = {
+  __typename?: 'CredentialsRequirementType';
+  password: {
+    __typename?: 'PasswordLimitsType';
+    minLength: number;
+    maxLength: number;
+  };
+};
+
+export type CurrentUserProfileFragment = {
+  __typename?: 'UserType';
+  id: string;
+  name: string;
+  email: string;
+  avatarUrl: string | null;
+  emailVerified: boolean;
+  features: Array<FeatureType>;
+  settings: {
+    __typename?: 'UserSettingsType';
+    receiveInvitationEmail: boolean;
+    receiveMentionEmail: boolean;
+    receiveCommentEmail: boolean;
+  };
+  quota: {
+    __typename?: 'UserQuotaType';
+    name: string;
+    blobLimit: number;
+    storageQuota: number;
+    historyPeriod: number;
+    memberLimit: number;
+    humanReadable: {
+      __typename?: 'UserQuotaHumanReadableType';
+      name: string;
+      blobLimit: string;
+      storageQuota: string;
+      historyPeriod: string;
+      memberLimit: string;
+    };
+  };
+  quotaUsage: { __typename?: 'UserQuotaUsageType'; storageQuota: number };
+  copilot: {
+    __typename?: 'Copilot';
+    quota: { __typename?: 'CopilotQuota'; limit: number | null; used: number };
+  };
 };
 
 export type PaginatedCopilotChatsFragment = {
@@ -5750,52 +5998,6 @@ export type PaginatedCopilotChatsFragment = {
       }>;
     };
   }>;
-};
-
-export type CredentialsRequirementsFragment = {
-  __typename?: 'CredentialsRequirementType';
-  password: {
-    __typename?: 'PasswordLimitsType';
-    minLength: number;
-    maxLength: number;
-  };
-};
-
-export type CurrentUserProfileFragment = {
-  __typename?: 'UserType';
-  id: string;
-  name: string;
-  email: string;
-  avatarUrl: string | null;
-  emailVerified: boolean;
-  features: Array<FeatureType>;
-  settings: {
-    __typename?: 'UserSettingsType';
-    receiveInvitationEmail: boolean;
-    receiveMentionEmail: boolean;
-    receiveCommentEmail: boolean;
-  };
-  quota: {
-    __typename?: 'UserQuotaType';
-    name: string;
-    blobLimit: number;
-    storageQuota: number;
-    historyPeriod: number;
-    memberLimit: number;
-    humanReadable: {
-      __typename?: 'UserQuotaHumanReadableType';
-      name: string;
-      blobLimit: string;
-      storageQuota: string;
-      historyPeriod: string;
-      memberLimit: string;
-    };
-  };
-  quotaUsage: { __typename?: 'UserQuotaUsageType'; storageQuota: number };
-  copilot: {
-    __typename?: 'Copilot';
-    quota: { __typename?: 'CopilotQuota'; limit: number | null; used: number };
-  };
 };
 
 export type PasswordLimitsFragment = {
@@ -5933,6 +6135,93 @@ export type GetDocDefaultRoleQuery = {
   workspace: {
     __typename?: 'WorkspaceType';
     doc: { __typename?: 'DocType'; defaultRole: DocRole };
+  };
+};
+
+export type GetDocLastAccessedMembersQueryVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  docId: Scalars['String']['input'];
+  pagination: PaginationInput;
+  query?: InputMaybe<Scalars['String']['input']>;
+  includeTotal?: InputMaybe<Scalars['Boolean']['input']>;
+}>;
+
+export type GetDocLastAccessedMembersQuery = {
+  __typename?: 'Query';
+  workspace: {
+    __typename?: 'WorkspaceType';
+    doc: {
+      __typename?: 'DocType';
+      lastAccessedMembers: {
+        __typename?: 'PaginatedDocMemberLastAccess';
+        totalCount: number | null;
+        pageInfo: {
+          __typename?: 'PageInfo';
+          hasNextPage: boolean;
+          hasPreviousPage: boolean;
+          startCursor: string | null;
+          endCursor: string | null;
+        };
+        edges: Array<{
+          __typename?: 'DocMemberLastAccessEdge';
+          cursor: string;
+          node: {
+            __typename?: 'DocMemberLastAccess';
+            lastAccessedAt: string;
+            lastDocId: string | null;
+            user: {
+              __typename?: 'PublicUserType';
+              id: string;
+              name: string;
+              avatarUrl: string | null;
+            };
+          };
+        }>;
+      };
+    };
+  };
+};
+
+export type GetDocPageAnalyticsQueryVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  docId: Scalars['String']['input'];
+  input?: InputMaybe<DocPageAnalyticsInput>;
+}>;
+
+export type GetDocPageAnalyticsQuery = {
+  __typename?: 'Query';
+  workspace: {
+    __typename?: 'WorkspaceType';
+    doc: {
+      __typename?: 'DocType';
+      analytics: {
+        __typename?: 'DocPageAnalytics';
+        generatedAt: string;
+        window: {
+          __typename?: 'TimeWindow';
+          from: string;
+          to: string;
+          timezone: string;
+          bucket: TimeBucket;
+          requestedSize: number;
+          effectiveSize: number;
+        };
+        series: Array<{
+          __typename?: 'DocPageAnalyticsPoint';
+          date: string;
+          totalViews: number;
+          uniqueViews: number;
+          guestViews: number;
+        }>;
+        summary: {
+          __typename?: 'DocPageAnalyticsSummary';
+          totalViews: number;
+          uniqueViews: number;
+          guestViews: number;
+          lastAccessedAt: string | null;
+        };
+      };
+    };
   };
 };
 
@@ -7220,6 +7509,16 @@ export type Queries =
       response: ListUserAccessTokensQuery;
     }
   | {
+      name: 'adminAllSharedLinksQuery';
+      variables: AdminAllSharedLinksQueryVariables;
+      response: AdminAllSharedLinksQuery;
+    }
+  | {
+      name: 'adminDashboardQuery';
+      variables: AdminDashboardQueryVariables;
+      response: AdminDashboardQuery;
+    }
+  | {
       name: 'adminServerConfigQuery';
       variables: AdminServerConfigQueryVariables;
       response: AdminServerConfigQuery;
@@ -7243,11 +7542,6 @@ export type Queries =
       name: 'appConfigQuery';
       variables: AppConfigQueryVariables;
       response: AppConfigQuery;
-    }
-  | {
-      name: 'getPromptsQuery';
-      variables: GetPromptsQueryVariables;
-      response: GetPromptsQuery;
     }
   | {
       name: 'getUserByEmailQuery';
@@ -7438,6 +7732,16 @@ export type Queries =
       name: 'getDocDefaultRoleQuery';
       variables: GetDocDefaultRoleQueryVariables;
       response: GetDocDefaultRoleQuery;
+    }
+  | {
+      name: 'getDocLastAccessedMembersQuery';
+      variables: GetDocLastAccessedMembersQueryVariables;
+      response: GetDocLastAccessedMembersQuery;
+    }
+  | {
+      name: 'getDocPageAnalyticsQuery';
+      variables: GetDocPageAnalyticsQueryVariables;
+      response: GetDocPageAnalyticsQuery;
     }
   | {
       name: 'getDocSummaryQuery';
@@ -7647,11 +7951,6 @@ export type Mutations =
       response: CreateChangePasswordUrlMutation;
     }
   | {
-      name: 'updatePromptMutation';
-      variables: UpdatePromptMutationVariables;
-      response: UpdatePromptMutation;
-    }
-  | {
       name: 'createUserMutation';
       variables: CreateUserMutationVariables;
       response: CreateUserMutation;
@@ -7725,6 +8024,11 @@ export type Mutations =
       name: 'createBlobUploadMutation';
       variables: CreateBlobUploadMutationVariables;
       response: CreateBlobUploadMutation;
+    }
+  | {
+      name: 'linkCalDavAccountMutation';
+      variables: LinkCalDavAccountMutationVariables;
+      response: LinkCalDavAccountMutation;
     }
   | {
       name: 'linkCalendarAccountMutation';
@@ -7880,6 +8184,11 @@ export type Mutations =
       name: 'cleanupCopilotSessionMutation';
       variables: CleanupCopilotSessionMutationVariables;
       response: CleanupCopilotSessionMutation;
+    }
+  | {
+      name: 'createCopilotSessionWithHistoryMutation';
+      variables: CreateCopilotSessionWithHistoryMutationVariables;
+      response: CreateCopilotSessionWithHistoryMutation;
     }
   | {
       name: 'createCopilotSessionMutation';

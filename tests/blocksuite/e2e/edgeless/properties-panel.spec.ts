@@ -123,7 +123,7 @@ test.describe('properties panel', () => {
       const root = document.querySelector('affine-edgeless-root') as any;
       if (!root) throw new Error('Missing edgeless root');
       const model = root.service.crud.getElementById(id);
-      const [x, y, w, h] = JSON.parse(model.xywh);
+      const [, , w] = JSON.parse(model.xywh);
       return {
         width: w,
         strokeColor: model.strokeColor,

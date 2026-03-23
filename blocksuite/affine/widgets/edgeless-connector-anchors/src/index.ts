@@ -2,7 +2,6 @@ import { OverlayIdentifier } from '@blocksuite/affine-block-surface';
 import {
   type ConnectionOverlay,
   ConnectorTool,
-  getAnchors,
 } from '@blocksuite/affine-gfx-connector';
 import { DEFAULT_CONNECTOR_MODE } from '@blocksuite/affine-model';
 import { EditPropsStore } from '@blocksuite/affine-shared/services';
@@ -256,8 +255,6 @@ export class EdgelessConnectorAnchorsWidget extends WidgetComponent {
   }
 
   override render() {
-    const gfx = this._gfx;
-    const elements = gfx.selection?.selectedElements ?? [];
     return html``;
   }
 }

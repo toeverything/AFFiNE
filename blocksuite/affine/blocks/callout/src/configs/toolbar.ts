@@ -68,14 +68,14 @@ const backgroundColorAction = {
           ${repeat(colors, color => {
             const isDefault = color === 'default';
             const value = isDefault
-              ? null
+              ? cssVarV2.block.callout.background.grey
               : `var(--affine-text-highlight-${color})`;
             const displayName = `${color} Background`;
 
             return html`
               <editor-menu-action
                 data-testid="background-${color}"
-                @click=${() => updateBackground(color)}
+                @click=${() => updateBackground(isDefault ? 'grey' : color)}
               >
                 <affine-text-duotone-icon
                   style=${styleMap({

@@ -2,11 +2,9 @@ import { expect, type Page } from '@playwright/test';
 
 import {
   addBasicConnectorElement,
-  assertEdgelessConnectorToolMode,
   changeConnectorStrokeColor,
   changeConnectorStrokeStyle,
   changeConnectorStrokeWidth,
-  ConnectorMode,
   createConnectorElement,
   createShapeElement,
   dragBetweenViewCoords,
@@ -16,7 +14,6 @@ import {
   getConnectorPathWithInOut,
   locatorComponentToolbar,
   pickColorAtPoints,
-  rotateElementByHandle,
   selectElementInEdgeless,
   selectElementsByService,
   setEdgelessTool,
@@ -24,7 +21,6 @@ import {
   toModelCoord,
   toViewCoord,
   triggerComponentToolbarAction,
-  triggerShapeSwitch,
 } from '../../utils/actions/edgeless.js';
 import {
   clickView,
@@ -34,7 +30,6 @@ import {
 import {
   assertConnectorPath,
   assertEdgelessNonSelectedRect,
-  assertEdgelessSelectedRect,
   getSelectedRect,
 } from '../../utils/asserts.js';
 import { test } from '../../utils/playwright.js';
@@ -271,7 +266,7 @@ test.describe('quick connect', () => {
       Shape.Square
     );
     await selectElementsByService(page, [shapeId]);
-    const [x, y] = await toViewCoord(page, [50, 50]);
+    await toViewCoord(page, [50, 50]);
 
     const quickConnectBtn = locatorComponentToolbar(page).locator(
       '[data-testid="draw-connector"]'
@@ -297,7 +292,7 @@ test.describe('quick connect', () => {
       Shape.Square
     );
     await selectElementsByService(page, [shapeId]);
-    const [x, y] = await toViewCoord(page, [50, 50]);
+    await toViewCoord(page, [50, 50]);
 
     const quickConnectBtn = locatorComponentToolbar(page).locator(
       '[data-testid="draw-connector"]'

@@ -1,6 +1,6 @@
 {
   "name": "@affine/revert-update",
-  "version": "0.26.0",
+  "version": "0.26.3",
   "private": true,
   "type": "module",
   "description": "Generate a revert update from two Yjs snapshot binaries",
@@ -10,10 +10,10 @@
   },
   "dependencies": {
     "@affine-tools/cli": "workspace:*",
-    "typescript": "^5.7.2",
     "yjs": "^13.6.27"
   },
   "devDependencies": {
-    "@types/node": "^22.0.0"
+    "@types/node": "^22.0.0",
+    "typescript": "^5.9.3"
   }
 }

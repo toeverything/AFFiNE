@@ -41,6 +41,7 @@ interface TestingAppMetadata {
 export class TestingApp extends NestApplication {
   private sessionCookie: string | null = null;
   private currentUserCookie: string | null = null;
+  private csrfCookie: string | null = null;
   private readonly userCookies: Set<string> = new Set();
 
   create = createFactory(this.get(PrismaClient, { strict: false }));
@@ -65,12 +66,23 @@ export class TestingApp extends NestApplication {
     method: 'options' | 'get' | 'post' | 'put' | 'delete' | 'patch',
     path: string
   ): supertest.Test {
-    return supertest(this.getHttpServer())
+    const cookies = [
+      `${AuthService.sessionCookieName}=${this.sessionCookie ?? ''}`,
+      `${AuthService.userCookieName}=${this.currentUserCookie ?? ''}`,
+    ];
+    if (this.csrfCookie) {
+      cookies.push(`${AuthService.csrfCookieName}=${this.csrfCookie}`);
+    }
+
+    const req = supertest(this.getHttpServer())
       [method](path)
-      .set('Cookie', [
-        `${AuthService.sessionCookieName}=${this.sessionCookie ?? ''}`,
-        `${AuthService.userCookieName}=${this.currentUserCookie ?? ''}`,
-      ]);
+      .set('Cookie', cookies);
+
+    if (this.csrfCookie) {
+      req.set('x-affine-csrf-token', this.csrfCookie);
+    }
+
+    return req;
   }
 
   gql = gqlFetcherFactory('', async (_input, init) => {
@@ -123,6 +135,9 @@ export class TestingApp extends NestApplication {
 
           this.sessionCookie = cookies[AuthService.sessionCookieName];
           this.currentUserCookie = cookies[AuthService.userCookieName];
+          if (AuthService.csrfCookieName in cookies) {
+            this.csrfCookie = cookies[AuthService.csrfCookieName] || null;
+          }
           if (this.currentUserCookie) {
             this.userCookies.add(this.currentUserCookie);
           }
@@ -180,13 +195,17 @@ export class TestingApp extends NestApplication {
   }
 
   async logout(userId?: string) {
-    const res = await this.GET(
+    const res = await this.POST(
       '/api/auth/sign-out' + (userId ? `?user_id=${userId}` : '')
     ).expect(200);
     const cookies = parseCookies(res);
     this.sessionCookie = cookies[AuthService.sessionCookieName];
+    if (AuthService.csrfCookieName in cookies) {
+      this.csrfCookie = cookies[AuthService.csrfCookieName] || null;
+    }
     if (!this.sessionCookie) {
       this.currentUserCookie = null;
+      this.csrfCookie = null;
       this.userCookies.clear();
     } else {
       this.currentUserCookie = cookies[AuthService.userCookieName];

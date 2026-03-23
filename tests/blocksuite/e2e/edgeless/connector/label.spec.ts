@@ -70,14 +70,6 @@ test.describe('connector label with straight shape', () => {
     }, connectorId);
   }
 
-  async function getConnectorLabelCenterView(page: Page, connectorId: string) {
-    const center = await getConnectorLabelCenter(page, connectorId);
-    if (!center) {
-      throw new Error(`label center not found: ${connectorId}`);
-    }
-    return toViewCoord(page, center);
-  }
-
   test('should insert in the middle of the path when clicking on the button', async ({
     page,
   }) => {

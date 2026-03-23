@@ -108,7 +108,9 @@ export class BookmarkBlockComponent extends CaptionedBlockComponent<BookmarkBloc
   }
 
   open = () => {
-    window.open(this.link, '_blank');
+    const link = this.link;
+    if (!link) return;
+    window.open(link, '_blank', 'noopener,noreferrer');
   };
 
   refreshData = () => {

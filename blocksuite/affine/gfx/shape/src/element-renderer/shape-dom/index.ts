@@ -154,6 +154,35 @@ const buildPathFromPoints = (points: Array<[number, number]>) => {
   ].join(' ');
 };
 
+type RetainedShapeDom = {
+  polygon: SVGPolygonElement | null;
+  svg: SVGSVGElement | null;
+  text: HTMLDivElement | null;
+};
+
+type RetainedShapeSvg = {
+  polygon: SVGPolygonElement;
+  svg: SVGSVGElement;
+};
+
+const retainedShapeDom = new WeakMap<HTMLElement, RetainedShapeDom>();
+
+function getRetainedShapeDom(element: HTMLElement): RetainedShapeDom {
+  const existing = retainedShapeDom.get(element);
+
+  if (existing) {
+    return existing;
+  }
+
+  const retained = {
+    svg: null,
+    polygon: null,
+    text: null,
+  };
+  retainedShapeDom.set(element, retained);
+  return retained;
+}
+
 function applyShapeSpecificStyles(
   model: ShapeElementModel,
   element: HTMLElement,
@@ -200,6 +229,54 @@ function applyShapeSpecificStyles(
       break;
   }
   // No 'else' needed to clear styles, as they are reset at the beginning of the function.
+}
+
+function getOrCreateSvg(
+  retained: RetainedShapeDom,
+  element: HTMLElement
+): RetainedShapeSvg {
+  if (retained.svg && retained.polygon) {
+    return {
+      svg: retained.svg,
+      polygon: retained.polygon,
+    };
+  }
+
+  const svg = document.createElementNS(SVG_NS, 'svg');
+  svg.setAttribute('width', '100%');
+  svg.setAttribute('height', '100%');
+  svg.setAttribute('preserveAspectRatio', 'none');
+
+  const polygon = document.createElementNS(SVG_NS, 'polygon');
+  svg.append(polygon);
+
+  retained.svg = svg;
+  retained.polygon = polygon;
+  element.prepend(svg);
+
+  return { svg, polygon };
+}
+
+function removeSvg(retained: RetainedShapeDom) {
+  retained.svg?.remove();
+  retained.svg = null;
+  retained.polygon = null;
+}
+
+function getOrCreateText(retained: RetainedShapeDom, element: HTMLElement) {
+  if (retained.text) {
+    return retained.text;
+  }
+
+  const text = document.createElement('div');
+  retained.text = text;
+  element.append(text);
+  return text;
+}
+
+function removeText(retained: RetainedShapeDom) {
+  retained.text?.remove();
+  retained.text = null;
 }
 
 function applyBorderStyles(
@@ -279,8 +356,7 @@ export const shapeDomRenderer = (
   const { zoom } = renderer.viewport;
   const unscaledWidth = model.w;
   const unscaledHeight = model.h;
-
-  const newChildren: Element[] = [];
+  const retained = getRetainedShapeDom(element);
 
   const fillColor = renderer.getColorValue(
     model.fillColor,
@@ -311,6 +387,7 @@ export const shapeDomRenderer = (
     // For polygon shapes, fill and border are handled by inline SVG
     element.style.border = 'none'; // Ensure no standard CSS border interferes
     element.style.backgroundColor = 'transparent'; // Host element is transparent
+    getOrCreateSvg(retained, element);
 
     const strokeW = model.strokeWidth;
 
@@ -551,15 +628,18 @@ export const shapeDomRenderer = (
     }
 
     // Build SVG safely with DOM-API
-    const svg = document.createElementNS(SVG_NS, 'svg');
-    svg.setAttribute('width', '100%');
-    svg.setAttribute('height', '100%');
-    svg.setAttribute('viewBox', `0 0 ${unscaledWidth} ${unscaledHeight}`);
-    svg.setAttribute('preserveAspectRatio', 'none');
+    const svgElement = document.createElementNS(SVG_NS, 'svg');
+    svgElement.setAttribute('width', '100%');
+    svgElement.setAttribute('height', '100%');
+    svgElement.setAttribute(
+      'viewBox',
+      `0 0 ${unscaledWidth} ${unscaledHeight}`
+    );
+    svgElement.setAttribute('preserveAspectRatio', 'none');
 
     if (hasGradient && gradientFinal) {
       appendGradientDefs(
-        svg,
+        svgElement,
         gradientId,
         fillColor,
         gradientFinal,
@@ -613,9 +693,11 @@ export const shapeDomRenderer = (
       });
     }
 
-    svg.append(pathGroup);
-
-    newChildren.push(svg);
+    svgElement.append(pathGroup);
+    removeSvg(retained);
+    retained.svg = svgElement;
+    retained.polygon = null;
+    element.prepend(svgElement);
   } else {
     // Standard rendering for other shapes (e.g., rect, ellipse)
     // innerHTML was already cleared by applyShapeSpecificStyles if necessary
@@ -629,6 +711,10 @@ export const shapeDomRenderer = (
     }
     applyBorderStyles(model, element, strokeColor, zoom); // Uses standard CSS border
   }
+
+  element
+    .querySelectorAll('[data-shape-extra="1"]')
+    .forEach(node => node.remove());
 
   if (
     model.shapeType === ShapeType.VerticalContainer ||
@@ -649,7 +735,8 @@ export const shapeDomRenderer = (
         line.style.height = `${strokeWidth}px`;
         line.style.top = `${titleHeight}px`;
         line.style.transform = `translateY(${-strokeWidth / 2}px)`;
-        newChildren.push(line);
+        line.dataset.shapeExtra = '1';
+        element.append(line);
       }
     }
 
@@ -661,16 +748,19 @@ export const shapeDomRenderer = (
         line.style.width = `${strokeWidth}px`;
         line.style.left = `${titleWidth}px`;
         line.style.transform = `translateX(${-strokeWidth / 2}px)`;
-        newChildren.push(line);
+        line.dataset.shapeExtra = '1';
+        element.append(line);
       }
     }
   }
 
   if (model.textDisplay && model.text) {
     const str = model.text.toString();
-    const textElement = document.createElement('div');
+    const textElement = getOrCreateText(retained, element);
     if (isRTL(str)) {
       textElement.dir = 'rtl';
+    } else {
+      textElement.removeAttribute('dir');
     }
     textElement.style.position = 'absolute';
     textElement.style.inset = '0';
@@ -736,8 +826,8 @@ export const shapeDomRenderer = (
       textElement.dataset.role = 'shape-text';
 
       wrapper.append(textElement);
-      newChildren.push(wrapper);
-      element.replaceChildren(...newChildren);
+      wrapper.dataset.shapeExtra = '1';
+      element.append(wrapper);
       applyTransformStyles(model, element);
       manageClassNames(model, element);
       applyShadowStyles(model, element, renderer);
@@ -757,11 +847,9 @@ export const shapeDomRenderer = (
     }
     textElement.append(textContent);
     textElement.textContent = str;
-    newChildren.push(textElement);
+  } else {
+    removeText(retained);
   }
-
-  // Replace existing children to avoid memory leaks
-  element.replaceChildren(...newChildren);
 
   applyTransformStyles(model, element);
 

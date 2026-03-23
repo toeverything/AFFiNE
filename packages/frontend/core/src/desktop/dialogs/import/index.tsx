@@ -1,4 +1,10 @@
-import { Button, IconButton, IconType, Modal } from '@affine/component';
+import {
+  Button,
+  IconButton,
+  type IconData,
+  IconType,
+  Modal,
+} from '@affine/component';
 import { getStoreManager } from '@affine/core/blocksuite/manager/store';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { useNavigateHelper } from '@affine/core/components/hooks/use-navigate-helper';
@@ -28,13 +34,18 @@ import {
   ImageBlockModel,
   SurfaceRefBlockSchema,
 } from '@blocksuite/affine/model';
-import { openFilesWith, transformModel } from '@blocksuite/affine/shared/utils';
+import {
+  openDirectory,
+  openFilesWith,
+  transformModel,
+} from '@blocksuite/affine/shared/utils';
 import type { Workspace } from '@blocksuite/affine/store';
 import {
   DocxTransformer,
   HtmlTransformer,
   MarkdownTransformer,
   NotionHtmlTransformer,
+  ObsidianTransformer,
   ZipTransformer,
 } from '@blocksuite/affine/widgets/linked-doc';
 import {
@@ -122,10 +133,10 @@ function createFolderStructure(
           logger.debug('Icon data:', child.icon);
 
           try {
-            let iconData;
+            let iconData: IconData | undefined;
             if (child.icon.type === 'emoji') {
               iconData = {
-                type: IconType.Emoji as const,
+                type: IconType.Emoji,
                 unicode: child.icon.content,
               };
               logger.debug('Created emoji icon data:', iconData);
@@ -195,11 +206,12 @@ type ImportType =
   | 'markdown'
   | 'markdownZip'
   | 'notion'
+  | 'obsidian'
   | 'snapshot'
   | 'html'
   | 'docx'
   | 'dotaffinefile';
-type AcceptType = 'Markdown' | 'Zip' | 'Html' | 'Docx' | 'Skip'; // Skip is used for dotaffinefile
+type AcceptType = 'Markdown' | 'Zip' | 'Html' | 'Docx' | 'Directory' | 'Skip'; // Skip is used for dotaffinefile
 type Status = 'idle' | 'importing' | 'success' | 'error';
 type ImportResult = {
   docIds: string[];
@@ -253,6 +265,10 @@ async function autoConvertMarkdownFrameImages(
     })
   );
 }
+
+type ImportedWorkspacePayload = {
+  workspace: WorkspaceMetadata;
+};
 
 type ImportConfig = {
   fileOptions: { acceptType: AcceptType; multiple: boolean };
@@ -319,6 +335,19 @@ const importOptions = [
     suffixTooltip: 'com.affine.import.notion.tooltip',
     testId: 'editor-option-menu-import-notion',
     type: 'notion' as ImportType,
+  },
+  {
+    key: 'obsidian',
+    label: 'com.affine.import.obsidian',
+    prefixIcon: (
+      <ExportToMarkdownIcon color={cssVar('black')} width={20} height={20} />
+    ),
+    suffixIcon: (
+      <HelpIcon color={cssVarV2('icon/primary')} width={20} height={20} />
+    ),
+    suffixTooltip: 'com.affine.import.obsidian.tooltip',
+    testId: 'editor-option-menu-import-obsidian',
+    type: 'obsidian' as ImportType,
   },
   {
     key: 'docx',
@@ -507,6 +536,36 @@ const importConfigs: Record<ImportType, ImportConfig> = {
       };
     },
   },
+  obsidian: {
+    fileOptions: { acceptType: 'Directory', multiple: false },
+    importFunction: async (
+      docCollection,
+      files,
+      _handleImportAffineFile,
+      _organizeService,
+      explorerIconService
+    ) => {
+      const { docIds, docEmojis } =
+        await ObsidianTransformer.importObsidianVault({
+          collection: docCollection,
+          schema: getAFFiNEWorkspaceSchema(),
+          importedFiles: files,
+          extensions: getStoreManager().config.init().value.get('store'),
+        });
+
+      if (explorerIconService) {
+        for (const [id, emoji] of docEmojis.entries()) {
+          explorerIconService.setIcon({
+            where: 'doc',
+            id,
+            icon: { type: IconType.Emoji, unicode: emoji },
+          });
+        }
+      }
+
+      return { docIds };
+    },
+  },
   docx: {
     fileOptions: { acceptType: 'Docx', multiple: false },
     importFunction: async (docCollection, file) => {
@@ -544,7 +603,7 @@ const importConfigs: Record<ImportType, ImportConfig> = {
           file
         )
       )
-        .filter(doc => doc !== undefined)
+        .filter((doc): doc is NonNullable<typeof doc> => doc !== undefined)
         .map(doc => doc.id);
 
       return {
@@ -775,14 +834,18 @@ export const ImportDialog = ({
       });
 
       return new Promise<WorkspaceMetadata | undefined>((resolve, reject) => {
-        globalDialogService.open('import-workspace', undefined, payload => {
-          if (payload) {
-            handleCreatedWorkspace({ metadata: payload.workspace });
-            resolve(payload.workspace);
-          } else {
-            reject(new Error('No workspace imported'));
+        globalDialogService.open(
+          'import-workspace',
+          undefined,
+          (payload?: ImportedWorkspacePayload) => {
+            if (payload) {
+              handleCreatedWorkspace({ metadata: payload.workspace });
+              resolve(payload.workspace);
+            } else {
+              reject(new Error('No workspace imported'));
+            }
           }
-        });
+        );
       });
     };
   }, [globalDialogService, handleCreatedWorkspace]);
@@ -797,7 +860,9 @@ export const ImportDialog = ({
         const files =
           acceptType === 'Skip'
             ? []
-            : await openFilesWith(acceptType, multiple);
+            : acceptType === 'Directory'
+              ? await openDirectory()
+              : await openFilesWith(acceptType, multiple);
 
         if (!files || (files.length === 0 && acceptType !== 'Skip')) {
           throw new Error(

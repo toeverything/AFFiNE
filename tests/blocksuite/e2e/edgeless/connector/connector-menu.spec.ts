@@ -85,24 +85,6 @@ async function focusElement(page: Page, id: string) {
   await page.mouse.click(vx, vy);
 }
 
-async function createConnectorViaService(
-  page: Page,
-  source: [number, number],
-  target: [number, number]
-) {
-  return page.evaluate(
-    ({ source, target }) => {
-      const root = document.querySelector('affine-edgeless-root') as any;
-      if (!root) throw new Error('edgeless root not found');
-      return root.service.crud.addElement('connector', {
-        source: { position: source },
-        target: { position: target },
-      });
-    },
-    { source, target }
-  );
-}
-
 test.describe('connector menu', () => {
   test('rounded connector appears in type menu', async ({ page }) => {
     await edgelessCommonSetup(page);

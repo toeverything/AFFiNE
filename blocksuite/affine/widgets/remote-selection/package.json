@@ -22,7 +22,7 @@
     "@toeverything/theme": "^1.1.23",
     "@types/lodash-es": "^4.17.12",
     "lit": "^3.2.0",
-    "lodash-es": "^4.17.21",
+    "lodash-es": "^4.17.23",
     "rxjs": "^7.8.2"
   },
   "exports": {
@@ -35,5 +35,5 @@
     "!src/__tests__",
     "!dist/__tests__"
   ],
-  "version": "0.26.0"
+  "version": "0.26.3"
 }

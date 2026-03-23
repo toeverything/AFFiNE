@@ -1,6 +1,6 @@
 import { type Framework } from '@toeverything/infra';
 
-import { WorkbenchService } from '../workbench';
+import { WorkbenchService } from '../workbench/services/workbench';
 import { WorkspaceScope } from '../workspace';
 import { PeekViewEntity } from './entities/peek-view';
 import { PeekViewService } from './services/peek-view';

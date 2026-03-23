@@ -7,12 +7,12 @@ import {
   AllShapeConfig,
   mountShapeTextEditor,
 } from '@blocksuite/affine-gfx-shape';
-import type { ShapeName } from '@blocksuite/affine-model';
 import {
   ConnectorMode,
   getShapeRadius,
   getShapeType,
-  ShapeElementModel,
+  type ShapeElementModel,
+  type ShapeName,
 } from '@blocksuite/affine-model';
 import { EditPropsStore } from '@blocksuite/affine-shared/services';
 import { stopPropagation } from '@blocksuite/affine-shared/utils';

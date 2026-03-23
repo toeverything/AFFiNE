@@ -302,6 +302,29 @@ export class WorkspaceUserModel extends BaseModel {
     });
   }
 
+  async hasSharedWorkspace(userId: string, otherUserId: string) {
+    if (userId === otherUserId) {
+      return true;
+    }
+
+    const shared = await this.db.workspaceUserRole.findFirst({
+      select: { id: true },
+      where: {
+        userId,
+        status: WorkspaceMemberStatus.Accepted,
+        workspace: {
+          permissions: {
+            some: {
+              userId: otherUserId,
+            },
+          },
+        },
+      },
+    });
+
+    return !!shared;
+  }
+
   async paginate(workspaceId: string, pagination: PaginationInput) {
     return await Promise.all([
       this.db.workspaceUserRole.findMany({

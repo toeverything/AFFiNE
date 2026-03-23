@@ -75,7 +75,7 @@ export { CheckoutParams };
 @Injectable()
 export class SubscriptionService {
   private readonly logger = new Logger(SubscriptionService.name);
-  private readonly scheduleManager = new ScheduleManager(this.stripeProvider);
+  private readonly scheduleManager: ScheduleManager;
 
   constructor(
     private readonly stripeProvider: StripeFactory,
@@ -85,7 +85,9 @@ export class SubscriptionService {
     private readonly userManager: UserSubscriptionManager,
     private readonly workspaceManager: WorkspaceSubscriptionManager,
     private readonly selfhostManager: SelfhostTeamSubscriptionManager
-  ) {}
+  ) {
+    this.scheduleManager = new ScheduleManager(this.stripeProvider);
+  }
 
   get stripe() {
     return this.stripeProvider.stripe;

@@ -2,16 +2,24 @@ import { type Color, ColorScheme } from '@blocksuite/affine-model';
 import { FeatureFlagService } from '@blocksuite/affine-shared/services';
 import { requestConnectedFrame } from '@blocksuite/affine-shared/utils';
 import { DisposableGroup } from '@blocksuite/global/disposable';
-import type { IBound } from '@blocksuite/global/gfx';
-import { getBoundWithRotation, intersects } from '@blocksuite/global/gfx';
+import {
+  Bound,
+  getBoundWithRotation,
+  type IBound,
+  intersects,
+} from '@blocksuite/global/gfx';
 import type { BlockStdScope } from '@blocksuite/std';
 import type {
   GfxCompatibleInterface,
+  GfxController,
+  GfxLocalElementModel,
   GridManager,
   LayerManager,
   SurfaceBlockModel,
   Viewport,
 } from '@blocksuite/std/gfx';
+import { GfxControllerIdentifier } from '@blocksuite/std/gfx';
+import { effect } from '@preact/signals-core';
 import last from 'lodash-es/last';
 import { Subject } from 'rxjs';
 
@@ -40,10 +48,81 @@ type RendererOptions = {
   surfaceModel: SurfaceBlockModel;
 };
 
+export type CanvasRenderPassMetrics = {
+  overlayCount: number;
+  placeholderElementCount: number;
+  renderByBoundCallCount: number;
+  renderedElementCount: number;
+  visibleElementCount: number;
+};
+
+export type CanvasMemorySnapshot = {
+  bytes: number;
+  datasetLayerId: string | null;
+  height: number;
+  kind: 'main' | 'stacking';
+  width: number;
+  zIndex: string;
+};
+
+export type CanvasRendererDebugMetrics = {
+  canvasLayerCount: number;
+  canvasMemoryBytes: number;
+  canvasMemorySnapshots: CanvasMemorySnapshot[];
+  canvasMemoryMegabytes: number;
+  canvasPixelCount: number;
+  coalescedRefreshCount: number;
+  dirtyLayerRenderCount: number;
+  fallbackElementCount: number;
+  lastRenderDurationMs: number;
+  lastRenderMetrics: CanvasRenderPassMetrics;
+  maxRenderDurationMs: number;
+  pooledStackingCanvasCount: number;
+  refreshCount: number;
+  renderCount: number;
+  stackingCanvasCount: number;
+  totalLayerCount: number;
+  totalRenderDurationMs: number;
+  visibleStackingCanvasCount: number;
+};
+
+type MutableCanvasRendererDebugMetrics = Omit<
+  CanvasRendererDebugMetrics,
+  | 'canvasLayerCount'
+  | 'canvasMemoryBytes'
+  | 'canvasMemoryMegabytes'
+  | 'canvasPixelCount'
+  | 'canvasMemorySnapshots'
+  | 'pooledStackingCanvasCount'
+  | 'stackingCanvasCount'
+  | 'totalLayerCount'
+  | 'visibleStackingCanvasCount'
+>;
+
+type RenderPassStats = CanvasRenderPassMetrics;
+
+type StackingCanvasState = {
+  bound: Bound | null;
+  layerId: string | null;
+};
+
+type RefreshTarget =
+  | { type: 'all' }
+  | { type: 'main' }
+  | { type: 'element'; element: SurfaceElementModel | GfxLocalElementModel }
+  | {
+      type: 'elements';
+      elements: Array<SurfaceElementModel | GfxLocalElementModel>;
+    };
+
+const STACKING_CANVAS_PADDING = 32;
+
 export class CanvasRenderer {
   private _container!: HTMLElement;
 
   private readonly _disposables = new DisposableGroup();
+
+  private readonly _gfx: GfxController;
 
   private readonly _turboEnabled: () => boolean;
 
@@ -52,6 +131,37 @@ export class CanvasRenderer {
   private _refreshRafId: number | null = null;
 
   private _stackingCanvas: HTMLCanvasElement[] = [];
+
+  private readonly _stackingCanvasPool: HTMLCanvasElement[] = [];
+
+  private readonly _stackingCanvasState = new WeakMap<
+    HTMLCanvasElement,
+    StackingCanvasState
+  >();
+
+  private readonly _dirtyStackingCanvasIndexes = new Set<number>();
+
+  private _mainCanvasDirty = true;
+
+  private _needsFullRender = true;
+
+  private _debugMetrics: MutableCanvasRendererDebugMetrics = {
+    refreshCount: 0,
+    coalescedRefreshCount: 0,
+    renderCount: 0,
+    totalRenderDurationMs: 0,
+    lastRenderDurationMs: 0,
+    maxRenderDurationMs: 0,
+    lastRenderMetrics: {
+      renderByBoundCallCount: 0,
+      visibleElementCount: 0,
+      renderedElementCount: 0,
+      placeholderElementCount: 0,
+      overlayCount: 0,
+    },
+    dirtyLayerRenderCount: 0,
+    fallbackElementCount: 0,
+  };
 
   canvas: HTMLCanvasElement;
 
@@ -89,6 +199,7 @@ export class CanvasRenderer {
     this.layerManager = options.layerManager;
     this.grid = options.gridManager;
     this.provider = options.provider ?? {};
+    this._gfx = this.std.get(GfxControllerIdentifier);
 
     this._turboEnabled = () => {
       const featureFlagService = options.std.get(FeatureFlagService);
@@ -132,15 +243,199 @@ export class CanvasRenderer {
     };
   }
 
+  private _applyStackingCanvasLayout(
+    canvas: HTMLCanvasElement,
+    bound: Bound | null,
+    dpr = window.devicePixelRatio
+  ) {
+    const state =
+      this._stackingCanvasState.get(canvas) ??
+      ({
+        bound: null,
+        layerId: canvas.dataset.layerId ?? null,
+      } satisfies StackingCanvasState);
+
+    if (!bound || bound.w <= 0 || bound.h <= 0) {
+      canvas.style.display = 'none';
+      canvas.style.left = '0px';
+      canvas.style.top = '0px';
+      canvas.style.width = '0px';
+      canvas.style.height = '0px';
+      canvas.style.transform = '';
+      canvas.width = 0;
+      canvas.height = 0;
+      state.bound = null;
+      state.layerId = canvas.dataset.layerId ?? null;
+      this._stackingCanvasState.set(canvas, state);
+      return;
+    }
+
+    const { viewportBounds, zoom, viewScale } = this.viewport;
+    const width = bound.w * zoom;
+    const height = bound.h * zoom;
+    const left = (bound.x - viewportBounds.x) * zoom;
+    const top = (bound.y - viewportBounds.y) * zoom;
+    const actualWidth = Math.max(1, Math.ceil(width * dpr));
+    const actualHeight = Math.max(1, Math.ceil(height * dpr));
+    const transform = `translate(${left}px, ${top}px) scale(${1 / viewScale})`;
+
+    if (canvas.style.display !== 'block') {
+      canvas.style.display = 'block';
+    }
+    if (canvas.style.left !== '0px') {
+      canvas.style.left = '0px';
+    }
+    if (canvas.style.top !== '0px') {
+      canvas.style.top = '0px';
+    }
+    if (canvas.style.width !== `${width}px`) {
+      canvas.style.width = `${width}px`;
+    }
+    if (canvas.style.height !== `${height}px`) {
+      canvas.style.height = `${height}px`;
+    }
+    if (canvas.style.transform !== transform) {
+      canvas.style.transform = transform;
+    }
+    if (canvas.style.transformOrigin !== 'top left') {
+      canvas.style.transformOrigin = 'top left';
+    }
+
+    if (canvas.width !== actualWidth) {
+      canvas.width = actualWidth;
+    }
+
+    if (canvas.height !== actualHeight) {
+      canvas.height = actualHeight;
+    }
+
+    state.bound = bound;
+    state.layerId = canvas.dataset.layerId ?? null;
+    this._stackingCanvasState.set(canvas, state);
+  }
+
+  private _clampBoundToViewport(bound: Bound, viewportBounds: Bound) {
+    const minX = Math.max(bound.x, viewportBounds.x);
+    const minY = Math.max(bound.y, viewportBounds.y);
+    const maxX = Math.min(bound.maxX, viewportBounds.maxX);
+    const maxY = Math.min(bound.maxY, viewportBounds.maxY);
+
+    if (maxX <= minX || maxY <= minY) {
+      return null;
+    }
+
+    return new Bound(minX, minY, maxX - minX, maxY - minY);
+  }
+
+  private _createCanvasForLayer(
+    onCreated?: (canvas: HTMLCanvasElement) => void
+  ) {
+    const reused = this._stackingCanvasPool.pop();
+
+    if (reused) {
+      return reused;
+    }
+
+    const created = document.createElement('canvas');
+    onCreated?.(created);
+    return created;
+  }
+
+  private _findLayerIndexByElement(
+    element: SurfaceElementModel | GfxLocalElementModel
+  ) {
+    const canvasLayers = this.layerManager.getCanvasLayers();
+    const index = canvasLayers.findIndex(layer =>
+      layer.elements.some(layerElement => layerElement.id === element.id)
+    );
+
+    return index === -1 ? null : index;
+  }
+
+  private _getLayerRenderBound(
+    elements: SurfaceElementModel[],
+    viewportBounds: Bound
+  ) {
+    let layerBound: Bound | null = null;
+
+    for (const element of elements) {
+      const display = (element.display ?? true) && !element.hidden;
+
+      if (!display) {
+        continue;
+      }
+
+      const elementBound = Bound.from(getBoundWithRotation(element));
+
+      if (!intersects(elementBound, viewportBounds)) {
+        continue;
+      }
+
+      layerBound = layerBound ? layerBound.unite(elementBound) : elementBound;
+    }
+
+    if (!layerBound) {
+      return null;
+    }
+
+    return this._clampBoundToViewport(
+      layerBound.expand(STACKING_CANVAS_PADDING),
+      viewportBounds
+    );
+  }
+
+  private _getResolvedStackingCanvasBound(
+    canvas: HTMLCanvasElement,
+    bound: Bound | null
+  ) {
+    if (!bound || !this._gfx.tool.dragging$.peek()) {
+      return bound;
+    }
+
+    const previousBound = this._stackingCanvasState.get(canvas)?.bound;
+
+    return previousBound ? previousBound.unite(bound) : bound;
+  }
+
+  private _invalidate(target: RefreshTarget = { type: 'all' }) {
+    if (target.type === 'all') {
+      this._needsFullRender = true;
+      this._mainCanvasDirty = true;
+      this._dirtyStackingCanvasIndexes.clear();
+      return;
+    }
+
+    if (this._needsFullRender) {
+      return;
+    }
+
+    if (target.type === 'main') {
+      this._mainCanvasDirty = true;
+      return;
+    }
+
+    const elements =
+      target.type === 'element' ? [target.element] : target.elements;
+
+    for (const element of elements) {
+      const layerIndex = this._findLayerIndexByElement(element);
+
+      if (layerIndex === null || layerIndex >= this._stackingCanvas.length) {
+        this._mainCanvasDirty = true;
+        continue;
+      }
+
+      this._dirtyStackingCanvasIndexes.add(layerIndex);
+    }
+  }
+
+  private _resetPooledCanvas(canvas: HTMLCanvasElement) {
+    canvas.dataset.layerId = '';
+    this._applyStackingCanvasLayout(canvas, null);
+  }
+
   private _initStackingCanvas(onCreated?: (canvas: HTMLCanvasElement) => void) {
     const layer = this.layerManager;
-    const updateStackingCanvasSize = (canvases: HTMLCanvasElement[]) => {
-      this._stackingCanvas = canvases;
-
-      const sizeUpdater = this._canvasSizeUpdater();
-
-      canvases.filter(sizeUpdater.filter).forEach(sizeUpdater.update);
-    };
     const updateStackingCanvas = () => {
       /**
        * we already have a main canvas, so the last layer should be skipped
@@ -159,11 +454,7 @@ export class CanvasRenderer {
         const created = i < currentCanvases.length;
         const canvas = created
           ? currentCanvases[i]
-          : document.createElement('canvas');
-
-        if (!created) {
-          onCreated?.(canvas);
-        }
+          : this._createCanvasForLayer(onCreated);
 
         canvas.dataset.layerId = `[${layer.indexes[0]}--${layer.indexes[1]}]`;
         canvas.style.zIndex = layer.zIndex.toString();
@@ -171,7 +462,6 @@ export class CanvasRenderer {
       }
 
       this._stackingCanvas = canvases;
-      updateStackingCanvasSize(canvases);
 
       if (currentCanvases.length !== canvases.length) {
         const diff = canvases.length - currentCanvases.length;
@@ -189,12 +479,16 @@ export class CanvasRenderer {
           payload.added = canvases.slice(-diff);
         } else {
           payload.removed = currentCanvases.slice(diff);
+          payload.removed.forEach(canvas => {
+            this._resetPooledCanvas(canvas);
+            this._stackingCanvasPool.push(canvas);
+          });
         }
 
         this.stackingCanvasUpdated.next(payload);
       }
 
-      this.refresh();
+      this.refresh({ type: 'all' });
     };
 
     this._disposables.add(
@@ -211,7 +505,7 @@ export class CanvasRenderer {
 
     this._disposables.add(
       this.viewport.viewportUpdated.subscribe(() => {
-        this.refresh();
+        this.refresh({ type: 'all' });
       })
     );
 
@@ -222,7 +516,6 @@ export class CanvasRenderer {
           sizeUpdatedRafId = null;
           this._resetSize();
           this._render();
-          this.refresh();
         }, this._container);
       })
     );
@@ -233,58 +526,198 @@ export class CanvasRenderer {
 
         if (this.usePlaceholder !== shouldRenderPlaceholders) {
           this.usePlaceholder = shouldRenderPlaceholders;
-          this.refresh();
+          this.refresh({ type: 'all' });
         }
+      })
+    );
+
+    let wasDragging = false;
+    this._disposables.add(
+      effect(() => {
+        const isDragging = this._gfx.tool.dragging$.value;
+
+        if (wasDragging && !isDragging) {
+          this.refresh({ type: 'all' });
+        }
+
+        wasDragging = isDragging;
       })
     );
 
     this.usePlaceholder = false;
   }
 
+  private _createRenderPassStats(): RenderPassStats {
+    return {
+      renderByBoundCallCount: 0,
+      visibleElementCount: 0,
+      renderedElementCount: 0,
+      placeholderElementCount: 0,
+      overlayCount: 0,
+    };
+  }
+
+  private _getCanvasMemorySnapshots(): CanvasMemorySnapshot[] {
+    return [this.canvas, ...this._stackingCanvas].map((canvas, index) => {
+      return {
+        kind: index === 0 ? 'main' : 'stacking',
+        width: canvas.width,
+        height: canvas.height,
+        bytes: canvas.width * canvas.height * 4,
+        zIndex: canvas.style.zIndex,
+        datasetLayerId: canvas.dataset.layerId ?? null,
+      };
+    });
+  }
+
   private _render() {
+    const renderStart = performance.now();
     const { viewportBounds, zoom } = this.viewport;
     const { ctx } = this;
     const dpr = window.devicePixelRatio;
     const scale = zoom * dpr;
     const matrix = new DOMMatrix().scaleSelf(scale);
+    const renderStats = this._createRenderPassStats();
+    const fullRender = this._needsFullRender;
+    const stackingIndexesToRender = fullRender
+      ? this._stackingCanvas.map((_, idx) => idx)
+      : [...this._dirtyStackingCanvasIndexes];
     /**
      * if a layer does not have a corresponding canvas
      * its element will be add to this array and drawing on the
      * main canvas
      */
     let fallbackElement: SurfaceElementModel[] = [];
+    const allCanvasLayers = this.layerManager.getCanvasLayers();
+    const viewportBound = Bound.from(viewportBounds);
 
-    this.layerManager.getCanvasLayers().forEach((layer, idx) => {
-      if (!this._stackingCanvas[idx]) {
-        fallbackElement = fallbackElement.concat(layer.elements);
-        return;
+    for (const idx of stackingIndexesToRender) {
+      const layer = allCanvasLayers[idx];
+      const canvas = this._stackingCanvas[idx];
+
+      if (!layer || !canvas) {
+        continue;
       }
 
-      const canvas = this._stackingCanvas[idx];
-      const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
-      const rc = new RoughCanvas(ctx.canvas);
+      const layerRenderBound = this._getLayerRenderBound(
+        layer.elements,
+        viewportBound
+      );
+      const resolvedLayerRenderBound = this._getResolvedStackingCanvasBound(
+        canvas,
+        layerRenderBound
+      );
 
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      this._applyStackingCanvasLayout(canvas, resolvedLayerRenderBound);
+
+      if (
+        !resolvedLayerRenderBound ||
+        canvas.width === 0 ||
+        canvas.height === 0
+      ) {
+        continue;
+      }
+
+      const layerCtx = canvas.getContext('2d') as CanvasRenderingContext2D;
+      const layerRc = new RoughCanvas(layerCtx.canvas);
+
+      layerCtx.clearRect(0, 0, canvas.width, canvas.height);
+      layerCtx.save();
+      layerCtx.setTransform(matrix);
+
+      this._renderByBound(
+        layerCtx,
+        matrix,
+        layerRc,
+        resolvedLayerRenderBound,
+        layer.elements,
+        false,
+        renderStats
+      );
+    }
+
+    if (fullRender || this._mainCanvasDirty) {
+      allCanvasLayers.forEach((layer, idx) => {
+        if (!this._stackingCanvas[idx]) {
+          fallbackElement = fallbackElement.concat(layer.elements);
+        }
+      });
+
+      ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
       ctx.save();
       ctx.setTransform(matrix);
 
-      this._renderByBound(ctx, matrix, rc, viewportBounds, layer.elements);
-    });
+      this._renderByBound(
+        ctx,
+        matrix,
+        new RoughCanvas(ctx.canvas),
+        viewportBounds,
+        fallbackElement,
+        true,
+        renderStats
+      );
+    }
 
-    ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    ctx.save();
-
-    ctx.setTransform(matrix);
-
-    this._renderByBound(
-      ctx,
-      matrix,
-      new RoughCanvas(ctx.canvas),
-      viewportBounds,
-      fallbackElement,
-      true
+    const canvasMemorySnapshots = this._getCanvasMemorySnapshots();
+    const canvasMemoryBytes = canvasMemorySnapshots.reduce(
+      (sum, snapshot) => sum + snapshot.bytes,
+      0
     );
+    const layerTypes = this.layerManager.layers.map(layer => layer.type);
+    const renderDurationMs = performance.now() - renderStart;
+
+    this._debugMetrics.renderCount += 1;
+    this._debugMetrics.totalRenderDurationMs += renderDurationMs;
+    this._debugMetrics.lastRenderDurationMs = renderDurationMs;
+    this._debugMetrics.maxRenderDurationMs = Math.max(
+      this._debugMetrics.maxRenderDurationMs,
+      renderDurationMs
+    );
+    this._debugMetrics.lastRenderMetrics = renderStats;
+    this._debugMetrics.fallbackElementCount = fallbackElement.length;
+    this._debugMetrics.dirtyLayerRenderCount = stackingIndexesToRender.length;
+
+    this._lastDebugSnapshot = {
+      canvasMemorySnapshots,
+      canvasMemoryBytes,
+      canvasPixelCount: canvasMemorySnapshots.reduce(
+        (sum, snapshot) => sum + snapshot.width * snapshot.height,
+        0
+      ),
+      stackingCanvasCount: this._stackingCanvas.length,
+      canvasLayerCount: layerTypes.filter(type => type === 'canvas').length,
+      totalLayerCount: layerTypes.length,
+      pooledStackingCanvasCount: this._stackingCanvasPool.length,
+      visibleStackingCanvasCount: this._stackingCanvas.filter(
+        canvas => canvas.width > 0 && canvas.height > 0
+      ).length,
+    };
+
+    this._needsFullRender = false;
+    this._mainCanvasDirty = false;
+    this._dirtyStackingCanvasIndexes.clear();
   }
+
+  private _lastDebugSnapshot: Pick<
+    CanvasRendererDebugMetrics,
+    | 'canvasMemoryBytes'
+    | 'canvasMemorySnapshots'
+    | 'canvasPixelCount'
+    | 'canvasLayerCount'
+    | 'pooledStackingCanvasCount'
+    | 'stackingCanvasCount'
+    | 'totalLayerCount'
+    | 'visibleStackingCanvasCount'
+  > = {
+    canvasMemoryBytes: 0,
+    canvasMemorySnapshots: [],
+    canvasPixelCount: 0,
+    canvasLayerCount: 0,
+    pooledStackingCanvasCount: 0,
+    stackingCanvasCount: 0,
+    totalLayerCount: 0,
+    visibleStackingCanvasCount: 0,
+  };
 
   private _renderByBound(
     ctx: CanvasRenderingContext2D | null,
@@ -292,9 +725,12 @@ export class CanvasRenderer {
     rc: RoughCanvas,
     bound: IBound,
     surfaceElements?: SurfaceElementModel[],
-    overLay: boolean = false
+    overLay: boolean = false,
+    renderStats?: RenderPassStats
   ) {
     if (!ctx) return;
+
+    renderStats && (renderStats.renderByBoundCallCount += 1);
 
     const elements =
       surfaceElements ??
@@ -305,10 +741,12 @@ export class CanvasRenderer {
     for (const element of elements) {
       const display = (element.display ?? true) && !element.hidden;
       if (display && intersects(getBoundWithRotation(element), bound)) {
+        renderStats && (renderStats.visibleElementCount += 1);
         if (
           this.usePlaceholder &&
           !(element as GfxCompatibleInterface).forceFullRender
         ) {
+          renderStats && (renderStats.placeholderElementCount += 1);
           ctx.save();
           ctx.fillStyle = 'rgba(200, 200, 200, 0.5)';
           const drawX = element.x - bound.x;
@@ -316,6 +754,7 @@ export class CanvasRenderer {
           ctx.fillRect(drawX, drawY, element.w, element.h);
           ctx.restore();
         } else {
+          renderStats && (renderStats.renderedElementCount += 1);
           ctx.save();
           const renderFn = this.std.getOptional<ElementRenderer>(
             ElementRendererIdentifier(element.type)
@@ -333,6 +772,7 @@ export class CanvasRenderer {
     }
 
     if (overLay) {
+      renderStats && (renderStats.overlayCount += this._overlays.size);
       for (const overlay of this._overlays) {
         ctx.save();
         ctx.translate(-bound.x, -bound.y);
@@ -348,33 +788,38 @@ export class CanvasRenderer {
     const sizeUpdater = this._canvasSizeUpdater();
 
     sizeUpdater.update(this.canvas);
-
-    this._stackingCanvas.forEach(sizeUpdater.update);
-    this.refresh();
+    this._invalidate({ type: 'all' });
   }
 
   private _watchSurface(surfaceModel: SurfaceBlockModel) {
     this._disposables.add(
-      surfaceModel.elementAdded.subscribe(() => this.refresh())
+      surfaceModel.elementAdded.subscribe(() => this.refresh({ type: 'all' }))
     );
     this._disposables.add(
-      surfaceModel.elementRemoved.subscribe(() => this.refresh())
+      surfaceModel.elementRemoved.subscribe(() => this.refresh({ type: 'all' }))
     );
     this._disposables.add(
-      surfaceModel.localElementAdded.subscribe(() => this.refresh())
+      surfaceModel.localElementAdded.subscribe(() =>
+        this.refresh({ type: 'all' })
+      )
     );
     this._disposables.add(
-      surfaceModel.localElementDeleted.subscribe(() => this.refresh())
+      surfaceModel.localElementDeleted.subscribe(() =>
+        this.refresh({ type: 'all' })
+      )
     );
     this._disposables.add(
-      surfaceModel.localElementUpdated.subscribe(() => this.refresh())
+      surfaceModel.localElementUpdated.subscribe(({ model }) => {
+        this.refresh({ type: 'element', element: model });
+      })
     );
 
     this._disposables.add(
       surfaceModel.elementUpdated.subscribe(payload => {
         // ignore externalXYWH update cause it's updated by the renderer
         if (payload.props['externalXYWH']) return;
-        this.refresh();
+        const element = surfaceModel.getElementById(payload.id);
+        this.refresh(element ? { type: 'element', element } : { type: 'all' });
       })
     );
   }
@@ -382,7 +827,7 @@ export class CanvasRenderer {
   addOverlay(overlay: Overlay) {
     overlay.setRenderer(this);
     this._overlays.add(overlay);
-    this.refresh();
+    this.refresh({ type: 'main' });
   }
 
   /**
@@ -394,7 +839,7 @@ export class CanvasRenderer {
     container.append(this.canvas);
 
     this._resetSize();
-    this.refresh();
+    this.refresh({ type: 'all' });
   }
 
   dispose(): void {
@@ -453,8 +898,46 @@ export class CanvasRenderer {
     return this.provider.getPropertyValue?.(property) ?? '';
   }
 
-  refresh() {
-    if (this._refreshRafId !== null) return;
+  getDebugMetrics(): CanvasRendererDebugMetrics {
+    return {
+      ...this._debugMetrics,
+      ...this._lastDebugSnapshot,
+      canvasMemoryMegabytes:
+        this._lastDebugSnapshot.canvasMemoryBytes / 1024 / 1024,
+    };
+  }
+
+  resetDebugMetrics() {
+    this._debugMetrics = {
+      refreshCount: 0,
+      coalescedRefreshCount: 0,
+      renderCount: 0,
+      totalRenderDurationMs: 0,
+      lastRenderDurationMs: 0,
+      maxRenderDurationMs: 0,
+      lastRenderMetrics: this._createRenderPassStats(),
+      dirtyLayerRenderCount: 0,
+      fallbackElementCount: 0,
+    };
+    this._lastDebugSnapshot = {
+      canvasMemoryBytes: 0,
+      canvasMemorySnapshots: [],
+      canvasPixelCount: 0,
+      canvasLayerCount: 0,
+      pooledStackingCanvasCount: 0,
+      stackingCanvasCount: 0,
+      totalLayerCount: 0,
+      visibleStackingCanvasCount: 0,
+    };
+  }
+
+  refresh(target: RefreshTarget = { type: 'all' }) {
+    this._debugMetrics.refreshCount += 1;
+    this._invalidate(target);
+    if (this._refreshRafId !== null) {
+      this._debugMetrics.coalescedRefreshCount += 1;
+      return;
+    }
 
     this._refreshRafId = requestConnectedFrame(() => {
       this._refreshRafId = null;
@@ -469,6 +952,6 @@ export class CanvasRenderer {
 
     overlay.setRenderer(null);
     this._overlays.delete(overlay);
-    this.refresh();
+    this.refresh({ type: 'main' });
   }
 }

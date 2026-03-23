@@ -1,12 +1,8 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
+import type { CalendarAccount } from '@prisma/client';
 
 import { CalendarProviderRequestError, Config, OnEvent } from '../../../base';
-import { CalendarProviderFactory } from './factory';
-
-export enum CalendarProviderName {
-  Google = 'google',
-  CalDAV = 'caldav',
-}
+import { CalendarProviderFactory, CalendarProviderName } from './factory';
 
 export interface CalendarProviderTokens {
   accessToken: string;
@@ -54,9 +50,15 @@ export interface CalendarProviderEvent {
 export interface CalendarProviderListEventsParams {
   accessToken: string;
   calendarId: string;
+  account?: CalendarAccount;
   timeMin?: string;
   timeMax?: string;
   syncToken?: string;
+}
+
+export interface CalendarProviderListCalendarsParams {
+  accessToken: string;
+  account?: CalendarAccount;
 }
 
 export interface CalendarProviderListEventsResult {
@@ -97,7 +99,7 @@ export abstract class CalendarProvider {
     accessToken: string
   ): Promise<CalendarAccountProfile>;
   abstract listCalendars(
-    accessToken: string
+    params: CalendarProviderListCalendarsParams
   ): Promise<CalendarProviderCalendar[]>;
   abstract listEvents(
     params: CalendarProviderListEventsParams
@@ -117,12 +119,17 @@ export abstract class CalendarProvider {
   }
 
   get configured() {
-    return (
-      !!this.config &&
-      !!this.config.enabled &&
-      !!this.config.clientId &&
-      !!this.config.clientSecret
-    );
+    if (!this.config || !this.config.enabled) {
+      return false;
+    }
+    if ('clientId' in this.config || 'clientSecret' in this.config) {
+      return Boolean(this.config.clientId && this.config.clientSecret);
+    }
+    return true;
+  }
+
+  get supportsOAuth() {
+    return true;
   }
 
   @OnEvent('config.init')
@@ -147,8 +154,8 @@ export abstract class CalendarProvider {
 
   protected async fetchJson<T>(url: string, init?: RequestInit) {
     const response = await fetch(url, {
-      headers: { Accept: 'application/json', ...init?.headers },
       ...init,
+      headers: { ...init?.headers, Accept: 'application/json' },
     });
     const body = await response.text();
     if (!response.ok) {

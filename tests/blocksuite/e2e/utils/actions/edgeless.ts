@@ -859,10 +859,10 @@ export async function updateExistedBrushElementSize(
   page: Page,
   nthSizeButton: 1 | 2 | 3 | 4 | 5 | 6
 ) {
-  // get the nth brush size button
-  const btn = page.locator(
-    `edgeless-line-width-panel .point-button:nth-child(${nthSizeButton})`
-  );
+  // pick from the visible panel to avoid strict-mode collisions from hidden/duplicate toolbars
+  const btn = page
+    .locator('edgeless-line-width-panel:visible .point-button')
+    .nth(nthSizeButton - 1);
 
   await btn.click();
 }
@@ -1931,8 +1931,8 @@ export async function createShapeElement(
   await setEdgelessTool(page, 'default');
   await waitNextFrame(page, 200);
   const afterIds = await getIds(page, true);
-  const createdIds = afterIds.filter(id => !beforeIds.includes(id));
-  return createdIds[0] ?? selectedId;
+  const createdId = afterIds.find(id => !beforeIds.includes(id));
+  return createdId ?? selectedId;
 }
 
 export async function createConnectorElement(

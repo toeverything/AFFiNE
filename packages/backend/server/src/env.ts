@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import pkg from '../package.json' with { type: 'json' };
 
 declare global {
+  // oxlint-disable-next-line no-shadow-restricted-names
   namespace globalThis {
     // oxlint-disable-next-line no-var
     var env: Readonly<Env>;
@@ -22,6 +23,7 @@ export enum Flavor {
   Graphql = 'graphql',
   Sync = 'sync',
   Renderer = 'renderer',
+  Front = 'front',
   Doc = 'doc',
   Script = 'script',
 }
@@ -108,6 +110,7 @@ export class Env implements AppEnv {
       graphql: this.isFlavor(Flavor.Graphql),
       sync: this.isFlavor(Flavor.Sync),
       renderer: this.isFlavor(Flavor.Renderer),
+      front: this.FLAVOR === Flavor.Front,
       doc: this.isFlavor(Flavor.Doc),
       // Script in a special flavor, return true only when it is set explicitly
       script: this.FLAVOR === Flavor.Script,

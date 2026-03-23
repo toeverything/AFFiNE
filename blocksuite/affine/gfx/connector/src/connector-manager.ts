@@ -8,10 +8,11 @@ import {
   type Connection,
   ConnectorElementModel,
   ConnectorMode,
+  CONTAINER_TITLE_SIZE,
   GroupElementModel,
   type LocalConnectorElementModel,
+  ShapeType,
 } from '@blocksuite/affine-model';
-import { CONTAINER_TITLE_SIZE, ShapeType } from '@blocksuite/affine-model';
 import { ThemeProvider } from '@blocksuite/affine-shared/services';
 import { BlockSuiteError } from '@blocksuite/global/exceptions';
 import type { IBound, IVec, IVec3 } from '@blocksuite/global/gfx';
@@ -1514,7 +1515,7 @@ export class ConnectionOverlay extends Overlay {
   private _setupThemeListener(): void {
     const themeService = this.gfx.std.get(ThemeProvider);
     this._themeDisposer = effect(() => {
-      themeService.theme$;
+      void themeService.theme$.value;
       this._emphasisColor = this._getEmphasisColor();
     });
   }

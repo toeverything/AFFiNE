@@ -8,22 +8,30 @@ import { addDays, subDays } from 'date-fns';
 import {
   CalendarProviderRequestError,
   Config,
+  GraphqlBadRequest,
   Mutex,
   URLHelper,
 } from '../../base';
+import { SessionRedis } from '../../base/redis';
 import { Models } from '../../models';
+import type { CalendarCalDAVProviderPreset } from './config';
 import {
   CalendarProvider,
   CalendarProviderEvent,
   CalendarProviderEventTime,
+  CalendarProviderFactory,
   CalendarProviderName,
   CalendarSyncTokenInvalid,
 } from './providers';
-import { CalendarProviderFactory } from './providers';
+import type { LinkCalDAVAccountInput } from './types';
 
 const TOKEN_REFRESH_SKEW_MS = 60 * 1000;
 const DEFAULT_PAST_DAYS = 90;
 const DEFAULT_FUTURE_DAYS = 180;
+const SYNC_FAILURE_BACKOFF_KEY_PREFIX = 'calendar:sync:backoff:';
+const SYNC_FAILURE_BACKOFF_BASE_MS = 5 * 60 * 1000;
+const SYNC_FAILURE_BACKOFF_MAX_MS = 6 * 60 * 60 * 1000;
+const SYNC_FAILURE_BACKOFF_TTL_SECONDS = 24 * 60 * 60;
 
 @Injectable()
 export class CalendarService {
@@ -32,8 +40,9 @@ export class CalendarService {
 
   constructor(
     private readonly models: Models,
-    private readonly providerFactory: CalendarProviderFactory,
+    private readonly providerFactory: CalendarProviderFactory<CalendarProvider>,
     private readonly mutex: Mutex,
+    private readonly redis: SessionRedis,
     private readonly config: Config,
     private readonly url: URLHelper
   ) {}
@@ -102,11 +111,11 @@ export class CalendarService {
       const accessToken = accountTokens.accessToken;
       if (accessToken) {
         await Promise.allSettled(
-          needToStopChannel.map(s => {
+          needToStopChannel.map(async s => {
             if (!s.customChannelId || !s.customResourceId) {
-              return Promise.resolve();
+              return;
             }
-            return provider.stopChannel?.({
+            return await provider.stopChannel?.({
               accessToken,
               channelId: s.customChannelId,
               resourceId: s.customResourceId,
@@ -159,6 +168,92 @@ export class CalendarService {
     return account;
   }
 
+  async linkCalDAVAccount(params: {
+    userId: string;
+    input: LinkCalDAVAccountInput;
+  }) {
+    const caldavConfig = this.config.calendar.caldav;
+    if (!caldavConfig?.enabled) {
+      throw new GraphqlBadRequest({
+        code: 'caldav_disabled',
+        message: 'CalDAV integration is not enabled.',
+      });
+    }
+
+    const preset = caldavConfig.providers.find(
+      provider => provider.id === params.input.providerPresetId
+    );
+    if (!preset) {
+      throw new GraphqlBadRequest({
+        code: 'caldav_provider_not_found',
+        message: 'CalDAV provider is not available.',
+      });
+    }
+
+    const provider = this.requireProvider(CalendarProviderName.CalDAV);
+    if (!('discoverAccount' in provider)) {
+      throw new GraphqlBadRequest({
+        code: 'caldav_provider_unavailable',
+        message: 'CalDAV provider is not configured.',
+      });
+    }
+
+    const discovery = await (
+      provider as CalendarProvider & {
+        discoverAccount: (input: {
+          preset: CalendarCalDAVProviderPreset;
+          username: string;
+          password: string;
+        }) => Promise<{
+          providerAccountId: string;
+          serverUrl: string;
+          principalUrl: string;
+          calendarHomeUrl: string;
+          authType?: string | null;
+        }>;
+      }
+    ).discoverAccount({
+      preset,
+      username: params.input.username,
+      password: params.input.password,
+    });
+
+    const account = await this.models.calendarAccount.upsert({
+      userId: params.userId,
+      provider: CalendarProviderName.CalDAV,
+      providerAccountId: discovery.providerAccountId,
+      displayName: params.input.displayName ?? null,
+      email: params.input.username,
+      accessToken: params.input.password,
+      refreshToken: null,
+      expiresAt: null,
+      scope: null,
+      status: 'active',
+      lastError: null,
+      providerPresetId: params.input.providerPresetId,
+      serverUrl: discovery.serverUrl,
+      principalUrl: discovery.principalUrl,
+      calendarHomeUrl: discovery.calendarHomeUrl,
+      username: params.input.username,
+      authType: discovery.authType ?? null,
+    });
+
+    try {
+      await this.syncAccountCalendars(account.id);
+    } catch (error) {
+      if (error instanceof CalendarProviderRequestError) {
+        await this.models.calendarAccount.updateStatus(
+          account.id,
+          'invalid',
+          error.message
+        );
+      }
+      throw error;
+    }
+
+    return account;
+  }
+
   async syncAccountCalendars(accountId: string) {
     const account = await this.models.calendarAccount.get(accountId);
     if (!account) {
@@ -177,7 +272,10 @@ export class CalendarService {
       return;
     }
 
-    const calendars = await provider.listCalendars(accessToken);
+    const calendars = await provider.listCalendars({
+      accessToken,
+      account,
+    });
     const upserted = [];
     for (const calendar of calendars) {
       upserted.push(
@@ -215,10 +313,22 @@ export class CalendarService {
       return;
     }
 
+    const now = Date.now();
+    const backoff = await this.getSyncFailureBackoff(subscription.id);
+    if (backoff && now < backoff.nextRetryAt.getTime()) {
+      return;
+    }
+
     await using lock = await this.mutex.acquire(
       `calendar:subscription:${subscriptionId}`
     );
     if (!lock) {
+      return;
+    }
+
+    const lockedNow = Date.now();
+    const lockedBackoff = await this.getSyncFailureBackoff(subscription.id);
+    if (lockedBackoff && lockedNow < lockedBackoff.nextRetryAt.getTime()) {
       return;
     }
 
@@ -229,8 +339,18 @@ export class CalendarService {
       return;
     }
 
-    const { accessToken } = await this.ensureAccessToken(account);
-    if (!accessToken) {
+    let accessToken: string | null = null;
+    try {
+      const tokens = await this.ensureAccessToken(account);
+      if (!tokens.accessToken) return;
+      accessToken = tokens.accessToken;
+    } catch (error) {
+      await this.handleSubscriptionSyncFailure({
+        error,
+        subscription,
+        account,
+        provider,
+      });
       return;
     }
 
@@ -245,6 +365,7 @@ export class CalendarService {
         subscriptionId: subscription.id,
         calendarId: subscription.externalCalendarId,
         accessToken,
+        account,
         syncToken: shouldUseSyncToken
           ? (subscription.syncToken ?? undefined)
           : undefined,
@@ -259,30 +380,42 @@ export class CalendarService {
         await this.models.calendarSubscription.updateSync(subscription.id, {
           syncToken: null,
         });
-        await this.syncWithProvider({
-          provider,
-          subscriptionId: subscription.id,
-          calendarId: subscription.externalCalendarId,
-          accessToken,
-          timeMin,
-          timeMax,
-          subscriptionTimezone: subscription.timezone ?? undefined,
-        });
-        synced = true;
-      } else {
-        if (this.isTokenInvalidError(error)) {
-          await this.invalidateAccount(account.id, (error as Error).message);
-        } else {
-          this.logger.warn(
-            `Calendar sync failed for subscription ${subscription.id}`,
-            error as Error
-          );
+        try {
+          await this.syncWithProvider({
+            provider,
+            subscriptionId: subscription.id,
+            calendarId: subscription.externalCalendarId,
+            accessToken,
+            account,
+            timeMin,
+            timeMax,
+            subscriptionTimezone: subscription.timezone ?? undefined,
+          });
+          synced = true;
+        } catch (syncTokenRetryError) {
+          await this.handleSubscriptionSyncFailure({
+            error: syncTokenRetryError,
+            subscription,
+            account,
+            provider,
+            accessToken,
+          });
+          return;
         }
+      } else {
+        await this.handleSubscriptionSyncFailure({
+          error,
+          subscription,
+          account,
+          provider,
+          accessToken,
+        });
         return;
       }
     }
 
     if (synced) {
+      await this.clearSyncFailureBackoff(subscription.id);
       await this.ensureWebhookChannel(subscription, provider, accessToken);
     }
 
@@ -410,7 +543,21 @@ export class CalendarService {
   }
 
   isProviderAvailable(provider: CalendarProviderName) {
-    return !!this.providerFactory.get(provider);
+    return this.isProviderAvailableFor(provider);
+  }
+
+  isProviderAvailableFor(
+    provider: CalendarProviderName,
+    options?: { oauth?: boolean }
+  ) {
+    const instance = this.providerFactory.get(provider);
+    if (!instance) {
+      return false;
+    }
+    if (options?.oauth) {
+      return instance.supportsOAuth;
+    }
+    return true;
   }
 
   getAuthUrl(
@@ -418,7 +565,14 @@ export class CalendarService {
     state: string,
     redirectUri: string
   ) {
-    return this.requireProvider(provider).getAuthUrl(state, redirectUri);
+    const instance = this.requireProvider(provider);
+    if (!instance.supportsOAuth) {
+      throw new GraphqlBadRequest({
+        code: 'calendar_provider_oauth_unsupported',
+        message: 'Selected calendar provider does not support OAuth.',
+      });
+    }
+    return instance.getAuthUrl(state, redirectUri);
   }
 
   private async syncWithProvider(params: {
@@ -426,6 +580,7 @@ export class CalendarService {
     subscriptionId: string;
     calendarId: string;
     accessToken: string;
+    account: CalendarAccount;
     syncToken?: string;
     timeMin?: string;
     timeMax?: string;
@@ -434,6 +589,7 @@ export class CalendarService {
     const response = await params.provider.listEvents({
       accessToken: params.accessToken,
       calendarId: params.calendarId,
+      account: params.account,
       syncToken: params.syncToken,
       timeMin: params.timeMin,
       timeMax: params.timeMax,
@@ -537,8 +693,11 @@ export class CalendarService {
     }
 
     const zone = time.timeZone ?? fallbackTimezone ?? 'UTC';
+    if (!time.date) {
+      throw new Error('Calendar provider returned all-day event without date');
+    }
     return {
-      date: this.convertDateToUtc(time.date!, zone),
+      date: this.convertDateToUtc(time.date, zone),
       allDay: true,
     };
   }
@@ -632,7 +791,8 @@ export class CalendarService {
 
   private isTokenInvalidError(error: unknown) {
     if (error instanceof CalendarProviderRequestError) {
-      if (error.status === 401) {
+      const status = error.data?.status ?? error.status;
+      if (status === 401) {
         return true;
       }
       return error.message.includes('invalid_grant');
@@ -641,19 +801,6 @@ export class CalendarService {
       return error.message.includes('invalid_grant');
     }
     return false;
-  }
-
-  private async invalidateAccount(accountId: string, lastError?: string) {
-    await this.models.calendarAccount.updateStatus(
-      accountId,
-      'invalid',
-      lastError ?? null
-    );
-    const subscriptions =
-      await this.models.calendarSubscription.listByAccount(accountId);
-    const subscriptionIds = subscriptions.map(s => s.id);
-    await this.models.calendarEvent.deleteBySubscriptionIds(subscriptionIds);
-    await this.models.calendarSubscription.clearSyncTokensByAccount(accountId);
   }
 
   private requireProvider(name: CalendarProviderName) {
@@ -719,5 +866,181 @@ export class CalendarService {
       customResourceId: result.resourceId,
       channelExpiration: result.expiration ?? null,
     });
+  }
+
+  private async handleSubscriptionSyncFailure(params: {
+    error: unknown;
+    subscription: {
+      id: string;
+      externalCalendarId: string;
+      customChannelId: string | null;
+      customResourceId: string | null;
+    };
+    account: CalendarAccount;
+    provider: CalendarProvider;
+    accessToken?: string;
+  }) {
+    if (this.isSubscriptionMissingError(params.error)) {
+      await this.disableSubscription({
+        subscriptionId: params.subscription.id,
+        provider: params.provider,
+        accessToken: params.accessToken,
+        customChannelId: params.subscription.customChannelId,
+        customResourceId: params.subscription.customResourceId,
+      });
+      this.logger.warn(
+        `Calendar subscription ${params.subscription.id} was disabled because provider returned 404 for calendar ${params.subscription.externalCalendarId}`
+      );
+      return;
+    }
+
+    if (this.isTokenInvalidError(params.error)) {
+      await this.clearSyncFailureBackoff(params.subscription.id);
+      await this.models.calendarAccount.invalidateAndPurge(
+        params.account.id,
+        this.formatSyncError(params.error)
+      );
+      return;
+    }
+
+    const backoff = await this.bumpSyncFailureBackoff(params.subscription.id);
+    const interval = params.account.refreshIntervalMinutes ?? 60;
+    const lastSyncAt = this.calculateLastSyncAtForRetry(
+      backoff.nextRetryAt,
+      interval
+    );
+    await this.models.calendarSubscription.updateLastSyncAt(
+      params.subscription.id,
+      lastSyncAt
+    );
+    this.logger.warn(
+      `Calendar sync failed for subscription ${params.subscription.id}, attempt ${backoff.attempt}, next retry at ${backoff.nextRetryAt.toISOString()}`,
+      this.toError(params.error)
+    );
+  }
+
+  private isSubscriptionMissingError(error: unknown) {
+    if (!(error instanceof CalendarProviderRequestError)) {
+      return false;
+    }
+    const status = error.data?.status ?? error.status;
+    return status === 404;
+  }
+
+  private calculateLastSyncAtForRetry(
+    nextRetryAt: Date,
+    refreshIntervalMinutes: number
+  ) {
+    // Cron schedules by `now - lastSyncAt >= refreshInterval`, so back-calculate
+    // a synthetic lastSyncAt to defer the next attempt to `nextRetryAt`.
+    return new Date(nextRetryAt.getTime() - refreshIntervalMinutes * 60 * 1000);
+  }
+
+  private async disableSubscription(params: {
+    subscriptionId: string;
+    provider: CalendarProvider;
+    accessToken?: string;
+    customChannelId: string | null;
+    customResourceId: string | null;
+  }) {
+    if (
+      params.provider.stopChannel &&
+      params.accessToken &&
+      params.customChannelId &&
+      params.customResourceId
+    ) {
+      try {
+        await params.provider.stopChannel({
+          accessToken: params.accessToken,
+          channelId: params.customChannelId,
+          resourceId: params.customResourceId,
+        });
+      } catch (error) {
+        this.logger.warn(
+          `Failed to stop webhook channel for disabled calendar subscription ${params.subscriptionId}`,
+          this.toError(error)
+        );
+      }
+    }
+
+    await this.models.calendarSubscription.disableAndPurge(
+      params.subscriptionId
+    );
+    await this.clearSyncFailureBackoff(params.subscriptionId);
+  }
+
+  private getSyncFailureBackoffKey(subscriptionId: string) {
+    return `${SYNC_FAILURE_BACKOFF_KEY_PREFIX}${subscriptionId}`;
+  }
+
+  private async getSyncFailureBackoff(subscriptionId: string) {
+    const key = this.getSyncFailureBackoffKey(subscriptionId);
+    const value = await this.redis.get(key);
+    if (!value) {
+      return null;
+    }
+
+    try {
+      const parsed = JSON.parse(value) as {
+        attempt?: number;
+        nextRetryAt?: string;
+      };
+      if (!parsed.attempt || !parsed.nextRetryAt) {
+        return null;
+      }
+      const nextRetryAt = new Date(parsed.nextRetryAt);
+      if (Number.isNaN(nextRetryAt.getTime())) {
+        return null;
+      }
+      return {
+        attempt: parsed.attempt,
+        nextRetryAt,
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  private async bumpSyncFailureBackoff(subscriptionId: string) {
+    const state = await this.getSyncFailureBackoff(subscriptionId);
+    const attempt = (state?.attempt ?? 0) + 1;
+    const delay = Math.min(
+      SYNC_FAILURE_BACKOFF_BASE_MS * 2 ** (attempt - 1),
+      SYNC_FAILURE_BACKOFF_MAX_MS
+    );
+    const nextRetryAt = new Date(Date.now() + delay);
+    const key = this.getSyncFailureBackoffKey(subscriptionId);
+    await this.redis.set(
+      key,
+      JSON.stringify({
+        attempt,
+        nextRetryAt: nextRetryAt.toISOString(),
+      }),
+      'EX',
+      SYNC_FAILURE_BACKOFF_TTL_SECONDS
+    );
+    return {
+      attempt,
+      nextRetryAt,
+    };
+  }
+
+  private async clearSyncFailureBackoff(subscriptionId: string) {
+    const key = this.getSyncFailureBackoffKey(subscriptionId);
+    await this.redis.del(key);
+  }
+
+  private formatSyncError(error: unknown) {
+    if (error instanceof Error && error.message) {
+      return error.message;
+    }
+    return String(error);
+  }
+
+  private toError(error: unknown) {
+    if (error instanceof Error) {
+      return error;
+    }
+    return new Error(this.formatSyncError(error));
   }
 }

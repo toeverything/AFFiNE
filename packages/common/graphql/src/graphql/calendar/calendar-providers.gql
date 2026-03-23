@@ -1,5 +1,11 @@
 query calendarProviders {
   serverConfig {
+    calendarCalDAVProviders {
+      id
+      label
+      requiresAppPassword
+      docsUrl
+    }
     calendarProviders
   }
 }

@@ -122,6 +122,64 @@ test('should refresh exists userSession', async t => {
   );
 });
 
+test('should record sign-in client version on create and update', async t => {
+  const user = await t.context.user.create({
+    email: 'test@affine.pro',
+  });
+  const session = await t.context.session.createSession();
+
+  const userSession1 = await t.context.session.createOrRefreshUserSession(
+    user.id,
+    session.id,
+    undefined,
+    '0.25.0'
+  );
+  t.is(userSession1.signInClientVersion, '0.25.0');
+
+  const userSession2 = await t.context.session.createOrRefreshUserSession(
+    user.id,
+    session.id
+  );
+  t.is(userSession2.signInClientVersion, '0.25.0');
+
+  const userSession3 = await t.context.session.createOrRefreshUserSession(
+    user.id,
+    session.id,
+    undefined,
+    '0.26.0'
+  );
+  t.is(userSession3.signInClientVersion, '0.26.0');
+});
+
+test('should record refresh client version only when refreshed', async t => {
+  const user = await t.context.user.create({
+    email: 'test@affine.pro',
+  });
+  const session = await t.context.session.createSession();
+  const userSession = await t.context.session.createOrRefreshUserSession(
+    user.id,
+    session.id
+  );
+
+  // force refresh
+  userSession.expiresAt = new Date(
+    userSession.expiresAt!.getTime() -
+      t.context.config.auth.session.ttr * 2 * 1000
+  );
+
+  const newExpiresAt = await t.context.session.refreshUserSessionIfNeeded(
+    userSession,
+    undefined,
+    '0.25.0'
+  );
+  t.truthy(newExpiresAt);
+
+  const refreshed = await t.context.db.userSession.findFirst({
+    where: { id: userSession.id },
+  });
+  t.is(refreshed?.refreshClientVersion, '0.25.0');
+});
+
 test('should not refresh userSession when expires time not hit ttr', async t => {
   const user = await t.context.user.create({
     email: 'test@affine.pro',

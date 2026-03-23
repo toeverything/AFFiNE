@@ -1,12 +1,12 @@
-import { tool } from 'ai';
 import Exa from 'exa-js';
 import { z } from 'zod';
 
 import { Config } from '../../../base';
 import { toolError } from './error';
+import { defineTool } from './tool';
 
 export const createExaCrawlTool = (config: Config) => {
-  return tool({
+  return defineTool({
     description: 'Crawl the web url for information',
     inputSchema: z.object({
       url: z
@@ -19,9 +19,7 @@ export const createExaCrawlTool = (config: Config) => {
         const exa = new Exa(key);
         const result = await exa.getContents([url], {
           livecrawl: 'always',
-          text: {
-            maxCharacters: 100000,
-          },
+          text: { maxCharacters: 100000 },
         });
         return result.results.map(data => ({
           title: data.title,

@@ -582,6 +582,21 @@ Could you make a new website based on these notes and send back just the html fi
 
   AIProvider.provide('session', {
     createSession,
+    createSessionWithHistory: async options => {
+      if (!options.sessionId && !options.retry) {
+        return client.createSessionWithHistory({
+          workspaceId: options.workspaceId,
+          docId: options.docId,
+          promptName: options.promptName,
+          pinned: options.pinned,
+          reuseLatestChat: options.reuseLatestChat,
+        });
+      }
+
+      const sessionId = await createSession(options);
+      if (!sessionId) return undefined;
+      return client.getSession(options.workspaceId, sessionId);
+    },
     getSession: async (workspaceId: string, sessionId: string) => {
       return client.getSession(workspaceId, sessionId);
     },
@@ -823,7 +838,7 @@ Could you make a new website based on these notes and send back just the html fi
             regular: string;
           };
         }[];
-      } = await client.fetcher(url.toString()).then(res => res.json());
+      } = await fetch(url.toString()).then((res: Response) => res.json());
       if (!result.results) return [];
       return result.results.map(r => {
         const url = new URL(r.urls.regular);

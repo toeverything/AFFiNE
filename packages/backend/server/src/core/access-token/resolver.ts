@@ -28,13 +28,6 @@ class GenerateAccessTokenInput {
 export class AccessTokenResolver {
   constructor(private readonly models: Models) {}
 
-  @Query(() => [AccessToken], {
-    deprecationReason: 'use currentUser.accessTokens',
-  })
-  async accessTokens(@CurrentUser() user: CurrentUser): Promise<AccessToken[]> {
-    return await this.models.accessToken.list(user.id);
-  }
-
   @Query(() => [RevealedAccessToken], {
     deprecationReason: 'use currentUser.revealedAccessTokens',
   })

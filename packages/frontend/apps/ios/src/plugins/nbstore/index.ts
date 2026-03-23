@@ -3,6 +3,10 @@ import {
   uint8ArrayToBase64,
 } from '@affine/core/modules/workspace-engine';
 import {
+  decodePayload,
+  MOBILE_BLOB_FILE_PREFIX,
+} from '@affine/mobile-shared/nbstore/payload';
+import {
   type BlobRecord,
   type CrawlResult,
   type DocClock,
@@ -132,14 +136,23 @@ export const NbStoreNativeDBApis: NativeDBApis = {
       id,
       key,
     });
-    return record
-      ? {
-          data: base64ToUint8Array(record.data),
-          key: record.key,
-          mime: record.mime,
-          createdAt: new Date(record.createdAt),
-        }
-      : null;
+    if (!record) {
+      return null;
+    }
+
+    let refreshedBlobPromise: ReturnType<typeof NbStore.getBlob> | undefined;
+
+    return {
+      data: await decodePayload(record.data, MOBILE_BLOB_FILE_PREFIX, {
+        onTokenReadFailure: async () => {
+          refreshedBlobPromise ??= NbStore.getBlob({ id, key });
+          return (await refreshedBlobPromise)?.data;
+        },
+      }),
+      key: record.key,
+      mime: record.mime,
+      createdAt: new Date(record.createdAt),
+    };
   },
   setBlob: async function (id: string, blob: BlobRecord): Promise<void> {
     await NbStore.setBlob({

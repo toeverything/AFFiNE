@@ -54,10 +54,41 @@ export class HttpRequestError extends UserFriendlyError {
     super('bad_request', 'http_request_error', message, args);
   }
 }
+@ObjectType()
+class SsrfBlockedErrorDataType {
+  @Field() reason!: string
+}
+
+export class SsrfBlockedError extends UserFriendlyError {
+  constructor(args: SsrfBlockedErrorDataType, message?: string | ((args: SsrfBlockedErrorDataType) => string)) {
+    super('invalid_input', 'ssrf_blocked_error', message, args);
+  }
+}
+@ObjectType()
+class ResponseTooLargeErrorDataType {
+  @Field() limitBytes!: number
+  @Field() receivedBytes!: number
+}
+
+export class ResponseTooLargeError extends UserFriendlyError {
+  constructor(args: ResponseTooLargeErrorDataType, message?: string | ((args: ResponseTooLargeErrorDataType) => string)) {
+    super('invalid_input', 'response_too_large_error', message, args);
+  }
+}
 
 export class EmailServiceNotConfigured extends UserFriendlyError {
   constructor(message?: string) {
     super('internal_server_error', 'email_service_not_configured', message);
+  }
+}
+@ObjectType()
+class ImageFormatNotSupportedDataType {
+  @Field() format!: string
+}
+
+export class ImageFormatNotSupported extends UserFriendlyError {
+  constructor(args: ImageFormatNotSupportedDataType, message?: string | ((args: ImageFormatNotSupportedDataType) => string)) {
+    super('invalid_input', 'image_format_not_supported', message, args);
   }
 }
 @ObjectType()
@@ -1131,7 +1162,10 @@ export enum ErrorNames {
   BAD_REQUEST,
   GRAPHQL_BAD_REQUEST,
   HTTP_REQUEST_ERROR,
+  SSRF_BLOCKED_ERROR,
+  RESPONSE_TOO_LARGE_ERROR,
   EMAIL_SERVICE_NOT_CONFIGURED,
+  IMAGE_FORMAT_NOT_SUPPORTED,
   QUERY_TOO_LONG,
   VALIDATION_ERROR,
   USER_NOT_FOUND,
@@ -1274,5 +1308,5 @@ registerEnumType(ErrorNames, {
 export const ErrorDataUnionType = createUnionType({
   name: 'ErrorDataUnion',
   types: () =>
-    [GraphqlBadRequestDataType, HttpRequestErrorDataType, QueryTooLongDataType, ValidationErrorDataType, WrongSignInCredentialsDataType, UnknownOauthProviderDataType, InvalidOauthCallbackCodeDataType, MissingOauthQueryParameterDataType, InvalidOauthResponseDataType, InvalidEmailDataType, InvalidPasswordLengthDataType, WorkspacePermissionNotFoundDataType, SpaceNotFoundDataType, MemberNotFoundInSpaceDataType, NotInSpaceDataType, AlreadyInSpaceDataType, SpaceAccessDeniedDataType, SpaceOwnerNotFoundDataType, SpaceShouldHaveOnlyOneOwnerDataType, DocNotFoundDataType, DocActionDeniedDataType, DocUpdateBlockedDataType, VersionRejectedDataType, InvalidHistoryTimestampDataType, DocHistoryNotFoundDataType, BlobNotFoundDataType, ExpectToGrantDocUserRolesDataType, ExpectToRevokeDocUserRolesDataType, ExpectToUpdateDocUserRoleDataType, NoMoreSeatDataType, UnsupportedSubscriptionPlanDataType, SubscriptionAlreadyExistsDataType, SubscriptionNotExistsDataType, SameSubscriptionRecurringDataType, SubscriptionPlanNotFoundDataType, CalendarProviderRequestErrorDataType, NoCopilotProviderAvailableDataType, CopilotFailedToGenerateEmbeddingDataType, CopilotDocNotFoundDataType, CopilotMessageNotFoundDataType, CopilotPromptNotFoundDataType, CopilotProviderNotSupportedDataType, CopilotProviderSideErrorDataType, CopilotInvalidContextDataType, CopilotContextFileNotSupportedDataType, CopilotFailedToModifyContextDataType, CopilotFailedToMatchContextDataType, CopilotFailedToMatchGlobalContextDataType, CopilotFailedToAddWorkspaceFileEmbeddingDataType, RuntimeConfigNotFoundDataType, InvalidRuntimeConfigTypeDataType, InvalidLicenseToActivateDataType, InvalidLicenseUpdateParamsDataType, UnsupportedClientVersionDataType, MentionUserDocAccessDeniedDataType, InvalidAppConfigDataType, InvalidAppConfigInputDataType, InvalidSearchProviderRequestDataType, InvalidIndexerInputDataType] as const,
+    [GraphqlBadRequestDataType, HttpRequestErrorDataType, SsrfBlockedErrorDataType, ResponseTooLargeErrorDataType, ImageFormatNotSupportedDataType, QueryTooLongDataType, ValidationErrorDataType, WrongSignInCredentialsDataType, UnknownOauthProviderDataType, InvalidOauthCallbackCodeDataType, MissingOauthQueryParameterDataType, InvalidOauthResponseDataType, InvalidEmailDataType, InvalidPasswordLengthDataType, WorkspacePermissionNotFoundDataType, SpaceNotFoundDataType, MemberNotFoundInSpaceDataType, NotInSpaceDataType, AlreadyInSpaceDataType, SpaceAccessDeniedDataType, SpaceOwnerNotFoundDataType, SpaceShouldHaveOnlyOneOwnerDataType, DocNotFoundDataType, DocActionDeniedDataType, DocUpdateBlockedDataType, VersionRejectedDataType, InvalidHistoryTimestampDataType, DocHistoryNotFoundDataType, BlobNotFoundDataType, ExpectToGrantDocUserRolesDataType, ExpectToRevokeDocUserRolesDataType, ExpectToUpdateDocUserRoleDataType, NoMoreSeatDataType, UnsupportedSubscriptionPlanDataType, SubscriptionAlreadyExistsDataType, SubscriptionNotExistsDataType, SameSubscriptionRecurringDataType, SubscriptionPlanNotFoundDataType, CalendarProviderRequestErrorDataType, NoCopilotProviderAvailableDataType, CopilotFailedToGenerateEmbeddingDataType, CopilotDocNotFoundDataType, CopilotMessageNotFoundDataType, CopilotPromptNotFoundDataType, CopilotProviderNotSupportedDataType, CopilotProviderSideErrorDataType, CopilotInvalidContextDataType, CopilotContextFileNotSupportedDataType, CopilotFailedToModifyContextDataType, CopilotFailedToMatchContextDataType, CopilotFailedToMatchGlobalContextDataType, CopilotFailedToAddWorkspaceFileEmbeddingDataType, RuntimeConfigNotFoundDataType, InvalidRuntimeConfigTypeDataType, InvalidLicenseToActivateDataType, InvalidLicenseUpdateParamsDataType, UnsupportedClientVersionDataType, MentionUserDocAccessDeniedDataType, InvalidAppConfigDataType, InvalidAppConfigInputDataType, InvalidSearchProviderRequestDataType, InvalidIndexerInputDataType] as const,
 });

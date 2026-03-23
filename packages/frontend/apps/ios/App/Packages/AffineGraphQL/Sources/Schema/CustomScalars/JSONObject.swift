@@ -7,35 +7,5 @@
 
 import ApolloAPI
 
-public typealias JSONObject = CustomJSON
-
-public enum CustomJSON: CustomScalarType, Hashable {
-  case dictionary([String: AnyHashable])
-  case array([AnyHashable])
-
-  public init(_jsonValue value: JSONValue) throws {
-    if let dict = value as? [String: AnyHashable] {
-      self = .dictionary(dict)
-    } else if let array = value as? [AnyHashable] {
-      self = .array(array)
-    } else {
-      throw JSONDecodingError.couldNotConvert(value: value, to: CustomJSON.self)
-    }
-  }
-
-  public var _jsonValue: JSONValue {
-    switch self {
-    case let .dictionary(json as AnyHashable),
-         let .array(json as AnyHashable):
-      json
-    }
-  }
-
-  public static func == (lhs: CustomJSON, rhs: CustomJSON) -> Bool {
-    lhs._jsonValue == rhs._jsonValue
-  }
-
-  public func hash(into hasher: inout Hasher) {
-    hasher.combine(_jsonValue)
-  }
-}
+/// The `JSONObject` scalar type represents JSON objects as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
+public typealias JSONObject = String

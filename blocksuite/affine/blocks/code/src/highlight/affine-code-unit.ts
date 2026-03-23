@@ -45,8 +45,10 @@ export class AffineCodeUnit extends ShadowlessElement {
     if (!codeBlock || !vElement) return plainContent;
     const tokens = codeBlock.highlightTokens$.value;
     if (tokens.length === 0) return plainContent;
+    const line = tokens[vElement.lineIndex];
+    if (!line) return plainContent;
     // copy the tokens to avoid modifying the original tokens
-    const lineTokens = structuredClone(tokens[vElement.lineIndex]);
+    const lineTokens = structuredClone(line);
     if (lineTokens.length === 0) return plainContent;
 
     const startOffset = vElement.startOffset;

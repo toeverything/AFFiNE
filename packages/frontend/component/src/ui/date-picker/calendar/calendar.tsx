@@ -46,7 +46,7 @@ export const DatePicker = (props: DatePickerProps) => {
       setCursor(dayjs(v));
       onChange?.(v);
     },
-    [onChange]
+    [setMode, onChange]
   );
 
   const onCursorChange = useCallback(

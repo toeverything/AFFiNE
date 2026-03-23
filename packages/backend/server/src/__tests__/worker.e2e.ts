@@ -1,25 +1,49 @@
+import { LookupAddress } from 'node:dns';
+
 import type { ExecutionContext, TestFn } from 'ava';
 import ava from 'ava';
 import Sinon from 'sinon';
 import type { Response } from 'supertest';
 
+import {
+  __resetDnsLookupForTests,
+  __setDnsLookupForTests,
+  type DnsLookup,
+} from '../base/utils/ssrf';
 import { createTestingApp, TestingApp } from './utils';
 
 type TestContext = {
   app: TestingApp;
 };
-
 const test = ava as TestFn<TestContext>;
+
+const LookupAddressStub = (async (_hostname, options) => {
+  const result = [{ address: '76.76.21.21', family: 4 }] as LookupAddress[];
+  const isOptions = options && typeof options === 'object';
+  if (isOptions && 'all' in options && options.all) {
+    return result;
+  }
+  return result[0];
+}) as DnsLookup;
 
 test.before(async t => {
   // @ts-expect-error test
   env.DEPLOYMENT_TYPE = 'selfhosted';
+
+  // Avoid relying on real DNS during tests. SSRF protection uses dns.lookup().
+  __setDnsLookupForTests(LookupAddressStub);
+
   const app = await createTestingApp();
 
   t.context.app = app;
 });
 
+test.afterEach.always(() => {
+  Sinon.restore();
+});
+
 test.after.always(async t => {
+  __resetDnsLookupForTests();
   await t.context.app.close();
 });
 
@@ -29,7 +53,8 @@ const assertAndSnapshotRaw = async (
   message: string,
   options?: {
     status?: number;
-    origin?: string;
+    origin?: string | null;
+    referer?: string | null;
     method?: 'GET' | 'OPTIONS' | 'POST';
     body?: any;
     checker?: (res: Response) => any;
@@ -37,22 +62,28 @@ const assertAndSnapshotRaw = async (
 ) => {
   const {
     status = 200,
-    origin = 'http://localhost',
+    origin = 'http://localhost:3010',
+    referer,
     method = 'GET',
     checker = () => {},
   } = options || {};
   const { app } = t.context;
-  const res = app[method](route)
-    .set('Origin', origin)
-    .send(options?.body)
-    .expect(status)
-    .expect(checker);
+  const req = app[method](route);
+  if (origin) {
+    req.set('Origin', origin);
+  }
+  if (referer) {
+    req.set('Referer', referer);
+  }
+
+  const res = req.send(options?.body).expect(status).expect(checker);
   await t.notThrowsAsync(res, message);
   t.snapshot((await res).body);
 };
 
 test('should proxy image', async t => {
   const assertAndSnapshot = assertAndSnapshotRaw.bind(null, t);
+  const imageUrl = `http://example.com/image-${Date.now()}.png`;
 
   await assertAndSnapshot(
     '/api/worker/image-proxy',
@@ -78,34 +109,42 @@ test('should proxy image', async t => {
 
   {
     await assertAndSnapshot(
-      '/api/worker/image-proxy?url=http://example.com/image.png',
+      `/api/worker/image-proxy?url=${imageUrl}`,
+      'should return 400 if origin and referer are missing',
+      { status: 400, origin: null, referer: null }
+    );
+  }
+
+  {
+    await assertAndSnapshot(
+      `/api/worker/image-proxy?url=${imageUrl}`,
       'should return 400 for invalid origin header',
       { status: 400, origin: 'http://invalid.com' }
     );
   }
 
   {
-    const fakeBuffer = Buffer.from('fake image');
-    const fakeResponse = {
-      ok: true,
+    const fakeBuffer = Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jfJ8AAAAASUVORK5CYII=',
+      'base64'
+    );
+    const fakeResponse = new Response(fakeBuffer, {
+      status: 200,
       headers: {
-        get: (header: string) => {
-          if (header.toLowerCase() === 'content-type') return 'image/png';
-          if (header.toLowerCase() === 'content-disposition') return 'inline';
-          return null;
-        },
+        'content-type': 'image/png',
+        'content-disposition': 'inline',
       },
-      arrayBuffer: async () => fakeBuffer,
-    } as any;
+    });
 
     const fetchSpy = Sinon.stub(global, 'fetch').resolves(fakeResponse);
-
-    await assertAndSnapshot(
-      '/api/worker/image-proxy?url=http://example.com/image.png',
-      'should return image buffer'
-    );
-
-    fetchSpy.restore();
+    try {
+      await assertAndSnapshot(
+        `/api/worker/image-proxy?url=${imageUrl}`,
+        'should return image buffer'
+      );
+    } finally {
+      fetchSpy.restore();
+    }
   }
 });
 
@@ -134,6 +173,18 @@ test('should preview link', async t => {
 
   await assertAndSnapshot(
     '/api/worker/link-preview',
+    'should return 400 if origin and referer are missing',
+    {
+      status: 400,
+      method: 'POST',
+      origin: null,
+      referer: null,
+      body: { url: 'http://external.com/page' },
+    }
+  );
+
+  await assertAndSnapshot(
+    '/api/worker/link-preview',
     'should return 400 if provided URL is from the same origin',
     { status: 400, method: 'POST', body: { url: 'http://localhost/somepage' } }
   );
@@ -157,18 +208,19 @@ test('should preview link', async t => {
     });
 
     const fetchSpy = Sinon.stub(global, 'fetch').resolves(fakeHTML);
-
-    await assertAndSnapshot(
-      '/api/worker/link-preview',
-      'should process a valid external URL and return link preview data',
-      {
-        status: 200,
-        method: 'POST',
-        body: { url: 'http://external.com/page' },
-      }
-    );
-
-    fetchSpy.restore();
+    try {
+      await assertAndSnapshot(
+        '/api/worker/link-preview',
+        'should process a valid external URL and return link preview data',
+        {
+          status: 200,
+          method: 'POST',
+          body: { url: 'http://external.com/page' },
+        }
+      );
+    } finally {
+      fetchSpy.restore();
+    }
   }
 
   {
@@ -208,18 +260,19 @@ test('should preview link', async t => {
       });
 
       const fetchSpy = Sinon.stub(global, 'fetch').resolves(fakeHTML);
-
-      await assertAndSnapshot(
-        '/api/worker/link-preview',
-        'should decode HTML content with charset',
-        {
-          status: 200,
-          method: 'POST',
-          body: { url: `http://example.com/${charset}` },
-        }
-      );
-
-      fetchSpy.restore();
+      try {
+        await assertAndSnapshot(
+          '/api/worker/link-preview',
+          'should decode HTML content with charset',
+          {
+            status: 200,
+            method: 'POST',
+            body: { url: `http://example.com/${charset}` },
+          }
+        );
+      } finally {
+        fetchSpy.restore();
+      }
     }
   }
 });

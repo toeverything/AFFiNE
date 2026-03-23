@@ -37,8 +37,7 @@ import {
   PdfTransformer,
   ZipTransformer,
 } from '@blocksuite/affine/widgets/linked-doc';
-import { sha } from '@blocksuite/global/utils';
-import { nextTick } from '@blocksuite/global/utils';
+import { nextTick, sha } from '@blocksuite/global/utils';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
 import { nanoid } from 'nanoid';

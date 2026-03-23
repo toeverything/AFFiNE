@@ -7,7 +7,7 @@ public class ListUsersQuery: GraphQLQuery {
   public static let operationName: String = "listUsers"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"query listUsers($filter: ListUserInput!) { users(filter: $filter) { __typename id name email disabled features hasPassword emailVerified avatarUrl } usersCount }"#
+      #"query listUsers($filter: ListUserInput!) { users(filter: $filter) { __typename id name email disabled features hasPassword emailVerified avatarUrl } usersCount(filter: $filter) }"#
     ))
 
   public var filter: ListUserInput
@@ -25,7 +25,7 @@ public class ListUsersQuery: GraphQLQuery {
     public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.Query }
     public static var __selections: [ApolloAPI.Selection] { [
       .field("users", [User].self, arguments: ["filter": .variable("filter")]),
-      .field("usersCount", Int.self),
+      .field("usersCount", Int.self, arguments: ["filter": .variable("filter")]),
     ] }
 
     /// List registered users

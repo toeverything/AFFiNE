@@ -4,9 +4,9 @@ import { pathToFileURL } from 'node:url';
 import { app, net, protocol, session } from 'electron';
 import cookieParser from 'set-cookie-parser';
 
+import { anotherHost, mainHost } from '../shared/internal-origin';
 import { isWindows, resourcesPath } from '../shared/utils';
 import { buildType, isDev } from './config';
-import { anotherHost, mainHost } from './constants';
 import { logger } from './logger';
 
 const webStaticDir = join(resourcesPath, 'web-static');

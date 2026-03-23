@@ -33,6 +33,7 @@ import {
   FrameBlockModel,
   ImageBlockModel,
   isExternalEmbedModel,
+  MindmapElementModel,
   NoteBlockModel,
   ParagraphBlockModel,
   ShapeElementModel,
@@ -137,10 +138,10 @@ export const moreActions = [
         when(ctx) {
           return ctx.getSurfaceModelsByType(FrameBlockModel).length === 1;
         },
-        async run(ctx) {
+        run(ctx) {
           const model = ctx.getSurfaceModelsByType(FrameBlockModel)[0];
           if (!model) return;
-          await exportFrameMetadata(ctx, model);
+          exportFrameMetadata(ctx, model).catch(console.error);
         },
       },
       {
@@ -150,10 +151,10 @@ export const moreActions = [
         when(ctx) {
           return ctx.getSurfaceModelsByType(FrameBlockModel).length === 1;
         },
-        async run(ctx) {
+        run(ctx) {
           const model = ctx.getSurfaceModelsByType(FrameBlockModel)[0];
           if (!model) return;
-          await exportFramePng(ctx, model);
+          exportFramePng(ctx, model).catch(console.error);
         },
       },
       {
@@ -163,10 +164,10 @@ export const moreActions = [
         when(ctx) {
           return ctx.getSurfaceModelsByType(FrameBlockModel).length === 1;
         },
-        async run(ctx) {
+        run(ctx) {
           const model = ctx.getSurfaceModelsByType(FrameBlockModel)[0];
           if (!model) return;
-          await importFrameMetadata(ctx, model);
+          importFrameMetadata(ctx, model).catch(console.error);
         },
       },
       {
@@ -176,10 +177,10 @@ export const moreActions = [
         when(ctx) {
           return ctx.getSurfaceModelsByType(FrameBlockModel).length === 1;
         },
-        async run(ctx) {
+        run(ctx) {
           const model = ctx.getSurfaceModelsByType(FrameBlockModel)[0];
           if (!model) return;
-          await importFramePng(ctx, model);
+          importFramePng(ctx, model).catch(console.error);
         },
       },
     ],
@@ -721,7 +722,7 @@ export const moreActions = [
       modal.referenceElement = getPropertiesReferenceElement(ctx, model);
       modal.abortController = new AbortController();
 
-      getPropertiesMountRoot(ctx).appendChild(modal);
+      getPropertiesMountRoot(ctx).append(modal);
     },
   },
 
@@ -756,7 +757,17 @@ function reorderElements(
 ) {
   if (!models.length) return;
 
-  for (const model of models) {
+  const normalizedModels = Array.from(
+    new Map(
+      models.map(model => {
+        const reorderTarget =
+          model.group instanceof MindmapElementModel ? model.group : model;
+        return [reorderTarget.id, reorderTarget];
+      })
+    ).values()
+  );
+
+  for (const model of normalizedModels) {
     const index = ctx.gfx.layer.getReorderedIndex(model, type);
 
     // block should be updated in transaction

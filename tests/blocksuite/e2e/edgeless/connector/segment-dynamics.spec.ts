@@ -29,25 +29,6 @@ import { assertConnectorPath } from '../../utils/asserts.js';
 import { test } from '../../utils/playwright.js';
 
 /**
- * Helper: Get segment handle positions from the selected connector
- * Segment handles should appear at the midpoint of each movable segment
- */
-async function getSegmentHandles(page: import('@playwright/test').Page) {
-  return page.evaluate(() => {
-    const handles = document.querySelectorAll(
-      '.line-controller.segment-handle'
-    );
-    return Array.from(handles).map(handle => {
-      const rect = handle.getBoundingClientRect();
-      return {
-        x: rect.x + rect.width / 2,
-        y: rect.y + rect.height / 2,
-      };
-    });
-  });
-}
-
-/**
  * Helper: Get the CSS cursor of a segment handle
  */
 async function getSegmentHandleCursor(
@@ -64,29 +45,6 @@ async function getSegmentHandleCursor(
     },
     [index]
   );
-}
-
-/**
- * Helper: Determine if a segment is horizontal or vertical
- */
-function isHorizontalSegment(
-  start: [number, number],
-  end: [number, number]
-): boolean {
-  // Same X = vertical, Same Y = horizontal
-  const dx = Math.abs(end[0] - start[0]);
-  const dy = Math.abs(end[1] - start[1]);
-  return dy < dx; // More horizontal movement = horizontal segment
-}
-
-/**
- * Helper: Get segment midpoint
- */
-function getSegmentMidpoint(
-  start: [number, number],
-  end: [number, number]
-): [number, number] {
-  return [(start[0] + end[0]) / 2, (start[1] + end[1]) / 2];
 }
 
 // =============================================================================
@@ -227,8 +185,6 @@ test.describe('Phase 3: Drag Constraints', () => {
     await createShapeElement(page, [300, 0], [400, 100], Shape.Square);
 
     await createConnectorElement(page, [100, 50], [300, 50]);
-
-    const pathBefore = await getConnectorPath(page);
 
     // Find the horizontal segment's midpoint
     // For a simple connector, path is: [start, end] or [start, mid1, mid2, end]

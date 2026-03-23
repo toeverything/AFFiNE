@@ -17,6 +17,7 @@ export type AppSetting = {
   autoDownloadUpdate: boolean;
   enableTelemetry: boolean;
   showLinkedDocInSidebar: boolean;
+  disableImageAntialiasing: boolean;
 };
 export const windowFrameStyleOptions: AppSetting['windowFrameStyle'][] = [
   'frameless',
@@ -35,6 +36,7 @@ const appSettingBaseAtom = atomWithStorage<AppSetting>(
     autoDownloadUpdate: true,
     enableTelemetry: true,
     showLinkedDocInSidebar: true,
+    disableImageAntialiasing: false,
   },
   undefined,
   {

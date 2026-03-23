@@ -16,6 +16,7 @@ import type { Request, Response } from 'express';
 
 import { Config } from '../config';
 import { getRequestResponseFromContext } from '../utils/request';
+import { getRequestTrackerId } from '../utils/request-tracker';
 import type { ThrottlerType } from './config';
 import { THROTTLER_PROTECTED, Throttlers } from './decorators';
 
@@ -63,11 +64,8 @@ export class CloudThrottlerGuard extends ThrottlerGuard {
   }
 
   override getTracker(req: Request): Promise<string> {
-    return Promise.resolve(
-      //           ↓ prefer session id if available
-      `throttler:${req.session?.sessionId ?? req.get('CF-Connecting-IP') ?? req.get('CF-ray') ?? req.ip}`
-      // ^ throttler prefix make the key in store recognizable
-    );
+    // throttler prefix make the key in store recognizable
+    return Promise.resolve(`throttler:${getRequestTrackerId(req)}`);
   }
 
   override generateKey(

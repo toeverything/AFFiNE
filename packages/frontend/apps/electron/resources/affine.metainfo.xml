@@ -7,9 +7,9 @@
   <project_license>MIT AND LicenseRef-proprietary=https://github.com/toeverything/AFFiNE/blob/canary/LICENSE</project_license>
   <url type="homepage">https://affine.pro</url>
   <url type="bugtracker">https://github.com/toeverything/AFFiNE/issues</url>
-  <url type="help">https://docs.affine.pro/docs</url>
+  <url type="help">https://docs.affine.pro/</url>
   <url type="vcs-browser">https://github.com/toeverything/AFFiNE</url>
-  <url type="contribute">https://docs.affine.pro/docs/contributing</url>
+  <url type="contribute">https://docs.affine.pro/contributing</url>
   <developer id="pro.affine.app">
     <name>affine</name>
   </developer>
@@ -64,8 +64,8 @@
     </screenshot>
   </screenshots>
   <releases>
-    <release version="0.26.0" date="2026-01-15">
-      <url>https://github.com/toeverything/AFFiNE/releases/tag/v0.26.0</url>
+    <release version="0.26.3" date="2026-02-24">
+      <url>https://github.com/toeverything/AFFiNE/releases/tag/v0.26.3</url>
     </release>
   </releases>
 </component>

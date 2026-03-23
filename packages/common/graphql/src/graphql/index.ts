@@ -6,21 +6,6 @@ export interface GraphQLQuery {
   file?: boolean;
   deprecations?: string[];
 }
-export const copilotChatMessageFragment = `fragment CopilotChatMessage on ChatMessage {
-  id
-  role
-  content
-  attachments
-  streamObjects {
-    type
-    textDelta
-    toolCallId
-    toolName
-    args
-    result
-  }
-  createdAt
-}`;
 export const copilotChatHistoryFragment = `fragment CopilotChatHistory on CopilotHistories {
   sessionId
   workspaceId
@@ -34,24 +19,22 @@ export const copilotChatHistoryFragment = `fragment CopilotChatHistory on Copilo
   title
   tokens
   messages {
-    ...CopilotChatMessage
+    id
+    role
+    content
+    attachments
+    streamObjects {
+      type
+      textDelta
+      toolCallId
+      toolName
+      args
+      result
+    }
+    createdAt
   }
   createdAt
   updatedAt
-}`;
-export const paginatedCopilotChatsFragment = `fragment PaginatedCopilotChats on PaginatedCopilotHistoriesType {
-  pageInfo {
-    hasNextPage
-    hasPreviousPage
-    startCursor
-    endCursor
-  }
-  edges {
-    cursor
-    node {
-      ...CopilotChatHistory
-    }
-  }
 }`;
 export const credentialsRequirementsFragment = `fragment CredentialsRequirements on CredentialsRequirementType {
   password {
@@ -94,6 +77,20 @@ export const currentUserProfileFragment = `fragment CurrentUserProfile on UserTy
     }
   }
 }`;
+export const paginatedCopilotChatsFragment = `fragment PaginatedCopilotChats on PaginatedCopilotHistoriesType {
+  pageInfo {
+    hasNextPage
+    hasPreviousPage
+    startCursor
+    endCursor
+  }
+  edges {
+    cursor
+    node {
+      ...CopilotChatHistory
+    }
+  }
+}${copilotChatHistoryFragment}`;
 export const passwordLimitsFragment = `fragment PasswordLimits on PasswordLimitsType {
   minLength
   maxLength
@@ -141,6 +138,108 @@ export const revokeUserAccessTokenMutation = {
   op: 'revokeUserAccessToken',
   query: `mutation revokeUserAccessToken($id: String!) {
   revokeUserAccessToken(id: $id)
+}`,
+};
+
+export const adminAllSharedLinksQuery = {
+  id: 'adminAllSharedLinksQuery' as const,
+  op: 'adminAllSharedLinks',
+  query: `query adminAllSharedLinks($pagination: PaginationInput!, $filter: AdminAllSharedLinksFilterInput) {
+  adminAllSharedLinks(pagination: $pagination, filter: $filter) {
+    totalCount
+    analyticsWindow {
+      from
+      to
+      timezone
+      bucket
+      requestedSize
+      effectiveSize
+    }
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+      startCursor
+      endCursor
+    }
+    edges {
+      cursor
+      node {
+        workspaceId
+        docId
+        title
+        publishedAt
+        docUpdatedAt
+        workspaceOwnerId
+        lastUpdaterId
+        shareUrl
+        views
+        uniqueViews
+        guestViews
+        lastAccessedAt
+      }
+    }
+  }
+}`,
+};
+
+export const adminDashboardQuery = {
+  id: 'adminDashboardQuery' as const,
+  op: 'adminDashboard',
+  query: `query adminDashboard($input: AdminDashboardInput) {
+  adminDashboard(input: $input) {
+    syncActiveUsers
+    syncActiveUsersTimeline {
+      minute
+      activeUsers
+    }
+    syncWindow {
+      from
+      to
+      timezone
+      bucket
+      requestedSize
+      effectiveSize
+    }
+    copilotConversations
+    workspaceStorageBytes
+    blobStorageBytes
+    workspaceStorageHistory {
+      date
+      value
+    }
+    blobStorageHistory {
+      date
+      value
+    }
+    storageWindow {
+      from
+      to
+      timezone
+      bucket
+      requestedSize
+      effectiveSize
+    }
+    topSharedLinks {
+      workspaceId
+      docId
+      title
+      shareUrl
+      publishedAt
+      views
+      uniqueViews
+      guestViews
+      lastAccessedAt
+    }
+    topSharedLinksWindow {
+      from
+      to
+      timezone
+      bucket
+      requestedSize
+      effectiveSize
+    }
+    generatedAt
+  }
 }`,
 };
 
@@ -299,52 +398,6 @@ export const appConfigQuery = {
   op: 'appConfig',
   query: `query appConfig {
   appConfig
-}`,
-};
-
-export const getPromptsQuery = {
-  id: 'getPromptsQuery' as const,
-  op: 'getPrompts',
-  query: `query getPrompts {
-  listCopilotPrompts {
-    name
-    model
-    action
-    config {
-      frequencyPenalty
-      presencePenalty
-      temperature
-      topP
-    }
-    messages {
-      role
-      content
-      params
-    }
-  }
-}`,
-};
-
-export const updatePromptMutation = {
-  id: 'updatePromptMutation' as const,
-  op: 'updatePrompt',
-  query: `mutation updatePrompt($name: String!, $messages: [CopilotPromptMessageInput!]!) {
-  updateCopilotPrompt(name: $name, messages: $messages) {
-    name
-    model
-    action
-    config {
-      frequencyPenalty
-      presencePenalty
-      temperature
-      topP
-    }
-    messages {
-      role
-      content
-      params
-    }
-  }
 }`,
 };
 
@@ -656,7 +709,33 @@ export const calendarProvidersQuery = {
   op: 'calendarProviders',
   query: `query calendarProviders {
   serverConfig {
+    calendarCalDAVProviders {
+      id
+      label
+      requiresAppPassword
+      docsUrl
+    }
     calendarProviders
+  }
+}`,
+};
+
+export const linkCalDavAccountMutation = {
+  id: 'linkCalDavAccountMutation' as const,
+  op: 'linkCalDavAccount',
+  query: `mutation linkCalDavAccount($input: LinkCalDAVAccountInput!) {
+  linkCalDAVAccount(input: $input) {
+    id
+    provider
+    providerAccountId
+    displayName
+    email
+    status
+    lastError
+    refreshIntervalMinutes
+    calendarsCount
+    createdAt
+    updatedAt
   }
 }`,
 };
@@ -1283,8 +1362,6 @@ export const getCopilotDocSessionsQuery = {
     }
   }
 }
-${copilotChatMessageFragment}
-${copilotChatHistoryFragment}
 ${paginatedCopilotChatsFragment}`,
 };
 
@@ -1304,8 +1381,6 @@ export const getCopilotPinnedSessionsQuery = {
     }
   }
 }
-${copilotChatMessageFragment}
-${copilotChatHistoryFragment}
 ${paginatedCopilotChatsFragment}`,
 };
 
@@ -1321,8 +1396,6 @@ export const getCopilotWorkspaceSessionsQuery = {
     }
   }
 }
-${copilotChatMessageFragment}
-${copilotChatHistoryFragment}
 ${paginatedCopilotChatsFragment}`,
 };
 
@@ -1338,8 +1411,6 @@ export const getCopilotHistoriesQuery = {
     }
   }
 }
-${copilotChatMessageFragment}
-${copilotChatHistoryFragment}
 ${paginatedCopilotChatsFragment}`,
 };
 
@@ -1468,12 +1539,24 @@ export const cleanupCopilotSessionMutation = {
 }`,
 };
 
+export const createCopilotSessionWithHistoryMutation = {
+  id: 'createCopilotSessionWithHistoryMutation' as const,
+  op: 'createCopilotSessionWithHistory',
+  query: `mutation createCopilotSessionWithHistory($options: CreateChatSessionInput!) {
+  createCopilotSessionWithHistory(options: $options) {
+    ...CopilotChatHistory
+  }
+}
+${copilotChatHistoryFragment}`,
+};
+
 export const createCopilotSessionMutation = {
   id: 'createCopilotSessionMutation' as const,
   op: 'createCopilotSession',
   query: `mutation createCopilotSession($options: CreateChatSessionInput!) {
   createCopilotSession(options: $options)
 }`,
+  deprecations: ["'createCopilotSession' is deprecated: use `createCopilotSessionWithHistory` instead"],
 };
 
 export const forkCopilotSessionMutation = {
@@ -1500,8 +1583,6 @@ export const getCopilotLatestDocSessionQuery = {
     }
   }
 }
-${copilotChatMessageFragment}
-${copilotChatHistoryFragment}
 ${paginatedCopilotChatsFragment}`,
 };
 
@@ -1517,8 +1598,6 @@ export const getCopilotSessionQuery = {
     }
   }
 }
-${copilotChatMessageFragment}
-${copilotChatHistoryFragment}
 ${paginatedCopilotChatsFragment}`,
 };
 
@@ -1537,8 +1616,6 @@ export const getCopilotRecentSessionsQuery = {
     }
   }
 }
-${copilotChatMessageFragment}
-${copilotChatHistoryFragment}
 ${paginatedCopilotChatsFragment}`,
 };
 
@@ -1562,8 +1639,6 @@ export const getCopilotSessionsQuery = {
     }
   }
 }
-${copilotChatMessageFragment}
-${copilotChatHistoryFragment}
 ${paginatedCopilotChatsFragment}`,
 };
 
@@ -1846,6 +1921,76 @@ export const getDocDefaultRoleQuery = {
   workspace(id: $workspaceId) {
     doc(docId: $docId) {
       defaultRole
+    }
+  }
+}`,
+};
+
+export const getDocLastAccessedMembersQuery = {
+  id: 'getDocLastAccessedMembersQuery' as const,
+  op: 'getDocLastAccessedMembers',
+  query: `query getDocLastAccessedMembers($workspaceId: String!, $docId: String!, $pagination: PaginationInput!, $query: String, $includeTotal: Boolean) {
+  workspace(id: $workspaceId) {
+    doc(docId: $docId) {
+      lastAccessedMembers(
+        pagination: $pagination
+        query: $query
+        includeTotal: $includeTotal
+      ) {
+        totalCount
+        pageInfo {
+          hasNextPage
+          hasPreviousPage
+          startCursor
+          endCursor
+        }
+        edges {
+          cursor
+          node {
+            user {
+              id
+              name
+              avatarUrl
+            }
+            lastAccessedAt
+            lastDocId
+          }
+        }
+      }
+    }
+  }
+}`,
+};
+
+export const getDocPageAnalyticsQuery = {
+  id: 'getDocPageAnalyticsQuery' as const,
+  op: 'getDocPageAnalytics',
+  query: `query getDocPageAnalytics($workspaceId: String!, $docId: String!, $input: DocPageAnalyticsInput) {
+  workspace(id: $workspaceId) {
+    doc(docId: $docId) {
+      analytics(input: $input) {
+        window {
+          from
+          to
+          timezone
+          bucket
+          requestedSize
+          effectiveSize
+        }
+        series {
+          date
+          totalViews
+          uniqueViews
+          guestViews
+        }
+        summary {
+          totalViews
+          uniqueViews
+          guestViews
+          lastAccessedAt
+        }
+        generatedAt
+      }
     }
   }
 }`,

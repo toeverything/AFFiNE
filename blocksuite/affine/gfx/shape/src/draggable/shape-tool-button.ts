@@ -3,7 +3,6 @@ import { EditPropsStore } from '@blocksuite/affine-shared/services';
 import { once } from '@blocksuite/affine-shared/utils';
 import { EdgelessToolbarToolMixin } from '@blocksuite/affine-widget-edgeless-toolbar';
 import { SignalWatcher } from '@blocksuite/global/lit';
-import { GfxControllerIdentifier } from '@blocksuite/std/gfx';
 import {
   arrow,
   autoUpdate,

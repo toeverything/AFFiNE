@@ -33,7 +33,11 @@ import {
   ReleaseFromGroupIcon,
   UnlockIcon,
 } from '@blocksuite/icons/lit';
-import type { GfxModel } from '@blocksuite/std/gfx';
+import {
+  batchAddChildren,
+  batchRemoveChildren,
+  type GfxModel,
+} from '@blocksuite/std/gfx';
 import { html } from 'lit';
 
 import { renderAlignmentMenu } from './alignment';
@@ -61,14 +65,13 @@ export const builtinMiscToolbarConfig = {
 
         const group = firstModel.group;
 
-        // oxlint-disable-next-line unicorn/prefer-dom-node-remove
-        group.removeChild(firstModel);
+        batchRemoveChildren(group, [firstModel]);
 
         firstModel.index = ctx.gfx.layer.generateIndex();
 
         const parent = group.group;
         if (parent && parent instanceof GroupElementModel) {
-          parent.addChild(firstModel);
+          batchAddChildren(parent, [firstModel]);
         }
       },
     },
@@ -255,9 +258,12 @@ export const builtinMiscToolbarConfig = {
 
         // release other elements from their groups and group with top element
         otherElements.forEach(element => {
-          // oxlint-disable-next-line unicorn/prefer-dom-node-remove
-          element.group?.removeChild(element);
-          topElement.group?.addChild(element);
+          if (element.group) {
+            batchRemoveChildren(element.group, [element]);
+          }
+          if (topElement.group) {
+            batchAddChildren(topElement.group, [element]);
+          }
         });
 
         if (otherElements.length === 0) {

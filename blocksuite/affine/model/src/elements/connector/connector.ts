@@ -194,6 +194,11 @@ export class ConnectorElementModel extends GfxPrimitiveElementModel<ConnectorEle
       return [this.x + this.w / 2, this.y + this.h / 2];
     }
 
+    if (path.length === 0) {
+      const { x, y } = this;
+      return [x, y];
+    }
+
     if (mode === ConnectorMode.Straight) {
       const first = path[0];
       const last = path[path.length - 1];
@@ -231,6 +236,10 @@ export class ConnectorElementModel extends GfxPrimitiveElementModel<ConnectorEle
       y = bounds.y;
       w = bounds.w;
       h = bounds.h;
+    }
+
+    if (path.length === 0) {
+      return 0.5;
     }
 
     point[0] = Vec.clamp(point[0], x, x + w);
@@ -282,6 +291,9 @@ export class ConnectorElementModel extends GfxPrimitiveElementModel<ConnectorEle
     }
 
     if (mode === ConnectorMode.Orthogonal || mode === ConnectorMode.Rounded) {
+      if (path.length === 0) {
+        return [x + w / 2, y + h / 2];
+      }
       const points = path.map<IVec>(p => [p[0], p[1]]);
       const point = Polyline.pointAt(points, offsetDistance);
       if (point) return point;
@@ -322,6 +334,10 @@ export class ConnectorElementModel extends GfxPrimitiveElementModel<ConnectorEle
     }
 
     const { mode, strokeWidth, absolutePath: path } = this;
+
+    if (path.length === 0) {
+      return false;
+    }
 
     const point =
       mode === ConnectorMode.Curve

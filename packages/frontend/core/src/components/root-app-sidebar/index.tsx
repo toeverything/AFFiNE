@@ -89,6 +89,7 @@ const AllDocsButton = () => {
 };
 
 const AIChatButton = () => {
+  const t = useI18n();
   const featureFlagService = useService(FeatureFlagService);
   const serverService = useService(ServerService);
   const serverFeatures = useLiveData(serverService.server.features$);
@@ -108,7 +109,9 @@ const AIChatButton = () => {
 
   return (
     <MenuLinkItem icon={<AiOutlineIcon />} active={aiChatActive} to={'/chat'}>
-      <span data-testid="ai-chat">Intelligence</span>
+      <span data-testid="ai-chat">
+        {t['com.affine.workspaceSubPath.chat']()}
+      </span>
     </MenuLinkItem>
   );
 };

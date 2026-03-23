@@ -1,5 +1,15 @@
-import { Controller, Get, Logger, Param, Query, Res } from '@nestjs/common';
-import type { Response } from 'express';
+import { createHash } from 'node:crypto';
+
+import {
+  Controller,
+  Get,
+  Logger,
+  Param,
+  Query,
+  Req,
+  Res,
+} from '@nestjs/common';
+import type { Request, Response } from 'express';
 
 import {
   applyAttachHeaders,
@@ -8,6 +18,7 @@ import {
   CommentAttachmentNotFound,
   DocHistoryNotFound,
   DocNotFound,
+  getRequestTrackerId,
   InvalidHistoryTimestamp,
 } from '../../base';
 import { DocMode, Models, PublicDocMode } from '../../models';
@@ -29,6 +40,13 @@ export class WorkspacesController {
     private readonly docReader: DocReader,
     private readonly models: Models
   ) {}
+
+  private buildVisitorId(req: Request, workspaceId: string, docId: string) {
+    const tracker = getRequestTrackerId(req);
+    return createHash('sha256')
+      .update(`${workspaceId}:${docId}:${tracker}`)
+      .digest('hex');
+  }
 
   // get workspace blob
   //
@@ -99,6 +117,7 @@ export class WorkspacesController {
   @CallMetric('controllers', 'workspace_get_doc')
   async doc(
     @CurrentUser() user: CurrentUser | undefined,
+    @Req() req: Request,
     @Param('id') ws: string,
     @Param('guid') guid: string,
     @Res() res: Response
@@ -125,6 +144,23 @@ export class WorkspacesController {
         spaceId: docId.workspace,
         docId: docId.guid,
       });
+    }
+
+    if (!docId.isWorkspace) {
+      void this.models.workspaceAnalytics
+        .recordDocView({
+          workspaceId: docId.workspace,
+          docId: docId.guid,
+          userId: user?.id,
+          visitorId: this.buildVisitorId(req, docId.workspace, docId.guid),
+          isGuest: !user,
+        })
+        .catch(error => {
+          this.logger.warn(
+            `Failed to record doc view: ${docId.workspace}/${docId.guid}`,
+            error as Error
+          );
+        });
     }
 
     if (!docId.isWorkspace) {

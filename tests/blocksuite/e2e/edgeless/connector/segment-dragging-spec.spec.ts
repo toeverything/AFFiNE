@@ -1836,7 +1836,6 @@ test.describe('Scenario 11: Tail Detachment - Drag D past shape boundary', () =>
 
     // The path should have points that extend past the original source connection
     // (indicating the tail has detached and new geometry was created)
-    const sourceShapeRight = 100; // Right edge of source shape
     const minX = Math.min(...path.map(p => p[0]));
     console.log('Minimum X in path:', minX);
 
@@ -2391,7 +2390,6 @@ test.describe('Scenario 16: Self-Healing / Segment Subsumption', () => {
 
     // Initial: should have points for A-B-C style path
     let path = await getConnectorPath(page);
-    const initialY = path[0][1];
     console.log('Initial path length:', path.length, 'points');
 
     // Select and drag B up to create detour

@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Transactional } from '@nestjs-cls/transactional';
 import type { CalendarAccount, Prisma } from '@prisma/client';
 
 import { CryptoHelper } from '../base';
@@ -17,6 +18,12 @@ export interface UpsertCalendarAccountInput extends CalendarAccountTokens {
   providerAccountId: string;
   displayName?: string | null;
   email?: string | null;
+  providerPresetId?: string | null;
+  serverUrl?: string | null;
+  principalUrl?: string | null;
+  calendarHomeUrl?: string | null;
+  username?: string | null;
+  authType?: string | null;
   status?: string | null;
   lastError?: string | null;
   refreshIntervalMinutes?: number | null;
@@ -73,6 +80,12 @@ export class CalendarAccountModel extends BaseModel {
       providerAccountId: input.providerAccountId,
       displayName: input.displayName ?? null,
       email: input.email ?? null,
+      providerPresetId: input.providerPresetId ?? null,
+      serverUrl: input.serverUrl ?? null,
+      principalUrl: input.principalUrl ?? null,
+      calendarHomeUrl: input.calendarHomeUrl ?? null,
+      username: input.username ?? null,
+      authType: input.authType ?? null,
       accessToken: accessToken ?? null,
       refreshToken: refreshToken ?? null,
       expiresAt: input.expiresAt ?? null,
@@ -85,6 +98,12 @@ export class CalendarAccountModel extends BaseModel {
     const updateData: Prisma.CalendarAccountUncheckedUpdateInput = {
       displayName: data.displayName,
       email: data.email,
+      providerPresetId: data.providerPresetId,
+      serverUrl: data.serverUrl,
+      principalUrl: data.principalUrl,
+      calendarHomeUrl: data.calendarHomeUrl,
+      username: data.username,
+      authType: data.authType,
       expiresAt: data.expiresAt,
       scope: data.scope,
       status: data.status,
@@ -92,10 +111,10 @@ export class CalendarAccountModel extends BaseModel {
       refreshIntervalMinutes: data.refreshIntervalMinutes,
     };
 
-    if (!!accessToken) {
+    if (accessToken) {
       updateData.accessToken = accessToken;
     }
-    if (!!refreshToken) {
+    if (refreshToken) {
       updateData.refreshToken = refreshToken;
     }
 
@@ -154,6 +173,18 @@ export class CalendarAccountModel extends BaseModel {
       where: { id },
       data: { refreshIntervalMinutes },
     });
+  }
+
+  @Transactional()
+  async invalidateAndPurge(id: string, lastError?: string | null) {
+    await this.updateStatus(id, 'invalid', lastError ?? null);
+    const subscriptions =
+      await this.models.calendarSubscription.listByAccount(id);
+    const subscriptionIds = subscriptions.map(subscription => subscription.id);
+    if (subscriptionIds.length > 0) {
+      await this.models.calendarEvent.deleteBySubscriptionIds(subscriptionIds);
+    }
+    await this.models.calendarSubscription.clearSyncTokensByAccount(id);
   }
 
   async delete(id: string) {

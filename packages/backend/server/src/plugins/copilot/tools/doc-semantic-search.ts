@@ -1,4 +1,3 @@
-import { tool } from 'ai';
 import { omit } from 'lodash-es';
 import { z } from 'zod';
 
@@ -8,10 +7,14 @@ import {
   clearEmbeddingChunk,
   type Models,
 } from '../../../models';
-import type { CopilotContextService } from '../context';
-import type { ContextSession } from '../context/session';
-import type { CopilotChatOptions } from '../providers';
+import { workspaceSyncRequiredError } from './doc-sync';
 import { toolError } from './error';
+import { defineTool } from './tool';
+import type {
+  ContextSession,
+  CopilotChatOptions,
+  CopilotContextService,
+} from './types';
 
 export const buildDocSearchGetter = (
   ac: AccessController,
@@ -22,20 +25,30 @@ export const buildDocSearchGetter = (
   const searchDocs = async (
     options: CopilotChatOptions,
     query?: string,
-    abortSignal?: AbortSignal
+    signal?: AbortSignal
   ) => {
     if (!options || !query?.trim() || !options.user || !options.workspace) {
-      return `Invalid search parameters.`;
+      return toolError(
+        'Doc Semantic Search Failed',
+        'Missing workspace, user, or query for doc_semantic_search.'
+      );
+    }
+    const workspace = await models.workspace.get(options.workspace);
+    if (!workspace) {
+      return workspaceSyncRequiredError();
     }
     const canAccess = await ac
       .user(options.user)
       .workspace(options.workspace)
       .can('Workspace.Read');
     if (!canAccess)
-      return 'You do not have permission to access this workspace.';
+      return toolError(
+        'Doc Semantic Search Failed',
+        'You do not have permission to access this workspace.'
+      );
     const [chunks, contextChunks] = await Promise.all([
-      context.matchWorkspaceAll(options.workspace, query, 10, abortSignal),
-      docContext?.matchFiles(query, 10, abortSignal) ?? [],
+      context.matchWorkspaceAll(options.workspace, query, 10, signal),
+      docContext?.matchFiles(query, 10, signal) ?? [],
     ]);
 
     const docChunks = await ac
@@ -51,7 +64,7 @@ export const buildDocSearchGetter = (
       fileChunks.push(...contextChunks);
     }
     if (!blobChunks.length && !docChunks.length && !fileChunks.length) {
-      return `No results found for "${query}".`;
+      return [];
     }
 
     const docIds = docChunks.map(c => ({
@@ -98,10 +111,10 @@ export const buildDocSearchGetter = (
 export const createDocSemanticSearchTool = (
   searchDocs: (
     query: string,
-    abortSignal?: AbortSignal
-  ) => Promise<ChunkSimilarity[] | string | undefined>
+    signal?: AbortSignal
+  ) => Promise<ChunkSimilarity[] | ReturnType<typeof toolError>>
 ) => {
-  return tool({
+  return defineTool({
     description:
       'Retrieve conceptually related passages by performing vector-based semantic similarity search across embedded documents; use this tool only when exact keyword search fails or the user explicitly needs meaning-level matches (e.g., paraphrases, synonyms, broader concepts, recent documents).',
     inputSchema: z.object({
@@ -113,7 +126,7 @@ export const createDocSemanticSearchTool = (
     }),
     execute: async ({ query }, options) => {
       try {
-        return await searchDocs(query, options.abortSignal);
+        return await searchDocs(query, options.signal);
       } catch (e: any) {
         return toolError('Doc Semantic Search Failed', e.message);
       }

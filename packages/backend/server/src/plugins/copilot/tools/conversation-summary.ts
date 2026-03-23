@@ -1,10 +1,9 @@
 import { Logger } from '@nestjs/common';
-import { tool } from 'ai';
 import { z } from 'zod';
 
-import type { PromptService } from '../prompt';
-import type { CopilotProviderFactory } from '../providers';
 import { toolError } from './error';
+import { defineTool } from './tool';
+import type { CopilotProviderFactory, PromptService } from './types';
 
 const logger = new Logger('ConversationSummaryTool');
 
@@ -13,7 +12,7 @@ export const createConversationSummaryTool = (
   promptService: PromptService,
   factory: CopilotProviderFactory
 ) => {
-  return tool({
+  return defineTool({
     description:
       'Create a concise, AI-generated summary of the conversation so far—capturing key topics, decisions, and critical details. Use this tool whenever the context becomes lengthy to preserve essential information that might otherwise be lost to truncation in future turns.',
     inputSchema: z.object({

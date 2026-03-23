@@ -1,7 +1,6 @@
 import type { ConnectorElementModel } from '@blocksuite/affine-model';
 import { ConnectorMode } from '@blocksuite/affine-model';
-import type { IVec } from '@blocksuite/global/gfx';
-import type { PointLocation } from '@blocksuite/global/gfx';
+import type { IVec, PointLocation } from '@blocksuite/global/gfx';
 
 /**
  * Represents a point on the connector path with a type indicator.

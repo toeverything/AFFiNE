@@ -7,6 +7,7 @@ import { Injectable } from '@nestjs/common';
 
 import {
   Config,
+  getClientVersionFromRequest,
   getRequestResponseFromContext,
   GuardProvider,
 } from '../../base';
@@ -33,7 +34,7 @@ export class VersionGuardProvider
 
     const { req } = getRequestResponseFromContext(context);
 
-    const version = req.headers['x-affine-version'] as string | undefined;
+    const version = getClientVersionFromRequest(req);
 
     return this.version.checkVersion(version);
   }
