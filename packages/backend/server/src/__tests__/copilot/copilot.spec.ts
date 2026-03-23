@@ -287,6 +287,7 @@ test('should reject context file uploads after workspace write access is revoked
   await models.workspaceUser.set(ws.id, member.id, WorkspaceRole.External);
 
   Sinon.stub(context, 'canEmbedding').get(() => true);
+  Sinon.stub(context, 'embeddingClient').get(() => new MockEmbeddingClient());
   const put = Sinon.stub(storage, 'put').resolves();
   const buffer = Buffer.from('test pdf');
 
