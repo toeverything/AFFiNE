@@ -38,7 +38,7 @@ beforeEach(async () => {
 
   return async () => {
     await wait(100);
-    cleanup();
+    await cleanup();
   };
 });
 
