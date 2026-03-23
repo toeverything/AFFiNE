@@ -21,6 +21,8 @@ export const affineEdgelessDocViewport = style({
 
 export const docContainer = style({
   display: 'block',
+  position: 'relative',
+  zIndex: 1,
   selectors: ['generating', 'finished', 'error'].reduce<
     NonNullable<StyleRule['selectors']>
   >((rules, state) => {
