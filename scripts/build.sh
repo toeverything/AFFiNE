@@ -1,8 +1,12 @@
+corepack enable
+corepack prepare yarn@stable --activate
+
 find . -name 'node_modules' -type d -prune -exec rm -rf '{}' +
 yarn install
 
 yarn affine @affine/native build
 yarn affine @affine/server-native build
+
 
 BUILD_TYPE=canary yarn affine @affine/electron build
 BUILD_TYPE=canary yarn affine @affine/electron generate-assets
