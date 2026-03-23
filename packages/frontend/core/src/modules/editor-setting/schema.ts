@@ -35,6 +35,11 @@ const AffineEditorSettingSchema = z.object({
       'open-in-center-peek',
     ])
     .default('open-in-active-view'),
+  aiModelProvider: z
+    .enum(['DeepSeek', 'Qwen', 'Kimi', 'GLM', 'Doubao'])
+    .default('Qwen'),
+  aiModelName: z.string().default(''),
+  aiModelKey: z.string().default(''),
   // linux only:
   enableMiddleClickPaste: z.boolean().default(false),
 });

@@ -2,7 +2,7 @@ import { SettingHeader } from '@affine/component/setting-components';
 import { useI18n } from '@affine/i18n';
 
 import { Edgeless } from './edgeless';
-import { General } from './general';
+import { AI, General } from './general';
 import { Page } from './page';
 
 export const EditorSettings = () => {
@@ -14,6 +14,7 @@ export const EditorSettings = () => {
         title={t['com.affine.settings.editorSettings.title']()}
         subtitle={t['com.affine.settings.editorSettings.subtitle']()}
       />
+      <AI />
       <General />
       <Page />
       <Edgeless />

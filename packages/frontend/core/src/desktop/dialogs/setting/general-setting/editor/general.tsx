@@ -1,4 +1,5 @@
 import {
+  Input,
   Loading,
   Menu,
   MenuItem,
@@ -428,15 +429,18 @@ const NewDocDefaultModeSettings = () => {
   );
 };
 
-const AISettings = () => {
+export const AI = () => {
   const t = useI18n();
   const { openConfirmModal } = useConfirmModal();
-  const { featureFlagService, serverService } = useServices({
-    FeatureFlagService,
-    ServerService,
-  });
+  const { featureFlagService, serverService, editorSettingService } =
+    useServices({
+      FeatureFlagService,
+      ServerService,
+      EditorSettingService,
+    });
   const serverFeatures = useLiveData(serverService.server.features$);
   const enableAI = useLiveData(featureFlagService.flags.enable_ai.$);
+  const settings = useLiveData(editorSettingService.editorSetting.settings$);
 
   const onAIChange = useCallback(
     (checked: boolean) => {
@@ -472,17 +476,88 @@ const AISettings = () => {
     [openConfirmModal, t, onAIChange]
   );
 
+  const onProviderChange = useCallback(
+    (value: EditorSettingSchema['aiModelProvider']) => {
+      editorSettingService.editorSetting.set('aiModelProvider', value);
+    },
+    [editorSettingService.editorSetting]
+  );
+
+  const onModelNameChange = useCallback(
+    (value: string) => {
+      editorSettingService.editorSetting.set('aiModelName', value);
+    },
+    [editorSettingService.editorSetting]
+  );
+
+  const onModelKeyChange = useCallback(
+    (value: string) => {
+      editorSettingService.editorSetting.set('aiModelKey', value);
+    },
+    [editorSettingService.editorSetting]
+  );
+
   if (!serverFeatures?.copilot) {
     return null;
   }
 
+  const providers = ['DeepSeek', 'Qwen', 'Kimi', 'GLM', 'Doubao'] as const;
+
   return (
-    <SettingRow
-      name={t['com.affine.settings.editorSettings.general.ai.title']()}
-      desc={t['com.affine.settings.editorSettings.general.ai.description']()}
-    >
-      <Switch checked={enableAI} onChange={onToggleAI} />
-    </SettingRow>
+    <SettingWrapper title={t['com.affine.settings.editorSettings.ai']()}>
+      <SettingRow
+        name={t['com.affine.settings.editorSettings.general.ai.title']()}
+        desc={t['com.affine.settings.editorSettings.general.ai.description']()}
+      >
+        <Switch checked={enableAI} onChange={onToggleAI} />
+      </SettingRow>
+
+      <SettingRow
+        name={t['com.affine.settings.editorSettings.ai.model-provider']()}
+      >
+        <Menu
+          contentOptions={menuContentOptions}
+          items={providers.map(provider => (
+            <MenuItem
+              key={provider}
+              selected={provider === settings.aiModelProvider}
+              onSelect={() => onProviderChange(provider)}
+            >
+              {provider}
+            </MenuItem>
+          ))}
+        >
+          <MenuTrigger className={styles.menuTrigger}>
+            {settings.aiModelProvider}
+          </MenuTrigger>
+        </Menu>
+      </SettingRow>
+
+      <SettingRow
+        name={t['com.affine.settings.editorSettings.ai.model-name']()}
+      >
+        <Input
+          value={settings.aiModelName}
+          onChange={onModelNameChange}
+          placeholder={t[
+            'com.affine.settings.editorSettings.ai.model-name.placeholder'
+          ]()}
+          style={{ width: 250 }}
+        />
+      </SettingRow>
+
+      <SettingRow name={t['com.affine.settings.editorSettings.ai.model-key']()}>
+        <Input
+          type="password"
+          value={settings.aiModelKey}
+          onChange={onModelKeyChange}
+          placeholder={t[
+            'com.affine.settings.editorSettings.ai.model-key.placeholder'
+          ]()}
+          style={{ width: 250 }}
+        />
+      </SettingRow>
+    </SettingWrapper>
   );
 };
 
@@ -568,7 +643,6 @@ export const General = () => {
 
   return (
     <SettingWrapper title={t['com.affine.settings.editorSettings.general']()}>
-      <AISettings />
       <FontFamilySettings />
       <CustomFontFamilySettings />
       <FontSizeSettings />
