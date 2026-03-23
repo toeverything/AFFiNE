@@ -29,6 +29,7 @@ const viewManager = getTestViewManager();
 effects();
 
 const storeExtensions = storeManager.get('store');
+const painterWorkers = new Set<Worker>();
 
 export function getRenderer() {
   return editor.std.get(
@@ -108,6 +109,7 @@ export function createPainterWorker() {
       type: 'module',
     }
   );
+  painterWorkers.add(worker);
   return worker;
 }
 
@@ -141,18 +143,29 @@ export async function setupEditor(
 
   const appElement = await createEditor(collection, mode, extensions);
 
-  return () => {
+  return async () => {
+    await cleanup();
     appElement?.remove();
-    cleanup();
   };
 }
 
-export function cleanup() {
+export async function cleanup() {
   window.editor?.remove();
+  await window.editor?.updateComplete;
+  await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+
+  for (const worker of painterWorkers) {
+    worker.terminate();
+  }
+  painterWorkers.clear();
 
   delete (window as any).collection;
 
   delete (window as any).editor;
+
+  delete (window as any).doc;
+
+  delete (window as any).renderer;
 
   delete (window as any).store;
 }

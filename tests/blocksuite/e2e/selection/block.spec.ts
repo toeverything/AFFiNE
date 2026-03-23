@@ -143,6 +143,7 @@ test('select all should work for multiple notes in doc mode', async ({
 
 async function clickListIcon(page: Page, i = 0) {
   const locator = page.locator('.affine-list-block__prefix').nth(i);
+  await expect(locator).toBeVisible();
   await locator.click({
     force: true,
     position: {
