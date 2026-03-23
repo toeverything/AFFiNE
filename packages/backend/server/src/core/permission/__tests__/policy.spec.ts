@@ -16,6 +16,7 @@ import {
   WorkspaceRole,
 } from '../../../models';
 import { QuotaService } from '../../quota/service';
+import { QuotaServiceModule } from '../../quota/service.module';
 import { PermissionModule } from '../index';
 import { WorkspacePolicyService } from '../policy';
 
@@ -76,6 +77,26 @@ test.after.always(async t => {
   await t.context.module.close();
 });
 
+test('should reuse quota service exported by quota service module', async t => {
+  const module = await createTestingModule(
+    { imports: [PermissionModule, QuotaServiceModule] },
+    false
+  );
+
+  try {
+    const quota = module.select(QuotaServiceModule).get(QuotaService, {
+      strict: true,
+    });
+    const policy = module.select(PermissionModule).get(WorkspacePolicyService, {
+      strict: true,
+    });
+
+    t.is(Reflect.get(policy, 'quota'), quota);
+  } finally {
+    await module.close();
+  }
+});
+
 test('should keep owned workspace writable when quota is within limit', async t => {
   const state = await t.context.policy.reconcileWorkspaceQuotaState(
     workspace.id
@@ -105,6 +126,23 @@ test('should enter readonly mode when fallback owner member quota overflows', as
   await t.throwsAsync(t.context.policy.assertCanInviteMembers(workspace.id), {
     instanceOf: SpaceAccessDenied,
   });
+});
+
+test('should deny blob uploads when user no longer has write access', async t => {
+  const external = await t.context.models.user.create({
+    email: `${randomUUID()}@affine.pro`,
+  });
+  await t.context.models.workspaceUser.set(
+    workspace.id,
+    external.id,
+    WorkspaceRole.External,
+    { status: WorkspaceMemberStatus.Accepted }
+  );
+
+  await t.throwsAsync(
+    t.context.policy.assertCanUploadBlob(external.id, workspace.id),
+    { instanceOf: SpaceAccessDenied }
+  );
 });
 
 test('should enter readonly mode when fallback owner storage quota overflows', async t => {
@@ -195,4 +233,54 @@ test('should leave readonly mode after workspace usage recovers', async t => {
     await t.context.models.workspaceFeature.has(workspace.id, READONLY_FEATURE)
   );
   await t.notThrowsAsync(t.context.policy.assertCanInviteMembers(workspace.id));
+});
+
+test('should roll back team cancellation cleanup when cleanup fails', async t => {
+  const pending = await t.context.models.user.create({
+    email: `${randomUUID()}@affine.pro`,
+  });
+  const admin = await t.context.models.user.create({
+    email: `${randomUUID()}@affine.pro`,
+  });
+  await t.context.models.workspaceUser.set(
+    workspace.id,
+    pending.id,
+    WorkspaceRole.Collaborator
+  );
+  await t.context.models.workspaceUser.set(
+    workspace.id,
+    admin.id,
+    WorkspaceRole.Admin,
+    {
+      status: WorkspaceMemberStatus.Accepted,
+    }
+  );
+  await t.context.models.workspaceFeature.add(
+    workspace.id,
+    'team_plan_v1',
+    'test team workspace',
+    {
+      memberLimit: 20,
+    }
+  );
+
+  const failure = new Error('cleanup failed');
+  Sinon.stub(t.context.models.workspaceFeature, 'remove').rejects(failure);
+
+  const error = await t.throwsAsync(
+    t.context.policy.handleTeamPlanCanceled(workspace.id),
+    {
+      is: failure,
+    }
+  );
+
+  t.is(error, failure);
+  t.truthy(await t.context.models.workspaceUser.get(workspace.id, pending.id));
+  t.is(
+    (await t.context.models.workspaceUser.get(workspace.id, admin.id))?.type,
+    WorkspaceRole.Admin
+  );
+  t.true(
+    await t.context.models.workspaceFeature.has(workspace.id, 'team_plan_v1')
+  );
 });

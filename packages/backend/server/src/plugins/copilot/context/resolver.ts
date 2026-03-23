@@ -671,7 +671,12 @@ export class CopilotContextResolver {
       const blobId = createHash('sha256').update(buffer).digest('base64url');
       const { filename, mimetype } = content;
 
-      await this.policy.assertCanUploadBlob(session.workspaceId);
+      await this.ac
+        .user(user.id)
+        .workspace(session.workspaceId)
+        .allowLocal()
+        .assert('Workspace.Copilot');
+      await this.policy.assertCanUploadBlob(user.id, session.workspaceId);
       await this.storage.put(user.id, session.workspaceId, blobId, buffer);
       const file = await session.addFile(
         blobId,

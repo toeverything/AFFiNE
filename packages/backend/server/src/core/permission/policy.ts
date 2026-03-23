@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Transactional } from '@nestjs-cls/transactional';
 
 import { DocActionDenied, OnEvent, SpaceAccessDenied } from '../../base';
 import { Models, WorkspaceRole } from '../../models';
@@ -258,7 +259,12 @@ export class WorkspacePolicyService {
     }
   }
 
-  async assertCanUploadBlob(workspaceId: string) {
+  async assertCanUploadBlob(userId: string, workspaceId: string) {
+    await this.assertWorkspaceRoleAction(
+      userId,
+      workspaceId,
+      'Workspace.Blobs.Write'
+    );
     await this.assertWorkspaceActionAllowed(
       workspaceId,
       'Workspace.Blobs.Write'
@@ -295,6 +301,14 @@ export class WorkspacePolicyService {
 
   async assertCanPublishDoc(workspaceId: string, docId: string) {
     await this.assertDocActionAllowed(workspaceId, docId, 'Doc.Publish');
+  }
+
+  @Transactional()
+  async handleTeamPlanCanceled(workspaceId: string) {
+    await this.models.workspaceUser.deleteNonAccepted(workspaceId);
+    await this.models.workspaceUser.demoteAcceptedAdmins(workspaceId);
+    await this.models.workspaceFeature.remove(workspaceId, 'team_plan_v1');
+    return await this.reconcileWorkspaceQuotaState(workspaceId);
   }
 
   async assertCanUnpublishDoc(

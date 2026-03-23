@@ -57,10 +57,7 @@ export class PaymentEventHandlers {
   }: Events['workspace.subscription.canceled']) {
     switch (plan) {
       case SubscriptionPlan.Team:
-        await this.models.workspaceUser.deleteNonAccepted(workspaceId);
-        await this.models.workspaceUser.demoteAcceptedAdmins(workspaceId);
-        await this.models.workspaceFeature.remove(workspaceId, 'team_plan_v1');
-        await this.policy.reconcileWorkspaceQuotaState(workspaceId);
+        await this.policy.handleTeamPlanCanceled(workspaceId);
         break;
       default:
         break;

@@ -784,7 +784,7 @@ export class CopilotResolver {
       delete options.blobs;
 
       if (blobs.length) {
-        await this.policy.assertCanUploadBlob(workspaceId);
+        await this.policy.assertCanUploadBlob(user.id, workspaceId);
       }
 
       for (const blob of blobs) {
