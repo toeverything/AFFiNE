@@ -8,7 +8,12 @@ import ava from 'ava';
 import { nanoid } from 'nanoid';
 import Sinon from 'sinon';
 
-import { EventBus, JobQueue } from '../../base';
+import {
+  EventBus,
+  JobQueue,
+  RequestMutex,
+  SpaceAccessDenied,
+} from '../../base';
 import { ConfigModule } from '../../base/config';
 import { AuthService } from '../../core/auth';
 import { QuotaModule } from '../../core/quota';
@@ -16,10 +21,14 @@ import { StorageModule, WorkspaceBlobStorage } from '../../core/storage';
 import {
   ContextCategories,
   CopilotSessionModel,
+  Models,
+  WorkspaceMemberStatus,
   WorkspaceModel,
+  WorkspaceRole,
 } from '../../models';
 import { CopilotModule } from '../../plugins/copilot';
 import { CopilotContextService } from '../../plugins/copilot/context';
+import { CopilotContextResolver } from '../../plugins/copilot/context/resolver';
 import { CopilotCronJobs } from '../../plugins/copilot/cron';
 import {
   CopilotEmbeddingJob,
@@ -69,6 +78,7 @@ type Context = {
   module: TestingModule;
   db: PrismaClient;
   event: EventBus;
+  models: Models;
   workspace: WorkspaceModel;
   workspaceStorage: WorkspaceBlobStorage;
   copilotSession: CopilotSessionModel;
@@ -125,6 +135,11 @@ test.before(async t => {
     tapModule: builder => {
       // use real JobQueue for testing
       builder.overrideProvider(JobQueue).useClass(JobQueue);
+      builder.overrideProvider(RequestMutex).useValue({
+        acquire: async () => ({
+          async [Symbol.asyncDispose]() {},
+        }),
+      });
       builder.overrideProvider(OpenAIProvider).useClass(MockCopilotProvider);
       builder.overrideProvider(SubscriptionService).useClass(
         class {
@@ -139,6 +154,7 @@ test.before(async t => {
   const auth = module.get(AuthService);
   const db = module.get(PrismaClient);
   const event = module.get(EventBus);
+  const models = module.get(Models);
   const workspace = module.get(WorkspaceModel);
   const workspaceStorage = module.get(WorkspaceBlobStorage);
   const copilotSession = module.get(CopilotSessionModel);
@@ -160,6 +176,7 @@ test.before(async t => {
   t.context.auth = auth;
   t.context.db = db;
   t.context.event = event;
+  t.context.models = models;
   t.context.workspace = workspace;
   t.context.workspaceStorage = workspaceStorage;
   t.context.copilotSession = copilotSession;
@@ -197,7 +214,7 @@ test.beforeEach(async t => {
 });
 
 test.after.always(async t => {
-  await t.context.module.close();
+  await t.context.module?.close();
 });
 
 // ==================== prompt ====================
@@ -239,6 +256,64 @@ test('should be able to manage prompt', async t => {
     'should be delete prompt'
   );
   t.is(await prompt.get(promptName), null, 'should not have the prompt');
+});
+
+test('should reject context file uploads after workspace write access is revoked', async t => {
+  const { auth, context, models, prompt, session, storage, workspace } =
+    t.context;
+  const contextResolver = await t.context.module.resolve(
+    CopilotContextResolver
+  );
+
+  const owner = await auth.signUp(`test-${randomUUID()}@affine.pro`, '123456');
+  const member = await auth.signUp(`test-${randomUUID()}@affine.pro`, '123456');
+  const ws = await workspace.create(owner.id);
+
+  await models.workspaceUser.set(ws.id, member.id, WorkspaceRole.Collaborator, {
+    status: WorkspaceMemberStatus.Accepted,
+  });
+  await prompt.set(promptName, 'test', [
+    { role: 'system', content: 'hello {{word}}' },
+  ]);
+
+  const sessionId = await session.create({
+    userId: member.id,
+    workspaceId: ws.id,
+    docId: randomUUID(),
+    promptName,
+    pinned: false,
+  });
+  const contextSession = await context.create(sessionId);
+  await models.workspaceUser.set(ws.id, member.id, WorkspaceRole.External);
+
+  Sinon.stub(context, 'canEmbedding').get(() => true);
+  Sinon.stub(context, 'embeddingClient').get(() => new MockEmbeddingClient());
+  const put = Sinon.stub(storage, 'put').resolves();
+  const buffer = Buffer.from('test pdf');
+
+  await t.throwsAsync(
+    contextResolver.addContextFile(
+      { id: member.id } as any,
+      {
+        req: {
+          headers: {
+            'content-length': String(buffer.length),
+          },
+        },
+      } as any,
+      { contextId: contextSession.id },
+      {
+        filename: 'sample.pdf',
+        mimetype: 'application/pdf',
+        createReadStream: () => Readable.from(buffer),
+      } as any
+    ),
+    {
+      instanceOf: SpaceAccessDenied,
+    }
+  );
+
+  t.false(put.called);
 });
 
 test('should be able to render prompt', async t => {

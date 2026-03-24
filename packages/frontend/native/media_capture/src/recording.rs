@@ -2,7 +2,10 @@ use std::{
   fs,
   io::{BufWriter, Write},
   path::PathBuf,
-  sync::{LazyLock, Mutex},
+  sync::{
+    Arc, LazyLock,
+    atomic::{AtomicU64, Ordering},
+  },
   thread::{self, JoinHandle},
   time::{SystemTime, UNIX_EPOCH},
 };
@@ -13,6 +16,7 @@ use napi_derive::napi;
 use ogg::writing::{PacketWriteEndInfo, PacketWriter};
 use opus_codec::{Application, Channels, Encoder, FrameSize, SampleRate as OpusSampleRate};
 use rubato::Resampler;
+use tokio::sync::{Mutex as AsyncMutex, mpsc, oneshot};
 
 #[cfg(any(target_os = "macos", target_os = "windows"))]
 use crate::audio_callback::AudioCallback;
@@ -24,6 +28,7 @@ use crate::windows::screen_capture_kit::ShareableContent;
 const ENCODE_SAMPLE_RATE: OpusSampleRate = OpusSampleRate::Hz48000;
 const MAX_PACKET_SIZE: usize = 4096;
 const RESAMPLER_INPUT_CHUNK: usize = 1024;
+const AUDIO_CHUNK_QUEUE_CAPACITY: usize = 1024;
 
 type RecordingResult<T> = std::result::Result<T, RecordingError>;
 
@@ -55,6 +60,8 @@ pub struct RecordingArtifact {
   pub channels: u32,
   pub duration_ms: i64,
   pub size: i64,
+  pub degraded: bool,
+  pub overflow_count: u32,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -77,6 +84,8 @@ enum RecordingError {
   Empty,
   #[error("start failure: {0}")]
   Start(String),
+  #[error("teardown failure: {0}")]
+  Teardown(String),
   #[error("join failure")]
   Join,
 }
@@ -93,6 +102,7 @@ impl RecordingError {
       RecordingError::NotFound => "not-found",
       RecordingError::Empty => "empty-recording",
       RecordingError::Start(_) => "start-failure",
+      RecordingError::Teardown(_) => "teardown-failure",
       RecordingError::Join => "join-failure",
     }
   }
@@ -448,6 +458,8 @@ impl OggOpusWriter {
       channels: self.channels.as_usize() as u32,
       duration_ms,
       size,
+      degraded: false,
+      overflow_count: 0,
     })
   }
 }
@@ -507,17 +519,41 @@ impl PlatformCapture {
 }
 
 enum ControlMessage {
-  Stop(Sender<RecordingResult<RecordingArtifact>>),
+  Stop {
+    reply_tx: oneshot::Sender<RecordingResult<RecordingArtifact>>,
+  },
+  Abort {
+    reply_tx: oneshot::Sender<RecordingResult<()>>,
+  },
 }
 
 struct ActiveRecording {
   id: String,
-  control_tx: Sender<ControlMessage>,
+  control_tx: mpsc::UnboundedSender<ControlMessage>,
   controller: Option<JoinHandle<()>>,
 }
 
-static ACTIVE_RECORDING: LazyLock<Mutex<Option<ActiveRecording>>> = LazyLock::new(|| Mutex::new(None));
-static START_RECORDING_LOCK: LazyLock<Mutex<()>> = LazyLock::new(|| Mutex::new(()));
+#[derive(Default)]
+struct RecordingQualityMetrics {
+  overflow_count: Arc<AtomicU64>,
+}
+
+impl RecordingQualityMetrics {
+  fn shared_counter(&self) -> Arc<AtomicU64> {
+    Arc::clone(&self.overflow_count)
+  }
+
+  fn overflow_count(&self) -> u32 {
+    self
+      .overflow_count
+      .load(Ordering::Relaxed)
+      .try_into()
+      .unwrap_or(u32::MAX)
+  }
+}
+
+static ACTIVE_RECORDING: LazyLock<AsyncMutex<Option<ActiveRecording>>> = LazyLock::new(|| AsyncMutex::new(None));
+static START_RECORDING_LOCK: LazyLock<AsyncMutex<()>> = LazyLock::new(|| AsyncMutex::new(()));
 
 fn now_millis() -> i64 {
   SystemTime::now()
@@ -568,10 +604,17 @@ fn build_excluded_refs(ids: &[u32]) -> Result<Vec<ApplicationInfo>> {
   Ok(excluded)
 }
 
-fn start_capture(opts: &RecordingStartOptions, tx: Sender<Vec<f32>>) -> Result<(PlatformCapture, u32, u32)> {
+fn start_capture(
+  opts: &RecordingStartOptions,
+  tx: Sender<Vec<f32>>,
+  overflow_count: Arc<AtomicU64>,
+) -> Result<(PlatformCapture, u32, u32)> {
   #[cfg(target_os = "macos")]
   {
-    let callback = AudioCallback::Channel(tx);
+    let callback = AudioCallback::Channel {
+      sender: tx,
+      overflow_count,
+    };
     let session = if let Some(app_id) = opts.app_process_id {
       ShareableContent::tap_audio_with_callback(app_id, callback)?
     } else {
@@ -586,7 +629,10 @@ fn start_capture(opts: &RecordingStartOptions, tx: Sender<Vec<f32>>) -> Result<(
 
   #[cfg(target_os = "windows")]
   {
-    let callback = AudioCallback::Channel(tx);
+    let callback = AudioCallback::Channel {
+      sender: tx,
+      overflow_count,
+    };
     let session =
       ShareableContent::tap_audio_with_callback(opts.app_process_id.unwrap_or(0), callback, opts.sample_rate)?;
     let sample_rate = session.get_sample_rate().round() as u32;
@@ -598,6 +644,7 @@ fn start_capture(opts: &RecordingStartOptions, tx: Sender<Vec<f32>>) -> Result<(
   {
     let _ = opts;
     let _ = tx;
+    let _ = overflow_count;
     Err(RecordingError::UnsupportedPlatform.into())
   }
 }
@@ -621,17 +668,65 @@ fn spawn_worker(
   })
 }
 
+fn finalize_worker_artifact(
+  worker_result: RecordingResult<RecordingArtifact>,
+  metrics: &RecordingQualityMetrics,
+) -> RecordingResult<RecordingArtifact> {
+  worker_result.map(|mut artifact| {
+    artifact.overflow_count = metrics.overflow_count();
+    artifact.degraded = artifact.overflow_count > 0;
+    artifact
+  })
+}
+
+fn resolve_stop_result(
+  stop_result: std::result::Result<(), Error>,
+  worker_result: RecordingResult<RecordingArtifact>,
+  metrics: &RecordingQualityMetrics,
+) -> RecordingResult<RecordingArtifact> {
+  match finalize_worker_artifact(worker_result, metrics) {
+    Ok(artifact) => Ok(artifact),
+    Err(worker_error) => match stop_result {
+      Ok(()) => Err(worker_error),
+      Err(error) => Err(RecordingError::Teardown(error.to_string())),
+    },
+  }
+}
+
+fn resolve_abort_result(
+  stop_result: std::result::Result<(), Error>,
+  worker_result: RecordingResult<RecordingArtifact>,
+) -> RecordingResult<()> {
+  match worker_result {
+    Ok(artifact) => {
+      fs::remove_file(&artifact.filepath).ok();
+      Ok(())
+    }
+    Err(RecordingError::Empty) => Ok(()),
+    Err(worker_error) => match stop_result {
+      Ok(()) => Err(worker_error),
+      Err(error) => Err(RecordingError::Teardown(error.to_string())),
+    },
+  }
+}
+
 fn spawn_recording_controller(
   id: String,
   filepath: PathBuf,
   opts: RecordingStartOptions,
-) -> (Receiver<RecordingResult<u32>>, Sender<ControlMessage>, JoinHandle<()>) {
-  let (started_tx, started_rx) = bounded(1);
-  let (control_tx, control_rx) = bounded(1);
+) -> (
+  oneshot::Receiver<RecordingResult<u32>>,
+  mpsc::UnboundedSender<ControlMessage>,
+  JoinHandle<()>,
+) {
+  let (started_tx, started_rx) = oneshot::channel();
+  let (control_tx, mut control_rx) = mpsc::unbounded_channel();
 
   let controller = thread::spawn(move || {
-    let (tx, rx) = bounded::<Vec<f32>>(32);
-    let (mut capture, capture_rate, capture_channels) = match start_capture(&opts, tx.clone()) {
+    let (tx, rx) = bounded::<Vec<f32>>(AUDIO_CHUNK_QUEUE_CAPACITY);
+    let metrics = RecordingQualityMetrics::default();
+    let (mut capture, capture_rate, capture_channels) = match start_capture(&opts, tx.clone(), metrics.shared_counter())
+    {
       Ok(capture) => capture,
       Err(error) => {
         let _ = started_tx.send(Err(RecordingError::Start(error.to_string())));
@@ -675,28 +770,35 @@ fn spawn_recording_controller(
       return;
     }
 
-    while let Ok(message) = control_rx.recv() {
+    if let Some(message) = control_rx.blocking_recv() {
       match message {
-        ControlMessage::Stop(reply_tx) => {
-          let result = match capture.stop() {
-            Ok(()) => {
-              drop(audio_tx.take());
-              match worker.take() {
-                Some(handle) => match handle.join() {
-                  Ok(result) => result,
-                  Err(_) => Err(RecordingError::Join),
-                },
-                None => Err(RecordingError::Join),
-              }
-            }
-            Err(error) => Err(RecordingError::Start(error.to_string())),
+        ControlMessage::Stop { reply_tx } => {
+          let stop_result = capture.stop();
+          drop(audio_tx.take());
+          let worker_result = match worker.take() {
+            Some(handle) => match handle.join() {
+              Ok(result) => result,
+              Err(_) => Err(RecordingError::Join),
+            },
+            None => Err(RecordingError::Join),
           };
+          let result = resolve_stop_result(stop_result, worker_result, &metrics);
 
           let _ = reply_tx.send(result);
+        }
+        ControlMessage::Abort { reply_tx } => {
+          let stop_result = capture.stop();
+          drop(audio_tx.take());
+          let worker_result = match worker.take() {
+            Some(handle) => match handle.join() {
+              Ok(result) => result,
+              Err(_) => Err(RecordingError::Join),
+            },
+            None => Err(RecordingError::Join),
+          };
+          let result = resolve_abort_result(stop_result, worker_result);
 
-          if worker.is_none() {
-            break;
-          }
+          let _ = reply_tx.send(result);
         }
       }
     }
@@ -711,17 +813,49 @@ fn spawn_recording_controller(
   (started_rx, control_tx, controller)
 }
 
-fn cleanup_recording_controller(control_tx: &Sender<ControlMessage>, controller: JoinHandle<()>) {
-  let (reply_tx, reply_rx) = bounded(1);
-  let _ = control_tx.send(ControlMessage::Stop(reply_tx));
-  let _ = reply_rx.recv();
-  let _ = controller.join();
+async fn join_controller_handle(controller: JoinHandle<()>) -> RecordingResult<()> {
+  tokio::task::spawn_blocking(move || controller.join().map_err(|_| RecordingError::Join))
+    .await
+    .map_err(|_| RecordingError::Join)?
 }
 
-fn take_active_recording(id: &str) -> RecordingResult<ActiveRecording> {
-  let mut active_recording = ACTIVE_RECORDING
-    .lock()
-    .map_err(|_| RecordingError::Start("lock poisoned".into()))?;
+async fn cleanup_recording_controller(control_tx: &mpsc::UnboundedSender<ControlMessage>, controller: JoinHandle<()>) {
+  let (reply_tx, reply_rx) = oneshot::channel();
+  let _ = control_tx.send(ControlMessage::Abort { reply_tx });
+  let _ = reply_rx.await;
+  let _ = join_controller_handle(controller).await;
+}
+
+fn map_recording_result<T>(result: RecordingResult<T>) -> Result<T> {
+  result.map_err(Into::into)
+}
+
+async fn send_control_message<T>(
+  id: &str,
+  message: ControlMessage,
+  reply_rx: oneshot::Receiver<RecordingResult<T>>,
+) -> Result<T> {
+  let active_recording = take_active_recording(id).await?;
+
+  if active_recording.control_tx.send(message).is_err() {
+    let _ = join_active_recording(active_recording).await;
+    return Err(RecordingError::Join.into());
+  }
+
+  let response = match reply_rx.await {
+    Ok(response) => response,
+    Err(_) => {
+      let _ = join_active_recording(active_recording).await;
+      return Err(RecordingError::Join.into());
+    }
+  };
+
+  join_active_recording(active_recording).await?;
+  map_recording_result(response)
+}
+
+async fn take_active_recording(id: &str) -> RecordingResult<ActiveRecording> {
+  let mut active_recording = ACTIVE_RECORDING.lock().await;
   let recording = active_recording.take().ok_or(RecordingError::NotFound)?;
   if recording.id != id {
     *active_recording = Some(recording);
@@ -730,15 +864,14 @@ fn take_active_recording(id: &str) -> RecordingResult<ActiveRecording> {
   Ok(recording)
 }
 
-fn join_active_recording(mut recording: ActiveRecording) -> RecordingResult<()> {
+async fn join_active_recording(mut recording: ActiveRecording) -> RecordingResult<()> {
   if let Some(handle) = recording.controller.take() {
-    handle.join().map_err(|_| RecordingError::Join)?;
+    join_controller_handle(handle).await?;
   }
   Ok(())
 }
 
-#[napi]
-pub fn start_recording(opts: RecordingStartOptions) -> Result<RecordingSessionMeta> {
+async fn start_recording_inner(opts: RecordingStartOptions) -> Result<RecordingSessionMeta> {
   if let Some(fmt) = opts.format.as_deref()
     && !fmt.eq_ignore_ascii_case("opus")
   {
@@ -748,17 +881,12 @@ pub fn start_recording(opts: RecordingStartOptions) -> Result<RecordingSessionMe
     normalize_channel_count(channels)?;
   }
 
-  let _start_lock = START_RECORDING_LOCK
-    .lock()
-    .map_err(|_| RecordingError::Start("lock poisoned".into()))?;
+  let _start_lock = START_RECORDING_LOCK.lock().await;
   let output_dir = validate_output_dir(&opts.output_dir)?;
   let id = sanitize_id(opts.id.clone());
 
   {
-    let recording = ACTIVE_RECORDING
-      .lock()
-      .map_err(|_| RecordingError::Start("lock poisoned".into()))?;
-
+    let recording = ACTIVE_RECORDING.lock().await;
     if recording.is_some() {
       return Err(RecordingError::Start("recording already active".into()).into());
     }
@@ -770,9 +898,17 @@ pub fn start_recording(opts: RecordingStartOptions) -> Result<RecordingSessionMe
   }
 
   let (started_rx, control_tx, controller) = spawn_recording_controller(id.clone(), filepath.clone(), opts);
-  let encoding_channels = started_rx
-    .recv()
-    .map_err(|_| RecordingError::Start("failed to start recording controller".into()))??;
+  let encoding_channels = match started_rx.await {
+    Ok(Ok(channels)) => channels,
+    Ok(Err(error)) => {
+      let _ = join_controller_handle(controller).await;
+      return Err(error.into());
+    }
+    Err(_) => {
+      let _ = join_controller_handle(controller).await;
+      return Err(RecordingError::Start("failed to start recording controller".into()).into());
+    }
+  };
 
   let meta = RecordingSessionMeta {
     id: id.clone(),
@@ -782,16 +918,10 @@ pub fn start_recording(opts: RecordingStartOptions) -> Result<RecordingSessionMe
     started_at: now_millis(),
   };
 
-  let mut recording = match ACTIVE_RECORDING.lock() {
-    Ok(recording) => recording,
-    Err(_) => {
-      cleanup_recording_controller(&control_tx, controller);
-      return Err(RecordingError::Start("lock poisoned".into()).into());
-    }
-  };
+  let mut recording = ACTIVE_RECORDING.lock().await;
 
   if recording.is_some() {
-    cleanup_recording_controller(&control_tx, controller);
+    cleanup_recording_controller(&control_tx, controller).await;
     return Err(RecordingError::Start("recording already active".into()).into());
   }
 
@@ -805,63 +935,51 @@ pub fn start_recording(opts: RecordingStartOptions) -> Result<RecordingSessionMe
 }
 
 #[napi]
-pub fn stop_recording(id: String) -> Result<RecordingArtifact> {
-  let control_tx = {
-    let recording = ACTIVE_RECORDING
-      .lock()
-      .map_err(|_| RecordingError::Start("lock poisoned".into()))?;
+pub async fn start_recording(opts: RecordingStartOptions) -> Result<RecordingSessionMeta> {
+  start_recording_inner(opts).await
+}
 
-    let active = recording.as_ref().ok_or(RecordingError::NotFound)?;
-    if active.id != id {
-      return Err(RecordingError::NotFound.into());
-    }
-    active.control_tx.clone()
-  };
+async fn stop_recording_inner(id: String) -> Result<RecordingArtifact> {
+  let (reply_tx, reply_rx) = oneshot::channel();
+  send_control_message(&id, ControlMessage::Stop { reply_tx }, reply_rx).await
+}
 
-  let (reply_tx, reply_rx) = bounded(1);
-  if control_tx.send(ControlMessage::Stop(reply_tx)).is_err() {
-    if let Ok(recording) = take_active_recording(&id) {
-      let _ = join_active_recording(recording);
-    }
-    return Err(RecordingError::Join.into());
-  }
+#[napi]
+pub async fn stop_recording(id: String) -> Result<RecordingArtifact> {
+  stop_recording_inner(id).await
+}
 
-  let response = match reply_rx.recv() {
-    Ok(response) => response,
-    Err(_) => {
-      if let Ok(recording) = take_active_recording(&id) {
-        let _ = join_active_recording(recording);
-      }
-      return Err(RecordingError::Join.into());
-    }
-  };
+async fn abort_recording_inner(id: String) -> Result<()> {
+  let (reply_tx, reply_rx) = oneshot::channel();
+  send_control_message(&id, ControlMessage::Abort { reply_tx }, reply_rx).await
+}
 
-  let artifact = match response {
-    Ok(artifact) => artifact,
-    Err(RecordingError::Start(message)) => {
-      return Err(RecordingError::Start(message).into());
-    }
-    Err(error) => {
-      if let Ok(recording) = take_active_recording(&id) {
-        let _ = join_active_recording(recording);
-      }
-      return Err(error.into());
-    }
-  };
-
-  let active_recording = take_active_recording(&id)?;
-  join_active_recording(active_recording)?;
-
-  Ok(artifact)
+#[napi]
+pub async fn abort_recording(id: String) -> Result<()> {
+  abort_recording_inner(id).await
 }
 
 #[cfg(test)]
 mod tests {
-  use std::{env, fs::File, path::PathBuf};
+  use std::{env, fs::File, path::PathBuf, thread};
 
+  use napi::{Error, Status};
   use ogg::PacketReader;
+  use tokio::runtime::Builder;
 
-  use super::{OggOpusWriter, convert_interleaved_channels};
+  use super::{
+    ACTIVE_RECORDING, ActiveRecording, ControlMessage, OggOpusWriter, RecordingArtifact, RecordingError,
+    RecordingQualityMetrics, START_RECORDING_LOCK, abort_recording_inner, bounded, convert_interleaved_channels, mpsc,
+    resolve_abort_result, resolve_stop_result, stop_recording_inner,
+  };
+  use crate::audio_callback::AudioCallback;
+
+  fn block_on<F: std::future::Future>(future: F) -> F::Output {
+    Builder::new_current_thread()
+      .build()
+      .expect("create runtime")
+      .block_on(future)
+  }
 
   fn temp_recording_path() -> PathBuf {
     env::temp_dir().join(format!("affine-recording-test-{}.opus", rand::random::<u64>()))
@@ -938,5 +1056,201 @@ mod tests {
       convert_interleaved_channels(&[1.0, 3.0, 5.0, 2.0, 4.0, 6.0], 3, 2).expect("surround to stereo"),
       vec![3.0, 3.0, 4.0, 4.0]
     );
+  }
+
+  #[test]
+  fn stop_recording_clears_active_session_after_stop_error() {
+    let _lock = START_RECORDING_LOCK.blocking_lock();
+    let id = String::from("stop-error");
+    let (control_tx, mut control_rx) = mpsc::unbounded_channel();
+    let controller = thread::spawn(move || {
+      let Some(ControlMessage::Stop { reply_tx }) = control_rx.blocking_recv() else {
+        panic!("expected stop");
+      };
+      let _ = reply_tx.send(Err(RecordingError::Teardown(String::from("boom"))));
+    });
+
+    *ACTIVE_RECORDING.blocking_lock() = Some(ActiveRecording {
+      id: id.clone(),
+      control_tx,
+      controller: Some(controller),
+    });
+
+    let error = match block_on(stop_recording_inner(id)) {
+      Ok(_) => panic!("stop should fail"),
+      Err(error) => error,
+    };
+    assert!(
+      error.to_string().contains("teardown failure: boom"),
+      "unexpected error: {error}"
+    );
+    assert!(ACTIVE_RECORDING.blocking_lock().is_none());
+  }
+
+  #[test]
+  fn stop_recording_returns_artifact_and_clears_active_session() {
+    let _lock = START_RECORDING_LOCK.blocking_lock();
+    let id = String::from("stop-success");
+    let (control_tx, mut control_rx) = mpsc::unbounded_channel();
+    let controller = thread::spawn(move || {
+      let Some(ControlMessage::Stop { reply_tx }) = control_rx.blocking_recv() else {
+        panic!("expected stop");
+      };
+      let _ = reply_tx.send(Ok(RecordingArtifact {
+        id: String::from("stop-success"),
+        filepath: String::from("/tmp/recording.opus"),
+        sample_rate: 48_000,
+        channels: 2,
+        duration_ms: 1_000,
+        size: 128,
+        degraded: true,
+        overflow_count: 3,
+      }));
+    });
+
+    *ACTIVE_RECORDING.blocking_lock() = Some(ActiveRecording {
+      id: id.clone(),
+      control_tx,
+      controller: Some(controller),
+    });
+
+    let artifact = block_on(stop_recording_inner(id)).expect("stop should succeed");
+    assert_eq!(artifact.filepath, "/tmp/recording.opus");
+    assert!(artifact.degraded);
+    assert_eq!(artifact.overflow_count, 3);
+    assert!(ACTIVE_RECORDING.blocking_lock().is_none());
+  }
+
+  #[test]
+  fn abort_recording_clears_active_session() {
+    let _lock = START_RECORDING_LOCK.blocking_lock();
+    let id = String::from("abort-success");
+    let (control_tx, mut control_rx) = mpsc::unbounded_channel();
+    let controller = thread::spawn(move || {
+      let Some(ControlMessage::Abort { reply_tx }) = control_rx.blocking_recv() else {
+        panic!("expected abort");
+      };
+      let _ = reply_tx.send(Ok(()));
+    });
+
+    *ACTIVE_RECORDING.blocking_lock() = Some(ActiveRecording {
+      id: id.clone(),
+      control_tx,
+      controller: Some(controller),
+    });
+
+    block_on(abort_recording_inner(id)).expect("abort should succeed");
+    assert!(ACTIVE_RECORDING.blocking_lock().is_none());
+  }
+
+  #[test]
+  fn concurrent_stop_and_abort_only_allow_one_owner() {
+    let _lock = START_RECORDING_LOCK.blocking_lock();
+    let id = String::from("concurrent-stop-abort");
+    let (control_tx, mut control_rx) = mpsc::unbounded_channel();
+    let (stop_started_tx, stop_started_rx) = std::sync::mpsc::channel();
+    let (finish_stop_tx, finish_stop_rx) = std::sync::mpsc::channel();
+    let controller = thread::spawn(move || {
+      let Some(ControlMessage::Stop { reply_tx }) = control_rx.blocking_recv() else {
+        panic!("expected stop");
+      };
+      stop_started_tx.send(()).expect("signal stop start");
+      finish_stop_rx.recv().expect("wait for stop completion");
+      let _ = reply_tx.send(Ok(RecordingArtifact {
+        id: String::from("concurrent-stop-abort"),
+        filepath: String::from("/tmp/recording.opus"),
+        sample_rate: 48_000,
+        channels: 2,
+        duration_ms: 1_000,
+        size: 128,
+        degraded: false,
+        overflow_count: 0,
+      }));
+    });
+
+    *ACTIVE_RECORDING.blocking_lock() = Some(ActiveRecording {
+      id: id.clone(),
+      control_tx,
+      controller: Some(controller),
+    });
+
+    let stop_id = id.clone();
+    let stop_thread = thread::spawn(move || block_on(stop_recording_inner(stop_id)));
+    stop_started_rx.recv().expect("stop should own the session");
+
+    let abort_error = block_on(abort_recording_inner(id)).expect_err("abort should lose ownership");
+    assert!(
+      abort_error.to_string().contains("not-found"),
+      "unexpected abort error: {abort_error}"
+    );
+
+    finish_stop_tx.send(()).expect("allow stop to finish");
+    let stop_result = stop_thread.join().expect("join stop thread");
+    assert!(stop_result.is_ok(), "stop should win ownership");
+    assert!(ACTIVE_RECORDING.blocking_lock().is_none());
+  }
+
+  #[test]
+  fn queue_overflow_marks_recording_as_degraded() {
+    let metrics = RecordingQualityMetrics::default();
+    let (sender, receiver) = bounded(1);
+    let callback = AudioCallback::Channel {
+      sender,
+      overflow_count: metrics.shared_counter(),
+    };
+
+    callback.call(vec![0.1, 0.2]);
+    callback.call(vec![0.3, 0.4]);
+
+    let _ = receiver.recv().expect("queued audio");
+    assert_eq!(metrics.overflow_count(), 1);
+  }
+
+  #[test]
+  fn stop_prefers_a_finished_artifact_over_teardown_errors() {
+    let metrics = RecordingQualityMetrics::default();
+    metrics.shared_counter().store(2, std::sync::atomic::Ordering::Relaxed);
+
+    let artifact = resolve_stop_result(
+      Err(Error::new(Status::GenericFailure, "pause failed")),
+      Ok(RecordingArtifact {
+        id: String::from("stop-success"),
+        filepath: String::from("/tmp/recording.opus"),
+        sample_rate: 48_000,
+        channels: 2,
+        duration_ms: 1_000,
+        size: 128,
+        degraded: false,
+        overflow_count: 0,
+      }),
+      &metrics,
+    )
+    .expect("artifact should be preserved");
+
+    assert_eq!(artifact.overflow_count, 2);
+    assert!(artifact.degraded);
+  }
+
+  #[test]
+  fn abort_cleans_artifacts_even_when_teardown_reports_an_error() {
+    let path = temp_recording_path();
+    std::fs::write(&path, b"artifact").expect("write temp artifact");
+
+    resolve_abort_result(
+      Err(Error::new(Status::GenericFailure, "pause failed")),
+      Ok(RecordingArtifact {
+        id: String::from("abort-success"),
+        filepath: path.to_string_lossy().into_owned(),
+        sample_rate: 48_000,
+        channels: 2,
+        duration_ms: 1_000,
+        size: 8,
+        degraded: false,
+        overflow_count: 0,
+      }),
+    )
+    .expect("abort should still clean up");
+
+    assert!(!path.exists());
   }
 }

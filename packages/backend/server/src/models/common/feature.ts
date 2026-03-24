@@ -53,6 +53,7 @@ export enum Feature {
   // workspace
   UnlimitedWorkspace = 'unlimited_workspace',
   TeamPlan = 'team_plan_v1',
+  QuotaExceededReadonlyWorkspace = 'quota_exceeded_readonly_workspace_v1',
 }
 
 // TODO(@forehalo): may merge `FeatureShapes` and `FeatureConfigs`?
@@ -66,6 +67,7 @@ export const FeaturesShapes = {
   pro_plan_v1: UserPlanQuotaConfig,
   lifetime_pro_plan_v1: UserPlanQuotaConfig,
   team_plan_v1: WorkspaceQuotaConfig,
+  quota_exceeded_readonly_workspace_v1: EMPTY_CONFIG,
 } satisfies Record<Feature, z.ZodObject<any>>;
 
 export type UserFeatureName = keyof Pick<
@@ -80,7 +82,9 @@ export type UserFeatureName = keyof Pick<
 >;
 export type WorkspaceFeatureName = keyof Pick<
   typeof FeaturesShapes,
-  'unlimited_workspace' | 'team_plan_v1'
+  | 'unlimited_workspace'
+  | 'team_plan_v1'
+  | 'quota_exceeded_readonly_workspace_v1'
 >;
 
 export type FeatureName = UserFeatureName | WorkspaceFeatureName;
@@ -162,6 +166,7 @@ export const FeatureConfigs: {
   team_plan_v1: TeamFeature,
   early_access: WhitelistFeature,
   unlimited_workspace: EmptyFeature,
+  quota_exceeded_readonly_workspace_v1: EmptyFeature,
   unlimited_copilot: EmptyFeature,
   ai_early_access: EmptyFeature,
   administrator: EmptyFeature,

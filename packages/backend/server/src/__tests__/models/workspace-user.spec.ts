@@ -65,6 +65,28 @@ test('should transfer workespace owner', async t => {
 
   const owner2 = await models.workspaceUser.getOwner(workspace.id);
   t.is(owner2.id, user2.id);
+  const oldOwnerRole = await models.workspaceUser.get(workspace.id, user.id);
+  t.is(oldOwnerRole?.type, WorkspaceRole.Collaborator);
+});
+
+test('should keep old owner as admin when transferring a team workspace', async t => {
+  const [user, user2] = await module.create(Mockers.User, 2);
+  const workspace = await module.create(Mockers.Workspace, {
+    owner: { id: user.id },
+  });
+  await module.create(Mockers.TeamWorkspace, {
+    id: workspace.id,
+    quantity: 10,
+  });
+  await module.create(Mockers.WorkspaceUser, {
+    workspaceId: workspace.id,
+    userId: user2.id,
+  });
+
+  await models.workspaceUser.setOwner(workspace.id, user2.id);
+
+  const oldOwnerRole = await models.workspaceUser.get(workspace.id, user.id);
+  t.is(oldOwnerRole?.type, WorkspaceRole.Admin);
 });
 
 test('should throw if transfer owner to non-active member', async t => {
