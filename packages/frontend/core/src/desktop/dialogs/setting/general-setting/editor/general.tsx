@@ -26,6 +26,8 @@ import {
   type FontFamily,
   fontStyleOptions,
   type NewDocDateTitleFormat,
+  newDocDateTitleFormatLabelKeys,
+  newDocDateTitleFormatOptions,
 } from '@affine/core/modules/editor-setting';
 import { SpellCheckSettingService } from '@affine/core/modules/editor-setting/services/spell-check-setting';
 import { FeatureFlagService } from '@affine/core/modules/feature-flag';
@@ -435,36 +437,10 @@ export const getNewDocDateTitleFormatItems = (
   value: NewDocDateTitleFormat;
   label: string;
 }> => {
-  return [
-    {
-      value: 'DD-MM-YYYY',
-      label:
-        t[
-          'com.affine.settings.editorSettings.general.auto-date-title.format.dd-mm-yyyy'
-        ](),
-    },
-    {
-      value: 'MM-DD-YYYY',
-      label:
-        t[
-          'com.affine.settings.editorSettings.general.auto-date-title.format.mm-dd-yyyy'
-        ](),
-    },
-    {
-      value: 'YYYY-MM-DD',
-      label:
-        t[
-          'com.affine.settings.editorSettings.general.auto-date-title.format.yyyy-mm-dd'
-        ](),
-    },
-    {
-      value: 'journal',
-      label:
-        t[
-          'com.affine.settings.editorSettings.general.auto-date-title.format.journal'
-        ](),
-    },
-  ];
+  return newDocDateTitleFormatOptions.map(value => ({
+    value,
+    label: t[newDocDateTitleFormatLabelKeys[value]](),
+  }));
 };
 
 export const NewDocDateTitleSettings = () => {

@@ -18,6 +18,7 @@ export type { FontFamily, NewDocDateTitleFormat } from './schema';
 export {
   EditorSettingSchema,
   fontStyleOptions,
+  newDocDateTitleFormatLabelKeys,
   newDocDateTitleFormatOptions,
 } from './schema';
 export { EditorSettingService } from './services/editor-setting';
