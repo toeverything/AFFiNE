@@ -16,6 +16,7 @@ import {
   UserFriendlyError,
   WorkspaceLicenseAlreadyExists,
 } from '../../base';
+import { WorkspacePolicyService } from '../../core/permission';
 import { Models } from '../../models';
 import {
   SubscriptionPlan,
@@ -59,7 +60,8 @@ export class LicenseService {
     private readonly db: PrismaClient,
     private readonly event: EventBus,
     private readonly models: Models,
-    private readonly crypto: CryptoHelper
+    private readonly crypto: CryptoHelper,
+    private readonly policy: WorkspacePolicyService
   ) {}
 
   @OnEvent('workspace.subscription.activated')
@@ -83,6 +85,7 @@ export class LicenseService {
           workspaceId,
           quantity,
         });
+        await this.policy.reconcileWorkspaceQuotaState(workspaceId);
         break;
       default:
         break;
@@ -96,7 +99,7 @@ export class LicenseService {
   }: Events['workspace.subscription.canceled']) {
     switch (plan) {
       case SubscriptionPlan.SelfHostedTeam:
-        await this.models.workspaceFeature.remove(workspaceId, 'team_plan_v1');
+        await this.policy.handleTeamPlanCanceled(workspaceId);
         break;
       default:
         break;

@@ -194,25 +194,38 @@ const cleanupElectronApp = async (electronApp: ElectronApplication) => {
 
   const closeWithTimeout = async () => {
     const closeEvent = waitForAppClose();
+    const processExit = waitForProcessExit();
+    const pid = child.pid;
+    void electronApp.close().catch(() => {});
     const controller = new AbortController();
     const killAfterTimeout = setTimeout(10_000, undefined, {
       signal: controller.signal,
     })
-      .then(() => {
+      .then(async () => {
+        if (child.exitCode !== null || child.signalCode !== null) return;
+        if (pid !== undefined) {
+          await treeKillAsync(pid, 'SIGKILL').catch(() => {
+            killProcess();
+          });
+          return;
+        }
+
         killProcess();
       })
       .catch(error => {
-        if (error instanceof Error && error.name === 'AbortError') {
-          return;
-        }
+        if (error instanceof Error && error.name === 'AbortError') return;
         throw error;
       });
 
     try {
-      await Promise.all([electronApp.close().catch(() => {}), closeEvent]);
+      await Promise.race([closeEvent, processExit, killAfterTimeout]);
     } finally {
       controller.abort();
       await killAfterTimeout;
+      await Promise.race([closeEvent, processExit, setTimeout(5_000)]).catch(
+        () => {}
+      );
+      releaseChildProcessHandles(child);
     }
   };
 

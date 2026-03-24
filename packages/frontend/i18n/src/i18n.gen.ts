@@ -8526,6 +8526,10 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.recording.new"](): string;
     /**
+      * `Importing...`
+      */
+    ["com.affine.recording.importing.prompt"](): string;
+    /**
       * `Finished`
       */
     ["com.affine.recording.success.prompt"](): string;

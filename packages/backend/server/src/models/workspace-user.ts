@@ -36,7 +36,8 @@ export class WorkspaceUserModel extends BaseModel {
 
   /**
    * Set or update the [Owner] of a workspace.
-   * The old [Owner] will be changed to [Admin] if there is already an [Owner].
+   * The old [Owner] will be changed to [Admin] for team workspace and
+   * [Collaborator] for owned workspace if there is already an [Owner].
    */
   @Transactional()
   async setOwner(workspaceId: string, userId: string) {
@@ -63,12 +64,18 @@ export class WorkspaceUserModel extends BaseModel {
         throw new NewOwnerIsNotActiveMember();
       }
 
+      const fallbackRole = (await this.models.workspace.isTeamWorkspace(
+        workspaceId
+      ))
+        ? WorkspaceRole.Admin
+        : WorkspaceRole.Collaborator;
+
       await this.db.workspaceUserRole.update({
         where: {
           id: oldOwner.id,
         },
         data: {
-          type: WorkspaceRole.Admin,
+          type: fallbackRole,
         },
       });
       await this.db.workspaceUserRole.update({
@@ -197,6 +204,25 @@ export class WorkspaceUserModel extends BaseModel {
     await this.db.workspaceUserRole.deleteMany({
       where: {
         userId,
+      },
+    });
+  }
+
+  async deleteNonAccepted(workspaceId: string) {
+    return await this.db.workspaceUserRole.deleteMany({
+      where: { workspaceId, status: { not: WorkspaceMemberStatus.Accepted } },
+    });
+  }
+
+  async demoteAcceptedAdmins(workspaceId: string) {
+    return await this.db.workspaceUserRole.updateMany({
+      where: {
+        workspaceId,
+        status: WorkspaceMemberStatus.Accepted,
+        type: WorkspaceRole.Admin,
+      },
+      data: {
+        type: WorkspaceRole.Collaborator,
       },
     });
   }
