@@ -37,7 +37,10 @@ import {
   UserFriendlyError,
 } from '../../../base';
 import { CurrentUser } from '../../../core/auth';
-import { AccessController } from '../../../core/permission';
+import {
+  AccessController,
+  WorkspacePolicyService,
+} from '../../../core/permission';
 import {
   ContextBlob,
   ContextCategories,
@@ -408,6 +411,7 @@ export class CopilotContextRootResolver {
 export class CopilotContextResolver {
   constructor(
     private readonly ac: AccessController,
+    private readonly policy: WorkspacePolicyService,
     private readonly models: Models,
     private readonly mutex: RequestMutex,
     private readonly context: CopilotContextService,
@@ -667,6 +671,12 @@ export class CopilotContextResolver {
       const blobId = createHash('sha256').update(buffer).digest('base64url');
       const { filename, mimetype } = content;
 
+      await this.ac
+        .user(user.id)
+        .workspace(session.workspaceId)
+        .allowLocal()
+        .assert('Workspace.Copilot');
+      await this.policy.assertCanUploadBlob(user.id, session.workspaceId);
       await this.storage.put(user.id, session.workspaceId, blobId, buffer);
       const file = await session.addFile(
         blobId,

@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 import test from 'ava';
 
 import { createTestingModule, TestingModule } from '../../../__tests__/utils';
@@ -9,24 +11,27 @@ import {
   WorkspaceRole,
 } from '../../../models';
 import { PermissionModule } from '../index';
+import { WorkspacePolicyService } from '../policy';
 import { mapWorkspaceRoleToPermissions } from '../types';
 import { WorkspaceAccessController } from '../workspace';
 
 let module: TestingModule;
 let models: Models;
 let ac: WorkspaceAccessController;
+let policy: WorkspacePolicyService;
 let user: User;
 let ws: Workspace;
 
 test.before(async () => {
   module = await createTestingModule({ imports: [PermissionModule] });
   models = module.get<Models>(Models);
-  ac = new WorkspaceAccessController(models);
+  ac = module.get(WorkspaceAccessController);
+  policy = module.get(WorkspacePolicyService);
 });
 
 test.beforeEach(async () => {
   await module.initTestingDB();
-  user = await models.user.create({ email: 'u1@affine.pro' });
+  user = await models.user.create({ email: `${randomUUID()}@affine.pro` });
   ws = await models.workspace.create(user.id);
 });
 
@@ -44,7 +49,7 @@ test('should get null role', async t => {
 });
 
 test('should return null if role is not accepted', async t => {
-  const u2 = await models.user.create({ email: 'u2@affine.pro' });
+  const u2 = await models.user.create({ email: `${randomUUID()}@affine.pro` });
   await models.workspaceUser.set(ws.id, u2.id, WorkspaceRole.Collaborator, {
     status: WorkspaceMemberStatus.UnderReview,
   });
@@ -182,4 +187,39 @@ test('should assert action', async t => {
       'Workspace.Settings.Update'
     )
   );
+});
+
+test('should apply readonly workspace restrictions while keeping cleanup actions', async t => {
+  for (let index = 0; index < 10; index++) {
+    const member = await models.user.create({
+      email: `${randomUUID()}@affine.pro`,
+    });
+    await models.workspaceUser.set(
+      ws.id,
+      member.id,
+      WorkspaceRole.Collaborator,
+      {
+        status: WorkspaceMemberStatus.Accepted,
+      }
+    );
+  }
+  await policy.reconcileWorkspaceQuotaState(ws.id);
+
+  const { permissions } = await ac.role({
+    workspaceId: ws.id,
+    userId: user.id,
+  });
+
+  t.false(permissions['Workspace.CreateDoc']);
+  t.false(permissions['Workspace.Settings.Update']);
+  t.false(permissions['Workspace.Properties.Create']);
+  t.false(permissions['Workspace.Properties.Update']);
+  t.false(permissions['Workspace.Properties.Delete']);
+  t.false(permissions['Workspace.Blobs.Write']);
+  t.true(permissions['Workspace.Read']);
+  t.true(permissions['Workspace.Sync']);
+  t.true(permissions['Workspace.Users.Manage']);
+  t.true(permissions['Workspace.Blobs.List']);
+  t.true(permissions['Workspace.TransferOwner']);
+  t.true(permissions['Workspace.Payment.Manage']);
 });

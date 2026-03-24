@@ -11,15 +11,22 @@ import {
   askForMeetingPermission,
   checkMeetingPermissions,
   checkRecordingAvailable,
+  claimRecordingImport,
+  completeRecordingImport,
   disableRecordingFeature,
+  dismissRecordingStatus,
+  failRecordingImport,
+  getCurrentRecordingStatus,
   getRecording,
+  getRecordingImportQueue,
   readRecordingFile,
+  recordingImportQueue$,
   recordingStatus$,
   removeRecording,
   SAVED_RECORDINGS_DIR,
+  type SerializedRecordingImportStatus,
   type SerializedRecordingStatus,
   serializeRecordingStatus,
-  setRecordingBlockCreationStatus,
   setupRecordingFeature,
   startRecording,
   stopRecording,
@@ -32,9 +39,8 @@ export const recordingHandlers = {
   },
   getCurrentRecording: async () => {
     // not all properties are serializable, so we need to return a subset of the status
-    return recordingStatus$.value
-      ? serializeRecordingStatus(recordingStatus$.value)
-      : null;
+    const status = getCurrentRecordingStatus();
+    return status ? serializeRecordingStatus(status) : null;
   },
   startRecording: async (_, appGroup?: AppGroupInfo | number) => {
     return startRecording(appGroup);
@@ -45,13 +51,20 @@ export const recordingHandlers = {
   readRecordingFile: async (_, filepath: string) => {
     return readRecordingFile(filepath);
   },
-  setRecordingBlockCreationStatus: async (
-    _,
-    id: number,
-    status: 'success' | 'failed',
-    errorMessage?: string
-  ) => {
-    return setRecordingBlockCreationStatus(id, status, errorMessage);
+  getRecordingImportQueue: async () => {
+    return getRecordingImportQueue();
+  },
+  claimRecordingImport: async (_, id: number, workspaceId: string) => {
+    return claimRecordingImport(id, workspaceId);
+  },
+  completeRecordingImport: async (_, id: number) => {
+    return completeRecordingImport(id);
+  },
+  dismissRecordingStatus: async (_, id: number) => {
+    return dismissRecordingStatus(id);
+  },
+  failRecordingImport: async (_, id: number, errorMessage?: string) => {
+    return failRecordingImport(id, errorMessage);
   },
   removeRecording: async (_, id: number) => {
     return removeRecording(id);
@@ -99,6 +112,39 @@ export const recordingEvents = {
   ) => {
     const sub = recordingStatus$.subscribe(status => {
       fn(status ? serializeRecordingStatus(status) : null);
+    });
+    return () => {
+      try {
+        sub.unsubscribe();
+      } catch {
+        // ignore unsubscribe error
+      }
+    };
+  },
+  onRecordingImportQueueChanged: (
+    fn: (queue: SerializedRecordingImportStatus[]) => void
+  ) => {
+    const sub = recordingImportQueue$.subscribe(queue => {
+      fn(
+        queue.map(item => ({
+          id: item.id,
+          appName: item.appName,
+          workspaceId: item.workspaceId,
+          docId: item.docId,
+          startTime: item.startTime,
+          filepath: item.filepath,
+          sampleRate: item.sampleRate,
+          numberOfChannels: item.numberOfChannels,
+          durationMs: item.durationMs,
+          size: item.size,
+          degraded: item.degraded,
+          overflowCount: item.overflowCount,
+          importStatus: item.importStatus,
+          errorMessage: item.errorMessage,
+          createdAt: item.createdAt,
+          updatedAt: item.updatedAt,
+        }))
+      );
     });
     return () => {
       try {
