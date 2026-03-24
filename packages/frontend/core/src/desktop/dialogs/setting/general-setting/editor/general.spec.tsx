@@ -44,7 +44,13 @@ vi.mock('@affine/i18n', () => {
     new Proxy(
       {},
       {
-        get: (_, key: string) => () => translations[key] ?? key,
+        get: (_, key: string) => {
+          if (key === 't') {
+            return (translationKey: string) =>
+              translations[translationKey] ?? translationKey;
+          }
+          return () => translations[key] ?? key;
+        },
       }
     );
 

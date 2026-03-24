@@ -13,16 +13,6 @@ export const newDocDateTitleFormatOptions = [
 ] as const;
 export type NewDocDateTitleFormat =
   (typeof newDocDateTitleFormatOptions)[number];
-export const newDocDateTitleFormatLabelKeys = {
-  'DD-MM-YYYY':
-    'com.affine.settings.editorSettings.general.auto-date-title.format.dd-mm-yyyy',
-  'MM-DD-YYYY':
-    'com.affine.settings.editorSettings.general.auto-date-title.format.mm-dd-yyyy',
-  'YYYY-MM-DD':
-    'com.affine.settings.editorSettings.general.auto-date-title.format.yyyy-mm-dd',
-  journal:
-    'com.affine.settings.editorSettings.general.auto-date-title.format.journal',
-} satisfies Record<NewDocDateTitleFormat, string>;
 
 export const fontStyleOptions = [
   { key: 'Sans', value: 'var(--affine-font-sans-family)' },

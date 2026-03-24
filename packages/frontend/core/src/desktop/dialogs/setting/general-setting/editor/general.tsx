@@ -26,7 +26,6 @@ import {
   type FontFamily,
   fontStyleOptions,
   type NewDocDateTitleFormat,
-  newDocDateTitleFormatLabelKeys,
   newDocDateTitleFormatOptions,
 } from '@affine/core/modules/editor-setting';
 import { SpellCheckSettingService } from '@affine/core/modules/editor-setting/services/spell-check-setting';
@@ -439,7 +438,9 @@ export const getNewDocDateTitleFormatItems = (
 }> => {
   return newDocDateTitleFormatOptions.map(value => ({
     value,
-    label: t[newDocDateTitleFormatLabelKeys[value]](),
+    label: t.t(
+      `com.affine.settings.editorSettings.general.auto-date-title.format.${value.toLowerCase()}`
+    ),
   }));
 };
 
