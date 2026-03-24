@@ -2,11 +2,11 @@ import { type Framework } from '@toeverything/infra';
 
 import { ServersService } from '../cloud';
 import { DesktopApiService } from '../desktop-api';
-import { DocCreateMiddleware } from '../doc';
+import { DocCreateMiddleware, DocsService } from '../doc';
 import { I18n } from '../i18n';
 import { GlobalState, GlobalStateService } from '../storage';
 import { AppThemeService } from '../theme';
-import { WorkspaceScope, WorkspaceService } from '../workspace';
+import { WorkspaceScope } from '../workspace';
 import { EditorSetting } from './entities/editor-setting';
 import { EditorSettingDocCreateMiddleware } from './impls/doc-create-middleware';
 import { CurrentUserDBEditorSettingProvider } from './impls/user-db';
@@ -35,7 +35,7 @@ export function configureEditorSettingModule(framework: Framework) {
     .impl(DocCreateMiddleware, EditorSettingDocCreateMiddleware, [
       EditorSettingService,
       AppThemeService,
-      WorkspaceService,
+      DocsService,
     ]);
 }
 

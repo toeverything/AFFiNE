@@ -1,29 +1,17 @@
 import { getOrCreateI18n } from '@affine/i18n';
 import { Framework, Service } from '@toeverything/infra';
 import { afterEach, describe, expect, test, vi } from 'vitest';
-import { Array as YArray, Doc as YDoc, Map as YMap } from 'yjs';
 
 import { EditorSettingDocCreateMiddleware } from '../impls/doc-create-middleware';
 
-const createWorkspaceService = (titles: string[]) => {
-  const rootYDoc = new YDoc();
-  const meta = rootYDoc.getMap('meta');
-  const pages = new YArray<YMap<unknown>>();
-
-  pages.push(
-    titles.map((title, index) => {
-      return new YMap([
-        ['id', `doc-${index}`],
-        ['title', title],
-      ]);
-    })
-  );
-  meta.set('pages', pages);
-
+const createDocsService = (titles: string[]) => {
   return {
-    workspace: {
-      rootYDoc,
-    },
+    ['allDocTitle$']: () => ({
+      value: titles.map((title, index) => ({
+        id: `doc-${index}`,
+        title,
+      })),
+    }),
   };
 };
 
@@ -74,19 +62,19 @@ const createMiddleware = ({
     appTheme = appThemeService.appTheme;
   }
 
-  class MockWorkspaceService extends Service {
-    workspace = createWorkspaceService(titles ?? []).workspace;
+  class MockDocsService extends Service {
+    ['allDocTitle$'] = createDocsService(titles ?? [])['allDocTitle$'];
   }
 
   const framework = new Framework();
   framework
     .service(MockEditorSettingService)
     .service(MockAppThemeService)
-    .service(MockWorkspaceService)
+    .service(MockDocsService)
     .service(EditorSettingDocCreateMiddleware, [
       MockEditorSettingService,
       MockAppThemeService,
-      MockWorkspaceService,
+      MockDocsService,
     ]);
 
   return framework.provider().get(EditorSettingDocCreateMiddleware);

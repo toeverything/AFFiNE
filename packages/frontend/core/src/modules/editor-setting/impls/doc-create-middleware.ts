@@ -1,10 +1,8 @@
 import { Service } from '@toeverything/infra';
-import { Array as YArray, Map as YMap } from 'yjs';
 
-import type { DocCreateMiddleware, DocRecord } from '../../doc';
+import type { DocCreateMiddleware, DocRecord, DocsService } from '../../doc';
 import type { DocCreateOptions } from '../../doc/types';
 import type { AppThemeService } from '../../theme';
-import type { WorkspaceService } from '../../workspace';
 import type { EdgelessDefaultTheme } from '../schema';
 import type { EditorSettingService } from '../services/editor-setting';
 import { getUniqueNewDocDateTitle } from '../utils/date-title';
@@ -34,27 +32,15 @@ export class EditorSettingDocCreateMiddleware
   constructor(
     private readonly editorSettingService: EditorSettingService,
     private readonly appThemeService: AppThemeService,
-    private readonly workspaceService: WorkspaceService
+    private readonly docsService: DocsService
   ) {
     super();
   }
 
   private getCurrentDocTitles() {
-    const pages = this.workspaceService.workspace.rootYDoc
-      .getMap('meta')
-      .get('pages');
-
-    if (!(pages instanceof YArray)) {
-      return [];
-    }
-
-    return pages
-      .map(page => {
-        if (!(page instanceof YMap)) {
-          return '';
-        }
-        return (page.get('title') ?? '') as string;
-      })
+    return this.docsService
+      .allDocTitle$()
+      .value.map(doc => doc.title)
       .filter(Boolean);
   }
 
