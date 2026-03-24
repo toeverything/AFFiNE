@@ -3,7 +3,7 @@
  */
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import type { PropsWithChildren, ReactNode } from 'react';
+import type { PropsWithChildren } from 'react';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 const editorSettingSet = vi.fn();
@@ -19,89 +19,6 @@ const editorSettingService = {
     set: editorSettingSet,
   },
 };
-
-vi.mock('@affine/component', async () => {
-  const React = await import('react');
-  const MockScrollableViewport = React.forwardRef<
-    HTMLDivElement,
-    React.HTMLAttributes<HTMLDivElement>
-  >((props, ref) => <div ref={ref} {...props} />);
-  MockScrollableViewport.displayName = 'MockScrollableViewport';
-
-  return {
-    Loading: () => null,
-    Menu: ({
-      children,
-      items,
-    }: React.PropsWithChildren<{ items: React.ReactNode }>) => (
-      <div>
-        {children}
-        <div>{items}</div>
-      </div>
-    ),
-    MenuItem: ({
-      children,
-      onSelect,
-      ...props
-    }: React.PropsWithChildren<{
-      onSelect?: () => void;
-    }>) => (
-      <button type="button" onClick={onSelect} {...props}>
-        {children}
-      </button>
-    ),
-    MenuSeparator: () => null,
-    MenuTrigger: (props: React.ButtonHTMLAttributes<HTMLButtonElement>) => (
-      <button type="button" {...props} />
-    ),
-    RadioGroup: () => null,
-    RowInput: () => null,
-    Scrollable: {
-      Root: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
-      Viewport: MockScrollableViewport,
-      Scrollbar: () => null,
-    },
-    Slider: () => null,
-    Switch: ({
-      checked,
-      onChange,
-    }: {
-      checked: boolean;
-      onChange: (checked: boolean) => void;
-    }) => (
-      <input
-        aria-label="toggle"
-        type="checkbox"
-        checked={checked}
-        onChange={event => onChange(event.target.checked)}
-      />
-    ),
-    useConfirmModal: () => ({
-      openConfirmModal: vi.fn(),
-    }),
-  };
-});
-
-vi.mock('@affine/component/setting-components', () => {
-  return {
-    SettingRow: ({
-      name,
-      desc,
-      children,
-    }: PropsWithChildren<{ name: string; desc: ReactNode }>) => (
-      <section>
-        <h2>{name}</h2>
-        <div>{desc}</div>
-        {children}
-      </section>
-    ),
-    SettingWrapper: ({ children }: PropsWithChildren) => <div>{children}</div>,
-  };
-});
-
-vi.mock('@affine/core/components/hooks/affine-async-hooks', () => ({
-  useAsyncCallback: (fn: (...args: never[]) => Promise<unknown>) => fn,
-}));
 
 vi.mock('@affine/i18n', () => {
   const translations: Record<string, string> = {
@@ -174,7 +91,7 @@ describe('NewDocDateTitleSettings', () => {
   test('persists the auto title toggle through EditorSettingService', () => {
     render(<NewDocDateTitleSettings />);
 
-    fireEvent.click(screen.getByLabelText('toggle'));
+    fireEvent.click(screen.getByRole('checkbox'));
 
     expect(editorSettingSet).toHaveBeenCalledWith(
       'autoTitleNewDocWithCurrentDate',
@@ -185,7 +102,10 @@ describe('NewDocDateTitleSettings', () => {
   test('persists the selected date format through EditorSettingService', () => {
     render(<NewDocDateTitleSettings />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'YYYY-MM-DD' }));
+    fireEvent.pointerDown(
+      screen.getByTestId('new-doc-date-title-format-trigger')
+    );
+    fireEvent.click(screen.getByRole('menuitem', { name: 'YYYY-MM-DD' }));
 
     expect(editorSettingSet).toHaveBeenCalledWith(
       'newDocDateTitleFormat',
@@ -196,16 +116,17 @@ describe('NewDocDateTitleSettings', () => {
   test('renders all supported date format options', () => {
     render(<NewDocDateTitleSettings />);
 
+    const trigger = screen.getByTestId('new-doc-date-title-format-trigger');
+
+    expect(trigger.textContent).toContain('DD-MM-YYYY');
+
+    fireEvent.pointerDown(trigger);
+
+    expect(screen.getByRole('menuitem', { name: 'DD-MM-YYYY' })).toBeTruthy();
+    expect(screen.getByRole('menuitem', { name: 'MM-DD-YYYY' })).toBeTruthy();
+    expect(screen.getByRole('menuitem', { name: 'YYYY-MM-DD' })).toBeTruthy();
     expect(
-      screen.getByTestId('new-doc-date-title-format-trigger').textContent
-    ).toBe('DD-MM-YYYY');
-    expect(screen.getAllByRole('button', { name: 'DD-MM-YYYY' })).toHaveLength(
-      2
-    );
-    expect(screen.getByRole('button', { name: 'MM-DD-YYYY' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'YYYY-MM-DD' })).toBeTruthy();
-    expect(
-      screen.getByRole('button', { name: 'Journal style (localized)' })
+      screen.getByRole('menuitem', { name: 'Journal style (localized)' })
     ).toBeTruthy();
   });
 
