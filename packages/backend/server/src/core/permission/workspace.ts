@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { SpaceAccessDenied } from '../../base';
 import { DocRole, Models } from '../../models';
 import { AccessController } from './controller';
+import { WorkspacePolicyService } from './policy';
 import type { Resource } from './resource';
 import {
   fixupDocRole,
@@ -17,7 +18,10 @@ import {
 export class WorkspaceAccessController extends AccessController<'ws'> {
   protected readonly type = 'ws';
 
-  constructor(private readonly models: Models) {
+  constructor(
+    private readonly models: Models,
+    private readonly policy: WorkspacePolicyService
+  ) {
     super();
   }
 
@@ -37,7 +41,10 @@ export class WorkspaceAccessController extends AccessController<'ws'> {
 
     return {
       role,
-      permissions: mapWorkspaceRoleToPermissions(role),
+      permissions: await this.policy.applyWorkspacePermissions(
+        resource.workspaceId,
+        mapWorkspaceRoleToPermissions(role)
+      ),
     };
   }
 
