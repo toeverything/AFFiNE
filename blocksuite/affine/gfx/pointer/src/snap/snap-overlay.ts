@@ -882,6 +882,10 @@ export class SnapOverlay extends Overlay {
       allCandidateElements.add(candidate);
     });
 
+    const allBounds = [...allCandidateElements].map(
+      element => element.elementBound
+    );
+
     // Add grid lines as snap targets when snap-to-grid is enabled
     if (this._snapToGrid && this._gridSize > 0) {
       const gridBounds = this._generateGridBounds(movingBound);
@@ -893,7 +897,7 @@ export class SnapOverlay extends Overlay {
     this._referenceBounds = {
       horizontal: horizBounds,
       vertical: verticalBounds,
-      all: [...allCandidateElements].map(element => element.elementBound),
+      all: allBounds,
     };
   }
 

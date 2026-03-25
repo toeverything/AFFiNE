@@ -266,7 +266,7 @@ test.describe('quick connect', () => {
       Shape.Square
     );
     await selectElementsByService(page, [shapeId]);
-    await toViewCoord(page, [50, 50]);
+    const [x, y] = await toViewCoord(page, [50, 50]);
 
     const quickConnectBtn = locatorComponentToolbar(page).locator(
       '[data-testid="draw-connector"]'

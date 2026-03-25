@@ -487,79 +487,13 @@ export class EdgelessRootBlockComponent extends BlockComponent<
     this.keyboardManager = new EdgelessPageKeyboardManager(this);
 
     this.handleEvent('selectionChange', () => {
-      console.log('[DEBUG] selectionChange event fired');
-      console.log('[DEBUG] host.selection.value:', this.host.selection.value);
-
       const surface = this.host.selection.value.find(
         (sel): sel is SurfaceSelection => sel.is(SurfaceSelection)
       );
-
-      console.log('[DEBUG] surface selection:', surface);
-      if (!surface) {
-        console.log('[DEBUG] No surface selection found');
-        return;
-      }
-
-      console.log('[DEBUG] surface.elements:', surface.elements);
-      if (surface.elements.length === 0) {
-        console.log('[DEBUG] No elements in selection');
-        return;
-      }
+      if (!surface) return;
 
       const el = this.gfx.getElementById(surface.elements[0]);
-      console.log('[DEBUG] Retrieved element:', el);
-      console.log('[DEBUG] isCanvasElement check:', isCanvasElement(el));
-
       if (isCanvasElement(el)) {
-        // Log all properties of the selected element
-        console.group('🔍 Selected Element Properties');
-        console.log('Element Type:', el.type);
-        console.log('Element ID:', el.id);
-        console.log('Full Element Object:', el);
-
-        // Log specific common properties
-        if ('xywh' in el) console.log('Position/Size (xywh):', el.xywh);
-        if ('x' in el) console.log('X:', el.x);
-        if ('y' in el) console.log('Y:', el.y);
-        if ('w' in el) console.log('Width:', el.w);
-        if ('h' in el) console.log('Height:', el.h);
-
-        // Shape-specific properties
-        if ('shapeType' in el) console.log('Shape Type:', el.shapeType);
-        if ('strokeColor' in el) console.log('Stroke Color:', el.strokeColor);
-        if ('strokeWidth' in el) console.log('Stroke Width:', el.strokeWidth);
-        if ('strokeStyle' in el) console.log('Stroke Style:', el.strokeStyle);
-        if ('fillColor' in el) console.log('Fill Color:', el.fillColor);
-        if ('filled' in el) console.log('Filled:', el.filled);
-        if ('radius' in el) console.log('Radius:', el.radius);
-        if ('roughness' in el) console.log('Roughness:', el.roughness);
-
-        // Connector-specific properties
-        if ('source' in el) console.log('Source:', el.source);
-        if ('target' in el) console.log('Target:', el.target);
-        if ('mode' in el) console.log('Mode:', el.mode);
-        if ('controllers' in el) console.log('Controllers:', el.controllers);
-        if ('frontEndpointStyle' in el)
-          console.log('Front Endpoint:', el.frontEndpointStyle);
-        if ('rearEndpointStyle' in el)
-          console.log('Rear Endpoint:', el.rearEndpointStyle);
-
-        // Text properties
-        if ('text' in el) console.log('Text:', el.text);
-        if ('fontFamily' in el) console.log('Font Family:', el.fontFamily);
-        if ('fontSize' in el) console.log('Font Size:', el.fontSize);
-        if ('fontWeight' in el) console.log('Font Weight:', el.fontWeight);
-        if ('fontStyle' in el) console.log('Font Style:', el.fontStyle);
-        if ('textAlign' in el) console.log('Text Align:', el.textAlign);
-        if ('color' in el) console.log('Color:', el.color);
-
-        // Rotation
-        if ('rotate' in el) console.log('Rotation:', el.rotate);
-
-        // Log all enumerable properties
-        console.log('All Properties:', Object.keys(el));
-        console.groupEnd();
-
         return true;
       }
 
