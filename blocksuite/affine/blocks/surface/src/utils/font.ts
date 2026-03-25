@@ -21,11 +21,9 @@ export const getFontFaces = IS_FIREFOX
     }
   : () => [...document.fonts.keys()];
 
-export const isSameFontFamily = IS_FIREFOX
-  ? (fontFamily: FontFamily | string) => (fontFace: FontFace) =>
-      fontFace.family === `"${fontFamily}"`
-  : (fontFamily: FontFamily | string) => (fontFace: FontFace) =>
-      fontFace.family === fontFamily;
+export const isSameFontFamily =
+  (fontFamily: FontFamily | string) => (fontFace: FontFace) =>
+    fontFace.family === `"${fontFamily}"`;
 
 export function getFontFacesByFontFamily(
   fontFamily: FontFamily | string
