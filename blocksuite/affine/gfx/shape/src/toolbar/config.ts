@@ -195,7 +195,11 @@ export const shapeToolbarConfig = {
         const onPickFillColor = pickColorWrapper('fillColor', palette => {
           const value = palette.value;
           const filled = isTransparent(value);
-          const props = packColor('fillColor', value);
+          const props = {
+            ...packColor('fillColor', value),
+            gradientFinal: undefined,
+            gradientDirection: undefined,
+          };
           const crud = ctx.std.get(EdgelessCRUDIdentifier);
           models.forEach(model => {
             if (filled && !model.filled) {

@@ -8,7 +8,13 @@ import { EditorService } from '@affine/core/modules/editor';
 import { getAFFiNEWorkspaceSchema } from '@affine/core/modules/workspace/global-schema';
 import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
+import { buildFramePngPayload } from '@blocksuite/affine/blocks/frame';
 import { ExportManager } from '@blocksuite/affine/blocks/surface';
+import {
+  FrameBlockModel,
+  FrameBlockSchema,
+  SurfaceRefBlockModel,
+} from '@blocksuite/affine/model';
 import {
   docLinkBaseURLMiddleware,
   embedSyncedDocMiddleware,
@@ -18,7 +24,11 @@ import {
 } from '@blocksuite/affine/shared/adapters';
 import { printToPdf } from '@blocksuite/affine/shared/utils';
 import type { BlockStdScope } from '@blocksuite/affine/std';
-import { type Store, Transformer } from '@blocksuite/affine/store';
+import {
+  getAssetName,
+  type Store,
+  Transformer,
+} from '@blocksuite/affine/store';
 import {
   createAssetsArchive,
   download,
@@ -27,6 +37,7 @@ import {
   PdfTransformer,
   ZipTransformer,
 } from '@blocksuite/affine/widgets/linked-doc';
+import { nextTick, sha } from '@blocksuite/global/utils';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
 import { nanoid } from 'nanoid';
@@ -52,22 +63,139 @@ interface AdapterResult {
   assetsIds: string[];
 }
 
-type AdapterFactoryIdentifier =
-  | typeof HtmlAdapterFactoryIdentifier
-  | typeof MarkdownAdapterFactoryIdentifier;
+type FrameAsset = {
+  id: string;
+  frameId: string;
+  name: string;
+  alt: string;
+};
 
-interface AdapterConfig {
-  identifier: AdapterFactoryIdentifier;
-  fileExtension: string; // file extension need to be lower case with dot prefix, e.g. '.md', '.txt', '.html'
-  contentType: string;
-  indexFileName: string;
+type SurfaceRefPreview = HTMLElement & {
+  referenceModel?: unknown;
+  previewEditor?: { std?: BlockStdScope } | null;
+};
+
+function setFrameExportConfigs(
+  transformer: Transformer,
+  frameAssets: FrameAsset[],
+  referencedFrameIds: string[]
+) {
+  if (!frameAssets.length) return;
+  const imageMap = Object.fromEntries(
+    frameAssets.map(asset => [asset.frameId, asset])
+  );
+  transformer.adapterConfigs.set(
+    'frame:export:image-map',
+    JSON.stringify(imageMap)
+  );
+  transformer.adapterConfigs.set(
+    'frame:export:surface-ref-ids',
+    JSON.stringify(referencedFrameIds)
+  );
+  transformer.adapterConfigs.set('surface:exportFramesAsImages', 'true');
 }
 
-async function exportDoc(
+function collectReferencedFrameIds(doc: Store) {
+  const surfaceRefs = doc
+    .getBlocksByFlavour('affine:surface-ref')
+    .map(block => block.model)
+    .filter(
+      (model): model is SurfaceRefBlockModel =>
+        model instanceof SurfaceRefBlockModel
+    );
+
+  const referenced = new Set<string>();
+  for (const model of surfaceRefs) {
+    if (model.props.refFlavour !== FrameBlockSchema.model.flavour) continue;
+    const reference = model.props.reference;
+    if (reference) referenced.add(reference);
+  }
+  return [...referenced];
+}
+
+function ensureUniqueFileName(name: string, used: Set<string>) {
+  if (!used.has(name)) {
+    used.add(name);
+    return name;
+  }
+  const dotIndex = name.lastIndexOf('.');
+  const base = dotIndex >= 0 ? name.slice(0, dotIndex) : name;
+  const ext = dotIndex >= 0 ? name.slice(dotIndex) : '';
+  let count = 2;
+  let candidate = `${base}-${count}${ext}`;
+  while (used.has(candidate)) {
+    count += 1;
+    candidate = `${base}-${count}${ext}`;
+  }
+  used.add(candidate);
+  return candidate;
+}
+
+function normalizeAssetFileName(name: string) {
+  const trimmed = name.trim();
+  const dotIndex = trimmed.lastIndexOf('.');
+  const base = dotIndex >= 0 ? trimmed.slice(0, dotIndex) : trimmed;
+  const ext = dotIndex >= 0 ? trimmed.slice(dotIndex) : '';
+  const normalizedBase = base.replace(/\s+/g, '-');
+  return `${normalizedBase}${ext}`;
+}
+
+async function collectFrameAssets(
   doc: Store,
   std: BlockStdScope,
-  config: AdapterConfig
+  transformer: Transformer,
+  frameIds?: string[]
 ) {
+  const assets = transformer.assets;
+  const renderStdMap = new Map<string, BlockStdScope>();
+  document.querySelectorAll('affine-surface-ref').forEach(node => {
+    const surfaceRef = node as SurfaceRefPreview;
+    if (!surfaceRef.previewEditor?.std) return;
+    const referenceModel = surfaceRef.referenceModel;
+    if (referenceModel instanceof FrameBlockModel) {
+      renderStdMap.set(referenceModel.id, surfaceRef.previewEditor.std);
+    }
+  });
+  const frames = doc
+    .getBlocksByFlavour('affine:frame')
+    .map(block => block.model)
+    .filter(
+      (model): model is FrameBlockModel => model instanceof FrameBlockModel
+    );
+  const filteredFrames = frameIds?.length
+    ? frames.filter(frame => frameIds.includes(frame.id))
+    : frames;
+  if (!filteredFrames.length) {
+    return [] as FrameAsset[];
+  }
+
+  const usedNames = new Set<string>();
+  const assetsList: FrameAsset[] = [];
+  for (const frame of filteredFrames) {
+    const renderStd = renderStdMap.get(frame.id);
+    const payload = await buildFramePngPayload(std, frame, renderStd);
+    if (!payload) continue;
+
+    const normalizedName = normalizeAssetFileName(payload.fileName);
+    const fileName = ensureUniqueFileName(normalizedName, usedNames);
+    const buffer = await payload.blob.arrayBuffer();
+    const blobId = await sha(buffer);
+    const file = new File([buffer], fileName, { type: 'image/png' });
+    assets.set(blobId, file);
+
+    assetsList.push({
+      id: blobId,
+      frameId: frame.id,
+      name: getAssetName(assets, blobId),
+      alt: frame.props.title?.toString()?.trim() || 'Frame',
+    });
+    await nextTick();
+  }
+
+  return assetsList;
+}
+
+async function exportMarkdownWithFrames(doc: Store, std: BlockStdScope) {
   const transformer = new Transformer({
     schema: getAFFiNEWorkspaceSchema(),
     blobCRUD: doc.workspace.blobSync,
@@ -83,31 +211,106 @@ async function exportDoc(
     ],
   });
 
-  const adapterFactory = std.store.provider.get(config.identifier);
+  const referencedFrameIds = collectReferencedFrameIds(doc);
+  const frameAssets = await collectFrameAssets(
+    doc,
+    std,
+    transformer,
+    referencedFrameIds
+  );
+  setFrameExportConfigs(transformer, frameAssets, referencedFrameIds);
+
+  const adapterFactory = std.store.provider.get(
+    MarkdownAdapterFactoryIdentifier
+  );
   const adapter = adapterFactory.get(transformer);
   const result = (await adapter.fromDoc(doc)) as AdapterResult;
 
-  if (!result || (!result.file && !result.assetsIds.length)) {
+  if (
+    !result ||
+    (!result.file && !result.assetsIds.length && !frameAssets.length)
+  ) {
     return;
   }
+  const assetsIds = [
+    ...new Set([...result.assetsIds, ...frameAssets.map(asset => asset.id)]),
+  ];
 
   const docTitle = doc.meta?.title || 'Untitled';
-  const contentBlob = new Blob([result.file], { type: config.contentType });
+  const contentBlob = new Blob([result.file], { type: 'text/plain' });
+  const indexFileName = `${docTitle}.md`;
 
   let downloadBlob: Blob;
   let name: string;
 
-  if (result.assetsIds.length > 0) {
-    if (!transformer.assets) {
-      throw new Error('No assets found');
-    }
-    const zip = await createAssetsArchive(transformer.assets, result.assetsIds);
-    await zip.file(config.indexFileName, contentBlob);
+  if (assetsIds.length > 0) {
+    const zip = await createAssetsArchive(transformer.assets, assetsIds);
+    await zip.file(indexFileName, contentBlob);
     downloadBlob = await zip.generate();
     name = `${docTitle}.zip`;
   } else {
     downloadBlob = contentBlob;
-    name = `${docTitle}${config.fileExtension}`;
+    name = `${docTitle}.md`;
+  }
+
+  download(downloadBlob, name);
+}
+
+async function exportHtmlWithFrames(doc: Store, std: BlockStdScope) {
+  const transformer = new Transformer({
+    schema: getAFFiNEWorkspaceSchema(),
+    blobCRUD: doc.workspace.blobSync,
+    docCRUD: {
+      create: (id: string) => doc.workspace.createDoc(id).getStore({ id }),
+      get: (id: string) => doc.workspace.getDoc(id)?.getStore({ id }) ?? null,
+      delete: (id: string) => doc.workspace.removeDoc(id),
+    },
+    middlewares: [
+      docLinkBaseURLMiddleware(doc.workspace.id),
+      titleMiddleware(doc.workspace.meta.docMetas),
+      embedSyncedDocMiddleware('content'),
+    ],
+  });
+
+  const referencedFrameIds = collectReferencedFrameIds(doc);
+  const frameAssets = await collectFrameAssets(
+    doc,
+    std,
+    transformer,
+    referencedFrameIds
+  );
+  setFrameExportConfigs(transformer, frameAssets, referencedFrameIds);
+
+  const adapterFactory = std.store.provider.get(HtmlAdapterFactoryIdentifier);
+  const adapter = adapterFactory.get(transformer);
+  const result = (await adapter.fromDoc(doc)) as AdapterResult;
+
+  if (
+    !result ||
+    (!result.file && !result.assetsIds.length && !frameAssets.length)
+  ) {
+    return;
+  }
+
+  const assetsIds = [
+    ...new Set([...result.assetsIds, ...frameAssets.map(asset => asset.id)]),
+  ];
+
+  const docTitle = doc.meta?.title || 'Untitled';
+  const contentBlob = new Blob([result.file], { type: 'text/html' });
+  const indexFileName = `${docTitle}.html`;
+
+  let downloadBlob: Blob;
+  let name: string;
+
+  if (assetsIds.length > 0) {
+    const zip = await createAssetsArchive(transformer.assets, assetsIds);
+    await zip.file(indexFileName, contentBlob);
+    downloadBlob = await zip.generate();
+    name = `${docTitle}.zip`;
+  } else {
+    downloadBlob = contentBlob;
+    name = `${docTitle}.html`;
   }
 
   download(downloadBlob, name);
@@ -118,12 +321,7 @@ async function exportToHtml(doc: Store, std?: BlockStdScope) {
     // If std is not provided, we use the default export method
     await HtmlTransformer.exportDoc(doc);
   } else {
-    await exportDoc(doc, std, {
-      identifier: HtmlAdapterFactoryIdentifier,
-      fileExtension: '.html',
-      contentType: 'text/html',
-      indexFileName: 'index.html',
-    });
+    await exportHtmlWithFrames(doc, std);
   }
 }
 
@@ -132,12 +330,7 @@ async function exportToMarkdown(doc: Store, std?: BlockStdScope) {
     // If std is not provided, we use the default export method
     await MarkdownTransformer.exportDoc(doc);
   } else {
-    await exportDoc(doc, std, {
-      identifier: MarkdownAdapterFactoryIdentifier,
-      fileExtension: '.md',
-      contentType: 'text/plain',
-      indexFileName: 'index.md',
-    });
+    await exportMarkdownWithFrames(doc, std);
   }
 }
 

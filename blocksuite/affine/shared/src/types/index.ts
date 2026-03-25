@@ -71,4 +71,6 @@ export type SelectedRect = {
   borderWidth: number;
   borderStyle: string;
   rotate: number;
+  flipX?: boolean;
+  flipY?: boolean;
 };

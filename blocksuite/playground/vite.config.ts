@@ -43,6 +43,53 @@ const clearSiteDataPlugin = () =>
     },
   }) as Plugin;
 
+const lodashEsSpecifierPlugin = () =>
+  ({
+    name: 'lodash-es-specifier',
+    enforce: 'pre',
+    async resolveId(id, importer, options) {
+      if (!id.startsWith('lodash-es/') || id.endsWith('.js')) {
+        return null;
+      }
+      return this.resolve(`${id}.js`, importer, {
+        ...options,
+        skipSelf: true,
+      });
+    },
+  }) as Plugin;
+
+const atlaskitSpecifierPlugin = () =>
+  ({
+    name: 'atlaskit-specifier',
+    enforce: 'pre',
+    async resolveId(id, importer, options) {
+      const mapping: Record<string, string> = {
+        '@atlaskit/pragmatic-drag-and-drop/element/adapter':
+          '@atlaskit/pragmatic-drag-and-drop/dist/cjs/entry-point/element/adapter.js',
+        '@atlaskit/pragmatic-drag-and-drop/element/center-under-pointer':
+          '@atlaskit/pragmatic-drag-and-drop/dist/cjs/entry-point/element/center-under-pointer.js',
+        '@atlaskit/pragmatic-drag-and-drop/element/disable-native-drag-preview':
+          '@atlaskit/pragmatic-drag-and-drop/dist/cjs/entry-point/element/disable-native-drag-preview.js',
+        '@atlaskit/pragmatic-drag-and-drop/element/pointer-outside-of-preview':
+          '@atlaskit/pragmatic-drag-and-drop/dist/cjs/entry-point/element/pointer-outside-of-preview.js',
+        '@atlaskit/pragmatic-drag-and-drop/element/preserve-offset-on-source':
+          '@atlaskit/pragmatic-drag-and-drop/dist/cjs/entry-point/element/preserve-offset-on-source.js',
+        '@atlaskit/pragmatic-drag-and-drop/element/set-custom-native-drag-preview':
+          '@atlaskit/pragmatic-drag-and-drop/dist/cjs/entry-point/element/set-custom-native-drag-preview.js',
+        '@atlaskit/pragmatic-drag-and-drop-auto-scroll/element':
+          '@atlaskit/pragmatic-drag-and-drop-auto-scroll/dist/cjs/entry-point/element.js',
+        '@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge':
+          '@atlaskit/pragmatic-drag-and-drop-hitbox/dist/cjs/closest-edge.js',
+      };
+      const replacement = mapping[id];
+      if (!replacement) return null;
+      return this.resolve(replacement, importer, {
+        ...options,
+        skipSelf: true,
+      });
+    },
+  }) as Plugin;
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   process.env = { ...process.env, ...loadEnv(mode, __dirname, '') };
@@ -58,6 +105,8 @@ export default defineConfig(({ mode }) => {
       ),
     },
     plugins: [
+      lodashEsSpecifierPlugin(),
+      atlaskitSpecifierPlugin(),
       hmrPlugin,
       sourcemapExclude(),
       enableIstanbul &&

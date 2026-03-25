@@ -42,6 +42,7 @@ import { InlinePresetViewExtension } from '@blocksuite/affine-inline-preset/view
 import { ReferenceViewExtension } from '@blocksuite/affine-inline-reference/view';
 import { DragHandleViewExtension } from '@blocksuite/affine-widget-drag-handle/view';
 import { EdgelessAutoConnectViewExtension } from '@blocksuite/affine-widget-edgeless-auto-connect/view';
+import { EdgelessConnectorAnchorsViewExtension } from '@blocksuite/affine-widget-edgeless-connector-anchors/view';
 import { EdgelessDraggingAreaViewExtension } from '@blocksuite/affine-widget-edgeless-dragging-area/view';
 import { EdgelessSelectedRectViewExtension } from '@blocksuite/affine-widget-edgeless-selected-rect/view';
 import { EdgelessToolbarViewExtension } from '@blocksuite/affine-widget-edgeless-toolbar/view';
@@ -108,6 +109,7 @@ export function getInternalViewExtensions() {
     // order will affect the z-index of the widget
     DragHandleViewExtension,
     EdgelessAutoConnectViewExtension,
+    EdgelessConnectorAnchorsViewExtension,
     FrameTitleViewExtension,
     KeyboardToolbarViewExtension,
     LinkedDocViewExtension,

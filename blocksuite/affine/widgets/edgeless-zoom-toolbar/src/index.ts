@@ -18,13 +18,16 @@ export class AffineEdgelessZoomToolbarWidget extends WidgetComponent<RootBlockMo
       left: 12px;
       z-index: var(--affine-z-index-popover);
       display: flex;
+      align-items: center;
+      gap: 8px;
       justify-content: center;
       -webkit-user-select: none;
       user-select: none;
     }
 
     @container viewport (width <= 1200px) {
-      edgeless-zoom-toolbar {
+      edgeless-zoom-toolbar,
+      edgeless-grid-menu {
         display: none;
       }
     }
@@ -79,6 +82,7 @@ export class AffineEdgelessZoomToolbarWidget extends WidgetComponent<RootBlockMo
 
     return html`
       <edgeless-zoom-toolbar .std=${this.std}></edgeless-zoom-toolbar>
+      <edgeless-grid-menu .std=${this.std}></edgeless-grid-menu>
       <zoom-bar-toggle-button .std=${this.std}></zoom-bar-toggle-button>
     `;
   }

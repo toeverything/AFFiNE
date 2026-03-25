@@ -6,9 +6,11 @@ import {
 } from '@blocksuite/affine-block-surface';
 import type { ShapeElementModel, ShapeName } from '@blocksuite/affine-model';
 import {
+  COLLAPSIBLE_CONTAINER_SHAPES,
   DefaultTheme,
   getShapeType,
   ShapeType,
+  TextVerticalAlign,
 } from '@blocksuite/affine-model';
 import {
   EditPropsStore,
@@ -31,6 +33,7 @@ import { ShapeOverlay } from './overlay/shape-overlay.js';
 
 export type ShapeToolOption = {
   shapeName: ShapeName;
+  stencilName?: string;
 };
 
 export class ShapeTool extends BaseTool<ShapeToolOption> {
@@ -64,23 +67,72 @@ export class ShapeTool extends BaseTool<ShapeToolOption> {
     height: number
   ): string {
     const { viewport } = this.gfx;
-    const { shapeName } = this.activatedOption;
+    const { shapeName, stencilName } = this.activatedOption;
+    const propsStore = this.std.get(EditPropsStore);
     const attributes =
-      this.std.get(EditPropsStore).lastProps$.value[`shape:${shapeName}`];
+      propsStore.lastProps$.value[`shape:${shapeName}`] ??
+      propsStore.lastProps$.value['shape:rect'];
 
-    if (shapeName === 'roundedRect') {
+    if (shapeName === 'roundedRect' || shapeName === ShapeType.Rect) {
       width += 40;
+    }
+
+    const shapeType = getShapeType(shapeName);
+    if (width === SHAPE_OVERLAY_WIDTH && height === SHAPE_OVERLAY_HEIGHT) {
+      if (
+        shapeType === ShapeType.Container ||
+        shapeType === ShapeType.VerticalContainer ||
+        shapeType === ShapeType.HorizontalContainer
+      ) {
+        width = 400;
+        height = 400;
+      }
+      if (
+        shapeType === ShapeType.MindmapCentralIdea ||
+        shapeType === ShapeType.MindmapSubTopic ||
+        shapeType === ShapeType.MindmapSquare
+      ) {
+        width = 200;
+        height = 80;
+      }
+      if (shapeType === ShapeType.MindmapBranch) {
+        width = 200;
+        height = 32;
+      }
     }
     // create a shape block when drag start
     const [modelX, modelY] = viewport.toModelCoord(e.point.x, e.point.y);
     const bound = new Bound(modelX, modelY, width, height);
 
+    const isMindmapSubTopic = shapeType === ShapeType.MindmapSubTopic;
+    const isMindmapBranch = shapeType === ShapeType.MindmapBranch;
+
     const id = this.gfx.surface!.addElement({
       type: CanvasElementType.SHAPE,
-      shapeType: getShapeType(shapeName),
+      shapeType,
       xywh: bound.serialize(),
-      radius: attributes.radius,
+      radius: isMindmapSubTopic ? 0.5 : attributes.radius,
+      stencilName,
+      filled: isMindmapBranch
+        ? false
+        : shapeName === ShapeType.DrawioStencil
+          ? true
+          : attributes.filled,
+      fillColor: attributes.fillColor,
+      gradientFinal: attributes.gradientFinal,
+      gradientDirection: attributes.gradientDirection,
+      strokeColor: attributes.strokeColor,
+      strokeWidth: attributes.strokeWidth,
+      strokeStyle: attributes.strokeStyle,
+      shapeStyle: attributes.shapeStyle,
+      roughness: attributes.roughness,
     });
+
+    if (COLLAPSIBLE_CONTAINER_SHAPES.has(shapeType)) {
+      this.gfx.surface!.updateElement(id, {
+        textVerticalAlign: TextVerticalAlign.Top,
+      });
+    }
 
     this.std.getOptional(TelemetryProvider)?.track('CanvasElementAdded', {
       control: 'canvas:draw',
@@ -207,9 +259,11 @@ export class ShapeTool extends BaseTool<ShapeToolOption> {
     this.clearOverlay();
     if (this._disableOverlay) return;
     const options = SHAPE_OVERLAY_OPTIONS;
-    const { shapeName } = this.activatedOption;
+    const { shapeName, stencilName } = this.activatedOption;
+    const propsStore = this.std.get(EditPropsStore);
     const attributes =
-      this.std.get(EditPropsStore).lastProps$.value[`shape:${shapeName}`];
+      propsStore.lastProps$.value[`shape:${shapeName}`] ??
+      propsStore.lastProps$.value['shape:rect'];
 
     options.stroke = this.std
       .get(ThemeProvider)
@@ -233,11 +287,17 @@ export class ShapeTool extends BaseTool<ShapeToolOption> {
       default:
         options.strokeLineDash = [];
     }
-    this._shapeOverlay = new ShapeOverlay(this.gfx, shapeName, options, {
-      shapeStyle: attributes.shapeStyle,
-      fillColor: attributes.fillColor,
-      strokeColor: attributes.strokeColor,
-    });
+    this._shapeOverlay = new ShapeOverlay(
+      this.gfx,
+      shapeName,
+      options,
+      {
+        shapeStyle: attributes.shapeStyle,
+        fillColor: attributes.fillColor,
+        strokeColor: attributes.strokeColor,
+      },
+      stencilName
+    );
     this._surfaceComponent?.renderer.addOverlay(this._shapeOverlay);
   }
 

@@ -87,7 +87,7 @@ export class EdgelessToolbarWidget extends WidgetComponent<RootBlockModel> {
       pointer-events: auto;
       padding-bottom: 16px;
       width: fit-content;
-      max-width: calc(100% - ${unsafeCSS(SAFE_AREA_WIDTH)}px * 2);
+      max-width: calc(100% - ${unsafeCSS(SAFE_AREA_WIDTH)}px);
       min-width: 264px;
     }
     .edgeless-toolbar-toggle-control[data-enable='true'] {
@@ -291,7 +291,7 @@ export class EdgelessToolbarWidget extends WidgetComponent<RootBlockModel> {
 
   // calculate all the width manually
   private get _availableWidth() {
-    return this.containerWidth - 2 * SAFE_AREA_WIDTH;
+    return this.containerWidth - SAFE_AREA_WIDTH;
   }
 
   private get _cachedPresentHideToolbar() {

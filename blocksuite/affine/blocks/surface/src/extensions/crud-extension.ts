@@ -124,7 +124,11 @@ export class EdgelessCRUDExtension extends Extension {
         ...element.yMap.toJSON(),
         ...props,
       });
-      key && this.std.get(EditPropsStore).recordLastProps(key, props);
+      if (key) {
+        const propsStore = this.std.get(EditPropsStore);
+        propsStore.recordLastProps(key, props);
+        syncShapeStyleProps(propsStore, key, props);
+      }
       this._surface.updateElement(id, props);
       return;
     }
@@ -178,4 +182,58 @@ export class EdgelessCRUDExtension extends Extension {
       return;
     }
   }
+}
+
+const SHAPE_STYLE_PROP_KEYS = new Set([
+  'color',
+  'fillColor',
+  'strokeColor',
+  'strokeWidth',
+  'strokeStyle',
+  'filled',
+  'shapeStyle',
+  'roughness',
+]);
+
+const SHAPE_STYLE_SYNC_KEYS = [
+  'shape:rect',
+  'shape:roundedRect',
+  'shape:ellipse',
+  'shape:triangle',
+  'shape:container',
+  'shape:verticalContainer',
+  'shape:horizontalContainer',
+  'shape:list',
+  'shape:mindmapCentralIdea',
+  'shape:mindmapBranch',
+  'shape:mindmapSubTopic',
+  'shape:mindmapSquare',
+  'shape:mindmapOrganization',
+  'shape:mindmapDivision',
+];
+
+function pickShapeStyleProps(props: Record<string, unknown>) {
+  const styleProps: Record<string, unknown> = {};
+  Object.keys(props).forEach(key => {
+    if (SHAPE_STYLE_PROP_KEYS.has(key)) {
+      styleProps[key] = props[key];
+    }
+  });
+  return styleProps;
+}
+
+function syncShapeStyleProps(
+  propsStore: EditPropsStore,
+  key: string,
+  props: Record<string, unknown>
+) {
+  if (!key.startsWith('shape:')) return;
+  const styleProps = pickShapeStyleProps(props);
+  if (Object.keys(styleProps).length === 0) return;
+  propsStore.recordLastPropsBatch(
+    SHAPE_STYLE_SYNC_KEYS.map(shapeKey => ({
+      key: shapeKey as never,
+      props: styleProps,
+    }))
+  );
 }

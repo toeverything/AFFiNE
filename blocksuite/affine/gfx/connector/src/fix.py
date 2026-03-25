@@ -1,0 +1,1 @@
+["wp[0] + connector.x, wp[1] + connector.y] as IVec',\n    'new PointLocation([wp[0] + connector.x, wp[1] + connector.y])'\n)\n\nwith open('connector-manager.ts', 'w') as f:\n    f.write(content)\n\nprint('Fixed!')"]

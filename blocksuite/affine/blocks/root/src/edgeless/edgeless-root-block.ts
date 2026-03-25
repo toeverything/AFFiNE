@@ -3,6 +3,7 @@ import {
   DefaultTool,
   getBgGridGap,
   normalizeWheelDeltaY,
+  OverlayIdentifier,
   type SurfaceBlockComponent,
   type SurfaceBlockModel,
 } from '@blocksuite/affine-block-surface';
@@ -96,10 +97,13 @@ export class EdgelessRootBlockComponent extends BlockComponent<
     }
   `;
 
+  private _gridSize = 20;
+  private _gridVisible = true;
+
   private readonly _refreshLayerViewport = requestThrottledConnectedFrame(
     () => {
       const { zoom, translateX, translateY } = this.gfx.viewport;
-      const gap = getBgGridGap(zoom);
+      const gap = getBgGridGap(zoom, this._gridSize);
 
       if (this.backgroundElm) {
         this.backgroundElm.style.setProperty(
@@ -109,6 +113,13 @@ export class EdgelessRootBlockComponent extends BlockComponent<
         this.backgroundElm.style.setProperty(
           'background-size',
           `${gap}px ${gap}px`
+        );
+        // Show/hide grid
+        this.backgroundElm.style.setProperty(
+          'background-image',
+          this._gridVisible
+            ? 'radial-gradient(var(--affine-edgeless-grid-color) 1px, var(--affine-background-primary-color) 1px)'
+            : 'none'
         );
       }
     },
@@ -405,10 +416,73 @@ export class EdgelessRootBlockComponent extends BlockComponent<
     return super.bindHotKey(keymap, options);
   }
 
+  private _initGridSettings() {
+    const store = this.std.get(EditPropsStore);
+
+    // Load initial settings
+    this._gridVisible = store.getStorage('edgelessShowGrid') ?? true;
+    this._gridSize = store.getStorage('edgelessGridSize') ?? 20;
+
+    // Listen for changes from grid menu
+    this._disposables.addFromEvent(
+      this,
+      'grid-visibility-changed',
+      (e: Event) => {
+        const customEvent = e as CustomEvent<{ visible: boolean }>;
+        this._gridVisible = customEvent.detail.visible;
+        this._refreshLayerViewport();
+      }
+    );
+
+    this._disposables.addFromEvent(this, 'grid-size-changed', (e: Event) => {
+      const customEvent = e as CustomEvent<{ size: number }>;
+      this._gridSize = customEvent.detail.size;
+      this._refreshLayerViewport();
+    });
+
+    // Wire snap to guides toggle
+    this._disposables.addFromEvent(
+      this,
+      'snap-to-guides-changed',
+      (e: Event) => {
+        const customEvent = e as CustomEvent<{ enabled: boolean }>;
+        const snapOverlay = this.std.getOptional(
+          OverlayIdentifier('snap-manager')
+        );
+        if (snapOverlay && 'setEnabled' in snapOverlay) {
+          (snapOverlay as any).setEnabled(customEvent.detail.enabled);
+        }
+      }
+    );
+
+    // Wire snap to grid toggle
+    this._disposables.addFromEvent(this, 'snap-to-grid-changed', (e: Event) => {
+      const customEvent = e as CustomEvent<{ enabled: boolean }>;
+      const snapOverlay = this.std.getOptional(
+        OverlayIdentifier('snap-manager')
+      );
+      if (snapOverlay && 'setSnapToGrid' in snapOverlay) {
+        (snapOverlay as any).setSnapToGrid(customEvent.detail.enabled);
+      }
+    });
+
+    // Update snap overlay grid size when grid size changes
+    this._disposables.addFromEvent(this, 'grid-size-changed', (e: Event) => {
+      const customEvent = e as CustomEvent<{ size: number }>;
+      const snapOverlay = this.std.getOptional(
+        OverlayIdentifier('snap-manager')
+      );
+      if (snapOverlay && 'setGridSize' in snapOverlay) {
+        (snapOverlay as any).setGridSize(customEvent.detail.size);
+      }
+    });
+  }
+
   override connectedCallback() {
     super.connectedCallback();
 
     this._initViewport();
+    this._initGridSettings();
 
     this.keyboardManager = new EdgelessPageKeyboardManager(this);
 
@@ -468,6 +542,24 @@ export class EdgelessRootBlockComponent extends BlockComponent<
     );
 
     this._refreshLayerViewport();
+
+    // Apply initial snap settings
+    const store = this.std.get(EditPropsStore);
+    const snapToGuides = store.getStorage('edgelessSnapToGuides') ?? true;
+    const snapToGrid = store.getStorage('edgelessSnapToGrid') ?? false;
+    const gridSize = store.getStorage('edgelessGridSize') ?? 20;
+    const snapOverlay = this.std.getOptional(OverlayIdentifier('snap-manager'));
+    if (snapOverlay) {
+      if ('setEnabled' in snapOverlay) {
+        (snapOverlay as any).setEnabled(snapToGuides);
+      }
+      if ('setSnapToGrid' in snapOverlay) {
+        (snapOverlay as any).setSnapToGrid(snapToGrid);
+      }
+      if ('setGridSize' in snapOverlay) {
+        (snapOverlay as any).setGridSize(gridSize);
+      }
+    }
   }
 
   override renderBlock() {

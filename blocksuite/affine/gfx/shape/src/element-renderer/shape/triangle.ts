@@ -25,6 +25,8 @@ export function triangle(
     roughness,
     rotate,
     shapeStyle,
+    flipX,
+    flipY,
   } = model;
   const [, , w, h] = model.deserializedXYWH;
   const renderOffset = Math.max(strokeWidth, 0) / 2;
@@ -39,6 +41,7 @@ export function triangle(
     matrix
       .translateSelf(renderOffset, renderOffset)
       .translateSelf(cx, cy)
+      .scaleSelf(flipX ? -1 : 1, flipY ? -1 : 1)
       .rotateSelf(rotate)
       .translateSelf(-cx, -cy)
   );
@@ -55,7 +58,12 @@ export function triangle(
       {
         seed,
         roughness: shapeStyle === 'Scribbled' ? roughness : 0,
-        strokeLineDash: strokeStyle === 'dash' ? [12, 12] : undefined,
+        strokeLineDash:
+          strokeStyle === 'dash'
+            ? [12, 12]
+            : strokeStyle === 'dot'
+              ? [Math.max(1, strokeWidth), strokeWidth * 2.5]
+              : undefined,
         stroke: strokeStyle === 'none' ? 'none' : strokeColor,
         strokeWidth,
         fill: filled ? fillColor : undefined,

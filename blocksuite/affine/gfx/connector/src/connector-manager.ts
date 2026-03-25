@@ -1,11 +1,17 @@
 import { AStarRunner, Overlay } from '@blocksuite/affine-block-surface';
 import {
+  DRAWIO_STENCIL_SHAPE_MAP,
+  getStencilShapeData,
+} from '@blocksuite/affine-gfx-shape';
+import {
   type BrushElementModel,
   type Connection,
   ConnectorElementModel,
   ConnectorMode,
+  CONTAINER_TITLE_SIZE,
   GroupElementModel,
   type LocalConnectorElementModel,
+  ShapeType,
 } from '@blocksuite/affine-model';
 import { ThemeProvider } from '@blocksuite/affine-shared/services';
 import { BlockSuiteError } from '@blocksuite/global/exceptions';
@@ -59,16 +65,228 @@ export const ConnectorEndpointLocations: IVec[] = [
   [0, 0.5],
 ];
 
-export const ConnectorEndpointLocationsOnTriangle: IVec[] = [
-  // At top
+const buildEdgeLocations = (corners: IVec[], between = 3): IVec[] => {
+  const locations: IVec[] = [];
+  const count = corners.length;
+
+  for (let i = 0; i < count; i += 1) {
+    const start = corners[i];
+    const end = corners[(i + 1) % count];
+    locations.push([...start]);
+
+    for (let j = 1; j <= between; j += 1) {
+      const t = j / (between + 1);
+      locations.push([
+        start[0] + (end[0] - start[0]) * t,
+        start[1] + (end[1] - start[1]) * t,
+      ]);
+    }
+  }
+
+  return locations;
+};
+
+export const ConnectorEndpointLocationsOnTriangle: IVec[] = buildEdgeLocations([
   [0.5, 0],
-  // At right
-  [0.75, 0.5],
-  // At bottom
+  [1, 1],
+  [0, 1],
+]);
+
+// Extended connection points for rectangle (16 points total)
+export const ConnectorEndpointLocationsOnRectangle: IVec[] = [
+  // Top edge: left quarter, center, right quarter
+  [0.25, 0],
+  [0.5, 0],
+  [0.75, 0],
+  // Top-right corner
+  [1, 0],
+  // Right edge: top quarter, center, bottom quarter
+  [1, 0.25],
+  [1, 0.5],
+  [1, 0.75],
+  // Bottom-right corner
+  [1, 1],
+  // Bottom edge: right quarter, center, left quarter
+  [0.75, 1],
   [0.5, 1],
-  // At left
-  [0.25, 0.5],
+  [0.25, 1],
+  // Bottom-left corner
+  [0, 1],
+  // Left edge: bottom quarter, center, top quarter
+  [0, 0.75],
+  [0, 0.5],
+  [0, 0.25],
+  // Top-left corner
+  [0, 0],
 ];
+
+// Extended connection points for diamond (8 points total)
+export const ConnectorEndpointLocationsOnDiamond: IVec[] = buildEdgeLocations([
+  [0.5, 0],
+  [1, 0.5],
+  [0.5, 1],
+  [0, 0.5],
+]);
+
+// Extended connection points for ellipse (8 points total)
+// Points calculated using trigonometry to sit on the actual ellipse curve
+// Formula: x = 0.5 + 0.5 * cos(angle), y = 0.5 + 0.5 * sin(angle)
+const buildEllipseLocations = (stepDegrees = 22.5): IVec[] => {
+  const locations: IVec[] = [];
+  for (let angle = 0; angle < 360; angle += stepDegrees) {
+    const rad = toRadian(angle);
+    locations.push([0.5 + 0.5 * Math.cos(rad), 0.5 + 0.5 * Math.sin(rad)]);
+  }
+  return locations;
+};
+
+export const ConnectorEndpointLocationsOnEllipse: IVec[] =
+  buildEllipseLocations();
+
+export const ConnectorEndpointLocationsOnTriangleRight: IVec[] =
+  buildEdgeLocations([
+    [0, 0],
+    [1, 0.5],
+    [0, 1],
+  ]);
+
+export const ConnectorEndpointLocationsOnHexagon: IVec[] = buildEdgeLocations(
+  [
+    [0.25, 0],
+    [0.75, 0],
+    [1, 0.5],
+    [0.75, 1],
+    [0.25, 1],
+    [0, 0.5],
+  ],
+  1
+);
+
+export const ConnectorEndpointLocationsOnParallelogram: IVec[] =
+  buildEdgeLocations([
+    [0.2, 0],
+    [1, 0],
+    [0.8, 1],
+    [0, 1],
+  ]);
+
+export const ConnectorEndpointLocationsOnTrapezoid: IVec[] = buildEdgeLocations(
+  [
+    [0.2, 0],
+    [0.8, 0],
+    [1, 1],
+    [0, 1],
+  ]
+);
+
+export const ConnectorEndpointLocationsOnStep: IVec[] = buildEdgeLocations([
+  [0, 0],
+  [0.8, 0],
+  [1, 0.5],
+  [0.8, 1],
+  [1, 1],
+  [0, 1],
+  [0.2, 0.5],
+]);
+
+export const ConnectorEndpointLocationsOnCylinder: IVec[] = buildEdgeLocations([
+  [0, 0],
+  [1, 0],
+  [1, 1],
+  [0, 1],
+]);
+
+export const ConnectorEndpointLocationsOnCloud: IVec[] = [
+  // six lobe meeting points
+  [0.25, 0.25],
+  [0.16, 0.5],
+  [0.31, 0.8],
+  [0.8, 0.8],
+  [0.875, 0.5],
+  [0.625, 0.2],
+  // extra side-center anchors
+  [0, 0.5],
+  [1, 0.5],
+];
+
+export const ConnectorEndpointLocationsOnDocument: IVec[] = buildEdgeLocations([
+  [0, 0],
+  [1, 0],
+  [1, 1],
+  [0, 1],
+]);
+
+export const ConnectorEndpointLocationsOnNote: IVec[] = buildEdgeLocations([
+  [0, 0],
+  [0.8, 0],
+  [1, 0.2],
+  [1, 1],
+  [0, 1],
+]);
+
+export const ConnectorEndpointLocationsOnCube: IVec[] = buildEdgeLocations(
+  [
+    [0.2, 0],
+    [1, 0],
+    [1, 0.8],
+    [0.8, 1],
+    [0, 1],
+    [0, 0.2],
+  ],
+  1
+);
+
+export const ConnectorEndpointLocationsOnCallout: IVec[] = buildEdgeLocations([
+  [0, 0],
+  [1, 0],
+  [1, 0.75],
+  [0.6, 0.75],
+  [0.5, 1],
+  [0.4, 0.75],
+  [0, 0.75],
+]);
+
+export const ConnectorEndpointLocationsOnActor: IVec[] = buildEdgeLocations([
+  [0, 0],
+  [1, 0],
+  [1, 1],
+  [0, 1],
+]);
+
+export const ConnectorEndpointLocationsOnDataStorage: IVec[] =
+  ConnectorEndpointLocationsOnRectangle;
+
+export const ConnectorEndpointLocationsOnTape: IVec[] = buildEdgeLocations(
+  [
+    [0, 0],
+    [1, 0],
+    [1, 1],
+    [0, 1],
+  ],
+  3
+);
+
+export const ConnectorEndpointLocationsOnInternalStorage: IVec[] =
+  buildEdgeLocations([
+    [0, 0],
+    [1, 0],
+    [1, 1],
+    [0, 1],
+  ]);
+
+export const ConnectorEndpointLocationsOnLogicAnd: IVec[] = buildEdgeLocations([
+  [0, 0],
+  [1, 0],
+  [1, 1],
+  [0, 1],
+]);
+
+export const ConnectorEndpointLocationsOnLogicOr: IVec[] = buildEdgeLocations([
+  [0, 0],
+  [1, 0],
+  [1, 1],
+  [0, 1],
+]);
 
 export function isConnectorWithLabel(model: GfxModel | GfxLocalElementModel) {
   return model instanceof ConnectorElementModel && model.hasLabel();
@@ -130,36 +348,449 @@ export function isConnectorAndBindingsAllSelected(
   return false;
 }
 
+/**
+ * Get connection point locations for a given element based on its shape type
+ */
+type ConnectionLocationResult = {
+  locations: IVec[];
+  fromStencil: boolean;
+};
+
+const getStencilConstraintLocations = (
+  shapeType: string,
+  stencilName?: string
+): ConnectionLocationResult | null => {
+  if (
+    shapeType === ShapeType.DataStorage ||
+    shapeType === ShapeType.Tape ||
+    shapeType === ShapeType.Document
+  ) {
+    return null;
+  }
+  const name =
+    shapeType === ShapeType.DrawioStencil
+      ? stencilName
+      : DRAWIO_STENCIL_SHAPE_MAP[shapeType as ShapeType];
+  if (!name) return null;
+  const stencil = getStencilShapeData(name);
+  if (!stencil || stencil.constraints.length === 0) return null;
+  const locations: IVec[] = stencil.constraints.map(
+    constraint => [constraint.x, constraint.y] as IVec
+  );
+  const enhancedLocations = addStencilExtras(shapeType as ShapeType, locations);
+  return {
+    locations: enhancedLocations,
+    fromStencil: true,
+  };
+};
+
+const buildCubeLocations = (bound: Bound): IVec[] => {
+  const { w, h } = bound;
+  const isoAngle = (15 * Math.PI) / 200;
+  const isoH = Math.min(w * Math.tan(isoAngle), h * 0.5);
+  const t = isoH / h;
+
+  const corners: IVec[] = [
+    [0.5, 0],
+    [1, t],
+    [1, 1 - t],
+    [0.5, 1],
+    [0, 1 - t],
+    [0, t],
+  ];
+
+  const locations: IVec[] = [];
+  for (let i = 0; i < corners.length; i += 1) {
+    const start = corners[i];
+    const end = corners[(i + 1) % corners.length];
+    locations.push(start);
+    locations.push([(start[0] + end[0]) / 2, (start[1] + end[1]) / 2]);
+  }
+  return locations;
+};
+
+const buildRectangularLocations = (): IVec[] =>
+  ConnectorEndpointLocationsOnRectangle;
+
+const buildContainerTitleLocations = (
+  bound: Bound,
+  axis: 'vertical' | 'horizontal'
+): IVec[] => {
+  const size = axis === 'vertical' ? bound.h : bound.w;
+  const titleSize = Math.min(CONTAINER_TITLE_SIZE, size);
+  const contentSize = Math.max(size - titleSize, 0);
+  const titleMid = size > 0 ? titleSize / 2 / size : 0.5;
+  const contentMid = size > 0 ? (titleSize + contentSize / 2) / size : 0.5;
+
+  if (axis === 'vertical') {
+    return [
+      [0, titleMid],
+      [1, titleMid],
+      [0, contentMid],
+      [1, contentMid],
+      [0.5, 0],
+      [0.5, 1],
+    ];
+  }
+
+  return [
+    [titleMid, 0],
+    [titleMid, 1],
+    [contentMid, 0],
+    [contentMid, 1],
+    [0, 0.5],
+    [1, 0.5],
+  ];
+};
+
+const getCustomLocations = (
+  ele: GfxModel,
+  bound: Bound
+): ConnectionLocationResult | null => {
+  if (!('shapeType' in ele)) return null;
+  const shapeType = (ele as any).shapeType as ShapeType;
+  switch (shapeType) {
+    case ShapeType.MindmapBranch:
+      return {
+        locations: [
+          [0, 0.5],
+          [1, 0.5],
+        ],
+        fromStencil: false,
+      };
+    case ShapeType.Cube:
+      return { locations: buildCubeLocations(bound), fromStencil: false };
+    case ShapeType.DataStorage:
+    case ShapeType.Tape:
+    case ShapeType.Document:
+      return { locations: buildRectangularLocations(), fromStencil: true };
+    case ShapeType.VerticalContainer:
+      return {
+        locations: mergeLocations(
+          ConnectorEndpointLocationsOnRectangle,
+          buildContainerTitleLocations(bound, 'vertical')
+        ),
+        fromStencil: false,
+      };
+    case ShapeType.HorizontalContainer:
+      return {
+        locations: mergeLocations(
+          ConnectorEndpointLocationsOnRectangle,
+          buildContainerTitleLocations(bound, 'horizontal')
+        ),
+        fromStencil: false,
+      };
+    default:
+      return null;
+  }
+};
+
+const addStencilExtras = (shapeType: ShapeType, locations: IVec[]): IVec[] => {
+  const rectangularEdgePoints: IVec[] = [
+    [0.25, 0],
+    [0.5, 0],
+    [0.75, 0],
+    [0.25, 1],
+    [0.5, 1],
+    [0.75, 1],
+    [0, 0.25],
+    [0, 0.5],
+    [0, 0.75],
+    [1, 0.25],
+    [1, 0.5],
+    [1, 0.75],
+  ];
+  switch (shapeType) {
+    case ShapeType.Document:
+      return mergeLocations(locations, [
+        [0.25, 0],
+        [0.75, 0],
+        [0, 0.25],
+        [0, 0.75],
+        [1, 0.25],
+        [1, 0.75],
+      ]);
+    case ShapeType.Cylinder:
+      return mergeLocations(locations, [
+        [0.25, 0],
+        [0.75, 0],
+        [0.25, 1],
+        [0.75, 1],
+        [0, 0.33],
+        [0, 0.66],
+        [1, 0.33],
+        [1, 0.66],
+      ]);
+    case ShapeType.DataStorage:
+    case ShapeType.InternalStorage:
+      return mergeLocations(locations, rectangularEdgePoints);
+    case ShapeType.Tape:
+      return mergeLocations(locations, [
+        [0.25, 0.09],
+        [0.75, 0.09],
+        [0.25, 0.91],
+        [0.75, 0.91],
+        [0, 0.25],
+        [0, 0.75],
+        [1, 0.25],
+        [1, 0.75],
+      ]);
+    default:
+      return locations;
+  }
+};
+
+const mergeLocations = (locations: IVec[], extras: IVec[]): IVec[] => {
+  const merged = [...locations, ...extras];
+  const seen = new Set<string>();
+  return merged.filter(([x, y]) => {
+    const key = `${x.toFixed(4)}:${y.toFixed(4)}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
+export function getConnectionLocationsForElement(
+  ele: GfxModel
+): ConnectionLocationResult {
+  // Check if element is a ShapeElementModel and get shape-specific locations
+  if ('shapeType' in ele) {
+    const shapeType = (ele as any).shapeType;
+    const stencilLocations = getStencilConstraintLocations(
+      shapeType,
+      (ele as any).stencilName
+    );
+    if (stencilLocations) return stencilLocations;
+    switch (shapeType) {
+      case 'rect':
+        return {
+          locations: ConnectorEndpointLocationsOnRectangle,
+          fromStencil: false,
+        };
+      case 'triangle':
+        return {
+          locations: ConnectorEndpointLocationsOnTriangle,
+          fromStencil: false,
+        };
+      case 'diamond':
+        return {
+          locations: ConnectorEndpointLocationsOnDiamond,
+          fromStencil: false,
+        };
+      case 'ellipse':
+        return {
+          locations: ConnectorEndpointLocationsOnEllipse,
+          fromStencil: false,
+        };
+      case 'triangleRight':
+        return {
+          locations: ConnectorEndpointLocationsOnTriangleRight,
+          fromStencil: false,
+        };
+      case 'hexagon':
+        return {
+          locations: ConnectorEndpointLocationsOnHexagon,
+          fromStencil: false,
+        };
+      case 'parallelogram':
+        return {
+          locations: ConnectorEndpointLocationsOnParallelogram,
+          fromStencil: false,
+        };
+      case 'trapezoid':
+        return {
+          locations: ConnectorEndpointLocationsOnTrapezoid,
+          fromStencil: false,
+        };
+      case 'step':
+        return {
+          locations: ConnectorEndpointLocationsOnStep,
+          fromStencil: false,
+        };
+      case 'cylinder':
+        return {
+          locations: ConnectorEndpointLocationsOnCylinder,
+          fromStencil: false,
+        };
+      case 'cloud':
+        return {
+          locations: ConnectorEndpointLocationsOnCloud,
+          fromStencil: false,
+        };
+      case 'document':
+        return {
+          locations: ConnectorEndpointLocationsOnDocument,
+          fromStencil: false,
+        };
+      case 'note':
+        return {
+          locations: ConnectorEndpointLocationsOnNote,
+          fromStencil: false,
+        };
+      case 'cube':
+        return {
+          locations: ConnectorEndpointLocationsOnCube,
+          fromStencil: false,
+        };
+      case 'callout':
+        return {
+          locations: ConnectorEndpointLocationsOnCallout,
+          fromStencil: false,
+        };
+      case 'actor':
+        return {
+          locations: ConnectorEndpointLocationsOnActor,
+          fromStencil: false,
+        };
+      case 'dataStorage':
+        return {
+          locations: ConnectorEndpointLocationsOnDataStorage,
+          fromStencil: false,
+        };
+      case 'tape':
+        return {
+          locations: ConnectorEndpointLocationsOnTape,
+          fromStencil: false,
+        };
+      case 'internalStorage':
+        return {
+          locations: ConnectorEndpointLocationsOnInternalStorage,
+          fromStencil: false,
+        };
+      case 'logicAnd':
+        return {
+          locations: ConnectorEndpointLocationsOnLogicAnd,
+          fromStencil: false,
+        };
+      case 'logicOr':
+        return {
+          locations: ConnectorEndpointLocationsOnLogicOr,
+          fromStencil: false,
+        };
+      default:
+        return { locations: ConnectorEndpointLocations, fromStencil: false };
+    }
+  }
+  return { locations: ConnectorEndpointLocations, fromStencil: false };
+}
+
 export function getAnchors(ele: GfxModel) {
   const bound = Bound.deserialize(ele.xywh);
-  const offset = 10;
   const anchors: { point: PointLocation; coord: IVec }[] = [];
   const rotate = ele.rotate;
+  const custom = getCustomLocations(ele, bound);
+  const { locations, fromStencil } =
+    custom ?? getConnectionLocationsForElement(ele);
 
-  (
-    [
-      [bound.center[0], bound.y - offset],
-      [bound.center[0], bound.maxY + offset],
-      [bound.x - offset, bound.center[1]],
-      [bound.maxX + offset, bound.center[1]],
-    ] satisfies IVec[]
-  )
-    .map(vec => getPointFromBoundsWithRotation({ ...bound, rotate }, vec))
-    .forEach(vec => {
-      const rst = ele.getLineIntersections(bound.center, vec);
-      if (!rst) return;
+  // For each connection location (relative coordinates), calculate the actual point
+  locations.forEach(location => {
+    const flipX = 'flipX' in ele && Boolean((ele as { flipX?: boolean }).flipX);
+    const flipY = 'flipY' in ele && Boolean((ele as { flipY?: boolean }).flipY);
+    const coordToStore = location;
+    // Convert relative location to absolute position
+    const absPoint: IVec = [
+      bound.x + location[0] * bound.w,
+      bound.y + location[1] * bound.h,
+    ];
 
-      const originPoint = getPointFromBoundsWithRotation(
-        { ...bound, rotate: -rotate },
-        rst[0]
-      );
-      anchors.push({ point: rst[0], coord: bound.toRelative(originPoint) });
+    // Apply rotation if needed
+    const rotatedPoint = getPointFromBoundsWithRotation(
+      { ...bound, rotate },
+      absPoint
+    );
+    const flipMatrix =
+      flipX || flipY
+        ? (() => {
+            const cx = bound.x + bound.w / 2;
+            const cy = bound.y + bound.h / 2;
+            return new DOMMatrix()
+              .translateSelf(cx, cy)
+              .scaleSelf(flipX ? -1 : 1, flipY ? -1 : 1)
+              .rotateSelf(rotate ?? 0)
+              .translateSelf(-cx, -cy);
+          })()
+        : null;
+    const flippedPoint = flipMatrix
+      ? (() => {
+          const { x, y } = new DOMPoint(
+            absPoint[0],
+            absPoint[1]
+          ).matrixTransform(flipMatrix);
+          return [x, y] as IVec;
+        })()
+      : rotatedPoint;
+
+    if (fromStencil) {
+      anchors.push({
+        point: PointLocation.fromVec(flippedPoint),
+        coord: coordToStore,
+      });
+      return;
+    }
+
+    if (flipX || flipY) {
+      anchors.push({
+        point: PointLocation.fromVec(flippedPoint),
+        coord: coordToStore,
+      });
+      return;
+    }
+
+    // Get the intersection point with the shape's edge
+    const rst = ele.getLineIntersections(bound.center, rotatedPoint);
+    if (!rst) {
+      // If no intersection, use the calculated point directly
+      anchors.push({
+        point: PointLocation.fromVec(flippedPoint),
+        coord: coordToStore,
+      });
+      return;
+    }
+
+    const originPoint = getPointFromBoundsWithRotation(
+      { ...bound, rotate: -rotate },
+      rst[0]
+    );
+    const relativeToStore = bound.toRelative(originPoint);
+    const intersectionPoint = rst[0];
+    anchors.push({
+      point: PointLocation.fromVec(intersectionPoint),
+      coord: relativeToStore,
     });
+  });
+
   return anchors;
 }
 
 function getConnectableRelativePosition(connectable: GfxModel, position: IVec) {
+  if ('shapeType' in connectable) {
+    const anchors = getAnchors(connectable);
+    const matched = anchors.find(
+      anchor =>
+        Math.abs(anchor.coord[0] - position[0]) < 1e-6 &&
+        Math.abs(anchor.coord[1] - position[1]) < 1e-6
+    );
+    if (matched) {
+      return matched.point;
+    }
+  }
   const location = connectable.getRelativePointLocation(position);
+
+  if ('shapeType' in connectable && connectable.shapeType === ShapeType.Cloud) {
+    const topOrBottomBand =
+      almostEqual(position[1], 0.2) ||
+      almostEqual(position[1], 0.25) ||
+      almostEqual(position[1], 0.8);
+    // In connector routing slope calculation, a horizontal tangent means
+    // vertical expansion and a vertical tangent means horizontal expansion.
+    location.tangent = Vec.rot(
+      topOrBottomBand ? [1, 0] : [0, -1],
+      toRadian(connectable.rotate)
+    );
+    return location;
+  }
+
   if (isVecZero(Vec.sub(position, [0, 0.5])))
     location.tangent = Vec.rot([0, -1], toRadian(connectable.rotate));
   else if (isVecZero(Vec.sub(position, [1, 0.5])))
@@ -912,7 +1543,7 @@ export class ConnectionOverlay extends Overlay {
     const zoom = this.gfx.viewport.zoom;
     const radius = 5 / zoom;
     const color = this._emphasisColor;
-    ctx.globalAlpha = 0.6;
+    ctx.globalAlpha = 0.3; // Reduced from 0.6 to make lighter
     let lineWidth = 1 / zoom;
     if (this.sourceBounds) {
       renderRect(ctx, this.sourceBounds, color, lineWidth);
@@ -921,13 +1552,13 @@ export class ConnectionOverlay extends Overlay {
       renderRect(ctx, this.targetBounds, color, lineWidth);
     }
 
-    lineWidth = 2 / zoom;
+    // Keep lineWidth at 1px instead of 2px for thinner strokes
     this.points.forEach(p => {
       ctx.beginPath();
       ctx.arc(p[0], p[1], radius, 0, PI2);
       ctx.fillStyle = 'white';
       ctx.strokeStyle = color;
-      ctx.lineWidth = lineWidth;
+      ctx.lineWidth = lineWidth; // Now using 1/zoom instead of 2/zoom
       ctx.fill();
       ctx.stroke();
       ctx.closePath();
@@ -939,7 +1570,7 @@ export class ConnectionOverlay extends Overlay {
       ctx.arc(this.highlightPoint[0], this.highlightPoint[1], radius, 0, PI2);
       ctx.fillStyle = color;
       ctx.strokeStyle = color;
-      ctx.lineWidth = lineWidth;
+      ctx.lineWidth = 1 / zoom; // Use 1px stroke for consistency
       ctx.fill();
       ctx.stroke();
       ctx.closePath();
@@ -1191,6 +1822,7 @@ export class ConnectorPathGenerator extends PathGenerator {
       getElementById: elementGetter ?? (() => null),
     });
     const points = path ?? instance._generateConnectorPath(connector) ?? [];
+    // Curve mode uses bezier bounding box, others use simple point bounds
     const bound =
       connector.mode === ConnectorMode.Curve
         ? getBezierCurveBoundingBox(getBezierParameters(points))
@@ -1267,7 +1899,12 @@ export class ConnectorPathGenerator extends PathGenerator {
     const { mode } = connector;
     if (mode === ConnectorMode.Straight) {
       return this._generateStraightConnectorPath(connector);
-    } else if (mode === ConnectorMode.Orthogonal) {
+    } else if (
+      mode === ConnectorMode.Orthogonal ||
+      mode === ConnectorMode.Rounded
+    ) {
+      // Rounded uses the same path generation as Orthogonal,
+      // the rounded corners are handled during rendering
       const start = this._getConnectorEndElement(connector, 'source');
       const end = this._getConnectorEndElement(connector, 'target');
 
@@ -1279,6 +1916,22 @@ export class ConnectorPathGenerator extends PathGenerator {
       const endBound = end
         ? Bound.from(getBoundWithRotation(rBound(end)))
         : null;
+
+      // Check for user-defined waypoints (only on ConnectorElementModel, not Local)
+      const waypoints =
+        'waypoints' in connector ? connector.waypoints : undefined;
+
+      if (waypoints && waypoints.length > 0) {
+        // Route through waypoints
+        return this._generatePathThroughWaypoints(
+          startPoint,
+          endPoint,
+          startBound,
+          endBound,
+          waypoints
+        );
+      }
+
       const path = this.generateOrthogonalConnectorPath({
         startPoint,
         endPoint,
@@ -1290,6 +1943,123 @@ export class ConnectorPathGenerator extends PathGenerator {
       return this._generateCurveConnectorPath(connector);
     }
     throw new Error('unknown connector mode');
+  }
+
+  /**
+   * Generate a path that routes through user-defined waypoints.
+   * Waypoints are intermediate turn points that the connector must pass through.
+   */
+  private _generatePathThroughWaypoints(
+    startPoint: PointLocation,
+    endPoint: PointLocation,
+    _startBound: Bound | null,
+    _endBound: Bound | null,
+    waypoints: IVec[]
+  ): PointLocation[] {
+    const [, , nextStartPoint, lastEndPoint] =
+      this._prepareOrthogonalConnectorInfo({
+        startPoint,
+        endPoint,
+        startBound: _startBound,
+        endBound: _endBound,
+      });
+
+    const pointsEqual = (a: IVec | PointLocation, b: IVec | PointLocation) =>
+      Math.abs(a[0] - b[0]) < 0.001 && Math.abs(a[1] - b[1]) < 0.001;
+
+    // Build path by connecting: start -> tail anchor -> wp1 -> ... -> tail anchor -> end
+    // Waypoints represent intermediate turn points; tail anchors preserve orientation.
+
+    const fullPath: PointLocation[] = [startPoint];
+
+    // For orthogonal connectors, waypoints define the turn points.
+    // We build a path through them while keeping tail anchors perpendicular.
+
+    const startAnchor = new PointLocation(nextStartPoint);
+    if (!pointsEqual(startPoint, nextStartPoint)) {
+      fullPath.push(startAnchor);
+    }
+
+    let currentPoint = startAnchor;
+
+    // Small tolerance to avoid creating micro-segments from tiny float drift.
+    const axisEpsilon = 0.5;
+
+    waypoints.forEach((wp, index) => {
+      // Create orthogonal path from current point to waypoint
+      // We need to determine if we should go horizontal-then-vertical
+      // or vertical-then-horizontal based on the direction
+
+      const dx = wp[0] - currentPoint[0];
+      const dy = wp[1] - currentPoint[1];
+
+      const prevWaypoint = index > 0 ? waypoints[index - 1] : null;
+      const isDuplicateWaypoint =
+        prevWaypoint &&
+        Math.abs(prevWaypoint[0] - wp[0]) <= axisEpsilon &&
+        Math.abs(prevWaypoint[1] - wp[1]) <= axisEpsilon;
+
+      // For the first segment from start, prefer to exit based on start bound
+      // For subsequent segments, alternate based on previous direction
+
+      // Preserve explicit duplicate waypoints to create a zero-length segment.
+      if (
+        isDuplicateWaypoint &&
+        Math.abs(dx) <= axisEpsilon &&
+        Math.abs(dy) <= axisEpsilon
+      ) {
+        fullPath.push(new PointLocation([currentPoint[0], currentPoint[1]]));
+        return;
+      }
+
+      // If both axes move beyond tolerance, add an elbow.
+      if (Math.abs(dx) > axisEpsilon && Math.abs(dy) > axisEpsilon) {
+        // Need a turn - add intermediate point
+        // Go horizontal first, then vertical
+        const intermediate = new PointLocation([wp[0], currentPoint[1]]);
+        fullPath.push(intermediate);
+      }
+
+      // Snap near-aligned points to avoid tiny segments.
+      const snappedWp: IVec = [
+        Math.abs(dx) <= axisEpsilon ? currentPoint[0] : wp[0],
+        Math.abs(dy) <= axisEpsilon ? currentPoint[1] : wp[1],
+      ];
+      // If snapping collapses the point, skip it.
+      if (
+        Math.abs(snappedWp[0] - currentPoint[0]) <= axisEpsilon &&
+        Math.abs(snappedWp[1] - currentPoint[1]) <= axisEpsilon
+      ) {
+        return;
+      }
+
+      const wpPoint = new PointLocation(snappedWp);
+      fullPath.push(wpPoint);
+      currentPoint = wpPoint;
+    });
+
+    // Final segment: last waypoint (or start anchor) to end anchor/end
+    const endAnchor = new PointLocation(lastEndPoint);
+    const lastPoint = fullPath[fullPath.length - 1];
+    const dx = endAnchor[0] - lastPoint[0];
+    const dy = endAnchor[1] - lastPoint[1];
+
+    if (Math.abs(dx) > axisEpsilon && Math.abs(dy) > axisEpsilon) {
+      // Need a turn to reach end - add intermediate point
+      // Go horizontal first to align X, then vertical
+      const intermediate = new PointLocation([endAnchor[0], lastPoint[1]]);
+      fullPath.push(intermediate);
+    }
+
+    if (!pointsEqual(lastPoint, endAnchor)) {
+      fullPath.push(endAnchor);
+    }
+
+    if (!pointsEqual(endAnchor, endPoint)) {
+      fullPath.push(endPoint);
+    }
+
+    return fullPath;
   }
 
   private _generateCurveConnectorPath(
@@ -1432,7 +2202,20 @@ export class ConnectorPathGenerator extends PathGenerator {
     const id = connector[type].id;
 
     if (id) {
-      return this.options.getElementById(id) as Connectable;
+      const element = this.options.getElementById(id) as Connectable | null;
+      if (!element) return null;
+      if (
+        'hidden' in element &&
+        element.hidden &&
+        'collapseProxyId' in element &&
+        typeof element.collapseProxyId === 'string'
+      ) {
+        const proxy = this.options.getElementById(
+          element.collapseProxyId
+        ) as Connectable | null;
+        if (proxy) return proxy;
+      }
+      return element;
     }
 
     return null;

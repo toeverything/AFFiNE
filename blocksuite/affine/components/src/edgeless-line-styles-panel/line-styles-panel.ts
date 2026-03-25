@@ -1,7 +1,7 @@
 import { LineWidth, StrokeStyle } from '@blocksuite/affine-model';
 import { WithDisposable } from '@blocksuite/global/lit';
-import { BanIcon, DashLineIcon, StraightLineIcon } from '@blocksuite/icons/lit';
-import { css, html, LitElement } from 'lit';
+import { DashLineIcon, StraightLineIcon } from '@blocksuite/icons/lit';
+import { css, html, LitElement, svg } from 'lit';
 import { property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { repeat } from 'lit/directives/repeat.js';
@@ -28,9 +28,21 @@ const LINE_STYLE_LIST = [
     icon: DashLineIcon(),
   },
   {
-    key: 'None',
-    value: StrokeStyle.None,
-    icon: BanIcon(),
+    key: 'Dot',
+    value: StrokeStyle.Dot,
+    icon: svg`<svg
+      width="20"
+      height="20"
+      viewBox="0 0 20 20"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <circle cx="5" cy="15" r="1" fill="currentColor" />
+      <circle cx="8" cy="12" r="1" fill="currentColor" />
+      <circle cx="11" cy="9" r="1" fill="currentColor" />
+      <circle cx="14" cy="6" r="1" fill="currentColor" />
+      <circle cx="17" cy="3" r="1" fill="currentColor" />
+    </svg>`,
   },
 ];
 
@@ -102,7 +114,7 @@ export class EdgelessLineStylesPanel extends WithDisposable(LitElement) {
   accessor lineStyles: StrokeStyle[] = [
     StrokeStyle.Solid,
     StrokeStyle.Dash,
-    StrokeStyle.None,
+    StrokeStyle.Dot,
   ];
 }
 

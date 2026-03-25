@@ -10,6 +10,7 @@
   "author": "toeverything",
   "license": "MIT",
   "dependencies": {
+    "@blocksuite/affine-block-frame": "workspace:*",
     "@blocksuite/affine-block-note": "workspace:*",
     "@blocksuite/affine-block-surface": "workspace:*",
     "@blocksuite/affine-components": "workspace:*",

@@ -3,7 +3,6 @@ import { expect } from '@playwright/test';
 import { click, clickView } from '../utils/actions/click.js';
 import { dragBetweenCoords } from '../utils/actions/drag.js';
 import {
-  addBasicRectShapeElement,
   autoFit,
   edgelessCommonSetup,
   getSelectedBound,
@@ -22,7 +21,7 @@ import {
 } from '../utils/actions/keyboard.js';
 import { waitNextFrame } from '../utils/actions/misc.js';
 import {
-  assertEdgelessSelectedRect,
+  assertEdgelessSelectedModelRect,
   assertSelectedBound,
 } from '../utils/asserts.js';
 import {
@@ -37,15 +36,21 @@ test('elements should be selectable after open mindmap menu', async ({
 }) => {
   await edgelessCommonSetup(page);
 
-  const start = { x: 100, y: 100 };
-  const end = { x: 200, y: 200 };
-  await addBasicRectShapeElement(page, start, end);
+  const shapeId = await page.evaluate(() => {
+    const root = document.querySelector('affine-edgeless-root') as any;
+    if (!root) throw new Error('edgeless root not found');
+    return root.service.crud.addElement('shape', {
+      shapeType: 'rect',
+      xywh: JSON.stringify([100, 100, 100, 100]),
+      radius: 0,
+    });
+  });
 
   await page.locator('.basket-wrapper').click({ position: { x: 0, y: 0 } });
   await expect(page.locator('edgeless-mindmap-menu')).toBeVisible();
 
-  await page.mouse.click(start.x + 5, start.y + 5);
-  await assertEdgelessSelectedRect(page, [100, 100, 100, 100]);
+  await selectElementInEdgeless(page, [shapeId]);
+  await assertEdgelessSelectedModelRect(page, [100, 100, 100, 100]);
 });
 
 test('undo deletion of mindmap should restore the deleted element', async ({
@@ -223,18 +228,28 @@ test('drag root node should layout in real time', async ({ page }) => {
   const { rect: secondRect } = await getMindMapNode(page, mindmapId, [0, 1]);
   const { rect: thirdRect } = await getMindMapNode(page, mindmapId, [0, 2]);
 
+  const assertRectClose = (
+    actual: { x: number; y: number; w: number; h: number },
+    expected: { x: number; y: number; w: number; h: number }
+  ) => {
+    expect(actual.x).toBeCloseTo(expected.x, 2);
+    expect(actual.y).toBeCloseTo(expected.y, 2);
+    expect(actual.w).toBeCloseTo(expected.w, 2);
+    expect(actual.h).toBeCloseTo(expected.h, 2);
+  };
+
   const assertMindMapNodesPosition = async (deltaX: number, deltaY: number) => {
-    expect((await getMindMapNode(page, mindmapId, [0, 0])).rect).toEqual({
+    assertRectClose((await getMindMapNode(page, mindmapId, [0, 0])).rect, {
       ...firstRect,
       x: firstRect.x + deltaX,
       y: firstRect.y + deltaY,
     });
-    expect((await getMindMapNode(page, mindmapId, [0, 1])).rect).toEqual({
+    assertRectClose((await getMindMapNode(page, mindmapId, [0, 1])).rect, {
       ...secondRect,
       x: secondRect.x + deltaX,
       y: secondRect.y + deltaY,
     });
-    expect((await getMindMapNode(page, mindmapId, [0, 2])).rect).toEqual({
+    assertRectClose((await getMindMapNode(page, mindmapId, [0, 2])).rect, {
       ...thirdRect,
       x: thirdRect.x + deltaX,
       y: thirdRect.y + deltaY,

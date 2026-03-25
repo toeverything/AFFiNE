@@ -3,7 +3,10 @@ import {
   EdgelessCRUDIdentifier,
 } from '@blocksuite/affine-block-surface';
 import { getLineHeight } from '@blocksuite/affine-gfx-text';
-import type { ConnectorElementModel } from '@blocksuite/affine-model';
+import {
+  type ConnectorElementModel,
+  ConnectorLabelOffsetAnchor,
+} from '@blocksuite/affine-model';
 import type { RichText } from '@blocksuite/affine-rich-text';
 import { ThemeProvider } from '@blocksuite/affine-shared/services';
 import { almostEqual } from '@blocksuite/affine-shared/utils';
@@ -31,7 +34,7 @@ const BORDER_WIDTH = 1;
 export function mountConnectorLabelEditor(
   connector: ConnectorElementModel,
   edgeless: BlockComponent,
-  point?: IVec
+  _point?: IVec
 ) {
   const mountElm = edgeless.querySelector('.edgeless-mount-point');
   if (!mountElm) {
@@ -49,19 +52,30 @@ export function mountConnectorLabelEditor(
     editing: true,
   });
 
-  if (!connector.text) {
-    const text = new Y.Text();
-    const labelOffset = connector.labelOffset;
-    let labelXYWH = connector.labelXYWH ?? [0, 0, 16, 16];
+  const shouldCenterLabel =
+    !connector.labelXYWH ||
+    !connector.labelOffset ||
+    (connector.text && connector.text.length === 0);
 
-    if (point) {
-      const center = connector.getNearestPoint(point);
-      const distance = connector.getOffsetDistanceByPoint(center as IVec);
-      const bounds = Bound.fromXYWH(labelXYWH);
-      bounds.center = center;
-      labelOffset.distance = distance;
-      labelXYWH = bounds.toXYWH();
-    }
+  if (!connector.text || shouldCenterLabel) {
+    const text = connector.text ?? new Y.Text();
+    const labelOffset = {
+      ...(connector.labelOffset ?? {
+        distance: 0.5,
+        anchor: ConnectorLabelOffsetAnchor.Center,
+      }),
+      distance: 0.5,
+    };
+    const defaultSize: [number, number] = [80, 24];
+    const center = connector.getPointByOffsetDistance(0.5);
+    const labelXYWH: [number, number, number, number] = [
+      center[0] - defaultSize[0] / 2,
+      center[1] - defaultSize[1] / 2,
+      ...defaultSize,
+    ];
+
+    connector.labelOffset = { ...labelOffset };
+    connector.labelXYWH = labelXYWH;
 
     edgeless.std.get(EdgelessCRUDIdentifier).updateElement(connector.id, {
       text,
@@ -98,6 +112,7 @@ export class EdgelessConnectorLabelEditor extends WithDisposable(
       box-shadow: 0px 0px 0px 2px rgba(30, 150, 235, 0.3);
       box-sizing: border-box;
       overflow: visible;
+      touch-action: none;
 
       .inline-editor {
         white-space: pre-wrap !important;
@@ -114,6 +129,33 @@ export class EdgelessConnectorLabelEditor extends WithDisposable(
         color: var(--affine-text-disable-color);
         white-space: nowrap;
       }
+    }
+
+    .label-drag-handle {
+      position: absolute;
+      top: 50%;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #fff;
+      border: 2px solid var(--affine-primary-color, #1e96eb);
+      box-shadow: 0 0 0 2px rgba(30, 150, 235, 0.2);
+      cursor: grab;
+      touch-action: none;
+      user-select: none;
+      transform: translateY(-50%);
+    }
+
+    .label-drag-handle.left {
+      left: -10px;
+    }
+
+    .label-drag-handle.right {
+      right: -10px;
+    }
+
+    .label-drag-handle:active {
+      cursor: grabbing;
     }
   `;
 
@@ -134,6 +176,64 @@ export class EdgelessConnectorLabelEditor extends WithDisposable(
   private _keeping = false;
 
   private _resizeObserver: ResizeObserver | null = null;
+
+  private _dragAbort: AbortController | null = null;
+
+  private _dragStart: IVec | null = null;
+
+  private _dragBound: Bound | null = null;
+
+  private readonly _startDrag = (event: PointerEvent) => {
+    if (event.button !== 0) return;
+    if (!this.connector?.labelXYWH) return;
+    const target = event.target as HTMLElement | null;
+    if (!target?.closest('.label-drag-handle')) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+
+    this._dragStart = this.gfx.viewport.toModelCoord(
+      event.clientX,
+      event.clientY
+    );
+    this._dragBound = Bound.fromXYWH(this.connector.labelXYWH);
+
+    this._dragAbort?.abort();
+    this._dragAbort = new AbortController();
+    const { signal } = this._dragAbort;
+
+    const onMove = (moveEvent: PointerEvent) => {
+      if (!this._dragStart || !this._dragBound) return;
+      const current = this.gfx.viewport.toModelCoord(
+        moveEvent.clientX,
+        moveEvent.clientY
+      );
+      const delta = Vec.sub(current, this._dragStart);
+      const nextBound = this._dragBound.clone();
+      nextBound.center = Vec.add(nextBound.center, delta);
+      const center = this.connector.getNearestPoint(nextBound.center);
+      const distance = this.connector.getOffsetDistanceByPoint(center as IVec);
+      nextBound.center = center;
+
+      this.crud.updateElement(this.connector.id, {
+        labelXYWH: nextBound.toXYWH(),
+        labelOffset: {
+          distance,
+        },
+      });
+    };
+
+    const onUp = () => {
+      this._dragStart = null;
+      this._dragBound = null;
+      this._dragAbort?.abort();
+      this._dragAbort = null;
+    };
+
+    window.addEventListener('pointermove', onMove, { signal });
+    window.addEventListener('pointerup', onUp, { signal });
+  };
 
   private readonly _updateLabelRect = () => {
     const { connector, isConnected } = this;
@@ -176,6 +276,8 @@ export class EdgelessConnectorLabelEditor extends WithDisposable(
     super.disconnectedCallback();
     this._resizeObserver?.disconnect();
     this._resizeObserver = null;
+    this._dragAbort?.abort();
+    this._dragAbort = null;
   }
 
   override firstUpdated() {
@@ -189,6 +291,9 @@ export class EdgelessConnectorLabelEditor extends WithDisposable(
     this._resizeObserver.observe(this.richText);
 
     this.connector.stash('labelXYWH');
+    if (this.connector.labelOffset) {
+      this.connector.stash('labelOffset');
+    }
 
     this.updateComplete
       .then(() => {
@@ -228,6 +333,13 @@ export class EdgelessConnectorLabelEditor extends WithDisposable(
               if (id === connector.id) this.requestUpdate();
             })
           );
+          this.disposables.add(
+            surface.elementRemoved.subscribe(({ id }) => {
+              if (id === connector.id) {
+                this.remove();
+              }
+            })
+          );
         }
 
         this.disposables.add(
@@ -261,6 +373,9 @@ export class EdgelessConnectorLabelEditor extends WithDisposable(
 
           connector.labelEditing = false;
           connector.pop('labelXYWH');
+          if (connector.labelOffset) {
+            connector.pop('labelOffset');
+          }
 
           selection.set({
             elements: [],
@@ -340,6 +455,7 @@ export class EdgelessConnectorLabelEditor extends WithDisposable(
     return html`
       <div
         class="edgeless-connector-label-editor"
+        @pointerdown=${this._startDrag}
         style=${styleMap({
           fontFamily: `"${fontFamily}"`,
           fontSize: `${fontSize}px`,
@@ -354,6 +470,8 @@ export class EdgelessConnectorLabelEditor extends WithDisposable(
           transform: transformOperation.join(' '),
         })}
       >
+        <div class="label-drag-handle left" aria-label="Drag label"></div>
+        <div class="label-drag-handle right" aria-label="Drag label"></div>
         <rich-text
           .yText=${connector.text}
           .enableFormat=${false}

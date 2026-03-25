@@ -1223,3 +1223,16 @@ export async function assertConnectorStrokeColor(
 
   expect(toHex(realColor)).toBe(color);
 }
+
+export function assertJumpMarkersChanged(
+  samples: Array<Array<{ type: 0 | 1; x: number; y: number }>>
+) {
+  const serialized = samples.map(sample =>
+    JSON.stringify(sample.filter(p => p.type === 1))
+  );
+  const changed = serialized.some((value, index) => {
+    if (index === 0) return false;
+    return value !== serialized[index - 1];
+  });
+  expect(changed).toBe(true);
+}

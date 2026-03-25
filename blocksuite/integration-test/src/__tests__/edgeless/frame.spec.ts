@@ -47,6 +47,9 @@ describe('frame', () => {
     expect(rect!.width).toBeGreaterThan(0);
     expect(rect!.height).toBeGreaterThan(0);
 
+    const frameModel = service.doc.getBlock(frame)?.model as FrameBlockModel;
+    expect(frameModel.externalXYWH).toBeDefined();
+
     const [titleX, titleY] = service.viewport.toModelCoordFromClientCoord([
       rect!.x,
       rect!.y,
