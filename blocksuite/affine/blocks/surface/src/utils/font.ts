@@ -1,5 +1,5 @@
 import type { FontFamily } from '@blocksuite/affine-model';
-import { IS_FIREFOX } from '@blocksuite/global/env';
+import { IS_FIREFOX, IS_SAFARI } from '@blocksuite/global/env';
 
 export function wrapFontFamily(fontFamily: FontFamily | string): string {
   return `"${fontFamily}"`;
@@ -21,9 +21,11 @@ export const getFontFaces = IS_FIREFOX
     }
   : () => [...document.fonts.keys()];
 
-export const isSameFontFamily =
-  (fontFamily: FontFamily | string) => (fontFace: FontFace) =>
-    fontFace.family === `"${fontFamily}"`;
+export const isSameFontFamily = IS_SAFARI
+  ? (fontFamily: FontFamily | string) => (fontFace: FontFace) =>
+      fontFace.family === fontFamily
+  : (fontFamily: FontFamily | string) => (fontFace: FontFace) =>
+      fontFace.family === `"${fontFamily}"`;
 
 export function getFontFacesByFontFamily(
   fontFamily: FontFamily | string
