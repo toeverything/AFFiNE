@@ -106,7 +106,7 @@ jobs:
           electron-install: false
           hard-link-nm: false
           enableScripts: false
-      - uses: maxim-lobanov/setup-xcode@v1
+      - uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1
         with:
           xcode-version: 26.2
       - name: Install Swiftformat
@@ -114,7 +114,7 @@ jobs:
       - name: Cap sync
         run: yarn workspace @affine/ios sync
       - name: Signing By Apple Developer ID
-        uses: apple-actions/import-codesign-certs@v6
+        uses: apple-actions/import-codesign-certs@fe74d46e82474f87e1ba79832ad28a4013d0e33a # v6
         id: import-codesign-certs
         with:
           p12-file-base64: ${{ secrets.CERTIFICATES_P12_MOBILE }}
@@ -185,7 +185,7 @@ jobs:
           python-version: '3.13'
       - name: Auth gcloud
         id: auth
-        uses: google-github-actions/auth@v2
+        uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2
         with:
           workload_identity_provider: 'projects/${{ secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-actions/providers/github-actions-helm-deploy'
           service_account: '${{ secrets.GCP_HELM_DEPLOY_SERVICE_ACCOUNT }}'
@@ -212,7 +212,7 @@ jobs:
           AFFINE_ANDROID_SIGN_KEYSTORE: ${{ secrets.AFFINE_ANDROID_SIGN_KEYSTORE }}
           VERSION_NAME: ${{ inputs.app-version }}
       - name: Upload to Google Play
-        uses: r0adkll/upload-google-play@v1
+        uses: r0adkll/upload-google-play@935ef9c68bb393a8e6116b1575626a7f5be3a7fb # v1
         with:
           serviceAccountJson: ${{ steps.auth.outputs.credentials_file_path }}
           packageName: app.affine.pro
