@@ -12,6 +12,20 @@ on:
       git-short-hash:
         type: string
         required: true
+  workflow_dispatch:
+    inputs:
+      build-type:
+        description: "Build type"
+        required: true
+        type: string
+      app-version:
+        description: "App version"
+        required: true
+        type: string
+      git-short-hash:
+        description: "Git short hash"
+        required: true
+        type: string
 
 permissions:
   contents: 'write'
@@ -272,4 +286,4 @@ jobs:
           platforms: linux/amd64,linux/arm64,linux/arm/v7
           provenance: true
           file: .github/deployment/node/Dockerfile
-          tags: ghcr.io/toeverything/affine:${{inputs.build-type}}-${{ inputs.git-short-hash }}
+          tags: ghcr.io/as206em/affine:${{inputs.build-type}}-${{ inputs.git-short-hash }}
