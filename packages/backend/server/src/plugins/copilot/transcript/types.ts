@@ -14,6 +14,7 @@ import {
   TranscriptionLegacyProjectionSchema,
   TranscriptionPayloadV2Schema,
   TranscriptionQualitySchema,
+  TranscriptionRetryMetaSchema,
   TranscriptionSourceAudioSchema,
   TranscriptionSubmitInputSchema,
   TranscriptProviderMetaSchema,
@@ -25,7 +26,9 @@ export type LegacyTranscriptionSegment = z.infer<
 export type LegacyTranscription = z.infer<typeof LegacyTranscriptionSchema>;
 export type AudioBlobInfo = z.infer<typeof AudioBlobInfoSchema>;
 export type AudioBlobInfos = z.infer<typeof AudioBlobInfosSchema>;
-export type AudioSliceManifestItem = z.infer<typeof AudioSliceManifestItemSchema>;
+export type AudioSliceManifestItem = z.infer<
+  typeof AudioSliceManifestItemSchema
+>;
 export type RawTranscriptSegment = z.infer<typeof RawTranscriptSegmentSchema>;
 export type NormalizedTranscriptSegment = z.infer<
   typeof NormalizedTranscriptSegmentSchema
@@ -36,11 +39,16 @@ export type TranscriptionSourceAudio = z.infer<
   typeof TranscriptionSourceAudioSchema
 >;
 export type TranscriptionQuality = z.infer<typeof TranscriptionQualitySchema>;
-export type TranscriptProviderMeta = z.infer<typeof TranscriptProviderMetaSchema>;
+export type TranscriptionRetryMeta = z.infer<typeof TranscriptionRetryMetaSchema>;
+export type TranscriptProviderMeta = z.infer<
+  typeof TranscriptProviderMetaSchema
+>;
 export type TranscriptionLegacyProjection = z.infer<
   typeof TranscriptionLegacyProjectionSchema
 >;
-export type TranscriptionPayloadV2 = z.infer<typeof TranscriptionPayloadV2Schema>;
+export type TranscriptionPayloadV2 = z.infer<
+  typeof TranscriptionPayloadV2Schema
+>;
 export type TranscriptionSubmitInput = z.infer<
   typeof TranscriptionSubmitInputSchema
 >;

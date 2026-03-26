@@ -95,6 +95,15 @@ export class CopilotTranscriptionService {
     return payload;
   }
 
+  private canReuseTranscript(payload: TranscriptionPayloadV2) {
+    return (
+      payload.retryMeta?.skipAsrOnRetry === true &&
+      !!payload.normalizedTranscript &&
+      !!payload.rawSegments?.length &&
+      !!payload.normalizedSegments?.length
+    );
+  }
+
   private createFallbackSliceManifest(infos: AudioBlobInfos) {
     return infos.map(
       (info, index): AudioSliceManifestItem => ({
@@ -363,41 +372,61 @@ export class CopilotTranscriptionService {
     modelId,
   }: Jobs['copilot.transcript.submit']) {
     try {
-      const infos = payload.infos ?? [];
-      const rawSegments = (
-        await Promise.all(
-          infos.map((info, index) =>
-            this.callTranscript(
-              info,
-              this.getSliceOffset(payload.sliceManifest, info, index),
-              modelId
+      const reusesTranscript = this.canReuseTranscript(payload);
+      let normalizedTranscript = payload.normalizedTranscript ?? null;
+
+      if (!reusesTranscript) {
+        const infos = payload.infos ?? [];
+        const rawSegments = (
+          await Promise.all(
+            infos.map((info, index) =>
+              this.callTranscript(
+                info,
+                this.getSliceOffset(payload.sliceManifest, info, index),
+                modelId
+              )
             )
           )
-        )
-      ).flat();
+        ).flat();
 
-      const normalizedSegments = normalizeTranscriptSegments(rawSegments);
-      const normalizedTranscript =
-        buildNormalizedTranscript(normalizedSegments) || null;
-      const summaryJson = normalizedTranscript
-        ? await this.summarizeMeeting(normalizedTranscript)
-        : null;
+        const normalizedSegments = normalizeTranscriptSegments(rawSegments);
+        normalizedTranscript =
+          buildNormalizedTranscript(normalizedSegments) || null;
 
-      await this.updatePayload(jobId, current => ({
-        ...current,
-        infos: payload.infos ?? current.infos,
-        sourceAudio: payload.sourceAudio ?? current.sourceAudio,
-        quality: payload.quality ?? current.quality,
-        sliceManifest: payload.sliceManifest ?? current.sliceManifest,
-        rawSegments,
-        normalizedSegments,
-        normalizedTranscript,
-        summaryJson,
-        providerMeta: {
-          provider: CopilotProviderType.Gemini,
-          model: modelId ?? payload.providerMeta?.model ?? null,
-        },
-      }));
+        await this.updatePayload(jobId, current => ({
+          ...current,
+          infos: payload.infos ?? current.infos,
+          sourceAudio: payload.sourceAudio ?? current.sourceAudio,
+          quality: payload.quality ?? current.quality,
+          sliceManifest: payload.sliceManifest ?? current.sliceManifest,
+          rawSegments,
+          normalizedSegments,
+          normalizedTranscript,
+          summaryJson: null,
+          providerMeta: {
+            provider: CopilotProviderType.Gemini,
+            model: modelId ?? payload.providerMeta?.model ?? null,
+          },
+          retryMeta: undefined,
+        }));
+      }
+
+      if (normalizedTranscript) {
+        try {
+          const summaryJson = await this.summarizeMeeting(normalizedTranscript);
+          await this.updatePayload(jobId, current => ({
+            ...current,
+            summaryJson,
+            retryMeta: undefined,
+          }));
+        } catch (error) {
+          await this.updatePayload(jobId, current => ({
+            ...current,
+            retryMeta: reusesTranscript ? undefined : { skipAsrOnRetry: true },
+          }));
+          throw error;
+        }
+      }
 
       this.event.emit('workspace.file.transcript.finished', {
         jobId,

@@ -50,8 +50,8 @@ export const NormalizedTranscriptSegmentSchema = z.object({
 
 export const MeetingActionItemSchema = z.object({
   description: z.string(),
-  owner: z.string().nullable().optional(),
-  deadline: z.string().nullable().optional(),
+  owner: z.string().nullable(),
+  deadline: z.string().nullable(),
 });
 
 export const MeetingSummaryV2Schema = z.object({
@@ -83,6 +83,10 @@ export const TranscriptProviderMetaSchema = z.object({
   model: z.string().nullable().optional(),
 });
 
+export const TranscriptionRetryMetaSchema = z.object({
+  skipAsrOnRetry: z.boolean().optional(),
+});
+
 export const TranscriptionLegacyProjectionSchema = z.object({
   title: z.string().nullable().optional(),
   summary: z.string().nullable().optional(),
@@ -101,13 +105,16 @@ export const TranscriptionPayloadV2Schema = z.object({
   summaryJson: MeetingSummaryV2Schema.nullable().optional(),
   legacy: TranscriptionLegacyProjectionSchema.nullable().optional(),
   providerMeta: TranscriptProviderMetaSchema.nullable().optional(),
+  retryMeta: TranscriptionRetryMetaSchema.optional(),
 });
 
-export const TranscriptionSubmitInputSchema = TranscriptionPayloadV2Schema.pick({
-  sourceAudio: true,
-  quality: true,
-  sliceManifest: true,
-});
+export const TranscriptionSubmitInputSchema = TranscriptionPayloadV2Schema.pick(
+  {
+    sourceAudio: true,
+    quality: true,
+    sliceManifest: true,
+  }
+);
 
 export const TranscriptionResponseSchema = z
   .object({
@@ -118,15 +125,20 @@ export const TranscriptionResponseSchema = z
   })
   .array();
 
-const LegacyTranscriptPayloadSchema = z.object({
-  url: z.string().nullable().optional(),
-  mimeType: z.string().nullable().optional(),
-  infos: AudioBlobInfosSchema.nullable().optional(),
-  title: z.string().nullable().optional(),
-  summary: z.string().nullable().optional(),
-  actions: z.string().nullable().optional(),
-  transcription: LegacyTranscriptionSchema.nullable().optional(),
-});
+const LegacyTranscriptPayloadSchema = z
+  .object({
+    url: z.string().nullable().optional(),
+    mimeType: z.string().nullable().optional(),
+    infos: AudioBlobInfosSchema.nullable().optional(),
+    title: z.string().nullable().optional(),
+    summary: z.string().nullable().optional(),
+    actions: z.string().nullable().optional(),
+    transcription: LegacyTranscriptionSchema.nullable().optional(),
+  })
+  .refine(
+    payload => Object.values(payload).some(value => value !== undefined),
+    { message: 'legacy transcript payload must contain known fields' }
+  );
 
 type LegacyTranscriptPayload = z.infer<typeof LegacyTranscriptPayloadSchema>;
 type CanonicalTranscriptPayload = z.infer<typeof TranscriptionPayloadV2Schema>;
@@ -185,25 +197,23 @@ function normalizePayload(
   };
 }
 
-export const TranscriptPayloadSchema = z
-  .unknown()
-  .transform((input, ctx) => {
-    const canonical = CanonicalTranscriptPayloadSchema.safeParse(input);
-    if (canonical.success) {
-      return normalizePayload(canonical.data);
-    }
+export const TranscriptPayloadSchema = z.unknown().transform((input, ctx) => {
+  const canonical = CanonicalTranscriptPayloadSchema.safeParse(input);
+  if (canonical.success) {
+    return normalizePayload(canonical.data);
+  }
 
-    const legacy = LegacyTranscriptPayloadSchema.safeParse(input);
-    if (legacy.success) {
-      return normalizePayload(legacy.data);
-    }
+  const legacy = LegacyTranscriptPayloadSchema.safeParse(input);
+  if (legacy.success) {
+    return normalizePayload(legacy.data);
+  }
 
-    const issue =
-      canonical.error.issues[0] ?? legacy.error.issues[0] ?? {
-        code: z.ZodIssueCode.custom,
-        message: 'invalid transcript payload',
-      };
+  const issue = canonical.error.issues[0] ??
+    legacy.error.issues[0] ?? {
+      code: z.ZodIssueCode.custom,
+      message: 'invalid transcript payload',
+    };
 
-    ctx.addIssue(issue);
-    return z.NEVER;
-  }) as z.ZodType<CanonicalTranscriptPayload>;
+  ctx.addIssue(issue);
+  return z.NEVER;
+}) as z.ZodType<CanonicalTranscriptPayload>;

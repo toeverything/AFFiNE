@@ -22,10 +22,20 @@ import { AudioTranscriptionJob } from './audio-transcription-job';
 import type { TranscriptionResult } from './types';
 
 const logger = new DebugLogger('audio-attachment-block');
+type TranscriptionBlockProps = TranscriptionBlockModel['props'];
 
 // BlockSuiteError: yText must not contain "\r" because it will break the range synchronization
 function sanitizeText(text: string) {
   return text.replace(/\r/g, '');
+}
+
+function requireTranscriptionBlockProps(
+  transcriptionBlockProps: TranscriptionBlockProps | undefined
+) {
+  if (!transcriptionBlockProps) {
+    throw new Error('No transcription block props');
+  }
+  return transcriptionBlockProps;
 }
 
 const colorOptions = [
@@ -123,18 +133,17 @@ export class AudioAttachmentBlock extends Entity<AttachmentBlockModel> {
       transcriptionBlockProps = this.transcriptionBlock$.value?.props;
     }
 
-    if (!transcriptionBlockProps) {
-      throw new Error('No transcription block props');
-    }
-
     const job = this.framework.createEntity(AudioTranscriptionJob, {
       blobId: this.props.props.sourceId,
-      blockProps: transcriptionBlockProps,
+      blockProps: requireTranscriptionBlockProps(transcriptionBlockProps),
       getAudioTranscriptionInput: async () => {
         const buffer = await this.audioMedia.getBuffer();
         if (!buffer) {
           throw new Error('No audio buffer available');
         }
+        const currentTranscriptionBlockProps = requireTranscriptionBlockProps(
+          this.transcriptionBlock$.value?.props
+        );
         const { files, sourceAudio, sliceManifest } =
           await preprocessAudioBlobForTranscription(buffer, {
             fileNameBase: this.props.props.name,
@@ -147,9 +156,9 @@ export class AudioAttachmentBlock extends Entity<AttachmentBlockModel> {
           input: {
             sourceAudio: {
               ...sourceAudio,
-              ...transcriptionBlockProps.transcription.sourceAudio,
+              ...currentTranscriptionBlockProps.transcription.sourceAudio,
             },
-            quality: transcriptionBlockProps.transcription.quality,
+            quality: currentTranscriptionBlockProps.transcription.quality,
             sliceManifest,
           },
         };

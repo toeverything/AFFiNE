@@ -29,7 +29,9 @@ function formatSection(title: string, items: string[]) {
   return [`## ${title}`, ...items.map(item => `- ${item}`)];
 }
 
-export function summaryJsonToMarkdown(summaryJson?: MeetingSummaryV2Type | null) {
+export function summaryJsonToMarkdown(
+  summaryJson?: MeetingSummaryV2Type | null
+) {
   if (!summaryJson) {
     return '';
   }
@@ -44,7 +46,9 @@ export function summaryJsonToMarkdown(summaryJson?: MeetingSummaryV2Type | null)
     .trim();
 }
 
-export function actionItemsToMarkdown(summaryJson?: MeetingSummaryV2Type | null) {
+export function actionItemsToMarkdown(
+  summaryJson?: MeetingSummaryV2Type | null
+) {
   if (!summaryJson?.actionItems.length) {
     return '';
   }
@@ -79,6 +83,7 @@ export function buildTranscriptionResult(
     summary: payload.summary ?? summaryJsonToMarkdown(payload.summaryJson),
     actions: payload.actions ?? actionItemsToMarkdown(payload.summaryJson),
     segments:
-      payload.transcription ?? normalizedSegmentsToResult(payload.normalizedSegments),
+      payload.transcription ??
+      normalizedSegmentsToResult(payload.normalizedSegments),
   };
 }

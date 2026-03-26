@@ -34,6 +34,12 @@ const DEFAULT_BITRATE = 64000;
 const MAX_SLICE_DURATION_SECONDS = 10 * 60; // 10 minutes
 const MIN_SLICE_DURATION_SECONDS = 5 * 60; // 5 minutes
 const AUDIO_LEVEL_THRESHOLD = 0.02; // Threshold for "silence" detection
+export const SLICE_FILE_EXT = 'm4a';
+export const SLICE_MIME_TYPE = 'audio/m4a';
+
+export function getSliceName(fileNameBase: string, index: number) {
+  return `${fileNameBase}-${index}.${SLICE_FILE_EXT}`;
+}
 
 /**
  * Converts various blob formats to ArrayBuffer
@@ -448,25 +454,27 @@ export async function preprocessAudioBlobForTranscription(
     );
 
     const files = encodedSlices.map((slice, index) => {
-      const fileName = `${options.fileNameBase}-${index}.opus`;
+      const fileName = getSliceName(options.fileNameBase, index);
       const data = toArrayBuffer(slice.data);
-      return new File([new Blob([data], { type: 'audio/opus' })], fileName, {
-        type: 'audio/opus',
+      return new File([new Blob([data], { type: SLICE_MIME_TYPE })], fileName, {
+        type: SLICE_MIME_TYPE,
       });
     });
 
     return {
       files,
       sourceAudio: {
-        mimeType: options.sourceMimeType ?? (blob instanceof Blob ? blob.type : null),
+        mimeType:
+          options.sourceMimeType ?? (blob instanceof Blob ? blob.type : null),
         durationMs: Math.round(audioBuffer.duration * 1000),
         sampleRate: audioBuffer.sampleRate,
         channels: audioBuffer.numberOfChannels,
       },
       sliceManifest: encodedSlices.map((slice, index) => ({
         index,
-        fileName: files[index]?.name ?? `${options.fileNameBase}-${index}.opus`,
-        mimeType: files[index]?.type || 'audio/opus',
+        fileName:
+          files[index]?.name ?? getSliceName(options.fileNameBase, index),
+        mimeType: files[index]?.type || SLICE_MIME_TYPE,
         startSec: slice.startSec,
         durationSec: slice.durationSec,
         byteSize: slice.data.byteLength,

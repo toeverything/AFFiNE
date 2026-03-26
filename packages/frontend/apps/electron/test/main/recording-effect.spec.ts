@@ -179,7 +179,8 @@ function createWorkspaceRef() {
               addBlock: (...args: Parameters<typeof blockSuiteDoc.addBlock>) =>
                 blockSuiteDoc.addBlock(...args),
               getBlock: (blockId: string) => blockSuiteDoc.getBlock(blockId),
-              'getBlock$': (blockId: string) => blockSuiteDoc.getBlock(blockId),
+              'getBlock$': (blockId: string) =>
+                blockSuiteDoc.getBlock(blockId),
             },
           };
           attachments.push(attachment);

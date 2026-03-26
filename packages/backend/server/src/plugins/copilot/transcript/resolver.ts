@@ -186,7 +186,10 @@ class AudioSliceManifestItemInput implements AudioSliceManifestItem {
 }
 
 @InputType()
-class TranscriptionSourceAudioInput implements Omit<TranscriptionSourceAudio, 'blobId'> {
+class TranscriptionSourceAudioInput implements Omit<
+  TranscriptionSourceAudio,
+  'blobId'
+> {
   @Field(() => String, { nullable: true })
   mimeType?: string | null;
 
@@ -319,7 +322,11 @@ export class CopilotTranscriptionResolver {
     blob: FileUpload | null,
     @Args({ name: 'blobs', type: () => [GraphQLUpload], nullable: true })
     blobs: FileUpload[] | null,
-    @Args({ name: 'input', type: () => SubmitAudioTranscriptionInput, nullable: true })
+    @Args({
+      name: 'input',
+      type: () => SubmitAudioTranscriptionInput,
+      nullable: true,
+    })
     input: SubmitAudioTranscriptionInput | null
   ): Promise<TranscriptionResultType | null> {
     await this.ac

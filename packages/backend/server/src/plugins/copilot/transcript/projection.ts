@@ -100,7 +100,7 @@ export function summaryToMarkdown(summaryJson?: MeetingSummaryV2 | null) {
   }
 
   const lines = [
-    ...summaryJson.keyPoints.map(item => `- ${item}`),
+    ...formatSection('Key Points', summaryJson.keyPoints),
     ...formatSection('Decisions', summaryJson.decisions),
     ...formatSection('Open Questions', summaryJson.openQuestions),
     ...formatSection('Blockers', summaryJson.blockers),

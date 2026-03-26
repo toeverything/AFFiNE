@@ -1110,7 +1110,8 @@ test('should be able to transcript', async t => {
     let status = '';
     while (status !== 'finished') {
       await new Promise(resolve => setTimeout(resolve, 1000));
-      status = (await audioTranscription(app, workspaceId, job.id))?.status || '';
+      status =
+        (await audioTranscription(app, workspaceId, job.id))?.status || '';
     }
 
     const result = await claimAudioTranscription(app, job.id);
@@ -1161,7 +1162,8 @@ test('should be able to transcript', async t => {
     let status = '';
     while (status !== 'finished') {
       await new Promise(resolve => setTimeout(resolve, 1000));
-      status = (await audioTranscription(app, workspaceId, job.id))?.status || '';
+      status =
+        (await audioTranscription(app, workspaceId, job.id))?.status || '';
     }
 
     const result = await claimAudioTranscription(app, job.id);
@@ -1173,7 +1175,10 @@ test('should be able to transcript', async t => {
       result.transcription?.map(segment => segment.start),
       ['00:00:30', '00:00:46', '00:10:35', '00:10:51']
     );
-    t.is(result.normalizedTranscript?.split('\n')[2], '00:10:35 A: Hello, everyone.');
+    t.is(
+      result.normalizedTranscript?.split('\n')[2],
+      '00:10:35 A: Hello, everyone.'
+    );
   }
 });
 
