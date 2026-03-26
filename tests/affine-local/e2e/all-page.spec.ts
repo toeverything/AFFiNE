@@ -176,7 +176,11 @@ test('select all and delete closes the floating toolbar', async ({ page }) => {
 
   const pageCount = await getPagesCount(page);
 
-  await page.getByRole('button', { name: 'Select all' }).first().click();
+  const selectAllButton = page
+    .getByRole('button', { name: 'Select all' })
+    .last();
+  await selectAllButton.hover();
+  await selectAllButton.click();
 
   await expect(page.locator('[data-testid="floating-toolbar"]')).toBeVisible();
   await page.locator('[data-testid="list-toolbar-delete"]').click();
