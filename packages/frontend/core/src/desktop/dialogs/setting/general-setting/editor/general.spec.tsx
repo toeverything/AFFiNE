@@ -61,7 +61,7 @@ vi.mock('@affine/i18n', () => {
 });
 
 vi.mock('@toeverything/infra', async importOriginal => {
-  const actual = await importOriginal();
+  const actual = (await importOriginal()) as Record<string, unknown>;
 
   return {
     ...actual,

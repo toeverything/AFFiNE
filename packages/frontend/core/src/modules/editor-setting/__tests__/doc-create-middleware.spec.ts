@@ -1,17 +1,19 @@
 import { getOrCreateI18n } from '@affine/i18n';
 import { Framework, Service } from '@toeverything/infra';
+import { of } from 'rxjs';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 
 import { EditorSettingDocCreateMiddleware } from '../impls/doc-create-middleware';
 
 const createDocsService = (titles: string[]) => {
   return {
-    ['allDocTitle$']: () => ({
-      value: titles.map((title, index) => ({
-        id: `doc-${index}`,
-        title,
-      })),
-    }),
+    ['allDocTitle$']: () =>
+      of(
+        titles.map((title, index) => ({
+          id: `doc-${index}`,
+          title,
+        }))
+      ),
   };
 };
 
@@ -72,9 +74,9 @@ const createMiddleware = ({
     .service(MockAppThemeService)
     .service(MockDocsService)
     .service(EditorSettingDocCreateMiddleware, [
-      MockEditorSettingService,
-      MockAppThemeService,
-      MockDocsService,
+      MockEditorSettingService as never,
+      MockAppThemeService as never,
+      MockDocsService as never,
     ]);
 
   return framework.provider().get(EditorSettingDocCreateMiddleware);

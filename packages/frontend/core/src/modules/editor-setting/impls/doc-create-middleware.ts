@@ -1,4 +1,4 @@
-import { Service } from '@toeverything/infra';
+import { LiveData, Service } from '@toeverything/infra';
 
 import type { DocCreateMiddleware, DocRecord, DocsService } from '../../doc';
 import type { DocCreateOptions } from '../../doc/types';
@@ -29,19 +29,19 @@ export class EditorSettingDocCreateMiddleware
   extends Service
   implements DocCreateMiddleware
 {
+  private readonly allDocTitles$: LiveData<{ id: string; title: string }[]>;
+
   constructor(
     private readonly editorSettingService: EditorSettingService,
     private readonly appThemeService: AppThemeService,
     private readonly docsService: DocsService
   ) {
     super();
+    this.allDocTitles$ = LiveData.from(this.docsService.allDocTitle$(), []);
   }
 
   private getCurrentDocTitles() {
-    return this.docsService
-      .allDocTitle$()
-      .value.map(doc => doc.title)
-      .filter(Boolean);
+    return this.allDocTitles$.value.map(doc => doc.title).filter(Boolean);
   }
 
   beforeCreate(docCreateOptions: DocCreateOptions): DocCreateOptions {
