@@ -23,17 +23,17 @@ import {
 import { CurrentUser } from '../../../core/auth';
 import { AccessController } from '../../../core/permission';
 import { CopilotType } from '../resolver';
-import { CopilotTranscriptionService, TranscriptionJob } from './service';
 import { buildLegacyProjection } from './projection';
+import { CopilotTranscriptionService, TranscriptionJob } from './service';
 import type {
   AudioSliceManifestItem,
   MeetingActionItem,
   MeetingSummaryV2,
   NormalizedTranscriptSegment,
-  TranscriptionQuality,
-  TranscriptionSourceAudio,
   TranscriptionItem,
   TranscriptionPayload,
+  TranscriptionQuality,
+  TranscriptionSourceAudio,
   TranscriptionSubmitInput,
 } from './types';
 

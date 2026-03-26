@@ -211,7 +211,9 @@ function createWorkspaceRef() {
       if (attachment) {
         return { model: attachment };
       }
-      const transcriptionBlock = transcriptionBlocks.find(entry => entry.id === id);
+      const transcriptionBlock = transcriptionBlocks.find(
+        entry => entry.id === id
+      );
       return transcriptionBlock ? { model: transcriptionBlock } : null;
     }),
   };

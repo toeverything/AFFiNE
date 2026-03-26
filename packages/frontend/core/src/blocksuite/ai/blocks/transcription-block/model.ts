@@ -1,12 +1,12 @@
+import type {
+  TranscriptionQualityInput,
+  TranscriptionSourceAudioInput,
+} from '@affine/graphql';
 import {
   BlockModel,
   BlockSchemaExtension,
   defineBlockSchema,
 } from '@blocksuite/affine/store';
-import type {
-  TranscriptionQualityInput,
-  TranscriptionSourceAudioInput,
-} from '@affine/graphql';
 
 export const TranscriptionBlockFlavour = 'affine:transcription';
 

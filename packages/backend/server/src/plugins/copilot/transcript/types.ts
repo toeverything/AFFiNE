@@ -11,12 +11,12 @@ import {
   MeetingSummaryV2Schema,
   NormalizedTranscriptSegmentSchema,
   RawTranscriptSegmentSchema,
-  TranscriptProviderMetaSchema,
   TranscriptionLegacyProjectionSchema,
   TranscriptionPayloadV2Schema,
   TranscriptionQualitySchema,
   TranscriptionSourceAudioSchema,
   TranscriptionSubmitInputSchema,
+  TranscriptProviderMetaSchema,
 } from './schema';
 
 export type LegacyTranscriptionSegment = z.infer<

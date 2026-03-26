@@ -1,8 +1,8 @@
-import type { DocProps } from '@affine/core/blocksuite/initialization';
 import {
   TranscriptionBlockFlavour,
   type TranscriptionBlockModel,
 } from '@affine/core/blocksuite/ai/blocks/transcription-block/model';
+import type { DocProps } from '@affine/core/blocksuite/initialization';
 import { DocsService } from '@affine/core/modules/doc';
 import { AudioAttachmentService } from '@affine/core/modules/media/services/audio-attachment';
 import { WorkbenchService } from '@affine/core/modules/workbench';
