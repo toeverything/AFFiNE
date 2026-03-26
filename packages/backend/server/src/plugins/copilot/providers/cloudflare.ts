@@ -82,17 +82,20 @@ export class CloudflareWorkersAIProvider extends CopilotProvider<CloudflareWorke
   override readonly models = [
     rerankOnlyModel('@cf/baai/bge-reranker-base', 'BGE Reranker Base', true),
     chatAndRerankModel('@cf/moonshotai/kimi-k2.5', 'Kimi K2.5'),
-    rerankOnlyModel(
+    chatAndRerankModel(
       '@cf/ibm-granite/granite-4.0-h-micro',
       'Granite 4.0 H Micro'
     ),
-    rerankOnlyModel(
+    chatAndRerankModel(
       '@cf/aisingapore/gemma-sea-lion-v4-27b-it',
       'Gemma Sea Lion V4 27B IT'
     ),
-    rerankOnlyModel('@cf/nvidia/nemotron-3-120b-a12b', 'Nemotron 3 120B A12B'),
-    rerankOnlyModel('@cf/zai-org/glm-4.7-flash', 'GLM 4.7 Flash'),
-    rerankOnlyModel('@cf/qwen/qwen3-30b-a3b-fp8', 'Qwen3 30B A3B FP8'),
+    chatAndRerankModel(
+      '@cf/nvidia/nemotron-3-120b-a12b',
+      'Nemotron 3 120B A12B'
+    ),
+    chatAndRerankModel('@cf/zai-org/glm-4.7-flash', 'GLM 4.7 Flash'),
+    chatAndRerankModel('@cf/qwen/qwen3-30b-a3b-fp8', 'Qwen3 30B A3B FP8'),
   ];
 
   override configured(): boolean {

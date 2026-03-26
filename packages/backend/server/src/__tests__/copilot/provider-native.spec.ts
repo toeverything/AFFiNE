@@ -54,7 +54,7 @@ class TestOpenAIProvider extends CopilotProvider<{ apiKey: string }> {
 class NativeRerankProtocolProvider extends OpenAIProvider {
   override readonly models = [
     {
-      id: 'gpt-5.2',
+      id: 'gpt-4o-mini',
       capabilities: [
         {
           input: [ModelInputType.Text],
