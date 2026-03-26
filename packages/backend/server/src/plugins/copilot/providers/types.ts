@@ -8,6 +8,7 @@ import { JSONSchema } from '../../../base';
 export enum CopilotProviderType {
   Anthropic = 'anthropic',
   AnthropicVertex = 'anthropicVertex',
+  CloudflareWorkersAi = 'cloudflareWorkersAi',
   FAL = 'fal',
   Gemini = 'gemini',
   GeminiVertex = 'geminiVertex',
