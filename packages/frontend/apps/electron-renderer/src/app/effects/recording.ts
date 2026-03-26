@@ -1,7 +1,3 @@
-import {
-  TranscriptionBlockFlavour,
-  type TranscriptionBlockModel,
-} from '@affine/core/blocksuite/ai/blocks/transcription-block/model';
 import type { DocProps } from '@affine/core/blocksuite/initialization';
 import { DocsService } from '@affine/core/modules/doc';
 import { AudioAttachmentService } from '@affine/core/modules/media/services/audio-attachment';
@@ -20,6 +16,21 @@ import { getCurrentWorkspace, isAiEnabled } from './utils';
 const logger = new DebugLogger('electron-renderer:recording');
 const RECORDING_IMPORT_RETRY_MS = 1000;
 const NATIVE_RECORDING_MIME_TYPE = 'audio/ogg';
+const TRANSCRIPTION_BLOCK_FLAVOUR = 'affine:transcription';
+
+type TranscriptionBlockModel = {
+  props: {
+    transcription: {
+      sourceAudio?: {
+        mimeType?: string;
+        durationMs?: number;
+        sampleRate?: number;
+        channels?: number;
+      };
+      quality?: { degraded?: boolean; overflowCount?: number };
+    };
+  };
+};
 
 type RecordingImportStatus = {
   id: number;
@@ -122,16 +133,14 @@ function findExistingAttachment(docStore: Store, attachmentName: string) {
 function ensureTranscriptionBlock(model: AttachmentBlockModel) {
   for (const key of model.childMap.value.keys()) {
     const block = model.store.getBlock$(key);
-    if (block?.flavour === TranscriptionBlockFlavour) {
+    if (block?.flavour === TRANSCRIPTION_BLOCK_FLAVOUR) {
       return block.model as unknown as TranscriptionBlockModel;
     }
   }
 
   const blockId = model.store.addBlock(
-    TranscriptionBlockFlavour,
-    {
-      transcription: {},
-    },
+    TRANSCRIPTION_BLOCK_FLAVOUR,
+    { transcription: {} },
     model.id
   );
 

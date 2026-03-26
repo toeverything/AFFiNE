@@ -39,7 +39,9 @@ export type TranscriptionSourceAudio = z.infer<
   typeof TranscriptionSourceAudioSchema
 >;
 export type TranscriptionQuality = z.infer<typeof TranscriptionQualitySchema>;
-export type TranscriptionRetryMeta = z.infer<typeof TranscriptionRetryMetaSchema>;
+export type TranscriptionRetryMeta = z.infer<
+  typeof TranscriptionRetryMetaSchema
+>;
 export type TranscriptProviderMeta = z.infer<
   typeof TranscriptProviderMetaSchema
 >;

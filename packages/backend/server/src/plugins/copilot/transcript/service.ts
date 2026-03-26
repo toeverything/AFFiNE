@@ -50,6 +50,11 @@ export type TranscriptionJob = {
   transcription?: TranscriptionPayload;
 };
 
+const QueryableTranscriptionStatuses: Set<AiJobStatus> = new Set([
+  AiJobStatus.finished,
+  AiJobStatus.claimed,
+]);
+
 @Injectable()
 export class CopilotTranscriptionService {
   constructor(
@@ -104,28 +109,17 @@ export class CopilotTranscriptionService {
     );
   }
 
-  private createFallbackSliceManifest(infos: AudioBlobInfos) {
-    return infos.map(
-      (info, index): AudioSliceManifestItem => ({
-        index,
-        fileName: `slice-${index}.opus`,
-        mimeType: info.mimeType,
-        startSec: index * 10 * 60,
-        durationSec: 10 * 60,
-      })
-    );
-  }
-
   private async createCanonicalPayload(
     blobId: string,
     infos: AudioBlobInfos,
     input?: TranscriptionSubmitInput
   ) {
-    const sliceManifest = (
-      input?.sliceManifest?.length
-        ? input.sliceManifest
-        : this.createFallbackSliceManifest(infos)
-    ).map(item => ({ ...item, byteSize: item.byteSize ?? null }));
+    const sliceManifest = input?.sliceManifest?.length
+      ? input.sliceManifest.map(item => ({
+          ...item,
+          byteSize: item.byteSize ?? null,
+        }))
+      : undefined;
 
     return {
       infos,
@@ -254,7 +248,7 @@ export class CopilotTranscriptionService {
       infos: payload.data.infos ?? [],
     };
 
-    if (job.status === AiJobStatus.claimed) {
+    if (QueryableTranscriptionStatuses.has(job.status)) {
       ret.transcription = payload.data;
     }
 
@@ -323,9 +317,42 @@ export class CopilotTranscriptionService {
   ) {
     const sliceIndex = info.index ?? fallbackIndex;
     return (
-      sliceManifest?.find(item => item.index === sliceIndex)?.startSec ??
-      fallbackIndex * 10 * 60
+      sliceManifest?.find(item => item.index === sliceIndex)?.startSec ?? 0
     );
+  }
+
+  private rebaseManifestlessTranscriptSlices(
+    infos: AudioBlobInfos,
+    slices: RawTranscriptSegment[][]
+  ) {
+    let accumulatedOffset = 0;
+
+    return slices
+      .map((segments, fallbackIndex) => ({
+        fallbackIndex,
+        sliceIndex: infos[fallbackIndex]?.index ?? fallbackIndex,
+        segments,
+      }))
+      .sort((left, right) => {
+        return (
+          left.sliceIndex - right.sliceIndex ||
+          left.fallbackIndex - right.fallbackIndex
+        );
+      })
+      .flatMap(({ segments }) => {
+        const rebasedSegments = segments.map(segment => ({
+          ...segment,
+          startSec: segment.startSec + accumulatedOffset,
+          endSec: segment.endSec + accumulatedOffset,
+        }));
+
+        accumulatedOffset += Math.max(
+          0,
+          ...segments.map(segment => segment.endSec)
+        );
+
+        return rebasedSegments;
+      });
   }
 
   private async callTranscript(
@@ -377,17 +404,23 @@ export class CopilotTranscriptionService {
 
       if (!reusesTranscript) {
         const infos = payload.infos ?? [];
-        const rawSegments = (
-          await Promise.all(
-            infos.map((info, index) =>
-              this.callTranscript(
+        const manifestProvided = !!payload.sliceManifest?.length;
+        const transcriptSlices = await Promise.all(
+          infos.map((info, index) =>
+            this.callTranscript(
+              info,
+              this.getSliceOffset(
+                manifestProvided ? payload.sliceManifest : undefined,
                 info,
-                this.getSliceOffset(payload.sliceManifest, info, index),
-                modelId
-              )
+                index
+              ),
+              modelId
             )
           )
-        ).flat();
+        );
+        const rawSegments = manifestProvided
+          ? transcriptSlices.flat()
+          : this.rebaseManifestlessTranscriptSlices(infos, transcriptSlices);
 
         const normalizedSegments = normalizeTranscriptSegments(rawSegments);
         normalizedTranscript =

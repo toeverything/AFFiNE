@@ -132,7 +132,7 @@ function createWorkspaceRef() {
       parentId?: string
     ) => string;
     getBlock: (id: string) => MockBlockRecord;
-    'getBlock$': (id: string) => MockBlockRecord;
+    getBlock$: (id: string) => MockBlockRecord;
   };
   const attachments: Array<{
     id: string;
@@ -179,8 +179,7 @@ function createWorkspaceRef() {
               addBlock: (...args: Parameters<typeof blockSuiteDoc.addBlock>) =>
                 blockSuiteDoc.addBlock(...args),
               getBlock: (blockId: string) => blockSuiteDoc.getBlock(blockId),
-              'getBlock$': (blockId: string) =>
-                blockSuiteDoc.getBlock(blockId),
+              getBlock$: (blockId: string) => blockSuiteDoc.getBlock(blockId),
             },
           };
           attachments.push(attachment);

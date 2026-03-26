@@ -1,3 +1,4 @@
+import { AiJobStatus } from '@prisma/client';
 import test from 'ava';
 import Sinon from 'sinon';
 
@@ -253,7 +254,9 @@ test('transcriptAudio persists transcript payload before summary failure', async
     ['Kickoff', 'Status update']
   );
   t.deepEqual(
-    persistedPayloads[0].normalizedSegments?.map((segment: any) => segment.start),
+    persistedPayloads[0].normalizedSegments?.map(
+      (segment: any) => segment.start
+    ),
     ['00:00:05', '00:00:10']
   );
   t.is(
@@ -262,11 +265,9 @@ test('transcriptAudio persists transcript payload before summary failure', async
   );
   t.is(persistedPayloads[0].summaryJson, null);
   t.deepEqual(persistedPayloads[1].retryMeta, { skipAsrOnRetry: true });
-  Sinon.assert.calledWith(
-    event.emit,
-    'workspace.file.transcript.failed',
-    { jobId: 'job-1' }
-  );
+  Sinon.assert.calledWith(event.emit, 'workspace.file.transcript.failed', {
+    jobId: 'job-1',
+  });
 });
 
 test('transcriptAudio reuses persisted transcript once after summary failure', async t => {
@@ -340,11 +341,9 @@ test('transcriptAudio reuses persisted transcript once after summary failure', a
   Sinon.assert.notCalled(callTranscript);
   t.is(currentPayload.summaryJson?.title, 'Weekly Sync');
   t.is(currentPayload.retryMeta, undefined);
-  Sinon.assert.calledWith(
-    event.emit,
-    'workspace.file.transcript.finished',
-    { jobId: 'job-2' }
-  );
+  Sinon.assert.calledWith(event.emit, 'workspace.file.transcript.finished', {
+    jobId: 'job-2',
+  });
 });
 
 test('transcriptAudio clears reuse flag after repeated summary failure', async t => {
@@ -413,9 +412,175 @@ test('transcriptAudio clears reuse flag after repeated summary failure', async t
   Sinon.assert.notCalled(callTranscript);
   t.is(currentPayload.retryMeta, undefined);
   t.is(currentPayload.normalizedTranscript, '00:00:05 A: Kickoff');
-  Sinon.assert.calledWith(
-    event.emit,
-    'workspace.file.transcript.failed',
-    { jobId: 'job-3' }
+  Sinon.assert.calledWith(event.emit, 'workspace.file.transcript.failed', {
+    jobId: 'job-3',
+  });
+});
+
+test('queryJob returns transcript payload for finished jobs', async t => {
+  const payload = TranscriptPayloadSchema.parse({
+    infos: [
+      {
+        url: 'https://example.com/audio-0.m4a',
+        mimeType: 'audio/m4a',
+        index: 0,
+      },
+    ],
+    normalizedSegments: [
+      {
+        speaker: 'A',
+        startSec: 5,
+        endSec: 9,
+        start: '00:00:05',
+        end: '00:00:09',
+        text: 'Kickoff',
+      },
+    ],
+    normalizedTranscript: '00:00:05 A: Kickoff',
+  });
+  const service = new CopilotTranscriptionService(
+    {} as never,
+    {
+      copilotJob: {
+        getWithUser: Sinon.stub().resolves({
+          id: 'job-4',
+          status: AiJobStatus.finished,
+          payload,
+        }),
+      },
+    } as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never
   );
+
+  const result = await service.queryJob('user-1', 'workspace-1', 'job-4');
+
+  t.is(result?.status, AiJobStatus.finished);
+  t.deepEqual(result?.infos, payload.infos);
+  t.is(result?.transcription?.normalizedTranscript, '00:00:05 A: Kickoff');
+});
+
+test('createCanonicalPayload keeps sliceManifest undefined when input omits it', async t => {
+  const service = new CopilotTranscriptionService(
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never
+  );
+
+  const payload = await (service as any).createCanonicalPayload('blob-1', [
+    {
+      url: 'https://example.com/audio-0.m4a',
+      mimeType: 'audio/m4a',
+      index: 0,
+    },
+    {
+      url: 'https://example.com/audio-1.m4a',
+      mimeType: 'audio/m4a',
+      index: 1,
+    },
+  ]);
+
+  t.is(payload.sliceManifest, undefined);
+});
+
+test('transcriptAudio derives manifest-less slice offsets from observed durations', async t => {
+  const event = { emit: Sinon.spy() };
+  let currentPayload: any = {};
+  const service = new CopilotTranscriptionService(
+    event as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never
+  );
+
+  const callTranscript = Sinon.stub(service as any, 'callTranscript');
+  callTranscript.onCall(0).resolves([
+    {
+      source: 'asr',
+      sliceIndex: 0,
+      speaker: 'A',
+      startSec: 30,
+      endSec: 45,
+      text: 'Hello, everyone.',
+    },
+    {
+      source: 'asr',
+      sliceIndex: 0,
+      speaker: 'B',
+      startSec: 46,
+      endSec: 70,
+      text: 'Hi, thank you for joining the meeting today.',
+    },
+  ]);
+  callTranscript.onCall(1).resolves([
+    {
+      source: 'asr',
+      sliceIndex: 1,
+      speaker: 'A',
+      startSec: 30,
+      endSec: 45,
+      text: 'Second slice hello.',
+    },
+    {
+      source: 'asr',
+      sliceIndex: 1,
+      speaker: 'B',
+      startSec: 46,
+      endSec: 70,
+      text: 'Second slice response.',
+    },
+  ]);
+  Sinon.stub(service as any, 'summarizeMeeting').resolves({
+    title: 'Weekly Sync',
+    durationMinutes: 12,
+    attendees: ['A', 'B'],
+    keyPoints: ['Reviewed launch status'],
+    actionItems: [],
+    decisions: [],
+    openQuestions: [],
+    blockers: [],
+  });
+  Sinon.stub(service as any, 'updatePayload').callsFake(
+    async (...args: any[]) => {
+      const updater = args[1] as (payload: any) => any;
+      currentPayload = await updater(currentPayload);
+      return currentPayload;
+    }
+  );
+
+  await service.transcriptAudio({
+    jobId: 'job-5',
+    modelId: 'model-1',
+    payload: {
+      infos: [
+        {
+          url: 'https://example.com/audio-0.m4a',
+          mimeType: 'audio/m4a',
+          index: 0,
+        },
+        {
+          url: 'https://example.com/audio-1.m4a',
+          mimeType: 'audio/m4a',
+          index: 1,
+        },
+      ],
+    },
+  } as Jobs['copilot.transcript.submit']);
+
+  t.deepEqual(
+    currentPayload.normalizedSegments?.map((segment: any) => segment.start),
+    ['00:00:30', '00:00:46', '00:01:40', '00:01:56']
+  );
+  t.is(
+    currentPayload.normalizedTranscript?.split('\n')[2],
+    '00:01:40 A: Second slice hello.'
+  );
+  t.is(currentPayload.sliceManifest, undefined);
 });
