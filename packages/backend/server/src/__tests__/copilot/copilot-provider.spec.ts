@@ -943,7 +943,7 @@ for (const { name, content, verifier } of workflows) {
 
 // ==================== rerank ====================
 
-test.only(
+test(
   'should be able to rerank message chunks',
   runIfCopilotConfigured,
   async t => {
