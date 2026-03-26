@@ -16,7 +16,7 @@ import {
   StreamObject,
   StreamObjectSchema,
 } from '../../plugins/copilot/providers';
-import { TranscriptionResponseSchema } from '../../plugins/copilot/transcript/types';
+import { TranscriptionResponseSchema } from '../../plugins/copilot/transcript/schema';
 import {
   CopilotChatTextExecutor,
   CopilotWorkflowService,

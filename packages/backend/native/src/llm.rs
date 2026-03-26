@@ -16,7 +16,8 @@ use llm_adapter::{
   },
 };
 use napi::{
-  Error, Result, Status,
+  Env, Error, Result, Status, Task,
+  bindgen_prelude::AsyncTask,
   threadsafe_function::{ThreadsafeFunction, ThreadsafeFunctionCallMode},
 };
 use serde::Deserialize;
@@ -60,6 +61,116 @@ pub struct LlmStreamHandle {
   aborted: Arc<AtomicBool>,
 }
 
+pub struct AsyncLlmDispatchTask {
+  protocol: String,
+  backend_config_json: String,
+  request_json: String,
+}
+
+#[napi]
+impl Task for AsyncLlmDispatchTask {
+  type Output = String;
+  type JsValue = String;
+
+  fn compute(&mut self) -> Result<Self::Output> {
+    let protocol = parse_protocol(&self.protocol)?;
+    let config: BackendConfig = serde_json::from_str(&self.backend_config_json).map_err(map_json_error)?;
+    let payload: LlmDispatchPayload = serde_json::from_str(&self.request_json).map_err(map_json_error)?;
+    let request = apply_request_middlewares(payload.request, &payload.middleware)?;
+
+    let response =
+      dispatch_request(&DefaultHttpClient::default(), &config, protocol, &request).map_err(map_backend_error)?;
+
+    serde_json::to_string(&response).map_err(map_json_error)
+  }
+
+  fn resolve(&mut self, _: Env, output: Self::Output) -> Result<Self::JsValue> {
+    Ok(output)
+  }
+}
+
+pub struct AsyncLlmStructuredDispatchTask {
+  protocol: String,
+  backend_config_json: String,
+  request_json: String,
+}
+
+#[napi]
+impl Task for AsyncLlmStructuredDispatchTask {
+  type Output = String;
+  type JsValue = String;
+
+  fn compute(&mut self) -> Result<Self::Output> {
+    let protocol = parse_protocol(&self.protocol)?;
+    let config: BackendConfig = serde_json::from_str(&self.backend_config_json).map_err(map_json_error)?;
+    let payload: LlmStructuredDispatchPayload = serde_json::from_str(&self.request_json).map_err(map_json_error)?;
+    let request = apply_structured_request_middlewares(payload.request, &payload.middleware)?;
+
+    let response = dispatch_structured_request(&DefaultHttpClient::default(), &config, protocol, &request)
+      .map_err(map_backend_error)?;
+
+    serde_json::to_string(&response).map_err(map_json_error)
+  }
+
+  fn resolve(&mut self, _: Env, output: Self::Output) -> Result<Self::JsValue> {
+    Ok(output)
+  }
+}
+
+pub struct AsyncLlmEmbeddingDispatchTask {
+  protocol: String,
+  backend_config_json: String,
+  request_json: String,
+}
+
+#[napi]
+impl Task for AsyncLlmEmbeddingDispatchTask {
+  type Output = String;
+  type JsValue = String;
+
+  fn compute(&mut self) -> Result<Self::Output> {
+    let protocol = parse_protocol(&self.protocol)?;
+    let config: BackendConfig = serde_json::from_str(&self.backend_config_json).map_err(map_json_error)?;
+    let request: EmbeddingRequest = serde_json::from_str(&self.request_json).map_err(map_json_error)?;
+
+    let response = dispatch_embedding_request(&DefaultHttpClient::default(), &config, protocol, &request)
+      .map_err(map_backend_error)?;
+
+    serde_json::to_string(&response).map_err(map_json_error)
+  }
+
+  fn resolve(&mut self, _: Env, output: Self::Output) -> Result<Self::JsValue> {
+    Ok(output)
+  }
+}
+
+pub struct AsyncLlmRerankDispatchTask {
+  protocol: String,
+  backend_config_json: String,
+  request_json: String,
+}
+
+#[napi]
+impl Task for AsyncLlmRerankDispatchTask {
+  type Output = String;
+  type JsValue = String;
+
+  fn compute(&mut self) -> Result<Self::Output> {
+    let protocol = parse_protocol(&self.protocol)?;
+    let config: BackendConfig = serde_json::from_str(&self.backend_config_json).map_err(map_json_error)?;
+    let payload: LlmRerankDispatchPayload = serde_json::from_str(&self.request_json).map_err(map_json_error)?;
+
+    let response = dispatch_rerank_request(&DefaultHttpClient::default(), &config, protocol, &payload.request)
+      .map_err(map_backend_error)?;
+
+    serde_json::to_string(&response).map_err(map_json_error)
+  }
+
+  fn resolve(&mut self, _: Env, output: Self::Output) -> Result<Self::JsValue> {
+    Ok(output)
+  }
+}
+
 #[napi]
 impl LlmStreamHandle {
   #[napi]
@@ -69,53 +180,55 @@ impl LlmStreamHandle {
 }
 
 #[napi(catch_unwind)]
-pub fn llm_dispatch(protocol: String, backend_config_json: String, request_json: String) -> Result<String> {
-  let protocol = parse_protocol(&protocol)?;
-  let config: BackendConfig = serde_json::from_str(&backend_config_json).map_err(map_json_error)?;
-  let payload: LlmDispatchPayload = serde_json::from_str(&request_json).map_err(map_json_error)?;
-  let request = apply_request_middlewares(payload.request, &payload.middleware)?;
-
-  let response =
-    dispatch_request(&DefaultHttpClient::default(), &config, protocol, &request).map_err(map_backend_error)?;
-
-  serde_json::to_string(&response).map_err(map_json_error)
+pub fn llm_dispatch(
+  protocol: String,
+  backend_config_json: String,
+  request_json: String,
+) -> AsyncTask<AsyncLlmDispatchTask> {
+  AsyncTask::new(AsyncLlmDispatchTask {
+    protocol,
+    backend_config_json,
+    request_json,
+  })
 }
 
 #[napi(catch_unwind)]
-pub fn llm_structured_dispatch(protocol: String, backend_config_json: String, request_json: String) -> Result<String> {
-  let protocol = parse_protocol(&protocol)?;
-  let config: BackendConfig = serde_json::from_str(&backend_config_json).map_err(map_json_error)?;
-  let payload: LlmStructuredDispatchPayload = serde_json::from_str(&request_json).map_err(map_json_error)?;
-  let request = apply_structured_request_middlewares(payload.request, &payload.middleware)?;
-
-  let response = dispatch_structured_request(&DefaultHttpClient::default(), &config, protocol, &request)
-    .map_err(map_backend_error)?;
-
-  serde_json::to_string(&response).map_err(map_json_error)
+pub fn llm_structured_dispatch(
+  protocol: String,
+  backend_config_json: String,
+  request_json: String,
+) -> AsyncTask<AsyncLlmStructuredDispatchTask> {
+  AsyncTask::new(AsyncLlmStructuredDispatchTask {
+    protocol,
+    backend_config_json,
+    request_json,
+  })
 }
 
 #[napi(catch_unwind)]
-pub fn llm_embedding_dispatch(protocol: String, backend_config_json: String, request_json: String) -> Result<String> {
-  let protocol = parse_protocol(&protocol)?;
-  let config: BackendConfig = serde_json::from_str(&backend_config_json).map_err(map_json_error)?;
-  let request: EmbeddingRequest = serde_json::from_str(&request_json).map_err(map_json_error)?;
-
-  let response = dispatch_embedding_request(&DefaultHttpClient::default(), &config, protocol, &request)
-    .map_err(map_backend_error)?;
-
-  serde_json::to_string(&response).map_err(map_json_error)
+pub fn llm_embedding_dispatch(
+  protocol: String,
+  backend_config_json: String,
+  request_json: String,
+) -> AsyncTask<AsyncLlmEmbeddingDispatchTask> {
+  AsyncTask::new(AsyncLlmEmbeddingDispatchTask {
+    protocol,
+    backend_config_json,
+    request_json,
+  })
 }
 
 #[napi(catch_unwind)]
-pub fn llm_rerank_dispatch(protocol: String, backend_config_json: String, request_json: String) -> Result<String> {
-  let protocol = parse_protocol(&protocol)?;
-  let config: BackendConfig = serde_json::from_str(&backend_config_json).map_err(map_json_error)?;
-  let payload: LlmRerankDispatchPayload = serde_json::from_str(&request_json).map_err(map_json_error)?;
-
-  let response = dispatch_rerank_request(&DefaultHttpClient::default(), &config, protocol, &payload.request)
-    .map_err(map_backend_error)?;
-
-  serde_json::to_string(&response).map_err(map_json_error)
+pub fn llm_rerank_dispatch(
+  protocol: String,
+  backend_config_json: String,
+  request_json: String,
+) -> AsyncTask<AsyncLlmRerankDispatchTask> {
+  AsyncTask::new(AsyncLlmRerankDispatchTask {
+    protocol,
+    backend_config_json,
+    request_json,
+  })
 }
 
 #[napi(catch_unwind)]
@@ -379,7 +492,12 @@ mod tests {
 
   #[test]
   fn llm_dispatch_should_reject_invalid_backend_json() {
-    let error = llm_dispatch("openai_chat".to_string(), "{".to_string(), "{}".to_string()).unwrap_err();
+    let mut task = AsyncLlmDispatchTask {
+      protocol: "openai_chat".to_string(),
+      backend_config_json: "{".to_string(),
+      request_json: "{}".to_string(),
+    };
+    let error = task.compute().unwrap_err();
     assert_eq!(error.status, Status::InvalidArg);
     assert!(error.reason.contains("Invalid JSON payload"));
   }

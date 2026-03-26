@@ -8,6 +8,7 @@ import { Entity, LiveData } from '@toeverything/infra';
 import type { DefaultServerService, WorkspaceServerService } from '../../cloud';
 import { AuthService } from '../../cloud/services/auth';
 import { AudioTranscriptionJobStore } from './audio-transcription-job-store';
+import { buildTranscriptionResult } from './transcription-result';
 import type { TranscriptionResult } from './types';
 
 // The UI status of the transcription job
@@ -46,7 +47,10 @@ const logger = new DebugLogger('audio-transcription-job');
 export class AudioTranscriptionJob extends Entity<{
   readonly blockProps: TranscriptionBlockProps;
   readonly blobId: string;
-  readonly getAudioFiles: () => Promise<File[]>;
+  readonly getAudioTranscriptionInput: () => Promise<{
+    files: File[];
+    input?: Record<string, unknown>;
+  }>;
 }> {
   constructor(
     private readonly workspaceServerService: WorkspaceServerService,
@@ -68,7 +72,7 @@ export class AudioTranscriptionJob extends Entity<{
     AudioTranscriptionJobStore,
     {
       blobId: this.props.blobId,
-      getAudioFiles: this.props.getAudioFiles,
+      getAudioTranscriptionInput: this.props.getAudioTranscriptionInput,
     }
   );
 
@@ -241,18 +245,7 @@ export class AudioTranscriptionJob extends Entity<{
       logger.debug('Successfully claimed job', {
         jobId: this.props.blockProps.jobId,
       });
-      const result: TranscriptionResult = {
-        summary: claimedJob.summary ?? '',
-        title: claimedJob.title ?? '',
-        actions: claimedJob.actions ?? '',
-        segments:
-          claimedJob.transcription?.map(segment => ({
-            speaker: segment.speaker,
-            start: segment.start,
-            end: segment.end,
-            transcription: segment.transcription,
-          })) ?? [],
-      };
+      const result: TranscriptionResult = buildTranscriptionResult(claimedJob);
 
       this._status$.value = {
         status: AiJobStatus.claimed,
