@@ -1,5 +1,9 @@
 import { DebugLogger } from '@affine/debug';
 import { apis } from '@affine/electron-api';
+import type {
+  AudioSliceManifestItemInput,
+  TranscriptionSourceAudioInput,
+} from '@affine/graphql';
 import { ArrayBufferTarget, Muxer } from 'mp4-muxer';
 
 import { isLink } from '../modules/navigation/utils';
@@ -14,6 +18,12 @@ interface AudioEncodingConfig {
 interface AudioEncodingResult {
   encodedChunks: EncodedAudioChunk[];
   config: AudioEncodingConfig;
+}
+
+interface EncodedAudioSlice {
+  data: Uint8Array;
+  startSec: number;
+  durationSec: number;
 }
 
 const logger = new DebugLogger('opus-encoding');
@@ -352,64 +362,116 @@ export async function encodeAudioBlobToOpusSlices(
   try {
     const arrayBuffer = await blobToArrayBuffer(blob);
     const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-    const slices: Uint8Array[] = [];
-
-    // Define slicing parameters
-    const sampleRate = audioBuffer.sampleRate;
-    const numberOfChannels = audioBuffer.numberOfChannels;
-
-    // Calculate sizes in samples
-    const maxSliceSamples = MAX_SLICE_DURATION_SECONDS * sampleRate;
-    const minSliceSamples = MIN_SLICE_DURATION_SECONDS * sampleRate;
-    const totalSamples = audioBuffer.length;
-
-    // Start slicing
-    let startSample = 0;
-
-    while (startSample < totalSamples) {
-      // Determine end sample for this slice
-      let endSample = Math.min(startSample + maxSliceSamples, totalSamples);
-
-      // Find the best slice point based on audio levels
-      endSample = findSlicePoint(
-        audioBuffer,
-        startSample,
-        endSample,
-        minSliceSamples
-      );
-
-      // Create a slice from startSample to endSample
-      const audioData = extractAudioData(audioBuffer, startSample, endSample);
-
-      // Encode this slice to Opus
-      const { encoder, encodedChunks } = createOpusEncoder({
-        sampleRate,
-        numberOfChannels,
-        bitrate: targetBitrate,
-      });
-
-      await encodeAudioFrames({
-        audioData,
-        numberOfChannels,
-        sampleRate,
-        encoder,
-      });
-
-      // Mux to MP4 and add to slices
-      const mp4 = muxToMp4(encodedChunks, {
-        sampleRate,
-        numberOfChannels,
-        bitrate: targetBitrate,
-      });
-
-      slices.push(mp4);
-
-      // Move to next slice
-      startSample = endSample;
-    }
+    const slices = await encodeAudioBufferToOpusSliceData(
+      audioBuffer,
+      targetBitrate
+    );
 
     logger.debug(`Encoded audio blob to ${slices.length} Opus slices`);
-    return slices;
+    return slices.map(slice => slice.data);
+  } finally {
+    await audioContext.close();
+  }
+}
+
+async function encodeAudioBufferToOpusSliceData(
+  audioBuffer: AudioBuffer,
+  targetBitrate: number
+): Promise<EncodedAudioSlice[]> {
+  const slices: EncodedAudioSlice[] = [];
+  const sampleRate = audioBuffer.sampleRate;
+  const numberOfChannels = audioBuffer.numberOfChannels;
+  const maxSliceSamples = MAX_SLICE_DURATION_SECONDS * sampleRate;
+  const minSliceSamples = MIN_SLICE_DURATION_SECONDS * sampleRate;
+  const totalSamples = audioBuffer.length;
+
+  let startSample = 0;
+  while (startSample < totalSamples) {
+    let endSample = Math.min(startSample + maxSliceSamples, totalSamples);
+    endSample = findSlicePoint(
+      audioBuffer,
+      startSample,
+      endSample,
+      minSliceSamples
+    );
+
+    const audioData = extractAudioData(audioBuffer, startSample, endSample);
+    const { encoder, encodedChunks } = createOpusEncoder({
+      sampleRate,
+      numberOfChannels,
+      bitrate: targetBitrate,
+    });
+
+    await encodeAudioFrames({
+      audioData,
+      numberOfChannels,
+      sampleRate,
+      encoder,
+    });
+
+    slices.push({
+      data: muxToMp4(encodedChunks, {
+        sampleRate,
+        numberOfChannels,
+        bitrate: targetBitrate,
+      }),
+      startSec: startSample / sampleRate,
+      durationSec: (endSample - startSample) / sampleRate,
+    });
+
+    startSample = endSample;
+  }
+
+  return slices;
+}
+
+export async function preprocessAudioBlobForTranscription(
+  blob: Blob | ArrayBuffer | Uint8Array,
+  options: {
+    fileNameBase: string;
+    sourceMimeType?: string;
+    targetBitrate?: number;
+  }
+): Promise<{
+  files: File[];
+  sourceAudio: TranscriptionSourceAudioInput;
+  sliceManifest: AudioSliceManifestItemInput[];
+}> {
+  const audioContext = new AudioContext();
+
+  try {
+    const arrayBuffer = await blobToArrayBuffer(blob);
+    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+    const encodedSlices = await encodeAudioBufferToOpusSliceData(
+      audioBuffer,
+      options.targetBitrate ?? DEFAULT_BITRATE
+    );
+
+    const files = encodedSlices.map((slice, index) => {
+      const fileName = `${options.fileNameBase}-${index}.opus`;
+      const data = toArrayBuffer(slice.data);
+      return new File([new Blob([data], { type: 'audio/opus' })], fileName, {
+        type: 'audio/opus',
+      });
+    });
+
+    return {
+      files,
+      sourceAudio: {
+        mimeType: options.sourceMimeType ?? (blob instanceof Blob ? blob.type : null),
+        durationMs: Math.round(audioBuffer.duration * 1000),
+        sampleRate: audioBuffer.sampleRate,
+        channels: audioBuffer.numberOfChannels,
+      },
+      sliceManifest: encodedSlices.map((slice, index) => ({
+        index,
+        fileName: files[index]?.name ?? `${options.fileNameBase}-${index}.opus`,
+        mimeType: files[index]?.type || 'audio/opus',
+        startSec: slice.startSec,
+        durationSec: slice.durationSec,
+        byteSize: slice.data.byteLength,
+      })),
+    };
   } finally {
     await audioContext.close();
   }

@@ -3,6 +3,10 @@ import {
   BlockSchemaExtension,
   defineBlockSchema,
 } from '@blocksuite/affine/store';
+import type {
+  TranscriptionQualityInput,
+  TranscriptionSourceAudioInput,
+} from '@affine/graphql';
 
 export const TranscriptionBlockFlavour = 'affine:transcription';
 
@@ -25,7 +29,10 @@ export const TranscriptionBlockSchema = defineBlockSchema({
 });
 
 export type TranscriptionBlockProps = {
-  transcription: Record<string, any>;
+  transcription: {
+    sourceAudio?: TranscriptionSourceAudioInput;
+    quality?: TranscriptionQualityInput;
+  };
   jobId?: string;
   createdBy?: string;
 };

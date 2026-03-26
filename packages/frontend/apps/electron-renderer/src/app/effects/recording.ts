@@ -1,4 +1,8 @@
 import type { DocProps } from '@affine/core/blocksuite/initialization';
+import {
+  TranscriptionBlockFlavour,
+  type TranscriptionBlockModel,
+} from '@affine/core/blocksuite/ai/blocks/transcription-block/model';
 import { DocsService } from '@affine/core/modules/doc';
 import { AudioAttachmentService } from '@affine/core/modules/media/services/audio-attachment';
 import { WorkbenchService } from '@affine/core/modules/workbench';
@@ -115,6 +119,31 @@ function findExistingAttachment(docStore: Store, attachmentName: string) {
   );
 }
 
+function ensureTranscriptionBlock(model: AttachmentBlockModel) {
+  for (const key of model.childMap.value.keys()) {
+    const block = model.store.getBlock$(key);
+    if (block?.flavour === TranscriptionBlockFlavour) {
+      return block.model as unknown as TranscriptionBlockModel;
+    }
+  }
+
+  const blockId = model.store.addBlock(
+    TranscriptionBlockFlavour,
+    {
+      transcription: {},
+    },
+    model.id
+  );
+
+  const block = model.store.getBlock(blockId)?.model as
+    | TranscriptionBlockModel
+    | undefined;
+  if (!block) {
+    throw new Error('Failed to create transcription block');
+  }
+  return block;
+}
+
 async function createRecordingDoc(
   frameworkProvider: FrameworkProvider,
   workspace: WorkspaceHandle['workspace'],
@@ -186,6 +215,20 @@ async function createRecordingDoc(
       }
       attachmentCreated = true;
     }
+
+    const transcriptionBlock = ensureTranscriptionBlock(model);
+    transcriptionBlock.props.transcription = {
+      sourceAudio: {
+        mimeType: model.props.type,
+        durationMs: status.durationMs,
+        sampleRate: status.sampleRate,
+        channels: status.numberOfChannels,
+      },
+      quality: {
+        degraded: status.degraded,
+        overflowCount: status.overflowCount,
+      },
+    };
 
     workspace.scope.get(WorkbenchService).workbench.openDoc(targetDocId);
 

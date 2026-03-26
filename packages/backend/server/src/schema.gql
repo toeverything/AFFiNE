@@ -230,6 +230,24 @@ type AppConfigValidateResult {
   value: JSON!
 }
 
+input AudioSliceManifestItemInput {
+  byteSize: Int
+  durationSec: Float!
+  fileName: String!
+  index: Int!
+  mimeType: String!
+  startSec: Float!
+}
+
+type AudioSliceManifestItemType {
+  byteSize: Int
+  durationSec: Float!
+  fileName: String!
+  index: Int!
+  mimeType: String!
+  startSec: Float!
+}
+
 type BlobNotFoundDataType {
   blobId: String!
   spaceId: String!
@@ -1049,6 +1067,7 @@ enum FeatureType {
   FreePlan
   LifetimeProPlan
   ProPlan
+  QuotaExceededReadonlyWorkspace
   TeamPlan
   UnlimitedCopilot
   UnlimitedWorkspace
@@ -1406,6 +1425,23 @@ input ManageUserInput {
   name: String
 }
 
+type MeetingActionItemType {
+  deadline: String
+  description: String!
+  owner: String
+}
+
+type MeetingSummaryV2Type {
+  actionItems: [MeetingActionItemType!]!
+  attendees: [String!]!
+  blockers: [String!]!
+  decisions: [String!]!
+  durationMinutes: Float!
+  keyPoints: [String!]!
+  openQuestions: [String!]!
+  title: String!
+}
+
 type MemberNotFoundInSpaceDataType {
   spaceId: String!
 }
@@ -1613,7 +1649,7 @@ type Mutation {
   sendVerifyChangeEmail(callbackUrl: String!, email: String!, token: String!): Boolean!
   sendVerifyEmail(callbackUrl: String!): Boolean!
   setBlob(blob: Upload!, workspaceId: String!): String!
-  submitAudioTranscription(blob: Upload, blobId: String!, blobs: [Upload!], workspaceId: String!): TranscriptionResultType
+  submitAudioTranscription(blob: Upload, blobId: String!, blobs: [Upload!], input: SubmitAudioTranscriptionInput, workspaceId: String!): TranscriptionResultType
 
   """Trigger cleanup of trashed doc embeddings"""
   triggerCleanupTrashedDocEmbeddings: Boolean!
@@ -1669,6 +1705,15 @@ type NoCopilotProviderAvailableDataType {
 
 type NoMoreSeatDataType {
   spaceId: String!
+}
+
+type NormalizedTranscriptSegmentType {
+  end: String!
+  endSec: Float!
+  speaker: String!
+  start: String!
+  startSec: Float!
+  text: String!
 }
 
 type NotInSpaceDataType {
@@ -2213,6 +2258,12 @@ type StreamObject {
   type: String!
 }
 
+input SubmitAudioTranscriptionInput {
+  quality: TranscriptionQualityInput
+  sliceManifest: [AudioSliceManifestItemInput!]
+  sourceAudio: TranscriptionSourceAudioInput
+}
+
 type SubscriptionAlreadyExistsDataType {
   plan: String!
 }
@@ -2319,13 +2370,44 @@ type TranscriptionItemType {
   transcription: String!
 }
 
+input TranscriptionQualityInput {
+  degraded: Boolean
+  overflowCount: Int
+}
+
+type TranscriptionQualityType {
+  degraded: Boolean
+  overflowCount: Int
+}
+
 type TranscriptionResultType {
   actions: String
   id: ID!
+  normalizedSegments: [NormalizedTranscriptSegmentType!]
+  normalizedTranscript: String
+  quality: TranscriptionQualityType
+  sliceManifest: [AudioSliceManifestItemType!]
+  sourceAudio: TranscriptionSourceAudioType
   status: AiJobStatus!
   summary: String
+  summaryJson: MeetingSummaryV2Type
   title: String
   transcription: [TranscriptionItemType!]
+}
+
+input TranscriptionSourceAudioInput {
+  channels: Int
+  durationMs: Int
+  mimeType: String
+  sampleRate: Int
+}
+
+type TranscriptionSourceAudioType {
+  blobId: String
+  channels: Int
+  durationMs: Int
+  mimeType: String
+  sampleRate: Int
 }
 
 union UnionNotificationBodyType = InvitationAcceptedNotificationBodyType | InvitationBlockedNotificationBodyType | InvitationNotificationBodyType | InvitationReviewApprovedNotificationBodyType | InvitationReviewDeclinedNotificationBodyType | InvitationReviewRequestNotificationBodyType | MentionNotificationBodyType

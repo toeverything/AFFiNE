@@ -3,8 +3,7 @@ import {
   type TranscriptionBlockModel,
 } from '@affine/core/blocksuite/ai/blocks/transcription-block/model';
 import { insertFromMarkdown } from '@affine/core/blocksuite/utils';
-import { toArrayBuffer } from '@affine/core/utils/array-buffer';
-import { encodeAudioBlobToOpusSlices } from '@affine/core/utils/opus-encoding';
+import { preprocessAudioBlobForTranscription } from '@affine/core/utils/opus-encoding';
 import { DebugLogger } from '@affine/debug';
 import { AiJobStatus } from '@affine/graphql';
 import track from '@affine/track';
@@ -131,19 +130,29 @@ export class AudioAttachmentBlock extends Entity<AttachmentBlockModel> {
     const job = this.framework.createEntity(AudioTranscriptionJob, {
       blobId: this.props.props.sourceId,
       blockProps: transcriptionBlockProps,
-      getAudioFiles: async () => {
+      getAudioTranscriptionInput: async () => {
         const buffer = await this.audioMedia.getBuffer();
         if (!buffer) {
           throw new Error('No audio buffer available');
         }
-        const slices = await encodeAudioBlobToOpusSlices(buffer, 64000);
-        const files = slices.map((slice, index) => {
-          const blob = new Blob([toArrayBuffer(slice)], { type: 'audio/opus' });
-          return new File([blob], this.props.props.name + `-${index}.opus`, {
-            type: 'audio/opus',
+        const { files, sourceAudio, sliceManifest } =
+          await preprocessAudioBlobForTranscription(buffer, {
+            fileNameBase: this.props.props.name,
+            sourceMimeType: this.props.props.type,
+            targetBitrate: 64000,
           });
-        });
-        return files;
+
+        return {
+          files,
+          input: {
+            sourceAudio: {
+              ...sourceAudio,
+              ...transcriptionBlockProps.transcription.sourceAudio,
+            },
+            quality: transcriptionBlockProps.transcription.quality,
+            sliceManifest,
+          },
+        };
       },
     });
 
