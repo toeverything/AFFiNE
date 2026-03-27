@@ -248,7 +248,9 @@ export class Editor extends Entity {
         const commentManager = this.framework.get(DocCommentManagerService);
         const commentPanelService = this.framework.get(CommentPanelService);
         const commentEntity = commentManager.get(this.doc.id);
-        commentPanelService.openCommentPanel();
+        commentPanelService.openCommentPanel({
+          focusedCommentId: commentId,
+        });
         commentEntity.obj.highlightComment(commentId);
         commentEntity.release();
       }, 0);

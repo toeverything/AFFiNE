@@ -36,12 +36,11 @@ import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { useAsyncCallback } from '../../hooks/affine-async-hooks';
 import { CommentEditor, type CommentEditorRef } from '../comment-editor';
 import * as styles from './style.css';
-
-interface CommentFilterState {
-  showResolvedComments: boolean;
-  onlyMyReplies: boolean;
-  onlyCurrentMode: boolean;
-}
+import {
+  type CommentFilterState,
+  getVisibleComments,
+  shouldResetFocusedCommentsOnSidebarClick,
+} from './utils';
 
 const SortFilterButton = ({
   filterState,
@@ -588,11 +587,13 @@ const CommentItem = ({
 
 const CommentList = ({ entity }: { entity: DocCommentEntity }) => {
   const comments = useLiveData(entity.comments$);
+  const commentPanelService = useService(CommentPanelService);
   const session = useService(AuthService).session;
   const account = useLiveData(session.account$);
   const t = useI18n();
 
   const docMode = useLiveData(entity.docMode$);
+  const displayMode = useLiveData(commentPanelService.displayMode$);
 
   // Filter state management
   const [filterState, setFilterState] = useState<CommentFilterState>({
@@ -610,58 +611,14 @@ const CommentList = ({ entity }: { entity: DocCommentEntity }) => {
 
   // Filter and sort comments based on filter state
   const filteredAndSortedComments = useMemo(() => {
-    let filteredComments = comments;
-
-    // Filter by resolved status
-    if (!filterState.showResolvedComments) {
-      filteredComments = filteredComments.filter(comment => !comment.resolved);
-    }
-
-    // Filter by only my replies and mentions
-    if (filterState.onlyMyReplies && account) {
-      filteredComments = filteredComments.filter(comment => {
-        return (
-          comment.user.id === account.id ||
-          comment.mentions.includes(account.id) ||
-          comment.replies?.some(reply => {
-            return (
-              reply.user.id === account.id ||
-              reply.mentions.includes(account.id)
-            );
-          })
-        );
-      });
-
-      filteredComments = filteredComments.map(comment => {
-        return {
-          ...comment,
-          replies: comment.replies?.filter(reply => {
-            return (
-              reply.user.id === account.id ||
-              reply.mentions.includes(account.id)
-            );
-          }),
-        };
-      });
-    }
-
-    // Filter by only current mode
-    if (filterState.onlyCurrentMode) {
-      filteredComments = filteredComments.filter(comment => {
-        return (
-          !comment.content?.mode || !docMode || comment.content.mode === docMode
-        );
-      });
-    }
-    return filteredComments.toSorted((a, b) => b.createdAt - a.createdAt);
-  }, [
-    comments,
-    filterState.showResolvedComments,
-    filterState.onlyMyReplies,
-    filterState.onlyCurrentMode,
-    docMode,
-    account,
-  ]);
+    return getVisibleComments({
+      comments,
+      displayMode,
+      filterState,
+      docMode,
+      accountId: account?.id,
+    });
+  }, [account?.id, comments, displayMode, filterState, docMode]);
 
   const newPendingComment = useLiveData(entity.pendingComment$);
   const loading = useLiveData(entity.loading$);
@@ -1027,8 +984,13 @@ const useCommentEntity = (docId: string | undefined) => {
 export const CommentSidebar = () => {
   const doc = useServiceOptional(DocService)?.doc;
   const entity = useCommentEntity(doc?.id);
+  const commentPanelService = useService(CommentPanelService);
 
   const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    commentPanelService.showAllComments();
+  }, [commentPanelService, doc?.id]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -1036,13 +998,17 @@ export const CommentSidebar = () => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         entity?.highlightComment(null);
+        commentPanelService.showAllComments();
         entity?.dismissDraftEditing();
       }
     };
     const handleContainerClick = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
       if (!target.closest('[data-comment-id]')) {
-        entity?.highlightComment(null);
+        if (shouldResetFocusedCommentsOnSidebarClick(target)) {
+          entity?.highlightComment(null);
+          commentPanelService.showAllComments();
+        }
         entity?.dismissDraftEditing();
       }
       // if creating a new comment, dismiss the comment input
@@ -1060,8 +1026,9 @@ export const CommentSidebar = () => {
       document.removeEventListener('keydown', handleKeyDown);
       container?.removeEventListener('click', handleContainerClick);
       entity?.highlightComment(null);
+      commentPanelService.showAllComments();
     };
-  }, [entity]);
+  }, [commentPanelService, entity]);
 
   if (!entity) {
     return null;

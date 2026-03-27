@@ -1,7 +1,16 @@
 import { type WorkbenchService } from '@affine/core/modules/workbench';
-import { Service } from '@toeverything/infra';
+import { LiveData, Service } from '@toeverything/infra';
 
 import type { DocCommentEntity } from '../entities/doc-comment';
+
+export type CommentPanelDisplayMode =
+  | {
+      type: 'all';
+    }
+  | {
+      type: 'focused';
+      commentId: string;
+    };
 
 export class CommentPanelService extends Service {
   constructor(private readonly workbenchService: WorkbenchService) {
@@ -9,6 +18,9 @@ export class CommentPanelService extends Service {
   }
 
   private readonly activePendingWatchers = new Set<() => void>();
+  readonly displayMode$ = new LiveData<CommentPanelDisplayMode>({
+    type: 'all',
+  });
 
   /**
    * Watch for pending comments on a doc comment entity and open the sidebar automatically
@@ -33,7 +45,16 @@ export class CommentPanelService extends Service {
   /**
    * Open the sidebar and activate the comment tab
    */
-  openCommentPanel(): void {
+  openCommentPanel(options?: { focusedCommentId?: string | null }): void {
+    if (options?.focusedCommentId) {
+      this.displayMode$.next({
+        type: 'focused',
+        commentId: options.focusedCommentId,
+      });
+    } else {
+      this.showAllComments();
+    }
+
     const workbench = this.workbenchService.workbench;
     const activeView = workbench.activeView$.value;
 
@@ -41,6 +62,12 @@ export class CommentPanelService extends Service {
       workbench.openSidebar();
       activeView.activeSidebarTab('comment');
     }
+  }
+
+  showAllComments(): void {
+    this.displayMode$.next({
+      type: 'all',
+    });
   }
 
   override dispose(): void {

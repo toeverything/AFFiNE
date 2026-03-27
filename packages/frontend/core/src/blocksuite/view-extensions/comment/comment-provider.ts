@@ -1,4 +1,3 @@
-import { WorkbenchService } from '@affine/core/modules/workbench';
 import { getSelectedBlocksCommand } from '@blocksuite/affine/shared/commands';
 import type { CommentProvider } from '@blocksuite/affine/shared/services';
 import { CommentProviderIdentifier } from '@blocksuite/affine/shared/services';
@@ -19,6 +18,7 @@ import {
 } from '@blocksuite/std/gfx';
 import type { FrameworkProvider } from '@toeverything/infra';
 
+import { CommentPanelService } from '../../../modules/comment/services/comment-panel-service';
 import { DocCommentManagerService } from '../../../modules/comment/services/doc-comment-manager';
 
 function getPreviewFromSelections(
@@ -142,9 +142,7 @@ class AffineCommentService implements CommentProvider {
   }
 
   addComment(selections: BaseSelection[]): void {
-    const workbench = this.framework.get(WorkbenchService).workbench;
-    workbench.setSidebarOpen(true);
-    workbench.activeView$.value.activeSidebarTab('comment');
+    this.framework.get(CommentPanelService).openCommentPanel();
     const preview = getPreviewFromSelections(this.std, selections);
     this.commentEntity.addComment(selections, preview).catch(console.error);
   }
@@ -154,11 +152,16 @@ class AffineCommentService implements CommentProvider {
   }
 
   highlightComment(id: string | null): void {
+    const commentPanelService = this.framework.get(CommentPanelService);
+
     if (id !== null) {
-      const workbench = this.framework.get(WorkbenchService).workbench;
-      workbench.setSidebarOpen(true);
-      workbench.activeView$.value.activeSidebarTab('comment');
+      commentPanelService.openCommentPanel({
+        focusedCommentId: id,
+      });
+    } else {
+      commentPanelService.showAllComments();
     }
+
     this.commentEntity.highlightComment(id);
   }
 
