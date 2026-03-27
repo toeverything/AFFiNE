@@ -103,6 +103,7 @@ export type NativeLlmBackendConfig = {
   request_layer?:
     | 'anthropic'
     | 'chat_completions'
+    | 'cloudflare_workers_ai'
     | 'responses'
     | 'vertex'
     | 'vertex_anthropic'

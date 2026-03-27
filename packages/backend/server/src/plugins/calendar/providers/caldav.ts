@@ -1020,7 +1020,7 @@ export class CalDAVProvider extends CalendarProvider {
     if (response.ok) {
       return response.url;
     }
-    if ([404, 405].includes(response.status)) {
+    if ([400, 404, 405].includes(response.status)) {
       return serverUrl;
     }
     const text = await response.text();

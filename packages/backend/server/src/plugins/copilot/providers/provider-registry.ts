@@ -11,6 +11,7 @@ const PROVIDER_ID_PATTERN = /^[a-zA-Z0-9-_]+$/;
 
 const LEGACY_PROVIDER_ORDER: CopilotProviderType[] = [
   CopilotProviderType.OpenAI,
+  CopilotProviderType.CloudflareWorkersAi,
   CopilotProviderType.FAL,
   CopilotProviderType.Gemini,
   CopilotProviderType.GeminiVertex,

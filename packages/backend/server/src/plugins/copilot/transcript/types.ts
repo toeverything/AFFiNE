@@ -1,47 +1,62 @@
 import { z } from 'zod';
 
 import { OneMB } from '../../../base';
+import {
+  AudioBlobInfoSchema,
+  AudioBlobInfosSchema,
+  AudioSliceManifestItemSchema,
+  LegacyTranscriptionSchema,
+  LegacyTranscriptionSegmentSchema,
+  MeetingActionItemSchema,
+  MeetingSummaryV2Schema,
+  NormalizedTranscriptSegmentSchema,
+  RawTranscriptSegmentSchema,
+  TranscriptionLegacyProjectionSchema,
+  TranscriptionPayloadV2Schema,
+  TranscriptionQualitySchema,
+  TranscriptionRetryMetaSchema,
+  TranscriptionSourceAudioSchema,
+  TranscriptionSubmitInputSchema,
+  TranscriptProviderMetaSchema,
+} from './schema';
 
-export const TranscriptionResponseSchema = z
-  .object({
-    a: z.string().describe("speaker's name, for example A, B, C"),
-    s: z.number().describe('start time(second) of the transcription'),
-    e: z.number().describe('end time(second) of the transcription'),
-    t: z.string().describe('transcription text'),
-  })
-  .array();
-
-const TranscriptionItemSchema = z.object({
-  speaker: z.string(),
-  start: z.string(),
-  end: z.string(),
-  transcription: z.string(),
-});
-
-export const TranscriptionSchema = z.array(TranscriptionItemSchema);
-
-export const AudioBlobInfosSchema = z
-  .object({
-    url: z.string(),
-    mimeType: z.string(),
-  })
-  .array();
-
-export const TranscriptPayloadSchema = z.object({
-  url: z.string().nullable().optional(),
-  mimeType: z.string().nullable().optional(),
-  infos: AudioBlobInfosSchema.nullable().optional(),
-  title: z.string().nullable().optional(),
-  summary: z.string().nullable().optional(),
-  actions: z.string().nullable().optional(),
-  transcription: TranscriptionSchema.nullable().optional(),
-});
-
-export type TranscriptionItem = z.infer<typeof TranscriptionItemSchema>;
-export type Transcription = z.infer<typeof TranscriptionSchema>;
-export type TranscriptionPayload = z.infer<typeof TranscriptPayloadSchema>;
-
+export type LegacyTranscriptionSegment = z.infer<
+  typeof LegacyTranscriptionSegmentSchema
+>;
+export type LegacyTranscription = z.infer<typeof LegacyTranscriptionSchema>;
+export type AudioBlobInfo = z.infer<typeof AudioBlobInfoSchema>;
 export type AudioBlobInfos = z.infer<typeof AudioBlobInfosSchema>;
+export type AudioSliceManifestItem = z.infer<
+  typeof AudioSliceManifestItemSchema
+>;
+export type RawTranscriptSegment = z.infer<typeof RawTranscriptSegmentSchema>;
+export type NormalizedTranscriptSegment = z.infer<
+  typeof NormalizedTranscriptSegmentSchema
+>;
+export type MeetingActionItem = z.infer<typeof MeetingActionItemSchema>;
+export type MeetingSummaryV2 = z.infer<typeof MeetingSummaryV2Schema>;
+export type TranscriptionSourceAudio = z.infer<
+  typeof TranscriptionSourceAudioSchema
+>;
+export type TranscriptionQuality = z.infer<typeof TranscriptionQualitySchema>;
+export type TranscriptionRetryMeta = z.infer<
+  typeof TranscriptionRetryMetaSchema
+>;
+export type TranscriptProviderMeta = z.infer<
+  typeof TranscriptProviderMetaSchema
+>;
+export type TranscriptionLegacyProjection = z.infer<
+  typeof TranscriptionLegacyProjectionSchema
+>;
+export type TranscriptionPayloadV2 = z.infer<
+  typeof TranscriptionPayloadV2Schema
+>;
+export type TranscriptionSubmitInput = z.infer<
+  typeof TranscriptionSubmitInputSchema
+>;
+
+export type TranscriptionPayload = TranscriptionPayloadV2;
+export type TranscriptionItem = LegacyTranscriptionSegment;
 
 declare global {
   interface Events {
@@ -55,17 +70,8 @@ declare global {
   interface Jobs {
     'copilot.transcript.submit': {
       jobId: string;
-      infos: AudioBlobInfos;
+      payload: TranscriptionPayloadV2;
       modelId?: string;
-    };
-    'copilot.transcript.summary.submit': {
-      jobId: string;
-    };
-    'copilot.transcript.title.submit': {
-      jobId: string;
-    };
-    'copilot.transcript.findAction.submit': {
-      jobId: string;
     };
   }
 }

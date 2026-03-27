@@ -1,6 +1,7 @@
 import {
   Args,
   GraphQLISODateTime,
+  Int,
   Mutation,
   Parent,
   ResolveField,
@@ -74,6 +75,22 @@ export class UserCalendarResolver {
 @Resolver(() => CalendarAccountObjectType)
 export class CalendarAccountResolver {
   constructor(private readonly calendar: CalendarService) {}
+
+  @ResolveField(() => Int)
+  async calendarsCount(
+    @CurrentUser() user: CurrentUser,
+    @Parent() account: CalendarAccountObjectType
+  ) {
+    if (typeof account.calendarsCount === 'number') {
+      return account.calendarsCount;
+    }
+
+    const calendars = await this.calendar.listAccountCalendars(
+      user.id,
+      account.id
+    );
+    return calendars.length;
+  }
 
   @ResolveField(() => [CalendarSubscriptionObjectType])
   async calendars(

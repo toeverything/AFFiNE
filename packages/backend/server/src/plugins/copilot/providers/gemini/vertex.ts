@@ -78,6 +78,27 @@ export class GeminiVertexProvider extends GeminiProvider<GeminiVertexConfig> {
       ],
     },
     {
+      name: 'Gemini 3.1 Flash Lite Preview',
+      id: 'gemini-3.1-flash-lite-preview',
+      capabilities: [
+        {
+          input: [
+            ModelInputType.Text,
+            ModelInputType.Image,
+            ModelInputType.Audio,
+            ModelInputType.File,
+          ],
+          output: [
+            ModelOutputType.Text,
+            ModelOutputType.Object,
+            ModelOutputType.Structured,
+          ],
+          attachments: GEMINI_ATTACHMENT_CAPABILITY,
+          structuredAttachments: GEMINI_ATTACHMENT_CAPABILITY,
+        },
+      ],
+    },
+    {
       name: 'Gemini Embedding',
       id: 'gemini-embedding-001',
       capabilities: [

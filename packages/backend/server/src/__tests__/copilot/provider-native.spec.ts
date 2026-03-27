@@ -3,6 +3,7 @@ import test from 'ava';
 
 import type { NativeLlmRerankRequest } from '../../native';
 import { ProviderMiddlewareConfig } from '../../plugins/copilot/config';
+import { CloudflareWorkersAIProvider } from '../../plugins/copilot/providers/cloudflare';
 import {
   normalizeOpenAIOptionsForModel,
   OpenAIProvider,
@@ -53,7 +54,7 @@ class TestOpenAIProvider extends CopilotProvider<{ apiKey: string }> {
 class NativeRerankProtocolProvider extends OpenAIProvider {
   override readonly models = [
     {
-      id: 'gpt-5.2',
+      id: 'gpt-4o-mini',
       capabilities: [
         {
           input: [ModelInputType.Text],
@@ -69,6 +70,19 @@ class NativeRerankProtocolProvider extends OpenAIProvider {
       apiKey: 'test-key',
       baseURL: 'https://api.openai.com/v1',
       oldApiStyle: false,
+    };
+  }
+
+  override configured() {
+    return true;
+  }
+}
+
+class NativeCloudflareRerankProtocolProvider extends CloudflareWorkersAIProvider {
+  override get config() {
+    return {
+      apiToken: 'test-key',
+      accountId: 'account-1',
     };
   }
 
@@ -170,14 +184,14 @@ test('OpenAI rerank should always use chat-completions native protocol', async t
   ) => {
     capturedProtocol = protocol;
     capturedRequest = JSON.parse(requestJson) as NativeLlmRerankRequest;
-    return JSON.stringify({ model: 'gpt-5.2', scores: [0.9, 0.1] });
+    return JSON.stringify({ model: 'gpt-4o-mini', scores: [0.9, 0.1] });
   };
   t.teardown(() => {
     (serverNativeModule as any).llmRerankDispatch = original;
   });
 
   const scores = await provider.rerank(
-    { modelId: 'gpt-5.2' },
+    { modelId: 'gpt-4o-mini' },
     {
       query: 'programming',
       candidates: [
@@ -190,11 +204,71 @@ test('OpenAI rerank should always use chat-completions native protocol', async t
   t.deepEqual(scores, [0.9, 0.1]);
   t.is(capturedProtocol, 'openai_chat');
   t.deepEqual(capturedRequest, {
-    model: 'gpt-5.2',
+    model: 'gpt-4o-mini',
     query: 'programming',
     candidates: [
       { id: 'react', text: 'React is a UI library.' },
       { id: 'weather', text: 'The weather is sunny today.' },
     ],
   });
+});
+
+test('Cloudflare rerank should keep native protocol details behind provider', async t => {
+  const provider = new NativeCloudflareRerankProtocolProvider();
+  let capturedProtocol: string | undefined;
+  let capturedRequest: NativeLlmRerankRequest | undefined;
+  let capturedBackendConfig: Record<string, unknown> | undefined;
+
+  const original = (serverNativeModule as any).llmRerankDispatch;
+  (serverNativeModule as any).llmRerankDispatch = (
+    protocol: string,
+    backendConfigJson: string,
+    requestJson: string
+  ) => {
+    capturedProtocol = protocol;
+    capturedBackendConfig = JSON.parse(backendConfigJson) as Record<
+      string,
+      unknown
+    >;
+    capturedRequest = JSON.parse(requestJson) as NativeLlmRerankRequest;
+    return JSON.stringify({
+      model: '@cf/qwen/qwen3-30b-a3b-fp8',
+      scores: [0.9, 0.1],
+    });
+  };
+  t.teardown(() => {
+    (serverNativeModule as any).llmRerankDispatch = original;
+  });
+
+  for (const modelId of [
+    '@cf/qwen/qwen3-30b-a3b-fp8',
+    '@cf/baai/bge-reranker-base',
+  ]) {
+    const scores = await provider.rerank(
+      { modelId },
+      {
+        query: 'programming',
+        candidates: [
+          { id: 'react', text: 'React is a UI library.' },
+          { id: 'weather', text: 'The weather is sunny today.' },
+        ],
+      }
+    );
+
+    t.deepEqual(scores, [0.9, 0.1]);
+    t.is(capturedProtocol, 'openai_chat');
+    t.deepEqual(capturedBackendConfig, {
+      base_url: 'https://api.cloudflare.com/client/v4/accounts/account-1/ai',
+      auth_token: 'test-key',
+      request_layer: 'cloudflare_workers_ai',
+    });
+    t.deepEqual(capturedRequest, {
+      model: modelId,
+      query: 'programming',
+      candidates: [
+        { id: 'react', text: 'React is a UI library.' },
+        { id: 'weather', text: 'The weather is sunny today.' },
+      ],
+    });
+  }
 });

@@ -2,6 +2,7 @@ import {
   AnthropicOfficialProvider,
   AnthropicVertexProvider,
 } from './anthropic';
+import { CloudflareWorkersAIProvider } from './cloudflare';
 import { FalProvider } from './fal';
 import { GeminiGenerativeProvider, GeminiVertexProvider } from './gemini';
 import { MorphProvider } from './morph';
@@ -10,6 +11,7 @@ import { PerplexityProvider } from './perplexity';
 
 export const CopilotProviders = [
   OpenAIProvider,
+  CloudflareWorkersAIProvider,
   FalProvider,
   GeminiGenerativeProvider,
   GeminiVertexProvider,
@@ -23,6 +25,7 @@ export {
   AnthropicOfficialProvider,
   AnthropicVertexProvider,
 } from './anthropic';
+export { CloudflareWorkersAIProvider } from './cloudflare';
 export { CopilotProviderFactory } from './factory';
 export { FalProvider } from './fal';
 export { GeminiGenerativeProvider, GeminiVertexProvider } from './gemini';
