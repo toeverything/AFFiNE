@@ -1,3 +1,4 @@
+import { useEnableAI } from '@affine/core/components/hooks/affine/use-enable-ai';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { useLiveData, useService } from '@toeverything/infra';
 import clsx from 'clsx';
@@ -25,9 +26,13 @@ export const AIIsland = () => {
   const activeTab = useLiveData(activeView.activeSidebarTab$);
   const sidebarOpen = useLiveData(workbench.sidebarOpen$);
 
+  const enableAI = useEnableAI();
+
   useEffect(() => {
     let hide = true;
-    if (haveChatTab) {
+    if (!enableAI) {
+      hide = true;
+    } else if (haveChatTab) {
       hide = !!sidebarOpen && activeTab?.id === 'chat';
     } else {
       const path = activeLocation.pathname;
@@ -36,7 +41,7 @@ export const AIIsland = () => {
       );
     }
     setHide(hide);
-  }, [activeLocation.pathname, activeTab, haveChatTab, sidebarOpen]);
+  }, [activeLocation.pathname, activeTab, enableAI, haveChatTab, sidebarOpen]);
 
   const onOpenChat = useCallback(() => {
     if (hide) return;
