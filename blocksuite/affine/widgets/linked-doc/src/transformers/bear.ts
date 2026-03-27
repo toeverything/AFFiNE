@@ -133,7 +133,9 @@ function extractTagsFromLine(line: string): string[] {
         }
       }
 
-      const openMatch = remaining.match(/^#([\w][\w/-]*)(.*)$/);
+      const openMatch = remaining.match(
+        /^#([\p{L}\p{N}_][\p{L}\p{N}_/-]*)(.*)$/u
+      );
       if (openMatch) {
         const tagValue = openMatch[1];
         const after = openMatch[2].trim();
@@ -421,7 +423,7 @@ async function importBearBackup({
           const tbMatch = assetFullPath.match(/^.+?\.textbundle\/(.*)/i);
           const assetRelPath = tbMatch ? tbMatch[1] : assetFullPath;
           const ext = assetRelPath.split('.').at(-1) ?? '';
-          const mime = extMimeMap.get(ext) ?? '';
+          const mime = extMimeMap.get(ext.toLowerCase()) ?? '';
           const key = await sha(data);
           // Map both the full zip path and the relative path (assets/...)
           pendingPathBlobIdMap.set(assetFullPath, key);
