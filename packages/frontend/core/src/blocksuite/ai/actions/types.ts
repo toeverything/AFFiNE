@@ -429,6 +429,7 @@ declare global {
         offset?: number
       ) => Promise<AIRecentSession[] | undefined>;
       updateSession: (options: UpdateChatSessionInput) => Promise<string>;
+      deleteSession: (workspaceId: string, sessionId: string) => Promise<void>;
     }
 
     interface AIHistoryService {

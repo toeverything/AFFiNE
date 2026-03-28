@@ -18,7 +18,7 @@ import { AIProvider } from './ai-provider';
 import { type CopilotClient, Endpoint } from './copilot-client';
 import type { PromptKey } from './prompt';
 import { textToText, toImage } from './request';
-import { restTextToText } from './rest-client';
+import { RestCopilotClient, restTextToText } from './rest-client';
 import { setupTracker } from './tracker';
 
 function toAIUserInfo(account: AuthAccountInfo | null) {
@@ -54,26 +54,7 @@ export function setupAIProvider(
   authService: AuthService,
   editorSettingService: EditorSettingService
 ) {
-  async function createSession({
-    promptName,
-    workspaceId,
-    docId,
-    sessionId,
-    retry,
-    pinned,
-    reuseLatestChat,
-  }: BlockSuitePresets.AICreateSessionOptions) {
-    if (sessionId) return sessionId;
-    if (retry) return AIProvider.LAST_ACTION_SESSIONID;
-
-    return client.createSession({
-      workspaceId,
-      docId,
-      promptName,
-      pinned,
-      reuseLatestChat,
-    });
-  }
+  const restClient = new RestCopilotClient();
 
   AIProvider.provide('userInfo', () => {
     return toAIUserInfo(authService.session.account$.value);
@@ -87,29 +68,31 @@ export function setupAIProvider(
 
   //#region actions
   AIProvider.provide('chat', async options => {
-    const { input, contexts } = options;
+    const { input, stream, signal } = options;
 
-    const sessionId = await createSession({
-      promptName: 'Chat With AFFiNE AI',
-      ...options,
-    });
-    return textToText({
-      ...options,
-      modelId: options.modelId,
-      client,
-      sessionId,
-      content: input,
-      timeout: 5 * 60 * 1000, // 5 minutes
-      params: {
-        docs: contexts?.docs,
-        files: contexts?.files,
-        selectedSnapshot: contexts?.selectedSnapshot,
-        selectedMarkdown: contexts?.selectedMarkdown,
-        html: contexts?.html,
-        ...(options.docId ? { currentDocId: options.docId } : {}),
+    const sessionId: string = options.sessionId ?? `session-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+
+    return {
+      [Symbol.asyncIterator]: async function* () {
+        const result = await restClient.createSessionAndChat(
+          sessionId,
+          {
+            role: 'user',
+            content: input || '',
+          },
+          {
+            signal,
+            timeout: 5 * 60 * 1000,
+          }
+        );
+
+        AIProvider.LAST_ACTION_SESSIONID = sessionId;
+
+        for await (const chunk of result) {
+          yield chunk;
+        }
       },
-      endpoint: Endpoint.StreamObject,
-    });
+    };
   });
 
   const systemPrompt =
@@ -297,148 +280,91 @@ export function setupAIProvider(
   //#endregion
 
   AIProvider.provide('createHeadings', async options => {
-    const sessionId = await createSession({
-      promptName: 'Create headings',
-      ...options,
-    });
-    return textToText({
-      ...options,
-      client,
-      sessionId,
-      content: options.input,
+    return restTextToText({
+      content: options.input || '',
+      stream: options.stream,
+      signal: options.signal,
     });
   });
 
   AIProvider.provide('checkCodeErrors', async options => {
-    const sessionId = await createSession({
-      promptName: 'Check code error',
-      ...options,
-    });
-    return textToText({
-      ...options,
-      client,
-      sessionId,
-      content: options.input,
+    return restTextToText({
+      content: options.input || '',
+      stream: options.stream,
+      signal: options.signal,
     });
   });
 
   AIProvider.provide('explainCode', async options => {
-    const sessionId = await createSession({
-      promptName: 'Explain this code',
-      ...options,
-    });
-    return textToText({
-      ...options,
-      client,
-      sessionId,
-      content: options.input,
+    return restTextToText({
+      content: options.input || '',
+      stream: options.stream,
+      signal: options.signal,
     });
   });
 
   AIProvider.provide('writeArticle', async options => {
-    const sessionId = await createSession({
-      promptName: 'Write an article about this',
-      ...options,
-    });
-    return textToText({
-      ...options,
-      client,
-      sessionId,
-      content: options.input,
+    return restTextToText({
+      content: options.input || '',
+      stream: options.stream,
+      signal: options.signal,
     });
   });
 
   AIProvider.provide('writeTwitterPost', async options => {
-    const sessionId = await createSession({
-      promptName: 'Write a twitter about this',
-      ...options,
-    });
-    return textToText({
-      ...options,
-      client,
-      sessionId,
-      content: options.input,
+    return restTextToText({
+      content: options.input || '',
+      stream: options.stream,
+      signal: options.signal,
     });
   });
 
   AIProvider.provide('writePoem', async options => {
-    const sessionId = await createSession({
-      promptName: 'Write a poem about this',
-      ...options,
-    });
-    return textToText({
-      ...options,
-      client,
-      sessionId,
-      content: options.input,
+    return restTextToText({
+      content: options.input || '',
+      stream: options.stream,
+      signal: options.signal,
     });
   });
 
   AIProvider.provide('writeOutline', async options => {
-    const sessionId = await createSession({
-      promptName: 'Write outline',
-      ...options,
-    });
-    return textToText({
-      ...options,
-      client,
-      sessionId,
-      content: options.input,
+    return restTextToText({
+      content: options.input || '',
+      stream: options.stream,
+      signal: options.signal,
     });
   });
 
   AIProvider.provide('writeBlogPost', async options => {
-    const sessionId = await createSession({
-      promptName: 'Write a blog post about this',
-      ...options,
-    });
-    return textToText({
-      ...options,
-      client,
-      sessionId,
-      content: options.input,
+    return restTextToText({
+      content: options.input || '',
+      stream: options.stream,
+      signal: options.signal,
     });
   });
 
   AIProvider.provide('brainstorm', async options => {
-    const sessionId = await createSession({
-      promptName: 'Brainstorm ideas about this',
-      ...options,
-    });
-    return textToText({
-      ...options,
-      client,
-      sessionId,
-      content: options.input,
+    return restTextToText({
+      content: options.input || '',
+      stream: options.stream,
+      signal: options.signal,
     });
   });
 
   AIProvider.provide('findActions', async options => {
-    const sessionId = await createSession({
-      promptName: 'Find action items from it',
-      ...options,
-    });
-    return textToText({
-      ...options,
-      client,
-      sessionId,
-      content: options.input,
+    return restTextToText({
+      content: options.input || '',
+      stream: options.stream,
+      signal: options.signal,
     });
   });
 
   AIProvider.provide('brainstormMindmap', async options => {
-    const sessionId = await createSession({
-      promptName: 'workflow:brainstorm',
-      ...options,
-    });
-    return textToText({
-      ...options,
-      client,
-      sessionId,
-      content: options.input,
-      // 3 minutes
+    return restTextToText({
+      content: options.input || '',
+      stream: options.stream,
+      signal: options.signal,
       timeout: 180000,
-      endpoint: Endpoint.Workflow,
     });
   });
 
@@ -446,60 +372,36 @@ export function setupAIProvider(
     if (!options.input) {
       throw new Error('expandMindmap action requires input');
     }
-    const sessionId = await createSession({
-      promptName: 'Expand mind map',
-      ...options,
-    });
-    return textToText({
-      ...options,
-      client,
-      sessionId,
-      params: {
-        mindmap: options.mindmap,
-        node: options.input,
-      },
-      content: options.input,
+    return restTextToText({
+      content: `Mindmap: ${options.mindmap}\n\nNode to expand: ${options.input}`,
+      stream: options.stream,
+      signal: options.signal,
     });
   });
 
   AIProvider.provide('explainImage', async options => {
-    const sessionId = await createSession({
-      promptName: 'Explain this image',
-      ...options,
-    });
-    return textToText({
-      ...options,
-      client,
-      sessionId,
-      content: options.input,
+    return restTextToText({
+      content: options.input || '',
+      stream: options.stream,
+      signal: options.signal,
     });
   });
 
   AIProvider.provide('makeItReal', async options => {
-    let promptName: PromptKey = 'Make it real';
     let content = options.input || '';
 
-    // wireframes
     if (options.attachments?.length) {
       content = `Here are the latest wireframes. Could you make a new website based on these wireframes and notes and send back just the html file?
 Here are our design notes:\n ${content}.`;
     } else {
-      // notes
-      promptName = 'Make it real with text';
       content = `Here are the latest notes: \n ${content}.
 Could you make a new website based on these notes and send back just the html file?`;
     }
 
-    const sessionId = await createSession({
-      promptName,
-      ...options,
-    });
-
-    return textToText({
-      ...options,
-      client,
-      sessionId,
+    return restTextToText({
       content,
+      stream: options.stream,
+      signal: options.signal,
     });
   });
 
@@ -517,7 +419,6 @@ Could you make a new website based on these notes and send back just the html fi
         return null;
       }
     };
-    // TODO(@darkskygit): move this to backend's workflow after workflow support custom code action
     const postfix = (text: string): string => {
       const slides = text
         .split('\n')
@@ -540,205 +441,279 @@ Could you make a new website based on these notes and send back just the html fi
         })
         .join('\n');
     };
-    const sessionId = await createSession({
-      promptName: 'workflow:presentation',
-      ...options,
-    });
-    return textToText({
-      ...options,
-      client,
-      sessionId,
-      content: options.input,
-      // 3 minutes
+
+    const result = await restTextToText({
+      content: options.input || '',
+      stream: false,
+      signal: options.signal,
       timeout: 180000,
-      endpoint: Endpoint.Workflow,
-      postfix,
     });
+
+    if (typeof result === 'string') {
+      return postfix(result);
+    }
+    return result;
   });
 
   AIProvider.provide('createImage', async options => {
-    const sessionId = await createSession({
-      promptName: 'Generate image',
-      ...options,
-    });
-    return toImage({
-      ...options,
-      client,
-      sessionId,
-      content:
-        !options.input && options.attachments
-          ? 'Make the image more detailed.'
-          : options.input,
-      // 5 minutes
+    return restTextToText({
+      content: !options.input && options.attachments
+        ? 'Make the image more detailed.'
+        : options.input || '',
+      stream: options.stream,
+      signal: options.signal,
       timeout: 300000,
     });
   });
 
   AIProvider.provide('filterImage', async options => {
-    // test to image
     const promptName: PromptKey | undefined = filterStyleToPromptName.get(
       options.style
     );
     if (!promptName) {
       throw new Error('filterImage requires a promptName');
     }
-    const sessionId = await createSession({
-      promptName,
-      ...options,
-    });
-    const isWorkflow = !!promptName?.startsWith('workflow:');
-    return toImage({
-      ...options,
-      client,
-      sessionId,
-      content: options.input,
+    return restTextToText({
+      content: options.input || '',
+      stream: options.stream,
+      signal: options.signal,
       timeout: 180000,
-      endpoint: isWorkflow ? Endpoint.Workflow : Endpoint.Images,
     });
   });
 
   AIProvider.provide('processImage', async options => {
-    // test to image
     const promptName: PromptKey | undefined = processTypeToPromptName.get(
       options.type
     );
     if (!promptName) {
       throw new Error('processImage requires a promptName');
     }
-    const sessionId = await createSession({
-      promptName,
-      ...options,
-    });
-    return toImage({
-      ...options,
-      client,
-      sessionId,
-      content: options.input,
+    return restTextToText({
+      content: options.input || '',
+      stream: options.stream,
+      signal: options.signal,
       timeout: 180000,
     });
   });
 
   AIProvider.provide('generateCaption', async options => {
-    const sessionId = await createSession({
-      promptName: 'Generate a caption',
-      ...options,
-    });
-    return textToText({
-      ...options,
-      client,
-      sessionId,
-      content: options.input,
+    return restTextToText({
+      content: options.input || '',
+      stream: options.stream,
+      signal: options.signal,
     });
   });
 
   AIProvider.provide('session', {
-    createSession,
-    createSessionWithHistory: async options => {
-      if (!options.sessionId && !options.retry) {
-        return client.createSessionWithHistory({
-          workspaceId: options.workspaceId,
-          docId: options.docId,
-          promptName: options.promptName,
-          pinned: options.pinned,
-          reuseLatestChat: options.reuseLatestChat,
-        });
+    createSession: async (options: BlockSuitePresets.AICreateSessionOptions) => {
+      return options.sessionId || `session-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+    },
+    createSessionWithHistory: async (options: BlockSuitePresets.AICreateSessionOptions) => {
+      if (options.sessionId) {
+        const sessionDetail = await restClient.getSession(options.sessionId);
+        return {
+          sessionId: sessionDetail.id,
+          workspaceId: '',
+          docId: null,
+          parentSessionId: null,
+          promptName: options.promptName || 'Chat With AFFiNE AI',
+          model: 'qwen',
+          optionalModels: [],
+          action: null,
+          pinned: false,
+          title: sessionDetail.title,
+          tokens: 0,
+          createdAt: sessionDetail.created_at,
+          updatedAt: sessionDetail.created_at,
+          messages: sessionDetail.messages.map((msg, idx) => ({
+            id: `msg-${idx}`,
+            role: msg.role,
+            content: msg.content,
+            attachments: null,
+            createdAt: sessionDetail.created_at,
+            streamObjects: null,
+          })),
+        };
       }
 
-      const sessionId = await createSession(options);
-      if (!sessionId) return undefined;
-      return client.getSession(options.workspaceId, sessionId);
+      const sessions = await restClient.getSessions();
+      if (sessions.length > 0 && options.reuseLatestChat !== false) {
+        const latestSession = sessions[0];
+        const sessionDetail = await restClient.getSession(latestSession.id);
+        return {
+          sessionId: sessionDetail.id,
+          workspaceId: '',
+          docId: null,
+          parentSessionId: null,
+          promptName: options.promptName || 'Chat With AFFiNE AI',
+          model: 'qwen',
+          optionalModels: [],
+          action: null,
+          pinned: false,
+          title: sessionDetail.title,
+          tokens: 0,
+          createdAt: sessionDetail.created_at,
+          updatedAt: sessionDetail.created_at,
+          messages: sessionDetail.messages.map((msg, idx) => ({
+            id: `msg-${idx}`,
+            role: msg.role,
+            content: msg.content,
+            attachments: null,
+            createdAt: sessionDetail.created_at,
+            streamObjects: null,
+          })),
+        };
+      }
+
+      const newSessionId = `session-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+      return {
+        sessionId: newSessionId,
+        workspaceId: '',
+        docId: null,
+        parentSessionId: null,
+        promptName: options.promptName || 'Chat With AFFiNE AI',
+        model: 'qwen',
+        optionalModels: [],
+        action: null,
+        pinned: false,
+        title: null,
+        tokens: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        messages: [],
+      };
     },
     getSession: async (workspaceId: string, sessionId: string) => {
-      return client.getSession(workspaceId, sessionId);
+      const sessionDetail = await restClient.getSession(sessionId);
+      return {
+        sessionId: sessionDetail.id,
+        workspaceId: workspaceId,
+        docId: null,
+        parentSessionId: null,
+        promptName: 'Chat With AFFiNE AI',
+        model: 'qwen',
+        optionalModels: [],
+        action: null,
+        pinned: false,
+        title: sessionDetail.title,
+        tokens: 0,
+        createdAt: sessionDetail.created_at,
+        updatedAt: sessionDetail.created_at,
+        messages: sessionDetail.messages.map((msg, idx) => ({
+          id: `msg-${idx}`,
+          role: msg.role,
+          content: msg.content,
+          attachments: null,
+          createdAt: sessionDetail.created_at,
+          streamObjects: null,
+        })),
+      };
     },
     getSessions: async (
       workspaceId: string,
       docId?: string,
       options?: QueryChatSessionsInput
     ) => {
-      return client.getSessions(workspaceId, {}, docId, options);
+      const sessions = await restClient.getSessions();
+      return sessions.map(session => ({
+        sessionId: session.id,
+        workspaceId: workspaceId,
+        docId: docId || null,
+        parentSessionId: null,
+        promptName: 'Chat With AFFiNE AI',
+        model: 'qwen',
+        optionalModels: [],
+        action: null,
+        pinned: false,
+        title: session.title,
+        tokens: 0,
+        createdAt: session.created_at,
+        updatedAt: session.created_at,
+        messages: [],
+      }));
     },
     getRecentSessions: async (
       workspaceId: string,
       limit?: number,
       offset?: number
     ) => {
-      return client.getRecentSessions(workspaceId, limit, offset);
+      const sessions = await restClient.getSessions();
+      return sessions.slice(offset || 0, (offset || 0) + (limit || 20)).map(session => ({
+        sessionId: session.id,
+        workspaceId: workspaceId,
+        docId: null,
+        parentSessionId: null,
+        promptName: 'Chat With AFFiNE AI',
+        model: 'qwen',
+        optionalModels: [],
+        action: null,
+        pinned: false,
+        title: session.title,
+        tokens: 0,
+        createdAt: session.created_at,
+        updatedAt: session.created_at,
+        messages: [],
+      }));
     },
     updateSession: async (options: UpdateChatSessionInput) => {
-      return client.updateSession(options);
+      return options.sessionId;
+    },
+    deleteSession: async (workspaceId: string, sessionId: string) => {
+      await restClient.deleteSession(sessionId);
     },
   });
 
   AIProvider.provide('context', {
     createContext: async (workspaceId: string, sessionId: string) => {
-      return client.createContext(workspaceId, sessionId);
+      return `context-${sessionId}`;
     },
     getContextId: async (workspaceId: string, sessionId: string) => {
-      return client.getContextId(workspaceId, sessionId);
+      return `context-${sessionId}`;
     },
     addContextDoc: async (options: { contextId: string; docId: string }) => {
-      return client.addContextDoc(options);
+      return {} as any;
     },
     removeContextDoc: async (options: { contextId: string; docId: string }) => {
-      return client.removeContextDoc(options);
+      return true;
     },
     addContextFile: async (file: File, options: AddContextFileInput) => {
-      return client.addContextFile(file, options);
+      return {} as any;
     },
     removeContextFile: async (options: {
       contextId: string;
       fileId: string;
     }) => {
-      return client.removeContextFile(options);
+      return true;
     },
     addContextTag: async (options: {
       contextId: string;
       tagId: string;
       docIds: string[];
     }) => {
-      return client.addContextCategory({
-        contextId: options.contextId,
-        type: ContextCategories.Tag,
-        categoryId: options.tagId,
-        docs: options.docIds,
-      });
+      return {} as any;
     },
     removeContextTag: async (options: { contextId: string; tagId: string }) => {
-      return client.removeContextCategory({
-        contextId: options.contextId,
-        type: ContextCategories.Tag,
-        categoryId: options.tagId,
-      });
+      return true;
     },
     addContextCollection: async (options: {
       contextId: string;
       collectionId: string;
       docIds: string[];
     }) => {
-      return client.addContextCategory({
-        contextId: options.contextId,
-        type: ContextCategories.Collection,
-        categoryId: options.collectionId,
-        docs: options.docIds,
-      });
+      return {} as any;
     },
     removeContextCollection: async (options: {
       contextId: string;
       collectionId: string;
     }) => {
-      return client.removeContextCategory({
-        contextId: options.contextId,
-        type: ContextCategories.Collection,
-        categoryId: options.collectionId,
-      });
+      return true;
     },
     getContextDocsAndFiles: async (
       workspaceId: string,
       sessionId: string,
       contextId: string
     ) => {
-      return client.getContextDocsAndFiles(workspaceId, sessionId, contextId);
+      return undefined;
     },
     pollContextDocsAndFiles: async (
       workspaceId: string,
@@ -749,45 +724,14 @@ Could you make a new website based on these notes and send back just the html fi
       ) => void,
       abortSignal: AbortSignal
     ) => {
-      const poll = async () => {
-        const result = await client.getContextDocsAndFiles(
-          workspaceId,
-          sessionId,
-          contextId
-        );
-        onPoll(result);
-      };
-
-      let attempts = 0;
-      const MIN_INTERVAL = 1000;
-      const MAX_INTERVAL = 30 * 1000;
-
-      while (!abortSignal.aborted) {
-        await poll();
-        const interval = Math.min(
-          MIN_INTERVAL * Math.pow(1.5, attempts),
-          MAX_INTERVAL
-        );
-        attempts++;
-        await new Promise(resolve => setTimeout(resolve, interval));
-      }
+      return;
     },
     pollEmbeddingStatus: async (
       workspaceId: string,
       onPoll: (result: ContextWorkspaceEmbeddingStatus) => void,
       abortSignal: AbortSignal
     ) => {
-      const poll = async () => {
-        const result = await client.getEmbeddingStatus(workspaceId);
-        onPoll(result);
-      };
-
-      const INTERVAL = 10 * 1000;
-
-      while (!abortSignal.aborted) {
-        await poll();
-        await new Promise(resolve => setTimeout(resolve, INTERVAL));
-      }
+      return;
     },
     matchContext: async (
       content: string,
@@ -797,14 +741,7 @@ Could you make a new website based on these notes and send back just the html fi
       scopedThreshold?: number,
       threshold?: number
     ) => {
-      return client.matchContext(
-        content,
-        contextId,
-        workspaceId,
-        limit,
-        scopedThreshold,
-        threshold
-      );
+      return { files: [], docs: [] };
     },
     applyDocUpdates: async (
       workspaceId: string,
@@ -812,22 +749,16 @@ Could you make a new website based on these notes and send back just the html fi
       op: string,
       updates: string
     ) => {
-      return client.applyDocUpdates(workspaceId, docId, op, updates);
+      return '';
     },
     addContextBlob: async (options: { blobId: string; contextId: string }) => {
-      return client.addContextBlob({
-        contextId: options.contextId,
-        blobId: options.blobId,
-      });
+      return {} as any;
     },
     removeContextBlob: async (options: {
       blobId: string;
       contextId: string;
     }) => {
-      return client.removeContextBlob({
-        contextId: options.contextId,
-        blobId: options.blobId,
-      });
+      return true;
     },
   });
 
@@ -836,34 +767,45 @@ Could you make a new website based on these notes and send back just the html fi
       workspaceId: string,
       docId: string
     ): Promise<BlockSuitePresets.AIHistory[]> => {
-      // @ts-expect-error - 'action' is missing in server impl
-      return (
-        (await client.getHistories(workspaceId, {}, docId, {
-          action: true,
-          withPrompt: true,
-          withMessages: true,
-        })) ?? []
-      );
+      return [];
     },
     chats: async (
       workspaceId: string,
       sessionId: string,
       docId?: string
     ): Promise<BlockSuitePresets.AIHistory[]> => {
-      // @ts-expect-error - 'action' is missing in server impl
-      return (
-        (await client.getHistories(workspaceId, {}, docId, {
-          sessionId,
-          withMessages: true,
-        })) ?? []
-      );
+      try {
+        const sessionDetail = await restClient.getSession(sessionId);
+        return [{
+          sessionId: sessionDetail.id,
+          tokens: 0,
+          action: null,
+          createdAt: sessionDetail.created_at,
+          messages: sessionDetail.messages.map((msg, idx) => ({
+            id: `msg-${idx}`,
+            content: msg.content,
+            createdAt: sessionDetail.created_at,
+            role: msg.role as 'user' | 'assistant',
+            attachments: null,
+            streamObjects: null,
+          })),
+        }];
+      } catch (err) {
+        return [];
+      }
     },
     cleanup: async (
       workspaceId: string,
       docId: string | undefined,
       sessionIds: string[]
     ) => {
-      await client.cleanupSessions({ workspaceId, docId, sessionIds });
+      for (const sessionId of sessionIds) {
+        try {
+          await restClient.deleteSession(sessionId);
+        } catch (err) {
+          console.error('Failed to delete session:', sessionId, err);
+        }
+      }
     },
     ids: async (
       workspaceId: string,
@@ -872,8 +814,11 @@ Could you make a new website based on these notes and send back just the html fi
         typeof getCopilotHistoriesQuery
       >['variables']['options']
     ): Promise<BlockSuitePresets.AIHistoryIds[]> => {
-      // @ts-expect-error - 'action' is missing in server impl
-      return await client.getHistoryIds(workspaceId, {}, docId, options);
+      const sessions = await restClient.getSessions();
+      return sessions.map(session => ({
+        sessionId: session.id,
+        messages: [],
+      }));
     },
   });
 
@@ -906,7 +851,7 @@ Could you make a new website based on these notes and send back just the html fi
   AIProvider.provide('onboarding', toggleGeneralAIOnboarding);
 
   AIProvider.provide('forkChat', options => {
-    return client.forkSession(options);
+    return `session-${Date.now()}-fork-${options.sessionId}`;
   });
 
   const disposeRequestLoginHandler = AIProvider.slots.requestLogin.subscribe(

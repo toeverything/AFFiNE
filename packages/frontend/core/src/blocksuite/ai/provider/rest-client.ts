@@ -20,6 +20,24 @@ export interface ChatStreamOptions {
   timeout?: number;
 }
 
+export interface SessionInfo {
+  id: string;
+  title: string;
+  created_at: string;
+}
+
+export interface SessionDetail {
+  id: string;
+  title: string;
+  created_at: string;
+  messages: ChatMessage[];
+}
+
+export interface CreateSessionMessageRequest {
+  session_id: string;
+  message: ChatMessage;
+}
+
 async function* parseSSEStream(
   response: Response,
   options: ChatStreamOptions = {}
@@ -72,7 +90,15 @@ async function* parseSSEStream(
             return;
           }
           if (data) {
-            yield data;
+            try {
+              const parsed = JSON.parse(data);
+              const content = parsed.choices?.[0]?.delta?.content;
+              if (content) {
+                yield content;
+              }
+            } catch {
+              yield data;
+            }
           }
         }
       }
@@ -83,7 +109,15 @@ async function* parseSSEStream(
       if (trimmedLine.startsWith('data: ')) {
         const data = trimmedLine.slice(6);
         if (data !== '[DONE]' && data) {
-          yield data;
+          try {
+            const parsed = JSON.parse(data);
+            const content = parsed.choices?.[0]?.delta?.content;
+            if (content) {
+              yield content;
+            }
+          } catch {
+            yield data;
+          }
         }
       }
     }
@@ -196,4 +230,134 @@ export function restTextToText({
       }
     },
   };
+}
+
+export class RestCopilotClient {
+  async createSessionAndChat(
+    sessionId: string,
+    message: ChatMessage,
+    options: ChatStreamOptions = {}
+  ): Promise<AsyncIterable<string>> {
+    const request: CreateSessionMessageRequest = {
+      session_id: sessionId,
+      message,
+    };
+
+    let response: Response;
+    try {
+      response = await fetch(`${REST_API_BASE_URL}/api/chat/session`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'text/event-stream',
+        },
+        body: JSON.stringify(request),
+        signal: options.signal,
+      });
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        throw err;
+      }
+      if (err.name === 'TypeError' && err.message?.includes('Failed to fetch')) {
+        throw new GeneralNetworkError(
+          `Network error: Cannot connect to ${REST_API_BASE_URL}. Please check if the server is running and CORS is enabled.`
+        );
+      }
+      throw new GeneralNetworkError(err.message || 'Unknown network error');
+    }
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => '');
+      throw new GeneralNetworkError(
+        `HTTP error ${response.status}: ${errorText || response.statusText}`
+      );
+    }
+
+    return parseSSEStream(response, options);
+  }
+
+  async getSessions(): Promise<SessionInfo[]> {
+    try {
+      const response = await fetch(`${REST_API_BASE_URL}/api/sessions`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => '');
+        throw new GeneralNetworkError(
+          `HTTP error ${response.status}: ${errorText || response.statusText}`
+        );
+      }
+
+      return await response.json();
+    } catch (err: any) {
+      if (err.name === 'TypeError' && err.message?.includes('Failed to fetch')) {
+        throw new GeneralNetworkError(
+          `Network error: Cannot connect to ${REST_API_BASE_URL}. Please check if the server is running and CORS is enabled.`
+        );
+      }
+      throw new GeneralNetworkError(err.message || 'Unknown network error');
+    }
+  }
+
+  async getSession(sessionId: string): Promise<SessionDetail> {
+    try {
+      const response = await fetch(
+        `${REST_API_BASE_URL}/api/session?id=${encodeURIComponent(sessionId)}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => '');
+        throw new GeneralNetworkError(
+          `HTTP error ${response.status}: ${errorText || response.statusText}`
+        );
+      }
+
+      return await response.json();
+    } catch (err: any) {
+      if (err.name === 'TypeError' && err.message?.includes('Failed to fetch')) {
+        throw new GeneralNetworkError(
+          `Network error: Cannot connect to ${REST_API_BASE_URL}. Please check if the server is running and CORS is enabled.`
+        );
+      }
+      throw new GeneralNetworkError(err.message || 'Unknown network error');
+    }
+  }
+
+  async deleteSession(sessionId: string): Promise<{ message: string }> {
+    try {
+      const response = await fetch(`${REST_API_BASE_URL}/api/session/delete`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ session_id: sessionId }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => '');
+        throw new GeneralNetworkError(
+          `HTTP error ${response.status}: ${errorText || response.statusText}`
+        );
+      }
+
+      return await response.json();
+    } catch (err: any) {
+      if (err.name === 'TypeError' && err.message?.includes('Failed to fetch')) {
+        throw new GeneralNetworkError(
+          `Network error: Cannot connect to ${REST_API_BASE_URL}. Please check if the server is running and CORS is enabled.`
+        );
+      }
+      throw new GeneralNetworkError(err.message || 'Unknown network error');
+    }
+  }
 }
