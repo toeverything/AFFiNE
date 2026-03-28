@@ -16,6 +16,7 @@ import { AIProvider } from './ai-provider';
 import { type CopilotClient, Endpoint } from './copilot-client';
 import type { PromptKey } from './prompt';
 import { textToText, toImage } from './request';
+import { restTextToText } from './rest-client';
 import { setupTracker } from './tracker';
 
 function toAIUserInfo(account: AuthAccountInfo | null) {
@@ -109,86 +110,56 @@ export function setupAIProvider(
   });
 
   AIProvider.provide('summary', async options => {
-    const sessionId = await createSession({
-      promptName: 'Summary',
-      ...options,
-    });
-    return textToText({
-      ...options,
-      client,
-      sessionId,
-      content: options.input,
+    return restTextToText({
+      content: `全文内容为：${options.input}，请对选中内容进行总结`,
+      systemPrompt: '你是一位专业的智能助手，你需要帮助用户完成文字工作.',
+      stream: options.stream,
+      signal: options.signal,
     });
   });
 
   AIProvider.provide('translate', async options => {
-    const sessionId = await createSession({
-      promptName: 'Translate to',
-      ...options,
-    });
-    return textToText({
-      ...options,
-      client,
-      sessionId,
-      content: options.input,
-      params: {
-        language: options.lang,
-      },
+    return restTextToText({
+      content: `全文内容为：${options.input}，请对选中内容翻译为${options.lang}语言`,
+      systemPrompt: '你是一位专业的智能助手，你需要帮助用户完成文字工作.',
+      stream: options.stream,
+      signal: options.signal,
     });
   });
 
   AIProvider.provide('changeTone', async options => {
-    const sessionId = await createSession({
-      promptName: 'Change tone to',
-      ...options,
-    });
-    return textToText({
-      ...options,
-      client,
-      sessionId,
-      params: {
-        tone: options.tone.toLowerCase(),
-      },
-      content: options.input,
+    return restTextToText({
+      content: `全文内容为：${options.input}，请对选中内容改写为更加${options.tone}的风格`,
+      systemPrompt: '你是一位专业的智能助手，你需要帮助用户完成文字工作.',
+      stream: options.stream,
+      signal: options.signal,
     });
   });
 
   AIProvider.provide('improveWriting', async options => {
-    const sessionId = await createSession({
-      promptName: 'Improve writing for it',
-      ...options,
-    });
-    return textToText({
-      ...options,
-      client,
-      sessionId,
-      content: options.input,
+    return restTextToText({
+      content: `全文内容为：${options.input}，请对选中内容进行润色`,
+      systemPrompt: '你是一位专业的智能助手，你需要帮助用户完成文字工作.',
+      stream: options.stream,
+      signal: options.signal,
     });
   });
 
   AIProvider.provide('improveGrammar', async options => {
-    const sessionId = await createSession({
-      promptName: 'Improve grammar for it',
-      ...options,
-    });
-    return textToText({
-      ...options,
-      client,
-      sessionId,
-      content: options.input,
+    return restTextToText({
+      content: `全文内容为：${options.input}，请对选中内容进行语法纠正`,
+      systemPrompt: '你是一位专业的智能助手，你需要帮助用户完成文字工作.',
+      stream: options.stream,
+      signal: options.signal,
     });
   });
 
   AIProvider.provide('fixSpelling', async options => {
-    const sessionId = await createSession({
-      promptName: 'Fix spelling for it',
-      ...options,
-    });
-    return textToText({
-      ...options,
-      client,
-      sessionId,
-      content: options.input,
+    return restTextToText({
+      content: `全文内容为：${options.input}，请对选中内容进行错别字纠正`,
+      systemPrompt: '你是一位专业的智能助手，你需要帮助用户完成文字工作.',
+      stream: options.stream,
+      signal: options.signal,
     });
   });
 
@@ -206,28 +177,20 @@ export function setupAIProvider(
   });
 
   AIProvider.provide('makeLonger', async options => {
-    const sessionId = await createSession({
-      promptName: 'Make it longer',
-      ...options,
-    });
-    return textToText({
-      ...options,
-      client,
-      sessionId,
-      content: options.input,
+    return restTextToText({
+      content: `全文内容为：${options.input}，请对选中内容进行扩写`,
+      systemPrompt: '你是一位专业的智能助手，你需要帮助用户完成文字工作.',
+      stream: options.stream,
+      signal: options.signal,
     });
   });
 
   AIProvider.provide('makeShorter', async options => {
-    const sessionId = await createSession({
-      promptName: 'Make it shorter',
-      ...options,
-    });
-    return textToText({
-      ...options,
-      client,
-      sessionId,
-      content: options.input,
+    return restTextToText({
+      content: `全文内容为：${options.input}，请对选中内容进行缩写`,
+      systemPrompt: '你是一位专业的智能助手，你需要帮助用户完成文字工作.',
+      stream: options.stream,
+      signal: options.signal,
     });
   });
 
@@ -385,15 +348,11 @@ export function setupAIProvider(
   });
 
   AIProvider.provide('explain', async options => {
-    const sessionId = await createSession({
-      promptName: 'Explain this',
-      ...options,
-    });
-    return textToText({
-      ...options,
-      client,
-      sessionId,
-      content: options.input,
+    return restTextToText({
+      content: `全文内容为：${options.input}，请对选中内容进行解释说明`,
+      systemPrompt: '你是一位专业的智能助手，你需要帮助用户完成文字工作.',
+      stream: options.stream,
+      signal: options.signal,
     });
   });
 
@@ -567,15 +526,11 @@ Could you make a new website based on these notes and send back just the html fi
   });
 
   AIProvider.provide('continueWriting', async options => {
-    const sessionId = await createSession({
-      promptName: 'Continue writing',
-      ...options,
-    });
-    return textToText({
-      ...options,
-      client,
-      sessionId,
-      content: options.input,
+    return restTextToText({
+      content: `全文内容为：${options.input}，请对选中内容进行续写`,
+      systemPrompt: '你是一位专业的智能助手，你需要帮助用户完成文字工作.',
+      stream: options.stream,
+      signal: options.signal,
     });
   });
   //#endregion
