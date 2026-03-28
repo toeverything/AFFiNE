@@ -8,6 +8,7 @@ import { DocsExplorer } from '@affine/core/components/explorer/docs-view/docs-li
 import type { ExplorerDisplayPreference } from '@affine/core/components/explorer/types';
 import {
   type Collection,
+  CollectionPropertiesService,
   CollectionService,
 } from '@affine/core/modules/collection';
 import { CollectionRulesService } from '@affine/core/modules/collection-rules';
@@ -17,7 +18,7 @@ import { WorkspaceService } from '@affine/core/modules/workspace';
 import { useI18n } from '@affine/i18n';
 import { ViewLayersIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService, useServices } from '@toeverything/infra';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { useNavigateHelper } from '../../../../components/hooks/use-navigate-helper';
@@ -39,7 +40,14 @@ export const CollectionDetail = ({
 }: {
   collection: Collection;
 }) => {
-  const [explorerContextValue] = useState(createDocExplorerContext);
+  const collectionPropertiesService = useService(CollectionPropertiesService);
+  const savedPrefs = useMemo(
+    () => collectionPropertiesService.getDisplayPreference(collection.id),
+    [collectionPropertiesService, collection.id]
+  );
+  const [explorerContextValue] = useState(() =>
+    createDocExplorerContext(savedPrefs)
+  );
   const collectionRulesService = useService(CollectionRulesService);
 
   const permissionService = useService(WorkspacePermissionService);
@@ -57,8 +65,12 @@ export const CollectionDetail = ({
   const handleDisplayPreferenceChange = useCallback(
     (displayPreference: ExplorerDisplayPreference) => {
       explorerContextValue.displayPreference$.next(displayPreference);
+      collectionPropertiesService.setDisplayPreference(
+        collection.id,
+        displayPreference
+      );
     },
-    [explorerContextValue]
+    [explorerContextValue, collectionPropertiesService, collection.id]
   );
 
   useEffect(() => {

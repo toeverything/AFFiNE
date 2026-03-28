@@ -47,6 +47,10 @@ export const AFFiNE_WORKSPACE_DB_SCHEMA = {
     collectionId: f.string().primaryKey(),
     index: f.string(),
   },
+  collectionProperties: {
+    id: f.string().primaryKey(), // collectionId
+    displayPreference: f.json().optional(),
+  },
   explorerIcon: {
     /**
      * ${doc|collection|folder|tag}:${id}

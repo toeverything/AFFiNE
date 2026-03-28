@@ -3,13 +3,17 @@ import { map } from 'rxjs';
 
 import { Collection } from '../entities/collection';
 import type { CollectionInfo, CollectionStore } from '../stores/collection';
+import type { CollectionPropertiesStore } from '../stores/collection-properties';
 
 export interface CollectionMeta extends Pick<CollectionInfo, 'id' | 'name'> {
   title: string;
 }
 
 export class CollectionService extends Service {
-  constructor(private readonly store: CollectionStore) {
+  constructor(
+    private readonly store: CollectionStore,
+    private readonly collectionPropertiesStore: CollectionPropertiesStore
+  ) {
     super();
   }
 
@@ -79,5 +83,6 @@ export class CollectionService extends Service {
 
   deleteCollection(id: string) {
     this.store.deleteCollection(id);
+    this.collectionPropertiesStore.deleteProperties(id);
   }
 }
