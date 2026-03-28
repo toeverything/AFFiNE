@@ -2,6 +2,7 @@ import { CodeBlockPreviewIdentifier } from '@blocksuite/affine/blocks/code';
 import { addImages } from '@blocksuite/affine/blocks/image';
 import { getSurfaceBlock } from '@blocksuite/affine/blocks/surface';
 import { LoadingIcon } from '@blocksuite/affine/components/icons';
+import { I18n } from '@affine/i18n';
 import { addTree } from '@blocksuite/affine/gfx/mindmap';
 import { fitContent } from '@blocksuite/affine/gfx/shape';
 import { createTemplateJob } from '@blocksuite/affine/gfx/template';
@@ -82,7 +83,7 @@ export function discard(
   _: EdgelessCopilotWidget
 ): AIItemConfig {
   return {
-    name: 'Discard',
+    name: I18n.t('com.affine.ai.action.discard'),
     icon: DeleteIcon(),
     testId: 'answer-discard',
     showWhen: () => !!panel.answer,
@@ -94,7 +95,7 @@ export function discard(
 
 export function retry(panel: AffineAIPanelWidget): AIItemConfig {
   return {
-    name: 'Retry',
+    name: I18n.t('com.affine.ai.action.retry'),
     icon: ResetIcon(),
     testId: 'answer-retry',
     handler: () => {
@@ -565,7 +566,7 @@ const getButtonText: {
   ) => string | undefined;
 } = {
   brainstormMindmap: variants => {
-    return variants?.regenerate ? 'Replace' : undefined;
+    return variants?.regenerate ? I18n.t('com.affine.ai.action.replace-selection') : undefined;
   },
 };
 
@@ -581,11 +582,11 @@ export function actionToResponse<T extends keyof BlockSuitePresets.AIActions>(
   return {
     responses: [
       {
-        name: 'Response',
+        name: I18n.t('com.affine.ai.action.response'),
         testId: 'answer-responses',
         items: [
           {
-            name: 'Continue in chat',
+            name: I18n.t('com.affine.ai.action.continue-in-chat'),
             testId: 'answer-continue-in-chat',
             icon: ChatWithAiIcon({}),
             handler: () => {

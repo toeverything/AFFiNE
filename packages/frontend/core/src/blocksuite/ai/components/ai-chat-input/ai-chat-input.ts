@@ -9,6 +9,7 @@ import type {
 } from '@affine/core/modules/cloud';
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import type { CopilotChatHistoryFragment } from '@affine/graphql';
+import { I18n } from '@affine/i18n';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import { unsafeCSSVar, unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import type { EditorHost } from '@blocksuite/affine/std';
@@ -493,7 +494,7 @@ export class AIChatInput extends SignalWatcher(
         : nothing}
       <textarea
         rows="1"
-        placeholder="What are your thoughts?"
+        placeholder="${I18n.t('com.affine.ai.input.placeholder.what-are-your-thoughts')}"
         @input=${this._handleInput}
         @keydown=${this._handleKeyDown}
         @focus=${() => {

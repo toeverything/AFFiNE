@@ -1,4 +1,5 @@
 import type { CopilotChatHistoryFragment } from '@affine/graphql';
+import { I18n } from '@affine/i18n';
 import type { ImageSelection } from '@blocksuite/affine/shared/selection';
 import type {
   BlockSelection,
@@ -152,7 +153,7 @@ export class ChatActionList extends LitElement {
                 );
                 if (success) {
                   this.notificationService.notify({
-                    title: action.toast,
+                    title: I18n.t(action.toast),
                     accent: 'success',
                     onClose: function (): void {},
                   });
@@ -161,11 +162,11 @@ export class ChatActionList extends LitElement {
             >
               ${action.icon}
               <div
-                data-testid="action-${action.title
+                data-testid="action-${I18n.t(action.title)
                   .toLowerCase()
                   .replaceAll(' ', '-')}"
               >
-                ${action.title}
+                ${I18n.t(action.title)}
               </div>
             </div>`;
           }

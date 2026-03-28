@@ -1,4 +1,5 @@
 import { AIStarIcon } from '@blocksuite/affine/components/icons';
+import { I18n } from '@affine/i18n';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import { ColorScheme } from '@blocksuite/affine/model';
 import { unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
@@ -220,7 +221,7 @@ export class AIPanelInput extends SignalWatcher(WithDisposable(LitElement)) {
       <div class="star">${AIStarIcon}</div>
       <div class="textarea-container">
         <textarea
-          placeholder="What are your thoughts?"
+          placeholder="${I18n.t('com.affine.ai.input.placeholder.what-are-your-thoughts')}"
           rows="1"
           @keydown=${this._onKeyDown}
           @input=${this._onInput}
