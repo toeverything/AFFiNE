@@ -140,12 +140,14 @@ export const WorkspaceSideEffects = () => {
   const graphqlService = useService(GraphQLService);
   const eventSourceService = useService(EventSourceService);
   const authService = useService(AuthService);
+  const editorSettingService = useService(EditorSettingService);
 
   useEffect(() => {
     const dispose = setupAIProvider(
       new CopilotClient(graphqlService.gql, eventSourceService.eventSource),
       globalDialogService,
-      authService
+      authService,
+      editorSettingService
     );
     return () => {
       dispose();
@@ -156,6 +158,7 @@ export const WorkspaceSideEffects = () => {
     graphqlService,
     globalDialogService,
     authService,
+    editorSettingService,
   ]);
 
   useRegisterWorkspaceCommands();

@@ -62,9 +62,50 @@ import {
   imageCustomInput,
 } from '../../utils/selection-utils';
 
+const translateLangI18nKeys: Record<(typeof translateLangs)[number], string> = {
+  English: 'com.affine.ai.action.lang.english',
+  'Brazilian Portuguese': 'com.affine.ai.action.lang.brazilian-portuguese',
+  Spanish: 'com.affine.ai.action.lang.spanish',
+  German: 'com.affine.ai.action.lang.german',
+  French: 'com.affine.ai.action.lang.french',
+  Italian: 'com.affine.ai.action.lang.italian',
+  'Simplified Chinese': 'com.affine.ai.action.lang.simplified-chinese',
+  'Traditional Chinese': 'com.affine.ai.action.lang.traditional-chinese',
+  Japanese: 'com.affine.ai.action.lang.japanese',
+  Russian: 'com.affine.ai.action.lang.russian',
+  Korean: 'com.affine.ai.action.lang.korean',
+};
+
+const textToneI18nKeys: Record<(typeof textTones)[number], string> = {
+  Professional: 'com.affine.ai.action.tone.professional',
+  Informal: 'com.affine.ai.action.tone.informal',
+  Friendly: 'com.affine.ai.action.tone.friendly',
+  Critical: 'com.affine.ai.action.tone.critical',
+  Humorous: 'com.affine.ai.action.tone.humorous',
+};
+
+const imageFilterStyleI18nKeys: Record<
+  (typeof imageFilterStyles)[number],
+  string
+> = {
+  'Clay style': 'com.affine.ai.action.filter.clay-style',
+  'Sketch style': 'com.affine.ai.action.filter.sketch-style',
+  'Anime style': 'com.affine.ai.action.filter.anime-style',
+  'Pixel style': 'com.affine.ai.action.filter.pixel-style',
+};
+
+const imageProcessingTypeI18nKeys: Record<
+  (typeof imageProcessingTypes)[number],
+  string
+> = {
+  Clearer: 'com.affine.ai.action.processing.clearer',
+  'Remove background': 'com.affine.ai.action.processing.remove-background',
+  'Convert to sticker': 'com.affine.ai.action.processing.convert-to-sticker',
+};
+
 const translateSubItem = translateLangs.map(lang => {
   return {
-    type: lang,
+    type: translateLangI18nKeys[lang],
     testId: `action-translate-${lang}`,
     handler: actionToHandler('translate', AIStarIconWithAnimation, { lang }),
   };
@@ -72,7 +113,7 @@ const translateSubItem = translateLangs.map(lang => {
 
 const toneSubItem = textTones.map(tone => {
   return {
-    type: tone,
+    type: textToneI18nKeys[tone],
     testId: `action-change-tone-${tone.toLowerCase()}`,
     handler: actionToHandler('changeTone', AIStarIconWithAnimation, { tone }),
   };
@@ -80,7 +121,7 @@ const toneSubItem = textTones.map(tone => {
 
 export const imageFilterSubItem = imageFilterStyles.map(style => {
   return {
-    type: style,
+    type: imageFilterStyleI18nKeys[style],
     testId: `action-image-filter-${style.toLowerCase().replace(' ', '-')}`,
     handler: actionToHandler(
       'filterImage',
@@ -95,7 +136,7 @@ export const imageFilterSubItem = imageFilterStyles.map(style => {
 
 export const imageProcessingSubItem = imageProcessingTypes.map(type => {
   return {
-    type,
+    type: imageProcessingTypeI18nKeys[type],
     testId: `action-image-processing-${type.toLowerCase().replace(' ', '-')}`,
     handler: actionToHandler(
       'processImage',
@@ -109,10 +150,10 @@ export const imageProcessingSubItem = imageProcessingTypes.map(type => {
 });
 
 const othersGroup: AIItemGroupConfig = {
-  name: 'others',
+  name: 'com.affine.ai.action.group.others',
   items: [
     {
-      name: 'Continue in AI Chat',
+      name: 'com.affine.ai.action.continue-in-ai-chat',
       testId: 'action-continue-with-ai',
       icon: CommentIcon({ width: '20px', height: '20px' }),
       showWhen: () => true,
@@ -137,24 +178,24 @@ const othersGroup: AIItemGroupConfig = {
 };
 
 const editTextGroup: AIItemGroupConfig = {
-  name: 'edit text',
+  name: 'com.affine.ai.action.group.edit-text',
   items: [
     {
-      name: 'Translate to',
+      name: 'com.affine.ai.action.translate-to',
       testId: 'action-translate',
       icon: LanguageIcon(),
       showWhen: noteBlockOrTextShowWhen,
       subItem: translateSubItem,
     },
     {
-      name: 'Change tone to',
+      name: 'com.affine.ai.action.change-tone-to',
       testId: 'action-change-tone',
       icon: ToneIcon(),
       showWhen: noteBlockOrTextShowWhen,
       subItem: toneSubItem,
     },
     {
-      name: 'Improve writing',
+      name: 'com.affine.ai.action.improve-writing',
       testId: 'action-improve-writing',
       icon: ImproveWritingIcon(),
       showWhen: noteBlockOrTextShowWhen,
@@ -162,21 +203,21 @@ const editTextGroup: AIItemGroupConfig = {
     },
 
     {
-      name: 'Make it longer',
+      name: 'com.affine.ai.action.make-it-longer',
       testId: 'action-make-it-longer',
       icon: LongerIcon(),
       showWhen: noteBlockOrTextShowWhen,
       handler: actionToHandler('makeLonger', AIStarIconWithAnimation),
     },
     {
-      name: 'Make it shorter',
+      name: 'com.affine.ai.action.make-it-shorter',
       testId: 'action-make-it-shorter',
       icon: ShorterIcon(),
       showWhen: noteBlockOrTextShowWhen,
       handler: actionToHandler('makeShorter', AIStarIconWithAnimation),
     },
     {
-      name: 'Continue writing',
+      name: 'com.affine.ai.action.continue-writing',
       testId: 'action-continue-writing',
       icon: PenIcon(),
       showWhen: noteBlockOrTextShowWhen,
@@ -186,38 +227,38 @@ const editTextGroup: AIItemGroupConfig = {
 };
 
 const draftFromTextGroup: AIItemGroupConfig = {
-  name: 'draft from text',
+  name: 'com.affine.ai.action.group.draft-from-text',
   items: [
     {
-      name: 'Write an article about this',
+      name: 'com.affine.ai.action.write-article',
       testId: 'action-write-article',
       icon: PenIcon(),
       showWhen: noteBlockOrTextShowWhen,
       handler: actionToHandler('writeArticle', AIPenIconWithAnimation),
     },
     {
-      name: 'Write a tweet about this',
+      name: 'com.affine.ai.action.write-tweet',
       testId: 'action-write-twitter-post',
       icon: PenIcon(),
       showWhen: noteBlockOrTextShowWhen,
       handler: actionToHandler('writeTwitterPost', AIPenIconWithAnimation),
     },
     {
-      name: 'Write a poem about this',
+      name: 'com.affine.ai.action.write-poem',
       testId: 'action-write-poem',
       icon: PenIcon(),
       showWhen: noteBlockOrTextShowWhen,
       handler: actionToHandler('writePoem', AIPenIconWithAnimation),
     },
     {
-      name: 'Write a blog post about this',
+      name: 'com.affine.ai.action.write-blog-post',
       testId: 'action-write-blog-post',
       icon: PenIcon(),
       showWhen: noteBlockOrTextShowWhen,
       handler: actionToHandler('writeBlogPost', AIPenIconWithAnimation),
     },
     {
-      name: 'Brainstorm ideas about this',
+      name: 'com.affine.ai.action.brainstorm',
       testId: 'action-brainstorm',
       icon: PenIcon(),
       showWhen: noteBlockOrTextShowWhen,
@@ -227,10 +268,10 @@ const draftFromTextGroup: AIItemGroupConfig = {
 };
 
 const reviewImageGroup: AIItemGroupConfig = {
-  name: 'review image',
+  name: 'com.affine.ai.action.group.review-image',
   items: [
     {
-      name: 'Explain this image',
+      name: 'com.affine.ai.action.explain-image',
       icon: PenIcon(),
       testId: 'action-explain-image',
       showWhen: imageOnlyShowWhen,
@@ -245,17 +286,17 @@ const reviewImageGroup: AIItemGroupConfig = {
 };
 
 const reviewCodeGroup: AIItemGroupConfig = {
-  name: 'review code',
+  name: 'com.affine.ai.action.group.review-code',
   items: [
     {
-      name: 'Explain this code',
+      name: 'com.affine.ai.action.explain-code',
       icon: ExplainIcon(),
       testId: 'action-explain-code',
       showWhen: noteWithCodeBlockShowWen,
       handler: actionToHandler('explainCode', AIStarIconWithAnimation),
     },
     {
-      name: 'Check code error',
+      name: 'com.affine.ai.action.check-code-error',
       icon: ExplainIcon(),
       testId: 'action-check-code-error',
       showWhen: noteWithCodeBlockShowWen,
@@ -265,17 +306,17 @@ const reviewCodeGroup: AIItemGroupConfig = {
 };
 
 const reviewTextGroup: AIItemGroupConfig = {
-  name: 'review text',
+  name: 'com.affine.ai.action.group.review-text',
   items: [
     {
-      name: 'Fix spelling',
+      name: 'com.affine.ai.action.fix-spelling',
       icon: PenIcon(),
       testId: 'action-fix-spelling',
       showWhen: noteBlockOrTextShowWhen,
       handler: actionToHandler('fixSpelling', AIStarIconWithAnimation),
     },
     {
-      name: 'Fix grammar',
+      name: 'com.affine.ai.action.fix-grammar',
       icon: PenIcon(),
       testId: 'action-fix-grammar',
       showWhen: noteBlockOrTextShowWhen,
@@ -283,7 +324,7 @@ const reviewTextGroup: AIItemGroupConfig = {
     },
 
     {
-      name: 'Explain selection',
+      name: 'com.affine.ai.action.explain-selection',
       icon: SelectionIcon({ width: '20px', height: '20px' }),
       testId: 'action-explain-selection',
       showWhen: noteBlockOrTextShowWhen,
@@ -293,17 +334,17 @@ const reviewTextGroup: AIItemGroupConfig = {
 };
 
 const generateFromTextGroup: AIItemGroupConfig = {
-  name: 'generate from text',
+  name: 'com.affine.ai.action.group.generate-from-text',
   items: [
     {
-      name: 'Summarize',
+      name: 'com.affine.ai.action.summarize',
       icon: PenIcon(),
       testId: 'action-summarize',
       showWhen: noteBlockOrTextShowWhen,
       handler: actionToHandler('summary', AIPenIconWithAnimation),
     },
     {
-      name: 'Generate headings',
+      name: 'com.affine.ai.action.generate-headings',
       icon: PenIcon(),
       testId: 'action-generate-headings',
       showWhen: noteBlockOrTextShowWhen,
@@ -311,14 +352,14 @@ const generateFromTextGroup: AIItemGroupConfig = {
       beta: true,
     },
     {
-      name: 'Generate outline',
+      name: 'com.affine.ai.action.generate-outline',
       icon: PenIcon(),
       testId: 'action-generate-outline',
       showWhen: noteBlockOrTextShowWhen,
       handler: actionToHandler('writeOutline', AIPenIconWithAnimation),
     },
     {
-      name: 'Generate an image',
+      name: 'com.affine.ai.action.generate-image',
       icon: ImageIcon(),
       testId: 'action-generate-image',
       showWhen: notAllAIChatBlockShowWhen,
@@ -393,7 +434,7 @@ const generateFromTextGroup: AIItemGroupConfig = {
       ),
     },
     {
-      name: 'Expand from this mind map node',
+      name: 'com.affine.ai.action.expand-mindmap-node',
       icon: MindmapNodeIcon(),
       testId: 'action-expand-mindmap-node',
       showWhen: mindmapChildShowWhen,
@@ -419,14 +460,14 @@ const generateFromTextGroup: AIItemGroupConfig = {
       beta: true,
     },
     {
-      name: 'Brainstorm ideas with mind map',
+      name: 'com.affine.ai.action.brainstorm-mindmap',
       icon: MindmapIcon(),
       testId: 'action-brainstorm-mindmap',
       showWhen: noteBlockOrTextShowWhen,
       handler: actionToHandler('brainstormMindmap', AIMindMapIconWithAnimation),
     },
     {
-      name: 'Regenerate mind map',
+      name: 'com.affine.ai.action.regenerate-mindmap',
       icon: MindmapIcon(),
       testId: 'action-regenerate-mindmap',
       showWhen: mindmapRootShowWhen,
@@ -439,7 +480,7 @@ const generateFromTextGroup: AIItemGroupConfig = {
       ),
     },
     {
-      name: 'Generate presentation',
+      name: 'com.affine.ai.action.generate-presentation',
       icon: PresentationIcon(),
       testId: 'action-generate-presentation',
       showWhen: noteBlockOrTextShowWhen,
@@ -447,7 +488,7 @@ const generateFromTextGroup: AIItemGroupConfig = {
       beta: true,
     },
     {
-      name: 'Make it real',
+      name: 'com.affine.ai.action.make-it-real',
       icon: MakeItRealIcon({ width: '20px', height: '20px' }),
       testId: 'action-make-it-real',
       beta: true,
@@ -529,7 +570,7 @@ const generateFromTextGroup: AIItemGroupConfig = {
       ),
     },
     {
-      name: 'AI image filter',
+      name: 'com.affine.ai.action.ai-image-filter',
       icon: PenIcon(),
       testId: 'action-ai-image-filter',
       showWhen: imageOnlyShowWhen,
@@ -538,7 +579,7 @@ const generateFromTextGroup: AIItemGroupConfig = {
       beta: true,
     },
     {
-      name: 'Image processing',
+      name: 'com.affine.ai.action.image-processing',
       icon: ImageIcon(),
       testId: 'action-image-processing',
       showWhen: imageOnlyShowWhen,
@@ -547,7 +588,7 @@ const generateFromTextGroup: AIItemGroupConfig = {
       beta: true,
     },
     {
-      name: 'Generate a caption',
+      name: 'com.affine.ai.action.generate-caption',
       icon: PenIcon(),
       testId: 'action-generate-caption',
       showWhen: imageOnlyShowWhen,
@@ -560,7 +601,7 @@ const generateFromTextGroup: AIItemGroupConfig = {
       ),
     },
     {
-      name: 'Find actions',
+      name: 'com.affine.ai.action.find-actions',
       icon: SearchIcon(),
       testId: 'action-find-actions',
       showWhen: noteBlockOrTextShowWhen,

@@ -1,3 +1,4 @@
+import { I18n } from '@affine/i18n';
 import { EnterIcon } from '@blocksuite/affine/components/icons';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
 import { stopPropagation } from '@blocksuite/affine/shared/utils';
@@ -13,6 +14,13 @@ import { repeat } from 'lit/directives/repeat.js';
 
 import { menuItemStyles } from './styles';
 import type { AIItemConfig, AISubItemConfig } from './types';
+
+function getI18nType(type: AISubItemConfig['type']): string {
+  if (typeof type === 'object' && 'i18nKey' in type) {
+    return I18n.t(type.i18nKey, type.options);
+  }
+  return I18n.t(type);
+}
 
 @requiredProperties({
   host: PropTypes.instanceOf(EditorHost),
@@ -74,7 +82,7 @@ export class AISubItemList extends WithDisposable(LitElement) {
             class="menu-item"
             @click=${() => this._handleClick(subItem)}
           >
-            <div class="item-name">${subItem.type}</div>
+            <div class="item-name">${getI18nType(subItem.type)}</div>
             <span class="enter-icon">${EnterIcon}</span>
           </div>`
       )}

@@ -1,15 +1,16 @@
+import type { I18nString } from '@affine/i18n';
 import type { DocMode } from '@blocksuite/affine/model';
 import type { Chain, EditorHost, InitCommandCtx } from '@blocksuite/affine/std';
 import type { TemplateResult } from 'lit';
 
 export interface AIItemGroupConfig {
-  name?: string;
+  name?: I18nString;
   testId?: string;
   items: AIItemConfig[];
 }
 
 export interface AIItemConfig {
-  name: string;
+  name: I18nString;
   testId: string;
   icon: TemplateResult | (() => HTMLElement);
   showWhen?: (
@@ -24,7 +25,7 @@ export interface AIItemConfig {
 }
 
 export interface AISubItemConfig {
-  type: string;
+  type: I18nString;
   testId?: string;
   handler?: (host: EditorHost) => void;
 }

@@ -1,3 +1,4 @@
+import { I18n } from '@affine/i18n';
 import { ArrowRightIcon, EnterIcon } from '@blocksuite/affine/components/icons';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
 import { ColorScheme } from '@blocksuite/affine/model';
@@ -12,6 +13,13 @@ import { property, query } from 'lit/decorators.js';
 import { menuItemStyles } from './styles';
 import type { AIItemConfig } from './types';
 
+function getI18nName(name: AIItemConfig['name']): string {
+  if (typeof name === 'object' && 'i18nKey' in name) {
+    return I18n.t(name.i18nKey, name.options);
+  }
+  return I18n.t(name);
+}
+
 @requiredProperties({
   host: PropTypes.instanceOf(EditorHost),
   item: PropTypes.object,
@@ -23,7 +31,8 @@ export class AIItem extends WithDisposable(LitElement) {
 
   override render() {
     const { item } = this;
-    const className = item.name.split(' ').join('-').toLocaleLowerCase();
+    const nameStr = getI18nName(item.name);
+    const className = item.testId.replace(/^action-/, '').replace(/-/g, '-');
     const testId = item.testId;
 
     return html`<div
@@ -40,7 +49,7 @@ export class AIItem extends WithDisposable(LitElement) {
     >
       <span class="item-icon">${item.icon}</span>
       <div class="item-name">
-        ${item.name}${item.beta
+        ${nameStr}${item.beta
           ? html`<div class="item-beta">(Beta)</div>`
           : nothing}
       </div>

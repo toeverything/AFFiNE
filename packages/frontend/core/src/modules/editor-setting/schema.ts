@@ -40,6 +40,7 @@ const AffineEditorSettingSchema = z.object({
     .default('Qwen'),
   aiModelName: z.string().default(''),
   aiModelKey: z.string().default(''),
+  aiChatIncludeFullDoc: z.boolean().default(true),
   // linux only:
   enableMiddleClickPaste: z.boolean().default(false),
 });

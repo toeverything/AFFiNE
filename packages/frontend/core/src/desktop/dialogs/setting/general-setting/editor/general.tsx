@@ -497,6 +497,13 @@ export const AI = () => {
     [editorSettingService.editorSetting]
   );
 
+  const onChatIncludeFullDocChange = useCallback(
+    (checked: boolean) => {
+      editorSettingService.editorSetting.set('aiChatIncludeFullDoc', checked);
+    },
+    [editorSettingService.editorSetting]
+  );
+
   if (!serverFeatures?.copilot) {
     return null;
   }
@@ -555,6 +562,20 @@ export const AI = () => {
             'com.affine.settings.editorSettings.ai.model-key.placeholder'
           ]()}
           style={{ width: 250 }}
+        />
+      </SettingRow>
+
+      <SettingRow
+        name={t[
+          'com.affine.settings.editorSettings.ai.chat-include-full-doc'
+        ]()}
+        desc={t[
+          'com.affine.settings.editorSettings.ai.chat-include-full-doc.description'
+        ]()}
+      >
+        <Switch
+          checked={settings.aiChatIncludeFullDoc}
+          onChange={onChatIncludeFullDocChange}
         />
       </SettingRow>
     </SettingWrapper>

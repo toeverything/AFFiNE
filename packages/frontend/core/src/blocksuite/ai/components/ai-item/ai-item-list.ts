@@ -1,3 +1,4 @@
+import { I18n } from '@affine/i18n';
 import { createLitPortal } from '@blocksuite/affine/components/portal';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
 import { ThemeProvider } from '@blocksuite/affine/shared/services';
@@ -15,6 +16,14 @@ import { repeat } from 'lit/directives/repeat.js';
 import type { AIItem } from './ai-item';
 import { SUBMENU_OFFSET_CROSS_AXIS, SUBMENU_OFFSET_MAIN_AXIS } from './const';
 import type { AIItemConfig, AIItemGroupConfig } from './types';
+
+function getI18nName(name: AIItemGroupConfig['name']): string {
+  if (!name) return '';
+  if (typeof name === 'object' && 'i18nKey' in name) {
+    return I18n.t(name.i18nKey, name.options);
+  }
+  return I18n.t(name);
+}
 
 @requiredProperties({ host: PropTypes.instanceOf(EditorHost) })
 export class AIItemList extends WithDisposable(LitElement) {
@@ -55,7 +64,7 @@ export class AIItemList extends WithDisposable(LitElement) {
   };
 
   private readonly _itemClassName = (item: AIItemConfig) => {
-    return 'ai-item-' + item.name.split(' ').join('-').toLocaleLowerCase();
+    return 'ai-item-' + item.testId.replace(/^action-/, '').replace(/-/g, '-');
   };
 
   private readonly _openSubMenu = (item: AIItemConfig) => {
@@ -114,11 +123,10 @@ export class AIItemList extends WithDisposable(LitElement) {
   override render() {
     const theme = this.host.std.get(ThemeProvider).app$.value;
     return html`${repeat(this.groups, group => {
+      const groupName = getI18nName(group.name);
       return html`
         ${group.name
-          ? html`<div class="group-name">
-              ${group.name.toLocaleUpperCase()}
-            </div>`
+          ? html`<div class="group-name">${groupName.toLocaleUpperCase()}</div>`
           : nothing}
         ${repeat(
           group.items,
