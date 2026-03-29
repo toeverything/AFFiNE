@@ -1049,6 +1049,7 @@ enum FeatureType {
   FreePlan
   LifetimeProPlan
   ProPlan
+  QuotaExceededReadonlyWorkspace
   TeamPlan
   UnlimitedCopilot
   UnlimitedWorkspace

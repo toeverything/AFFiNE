@@ -62,16 +62,37 @@ export const resolveInitialSession = async ({
   sessionService,
   doc,
   workbench,
+  preferredSessionId,
 }: {
   sessionService?: SessionService | null;
   doc?: DocLike | null;
   workbench?: WorkbenchLike | null;
+  preferredSessionId?: string;
 }): Promise<CopilotChatHistoryFragment | null | undefined> => {
   if (!sessionService || !doc) {
     return undefined;
   }
 
   const sessionId = getSessionIdFromUrl(workbench);
+
+  const getSessionSafely = async (targetSessionId: string) => {
+    try {
+      return (
+        (await sessionService.getSession(doc.workspace.id, targetSessionId)) ??
+        null
+      );
+    } catch {
+      return null;
+    }
+  };
+
+  if (sessionId) {
+    return getSessionSafely(sessionId);
+  }
+
+  if (preferredSessionId) {
+    return getSessionSafely(preferredSessionId);
+  }
 
   const pinSessions = await sessionService.getSessions(
     doc.workspace.id,
@@ -84,14 +105,6 @@ export const resolveInitialSession = async ({
 
   if (Array.isArray(pinSessions) && pinSessions[0]) {
     return pinSessions[0];
-  }
-
-  if (sessionId) {
-    const session = await sessionService.getSession(
-      doc.workspace.id,
-      sessionId
-    );
-    return session ?? null;
   }
 
   const docSessions = await sessionService.getSessions(

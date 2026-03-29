@@ -1,5 +1,5 @@
 import { useConfirmModal } from '@affine/component';
-import { AIProvider } from '@affine/core/blocksuite/ai';
+import { type AIChatParams, AIProvider } from '@affine/core/blocksuite/ai';
 import type { AppSidebarConfig } from '@affine/core/blocksuite/ai/chat-panel/chat-config';
 import {
   AIChatContent,
@@ -103,6 +103,7 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
 
   const doc = editor?.doc;
   const host = editor?.host;
+  const docScopedSessionId = doc ? `session-${doc.id}` : undefined;
 
   const appSidebarConfig = useMemo<AppSidebarConfig>(() => {
     return {
@@ -142,6 +143,7 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
         sessionService: AIProvider.session ?? undefined,
         doc,
         workbench: workbench as WorkbenchLike,
+        preferredSessionId: docScopedSessionId,
       });
 
       if (requestSeq !== sessionLoadSeqRef.current) return;
@@ -154,7 +156,7 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
     } catch (error) {
       console.error(error);
     }
-  }, [doc, workbench]);
+  }, [doc, docScopedSessionId, workbench]);
 
   const createSession = useCallback(
     async (options: Partial<BlockSuitePresets.AICreateSessionOptions> = {}) => {
@@ -163,6 +165,7 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
       }
       const requestSeq = ++sessionLoadSeqRef.current;
       const nextSession = await AIProvider.session.createSessionWithHistory({
+        sessionId: options.sessionId ?? docScopedSessionId,
         docId: doc.id,
         workspaceId: doc.workspace.id,
         promptName: 'Chat With AFFiNE AI',
@@ -174,7 +177,7 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
       setHasPinned(!!nextSession?.pinned);
       return nextSession ?? undefined;
     },
-    [doc, session]
+    [doc, docScopedSessionId, session]
   );
 
   const updateSession = useCallback(
@@ -382,6 +385,57 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
     });
     return () => subscription.unsubscribe();
   }, [doc, initPanel, session]);
+
+  useEffect(() => {
+    if (!doc || !host || !docScopedSessionId) {
+      return;
+    }
+
+    const syncDocScopedSession = async () => {
+      if (!AIProvider.session) {
+        return;
+      }
+      const requestSeq = ++sessionLoadSeqRef.current;
+      setSession(null);
+      setHasPinned(false);
+      try {
+        const nextSession = await AIProvider.session.getSession(
+          doc.workspace.id,
+          docScopedSessionId
+        );
+        if (requestSeq !== sessionLoadSeqRef.current) {
+          return;
+        }
+        setSession(nextSession ?? null);
+        setHasPinned(!!nextSession?.pinned);
+      } catch {
+        if (requestSeq !== sessionLoadSeqRef.current) {
+          return;
+        }
+        setSession(null);
+      }
+    };
+
+    const handleOpenWithChat = (params: AIChatParams | null) => {
+      if (!params || params.host !== host) {
+        return;
+      }
+      if (session?.sessionId === docScopedSessionId) {
+        return;
+      }
+      syncDocScopedSession().catch(console.error);
+    };
+
+    const openSubscription =
+      AIProvider.slots.requestOpenWithChat.subscribe(handleOpenWithChat);
+    const sendSubscription =
+      AIProvider.slots.requestSendWithChat.subscribe(handleOpenWithChat);
+
+    return () => {
+      openSubscription.unsubscribe();
+      sendSubscription.unsubscribe();
+    };
+  }, [doc, docScopedSessionId, host, session?.sessionId]);
 
   const hasSessionHistory = !!session?.messages?.length;
   const sessionSwitched = !!(

@@ -37,7 +37,7 @@ test('returns undefined without session service or doc', async () => {
 });
 
 describe('resolveInitialSession', () => {
-  test('prefers pinned session and clears sessionId from url', async () => {
+  test('loads pinned session when url sessionId is absent', async () => {
     const pinnedSession = {
       sessionId: 'pinned-session',
       pinned: true,
@@ -48,9 +48,7 @@ describe('resolveInitialSession', () => {
       getSession: vi.fn(),
     };
 
-    const { workbench, updateQueryString } = createWorkbench(
-      '?sessionId=from-url'
-    );
+    const { workbench, updateQueryString } = createWorkbench('');
 
     const result = await resolveInitialSession({
       sessionService,
@@ -59,10 +57,7 @@ describe('resolveInitialSession', () => {
     });
 
     expect(result).toBe(pinnedSession);
-    expect(updateQueryString).toHaveBeenCalledWith(
-      { sessionId: undefined },
-      { replace: true }
-    );
+    expect(updateQueryString).not.toHaveBeenCalled();
     expect(sessionService.getSession).not.toHaveBeenCalled();
   });
 
@@ -140,6 +135,52 @@ describe('resolveInitialSession', () => {
       sessionService,
       doc,
       workbench,
+    });
+
+    expect(result).toBeNull();
+  });
+
+  test('prefers doc scoped session when preferredSessionId is provided', async () => {
+    const docScopedSession = {
+      sessionId: 'session-doc-1',
+      pinned: false,
+    } as CopilotChatHistoryFragment;
+
+    const sessionService: SessionService = {
+      getSessions: vi.fn(),
+      getSession: vi.fn().mockResolvedValueOnce(docScopedSession),
+    };
+
+    const { workbench } = createWorkbench('');
+
+    const result = await resolveInitialSession({
+      sessionService,
+      doc,
+      workbench,
+      preferredSessionId: 'session-doc-1',
+    });
+
+    expect(result).toBe(docScopedSession);
+    expect(sessionService.getSession).toHaveBeenCalledWith(
+      doc.workspace.id,
+      'session-doc-1'
+    );
+    expect(sessionService.getSessions).not.toHaveBeenCalled();
+  });
+
+  test('returns null when preferredSessionId does not exist', async () => {
+    const sessionService: SessionService = {
+      getSessions: vi.fn(),
+      getSession: vi.fn().mockRejectedValueOnce(new Error('HTTP error 404')),
+    };
+
+    const { workbench } = createWorkbench('');
+
+    const result = await resolveInitialSession({
+      sessionService,
+      doc,
+      workbench,
+      preferredSessionId: 'session-doc-1',
     });
 
     expect(result).toBeNull();

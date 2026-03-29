@@ -6,6 +6,7 @@ import {
   type AddContextFileInput,
   ContextCategories,
   type ContextWorkspaceEmbeddingStatus,
+  type CopilotChatHistoryFragment,
   type getCopilotHistoriesQuery,
   type QueryChatSessionsInput,
   type RequestOptions,
@@ -442,12 +443,12 @@ Could you make a new website based on these notes and send back just the html fi
         .join('\n');
     };
 
-    const result = await restTextToText({
+    const result = restTextToText({
       content: options.input || '',
       stream: false,
       signal: options.signal,
       timeout: 180000,
-    });
+    }) as unknown as string | BlockSuitePresets.TextStream;
 
     if (typeof result === 'string') {
       return postfix(result);
@@ -504,110 +505,98 @@ Could you make a new website based on these notes and send back just the html fi
     });
   });
 
+  const toSessionFromDetail = (
+    sessionDetail: Awaited<ReturnType<RestCopilotClient['getSession']>>,
+    options: Partial<BlockSuitePresets.AICreateSessionOptions> = {}
+  ): CopilotChatHistoryFragment => {
+    return {
+      sessionId: sessionDetail.id,
+      workspaceId: options.workspaceId ?? '',
+      docId: options.docId ?? null,
+      parentSessionId: null,
+      promptName: (options.promptName || 'Chat With AFFiNE AI') as PromptKey,
+      model: 'qwen',
+      optionalModels: [],
+      action: null,
+      pinned: false,
+      title: sessionDetail.title,
+      tokens: 0,
+      createdAt: sessionDetail.created_at,
+      updatedAt: sessionDetail.created_at,
+      messages: sessionDetail.messages.map((msg, idx) => ({
+        id: `msg-${idx}`,
+        role: msg.role,
+        content: msg.content,
+        attachments: null,
+        createdAt: sessionDetail.created_at,
+        streamObjects: null,
+      })),
+    };
+  };
+
+  const createEmptySession = (
+    sessionId: string,
+    options: Partial<BlockSuitePresets.AICreateSessionOptions> = {}
+  ): CopilotChatHistoryFragment => {
+    const now = new Date().toISOString();
+    return {
+      sessionId,
+      workspaceId: options.workspaceId ?? '',
+      docId: options.docId ?? null,
+      parentSessionId: null,
+      promptName: (options.promptName || 'Chat With AFFiNE AI') as PromptKey,
+      model: 'qwen',
+      optionalModels: [],
+      action: null,
+      pinned: false,
+      title: null,
+      tokens: 0,
+      createdAt: now,
+      updatedAt: now,
+      messages: [],
+    };
+  };
+
+  const isSessionNotFoundError = (error: unknown) =>
+    error instanceof Error && /HTTP error 404/.test(error.message);
+
   AIProvider.provide('session', {
     createSession: async (options: BlockSuitePresets.AICreateSessionOptions) => {
       return options.sessionId || `session-${Date.now()}-${Math.random().toString(36).substring(7)}`;
     },
     createSessionWithHistory: async (options: BlockSuitePresets.AICreateSessionOptions) => {
       if (options.sessionId) {
-        const sessionDetail = await restClient.getSession(options.sessionId);
-        return {
-          sessionId: sessionDetail.id,
-          workspaceId: '',
-          docId: null,
-          parentSessionId: null,
-          promptName: options.promptName || 'Chat With AFFiNE AI',
-          model: 'qwen',
-          optionalModels: [],
-          action: null,
-          pinned: false,
-          title: sessionDetail.title,
-          tokens: 0,
-          createdAt: sessionDetail.created_at,
-          updatedAt: sessionDetail.created_at,
-          messages: sessionDetail.messages.map((msg, idx) => ({
-            id: `msg-${idx}`,
-            role: msg.role,
-            content: msg.content,
-            attachments: null,
-            createdAt: sessionDetail.created_at,
-            streamObjects: null,
-          })),
-        };
+        try {
+          const sessionDetail = await restClient.getSession(options.sessionId);
+          return toSessionFromDetail(sessionDetail, options);
+        } catch (error) {
+          if (isSessionNotFoundError(error)) {
+            return createEmptySession(options.sessionId, options);
+          }
+          throw error;
+        }
       }
 
       const sessions = await restClient.getSessions();
       if (sessions.length > 0 && options.reuseLatestChat !== false) {
         const latestSession = sessions[0];
         const sessionDetail = await restClient.getSession(latestSession.id);
-        return {
-          sessionId: sessionDetail.id,
-          workspaceId: '',
-          docId: null,
-          parentSessionId: null,
-          promptName: options.promptName || 'Chat With AFFiNE AI',
-          model: 'qwen',
-          optionalModels: [],
-          action: null,
-          pinned: false,
-          title: sessionDetail.title,
-          tokens: 0,
-          createdAt: sessionDetail.created_at,
-          updatedAt: sessionDetail.created_at,
-          messages: sessionDetail.messages.map((msg, idx) => ({
-            id: `msg-${idx}`,
-            role: msg.role,
-            content: msg.content,
-            attachments: null,
-            createdAt: sessionDetail.created_at,
-            streamObjects: null,
-          })),
-        };
+        return toSessionFromDetail(sessionDetail, options);
       }
 
       const newSessionId = `session-${Date.now()}-${Math.random().toString(36).substring(7)}`;
-      return {
-        sessionId: newSessionId,
-        workspaceId: '',
-        docId: null,
-        parentSessionId: null,
-        promptName: options.promptName || 'Chat With AFFiNE AI',
-        model: 'qwen',
-        optionalModels: [],
-        action: null,
-        pinned: false,
-        title: null,
-        tokens: 0,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        messages: [],
-      };
+      return createEmptySession(newSessionId, options);
     },
     getSession: async (workspaceId: string, sessionId: string) => {
-      const sessionDetail = await restClient.getSession(sessionId);
-      return {
-        sessionId: sessionDetail.id,
-        workspaceId: workspaceId,
-        docId: null,
-        parentSessionId: null,
-        promptName: 'Chat With AFFiNE AI',
-        model: 'qwen',
-        optionalModels: [],
-        action: null,
-        pinned: false,
-        title: sessionDetail.title,
-        tokens: 0,
-        createdAt: sessionDetail.created_at,
-        updatedAt: sessionDetail.created_at,
-        messages: sessionDetail.messages.map((msg, idx) => ({
-          id: `msg-${idx}`,
-          role: msg.role,
-          content: msg.content,
-          attachments: null,
-          createdAt: sessionDetail.created_at,
-          streamObjects: null,
-        })),
-      };
+      try {
+        const sessionDetail = await restClient.getSession(sessionId);
+        return toSessionFromDetail(sessionDetail, { workspaceId });
+      } catch (error) {
+        if (isSessionNotFoundError(error)) {
+          return undefined;
+        }
+        throw error;
+      }
     },
     getSessions: async (
       workspaceId: string,
