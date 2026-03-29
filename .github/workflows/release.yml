@@ -1,8 +1,8 @@
 name: Release
 
 on:
-  schedule:
-    - cron: '0 9 * * *'
+  # schedule:
+  #   - cron: '0 9 * * *'
 
   workflow_dispatch:
     inputs:
