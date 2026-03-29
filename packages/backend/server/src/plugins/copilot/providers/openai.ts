@@ -27,6 +27,7 @@ import { IMAGE_ATTACHMENT_CAPABILITY } from './attachments';
 import {
   buildNativeEmbeddingRequest,
   buildNativeRequest,
+  buildNativeRerankRequest,
   buildNativeStructuredRequest,
   NativeProviderAdapter,
   parseNativeStructuredOutput,
@@ -133,21 +134,6 @@ function normalizeImageResponseData(
     .filter((value): value is string => typeof value === 'string');
 }
 
-function buildOpenAIRerankRequest(
-  model: string,
-  request: CopilotRerankRequest
-): NativeLlmRerankRequest {
-  return {
-    model,
-    query: request.query,
-    candidates: request.candidates.map(candidate => ({
-      ...(candidate.id ? { id: candidate.id } : {}),
-      text: candidate.text,
-    })),
-    ...(request.topK ? { top_n: request.topK } : {}),
-  };
-}
-
 function createOpenAIMultimodalCapability(
   output: ModelCapability['output'],
   options: Pick<ModelCapability, 'defaultForOutputType'> = {}
@@ -194,6 +180,7 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
         createOpenAIMultimodalCapability([
           ModelOutputType.Text,
           ModelOutputType.Object,
+          ModelOutputType.Rerank,
         ]),
       ],
     },
@@ -444,7 +431,7 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
     return;
   }
 
-  private createNativeConfig(): NativeLlmBackendConfig {
+  protected createNativeConfig(): NativeLlmBackendConfig {
     const baseUrl = this.config.baseURL || 'https://api.openai.com/v1';
     return {
       base_url: baseUrl.replace(/\/v1\/?$/, ''),
@@ -452,7 +439,7 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
     };
   }
 
-  private getNativeProtocol() {
+  protected getNativeProtocol() {
     return this.config.oldApiStyle ? 'openai_chat' : 'openai_responses';
   }
 
@@ -709,7 +696,7 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
 
     try {
       const backendConfig = this.createNativeConfig();
-      const nativeRequest = buildOpenAIRerankRequest(model.id, request);
+      const nativeRequest = buildNativeRerankRequest(model.id, request);
       const response =
         await this.createNativeRerankDispatch(backendConfig)(nativeRequest);
       return response.scores;

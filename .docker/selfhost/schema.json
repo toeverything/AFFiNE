@@ -1005,6 +1005,14 @@
             "baseURL": "https://api.openai.com/v1"
           }
         },
+        "providers.cloudflareWorkersAi": {
+          "type": "object",
+          "description": "The config for the Cloudflare Workers AI provider.\n@default {\"apiToken\":\"\",\"accountId\":\"\"}",
+          "default": {
+            "apiToken": "",
+            "accountId": ""
+          }
+        },
         "providers.fal": {
           "type": "object",
           "description": "The config for the fal provider.\n@default {\"apiKey\":\"\"}",

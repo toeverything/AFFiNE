@@ -19,7 +19,7 @@ import {
 import { EmbeddingClient, type ReRankResult } from './types';
 
 const EMBEDDING_MODEL = 'gemini-embedding-001';
-const RERANK_MODEL = 'gpt-5.2';
+const RERANK_MODEL = 'gpt-4o-mini';
 class ProductionEmbeddingClient extends EmbeddingClient {
   private readonly logger = new Logger(ProductionEmbeddingClient.name);
 

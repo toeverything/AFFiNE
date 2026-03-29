@@ -3,8 +3,7 @@ import {
   type TranscriptionBlockModel,
 } from '@affine/core/blocksuite/ai/blocks/transcription-block/model';
 import { insertFromMarkdown } from '@affine/core/blocksuite/utils';
-import { toArrayBuffer } from '@affine/core/utils/array-buffer';
-import { encodeAudioBlobToOpusSlices } from '@affine/core/utils/opus-encoding';
+import { preprocessAudioBlobForTranscription } from '@affine/core/utils/opus-encoding';
 import { DebugLogger } from '@affine/debug';
 import { AiJobStatus } from '@affine/graphql';
 import track from '@affine/track';
@@ -23,10 +22,20 @@ import { AudioTranscriptionJob } from './audio-transcription-job';
 import type { TranscriptionResult } from './types';
 
 const logger = new DebugLogger('audio-attachment-block');
+type TranscriptionBlockProps = TranscriptionBlockModel['props'];
 
 // BlockSuiteError: yText must not contain "\r" because it will break the range synchronization
 function sanitizeText(text: string) {
   return text.replace(/\r/g, '');
+}
+
+function requireTranscriptionBlockProps(
+  transcriptionBlockProps: TranscriptionBlockProps | undefined
+) {
+  if (!transcriptionBlockProps) {
+    throw new Error('No transcription block props');
+  }
+  return transcriptionBlockProps;
 }
 
 const colorOptions = [
@@ -124,26 +133,35 @@ export class AudioAttachmentBlock extends Entity<AttachmentBlockModel> {
       transcriptionBlockProps = this.transcriptionBlock$.value?.props;
     }
 
-    if (!transcriptionBlockProps) {
-      throw new Error('No transcription block props');
-    }
-
     const job = this.framework.createEntity(AudioTranscriptionJob, {
       blobId: this.props.props.sourceId,
-      blockProps: transcriptionBlockProps,
-      getAudioFiles: async () => {
+      blockProps: requireTranscriptionBlockProps(transcriptionBlockProps),
+      getAudioTranscriptionInput: async () => {
         const buffer = await this.audioMedia.getBuffer();
         if (!buffer) {
           throw new Error('No audio buffer available');
         }
-        const slices = await encodeAudioBlobToOpusSlices(buffer, 64000);
-        const files = slices.map((slice, index) => {
-          const blob = new Blob([toArrayBuffer(slice)], { type: 'audio/opus' });
-          return new File([blob], this.props.props.name + `-${index}.opus`, {
-            type: 'audio/opus',
+        const currentTranscriptionBlockProps = requireTranscriptionBlockProps(
+          this.transcriptionBlock$.value?.props
+        );
+        const { files, sourceAudio, sliceManifest } =
+          await preprocessAudioBlobForTranscription(buffer, {
+            fileNameBase: this.props.props.name,
+            sourceMimeType: this.props.props.type,
+            targetBitrate: 64000,
           });
-        });
-        return files;
+
+        return {
+          files,
+          input: {
+            sourceAudio: {
+              ...sourceAudio,
+              ...currentTranscriptionBlockProps.transcription.sourceAudio,
+            },
+            quality: currentTranscriptionBlockProps.transcription.quality,
+            sliceManifest,
+          },
+        };
       },
     });
 

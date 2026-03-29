@@ -14,6 +14,15 @@ const DEFAULT_MIDDLEWARE_BY_TYPE: Record<
       text: ['citation_footnote', 'callout'],
     },
   },
+  [CopilotProviderType.CloudflareWorkersAi]: {
+    rust: {
+      request: ['normalize_messages'],
+      stream: ['stream_event_normalize', 'citation_indexing'],
+    },
+    node: {
+      text: ['citation_footnote', 'callout'],
+    },
+  },
   [CopilotProviderType.Anthropic]: {
     rust: {
       request: ['normalize_messages', 'tool_schema_rewrite'],
