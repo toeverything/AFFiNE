@@ -212,7 +212,7 @@ export class SettingsPanelUtils {
       await searchInput.focus();
       await page.keyboard.insertText(doc);
 
-      const pageListItem = searcher.getByTestId('page-list-item');
+      const pageListItem = searcher.getByTestId('doc-list-item');
       await expect(pageListItem).toHaveCount(1);
 
       await pageListItem.getByTestId('affine-checkbox').uncheck();
