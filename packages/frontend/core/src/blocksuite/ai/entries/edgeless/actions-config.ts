@@ -170,8 +170,8 @@ const othersGroup: AIItemGroupConfig = {
             });
           })
           .catch(console.error);
-        edgelessCopilot.hideCopilotPanel();
-        panel.hide();
+        edgelessCopilot?.hideCopilotPanel();
+        panel?.hide();
       },
     },
   ],

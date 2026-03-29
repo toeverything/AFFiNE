@@ -5,12 +5,12 @@ import { AFFINE_EDGELESS_COPILOT_WIDGET } from '../widgets/edgeless-copilot/cons
 
 export function getEdgelessCopilotWidget(
   host: EditorHost
-): EdgelessCopilotWidget {
+): EdgelessCopilotWidget | null {
   const rootBlockId = host.store.root?.id as string;
   const copilotWidget = host.view.getWidget(
     AFFINE_EDGELESS_COPILOT_WIDGET,
     rootBlockId
-  ) as EdgelessCopilotWidget;
+  ) as EdgelessCopilotWidget | null;
 
   return copilotWidget;
 }

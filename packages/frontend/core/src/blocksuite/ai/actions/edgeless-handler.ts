@@ -306,7 +306,7 @@ function updateEdgelessAIPanelConfig<
   T extends keyof BlockSuitePresets.AIActions,
 >(
   aiPanel: AffineAIPanelWidget,
-  edgelessCopilot: EdgelessCopilotWidget,
+  edgelessCopilot: EdgelessCopilotWidget | null,
   id: T,
   generatingIcon: TemplateResult<1>,
   ctx: AIContext,
@@ -356,13 +356,15 @@ function updateEdgelessAIPanelConfig<
   config.hideCallback = () => {
     aiPanel.updateComplete
       .finally(() => {
-        edgelessCopilot.gfx.tool.setTool(DefaultTool);
-        edgelessCopilot.gfx.selection.set({
-          elements: [],
-          editing: false,
-        });
-        host.selection.clear();
-        edgelessCopilot.lockToolbar(false);
+        if (edgelessCopilot) {
+          edgelessCopilot.gfx.tool.setTool(DefaultTool);
+          edgelessCopilot.gfx.selection.set({
+            elements: [],
+            editing: false,
+          });
+          host.selection.clear();
+          edgelessCopilot.lockToolbar(false);
+        }
       })
       .catch(console.error);
   };
@@ -393,8 +395,8 @@ export function actionToHandler<T extends keyof BlockSuitePresets.AIActions>(
     const { selectedBlocks } = getSelections(host);
     const ctx = new AIContext({ selectedElements });
 
-    edgelessCopilot.hideCopilotPanel();
-    edgelessCopilot.lockToolbar(true);
+    edgelessCopilot?.hideCopilotPanel();
+    edgelessCopilot?.lockToolbar(true);
 
     updateEdgelessAIPanelConfig(
       aiPanel,
@@ -416,7 +418,7 @@ export function actionToHandler<T extends keyof BlockSuitePresets.AIActions>(
 
     if (selectedBlocks && selectedBlocks.length !== 0) {
       referenceElement = selectedBlocks.at(-1);
-    } else if (edgelessCopilot.visible && edgelessCopilot.selectionElem) {
+    } else if (edgelessCopilot?.visible && edgelessCopilot.selectionElem) {
       referenceElement = edgelessCopilot.selectionElem;
     } else if (toolbar?.dataset.open) {
       referenceElement = toolbar;
@@ -430,7 +432,7 @@ export function actionToHandler<T extends keyof BlockSuitePresets.AIActions>(
     if (!referenceElement) {
       const gfx = host.std.get(GfxControllerIdentifier);
       gfx?.tool.setTool(DefaultTool);
-      edgelessCopilot.lockToolbar(false);
+      edgelessCopilot?.lockToolbar(false);
       return;
     }
 

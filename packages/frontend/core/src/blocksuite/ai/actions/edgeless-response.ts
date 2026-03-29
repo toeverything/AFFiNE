@@ -75,12 +75,12 @@ export function getToolbar(host: EditorHost) {
 export function getTriggerEntry(host: EditorHost) {
   const copilotWidget = getEdgelessCopilotWidget(host);
 
-  return copilotWidget.visible ? 'selection' : 'toolbar';
+  return copilotWidget?.visible ? 'selection' : 'toolbar';
 }
 
 export function discard(
   panel: AffineAIPanelWidget,
-  _: EdgelessCopilotWidget
+  _: EdgelessCopilotWidget | null
 ): AIItemConfig {
   return {
     name: I18n.t('com.affine.ai.action.discard'),
@@ -246,6 +246,7 @@ function createBlockAndInsert(
 ) {
   const doc = host.store;
   const edgelessCopilot = getEdgelessCopilotWidget(host);
+  if (!edgelessCopilot) return;
   doc.transact(() => {
     if (!doc.root) return;
     let blockId = '';
@@ -263,11 +264,11 @@ function createBlockAndInsert(
         surfaceBlock.id
       );
     } else {
-      const bounds = edgelessCopilot.determineInsertionBounds(800, 95);
+      const noteBounds = edgelessCopilot.determineInsertionBounds(800, 95);
       blockId = doc.addBlock(
         'affine:note',
         {
-          xywh: bounds.serialize(),
+          xywh: noteBounds.serialize(),
           displayMode: NoteDisplayMode.EdgelessOnly,
         },
         doc.root.id
@@ -319,6 +320,7 @@ function responseToCreateImage(host: EditorHost) {
   if (!data) return;
 
   const edgelessCopilot = getEdgelessCopilotWidget(host);
+  if (!edgelessCopilot) return;
   const bounds = edgelessCopilot.determineInsertionBounds();
   const selectedElements = getCopilotSelectedElems(host);
   const selectedImageBlockModel = selectedElements.find(
@@ -329,7 +331,7 @@ function responseToCreateImage(host: EditorHost) {
     : null;
 
   edgelessCopilot.hideCopilotPanel();
-  aiPanel.hide();
+  aiPanel?.hide();
 
   const filename = 'image';
   const imageProxy = host.std.clipboard.configs.get('imageProxy');
@@ -415,6 +417,7 @@ function responseToBrainstormMindmap(host: EditorHost, ctx: AIContext) {
   const aiPanel = getAIPanelWidget(host);
   const gfx = host.std.get(GfxControllerIdentifier);
   const edgelessCopilot = getEdgelessCopilotWidget(host);
+  if (!edgelessCopilot) return;
   const selectionRect = edgelessCopilot.selectionModelRect;
   const surface = getSurfaceBlock(host.store);
   if (!surface) return;
@@ -433,7 +436,7 @@ function responseToBrainstormMindmap(host: EditorHost, ctx: AIContext) {
   }
 
   edgelessCopilot.hideCopilotPanel();
-  aiPanel.hide();
+  aiPanel?.hide();
 
   const mindmapId = surface.addElement({
     type: 'mindmap',
@@ -487,7 +490,7 @@ function responseToMakeItReal(host: EditorHost, ctx: AIContext) {
 
   const edgelessCopilot = getEdgelessCopilotWidget(host);
   const surface = getSurfaceBlock(host.store);
-  if (!surface) return;
+  if (!surface || !edgelessCopilot) return;
 
   const data = ctx.get();
   const bounds = edgelessCopilot.determineInsertionBounds(
@@ -496,7 +499,7 @@ function responseToMakeItReal(host: EditorHost, ctx: AIContext) {
   );
 
   edgelessCopilot.hideCopilotPanel();
-  aiPanel.hide();
+  aiPanel?.hide();
 
   host.store.transact(() => {
     const ifUseCodeBlock = host.std.getOptional(
