@@ -1,7 +1,10 @@
 import cp from 'node:child_process';
-import { readdir, rm, symlink } from 'node:fs/promises';
+import { createReadStream, createWriteStream } from 'node:fs';
+import { readdir, rename, rm, stat, symlink } from 'node:fs/promises';
 import path from 'node:path';
+import { pipeline } from 'node:stream/promises';
 import { fileURLToPath } from 'node:url';
+import { createGzip } from 'node:zlib';
 
 import { FuseV1Options, FuseVersion } from '@electron/fuses';
 import { utils } from '@electron-forge/core';
@@ -25,6 +28,70 @@ const fromBuildIdentifier = utils.fromBuildIdentifier;
 const linuxMimeTypes = [`x-scheme-handler/${productName.toLowerCase()}`];
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
+const resolveGoServerBinaryName = (targetPlatform, targetArch) => {
+  if (targetPlatform === 'darwin' && targetArch === 'arm64') {
+    return 'friday-darwin-arm64';
+  }
+  if (targetPlatform === 'linux' && targetArch === 'x64') {
+    return 'friday-linux-amd64';
+  }
+  if (targetPlatform === 'linux' && targetArch === 'arm64') {
+    return 'friday-linux-arm64';
+  }
+  if (targetPlatform === 'linux' && targetArch === 'ia32') {
+    return 'friday-linux-386';
+  }
+  if (targetPlatform === 'win32' && targetArch === 'x64') {
+    return 'friday-windows-amd64.exe';
+  }
+  return null;
+};
+
+const GO_SERVER_RESOURCE_NAME = resolveGoServerBinaryName(platform, arch);
+const GO_SERVER_RESOURCE_ARCHIVE_NAME = GO_SERVER_RESOURCE_NAME
+  ? `${GO_SERVER_RESOURCE_NAME}.gz`
+  : null;
+
+const ensureGoServerArchive = async (targetPlatform, targetArch) => {
+  const goServerResourceName = resolveGoServerBinaryName(targetPlatform, targetArch);
+  if (!goServerResourceName) return;
+
+  const sourcePath = path.join(
+    __dirname,
+    'resources',
+    'go-server',
+    goServerResourceName
+  );
+  const archivePath = path.join(
+    __dirname,
+    'resources',
+    'go-server',
+    `${goServerResourceName}.gz`
+  );
+
+  const sourceStat = await stat(sourcePath);
+  let shouldGenerate = true;
+  try {
+    const archiveStat = await stat(archivePath);
+    shouldGenerate =
+      archiveStat.size === 0 || archiveStat.mtimeMs < sourceStat.mtimeMs;
+  } catch {
+    shouldGenerate = true;
+  }
+
+  if (!shouldGenerate) {
+    return;
+  }
+
+  const tempArchivePath = `${archivePath}.tmp`;
+  await pipeline(
+    createReadStream(sourcePath),
+    createGzip({ level: 9 }),
+    createWriteStream(tempArchivePath)
+  );
+  await rm(archivePath, { force: true });
+  await rename(tempArchivePath, archivePath);
+};
 
 const DEFAULT_ELECTRON_LOCALES_KEEP = new Set([
   'en',
@@ -333,6 +400,22 @@ export default {
       'hardened-runtime': true,
     },
     electronZipDir: process.env.ELECTRON_FORGE_ELECTRON_ZIP_DIR,
+    download: {
+      cacheRoot: path.join(__dirname, '.electron-cache'),
+      mirrorOptions: {
+        mirror:
+          process.env.ELECTRON_MIRROR ??
+          'https://npmmirror.com/mirrors/electron/',
+      },
+      downloadOptions: {
+        retry: {
+          limit: 5,
+        },
+        timeout: {
+          request: 120_000,
+        },
+      },
+    },
     osxNotarize: process.env.APPLE_ID
       ? {
           tool: 'notarytool',
@@ -345,6 +428,9 @@ export default {
     extraResource: [
       './resources/app-update.yml',
       ...(platform === 'linux' ? ['./resources/affine.metainfo.xml'] : []),
+      ...(GO_SERVER_RESOURCE_ARCHIVE_NAME
+        ? [`./resources/go-server/${GO_SERVER_RESOURCE_ARCHIVE_NAME}`]
+        : []),
     ],
     protocols: [
       {
@@ -416,6 +502,8 @@ export default {
       if (process.env.SKIP_GENERATE_ASSETS) {
         return;
       }
+
+      await ensureGoServerArchive(platform, arch);
 
       // TODO(@Peng): right now we do not need the following
       // it is for octobase-node, but we dont use it for now.

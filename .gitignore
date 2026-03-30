@@ -71,6 +71,7 @@ download
 
 # Cache
 .eslintcache
+.electron-cache
 next-env.d.ts
 .rollup.cache
 

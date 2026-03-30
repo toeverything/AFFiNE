@@ -9,6 +9,7 @@ import { buildType, isDev, overrideSession } from './config';
 import { persistentConfig } from './config-storage/persist';
 import { setupDeepLink } from './deep-link';
 import { registerEvents } from './events';
+import { setupGoServerManager } from './go-server';
 import { registerHandlers } from './handlers';
 import { logger } from './logger';
 import { registerProtocol } from './protocol';
@@ -111,6 +112,7 @@ registerSecurityRestrictions();
  */
 app
   .whenReady()
+  .then(setupGoServerManager)
   .then(registerProtocol)
   .then(registerHandlers)
   .then(registerEvents)
