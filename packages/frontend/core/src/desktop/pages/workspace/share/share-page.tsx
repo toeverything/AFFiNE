@@ -130,7 +130,7 @@ const SharePageInner = ({
   const [noPermission, setNoPermission] = useState(false);
   const [editorContainer, setActiveBlocksuiteEditor] =
     useActiveBlocksuiteEditor();
-  const resolvedPublishMode = useSharedPublishMode({
+  const { hasPublishModeError, resolvedPublishMode } = useSharedPublishMode({
     docId,
     publishMode,
     workspaceId,
@@ -264,6 +264,10 @@ const SharePageInner = ({
     },
     [editor, setActiveBlocksuiteEditor, jumpToPageBlock, openPage, workspaceId]
   );
+
+  if (hasPublishModeError && !workspace && !page && !editor) {
+    return null;
+  }
 
   if (noPermission) {
     return <PageNotFound noPermission />;

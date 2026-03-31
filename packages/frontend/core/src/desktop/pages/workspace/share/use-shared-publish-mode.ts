@@ -19,11 +19,13 @@ export const useSharedPublishMode = ({
   const [resolvedPublishMode, setResolvedPublishMode] = useState<DocMode | null>(
     publishMode ?? null
   );
+  const [hasPublishModeError, setHasPublishModeError] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
 
     if (publishMode) {
+      setHasPublishModeError(false);
       setResolvedPublishMode(publishMode);
 
       return () => {
@@ -31,6 +33,7 @@ export const useSharedPublishMode = ({
       };
     }
 
+    setHasPublishModeError(false);
     setResolvedPublishMode(null);
 
     serverService.server
@@ -54,7 +57,7 @@ export const useSharedPublishMode = ({
         }
 
         console.error(err);
-        setResolvedPublishMode('page');
+        setHasPublishModeError(true);
       });
 
     return () => {
@@ -62,5 +65,8 @@ export const useSharedPublishMode = ({
     };
   }, [docId, publishMode, serverService.server, workspaceId]);
 
-  return resolvedPublishMode;
+  return {
+    hasPublishModeError,
+    resolvedPublishMode,
+  };
 };
