@@ -15,17 +15,17 @@ on:
         description: 'Desktop - macOS'
         required: true
         type: boolean
-        default: false
+        default: true
       desktop_windows:
         description: 'Desktop - Windows'
         required: true
         type: boolean
-        default: false
+        default: true
       desktop_linux:
         description: 'Desktop - Linux'
         required: true
         type: boolean
-        default: false
+        default: true
       mobile:
         description: 'Release Mobile?'
         required: true
