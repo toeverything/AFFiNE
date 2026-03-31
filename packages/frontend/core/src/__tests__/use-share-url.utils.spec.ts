@@ -7,8 +7,8 @@ describe('getDefaultShareMode', () => {
     expect(getDefaultShareMode('edgeless')).toBe('edgeless');
   });
 
-  test('returns page for page mode or an unset mode', () => {
-    expect(getDefaultShareMode('page')).toBe('page');
-    expect(getDefaultShareMode(undefined)).toBe('page');
+  test('returns undefined for page mode or an unset mode', () => {
+    expect(getDefaultShareMode('page')).toBeUndefined();
+    expect(getDefaultShareMode(undefined)).toBeUndefined();
   });
 });
