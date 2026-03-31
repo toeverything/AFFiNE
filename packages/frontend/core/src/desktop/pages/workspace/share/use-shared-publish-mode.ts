@@ -31,6 +31,8 @@ export const useSharedPublishMode = ({
       };
     }
 
+    setResolvedPublishMode(null);
+
     serverService.server
       .gql({
         query: getWorkspacePageByIdQuery,
