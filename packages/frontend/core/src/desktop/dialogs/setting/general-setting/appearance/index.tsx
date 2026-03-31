@@ -11,7 +11,7 @@ import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useTheme } from 'next-themes';
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 
 import { useAppSettingHelper } from '../../../../../components/hooks/affine/use-app-setting-helper';
 import { OpenInAppLinksMenu } from './links';
@@ -41,7 +41,7 @@ export const ThemeSettings = () => {
   const t = useI18n();
   const { setTheme, theme } = useTheme();
 
-  const radioItems = useMemo<RadioItem[]>(() => getThemeOptions(t), [t]);
+  const radioItems: RadioItem[] = getThemeOptions(t);
 
   return (
     <RadioGroup
