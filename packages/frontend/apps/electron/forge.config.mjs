@@ -426,10 +426,12 @@ export default {
       : undefined,
     // We need the following line for updater
     extraResource: [
-      './resources/app-update.yml',
-      ...(platform === 'linux' ? ['./resources/affine.metainfo.xml'] : []),
+      path.resolve(__dirname, 'resources', 'app-update.yml'),
+      ...(platform === 'linux' 
+        ? [path.resolve(__dirname, 'resources', 'affine.metainfo.xml')] 
+        : []),
       ...(GO_SERVER_RESOURCE_ARCHIVE_NAME
-        ? [`./resources/go-server/${GO_SERVER_RESOURCE_ARCHIVE_NAME}`]
+        ? [path.resolve(__dirname, 'resources', 'go-server', GO_SERVER_RESOURCE_ARCHIVE_NAME)]
         : []),
     ],
     protocols: [

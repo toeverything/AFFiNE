@@ -572,11 +572,6 @@ if (!nativeBinding) {
 }
 
 module.exports = nativeBinding
-module.exports.ApplicationInfo = nativeBinding.ApplicationInfo
-module.exports.ApplicationListChangedSubscriber = nativeBinding.ApplicationListChangedSubscriber
-module.exports.ApplicationStateChangedSubscriber = nativeBinding.ApplicationStateChangedSubscriber
-module.exports.AudioCaptureSession = nativeBinding.AudioCaptureSession
-module.exports.ShareableContent = nativeBinding.ShareableContent
 module.exports.abortRecording = nativeBinding.abortRecording
 module.exports.decodeAudio = nativeBinding.decodeAudio
 module.exports.decodeAudioSync = nativeBinding.decodeAudioSync
