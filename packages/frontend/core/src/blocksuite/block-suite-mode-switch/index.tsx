@@ -47,14 +47,14 @@ export const EditorModeSwitch = () => {
   const isActiveView = activeView?.id && activeView?.id === view?.id;
 
   const togglePage = useCallback(() => {
-    if (currentMode === 'page' || isSharedMode || trash) return;
+    if (currentMode === 'page' || trash) return;
     editor.setMode('page');
     editor.setSelector(undefined);
     track.$.header.actions.switchPageMode({ mode: 'page' });
   }, [currentMode, editor, isSharedMode, trash]);
 
   const toggleEdgeless = useCallback(() => {
-    if (currentMode === 'edgeless' || isSharedMode || trash) return;
+    if (currentMode === 'edgeless' || trash) return;
     editor.setMode('edgeless');
     editor.setSelector(undefined);
     track.$.header.actions.switchPageMode({ mode: 'edgeless' });
@@ -68,12 +68,12 @@ export const EditorModeSwitch = () => {
   );
 
   const shouldHide = useCallback(
-    (mode: DocMode) => (trash || isSharedMode) && currentMode !== mode,
-    [currentMode, isSharedMode, trash]
+    (mode: DocMode) => trash && currentMode !== mode,
+    [currentMode, trash]
   );
 
   useEffect(() => {
-    if (trash || isSharedMode || currentMode === undefined || !isActiveView)
+    if (trash || currentMode === undefined || !isActiveView)
       return;
     return registerAffineCommand({
       id: 'affine:doc-mode-switch',

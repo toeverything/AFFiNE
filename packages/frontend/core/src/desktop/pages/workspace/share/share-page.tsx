@@ -37,6 +37,8 @@ import { PageNotFound } from '../../404';
 import { ShareFooter } from './share-footer';
 import { ShareHeader } from './share-header';
 import * as styles from './share-page.css';
+import { useSharedModeQuerySync } from './use-shared-mode-query-sync';
+import { useSharedPublishMode } from './use-shared-publish-mode';
 
 const useUpdateBasename = (workspace: Workspace | null) => {
   const location = useLocation();
@@ -106,7 +108,7 @@ export const SharePage = ({
 const SharePageInner = ({
   workspaceId,
   docId,
-  publishMode = 'page',
+  publishMode,
   selector,
   isTemplate,
   templateName,
@@ -128,10 +130,23 @@ const SharePageInner = ({
   const [noPermission, setNoPermission] = useState(false);
   const [editorContainer, setActiveBlocksuiteEditor] =
     useActiveBlocksuiteEditor();
+  const resolvedPublishMode = useSharedPublishMode({
+    docId,
+    publishMode,
+    workspaceId,
+  });
+  const currentPublishMode = useSharedModeQuerySync({
+    editor,
+    resolvedPublishMode,
+  });
 
   useEffect(() => {
+    if (!resolvedPublishMode || editor || workspace || page) {
+      return;
+    }
+
     // create a workspace for share page
-    const { workspace } = workspacesService.open(
+    const { workspace: sharedWorkspace } = workspacesService.open(
       {
         metadata: {
           id: workspaceId,
@@ -160,16 +175,16 @@ const SharePageInner = ({
       }
     );
 
-    setWorkspace(workspace);
+    setWorkspace(sharedWorkspace);
 
-    workspace.engine.doc
-      .waitForDocLoaded(workspace.id)
+    sharedWorkspace.engine.doc
+      .waitForDocLoaded(sharedWorkspace.id)
       .then(async () => {
-        const { doc } = workspace.scope.get(DocsService).open(docId);
+        const { doc } = sharedWorkspace.scope.get(DocsService).open(docId);
         doc.blockSuiteDoc.load();
         doc.blockSuiteDoc.readonly = true;
 
-        await workspace.engine.doc.waitForDocLoaded(docId);
+        await sharedWorkspace.engine.doc.waitForDocLoaded(docId);
 
         if (!doc.blockSuiteDoc.root) {
           throw new Error('Doc is empty');
@@ -178,7 +193,7 @@ const SharePageInner = ({
         setPage(doc);
 
         const editor = doc.scope.get(EditorsService).createEditor();
-        editor.setMode(publishMode);
+        editor.setMode(resolvedPublishMode);
 
         if (selector) {
           editor.setSelector(selector);
@@ -192,12 +207,22 @@ const SharePageInner = ({
       });
   }, [
     docId,
+    editor,
+    page,
+    resolvedPublishMode,
     workspaceId,
+    workspace,
     workspacesService,
-    publishMode,
-    selector,
     serverService.server.baseUrl,
   ]);
+
+  useEffect(() => {
+    if (!editor) {
+      return;
+    }
+
+    editor.setSelector(selector);
+  }, [editor, selector]);
 
   const t = useI18n();
   const pageTitle = useLiveData(page?.title$);
@@ -244,7 +269,7 @@ const SharePageInner = ({
     return <PageNotFound noPermission />;
   }
 
-  if (!workspace || !page || !editor) {
+  if (!workspace || !page || !editor || !currentPublishMode) {
     return null;
   }
 
@@ -252,13 +277,13 @@ const SharePageInner = ({
     <FrameworkScope scope={workspace.scope}>
       <FrameworkScope scope={page.scope}>
         <FrameworkScope scope={editor.scope}>
-          <ViewIcon icon={publishMode === 'page' ? 'doc' : 'edgeless'} />
+          <ViewIcon icon={currentPublishMode === 'page' ? 'doc' : 'edgeless'} />
           <ViewTitle title={pageTitle ?? t['unnamed']()} />
           <div className={styles.root}>
             <div className={styles.mainContainer}>
               <ShareHeader
                 pageId={page.id}
-                publishMode={publishMode}
+                publishMode={currentPublishMode}
                 isTemplate={isTemplate}
                 templateName={templateName}
                 snapshotUrl={templateSnapshotUrl}
@@ -271,7 +296,7 @@ const SharePageInner = ({
                   )}
                 >
                   <PageDetailEditor onLoad={onEditorLoad} readonly />
-                  {publishMode === 'page' && !BUILD_CONFIG.isElectron ? (
+                  {currentPublishMode === 'page' && !BUILD_CONFIG.isElectron ? (
                     <ShareFooter />
                   ) : null}
                 </Scrollable.Viewport>
@@ -279,7 +304,7 @@ const SharePageInner = ({
               </Scrollable.Root>
               <EditorOutlineViewer
                 editor={editorContainer?.host ?? null}
-                show={publishMode === 'page'}
+                show={currentPublishMode === 'page'}
               />
               {!BUILD_CONFIG.isElectron && <SharePageFooter />}
             </div>
