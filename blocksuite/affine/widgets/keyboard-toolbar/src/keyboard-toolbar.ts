@@ -127,14 +127,27 @@ export class AffineKeyboardToolbar extends SignalWatcher(
         const block = this.std.view.getBlock(selectedModels[0].id);
         if (!block) return;
 
-        const { y: y1 } = this.getBoundingClientRect();
-        const { bottom: y2 } = block.getBoundingClientRect();
+        const { top: toolbarTop } = this.getBoundingClientRect();
+        const { bottom: blockBottom } = block.getBoundingClientRect();
         const gap = 8;
+        const delta = blockBottom - toolbarTop + gap;
 
-        if (y2 < y1 + gap) return;
+        if (delta <= 0) return;
 
-        scrollTo({
-          top: window.scrollY + y2 - y1 + gap,
+        const scrollViewport = this.rootComponent.closest<HTMLElement>(
+          '.affine-page-viewport, .affine-edgeless-viewport'
+        );
+
+        if (scrollViewport) {
+          scrollViewport.scrollBy({
+            top: delta,
+            behavior: 'instant',
+          });
+          return;
+        }
+
+        window.scrollBy({
+          top: delta,
           behavior: 'instant',
         });
       })

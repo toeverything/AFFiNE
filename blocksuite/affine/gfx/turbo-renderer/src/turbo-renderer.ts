@@ -140,12 +140,19 @@ export class ViewportTurboRendererExtension extends GfxExtension {
   }
 
   override mounted() {
-    const mountPoint = document.querySelector('.affine-edgeless-viewport');
-    if (mountPoint) {
-      mountPoint.append(this.canvas);
-    }
-
     this.viewport.elementReady.pipe(take(1)).subscribe(element => {
+      const mountPoint =
+        element.closest<HTMLElement>(
+          '.affine-edgeless-viewport, .affine-page-viewport'
+        ) ??
+        this.std.host.closest<HTMLElement>(
+          '.affine-edgeless-viewport, .affine-page-viewport'
+        );
+
+      if (mountPoint) {
+        mountPoint.append(this.canvas);
+      }
+
       this.viewportElement = element;
       syncCanvasSize(this.canvas, this.std.host);
       this.state$.next('pending');

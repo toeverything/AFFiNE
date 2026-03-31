@@ -66,7 +66,10 @@ export class EdgelessEraserToolButton extends EdgelessToolbarToolMixin(
         ></affine-tooltip-content-with-shortcut>`}
         .tooltipOffset=${4}
         .active=${type === EraserTool}
-        @click=${() => this.setEdgelessTool(EraserTool)}
+        @click=${() => {
+          (this.ownerDocument.activeElement as HTMLElement | null)?.blur?.();
+          this.setEdgelessTool(EraserTool);
+        }}
       >
         <div class="eraser-button">${icon}</div>
       </edgeless-toolbar-button>

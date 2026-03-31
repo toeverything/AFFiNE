@@ -144,6 +144,7 @@ export class EdgelessPenToolButton extends EdgelessToolbarToolMixin(
       }
     };
     if (!this.active) {
+      (this.ownerDocument.activeElement as HTMLElement | null)?.blur?.();
       const pen = this.pen$.peek();
       setPenByType(pen);
     }

@@ -4,6 +4,7 @@ import {
 } from '@blocksuite/affine-ext-loader';
 
 import { effects } from './effects';
+import { historySeniorTool } from './quick-tool/history-senior-tool';
 import { defaultQuickTool } from './quick-tool/quick-tool';
 import { SnapExtension } from './snap/snap-manager';
 import { SnapOverlay } from './snap/snap-overlay';
@@ -23,6 +24,7 @@ export class PointerViewExtension extends ViewExtensionProvider {
     context.register(PanTool);
     if (this.isEdgeless(context.scope)) {
       context.register(defaultQuickTool);
+      context.register(historySeniorTool);
       context.register(SnapExtension);
       context.register(SnapOverlay);
     }

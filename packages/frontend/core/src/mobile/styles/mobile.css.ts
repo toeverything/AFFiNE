@@ -24,7 +24,10 @@ globalStyle('body:has(affine-keyboard-toolbar)', {
   paddingBottom: `calc(${globalVars.appKeyboardStaticHeight} + 46px)`,
 });
 globalStyle('body:has(>#app-tabs) edgeless-toolbar-widget', {
-  bottom: globalVars.appTabSafeArea,
+  vars: {
+    ['--affine-edgeless-toolbar-bottom-offset' as string]:
+      globalVars.appTabSafeArea,
+  },
 });
 
 globalStyle('html', {

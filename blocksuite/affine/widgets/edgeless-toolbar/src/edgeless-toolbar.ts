@@ -69,7 +69,10 @@ export class EdgelessToolbarWidget extends WidgetComponent<RootBlockModel> {
       z-index: 1;
       left: calc(50%);
       transform: translateX(-50%);
-      bottom: 0;
+      bottom: calc(
+        var(--affine-edgeless-toolbar-bottom-offset, 0px) +
+          var(--affine-edgeless-toolbar-keyboard-offset, 0px)
+      );
       -webkit-user-select: none;
       user-select: none;
       width: 100%;
@@ -271,6 +274,24 @@ export class EdgelessToolbarWidget extends WidgetComponent<RootBlockModel> {
   );
 
   private _resizeObserver: ResizeObserver | null = null;
+
+  private readonly _updateKeyboardOffset = () => {
+    const vv = window.visualViewport;
+
+    if (!vv) {
+      this.style.removeProperty('--affine-edgeless-toolbar-keyboard-offset');
+      return;
+    }
+
+    const keyboardHeight = Math.max(
+      0,
+      window.innerHeight - vv.height - vv.offsetTop
+    );
+    this.style.setProperty(
+      '--affine-edgeless-toolbar-keyboard-offset',
+      `${keyboardHeight}px`
+    );
+  };
 
   private readonly _slotsProvider = new ContextProvider(this, {
     context: edgelessToolbarSlotsContext,
@@ -591,6 +612,19 @@ export class EdgelessToolbarWidget extends WidgetComponent<RootBlockModel> {
       }
     });
     this._resizeObserver.observe(this);
+    this._updateKeyboardOffset();
+    if (window.visualViewport) {
+      this.disposables.addFromEvent(
+        window.visualViewport,
+        'resize',
+        this._updateKeyboardOffset
+      );
+      this.disposables.addFromEvent(
+        window.visualViewport,
+        'scroll',
+        this._updateKeyboardOffset
+      );
+    }
     this.disposables.add(
       this.std
         .get(ThemeProvider)
@@ -625,6 +659,7 @@ export class EdgelessToolbarWidget extends WidgetComponent<RootBlockModel> {
     if (this._resizeObserver) {
       this._resizeObserver.disconnect();
     }
+    this.style.removeProperty('--affine-edgeless-toolbar-keyboard-offset');
   }
 
   override firstUpdated() {
