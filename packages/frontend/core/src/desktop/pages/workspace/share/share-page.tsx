@@ -210,6 +210,7 @@ const SharePageInner = ({
     editor,
     page,
     resolvedPublishMode,
+    selector,
     workspaceId,
     workspace,
     workspacesService,

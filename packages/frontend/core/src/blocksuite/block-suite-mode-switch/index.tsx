@@ -39,7 +39,6 @@ export const EditorModeSwitch = () => {
   const t = useI18n();
   const editor = useService(EditorService).editor;
   const trash = useLiveData(editor.doc.trash$);
-  const isSharedMode = editor.isSharedMode;
   const currentMode = useLiveData(editor.mode$);
   const view = useServiceOptional(ViewService)?.view;
   const workbench = useServiceOptional(WorkbenchService)?.workbench;
@@ -51,14 +50,14 @@ export const EditorModeSwitch = () => {
     editor.setMode('page');
     editor.setSelector(undefined);
     track.$.header.actions.switchPageMode({ mode: 'page' });
-  }, [currentMode, editor, isSharedMode, trash]);
+  }, [currentMode, editor, trash]);
 
   const toggleEdgeless = useCallback(() => {
     if (currentMode === 'edgeless' || trash) return;
     editor.setMode('edgeless');
     editor.setSelector(undefined);
     track.$.header.actions.switchPageMode({ mode: 'edgeless' });
-  }, [currentMode, editor, isSharedMode, trash]);
+  }, [currentMode, editor, trash]);
 
   const onModeChange = useCallback(
     (mode: DocMode) => {
@@ -73,8 +72,7 @@ export const EditorModeSwitch = () => {
   );
 
   useEffect(() => {
-    if (trash || currentMode === undefined || !isActiveView)
-      return;
+    if (trash || currentMode === undefined || !isActiveView) return;
     return registerAffineCommand({
       id: 'affine:doc-mode-switch',
       category: 'editor:page',
@@ -89,7 +87,7 @@ export const EditorModeSwitch = () => {
       },
       run: () => onModeChange(currentMode === 'edgeless' ? 'page' : 'edgeless'),
     });
-  }, [currentMode, isActiveView, isSharedMode, onModeChange, t, trash]);
+  }, [currentMode, isActiveView, onModeChange, t, trash]);
 
   return (
     <PureEditorModeSwitch
