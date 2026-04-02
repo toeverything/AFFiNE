@@ -647,7 +647,7 @@ describe('compare function', () => {
   const createGroup = (
     service: EdgelessRootBlockComponent['service'],
     childIds: string[]
-    // eslint-disable-next-line sonarjs/no-identical-functions
+    // oxlint-disable-next-line sonarjs/no-identical-functions
   ) => {
     const children = new Y.Map<boolean>();
     childIds.forEach(id => children.set(id, true));

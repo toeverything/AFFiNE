@@ -1,4 +1,8 @@
-query listCommentChanges($workspaceId: String!, $docId: String!, $pagination: PaginationInput!) {
+query listCommentChanges(
+  $workspaceId: String!
+  $docId: String!
+  $pagination: PaginationInput!
+) {
   workspace(id: $workspaceId) {
     commentChanges(docId: $docId, pagination: $pagination) {
       totalCount

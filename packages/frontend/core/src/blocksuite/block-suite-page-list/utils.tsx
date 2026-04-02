@@ -50,10 +50,7 @@ export const usePageHelper = (docCollection: Workspace) => {
 
   const createEdgelessAndOpen = useCallback(
     (
-      options: {
-        at?: 'new-tab' | 'tail' | 'active';
-        show?: boolean;
-      } = {
+      options: { at?: 'new-tab' | 'tail' | 'active'; show?: boolean } = {
         at: 'active',
         show: true,
       }

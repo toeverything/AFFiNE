@@ -90,7 +90,7 @@ test.skip('use keyboard copy inside code block copy', async ({
 
   await type(page, 'use');
   await page.keyboard.down('Shift');
-  // eslint-disable-next-line @typescript-eslint/prefer-for-of
+  // oxlint-disable-next-line @typescript-eslint/prefer-for-of
   for (let i = 0; i < 'use'.length; i++) {
     await page.keyboard.press('ArrowLeft');
   }

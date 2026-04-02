@@ -153,7 +153,7 @@ export class AStarRunner {
     }
     const neighbors = this._neighbors(current);
 
-    // eslint-disable-next-line @typescript-eslint/prefer-for-of
+    // oxlint-disable-next-line @typescript-eslint/prefer-for-of
     for (let i = 0; i < neighbors.length; i++) {
       const next = neighbors[i];
       const curCosts = this._costSoFar.get(current);
