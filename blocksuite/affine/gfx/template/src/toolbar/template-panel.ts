@@ -21,13 +21,16 @@ import { css, html, LitElement, nothing, unsafeCSS } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
-import { unsafeSVG } from 'lit/directives/unsafe-svg.js';
 
 import { createTemplateJob } from '../services/template.js';
 import { builtInTemplates } from './builtin-templates.js';
 import { defaultPreview, Triangle } from './cards.js';
 import type { Template } from './template-type.js';
 import { cloneDeep } from './utils.js';
+
+function toSvgPreviewDataUrl(svg: string) {
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
 
 export class EdgelessTemplatePanel extends WithDisposable(LitElement) {
   static override styles = css`
@@ -433,7 +436,11 @@ export class EdgelessTemplatePanel extends WithDisposable(LitElement) {
                     template => {
                       const preview = template.preview
                         ? template.preview.startsWith('<svg')
-                          ? html`${unsafeSVG(template.preview)}`
+                          ? html`<img
+                              src="${toSvgPreviewDataUrl(template.preview)}"
+                              class="template-preview"
+                              loading="lazy"
+                            />`
                           : html`<img
                               src="${template.preview}"
                               class="template-preview"

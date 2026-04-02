@@ -15,7 +15,7 @@ import type {
 import { GlobalContextService } from '@affine/core/modules/global-context';
 import { createIsland, type Island } from '@affine/core/utils/island';
 import { ServerDeploymentType } from '@affine/graphql';
-import { Trans } from '@affine/i18n';
+import { Trans, useTranslation } from '@affine/i18n';
 import { ContactWithUsIcon } from '@blocksuite/icons/rc';
 import { FrameworkScope, useLiveData, useService } from '@toeverything/infra';
 import { debounce } from 'lodash-es';
@@ -72,10 +72,12 @@ const SettingModalInner = ({
     scrollAnchor: initialScrollAnchor,
   });
   const globalContextService = useService(GlobalContextService);
+  const { i18n } = useTranslation('translation');
 
   const currentServerId = useLiveData(
     globalContextService.globalContext.serverId.$
   );
+  const currentLanguageKey = i18n.resolvedLanguage ?? i18n.language;
   const serversService = useService(ServersService);
   const defaultServerService = useService(DefaultServerService);
   const currentServer =

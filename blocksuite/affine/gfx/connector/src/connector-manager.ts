@@ -963,7 +963,7 @@ export class ConnectionOverlay extends Overlay {
     this._clearRect();
 
     let result: Connection | null = null;
-    // eslint-disable-next-line @typescript-eslint/prefer-for-of
+    // oxlint-disable-next-line @typescript-eslint/prefer-for-of
     for (let i = 0; i < connectables.length; i++) {
       const connectable = connectables[i];
       // first check if in excluedIds
