@@ -19,14 +19,12 @@
     "@affine/nbstore": "workspace:*",
     "@affine/track": "workspace:*",
     "@blocksuite/affine": "workspace:*",
-    "@blocksuite/icons": "^2.2.17",
     "@capacitor/android": "^7.0.0",
     "@capacitor/app": "^7.0.0",
     "@capacitor/core": "^7.0.0",
     "@capacitor/keyboard": "^7.0.0",
     "@capacitor/status-bar": "^7.0.0",
     "@capgo/inappbrowser": "^8.0.0",
-    "@sentry/react": "^10.40.0",
     "@toeverything/infra": "workspace:*",
     "async-call-rpc": "^6.4.2",
     "idb": "^8.0.0",
@@ -39,7 +37,6 @@
     "@capacitor/cli": "^7.0.0",
     "@types/react": "^19.0.1",
     "@types/react-dom": "^19.0.2",
-    "cross-env": "^10.1.0",
     "typescript": "^5.9.3"
   }
 }

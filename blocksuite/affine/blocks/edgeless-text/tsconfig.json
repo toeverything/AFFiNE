@@ -8,14 +8,12 @@
   "include": ["./src"],
   "references": [
     { "path": "../surface" },
-    { "path": "../../components" },
     { "path": "../../ext-loader" },
     { "path": "../../gfx/text" },
     { "path": "../../inlines/preset" },
     { "path": "../../model" },
     { "path": "../../rich-text" },
     { "path": "../../shared" },
-    { "path": "../../widgets/edgeless-toolbar" },
     { "path": "../../../framework/global" },
     { "path": "../../../framework/std" },
     { "path": "../../../framework/store" }

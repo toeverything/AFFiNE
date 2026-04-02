@@ -12,7 +12,6 @@
   },
   "sideEffects": false,
   "devDependencies": {
-    "@graphql-codegen/add": "^5.0.3",
     "@graphql-codegen/cli": "^5.0.7",
     "@graphql-codegen/typescript": "^4.1.6",
     "@graphql-codegen/typescript-operations": "^4.6.1",
@@ -25,7 +24,6 @@
   },
   "dependencies": {
     "@affine/debug": "workspace:*",
-    "@affine/env": "workspace:*",
     "@affine/error": "workspace:*",
     "graphql": "^16.9.0",
     "lodash": "^4.17.23",

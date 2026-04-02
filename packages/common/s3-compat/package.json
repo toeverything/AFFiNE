@@ -11,8 +11,7 @@
     "s3mini": "^0.9.1"
   },
   "devDependencies": {
-    "@types/aws4": "^1.11.6",
-    "vitest": "^4.0.18"
+    "@types/aws4": "^1.11.6"
   },
   "version": "0.26.3"
 }
