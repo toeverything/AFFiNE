@@ -30,6 +30,7 @@
   },
   "license": "MIT",
   "devDependencies": {
+    "@tweakpane/core": "^2.0.4",
     "@types/micromatch": "^4.0.9",
     "@vanilla-extract/vite-plugin": "^5.0.0",
     "magic-string": "^0.30.21",

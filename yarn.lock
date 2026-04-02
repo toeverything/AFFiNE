@@ -563,6 +563,7 @@ __metadata:
     "@sentry/electron": "npm:^7.9.0"
     "@sentry/esbuild-plugin": "npm:^5.1.1"
     "@toeverything/infra": "workspace:*"
+    "@types/set-cookie-parser": "npm:^2.4.10"
     "@vitejs/plugin-react-swc": "npm:^4.0.0"
     app-builder-lib: "npm:^26.8.1"
     async-call-rpc: "npm:^6.4.2"
@@ -964,6 +965,7 @@ __metadata:
     "@socket.io/redis-adapter": "npm:^8.3.0"
     "@types/cookie-parser": "npm:^1.4.8"
     "@types/express": "npm:^5.0.1"
+    "@types/express-serve-static-core": "npm:^5.0.6"
     "@types/graphql-upload": "npm:^17.0.0"
     "@types/http-errors": "npm:^2.0.4"
     "@types/jsonwebtoken": "npm:^9.0.9"
@@ -1011,6 +1013,7 @@ __metadata:
     piscina: "npm:^5.1.4"
     prisma: "npm:^6.6.0"
     react: "npm:^19.2.1"
+    react-dom: "npm:19.2.1"
     react-email: "npm:^4.3.2"
     reflect-metadata: "npm:^0.2.2"
     rxjs: "npm:^7.8.2"
@@ -3198,6 +3201,7 @@ __metadata:
     "@shoelace-style/shoelace": "npm:2.20.1"
     "@toeverything/pdf-viewer": "npm:^0.1.1"
     "@toeverything/pdfium": "npm:^0.1.1"
+    "@tweakpane/core": "npm:^2.0.4"
     "@types/micromatch": "npm:^4.0.9"
     "@vanilla-extract/vite-plugin": "npm:^5.0.0"
     katex: "npm:^0.16.27"
@@ -15407,6 +15411,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@tweakpane/core@npm:^2.0.4":
+  version: 2.0.5
+  resolution: "@tweakpane/core@npm:2.0.5"
+  checksum: 10/329dd120b26abd2059dc929d37ade52bf823d631965e4cdd8fc402dd4faebd85be9a3c95069def09a937fd1a8d7364b23f490b8efe2737076fbbba210c657e1e
+  languageName: node
+  linkType: hard
+
 "@tybys/wasm-util@npm:^0.10.0, @tybys/wasm-util@npm:^0.10.1":
   version: 0.10.1
   resolution: "@tybys/wasm-util@npm:0.10.1"
@@ -15988,15 +15999,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/express-serve-static-core@npm:*, @types/express-serve-static-core@npm:^5.0.0":
-  version: 5.0.6
-  resolution: "@types/express-serve-static-core@npm:5.0.6"
+"@types/express-serve-static-core@npm:*, @types/express-serve-static-core@npm:^5.0.0, @types/express-serve-static-core@npm:^5.0.6":
+  version: 5.1.1
+  resolution: "@types/express-serve-static-core@npm:5.1.1"
   dependencies:
     "@types/node": "npm:*"
     "@types/qs": "npm:*"
     "@types/range-parser": "npm:*"
     "@types/send": "npm:*"
-  checksum: 10/9dc51bdee7da9ad4792e97dd1be5b3071b5128f26d3b87a753070221bb36c8f9d16074b95a8b972acc965641e987b1e279a44675e7312ac8f3e18ec9abe93940
+  checksum: 10/7f3d8cf7e68764c9f3e8f6a12825b69ccf5287347fc1c20b29803d4f08a4abc1153ae11d7258852c61aad50f62ef72d4c1b9c97092b0a90462c3dddec2f6026c
   languageName: node
   linkType: hard
 
@@ -16556,6 +16567,15 @@ __metadata:
     "@types/node": "npm:*"
     "@types/send": "npm:<1"
   checksum: 10/d9be72487540b9598e7d77260d533f241eb2e5db5181bb885ef2d6bc4592dad1c9e8c0e27f465d59478b2faf90edd2d535e834f20fbd9dd3c0928d43dc486404
+  languageName: node
+  linkType: hard
+
+"@types/set-cookie-parser@npm:^2.4.10":
+  version: 2.4.10
+  resolution: "@types/set-cookie-parser@npm:2.4.10"
+  dependencies:
+    "@types/node": "npm:*"
+  checksum: 10/105cc90c7d7deeb344858f720b58bd137356586545ac00d1a448e050bfcc0f385553ff26bc9c674bd8c2e953a458149eadb1945ee3d1eee81e6c0656236ebc0a
   languageName: node
   linkType: hard
 
