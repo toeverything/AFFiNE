@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-restricted-imports */
+/* oxlint-disable no-restricted-imports */
 import '@shoelace-style/shoelace/dist/components/button/button.js';
 import '@shoelace-style/shoelace/dist/components/button-group/button-group.js';
 import '@shoelace-style/shoelace/dist/components/color-picker/color-picker.js';

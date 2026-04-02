@@ -29,7 +29,6 @@ import { query, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
-import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 
 import { ParagraphBlockConfigExtension } from './paragraph-block-config.js';
 import { paragraphBlockStyles } from './styles.js';
@@ -251,15 +250,18 @@ export class ParagraphBlockComponent extends CaptionedBlockComponent<ParagraphBl
 
     let style = html``;
     if (this.model.props.type$.value.startsWith('h') && collapsed) {
+      const collapsedSiblingStyles = collapsedSiblings
+        .map(
+          sibling => `
+            [data-block-id="${sibling.id}"] {
+              display: none !important;
+            }
+          `
+        )
+        .join('\n');
       style = html`
         <style>
-          ${collapsedSiblings.map(sibling =>
-            unsafeHTML(`
-              [data-block-id="${sibling.id}"] {
-                display: none !important;
-              }
-            `)
-          )}
+          ${collapsedSiblingStyles}
         </style>
       `;
     }

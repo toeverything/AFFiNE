@@ -5,7 +5,11 @@ import test from 'ava';
 
 import { createModule } from '../../../__tests__/create-module';
 import { Mockers } from '../../../__tests__/mocks';
-import { CalendarProviderRequestError, CryptoHelper } from '../../../base';
+import {
+  CalendarProviderRequestError,
+  CryptoHelper,
+  Mutex,
+} from '../../../base';
 import { ConfigModule } from '../../../base/config';
 import { ServerConfigModule } from '../../../core/config';
 import type {
@@ -14,6 +18,7 @@ import type {
 } from '../../../models';
 import { Models } from '../../../models';
 import { CalendarModule } from '../index';
+import { CalendarCronJobs } from '../cron';
 import {
   CalendarProvider,
   CalendarProviderFactory,
@@ -85,8 +90,10 @@ const module = await createModule({
   ],
 });
 const calendarService = module.get(CalendarService);
+const calendarCronJobs = module.get(CalendarCronJobs);
 const providerFactory = module.get(CalendarProviderFactory);
 const models = module.get(Models);
+const mutex = module.get(Mutex);
 module.get(CryptoHelper).onConfigInit();
 
 const createAccount = async (
@@ -598,4 +605,58 @@ test('syncSubscription renews webhook channel when expiring', async t => {
   t.is(updated?.customChannelId, 'new-channel');
   t.is(updated?.customResourceId, 'new-resource');
   t.truthy(updated?.channelExpiration);
+});
+
+test('pollAccounts skips syncing when cluster lock is unavailable', async t => {
+  mock.method(mutex, 'acquire', async () => undefined);
+  mock.method(
+    models.calendarSubscription,
+    'listAllWithAccountForSync',
+    async () => []
+  );
+  const syncAccountMock = mock.method(calendarService, 'syncAccount', async () => {
+    return;
+  });
+
+  await calendarCronJobs.pollAccounts();
+
+  t.is(syncAccountMock.mock.callCount(), 0);
+});
+
+test('pollAccounts only syncs due accounts', async t => {
+  mock.method(mutex, 'acquire', async () => ({
+    [Symbol.asyncDispose]: async () => {},
+  }));
+  mock.method(
+    models.calendarSubscription,
+    'listAllWithAccountForSync',
+    async () =>
+      [
+        {
+          accountId: 'due-account',
+          lastSyncAt: new Date(Date.now() - 31 * 60 * 1000),
+          account: {
+            refreshIntervalMinutes: 30,
+          },
+        },
+        {
+          accountId: 'fresh-account',
+          lastSyncAt: new Date(Date.now() - 5 * 60 * 1000),
+          account: {
+            refreshIntervalMinutes: 30,
+          },
+        },
+      ] as any
+  );
+
+  const syncAccountMock = mock.method(calendarService, 'syncAccount', async () => {
+    return;
+  });
+
+  await calendarCronJobs.pollAccounts();
+
+  t.deepEqual(
+    syncAccountMock.mock.calls.map(call => call.arguments[0]),
+    ['due-account']
+  );
 });

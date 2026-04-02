@@ -12,7 +12,10 @@ import type { WorkspaceService } from '../../workspace';
 
 export class AudioTranscriptionJobStore extends Entity<{
   readonly blobId: string;
-  readonly getAudioFiles: () => Promise<File[]>;
+  readonly getAudioTranscriptionInput: () => Promise<{
+    files: File[];
+    input?: Record<string, unknown>;
+  }>;
 }> {
   constructor(
     private readonly workspaceService: WorkspaceService,
@@ -41,7 +44,7 @@ export class AudioTranscriptionJobStore extends Entity<{
     if (!graphqlService) {
       throw new Error('No graphql service available');
     }
-    const files = await this.props.getAudioFiles();
+    const { files, input } = await this.props.getAudioTranscriptionInput();
     const response = await graphqlService.gql({
       timeout: 0, // default 15s is too short for audio transcription
       query: submitAudioTranscriptionMutation,
@@ -49,6 +52,7 @@ export class AudioTranscriptionJobStore extends Entity<{
         workspaceId: this.currentWorkspaceId,
         blobId: this.props.blobId,
         blobs: files,
+        input,
       },
     });
     if (!response.submitAudioTranscription?.id) {

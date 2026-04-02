@@ -16,6 +16,21 @@ import { getCurrentWorkspace, isAiEnabled } from './utils';
 const logger = new DebugLogger('electron-renderer:recording');
 const RECORDING_IMPORT_RETRY_MS = 1000;
 const NATIVE_RECORDING_MIME_TYPE = 'audio/ogg';
+const TRANSCRIPTION_BLOCK_FLAVOUR = 'affine:transcription';
+
+type TranscriptionBlockModel = {
+  props: {
+    transcription: {
+      sourceAudio?: {
+        mimeType?: string;
+        durationMs?: number;
+        sampleRate?: number;
+        channels?: number;
+      };
+      quality?: { degraded?: boolean; overflowCount?: number };
+    };
+  };
+};
 
 type RecordingImportStatus = {
   id: number;
@@ -115,6 +130,29 @@ function findExistingAttachment(docStore: Store, attachmentName: string) {
   );
 }
 
+function ensureTranscriptionBlock(model: AttachmentBlockModel) {
+  for (const key of model.childMap.value.keys()) {
+    const block = model.store.getBlock$(key);
+    if (block?.flavour === TRANSCRIPTION_BLOCK_FLAVOUR) {
+      return block.model as unknown as TranscriptionBlockModel;
+    }
+  }
+
+  const blockId = model.store.addBlock(
+    TRANSCRIPTION_BLOCK_FLAVOUR,
+    { transcription: {} },
+    model.id
+  );
+
+  const block = model.store.getBlock(blockId)?.model as
+    | TranscriptionBlockModel
+    | undefined;
+  if (!block) {
+    throw new Error('Failed to create transcription block');
+  }
+  return block;
+}
+
 async function createRecordingDoc(
   frameworkProvider: FrameworkProvider,
   workspace: WorkspaceHandle['workspace'],
@@ -186,6 +224,20 @@ async function createRecordingDoc(
       }
       attachmentCreated = true;
     }
+
+    const transcriptionBlock = ensureTranscriptionBlock(model);
+    transcriptionBlock.props.transcription = {
+      sourceAudio: {
+        mimeType: model.props.type,
+        durationMs: status.durationMs,
+        sampleRate: status.sampleRate,
+        channels: status.numberOfChannels,
+      },
+      quality: {
+        degraded: status.degraded,
+        overflowCount: status.overflowCount,
+      },
+    };
 
     workspace.scope.get(WorkbenchService).workbench.openDoc(targetDocId);
 

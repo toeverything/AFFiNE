@@ -575,7 +575,14 @@ export class EditorUtils {
       ),
       generateImage: this.createAction(page, async () => {
         await page.getByTestId('action-generate-image').click();
-        await page.keyboard.type('generate an image');
+        const input = page.locator(
+          'affine-ai-panel-widget .ai-panel-container textarea'
+        );
+        await input.waitFor({ state: 'visible' });
+        await input.fill('generate an image');
+        await page.getByTestId('ai-panel-input-send').waitFor({
+          state: 'visible',
+        });
         await page.getByTestId('ai-panel-input-send').click();
       }),
       generateCaption: this.createAction(page, () =>

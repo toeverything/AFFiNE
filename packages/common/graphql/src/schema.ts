@@ -284,6 +284,25 @@ export interface AppConfigValidateResult {
   value: Scalars['JSON']['output'];
 }
 
+export interface AudioSliceManifestItemInput {
+  byteSize?: InputMaybe<Scalars['Int']['input']>;
+  durationSec: Scalars['Float']['input'];
+  fileName: Scalars['String']['input'];
+  index: Scalars['Int']['input'];
+  mimeType: Scalars['String']['input'];
+  startSec: Scalars['Float']['input'];
+}
+
+export interface AudioSliceManifestItemType {
+  __typename?: 'AudioSliceManifestItemType';
+  byteSize: Maybe<Scalars['Int']['output']>;
+  durationSec: Scalars['Float']['output'];
+  fileName: Scalars['String']['output'];
+  index: Scalars['Int']['output'];
+  mimeType: Scalars['String']['output'];
+  startSec: Scalars['Float']['output'];
+}
+
 export interface BlobNotFoundDataType {
   __typename?: 'BlobNotFoundDataType';
   blobId: Scalars['String']['output'];
@@ -1268,6 +1287,7 @@ export enum FeatureType {
   FreePlan = 'FreePlan',
   LifetimeProPlan = 'LifetimeProPlan',
   ProPlan = 'ProPlan',
+  QuotaExceededReadonlyWorkspace = 'QuotaExceededReadonlyWorkspace',
   TeamPlan = 'TeamPlan',
   UnlimitedCopilot = 'UnlimitedCopilot',
   UnlimitedWorkspace = 'UnlimitedWorkspace',
@@ -1616,6 +1636,25 @@ export interface ManageUserInput {
   email?: InputMaybe<Scalars['String']['input']>;
   /** User name */
   name?: InputMaybe<Scalars['String']['input']>;
+}
+
+export interface MeetingActionItemType {
+  __typename?: 'MeetingActionItemType';
+  deadline: Maybe<Scalars['String']['output']>;
+  description: Scalars['String']['output'];
+  owner: Maybe<Scalars['String']['output']>;
+}
+
+export interface MeetingSummaryV2Type {
+  __typename?: 'MeetingSummaryV2Type';
+  actionItems: Array<MeetingActionItemType>;
+  attendees: Array<Scalars['String']['output']>;
+  blockers: Array<Scalars['String']['output']>;
+  decisions: Array<Scalars['String']['output']>;
+  durationMinutes: Scalars['Float']['output'];
+  keyPoints: Array<Scalars['String']['output']>;
+  openQuestions: Array<Scalars['String']['output']>;
+  title: Scalars['String']['output'];
 }
 
 export interface MemberNotFoundInSpaceDataType {
@@ -2199,6 +2238,7 @@ export interface MutationSubmitAudioTranscriptionArgs {
   blob?: InputMaybe<Scalars['Upload']['input']>;
   blobId: Scalars['String']['input'];
   blobs?: InputMaybe<Array<Scalars['Upload']['input']>>;
+  input?: InputMaybe<SubmitAudioTranscriptionInput>;
   workspaceId: Scalars['String']['input'];
 }
 
@@ -2296,6 +2336,16 @@ export interface NoCopilotProviderAvailableDataType {
 export interface NoMoreSeatDataType {
   __typename?: 'NoMoreSeatDataType';
   spaceId: Scalars['String']['output'];
+}
+
+export interface NormalizedTranscriptSegmentType {
+  __typename?: 'NormalizedTranscriptSegmentType';
+  end: Scalars['String']['output'];
+  endSec: Scalars['Float']['output'];
+  speaker: Scalars['String']['output'];
+  start: Scalars['String']['output'];
+  startSec: Scalars['Float']['output'];
+  text: Scalars['String']['output'];
 }
 
 export interface NotInSpaceDataType {
@@ -2906,6 +2956,12 @@ export interface StreamObject {
   type: Scalars['String']['output'];
 }
 
+export interface SubmitAudioTranscriptionInput {
+  quality?: InputMaybe<TranscriptionQualityInput>;
+  sliceManifest?: InputMaybe<Array<AudioSliceManifestItemInput>>;
+  sourceAudio?: InputMaybe<TranscriptionSourceAudioInput>;
+}
+
 export interface SubscriptionAlreadyExistsDataType {
   __typename?: 'SubscriptionAlreadyExistsDataType';
   plan: Scalars['String']['output'];
@@ -3013,14 +3069,47 @@ export interface TranscriptionItemType {
   transcription: Scalars['String']['output'];
 }
 
+export interface TranscriptionQualityInput {
+  degraded?: InputMaybe<Scalars['Boolean']['input']>;
+  overflowCount?: InputMaybe<Scalars['Int']['input']>;
+}
+
+export interface TranscriptionQualityType {
+  __typename?: 'TranscriptionQualityType';
+  degraded: Maybe<Scalars['Boolean']['output']>;
+  overflowCount: Maybe<Scalars['Int']['output']>;
+}
+
 export interface TranscriptionResultType {
   __typename?: 'TranscriptionResultType';
   actions: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
+  normalizedSegments: Maybe<Array<NormalizedTranscriptSegmentType>>;
+  normalizedTranscript: Maybe<Scalars['String']['output']>;
+  quality: Maybe<TranscriptionQualityType>;
+  sliceManifest: Maybe<Array<AudioSliceManifestItemType>>;
+  sourceAudio: Maybe<TranscriptionSourceAudioType>;
   status: AiJobStatus;
   summary: Maybe<Scalars['String']['output']>;
+  summaryJson: Maybe<MeetingSummaryV2Type>;
   title: Maybe<Scalars['String']['output']>;
   transcription: Maybe<Array<TranscriptionItemType>>;
+}
+
+export interface TranscriptionSourceAudioInput {
+  channels?: InputMaybe<Scalars['Int']['input']>;
+  durationMs?: InputMaybe<Scalars['Int']['input']>;
+  mimeType?: InputMaybe<Scalars['String']['input']>;
+  sampleRate?: InputMaybe<Scalars['Int']['input']>;
+}
+
+export interface TranscriptionSourceAudioType {
+  __typename?: 'TranscriptionSourceAudioType';
+  blobId: Maybe<Scalars['String']['output']>;
+  channels: Maybe<Scalars['Int']['output']>;
+  durationMs: Maybe<Scalars['Int']['output']>;
+  mimeType: Maybe<Scalars['String']['output']>;
+  sampleRate: Maybe<Scalars['Int']['output']>;
 }
 
 export type UnionNotificationBodyType =
@@ -5181,6 +5270,7 @@ export type SubmitAudioTranscriptionMutationVariables = Exact<{
   blobs?: InputMaybe<
     Array<Scalars['Upload']['input']> | Scalars['Upload']['input']
   >;
+  input?: InputMaybe<SubmitAudioTranscriptionInput>;
 }>;
 
 export type SubmitAudioTranscriptionMutation = {
@@ -5205,6 +5295,54 @@ export type ClaimAudioTranscriptionMutation = {
     title: string | null;
     summary: string | null;
     actions: string | null;
+    normalizedTranscript: string | null;
+    sourceAudio: {
+      __typename?: 'TranscriptionSourceAudioType';
+      blobId: string | null;
+      mimeType: string | null;
+      durationMs: number | null;
+      sampleRate: number | null;
+      channels: number | null;
+    } | null;
+    quality: {
+      __typename?: 'TranscriptionQualityType';
+      degraded: boolean | null;
+      overflowCount: number | null;
+    } | null;
+    sliceManifest: Array<{
+      __typename?: 'AudioSliceManifestItemType';
+      index: number;
+      fileName: string;
+      mimeType: string;
+      startSec: number;
+      durationSec: number;
+      byteSize: number | null;
+    }> | null;
+    normalizedSegments: Array<{
+      __typename?: 'NormalizedTranscriptSegmentType';
+      speaker: string;
+      startSec: number;
+      endSec: number;
+      start: string;
+      end: string;
+      text: string;
+    }> | null;
+    summaryJson: {
+      __typename?: 'MeetingSummaryV2Type';
+      title: string;
+      durationMinutes: number;
+      attendees: Array<string>;
+      keyPoints: Array<string>;
+      decisions: Array<string>;
+      openQuestions: Array<string>;
+      blockers: Array<string>;
+      actionItems: Array<{
+        __typename?: 'MeetingActionItemType';
+        description: string;
+        owner: string | null;
+        deadline: string | null;
+      }>;
+    } | null;
     transcription: Array<{
       __typename?: 'TranscriptionItemType';
       speaker: string;
@@ -5233,6 +5371,54 @@ export type GetAudioTranscriptionQuery = {
         status: AiJobStatus;
         title: string | null;
         summary: string | null;
+        normalizedTranscript: string | null;
+        sourceAudio: {
+          __typename?: 'TranscriptionSourceAudioType';
+          blobId: string | null;
+          mimeType: string | null;
+          durationMs: number | null;
+          sampleRate: number | null;
+          channels: number | null;
+        } | null;
+        quality: {
+          __typename?: 'TranscriptionQualityType';
+          degraded: boolean | null;
+          overflowCount: number | null;
+        } | null;
+        sliceManifest: Array<{
+          __typename?: 'AudioSliceManifestItemType';
+          index: number;
+          fileName: string;
+          mimeType: string;
+          startSec: number;
+          durationSec: number;
+          byteSize: number | null;
+        }> | null;
+        normalizedSegments: Array<{
+          __typename?: 'NormalizedTranscriptSegmentType';
+          speaker: string;
+          startSec: number;
+          endSec: number;
+          start: string;
+          end: string;
+          text: string;
+        }> | null;
+        summaryJson: {
+          __typename?: 'MeetingSummaryV2Type';
+          title: string;
+          durationMinutes: number;
+          attendees: Array<string>;
+          keyPoints: Array<string>;
+          decisions: Array<string>;
+          openQuestions: Array<string>;
+          blockers: Array<string>;
+          actionItems: Array<{
+            __typename?: 'MeetingActionItemType';
+            description: string;
+            owner: string | null;
+            deadline: string | null;
+          }>;
+        } | null;
         transcription: Array<{
           __typename?: 'TranscriptionItemType';
           speaker: string;

@@ -6,6 +6,7 @@ import type {
   NativeLlmCoreMessage,
   NativeLlmEmbeddingRequest,
   NativeLlmRequest,
+  NativeLlmRerankRequest,
   NativeLlmStreamEvent,
   NativeLlmStructuredRequest,
   NativeLlmStructuredResponse,
@@ -19,6 +20,7 @@ import {
 import { NativeDispatchFn, ToolCallLoop, ToolSchemaExtractor } from './loop';
 import type {
   CopilotChatOptions,
+  CopilotRerankRequest,
   CopilotStructuredOptions,
   ModelAttachmentCapability,
   PromptMessage,
@@ -192,6 +194,21 @@ export function parseNativeStructuredOutput(
   throw new StructuredResponseParseError(
     `Unexpected structured response: ${normalized.slice(0, 200)}`
   );
+}
+
+export function buildNativeRerankRequest(
+  model: string,
+  request: CopilotRerankRequest
+): NativeLlmRerankRequest {
+  return {
+    model,
+    query: request.query,
+    candidates: request.candidates.map(candidate => ({
+      ...(candidate.id ? { id: candidate.id } : {}),
+      text: candidate.text,
+    })),
+    ...(request.topK ? { top_n: request.topK } : {}),
+  };
 }
 
 async function toCoreContents(

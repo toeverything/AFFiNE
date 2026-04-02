@@ -273,7 +273,7 @@ export class SelectionController implements ReactiveController {
       }
       drag?.onMove(event.clientY);
     };
-    // eslint-disable-next-line sonarjs/no-identical-functions
+    // oxlint-disable-next-line sonarjs/no-identical-functions
     const onUp = () => {
       drag?.onEnd();
       window.removeEventListener('mousemove', onMove);

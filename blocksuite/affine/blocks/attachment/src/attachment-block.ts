@@ -54,7 +54,7 @@ type AttachmentResolvedStateInfo = ResolvedStateInfo & {
 
 @Peekable({
   enableOn: ({ model }: AttachmentBlockComponent) => {
-    return !model.store.readonly && model.props.type.endsWith('pdf');
+    return model.props.type.endsWith('pdf');
   },
 })
 export class AttachmentBlockComponent extends CaptionedBlockComponent<AttachmentBlockModel> {

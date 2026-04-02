@@ -1,4 +1,4 @@
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports
+// oxlint-disable-next-line no-restricted-imports
 import { useNavigate } from 'react-router-dom';
 
 import { MobileSignInPanel } from '../components/sign-in';

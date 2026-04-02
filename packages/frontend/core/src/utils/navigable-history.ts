@@ -199,7 +199,7 @@ type Events<F> = {
   call: (arg: any) => void;
 };
 
-// eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
+// oxlint-disable-next-line @typescript-eslint/no-unsafe-function-type
 function createEvents<F extends Function>(): Events<F> {
   let handlers: F[] = [];
 

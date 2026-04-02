@@ -226,7 +226,7 @@ class Resolver extends FrameworkProvider {
     const result = new Map<ComponentVariant, any>();
 
     for (const [variant, factory] of vars) {
-      // eslint-disable-next-line sonarjs/no-identical-functions
+      // oxlint-disable-next-line sonarjs/no-identical-functions
       const runFactory = () => {
         const nextResolver = this.track(identifier);
         try {

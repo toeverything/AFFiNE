@@ -78,8 +78,7 @@
     "@blocksuite/global": "workspace:*",
     "@blocksuite/std": "workspace:*",
     "@blocksuite/store": "workspace:*",
-    "@blocksuite/sync": "workspace:*",
-    "rxjs": "^7.8.2"
+    "@blocksuite/sync": "workspace:*"
   },
   "exports": {
     ".": "./src/index.ts",

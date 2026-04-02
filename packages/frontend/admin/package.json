@@ -39,7 +39,6 @@
     "@radix-ui/react-tooltip": "^1.1.5",
     "@sentry/react": "^10.40.0",
     "@tanstack/react-table": "^8.20.5",
-    "@toeverything/infra": "workspace:*",
     "@toeverything/theme": "^1.1.23",
     "cmdk": "^1.0.4",
     "embla-carousel-react": "^8.5.1",
@@ -56,16 +55,13 @@
     "recharts": "^2.15.4",
     "sonner": "^2.0.7",
     "swr": "^2.3.7",
-    "vaul": "^1.1.2",
-    "zod": "^3.25.76"
+    "vaul": "^1.1.2"
   },
   "devDependencies": {
     "@testing-library/react": "^16.3.2",
     "@types/lodash-es": "^4.17.12",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "cross-env": "^10.1.0",
-    "shadcn-ui": "^0.9.5",
     "tailwind-merge": "^3.4.0",
     "tailwindcss": "^4.1.17",
     "tailwindcss-animate": "^1.0.7",

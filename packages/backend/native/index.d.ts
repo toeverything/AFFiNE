@@ -50,15 +50,15 @@ export declare function getMime(input: Uint8Array): string
 
 export declare function htmlSanitize(input: string): string
 
-export declare function llmDispatch(protocol: string, backendConfigJson: string, requestJson: string): string
+export declare function llmDispatch(protocol: string, backendConfigJson: string, requestJson: string): Promise<string>
 
 export declare function llmDispatchStream(protocol: string, backendConfigJson: string, requestJson: string, callback: ((err: Error | null, arg: string) => void)): LlmStreamHandle
 
-export declare function llmEmbeddingDispatch(protocol: string, backendConfigJson: string, requestJson: string): string
+export declare function llmEmbeddingDispatch(protocol: string, backendConfigJson: string, requestJson: string): Promise<string>
 
-export declare function llmRerankDispatch(protocol: string, backendConfigJson: string, requestJson: string): string
+export declare function llmRerankDispatch(protocol: string, backendConfigJson: string, requestJson: string): Promise<string>
 
-export declare function llmStructuredDispatch(protocol: string, backendConfigJson: string, requestJson: string): string
+export declare function llmStructuredDispatch(protocol: string, backendConfigJson: string, requestJson: string): Promise<string>
 
 /**
  * Merge updates in form like `Y.applyUpdate(doc, update)` way and return the

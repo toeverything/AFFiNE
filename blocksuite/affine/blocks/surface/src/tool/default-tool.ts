@@ -281,7 +281,7 @@ export class DefaultTool extends BaseTool {
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-misused-promises
+  // oxlint-disable-next-line @typescript-eslint/no-misused-promises
   override async dragStart(e: PointerEventState) {
     const { preventDefaultState, handledByView } =
       this.interactivity?.dispatchEvent('dragstart', e) ?? {};
