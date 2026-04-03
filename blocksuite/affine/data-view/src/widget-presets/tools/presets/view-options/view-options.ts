@@ -74,7 +74,13 @@ export class DataViewHeaderToolsViewOptions extends WidgetBase {
   };
 
   openMoreAction = (target: PopupTarget) => {
-    popViewOptions(target, this.dataViewLogic);
+    popViewOptions(
+      {
+        ...target,
+        root: document.body,
+      },
+      this.dataViewLogic
+    );
   };
 
   override render() {
