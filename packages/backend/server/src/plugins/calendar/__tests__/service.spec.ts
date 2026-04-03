@@ -17,8 +17,8 @@ import type {
   UpsertCalendarSubscriptionInput,
 } from '../../../models';
 import { Models } from '../../../models';
-import { CalendarModule } from '../index';
 import { CalendarCronJobs } from '../cron';
+import { CalendarModule } from '../index';
 import {
   CalendarProvider,
   CalendarProviderFactory,
@@ -614,9 +614,13 @@ test('pollAccounts skips syncing when cluster lock is unavailable', async t => {
     'listAllWithAccountForSync',
     async () => []
   );
-  const syncAccountMock = mock.method(calendarService, 'syncAccount', async () => {
-    return;
-  });
+  const syncAccountMock = mock.method(
+    calendarService,
+    'syncAccount',
+    async () => {
+      return;
+    }
+  );
 
   await calendarCronJobs.pollAccounts();
 
@@ -649,9 +653,13 @@ test('pollAccounts only syncs due accounts', async t => {
       ] as any
   );
 
-  const syncAccountMock = mock.method(calendarService, 'syncAccount', async () => {
-    return;
-  });
+  const syncAccountMock = mock.method(
+    calendarService,
+    'syncAccount',
+    async () => {
+      return;
+    }
+  );
 
   await calendarCronJobs.pollAccounts();
 
