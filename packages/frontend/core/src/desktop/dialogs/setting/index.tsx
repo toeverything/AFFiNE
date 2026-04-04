@@ -195,7 +195,10 @@ const SettingModalInner = ({
     modalContentWrapperRef.current?.scrollTo({ top: 0 });
   }, [settingState]);
   return (
-    <FrameworkScope scope={currentServer.scope}>
+    <FrameworkScope
+      key={`setting-modal-${currentServerId}-${currentLanguageKey}`}
+      scope={currentServer.scope}
+    >
       <SettingSidebar
         activeTab={settingState.activeTab}
         onTabChange={onTabChange}
