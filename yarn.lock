@@ -2426,6 +2426,23 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@blocksuite/affine-block-todo-summary@workspace:*, @blocksuite/affine-block-todo-summary@workspace:blocksuite/affine/blocks/todo-summary":
+  version: 0.0.0-use.local
+  resolution: "@blocksuite/affine-block-todo-summary@workspace:blocksuite/affine/blocks/todo-summary"
+  dependencies:
+    "@blocksuite/affine-components": "workspace:*"
+    "@blocksuite/affine-ext-loader": "workspace:*"
+    "@blocksuite/affine-model": "workspace:*"
+    "@blocksuite/affine-shared": "workspace:*"
+    "@blocksuite/affine-widget-slash-menu": "workspace:*"
+    "@blocksuite/global": "workspace:*"
+    "@blocksuite/icons": "npm:^2.2.17"
+    "@blocksuite/std": "workspace:*"
+    "@blocksuite/store": "workspace:*"
+    lit: "npm:^3.2.0"
+  languageName: unknown
+  linkType: soft
+
 "@blocksuite/affine-components@workspace:*, @blocksuite/affine-components@workspace:blocksuite/affine/components":
   version: 0.0.0-use.local
   resolution: "@blocksuite/affine-components@workspace:blocksuite/affine/components"
@@ -3618,6 +3635,7 @@ __metadata:
     "@blocksuite/affine-block-surface": "workspace:*"
     "@blocksuite/affine-block-surface-ref": "workspace:*"
     "@blocksuite/affine-block-table": "workspace:*"
+    "@blocksuite/affine-block-todo-summary": "workspace:*"
     "@blocksuite/affine-components": "workspace:*"
     "@blocksuite/affine-ext-loader": "workspace:*"
     "@blocksuite/affine-foundation": "workspace:*"

@@ -25,6 +25,7 @@ export const PackageList = [
       'blocksuite/affine/blocks/surface',
       'blocksuite/affine/blocks/surface-ref',
       'blocksuite/affine/blocks/table',
+      'blocksuite/affine/blocks/todo-summary',
       'blocksuite/affine/components',
       'blocksuite/affine/ext-loader',
       'blocksuite/affine/foundation',
@@ -429,6 +430,20 @@ export const PackageList = [
       'blocksuite/affine/shared',
       'blocksuite/affine/widgets/slash-menu',
       'blocksuite/affine/data-view',
+      'blocksuite/framework/global',
+      'blocksuite/framework/std',
+      'blocksuite/framework/store',
+    ],
+  },
+  {
+    location: 'blocksuite/affine/blocks/todo-summary',
+    name: '@blocksuite/affine-block-todo-summary',
+    workspaceDependencies: [
+      'blocksuite/affine/components',
+      'blocksuite/affine/ext-loader',
+      'blocksuite/affine/model',
+      'blocksuite/affine/shared',
+      'blocksuite/affine/widgets/slash-menu',
       'blocksuite/framework/global',
       'blocksuite/framework/std',
       'blocksuite/framework/store',
@@ -1532,6 +1547,7 @@ export type PackageName =
   | '@blocksuite/affine-block-surface'
   | '@blocksuite/affine-block-surface-ref'
   | '@blocksuite/affine-block-table'
+  | '@blocksuite/affine-block-todo-summary'
   | '@blocksuite/affine-components'
   | '@blocksuite/data-view'
   | '@blocksuite/affine-ext-loader'

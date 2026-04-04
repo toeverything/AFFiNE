@@ -27,6 +27,7 @@
     { "path": "../blocks/surface" },
     { "path": "../blocks/surface-ref" },
     { "path": "../blocks/table" },
+    { "path": "../blocks/todo-summary" },
     { "path": "../components" },
     { "path": "../ext-loader" },
     { "path": "../foundation" },

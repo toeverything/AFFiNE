@@ -18,6 +18,7 @@ import { RootStoreExtension } from '@blocksuite/affine-block-root/store';
 import { SurfaceStoreExtension } from '@blocksuite/affine-block-surface/store';
 import { SurfaceRefStoreExtension } from '@blocksuite/affine-block-surface-ref/store';
 import { TableStoreExtension } from '@blocksuite/affine-block-table/store';
+import { TodoSummaryStoreExtension } from '@blocksuite/affine-block-todo-summary/store';
 import { FoundationStoreExtension } from '@blocksuite/affine-foundation/store';
 import { BrushStoreExtension } from '@blocksuite/affine-gfx-brush/store';
 import { ConnectorStoreExtension } from '@blocksuite/affine-gfx-connector/store';
@@ -53,6 +54,7 @@ export function getInternalStoreExtensions() {
     ParagraphStoreExtension,
     SurfaceRefStoreExtension,
     TableStoreExtension,
+    TodoSummaryStoreExtension,
     SurfaceStoreExtension,
     RootStoreExtension,
 

@@ -71,6 +71,7 @@
     { "path": "./blocksuite/affine/blocks/surface" },
     { "path": "./blocksuite/affine/blocks/surface-ref" },
     { "path": "./blocksuite/affine/blocks/table" },
+    { "path": "./blocksuite/affine/blocks/todo-summary" },
     { "path": "./blocksuite/affine/components" },
     { "path": "./blocksuite/affine/data-view" },
     { "path": "./blocksuite/affine/ext-loader" },

@@ -10,6 +10,7 @@ export type NoteChildrenFlavour =
   | 'affine:divider'
   | 'affine:database'
   | 'affine:data-view'
+  | 'affine:todo-summary'
   | 'affine:image'
   | 'affine:bookmark'
   | 'affine:attachment'
