@@ -36,7 +36,7 @@ export { WorkspaceServerService } from './services/workspace-server';
 export { WorkspaceSubscriptionService } from './services/workspace-subscription';
 export type { ServerConfig } from './types';
 
-// eslint-disable-next-line simple-import-sort/imports
+// oxlint-disable-next-line simple-import-sort/imports
 import { type Framework } from '@toeverything/infra';
 
 import { GlobalCache, GlobalState } from '../storage/providers/global';

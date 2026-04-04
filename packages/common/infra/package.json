@@ -18,11 +18,7 @@
     "@affine/templates": "workspace:*",
     "@preact/signals-core": "^1.8.0",
     "eventemitter2": "^6.4.9",
-    "foxact": "^0.2.49",
     "fractional-indexing": "^3.2.0",
-    "fuse.js": "^7.0.0",
-    "graphemer": "^1.4.0",
-    "idb": "^8.0.0",
     "jotai": "^2.10.3",
     "jotai-effect": "^2.0.0",
     "lodash-es": "^4.17.23",
@@ -32,12 +28,9 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
-    "@affine/templates": "workspace:*",
-    "@emotion/react": "^11.14.0",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/react": "^16.1.0",
     "@types/react": "^19.0.1",
-    "fake-indexeddb": "^6.0.0",
     "rxjs": "^7.8.2",
     "vitest": "^4.0.18"
   },

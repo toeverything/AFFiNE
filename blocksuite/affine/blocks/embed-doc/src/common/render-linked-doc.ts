@@ -25,7 +25,7 @@ export function renderLinkedDocInCard(
     return;
   }
 
-  // eslint-disable-next-line sonarjs/no-collapsible-if
+  // oxlint-disable-next-line sonarjs/no-collapsible-if
   if ('bannerContainer' in card) {
     if (card.editorMode === 'page') {
       renderPageAsBanner(card).catch(e => {

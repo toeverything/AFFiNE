@@ -820,7 +820,7 @@ export class CalDAVProvider extends CalendarProvider {
     });
   }
 
-  // eslint-disable-next-line sonarjs/no-identical-functions
+  // oxlint-disable-next-line sonarjs/no-identical-functions
   override async exchangeCode(): Promise<any> {
     throw new GraphqlBadRequest({
       code: 'caldav_oauth_unsupported',
@@ -828,7 +828,7 @@ export class CalDAVProvider extends CalendarProvider {
     });
   }
 
-  // eslint-disable-next-line sonarjs/no-identical-functions
+  // oxlint-disable-next-line sonarjs/no-identical-functions
   override async refreshTokens(): Promise<any> {
     throw new GraphqlBadRequest({
       code: 'caldav_oauth_unsupported',
@@ -836,7 +836,7 @@ export class CalDAVProvider extends CalendarProvider {
     });
   }
 
-  // eslint-disable-next-line sonarjs/no-identical-functions
+  // oxlint-disable-next-line sonarjs/no-identical-functions
   override async getAccountProfile(): Promise<any> {
     throw new GraphqlBadRequest({
       code: 'caldav_oauth_unsupported',

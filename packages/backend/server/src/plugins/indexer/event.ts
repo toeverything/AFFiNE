@@ -29,21 +29,20 @@ export class IndexerEvent {
     );
   }
 
-  @OnEvent('workspace.updated')
-  async indexWorkspace({ id }: Events['workspace.updated']) {
+  @OnEvent('doc.snapshot.updated')
+  async indexWorkspace({ workspaceId, docId }: Events['doc.snapshot.updated']) {
     if (!this.config.indexer.enabled) {
+      return;
+    }
+
+    if (workspaceId !== docId) {
       return;
     }
 
     await this.queue.add(
       'indexer.indexWorkspace',
-      {
-        workspaceId: id,
-      },
-      {
-        jobId: `indexWorkspace/${id}`,
-        priority: 100,
-      }
+      { workspaceId },
+      { jobId: `indexWorkspace/${workspaceId}`, priority: 100 }
     );
   }
 

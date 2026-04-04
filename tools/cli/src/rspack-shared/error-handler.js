@@ -101,7 +101,7 @@
       'MutationObserver',
     ];
 
-    // eslint-disable-next-line @typescript-eslint/prefer-for-of
+    // oxlint-disable-next-line @typescript-eslint/prefer-for-of
     for (let i = 0; i < globals.length; i++) {
       if (!(globals[i] in globalThis)) {
         showGlobalErrorPage();

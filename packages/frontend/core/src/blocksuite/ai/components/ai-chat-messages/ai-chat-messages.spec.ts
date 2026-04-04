@@ -47,4 +47,50 @@ describe('AIChatMessages scrolling', () => {
 
     expect(scrollTo).toHaveBeenCalledWith({ top: 128 });
   });
+
+  test('pauses auto scroll when user scrolls away from the bottom', () => {
+    const element = {
+      canScrollDown: false,
+      scrollTop: 120,
+      _autoScrollEnabled: true,
+      _lastObservedScrollTop: 300,
+      _getDistanceFromBottom: vi.fn(() => 260),
+    } as unknown as AIChatMessages;
+
+    (AIChatMessages.prototype as any)._onScroll.call(element);
+
+    expect(element.canScrollDown).toBe(true);
+    expect((element as any)._autoScrollEnabled).toBe(false);
+    expect((element as any)._lastObservedScrollTop).toBe(120);
+  });
+
+  test('resumes auto scroll when user returns to the bottom', () => {
+    const element = {
+      canScrollDown: true,
+      scrollTop: 420,
+      _autoScrollEnabled: false,
+      _lastObservedScrollTop: 120,
+      _getDistanceFromBottom: vi.fn(() => 8),
+    } as unknown as AIChatMessages;
+
+    (AIChatMessages.prototype as any)._onScroll.call(element);
+
+    expect(element.canScrollDown).toBe(false);
+    expect((element as any)._autoScrollEnabled).toBe(true);
+  });
+
+  test('restores auto scroll when clicking the down indicator', () => {
+    const scrollToEnd = vi.fn();
+    const element = {
+      canScrollDown: true,
+      _autoScrollEnabled: false,
+      scrollToEnd,
+    } as unknown as AIChatMessages;
+
+    (AIChatMessages.prototype as any)._onDownIndicatorClick.call(element);
+
+    expect((element as any)._autoScrollEnabled).toBe(true);
+    expect(element.canScrollDown).toBe(false);
+    expect(scrollToEnd).toHaveBeenCalled();
+  });
 });

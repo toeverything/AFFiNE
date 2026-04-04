@@ -22,7 +22,7 @@ const SIZE_LIST: SizeItem[] = [
 ] as const;
 
 @requiredProperties({
-  size$: PropTypes.object,
+  sizeSignal: PropTypes.object,
 })
 export class SizeDropdownMenu extends SignalWatcher(
   WithDisposable(LitElement)
@@ -68,7 +68,7 @@ export class SizeDropdownMenu extends SignalWatcher(
   accessor sizes: readonly SizeItem[] = SIZE_LIST;
 
   @property({ attribute: false })
-  accessor size$!: Signal<number> | ReadonlySignal<number>;
+  accessor sizeSignal!: Signal<number> | ReadonlySignal<number>;
 
   @property({ attribute: false })
   accessor maxSize: number = MAX_SIZE;
@@ -144,7 +144,7 @@ export class SizeDropdownMenu extends SignalWatcher(
       type,
       icon,
       label,
-      size$: { value: size },
+      sizeSignal: { value: size },
     } = this;
     const isCheckType = type === 'check';
     const placeholder = format?.(Math.trunc(size)) ?? Math.trunc(size);

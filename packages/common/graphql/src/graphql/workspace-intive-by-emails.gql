@@ -1,11 +1,5 @@
-mutation inviteByEmails(
-  $workspaceId: String!
-  $emails: [String!]!
-) {
-  inviteMembers(
-    workspaceId: $workspaceId
-    emails: $emails
-  ) {
+mutation inviteByEmails($workspaceId: String!, $emails: [String!]!) {
+  inviteMembers(workspaceId: $workspaceId, emails: $emails) {
     email
     inviteId
     sentSuccess
