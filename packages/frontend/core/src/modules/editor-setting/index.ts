@@ -2,7 +2,7 @@ import { type Framework } from '@toeverything/infra';
 
 import { ServersService } from '../cloud';
 import { DesktopApiService } from '../desktop-api';
-import { DocCreateMiddleware, DocsService } from '../doc';
+import { DocCreateMiddleware, DocsQueryService } from '../doc';
 import { I18n } from '../i18n';
 import { GlobalState, GlobalStateService } from '../storage';
 import { AppThemeService } from '../theme';
@@ -34,7 +34,7 @@ export function configureEditorSettingModule(framework: Framework) {
     .impl(DocCreateMiddleware, EditorSettingDocCreateMiddleware, [
       EditorSettingService,
       AppThemeService,
-      DocsService,
+      DocsQueryService,
     ]);
 }
 

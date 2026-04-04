@@ -1,6 +1,10 @@
 import { LiveData, Service } from '@toeverything/infra';
 
-import type { DocCreateMiddleware, DocRecord, DocsService } from '../../doc';
+import type {
+  DocCreateMiddleware,
+  DocRecord,
+  DocsQueryService,
+} from '../../doc';
 import type { DocCreateOptions } from '../../doc/types';
 import type { AppThemeService } from '../../theme';
 import type { EdgelessDefaultTheme } from '../schema';
@@ -34,10 +38,10 @@ export class EditorSettingDocCreateMiddleware
   constructor(
     private readonly editorSettingService: EditorSettingService,
     private readonly appThemeService: AppThemeService,
-    private readonly docsService: DocsService
+    private readonly docsQueryService: DocsQueryService
   ) {
     super();
-    this.allDocTitles$ = LiveData.from(this.docsService.allDocTitle$(), []);
+    this.allDocTitles$ = LiveData.from(this.docsQueryService.allDocTitle$(), []);
   }
 
   private getCurrentDocTitles() {

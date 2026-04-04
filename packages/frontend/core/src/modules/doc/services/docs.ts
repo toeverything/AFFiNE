@@ -22,15 +22,7 @@ import { getDuplicatedDocTitle } from './duplicate-title';
 
 const logger = new DebugLogger('DocsService');
 
-export class DocsService extends Service {
-  list = this.framework.createEntity(DocRecordList);
-
-  pool = new ObjectPool<string, Doc>({
-    onDelete(obj) {
-      obj.scope.dispose();
-    },
-  });
-
+export class DocsQueryService extends Service {
   /**
    * Get all property values of a property, used for search
    *
@@ -88,10 +80,59 @@ export class DocsService extends Service {
 
   constructor(
     private readonly store: DocsStore,
-    private readonly docPropertiesStore: DocPropertiesStore,
-    private readonly docCreateMiddlewares: DocCreateMiddleware[]
+    private readonly docPropertiesStore: DocPropertiesStore
   ) {
     super();
+  }
+}
+
+export class DocsService extends Service {
+  list = this.framework.createEntity(DocRecordList);
+
+  pool = new ObjectPool<string, Doc>({
+    onDelete(obj) {
+      obj.scope.dispose();
+    },
+  });
+
+  constructor(
+    private readonly store: DocsStore,
+    private readonly docCreateMiddlewares: DocCreateMiddleware[],
+    private readonly docsQueryService: DocsQueryService
+  ) {
+    super();
+  }
+
+  propertyValues$(propertyKey: string) {
+    return this.docsQueryService.propertyValues$(propertyKey);
+  }
+
+  allDocsCreatedDate$() {
+    return this.docsQueryService.allDocsCreatedDate$();
+  }
+
+  allDocsUpdatedDate$() {
+    return this.docsQueryService.allDocsUpdatedDate$();
+  }
+
+  allDocsTagIds$() {
+    return this.docsQueryService.allDocsTagIds$();
+  }
+
+  allDocIds$() {
+    return this.docsQueryService.allDocIds$();
+  }
+
+  allNonTrashDocIds$() {
+    return this.docsQueryService.allNonTrashDocIds$();
+  }
+
+  allTrashDocIds$() {
+    return this.docsQueryService.allTrashDocIds$();
+  }
+
+  allDocTitle$() {
+    return this.docsQueryService.allDocTitle$();
   }
 
   loaded(docId: string) {

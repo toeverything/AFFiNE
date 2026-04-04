@@ -5,7 +5,7 @@ import { afterEach, describe, expect, test, vi } from 'vitest';
 
 import { EditorSettingDocCreateMiddleware } from '../impls/doc-create-middleware';
 
-const createDocsService = (titles: string[]) => {
+const createDocsQueryService = (titles: string[]) => {
   return {
     ['allDocTitle$']: () =>
       of(
@@ -64,19 +64,20 @@ const createMiddleware = ({
     appTheme = appThemeService.appTheme;
   }
 
-  class MockDocsService extends Service {
-    ['allDocTitle$'] = createDocsService(titles ?? [])['allDocTitle$'];
+  class MockDocsQueryService extends Service {
+    ['allDocTitle$'] =
+      createDocsQueryService(titles ?? [])['allDocTitle$'];
   }
 
   const framework = new Framework();
   framework
     .service(MockEditorSettingService)
     .service(MockAppThemeService)
-    .service(MockDocsService)
+    .service(MockDocsQueryService)
     .service(EditorSettingDocCreateMiddleware, [
       MockEditorSettingService as never,
       MockAppThemeService as never,
-      MockDocsService as never,
+      MockDocsQueryService as never,
     ]);
 
   return framework.provider().get(EditorSettingDocCreateMiddleware);
