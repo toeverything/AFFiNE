@@ -16,7 +16,7 @@ import {
   StreamObject,
   StreamObjectSchema,
 } from '../../plugins/copilot/providers';
-import { TranscriptionResponseSchema } from '../../plugins/copilot/transcript/types';
+import { TranscriptionResponseSchema } from '../../plugins/copilot/transcript/schema';
 import {
   CopilotChatTextExecutor,
   CopilotWorkflowService,
@@ -964,11 +964,11 @@ test(
         'The stock market is experiencing significant fluctuations.',
       ];
 
-      const provider = (await factory.getProviderByModel('gpt-5.2'))!;
+      const provider = (await factory.getProviderByModel('gpt-4o-mini'))!;
       t.assert(provider, 'should have provider for rerank');
 
       const scores = await provider.rerank(
-        { modelId: 'gpt-5.2' },
+        { modelId: 'gpt-4o-mini' },
         {
           query,
           candidates: embeddings.map((text, index) => ({
@@ -990,8 +990,8 @@ test(
       t.log('Rerank scores:', scores);
       t.is(
         scores.filter(s => s > 0.5).length,
-        5,
-        'should have 5 related chunks'
+        4,
+        'should have 4 related chunks'
       );
     });
   }

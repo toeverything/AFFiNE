@@ -149,7 +149,7 @@ export class Menu {
 
   renderItems(items: MenuConfig[]) {
     const result = [];
-    // eslint-disable-next-line @typescript-eslint/prefer-for-of
+    // oxlint-disable-next-line @typescript-eslint/prefer-for-of
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
       const template = item(this, result.length);

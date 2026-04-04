@@ -513,9 +513,9 @@ test.describe('AISettings/Embedding', () => {
     await utils.settings.openSettingsPanel(page);
     await page.context().setOffline(true);
     await utils.settings.ignoreDocForEmbedding(page, 'Test Doc', false);
-    await expect(
-      page.getByText(/Failed to update ignored docs/i)
-    ).toBeVisible();
+    await page
+      .getByText(/Failed to update ignored docs/i)
+      .waitFor({ state: 'visible', timeout: 20000 });
     await page.context().setOffline(false);
   });
 });

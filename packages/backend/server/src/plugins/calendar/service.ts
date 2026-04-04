@@ -4,6 +4,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Transactional } from '@nestjs-cls/transactional';
 import type { CalendarAccount, Prisma } from '@prisma/client';
 import { addDays, subDays } from 'date-fns';
+import { chunk } from 'lodash-es';
 
 import {
   CalendarProviderRequestError,
@@ -32,6 +33,7 @@ const SYNC_FAILURE_BACKOFF_KEY_PREFIX = 'calendar:sync:backoff:';
 const SYNC_FAILURE_BACKOFF_BASE_MS = 5 * 60 * 1000;
 const SYNC_FAILURE_BACKOFF_MAX_MS = 6 * 60 * 60 * 1000;
 const SYNC_FAILURE_BACKOFF_TTL_SECONDS = 24 * 60 * 60;
+const ACCOUNT_SYNC_BATCH_SIZE = 10;
 
 @Injectable()
 export class CalendarService {
@@ -433,11 +435,13 @@ export class CalendarService {
 
     const subscriptions =
       await this.models.calendarSubscription.listByAccountForSync(accountId);
-    await Promise.allSettled(
-      subscriptions.map(subscription =>
-        this.syncSubscription(subscription.id, { reason: 'polling' })
-      )
-    );
+    for (const batch of chunk(subscriptions, ACCOUNT_SYNC_BATCH_SIZE)) {
+      await Promise.allSettled(
+        batch.map(subscription =>
+          this.syncSubscription(subscription.id, { reason: 'polling' })
+        )
+      );
+    }
   }
 
   async listWorkspaceEvents(params: {

@@ -26,6 +26,9 @@ public class GetWorkspaceInfoQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("workspace", Workspace.self, arguments: ["id": .variable("workspaceId")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      GetWorkspaceInfoQuery.Data.self
+    ] }
 
     /// Get workspace by id
     public var workspace: Workspace { __data["workspace"] }
@@ -43,6 +46,9 @@ public class GetWorkspaceInfoQuery: GraphQLQuery {
         .field("permissions", Permissions.self),
         .field("role", GraphQLEnum<AffineGraphQL.Permission>.self),
         .field("team", Bool.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        GetWorkspaceInfoQuery.Data.Workspace.self
       ] }
 
       /// map of action permissions
@@ -82,6 +88,9 @@ public class GetWorkspaceInfoQuery: GraphQLQuery {
           .field("Workspace_TransferOwner", Bool.self),
           .field("Workspace_Users_Manage", Bool.self),
           .field("Workspace_Users_Read", Bool.self),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          GetWorkspaceInfoQuery.Data.Workspace.Permissions.self
         ] }
 
         public var workspace_Administrators_Manage: Bool { __data["Workspace_Administrators_Manage"] }

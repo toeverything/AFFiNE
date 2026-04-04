@@ -42,6 +42,9 @@ public class GetMembersByWorkspaceIdQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("workspace", Workspace.self, arguments: ["id": .variable("workspaceId")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      GetMembersByWorkspaceIdQuery.Data.self
+    ] }
 
     /// Get workspace by id
     public var workspace: Workspace { __data["workspace"] }
@@ -62,6 +65,9 @@ public class GetMembersByWorkspaceIdQuery: GraphQLQuery {
           "take": .variable("take"),
           "query": .variable("query")
         ]),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        GetMembersByWorkspaceIdQuery.Data.Workspace.self
       ] }
 
       /// member count of workspace
@@ -87,6 +93,9 @@ public class GetMembersByWorkspaceIdQuery: GraphQLQuery {
           .field("inviteId", String.self),
           .field("emailVerified", Bool?.self),
           .field("status", GraphQLEnum<AffineGraphQL.WorkspaceMemberStatus>.self),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          GetMembersByWorkspaceIdQuery.Data.Workspace.Member.self
         ] }
 
         public var id: AffineGraphQL.ID { __data["id"] }

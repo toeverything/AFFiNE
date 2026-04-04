@@ -36,6 +36,13 @@ resources:
 
 probe:
   initialDelaySeconds: 20
+  timeoutSeconds: 5
+  periodSeconds: 10
+  failureThreshold: 6
+  successThreshold: 1
+  liveness:
+    failureThreshold: 12
+  readiness: {}
 
 nodeSelector: {}
 tolerations: []

@@ -26,6 +26,9 @@ public class GetInviteInfoQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("getInviteInfo", GetInviteInfo.self, arguments: ["inviteId": .variable("inviteId")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      GetInviteInfoQuery.Data.self
+    ] }
 
     /// get workspace invitation info
     public var getInviteInfo: GetInviteInfo { __data["getInviteInfo"] }
@@ -44,6 +47,9 @@ public class GetInviteInfoQuery: GraphQLQuery {
         .field("user", User.self),
         .field("status", GraphQLEnum<AffineGraphQL.WorkspaceMemberStatus>?.self),
         .field("invitee", Invitee.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        GetInviteInfoQuery.Data.GetInviteInfo.self
       ] }
 
       /// Workspace information
@@ -69,6 +75,9 @@ public class GetInviteInfoQuery: GraphQLQuery {
           .field("name", String.self),
           .field("avatar", String.self),
         ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          GetInviteInfoQuery.Data.GetInviteInfo.Workspace.self
+        ] }
 
         public var id: AffineGraphQL.ID { __data["id"] }
         /// Workspace name
@@ -91,6 +100,9 @@ public class GetInviteInfoQuery: GraphQLQuery {
           .field("name", String.self),
           .field("avatarUrl", String?.self),
         ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          GetInviteInfoQuery.Data.GetInviteInfo.User.self
+        ] }
 
         public var id: String { __data["id"] }
         public var name: String { __data["name"] }
@@ -111,6 +123,9 @@ public class GetInviteInfoQuery: GraphQLQuery {
           .field("name", String.self),
           .field("email", String.self),
           .field("avatarUrl", String?.self),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          GetInviteInfoQuery.Data.GetInviteInfo.Invitee.self
         ] }
 
         public var id: String { __data["id"] }

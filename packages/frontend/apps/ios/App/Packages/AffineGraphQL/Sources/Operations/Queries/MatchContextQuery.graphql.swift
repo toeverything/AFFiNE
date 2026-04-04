@@ -50,6 +50,9 @@ public class MatchContextQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("currentUser", CurrentUser?.self),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      MatchContextQuery.Data.self
+    ] }
 
     /// Get current user
     public var currentUser: CurrentUser? { __data["currentUser"] }
@@ -66,6 +69,9 @@ public class MatchContextQuery: GraphQLQuery {
         .field("__typename", String.self),
         .field("copilot", Copilot.self, arguments: ["workspaceId": .variable("workspaceId")]),
       ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        MatchContextQuery.Data.CurrentUser.self
+      ] }
 
       public var copilot: Copilot { __data["copilot"] }
 
@@ -80,6 +86,9 @@ public class MatchContextQuery: GraphQLQuery {
         public static var __selections: [ApolloAPI.Selection] { [
           .field("__typename", String.self),
           .field("contexts", [Context].self, arguments: ["contextId": .variable("contextId")]),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          MatchContextQuery.Data.CurrentUser.Copilot.self
         ] }
 
         /// Get the context list of a session
@@ -108,6 +117,9 @@ public class MatchContextQuery: GraphQLQuery {
               "threshold": .variable("threshold")
             ]),
           ] }
+          public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+            MatchContextQuery.Data.CurrentUser.Copilot.Context.self
+          ] }
 
           /// match file in context
           public var matchFiles: [MatchFile] { __data["matchFiles"] }
@@ -131,6 +143,9 @@ public class MatchContextQuery: GraphQLQuery {
               .field("chunk", AffineGraphQL.SafeInt.self),
               .field("content", String.self),
               .field("distance", Double?.self),
+            ] }
+            public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+              MatchContextQuery.Data.CurrentUser.Copilot.Context.MatchFile.self
             ] }
 
             public var fileId: String { __data["fileId"] }
@@ -156,6 +171,9 @@ public class MatchContextQuery: GraphQLQuery {
               .field("chunk", AffineGraphQL.SafeInt.self),
               .field("content", String.self),
               .field("distance", Double?.self),
+            ] }
+            public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+              MatchContextQuery.Data.CurrentUser.Copilot.Context.MatchWorkspaceDoc.self
             ] }
 
             public var docId: String { __data["docId"] }

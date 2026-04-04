@@ -26,6 +26,9 @@ public class CleanupCopilotSessionMutation: GraphQLMutation {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("cleanupCopilotSession", [String].self, arguments: ["options": .variable("input")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      CleanupCopilotSessionMutation.Data.self
+    ] }
 
     /// Cleanup sessions
     public var cleanupCopilotSession: [String] { __data["cleanupCopilotSession"] }

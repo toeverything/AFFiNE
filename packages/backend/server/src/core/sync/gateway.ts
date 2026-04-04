@@ -32,7 +32,6 @@ import {
   SpaceAccessDenied,
 } from '../../base';
 import { Models } from '../../models';
-import { mergeUpdatesInApplyWay } from '../../native';
 import { CurrentUser } from '../auth';
 import {
   DocReader,
@@ -40,6 +39,7 @@ import {
   PgUserspaceDocStorageAdapter,
   PgWorkspaceDocStorageAdapter,
 } from '../doc';
+import { applyUpdatesWithNative } from '../doc/merge-updates';
 import { AccessController, WorkspaceAction } from '../permission';
 import { DocID } from '../utils/doc';
 
@@ -268,8 +268,10 @@ export class SpaceSyncGateway
     }
 
     try {
-      const merged = mergeUpdatesInApplyWay(
-        updates.map(update => Buffer.from(update))
+      const merged = applyUpdatesWithNative(
+        updates,
+        'socketio.broadcast',
+        this.logger
       );
       metrics.socketio.counter('doc_updates_compressed').add(1);
       return {

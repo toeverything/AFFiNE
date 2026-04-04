@@ -19,7 +19,6 @@
     "@emotion/css": "^11.13.5",
     "@emotion/hash": "^0.9.2",
     "@floating-ui/dom": "^1.6.13",
-    "@lit/context": "^1.1.2",
     "@preact/signals-core": "^1.8.0",
     "@toeverything/theme": "^1.1.23",
     "@types/lodash-es": "^4.17.12",
@@ -27,7 +26,6 @@
     "date-fns": "^4.0.0",
     "lit": "^3.2.0",
     "lodash-es": "^4.17.23",
-    "rxjs": "^7.8.2",
     "yjs": "^13.6.27",
     "zod": "^3.25.76"
   },

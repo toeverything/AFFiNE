@@ -10,6 +10,7 @@ import {
   AnthropicOfficialConfig,
   AnthropicVertexConfig,
 } from './providers/anthropic';
+import { CloudflareWorkersAIConfig } from './providers/cloudflare';
 import type { FalConfig } from './providers/fal';
 import { GeminiGenerativeConfig, GeminiVertexConfig } from './providers/gemini';
 import { MorphConfig } from './providers/morph';
@@ -23,6 +24,7 @@ import {
 
 export type CopilotProviderConfigMap = {
   [CopilotProviderType.OpenAI]: OpenAIConfig;
+  [CopilotProviderType.CloudflareWorkersAi]: CloudflareWorkersAIConfig;
   [CopilotProviderType.FAL]: FalConfig;
   [CopilotProviderType.Gemini]: GeminiGenerativeConfig;
   [CopilotProviderType.GeminiVertex]: GeminiVertexConfig;
@@ -117,6 +119,12 @@ const FalConfigShape = z.object({
   apiKey: z.string(),
 });
 
+const CloudflareWorkersAIConfigShape = z.object({
+  apiToken: z.string(),
+  accountId: z.string().optional(),
+  baseURL: z.string().optional(),
+});
+
 const GeminiGenerativeConfigShape = z.object({
   apiKey: z.string(),
   baseURL: z.string().optional(),
@@ -152,6 +160,10 @@ const CopilotProviderProfileShape = z.discriminatedUnion('type', [
   CopilotProviderProfileBaseShape.extend({
     type: z.literal(CopilotProviderType.FAL),
     config: FalConfigShape,
+  }),
+  CopilotProviderProfileBaseShape.extend({
+    type: z.literal(CopilotProviderType.CloudflareWorkersAi),
+    config: CloudflareWorkersAIConfigShape,
   }),
   CopilotProviderProfileBaseShape.extend({
     type: z.literal(CopilotProviderType.Gemini),
@@ -205,6 +217,7 @@ declare global {
         profiles: ConfigItem<CopilotProviderProfile[]>;
         defaults: ConfigItem<CopilotProviderDefaults>;
         openai: ConfigItem<OpenAIConfig>;
+        cloudflareWorkersAi: ConfigItem<CloudflareWorkersAIConfig>;
         fal: ConfigItem<FalConfig>;
         gemini: ConfigItem<GeminiGenerativeConfig>;
         geminiVertex: ConfigItem<GeminiVertexConfig>;
@@ -256,6 +269,13 @@ defineModuleConfig('copilot', {
       baseURL: 'https://api.openai.com/v1',
     },
     link: 'https://github.com/openai/openai-node',
+  },
+  'providers.cloudflareWorkersAi': {
+    desc: 'The config for the Cloudflare Workers AI provider.',
+    default: {
+      apiToken: '',
+      accountId: '',
+    },
   },
   'providers.fal': {
     desc: 'The config for the fal provider.',

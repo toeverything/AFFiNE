@@ -21,7 +21,6 @@
   },
   "dependencies": {
     "@affine/debug": "workspace:*",
-    "@affine/electron-api": "workspace:*",
     "@affine/error": "workspace:*",
     "@affine/graphql": "workspace:*",
     "@affine/i18n": "workspace:*",
@@ -51,7 +50,6 @@
     "check-password-strength": "^3.0.0",
     "clsx": "^2.1.1",
     "dayjs": "^1.11.13",
-    "emoji-mart": "^5.6.0",
     "emojibase-data": "^16.0.3",
     "foxact": "^0.2.49",
     "jotai": "^2.10.3",
@@ -72,7 +70,6 @@
   },
   "devDependencies": {
     "@affine-tools/utils": "workspace:*",
-    "@blocksuite/affine": "workspace:*",
     "@storybook/react": "^10.2.14",
     "@storybook/react-vite": "^10.2.14",
     "@testing-library/dom": "^10.4.0",

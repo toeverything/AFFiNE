@@ -7,13 +7,13 @@ import type {
   LinkedMenuGroup,
   LinkedMenuItem,
 } from '@blocksuite/affine/widgets/linked-doc';
+import { unsafeHTML } from '@blocksuite/affine-shared/utils';
 import { CollectionsIcon, WarningIcon } from '@blocksuite/icons/lit';
 import { computed, signal } from '@preact/signals-core';
 import { Service } from '@toeverything/infra';
 import { cssVarV2 } from '@toeverything/theme/v2';
 import Fuse, { type FuseResultMatch } from 'fuse.js';
 import { html } from 'lit';
-import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { catchError, map, of } from 'rxjs';
 
 import { normalizeSearchText } from '../../../utils/normalize-search-text';

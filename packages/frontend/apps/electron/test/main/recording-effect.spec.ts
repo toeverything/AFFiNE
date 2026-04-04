@@ -124,9 +124,32 @@ function createWorkspaceRef() {
   const blobSet = vi.fn(async () => 'blob-1');
   const openDoc = vi.fn();
   const createdDocs = new Set<string>();
+  type MockBlockRecord = { model: unknown } | null;
+  type MockBlockStore = {
+    addBlock: (
+      flavour: string,
+      props: Record<string, unknown>,
+      parentId?: string
+    ) => string;
+    getBlock: (id: string) => MockBlockRecord;
+    // eslint-disable-next-line rxjs/finnish
+    getBlock$: (id: string) => MockBlockRecord;
+  };
   const attachments: Array<{
     id: string;
     props: { name: string; type: string };
+    childMap: { value: Map<string, true> };
+    store: MockBlockStore;
+  }> = [];
+  const transcriptionBlocks: Array<{
+    id: string;
+    flavour: string;
+    props: {
+      transcription: {
+        sourceAudio?: Record<string, unknown>;
+        quality?: Record<string, unknown>;
+      };
+    };
   }> = [];
 
   const blockSuiteDoc = {
@@ -143,20 +166,43 @@ function createWorkspaceRef() {
       return [];
     }),
     addBlock: vi.fn(
-      (
-        flavour: string,
-        props: { name?: string; type?: string },
-        _parentId?: string
-      ) => {
+      (flavour: string, props: Record<string, unknown>, parentId?: string) => {
         if (flavour === 'affine:attachment') {
           const id = `attachment-${attachments.length + 1}`;
-          attachments.push({
+          const attachment = {
             id,
             props: {
-              name: props.name ?? '',
-              type: props.type ?? '',
+              name: typeof props.name === 'string' ? props.name : '',
+              type: typeof props.type === 'string' ? props.type : '',
             },
-          });
+            childMap: { value: new Map<string, true>() },
+            store: {
+              addBlock: (...args: Parameters<typeof blockSuiteDoc.addBlock>) =>
+                blockSuiteDoc.addBlock(...args),
+              getBlock: (blockId: string) => blockSuiteDoc.getBlock(blockId),
+              // eslint-disable-next-line rxjs/finnish
+              getBlock$: (blockId: string) => blockSuiteDoc.getBlock(blockId),
+            },
+          };
+          attachments.push(attachment);
+          return id;
+        }
+        if (flavour === 'affine:transcription') {
+          const id = `transcription-${transcriptionBlocks.length + 1}`;
+          const block = {
+            id,
+            flavour,
+            props: {
+              transcription:
+                (props.transcription as {
+                  sourceAudio?: Record<string, unknown>;
+                  quality?: Record<string, unknown>;
+                }) ?? {},
+            },
+          };
+          transcriptionBlocks.push(block);
+          const attachment = attachments.find(entry => entry.id === parentId);
+          attachment?.childMap.value.set(id, true);
           return id;
         }
         return `${flavour}-1`;
@@ -164,7 +210,13 @@ function createWorkspaceRef() {
     ),
     getBlock: vi.fn((id: string) => {
       const attachment = attachments.find(entry => entry.id === id);
-      return attachment ? { model: attachment } : null;
+      if (attachment) {
+        return { model: attachment };
+      }
+      const transcriptionBlock = transcriptionBlocks.find(
+        entry => entry.id === id
+      );
+      return transcriptionBlock ? { model: transcriptionBlock } : null;
     }),
   };
 
@@ -236,6 +288,7 @@ function createWorkspaceRef() {
     openDoc,
     blobSet,
     attachments,
+    transcriptionBlocks,
   };
 }
 
@@ -337,6 +390,54 @@ describe('recording effect', () => {
     expect(workspace.createDoc).toHaveBeenCalledTimes(1);
     expect(workspace.blobSet).toHaveBeenCalledTimes(1);
     expect(completeRecordingImport).toHaveBeenCalledWith(8);
+  });
+
+  test('writes recording metadata into the transcription block', async () => {
+    const workspace = createWorkspaceRef();
+    const pendingImport = withQueueMeta({
+      id: 18,
+      importStatus: 'pending_import',
+      appName: 'Meet',
+      filepath: '/tmp/meeting.opus',
+      startTime: 1000,
+      sampleRate: 48_000,
+      numberOfChannels: 2,
+      durationMs: 120_000,
+      degraded: true,
+      overflowCount: 4,
+    });
+
+    isActiveTab.mockResolvedValue(true);
+    getCurrentWorkspace.mockReturnValue(workspace.ref);
+    claimRecordingImport.mockResolvedValue({
+      ...pendingImport,
+      workspaceId: 'workspace-1',
+      docId: 'recording-18',
+      importStatus: 'importing',
+    });
+    getRecordingImportQueue.mockResolvedValue([pendingImport]);
+
+    const { setupRecordingEvents } =
+      await import('../../../electron-renderer/src/app/effects/recording');
+
+    setupRecordingEvents({} as never);
+    await Promise.resolve();
+    await Promise.resolve();
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(workspace.transcriptionBlocks).toHaveLength(1);
+    expect(workspace.transcriptionBlocks[0]?.props.transcription).toEqual({
+      sourceAudio: {
+        mimeType: 'audio/ogg',
+        durationMs: 120_000,
+        sampleRate: 48_000,
+        channels: 2,
+      },
+      quality: {
+        degraded: true,
+        overflowCount: 4,
+      },
+    });
   });
 
   test('marks imports as failed when blob import fails after claim', async () => {

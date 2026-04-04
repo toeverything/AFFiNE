@@ -1,9 +1,6 @@
 #import "./fragments/paginated-copilot-chats.gql"
 
-query getCopilotLatestDocSession(
-  $workspaceId: String!
-  $docId: String!
-) {
+query getCopilotLatestDocSession($workspaceId: String!, $docId: String!) {
   currentUser {
     copilot(workspaceId: $workspaceId) {
       chats(

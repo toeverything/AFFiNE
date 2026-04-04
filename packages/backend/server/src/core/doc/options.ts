@@ -1,28 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { chunk } from 'lodash-es';
-import * as Y from 'yjs';
 
-import { CallMetric, Config, metrics } from '../../base';
-import { mergeUpdatesInApplyWay as yoctoMergeUpdates } from '../../native';
+import { Config, metrics } from '../../base';
 import { QuotaService } from '../quota';
+import { compareCodecResult } from './codec-compare';
+import { applyUpdatesWithNative, applyUpdatesWithYjs } from './merge-updates';
 import { DocStorageOptions as IDocStorageOptions } from './storage';
-
-function compare(yBinary: Buffer, jwstBinary: Buffer, strict = false): boolean {
-  if (yBinary.equals(jwstBinary)) {
-    return true;
-  }
-
-  if (strict) {
-    return false;
-  }
-
-  const doc = new Y.Doc();
-  Y.applyUpdate(doc, jwstBinary);
-
-  const yBinary2 = Buffer.from(Y.encodeStateAsUpdate(doc));
-
-  return compare(yBinary, yBinary2, true);
-}
 
 @Injectable()
 export class DocStorageOptions implements IDocStorageOptions {
@@ -34,18 +16,31 @@ export class DocStorageOptions implements IDocStorageOptions {
   ) {}
 
   mergeUpdates = async (updates: Uint8Array[]) => {
-    const doc = await this.recoverDoc(updates);
-    const yjsResult = Buffer.from(Y.encodeStateAsUpdate(doc));
+    const yjsResult = await applyUpdatesWithYjs(
+      updates,
+      'doc.options.merge_updates',
+      this.logger
+    );
 
     if (this.config.doc.experimental.yocto) {
       metrics.jwst.counter('codec_merge_counter').add(1);
       let log = false;
       let yoctoResult: Buffer | null = null;
       try {
-        yoctoResult = yoctoMergeUpdates(updates.map(Buffer.from));
-        if (!compare(yjsResult, yoctoResult)) {
+        yoctoResult = applyUpdatesWithNative(
+          updates,
+          'doc.options.yocto_codec_compare',
+          this.logger
+        );
+        const comparison = compareCodecResult(yjsResult, yoctoResult);
+        if (!comparison.matches) {
           metrics.jwst.counter('codec_not_match').add(1);
           this.logger.warn(`yocto codec result doesn't match yjs codec result`);
+          if (comparison.treeDiff?.length) {
+            this.logger.warn(
+              `yocto codec tree diff:\n${comparison.treeDiff.join('\n')}`
+            );
+          }
           log = true;
           if (env.dev) {
             this.logger.warn(`Expected:\n  ${yjsResult.toString('hex')}`);
@@ -84,38 +79,4 @@ export class DocStorageOptions implements IDocStorageOptions {
   historyMinInterval = (_spaceId: string) => {
     return this.config.doc.history.interval;
   };
-
-  @CallMetric('doc', 'yjs_recover_updates_to_doc')
-  private recoverDoc(updates: Uint8Array[]): Promise<Y.Doc> {
-    const doc = new Y.Doc();
-    const chunks = chunk(updates, 10);
-    let i = 0;
-
-    return new Promise(resolve => {
-      Y.transact(doc, () => {
-        const next = () => {
-          const updates = chunks.at(i++);
-
-          if (updates?.length) {
-            updates.forEach(u => {
-              try {
-                Y.applyUpdate(doc, u);
-              } catch (e) {
-                this.logger.error('Failed to apply update', e);
-              }
-            });
-
-            // avoid applying too many updates in single round which will take the whole cpu time like dead lock
-            setImmediate(() => {
-              next();
-            });
-          } else {
-            resolve(doc);
-          }
-        };
-
-        next();
-      });
-    });
-  }
 }

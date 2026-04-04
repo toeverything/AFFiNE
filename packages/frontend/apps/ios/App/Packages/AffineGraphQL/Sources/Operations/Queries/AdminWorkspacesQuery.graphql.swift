@@ -26,6 +26,9 @@ public class AdminWorkspacesQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("adminWorkspaces", [AdminWorkspace].self, arguments: ["filter": .variable("filter")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      AdminWorkspacesQuery.Data.self
+    ] }
 
     /// List workspaces for admin
     public var adminWorkspaces: [AdminWorkspace] { __data["adminWorkspaces"] }
@@ -57,6 +60,9 @@ public class AdminWorkspacesQuery: GraphQLQuery {
         .field("snapshotSize", AffineGraphQL.SafeInt.self),
         .field("blobCount", Int.self),
         .field("blobSize", AffineGraphQL.SafeInt.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        AdminWorkspacesQuery.Data.AdminWorkspace.self
       ] }
 
       public var id: String { __data["id"] }
@@ -91,6 +97,9 @@ public class AdminWorkspacesQuery: GraphQLQuery {
           .field("name", String.self),
           .field("email", String.self),
           .field("avatarUrl", String?.self),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          AdminWorkspacesQuery.Data.AdminWorkspace.Owner.self
         ] }
 
         public var id: String { __data["id"] }

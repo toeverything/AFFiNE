@@ -8,7 +8,14 @@ import type { Request, Response } from 'express';
 import { ClsServiceManager } from 'nestjs-cls';
 import type { Socket } from 'socket.io';
 
-export function getRequestResponseFromHost(host: ArgumentsHost) {
+type RequestResponse = {
+  req: Request;
+  res?: Response;
+};
+
+export function getRequestResponseFromHost(
+  host: ArgumentsHost
+): RequestResponse {
   switch (host.getType<GqlContextType>()) {
     case 'graphql': {
       const gqlContext = GqlArgumentsHost.create(host).getContext<{
@@ -44,11 +51,13 @@ export function getRequestResponseFromHost(host: ArgumentsHost) {
   }
 }
 
-export function getRequestFromHost(host: ArgumentsHost) {
+export function getRequestFromHost(host: ArgumentsHost): Request {
   return getRequestResponseFromHost(host).req;
 }
 
-export function getRequestResponseFromContext(ctx: ExecutionContext) {
+export function getRequestResponseFromContext(
+  ctx: ExecutionContext
+): RequestResponse {
   return getRequestResponseFromHost(ctx);
 }
 
