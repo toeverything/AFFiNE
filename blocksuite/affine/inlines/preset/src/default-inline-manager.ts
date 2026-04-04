@@ -13,6 +13,7 @@ import {
   CodeInlineSpecExtension,
   ColorInlineSpecExtension,
   ItalicInlineSpecExtension,
+  PageHashtagInlineSpecExtension,
   StrikeInlineSpecExtension,
   UnderlineInlineSpecExtension,
 } from './inline-spec';
@@ -28,6 +29,7 @@ export const DefaultInlineManagerExtension =
       CodeInlineSpecExtension.identifier,
       BackgroundInlineSpecExtension.identifier,
       ColorInlineSpecExtension.identifier,
+      PageHashtagInlineSpecExtension.identifier,
       LatexInlineSpecExtension.identifier,
       ReferenceInlineSpecExtension.identifier,
       LinkInlineSpecExtension.identifier,
