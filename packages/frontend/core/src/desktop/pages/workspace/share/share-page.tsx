@@ -38,7 +38,6 @@ import { ShareFooter } from './share-footer';
 import { ShareHeader } from './share-header';
 import * as styles from './share-page.css';
 import { useSharedModeQuerySync } from './use-shared-mode-query-sync';
-import { useSharedPublishMode } from './use-shared-publish-mode';
 
 const useUpdateBasename = (workspace: Workspace | null) => {
   const location = useLocation();
@@ -130,18 +129,14 @@ const SharePageInner = ({
   const [noPermission, setNoPermission] = useState(false);
   const [editorContainer, setActiveBlocksuiteEditor] =
     useActiveBlocksuiteEditor();
-  const { hasPublishModeError, resolvedPublishMode } = useSharedPublishMode({
-    docId,
-    publishMode,
-    workspaceId,
-  });
+  const resolvedPublishMode = publishMode ?? null;
   const currentPublishMode = useSharedModeQuerySync({
     editor,
     resolvedPublishMode,
   });
 
   useEffect(() => {
-    if (!resolvedPublishMode || editor || workspace || page) {
+    if (editor || workspace || page) {
       return;
     }
 
@@ -193,7 +188,7 @@ const SharePageInner = ({
         setPage(doc);
 
         const editor = doc.scope.get(EditorsService).createEditor();
-        editor.setMode(resolvedPublishMode);
+        editor.setMode(resolvedPublishMode ?? doc.getPrimaryMode() ?? 'page');
 
         if (selector) {
           editor.setSelector(selector);
@@ -265,10 +260,6 @@ const SharePageInner = ({
     },
     [editor, setActiveBlocksuiteEditor, jumpToPageBlock, openPage, workspaceId]
   );
-
-  if (hasPublishModeError && !workspace && !page && !editor) {
-    return null;
-  }
 
   if (noPermission) {
     return <PageNotFound noPermission />;
