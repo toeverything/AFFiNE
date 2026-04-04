@@ -26,6 +26,9 @@ public class ImportUsersMutation: GraphQLMutation {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("importUsers", [ImportUser].self, arguments: ["input": .variable("input")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      ImportUsersMutation.Data.self
+    ] }
 
     /// import users
     public var importUsers: [ImportUser] { __data["importUsers"] }
@@ -42,6 +45,9 @@ public class ImportUsersMutation: GraphQLMutation {
         .field("__typename", String.self),
         .inlineFragment(AsUserType.self),
         .inlineFragment(AsUserImportFailedType.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        ImportUsersMutation.Data.ImportUser.self
       ] }
 
       public var asUserType: AsUserType? { _asInlineFragment() }
@@ -60,6 +66,10 @@ public class ImportUsersMutation: GraphQLMutation {
           .field("id", AffineGraphQL.ID.self),
           .field("name", String.self),
           .field("email", String.self),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          ImportUsersMutation.Data.ImportUser.self,
+          ImportUsersMutation.Data.ImportUser.AsUserType.self
         ] }
 
         public var id: AffineGraphQL.ID { __data["id"] }
@@ -81,6 +91,10 @@ public class ImportUsersMutation: GraphQLMutation {
         public static var __selections: [ApolloAPI.Selection] { [
           .field("email", String.self),
           .field("error", String.self),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          ImportUsersMutation.Data.ImportUser.self,
+          ImportUsersMutation.Data.ImportUser.AsUserImportFailedType.self
         ] }
 
         public var email: String { __data["email"] }

@@ -47,6 +47,9 @@ public class ApplyDocUpdatesMutation: GraphQLMutation {
         "updates": .variable("updates")
       ]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      ApplyDocUpdatesMutation.Data.self
+    ] }
 
     /// Apply updates to a doc using LLM and return the merged markdown.
     public var applyDocUpdates: String { __data["applyDocUpdates"] }

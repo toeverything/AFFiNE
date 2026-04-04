@@ -37,6 +37,9 @@ public class CreateCopilotContextMutation: GraphQLMutation {
         "sessionId": .variable("sessionId")
       ]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      CreateCopilotContextMutation.Data.self
+    ] }
 
     /// Create a context session
     public var createCopilotContext: String { __data["createCopilotContext"] }

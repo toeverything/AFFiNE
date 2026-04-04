@@ -26,6 +26,9 @@ public class ReleaseDeletedBlobsMutation: GraphQLMutation {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("releaseDeletedBlobs", Bool.self, arguments: ["workspaceId": .variable("workspaceId")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      ReleaseDeletedBlobsMutation.Data.self
+    ] }
 
     public var releaseDeletedBlobs: Bool { __data["releaseDeletedBlobs"] }
   }

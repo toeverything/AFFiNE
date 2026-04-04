@@ -37,6 +37,9 @@ public class AddContextFileMutation: GraphQLMutation {
         "options": .variable("options")
       ]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      AddContextFileMutation.Data.self
+    ] }
 
     /// add a file to context
     public var addContextFile: AddContextFile { __data["addContextFile"] }
@@ -59,6 +62,9 @@ public class AddContextFileMutation: GraphQLMutation {
         .field("error", String?.self),
         .field("status", GraphQLEnum<AffineGraphQL.ContextEmbedStatus>.self),
         .field("blobId", String.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        AddContextFileMutation.Data.AddContextFile.self
       ] }
 
       public var id: AffineGraphQL.ID { __data["id"] }

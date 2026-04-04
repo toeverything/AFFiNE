@@ -25,6 +25,9 @@ public struct CurrentUserProfile: AffineGraphQL.SelectionSet, Fragment {
     .field("quotaUsage", QuotaUsage.self),
     .field("copilot", Copilot.self),
   ] }
+  public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+    CurrentUserProfile.self
+  ] }
 
   public var id: AffineGraphQL.ID { __data["id"] }
   /// User name
@@ -57,6 +60,9 @@ public struct CurrentUserProfile: AffineGraphQL.SelectionSet, Fragment {
       .field("receiveMentionEmail", Bool.self),
       .field("receiveCommentEmail", Bool.self),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      CurrentUserProfile.Settings.self
+    ] }
 
     /// Receive invitation email
     public var receiveInvitationEmail: Bool { __data["receiveInvitationEmail"] }
@@ -83,6 +89,9 @@ public struct CurrentUserProfile: AffineGraphQL.SelectionSet, Fragment {
       .field("memberLimit", Int.self),
       .field("humanReadable", HumanReadable.self),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      CurrentUserProfile.Quota.self
+    ] }
 
     public var name: String { __data["name"] }
     public var blobLimit: AffineGraphQL.SafeInt { __data["blobLimit"] }
@@ -107,6 +116,9 @@ public struct CurrentUserProfile: AffineGraphQL.SelectionSet, Fragment {
         .field("historyPeriod", String.self),
         .field("memberLimit", String.self),
       ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        CurrentUserProfile.Quota.HumanReadable.self
+      ] }
 
       public var name: String { __data["name"] }
       public var blobLimit: String { __data["blobLimit"] }
@@ -128,6 +140,9 @@ public struct CurrentUserProfile: AffineGraphQL.SelectionSet, Fragment {
       .field("__typename", String.self),
       .field("storageQuota", AffineGraphQL.SafeInt.self),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      CurrentUserProfile.QuotaUsage.self
+    ] }
 
     @available(*, deprecated, message: "use `UserQuotaType[\'usedStorageQuota\']` instead")
     public var storageQuota: AffineGraphQL.SafeInt { __data["storageQuota"] }
@@ -145,6 +160,9 @@ public struct CurrentUserProfile: AffineGraphQL.SelectionSet, Fragment {
       .field("__typename", String.self),
       .field("quota", Quota.self),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      CurrentUserProfile.Copilot.self
+    ] }
 
     /// Get the quota of the user in the workspace
     public var quota: Quota { __data["quota"] }
@@ -161,6 +179,9 @@ public struct CurrentUserProfile: AffineGraphQL.SelectionSet, Fragment {
         .field("__typename", String.self),
         .field("limit", AffineGraphQL.SafeInt?.self),
         .field("used", AffineGraphQL.SafeInt.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        CurrentUserProfile.Copilot.Quota.self
       ] }
 
       public var limit: AffineGraphQL.SafeInt? { __data["limit"] }

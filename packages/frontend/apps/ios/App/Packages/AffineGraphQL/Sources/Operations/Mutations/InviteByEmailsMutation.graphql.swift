@@ -37,6 +37,9 @@ public class InviteByEmailsMutation: GraphQLMutation {
         "emails": .variable("emails")
       ]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      InviteByEmailsMutation.Data.self
+    ] }
 
     public var inviteMembers: [InviteMember] { __data["inviteMembers"] }
 
@@ -53,6 +56,9 @@ public class InviteByEmailsMutation: GraphQLMutation {
         .field("email", String.self),
         .field("inviteId", String?.self),
         .field("sentSuccess", Bool.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        InviteByEmailsMutation.Data.InviteMember.self
       ] }
 
       public var email: String { __data["email"] }
