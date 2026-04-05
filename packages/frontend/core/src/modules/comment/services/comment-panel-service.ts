@@ -8,6 +8,9 @@ export type CommentPanelDisplayMode =
       type: 'all';
     }
   | {
+      type: 'pending';
+    }
+  | {
       type: 'focused';
       commentId: string;
     }
@@ -31,9 +34,8 @@ export class CommentPanelService extends Service {
    */
   watchForPendingComments(entity: DocCommentEntity): () => void {
     const subscription = entity.pendingComment$.subscribe(pendingComment => {
-      // If we have a new pending comment, open the comment panel
       if (pendingComment) {
-        this.openCommentPanel();
+        this.showPendingComment();
       }
     });
 
@@ -67,6 +69,24 @@ export class CommentPanelService extends Service {
       this.showAllComments();
     }
 
+    this.activateCommentTab();
+  }
+
+  showPendingComment(): void {
+    this.displayMode$.next({
+      type: 'pending',
+    });
+
+    this.activateCommentTab();
+  }
+
+  showAllComments(): void {
+    this.displayMode$.next({
+      type: 'all',
+    });
+  }
+
+  private activateCommentTab(): void {
     const workbench = this.workbenchService.workbench;
     const activeView = workbench.activeView$.value;
 
@@ -74,12 +94,6 @@ export class CommentPanelService extends Service {
       workbench.openSidebar();
       activeView.activeSidebarTab('comment');
     }
-  }
-
-  showAllComments(): void {
-    this.displayMode$.next({
-      type: 'all',
-    });
   }
 
   override dispose(): void {

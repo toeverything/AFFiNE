@@ -142,9 +142,14 @@ class AffineCommentService implements CommentProvider {
   }
 
   addComment(selections: BaseSelection[]): void {
-    this.framework.get(CommentPanelService).openCommentPanel();
     const preview = getPreviewFromSelections(this.std, selections);
-    this.commentEntity.addComment(selections, preview).catch(console.error);
+    this.commentEntity.highlightComment(null);
+    this.commentEntity
+      .addComment(selections, preview)
+      .then(() => {
+        this.framework.get(CommentPanelService).showPendingComment();
+      })
+      .catch(console.error);
   }
 
   resolveComment(id: string): void {

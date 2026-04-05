@@ -218,11 +218,11 @@ export class DocCommentEntity extends Entity<{
     return this.framework.get(GlobalContextService).globalContext.docMode.$;
   }
 
-  async commitComment(id: string): Promise<void> {
+  async commitComment(id: string): Promise<DocComment | undefined> {
     const pendingComment = this.pendingComment$.value;
     if (!pendingComment || pendingComment.id !== id) {
       console.warn('Pending comment not found:', id);
-      return;
+      return undefined;
     }
     const { doc, preview, attachments } = pendingComment;
     const snapshot = this.snapshotHelper.getSnapshot(doc);
@@ -260,6 +260,7 @@ export class DocCommentEntity extends Entity<{
     });
     this.pendingComment$.setValue(null);
     this.revalidate();
+    return comment;
   }
 
   async commitReply(id: string): Promise<void> {

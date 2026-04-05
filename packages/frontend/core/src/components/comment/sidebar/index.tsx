@@ -666,6 +666,7 @@ const CommentInput = ({ entity }: { entity: DocCommentEntity }) => {
   const newPendingComment = useLiveData(entity.pendingComment$);
   const pendingPreview = newPendingComment?.preview;
   const [isMutating, setIsMutating] = useState(false);
+  const commentPanelService = useService(CommentPanelService);
 
   const docId = entity.props.docId;
   const canCreateComment = useGuard('Doc_Comments_Create', docId);
@@ -674,17 +675,23 @@ const CommentInput = ({ entity }: { entity: DocCommentEntity }) => {
     if (!newPendingComment?.id) return;
     setIsMutating(true);
     try {
-      await entity.commitComment(newPendingComment.id);
+      const comment = await entity.commitComment(newPendingComment.id);
+      if (comment) {
+        commentPanelService.openCommentPanel({
+          focusedCommentId: comment.id,
+        });
+      }
     } finally {
       setIsMutating(false);
     }
-  }, [entity, newPendingComment]);
+  }, [commentPanelService, entity, newPendingComment]);
 
   const handleCancel = useCallback(() => {
     if (!newPendingComment?.id) return;
 
     entity.dismissDraftComment();
-  }, [entity, newPendingComment]);
+    commentPanelService.showAllComments();
+  }, [commentPanelService, entity, newPendingComment]);
 
   const session = useService(AuthService).session;
   const account = useLiveData(session.account$);
@@ -1032,6 +1039,7 @@ export const CommentSidebar = () => {
         !target.closest('[data-pending-comment]')
       ) {
         entity.dismissDraftComment();
+        commentPanelService.showAllComments();
       }
     };
     document.addEventListener('keydown', handleKeyDown);

@@ -45,6 +45,10 @@ export function getVisibleComments({
     return focusedComment ? [focusedComment] : [];
   }
 
+  if (displayMode.type === 'pending') {
+    return [];
+  }
+
   if (displayMode.type === 'subset') {
     const commentIds = new Set(displayMode.commentIds);
 

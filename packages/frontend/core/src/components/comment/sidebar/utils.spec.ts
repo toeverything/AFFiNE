@@ -101,6 +101,24 @@ describe('getVisibleComments', () => {
     expect(result).toEqual([]);
   });
 
+  test('hides existing comments when sidebar is in pending mode', () => {
+    const comments = [
+      createComment({ id: 'comment-1', createdAt: 10 }),
+      createComment({ id: 'comment-2', createdAt: 20 }),
+    ];
+
+    const result = getVisibleComments({
+      comments,
+      displayMode: {
+        type: 'pending',
+      } as never,
+      filterState: defaultFilterState,
+      docMode: 'page',
+    });
+
+    expect(result).toEqual([]);
+  });
+
   test('shows all filtered comments when sidebar is in all mode', () => {
     const comments = [
       createComment({ id: 'comment-1', createdAt: 10 }),
