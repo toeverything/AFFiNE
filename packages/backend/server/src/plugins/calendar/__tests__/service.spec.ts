@@ -5,11 +5,7 @@ import test from 'ava';
 
 import { createModule } from '../../../__tests__/create-module';
 import { Mockers } from '../../../__tests__/mocks';
-import {
-  CalendarProviderRequestError,
-  CryptoHelper,
-  Mutex,
-} from '../../../base';
+import { CalendarProviderRequestError, CryptoHelper } from '../../../base';
 import { ConfigModule } from '../../../base/config';
 import { ServerConfigModule } from '../../../core/config';
 import type {
@@ -93,7 +89,6 @@ const calendarService = module.get(CalendarService);
 const calendarCronJobs = module.get(CalendarCronJobs);
 const providerFactory = module.get(CalendarProviderFactory);
 const models = module.get(Models);
-const mutex = module.get(Mutex);
 module.get(CryptoHelper).onConfigInit();
 
 const createAccount = async (
@@ -120,6 +115,8 @@ const createSubscription = async (
   accountId: string,
   overrides: Partial<UpsertCalendarSubscriptionInput> & {
     syncToken?: string | null;
+    nextSyncAt?: Date;
+    syncRetryCount?: number;
     customChannelId?: string | null;
     customResourceId?: string | null;
     channelExpiration?: Date | null;
@@ -142,6 +139,20 @@ const createSubscription = async (
   }
 
   if (
+    overrides.nextSyncAt !== undefined ||
+    overrides.syncRetryCount !== undefined
+  ) {
+    await models.calendarSubscription.updateSync(subscription.id, {
+      ...(overrides.nextSyncAt !== undefined
+        ? { nextSyncAt: overrides.nextSyncAt }
+        : {}),
+      ...(overrides.syncRetryCount !== undefined
+        ? { syncRetryCount: overrides.syncRetryCount }
+        : {}),
+    });
+  }
+
+  if (
     overrides.customChannelId !== undefined ||
     overrides.customResourceId !== undefined ||
     overrides.channelExpiration !== undefined
@@ -158,6 +169,8 @@ const createSubscription = async (
 
 test.afterEach.always(() => {
   mock.reset();
+  module.queue.add.resetHistory();
+  module.queue.remove.resetHistory();
 });
 
 test.after.always(async () => {
@@ -259,6 +272,9 @@ test('syncSubscription resets invalid sync token and maps events', async t => {
   const updated = await models.calendarSubscription.get(subscription.id);
   t.is(updated?.syncToken, 'next-token');
   t.truthy(updated?.lastSyncAt);
+  t.is(updated?.syncRetryCount, 0);
+  t.truthy(updated?.nextSyncAt);
+  t.true(updated!.nextSyncAt.getTime() > updated!.lastSyncAt!.getTime());
 
   const events = await models.calendarEvent.listBySubscriptionsInRange(
     [subscription.id],
@@ -500,51 +516,22 @@ test('syncSubscription applies exponential backoff for repeated failures', async
   mock.method(Date, 'now', () => now);
 
   await calendarService.syncSubscription(subscription.id);
-  await calendarService.syncSubscription(subscription.id);
+  let updated = await models.calendarSubscription.get(subscription.id);
   t.is(listEventsMock.mock.callCount(), 1);
+  t.is(updated?.syncRetryCount, 1);
+  t.is(
+    updated?.nextSyncAt.toISOString(),
+    new Date(now + baseDelayMs).toISOString()
+  );
 
-  now += baseDelayMs + 1000;
   await calendarService.syncSubscription(subscription.id);
+  updated = await models.calendarSubscription.get(subscription.id);
   t.is(listEventsMock.mock.callCount(), 2);
-
-  now += baseDelayMs + 1000;
-  await calendarService.syncSubscription(subscription.id);
-  t.is(listEventsMock.mock.callCount(), 2);
-});
-
-test('syncSubscription skips token refresh while in backoff window', async t => {
-  let now = new Date('2026-01-01T00:00:00.000Z').getTime();
-  mock.method(Date, 'now', () => now);
-
-  const user = await module.create(Mockers.User);
-  const account = await createAccount(user.id, {
-    accessToken: 'expired-access-token',
-    expiresAt: new Date(now - 5 * 60 * 1000),
-  });
-  const subscription = await createSubscription(account.id, {
-    syncToken: 'sync-token',
-  });
-
-  const provider = new MockCalendarProvider();
-  const refreshMock = mock.method(provider, 'refreshTokens', async () => ({
-    accessToken: `refreshed-${randomUUID()}`,
-  }));
-  const listEventsMock = mock.method(provider, 'listEvents', async () => {
-    throw new Error('upstream timeout');
-  });
-  mock.method(providerFactory, 'get', () => provider);
-
-  const baseDelayMs = 5 * 60 * 1000;
-
-  await calendarService.syncSubscription(subscription.id);
-  await calendarService.syncSubscription(subscription.id);
-  t.is(refreshMock.mock.callCount(), 1);
-  t.is(listEventsMock.mock.callCount(), 1);
-
-  now += baseDelayMs + 1000;
-  await calendarService.syncSubscription(subscription.id);
-  t.is(refreshMock.mock.callCount(), 2);
-  t.is(listEventsMock.mock.callCount(), 2);
+  t.is(updated?.syncRetryCount, 2);
+  t.is(
+    updated?.nextSyncAt.toISOString(),
+    new Date(now + baseDelayMs * 2).toISOString()
+  );
 });
 
 test('syncSubscription renews webhook channel when expiring', async t => {
@@ -607,64 +594,72 @@ test('syncSubscription renews webhook channel when expiring', async t => {
   t.truthy(updated?.channelExpiration);
 });
 
-test('pollAccounts skips syncing when cluster lock is unavailable', async t => {
-  mock.method(mutex, 'acquire', async () => undefined);
-  mock.method(
-    models.calendarSubscription,
-    'listAllWithAccountForSync',
-    async () => []
-  );
-  const syncAccountMock = mock.method(
-    calendarService,
-    'syncAccount',
-    async () => {
-      return;
-    }
-  );
+test('syncSubscription keeps schedule moving when webhook renewal fails', async t => {
+  const now = new Date('2026-01-01T00:00:00.000Z').getTime();
+  mock.method(Date, 'now', () => now);
 
-  await calendarCronJobs.pollAccounts();
+  const user = await module.create(Mockers.User);
+  const account = await createAccount(user.id, {
+    refreshIntervalMinutes: 60,
+  });
+  const subscription = await createSubscription(account.id, {
+    syncToken: 'sync-token',
+    channelExpiration: new Date(Date.now() + 60 * 60 * 1000),
+  });
 
-  t.is(syncAccountMock.mock.callCount(), 0);
+  const provider = new MockCalendarProvider();
+  mock.method(provider, 'listEvents', async () => ({
+    events: [],
+    nextSyncToken: 'next-sync',
+  }));
+  mock.method(provider, 'watchCalendar', async () => {
+    throw new Error('watch failed');
+  });
+  mock.method(providerFactory, 'get', () => provider);
+
+  await calendarService.syncSubscription(subscription.id);
+
+  const updated = await models.calendarSubscription.get(subscription.id);
+  t.truthy(updated?.lastSyncAt);
+  t.is(updated?.syncRetryCount, 0);
+  t.is(
+    updated?.nextSyncAt.toISOString(),
+    new Date(now + 15 * 60 * 1000).toISOString()
+  );
 });
 
-test('pollAccounts only syncs due accounts', async t => {
-  mock.method(mutex, 'acquire', async () => ({
-    [Symbol.asyncDispose]: async () => {},
-  }));
-  mock.method(
-    models.calendarSubscription,
-    'listAllWithAccountForSync',
-    async () =>
-      [
-        {
-          accountId: 'due-account',
-          lastSyncAt: new Date(Date.now() - 31 * 60 * 1000),
-          account: {
-            refreshIntervalMinutes: 30,
-          },
-        },
-        {
-          accountId: 'fresh-account',
-          lastSyncAt: new Date(Date.now() - 5 * 60 * 1000),
-          account: {
-            refreshIntervalMinutes: 30,
-          },
-        },
-      ] as any
-  );
-
-  const syncAccountMock = mock.method(
-    calendarService,
-    'syncAccount',
-    async () => {
-      return;
-    }
-  );
+test('pollAccounts skips when nothing is due', async t => {
+  mock.method(models.calendarSubscription, 'listDueForSync', async () => []);
 
   await calendarCronJobs.pollAccounts();
 
+  t.is(module.queue.count('calendar.syncSubscription'), 0);
+});
+
+test('pollAccounts enqueues due subscriptions only', async t => {
+  mock.method(models.calendarSubscription, 'listDueForSync', async () => [
+    { id: 'due-subscription-a' },
+    { id: 'due-subscription-b' },
+  ]);
+
+  await calendarCronJobs.pollAccounts();
+
+  t.is(module.queue.count('calendar.syncSubscription'), 2);
   t.deepEqual(
-    syncAccountMock.mock.calls.map(call => call.arguments[0]),
-    ['due-account']
+    module.queue.add
+      .getCalls()
+      .map(call => [call.args[0], call.args[1], call.args[2]]),
+    [
+      [
+        'calendar.syncSubscription',
+        { subscriptionId: 'due-subscription-a', reason: 'polling' },
+        { jobId: 'due-subscription-a' },
+      ],
+      [
+        'calendar.syncSubscription',
+        { subscriptionId: 'due-subscription-b', reason: 'polling' },
+        { jobId: 'due-subscription-b' },
+      ],
+    ]
   );
 });
