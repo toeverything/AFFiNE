@@ -4,9 +4,14 @@ import type { BlockModel } from '@blocksuite/store';
 const EMBED_BLOCK_PREFIX = 'affine:embed-';
 const COMMENT_ATTR_PREFIX = 'comment-';
 const TODO_TAG_PATTERN = /#[^\s]+/g;
+const HEADING_TYPE_PATTERN = /^h([1-6])$/;
 const todoSummaryStatusFilters = ['all', 'done', 'not-done'] as const;
 
 type TodoSummaryStatusFilter = (typeof todoSummaryStatusFilters)[number];
+type TodoSummaryHeading = {
+  level: number;
+  text: string;
+};
 
 export type TodoSummaryRow = {
   todoId: string;
@@ -15,6 +20,7 @@ export type TodoSummaryRow = {
   nestingLevel: number;
   tags: string[];
   commentIds: string[];
+  heading?: TodoSummaryHeading;
 };
 
 export type TodoSummaryRowFilter = {
@@ -48,8 +54,9 @@ export function collectPageTodoRows(
       return;
     }
 
+    let currentHeading: TodoSummaryHeading | undefined;
     child.children.forEach(noteChild => {
-      walkBlockTree(noteChild, 0, rows);
+      currentHeading = walkBlockTree(noteChild, 0, rows, currentHeading);
     });
   });
   return rows;
@@ -121,11 +128,14 @@ export function insertTodoSummaryBlock(model: BlockModel) {
 function walkBlockTree(
   block: BlockModel,
   depth: number,
-  rows: TodoSummaryRow[]
-) {
+  rows: TodoSummaryRow[],
+  currentHeading?: TodoSummaryHeading
+): TodoSummaryHeading | undefined {
   if (block.flavour.startsWith(EMBED_BLOCK_PREFIX)) {
-    return;
+    return currentHeading;
   }
+
+  let nextHeading = getHeading(block) ?? currentHeading;
 
   if (isTodoBlock(block)) {
     const text = block.props.text?.toString() ?? '';
@@ -136,12 +146,15 @@ function walkBlockTree(
       nestingLevel: depth,
       tags: extractTodoTags(text),
       commentIds: getTodoCommentIds(block),
+      heading: nextHeading,
     });
   }
 
   block.children.forEach(child => {
-    walkBlockTree(child, depth + 1, rows);
+    nextHeading = walkBlockTree(child, depth + 1, rows, nextHeading);
   });
+
+  return nextHeading;
 }
 
 function isVisibleNote(block: BlockModel) {
@@ -173,6 +186,31 @@ function getTodoCommentIds(block: ListBlockModel) {
   return Array.from(new Set([...blockComments, ...inlineComments])).sort(
     (a, b) => a.localeCompare(b)
   );
+}
+
+function getHeading(block: BlockModel): TodoSummaryHeading | undefined {
+  if (block.flavour !== 'affine:paragraph') {
+    return undefined;
+  }
+
+  const type = (block.props as { type?: string }).type;
+  const match = type?.match(HEADING_TYPE_PATTERN);
+  if (!match) {
+    return undefined;
+  }
+
+  const text = (
+    block.props as { text?: { toString?: () => string } }
+  ).text?.toString?.();
+  const headingText = text?.trim();
+  if (!headingText) {
+    return undefined;
+  }
+
+  return {
+    level: Number(match[1]),
+    text: headingText,
+  };
 }
 
 function normalizeTodoTags(tags: string[]) {

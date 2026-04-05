@@ -158,6 +158,51 @@ describe('todo summary utils', () => {
     expect(buttons[1]?.classList.contains('has-comments')).toBe(false);
   });
 
+  test('renders the closest heading above the todo text', () => {
+    const component = createTodoSummaryComponent();
+    const container = document.createElement('div');
+    const root = block('root', 'affine:page', {}, [
+      block(
+        'note-1',
+        'affine:note',
+        {
+          displayMode: NoteDisplayMode.DocOnly,
+        },
+        [
+          block('heading-1', 'affine:paragraph', {
+            type: 'h2',
+            text: text('Current section'),
+          }),
+          block('todo-1', 'affine:list', {
+            type: 'todo',
+            checked: false,
+            text: text('Todo with heading'),
+          }),
+        ]
+      ),
+    ]);
+
+    Object.defineProperty(component, 'store', {
+      value: { readonly: false, root },
+      configurable: true,
+    });
+    Object.defineProperty(component, 'model', {
+      value: {
+        props: {
+          statusFilter: 'all',
+          tagsFilter: [],
+        },
+      },
+      configurable: true,
+    });
+
+    render(component.renderBlock(), container);
+
+    expect(container.querySelector('.todo-heading')?.textContent?.trim()).toBe(
+      'H2 Current section'
+    );
+  });
+
   test('closes the tag dropdown when clicking outside the component', () => {
     const component = createTodoSummaryComponent();
     component._tagsFilter = { open: true };
@@ -323,6 +368,87 @@ describe('todo summary utils', () => {
         nestingLevel: 0,
         tags: [],
         commentIds: ['comment-1', 'comment-2', 'comment-3'],
+      },
+    ]);
+  });
+
+  test('collects the closest previous heading for each todo', () => {
+    const root = block('root', 'affine:page', {}, [
+      block(
+        'note-1',
+        'affine:note',
+        {
+          displayMode: NoteDisplayMode.DocOnly,
+        },
+        [
+          block('heading-1', 'affine:paragraph', {
+            type: 'h1',
+            text: text('Planning'),
+          }),
+          block('todo-1', 'affine:list', {
+            type: 'todo',
+            checked: false,
+            text: text('Draft spec'),
+          }),
+          block('heading-2', 'affine:paragraph', {
+            type: 'h3',
+            text: text('Launch'),
+          }),
+          block('todo-2', 'affine:list', {
+            type: 'todo',
+            checked: false,
+            text: text('Ship it'),
+          }),
+        ]
+      ),
+      block(
+        'note-2',
+        'affine:note',
+        {
+          displayMode: NoteDisplayMode.DocOnly,
+        },
+        [
+          block('todo-3', 'affine:list', {
+            type: 'todo',
+            checked: false,
+            text: text('No heading here'),
+          }),
+        ]
+      ),
+    ]);
+
+    expect(collectPageTodoRows(root)).toEqual([
+      {
+        todoId: 'todo-1',
+        text: 'Draft spec',
+        checked: false,
+        nestingLevel: 0,
+        tags: [],
+        commentIds: [],
+        heading: {
+          level: 1,
+          text: 'Planning',
+        },
+      },
+      {
+        todoId: 'todo-2',
+        text: 'Ship it',
+        checked: false,
+        nestingLevel: 0,
+        tags: [],
+        commentIds: [],
+        heading: {
+          level: 3,
+          text: 'Launch',
+        },
+      },
+      {
+        todoId: 'todo-3',
+        text: 'No heading here',
+        checked: false,
+        nestingLevel: 0,
+        tags: [],
+        commentIds: [],
       },
     ]);
   });

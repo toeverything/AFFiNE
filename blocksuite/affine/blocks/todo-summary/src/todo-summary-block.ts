@@ -408,6 +408,23 @@ export class TodoSummaryBlockComponent extends CaptionedBlockComponent<TodoSumma
       text-decoration: line-through;
     }
 
+    .todo-content {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      min-width: 0;
+    }
+
+    .todo-heading {
+      max-width: 100%;
+      overflow: hidden;
+      color: var(--affine-text-secondary-color);
+      font-size: var(--affine-font-xs);
+      line-height: 15px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
     .todo-value {
       overflow: hidden;
       text-overflow: ellipsis;
@@ -806,30 +823,37 @@ export class TodoSummaryBlockComponent extends CaptionedBlockComponent<TodoSumma
                             </button>
                           </td>
                           <td>
-                            <div
-                              class=${classMap({
-                                'todo-text': true,
-                                checked: row.checked,
-                              })}
-                            >
-                              ${row.nestingLevel > 0
-                                ? html`<span class="nested-icons">
-                                    ${createNestingIndicators(
-                                      row.nestingLevel
-                                    ).map(
-                                      level =>
-                                        html`<span
-                                          class="nested-icon"
-                                          data-level=${level}
-                                          >${SubNodeIcon({
-                                            width: '14px',
-                                            height: '14px',
-                                          })}</span
-                                        >`
-                                    )}
-                                  </span>`
+                            <div class="todo-content">
+                              ${row.heading
+                                ? html`<span class="todo-heading"
+                                    >${`${row.heading.text}`}</span
+                                  >`
                                 : nothing}
-                              <span class="todo-value">${row.text}</span>
+                              <div
+                                class=${classMap({
+                                  'todo-text': true,
+                                  checked: row.checked,
+                                })}
+                              >
+                                ${row.nestingLevel > 0
+                                  ? html`<span class="nested-icons">
+                                      ${createNestingIndicators(
+                                        row.nestingLevel
+                                      ).map(
+                                        level =>
+                                          html`<span
+                                            class="nested-icon"
+                                            data-level=${level}
+                                            >${SubNodeIcon({
+                                              width: '14px',
+                                              height: '14px',
+                                            })}</span
+                                          >`
+                                      )}
+                                    </span>`
+                                  : nothing}
+                                <span class="todo-value">${row.text}</span>
+                              </div>
                             </div>
                           </td>
                           <td class="comment-cell">
