@@ -11,9 +11,7 @@ describe('getResolvedPublishMode', () => {
     expect(getResolvedPublishMode('edgeless', PublicDocMode.Page)).toBe(
       'edgeless'
     );
-    expect(getResolvedPublishMode('page', PublicDocMode.Edgeless)).toBe(
-      'page'
-    );
+    expect(getResolvedPublishMode('page', PublicDocMode.Edgeless)).toBe('page');
   });
 
   test('falls back to the published public mode for shared docs', () => {
