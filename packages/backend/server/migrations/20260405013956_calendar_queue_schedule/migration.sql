@@ -12,7 +12,7 @@ SET
     "next_sync_at" = CASE
         WHEN s."last_sync_at" IS NULL THEN CURRENT_TIMESTAMP
         ELSE s."last_sync_at" + make_interval(
-            mins = > COALESCE(a."refresh_interval_minutes", 30)
+            mins => COALESCE(a."refresh_interval_minutes", 30)
         )
     END
 FROM
