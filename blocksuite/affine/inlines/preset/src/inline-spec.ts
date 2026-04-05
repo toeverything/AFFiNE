@@ -1,7 +1,7 @@
 import { DocModeProvider } from '@blocksuite/affine-shared/services';
 import { affineTextStyles } from '@blocksuite/affine-shared/styles';
 import type { AffineTextAttributes } from '@blocksuite/affine-shared/types';
-import { type BlockComponent,StdIdentifier } from '@blocksuite/std';
+import { type BlockComponent, StdIdentifier } from '@blocksuite/std';
 import {
   type InlineRootElement,
   InlineSpecExtension,
