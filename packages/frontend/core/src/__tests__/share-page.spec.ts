@@ -1,9 +1,13 @@
+import { UserFriendlyError } from '@affine/error';
+import { TimeoutError } from 'rxjs';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 
 import {
   fetchSharedPublishMode,
   getResolvedPublishMode,
   getSearchWithMode,
+  isSharePagePermissionError,
+  isSharePageTimeoutError,
   parsePublishMode,
 } from '../desktop/pages/workspace/share/share-page.utils';
 
@@ -93,5 +97,36 @@ describe('getSearchWithMode', () => {
     expect(getSearchWithMode('?foo=1&mode=page&bar=2', 'edgeless')).toBe(
       '?foo=1&mode=edgeless&bar=2'
     );
+  });
+});
+
+describe('share page error helpers', () => {
+  test('recognizes permission errors only', () => {
+    const permissionError = new UserFriendlyError({
+      status: 403,
+      code: 'DOC_ACTION_DENIED',
+      type: 'DOC_ACTION_DENIED',
+      name: 'DOC_ACTION_DENIED',
+      message: 'forbidden',
+    });
+
+    expect(isSharePagePermissionError(permissionError)).toBe(true);
+    expect(isSharePagePermissionError(new TimeoutError())).toBe(false);
+    expect(isSharePagePermissionError(new Error('x'))).toBe(false);
+  });
+
+  test('recognizes timeout errors only', () => {
+    expect(isSharePageTimeoutError(new TimeoutError())).toBe(true);
+    expect(
+      isSharePageTimeoutError(
+        new UserFriendlyError({
+          status: 403,
+          code: 'DOC_ACTION_DENIED',
+          type: 'DOC_ACTION_DENIED',
+          name: 'DOC_ACTION_DENIED',
+          message: 'forbidden',
+        })
+      )
+    ).toBe(false);
   });
 });

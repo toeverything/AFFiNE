@@ -41,6 +41,8 @@ import * as styles from './share-page.css';
 import {
   fetchSharedPublishMode,
   getResolvedPublishMode,
+  isSharePagePermissionError,
+  isSharePageTimeoutError,
 } from './share-page.utils';
 import { useSharedModeQuerySync } from './use-shared-mode-query-sync';
 
@@ -145,6 +147,7 @@ const SharePageInner = ({
   const [page, setPage] = useState<Doc | null>(null);
   const [editor, setEditor] = useState<Editor | null>(null);
   const [noPermission, setNoPermission] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [fetchedPublishMode, setFetchedPublishMode] = useState<
     DocMode | null | undefined
   >(() => (publishMode === undefined ? undefined : null));
@@ -259,7 +262,17 @@ const SharePageInner = ({
       })
       .catch(err => {
         console.error(err);
-        setNoPermission(true);
+        if (isSharePagePermissionError(err)) {
+          setNoPermission(true);
+          return;
+        }
+
+        if (isSharePageTimeoutError(err)) {
+          setLoadFailed(true);
+          return;
+        }
+
+        setLoadFailed(true);
       });
   }, [
     docId,
@@ -324,6 +337,10 @@ const SharePageInner = ({
 
   if (noPermission) {
     return <PageNotFound noPermission />;
+  }
+
+  if (loadFailed) {
+    return <PageNotFound />;
   }
 
   if (!workspace || !page || !editor || !currentPublishMode) {
