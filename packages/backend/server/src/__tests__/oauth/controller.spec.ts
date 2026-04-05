@@ -14,6 +14,7 @@ import { ServerFeature } from '../../core/config/types';
 import { Models } from '../../models';
 import { OAuthProviderName } from '../../plugins/oauth/config';
 import { OAuthProviderFactory } from '../../plugins/oauth/factory';
+import { GithubOAuthProvider } from '../../plugins/oauth/providers/github';
 import { GoogleOAuthProvider } from '../../plugins/oauth/providers/google';
 import { OIDCProvider } from '../../plugins/oauth/providers/oidc';
 import { OAuthService } from '../../plugins/oauth/service';
@@ -37,6 +38,10 @@ test.before(async t => {
             google: {
               clientId: 'google-client-id',
               clientSecret: 'google-client-secret',
+            },
+            github: {
+              clientId: 'github-client-id',
+              clientSecret: 'github-client-secret',
             },
             oidc: {
               clientId: '',
@@ -293,7 +298,7 @@ test('should be able to get registered oauth providers', async t => {
 
   const providers = oauth.availableOAuthProviders();
 
-  t.deepEqual(providers, [OAuthProviderName.Google]);
+  t.deepEqual(providers, [OAuthProviderName.Google, OAuthProviderName.GitHub]);
 });
 
 test('should throw if code is missing in callback uri', async t => {
@@ -439,6 +444,24 @@ function mockOAuthProvider(
   });
 
   return clientNonce;
+}
+
+function mockGithubOAuthProvider(
+  app: TestingApp,
+  clientNonce: string = randomUUID()
+) {
+  const provider = app.get(GithubOAuthProvider);
+  const oauth = app.get(OAuthService);
+
+  Sinon.stub(oauth, 'isValidState').resolves(true);
+  Sinon.stub(oauth, 'getOAuthState').resolves({
+    provider: OAuthProviderName.GitHub,
+    clientNonce,
+  });
+
+  Sinon.stub(provider, 'getToken').resolves({ accessToken: '1' });
+
+  return { provider, clientNonce };
 }
 
 function mockOidcProvider(
@@ -643,6 +666,76 @@ test('should be able to fullfil user with oauth sign in', async t => {
 
   t.truthy(account);
   t.is(account!.user.id, u3.id);
+});
+
+test('github oauth should resolve private email from emails api', async t => {
+  const { app, db } = t.context;
+
+  const email = 'github-private@affine.pro';
+  const { clientNonce, provider } = mockGithubOAuthProvider(app);
+  const fetchJson = Sinon.stub(provider as any, 'fetchJson');
+
+  fetchJson.onFirstCall().resolves({
+    login: 'github-user',
+    email: null,
+    avatar_url: 'avatar',
+    name: 'DarkSky',
+  });
+  fetchJson.onSecondCall().resolves([
+    { email: 'unverified@affine.pro', primary: true, verified: false },
+    { email, primary: false, verified: true },
+  ]);
+
+  await app
+    .POST('/api/oauth/callback')
+    .send({ code: '1', state: '1', client_nonce: clientNonce })
+    .expect(HttpStatus.OK);
+
+  const sessionUser = await currentUser(app);
+  t.truthy(sessionUser);
+  t.is(sessionUser!.email, email);
+
+  const user = await db.user.findFirst({
+    select: {
+      email: true,
+      connectedAccounts: true,
+    },
+    where: {
+      email,
+    },
+  });
+
+  t.truthy(user);
+  t.is(user!.connectedAccounts[0].provider, OAuthProviderName.GitHub);
+  t.is(user!.connectedAccounts[0].providerAccountId, 'github-user');
+});
+
+test('github oauth should reject responses without a verified email', async t => {
+  const { app } = t.context;
+
+  const provider = app.get(GithubOAuthProvider);
+  const fetchJson = Sinon.stub(provider as any, 'fetchJson');
+
+  fetchJson.onFirstCall().resolves({
+    login: 'github-user',
+    email: null,
+    avatar_url: 'avatar',
+    name: 'DarkSky',
+  });
+  fetchJson
+    .onSecondCall()
+    .resolves([
+      { email: 'private@affine.pro', primary: true, verified: false },
+    ]);
+
+  const error = await t.throwsAsync(
+    provider.getUser(
+      { accessToken: 'token' },
+      { token: 'state', provider: OAuthProviderName.GitHub }
+    )
+  );
+
+  t.true(error instanceof InvalidOauthResponse);
 });
 
 test('oidc should accept email from id token when userinfo email is missing', async t => {

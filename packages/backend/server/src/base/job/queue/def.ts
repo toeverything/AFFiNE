@@ -28,6 +28,7 @@ export enum Queue {
   DOC = 'doc',
   COPILOT = 'copilot',
   INDEXER = 'indexer',
+  CALENDAR = 'calendar',
 }
 
 export const QUEUES = Object.values(Queue);

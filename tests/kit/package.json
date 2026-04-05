@@ -16,8 +16,8 @@
     "@node-rs/argon2": "^2.0.2",
     "@playwright/test": "=1.58.2",
     "@toeverything/infra": "workspace:*",
-    "express": "^5.0.0",
-    "http-proxy-middleware": "^3.0.3"
+    "express": "^5.1.0",
+    "http-proxy-middleware": "^3.0.5"
   },
   "peerDependencies": {
     "@playwright/test": "*",

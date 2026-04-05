@@ -4,8 +4,8 @@
 import ApolloAPI
 
 public extension Objects {
-  static let CopilotPromptConfigType = ApolloAPI.Object(
-    typename: "CopilotPromptConfigType",
+  static let DocPageAnalyticsSummary = ApolloAPI.Object(
+    typename: "DocPageAnalyticsSummary",
     implementedInterfaces: [],
     keyFields: nil
   )

@@ -5,6 +5,48 @@ mutation claimAudioTranscription($jobId: String!) {
     title
     summary
     actions
+    sourceAudio {
+      blobId
+      mimeType
+      durationMs
+      sampleRate
+      channels
+    }
+    quality {
+      degraded
+      overflowCount
+    }
+    sliceManifest {
+      index
+      fileName
+      mimeType
+      startSec
+      durationSec
+      byteSize
+    }
+    normalizedSegments {
+      speaker
+      startSec
+      endSec
+      start
+      end
+      text
+    }
+    normalizedTranscript
+    summaryJson {
+      title
+      durationMinutes
+      attendees
+      keyPoints
+      actionItems {
+        description
+        owner
+        deadline
+      }
+      decisions
+      openQuestions
+      blockers
+    }
     transcription {
       speaker
       start

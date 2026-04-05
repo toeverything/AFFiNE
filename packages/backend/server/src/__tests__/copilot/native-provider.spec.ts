@@ -247,7 +247,7 @@ class TestGeminiVertexProvider extends GeminiVertexProvider {
     };
   }
 
-  // eslint-disable-next-line sonarjs/no-identical-functions
+  // oxlint-disable-next-line sonarjs/no-identical-functions
   protected override async fetchRemoteAttach(
     url: string,
     signal?: AbortSignal

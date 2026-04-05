@@ -26,6 +26,9 @@ public class RemoveContextBlobMutation: GraphQLMutation {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("removeContextBlob", Bool.self, arguments: ["options": .variable("options")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      RemoveContextBlobMutation.Data.self
+    ] }
 
     /// remove a blob from context
     public var removeContextBlob: Bool { __data["removeContextBlob"] }

@@ -1417,12 +1417,13 @@ ${paginatedCopilotChatsFragment}`,
 export const submitAudioTranscriptionMutation = {
   id: 'submitAudioTranscriptionMutation' as const,
   op: 'submitAudioTranscription',
-  query: `mutation submitAudioTranscription($workspaceId: String!, $blobId: String!, $blob: Upload, $blobs: [Upload!]) {
+  query: `mutation submitAudioTranscription($workspaceId: String!, $blobId: String!, $blob: Upload, $blobs: [Upload!], $input: SubmitAudioTranscriptionInput) {
   submitAudioTranscription(
     blob: $blob
     blobs: $blobs
     blobId: $blobId
     workspaceId: $workspaceId
+    input: $input
   ) {
     id
     status
@@ -1441,6 +1442,48 @@ export const claimAudioTranscriptionMutation = {
     title
     summary
     actions
+    sourceAudio {
+      blobId
+      mimeType
+      durationMs
+      sampleRate
+      channels
+    }
+    quality {
+      degraded
+      overflowCount
+    }
+    sliceManifest {
+      index
+      fileName
+      mimeType
+      startSec
+      durationSec
+      byteSize
+    }
+    normalizedSegments {
+      speaker
+      startSec
+      endSec
+      start
+      end
+      text
+    }
+    normalizedTranscript
+    summaryJson {
+      title
+      durationMinutes
+      attendees
+      keyPoints
+      actionItems {
+        description
+        owner
+        deadline
+      }
+      decisions
+      openQuestions
+      blockers
+    }
     transcription {
       speaker
       start
@@ -1462,6 +1505,48 @@ export const getAudioTranscriptionQuery = {
         status
         title
         summary
+        sourceAudio {
+          blobId
+          mimeType
+          durationMs
+          sampleRate
+          channels
+        }
+        quality {
+          degraded
+          overflowCount
+        }
+        sliceManifest {
+          index
+          fileName
+          mimeType
+          startSec
+          durationSec
+          byteSize
+        }
+        normalizedSegments {
+          speaker
+          startSec
+          endSec
+          start
+          end
+          text
+        }
+        normalizedTranscript
+        summaryJson {
+          title
+          durationMinutes
+          attendees
+          keyPoints
+          actionItems {
+            description
+            owner
+            deadline
+          }
+          decisions
+          openQuestions
+          blockers
+        }
         transcription {
           speaker
           start

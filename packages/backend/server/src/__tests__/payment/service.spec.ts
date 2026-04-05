@@ -11,6 +11,7 @@ import { ConfigFactory, ConfigModule } from '../../base/config';
 import { CurrentUser } from '../../core/auth';
 import { AuthService } from '../../core/auth/service';
 import { EarlyAccessType, FeatureService } from '../../core/features';
+import { SubscriptionCronJobs } from '../../plugins/payment/cron';
 import { SubscriptionService } from '../../plugins/payment/service';
 import { StripeFactory } from '../../plugins/payment/stripe';
 import {
@@ -869,6 +870,34 @@ test('should be able to cancel subscription', async t => {
   );
   t.is(subInDB.status, SubscriptionStatus.Active);
   t.truthy(subInDB.canceledAt);
+});
+
+test('should reconcile canceled stripe subscriptions and revoke local entitlement', async t => {
+  const { app, db, event, service, stripe, u1 } = t.context;
+  const cron = app.get(SubscriptionCronJobs);
+
+  await service.saveStripeSubscription(sub);
+  event.emit.resetHistory();
+
+  stripe.subscriptions.retrieve.resolves({
+    ...sub,
+    status: SubscriptionStatus.Canceled,
+  } as any);
+
+  await cron.reconcileStripeSubscriptions();
+
+  const subInDB = await db.subscription.findFirst({
+    where: { targetId: u1.id, stripeSubscriptionId: sub.id },
+  });
+
+  t.is(subInDB, null);
+  t.true(
+    event.emit.calledWith('user.subscription.canceled', {
+      userId: u1.id,
+      plan: SubscriptionPlan.Pro,
+      recurring: SubscriptionRecurring.Monthly,
+    })
+  );
 });
 
 test('should be able to resume subscription', async t => {

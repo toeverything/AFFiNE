@@ -38,6 +38,7 @@ import {
   DOC_ACTIONS,
   DocAction,
   DocRole,
+  WorkspacePolicyService,
 } from '../../permission';
 import { PublicUserType, WorkspaceUserType } from '../../user';
 import { WorkspaceType } from '../types';
@@ -295,6 +296,7 @@ export class WorkspaceDocResolver {
      */
     private readonly prisma: PrismaClient,
     private readonly ac: AccessController,
+    private readonly policy: WorkspacePolicyService,
     private readonly models: Models,
     private readonly cache: Cache
   ) {}
@@ -437,7 +439,7 @@ export class WorkspaceDocResolver {
       throw new ExpectToRevokePublicDoc('Expect doc not to be workspace');
     }
 
-    await this.ac.user(user.id).doc(workspaceId, docId).assert('Doc.Publish');
+    await this.policy.assertCanUnpublishDoc(user.id, workspaceId, docId);
 
     const doc = await this.models.doc.unpublish(workspaceId, docId);
 

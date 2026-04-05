@@ -99,6 +99,7 @@ dependencies = [
  "screencapturekit",
  "symphonia",
  "thiserror 2.0.18",
+ "tokio",
  "uuid",
  "windows 0.61.3",
  "windows-core 0.61.2",
@@ -3370,9 +3371,9 @@ dependencies = [
 
 [[package]]
 name = "llm_adapter"
-version = "0.1.3"
+version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e98485dda5180cc89b993a001688bed93307be6bd8fedcde445b69bbca4f554d"
+checksum = "cd95a9dd20745f3d80d47460e6cf6131921bef928c38fcd961b10b574d749305"
 dependencies = [
  "base64",
  "serde",
@@ -3544,9 +3545,9 @@ dependencies = [
 
 [[package]]
 name = "memory-indexer"
-version = "0.3.0"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c2b5b765680ef95f5cd17cae452625c014e03d148045dc1d9604fb00cb602888"
+checksum = "53a349dd43a5b5efb437a192d7fe37e58feb94f094839d303482dc8bcc8d1043"
 dependencies = [
  "jieba-rs",
  "once_cell",
@@ -5060,9 +5061,9 @@ dependencies = [
 
 [[package]]
 name = "rustls-webpki"
-version = "0.103.9"
+version = "0.103.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d7df23109aa6c1567d1c575b9952556388da57401e4ace1d15f79eedad0d8f53"
+checksum = "df33b2b81ac578cabaf06b89b0631153a3f416b0a886e8a7a1707fb51abbd1ef"
 dependencies = [
  "ring",
  "rustls-pki-types",

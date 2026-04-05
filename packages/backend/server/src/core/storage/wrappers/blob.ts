@@ -26,6 +26,9 @@ declare global {
       workspaceId: string;
       key: string;
     };
+    'workspace.blobs.updated': {
+      workspaceId: string;
+    };
   }
 }
 
@@ -255,6 +258,9 @@ export class WorkspaceBlobStorage {
       await this.provider.delete(`${workspaceId}/${key}`);
     }
     await this.models.blob.delete(workspaceId, key, permanently);
+    if (!permanently) {
+      await this.event.emitAsync('workspace.blobs.updated', { workspaceId });
+    }
   }
 
   async release(workspaceId: string) {
@@ -270,6 +276,8 @@ export class WorkspaceBlobStorage {
     this.logger.log(
       `released ${deletedBlobs.length} blobs for workspace ${workspaceId}`
     );
+
+    await this.event.emitAsync('workspace.blobs.updated', { workspaceId });
   }
 
   async totalSize(workspaceId: string) {

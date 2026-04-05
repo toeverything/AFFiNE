@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 import test from 'ava';
 
 import { createTestingModule, TestingModule } from '../../../__tests__/utils';
@@ -10,11 +12,13 @@ import {
 } from '../../../models';
 import { DocAccessController } from '../doc';
 import { PermissionModule } from '../index';
+import { WorkspacePolicyService } from '../policy';
 import { DocRole, mapDocRoleToPermissions } from '../types';
 
 let module: TestingModule;
 let models: Models;
 let ac: DocAccessController;
+let policy: WorkspacePolicyService;
 let user: User;
 let ws: Workspace;
 
@@ -22,11 +26,12 @@ test.before(async () => {
   module = await createTestingModule({ imports: [PermissionModule] });
   models = module.get<Models>(Models);
   ac = module.get(DocAccessController);
+  policy = module.get(WorkspacePolicyService);
 });
 
 test.beforeEach(async () => {
   await module.initTestingDB();
-  user = await models.user.create({ email: 'u1@affine.pro' });
+  user = await models.user.create({ email: `${randomUUID()}@affine.pro` });
   ws = await models.workspace.create(user.id);
 });
 
@@ -45,7 +50,7 @@ test('should get null role', async t => {
 });
 
 test('should return null if workspace role is not accepted', async t => {
-  const u2 = await models.user.create({ email: 'u2@affine.pro' });
+  const u2 = await models.user.create({ email: `${randomUUID()}@affine.pro` });
   await models.workspaceUser.set(ws.id, u2.id, WorkspaceRole.Collaborator, {
     status: WorkspaceMemberStatus.UnderReview,
   });
@@ -162,7 +167,7 @@ test('should assert action', async t => {
     )
   );
 
-  const u2 = await models.user.create({ email: 'u2@affine.pro' });
+  const u2 = await models.user.create({ email: `${randomUUID()}@affine.pro` });
 
   await t.throwsAsync(
     ac.assert(
@@ -183,4 +188,38 @@ test('should assert action', async t => {
       'Doc.Delete'
     )
   );
+});
+
+test('should apply readonly doc restrictions while keeping cleanup actions', async t => {
+  for (let index = 0; index < 10; index++) {
+    const member = await models.user.create({
+      email: `${randomUUID()}@affine.pro`,
+    });
+    await models.workspaceUser.set(
+      ws.id,
+      member.id,
+      WorkspaceRole.Collaborator,
+      {
+        status: WorkspaceMemberStatus.Accepted,
+      }
+    );
+  }
+  await policy.reconcileWorkspaceQuotaState(ws.id);
+
+  const { permissions } = await ac.role({
+    workspaceId: ws.id,
+    docId: 'doc1',
+    userId: user.id,
+  });
+
+  t.false(permissions['Doc.Update']);
+  t.false(permissions['Doc.Publish']);
+  t.false(permissions['Doc.Duplicate']);
+  t.false(permissions['Doc.Comments.Create']);
+  t.false(permissions['Doc.Comments.Update']);
+  t.false(permissions['Doc.Comments.Resolve']);
+  t.true(permissions['Doc.Read']);
+  t.true(permissions['Doc.Delete']);
+  t.true(permissions['Doc.Trash']);
+  t.true(permissions['Doc.TransferOwner']);
 });

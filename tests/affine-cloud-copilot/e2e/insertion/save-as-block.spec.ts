@@ -28,11 +28,10 @@ test.describe('AIInsertion/SaveAsBlock', () => {
 
     const { actions } = await utils.chatPanel.getLatestAssistantMessage(page);
     await actions.saveAsBlock();
+    await page.getByText('Successfully saved chat to a block').waitFor();
 
-    // Switch to edgeless mode
     await utils.editor.isEdgelessMode(page);
 
-    // Verify the ai block is created
     await page.waitForSelector('affine-edgeless-ai-chat');
     const aiBlock = await page.locator('affine-edgeless-ai-chat');
     await expect(aiBlock).toBeVisible();

@@ -17,6 +17,9 @@ public struct PaginatedCopilotChats: AffineGraphQL.SelectionSet, Fragment {
     .field("pageInfo", PageInfo.self),
     .field("edges", [Edge].self),
   ] }
+  public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+    PaginatedCopilotChats.self
+  ] }
 
   public var pageInfo: PageInfo { __data["pageInfo"] }
   public var edges: [Edge] { __data["edges"] }
@@ -35,6 +38,9 @@ public struct PaginatedCopilotChats: AffineGraphQL.SelectionSet, Fragment {
       .field("hasPreviousPage", Bool.self),
       .field("startCursor", String?.self),
       .field("endCursor", String?.self),
+    ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      PaginatedCopilotChats.PageInfo.self
     ] }
 
     public var hasNextPage: Bool { __data["hasNextPage"] }
@@ -56,6 +62,9 @@ public struct PaginatedCopilotChats: AffineGraphQL.SelectionSet, Fragment {
       .field("cursor", String.self),
       .field("node", Node.self),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      PaginatedCopilotChats.Edge.self
+    ] }
 
     public var cursor: String { __data["cursor"] }
     public var node: Node { __data["node"] }
@@ -71,6 +80,10 @@ public struct PaginatedCopilotChats: AffineGraphQL.SelectionSet, Fragment {
       public static var __selections: [ApolloAPI.Selection] { [
         .field("__typename", String.self),
         .fragment(CopilotChatHistory.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        PaginatedCopilotChats.Edge.Node.self,
+        CopilotChatHistory.self
       ] }
 
       public var sessionId: String { __data["sessionId"] }

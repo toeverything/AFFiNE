@@ -1,6 +1,5 @@
 import * as dns from 'node:dns/promises';
 import { BlockList, isIP } from 'node:net';
-import { Readable } from 'node:stream';
 
 import { ResponseTooLargeError, SsrfBlockedError } from '../error/errors.gen';
 import { OneMinute } from './unit';
@@ -298,36 +297,45 @@ export async function readResponseBufferWithLimit(
     return Buffer.alloc(0);
   }
 
-  // Convert Web ReadableStream -> Node Readable for consistent limit handling.
-  const nodeStream = Readable.fromWeb(response.body);
-  const chunks: Buffer[] = [];
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
   let total = 0;
 
   try {
-    for await (const chunk of nodeStream) {
-      const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
-      total += buf.length;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const chunk = value ?? new Uint8Array();
+      total += chunk.byteLength;
       if (total > limitBytes) {
         try {
-          nodeStream.destroy();
+          await reader.cancel();
         } catch {
           // ignore
         }
         throw new ResponseTooLargeError({ limitBytes, receivedBytes: total });
       }
-      chunks.push(buf);
+      chunks.push(chunk);
     }
+  } catch (error) {
+    try {
+      await reader.cancel(error);
+    } catch {
+      // ignore
+    }
+    throw error;
   } finally {
-    if (total > limitBytes) {
-      try {
-        await response.body?.cancel();
-      } catch {
-        // ignore
-      }
+    try {
+      reader.releaseLock();
+    } catch {
+      // ignore
     }
   }
 
-  return Buffer.concat(chunks, total);
+  return Buffer.concat(
+    chunks.map(chunk => Buffer.from(chunk)),
+    total
+  );
 }
 
 type FetchBufferResult = { buffer: Buffer; type: string };

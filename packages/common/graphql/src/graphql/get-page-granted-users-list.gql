@@ -1,4 +1,8 @@
-query getPageGrantedUsersList($pagination: PaginationInput!, $docId: String!, $workspaceId: String!) {
+query getPageGrantedUsersList(
+  $pagination: PaginationInput!
+  $docId: String!
+  $workspaceId: String!
+) {
   workspace(id: $workspaceId) {
     doc(docId: $docId) {
       grantedUsersList(pagination: $pagination) {

@@ -1,9 +1,12 @@
-query getDocCreatedByUpdatedByList($workspaceId: String!, $pagination: PaginationInput!) {
+query getDocCreatedByUpdatedByList(
+  $workspaceId: String!
+  $pagination: PaginationInput!
+) {
   workspace(id: $workspaceId) {
     docs(pagination: $pagination) {
       totalCount
       pageInfo {
-      endCursor
+        endCursor
         hasNextPage
       }
       edges {

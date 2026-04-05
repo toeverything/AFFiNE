@@ -11,11 +11,9 @@
     { "path": "../../components" },
     { "path": "../../ext-loader" },
     { "path": "../../model" },
-    { "path": "../../rich-text" },
     { "path": "../../shared" },
     { "path": "../../widgets/edgeless-toolbar" },
     { "path": "../../../framework/global" },
-    { "path": "../../../framework/std" },
-    { "path": "../../../framework/store" }
+    { "path": "../../../framework/std" }
   ]
 }

@@ -27,6 +27,11 @@ on:
         required: false
         default: true
         type: boolean
+      require-windows-signing:
+        description: 'Require all Windows signing steps to succeed before release'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   actions: write
@@ -72,6 +77,21 @@ jobs:
         with:
           name: desktop-web
           path: packages/frontend/apps/electron/resources/web-static
+
+  windows-signer-gate:
+    if: ${{ inputs.desktop_windows }}
+    runs-on: ubuntu-latest
+    outputs:
+      signer_available: ${{ steps.check.outputs.signer_available }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Check windows signer availability
+        id: check
+        run: node ./scripts/check-windows-signer.mjs
+        env:
+          BUILD_TYPE: ${{ inputs.build-type }}
+          GITHUB_TOKEN: ${{ github.token }}
+          REQUIRE_SIGNER: ${{ inputs.require-windows-signing }}
 
   make-distribution-macos:
     if: ${{ inputs.desktop_macos }}
@@ -154,24 +174,45 @@ jobs:
       enable_scripts: true
 
   sign-packaged-artifacts-windows_x64:
-    if: ${{ inputs.desktop_windows }}
-    needs: package-distribution-windows-x64
+    if: ${{ inputs.desktop_windows && needs.windows-signer-gate.outputs.signer_available == 'true' }}
+    needs:
+      - windows-signer-gate
+      - package-distribution-windows-x64
     uses: ./.github/workflows/windows-signer.yml
     with:
       files: ${{ needs.package-distribution-windows-x64.outputs.files_to_be_signed }}
       artifact-name: packaged-win32-x64
 
   sign-packaged-artifacts-windows_arm64:
-    if: ${{ inputs.desktop_windows }}
-    needs: package-distribution-windows-arm64
+    if: ${{ inputs.desktop_windows && needs.windows-signer-gate.outputs.signer_available == 'true' }}
+    needs:
+      - windows-signer-gate
+      - package-distribution-windows-arm64
     uses: ./.github/workflows/windows-signer.yml
     with:
       files: ${{ needs.package-distribution-windows-arm64.outputs.files_to_be_signed }}
       artifact-name: packaged-win32-arm64
 
   make-windows-installer:
-    if: ${{ inputs.desktop_windows }}
+    if: >-
+      ${{
+        always() &&
+        inputs.desktop_windows &&
+        needs.windows-signer-gate.result == 'success' &&
+        needs.package-distribution-windows-x64.result == 'success' &&
+        needs.package-distribution-windows-arm64.result == 'success' &&
+        (
+          !inputs.require-windows-signing ||
+          (
+            needs.sign-packaged-artifacts-windows_x64.result == 'success' &&
+            needs.sign-packaged-artifacts-windows_arm64.result == 'success'
+          )
+        )
+      }}
     needs:
+      - windows-signer-gate
+      - package-distribution-windows-x64
+      - package-distribution-windows-arm64
       - sign-packaged-artifacts-windows_x64
       - sign-packaged-artifacts-windows_arm64
     strategy:
@@ -209,11 +250,13 @@ jobs:
       - name: unzip packaged artifacts
         run: Expand-Archive -Path packaged-unsigned/archive.zip -DestinationPath packages/frontend/apps/electron/out
       - name: Download signed packaged file diff
+        if: ${{ (matrix.spec.arch == 'x64' && needs.sign-packaged-artifacts-windows_x64.result == 'success') || (matrix.spec.arch == 'arm64' && needs.sign-packaged-artifacts-windows_arm64.result == 'success') }}
         uses: actions/download-artifact@v4
         with:
           name: signed-packaged-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
           path: signed-packaged-diff
       - name: Apply signed packaged file diff
+        if: ${{ (matrix.spec.arch == 'x64' && needs.sign-packaged-artifacts-windows_x64.result == 'success') || (matrix.spec.arch == 'arm64' && needs.sign-packaged-artifacts-windows_arm64.result == 'success') }}
         shell: pwsh
         run: |
           $DiffRoot = 'signed-packaged-diff/files'
@@ -263,25 +306,38 @@ jobs:
           path: archive.zip
 
   sign-installer-artifacts-windows-x64:
-    if: ${{ inputs.desktop_windows }}
-    needs: make-windows-installer
+    if: ${{ inputs.desktop_windows && needs.windows-signer-gate.outputs.signer_available == 'true' }}
+    needs:
+      - windows-signer-gate
+      - make-windows-installer
     uses: ./.github/workflows/windows-signer.yml
     with:
       files: ${{ needs.make-windows-installer.outputs.FILES_TO_BE_SIGNED_x64 }}
       artifact-name: installer-win32-x64
 
   sign-installer-artifacts-windows-arm64:
-    if: ${{ inputs.desktop_windows }}
-    needs: make-windows-installer
+    if: ${{ inputs.desktop_windows && needs.windows-signer-gate.outputs.signer_available == 'true' }}
+    needs:
+      - windows-signer-gate
+      - make-windows-installer
     uses: ./.github/workflows/windows-signer.yml
     with:
       files: ${{ needs.make-windows-installer.outputs.FILES_TO_BE_SIGNED_arm64 }}
       artifact-name: installer-win32-arm64
 
   finalize-installer-windows:
-    if: ${{ inputs.desktop_windows }}
+    if: >-
+      ${{
+        always() &&
+        inputs.desktop_windows &&
+        needs.make-windows-installer.result == 'success'
+      }}
     needs:
       [
+        windows-signer-gate,
+        make-windows-installer,
+        sign-packaged-artifacts-windows_x64,
+        sign-packaged-artifacts-windows_arm64,
         sign-installer-artifacts-windows-x64,
         sign-installer-artifacts-windows-arm64,
         before-make,
@@ -299,18 +355,22 @@ jobs:
     runs-on: ${{ matrix.spec.runner }}
     steps:
       - name: Download installer artifacts
+        if: ${{ (matrix.spec.arch == 'x64' && needs.sign-packaged-artifacts-windows_x64.result == 'success' && needs.sign-installer-artifacts-windows-x64.result == 'success') || (matrix.spec.arch == 'arm64' && needs.sign-packaged-artifacts-windows_arm64.result == 'success' && needs.sign-installer-artifacts-windows-arm64.result == 'success') }}
         uses: actions/download-artifact@v4
         with:
           name: installer-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
           path: installer-unsigned
       - name: unzip installer artifacts
+        if: ${{ (matrix.spec.arch == 'x64' && needs.sign-packaged-artifacts-windows_x64.result == 'success' && needs.sign-installer-artifacts-windows-x64.result == 'success') || (matrix.spec.arch == 'arm64' && needs.sign-packaged-artifacts-windows_arm64.result == 'success' && needs.sign-installer-artifacts-windows-arm64.result == 'success') }}
         run: Expand-Archive -Path installer-unsigned/archive.zip -DestinationPath packages/frontend/apps/electron/out/${{ env.BUILD_TYPE }}/make
       - name: Download signed installer file diff
+        if: ${{ (matrix.spec.arch == 'x64' && needs.sign-packaged-artifacts-windows_x64.result == 'success' && needs.sign-installer-artifacts-windows-x64.result == 'success') || (matrix.spec.arch == 'arm64' && needs.sign-packaged-artifacts-windows_arm64.result == 'success' && needs.sign-installer-artifacts-windows-arm64.result == 'success') }}
         uses: actions/download-artifact@v4
         with:
           name: signed-installer-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
           path: signed-installer-diff
       - name: Apply signed installer file diff
+        if: ${{ (matrix.spec.arch == 'x64' && needs.sign-packaged-artifacts-windows_x64.result == 'success' && needs.sign-installer-artifacts-windows-x64.result == 'success') || (matrix.spec.arch == 'arm64' && needs.sign-packaged-artifacts-windows_arm64.result == 'success' && needs.sign-installer-artifacts-windows-arm64.result == 'success') }}
         shell: pwsh
         run: |
           $DiffRoot = 'signed-installer-diff/files'
@@ -338,6 +398,7 @@ jobs:
           }
 
       - name: Save artifacts
+        if: ${{ (matrix.spec.arch == 'x64' && needs.sign-packaged-artifacts-windows_x64.result == 'success' && needs.sign-installer-artifacts-windows-x64.result == 'success') || (matrix.spec.arch == 'arm64' && needs.sign-packaged-artifacts-windows_arm64.result == 'success' && needs.sign-installer-artifacts-windows-arm64.result == 'success') }}
         run: |
           mkdir -p builds
           mv packages/frontend/apps/electron/out/*/make/zip/win32/${{ matrix.spec.arch }}/AFFiNE*-win32-${{ matrix.spec.arch }}-*.zip ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-${{ matrix.spec.arch }}.zip
@@ -345,6 +406,7 @@ jobs:
           mv packages/frontend/apps/electron/out/*/make/nsis.windows/${{ matrix.spec.arch }}/*.exe ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-${{ matrix.spec.arch }}.nsis.exe
 
       - uses: actions/attest-build-provenance@v4
+        if: ${{ (matrix.spec.arch == 'x64' && needs.sign-packaged-artifacts-windows_x64.result == 'success' && needs.sign-installer-artifacts-windows-x64.result == 'success') || (matrix.spec.arch == 'arm64' && needs.sign-packaged-artifacts-windows_arm64.result == 'success' && needs.sign-installer-artifacts-windows-arm64.result == 'success') }}
         with:
           subject-path: |
             ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-${{ matrix.spec.arch }}.zip
@@ -352,18 +414,42 @@ jobs:
             ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-${{ matrix.spec.arch }}.nsis.exe
 
       - name: Upload Artifact
+        if: ${{ (matrix.spec.arch == 'x64' && needs.sign-packaged-artifacts-windows_x64.result == 'success' && needs.sign-installer-artifacts-windows-x64.result == 'success') || (matrix.spec.arch == 'arm64' && needs.sign-packaged-artifacts-windows_arm64.result == 'success' && needs.sign-installer-artifacts-windows-arm64.result == 'success') }}
         uses: actions/upload-artifact@v4
         with:
           name: affine-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}-builds
           path: builds
 
   release:
-    if: ${{ inputs.desktop_macos && inputs.desktop_linux && inputs.desktop_windows }}
+    if: >-
+      ${{
+        always() &&
+        inputs.desktop_macos &&
+        inputs.desktop_linux &&
+        inputs.desktop_windows &&
+        needs.before-make.result == 'success' &&
+        needs.make-distribution-macos.result == 'success' &&
+        needs.make-distribution-linux.result == 'success' &&
+        (
+          !inputs.require-windows-signing ||
+          (
+            needs.sign-packaged-artifacts-windows_x64.result == 'success' &&
+            needs.sign-packaged-artifacts-windows_arm64.result == 'success' &&
+            needs.sign-installer-artifacts-windows-x64.result == 'success' &&
+            needs.sign-installer-artifacts-windows-arm64.result == 'success' &&
+            needs.finalize-installer-windows.result == 'success'
+          )
+        )
+      }}
     needs:
       [
         before-make,
         make-distribution-macos,
         make-distribution-linux,
+        sign-packaged-artifacts-windows_x64,
+        sign-packaged-artifacts-windows_arm64,
+        sign-installer-artifacts-windows-x64,
+        sign-installer-artifacts-windows-arm64,
         finalize-installer-windows,
       ]
     runs-on: ubuntu-latest
@@ -381,11 +467,13 @@ jobs:
           name: affine-darwin-arm64-builds
           path: ./release
       - name: Download Artifacts (windows-x64)
+        if: ${{ needs.sign-packaged-artifacts-windows_x64.result == 'success' && needs.sign-installer-artifacts-windows-x64.result == 'success' }}
         uses: actions/download-artifact@v4
         with:
           name: affine-win32-x64-builds
           path: ./release
       - name: Download Artifacts (windows-arm64)
+        if: ${{ needs.sign-packaged-artifacts-windows_arm64.result == 'success' && needs.sign-installer-artifacts-windows-arm64.result == 'success' }}
         uses: actions/download-artifact@v4
         with:
           name: affine-win32-arm64-builds
