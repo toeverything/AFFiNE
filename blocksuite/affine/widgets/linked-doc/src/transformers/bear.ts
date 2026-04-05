@@ -513,8 +513,8 @@ async function importBearBackup({
           tagDocMap.get(tag)!.push(doc.id);
         }
       }
-    } catch {
-      console.warn(`Failed to import bundle: ${entry.bundlePath}`);
+    } catch (err) {
+      console.warn(`Failed to import bundle: ${entry.bundlePath}`, err);
     }
   }
 
