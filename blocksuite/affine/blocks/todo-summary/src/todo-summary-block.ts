@@ -397,7 +397,7 @@ export class TodoSummaryBlockComponent extends CaptionedBlockComponent<TodoSumma
 
     .todo-text {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       gap: 8px;
       min-width: 0;
       color: var(--affine-text-primary-color);
@@ -426,9 +426,9 @@ export class TodoSummaryBlockComponent extends CaptionedBlockComponent<TodoSumma
     }
 
     .todo-value {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      min-width: 0;
+      white-space: normal;
+      overflow-wrap: anywhere;
     }
 
     .nested-icon {

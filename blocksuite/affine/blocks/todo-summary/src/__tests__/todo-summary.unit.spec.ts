@@ -75,6 +75,19 @@ describe('todo summary utils', () => {
     expect(cssText).toContain('border: 1px solid var(--affine-border-color);');
   });
 
+  test('allows long todo text to wrap', () => {
+    const cssText = (TodoSummaryBlockComponent.styles as { cssText: string })
+      .cssText;
+    const todoTextRule = cssText.match(/\.todo-text\s*\{([^}]*)\}/)?.[1];
+    const todoValueRule = cssText.match(/\.todo-value\s*\{([^}]*)\}/)?.[1];
+
+    expect(todoTextRule).toContain('align-items: flex-start;');
+    expect(todoValueRule).toContain('min-width: 0;');
+    expect(todoValueRule).toContain('white-space: normal;');
+    expect(todoValueRule).toContain('overflow-wrap: anywhere;');
+    expect(todoValueRule).not.toContain('text-overflow: ellipsis;');
+  });
+
   test('does not show a default tag value when no tags are selected', () => {
     const component = createTodoSummaryComponent();
     const container = document.createElement('div');
