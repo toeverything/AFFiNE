@@ -4,6 +4,7 @@ import type { DocComment } from '../../../modules/comment/types';
 import {
   type CommentFilterState,
   getVisibleComments,
+  shouldResetCommentDisplayModeOnDocChange,
   shouldResetFocusedCommentsOnSidebarClick,
 } from './utils';
 
@@ -62,6 +63,44 @@ describe('getVisibleComments', () => {
     expect(result.map(comment => comment.id)).toEqual(['comment-2']);
   });
 
+  test('shows only matching comments when sidebar is in subset mode', () => {
+    const comments = [
+      createComment({ id: 'comment-1', createdAt: 10 }),
+      createComment({ id: 'comment-2', createdAt: 20, resolved: true }),
+      createComment({ id: 'comment-3', createdAt: 30 }),
+      createComment({ id: 'comment-4', createdAt: 40 }),
+    ];
+
+    const result = getVisibleComments({
+      comments,
+      displayMode: {
+        type: 'subset',
+        commentIds: ['comment-1', 'comment-3'],
+      },
+      filterState: defaultFilterState,
+      docMode: 'page',
+    });
+
+    expect(result.map(comment => comment.id)).toEqual([
+      'comment-3',
+      'comment-1',
+    ]);
+  });
+
+  test('shows empty list when subset ids are stale', () => {
+    const result = getVisibleComments({
+      comments: [createComment({ id: 'comment-1' })],
+      displayMode: {
+        type: 'subset',
+        commentIds: ['missing'],
+      },
+      filterState: defaultFilterState,
+      docMode: 'page',
+    });
+
+    expect(result).toEqual([]);
+  });
+
   test('shows all filtered comments when sidebar is in all mode', () => {
     const comments = [
       createComment({ id: 'comment-1', createdAt: 10 }),
@@ -110,5 +149,25 @@ describe('shouldResetFocusedCommentsOnSidebarClick', () => {
     } as unknown as HTMLElement;
 
     expect(shouldResetFocusedCommentsOnSidebarClick(target)).toBe(false);
+  });
+});
+
+describe('shouldResetCommentDisplayModeOnDocChange', () => {
+  test('does not reset comment display mode on first mount', () => {
+    expect(shouldResetCommentDisplayModeOnDocChange(undefined, 'doc-1')).toBe(
+      false
+    );
+  });
+
+  test('does not reset comment display mode when staying on the same doc', () => {
+    expect(shouldResetCommentDisplayModeOnDocChange('doc-1', 'doc-1')).toBe(
+      false
+    );
+  });
+
+  test('resets comment display mode when doc changes', () => {
+    expect(shouldResetCommentDisplayModeOnDocChange('doc-1', 'doc-2')).toBe(
+      true
+    );
   });
 });

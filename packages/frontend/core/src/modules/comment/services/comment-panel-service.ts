@@ -10,6 +10,10 @@ export type CommentPanelDisplayMode =
   | {
       type: 'focused';
       commentId: string;
+    }
+  | {
+      type: 'subset';
+      commentIds: string[];
     };
 
 export class CommentPanelService extends Service {
@@ -45,11 +49,19 @@ export class CommentPanelService extends Service {
   /**
    * Open the sidebar and activate the comment tab
    */
-  openCommentPanel(options?: { focusedCommentId?: string | null }): void {
+  openCommentPanel(options?: {
+    focusedCommentId?: string | null;
+    subsetCommentIds?: string[] | null;
+  }): void {
     if (options?.focusedCommentId) {
       this.displayMode$.next({
         type: 'focused',
         commentId: options.focusedCommentId,
+      });
+    } else if (options?.subsetCommentIds?.length) {
+      this.displayMode$.next({
+        type: 'subset',
+        commentIds: options.subsetCommentIds,
       });
     } else {
       this.showAllComments();

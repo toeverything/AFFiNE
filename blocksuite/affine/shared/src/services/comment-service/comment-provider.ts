@@ -15,6 +15,7 @@ export interface CommentProvider {
   addComment: (selections: BaseSelection[]) => void;
   resolveComment: (id: CommentId) => void;
   highlightComment: (id: CommentId | null) => void;
+  showComments: (commentIds: CommentId[]) => void;
 
   getComments: (
     type: 'resolved' | 'unresolved' | 'all'

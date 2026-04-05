@@ -1,14 +1,16 @@
 import { CaptionedBlockComponent } from '@blocksuite/affine-components/caption';
 import type { TodoSummaryBlockModel } from '@blocksuite/affine-model';
+import { CommentProviderIdentifier } from '@blocksuite/affine-shared/services';
 import {
   ArrowDownSmallIcon,
   CheckBoxCheckSolidIcon,
   CheckBoxUnIcon,
   CloseIcon,
+  CommentIcon,
   SearchIcon,
   SubNodeIcon,
 } from '@blocksuite/icons/lit';
-import { BlockSelection } from '@blocksuite/std';
+import { BlockSelection, TextSelection } from '@blocksuite/std';
 import type { BlockModel } from '@blocksuite/store';
 import { css, html, nothing } from 'lit';
 import { state } from 'lit/decorators.js';
@@ -341,6 +343,12 @@ export class TodoSummaryBlockComponent extends CaptionedBlockComponent<TodoSumma
       padding-right: 0;
     }
 
+    td.comment-cell {
+      width: 40px;
+      padding-left: 0;
+      text-align: right;
+    }
+
     .checkbox {
       display: flex;
       align-items: center;
@@ -361,6 +369,30 @@ export class TodoSummaryBlockComponent extends CaptionedBlockComponent<TodoSumma
     .checkbox > svg {
       width: 20px;
       height: 20px;
+    }
+
+    .comment-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      padding: 0;
+      border: 0;
+      border-radius: 999px;
+      background: transparent;
+      color: var(--affine-text-secondary-color);
+      cursor: pointer;
+    }
+
+    .comment-button.has-comments {
+      background: var(--affine-blue-100);
+      color: var(--affine-blue-700);
+    }
+
+    .comment-button > svg {
+      width: 16px;
+      height: 16px;
     }
 
     .todo-text {
@@ -453,6 +485,47 @@ export class TodoSummaryBlockComponent extends CaptionedBlockComponent<TodoSumma
     this.store.updateBlock(model, {
       checked: !model.props.checked,
     });
+  }
+
+  private _handleCommentClick(
+    row: { todoId: string; text: string; commentIds: string[] },
+    event: MouseEvent
+  ) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const commentProvider = this.std.getOptional(CommentProviderIdentifier) as {
+      addComment: (selections: Array<BlockSelection | TextSelection>) => void;
+      showComments?: (commentIds: string[]) => void;
+    } | null;
+    if (!commentProvider) {
+      return;
+    }
+
+    if (row.commentIds.length > 0) {
+      commentProvider.showComments?.(row.commentIds);
+      return;
+    }
+
+    if (row.text.length > 0) {
+      commentProvider.addComment([
+        new TextSelection({
+          from: {
+            blockId: row.todoId,
+            index: 0,
+            length: row.text.length,
+          },
+          to: null,
+        }),
+      ]);
+      return;
+    }
+
+    commentProvider.addComment([
+      new BlockSelection({
+        blockId: row.todoId,
+      }),
+    ]);
   }
 
   private get _filterModel() {
@@ -758,6 +831,24 @@ export class TodoSummaryBlockComponent extends CaptionedBlockComponent<TodoSumma
                                 : nothing}
                               <span class="todo-value">${row.text}</span>
                             </div>
+                          </td>
+                          <td class="comment-cell">
+                            <button
+                              class=${classMap({
+                                'comment-button': true,
+                                'has-comments': row.commentIds.length > 0,
+                              })}
+                              data-has-comments=${row.commentIds.length > 0
+                                ? 'true'
+                                : 'false'}
+                              aria-label=${row.commentIds.length > 0
+                                ? 'Show todo comments'
+                                : 'Add todo comment'}
+                              @click=${(event: MouseEvent) =>
+                                this._handleCommentClick(row, event)}
+                            >
+                              ${CommentIcon()}
+                            </button>
                           </td>
                         </tr>
                       `

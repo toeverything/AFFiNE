@@ -165,6 +165,29 @@ class AffineCommentService implements CommentProvider {
     this.commentEntity.highlightComment(id);
   }
 
+  showComments(commentIds: string[]): void {
+    const visibleCommentIds = Array.from(new Set(commentIds));
+    if (visibleCommentIds.length === 0) {
+      return;
+    }
+
+    const commentPanelService = this.framework.get(CommentPanelService);
+
+    if (visibleCommentIds.length === 1) {
+      const [commentId] = visibleCommentIds;
+      commentPanelService.openCommentPanel({
+        focusedCommentId: commentId,
+      });
+      this.commentEntity.highlightComment(commentId);
+      return;
+    }
+
+    commentPanelService.openCommentPanel({
+      subsetCommentIds: visibleCommentIds,
+    });
+    this.commentEntity.highlightComment(null);
+  }
+
   async getComments(
     type: 'resolved' | 'unresolved' | 'all' = 'all'
   ): Promise<string[]> {

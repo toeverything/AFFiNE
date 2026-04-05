@@ -12,8 +12,9 @@ import {
   insertTodoSummaryBlock,
 } from '../utils.js';
 
-const text = (value: string) => ({
+const text = (value: string, delta?: Array<Record<string, unknown>>) => ({
   toString: () => value,
+  toDelta: () => delta ?? [{ insert: value }],
 });
 
 const block = (
@@ -102,6 +103,59 @@ describe('todo summary utils', () => {
     );
 
     expect(container.querySelector('.tags-clear')).not.toBeNull();
+  });
+
+  test('renders different comment button states for commented and uncommented todos', () => {
+    const component = createTodoSummaryComponent();
+    const container = document.createElement('div');
+    const root = block('root', 'affine:page', {}, [
+      block(
+        'note-1',
+        'affine:note',
+        {
+          displayMode: NoteDisplayMode.DocOnly,
+        },
+        [
+          block('todo-1', 'affine:list', {
+            type: 'todo',
+            checked: false,
+            comments: { 'comment-1': true },
+            text: text('Todo with comments'),
+          }),
+          block('todo-2', 'affine:list', {
+            type: 'todo',
+            checked: false,
+            text: text('Todo without comments'),
+          }),
+        ]
+      ),
+    ]);
+
+    Object.defineProperty(component, 'store', {
+      value: { readonly: false, root },
+      configurable: true,
+    });
+    Object.defineProperty(component, 'model', {
+      value: {
+        props: {
+          statusFilter: 'all',
+          tagsFilter: [],
+        },
+      },
+      configurable: true,
+    });
+
+    render(component.renderBlock(), container);
+
+    const buttons = Array.from(
+      container.querySelectorAll<HTMLButtonElement>('.comment-button')
+    );
+
+    expect(buttons).toHaveLength(2);
+    expect(buttons[0]?.dataset.hasComments).toBe('true');
+    expect(buttons[0]?.classList.contains('has-comments')).toBe(true);
+    expect(buttons[1]?.dataset.hasComments).toBe('false');
+    expect(buttons[1]?.classList.contains('has-comments')).toBe(false);
   });
 
   test('closes the tag dropdown when clicking outside the component', () => {
@@ -204,6 +258,7 @@ describe('todo summary utils', () => {
         checked: false,
         nestingLevel: 0,
         tags: ['work', 'urgent'],
+        commentIds: [],
       },
       {
         todoId: 'todo-1-1',
@@ -211,6 +266,7 @@ describe('todo summary utils', () => {
         checked: true,
         nestingLevel: 1,
         tags: ['work'],
+        commentIds: [],
       },
       {
         todoId: 'todo-1-1-1',
@@ -218,6 +274,7 @@ describe('todo summary utils', () => {
         checked: false,
         nestingLevel: 2,
         tags: ['urgent'],
+        commentIds: [],
       },
       {
         todoId: 'todo-2',
@@ -225,8 +282,126 @@ describe('todo summary utils', () => {
         checked: false,
         nestingLevel: 0,
         tags: ['later'],
+        commentIds: [],
       },
     ]);
+  });
+
+  test('collects merged block and inline comment ids for todo rows', () => {
+    const root = block('root', 'affine:page', {}, [
+      block(
+        'note-1',
+        'affine:note',
+        {
+          displayMode: NoteDisplayMode.DocOnly,
+        },
+        [
+          block('todo-1', 'affine:list', {
+            type: 'todo',
+            checked: false,
+            comments: { 'comment-1': true, 'comment-2': false },
+            text: text('First todo', [
+              { insert: 'First ' },
+              {
+                insert: 'todo',
+                attributes: {
+                  'comment-comment-2': true,
+                  'comment-comment-3': true,
+                },
+              },
+            ]),
+          }),
+        ]
+      ),
+    ]);
+
+    expect(collectPageTodoRows(root)).toEqual([
+      {
+        todoId: 'todo-1',
+        text: 'First todo',
+        checked: false,
+        nestingLevel: 0,
+        tags: [],
+        commentIds: ['comment-1', 'comment-2', 'comment-3'],
+      },
+    ]);
+  });
+
+  test('opens matching comment threads when todo row has comments', () => {
+    const component = createTodoSummaryComponent();
+    const showComments = vi.fn();
+    const addComment = vi.fn();
+    const event = {
+      preventDefault: vi.fn(),
+      stopPropagation: vi.fn(),
+    } as unknown as MouseEvent;
+
+    Object.defineProperty(component, 'std', {
+      value: {
+        getOptional: vi.fn(() => ({
+          showComments,
+          addComment,
+        })),
+      },
+      configurable: true,
+    });
+
+    component._handleCommentClick(
+      {
+        todoId: 'todo-1',
+        text: 'Todo',
+        checked: false,
+        nestingLevel: 0,
+        tags: [],
+        commentIds: ['comment-1', 'comment-2'],
+      },
+      event
+    );
+
+    expect(event.preventDefault).toHaveBeenCalled();
+    expect(event.stopPropagation).toHaveBeenCalled();
+    expect(showComments).toHaveBeenCalledWith(['comment-1', 'comment-2']);
+    expect(addComment).not.toHaveBeenCalled();
+  });
+
+  test('starts a new thread when todo row has no comments', () => {
+    const component = createTodoSummaryComponent();
+    const showComments = vi.fn();
+    const addComment = vi.fn();
+
+    Object.defineProperty(component, 'std', {
+      value: {
+        getOptional: vi.fn(() => ({
+          showComments,
+          addComment,
+        })),
+      },
+      configurable: true,
+    });
+
+    component._handleCommentClick(
+      {
+        todoId: 'todo-1',
+        text: 'Todo',
+        checked: false,
+        nestingLevel: 0,
+        tags: [],
+        commentIds: [],
+      },
+      {
+        preventDefault: vi.fn(),
+        stopPropagation: vi.fn(),
+      } as unknown as MouseEvent
+    );
+
+    expect(showComments).not.toHaveBeenCalled();
+    expect(addComment).toHaveBeenCalledTimes(1);
+    expect(addComment.mock.calls[0][0][0].from).toEqual({
+      blockId: 'todo-1',
+      index: 0,
+      length: 4,
+    });
+    expect(addComment.mock.calls[0][0][0].to).toBeNull();
   });
 
   test('collects available tags in sorted order', () => {
@@ -238,6 +413,7 @@ describe('todo summary utils', () => {
           checked: false,
           nestingLevel: 0,
           tags: ['work', 'urgent'],
+          commentIds: [],
         },
         {
           todoId: 'todo-2',
@@ -245,6 +421,7 @@ describe('todo summary utils', () => {
           checked: true,
           nestingLevel: 0,
           tags: ['later', 'urgent'],
+          commentIds: [],
         },
       ])
     ).toEqual(['later', 'urgent', 'work']);
@@ -259,6 +436,7 @@ describe('todo summary utils', () => {
           checked: false,
           nestingLevel: 0,
           tags: ['work', 'urgent'],
+          commentIds: [],
         },
         {
           todoId: 'todo-2',
@@ -266,6 +444,7 @@ describe('todo summary utils', () => {
           checked: true,
           nestingLevel: 0,
           tags: ['urgent'],
+          commentIds: [],
         },
         {
           todoId: 'todo-3',
@@ -273,6 +452,7 @@ describe('todo summary utils', () => {
           checked: false,
           nestingLevel: 0,
           tags: ['work'],
+          commentIds: [],
         },
       ])
     ).toEqual({
@@ -289,6 +469,7 @@ describe('todo summary utils', () => {
         checked: false,
         nestingLevel: 0,
         tags: ['work', 'urgent'],
+        commentIds: [],
       },
       {
         todoId: 'todo-2',
@@ -296,6 +477,7 @@ describe('todo summary utils', () => {
         checked: true,
         nestingLevel: 0,
         tags: ['home', 'urgent'],
+        commentIds: [],
       },
       {
         todoId: 'todo-3',
@@ -303,6 +485,7 @@ describe('todo summary utils', () => {
         checked: false,
         nestingLevel: 0,
         tags: ['work'],
+        commentIds: [],
       },
     ];
 

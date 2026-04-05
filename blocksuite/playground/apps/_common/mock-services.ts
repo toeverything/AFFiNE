@@ -244,6 +244,10 @@ export function mockCommentProvider() {
       this.commentHighlightSubject.next(id);
     }
 
+    showComments(commentIds: CommentId[]) {
+      this.commentHighlightSubject.next(commentIds[0] ?? null);
+    }
+
     getComments(type: 'resolved' | 'unresolved' | 'all' = 'all') {
       return Array.from(this.comments.entries())
         .filter(([_, comment]) => {

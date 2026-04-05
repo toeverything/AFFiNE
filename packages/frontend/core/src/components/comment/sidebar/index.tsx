@@ -39,6 +39,7 @@ import * as styles from './style.css';
 import {
   type CommentFilterState,
   getVisibleComments,
+  shouldResetCommentDisplayModeOnDocChange,
   shouldResetFocusedCommentsOnSidebarClick,
 } from './utils';
 
@@ -987,12 +988,26 @@ export const CommentSidebar = () => {
   const commentPanelService = useService(CommentPanelService);
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const previousDocIdRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
-    commentPanelService.showAllComments();
+    if (
+      shouldResetCommentDisplayModeOnDocChange(
+        previousDocIdRef.current,
+        doc?.id
+      )
+    ) {
+      commentPanelService.showAllComments();
+    }
+
+    previousDocIdRef.current = doc?.id;
   }, [commentPanelService, doc?.id]);
 
   useEffect(() => {
+    if (!entity) {
+      return;
+    }
+
     const container = containerRef.current;
     // dismiss the highlight when ESC is pressed
     const handleKeyDown = (event: KeyboardEvent) => {

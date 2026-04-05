@@ -23,6 +23,13 @@ export function shouldResetFocusedCommentsOnSidebarClick(
   return false;
 }
 
+export function shouldResetCommentDisplayModeOnDocChange(
+  previousDocId: string | undefined,
+  nextDocId: string | undefined
+): boolean {
+  return !!previousDocId && !!nextDocId && previousDocId !== nextDocId;
+}
+
 export function getVisibleComments({
   comments,
   displayMode,
@@ -36,6 +43,14 @@ export function getVisibleComments({
     );
 
     return focusedComment ? [focusedComment] : [];
+  }
+
+  if (displayMode.type === 'subset') {
+    const commentIds = new Set(displayMode.commentIds);
+
+    return comments
+      .filter(comment => commentIds.has(comment.id))
+      .toSorted((a, b) => b.createdAt - a.createdAt);
   }
 
   let filteredComments = comments;

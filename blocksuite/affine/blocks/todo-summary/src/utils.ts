@@ -2,6 +2,7 @@ import { type ListBlockModel, NoteDisplayMode } from '@blocksuite/affine-model';
 import type { BlockModel } from '@blocksuite/store';
 
 const EMBED_BLOCK_PREFIX = 'affine:embed-';
+const COMMENT_ATTR_PREFIX = 'comment-';
 const TODO_TAG_PATTERN = /#[^\s]+/g;
 const todoSummaryStatusFilters = ['all', 'done', 'not-done'] as const;
 
@@ -13,6 +14,7 @@ export type TodoSummaryRow = {
   checked: boolean;
   nestingLevel: number;
   tags: string[];
+  commentIds: string[];
 };
 
 export type TodoSummaryRowFilter = {
@@ -133,6 +135,7 @@ function walkBlockTree(
       checked: !!block.props.checked,
       nestingLevel: depth,
       tags: extractTodoTags(text),
+      commentIds: getTodoCommentIds(block),
     });
   }
 
@@ -152,6 +155,23 @@ function isVisibleNote(block: BlockModel) {
 function extractTodoTags(text: string) {
   return normalizeTodoTags(
     Array.from(text.matchAll(TODO_TAG_PATTERN), match => match[0].slice(1))
+  );
+}
+
+function getTodoCommentIds(block: ListBlockModel) {
+  const blockComments =
+    typeof block.props.comments === 'object' && block.props.comments !== null
+      ? Object.keys(block.props.comments)
+      : [];
+  const inlineComments =
+    block.props.text?.toDelta?.().flatMap(delta => {
+      return Object.keys(delta.attributes ?? {})
+        .filter(key => key.startsWith(COMMENT_ATTR_PREFIX))
+        .map(key => key.slice(COMMENT_ATTR_PREFIX.length));
+    }) ?? [];
+
+  return Array.from(new Set([...blockComments, ...inlineComments])).sort(
+    (a, b) => a.localeCompare(b)
   );
 }
 
