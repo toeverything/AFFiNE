@@ -37,6 +37,9 @@ public class RemoveWorkspaceEmbeddingFilesMutation: GraphQLMutation {
         "fileId": .variable("fileId")
       ]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      RemoveWorkspaceEmbeddingFilesMutation.Data.self
+    ] }
 
     /// Remove workspace embedding files
     public var removeWorkspaceEmbeddingFiles: Bool { __data["removeWorkspaceEmbeddingFiles"] }

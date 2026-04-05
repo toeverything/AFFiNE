@@ -34,6 +34,9 @@ public class InvoicesQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("currentUser", CurrentUser?.self),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      InvoicesQuery.Data.self
+    ] }
 
     /// Get current user
     public var currentUser: CurrentUser? { __data["currentUser"] }
@@ -53,6 +56,9 @@ public class InvoicesQuery: GraphQLQuery {
           "take": .variable("take"),
           "skip": .variable("skip")
         ]),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        InvoicesQuery.Data.CurrentUser.self
       ] }
 
       /// Get user invoice count
@@ -77,6 +83,9 @@ public class InvoicesQuery: GraphQLQuery {
           .field("lastPaymentError", String?.self),
           .field("link", String?.self),
           .field("createdAt", AffineGraphQL.DateTime.self),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          InvoicesQuery.Data.CurrentUser.Invoice.self
         ] }
 
         @available(*, deprecated, message: "removed")

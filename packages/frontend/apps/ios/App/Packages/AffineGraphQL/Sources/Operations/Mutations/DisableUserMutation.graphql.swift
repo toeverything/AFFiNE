@@ -26,6 +26,9 @@ public class DisableUserMutation: GraphQLMutation {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("banUser", BanUser.self, arguments: ["id": .variable("id")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      DisableUserMutation.Data.self
+    ] }
 
     /// Ban an user
     public var banUser: BanUser { __data["banUser"] }
@@ -42,6 +45,9 @@ public class DisableUserMutation: GraphQLMutation {
         .field("__typename", String.self),
         .field("email", String.self),
         .field("disabled", Bool.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        DisableUserMutation.Data.BanUser.self
       ] }
 
       /// User email

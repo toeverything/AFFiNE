@@ -7,6 +7,7 @@ import { PermissionModule } from '../../core/permission';
 import { WorkspaceModule } from '../../core/workspaces';
 import { CalendarController } from './controller';
 import { CalendarCronJobs } from './cron';
+import { CalendarJob } from './job';
 import { CalendarOAuthService } from './oauth';
 import { CalendarProviderFactory, CalendarProviders } from './providers';
 import {
@@ -25,6 +26,7 @@ import { CalendarService } from './service';
     ...CalendarProviders,
     CalendarProviderFactory,
     CalendarService,
+    CalendarJob,
     CalendarOAuthService,
     CalendarCronJobs,
     CalendarServerConfigResolver,

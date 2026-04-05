@@ -42,6 +42,9 @@ public class GetBlobUploadPartUrlQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("workspace", Workspace.self, arguments: ["id": .variable("workspaceId")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      GetBlobUploadPartUrlQuery.Data.self
+    ] }
 
     /// Get workspace by id
     public var workspace: Workspace { __data["workspace"] }
@@ -62,6 +65,9 @@ public class GetBlobUploadPartUrlQuery: GraphQLQuery {
           "partNumber": .variable("partNumber")
         ]),
       ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        GetBlobUploadPartUrlQuery.Data.Workspace.self
+      ] }
 
       /// Get blob upload part url
       public var blobUploadPartUrl: BlobUploadPartUrl { __data["blobUploadPartUrl"] }
@@ -79,6 +85,9 @@ public class GetBlobUploadPartUrlQuery: GraphQLQuery {
           .field("uploadUrl", String.self),
           .field("headers", AffineGraphQL.JSONObject?.self),
           .field("expiresAt", AffineGraphQL.DateTime?.self),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          GetBlobUploadPartUrlQuery.Data.Workspace.BlobUploadPartUrl.self
         ] }
 
         public var uploadUrl: String { __data["uploadUrl"] }

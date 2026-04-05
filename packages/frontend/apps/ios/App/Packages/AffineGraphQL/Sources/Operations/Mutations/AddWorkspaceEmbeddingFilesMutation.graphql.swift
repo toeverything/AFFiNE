@@ -37,6 +37,9 @@ public class AddWorkspaceEmbeddingFilesMutation: GraphQLMutation {
         "blob": .variable("blob")
       ]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      AddWorkspaceEmbeddingFilesMutation.Data.self
+    ] }
 
     /// Update workspace embedding files
     public var addWorkspaceEmbeddingFiles: AddWorkspaceEmbeddingFiles { __data["addWorkspaceEmbeddingFiles"] }
@@ -57,6 +60,9 @@ public class AddWorkspaceEmbeddingFilesMutation: GraphQLMutation {
         .field("mimeType", String.self),
         .field("size", AffineGraphQL.SafeInt.self),
         .field("createdAt", AffineGraphQL.DateTime.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        AddWorkspaceEmbeddingFilesMutation.Data.AddWorkspaceEmbeddingFiles.self
       ] }
 
       public var fileId: String { __data["fileId"] }

@@ -1037,6 +1037,8 @@ model CalendarSubscription {
   enabled            Boolean   @default(true)
   syncToken          String?   @map("sync_token") @db.Text
   lastSyncAt         DateTime? @map("last_sync_at") @db.Timestamptz(3)
+  nextSyncAt         DateTime  @default(now()) @map("next_sync_at") @db.Timestamptz(3)
+  syncRetryCount     Int       @default(0) @map("sync_retry_count")
   customChannelId    String?   @map("custom_channel_id") @db.VarChar
   customResourceId   String?   @map("custom_resource_id") @db.VarChar
   channelExpiration  DateTime? @map("channel_expiration") @db.Timestamptz(3)
@@ -1050,6 +1052,8 @@ model CalendarSubscription {
   @@unique([accountId, externalCalendarId])
   @@index([accountId])
   @@index([provider, externalCalendarId])
+  @@index([customChannelId])
+  @@index([enabled, nextSyncAt])
   @@map("calendar_subscriptions")
 }
 
