@@ -111,7 +111,6 @@ export function hasNewerVersion(
   }
 
   return semver.gt(next, current, {
-    includePrerelease: true,
     loose: true,
   });
 }
