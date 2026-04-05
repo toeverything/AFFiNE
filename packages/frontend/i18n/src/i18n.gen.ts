@@ -2455,6 +2455,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.import.affine-workspace-data"](): string;
     /**
+      * `Bear (.bear2bk)`
+      */
+    ["com.affine.import.bear"](): string;
+    /**
+      * `Import your Bear note backup. Tags will be converted to AFFiNE tags and folders.`
+      */
+    ["com.affine.import.bear.tooltip"](): string;
+    /**
       * `Docx`
       */
     ["com.affine.import.docx"](): string;
