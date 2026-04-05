@@ -633,7 +633,10 @@ test('syncSubscription falls back to polling when push is unsupported', async t 
   t.is(updated?.customChannelId, null);
   t.is(updated?.customResourceId, null);
   t.truthy(updated?.channelExpiration);
-  t.true(updated!.channelExpiration!.getTime() > Date.now() + 365 * 24 * 60 * 60 * 1000);
+  t.true(
+    updated!.channelExpiration!.getTime() >
+      Date.now() + 365 * 24 * 60 * 60 * 1000
+  );
 
   await calendarService.syncSubscription(subscription.id);
 
