@@ -837,7 +837,7 @@ __metadata:
     husky: "npm:^9.1.7"
     lint-staged: "npm:^16.0.0"
     msw: "npm:^2.12.4"
-    oxlint: "npm:^1.47.0"
+    oxlint: "npm:1.47.0"
     prettier: "npm:^3.7.4"
     semver: "npm:^7.7.3"
     typescript: "npm:^5.9.3"
@@ -30319,7 +30319,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"oxlint@npm:^1.47.0":
+"oxlint@npm:1.47.0":
   version: 1.47.0
   resolution: "oxlint@npm:1.47.0"
   dependencies:

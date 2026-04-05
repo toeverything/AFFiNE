@@ -83,7 +83,7 @@
     "husky": "^9.1.7",
     "lint-staged": "^16.0.0",
     "msw": "^2.12.4",
-    "oxlint": "^1.47.0",
+    "oxlint": "1.47.0",
     "prettier": "^3.7.4",
     "semver": "^7.7.3",
     "typescript": "^5.9.3",
