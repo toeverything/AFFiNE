@@ -2440,6 +2440,7 @@ __metadata:
     "@blocksuite/std": "workspace:*"
     "@blocksuite/store": "workspace:*"
     lit: "npm:^3.2.0"
+    vitest: "npm:^3.2.4"
   languageName: unknown
   linkType: soft
 
