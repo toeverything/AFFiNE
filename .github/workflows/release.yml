@@ -195,6 +195,7 @@ jobs:
       desktop_macos: ${{ github.event_name != 'workflow_dispatch' || inputs.desktop_macos }}
       desktop_windows: ${{ github.event_name != 'workflow_dispatch' || inputs.desktop_windows }}
       desktop_linux: ${{ github.event_name != 'workflow_dispatch' || inputs.desktop_linux }}
+      require-windows-signing: ${{ needs.prepare.outputs.BUILD_TYPE == 'beta' || needs.prepare.outputs.BUILD_TYPE == 'stable' || (github.event_name == 'workflow_dispatch' && inputs.desktop_windows) }}
 
   mobile:
     name: Release Mobile

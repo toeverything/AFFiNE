@@ -2,22 +2,51 @@ import { toast } from '@affine/component';
 import { getStoreManager } from '@affine/core/blocksuite/manager/store';
 import { AppSidebarService } from '@affine/core/modules/app-sidebar';
 import { DocsService } from '@affine/core/modules/doc';
+import {
+  EditorSettingService,
+  resolveNewDocTitle,
+} from '@affine/core/modules/editor-setting';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { getAFFiNEWorkspaceSchema } from '@affine/core/modules/workspace';
 import { type DocMode } from '@blocksuite/affine/model';
 import type { Workspace } from '@blocksuite/affine/store';
-import { useServices } from '@toeverything/infra';
+import { LiveData, useLiveData, useServices } from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
 
 export const usePageHelper = (docCollection: Workspace) => {
-  const { docsService, workbenchService, appSidebarService } = useServices({
+  const {
+    docsService,
+    workbenchService,
+    appSidebarService,
+    editorSettingService,
+  } = useServices({
     DocsService,
     WorkbenchService,
     AppSidebarService,
+    EditorSettingService,
   });
   const workbench = workbenchService.workbench;
   const docRecordList = docsService.list;
   const appSidebar = appSidebarService.sidebar;
+  const settings = useLiveData(editorSettingService.editorSetting.settings$);
+  const allDocTitles = useLiveData(
+    useMemo(() => LiveData.from(docsService.allDocTitle$(), []), [docsService])
+  );
+
+  const createBlankDoc = useCallback(() => {
+    const title = resolveNewDocTitle({
+      autoTitleEnabled: settings.autoTitleNewDocWithCurrentDate,
+      existingTitles: allDocTitles.map(doc => doc.title).filter(Boolean),
+      format: settings.newDocDateTitleFormat,
+    });
+
+    return docsService.createDoc(title ? { title } : undefined);
+  }, [
+    allDocTitles,
+    docsService,
+    settings.autoTitleNewDocWithCurrentDate,
+    settings.newDocDateTitleFormat,
+  ]);
 
   const createPageAndOpen = useCallback(
     (
@@ -31,7 +60,7 @@ export const usePageHelper = (docCollection: Workspace) => {
       }
     ) => {
       appSidebar.setHovering(false);
-      const page = docsService.createDoc();
+      const page = createBlankDoc();
 
       if (mode) {
         docRecordList.doc$(page.id).value?.setPrimaryMode(mode);
@@ -45,7 +74,7 @@ export const usePageHelper = (docCollection: Workspace) => {
       }
       return page;
     },
-    [appSidebar, docRecordList, docsService, workbench]
+    [appSidebar, createBlankDoc, docRecordList, workbench]
   );
 
   const createEdgelessAndOpen = useCallback(

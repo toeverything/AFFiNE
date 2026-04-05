@@ -42,6 +42,9 @@ public class AdminWorkspaceQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("adminWorkspace", AdminWorkspace?.self, arguments: ["id": .variable("id")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      AdminWorkspaceQuery.Data.self
+    ] }
 
     /// Get workspace detail for admin
     public var adminWorkspace: AdminWorkspace? { __data["adminWorkspace"] }
@@ -80,6 +83,9 @@ public class AdminWorkspaceQuery: GraphQLQuery {
           "query": .variable("memberQuery")
         ]),
       ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        AdminWorkspaceQuery.Data.AdminWorkspace.self
+      ] }
 
       public var id: String { __data["id"] }
       public var `public`: Bool { __data["public"] }
@@ -117,6 +123,9 @@ public class AdminWorkspaceQuery: GraphQLQuery {
           .field("email", String.self),
           .field("avatarUrl", String?.self),
         ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          AdminWorkspaceQuery.Data.AdminWorkspace.Owner.self
+        ] }
 
         public var id: String { __data["id"] }
         public var name: String { __data["name"] }
@@ -137,6 +146,9 @@ public class AdminWorkspaceQuery: GraphQLQuery {
           .field("docId", String.self),
           .field("title", String?.self),
           .field("publishedAt", AffineGraphQL.DateTime?.self),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          AdminWorkspaceQuery.Data.AdminWorkspace.SharedLink.self
         ] }
 
         public var docId: String { __data["docId"] }
@@ -160,6 +172,9 @@ public class AdminWorkspaceQuery: GraphQLQuery {
           .field("avatarUrl", String?.self),
           .field("role", GraphQLEnum<AffineGraphQL.Permission>.self),
           .field("status", GraphQLEnum<AffineGraphQL.WorkspaceMemberStatus>.self),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          AdminWorkspaceQuery.Data.AdminWorkspace.Member.self
         ] }
 
         public var id: String { __data["id"] }

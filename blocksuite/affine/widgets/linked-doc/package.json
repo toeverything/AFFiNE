@@ -30,6 +30,9 @@
     "mammoth": "^1.11.0",
     "zod": "^3.25.76"
   },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9"
+  },
   "exports": {
     ".": "./src/index.ts",
     "./view": "./src/view.ts"

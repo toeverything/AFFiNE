@@ -34,6 +34,9 @@ public class GetDocDefaultRoleQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("workspace", Workspace.self, arguments: ["id": .variable("workspaceId")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      GetDocDefaultRoleQuery.Data.self
+    ] }
 
     /// Get workspace by id
     public var workspace: Workspace { __data["workspace"] }
@@ -50,6 +53,9 @@ public class GetDocDefaultRoleQuery: GraphQLQuery {
         .field("__typename", String.self),
         .field("doc", Doc.self, arguments: ["docId": .variable("docId")]),
       ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        GetDocDefaultRoleQuery.Data.Workspace.self
+      ] }
 
       /// Get get with given id
       public var doc: Doc { __data["doc"] }
@@ -65,6 +71,9 @@ public class GetDocDefaultRoleQuery: GraphQLQuery {
         public static var __selections: [ApolloAPI.Selection] { [
           .field("__typename", String.self),
           .field("defaultRole", GraphQLEnum<AffineGraphQL.DocRole>.self),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          GetDocDefaultRoleQuery.Data.Workspace.Doc.self
         ] }
 
         public var defaultRole: GraphQLEnum<AffineGraphQL.DocRole> { __data["defaultRole"] }

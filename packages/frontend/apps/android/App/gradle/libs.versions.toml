@@ -13,7 +13,7 @@ androidx-junit                 = "1.2.1"
 androidx-lifecycle-compose     = "2.9.0"
 androidx-material3             = "1.3.1"
 androidx-navigation            = "2.9.0"
-apollo                         = "4.2.0"
+apollo                         = "4.4.2"
 apollo-kotlin-adapters         = "0.0.6"
 # @keep
 compileSdk                 = "36"

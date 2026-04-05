@@ -34,6 +34,9 @@ public class GetDocRolePermissionsQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("workspace", Workspace.self, arguments: ["id": .variable("workspaceId")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      GetDocRolePermissionsQuery.Data.self
+    ] }
 
     /// Get workspace by id
     public var workspace: Workspace { __data["workspace"] }
@@ -50,6 +53,9 @@ public class GetDocRolePermissionsQuery: GraphQLQuery {
         .field("__typename", String.self),
         .field("doc", Doc.self, arguments: ["docId": .variable("docId")]),
       ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        GetDocRolePermissionsQuery.Data.Workspace.self
+      ] }
 
       /// Get get with given id
       public var doc: Doc { __data["doc"] }
@@ -65,6 +71,9 @@ public class GetDocRolePermissionsQuery: GraphQLQuery {
         public static var __selections: [ApolloAPI.Selection] { [
           .field("__typename", String.self),
           .field("permissions", Permissions.self),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          GetDocRolePermissionsQuery.Data.Workspace.Doc.self
         ] }
 
         public var permissions: Permissions { __data["permissions"] }
@@ -96,6 +105,9 @@ public class GetDocRolePermissionsQuery: GraphQLQuery {
             .field("Doc_Comments_Delete", Bool.self),
             .field("Doc_Comments_Read", Bool.self),
             .field("Doc_Comments_Resolve", Bool.self),
+          ] }
+          public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+            GetDocRolePermissionsQuery.Data.Workspace.Doc.Permissions.self
           ] }
 
           public var doc_Copy: Bool { __data["Doc_Copy"] }

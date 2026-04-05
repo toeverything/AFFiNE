@@ -26,6 +26,9 @@ public class CreateCheckoutSessionMutation: GraphQLMutation {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("createCheckoutSession", String.self, arguments: ["input": .variable("input")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      CreateCheckoutSessionMutation.Data.self
+    ] }
 
     /// Create a subscription checkout link of stripe
     public var createCheckoutSession: String { __data["createCheckoutSession"] }

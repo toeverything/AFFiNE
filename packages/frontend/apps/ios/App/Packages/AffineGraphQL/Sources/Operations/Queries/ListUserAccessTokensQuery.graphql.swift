@@ -20,6 +20,9 @@ public class ListUserAccessTokensQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("currentUser", CurrentUser?.self),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      ListUserAccessTokensQuery.Data.self
+    ] }
 
     /// Get current user
     public var currentUser: CurrentUser? { __data["currentUser"] }
@@ -35,6 +38,9 @@ public class ListUserAccessTokensQuery: GraphQLQuery {
       public static var __selections: [ApolloAPI.Selection] { [
         .field("__typename", String.self),
         .field("revealedAccessTokens", [RevealedAccessToken].self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        ListUserAccessTokensQuery.Data.CurrentUser.self
       ] }
 
       public var revealedAccessTokens: [RevealedAccessToken] { __data["revealedAccessTokens"] }
@@ -54,6 +60,9 @@ public class ListUserAccessTokensQuery: GraphQLQuery {
           .field("createdAt", AffineGraphQL.DateTime.self),
           .field("expiresAt", AffineGraphQL.DateTime?.self),
           .field("token", String.self),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          ListUserAccessTokensQuery.Data.CurrentUser.RevealedAccessToken.self
         ] }
 
         public var id: String { __data["id"] }

@@ -5,6 +5,14 @@ export const BSEditorSettingSchema = GeneralSettingSchema;
 
 export type FontFamily = 'Sans' | 'Serif' | 'Mono' | 'Custom';
 export type EdgelessDefaultTheme = 'auto' | 'dark' | 'light' | 'specified';
+export const newDocDateTitleFormatOptions = [
+  'DD-MM-YYYY',
+  'MM-DD-YYYY',
+  'YYYY-MM-DD',
+  'journal',
+] as const;
+export type NewDocDateTitleFormat =
+  (typeof newDocDateTitleFormatOptions)[number];
 
 export const fontStyleOptions = [
   { key: 'Sans', value: 'var(--affine-font-sans-family)' },
@@ -21,6 +29,10 @@ const AffineEditorSettingSchema = z.object({
   customFontFamily: z.string().default(''),
   fontSize: z.number().min(12).max(24).default(16),
   newDocDefaultMode: z.enum(['edgeless', 'page', 'ask']).default('page'),
+  autoTitleNewDocWithCurrentDate: z.boolean().default(false),
+  newDocDateTitleFormat: z
+    .enum(newDocDateTitleFormatOptions)
+    .default('DD-MM-YYYY'),
   fullWidthLayout: z.boolean().default(false),
   displayDocInfo: z.boolean().default(true),
   displayBiDirectionalLink: z.boolean().default(true),
