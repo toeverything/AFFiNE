@@ -3545,9 +3545,9 @@ dependencies = [
 
 [[package]]
 name = "memory-indexer"
-version = "0.3.0"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c2b5b765680ef95f5cd17cae452625c014e03d148045dc1d9604fb00cb602888"
+checksum = "53a349dd43a5b5efb437a192d7fe37e58feb94f094839d303482dc8bcc8d1043"
 dependencies = [
  "jieba-rs",
  "once_cell",
