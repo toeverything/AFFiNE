@@ -430,26 +430,22 @@ const NewDocDefaultModeSettings = () => {
   );
 };
 
-export const getNewDocDateTitleFormatItems = (
-  t: ReturnType<typeof useI18n>
-): Array<{
-  value: NewDocDateTitleFormat;
-  label: string;
-}> => {
-  return newDocDateTitleFormatOptions.map(value => ({
-    value,
-    label: t.t(
-      `com.affine.settings.editorSettings.general.auto-date-title.format.${value.toLowerCase()}`
-    ),
-  }));
+const getDateTitleFormatLabel = (format: NewDocDateTitleFormat) => {
+  return `com.affine.settings.editorSettings.general.auto-date-title.format.${format.toLowerCase()}` as const;
 };
 
 export const NewDocDateTitleSettings = () => {
   const t = useI18n();
   const { editorSettingService } = useServices({ EditorSettingService });
   const settings = useLiveData(editorSettingService.editorSetting.settings$);
-
-  const formatItems = useMemo(() => getNewDocDateTitleFormatItems(t), [t]);
+  const formatItems = useMemo(
+    () =>
+      newDocDateTitleFormatOptions.map(value => ({
+        value,
+        label: t.t(getDateTitleFormatLabel(value)),
+      })),
+    [t]
+  );
 
   const onToggleAutoDateTitle = useCallback(
     (checked: boolean) => {
@@ -494,17 +490,15 @@ export const NewDocDateTitleSettings = () => {
         >
           <Menu
             contentOptions={menuContentOptions}
-            items={formatItems.map(item => {
-              return (
-                <MenuItem
-                  key={item.value}
-                  selected={item.value === settings.newDocDateTitleFormat}
-                  onSelect={() => onDateTitleFormatChange(item.value)}
-                >
-                  {item.label}
-                </MenuItem>
-              );
-            })}
+            items={formatItems.map(item => (
+              <MenuItem
+                key={item.value}
+                selected={item.value === settings.newDocDateTitleFormat}
+                onSelect={() => onDateTitleFormatChange(item.value)}
+              >
+                {item.label}
+              </MenuItem>
+            ))}
           >
             <MenuTrigger
               className={styles.menuTrigger}

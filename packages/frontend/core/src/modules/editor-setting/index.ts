@@ -2,7 +2,7 @@ import { type Framework } from '@toeverything/infra';
 
 import { ServersService } from '../cloud';
 import { DesktopApiService } from '../desktop-api';
-import { DocCreateMiddleware, DocsQueryService } from '../doc';
+import { DocCreateMiddleware } from '../doc';
 import { I18n } from '../i18n';
 import { GlobalState, GlobalStateService } from '../storage';
 import { AppThemeService } from '../theme';
@@ -21,6 +21,7 @@ export {
   newDocDateTitleFormatOptions,
 } from './schema';
 export { EditorSettingService } from './services/editor-setting';
+export { resolveNewDocTitle } from './utils/date-title';
 
 export function configureEditorSettingModule(framework: Framework) {
   framework
@@ -34,7 +35,6 @@ export function configureEditorSettingModule(framework: Framework) {
     .impl(DocCreateMiddleware, EditorSettingDocCreateMiddleware, [
       EditorSettingService,
       AppThemeService,
-      DocsQueryService,
     ]);
 }
 

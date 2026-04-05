@@ -39,3 +39,21 @@ export const getUniqueNewDocDateTitle = ({
 
   return `${baseTitle}(${duplicateIndex})`;
 };
+
+export const resolveNewDocTitle = ({
+  title,
+  autoTitleEnabled,
+  existingTitles,
+  format,
+  date = new Date(),
+}: {
+  title?: string;
+  autoTitleEnabled: boolean;
+  existingTitles: Iterable<string>;
+  format: NewDocDateTitleFormat;
+  date?: dayjs.ConfigType;
+}) => {
+  if (title?.trim()) return title;
+  if (!autoTitleEnabled) return undefined;
+  return getUniqueNewDocDateTitle({ existingTitles, format, date });
+};

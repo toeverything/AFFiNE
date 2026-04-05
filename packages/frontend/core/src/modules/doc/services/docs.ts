@@ -22,7 +22,15 @@ import { getDuplicatedDocTitle } from './duplicate-title';
 
 const logger = new DebugLogger('DocsService');
 
-export class DocsQueryService extends Service {
+export class DocsService extends Service {
+  list = this.framework.createEntity(DocRecordList);
+
+  pool = new ObjectPool<string, Doc>({
+    onDelete(obj) {
+      obj.scope.dispose();
+    },
+  });
+
   /**
    * Get all property values of a property, used for search
    *
@@ -80,59 +88,10 @@ export class DocsQueryService extends Service {
 
   constructor(
     private readonly store: DocsStore,
-    private readonly docPropertiesStore: DocPropertiesStore
+    private readonly docPropertiesStore: DocPropertiesStore,
+    private readonly docCreateMiddlewares: DocCreateMiddleware[]
   ) {
     super();
-  }
-}
-
-export class DocsService extends Service {
-  list = this.framework.createEntity(DocRecordList);
-
-  pool = new ObjectPool<string, Doc>({
-    onDelete(obj) {
-      obj.scope.dispose();
-    },
-  });
-
-  constructor(
-    private readonly store: DocsStore,
-    private readonly docCreateMiddlewares: DocCreateMiddleware[],
-    private readonly docsQueryService: DocsQueryService
-  ) {
-    super();
-  }
-
-  propertyValues$(propertyKey: string) {
-    return this.docsQueryService.propertyValues$(propertyKey);
-  }
-
-  allDocsCreatedDate$() {
-    return this.docsQueryService.allDocsCreatedDate$();
-  }
-
-  allDocsUpdatedDate$() {
-    return this.docsQueryService.allDocsUpdatedDate$();
-  }
-
-  allDocsTagIds$() {
-    return this.docsQueryService.allDocsTagIds$();
-  }
-
-  allDocIds$() {
-    return this.docsQueryService.allDocIds$();
-  }
-
-  allNonTrashDocIds$() {
-    return this.docsQueryService.allNonTrashDocIds$();
-  }
-
-  allTrashDocIds$() {
-    return this.docsQueryService.allTrashDocIds$();
-  }
-
-  allDocTitle$() {
-    return this.docsQueryService.allDocTitle$();
   }
 
   loaded(docId: string) {
@@ -205,9 +164,6 @@ export class DocsService extends Service {
     }
     if (options.isTemplate) {
       docRecord.setProperty('isTemplate', true);
-    }
-    if (options.title?.trim()) {
-      docRecord.setMeta({ title: options.title });
     }
     for (const middleware of this.docCreateMiddlewares) {
       middleware.afterCreate?.(docRecord, options);
