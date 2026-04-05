@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
 import { DocActionDenied } from '../../base';
-import { Models } from '../../models';
 import { AccessController, getAccessController } from './controller';
 import { WorkspacePolicyService } from './policy';
 import type { Resource } from './resource';
@@ -16,10 +15,7 @@ import { WorkspaceAccessController } from './workspace';
 @Injectable()
 export class DocAccessController extends AccessController<'doc'> {
   protected readonly type = 'doc';
-  constructor(
-    private readonly models: Models,
-    private readonly policy: WorkspacePolicyService
-  ) {
+  constructor(private readonly policy: WorkspacePolicyService) {
     super();
   }
 
@@ -29,7 +25,7 @@ export class DocAccessController extends AccessController<'doc'> {
       resource.workspaceId,
       mapDocRoleToPermissions(role)
     );
-    const sharingAllowed = await this.models.workspace.allowSharing(
+    const sharingAllowed = await this.policy.canPublishDoc(
       resource.workspaceId
     );
     if (!sharingAllowed) {

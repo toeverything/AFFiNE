@@ -56,7 +56,7 @@ describe('fetchSharedPublishMode', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock).toHaveBeenCalledWith(
       new URL(
-        '/api/workspaces/workspace-id/docs/doc-id',
+        '/api/workspaces/workspace-id/public-docs/doc-id',
         'https://app.affine.pro'
       ),
       expect.objectContaining({ method: 'HEAD' })

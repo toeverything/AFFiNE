@@ -32,6 +32,7 @@ import { FrameworkScope, useLiveData, useService } from '@toeverything/infra';
 import clsx from 'clsx';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
+import { filter, firstValueFrom, timeout } from 'rxjs';
 
 import { PageNotFound } from '../../404';
 import { ShareFooter } from './share-footer';
@@ -42,6 +43,19 @@ import {
   getResolvedPublishMode,
 } from './share-page.utils';
 import { useSharedModeQuerySync } from './use-shared-mode-query-sync';
+
+const waitForSharedDocRecord = async (
+  docsService: DocsService,
+  docId: string
+): Promise<void> => {
+  if (docsService.list.doc$(docId).value) {
+    return;
+  }
+
+  await firstValueFrom(
+    docsService.list.doc$(docId).pipe(filter(Boolean), timeout(3000))
+  );
+};
 
 const useUpdateBasename = (workspace: Workspace | null) => {
   const location = useLocation();
@@ -198,6 +212,7 @@ const SharePageInner = ({
             name: 'StaticCloudDocStorage',
             opts: {
               id: workspaceId,
+              publicRootDocId: docId,
               serverBaseUrl: serverService.server.baseUrl,
             },
           },
@@ -218,7 +233,10 @@ const SharePageInner = ({
     sharedWorkspace.engine.doc
       .waitForDocLoaded(sharedWorkspace.id)
       .then(async () => {
-        const { doc } = sharedWorkspace.scope.get(DocsService).open(docId);
+        const docsService = sharedWorkspace.scope.get(DocsService);
+        await waitForSharedDocRecord(docsService, docId);
+
+        const { doc } = docsService.open(docId);
         doc.blockSuiteDoc.load();
         doc.blockSuiteDoc.readonly = true;
 

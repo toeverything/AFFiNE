@@ -35,7 +35,7 @@ export const fetchSharedPublishMode = async ({
   signal?: AbortSignal;
 }): Promise<DocMode | null> => {
   const url = new URL(
-    `/api/workspaces/${encodeURIComponent(workspaceId)}/docs/${encodeURIComponent(docId)}`,
+    `/api/workspaces/${encodeURIComponent(workspaceId)}/public-docs/${encodeURIComponent(docId)}`,
     serverBaseUrl
   );
   const headers = {
