@@ -309,7 +309,13 @@ function convertHighlights(markdown: string): string {
 /** Extract the document title from the first `# heading` or fall back to the bundle name. */
 function extractTitle(markdown: string, bundleName: string): string {
   const lines = markdown.split('\n');
+  let inCodeBlock = false;
   for (const line of lines) {
+    if (line.trimStart().startsWith('```')) {
+      inCodeBlock = !inCodeBlock;
+      continue;
+    }
+    if (inCodeBlock) continue;
     const match = line.match(/^#\s+(.+)/);
     if (match) {
       const title = match[1].trim();
