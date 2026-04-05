@@ -393,6 +393,12 @@ async function importBearBackup({
     validBundles.push({ entry, bearMeta });
   }
 
+  if (validBundles.length === 0) {
+    throw new Error(
+      'No valid Bear textbundles found in the archive. Please select a .bear2bk backup file.'
+    );
+  }
+
   const docIds: string[] = [];
   const tagDocMap = new Map<string, string[]>();
 
