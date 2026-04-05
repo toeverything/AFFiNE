@@ -977,7 +977,7 @@ __metadata:
     "@types/nodemailer": "npm:^7.0.0"
     "@types/on-headers": "npm:^1.0.3"
     "@types/react": "npm:^19.0.1"
-    "@types/semver": "npm:^7.5.8"
+    "@types/semver": "npm:^7.7.1"
     "@types/sinon": "npm:^21.0.0"
     "@types/supertest": "npm:^7.0.0"
     ava: "npm:^7.0.0"
@@ -1019,7 +1019,7 @@ __metadata:
     react-email: "npm:^4.3.2"
     reflect-metadata: "npm:^0.2.2"
     rxjs: "npm:^7.8.2"
-    semver: "npm:^7.7.3"
+    semver: "npm:^7.7.4"
     sinon: "npm:^21.0.1"
     socket.io: "npm:^4.8.1"
     socket.io-client: "npm:^4.8.3"
@@ -16451,10 +16451,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/semver@npm:^7, @types/semver@npm:^7.5.8":
+"@types/semver@npm:^7":
   version: 7.7.0
   resolution: "@types/semver@npm:7.7.0"
   checksum: 10/ee4514c6c852b1c38f951239db02f9edeea39f5310fad9396a00b51efa2a2d96b3dfca1ae84c88181ea5b7157c57d32d7ef94edacee36fbf975546396b85ba5b
+  languageName: node
+  linkType: hard
+
+"@types/semver@npm:^7.7.1":
+  version: 7.7.1
+  resolution: "@types/semver@npm:7.7.1"
+  checksum: 10/8f09e7e6ca3ded67d78ba7a8f7535c8d9cf8ced83c52e7f3ac3c281fe8c689c3fe475d199d94390dc04fc681d51f2358b430bb7b2e21c62de24f2bee2c719068
   languageName: node
   linkType: hard
 
