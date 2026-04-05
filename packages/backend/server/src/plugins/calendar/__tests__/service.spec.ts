@@ -594,6 +594,55 @@ test('syncSubscription renews webhook channel when expiring', async t => {
   t.truthy(updated?.channelExpiration);
 });
 
+test('syncSubscription falls back to polling when push is unsupported', async t => {
+  const user = await module.create(Mockers.User);
+  const account = await createAccount(user.id);
+  const subscription = await createSubscription(account.id, {
+    syncToken: 'sync-token',
+  });
+
+  const provider = new MockCalendarProvider();
+  mock.method(provider, 'listEvents', async () => ({
+    events: [],
+    nextSyncToken: 'next-sync',
+  }));
+  const watchMock = mock.method(provider, 'watchCalendar', async () => {
+    throw new CalendarProviderRequestError({
+      status: 400,
+      message: JSON.stringify({
+        error: {
+          errors: [
+            {
+              domain: 'calendar',
+              reason: 'pushNotSupportedForRequestedResource',
+              message: 'Push notifications are not supported by this resource.',
+            },
+          ],
+          code: 400,
+          message: 'Push notifications are not supported by this resource.',
+        },
+      }),
+    });
+  });
+  mock.method(providerFactory, 'get', () => provider);
+
+  await calendarService.syncSubscription(subscription.id);
+
+  let updated = await models.calendarSubscription.get(subscription.id);
+  t.is(watchMock.mock.callCount(), 1);
+  t.is(updated?.customChannelId, null);
+  t.is(updated?.customResourceId, null);
+  t.truthy(updated?.channelExpiration);
+  t.true(updated!.channelExpiration!.getTime() > Date.now() + 365 * 24 * 60 * 60 * 1000);
+
+  await calendarService.syncSubscription(subscription.id);
+
+  updated = await models.calendarSubscription.get(subscription.id);
+  t.is(watchMock.mock.callCount(), 1);
+  t.is(updated?.customChannelId, null);
+  t.is(updated?.customResourceId, null);
+});
+
 test('syncSubscription keeps schedule moving when webhook renewal fails', async t => {
   const now = new Date('2026-01-01T00:00:00.000Z').getTime();
   mock.method(Date, 'now', () => now);

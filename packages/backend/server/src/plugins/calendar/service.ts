@@ -32,6 +32,9 @@ const SYNC_FAILURE_BACKOFF_BASE_MS = 5 * 60 * 1000;
 const SYNC_FAILURE_BACKOFF_MAX_MS = 6 * 60 * 60 * 1000;
 const DEFAULT_REFRESH_INTERVAL_MINUTES = 30;
 const CHANNEL_RENEW_RETRY_MS = 15 * 60 * 1000;
+const UNSUPPORTED_PUSH_CHANNEL_EXPIRATION = new Date(
+  '9999-12-31T23:59:59.999Z'
+);
 
 @Injectable()
 export class CalendarService {
@@ -805,6 +808,19 @@ export class CalendarService {
     return false;
   }
 
+  private isPushUnsupportedError(error: unknown) {
+    if (!(error instanceof CalendarProviderRequestError)) {
+      return false;
+    }
+
+    const status = error.data?.status ?? error.status;
+    if (status !== 400) return false;
+
+    return error.data?.message?.includes(
+      'pushNotSupportedForRequestedResource'
+    );
+  }
+
   private requireProvider(name: CalendarProviderName) {
     const provider = this.providerFactory.get(name);
     if (!provider) {
@@ -817,6 +833,7 @@ export class CalendarService {
     subscription: {
       id: string;
       externalCalendarId: string;
+      displayName: string | null;
       customChannelId: string | null;
       customResourceId: string | null;
       channelExpiration: Date | null;
@@ -855,13 +872,30 @@ export class CalendarService {
 
     const channelId = randomUUID();
     const token = this.getWebhookToken();
-    const result = await provider.watchCalendar({
-      accessToken,
-      calendarId: subscription.externalCalendarId,
-      address,
-      token,
-      channelId,
-    });
+    let result: Awaited<ReturnType<NonNullable<typeof provider.watchCalendar>>>;
+    try {
+      result = await provider.watchCalendar({
+        accessToken,
+        calendarId: subscription.externalCalendarId,
+        address,
+        token,
+        channelId,
+      });
+    } catch (error) {
+      if (!this.isPushUnsupportedError(error)) {
+        throw error;
+      }
+
+      await this.models.calendarSubscription.updateChannel(subscription.id, {
+        customChannelId: null,
+        customResourceId: null,
+        channelExpiration: UNSUPPORTED_PUSH_CHANNEL_EXPIRATION,
+      });
+      this.logger.log(
+        `Calendar subscription ${subscription.id} (${subscription.displayName ?? subscription.externalCalendarId}) does not support push notifications; falling back to polling`
+      );
+      return;
+    }
 
     await this.models.calendarSubscription.updateChannel(subscription.id, {
       customChannelId: result.channelId,
