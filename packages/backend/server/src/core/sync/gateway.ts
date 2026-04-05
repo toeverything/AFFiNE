@@ -214,6 +214,7 @@ export class SpaceSyncGateway
   private readonly localUserConnectionCounts = new Map<string, number>();
   private unresolvedPresenceSockets = 0;
   private flushTimer?: NodeJS.Timeout;
+  private activeUsersFlushTimer?: NodeJS.Timeout;
 
   constructor(
     private readonly ac: AccessController,
@@ -225,6 +226,7 @@ export class SpaceSyncGateway
   ) {}
 
   onModuleInit() {
+    this.scheduleActiveUsersFlush(0);
     this.flushTimer = setInterval(() => {
       this.flushActiveUsersMinute().catch(error => {
         this.logger.warn(
@@ -239,6 +241,10 @@ export class SpaceSyncGateway
     if (this.flushTimer) {
       clearInterval(this.flushTimer);
       this.flushTimer = undefined;
+    }
+    if (this.activeUsersFlushTimer) {
+      clearTimeout(this.activeUsersFlushTimer);
+      this.activeUsersFlushTimer = undefined;
     }
   }
 
@@ -310,13 +316,7 @@ export class SpaceSyncGateway
     metrics.socketio.gauge('connections').record(this.connectionCount);
     const userId = this.attachPresenceUserId(client);
     this.trackConnectedSocket(client.id, userId);
-    void this.flushActiveUsersMinute({
-      aggregateAcrossCluster: false,
-    }).catch(error => {
-      this.logger.warn(
-        `Failed to flush active users minute: ${this.formatError(error)}`
-      );
-    });
+    this.scheduleActiveUsersFlush();
   }
 
   handleDisconnect(client: Socket) {
@@ -326,13 +326,7 @@ export class SpaceSyncGateway
       `Connection disconnected, total: ${this.connectionCount}`
     );
     metrics.socketio.gauge('connections').record(this.connectionCount);
-    void this.flushActiveUsersMinute({
-      aggregateAcrossCluster: false,
-    }).catch(error => {
-      this.logger.warn(
-        `Failed to flush active users minute: ${this.formatError(error)}`
-      );
-    });
+    this.scheduleActiveUsersFlush();
   }
 
   private attachPresenceUserId(client: Socket): string | null {
@@ -414,13 +408,30 @@ export class SpaceSyncGateway
     }
   }
 
+  private scheduleActiveUsersFlush(delayMs = 250) {
+    if (this.activeUsersFlushTimer) return;
+
+    this.activeUsersFlushTimer = setTimeout(() => {
+      this.activeUsersFlushTimer = undefined;
+      this.flushActiveUsersMinute().catch(error => {
+        this.logger.warn(
+          `Failed to flush active users minute: ${this.formatError(error)}`
+        );
+      });
+    }, delayMs);
+    this.activeUsersFlushTimer.unref?.();
+  }
+
   private async flushActiveUsersMinute(options?: {
     aggregateAcrossCluster?: boolean;
+    skipWriteOnAggregateError?: boolean;
   }) {
     const minute = new Date();
     minute.setSeconds(0, 0);
 
     const aggregateAcrossCluster = options?.aggregateAcrossCluster ?? true;
+    const skipWriteOnAggregateError =
+      options?.skipWriteOnAggregateError ?? aggregateAcrossCluster;
     let activeUsers = this.resolveLocalActiveUsers();
     if (aggregateAcrossCluster) {
       try {
@@ -446,8 +457,9 @@ export class SpaceSyncGateway
         }
       } catch (error) {
         this.logger.warn(
-          `Failed to aggregate active users from sockets, using local value: ${this.formatError(error)}`
+          `Failed to aggregate active users from sockets: ${this.formatError(error)}`
         );
+        if (skipWriteOnAggregateError) return;
       }
     }
 

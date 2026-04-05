@@ -5,7 +5,8 @@ import { Prisma, PrismaClient } from '@prisma/client';
 import { metrics } from '../../base';
 
 const LOCK_NAMESPACE = 97_301;
-const LOCK_KEY = 1;
+const REFRESH_LOCK_KEY = 1;
+const SNAPSHOT_LOCK_KEY = 2;
 const DIRTY_BATCH_SIZE = 500;
 const FULL_REFRESH_BATCH_SIZE = 2000;
 const TRANSACTION_TIMEOUT_MS = 120_000;
@@ -21,7 +22,7 @@ export class WorkspaceStatsJob {
     const started = Date.now();
 
     try {
-      const result = await this.withAdvisoryLock(async tx => {
+      const result = await this.withAdvisoryLock(REFRESH_LOCK_KEY, async tx => {
         const backlog = await this.countDirty(tx);
         metrics.workspace
           .gauge('admin_stats_dirty_backlog')
@@ -67,24 +68,27 @@ export class WorkspaceStatsJob {
     while (true) {
       const started = Date.now();
       try {
-        const result = await this.withAdvisoryLock(async tx => {
-          const workspaces = await this.fetchWorkspaceBatch(
-            tx,
-            lastSid,
-            FULL_REFRESH_BATCH_SIZE
-          );
-          if (!workspaces.length) {
-            return { processed: 0, lastSid };
+        const result = await this.withAdvisoryLock(
+          REFRESH_LOCK_KEY,
+          async tx => {
+            const workspaces = await this.fetchWorkspaceBatch(
+              tx,
+              lastSid,
+              FULL_REFRESH_BATCH_SIZE
+            );
+            if (!workspaces.length) {
+              return { processed: 0, lastSid };
+            }
+
+            const ids = workspaces.map(({ id }) => id);
+            await this.upsertStats(tx, ids);
+
+            return {
+              processed: ids.length,
+              lastSid: workspaces[workspaces.length - 1].sid,
+            };
           }
-
-          const ids = workspaces.map(({ id }) => id);
-          await this.upsertStats(tx, ids);
-
-          return {
-            processed: ids.length,
-            lastSid: workspaces[workspaces.length - 1].sid,
-          };
-        });
+        );
 
         if (!result) {
           this.logger.debug(
@@ -126,10 +130,13 @@ export class WorkspaceStatsJob {
     }
 
     try {
-      const snapshotted = await this.withAdvisoryLock(async tx => {
-        await this.writeDailySnapshot(tx);
-        return true;
-      });
+      const snapshotted = await this.withAdvisoryLock(
+        SNAPSHOT_LOCK_KEY,
+        async tx => {
+          await this.writeDailySnapshot(tx);
+          return true;
+        }
+      );
       if (snapshotted) {
         this.logger.debug('Wrote daily workspace admin stats snapshot');
       }
@@ -142,9 +149,10 @@ export class WorkspaceStatsJob {
   }
 
   private async withAdvisoryLock<T>(
+    lockKey: number,
     callback: (tx: Prisma.TransactionClient) => Promise<T>
   ): Promise<T | null> {
-    const lockIdSql = Prisma.sql`(${LOCK_NAMESPACE}::bigint << 32) + ${LOCK_KEY}::bigint`;
+    const lockIdSql = Prisma.sql`(${LOCK_NAMESPACE}::bigint << 32) + ${lockKey}::bigint`;
 
     return await this.prisma.$transaction(
       async tx => {
