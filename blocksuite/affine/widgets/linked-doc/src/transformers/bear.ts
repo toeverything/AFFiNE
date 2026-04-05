@@ -13,6 +13,7 @@ import JSZip from 'jszip';
 
 import { createCollectionDocCRUD } from './markdown.js';
 
+/** Recursive tree node representing a tag-based folder hierarchy. */
 type FolderHierarchy = {
   name: string;
   path: string;
@@ -521,6 +522,7 @@ async function importBearBackup({
   return { docIds, tags: tagDocMap, folderHierarchy };
 }
 
+/** Public API for importing Bear .bear2bk backup archives. */
 export const BearTransformer = {
   importBearBackup,
 };
