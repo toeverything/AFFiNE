@@ -32,3 +32,9 @@ Repo-wide agent instructions.
 - Call it out.
 - Explain why.
 - Ask before proceeding.
+
+## Git Safety
+
+- Never commit changes by yourself.
+- Never push changes by yourself.
+- Commit or push only when the user explicitly asks.
