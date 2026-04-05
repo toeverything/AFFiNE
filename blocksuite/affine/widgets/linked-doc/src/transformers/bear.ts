@@ -11,6 +11,8 @@ import type { ExtensionType, Schema, Workspace } from '@blocksuite/store';
 import { extMimeMap, Transformer } from '@blocksuite/store';
 import JSZip from 'jszip';
 
+import { createCollectionDocCRUD } from './markdown.js';
+
 type FolderHierarchy = {
   name: string;
   path: string;
@@ -451,11 +453,7 @@ async function importBearBackup({
       const job = new Transformer({
         schema,
         blobCRUD: collection.blobSync,
-        docCRUD: {
-          create: (id: string) => collection.createDoc(id).getStore({ id }),
-          get: (id: string) => collection.getDoc(id)?.getStore({ id }) ?? null,
-          delete: (id: string) => collection.removeDoc(id),
-        },
+        docCRUD: createCollectionDocCRUD(collection),
         middlewares: [
           defaultImageProxyMiddleware,
           fileNameMiddleware(title),
