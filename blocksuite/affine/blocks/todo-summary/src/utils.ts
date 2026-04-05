@@ -2,12 +2,23 @@ import { type ListBlockModel, NoteDisplayMode } from '@blocksuite/affine-model';
 import type { BlockModel } from '@blocksuite/store';
 
 const EMBED_BLOCK_PREFIX = 'affine:embed-';
+const TODO_TAG_PATTERN = /#[^\s]+/g;
+const todoSummaryStatusFilters = ['all', 'done', 'not-done'] as const;
+
+type TodoSummaryStatusFilter = (typeof todoSummaryStatusFilters)[number];
 
 export type TodoSummaryRow = {
   todoId: string;
   text: string;
   checked: boolean;
   nestingLevel: number;
+  tags: string[];
+};
+
+export type TodoSummaryRowFilter = {
+  statusFilter: TodoSummaryStatusFilter;
+  selectedTags: string[];
+  searchQuery: string;
 };
 
 export function createNestingIndicators(nestingLevel: number) {
@@ -42,6 +53,55 @@ export function collectPageTodoRows(
   return rows;
 }
 
+export function filterTodoRows(
+  rows: TodoSummaryRow[],
+  { searchQuery, selectedTags, statusFilter }: TodoSummaryRowFilter
+) {
+  const normalizedSearch = searchQuery.trim().toLowerCase();
+  const normalizedTags = normalizeTodoTags(selectedTags);
+
+  return rows.filter(row => {
+    if (statusFilter === 'done' && !row.checked) {
+      return false;
+    }
+
+    if (statusFilter === 'not-done' && row.checked) {
+      return false;
+    }
+
+    if (
+      normalizedTags.length > 0 &&
+      !normalizedTags.every(tag => row.tags.includes(tag))
+    ) {
+      return false;
+    }
+
+    if (
+      normalizedSearch &&
+      !row.text.toLowerCase().includes(normalizedSearch)
+    ) {
+      return false;
+    }
+
+    return true;
+  });
+}
+
+export function getTodoSummaryAvailableTags(rows: TodoSummaryRow[]) {
+  return Array.from(new Set(rows.flatMap(row => row.tags))).sort((a, b) =>
+    a.localeCompare(b)
+  );
+}
+
+export function getTodoSummaryTagCounts(rows: TodoSummaryRow[]) {
+  return rows.reduce<Record<string, number>>((counts, row) => {
+    row.tags.forEach(tag => {
+      counts[tag] = (counts[tag] ?? 0) + 1;
+    });
+    return counts;
+  }, {});
+}
+
 export function insertTodoSummaryBlock(model: BlockModel) {
   const parent = model.store.getParent(model);
   if (!parent) {
@@ -66,11 +126,13 @@ function walkBlockTree(
   }
 
   if (isTodoBlock(block)) {
+    const text = block.props.text?.toString() ?? '';
     rows.push({
       todoId: block.id,
-      text: block.props.text?.toString() ?? '',
+      text,
       checked: !!block.props.checked,
       nestingLevel: depth,
+      tags: extractTodoTags(text),
     });
   }
 
@@ -84,5 +146,19 @@ function isVisibleNote(block: BlockModel) {
     block.flavour === 'affine:note' &&
     (block as { props: { displayMode?: NoteDisplayMode } }).props
       .displayMode !== NoteDisplayMode.EdgelessOnly
+  );
+}
+
+function extractTodoTags(text: string) {
+  return normalizeTodoTags(
+    Array.from(text.matchAll(TODO_TAG_PATTERN), match => match[0].slice(1))
+  );
+}
+
+function normalizeTodoTags(tags: string[]) {
+  return Array.from(
+    new Set(
+      tags.map(tag => tag.trim().toLowerCase()).filter(tag => tag.length > 0)
+    )
   );
 }
