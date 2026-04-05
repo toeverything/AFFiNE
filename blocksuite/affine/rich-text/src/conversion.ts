@@ -116,7 +116,7 @@ export const textConversionConfigs: TextConversionConfig[] = [
     type: undefined,
     name: 'Code Block',
     description: 'Code snippet with formatting.',
-    hotkey: [`Mod-Alt-c`, `Mod-Shift-c`],
+    hotkey: [`Mod-Alt-c`],
     icon: CodeBlockIcon,
   },
   {
