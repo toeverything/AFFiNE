@@ -71,10 +71,10 @@ export const processTable = (
   cells: Record<string, TableCellSerialized>
 ): Table => {
   const sortedColumns = Object.values(columns).sort((a, b) =>
-    a.order.localeCompare(b.order)
+    a.order > b.order ? 1 : -1
   );
   const sortedRows = Object.values(rows).sort((a, b) =>
-    a.order.localeCompare(b.order)
+    a.order > b.order ? 1 : -1
   );
   const table: Table = {
     rows: [],
