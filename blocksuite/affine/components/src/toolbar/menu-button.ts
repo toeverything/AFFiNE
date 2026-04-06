@@ -187,6 +187,7 @@ export class EditorMenuAction extends LitElement {
       color: var(--affine-text-primary-color);
       font-weight: 400;
       min-height: 30px; // 22 + 8
+      user-select: none;
     }
 
     :host(:hover),
