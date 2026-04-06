@@ -1,4 +1,5 @@
-import { Framework, LiveData, Service } from '@toeverything/infra';
+import { WorkbenchService } from '@affine/core/modules/workbench';
+import { Framework, LiveData } from '@toeverything/infra';
 import { describe, expect, test, vi } from 'vitest';
 
 import { CommentPanelService } from './comment-panel-service';
@@ -12,18 +13,16 @@ describe('CommentPanelService', () => {
     } | null>(null);
     const framework = new Framework();
 
-    class MockWorkbenchService extends Service {
-      workbench = {
-        activeView$: new LiveData({
-          activeSidebarTab,
-        }),
-        openSidebar,
-      };
-    }
-
     framework
-      .service(MockWorkbenchService)
-      .service(CommentPanelService, [MockWorkbenchService]);
+      .service(WorkbenchService, {
+        workbench: {
+          activeView$: new LiveData({
+            activeSidebarTab,
+          }),
+          openSidebar,
+        },
+      } as unknown as WorkbenchService)
+      .service(CommentPanelService, [WorkbenchService]);
 
     const service = framework.provider().get(CommentPanelService);
 
