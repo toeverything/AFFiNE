@@ -21,6 +21,7 @@ let ac: WorkspaceAccessController;
 let policy: WorkspacePolicyService;
 let user: User;
 let ws: Workspace;
+let underReviewUserId: string;
 
 test.before(async () => {
   module = await createTestingModule({ imports: [PermissionModule] });
@@ -39,90 +40,114 @@ test.after.always(async () => {
   await module.close();
 });
 
-test('should get null role', async t => {
-  const role = await ac.getRole({
-    workspaceId: 'ws1',
-    userId: 'u1',
+const roleCases: Array<{
+  title: string;
+  setup?: () => Promise<void>;
+  resource: () => {
+    workspaceId: string;
+    userId: string;
+    allowLocal?: boolean;
+  };
+  expectedRole: WorkspaceRole | null;
+}> = [
+  {
+    title: 'should get null role',
+    resource: () => ({
+      workspaceId: 'ws1',
+      userId: 'u1',
+    }),
+    expectedRole: null,
+  },
+  {
+    title: 'should return null if role is not accepted',
+    setup: async () => {
+      const u2 = await models.user.create({
+        email: `${randomUUID()}@affine.pro`,
+      });
+      underReviewUserId = u2.id;
+      await models.workspaceUser.set(ws.id, u2.id, WorkspaceRole.Collaborator, {
+        status: WorkspaceMemberStatus.UnderReview,
+      });
+    },
+    resource: () => ({
+      workspaceId: ws.id,
+      userId: underReviewUserId,
+    }),
+    expectedRole: null,
+  },
+  {
+    title:
+      'should return [Owner] role if workspace is not found but local is allowed',
+    resource: () => ({
+      workspaceId: 'ws1',
+      userId: 'u1',
+      allowLocal: true,
+    }),
+    expectedRole: WorkspaceRole.Owner,
+  },
+  {
+    title: 'should fallback to [External] if workspace is public',
+    setup: async () => {
+      await models.workspace.update(ws.id, {
+        public: true,
+      });
+    },
+    resource: () => ({
+      workspaceId: ws.id,
+      userId: 'random-user-id',
+    }),
+    expectedRole: WorkspaceRole.External,
+  },
+  {
+    title: 'should return null if workspace is public but sharing disabled',
+    setup: async () => {
+      await models.workspace.update(ws.id, {
+        public: true,
+        enableSharing: false,
+      });
+    },
+    resource: () => ({
+      workspaceId: ws.id,
+      userId: 'random-user-id',
+    }),
+    expectedRole: null,
+  },
+  {
+    title: 'should return null even workspace has public doc',
+    setup: async () => {
+      await models.doc.publish(ws.id, 'doc1');
+    },
+    resource: () => ({
+      workspaceId: ws.id,
+      userId: 'random-user-id',
+    }),
+    expectedRole: null,
+  },
+  {
+    title:
+      'should return null even workspace has public doc when sharing disabled',
+    setup: async () => {
+      await models.doc.publish(ws.id, 'doc1');
+      await models.workspace.update(ws.id, { enableSharing: false });
+    },
+    resource: () => ({
+      workspaceId: ws.id,
+      userId: 'random-user-id',
+    }),
+    expectedRole: null,
+  },
+];
+
+for (const roleCase of roleCases) {
+  test(roleCase.title, async t => {
+    await roleCase.setup?.();
+    const role = await ac.getRole(roleCase.resource());
+
+    t.is(role, roleCase.expectedRole);
   });
+}
 
-  t.is(role, null);
-});
-
-test('should return null if role is not accepted', async t => {
-  const u2 = await models.user.create({ email: `${randomUUID()}@affine.pro` });
-  await models.workspaceUser.set(ws.id, u2.id, WorkspaceRole.Collaborator, {
-    status: WorkspaceMemberStatus.UnderReview,
-  });
-
-  const role = await ac.getRole({
-    workspaceId: ws.id,
-    userId: u2.id,
-  });
-
-  t.is(role, null);
-});
-
-test('should return [Owner] role if workspace is not found but local is allowed', async t => {
-  const role = await ac.getRole({
-    workspaceId: 'ws1',
-    userId: 'u1',
-    allowLocal: true,
-  });
-
-  t.is(role, WorkspaceRole.Owner);
-});
-
-test('should fallback to [External] if workspace is public', async t => {
-  await models.workspace.update(ws.id, {
-    public: true,
-  });
-
-  const role = await ac.getRole({
-    workspaceId: ws.id,
-    userId: 'random-user-id',
-  });
-
-  t.is(role, WorkspaceRole.External);
-});
-
-test('should return null if workspace is public but sharing disabled', async t => {
-  await models.workspace.update(ws.id, {
-    public: true,
-    enableSharing: false,
-  });
-
-  const role = await ac.getRole({
-    workspaceId: ws.id,
-    userId: 'random-user-id',
-  });
-
-  t.is(role, null);
-});
-
-test('should return null even workspace has public doc', async t => {
-  await models.doc.publish(ws.id, 'doc1');
-
-  const role = await ac.getRole({
-    workspaceId: ws.id,
-    userId: 'random-user-id',
-  });
-
-  t.is(role, null);
-});
-
-test('should return null even workspace has public doc when sharing disabled', async t => {
-  await models.doc.publish(ws.id, 'doc1');
-  await models.workspace.update(ws.id, { enableSharing: false });
-
-  const role = await ac.getRole({
-    workspaceId: ws.id,
-    userId: 'random-user-id',
-  });
-
-  t.is(role, null);
-});
-
-test('should return mapped external permission for workspace has public docs', async t => {
+test('should return mapped null permission even workspace has public docs', async t => {
   await models.doc.publish(ws.id, 'doc1');
 
   const { permissions } = await ac.role({
@@ -130,9 +155,35 @@ test('should return mapped external permission for workspace has public docs', a
     userId: 'random-user-id',
   });
 
-  t.deepEqual(
-    permissions,
-    mapWorkspaceRoleToPermissions(WorkspaceRole.External)
+  t.deepEqual(permissions, mapWorkspaceRoleToPermissions(null));
+});
+
+test('should deny external read assert even workspace has public docs', async t => {
+  await models.doc.publish(ws.id, 'doc1');
+
+  await t.throwsAsync(
+    ac.assert(
+      {
+        workspaceId: ws.id,
+        userId: 'random-user-id',
+      },
+      'Workspace.Read'
+    )
+  );
+});
+
+test('should deny external read assert when sharing disabled even if workspace has public docs', async t => {
+  await models.doc.publish(ws.id, 'doc1');
+  await models.workspace.update(ws.id, { enableSharing: false });
+
+  await t.throwsAsync(
+    ac.assert(
+      {
+        workspaceId: ws.id,
+        userId: 'random-user-id',
+      },
+      'Workspace.Read'
+    )
   );
 });
 

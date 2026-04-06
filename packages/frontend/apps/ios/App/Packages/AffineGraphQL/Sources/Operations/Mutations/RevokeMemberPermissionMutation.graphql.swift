@@ -37,6 +37,9 @@ public class RevokeMemberPermissionMutation: GraphQLMutation {
         "userId": .variable("userId")
       ]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      RevokeMemberPermissionMutation.Data.self
+    ] }
 
     public var revokeMember: Bool { __data["revokeMember"] }
   }

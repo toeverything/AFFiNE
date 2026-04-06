@@ -10,7 +10,11 @@ import { HttpConnection } from './http';
 
 interface CloudDocStorageOptions extends DocStorageOptions {
   serverBaseUrl: string;
+  publicRootDocId?: string;
 }
+
+const isShareModePrivateSystemDoc = (docId: string) =>
+  docId.startsWith('db$') || docId.startsWith('userdata$');
 
 export class StaticCloudDocStorage extends DocStorageBase<CloudDocStorageOptions> {
   static readonly identifier = 'StaticCloudDocStorage';
@@ -46,15 +50,26 @@ export class StaticCloudDocStorage extends DocStorageBase<CloudDocStorageOptions
     docId: string
   ): Promise<DocRecord | null> {
     try {
-      const arrayBuffer = await this.connection.fetchArrayBuffer(
-        `/api/workspaces/${this.spaceId}/docs/${docId}`,
-        {
-          priority: 'high',
-          headers: {
-            Accept: 'application/octet-stream', // this is necessary for ios native fetch to return arraybuffer
-          },
-        }
-      );
+      if (
+        this.options.publicRootDocId &&
+        docId !== this.spaceId &&
+        isShareModePrivateSystemDoc(docId)
+      ) {
+        return null;
+      }
+
+      const path =
+        docId === this.spaceId && this.options.publicRootDocId
+          ? `/api/workspaces/${this.spaceId}/public-docs/${this.options.publicRootDocId}/root-doc`
+          : this.options.publicRootDocId
+            ? `/api/workspaces/${this.spaceId}/public-docs/${docId}`
+            : `/api/workspaces/${this.spaceId}/docs/${docId}`;
+      const arrayBuffer = await this.connection.fetchArrayBuffer(path, {
+        priority: 'high',
+        headers: {
+          Accept: 'application/octet-stream', // this is necessary for ios native fetch to return arraybuffer
+        },
+      });
       if (!arrayBuffer) {
         return null;
       }

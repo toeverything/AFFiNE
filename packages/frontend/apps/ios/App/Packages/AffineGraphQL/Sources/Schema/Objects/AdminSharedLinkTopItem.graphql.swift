@@ -4,8 +4,8 @@
 import ApolloAPI
 
 public extension Objects {
-  static let CopilotPromptMessageType = ApolloAPI.Object(
-    typename: "CopilotPromptMessageType",
+  static let AdminSharedLinkTopItem = ApolloAPI.Object(
+    typename: "AdminSharedLinkTopItem",
     implementedInterfaces: [],
     keyFields: nil
   )

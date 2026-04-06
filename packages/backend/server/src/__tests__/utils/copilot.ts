@@ -1,3 +1,4 @@
+import { ContextCategories } from '../../models';
 import { PromptConfig, PromptMessage } from '../../plugins/copilot/providers';
 import { NodeExecutorType } from '../../plugins/copilot/workflow/executor';
 import {
@@ -318,6 +319,33 @@ export async function addContextDoc(
   return res.addContextDoc;
 }
 
+export async function addContextCategory(
+  app: TestingApp,
+  contextId: string,
+  type: ContextCategories,
+  categoryId: string,
+  docs: string[]
+): Promise<{ type: string; id: string; docs: { id: string }[] }> {
+  const graphqlType =
+    type === ContextCategories.Collection ? 'Collection' : 'Tag';
+  const res = await app.gql(
+    `
+      mutation addContextCategory($options: AddContextCategoryInput!) {
+        addContextCategory(options: $options) {
+          type
+          id
+          docs {
+            id
+          }
+        }
+      }
+    `,
+    { options: { contextId, type: graphqlType, categoryId, docs } }
+  );
+
+  return res.addContextCategory;
+}
+
 export async function removeContextDoc(
   app: TestingApp,
   contextId: string,
@@ -388,6 +416,50 @@ export async function listContextDocAndFiles(
   const { docs, files } = res.currentUser?.copilot?.contexts?.[0] || {};
 
   return { docs, files };
+}
+
+export async function listContextCategories(
+  app: TestingApp,
+  workspaceId: string,
+  sessionId: string,
+  contextId: string
+): Promise<
+  | {
+      collections: {
+        type: string;
+        id: string;
+        docs: {
+          id: string;
+          status: string;
+          createdAt: number;
+        }[];
+      }[];
+    }
+  | undefined
+> {
+  const res = await app.gql(`
+        query {
+          currentUser {
+            copilot(workspaceId: "${workspaceId}") {
+              contexts(sessionId: "${sessionId}", contextId: "${contextId}") {
+                collections {
+                  type
+                  id
+                  docs {
+                    id
+                    status
+                    createdAt
+                  }
+                }
+              }
+            }
+          }
+        }
+      `);
+
+  const { collections } = res.currentUser?.copilot?.contexts?.[0] || {};
+
+  return { collections };
 }
 
 export async function submitAudioTranscription(

@@ -20,6 +20,9 @@ public class NotificationCountQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("currentUser", CurrentUser?.self),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      NotificationCountQuery.Data.self
+    ] }
 
     /// Get current user
     public var currentUser: CurrentUser? { __data["currentUser"] }
@@ -36,6 +39,9 @@ public class NotificationCountQuery: GraphQLQuery {
         .field("__typename", String.self),
         .field("notifications", Notifications.self, arguments: ["pagination": ["first": 1]]),
       ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        NotificationCountQuery.Data.CurrentUser.self
+      ] }
 
       /// Get current user notifications
       public var notifications: Notifications { __data["notifications"] }
@@ -51,6 +57,9 @@ public class NotificationCountQuery: GraphQLQuery {
         public static var __selections: [ApolloAPI.Selection] { [
           .field("__typename", String.self),
           .field("totalCount", Int.self),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          NotificationCountQuery.Data.CurrentUser.Notifications.self
         ] }
 
         public var totalCount: Int { __data["totalCount"] }

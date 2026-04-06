@@ -55,6 +55,7 @@ export const AFFINE_PRO_LICENSE_AES_KEY =
 export const createDocWithMarkdown = serverNativeModule.createDocWithMarkdown;
 export const updateDocWithMarkdown = serverNativeModule.updateDocWithMarkdown;
 export const addDocToRootDoc = serverNativeModule.addDocToRootDoc;
+export const buildPublicRootDoc = serverNativeModule.buildPublicRootDoc;
 export const updateDocTitle = serverNativeModule.updateDocTitle;
 export const updateDocProperties = serverNativeModule.updateDocProperties;
 export const updateRootDocMetaTitle = serverNativeModule.updateRootDocMetaTitle;

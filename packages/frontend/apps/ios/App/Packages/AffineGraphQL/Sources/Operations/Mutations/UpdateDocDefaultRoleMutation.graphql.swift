@@ -26,6 +26,9 @@ public class UpdateDocDefaultRoleMutation: GraphQLMutation {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("updateDocDefaultRole", Bool.self, arguments: ["input": .variable("input")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      UpdateDocDefaultRoleMutation.Data.self
+    ] }
 
     public var updateDocDefaultRole: Bool { __data["updateDocDefaultRole"] }
   }

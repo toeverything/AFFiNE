@@ -42,6 +42,9 @@ public class GetCopilotHistoryIdsQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("currentUser", CurrentUser?.self),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      GetCopilotHistoryIdsQuery.Data.self
+    ] }
 
     /// Get current user
     public var currentUser: CurrentUser? { __data["currentUser"] }
@@ -57,6 +60,9 @@ public class GetCopilotHistoryIdsQuery: GraphQLQuery {
       public static var __selections: [ApolloAPI.Selection] { [
         .field("__typename", String.self),
         .field("copilot", Copilot.self, arguments: ["workspaceId": .variable("workspaceId")]),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        GetCopilotHistoryIdsQuery.Data.CurrentUser.self
       ] }
 
       public var copilot: Copilot { __data["copilot"] }
@@ -77,6 +83,9 @@ public class GetCopilotHistoryIdsQuery: GraphQLQuery {
             "options": .variable("options")
           ]),
         ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          GetCopilotHistoryIdsQuery.Data.CurrentUser.Copilot.self
+        ] }
 
         public var chats: Chats { __data["chats"] }
 
@@ -92,6 +101,9 @@ public class GetCopilotHistoryIdsQuery: GraphQLQuery {
             .field("__typename", String.self),
             .field("pageInfo", PageInfo.self),
             .field("edges", [Edge].self),
+          ] }
+          public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+            GetCopilotHistoryIdsQuery.Data.CurrentUser.Copilot.Chats.self
           ] }
 
           public var pageInfo: PageInfo { __data["pageInfo"] }
@@ -111,6 +123,9 @@ public class GetCopilotHistoryIdsQuery: GraphQLQuery {
               .field("hasPreviousPage", Bool.self),
               .field("startCursor", String?.self),
               .field("endCursor", String?.self),
+            ] }
+            public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+              GetCopilotHistoryIdsQuery.Data.CurrentUser.Copilot.Chats.PageInfo.self
             ] }
 
             public var hasNextPage: Bool { __data["hasNextPage"] }
@@ -132,6 +147,9 @@ public class GetCopilotHistoryIdsQuery: GraphQLQuery {
               .field("cursor", String.self),
               .field("node", Node.self),
             ] }
+            public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+              GetCopilotHistoryIdsQuery.Data.CurrentUser.Copilot.Chats.Edge.self
+            ] }
 
             public var cursor: String { __data["cursor"] }
             public var node: Node { __data["node"] }
@@ -149,6 +167,9 @@ public class GetCopilotHistoryIdsQuery: GraphQLQuery {
                 .field("sessionId", String.self),
                 .field("pinned", Bool.self),
                 .field("messages", [Message].self),
+              ] }
+              public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+                GetCopilotHistoryIdsQuery.Data.CurrentUser.Copilot.Chats.Edge.Node.self
               ] }
 
               public var sessionId: String { __data["sessionId"] }
@@ -168,6 +189,9 @@ public class GetCopilotHistoryIdsQuery: GraphQLQuery {
                   .field("id", AffineGraphQL.ID?.self),
                   .field("role", String.self),
                   .field("createdAt", AffineGraphQL.DateTime.self),
+                ] }
+                public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+                  GetCopilotHistoryIdsQuery.Data.CurrentUser.Copilot.Chats.Edge.Node.Message.self
                 ] }
 
                 public var id: AffineGraphQL.ID? { __data["id"] }

@@ -24,10 +24,7 @@ import {
   UserFriendlyError,
 } from '../../../base';
 import { CurrentUser } from '../../../core/auth';
-import {
-  AccessController,
-  WorkspacePolicyService,
-} from '../../../core/permission';
+import { AccessController } from '../../../core/permission';
 import { WorkspaceType } from '../../../core/workspaces';
 import { COPILOT_LOCKER } from '../resolver';
 import { MAX_EMBEDDABLE_SIZE } from '../utils';
@@ -75,7 +72,6 @@ export class CopilotWorkspaceEmbeddingConfigResolver {
   constructor(
     private readonly ac: AccessController,
     private readonly mutex: Mutex,
-    private readonly policy: WorkspacePolicyService,
     private readonly copilotWorkspace: CopilotWorkspaceService
   ) {}
 
@@ -219,11 +215,10 @@ export class CopilotWorkspaceEmbeddingConfigResolver {
     @Args('fileId', { type: () => String })
     fileId: string
   ): Promise<boolean> {
-    await this.policy.assertWorkspaceRoleAction(
-      user.id,
-      workspaceId,
-      'Workspace.Settings.Update'
-    );
+    await this.ac
+      .user(user.id)
+      .workspace(workspaceId)
+      .assert('Workspace.Settings.Update');
 
     return await this.copilotWorkspace.removeFile(workspaceId, fileId);
   }

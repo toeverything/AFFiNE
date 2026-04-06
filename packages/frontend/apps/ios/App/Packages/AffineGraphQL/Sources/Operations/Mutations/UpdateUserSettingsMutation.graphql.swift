@@ -26,6 +26,9 @@ public class UpdateUserSettingsMutation: GraphQLMutation {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("updateSettings", Bool.self, arguments: ["input": .variable("input")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      UpdateUserSettingsMutation.Data.self
+    ] }
 
     /// Update user settings
     public var updateSettings: Bool { __data["updateSettings"] }

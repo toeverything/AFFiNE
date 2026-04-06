@@ -26,6 +26,9 @@ public class GetWorkspacePublicPagesQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("workspace", Workspace.self, arguments: ["id": .variable("workspaceId")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      GetWorkspacePublicPagesQuery.Data.self
+    ] }
 
     /// Get workspace by id
     public var workspace: Workspace { __data["workspace"] }
@@ -41,6 +44,9 @@ public class GetWorkspacePublicPagesQuery: GraphQLQuery {
       public static var __selections: [ApolloAPI.Selection] { [
         .field("__typename", String.self),
         .field("publicDocs", [PublicDoc].self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        GetWorkspacePublicPagesQuery.Data.Workspace.self
       ] }
 
       /// Get public docs of a workspace
@@ -58,6 +64,9 @@ public class GetWorkspacePublicPagesQuery: GraphQLQuery {
           .field("__typename", String.self),
           .field("id", String.self),
           .field("mode", GraphQLEnum<AffineGraphQL.PublicDocMode>.self),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          GetWorkspacePublicPagesQuery.Data.Workspace.PublicDoc.self
         ] }
 
         public var id: String { __data["id"] }

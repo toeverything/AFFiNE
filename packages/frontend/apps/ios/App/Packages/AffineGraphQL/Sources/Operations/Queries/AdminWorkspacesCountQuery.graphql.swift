@@ -26,6 +26,9 @@ public class AdminWorkspacesCountQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("adminWorkspacesCount", Int.self, arguments: ["filter": .variable("filter")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      AdminWorkspacesCountQuery.Data.self
+    ] }
 
     /// Workspaces count for admin
     public var adminWorkspacesCount: Int { __data["adminWorkspacesCount"] }

@@ -40,7 +40,11 @@ import {
   PgWorkspaceDocStorageAdapter,
 } from '../doc';
 import { applyUpdatesWithNative } from '../doc/merge-updates';
-import { AccessController, WorkspaceAction } from '../permission';
+import {
+  AccessController,
+  type DocAction,
+  WorkspaceAction,
+} from '../permission';
 import { DocID } from '../utils/doc';
 
 const SubscribeMessage = (event: string) =>
@@ -302,6 +306,23 @@ export class SpaceSyncGateway
   private rejectJoin(client: Socket) {
     // Give socket.io a chance to flush the ack packet before disconnecting.
     setImmediate(() => client.disconnect());
+  }
+
+  private async assertDocActionAllowed(
+    spaceType: SpaceType,
+    userId: string,
+    spaceId: string,
+    docId: string,
+    action: DocAction
+  ) {
+    if (spaceType === SpaceType.Userspace) {
+      if (spaceId !== userId) {
+        throw new SpaceAccessDenied({ spaceId });
+      }
+      return;
+    }
+
+    await this.ac.user(userId).doc(spaceId, docId).assert(action);
   }
 
   handleConnection(client: Socket) {
@@ -607,9 +628,17 @@ export class SpaceSyncGateway
   @SubscribeMessage('space:delete-doc')
   async onDeleteSpaceDoc(
     @ConnectedSocket() client: Socket,
+    @CurrentUser() user: CurrentUser,
     @MessageBody() { spaceType, spaceId, docId }: DeleteDocMessage
   ) {
     const adapter = this.selectAdapter(client, spaceType);
+    await this.assertDocActionAllowed(
+      spaceType,
+      user.id,
+      spaceId,
+      docId,
+      'Doc.Delete'
+    );
     await adapter.delete(spaceId, docId);
   }
 

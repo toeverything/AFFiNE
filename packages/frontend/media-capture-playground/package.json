@@ -16,7 +16,7 @@
     "@types/multer": "^2.0.0",
     "@types/react": "^19.0.8",
     "@types/react-dom": "^19.0.3",
-    "@vitejs/plugin-react": "^5.0.0",
+    "@vitejs/plugin-react": "^5.2.0",
     "chokidar": "^4.0.3",
     "express": "^5.0.0",
     "express-rate-limit": "^7.1.5",
@@ -30,7 +30,7 @@
     "socket.io-client": "^4.8.3",
     "swr": "^2.3.7",
     "tailwindcss": "^4.1.17",
-    "vite": "^7.2.7"
+    "vite": "^7.3.1"
   },
   "devDependencies": {
     "@types/fs-extra": "^11",

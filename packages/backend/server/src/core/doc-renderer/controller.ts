@@ -11,6 +11,7 @@ import { Models } from '../../models';
 import { htmlSanitize } from '../../native';
 import { Public } from '../auth';
 import { DocReader } from '../doc';
+import { WorkspacePolicyService } from '../permission';
 
 interface RenderOptions {
   title: string;
@@ -59,7 +60,8 @@ export class DocRendererController {
   constructor(
     private readonly doc: DocReader,
     private readonly models: Models,
-    private readonly config: Config
+    private readonly config: Config,
+    private readonly policy: WorkspacePolicyService
   ) {
     this.webAssets = this.readHtmlAssets(join(env.projectRoot, 'static'));
     this.mobileAssets = this.readHtmlAssets(
@@ -72,21 +74,6 @@ export class DocRendererController {
     return createHash('sha256')
       .update(`${workspaceId}:${docId}:${tracker}`)
       .digest('hex');
-  }
-
-  private async allowDocPreview(workspaceId: string, docId: string) {
-    const allowSharing = await this.models.workspace.allowSharing(workspaceId);
-    if (!allowSharing) return false;
-
-    let allowUrlPreview = await this.models.doc.isPublic(workspaceId, docId);
-
-    if (!allowUrlPreview) {
-      // if page is private, but workspace url preview is on
-      allowUrlPreview =
-        await this.models.workspace.allowUrlPreview(workspaceId);
-    }
-
-    return allowUrlPreview;
   }
 
   @Public()
@@ -112,8 +99,11 @@ export class DocRendererController {
       req.accepts().some(t => markdownType.has(t.toLowerCase()))
     ) {
       try {
-        const allowPreview = await this.allowDocPreview(workspaceId, sub);
-        if (!allowPreview) {
+        const canReadMarkdown = await this.policy.canReadSharedDoc(
+          workspaceId,
+          sub
+        );
+        if (!canReadMarkdown) {
           res.status(404).end();
           return;
         }
@@ -172,7 +162,7 @@ export class DocRendererController {
     workspaceId: string,
     docId: string
   ): Promise<RenderOptions | null> {
-    if (await this.allowDocPreview(workspaceId, docId)) {
+    if (await this.policy.canPreviewDoc(workspaceId, docId)) {
       return this.doc.getDocContent(workspaceId, docId);
     }
 
@@ -182,24 +172,18 @@ export class DocRendererController {
   private async getWorkspaceContent(
     workspaceId: string
   ): Promise<RenderOptions | null> {
-    const allowSharing = await this.models.workspace.allowSharing(workspaceId);
-    if (!allowSharing) {
-      return null;
-    }
+    const canPreviewWorkspace =
+      await this.policy.canPreviewWorkspace(workspaceId);
+    if (!canPreviewWorkspace) return null;
 
-    const allowUrlPreview =
-      await this.models.workspace.allowUrlPreview(workspaceId);
+    const workspaceContent = await this.doc.getWorkspaceContent(workspaceId);
 
-    if (allowUrlPreview) {
-      const workspaceContent = await this.doc.getWorkspaceContent(workspaceId);
-
-      if (workspaceContent) {
-        return {
-          title: workspaceContent.name,
-          summary: '',
-          avatar: workspaceContent.avatarUrl,
-        };
-      }
+    if (workspaceContent) {
+      return {
+        title: workspaceContent.name,
+        summary: '',
+        avatar: workspaceContent.avatarUrl,
+      };
     }
 
     return null;

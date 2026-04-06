@@ -20,6 +20,9 @@ public class CopilotQuotaQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("currentUser", CurrentUser?.self),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      CopilotQuotaQuery.Data.self
+    ] }
 
     /// Get current user
     public var currentUser: CurrentUser? { __data["currentUser"] }
@@ -36,6 +39,9 @@ public class CopilotQuotaQuery: GraphQLQuery {
         .field("__typename", String.self),
         .field("copilot", Copilot.self),
       ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        CopilotQuotaQuery.Data.CurrentUser.self
+      ] }
 
       public var copilot: Copilot { __data["copilot"] }
 
@@ -50,6 +56,9 @@ public class CopilotQuotaQuery: GraphQLQuery {
         public static var __selections: [ApolloAPI.Selection] { [
           .field("__typename", String.self),
           .field("quota", Quota.self),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          CopilotQuotaQuery.Data.CurrentUser.Copilot.self
         ] }
 
         /// Get the quota of the user in the workspace
@@ -67,6 +76,9 @@ public class CopilotQuotaQuery: GraphQLQuery {
             .field("__typename", String.self),
             .field("limit", AffineGraphQL.SafeInt?.self),
             .field("used", AffineGraphQL.SafeInt.self),
+          ] }
+          public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+            CopilotQuotaQuery.Data.CurrentUser.Copilot.Quota.self
           ] }
 
           public var limit: AffineGraphQL.SafeInt? { __data["limit"] }
