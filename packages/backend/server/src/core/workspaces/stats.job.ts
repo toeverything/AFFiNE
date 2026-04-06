@@ -6,9 +6,10 @@ import { metrics } from '../../base';
 
 const LOCK_NAMESPACE = 97_301;
 const REFRESH_LOCK_KEY = 1;
-const SNAPSHOT_LOCK_KEY = 2;
 const DIRTY_BATCH_SIZE = 500;
 const FULL_REFRESH_BATCH_SIZE = 2000;
+const SNAPSHOT_RETRY_DELAY_MS = 5_000;
+const SNAPSHOT_RETRY_TIMES = 12;
 const TRANSACTION_TIMEOUT_MS = 120_000;
 
 @Injectable()
@@ -130,15 +131,13 @@ export class WorkspaceStatsJob {
     }
 
     try {
-      const snapshotted = await this.withAdvisoryLock(
-        SNAPSHOT_LOCK_KEY,
-        async tx => {
-          await this.writeDailySnapshot(tx);
-          return true;
-        }
-      );
+      const snapshotted = await this.writeDailySnapshotWithRetry();
       if (snapshotted) {
         this.logger.debug('Wrote daily workspace admin stats snapshot');
+      } else {
+        this.logger.warn(
+          'Skipped daily workspace admin stats snapshot after retrying lock acquisition'
+        );
       }
     } catch (error) {
       this.logger.error(
@@ -175,6 +174,30 @@ export class WorkspaceStatsJob {
         timeout: TRANSACTION_TIMEOUT_MS,
       }
     );
+  }
+
+  private async writeDailySnapshotWithRetry() {
+    for (let attempt = 0; attempt < SNAPSHOT_RETRY_TIMES; attempt++) {
+      const snapshotted = await this.withAdvisoryLock(
+        REFRESH_LOCK_KEY,
+        async tx => {
+          await this.writeDailySnapshot(tx);
+          return true;
+        }
+      );
+
+      if (snapshotted) {
+        return true;
+      }
+
+      if (attempt < SNAPSHOT_RETRY_TIMES - 1) {
+        await new Promise(resolve =>
+          setTimeout(resolve, SNAPSHOT_RETRY_DELAY_MS)
+        );
+      }
+    }
+
+    return false;
   }
 
   private async loadDirty(

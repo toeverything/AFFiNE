@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import Sinon from 'sinon';
 
 import { app, e2e, Mockers } from '../test';
 
@@ -392,27 +393,31 @@ e2e(
 e2e(
   'adminDashboard should carry forward missing sync and storage samples',
   async t => {
-    const admin = await app.create(Mockers.User, {
-      feature: 'administrator',
-    });
-    await app.login(admin);
+    const now = new Date('2026-04-05T08:55:00.000Z');
+    const clock = Sinon.useFakeTimers({ now, toFake: ['Date'] });
 
-    const owner = await app.create(Mockers.User);
-    const workspace = await app.create(Mockers.Workspace, {
-      owner: { id: owner.id },
-    });
+    try {
+      const admin = await app.create(Mockers.User, {
+        feature: 'administrator',
+      });
+      await app.login(admin);
 
-    const db = app.get(PrismaClient);
-    await ensureAnalyticsTables(db);
+      const owner = await app.create(Mockers.User);
+      const workspace = await app.create(Mockers.Workspace, {
+        owner: { id: owner.id },
+      });
 
-    const minute = new Date();
-    minute.setSeconds(0, 0);
-    const sampleStartMinute = new Date(minute.getTime() - 30 * 60 * 1000);
-    const sampleEndMinute = new Date(
-      sampleStartMinute.getTime() + 2 * 60 * 1000
-    );
+      const db = app.get(PrismaClient);
+      await ensureAnalyticsTables(db);
 
-    await db.$executeRaw`
+      const minute = new Date();
+      minute.setSeconds(0, 0);
+      const sampleStartMinute = new Date(minute.getTime() - 30 * 60 * 1000);
+      const sampleEndMinute = new Date(
+        sampleStartMinute.getTime() + 2 * 60 * 1000
+      );
+
+      await db.$executeRaw`
       INSERT INTO sync_active_users_minutely (minute_ts, active_users, updated_at)
       VALUES
         (${sampleStartMinute}, 5, NOW()),
@@ -421,7 +426,7 @@ e2e(
       DO UPDATE SET active_users = EXCLUDED.active_users, updated_at = EXCLUDED.updated_at
     `;
 
-    await db.$executeRaw`
+      await db.$executeRaw`
       INSERT INTO workspace_admin_stats (
         workspace_id, snapshot_count, snapshot_size, blob_count, blob_size, member_count, public_page_count, features, updated_at
       )
@@ -438,13 +443,19 @@ e2e(
         updated_at = EXCLUDED.updated_at
     `;
 
-    const today = new Date();
-    const currentDay = new Date(
-      Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate())
-    );
-    const twoDaysAgo = new Date(currentDay.getTime() - 2 * 24 * 60 * 60 * 1000);
+      const today = new Date();
+      const currentDay = new Date(
+        Date.UTC(
+          today.getUTCFullYear(),
+          today.getUTCMonth(),
+          today.getUTCDate()
+        )
+      );
+      const twoDaysAgo = new Date(
+        currentDay.getTime() - 2 * 24 * 60 * 60 * 1000
+      );
 
-    await db.$executeRaw`
+      await db.$executeRaw`
       INSERT INTO workspace_admin_stats_daily (
         workspace_id, date, snapshot_size, blob_size, member_count, updated_at
       )
@@ -457,8 +468,8 @@ e2e(
         updated_at = EXCLUDED.updated_at
     `;
 
-    const result = await gql(
-      `
+      const result = await gql(
+        `
       query AdminDashboard($input: AdminDashboardInput) {
         adminDashboard(input: $input) {
           syncActiveUsers
@@ -479,40 +490,98 @@ e2e(
         }
       }
     `,
-      {
-        input: {
-          storageHistoryDays: 3,
-          syncHistoryHours: 2,
-        },
-      }
-    );
+        {
+          input: {
+            storageHistoryDays: 3,
+            syncHistoryHours: 2,
+          },
+        }
+      );
 
-    t.falsy(result.errors);
-    const dashboard = result.data!.adminDashboard;
-    t.is(dashboard.syncActiveUsers, 7);
-    const missingMinute = new Date(sampleStartMinute.getTime() + 60 * 1000);
-    t.is(
-      dashboard.syncActiveUsersTimeline.find(
-        (point: { minute: string }) =>
-          point.minute === missingMinute.toISOString()
-      )?.activeUsers,
-      5
-    );
-    const workspaceHistory = dashboard.workspaceStorageHistory.map(
-      (point: { value: number }) => point.value
-    );
-    const blobHistory = dashboard.blobStorageHistory.map(
-      (point: { value: number }) => point.value
-    );
-    t.is(workspaceHistory.length, 3);
-    t.is(blobHistory.length, 3);
-    t.is(workspaceHistory[0], workspaceHistory[1]);
-    t.is(blobHistory[0], blobHistory[1]);
-    t.is(
-      workspaceHistory[workspaceHistory.length - 1],
-      dashboard.workspaceStorageBytes
-    );
-    t.is(blobHistory[blobHistory.length - 1], dashboard.blobStorageBytes);
+      t.falsy(result.errors);
+      const dashboard = result.data!.adminDashboard;
+      t.is(dashboard.syncActiveUsers, 7);
+      const missingMinute = new Date(sampleStartMinute.getTime() + 60 * 1000);
+      t.is(
+        dashboard.syncActiveUsersTimeline.find(
+          (point: { minute: string }) =>
+            point.minute === missingMinute.toISOString()
+        )?.activeUsers,
+        5
+      );
+      const workspaceHistory = dashboard.workspaceStorageHistory.map(
+        (point: { value: number }) => point.value
+      );
+      const blobHistory = dashboard.blobStorageHistory.map(
+        (point: { value: number }) => point.value
+      );
+      t.is(workspaceHistory.length, 3);
+      t.is(blobHistory.length, 3);
+      t.is(workspaceHistory[0], workspaceHistory[1]);
+      t.is(blobHistory[0], blobHistory[1]);
+      t.is(
+        workspaceHistory[workspaceHistory.length - 1],
+        dashboard.workspaceStorageBytes
+      );
+      t.is(blobHistory[blobHistory.length - 1], dashboard.blobStorageBytes);
+    } finally {
+      clock.restore();
+    }
+  }
+);
+
+e2e(
+  'adminDashboard should not backfill sync samples older than the requested window',
+  async t => {
+    const now = new Date('2026-04-05T08:55:00.000Z');
+    const clock = Sinon.useFakeTimers({ now, toFake: ['Date'] });
+
+    try {
+      const admin = await app.create(Mockers.User, {
+        feature: 'administrator',
+      });
+      await app.login(admin);
+
+      const db = app.get(PrismaClient);
+      await ensureAnalyticsTables(db);
+
+      const staleMinute = new Date('2026-04-05T05:55:00.000Z');
+      await db.$executeRaw`
+        INSERT INTO sync_active_users_minutely (minute_ts, active_users, updated_at)
+        VALUES (${staleMinute}, 9, NOW())
+        ON CONFLICT (minute_ts)
+        DO UPDATE SET active_users = EXCLUDED.active_users, updated_at = EXCLUDED.updated_at
+      `;
+
+      const result = await gql(
+        `
+          query AdminDashboard($input: AdminDashboardInput) {
+            adminDashboard(input: $input) {
+              syncActiveUsers
+              syncActiveUsersTimeline {
+                activeUsers
+              }
+            }
+          }
+        `,
+        {
+          input: {
+            syncHistoryHours: 1,
+          },
+        }
+      );
+
+      t.falsy(result.errors);
+      const dashboard = result.data!.adminDashboard;
+      t.is(dashboard.syncActiveUsers, 0);
+      t.true(
+        dashboard.syncActiveUsersTimeline.every(
+          (point: { activeUsers: number }) => point.activeUsers === 0
+        )
+      );
+    } finally {
+      clock.restore();
+    }
   }
 );
 

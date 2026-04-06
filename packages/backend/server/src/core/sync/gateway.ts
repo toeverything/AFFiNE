@@ -215,6 +215,8 @@ export class SpaceSyncGateway
   private unresolvedPresenceSockets = 0;
   private flushTimer?: NodeJS.Timeout;
   private activeUsersFlushTimer?: NodeJS.Timeout;
+  private activeUsersFlushInFlight = false;
+  private activeUsersFlushQueued = false;
 
   constructor(
     private readonly ac: AccessController,
@@ -228,11 +230,7 @@ export class SpaceSyncGateway
   onModuleInit() {
     this.scheduleActiveUsersFlush(0);
     this.flushTimer = setInterval(() => {
-      this.flushActiveUsersMinute().catch(error => {
-        this.logger.warn(
-          `Failed to flush active users minute: ${this.formatError(error)}`
-        );
-      });
+      this.scheduleActiveUsersFlush(0);
     }, 60_000);
     this.flushTimer.unref?.();
   }
@@ -246,6 +244,7 @@ export class SpaceSyncGateway
       clearTimeout(this.activeUsersFlushTimer);
       this.activeUsersFlushTimer = undefined;
     }
+    this.activeUsersFlushQueued = false;
   }
 
   private encodeUpdates(updates: Uint8Array[]) {
@@ -409,17 +408,42 @@ export class SpaceSyncGateway
   }
 
   private scheduleActiveUsersFlush(delayMs = 250) {
-    if (this.activeUsersFlushTimer) return;
+    if (this.activeUsersFlushTimer) {
+      return;
+    }
+
+    if (this.activeUsersFlushInFlight) {
+      this.activeUsersFlushQueued = true;
+      return;
+    }
 
     this.activeUsersFlushTimer = setTimeout(() => {
       this.activeUsersFlushTimer = undefined;
-      this.flushActiveUsersMinute().catch(error => {
-        this.logger.warn(
-          `Failed to flush active users minute: ${this.formatError(error)}`
-        );
-      });
+      void this.runScheduledActiveUsersFlush();
     }, delayMs);
     this.activeUsersFlushTimer.unref?.();
+  }
+
+  private async runScheduledActiveUsersFlush() {
+    if (this.activeUsersFlushInFlight) {
+      this.activeUsersFlushQueued = true;
+      return;
+    }
+
+    this.activeUsersFlushInFlight = true;
+    try {
+      await this.flushActiveUsersMinute();
+    } catch (error) {
+      this.logger.warn(
+        `Failed to flush active users minute: ${this.formatError(error)}`
+      );
+    } finally {
+      this.activeUsersFlushInFlight = false;
+      if (this.activeUsersFlushQueued) {
+        this.activeUsersFlushQueued = false;
+        this.scheduleActiveUsersFlush(0);
+      }
+    }
   }
 
   private async flushActiveUsersMinute(options?: {

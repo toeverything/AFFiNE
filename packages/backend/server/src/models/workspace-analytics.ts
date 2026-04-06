@@ -349,7 +349,7 @@ export class WorkspaceAnalyticsModel extends BaseModel {
             (
               SELECT active_users
               FROM sync_active_users_minutely
-              WHERE minute_ts <= ${syncTo}
+              WHERE minute_ts BETWEEN ${syncFrom} AND ${syncTo}
               ORDER BY minute_ts DESC
               LIMIT 1
             ),
@@ -367,7 +367,7 @@ export class WorkspaceAnalyticsModel extends BaseModel {
           LEFT JOIN LATERAL (
             SELECT active_users
             FROM sync_active_users_minutely
-            WHERE minute_ts <= minutes.minute_ts
+            WHERE minute_ts BETWEEN ${syncFrom} AND minutes.minute_ts
             ORDER BY minute_ts DESC
             LIMIT 1
           ) sample ON TRUE
