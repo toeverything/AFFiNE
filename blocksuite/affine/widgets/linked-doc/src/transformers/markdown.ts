@@ -550,6 +550,13 @@ async function importMarkdownZip({
   return { docIds, folderHierarchy };
 }
 
+/**
+ * Builds a tree of {@link FolderHierarchy} nodes from the zip paths of
+ * imported markdown files. Returns `undefined` when every entry sits at
+ * the same level (no real subfolder structure). A common root directory
+ * shared by all entries is stripped automatically so that the resulting
+ * hierarchy starts one level deeper.
+ */
 function buildMarkdownZipFolderHierarchy(
   entries: Array<{ fullPath: string; docId: string }>
 ): FolderHierarchy | undefined {
@@ -570,22 +577,18 @@ function buildMarkdownZipFolderHierarchy(
     children: new Map(),
   };
 
+  // Check once whether all entries share a common root directory
+  const candidateRoot = entries[0]?.fullPath.split('/').find(Boolean);
+  const skipRoot =
+    !!candidateRoot &&
+    entries.every(e => e.fullPath.startsWith(candidateRoot + '/'));
+
   for (const { fullPath, docId } of entries) {
     const parts = fullPath.split('/').filter(Boolean);
     const fileName = parts.pop(); // Remove filename
     if (!fileName) continue;
 
-    // Skip the root zip directory (first part) if all entries share it
-    let folderParts = parts;
-    if (folderParts.length > 0) {
-      // Check if first part is a common root directory — skip it
-      const allSameRoot = entries.every(e =>
-        e.fullPath.startsWith(folderParts[0] + '/')
-      );
-      if (allSameRoot) {
-        folderParts = folderParts.slice(1);
-      }
-    }
+    let folderParts = skipRoot ? parts.slice(1) : parts;
 
     if (folderParts.length === 0) {
       // Root-level file, no folder needed

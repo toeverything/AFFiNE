@@ -190,6 +190,39 @@ function createFolderStructure(
   return { folderId: rootFolderId, docLinks };
 }
 
+/**
+ * Creates the folder tree described by {@link folderHierarchy} via
+ * {@link OrganizeService} and links every document into its folder.
+ * Returns the root folder ID on success, or `undefined` if the
+ * hierarchy is empty or an error occurs.
+ */
+function applyFolderHierarchy(
+  organizeService: OrganizeService,
+  folderHierarchy: FolderHierarchy,
+  explorerIconService?: ExplorerIconService
+): string | undefined {
+  if (folderHierarchy.children.size === 0) return undefined;
+  try {
+    const { folderId, docLinks } = createFolderStructure(
+      organizeService,
+      folderHierarchy,
+      null,
+      explorerIconService
+    );
+    for (const { folderId, docId } of docLinks) {
+      const folder = organizeService.folderTree.folderNode$(folderId).value;
+      if (folder) {
+        const index = folder.indexAt('after');
+        folder.createLink('doc', docId, index);
+      }
+    }
+    return folderId || undefined;
+  } catch (error) {
+    logger.warn('Failed to create folder structure:', error);
+    return undefined;
+  }
+}
+
 type ImportType =
   | 'markdown'
   | 'markdownZip'
@@ -397,32 +430,10 @@ const importConfigs: Record<ImportType, ImportConfig> = {
           extensions: getStoreManager().config.init().value.get('store'),
         });
 
-      let rootFolderId: string | undefined;
-
-      if (
-        folderHierarchy &&
-        organizeService &&
-        folderHierarchy.children.size > 0
-      ) {
-        try {
-          const { folderId, docLinks } = createFolderStructure(
-            organizeService,
-            folderHierarchy
-          );
-          rootFolderId = folderId || undefined;
-
-          for (const { folderId, docId } of docLinks) {
-            const folder =
-              organizeService.folderTree.folderNode$(folderId).value;
-            if (folder) {
-              const index = folder.indexAt('after');
-              folder.createLink('doc', docId, index);
-            }
-          }
-        } catch (error) {
-          logger.warn('Failed to create folder structure:', error);
-        }
-      }
+      const rootFolderId =
+        folderHierarchy && organizeService
+          ? applyFolderHierarchy(organizeService, folderHierarchy)
+          : undefined;
 
       return {
         docIds,
@@ -478,37 +489,14 @@ const importConfigs: Record<ImportType, ImportConfig> = {
           extensions: getStoreManager().config.init().value.get('store'),
         });
 
-      let rootFolderId: string | undefined;
-
-      // Create folder structure if hierarchy exists and OrganizeService is available
-      if (
-        folderHierarchy &&
-        organizeService &&
-        folderHierarchy.children.size > 0
-      ) {
-        try {
-          const { folderId, docLinks } = createFolderStructure(
-            organizeService,
-            folderHierarchy,
-            null,
-            explorerIconService
-          );
-          rootFolderId = folderId || undefined;
-
-          // Create links for all documents to their respective folders
-          for (const { folderId, docId } of docLinks) {
-            const folder =
-              organizeService.folderTree.folderNode$(folderId).value;
-            if (folder) {
-              const index = folder.indexAt('after');
-              folder.createLink('doc', docId, index);
-            }
-          }
-        } catch (error) {
-          logger.warn('Failed to create folder structure:', error);
-          // Continue with import even if folder creation fails
-        }
-      }
+      const rootFolderId =
+        folderHierarchy && organizeService
+          ? applyFolderHierarchy(
+              organizeService,
+              folderHierarchy,
+              explorerIconService
+            )
+          : undefined;
 
       return {
         docIds: pageIds,
@@ -633,32 +621,10 @@ const importConfigs: Record<ImportType, ImportConfig> = {
         }
       }
 
-      // Create folder hierarchy from nested tags
-      let rootFolderId: string | undefined;
-      if (
-        folderHierarchy &&
-        organizeService &&
-        folderHierarchy.children.size > 0
-      ) {
-        try {
-          const { folderId, docLinks } = createFolderStructure(
-            organizeService,
-            folderHierarchy
-          );
-          rootFolderId = folderId || undefined;
-
-          for (const { folderId, docId } of docLinks) {
-            const folder =
-              organizeService.folderTree.folderNode$(folderId).value;
-            if (folder) {
-              const index = folder.indexAt('after');
-              folder.createLink('doc', docId, index);
-            }
-          }
-        } catch (error) {
-          logger.warn('Failed to create folder structure:', error);
-        }
-      }
+      const rootFolderId =
+        folderHierarchy && organizeService
+          ? applyFolderHierarchy(organizeService, folderHierarchy)
+          : undefined;
 
       return {
         docIds,
