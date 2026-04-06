@@ -419,31 +419,31 @@ export class SpaceSyncGateway
 
     this.activeUsersFlushTimer = setTimeout(() => {
       this.activeUsersFlushTimer = undefined;
-      void this.runScheduledActiveUsersFlush();
+      this.runScheduledActiveUsersFlush();
     }, delayMs);
     this.activeUsersFlushTimer.unref?.();
   }
 
-  private async runScheduledActiveUsersFlush() {
+  private runScheduledActiveUsersFlush() {
     if (this.activeUsersFlushInFlight) {
       this.activeUsersFlushQueued = true;
       return;
     }
 
     this.activeUsersFlushInFlight = true;
-    try {
-      await this.flushActiveUsersMinute();
-    } catch (error) {
-      this.logger.warn(
-        `Failed to flush active users minute: ${this.formatError(error)}`
-      );
-    } finally {
-      this.activeUsersFlushInFlight = false;
-      if (this.activeUsersFlushQueued) {
-        this.activeUsersFlushQueued = false;
-        this.scheduleActiveUsersFlush(0);
-      }
-    }
+    void this.flushActiveUsersMinute()
+      .catch(error => {
+        this.logger.warn(
+          `Failed to flush active users minute: ${this.formatError(error)}`
+        );
+      })
+      .finally(() => {
+        this.activeUsersFlushInFlight = false;
+        if (this.activeUsersFlushQueued) {
+          this.activeUsersFlushQueued = false;
+          this.scheduleActiveUsersFlush(0);
+        }
+      });
   }
 
   private async flushActiveUsersMinute(options?: {
