@@ -26,6 +26,7 @@ import {
 import type { KanbanCard } from '../view-presets/kanban/pc/card.js';
 import { KanbanDragController } from '../view-presets/kanban/pc/controller/drag.js';
 import type { KanbanGroup } from '../view-presets/kanban/pc/group.js';
+import type { Row } from '../core/view-manager/row.js';
 
 type Column = {
   id: string;
@@ -215,6 +216,16 @@ const createDragController = () => {
   return new KanbanDragController({} as DragLogic);
 };
 
+const createTestRow = (rowId: string): Row => ({
+  rowId,
+  cells$: signal([]) as Row['cells$'],
+  index$: signal<Row['index$']['value']>(undefined),
+  prev$: signal<Row | undefined>(undefined),
+  next$: signal<Row | undefined>(undefined),
+  delete: vi.fn(),
+  move: vi.fn(),
+});
+
 const createGroupTraitHarness = (options?: {
   groupProperties?: Array<{
     key: string;
@@ -291,7 +302,7 @@ const createGroupTraitHarness = (options?: {
 
   const view = {
     data$,
-    rows$: signal(rows.map(rowId => ({ rowId }))),
+    rows$: signal(rows.map(createTestRow)),
     isLocked$: signal(false),
     manager: {
       dataSource: asDataSource(dataSource),
@@ -318,7 +329,7 @@ const createGroupTraitHarness = (options?: {
       );
       return asc === false ? sorted.reverse() : sorted;
     },
-    sortRow: (groupKey: string, groupedRows: Array<{ rowId: string }>) => {
+    sortRow: (groupKey: string, groupedRows: Row[]) => {
       const group = data$.value.groupProperties.find(
         value => value.key === groupKey
       );
