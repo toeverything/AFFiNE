@@ -17,12 +17,14 @@ export enum RouteLogic {
   PUSH = 'push',
 }
 
+export type WorkspaceSettingsRouteOptions = {
+  tab?: SettingTab;
+  scrollAnchor?: string;
+};
+
 export function buildWorkspaceSettingsPath(
   workspaceId: string,
-  options?: {
-    tab?: SettingTab;
-    scrollAnchor?: string;
-  }
+  options?: WorkspaceSettingsRouteOptions
 ) {
   const searchParams = new URLSearchParams();
   if (options?.tab) {
@@ -33,6 +35,38 @@ export function buildWorkspaceSettingsPath(
   }
   const query = searchParams.toString();
   return `/workspace/${workspaceId}/settings${query ? `?${query}` : ''}`;
+}
+
+export function buildWorkspaceSettingsRedirectUri(
+  currentHref: string,
+  options?: WorkspaceSettingsRouteOptions
+): string {
+  let currentUrl: URL;
+  try {
+    currentUrl = new URL(currentHref);
+  } catch {
+    return currentHref;
+  }
+
+  const pathSegments = currentUrl.pathname.split('/').filter(Boolean);
+  const workspaceSegmentIndex = pathSegments.indexOf('workspace');
+  const workspaceId = pathSegments[workspaceSegmentIndex + 1];
+
+  if (workspaceSegmentIndex === -1 || !workspaceId) {
+    return currentHref;
+  }
+
+  const basePath = pathSegments.slice(0, workspaceSegmentIndex).join('/');
+  const redirectUrl = new URL(
+    buildWorkspaceSettingsPath(workspaceId, options),
+    currentUrl.origin
+  );
+
+  if (basePath) {
+    redirectUrl.pathname = `/${basePath}${redirectUrl.pathname}`;
+  }
+
+  return redirectUrl.toString();
 }
 
 // TODO(@eyhn): add a name -> path helper in the results
@@ -231,12 +265,16 @@ export function useNavigateHelper() {
   const jumpToWorkspaceSettings = useCallback(
     (
       workspaceId: string,
-      tab?: SettingTab,
+      options?: WorkspaceSettingsRouteOptions | SettingTab,
       logic: RouteLogic = RouteLogic.PUSH
     ) => {
-      return navigate(buildWorkspaceSettingsPath(workspaceId, { tab }), {
-        replace: logic === RouteLogic.REPLACE,
-      });
+      const resolvedOptions =
+        typeof options === 'string' ? { tab: options } : options;
+
+      return navigate(
+        buildWorkspaceSettingsPath(workspaceId, resolvedOptions),
+        { replace: logic === RouteLogic.REPLACE }
+      );
     },
     [navigate]
   );

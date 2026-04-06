@@ -1,3 +1,7 @@
+/**
+ * @vitest-environment happy-dom
+ */
+
 import { render } from '@testing-library/react';
 import type * as ReactRouterDom from 'react-router-dom';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
