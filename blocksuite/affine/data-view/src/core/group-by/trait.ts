@@ -99,7 +99,7 @@ const getOrderedGroupKeys = (
   return sortGroup(keys, sortAsc);
 };
 
-export const applyGroupRowSort = <T extends { rows: Row[] }>(
+const applyGroupRowSort = <T extends { rows: Row[] }>(
   groups: Record<string, T>,
   orderedKeys: string[],
   sortRow: (groupKey: string, rows: Row[]) => Row[]
@@ -113,7 +113,7 @@ export const applyGroupRowSort = <T extends { rows: Row[] }>(
   });
 };
 
-export const reorderGroupKeys = (
+const reorderGroupKeys = (
   keys: string[],
   groupKey: string,
   position: InsertToPosition
@@ -480,7 +480,12 @@ export class GroupTrait {
         .map(row => row.rowId) ?? [];
     const index = insertPositionToIndex(position, rows, row => row);
     rows.splice(index, 0, rowId);
-    const groupKeys = Object.keys(groupMap);
+    const groupKeys = getOrderedGroupKeys(
+      Object.keys(groupMap),
+      this.groupInfo$.value,
+      this.ops.sortGroup,
+      this.sortAsc$.value
+    );
     this.ops.changeRowSort(groupKeys, toGroupKey, rows);
   }
 
