@@ -8,8 +8,8 @@ const LOCK_NAMESPACE = 97_301;
 const REFRESH_LOCK_KEY = 1;
 const DIRTY_BATCH_SIZE = 500;
 const FULL_REFRESH_BATCH_SIZE = 2000;
-const SNAPSHOT_RETRY_DELAY_MS = 5_000;
-const SNAPSHOT_RETRY_TIMES = 12;
+const REFRESH_LOCK_RETRY_DELAY_MS = 5_000;
+const REFRESH_LOCK_RETRY_TIMES = 12;
 const TRANSACTION_TIMEOUT_MS = 120_000;
 
 @Injectable()
@@ -65,35 +65,34 @@ export class WorkspaceStatsJob {
   async recalibrate() {
     let lastSid = 0;
     let processed = 0;
+    let completed = true;
 
     while (true) {
       const started = Date.now();
       try {
-        const result = await this.withAdvisoryLock(
-          REFRESH_LOCK_KEY,
-          async tx => {
-            const workspaces = await this.fetchWorkspaceBatch(
-              tx,
-              lastSid,
-              FULL_REFRESH_BATCH_SIZE
-            );
-            if (!workspaces.length) {
-              return { processed: 0, lastSid };
-            }
-
-            const ids = workspaces.map(({ id }) => id);
-            await this.upsertStats(tx, ids);
-
-            return {
-              processed: ids.length,
-              lastSid: workspaces[workspaces.length - 1].sid,
-            };
+        const result = await this.withRefreshLockRetry(async tx => {
+          const workspaces = await this.fetchWorkspaceBatch(
+            tx,
+            lastSid,
+            FULL_REFRESH_BATCH_SIZE
+          );
+          if (!workspaces.length) {
+            return { processed: 0, lastSid };
           }
-        );
+
+          const ids = workspaces.map(({ id }) => id);
+          await this.upsertStats(tx, ids);
+
+          return {
+            processed: ids.length,
+            lastSid: workspaces[workspaces.length - 1].sid,
+          };
+        });
 
         if (!result) {
-          this.logger.debug(
-            'skip admin stats recalibration, lock not acquired'
+          completed = false;
+          this.logger.warn(
+            'skip admin stats recalibration after retrying lock acquisition'
           );
           break;
         }
@@ -113,6 +112,7 @@ export class WorkspaceStatsJob {
           break;
         }
       } catch (error) {
+        completed = false;
         metrics.workspace.counter('admin_stats_refresh_failed').add(1, {
           mode: 'full',
         });
@@ -130,8 +130,18 @@ export class WorkspaceStatsJob {
       );
     }
 
+    if (!completed) {
+      this.logger.warn(
+        'Skip daily workspace admin stats snapshot because full recalibration did not complete'
+      );
+      return;
+    }
+
     try {
-      const snapshotted = await this.writeDailySnapshotWithRetry();
+      const snapshotted = await this.withRefreshLockRetry(async tx => {
+        await this.writeDailySnapshot(tx);
+        return true;
+      });
       if (snapshotted) {
         this.logger.debug('Wrote daily workspace admin stats snapshot');
       } else {
@@ -176,28 +186,24 @@ export class WorkspaceStatsJob {
     );
   }
 
-  private async writeDailySnapshotWithRetry() {
-    for (let attempt = 0; attempt < SNAPSHOT_RETRY_TIMES; attempt++) {
-      const snapshotted = await this.withAdvisoryLock(
-        REFRESH_LOCK_KEY,
-        async tx => {
-          await this.writeDailySnapshot(tx);
-          return true;
-        }
-      );
+  private async withRefreshLockRetry<T>(
+    callback: (tx: Prisma.TransactionClient) => Promise<T>
+  ) {
+    for (let attempt = 0; attempt < REFRESH_LOCK_RETRY_TIMES; attempt++) {
+      const result = await this.withAdvisoryLock(REFRESH_LOCK_KEY, callback);
 
-      if (snapshotted) {
-        return true;
+      if (result) {
+        return result;
       }
 
-      if (attempt < SNAPSHOT_RETRY_TIMES - 1) {
+      if (attempt < REFRESH_LOCK_RETRY_TIMES - 1) {
         await new Promise(resolve =>
-          setTimeout(resolve, SNAPSHOT_RETRY_DELAY_MS)
+          setTimeout(resolve, REFRESH_LOCK_RETRY_DELAY_MS)
         );
       }
     }
 
-    return false;
+    return null;
   }
 
   private async loadDirty(
