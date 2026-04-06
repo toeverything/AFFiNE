@@ -15,6 +15,8 @@ import { nanoid } from '@blocksuite/store';
 import type { Element } from 'hast';
 import type { Table as MarkdownTable } from 'mdast';
 
+import { compareByOrder } from '../utils';
+
 type RichTextType = DeltaInsert[];
 const createRichText = (text: RichTextType) => {
   return {
@@ -70,9 +72,6 @@ export const processTable = (
   rows: Record<string, TableRow>,
   cells: Record<string, TableCellSerialized>
 ): Table => {
-  const compareByOrder = <T extends { order: string }>(a: T, b: T) =>
-    a.order === b.order ? 0 : a.order > b.order ? 1 : -1;
-
   const sortedColumns = Object.values(columns).sort(compareByOrder);
   const sortedRows = Object.values(rows).sort(compareByOrder);
   const table: Table = {
