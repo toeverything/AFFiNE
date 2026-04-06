@@ -70,12 +70,11 @@ export const processTable = (
   rows: Record<string, TableRow>,
   cells: Record<string, TableCellSerialized>
 ): Table => {
-  const sortedColumns = Object.values(columns).sort((a, b) =>
-    a.order > b.order ? 1 : -1
-  );
-  const sortedRows = Object.values(rows).sort((a, b) =>
-    a.order > b.order ? 1 : -1
-  );
+  const compareByOrder = <T extends { order: string }>(a: T, b: T) =>
+    a.order === b.order ? 0 : a.order > b.order ? 1 : -1;
+
+  const sortedColumns = Object.values(columns).sort(compareByOrder);
+  const sortedRows = Object.values(rows).sort(compareByOrder);
   const table: Table = {
     rows: [],
   };

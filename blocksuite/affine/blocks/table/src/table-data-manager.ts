@@ -29,13 +29,13 @@ export class TableDataManager {
   );
   readonly rows$ = computed(() => {
     return Object.values(this.model.props.rows$.value).sort((a, b) =>
-      a.order > b.order ? 1 : -1
+      a.order === b.order ? 0 : a.order > b.order ? 1 : -1
     );
   });
 
   readonly columns$ = computed(() => {
     return Object.values(this.model.props.columns$.value).sort((a, b) =>
-      a.order > b.order ? 1 : -1
+      a.order === b.order ? 0 : a.order > b.order ? 1 : -1
     );
   });
 
