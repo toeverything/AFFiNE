@@ -195,6 +195,10 @@ function createFolderStructure(
  * {@link OrganizeService} and links every document into its folder.
  * Returns the root folder ID on success, or `undefined` if the
  * hierarchy is empty or an error occurs.
+ *
+ * When {@link explorerIconService} is provided, document icons from the
+ * hierarchy (e.g. Notion page emojis) are applied. Callers that do not
+ * need icon support can omit it safely.
  */
 function applyFolderHierarchy(
   organizeService: OrganizeService,

@@ -560,13 +560,15 @@ async function importMarkdownZip({
 function buildMarkdownZipFolderHierarchy(
   entries: Array<{ fullPath: string; docId: string }>
 ): FolderHierarchy | undefined {
+  if (entries.length === 0) return undefined;
+
   // Check if any entries have folder structure
   const hasSubfolders = entries.some(e => {
     const parts = e.fullPath.split('/').filter(Boolean);
-    // More than just "root/file.md" — need at least one real subfolder
+    // More than just "root/file.md" -- need at least one real subfolder
     return parts.length > 2;
   });
-  if (!hasSubfolders && entries.length > 0) {
+  if (!hasSubfolders) {
     // All files are at the same level, no folder hierarchy needed
     return undefined;
   }
