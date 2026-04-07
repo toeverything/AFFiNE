@@ -158,7 +158,10 @@ function extractTagsFromLine(line: string): string[] {
   return tags;
 }
 
-/** Deduplicate tags case-insensitively, normalizing to lowercase. */
+/**
+ * Deduplicate tags case-insensitively while preserving the original
+ * capitalization of the first occurrence of each tag.
+ */
 function deduplicateTags(tags: string[]): string[] {
   const seen = new Set<string>();
   const result: string[] = [];
@@ -166,7 +169,7 @@ function deduplicateTags(tags: string[]): string[] {
     const normalized = tag.toLowerCase();
     if (!seen.has(normalized)) {
       seen.add(normalized);
-      result.push(normalized);
+      result.push(tag);
     }
   }
   return result;

@@ -585,28 +585,40 @@ const importConfigs: Record<ImportType, ImportConfig> = {
             existingTagMap.set(name, tag.id);
           }
 
-          // Consolidate tags by root segment (e.g., "privat/bike" → "privat")
-          const rootTagDocMap = new Map<string, Set<string>>();
+          // Consolidate tags by root segment (e.g., "privat/bike" → "privat").
+          // Keyed by lowercase root for case-insensitive dedup, but the
+          // original capitalization of the first occurrence is preserved
+          // so new AFFiNE tags are created with the user's casing.
+          const rootTagDocMap = new Map<
+            string,
+            { displayName: string; docs: Set<string> }
+          >();
           for (const [tagName, tagDocIds] of tags) {
-            const rootTag = tagName.split('/')[0].toLowerCase();
-            const existing = rootTagDocMap.get(rootTag);
-            const docSet = existing ?? new Set<string>();
-            if (!existing) rootTagDocMap.set(rootTag, docSet);
+            const originalRoot = tagName.split('/')[0];
+            const key = originalRoot.toLowerCase();
+            let entry = rootTagDocMap.get(key);
+            if (!entry) {
+              entry = { displayName: originalRoot, docs: new Set<string>() };
+              rootTagDocMap.set(key, entry);
+            }
             for (const docId of tagDocIds) {
-              docSet.add(docId);
+              entry.docs.add(docId);
             }
           }
 
-          for (const [rootTag, docIdSet] of rootTagDocMap) {
+          for (const [
+            rootTagKey,
+            { displayName, docs: docIdSet },
+          ] of rootTagDocMap) {
             // Check if tag already exists (case-insensitive)
-            let tagId = existingTagMap.get(rootTag);
+            let tagId = existingTagMap.get(rootTagKey);
             if (!tagId) {
               const newTag = tagService.tagList.createTag(
-                rootTag,
+                displayName,
                 tagService.randomTagColor()
               );
               tagId = newTag.id;
-              existingTagMap.set(rootTag, tagId);
+              existingTagMap.set(rootTagKey, tagId);
             }
 
             // Assign tag to each doc
