@@ -304,6 +304,7 @@ CapacitorApp.addListener('appUrlOpen', ({ url }) => {
   if (urlObj.hostname === 'authentication') {
     const method = urlObj.searchParams.get('method');
     const payload = JSON.parse(urlObj.searchParams.get('payload') ?? 'false');
+    const serverBaseUrl = urlObj.searchParams.get('server');
 
     if (
       !method ||
@@ -314,9 +315,18 @@ CapacitorApp.addListener('appUrlOpen', ({ url }) => {
       return;
     }
 
-    const authService = frameworkProvider
+    let authService = frameworkProvider
       .get(DefaultServerService)
       .server.scope.get(AuthService);
+
+    if (serverBaseUrl) {
+      const serversService = frameworkProvider.get(ServersService);
+      const server = serversService.getServerByBaseUrl(serverBaseUrl);
+      if (server) {
+        authService = server.scope.get(AuthService);
+      }
+    }
+
     if (method === 'oauth') {
       authService
         .signInOauth(payload.code, payload.state, payload.provider)
