@@ -1,11 +1,18 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import { multiSelectPropertyType } from '../property-presets/multi-select/define.js';
+import { selectPropertyType } from '../property-presets/select/define.js';
 import { TableHotkeysController } from '../view-presets/table/pc/controller/hotkeys.js';
 import { TableHotkeysController as VirtualHotkeysController } from '../view-presets/table/pc-virtual/controller/hotkeys.js';
 import {
   TableViewAreaSelection,
   TableViewRowSelection,
 } from '../view-presets/table/selection';
+
+const TAG_COLUMN_TYPES = [
+  selectPropertyType.type,
+  multiSelectPropertyType.type,
+] as const;
 
 function createLogic() {
   const view = {
@@ -66,7 +73,10 @@ describe('TableHotkeysController', () => {
     const cell = {
       rowId: 'r1',
       dataset: { rowId: 'r1', columnId: 'c1' },
-      column: { valueSetFromString: vi.fn() },
+      column: {
+        valueSetFromString: vi.fn(),
+        type$: { value: 'text' },
+      },
     };
     selectionController.getCellContainer.mockReturnValue(cell);
     selectionController.selection = TableViewAreaSelection.create({
@@ -85,6 +95,41 @@ describe('TableHotkeysController', () => {
     expect(selectionController.selection.isEditing).toBe(true);
     expect(evt.preventDefault).toHaveBeenCalled();
   });
+
+  it.each(TAG_COLUMN_TYPES)(
+    'stages draft for %s column instead of valueSetFromString',
+    columnType => {
+      const { logic, selectionController } = createLogic();
+      const ctrl = new TableHotkeysController(logic as any);
+      ctrl.hostConnected();
+      const setTagDraft = vi.fn();
+      const cell = {
+        rowId: 'r1',
+        dataset: { rowId: 'r1', columnId: 'c1' },
+        column: {
+          valueSetFromString: vi.fn(),
+          type$: { value: columnType },
+        },
+        setTagDraft,
+      };
+      selectionController.getCellContainer.mockReturnValue(cell);
+      selectionController.selection = TableViewAreaSelection.create({
+        focus: { rowIndex: 0, columnIndex: 0 },
+        isEditing: false,
+      });
+      const evt = {
+        key: 'C',
+        metaKey: false,
+        ctrlKey: false,
+        altKey: false,
+        preventDefault: vi.fn(),
+      };
+      logic.keyDown({ get: () => ({ raw: evt }) });
+      expect(cell.column.valueSetFromString).not.toHaveBeenCalled();
+      expect(setTagDraft).toHaveBeenCalledWith('C');
+      expect(selectionController.selection.isEditing).toBe(true);
+    }
+  );
 });
 
 describe('Virtual TableHotkeysController', () => {
@@ -95,7 +140,12 @@ describe('Virtual TableHotkeysController', () => {
     const cell = {
       rowId: 'r1',
       dataset: { rowId: 'r1', columnId: 'c1' },
-      column$: { value: { valueSetFromString: vi.fn() } },
+      column$: {
+        value: {
+          valueSetFromString: vi.fn(),
+          type$: { value: 'text' },
+        },
+      },
     };
     selectionController.getCellContainer.mockReturnValue(cell);
     selectionController.selection = TableViewAreaSelection.create({
@@ -117,4 +167,41 @@ describe('Virtual TableHotkeysController', () => {
     expect(selectionController.selection.isEditing).toBe(true);
     expect(evt.preventDefault).toHaveBeenCalled();
   });
+
+  it.each(TAG_COLUMN_TYPES)(
+    'stages draft for %s column instead of valueSetFromString',
+    columnType => {
+      const { logic, selectionController } = createLogic();
+      const ctrl = new VirtualHotkeysController(logic as any);
+      ctrl.hostConnected();
+      const setTagDraft = vi.fn();
+      const cell = {
+        rowId: 'r1',
+        dataset: { rowId: 'r1', columnId: 'c1' },
+        column$: {
+          value: {
+            valueSetFromString: vi.fn(),
+            type$: { value: columnType },
+          },
+        },
+        setTagDraft,
+      };
+      selectionController.getCellContainer.mockReturnValue(cell);
+      selectionController.selection = TableViewAreaSelection.create({
+        focus: { rowIndex: 1, columnIndex: 0 },
+        isEditing: false,
+      });
+      const evt = {
+        key: 'C',
+        metaKey: false,
+        ctrlKey: false,
+        altKey: false,
+        preventDefault: vi.fn(),
+      };
+      logic.keyDown({ get: () => ({ raw: evt }) });
+      expect(cell.column$.value.valueSetFromString).not.toHaveBeenCalled();
+      expect(setTagDraft).toHaveBeenCalledWith('C');
+      expect(selectionController.selection.isEditing).toBe(true);
+    }
+  );
 });
