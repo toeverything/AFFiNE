@@ -322,9 +322,11 @@ CapacitorApp.addListener('appUrlOpen', ({ url }) => {
     if (serverBaseUrl) {
       const serversService = frameworkProvider.get(ServersService);
       const server = serversService.getServerByBaseUrl(serverBaseUrl);
-      if (server) {
-        authService = server.scope.get(AuthService);
+      if (!server) {
+        console.error('Authentication callback server not found', serverBaseUrl);
+        return;
       }
+      authService = server.scope.get(AuthService);
     }
 
     if (method === 'oauth') {
