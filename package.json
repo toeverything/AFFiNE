@@ -82,7 +82,7 @@
     "happy-dom": "^20.0.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.0.0",
-    "msw": "^2.12.4",
+    "msw": "^2.13.2",
     "oxlint": "1.58.0",
     "oxlint-tsgolint": "^0.19.0",
     "prettier": "^3.7.4",
