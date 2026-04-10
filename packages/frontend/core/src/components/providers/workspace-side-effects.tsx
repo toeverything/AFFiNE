@@ -14,7 +14,6 @@ import { OverCapacityNotification } from '@affine/core/components/over-capacity'
 import {
   AuthService,
   EventSourceService,
-  FetchService,
   GraphQLService,
 } from '@affine/core/modules/cloud';
 import {
@@ -140,16 +139,11 @@ export const WorkspaceSideEffects = () => {
 
   const graphqlService = useService(GraphQLService);
   const eventSourceService = useService(EventSourceService);
-  const fetchService = useService(FetchService);
   const authService = useService(AuthService);
 
   useEffect(() => {
     const dispose = setupAIProvider(
-      new CopilotClient(
-        graphqlService.gql,
-        fetchService.fetch,
-        eventSourceService.eventSource
-      ),
+      new CopilotClient(graphqlService.gql, eventSourceService.eventSource),
       globalDialogService,
       authService
     );
@@ -158,7 +152,6 @@ export const WorkspaceSideEffects = () => {
     };
   }, [
     eventSourceService,
-    fetchService,
     workspaceDialogService,
     graphqlService,
     globalDialogService,

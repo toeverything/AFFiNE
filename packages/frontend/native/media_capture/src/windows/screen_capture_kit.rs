@@ -10,6 +10,7 @@ use std::{
   time::Duration,
 };
 
+use cpal::SampleRate;
 use napi::{
   bindgen_prelude::{Buffer, Error, Result, Status},
   threadsafe_function::{ThreadsafeFunction, ThreadsafeFunctionCallMode},
@@ -27,6 +28,7 @@ use windows::Win32::System::{
 };
 
 // Import the function from microphone_listener
+use crate::audio_callback::AudioCallback;
 use crate::windows::microphone_listener::is_process_actively_using_microphone;
 
 // Type alias to match macOS API
@@ -214,6 +216,15 @@ impl ShareableContent {
     }
   }
 
+  pub(crate) fn tap_audio_with_callback(
+    _process_id: u32,
+    audio_stream_callback: AudioCallback,
+    target_sample_rate: Option<u32>,
+  ) -> Result<AudioCaptureSession> {
+    let target = target_sample_rate.map(SampleRate);
+    crate::windows::audio_capture::start_recording(audio_stream_callback, target)
+  }
+
   #[napi]
   pub fn tap_audio(
     _process_id: u32, // Currently unused - Windows captures global audio
@@ -221,7 +232,18 @@ impl ShareableContent {
   ) -> Result<AudioCaptureSession> {
     // On Windows with CPAL, we capture global audio (mic + loopback)
     // since per-application audio tapping isn't supported the same way as macOS
-    crate::windows::audio_capture::start_recording(audio_stream_callback)
+    ShareableContent::tap_audio_with_callback(_process_id, AudioCallback::Js(Arc::new(audio_stream_callback)), None)
+  }
+
+  pub(crate) fn tap_global_audio_with_callback(
+    _excluded_processes: Option<Vec<&ApplicationInfo>>,
+    audio_stream_callback: AudioCallback,
+    target_sample_rate: Option<u32>,
+  ) -> Result<AudioCaptureSession> {
+    let target = target_sample_rate.map(SampleRate);
+    // Delegate to audio_capture::start_recording which handles mixing mic +
+    // loopback
+    crate::windows::audio_capture::start_recording(audio_stream_callback, target)
   }
 
   #[napi]
@@ -229,9 +251,11 @@ impl ShareableContent {
     _excluded_processes: Option<Vec<&ApplicationInfo>>,
     audio_stream_callback: ThreadsafeFunction<napi::bindgen_prelude::Float32Array, ()>,
   ) -> Result<AudioCaptureSession> {
-    // Delegate to audio_capture::start_recording which handles mixing mic +
-    // loopback
-    crate::windows::audio_capture::start_recording(audio_stream_callback)
+    ShareableContent::tap_global_audio_with_callback(
+      _excluded_processes,
+      AudioCallback::Js(Arc::new(audio_stream_callback)),
+      None,
+    )
   }
 
   #[napi]

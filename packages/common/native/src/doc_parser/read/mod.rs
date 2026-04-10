@@ -1,6 +1,6 @@
 mod database;
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use serde::{Deserialize, Serialize};
 use serde_json::{Map as JsonMap, Value as JsonValue};
@@ -22,6 +22,18 @@ use super::{
 
 const SUMMARY_LIMIT: usize = 1000;
 const DEFAULT_PAGE_TITLE: &str = "Untitled";
+const KNOWN_UNSUPPORTED_MARKDOWN_FLAVOURS: [&str; 10] = [
+  "affine:attachment",
+  "affine:callout",
+  "affine:note",
+  "affine:edgeless-text",
+  "affine:embed-linked-doc",
+  "affine:embed-synced-doc",
+  "affine:frame",
+  "affine:latex",
+  "affine:surface",
+  "affine:surface-ref",
+];
 
 const BOOKMARK_FLAVOURS: [&str; 6] = [
   "affine:bookmark",
@@ -129,6 +141,31 @@ pub struct WorkspaceDocContent {
 pub struct MarkdownResult {
   pub title: String,
   pub markdown: String,
+  pub known_unsupported_blocks: Vec<String>,
+  pub unknown_blocks: Vec<String>,
+}
+
+fn is_known_unsupported_markdown_flavour(flavour: &str) -> bool {
+  KNOWN_UNSUPPORTED_MARKDOWN_FLAVOURS.contains(&flavour) || flavour.starts_with("affine:edgeless-")
+}
+
+fn is_edgeless_markdown_flavour(flavour: &str) -> bool {
+  matches!(flavour, "affine:surface" | "affine:frame" | "affine:surface-ref") || flavour.starts_with("affine:edgeless-")
+}
+
+fn has_skipped_markdown_ancestor(
+  block_id: &str,
+  parent_lookup: &HashMap<String, String>,
+  skipped_subtrees: &HashSet<String>,
+) -> bool {
+  let mut cursor = parent_lookup.get(block_id).cloned();
+  while let Some(parent_id) = cursor {
+    if skipped_subtrees.contains(&parent_id) {
+      return true;
+    }
+    cursor = parent_lookup.get(&parent_id).cloned();
+  }
+  false
 }
 
 pub fn parse_workspace_doc(doc_bin: Vec<u8>) -> Result<Option<WorkspaceDocContent>, ParseError> {
@@ -235,6 +272,8 @@ pub fn parse_doc_to_markdown(
     return Ok(MarkdownResult {
       title: "".into(),
       markdown: "".into(),
+      known_unsupported_blocks: vec![],
+      unknown_blocks: vec![],
     });
   }
 
@@ -244,6 +283,9 @@ pub fn parse_doc_to_markdown(
   let mut walker = context.walker();
   let mut doc_title = String::from(DEFAULT_PAGE_TITLE);
   let mut markdown = String::new();
+  let mut known_unsupported_blocks = Vec::new();
+  let mut unknown_blocks = Vec::new();
+  let mut skipped_subtrees = HashSet::new();
   let md_options = DeltaToMdOptions::new(doc_url_prefix);
   let renderer = MarkdownRenderer::new(&md_options);
 
@@ -258,6 +300,14 @@ pub fn parse_doc_to_markdown(
       None => continue,
     };
 
+    if flavour == PAGE_FLAVOUR {
+      // enqueue children first to keep traversal order similar to JS implementation
+      walker.enqueue_children(&block_id, block);
+      let title = get_string(block, "prop:title").unwrap_or_default();
+      doc_title = title.clone();
+      continue;
+    }
+
     let parent_id = context.parent_lookup.get(&block_id);
     let parent_flavour = parent_id
       .and_then(|id| context.block_pool.get(id))
@@ -270,9 +320,21 @@ pub fn parse_doc_to_markdown(
     // enqueue children first to keep traversal order similar to JS implementation
     walker.enqueue_children(&block_id, block);
 
-    if flavour == PAGE_FLAVOUR {
-      let title = get_string(block, "prop:title").unwrap_or_default();
-      doc_title = title.clone();
+    if is_known_unsupported_markdown_flavour(flavour.as_str()) {
+      known_unsupported_blocks.push(format!("{block_id}:{flavour}"));
+      if is_edgeless_markdown_flavour(flavour.as_str()) {
+        skipped_subtrees.insert(block_id.clone());
+      }
+      continue;
+    }
+
+    if BlockFlavour::from_str(flavour.as_str()).is_none() && flavour.as_str() != "affine:database" {
+      unknown_blocks.push(format!("{block_id}:{flavour}"));
+      skipped_subtrees.insert(block_id.clone());
+      continue;
+    }
+
+    if has_skipped_markdown_ancestor(&block_id, &context.parent_lookup, &skipped_subtrees) {
       continue;
     }
 
@@ -297,19 +359,17 @@ pub fn parse_doc_to_markdown(
           writer.push_table(&table_md);
         }
       }
-      "affine:note" | "affine:surface" | "affine:frame" => {}
       _ => {
-        if let Some(block_flavour) = BlockFlavour::from_str(flavour.as_str()) {
-          let spec = BlockSpec::from_block_map_with_flavour(block, block_flavour);
-          let list_depth = if block_flavour == BlockFlavour::List {
-            get_list_depth(&block_id, &context.parent_lookup, &context.block_pool)
-          } else {
-            0
-          };
-          renderer.write_block(&mut block_markdown, &spec, list_depth);
+        let Some(block_flavour) = BlockFlavour::from_str(flavour.as_str()) else {
+          continue;
+        };
+        let spec = BlockSpec::from_block_map_with_flavour(block, block_flavour);
+        let list_depth = if block_flavour == BlockFlavour::List {
+          get_list_depth(&block_id, &context.parent_lookup, &context.block_pool)
         } else {
-          return Err(ParseError::ParserError(format!("unsupported_block_flavour:{flavour}")));
-        }
+          0
+        };
+        renderer.write_block(&mut block_markdown, &spec, list_depth);
       }
     }
 
@@ -322,6 +382,8 @@ pub fn parse_doc_to_markdown(
   Ok(MarkdownResult {
     title: doc_title,
     markdown,
+    known_unsupported_blocks,
+    unknown_blocks,
   })
 }
 
@@ -791,5 +853,133 @@ mod tests {
     assert!(md.contains("blob://image-id"));
     assert!(md.contains("|A|B|"));
     assert!(md.contains("|---|---|"));
+    assert!(
+      result
+        .known_unsupported_blocks
+        .iter()
+        .any(|block| block.ends_with(":affine:note"))
+    );
+    assert!(result.unknown_blocks.is_empty());
+  }
+
+  #[test]
+  fn test_parse_doc_to_markdown_with_edgeless_text_container() {
+    let doc_id = "edgeless-text-doc".to_string();
+    let doc = DocOptions::new().with_guid(doc_id.clone()).build();
+    let mut blocks = doc.get_or_create_map("blocks").unwrap();
+
+    let mut page = doc.create_map().unwrap();
+    page.insert("sys:id".into(), "page").unwrap();
+    page.insert("sys:flavour".into(), "affine:page").unwrap();
+    let mut page_children = doc.create_array().unwrap();
+    page_children.push("surface").unwrap();
+    page.insert("sys:children".into(), Value::Array(page_children)).unwrap();
+    let mut page_title = doc.create_text().unwrap();
+    page_title.insert(0, "Page").unwrap();
+    page.insert("prop:title".into(), Value::Text(page_title)).unwrap();
+    blocks.insert("page".into(), Value::Map(page)).unwrap();
+
+    let mut surface = doc.create_map().unwrap();
+    surface.insert("sys:id".into(), "surface").unwrap();
+    surface.insert("sys:flavour".into(), "affine:surface").unwrap();
+    let mut surface_children = doc.create_array().unwrap();
+    surface_children.push("edgeless-text").unwrap();
+    surface
+      .insert("sys:children".into(), Value::Array(surface_children))
+      .unwrap();
+    blocks.insert("surface".into(), Value::Map(surface)).unwrap();
+
+    let mut edgeless_text = doc.create_map().unwrap();
+    edgeless_text.insert("sys:id".into(), "edgeless-text").unwrap();
+    edgeless_text
+      .insert("sys:flavour".into(), "affine:edgeless-text")
+      .unwrap();
+    let mut edgeless_text_children = doc.create_array().unwrap();
+    edgeless_text_children.push("paragraph").unwrap();
+    edgeless_text
+      .insert("sys:children".into(), Value::Array(edgeless_text_children))
+      .unwrap();
+    blocks
+      .insert("edgeless-text".into(), Value::Map(edgeless_text))
+      .unwrap();
+
+    let mut paragraph = doc.create_map().unwrap();
+    paragraph.insert("sys:id".into(), "paragraph").unwrap();
+    paragraph.insert("sys:flavour".into(), "affine:paragraph").unwrap();
+    paragraph
+      .insert("sys:children".into(), Value::Array(doc.create_array().unwrap()))
+      .unwrap();
+    paragraph.insert("prop:type".into(), "text").unwrap();
+    let mut paragraph_text = doc.create_text().unwrap();
+    paragraph_text.insert(0, "hello from edgeless").unwrap();
+    paragraph
+      .insert("prop:text".into(), Value::Text(paragraph_text))
+      .unwrap();
+    blocks.insert("paragraph".into(), Value::Map(paragraph)).unwrap();
+
+    let doc_bin = doc.encode_update_v1().unwrap();
+    let result = parse_doc_to_markdown(doc_bin, doc_id, false, None).expect("parse doc");
+
+    assert!(result.markdown.is_empty());
+    assert!(
+      result
+        .known_unsupported_blocks
+        .contains(&"surface:affine:surface".to_string())
+    );
+    assert!(
+      result
+        .known_unsupported_blocks
+        .contains(&"edgeless-text:affine:edgeless-text".to_string())
+    );
+    assert!(result.unknown_blocks.is_empty());
+  }
+
+  #[test]
+  fn test_parse_doc_to_markdown_collects_unknown_blocks() {
+    let doc_id = "unknown-block-doc".to_string();
+    let doc = DocOptions::new().with_guid(doc_id.clone()).build();
+    let mut blocks = doc.get_or_create_map("blocks").unwrap();
+
+    let mut page = doc.create_map().unwrap();
+    page.insert("sys:id".into(), "page").unwrap();
+    page.insert("sys:flavour".into(), "affine:page").unwrap();
+    let mut page_children = doc.create_array().unwrap();
+    page_children.push("mystery").unwrap();
+    page.insert("sys:children".into(), Value::Array(page_children)).unwrap();
+    let mut page_title = doc.create_text().unwrap();
+    page_title.insert(0, "Page").unwrap();
+    page.insert("prop:title".into(), Value::Text(page_title)).unwrap();
+    blocks.insert("page".into(), Value::Map(page)).unwrap();
+
+    let mut mystery = doc.create_map().unwrap();
+    mystery.insert("sys:id".into(), "mystery").unwrap();
+    mystery.insert("sys:flavour".into(), "affine:custom-unknown").unwrap();
+    let mut mystery_children = doc.create_array().unwrap();
+    mystery_children.push("paragraph").unwrap();
+    mystery
+      .insert("sys:children".into(), Value::Array(mystery_children))
+      .unwrap();
+    blocks.insert("mystery".into(), Value::Map(mystery)).unwrap();
+
+    let mut paragraph = doc.create_map().unwrap();
+    paragraph.insert("sys:id".into(), "paragraph").unwrap();
+    paragraph.insert("sys:flavour".into(), "affine:paragraph").unwrap();
+    paragraph
+      .insert("sys:children".into(), Value::Array(doc.create_array().unwrap()))
+      .unwrap();
+    paragraph.insert("prop:type".into(), "text").unwrap();
+    let mut paragraph_text = doc.create_text().unwrap();
+    paragraph_text.insert(0, "child of unknown").unwrap();
+    paragraph
+      .insert("prop:text".into(), Value::Text(paragraph_text))
+      .unwrap();
+    blocks.insert("paragraph".into(), Value::Map(paragraph)).unwrap();
+
+    let doc_bin = doc.encode_update_v1().unwrap();
+    let result = parse_doc_to_markdown(doc_bin, doc_id, false, None).expect("parse doc");
+
+    assert!(result.markdown.is_empty());
+    assert!(result.known_unsupported_blocks.is_empty());
+    assert_eq!(result.unknown_blocks, vec!["mystery:affine:custom-unknown".to_string()]);
   }
 }

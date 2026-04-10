@@ -71,6 +71,7 @@ export class MenuInput extends MenuFocusable {
     }
     if (e.key === 'Enter') {
       this.complete();
+      this.inputRef.blur();
       this.menu.close();
       return;
     }

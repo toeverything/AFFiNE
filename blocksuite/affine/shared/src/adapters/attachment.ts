@@ -1,4 +1,7 @@
-import { AttachmentBlockSchema } from '@blocksuite/affine-model';
+import {
+  type AttachmentBlockProps,
+  AttachmentBlockSchema,
+} from '@blocksuite/affine-model';
 import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
 import {
   type AssetsManager,
@@ -22,6 +25,24 @@ import {
 import { AdapterFactoryIdentifier } from './types/adapter';
 
 export type Attachment = File[];
+
+type CreateAttachmentBlockSnapshotOptions = {
+  id?: string;
+  props: Partial<AttachmentBlockProps> & Pick<AttachmentBlockProps, 'name'>;
+};
+
+export function createAttachmentBlockSnapshot({
+  id = nanoid(),
+  props,
+}: CreateAttachmentBlockSnapshotOptions): BlockSnapshot {
+  return {
+    type: 'block',
+    id,
+    flavour: AttachmentBlockSchema.model.flavour,
+    props,
+    children: [],
+  };
+}
 
 type AttachmentToSliceSnapshotPayload = {
   file: Attachment;
@@ -97,8 +118,6 @@ export class AttachmentAdapter extends BaseAdapter<Attachment> {
     if (files.length === 0) return null;
 
     const content: SliceSnapshot['content'] = [];
-    const flavour = AttachmentBlockSchema.model.flavour;
-
     for (const blob of files) {
       const id = nanoid();
       const { name, size, type } = blob;
@@ -108,22 +127,21 @@ export class AttachmentAdapter extends BaseAdapter<Attachment> {
         mapInto: sourceId => ({ sourceId }),
       });
 
-      content.push({
-        type: 'block',
-        flavour,
-        id,
-        props: {
-          name,
-          size,
-          type,
-          embed: false,
-          style: 'horizontalThin',
-          index: 'a0',
-          xywh: '[0,0,0,0]',
-          rotate: 0,
-        },
-        children: [],
-      });
+      content.push(
+        createAttachmentBlockSnapshot({
+          id,
+          props: {
+            name,
+            size,
+            type,
+            embed: false,
+            style: 'horizontalThin',
+            index: 'a0',
+            xywh: '[0,0,0,0]',
+            rotate: 0,
+          },
+        })
+      );
     }
 
     return {

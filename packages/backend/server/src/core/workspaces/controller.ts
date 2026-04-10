@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import {
   Controller,
   Get,
+  Head,
   Logger,
   Param,
   Query,
@@ -16,16 +17,19 @@ import {
   BlobNotFound,
   CallMetric,
   CommentAttachmentNotFound,
+  DocActionDenied,
   DocHistoryNotFound,
   DocNotFound,
   getRequestTrackerId,
   InvalidHistoryTimestamp,
+  SpaceAccessDenied,
 } from '../../base';
 import { DocMode, Models, PublicDocMode } from '../../models';
+import { buildPublicRootDoc } from '../../native';
 import { CurrentUser, Public } from '../auth';
 import { PgWorkspaceDocStorageAdapter } from '../doc';
 import { DocReader } from '../doc/reader';
-import { AccessController } from '../permission';
+import { AccessController, WorkspacePolicyService } from '../permission';
 import { CommentAttachmentStorage, WorkspaceBlobStorage } from '../storage';
 import { DocID } from '../utils/doc';
 
@@ -36,6 +40,7 @@ export class WorkspacesController {
     private readonly storage: WorkspaceBlobStorage,
     private readonly commentAttachmentStorage: CommentAttachmentStorage,
     private readonly ac: AccessController,
+    private readonly workspacePolicy: WorkspacePolicyService,
     private readonly workspace: PgWorkspaceDocStorageAdapter,
     private readonly docReader: DocReader,
     private readonly models: Models
@@ -46,6 +51,48 @@ export class WorkspacesController {
     return createHash('sha256')
       .update(`${workspaceId}:${docId}:${tracker}`)
       .digest('hex');
+  }
+
+  private async assertCanReadPublicDoc(
+    userId: string,
+    workspaceId: string,
+    docId: string
+  ) {
+    const canReadSharedDoc = await this.ac
+      .user(userId)
+      .doc(workspaceId, docId)
+      .can('Doc.Read');
+    if (!canReadSharedDoc) {
+      throw new DocActionDenied({
+        docId,
+        spaceId: workspaceId,
+        action: 'Doc.Read',
+      });
+    }
+  }
+
+  private async getPublishModeHeader(workspaceId: string, docId: string) {
+    const docMeta = await this.models.doc.getMeta(workspaceId, docId, {
+      select: {
+        mode: true,
+      },
+    });
+    return docMeta?.mode === PublicDocMode.Edgeless
+      ? DocMode.edgeless
+      : DocMode.page;
+  }
+
+  private async getDocBinaryOrThrow(workspaceId: string, docId: string) {
+    const binResponse = await this.docReader.getDoc(workspaceId, docId);
+
+    if (!binResponse) {
+      throw new DocNotFound({
+        spaceId: workspaceId,
+        docId,
+      });
+    }
+
+    return binResponse;
   }
 
   // get workspace blob
@@ -61,10 +108,15 @@ export class WorkspacesController {
     @Query('redirect') redirect: string | undefined,
     @Res() res: Response
   ) {
-    await this.ac
+    const canReadWorkspace = await this.ac
       .user(user?.id ?? 'anonymous')
       .workspace(workspaceId)
-      .assert('Workspace.Read');
+      .can('Workspace.Read');
+    const canReadSharedWorkspaceBlobs =
+      await this.workspacePolicy.canReadWorkspaceBySharedDocs(workspaceId);
+    if (!canReadWorkspace && !canReadSharedWorkspaceBlobs) {
+      throw new SpaceAccessDenied({ spaceId: workspaceId });
+    }
     const { body, metadata, redirectUrl } = await this.storage.get(
       workspaceId,
       name,
@@ -184,6 +236,94 @@ export class WorkspacesController {
 
     res.setHeader('content-type', 'application/octet-stream');
     res.send(binResponse.bin);
+  }
+
+  @Public()
+  @Head('/:id/public-docs/:docId')
+  @CallMetric('controllers', 'workspace_head_public_doc')
+  async headPublicDoc(
+    @CurrentUser() user: CurrentUser | undefined,
+    @Param('id') workspaceId: string,
+    @Param('docId') docId: string,
+    @Res() res: Response
+  ) {
+    await this.assertCanReadPublicDoc(
+      user?.id ?? 'anonymous',
+      workspaceId,
+      docId
+    );
+    const publishPageMode = await this.getPublishModeHeader(workspaceId, docId);
+
+    res.setHeader('publish-mode', publishPageMode);
+    res.status(200).end();
+  }
+
+  @Public()
+  @Get('/:id/public-docs/:docId')
+  @CallMetric('controllers', 'workspace_get_public_doc')
+  async publicDoc(
+    @CurrentUser() user: CurrentUser | undefined,
+    @Req() req: Request,
+    @Param('id') workspaceId: string,
+    @Param('docId') docId: string,
+    @Res() res: Response
+  ) {
+    await this.assertCanReadPublicDoc(
+      user?.id ?? 'anonymous',
+      workspaceId,
+      docId
+    );
+
+    const binResponse = await this.getDocBinaryOrThrow(workspaceId, docId);
+
+    void this.models.workspaceAnalytics
+      .recordDocView({
+        workspaceId,
+        docId,
+        userId: user?.id,
+        visitorId: this.buildVisitorId(req, workspaceId, docId),
+        isGuest: !user,
+      })
+      .catch(error => {
+        this.logger.warn(
+          `Failed to record doc view: ${workspaceId}/${docId}`,
+          error as Error
+        );
+      });
+
+    res.setHeader(
+      'publish-mode',
+      await this.getPublishModeHeader(workspaceId, docId)
+    );
+    res.setHeader('content-type', 'application/octet-stream');
+    res.send(binResponse.bin);
+  }
+
+  @Public()
+  @Get('/:id/public-docs/:docId/root-doc')
+  @CallMetric('controllers', 'workspace_get_public_root_doc')
+  async publicRootDoc(
+    @CurrentUser() user: CurrentUser | undefined,
+    @Param('id') workspaceId: string,
+    @Param('docId') docId: string,
+    @Res() res: Response
+  ) {
+    await this.assertCanReadPublicDoc(
+      user?.id ?? 'anonymous',
+      workspaceId,
+      docId
+    );
+
+    const rootDoc = await this.getDocBinaryOrThrow(workspaceId, workspaceId);
+
+    const publicDocs = await this.models.doc.findPublics(workspaceId);
+    const publicRootDoc = buildPublicRootDoc(
+      Buffer.from(rootDoc.bin),
+      publicDocs.map(doc => ({ id: doc.docId, title: doc.title ?? undefined }))
+    );
+
+    res.setHeader('content-type', 'application/octet-stream');
+    res.send(publicRootDoc);
   }
 
   @Get('/:id/docs/:guid/histories/:timestamp')

@@ -32,6 +32,8 @@ export interface WorkspaceDocInfo {
 export interface DocMarkdown {
   title: string;
   markdown: string;
+  knownUnsupportedBlocks: string[];
+  unknownBlocks: string[];
 }
 
 export abstract class DocReader {
@@ -185,12 +187,27 @@ export class DatabaseDocReader extends DocReader {
     if (!doc) {
       return null;
     }
-    return parseDocToMarkdownFromDocSnapshot(
-      workspaceId,
-      docId,
-      doc.bin,
-      aiEditable
-    );
+    try {
+      const markdown = parseDocToMarkdownFromDocSnapshot(
+        workspaceId,
+        docId,
+        doc.bin,
+        aiEditable
+      );
+
+      const unknownBlocks = markdown.unknownBlocks ?? [];
+      if (unknownBlocks.length > 0) {
+        this.logger.warn(
+          `Unknown blocks found when parsing markdown for ${workspaceId}/${docId}.`,
+          { unknownBlocks }
+        );
+      }
+
+      return markdown;
+    } catch (error) {
+      this.logger.error(`Failed to parse ${workspaceId}/${docId}.`, error);
+      throw error;
+    }
   }
 
   async getDocDiff(

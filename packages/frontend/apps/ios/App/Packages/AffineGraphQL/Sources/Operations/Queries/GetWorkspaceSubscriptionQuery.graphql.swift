@@ -26,6 +26,9 @@ public class GetWorkspaceSubscriptionQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("workspace", Workspace.self, arguments: ["id": .variable("workspaceId")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      GetWorkspaceSubscriptionQuery.Data.self
+    ] }
 
     /// Get workspace by id
     public var workspace: Workspace { __data["workspace"] }
@@ -41,6 +44,9 @@ public class GetWorkspaceSubscriptionQuery: GraphQLQuery {
       public static var __selections: [ApolloAPI.Selection] { [
         .field("__typename", String.self),
         .field("subscription", Subscription?.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        GetWorkspaceSubscriptionQuery.Data.Workspace.self
       ] }
 
       /// The team subscription of the workspace, if exists.
@@ -65,6 +71,9 @@ public class GetWorkspaceSubscriptionQuery: GraphQLQuery {
           .field("nextBillAt", AffineGraphQL.DateTime?.self),
           .field("canceledAt", AffineGraphQL.DateTime?.self),
           .field("variant", GraphQLEnum<AffineGraphQL.SubscriptionVariant>?.self),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          GetWorkspaceSubscriptionQuery.Data.Workspace.Subscription.self
         ] }
 
         @available(*, deprecated, message: "removed")

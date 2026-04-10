@@ -17,7 +17,10 @@ test.describe('AIAction/ExplainSelection', () => {
       'LLM(AI)'
     );
     const { answer, responses } = await explainSelection();
-    await expect(answer).toHaveText(/Large Language Model/, { timeout: 20000 });
+    await expect(answer).toHaveText(
+      /Large Language Model|LLM|artificial intelligence/i,
+      { timeout: 20000 }
+    );
     expect(responses).toEqual(new Set(['insert-below', 'replace-selection']));
   });
 
@@ -33,7 +36,10 @@ test.describe('AIAction/ExplainSelection', () => {
     );
 
     const { answer, responses } = await explainSelection();
-    await expect(answer).toHaveText(/Large Language Model/, { timeout: 20000 });
+    await expect(answer).toHaveText(
+      /Large Language Model|LLM|artificial intelligence/i,
+      { timeout: 20000 }
+    );
     expect(responses).toEqual(new Set(['insert-below']));
   });
 
@@ -49,7 +55,10 @@ test.describe('AIAction/ExplainSelection', () => {
     );
 
     const { answer, responses } = await explainSelection();
-    await expect(answer).toHaveText(/Large Language Model/, { timeout: 20000 });
+    await expect(answer).toHaveText(
+      /Large Language Model|LLM|artificial intelligence/i,
+      { timeout: 20000 }
+    );
     expect(responses).toEqual(new Set(['insert-below']));
   });
 

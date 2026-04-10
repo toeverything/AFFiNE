@@ -32,7 +32,6 @@ import {
   SpaceAccessDenied,
 } from '../../base';
 import { Models } from '../../models';
-import { mergeUpdatesInApplyWay } from '../../native';
 import { CurrentUser } from '../auth';
 import {
   DocReader,
@@ -40,7 +39,12 @@ import {
   PgUserspaceDocStorageAdapter,
   PgWorkspaceDocStorageAdapter,
 } from '../doc';
-import { AccessController, WorkspaceAction } from '../permission';
+import { applyUpdatesWithNative } from '../doc/merge-updates';
+import {
+  AccessController,
+  type DocAction,
+  WorkspaceAction,
+} from '../permission';
 import { DocID } from '../utils/doc';
 
 const SubscribeMessage = (event: string) =>
@@ -214,6 +218,9 @@ export class SpaceSyncGateway
   private readonly localUserConnectionCounts = new Map<string, number>();
   private unresolvedPresenceSockets = 0;
   private flushTimer?: NodeJS.Timeout;
+  private activeUsersFlushTimer?: NodeJS.Timeout;
+  private activeUsersFlushInFlight = false;
+  private activeUsersFlushQueued = false;
 
   constructor(
     private readonly ac: AccessController,
@@ -225,12 +232,9 @@ export class SpaceSyncGateway
   ) {}
 
   onModuleInit() {
+    this.scheduleActiveUsersFlush(0);
     this.flushTimer = setInterval(() => {
-      this.flushActiveUsersMinute().catch(error => {
-        this.logger.warn(
-          `Failed to flush active users minute: ${this.formatError(error)}`
-        );
-      });
+      this.scheduleActiveUsersFlush(0);
     }, 60_000);
     this.flushTimer.unref?.();
   }
@@ -240,6 +244,11 @@ export class SpaceSyncGateway
       clearInterval(this.flushTimer);
       this.flushTimer = undefined;
     }
+    if (this.activeUsersFlushTimer) {
+      clearTimeout(this.activeUsersFlushTimer);
+      this.activeUsersFlushTimer = undefined;
+    }
+    this.activeUsersFlushQueued = false;
   }
 
   private encodeUpdates(updates: Uint8Array[]) {
@@ -268,8 +277,10 @@ export class SpaceSyncGateway
     }
 
     try {
-      const merged = mergeUpdatesInApplyWay(
-        updates.map(update => Buffer.from(update))
+      const merged = applyUpdatesWithNative(
+        updates,
+        'socketio.broadcast',
+        this.logger
       );
       metrics.socketio.counter('doc_updates_compressed').add(1);
       return {
@@ -302,19 +313,30 @@ export class SpaceSyncGateway
     setImmediate(() => client.disconnect());
   }
 
+  private async assertDocActionAllowed(
+    spaceType: SpaceType,
+    userId: string,
+    spaceId: string,
+    docId: string,
+    action: DocAction
+  ) {
+    if (spaceType === SpaceType.Userspace) {
+      if (spaceId !== userId) {
+        throw new SpaceAccessDenied({ spaceId });
+      }
+      return;
+    }
+
+    await this.ac.user(userId).doc(spaceId, docId).assert(action);
+  }
+
   handleConnection(client: Socket) {
     this.connectionCount++;
     this.logger.debug(`New connection, total: ${this.connectionCount}`);
     metrics.socketio.gauge('connections').record(this.connectionCount);
     const userId = this.attachPresenceUserId(client);
     this.trackConnectedSocket(client.id, userId);
-    void this.flushActiveUsersMinute({
-      aggregateAcrossCluster: false,
-    }).catch(error => {
-      this.logger.warn(
-        `Failed to flush active users minute: ${this.formatError(error)}`
-      );
-    });
+    this.scheduleActiveUsersFlush();
   }
 
   handleDisconnect(client: Socket) {
@@ -324,13 +346,7 @@ export class SpaceSyncGateway
       `Connection disconnected, total: ${this.connectionCount}`
     );
     metrics.socketio.gauge('connections').record(this.connectionCount);
-    void this.flushActiveUsersMinute({
-      aggregateAcrossCluster: false,
-    }).catch(error => {
-      this.logger.warn(
-        `Failed to flush active users minute: ${this.formatError(error)}`
-      );
-    });
+    this.scheduleActiveUsersFlush();
   }
 
   private attachPresenceUserId(client: Socket): string | null {
@@ -412,13 +428,55 @@ export class SpaceSyncGateway
     }
   }
 
+  private scheduleActiveUsersFlush(delayMs = 250) {
+    if (this.activeUsersFlushTimer) {
+      return;
+    }
+
+    if (this.activeUsersFlushInFlight) {
+      this.activeUsersFlushQueued = true;
+      return;
+    }
+
+    this.activeUsersFlushTimer = setTimeout(() => {
+      this.activeUsersFlushTimer = undefined;
+      this.runScheduledActiveUsersFlush();
+    }, delayMs);
+    this.activeUsersFlushTimer.unref?.();
+  }
+
+  private runScheduledActiveUsersFlush() {
+    if (this.activeUsersFlushInFlight) {
+      this.activeUsersFlushQueued = true;
+      return;
+    }
+
+    this.activeUsersFlushInFlight = true;
+    void this.flushActiveUsersMinute()
+      .catch(error => {
+        this.logger.warn(
+          `Failed to flush active users minute: ${this.formatError(error)}`
+        );
+      })
+      .finally(() => {
+        this.activeUsersFlushInFlight = false;
+        if (this.activeUsersFlushQueued) {
+          this.activeUsersFlushQueued = false;
+          this.scheduleActiveUsersFlush(0);
+        }
+      });
+  }
+
   private async flushActiveUsersMinute(options?: {
     aggregateAcrossCluster?: boolean;
+    skipWriteOnAggregateError?: boolean;
   }) {
     const minute = new Date();
     minute.setSeconds(0, 0);
 
     const aggregateAcrossCluster = options?.aggregateAcrossCluster ?? true;
+    const skipWriteOnAggregateError =
+      options?.skipWriteOnAggregateError ?? aggregateAcrossCluster;
     let activeUsers = this.resolveLocalActiveUsers();
     if (aggregateAcrossCluster) {
       try {
@@ -444,8 +502,9 @@ export class SpaceSyncGateway
         }
       } catch (error) {
         this.logger.warn(
-          `Failed to aggregate active users from sockets, using local value: ${this.formatError(error)}`
+          `Failed to aggregate active users from sockets: ${this.formatError(error)}`
         );
+        if (skipWriteOnAggregateError) return;
       }
     }
 
@@ -605,9 +664,17 @@ export class SpaceSyncGateway
   @SubscribeMessage('space:delete-doc')
   async onDeleteSpaceDoc(
     @ConnectedSocket() client: Socket,
+    @CurrentUser() user: CurrentUser,
     @MessageBody() { spaceType, spaceId, docId }: DeleteDocMessage
   ) {
     const adapter = this.selectAdapter(client, spaceType);
+    await this.assertDocActionAllowed(
+      spaceType,
+      user.id,
+      spaceId,
+      docId,
+      'Doc.Delete'
+    );
     await adapter.delete(spaceId, docId);
   }
 
@@ -624,6 +691,7 @@ export class SpaceSyncGateway
     const { spaceType, spaceId, docId, update } = message;
     const adapter = this.selectAdapter(client, spaceType);
 
+    // Quota recovery mode is intentionally not applied to sync in this phase.
     // TODO(@forehalo): enable after frontend supporting doc revert
     // await this.ac.user(user.id).doc(spaceId, docId).assert('Doc.Update');
     const timestamp = await adapter.push(

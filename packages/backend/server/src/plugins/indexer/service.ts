@@ -14,6 +14,7 @@ import {
   AggregateQueryDSL,
   BaseQueryDSL,
   HighlightDSL,
+  ManticoresearchProvider,
   OperationOptions,
   SearchNode,
   SearchProvider,
@@ -127,6 +128,63 @@ export class IndexerService {
     const mappings = SearchTableMappingStrings[searchProvider.type];
     for (const table of Object.keys(mappings) as SearchTable[]) {
       await searchProvider.createTable(table, mappings[table]);
+    }
+  }
+
+  async rebuildManticoreIndexes() {
+    let searchProvider: SearchProvider | undefined;
+    try {
+      searchProvider = this.factory.get();
+    } catch (err) {
+      if (err instanceof SearchProviderNotFound) {
+        this.logger.debug('No search provider found, skip rebuilding tables');
+        return;
+      }
+      throw err;
+    }
+
+    if (!(searchProvider instanceof ManticoresearchProvider)) {
+      this.logger.debug(
+        `Search provider ${searchProvider.type} does not need manticore rebuild`
+      );
+      return;
+    }
+
+    const mappings = SearchTableMappingStrings[searchProvider.type];
+    for (const table of Object.keys(mappings) as SearchTable[]) {
+      await searchProvider.recreateTable(table, mappings[table]);
+    }
+
+    let lastWorkspaceSid = 0;
+    while (true) {
+      const workspaces = await this.models.workspace.list(
+        { sid: { gt: lastWorkspaceSid } },
+        { id: true, sid: true },
+        100
+      );
+      if (!workspaces.length) {
+        break;
+      }
+
+      for (const workspace of workspaces) {
+        await this.models.workspace.update(
+          workspace.id,
+          { indexed: false },
+          false
+        );
+        await this.queue.add(
+          'indexer.indexWorkspace',
+          {
+            workspaceId: workspace.id,
+          },
+          {
+            jobId: `indexWorkspace/${workspace.id}`,
+            priority: 100,
+          }
+        );
+      }
+
+      lastWorkspaceSid = workspaces[workspaces.length - 1].sid;
     }
   }
 

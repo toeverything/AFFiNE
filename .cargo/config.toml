@@ -19,3 +19,8 @@ rustflags = [
 # pthread_key_create() destructors and segfault after a DSO unloading
 [target.'cfg(all(target_env = "gnu", not(target_os = "windows")))']
 rustflags = ["-C", "link-args=-Wl,-z,nodelete"]
+
+# Temporary local llm_adapter override.
+# Uncomment when verifying AFFiNE against the sibling llm_adapter workspace.
+# [patch.crates-io]
+# llm_adapter = { path = "../llm_adapter" }

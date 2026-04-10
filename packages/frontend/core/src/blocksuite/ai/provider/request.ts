@@ -3,7 +3,7 @@ import { partition } from 'lodash-es';
 
 import { AIProvider } from './ai-provider';
 import { type CopilotClient, Endpoint } from './copilot-client';
-import { delay, toTextStream } from './event-source';
+import { toTextStream } from './event-source';
 
 const TIMEOUT = 50000;
 
@@ -67,6 +67,8 @@ interface CreateMessageOptions {
   content?: string;
   attachments?: (string | Blob | File)[];
   params?: Record<string, any>;
+  timeout?: number;
+  signal?: AbortSignal;
 }
 
 async function createMessage({
@@ -75,6 +77,8 @@ async function createMessage({
   content,
   attachments,
   params,
+  timeout,
+  signal,
 }: CreateMessageOptions): Promise<string> {
   const hasAttachments = attachments && attachments.length > 0;
   const options: Parameters<CopilotClient['createMessage']>[0] = {
@@ -102,7 +106,7 @@ async function createMessage({
     ).filter(Boolean) as File[];
   }
 
-  return await client.createMessage(options);
+  return await client.createMessage(options, { timeout, signal });
 }
 
 export function textToText({
@@ -115,7 +119,7 @@ export function textToText({
   signal,
   timeout = TIMEOUT,
   retry = false,
-  endpoint = Endpoint.Stream,
+  endpoint = Endpoint.StreamObject,
   postfix,
   reasoning,
   modelId,
@@ -133,6 +137,8 @@ export function textToText({
             content,
             attachments,
             params,
+            timeout,
+            signal,
           });
         }
         const eventSource = client.chatTextStream(
@@ -147,65 +153,105 @@ export function textToText({
         );
         AIProvider.LAST_ACTION_SESSIONID = sessionId;
 
-        if (signal) {
-          if (signal.aborted) {
-            eventSource.close();
-            return;
+        let onAbort: (() => void) | undefined;
+        try {
+          if (signal) {
+            if (signal.aborted) {
+              eventSource.close();
+              return;
+            }
+            onAbort = () => {
+              eventSource.close();
+            };
+            signal.addEventListener('abort', onAbort, { once: true });
           }
-          signal.onabort = () => {
-            eventSource.close();
-          };
-        }
-        if (postfix) {
-          const messages: string[] = [];
-          for await (const event of toTextStream(eventSource, {
-            timeout,
-            signal,
-          })) {
-            if (event.type === 'message') {
-              messages.push(event.data);
+
+          if (postfix) {
+            const messages: string[] = [];
+            for await (const event of toTextStream(eventSource, {
+              timeout,
+              signal,
+            })) {
+              if (event.type === 'message') {
+                messages.push(event.data);
+              }
+            }
+            yield postfix(messages.join(''));
+          } else {
+            for await (const event of toTextStream(eventSource, {
+              timeout,
+              signal,
+            })) {
+              if (event.type === 'message') {
+                yield event.data;
+              }
             }
           }
-          yield postfix(messages.join(''));
-        } else {
-          for await (const event of toTextStream(eventSource, {
-            timeout,
-            signal,
-          })) {
-            if (event.type === 'message') {
-              yield event.data;
-            }
+        } finally {
+          eventSource.close();
+          if (signal && onAbort) {
+            signal.removeEventListener('abort', onAbort);
           }
         }
       },
     };
   } else {
-    return Promise.race([
-      timeout
-        ? delay(timeout).then(() => {
-            throw new Error('Timeout');
-          })
-        : null,
-      (async function () {
-        if (!retry) {
-          messageId = await createMessage({
-            client,
-            sessionId,
-            content,
-            attachments,
-            params,
-          });
-        }
-        AIProvider.LAST_ACTION_SESSIONID = sessionId;
-
-        return client.chatText({
+    return (async function () {
+      if (!retry) {
+        messageId = await createMessage({
+          client,
+          sessionId,
+          content,
+          attachments,
+          params,
+          timeout,
+          signal,
+        });
+      }
+      const eventSource = client.chatTextStream(
+        {
           sessionId,
           messageId,
           reasoning,
           modelId,
-        });
-      })(),
-    ]);
+          toolsConfig,
+        },
+        endpoint
+      );
+      AIProvider.LAST_ACTION_SESSIONID = sessionId;
+
+      let onAbort: (() => void) | undefined;
+      try {
+        if (signal) {
+          if (signal.aborted) {
+            eventSource.close();
+            return '';
+          }
+          onAbort = () => {
+            eventSource.close();
+          };
+          signal.addEventListener('abort', onAbort, { once: true });
+        }
+
+        const messages: string[] = [];
+        for await (const event of toTextStream(eventSource, {
+          timeout,
+          signal,
+        })) {
+          if (event.type === 'message') {
+            messages.push(event.data);
+          }
+        }
+
+        const result = messages.join('');
+        return postfix ? postfix(result) : result;
+      } finally {
+        eventSource.close();
+        if (signal && onAbort) {
+          signal.removeEventListener('abort', onAbort);
+        }
+      }
+    })();
   }
 }
 
@@ -232,6 +278,8 @@ export function toImage({
           content,
           attachments,
           params,
+          timeout,
+          signal,
         });
       }
       const eventSource = client.imagesStream(

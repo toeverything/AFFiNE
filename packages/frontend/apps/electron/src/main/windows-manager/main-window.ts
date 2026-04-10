@@ -4,10 +4,10 @@ import { BrowserWindow, nativeTheme } from 'electron';
 import electronWindowState from 'electron-window-state';
 import { BehaviorSubject, map, shareReplay } from 'rxjs';
 
+import { mainWindowOrigin } from '../../shared/internal-origin';
 import { isLinux, isMacOS, isWindows, resourcesPath } from '../../shared/utils';
 import { beforeAppQuit } from '../cleanup';
 import { buildType } from '../config';
-import { mainWindowOrigin } from '../constants';
 import { ensureHelperProcess } from '../helper-process';
 import { logger } from '../logger';
 import { MenubarStateKey, MenubarStateSchema } from '../shared-state-schema';

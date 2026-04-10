@@ -13,10 +13,16 @@ import {
   buildOpenAppUrlRoute,
 } from '../../../modules/open-in-app';
 import { supportedClient } from './common';
+import {
+  type OAuthFlowMode,
+  parseOAuthCallbackState,
+  resolveOAuthRedirect,
+} from './oauth-flow';
 
 interface LoaderData {
   state: string;
   code: string;
+  flow: OAuthFlowMode;
   provider: string;
 }
 
@@ -31,12 +37,18 @@ export const loader: LoaderFunction = async ({ request }) => {
   }
 
   try {
-    const { state, client, provider } = JSON.parse(stateStr);
+    const { state, client, flow, provider } = parseOAuthCallbackState(stateStr);
+
+    if (!state || !provider) {
+      return redirect('/sign-in?error=Invalid oauth callback parameters');
+    }
+
     stateStr = state;
 
     const payload: LoaderData = {
       state,
       code,
+      flow,
       provider,
     };
 
@@ -79,8 +91,13 @@ export const Component = () => {
     triggeredRef.current = true;
     auth
       .signInOauth(data.code, data.state, data.provider)
-      .then(() => {
-        window.close();
+      .then(({ redirectUri }) => {
+        if (data.flow === 'popup') {
+          window.close();
+          return;
+        }
+
+        location.replace(resolveOAuthRedirect(redirectUri, location.origin));
       })
       .catch(e => {
         nav(`/sign-in?error=${encodeURIComponent(e.message)}`);

@@ -16,7 +16,7 @@ import { css, html, nothing, type PropertyValues } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { repeat } from 'lit/directives/repeat.js';
-import { debounce } from 'lodash-es';
+import { debounce, throttle } from 'lodash-es';
 
 import { AffineIcon } from '../../_common/icons';
 import { type AIError, AIProvider, UnauthorizedError } from '../../provider';
@@ -24,6 +24,11 @@ import { mergeStreamObjects } from '../../utils/stream-objects';
 import type { DocDisplayConfig } from '../ai-chat-chips';
 import { type ChatContextValue } from '../ai-chat-content/type';
 import type { AIReasoningConfig } from '../ai-chat-input';
+import {
+  AI_CHAT_AUTO_SCROLL_PAUSE_EVENT,
+  AI_CHAT_AUTO_SCROLL_RESUME_THRESHOLD,
+  AI_CHAT_SCROLL_DOWN_INDICATOR_THRESHOLD,
+} from './auto-scroll';
 import { AIPreloadConfig } from './preload-config';
 import {
   type HistoryMessage,
@@ -218,6 +223,10 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
   })
   accessor testId = 'chat-panel-messages';
 
+  private _autoScrollEnabled = true;
+
+  private _lastObservedScrollTop = 0;
+
   private get _isReasoningActive() {
     return !!this.reasoningConfig.enabled.value;
   }
@@ -243,20 +252,49 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
         </div>`;
   }
 
-  private readonly _onScroll = () => {
-    const { clientHeight, scrollTop, scrollHeight } = this;
-    this.canScrollDown = scrollHeight - scrollTop - clientHeight > 200;
-  };
+  private _onScroll() {
+    const { scrollTop } = this;
+    const distanceFromBottom = this._getDistanceFromBottom();
+
+    this.canScrollDown =
+      distanceFromBottom > AI_CHAT_SCROLL_DOWN_INDICATOR_THRESHOLD;
+
+    if (distanceFromBottom <= AI_CHAT_AUTO_SCROLL_RESUME_THRESHOLD) {
+      this._autoScrollEnabled = true;
+    } else if (scrollTop < this._lastObservedScrollTop) {
+      this._autoScrollEnabled = false;
+    }
+
+    this._lastObservedScrollTop = scrollTop;
+  }
 
   private readonly _debouncedOnScroll = debounce(
     this._onScroll.bind(this),
     100
   );
 
-  private readonly _onDownIndicatorClick = () => {
+  private readonly _throttledScrollToEnd = throttle(() => {
+    if (!this._autoScrollEnabled) {
+      return;
+    }
+    this.scrollToEnd();
+  }, 200);
+
+  private _onDownIndicatorClick() {
+    this._autoScrollEnabled = true;
     this.canScrollDown = false;
     this.scrollToEnd();
-  };
+  }
+
+  private _pauseAutoScroll() {
+    this._autoScrollEnabled = false;
+    requestAnimationFrame(() => this._onScroll());
+  }
+
+  private _getDistanceFromBottom() {
+    const { clientHeight, scrollTop, scrollHeight } = this;
+    return scrollHeight - scrollTop - clientHeight;
+  }
 
   protected override render() {
     const { status, error } = this.chatContextValue;
@@ -392,19 +430,39 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
 
     // Add scroll event listener to the host element
     this.addEventListener('scroll', this._debouncedOnScroll);
+    this.addEventListener(
+      AI_CHAT_AUTO_SCROLL_PAUSE_EVENT,
+      this._pauseAutoScroll as EventListener
+    );
     disposables.add(() => {
       this.removeEventListener('scroll', this._debouncedOnScroll);
+      this.removeEventListener(
+        AI_CHAT_AUTO_SCROLL_PAUSE_EVENT,
+        this._pauseAutoScroll as EventListener
+      );
     });
   }
 
-  protected override updated(_changedProperties: PropertyValues) {
-    if (_changedProperties.has('isHistoryLoading')) {
+  protected override updated(changedProperties: PropertyValues) {
+    if (changedProperties.has('isHistoryLoading')) {
       this.canScrollDown = false;
+      this._autoScrollEnabled = true;
+    }
+
+    if (changedProperties.has('messages')) {
+      this._onScroll();
+
+      if (this.chatContextValue.status === 'transmitting') {
+        this._throttledScrollToEnd();
+      } else if (this._autoScrollEnabled) {
+        this.scrollToEnd();
+      }
     }
 
     if (
-      _changedProperties.has('chatContextValue') &&
-      this.chatContextValue.status === 'transmitting'
+      changedProperties.has('chatContextValue') &&
+      (this.chatContextValue.status === 'success' ||
+        this.chatContextValue.status === 'error')
     ) {
       this._onScroll();
     }

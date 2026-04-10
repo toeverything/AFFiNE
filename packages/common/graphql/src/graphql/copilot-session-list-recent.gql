@@ -1,4 +1,4 @@
-#import "./fragments/copilot.gql"
+#import "./fragments/paginated-copilot-chats.gql"
 
 query getCopilotRecentSessions(
   $workspaceId: String!

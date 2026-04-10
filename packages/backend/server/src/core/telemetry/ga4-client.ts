@@ -1,3 +1,5 @@
+import { Logger } from '@nestjs/common';
+
 import { CleanedTelemetryEvent, Scalar } from './cleaner';
 
 const GA4_ENDPOINT = 'https://www.google-analytics.com/mp/collect';
@@ -14,6 +16,7 @@ type Ga4Payload = {
 };
 
 export class Ga4Client {
+  private readonly logger = new Logger(Ga4Client.name);
   constructor(
     private readonly measurementId: string,
     private readonly apiSecret: string,
@@ -42,8 +45,21 @@ export class Ga4Client {
             timestamp_micros: event.timestampMicros,
           })),
         };
-
-        await this.post(payload);
+        try {
+          await this.post(payload);
+        } catch {
+          if (
+            env.DEPLOYMENT_TYPE === 'affine' &&
+            env.NODE_ENV === 'production'
+          ) {
+            // In production, we want to be resilient to GA4 failures, so we catch and ignore errors.
+            // In non-production environments, we rethrow to surface issues during development and testing.
+            this.logger.log(
+              'Failed to send telemetry event to GA4:',
+              chunk.map(e => e.eventName).join(', ')
+            );
+          }
+        }
       }
     }
   }

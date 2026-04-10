@@ -19,7 +19,8 @@ export type EmbedCardStyle =
   | 'html'
   | 'syncedDoc'
   | 'pdf'
-  | 'citation';
+  | 'citation'
+  | 'audio';
 
 export const LinkPreviewDataSchema = z.object({
   description: z.string().nullable(),

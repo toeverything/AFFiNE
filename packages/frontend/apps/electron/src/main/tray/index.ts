@@ -17,8 +17,8 @@ import {
   appGroups$,
   checkCanRecordMeeting,
   checkRecordingAvailable,
+  getCurrentRecordingStatus,
   MeetingsSettingsState,
-  recordingStatus$,
   startRecording,
   stopRecording,
   updateApplicationsPing$,
@@ -158,12 +158,13 @@ class TrayState implements Disposable {
           appGroup => appGroup.isRunning
         );
 
-        const recordingStatus = recordingStatus$.value;
+        const recordingStatus = getCurrentRecordingStatus();
 
         if (
           !recordingStatus ||
-          (recordingStatus?.status !== 'paused' &&
-            recordingStatus?.status !== 'recording')
+          (recordingStatus.status !== 'starting' &&
+            recordingStatus.status !== 'recording' &&
+            recordingStatus.status !== 'finalizing')
         ) {
           const appMenuItems = runningAppGroups.map(appGroup => ({
             label: appGroup.name,
@@ -172,7 +173,9 @@ class TrayState implements Disposable {
               logger.info(
                 `User action: Start Recording Meeting (${appGroup.name})`
               );
-              startRecording(appGroup);
+              startRecording(appGroup).catch(err => {
+                logger.error('Failed to start recording:', err);
+              });
             },
           }));
 
@@ -188,7 +191,9 @@ class TrayState implements Disposable {
                     logger.info(
                       'User action: Start Recording Meeting (System audio)'
                     );
-                    startRecording();
+                    startRecording().catch(err => {
+                      logger.error('Failed to start recording:', err);
+                    });
                   },
                 },
                 ...appMenuItems,
@@ -197,11 +202,11 @@ class TrayState implements Disposable {
             ...appMenuItems
           );
         } else {
-          const recordingLabel = recordingStatus.appGroup?.name
-            ? `Recording (${recordingStatus.appGroup?.name})`
+          const recordingLabel = recordingStatus.appName
+            ? `Recording (${recordingStatus.appName})`
             : 'Recording';
 
-          // recording is either started or paused
+          // recording is active
           items.push(
             {
               label: recordingLabel,
@@ -210,11 +215,14 @@ class TrayState implements Disposable {
             },
             {
               label: 'Stop',
+              disabled: recordingStatus.status !== 'recording',
               click: () => {
                 logger.info('User action: Stop Recording');
-                stopRecording(recordingStatus.id).catch(err => {
-                  logger.error('Failed to stop recording:', err);
-                });
+                if (recordingStatus.status === 'recording') {
+                  stopRecording(recordingStatus.id).catch(err => {
+                    logger.error('Failed to stop recording:', err);
+                  });
+                }
               },
             }
           );

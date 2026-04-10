@@ -30,7 +30,11 @@ export function correctNumberedListsOrderToPrev(
 
   const fn = () => {
     // step 1
-    const previousSibling = doc.getPrev(model);
+    const parent = doc.getParent(model);
+    if (!parent) return;
+    const index = parent.children.indexOf(model);
+    const previousSibling = index > 0 ? parent.children[index - 1] : null;
+
     if (
       previousSibling &&
       matchModels(previousSibling, [ListBlockModel]) &&

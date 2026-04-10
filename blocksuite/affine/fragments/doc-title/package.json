@@ -10,24 +10,15 @@
   "author": "toeverything",
   "license": "MIT",
   "dependencies": {
-    "@blocksuite/affine-block-frame": "workspace:*",
-    "@blocksuite/affine-block-surface": "workspace:*",
-    "@blocksuite/affine-components": "workspace:*",
     "@blocksuite/affine-ext-loader": "workspace:*",
     "@blocksuite/affine-model": "workspace:*",
     "@blocksuite/affine-rich-text": "workspace:*",
     "@blocksuite/affine-shared": "workspace:*",
     "@blocksuite/global": "workspace:*",
-    "@blocksuite/icons": "^2.2.17",
     "@blocksuite/std": "workspace:*",
     "@blocksuite/store": "workspace:*",
-    "@floating-ui/dom": "^1.6.13",
-    "@lit/context": "^1.1.2",
     "@preact/signals-core": "^1.8.0",
-    "@toeverything/theme": "^1.1.23",
-    "lit": "^3.2.0",
-    "rxjs": "^7.8.2",
-    "zod": "^3.25.76"
+    "lit": "^3.2.0"
   },
   "exports": {
     ".": "./src/index.ts",

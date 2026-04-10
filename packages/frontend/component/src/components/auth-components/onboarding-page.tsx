@@ -216,7 +216,7 @@ export const OnboardingPage = ({
                     ],
                   };
 
-                  // eslint-disable-next-line @typescript-eslint/no-floating-promises
+                  // oxlint-disable-next-line @typescript-eslint/no-floating-promises
                   fetch('/api/worker/questionnaire', {
                     method: 'POST',
                     body: JSON.stringify(answer),

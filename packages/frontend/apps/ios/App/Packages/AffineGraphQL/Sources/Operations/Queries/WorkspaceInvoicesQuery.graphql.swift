@@ -38,6 +38,9 @@ public class WorkspaceInvoicesQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("workspace", Workspace.self, arguments: ["id": .variable("workspaceId")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      WorkspaceInvoicesQuery.Data.self
+    ] }
 
     /// Get workspace by id
     public var workspace: Workspace { __data["workspace"] }
@@ -57,6 +60,9 @@ public class WorkspaceInvoicesQuery: GraphQLQuery {
           "take": .variable("take"),
           "skip": .variable("skip")
         ]),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        WorkspaceInvoicesQuery.Data.Workspace.self
       ] }
 
       /// Get user invoice count
@@ -81,6 +87,9 @@ public class WorkspaceInvoicesQuery: GraphQLQuery {
           .field("lastPaymentError", String?.self),
           .field("link", String?.self),
           .field("createdAt", AffineGraphQL.DateTime.self),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          WorkspaceInvoicesQuery.Data.Workspace.Invoice.self
         ] }
 
         @available(*, deprecated, message: "removed")

@@ -32,7 +32,6 @@ function AiPage() {
               />
             </div>
           </div>
-          {/* <Prompts /> */}
         </ScrollAreaPrimitive.Viewport>
         <ScrollAreaPrimitive.ScrollAreaScrollbar
           className={cn(

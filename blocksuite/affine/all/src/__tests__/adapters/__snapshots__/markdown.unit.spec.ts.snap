@@ -1,0 +1,94 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`snapshot to markdown > imports obsidian vault fixtures 1`] = `
+{
+  "entry": {
+    "children": [
+      {
+        "children": [
+          {
+            "children": [
+              {
+                "delta": [
+                  {
+                    "insert": "Panel
+Body line",
+                  },
+                ],
+                "flavour": "affine:paragraph",
+                "type": "text",
+              },
+            ],
+            "emoji": "💡",
+            "flavour": "affine:callout",
+          },
+          {
+            "flavour": "affine:attachment",
+            "name": "archive.zip",
+            "style": "horizontalThin",
+          },
+          {
+            "delta": [
+              {
+                "footnote": {
+                  "label": "1",
+                  "reference": {
+                    "title": "reference body",
+                    "type": "url",
+                  },
+                },
+                "insert": " ",
+              },
+            ],
+            "flavour": "affine:paragraph",
+            "type": "text",
+          },
+          {
+            "flavour": "affine:divider",
+          },
+          {
+            "delta": [
+              {
+                "insert": "after note",
+              },
+            ],
+            "flavour": "affine:paragraph",
+            "type": "text",
+          },
+          {
+            "delta": [
+              {
+                "insert": " ",
+                "reference": {
+                  "page": "linked",
+                  "type": "LinkedPage",
+                },
+              },
+            ],
+            "flavour": "affine:paragraph",
+            "type": "text",
+          },
+          {
+            "delta": [
+              {
+                "insert": "Sources",
+              },
+            ],
+            "flavour": "affine:paragraph",
+            "type": "h6",
+          },
+          {
+            "flavour": "affine:bookmark",
+          },
+        ],
+        "flavour": "affine:note",
+      },
+    ],
+    "flavour": "affine:page",
+  },
+  "titles": [
+    "entry",
+    "linked",
+  ],
+}
+`;

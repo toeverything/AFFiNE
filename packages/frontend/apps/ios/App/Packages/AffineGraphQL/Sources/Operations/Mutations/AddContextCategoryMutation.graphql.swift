@@ -26,6 +26,9 @@ public class AddContextCategoryMutation: GraphQLMutation {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("addContextCategory", AddContextCategory.self, arguments: ["options": .variable("options")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      AddContextCategoryMutation.Data.self
+    ] }
 
     /// add a category to context
     public var addContextCategory: AddContextCategory { __data["addContextCategory"] }
@@ -44,6 +47,9 @@ public class AddContextCategoryMutation: GraphQLMutation {
         .field("createdAt", AffineGraphQL.SafeInt.self),
         .field("type", GraphQLEnum<AffineGraphQL.ContextCategories>.self),
         .field("docs", [Doc].self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        AddContextCategoryMutation.Data.AddContextCategory.self
       ] }
 
       public var id: AffineGraphQL.ID { __data["id"] }
@@ -64,6 +70,9 @@ public class AddContextCategoryMutation: GraphQLMutation {
           .field("id", AffineGraphQL.ID.self),
           .field("createdAt", AffineGraphQL.SafeInt.self),
           .field("status", GraphQLEnum<AffineGraphQL.ContextEmbedStatus>?.self),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          AddContextCategoryMutation.Data.AddContextCategory.Doc.self
         ] }
 
         public var id: AffineGraphQL.ID { __data["id"] }

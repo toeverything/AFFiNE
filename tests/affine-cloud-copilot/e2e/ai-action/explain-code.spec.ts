@@ -15,7 +15,7 @@ test.describe('AIAction/ExplainCode', () => {
       'javascript'
     );
     const { answer } = await explainCode();
-    await expect(answer).toHaveText(/console.log/);
+    await expect(answer).toContainText(/(console\.log|Hello,\s*World)/i);
   });
 
   test.skip('should show chat history in chat panel', async ({

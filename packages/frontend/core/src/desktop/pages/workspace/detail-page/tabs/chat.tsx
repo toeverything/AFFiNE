@@ -97,7 +97,9 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
   const chatContainerRef = useRef<HTMLDivElement | null>(null);
   const chatToolbarContainerRef = useRef<HTMLDivElement | null>(null);
   const contentKeyRef = useRef<string | null>(null);
+  const prevSessionIdRef = useRef<string | null>(null);
   const lastDocIdRef = useRef<string | null>(null);
+  const sessionLoadSeqRef = useRef(0);
 
   const doc = editor?.doc;
   const host = editor?.host;
@@ -127,12 +129,14 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
   }, [appSidebarConfig]);
 
   const resetPanel = useCallback(() => {
+    sessionLoadSeqRef.current += 1;
     setSession(undefined);
     setEmbeddingProgress([0, 0]);
     setHasPinned(false);
   }, []);
 
   const initPanel = useCallback(async () => {
+    const requestSeq = ++sessionLoadSeqRef.current;
     try {
       const nextSession = await resolveInitialSession({
         sessionService: AIProvider.session ?? undefined,
@@ -140,6 +144,7 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
         workbench: workbench as WorkbenchLike,
       });
 
+      if (requestSeq !== sessionLoadSeqRef.current) return;
       if (nextSession === undefined) {
         return;
       }
@@ -156,22 +161,18 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
       if (session || !AIProvider.session || !doc) {
         return session ?? undefined;
       }
-      const sessionId = await AIProvider.session.createSession({
+      const requestSeq = ++sessionLoadSeqRef.current;
+      const nextSession = await AIProvider.session.createSessionWithHistory({
         docId: doc.id,
         workspaceId: doc.workspace.id,
         promptName: 'Chat With AFFiNE AI',
         reuseLatestChat: false,
         ...options,
       });
-      if (sessionId) {
-        const nextSession = await AIProvider.session.getSession(
-          doc.workspace.id,
-          sessionId
-        );
-        setSession(nextSession ?? null);
-        return nextSession ?? undefined;
-      }
-      return session ?? undefined;
+      if (requestSeq !== sessionLoadSeqRef.current) return undefined;
+      setSession(nextSession ?? null);
+      setHasPinned(!!nextSession?.pinned);
+      return nextSession ?? undefined;
     },
     [doc, session]
   );
@@ -181,37 +182,64 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
       if (!AIProvider.session || !doc) {
         return undefined;
       }
+      const requestSeq = ++sessionLoadSeqRef.current;
       await AIProvider.session.updateSession(options);
       const nextSession = await AIProvider.session.getSession(
         doc.workspace.id,
         options.sessionId
       );
+      if (requestSeq !== sessionLoadSeqRef.current) return undefined;
       setSession(nextSession ?? null);
+      setHasPinned(!!nextSession?.pinned);
       return nextSession ?? undefined;
     },
     [doc]
   );
 
-  const newSession = useCallback(() => {
+  const newSession = useCallback(async () => {
     resetPanel();
-    requestAnimationFrame(() => {
-      setSession(null);
-    });
-  }, [resetPanel]);
+    const requestSeq = sessionLoadSeqRef.current;
+    setSession(null);
+
+    if (!AIProvider.session || !doc) {
+      return;
+    }
+
+    try {
+      const nextSession = await AIProvider.session.createSessionWithHistory({
+        docId: doc.id,
+        workspaceId: doc.workspace.id,
+        promptName: 'Chat With AFFiNE AI',
+        reuseLatestChat: false,
+      });
+      if (requestSeq === sessionLoadSeqRef.current) {
+        setSession(nextSession ?? null);
+        setHasPinned(!!nextSession?.pinned);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  }, [doc, resetPanel]);
 
   const openSession = useCallback(
     async (sessionId: string) => {
       if (session?.sessionId === sessionId || !AIProvider.session || !doc) {
         return;
       }
-      resetPanel();
-      const nextSession = await AIProvider.session.getSession(
-        doc.workspace.id,
-        sessionId
-      );
-      setSession(nextSession ?? null);
+      const requestSeq = ++sessionLoadSeqRef.current;
+      try {
+        const nextSession = await AIProvider.session.getSession(
+          doc.workspace.id,
+          sessionId
+        );
+        if (requestSeq !== sessionLoadSeqRef.current) return;
+        setSession(nextSession ?? null);
+        setHasPinned(!!nextSession?.pinned);
+      } catch (error) {
+        console.error(error);
+      }
     },
-    [doc, resetPanel, session?.sessionId]
+    [doc, session?.sessionId]
   );
 
   const openDoc = useCallback(
@@ -252,7 +280,9 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
         },
         isActiveSession: sessionToDelete =>
           sessionToDelete.sessionId === session?.sessionId,
-        onActiveSessionDeleted: newSession,
+        onActiveSessionDeleted: () => {
+          newSession().catch(console.error);
+        },
       }),
     [newSession, notificationService, session?.sessionId, t]
   );
@@ -342,35 +372,33 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
     if (!doc || session !== undefined) {
       return;
     }
-
-    let cancelled = false;
-    let timerId: ReturnType<typeof setTimeout> | null = null;
-
-    const tryInit = () => {
-      if (cancelled || session !== undefined) {
-        return;
-      }
-      // Session service may be registered after the panel mounts.
-      if (AIProvider.session) {
-        initPanel().catch(console.error);
-        return;
-      }
-      timerId = setTimeout(tryInit, 200);
-    };
-
-    tryInit();
-
-    return () => {
-      cancelled = true;
-      if (timerId) {
-        clearTimeout(timerId);
-      }
-    };
+    if (AIProvider.session) {
+      initPanel().catch(console.error);
+      return;
+    }
+    const subscription = AIProvider.slots.sessionReady.subscribe(ready => {
+      if (!ready || session !== undefined) return;
+      initPanel().catch(console.error);
+    });
+    return () => subscription.unsubscribe();
   }, [doc, initPanel, session]);
 
-  const contentKey = hasPinned
-    ? (session?.sessionId ?? doc?.id ?? 'chat-panel')
-    : (doc?.id ?? 'chat-panel');
+  const hasSessionHistory = !!session?.messages?.length;
+  const sessionSwitched = !!(
+    session?.sessionId &&
+    prevSessionIdRef.current &&
+    prevSessionIdRef.current !== session.sessionId
+  );
+  const contentKey =
+    hasPinned || (session?.sessionId && (hasSessionHistory || sessionSwitched))
+      ? (session?.sessionId ?? doc?.id ?? 'chat-panel')
+      : (doc?.id ?? 'chat-panel');
+
+  useEffect(() => {
+    if (session?.sessionId) {
+      prevSessionIdRef.current = session.sessionId;
+    }
+  }, [session?.sessionId]);
 
   useEffect(() => {
     if (!chatContent) {
@@ -469,7 +497,9 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
       status,
       docDisplayConfig,
       notificationService,
-      onNewSession: newSession,
+      onNewSession: () => {
+        newSession().catch(console.error);
+      },
       onTogglePin: togglePin,
       onOpenSession: (sessionId: string) => {
         openSession(sessionId).catch(console.error);

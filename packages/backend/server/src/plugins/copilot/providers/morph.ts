@@ -1,14 +1,16 @@
 import {
-  createOpenAICompatible,
-  OpenAICompatibleProvider as VercelOpenAICompatibleProvider,
-} from '@ai-sdk/openai-compatible';
-import { AISDKError, generateText, streamText } from 'ai';
-
-import {
   CopilotProviderSideError,
   metrics,
   UserFriendlyError,
 } from '../../../base';
+import {
+  llmDispatchStream,
+  type NativeLlmBackendConfig,
+  type NativeLlmRequest,
+} from '../../../native';
+import type { NodeTextMiddleware } from '../config';
+import type { CopilotToolSet } from '../tools';
+import { buildNativeRequest, NativeProviderAdapter } from './native';
 import { CopilotProvider } from './provider';
 import type {
   CopilotChatOptions,
@@ -16,7 +18,6 @@ import type {
   PromptMessage,
 } from './types';
 import { CopilotProviderType, ModelInputType, ModelOutputType } from './types';
-import { chatToGPTMessage, TextStreamParser } from './utils';
 
 export const DEFAULT_DIMENSIONS = 256;
 
@@ -57,37 +58,48 @@ export class MorphProvider extends CopilotProvider<MorphConfig> {
     },
   ];
 
-  #instance!: VercelOpenAICompatibleProvider;
-
   override configured(): boolean {
     return !!this.config.apiKey;
   }
 
   protected override setup() {
     super.setup();
-    this.#instance = createOpenAICompatible({
-      name: this.type,
-      apiKey: this.config.apiKey,
-      baseURL: 'https://api.morphllm.com/v1',
-    });
   }
 
   private handleError(e: any) {
     if (e instanceof UserFriendlyError) {
       return e;
-    } else if (e instanceof AISDKError) {
-      return new CopilotProviderSideError({
-        provider: this.type,
-        kind: e.name || 'unknown',
-        message: e.message,
-      });
-    } else {
-      return new CopilotProviderSideError({
-        provider: this.type,
-        kind: 'unexpected_response',
-        message: e?.message || 'Unexpected morph response',
-      });
     }
+    return new CopilotProviderSideError({
+      provider: this.type,
+      kind: 'unexpected_response',
+      message: e?.message || 'Unexpected morph response',
+    });
+  }
+
+  private createNativeConfig(): NativeLlmBackendConfig {
+    return {
+      base_url: 'https://api.morphllm.com',
+      auth_token: this.config.apiKey ?? '',
+    };
+  }
+
+  private createNativeAdapter(
+    tools: CopilotToolSet,
+    nodeTextMiddleware?: NodeTextMiddleware[]
+  ) {
+    return new NativeProviderAdapter(
+      (request: NativeLlmRequest, signal?: AbortSignal) =>
+        llmDispatchStream(
+          'openai_chat',
+          this.createNativeConfig(),
+          request,
+          signal
+        ),
+      tools,
+      this.MAX_STEPS,
+      { nodeTextMiddleware }
+    );
   }
 
   async text(
@@ -95,30 +107,32 @@ export class MorphProvider extends CopilotProvider<MorphConfig> {
     messages: PromptMessage[],
     options: CopilotChatOptions = {}
   ): Promise<string> {
-    const fullCond = {
-      ...cond,
-      outputType: ModelOutputType.Text,
-    };
-    await this.checkParams({ messages, cond: fullCond, options });
-    const model = this.selectModel(fullCond);
+    const fullCond = { ...cond, outputType: ModelOutputType.Text };
+    const model = this.selectModel(
+      await this.checkParams({
+        messages,
+        cond: fullCond,
+        options,
+      })
+    );
 
     try {
-      metrics.ai.counter('chat_text_calls').add(1, { model: model.id });
-
-      const [system, msgs] = await chatToGPTMessage(messages);
-
-      const modelInstance = this.#instance(model.id);
-
-      const { text } = await generateText({
-        model: modelInstance,
-        system,
-        messages: msgs,
-        abortSignal: options.signal,
+      metrics.ai.counter('chat_text_calls').add(1, this.metricLabels(model.id));
+      const tools = await this.getTools(options, model.id);
+      const middleware = this.getActiveProviderMiddleware();
+      const { request } = await buildNativeRequest({
+        model: model.id,
+        messages,
+        options,
+        tools,
+        middleware,
       });
-
-      return text.trim();
+      const adapter = this.createNativeAdapter(tools, middleware.node?.text);
+      return await adapter.text(request, options.signal, messages);
     } catch (e: any) {
-      metrics.ai.counter('chat_text_errors').add(1, { model: model.id });
+      metrics.ai
+        .counter('chat_text_errors')
+        .add(1, this.metricLabels(model.id));
       throw this.handleError(e);
     }
   }
@@ -128,46 +142,40 @@ export class MorphProvider extends CopilotProvider<MorphConfig> {
     messages: PromptMessage[],
     options: CopilotChatOptions = {}
   ): AsyncIterable<string> {
-    const fullCond = {
-      ...cond,
-      outputType: ModelOutputType.Text,
-    };
-    await this.checkParams({ messages, cond: fullCond, options });
-    const model = this.selectModel(fullCond);
+    const fullCond = { ...cond, outputType: ModelOutputType.Text };
+    const model = this.selectModel(
+      await this.checkParams({
+        messages,
+        cond: fullCond,
+        options,
+      })
+    );
 
     try {
-      metrics.ai.counter('chat_text_stream_calls').add(1, { model: model.id });
-      const [system, msgs] = await chatToGPTMessage(messages);
-
-      const modelInstance = this.#instance(model.id);
-
-      const { fullStream } = streamText({
-        model: modelInstance,
-        system,
-        messages: msgs,
-        abortSignal: options.signal,
+      metrics.ai
+        .counter('chat_text_stream_calls')
+        .add(1, this.metricLabels(model.id));
+      const tools = await this.getTools(options, model.id);
+      const middleware = this.getActiveProviderMiddleware();
+      const { request } = await buildNativeRequest({
+        model: model.id,
+        messages,
+        options,
+        tools,
+        middleware,
       });
-
-      const textParser = new TextStreamParser();
-      for await (const chunk of fullStream) {
-        switch (chunk.type) {
-          case 'text-delta': {
-            let result = textParser.parse(chunk);
-            yield result;
-            break;
-          }
-          default: {
-            yield textParser.parse(chunk);
-            break;
-          }
-        }
-        if (options.signal?.aborted) {
-          await fullStream.cancel();
-          break;
-        }
+      const adapter = this.createNativeAdapter(tools, middleware.node?.text);
+      for await (const chunk of adapter.streamText(
+        request,
+        options.signal,
+        messages
+      )) {
+        yield chunk;
       }
     } catch (e: any) {
-      metrics.ai.counter('chat_text_stream_errors').add(1, { model: model.id });
+      metrics.ai
+        .counter('chat_text_stream_errors')
+        .add(1, this.metricLabels(model.id));
       throw this.handleError(e);
     }
   }

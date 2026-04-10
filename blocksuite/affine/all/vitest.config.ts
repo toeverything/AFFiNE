@@ -11,7 +11,7 @@ export default defineConfig({
     include: ['src/__tests__/**/*.unit.spec.ts'],
     testTimeout: 1000,
     coverage: {
-      provider: 'istanbul', // or 'c8'
+      provider: 'istanbul',
       reporter: ['lcov'],
       reportsDirectory: '../../../.coverage/blocksuite-affine',
     },

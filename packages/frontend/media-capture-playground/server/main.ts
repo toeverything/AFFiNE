@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-misused-promises */
+/* oxlint-disable @typescript-eslint/no-misused-promises */
 import { createServer } from 'node:http';
 import path from 'node:path';
 

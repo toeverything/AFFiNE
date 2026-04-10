@@ -284,6 +284,25 @@ export interface AppConfigValidateResult {
   value: Scalars['JSON']['output'];
 }
 
+export interface AudioSliceManifestItemInput {
+  byteSize?: InputMaybe<Scalars['Int']['input']>;
+  durationSec: Scalars['Float']['input'];
+  fileName: Scalars['String']['input'];
+  index: Scalars['Int']['input'];
+  mimeType: Scalars['String']['input'];
+  startSec: Scalars['Float']['input'];
+}
+
+export interface AudioSliceManifestItemType {
+  __typename?: 'AudioSliceManifestItemType';
+  byteSize: Maybe<Scalars['Int']['output']>;
+  durationSec: Scalars['Float']['output'];
+  fileName: Scalars['String']['output'];
+  index: Scalars['Int']['output'];
+  mimeType: Scalars['String']['output'];
+  startSec: Scalars['Float']['output'];
+}
+
 export interface BlobNotFoundDataType {
   __typename?: 'BlobNotFoundDataType';
   blobId: Scalars['String']['output'];
@@ -725,51 +744,8 @@ export interface CopilotModelsType {
   proModels: Array<CopilotModelType>;
 }
 
-export interface CopilotPromptConfigInput {
-  frequencyPenalty?: InputMaybe<Scalars['Float']['input']>;
-  presencePenalty?: InputMaybe<Scalars['Float']['input']>;
-  temperature?: InputMaybe<Scalars['Float']['input']>;
-  topP?: InputMaybe<Scalars['Float']['input']>;
-}
-
-export interface CopilotPromptConfigType {
-  __typename?: 'CopilotPromptConfigType';
-  frequencyPenalty: Maybe<Scalars['Float']['output']>;
-  presencePenalty: Maybe<Scalars['Float']['output']>;
-  temperature: Maybe<Scalars['Float']['output']>;
-  topP: Maybe<Scalars['Float']['output']>;
-}
-
-export interface CopilotPromptMessageInput {
-  content: Scalars['String']['input'];
-  params?: InputMaybe<Scalars['JSON']['input']>;
-  role: CopilotPromptMessageRole;
-}
-
-export enum CopilotPromptMessageRole {
-  assistant = 'assistant',
-  system = 'system',
-  user = 'user',
-}
-
-export interface CopilotPromptMessageType {
-  __typename?: 'CopilotPromptMessageType';
-  content: Scalars['String']['output'];
-  params: Maybe<Scalars['JSON']['output']>;
-  role: CopilotPromptMessageRole;
-}
-
 export interface CopilotPromptNotFoundDataType {
   __typename?: 'CopilotPromptNotFoundDataType';
-  name: Scalars['String']['output'];
-}
-
-export interface CopilotPromptType {
-  __typename?: 'CopilotPromptType';
-  action: Maybe<Scalars['String']['output']>;
-  config: Maybe<CopilotPromptConfigType>;
-  messages: Array<CopilotPromptMessageType>;
-  model: Scalars['String']['output'];
   name: Scalars['String']['output'];
 }
 
@@ -856,6 +832,7 @@ export interface CopilotWorkspaceIgnoredDocTypeEdge {
 }
 
 export interface CreateChatMessageInput {
+  /** @deprecated use blobs */
   attachments?: InputMaybe<Array<Scalars['String']['input']>>;
   blob?: InputMaybe<Scalars['Upload']['input']>;
   blobs?: InputMaybe<Array<Scalars['Upload']['input']>>;
@@ -877,19 +854,12 @@ export interface CreateChatSessionInput {
 export interface CreateCheckoutSessionInput {
   args?: InputMaybe<Scalars['JSONObject']['input']>;
   coupon?: InputMaybe<Scalars['String']['input']>;
+  /** @deprecated not required anymore */
   idempotencyKey?: InputMaybe<Scalars['String']['input']>;
   plan?: InputMaybe<SubscriptionPlan>;
   recurring?: InputMaybe<SubscriptionRecurring>;
   successCallbackLink: Scalars['String']['input'];
   variant?: InputMaybe<SubscriptionVariant>;
-}
-
-export interface CreateCopilotPromptInput {
-  action?: InputMaybe<Scalars['String']['input']>;
-  config?: InputMaybe<CopilotPromptConfigInput>;
-  messages: Array<CopilotPromptMessageInput>;
-  model: Scalars['String']['input'];
-  name: Scalars['String']['input'];
 }
 
 export interface CreateUserInput {
@@ -1107,6 +1077,7 @@ export type ErrorDataUnion =
   | ExpectToUpdateDocUserRoleDataType
   | GraphqlBadRequestDataType
   | HttpRequestErrorDataType
+  | ImageFormatNotSupportedDataType
   | InvalidAppConfigDataType
   | InvalidAppConfigInputDataType
   | InvalidEmailDataType
@@ -1213,6 +1184,7 @@ export enum ErrorNames {
   FAILED_TO_UPSERT_SNAPSHOT = 'FAILED_TO_UPSERT_SNAPSHOT',
   GRAPHQL_BAD_REQUEST = 'GRAPHQL_BAD_REQUEST',
   HTTP_REQUEST_ERROR = 'HTTP_REQUEST_ERROR',
+  IMAGE_FORMAT_NOT_SUPPORTED = 'IMAGE_FORMAT_NOT_SUPPORTED',
   INTERNAL_SERVER_ERROR = 'INTERNAL_SERVER_ERROR',
   INVALID_APP_CONFIG = 'INVALID_APP_CONFIG',
   INVALID_APP_CONFIG_INPUT = 'INVALID_APP_CONFIG_INPUT',
@@ -1317,6 +1289,7 @@ export enum FeatureType {
   FreePlan = 'FreePlan',
   LifetimeProPlan = 'LifetimeProPlan',
   ProPlan = 'ProPlan',
+  QuotaExceededReadonlyWorkspace = 'QuotaExceededReadonlyWorkspace',
   TeamPlan = 'TeamPlan',
   UnlimitedCopilot = 'UnlimitedCopilot',
   UnlimitedWorkspace = 'UnlimitedWorkspace',
@@ -1363,6 +1336,11 @@ export interface GraphqlBadRequestDataType {
 export interface HttpRequestErrorDataType {
   __typename?: 'HttpRequestErrorDataType';
   message: Scalars['String']['output'];
+}
+
+export interface ImageFormatNotSupportedDataType {
+  __typename?: 'ImageFormatNotSupportedDataType';
+  format: Scalars['String']['output'];
 }
 
 export interface ImportUsersInput {
@@ -1662,6 +1640,25 @@ export interface ManageUserInput {
   name?: InputMaybe<Scalars['String']['input']>;
 }
 
+export interface MeetingActionItemType {
+  __typename?: 'MeetingActionItemType';
+  deadline: Maybe<Scalars['String']['output']>;
+  description: Scalars['String']['output'];
+  owner: Maybe<Scalars['String']['output']>;
+}
+
+export interface MeetingSummaryV2Type {
+  __typename?: 'MeetingSummaryV2Type';
+  actionItems: Array<MeetingActionItemType>;
+  attendees: Array<Scalars['String']['output']>;
+  blockers: Array<Scalars['String']['output']>;
+  decisions: Array<Scalars['String']['output']>;
+  durationMinutes: Scalars['Float']['output'];
+  keyPoints: Array<Scalars['String']['output']>;
+  openQuestions: Array<Scalars['String']['output']>;
+  title: Scalars['String']['output'];
+}
+
 export interface MemberNotFoundInSpaceDataType {
   __typename?: 'MemberNotFoundInSpaceDataType';
   spaceId: Scalars['String']['output'];
@@ -1752,10 +1749,13 @@ export interface Mutation {
   createCopilotContext: Scalars['String']['output'];
   /** Create a chat message */
   createCopilotMessage: Scalars['String']['output'];
-  /** Create a copilot prompt */
-  createCopilotPrompt: CopilotPromptType;
-  /** Create a chat session */
+  /**
+   * Create a chat session
+   * @deprecated use `createCopilotSessionWithHistory` instead
+   */
   createCopilotSession: Scalars['String']['output'];
+  /** Create a chat session and return full session payload */
+  createCopilotSessionWithHistory: CopilotHistories;
   /** Create a stripe customer portal to manage payment methods */
   createCustomerPortal: Scalars['String']['output'];
   createInviteLink: InviteLink;
@@ -1845,8 +1845,6 @@ export interface Mutation {
   updateCalendarAccount: Maybe<CalendarAccountObjectType>;
   /** Update a comment content */
   updateComment: Scalars['Boolean']['output'];
-  /** Update a copilot prompt */
-  updateCopilotPrompt: CopilotPromptType;
   /** Update a chat session */
   updateCopilotSession: Scalars['String']['output'];
   updateDocDefaultRole: Scalars['Boolean']['output'];
@@ -1998,11 +1996,11 @@ export interface MutationCreateCopilotMessageArgs {
   options: CreateChatMessageInput;
 }
 
-export interface MutationCreateCopilotPromptArgs {
-  input: CreateCopilotPromptInput;
+export interface MutationCreateCopilotSessionArgs {
+  options: CreateChatSessionInput;
 }
 
-export interface MutationCreateCopilotSessionArgs {
+export interface MutationCreateCopilotSessionWithHistoryArgs {
   options: CreateChatSessionInput;
 }
 
@@ -2242,6 +2240,7 @@ export interface MutationSubmitAudioTranscriptionArgs {
   blob?: InputMaybe<Scalars['Upload']['input']>;
   blobId: Scalars['String']['input'];
   blobs?: InputMaybe<Array<Scalars['Upload']['input']>>;
+  input?: InputMaybe<SubmitAudioTranscriptionInput>;
   workspaceId: Scalars['String']['input'];
 }
 
@@ -2260,11 +2259,6 @@ export interface MutationUpdateCalendarAccountArgs {
 
 export interface MutationUpdateCommentArgs {
   input: CommentUpdateInput;
-}
-
-export interface MutationUpdateCopilotPromptArgs {
-  messages: Array<CopilotPromptMessageInput>;
-  name: Scalars['String']['input'];
 }
 
 export interface MutationUpdateCopilotSessionArgs {
@@ -2344,6 +2338,16 @@ export interface NoCopilotProviderAvailableDataType {
 export interface NoMoreSeatDataType {
   __typename?: 'NoMoreSeatDataType';
   spaceId: Scalars['String']['output'];
+}
+
+export interface NormalizedTranscriptSegmentType {
+  __typename?: 'NormalizedTranscriptSegmentType';
+  end: Scalars['String']['output'];
+  endSec: Scalars['Float']['output'];
+  speaker: Scalars['String']['output'];
+  start: Scalars['String']['output'];
+  startSec: Scalars['Float']['output'];
+  text: Scalars['String']['output'];
 }
 
 export interface NotInSpaceDataType {
@@ -2554,8 +2558,6 @@ export interface Query {
   error: ErrorDataUnion;
   /** get workspace invitation info */
   getInviteInfo: InvitationType;
-  /** List all copilot prompts */
-  listCopilotPrompts: Array<CopilotPromptType>;
   prices: Array<SubscriptionPrice>;
   /** Get public user by id */
   publicUserById: Maybe<PublicUserType>;
@@ -2956,6 +2958,12 @@ export interface StreamObject {
   type: Scalars['String']['output'];
 }
 
+export interface SubmitAudioTranscriptionInput {
+  quality?: InputMaybe<TranscriptionQualityInput>;
+  sliceManifest?: InputMaybe<Array<AudioSliceManifestItemInput>>;
+  sourceAudio?: InputMaybe<TranscriptionSourceAudioInput>;
+}
+
 export interface SubscriptionAlreadyExistsDataType {
   __typename?: 'SubscriptionAlreadyExistsDataType';
   plan: Scalars['String']['output'];
@@ -3063,14 +3071,47 @@ export interface TranscriptionItemType {
   transcription: Scalars['String']['output'];
 }
 
+export interface TranscriptionQualityInput {
+  degraded?: InputMaybe<Scalars['Boolean']['input']>;
+  overflowCount?: InputMaybe<Scalars['Int']['input']>;
+}
+
+export interface TranscriptionQualityType {
+  __typename?: 'TranscriptionQualityType';
+  degraded: Maybe<Scalars['Boolean']['output']>;
+  overflowCount: Maybe<Scalars['Int']['output']>;
+}
+
 export interface TranscriptionResultType {
   __typename?: 'TranscriptionResultType';
   actions: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
+  normalizedSegments: Maybe<Array<NormalizedTranscriptSegmentType>>;
+  normalizedTranscript: Maybe<Scalars['String']['output']>;
+  quality: Maybe<TranscriptionQualityType>;
+  sliceManifest: Maybe<Array<AudioSliceManifestItemType>>;
+  sourceAudio: Maybe<TranscriptionSourceAudioType>;
   status: AiJobStatus;
   summary: Maybe<Scalars['String']['output']>;
+  summaryJson: Maybe<MeetingSummaryV2Type>;
   title: Maybe<Scalars['String']['output']>;
   transcription: Maybe<Array<TranscriptionItemType>>;
+}
+
+export interface TranscriptionSourceAudioInput {
+  channels?: InputMaybe<Scalars['Int']['input']>;
+  durationMs?: InputMaybe<Scalars['Int']['input']>;
+  mimeType?: InputMaybe<Scalars['String']['input']>;
+  sampleRate?: InputMaybe<Scalars['Int']['input']>;
+}
+
+export interface TranscriptionSourceAudioType {
+  __typename?: 'TranscriptionSourceAudioType';
+  blobId: Maybe<Scalars['String']['output']>;
+  channels: Maybe<Scalars['Int']['output']>;
+  durationMs: Maybe<Scalars['Int']['output']>;
+  mimeType: Maybe<Scalars['String']['output']>;
+  sampleRate: Maybe<Scalars['Int']['output']>;
 }
 
 export type UnionNotificationBodyType =
@@ -3885,59 +3926,6 @@ export type CreateChangePasswordUrlMutation = {
 export type AppConfigQueryVariables = Exact<{ [key: string]: never }>;
 
 export type AppConfigQuery = { __typename?: 'Query'; appConfig: any };
-
-export type GetPromptsQueryVariables = Exact<{ [key: string]: never }>;
-
-export type GetPromptsQuery = {
-  __typename?: 'Query';
-  listCopilotPrompts: Array<{
-    __typename?: 'CopilotPromptType';
-    name: string;
-    model: string;
-    action: string | null;
-    config: {
-      __typename?: 'CopilotPromptConfigType';
-      frequencyPenalty: number | null;
-      presencePenalty: number | null;
-      temperature: number | null;
-      topP: number | null;
-    } | null;
-    messages: Array<{
-      __typename?: 'CopilotPromptMessageType';
-      role: CopilotPromptMessageRole;
-      content: string;
-      params: Record<string, string> | null;
-    }>;
-  }>;
-};
-
-export type UpdatePromptMutationVariables = Exact<{
-  name: Scalars['String']['input'];
-  messages: Array<CopilotPromptMessageInput> | CopilotPromptMessageInput;
-}>;
-
-export type UpdatePromptMutation = {
-  __typename?: 'Mutation';
-  updateCopilotPrompt: {
-    __typename?: 'CopilotPromptType';
-    name: string;
-    model: string;
-    action: string | null;
-    config: {
-      __typename?: 'CopilotPromptConfigType';
-      frequencyPenalty: number | null;
-      presencePenalty: number | null;
-      temperature: number | null;
-      topP: number | null;
-    } | null;
-    messages: Array<{
-      __typename?: 'CopilotPromptMessageType';
-      role: CopilotPromptMessageRole;
-      content: string;
-      params: Record<string, string> | null;
-    }>;
-  };
-};
 
 export type CreateUserMutationVariables = Exact<{
   input: CreateUserInput;
@@ -5284,6 +5272,7 @@ export type SubmitAudioTranscriptionMutationVariables = Exact<{
   blobs?: InputMaybe<
     Array<Scalars['Upload']['input']> | Scalars['Upload']['input']
   >;
+  input?: InputMaybe<SubmitAudioTranscriptionInput>;
 }>;
 
 export type SubmitAudioTranscriptionMutation = {
@@ -5308,6 +5297,54 @@ export type ClaimAudioTranscriptionMutation = {
     title: string | null;
     summary: string | null;
     actions: string | null;
+    normalizedTranscript: string | null;
+    sourceAudio: {
+      __typename?: 'TranscriptionSourceAudioType';
+      blobId: string | null;
+      mimeType: string | null;
+      durationMs: number | null;
+      sampleRate: number | null;
+      channels: number | null;
+    } | null;
+    quality: {
+      __typename?: 'TranscriptionQualityType';
+      degraded: boolean | null;
+      overflowCount: number | null;
+    } | null;
+    sliceManifest: Array<{
+      __typename?: 'AudioSliceManifestItemType';
+      index: number;
+      fileName: string;
+      mimeType: string;
+      startSec: number;
+      durationSec: number;
+      byteSize: number | null;
+    }> | null;
+    normalizedSegments: Array<{
+      __typename?: 'NormalizedTranscriptSegmentType';
+      speaker: string;
+      startSec: number;
+      endSec: number;
+      start: string;
+      end: string;
+      text: string;
+    }> | null;
+    summaryJson: {
+      __typename?: 'MeetingSummaryV2Type';
+      title: string;
+      durationMinutes: number;
+      attendees: Array<string>;
+      keyPoints: Array<string>;
+      decisions: Array<string>;
+      openQuestions: Array<string>;
+      blockers: Array<string>;
+      actionItems: Array<{
+        __typename?: 'MeetingActionItemType';
+        description: string;
+        owner: string | null;
+        deadline: string | null;
+      }>;
+    } | null;
     transcription: Array<{
       __typename?: 'TranscriptionItemType';
       speaker: string;
@@ -5336,6 +5373,54 @@ export type GetAudioTranscriptionQuery = {
         status: AiJobStatus;
         title: string | null;
         summary: string | null;
+        normalizedTranscript: string | null;
+        sourceAudio: {
+          __typename?: 'TranscriptionSourceAudioType';
+          blobId: string | null;
+          mimeType: string | null;
+          durationMs: number | null;
+          sampleRate: number | null;
+          channels: number | null;
+        } | null;
+        quality: {
+          __typename?: 'TranscriptionQualityType';
+          degraded: boolean | null;
+          overflowCount: number | null;
+        } | null;
+        sliceManifest: Array<{
+          __typename?: 'AudioSliceManifestItemType';
+          index: number;
+          fileName: string;
+          mimeType: string;
+          startSec: number;
+          durationSec: number;
+          byteSize: number | null;
+        }> | null;
+        normalizedSegments: Array<{
+          __typename?: 'NormalizedTranscriptSegmentType';
+          speaker: string;
+          startSec: number;
+          endSec: number;
+          start: string;
+          end: string;
+          text: string;
+        }> | null;
+        summaryJson: {
+          __typename?: 'MeetingSummaryV2Type';
+          title: string;
+          durationMinutes: number;
+          attendees: Array<string>;
+          keyPoints: Array<string>;
+          decisions: Array<string>;
+          openQuestions: Array<string>;
+          blockers: Array<string>;
+          actionItems: Array<{
+            __typename?: 'MeetingActionItemType';
+            description: string;
+            owner: string | null;
+            deadline: string | null;
+          }>;
+        } | null;
         transcription: Array<{
           __typename?: 'TranscriptionItemType';
           speaker: string;
@@ -5423,6 +5508,47 @@ export type CleanupCopilotSessionMutationVariables = Exact<{
 export type CleanupCopilotSessionMutation = {
   __typename?: 'Mutation';
   cleanupCopilotSession: Array<string>;
+};
+
+export type CreateCopilotSessionWithHistoryMutationVariables = Exact<{
+  options: CreateChatSessionInput;
+}>;
+
+export type CreateCopilotSessionWithHistoryMutation = {
+  __typename?: 'Mutation';
+  createCopilotSessionWithHistory: {
+    __typename?: 'CopilotHistories';
+    sessionId: string;
+    workspaceId: string;
+    docId: string | null;
+    parentSessionId: string | null;
+    promptName: string;
+    model: string;
+    optionalModels: Array<string>;
+    action: string | null;
+    pinned: boolean;
+    title: string | null;
+    tokens: number;
+    createdAt: string;
+    updatedAt: string;
+    messages: Array<{
+      __typename?: 'ChatMessage';
+      id: string | null;
+      role: string;
+      content: string;
+      attachments: Array<string> | null;
+      createdAt: string;
+      streamObjects: Array<{
+        __typename?: 'StreamObject';
+        type: string;
+        textDelta: string | null;
+        toolCallId: string | null;
+        toolName: string | null;
+        args: Record<string, string> | null;
+        result: Record<string, string> | null;
+      }> | null;
+    }>;
+  };
 };
 
 export type CreateCopilotSessionMutationVariables = Exact<{
@@ -5934,24 +6060,6 @@ export type GetDocRolePermissionsQuery = {
   };
 };
 
-export type CopilotChatMessageFragment = {
-  __typename?: 'ChatMessage';
-  id: string | null;
-  role: string;
-  content: string;
-  attachments: Array<string> | null;
-  createdAt: string;
-  streamObjects: Array<{
-    __typename?: 'StreamObject';
-    type: string;
-    textDelta: string | null;
-    toolCallId: string | null;
-    toolName: string | null;
-    args: Record<string, string> | null;
-    result: Record<string, string> | null;
-  }> | null;
-};
-
 export type CopilotChatHistoryFragment = {
   __typename?: 'CopilotHistories';
   sessionId: string;
@@ -5984,6 +6092,52 @@ export type CopilotChatHistoryFragment = {
       result: Record<string, string> | null;
     }> | null;
   }>;
+};
+
+export type CredentialsRequirementsFragment = {
+  __typename?: 'CredentialsRequirementType';
+  password: {
+    __typename?: 'PasswordLimitsType';
+    minLength: number;
+    maxLength: number;
+  };
+};
+
+export type CurrentUserProfileFragment = {
+  __typename?: 'UserType';
+  id: string;
+  name: string;
+  email: string;
+  avatarUrl: string | null;
+  emailVerified: boolean;
+  features: Array<FeatureType>;
+  settings: {
+    __typename?: 'UserSettingsType';
+    receiveInvitationEmail: boolean;
+    receiveMentionEmail: boolean;
+    receiveCommentEmail: boolean;
+  };
+  quota: {
+    __typename?: 'UserQuotaType';
+    name: string;
+    blobLimit: number;
+    storageQuota: number;
+    historyPeriod: number;
+    memberLimit: number;
+    humanReadable: {
+      __typename?: 'UserQuotaHumanReadableType';
+      name: string;
+      blobLimit: string;
+      storageQuota: string;
+      historyPeriod: string;
+      memberLimit: string;
+    };
+  };
+  quotaUsage: { __typename?: 'UserQuotaUsageType'; storageQuota: number };
+  copilot: {
+    __typename?: 'Copilot';
+    quota: { __typename?: 'CopilotQuota'; limit: number | null; used: number };
+  };
 };
 
 export type PaginatedCopilotChatsFragment = {
@@ -6032,52 +6186,6 @@ export type PaginatedCopilotChatsFragment = {
       }>;
     };
   }>;
-};
-
-export type CredentialsRequirementsFragment = {
-  __typename?: 'CredentialsRequirementType';
-  password: {
-    __typename?: 'PasswordLimitsType';
-    minLength: number;
-    maxLength: number;
-  };
-};
-
-export type CurrentUserProfileFragment = {
-  __typename?: 'UserType';
-  id: string;
-  name: string;
-  email: string;
-  avatarUrl: string | null;
-  emailVerified: boolean;
-  features: Array<FeatureType>;
-  settings: {
-    __typename?: 'UserSettingsType';
-    receiveInvitationEmail: boolean;
-    receiveMentionEmail: boolean;
-    receiveCommentEmail: boolean;
-  };
-  quota: {
-    __typename?: 'UserQuotaType';
-    name: string;
-    blobLimit: number;
-    storageQuota: number;
-    historyPeriod: number;
-    memberLimit: number;
-    humanReadable: {
-      __typename?: 'UserQuotaHumanReadableType';
-      name: string;
-      blobLimit: string;
-      storageQuota: string;
-      historyPeriod: string;
-      memberLimit: string;
-    };
-  };
-  quotaUsage: { __typename?: 'UserQuotaUsageType'; storageQuota: number };
-  copilot: {
-    __typename?: 'Copilot';
-    quota: { __typename?: 'CopilotQuota'; limit: number | null; used: number };
-  };
 };
 
 export type PasswordLimitsFragment = {
@@ -7624,11 +7732,6 @@ export type Queries =
       response: AppConfigQuery;
     }
   | {
-      name: 'getPromptsQuery';
-      variables: GetPromptsQueryVariables;
-      response: GetPromptsQuery;
-    }
-  | {
       name: 'getUserByEmailQuery';
       variables: GetUserByEmailQueryVariables;
       response: GetUserByEmailQuery;
@@ -8036,11 +8139,6 @@ export type Mutations =
       response: CreateChangePasswordUrlMutation;
     }
   | {
-      name: 'updatePromptMutation';
-      variables: UpdatePromptMutationVariables;
-      response: UpdatePromptMutation;
-    }
-  | {
       name: 'createUserMutation';
       variables: CreateUserMutationVariables;
       response: CreateUserMutation;
@@ -8274,6 +8372,11 @@ export type Mutations =
       name: 'cleanupCopilotSessionMutation';
       variables: CleanupCopilotSessionMutationVariables;
       response: CleanupCopilotSessionMutation;
+    }
+  | {
+      name: 'createCopilotSessionWithHistoryMutation';
+      variables: CreateCopilotSessionWithHistoryMutationVariables;
+      response: CreateCopilotSessionWithHistoryMutation;
     }
   | {
       name: 'createCopilotSessionMutation';

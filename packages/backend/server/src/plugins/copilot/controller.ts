@@ -36,10 +36,7 @@ import {
   BlobNotFound,
   CallMetric,
   Config,
-  CopilotFailedToGenerateText,
   CopilotSessionNotFound,
-  InternalServerError,
-  mapAnyError,
   mapSseError,
   metrics,
   NoCopilotProviderAvailable,
@@ -240,61 +237,6 @@ export class CopilotController implements BeforeApplicationShutdown {
       session,
       finalMessage,
     };
-  }
-
-  @Get('/chat/:sessionId')
-  @CallMetric('ai', 'chat', { timer: true })
-  async chat(
-    @CurrentUser() user: CurrentUser,
-    @Req() req: Request,
-    @Param('sessionId') sessionId: string,
-    @Query() query: Record<string, string | string[]>
-  ): Promise<string> {
-    const info: any = { sessionId, params: query };
-
-    try {
-      const { provider, model, session, finalMessage } =
-        await this.prepareChatSession(
-          user,
-          sessionId,
-          query,
-          ModelOutputType.Text
-        );
-
-      info.model = model;
-      info.finalMessage = finalMessage.filter(m => m.role !== 'system');
-      metrics.ai.counter('chat_calls').add(1, { model });
-
-      const { reasoning, webSearch, toolsConfig } =
-        ChatQuerySchema.parse(query);
-      const content = await provider.text({ modelId: model }, finalMessage, {
-        ...session.config.promptConfig,
-        signal: getSignal(req).signal,
-        user: user.id,
-        session: session.config.sessionId,
-        workspace: session.config.workspaceId,
-        reasoning,
-        webSearch,
-        tools: getTools(session.config.promptConfig?.tools, toolsConfig),
-      });
-
-      session.push({
-        role: 'assistant',
-        content,
-        createdAt: new Date(),
-      });
-      await session.save();
-
-      return content;
-    } catch (e: any) {
-      metrics.ai.counter('chat_errors').add(1);
-      let error = mapAnyError(e);
-      if (error instanceof InternalServerError) {
-        error = new CopilotFailedToGenerateText(e.message);
-      }
-      error.log('CopilotChat', info);
-      throw error;
-    }
   }
 
   @Sse('/chat/:sessionId/stream')

@@ -26,6 +26,9 @@ public class RevokeUserAccessTokenMutation: GraphQLMutation {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("revokeUserAccessToken", Bool.self, arguments: ["id": .variable("id")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      RevokeUserAccessTokenMutation.Data.self
+    ] }
 
     public var revokeUserAccessToken: Bool { __data["revokeUserAccessToken"] }
   }
