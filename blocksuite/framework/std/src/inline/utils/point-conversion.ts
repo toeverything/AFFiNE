@@ -37,7 +37,16 @@ export function nativePointToTextPoint(
     }
 
     if (texts.length > 0) {
-      return texts[offset] ? [texts[offset], 0] : null;
+      if (offset <= 0) {
+        return [texts[0], 0];
+      }
+
+      if (texts[offset]) {
+        return [texts[offset], 0];
+      }
+
+      const lastText = texts[texts.length - 1];
+      return [lastText, calculateTextLength(lastText)];
     }
   }
 
