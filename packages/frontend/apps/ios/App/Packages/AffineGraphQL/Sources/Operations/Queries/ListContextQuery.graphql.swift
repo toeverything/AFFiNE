@@ -34,6 +34,9 @@ public class ListContextQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("currentUser", CurrentUser?.self),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      ListContextQuery.Data.self
+    ] }
 
     /// Get current user
     public var currentUser: CurrentUser? { __data["currentUser"] }
@@ -50,6 +53,9 @@ public class ListContextQuery: GraphQLQuery {
         .field("__typename", String.self),
         .field("copilot", Copilot.self, arguments: ["workspaceId": .variable("workspaceId")]),
       ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        ListContextQuery.Data.CurrentUser.self
+      ] }
 
       public var copilot: Copilot { __data["copilot"] }
 
@@ -64,6 +70,9 @@ public class ListContextQuery: GraphQLQuery {
         public static var __selections: [ApolloAPI.Selection] { [
           .field("__typename", String.self),
           .field("contexts", [Context].self, arguments: ["sessionId": .variable("sessionId")]),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          ListContextQuery.Data.CurrentUser.Copilot.self
         ] }
 
         /// Get the context list of a session
@@ -81,6 +90,9 @@ public class ListContextQuery: GraphQLQuery {
             .field("__typename", String.self),
             .field("id", AffineGraphQL.ID?.self),
             .field("workspaceId", String.self),
+          ] }
+          public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+            ListContextQuery.Data.CurrentUser.Copilot.Context.self
           ] }
 
           public var id: AffineGraphQL.ID? { __data["id"] }

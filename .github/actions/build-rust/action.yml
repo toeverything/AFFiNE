@@ -50,8 +50,14 @@ runs:
       # https://github.com/tree-sitter/tree-sitter/issues/4186
       # pass -D_BSD_SOURCE to clang to fix the tree-sitter build issue
       run: |
-        echo "CC=clang -D_BSD_SOURCE" >> "$GITHUB_ENV"
-        echo "TARGET_CC=clang -D_BSD_SOURCE" >> "$GITHUB_ENV"
+        if [[ "${{ inputs.target }}" == "aarch64-unknown-linux-gnu" ]]; then
+          # napi cross-toolchain 1.0.3 headers miss AT_HWCAP2 in elf.h
+          echo "CC=clang -D_BSD_SOURCE -DAT_HWCAP2=26" >> "$GITHUB_ENV"
+          echo "TARGET_CC=clang -D_BSD_SOURCE -DAT_HWCAP2=26" >> "$GITHUB_ENV"
+        else
+          echo "CC=clang -D_BSD_SOURCE" >> "$GITHUB_ENV"
+          echo "TARGET_CC=clang -D_BSD_SOURCE" >> "$GITHUB_ENV"
+        fi
 
     - name: Cache cargo
       uses: Swatinem/rust-cache@v2

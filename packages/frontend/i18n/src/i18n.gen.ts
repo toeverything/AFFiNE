@@ -1095,7 +1095,7 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.appearanceSettings.showLinkedDocInSidebar.description"](): string;
     /**
-      * `Your current email is {{email}}. We'll send a temporary verification link to this email.`
+      * `Your current email is {{email}}. We'll send a confirmation link there first so you can securely switch to a new email address.`
       */
     ["com.affine.auth.change.email.message"](options: {
         readonly email: string;
@@ -1427,7 +1427,7 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.auth.toast.title.signed-in"](): string;
     /**
-      * `Your current email is {{email}}. We'll send a temporary verification link to this email.`
+      * `Your current email is {{email}}. We'll send a verification link to this email so you can confirm it belongs to you.`
       */
     ["com.affine.auth.verify.email.message"](options: {
         readonly email: string;
@@ -2494,6 +2494,14 @@ export function useAFFiNEI18N(): {
       * `Import your Notion data. Supported import formats: HTML with subpages.`
       */
     ["com.affine.import.notion.tooltip"](): string;
+    /**
+      * `Obsidian Vault`
+      */
+    ["com.affine.import.obsidian"](): string;
+    /**
+      * `Import an Obsidian vault. Select a folder to import all notes, images, and assets with wikilinks resolved.`
+      */
+    ["com.affine.import.obsidian.tooltip"](): string;
     /**
       * `Snapshot`
       */
@@ -5482,6 +5490,38 @@ export function useAFFiNEI18N(): {
       * `New doc default mode`
       */
     ["com.affine.settings.editorSettings.general.default-new-doc.title"](): string;
+    /**
+      * `Auto-title new docs with current date`
+      */
+    ["com.affine.settings.editorSettings.general.auto-date-title.title"](): string;
+    /**
+      * `Automatically title blank new docs with today's date.`
+      */
+    ["com.affine.settings.editorSettings.general.auto-date-title.description"](): string;
+    /**
+      * `New doc date format`
+      */
+    ["com.affine.settings.editorSettings.general.auto-date-title.format.title"](): string;
+    /**
+      * `Choose the date format used for automatic new doc titles.`
+      */
+    ["com.affine.settings.editorSettings.general.auto-date-title.format.description"](): string;
+    /**
+      * `DD-MM-YYYY`
+      */
+    ["com.affine.settings.editorSettings.general.auto-date-title.format.dd-mm-yyyy"](): string;
+    /**
+      * `MM-DD-YYYY`
+      */
+    ["com.affine.settings.editorSettings.general.auto-date-title.format.mm-dd-yyyy"](): string;
+    /**
+      * `YYYY-MM-DD`
+      */
+    ["com.affine.settings.editorSettings.general.auto-date-title.format.yyyy-mm-dd"](): string;
+    /**
+      * `Journal style (localized)`
+      */
+    ["com.affine.settings.editorSettings.general.auto-date-title.format.journal"](): string;
     /**
       * `Customize your text experience.`
       */
@@ -8518,6 +8558,10 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.recording.new"](): string;
     /**
+      * `Importing...`
+      */
+    ["com.affine.recording.importing.prompt"](): string;
+    /**
       * `Finished`
       */
     ["com.affine.recording.success.prompt"](): string;
@@ -8699,6 +8743,12 @@ export function useAFFiNEI18N(): {
       * `Email service is not configured.`
       */
     ["error.EMAIL_SERVICE_NOT_CONFIGURED"](): string;
+    /**
+      * `Image format not supported: {{format}}`
+      */
+    ["error.IMAGE_FORMAT_NOT_SUPPORTED"](options: {
+        readonly format: string;
+    }): string;
     /**
       * `Query is too long, max length is {{max}}.`
       */
@@ -9883,7 +9933,7 @@ export const TypedTrans: {
         ["2"]: JSX.Element;
     }>>;
     /**
-      * `<1>{{username}}</1> has accept your invitation`
+      * `<1>{{username}}</1> has accepted your invitation`
       */
     ["com.affine.notification.invitation-accepted"]: ComponentType<TypedTransProps<{
         readonly username: string;

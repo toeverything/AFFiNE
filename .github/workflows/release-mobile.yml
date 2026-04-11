@@ -26,7 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ inputs.build-type }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Setup Version
         uses: ./.github/actions/setup-version
         with:
@@ -54,7 +54,7 @@ jobs:
   build-android-web:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Setup Version
         uses: ./.github/actions/setup-version
         with:
@@ -83,7 +83,7 @@ jobs:
     needs:
       - build-ios-web
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Setup Version
         uses: ./.github/actions/setup-version
         with:
@@ -114,7 +114,7 @@ jobs:
       - name: Cap sync
         run: yarn workspace @affine/ios sync
       - name: Signing By Apple Developer ID
-        uses: apple-actions/import-codesign-certs@v5
+        uses: apple-actions/import-codesign-certs@v6
         id: import-codesign-certs
         with:
           p12-file-base64: ${{ secrets.CERTIFICATES_P12_MOBILE }}
@@ -147,7 +147,7 @@ jobs:
     needs:
       - build-android-web
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Setup Version
         uses: ./.github/actions/setup-version
         with:
@@ -180,7 +180,7 @@ jobs:
           no-build: 'true'
       - name: Cap sync
         run: yarn workspace @affine/android cap sync
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.13'
       - name: Auth gcloud
@@ -192,7 +192,7 @@ jobs:
           token_format: 'access_token'
           project_id: '${{ secrets.GCP_PROJECT_ID }}'
           access_token_scopes: 'https://www.googleapis.com/auth/androidpublisher'
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '21'

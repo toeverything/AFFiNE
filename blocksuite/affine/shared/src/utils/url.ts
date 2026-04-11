@@ -24,6 +24,11 @@ const toURL = (str: string) => {
   }
 };
 
+const hasAllowedScheme = (url: URL) => {
+  const protocol = url.protocol.slice(0, -1).toLowerCase();
+  return ALLOWED_SCHEMES.has(protocol);
+};
+
 function resolveURL(str: string, baseUrl: string, padded = false) {
   const url = toURL(str);
   if (!url) return null;
@@ -61,6 +66,7 @@ export function normalizeUrl(str: string) {
 
   // Formatted
   if (url) {
+    if (!hasAllowedScheme(url)) return '';
     if (!str.endsWith('/') && url.href.endsWith('/')) {
       return url.href.substring(0, url.href.length - 1);
     }

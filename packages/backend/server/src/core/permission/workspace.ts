@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { SpaceAccessDenied } from '../../base';
 import { DocRole, Models } from '../../models';
 import { AccessController } from './controller';
+import { WorkspacePolicyService } from './policy';
 import type { Resource } from './resource';
 import {
   fixupDocRole,
@@ -17,27 +18,22 @@ import {
 export class WorkspaceAccessController extends AccessController<'ws'> {
   protected readonly type = 'ws';
 
-  constructor(private readonly models: Models) {
+  constructor(
+    private readonly models: Models,
+    private readonly policy: WorkspacePolicyService
+  ) {
     super();
   }
 
   async role(resource: Resource<'ws'>) {
-    let role = await this.getRole(resource);
-
-    // NOTE(@forehalo): special case for public page
-    // Currently, we can not only load binary of a public Doc to render in a shared page,
-    // so we need to ensure anyone has basic 'read' permission to a workspace that has public pages.
-    if (
-      !role &&
-      (await this.models.workspace.allowSharing(resource.workspaceId)) &&
-      (await this.models.doc.hasPublic(resource.workspaceId))
-    ) {
-      role = WorkspaceRole.External;
-    }
+    const role = await this.getRole(resource);
 
     return {
       role,
-      permissions: mapWorkspaceRoleToPermissions(role),
+      permissions: await this.policy.applyWorkspacePermissions(
+        resource.workspaceId,
+        mapWorkspaceRoleToPermissions(role)
+      ),
     };
   }
 
@@ -96,7 +92,7 @@ export class WorkspaceAccessController extends AccessController<'ws'> {
     }
 
     const workspaceRole = await this.getRole(payload);
-    const sharingAllowed = await this.models.workspace.allowSharing(
+    const sharingAllowed = await this.policy.isSharingEnabled(
       payload.workspaceId
     );
     if (
@@ -203,7 +199,9 @@ export class WorkspaceAccessController extends AccessController<'ws'> {
     }
 
     if (ws.public) {
-      const sharingAllowed = await this.models.workspace.allowSharing(ws.id);
+      const sharingAllowed = await this.policy.canReadWorkspaceByPublicFlag(
+        ws.id
+      );
       return sharingAllowed ? WorkspaceRole.External : null;
     }
 

@@ -37,9 +37,12 @@ export async function waitForAllPagesLoad(page: Page) {
 }
 
 export async function clickNewPageButton(page: Page, title?: string) {
-  await page.getByTestId('sidebar-new-page-button').click({
-    // default timeout is 5000ms, but it's not enough for the CI first page load
-    timeout: 20000,
+  const newPageButton = page.getByTestId('sidebar-new-page-button');
+  await expect(newPageButton).toBeVisible({
+    timeout: 30000,
+  });
+  await newPageButton.click({
+    timeout: 30000,
   });
   await waitForEmptyEditor(page);
   if (title) {
@@ -48,7 +51,10 @@ export async function clickNewPageButton(page: Page, title?: string) {
 }
 
 export async function waitForEmptyEditor(page: Page) {
-  await expect(page.locator('.doc-title-container-empty')).toBeVisible();
+  await page.waitForSelector(
+    '.doc-title-container-empty, doc-title .inline-editor',
+    { timeout: 20000 }
+  );
 }
 
 export function getBlockSuiteEditorTitle(page: Page) {

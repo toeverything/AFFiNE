@@ -304,11 +304,11 @@ export class PlaygroundContent extends SignalWatcher(
       }
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises
+    // oxlint-disable-next-line @typescript-eslint/no-misused-promises
     button.addEventListener('click', handleSendClick);
 
     this._disposables.add(() => {
-      // eslint-disable-next-line @typescript-eslint/no-misused-promises
+      // oxlint-disable-next-line @typescript-eslint/no-misused-promises
       button.removeEventListener('click', handleSendClick);
     });
   }

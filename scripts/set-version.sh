@@ -24,13 +24,11 @@ update_app_version_in_helm_charts() {
   echo "Updating $file_path with appVersion $new_version"
 
   # Use sed to replace the appVersion value with the new version.
-  sed -i.bak -E "s/^appVersion:[[:space:]]+[\"']?.*[\"']?$/appVersion: \"$new_version\"/" "$file_path"
-
-  # Check if sed command succeeded
-  if [ $? -ne 0 ]; then
-    echo "Error: Failed to update the appVersion."
+  sed -i.bak -E "s/^appVersion:[[:space:]]+[\"']?.*[\"']?$/appVersion: \"$new_version\"/" "$file_path" || {
+    # If the sed command fails, print an error message and exit with a non-zero status
+    echo "Error: Failed to update the appVersion in $file_path."
     return 1
-  fi
+  }
 
   echo "appVersion in $file_path updated to $new_version"
 
@@ -58,13 +56,12 @@ update_app_stream_version() {
   current_date=$(date +"%Y-%m-%d")
 
   # Use sed to update the version, date, and URL in the releases section
-  sed -i.bak -E "s|<release version=\"[^\"]*\" date=\"[^\"]*\">|<release version=\"$new_version\" date=\"$current_date\">|" "$file_path"
-  sed -i.bak -E "s|<url>https://github.com/toeverything/AFFiNE/releases/tag/v[^<]*</url>|<url>https://github.com/toeverything/AFFiNE/releases/tag/v$new_version</url>|" "$file_path"
-
-  if [ $? -ne 0 ]; then
+  sed -i.bak -E "s|<release version=\"[^\"]*\" date=\"[^\"]*\">|<release version=\"$new_version\" date=\"$current_date\">|" "$file_path" &&
+  sed -i.bak -E "s|<url>https://github.com/toeverything/AFFiNE/releases/tag/v[^<]*</url>|<url>https://github.com/toeverything/AFFiNE/releases/tag/v$new_version</url>|" "$file_path" || {
+    # If the sed command fails, print an error message and exit with a non-zero status
     echo "Error: Failed to update the appVersion."
     return 1
-  fi
+  }
 
   echo "appVersion in $file_path updated to $new_version"
 
@@ -85,13 +82,11 @@ update_ios_marketing_version() {
   echo "Updating $file_path with MARKETING_VERSION $new_version"
 
   # Use sed to replace the MARKETING_VERSION value with the new version
-  sed -i.bak -E "s/MARKETING_VERSION = [^;]*;/MARKETING_VERSION = $new_version;/g" "$file_path"
-
-  # Check if sed command succeeded
-  if [ $? -ne 0 ]; then
+  sed -i.bak -E "s/MARKETING_VERSION = [^;]*;/MARKETING_VERSION = $new_version;/g" "$file_path" || {
+    # If the sed command fails, print an error message and exit with a non-zero status
     echo "Error: Failed to update the MARKETING_VERSION."
     return 1
-  fi
+  }
 
   echo "MARKETING_VERSION in $file_path updated to $new_version"
 

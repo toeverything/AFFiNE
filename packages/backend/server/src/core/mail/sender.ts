@@ -9,6 +9,7 @@ import {
 import SMTPTransport from 'nodemailer/lib/smtp-transport';
 
 import { Config, metrics, OnEvent } from '../../base';
+import { resolveSMTPHeloHostname } from './utils';
 
 export type SendOptions = Omit<SendMailOptions, 'to' | 'subject' | 'html'> & {
   to: string;
@@ -19,8 +20,10 @@ export type SendOptions = Omit<SendMailOptions, 'to' | 'subject' | 'html'> & {
 function configToSMTPOptions(
   config: AppConfig['mailer']['SMTP']
 ): SMTPTransport.Options {
+  const name = resolveSMTPHeloHostname(config.name);
+
   return {
-    name: config.name,
+    ...(name ? { name } : {}),
     host: config.host,
     port: config.port,
     tls: {

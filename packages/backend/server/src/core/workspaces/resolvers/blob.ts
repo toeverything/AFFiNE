@@ -25,7 +25,7 @@ import {
 } from '../../../base';
 import { Models } from '../../../models';
 import { CurrentUser } from '../../auth';
-import { AccessController } from '../../permission';
+import { AccessController, WorkspacePolicyService } from '../../permission';
 import { QuotaService } from '../../quota';
 import { WorkspaceBlobStorage } from '../../storage';
 import {
@@ -126,6 +126,7 @@ export class WorkspaceBlobResolver {
   logger = new Logger(WorkspaceBlobResolver.name);
   constructor(
     private readonly ac: AccessController,
+    private readonly policy: WorkspacePolicyService,
     private readonly quota: QuotaService,
     private readonly storage: WorkspaceBlobStorage,
     private readonly models: Models
@@ -466,10 +467,7 @@ export class WorkspaceBlobResolver {
       return false;
     }
 
-    await this.ac
-      .user(user.id)
-      .workspace(workspaceId)
-      .assert('Workspace.Blobs.Write');
+    await this.policy.assertCanDeleteBlob(user.id, workspaceId);
 
     await this.storage.delete(workspaceId, key, permanently);
 
@@ -481,10 +479,7 @@ export class WorkspaceBlobResolver {
     @CurrentUser() user: CurrentUser,
     @Args('workspaceId') workspaceId: string
   ) {
-    await this.ac
-      .user(user.id)
-      .workspace(workspaceId)
-      .assert('Workspace.Blobs.Write');
+    await this.policy.assertCanDeleteBlob(user.id, workspaceId);
 
     await this.storage.release(workspaceId);
 

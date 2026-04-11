@@ -38,6 +38,9 @@ public class ListContextObjectQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("currentUser", CurrentUser?.self),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      ListContextObjectQuery.Data.self
+    ] }
 
     /// Get current user
     public var currentUser: CurrentUser? { __data["currentUser"] }
@@ -53,6 +56,9 @@ public class ListContextObjectQuery: GraphQLQuery {
       public static var __selections: [ApolloAPI.Selection] { [
         .field("__typename", String.self),
         .field("copilot", Copilot.self, arguments: ["workspaceId": .variable("workspaceId")]),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        ListContextObjectQuery.Data.CurrentUser.self
       ] }
 
       public var copilot: Copilot { __data["copilot"] }
@@ -71,6 +77,9 @@ public class ListContextObjectQuery: GraphQLQuery {
             "sessionId": .variable("sessionId"),
             "contextId": .variable("contextId")
           ]),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          ListContextObjectQuery.Data.CurrentUser.Copilot.self
         ] }
 
         /// Get the context list of a session
@@ -91,6 +100,9 @@ public class ListContextObjectQuery: GraphQLQuery {
             .field("files", [File].self),
             .field("tags", [Tag].self),
             .field("collections", [Collection].self),
+          ] }
+          public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+            ListContextObjectQuery.Data.CurrentUser.Copilot.Context.self
           ] }
 
           /// list blobs in context
@@ -118,6 +130,9 @@ public class ListContextObjectQuery: GraphQLQuery {
               .field("status", GraphQLEnum<AffineGraphQL.ContextEmbedStatus>?.self),
               .field("createdAt", AffineGraphQL.SafeInt.self),
             ] }
+            public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+              ListContextObjectQuery.Data.CurrentUser.Copilot.Context.Blob.self
+            ] }
 
             public var id: AffineGraphQL.ID { __data["id"] }
             public var status: GraphQLEnum<AffineGraphQL.ContextEmbedStatus>? { __data["status"] }
@@ -137,6 +152,9 @@ public class ListContextObjectQuery: GraphQLQuery {
               .field("id", AffineGraphQL.ID.self),
               .field("status", GraphQLEnum<AffineGraphQL.ContextEmbedStatus>?.self),
               .field("createdAt", AffineGraphQL.SafeInt.self),
+            ] }
+            public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+              ListContextObjectQuery.Data.CurrentUser.Copilot.Context.Doc.self
             ] }
 
             public var id: AffineGraphQL.ID { __data["id"] }
@@ -162,6 +180,9 @@ public class ListContextObjectQuery: GraphQLQuery {
               .field("error", String?.self),
               .field("status", GraphQLEnum<AffineGraphQL.ContextEmbedStatus>.self),
               .field("createdAt", AffineGraphQL.SafeInt.self),
+            ] }
+            public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+              ListContextObjectQuery.Data.CurrentUser.Copilot.Context.File.self
             ] }
 
             public var id: AffineGraphQL.ID { __data["id"] }
@@ -189,6 +210,9 @@ public class ListContextObjectQuery: GraphQLQuery {
               .field("docs", [Doc].self),
               .field("createdAt", AffineGraphQL.SafeInt.self),
             ] }
+            public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+              ListContextObjectQuery.Data.CurrentUser.Copilot.Context.Tag.self
+            ] }
 
             public var type: GraphQLEnum<AffineGraphQL.ContextCategories> { __data["type"] }
             public var id: AffineGraphQL.ID { __data["id"] }
@@ -208,6 +232,9 @@ public class ListContextObjectQuery: GraphQLQuery {
                 .field("id", AffineGraphQL.ID.self),
                 .field("status", GraphQLEnum<AffineGraphQL.ContextEmbedStatus>?.self),
                 .field("createdAt", AffineGraphQL.SafeInt.self),
+              ] }
+              public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+                ListContextObjectQuery.Data.CurrentUser.Copilot.Context.Tag.Doc.self
               ] }
 
               public var id: AffineGraphQL.ID { __data["id"] }
@@ -231,6 +258,9 @@ public class ListContextObjectQuery: GraphQLQuery {
               .field("docs", [Doc].self),
               .field("createdAt", AffineGraphQL.SafeInt.self),
             ] }
+            public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+              ListContextObjectQuery.Data.CurrentUser.Copilot.Context.Collection.self
+            ] }
 
             public var type: GraphQLEnum<AffineGraphQL.ContextCategories> { __data["type"] }
             public var id: AffineGraphQL.ID { __data["id"] }
@@ -250,6 +280,9 @@ public class ListContextObjectQuery: GraphQLQuery {
                 .field("id", AffineGraphQL.ID.self),
                 .field("status", GraphQLEnum<AffineGraphQL.ContextEmbedStatus>?.self),
                 .field("createdAt", AffineGraphQL.SafeInt.self),
+              ] }
+              public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+                ListContextObjectQuery.Data.CurrentUser.Copilot.Context.Collection.Doc.self
               ] }
 
               public var id: AffineGraphQL.ID { __data["id"] }

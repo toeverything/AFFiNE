@@ -2,7 +2,7 @@
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import react from '@vitejs/plugin-react-swc';
+import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
 
 const rootDir = fileURLToPath(new URL('../../../..', import.meta.url));
@@ -24,13 +24,10 @@ export default defineConfig({
     setupFiles: [resolve(rootDir, './scripts/setup/global.ts')],
     include: ['./test/**/*.spec.ts'],
     testTimeout: 5000,
-    poolOptions: {
-      forks: {
-        singleFork: true,
-      },
-    },
+    pool: 'forks',
+    maxWorkers: 1,
     coverage: {
-      provider: 'istanbul', // or 'c8'
+      provider: 'istanbul', // or 'istanbul'
       reporter: ['lcov'],
       reportsDirectory: resolve(rootDir, '.coverage/electron'),
     },

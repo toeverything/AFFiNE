@@ -2,6 +2,7 @@
   "extends": "../../../tsconfig.web.json",
   "include": ["./src"],
   "compilerOptions": {
+    "types": ["build-config", "affine__env", "node"],
     "rootDir": "./src",
     "outDir": "./dist",
     "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo"

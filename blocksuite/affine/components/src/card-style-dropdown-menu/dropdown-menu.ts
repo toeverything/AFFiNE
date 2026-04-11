@@ -50,7 +50,7 @@ const cardStyleMap: Record<ColorScheme, Record<string, TemplateResult>> = {
 @requiredProperties({
   actions: PropTypes.array,
   context: PropTypes.instanceOf(ToolbarContext),
-  style$: PropTypes.object,
+  styleSignal: PropTypes.object,
 })
 export class CardStyleDropdownMenu extends SignalWatcher(LitElement) {
   @property({ attribute: false })
@@ -60,7 +60,7 @@ export class CardStyleDropdownMenu extends SignalWatcher(LitElement) {
   accessor context!: ToolbarContext;
 
   @property({ attribute: false })
-  accessor style$!: Signal<string> | ReadonlySignal<string>;
+  accessor styleSignal!: Signal<string> | ReadonlySignal<string>;
 
   icons$ = computed(() => cardStyleMap[this.context.theme.theme$.value]);
 
@@ -68,7 +68,7 @@ export class CardStyleDropdownMenu extends SignalWatcher(LitElement) {
     const {
       actions,
       context,
-      style$: { value: style },
+      styleSignal: { value: style },
       icons$: { value: icons },
     } = this;
 

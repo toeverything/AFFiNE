@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-import { URLHelper } from '../../../base';
+import { InvalidOauthResponse, URLHelper } from '../../../base';
 import { OAuthProviderName } from '../config';
 import type { OAuthState } from '../types';
 import { OAuthAccount, OAuthProvider, Tokens } from './def';
@@ -13,9 +13,15 @@ interface AuthTokenResponse {
 
 export interface UserInfo {
   login: string;
-  email: string;
+  email: string | null;
   avatar_url: string;
   name: string;
+}
+
+interface UserEmailInfo {
+  email: string;
+  primary: boolean;
+  verified: boolean;
 }
 
 @Injectable()
@@ -30,7 +36,7 @@ export class GithubOAuthProvider extends OAuthProvider {
     return `https://github.com/login/oauth/authorize?${this.url.stringify({
       client_id: this.config.clientId,
       redirect_uri: this.url.link('/oauth/callback'),
-      scope: 'user',
+      scope: 'read:user user:email',
       ...this.config.args,
       state,
     })}`;
@@ -56,16 +62,36 @@ export class GithubOAuthProvider extends OAuthProvider {
   async getUser(tokens: Tokens, _state: OAuthState): Promise<OAuthAccount> {
     const user = await this.fetchJson<UserInfo>('https://api.github.com/user', {
       method: 'GET',
-      headers: {
-        Authorization: `Bearer ${tokens.accessToken}`,
-      },
+      headers: { Authorization: `Bearer ${tokens.accessToken}` },
     });
+
+    const email = user.email ?? (await this.getVerifiedEmail(tokens));
+    if (!email) {
+      throw new InvalidOauthResponse({
+        reason: 'GitHub account did not have a verified email address.',
+      });
+    }
 
     return {
       id: user.login,
       avatarUrl: user.avatar_url,
-      email: user.email,
+      email,
       name: user.name,
     };
+  }
+
+  private async getVerifiedEmail(tokens: Tokens) {
+    const emails = await this.fetchJson<UserEmailInfo[]>(
+      'https://api.github.com/user/emails',
+      {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${tokens.accessToken}` },
+      }
+    );
+
+    return (
+      emails.find(email => email.primary && email.verified)?.email ??
+      emails.find(email => email.verified)?.email
+    );
   }
 }

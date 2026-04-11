@@ -107,12 +107,15 @@ test('should cut work multiple line', async ({ page }, testInfo) => {
   await dragBetweenIndices(page, [0, 1], [2, 2]);
   // cut
   await page.keyboard.press(`${SHORT_KEY}+x`);
+  await waitNextFrame(page, 200);
+  await assertRichTexts(page, ['19']);
   expect(await getPageSnapshot(page, true)).toMatchSnapshot(
     `${testInfo.title}_init.json`
   );
   await undoByKeyboard(page);
   const text = await readClipboardText(page);
   expect(text).toBe(`23 456 78`);
+  await assertRichTexts(page, ['123', '456', '789']);
   expect(await getPageSnapshot(page, true)).toMatchSnapshot(
     `${testInfo.title}_undo.json`
   );

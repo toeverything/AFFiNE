@@ -5,9 +5,11 @@ import { Prisma, PrismaClient } from '@prisma/client';
 import { metrics } from '../../base';
 
 const LOCK_NAMESPACE = 97_301;
-const LOCK_KEY = 1;
+const REFRESH_LOCK_KEY = 1;
 const DIRTY_BATCH_SIZE = 500;
 const FULL_REFRESH_BATCH_SIZE = 2000;
+const REFRESH_LOCK_RETRY_DELAY_MS = 5_000;
+const REFRESH_LOCK_RETRY_TIMES = 12;
 const TRANSACTION_TIMEOUT_MS = 120_000;
 
 @Injectable()
@@ -21,7 +23,7 @@ export class WorkspaceStatsJob {
     const started = Date.now();
 
     try {
-      const result = await this.withAdvisoryLock(async tx => {
+      const result = await this.withAdvisoryLock(REFRESH_LOCK_KEY, async tx => {
         const backlog = await this.countDirty(tx);
         metrics.workspace
           .gauge('admin_stats_dirty_backlog')
@@ -63,11 +65,12 @@ export class WorkspaceStatsJob {
   async recalibrate() {
     let lastSid = 0;
     let processed = 0;
+    let completed = true;
 
     while (true) {
       const started = Date.now();
       try {
-        const result = await this.withAdvisoryLock(async tx => {
+        const result = await this.withRefreshLockRetry(async tx => {
           const workspaces = await this.fetchWorkspaceBatch(
             tx,
             lastSid,
@@ -87,8 +90,9 @@ export class WorkspaceStatsJob {
         });
 
         if (!result) {
-          this.logger.debug(
-            'skip admin stats recalibration, lock not acquired'
+          completed = false;
+          this.logger.warn(
+            'skip admin stats recalibration after retrying lock acquisition'
           );
           break;
         }
@@ -108,6 +112,7 @@ export class WorkspaceStatsJob {
           break;
         }
       } catch (error) {
+        completed = false;
         metrics.workspace.counter('admin_stats_refresh_failed').add(1, {
           mode: 'full',
         });
@@ -125,13 +130,24 @@ export class WorkspaceStatsJob {
       );
     }
 
+    if (!completed) {
+      this.logger.warn(
+        'Skip daily workspace admin stats snapshot because full recalibration did not complete'
+      );
+      return;
+    }
+
     try {
-      const snapshotted = await this.withAdvisoryLock(async tx => {
+      const snapshotted = await this.withRefreshLockRetry(async tx => {
         await this.writeDailySnapshot(tx);
         return true;
       });
       if (snapshotted) {
         this.logger.debug('Wrote daily workspace admin stats snapshot');
+      } else {
+        this.logger.warn(
+          'Skipped daily workspace admin stats snapshot after retrying lock acquisition'
+        );
       }
     } catch (error) {
       this.logger.error(
@@ -142,9 +158,10 @@ export class WorkspaceStatsJob {
   }
 
   private async withAdvisoryLock<T>(
+    lockKey: number,
     callback: (tx: Prisma.TransactionClient) => Promise<T>
   ): Promise<T | null> {
-    const lockIdSql = Prisma.sql`(${LOCK_NAMESPACE}::bigint << 32) + ${LOCK_KEY}::bigint`;
+    const lockIdSql = Prisma.sql`(${LOCK_NAMESPACE}::bigint << 32) + ${lockKey}::bigint`;
 
     return await this.prisma.$transaction(
       async tx => {
@@ -167,6 +184,26 @@ export class WorkspaceStatsJob {
         timeout: TRANSACTION_TIMEOUT_MS,
       }
     );
+  }
+
+  private async withRefreshLockRetry<T>(
+    callback: (tx: Prisma.TransactionClient) => Promise<T>
+  ) {
+    for (let attempt = 0; attempt < REFRESH_LOCK_RETRY_TIMES; attempt++) {
+      const result = await this.withAdvisoryLock(REFRESH_LOCK_KEY, callback);
+
+      if (result) {
+        return result;
+      }
+
+      if (attempt < REFRESH_LOCK_RETRY_TIMES - 1) {
+        await new Promise(resolve =>
+          setTimeout(resolve, REFRESH_LOCK_RETRY_DELAY_MS)
+        );
+      }
+    }
+
+    return null;
   }
 
   private async loadDirty(

@@ -26,7 +26,6 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "importsNotUsedAsValues": "remove",
 
     // Interop Constraints
     "forceConsistentCasingInFileNames": true,

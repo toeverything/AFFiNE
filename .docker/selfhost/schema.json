@@ -62,6 +62,18 @@
             "concurrency": 10
           }
         },
+        "queues.calendar": {
+          "type": "object",
+          "description": "The config for calendar job queue\n@default {\"concurrency\":4}",
+          "properties": {
+            "concurrency": {
+              "type": "number"
+            }
+          },
+          "default": {
+            "concurrency": 4
+          }
+        },
         "queues.doc": {
           "type": "object",
           "description": "The config for doc job queue\n@default {\"concurrency\":1}",
@@ -197,8 +209,8 @@
       "properties": {
         "SMTP.name": {
           "type": "string",
-          "description": "Name of the email server (e.g. your domain name)\n@default \"AFFiNE Server\"\n@environment `MAILER_SERVERNAME`",
-          "default": "AFFiNE Server"
+          "description": "Hostname used for SMTP HELO/EHLO (e.g. mail.example.com). Leave empty to use the system hostname.\n@default \"\"\n@environment `MAILER_SERVERNAME`",
+          "default": ""
         },
         "SMTP.host": {
           "type": "string",
@@ -237,8 +249,8 @@
         },
         "fallbackSMTP.name": {
           "type": "string",
-          "description": "Name of the fallback email server (e.g. your domain name)\n@default \"AFFiNE Server\"",
-          "default": "AFFiNE Server"
+          "description": "Hostname used for fallback SMTP HELO/EHLO (e.g. mail.example.com). Leave empty to use the system hostname.\n@default \"\"",
+          "default": ""
         },
         "fallbackSMTP.host": {
           "type": "string",
@@ -843,7 +855,7 @@
       "properties": {
         "google": {
           "type": "object",
-          "description": "Google Calendar integration config\n@default {\"enabled\":false,\"clientId\":\"\",\"clientSecret\":\"\",\"externalWebhookUrl\":\"\",\"webhookVerificationToken\":\"\"}\n@link https://developers.google.com/calendar/api/guides/push",
+          "description": "Google Calendar integration config\n@default {\"enabled\":false,\"clientId\":\"\",\"clientSecret\":\"\",\"externalWebhookUrl\":\"\",\"webhookVerificationToken\":\"\",\"requestTimeoutMs\":10000}\n@link https://developers.google.com/calendar/api/guides/push",
           "properties": {
             "enabled": {
               "type": "boolean"
@@ -859,6 +871,9 @@
             },
             "webhookVerificationToken": {
               "type": "string"
+            },
+            "requestTimeoutMs": {
+              "type": "number"
             }
           },
           "default": {
@@ -866,7 +881,8 @@
             "clientId": "",
             "clientSecret": "",
             "externalWebhookUrl": "",
-            "webhookVerificationToken": ""
+            "webhookVerificationToken": "",
+            "requestTimeoutMs": 10000
           }
         },
         "caldav": {
@@ -971,7 +987,7 @@
         },
         "scenarios": {
           "type": "object",
-          "description": "Use custom models in scenarios and override default settings.\n@default {\"override_enabled\":false,\"scenarios\":{\"audio_transcribing\":\"gemini-2.5-flash\",\"chat\":\"gemini-2.5-flash\",\"embedding\":\"gemini-embedding-001\",\"image\":\"gpt-image-1\",\"rerank\":\"gpt-4.1\",\"coding\":\"claude-sonnet-4-5@20250929\",\"complex_text_generation\":\"gpt-4o-2024-08-06\",\"quick_decision_making\":\"gpt-5-mini\",\"quick_text_generation\":\"gemini-2.5-flash\",\"polish_and_summarize\":\"gemini-2.5-flash\"}}",
+          "description": "Use custom models in scenarios and override default settings.\n@default {\"override_enabled\":false,\"scenarios\":{\"audio_transcribing\":\"gemini-2.5-flash\",\"chat\":\"gemini-2.5-flash\",\"embedding\":\"gemini-embedding-001\",\"image\":\"gpt-image-1\",\"coding\":\"claude-sonnet-4-5@20250929\",\"complex_text_generation\":\"gpt-5-mini\",\"quick_decision_making\":\"gpt-5-mini\",\"quick_text_generation\":\"gemini-2.5-flash\",\"polish_and_summarize\":\"gemini-2.5-flash\"}}",
           "default": {
             "override_enabled": false,
             "scenarios": {
@@ -979,14 +995,23 @@
               "chat": "gemini-2.5-flash",
               "embedding": "gemini-embedding-001",
               "image": "gpt-image-1",
-              "rerank": "gpt-4.1",
               "coding": "claude-sonnet-4-5@20250929",
-              "complex_text_generation": "gpt-4o-2024-08-06",
+              "complex_text_generation": "gpt-5-mini",
               "quick_decision_making": "gpt-5-mini",
               "quick_text_generation": "gemini-2.5-flash",
               "polish_and_summarize": "gemini-2.5-flash"
             }
           }
+        },
+        "providers.profiles": {
+          "type": "array",
+          "description": "The profile list for copilot providers.\n@default []",
+          "default": []
+        },
+        "providers.defaults": {
+          "type": "object",
+          "description": "The default provider ids for model output types and global fallback.\n@default {}",
+          "default": {}
         },
         "providers.openai": {
           "type": "object",
@@ -994,6 +1019,14 @@
           "default": {
             "apiKey": "",
             "baseURL": "https://api.openai.com/v1"
+          }
+        },
+        "providers.cloudflareWorkersAi": {
+          "type": "object",
+          "description": "The config for the Cloudflare Workers AI provider.\n@default {\"apiToken\":\"\",\"accountId\":\"\"}",
+          "default": {
+            "apiToken": "",
+            "accountId": ""
           }
         },
         "providers.fal": {

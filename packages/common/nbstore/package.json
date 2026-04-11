@@ -22,7 +22,6 @@
     "@toeverything/infra": "workspace:*",
     "eventemitter2": "^6.4.9",
     "graphemer": "^1.4.0",
-    "lib0": "^0.2.114",
     "lodash-es": "^4.17.23",
     "nanoid": "^5.1.6",
     "rxjs": "^7.8.2",
@@ -37,7 +36,7 @@
     "fake-indexeddb": "^6.0.0",
     "idb": "^8.0.0",
     "socket.io-client": "^4.8.3",
-    "vitest": "^3.2.4"
+    "vitest": "^4.0.18"
   },
   "peerDependencies": {
     "@affine/error": "workspace:*",

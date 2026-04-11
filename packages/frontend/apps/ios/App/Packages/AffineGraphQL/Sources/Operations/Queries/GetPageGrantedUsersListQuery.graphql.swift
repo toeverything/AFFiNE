@@ -38,6 +38,9 @@ public class GetPageGrantedUsersListQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("workspace", Workspace.self, arguments: ["id": .variable("workspaceId")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      GetPageGrantedUsersListQuery.Data.self
+    ] }
 
     /// Get workspace by id
     public var workspace: Workspace { __data["workspace"] }
@@ -54,6 +57,9 @@ public class GetPageGrantedUsersListQuery: GraphQLQuery {
         .field("__typename", String.self),
         .field("doc", Doc.self, arguments: ["docId": .variable("docId")]),
       ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        GetPageGrantedUsersListQuery.Data.Workspace.self
+      ] }
 
       /// Get get with given id
       public var doc: Doc { __data["doc"] }
@@ -69,6 +75,9 @@ public class GetPageGrantedUsersListQuery: GraphQLQuery {
         public static var __selections: [ApolloAPI.Selection] { [
           .field("__typename", String.self),
           .field("grantedUsersList", GrantedUsersList.self, arguments: ["pagination": .variable("pagination")]),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          GetPageGrantedUsersListQuery.Data.Workspace.Doc.self
         ] }
 
         /// paginated doc granted users list
@@ -88,6 +97,9 @@ public class GetPageGrantedUsersListQuery: GraphQLQuery {
             .field("pageInfo", PageInfo.self),
             .field("edges", [Edge].self),
           ] }
+          public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+            GetPageGrantedUsersListQuery.Data.Workspace.Doc.GrantedUsersList.self
+          ] }
 
           public var totalCount: Int { __data["totalCount"] }
           public var pageInfo: PageInfo { __data["pageInfo"] }
@@ -106,6 +118,9 @@ public class GetPageGrantedUsersListQuery: GraphQLQuery {
               .field("endCursor", String?.self),
               .field("hasNextPage", Bool.self),
             ] }
+            public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+              GetPageGrantedUsersListQuery.Data.Workspace.Doc.GrantedUsersList.PageInfo.self
+            ] }
 
             public var endCursor: String? { __data["endCursor"] }
             public var hasNextPage: Bool { __data["hasNextPage"] }
@@ -123,6 +138,9 @@ public class GetPageGrantedUsersListQuery: GraphQLQuery {
               .field("__typename", String.self),
               .field("node", Node.self),
             ] }
+            public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+              GetPageGrantedUsersListQuery.Data.Workspace.Doc.GrantedUsersList.Edge.self
+            ] }
 
             public var node: Node { __data["node"] }
 
@@ -138,6 +156,9 @@ public class GetPageGrantedUsersListQuery: GraphQLQuery {
                 .field("__typename", String.self),
                 .field("role", GraphQLEnum<AffineGraphQL.DocRole>.self),
                 .field("user", User.self),
+              ] }
+              public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+                GetPageGrantedUsersListQuery.Data.Workspace.Doc.GrantedUsersList.Edge.Node.self
               ] }
 
               public var role: GraphQLEnum<AffineGraphQL.DocRole> { __data["role"] }
@@ -157,6 +178,9 @@ public class GetPageGrantedUsersListQuery: GraphQLQuery {
                   .field("name", String.self),
                   .field("email", String.self),
                   .field("avatarUrl", String?.self),
+                ] }
+                public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+                  GetPageGrantedUsersListQuery.Data.Workspace.Doc.GrantedUsersList.Edge.Node.User.self
                 ] }
 
                 public var id: String { __data["id"] }

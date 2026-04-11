@@ -280,6 +280,27 @@ export async function loginUserDirectly(
   }
 }
 
+async function dismissBlockingModal(page: Page) {
+  const modal = page.locator('modal-transition-container [data-modal="true"]');
+  if (
+    !(await modal
+      .first()
+      .isVisible()
+      .catch(() => false))
+  ) {
+    return;
+  }
+
+  const closeButton = page.getByTestId('modal-close-button').last();
+  if (await closeButton.isVisible().catch(() => false)) {
+    await closeButton.click({ timeout: 5000 });
+  } else {
+    await page.keyboard.press('Escape');
+  }
+
+  await expect(modal.first()).toBeHidden({ timeout: 10000 });
+}
+
 export async function enableCloudWorkspace(page: Page) {
   await clickSideBarSettingButton(page);
   await page.getByTestId('workspace-setting:preference').click();
@@ -288,6 +309,7 @@ export async function enableCloudWorkspace(page: Page) {
   // wait for upload and delete local workspace
   await page.waitForTimeout(2000);
   await waitForAllPagesLoad(page);
+  await dismissBlockingModal(page);
   await clickNewPageButton(page);
 }
 
@@ -303,6 +325,7 @@ export async function enableCloudWorkspaceFromShareButton(page: Page) {
   // wait for upload and delete local workspace
   await page.waitForTimeout(2000);
   await waitForEditorLoad(page);
+  await dismissBlockingModal(page);
   await clickNewPageButton(page);
 }
 

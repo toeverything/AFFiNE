@@ -38,6 +38,9 @@ public class AcceptInviteByInviteIdMutation: GraphQLMutation {
         "inviteId": .variable("inviteId")
       ]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      AcceptInviteByInviteIdMutation.Data.self
+    ] }
 
     public var acceptInviteById: Bool { __data["acceptInviteById"] }
   }

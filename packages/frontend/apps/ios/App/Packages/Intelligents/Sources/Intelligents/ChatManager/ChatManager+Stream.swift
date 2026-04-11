@@ -6,8 +6,6 @@
 //
 
 import AffineGraphQL
-import Apollo
-import ApolloAPI
 import EventSource
 import Foundation
 import MarkdownParser
@@ -26,6 +24,7 @@ private extension InputBoxData {
 }
 
 public extension ChatManager {
+  @MainActor
   func startUserRequest(editorData: InputBoxData, sessionId: String) {
     append(sessionId: sessionId, UserMessageCellViewModel(
       id: .init(),
@@ -163,66 +162,50 @@ private extension ChatManager {
     assert(!Thread.isMainThread)
     print("[+] starting copilot response for session: \(sessionId)")
 
-    let messageParameters: [String: AnyHashable] = [
+    let messageParameters: AffineGraphQL.JSON = [
       // packages/frontend/core/src/blocksuite/ai/provider/setup-provider.tsx
       "docs": editorData.documentAttachments.map(\.documentID), // affine doc
       "files": [String](), // attachment in context, keep nil for now
       "searchMode": editorData.isSearchEnabled ? "MUST" : "AUTO",
     ]
-    let attachmentCount = [
-      editorData.fileAttachments.count,
-      editorData.imageAttachments.count,
-    ].reduce(0, +)
-    let attachmentFieldName = attachmentCount > 1 && attachmentCount != 0 ? "options.blobs" : "options.blob"
-    let uploadableAttachments: [GraphQLFile] = [
-      editorData.fileAttachments.map { file -> GraphQLFile in
+    let uploadableAttachments: [CopilotAttachmentUpload] = [
+      editorData.fileAttachments.map { file -> CopilotAttachmentUpload in
         .init(
-          fieldName: attachmentFieldName,
           originalName: file.name,
           mimeType: mimeType(text: file.name),
           data: file.data ?? .init()
         )
       },
-      editorData.imageAttachments.map { image -> GraphQLFile in
+      editorData.imageAttachments.map { image -> CopilotAttachmentUpload in
         .init(
-          fieldName: attachmentFieldName,
           originalName: "image.jpg",
           mimeType: mimeType(pathExtension: "jpg"),
           data: image.imageData
         )
       },
     ].flatMap(\.self)
-    assert(uploadableAttachments.allSatisfy { !($0.data?.isEmpty ?? true) })
-    guard let input = try? CreateChatMessageInput(
-      attachments: [],
-      blob: attachmentCount == 1 ? "" : .none,
-      blobs: attachmentCount > 1 && attachmentCount != 0 ? .some([]) : .none,
-      content: .some(contextSnippet.isEmpty ? editorData.text : "\(contextSnippet)\n\(editorData.text)"),
-      params: .some(AffineGraphQL.JSON(_jsonValue: messageParameters)),
-      sessionId: sessionId
-    ) else {
-      report(sessionId, ChatError.unknownError)
-      assertionFailure() // very unlikely to happen
-      return
-    }
-    let mutation = CreateCopilotMessageMutation(options: input)
-    QLService.shared.client.upload(operation: mutation, files: uploadableAttachments) { result in
-      print("[*] createCopilotMessage result: \(result)")
-      DispatchQueue.main.async {
-        switch result {
-        case let .success(graphQLResult):
-          guard let messageIdentifier = graphQLResult.data?.createCopilotMessage else {
-            self.report(sessionId, ChatError.invalidResponse)
-            self.delete(sessionId: sessionId, vmId: viewModelId)
-            return
-          }
+    assert(uploadableAttachments.allSatisfy { !$0.data.isEmpty })
+    let messageContent = contextSnippet.isEmpty ? editorData.text : "\(contextSnippet)\n\(editorData.text)"
+    Task {
+      do {
+        let messageIdentifier = try await QLService.shared.createCopilotMessage(
+          workspaceId: IntelligentContext.shared.currentWorkspaceId ?? "",
+          sessionId: sessionId,
+          content: messageContent,
+          params: messageParameters,
+          attachments: uploadableAttachments
+        )
+        DispatchQueue.main.async {
           self.startStreamingResponse(
             sessionId: sessionId,
             messageId: messageIdentifier,
             applyingTo: viewModelId
           )
-        case let .failure(error):
+        }
+      } catch {
+        DispatchQueue.main.async {
           self.report(sessionId, error)
+          self.delete(sessionId: sessionId, vmId: viewModelId)
         }
       }
     }
@@ -277,7 +260,7 @@ private extension ChatManager {
       let eventSource = EventSource()
       let dataTask = eventSource.dataTask(for: request)
       var document = ""
-      self.writeMarkdownContent(document + loadingIndicator, sessionId: sessionId, vmId: vmId)
+      await self.writeMarkdownContent(document + loadingIndicator, sessionId: sessionId, vmId: vmId)
       for await event in dataTask.events() {
         switch event {
         case .open:
@@ -287,7 +270,7 @@ private extension ChatManager {
         case let .event(event):
           guard let data = event.data else { continue }
           document += data
-          self.writeMarkdownContent(
+          await self.writeMarkdownContent(
             document + loadingIndicator,
             sessionId: sessionId,
             vmId: vmId
@@ -297,13 +280,13 @@ private extension ChatManager {
           print("[*] connection closed")
         }
       }
-      self.writeMarkdownContent(document, sessionId: sessionId, vmId: vmId)
+      await self.writeMarkdownContent(document, sessionId: sessionId, vmId: vmId)
       self.closeAll()
     }))
     self.closable.append(closable)
   }
 
-  private func writeMarkdownContent(
+  @MainActor private func writeMarkdownContent(
     _ document: String,
     sessionId: SessionID,
     vmId: UUID

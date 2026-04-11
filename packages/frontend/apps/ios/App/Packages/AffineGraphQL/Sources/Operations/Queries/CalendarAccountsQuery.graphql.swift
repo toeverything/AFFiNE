@@ -20,6 +20,9 @@ public class CalendarAccountsQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("currentUser", CurrentUser?.self),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      CalendarAccountsQuery.Data.self
+    ] }
 
     /// Get current user
     public var currentUser: CurrentUser? { __data["currentUser"] }
@@ -35,6 +38,9 @@ public class CalendarAccountsQuery: GraphQLQuery {
       public static var __selections: [ApolloAPI.Selection] { [
         .field("__typename", String.self),
         .field("calendarAccounts", [CalendarAccount].self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        CalendarAccountsQuery.Data.CurrentUser.self
       ] }
 
       public var calendarAccounts: [CalendarAccount] { __data["calendarAccounts"] }
@@ -61,6 +67,9 @@ public class CalendarAccountsQuery: GraphQLQuery {
           .field("createdAt", AffineGraphQL.DateTime.self),
           .field("updatedAt", AffineGraphQL.DateTime.self),
           .field("calendars", [Calendar].self),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          CalendarAccountsQuery.Data.CurrentUser.CalendarAccount.self
         ] }
 
         public var id: String { __data["id"] }
@@ -95,6 +104,9 @@ public class CalendarAccountsQuery: GraphQLQuery {
             .field("color", String?.self),
             .field("enabled", Bool.self),
             .field("lastSyncAt", AffineGraphQL.DateTime?.self),
+          ] }
+          public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+            CalendarAccountsQuery.Data.CurrentUser.CalendarAccount.Calendar.self
           ] }
 
           public var id: String { __data["id"] }

@@ -35,7 +35,7 @@ jobs:
       - build-images
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Deploy to ${{ inputs.build-type }}
         uses: ./.github/actions/deploy
         with:

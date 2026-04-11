@@ -9,4 +9,4 @@ export const useI18n = () => {
   return useMemo(() => createI18nWrapper(() => i18n), [i18n]);
 };
 
-export { I18nextProvider, Trans } from 'react-i18next';
+export { I18nextProvider, Trans, useTranslation } from 'react-i18next';

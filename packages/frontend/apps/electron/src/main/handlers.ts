@@ -7,6 +7,7 @@ import { configStorageHandlers } from './config-storage';
 import { findInPageHandlers } from './find-in-page';
 import { getLogFilePath, logger, revealLogFile } from './logger';
 import { recordingHandlers } from './recording';
+import { checkSource } from './security-restrictions';
 import { sharedStorageHandlers } from './shared-storage';
 import { uiHandlers } from './ui/handlers';
 import { updaterHandlers } from './updater';
@@ -49,7 +50,7 @@ export const registerHandlers = () => {
     ...args: any[]
   ) => {
     // args[0] is the `{namespace:key}`
-    if (typeof args[0] !== 'string') {
+    if (!checkSource(e) || typeof args[0] !== 'string') {
       logger.error('invalid ipc message', args);
       return;
     }
@@ -97,6 +98,8 @@ export const registerHandlers = () => {
   });
 
   ipcMain.on(AFFINE_API_CHANNEL_NAME, (e, ...args: any[]) => {
+    if (!checkSource(e)) return;
+
     handleIpcMessage(e, ...args)
       .then(ret => {
         e.returnValue = ret;

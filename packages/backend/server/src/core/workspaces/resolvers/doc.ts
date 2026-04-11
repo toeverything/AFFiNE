@@ -38,6 +38,7 @@ import {
   DOC_ACTIONS,
   DocAction,
   DocRole,
+  WorkspacePolicyService,
 } from '../../permission';
 import { PublicUserType, WorkspaceUserType } from '../../user';
 import { WorkspaceType } from '../types';
@@ -295,6 +296,7 @@ export class WorkspaceDocResolver {
      */
     private readonly prisma: PrismaClient,
     private readonly ac: AccessController,
+    private readonly policy: WorkspacePolicyService,
     private readonly models: Models,
     private readonly cache: Cache
   ) {}
@@ -305,9 +307,12 @@ export class WorkspaceDocResolver {
     deprecationReason: 'use [WorkspaceType.doc] instead',
   })
   async pageMeta(
+    @CurrentUser() me: CurrentUser,
     @Parent() workspace: WorkspaceType,
     @Args('pageId') pageId: string
   ) {
+    await this.ac.user(me.id).doc(workspace.id, pageId).assert('Doc.Read');
+
     const metadata = await this.models.doc.getAuthors(workspace.id, pageId);
     if (!metadata) {
       throw new DocNotFound({ spaceId: workspace.id, docId: pageId });
@@ -331,9 +336,15 @@ export class WorkspaceDocResolver {
 
   @ResolveField(() => PaginatedDocType)
   async docs(
+    @CurrentUser() me: CurrentUser,
     @Parent() workspace: WorkspaceType,
     @Args('pagination', PaginationInput.decode) pagination: PaginationInput
   ): Promise<PaginatedDocType> {
+    await this.ac
+      .user(me.id)
+      .workspace(workspace.id)
+      .assert('Workspace.Users.Manage');
+
     const [count, rows] = await this.models.doc.paginateDocInfo(
       workspace.id,
       pagination
@@ -412,7 +423,7 @@ export class WorkspaceDocResolver {
       throw new ExpectToPublishDoc();
     }
 
-    await this.ac.user(user.id).doc(workspaceId, docId).assert('Doc.Publish');
+    await this.policy.assertCanPublishDoc(user.id, workspaceId, docId);
 
     const doc = await this.models.doc.publish(workspaceId, docId, mode);
 
@@ -437,7 +448,7 @@ export class WorkspaceDocResolver {
       throw new ExpectToRevokePublicDoc('Expect doc not to be workspace');
     }
 
-    await this.ac.user(user.id).doc(workspaceId, docId).assert('Doc.Publish');
+    await this.policy.assertCanUnpublishDoc(user.id, workspaceId, docId);
 
     const doc = await this.models.doc.unpublish(workspaceId, docId);
 

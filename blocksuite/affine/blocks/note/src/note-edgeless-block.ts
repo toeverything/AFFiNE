@@ -221,6 +221,12 @@ export class EdgelessNoteBlockComponent extends toGfxBlockComponent(
     }
   }
 
+  override getCSSScaleVal(): number {
+    const baseScale = super.getCSSScaleVal();
+    const extraScale = this.model.props.edgeless?.scale ?? 1;
+    return baseScale * extraScale;
+  }
+
   override getRenderingRect() {
     const { xywh, edgeless } = this.model.props;
     const { collapse, scale = 1 } = edgeless;
@@ -255,7 +261,6 @@ export class EdgelessNoteBlockComponent extends toGfxBlockComponent(
 
     const style = {
       borderRadius: borderRadius + 'px',
-      transform: `scale(${scale})`,
     };
 
     const extra = this._editing ? ACTIVE_NOTE_EXTRA_PADDING : 0;
@@ -454,6 +459,28 @@ export const EdgelessNoteInteraction =
                     return;
                   }
 
+                  let isClickOnTitle = false;
+                  const titleRect = view
+                    .querySelector('edgeless-page-block-title')
+                    ?.getBoundingClientRect();
+
+                  if (titleRect) {
+                    const titleBound = new Bound(
+                      titleRect.x,
+                      titleRect.y,
+                      titleRect.width,
+                      titleRect.height
+                    );
+                    if (titleBound.isPointInBound([e.clientX, e.clientY])) {
+                      isClickOnTitle = true;
+                    }
+                  }
+
+                  if (isClickOnTitle) {
+                    handleNativeRangeAtPoint(e.clientX, e.clientY);
+                    return;
+                  }
+
                   if (model.children.length === 0) {
                     const blockId = std.store.addBlock(
                       'affine:paragraph',
@@ -489,6 +516,9 @@ export const EdgelessNoteInteraction =
                   }
                 })
                 .catch(console.error);
+            } else if (multiSelect && alreadySelected && editing) {
+              // range selection using Shift-click when editing
+              return;
             } else {
               context.default(context);
             }

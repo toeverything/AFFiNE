@@ -21,6 +21,7 @@ import { AIProvider } from '../../provider';
 import { BlockDiffProvider } from '../../services/block-diff';
 import { diffMarkdown } from '../../utils/apply-model/markdown-diff';
 import { copyText } from '../../utils/editor-actions';
+import { AI_CHAT_AUTO_SCROLL_PAUSE_EVENT } from '../ai-chat-messages/auto-scroll';
 import type { ToolError } from './type';
 
 interface DocEditToolCall {
@@ -322,6 +323,12 @@ export class DocEditTool extends WithDisposable(ShadowlessElement) {
   }
 
   private async _toggleCollapse() {
+    this.dispatchEvent(
+      new CustomEvent(AI_CHAT_AUTO_SCROLL_PAUSE_EVENT, {
+        bubbles: true,
+        composed: true,
+      })
+    );
     this.isCollapsed = !this.isCollapsed;
   }
 

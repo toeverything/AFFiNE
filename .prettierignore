@@ -4,6 +4,7 @@
 .github/helm
 .git
 .vscode
+.context/**/*.js
 .yarnrc.yml
 .docker
 **/.storybook

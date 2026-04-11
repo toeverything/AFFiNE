@@ -1,8 +1,8 @@
 import { Logger } from '@nestjs/common';
-import { tool } from 'ai';
 import { z } from 'zod';
 
 import { toolError } from './error';
+import { defineTool } from './tool';
 import type { CopilotProviderFactory, PromptService } from './types';
 
 const logger = new Logger('SectionEditTool');
@@ -11,7 +11,7 @@ export const createSectionEditTool = (
   promptService: PromptService,
   factory: CopilotProviderFactory
 ) => {
-  return tool({
+  return defineTool({
     description:
       'Intelligently edit and modify a specific section of a document based on user instructions, with full document context awareness. This tool can refine, rewrite, translate, restructure, or enhance any part of markdown content while preserving formatting, maintaining contextual coherence, and ensuring consistency with the entire document. Perfect for targeted improvements that consider the broader document context.',
     inputSchema: z.object({
