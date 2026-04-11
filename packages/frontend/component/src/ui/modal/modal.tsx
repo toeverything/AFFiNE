@@ -67,10 +67,13 @@ const getVar = (style: number | string = '', defaultValue = '') => {
     : defaultValue;
 };
 
+const ModalTransitionContainerBase =
+  typeof HTMLElement === 'undefined' ? class {} : HTMLElement;
+
 /**
  * This component is a hack to support `startViewTransition` in the modal.
  */
-class ModalTransitionContainer extends HTMLElement {
+class ModalTransitionContainer extends ModalTransitionContainerBase {
   pendingTransitionNodes: Node[] = [];
   animationFrame: number | null = null;
 
@@ -100,7 +103,10 @@ class ModalTransitionContainer extends HTMLElement {
     this.animationFrame = requestAnimationFrame(() => {
       const nodes = this.pendingTransitionNodes;
       nodes.forEach(child => {
-        if (child instanceof HTMLElement) {
+        if (
+          typeof HTMLElement !== 'undefined' &&
+          child instanceof HTMLElement
+        ) {
           child.classList.add('vt-active');
         }
       });

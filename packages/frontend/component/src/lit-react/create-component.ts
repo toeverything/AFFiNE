@@ -245,7 +245,10 @@ export const createComponent = <
 
   if (BUILD_CONFIG.debug) {
     for (const p of reservedReactProperties) {
-      if (p in elementClass.prototype && !(p in HTMLElement.prototype)) {
+      if (
+        p in elementClass.prototype &&
+        (typeof HTMLElement === 'undefined' || !(p in HTMLElement.prototype))
+      ) {
         // Note, this effectively warns only for `ref` since the other
         // reserved props are on HTMLElement.prototype. To address this
         // would require crawling down the prototype, which doesn't feel worth

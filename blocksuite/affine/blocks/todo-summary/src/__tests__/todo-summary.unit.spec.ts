@@ -212,7 +212,7 @@ describe('todo summary utils', () => {
     render(component.renderBlock(), container);
 
     expect(container.querySelector('.todo-heading')?.textContent?.trim()).toBe(
-      'H2 Current section'
+      'Current section'
     );
   });
 

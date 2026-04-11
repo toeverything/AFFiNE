@@ -1,7 +1,7 @@
-import { WorkbenchService } from '@affine/core/modules/workbench';
 import { Framework, LiveData } from '@toeverything/infra';
 import { describe, expect, test, vi } from 'vitest';
 
+import { WorkbenchService } from '../../workbench/services/workbench';
 import { CommentPanelService } from './comment-panel-service';
 
 describe('CommentPanelService', () => {
