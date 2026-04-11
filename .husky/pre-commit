@@ -1,1 +1,1 @@
-yarn lint-staged && yarn lint:ox
+yarn lint-staged

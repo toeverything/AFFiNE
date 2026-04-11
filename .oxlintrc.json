@@ -226,11 +226,11 @@
         "ignoreTypes": true
       }
     ],
-    "import/sort-imports": "error",
+    "sort-imports": "error",
     "import/namespace": "off",
     "import/no-webpack-loader-syntax": "error",
     "import/no-duplicates": "error",
-    "import/no-import-assign": "error",
+    "no-import-assign": "error",
     "import/no-self-import": "error"
   },
   "overrides": [
