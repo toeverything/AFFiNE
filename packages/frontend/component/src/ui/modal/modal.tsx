@@ -67,8 +67,9 @@ const getVar = (style: number | string = '', defaultValue = '') => {
     : defaultValue;
 };
 
-const ModalTransitionContainerBase =
-  typeof HTMLElement === 'undefined' ? class {} : HTMLElement;
+const ModalTransitionContainerBase = (
+  typeof HTMLElement === 'undefined' ? class {} : HTMLElement
+) as typeof HTMLElement;
 
 /**
  * This component is a hack to support `startViewTransition` in the modal.
