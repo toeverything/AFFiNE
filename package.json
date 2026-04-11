@@ -41,6 +41,7 @@
     "*.{ts,tsx,mjs,js,jsx}": [
       "prettier --ignore-unknown --write",
       "cross-env NODE_OPTIONS=\"--max-old-space-size=16384\" eslint --cache --fix"
+      "oxlint --quiet --deny-warnings"
     ],
     "*.toml": [
       "taplo format"
