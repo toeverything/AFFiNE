@@ -187,9 +187,9 @@ enum UniffiError {
 
 Large blobs (> 1 MB, controlled by `MOBILE_PAYLOAD_INLINE_THRESHOLD_BYTES`) are **not** sent across the FFI boundary as base64 — that would cause memory spikes for images and attachments. Instead:
 
-1. `set_blob()` writes the blob to a cache file and returns a **file-path token**: `__AFFINE_BLOB_FILE__:/path/to/cache/<hash>.blob`
-2. `get_blob()` detects the token prefix, reads the file, and returns the raw bytes
-3. The JS side (`@affine/mobile-shared/nbstore/payload`) decodes the token
+1. `set_blob()` accepts a `SetBlob` whose `data` field is either base64 or a file-path token (`__AFFINE_BLOB_FILE__:/path/…`). It decodes the payload to raw bytes, stores them in SQLite, and returns `Result<(), UniffiError>` — **no token is returned**.
+2. `get_blob()` reads raw bytes from SQLite. If the blob is ≥ 1 MB it writes the bytes to a cache file and returns a `Blob` whose `data` field is the file-path token `__AFFINE_BLOB_FILE__:/path/to/cache/<hash>.blob`. Smaller blobs are returned inline as base64.
+3. The JS side (`@affine/mobile-shared/nbstore/payload`) receives the `Blob.data` string from `get_blob()` and calls `decodePayload(data, MOBILE_BLOB_FILE_PREFIX)` to transparently handle both token and base64 cases.
 
 Cache directories:
 - **Android**: `<app>/cache/nbstore-blob-cache/<workspace_hash>/`
