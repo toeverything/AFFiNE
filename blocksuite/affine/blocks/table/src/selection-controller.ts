@@ -33,6 +33,22 @@ export class SelectionController implements ReactiveController {
     this.host.handleEvent('copy', this.onCopy);
     this.host.handleEvent('cut', this.onCut);
     this.host.handleEvent('paste', this.onPaste);
+    this.host.handleEvent('dragStart', context => {
+      if (IS_MOBILE || this.dataManager.readonly$.value) return false;
+      const event = context.get('pointerState').raw;
+      const target = event.target;
+      if (
+        target instanceof Element &&
+        target.closest(
+          '[data-width-adjust-column-id], [data-drag-column-id], [data-drag-row-id]'
+        )
+      ) {
+        event.preventDefault();
+        event.stopPropagation();
+        return true;
+      }
+      return false;
+    });
   }
   private get dataManager() {
     return this.host.dataManager;
@@ -84,6 +100,17 @@ export class SelectionController implements ReactiveController {
     if (IS_MOBILE || this.dataManager.readonly$.value) {
       return;
     }
+    this.host.disposables.addFromEvent(this.host, 'pointerdown', event => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      if (
+        target.closest(
+          '[data-width-adjust-column-id], [data-drag-column-id], [data-drag-row-id]'
+        )
+      ) {
+        event.stopPropagation();
+      }
+    });
     this.host.disposables.addFromEvent(this.host, 'mousedown', event => {
       const target = event.target;
       if (!(target instanceof HTMLElement)) {
