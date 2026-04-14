@@ -1,6 +1,8 @@
 # @affine/native
 
-NAPI-RS Rust addon for the AFFiNE Electron desktop app. Compiled to a `.node` binary, providing native-performance APIs for: audio/video capture, document storage (SQLite), full-text search, Mermaid/Typst rendering, and hashcash proof-of-work. Consumed exclusively by `@affine/electron` and `@affine/electron-renderer`.
+NAPI-RS Rust addon for the AFFiNE Electron desktop app. Compiled to a `.node` binary, providing native-performance APIs for: audio/video capture, document storage (SQLite), full-text search, Mermaid/Typst rendering, and hashcash proof-of-work. Primarily consumed by `@affine/electron`; also used by `@affine/media-capture-playground` (the dev playground for audio capture APIs).
+
+Audio capture on macOS uses ScreenCaptureKit via the `ShareableContent` NAPI class: `ShareableContent.tapAudio(processId, callback)` for per-app recording and `ShareableContent.tapGlobalAudio(excludedProcesses, callback)` for system-wide capture. Both APIs require macOS and the ScreenCaptureKit entitlement.
 
 ## Layout
 
