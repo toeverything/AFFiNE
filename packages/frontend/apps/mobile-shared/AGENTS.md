@@ -30,21 +30,37 @@ Mobile native storage passes large blobs between the native layer (Swift/Kotlin)
 
 ```typescript
 // Prefix used to identify file-token payloads vs inline base64
-const MOBILE_BLOB_FILE_PREFIX = 'affine-blob-file://'
+const MOBILE_BLOB_FILE_PREFIX = '__AFFINE_BLOB_FILE__:'
 
 // Blobs larger than this are written to a temp file; smaller ones are inlined as base64
 const MOBILE_PAYLOAD_INLINE_THRESHOLD_BYTES = 1024 * 1024  // 1 MB
 ```
 
-### `decodePayload(payload: string): Uint8Array`
+### `decodePayload(data: string, prefix: string, options?: DecodePayloadOptions): Promise<Uint8Array>`
 
-Decodes a blob payload string received from the native layer:
+Decodes a blob payload string received from the native layer. Returns a `Promise` that resolves to a `Uint8Array`.
+
+- If `data` starts with `prefix` → the remainder is treated as a file path; the path is validated against allowed OS cache directories, then fetched via `Capacitor.convertFileSrc` and returned as raw bytes.
+- Otherwise → `data` is decoded as base64 and returned directly.
 
 ```typescript
-// If payload starts with MOBILE_BLOB_FILE_PREFIX → read file from cache path
-// Otherwise → decode as base64
-const data = decodePayload(nativePayloadString)
+// File-token path (large blob): reads from OS cache dir
+const bytes = await decodePayload(nativePayloadString, MOBILE_BLOB_FILE_PREFIX)
+
+// Optionally supply a retry callback for stale tokens
+const bytes = await decodePayload(nativePayloadString, MOBILE_BLOB_FILE_PREFIX, {
+  onTokenReadFailure: async (err) => {
+    // Return a refreshed payload string, or null/undefined to rethrow
+    return await refreshPayloadFromNative();
+  },
+})
 ```
+
+#### `DecodePayloadOptions`
+
+| Field | Type | Description |
+|---|---|---|
+| `onTokenReadFailure` | `(error: Error) => Promise<string \| null \| undefined>` | Called when reading the cache file fails. Return a refreshed payload string to retry decoding, or `null`/`undefined` to rethrow the original error. |
 
 ### Security
 
