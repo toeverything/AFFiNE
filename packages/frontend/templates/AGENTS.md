@@ -45,13 +45,13 @@ Both `edgeless-templates.gen.ts` and `stickers-templates.gen.ts` export the same
 ```typescript
 const builtInTemplates = {
   // List all templates in a category
-  list(category: string): Template[]
+  list(category: string): Promise<Template[]>
 
   // List all available category names
-  categories(): string[]
+  categories(): Promise<string[]>
 
   // Fuzzy search across all templates (LCS algorithm)
-  search(query: string): Template[]
+  search(query: string): Promise<Template[]>
 }
 ```
 
@@ -152,7 +152,7 @@ import { builtInTemplates } from '@affine/templates/edgeless'
 setupEdgelessTemplate(builtInTemplates)
 
 // Query in the template picker UI
-const categories = builtInTemplates.categories()
-const results = builtInTemplates.search('marketing')
-const templates = builtInTemplates.list('Presentation')
+const categories = await builtInTemplates.categories()
+const results = await builtInTemplates.search('marketing')
+const templates = await builtInTemplates.list('Presentation')
 ```
