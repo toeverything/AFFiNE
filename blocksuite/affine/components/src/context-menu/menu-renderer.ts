@@ -555,6 +555,7 @@ export const popMenu = (
         ],
       }),
       offset(4),
+      shift({ padding: 8 }),
     ],
     container: props.container,
     placement: props.placement,
