@@ -22,12 +22,16 @@ const colorList: string[] = [
   cssVarV2.block.callout.icon.red,
   cssVarV2.block.callout.icon.orange,
   cssVarV2.block.callout.icon.yellow,
+  '#84CC16',
   cssVarV2.block.callout.icon.green,
   cssVarV2.block.callout.icon.teal,
+  '#06B6D4',
   cssVarV2.block.callout.icon.blue,
   cssVarV2.block.callout.icon.purple,
   cssVarV2.block.callout.icon.magenta,
+  '#FF69B4',
   cssVarV2.block.callout.icon.grey,
+  '#8B5E3C',
 ];
 
 const useRecentIcons = () => {
