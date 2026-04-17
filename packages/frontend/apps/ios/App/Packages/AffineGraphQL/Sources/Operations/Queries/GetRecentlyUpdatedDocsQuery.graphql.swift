@@ -34,6 +34,9 @@ public class GetRecentlyUpdatedDocsQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("workspace", Workspace.self, arguments: ["id": .variable("workspaceId")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      GetRecentlyUpdatedDocsQuery.Data.self
+    ] }
 
     /// Get workspace by id
     public var workspace: Workspace { __data["workspace"] }
@@ -49,6 +52,9 @@ public class GetRecentlyUpdatedDocsQuery: GraphQLQuery {
       public static var __selections: [ApolloAPI.Selection] { [
         .field("__typename", String.self),
         .field("recentlyUpdatedDocs", RecentlyUpdatedDocs.self, arguments: ["pagination": .variable("pagination")]),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        GetRecentlyUpdatedDocsQuery.Data.Workspace.self
       ] }
 
       /// Get recently updated docs of a workspace
@@ -68,6 +74,9 @@ public class GetRecentlyUpdatedDocsQuery: GraphQLQuery {
           .field("pageInfo", PageInfo.self),
           .field("edges", [Edge].self),
         ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          GetRecentlyUpdatedDocsQuery.Data.Workspace.RecentlyUpdatedDocs.self
+        ] }
 
         public var totalCount: Int { __data["totalCount"] }
         public var pageInfo: PageInfo { __data["pageInfo"] }
@@ -86,6 +95,9 @@ public class GetRecentlyUpdatedDocsQuery: GraphQLQuery {
             .field("endCursor", String?.self),
             .field("hasNextPage", Bool.self),
           ] }
+          public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+            GetRecentlyUpdatedDocsQuery.Data.Workspace.RecentlyUpdatedDocs.PageInfo.self
+          ] }
 
           public var endCursor: String? { __data["endCursor"] }
           public var hasNextPage: Bool { __data["hasNextPage"] }
@@ -102,6 +114,9 @@ public class GetRecentlyUpdatedDocsQuery: GraphQLQuery {
           public static var __selections: [ApolloAPI.Selection] { [
             .field("__typename", String.self),
             .field("node", Node.self),
+          ] }
+          public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+            GetRecentlyUpdatedDocsQuery.Data.Workspace.RecentlyUpdatedDocs.Edge.self
           ] }
 
           public var node: Node { __data["node"] }
@@ -122,6 +137,9 @@ public class GetRecentlyUpdatedDocsQuery: GraphQLQuery {
               .field("updatedAt", AffineGraphQL.DateTime?.self),
               .field("creatorId", String?.self),
               .field("lastUpdaterId", String?.self),
+            ] }
+            public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+              GetRecentlyUpdatedDocsQuery.Data.Workspace.RecentlyUpdatedDocs.Edge.Node.self
             ] }
 
             public var id: String { __data["id"] }

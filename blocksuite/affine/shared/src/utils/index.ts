@@ -20,6 +20,7 @@ export * from './popper-position';
 export * from './print-to-pdf';
 export * from './reference';
 export * from './reordering';
+export * from './safe-html';
 export * from './signal';
 export * from './string';
 export * from './title';

@@ -376,7 +376,7 @@ export class CodeArtifactTool extends ArtifactTool<
       flex-direction: column;
     }
 
-    .code-artifact-preview > html-preview {
+    .code-artifact-preview > affine-html-preview {
       height: 100%;
     }
 
@@ -487,7 +487,7 @@ export class CodeArtifactTool extends ArtifactTool<
 
     return html`<div class="code-artifact-preview">
       ${this.mode === 'preview'
-        ? html`<html-preview .html=${htmlContent}></html-preview>`
+        ? html`<affine-html-preview .html=${htmlContent}></affine-html-preview>`
         : html`<code-highlighter
             .std=${this.std}
             .code=${htmlContent}

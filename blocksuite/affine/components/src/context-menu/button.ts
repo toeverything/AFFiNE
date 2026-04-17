@@ -149,7 +149,7 @@ export class MobileMenuButton extends MenuFocusable {
     this.disposables.addFromEvent(this, 'click', this.onClick);
   }
 
-  // eslint-disable-next-line sonarjs/no-identical-functions
+  // oxlint-disable-next-line sonarjs/no-identical-functions
   onClick() {
     if (this.data.select(this) !== false) {
       this.menu.options.onComplete?.();

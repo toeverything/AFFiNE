@@ -82,17 +82,13 @@ jobs:
         run: |
           set -euo pipefail
           "$(go env GOPATH)/bin/actionlint"
-      - name: Run oxlint
-        # oxlint is fast, so wrong code will fail quickly
-        run: |
-          set -euo pipefail
-          oxlint_version="$(node -e "console.log(require('./package.json').devDependencies.oxlint)")"
-          yarn dlx "oxlint@${oxlint_version}" --deny-warnings
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
           electron-install: false
           full-cache: true
+      - name: Run oxlint
+        run: yarn lint:ox
       - name: Run i18n codegen
         run: yarn affine @affine/i18n build
       - name: Run ESLint

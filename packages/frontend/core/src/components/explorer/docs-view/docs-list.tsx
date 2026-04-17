@@ -198,6 +198,7 @@ export const DocsExplorer = ({
           const doc = docsService.list.doc$(docId).value;
           doc?.moveToTrash();
         }
+        handleCloseFloatingToolbar();
       },
     });
   }, [

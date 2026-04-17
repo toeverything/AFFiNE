@@ -8,9 +8,6 @@ import importX from 'eslint-plugin-import-x';
 import oxlint from 'eslint-plugin-oxlint';
 import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
-import simpleImportSort from 'eslint-plugin-simple-import-sort';
-import sonarjs from 'eslint-plugin-sonarjs';
-import unicorn from 'eslint-plugin-unicorn';
 import tseslint from 'typescript-eslint';
 
 const __require = createRequire(import.meta.url);
@@ -28,6 +25,7 @@ const ignoreList = readFileSync(
 // types are resolved, and 2) it would mask an unresolved
 // `.ts`/`.tsx`/`.js`/`.jsx` implementation.
 const typeScriptExtensions = ['.ts', '.tsx', '.cts', '.mts'];
+const oxlintConfigs = oxlint.buildFromOxlintConfigFile('./.oxlintrc.json');
 
 export default tseslint.config(
   {
@@ -56,22 +54,16 @@ export default tseslint.config(
   },
   {
     plugins: {
-      '@typescript-eslint': tseslint.plugin,
       react,
       'react-hooks': reactHooks,
-      sonarjs,
       'import-x': importX,
-      'simple-import-sort': simpleImportSort,
       rxjs,
-      unicorn,
-      oxlint,
     },
     rules: {
       ...eslint.configs.recommended.rules,
       ...react.configs.recommended.rules,
       ...react.configs['jsx-runtime'].rules,
       ...reactHooks.configs.recommended.rules,
-      ...oxlint.configs.recommended.rules,
       // covered by TypeScript
       'no-dupe-args': 'off',
       // the following rules are disabled because they are covered by oxlint
@@ -97,51 +89,17 @@ export default tseslint.config(
       'react/no-unescaped-entities': 'off',
       'react/jsx-no-target-blank': 'off',
       'react/jsx-no-comment-textnodes': 'off',
+      'react/jsx-uses-vars': 'off',
       'react/prop-types': 'off',
       'react-hooks/immutability': 'off',
       'react-hooks/refs': 'off',
       'react-hooks/set-state-in-effect': 'off',
       'react-hooks/static-components': 'off',
       'react-hooks/use-memo': 'off',
-      'sonarjs/no-useless-catch': 'off',
-      '@typescript-eslint/consistent-type-imports': 'off',
-      '@typescript-eslint/no-unused-vars': 'off',
-      '@typescript-eslint/no-non-null-assertion': 'off',
-      '@typescript-eslint/ban-ts-comment': 'off',
-      '@typescript-eslint/prefer-for-of': 'error',
-      '@typescript-eslint/no-var-requires': 'off',
-      '@typescript-eslint/no-namespace': 'off',
-      '@typescript-eslint/no-unnecessary-type-constraint': 'off',
-      '@typescript-eslint/no-array-constructor': 'off',
-      '@typescript-eslint/no-explicit-any': 'off',
-      '@typescript-eslint/no-empty-function': 'off',
 
-      // rules that are not supported by oxlint
+      // rules that are not supported by oxlint, or are not enabled by our
+      // current oxlint setup
       'no-unreachable-loop': 'error',
-      '@typescript-eslint/no-unsafe-function-type': 'error',
-      '@typescript-eslint/unified-signatures': 'error',
-      '@typescript-eslint/return-await': [
-        'error',
-        'error-handling-correctness-only',
-      ],
-      'sonarjs/no-all-duplicated-branches': 'error',
-      'sonarjs/no-element-overwrite': 'error',
-      'sonarjs/no-empty-collection': 'error',
-      'sonarjs/no-extra-arguments': 'error',
-      'sonarjs/no-identical-conditions': 'error',
-      'sonarjs/no-identical-expressions': 'error',
-      'sonarjs/no-ignored-return': 'error',
-      'sonarjs/no-use-of-empty-return-value': 'error',
-      'sonarjs/non-existent-operator': 'error',
-      'sonarjs/no-collapsible-if': 'error',
-      'sonarjs/no-same-line-conditional': 'error',
-      'sonarjs/no-duplicated-branches': 'error',
-      'sonarjs/no-collection-size-mischeck': 'error',
-      'sonarjs/no-identical-functions': 'error',
-      'sonarjs/no-gratuitous-expressions': 'error',
-
-      'simple-import-sort/imports': 'error',
-      'simple-import-sort/exports': 'error',
     },
   },
   {
@@ -151,17 +109,6 @@ export default tseslint.config(
       'blocksuite/**/*.{ts,tsx}',
     ],
     rules: {
-      '@typescript-eslint/no-floating-promises': [
-        'error',
-        {
-          ignoreVoid: false,
-          ignoreIIFE: false,
-        },
-      ],
-      '@typescript-eslint/await-thenable': 'error',
-      '@typescript-eslint/require-array-sort-compare': 'error',
-      '@typescript-eslint/no-misused-promises': ['error'],
-      '@typescript-eslint/prefer-readonly': 'error',
       'import-x/no-extraneous-dependencies': [
         'error',
         { includeInternal: true },
@@ -213,25 +160,6 @@ export default tseslint.config(
     },
   },
   {
-    files: [
-      '**/__tests__/**/*',
-      '**/*.stories.tsx',
-      '**/*.spec.ts',
-      '**/tests/**/*',
-      'scripts/**/*',
-      '**/benchmark/**/*',
-      '**/__debug__/**/*',
-      '**/e2e/**/*',
-    ],
-    rules: {
-      '@typescript-eslint/no-floating-promises': [
-        'error',
-        { ignoreVoid: true },
-      ],
-      '@typescript-eslint/no-misused-promises': 0,
-    },
-  },
-  {
     files: ['**/*.{ts,js,mjs}'],
     rules: {
       'react-hooks/rules-of-hooks': 'off',
@@ -253,5 +181,6 @@ export default tseslint.config(
       'rxjs/finnish': 'off',
     },
   },
+  ...oxlintConfigs,
   eslintConfigPrettier
 );

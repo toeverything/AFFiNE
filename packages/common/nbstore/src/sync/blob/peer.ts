@@ -94,7 +94,7 @@ export class BlobSyncPeer {
                 Math.pow(2, attempts - 1) * backoffRetry.delay,
                 backoffRetry.maxDelay
               );
-              // eslint-disable-next-line @typescript-eslint/no-misused-promises
+              // oxlint-disable-next-line @typescript-eslint/no-misused-promises
               setTimeout(attempt, waitTime);
             } else {
               // reach the max retry times, resolve the promise with false
@@ -107,7 +107,7 @@ export class BlobSyncPeer {
         }
       };
 
-      // eslint-disable-next-line @typescript-eslint/no-floating-promises
+      // oxlint-disable-next-line @typescript-eslint/no-floating-promises
       attempt();
     })
       .catch(error => {

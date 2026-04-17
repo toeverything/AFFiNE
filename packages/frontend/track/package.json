@@ -8,7 +8,7 @@
   },
   "dependencies": {
     "@affine/debug": "workspace:*",
-    "@sentry/react": "^10.40.0",
+    "@sentry/react": "^10.47.0",
     "nanoid": "^5.1.6",
     "react-router-dom": "^6.30.3"
   },

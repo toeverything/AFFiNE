@@ -26,6 +26,9 @@ public class GenerateUserAccessTokenMutation: GraphQLMutation {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("generateUserAccessToken", GenerateUserAccessToken.self, arguments: ["input": .variable("input")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      GenerateUserAccessTokenMutation.Data.self
+    ] }
 
     public var generateUserAccessToken: GenerateUserAccessToken { __data["generateUserAccessToken"] }
 
@@ -44,6 +47,9 @@ public class GenerateUserAccessTokenMutation: GraphQLMutation {
         .field("token", String.self),
         .field("createdAt", AffineGraphQL.DateTime.self),
         .field("expiresAt", AffineGraphQL.DateTime?.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        GenerateUserAccessTokenMutation.Data.GenerateUserAccessToken.self
       ] }
 
       public var id: String { __data["id"] }

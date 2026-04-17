@@ -31,7 +31,6 @@
     { "path": "../../model" },
     { "path": "../../rich-text" },
     { "path": "../../shared" },
-    { "path": "../../widgets/edgeless-selected-rect" },
     { "path": "../../widgets/edgeless-toolbar" },
     { "path": "../../data-view" },
     { "path": "../../../framework/global" },

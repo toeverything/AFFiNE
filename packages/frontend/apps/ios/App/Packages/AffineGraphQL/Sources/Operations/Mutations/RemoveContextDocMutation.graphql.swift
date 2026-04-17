@@ -26,6 +26,9 @@ public class RemoveContextDocMutation: GraphQLMutation {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("removeContextDoc", Bool.self, arguments: ["options": .variable("options")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      RemoveContextDocMutation.Data.self
+    ] }
 
     /// remove a doc from context
     public var removeContextDoc: Bool { __data["removeContextDoc"] }

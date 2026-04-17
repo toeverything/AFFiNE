@@ -4,8 +4,8 @@
 import ApolloAPI
 
 public extension Objects {
-  static let CopilotPromptType = ApolloAPI.Object(
-    typename: "CopilotPromptType",
+  static let TranscriptionSourceAudioType = ApolloAPI.Object(
+    typename: "TranscriptionSourceAudioType",
     implementedInterfaces: [],
     keyFields: nil
   )

@@ -622,9 +622,9 @@ dependencies = [
 
 [[package]]
 name = "rand"
-version = "0.9.1"
+version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9fbfd9d094a40bf3ae768db9361049ace4c0e04a4fd6b359518bd7b73a73dd97"
+checksum = "7ec095654a25171c2124e9e3393a930bddbffdc939556c914957a4c3e0a87166"
 dependencies = [
  "rand_chacha 0.9.0",
  "rand_core 0.9.3",
@@ -675,7 +675,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6a8615d50dcf34fa31f7ab52692afec947c4dd0ab803cc87cb3b0b4570ff7463"
 dependencies = [
  "num-traits",
- "rand 0.9.1",
+ "rand 0.9.3",
 ]
 
 [[package]]
@@ -1177,7 +1177,7 @@ dependencies = [
  "nanoid",
  "nom",
  "ordered-float",
- "rand 0.9.1",
+ "rand 0.9.3",
  "rand_chacha 0.9.0",
  "rand_distr",
  "serde",
@@ -1192,7 +1192,7 @@ version = "0.0.0"
 dependencies = [
  "lib0",
  "libfuzzer-sys",
- "rand 0.9.1",
+ "rand 0.9.3",
  "rand_chacha 0.9.0",
  "y-octo",
  "y-octo-utils",
@@ -1207,7 +1207,7 @@ dependencies = [
  "clap",
  "lib0",
  "phf",
- "rand 0.9.1",
+ "rand 0.9.3",
  "rand_chacha 0.9.0",
  "y-octo",
  "yrs",

@@ -1376,7 +1376,7 @@ test('scroll should update dragging area and select blocks when dragging', async
   await initParagraphsByCount(page, 20);
 
   await page.mouse.click(0, 0);
-  // eslint-disable-next-line sonarjs/no-identical-functions
+  // oxlint-disable-next-line sonarjs/no-identical-functions
   async function getViewportScrollTop() {
     return page.evaluate(() => {
       const viewport = document.querySelector('.affine-page-viewport');

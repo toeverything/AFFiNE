@@ -8,6 +8,7 @@ export interface CalendarGoogleConfig {
   clientSecret: string;
   externalWebhookUrl?: string;
   webhookVerificationToken?: string;
+  requestTimeoutMs?: number;
 }
 
 export type CalendarCalDAVAuthType = 'auto' | 'basic' | 'digest';
@@ -49,6 +50,7 @@ const schema: JSONSchema = {
     clientSecret: { type: 'string' },
     externalWebhookUrl: { type: 'string' },
     webhookVerificationToken: { type: 'string' },
+    requestTimeoutMs: { type: 'number' },
   },
 };
 
@@ -88,6 +90,7 @@ defineModuleConfig('calendar', {
       clientSecret: '',
       externalWebhookUrl: '',
       webhookVerificationToken: '',
+      requestTimeoutMs: 10_000,
     },
     schema,
     shape: z.object({
@@ -101,6 +104,7 @@ defineModuleConfig('calendar', {
         .or(z.string().length(0))
         .optional(),
       webhookVerificationToken: z.string().optional(),
+      requestTimeoutMs: z.number().int().positive().optional(),
     }),
     link: 'https://developers.google.com/calendar/api/guides/push',
   },

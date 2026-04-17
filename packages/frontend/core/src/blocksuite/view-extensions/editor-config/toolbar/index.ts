@@ -834,7 +834,7 @@ function renderOpenDocMenu(
       <affine-open-doc-dropdown-menu
         .actions=${actions}
         .context=${ctx}
-        .openDocMode$=${openDocMode}
+        .openDocModeSignal=${openDocMode}
         .updateOpenDocMode=${updateOpenDocMode}
       >
       </affine-open-doc-dropdown-menu>

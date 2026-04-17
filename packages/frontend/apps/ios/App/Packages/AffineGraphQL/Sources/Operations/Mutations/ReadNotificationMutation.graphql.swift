@@ -26,6 +26,9 @@ public class ReadNotificationMutation: GraphQLMutation {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("readNotification", Bool.self, arguments: ["id": .variable("id")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      ReadNotificationMutation.Data.self
+    ] }
 
     /// mark notification as read
     public var readNotification: Bool { __data["readNotification"] }

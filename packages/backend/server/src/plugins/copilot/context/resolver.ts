@@ -59,6 +59,30 @@ import { CopilotStorage } from '../storage';
 import { getSignal, MAX_EMBEDDABLE_SIZE, readStream } from '../utils';
 import { CopilotContextService } from './service';
 
+async function assertAccess(
+  ac: AccessController,
+  userId: string,
+  workspaceId: string
+) {
+  await ac
+    .user(userId)
+    .workspace(workspaceId)
+    .allowLocal()
+    .assert('Workspace.Copilot');
+}
+
+async function getSession(
+  context: CopilotContextService,
+  ac: AccessController,
+  userId: string,
+  contextId: string,
+  options: { workspaceId?: string; sessionId?: string } = {}
+) {
+  const session = await context.getOwnedContext(userId, contextId, options);
+  await assertAccess(ac, userId, session.workspaceId);
+  return session;
+}
+
 @InputType()
 class AddContextCategoryInput {
   @Field(() => String)
@@ -310,8 +334,12 @@ export class CopilotContextRootResolver {
       }
 
       if (contextId) {
-        const context = await this.context.get(contextId);
-        if (context) return [context];
+        return [
+          await getSession(this.context, this.ac, user.id, contextId, {
+            sessionId,
+            workspaceId: copilot.workspaceId || undefined,
+          }),
+        ];
       } else if (sessionId) {
         await this.checkChatSession(
           user,
@@ -515,6 +543,7 @@ export class CopilotContextResolver {
   })
   @CallMetric('ai', 'context_category_add')
   async addContextCategory(
+    @CurrentUser() user: CurrentUser,
     @Args({ name: 'options', type: () => AddContextCategoryInput })
     options: AddContextCategoryInput
   ): Promise<CopilotContextCategory> {
@@ -523,18 +552,38 @@ export class CopilotContextResolver {
     if (!lock) {
       throw new TooManyRequest('Server is busy');
     }
-    const session = await this.context.get(options.contextId);
+    const session = await getSession(
+      this.context,
+      this.ac,
+      user.id,
+      options.contextId
+    );
 
     try {
+      const docs = options.docs?.length
+        ? (
+            await Promise.all(
+              options.docs.map(async docId =>
+                (await this.ac
+                  .user(user.id)
+                  .doc(session.workspaceId, docId)
+                  .can('Doc.Read'))
+                  ? docId
+                  : null
+              )
+            )
+          ).filter((docId): docId is string => !!docId)
+        : [];
+
       const records = await session.addCategoryRecord(
         options.type,
         options.categoryId,
-        options.docs || []
+        docs
       );
 
-      if (options.docs) {
+      if (docs.length) {
         await this.jobs.addDocEmbeddingQueue(
-          options.docs.map(docId => ({
+          docs.map(docId => ({
             workspaceId: session.workspaceId,
             docId,
           })),
@@ -556,6 +605,7 @@ export class CopilotContextResolver {
   })
   @CallMetric('ai', 'context_category_remove')
   async removeContextCategory(
+    @CurrentUser() user: CurrentUser,
     @Args({ name: 'options', type: () => RemoveContextCategoryInput })
     options: RemoveContextCategoryInput
   ): Promise<boolean> {
@@ -564,7 +614,12 @@ export class CopilotContextResolver {
     if (!lock) {
       throw new TooManyRequest('Server is busy');
     }
-    const session = await this.context.get(options.contextId);
+    const session = await getSession(
+      this.context,
+      this.ac,
+      user.id,
+      options.contextId
+    );
 
     try {
       return await session.removeCategoryRecord(
@@ -584,6 +639,7 @@ export class CopilotContextResolver {
   })
   @CallMetric('ai', 'context_doc_add')
   async addContextDoc(
+    @CurrentUser() user: CurrentUser,
     @Args({ name: 'options', type: () => AddContextDocInput })
     options: AddContextDocInput
   ): Promise<CopilotContextDoc> {
@@ -592,9 +648,18 @@ export class CopilotContextResolver {
     if (!lock) {
       throw new TooManyRequest('Server is busy');
     }
-    const session = await this.context.get(options.contextId);
+    const session = await getSession(
+      this.context,
+      this.ac,
+      user.id,
+      options.contextId
+    );
 
     try {
+      await this.ac
+        .user(user.id)
+        .doc(session.workspaceId, options.docId)
+        .assert('Doc.Read');
       const record = await session.addDocRecord(options.docId);
 
       await this.jobs.addDocEmbeddingQueue(
@@ -616,6 +681,7 @@ export class CopilotContextResolver {
   })
   @CallMetric('ai', 'context_doc_remove')
   async removeContextDoc(
+    @CurrentUser() user: CurrentUser,
     @Args({ name: 'options', type: () => RemoveContextDocInput })
     options: RemoveContextDocInput
   ): Promise<boolean> {
@@ -624,7 +690,12 @@ export class CopilotContextResolver {
     if (!lock) {
       throw new TooManyRequest('Server is busy');
     }
-    const session = await this.context.get(options.contextId);
+    const session = await getSession(
+      this.context,
+      this.ac,
+      user.id,
+      options.contextId
+    );
 
     try {
       return await session.removeDocRecord(options.docId);
@@ -664,18 +735,13 @@ export class CopilotContextResolver {
       throw new BlobQuotaExceeded();
     }
 
-    const session = await this.context.get(contextId);
+    const session = await getSession(this.context, this.ac, user.id, contextId);
 
     try {
       const buffer = await readStream(content.createReadStream());
       const blobId = createHash('sha256').update(buffer).digest('base64url');
       const { filename, mimetype } = content;
 
-      await this.ac
-        .user(user.id)
-        .workspace(session.workspaceId)
-        .allowLocal()
-        .assert('Workspace.Copilot');
       await this.policy.assertCanUploadBlob(user.id, session.workspaceId);
       await this.storage.put(user.id, session.workspaceId, blobId, buffer);
       const file = await session.addFile(
@@ -708,6 +774,7 @@ export class CopilotContextResolver {
   })
   @CallMetric('ai', 'context_file_remove')
   async removeContextFile(
+    @CurrentUser() user: CurrentUser,
     @Args({ name: 'options', type: () => RemoveContextFileInput })
     options: RemoveContextFileInput
   ): Promise<boolean> {
@@ -720,7 +787,12 @@ export class CopilotContextResolver {
     if (!lock) {
       throw new TooManyRequest('Server is busy');
     }
-    const session = await this.context.get(options.contextId);
+    const session = await getSession(
+      this.context,
+      this.ac,
+      user.id,
+      options.contextId
+    );
 
     try {
       return await session.removeFile(options.fileId);
@@ -751,13 +823,12 @@ export class CopilotContextResolver {
       throw new TooManyRequest('Server is busy');
     }
 
-    const contextSession = await this.context.get(options.contextId);
-
-    await this.ac
-      .user(user.id)
-      .workspace(contextSession.workspaceId)
-      .allowLocal()
-      .assert('Workspace.Copilot');
+    const contextSession = await getSession(
+      this.context,
+      this.ac,
+      user.id,
+      options.contextId
+    );
 
     try {
       const blob = await contextSession.addBlobRecord(options.blobId);
@@ -791,6 +862,7 @@ export class CopilotContextResolver {
   })
   @CallMetric('ai', 'context_blob_remove')
   async removeContextBlob(
+    @CurrentUser() user: CurrentUser,
     @Args({ name: 'options', type: () => RemoveContextBlobInput })
     options: RemoveContextBlobInput
   ): Promise<boolean> {
@@ -804,7 +876,12 @@ export class CopilotContextResolver {
       throw new TooManyRequest('Server is busy');
     }
 
-    const contextSession = await this.context.get(options.contextId);
+    const contextSession = await getSession(
+      this.context,
+      this.ac,
+      user.id,
+      options.contextId
+    );
 
     try {
       return await contextSession.removeBlobRecord(options.blobId);
@@ -821,6 +898,7 @@ export class CopilotContextResolver {
   })
   @CallMetric('ai', 'context_file_remove')
   async matchFiles(
+    @CurrentUser() user: CurrentUser,
     @Context() ctx: { req: Request },
     @Parent() context: CopilotContextType,
     @Args('content') content: string,
@@ -837,6 +915,7 @@ export class CopilotContextResolver {
 
     try {
       if (!context.id) {
+        await assertAccess(this.ac, user.id, context.workspaceId);
         return await this.context.matchWorkspaceFiles(
           context.workspaceId,
           content,
@@ -846,7 +925,13 @@ export class CopilotContextResolver {
         );
       }
 
-      const session = await this.context.get(context.id);
+      const session = await getSession(
+        this.context,
+        this.ac,
+        user.id,
+        context.id,
+        { workspaceId: context.workspaceId }
+      );
       return await session.matchFiles(
         content,
         limit,
@@ -899,11 +984,7 @@ export class CopilotContextResolver {
     }
 
     try {
-      await this.ac
-        .user(user.id)
-        .workspace(context.workspaceId)
-        .allowLocal()
-        .assert('Workspace.Copilot');
+      await assertAccess(this.ac, user.id, context.workspaceId);
       const allowEmbedding = await this.models.workspace.allowEmbedding(
         context.workspaceId
       );
@@ -921,15 +1002,13 @@ export class CopilotContextResolver {
         );
       }
 
-      const session = await this.context.get(context.id);
-      if (session.workspaceId !== context.workspaceId) {
-        throw new CopilotFailedToMatchContext({
-          contextId: context.id,
-          // don't record the large content
-          content: content.slice(0, 512),
-          message: 'context not in the same workspace',
-        });
-      }
+      const session = await getSession(
+        this.context,
+        this.ac,
+        user.id,
+        context.id,
+        { workspaceId: context.workspaceId }
+      );
       const chunks = await session.matchWorkspaceDocs(
         content,
         limit,

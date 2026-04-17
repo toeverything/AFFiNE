@@ -8,7 +8,6 @@
   "include": ["./src"],
   "references": [
     { "path": "../../blocks/attachment" },
-    { "path": "../../blocks/edgeless-text" },
     { "path": "../../blocks/image" },
     { "path": "../../blocks/surface" },
     { "path": "../../components" },
@@ -18,7 +17,6 @@
     { "path": "../shape" },
     { "path": "../text" },
     { "path": "../../model" },
-    { "path": "../../rich-text" },
     { "path": "../../shared" },
     { "path": "../../widgets/edgeless-toolbar" },
     { "path": "../../../framework/global" },
