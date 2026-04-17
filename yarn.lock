@@ -385,6 +385,7 @@ __metadata:
     "@affine/reader": "workspace:*"
     "@affine/templates": "workspace:*"
     "@affine/track": "workspace:*"
+    "@atlaskit/pragmatic-drag-and-drop": "npm:^1.7.7"
     "@blocksuite/affine": "workspace:*"
     "@blocksuite/affine-block-root": "workspace:*"
     "@blocksuite/affine-components": "workspace:*"
