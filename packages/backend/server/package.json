@@ -5,7 +5,7 @@
   "description": "Affine Node.js server",
   "type": "module",
   "scripts": {
-    "build": "affine bundle -p @affine/server",
+    "build": "affine bundle",
     "dev": "nodemon ./src/index.ts",
     "dev:mail": "email dev -d src/mails",
     "test": "ava --concurrency 1 --serial",
