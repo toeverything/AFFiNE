@@ -85,6 +85,7 @@ export class RangeBinding {
   };
 
   private readonly _onCompositionEnd = (event: CompositionEvent) => {
+    this.isComposing = false;
     if (this._compositionStartCallback) {
       event.preventDefault();
       event.stopPropagation();
@@ -94,13 +95,12 @@ export class RangeBinding {
   };
 
   private readonly _onCompositionStart = () => {
+    this.isComposing = true;
     const selection = this.selectionManager.find(TextSelection);
     if (!selection) return;
 
     const { from, to } = selection;
     if (!to) return;
-
-    this.isComposing = true;
 
     const range = this.rangeManager?.value;
     if (!range) return;
