@@ -32,12 +32,20 @@ export class R2StorageProvider extends S3StorageProvider {
     private readonly config: R2StorageConfig,
     bucket: string
   ) {
-    assert(config.accountId, 'accountId is required for R2 storage provider');
+    assert(
+      config.accountId || config.endpoint,
+      'accountId or endpoint is required for R2 storage provider'
+    );
+
+    const endpoint =
+      config.endpoint ??
+      `https://${config.accountId}.r2.cloudflarestorage.com`;
+
     super(
       {
         ...config,
         forcePathStyle: true,
-        endpoint: `https://${config.accountId}.r2.cloudflarestorage.com`,
+        endpoint,
       },
       bucket
     );

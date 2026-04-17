@@ -38,7 +38,7 @@ const S3ConfigSchema: JSONSchema = {
     endpoint: {
       type: 'string',
       description:
-        'The S3 compatible endpoint. Example: "https://s3.us-east-1.amazonaws.com" or "https://<account>.r2.cloudflarestorage.com".',
+        'The S3 compatible endpoint. Example: "https://s3.us-east-1.amazonaws.com", "https://<account>.r2.cloudflarestorage.com", or jurisdiction endpoints like "https://<account>.eu.r2.cloudflarestorage.com".',
     },
     region: {
       type: 'string',
@@ -141,7 +141,7 @@ export const StorageJSONSchema: JSONSchema = {
             accountId: {
               type: 'string' as const,
               description:
-                'The account id for the cloudflare r2 storage provider.',
+                'The account id for the cloudflare r2 storage provider. Required when endpoint is not set.',
             },
             usePresignedURL: {
               type: 'object' as const,
