@@ -481,6 +481,10 @@ export class AIChatInput extends SignalWatcher(
         }
       })
       .catch(console.error);
+
+    window.addEventListener('dragleave', this._handleWindowDragLeave);
+    window.addEventListener('drop', this._resetDragState);
+    window.addEventListener('dragend', this._resetDragState);
   }
 
   protected override firstUpdated(changedProperties: PropertyValues): void {
@@ -500,6 +504,9 @@ export class AIChatInput extends SignalWatcher(
     super.disconnectedCallback();
     this._internalDropCleanup?.();
     this._internalDropCleanup = null;
+    window.removeEventListener('dragleave', this._handleWindowDragLeave);
+    window.removeEventListener('drop', this._resetDragState);
+    window.removeEventListener('dragend', this._resetDragState);
   }
 
   private _trackDragDrop(method: EventArgs['addEmbeddingDoc']['method']) {
@@ -739,6 +746,18 @@ export class AIChatInput extends SignalWatcher(
     if (this._dragEnterCounter === 0) {
       this.isDragOver = false;
     }
+  };
+
+  private readonly _resetDragState = () => {
+    if (this._dragEnterCounter === 0 && !this.isDragOver) return;
+    this._dragEnterCounter = 0;
+    this.isDragOver = false;
+  };
+
+  // Covers the cases where the drag session ends without dragleave/drop firing
+  // on the input (Esc-cancel, release outside window, drop on another element).
+  private readonly _handleWindowDragLeave = (event: DragEvent) => {
+    if (event.relatedTarget === null) this._resetDragState();
   };
 
   private readonly _handleDrop = async (event: DragEvent) => {

@@ -99,6 +99,7 @@ export const Component = () => {
     null
   );
   const [openTabs, setOpenTabs] = useState<NonNullable<CopilotSession>[]>([]);
+  const [tabsHydrated, setTabsHydrated] = useState(false);
   const [status, setStatus] = useState<ChatStatus>('idle');
   const [isTogglingPin, setIsTogglingPin] = useState(false);
   const [isOpeningSession, setIsOpeningSession] = useState(false);
@@ -438,7 +439,10 @@ export const Component = () => {
     } catch (error) {
       console.error(error);
     }
-    if (!rawIds.length) return;
+    if (!rawIds.length) {
+      setTabsHydrated(true);
+      return;
+    }
     let cancelled = false;
     Promise.all(
       rawIds.map(id => client.getSession(workspaceId, id).catch(() => null))
@@ -459,8 +463,12 @@ export const Component = () => {
             return merged;
           });
         }
+        setTabsHydrated(true);
       })
-      .catch(console.error);
+      .catch(error => {
+        console.error(error);
+        if (!cancelled) setTabsHydrated(true);
+      });
     return () => {
       cancelled = true;
     };
@@ -483,7 +491,7 @@ export const Component = () => {
   }, [currentSession]);
 
   useEffect(() => {
-    if (!workspaceId) return;
+    if (!workspaceId || !tabsHydrated) return;
     const storageKey = `ai-chat-open-tabs:${workspaceId}`;
     try {
       if (openTabs.length) {
@@ -497,11 +505,12 @@ export const Component = () => {
     } catch (error) {
       console.error(error);
     }
-  }, [openTabs, workspaceId]);
+  }, [openTabs, workspaceId, tabsHydrated]);
 
   // Reset tabs on workspace change so tabs don't leak across workspaces.
   useEffect(() => {
     setOpenTabs([]);
+    setTabsHydrated(false);
   }, [workspaceId]);
 
   useEffect(() => {
