@@ -21,7 +21,6 @@ export const useZoomControls = ({
     x: 0,
     y: 0,
   });
-
   const handleDragStart = useCallback(
     (event: ReactMouseEvent) => {
       event?.preventDefault();

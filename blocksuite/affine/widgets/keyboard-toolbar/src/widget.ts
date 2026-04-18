@@ -19,13 +19,39 @@ import {
 
 export const AFFINE_KEYBOARD_TOOLBAR_WIDGET = 'affine-keyboard-toolbar-widget';
 
+const missingVirtualKeyboardProvider = {
+  visible$: signal(false),
+  height$: signal(0),
+  staticHeight$: signal(0),
+  appTabSafeArea$: signal('0px'),
+};
+
 export class AffineKeyboardToolbarWidget extends WidgetComponent<RootBlockModel> {
   private readonly _show$ = signal(false);
 
   private _initialInputMode: string = '';
 
   get keyboard(): VirtualKeyboardProviderWithAction & { fallback?: boolean } {
-    const provider = this.std.get(VirtualKeyboardProvider);
+    const provider = this.std.getOptional(VirtualKeyboardProvider);
+    if (!provider) {
+      return {
+        fallback: true,
+        show: () => {
+          const rootComponent = this.block?.rootComponent;
+          if (rootComponent && rootComponent === document.activeElement) {
+            rootComponent.inputMode = this._initialInputMode;
+          }
+        },
+        hide: () => {
+          const rootComponent = this.block?.rootComponent;
+          if (rootComponent && rootComponent === document.activeElement) {
+            rootComponent.inputMode = 'none';
+          }
+        },
+        ...missingVirtualKeyboardProvider,
+      };
+    }
+
     if (isVirtualKeyboardProviderWithAction(provider)) return provider;
 
     return {
