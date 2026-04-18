@@ -370,6 +370,22 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
     }
   }, [chatContent, chatTabs, chatToolbar, session]);
 
+  const [sessionServiceReady, setSessionServiceReady] = useState(
+    () => !!AIProvider.session
+  );
+
+  useEffect(() => {
+    if (sessionServiceReady) return;
+    if (AIProvider.session) {
+      setSessionServiceReady(true);
+      return;
+    }
+    const sub = AIProvider.slots.sessionReady.subscribe(ready => {
+      if (ready) setSessionServiceReady(true);
+    });
+    return () => sub.unsubscribe();
+  }, [sessionServiceReady]);
+
   useEffect(() => {
     const sessionService = AIProvider.session;
     if (!doc || !sessionService) return;
@@ -418,7 +434,7 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
     return () => {
       cancelled = true;
     };
-  }, [doc]);
+  }, [doc, sessionServiceReady]);
 
   useEffect(() => {
     if (!session?.sessionId) return;

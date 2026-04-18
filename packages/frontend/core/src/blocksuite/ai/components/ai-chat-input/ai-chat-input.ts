@@ -473,6 +473,14 @@ export class AIChatInput extends SignalWatcher(
         }
       })
     );
+
+    this.updateComplete
+      .then(() => {
+        if (this.isConnected && !this._internalDropCleanup) {
+          this._setupInternalDropTarget();
+        }
+      })
+      .catch(console.error);
   }
 
   protected override firstUpdated(changedProperties: PropertyValues): void {
@@ -486,7 +494,6 @@ export class AIChatInput extends SignalWatcher(
         })
         .catch(console.error);
     }
-    this._setupInternalDropTarget();
   }
 
   override disconnectedCallback(): void {

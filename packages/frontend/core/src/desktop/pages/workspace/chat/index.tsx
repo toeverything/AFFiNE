@@ -499,6 +499,11 @@ export const Component = () => {
     }
   }, [openTabs, workspaceId]);
 
+  // Reset tabs on workspace change so tabs don't leak across workspaces.
+  useEffect(() => {
+    setOpenTabs([]);
+  }, [workspaceId]);
+
   useEffect(() => {
     if (!chatTabsContainerRef.current) return;
     let tabs = chatTabs;
