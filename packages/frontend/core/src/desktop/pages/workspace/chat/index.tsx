@@ -99,7 +99,9 @@ export const Component = () => {
     null
   );
   const [openTabs, setOpenTabs] = useState<NonNullable<CopilotSession>[]>([]);
-  const [tabsHydrated, setTabsHydrated] = useState(false);
+  const [hydratedWorkspaceId, setHydratedWorkspaceId] = useState<string | null>(
+    null
+  );
   const [status, setStatus] = useState<ChatStatus>('idle');
   const [isTogglingPin, setIsTogglingPin] = useState(false);
   const [isOpeningSession, setIsOpeningSession] = useState(false);
@@ -197,6 +199,12 @@ export const Component = () => {
       setIsOpeningSession(true);
       try {
         const session = await client.getSession(workspaceId, sessionId);
+        if (!session) {
+          // Session was deleted or is no longer accessible — drop the stale tab
+          // instead of switching to an empty chat.
+          setOpenTabs(prev => prev.filter(tab => tab.sessionId !== sessionId));
+          return;
+        }
         setCurrentSession(session);
         reMountChatContent();
         chatTool?.closeHistoryMenu();
@@ -440,7 +448,7 @@ export const Component = () => {
       console.error(error);
     }
     if (!rawIds.length) {
-      setTabsHydrated(true);
+      setHydratedWorkspaceId(workspaceId);
       return;
     }
     let cancelled = false;
@@ -463,11 +471,11 @@ export const Component = () => {
             return merged;
           });
         }
-        setTabsHydrated(true);
+        setHydratedWorkspaceId(workspaceId);
       })
       .catch(error => {
         console.error(error);
-        if (!cancelled) setTabsHydrated(true);
+        if (!cancelled) setHydratedWorkspaceId(workspaceId);
       });
     return () => {
       cancelled = true;
@@ -491,7 +499,7 @@ export const Component = () => {
   }, [currentSession]);
 
   useEffect(() => {
-    if (!workspaceId || !tabsHydrated) return;
+    if (!workspaceId || hydratedWorkspaceId !== workspaceId) return;
     const storageKey = `ai-chat-open-tabs:${workspaceId}`;
     try {
       if (openTabs.length) {
@@ -505,12 +513,12 @@ export const Component = () => {
     } catch (error) {
       console.error(error);
     }
-  }, [openTabs, workspaceId, tabsHydrated]);
+  }, [openTabs, workspaceId, hydratedWorkspaceId]);
 
   // Reset tabs on workspace change so tabs don't leak across workspaces.
   useEffect(() => {
     setOpenTabs([]);
-    setTabsHydrated(false);
+    setHydratedWorkspaceId(null);
   }, [workspaceId]);
 
   useEffect(() => {

@@ -237,8 +237,14 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
           sessionId
         );
         if (requestSeq !== sessionLoadSeqRef.current) return;
-        setSession(nextSession ?? null);
-        setHasPinned(!!nextSession?.pinned);
+        if (!nextSession) {
+          // Session was deleted or is no longer accessible — drop the stale tab
+          // instead of switching to an empty chat.
+          setOpenTabs(prev => prev.filter(tab => tab.sessionId !== sessionId));
+          return;
+        }
+        setSession(nextSession);
+        setHasPinned(!!nextSession.pinned);
       } catch (error) {
         console.error(error);
       }
@@ -373,7 +379,9 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
   const [sessionServiceReady, setSessionServiceReady] = useState(
     () => !!AIProvider.session
   );
-  const [tabsHydrated, setTabsHydrated] = useState(false);
+  const [hydratedWorkspaceId, setHydratedWorkspaceId] = useState<string | null>(
+    null
+  );
 
   useEffect(() => {
     if (sessionServiceReady) return;
@@ -408,7 +416,7 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
       console.error(error);
     }
     if (!rawIds.length) {
-      setTabsHydrated(true);
+      setHydratedWorkspaceId(workspaceId);
       return;
     }
     let cancelled = false;
@@ -433,11 +441,11 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
             return merged;
           });
         }
-        setTabsHydrated(true);
+        setHydratedWorkspaceId(workspaceId);
       })
       .catch(error => {
         console.error(error);
-        if (!cancelled) setTabsHydrated(true);
+        if (!cancelled) setHydratedWorkspaceId(workspaceId);
       });
     return () => {
       cancelled = true;
@@ -461,8 +469,10 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
   }, [session]);
 
   useEffect(() => {
-    if (!doc || !tabsHydrated) return;
-    const storageKey = `ai-chat-open-tabs:${doc.workspace.id}`;
+    if (!doc) return;
+    const workspaceId = doc.workspace.id;
+    if (hydratedWorkspaceId !== workspaceId) return;
+    const storageKey = `ai-chat-open-tabs:${workspaceId}`;
     try {
       if (openTabs.length) {
         localStorage.setItem(
@@ -475,13 +485,13 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
     } catch (error) {
       console.error(error);
     }
-  }, [doc, openTabs, tabsHydrated]);
+  }, [doc, openTabs, hydratedWorkspaceId]);
 
   // Reset tabs on workspace change so tabs don't leak across workspaces.
   const workspaceId = doc?.workspace.id;
   useEffect(() => {
     setOpenTabs([]);
-    setTabsHydrated(false);
+    setHydratedWorkspaceId(null);
   }, [workspaceId]);
 
   useEffect(() => {
