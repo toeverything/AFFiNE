@@ -299,19 +299,22 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
 
   const closeTab = useCallback(
     (sessionId: string) => {
-      const idx = openTabs.findIndex(tab => tab.sessionId === sessionId);
-      if (idx === -1) return;
-      const next = openTabs.filter(tab => tab.sessionId !== sessionId);
-      setOpenTabs(next);
+      let fallback: CopilotChatHistoryFragment | undefined;
+      setOpenTabs(prev => {
+        const idx = prev.findIndex(tab => tab.sessionId === sessionId);
+        if (idx === -1) return prev;
+        const next = prev.filter(tab => tab.sessionId !== sessionId);
+        fallback = next[idx] ?? next[idx - 1] ?? next[0];
+        return next;
+      });
       if (session?.sessionId !== sessionId) return;
-      const fallback = next[idx] ?? next[idx - 1] ?? next[0];
       if (fallback) {
         openSession(fallback.sessionId).catch(console.error);
       } else {
         newSession().catch(console.error);
       }
     },
-    [newSession, openSession, openTabs, session?.sessionId]
+    [newSession, openSession, session?.sessionId]
   );
 
   const togglePin = useCallback(async () => {
@@ -395,10 +398,11 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
     return () => sub.unsubscribe();
   }, [sessionServiceReady]);
 
+  const workspaceId = doc?.workspace.id;
+
   useEffect(() => {
     const sessionService = AIProvider.session;
-    if (!doc || !sessionService) return;
-    const workspaceId = doc.workspace.id;
+    if (!workspaceId || !sessionService) return;
     const storageKey = `ai-chat-open-tabs:${workspaceId}`;
     let rawIds: string[] = [];
     try {
@@ -450,7 +454,7 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
     return () => {
       cancelled = true;
     };
-  }, [doc, sessionServiceReady]);
+  }, [workspaceId, sessionServiceReady]);
 
   useEffect(() => {
     if (!session?.sessionId) return;
@@ -469,9 +473,7 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
   }, [session]);
 
   useEffect(() => {
-    if (!doc) return;
-    const workspaceId = doc.workspace.id;
-    if (hydratedWorkspaceId !== workspaceId) return;
+    if (!workspaceId || hydratedWorkspaceId !== workspaceId) return;
     const storageKey = `ai-chat-open-tabs:${workspaceId}`;
     try {
       if (openTabs.length) {
@@ -485,10 +487,9 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
     } catch (error) {
       console.error(error);
     }
-  }, [doc, openTabs, hydratedWorkspaceId]);
+  }, [workspaceId, openTabs, hydratedWorkspaceId]);
 
   // Reset tabs on workspace change so tabs don't leak across workspaces.
-  const workspaceId = doc?.workspace.id;
   useEffect(() => {
     setOpenTabs([]);
     setHydratedWorkspaceId(null);

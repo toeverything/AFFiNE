@@ -226,19 +226,22 @@ export const Component = () => {
 
   const closeTab = useCallback(
     (sessionId: string) => {
-      const idx = openTabs.findIndex(tab => tab.sessionId === sessionId);
-      if (idx === -1) return;
-      const next = openTabs.filter(tab => tab.sessionId !== sessionId);
-      setOpenTabs(next);
+      let fallback: NonNullable<CopilotSession> | undefined;
+      setOpenTabs(prev => {
+        const idx = prev.findIndex(tab => tab.sessionId === sessionId);
+        if (idx === -1) return prev;
+        const next = prev.filter(tab => tab.sessionId !== sessionId);
+        fallback = next[idx] ?? next[idx - 1] ?? next[0];
+        return next;
+      });
       if (currentSession?.sessionId !== sessionId) return;
-      const fallback = next[idx] ?? next[idx - 1] ?? next[0];
       if (fallback) {
         onOpenSession(fallback.sessionId).catch(console.error);
       } else {
         createFreshSession().catch(console.error);
       }
     },
-    [createFreshSession, currentSession?.sessionId, onOpenSession, openTabs]
+    [createFreshSession, currentSession?.sessionId, onOpenSession]
   );
 
   const onContextChange = useCallback((context: Partial<ChatContextValue>) => {
