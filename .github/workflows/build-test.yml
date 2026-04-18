@@ -114,13 +114,20 @@ jobs:
           electron-install: false
           full-cache: true
       - name: Run i18n codegen
-        run: yarn affine @affine/i18n build
+        run: |
+          yarn affine @affine/i18n build
+          git checkout packages/frontend/i18n/src/i18n-completenesses.json
+          if git status --porcelain | grep -q .; then
+            echo "Run 'yarn affine @affine/i18n build' and make sure all generated i18n changes are submitted"
+            exit 1
+          else
+            echo "All generated i18n changes are submitted"
+          fi
       - name: Run Type Check
         run: yarn typecheck
       - name: Run BS Docs Build
         run: |
           yarn affine bs-docs build
-          git checkout packages/frontend/i18n/src/i18n-completenesses.json
           if git status --porcelain | grep -q .; then
             echo "Run 'yarn typecheck && yarn affine bs-docs build' and make sure all changes are submitted"
             exit 1
