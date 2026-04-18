@@ -1,8 +1,4 @@
-import type {
-  MouseEvent as ReactMouseEvent,
-  RefObject,
-  TouchEvent as ReactTouchEvent,
-} from 'react';
+import type { MouseEvent as ReactMouseEvent, RefObject } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 
 interface UseZoomControlsProps {
@@ -25,23 +21,6 @@ export const useZoomControls = ({
     x: 0,
     y: 0,
   });
-  const [touchDistance, setTouchDistance] = useState<number | null>(null);
-  const [touchScaleStart, setTouchScaleStart] = useState<number>(1);
-
-  const applyScale = useCallback(
-    (newScale: number) => {
-      const image = imageRef.current;
-      if (!image) {
-        return;
-      }
-      const clampedScale = Math.max(0.2, Math.min(2, newScale));
-      setCurrentScale(clampedScale);
-      image.style.width = `${image.naturalWidth * clampedScale}px`;
-      image.style.height = `${image.naturalHeight * clampedScale}px`;
-    },
-    [imageRef]
-  );
-
   const handleDragStart = useCallback(
     (event: ReactMouseEvent) => {
       event?.preventDefault();
@@ -143,16 +122,23 @@ export const useZoomControls = ({
   }, [currentScale, zoomRef]);
 
   const zoomIn = useCallback(() => {
-    if (currentScale < 2) {
-      applyScale(currentScale + 0.1);
+    const image = imageRef.current;
+
+    if (image && currentScale < 2) {
+      const newScale = currentScale + 0.1;
+      setCurrentScale(newScale);
+      image.style.width = `${image.naturalWidth * newScale}px`;
+      image.style.height = `${image.naturalHeight * newScale}px`;
     }
-  }, [applyScale, currentScale]);
+  }, [imageRef, currentScale]);
 
   const zoomOut = useCallback(() => {
     const image = imageRef.current;
     if (image && currentScale > 0.2) {
       const newScale = currentScale - 0.1;
-      applyScale(newScale);
+      setCurrentScale(newScale);
+      image.style.width = `${image.naturalWidth * newScale}px`;
+      image.style.height = `${image.naturalHeight * newScale}px`;
       const zoomedWidth = image.naturalWidth * newScale;
       const zoomedHeight = image.naturalHeight * newScale;
       const containerWidth = window.innerWidth;
@@ -162,41 +148,7 @@ export const useZoomControls = ({
         setImagePos({ x: 0, y: 0 });
       }
     }
-  }, [applyScale, imageRef, currentScale]);
-
-  const handleTouchStart = useCallback((event: ReactTouchEvent) => {
-    if (event.touches.length !== 2) {
-      return;
-    }
-    event.preventDefault();
-    const [first, second] = event.touches;
-    const distance = Math.hypot(
-      second.clientX - first.clientX,
-      second.clientY - first.clientY
-    );
-    setTouchDistance(distance);
-    setTouchScaleStart(currentScale);
-  }, [currentScale]);
-
-  const handleTouchMove = useCallback(
-    (event: ReactTouchEvent) => {
-      if (event.touches.length !== 2 || !touchDistance) {
-        return;
-      }
-      event.preventDefault();
-      const [first, second] = event.touches;
-      const distance = Math.hypot(
-        second.clientX - first.clientX,
-        second.clientY - first.clientY
-      );
-      applyScale(touchScaleStart * (distance / touchDistance));
-    },
-    [applyScale, touchDistance, touchScaleStart]
-  );
-
-  const handleTouchEnd = useCallback(() => {
-    setTouchDistance(null);
-  }, []);
+  }, [imageRef, currentScale]);
 
   const resetZoom = useCallback(() => {
     const image = imageRef.current;
@@ -271,8 +223,5 @@ export const useZoomControls = ({
     handleDragStart,
     handleDrag,
     handleDragEnd,
-    handleTouchStart,
-    handleTouchMove,
-    handleTouchEnd,
   };
 };

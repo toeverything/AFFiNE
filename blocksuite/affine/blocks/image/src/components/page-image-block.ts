@@ -1,3 +1,4 @@
+import { PeekViewProvider } from '@blocksuite/affine-components/peek';
 import type { ResolvedStateInfo } from '@blocksuite/affine-components/resource';
 import {
   focusBlockEnd,
@@ -7,6 +8,7 @@ import {
 } from '@blocksuite/affine-shared/commands';
 import { ImageSelection } from '@blocksuite/affine-shared/selection';
 import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
+import { IS_MOBILE } from '@blocksuite/global/env';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import type { BlockComponent, UIEventStateContext } from '@blocksuite/std';
 import {
@@ -235,6 +237,16 @@ export class ImageBlockPageComponent extends SignalWatcher(
       this.resizeImg,
       'click',
       (event: MouseEvent) => {
+        if (IS_MOBILE) {
+          event.stopPropagation();
+          event.stopImmediatePropagation();
+          this.block.std
+            .getOptional(PeekViewProvider)
+            ?.peek({ target: this.block })
+            .catch(console.error);
+          return true;
+        }
+
         // the peek view need handle shift + click
         if (event.shiftKey) return;
 
