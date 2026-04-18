@@ -10,6 +10,7 @@ import {
   textConversionConfigs,
 } from '@blocksuite/affine-rich-text';
 import {
+  focusBlockEnd,
   getSelectedModelsCommand,
   getTextSelectionCommand,
 } from '@blocksuite/affine-shared/commands';
@@ -20,10 +21,14 @@ import {
   SlashMenuConfigExtension,
   type SlashMenuItem,
 } from '@blocksuite/affine-widget-slash-menu';
-import { HeadingsIcon } from '@blocksuite/icons/lit';
+import { HeadingsIcon, LayoutIcon } from '@blocksuite/icons/lit';
 import { BlockSelection } from '@blocksuite/std';
 
-import { updateBlockAlign, updateBlockType } from '../commands';
+import {
+  insertColumnsBlockCommand,
+  updateBlockAlign,
+  updateBlockType,
+} from '../commands';
 import { tooltips } from './tooltips';
 
 let basicIndex = 0;
@@ -43,6 +48,8 @@ const noteSlashMenuConfig: SlashMenuConfig = {
     ...textConversionConfigs
       .filter(i => i.flavour === 'affine:code')
       .map(config => createConversionItem(config, `0_Basic@${basicIndex++}`)),
+    createColumnsItem(2, `0_Basic@${basicIndex++}`),
+    createColumnsItem(3, `0_Basic@${basicIndex++}`),
 
     ...textConversionConfigs
       .filter(i => i.type && ['divider', 'quote'].includes(i.type))
@@ -146,6 +153,54 @@ function createTextFormatItem(
         // like format bar when the line is empty
         action(host);
       }
+    },
+  };
+}
+
+function createColumnsItem(
+  columnCount: number,
+  group?: SlashMenuItem['group']
+): SlashMenuActionItem {
+  return {
+    name: `${columnCount} Columns`,
+    group,
+    description: 'Create side-by-side columns.',
+    icon: LayoutIcon(),
+    searchAlias: ['column', 'columns', 'layout'],
+    when: ({ model }) =>
+      !isInsideBlockByFlavour(model.store, model, 'affine:edgeless-text') &&
+      model.parent?.flavour === 'affine:note',
+    action: ({ std }) => {
+      std.command
+        .chain()
+        .pipe(getSelectedModelsCommand)
+        .pipe(insertColumnsBlockCommand, {
+          columnCount,
+          place: 'after',
+          removeEmptyLine: true,
+        })
+        .pipe(({ insertedColumnsBlockId }) => {
+          if (!insertedColumnsBlockId) {
+            return;
+          }
+          std.host.updateComplete
+            .then(() => {
+              const columns = std.store.getModelById(insertedColumnsBlockId);
+              const firstParagraphId = columns?.children[0]?.children[0]?.id;
+              if (!firstParagraphId) {
+                return;
+              }
+              const firstParagraph = std.view.getBlock(firstParagraphId);
+              if (!firstParagraph) {
+                return;
+              }
+              std.command.exec(focusBlockEnd, {
+                focusBlock: firstParagraph,
+              });
+            })
+            .catch(console.error);
+        })
+        .run();
     },
   };
 }

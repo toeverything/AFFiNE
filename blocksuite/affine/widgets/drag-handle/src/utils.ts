@@ -6,6 +6,7 @@ import {
 } from '@blocksuite/affine-block-note';
 import { ParagraphBlockComponent } from '@blocksuite/affine-block-paragraph';
 import {
+  ColumnBlockModel,
   DatabaseBlockModel,
   ListBlockModel,
   ParagraphBlockModel,
@@ -194,6 +195,22 @@ export const getClosestBlockByPoint = (
     rect: noteRect,
   }) as BlockComponent | null;
 
+  const closestColumn = getClosestColumnBlock(
+    closestNoteBlock as BlockComponent,
+    point
+  );
+
+  if (closestColumn) {
+    const closestBlockInColumn =
+      block && containChildBlock([closestColumn], block.model)
+        ? block
+        : getClosestColumnChildBlockByPoint(closestColumn, point);
+
+    if (closestBlockInColumn) {
+      return getDragHandleBlock(closestBlockInColumn);
+    }
+  }
+
   const blockSelector =
     '.affine-note-block-container > .affine-block-children-container > [data-block-id]';
 
@@ -211,11 +228,82 @@ export const getClosestBlockByPoint = (
     return null;
   }
 
-  if (matchModels(closestBlock.model, [ParagraphBlockModel])) {
-    const callout =
-      closestBlock.closest<CalloutBlockComponent>('affine-callout');
+  return getDragHandleBlock(closestBlock);
+};
+
+export const getDragHandleBlock = (block: BlockComponent | null) => {
+  if (!block) {
+    return null;
+  }
+
+  if (matchModels(block.model, [ParagraphBlockModel])) {
+    const callout = block.closest<CalloutBlockComponent>('affine-callout');
     if (callout) {
       return callout;
+    }
+  }
+
+  return block;
+};
+
+const getClosestColumnBlock = (
+  noteBlock: BlockComponent,
+  point: Point
+): BlockComponent | null => {
+  const columns = Array.from(
+    noteBlock.querySelectorAll<BlockComponent>('affine-column')
+  ).filter(column => column.host === noteBlock.host);
+
+  for (const column of columns) {
+    const rect = column.getBoundingClientRect();
+    if (
+      point.x >= rect.left &&
+      point.x <= rect.right &&
+      point.y >= rect.top &&
+      point.y <= rect.bottom
+    ) {
+      return column;
+    }
+  }
+
+  return null;
+};
+
+const getClosestColumnChildBlockByPoint = (
+  columnBlock: BlockComponent,
+  point: Point
+) => {
+  if (!matchModels(columnBlock.model, [ColumnBlockModel])) {
+    return null;
+  }
+
+  const children = columnBlock.childBlocks;
+  if (!children.length) {
+    return columnBlock;
+  }
+
+  let closestBlock = children[0] ?? null;
+  let closestDistance = Number.POSITIVE_INFINITY;
+
+  for (const child of children) {
+    const rect = child.getBoundingClientRect();
+    const dx =
+      point.x < rect.left
+        ? rect.left - point.x
+        : point.x > rect.right
+          ? point.x - rect.right
+          : 0;
+    const dy =
+      point.y < rect.top
+        ? rect.top - point.y
+        : point.y > rect.bottom
+          ? point.y - rect.bottom
+          : 0;
+    const distance = dx * dx + dy * dy;
+
+    if (distance < closestDistance) {
+      closestDistance = distance;
+      closestBlock = child;
     }
   }
 

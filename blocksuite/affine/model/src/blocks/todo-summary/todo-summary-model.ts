@@ -22,7 +22,7 @@ export const TodoSummaryBlockSchema = defineBlockSchema({
   metadata: {
     version: 1,
     role: 'content',
-    parent: ['affine:note'],
+    parent: ['affine:note', 'affine:column'],
     children: [],
   },
   toModel: () => new TodoSummaryBlockModel(),

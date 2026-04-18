@@ -2,7 +2,11 @@ import {
   type StoreExtensionContext,
   StoreExtensionProvider,
 } from '@blocksuite/affine-ext-loader';
-import { NoteBlockSchemaExtension } from '@blocksuite/affine-model';
+import {
+  ColumnBlockSchemaExtension,
+  ColumnsBlockSchemaExtension,
+  NoteBlockSchemaExtension,
+} from '@blocksuite/affine-model';
 import { z } from 'zod';
 
 import {
@@ -26,7 +30,11 @@ export class NoteStoreExtension extends StoreExtensionProvider<
     options?: z.infer<typeof optionsSchema>
   ) {
     super.setup(context);
-    context.register(NoteBlockSchemaExtension);
+    context.register([
+      NoteBlockSchemaExtension,
+      ColumnsBlockSchemaExtension,
+      ColumnBlockSchemaExtension,
+    ]);
     if (options?.mode === 'edgeless') {
       context.register(EdgelessNoteBlockAdapterExtensions);
     } else {

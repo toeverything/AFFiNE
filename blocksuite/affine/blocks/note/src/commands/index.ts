@@ -6,6 +6,7 @@ export { dedentBlocks } from './dedent-blocks.js';
 export { dedentBlocksToRoot } from './dedent-blocks-to-root.js';
 export { indentBlock } from './indent-block.js';
 export { indentBlocks } from './indent-blocks.js';
+export { insertColumnsBlockCommand } from './insert-columns.js';
 export { selectBlock } from './select-block.js';
 export { selectBlocksBetween } from './select-blocks-between.js';
 export { updateBlockAlign } from './update-block-align.js';

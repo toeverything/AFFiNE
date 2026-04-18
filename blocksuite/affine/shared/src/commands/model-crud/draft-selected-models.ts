@@ -28,7 +28,8 @@ export const draftSelectedModelsCommand: Command<
 
     const traverse = (model: DraftModel) => {
       const isDatabase = model.flavour === 'affine:database';
-      const children = isDatabase
+      const keepChildren = isDatabase || model.role !== 'content';
+      const children = keepChildren
         ? model.children
         : model.children.filter(child => modelMap.has(child.id));
 

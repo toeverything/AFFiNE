@@ -22,6 +22,7 @@ import type { AffineDragHandleWidget } from '../drag-handle.js';
 import {
   getClosestBlockByPoint,
   getClosestNoteBlock,
+  getDragHandleBlock,
   getDragHandleContainerHeight,
   includeTextSelection,
   insideDatabaseTable,
@@ -161,7 +162,10 @@ export class PointerEventWatcher {
    * When pointer move on block, should show drag handle
    * And update hover block id and path
    */
-  private readonly _pointerMoveOnBlock = (state: PointerEventState) => {
+  private readonly _pointerMoveOnBlock = (
+    state: PointerEventState,
+    hitBlockId?: string | null
+  ) => {
     if (this.widget.isGfxDragHandleVisible) return;
 
     const point = new Point(state.raw.x, state.raw.y);
@@ -172,18 +176,24 @@ export class PointerEventWatcher {
       this.widget.rootComponent,
       point
     );
-    if (!closestBlock) {
+    const fallbackBlock =
+      hitBlockId && hitBlockId !== this.widget.store.root?.id
+        ? getDragHandleBlock(this.widget.std.view.getBlock(hitBlockId))
+        : null;
+    const hoverBlock = closestBlock ?? fallbackBlock;
+
+    if (!hoverBlock) {
       this._lastPointerHitBlockId = null;
       this.widget.anchorBlockId.value = null;
       return;
     }
 
-    const blockId = closestBlock.getAttribute(BLOCK_ID_ATTR);
+    const blockId = hoverBlock.getAttribute(BLOCK_ID_ATTR);
     if (!blockId) return;
 
     this.widget.anchorBlockId.value = blockId;
 
-    if (insideDatabaseTable(closestBlock) || this.widget.store.readonly) {
+    if (insideDatabaseTable(hoverBlock) || this.widget.store.readonly) {
       this.widget.hide();
       return;
     }
@@ -298,7 +308,7 @@ export class PointerEventWatcher {
           this.widget.scaleInNote.peek()
         )
       ) {
-        this._pointerMoveOnBlock(state);
+        this._pointerMoveOnBlock(state, hitBlockId);
         return true;
       }
 

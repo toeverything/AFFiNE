@@ -2,7 +2,11 @@ import {
   type ViewExtensionContext,
   ViewExtensionProvider,
 } from '@blocksuite/affine-ext-loader';
-import { NoteBlockSchema } from '@blocksuite/affine-model';
+import {
+  ColumnBlockSchema,
+  ColumnsBlockSchema,
+  NoteBlockSchema,
+} from '@blocksuite/affine-model';
 import { BlockViewExtension, FlavourExtension } from '@blocksuite/std';
 import { literal } from 'lit/static-html.js';
 
@@ -27,6 +31,8 @@ export class NoteViewExtension extends ViewExtensionProvider {
     super.setup(context);
     context.register([
       FlavourExtension(flavour),
+      FlavourExtension(ColumnsBlockSchema.model.flavour),
+      FlavourExtension(ColumnBlockSchema.model.flavour),
       NoteSlashMenuConfigExtension,
       NoteKeymapExtension,
     ]);
@@ -41,7 +47,17 @@ export class NoteViewExtension extends ViewExtensionProvider {
       context.register(EdgelessClipboardNoteConfig);
       context.register(EdgelessNoteInteraction);
     } else {
-      context.register(BlockViewExtension(flavour, literal`affine-note`));
+      context.register([
+        BlockViewExtension(flavour, literal`affine-note`),
+        BlockViewExtension(
+          ColumnsBlockSchema.model.flavour,
+          literal`affine-columns`
+        ),
+        BlockViewExtension(
+          ColumnBlockSchema.model.flavour,
+          literal`affine-column`
+        ),
+      ]);
     }
   }
 }

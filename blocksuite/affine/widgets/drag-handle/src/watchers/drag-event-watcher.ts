@@ -7,6 +7,7 @@ import { DropIndicator } from '@blocksuite/affine-components/drop-indicator';
 import {
   AttachmentBlockModel,
   BookmarkBlockModel,
+  ColumnBlockModel,
   DatabaseBlockModel,
   DEFAULT_NOTE_HEIGHT,
   DEFAULT_NOTE_WIDTH,
@@ -215,7 +216,24 @@ export class DragEventWatcher {
     const scale = this.widget.scale.peek();
     let result: DropResult | null = null;
 
-    if (edge === 'right' && matchModels(dropModel, [ListBlockModel])) {
+    if (matchModels(dropModel, [ColumnBlockModel])) {
+      const domRect = getRectByBlockComponent(dropBlock);
+
+      result = {
+        placement: 'in',
+        rect: Rect.fromLWTH(
+          domRect.left,
+          domRect.width,
+          domRect.top + domRect.height - 3 * scale,
+          3 * scale
+        ),
+        modelState: {
+          model: dropModel,
+          rect: domRect,
+          element: dropBlock,
+        },
+      };
+    } else if (edge === 'right' && matchModels(dropModel, [ListBlockModel])) {
       const domRect = getRectByBlockComponent(dropBlock);
       const placement = 'in';
 

@@ -24,6 +24,7 @@ import {
   pressShiftTab,
   pressTab,
   resetHistory,
+  selectAllBlocksByKeyboard,
   selectAllByKeyboard,
   setInlineRangeInSelectedRichText,
   setSelection,
@@ -42,6 +43,35 @@ import {
 } from '../utils/asserts.js';
 import { scoped, test } from '../utils/playwright.js';
 
+async function initColumnsDoc(page: Parameters<typeof test>[0]['page']) {
+  return page.evaluate(() => {
+    const { doc } = window;
+    const Text = window.$blocksuite.store.Text;
+
+    const rootId =
+      doc.root?.id ?? doc.addBlock('affine:page', { title: new Text() });
+    const root = doc.getBlock(rootId)?.model;
+    let noteId =
+      root?.children.find(child => child.flavour === 'affine:note')?.id ?? null;
+    if (!noteId) {
+      noteId = doc.addBlock('affine:note', {}, rootId);
+    }
+
+    const note = doc.getBlock(noteId)?.model;
+    note?.children.forEach(child => {
+      doc.deleteBlock(child);
+    });
+
+    const columnsId = doc.addBlock('affine:columns', {}, noteId);
+    const leftId = doc.addBlock('affine:column', { width: 1 }, columnsId);
+    const rightId = doc.addBlock('affine:column', { width: 1 }, columnsId);
+    doc.addBlock('affine:paragraph', { text: new Text('left') }, leftId);
+    doc.addBlock('affine:paragraph', { text: new Text('right') }, rightId);
+    doc.captureSync();
+    doc.resetHistory();
+  });
+}
+
 test(scoped`clipboard copy paste`, async ({ page }) => {
   await enterPlaygroundRoom(page);
   await initEmptyParagraphState(page);
@@ -54,6 +84,56 @@ test(scoped`clipboard copy paste`, async ({ page }) => {
   await focusRichText(page);
   await page.keyboard.press(`${SHORT_KEY}+v`);
   await assertText(page, 'testtes');
+});
+
+test(scoped`clipboard copy preserves columns snapshot`, async ({ page }) => {
+  await enterPlaygroundRoom(page);
+  await initColumnsDoc(page);
+  await focusRichText(page);
+
+  await selectAllBlocksByKeyboard(page);
+  await waitNextFrame(page);
+  await copyByKeyboard(page);
+
+  const snapshot = await getClipboardSnapshot(page);
+  expect(
+    snapshot.snapshot.content.map((block: { flavour: string }) => block.flavour)
+  ).toEqual(['affine:note']);
+  expect(
+    snapshot.snapshot.content[0]?.children.map(
+      (block: { flavour: string }) => block.flavour
+    )
+  ).toEqual(['affine:columns']);
+  expect(
+    snapshot.snapshot.content[0]?.children[0]?.children.map(
+      (block: { flavour: string }) => block.flavour
+    )
+  ).toEqual(['affine:column', 'affine:column']);
+});
+
+test(scoped`clipboard copy paste columns row`, async ({ page }) => {
+  await enterPlaygroundRoom(page);
+  await initColumnsDoc(page);
+  await focusRichText(page);
+
+  const beforePasteChildren = await page.evaluate(() => {
+    const note = document.querySelector('affine-note');
+    return note?.model.children.map(child => child.flavour) ?? [];
+  });
+
+  expect(beforePasteChildren).toEqual(['affine:columns']);
+
+  await selectAllBlocksByKeyboard(page);
+  await waitNextFrame(page);
+  await copyByKeyboard(page);
+  await pasteByKeyboard(page, false);
+  await waitNextFrame(page);
+
+  const noteChildren = await page.evaluate(() => {
+    const note = document.querySelector('affine-note');
+    return note?.model.children.map(child => child.flavour) ?? [];
+  });
+  expect(noteChildren).toEqual(['affine:columns', 'affine:columns']);
 });
 
 test(scoped`clipboard copy paste title`, async ({ page }) => {

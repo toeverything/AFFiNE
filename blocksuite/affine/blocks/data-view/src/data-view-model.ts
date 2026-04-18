@@ -90,7 +90,7 @@ export const DataViewBlockSchema = defineBlockSchema({
   metadata: {
     role: 'hub',
     version: 1,
-    parent: ['affine:note'],
+    parent: ['affine:note', 'affine:column'],
     children: ['affine:paragraph', 'affine:list'],
   },
   toModel: () => {

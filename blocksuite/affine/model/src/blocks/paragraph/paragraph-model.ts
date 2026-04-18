@@ -44,6 +44,7 @@ export const ParagraphBlockSchema = defineBlockSchema({
     role: 'content',
     parent: [
       'affine:note',
+      'affine:column',
       'affine:database',
       'affine:paragraph',
       'affine:list',

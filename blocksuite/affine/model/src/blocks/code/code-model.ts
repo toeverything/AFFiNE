@@ -38,6 +38,7 @@ export const CodeBlockSchema = defineBlockSchema({
     role: 'content',
     parent: [
       'affine:note',
+      'affine:column',
       'affine:paragraph',
       'affine:list',
       'affine:edgeless-text',

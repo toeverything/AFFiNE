@@ -77,6 +77,7 @@ export const NoteBlockSchema = defineBlockSchema({
     parent: ['@root'],
     children: [
       '@content',
+      'affine:columns',
       'affine:database',
       'affine:data-view',
       'affine:todo-summary',
