@@ -420,7 +420,6 @@ export const Component = () => {
     return () => sub.unsubscribe();
   }, [framework, mockStd]);
 
-  // Hydrate open tabs from localStorage for this workspace.
   useEffect(() => {
     if (!workspaceId) return;
     const storageKey = `ai-chat-open-tabs:${workspaceId}`;
@@ -467,7 +466,6 @@ export const Component = () => {
     };
   }, [client, workspaceId]);
 
-  // Keep openTabs in sync with the active session.
   useEffect(() => {
     if (!currentSession?.sessionId) return;
     setOpenTabs(prev => {
@@ -484,21 +482,23 @@ export const Component = () => {
     });
   }, [currentSession]);
 
-  // Persist open tab IDs to localStorage.
   useEffect(() => {
-    if (!workspaceId || !openTabs.length) return;
+    if (!workspaceId) return;
     const storageKey = `ai-chat-open-tabs:${workspaceId}`;
     try {
-      localStorage.setItem(
-        storageKey,
-        JSON.stringify(openTabs.map(tab => tab.sessionId))
-      );
+      if (openTabs.length) {
+        localStorage.setItem(
+          storageKey,
+          JSON.stringify(openTabs.map(tab => tab.sessionId))
+        );
+      } else {
+        localStorage.removeItem(storageKey);
+      }
     } catch (error) {
       console.error(error);
     }
   }, [openTabs, workspaceId]);
 
-  // Mount / update the tab strip element.
   useEffect(() => {
     if (!chatTabsContainerRef.current) return;
     let tabs = chatTabs;

@@ -21,8 +21,8 @@ function deriveTabTitle(session: CopilotChatHistoryFragment): string {
   const firstUserMessage = session.messages?.find(m => m.role === 'user');
   const raw = firstUserMessage?.content?.trim();
   if (!raw) return DEFAULT_TAB_TITLE;
-  const firstLine = raw.split('\n')[0] ?? raw;
-  return truncate(firstLine);
+  const newlineIdx = raw.indexOf('\n');
+  return truncate(newlineIdx === -1 ? raw : raw.slice(0, newlineIdx));
 }
 
 export class AIChatTabs extends WithDisposable(ShadowlessElement) {
@@ -146,8 +146,6 @@ export class AIChatTabs extends WithDisposable(ShadowlessElement) {
   private readonly _handleWheel = (e: WheelEvent) => {
     const el = e.currentTarget as HTMLElement;
     if (el.scrollWidth <= el.clientWidth) return;
-    // Convert vertical wheel input (mouse wheel, trackpad vertical swipe) into
-    // horizontal scroll so users can reach tabs that overflow the viewport.
     if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
       e.preventDefault();
       el.scrollLeft += e.deltaY;

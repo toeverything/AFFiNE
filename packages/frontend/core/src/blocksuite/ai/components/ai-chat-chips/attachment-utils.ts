@@ -9,13 +9,6 @@ export interface AttachmentHandlers {
   addChip: (chip: ChatChip, silent?: boolean) => Promise<void>;
 }
 
-/**
- * Splits a list of dropped/selected files into images and non-images, enforces
- * the per-file size cap, and routes each file through the chat's existing
- * attachment pipeline.
- *
- * Shared between the "+" file picker and drag-and-drop so behavior stays in sync.
- */
 export async function addFilesToChat(
   files: File[],
   { addImages, addChip }: AttachmentHandlers

@@ -437,17 +437,27 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
   }, [session]);
 
   useEffect(() => {
-    if (!doc || !openTabs.length) return;
+    if (!doc) return;
     const storageKey = `ai-chat-open-tabs:${doc.workspace.id}`;
     try {
-      localStorage.setItem(
-        storageKey,
-        JSON.stringify(openTabs.map(tab => tab.sessionId))
-      );
+      if (openTabs.length) {
+        localStorage.setItem(
+          storageKey,
+          JSON.stringify(openTabs.map(tab => tab.sessionId))
+        );
+      } else {
+        localStorage.removeItem(storageKey);
+      }
     } catch (error) {
       console.error(error);
     }
   }, [doc, openTabs]);
+
+  // Reset tabs on workspace change so tabs don't leak across workspaces.
+  const workspaceId = doc?.workspace.id;
+  useEffect(() => {
+    setOpenTabs([]);
+  }, [workspaceId]);
 
   useEffect(() => {
     const subscription = AIProvider.slots.userInfo.subscribe(() => {

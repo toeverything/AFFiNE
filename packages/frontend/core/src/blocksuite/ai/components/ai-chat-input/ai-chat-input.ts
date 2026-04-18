@@ -9,7 +9,7 @@ import type {
 } from '@affine/core/modules/cloud';
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import type { CopilotChatHistoryFragment } from '@affine/graphql';
-import track from '@affine/track';
+import track, { type EventArgs } from '@affine/track';
 import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine';
 import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
@@ -495,6 +495,16 @@ export class AIChatInput extends SignalWatcher(
     this._internalDropCleanup = null;
   }
 
+  private _trackDragDrop(method: EventArgs['addEmbeddingDoc']['method']) {
+    const page = this.independentMode
+      ? track.$.intelligence
+      : track.$.chatPanel;
+    page.chatPanelInput.addEmbeddingDoc({
+      control: 'dragDrop',
+      method,
+    });
+  }
+
   private _setupInternalDropTarget() {
     const el = this.chatPanelInput;
     if (!el) return;
@@ -520,10 +530,7 @@ export class AIChatInput extends SignalWatcher(
             docId: entity.id,
             state: 'processing',
           }).catch(console.error);
-          track.$.chatPanel.chatPanelInput.addEmbeddingDoc({
-            control: 'dragDrop',
-            method: 'doc',
-          });
+          this._trackDragDrop('doc');
         }
       },
     });
@@ -742,10 +749,7 @@ export class AIChatInput extends SignalWatcher(
         addImages: this.addImages,
         addChip: this.addChip,
       });
-      track.$.chatPanel.chatPanelInput.addEmbeddingDoc({
-        control: 'dragDrop',
-        method: 'file',
-      });
+      this._trackDragDrop('file');
     } catch (error) {
       console.error(error);
     }

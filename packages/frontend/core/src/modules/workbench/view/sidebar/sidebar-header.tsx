@@ -2,9 +2,6 @@ import { IconButton } from '@affine/component';
 
 import * as styles from './sidebar-header.css';
 
-// Custom variant of RightSidebarIcon with the right panel filled in the accent
-// color to convey "sidebar is currently open" — mirrors the closed-state icon
-// in shape so the two buttons read as the same toggle in two states.
 const RightSidebarOpenIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
