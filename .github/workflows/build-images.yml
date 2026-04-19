@@ -285,3 +285,10 @@ jobs:
           tags: |
             ghcr.io/as206em/affine:${{ inputs.build-type }}-${{ steps.git-short-hash.outputs.value }}
             ghcr.io/as206em/affine:${{ inputs.build-type }}-latest
+
+      - name: Wait for registry sync
+        run: sleep 60
+
+      - name: Deploy via Portainer Webhooks
+        run: |
+          curl -X POST ${{ secrets.AFFINE_UPDATE_SERVICE_WEBHOOK }}
