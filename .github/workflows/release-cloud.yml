@@ -26,7 +26,6 @@ jobs:
     with:
       build-type: ${{ inputs.build-type }}
       app-version: ${{ inputs.app-version }}
-      git-short-hash: ${{ inputs.git-short-hash }}
 
   deploy:
     name: Deploy to cluster

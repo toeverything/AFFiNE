@@ -132,7 +132,6 @@ jobs:
     with:
       build-type: ${{ needs.prepare.outputs.BUILD_TYPE }}
       app-version: ${{ needs.prepare.outputs.APP_VERSION }}
-      git-short-hash: ${{ needs.prepare.outputs.GIT_SHORT_HASH }}
 
   image:
     name: Release Docker Image
