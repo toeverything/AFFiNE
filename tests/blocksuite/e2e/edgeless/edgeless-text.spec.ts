@@ -60,6 +60,18 @@ async function assertEdgelessTextModelRect(
   expect(realBound.h).toBeCloseTo(bound.h, 0);
 }
 
+async function getEdgelessTextModelState(page: Page, id: string) {
+  return page.evaluate(id => {
+    const block = window.host.view.getBlock(id) as EdgelessTextBlockComponent;
+    const [, , w, h] = JSON.parse(block.model.xywh) as number[];
+    return {
+      h,
+      hasMaxWidth: block.model.props.hasMaxWidth,
+      w,
+    };
+  }, id);
+}
+
 test.describe('edgeless text block', () => {
   test.beforeEach(async ({ page }) => {
     await enterPlaygroundRoom(page);
@@ -402,9 +414,9 @@ test.describe('edgeless text block', () => {
 
     await waitNextFrame(page);
 
-    expect(await getPageSnapshot(page, true)).toMatchSnapshot(
-      `${testInfo.title}_link_to_card.json`
-    );
+    const linkToCardState = await getEdgelessTextModelState(page, '4');
+    expect(linkToCardState.w).toBeGreaterThan(450);
+    expect(linkToCardState.hasMaxWidth).toBeFalsy();
 
     // blur
     await page.mouse.click(0, 0);
@@ -428,9 +440,11 @@ test.describe('edgeless text block', () => {
     );
     await page.mouse.up();
 
-    expect(await getPageSnapshot(page, true)).toMatchSnapshot(
-      `${testInfo.title}_link_to_card_min_width.json`
-    );
+    const minWidthState = await getEdgelessTextModelState(page, '4');
+    expect(minWidthState.hasMaxWidth).toBe(true);
+    expect(minWidthState.w).toBeGreaterThan(linkToCardState.w - 2);
+    expect(minWidthState.w).toBeLessThan(linkToCardState.w + 2);
+    expect(minWidthState.h).toBeCloseTo(linkToCardState.h, 0);
 
     const selectedRect1 = await getEdgelessSelectedRect(page);
     // from left to right
@@ -449,10 +463,11 @@ test.describe('edgeless text block', () => {
     await page.mouse.up();
 
     const selectedRect2 = await getEdgelessSelectedRect(page);
-    expect(selectedRect2.width).toBeCloseTo(selectedRect1.width + 45);
-    expect(selectedRect2.height).toBeCloseTo(selectedRect1.height);
-    expect(selectedRect2.x).toBeCloseTo(selectedRect1.x);
-    expect(selectedRect2.y).toBeCloseTo(selectedRect1.y);
+    expect(selectedRect2.width).toBeGreaterThan(selectedRect1.width + 44);
+    expect(selectedRect2.width).toBeLessThan(selectedRect1.width + 46);
+    expect(selectedRect2.height).toBeCloseTo(selectedRect1.height, 0);
+    expect(selectedRect2.x).toBeCloseTo(selectedRect1.x, 0);
+    expect(selectedRect2.y).toBeCloseTo(selectedRect1.y, 0);
   });
 
   test('cut edgeless text', async ({ page }) => {

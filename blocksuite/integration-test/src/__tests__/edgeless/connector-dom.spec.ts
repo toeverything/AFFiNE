@@ -29,7 +29,13 @@ async function waitForConnectorElement(
       continue;
     }
 
-    const connectorElement = surfaceView.renderRoot.querySelector<HTMLElement>(
+    const root = surfaceView.renderRoot.querySelector('.dom-renderer-root');
+    if (!root) {
+      await wait(50);
+      continue;
+    }
+
+    const connectorElement = root.querySelector<HTMLElement>(
       `[data-element-id="${connectorId}"]`
     );
 
@@ -49,7 +55,10 @@ async function waitForConnectorElementRemoval(
   const startedAt = Date.now();
 
   while (Date.now() - startedAt < timeout) {
-    const connectorElement = surfaceView.renderRoot.querySelector(
+    const root = surfaceView.renderRoot.querySelector('.dom-renderer-root');
+    if (!root) return true;
+
+    const connectorElement = root.querySelector(
       `[data-element-id="${connectorId}"]`
     );
 

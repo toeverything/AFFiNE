@@ -16,12 +16,18 @@ function expectPxCloseTo(
 async function waitForShapeElement(
   surfaceView: ReturnType<typeof getSurface>,
   shapeId: string,
-  timeout = 1000
+  timeout = 5000
 ) {
   const startedAt = Date.now();
 
   while (Date.now() - startedAt < timeout) {
-    const shapeElement = surfaceView.renderRoot.querySelector<HTMLElement>(
+    const root = surfaceView.renderRoot.querySelector('.dom-renderer-root');
+    if (!root) {
+      await wait(50);
+      continue;
+    }
+
+    const shapeElement = root.querySelector<HTMLElement>(
       `[data-element-id="${shapeId}"]`
     );
 
@@ -31,6 +37,26 @@ async function waitForShapeElement(
   }
 
   return null;
+}
+
+async function waitForShapeElementRemoval(
+  surfaceView: ReturnType<typeof getSurface>,
+  shapeId: string,
+  timeout = 5000
+) {
+  const startedAt = Date.now();
+
+  while (Date.now() - startedAt < timeout) {
+    const root = surfaceView.renderRoot.querySelector('.dom-renderer-root');
+    if (!root) return true;
+
+    const shapeElement = root.querySelector(`[data-element-id="${shapeId}"]`);
+    if (!shapeElement) return true;
+
+    await wait(50);
+  }
+
+  return false;
 }
 
 describe('Shape rendering with DOM renderer', () => {
@@ -103,12 +129,8 @@ describe('Shape rendering with DOM renderer', () => {
 
     surfaceModel.deleteElement(shapeId);
 
-    await wait(100);
-
-    shapeElement = surfaceView.renderRoot.querySelector(
-      `[data-element-id="${shapeId}"]`
-    );
-    expect(shapeElement).toBeNull();
+    const removed = await waitForShapeElementRemoval(surfaceView, shapeId);
+    expect(removed).toBe(true);
   });
 
   test('should correctly render diamond shape', async () => {

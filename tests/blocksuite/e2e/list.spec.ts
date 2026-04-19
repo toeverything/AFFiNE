@@ -385,10 +385,16 @@ test('enter list block with empty text', async ({ page }, testInfo) => {
     `${testInfo.title}_init.json`
   );
 
-  await focusRichText(page, 1);
+  await page.locator('[data-block-id="3"] .inline-editor').click({
+    force: true,
+  });
   await pressTab(page);
-  await focusRichText(page, 2);
+  await waitNextFrame(page, 200);
+  await page.locator('[data-block-id="4"] .inline-editor').click({
+    force: true,
+  });
   await pressTab(page);
+  await waitNextFrame(page, 200);
 
   /**
    * -
