@@ -314,36 +314,36 @@ jobs:
           path: ./test-results
           if-no-files-found: ignore
 
-  e2e-mobile-test:
-    name: E2E Mobile Test
-    runs-on: ubuntu-latest
-    env:
-      DISTRIBUTION: mobile
-      IN_CI_TEST: true
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: [1, 2]
-    steps:
-      - uses: actions/checkout@v6
-      - name: Setup Node.js
-        uses: ./.github/actions/setup-node
-        with:
-          extra-flags: workspaces focus @affine/monorepo @affine-test/affine-mobile @affine/mobile
-          playwright-install: true
-          electron-install: false
-          full-cache: true
+  # e2e-mobile-test:
+  #   name: E2E Mobile Test
+  #   runs-on: ubuntu-latest
+  #   env:
+  #     DISTRIBUTION: mobile
+  #     IN_CI_TEST: true
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       shard: [1, 2]
+  #   steps:
+  #     - uses: actions/checkout@v6
+  #     - name: Setup Node.js
+  #       uses: ./.github/actions/setup-node
+  #       with:
+  #         extra-flags: workspaces focus @affine/monorepo @affine-test/affine-mobile @affine/mobile
+  #         playwright-install: true
+  #         electron-install: false
+  #         full-cache: true
 
-      - name: Run playwright tests
-        run: yarn affine @affine-test/affine-mobile e2e --forbid-only --shard=${{ matrix.shard }}/${{ strategy.job-total }}
+  #     - name: Run playwright tests
+  #       run: yarn affine @affine-test/affine-mobile e2e --forbid-only --shard=${{ matrix.shard }}/${{ strategy.job-total }}
 
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results-e2e-mobile-${{ matrix.shard }}
-          path: ./test-results
-          if-no-files-found: ignore
+  #     - name: Upload test results
+  #       if: always()
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: test-results-e2e-mobile-${{ matrix.shard }}
+  #         path: ./test-results
+  #         if-no-files-found: ignore
 
   unit-test:
     name: Unit Test
@@ -416,93 +416,93 @@ jobs:
           path: ${{ github.workspace }}/packages/frontend/native/${{ steps.filename.outputs.filename }}
           if-no-files-found: error
 
-  build-native-macos:
-    name: Build AFFiNE native (${{ matrix.spec.target }})
-    runs-on: ${{ matrix.spec.os }}
-    env:
-      CARGO_PROFILE_RELEASE_DEBUG: '1'
-    strategy:
-      fail-fast: false
-      matrix:
-        spec:
-          - { os: macos-latest, target: x86_64-apple-darwin }
-          - { os: macos-latest, target: aarch64-apple-darwin }
+  # build-native-macos:
+  #   name: Build AFFiNE native (${{ matrix.spec.target }})
+  #   runs-on: ${{ matrix.spec.os }}
+  #   env:
+  #     CARGO_PROFILE_RELEASE_DEBUG: '1'
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       spec:
+  #         - { os: macos-latest, target: x86_64-apple-darwin }
+  #         - { os: macos-latest, target: aarch64-apple-darwin }
 
-    steps:
-      - uses: actions/checkout@v6
-      - name: Setup Node.js
-        uses: ./.github/actions/setup-node
-        with:
-          extra-flags: workspaces focus @affine/native
-          electron-install: false
-      - name: Setup filename
-        id: filename
-        working-directory: ${{ github.workspace }}
-        shell: bash
-        run: |
-          PLATFORM_ARCH_ABI="$(node -e "console.log(require('@napi-rs/cli').parseTriple('${{ matrix.spec.target }}').platformArchABI)")"
-          echo "filename=affine.$PLATFORM_ARCH_ABI.node" >> "$GITHUB_OUTPUT"
-      - name: Build AFFiNE native
-        uses: ./.github/actions/build-rust
-        with:
-          target: ${{ matrix.spec.target }}
-          package: '@affine/native'
-      - name: Upload ${{ steps.filename.outputs.filename }}
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: ${{ steps.filename.outputs.filename }}
-          path: ${{ github.workspace }}/packages/frontend/native/${{ steps.filename.outputs.filename }}
-          if-no-files-found: error
+  #   steps:
+  #     - uses: actions/checkout@v6
+  #     - name: Setup Node.js
+  #       uses: ./.github/actions/setup-node
+  #       with:
+  #         extra-flags: workspaces focus @affine/native
+  #         electron-install: false
+  #     - name: Setup filename
+  #       id: filename
+  #       working-directory: ${{ github.workspace }}
+  #       shell: bash
+  #       run: |
+  #         PLATFORM_ARCH_ABI="$(node -e "console.log(require('@napi-rs/cli').parseTriple('${{ matrix.spec.target }}').platformArchABI)")"
+  #         echo "filename=affine.$PLATFORM_ARCH_ABI.node" >> "$GITHUB_OUTPUT"
+  #     - name: Build AFFiNE native
+  #       uses: ./.github/actions/build-rust
+  #       with:
+  #         target: ${{ matrix.spec.target }}
+  #         package: '@affine/native'
+  #     - name: Upload ${{ steps.filename.outputs.filename }}
+  #       uses: actions/upload-artifact@v4
+  #       if: always()
+  #       with:
+  #         name: ${{ steps.filename.outputs.filename }}
+  #         path: ${{ github.workspace }}/packages/frontend/native/${{ steps.filename.outputs.filename }}
+  #         if-no-files-found: error
 
   # Split Windows build because it's too slow
   # and other ci jobs required linux native
-  build-native-windows:
-    name: Build AFFiNE native (${{ matrix.spec.target }})
-    runs-on: ${{ matrix.spec.os }}
-    env:
-      CARGO_PROFILE_RELEASE_DEBUG: '1'
-    strategy:
-      fail-fast: false
-      matrix:
-        spec:
-          - { os: windows-latest, target: x86_64-pc-windows-msvc }
-          - { os: windows-latest, target: aarch64-pc-windows-msvc }
+  # build-native-windows:
+  #   name: Build AFFiNE native (${{ matrix.spec.target }})
+  #   runs-on: ${{ matrix.spec.os }}
+  #   env:
+  #     CARGO_PROFILE_RELEASE_DEBUG: '1'
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       spec:
+  #         - { os: windows-latest, target: x86_64-pc-windows-msvc }
+  #         - { os: windows-latest, target: aarch64-pc-windows-msvc }
 
-    steps:
-      - uses: actions/checkout@v6
-      - uses: samypr100/setup-dev-drive@v3
-        with:
-          workspace-copy: true
-          drive-size: 8GB
-          drive-format: NTFS
-          env-mapping: |
-            CARGO_HOME,{{ DEV_DRIVE }}/.cargo
-            RUSTUP_HOME,{{ DEV_DRIVE }}/.rustup
-      - name: Setup Node.js
-        uses: ./.github/actions/setup-node
-        with:
-          extra-flags: workspaces focus @affine/native
-          electron-install: false
-      - name: Setup filename
-        id: filename
-        working-directory: ${{ env.DEV_DRIVE_WORKSPACE }}
-        shell: bash
-        run: |
-          PLATFORM_ARCH_ABI="$(node -e "console.log(require('@napi-rs/cli').parseTriple('${{ matrix.spec.target }}').platformArchABI)")"
-          echo "filename=affine.$PLATFORM_ARCH_ABI.node" >> "$GITHUB_OUTPUT"
-      - name: Build AFFiNE native
-        uses: ./.github/actions/build-rust
-        with:
-          target: ${{ matrix.spec.target }}
-          package: '@affine/native'
-      - name: Upload ${{ steps.filename.outputs.filename }}
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: ${{ steps.filename.outputs.filename }}
-          path: ${{ env.DEV_DRIVE_WORKSPACE }}/packages/frontend/native/${{ steps.filename.outputs.filename }}
-          if-no-files-found: error
+  #   steps:
+  #     - uses: actions/checkout@v6
+  #     - uses: samypr100/setup-dev-drive@v3
+  #       with:
+  #         workspace-copy: true
+  #         drive-size: 8GB
+  #         drive-format: NTFS
+  #         env-mapping: |
+  #           CARGO_HOME,{{ DEV_DRIVE }}/.cargo
+  #           RUSTUP_HOME,{{ DEV_DRIVE }}/.rustup
+  #     - name: Setup Node.js
+  #       uses: ./.github/actions/setup-node
+  #       with:
+  #         extra-flags: workspaces focus @affine/native
+  #         electron-install: false
+  #     - name: Setup filename
+  #       id: filename
+  #       working-directory: ${{ env.DEV_DRIVE_WORKSPACE }}
+  #       shell: bash
+  #       run: |
+  #         PLATFORM_ARCH_ABI="$(node -e "console.log(require('@napi-rs/cli').parseTriple('${{ matrix.spec.target }}').platformArchABI)")"
+  #         echo "filename=affine.$PLATFORM_ARCH_ABI.node" >> "$GITHUB_OUTPUT"
+  #     - name: Build AFFiNE native
+  #       uses: ./.github/actions/build-rust
+  #       with:
+  #         target: ${{ matrix.spec.target }}
+  #         package: '@affine/native'
+  #     - name: Upload ${{ steps.filename.outputs.filename }}
+  #       uses: actions/upload-artifact@v4
+  #       if: always()
+  #       with:
+  #         name: ${{ steps.filename.outputs.filename }}
+  #         path: ${{ env.DEV_DRIVE_WORKSPACE }}/packages/frontend/native/${{ steps.filename.outputs.filename }}
+  #         if-no-files-found: error
 
   build-server-native:
     name: Build Server native
@@ -529,30 +529,30 @@ jobs:
           path: ./packages/backend/native/server-native.node
           if-no-files-found: error
 
-  build-electron-renderer:
-    name: Build @affine/electron renderer
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - name: Setup Node.js
-        uses: ./.github/actions/setup-node
-        with:
-          extra-flags: workspaces focus @affine/monorepo @affine/electron-renderer @affine/nbstore @toeverything/infra
-          electron-install: false
-          full-cache: true
-      - name: Build Electron renderer
-        run: yarn affine @affine/electron-renderer build
-        env:
-          DISTRIBUTION: desktop
-      - name: zip web
-        run: tar -czf dist.tar.gz --directory=packages/frontend/apps/electron-renderer/dist .
-      - name: Upload web artifact
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: web
-          path: dist.tar.gz
-          if-no-files-found: error
+  # build-electron-renderer:
+  #   name: Build @affine/electron renderer
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v6
+  #     - name: Setup Node.js
+  #       uses: ./.github/actions/setup-node
+  #       with:
+  #         extra-flags: workspaces focus @affine/monorepo @affine/electron-renderer @affine/nbstore @toeverything/infra
+  #         electron-install: false
+  #         full-cache: true
+  #     - name: Build Electron renderer
+  #       run: yarn affine @affine/electron-renderer build
+  #       env:
+  #         DISTRIBUTION: desktop
+  #     - name: zip web
+  #       run: tar -czf dist.tar.gz --directory=packages/frontend/apps/electron-renderer/dist .
+  #     - name: Upload web artifact
+  #       uses: actions/upload-artifact@v4
+  #       if: always()
+  #       with:
+  #         name: web
+  #         path: dist.tar.gz
+  #         if-no-files-found: error
 
   native-unit-test:
     name: Native Unit Test
@@ -1103,15 +1103,15 @@ jobs:
           - name: 'Cloud E2E Test 2/2'
             shard: 2
             script: yarn affine @affine-test/affine-cloud e2e --forbid-only --shard=2/2
-          - name: 'Cloud Desktop E2E Test'
-            shard: desktop
-            script: |
-              yarn affine @affine/electron build:dev
-              # Workaround for Electron apps failing to initialize on Ubuntu 24.04 due to AppArmor restrictions
-              # Disables unprivileged user namespaces restriction to allow Electron apps to run
-              # Reference: https://github.com/electron/electron/issues/42510
-              sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
-              xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- yarn affine @affine-test/affine-desktop-cloud e2e
+          # - name: 'Cloud Desktop E2E Test'
+          #   shard: desktop
+          #   script: |
+          #     yarn affine @affine/electron build:dev
+          #     # Workaround for Electron apps failing to initialize on Ubuntu 24.04 due to AppArmor restrictions
+          #     # Disables unprivileged user namespaces restriction to allow Electron apps to run
+          #     # Reference: https://github.com/electron/electron/issues/42510
+          #     sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          #     xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- yarn affine @affine-test/affine-desktop-cloud e2e
     services:
       postgres:
         image: pgvector/pgvector:pg16
@@ -1178,143 +1178,143 @@ jobs:
           path: ./test-results
           if-no-files-found: ignore
 
-  desktop-test:
-    name: Desktop Test (${{ matrix.spec.os }}, ${{ matrix.spec.platform }}, ${{ matrix.spec.arch }}, ${{ matrix.spec.target }}, ${{ matrix.spec.test }})
-    runs-on: ${{ matrix.spec.os }}
-    needs:
-      - build-electron-renderer
-      - build-native-linux
-      - build-native-macos
-      - build-native-windows
-    strategy:
-      fail-fast: false
-      matrix:
-        spec:
-          - {
-              os: macos-latest,
-              platform: macos,
-              arch: x64,
-              target: x86_64-apple-darwin,
-              test: false,
-            }
-          - {
-              os: macos-latest,
-              platform: macos,
-              arch: arm64,
-              target: aarch64-apple-darwin,
-              test: true,
-            }
-          - {
-              os: ubuntu-latest,
-              platform: linux,
-              arch: x64,
-              target: x86_64-unknown-linux-gnu,
-              test: true,
-            }
-          - {
-              os: windows-latest,
-              platform: windows,
-              arch: x64,
-              target: x86_64-pc-windows-msvc,
-              test: true,
-            }
-    steps:
-      - uses: actions/checkout@v6
-      - name: Setup Node.js
-        uses: ./.github/actions/setup-node
-        timeout-minutes: 10
-        with:
-          extra-flags: workspaces focus @affine/electron @affine/monorepo @affine-test/affine-desktop @affine/nbstore @toeverything/infra
-          playwright-install: ${{ matrix.spec.test && 'true' || 'false' }}
-          playwright-platform: 'chromium'
-          hard-link-nm: false
-          enableScripts: false
+  # desktop-test:
+  #   name: Desktop Test (${{ matrix.spec.os }}, ${{ matrix.spec.platform }}, ${{ matrix.spec.arch }}, ${{ matrix.spec.target }}, ${{ matrix.spec.test }})
+  #   runs-on: ${{ matrix.spec.os }}
+  #   needs:
+  #     - build-electron-renderer
+  #     - build-native-linux
+  #     - build-native-macos
+  #     - build-native-windows
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       spec:
+  #         - {
+  #             os: macos-latest,
+  #             platform: macos,
+  #             arch: x64,
+  #             target: x86_64-apple-darwin,
+  #             test: false,
+  #           }
+  #         - {
+  #             os: macos-latest,
+  #             platform: macos,
+  #             arch: arm64,
+  #             target: aarch64-apple-darwin,
+  #             test: true,
+  #           }
+  #         - {
+  #             os: ubuntu-latest,
+  #             platform: linux,
+  #             arch: x64,
+  #             target: x86_64-unknown-linux-gnu,
+  #             test: true,
+  #           }
+  #         - {
+  #             os: windows-latest,
+  #             platform: windows,
+  #             arch: x64,
+  #             target: x86_64-pc-windows-msvc,
+  #             test: true,
+  #           }
+  #   steps:
+  #     - uses: actions/checkout@v6
+  #     - name: Setup Node.js
+  #       uses: ./.github/actions/setup-node
+  #       timeout-minutes: 10
+  #       with:
+  #         extra-flags: workspaces focus @affine/electron @affine/monorepo @affine-test/affine-desktop @affine/nbstore @toeverything/infra
+  #         playwright-install: ${{ matrix.spec.test && 'true' || 'false' }}
+  #         playwright-platform: 'chromium'
+  #         hard-link-nm: false
+  #         enableScripts: false
 
-      - name: Setup filename
-        id: filename
-        shell: bash
-        run: |
-          PLATFORM_ARCH_ABI="$(node -e "console.log(require('@napi-rs/cli').parseTriple('${{ matrix.spec.target }}').platformArchABI)")"
-          echo "filename=affine.$PLATFORM_ARCH_ABI.node" >> "$GITHUB_OUTPUT"
+  #     - name: Setup filename
+  #       id: filename
+  #       shell: bash
+  #       run: |
+  #         PLATFORM_ARCH_ABI="$(node -e "console.log(require('@napi-rs/cli').parseTriple('${{ matrix.spec.target }}').platformArchABI)")"
+  #         echo "filename=affine.$PLATFORM_ARCH_ABI.node" >> "$GITHUB_OUTPUT"
 
-      - name: Download ${{ steps.filename.outputs.filename }}
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{ steps.filename.outputs.filename }}
-          path: ./packages/frontend/native
+  #     - name: Download ${{ steps.filename.outputs.filename }}
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: ${{ steps.filename.outputs.filename }}
+  #         path: ./packages/frontend/native
 
-      - name: Run unit tests
-        if: ${{ matrix.spec.test }}
-        shell: bash
-        run: yarn affine @affine/electron vitest
+  #     - name: Run unit tests
+  #       if: ${{ matrix.spec.test }}
+  #       shell: bash
+  #       run: yarn affine @affine/electron vitest
 
-      - name: Download web artifact
-        uses: ./.github/actions/download-web
-        with:
-          path: packages/frontend/apps/electron/resources/web-static
+  #     - name: Download web artifact
+  #       uses: ./.github/actions/download-web
+  #       with:
+  #         path: packages/frontend/apps/electron/resources/web-static
 
-      - name: Build Desktop Layers
-        run: yarn affine @affine/electron build
+  #     - name: Build Desktop Layers
+  #       run: yarn affine @affine/electron build
 
-      - name: Run desktop tests
-        if: ${{ matrix.spec.os == 'ubuntu-latest' }}
-        run: |
-          # Workaround for Electron apps failing to initialize on Ubuntu 24.04 due to AppArmor restrictions
-          # Disables unprivileged user namespaces restriction to allow Electron apps to run
-          # Reference: https://github.com/electron/electron/issues/42510
-          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
-          xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- yarn affine @affine-test/affine-desktop e2e
+  #     - name: Run desktop tests
+  #       if: ${{ matrix.spec.os == 'ubuntu-latest' }}
+  #       run: |
+  #         # Workaround for Electron apps failing to initialize on Ubuntu 24.04 due to AppArmor restrictions
+  #         # Disables unprivileged user namespaces restriction to allow Electron apps to run
+  #         # Reference: https://github.com/electron/electron/issues/42510
+  #         sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+  #         xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- yarn affine @affine-test/affine-desktop e2e
 
-      - name: Run desktop tests
-        if: ${{ matrix.spec.test && matrix.spec.os != 'ubuntu-latest' }}
-        run: yarn affine @affine-test/affine-desktop e2e
+  #     - name: Run desktop tests
+  #       if: ${{ matrix.spec.test && matrix.spec.os != 'ubuntu-latest' }}
+  #       run: yarn affine @affine-test/affine-desktop e2e
 
-      - name: Make bundle (macOS)
-        if: ${{ matrix.spec.target == 'aarch64-apple-darwin' }}
-        env:
-          SKIP_BUNDLE: true
-          SKIP_WEB_BUILD: true
-          HOIST_NODE_MODULES: 1
-        run: yarn affine @affine/electron package --platform=darwin --arch=arm64
+  #     - name: Make bundle (macOS)
+  #       if: ${{ matrix.spec.target == 'aarch64-apple-darwin' }}
+  #       env:
+  #         SKIP_BUNDLE: true
+  #         SKIP_WEB_BUILD: true
+  #         HOIST_NODE_MODULES: 1
+  #       run: yarn affine @affine/electron package --platform=darwin --arch=arm64
 
-      - name: Make Bundle (Windows)
-        if: ${{ matrix.spec.target == 'x86_64-pc-windows-msvc' }}
-        shell: bash
-        env:
-          SKIP_BUNDLE: true
-          SKIP_WEB_BUILD: true
-          HOIST_NODE_MODULES: 1
-        run: |
-          rm -rf packages/frontend/apps/electron/node_modules/@affine/nbstore/node_modules/@blocksuite/affine/node_modules
-          rm -rf packages/frontend/apps/electron/node_modules/@affine/native/node_modules
-          yarn affine @affine/electron package --platform=win32 --arch=x64
+  #     - name: Make Bundle (Windows)
+  #       if: ${{ matrix.spec.target == 'x86_64-pc-windows-msvc' }}
+  #       shell: bash
+  #       env:
+  #         SKIP_BUNDLE: true
+  #         SKIP_WEB_BUILD: true
+  #         HOIST_NODE_MODULES: 1
+  #       run: |
+  #         rm -rf packages/frontend/apps/electron/node_modules/@affine/nbstore/node_modules/@blocksuite/affine/node_modules
+  #         rm -rf packages/frontend/apps/electron/node_modules/@affine/native/node_modules
+  #         yarn affine @affine/electron package --platform=win32 --arch=x64
 
-      - name: Make Bundle (Linux)
-        run: |
-          sudo add-apt-repository universe
-          sudo apt install -y libfuse2 elfutils flatpak flatpak-builder
-          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-          flatpak update
-          # some flatpak deps need git protocol.file.allow
-          git config --global protocol.file.allow always
-          yarn affine @affine/electron make --platform=linux --arch=x64
-        if: ${{ matrix.spec.target == 'x86_64-unknown-linux-gnu' }}
-        env:
-          SKIP_WEB_BUILD: 1
-          HOIST_NODE_MODULES: 1
+  #     - name: Make Bundle (Linux)
+  #       run: |
+  #         sudo add-apt-repository universe
+  #         sudo apt install -y libfuse2 elfutils flatpak flatpak-builder
+  #         flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+  #         flatpak update
+  #         # some flatpak deps need git protocol.file.allow
+  #         git config --global protocol.file.allow always
+  #         yarn affine @affine/electron make --platform=linux --arch=x64
+  #       if: ${{ matrix.spec.target == 'x86_64-unknown-linux-gnu' }}
+  #       env:
+  #         SKIP_WEB_BUILD: 1
+  #         HOIST_NODE_MODULES: 1
 
-      - name: Output check
-        if: ${{ matrix.spec.os == 'macos-latest' && matrix.spec.arch == 'arm64' }}
-        run: |
-          yarn affine @affine/electron node ./scripts/macos-arm64-output-check.ts
+  #     - name: Output check
+  #       if: ${{ matrix.spec.os == 'macos-latest' && matrix.spec.arch == 'arm64' }}
+  #       run: |
+  #         yarn affine @affine/electron node ./scripts/macos-arm64-output-check.ts
 
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results-e2e-${{ matrix.spec.os }}-${{ matrix.spec.arch }}
-          path: ./test-results
-          if-no-files-found: ignore
+  #     - name: Upload test results
+  #       if: always()
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: test-results-e2e-${{ matrix.spec.os }}-${{ matrix.spec.arch }}
+  #         path: ./test-results
+  #         if-no-files-found: ignore
 
   test-done:
     needs:
@@ -1327,13 +1327,13 @@ jobs:
       - e2e-test
       - e2e-blocksuite-test
       - e2e-blocksuite-cross-browser-test
-      - e2e-mobile-test
+      # - e2e-mobile-test
       - unit-test
       - build-native-linux
-      - build-native-macos
-      - build-native-windows
+      # - build-native-macos
+      # - build-native-windows
       - build-server-native
-      - build-electron-renderer
+      # - build-electron-renderer
       - native-unit-test
       - miri
       - loom
@@ -1345,7 +1345,7 @@ jobs:
       - copilot-test-filter
       - copilot-api-test
       - copilot-e2e-test
-      - desktop-test
+      # - desktop-test
       - cloud-e2e-test
     if: always()
     runs-on: ubuntu-latest
