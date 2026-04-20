@@ -26,11 +26,11 @@ test('R2 provider should use account endpoint by default', t => {
   );
 });
 
-test('R2 provider should honor custom endpoint for jurisdiction buckets', t => {
+test('R2 provider should append jurisdiction suffix for EU buckets', t => {
   const provider = new R2StorageProvider(
     {
       accountId: 'test-account',
-      endpoint: 'https://test-account.eu.r2.cloudflarestorage.com',
+      jurisdiction: 'eu',
       region: 'auto',
       credentials: {
         accessKeyId: 'test',

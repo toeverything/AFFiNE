@@ -353,7 +353,7 @@
                   "properties": {
                     "endpoint": {
                       "type": "string",
-                      "description": "The S3 compatible endpoint. Example: \"https://s3.us-east-1.amazonaws.com\" or \"https://<account>.r2.cloudflarestorage.com\"."
+                      "description": "The S3 compatible endpoint (used by aws-s3 provider). Optional; if omitted, endpoint is derived from region."
                     },
                     "region": {
                       "type": "string",
@@ -420,10 +420,6 @@
                   "type": "object",
                   "description": "The config for the S3 compatible storage provider.",
                   "properties": {
-                    "endpoint": {
-                      "type": "string",
-                      "description": "The S3 compatible endpoint. Example: \"https://s3.us-east-1.amazonaws.com\" or \"https://<account>.r2.cloudflarestorage.com\"."
-                    },
                     "region": {
                       "type": "string",
                       "description": "The region for the storage provider. Example: \"us-east-1\" or \"auto\" for R2."
@@ -490,6 +486,13 @@
                           "description": "The presigned key for the cloudflare r2 storage provider."
                         }
                       }
+                    },
+                    "jurisdiction": {
+                      "type": "string",
+                      "enum": [
+                        "eu"
+                      ],
+                      "description": "Optional jurisdiction for the cloudflare r2 endpoint. Set to \"eu\" for EU buckets."
                     }
                   }
                 }
@@ -548,7 +551,7 @@
                   "properties": {
                     "endpoint": {
                       "type": "string",
-                      "description": "The S3 compatible endpoint. Example: \"https://s3.us-east-1.amazonaws.com\" or \"https://<account>.r2.cloudflarestorage.com\"."
+                      "description": "The S3 compatible endpoint (used by aws-s3 provider). Optional; if omitted, endpoint is derived from region."
                     },
                     "region": {
                       "type": "string",
@@ -615,10 +618,6 @@
                   "type": "object",
                   "description": "The config for the S3 compatible storage provider.",
                   "properties": {
-                    "endpoint": {
-                      "type": "string",
-                      "description": "The S3 compatible endpoint. Example: \"https://s3.us-east-1.amazonaws.com\" or \"https://<account>.r2.cloudflarestorage.com\"."
-                    },
                     "region": {
                       "type": "string",
                       "description": "The region for the storage provider. Example: \"us-east-1\" or \"auto\" for R2."
@@ -685,6 +684,13 @@
                           "description": "The presigned key for the cloudflare r2 storage provider."
                         }
                       }
+                    },
+                    "jurisdiction": {
+                      "type": "string",
+                      "enum": [
+                        "eu"
+                      ],
+                      "description": "Optional jurisdiction for the cloudflare r2 endpoint. Set to \"eu\" for EU buckets."
                     }
                   }
                 }
@@ -1192,7 +1198,7 @@
                   "properties": {
                     "endpoint": {
                       "type": "string",
-                      "description": "The S3 compatible endpoint. Example: \"https://s3.us-east-1.amazonaws.com\" or \"https://<account>.r2.cloudflarestorage.com\"."
+                      "description": "The S3 compatible endpoint (used by aws-s3 provider). Optional; if omitted, endpoint is derived from region."
                     },
                     "region": {
                       "type": "string",
@@ -1259,10 +1265,6 @@
                   "type": "object",
                   "description": "The config for the S3 compatible storage provider.",
                   "properties": {
-                    "endpoint": {
-                      "type": "string",
-                      "description": "The S3 compatible endpoint. Example: \"https://s3.us-east-1.amazonaws.com\" or \"https://<account>.r2.cloudflarestorage.com\"."
-                    },
                     "region": {
                       "type": "string",
                       "description": "The region for the storage provider. Example: \"us-east-1\" or \"auto\" for R2."
@@ -1329,6 +1331,13 @@
                           "description": "The presigned key for the cloudflare r2 storage provider."
                         }
                       }
+                    },
+                    "jurisdiction": {
+                      "type": "string",
+                      "enum": [
+                        "eu"
+                      ],
+                      "description": "Optional jurisdiction for the cloudflare r2 endpoint. Set to \"eu\" for EU buckets."
                     }
                   }
                 }

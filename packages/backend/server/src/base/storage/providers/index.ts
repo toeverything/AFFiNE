@@ -38,7 +38,7 @@ const S3ConfigSchema: JSONSchema = {
     endpoint: {
       type: 'string',
       description:
-        'The S3 compatible endpoint. Example: "https://s3.us-east-1.amazonaws.com", "https://<account>.r2.cloudflarestorage.com", or jurisdiction endpoints like "https://<account>.eu.r2.cloudflarestorage.com".',
+        'The S3 compatible endpoint (used by aws-s3 provider). Optional; if omitted, endpoint is derived from region.',
     },
     region: {
       type: 'string',
@@ -89,6 +89,17 @@ const S3ConfigSchema: JSONSchema = {
   },
 };
 
+const S3ConfigPropertiesWithoutEndpoint = Object.fromEntries(
+  Object.entries(
+    (
+      S3ConfigSchema as {
+        type: 'object';
+        properties?: Record<string, JSONSchema>;
+      }
+    ).properties ?? {}
+  ).filter(([key]) => key !== 'endpoint')
+) as Record<string, JSONSchema>;
+
 export const StorageJSONSchema: JSONSchema = {
   oneOf: [
     {
@@ -137,11 +148,17 @@ export const StorageJSONSchema: JSONSchema = {
         config: {
           ...S3ConfigSchema,
           properties: {
-            ...S3ConfigSchema.properties,
+            ...S3ConfigPropertiesWithoutEndpoint,
             accountId: {
               type: 'string' as const,
               description:
-                'The account id for the cloudflare r2 storage provider. Required when endpoint is not set.',
+                'The account id for the cloudflare r2 storage provider.',
+            },
+            jurisdiction: {
+              type: 'string' as const,
+              enum: ['eu'],
+              description:
+                'Optional jurisdiction for the cloudflare r2 endpoint. Set to "eu" for EU buckets.',
             },
             usePresignedURL: {
               type: 'object' as const,
