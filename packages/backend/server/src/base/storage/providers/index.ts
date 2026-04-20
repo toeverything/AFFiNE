@@ -3,7 +3,11 @@ import { Type } from '@nestjs/common';
 import { JSONSchema } from '../../config';
 import { FsStorageConfig, FsStorageProvider } from './fs';
 import { StorageProvider } from './provider';
-import { R2StorageConfig, R2StorageProvider } from './r2';
+import {
+  R2_JURISDICTIONS,
+  R2StorageConfig,
+  R2StorageProvider,
+} from './r2';
 import { S3StorageConfig, S3StorageProvider } from './s3';
 
 export type StorageProviderName = 'fs' | 'aws-s3' | 'cloudflare-r2';
@@ -156,7 +160,7 @@ export const StorageJSONSchema: JSONSchema = {
             },
             jurisdiction: {
               type: 'string' as const,
-              enum: ['eu'],
+              enum: [...R2_JURISDICTIONS],
               description:
                 'Optional jurisdiction for the cloudflare r2 endpoint. Set to "eu" for EU buckets.',
             },

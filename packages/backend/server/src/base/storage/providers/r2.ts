@@ -15,12 +15,15 @@ import {
   SIGNED_URL_EXPIRED,
 } from './utils';
 
+export const R2_JURISDICTIONS = ['eu'] as const;
+type R2Jurisdiction = (typeof R2_JURISDICTIONS)[number];
+
 export interface R2StorageConfig extends Omit<
   S3StorageConfig,
   'endpoint' | 'forcePathStyle'
 > {
   accountId: string;
-  jurisdiction?: 'eu';
+  jurisdiction?: R2Jurisdiction;
   usePresignedURL?: {
     enabled: boolean;
     urlPrefix?: string;
