@@ -473,12 +473,15 @@ export class EdgelessSelectedRectWidget extends WidgetComponent<RootBlockModel> 
     const { zoom, selection, gfx } = this;
 
     const elements = selection.selectedElements;
-    // in surface
     const rect = getSelectedRect(elements);
 
-    // in viewport
-    const [left, top] = gfx.viewport.toViewCoord(rect.left, rect.top);
-    const [width, height] = [rect.width * zoom, rect.height * zoom];
+    // Compensate for outer CSS scale (e.g. embed-edgeless-synced-doc),
+    // matching GfxBlockComponent.getCSSTransform.
+    const { viewportX, viewportY, viewScale } = gfx.viewport;
+    const left = ((rect.left - viewportX) * zoom) / viewScale;
+    const top = ((rect.top - viewportY) * zoom) / viewScale;
+    const width = (rect.width * zoom) / viewScale;
+    const height = (rect.height * zoom) / viewScale;
 
     let rotate = 0;
     if (elements.length === 1 && elements[0].rotate) {
