@@ -717,15 +717,17 @@ export class EdgelessSelectedRectWidget extends WidgetComponent<RootBlockModel> 
           element => element.id,
           element => {
             const [modelX, modelY, w, h] = deserializeXYWH(element.xywh);
-            const [x, y] = gfx.viewport.toViewCoord(modelX, modelY);
+            const { viewportX, viewportY, zoom, viewScale } = gfx.viewport;
+            const x = ((modelX - viewportX) * zoom) / viewScale;
+            const y = ((modelY - viewportY) * zoom) / viewScale;
             const { left, top, borderWidth } = this._selectedRect;
             const style = {
               position: 'absolute',
               boxSizing: 'border-box',
               left: `${x - left - borderWidth}px`,
               top: `${y - top - borderWidth}px`,
-              width: `${w * this.zoom}px`,
-              height: `${h * this.zoom}px`,
+              width: `${(w * zoom) / viewScale}px`,
+              height: `${(h * zoom) / viewScale}px`,
               transform: `rotate(${element.rotate}deg)`,
               border: `1px solid var(--affine-primary-color)`,
             };

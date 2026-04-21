@@ -278,7 +278,7 @@ export class EdgelessWatcher {
 
     const containerWidth =
       (DRAG_HANDLE_CONTAINER_WIDTH_TOP_LEVEL * scale) / viewScale;
-    const offsetLeft = DRAG_HANDLE_CONTAINER_OFFSET_LEFT_TOP_LEVEL;
+    const offsetLeft = DRAG_HANDLE_CONTAINER_OFFSET_LEFT_TOP_LEVEL / viewScale;
 
     left -= containerWidth + offsetLeft;
     right += padding;
