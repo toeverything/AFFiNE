@@ -22,7 +22,6 @@ jobs:
   build-web:
     name: Build @affine/web
     runs-on: ubuntu-latest
-    environment: ${{ inputs.build-type }}
     steps:
       - uses: actions/checkout@v6
       - name: Setup Version
@@ -55,7 +54,6 @@ jobs:
   build-admin:
     name: Build @affine/admin
     runs-on: ubuntu-latest
-    environment: ${{ inputs.build-type }}
     steps:
       - uses: actions/checkout@v6
       - name: Setup Version
@@ -87,7 +85,6 @@ jobs:
   build-mobile:
     name: Build @affine/mobile
     runs-on: ubuntu-latest
-    environment: ${{ inputs.build-type }}
     steps:
       - uses: actions/checkout@v6
       - name: Setup Version
@@ -119,7 +116,6 @@ jobs:
   build-server-native:
     name: Build Server native - ${{ matrix.targets.name }}
     runs-on: ubuntu-22.04
-    environment: ${{ inputs.build-type }}
     strategy:
       fail-fast: false
       matrix:
