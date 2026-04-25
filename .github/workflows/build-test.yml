@@ -258,7 +258,7 @@ jobs:
   e2e-blocksuite-cross-browser-test:
     name: E2E BlockSuite Cross Browser Test
     # Temporarily disabled in the fork: Firefox connector DOM tests are failing upstream.
-    if: false
+    if: ${{ false }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
