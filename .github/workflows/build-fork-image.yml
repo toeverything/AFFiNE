@@ -25,7 +25,8 @@ jobs:
         shell: bash
         run: |
           git_short_hash="$(git rev-parse --short HEAD)"
-          app_version="0.0.0-canary.${git_short_hash}"
+          base_version="$(node -p "require('./package.json').version")"
+          app_version="${base_version}-canary.${git_short_hash}"
           echo "app-version=${app_version}" >> "$GITHUB_OUTPUT"
           echo "git-short-hash=${git_short_hash}" >> "$GITHUB_OUTPUT"
 
