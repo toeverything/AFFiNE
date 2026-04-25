@@ -7,6 +7,8 @@ import {
   CANARY_CLIENT_VERSION_MAX_AGE_DAYS,
   ConfigFactory,
   hasNewerVersion,
+  normalizeComparableClientVersion,
+  satisfiesComparableClientVersion,
   UseNamedGuard,
 } from '../base';
 import { Public } from '../core/auth/guard';
@@ -257,4 +259,18 @@ test('should compare release versions for available upgrades', t => {
   t.true(hasNewerVersion('0.26.5', '0.26.6'));
   t.true(hasNewerVersion('0.26.5', '0.26.6-beta.1'));
   t.false(hasNewerVersion('0.26.6-beta.2', '0.26.6-beta.1'));
+});
+
+test('should normalize prerelease numeric identifiers with leading zeroes', t => {
+  t.is(
+    normalizeComparableClientVersion('0.26.3-canary.0584193'),
+    '0.26.3-canary.584193'
+  );
+});
+
+test('should satisfy ranges for canary prerelease versions with leading zeroes', t => {
+  t.true(satisfiesComparableClientVersion('0.26.3-canary.0584193', '>=0.25.0'));
+  t.false(
+    satisfiesComparableClientVersion('0.22.9-canary.0584193', '>=0.25.0')
+  );
 });

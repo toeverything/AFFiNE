@@ -4,6 +4,7 @@ import semver from 'semver';
 import {
   checkCanaryDateClientVersion,
   Config,
+  satisfiesComparableClientVersion,
   UnsupportedClientVersion,
 } from '../../base';
 
@@ -40,9 +41,7 @@ export class VersionService {
     if (
       configRange &&
       (!clientVersion ||
-        !semver.satisfies(clientVersion, configRange, {
-          includePrerelease: true,
-        }))
+        !satisfiesComparableClientVersion(clientVersion, configRange))
     ) {
       throw new UnsupportedClientVersion({
         clientVersion: clientVersion ?? 'unset_or_invalid',
@@ -53,9 +52,7 @@ export class VersionService {
     if (
       hardRange &&
       (!clientVersion ||
-        !semver.satisfies(clientVersion, hardRange, {
-          includePrerelease: true,
-        }))
+        !satisfiesComparableClientVersion(clientVersion, hardRange))
     ) {
       throw new UnsupportedClientVersion({
         clientVersion: clientVersion ?? 'unset_or_invalid',

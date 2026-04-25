@@ -30,6 +30,7 @@ import {
   NotInSpace,
   OnEvent,
   SpaceAccessDenied,
+  testComparableClientVersion,
 } from '../../base';
 import { Models } from '../../models';
 import { CurrentUser } from '../auth';
@@ -101,14 +102,15 @@ function isSupportedWsClientVersion(clientVersion: string): boolean {
     return false;
   }
 
-  return Boolean(
-    semver.valid(normalized) && MIN_WS_CLIENT_VERSION.test(normalized)
-  );
+  return testComparableClientVersion(MIN_WS_CLIENT_VERSION, normalized);
 }
 
 function getSyncProtocolRoomType(clientVersion: string): SyncProtocolRoomType {
   const normalized = normalizeWsClientVersion(clientVersion);
-  return DOC_UPDATES_PROTOCOL_026.test(normalized ?? clientVersion)
+  return testComparableClientVersion(
+    DOC_UPDATES_PROTOCOL_026,
+    normalized ?? clientVersion
+  )
     ? 'sync-026'
     : 'sync-025';
 }

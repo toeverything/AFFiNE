@@ -20,6 +20,7 @@ import {
   getClientVersionFromRequest,
   getRequestResponseFromContext,
   parseCookies,
+  satisfiesComparableClientVersion,
   UnsupportedClientVersion,
 } from '../../base';
 import { WEBSOCKET_OPTIONS } from '../../base/websocket';
@@ -233,9 +234,7 @@ export class AuthGuard implements CanActivate, OnModuleInit {
     if (
       configRange &&
       (!clientVersion ||
-        !semver.satisfies(clientVersion, configRange, {
-          includePrerelease: true,
-        }))
+        !satisfiesComparableClientVersion(clientVersion, configRange))
     ) {
       return { ok: false, requiredVersion };
     }
@@ -247,9 +246,7 @@ export class AuthGuard implements CanActivate, OnModuleInit {
 
     if (
       !clientVersion ||
-      !semver.satisfies(clientVersion, hardRange, {
-        includePrerelease: true,
-      })
+      !satisfiesComparableClientVersion(clientVersion, hardRange)
     ) {
       return { ok: false, requiredVersion: AuthGuard.HARD_REQUIRED_VERSION };
     }

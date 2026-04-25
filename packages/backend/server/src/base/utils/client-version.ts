@@ -92,19 +92,81 @@ export function checkCanaryDateClientVersion(
   };
 }
 
-function normalizeComparableVersion(version: string): string | null {
-  const canary = parseCanaryDateClientVersion(version);
-  return semver.valid(canary?.normalized ?? version.trim(), {
+function normalizePrereleaseLeadingZeroes(version: string): string {
+  const [withoutBuildMetadata, buildMetadata] = version.split('+', 2);
+  const prereleaseSeparator = withoutBuildMetadata.indexOf('-');
+
+  if (prereleaseSeparator === -1) {
+    return version;
+  }
+
+  const release = withoutBuildMetadata.slice(0, prereleaseSeparator);
+  const prerelease = withoutBuildMetadata.slice(prereleaseSeparator + 1);
+
+  if (!release || !prerelease) {
+    return version;
+  }
+
+  const normalizedPrerelease = prerelease
+    .split('.')
+    .map(segment => {
+      if (/^\d+$/.test(segment)) {
+        return String(Number.parseInt(segment, 10));
+      }
+
+      return segment;
+    })
+    .join('.');
+
+  return `${release}-${normalizedPrerelease}${buildMetadata ? `+${buildMetadata}` : ''}`;
+}
+
+export function normalizeComparableClientVersion(
+  version: string
+): string | null {
+  const trimmed = version.trim();
+  const canary = parseCanaryDateClientVersion(trimmed);
+  const normalizedCandidate = canary?.normalized ?? trimmed;
+
+  return (
+    semver.valid(normalizedCandidate, {
+      loose: true,
+    }) ??
+    semver.valid(normalizePrereleaseLeadingZeroes(normalizedCandidate), {
+      loose: true,
+    })
+  );
+}
+
+export function satisfiesComparableClientVersion(
+  version: string,
+  range: semver.Range | string
+): boolean {
+  const normalized = normalizeComparableClientVersion(version);
+  if (!normalized) {
+    return false;
+  }
+
+  return semver.satisfies(normalized, range, {
+    includePrerelease: true,
     loose: true,
   });
+}
+
+export function testComparableClientVersion(
+  range: semver.Range,
+  version: string
+): boolean {
+  const normalized = normalizeComparableClientVersion(version);
+  return !!normalized && range.test(normalized);
 }
 
 export function hasNewerVersion(
   currentVersion: string,
   nextVersion: string
 ): boolean {
-  const current = normalizeComparableVersion(currentVersion);
-  const next = normalizeComparableVersion(nextVersion);
+  const current = normalizeComparableClientVersion(currentVersion);
+  const next = normalizeComparableClientVersion(nextVersion);
 
   if (!current || !next) {
     return currentVersion.trim() !== nextVersion.trim();
