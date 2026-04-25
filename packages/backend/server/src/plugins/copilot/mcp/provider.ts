@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { pick } from 'lodash-es';
 import z from 'zod/v3';
 
-import { env } from '../../../base';
 import { DocReader, DocWriter } from '../../../core/doc';
 import { AccessController } from '../../../core/permission';
 import { clearEmbeddingChunk } from '../../../models';
