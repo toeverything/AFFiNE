@@ -36,17 +36,25 @@ export class BlobFrontend {
 
   async set(blob: BlobRecord) {
     await this.waitForConnected();
-    await using lock = await this.lock.lock('blob', blob.key);
-    await this.storage.set(blob);
+    const storageKey = this.storage.storageKey?.(blob.key) ?? blob.key;
+    const storedBlob =
+      storageKey === blob.key
+        ? blob
+        : {
+            ...blob,
+            key: storageKey,
+          };
+    await using lock = await this.lock.lock('blob', storageKey);
+    await this.storage.set(storedBlob);
     await lock[Symbol.asyncDispose]();
 
     // We don't wait for the upload to complete,
     // as the upload process runs asynchronously in the background
-    this.sync.uploadBlob(blob, true /* force upload */).catch(() => {
+    this.sync.uploadBlob(storedBlob, true /* force upload */).catch(() => {
       // ignore the error as it has already been recorded in the sync status
     });
 
-    return;
+    return storageKey;
   }
 
   /**

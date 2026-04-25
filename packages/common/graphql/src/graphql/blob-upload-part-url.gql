@@ -3,9 +3,15 @@ query getBlobUploadPartUrl(
   $key: String!
   $uploadId: String!
   $partNumber: Int!
+  $anonymousGuestToken: String
 ) {
   workspace(id: $workspaceId) {
-    blobUploadPartUrl(key: $key, uploadId: $uploadId, partNumber: $partNumber) {
+    blobUploadPartUrl(
+      key: $key
+      uploadId: $uploadId
+      partNumber: $partNumber
+      anonymousGuestToken: $anonymousGuestToken
+    ) {
       uploadUrl
       headers
       expiresAt

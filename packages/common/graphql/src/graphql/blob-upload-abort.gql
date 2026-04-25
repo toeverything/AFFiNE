@@ -2,6 +2,12 @@ mutation abortBlobUpload(
   $workspaceId: String!
   $key: String!
   $uploadId: String!
+  $anonymousGuestToken: String
 ) {
-  abortBlobUpload(workspaceId: $workspaceId, key: $key, uploadId: $uploadId)
+  abortBlobUpload(
+    workspaceId: $workspaceId
+    key: $key
+    uploadId: $uploadId
+    anonymousGuestToken: $anonymousGuestToken
+  )
 }

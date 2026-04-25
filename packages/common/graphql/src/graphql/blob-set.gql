@@ -1,3 +1,11 @@
-mutation setBlob($workspaceId: String!, $blob: Upload!) {
-  setBlob(workspaceId: $workspaceId, blob: $blob)
+mutation setBlob(
+  $workspaceId: String!
+  $blob: Upload!
+  $anonymousGuestToken: String
+) {
+  setBlob(
+    workspaceId: $workspaceId
+    blob: $blob
+    anonymousGuestToken: $anonymousGuestToken
+  )
 }

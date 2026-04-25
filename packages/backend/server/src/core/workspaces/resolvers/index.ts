@@ -1,4 +1,5 @@
 export * from './admin';
+export * from './anonymous-doc-access';
 export * from './blob';
 export * from './doc';
 export * from './history';

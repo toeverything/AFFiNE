@@ -11,6 +11,7 @@ import { AffineErrorComponent } from '../components/affine/affine-error-boundary
 import { NavigateContext } from '../components/hooks/use-navigate-helper';
 import { RootWrapper } from './pages/root';
 import {
+  ANONYMOUS_BOARD_ROUTE_PATH,
   CATCH_ALL_ROUTE_PATH,
   getWorkspaceDocPath,
   NOT_FOUND_ROUTE_PATH,
@@ -55,6 +56,10 @@ export const topLevelRoutes = [
             getWorkspaceDocPath(params.workspaceId ?? '', params.pageId ?? '')
           );
         },
+      },
+      {
+        path: ANONYMOUS_BOARD_ROUTE_PATH,
+        lazy: () => import('./pages/anonymous-board'),
       },
       {
         path: NOT_FOUND_ROUTE_PATH,

@@ -222,6 +222,46 @@ type AlreadyInSpaceDataType {
   spaceId: String!
 }
 
+input AnonymousDocAccessInput {
+  docId: String!
+  workspaceId: String!
+}
+
+type AnonymousDocAccessLinkType {
+  createdAt: DateTime!
+  createdByUserId: String!
+  docId: String!
+  enabled: Boolean!
+  id: String!
+  revokedAt: DateTime
+  role: DocRole!
+  updatedAt: DateTime!
+  workspaceId: String!
+}
+
+type AnonymousDocGuestSessionType {
+  color: String!
+  createdAt: DateTime!
+  displayName: String!
+  docId: String!
+  guestId: String!
+  id: String!
+  lastSeenAt: DateTime!
+  linkId: String!
+  revertedAt: DateTime
+  workspaceId: String!
+}
+
+type AnonymousDocUpdateType {
+  createdAt: DateTime!
+  docId: String!
+  guestSessionId: String!
+  id: String!
+  linkId: String!
+  timestamp: DateTime!
+  workspaceId: String!
+}
+
 type AppConfigValidateResult {
   error: String
   key: String!
@@ -729,6 +769,19 @@ input CreateUserInput {
   email: String!
   name: String
   password: String
+}
+
+type CreatedAnonymousDocAccessLinkType {
+  createdAt: DateTime!
+  createdByUserId: String!
+  docId: String!
+  enabled: Boolean!
+  id: String!
+  revokedAt: DateTime
+  role: DocRole!
+  token: String!
+  updatedAt: DateTime!
+  workspaceId: String!
 }
 
 type CredentialsRequirementType {
@@ -1492,7 +1545,7 @@ type MissingOauthQueryParameterDataType {
 }
 
 type Mutation {
-  abortBlobUpload(key: String!, uploadId: String!, workspaceId: String!): Boolean!
+  abortBlobUpload(anonymousGuestToken: String, key: String!, uploadId: String!, workspaceId: String!): Boolean!
   acceptInviteById(inviteId: String!, sendAcceptMail: Boolean @deprecated(reason: "never used"), workspaceId: String @deprecated(reason: "never used")): Boolean!
   activateLicense(license: String!, workspaceId: String!): License!
 
@@ -1528,8 +1581,9 @@ type Mutation {
 
   """Cleanup sessions"""
   cleanupCopilotSession(options: DeleteSessionInput!): [String!]!
-  completeBlobUpload(key: String!, parts: [BlobUploadPartInput!], uploadId: String, workspaceId: String!): String!
-  createBlobUpload(key: String!, mime: String!, size: Int!, workspaceId: String!): BlobUploadInit!
+  completeBlobUpload(anonymousGuestToken: String, key: String!, parts: [BlobUploadPartInput!], uploadId: String, workspaceId: String!): String!
+  createAnonymousDocAccessLink(input: AnonymousDocAccessInput!): CreatedAnonymousDocAccessLinkType!
+  createBlobUpload(anonymousGuestToken: String, key: String!, mime: String!, size: Int!, workspaceId: String!): BlobUploadInit!
 
   """Create change password url"""
   createChangePasswordUrl(callbackUrl: String!, userId: String!): String!
@@ -1632,11 +1686,14 @@ type Mutation {
 
   """Request to apply the subscription in advance"""
   requestApplySubscription(transactionId: String!): [SubscriptionType!]!
+  resolveAnonymousDocAccessLink(displayName: String, token: String!): ResolvedAnonymousDocAccessType!
 
   """Resolve a comment or not"""
   resolveComment(input: CommentResolveInput!): Boolean!
   resumeSubscription(idempotencyKey: String @deprecated(reason: "use header `Idempotency-Key`"), plan: SubscriptionPlan = Pro, workspaceId: String): SubscriptionType!
   retryAudioTranscription(jobId: String!, workspaceId: String!): TranscriptionResultType
+  revertAnonymousDocGuestSession(docId: String!, guestSessionId: String!, workspaceId: String!): DateTime!
+  revokeAnonymousDocAccessLink(docId: String!, linkId: String!, workspaceId: String!): AnonymousDocAccessLinkType
   revokeDocUserRoles(input: RevokeDocUserRoleInput!): Boolean!
   revokeInviteLink(workspaceId: String!): Boolean!
   revokeMember(userId: String!, workspaceId: String!): Boolean!
@@ -1648,7 +1705,7 @@ type Mutation {
   sendTestEmail(config: JSONObject!): Boolean!
   sendVerifyChangeEmail(callbackUrl: String!, email: String!, token: String!): Boolean!
   sendVerifyEmail(callbackUrl: String!): Boolean!
-  setBlob(blob: Upload!, workspaceId: String!): String!
+  setBlob(anonymousGuestToken: String, blob: Upload!, workspaceId: String!): String!
   submitAudioTranscription(blob: Upload, blobId: String!, blobs: [Upload!], input: SubmitAudioTranscriptionInput, workspaceId: String!): TranscriptionResultType
 
   """Trigger cleanup of trashed doc embeddings"""
@@ -1909,6 +1966,8 @@ type Query {
 
   """Workspaces count for admin"""
   adminWorkspacesCount(filter: ListWorkspaceInput!): Int!
+  anonymousDocAccessLinks(docId: String!, workspaceId: String!): [AnonymousDocAccessLinkType!]!
+  anonymousDocGuestUpdates(docId: String!, guestSessionId: String!, workspaceId: String!): [AnonymousDocUpdateType!]!
 
   """get the whole app configuration"""
   appConfig: JSONObject!
@@ -2051,6 +2110,12 @@ type ReplyObjectType {
 input ReplyUpdateInput {
   content: JSONObject!
   id: ID!
+}
+
+type ResolvedAnonymousDocAccessType {
+  guest: AnonymousDocGuestSessionType!
+  guestToken: String!
+  link: AnonymousDocAccessLinkType!
 }
 
 type ResponseTooLargeErrorDataType {
@@ -2712,7 +2777,7 @@ type WorkspaceType {
   aggregate(input: AggregateInput!): AggregateResultObjectType!
 
   """Get blob upload part url"""
-  blobUploadPartUrl(key: String!, partNumber: Int!, uploadId: String!): BlobUploadPart!
+  blobUploadPartUrl(anonymousGuestToken: String, key: String!, partNumber: Int!, uploadId: String!): BlobUploadPart!
 
   """List blobs of workspace"""
   blobs: [ListedBlob!]!

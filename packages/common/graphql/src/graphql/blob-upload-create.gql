@@ -3,12 +3,14 @@ mutation createBlobUpload(
   $key: String!
   $size: Int!
   $mime: String!
+  $anonymousGuestToken: String
 ) {
   createBlobUpload(
     workspaceId: $workspaceId
     key: $key
     size: $size
     mime: $mime
+    anonymousGuestToken: $anonymousGuestToken
   ) {
     method
     blobKey

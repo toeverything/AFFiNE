@@ -549,6 +549,80 @@ export const validateConfigQuery = {
 }`,
 };
 
+export const createAnonymousDocAccessLinkMutation = {
+  id: 'createAnonymousDocAccessLinkMutation' as const,
+  op: 'createAnonymousDocAccessLink',
+  query: `mutation createAnonymousDocAccessLink($input: AnonymousDocAccessInput!) {
+  createAnonymousDocAccessLink(input: $input) {
+    id
+    workspaceId
+    docId
+    role
+    enabled
+    revokedAt
+    createdByUserId
+    createdAt
+    updatedAt
+    token
+  }
+}`,
+};
+
+export const resolveAnonymousDocAccessLinkMutation = {
+  id: 'resolveAnonymousDocAccessLinkMutation' as const,
+  op: 'resolveAnonymousDocAccessLink',
+  query: `mutation resolveAnonymousDocAccessLink($token: String!, $displayName: String) {
+  resolveAnonymousDocAccessLink(token: $token, displayName: $displayName) {
+    guestToken
+    link {
+      id
+      workspaceId
+      docId
+      role
+      enabled
+      revokedAt
+      createdByUserId
+      createdAt
+      updatedAt
+    }
+    guest {
+      id
+      linkId
+      workspaceId
+      docId
+      guestId
+      displayName
+      color
+      revertedAt
+      lastSeenAt
+      createdAt
+    }
+  }
+}`,
+};
+
+export const revokeAnonymousDocAccessLinkMutation = {
+  id: 'revokeAnonymousDocAccessLinkMutation' as const,
+  op: 'revokeAnonymousDocAccessLink',
+  query: `mutation revokeAnonymousDocAccessLink($workspaceId: String!, $docId: String!, $linkId: String!) {
+  revokeAnonymousDocAccessLink(
+    workspaceId: $workspaceId
+    docId: $docId
+    linkId: $linkId
+  ) {
+    id
+    workspaceId
+    docId
+    role
+    enabled
+    revokedAt
+    createdByUserId
+    createdAt
+    updatedAt
+  }
+}`,
+};
+
 export const deleteBlobMutation = {
   id: 'deleteBlobMutation' as const,
   op: 'deleteBlob',
@@ -583,8 +657,12 @@ export const releaseDeletedBlobsMutation = {
 export const setBlobMutation = {
   id: 'setBlobMutation' as const,
   op: 'setBlob',
-  query: `mutation setBlob($workspaceId: String!, $blob: Upload!) {
-  setBlob(workspaceId: $workspaceId, blob: $blob)
+  query: `mutation setBlob($workspaceId: String!, $blob: Upload!, $anonymousGuestToken: String) {
+  setBlob(
+    workspaceId: $workspaceId
+    blob: $blob
+    anonymousGuestToken: $anonymousGuestToken
+  )
 }`,
   file: true,
 };
@@ -592,20 +670,26 @@ export const setBlobMutation = {
 export const abortBlobUploadMutation = {
   id: 'abortBlobUploadMutation' as const,
   op: 'abortBlobUpload',
-  query: `mutation abortBlobUpload($workspaceId: String!, $key: String!, $uploadId: String!) {
-  abortBlobUpload(workspaceId: $workspaceId, key: $key, uploadId: $uploadId)
+  query: `mutation abortBlobUpload($workspaceId: String!, $key: String!, $uploadId: String!, $anonymousGuestToken: String) {
+  abortBlobUpload(
+    workspaceId: $workspaceId
+    key: $key
+    uploadId: $uploadId
+    anonymousGuestToken: $anonymousGuestToken
+  )
 }`,
 };
 
 export const completeBlobUploadMutation = {
   id: 'completeBlobUploadMutation' as const,
   op: 'completeBlobUpload',
-  query: `mutation completeBlobUpload($workspaceId: String!, $key: String!, $uploadId: String, $parts: [BlobUploadPartInput!]) {
+  query: `mutation completeBlobUpload($workspaceId: String!, $key: String!, $uploadId: String, $parts: [BlobUploadPartInput!], $anonymousGuestToken: String) {
   completeBlobUpload(
     workspaceId: $workspaceId
     key: $key
     uploadId: $uploadId
     parts: $parts
+    anonymousGuestToken: $anonymousGuestToken
   )
 }`,
 };
@@ -613,8 +697,14 @@ export const completeBlobUploadMutation = {
 export const createBlobUploadMutation = {
   id: 'createBlobUploadMutation' as const,
   op: 'createBlobUpload',
-  query: `mutation createBlobUpload($workspaceId: String!, $key: String!, $size: Int!, $mime: String!) {
-  createBlobUpload(workspaceId: $workspaceId, key: $key, size: $size, mime: $mime) {
+  query: `mutation createBlobUpload($workspaceId: String!, $key: String!, $size: Int!, $mime: String!, $anonymousGuestToken: String) {
+  createBlobUpload(
+    workspaceId: $workspaceId
+    key: $key
+    size: $size
+    mime: $mime
+    anonymousGuestToken: $anonymousGuestToken
+  ) {
     method
     blobKey
     alreadyUploaded
@@ -634,9 +724,14 @@ export const createBlobUploadMutation = {
 export const getBlobUploadPartUrlQuery = {
   id: 'getBlobUploadPartUrlQuery' as const,
   op: 'getBlobUploadPartUrl',
-  query: `query getBlobUploadPartUrl($workspaceId: String!, $key: String!, $uploadId: String!, $partNumber: Int!) {
+  query: `query getBlobUploadPartUrl($workspaceId: String!, $key: String!, $uploadId: String!, $partNumber: Int!, $anonymousGuestToken: String) {
   workspace(id: $workspaceId) {
-    blobUploadPartUrl(key: $key, uploadId: $uploadId, partNumber: $partNumber) {
+    blobUploadPartUrl(
+      key: $key
+      uploadId: $uploadId
+      partNumber: $partNumber
+      anonymousGuestToken: $anonymousGuestToken
+    ) {
       uploadUrl
       headers
       expiresAt

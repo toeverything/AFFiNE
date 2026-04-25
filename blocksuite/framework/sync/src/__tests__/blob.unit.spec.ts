@@ -48,4 +48,19 @@ describe('BlobEngine with MemoryBlobSource', () => {
     const retrievedBlob = await engine.get(key);
     expect(retrievedBlob).not.toBeNull();
   });
+
+  it('should return the main source normalized key', async () => {
+    const blob = new Blob(['test'], { type: 'text/plain' });
+    mainSource.set = async (key, value) => {
+      const normalizedKey = `normalized/${key}`;
+      mainSource.map.set(normalizedKey, value);
+      return normalizedKey;
+    };
+
+    const key = await engine.set('custom-key', blob);
+
+    expect(key).toBe('normalized/custom-key');
+    expect(await mainSource.get(key)).toBe(blob);
+    expect(await shadowSource.get(key)).toBe(blob);
+  });
 });

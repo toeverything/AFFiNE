@@ -14,6 +14,7 @@ interface CloudAwarenessStorageOptions {
   serverBaseUrl: string;
   type: SpaceType;
   id: string;
+  anonymousGuestToken?: string;
 }
 
 export class CloudAwarenessStorage extends AwarenessStorageBase {
@@ -25,7 +26,10 @@ export class CloudAwarenessStorage extends AwarenessStorageBase {
 
   connection = new SocketConnection(
     this.options.serverBaseUrl,
-    this.options.isSelfHosted
+    this.options.isSelfHosted,
+    this.options.anonymousGuestToken
+      ? { anonymousGuestToken: this.options.anonymousGuestToken }
+      : undefined
   );
 
   private get socket() {

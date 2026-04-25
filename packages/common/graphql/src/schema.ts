@@ -275,6 +275,49 @@ export interface AlreadyInSpaceDataType {
   spaceId: Scalars['String']['output'];
 }
 
+export interface AnonymousDocAccessInput {
+  docId: Scalars['String']['input'];
+  workspaceId: Scalars['String']['input'];
+}
+
+export interface AnonymousDocAccessLinkType {
+  __typename?: 'AnonymousDocAccessLinkType';
+  createdAt: Scalars['DateTime']['output'];
+  createdByUserId: Scalars['String']['output'];
+  docId: Scalars['String']['output'];
+  enabled: Scalars['Boolean']['output'];
+  id: Scalars['String']['output'];
+  revokedAt: Maybe<Scalars['DateTime']['output']>;
+  role: DocRole;
+  updatedAt: Scalars['DateTime']['output'];
+  workspaceId: Scalars['String']['output'];
+}
+
+export interface AnonymousDocGuestSessionType {
+  __typename?: 'AnonymousDocGuestSessionType';
+  color: Scalars['String']['output'];
+  createdAt: Scalars['DateTime']['output'];
+  displayName: Scalars['String']['output'];
+  docId: Scalars['String']['output'];
+  guestId: Scalars['String']['output'];
+  id: Scalars['String']['output'];
+  lastSeenAt: Scalars['DateTime']['output'];
+  linkId: Scalars['String']['output'];
+  revertedAt: Maybe<Scalars['DateTime']['output']>;
+  workspaceId: Scalars['String']['output'];
+}
+
+export interface AnonymousDocUpdateType {
+  __typename?: 'AnonymousDocUpdateType';
+  createdAt: Scalars['DateTime']['output'];
+  docId: Scalars['String']['output'];
+  guestSessionId: Scalars['String']['output'];
+  id: Scalars['String']['output'];
+  linkId: Scalars['String']['output'];
+  timestamp: Scalars['DateTime']['output'];
+  workspaceId: Scalars['String']['output'];
+}
+
 export interface AppConfigValidateResult {
   __typename?: 'AppConfigValidateResult';
   error: Maybe<Scalars['String']['output']>;
@@ -866,6 +909,20 @@ export interface CreateUserInput {
   email: Scalars['String']['input'];
   name?: InputMaybe<Scalars['String']['input']>;
   password?: InputMaybe<Scalars['String']['input']>;
+}
+
+export interface CreatedAnonymousDocAccessLinkType {
+  __typename?: 'CreatedAnonymousDocAccessLinkType';
+  createdAt: Scalars['DateTime']['output'];
+  createdByUserId: Scalars['String']['output'];
+  docId: Scalars['String']['output'];
+  enabled: Scalars['Boolean']['output'];
+  id: Scalars['String']['output'];
+  revokedAt: Maybe<Scalars['DateTime']['output']>;
+  role: DocRole;
+  token: Scalars['String']['output'];
+  updatedAt: Scalars['DateTime']['output'];
+  workspaceId: Scalars['String']['output'];
 }
 
 export interface CredentialsRequirementType {
@@ -1739,6 +1796,7 @@ export interface Mutation {
   /** Cleanup sessions */
   cleanupCopilotSession: Array<Scalars['String']['output']>;
   completeBlobUpload: Scalars['String']['output'];
+  createAnonymousDocAccessLink: CreatedAnonymousDocAccessLinkType;
   createBlobUpload: BlobUploadInit;
   /** Create change password url */
   createChangePasswordUrl: Scalars['String']['output'];
@@ -1819,9 +1877,12 @@ export interface Mutation {
   /** Request to apply the subscription in advance */
   requestApplySubscription: Array<SubscriptionType>;
   /** Resolve a comment or not */
+  resolveAnonymousDocAccessLink: ResolvedAnonymousDocAccessType;
   resolveComment: Scalars['Boolean']['output'];
   resumeSubscription: SubscriptionType;
   retryAudioTranscription: Maybe<TranscriptionResultType>;
+  revertAnonymousDocGuestSession: Scalars['DateTime']['output'];
+  revokeAnonymousDocAccessLink: Maybe<AnonymousDocAccessLinkType>;
   revokeDocUserRoles: Scalars['Boolean']['output'];
   revokeInviteLink: Scalars['Boolean']['output'];
   revokeMember: Scalars['Boolean']['output'];
@@ -1872,6 +1933,7 @@ export interface Mutation {
 }
 
 export interface MutationAbortBlobUploadArgs {
+  anonymousGuestToken?: InputMaybe<Scalars['String']['input']>;
   key: Scalars['String']['input'];
   uploadId: Scalars['String']['input'];
   workspaceId: Scalars['String']['input'];
@@ -1961,13 +2023,19 @@ export interface MutationCleanupCopilotSessionArgs {
 }
 
 export interface MutationCompleteBlobUploadArgs {
+  anonymousGuestToken?: InputMaybe<Scalars['String']['input']>;
   key: Scalars['String']['input'];
   parts?: InputMaybe<Array<BlobUploadPartInput>>;
   uploadId?: InputMaybe<Scalars['String']['input']>;
   workspaceId: Scalars['String']['input'];
 }
 
+export interface MutationCreateAnonymousDocAccessLinkArgs {
+  input: AnonymousDocAccessInput;
+}
+
 export interface MutationCreateBlobUploadArgs {
+  anonymousGuestToken?: InputMaybe<Scalars['String']['input']>;
   key: Scalars['String']['input'];
   mime: Scalars['String']['input'];
   size: Scalars['Int']['input'];
@@ -2165,6 +2233,11 @@ export interface MutationRequestApplySubscriptionArgs {
   transactionId: Scalars['String']['input'];
 }
 
+export interface MutationResolveAnonymousDocAccessLinkArgs {
+  displayName?: InputMaybe<Scalars['String']['input']>;
+  token: Scalars['String']['input'];
+}
+
 export interface MutationResolveCommentArgs {
   input: CommentResolveInput;
 }
@@ -2177,6 +2250,18 @@ export interface MutationResumeSubscriptionArgs {
 
 export interface MutationRetryAudioTranscriptionArgs {
   jobId: Scalars['String']['input'];
+  workspaceId: Scalars['String']['input'];
+}
+
+export interface MutationRevertAnonymousDocGuestSessionArgs {
+  docId: Scalars['String']['input'];
+  guestSessionId: Scalars['String']['input'];
+  workspaceId: Scalars['String']['input'];
+}
+
+export interface MutationRevokeAnonymousDocAccessLinkArgs {
+  docId: Scalars['String']['input'];
+  linkId: Scalars['String']['input'];
   workspaceId: Scalars['String']['input'];
 }
 
@@ -2232,6 +2317,7 @@ export interface MutationSendVerifyEmailArgs {
 }
 
 export interface MutationSetBlobArgs {
+  anonymousGuestToken?: InputMaybe<Scalars['String']['input']>;
   blob: Scalars['Upload']['input'];
   workspaceId: Scalars['String']['input'];
 }
@@ -2546,6 +2632,8 @@ export interface Query {
   adminWorkspaces: Array<AdminWorkspace>;
   /** Workspaces count for admin */
   adminWorkspacesCount: Scalars['Int']['output'];
+  anonymousDocAccessLinks: Array<AnonymousDocAccessLinkType>;
+  anonymousDocGuestUpdates: Array<AnonymousDocUpdateType>;
   /** get the whole app configuration */
   appConfig: Scalars['JSONObject']['output'];
   /**
@@ -2609,6 +2697,17 @@ export interface QueryAdminWorkspacesArgs {
 
 export interface QueryAdminWorkspacesCountArgs {
   filter: ListWorkspaceInput;
+}
+
+export interface QueryAnonymousDocAccessLinksArgs {
+  docId: Scalars['String']['input'];
+  workspaceId: Scalars['String']['input'];
+}
+
+export interface QueryAnonymousDocGuestUpdatesArgs {
+  docId: Scalars['String']['input'];
+  guestSessionId: Scalars['String']['input'];
+  workspaceId: Scalars['String']['input'];
 }
 
 export interface QueryApplyDocUpdatesArgs {
@@ -2752,6 +2851,13 @@ export interface ReplyObjectType {
 export interface ReplyUpdateInput {
   content: Scalars['JSONObject']['input'];
   id: Scalars['ID']['input'];
+}
+
+export interface ResolvedAnonymousDocAccessType {
+  __typename?: 'ResolvedAnonymousDocAccessType';
+  guest: AnonymousDocGuestSessionType;
+  guestToken: Scalars['String']['output'];
+  link: AnonymousDocAccessLinkType;
 }
 
 export interface ResponseTooLargeErrorDataType {
@@ -3514,6 +3620,7 @@ export interface WorkspaceTypeAggregateArgs {
 }
 
 export interface WorkspaceTypeBlobUploadPartUrlArgs {
+  anonymousGuestToken?: InputMaybe<Scalars['String']['input']>;
   key: Scalars['String']['input'];
   partNumber: Scalars['Int']['input'];
   uploadId: Scalars['String']['input'];
@@ -4078,6 +4185,87 @@ export type ValidateConfigQuery = {
   }>;
 };
 
+export type CreateAnonymousDocAccessLinkMutationVariables = Exact<{
+  input: AnonymousDocAccessInput;
+}>;
+
+export type CreateAnonymousDocAccessLinkMutation = {
+  __typename?: 'Mutation';
+  createAnonymousDocAccessLink: {
+    __typename?: 'CreatedAnonymousDocAccessLinkType';
+    id: string;
+    workspaceId: string;
+    docId: string;
+    role: DocRole;
+    enabled: boolean;
+    revokedAt: string | null;
+    createdByUserId: string;
+    createdAt: string;
+    updatedAt: string;
+    token: string;
+  };
+};
+
+export type ResolveAnonymousDocAccessLinkMutationVariables = Exact<{
+  token: Scalars['String']['input'];
+  displayName?: InputMaybe<Scalars['String']['input']>;
+}>;
+
+export type ResolveAnonymousDocAccessLinkMutation = {
+  __typename?: 'Mutation';
+  resolveAnonymousDocAccessLink: {
+    __typename?: 'ResolvedAnonymousDocAccessType';
+    guestToken: string;
+    link: {
+      __typename?: 'AnonymousDocAccessLinkType';
+      id: string;
+      workspaceId: string;
+      docId: string;
+      role: DocRole;
+      enabled: boolean;
+      revokedAt: string | null;
+      createdByUserId: string;
+      createdAt: string;
+      updatedAt: string;
+    };
+    guest: {
+      __typename?: 'AnonymousDocGuestSessionType';
+      id: string;
+      linkId: string;
+      workspaceId: string;
+      docId: string;
+      guestId: string;
+      displayName: string;
+      color: string;
+      revertedAt: string | null;
+      lastSeenAt: string;
+      createdAt: string;
+    };
+  };
+};
+
+export type RevokeAnonymousDocAccessLinkMutationVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  docId: Scalars['String']['input'];
+  linkId: Scalars['String']['input'];
+}>;
+
+export type RevokeAnonymousDocAccessLinkMutation = {
+  __typename?: 'Mutation';
+  revokeAnonymousDocAccessLink: {
+    __typename?: 'AnonymousDocAccessLinkType';
+    id: string;
+    workspaceId: string;
+    docId: string;
+    role: DocRole;
+    enabled: boolean;
+    revokedAt: string | null;
+    createdByUserId: string;
+    createdAt: string;
+    updatedAt: string;
+  } | null;
+};
+
 export type DeleteBlobMutationVariables = Exact<{
   workspaceId: Scalars['String']['input'];
   key: Scalars['String']['input'];
@@ -4119,6 +4307,7 @@ export type ReleaseDeletedBlobsMutation = {
 export type SetBlobMutationVariables = Exact<{
   workspaceId: Scalars['String']['input'];
   blob: Scalars['Upload']['input'];
+  anonymousGuestToken?: InputMaybe<Scalars['String']['input']>;
 }>;
 
 export type SetBlobMutation = { __typename?: 'Mutation'; setBlob: string };
@@ -4127,6 +4316,7 @@ export type AbortBlobUploadMutationVariables = Exact<{
   workspaceId: Scalars['String']['input'];
   key: Scalars['String']['input'];
   uploadId: Scalars['String']['input'];
+  anonymousGuestToken?: InputMaybe<Scalars['String']['input']>;
 }>;
 
 export type AbortBlobUploadMutation = {
@@ -4139,6 +4329,7 @@ export type CompleteBlobUploadMutationVariables = Exact<{
   key: Scalars['String']['input'];
   uploadId?: InputMaybe<Scalars['String']['input']>;
   parts?: InputMaybe<Array<BlobUploadPartInput> | BlobUploadPartInput>;
+  anonymousGuestToken?: InputMaybe<Scalars['String']['input']>;
 }>;
 
 export type CompleteBlobUploadMutation = {
@@ -4151,6 +4342,7 @@ export type CreateBlobUploadMutationVariables = Exact<{
   key: Scalars['String']['input'];
   size: Scalars['Int']['input'];
   mime: Scalars['String']['input'];
+  anonymousGuestToken?: InputMaybe<Scalars['String']['input']>;
 }>;
 
 export type CreateBlobUploadMutation = {
@@ -4178,6 +4370,7 @@ export type GetBlobUploadPartUrlQueryVariables = Exact<{
   key: Scalars['String']['input'];
   uploadId: Scalars['String']['input'];
   partNumber: Scalars['Int']['input'];
+  anonymousGuestToken?: InputMaybe<Scalars['String']['input']>;
 }>;
 
 export type GetBlobUploadPartUrlQuery = {
@@ -8182,6 +8375,21 @@ export type Mutations =
       name: 'updateAppConfigMutation';
       variables: UpdateAppConfigMutationVariables;
       response: UpdateAppConfigMutation;
+    }
+  | {
+      name: 'createAnonymousDocAccessLinkMutation';
+      variables: CreateAnonymousDocAccessLinkMutationVariables;
+      response: CreateAnonymousDocAccessLinkMutation;
+    }
+  | {
+      name: 'resolveAnonymousDocAccessLinkMutation';
+      variables: ResolveAnonymousDocAccessLinkMutationVariables;
+      response: ResolveAnonymousDocAccessLinkMutation;
+    }
+  | {
+      name: 'revokeAnonymousDocAccessLinkMutation';
+      variables: RevokeAnonymousDocAccessLinkMutationVariables;
+      response: RevokeAnonymousDocAccessLinkMutation;
     }
   | {
       name: 'deleteBlobMutation';

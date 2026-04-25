@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+
 import {
   applyDecorators,
   Logger,
@@ -22,6 +24,7 @@ import { type Server, Socket } from 'socket.io';
 import {
   CallMetric,
   checkCanaryDateClientVersion,
+  DocActionDenied,
   DocNotFound,
   DocUpdateBlocked,
   EventBus,
@@ -33,6 +36,10 @@ import {
   testComparableClientVersion,
 } from '../../base';
 import { Models } from '../../models';
+import {
+  AnonymousDocAccessService,
+  type AnonymousDocGuestPrincipal,
+} from '../anonymous-doc-access';
 import { CurrentUser } from '../auth';
 import {
   DocReader,
@@ -84,6 +91,7 @@ const DOC_UPDATES_PROTOCOL_026 = new semver.Range('>=0.26.0-0', {
 
 type SyncProtocolRoomType = Extract<RoomType, 'sync-025' | 'sync-026'>;
 const SOCKET_PRESENCE_USER_ID_KEY = 'affinePresenceUserId';
+const ANONYMOUS_GUEST_TOKEN_KEY = 'anonymousGuestToken';
 
 function normalizeWsClientVersion(clientVersion: string): string | null {
   if (env.namespaces.canary) {
@@ -124,6 +132,7 @@ interface JoinSpaceMessage {
   spaceType: SpaceType;
   spaceId: string;
   clientVersion: string;
+  docId?: string;
 }
 
 interface JoinSpaceAwarenessMessage {
@@ -230,7 +239,8 @@ export class SpaceSyncGateway
     private readonly workspace: PgWorkspaceDocStorageAdapter,
     private readonly userspace: PgUserspaceDocStorageAdapter,
     private readonly docReader: DocReader,
-    private readonly models: Models
+    private readonly models: Models,
+    private readonly anonymous: AnonymousDocAccessService
   ) {}
 
   onModuleInit() {
@@ -315,6 +325,68 @@ export class SpaceSyncGateway
     setImmediate(() => client.disconnect());
   }
 
+  private getAnonymousGuestToken(client: Socket): string | null {
+    const token = client.handshake.auth?.[ANONYMOUS_GUEST_TOKEN_KEY];
+    return typeof token === 'string' && token ? token : null;
+  }
+
+  private async getAnonymousPrincipal(
+    client: Socket
+  ): Promise<AnonymousDocGuestPrincipal | null> {
+    const token = this.getAnonymousGuestToken(client);
+    if (!token) {
+      return null;
+    }
+
+    return await this.anonymous.getGuestPrincipal(token);
+  }
+
+  private anonymousDocRoom(
+    spaceId: string,
+    docId: string,
+    protocolRoomType: SyncProtocolRoomType
+  ) {
+    return `${SpaceType.Workspace}:${spaceId}:anonymous-doc:${docId}:${protocolRoomType}`;
+  }
+
+  private anonymousAwarenessRoom(spaceId: string, docId: string) {
+    return `${SpaceType.Workspace}:${spaceId}:anonymous-doc:${docId}:awareness`;
+  }
+
+  private broadcastAnonymousDocRooms(
+    spaceId: string,
+    docId: string,
+    updates: Uint8Array[],
+    timestamp: number,
+    editor?: string
+  ) {
+    const encodedUpdates = this.encodeUpdates(updates);
+    for (const update of encodedUpdates) {
+      this.server
+        .to(this.anonymousDocRoom(spaceId, docId, 'sync-025'))
+        .emit('space:broadcast-doc-update', {
+          spaceType: SpaceType.Workspace,
+          spaceId,
+          docId,
+          update,
+          timestamp,
+          editor: editor ?? '',
+        } satisfies BroadcastDocUpdateMessage);
+    }
+
+    const payload = this.buildBroadcastPayload(
+      SpaceType.Workspace,
+      spaceId,
+      docId,
+      updates,
+      timestamp,
+      editor
+    );
+    this.server
+      .to(this.anonymousDocRoom(spaceId, docId, 'sync-026'))
+      .emit('space:broadcast-doc-updates', payload);
+  }
+
   private async assertDocActionAllowed(
     spaceType: SpaceType,
     userId: string,
@@ -355,6 +427,16 @@ export class SpaceSyncGateway
     const request = client.request as Request;
     const userId = request.session?.user.id ?? request.token?.user.id;
     if (typeof userId !== 'string' || !userId) {
+      const anonymousGuestToken = this.getAnonymousGuestToken(client);
+      if (anonymousGuestToken) {
+        const anonymousPresenceId = `anonymous:${createHash('sha256')
+          .update(anonymousGuestToken)
+          .digest('hex')
+          .slice(0, 16)}`;
+        client.data[SOCKET_PRESENCE_USER_ID_KEY] = anonymousPresenceId;
+        return anonymousPresenceId;
+      }
+
       this.logger.warn(
         `Unable to resolve authenticated user id for socket ${client.id}`
       );
@@ -558,6 +640,16 @@ export class SpaceSyncGateway
       .add(payload.updates.length, {
         mode: payload.compressed ? 'compressed' : 'batch',
       });
+
+    if (spaceType === SpaceType.Workspace) {
+      this.broadcastAnonymousDocRooms(
+        spaceId,
+        docId,
+        updates,
+        timestamp,
+        editor
+      );
+    }
   }
 
   selectAdapter(client: Socket, spaceType: SpaceType): SyncSocketAdapter {
@@ -584,10 +676,10 @@ export class SpaceSyncGateway
   // v3
   @SubscribeMessage('space:join')
   async onJoinSpace(
-    @CurrentUser() user: CurrentUser,
+    @CurrentUser() user: CurrentUser | undefined,
     @ConnectedSocket() client: Socket,
     @MessageBody()
-    { spaceType, spaceId, clientVersion }: JoinSpaceMessage
+    { spaceType, spaceId, clientVersion, docId }: JoinSpaceMessage
   ): Promise<EventResponse<{ clientId: string; success: boolean }>> {
     if (![SpaceType.Userspace, SpaceType.Workspace].includes(spaceType)) {
       this.rejectJoin(client);
@@ -601,6 +693,43 @@ export class SpaceSyncGateway
 
     if (spaceType === SpaceType.Workspace) {
       this.event.emit('workspace.embedding', { workspaceId: spaceId });
+    }
+
+    const anonymousPrincipal = await this.getAnonymousPrincipal(client);
+    if (anonymousPrincipal) {
+      if (
+        spaceType !== SpaceType.Workspace ||
+        anonymousPrincipal.workspaceId !== spaceId ||
+        (anonymousPrincipal.docId !== docId && docId !== spaceId)
+      ) {
+        this.rejectJoin(client);
+        return { data: { clientId: client.id, success: false } };
+      }
+
+      const protocolRoomType = getSyncProtocolRoomType(clientVersion);
+      const protocolRoom = this.anonymousDocRoom(
+        spaceId,
+        anonymousPrincipal.docId,
+        protocolRoomType
+      );
+      const otherProtocolRoom = this.anonymousDocRoom(
+        spaceId,
+        anonymousPrincipal.docId,
+        protocolRoomType === 'sync-025' ? 'sync-026' : 'sync-025'
+      );
+      if (client.rooms.has(otherProtocolRoom)) {
+        await client.leave(otherProtocolRoom);
+      }
+      if (!client.rooms.has(protocolRoom)) {
+        await client.join(protocolRoom);
+      }
+
+      return { data: { clientId: client.id, success: true } };
+    }
+
+    if (!user) {
+      this.rejectJoin(client);
+      return { data: { clientId: client.id, success: false } };
     }
 
     const adapter = this.selectAdapter(client, spaceType);
@@ -640,6 +769,27 @@ export class SpaceSyncGateway
   ): Promise<
     EventResponse<{ missing: string; state: string; timestamp: number }>
   > {
+    const anonymousPrincipal = await this.getAnonymousPrincipal(client);
+    if (anonymousPrincipal) {
+      if (spaceType !== SpaceType.Workspace) {
+        throw new SpaceAccessDenied({ spaceId });
+      }
+      const doc = await this.anonymous.getDocDiff(
+        anonymousPrincipal,
+        spaceId,
+        docId,
+        stateVector ? Buffer.from(stateVector, 'base64') : undefined
+      );
+
+      return {
+        data: {
+          missing: Buffer.from(doc.missing).toString('base64'),
+          state: Buffer.from(doc.state).toString('base64'),
+          timestamp: doc.timestamp,
+        },
+      };
+    }
+
     const id = new DocID(docId, spaceId);
     const adapter = this.selectAdapter(client, spaceType);
     adapter.assertIn(spaceId);
@@ -666,9 +816,20 @@ export class SpaceSyncGateway
   @SubscribeMessage('space:delete-doc')
   async onDeleteSpaceDoc(
     @ConnectedSocket() client: Socket,
-    @CurrentUser() user: CurrentUser,
+    @CurrentUser() user: CurrentUser | undefined,
     @MessageBody() { spaceType, spaceId, docId }: DeleteDocMessage
   ) {
+    if (await this.getAnonymousPrincipal(client)) {
+      throw new DocActionDenied({
+        spaceId,
+        docId,
+        action: 'Doc.Delete',
+      });
+    }
+    if (!user) {
+      throw new SpaceAccessDenied({ spaceId });
+    }
+
     const adapter = this.selectAdapter(client, spaceType);
     await this.assertDocActionAllowed(
       spaceType,
@@ -686,11 +847,97 @@ export class SpaceSyncGateway
   @SubscribeMessage('space:push-doc-update')
   async onReceiveDocUpdate(
     @ConnectedSocket() client: Socket,
-    @CurrentUser() user: CurrentUser,
+    @CurrentUser() user: CurrentUser | undefined,
     @MessageBody()
     message: PushDocUpdateMessage
   ): Promise<EventResponse<{ accepted: true; timestamp?: number }>> {
     const { spaceType, spaceId, docId, update } = message;
+    const updateBuffer = Buffer.from(update, 'base64');
+
+    const anonymousPrincipal = await this.getAnonymousPrincipal(client);
+    if (anonymousPrincipal) {
+      if (spaceType !== SpaceType.Workspace) {
+        throw new SpaceAccessDenied({ spaceId });
+      }
+
+      if (this.anonymous.isReadOnlySyntheticDoc(spaceId, docId)) {
+        return {
+          data: {
+            accepted: true,
+          },
+        };
+      }
+
+      await this.anonymous.assertCanWriteDoc(
+        anonymousPrincipal,
+        spaceId,
+        docId
+      );
+      const docMeta = await this.models.doc.getMeta(spaceId, docId, {
+        select: {
+          blocked: true,
+        },
+      });
+      if (docMeta?.blocked) {
+        throw new DocUpdateBlocked({ spaceId, docId });
+      }
+
+      const timestamp = await this.workspace.pushDocUpdates(spaceId, docId, [
+        updateBuffer,
+      ]);
+      await this.anonymous.recordUpdates(
+        anonymousPrincipal,
+        [updateBuffer],
+        timestamp
+      );
+
+      const payload = this.buildBroadcastPayload(
+        spaceType,
+        spaceId,
+        docId,
+        [updateBuffer],
+        timestamp,
+        anonymousPrincipal.guestId
+      );
+      client
+        .to(`${spaceType}:${Room(spaceId, 'sync-026')}`)
+        .emit('space:broadcast-doc-updates', payload);
+      client
+        .to(this.anonymousDocRoom(spaceId, docId, 'sync-026'))
+        .emit('space:broadcast-doc-updates', payload);
+      metrics.socketio
+        .counter('doc_updates_broadcast')
+        .add(payload.updates.length, {
+          mode: payload.compressed ? 'compressed' : 'batch',
+        });
+
+      const legacyPayload: BroadcastDocUpdateMessage = {
+        spaceType,
+        spaceId,
+        docId,
+        update,
+        timestamp,
+        editor: anonymousPrincipal.guestId,
+      };
+      client
+        .to(`${spaceType}:${Room(spaceId, 'sync-025')}`)
+        .emit('space:broadcast-doc-update', legacyPayload);
+      client
+        .to(this.anonymousDocRoom(spaceId, docId, 'sync-025'))
+        .emit('space:broadcast-doc-update', legacyPayload);
+
+      return {
+        data: {
+          accepted: true,
+          timestamp,
+        },
+      };
+    }
+
+    if (!user) {
+      throw new SpaceAccessDenied({ spaceId });
+    }
+
     const adapter = this.selectAdapter(client, spaceType);
 
     // Quota recovery mode is intentionally not applied to sync in this phase.
@@ -699,7 +946,7 @@ export class SpaceSyncGateway
     const timestamp = await adapter.push(
       spaceId,
       docId,
-      [Buffer.from(update, 'base64')],
+      [updateBuffer],
       user.id
     );
 
@@ -707,7 +954,7 @@ export class SpaceSyncGateway
       spaceType,
       spaceId,
       docId,
-      [Buffer.from(update, 'base64')],
+      [updateBuffer],
       timestamp,
       user.id
     );
@@ -731,6 +978,16 @@ export class SpaceSyncGateway
         editor: user.id,
       } satisfies BroadcastDocUpdateMessage);
 
+    if (spaceType === SpaceType.Workspace) {
+      this.broadcastAnonymousDocRooms(
+        spaceId,
+        docId,
+        [updateBuffer],
+        timestamp,
+        user.id
+      );
+    }
+
     return {
       data: {
         accepted: true,
@@ -745,6 +1002,33 @@ export class SpaceSyncGateway
     @MessageBody()
     { spaceType, spaceId, timestamp }: LoadDocTimestampsMessage
   ): Promise<EventResponse<Record<string, number>>> {
+    const anonymousPrincipal = await this.getAnonymousPrincipal(client);
+    if (anonymousPrincipal) {
+      if (
+        spaceType !== SpaceType.Workspace ||
+        anonymousPrincipal.workspaceId !== spaceId
+      ) {
+        throw new SpaceAccessDenied({ spaceId });
+      }
+
+      const snapshot = await this.models.doc.getSnapshot(
+        spaceId,
+        anonymousPrincipal.docId,
+        {
+          select: {
+            updatedAt: true,
+          },
+        }
+      );
+      const updatedAt = snapshot?.updatedAt.getTime();
+      return {
+        data:
+          updatedAt && (!timestamp || updatedAt > timestamp)
+            ? { [anonymousPrincipal.docId]: updatedAt }
+            : {},
+      };
+    }
+
     const adapter = this.selectAdapter(client, spaceType);
 
     const stats = await adapter.getTimestamps(spaceId, timestamp);
@@ -757,7 +1041,7 @@ export class SpaceSyncGateway
   @SubscribeMessage('space:join-awareness')
   async onJoinAwareness(
     @ConnectedSocket() client: Socket,
-    @CurrentUser() user: CurrentUser,
+    @CurrentUser() user: CurrentUser | undefined,
     @MessageBody()
     { spaceType, spaceId, docId, clientVersion }: JoinSpaceAwarenessMessage
   ) {
@@ -767,6 +1051,26 @@ export class SpaceSyncGateway
     }
 
     if (!isSupportedWsClientVersion(clientVersion)) {
+      this.rejectJoin(client);
+      return { data: { clientId: client.id, success: false } };
+    }
+
+    const anonymousPrincipal = await this.getAnonymousPrincipal(client);
+    if (anonymousPrincipal) {
+      if (spaceType !== SpaceType.Workspace) {
+        this.rejectJoin(client);
+        return { data: { clientId: client.id, success: false } };
+      }
+      this.anonymous.assertCanAccessDoc(anonymousPrincipal, spaceId, docId);
+      const room = this.anonymousAwarenessRoom(spaceId, docId);
+      if (!client.rooms.has(room)) {
+        await client.join(room);
+      }
+
+      return { data: { clientId: client.id, success: true } };
+    }
+
+    if (!user) {
       this.rejectJoin(client);
       return { data: { clientId: client.id, success: false } };
     }
@@ -786,6 +1090,11 @@ export class SpaceSyncGateway
     @MessageBody()
     { spaceType, spaceId, docId }: LeaveSpaceAwarenessMessage
   ) {
+    if (await this.getAnonymousPrincipal(client)) {
+      await client.leave(this.anonymousAwarenessRoom(spaceId, docId));
+      return { data: { clientId: client.id, success: true } };
+    }
+
     await this.selectAdapter(client, spaceType).leave(
       spaceId,
       `${docId}:awareness`
@@ -800,6 +1109,16 @@ export class SpaceSyncGateway
     @MessageBody()
     { spaceType, spaceId, docId }: LoadSpaceAwarenessesMessage
   ) {
+    const anonymousPrincipal = await this.getAnonymousPrincipal(client);
+    if (anonymousPrincipal) {
+      this.anonymous.assertCanAccessDoc(anonymousPrincipal, spaceId, docId);
+      client
+        .to(this.anonymousAwarenessRoom(spaceId, docId))
+        .emit('space:collect-awareness', { spaceType, spaceId, docId });
+
+      return { data: { clientId: client.id } };
+    }
+
     const adapter = this.selectAdapter(client, spaceType);
 
     const roomType = `${docId}:awareness` as const;
@@ -817,6 +1136,16 @@ export class SpaceSyncGateway
     @MessageBody() message: UpdateAwarenessMessage
   ) {
     const { spaceType, spaceId, docId } = message;
+    const anonymousPrincipal = await this.getAnonymousPrincipal(client);
+    if (anonymousPrincipal) {
+      this.anonymous.assertCanAccessDoc(anonymousPrincipal, spaceId, docId);
+      client
+        .to(this.anonymousAwarenessRoom(spaceId, docId))
+        .emit('space:broadcast-awareness-update', message);
+
+      return {};
+    }
+
     const adapter = this.selectAdapter(client, spaceType);
 
     const roomType = `${docId}:awareness` as const;

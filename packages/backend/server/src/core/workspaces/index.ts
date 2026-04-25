@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 
+import { AnonymousDocAccessModule } from '../anonymous-doc-access';
 import { DocStorageModule } from '../doc';
 import { DocRendererModule } from '../doc-renderer';
 import { FeatureModule } from '../features';
@@ -12,6 +13,7 @@ import { UserModule } from '../user';
 import { WorkspacesController } from './controller';
 import { WorkspaceEvents } from './event';
 import {
+  AnonymousDocAccessResolver,
   DocHistoryResolver,
   DocResolver,
   WorkspaceBlobResolver,
@@ -25,6 +27,7 @@ import { WorkspaceStatsJob } from './stats.job';
 
 @Module({
   imports: [
+    AnonymousDocAccessModule,
     DocStorageModule,
     DocRendererModule,
     FeatureModule,
@@ -39,6 +42,7 @@ import { WorkspaceStatsJob } from './stats.job';
   providers: [
     WorkspaceResolver,
     WorkspaceMemberResolver,
+    AnonymousDocAccessResolver,
     WorkspaceDocResolver,
     DocResolver,
     DocHistoryResolver,

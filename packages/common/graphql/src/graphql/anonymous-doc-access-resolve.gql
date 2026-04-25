@@ -1,0 +1,34 @@
+mutation resolveAnonymousDocAccessLink(
+  $token: String!
+  $displayName: String
+) {
+  resolveAnonymousDocAccessLink(
+    token: $token
+    displayName: $displayName
+  ) {
+    guestToken
+    link {
+      id
+      workspaceId
+      docId
+      role
+      enabled
+      revokedAt
+      createdByUserId
+      createdAt
+      updatedAt
+    }
+    guest {
+      id
+      linkId
+      workspaceId
+      docId
+      guestId
+      displayName
+      color
+      revertedAt
+      lastSeenAt
+      createdAt
+    }
+  }
+}

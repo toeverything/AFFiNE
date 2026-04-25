@@ -50,12 +50,11 @@ export class Workspace extends Entity {
             return [];
           },
           set: async (id, blob) => {
-            await this.engine.blob.set({
+            return await this.engine.blob.set({
               key: id,
               data: new Uint8Array(await blob.arrayBuffer()),
               mime: blob.type,
             });
-            return id;
           },
           /* eslint-disable rxjs/finnish */
           blobState$: key => this.engine.blob.blobState$(key),

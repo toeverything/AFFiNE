@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+
 import type {
   CanActivate,
   ExecutionContext,
@@ -6,6 +8,7 @@ import type {
 } from '@nestjs/common';
 import { Injectable, SetMetadata } from '@nestjs/common';
 import { ModuleRef, Reflector } from '@nestjs/core';
+import { PrismaClient } from '@prisma/client';
 import type { Request, Response } from 'express';
 import semver from 'semver';
 import { Socket } from 'socket.io';
@@ -267,7 +270,7 @@ export const Internal = () => SetMetadata(INTERNAL_ENTRYPOINT_SYMBOL, true);
 
 export const AuthWebsocketOptionsProvider: FactoryProvider = {
   provide: WEBSOCKET_OPTIONS,
-  useFactory: (config: Config, guard: AuthGuard) => {
+  useFactory: (config: Config, guard: AuthGuard, db: PrismaClient) => {
     return {
       ...config.websocket,
       canActivate: async (socket: Socket) => {
@@ -291,9 +294,48 @@ export const AuthWebsocketOptionsProvider: FactoryProvider = {
           }
         })();
 
-        return !!session;
+        if (session) {
+          return true;
+        }
+
+        if (typeof handshake.auth.anonymousGuestToken !== 'string') {
+          return false;
+        }
+
+        try {
+          const tokenHash = createHash('sha256')
+            .update(handshake.auth.anonymousGuestToken)
+            .digest('hex');
+          const session = await db.anonymousDocGuestSession.findFirst({
+            where: {
+              tokenHash,
+              revertedAt: null,
+            },
+            select: {
+              linkId: true,
+            },
+          });
+          if (!session) {
+            return false;
+          }
+
+          const link = await db.anonymousDocAccessLink.findFirst({
+            where: {
+              id: session.linkId,
+              enabled: true,
+              revokedAt: null,
+            },
+            select: {
+              id: true,
+            },
+          });
+
+          return Boolean(link);
+        } catch {
+          return false;
+        }
       },
     };
   },
-  inject: [Config, AuthGuard],
+  inject: [Config, AuthGuard, PrismaClient],
 };

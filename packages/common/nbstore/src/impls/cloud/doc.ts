@@ -20,6 +20,8 @@ interface CloudDocStorageOptions extends DocStorageOptions {
   serverBaseUrl: string;
   isSelfHosted: boolean;
   type: SpaceType;
+  anonymousGuestToken?: string;
+  anonymousDocId?: string;
 }
 
 export class CloudDocStorage extends DocStorageBase<CloudDocStorageOptions> {
@@ -208,7 +210,13 @@ class CloudDocStorageConnection extends SocketConnection {
     private readonly onServerUpdate: ServerEventsMap['space:broadcast-doc-update'],
     private readonly onServerUpdates: ServerEventsMap['space:broadcast-doc-updates']
   ) {
-    super(options.serverBaseUrl, options.isSelfHosted);
+    super(
+      options.serverBaseUrl,
+      options.isSelfHosted,
+      options.anonymousGuestToken
+        ? { anonymousGuestToken: options.anonymousGuestToken }
+        : undefined
+    );
   }
 
   idConverter: IdConverter | null = null;
@@ -221,6 +229,7 @@ class CloudDocStorageConnection extends SocketConnection {
         spaceType: this.options.type,
         spaceId: this.options.id,
         clientVersion: BUILD_CONFIG.appVersion,
+        docId: this.options.anonymousDocId,
       });
 
       if ('error' in res) {

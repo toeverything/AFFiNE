@@ -1,0 +1,14 @@
+mutation createAnonymousDocAccessLink($input: AnonymousDocAccessInput!) {
+  createAnonymousDocAccessLink(input: $input) {
+    id
+    workspaceId
+    docId
+    role
+    enabled
+    revokedAt
+    createdByUserId
+    createdAt
+    updatedAt
+    token
+  }
+}

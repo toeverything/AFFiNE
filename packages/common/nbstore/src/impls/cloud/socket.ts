@@ -56,7 +56,12 @@ interface ServerEvents {
 
 interface ClientEvents {
   'space:join': [
-    { spaceType: string; spaceId: string; clientVersion: string },
+    {
+      spaceType: string;
+      spaceId: string;
+      clientVersion: string;
+      docId?: string;
+    },
     { clientId: string },
   ];
   'space:leave': { spaceType: string; spaceId: string };
@@ -186,7 +191,11 @@ class SocketManager {
   socket: Socket;
   refCount = 0;
 
-  constructor(endpoint: string, isSelfHosted: boolean) {
+  constructor(
+    endpoint: string,
+    isSelfHosted: boolean,
+    authData?: Record<string, string>
+  ) {
     this.socketIOManager = new SocketIOManager(endpoint, {
       autoConnect: false,
       transports: isSelfHosted ? ['polling', 'websocket'] : ['websocket'], // self-hosted server may not support websocket
@@ -196,7 +205,9 @@ class SocketManager {
     });
     this.socket = this.socketIOManager.socket('/', {
       auth(cb) {
-        if (authMethod) {
+        if (authData) {
+          cb(authData);
+        } else if (authMethod) {
           authMethod(endpoint, cb);
         } else {
           cb({});
@@ -226,11 +237,18 @@ class SocketManager {
 }
 
 const SOCKET_MANAGER_CACHE = new Map<string, SocketManager>();
-function getSocketManager(endpoint: string, isSelfHosted: boolean) {
-  let manager = SOCKET_MANAGER_CACHE.get(endpoint);
+function getSocketManager(
+  endpoint: string,
+  isSelfHosted: boolean,
+  authData?: Record<string, string>
+) {
+  const cacheKey = authData
+    ? `${endpoint}:${isSelfHosted}:${JSON.stringify(authData)}`
+    : `${endpoint}:${isSelfHosted}`;
+  let manager = SOCKET_MANAGER_CACHE.get(cacheKey);
   if (!manager) {
-    manager = new SocketManager(endpoint, isSelfHosted);
-    SOCKET_MANAGER_CACHE.set(endpoint, manager);
+    manager = new SocketManager(endpoint, isSelfHosted, authData);
+    SOCKET_MANAGER_CACHE.set(cacheKey, manager);
   }
   return manager;
 }
@@ -239,11 +257,12 @@ export class SocketConnection extends AutoReconnectConnection<{
   socket: Socket;
   disconnect: () => void;
 }> {
-  manager = getSocketManager(this.endpoint, this.isSelfHosted);
+  manager = getSocketManager(this.endpoint, this.isSelfHosted, this.authData);
 
   constructor(
     private readonly endpoint: string,
-    private readonly isSelfHosted: boolean
+    private readonly isSelfHosted: boolean,
+    private readonly authData?: Record<string, string>
   ) {
     super();
   }

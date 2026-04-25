@@ -4,6 +4,7 @@ import {
   Controller,
   Get,
   Head,
+  Headers,
   Logger,
   Param,
   Query,
@@ -26,6 +27,7 @@ import {
 } from '../../base';
 import { DocMode, Models, PublicDocMode } from '../../models';
 import { buildPublicRootDoc } from '../../native';
+import { AnonymousDocAccessService } from '../anonymous-doc-access';
 import { CurrentUser, Public } from '../auth';
 import { PgWorkspaceDocStorageAdapter } from '../doc';
 import { DocReader } from '../doc/reader';
@@ -43,7 +45,8 @@ export class WorkspacesController {
     private readonly workspacePolicy: WorkspacePolicyService,
     private readonly workspace: PgWorkspaceDocStorageAdapter,
     private readonly docReader: DocReader,
-    private readonly models: Models
+    private readonly models: Models,
+    private readonly anonymous: AnonymousDocAccessService
   ) {}
 
   private buildVisitorId(req: Request, workspaceId: string, docId: string) {
@@ -105,17 +108,25 @@ export class WorkspacesController {
     @CurrentUser() user: CurrentUser | undefined,
     @Param('id') workspaceId: string,
     @Param('name') name: string,
+    @Headers('x-affine-anonymous-guest-token')
+    anonymousGuestToken: string | undefined,
     @Query('redirect') redirect: string | undefined,
     @Res() res: Response
   ) {
-    const canReadWorkspace = await this.ac
-      .user(user?.id ?? 'anonymous')
-      .workspace(workspaceId)
-      .can('Workspace.Read');
-    const canReadSharedWorkspaceBlobs =
-      await this.workspacePolicy.canReadWorkspaceBySharedDocs(workspaceId);
-    if (!canReadWorkspace && !canReadSharedWorkspaceBlobs) {
-      throw new SpaceAccessDenied({ spaceId: workspaceId });
+    if (anonymousGuestToken) {
+      const principal =
+        await this.anonymous.getGuestPrincipal(anonymousGuestToken);
+      await this.anonymous.assertCanReadBlob(principal, workspaceId, name);
+    } else {
+      const canReadWorkspace = await this.ac
+        .user(user?.id ?? 'anonymous')
+        .workspace(workspaceId)
+        .can('Workspace.Read');
+      const canReadSharedWorkspaceBlobs =
+        await this.workspacePolicy.canReadWorkspaceBySharedDocs(workspaceId);
+      if (!canReadWorkspace && !canReadSharedWorkspaceBlobs) {
+        throw new SpaceAccessDenied({ spaceId: workspaceId });
+      }
     }
     const { body, metadata, redirectUrl } = await this.storage.get(
       workspaceId,

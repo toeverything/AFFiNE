@@ -3,11 +3,13 @@ mutation completeBlobUpload(
   $key: String!
   $uploadId: String
   $parts: [BlobUploadPartInput!]
+  $anonymousGuestToken: String
 ) {
   completeBlobUpload(
     workspaceId: $workspaceId
     key: $key
     uploadId: $uploadId
     parts: $parts
+    anonymousGuestToken: $anonymousGuestToken
   )
 }

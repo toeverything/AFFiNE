@@ -23,6 +23,8 @@ import { HttpConnection } from './http';
 interface CloudBlobStorageOptions {
   serverBaseUrl: string;
   id: string;
+  anonymousGuestToken?: string;
+  anonymousDocId?: string;
 }
 
 const SHOULD_MANUAL_REDIRECT =
@@ -67,14 +69,19 @@ export class CloudBlobStorage extends BlobStorageBase {
     super();
   }
 
-  readonly connection = new HttpConnection(this.options.serverBaseUrl);
+  readonly connection = new HttpConnection(
+    this.options.serverBaseUrl,
+    this.options.anonymousGuestToken
+      ? { 'x-affine-anonymous-guest-token': this.options.anonymousGuestToken }
+      : undefined
+  );
 
   override async get(key: string, signal?: AbortSignal) {
     const res = await this.connection.fetch(
       '/api/workspaces/' +
         this.options.id +
         '/blobs/' +
-        key +
+        encodeURIComponent(this.storageKey(key)) +
         (SHOULD_MANUAL_REDIRECT ? '?redirect=manual' : ''),
       {
         cache: 'default',
@@ -139,9 +146,10 @@ export class CloudBlobStorage extends BlobStorageBase {
         query: createBlobUploadMutation,
         variables: {
           workspaceId: this.options.id,
-          key: blob.key,
+          key: this.storageKey(blob.key),
           size: blob.data.byteLength,
           mime: blob.mime,
+          anonymousGuestToken: this.options.anonymousGuestToken,
         },
         context: { signal },
       });
@@ -166,7 +174,12 @@ export class CloudBlobStorage extends BlobStorageBase {
             blob.data,
             signal
           );
-          await this.completeUpload(blob.key, undefined, undefined, signal);
+          await this.completeUpload(
+            this.storageKey(blob.key),
+            undefined,
+            undefined,
+            signal
+          );
           return;
         } catch {
           await this.uploadViaGraphql(blob, signal);
@@ -182,19 +195,24 @@ export class CloudBlobStorage extends BlobStorageBase {
             );
           }
           const parts = await this.uploadViaMultipart(
-            blob.key,
+            this.storageKey(blob.key),
             upload.uploadId,
             upload.partSize,
             blob.data,
             upload.uploadedParts,
             signal
           );
-          await this.completeUpload(blob.key, upload.uploadId, parts, signal);
+          await this.completeUpload(
+            this.storageKey(blob.key),
+            upload.uploadId,
+            parts,
+            signal
+          );
           return;
         } catch {
           if (upload.uploadId) {
             await this.tryAbortMultipartUpload(
-              blob.key,
+              this.storageKey(blob.key),
               upload.uploadId,
               signal
             );
@@ -254,9 +272,14 @@ export class CloudBlobStorage extends BlobStorageBase {
       query: setBlobMutation,
       variables: {
         workspaceId: this.options.id,
-        blob: new File([toStrictArrayBuffer(blob.data)], blob.key, {
-          type: blob.mime,
-        }),
+        blob: new File(
+          [toStrictArrayBuffer(blob.data)],
+          this.storageKey(blob.key),
+          {
+            type: blob.mime,
+          }
+        ),
+        anonymousGuestToken: this.options.anonymousGuestToken,
       },
       context: { signal },
       timeout: UPLOAD_REQUEST_TIMEOUT,
@@ -306,7 +329,13 @@ export class CloudBlobStorage extends BlobStorageBase {
 
       const part = await this.connection.gql({
         query: getBlobUploadPartUrlQuery,
-        variables: { workspaceId: this.options.id, key, uploadId, partNumber },
+        variables: {
+          workspaceId: this.options.id,
+          key,
+          uploadId,
+          partNumber,
+          anonymousGuestToken: this.options.anonymousGuestToken,
+        },
         context: { signal },
       });
 
@@ -350,7 +379,13 @@ export class CloudBlobStorage extends BlobStorageBase {
   ) {
     await this.connection.gql({
       query: completeBlobUploadMutation,
-      variables: { workspaceId: this.options.id, key, uploadId, parts },
+      variables: {
+        workspaceId: this.options.id,
+        key,
+        uploadId,
+        parts,
+        anonymousGuestToken: this.options.anonymousGuestToken,
+      },
       context: { signal },
       timeout: UPLOAD_REQUEST_TIMEOUT,
     });
@@ -364,7 +399,12 @@ export class CloudBlobStorage extends BlobStorageBase {
     try {
       await this.connection.gql({
         query: abortBlobUploadMutation,
-        variables: { workspaceId: this.options.id, key, uploadId },
+        variables: {
+          workspaceId: this.options.id,
+          key,
+          uploadId,
+          anonymousGuestToken: this.options.anonymousGuestToken,
+        },
         context: { signal },
       });
     } catch {}
@@ -408,7 +448,20 @@ export class CloudBlobStorage extends BlobStorageBase {
   private humanReadableBlobSizeLimitCache: string | null = null;
   private blobSizeLimitCache: number | null = null;
   private blobSizeLimitCacheTime = 0;
+
+  storageKey(key: string) {
+    if (!this.options.anonymousGuestToken || !this.options.anonymousDocId) {
+      return key;
+    }
+    const prefix = `anonymous-doc/${this.options.anonymousDocId}/`;
+    return key.startsWith(prefix) ? key : `${prefix}${key}`;
+  }
+
   private async getBlobSizeLimit() {
+    if (this.options.anonymousGuestToken) {
+      return Number.POSITIVE_INFINITY;
+    }
+
     // If cache time is less than 120 seconds, return the cached value directly
     if (
       this.blobSizeLimitCache !== null &&

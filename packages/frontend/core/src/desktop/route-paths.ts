@@ -1,5 +1,6 @@
 export const WORKSPACE_ROUTE_PATH = '/workspace/:workspaceId/*';
 export const SHARE_ROUTE_PATH = '/share/:workspaceId/:pageId';
+export const ANONYMOUS_BOARD_ROUTE_PATH = '/anonymous-board/:token';
 export const NOT_FOUND_ROUTE_PATH = '/404';
 export const CATCH_ALL_ROUTE_PATH = '*';
 

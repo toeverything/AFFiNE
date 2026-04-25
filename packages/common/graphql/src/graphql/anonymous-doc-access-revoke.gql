@@ -1,0 +1,21 @@
+mutation revokeAnonymousDocAccessLink(
+  $workspaceId: String!
+  $docId: String!
+  $linkId: String!
+) {
+  revokeAnonymousDocAccessLink(
+    workspaceId: $workspaceId
+    docId: $docId
+    linkId: $linkId
+  ) {
+    id
+    workspaceId
+    docId
+    role
+    enabled
+    revokedAt
+    createdByUserId
+    createdAt
+    updatedAt
+  }
+}

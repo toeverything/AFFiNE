@@ -29,9 +29,13 @@ export function assertRspackSupportedPackageName(name: string) {
 
 const IN_CI = !!process.env.CI;
 const httpProxyMiddlewareLogLevel = IN_CI ? 'silent' : 'error';
+const devServerPort = process.env.AFFINE_DEV_SERVER_PORT || '8080';
+const backendServerUrl =
+  process.env.AFFINE_DEV_BACKEND_URL || 'http://localhost:3010';
 
 export const DEFAULT_DEV_SERVER_CONFIG: RspackDevServerConfiguration = {
   host: '0.0.0.0',
+  port: devServerPort,
   allowedHosts: 'all',
   hot: false,
   liveReload: true,
@@ -43,7 +47,7 @@ export const DEFAULT_DEV_SERVER_CONFIG: RspackDevServerConfiguration = {
     // see: https://webpack.js.org/configuration/dev-server/#websocketurl
     // must be an explicit ws/wss URL because custom protocols (e.g. assets://)
     // cannot be used to construct WebSocket endpoints in Electron
-    webSocketURL: 'ws://0.0.0.0:8080/ws',
+    webSocketURL: `ws://0.0.0.0:${devServerPort}/ws`,
   },
   historyApiFallback: {
     rewrites: [
@@ -60,18 +64,18 @@ export const DEFAULT_DEV_SERVER_CONFIG: RspackDevServerConfiguration = {
   proxy: [
     {
       context: '/api',
-      target: 'http://localhost:3010',
+      target: backendServerUrl,
       logLevel: httpProxyMiddlewareLogLevel,
     },
     {
       context: '/socket.io',
-      target: 'http://localhost:3010',
+      target: backendServerUrl,
       ws: true,
       logLevel: httpProxyMiddlewareLogLevel,
     },
     {
       context: '/graphql',
-      target: 'http://localhost:3010',
+      target: backendServerUrl,
       logLevel: httpProxyMiddlewareLogLevel,
     },
   ],

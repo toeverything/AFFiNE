@@ -24,7 +24,8 @@ import {
   StorageQuotaExceeded,
 } from '../../../base';
 import { Models } from '../../../models';
-import { CurrentUser } from '../../auth';
+import { AnonymousDocAccessService } from '../../anonymous-doc-access';
+import { CurrentUser, Public } from '../../auth';
 import { AccessController, WorkspacePolicyService } from '../../permission';
 import { QuotaService } from '../../quota';
 import { WorkspaceBlobStorage } from '../../storage';
@@ -129,8 +130,32 @@ export class WorkspaceBlobResolver {
     private readonly policy: WorkspacePolicyService,
     private readonly quota: QuotaService,
     private readonly storage: WorkspaceBlobStorage,
-    private readonly models: Models
+    private readonly models: Models,
+    private readonly anonymous: AnonymousDocAccessService
   ) {}
+
+  private async assertCanWriteBlob(
+    user: CurrentUser | undefined,
+    workspaceId: string,
+    key: string,
+    anonymousGuestToken?: string | null
+  ) {
+    if (anonymousGuestToken) {
+      const principal =
+        await this.anonymous.getGuestPrincipal(anonymousGuestToken);
+      await this.anonymous.assertCanWriteBlob(principal, workspaceId, key);
+      return;
+    }
+
+    if (!user) {
+      throw new BlobInvalid('Authenticated user or anonymous guest required');
+    }
+
+    await this.ac
+      .user(user.id)
+      .workspace(workspaceId)
+      .assert('Workspace.Blobs.Write');
+  }
 
   @ResolveField(() => [ListedBlob], {
     description: 'List blobs of workspace',
@@ -159,27 +184,42 @@ export class WorkspaceBlobResolver {
   @ResolveField(() => BlobUploadPart, {
     description: 'Get blob upload part url',
   })
+  @Public()
   async blobUploadPartUrl(
-    @CurrentUser() user: CurrentUser,
+    @CurrentUser() user: CurrentUser | undefined,
     @Parent() workspace: WorkspaceType,
     @Args('key') key: string,
     @Args('uploadId') uploadId: string,
-    @Args('partNumber', { type: () => Int }) partNumber: number
+    @Args('partNumber', { type: () => Int }) partNumber: number,
+    @Args('anonymousGuestToken', { type: () => String, nullable: true })
+    anonymousGuestToken?: string
   ): Promise<BlobUploadPart> {
-    return this.getUploadPart(user, workspace.id, key, uploadId, partNumber);
+    return this.getUploadPart(
+      user,
+      workspace.id,
+      key,
+      uploadId,
+      partNumber,
+      anonymousGuestToken
+    );
   }
 
   @Mutation(() => String)
+  @Public()
   async setBlob(
-    @CurrentUser() user: CurrentUser,
+    @CurrentUser() user: CurrentUser | undefined,
     @Args('workspaceId') workspaceId: string,
     @Args({ name: 'blob', type: () => GraphQLUpload })
-    blob: FileUpload
+    blob: FileUpload,
+    @Args('anonymousGuestToken', { type: () => String, nullable: true })
+    anonymousGuestToken?: string
   ) {
-    await this.ac
-      .user(user.id)
-      .workspace(workspaceId)
-      .assert('Workspace.Blobs.Write');
+    await this.assertCanWriteBlob(
+      user,
+      workspaceId,
+      blob.filename,
+      anonymousGuestToken
+    );
 
     const checkExceeded =
       await this.quota.getWorkspaceQuotaCalculator(workspaceId);
@@ -198,17 +238,17 @@ export class WorkspaceBlobResolver {
   }
 
   @Mutation(() => BlobUploadInit)
+  @Public()
   async createBlobUpload(
-    @CurrentUser() user: CurrentUser,
+    @CurrentUser() user: CurrentUser | undefined,
     @Args('workspaceId') workspaceId: string,
     @Args('key') key: string,
     @Args('size', { type: () => Int }) size: number,
-    @Args('mime') mime: string
+    @Args('mime') mime: string,
+    @Args('anonymousGuestToken', { type: () => String, nullable: true })
+    anonymousGuestToken?: string
   ): Promise<BlobUploadInit> {
-    await this.ac
-      .user(user.id)
-      .workspace(workspaceId)
-      .assert('Workspace.Blobs.Write');
+    await this.assertCanWriteBlob(user, workspaceId, key, anonymousGuestToken);
 
     let record = await this.models.blob.get(workspaceId, key);
     mime = mime || 'application/octet-stream';
@@ -251,6 +291,22 @@ export class WorkspaceBlobResolver {
     const metadata = { contentType: mime, contentLength: size };
     let init: BlobUploadInit | null = null;
     let uploadIdForRecord: string | null = null;
+
+    if (anonymousGuestToken) {
+      await this.models.blob.upsert({
+        workspaceId,
+        key,
+        mime,
+        size,
+        status: 'pending',
+        uploadId: null,
+      });
+
+      return {
+        method: BlobUploadMethod.GRAPHQL,
+        blobKey: key,
+      };
+    }
 
     // try to resume multipart uploads
     if (record && record.uploadId) {
@@ -327,22 +383,23 @@ export class WorkspaceBlobResolver {
   }
 
   @Mutation(() => String)
+  @Public()
   async completeBlobUpload(
-    @CurrentUser() user: CurrentUser,
+    @CurrentUser() user: CurrentUser | undefined,
     @Args('workspaceId') workspaceId: string,
     @Args('key') key: string,
-    @Args('uploadId', { nullable: true }) uploadId?: string,
+    @Args('uploadId', { type: () => String, nullable: true })
+    uploadId: string | undefined,
     @Args({
       name: 'parts',
       type: () => [BlobUploadPartInput],
       nullable: true,
     })
-    parts?: BlobUploadPartInput[]
+    parts: BlobUploadPartInput[] | undefined,
+    @Args('anonymousGuestToken', { type: () => String, nullable: true })
+    anonymousGuestToken?: string
   ): Promise<string> {
-    await this.ac
-      .user(user.id)
-      .workspace(workspaceId)
-      .assert('Workspace.Blobs.Write');
+    await this.assertCanWriteBlob(user, workspaceId, key, anonymousGuestToken);
 
     const record = await this.models.blob.get(workspaceId, key);
     if (!record) {
@@ -405,31 +462,29 @@ export class WorkspaceBlobResolver {
   }
 
   @Mutation(() => Boolean)
+  @Public()
   async abortBlobUpload(
-    @CurrentUser() user: CurrentUser,
+    @CurrentUser() user: CurrentUser | undefined,
     @Args('workspaceId') workspaceId: string,
     @Args('key') key: string,
-    @Args('uploadId') uploadId: string
+    @Args('uploadId') uploadId: string,
+    @Args('anonymousGuestToken', { type: () => String, nullable: true })
+    anonymousGuestToken?: string
   ) {
-    await this.ac
-      .user(user.id)
-      .workspace(workspaceId)
-      .assert('Workspace.Blobs.Write');
+    await this.assertCanWriteBlob(user, workspaceId, key, anonymousGuestToken);
 
     return this.storage.abortMultipartUpload(workspaceId, key, uploadId);
   }
 
   private async getUploadPart(
-    user: CurrentUser,
+    user: CurrentUser | undefined,
     workspaceId: string,
     key: string,
     uploadId: string,
-    partNumber: number
+    partNumber: number,
+    anonymousGuestToken?: string | null
   ): Promise<BlobUploadPart> {
-    await this.ac
-      .user(user.id)
-      .workspace(workspaceId)
-      .assert('Workspace.Blobs.Write');
+    await this.assertCanWriteBlob(user, workspaceId, key, anonymousGuestToken);
 
     const part = await this.storage.presignUploadPart(
       workspaceId,

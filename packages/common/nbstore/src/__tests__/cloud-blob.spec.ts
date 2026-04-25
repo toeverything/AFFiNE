@@ -9,6 +9,7 @@ import {
 } from '@affine/graphql';
 import { afterEach, expect, test, vi } from 'vitest';
 
+import { BlobFrontend } from '../frontend/blob';
 import { CloudBlobStorage } from '../impls/cloud/blob';
 
 const originalBuildConfig = (globalThis as any).BUILD_CONFIG;
@@ -33,6 +34,15 @@ function createStorage() {
   return new CloudBlobStorage({
     serverBaseUrl: 'https://example.com',
     id: 'workspace-1',
+  });
+}
+
+function createAnonymousStorage() {
+  return new CloudBlobStorage({
+    serverBaseUrl: 'https://example.com',
+    id: 'workspace-1',
+    anonymousGuestToken: 'guest-token',
+    anonymousDocId: 'doc-1',
   });
 }
 
@@ -68,6 +78,88 @@ test('uses graphql upload when server returns GRAPHQL method', async () => {
   const queries = gqlMock.mock.calls.map(call => call[0].query);
   expect(queries).toContain(createBlobUploadMutation);
   expect(queries).toContain(setBlobMutation);
+});
+
+test('anonymous upload skips user quota query and namespaces blob key', async () => {
+  const storage = createAnonymousStorage();
+  const gqlMock = vi.fn(async ({ query, variables }) => {
+    if (query === workspaceBlobQuotaQuery) {
+      throw new Error('Anonymous upload should not query user quota');
+    }
+    if (query === createBlobUploadMutation) {
+      expect(variables.key).toBe('anonymous-doc/doc-1/blob-key');
+      expect(variables.anonymousGuestToken).toBe('guest-token');
+      return {
+        createBlobUpload: {
+          method: BlobUploadMethod.GRAPHQL,
+          blobKey: 'anonymous-doc/doc-1/blob-key',
+          alreadyUploaded: false,
+        },
+      };
+    }
+    if (query === setBlobMutation) {
+      expect(variables.blob.name).toBe('anonymous-doc/doc-1/blob-key');
+      expect(variables.anonymousGuestToken).toBe('guest-token');
+      return { setBlob: 'anonymous-doc/doc-1/blob-key' };
+    }
+    throw new Error('Unexpected query');
+  });
+
+  (storage.connection as any).gql = gqlMock;
+
+  await storage.set({
+    key: 'blob-key',
+    data: new Uint8Array([1, 2, 3]),
+    mime: 'text/plain',
+  });
+
+  expect(gqlMock).not.toHaveBeenCalledWith(
+    expect.objectContaining({ query: workspaceBlobQuotaQuery })
+  );
+});
+
+test('blob frontend returns storage key for document references', async () => {
+  const setMock = vi.fn();
+  const uploadMock = vi.fn(async () => true);
+  const frontend = new BlobFrontend(
+    {
+      storageType: 'blob',
+      isReadonly: false,
+      connection: {
+        waitForConnected: async () => {},
+      },
+      storageKey: (key: string) => `anonymous-doc/doc-1/${key}`,
+      get: async () => null,
+      set: setMock,
+      delete: async () => {},
+      release: async () => {},
+      list: async () => [],
+    } as any,
+    {
+      ['state$']: null as any,
+      ['blobState$']: () => null as any,
+      uploadBlob: uploadMock,
+      downloadBlob: async () => false,
+      fullDownload: async () => {},
+      waitForConnected: async () => {},
+      connection: null as any,
+    } as any
+  );
+
+  const storedKey = await frontend.set({
+    key: 'blob-key',
+    data: new Uint8Array([1]),
+    mime: 'text/plain',
+  });
+
+  expect(storedKey).toBe('anonymous-doc/doc-1/blob-key');
+  expect(setMock).toHaveBeenCalledWith(
+    expect.objectContaining({ key: 'anonymous-doc/doc-1/blob-key' })
+  );
+  expect(uploadMock).toHaveBeenCalledWith(
+    expect.objectContaining({ key: 'anonymous-doc/doc-1/blob-key' }),
+    true
+  );
 });
 
 test('falls back to graphql when presigned upload fails', async () => {

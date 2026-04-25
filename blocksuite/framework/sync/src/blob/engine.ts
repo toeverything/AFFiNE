@@ -76,14 +76,14 @@ export class BlobEngine {
     }
 
     // await upload to the main peer
-    await this.main.set(key, value);
+    const storedKey = await this.main.set(key, value);
 
     // uploads to other peers in the background
     Promise.allSettled(
       this.shadows
         .filter(r => !r.readonly)
         .map(peer =>
-          peer.set(key, value).catch(err => {
+          peer.set(storedKey, value).catch(err => {
             this.logger.error('Error when uploading to peer', err);
           })
         )
@@ -91,17 +91,17 @@ export class BlobEngine {
       .then(result => {
         if (result.some(({ status }) => status === 'rejected')) {
           this.logger.error(
-            `blob ${key} update finish, but some peers failed to update`
+            `blob ${storedKey} update finish, but some peers failed to update`
           );
         } else {
-          this.logger.debug(`blob ${key} update finish`);
+          this.logger.debug(`blob ${storedKey} update finish`);
         }
       })
       .catch(() => {
         // Promise.allSettled never reject
       });
 
-    return key;
+    return storedKey;
   }
 
   blobState$(key: string) {

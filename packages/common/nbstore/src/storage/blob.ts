@@ -18,6 +18,7 @@ export interface ListedBlobRecord {
 export interface BlobStorage extends Storage {
   readonly storageType: 'blob';
   readonly isReadonly: boolean;
+  storageKey?(key: string): string;
   get(key: string, signal?: AbortSignal): Promise<BlobRecord | null>;
   set(blob: BlobRecord, signal?: AbortSignal): Promise<void>;
   delete(

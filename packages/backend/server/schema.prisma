@@ -249,6 +249,56 @@ model WorkspaceDocUserRole {
   @@map("workspace_page_user_permissions")
 }
 
+model AnonymousDocAccessLink {
+  id              String    @id @default(uuid()) @db.VarChar
+  workspaceId     String    @map("workspace_id") @db.VarChar
+  docId           String    @map("doc_id") @db.VarChar
+  tokenHash       String    @unique @map("token_hash") @db.VarChar
+  role            Int       @default(20) @db.SmallInt
+  enabled         Boolean   @default(true)
+  revokedAt       DateTime? @map("revoked_at") @db.Timestamptz(3)
+  createdByUserId String    @map("created_by_user_id") @db.VarChar
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([workspaceId, docId])
+  @@index([workspaceId, docId, enabled])
+  @@map("anonymous_doc_access_links")
+}
+
+model AnonymousDocGuestSession {
+  id          String    @id @default(uuid()) @db.VarChar
+  linkId      String    @map("link_id") @db.VarChar
+  workspaceId String    @map("workspace_id") @db.VarChar
+  docId       String    @map("doc_id") @db.VarChar
+  guestId     String    @map("guest_id") @db.VarChar
+  tokenHash   String    @unique @map("token_hash") @db.VarChar
+  displayName String    @map("display_name") @db.VarChar
+  color       String    @db.VarChar
+  revertedAt  DateTime? @map("reverted_at") @db.Timestamptz(3)
+  lastSeenAt  DateTime  @default(now()) @map("last_seen_at") @db.Timestamptz(3)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([linkId])
+  @@index([workspaceId, docId])
+  @@map("anonymous_doc_guest_sessions")
+}
+
+model AnonymousDocUpdate {
+  id             String   @id @default(uuid()) @db.VarChar
+  linkId         String   @map("link_id") @db.VarChar
+  guestSessionId String   @map("guest_session_id") @db.VarChar
+  workspaceId    String   @map("workspace_id") @db.VarChar
+  docId          String   @map("doc_id") @db.VarChar
+  update         Bytes    @db.ByteA
+  timestamp      DateTime @db.Timestamptz(3)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([guestSessionId, timestamp])
+  @@index([workspaceId, docId, timestamp])
+  @@map("anonymous_doc_updates")
+}
+
 model UserFeature {
   id        Int       @id @default(autoincrement())
   userId    String    @map("user_id") @db.VarChar
