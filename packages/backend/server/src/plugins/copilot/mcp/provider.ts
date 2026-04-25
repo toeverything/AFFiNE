@@ -246,8 +246,9 @@ export class WorkspaceMcpProvider {
     });
 
     const tools = [readDocument, semanticSearch, keywordSearch];
+    const allowWriteTools = env.dev || env.selfhosted || env.namespaces.canary;
 
-    if (env.dev || env.namespaces.canary) {
+    if (allowWriteTools) {
       const createDocument = defineTool({
         name: 'doc_create',
         title: 'Create Document',
