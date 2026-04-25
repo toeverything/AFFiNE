@@ -1,0 +1,60 @@
+name: Build Fork Image
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - canary
+
+permissions:
+  contents: write
+  id-token: write
+  packages: write
+
+jobs:
+  prepare:
+    name: Prepare
+    runs-on: ubuntu-latest
+    outputs:
+      app-version: ${{ steps.prepare.outputs.app-version }}
+      git-short-hash: ${{ steps.prepare.outputs.git-short-hash }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Prepare build metadata
+        id: prepare
+        shell: bash
+        run: |
+          git_short_hash="$(git rev-parse --short HEAD)"
+          app_version="0.0.0-canary.${git_short_hash}"
+          echo "app-version=${app_version}" >> "$GITHUB_OUTPUT"
+          echo "git-short-hash=${git_short_hash}" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build Docker Image
+    needs:
+      - prepare
+    uses: ./.github/workflows/build-images.yml
+    with:
+      build-type: canary
+      app-version: ${{ needs.prepare.outputs.app-version }}
+      git-short-hash: ${{ needs.prepare.outputs.git-short-hash }}
+
+  tag:
+    name: Tag Deploy Image
+    runs-on: ubuntu-latest
+    needs:
+      - prepare
+      - build
+    steps:
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          logout: false
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Tag canary image
+        run: |
+          docker buildx imagetools create \
+            --tag ghcr.io/${{ github.repository_owner }}/affine:canary \
+            ghcr.io/${{ github.repository_owner }}/affine:canary-${{ needs.prepare.outputs.git-short-hash }}
