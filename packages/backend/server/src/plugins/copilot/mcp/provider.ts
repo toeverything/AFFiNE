@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { pick } from 'lodash-es';
 import z from 'zod/v3';
 
+import { env } from '../../../base';
 import { DocReader, DocWriter } from '../../../core/doc';
 import { AccessController } from '../../../core/permission';
 import { clearEmbeddingChunk } from '../../../models';
@@ -110,25 +111,29 @@ export class WorkspaceMcpProvider {
     await this.ac.user(userId).workspace(workspaceId).assert('Workspace.Read');
 
     const readDocument = defineTool({
-      name: 'read_document',
+      name: 'doc_read',
       title: 'Read Document',
-      description: 'Read a document with given ID',
-      parser: z.object({ docId: z.string() }),
+      description:
+        'Return the complete Markdown content of a single document identified by doc_id; use this when the user needs the full content of a specific document rather than a search result.',
+      parser: z.object({ doc_id: z.string() }),
       inputSchema: {
         type: 'object',
         properties: {
-          docId: { type: 'string' },
+          doc_id: {
+            type: 'string',
+            description: 'The target document ID to read',
+          },
         },
-        required: ['docId'],
+        required: ['doc_id'],
         additionalProperties: false,
       },
-      execute: async ({ docId }, options) => {
-        const notFoundError = toolError(`Doc with id ${docId} not found.`);
+      execute: async ({ doc_id }, options) => {
+        const notFoundError = toolError(`Doc with id ${doc_id} not found.`);
 
         const accessible = await this.ac
           .user(userId)
           .workspace(workspaceId)
-          .doc(docId)
+          .doc(doc_id)
           .can('Doc.Read');
         if (!accessible) return notFoundError;
 
@@ -137,7 +142,7 @@ export class WorkspaceMcpProvider {
 
         const content = await this.reader.getDocMarkdown(
           workspaceId,
-          docId,
+          doc_id,
           false
         );
         if (!content) return notFoundError;
@@ -150,7 +155,7 @@ export class WorkspaceMcpProvider {
     });
 
     const semanticSearch = defineTool({
-      name: 'semantic_search',
+      name: 'doc_semantic_search',
       title: 'Semantic Search',
       description:
         'Retrieve conceptually related passages by performing vector-based semantic similarity search across embedded documents; use this tool only when exact keyword search fails or the user explicitly needs meaning-level matches (e.g., paraphrases, synonyms, broader concepts, recent documents).',
@@ -200,10 +205,10 @@ export class WorkspaceMcpProvider {
     });
 
     const keywordSearch = defineTool({
-      name: 'keyword_search',
+      name: 'doc_keyword_search',
       title: 'Keyword Search',
       description:
-        'Fuzzy search all workspace documents for the exact keyword or phrase supplied and return passages ranked by textual match. Use this tool by default whenever a straightforward term-based or keyword-base lookup is sufficient.',
+        'Fuzzy search all workspace documents for the exact keyword or phrase supplied and return documents ranked by textual match. Use this tool by default whenever a straightforward term-based or keyword-based lookup is sufficient.',
       parser: z.object({ query: z.string() }),
       inputSchema: {
         type: 'object',
@@ -233,7 +238,9 @@ export class WorkspaceMcpProvider {
         return {
           content: docs.map(doc => ({
             type: 'text',
-            text: JSON.stringify(pick(doc, 'docId', 'title', 'createdAt')),
+            text: JSON.stringify(
+              pick(doc, 'docId', 'title', 'createdAt', 'updatedAt')
+            ),
           })),
         };
       },
@@ -243,7 +250,7 @@ export class WorkspaceMcpProvider {
 
     if (env.dev || env.namespaces.canary) {
       const createDocument = defineTool({
-        name: 'create_document',
+        name: 'doc_create',
         title: 'Create Document',
         description:
           'Create a new document in the workspace with the given title and markdown content. Returns the ID of the created document. This tool not support insert or update database block and image yet.',
@@ -305,18 +312,18 @@ export class WorkspaceMcpProvider {
       });
 
       const updateDocument = defineTool({
-        name: 'update_document',
+        name: 'doc_update',
         title: 'Update Document',
         description:
           'Update an existing document with new markdown content (body only). Uses structural diffing to apply minimal changes, preserving document history and enabling real-time collaboration. This does NOT update the document title. This tool not support insert or update database block and image yet.',
         parser: z.object({
-          docId: z.string(),
+          doc_id: z.string(),
           content: z.string(),
         }),
         inputSchema: {
           type: 'object',
           properties: {
-            docId: {
+            doc_id: {
               type: 'string',
               description: 'The ID of the document to update',
             },
@@ -326,16 +333,16 @@ export class WorkspaceMcpProvider {
                 'The complete new markdown content for the document body (do NOT include a title H1)',
             },
           },
-          required: ['docId', 'content'],
+          required: ['doc_id', 'content'],
           additionalProperties: false,
         },
-        execute: async ({ docId, content }, options) => {
-          const notFoundError = toolError(`Doc with id ${docId} not found.`);
+        execute: async ({ doc_id, content }, options) => {
+          const notFoundError = toolError(`Doc with id ${doc_id} not found.`);
 
           const accessible = await this.ac
             .user(userId)
             .workspace(workspaceId)
-            .doc(docId)
+            .doc(doc_id)
             .can('Doc.Update');
           if (!accessible) return notFoundError;
 
@@ -343,11 +350,11 @@ export class WorkspaceMcpProvider {
           if (abortedBeforeWrite) return abortedBeforeWrite;
 
           try {
-            await this.writer.updateDoc(workspaceId, docId, content, userId);
+            await this.writer.updateDoc(workspaceId, doc_id, content, userId);
             return toolText(
               JSON.stringify({
                 success: true,
-                docId,
+                docId: doc_id,
                 message: 'Document updated successfully',
               })
             );
@@ -360,17 +367,17 @@ export class WorkspaceMcpProvider {
       });
 
       const updateDocumentMeta = defineTool({
-        name: 'update_document_meta',
+        name: 'doc_update_meta',
         title: 'Update Document Metadata',
         description: 'Update document metadata (currently title only).',
         parser: z.object({
-          docId: z.string(),
+          doc_id: z.string(),
           title: z.string().min(1),
         }),
         inputSchema: {
           type: 'object',
           properties: {
-            docId: {
+            doc_id: {
               type: 'string',
               description: 'The ID of the document to update',
             },
@@ -379,16 +386,16 @@ export class WorkspaceMcpProvider {
               description: 'The new document title',
             },
           },
-          required: ['docId', 'title'],
+          required: ['doc_id', 'title'],
           additionalProperties: false,
         },
-        execute: async ({ docId, title }, options) => {
-          const notFoundError = toolError(`Doc with id ${docId} not found.`);
+        execute: async ({ doc_id, title }, options) => {
+          const notFoundError = toolError(`Doc with id ${doc_id} not found.`);
 
           const accessible = await this.ac
             .user(userId)
             .workspace(workspaceId)
-            .doc(docId)
+            .doc(doc_id)
             .can('Doc.Update');
           if (!accessible) return notFoundError;
 
@@ -401,7 +408,7 @@ export class WorkspaceMcpProvider {
 
             await this.writer.updateDocMeta(
               workspaceId,
-              docId,
+              doc_id,
               { title: sanitizedTitle },
               userId
             );
@@ -409,7 +416,7 @@ export class WorkspaceMcpProvider {
             return toolText(
               JSON.stringify({
                 success: true,
-                docId,
+                docId: doc_id,
                 message: 'Document title updated successfully',
               })
             );
