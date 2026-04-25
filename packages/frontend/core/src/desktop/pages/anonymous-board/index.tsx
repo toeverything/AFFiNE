@@ -1,3 +1,4 @@
+import { Scrollable } from '@affine/component';
 import { PageDetailEditor } from '@affine/core/components/page-detail-editor';
 import { AppContainer } from '@affine/core/desktop/components/app-container';
 import { GraphQLService, ServerService } from '@affine/core/modules/cloud';
@@ -13,11 +14,13 @@ import {
   ServerDeploymentType,
 } from '@affine/graphql';
 import { FrameworkScope, useService } from '@toeverything/infra';
+import clsx from 'clsx';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { filter, firstValueFrom, timeout } from 'rxjs';
 
 import { PageNotFound } from '../404';
+import * as styles from './styles.css';
 
 const waitForAnonymousDocRecord = async (
   docsService: DocsService,
@@ -159,7 +162,16 @@ const AnonymousBoard = ({ token }: { token: string }) => {
     <FrameworkScope scope={workspace.scope}>
       <FrameworkScope scope={page.scope}>
         <FrameworkScope scope={editor.scope}>
-          <PageDetailEditor readonly={false} />
+          <div className={styles.root}>
+            <Scrollable.Root>
+              <Scrollable.Viewport
+                className={clsx('affine-page-viewport', styles.editorContainer)}
+              >
+                <PageDetailEditor readonly={false} />
+              </Scrollable.Viewport>
+              <Scrollable.Scrollbar />
+            </Scrollable.Root>
+          </div>
         </FrameworkScope>
       </FrameworkScope>
     </FrameworkScope>
