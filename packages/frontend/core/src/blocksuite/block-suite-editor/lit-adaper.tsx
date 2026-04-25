@@ -301,8 +301,8 @@ export const BlocksuiteDocEditor = forwardRef<
 export const BlocksuiteEdgelessEditor = forwardRef<
   EdgelessEditor,
   BlocksuiteEditorProps
->(function BlocksuiteEdgelessEditor({ page }, ref) {
-  const [specs, portals] = usePatchSpecs('edgeless');
+>(function BlocksuiteEdgelessEditor({ page, shared }, ref) {
+  const [specs, portals] = usePatchSpecs('edgeless', shared);
   const editorRef = useRef<EdgelessEditor | null>(null);
 
   const onDocRef = useCallback(

@@ -1,4 +1,5 @@
 import { Scrollable } from '@affine/component';
+import type { AffineEditorContainer } from '@affine/core/blocksuite/block-suite-editor';
 import { PageDetailEditor } from '@affine/core/components/page-detail-editor';
 import { AppContainer } from '@affine/core/desktop/components/app-container';
 import { GraphQLService, ServerService } from '@affine/core/modules/cloud';
@@ -15,7 +16,7 @@ import {
 } from '@affine/graphql';
 import { FrameworkScope, useService } from '@toeverything/infra';
 import clsx from 'clsx';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { filter, firstValueFrom, timeout } from 'rxjs';
 
@@ -53,6 +54,17 @@ const AnonymousBoard = ({ token }: { token: string }) => {
   const [page, setPage] = useState<Doc | null>(null);
   const [editor, setEditor] = useState<Editor | null>(null);
   const [failed, setFailed] = useState(false);
+  const scrollViewportRef = useRef<HTMLDivElement | null>(null);
+
+  const onLoad = useCallback(
+    (editorContainer: AffineEditorContainer) =>
+      editor?.bindEditorContainer(
+        editorContainer,
+        editorContainer.docTitle,
+        scrollViewportRef.current
+      ),
+    [editor]
+  );
 
   useEffect(() => {
     let disposed = false;
@@ -135,6 +147,7 @@ const AnonymousBoard = ({ token }: { token: string }) => {
       await openedWorkspace.engine.doc.waitForDocLoaded(link.docId);
 
       const createdEditor = doc.scope.get(EditorsService).createEditor();
+      createdEditor.setMode('edgeless');
       setPage(doc);
       setEditor(createdEditor);
     })().catch(error => {
@@ -165,9 +178,10 @@ const AnonymousBoard = ({ token }: { token: string }) => {
           <div className={styles.root}>
             <Scrollable.Root>
               <Scrollable.Viewport
+                ref={scrollViewportRef}
                 className={clsx('affine-page-viewport', styles.editorContainer)}
               >
-                <PageDetailEditor readonly={false} />
+                <PageDetailEditor onLoad={onLoad} readonly={false} />
               </Scrollable.Viewport>
               <Scrollable.Scrollbar />
             </Scrollable.Root>

@@ -1876,8 +1876,8 @@ export interface Mutation {
   removeWorkspaceFeature: Scalars['Boolean']['output'];
   /** Request to apply the subscription in advance */
   requestApplySubscription: Array<SubscriptionType>;
-  /** Resolve a comment or not */
   resolveAnonymousDocAccessLink: ResolvedAnonymousDocAccessType;
+  /** Resolve a comment or not */
   resolveComment: Scalars['Boolean']['output'];
   resumeSubscription: SubscriptionType;
   retryAudioTranscription: Maybe<TranscriptionResultType>;
