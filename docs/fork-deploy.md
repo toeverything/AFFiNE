@@ -256,11 +256,14 @@ curl -sSI https://doska.wastelandw.ru | sed -n '1,16p'
 
 ## Точка состояния
 
-На `2026-04-25` успешный production build (боевая сборка) и deploy (выкладка):
+На `2026-04-25` актуальный production build (боевая сборка) и deploy (выкладка):
 
-- GitHub Actions run: `https://github.com/z0rgoyok/AFFiNE/actions/runs/24931203468`;
-- fork commit (коммит форка): `51a14ee6741ba7ae16b909cffd9519b204f8ce85`;
+- GitHub Actions run: `https://github.com/z0rgoyok/AFFiNE/actions/runs/24931730285`;
+- fork commit (коммит форка): `34ee5bb23f730c3f2d9fb76dbc344154b80bc5c3`;
 - published image (опубликованный образ): `ghcr.io/z0rgoyok/affine:canary`;
-- image digest (дайджест образа): `sha256:7b740c0ea15cc91ee08c77f1eacddd37b4ff00f88f22206819fa55618896e167`;
+- image digest (дайджест образа): `sha256:050605c264d914f32252279266b3b8d509b8d48821b6b27bad0bc8fdd3f8ca50`;
 - server image (образ на сервере): `ghcr.io/z0rgoyok/affine:canary` с тем же digest (дайджестом);
+- server version (версия сервера): `0.26.3-canary.34ee5bb`;
 - production domain (боевой домен): `https://doska.wastelandw.ru`.
+
+Предыдущая сборка `51a14ee` публиковала server version (версию сервера) `0.0.0-canary.51a14ee`. Desktop client (настольный клиент) отклонял такой сервер как старее `0.23.0`, поэтому sign in (вход) был заблокирован. Фикс находится в `.github/workflows/build-fork-image.yml`: `app-version` берется из `package.json` и получает суффикс `-canary.<git-short-hash>`.
