@@ -258,6 +258,34 @@ test('anonymous update allows image insertion with bare blob source id', async t
   );
 });
 
+test('anonymous update allows split image source structs', async t => {
+  const adminDoc = new YDoc();
+  const blocks = adminDoc.getMap('blocks');
+  let adminUpdate: Buffer | null = null;
+  adminDoc.on('update', update => {
+    adminUpdate = Buffer.from(update);
+  });
+  blocks.set('admin-block', 'admin content');
+
+  const guestDoc = new YDoc();
+  applyUpdate(guestDoc, adminUpdate!);
+  let guestUpdate: Buffer | null = null;
+  guestDoc.on('update', update => {
+    guestUpdate = Buffer.from(update);
+  });
+  guestDoc.getMap('blocks').delete('admin-block');
+  guestDoc.getMap('flavour').set('image-block', 'affine:image');
+  guestDoc
+    .getMap('props')
+    .set('sourceId', 'UwHFZxwb0cHtNqX22dZS5H7AApidNb6hJaAITBV0Z6M=');
+
+  const service = createService();
+
+  await t.notThrowsAsync(
+    service.assertUpdatesDeleteOnlyGuestContent(editorPrincipal, [guestUpdate!])
+  );
+});
+
 test('anonymous update ignores delete ranges already present in current doc', async t => {
   const adminDoc = new YDoc();
   adminDoc.getMap('blocks').set('old-admin-block', 'admin content');

@@ -745,16 +745,21 @@ export class AnonymousDocAccessService {
     principal: AnonymousDocGuestPrincipal,
     update: Uint8Array
   ) {
-    return decodeUpdate(update).structs.some(struct => {
-      const hasAnonymousStorageKey = this.structContainsString(
+    const structs = decodeUpdate(update).structs;
+    const hasAnonymousStorageKey = structs.some(struct =>
+      this.structContainsString(
         struct,
         this.anonymousBlobPrefix(principal.docId)
-      );
-      const hasImageBlock = this.structContainsString(struct, 'affine:image');
-      const hasImageSource = this.structContainsString(struct, 'sourceId');
+      )
+    );
+    const hasImageBlock = structs.some(struct =>
+      this.structContainsString(struct, 'affine:image')
+    );
+    const hasImageSource = structs.some(struct =>
+      this.structContainsString(struct, 'sourceId')
+    );
 
-      return hasAnonymousStorageKey || (hasImageBlock && hasImageSource);
-    });
+    return hasAnonymousStorageKey || (hasImageBlock && hasImageSource);
   }
 
   private structContainsString(value: unknown, needle: string): boolean {
