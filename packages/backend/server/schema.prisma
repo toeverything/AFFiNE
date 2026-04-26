@@ -1034,6 +1034,7 @@ model AccessToken {
   id        String    @id @default(uuid()) @db.VarChar
   name      String    @db.VarChar
   token     String    @unique @db.VarChar
+  scopes    Json?     @db.JsonB
   userId    String    @map("user_id") @db.VarChar
   createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   expiresAt DateTime? @map("expires_at") @db.Timestamptz(3)

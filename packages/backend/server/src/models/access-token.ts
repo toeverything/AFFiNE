@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 
 import { CryptoHelper } from '../base';
 import { BaseModel } from './base';
@@ -9,11 +10,13 @@ export interface CreateAccessTokenInput {
   userId: string;
   name: string;
   expiresAt?: Date | null;
+  scopes?: Prisma.InputJsonValue | null;
 }
 
 type UserAccessToken = {
   id: string;
   name: string;
+  scopes: Prisma.JsonValue | null;
   createdAt: Date;
   expiresAt: Date | null;
 };
@@ -31,7 +34,13 @@ export class AccessTokenModel extends BaseModel {
   ): Promise<(UserAccessToken & { token: string })[]>;
   async list(userId: string, revealed: boolean = false) {
     const tokens = await this.db.accessToken.findMany({
-      select: { id: true, name: true, createdAt: true, expiresAt: true },
+      select: {
+        id: true,
+        name: true,
+        scopes: true,
+        createdAt: true,
+        expiresAt: true,
+      },
       where: { userId },
     });
 
@@ -45,7 +54,13 @@ export class AccessTokenModel extends BaseModel {
     const tokenHash = this.crypto.sha256(token).toString('hex');
 
     const created = await this.db.accessToken.create({
-      data: { token: tokenHash, ...input },
+      data: {
+        token: tokenHash,
+        userId: input.userId,
+        name: input.name,
+        expiresAt: input.expiresAt,
+        ...(input.scopes ? { scopes: input.scopes } : {}),
+      },
     });
 
     // NOTE: we only return the plaintext token once, at creation time.

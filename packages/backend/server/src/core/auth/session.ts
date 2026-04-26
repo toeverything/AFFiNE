@@ -62,6 +62,12 @@ export const Session = createParamDecorator(
   }
 );
 
+export const CurrentAccessToken = createParamDecorator(
+  (_: unknown, context: ExecutionContext) => {
+    return getRequestResponseFromContext(context).req.token;
+  }
+);
+
 export type Session = UserSession & {
   user: CurrentUser;
 };

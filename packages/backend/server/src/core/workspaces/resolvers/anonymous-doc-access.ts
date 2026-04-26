@@ -8,8 +8,14 @@ import {
   Resolver,
 } from '@nestjs/graphql';
 
+import { assertAccessTokenCanUseDocAction } from '../../access-token';
 import { AnonymousDocAccessService } from '../../anonymous-doc-access';
-import { CurrentUser, Public } from '../../auth';
+import {
+  CurrentAccessToken,
+  CurrentUser,
+  Public,
+  TokenSession,
+} from '../../auth';
 import { AccessController, DocRole } from '../../permission';
 
 @ObjectType()
@@ -136,8 +142,15 @@ export class AnonymousDocAccessResolver {
   @Mutation(() => CreatedAnonymousDocAccessLinkType)
   async createAnonymousDocAccessLink(
     @CurrentUser() user: CurrentUser,
+    @CurrentAccessToken() token: TokenSession | undefined,
     @Args('input') input: AnonymousDocAccessInput
   ) {
+    assertAccessTokenCanUseDocAction(
+      token,
+      input.workspaceId,
+      input.docId,
+      'Doc.Users.Manage'
+    );
     await this.ac.user(user.id).doc(input).assert('Doc.Users.Manage');
 
     return await this.anonymous.createLink(
@@ -150,10 +163,17 @@ export class AnonymousDocAccessResolver {
   @Mutation(() => AnonymousDocAccessLinkType, { nullable: true })
   async revokeAnonymousDocAccessLink(
     @CurrentUser() user: CurrentUser,
+    @CurrentAccessToken() token: TokenSession | undefined,
     @Args('workspaceId') workspaceId: string,
     @Args('docId') docId: string,
     @Args('linkId') linkId: string
   ) {
+    assertAccessTokenCanUseDocAction(
+      token,
+      workspaceId,
+      docId,
+      'Doc.Users.Manage'
+    );
     await this.ac
       .user(user.id)
       .doc({ workspaceId, docId })
@@ -165,9 +185,16 @@ export class AnonymousDocAccessResolver {
   @Query(() => [AnonymousDocAccessLinkType])
   async anonymousDocAccessLinks(
     @CurrentUser() user: CurrentUser,
+    @CurrentAccessToken() token: TokenSession | undefined,
     @Args('workspaceId') workspaceId: string,
     @Args('docId') docId: string
   ) {
+    assertAccessTokenCanUseDocAction(
+      token,
+      workspaceId,
+      docId,
+      'Doc.Users.Manage'
+    );
     await this.ac
       .user(user.id)
       .doc({ workspaceId, docId })
@@ -188,10 +215,17 @@ export class AnonymousDocAccessResolver {
   @Query(() => [AnonymousDocUpdateType])
   async anonymousDocGuestUpdates(
     @CurrentUser() user: CurrentUser,
+    @CurrentAccessToken() token: TokenSession | undefined,
     @Args('workspaceId') workspaceId: string,
     @Args('docId') docId: string,
     @Args('guestSessionId') guestSessionId: string
   ) {
+    assertAccessTokenCanUseDocAction(
+      token,
+      workspaceId,
+      docId,
+      'Doc.Users.Manage'
+    );
     await this.ac
       .user(user.id)
       .doc({ workspaceId, docId })
@@ -207,10 +241,12 @@ export class AnonymousDocAccessResolver {
   @Mutation(() => Date)
   async revertAnonymousDocGuestSession(
     @CurrentUser() user: CurrentUser,
+    @CurrentAccessToken() token: TokenSession | undefined,
     @Args('workspaceId') workspaceId: string,
     @Args('docId') docId: string,
     @Args('guestSessionId') guestSessionId: string
   ) {
+    assertAccessTokenCanUseDocAction(token, workspaceId, docId, 'Doc.Update');
     await this.ac
       .user(user.id)
       .doc({ workspaceId, docId })
