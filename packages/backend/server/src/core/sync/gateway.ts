@@ -882,6 +882,11 @@ export class SpaceSyncGateway
         throw new DocUpdateBlocked({ spaceId, docId });
       }
 
+      await this.anonymous.assertUpdatesDeleteOnlyGuestContent(
+        anonymousPrincipal,
+        [updateBuffer]
+      );
+
       const timestamp = await this.workspace.pushDocUpdates(spaceId, docId, [
         updateBuffer,
       ]);

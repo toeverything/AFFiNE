@@ -55,6 +55,9 @@ tsconfig.tsbuildinfo
 Thumbs.db
 
 # env
+.env
+.env.*
+!.env.example
 *.env.local
 *.local.env
 .history
@@ -73,6 +76,15 @@ download
 .eslintcache
 next-env.d.ts
 .rollup.cache
+.turbo
+.vite
+
+# local build/deploy artifacts
+*.log
+*.pid
+*.tgz
+*.tar
+*.tar.gz
 
 # Rust
 target

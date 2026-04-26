@@ -4,6 +4,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import {
   Array as YArray,
+  decodeUpdate,
   diffUpdate,
   Doc,
   encodeStateAsUpdate,
@@ -78,6 +79,12 @@ const GUEST_COLORS = [
   '#7D5AC8',
   '#C45189',
 ];
+
+type StructRange = {
+  client: number;
+  clock: number;
+  len: number;
+};
 
 @Injectable()
 export class AnonymousDocAccessService {
@@ -472,6 +479,37 @@ export class AnonymousDocAccessService {
     }
   }
 
+  async assertUpdatesDeleteOnlyGuestContent(
+    principal: AnonymousDocGuestPrincipal,
+    updates: Buffer[]
+  ) {
+    const deleteRanges = updates.flatMap(update => this.deleteRanges(update));
+    if (!deleteRanges.length) {
+      return;
+    }
+
+    const recordedUpdate = await this.getRecordedGuestUpdate(
+      principal.workspaceId,
+      principal.docId,
+      principal.guestSessionId
+    );
+    const ownedRanges = [
+      ...(recordedUpdate ? this.structRanges(recordedUpdate) : []),
+      ...updates.flatMap(update => this.structRanges(update)),
+    ];
+    const mergedOwnedRanges = this.mergeRangesByClient(ownedRanges);
+
+    for (const range of deleteRanges) {
+      if (!this.isRangeCovered(mergedOwnedRanges.get(range.client), range)) {
+        throw new DocActionDenied({
+          spaceId: principal.workspaceId,
+          docId: principal.docId,
+          action: 'Doc.Update',
+        });
+      }
+    }
+  }
+
   async listGuestUpdates(
     workspaceId: string,
     docId: string,
@@ -606,6 +644,81 @@ export class AnonymousDocAccessService {
 
   anonymousBlobPrefix(docId: string) {
     return `anonymous-doc/${docId}/`;
+  }
+
+  private structRanges(update: Uint8Array): StructRange[] {
+    return decodeUpdate(update).structs.map(struct => ({
+      client: struct.id.client,
+      clock: struct.id.clock,
+      len: struct.length,
+    }));
+  }
+
+  private deleteRanges(update: Uint8Array): StructRange[] {
+    return [...decodeUpdate(update).ds.clients.entries()].flatMap(
+      ([client, ranges]) =>
+        ranges.map(range => ({
+          client,
+          clock: range.clock,
+          len: range.len,
+        }))
+    );
+  }
+
+  private mergeRangesByClient(ranges: StructRange[]) {
+    const byClient = new Map<number, StructRange[]>();
+    for (const range of ranges) {
+      const clientRanges = byClient.get(range.client) ?? [];
+      clientRanges.push(range);
+      byClient.set(range.client, clientRanges);
+    }
+
+    for (const [client, clientRanges] of byClient) {
+      const sorted = clientRanges
+        .slice()
+        .sort((left, right) => left.clock - right.clock);
+      const merged: StructRange[] = [];
+      for (const range of sorted) {
+        const previous = merged.at(-1);
+        if (!previous || previous.clock + previous.len < range.clock) {
+          merged.push({ ...range });
+          continue;
+        }
+        const previousEnd = previous.clock + previous.len;
+        const rangeEnd = range.clock + range.len;
+        previous.len = Math.max(previousEnd, rangeEnd) - previous.clock;
+      }
+      byClient.set(client, merged);
+    }
+
+    return byClient;
+  }
+
+  private isRangeCovered(
+    ownedRanges: StructRange[] | undefined,
+    deletedRange: StructRange
+  ) {
+    if (!ownedRanges) {
+      return false;
+    }
+
+    let coveredUntil = deletedRange.clock;
+    const deletedEnd = deletedRange.clock + deletedRange.len;
+    for (const owned of ownedRanges) {
+      const ownedEnd = owned.clock + owned.len;
+      if (ownedEnd <= coveredUntil) {
+        continue;
+      }
+      if (owned.clock > coveredUntil) {
+        return false;
+      }
+      coveredUntil = Math.max(coveredUntil, ownedEnd);
+      if (coveredUntil >= deletedEnd) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   isReadOnlySyntheticDoc(workspaceId: string, docId: string) {
