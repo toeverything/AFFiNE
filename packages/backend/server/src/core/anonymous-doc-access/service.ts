@@ -438,7 +438,10 @@ export class AnonymousDocAccessService {
   ) {
     this.assertCanUpdateDoc(principal, workspaceId, principal.docId);
     await this.assertDocExists(workspaceId, principal.docId);
-    if (!key.startsWith(this.anonymousBlobPrefix(principal.docId))) {
+    if (
+      !this.isContentAddressedBlobKey(key) &&
+      !key.startsWith(this.anonymousBlobPrefix(principal.docId))
+    ) {
       throw new DocActionDenied({
         spaceId: workspaceId,
         docId: principal.docId,
@@ -664,6 +667,10 @@ export class AnonymousDocAccessService {
 
   anonymousBlobPrefix(docId: string) {
     return `anonymous-doc/${docId}/`;
+  }
+
+  private isContentAddressedBlobKey(key: string) {
+    return !key.includes('/');
   }
 
   private structRanges(update: Uint8Array): StructRange[] {
