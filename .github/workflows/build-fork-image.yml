@@ -2,9 +2,6 @@ name: Build Fork Image
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - canary
 
 permissions:
   contents: write
