@@ -9,6 +9,12 @@ export class RemoteColorManager {
   }
 
   constructor(readonly std: BlockStdScope) {
+    const awarenessColor = this.awarenessStore.getLocalState()?.color;
+    if (awarenessColor) {
+      this.std.get(EditPropsStore).setStorage('remoteColor', awarenessColor);
+      return;
+    }
+
     const sessionColor = this.std.get(EditPropsStore).getStorage('remoteColor');
     if (sessionColor) {
       this.awarenessStore.awareness.setLocalStateField('color', sessionColor);

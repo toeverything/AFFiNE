@@ -76,7 +76,6 @@ const AnonymousBoard = ({ token }: { token: string }) => {
           query: resolveAnonymousDocAccessLinkMutation,
           variables: {
             token,
-            displayName: `Guest ${Math.floor(Math.random() * 1000)}`,
           },
         });
 
@@ -84,7 +83,8 @@ const AnonymousBoard = ({ token }: { token: string }) => {
         return;
       }
 
-      const { guestToken, link } = resolved.resolveAnonymousDocAccessLink;
+      const { guest, guestToken, link } =
+        resolved.resolveAnonymousDocAccessLink;
       const { workspace: openedWorkspace, dispose } = workspacesService.open(
         {
           metadata: {
@@ -152,6 +152,10 @@ const AnonymousBoard = ({ token }: { token: string }) => {
       const { doc } = docsService.open(link.docId);
       doc.blockSuiteDoc.load();
       doc.blockSuiteDoc.readonly = false;
+      doc.blockSuiteDoc.awarenessStore.setLocalStateField('user', {
+        name: guest.displayName,
+      });
+      doc.blockSuiteDoc.awarenessStore.setLocalStateField('color', guest.color);
 
       const createdEditor = doc.scope.get(EditorsService).createEditor();
       createdEditor.setMode('edgeless');

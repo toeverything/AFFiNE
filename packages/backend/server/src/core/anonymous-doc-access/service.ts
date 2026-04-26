@@ -1,4 +1,4 @@
-import { createHash, randomBytes, randomUUID } from 'node:crypto';
+import { createHash, randomBytes, randomInt, randomUUID } from 'node:crypto';
 
 import { Injectable } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
@@ -79,6 +79,79 @@ const GUEST_COLORS = [
   '#7D5AC8',
   '#C45189',
 ];
+
+const GUEST_NAME_ADJECTIVES = [
+  'Багровый',
+  'Глитчовый',
+  'Неоновый',
+  'Ржавый',
+  'Пыльный',
+  'Лунный',
+  'Капиллярный',
+  'Пиксельный',
+  'Стикерный',
+  'Маркерный',
+  'Шумный',
+  'Тихий',
+  'Дикий',
+  'Подпольный',
+  'Секретный',
+  'Картонный',
+  'Кислотный',
+  'Виниловый',
+  'Пульсирующий',
+  'Архивный',
+  'Мутный',
+  'Ломаный',
+  'Хромой',
+  'Ночной',
+];
+
+const GUEST_NAME_NOUNS = [
+  'Сгусток',
+  'Капилляр',
+  'Пульс',
+  'Шрам',
+  'Стикер',
+  'Пиксель',
+  'Маркер',
+  'Курсор',
+  'Спутник',
+  'Архивариус',
+  'Странник',
+  'Маяк',
+  'Радар',
+  'Дроид',
+  'Гриб',
+  'Шаман',
+  'Пилигрим',
+  'Сигнал',
+  'Енот',
+  'Кот',
+  'Глаз',
+  'Шум',
+  'Ритуал',
+  'Плакат',
+  'Тэг',
+  'Фрагмент',
+  'Свидетель',
+  'Гость',
+  'Комментатор',
+  'Смотритель',
+  'Рисовальщик',
+  'Коллажист',
+];
+
+export function createAnonymousGuestDisplayName() {
+  const adjective =
+    GUEST_NAME_ADJECTIVES[randomInt(GUEST_NAME_ADJECTIVES.length)] ??
+    GUEST_NAME_ADJECTIVES[0];
+  const noun =
+    GUEST_NAME_NOUNS[randomInt(GUEST_NAME_NOUNS.length)] ?? GUEST_NAME_NOUNS[0];
+  const suffix = randomInt(0x1000).toString(16).toUpperCase().padStart(3, '0');
+
+  return `${adjective} ${noun} ${suffix}`;
+}
 
 type StructRange = {
   client: number;
@@ -250,10 +323,9 @@ export class AnonymousDocAccessService {
     const guestToken = this.createToken();
     const guestTokenHash = this.hashToken(guestToken);
     const guestId = randomUUID();
-    const safeDisplayName = (displayName?.trim() || 'Anonymous guest').slice(
-      0,
-      80
-    );
+    const safeDisplayName = (
+      displayName?.trim() || createAnonymousGuestDisplayName()
+    ).slice(0, 80);
     const color =
       GUEST_COLORS[Math.floor(Math.random() * GUEST_COLORS.length)] ??
       GUEST_COLORS[0];

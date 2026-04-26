@@ -212,6 +212,7 @@ export class EdgelessRemoteSelectionWidget extends WidgetComponent<RootBlockMode
 
     this._updateTransform();
     this._updateRemoteRects();
+    this._updateRemoteCursor();
 
     this._remoteColorManager = new RemoteColorManager(this.std);
   }

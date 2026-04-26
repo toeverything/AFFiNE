@@ -3,7 +3,10 @@ import { applyUpdate, Doc as YDoc, encodeStateAsUpdate } from 'yjs';
 
 import { DocActionDenied, DocNotFound } from '../../../base';
 import { DocRole } from '../../../models';
-import { AnonymousDocAccessService } from '../service';
+import {
+  AnonymousDocAccessService,
+  createAnonymousGuestDisplayName,
+} from '../service';
 
 function createService(
   snapshot: unknown = { id: 'doc' },
@@ -38,6 +41,13 @@ const editorPrincipal = {
   docId: 'doc',
   role: DocRole.Editor,
 };
+
+test('anonymous guest display name uses channel-themed words', t => {
+  const displayName = createAnonymousGuestDisplayName();
+
+  t.regex(displayName, /^[А-ЯЁ][а-яё]+ [А-ЯЁ][а-яё]+ [0-9A-F]{3}$/);
+  t.true(displayName.length <= 80);
+});
 
 test('anonymous doc link rejects workspace root doc', async t => {
   const service = createService();
