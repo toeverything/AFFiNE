@@ -5,12 +5,16 @@ import { DocActionDenied, DocNotFound } from '../../../base';
 import { DocRole } from '../../../models';
 import { AnonymousDocAccessService } from '../service';
 
-function createService(snapshot: unknown = { id: 'doc' }) {
+function createService(
+  snapshot: unknown = { id: 'doc' },
+  recordedUpdates: Buffer[] = []
+) {
   return new AnonymousDocAccessService(
     {
       snapshot: {
         findUnique: async () => snapshot,
       },
+      $queryRaw: async () => recordedUpdates.map(update => ({ update })),
     } as any,
     {} as any
   );
@@ -134,6 +138,58 @@ test('anonymous shared doc remains writable for editor', async t => {
 
   await t.notThrowsAsync(
     service.assertCanWriteDoc(editorPrincipal, 'workspace', 'doc')
+  );
+});
+
+test('anonymous update can delete guest-owned content', async t => {
+  const guestDoc = new YDoc();
+  const blocks = guestDoc.getMap('blocks');
+  let createUpdate: Buffer | null = null;
+  let deleteUpdate: Buffer | null = null;
+
+  guestDoc.on('update', update => {
+    if (!createUpdate) {
+      createUpdate = Buffer.from(update);
+    } else {
+      deleteUpdate = Buffer.from(update);
+    }
+  });
+  blocks.set('guest-block', 'guest content');
+  blocks.delete('guest-block');
+
+  const service = createService({ id: 'doc' }, [createUpdate!]);
+
+  await t.notThrowsAsync(
+    service.assertUpdatesDeleteOnlyGuestContent(editorPrincipal, [
+      deleteUpdate!,
+    ])
+  );
+});
+
+test('anonymous update rejects deleting admin-owned content', async t => {
+  const adminDoc = new YDoc();
+  const blocks = adminDoc.getMap('blocks');
+  let adminUpdate: Buffer | null = null;
+  adminDoc.on('update', update => {
+    adminUpdate = Buffer.from(update);
+  });
+  blocks.set('admin-block', 'admin content');
+
+  const guestDoc = new YDoc();
+  applyUpdate(guestDoc, adminUpdate!);
+  let deleteUpdate: Buffer | null = null;
+  guestDoc.on('update', update => {
+    deleteUpdate = Buffer.from(update);
+  });
+  guestDoc.getMap('blocks').delete('admin-block');
+
+  const service = createService();
+
+  await t.throwsAsync(
+    service.assertUpdatesDeleteOnlyGuestContent(editorPrincipal, [
+      deleteUpdate!,
+    ]),
+    { instanceOf: DocActionDenied }
   );
 });
 

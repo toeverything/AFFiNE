@@ -122,10 +122,6 @@ jobs:
         targets:
           - name: x86_64-unknown-linux-gnu
             file: server-native.x64.node
-          - name: aarch64-unknown-linux-gnu
-            file: server-native.arm64.node
-          - name: armv7-unknown-linux-gnueabihf
-            file: server-native.armv7.node
 
     steps:
       - uses: actions/checkout@v6
@@ -244,7 +240,8 @@ jobs:
 
       - name: Install Node.js dependencies
         run: |
-          yarn config set --json supportedArchitectures.cpu '["x64", "arm64", "arm"]'
+          yarn config set --json supportedArchitectures.os '["linux"]'
+          yarn config set --json supportedArchitectures.cpu '["x64"]'
           yarn config set --json supportedArchitectures.libc '["glibc"]'
           yarn workspaces focus @affine/server --production
 
@@ -265,7 +262,7 @@ jobs:
           context: .
           push: true
           pull: true
-          platforms: linux/amd64,linux/arm64,linux/arm/v7
+          platforms: linux/amd64
           provenance: true
           file: .github/deployment/node/Dockerfile
           tags: ghcr.io/${{ github.repository_owner }}/affine:${{inputs.build-type}}-${{ inputs.git-short-hash }}
