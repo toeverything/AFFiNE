@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Полный цикл тестирования AFFiNE'
+  short_description: 'Полный тестовый цикл AFFiNE'
+  default_prompt: 'Используй $affine-full-test-cycle, чтобы довести изменение AFFiNE до проверенного состояния: тесты, сборка, браузерный сценарий и отчет по рискам.'

@@ -512,13 +512,13 @@ export class AnonymousDocAccessService {
       ...updates.flatMap(update => this.structRanges(update)),
     ];
     const mergedOwnedRanges = this.mergeRangesByClient(ownedRanges);
-    const hasAnonymousBlobReference = updates.some(update =>
-      this.hasAnonymousBlobReference(principal, update)
+    const hasAnonymousImageInsertion = updates.some(update =>
+      this.hasAnonymousImageInsertion(principal, update)
     );
 
     for (const range of newDeleteRanges) {
       if (!this.isRangeCovered(mergedOwnedRanges.get(range.client), range)) {
-        if (hasAnonymousBlobReference) {
+        if (hasAnonymousImageInsertion) {
           continue;
         }
         throw new DocActionDenied({
@@ -741,16 +741,20 @@ export class AnonymousDocAccessService {
     return false;
   }
 
-  private hasAnonymousBlobReference(
+  private hasAnonymousImageInsertion(
     principal: AnonymousDocGuestPrincipal,
     update: Uint8Array
   ) {
-    return decodeUpdate(update).structs.some(struct =>
-      this.structContainsString(
+    return decodeUpdate(update).structs.some(struct => {
+      const hasAnonymousStorageKey = this.structContainsString(
         struct,
         this.anonymousBlobPrefix(principal.docId)
-      )
-    );
+      );
+      const hasImageBlock = this.structContainsString(struct, 'affine:image');
+      const hasImageSource = this.structContainsString(struct, 'sourceId');
+
+      return hasAnonymousStorageKey || (hasImageBlock && hasImageSource);
+    });
   }
 
   private structContainsString(value: unknown, needle: string): boolean {
