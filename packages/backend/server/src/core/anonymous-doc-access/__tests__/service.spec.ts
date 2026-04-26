@@ -72,12 +72,29 @@ test('anonymous blob read requires existing shared doc', async t => {
   const service = createService(null);
 
   await t.throwsAsync(
+    service.assertCanReadBlob(editorPrincipal, 'workspace', 'assets/file.png'),
+    { instanceOf: DocNotFound }
+  );
+});
+
+test('anonymous blob read allows source doc blobs', async t => {
+  const service = createService();
+
+  await t.notThrowsAsync(
+    service.assertCanReadBlob(editorPrincipal, 'workspace', 'assets/file.png')
+  );
+});
+
+test('anonymous blob read rejects another anonymous doc namespace', async t => {
+  const service = createService();
+
+  await t.throwsAsync(
     service.assertCanReadBlob(
       editorPrincipal,
       'workspace',
-      'anonymous-doc/doc/file.png'
+      'anonymous-doc/other-doc/file.png'
     ),
-    { instanceOf: DocNotFound }
+    { instanceOf: DocActionDenied }
   );
 });
 

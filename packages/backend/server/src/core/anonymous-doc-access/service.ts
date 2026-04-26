@@ -581,8 +581,17 @@ export class AnonymousDocAccessService {
     workspaceId: string,
     key: string
   ) {
+    if (principal.workspaceId !== workspaceId) {
+      throw new DocActionDenied({
+        spaceId: workspaceId,
+        docId: principal.docId,
+        action: 'Doc.Read',
+      });
+    }
+
+    const anonymousBlobPrefix = 'anonymous-doc/';
     if (
-      principal.workspaceId !== workspaceId ||
+      key.startsWith(anonymousBlobPrefix) &&
       !key.startsWith(this.anonymousBlobPrefix(principal.docId))
     ) {
       throw new DocActionDenied({
@@ -591,6 +600,7 @@ export class AnonymousDocAccessService {
         action: 'Doc.Read',
       });
     }
+
     await this.assertDocExists(workspaceId, principal.docId);
   }
 
