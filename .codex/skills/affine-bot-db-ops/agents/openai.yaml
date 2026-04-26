@@ -1,0 +1,4 @@
+interface:
+  display_name: 'AFFiNE Bot DB'
+  short_description: 'Операции с БД бота AFFiNE'
+  default_prompt: 'Используй этот skill для безопасной работы с SQLite БД Telegram-бота AFFiNE, отзыва выданных ссылок и проверки связки бот/AFFiNE.'
