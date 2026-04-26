@@ -498,6 +498,9 @@ export class AnonymousDocAccessService {
     const currentDeleteRanges = currentDoc
       ? this.mergeRangesByClient(this.deleteRanges(currentDoc.missing))
       : new Map<number, StructRange[]>();
+    const currentStructRanges = currentDoc
+      ? this.mergeRangesByClient(this.structRanges(currentDoc.missing))
+      : new Map<number, StructRange[]>();
     const newDeleteRanges = deleteRanges.flatMap(range =>
       this.uncoveredRanges(currentDeleteRanges.get(range.client), range)
     );
@@ -515,15 +518,12 @@ export class AnonymousDocAccessService {
       ...updates.flatMap(update => this.structRanges(update)),
     ];
     const mergedOwnedRanges = this.mergeRangesByClient(ownedRanges);
-    const hasAnonymousImageInsertion = updates.some(update =>
-      this.hasAnonymousImageInsertion(principal, update)
-    );
 
     for (const range of newDeleteRanges) {
+      if (!this.rangeOverlaps(currentStructRanges.get(range.client), range)) {
+        continue;
+      }
       if (!this.isRangeCovered(mergedOwnedRanges.get(range.client), range)) {
-        if (hasAnonymousImageInsertion) {
-          continue;
-        }
         throw new DocActionDenied({
           spaceId: principal.workspaceId,
           docId: principal.docId,
@@ -748,40 +748,19 @@ export class AnonymousDocAccessService {
     return false;
   }
 
-  private hasAnonymousImageInsertion(
-    principal: AnonymousDocGuestPrincipal,
-    update: Uint8Array
+  private rangeOverlaps(
+    existingRanges: StructRange[] | undefined,
+    checkedRange: StructRange
   ) {
-    const structs = decodeUpdate(update).structs;
-    const hasAnonymousStorageKey = structs.some(struct =>
-      this.structContainsString(
-        struct,
-        this.anonymousBlobPrefix(principal.docId)
-      )
-    );
-    const hasImageBlock = structs.some(struct =>
-      this.structContainsString(struct, 'affine:image')
-    );
-    const hasImageSource = structs.some(struct =>
-      this.structContainsString(struct, 'sourceId')
-    );
-
-    return hasAnonymousStorageKey || (hasImageBlock && hasImageSource);
-  }
-
-  private structContainsString(value: unknown, needle: string): boolean {
-    if (typeof value === 'string') {
-      return value.includes(needle);
-    }
-    if (!value || typeof value !== 'object') {
+    if (!existingRanges) {
       return false;
     }
 
-    const values = Array.isArray(value)
-      ? value
-      : Object.values(value as Record<string, unknown>);
-
-    return values.some(child => this.structContainsString(child, needle));
+    const checkedEnd = checkedRange.clock + checkedRange.len;
+    return existingRanges.some(existing => {
+      const existingEnd = existing.clock + existing.len;
+      return existing.clock < checkedEnd && checkedRange.clock < existingEnd;
+    });
   }
 
   private uncoveredRanges(
