@@ -215,6 +215,75 @@ test('anonymous update rejects deleting admin-owned content', async t => {
   );
 });
 
+test('anonymous update rejects editing admin-owned content', async t => {
+  const adminDoc = new YDoc();
+  let adminUpdate: Buffer | null = null;
+  adminDoc.on('update', update => {
+    adminUpdate = Buffer.from(update);
+  });
+  adminDoc.getMap('blocks').set('admin-block', 'admin content');
+
+  const guestDoc = new YDoc();
+  applyUpdate(guestDoc, adminUpdate!);
+  let guestEditUpdate: Buffer | null = null;
+  guestDoc.on('update', update => {
+    guestEditUpdate = Buffer.from(update);
+  });
+  guestDoc.getMap('blocks').set('admin-block', 'guest edited content');
+
+  const service = createService({ id: 'doc' }, [], adminUpdate);
+
+  await t.throwsAsync(
+    service.assertUpdatesDeleteOnlyGuestContent(editorPrincipal, [
+      guestEditUpdate!,
+    ]),
+    { instanceOf: DocActionDenied }
+  );
+});
+
+test('anonymous update allows deleting guest object after admin edit', async t => {
+  const guestDoc = new YDoc();
+  const blocks = guestDoc.getMap('blocks');
+  let guestCreateUpdate: Buffer | null = null;
+  guestDoc.on('update', update => {
+    guestCreateUpdate = Buffer.from(update);
+  });
+  blocks.set('guest-block', 'guest content');
+
+  const adminDoc = new YDoc();
+  applyUpdate(adminDoc, guestCreateUpdate!);
+  let adminEditUpdate: Buffer | null = null;
+  adminDoc.on('update', update => {
+    adminEditUpdate = Buffer.from(update);
+  });
+  adminDoc.getMap('blocks').set('guest-block', 'admin edited content');
+
+  const currentDoc = new YDoc();
+  applyUpdate(currentDoc, guestCreateUpdate!);
+  applyUpdate(currentDoc, adminEditUpdate!);
+  const currentDocUpdate = Buffer.from(encodeStateAsUpdate(currentDoc));
+
+  const deleteDoc = new YDoc();
+  applyUpdate(deleteDoc, currentDocUpdate);
+  let deleteUpdate: Buffer | null = null;
+  deleteDoc.on('update', update => {
+    deleteUpdate = Buffer.from(update);
+  });
+  deleteDoc.getMap('blocks').delete('guest-block');
+
+  const service = createService(
+    { id: 'doc' },
+    [guestCreateUpdate!],
+    currentDocUpdate
+  );
+
+  await t.notThrowsAsync(
+    service.assertUpdatesDeleteOnlyGuestContent(editorPrincipal, [
+      deleteUpdate!,
+    ])
+  );
+});
+
 test('anonymous update ignores delete ranges for absent template structs', async t => {
   const templateDoc = new YDoc();
   let templateUpdate: Buffer | null = null;

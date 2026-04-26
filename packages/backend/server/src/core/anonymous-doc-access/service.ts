@@ -86,6 +86,10 @@ type StructRange = {
   len: number;
 };
 
+type StructMetadata = StructRange & {
+  origin: StructRange | null;
+};
+
 @Injectable()
 export class AnonymousDocAccessService {
   constructor(
@@ -501,6 +505,9 @@ export class AnonymousDocAccessService {
     const currentStructRanges = currentDoc
       ? this.mergeRangesByClient(this.structRanges(currentDoc.missing))
       : new Map<number, StructRange[]>();
+    const currentStructMetadata = currentDoc
+      ? this.structMetadata(currentDoc.missing)
+      : [];
     const newDeleteRanges = deleteRanges.flatMap(range =>
       this.uncoveredRanges(currentDeleteRanges.get(range.client), range)
     );
@@ -521,6 +528,15 @@ export class AnonymousDocAccessService {
 
     for (const range of newDeleteRanges) {
       if (!this.rangeOverlaps(currentStructRanges.get(range.client), range)) {
+        continue;
+      }
+      if (
+        this.isRangeDerivedFromOwned(
+          currentStructMetadata,
+          mergedOwnedRanges,
+          range
+        )
+      ) {
         continue;
       }
       if (!this.isRangeCovered(mergedOwnedRanges.get(range.client), range)) {
@@ -681,6 +697,26 @@ export class AnonymousDocAccessService {
     }));
   }
 
+  private structMetadata(update: Uint8Array): StructMetadata[] {
+    return decodeUpdate(update).structs.map(struct => {
+      const origin =
+        'origin' in struct && struct.origin
+          ? {
+              client: struct.origin.client,
+              clock: struct.origin.clock,
+              len: 1,
+            }
+          : null;
+
+      return {
+        client: struct.id.client,
+        clock: struct.id.clock,
+        len: struct.length,
+        origin,
+      };
+    });
+  }
+
   private deleteRanges(update: Uint8Array): StructRange[] {
     return [...decodeUpdate(update).ds.clients.entries()].flatMap(
       ([client, ranges]) =>
@@ -748,6 +784,69 @@ export class AnonymousDocAccessService {
     return false;
   }
 
+  private isRangeDerivedFromOwned(
+    currentStructs: StructMetadata[],
+    ownedRanges: Map<number, StructRange[]>,
+    checkedRange: StructRange
+  ) {
+    const overlappingStructs = currentStructs.filter(
+      struct =>
+        struct.client === checkedRange.client &&
+        this.rangesOverlap(struct, checkedRange)
+    );
+
+    return (
+      overlappingStructs.length > 0 &&
+      overlappingStructs.every(struct =>
+        this.isStructDerivedFromOwned(currentStructs, ownedRanges, struct)
+      )
+    );
+  }
+
+  private isStructDerivedFromOwned(
+    currentStructs: StructMetadata[],
+    ownedRanges: Map<number, StructRange[]>,
+    struct: StructMetadata,
+    visited = new Set<string>()
+  ): boolean {
+    const ownRanges = ownedRanges.get(struct.client);
+    if (this.isRangeCovered(ownRanges, struct)) {
+      return true;
+    }
+    if (!struct.origin) {
+      return false;
+    }
+
+    const originKey = `${struct.origin.client}:${struct.origin.clock}`;
+    if (visited.has(originKey)) {
+      return false;
+    }
+    visited.add(originKey);
+
+    if (
+      this.isRangeCovered(ownedRanges.get(struct.origin.client), struct.origin)
+    ) {
+      return true;
+    }
+
+    const origin = struct.origin;
+    const originStruct = currentStructs.find(
+      candidate =>
+        candidate.client === origin.client &&
+        candidate.clock <= origin.clock &&
+        origin.clock < candidate.clock + candidate.len
+    );
+
+    return originStruct
+      ? this.isStructDerivedFromOwned(
+          currentStructs,
+          ownedRanges,
+          originStruct,
+          visited
+        )
+      : false;
+  }
+
   private rangeOverlaps(
     existingRanges: StructRange[] | undefined,
     checkedRange: StructRange
@@ -756,11 +855,15 @@ export class AnonymousDocAccessService {
       return false;
     }
 
-    const checkedEnd = checkedRange.clock + checkedRange.len;
-    return existingRanges.some(existing => {
-      const existingEnd = existing.clock + existing.len;
-      return existing.clock < checkedEnd && checkedRange.clock < existingEnd;
-    });
+    return existingRanges.some(existing =>
+      this.rangesOverlap(existing, checkedRange)
+    );
+  }
+
+  private rangesOverlap(left: StructRange, right: StructRange) {
+    const leftEnd = left.clock + left.len;
+    const rightEnd = right.clock + right.len;
+    return left.clock < rightEnd && right.clock < leftEnd;
   }
 
   private uncoveredRanges(
