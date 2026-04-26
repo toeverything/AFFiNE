@@ -137,19 +137,29 @@ const AnonymousBoard = ({ token }: { token: string }) => {
       disposeWorkspace = dispose;
       setWorkspace(openedWorkspace);
 
-      await openedWorkspace.engine.doc.waitForDocLoaded(openedWorkspace.id);
       const docsService = openedWorkspace.scope.get(DocsService);
+      if (!docsService.list.doc$(link.docId).value) {
+        openedWorkspace.docCollection.meta.initialize();
+        openedWorkspace.docCollection.meta.addDocMeta({
+          id: link.docId,
+          title: 'Anonymous board',
+          createDate: Date.now(),
+          tags: [],
+        });
+      }
       await waitForAnonymousDocRecord(docsService, link.docId);
 
       const { doc } = docsService.open(link.docId);
       doc.blockSuiteDoc.load();
       doc.blockSuiteDoc.readonly = false;
-      await openedWorkspace.engine.doc.waitForDocLoaded(link.docId);
 
       const createdEditor = doc.scope.get(EditorsService).createEditor();
       createdEditor.setMode('edgeless');
       setPage(doc);
       setEditor(createdEditor);
+      void openedWorkspace.engine.doc.waitForDocLoaded(link.docId).catch(() => {
+        // The editor still renders the current local doc state; sync retries are owned by nbstore.
+      });
     })().catch(error => {
       console.error(error);
       if (!disposed) {

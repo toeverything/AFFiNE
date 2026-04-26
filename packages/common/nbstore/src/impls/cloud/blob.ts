@@ -81,7 +81,7 @@ export class CloudBlobStorage extends BlobStorageBase {
       '/api/workspaces/' +
         this.options.id +
         '/blobs/' +
-        encodeURIComponent(this.storageKey(key)) +
+        encodeURIComponent(key) +
         (SHOULD_MANUAL_REDIRECT ? '?redirect=manual' : ''),
       {
         cache: 'default',

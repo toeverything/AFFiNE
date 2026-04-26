@@ -118,6 +118,30 @@ test('anonymous upload skips user quota query and namespaces blob key', async ()
   );
 });
 
+test('anonymous download keeps document blob key', async () => {
+  const storage = createAnonymousStorage();
+  const fetchMock = vi.fn().mockResolvedValueOnce(
+    new Response('blob-data', {
+      status: 200,
+      headers: {
+        'content-type': 'text/plain',
+        'last-modified': new Date('2026-01-01').toUTCString(),
+      },
+    })
+  );
+  vi.stubGlobal('fetch', fetchMock);
+
+  const blob = await storage.get('admin-uploaded-blob');
+
+  expect(blob?.data).toEqual(new TextEncoder().encode('blob-data'));
+  expect(fetchMock.mock.calls[0]?.[0]?.toString()).toBe(
+    'https://example.com/api/workspaces/workspace-1/blobs/admin-uploaded-blob'
+  );
+  expect(fetchMock.mock.calls[0]?.[1]?.headers).toMatchObject({
+    'x-affine-anonymous-guest-token': 'guest-token',
+  });
+});
+
 test('blob frontend returns storage key for document references', async () => {
   const setMock = vi.fn();
   const uploadMock = vi.fn(async () => true);
