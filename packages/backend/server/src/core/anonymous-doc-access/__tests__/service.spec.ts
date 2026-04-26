@@ -60,7 +60,19 @@ test('anonymous doc link rejects system docs', async t => {
   );
 });
 
-test('anonymous blob write requires anonymous blob namespace', async t => {
+test('anonymous blob write allows content-addressed workspace blob key', async t => {
+  const service = createService();
+
+  await t.notThrowsAsync(
+    service.assertCanWriteBlob(
+      editorPrincipal,
+      'workspace',
+      'UwHFZxwb0cHtNqX22dZS5H7AApidNb6hJaAITBV0Z6M='
+    )
+  );
+});
+
+test('anonymous blob write rejects nested workspace blob key outside anonymous namespace', async t => {
   const service = createService();
 
   await t.throwsAsync(
