@@ -150,7 +150,7 @@ const BlockSuiteEditorImpl = ({
   }, [mode, page]);
 
   const handleClickPageModeBlank = useCallback(() => {
-    if (shared || readonly || page.readonly) return;
+    if (readonly || page.readonly) return;
     const std = affineEditorContainerProxy.host?.std;
     if (!std) {
       return;
@@ -173,7 +173,7 @@ const BlockSuiteEditorImpl = ({
     }
 
     std.command.exec(appendParagraphCommand);
-  }, [affineEditorContainerProxy.host?.std, page, readonly, shared]);
+  }, [affineEditorContainerProxy.host?.std, page, readonly]);
 
   useEffect(() => {
     const editorContainer = rootRef.current;
