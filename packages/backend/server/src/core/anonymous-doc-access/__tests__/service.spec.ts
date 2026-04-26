@@ -205,7 +205,7 @@ test('anonymous update rejects deleting admin-owned content', async t => {
   });
   guestDoc.getMap('blocks').delete('admin-block');
 
-  const service = createService();
+  const service = createService({ id: 'doc' }, [], adminUpdate);
 
   await t.throwsAsync(
     service.assertUpdatesDeleteOnlyGuestContent(editorPrincipal, [
@@ -215,22 +215,44 @@ test('anonymous update rejects deleting admin-owned content', async t => {
   );
 });
 
-test('anonymous update allows anonymous image blob insertion side effects', async t => {
-  const adminDoc = new YDoc();
-  const blocks = adminDoc.getMap('blocks');
-  let adminUpdate: Buffer | null = null;
-  adminDoc.on('update', update => {
-    adminUpdate = Buffer.from(update);
+test('anonymous update ignores delete ranges for absent template structs', async t => {
+  const templateDoc = new YDoc();
+  let templateUpdate: Buffer | null = null;
+  let cleanupUpdate: Buffer | null = null;
+  templateDoc.on('update', update => {
+    if (!templateUpdate) {
+      templateUpdate = Buffer.from(update);
+    } else {
+      cleanupUpdate = Buffer.from(update);
+    }
   });
-  blocks.set('admin-block', 'admin content');
+  templateDoc.getMap('blocks').set('template-block', 'template content');
+  templateDoc.getMap('blocks').delete('template-block');
+
+  const service = createService();
+
+  await t.notThrowsAsync(
+    service.assertUpdatesDeleteOnlyGuestContent(editorPrincipal, [
+      cleanupUpdate!,
+    ])
+  );
+});
+
+test('anonymous update allows anonymous image blob insertion side effects', async t => {
+  const templateDoc = new YDoc();
+  let cleanupUpdate: Buffer | null = null;
+  templateDoc.getMap('blocks').set('template-block', 'template content');
+  templateDoc.on('update', update => {
+    cleanupUpdate = Buffer.from(update);
+  });
+  templateDoc.getMap('blocks').delete('template-block');
 
   const guestDoc = new YDoc();
-  applyUpdate(guestDoc, adminUpdate!);
+  applyUpdate(guestDoc, cleanupUpdate!);
   let guestUpdate: Buffer | null = null;
   guestDoc.on('update', update => {
     guestUpdate = Buffer.from(update);
   });
-  guestDoc.getMap('blocks').delete('admin-block');
   guestDoc.getMap('blocks').set('image-block', 'anonymous-doc/doc/image.png');
 
   const service = createService();
