@@ -3,8 +3,7 @@ let binding;
 try {
   binding = require('./server-native.node');
 } catch {
-  const fallback = './server-native.x64.node';
-  binding = require(fallback);
+  binding = require('./server-native.x64.node');
 }
 
 module.exports = binding;
