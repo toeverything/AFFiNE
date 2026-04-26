@@ -12,8 +12,27 @@ import {
 import { ActionForbidden } from '../../base';
 import { Models } from '../../models';
 import { CurrentUser } from '../auth/session';
+import { DOC_ACTIONS } from '../permission';
 import { UserType } from '../user';
 import { AccessToken, RevealedAccessToken } from './types';
+
+@InputType()
+class GenerateAccessTokenDocScopeInput {
+  @Field()
+  workspaceId!: string;
+
+  @Field({ nullable: true })
+  docId?: string;
+
+  @Field(() => [String])
+  actions!: string[];
+}
+
+@InputType()
+class GenerateAccessTokenScopesInput {
+  @Field(() => [GenerateAccessTokenDocScopeInput], { nullable: true })
+  docs?: GenerateAccessTokenDocScopeInput[];
+}
 
 @InputType()
 class GenerateAccessTokenInput {
@@ -22,6 +41,9 @@ class GenerateAccessTokenInput {
 
   @Field(() => Date, { nullable: true })
   expiresAt!: Date | null;
+
+  @Field(() => GenerateAccessTokenScopesInput, { nullable: true })
+  scopes?: GenerateAccessTokenScopesInput;
 }
 
 @Resolver(() => AccessToken)
@@ -42,10 +64,13 @@ export class AccessTokenResolver {
     @CurrentUser() user: CurrentUser,
     @Args('input') input: GenerateAccessTokenInput
   ): Promise<RevealedAccessToken> {
+    const scopes = normalizeScopes(input.scopes);
+
     return await this.models.accessToken.create({
       userId: user.id,
       name: input.name,
       expiresAt: input.expiresAt,
+      scopes,
     });
   }
 
@@ -57,6 +82,38 @@ export class AccessTokenResolver {
     await this.models.accessToken.revoke(id, user.id);
     return true;
   }
+}
+
+function normalizeScopes(input?: GenerateAccessTokenScopesInput) {
+  if (!input) {
+    return null;
+  }
+
+  const docs = input.docs?.map(scope => ({
+    workspaceId: scope.workspaceId,
+    docId: scope.docId ?? null,
+    actions: [...new Set(scope.actions)],
+  }));
+
+  if (!docs?.length) {
+    return null;
+  }
+
+  for (const scope of docs) {
+    if (!scope.workspaceId) {
+      throw new ActionForbidden('Access token doc scope requires workspaceId');
+    }
+    if (!scope.actions.length) {
+      throw new ActionForbidden('Access token doc scope requires actions');
+    }
+    for (const action of scope.actions) {
+      if (!DOC_ACTIONS.includes(action as any)) {
+        throw new ActionForbidden(`Unsupported doc action scope: ${action}`);
+      }
+    }
+  }
+
+  return { docs };
 }
 
 @Resolver(() => UserType)

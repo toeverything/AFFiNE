@@ -7,6 +7,7 @@ type AccessToken {
   expiresAt: DateTime
   id: String!
   name: String!
+  scopes: JSONObject
 }
 
 input AddContextBlobInput {
@@ -1137,9 +1138,20 @@ input ForkChatSessionInput {
   workspaceId: String!
 }
 
+input GenerateAccessTokenDocScopeInput {
+  actions: [String!]!
+  docId: String
+  workspaceId: String!
+}
+
 input GenerateAccessTokenInput {
   expiresAt: DateTime
   name: String!
+  scopes: GenerateAccessTokenScopesInput
+}
+
+input GenerateAccessTokenScopesInput {
+  docs: [GenerateAccessTokenDocScopeInput!]
 }
 
 input GrantDocUserRolesInput {
@@ -2128,6 +2140,7 @@ type RevealedAccessToken {
   expiresAt: DateTime
   id: String!
   name: String!
+  scopes: JSONObject
   token: String!
 }
 
