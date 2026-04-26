@@ -203,6 +203,31 @@ test('anonymous update rejects deleting admin-owned content', async t => {
   );
 });
 
+test('anonymous update allows anonymous image blob insertion side effects', async t => {
+  const adminDoc = new YDoc();
+  const blocks = adminDoc.getMap('blocks');
+  let adminUpdate: Buffer | null = null;
+  adminDoc.on('update', update => {
+    adminUpdate = Buffer.from(update);
+  });
+  blocks.set('admin-block', 'admin content');
+
+  const guestDoc = new YDoc();
+  applyUpdate(guestDoc, adminUpdate!);
+  let guestUpdate: Buffer | null = null;
+  guestDoc.on('update', update => {
+    guestUpdate = Buffer.from(update);
+  });
+  guestDoc.getMap('blocks').delete('admin-block');
+  guestDoc.getMap('blocks').set('image-block', 'anonymous-doc/doc/image.png');
+
+  const service = createService();
+
+  await t.notThrowsAsync(
+    service.assertUpdatesDeleteOnlyGuestContent(editorPrincipal, [guestUpdate!])
+  );
+});
+
 test('anonymous update ignores delete ranges already present in current doc', async t => {
   const adminDoc = new YDoc();
   adminDoc.getMap('blocks').set('old-admin-block', 'admin content');
