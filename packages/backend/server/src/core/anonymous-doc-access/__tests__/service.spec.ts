@@ -1,5 +1,5 @@
 import test from 'ava';
-import { applyUpdate, Doc as YDoc } from 'yjs';
+import { applyUpdate, Doc as YDoc, encodeStateAsUpdate } from 'yjs';
 
 import { DocActionDenied, DocNotFound } from '../../../base';
 import { DocRole } from '../../../models';
@@ -7,7 +7,8 @@ import { AnonymousDocAccessService } from '../service';
 
 function createService(
   snapshot: unknown = { id: 'doc' },
-  recordedUpdates: Buffer[] = []
+  recordedUpdates: Buffer[] = [],
+  currentDocUpdate: Buffer | null = null
 ) {
   return new AnonymousDocAccessService(
     {
@@ -16,7 +17,16 @@ function createService(
       },
       $queryRaw: async () => recordedUpdates.map(update => ({ update })),
     } as any,
-    {} as any
+    {
+      getDocDiff: async () =>
+        currentDocUpdate
+          ? {
+              missing: currentDocUpdate,
+              state: new Uint8Array(),
+              timestamp: Date.now(),
+            }
+          : null,
+    } as any
   );
 }
 
@@ -190,6 +200,27 @@ test('anonymous update rejects deleting admin-owned content', async t => {
       deleteUpdate!,
     ]),
     { instanceOf: DocActionDenied }
+  );
+});
+
+test('anonymous update ignores delete ranges already present in current doc', async t => {
+  const adminDoc = new YDoc();
+  adminDoc.getMap('blocks').set('old-admin-block', 'admin content');
+  adminDoc.getMap('blocks').delete('old-admin-block');
+  const currentDocUpdate = Buffer.from(encodeStateAsUpdate(adminDoc));
+
+  const guestDoc = new YDoc();
+  applyUpdate(guestDoc, currentDocUpdate);
+  let guestUpdate: Buffer | null = null;
+  guestDoc.on('update', update => {
+    guestUpdate = Buffer.from(update);
+  });
+  guestDoc.getMap('blocks').set('guest-block', 'guest content');
+
+  const service = createService({ id: 'doc' }, [], currentDocUpdate);
+
+  await t.notThrowsAsync(
+    service.assertUpdatesDeleteOnlyGuestContent(editorPrincipal, [guestUpdate!])
   );
 });
 

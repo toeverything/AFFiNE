@@ -488,6 +488,20 @@ export class AnonymousDocAccessService {
       return;
     }
 
+    const currentDoc = await this.workspace.getDocDiff(
+      principal.workspaceId,
+      principal.docId
+    );
+    const currentDeleteRanges = currentDoc
+      ? this.mergeRangesByClient(this.deleteRanges(currentDoc.missing))
+      : new Map<number, StructRange[]>();
+    const newDeleteRanges = deleteRanges.flatMap(range =>
+      this.uncoveredRanges(currentDeleteRanges.get(range.client), range)
+    );
+    if (!newDeleteRanges.length) {
+      return;
+    }
+
     const recordedUpdate = await this.getRecordedGuestUpdate(
       principal.workspaceId,
       principal.docId,
@@ -499,7 +513,7 @@ export class AnonymousDocAccessService {
     ];
     const mergedOwnedRanges = this.mergeRangesByClient(ownedRanges);
 
-    for (const range of deleteRanges) {
+    for (const range of newDeleteRanges) {
       if (!this.isRangeCovered(mergedOwnedRanges.get(range.client), range)) {
         throw new DocActionDenied({
           spaceId: principal.workspaceId,
@@ -719,6 +733,50 @@ export class AnonymousDocAccessService {
     }
 
     return false;
+  }
+
+  private uncoveredRanges(
+    coveredRanges: StructRange[] | undefined,
+    checkedRange: StructRange
+  ) {
+    if (!coveredRanges) {
+      return [checkedRange];
+    }
+
+    const uncovered: StructRange[] = [];
+    let cursor = checkedRange.clock;
+    const checkedEnd = checkedRange.clock + checkedRange.len;
+
+    for (const covered of coveredRanges) {
+      const coveredEnd = covered.clock + covered.len;
+      if (coveredEnd <= cursor) {
+        continue;
+      }
+      if (covered.clock >= checkedEnd) {
+        break;
+      }
+      if (covered.clock > cursor) {
+        uncovered.push({
+          client: checkedRange.client,
+          clock: cursor,
+          len: covered.clock - cursor,
+        });
+      }
+      cursor = Math.max(cursor, coveredEnd);
+      if (cursor >= checkedEnd) {
+        break;
+      }
+    }
+
+    if (cursor < checkedEnd) {
+      uncovered.push({
+        client: checkedRange.client,
+        clock: cursor,
+        len: checkedEnd - cursor,
+      });
+    }
+
+    return uncovered;
   }
 
   isReadOnlySyntheticDoc(workspaceId: string, docId: string) {
