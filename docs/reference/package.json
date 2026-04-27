@@ -8,8 +8,8 @@
   },
   "devDependencies": {
     "nodemon": "^3.1.14",
-    "serve": "^14.2.5",
-    "typedoc": "^0.28.17"
+    "serve": "^14.2.6",
+    "typedoc": "^0.28.18"
   },
   "nodemonConfig": {
     "watch": [

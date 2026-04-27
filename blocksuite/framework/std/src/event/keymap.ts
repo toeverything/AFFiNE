@@ -94,7 +94,8 @@ export function bindKeymap(
       event.shiftKey || event.altKey || event.ctrlKey || event.metaKey;
     const baseName = base[event.keyCode];
     const isSingleAscii = name.length === 1 && name.charCodeAt(0) <= 0x7e;
-    const isAltInputChar = event.altKey && !event.ctrlKey && !isSingleAscii;
+    const isAltInputChar =
+      event.altKey && !event.ctrlKey && !event.metaKey && !isSingleAscii;
     // Keep supporting existing Alt+digit shortcuts (e.g. Alt-0/1/2 in edgeless)
     // while preventing Alt-based locale input characters from triggering letter shortcuts.
     const isDigitBaseKey =

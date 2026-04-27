@@ -20,6 +20,9 @@ public class PricesQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("prices", [Price].self),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      PricesQuery.Data.self
+    ] }
 
     public var prices: [Price] { __data["prices"] }
 
@@ -39,6 +42,9 @@ public class PricesQuery: GraphQLQuery {
         .field("amount", Int?.self),
         .field("yearlyAmount", Int?.self),
         .field("lifetimeAmount", Int?.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        PricesQuery.Data.Price.self
       ] }
 
       public var type: String { __data["type"] }

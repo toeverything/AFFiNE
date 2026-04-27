@@ -37,6 +37,9 @@ public class ApproveWorkspaceTeamMemberMutation: GraphQLMutation {
         "userId": .variable("userId")
       ]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      ApproveWorkspaceTeamMemberMutation.Data.self
+    ] }
 
     public var approveMember: Bool { __data["approveMember"] }
   }

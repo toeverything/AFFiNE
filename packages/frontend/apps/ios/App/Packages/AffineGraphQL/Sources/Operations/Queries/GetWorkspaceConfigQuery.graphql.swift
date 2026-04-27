@@ -26,6 +26,9 @@ public class GetWorkspaceConfigQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("workspace", Workspace.self, arguments: ["id": .variable("id")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      GetWorkspaceConfigQuery.Data.self
+    ] }
 
     /// Get workspace by id
     public var workspace: Workspace { __data["workspace"] }
@@ -45,6 +48,9 @@ public class GetWorkspaceConfigQuery: GraphQLQuery {
         .field("enableUrlPreview", Bool.self),
         .field("enableDocEmbedding", Bool.self),
         .field("inviteLink", InviteLink?.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        GetWorkspaceConfigQuery.Data.Workspace.self
       ] }
 
       /// Enable AI
@@ -70,6 +76,9 @@ public class GetWorkspaceConfigQuery: GraphQLQuery {
           .field("__typename", String.self),
           .field("link", String.self),
           .field("expireTime", AffineGraphQL.DateTime.self),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          GetWorkspaceConfigQuery.Data.Workspace.InviteLink.self
         ] }
 
         /// Invite link

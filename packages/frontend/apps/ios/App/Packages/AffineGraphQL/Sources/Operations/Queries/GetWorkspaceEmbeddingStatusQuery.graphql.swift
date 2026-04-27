@@ -26,6 +26,9 @@ public class GetWorkspaceEmbeddingStatusQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("queryWorkspaceEmbeddingStatus", QueryWorkspaceEmbeddingStatus.self, arguments: ["workspaceId": .variable("workspaceId")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      GetWorkspaceEmbeddingStatusQuery.Data.self
+    ] }
 
     /// query workspace embedding status
     public var queryWorkspaceEmbeddingStatus: QueryWorkspaceEmbeddingStatus { __data["queryWorkspaceEmbeddingStatus"] }
@@ -42,6 +45,9 @@ public class GetWorkspaceEmbeddingStatusQuery: GraphQLQuery {
         .field("__typename", String.self),
         .field("total", AffineGraphQL.SafeInt.self),
         .field("embedded", AffineGraphQL.SafeInt.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        GetWorkspaceEmbeddingStatusQuery.Data.QueryWorkspaceEmbeddingStatus.self
       ] }
 
       public var total: AffineGraphQL.SafeInt { __data["total"] }

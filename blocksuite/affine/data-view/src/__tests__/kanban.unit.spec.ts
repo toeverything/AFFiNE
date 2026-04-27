@@ -6,8 +6,10 @@ import type { DataSource } from '../core/data-source/base.js';
 import { DetailSelection } from '../core/detail/selection.js';
 import type { FilterGroup } from '../core/filter/types.js';
 import { groupByMatchers } from '../core/group-by/define.js';
+import { GroupTrait, sortByManually } from '../core/group-by/trait.js';
 import { t } from '../core/logical/type-presets.js';
 import type { DataViewCellLifeCycle } from '../core/property/index.js';
+import type { Row } from '../core/view-manager/row.js';
 import { checkboxPropertyModelConfig } from '../property-presets/checkbox/define.js';
 import { multiSelectPropertyModelConfig } from '../property-presets/multi-select/define.js';
 import { selectPropertyModelConfig } from '../property-presets/select/define.js';
@@ -214,7 +216,205 @@ const createDragController = () => {
   return new KanbanDragController({} as DragLogic);
 };
 
+const createTestRow = (rowId: string): Row => ({
+  rowId,
+  cells$: signal([]) as Row['cells$'],
+  index$: signal<Row['index$']['value']>(undefined),
+  prev$: signal<Row | undefined>(undefined),
+  next$: signal<Row | undefined>(undefined),
+  delete: vi.fn(),
+  move: vi.fn(),
+});
+
+const createGroupTraitHarness = (options?: {
+  groupProperties?: Array<{
+    key: string;
+    hide: boolean;
+    manuallyCardSort: string[];
+  }>;
+  rowIds?: string[];
+  values?: Record<string, boolean>;
+}) => {
+  const dataSource = createMockDataSource([
+    {
+      id: 'checkbox',
+      type: checkboxPropertyModelConfig.type,
+    },
+  ]);
+
+  const property = {
+    id: 'checkbox',
+    dataType$: signal(t.boolean.instance()),
+    meta$: signal({ config: {} }),
+  };
+
+  const groupProperties = options?.groupProperties ?? [
+    {
+      key: 'true',
+      hide: false,
+      manuallyCardSort: [],
+    },
+    {
+      key: 'false',
+      hide: false,
+      manuallyCardSort: [],
+    },
+  ];
+  const rows = options?.rowIds ?? [];
+  const data$ = signal({
+    groupProperties,
+  });
+  const cellValues = new Map(
+    Object.entries(options?.values ?? {}).map(([rowId, value]) => [
+      `${rowId}:checkbox`,
+      value,
+    ])
+  );
+  const cells = new Map<
+    string,
+    {
+      jsonValue$: ReturnType<typeof signal<boolean | undefined>>;
+      jsonValueSet: ReturnType<typeof vi.fn<(value: unknown) => void>>;
+      valueSet: ReturnType<typeof vi.fn<(value: unknown) => void>>;
+    }
+  >();
+
+  const cellGetOrCreate = (rowId: string, propertyId: string) => {
+    const key = `${rowId}:${propertyId}`;
+    const existing = cells.get(key);
+    if (existing) {
+      return existing;
+    }
+
+    const jsonValue$ = signal(cellValues.get(key));
+    const update = (value: unknown) => {
+      jsonValue$.value = value as boolean | undefined;
+      cellValues.set(key, value as boolean);
+    };
+    const cell = {
+      jsonValue$,
+      jsonValueSet: vi.fn(update),
+      valueSet: vi.fn(update),
+    };
+    cells.set(key, cell);
+    return cell;
+  };
+
+  const view = {
+    data$,
+    rows$: signal(rows.map(createTestRow)),
+    isLocked$: signal(false),
+    manager: {
+      dataSource: asDataSource(dataSource),
+    },
+    propertyGetOrCreate: () => property,
+    cellGetOrCreate,
+  };
+
+  const groupBy$ = signal<GroupBy | undefined>({
+    type: 'groupBy',
+    columnId: 'checkbox',
+    name: 'boolean',
+    hideEmpty: false,
+    sort: { desc: false },
+  });
+
+  const ops = {
+    groupBySet: vi.fn(),
+    sortGroup: (keys: string[], asc?: boolean) => {
+      const sorted = sortByManually(
+        keys,
+        value => value,
+        data$.value.groupProperties.map(value => value.key)
+      );
+      return asc === false ? sorted.reverse() : sorted;
+    },
+    sortRow: (groupKey: string, groupedRows: Row[]) => {
+      const group = data$.value.groupProperties.find(
+        value => value.key === groupKey
+      );
+      return sortByManually(
+        groupedRows,
+        row => row.rowId,
+        group?.manuallyCardSort ?? []
+      );
+    },
+    changeGroupSort: vi.fn(),
+    changeRowSort: vi.fn(),
+    changeGroupHide: vi.fn(),
+  };
+
+  return {
+    groupTrait: new GroupTrait(groupBy$, view as never, ops),
+    ops,
+    cells,
+  };
+};
+
 describe('kanban', () => {
+  describe('group trait', () => {
+    it('reapplies manual card order when building grouped rows', () => {
+      const { groupTrait } = createGroupTraitHarness({
+        groupProperties: [
+          {
+            key: 'true',
+            hide: false,
+            manuallyCardSort: ['row-2', 'row-1'],
+          },
+          {
+            key: 'false',
+            hide: false,
+            manuallyCardSort: [],
+          },
+        ],
+        rowIds: ['row-1', 'row-2'],
+        values: {
+          'row-1': true,
+          'row-2': true,
+        },
+      });
+
+      expect(
+        groupTrait.groupsDataList$.value
+          ?.find(group => group.key === 'true')
+          ?.rows.map(row => row.rowId)
+      ).toEqual(['row-2', 'row-1']);
+    });
+
+    it('preserves manual group order when updating card sort', () => {
+      const { groupTrait, ops, cells } = createGroupTraitHarness({
+        groupProperties: [
+          {
+            key: 'false',
+            hide: false,
+            manuallyCardSort: ['row-1'],
+          },
+          {
+            key: 'true',
+            hide: false,
+            manuallyCardSort: ['row-2'],
+          },
+        ],
+        rowIds: ['row-1', 'row-2'],
+        values: {
+          'row-1': false,
+          'row-2': true,
+        },
+      });
+
+      groupTrait.moveCardTo('row-1', 'false', 'true', 'end');
+
+      expect(ops.changeRowSort).toHaveBeenCalledWith(
+        ['false', 'true'],
+        'true',
+        ['row-2', 'row-1']
+      );
+      expect(cells.get('row-1:checkbox')?.jsonValueSet).toHaveBeenCalledWith(
+        true
+      );
+    });
+  });
+
   describe('group-by define', () => {
     it('boolean group should not include ungroup bucket', () => {
       const booleanGroup = groupByMatchers.find(

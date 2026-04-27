@@ -38,6 +38,9 @@ public class CalendarEventsQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("workspace", Workspace.self, arguments: ["id": .variable("workspaceId")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      CalendarEventsQuery.Data.self
+    ] }
 
     /// Get workspace by id
     public var workspace: Workspace { __data["workspace"] }
@@ -53,6 +56,9 @@ public class CalendarEventsQuery: GraphQLQuery {
       public static var __selections: [ApolloAPI.Selection] { [
         .field("__typename", String.self),
         .field("calendars", [Calendar].self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        CalendarEventsQuery.Data.Workspace.self
       ] }
 
       public var calendars: [Calendar] { __data["calendars"] }
@@ -72,6 +78,9 @@ public class CalendarEventsQuery: GraphQLQuery {
             "from": .variable("from"),
             "to": .variable("to")
           ]),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          CalendarEventsQuery.Data.Workspace.Calendar.self
         ] }
 
         public var id: String { __data["id"] }
@@ -99,6 +108,9 @@ public class CalendarEventsQuery: GraphQLQuery {
             .field("endAtUtc", AffineGraphQL.DateTime.self),
             .field("originalTimezone", String?.self),
             .field("allDay", Bool.self),
+          ] }
+          public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+            CalendarEventsQuery.Data.Workspace.Calendar.Event.self
           ] }
 
           public var id: String { __data["id"] }

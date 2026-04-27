@@ -4,10 +4,17 @@ import { HttpStatus } from '@nestjs/common';
 import { PrismaClient, WorkspaceMemberStatus } from '@prisma/client';
 import ava, { TestFn } from 'ava';
 import Sinon from 'sinon';
+import supertest from 'supertest';
+import { applyUpdate, Doc as YDoc, Map as YMap } from 'yjs';
 
 import { PgWorkspaceDocStorageAdapter } from '../../core/doc';
 import { WorkspaceBlobStorage } from '../../core/storage';
 import { Models, PublicDocMode, WorkspaceRole } from '../../models';
+import {
+  addDocToRootDoc,
+  mergeUpdatesInApplyWay,
+  readAllDocIdsFromRootDoc,
+} from '../../native';
 import { createTestingApp, TestingApp, TestUser } from '../utils';
 
 const test = ava as TestFn<{
@@ -215,6 +222,81 @@ test('should be able to get doc', async t => {
   t.is(res.status, HttpStatus.OK);
   t.is(res.get('content-type'), 'application/octet-stream');
   t.deepEqual(res.body, Buffer.from([0, 0]));
+});
+
+test('should not expose legacy root doc for private workspace with public pages', async t => {
+  const { app } = t.context;
+
+  const res = await app.GET('/api/workspaces/private/docs/private');
+
+  t.is(res.status, HttpStatus.FORBIDDEN);
+});
+
+test('should expose filtered public root doc for shared page', async t => {
+  const { app, workspace: doc } = t.context;
+
+  let root = addDocToRootDoc(Buffer.from([0, 0]), 'public', 'Public Doc');
+  const privateUpdate = addDocToRootDoc(root, 'private-page', 'Private Doc');
+  root = mergeUpdatesInApplyWay([root, privateUpdate]);
+
+  doc.getDoc.resolves({
+    spaceId: 'private',
+    docId: 'private',
+    bin: root,
+    timestamp: Date.now(),
+  });
+
+  const res = await app.GET(
+    '/api/workspaces/private/public-docs/public/root-doc'
+  );
+
+  t.is(res.status, HttpStatus.OK);
+  const body = Buffer.isBuffer(res.body) ? res.body : Buffer.from(res.body);
+  t.deepEqual(readAllDocIdsFromRootDoc(body, false), ['public']);
+
+  const ydoc = new YDoc({ guid: 'private' });
+  t.notThrows(() =>
+    applyUpdate(
+      ydoc,
+      new Uint8Array(body.buffer, body.byteOffset, body.byteLength)
+    )
+  );
+  const pages = (ydoc.getMap('meta') as YMap<unknown>).get('pages') as
+    | { toArray: () => Array<{ get: (key: string) => unknown }> }
+    | undefined;
+  t.deepEqual(
+    pages?.toArray().map(page => page.get('id')),
+    ['public']
+  );
+});
+
+test('should expose public doc publish mode through HEAD route', async t => {
+  const { app } = t.context;
+
+  const res = await supertest(app.getHttpServer()).head(
+    '/api/workspaces/private/public-docs/public'
+  );
+
+  t.is(res.status, HttpStatus.OK);
+  t.is(res.get('publish-mode'), 'page');
+});
+
+test('should expose public doc binary through public route', async t => {
+  const { app, workspace: doc } = t.context;
+
+  doc.getDoc.resolves({
+    spaceId: 'private',
+    docId: 'public',
+    bin: Buffer.from([1, 2, 3]),
+    timestamp: Date.now(),
+  });
+
+  const res = await app.GET('/api/workspaces/private/public-docs/public');
+
+  t.is(res.status, HttpStatus.OK);
+  t.is(res.get('content-type'), 'application/octet-stream');
+  t.is(res.get('publish-mode'), 'page');
+  t.deepEqual(res.body, Buffer.from([1, 2, 3]));
 });
 
 test('should record doc view when reading doc', async t => {

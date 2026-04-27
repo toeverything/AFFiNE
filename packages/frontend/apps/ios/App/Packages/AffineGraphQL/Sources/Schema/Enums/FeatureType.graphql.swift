@@ -10,6 +10,7 @@ public enum FeatureType: String, EnumType {
   case freePlan = "FreePlan"
   case lifetimeProPlan = "LifetimeProPlan"
   case proPlan = "ProPlan"
+  case quotaExceededReadonlyWorkspace = "QuotaExceededReadonlyWorkspace"
   case teamPlan = "TeamPlan"
   case unlimitedCopilot = "UnlimitedCopilot"
   case unlimitedWorkspace = "UnlimitedWorkspace"

@@ -2,8 +2,15 @@ import { SettingHeader } from '@affine/component/setting-components';
 import { WorkspaceService } from '@affine/core/modules/workspace';
 import { useI18n } from '@affine/i18n';
 import { useService } from '@toeverything/infra';
-import { type ReactNode, useCallback, useMemo, useState } from 'react';
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 
+import { CALENDAR_INTEGRATION_SCROLL_ANCHOR } from '../../navigation-constants';
 import { SubPageProvider, useSubPageIsland } from '../../sub-page';
 import {
   IntegrationCard,
@@ -14,17 +21,34 @@ import { getAllowedIntegrationList } from './constants';
 import { type IntegrationItem } from './constants';
 import { list } from './index.css';
 
-export const IntegrationSetting = () => {
+export const IntegrationSetting = ({
+  scrollAnchor,
+}: {
+  scrollAnchor?: string;
+}) => {
   const t = useI18n();
   const [opened, setOpened] = useState<string | null>(null);
   const workspaceService = useService(WorkspaceService);
   const isCloudWorkspace = workspaceService.workspace.flavour !== 'local';
-  console.log('isCloudWorkspace', isCloudWorkspace);
 
   const integrationList = useMemo(
     () => getAllowedIntegrationList(isCloudWorkspace),
     [isCloudWorkspace]
   );
+
+  useEffect(() => {
+    if (scrollAnchor !== CALENDAR_INTEGRATION_SCROLL_ANCHOR) {
+      return;
+    }
+
+    const hasCalendarSetting = integrationList.some(
+      item => item.id === 'calendar' && 'setting' in item
+    );
+    if (hasCalendarSetting) {
+      setOpened('calendar');
+    }
+  }, [integrationList, scrollAnchor]);
+
   const handleCardClick = useCallback((card: IntegrationItem) => {
     if ('setting' in card && card.setting) {
       setOpened(card.id);

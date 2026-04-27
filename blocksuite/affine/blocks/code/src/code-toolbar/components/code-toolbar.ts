@@ -11,7 +11,6 @@ import { MoreVerticalIcon } from '@blocksuite/icons/lit';
 import { flip, offset } from '@floating-ui/dom';
 import { css, html, LitElement } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
-import { styleMap } from 'lit/directives/style-map.js';
 
 import type { CodeBlockToolbarContext } from '../context.js';
 
@@ -82,18 +81,10 @@ export class AffineCodeToolbar extends WithDisposable(LitElement) {
 
     createLitPortal({
       template: html`
-        <editor-menu-content
-          data-show
-          class="more-popup-menu"
-          style=${styleMap({
-            '--content-padding': '8px',
-            '--packed-height': '4px',
-          })}
-        >
-          <div data-size="large" data-orientation="vertical">
-            ${renderGroups(this.moreGroups, this.context)}
-          </div>
-        </editor-menu-content>
+        <affine-code-more-menu
+          .context=${this.context}
+          .moreGroups=${this.moreGroups}
+        ></affine-code-more-menu>
       `,
       // should be greater than block-selection z-index as selection and popover wil share the same stacking context(editor-host)
       portalStyles: {

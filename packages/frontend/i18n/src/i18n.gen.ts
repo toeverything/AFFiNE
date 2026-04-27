@@ -1823,6 +1823,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.copy.asImage.failed"](): string;
     /**
+      * `Copy as Markdown`
+      */
+    ["com.affine.export.copy-markdown"](): string;
+    /**
+      * `Copied as Markdown`
+      */
+    ["com.affine.export.copied-as-markdown"](): string;
+    /**
       * `Cancel`
       */
     ["com.affine.confirmModal.button.cancel"](): string;
@@ -5490,6 +5498,38 @@ export function useAFFiNEI18N(): {
       * `New doc default mode`
       */
     ["com.affine.settings.editorSettings.general.default-new-doc.title"](): string;
+    /**
+      * `Auto-title new docs with current date`
+      */
+    ["com.affine.settings.editorSettings.general.auto-date-title.title"](): string;
+    /**
+      * `Automatically title blank new docs with today's date.`
+      */
+    ["com.affine.settings.editorSettings.general.auto-date-title.description"](): string;
+    /**
+      * `New doc date format`
+      */
+    ["com.affine.settings.editorSettings.general.auto-date-title.format.title"](): string;
+    /**
+      * `Choose the date format used for automatic new doc titles.`
+      */
+    ["com.affine.settings.editorSettings.general.auto-date-title.format.description"](): string;
+    /**
+      * `DD-MM-YYYY`
+      */
+    ["com.affine.settings.editorSettings.general.auto-date-title.format.dd-mm-yyyy"](): string;
+    /**
+      * `MM-DD-YYYY`
+      */
+    ["com.affine.settings.editorSettings.general.auto-date-title.format.mm-dd-yyyy"](): string;
+    /**
+      * `YYYY-MM-DD`
+      */
+    ["com.affine.settings.editorSettings.general.auto-date-title.format.yyyy-mm-dd"](): string;
+    /**
+      * `Journal style (localized)`
+      */
+    ["com.affine.settings.editorSettings.general.auto-date-title.format.journal"](): string;
     /**
       * `Customize your text experience.`
       */

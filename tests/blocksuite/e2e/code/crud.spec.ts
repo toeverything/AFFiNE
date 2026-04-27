@@ -286,6 +286,32 @@ test('toggle code block wrap can work', async ({ page }, testInfo) => {
   );
 });
 
+test('toggle code block wrap can work in the same more menu', async ({
+  page,
+}) => {
+  await enterPlaygroundRoom(page);
+  await initEmptyCodeBlockState(page);
+
+  const codeBlockController = getCodeBlock(page);
+  const codeBlockContainer = page.locator(
+    'affine-code .affine-code-block-container'
+  );
+
+  await codeBlockController.codeBlock.hover();
+  const moreMenu = await codeBlockController.openMore();
+
+  await moreMenu.wrapButton.click();
+
+  await expect(moreMenu.menu).toBeVisible();
+  await expect(codeBlockContainer).toHaveClass(/wrap/);
+  await expect(moreMenu.cancelWrapButton).toBeVisible();
+
+  await moreMenu.cancelWrapButton.click();
+
+  await expect(moreMenu.menu).toBeVisible();
+  await expect(codeBlockContainer).not.toHaveClass(/wrap/);
+});
+
 test('add caption works', async ({ page }, testInfo) => {
   await enterPlaygroundRoom(page);
   await initEmptyCodeBlockState(page);
@@ -352,6 +378,34 @@ test('toggle code block line number can work', async ({ page }) => {
   await codeBlockController.codeBlock.hover();
   await (await codeBlockController.openMore()).lineNumberButton.click();
 
+  await expect(lineNumber).toBeVisible();
+});
+
+test('toggle code block line number can work in the same more menu', async ({
+  page,
+}) => {
+  await enterPlaygroundRoom(page);
+  await initEmptyCodeBlockState(page);
+  await focusRichText(page);
+
+  const lineNumber = page.locator('affine-code .line-number');
+
+  await expect(lineNumber).toBeVisible();
+
+  const codeBlockController = getCodeBlock(page);
+
+  await codeBlockController.codeBlock.hover();
+  const moreMenu = await codeBlockController.openMore();
+
+  await moreMenu.cancelLineNumberButton.click();
+
+  await expect(moreMenu.menu).toBeVisible();
+  await expect(lineNumber).toBeHidden();
+  await expect(moreMenu.lineNumberButton).toBeVisible();
+
+  await moreMenu.lineNumberButton.click();
+
+  await expect(moreMenu.menu).toBeVisible();
   await expect(lineNumber).toBeVisible();
 });
 
