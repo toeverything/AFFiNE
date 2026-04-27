@@ -1,3 +1,4 @@
+import { PlusIcon } from '@blocksuite/icons/lit';
 import { css, html, LitElement } from 'lit';
 import { property } from 'lit/decorators.js';
 
@@ -63,16 +64,7 @@ export class AffineAddBlockWidget extends LitElement {
         aria-label="Add block below"
         @click=${this._handleClick}
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 12 12"
-          fill="currentColor"
-          aria-hidden="true"
-        >
-          <path
-            d="M6 1a.75.75 0 0 1 .75.75v3.5h3.5a.75.75 0 0 1 0 1.5h-3.5v3.5a.75.75 0 0 1-1.5 0v-3.5h-3.5a.75.75 0 0 1 0-1.5h3.5v-3.5A.75.75 0 0 1 6 1Z"
-          />
-        </svg>
+        ${PlusIcon({ width: '12', height: '12' })}
       </button>
     `;
   }
