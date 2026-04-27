@@ -1,5 +1,8 @@
+import './components/add-block-widget.js';
+
 import { EdgelessCRUDIdentifier } from '@blocksuite/affine-block-surface';
 import type { RootBlockModel } from '@blocksuite/affine-model';
+import { focusTextModel } from '@blocksuite/affine-rich-text';
 import { DocModeProvider } from '@blocksuite/affine-shared/services';
 import {
   isInsideEdgelessEditor,
@@ -51,8 +54,47 @@ export class AffineDragHandleWidget extends WidgetComponent<RootBlockModel> {
     this.pointerEventWatcher.reset();
   };
 
+  /**
+   * Insert a new empty paragraph block below the currently hovered block
+   * and move the cursor into it.
+   */
+  private readonly _handleAddBlock = () => {
+    const anchorBlockId = this.anchorBlockId.peek();
+    if (!anchorBlockId) return;
+
+    const block = this.anchorBlockComponent.peek();
+    if (!block) return;
+
+    const { store } = this;
+    const parent = store.getParent(block.model);
+    if (!parent) return;
+
+    const index = parent.children.indexOf(block.model);
+
+    store.captureSync();
+    const newBlockId = store.addBlock(
+      'affine:paragraph',
+      {},
+      parent,
+      index + 1
+    );
+
+    if (!newBlockId) return;
+
+    this.host.updateComplete
+      .then(() => {
+        focusTextModel(this.std, newBlockId);
+      })
+      .catch(console.error);
+
+    this.hide();
+  };
+
   @state()
   accessor activeDragHandle: 'block' | 'gfx' | null = null;
+
+  @state()
+  accessor showAddBlockWidget = false;
 
   anchorBlockId = signal<string | null>(null);
 
@@ -115,6 +157,7 @@ export class AffineDragHandleWidget extends WidgetComponent<RootBlockModel> {
     this.anchorBlockId.value = null;
     this.dragHoverRect = null;
     this.activeDragHandle = null;
+    this.showAddBlockWidget = false;
 
     if (this.dragHandleContainer) {
       this.dragHandleContainer.removeAttribute('style');
@@ -211,6 +254,12 @@ export class AffineDragHandleWidget extends WidgetComponent<RootBlockModel> {
 
     return html`
       <div class="affine-drag-handle-widget">
+        <div class="affine-add-block-widget-container">
+          <affine-add-block-widget
+            .visible=${this.showAddBlockWidget && this.mode === 'page'}
+            @add-block=${this._handleAddBlock}
+          ></affine-add-block-widget>
+        </div>
         <div class="affine-drag-handle-container">
           <div class=${classMap(classes)}>
             ${isGfx
@@ -235,6 +284,9 @@ export class AffineDragHandleWidget extends WidgetComponent<RootBlockModel> {
 
   @query('.affine-drag-handle-grabber')
   accessor dragHandleGrabber!: HTMLDivElement;
+
+  @query('.affine-add-block-widget-container')
+  accessor addBlockWidgetContainer!: HTMLDivElement;
 
   @state()
   accessor dragHoverRect: {

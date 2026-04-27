@@ -12,6 +12,7 @@ import { computed } from '@preact/signals-core';
 import throttle from 'lodash-es/throttle';
 
 import {
+  ADD_BLOCK_WIDGET_WIDTH,
   DRAG_HANDLE_CONTAINER_WIDTH,
   DRAG_HANDLE_GRABBER_BORDER_RADIUS,
   DRAG_HANDLE_GRABBER_HEIGHT,
@@ -199,6 +200,7 @@ export class PointerEventWatcher {
       !this.widget.isDragHandleHovered
     ) {
       this.showDragHandleOnHoverBlock();
+      this.widget.showAddBlockWidget = true;
       this._lastHoveredBlockId = this.widget.anchorBlockId.peek();
     }
   };
@@ -317,6 +319,7 @@ export class PointerEventWatcher {
 
     const container = this.widget.dragHandleContainer;
     const grabber = this.widget.dragHandleGrabber;
+    const addBlockWidgetContainer = this.widget.addBlockWidgetContainer;
     if (!container || !grabber) return;
 
     this.widget.activeDragHandle = 'block';
@@ -336,6 +339,14 @@ export class PointerEventWatcher {
       Object.assign(container.style, containerStyle);
 
       container.style.display = 'flex';
+
+      // Position the add-block widget container to the left of the drag handle
+      if (addBlockWidgetContainer) {
+        addBlockWidgetContainer.style.left = `${draggingAreaRect.left - ADD_BLOCK_WIDGET_WIDTH}px`;
+        addBlockWidgetContainer.style.top = `${draggingAreaRect.top}px`;
+        addBlockWidgetContainer.style.height = `${draggingAreaRect.height}px`;
+        addBlockWidgetContainer.style.display = 'flex';
+      }
     };
 
     if (isBlockIdEqual(block.blockId, this._lastShowedBlock?.id)) {
