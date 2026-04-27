@@ -166,6 +166,10 @@ export class AffineDragHandleWidget extends WidgetComponent<RootBlockModel> {
     if (this.dragHandleGrabber) {
       this.dragHandleGrabber.removeAttribute('style');
     }
+    if (this.addBlockWidgetContainer) {
+      this.addBlockWidgetContainer.removeAttribute('style');
+      this.addBlockWidgetContainer.style.display = 'none';
+    }
 
     if (force) {
       this._reset();
