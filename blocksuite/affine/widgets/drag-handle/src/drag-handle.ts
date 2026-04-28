@@ -2,7 +2,6 @@ import './components/add-block-widget.js';
 
 import { EdgelessCRUDIdentifier } from '@blocksuite/affine-block-surface';
 import type { RootBlockModel } from '@blocksuite/affine-model';
-import { focusTextModel } from '@blocksuite/affine-rich-text';
 import { DocModeProvider } from '@blocksuite/affine-shared/services';
 import {
   isInsideEdgelessEditor,
@@ -29,6 +28,7 @@ import { HandleEventWatcher } from './watchers/handle-event-watcher.js';
 import { KeyboardEventWatcher } from './watchers/keyboard-event-watcher.js';
 import { PageWatcher } from './watchers/page-watcher.js';
 import { PointerEventWatcher } from './watchers/pointer-event-watcher.js';
+import { focusTextModel } from '../../../rich-text/src/dom.js';
 
 export class AffineDragHandleWidget extends WidgetComponent<RootBlockModel> {
   static override styles = styles;
