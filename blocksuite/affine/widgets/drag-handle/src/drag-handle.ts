@@ -17,6 +17,7 @@ import { query, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
+import { focusTextModel } from '../../../rich-text/src/dom.js';
 import type { AFFINE_DRAG_HANDLE_WIDGET } from './consts.js';
 import { RectHelper } from './helpers/rect-helper.js';
 import { SelectionHelper } from './helpers/selection-helper.js';
@@ -28,7 +29,6 @@ import { HandleEventWatcher } from './watchers/handle-event-watcher.js';
 import { KeyboardEventWatcher } from './watchers/keyboard-event-watcher.js';
 import { PageWatcher } from './watchers/page-watcher.js';
 import { PointerEventWatcher } from './watchers/pointer-event-watcher.js';
-import { focusTextModel } from '../../../rich-text/src/dom.js';
 
 export class AffineDragHandleWidget extends WidgetComponent<RootBlockModel> {
   static override styles = styles;
