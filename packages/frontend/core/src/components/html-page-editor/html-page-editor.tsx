@@ -1,3 +1,4 @@
+import { useConfirmModal } from '@affine/component';
 import { useLiveData, useService } from '@toeverything/infra';
 import clsx from 'clsx';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -31,7 +32,7 @@ export const HtmlPageEditor = ({ readonly }: HtmlPageEditorProps) => {
   const sandboxMode: SandboxMode = ((properties.htmlSandboxMode as string) ??
     'restricted') as SandboxMode;
 
-  const [viewMode, setViewMode] = useState<ViewMode>('split');
+  const [viewMode, setViewMode] = useState<ViewMode>('preview');
   const [localContent, setLocalContent] = useState(htmlContent);
   const [charCount, setCharCount] = useState(htmlContent.length);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -76,9 +77,23 @@ export const HtmlPageEditor = ({ readonly }: HtmlPageEditorProps) => {
   );
 
   const toggleSandboxMode = useCallback(() => {
-    const newMode: SandboxMode =
-      sandboxMode === 'restricted' ? 'unrestricted' : 'restricted';
-    doc.record.setProperty('htmlSandboxMode', newMode);
+    if (sandboxMode === 'restricted') {
+      openConfirmModal({
+        title: 'Security Warning',
+        description:
+          'Enabling unrestricted mode will allow JavaScript execution within this HTML page. This can be dangerous if the HTML content is from an untrusted source. Are you sure you want to proceed?',
+        cancelText: 'Cancel',
+        confirmText: 'Enable Unrestricted Mode',
+        confirmButtonOptions: {
+          variant: 'error',
+        },
+        onConfirm: () => {
+          doc.record.setProperty('htmlSandboxMode', 'unrestricted');
+        },
+      });
+    } else {
+      doc.record.setProperty('htmlSandboxMode', 'restricted');
+    }
   }, [doc, sandboxMode]);
 
   // Build the sandbox attribute for the iframe
