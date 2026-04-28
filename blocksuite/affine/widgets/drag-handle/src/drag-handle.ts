@@ -70,7 +70,7 @@ export class AffineDragHandleWidget extends WidgetComponent<RootBlockModel> {
     if (!parent) return;
 
     const index = parent.children.indexOf(block.model);
-
+    if (index < 0) return;
     store.captureSync();
     const newBlockId = store.addBlock(
       'affine:paragraph',
