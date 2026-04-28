@@ -27,6 +27,10 @@
       "type": "Object",
       "desc": "The config for copilot job queue"
     },
+    "queues.calendar": {
+      "type": "Object",
+      "desc": "The config for calendar job queue"
+    },
     "queues.doc": {
       "type": "Object",
       "desc": "The config for doc job queue"

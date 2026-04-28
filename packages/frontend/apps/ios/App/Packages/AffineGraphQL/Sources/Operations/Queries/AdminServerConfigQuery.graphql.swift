@@ -21,6 +21,9 @@ public class AdminServerConfigQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("serverConfig", ServerConfig.self),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      AdminServerConfigQuery.Data.self
+    ] }
 
     /// server config
     public var serverConfig: ServerConfig { __data["serverConfig"] }
@@ -45,6 +48,9 @@ public class AdminServerConfigQuery: GraphQLQuery {
         .field("availableUpgrade", AvailableUpgrade?.self),
         .field("availableUserFeatures", [GraphQLEnum<AffineGraphQL.FeatureType>].self),
         .field("availableWorkspaceFeatures", [GraphQLEnum<AffineGraphQL.FeatureType>].self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        AdminServerConfigQuery.Data.ServerConfig.self
       ] }
 
       /// server version
@@ -80,6 +86,10 @@ public class AdminServerConfigQuery: GraphQLQuery {
           .field("__typename", String.self),
           .fragment(CredentialsRequirements.self),
         ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          AdminServerConfigQuery.Data.ServerConfig.CredentialsRequirement.self,
+          CredentialsRequirements.self
+        ] }
 
         public var password: Password { __data["password"] }
 
@@ -107,6 +117,9 @@ public class AdminServerConfigQuery: GraphQLQuery {
           .field("version", String.self),
           .field("publishedAt", AffineGraphQL.DateTime.self),
           .field("url", String.self),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          AdminServerConfigQuery.Data.ServerConfig.AvailableUpgrade.self
         ] }
 
         public var changelog: String { __data["changelog"] }

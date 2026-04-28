@@ -34,6 +34,9 @@ public class IndexerAggregateQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("workspace", Workspace.self, arguments: ["id": .variable("id")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      IndexerAggregateQuery.Data.self
+    ] }
 
     /// Get workspace by id
     public var workspace: Workspace { __data["workspace"] }
@@ -49,6 +52,9 @@ public class IndexerAggregateQuery: GraphQLQuery {
       public static var __selections: [ApolloAPI.Selection] { [
         .field("__typename", String.self),
         .field("aggregate", Aggregate.self, arguments: ["input": .variable("input")]),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        IndexerAggregateQuery.Data.Workspace.self
       ] }
 
       /// Search a specific table with aggregate
@@ -66,6 +72,9 @@ public class IndexerAggregateQuery: GraphQLQuery {
           .field("__typename", String.self),
           .field("buckets", [Bucket].self),
           .field("pagination", Pagination.self),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          IndexerAggregateQuery.Data.Workspace.Aggregate.self
         ] }
 
         public var buckets: [Bucket] { __data["buckets"] }
@@ -85,6 +94,9 @@ public class IndexerAggregateQuery: GraphQLQuery {
             .field("count", Int.self),
             .field("hits", Hits.self),
           ] }
+          public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+            IndexerAggregateQuery.Data.Workspace.Aggregate.Bucket.self
+          ] }
 
           public var key: String { __data["key"] }
           public var count: Int { __data["count"] }
@@ -103,6 +115,9 @@ public class IndexerAggregateQuery: GraphQLQuery {
               .field("__typename", String.self),
               .field("nodes", [Node].self),
             ] }
+            public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+              IndexerAggregateQuery.Data.Workspace.Aggregate.Bucket.Hits.self
+            ] }
 
             public var nodes: [Node] { __data["nodes"] }
 
@@ -118,6 +133,9 @@ public class IndexerAggregateQuery: GraphQLQuery {
                 .field("__typename", String.self),
                 .field("fields", AffineGraphQL.JSONObject.self),
                 .field("highlights", AffineGraphQL.JSONObject?.self),
+              ] }
+              public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+                IndexerAggregateQuery.Data.Workspace.Aggregate.Bucket.Hits.Node.self
               ] }
 
               /// The search result fields, see UnionSearchItemObjectType
@@ -141,6 +159,9 @@ public class IndexerAggregateQuery: GraphQLQuery {
             .field("count", Int.self),
             .field("hasMore", Bool.self),
             .field("nextCursor", String?.self),
+          ] }
+          public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+            IndexerAggregateQuery.Data.Workspace.Aggregate.Pagination.self
           ] }
 
           public var count: Int { __data["count"] }

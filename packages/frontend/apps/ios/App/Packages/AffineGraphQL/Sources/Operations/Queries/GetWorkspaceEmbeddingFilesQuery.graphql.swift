@@ -34,6 +34,9 @@ public class GetWorkspaceEmbeddingFilesQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("workspace", Workspace.self, arguments: ["id": .variable("workspaceId")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      GetWorkspaceEmbeddingFilesQuery.Data.self
+    ] }
 
     /// Get workspace by id
     public var workspace: Workspace { __data["workspace"] }
@@ -50,6 +53,9 @@ public class GetWorkspaceEmbeddingFilesQuery: GraphQLQuery {
         .field("__typename", String.self),
         .field("embedding", Embedding.self),
       ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        GetWorkspaceEmbeddingFilesQuery.Data.Workspace.self
+      ] }
 
       public var embedding: Embedding { __data["embedding"] }
 
@@ -64,6 +70,9 @@ public class GetWorkspaceEmbeddingFilesQuery: GraphQLQuery {
         public static var __selections: [ApolloAPI.Selection] { [
           .field("__typename", String.self),
           .field("files", Files.self, arguments: ["pagination": .variable("pagination")]),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          GetWorkspaceEmbeddingFilesQuery.Data.Workspace.Embedding.self
         ] }
 
         public var files: Files { __data["files"] }
@@ -81,6 +90,9 @@ public class GetWorkspaceEmbeddingFilesQuery: GraphQLQuery {
             .field("totalCount", Int.self),
             .field("pageInfo", PageInfo.self),
             .field("edges", [Edge].self),
+          ] }
+          public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+            GetWorkspaceEmbeddingFilesQuery.Data.Workspace.Embedding.Files.self
           ] }
 
           public var totalCount: Int { __data["totalCount"] }
@@ -100,6 +112,9 @@ public class GetWorkspaceEmbeddingFilesQuery: GraphQLQuery {
               .field("endCursor", String?.self),
               .field("hasNextPage", Bool.self),
             ] }
+            public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+              GetWorkspaceEmbeddingFilesQuery.Data.Workspace.Embedding.Files.PageInfo.self
+            ] }
 
             public var endCursor: String? { __data["endCursor"] }
             public var hasNextPage: Bool { __data["hasNextPage"] }
@@ -116,6 +131,9 @@ public class GetWorkspaceEmbeddingFilesQuery: GraphQLQuery {
             public static var __selections: [ApolloAPI.Selection] { [
               .field("__typename", String.self),
               .field("node", Node.self),
+            ] }
+            public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+              GetWorkspaceEmbeddingFilesQuery.Data.Workspace.Embedding.Files.Edge.self
             ] }
 
             public var node: Node { __data["node"] }
@@ -136,6 +154,9 @@ public class GetWorkspaceEmbeddingFilesQuery: GraphQLQuery {
                 .field("mimeType", String.self),
                 .field("size", AffineGraphQL.SafeInt.self),
                 .field("createdAt", AffineGraphQL.DateTime.self),
+              ] }
+              public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+                GetWorkspaceEmbeddingFilesQuery.Data.Workspace.Embedding.Files.Edge.Node.self
               ] }
 
               public var fileId: String { __data["fileId"] }

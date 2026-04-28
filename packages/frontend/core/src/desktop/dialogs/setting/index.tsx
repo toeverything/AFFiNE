@@ -195,7 +195,10 @@ const SettingModalInner = ({
     modalContentWrapperRef.current?.scrollTo({ top: 0 });
   }, [settingState]);
   return (
-    <FrameworkScope scope={currentServer.scope}>
+    <FrameworkScope
+      key={`setting-modal-${currentServerId}-${currentLanguageKey}`}
+      scope={currentServer.scope}
+    >
       <SettingSidebar
         activeTab={settingState.activeTab}
         onTabChange={onTabChange}
@@ -218,6 +221,7 @@ const SettingModalInner = ({
                   ) : isWorkspaceSetting(settingState.activeTab) ? (
                     <WorkspaceSetting
                       activeTab={settingState.activeTab}
+                      scrollAnchor={settingState.scrollAnchor}
                       onCloseSetting={onCloseSetting}
                       onChangeSettingState={setSettingState}
                     />

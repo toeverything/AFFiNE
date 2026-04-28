@@ -20,6 +20,9 @@ public class RemoveAvatarMutation: GraphQLMutation {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("removeAvatar", RemoveAvatar.self),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      RemoveAvatarMutation.Data.self
+    ] }
 
     /// Remove user avatar
     public var removeAvatar: RemoveAvatar { __data["removeAvatar"] }
@@ -35,6 +38,9 @@ public class RemoveAvatarMutation: GraphQLMutation {
       public static var __selections: [ApolloAPI.Selection] { [
         .field("__typename", String.self),
         .field("success", Bool.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        RemoveAvatarMutation.Data.RemoveAvatar.self
       ] }
 
       public var success: Bool { __data["success"] }

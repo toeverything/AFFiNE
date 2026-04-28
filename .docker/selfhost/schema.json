@@ -62,6 +62,18 @@
             "concurrency": 10
           }
         },
+        "queues.calendar": {
+          "type": "object",
+          "description": "The config for calendar job queue\n@default {\"concurrency\":4}",
+          "properties": {
+            "concurrency": {
+              "type": "number"
+            }
+          },
+          "default": {
+            "concurrency": 4
+          }
+        },
         "queues.doc": {
           "type": "object",
           "description": "The config for doc job queue\n@default {\"concurrency\":1}",
@@ -843,7 +855,7 @@
       "properties": {
         "google": {
           "type": "object",
-          "description": "Google Calendar integration config\n@default {\"enabled\":false,\"clientId\":\"\",\"clientSecret\":\"\",\"externalWebhookUrl\":\"\",\"webhookVerificationToken\":\"\"}\n@link https://developers.google.com/calendar/api/guides/push",
+          "description": "Google Calendar integration config\n@default {\"enabled\":false,\"clientId\":\"\",\"clientSecret\":\"\",\"externalWebhookUrl\":\"\",\"webhookVerificationToken\":\"\",\"requestTimeoutMs\":10000}\n@link https://developers.google.com/calendar/api/guides/push",
           "properties": {
             "enabled": {
               "type": "boolean"
@@ -859,6 +871,9 @@
             },
             "webhookVerificationToken": {
               "type": "string"
+            },
+            "requestTimeoutMs": {
+              "type": "number"
             }
           },
           "default": {
@@ -866,7 +881,8 @@
             "clientId": "",
             "clientSecret": "",
             "externalWebhookUrl": "",
-            "webhookVerificationToken": ""
+            "webhookVerificationToken": "",
+            "requestTimeoutMs": 10000
           }
         },
         "caldav": {

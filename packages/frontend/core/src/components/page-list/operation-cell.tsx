@@ -37,6 +37,7 @@ import { useLiveData, useService, useServices } from '@toeverything/infra';
 import type { MouseEvent } from 'react';
 import { useCallback, useState } from 'react';
 
+import { usePageHelper } from '../../blocksuite/block-suite-page-list/utils';
 import {
   type CollectionMeta,
   CollectionService,
@@ -340,13 +341,16 @@ export const CollectionOperationCell = ({
     compatibleFavoriteItemsAdapter: favAdapter,
     workspaceDialogService,
     collectionService,
-    docsService,
+    workspaceService,
   } = useServices({
     CompatibleFavoriteItemsAdapter,
     WorkspaceDialogService,
     CollectionService,
-    DocsService,
+    WorkspaceService,
   });
+  const { createPage } = usePageHelper(
+    workspaceService.workspace.docCollection
+  );
   const collectionId = collectionMeta.id;
   const { openConfirmModal } = useConfirmModal();
   const favourite = useLiveData(
@@ -409,9 +413,9 @@ export const CollectionOperationCell = ({
   }, [favAdapter, collectionId, t]);
 
   const createAndAddDocument = useCallback(() => {
-    const newDoc = docsService.createDoc();
+    const newDoc = createPage(undefined, { show: false });
     collectionService.addDocToCollection(collectionId, newDoc.id);
-  }, [docsService, collectionService, collectionId]);
+  }, [collectionService, collectionId, createPage]);
 
   const onConfirmAddDocToCollection = useCallback(() => {
     openConfirmModal({

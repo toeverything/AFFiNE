@@ -55,6 +55,14 @@ defineModuleConfig('job', {
     schema,
   },
 
+  'queues.calendar': {
+    desc: 'The config for calendar job queue',
+    default: {
+      concurrency: 4,
+    },
+    schema,
+  },
+
   'queues.doc': {
     desc: 'The config for doc job queue',
     default: {

@@ -141,6 +141,26 @@ export class CopilotContextService implements OnApplicationBootstrap {
     throw new CopilotInvalidContext({ contextId: id });
   }
 
+  async getOwnedContext(
+    userId: string,
+    contextId: string,
+    options: { workspaceId?: string; sessionId?: string } = {}
+  ): Promise<ContextSession> {
+    const accessInfo =
+      await this.models.copilotContext.getAccessInfo(contextId);
+    if (
+      !accessInfo ||
+      accessInfo.session.userId !== userId ||
+      (options.workspaceId &&
+        accessInfo.session.workspaceId !== options.workspaceId) ||
+      (options.sessionId && accessInfo.sessionId !== options.sessionId)
+    ) {
+      throw new CopilotInvalidContext({ contextId });
+    }
+
+    return await this.get(contextId);
+  }
+
   async getBySessionId(sessionId: string): Promise<ContextSession | null> {
     const existsContext =
       await this.models.copilotContext.getBySessionId(sessionId);

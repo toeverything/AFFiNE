@@ -57,6 +57,9 @@ public class SendTestEmailMutation: GraphQLMutation {
         "ignoreTLS": .variable("ignoreTLS")
       ]]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      SendTestEmailMutation.Data.self
+    ] }
 
     public var sendTestEmail: Bool { __data["sendTestEmail"] }
   }

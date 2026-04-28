@@ -26,6 +26,9 @@ public class RemoveContextCategoryMutation: GraphQLMutation {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("removeContextCategory", Bool.self, arguments: ["options": .variable("options")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      RemoveContextCategoryMutation.Data.self
+    ] }
 
     /// remove a category from context
     public var removeContextCategory: Bool { __data["removeContextCategory"] }

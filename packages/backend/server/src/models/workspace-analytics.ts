@@ -349,7 +349,7 @@ export class WorkspaceAnalyticsModel extends BaseModel {
             (
               SELECT active_users
               FROM sync_active_users_minutely
-              WHERE minute_ts <= ${syncTo}
+              WHERE minute_ts BETWEEN ${syncFrom} AND ${syncTo}
               ORDER BY minute_ts DESC
               LIMIT 1
             ),
@@ -362,9 +362,15 @@ export class WorkspaceAnalyticsModel extends BaseModel {
           )
           SELECT
             minutes.minute_ts AS minute,
-            COALESCE(s.active_users, 0)::integer AS "activeUsers"
+            COALESCE(sample.active_users, 0)::integer AS "activeUsers"
           FROM minutes
-          LEFT JOIN sync_active_users_minutely s ON s.minute_ts = minutes.minute_ts
+          LEFT JOIN LATERAL (
+            SELECT active_users
+            FROM sync_active_users_minutely
+            WHERE minute_ts BETWEEN ${syncFrom} AND minutes.minute_ts
+            ORDER BY minute_ts DESC
+            LIMIT 1
+          ) sample ON TRUE
           ORDER BY minute ASC
         `,
       this.db.$queryRaw<
@@ -394,15 +400,23 @@ export class WorkspaceAnalyticsModel extends BaseModel {
               COALESCE(SUM(snapshot_size), 0) AS workspace_storage_bytes,
               COALESCE(SUM(blob_size), 0) AS blob_storage_bytes
             FROM workspace_admin_stats_daily
-            WHERE date BETWEEN ${storageFrom}::date AND ${currentDay}::date
+            WHERE date <= ${currentDay}::date
             GROUP BY date
           )
           SELECT
             days.day AS date,
-            COALESCE(grouped.workspace_storage_bytes, 0) AS "workspaceStorageBytes",
-            COALESCE(grouped.blob_storage_bytes, 0) AS "blobStorageBytes"
+            COALESCE(snapshot.workspace_storage_bytes, 0) AS "workspaceStorageBytes",
+            COALESCE(snapshot.blob_storage_bytes, 0) AS "blobStorageBytes"
           FROM days
-          LEFT JOIN grouped ON grouped.date = days.day
+          LEFT JOIN LATERAL (
+            SELECT
+              workspace_storage_bytes,
+              blob_storage_bytes
+            FROM grouped
+            WHERE date <= days.day
+            ORDER BY date DESC
+            LIMIT 1
+          ) snapshot ON TRUE
           ORDER BY date ASC
         `,
       this.db.$queryRaw<{ conversations: bigint | number }[]>`
@@ -415,11 +429,24 @@ export class WorkspaceAnalyticsModel extends BaseModel {
       topSharedLinksPromise,
     ]);
 
+    const currentWorkspaceStorageBytes = Number(
+      storageCurrent[0]?.workspaceStorageBytes ?? 0
+    );
+    const currentBlobStorageBytes = Number(
+      storageCurrent[0]?.blobStorageBytes ?? 0
+    );
     const storageHistorySeries = storageHistory.map(row => ({
       date: row.date,
       workspaceStorageBytes: Number(row.workspaceStorageBytes ?? 0),
       blobStorageBytes: Number(row.blobStorageBytes ?? 0),
     }));
+    if (storageHistorySeries.length > 0) {
+      const lastPoint = storageHistorySeries[storageHistorySeries.length - 1];
+      if (asDateOnlyString(lastPoint.date) === asDateOnlyString(currentDay)) {
+        lastPoint.workspaceStorageBytes = currentWorkspaceStorageBytes;
+        lastPoint.blobStorageBytes = currentBlobStorageBytes;
+      }
+    }
 
     return {
       syncActiveUsers: Number(syncCurrent[0]?.activeUsers ?? 0),
@@ -436,10 +463,8 @@ export class WorkspaceAnalyticsModel extends BaseModel {
         effectiveSize: syncHistoryHours,
       },
       copilotConversations: Number(copilotCount[0]?.conversations ?? 0),
-      workspaceStorageBytes: Number(
-        storageCurrent[0]?.workspaceStorageBytes ?? 0
-      ),
-      blobStorageBytes: Number(storageCurrent[0]?.blobStorageBytes ?? 0),
+      workspaceStorageBytes: currentWorkspaceStorageBytes,
+      blobStorageBytes: currentBlobStorageBytes,
       workspaceStorageHistory: storageHistorySeries.map(row => ({
         date: row.date,
         value: row.workspaceStorageBytes,

@@ -174,7 +174,8 @@ export const toggleGroup: MenuItemGroup<CodeBlockToolbarContext> = {
             return html`
               <editor-menu-action
                 @click=${() => {
-                  blockComponent.setWrap(!wrapped);
+                  const currentWrap = blockComponent.model.props.wrap;
+                  blockComponent.setWrap(!currentWrap);
                 }}
                 aria-label=${label}
               >
@@ -204,8 +205,10 @@ export const toggleGroup: MenuItemGroup<CodeBlockToolbarContext> = {
             return html`
               <editor-menu-action
                 @click=${() => {
+                  const currentLineNumber =
+                    blockComponent.model.props.lineNumber ?? true;
                   blockComponent.store.updateBlock(blockComponent.model, {
-                    lineNumber: !lineNumber,
+                    lineNumber: !currentLineNumber,
                   });
                 }}
                 aria-label=${label}

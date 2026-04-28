@@ -34,6 +34,9 @@ public class GetDocSummaryQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("workspace", Workspace.self, arguments: ["id": .variable("workspaceId")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      GetDocSummaryQuery.Data.self
+    ] }
 
     /// Get workspace by id
     public var workspace: Workspace { __data["workspace"] }
@@ -50,6 +53,9 @@ public class GetDocSummaryQuery: GraphQLQuery {
         .field("__typename", String.self),
         .field("doc", Doc.self, arguments: ["docId": .variable("docId")]),
       ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        GetDocSummaryQuery.Data.Workspace.self
+      ] }
 
       /// Get get with given id
       public var doc: Doc { __data["doc"] }
@@ -65,6 +71,9 @@ public class GetDocSummaryQuery: GraphQLQuery {
         public static var __selections: [ApolloAPI.Selection] { [
           .field("__typename", String.self),
           .field("summary", String?.self),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          GetDocSummaryQuery.Data.Workspace.Doc.self
         ] }
 
         public var summary: String? { __data["summary"] }

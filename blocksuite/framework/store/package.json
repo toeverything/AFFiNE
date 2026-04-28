@@ -17,7 +17,7 @@
     "file-type": "^21.0.0",
     "lib0": "^0.2.114",
     "lodash.ismatch": "^4.4.0",
-    "minimatch": "^10.2.2",
+    "minimatch": "^10.2.5",
     "nanoid": "^5.1.6",
     "rxjs": "^7.8.2",
     "y-protocols": "^1.0.6",

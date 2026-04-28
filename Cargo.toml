@@ -58,7 +58,7 @@ resolver = "3"
   loom = { version = "0.7", features = ["checkpoint"] }
   lru = "0.16"
   matroska = "0.30"
-  memory-indexer = "0.3.0"
+  memory-indexer = "0.3.1"
   mermaid-rs-renderer = { git = "https://github.com/toeverything/mermaid-rs-renderer", rev = "fba9097", default-features = false }
   mimalloc = "0.1"
   mp4parse = "0.17"
