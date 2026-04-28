@@ -59,6 +59,7 @@ function resolveSignal<T>(data: T | Signal<T>): T {
 const RESERVED_ITEM_KEYS = {
   createPage: 'create:page',
   createEdgeless: 'create:edgeless',
+  createHtmlPage: 'create:html-page',
   datePicker: 'date-picker',
 };
 
@@ -177,6 +178,23 @@ export class AtMenuConfigService extends Service {
           this.insertDoc(inlineEditor, page.id);
           track.doc.editor.atMenu.createDoc({
             mode: 'edgeless',
+          });
+        },
+      },
+      {
+        key: RESERVED_ITEM_KEYS.createHtmlPage,
+        icon: NewXxxPageIcon(), // Reuse icon or change to something HTML specific later
+        name: 'Create HTML Page',
+        action: () => {
+          close();
+          const page = this.docsService.createDoc({
+            title: query,
+            isHtmlPage: true,
+            htmlSandboxMode: 'restricted',
+          });
+          this.insertDoc(inlineEditor, page.id);
+          track.doc.editor.atMenu.createDoc({
+            mode: 'html-page' as any,
           });
         },
       },

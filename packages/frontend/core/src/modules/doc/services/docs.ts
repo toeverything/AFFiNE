@@ -165,6 +165,17 @@ export class DocsService extends Service {
     if (options.isTemplate) {
       docRecord.setProperty('isTemplate', true);
     }
+    if (options.isHtmlPage) {
+      docRecord.setProperty('isHtmlPage', true);
+      docRecord.setProperty(
+        'htmlSandboxMode',
+        options.htmlSandboxMode ?? 'restricted'
+      );
+      docRecord.setProperty(
+        'htmlContent',
+        '<!DOCTYPE html>\n<html>\n<head>\n  <meta charset="UTF-8">\n  <style>\n    body { font-family: sans-serif; padding: 20px; }\n  </style>\n</head>\n<body>\n  <h1>Hello HTML Page</h1>\n  <p>Edit this content to get started.</p>\n</body>\n</html>'
+      );
+    }
     for (const middleware of this.docCreateMiddlewares) {
       middleware.afterCreate?.(docRecord, options);
     }

@@ -8,4 +8,6 @@ export interface DocCreateOptions {
   skipInit?: boolean;
   docProps?: DocProps;
   isTemplate?: boolean;
+  isHtmlPage?: boolean;
+  htmlSandboxMode?: 'restricted' | 'unrestricted';
 }

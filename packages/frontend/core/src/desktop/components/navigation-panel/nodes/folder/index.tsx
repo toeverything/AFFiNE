@@ -24,6 +24,7 @@ import { Unreachable } from '@affine/env/constant';
 import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
 import {
+  CodeBlockIcon,
   DeleteIcon,
   FolderIcon,
   PageIcon,
@@ -214,7 +215,7 @@ const NavigationPanelFolderNodeFolder = ({
   );
   const [newFolderId, setNewFolderId] = useState<string | null>(null);
 
-  const { createPage } = usePageHelper(
+  const { createPage, createHtmlPage } = usePageHelper(
     workspaceService.workspace.docCollection
   );
   const handleDelete = useCallback(() => {
@@ -595,6 +596,17 @@ const NavigationPanelFolderNodeFolder = ({
     setCollapsed(false);
   }, [createPage, node, setCollapsed]);
 
+  const handleNewHtmlDoc = useCallback(() => {
+    const newDoc = createHtmlPage();
+    node.createLink('doc', newDoc.id, node.indexAt('before'));
+    track.$.navigationPanel.folders.createDoc();
+    track.$.navigationPanel.organize.createOrganizeItem({
+      type: 'link',
+      target: 'doc',
+    });
+    setCollapsed(false);
+  }, [createHtmlPage, node, setCollapsed]);
+
   const handleCreateSubfolder = useCallback(() => {
     const newFolderId = node.createFolder(
       t['com.affine.rootAppSidebar.organize.new-folders'](),
@@ -686,6 +698,14 @@ const NavigationPanelFolderNodeFolder = ({
         ),
       },
       {
+        index: 101.5,
+        view: (
+          <MenuItem prefixIcon={<CodeBlockIcon />} onClick={handleNewHtmlDoc}>
+            {'Create HTML Page'}
+          </MenuItem>
+        ),
+      },
+      {
         index: 102,
         view: (
           <MenuSub
@@ -743,6 +763,7 @@ const NavigationPanelFolderNodeFolder = ({
     handleCreateSubfolder,
     handleDelete,
     handleNewDoc,
+    handleNewHtmlDoc,
     node,
     t,
   ]);

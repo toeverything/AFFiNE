@@ -9,6 +9,7 @@ import { BlockSuiteEditor } from '../blocksuite/block-suite-editor';
 import { DocService } from '../modules/doc';
 import { EditorService } from '../modules/editor';
 import { EditorSettingService } from '../modules/editor-setting';
+import { HtmlPageEditor } from './html-page-editor';
 import * as styles from './page-detail-editor.css';
 
 declare global {
@@ -40,6 +41,7 @@ export const PageDetailEditor = ({
   const doc = useService(DocService).doc;
   const docMeta = useLiveData(doc.meta$) as DocMetaWithHeaderImage | null;
   const pageWidth = useLiveData(doc.properties$.selector(p => p.pageWidth));
+  const isHtmlPage = useLiveData(doc.properties$.selector(p => p.isHtmlPage));
 
   const isSharedMode = editor.isSharedMode;
   const editorSetting = useService(EditorSettingService).editorSetting;
@@ -57,6 +59,11 @@ export const PageDetailEditor = ({
   useEffect(() => {
     editor.doc.blockSuiteDoc.readonly = readonly ?? false;
   }, [editor, readonly]);
+
+  // If the doc is an HTML page, render the HTML editor instead of BlockSuite
+  if (isHtmlPage) {
+    return <HtmlPageEditor readonly={readonly} />;
+  }
 
   return (
     <>

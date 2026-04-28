@@ -134,6 +134,49 @@ export const usePageHelper = (docCollection: Workspace) => {
     [docCollection, workbench]
   );
 
+  const createHtmlPageAndOpen = useCallback(
+    (
+      options: {
+        at?: 'new-tab' | 'tail' | 'active';
+        show?: boolean;
+        sandboxMode?: 'restricted' | 'unrestricted';
+      } = {
+        at: 'active',
+        show: true,
+        sandboxMode: 'restricted',
+      }
+    ) => {
+      appSidebar.setHovering(false);
+      const title = resolveNewDocTitle({
+        autoTitleEnabled: settings.autoTitleNewDocWithCurrentDate,
+        existingTitles: allDocTitles.map(doc => doc.title).filter(Boolean),
+        format: settings.newDocDateTitleFormat,
+      });
+
+      const page = docsService.createDoc({
+        ...(title ? { title } : undefined),
+        isHtmlPage: true,
+        htmlSandboxMode: options.sandboxMode ?? 'restricted',
+      });
+
+      if (options.show !== false) {
+        workbench.openDoc(page.id, {
+          at: options.at,
+          show: options.show,
+        });
+      }
+      return page;
+    },
+    [
+      appSidebar,
+      allDocTitles,
+      docsService,
+      settings.autoTitleNewDocWithCurrentDate,
+      settings.newDocDateTitleFormat,
+      workbench,
+    ]
+  );
+
   return useMemo(() => {
     return {
       createPage: (
@@ -144,7 +187,13 @@ export const usePageHelper = (docCollection: Workspace) => {
         }
       ) => createPageAndOpen(mode, options),
       createEdgeless: createEdgelessAndOpen,
+      createHtmlPage: createHtmlPageAndOpen,
       importFile: importFileAndOpen,
     };
-  }, [createEdgelessAndOpen, createPageAndOpen, importFileAndOpen]);
+  }, [
+    createEdgelessAndOpen,
+    createHtmlPageAndOpen,
+    createPageAndOpen,
+    importFileAndOpen,
+  ]);
 };

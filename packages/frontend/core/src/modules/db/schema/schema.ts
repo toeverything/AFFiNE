@@ -31,6 +31,9 @@ export const AFFiNE_WORKSPACE_DB_SCHEMA = {
     integrationType: integrationType.optional(),
     createdBy: f.string().optional(),
     updatedBy: f.string().optional(),
+    isHtmlPage: f.boolean().optional(),
+    htmlContent: f.string().optional(),
+    htmlSandboxMode: f.enum('restricted', 'unrestricted').optional(),
   }),
   docCustomPropertyInfo: {
     id: f.string().primaryKey().optional().default(nanoid),

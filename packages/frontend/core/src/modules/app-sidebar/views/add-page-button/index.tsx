@@ -13,6 +13,7 @@ import track from '@affine/track';
 import type { DocMode } from '@blocksuite/affine/model';
 import {
   ArrowDownSmallIcon,
+  CodeBlockIcon,
   EdgelessIcon,
   PageIcon,
   PlusIcon,
@@ -57,7 +58,14 @@ const useNewDoc = () => {
     [docsService, enablePageTemplate, pageHelper, pageTemplateDocId, workbench]
   );
 
-  return createPage;
+  const createHtmlPage = useAsyncCallback(
+    async (e?: MouseEvent) => {
+      pageHelper.createHtmlPage({ at: inferOpenMode(e) });
+    },
+    [pageHelper]
+  );
+
+  return { createPage, createHtmlPage };
 };
 
 interface AddPageButtonProps {
@@ -87,7 +95,7 @@ function AddPageWithAsk({ className, style }: AddPageButtonProps) {
 
   const createPage = useCallback(
     (e?: MouseEvent) => {
-      createDoc(e, 'page');
+      createDoc.createPage(e, 'page');
       track.$.navigationPanel.$.createDoc();
       track.$.sidebar.newDoc.quickStart({ with: 'page' });
     },
@@ -95,9 +103,17 @@ function AddPageWithAsk({ className, style }: AddPageButtonProps) {
   );
   const createEdgeless = useCallback(
     (e?: MouseEvent) => {
-      createDoc(e, 'edgeless');
+      createDoc.createPage(e, 'edgeless');
       track.$.navigationPanel.$.createDoc();
       track.$.sidebar.newDoc.quickStart({ with: 'edgeless' });
+    },
+    [createDoc]
+  );
+  const createHtmlPage = useCallback(
+    (e?: MouseEvent) => {
+      createDoc.createHtmlPage(e);
+      track.$.navigationPanel.$.createDoc();
+      track.$.sidebar.newDoc.quickStart({ with: 'html-page' as any });
     },
     [createDoc]
   );
@@ -128,6 +144,13 @@ function AddPageWithAsk({ className, style }: AddPageButtonProps) {
             onAuxClick={createEdgeless}
           >
             {t['Edgeless']()}
+          </MenuItem>
+          <MenuItem
+            prefixIcon={<CodeBlockIcon />}
+            onClick={createHtmlPage}
+            onAuxClick={createHtmlPage}
+          >
+            {'HTML Page'}
           </MenuItem>
           <MenuSub
             triggerOptions={{
@@ -169,7 +192,7 @@ function AddPageWithoutAsk({ className, style }: AddPageButtonProps) {
 
   const onClickNewPage = useCallback(
     (e?: MouseEvent) => {
-      createDoc(e);
+      createDoc.createPage(e);
       track.$.navigationPanel.$.createDoc();
     },
     [createDoc]
