@@ -33,6 +33,7 @@ export const HtmlPageEditor = ({ readonly }: HtmlPageEditorProps) => {
     'restricted') as SandboxMode;
 
   const [viewMode, setViewMode] = useState<ViewMode>('preview');
+  const { openConfirmModal } = useConfirmModal();
   const [localContent, setLocalContent] = useState(htmlContent);
   const [charCount, setCharCount] = useState(htmlContent.length);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -94,7 +95,7 @@ export const HtmlPageEditor = ({ readonly }: HtmlPageEditorProps) => {
     } else {
       doc.record.setProperty('htmlSandboxMode', 'restricted');
     }
-  }, [doc, sandboxMode]);
+  }, [doc, sandboxMode, openConfirmModal]);
 
   // Build the sandbox attribute for the iframe
   const sandboxAttr = useMemo(() => {

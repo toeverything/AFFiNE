@@ -60,8 +60,9 @@ export const PageDetailEditor = ({
     editor.doc.blockSuiteDoc.readonly = readonly ?? false;
   }, [editor, readonly]);
 
-  // If the doc is an HTML page, render the HTML editor instead of BlockSuite
-  if (isHtmlPage) {
+  // If the doc is an HTML page and we are in 'page' mode, render the HTML editor.
+  // In 'edgeless' mode, we fall back to the standard BlockSuite editor (canvas).
+  if (isHtmlPage && mode === 'page') {
     return <HtmlPageEditor readonly={readonly} />;
   }
 
