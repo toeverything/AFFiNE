@@ -8,8 +8,7 @@ export const cellContainerStyle = css({
   borderColor: cssVarV2.table.border,
   borderCollapse: 'collapse',
   isolation: 'auto',
-  textAlign: 'start',
-  verticalAlign: 'top',
+  // textAlign and verticalAlign are applied dynamically per cell via inline style
 });
 
 export const columnOptionsCellStyle = css({

@@ -173,6 +173,8 @@ export class TableBlockComponent extends CaptionedBlockComponent<TableBlockModel
                             row.rowId,
                             column.columnId
                           );
+                          // This cell is covered by another cell's span — emit nothing
+                          if (cell?.hidden) return nothing;
                           return html`
                             <affine-table-cell
                               style="display: contents;"
@@ -181,6 +183,8 @@ export class TableBlockComponent extends CaptionedBlockComponent<TableBlockModel
                               .row=${row}
                               .column=${column}
                               .text=${cell?.text}
+                              .colSpan=${cell?.colSpan ?? 1}
+                              .rowSpan=${cell?.rowSpan ?? 1}
                               .dataManager=${this.dataManager}
                               .selectionController=${this.selectionController}
                             ></affine-table-cell>

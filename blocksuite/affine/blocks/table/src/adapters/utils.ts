@@ -64,6 +64,8 @@ type Row = {
 };
 type Cell = {
   value: { delta: DeltaInsert[] };
+  textAlign?: string;
+  hidden?: boolean;
 };
 export const processTable = (
   columns: Record<string, TableColumn>,
@@ -85,16 +87,18 @@ export const processTable = (
     };
     sortedColumns.forEach(col => {
       const cell = cells[`${r.rowId}:${col.columnId}`];
+      // hidden cells (covered by a merge) export as empty
+      if (cell?.hidden) {
+        row.cells.push({ value: { delta: [] } });
+        return;
+      }
       if (!cell) {
-        row.cells.push({
-          value: {
-            delta: [],
-          },
-        });
+        row.cells.push({ value: { delta: [] } });
         return;
       }
       row.cells.push({
         value: cell.text,
+        textAlign: cell.textAlign,
       });
     });
     table.rows.push(row);
