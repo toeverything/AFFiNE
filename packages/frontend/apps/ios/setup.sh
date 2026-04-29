@@ -39,7 +39,7 @@ rustup target add aarch64-apple-ios-sim
 rustup target add aarch64-apple-darwin
 
 echo "[*] syncing apollo version..."
-LATEST_VERSION="1.23.0"
+LATEST_VERSION="1.25.4"
 sed -i '' "s/exact: \"[^\"]*\"/exact: \"$LATEST_VERSION\"/g" $SCRIPT_DIR_PATH/App/Packages/AffineGraphQL/Package.swift
 echo "[*] apollo version synced to $LATEST_VERSION"
 
@@ -53,7 +53,7 @@ cp -r $CUSTOM_SCALARS_DIR/* $TEMP_DIR/
 
 echo "[*] codegen..."
 rm -rf $CUSTOM_SCALARS_DIR/*
-yarn affine @affine/ios codegen "1.23.0"
+yarn affine @affine/ios codegen "$LATEST_VERSION"
 cp -r $TEMP_DIR/* $CUSTOM_SCALARS_DIR/
 
 echo "[+] setup complete"

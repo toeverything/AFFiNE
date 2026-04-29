@@ -25,6 +25,8 @@ import {
   EditorSettingService,
   type FontFamily,
   fontStyleOptions,
+  type NewDocDateTitleFormat,
+  newDocDateTitleFormatOptions,
 } from '@affine/core/modules/editor-setting';
 import { SpellCheckSettingService } from '@affine/core/modules/editor-setting/services/spell-check-setting';
 import { FeatureFlagService } from '@affine/core/modules/feature-flag';
@@ -428,6 +430,93 @@ const NewDocDefaultModeSettings = () => {
   );
 };
 
+const getDateTitleFormatLabel = (format: NewDocDateTitleFormat) => {
+  return `com.affine.settings.editorSettings.general.auto-date-title.format.${format.toLowerCase()}` as const;
+};
+
+export const NewDocDateTitleSettings = () => {
+  const t = useI18n();
+  const { editorSettingService } = useServices({ EditorSettingService });
+  const settings = useLiveData(editorSettingService.editorSetting.settings$);
+  const formatItems = useMemo(
+    () =>
+      newDocDateTitleFormatOptions.map(value => ({
+        value,
+        label: t.t(getDateTitleFormatLabel(value)),
+      })),
+    [t]
+  );
+
+  const onToggleAutoDateTitle = useCallback(
+    (checked: boolean) => {
+      editorSettingService.editorSetting.set(
+        'autoTitleNewDocWithCurrentDate',
+        checked
+      );
+    },
+    [editorSettingService.editorSetting]
+  );
+
+  const onDateTitleFormatChange = useCallback(
+    (value: NewDocDateTitleFormat) => {
+      editorSettingService.editorSetting.set('newDocDateTitleFormat', value);
+    },
+    [editorSettingService.editorSetting]
+  );
+
+  return (
+    <>
+      <SettingRow
+        name={t[
+          'com.affine.settings.editorSettings.general.auto-date-title.title'
+        ]()}
+        desc={t[
+          'com.affine.settings.editorSettings.general.auto-date-title.description'
+        ]()}
+      >
+        <Switch
+          checked={settings.autoTitleNewDocWithCurrentDate}
+          onChange={onToggleAutoDateTitle}
+        />
+      </SettingRow>
+      {settings.autoTitleNewDocWithCurrentDate ? (
+        <SettingRow
+          name={t[
+            'com.affine.settings.editorSettings.general.auto-date-title.format.title'
+          ]()}
+          desc={t[
+            'com.affine.settings.editorSettings.general.auto-date-title.format.description'
+          ]()}
+        >
+          <Menu
+            contentOptions={menuContentOptions}
+            items={formatItems.map(item => (
+              <MenuItem
+                key={item.value}
+                selected={item.value === settings.newDocDateTitleFormat}
+                onSelect={() => onDateTitleFormatChange(item.value)}
+              >
+                {item.label}
+              </MenuItem>
+            ))}
+          >
+            <MenuTrigger
+              className={styles.menuTrigger}
+              data-testid="new-doc-date-title-format-trigger"
+            >
+              {
+                formatItems.find(
+                  item => item.value === settings.newDocDateTitleFormat
+                )?.label
+              }
+            </MenuTrigger>
+          </Menu>
+        </SettingRow>
+      ) : null}
+    </>
+  );
+};
+
 const AISettings = () => {
   const t = useI18n();
   const { openConfirmModal } = useConfirmModal();
@@ -573,6 +662,7 @@ export const General = () => {
       <CustomFontFamilySettings />
       <FontSizeSettings />
       <NewDocDefaultModeSettings />
+      <NewDocDateTitleSettings />
       {BUILD_CONFIG.isElectron && <SpellCheckSettings />}
       {environment.isLinux && <MiddleClickPasteSettings />}
       {/* // TODO(@akumatus): implement these settings

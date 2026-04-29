@@ -7,7 +7,11 @@ import {
   createTestingModule,
   type TestingModule,
 } from '../../../__tests__/utils';
-import { SpaceAccessDenied } from '../../../base';
+import {
+  DocActionDenied,
+  OwnerCanNotLeaveWorkspace,
+  SpaceAccessDenied,
+} from '../../../base';
 import {
   Models,
   User,
@@ -142,6 +146,49 @@ test('should deny blob uploads when user no longer has write access', async t =>
   await t.throwsAsync(
     t.context.policy.assertCanUploadBlob(external.id, workspace.id),
     { instanceOf: SpaceAccessDenied }
+  );
+});
+
+test('should deny publish through policy when workspace sharing is disabled', async t => {
+  await t.context.models.workspace.update(workspace.id, {
+    enableSharing: false,
+  });
+
+  await t.throwsAsync(
+    t.context.policy.assertCanPublishDoc(owner.id, workspace.id, 'doc1'),
+    { instanceOf: DocActionDenied }
+  );
+  await t.notThrowsAsync(
+    t.context.policy.assertCanUnpublishDoc(owner.id, workspace.id, 'doc1')
+  );
+});
+
+test('should allow managers to revoke invite links in readonly workspace', async t => {
+  await addAcceptedMembers(t.context.models, workspace.id, 10);
+  await t.context.policy.reconcileWorkspaceQuotaState(workspace.id);
+
+  await t.notThrowsAsync(
+    t.context.policy.assertCanManageInviteLink(owner.id, workspace.id)
+  );
+});
+
+test('should apply leave workspace policy by role', async t => {
+  const collaborator = await t.context.models.user.create({
+    email: `${randomUUID()}@affine.pro`,
+  });
+  await t.context.models.workspaceUser.set(
+    workspace.id,
+    collaborator.id,
+    WorkspaceRole.Collaborator,
+    { status: WorkspaceMemberStatus.Accepted }
+  );
+
+  await t.throwsAsync(
+    t.context.policy.assertCanLeaveWorkspace(owner.id, workspace.id),
+    { instanceOf: OwnerCanNotLeaveWorkspace }
+  );
+  await t.notThrowsAsync(
+    t.context.policy.assertCanLeaveWorkspace(collaborator.id, workspace.id)
   );
 });
 

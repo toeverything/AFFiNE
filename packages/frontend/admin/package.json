@@ -37,7 +37,7 @@
     "@radix-ui/react-toggle": "^1.1.1",
     "@radix-ui/react-toggle-group": "^1.1.1",
     "@radix-ui/react-tooltip": "^1.1.5",
-    "@sentry/react": "^10.40.0",
+    "@sentry/react": "^10.47.0",
     "@tanstack/react-table": "^8.20.5",
     "@toeverything/theme": "^1.1.23",
     "cmdk": "^1.0.4",

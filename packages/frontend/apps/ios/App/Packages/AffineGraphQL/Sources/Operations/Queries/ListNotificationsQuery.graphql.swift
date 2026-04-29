@@ -26,6 +26,9 @@ public class ListNotificationsQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("currentUser", CurrentUser?.self),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      ListNotificationsQuery.Data.self
+    ] }
 
     /// Get current user
     public var currentUser: CurrentUser? { __data["currentUser"] }
@@ -41,6 +44,9 @@ public class ListNotificationsQuery: GraphQLQuery {
       public static var __selections: [ApolloAPI.Selection] { [
         .field("__typename", String.self),
         .field("notifications", Notifications.self, arguments: ["pagination": .variable("pagination")]),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        ListNotificationsQuery.Data.CurrentUser.self
       ] }
 
       /// Get current user notifications
@@ -60,6 +66,9 @@ public class ListNotificationsQuery: GraphQLQuery {
           .field("edges", [Edge].self),
           .field("pageInfo", PageInfo.self),
         ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          ListNotificationsQuery.Data.CurrentUser.Notifications.self
+        ] }
 
         public var totalCount: Int { __data["totalCount"] }
         public var edges: [Edge] { __data["edges"] }
@@ -77,6 +86,9 @@ public class ListNotificationsQuery: GraphQLQuery {
             .field("__typename", String.self),
             .field("cursor", String.self),
             .field("node", Node.self),
+          ] }
+          public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+            ListNotificationsQuery.Data.CurrentUser.Notifications.Edge.self
           ] }
 
           public var cursor: String { __data["cursor"] }
@@ -99,6 +111,9 @@ public class ListNotificationsQuery: GraphQLQuery {
               .field("createdAt", AffineGraphQL.DateTime.self),
               .field("updatedAt", AffineGraphQL.DateTime.self),
               .field("body", AffineGraphQL.JSONObject.self),
+            ] }
+            public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+              ListNotificationsQuery.Data.CurrentUser.Notifications.Edge.Node.self
             ] }
 
             public var id: AffineGraphQL.ID { __data["id"] }
@@ -131,6 +146,9 @@ public class ListNotificationsQuery: GraphQLQuery {
             .field("endCursor", String?.self),
             .field("hasNextPage", Bool.self),
             .field("hasPreviousPage", Bool.self),
+          ] }
+          public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+            ListNotificationsQuery.Data.CurrentUser.Notifications.PageInfo.self
           ] }
 
           public var startCursor: String? { __data["startCursor"] }

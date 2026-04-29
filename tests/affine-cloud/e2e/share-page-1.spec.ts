@@ -200,13 +200,14 @@ test('share page with default edgeless', async ({ page, browser }) => {
   {
     const context = await browser.newContext();
     await skipOnboarding(context);
-    const url: string = await page.evaluate(() =>
-      navigator.clipboard.readText()
+    const url = new URL(
+      await page.evaluate(() => navigator.clipboard.readText())
     );
+    url.searchParams.delete('mode');
     const page2 = await context.newPage();
-    await page2.goto(url);
+    await page2.goto(url.toString());
     await waitForEditorLoad(page2);
-    await expect(page.locator('affine-edgeless-root')).toBeVisible({
+    await expect(page2.locator('affine-edgeless-root')).toBeVisible({
       timeout: 1000,
     });
     await expect(page2.locator('affine-paragraph').first()).toContainText(

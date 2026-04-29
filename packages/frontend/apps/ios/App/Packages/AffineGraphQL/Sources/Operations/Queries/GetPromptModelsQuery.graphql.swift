@@ -26,6 +26,9 @@ public class GetPromptModelsQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("currentUser", CurrentUser?.self),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      GetPromptModelsQuery.Data.self
+    ] }
 
     /// Get current user
     public var currentUser: CurrentUser? { __data["currentUser"] }
@@ -42,6 +45,9 @@ public class GetPromptModelsQuery: GraphQLQuery {
         .field("__typename", String.self),
         .field("copilot", Copilot.self),
       ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        GetPromptModelsQuery.Data.CurrentUser.self
+      ] }
 
       public var copilot: Copilot { __data["copilot"] }
 
@@ -56,6 +62,9 @@ public class GetPromptModelsQuery: GraphQLQuery {
         public static var __selections: [ApolloAPI.Selection] { [
           .field("__typename", String.self),
           .field("models", Models.self, arguments: ["promptName": .variable("promptName")]),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          GetPromptModelsQuery.Data.CurrentUser.Copilot.self
         ] }
 
         /// List available models for a prompt, with human-readable names
@@ -75,6 +84,9 @@ public class GetPromptModelsQuery: GraphQLQuery {
             .field("optionalModels", [OptionalModel].self),
             .field("proModels", [ProModel].self),
           ] }
+          public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+            GetPromptModelsQuery.Data.CurrentUser.Copilot.Models.self
+          ] }
 
           public var defaultModel: String { __data["defaultModel"] }
           public var optionalModels: [OptionalModel] { __data["optionalModels"] }
@@ -93,6 +105,9 @@ public class GetPromptModelsQuery: GraphQLQuery {
               .field("id", String.self),
               .field("name", String.self),
             ] }
+            public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+              GetPromptModelsQuery.Data.CurrentUser.Copilot.Models.OptionalModel.self
+            ] }
 
             public var id: String { __data["id"] }
             public var name: String { __data["name"] }
@@ -110,6 +125,9 @@ public class GetPromptModelsQuery: GraphQLQuery {
               .field("__typename", String.self),
               .field("id", String.self),
               .field("name", String.self),
+            ] }
+            public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+              GetPromptModelsQuery.Data.CurrentUser.Copilot.Models.ProModel.self
             ] }
 
             public var id: String { __data["id"] }

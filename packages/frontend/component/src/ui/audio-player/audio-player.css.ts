@@ -123,6 +123,7 @@ export const progressContainer = style({
   display: 'flex',
   alignItems: 'center',
   gap: 8,
+  minWidth: 0,
 });
 
 export const progressBar = style({
