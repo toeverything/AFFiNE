@@ -435,8 +435,9 @@ export class TableDataManager {
       const topLeft = this.model.props.cells[topLeftKey];
       if (topLeft) {
         if (extraTexts.length) {
+          const topLeftText = topLeft.text.toString();
           const combined =
-            topLeft.text.toString() + '\n' + extraTexts.join('\n');
+            topLeftText + (topLeftText ? '\n' : '') + extraTexts.join('\n');
           topLeft.text.replace(0, topLeft.text.length, combined);
         }
         topLeft.colSpan = colSpan;
