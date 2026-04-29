@@ -25,6 +25,22 @@ spec:
       serviceAccountName: {{ include "front.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- with .Values.global.database.gcloud }}
+      {{- if .enabled }}
+      initContainers:
+        - name: wait-for-cloud-sql-proxy
+          image: busybox:1.36.1
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              until wget -q -T 2 -O /dev/null "http://{{ $.Values.global.database.host }}:9801/startup"; do
+                echo "waiting for cloud sql proxy to become ready"
+                sleep 2
+              done
+      {{- end }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"

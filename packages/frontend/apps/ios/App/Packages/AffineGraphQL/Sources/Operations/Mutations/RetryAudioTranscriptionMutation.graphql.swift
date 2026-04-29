@@ -37,6 +37,9 @@ public class RetryAudioTranscriptionMutation: GraphQLMutation {
         "jobId": .variable("jobId")
       ]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      RetryAudioTranscriptionMutation.Data.self
+    ] }
 
     public var retryAudioTranscription: RetryAudioTranscription? { __data["retryAudioTranscription"] }
 
@@ -52,6 +55,9 @@ public class RetryAudioTranscriptionMutation: GraphQLMutation {
         .field("__typename", String.self),
         .field("id", AffineGraphQL.ID.self),
         .field("status", GraphQLEnum<AffineGraphQL.AiJobStatus>.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        RetryAudioTranscriptionMutation.Data.RetryAudioTranscription.self
       ] }
 
       public var id: AffineGraphQL.ID { __data["id"] }

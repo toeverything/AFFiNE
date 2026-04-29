@@ -26,6 +26,8 @@ export const AFFINE_PRO_LICENSE_AES_KEY: string | undefined | null
 
 export const AFFINE_PRO_PUBLIC_KEY: string | undefined | null
 
+export declare function buildPublicRootDoc(rootDocBin: Buffer, docMetas: Array<PublicDocMetaInput>): Buffer
+
 export interface Chunk {
   index: number
   content: string
@@ -119,6 +121,11 @@ export declare function parsePageDoc(docBin: Buffer, maxSummaryLength?: number |
 export declare function parseWorkspaceDoc(docBin: Buffer): NativeWorkspaceDocContent | null
 
 export declare function processImage(input: Buffer, maxEdge: number, keepExif: boolean): Promise<Buffer>
+
+export interface PublicDocMetaInput {
+  id: string
+  title?: string
+}
 
 export declare function readAllDocIdsFromRootDoc(docBin: Buffer, includeTrash?: boolean | undefined | null): Array<string>
 

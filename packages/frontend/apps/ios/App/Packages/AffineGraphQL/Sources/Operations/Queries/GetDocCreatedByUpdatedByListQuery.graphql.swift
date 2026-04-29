@@ -34,6 +34,9 @@ public class GetDocCreatedByUpdatedByListQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("workspace", Workspace.self, arguments: ["id": .variable("workspaceId")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      GetDocCreatedByUpdatedByListQuery.Data.self
+    ] }
 
     /// Get workspace by id
     public var workspace: Workspace { __data["workspace"] }
@@ -49,6 +52,9 @@ public class GetDocCreatedByUpdatedByListQuery: GraphQLQuery {
       public static var __selections: [ApolloAPI.Selection] { [
         .field("__typename", String.self),
         .field("docs", Docs.self, arguments: ["pagination": .variable("pagination")]),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        GetDocCreatedByUpdatedByListQuery.Data.Workspace.self
       ] }
 
       public var docs: Docs { __data["docs"] }
@@ -66,6 +72,9 @@ public class GetDocCreatedByUpdatedByListQuery: GraphQLQuery {
           .field("totalCount", Int.self),
           .field("pageInfo", PageInfo.self),
           .field("edges", [Edge].self),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          GetDocCreatedByUpdatedByListQuery.Data.Workspace.Docs.self
         ] }
 
         public var totalCount: Int { __data["totalCount"] }
@@ -85,6 +94,9 @@ public class GetDocCreatedByUpdatedByListQuery: GraphQLQuery {
             .field("endCursor", String?.self),
             .field("hasNextPage", Bool.self),
           ] }
+          public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+            GetDocCreatedByUpdatedByListQuery.Data.Workspace.Docs.PageInfo.self
+          ] }
 
           public var endCursor: String? { __data["endCursor"] }
           public var hasNextPage: Bool { __data["hasNextPage"] }
@@ -102,6 +114,9 @@ public class GetDocCreatedByUpdatedByListQuery: GraphQLQuery {
             .field("__typename", String.self),
             .field("node", Node.self),
           ] }
+          public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+            GetDocCreatedByUpdatedByListQuery.Data.Workspace.Docs.Edge.self
+          ] }
 
           public var node: Node { __data["node"] }
 
@@ -118,6 +133,9 @@ public class GetDocCreatedByUpdatedByListQuery: GraphQLQuery {
               .field("id", String.self),
               .field("creatorId", String?.self),
               .field("lastUpdaterId", String?.self),
+            ] }
+            public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+              GetDocCreatedByUpdatedByListQuery.Data.Workspace.Docs.Edge.Node.self
             ] }
 
             public var id: String { __data["id"] }

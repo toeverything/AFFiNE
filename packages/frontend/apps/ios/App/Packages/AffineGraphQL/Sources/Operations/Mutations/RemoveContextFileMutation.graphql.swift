@@ -26,6 +26,9 @@ public class RemoveContextFileMutation: GraphQLMutation {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("removeContextFile", Bool.self, arguments: ["options": .variable("options")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      RemoveContextFileMutation.Data.self
+    ] }
 
     /// remove a file from context
     public var removeContextFile: Bool { __data["removeContextFile"] }

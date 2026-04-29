@@ -4,6 +4,12 @@ import { io, type Socket as SocketIOClient } from 'socket.io-client';
 import { Doc, encodeStateAsUpdate } from 'yjs';
 
 import { CANARY_CLIENT_VERSION_MAX_AGE_DAYS } from '../../base';
+import {
+  DocRole,
+  Models,
+  WorkspaceMemberStatus,
+  WorkspaceRole,
+} from '../../models';
 import { createTestingApp, TestingApp } from '../utils';
 
 type WebsocketResponse<T> =
@@ -23,6 +29,16 @@ function unwrapResponse<T>(t: ExecutionContext, res: WebsocketResponse<T>): T {
 
   t.log(res);
   throw new Error(`Websocket error: ${res.error.name}: ${res.error.message}`);
+}
+
+function getErrorResponse<T>(
+  t: ExecutionContext,
+  res: WebsocketResponse<T>
+): { name: string; message: string } {
+  if ('error' in res) return res.error;
+
+  t.log(res);
+  throw new Error(`Expected websocket error response, got data instead`);
 }
 
 async function withTimeout<T>(
@@ -129,7 +145,7 @@ function expectNoEvent(
 }
 
 async function login(app: TestingApp) {
-  const user = await app.createUser('u1@affine.pro');
+  const user = await app.createUser();
   const res = await app
     .POST('/api/auth/sign-in')
     .send({ email: user.email, password: user.password })
@@ -517,5 +533,68 @@ test('active users metric should dedupe multiple sockets for one user', async t 
     first.disconnect();
     second.disconnect();
     await Promise.all([waitForDisconnect(first), waitForDisconnect(second)]);
+  }
+});
+
+test('workspace sync delete-doc should enforce doc permissions', async t => {
+  const db = app.get(PrismaClient);
+  const models = app.get(Models);
+  const { user: owner } = await login(app);
+  const { user: collaborator, cookieHeader } = await login(app);
+  const workspace = await models.workspace.create(owner.id);
+  const docId = 'private-doc';
+
+  await models.workspaceUser.set(
+    workspace.id,
+    collaborator.id,
+    WorkspaceRole.Collaborator,
+    {
+      status: WorkspaceMemberStatus.Accepted,
+    }
+  );
+  await models.doc.setDefaultRole(workspace.id, docId, DocRole.None);
+  await db.snapshot.create({
+    data: {
+      id: docId,
+      workspaceId: workspace.id,
+      blob: Buffer.from([1, 1]),
+      state: Buffer.from([1, 1]),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      createdBy: owner.id,
+      updatedBy: owner.id,
+    },
+  });
+
+  const socket = createClient(url, cookieHeader);
+
+  try {
+    await waitForConnect(socket);
+
+    const join = unwrapResponse(
+      t,
+      await emitWithAck<{ clientId: string; success: boolean }>(
+        socket,
+        'space:join',
+        {
+          spaceType: 'workspace',
+          spaceId: workspace.id,
+          clientVersion: '0.26.0',
+        }
+      )
+    );
+    t.true(join.success);
+
+    const error = getErrorResponse(
+      t,
+      await emitWithAck(socket, 'space:delete-doc', {
+        spaceType: 'workspace',
+        spaceId: workspace.id,
+        docId,
+      })
+    );
+    t.true(error.message.includes('Doc.Delete'));
+  } finally {
+    socket.disconnect();
   }
 });

@@ -1,7 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { Transactional } from '@nestjs-cls/transactional';
 
-import { DocActionDenied, OnEvent, SpaceAccessDenied } from '../../base';
+import {
+  DocActionDenied,
+  OnEvent,
+  OwnerCanNotLeaveWorkspace,
+  SpaceAccessDenied,
+} from '../../base';
 import { Models, WorkspaceRole } from '../../models';
 import { QuotaService } from '../quota/service';
 import { getAccessController } from './controller';
@@ -164,6 +169,57 @@ export class WorkspacePolicyService {
     return true;
   }
 
+  async isSharingEnabled(workspaceId: string) {
+    return await this.models.workspace.allowSharing(workspaceId);
+  }
+
+  async canReadWorkspaceByPublicFlag(workspaceId: string) {
+    const workspace = await this.models.workspace.get(workspaceId);
+    return !!workspace?.public && (workspace.enableSharing ?? true);
+  }
+
+  async canReadWorkspaceBySharedDocs(workspaceId: string) {
+    const [sharingEnabled, hasPublicDocs] = await Promise.all([
+      this.isSharingEnabled(workspaceId),
+      this.models.doc.hasPublic(workspaceId),
+    ]);
+
+    return sharingEnabled && hasPublicDocs;
+  }
+
+  async canReadSharedDoc(workspaceId: string, docId: string) {
+    const [sharingEnabled, isPublicDoc] = await Promise.all([
+      this.isSharingEnabled(workspaceId),
+      this.models.doc.isPublic(workspaceId, docId),
+    ]);
+
+    return sharingEnabled && isPublicDoc;
+  }
+
+  async canPreviewDoc(workspaceId: string, docId: string) {
+    const [sharingEnabled, canReadSharedDoc, allowUrlPreview] =
+      await Promise.all([
+        this.isSharingEnabled(workspaceId),
+        this.canReadSharedDoc(workspaceId, docId),
+        this.models.workspace.allowUrlPreview(workspaceId),
+      ]);
+
+    return sharingEnabled && (canReadSharedDoc || allowUrlPreview);
+  }
+
+  async canPreviewWorkspace(workspaceId: string) {
+    const [sharingEnabled, allowUrlPreview] = await Promise.all([
+      this.isSharingEnabled(workspaceId),
+      this.models.workspace.allowUrlPreview(workspaceId),
+    ]);
+
+    return sharingEnabled && allowUrlPreview;
+  }
+
+  async canPublishDoc(workspaceId: string) {
+    return await this.isSharingEnabled(workspaceId);
+  }
+
   async applyWorkspacePermissions(
     workspaceId: string,
     permissions: WorkspaceActionPermissions
@@ -299,10 +355,6 @@ export class WorkspacePolicyService {
     );
   }
 
-  async assertCanPublishDoc(workspaceId: string, docId: string) {
-    await this.assertDocActionAllowed(workspaceId, docId, 'Doc.Publish');
-  }
-
   @Transactional()
   async handleTeamPlanCanceled(workspaceId: string) {
     await this.models.workspaceUser.deleteNonAccepted(workspaceId);
@@ -317,6 +369,43 @@ export class WorkspacePolicyService {
     docId: string
   ) {
     await this.assertDocRoleAction(userId, workspaceId, docId, 'Doc.Publish');
+  }
+
+  async assertCanPublishDoc(
+    userId: string,
+    workspaceId: string,
+    docId: string
+  ) {
+    await this.assertDocRoleAction(userId, workspaceId, docId, 'Doc.Publish');
+    await this.assertDocActionAllowed(workspaceId, docId, 'Doc.Publish');
+
+    if (!(await this.canPublishDoc(workspaceId))) {
+      throw new DocActionDenied({
+        action: 'Doc.Publish',
+        docId,
+        spaceId: workspaceId,
+      });
+    }
+  }
+
+  async assertCanManageInviteLink(userId: string, workspaceId: string) {
+    await this.assertWorkspaceRoleAction(
+      userId,
+      workspaceId,
+      'Workspace.Users.Manage'
+    );
+  }
+
+  async assertCanLeaveWorkspace(userId: string, workspaceId: string) {
+    const role = await this.models.workspaceUser.getActive(workspaceId, userId);
+
+    if (!role) {
+      throw new SpaceAccessDenied({ spaceId: workspaceId });
+    }
+
+    if (role.type === WorkspaceRole.Owner) {
+      throw new OwnerCanNotLeaveWorkspace();
+    }
   }
 
   @OnEvent('workspace.members.updated')

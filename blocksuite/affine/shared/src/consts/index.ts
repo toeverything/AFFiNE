@@ -33,6 +33,7 @@ export const EMBED_CARD_WIDTH: Record<EmbedCardStyle, number> = {
   syncedDoc: SYNCED_DEFAULT_WIDTH,
   pdf: 537 + 24 + 2,
   citation: 752,
+  audio: 116,
 };
 
 export const EMBED_CARD_HEIGHT: Record<EmbedCardStyle, number> = {
@@ -48,6 +49,7 @@ export const EMBED_CARD_HEIGHT: Record<EmbedCardStyle, number> = {
   syncedDoc: 455,
   pdf: 759 + 46 + 24 + 2,
   citation: 52,
+  audio: 116,
 };
 
 export const EMBED_BLOCK_FLAVOUR_LIST = [

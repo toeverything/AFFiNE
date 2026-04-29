@@ -11,6 +11,7 @@ import { JobQueue } from '../../base';
 import { ConfigModule } from '../../base/config';
 import { AuthService } from '../../core/auth';
 import { DocReader } from '../../core/doc';
+import { ContextCategories, DocRole, WorkspaceRole } from '../../models';
 import { CopilotContextService } from '../../plugins/copilot/context';
 import {
   CopilotEmbeddingJob,
@@ -25,7 +26,7 @@ import {
   OpenAIProvider,
 } from '../../plugins/copilot/providers';
 import { CopilotStorage } from '../../plugins/copilot/storage';
-import { MockCopilotProvider } from '../mocks';
+import { MockCopilotProvider, Mockers } from '../mocks';
 import {
   acceptInviteById,
   createTestingApp,
@@ -36,6 +37,7 @@ import {
   TestUser,
 } from '../utils';
 import {
+  addContextCategory,
   addContextDoc,
   addContextFile,
   array2sse,
@@ -60,6 +62,7 @@ import {
   getPinnedSessions,
   getWorkspaceSessions,
   listContext,
+  listContextCategories,
   listContextDocAndFiles,
   matchFiles,
   matchWorkspaceDocs,
@@ -1038,6 +1041,114 @@ test('should be able to manage context', async t => {
     t.is(result.length, 1, 'should match context');
     t.is(result[0].docId, docId, 'should match doc id');
   }
+});
+
+test('should reject context reads from another user', async t => {
+  const { app, context, jobs, u1 } = t.context;
+
+  const u2 = await app.signupV1();
+  await app.switchUser(u1);
+
+  const { id: workspaceId } = await createWorkspace(app);
+  const sessionId = await createCopilotSession(
+    app,
+    workspaceId,
+    randomUUID(),
+    textPromptName
+  );
+
+  Sinon.stub(context, 'embeddingClient').get(() => new MockEmbeddingClient());
+  Sinon.stub(jobs, 'embeddingClient').get(() => new MockEmbeddingClient());
+
+  const contextId = await createCopilotContext(app, workspaceId, sessionId);
+  await addContextFile(app, contextId, 'sample.txt', Buffer.from('test file'));
+
+  await app.switchUser(u2);
+
+  await t.throwsAsync(
+    app.gql(`
+      query {
+        currentUser {
+          copilot {
+            contexts(contextId: "${contextId}") {
+              id
+            }
+          }
+        }
+      }
+    `)
+  );
+  await t.throwsAsync(matchFiles(app, contextId, 'test', 1));
+});
+
+test('should skip unauthorized docs when adding context category', async t => {
+  const { app, context, jobs, u1 } = t.context;
+
+  const member = await app.signupV1();
+  await app.switchUser(u1);
+
+  const { id: workspaceId } = await createWorkspace(app);
+  await app.create(Mockers.WorkspaceUser, {
+    workspaceId,
+    userId: member.id,
+    type: WorkspaceRole.Collaborator,
+  });
+
+  const readableSnapshot = await app.create(Mockers.DocSnapshot, {
+    workspaceId,
+    user: u1,
+  });
+  const hiddenSnapshot = await app.create(Mockers.DocSnapshot, {
+    workspaceId,
+    user: u1,
+  });
+
+  await app.create(Mockers.DocMeta, {
+    workspaceId,
+    docId: readableSnapshot.id,
+    title: 'readable-doc',
+  });
+  await app.create(Mockers.DocMeta, {
+    workspaceId,
+    docId: hiddenSnapshot.id,
+    title: 'hidden-doc',
+    defaultRole: DocRole.None,
+  });
+
+  Sinon.stub(context, 'embeddingClient').get(() => new MockEmbeddingClient());
+  Sinon.stub(jobs, 'embeddingClient').get(() => new MockEmbeddingClient());
+
+  await app.switchUser(member);
+  const sessionId = await createCopilotSession(
+    app,
+    workspaceId,
+    randomUUID(),
+    textPromptName
+  );
+  const contextId = await createCopilotContext(app, workspaceId, sessionId);
+  const category = await addContextCategory(
+    app,
+    contextId,
+    ContextCategories.Collection,
+    'fav',
+    [readableSnapshot.id, hiddenSnapshot.id]
+  );
+
+  t.deepEqual(
+    category.docs.map(doc => doc.id),
+    [readableSnapshot.id]
+  );
+
+  const ret = await listContextCategories(
+    app,
+    workspaceId,
+    sessionId,
+    contextId
+  );
+  t.deepEqual(
+    ret?.collections?.[0]?.docs.map(doc => doc.id),
+    [readableSnapshot.id]
+  );
 });
 
 test('should be able to transcript', async t => {

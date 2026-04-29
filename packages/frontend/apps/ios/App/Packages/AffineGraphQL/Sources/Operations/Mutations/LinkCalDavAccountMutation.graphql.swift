@@ -26,6 +26,9 @@ public class LinkCalDavAccountMutation: GraphQLMutation {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("linkCalDAVAccount", LinkCalDAVAccount.self, arguments: ["input": .variable("input")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      LinkCalDavAccountMutation.Data.self
+    ] }
 
     public var linkCalDAVAccount: LinkCalDAVAccount { __data["linkCalDAVAccount"] }
 
@@ -50,6 +53,9 @@ public class LinkCalDavAccountMutation: GraphQLMutation {
         .field("calendarsCount", Int.self),
         .field("createdAt", AffineGraphQL.DateTime.self),
         .field("updatedAt", AffineGraphQL.DateTime.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        LinkCalDavAccountMutation.Data.LinkCalDAVAccount.self
       ] }
 
       public var id: String { __data["id"] }

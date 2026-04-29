@@ -7,31 +7,35 @@ public class SubmitAudioTranscriptionMutation: GraphQLMutation {
   public static let operationName: String = "submitAudioTranscription"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"mutation submitAudioTranscription($workspaceId: String!, $blobId: String!, $blob: Upload, $blobs: [Upload!]) { submitAudioTranscription( blob: $blob blobs: $blobs blobId: $blobId workspaceId: $workspaceId ) { __typename id status } }"#
+      #"mutation submitAudioTranscription($workspaceId: String!, $blobId: String!, $blob: Upload, $blobs: [Upload!], $input: SubmitAudioTranscriptionInput) { submitAudioTranscription( blob: $blob blobs: $blobs blobId: $blobId workspaceId: $workspaceId input: $input ) { __typename id status } }"#
     ))
 
   public var workspaceId: String
   public var blobId: String
   public var blob: GraphQLNullable<Upload>
   public var blobs: GraphQLNullable<[Upload]>
+  public var input: GraphQLNullable<SubmitAudioTranscriptionInput>
 
   public init(
     workspaceId: String,
     blobId: String,
     blob: GraphQLNullable<Upload>,
-    blobs: GraphQLNullable<[Upload]>
+    blobs: GraphQLNullable<[Upload]>,
+    input: GraphQLNullable<SubmitAudioTranscriptionInput>
   ) {
     self.workspaceId = workspaceId
     self.blobId = blobId
     self.blob = blob
     self.blobs = blobs
+    self.input = input
   }
 
   public var __variables: Variables? { [
     "workspaceId": workspaceId,
     "blobId": blobId,
     "blob": blob,
-    "blobs": blobs
+    "blobs": blobs,
+    "input": input
   ] }
 
   public struct Data: AffineGraphQL.SelectionSet {
@@ -44,8 +48,12 @@ public class SubmitAudioTranscriptionMutation: GraphQLMutation {
         "blob": .variable("blob"),
         "blobs": .variable("blobs"),
         "blobId": .variable("blobId"),
-        "workspaceId": .variable("workspaceId")
+        "workspaceId": .variable("workspaceId"),
+        "input": .variable("input")
       ]),
+    ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      SubmitAudioTranscriptionMutation.Data.self
     ] }
 
     public var submitAudioTranscription: SubmitAudioTranscription? { __data["submitAudioTranscription"] }
@@ -62,6 +70,9 @@ public class SubmitAudioTranscriptionMutation: GraphQLMutation {
         .field("__typename", String.self),
         .field("id", AffineGraphQL.ID.self),
         .field("status", GraphQLEnum<AffineGraphQL.AiJobStatus>.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        SubmitAudioTranscriptionMutation.Data.SubmitAudioTranscription.self
       ] }
 
       public var id: AffineGraphQL.ID { __data["id"] }

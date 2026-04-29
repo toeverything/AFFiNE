@@ -21,6 +21,9 @@ public class GetCurrentUserProfileQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("currentUser", CurrentUser?.self),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      GetCurrentUserProfileQuery.Data.self
+    ] }
 
     /// Get current user
     public var currentUser: CurrentUser? { __data["currentUser"] }
@@ -36,6 +39,10 @@ public class GetCurrentUserProfileQuery: GraphQLQuery {
       public static var __selections: [ApolloAPI.Selection] { [
         .field("__typename", String.self),
         .fragment(CurrentUserProfile.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        GetCurrentUserProfileQuery.Data.CurrentUser.self,
+        CurrentUserProfile.self
       ] }
 
       public var id: AffineGraphQL.ID { __data["id"] }

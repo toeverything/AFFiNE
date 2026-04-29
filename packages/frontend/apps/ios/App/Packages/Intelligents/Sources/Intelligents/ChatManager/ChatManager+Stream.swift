@@ -6,8 +6,6 @@
 //
 
 import AffineGraphQL
-import Apollo
-import ApolloAPI
 import EventSource
 import Foundation
 import MarkdownParser
@@ -170,56 +168,44 @@ private extension ChatManager {
       "files": [String](), // attachment in context, keep nil for now
       "searchMode": editorData.isSearchEnabled ? "MUST" : "AUTO",
     ]
-    let attachmentCount = [
-      editorData.fileAttachments.count,
-      editorData.imageAttachments.count,
-    ].reduce(0, +)
-    let attachmentFieldName = attachmentCount > 1 && attachmentCount != 0 ? "options.blobs" : "options.blob"
-    let uploadableAttachments: [GraphQLFile] = [
-      editorData.fileAttachments.map { file -> GraphQLFile in
+    let uploadableAttachments: [CopilotAttachmentUpload] = [
+      editorData.fileAttachments.map { file -> CopilotAttachmentUpload in
         .init(
-          fieldName: attachmentFieldName,
           originalName: file.name,
           mimeType: mimeType(text: file.name),
           data: file.data ?? .init()
         )
       },
-      editorData.imageAttachments.map { image -> GraphQLFile in
+      editorData.imageAttachments.map { image -> CopilotAttachmentUpload in
         .init(
-          fieldName: attachmentFieldName,
           originalName: "image.jpg",
           mimeType: mimeType(pathExtension: "jpg"),
           data: image.imageData
         )
       },
     ].flatMap(\.self)
-    assert(uploadableAttachments.allSatisfy { !($0.data?.isEmpty ?? true) })
-    let input = CreateChatMessageInput(
-      attachments: [],
-      blob: attachmentCount == 1 ? "" : .none,
-      blobs: attachmentCount > 1 && attachmentCount != 0 ? .some([]) : .none,
-      content: .some(contextSnippet.isEmpty ? editorData.text : "\(contextSnippet)\n\(editorData.text)"),
-      params: .some(messageParameters),
-      sessionId: sessionId
-    )
-    let mutation = CreateCopilotMessageMutation(options: input)
-    QLService.shared.client.upload(operation: mutation, files: uploadableAttachments) { result in
-      print("[*] createCopilotMessage result: \(result)")
-      DispatchQueue.main.async {
-        switch result {
-        case let .success(graphQLResult):
-          guard let messageIdentifier = graphQLResult.data?.createCopilotMessage else {
-            self.report(sessionId, ChatError.invalidResponse)
-            self.delete(sessionId: sessionId, vmId: viewModelId)
-            return
-          }
+    assert(uploadableAttachments.allSatisfy { !$0.data.isEmpty })
+    let messageContent = contextSnippet.isEmpty ? editorData.text : "\(contextSnippet)\n\(editorData.text)"
+    Task {
+      do {
+        let messageIdentifier = try await QLService.shared.createCopilotMessage(
+          workspaceId: IntelligentContext.shared.currentWorkspaceId ?? "",
+          sessionId: sessionId,
+          content: messageContent,
+          params: messageParameters,
+          attachments: uploadableAttachments
+        )
+        DispatchQueue.main.async {
           self.startStreamingResponse(
             sessionId: sessionId,
             messageId: messageIdentifier,
             applyingTo: viewModelId
           )
-        case let .failure(error):
+        }
+      } catch {
+        DispatchQueue.main.async {
           self.report(sessionId, error)
+          self.delete(sessionId: sessionId, vmId: viewModelId)
         }
       }
     }

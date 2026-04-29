@@ -695,7 +695,7 @@ type CopilotWorkspaceIgnoredDocTypeEdge {
 }
 
 input CreateChatMessageInput {
-  attachments: [String!]
+  attachments: [String!] @deprecated(reason: "use blobs")
   blob: Upload
   blobs: [Upload!]
   content: String
@@ -718,7 +718,7 @@ input CreateChatSessionInput {
 input CreateCheckoutSessionInput {
   args: JSONObject
   coupon: String
-  idempotencyKey: String
+  idempotencyKey: String @deprecated(reason: "not required anymore")
   plan: SubscriptionPlan = Pro
   recurring: SubscriptionRecurring = Yearly
   successCallbackLink: String!

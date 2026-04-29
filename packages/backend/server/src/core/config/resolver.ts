@@ -12,7 +12,7 @@ import {
 } from '@nestjs/graphql';
 import { GraphQLJSON, GraphQLJSONObject } from 'graphql-scalars';
 
-import { Config, URLHelper } from '../../base';
+import { Config, hasNewerVersion, URLHelper } from '../../base';
 import { Namespace } from '../../env';
 import { Feature, type WorkspaceFeatureName } from '../../models';
 import { CurrentUser, Public } from '../auth';
@@ -143,7 +143,7 @@ export class ServerConfigResolver {
       }>;
 
       const latest = releases.at(0);
-      if (!latest || latest.name === env.version) {
+      if (!latest || !hasNewerVersion(env.version, latest.name)) {
         return null;
       }
 
