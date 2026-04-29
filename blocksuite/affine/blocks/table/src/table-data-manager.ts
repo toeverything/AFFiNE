@@ -422,11 +422,11 @@ export class TableDataManager {
           if (cell) {
             const t = cell.text.toString();
             if (t.trim()) extraTexts.push(t);
-            // Clear text content so it doesn't reappear after unmerge,
-            // then mark hidden — both mutations keep Y.Text attached in Yjs.
             if (cell.text.length > 0) {
               cell.text.replace(0, cell.text.length, '');
             }
+            delete cell.colSpan;
+            delete cell.rowSpan;
             cell.hidden = true;
           }
         }
@@ -435,6 +435,7 @@ export class TableDataManager {
       // Update the top-left cell — mutate in place to keep Y.Text attached
       const topLeft = this.model.props.cells[topLeftKey];
       if (topLeft) {
+        delete topLeft.hidden;
         if (extraTexts.length) {
           const topLeftText = topLeft.text.toString();
           const combined =
