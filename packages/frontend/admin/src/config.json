@@ -420,7 +420,8 @@
     },
     "token": {
       "type": "String",
-      "desc": "Customer.io token"
+      "desc": "Customer.io token",
+      "env": "CUSTOMER_IO_TOKEN"
     }
   },
   "oauth": {
