@@ -425,7 +425,11 @@ export class TableDataManager {
           if (cell) {
             const t = cell.text.toString();
             if (t.trim()) extraTexts.push(t);
-            // Mark as hidden — mutate in place to keep Y.Text attached
+            // Clear text content so it doesn't reappear after unmerge,
+            // then mark hidden — both mutations keep Y.Text attached in Yjs.
+            if (cell.text.length > 0) {
+              cell.text.replace(0, cell.text.length, '');
+            }
             cell.hidden = true;
           }
         }
