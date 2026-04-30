@@ -408,6 +408,26 @@ export class TableDataManager {
 
     const topLeftKey = `${topLeftRow.rowId}:${topLeftCol.columnId}`;
 
+    for (let r = rowStartIndex; r <= rowEndIndex; r++) {
+      for (let c = columnStartIndex; c <= columnEndIndex; c++) {
+        const row = rows[r];
+        const col = columns[c];
+        if (!row || !col) continue;
+        const current = this.model.props.cells[`${row.rowId}:${col.columnId}`];
+        if (!current) continue;
+        if (current.hidden) return;
+        const cs = current.colSpan ?? 1;
+        const rs = current.rowSpan ?? 1;
+        if (cs > 1 || rs > 1) {
+          const spanRowEnd = r + rs - 1;
+          const spanColEnd = c + cs - 1;
+          if (spanRowEnd > rowEndIndex || spanColEnd > columnEndIndex) {
+            return;
+          }
+        }
+      }
+    }
+
     this.model.store.transact(() => {
       // Collect non-empty text from all covered cells (excluding top-left)
       const extraTexts: string[] = [];
