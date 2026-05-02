@@ -68,6 +68,12 @@ export class TestUtils {
     await switchDefaultChatModel(defaultModel);
 
     await skipOnboarding(page.context());
+    await page.context().addInitScript(model => {
+      window.localStorage.setItem(
+        'global-state:AIModelId',
+        JSON.stringify(model)
+      );
+    }, defaultModel);
     await openHomePage(page);
     await this.createNewPage(page);
   }
