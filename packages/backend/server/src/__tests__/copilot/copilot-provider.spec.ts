@@ -892,7 +892,7 @@ const actionRecipeCases = [
 ];
 
 for (const { actionId, content, verifier } of actionRecipeCases) {
-  test(
+  test.serial(
     `should be able to run action recipe: ${actionId}`,
     runIfCopilotConfigured,
     async t => {

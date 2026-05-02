@@ -145,7 +145,12 @@ function parseFirstRoute(routesJson: string) {
   const routes = JSON.parse(routesJson) as Array<{
     provider_id?: string;
     model?: string;
-    request?: { model?: string; schema?: unknown };
+    request?: {
+      model?: string;
+      operation?: string;
+      prompt?: string;
+      schema?: unknown;
+    };
   }>;
   return routes[0];
 }
@@ -320,15 +325,23 @@ export function installMockCopilotRuntime() {
 
   native.llmImageDispatchPrepared = (routesJson: string) => {
     const route = parseFirstRoute(routesJson);
+    const model = route?.request?.model ?? route?.model ?? 'test-image';
+    const images = [
+      {
+        url: `https://example.com/${model}.jpg`,
+        media_type: 'image/jpeg',
+      },
+    ];
+    if (route?.request?.operation === 'edit' && route.request.prompt) {
+      images.push({
+        url: `https://example.com/generated/${encodeURIComponent(route.request.prompt)}.jpg`,
+        media_type: 'image/jpeg',
+      });
+    }
     return JSON.stringify({
       provider_id: route?.provider_id ?? 'mock-provider',
       response: {
-        images: [
-          {
-            url: 'https://example.com/test-image.jpg',
-            media_type: 'image/jpeg',
-          },
-        ],
+        images,
       },
     });
   };
@@ -420,6 +433,16 @@ export class MockCopilotProvider extends OpenAIProvider {
         providerType === CopilotProviderType.Gemini
           ? 'gemini_api'
           : 'openai_responses',
+    };
+  }
+
+  override getDriverSpec(): ProviderDriverSpec {
+    const spec = super.getDriverSpec();
+    return {
+      ...spec,
+      image: {
+        prepareMessages: async messages => messages,
+      },
     };
   }
 

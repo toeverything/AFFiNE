@@ -738,7 +738,10 @@ test('should be able to chat with special image model', async t => {
     t.is(
       ret3,
       textToEventStream(
-        [`https://example.com/${model}.jpg`, finalPrompt],
+        [
+          `https://example.com/${model}.jpg`,
+          `https://example.com/generated/${encodeURIComponent(finalPrompt)}.jpg`,
+        ],
         messageId,
         'attachment'
       ),
