@@ -152,7 +152,6 @@ declare global {
         selectedMarkdown?: string;
         html?: string;
       };
-      postfix?: (text: string) => string;
     }
 
     interface TranslateOptions extends AITextActionOptions {

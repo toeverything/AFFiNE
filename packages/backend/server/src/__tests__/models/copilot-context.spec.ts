@@ -48,7 +48,9 @@ let docId = 'doc1';
 
 test.beforeEach(async t => {
   await t.context.module.initTestingDB();
-  await t.context.copilotSession.createPrompt('prompt-name', 'gpt-5-mini');
+  await t.context.db.aiPrompt.create({
+    data: { name: 'prompt-name', model: 'gpt-5-mini', action: null },
+  });
   user = await t.context.user.create({
     email: 'test@affine.pro',
   });

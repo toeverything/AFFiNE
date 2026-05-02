@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
-import type { ChatPrompt } from './prompt/chat-prompt';
+import type { Turn } from './core/types';
+import type { ResolvedPrompt } from './prompt';
 import { PromptMessageSchema, PureMessageSchema } from './providers/types';
 
 const takeFirst = (v: unknown) => (Array.isArray(v) ? v[0] : v);
@@ -102,25 +103,30 @@ export type SubmittedMessage = z.infer<typeof SubmittedMessageSchema>;
 
 // ======== Chat Session ========
 
-export type ChatSessionOptions = Pick<
-  ChatHistory,
-  'userId' | 'workspaceId' | 'docId' | 'promptName' | 'pinned'
-> & {
+export type ChatSessionOptions = {
+  userId: string;
+  workspaceId: string;
+  docId: string | null;
+  promptName: string;
+  pinned: boolean;
   reuseLatestChat?: boolean;
 };
 
-export type ChatSessionForkOptions = Pick<
-  ChatHistory,
-  'userId' | 'sessionId' | 'workspaceId' | 'docId'
-> & {
+export type ChatSessionForkOptions = {
+  userId: string;
+  sessionId: string;
+  workspaceId: string;
+  docId: string;
   latestMessageId?: string;
 };
 
-export type ChatSessionState = Pick<
-  ChatHistory,
-  'userId' | 'sessionId' | 'workspaceId' | 'docId' | 'messages'
-> & {
-  prompt: ChatPrompt;
+export type ChatSessionState = {
+  userId: string;
+  sessionId: string;
+  workspaceId: string;
+  docId: string | null;
+  turns: Turn[];
+  prompt: ResolvedPrompt;
 };
 
 export type CopilotContextFile = {

@@ -1,5 +1,4 @@
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
-import { ModuleRef } from '@nestjs/core';
 
 import {
   Cache,
@@ -15,7 +14,7 @@ import {
   ContextFile,
   Models,
 } from '../../../models';
-import { getEmbeddingClient } from '../embedding/client';
+import { CopilotEmbeddingClientService } from '../embedding/client';
 import type { EmbeddingClient } from '../embedding/types';
 import { ContextSession } from './session';
 
@@ -27,7 +26,7 @@ export class CopilotContextService implements OnApplicationBootstrap {
   private client: EmbeddingClient | undefined;
 
   constructor(
-    private readonly moduleRef: ModuleRef,
+    private readonly embeddingClients: CopilotEmbeddingClientService,
     private readonly cache: Cache,
     private readonly models: Models
   ) {}
@@ -43,7 +42,7 @@ export class CopilotContextService implements OnApplicationBootstrap {
   }
 
   private async setup() {
-    this.client = await getEmbeddingClient(this.moduleRef);
+    this.client = await this.embeddingClients.refresh();
   }
 
   async onApplicationBootstrap() {
@@ -315,6 +314,18 @@ export class CopilotContextService implements OnApplicationBootstrap {
     await context.saveDocRecord(docId, doc => ({
       ...(doc as ContextDoc),
       status: ContextEmbedStatus.failed,
+    }));
+  }
+
+  @OnEvent('workspace.doc.embed.finished')
+  async onDocEmbedFinished({
+    contextId,
+    docId,
+  }: Events['workspace.doc.embed.finished']) {
+    const context = await this.get(contextId);
+    await context.saveDocRecord(docId, doc => ({
+      ...(doc as ContextDoc),
+      status: ContextEmbedStatus.finished,
     }));
   }
 

@@ -985,24 +985,6 @@
           "description": "Whether to enable the copilot plugin. <br> Document: <a href=\"https://docs.affine.pro/self-host-affine/administer/ai\" target=\"_blank\">https://docs.affine.pro/self-host-affine/administer/ai</a>\n@default false",
           "default": false
         },
-        "scenarios": {
-          "type": "object",
-          "description": "Use custom models in scenarios and override default settings.\n@default {\"override_enabled\":false,\"scenarios\":{\"audio_transcribing\":\"gemini-2.5-flash\",\"chat\":\"gemini-2.5-flash\",\"embedding\":\"gemini-embedding-001\",\"image\":\"gpt-image-1\",\"coding\":\"claude-sonnet-4-5@20250929\",\"complex_text_generation\":\"gpt-5-mini\",\"quick_decision_making\":\"gpt-5-mini\",\"quick_text_generation\":\"gemini-2.5-flash\",\"polish_and_summarize\":\"gemini-2.5-flash\"}}",
-          "default": {
-            "override_enabled": false,
-            "scenarios": {
-              "audio_transcribing": "gemini-2.5-flash",
-              "chat": "gemini-2.5-flash",
-              "embedding": "gemini-embedding-001",
-              "image": "gpt-image-1",
-              "coding": "claude-sonnet-4-5@20250929",
-              "complex_text_generation": "gpt-5-mini",
-              "quick_decision_making": "gpt-5-mini",
-              "quick_text_generation": "gemini-2.5-flash",
-              "polish_and_summarize": "gemini-2.5-flash"
-            }
-          }
-        },
         "providers.profiles": {
           "type": "array",
           "description": "The profile list for copilot providers.\n@default []",

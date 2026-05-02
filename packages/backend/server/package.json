@@ -27,7 +27,6 @@
     "@affine/server-native": "workspace:*",
     "@apollo/server": "^5.5.0",
     "@as-integrations/express5": "^1.1.2",
-    "@fal-ai/serverless-client": "^0.15.0",
     "@google-cloud/opentelemetry-cloud-trace-exporter": "^3.0.0",
     "@google-cloud/opentelemetry-resource-util": "^3.0.0",
     "@inquirer/prompts": "^7.10.1",
@@ -102,12 +101,14 @@
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
     "semver": "^7.7.4",
+    "ses": "^1.15.0",
     "socket.io": "^4.8.1",
     "stripe": "^17.7.0",
     "tldts": "^7.0.19",
     "winston": "^3.17.0",
     "yjs": "^13.6.27",
-    "zod": "^3.25.76"
+    "zod": "^3.25.76",
+    "zod-to-json-schema": "^3.20.0"
   },
   "devDependencies": {
     "@affine-tools/cli": "workspace:*",

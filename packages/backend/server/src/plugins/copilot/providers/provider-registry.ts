@@ -240,6 +240,16 @@ export function resolveModel({
     };
   }
 
+  if (modelId) {
+    return {
+      rawModelId: modelId,
+      modelId,
+      candidateProviderIds: registry.order.filter(providerId =>
+        isAllowed(providerId)
+      ),
+    };
+  }
+
   const defaultProviderId =
     outputType && outputType !== ModelOutputType.Rerank
       ? registry.defaults[outputType]
