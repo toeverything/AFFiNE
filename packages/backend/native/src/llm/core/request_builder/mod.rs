@@ -1,4 +1,4 @@
-use llm_adapter::core::{self as adapter_core, EmbeddingRequest, ImageRequest, RerankRequest};
+use llm_adapter::core::{self as adapter_core, EmbeddingRequest, ImageInput, ImageRequest, RerankRequest};
 use napi::Result;
 use napi_derive::napi;
 use serde::Serialize;
@@ -62,7 +62,36 @@ pub(crate) fn build_image_request(request: ImageRequest) -> Result<ImageRequest>
 }
 
 pub(crate) fn build_image_request_from_messages(request: LlmImageRequestBuildContract) -> Result<ImageRequest> {
-  adapter_core::build_image_request_from_prompt_messages(to_adapter(&request)?).map_err(map_builder_error)
+  let protocol = request.protocol.clone();
+  let mut request =
+    adapter_core::build_image_request_from_prompt_messages(to_adapter(&request)?).map_err(map_builder_error)?;
+  if protocol == "fal_image" {
+    keep_fal_data_uri_inputs_as_urls(&mut request);
+  }
+  Ok(request)
+}
+
+fn keep_fal_data_uri_inputs_as_urls(request: &mut ImageRequest) {
+  let ImageRequest::Edit(edit) = request else {
+    return;
+  };
+
+  for image in &mut edit.images {
+    let replacement = match image {
+      ImageInput::Data {
+        data_base64,
+        media_type,
+        ..
+      } => Some(ImageInput::Url {
+        url: format!("data:{media_type};base64,{data_base64}"),
+        media_type: Some(media_type.clone()),
+      }),
+      _ => None,
+    };
+    if let Some(replacement) = replacement {
+      *image = replacement;
+    }
+  }
 }
 
 pub(crate) fn infer_prompt_model_conditions(messages: Vec<PromptMessageInput>) -> Result<ModelConditionsContract> {
@@ -117,7 +146,7 @@ mod tests {
 
   use super::{
     build_embedding_request, build_image_request, build_rerank_request, llm_build_canonical_request,
-    llm_build_canonical_structured_request, llm_infer_prompt_model_conditions,
+    llm_build_canonical_structured_request, llm_build_image_request_from_messages, llm_infer_prompt_model_conditions,
   };
   use crate::llm::core::contracts::{
     CanonicalChatRequestContract, CanonicalStructuredRequestContract, PromptMessageContract,
@@ -438,6 +467,37 @@ mod tests {
         .openai()
         .and_then(|options| options.input_fidelity.as_deref()),
       Some("high")
+    );
+  }
+
+  #[test]
+  fn should_keep_fal_data_uri_image_inputs_as_urls() {
+    let response = llm_build_image_request_from_messages(
+      serde_json::from_value(json!({
+        "model": "lora/image-to-image",
+        "protocol": "fal_image",
+        "messages": [{
+          "role": "user",
+          "content": "restyle",
+          "attachments": [{
+            "kind": "url",
+            "url": "data:image/png;base64,aW1n",
+            "mimeType": "image/png"
+          }]
+        }]
+      }))
+      .unwrap(),
+    )
+    .unwrap();
+
+    let response = serde_json::to_value(response).unwrap();
+    assert_eq!(
+      response.pointer("/images/0"),
+      Some(&json!({
+        "kind": "url",
+        "url": "data:image/png;base64,aW1n",
+        "media_type": "image/png"
+      }))
     );
   }
 

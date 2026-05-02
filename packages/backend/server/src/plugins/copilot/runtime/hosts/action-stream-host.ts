@@ -89,7 +89,6 @@ export class ActionStreamHost {
       actionId,
       prepared.session,
       params,
-      query,
       userId,
       signal
     );
@@ -177,7 +176,6 @@ export class ActionStreamHost {
     actionId: string,
     session: ChatSession,
     params: Record<string, unknown>,
-    query: Record<string, string | string[]>,
     userId: string,
     signal?: AbortSignal
   ): Promise<ImageActionRoutePreparation | undefined> {
@@ -195,10 +193,7 @@ export class ActionStreamHost {
       session.config.sessionId
     );
     return {
-      modelId:
-        typeof query.modelId === 'string' && query.modelId
-          ? query.modelId
-          : prompt.model,
+      modelId: prompt.model,
       messages: finalMessage,
       options: {
         ...prompt.config,

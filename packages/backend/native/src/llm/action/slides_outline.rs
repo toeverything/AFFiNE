@@ -128,11 +128,17 @@ fn render_labeled_string_slide_item(item: &Value) -> Result<String, String> {
 }
 
 fn render_structured_slide_item(item: &Value) -> Result<String, String> {
+  let item_object = item
+    .as_object()
+    .ok_or_else(|| "slidesOutlineMarkdown structured item requires object content".to_string())?;
   let content = item
     .get("content")
     .and_then(Value::as_object)
     .ok_or_else(|| "slidesOutlineMarkdown structured item requires object content".to_string())?;
-  let title = required_string_prop(content, &["title", "name"], "slide title")?;
+  let title = string_prop(content, &["title", "name", "page_name", "pageName"])
+    .or_else(|| string_prop(item_object, &["title", "name", "page_name", "pageName", "page"]))
+    .filter(|value| !value.is_empty())
+    .ok_or_else(|| "slidesOutlineMarkdown requires slide title".to_string())?;
   let sections = content.get("sections").and_then(Value::as_array);
   let rendered_sections = if let Some(sections) = sections.filter(|sections| !sections.is_empty()) {
     sections
@@ -180,13 +186,22 @@ fn render_slide_section(section: &Value, index: usize) -> Result<Vec<String>, St
 }
 
 fn render_slide_object(object: &Map<String, Value>) -> Result<Vec<String>, String> {
-  let title = required_string_prop(object, &["title", "name", "section"], "slide section title")?;
-  let keywords = required_string_prop(
+  let title = required_string_prop(
     object,
-    &["image_keywords", "imageKeywords", "keywords"],
-    "slide section image keywords",
+    &["title", "name", "section", "page_name", "pageName"],
+    "slide section title",
   )?;
-  let content = required_string_prop(object, &["content", "description", "summary"], "slide section content")?;
+  let keywords = string_prop(
+    object,
+    &["image_keywords", "imageKeywords", "keywords", "image_keywords_optional"],
+  )
+  .filter(|value| !value.is_empty())
+  .unwrap_or_else(|| title.clone());
+  let content = required_string_prop(
+    object,
+    &["content", "description", "summary", "text"],
+    "slide section content",
+  )?;
 
   Ok(vec![
     format!("  - {title}"),

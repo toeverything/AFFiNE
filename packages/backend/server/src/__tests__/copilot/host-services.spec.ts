@@ -1220,6 +1220,7 @@ test('ActionStreamHost should prepare image action routes and persist native att
 
   const prepared = await host.stream('user-1', 'session-1', {
     actionId: 'image.filter.sketch',
+    modelId: 'chat-model',
   });
   const events = [];
   for await (const event of prepared.stream) {

@@ -214,7 +214,7 @@ export class TurnOrchestrator {
         userId,
         sessionId,
         prepared.session,
-        selection.model,
+        undefined,
         hasAttachment,
         finalMessage,
         {
@@ -235,7 +235,7 @@ export class TurnOrchestrator {
     userId: string,
     sessionId: string,
     session: ChatSession,
-    model: string,
+    model: string | undefined,
     hasAttachment: boolean,
     finalMessage: ReturnType<ChatSession['finish']>,
     options: Record<string, unknown>,

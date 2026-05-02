@@ -303,7 +303,7 @@ fn slides_outline_transform_rejects_unrecognized_text() {
 }
 
 #[test]
-fn slides_outline_transform_rejects_incomplete_structured_item() {
+fn slides_outline_transform_accepts_cover_without_image_keywords() {
   let outline = serde_json::to_string(&json!({
     "page": 1,
     "type": "cover",
@@ -338,11 +338,74 @@ fn slides_outline_transform_rejects_incomplete_structured_item() {
   )
   .unwrap();
 
-  assert_eq!(output.status, ActionRunStatus::Failed);
-  assert_eq!(output.error_code, Some("action_invalid_step".to_string()));
   assert_eq!(
-    output.events.last().and_then(|event| event.error_message.as_deref()),
-    Some("slidesOutlineMarkdown requires slide section image keywords")
+    output.result,
+    json!(
+      [
+        "- Launch deck",
+        "  - Launch deck",
+        "    - Launch deck",
+        "    - Overview"
+      ]
+      .join("\n")
+    )
+  );
+}
+
+#[test]
+fn slides_outline_transform_accepts_page_name_from_item() {
+  let outline = serde_json::to_string(&json!({
+    "page": 2,
+    "type": "content",
+    "page_name": "Workspace Benefits",
+    "content": {
+      "sections": [
+        {
+          "section": "Unified writing",
+          "keywords": ["docs", "canvas"],
+          "text": "AFFiNE combines documents and whiteboards."
+        }
+      ]
+    }
+  }))
+  .unwrap();
+  let recipe = test_recipe(vec![
+    ActionRecipeStep {
+      id: "project-outline".to_string(),
+      kind: ActionStepKind::Transform,
+      input: Some(json!({
+        "slidesOutlineMarkdown": { "$state": "outline" },
+        "outputKey": "outlineMarkdown"
+      })),
+      state_patch: None,
+    },
+    ActionRecipeStep {
+      id: "final".to_string(),
+      kind: ActionStepKind::Final,
+      input: Some(json!({ "copy": { "$state": "outlineMarkdown" } })),
+      state_patch: None,
+    },
+  ]);
+  let output = run_action_recipe_for_test(
+    recipe,
+    runtime_input(json!({
+      "outline": outline
+    })),
+  )
+  .unwrap();
+
+  assert_eq!(output.status, ActionRunStatus::Succeeded);
+  assert_eq!(
+    output.result,
+    json!(
+      [
+        "- Workspace Benefits",
+        "  - Unified writing",
+        "    - docs, canvas",
+        "    - AFFiNE combines documents and whiteboards."
+      ]
+      .join("\n")
+    )
   );
 }
 

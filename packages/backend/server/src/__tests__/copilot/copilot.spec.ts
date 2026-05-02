@@ -1300,7 +1300,9 @@ test('turn orchestrator should persist generated image links through image resul
     'persistAssistantTurn'
   ).resolves();
 
-  const prepared = await orchestrator.streamImages('user-1', 'session-1', {});
+  const prepared = await orchestrator.streamImages('user-1', 'session-1', {
+    modelId: 'chat-model',
+  });
   const result = await wrapAsyncIter(prepared.stream);
 
   t.deepEqual(result, [
@@ -1310,7 +1312,7 @@ test('turn orchestrator should persist generated image links through image resul
   t.deepEqual(
     (chatRuntime.streamImageArtifacts as Sinon.SinonStub).firstCall.args[0],
     {
-      modelId: 'test-image-model',
+      modelId: undefined,
       inputTypes: [ModelInputType.Image],
     }
   );
