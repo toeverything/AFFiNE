@@ -89,6 +89,7 @@ export const PRIMARY_GROUPS: MenuItemGroup<CodeBlockToolbarContext>[] = [
       },
       {
         type: 'collapse',
+        when: ({ doc }) => !doc.readonly,
         generate: ({ blockComponent }) => {
           return {
             action: () => {
