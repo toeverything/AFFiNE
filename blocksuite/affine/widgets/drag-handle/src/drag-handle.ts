@@ -2,6 +2,7 @@ import './components/add-block-widget.js';
 
 import { EdgelessCRUDIdentifier } from '@blocksuite/affine-block-surface';
 import type { RootBlockModel } from '@blocksuite/affine-model';
+import { focusTextModel } from '@blocksuite/affine-rich-text';
 import { DocModeProvider } from '@blocksuite/affine-shared/services';
 import {
   isInsideEdgelessEditor,
@@ -17,7 +18,7 @@ import { query, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
-import { focusTextModel } from '../../../rich-text/src/dom.js';
+//focustextmodel rich text should be added in package.json file and import from there
 import type { AFFINE_DRAG_HANDLE_WIDGET } from './consts.js';
 import { RectHelper } from './helpers/rect-helper.js';
 import { SelectionHelper } from './helpers/selection-helper.js';
