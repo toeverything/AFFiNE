@@ -1,4 +1,6 @@
 DO $$
+DECLARE
+  has_hnsw BOOLEAN;
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'vector') THEN
     BEGIN
@@ -8,6 +10,12 @@ BEGIN
         RAISE NOTICE 'pgvector extension is not available. Skip repairing copilot embedding tables.';
         RETURN;
     END;
+  END IF;
+
+  SELECT EXISTS (SELECT 1 FROM pg_am WHERE amname = 'hnsw') INTO has_hnsw;
+
+  IF NOT has_hnsw THEN
+    RAISE NOTICE 'pgvector HNSW index access method is not available. Skip repairing copilot embedding indexes.';
   END IF;
 
   IF to_regclass('public.ai_contexts') IS NOT NULL THEN
@@ -23,8 +31,10 @@ BEGIN
       CONSTRAINT "ai_context_embeddings_pkey" PRIMARY KEY ("id")
     );
 
-    CREATE INDEX IF NOT EXISTS "ai_context_embeddings_idx"
-      ON "ai_context_embeddings" USING hnsw ("embedding" vector_cosine_ops);
+    IF has_hnsw THEN
+      CREATE INDEX IF NOT EXISTS "ai_context_embeddings_idx"
+        ON "ai_context_embeddings" USING hnsw ("embedding" vector_cosine_ops);
+    END IF;
     CREATE UNIQUE INDEX IF NOT EXISTS "ai_context_embeddings_context_id_file_id_chunk_key"
       ON "ai_context_embeddings"("context_id", "file_id", "chunk");
 
@@ -53,8 +63,10 @@ BEGIN
         PRIMARY KEY ("workspace_id", "doc_id", "chunk")
     );
 
-    CREATE INDEX IF NOT EXISTS "ai_workspace_embeddings_idx"
-      ON "ai_workspace_embeddings" USING hnsw ("embedding" vector_cosine_ops);
+    IF has_hnsw THEN
+      CREATE INDEX IF NOT EXISTS "ai_workspace_embeddings_idx"
+        ON "ai_workspace_embeddings" USING hnsw ("embedding" vector_cosine_ops);
+    END IF;
 
     IF NOT EXISTS (
       SELECT 1 FROM pg_constraint
@@ -81,8 +93,10 @@ BEGIN
         PRIMARY KEY ("workspace_id", "file_id", "chunk")
     );
 
-    CREATE INDEX IF NOT EXISTS "ai_workspace_file_embeddings_idx"
-      ON "ai_workspace_file_embeddings" USING hnsw ("embedding" vector_cosine_ops);
+    IF has_hnsw THEN
+      CREATE INDEX IF NOT EXISTS "ai_workspace_file_embeddings_idx"
+        ON "ai_workspace_file_embeddings" USING hnsw ("embedding" vector_cosine_ops);
+    END IF;
 
     IF NOT EXISTS (
       SELECT 1 FROM pg_constraint
@@ -109,8 +123,10 @@ BEGIN
         PRIMARY KEY ("workspace_id", "blob_id", "chunk")
     );
 
-    CREATE INDEX IF NOT EXISTS "ai_workspace_blob_embeddings_idx"
-      ON "ai_workspace_blob_embeddings" USING hnsw ("embedding" vector_cosine_ops);
+    IF has_hnsw THEN
+      CREATE INDEX IF NOT EXISTS "ai_workspace_blob_embeddings_idx"
+        ON "ai_workspace_blob_embeddings" USING hnsw ("embedding" vector_cosine_ops);
+    END IF;
 
     IF NOT EXISTS (
       SELECT 1 FROM pg_constraint
