@@ -42,8 +42,8 @@ import {
 } from './error';
 
 export enum Endpoint {
+  Action = 'action',
   StreamObject = 'stream-object',
-  Workflow = 'workflow',
   Images = 'images',
 }
 
@@ -469,21 +469,36 @@ export class CopilotClient {
       reasoning,
       modelId,
       toolsConfig,
+      actionId,
+      actionVersion,
+      runId,
+      retry,
     }: {
       sessionId: string;
       messageId?: string;
       reasoning?: boolean;
       modelId?: string;
       toolsConfig?: AIToolsConfig;
+      actionId?: string;
+      actionVersion?: string;
+      runId?: string;
+      retry?: boolean;
     },
     endpoint = Endpoint.StreamObject
   ) {
-    let url = `/api/copilot/chat/${sessionId}/${endpoint}`;
+    let url =
+      endpoint === Endpoint.Action
+        ? `/api/copilot/actions/${sessionId}/stream`
+        : `/api/copilot/chat/${sessionId}/${endpoint}`;
     const queryString = this.paramsToQueryString({
       messageId,
       reasoning,
       modelId,
       toolsConfig,
+      actionId,
+      actionVersion,
+      runId,
+      retry,
     });
     if (queryString) {
       url += `?${queryString}`;

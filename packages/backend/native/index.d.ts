@@ -8,6 +8,46 @@ export declare class Tokenizer {
   count(content: string, allowedSpecial?: Array<string> | undefined | null): number
 }
 
+export interface ActionEvent {
+  type: ActionEventType
+  actionId: string
+  actionVersion: string
+  stepId?: string
+  status?: ActionRunStatus
+  attachment?: any
+  result?: any
+  errorCode?: string
+  errorMessage?: string
+  trace?: ActionTrace
+}
+
+export type ActionEventType =  'action_start'|
+'step_start'|
+'attachment'|
+'step_end'|
+'action_done'|
+'error';
+
+export type ActionRunStatus =  'created'|
+'running'|
+'succeeded'|
+'failed'|
+'aborted';
+
+export interface ActionRuntimeInput {
+  recipeId: string
+  recipeVersion?: string
+  input: any
+}
+
+export interface ActionTrace {
+  actionId: string
+  actionVersion: string
+  status: ActionRunStatus
+  lightweight: Array<any>
+  errorCode?: string
+}
+
 /**
  * Adds a document ID to the workspace root doc's meta.pages array.
  * This registers the document in the workspace so it appears in the UI.
@@ -27,6 +67,83 @@ export const AFFINE_PRO_LICENSE_AES_KEY: string | undefined | null
 export const AFFINE_PRO_PUBLIC_KEY: string | undefined | null
 
 export declare function buildPublicRootDoc(rootDocBin: Buffer, docMetas: Array<PublicDocMetaInput>): Buffer
+
+export interface BuiltInPromptRenderContract {
+  name: string
+  renderParams: Record<string, any>
+}
+
+export interface BuiltInPromptSessionContract {
+  name: string
+  turns: Array<PromptMessageContract>
+  renderParams: Record<string, any>
+  maxTokenSize: number
+}
+
+export interface BuiltInPromptSpec {
+  name: string
+  action?: string
+  model: string
+  optionalModels?: Array<string>
+  config?: any
+  params?: Record<string, PromptParamSpec>
+  builtins?: Array<PromptBuiltin>
+  messages: Array<PromptSpecMessage>
+}
+
+export interface CanonicalChatRequestContract {
+  model: string
+  messages: Array<PromptMessageContract>
+  maxTokens?: number
+  temperature?: number
+  tools?: Array<ToolContract>
+  include?: Array<string>
+  reasoning?: any
+  responseSchema?: any
+  attachmentCapability?: CapabilityAttachmentContract
+  middleware?: any
+}
+
+export interface CanonicalStructuredRequestContract {
+  model: string
+  messages: Array<PromptMessageContract>
+  schema?: any
+  maxTokens?: number
+  temperature?: number
+  reasoning?: any
+  strict?: boolean
+  responseMimeType?: string
+  attachmentCapability?: CapabilityAttachmentContract
+  middleware?: any
+}
+
+export interface CapabilityAttachmentContract {
+  kinds: Array<'image' | 'audio' | 'file'>
+  sourceKinds?: Array<'url' | 'data' | 'bytes' | 'file_handle'>
+  allowRemoteUrls?: boolean
+}
+
+export interface CapabilityMatchRequest {
+  models: Array<CapabilityModelContract>
+  cond: ModelConditionsContract
+}
+
+export interface CapabilityMatchResponse {
+  modelId?: string
+}
+
+export interface CapabilityModelCapability {
+  input: Array<'text' | 'image' | 'audio' | 'file'>
+  output: Array<'text' | 'image' | 'object' | 'structured' | 'embedding' | 'rerank'>
+  attachments?: CapabilityAttachmentContract
+  structuredAttachments?: CapabilityAttachmentContract
+  defaultForOutputType?: boolean
+}
+
+export interface CapabilityModelContract {
+  id: string
+  capabilities: Array<CapabilityModelCapability>
+}
 
 export interface Chunk {
   index: number
@@ -52,15 +169,182 @@ export declare function getMime(input: Uint8Array): string
 
 export declare function htmlSanitize(input: string): string
 
-export declare function llmDispatch(protocol: string, backendConfigJson: string, requestJson: string): Promise<string>
+export declare function llmBuildCanonicalRequest(request: CanonicalChatRequestContract): LlmRequestContract
 
-export declare function llmDispatchStream(protocol: string, backendConfigJson: string, requestJson: string, callback: ((err: Error | null, arg: string) => void)): LlmStreamHandle
+export declare function llmBuildCanonicalStructuredRequest(request: CanonicalStructuredRequestContract): LlmStructuredRequestContract
+
+export declare function llmBuildEmbeddingRequest(request: LlmEmbeddingRequestContract): LlmEmbeddingRequestContract
+
+export declare function llmBuildImageRequestFromMessages(request: LlmImageRequestBuildContract): LlmImageRequestContract
+
+export declare function llmBuildRerankRequest(request: LlmRerankRequestContract): LlmRerankRequestContract
+
+export declare function llmCanonicalJsonSchemaHash(schema: any): string
+
+export declare function llmCollectPromptMetadata(request: PromptMetadataContract): PromptMetadataResult
+
+export declare function llmCompileExecutionPlan(value: any): any
+
+export interface LlmCoreMessage {
+  role: string
+  content: Array<any>
+}
+
+export declare function llmCountPromptTokens(request: PromptTokenCountContract): PromptTokenCountResult
+
+export declare function llmDispatchPrepared(routesJson: string): Promise<string>
+
+export declare function llmDispatchPreparedStream(routesJson: string, callback: ((err: Error | null, arg: string) => void)): LlmStreamHandle
+
+export declare function llmDispatchToolLoopStream(protocol: string, backendConfigJson: string, requestJson: string, maxSteps: number, callback: ((err: Error | null, arg: string) => void), toolCallback: ((err: Error | null, arg: string) => Promise<string>)): LlmStreamHandle
+
+export declare function llmDispatchToolLoopStreamPrepared(routesJson: string, maxSteps: number, callback: ((err: Error | null, arg: string) => void), toolCallback: ((err: Error | null, arg: string) => Promise<string>)): LlmStreamHandle
+
+export declare function llmDispatchToolLoopStreamRouted(routesJson: string, requestJson: string, maxSteps: number, callback: ((err: Error | null, arg: string) => void), toolCallback: ((err: Error | null, arg: string) => Promise<string>)): LlmStreamHandle
 
 export declare function llmEmbeddingDispatch(protocol: string, backendConfigJson: string, requestJson: string): Promise<string>
 
+export declare function llmEmbeddingDispatchPrepared(routesJson: string): Promise<string>
+
+export interface LlmEmbeddingRequestContract {
+  model: string
+  inputs: Array<string>
+  dimensions?: number
+  taskType?: string
+}
+
+export declare function llmGetBuiltInPromptSpec(name: string): BuiltInPromptSpec | null
+
+export declare function llmGetContractSchema(name: string): any
+
+export declare function llmImageDispatchPrepared(routesJson: string): Promise<string>
+
+export interface LlmImageInputContract {
+  kind: 'url' | 'data' | 'bytes'
+  url?: string
+  dataBase64?: string
+  data?: Array<number>
+  mediaType?: string
+  fileName?: string
+}
+
+export interface LlmImageOptionsContract {
+  n?: number
+  size?: string
+  aspectRatio?: string
+  quality?: string
+  outputFormat?: 'png' | 'jpeg' | 'webp'
+  outputCompression?: number
+  background?: string
+  seed?: number
+}
+
+export interface LlmImageProviderOptionsContract {
+  provider: 'openai' | 'gemini' | 'fal' | 'extra'
+  options?: {
+    input_fidelity?: string;
+    response_modalities?: string[];
+    model_name?: string;
+    image_size?: unknown;
+    aspect_ratio?: string;
+    num_images?: number;
+    enable_safety_checker?: boolean;
+    output_format?: 'jpeg' | 'png' | 'webp';
+    sync_mode?: boolean;
+    enable_prompt_expansion?: boolean;
+    loras?: unknown;
+    controlnets?: unknown;
+    extra?: unknown;
+    } | unknown
+  }
+
+export interface LlmImageRequestBuildContract {
+  model: string
+  protocol: 'openai_chat' | 'openai_responses' | 'openai_images' | 'anthropic' | 'gemini' | 'fal_image'
+  messages: Array<PromptMessageContract>
+  options?: any
+}
+
+export interface LlmImageRequestContract {
+  model: string
+  prompt: string
+  operation: 'generate' | 'edit'
+  images?: Array<LlmImageInputContract>
+  mask?: LlmImageInputContract
+  options?: LlmImageOptionsContract
+  providerOptions?: LlmImageProviderOptionsContract
+}
+
+export declare function llmInferPromptModelConditions(messages: Array<PromptMessageContract>): ModelConditionsContract
+
+export declare function llmListBuiltInPromptSpecs(): Array<BuiltInPromptSpec>
+
+export declare function llmMatchModelCapabilities(payload: CapabilityMatchRequest): CapabilityMatchResponse
+
+export declare function llmMatchModelRegistry(request: ModelRegistryMatchRequest): ModelRegistryMatchResponse
+
+export declare function llmNormalizePreparedRoutes(value: any): any
+
+export declare function llmPlanAttachmentReference(protocol: string, backendConfigJson: string, sourceJson: string): string
+
+export declare function llmRenderBuiltInPrompt(request: BuiltInPromptRenderContract): PromptRenderResult
+
+export declare function llmRenderBuiltInSessionPrompt(request: BuiltInPromptSessionContract): PromptSessionResult
+
+export declare function llmRenderPrompt(request: PromptRenderContract): PromptRenderResult
+
+export declare function llmRenderSessionPrompt(request: PromptSessionContract): PromptSessionResult
+
+export interface LlmRequestContract {
+  model: string
+  messages: Array<LlmCoreMessage>
+  stream?: boolean
+  maxTokens?: number
+  temperature?: number
+  tools?: Array<ToolContract>
+  toolChoice?: any
+  include?: Array<string>
+  reasoning?: any
+  responseSchema?: any
+  middleware?: any
+}
+
 export declare function llmRerankDispatch(protocol: string, backendConfigJson: string, requestJson: string): Promise<string>
 
+export declare function llmRerankDispatchPrepared(routesJson: string): Promise<string>
+
+export interface LlmRerankRequestContract {
+  model: string
+  query: string
+  candidates: Array<RerankCandidate>
+  topN?: number
+}
+
+export declare function llmResolveModelRegistryVariant(request: ModelRegistryResolveRequest): ModelRegistryResolveResponse
+
+export declare function llmResolveRequestedModelMatch(payload: RequestedModelMatchRequest): RequestedModelMatchResponse
+
+export declare function llmResolveRequestIntent(protocol: string, backendConfigJson: string, intentJson: string): string
+
 export declare function llmStructuredDispatch(protocol: string, backendConfigJson: string, requestJson: string): Promise<string>
+
+export declare function llmStructuredDispatchPrepared(routesJson: string): Promise<string>
+
+export interface LlmStructuredRequestContract {
+  model: string
+  messages: Array<LlmCoreMessage>
+  schema: any
+  maxTokens?: number
+  temperature?: number
+  reasoning?: any
+  strict?: boolean
+  responseMimeType?: string
+  middleware?: any
+}
+
+export declare function llmValidateContract(name: string, value: any): any
+
+export declare function llmValidateJsonSchema(schema: any, value: any): any
 
 /**
  * Merge updates in form like `Y.applyUpdate(doc, update)` way and return the
@@ -69,6 +353,53 @@ export declare function llmStructuredDispatch(protocol: string, backendConfigJso
 export declare function mergeUpdatesInApplyWay(updates: Array<Buffer>): Buffer
 
 export declare function mintChallengeResponse(resource: string, bits?: number | undefined | null): Promise<string>
+
+export interface ModelConditionsContract {
+  inputTypes?: Array<'text' | 'image' | 'audio' | 'file'>
+  attachmentKinds?: Array<'image' | 'audio' | 'file'>
+  attachmentSourceKinds?: Array<'url' | 'data' | 'bytes' | 'file_handle'>
+  hasRemoteAttachments?: boolean
+  modelId?: string
+  outputType?: 'text' | 'image' | 'object' | 'structured' | 'embedding' | 'rerank'
+}
+
+export interface ModelRegistryMatchRequest {
+  backendKind: 'openai_chat' | 'openai_responses' | 'anthropic' | 'cloudflare_workers_ai' | 'gemini_api' | 'gemini_vertex' | 'fal' | 'perplexity' | 'anthropic_vertex' | 'morph'
+  cond: ModelConditionsContract
+}
+
+export interface ModelRegistryMatchResponse {
+  variant?: ModelRegistryVariantContract
+}
+
+export interface ModelRegistryResolveRequest {
+  backendKind?: 'openai_chat' | 'openai_responses' | 'anthropic' | 'cloudflare_workers_ai' | 'gemini_api' | 'gemini_vertex' | 'fal' | 'perplexity' | 'anthropic_vertex' | 'morph'
+  modelId: string
+}
+
+export interface ModelRegistryResolveResponse {
+  variant?: ModelRegistryVariantContract
+  matchedBy?: string
+}
+
+export interface ModelRegistryRouteContract {
+  protocol?: 'openai_chat' | 'openai_responses' | 'openai_images' | 'anthropic' | 'gemini' | 'fal_image'
+  requestLayer?: 'anthropic' | 'chat_completions' | 'cloudflare_workers_ai' | 'responses' | 'openai_images' | 'fal' | 'vertex' | 'vertex_anthropic' | 'gemini_api' | 'gemini_vertex'
+}
+
+export interface ModelRegistryVariantContract {
+  backendKind: 'openai_chat' | 'openai_responses' | 'anthropic' | 'cloudflare_workers_ai' | 'gemini_api' | 'gemini_vertex' | 'fal' | 'perplexity' | 'anthropic_vertex' | 'morph'
+  canonicalKey: string
+  rawModelId: string
+  displayName?: string
+  aliases: Array<string>
+  legacyAliases?: Array<string>
+  capabilities: Array<CapabilityModelCapability>
+  protocol?: 'openai_chat' | 'openai_responses' | 'openai_images' | 'anthropic' | 'gemini' | 'fal_image'
+  requestLayer?: 'anthropic' | 'chat_completions' | 'cloudflare_workers_ai' | 'responses' | 'openai_images' | 'fal' | 'vertex' | 'vertex_anthropic' | 'gemini_api' | 'gemini_vertex'
+  routeOverrides?: Record<string, ModelRegistryRouteContract>
+  behaviorFlags?: Array<string>
+}
 
 export interface NativeBlockInfo {
   blockId: string
@@ -122,12 +453,149 @@ export declare function parseWorkspaceDoc(docBin: Buffer): NativeWorkspaceDocCon
 
 export declare function processImage(input: Buffer, maxEdge: number, keepExif: boolean): Promise<Buffer>
 
+export type PromptBuiltin =  'Date'|
+'Language'|
+'Timezone'|
+'HasDocs'|
+'HasFiles'|
+'HasSelected'|
+'HasCurrentDoc';
+
+export interface PromptCountMessage {
+  content: string
+}
+
+export interface PromptMessageContract {
+  role: 'system' | 'assistant' | 'user'
+  content: string
+  attachments?: Array<any>
+  params?: Record<string, any>
+  responseFormat?: PromptStructuredResponseContract
+}
+
+export interface PromptMetadataContract {
+  messages: Array<PromptMessageContract>
+}
+
+export interface PromptMetadataResult {
+  paramKeys: Array<string>
+  templateParams: Record<string, any>
+}
+
+export interface PromptParamSpec {
+  default?: string
+  enumValues?: Array<string>
+}
+
+export interface PromptRenderContract {
+  messages: Array<PromptMessageContract>
+  templateParams: Record<string, any>
+  renderParams: Record<string, any>
+}
+
+export interface PromptRenderResult {
+  messages: Array<PromptMessageContract>
+  warnings: Array<string>
+}
+
+export interface PromptSessionContract {
+  prompt: PromptSessionPrompt
+  turns: Array<PromptMessageContract>
+  renderParams: Record<string, any>
+  maxTokenSize: number
+}
+
+export interface PromptSessionPrompt {
+  action?: string
+  model?: string
+  promptTokens: number
+  templateParams: Record<string, any>
+  messages: Array<PromptMessageContract>
+}
+
+export interface PromptSessionResult {
+  messages: Array<PromptMessageContract>
+  warnings: Array<string>
+  promptMessagePositions: Array<number>
+}
+
+export interface PromptSpecMessage {
+  role: 'system' | 'assistant' | 'user'
+  template: string
+}
+
+export interface PromptStructuredResponseContract {
+  type: 'json_schema'
+  responseSchemaJson: Record<string, unknown>
+  schemaHash: string
+  strict?: boolean
+}
+
+export interface PromptTokenCountContract {
+  model?: string
+  messages: Array<PromptCountMessage>
+}
+
+export interface PromptTokenCountResult {
+  tokens: number
+}
+
+export interface ProviderDriverSpec {
+  driverId: string
+  providerType: string
+  models: Array<string>
+  routes: Array<ProviderRouteSpec>
+  hostOnly?: ProviderHostOnlySpec
+}
+
+export interface ProviderHostOnlySpec {
+  errorMapper?: string
+  structuredRetry?: boolean
+  providerToolAlias?: boolean
+}
+
+export interface ProviderRouteSpec {
+  kind: string
+  protocol: string
+  requestLayer?: string
+  supportsNativeFallback?: boolean
+  supportsToolLoop?: boolean
+  requestMiddlewares?: Array<string>
+  streamMiddlewares?: Array<string>
+  nodeTextMiddlewares?: Array<string>
+}
+
 export interface PublicDocMetaInput {
   id: string
   title?: string
 }
 
 export declare function readAllDocIdsFromRootDoc(docBin: Buffer, includeTrash?: boolean | undefined | null): Array<string>
+
+export interface RequestedModelMatchRequest {
+  providerIds: Array<string>
+  optionalModels: Array<string>
+  requestedModelId?: string
+  defaultModel?: string
+}
+
+export interface RequestedModelMatchResponse {
+  selectedModel?: string
+  matchedOptionalModel: boolean
+}
+
+export interface RerankCandidate {
+  id?: string
+  text: string
+}
+
+export declare function runNativeActionRecipePreparedStream(input: ActionRuntimeInput, callback: ((err: Error | null, arg: string) => void)): LlmStreamHandle
+
+export interface ToolContract {
+  name: string
+  description?: string
+  parameters: any
+}
 
 /**
  * Updates or creates the docProperties record for a document.

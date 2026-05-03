@@ -167,6 +167,7 @@
     "typedarray": "npm:@nolyfill/typedarray@^1",
     "macos-alias": "npm:@napi-rs/macos-alias@0.0.4",
     "fs-xattr": "npm:@napi-rs/xattr@latest",
+    "ioredis": "5.8.2",
     "decode-named-character-reference@npm:^1.0.0": "patch:decode-named-character-reference@npm%3A1.0.2#~/.yarn/patches/decode-named-character-reference-npm-1.0.2-db17a755fd.patch",
     "@atlaskit/pragmatic-drag-and-drop": "patch:@atlaskit/pragmatic-drag-and-drop@npm%3A1.4.0#~/.yarn/patches/@atlaskit-pragmatic-drag-and-drop-npm-1.4.0-75c45f52d3.patch",
     "yjs": "patch:yjs@npm%3A13.6.21#~/.yarn/patches/yjs-npm-13.6.21-c9f1f3397c.patch"

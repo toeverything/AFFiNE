@@ -10,11 +10,9 @@ import {
   MeetingActionItemSchema,
   MeetingSummaryV2Schema,
   NormalizedTranscriptSegmentSchema,
-  RawTranscriptSegmentSchema,
   TranscriptionLegacyProjectionSchema,
   TranscriptionPayloadV2Schema,
   TranscriptionQualitySchema,
-  TranscriptionRetryMetaSchema,
   TranscriptionSourceAudioSchema,
   TranscriptionSubmitInputSchema,
   TranscriptProviderMetaSchema,
@@ -29,7 +27,6 @@ export type AudioBlobInfos = z.infer<typeof AudioBlobInfosSchema>;
 export type AudioSliceManifestItem = z.infer<
   typeof AudioSliceManifestItemSchema
 >;
-export type RawTranscriptSegment = z.infer<typeof RawTranscriptSegmentSchema>;
 export type NormalizedTranscriptSegment = z.infer<
   typeof NormalizedTranscriptSegmentSchema
 >;
@@ -39,9 +36,6 @@ export type TranscriptionSourceAudio = z.infer<
   typeof TranscriptionSourceAudioSchema
 >;
 export type TranscriptionQuality = z.infer<typeof TranscriptionQualitySchema>;
-export type TranscriptionRetryMeta = z.infer<
-  typeof TranscriptionRetryMetaSchema
->;
 export type TranscriptProviderMeta = z.infer<
   typeof TranscriptProviderMetaSchema
 >;
@@ -59,19 +53,12 @@ export type TranscriptionPayload = TranscriptionPayloadV2;
 export type TranscriptionItem = LegacyTranscriptionSegment;
 
 declare global {
-  interface Events {
-    'workspace.file.transcript.finished': {
-      jobId: string;
-    };
-    'workspace.file.transcript.failed': {
-      jobId: string;
-    };
-  }
   interface Jobs {
-    'copilot.transcript.submit': {
-      jobId: string;
+    'copilot.transcript.task.submit': {
+      taskId: string;
       payload: TranscriptionPayloadV2;
       modelId?: string;
+      retryOf?: string;
     };
   }
 }

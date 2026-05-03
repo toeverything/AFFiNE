@@ -48,13 +48,14 @@ export class CopilotStorage {
     userId: string,
     workspaceId: string,
     key: string,
-    blob: BlobInputType
+    blob: BlobInputType,
+    mimeType = 'image/png'
   ) {
     const name = `${userId}/${workspaceId}/${key}`;
     await this.provider.put(name, blob);
     if (!env.prod) {
       // return image base64url for dev environment
-      return `data:image/png;base64,${blob.toString('base64')}`;
+      return `data:${mimeType};base64,${blob.toString('base64')}`;
     }
     return this.url.link(`/api/copilot/blob/${name}`);
   }
@@ -92,8 +93,12 @@ export class CopilotStorage {
 
   @CallMetric('ai', 'blob_proxy_remote_url')
   async handleRemoteLink(userId: string, workspaceId: string, link: string) {
-    const { buffer } = await fetchBuffer(link, REMOTE_BLOB_MAX_BYTES, 'image/');
+    const { buffer, type } = await fetchBuffer(
+      link,
+      REMOTE_BLOB_MAX_BYTES,
+      'image/'
+    );
     const filename = createHash('sha256').update(buffer).digest('base64url');
-    return this.put(userId, workspaceId, filename, buffer);
+    return this.put(userId, workspaceId, filename, buffer, type);
   }
 }

@@ -531,7 +531,6 @@ export interface ContextWorkspaceEmbeddingStatus {
 
 export interface Copilot {
   __typename?: 'Copilot';
-  audioTranscription: Maybe<TranscriptionResultType>;
   chats: PaginatedCopilotHistoriesType;
   /** Get the context list of a session */
   contexts: Array<CopilotContext>;
@@ -548,12 +547,8 @@ export interface Copilot {
    * @deprecated use `chats` instead
    */
   sessions: Array<CopilotSessionType>;
+  transcriptTask: Maybe<TranscriptionResultType>;
   workspaceId: Maybe<Scalars['ID']['output']>;
-}
-
-export interface CopilotAudioTranscriptionArgs {
-  blobId?: InputMaybe<Scalars['String']['input']>;
-  jobId?: InputMaybe<Scalars['String']['input']>;
 }
 
 export interface CopilotChatsArgs {
@@ -583,6 +578,11 @@ export interface CopilotSessionArgs {
 export interface CopilotSessionsArgs {
   docId?: InputMaybe<Scalars['String']['input']>;
   options?: InputMaybe<QueryChatSessionsInput>;
+}
+
+export interface CopilotTranscriptTaskArgs {
+  blobId?: InputMaybe<Scalars['String']['input']>;
+  taskId?: InputMaybe<Scalars['String']['input']>;
 }
 
 export interface CopilotContext {
@@ -1735,7 +1735,6 @@ export interface Mutation {
   cancelSubscription: SubscriptionType;
   changeEmail: UserType;
   changePassword: Scalars['Boolean']['output'];
-  claimAudioTranscription: Maybe<TranscriptionResultType>;
   /** Cleanup sessions */
   cleanupCopilotSession: Array<Scalars['String']['output']>;
   completeBlobUpload: Scalars['String']['output'];
@@ -1821,7 +1820,7 @@ export interface Mutation {
   /** Resolve a comment or not */
   resolveComment: Scalars['Boolean']['output'];
   resumeSubscription: SubscriptionType;
-  retryAudioTranscription: Maybe<TranscriptionResultType>;
+  retryTranscriptTask: Maybe<TranscriptionResultType>;
   revokeDocUserRoles: Scalars['Boolean']['output'];
   revokeInviteLink: Scalars['Boolean']['output'];
   revokeMember: Scalars['Boolean']['output'];
@@ -1834,11 +1833,8 @@ export interface Mutation {
   sendVerifyChangeEmail: Scalars['Boolean']['output'];
   sendVerifyEmail: Scalars['Boolean']['output'];
   setBlob: Scalars['String']['output'];
-  submitAudioTranscription: Maybe<TranscriptionResultType>;
-  /** Trigger cleanup of trashed doc embeddings */
-  triggerCleanupTrashedDocEmbeddings: Scalars['Boolean']['output'];
-  /** Trigger generate missing titles cron job */
-  triggerGenerateTitleCron: Scalars['Boolean']['output'];
+  settleTranscriptTask: Maybe<TranscriptionResultType>;
+  submitTranscriptTask: Maybe<TranscriptionResultType>;
   unlinkCalendarAccount: Scalars['Boolean']['output'];
   /** update app configuration */
   updateAppConfig: Scalars['JSONObject']['output'];
@@ -1950,10 +1946,6 @@ export interface MutationChangePasswordArgs {
   newPassword: Scalars['String']['input'];
   token: Scalars['String']['input'];
   userId?: InputMaybe<Scalars['String']['input']>;
-}
-
-export interface MutationClaimAudioTranscriptionArgs {
-  jobId: Scalars['String']['input'];
 }
 
 export interface MutationCleanupCopilotSessionArgs {
@@ -2175,8 +2167,8 @@ export interface MutationResumeSubscriptionArgs {
   workspaceId?: InputMaybe<Scalars['String']['input']>;
 }
 
-export interface MutationRetryAudioTranscriptionArgs {
-  jobId: Scalars['String']['input'];
+export interface MutationRetryTranscriptTaskArgs {
+  taskId: Scalars['String']['input'];
   workspaceId: Scalars['String']['input'];
 }
 
@@ -2236,7 +2228,12 @@ export interface MutationSetBlobArgs {
   workspaceId: Scalars['String']['input'];
 }
 
-export interface MutationSubmitAudioTranscriptionArgs {
+export interface MutationSettleTranscriptTaskArgs {
+  taskId: Scalars['String']['input'];
+  workspaceId: Scalars['String']['input'];
+}
+
+export interface MutationSubmitTranscriptTaskArgs {
   blob?: InputMaybe<Scalars['Upload']['input']>;
   blobId: Scalars['String']['input'];
   blobs?: InputMaybe<Array<Scalars['Upload']['input']>>;
@@ -2962,6 +2959,7 @@ export interface SubmitAudioTranscriptionInput {
   quality?: InputMaybe<TranscriptionQualityInput>;
   sliceManifest?: InputMaybe<Array<AudioSliceManifestItemInput>>;
   sourceAudio?: InputMaybe<TranscriptionSourceAudioInput>;
+  strategy?: InputMaybe<Scalars['String']['input']>;
 }
 
 export interface SubscriptionAlreadyExistsDataType {
@@ -3063,6 +3061,12 @@ export interface TimeWindow {
   to: Scalars['DateTime']['output'];
 }
 
+export interface TranscriptProviderMetaType {
+  __typename?: 'TranscriptProviderMetaType';
+  model: Maybe<Scalars['String']['output']>;
+  provider: Maybe<Scalars['String']['output']>;
+}
+
 export interface TranscriptionItemType {
   __typename?: 'TranscriptionItemType';
   end: Scalars['String']['output'];
@@ -3088,14 +3092,17 @@ export interface TranscriptionResultType {
   id: Scalars['ID']['output'];
   normalizedSegments: Maybe<Array<NormalizedTranscriptSegmentType>>;
   normalizedTranscript: Maybe<Scalars['String']['output']>;
+  providerMeta: Maybe<TranscriptProviderMetaType>;
   quality: Maybe<TranscriptionQualityType>;
   sliceManifest: Maybe<Array<AudioSliceManifestItemType>>;
   sourceAudio: Maybe<TranscriptionSourceAudioType>;
   status: AiJobStatus;
+  strategy: Maybe<Scalars['String']['output']>;
   summary: Maybe<Scalars['String']['output']>;
   summaryJson: Maybe<MeetingSummaryV2Type>;
   title: Maybe<Scalars['String']['output']>;
   transcription: Maybe<Array<TranscriptionItemType>>;
+  version: Maybe<Scalars['String']['output']>;
 }
 
 export interface TranscriptionSourceAudioInput {
@@ -5265,188 +5272,6 @@ export type GetCopilotHistoriesQuery = {
   } | null;
 };
 
-export type SubmitAudioTranscriptionMutationVariables = Exact<{
-  workspaceId: Scalars['String']['input'];
-  blobId: Scalars['String']['input'];
-  blob?: InputMaybe<Scalars['Upload']['input']>;
-  blobs?: InputMaybe<
-    Array<Scalars['Upload']['input']> | Scalars['Upload']['input']
-  >;
-  input?: InputMaybe<SubmitAudioTranscriptionInput>;
-}>;
-
-export type SubmitAudioTranscriptionMutation = {
-  __typename?: 'Mutation';
-  submitAudioTranscription: {
-    __typename?: 'TranscriptionResultType';
-    id: string;
-    status: AiJobStatus;
-  } | null;
-};
-
-export type ClaimAudioTranscriptionMutationVariables = Exact<{
-  jobId: Scalars['String']['input'];
-}>;
-
-export type ClaimAudioTranscriptionMutation = {
-  __typename?: 'Mutation';
-  claimAudioTranscription: {
-    __typename?: 'TranscriptionResultType';
-    id: string;
-    status: AiJobStatus;
-    title: string | null;
-    summary: string | null;
-    actions: string | null;
-    normalizedTranscript: string | null;
-    sourceAudio: {
-      __typename?: 'TranscriptionSourceAudioType';
-      blobId: string | null;
-      mimeType: string | null;
-      durationMs: number | null;
-      sampleRate: number | null;
-      channels: number | null;
-    } | null;
-    quality: {
-      __typename?: 'TranscriptionQualityType';
-      degraded: boolean | null;
-      overflowCount: number | null;
-    } | null;
-    sliceManifest: Array<{
-      __typename?: 'AudioSliceManifestItemType';
-      index: number;
-      fileName: string;
-      mimeType: string;
-      startSec: number;
-      durationSec: number;
-      byteSize: number | null;
-    }> | null;
-    normalizedSegments: Array<{
-      __typename?: 'NormalizedTranscriptSegmentType';
-      speaker: string;
-      startSec: number;
-      endSec: number;
-      start: string;
-      end: string;
-      text: string;
-    }> | null;
-    summaryJson: {
-      __typename?: 'MeetingSummaryV2Type';
-      title: string;
-      durationMinutes: number;
-      attendees: Array<string>;
-      keyPoints: Array<string>;
-      decisions: Array<string>;
-      openQuestions: Array<string>;
-      blockers: Array<string>;
-      actionItems: Array<{
-        __typename?: 'MeetingActionItemType';
-        description: string;
-        owner: string | null;
-        deadline: string | null;
-      }>;
-    } | null;
-    transcription: Array<{
-      __typename?: 'TranscriptionItemType';
-      speaker: string;
-      start: string;
-      end: string;
-      transcription: string;
-    }> | null;
-  } | null;
-};
-
-export type GetAudioTranscriptionQueryVariables = Exact<{
-  workspaceId: Scalars['String']['input'];
-  jobId?: InputMaybe<Scalars['String']['input']>;
-  blobId?: InputMaybe<Scalars['String']['input']>;
-}>;
-
-export type GetAudioTranscriptionQuery = {
-  __typename?: 'Query';
-  currentUser: {
-    __typename?: 'UserType';
-    copilot: {
-      __typename?: 'Copilot';
-      audioTranscription: {
-        __typename?: 'TranscriptionResultType';
-        id: string;
-        status: AiJobStatus;
-        title: string | null;
-        summary: string | null;
-        normalizedTranscript: string | null;
-        sourceAudio: {
-          __typename?: 'TranscriptionSourceAudioType';
-          blobId: string | null;
-          mimeType: string | null;
-          durationMs: number | null;
-          sampleRate: number | null;
-          channels: number | null;
-        } | null;
-        quality: {
-          __typename?: 'TranscriptionQualityType';
-          degraded: boolean | null;
-          overflowCount: number | null;
-        } | null;
-        sliceManifest: Array<{
-          __typename?: 'AudioSliceManifestItemType';
-          index: number;
-          fileName: string;
-          mimeType: string;
-          startSec: number;
-          durationSec: number;
-          byteSize: number | null;
-        }> | null;
-        normalizedSegments: Array<{
-          __typename?: 'NormalizedTranscriptSegmentType';
-          speaker: string;
-          startSec: number;
-          endSec: number;
-          start: string;
-          end: string;
-          text: string;
-        }> | null;
-        summaryJson: {
-          __typename?: 'MeetingSummaryV2Type';
-          title: string;
-          durationMinutes: number;
-          attendees: Array<string>;
-          keyPoints: Array<string>;
-          decisions: Array<string>;
-          openQuestions: Array<string>;
-          blockers: Array<string>;
-          actionItems: Array<{
-            __typename?: 'MeetingActionItemType';
-            description: string;
-            owner: string | null;
-            deadline: string | null;
-          }>;
-        } | null;
-        transcription: Array<{
-          __typename?: 'TranscriptionItemType';
-          speaker: string;
-          start: string;
-          end: string;
-          transcription: string;
-        }> | null;
-      } | null;
-    };
-  } | null;
-};
-
-export type RetryAudioTranscriptionMutationVariables = Exact<{
-  workspaceId: Scalars['String']['input'];
-  jobId: Scalars['String']['input'];
-}>;
-
-export type RetryAudioTranscriptionMutation = {
-  __typename?: 'Mutation';
-  retryAudioTranscription: {
-    __typename?: 'TranscriptionResultType';
-    id: string;
-    status: AiJobStatus;
-  } | null;
-};
-
 export type CreateCopilotMessageMutationVariables = Exact<{
   options: CreateChatMessageInput;
 }>;
@@ -5826,6 +5651,189 @@ export type GetCopilotSessionsQuery = {
         }>;
       };
     };
+  } | null;
+};
+
+export type GetTranscriptTaskQueryVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  taskId?: InputMaybe<Scalars['String']['input']>;
+  blobId?: InputMaybe<Scalars['String']['input']>;
+}>;
+
+export type GetTranscriptTaskQuery = {
+  __typename?: 'Query';
+  currentUser: {
+    __typename?: 'UserType';
+    copilot: {
+      __typename?: 'Copilot';
+      transcriptTask: {
+        __typename?: 'TranscriptionResultType';
+        id: string;
+        status: AiJobStatus;
+        title: string | null;
+        summary: string | null;
+        normalizedTranscript: string | null;
+        sourceAudio: {
+          __typename?: 'TranscriptionSourceAudioType';
+          blobId: string | null;
+          mimeType: string | null;
+          durationMs: number | null;
+          sampleRate: number | null;
+          channels: number | null;
+        } | null;
+        quality: {
+          __typename?: 'TranscriptionQualityType';
+          degraded: boolean | null;
+          overflowCount: number | null;
+        } | null;
+        sliceManifest: Array<{
+          __typename?: 'AudioSliceManifestItemType';
+          index: number;
+          fileName: string;
+          mimeType: string;
+          startSec: number;
+          durationSec: number;
+          byteSize: number | null;
+        }> | null;
+        normalizedSegments: Array<{
+          __typename?: 'NormalizedTranscriptSegmentType';
+          speaker: string;
+          startSec: number;
+          endSec: number;
+          start: string;
+          end: string;
+          text: string;
+        }> | null;
+        summaryJson: {
+          __typename?: 'MeetingSummaryV2Type';
+          title: string;
+          durationMinutes: number;
+          attendees: Array<string>;
+          keyPoints: Array<string>;
+          decisions: Array<string>;
+          openQuestions: Array<string>;
+          blockers: Array<string>;
+          actionItems: Array<{
+            __typename?: 'MeetingActionItemType';
+            description: string;
+            owner: string | null;
+            deadline: string | null;
+          }>;
+        } | null;
+        transcription: Array<{
+          __typename?: 'TranscriptionItemType';
+          speaker: string;
+          start: string;
+          end: string;
+          transcription: string;
+        }> | null;
+      } | null;
+    };
+  } | null;
+};
+
+export type RetryTranscriptTaskMutationVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  taskId: Scalars['String']['input'];
+}>;
+
+export type RetryTranscriptTaskMutation = {
+  __typename?: 'Mutation';
+  retryTranscriptTask: {
+    __typename?: 'TranscriptionResultType';
+    id: string;
+    status: AiJobStatus;
+  } | null;
+};
+
+export type SettleTranscriptTaskMutationVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  taskId: Scalars['String']['input'];
+}>;
+
+export type SettleTranscriptTaskMutation = {
+  __typename?: 'Mutation';
+  settleTranscriptTask: {
+    __typename?: 'TranscriptionResultType';
+    id: string;
+    status: AiJobStatus;
+    title: string | null;
+    summary: string | null;
+    actions: string | null;
+    normalizedTranscript: string | null;
+    sourceAudio: {
+      __typename?: 'TranscriptionSourceAudioType';
+      blobId: string | null;
+      mimeType: string | null;
+      durationMs: number | null;
+      sampleRate: number | null;
+      channels: number | null;
+    } | null;
+    quality: {
+      __typename?: 'TranscriptionQualityType';
+      degraded: boolean | null;
+      overflowCount: number | null;
+    } | null;
+    sliceManifest: Array<{
+      __typename?: 'AudioSliceManifestItemType';
+      index: number;
+      fileName: string;
+      mimeType: string;
+      startSec: number;
+      durationSec: number;
+      byteSize: number | null;
+    }> | null;
+    normalizedSegments: Array<{
+      __typename?: 'NormalizedTranscriptSegmentType';
+      speaker: string;
+      startSec: number;
+      endSec: number;
+      start: string;
+      end: string;
+      text: string;
+    }> | null;
+    summaryJson: {
+      __typename?: 'MeetingSummaryV2Type';
+      title: string;
+      durationMinutes: number;
+      attendees: Array<string>;
+      keyPoints: Array<string>;
+      decisions: Array<string>;
+      openQuestions: Array<string>;
+      blockers: Array<string>;
+      actionItems: Array<{
+        __typename?: 'MeetingActionItemType';
+        description: string;
+        owner: string | null;
+        deadline: string | null;
+      }>;
+    } | null;
+    transcription: Array<{
+      __typename?: 'TranscriptionItemType';
+      speaker: string;
+      start: string;
+      end: string;
+      transcription: string;
+    }> | null;
+  } | null;
+};
+
+export type SubmitTranscriptTaskMutationVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  blobId: Scalars['String']['input'];
+  blob?: InputMaybe<Scalars['Upload']['input']>;
+  blobs?: InputMaybe<
+    Array<Scalars['Upload']['input']> | Scalars['Upload']['input']
+  >;
+  input?: InputMaybe<SubmitAudioTranscriptionInput>;
+}>;
+
+export type SubmitTranscriptTaskMutation = {
+  __typename?: 'Mutation';
+  submitTranscriptTask: {
+    __typename?: 'TranscriptionResultType';
+    id: string;
+    status: AiJobStatus;
   } | null;
 };
 
@@ -7842,11 +7850,6 @@ export type Queries =
       response: GetCopilotHistoriesQuery;
     }
   | {
-      name: 'getAudioTranscriptionQuery';
-      variables: GetAudioTranscriptionQueryVariables;
-      response: GetAudioTranscriptionQuery;
-    }
-  | {
       name: 'getPromptModelsQuery';
       variables: GetPromptModelsQueryVariables;
       response: GetPromptModelsQuery;
@@ -7875,6 +7878,11 @@ export type Queries =
       name: 'getCopilotSessionsQuery';
       variables: GetCopilotSessionsQueryVariables;
       response: GetCopilotSessionsQuery;
+    }
+  | {
+      name: 'getTranscriptTaskQuery';
+      variables: GetTranscriptTaskQueryVariables;
+      response: GetTranscriptTaskQuery;
     }
   | {
       name: 'getWorkspaceEmbeddingFilesQuery';
@@ -8349,21 +8357,6 @@ export type Mutations =
       response: QueueWorkspaceEmbeddingMutation;
     }
   | {
-      name: 'submitAudioTranscriptionMutation';
-      variables: SubmitAudioTranscriptionMutationVariables;
-      response: SubmitAudioTranscriptionMutation;
-    }
-  | {
-      name: 'claimAudioTranscriptionMutation';
-      variables: ClaimAudioTranscriptionMutationVariables;
-      response: ClaimAudioTranscriptionMutation;
-    }
-  | {
-      name: 'retryAudioTranscriptionMutation';
-      variables: RetryAudioTranscriptionMutationVariables;
-      response: RetryAudioTranscriptionMutation;
-    }
-  | {
       name: 'createCopilotMessageMutation';
       variables: CreateCopilotMessageMutationVariables;
       response: CreateCopilotMessageMutation;
@@ -8392,6 +8385,21 @@ export type Mutations =
       name: 'updateCopilotSessionMutation';
       variables: UpdateCopilotSessionMutationVariables;
       response: UpdateCopilotSessionMutation;
+    }
+  | {
+      name: 'retryTranscriptTaskMutation';
+      variables: RetryTranscriptTaskMutationVariables;
+      response: RetryTranscriptTaskMutation;
+    }
+  | {
+      name: 'settleTranscriptTaskMutation';
+      variables: SettleTranscriptTaskMutationVariables;
+      response: SettleTranscriptTaskMutation;
+    }
+  | {
+      name: 'submitTranscriptTaskMutation';
+      variables: SubmitTranscriptTaskMutationVariables;
+      response: SubmitTranscriptTaskMutation;
     }
   | {
       name: 'addWorkspaceEmbeddingFilesMutation';

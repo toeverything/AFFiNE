@@ -1,21 +1,12 @@
-import { CopilotProviderSideError, metrics } from '../../../base';
-import {
-  llmDispatchStream,
-  type NativeLlmBackendConfig,
-  type NativeLlmRequest,
-} from '../../../native';
-import type { NodeTextMiddleware } from '../config';
-import type { CopilotToolSet } from '../tools';
-import { buildNativeRequest, NativeProviderAdapter } from './native';
+import { CopilotProviderSideError } from '../../../base';
+import { type LlmBackendConfig } from '../../../native';
 import { CopilotProvider } from './provider';
+import { hasProviderModelBehaviorFlag } from './provider-model-runtime';
 import {
-  CopilotChatOptions,
-  CopilotProviderType,
-  ModelConditions,
-  ModelInputType,
-  ModelOutputType,
-  PromptMessage,
-} from './types';
+  type CopilotProviderExecution,
+  type ProviderDriverSpec,
+} from './provider-runtime-contract';
+import { CopilotProviderType, ModelOutputType } from './types';
 
 export type PerplexityConfig = {
   apiKey: string;
@@ -25,166 +16,50 @@ export type PerplexityConfig = {
 export class PerplexityProvider extends CopilotProvider<PerplexityConfig> {
   readonly type = CopilotProviderType.Perplexity;
 
-  readonly models = [
-    {
-      name: 'Sonar',
-      id: 'sonar',
-      capabilities: [
-        {
-          input: [ModelInputType.Text],
-          output: [ModelOutputType.Text],
-          defaultForOutputType: true,
-        },
-      ],
-    },
-    {
-      name: 'Sonar Pro',
-      id: 'sonar-pro',
-      capabilities: [
-        {
-          input: [ModelInputType.Text],
-          output: [ModelOutputType.Text],
-        },
-      ],
-    },
-    {
-      name: 'Sonar Reasoning',
-      id: 'sonar-reasoning',
-      capabilities: [
-        {
-          input: [ModelInputType.Text],
-          output: [ModelOutputType.Text],
-        },
-      ],
-    },
-    {
-      name: 'Sonar Reasoning Pro',
-      id: 'sonar-reasoning-pro',
-      capabilities: [
-        {
-          input: [ModelInputType.Text],
-          output: [ModelOutputType.Text],
-        },
-      ],
-    },
-  ];
-
-  override configured(): boolean {
-    return !!this.config.apiKey;
+  protected resolveModelBackendKind() {
+    return 'perplexity' as const;
   }
 
-  protected override setup() {
-    super.setup();
+  override configured(execution?: CopilotProviderExecution): boolean {
+    return !!this.getConfig(execution).apiKey;
   }
 
-  private createNativeConfig(): NativeLlmBackendConfig {
-    const baseUrl = this.config.endpoint || 'https://api.perplexity.ai';
+  override getDriverSpec(): ProviderDriverSpec {
     return {
-      base_url: baseUrl.replace(/\/v1\/?$/, ''),
-      auth_token: this.config.apiKey,
+      createBackendConfig: execution => this.createNativeConfig(execution),
+      mapError: error => this.handleError(error),
+      chat: {
+        resolveOutputType: kind =>
+          kind === 'streamObject' ? null : ModelOutputType.Text,
+        withAttachment: false,
+        resolveRequestOptions: async context => ({
+          withAttachment: !hasProviderModelBehaviorFlag(
+            context.model,
+            'no_attachments'
+          ),
+          include: hasProviderModelBehaviorFlag(
+            context.model,
+            'citations_include'
+          )
+            ? ['citations']
+            : undefined,
+        }),
+      },
+      structured: false,
+      embedding: false,
+      rerank: false,
     };
   }
 
-  private createNativeAdapter(
-    tools: CopilotToolSet,
-    nodeTextMiddleware?: NodeTextMiddleware[]
-  ) {
-    return new NativeProviderAdapter(
-      (request: NativeLlmRequest, signal?: AbortSignal) =>
-        llmDispatchStream(
-          'openai_chat',
-          this.createNativeConfig(),
-          request,
-          signal
-        ),
-      tools,
-      this.MAX_STEPS,
-      { nodeTextMiddleware }
-    );
-  }
-
-  async text(
-    cond: ModelConditions,
-    messages: PromptMessage[],
-    options: CopilotChatOptions = {}
-  ): Promise<string> {
-    const fullCond = { ...cond, outputType: ModelOutputType.Text };
-    const normalizedCond = await this.checkParams({
-      cond: fullCond,
-      messages,
-      options,
-      withAttachment: false,
-    });
-    const model = this.selectModel(normalizedCond);
-
-    try {
-      metrics.ai.counter('chat_text_calls').add(1, this.metricLabels(model.id));
-
-      const tools = await this.getTools(options, model.id);
-      const middleware = this.getActiveProviderMiddleware();
-      const { request } = await buildNativeRequest({
-        model: model.id,
-        messages,
-        options,
-        tools,
-        withAttachment: false,
-        include: ['citations'],
-        middleware,
-      });
-      const adapter = this.createNativeAdapter(tools, middleware.node?.text);
-      return await adapter.text(request, options.signal, messages);
-    } catch (e: any) {
-      metrics.ai
-        .counter('chat_text_errors')
-        .add(1, this.metricLabels(model.id));
-      throw this.handleError(e);
-    }
-  }
-
-  async *streamText(
-    cond: ModelConditions,
-    messages: PromptMessage[],
-    options: CopilotChatOptions = {}
-  ): AsyncIterable<string> {
-    const fullCond = { ...cond, outputType: ModelOutputType.Text };
-    const normalizedCond = await this.checkParams({
-      cond: fullCond,
-      messages,
-      options,
-      withAttachment: false,
-    });
-    const model = this.selectModel(normalizedCond);
-
-    try {
-      metrics.ai
-        .counter('chat_text_stream_calls')
-        .add(1, this.metricLabels(model.id));
-
-      const tools = await this.getTools(options, model.id);
-      const middleware = this.getActiveProviderMiddleware();
-      const { request } = await buildNativeRequest({
-        model: model.id,
-        messages,
-        options,
-        tools,
-        withAttachment: false,
-        include: ['citations'],
-        middleware,
-      });
-      const adapter = this.createNativeAdapter(tools, middleware.node?.text);
-      for await (const chunk of adapter.streamText(
-        request,
-        options.signal,
-        messages
-      )) {
-        yield chunk;
-      }
-    } catch (e: any) {
-      metrics.ai
-        .counter('chat_text_stream_errors')
-        .add(1, this.metricLabels(model.id));
-      throw this.handleError(e);
-    }
+  private createNativeConfig(
+    execution?: CopilotProviderExecution
+  ): LlmBackendConfig {
+    const config = this.getConfig(execution);
+    const baseUrl = config.endpoint || 'https://api.perplexity.ai';
+    return {
+      base_url: baseUrl.replace(/\/v1\/?$/, ''),
+      auth_token: config.apiKey,
+    };
   }
 
   private handleError(e: any) {

@@ -15,8 +15,15 @@ import {
   SIGNED_URL_EXPIRED,
 } from './utils';
 
-export interface R2StorageConfig extends S3StorageConfig {
+export const R2_JURISDICTIONS = ['eu'] as const;
+type R2Jurisdiction = (typeof R2_JURISDICTIONS)[number];
+
+export interface R2StorageConfig extends Omit<
+  S3StorageConfig,
+  'endpoint' | 'forcePathStyle'
+> {
   accountId: string;
+  jurisdiction?: R2Jurisdiction;
   usePresignedURL?: {
     enabled: boolean;
     urlPrefix?: string;
@@ -33,11 +40,16 @@ export class R2StorageProvider extends S3StorageProvider {
     bucket: string
   ) {
     assert(config.accountId, 'accountId is required for R2 storage provider');
+    const account = config.jurisdiction
+      ? `${config.accountId}.${config.jurisdiction}`
+      : config.accountId;
+    const endpoint = `https://${account}.r2.cloudflarestorage.com`;
+
     super(
       {
         ...config,
         forcePathStyle: true,
-        endpoint: `https://${config.accountId}.r2.cloudflarestorage.com`,
+        endpoint,
       },
       bucket
     );

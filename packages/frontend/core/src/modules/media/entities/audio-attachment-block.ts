@@ -5,7 +5,6 @@ import {
 import { insertFromMarkdown } from '@affine/core/blocksuite/utils';
 import { preprocessAudioBlobForTranscription } from '@affine/core/utils/opus-encoding';
 import { DebugLogger } from '@affine/debug';
-import { AiJobStatus } from '@affine/graphql';
 import track from '@affine/track';
 import type { AttachmentBlockModel } from '@blocksuite/affine/model';
 import type { AffineTextAttributes } from '@blocksuite/affine/shared/types';
@@ -175,7 +174,7 @@ export class AudioAttachmentBlock extends Entity<AttachmentBlockModel> {
         return;
       }
       const status = await this.transcriptionJob.start();
-      if (status.status === AiJobStatus.claimed) {
+      if (status.status === 'settled') {
         await this.fillTranscriptionResult(status.result);
       }
     } catch (error) {
