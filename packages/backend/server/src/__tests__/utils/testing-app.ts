@@ -1,5 +1,11 @@
 import { randomUUID } from 'node:crypto';
 
+import type {
+  GraphQLQuery,
+  QueryOptions,
+  QueryResponse,
+} from '@affine/graphql';
+import { transformToForm } from '@affine/graphql';
 import { INestApplication, ModuleMetadata } from '@nestjs/common';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { TestingModuleBuilder } from '@nestjs/testing';
@@ -188,21 +194,59 @@ export class TestingApp extends ApplyType<INestApplication>() {
 
   // TODO(@forehalo): directly make proxy for graphql queries defined in `@affine/graphql`
   // by calling with `app.apis.createWorkspace({ ...variables })`
-  async gql<Data = any>(query: string, variables?: any): Promise<Data> {
-    const res = await this.POST('/graphql')
-      .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
-      .send({
-        query,
+  async gql<Data = any>(query: string, variables?: any): Promise<Data>;
+  async gql<Query extends GraphQLQuery>(
+    options: QueryOptions<Query>
+  ): Promise<QueryResponse<Query>>;
+  async gql<Data = any, Query extends GraphQLQuery = GraphQLQuery>(
+    queryOrOptions: string | QueryOptions<Query>,
+    variables?: any
+  ): Promise<Data | QueryResponse<Query>> {
+    const req = this.POST('/graphql').set({ 'x-request-id': 'test' });
+    let res: supertest.Response;
+
+    if (typeof queryOrOptions === 'string') {
+      res = await req.set('x-operation-name', 'test').send({
+        query: queryOrOptions,
         variables,
       });
+    } else {
+      const operationName = queryOrOptions.query.op || 'test';
+      req.set('x-operation-name', operationName);
+
+      if (queryOrOptions.query.file) {
+        const form = transformToForm({
+          query: queryOrOptions.query.query,
+          variables: queryOrOptions.variables,
+          operationName,
+        });
+
+        for (const [key, value] of form.entries()) {
+          if (value instanceof File) {
+            req.attach(key, Buffer.from(await value.arrayBuffer()), {
+              filename: value.name || key,
+              contentType: value.type || 'application/octet-stream',
+            });
+          } else {
+            req.field(key, value);
+          }
+        }
+        res = await req;
+      } else {
+        res = await req.send({
+          query: queryOrOptions.query.query,
+          variables: queryOrOptions.variables,
+        });
+      }
+    }
 
     if (res.status !== 200) {
       throw new Error(
-        `Failed to execute gql: ${query}, status: ${res.status}, body: ${JSON.stringify(
-          res.body,
-          null,
-          2
-        )}`
+        `Failed to execute gql: ${
+          typeof queryOrOptions === 'string'
+            ? queryOrOptions
+            : queryOrOptions.query.query
+        }, status: ${res.status}, body: ${JSON.stringify(res.body, null, 2)}`
       );
     }
 

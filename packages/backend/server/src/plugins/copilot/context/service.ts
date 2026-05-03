@@ -1,5 +1,4 @@
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
-import { ModuleRef } from '@nestjs/core';
 
 import {
   Cache,
@@ -15,7 +14,7 @@ import {
   ContextFile,
   Models,
 } from '../../../models';
-import { getEmbeddingClient } from '../embedding/client';
+import { CopilotEmbeddingClientService } from '../embedding/client';
 import type { EmbeddingClient } from '../embedding/types';
 import { ContextSession } from './session';
 
@@ -27,7 +26,7 @@ export class CopilotContextService implements OnApplicationBootstrap {
   private client: EmbeddingClient | undefined;
 
   constructor(
-    private readonly moduleRef: ModuleRef,
+    private readonly embeddingClients: CopilotEmbeddingClientService,
     private readonly cache: Cache,
     private readonly models: Models
   ) {}
@@ -43,7 +42,7 @@ export class CopilotContextService implements OnApplicationBootstrap {
   }
 
   private async setup() {
-    this.client = await getEmbeddingClient(this.moduleRef);
+    this.client = await this.embeddingClients.refresh();
   }
 
   async onApplicationBootstrap() {
@@ -59,8 +58,8 @@ export class CopilotContextService implements OnApplicationBootstrap {
   }
 
   // public this client to allow overriding in tests
-  get embeddingClient() {
-    return this.client as EmbeddingClient;
+  get embeddingClient(): EmbeddingClient | undefined {
+    return this.client ?? this.embeddingClients.getClient();
   }
 
   private async saveConfig(
@@ -175,8 +174,9 @@ export class CopilotContextService implements OnApplicationBootstrap {
     signal?: AbortSignal,
     threshold: number = 0.5
   ) {
-    if (!this.embeddingClient) return [];
-    const embedding = await this.embeddingClient.getEmbedding(content, signal);
+    const client = this.embeddingClient;
+    if (!client) return [];
+    const embedding = await client.getEmbedding(content, signal);
     if (!embedding) return [];
 
     const blobChunks = await this.models.copilotWorkspace.matchBlobEmbedding(
@@ -187,7 +187,7 @@ export class CopilotContextService implements OnApplicationBootstrap {
     );
     if (!blobChunks.length) return [];
 
-    return await this.embeddingClient.reRank(content, blobChunks, topK, signal);
+    return await client.reRank(content, blobChunks, topK, signal);
   }
 
   async matchWorkspaceFiles(
@@ -197,8 +197,9 @@ export class CopilotContextService implements OnApplicationBootstrap {
     signal?: AbortSignal,
     threshold: number = 0.5
   ) {
-    if (!this.embeddingClient) return [];
-    const embedding = await this.embeddingClient.getEmbedding(content, signal);
+    const client = this.embeddingClient;
+    if (!client) return [];
+    const embedding = await client.getEmbedding(content, signal);
     if (!embedding) return [];
 
     const fileChunks = await this.models.copilotWorkspace.matchFileEmbedding(
@@ -209,7 +210,7 @@ export class CopilotContextService implements OnApplicationBootstrap {
     );
     if (!fileChunks.length) return [];
 
-    return await this.embeddingClient.reRank(content, fileChunks, topK, signal);
+    return await client.reRank(content, fileChunks, topK, signal);
   }
 
   async matchWorkspaceDocs(
@@ -219,8 +220,9 @@ export class CopilotContextService implements OnApplicationBootstrap {
     signal?: AbortSignal,
     threshold: number = 0.5
   ) {
-    if (!this.embeddingClient) return [];
-    const embedding = await this.embeddingClient.getEmbedding(content, signal);
+    const client = this.embeddingClient;
+    if (!client) return [];
+    const embedding = await client.getEmbedding(content, signal);
     if (!embedding) return [];
 
     const workspaceChunks =
@@ -232,12 +234,7 @@ export class CopilotContextService implements OnApplicationBootstrap {
       );
     if (!workspaceChunks.length) return [];
 
-    return await this.embeddingClient.reRank(
-      content,
-      workspaceChunks,
-      topK,
-      signal
-    );
+    return await client.reRank(content, workspaceChunks, topK, signal);
   }
 
   async matchWorkspaceAll(
@@ -249,8 +246,9 @@ export class CopilotContextService implements OnApplicationBootstrap {
     docIds?: string[],
     scopedThreshold: number = 0.85
   ) {
-    if (!this.embeddingClient) return [];
-    const embedding = await this.embeddingClient.getEmbedding(content, signal);
+    const client = this.embeddingClient;
+    if (!client) return [];
+    const embedding = await client.getEmbedding(content, signal);
     if (!embedding) return [];
 
     const [fileChunks, blobChunks, workspaceChunks, scopedWorkspaceChunks] =
@@ -293,7 +291,7 @@ export class CopilotContextService implements OnApplicationBootstrap {
       return [];
     }
 
-    return await this.embeddingClient.reRank(
+    return await client.reRank(
       content,
       [
         ...fileChunks,
@@ -315,6 +313,18 @@ export class CopilotContextService implements OnApplicationBootstrap {
     await context.saveDocRecord(docId, doc => ({
       ...(doc as ContextDoc),
       status: ContextEmbedStatus.failed,
+    }));
+  }
+
+  @OnEvent('workspace.doc.embed.finished')
+  async onDocEmbedFinished({
+    contextId,
+    docId,
+  }: Events['workspace.doc.embed.finished']) {
+    const context = await this.get(contextId);
+    await context.saveDocRecord(docId, doc => ({
+      ...(doc as ContextDoc),
+      status: ContextEmbedStatus.finished,
     }));
   }
 

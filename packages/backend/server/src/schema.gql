@@ -470,7 +470,6 @@ type ContextWorkspaceEmbeddingStatus {
 }
 
 type Copilot {
-  audioTranscription(blobId: String, jobId: String): TranscriptionResultType
   chats(docId: String, options: QueryChatHistoriesInput, pagination: PaginationInput!): PaginatedCopilotHistoriesType!
 
   """Get the context list of a session"""
@@ -488,6 +487,7 @@ type Copilot {
 
   """Get the session list in the workspace"""
   sessions(docId: String, options: QueryChatSessionsInput): [CopilotSessionType!]! @deprecated(reason: "use `chats` instead")
+  transcriptTask(blobId: String, taskId: String): TranscriptionResultType
   workspaceId: ID
 }
 
@@ -1524,7 +1524,6 @@ type Mutation {
   cancelSubscription(idempotencyKey: String @deprecated(reason: "use header `Idempotency-Key`"), plan: SubscriptionPlan = Pro, workspaceId: String): SubscriptionType!
   changeEmail(email: String!, token: String!): UserType!
   changePassword(newPassword: String!, token: String!, userId: String): Boolean!
-  claimAudioTranscription(jobId: String!): TranscriptionResultType
 
   """Cleanup sessions"""
   cleanupCopilotSession(options: DeleteSessionInput!): [String!]!
@@ -1636,7 +1635,7 @@ type Mutation {
   """Resolve a comment or not"""
   resolveComment(input: CommentResolveInput!): Boolean!
   resumeSubscription(idempotencyKey: String @deprecated(reason: "use header `Idempotency-Key`"), plan: SubscriptionPlan = Pro, workspaceId: String): SubscriptionType!
-  retryAudioTranscription(jobId: String!, workspaceId: String!): TranscriptionResultType
+  retryTranscriptTask(taskId: String!, workspaceId: String!): TranscriptionResultType
   revokeDocUserRoles(input: RevokeDocUserRoleInput!): Boolean!
   revokeInviteLink(workspaceId: String!): Boolean!
   revokeMember(userId: String!, workspaceId: String!): Boolean!
@@ -1649,13 +1648,8 @@ type Mutation {
   sendVerifyChangeEmail(callbackUrl: String!, email: String!, token: String!): Boolean!
   sendVerifyEmail(callbackUrl: String!): Boolean!
   setBlob(blob: Upload!, workspaceId: String!): String!
-  submitAudioTranscription(blob: Upload, blobId: String!, blobs: [Upload!], input: SubmitAudioTranscriptionInput, workspaceId: String!): TranscriptionResultType
-
-  """Trigger cleanup of trashed doc embeddings"""
-  triggerCleanupTrashedDocEmbeddings: Boolean!
-
-  """Trigger generate missing titles cron job"""
-  triggerGenerateTitleCron: Boolean!
+  settleTranscriptTask(taskId: String!, workspaceId: String!): TranscriptionResultType
+  submitTranscriptTask(blob: Upload, blobId: String!, blobs: [Upload!], input: SubmitAudioTranscriptionInput, workspaceId: String!): TranscriptionResultType
   unlinkCalendarAccount(accountId: String!): Boolean!
 
   """update app configuration"""
@@ -2262,6 +2256,7 @@ input SubmitAudioTranscriptionInput {
   quality: TranscriptionQualityInput
   sliceManifest: [AudioSliceManifestItemInput!]
   sourceAudio: TranscriptionSourceAudioInput
+  strategy: String
 }
 
 type SubscriptionAlreadyExistsDataType {
@@ -2363,6 +2358,11 @@ type TimeWindow {
   to: DateTime!
 }
 
+type TranscriptProviderMetaType {
+  model: String
+  provider: String
+}
+
 type TranscriptionItemType {
   end: String!
   speaker: String!
@@ -2385,14 +2385,17 @@ type TranscriptionResultType {
   id: ID!
   normalizedSegments: [NormalizedTranscriptSegmentType!]
   normalizedTranscript: String
+  providerMeta: TranscriptProviderMetaType
   quality: TranscriptionQualityType
   sliceManifest: [AudioSliceManifestItemType!]
   sourceAudio: TranscriptionSourceAudioType
   status: AiJobStatus!
+  strategy: String
   summary: String
   summaryJson: MeetingSummaryV2Type
   title: String
   transcription: [TranscriptionItemType!]
+  version: String
 }
 
 input TranscriptionSourceAudioInput {

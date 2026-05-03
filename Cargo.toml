@@ -53,7 +53,8 @@ resolver = "3"
   libc = "0.2"
   libwebp-sys = "0.14.2"
   little_exif = "0.6.23"
-  llm_adapter = { version = "0.1.4", default-features = false }
+  llm_adapter = { version = "0.2", default-features = false }
+  llm_runtime = { version = "0.2", default-features = false }
   log = "0.4"
   loom = { version = "0.7", features = ["checkpoint"] }
   lru = "0.16"
@@ -93,6 +94,7 @@ resolver = "3"
   readability = { version = "0.3.0", default-features = false }
   regex = "1.10"
   rubato = "0.16"
+  schemars = "0.8"
   screencapturekit = "0.3"
   serde = "1"
   serde_json = "1"
@@ -165,3 +167,7 @@ strip         = "symbols"
   # android uniffi bindgen requires symbols
   [profile.release.package.affine_mobile_native]
   strip = "none"
+
+  # [patch.crates-io]
+  # llm_adapter = { path = "../llm_adapter/crates/llm_adapter" }
+  # llm_runtime = { path = "../llm_adapter/crates/llm_runtime" }

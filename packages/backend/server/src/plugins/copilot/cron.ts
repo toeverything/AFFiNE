@@ -25,14 +25,6 @@ export class CopilotCronJobs {
     private readonly jobs: JobQueue
   ) {}
 
-  async triggerCleanupTrashedDocEmbeddings() {
-    await this.jobs.add(
-      'copilot.workspace.cleanupTrashedDocEmbeddings',
-      {},
-      { jobId: 'daily-copilot-cleanup-trashed-doc-embeddings' }
-    );
-  }
-
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async dailyCleanupJob() {
     await this.jobs.add(

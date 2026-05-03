@@ -35,6 +35,7 @@ import type {
   TranscriptionQuality,
   TranscriptionSourceAudio,
   TranscriptionSubmitInput,
+  TranscriptProviderMeta,
 } from './types';
 
 registerEnumType(AiJobStatus, {
@@ -164,6 +165,15 @@ class TranscriptionQualityType implements TranscriptionQuality {
   overflowCount!: number | null;
 }
 
+@ObjectType()
+class TranscriptProviderMetaType implements TranscriptProviderMeta {
+  @Field(() => String, { nullable: true })
+  provider!: string | null;
+
+  @Field(() => String, { nullable: true })
+  model!: string | null;
+}
+
 @InputType()
 class AudioSliceManifestItemInput implements AudioSliceManifestItem {
   @Field(() => Int)
@@ -222,6 +232,9 @@ class SubmitAudioTranscriptionInput implements TranscriptionSubmitInput {
 
   @Field(() => [AudioSliceManifestItemInput], { nullable: true })
   sliceManifest?: AudioSliceManifestItemInput[];
+
+  @Field(() => String, { nullable: true })
+  strategy?: string | null;
 }
 
 @ObjectType()
@@ -259,6 +272,15 @@ class TranscriptionResultType {
   @Field(() => MeetingSummaryV2Type, { nullable: true })
   summaryJson!: TranscriptionPayload['summaryJson'] | null;
 
+  @Field(() => TranscriptProviderMetaType, { nullable: true })
+  providerMeta!: TranscriptionPayload['providerMeta'] | null;
+
+  @Field(() => String, { nullable: true })
+  version!: string | null;
+
+  @Field(() => String, { nullable: true })
+  strategy!: string | null;
+
   @Field(() => AiJobStatus)
   status!: AiJobStatus;
 }
@@ -295,6 +317,9 @@ export class CopilotTranscriptionResolver {
         normalizedSegments: null,
         normalizedTranscript: null,
         summaryJson: null,
+        providerMeta: null,
+        version: null,
+        strategy: null,
       };
       if (FinishedStatus.has(finalJob.status)) {
         finalJob.title = legacy?.title ?? null;
@@ -307,6 +332,9 @@ export class CopilotTranscriptionResolver {
         finalJob.normalizedSegments = ret?.normalizedSegments ?? null;
         finalJob.normalizedTranscript = ret?.normalizedTranscript ?? null;
         finalJob.summaryJson = ret?.summaryJson ?? null;
+        finalJob.providerMeta = ret?.providerMeta ?? null;
+        finalJob.version = ret?.version ?? null;
+        finalJob.strategy = ret?.strategy ?? null;
       }
       return finalJob;
     }
@@ -314,7 +342,7 @@ export class CopilotTranscriptionResolver {
   }
 
   @Mutation(() => TranscriptionResultType, { nullable: true })
-  async submitAudioTranscription(
+  async submitTranscriptTask(
     @CurrentUser() user: CurrentUser,
     @Args('workspaceId') workspaceId: string,
     @Args('blobId') blobId: string,
@@ -334,13 +362,12 @@ export class CopilotTranscriptionResolver {
       .workspace(workspaceId)
       .allowLocal()
       .assert('Workspace.Copilot');
-    // merge blobs
     const allBlobs = blob ? [blob, ...(blobs || [])].filter(v => !!v) : blobs;
     if (!allBlobs || allBlobs.length === 0) {
       throw new CopilotTranscriptionAudioNotProvided();
     }
 
-    const jobResult = await this.transcript.submitJob(
+    const task = await this.transcript.submitTask(
       user.id,
       workspaceId,
       blobId,
@@ -349,14 +376,14 @@ export class CopilotTranscriptionResolver {
       input ?? undefined
     );
 
-    return this.handleJobResult(jobResult);
+    return this.handleJobResult(task);
   }
 
   @Mutation(() => TranscriptionResultType, { nullable: true })
-  async retryAudioTranscription(
+  async retryTranscriptTask(
     @CurrentUser() user: CurrentUser,
     @Args('workspaceId') workspaceId: string,
-    @Args('jobId') jobId: string
+    @Args('taskId') taskId: string
   ): Promise<TranscriptionResultType | null> {
     await this.ac
       .user(user.id)
@@ -364,37 +391,42 @@ export class CopilotTranscriptionResolver {
       .allowLocal()
       .assert('Workspace.Copilot');
 
-    const jobResult = await this.transcript.retryJob(
+    const jobResult = await this.transcript.retryTask(
       user.id,
       workspaceId,
-      jobId
+      taskId
     );
-
     return this.handleJobResult(jobResult);
   }
 
   @Mutation(() => TranscriptionResultType, { nullable: true })
-  async claimAudioTranscription(
+  async settleTranscriptTask(
     @CurrentUser() user: CurrentUser,
-    @Args('jobId') jobId: string
+    @Args('workspaceId') workspaceId: string,
+    @Args('taskId') taskId: string
   ): Promise<TranscriptionResultType | null> {
-    const job = await this.transcript.claimJob(user.id, jobId);
+    await this.ac
+      .user(user.id)
+      .workspace(workspaceId)
+      .allowLocal()
+      .assert('Workspace.Copilot');
+    const job = await this.transcript.settleTask(user.id, workspaceId, taskId);
     return this.handleJobResult(job);
   }
 
   @ResolveField(() => TranscriptionResultType, {
     nullable: true,
   })
-  async audioTranscription(
+  async transcriptTask(
     @Parent() copilot: CopilotType,
     @CurrentUser() user: CurrentUser,
-    @Args('jobId', { nullable: true })
-    jobId?: string,
+    @Args('taskId', { nullable: true })
+    taskId?: string,
     @Args('blobId', { nullable: true })
     blobId?: string
   ): Promise<TranscriptionResultType | null> {
     if (!copilot.workspaceId) return null;
-    if (!jobId && !blobId) return null;
+    if (!taskId && !blobId) return null;
 
     await this.ac
       .user(user.id)
@@ -402,10 +434,10 @@ export class CopilotTranscriptionResolver {
       .allowLocal()
       .assert('Workspace.Copilot');
 
-    const job = await this.transcript.queryJob(
+    const job = await this.transcript.queryTask(
       user.id,
       copilot.workspaceId,
-      jobId,
+      taskId,
       blobId
     );
     return this.handleJobResult(job);
