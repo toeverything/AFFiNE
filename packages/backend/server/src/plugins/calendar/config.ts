@@ -4,6 +4,7 @@ import { defineModuleConfig, JSONSchema } from '../../base';
 
 export interface CalendarGoogleConfig {
   enabled: boolean;
+  allowNewAccounts?: boolean;
   clientId: string;
   clientSecret: string;
   externalWebhookUrl?: string;
@@ -46,6 +47,7 @@ const schema: JSONSchema = {
   type: 'object',
   properties: {
     enabled: { type: 'boolean' },
+    allowNewAccounts: { type: 'boolean' },
     clientId: { type: 'string' },
     clientSecret: { type: 'string' },
     externalWebhookUrl: { type: 'string' },
@@ -86,6 +88,7 @@ defineModuleConfig('calendar', {
     desc: 'Google Calendar integration config',
     default: {
       enabled: false,
+      allowNewAccounts: true,
       clientId: '',
       clientSecret: '',
       externalWebhookUrl: '',
@@ -95,6 +98,7 @@ defineModuleConfig('calendar', {
     schema,
     shape: z.object({
       enabled: z.boolean(),
+      allowNewAccounts: z.boolean().optional(),
       clientId: z.string(),
       clientSecret: z.string(),
       externalWebhookUrl: z

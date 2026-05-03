@@ -38,7 +38,12 @@ export class CalendarServerConfigResolver {
 
   @ResolveField(() => [CalendarProviderName])
   calendarProviders() {
-    return this.providerFactory.providers;
+    return this.providerFactory.providers.filter(provider => {
+      return (
+        provider !== CalendarProviderName.Google ||
+        this.config.calendar.google.allowNewAccounts !== false
+      );
+    });
   }
 
   @ResolveField(() => [CalendarCalDAVProviderPresetObjectType])
@@ -165,6 +170,8 @@ export class CalendarMutationResolver {
     if (!user) {
       throw new AuthenticationRequired();
     }
+
+    await this.calendar.assertCanLinkProvider(user.id, input.provider);
 
     const state = await this.oauth.saveOAuthState({
       provider: input.provider,

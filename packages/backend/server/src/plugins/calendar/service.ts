@@ -154,6 +154,11 @@ export class CalendarService {
     const provider = this.requireProvider(params.provider);
     const tokens = await provider.exchangeCode(params.code, params.redirectUri);
     const profile = await provider.getAccountProfile(tokens.accessToken);
+    await this.assertCanPersistProviderAccount(
+      params.userId,
+      params.provider,
+      profile.providerAccountId
+    );
 
     const account = await this.models.calendarAccount.upsert({
       userId: params.userId,
@@ -565,6 +570,19 @@ export class CalendarService {
     return true;
   }
 
+  async assertCanLinkProvider(userId: string, provider: CalendarProviderName) {
+    if (this.canCreateNewAccounts(provider)) {
+      return;
+    }
+
+    const accounts = await this.models.calendarAccount.listByUser(userId);
+    if (accounts.some(account => account.provider === provider)) {
+      return;
+    }
+
+    throw this.providerLinkDisabledError(provider);
+  }
+
   getAuthUrl(
     provider: CalendarProviderName,
     state: string,
@@ -578,6 +596,41 @@ export class CalendarService {
       });
     }
     return instance.getAuthUrl(state, redirectUri);
+  }
+
+  private async assertCanPersistProviderAccount(
+    userId: string,
+    provider: CalendarProviderName,
+    providerAccountId: string
+  ) {
+    if (this.canCreateNewAccounts(provider)) {
+      return;
+    }
+
+    const account = await this.models.calendarAccount.getByProviderAccount(
+      userId,
+      provider,
+      providerAccountId
+    );
+    if (account) {
+      return;
+    }
+
+    throw this.providerLinkDisabledError(provider);
+  }
+
+  private canCreateNewAccounts(provider: CalendarProviderName) {
+    return (
+      provider !== CalendarProviderName.Google ||
+      this.config.calendar.google.allowNewAccounts !== false
+    );
+  }
+
+  private providerLinkDisabledError(provider: CalendarProviderName) {
+    return new GraphqlBadRequest({
+      code: 'calendar_provider_link_disabled',
+      message: `${provider} calendar account linking is disabled.`,
+    });
   }
 
   private async syncWithProvider(params: {

@@ -5,7 +5,12 @@ import test from 'ava';
 
 import { createModule } from '../../../__tests__/create-module';
 import { Mockers } from '../../../__tests__/mocks';
-import { CalendarProviderRequestError, CryptoHelper } from '../../../base';
+import {
+  CalendarProviderRequestError,
+  Config,
+  CryptoHelper,
+  GraphqlBadRequest,
+} from '../../../base';
 import { ConfigModule } from '../../../base/config';
 import { ServerConfigModule } from '../../../core/config';
 import type {
@@ -89,6 +94,7 @@ const calendarService = module.get(CalendarService);
 const calendarCronJobs = module.get(CalendarCronJobs);
 const providerFactory = module.get(CalendarProviderFactory);
 const models = module.get(Models);
+const config = module.get(Config);
 module.get(CryptoHelper).onConfigInit();
 
 const createAccount = async (
@@ -168,6 +174,7 @@ const createSubscription = async (
 };
 
 test.afterEach.always(() => {
+  config.calendar.google.allowNewAccounts = true;
   mock.reset();
   module.queue.add.resetHistory();
   module.queue.remove.resetHistory();
@@ -200,6 +207,48 @@ test('listAccounts includes calendars count', async t => {
   );
   t.is(counts.get(accountA.id), 2);
   t.is(counts.get(accountB.id), 1);
+});
+
+test('assertCanLinkProvider blocks new google calendar accounts when disabled', async t => {
+  config.calendar.google.allowNewAccounts = false;
+  const user = await module.create(Mockers.User);
+
+  const error = await t.throwsAsync(
+    calendarService.assertCanLinkProvider(user.id, CalendarProviderName.Google)
+  );
+  t.true(error instanceof GraphqlBadRequest);
+  t.is(
+    (error as GraphqlBadRequest).data?.code,
+    'calendar_provider_link_disabled'
+  );
+});
+
+test('assertCanLinkProvider allows users with an existing google calendar account', async t => {
+  config.calendar.google.allowNewAccounts = false;
+  const user = await module.create(Mockers.User);
+  await createAccount(user.id);
+
+  await t.notThrowsAsync(
+    calendarService.assertCanLinkProvider(user.id, CalendarProviderName.Google)
+  );
+});
+
+test('handleOAuthCallback does not persist new google account when linking is disabled', async t => {
+  config.calendar.google.allowNewAccounts = false;
+  const provider = new MockCalendarProvider();
+  providerFactory.register(provider);
+  const user = await module.create(Mockers.User);
+
+  const error = await t.throwsAsync(
+    calendarService.handleOAuthCallback({
+      provider: CalendarProviderName.Google,
+      code: 'code',
+      redirectUri: 'https://example.com/callback',
+      userId: user.id,
+    })
+  );
+  t.true(error instanceof GraphqlBadRequest);
+  t.is((await models.calendarAccount.listByUser(user.id)).length, 0);
 });
 
 test('syncSubscription resets invalid sync token and maps events', async t => {
