@@ -572,6 +572,19 @@ export class DomRenderer {
     return this._lastUsePlaceholder !== this.usePlaceholder;
   }
 
+  private _getElementsInViewport(viewportBounds: Bound) {
+    return this.layerManager.layers.flatMap(layer =>
+      layer.elements.filter(element => {
+        const elementModel = element as SurfaceElementModel;
+        const display = (elementModel.display ?? true) && !elementModel.hidden;
+        return (
+          display &&
+          intersects(getBoundWithRotation(elementModel), viewportBounds)
+        );
+      })
+    ) as SurfaceElementModel[];
+  }
+
   private _updateLastState() {
     const { viewportBounds, zoom } = this.viewport;
     this._lastViewportBounds = {
@@ -604,41 +617,33 @@ export class DomRenderer {
     }
 
     // Only update dirty elements
-    const elementsFromGrid = this.grid.search(viewportBounds, {
-      filter: ['canvas', 'local'],
-    }) as SurfaceElementModel[];
+    const elementsInViewport = this._getElementsInViewport(viewportBounds);
 
     const visibleElementIds = new Set<string>();
 
     // 1. Update dirty elements
-    for (const elementModel of elementsFromGrid) {
-      const display = (elementModel.display ?? true) && !elementModel.hidden;
-      if (
-        display &&
-        intersects(getBoundWithRotation(elementModel), viewportBounds)
-      ) {
-        visibleElementIds.add(elementModel.id);
+    for (const elementModel of elementsInViewport) {
+      visibleElementIds.add(elementModel.id);
 
-        // Only update dirty elements
-        if (this._updateState.dirtyElementIds.has(elementModel.id)) {
-          if (
-            this.usePlaceholder &&
-            !(elementModel as GfxCompatibleInterface).forceFullRender
-          ) {
-            this._renderOrUpdatePlaceholder(
-              elementModel,
-              viewportBounds,
-              zoom,
-              addedElements
-            );
-          } else {
-            this._renderOrUpdateFullElement(
-              elementModel,
-              viewportBounds,
-              zoom,
-              addedElements
-            );
-          }
+      // Only update dirty elements
+      if (this._updateState.dirtyElementIds.has(elementModel.id)) {
+        if (
+          this.usePlaceholder &&
+          !(elementModel as GfxCompatibleInterface).forceFullRender
+        ) {
+          this._renderOrUpdatePlaceholder(
+            elementModel,
+            viewportBounds,
+            zoom,
+            addedElements
+          );
+        } else {
+          this._renderOrUpdateFullElement(
+            elementModel,
+            viewportBounds,
+            zoom,
+            addedElements
+          );
         }
       }
     }
@@ -694,38 +699,30 @@ export class DomRenderer {
     }
 
     // Step 2: Render elements in the current viewport
-    const elementsFromGrid = this.grid.search(viewportBounds, {
-      filter: ['canvas', 'local'],
-    }) as SurfaceElementModel[];
+    const elementsInViewport = this._getElementsInViewport(viewportBounds);
     const visibleElementIds = new Set<string>();
 
-    for (const elementModel of elementsFromGrid) {
-      const display = (elementModel.display ?? true) && !elementModel.hidden;
-      if (
-        display &&
-        intersects(getBoundWithRotation(elementModel), viewportBounds)
-      ) {
-        visibleElementIds.add(elementModel.id);
+    for (const elementModel of elementsInViewport) {
+      visibleElementIds.add(elementModel.id);
 
-        if (
-          this.usePlaceholder &&
-          !(elementModel as GfxCompatibleInterface).forceFullRender
-        ) {
-          this._renderOrUpdatePlaceholder(
-            elementModel,
-            viewportBounds,
-            zoom,
-            addedElements
-          );
-        } else {
-          // Full render
-          this._renderOrUpdateFullElement(
-            elementModel,
-            viewportBounds,
-            zoom,
-            addedElements
-          );
-        }
+      if (
+        this.usePlaceholder &&
+        !(elementModel as GfxCompatibleInterface).forceFullRender
+      ) {
+        this._renderOrUpdatePlaceholder(
+          elementModel,
+          viewportBounds,
+          zoom,
+          addedElements
+        );
+      } else {
+        // Full render
+        this._renderOrUpdateFullElement(
+          elementModel,
+          viewportBounds,
+          zoom,
+          addedElements
+        );
       }
     }
 
