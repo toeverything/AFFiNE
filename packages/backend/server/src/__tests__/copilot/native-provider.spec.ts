@@ -629,6 +629,25 @@ test('NativeProviderAdapter should append citation and attachment footnotes', as
       yield { type: 'text_delta', text: 'Answer from files.' };
       yield { type: 'done', finish_reason: 'stop' };
     })();
+  const dispatchWithModelReference = () =>
+    (async function* (): AsyncIterableIterator<LlmToolLoopStreamEvent> {
+      yield {
+        type: 'tool_result',
+        call_id: 'call_1',
+        name: 'doc_semantic_search',
+        arguments: { query: 'A' },
+        output: [
+          {
+            blobId: 'blob_1',
+            name: 'a.txt',
+            mimeType: 'text/plain',
+            content: 'A',
+          },
+        ],
+      };
+      yield { type: 'text_delta', text: 'Answer from file.[^1]' };
+      yield { type: 'done', finish_reason: 'stop' };
+    })();
 
   const cases = [
     {
@@ -713,6 +732,33 @@ test('NativeProviderAdapter should append citation and attachment footnotes', as
         t.true(
           text.includes(
             '[^2]: {"type":"attachment","blobId":"blob_2","fileName":"b.txt","fileType":"text/plain"}'
+          )
+        );
+      },
+    },
+    {
+      title: 'streamObject attachment definitions for model references',
+      run: async () => {
+        const adapter = new NativeProviderAdapter(
+          createTestToolLoopBridge(dispatchWithModelReference, {}, 3)
+        );
+        const chunks = await collectChunks(
+          adapter.streamObject({
+            model: 'gpt-5-mini',
+            stream: true,
+            messages: nativeMessages(nativeUserText('hi')),
+          })
+        );
+        return chunks
+          .filter(chunk => chunk.type === 'text-delta')
+          .map(chunk => chunk.textDelta)
+          .join('');
+      },
+      verify: (text: string) => {
+        t.true(text.includes('Answer from file.[^1]'));
+        t.true(
+          text.includes(
+            '[^1]: {"type":"attachment","blobId":"blob_1","fileName":"a.txt","fileType":"text/plain"}'
           )
         );
       },

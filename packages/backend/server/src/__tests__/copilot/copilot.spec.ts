@@ -35,6 +35,7 @@ import {
 } from '../../plugins/copilot/core';
 import { CopilotCronJobs } from '../../plugins/copilot/cron';
 import {
+  CopilotEmbeddingClientService,
   CopilotEmbeddingJob,
   MockEmbeddingClient,
 } from '../../plugins/copilot/embedding';
@@ -92,6 +93,7 @@ type Context = {
   promptRuntime: PromptRuntime;
   chatRuntime: CapabilityRuntime;
   conversationHost: ConversationHost;
+  embeddingClients: CopilotEmbeddingClientService;
   jobs: CopilotEmbeddingJob;
   imageResults: ImageResultHost;
   orchestrator: TurnOrchestrator;
@@ -194,6 +196,7 @@ test.before(async t => {
   const storage = module.get(CopilotStorage);
 
   const context = module.get(CopilotContextService);
+  const embeddingClients = module.get(CopilotEmbeddingClientService);
   const jobs = module.get(CopilotEmbeddingJob);
   const transcript = module.get(CopilotTranscriptionService);
   const workspaceEmbedding = module.get(CopilotWorkspaceService);
@@ -219,6 +222,7 @@ test.before(async t => {
   t.context.actionBridge = actionBridge;
   t.context.storage = storage;
   t.context.context = context;
+  t.context.embeddingClients = embeddingClients;
   t.context.jobs = jobs;
   t.context.transcript = transcript;
   t.context.workspaceEmbedding = workspaceEmbedding;
@@ -356,6 +360,32 @@ test('should prioritize user-added context file embedding jobs', async t => {
     fileName: 'sample.pdf',
   });
   t.deepEqual(queue.firstCall.args[1], { priority: 0 });
+});
+
+test('should resolve context sessions with the shared embedding client', async t => {
+  const { context, embeddingClients, prompt, session, workspace } = t.context;
+
+  const ws = await workspace.create(userId);
+  await prompt.set(promptName, 'test', [
+    { role: 'system', content: 'hello {{word}}' },
+  ]);
+
+  const sessionId = await session.create({
+    userId,
+    workspaceId: ws.id,
+    docId: randomUUID(),
+    promptName,
+    pinned: false,
+  });
+  const client = new MockEmbeddingClient();
+
+  Sinon.stub(embeddingClients, 'refresh').resolves(undefined);
+  Sinon.stub(embeddingClients, 'getClient').returns(client);
+  await context.onConfigChanged();
+
+  const contextSession = await context.create(sessionId);
+  t.is(context.embeddingClient, client);
+  await t.notThrowsAsync(context.get(contextSession.id));
 });
 
 test('should be able to render prompt', async t => {

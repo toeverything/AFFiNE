@@ -78,8 +78,14 @@ function collectAttachmentFootnotes(
   return [];
 }
 
-function formatAttachmentFootnotes(attachments: AttachmentFootnote[]) {
-  const references = attachments.map((_, index) => `[^${index + 1}]`).join('');
+function formatAttachmentFootnotes(
+  attachments: AttachmentFootnote[],
+  options: { includeReferences?: boolean } = {}
+) {
+  const references =
+    options.includeReferences === false
+      ? ''
+      : attachments.map((_, index) => `[^${index + 1}]`).join('');
   const definitions = attachments
     .map((attachment, index) => {
       return `[^${index + 1}]: ${JSON.stringify({
@@ -91,7 +97,9 @@ function formatAttachmentFootnotes(attachments: AttachmentFootnote[]) {
     })
     .join('\n');
 
-  return `\n\n${references}\n\n${definitions}`;
+  return references
+    ? `\n\n${references}\n\n${definitions}`
+    : `\n\n${definitions}`;
 }
 
 export class NativeProviderAdapter {
@@ -299,11 +307,12 @@ export class NativeProviderAdapter {
             hasFootnoteReference = true;
             yield { type: 'text-delta', textDelta: `\n${citations}` };
           }
-          if (!hasFootnoteReference && fallbackAttachmentFootnotes.size > 0) {
+          if (!citations && fallbackAttachmentFootnotes.size > 0) {
             yield {
               type: 'text-delta',
               textDelta: formatAttachmentFootnotes(
-                Array.from(fallbackAttachmentFootnotes.values())
+                Array.from(fallbackAttachmentFootnotes.values()),
+                { includeReferences: !hasFootnoteReference }
               ),
             };
           }
