@@ -654,20 +654,3 @@ export declare function updateDocWithMarkdown(existingBinary: Buffer, newMarkdow
 export declare function updateRootDocMetaTitle(rootDocBin: Buffer, docId: string, title: string): Buffer
 
 export declare function verifyChallengeResponse(response: string, bits: number, resource: string): Promise<boolean>
-export interface ToolCallbackRequest {
-  callId: string
-  name: string
-  args: any
-  rawArgumentsText?: string
-  argumentParseError?: string
-}
-
-export interface ToolCallbackResponse {
-  callId: string
-  name: string
-  args: any
-  rawArgumentsText?: string
-  argumentParseError?: string
-  output: any
-  isError?: boolean
-}

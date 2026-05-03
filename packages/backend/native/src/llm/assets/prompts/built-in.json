@@ -560,7 +560,7 @@
   {
     "name": "Continue writing",
     "action": "Continue writing",
-    "model": "gemini-2.5-pro",
+    "model": "gemini-2.5-flash",
     "messages": [
       {
         "role": "system",

@@ -21,6 +21,7 @@ import {
   type NativeChatDispatchPlan,
   type NativeImageDispatchPlan,
 } from './execution-plan';
+import { mapNativeSemanticError } from './native-errors';
 import {
   createNativeToolLoopAdapter,
   NativeProviderAdapter,
@@ -104,7 +105,21 @@ async function runPreparedValuePlan<TResult>(
   run: () => Promise<TResult>
 ) {
   recordPreparedDispatch(executionMetrics, plan, routeCount);
-  return await run();
+  try {
+    return await run();
+  } catch (error) {
+    throw mapNativeSemanticError(error);
+  }
+}
+
+async function* mapPreparedStreamErrors<T>(
+  source: AsyncIterable<T>
+): AsyncIterableIterator<T> {
+  try {
+    yield* source;
+  } catch (error) {
+    throw mapNativeSemanticError(error);
+  }
 }
 
 async function runChatValuePlan(
@@ -150,19 +165,23 @@ async function* runChatStreamPlan(
   recordPreparedDispatch(executionMetrics, plan, dispatch.routes.length);
 
   if (plan.request.kind === 'streamText') {
-    yield* adapter.streamText(
-      dispatch.prepared.request,
-      plan.hostContext.signal,
-      plan.request.messages
+    yield* mapPreparedStreamErrors(
+      adapter.streamText(
+        dispatch.prepared.request,
+        plan.hostContext.signal,
+        plan.request.messages
+      )
     );
     return;
   }
 
   if (plan.request.kind === 'streamObject') {
-    yield* adapter.streamObject(
-      dispatch.prepared.request,
-      plan.hostContext.signal,
-      plan.request.messages
+    yield* mapPreparedStreamErrors(
+      adapter.streamObject(
+        dispatch.prepared.request,
+        plan.hostContext.signal,
+        plan.request.messages
+      )
     );
     return;
   }
@@ -180,9 +199,14 @@ async function* runPreparedImageArtifactPlan(
   }
 
   recordPreparedDispatch(executionMetrics, plan, dispatch.routes.length);
-  const result = await llmImageDispatchPlan({
-    preparedRoutes: dispatch.routes,
-  });
+  let result;
+  try {
+    result = await llmImageDispatchPlan({
+      preparedRoutes: dispatch.routes,
+    });
+  } catch (error) {
+    throw mapNativeSemanticError(error);
+  }
   for (const artifact of result.response.images) {
     yield artifact;
   }

@@ -3623,9 +3623,9 @@ dependencies = [
 
 [[package]]
 name = "llm_adapter"
-version = "0.2.4"
+version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8fde2df3dd380ae98d9b87e83ecee45436f8cb6ef5879a9a537a819ee0247dc8"
+checksum = "c6e139f0a1609d6078293140fb7e281cf2bd5a45a7a29ef39f8606c803be7822"
 dependencies = [
  "base64",
  "jsonschema",
@@ -3640,9 +3640,9 @@ dependencies = [
 
 [[package]]
 name = "llm_runtime"
-version = "0.2.4"
+version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fb15a0635e7c2e880b97f735cc16e639a420d85e1e005641982e568e8dd5fc0d"
+checksum = "804da5b8087fe2ec5d48f4b0716d5cf3639d6feb1c4242a6364ccdb7ef5bfa61"
 dependencies = [
  "jsonschema",
  "llm_adapter",

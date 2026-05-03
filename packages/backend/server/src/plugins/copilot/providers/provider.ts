@@ -3,6 +3,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Config } from '../../../base';
 import type { NodeTextMiddleware, ProviderMiddlewareConfig } from '../config';
 import { ToolExecutorHost } from '../runtime/hosts/tool-executor-host';
+import { mapNativeSemanticError } from '../runtime/native-errors';
 import type { ToolLoopBackend } from '../runtime/tool/bridge';
 import type { CopilotTool, CopilotToolSet } from '../tools';
 import { resolveProviderMiddleware } from './provider-middleware';
@@ -86,7 +87,10 @@ export abstract class CopilotProvider<C = any> {
   ): ProviderExecutionDrivers {
     return createNativeExecutionDriverSpec(spec, {
       createBackendConfig: spec.createBackendConfig,
-      mapError: spec.mapError,
+      mapError: error => {
+        const mapped = mapNativeSemanticError(error);
+        return mapped === error ? spec.mapError(error) : mapped;
+      },
       checkParams: input =>
         checkProviderParams(
           this.resolveModelRuntimeContext(input.execution),

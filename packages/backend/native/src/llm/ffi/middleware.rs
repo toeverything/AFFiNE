@@ -92,6 +92,22 @@ pub(crate) fn map_json_error(error: serde_json::Error) -> Error {
 pub(crate) fn map_backend_error(error: BackendError) -> Error {
   match error {
     BackendError::InvalidRequest { message, .. } => Error::new(Status::InvalidArg, message),
+    BackendError::Timeout { message } => Error::new(Status::GenericFailure, format!("llm_timeout: {message}")),
     other => Error::new(Status::GenericFailure, other.to_string()),
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn should_preserve_backend_timeout_semantics() {
+    let error = map_backend_error(BackendError::Timeout {
+      message: "request timed out".to_string(),
+    });
+
+    assert_eq!(error.status, Status::GenericFailure);
+    assert_eq!(error.reason, "llm_timeout: request timed out");
   }
 }
