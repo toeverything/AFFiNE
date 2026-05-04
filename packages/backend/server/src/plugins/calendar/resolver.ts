@@ -33,12 +33,20 @@ import {
 export class CalendarServerConfigResolver {
   constructor(
     private readonly providerFactory: CalendarProviderFactory,
-    private readonly config: Config
+    private readonly config: Config,
+    private readonly calendar: CalendarService
   ) {}
 
   @ResolveField(() => [CalendarProviderName])
-  calendarProviders() {
-    return this.providerFactory.providers;
+  async calendarProviders(@CurrentUser() user?: CurrentUser) {
+    const providers = [];
+    for (const provider of this.providerFactory.providers) {
+      if (!(await this.calendar.canLinkProvider(user?.id, provider))) {
+        continue;
+      }
+      providers.push(provider);
+    }
+    return providers;
   }
 
   @ResolveField(() => [CalendarCalDAVProviderPresetObjectType])
@@ -165,6 +173,8 @@ export class CalendarMutationResolver {
     if (!user) {
       throw new AuthenticationRequired();
     }
+
+    await this.calendar.assertCanLinkProvider(user.id, input.provider);
 
     const state = await this.oauth.saveOAuthState({
       provider: input.provider,

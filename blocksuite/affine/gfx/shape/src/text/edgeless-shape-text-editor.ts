@@ -434,6 +434,8 @@ export class EdgelessShapeTextEditor extends WithDisposable(ShadowlessElement) {
     const textResizing = this.element.textResizing;
     const viewport = this.gfx.viewport;
     const zoom = viewport.zoom;
+    // Compensate for outer CSS scale, matching GfxBlockComponent.getCSSTransform.
+    const { viewportX, viewportY, viewScale } = viewport;
     const rect = getSelectedRect([this.element]);
     const rotate = this.element.rotate;
     const [leftTopX, leftTopY] = Vec.rotWith(
@@ -441,7 +443,8 @@ export class EdgelessShapeTextEditor extends WithDisposable(ShadowlessElement) {
       [rect.left + rect.width / 2, rect.top + rect.height / 2],
       toRadian(rotate)
     );
-    const [x, y] = this.gfx.viewport.toViewCoord(leftTopX, leftTopY);
+    const x = ((leftTopX - viewportX) * zoom) / viewScale;
+    const y = ((leftTopY - viewportY) * zoom) / viewScale;
     const autoWidth = textResizing === TextResizing.AUTO_WIDTH_AND_HEIGHT;
     const constrainedAutoWidth = autoWidth && !!this.element.maxWidth;
     const editorWidth = constrainedAutoWidth
@@ -476,7 +479,7 @@ export class EdgelessShapeTextEditor extends WithDisposable(ShadowlessElement) {
       fontWeight: this.element.fontWeight,
       lineHeight: 'normal',
       outline: 'none',
-      transform: `scale(${zoom}, ${zoom}) rotate(${rotate}deg)`,
+      transform: `scale(${zoom / viewScale}, ${zoom / viewScale}) rotate(${rotate}deg)`,
       transformOrigin: 'top left',
       color,
       padding: `${verticalPadding}px ${horiPadding}px`,

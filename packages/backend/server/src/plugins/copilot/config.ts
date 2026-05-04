@@ -5,7 +5,6 @@ import {
   StorageJSONSchema,
   StorageProviderConfig,
 } from '../../base';
-import { CopilotPromptScenario } from './prompt/prompts';
 import {
   AnthropicOfficialConfig,
   AnthropicVertexConfig,
@@ -41,6 +40,7 @@ export const RustRequestMiddlewareValues = [
   'normalize_messages',
   'clamp_max_tokens',
   'tool_schema_rewrite',
+  'openai_request_compat',
 ] as const;
 export type RustRequestMiddleware =
   (typeof RustRequestMiddlewareValues)[number];
@@ -83,7 +83,7 @@ export type CopilotProviderProfile = CopilotProviderProfileCommon &
   }[CopilotProviderType];
 
 export type CopilotProviderDefaults = Partial<
-  Record<Exclude<ModelOutputType, ModelOutputType.Rerank>, string>
+  Record<Exclude<ModelOutputType, typeof ModelOutputType.Rerank>, string>
 > & {
   fallback?: string;
 };
@@ -212,7 +212,6 @@ declare global {
         key: string;
       }>;
       storage: ConfigItem<StorageProviderConfig>;
-      scenarios: ConfigItem<CopilotPromptScenario>;
       providers: {
         profiles: ConfigItem<CopilotProviderProfile[]>;
         defaults: ConfigItem<CopilotProviderDefaults>;
@@ -234,23 +233,6 @@ defineModuleConfig('copilot', {
   enabled: {
     desc: 'Whether to enable the copilot plugin. <br> Document: <a href="https://docs.affine.pro/self-host-affine/administer/ai" target="_blank">https://docs.affine.pro/self-host-affine/administer/ai</a>',
     default: false,
-  },
-  scenarios: {
-    desc: 'Use custom models in scenarios and override default settings.',
-    default: {
-      override_enabled: false,
-      scenarios: {
-        audio_transcribing: 'gemini-2.5-flash',
-        chat: 'gemini-2.5-flash',
-        embedding: 'gemini-embedding-001',
-        image: 'gpt-image-1',
-        coding: 'claude-sonnet-4-5@20250929',
-        complex_text_generation: 'gpt-5-mini',
-        quick_decision_making: 'gpt-5-mini',
-        quick_text_generation: 'gemini-2.5-flash',
-        polish_and_summarize: 'gemini-2.5-flash',
-      },
-    },
   },
   'providers.profiles': {
     desc: 'The profile list for copilot providers.',

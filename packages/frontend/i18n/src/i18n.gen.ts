@@ -1823,6 +1823,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.copy.asImage.failed"](): string;
     /**
+      * `Copy as Markdown`
+      */
+    ["com.affine.export.copy-markdown"](): string;
+    /**
+      * `Copied as Markdown`
+      */
+    ["com.affine.export.copied-as-markdown"](): string;
+    /**
       * `Cancel`
       */
     ["com.affine.confirmModal.button.cancel"](): string;
