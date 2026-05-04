@@ -81,12 +81,9 @@ export class EditorUtils {
     return page.getByTestId('title-edit-button').innerText();
   }
 
-  public static async waitForAiAnswer(page: Page) {
+  public static async waitForAiAnswer(page: Page, timeout = 2 * 60000) {
     const answer = page.getByTestId('ai-penel-answer').last();
-    await answer.waitFor({
-      state: 'visible',
-      timeout: 2 * 60000,
-    });
+    await answer.waitFor({ state: 'visible', timeout });
     return answer;
   }
 
@@ -99,10 +96,10 @@ export class EditorUtils {
       const responseTimeoutMs = options?.responseTimeoutMs ?? 60000;
 
       await action();
-      await this.waitForAiAnswer(page);
+      await this.waitForAiAnswer(page, responseTimeoutMs);
       await page.getByTestId('ai-generating').waitFor({
         state: 'hidden',
-        timeout: 2 * 60000,
+        timeout: responseTimeoutMs,
       });
 
       const responses = new Set<string>();
@@ -573,31 +570,43 @@ export class EditorUtils {
       explainImage: this.createAction(page, () =>
         page.getByTestId('action-explain-image').click()
       ),
-      generateImage: this.createAction(page, async () => {
-        await page.getByTestId('action-generate-image').click();
-        const input = page.locator(
-          'affine-ai-panel-widget .ai-panel-container textarea'
-        );
-        await input.waitFor({ state: 'visible' });
-        await input.fill('generate an image');
-        await page.getByTestId('ai-panel-input-send').waitFor({
-          state: 'visible',
-        });
-        await page.getByTestId('ai-panel-input-send').click();
-      }),
+      generateImage: this.createAction(
+        page,
+        async () => {
+          await page.getByTestId('action-generate-image').click();
+          const input = page.locator(
+            'affine-ai-panel-widget .ai-panel-container textarea'
+          );
+          await input.waitFor({ state: 'visible' });
+          await input.fill('generate an image');
+          await page.getByTestId('ai-panel-input-send').waitFor({
+            state: 'visible',
+          });
+          await page.getByTestId('ai-panel-input-send').click();
+        },
+        { responseTimeoutMs: 4 * 60000 }
+      ),
       generateCaption: this.createAction(page, () =>
         page.getByTestId('action-generate-caption').click()
       ),
       imageProcessing: (type: string) =>
-        this.createAction(page, async () => {
-          await page.getByTestId('action-image-processing').hover();
-          await page.getByTestId(`action-image-processing-${type}`).click();
-        })(),
+        this.createAction(
+          page,
+          async () => {
+            await page.getByTestId('action-image-processing').hover();
+            await page.getByTestId(`action-image-processing-${type}`).click();
+          },
+          { responseTimeoutMs: 4 * 60000 }
+        )(),
       imageFilter: (style: string) =>
-        this.createAction(page, async () => {
-          await page.getByTestId('action-ai-image-filter').hover();
-          await page.getByTestId(`action-image-filter-${style}`).click();
-        })(),
+        this.createAction(
+          page,
+          async () => {
+            await page.getByTestId('action-ai-image-filter').hover();
+            await page.getByTestId(`action-image-filter-${style}`).click();
+          },
+          { responseTimeoutMs: 4 * 60000 }
+        )(),
     };
   }
 

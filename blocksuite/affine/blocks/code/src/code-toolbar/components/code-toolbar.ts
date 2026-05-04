@@ -9,6 +9,7 @@ import { WithDisposable } from '@blocksuite/global/lit';
 import { noop } from '@blocksuite/global/utils';
 import { MoreVerticalIcon } from '@blocksuite/icons/lit';
 import { flip, offset } from '@floating-ui/dom';
+import { effect } from '@preact/signals-core';
 import { css, html, LitElement } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
 
@@ -108,6 +109,17 @@ export class AffineCodeToolbar extends WithDisposable(LitElement) {
     this.closeCurrentMenu();
   }
 
+  override connectedCallback() {
+    super.connectedCallback();
+    // Mirror the collapsed$ signal from the block component into local @state
+    // so this LitElement re-renders when it changes.
+    this.disposables.add(
+      effect(() => {
+        this._collapsed = this.context.blockComponent.collapsed$.value;
+      })
+    );
+  }
+
   override render() {
     return html`
       <editor-toolbar class="code-toolbar-container" data-without-bg>
@@ -135,6 +147,9 @@ export class AffineCodeToolbar extends WithDisposable(LitElement) {
 
   @state()
   private accessor _moreMenuOpen = false;
+
+  @state()
+  private accessor _collapsed = false;
 
   @property({ attribute: false })
   accessor context!: CodeBlockToolbarContext;

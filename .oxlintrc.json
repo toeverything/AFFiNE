@@ -23,7 +23,7 @@
     ".github/helm",
     ".git",
     ".vscode",
-    ".context/**/*.js",
+    ".context",
     ".yarnrc.yml",
     ".docker",
     "**/.storybook",

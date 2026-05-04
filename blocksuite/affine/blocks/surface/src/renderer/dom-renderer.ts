@@ -168,6 +168,8 @@ export class DomRenderer {
     pendingUpdates: new Map(),
   };
 
+  private readonly _pendingElements = new Map<string, SurfaceElementModel>();
+
   private _lastViewportBounds: Bound | null = null;
   private _lastZoom: number | null = null;
   private _lastUsePlaceholder: boolean = false;
@@ -183,6 +185,8 @@ export class DomRenderer {
   layerManager: LayerManager;
 
   provider: Partial<EnvProvider>;
+
+  private readonly _surfaceModel: SurfaceBlockModel;
 
   usePlaceholder = false;
 
@@ -204,6 +208,7 @@ export class DomRenderer {
     this.layerManager = options.layerManager;
     this.grid = options.gridManager;
     this.provider = options.provider ?? {};
+    this._surfaceModel = options.surfaceModel;
 
     this._turboEnabled = () => {
       const featureFlagService = options.std.get(FeatureFlagService);
@@ -367,7 +372,11 @@ export class DomRenderer {
     );
     this._disposables.add(
       surfaceModel.localElementAdded.subscribe(payload => {
-        this._markElementDirty(payload.id, UpdateType.ELEMENT_ADDED);
+        this._markElementDirty(
+          payload.id,
+          UpdateType.ELEMENT_ADDED,
+          payload as unknown as SurfaceElementModel
+        );
         this._markViewportDirty();
         this.refresh();
       })
@@ -381,7 +390,11 @@ export class DomRenderer {
     );
     this._disposables.add(
       surfaceModel.localElementUpdated.subscribe(payload => {
-        this._markElementDirty(payload.model.id, UpdateType.ELEMENT_UPDATED);
+        this._markElementDirty(
+          payload.model.id,
+          UpdateType.ELEMENT_UPDATED,
+          payload.model as unknown as SurfaceElementModel
+        );
         if (payload.props['index'] || payload.props['groupId']) {
           this._markViewportDirty();
         }
@@ -522,8 +535,22 @@ export class DomRenderer {
     this.refresh();
   };
 
-  private _markElementDirty(elementId: string, updateType: UpdateType) {
+  private _markElementDirty(
+    elementId: string,
+    updateType: UpdateType,
+    elementModel?: SurfaceElementModel
+  ) {
     this._updateState.dirtyElementIds.add(elementId);
+    if (updateType === UpdateType.ELEMENT_REMOVED) {
+      this._pendingElements.delete(elementId);
+    } else {
+      const model =
+        elementModel ?? this._surfaceModel.getElementById(elementId);
+      if (model) {
+        this._pendingElements.set(elementId, model as SurfaceElementModel);
+      }
+    }
+
     const currentUpdates =
       this._updateState.pendingUpdates.get(elementId) || [];
     if (!currentUpdates.includes(updateType)) {
@@ -572,6 +599,51 @@ export class DomRenderer {
     return this._lastUsePlaceholder !== this.usePlaceholder;
   }
 
+  private _elementInViewport(
+    elementModel: SurfaceElementModel,
+    viewportBounds: Bound
+  ) {
+    const display = (elementModel.display ?? true) && !elementModel.hidden;
+    return (
+      display && intersects(getBoundWithRotation(elementModel), viewportBounds)
+    );
+  }
+
+  private _getPendingElementsInViewport(viewportBounds: Bound) {
+    const elements: SurfaceElementModel[] = [];
+
+    for (const [id, elementModel] of this._pendingElements) {
+      this._pendingElements.delete(id);
+      if (this._elementInViewport(elementModel, viewportBounds)) {
+        elements.push(elementModel);
+      }
+    }
+
+    return elements;
+  }
+
+  private _getElementsInViewport(viewportBounds: Bound) {
+    const elements = this.grid.search(viewportBounds, {
+      filter: ['canvas', 'local'],
+    }) as SurfaceElementModel[];
+
+    const elementsById = new Map<string, SurfaceElementModel>();
+    for (const elementModel of elements) {
+      if (this._elementInViewport(elementModel, viewportBounds)) {
+        elementsById.set(elementModel.id, elementModel);
+        this._pendingElements.delete(elementModel.id);
+      }
+    }
+
+    for (const elementModel of this._getPendingElementsInViewport(
+      viewportBounds
+    )) {
+      elementsById.set(elementModel.id, elementModel);
+    }
+
+    return Array.from(elementsById.values());
+  }
+
   private _updateLastState() {
     const { viewportBounds, zoom } = this.viewport;
     this._lastViewportBounds = {
@@ -604,41 +676,33 @@ export class DomRenderer {
     }
 
     // Only update dirty elements
-    const elementsFromGrid = this.grid.search(viewportBounds, {
-      filter: ['canvas', 'local'],
-    }) as SurfaceElementModel[];
+    const elementsInViewport = this._getElementsInViewport(viewportBounds);
 
     const visibleElementIds = new Set<string>();
 
     // 1. Update dirty elements
-    for (const elementModel of elementsFromGrid) {
-      const display = (elementModel.display ?? true) && !elementModel.hidden;
-      if (
-        display &&
-        intersects(getBoundWithRotation(elementModel), viewportBounds)
-      ) {
-        visibleElementIds.add(elementModel.id);
+    for (const elementModel of elementsInViewport) {
+      visibleElementIds.add(elementModel.id);
 
-        // Only update dirty elements
-        if (this._updateState.dirtyElementIds.has(elementModel.id)) {
-          if (
-            this.usePlaceholder &&
-            !(elementModel as GfxCompatibleInterface).forceFullRender
-          ) {
-            this._renderOrUpdatePlaceholder(
-              elementModel,
-              viewportBounds,
-              zoom,
-              addedElements
-            );
-          } else {
-            this._renderOrUpdateFullElement(
-              elementModel,
-              viewportBounds,
-              zoom,
-              addedElements
-            );
-          }
+      // Only update dirty elements
+      if (this._updateState.dirtyElementIds.has(elementModel.id)) {
+        if (
+          this.usePlaceholder &&
+          !(elementModel as GfxCompatibleInterface).forceFullRender
+        ) {
+          this._renderOrUpdatePlaceholder(
+            elementModel,
+            viewportBounds,
+            zoom,
+            addedElements
+          );
+        } else {
+          this._renderOrUpdateFullElement(
+            elementModel,
+            viewportBounds,
+            zoom,
+            addedElements
+          );
         }
       }
     }
@@ -677,59 +741,32 @@ export class DomRenderer {
     const addedElements: HTMLElement[] = [];
     const elementsToRemove: HTMLElement[] = [];
 
-    // Step 1: Handle elements whose models are deleted from the surface
-    const prevRenderedElementIds = Array.from(this._elementsMap.keys());
-    for (const id of prevRenderedElementIds) {
-      const modelExists = this.layerManager.layers.some(layer =>
-        layer.elements.some(elem => (elem as SurfaceElementModel).id === id)
-      );
-      if (!modelExists) {
-        const domElem = this._elementsMap.get(id);
-        if (domElem) {
-          domElem.remove();
-          this._elementsMap.delete(id);
-          elementsToRemove.push(domElem);
-        }
-      }
-    }
-
-    // Step 2: Render elements in the current viewport
-    const elementsFromGrid = this.grid.search(viewportBounds, {
-      filter: ['canvas', 'local'],
-    }) as SurfaceElementModel[];
+    const elementsInViewport = this._getElementsInViewport(viewportBounds);
     const visibleElementIds = new Set<string>();
 
-    for (const elementModel of elementsFromGrid) {
-      const display = (elementModel.display ?? true) && !elementModel.hidden;
-      if (
-        display &&
-        intersects(getBoundWithRotation(elementModel), viewportBounds)
-      ) {
-        visibleElementIds.add(elementModel.id);
+    for (const elementModel of elementsInViewport) {
+      visibleElementIds.add(elementModel.id);
 
-        if (
-          this.usePlaceholder &&
-          !(elementModel as GfxCompatibleInterface).forceFullRender
-        ) {
-          this._renderOrUpdatePlaceholder(
-            elementModel,
-            viewportBounds,
-            zoom,
-            addedElements
-          );
-        } else {
-          // Full render
-          this._renderOrUpdateFullElement(
-            elementModel,
-            viewportBounds,
-            zoom,
-            addedElements
-          );
-        }
+      if (
+        this.usePlaceholder &&
+        !(elementModel as GfxCompatibleInterface).forceFullRender
+      ) {
+        this._renderOrUpdatePlaceholder(
+          elementModel,
+          viewportBounds,
+          zoom,
+          addedElements
+        );
+      } else {
+        this._renderOrUpdateFullElement(
+          elementModel,
+          viewportBounds,
+          zoom,
+          addedElements
+        );
       }
     }
 
-    // Step 3: Remove DOM elements that are in _elementsMap but were not processed in Step 2
     const currentRenderedElementIds = Array.from(this._elementsMap.keys());
     for (const id of currentRenderedElementIds) {
       if (!visibleElementIds.has(id)) {
@@ -744,7 +781,6 @@ export class DomRenderer {
       }
     }
 
-    // Step 4: Notify about changes
     if (addedElements.length > 0 || elementsToRemove.length > 0) {
       this.elementsUpdated.next({
         elements: Array.from(this._elementsMap.values()),

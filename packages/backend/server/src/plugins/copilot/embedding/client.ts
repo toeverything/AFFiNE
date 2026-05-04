@@ -1,41 +1,32 @@
-import { Logger } from '@nestjs/common';
-import type { ModuleRef } from '@nestjs/core';
+import { createHash } from 'node:crypto';
 
-import { Config, CopilotProviderNotSupported } from '../../../base';
+import { Injectable, Logger } from '@nestjs/common';
+
 import { CopilotFailedToGenerateEmbedding } from '../../../base/error/errors.gen';
 import {
   ChunkSimilarity,
   Embedding,
   EMBEDDING_DIMENSIONS,
 } from '../../../models';
-import { CopilotProviderFactory } from '../providers/factory';
-import type { CopilotProvider } from '../providers/provider';
-import {
-  type CopilotRerankRequest,
-  type ModelFullConditions,
-  ModelInputType,
-  ModelOutputType,
-} from '../providers/types';
+import { type CopilotRerankRequest } from '../providers/types';
+import { CapabilityRuntime } from '../runtime/capability-runtime';
+import { TaskPolicy } from '../runtime/task-policy';
 import { EmbeddingClient, type ReRankResult } from './types';
 
-const EMBEDDING_MODEL = 'gemini-embedding-001';
-const RERANK_MODEL = 'gpt-4o-mini';
 class ProductionEmbeddingClient extends EmbeddingClient {
   private readonly logger = new Logger(ProductionEmbeddingClient.name);
 
   constructor(
-    private readonly config: Config,
-    private readonly providerFactory: CopilotProviderFactory
+    private readonly taskPolicy: TaskPolicy,
+    private readonly runtime: CapabilityRuntime
   ) {
     super();
   }
 
   override async configured(): Promise<boolean> {
-    const embedding = await this.providerFactory.getProvider({
-      modelId: this.getEmbeddingModelId(),
-      outputType: ModelOutputType.Embedding,
-    });
-    const result = Boolean(embedding);
+    const result = await this.runtime.embeddingConfigured(
+      this.taskPolicy.resolveEmbeddingModelId()
+    );
     if (!result) {
       this.logger.warn(
         'Copilot embedding client is not configured properly, please check your configuration.'
@@ -44,42 +35,14 @@ class ProductionEmbeddingClient extends EmbeddingClient {
     return result;
   }
 
-  private async getProvider(
-    cond: ModelFullConditions
-  ): Promise<CopilotProvider> {
-    const provider = await this.providerFactory.getProvider(cond);
-    if (!provider) {
-      throw new CopilotProviderNotSupported({
-        provider: 'embedding',
-        kind: cond.outputType || 'embedding',
-      });
-    }
-    return provider;
-  }
-
-  private getEmbeddingModelId() {
-    return this.config.copilot?.scenarios?.override_enabled
-      ? this.config.copilot.scenarios.scenarios?.embedding || EMBEDDING_MODEL
-      : EMBEDDING_MODEL;
-  }
-
   async getEmbeddings(input: string[]): Promise<Embedding[]> {
-    const provider = await this.getProvider({
-      modelId: this.getEmbeddingModelId(),
-      outputType: ModelOutputType.Embedding,
+    const modelId = this.taskPolicy.resolveEmbeddingModelId();
+    const embeddings = await this.runtime.embed(modelId, input, {
+      dimensions: EMBEDDING_DIMENSIONS,
     });
-    this.logger.verbose(
-      `Using provider ${provider.type} for embedding: ${input.join(', ')}`
-    );
-
-    const embeddings = await provider.embedding(
-      { inputTypes: [ModelInputType.Text] },
-      input,
-      { dimensions: EMBEDDING_DIMENSIONS }
-    );
     if (embeddings.length !== input.length) {
       throw new CopilotFailedToGenerateEmbedding({
-        provider: provider.type,
+        provider: modelId,
         message: `Expected ${input.length} embeddings, got ${embeddings.length}`,
       });
     }
@@ -108,11 +71,6 @@ class ProductionEmbeddingClient extends EmbeddingClient {
   ): Promise<ReRankResult> {
     if (!embeddings.length) return [];
 
-    const provider = await this.getProvider({
-      modelId: RERANK_MODEL,
-      outputType: ModelOutputType.Rerank,
-    });
-
     const rerankRequest: CopilotRerankRequest = {
       query,
       candidates: embeddings.map((embedding, index) => ({
@@ -121,8 +79,8 @@ class ProductionEmbeddingClient extends EmbeddingClient {
       })),
     };
 
-    const ranks = await provider.rerank(
-      { modelId: RERANK_MODEL },
+    const ranks = await this.runtime.rerank(
+      this.taskPolicy.resolveRerankModelId(),
       rerankRequest,
       { signal }
     );
@@ -211,32 +169,40 @@ class ProductionEmbeddingClient extends EmbeddingClient {
   }
 }
 
-let EMBEDDING_CLIENT: EmbeddingClient | undefined;
-export async function getEmbeddingClient(
-  moduleRef: ModuleRef
-): Promise<EmbeddingClient | undefined> {
-  if (EMBEDDING_CLIENT) {
-    return EMBEDDING_CLIENT;
+@Injectable()
+export class CopilotEmbeddingClientService {
+  private client: EmbeddingClient | undefined;
+
+  constructor(
+    private readonly taskPolicy: TaskPolicy,
+    private readonly runtime: CapabilityRuntime
+  ) {}
+
+  async refresh() {
+    const client = new ProductionEmbeddingClient(this.taskPolicy, this.runtime);
+    this.client = (await client.configured()) ? client : undefined;
+    return this.client;
   }
-  const config = moduleRef.get(Config, { strict: false });
-  const providerFactory = moduleRef.get(CopilotProviderFactory, {
-    strict: false,
-  });
-  const client = new ProductionEmbeddingClient(config, providerFactory);
-  if (await client.configured()) {
-    EMBEDDING_CLIENT = client;
+
+  getClient() {
+    return this.client;
   }
-  return EMBEDDING_CLIENT;
 }
 
 export class MockEmbeddingClient extends EmbeddingClient {
+  private embed(content: string) {
+    const seed = createHash('sha256').update(content).digest();
+    return Array.from({ length: EMBEDDING_DIMENSIONS }, (_, index) => {
+      const byte = seed[index % seed.length];
+      return byte / 255;
+    });
+  }
+
   async getEmbeddings(input: string[]): Promise<Embedding[]> {
-    return input.map((_, i) => ({
+    return input.map((content, i) => ({
       index: i,
-      content: input[i],
-      embedding: Array.from({ length: EMBEDDING_DIMENSIONS }, () =>
-        Math.random()
-      ),
+      content,
+      embedding: this.embed(content),
     }));
   }
 }

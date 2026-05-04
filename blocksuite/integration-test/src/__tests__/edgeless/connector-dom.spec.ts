@@ -29,6 +29,11 @@ async function waitForConnectorElement(
       continue;
     }
 
+    if (surfaceView.renderer instanceof DomRenderer) {
+      surfaceView.renderer.markElementDirty(connectorId);
+      surfaceView.renderer.forceFullRender();
+    }
+
     const connectorElement = surfaceView.renderRoot.querySelector<HTMLElement>(
       `[data-element-id="${connectorId}"]`
     );

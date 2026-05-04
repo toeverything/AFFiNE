@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ModuleRef } from '@nestjs/core';
 
 import {
   BlobNotFound,
@@ -18,7 +17,7 @@ import { readAllDocIdsFromWorkspaceSnapshot } from '../../../core/utils/blocksui
 import { Models } from '../../../models';
 import { CopilotStorage } from '../storage';
 import { readStream } from '../utils';
-import { getEmbeddingClient } from './client';
+import { CopilotEmbeddingClientService } from './client';
 import type { Chunk, DocFragment } from './types';
 import { EmbeddingClient } from './types';
 
@@ -32,12 +31,13 @@ export class CopilotEmbeddingJob {
   private client: EmbeddingClient | undefined;
 
   constructor(
-    private readonly moduleRef: ModuleRef,
+    private readonly embeddingClients: CopilotEmbeddingClientService,
     private readonly doc: DocReader,
     private readonly event: EventBus,
     private readonly models: Models,
     private readonly queue: JobQueue,
-    private readonly storage: CopilotStorage
+    private readonly storage: CopilotStorage,
+    private readonly workspaceStorage: WorkspaceBlobStorage
   ) {}
 
   @OnEvent('config.init')
@@ -54,7 +54,7 @@ export class CopilotEmbeddingJob {
     this.supportEmbedding =
       await this.models.copilotContext.checkEmbeddingAvailable();
     if (this.supportEmbedding) {
-      this.client = await getEmbeddingClient(this.moduleRef);
+      this.client = await this.embeddingClients.refresh();
     }
   }
 
@@ -64,10 +64,15 @@ export class CopilotEmbeddingJob {
   }
 
   @CallMetric('ai', 'addFileEmbeddingQueue')
-  async addFileEmbeddingQueue(file: Jobs['copilot.embedding.files']) {
+  async addFileEmbeddingQueue(
+    file: Jobs['copilot.embedding.files'],
+    options?: { priority?: number }
+  ) {
     if (!this.supportEmbedding) return;
 
-    await this.queue.add('copilot.embedding.files', file);
+    await this.queue.add('copilot.embedding.files', file, {
+      priority: options?.priority,
+    });
   }
 
   @CallMetric('ai', 'addBlobEmbeddingQueue')
@@ -231,10 +236,7 @@ export class CopilotEmbeddingJob {
     blobId: string,
     fileName: string
   ) {
-    const workspaceStorage = this.moduleRef.get(WorkspaceBlobStorage, {
-      strict: false,
-    });
-    const { body } = await workspaceStorage.get(workspaceId, blobId);
+    const { body } = await this.workspaceStorage.get(workspaceId, blobId);
     if (!body) throw new BlobNotFound({ spaceId: workspaceId, blobId });
     const buffer = await readStream(body);
     return new File([buffer], fileName);
@@ -445,6 +447,12 @@ export class CopilotEmbeddingJob {
               this.logger.debug(
                 `Doc ${docId} in workspace ${workspaceId} has no content change, skipping embedding.`
               );
+              if (contextId) {
+                this.event.emit('workspace.doc.embed.finished', {
+                  contextId,
+                  docId,
+                });
+              }
               return;
             }
 
@@ -486,6 +494,12 @@ export class CopilotEmbeddingJob {
             docId
           );
         }
+      }
+      if (contextId) {
+        this.event.emit('workspace.doc.embed.finished', {
+          contextId,
+          docId,
+        });
       }
     } catch (error: any) {
       if (contextId) {

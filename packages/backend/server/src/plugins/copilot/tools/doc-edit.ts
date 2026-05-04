@@ -3,11 +3,12 @@ import { z } from 'zod';
 import { DocReader } from '../../../core/doc';
 import { AccessController } from '../../../core/permission';
 import { defineTool } from './tool';
-import type {
-  CopilotChatOptions,
-  CopilotProviderFactory,
-  PromptService,
-} from './types';
+import type { CopilotChatOptions } from './types';
+
+type RunPromptText = (
+  promptName: string,
+  params: Record<string, unknown>
+) => Promise<string>;
 
 const CodeEditSchema = z
   .array(
@@ -46,8 +47,7 @@ export const buildContentGetter = (ac: AccessController, doc: DocReader) => {
 };
 
 export const createDocEditTool = (
-  factory: CopilotProviderFactory,
-  prompt: PromptService,
+  prompt: RunPromptText,
   getContent: (targetId?: string) => Promise<string | undefined>
 ) => {
   return defineTool({
@@ -182,16 +182,6 @@ You should specify the following arguments before the others: [doc_id], [origin_
     }),
     execute: async ({ doc_id, origin_content, code_edit }) => {
       try {
-        const applyPrompt = await prompt.get('Apply Updates');
-        if (!applyPrompt) {
-          return 'Prompt not found';
-        }
-        const model = applyPrompt.model;
-        const provider = await factory.getProviderByModel(model);
-        if (!provider) {
-          return 'Editing docs is not supported';
-        }
-
         const content = origin_content || (await getContent(doc_id));
         if (!content) {
           return 'Doc not found or doc is empty';
@@ -199,13 +189,11 @@ You should specify the following arguments before the others: [doc_id], [origin_
 
         const changedContents = await Promise.all(
           code_edit.map(async edit => {
-            return await provider.text({ modelId: model }, [
-              ...applyPrompt.finish({
-                content,
-                op: edit.op,
-                updates: edit.updates,
-              }),
-            ]);
+            return await prompt('Apply Updates', {
+              content,
+              op: edit.op,
+              updates: edit.updates,
+            });
           })
         );
 

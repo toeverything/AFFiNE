@@ -154,15 +154,14 @@ export async function cleanupWorkspace(workspaceId: string): Promise<void> {
 
 export async function switchDefaultChatModel(model: string) {
   await runPrisma(async client => {
-    const promptId = await client.aiPrompt
-      .findFirst({
-        where: { name: 'Chat With AFFiNE AI' },
-        select: { id: true },
-      })
-      .then(f => f!.id);
+    const prompt = await client.aiPrompt.findFirst({
+      where: { name: 'Chat With AFFiNE AI' },
+      select: { id: true },
+    });
+    if (!prompt) return;
 
     await client.aiPrompt.update({
-      where: { id: promptId },
+      where: { id: prompt.id },
       data: { model },
     });
   });
