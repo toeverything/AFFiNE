@@ -573,16 +573,18 @@ export class DomRenderer {
   }
 
   private _getElementsInViewport(viewportBounds: Bound) {
-    return this.layerManager.layers.flatMap(layer =>
-      layer.elements.filter(element => {
+    return this.layerManager.layers.flatMap(layer => {
+      if (layer.type !== 'canvas') return [];
+
+      return layer.elements.filter(element => {
         const elementModel = element as SurfaceElementModel;
         const display = (elementModel.display ?? true) && !elementModel.hidden;
         return (
           display &&
           intersects(getBoundWithRotation(elementModel), viewportBounds)
         );
-      })
-    ) as SurfaceElementModel[];
+      });
+    }) as SurfaceElementModel[];
   }
 
   private _updateLastState() {
@@ -685,8 +687,10 @@ export class DomRenderer {
     // Step 1: Handle elements whose models are deleted from the surface
     const prevRenderedElementIds = Array.from(this._elementsMap.keys());
     for (const id of prevRenderedElementIds) {
-      const modelExists = this.layerManager.layers.some(layer =>
-        layer.elements.some(elem => (elem as SurfaceElementModel).id === id)
+      const modelExists = this.layerManager.layers.some(
+        layer =>
+          layer.type === 'canvas' &&
+          layer.elements.some(elem => (elem as SurfaceElementModel).id === id)
       );
       if (!modelExists) {
         const domElem = this._elementsMap.get(id);
