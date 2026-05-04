@@ -1414,162 +1414,6 @@ export const getCopilotHistoriesQuery = {
 ${paginatedCopilotChatsFragment}`,
 };
 
-export const submitAudioTranscriptionMutation = {
-  id: 'submitAudioTranscriptionMutation' as const,
-  op: 'submitAudioTranscription',
-  query: `mutation submitAudioTranscription($workspaceId: String!, $blobId: String!, $blob: Upload, $blobs: [Upload!], $input: SubmitAudioTranscriptionInput) {
-  submitAudioTranscription(
-    blob: $blob
-    blobs: $blobs
-    blobId: $blobId
-    workspaceId: $workspaceId
-    input: $input
-  ) {
-    id
-    status
-  }
-}`,
-  file: true,
-};
-
-export const claimAudioTranscriptionMutation = {
-  id: 'claimAudioTranscriptionMutation' as const,
-  op: 'claimAudioTranscription',
-  query: `mutation claimAudioTranscription($jobId: String!) {
-  claimAudioTranscription(jobId: $jobId) {
-    id
-    status
-    title
-    summary
-    actions
-    sourceAudio {
-      blobId
-      mimeType
-      durationMs
-      sampleRate
-      channels
-    }
-    quality {
-      degraded
-      overflowCount
-    }
-    sliceManifest {
-      index
-      fileName
-      mimeType
-      startSec
-      durationSec
-      byteSize
-    }
-    normalizedSegments {
-      speaker
-      startSec
-      endSec
-      start
-      end
-      text
-    }
-    normalizedTranscript
-    summaryJson {
-      title
-      durationMinutes
-      attendees
-      keyPoints
-      actionItems {
-        description
-        owner
-        deadline
-      }
-      decisions
-      openQuestions
-      blockers
-    }
-    transcription {
-      speaker
-      start
-      end
-      transcription
-    }
-  }
-}`,
-};
-
-export const getAudioTranscriptionQuery = {
-  id: 'getAudioTranscriptionQuery' as const,
-  op: 'getAudioTranscription',
-  query: `query getAudioTranscription($workspaceId: String!, $jobId: String, $blobId: String) {
-  currentUser {
-    copilot(workspaceId: $workspaceId) {
-      audioTranscription(jobId: $jobId, blobId: $blobId) {
-        id
-        status
-        title
-        summary
-        sourceAudio {
-          blobId
-          mimeType
-          durationMs
-          sampleRate
-          channels
-        }
-        quality {
-          degraded
-          overflowCount
-        }
-        sliceManifest {
-          index
-          fileName
-          mimeType
-          startSec
-          durationSec
-          byteSize
-        }
-        normalizedSegments {
-          speaker
-          startSec
-          endSec
-          start
-          end
-          text
-        }
-        normalizedTranscript
-        summaryJson {
-          title
-          durationMinutes
-          attendees
-          keyPoints
-          actionItems {
-            description
-            owner
-            deadline
-          }
-          decisions
-          openQuestions
-          blockers
-        }
-        transcription {
-          speaker
-          start
-          end
-          transcription
-        }
-      }
-    }
-  }
-}`,
-};
-
-export const retryAudioTranscriptionMutation = {
-  id: 'retryAudioTranscriptionMutation' as const,
-  op: 'retryAudioTranscription',
-  query: `mutation retryAudioTranscription($workspaceId: String!, $jobId: String!) {
-  retryAudioTranscription(workspaceId: $workspaceId, jobId: $jobId) {
-    id
-    status
-  }
-}`,
-};
-
 export const createCopilotMessageMutation = {
   id: 'createCopilotMessageMutation' as const,
   op: 'createCopilotMessage',
@@ -1725,6 +1569,162 @@ export const getCopilotSessionsQuery = {
   }
 }
 ${paginatedCopilotChatsFragment}`,
+};
+
+export const getTranscriptTaskQuery = {
+  id: 'getTranscriptTaskQuery' as const,
+  op: 'getTranscriptTask',
+  query: `query getTranscriptTask($workspaceId: String!, $taskId: String, $blobId: String) {
+  currentUser {
+    copilot(workspaceId: $workspaceId) {
+      transcriptTask(taskId: $taskId, blobId: $blobId) {
+        id
+        status
+        title
+        summary
+        sourceAudio {
+          blobId
+          mimeType
+          durationMs
+          sampleRate
+          channels
+        }
+        quality {
+          degraded
+          overflowCount
+        }
+        sliceManifest {
+          index
+          fileName
+          mimeType
+          startSec
+          durationSec
+          byteSize
+        }
+        normalizedSegments {
+          speaker
+          startSec
+          endSec
+          start
+          end
+          text
+        }
+        normalizedTranscript
+        summaryJson {
+          title
+          durationMinutes
+          attendees
+          keyPoints
+          actionItems {
+            description
+            owner
+            deadline
+          }
+          decisions
+          openQuestions
+          blockers
+        }
+        transcription {
+          speaker
+          start
+          end
+          transcription
+        }
+      }
+    }
+  }
+}`,
+};
+
+export const retryTranscriptTaskMutation = {
+  id: 'retryTranscriptTaskMutation' as const,
+  op: 'retryTranscriptTask',
+  query: `mutation retryTranscriptTask($workspaceId: String!, $taskId: String!) {
+  retryTranscriptTask(workspaceId: $workspaceId, taskId: $taskId) {
+    id
+    status
+  }
+}`,
+};
+
+export const settleTranscriptTaskMutation = {
+  id: 'settleTranscriptTaskMutation' as const,
+  op: 'settleTranscriptTask',
+  query: `mutation settleTranscriptTask($workspaceId: String!, $taskId: String!) {
+  settleTranscriptTask(workspaceId: $workspaceId, taskId: $taskId) {
+    id
+    status
+    title
+    summary
+    actions
+    sourceAudio {
+      blobId
+      mimeType
+      durationMs
+      sampleRate
+      channels
+    }
+    quality {
+      degraded
+      overflowCount
+    }
+    sliceManifest {
+      index
+      fileName
+      mimeType
+      startSec
+      durationSec
+      byteSize
+    }
+    normalizedSegments {
+      speaker
+      startSec
+      endSec
+      start
+      end
+      text
+    }
+    normalizedTranscript
+    summaryJson {
+      title
+      durationMinutes
+      attendees
+      keyPoints
+      actionItems {
+        description
+        owner
+        deadline
+      }
+      decisions
+      openQuestions
+      blockers
+    }
+    transcription {
+      speaker
+      start
+      end
+      transcription
+    }
+  }
+}`,
+};
+
+export const submitTranscriptTaskMutation = {
+  id: 'submitTranscriptTaskMutation' as const,
+  op: 'submitTranscriptTask',
+  query: `mutation submitTranscriptTask($workspaceId: String!, $blobId: String!, $blob: Upload, $blobs: [Upload!], $input: SubmitAudioTranscriptionInput) {
+  submitTranscriptTask(
+    blob: $blob
+    blobs: $blobs
+    blobId: $blobId
+    workspaceId: $workspaceId
+    input: $input
+  ) {
+    id
+    status
+  }
+}`,
+  file: true,
 };
 
 export const addWorkspaceEmbeddingFilesMutation = {

@@ -36,6 +36,11 @@ declare global {
       docId: string;
     };
 
+    'workspace.doc.embed.finished': {
+      contextId: string;
+      docId: string;
+    };
+
     'workspace.file.embed.finished': {
       contextId: string;
       fileId: string;

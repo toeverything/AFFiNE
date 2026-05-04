@@ -127,6 +127,8 @@ export async function setupEditor(
   const options: SetupEditorOptions = optionsInput ?? {};
   const enableDomRenderer = options?.enableDomRenderer ?? false;
 
+  await cleanup();
+
   const collection = new TestWorkspace(createCollectionOptions());
   collection.storeExtensions = storeExtensions;
   collection.meta.initialize();

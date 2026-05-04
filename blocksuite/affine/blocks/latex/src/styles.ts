@@ -9,7 +9,7 @@ export const latexBlockStyles = css`
     height: 100%;
     padding: 10px 24px;
     flex-direction: column;
-    align-items: center;
+    align-items: stretch;
     justify-content: center;
     border-radius: 4px;
     overflow-x: auto;

@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
+import serverNativeModule from '@affine/server-native';
 import { ProjectRoot } from '@affine-tools/utils/path';
 import { PrismaClient } from '@prisma/client';
 import type { TestFn } from 'ava';
@@ -11,22 +12,30 @@ import { JobQueue } from '../../base';
 import { ConfigModule } from '../../base/config';
 import { AuthService } from '../../core/auth';
 import { DocReader } from '../../core/doc';
+import { QuotaService } from '../../core/quota';
 import { ContextCategories, DocRole, WorkspaceRole } from '../../models';
+import { CompatSubmissionStore } from '../../plugins/copilot/compat/submission-store';
 import { CopilotContextService } from '../../plugins/copilot/context';
 import {
   CopilotEmbeddingJob,
   MockEmbeddingClient,
 } from '../../plugins/copilot/embedding';
-import { ChatMessageCache } from '../../plugins/copilot/message';
-import { prompts, PromptService } from '../../plugins/copilot/prompt';
+import { PromptService } from '../../plugins/copilot/prompt';
 import {
   CopilotProviderFactory,
   CopilotProviderType,
   GeminiGenerativeProvider,
   OpenAIProvider,
 } from '../../plugins/copilot/providers';
+import { CapabilityRuntime } from '../../plugins/copilot/runtime/capability-runtime';
+import { ChatSessionService } from '../../plugins/copilot/session';
 import { CopilotStorage } from '../../plugins/copilot/storage';
-import { MockCopilotProvider, Mockers } from '../mocks';
+import {
+  installMockCopilotRuntime,
+  MockCopilotProvider,
+  Mockers,
+} from '../mocks';
+import { TestingPromptService } from '../mocks/prompt-service.mock';
 import {
   acceptInviteById,
   createTestingApp,
@@ -41,13 +50,11 @@ import {
   addContextDoc,
   addContextFile,
   array2sse,
-  audioTranscription,
+  chatWithActionStream,
   chatWithImages,
   chatWithStreamObject,
   chatWithText,
   chatWithTextStream,
-  chatWithWorkflow,
-  claimAudioTranscription,
   cleanObject,
   createCopilotContext,
   createCopilotMessage,
@@ -60,14 +67,16 @@ import {
   getDocSessions,
   getHistories,
   getPinnedSessions,
+  getTranscriptTask,
   getWorkspaceSessions,
   listContext,
   listContextCategories,
   listContextDocAndFiles,
   matchFiles,
   matchWorkspaceDocs,
+  settleTranscriptTask,
   sse2array,
-  submitAudioTranscription,
+  submitTranscriptTask,
   textToEventStream,
   unsplashSearch,
   updateCopilotSession,
@@ -79,13 +88,37 @@ const test = ava as TestFn<{
   db: PrismaClient;
   context: CopilotContextService;
   jobs: CopilotEmbeddingJob;
-  prompt: PromptService;
+  prompt: TestingPromptService;
   factory: CopilotProviderFactory;
   storage: CopilotStorage;
   u1: TestUser;
 }>;
+let restoreMockCopilotRuntime: (() => void) | undefined;
+
+const waitForStatus = async (
+  loadStatus: () => Promise<string | undefined>,
+  expected: string,
+  description: string,
+  attempts = 30,
+  intervalMs = 1000
+) => {
+  let status = await loadStatus();
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    if (status === expected) {
+      return status;
+    }
+    await new Promise(resolve => setTimeout(resolve, intervalMs));
+    status = await loadStatus();
+  }
+  throw new Error(
+    `${description} did not reach status "${expected}", last status: ${
+      status ?? 'undefined'
+    }`
+  );
+};
 
 test.before(async t => {
+  restoreMockCopilotRuntime = installMockCopilotRuntime();
   const app = await createTestingApp({
     imports: [
       ConfigModule.override({
@@ -112,7 +145,11 @@ test.before(async t => {
             summary: '1',
           };
         },
+        getWorkspaceContent() {
+          return {};
+        },
       });
+      m.overrideProvider(PromptService).useClass(TestingPromptService);
       m.overrideProvider(OpenAIProvider).useClass(MockCopilotProvider);
       m.overrideProvider(GeminiGenerativeProvider).useClass(
         class MockGenerativeProvider extends MockCopilotProvider {
@@ -126,7 +163,7 @@ test.before(async t => {
   const auth = app.get(AuthService);
   const db = app.get(PrismaClient);
   const context = app.get(CopilotContextService);
-  const prompt = app.get(PromptService);
+  const prompt = app.get(PromptService) as TestingPromptService;
   const storage = app.get(CopilotStorage);
   const jobs = app.get(CopilotEmbeddingJob);
 
@@ -145,7 +182,8 @@ let imagePromptName = 'prompt-image';
 test.beforeEach(async t => {
   Sinon.restore();
   const { app, prompt } = t.context;
-  await prompt.onApplicationBootstrap();
+  await app.initTestingDB();
+  prompt.reset();
   t.context.u1 = await app.signupV1();
   textPromptName = randomUUID().replaceAll('-', '');
   imagePromptName = randomUUID().replaceAll('-', '');
@@ -160,6 +198,7 @@ test.beforeEach(async t => {
 });
 
 test.after.always(async t => {
+  restoreMockCopilotRuntime?.();
   await t.context.app.close();
 });
 
@@ -288,6 +327,22 @@ test('should update session correctly', async t => {
       );
     });
   }
+});
+
+test('should fetch action session by session id', async t => {
+  const { app } = t.context;
+  const { id: workspaceId } = await createWorkspace(app);
+  const sessionId = await createCopilotSession(
+    app,
+    workspaceId,
+    randomUUID(),
+    'Generate image'
+  );
+
+  const session = await getCopilotSession(app, workspaceId, sessionId);
+  t.truthy(session);
+  t.is(session.id, sessionId);
+  t.is(session.promptName, 'Generate image');
 });
 
 test('should fork session correctly', async t => {
@@ -420,9 +475,40 @@ test('should be able to use test provider', async t => {
 
 test('should create message correctly', async t => {
   const { app } = t.context;
-  const messageCache = app.get(ChatMessageCache);
+  const pngData = await fetch(smallestPng).then(res => res.arrayBuffer());
+  const cases = [
+    {
+      title: 'should be able to create message with valid session',
+      invoke: (sessionId: string) => createCopilotMessage(app, sessionId),
+    },
+    {
+      title: 'should be able to create message with url link',
+      invoke: (sessionId: string) =>
+        createCopilotMessage(app, sessionId, undefined, [
+          'http://example.com/cat.jpg',
+        ]),
+    },
+    {
+      title: 'should be able to create message with blob',
+      invoke: (sessionId: string) =>
+        createCopilotMessage(
+          app,
+          sessionId,
+          undefined,
+          undefined,
+          new File([new Uint8Array(pngData)], '1.png', { type: 'image/png' })
+        ),
+    },
+    {
+      title: 'should be able to create message with blobs',
+      invoke: (sessionId: string) =>
+        createCopilotMessage(app, sessionId, undefined, undefined, undefined, [
+          new File([new Uint8Array(pngData)], '1.png', { type: 'image/png' }),
+        ]),
+    },
+  ];
 
-  {
+  for (const testCase of cases) {
     const { id } = await createWorkspace(app);
     const sessionId = await createCopilotSession(
       app,
@@ -430,79 +516,8 @@ test('should create message correctly', async t => {
       randomUUID(),
       textPromptName
     );
-    const messageId = await createCopilotMessage(app, sessionId);
-    t.truthy(messageId, 'should be able to create message with valid session');
-  }
-
-  {
-    // with attachment url
-    {
-      const { id } = await createWorkspace(app);
-      const sessionId = await createCopilotSession(
-        app,
-        id,
-        randomUUID(),
-        textPromptName
-      );
-      const messageId = await createCopilotMessage(app, sessionId, undefined, [
-        'http://example.com/cat.jpg',
-      ]);
-      t.truthy(messageId, 'should be able to create message with url link');
-    }
-
-    // with attachment
-    {
-      const { id } = await createWorkspace(app);
-      const sessionId = await createCopilotSession(
-        app,
-        id,
-        randomUUID(),
-        textPromptName
-      );
-      const pngData = await fetch(smallestPng).then(res => res.arrayBuffer());
-      const messageId = await createCopilotMessage(
-        app,
-        sessionId,
-        undefined,
-        undefined,
-        new File([new Uint8Array(pngData)], '1.png', { type: 'image/png' })
-      );
-      t.truthy(messageId, 'should be able to create message with blob');
-
-      const message = await messageCache.get(messageId);
-      const attachment = message?.attachments?.[0] as
-        | { attachment: string; mimeType: string }
-        | undefined;
-      const payload = Buffer.from(
-        attachment?.attachment.split(',').at(1) || '',
-        'base64'
-      );
-
-      t.is(attachment?.mimeType, 'image/webp');
-      t.is(payload.subarray(0, 4).toString('ascii'), 'RIFF');
-      t.is(payload.subarray(8, 12).toString('ascii'), 'WEBP');
-    }
-
-    // with attachments
-    {
-      const { id } = await createWorkspace(app);
-      const sessionId = await createCopilotSession(
-        app,
-        id,
-        randomUUID(),
-        textPromptName
-      );
-      const pngData = await fetch(smallestPng).then(res => res.arrayBuffer());
-      const messageId = await createCopilotMessage(
-        app,
-        sessionId,
-        undefined,
-        undefined,
-        undefined,
-        [new File([new Uint8Array(pngData)], '1.png', { type: 'image/png' })]
-      );
-      t.truthy(messageId, 'should be able to create message with blobs');
-    }
+    const messageId = await testCase.invoke(sessionId);
+    t.truthy(messageId, testCase.title);
   }
 
   {
@@ -523,10 +538,11 @@ test('should be able to chat with api', async t => {
 
   const { id } = await createWorkspace(app);
   {
+    const docId = randomUUID();
     const sessionId = await createCopilotSession(
       app,
       id,
-      randomUUID(),
+      docId,
       textPromptName
     );
     const messageId = await createCopilotMessage(app, sessionId);
@@ -543,6 +559,21 @@ test('should be able to chat with api', async t => {
       textToEventStream('generate text to text stream', messageId),
       'should be able to chat with text stream'
     );
+
+    const [history] = await getHistories(app, { workspaceId: id, docId });
+    const persistedMessageIds = history?.messages
+      .filter(message => message.role !== 'system')
+      .map(message => message.id);
+    t.deepEqual(
+      persistedMessageIds?.every(id => typeof id === 'string' && id.length > 0),
+      true,
+      'should persist non-empty database-generated ids for chat turns'
+    );
+    t.is(
+      new Set(persistedMessageIds).size,
+      persistedMessageIds?.length ?? 0,
+      'should persist unique ids for chat turns'
+    );
   }
 
   {
@@ -557,7 +588,7 @@ test('should be able to chat with api', async t => {
     t.is(
       array2sse(sse2array(ret3).filter(e => e.event !== 'event')),
       textToEventStream(
-        ['https://example.com/test-image.jpg', 'hello '],
+        ['https://example.com/gpt-image-1.jpg'],
         messageId,
         'attachment'
       ),
@@ -576,7 +607,7 @@ test('should be able to chat with api', async t => {
 
     const ret4 = await chatWithStreamObject(app, sessionId, messageId);
 
-    const objects = Array.from('generate text to object stream').map(data =>
+    const objects = Array.from('generate text to text stream').map(data =>
       JSON.stringify({ type: 'text-delta', textDelta: data })
     );
 
@@ -590,7 +621,81 @@ test('should be able to chat with api', async t => {
   Sinon.restore();
 });
 
-test('should be able to chat with api by workflow', async t => {
+test('should be able to chat with api by action stream', async t => {
+  const { app, db, prompt } = t.context;
+
+  const { id } = await createWorkspace(app);
+  const beforeQuota = await app.gql(
+    `
+      query getCopilotQuota($workspaceId: String!) {
+        currentUser {
+          copilot(workspaceId: $workspaceId) {
+            quota {
+              used
+            }
+          }
+        }
+      }
+    `,
+    { workspaceId: id }
+  );
+  const sessionId = await createCopilotSession(
+    app,
+    id,
+    randomUUID(),
+    'slides.outline'
+  );
+  const messageId = await createCopilotMessage(app, sessionId, 'apple company');
+  const actionPrompt = await prompt.get('slides.outline');
+  t.truthy(actionPrompt);
+  const ret = await chatWithActionStream(app, sessionId, {
+    actionId: 'slides.outline',
+    actionVersion: 'v1',
+    modelId: actionPrompt?.model,
+    messageId,
+  });
+  t.is(
+    array2sse(sse2array(ret).filter(e => e.event !== 'event')),
+    textToEventStream(['generate text to text stream'], messageId),
+    'should be able to chat with action stream'
+  );
+  const actionRuns = await db.aiActionRun.findMany({
+    where: { sessionId },
+    select: {
+      actionId: true,
+      actionVersion: true,
+      status: true,
+      assistantMessageId: true,
+    },
+  });
+  const afterQuota = await app.gql(
+    `
+      query getCopilotQuota($workspaceId: String!) {
+        currentUser {
+          copilot(workspaceId: $workspaceId) {
+            quota {
+              used
+            }
+          }
+        }
+      }
+    `,
+    { workspaceId: id }
+  );
+
+  t.like(actionRuns[0], {
+    actionId: 'slides.outline',
+    actionVersion: 'v1',
+    status: 'succeeded',
+  });
+  t.truthy(actionRuns[0]?.assistantMessageId);
+  t.is(
+    afterQuota.currentUser.copilot.quota.used,
+    beforeQuota.currentUser.copilot.quota.used + 1
+  );
+});
+
+test('should map action stream preparation errors to SSE error events', async t => {
   const { app } = t.context;
 
   const { id } = await createWorkspace(app);
@@ -598,26 +703,28 @@ test('should be able to chat with api by workflow', async t => {
     app,
     id,
     randomUUID(),
-    'workflow:presentation'
+    'slides.outline'
   );
   const messageId = await createCopilotMessage(app, sessionId, 'apple company');
-  const ret = await chatWithWorkflow(app, sessionId, messageId);
-  t.is(
-    array2sse(sse2array(ret).filter(e => e.event !== 'event')),
-    textToEventStream(['generate text to text stream'], messageId),
-    'should be able to chat with workflow'
-  );
+
+  const ret = await chatWithActionStream(app, sessionId, {
+    actionId: 'image.filter.unknown',
+    actionVersion: 'v1',
+    messageId,
+  });
+
+  t.true(ret.includes('error'));
 });
 
 test('should be able to chat with special image model', async t => {
-  const { app, storage } = t.context;
+  const { app, prompt, storage } = t.context;
 
   Sinon.stub(storage, 'handleRemoteLink').resolvesArg(2);
 
   const { id } = await createWorkspace(app);
 
   const testWithModel = async (promptName: string, finalPrompt: string) => {
-    const model = prompts.find(p => p.name === promptName)?.model;
+    const model = (await prompt.get(promptName))?.model;
     const sessionId = await createCopilotSession(
       app,
       id,
@@ -631,7 +738,10 @@ test('should be able to chat with special image model', async t => {
     t.is(
       ret3,
       textToEventStream(
-        [`https://example.com/${model}.jpg`, finalPrompt],
+        [
+          `https://example.com/${model}.jpg`,
+          `https://example.com/generated/${encodeURIComponent(finalPrompt)}.jpg`,
+        ],
         messageId,
         'attachment'
       ),
@@ -835,6 +945,521 @@ test('should be able to list history', async t => {
   }
 });
 
+test('should preserve persisted assistant render trace on history reload', async t => {
+  const { app } = t.context;
+  const chatRuntime = app.get(CapabilityRuntime);
+  Sinon.stub(chatRuntime, 'streamObject').callsFake(async function* () {
+    yield { type: 'reasoning', textDelta: 'Inspecting context' } as const;
+    yield {
+      type: 'tool-result',
+      toolCallId: 'call_1',
+      toolName: 'doc_read',
+      args: { docId: 'doc-1' },
+      result: { markdown: '# AFFiNE' },
+    } as const;
+    yield { type: 'text-delta', textDelta: 'Final ' } as const;
+    yield { type: 'text-delta', textDelta: 'answer' } as const;
+  });
+
+  const { id: workspaceId } = await createWorkspace(app);
+  const docId = randomUUID();
+  const sessionId = await createCopilotSession(
+    app,
+    workspaceId,
+    docId,
+    textPromptName
+  );
+
+  const messageToken = await createCopilotMessage(app, sessionId, 'hello');
+  await chatWithStreamObject(app, sessionId, messageToken);
+
+  const histories = await app.gql(
+    `
+      query getCopilotHistoriesWithTrace(
+        $workspaceId: String!
+        $docId: String
+        $options: QueryChatHistoriesInput
+      ) {
+        currentUser {
+          copilot(workspaceId: $workspaceId) {
+            histories(docId: $docId, options: $options) {
+              sessionId
+              messages {
+                role
+                content
+                streamObjects {
+                  type
+                  textDelta
+                  toolCallId
+                  toolName
+                  args
+                  result
+                }
+              }
+            }
+          }
+        }
+      }
+    `,
+    {
+      workspaceId,
+      docId,
+      options: { withMessages: true },
+    }
+  );
+
+  const assistantMessage =
+    histories.currentUser.copilot.histories[0]?.messages.find(
+      (message: { role: string }) => message.role === 'assistant'
+    );
+
+  t.is(assistantMessage?.content, 'Final answer');
+  t.deepEqual(assistantMessage?.streamObjects, [
+    {
+      type: 'reasoning',
+      textDelta: 'Inspecting context',
+      toolCallId: null,
+      toolName: null,
+      args: null,
+      result: null,
+    },
+    {
+      type: 'tool-result',
+      toolCallId: 'call_1',
+      toolName: 'doc_read',
+      args: { docId: 'doc-1' },
+      result: { markdown: '# AFFiNE' },
+      textDelta: null,
+    },
+    {
+      type: 'text-delta',
+      textDelta: 'Final answer',
+      toolCallId: null,
+      toolName: null,
+      args: null,
+      result: null,
+    },
+  ]);
+});
+
+test('should keep compat submission token out of durable history before stream', async t => {
+  const { app } = t.context;
+
+  const { id: workspaceId } = await createWorkspace(app);
+  const docId = randomUUID();
+  const sessionId = await createCopilotSession(
+    app,
+    workspaceId,
+    docId,
+    textPromptName
+  );
+
+  const messageToken = await createCopilotMessage(app, sessionId, 'hello');
+  const histories = await getHistories(app, { workspaceId, docId });
+
+  t.deepEqual(
+    histories.flatMap(history =>
+      history.messages.map(message => message.content)
+    ),
+    [],
+    'should not persist user turn before stream starts'
+  );
+
+  await chatWithText(app, sessionId, messageToken);
+  const [history] = await getHistories(app, { workspaceId, docId });
+
+  t.truthy(history?.messages[0]?.id);
+  t.not(
+    history?.messages[0]?.id,
+    messageToken,
+    'should return compat token instead of durable turn id'
+  );
+});
+
+test('should accept compat submission once and keep duplicate consume idempotent', async t => {
+  const { app } = t.context;
+
+  const { id: workspaceId } = await createWorkspace(app);
+  const docId = randomUUID();
+  const sessionId = await createCopilotSession(
+    app,
+    workspaceId,
+    docId,
+    textPromptName
+  );
+
+  const beforeQuota = await app.gql(
+    `
+      query getCopilotQuota($workspaceId: String!) {
+        currentUser {
+          copilot(workspaceId: $workspaceId) {
+            quota {
+              used
+            }
+          }
+        }
+      }
+    `,
+    { workspaceId }
+  );
+
+  const messageToken = await createCopilotMessage(app, sessionId, 'hello');
+  const text = await chatWithText(app, sessionId, messageToken);
+  t.is(text, 'generate text to text stream');
+  await chatWithText(app, sessionId, messageToken);
+
+  const afterQuota = await app.gql(
+    `
+      query getCopilotQuota($workspaceId: String!) {
+        currentUser {
+          copilot(workspaceId: $workspaceId) {
+            quota {
+              used
+            }
+          }
+        }
+      }
+    `,
+    { workspaceId }
+  );
+  const [history] = await getHistories(app, { workspaceId, docId });
+
+  t.is(
+    afterQuota.currentUser.copilot.quota.used,
+    beforeQuota.currentUser.copilot.quota.used + 1,
+    'should count accepted submission exactly once'
+  );
+  t.true((history?.tokens ?? 0) > 0, 'should accumulate token cost');
+  t.deepEqual(
+    history?.messages.map(message => message.content),
+    ['hello', 'generate text to text stream', 'generate text to text stream']
+  );
+  t.is(
+    history?.messages.filter(message => message.role === 'user').length,
+    1,
+    'should reuse the same durable user turn for duplicate consume'
+  );
+  t.not(
+    history?.messages.find(message => message.role === 'user')?.id,
+    messageToken,
+    'should keep compat token separate from durable user turn id'
+  );
+});
+
+test('should allow accepted token replay after quota is exhausted', async t => {
+  const { app } = t.context;
+  const quota = app.get(QuotaService);
+  Sinon.stub(quota, 'getUserQuota').resolves({
+    copilotActionLimit: 1,
+  } as never);
+
+  const { id: workspaceId } = await createWorkspace(app);
+  const docId = randomUUID();
+  const sessionId = await createCopilotSession(
+    app,
+    workspaceId,
+    docId,
+    textPromptName
+  );
+
+  const messageToken = await createCopilotMessage(app, sessionId, 'hello');
+  t.is(
+    await chatWithText(app, sessionId, messageToken),
+    'generate text to text stream'
+  );
+  t.is(
+    await chatWithText(app, sessionId, messageToken),
+    'generate text to text stream'
+  );
+
+  const [history] = await getHistories(app, { workspaceId, docId });
+  t.is(
+    history?.messages.filter(message => message.role === 'user').length,
+    1,
+    'should not insert a second user turn when replaying an accepted token'
+  );
+});
+
+test('should recover duplicate consume after accepted-cache write fails', async t => {
+  const { app } = t.context;
+  const submissions = app.get(CompatSubmissionStore);
+  let shouldFail = true;
+  Sinon.stub(submissions, 'markAccepted').callsFake(async (...args) => {
+    if (shouldFail) {
+      shouldFail = false;
+      throw new Error('inject accepted cache failure');
+    }
+    return await CompatSubmissionStore.prototype.markAccepted.apply(
+      submissions,
+      args
+    );
+  });
+
+  const { id: workspaceId } = await createWorkspace(app);
+  const docId = randomUUID();
+  const sessionId = await createCopilotSession(
+    app,
+    workspaceId,
+    docId,
+    textPromptName
+  );
+
+  const messageToken = await createCopilotMessage(app, sessionId, 'hello');
+  await t.throwsAsync(chatWithText(app, sessionId, messageToken), {
+    instanceOf: Error,
+  });
+
+  t.is(
+    await chatWithText(app, sessionId, messageToken),
+    'generate text to text stream'
+  );
+
+  const [history] = await getHistories(app, { workspaceId, docId });
+  t.is(
+    history?.messages.filter(message => message.role === 'user').length,
+    1,
+    'should reuse the durable user turn after accepted-cache failure'
+  );
+  t.deepEqual(
+    history?.messages.map(message => message.content),
+    ['hello', 'generate text to text stream']
+  );
+});
+
+test('should retry token safely when durable insert failed before commit', async t => {
+  const { app } = t.context;
+  const sessions = app.get(ChatSessionService);
+  let shouldFail = true;
+  Sinon.stub(sessions, 'appendTurn').callsFake(async (...args) => {
+    if (shouldFail) {
+      shouldFail = false;
+      throw new Error('inject append failure');
+    }
+    return await ChatSessionService.prototype.appendTurn.apply(sessions, args);
+  });
+
+  const { id: workspaceId } = await createWorkspace(app);
+  const docId = randomUUID();
+  const sessionId = await createCopilotSession(
+    app,
+    workspaceId,
+    docId,
+    textPromptName
+  );
+
+  const messageToken = await createCopilotMessage(app, sessionId, 'hello');
+  await t.throwsAsync(chatWithText(app, sessionId, messageToken), {
+    instanceOf: Error,
+  });
+
+  t.is(
+    await chatWithText(app, sessionId, messageToken),
+    'generate text to text stream'
+  );
+
+  const [history] = await getHistories(app, { workspaceId, docId });
+  t.is(
+    history?.messages.filter(message => message.role === 'user').length,
+    1,
+    'should insert the user turn exactly once after retry'
+  );
+  t.deepEqual(
+    history?.messages.map(message => message.content),
+    ['hello', 'generate text to text stream']
+  );
+});
+
+test('should reject new token before durable insert when quota is exhausted', async t => {
+  const { app } = t.context;
+  const quota = app.get(QuotaService);
+  Sinon.stub(quota, 'getUserQuota').resolves({
+    copilotActionLimit: 1,
+  } as never);
+
+  const { id: workspaceId } = await createWorkspace(app);
+  const docId = randomUUID();
+  const sessionId = await createCopilotSession(
+    app,
+    workspaceId,
+    docId,
+    textPromptName
+  );
+
+  const firstMessageToken = await createCopilotMessage(app, sessionId, 'hello');
+  await chatWithText(app, sessionId, firstMessageToken);
+
+  const secondMessageToken = await createCopilotMessage(
+    app,
+    sessionId,
+    'new action'
+  );
+  await t.throwsAsync(chatWithText(app, sessionId, secondMessageToken), {
+    instanceOf: Error,
+  });
+
+  const [history] = await getHistories(app, { workspaceId, docId });
+  t.deepEqual(
+    history?.messages.map(message => message.content),
+    ['hello', 'generate text to text stream']
+  );
+});
+
+test('should preload prompt messages when withPrompt is enabled', async t => {
+  const { app, prompt } = t.context;
+
+  const promptName = randomUUID().replaceAll('-', '');
+  await prompt.set(promptName, 'test', [
+    { role: 'system', content: 'system prompt' },
+    { role: 'user', content: 'preloaded question' },
+  ]);
+
+  const { id: workspaceId } = await createWorkspace(app);
+  const docId = randomUUID();
+  const sessionId = await createCopilotSession(
+    app,
+    workspaceId,
+    docId,
+    promptName
+  );
+  const messageId = await createCopilotMessage(app, sessionId, 'hello');
+  await chatWithText(app, sessionId, messageId);
+
+  const withoutPrompt = await getHistories(app, {
+    workspaceId,
+    docId,
+    options: { withPrompt: false },
+  });
+  const withPrompt = await getHistories(app, {
+    workspaceId,
+    docId,
+    options: { withPrompt: true },
+  });
+  const chatsWithPrompt = await app.gql(
+    `
+      query getCopilotChatsWithPrompt(
+        $workspaceId: String!
+        $docId: String!
+        $pagination: PaginationInput!
+        $options: QueryChatHistoriesInput
+      ) {
+        currentUser {
+          copilot(workspaceId: $workspaceId) {
+            chats(pagination: $pagination, docId: $docId, options: $options) {
+              totalCount
+              edges {
+                node {
+                  sessionId
+                  messages {
+                    content
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    `,
+    {
+      workspaceId,
+      docId,
+      pagination: { first: 10, offset: 0 },
+      options: { withMessages: true, withPrompt: true },
+    }
+  );
+
+  t.deepEqual(
+    withoutPrompt[0]?.messages.map(message => message.content),
+    ['hello', 'generate text to text stream']
+  );
+  t.deepEqual(
+    withPrompt[0]?.messages.map(message => message.content),
+    ['preloaded question', 'hello', 'generate text to text stream']
+  );
+  t.deepEqual(
+    chatsWithPrompt.currentUser.copilot.chats.edges[0]?.node.messages.map(
+      (message: { content: string }) => message.content
+    ),
+    ['preloaded question', 'hello', 'generate text to text stream']
+  );
+});
+
+test('should keep action sessions visible in session and chat metadata queries', async t => {
+  const { app } = t.context;
+
+  const { id: workspaceId } = await createWorkspace(app);
+  const sessionId = await createCopilotSession(
+    app,
+    workspaceId,
+    randomUUID(),
+    'Generate image'
+  );
+
+  const sessionsResult = await app.gql(
+    `
+      query getCopilotSessions($workspaceId: String!) {
+        currentUser {
+          copilot(workspaceId: $workspaceId) {
+            sessions {
+              id
+              promptName
+            }
+          }
+        }
+      }
+    `,
+    { workspaceId }
+  );
+  const chatsResult = await app.gql(
+    `
+      query getCopilotChats($workspaceId: String!, $pagination: PaginationInput!) {
+        currentUser {
+          copilot(workspaceId: $workspaceId) {
+            chats(pagination: $pagination) {
+              edges {
+                node {
+                  sessionId
+                  promptName
+                  action
+                  messages {
+                    content
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    `,
+    {
+      workspaceId,
+      pagination: { first: 10, offset: 0 },
+    }
+  );
+
+  t.true(
+    sessionsResult.currentUser.copilot.sessions.some(
+      (session: { id: string; promptName: string }) =>
+        session.id === sessionId && session.promptName === 'Generate image'
+    ),
+    'should expose action session in sessions()'
+  );
+  t.true(
+    chatsResult.currentUser.copilot.chats.edges.some(
+      (edge: {
+        node: {
+          sessionId: string;
+          promptName: string;
+          messages: { content: string }[];
+        };
+      }) =>
+        edge.node.sessionId === sessionId &&
+        edge.node.promptName === 'Generate image' &&
+        edge.node.messages.length === 0
+    ),
+    'should expose action session metadata in chats(withMessages: false)'
+  );
+});
+
 test('should reject request that user have not permission', async t => {
   const { app, u1 } = t.context;
 
@@ -902,6 +1527,20 @@ test('should be able to search image from unsplash', async t => {
 
 test('should be able to manage context', async t => {
   const { app, context, jobs } = t.context;
+  const waitForMatches = async <T>(
+    loader: () => Promise<T[] | undefined>,
+    expectedLength = 1
+  ) => {
+    let matches = await loader();
+    for (let attempt = 0; attempt < 30; attempt++) {
+      if ((matches?.length ?? 0) >= expectedLength) {
+        return matches;
+      }
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      matches = await loader();
+    }
+    return matches;
+  };
 
   const { id: workspaceId } = await createWorkspace(app);
   const sessionId = await createCopilotSession(
@@ -957,28 +1596,23 @@ test('should be able to manage context', async t => {
     );
 
     // wait for processing
-    {
-      let { files } =
-        (await listContextDocAndFiles(
-          app,
-          workspaceId,
-          sessionId,
-          contextId
-        )) || {};
+    await waitForStatus(
+      async () =>
+        (await listContextDocAndFiles(app, workspaceId, sessionId, contextId))
+          ?.files?.[0]?.status,
+      'finished',
+      'context file embedding',
+      60
+    );
 
-      while (files?.[0].status !== 'finished') {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        ({ files } =
-          (await listContextDocAndFiles(
-            app,
-            workspaceId,
-            sessionId,
-            contextId
-          )) || {});
-      }
+    const result = await waitForMatches(
+      () => matchFiles(app, contextId, 'test', 1),
+      1
+    );
+    if (!result) {
+      t.fail('should return context matches');
+      return;
     }
-
-    const result = (await matchFiles(app, contextId, 'test', 1))!;
     t.is(result.length, 1, 'should match context');
     t.is(result[0].fileId, fileId, 'should match file id');
   }
@@ -1016,28 +1650,23 @@ test('should be able to manage context', async t => {
     );
 
     // wait for processing
-    {
-      let { docs } =
-        (await listContextDocAndFiles(
-          app,
-          workspaceId,
-          sessionId,
-          contextId
-        )) || {};
+    await waitForStatus(
+      async () =>
+        (await listContextDocAndFiles(app, workspaceId, sessionId, contextId))
+          ?.docs?.[0]?.status ?? undefined,
+      'finished',
+      'context doc embedding',
+      60
+    );
 
-      while (docs?.[0].status !== 'finished') {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        ({ docs } =
-          (await listContextDocAndFiles(
-            app,
-            workspaceId,
-            sessionId,
-            contextId
-          )) || {});
-      }
+    const result = await waitForMatches(
+      () => matchWorkspaceDocs(app, contextId, 'test', 1),
+      1
+    );
+    if (!result) {
+      t.fail('should return workspace doc matches');
+      return;
     }
-
-    const result = (await matchWorkspaceDocs(app, contextId, 'test', 1))!;
     t.is(result.length, 1, 'should match context');
     t.is(result[0].docId, docId, 'should match doc id');
   }
@@ -1152,42 +1781,191 @@ test('should skip unauthorized docs when adding context category', async t => {
 });
 
 test('should be able to transcript', async t => {
-  const { app } = t.context;
+  const { app, db } = t.context;
 
   const { id: workspaceId } = await createWorkspace(app);
-
-  Sinon.stub(app.get(GeminiGenerativeProvider), 'structure').resolves(
-    JSON.stringify([
-      { a: 'A', s: 30, e: 45, t: 'Hello, everyone.' },
+  const transcriptOutput = [
+    { a: 'A', s: 30, e: 45, t: 'Hello, everyone.' },
+    {
+      a: 'B',
+      s: 46,
+      e: 70,
+      t: 'Hi, thank you for joining the meeting today.',
+    },
+  ];
+  const summaryOutput = {
+    title: 'Weekly Sync',
+    durationMinutes: 12,
+    attendees: ['A', 'B'],
+    keyPoints: ['Reviewed launch status'],
+    actionItems: [
       {
-        a: 'B',
-        s: 46,
-        e: 70,
-        t: 'Hi, thank you for joining the meeting today.',
+        description: 'Send recap',
+        owner: 'A',
+        deadline: 'Friday',
       },
-    ])
-  );
-  Sinon.stub(app.get(OpenAIProvider), 'structure').resolves(
-    JSON.stringify({
-      title: 'Weekly Sync',
-      durationMinutes: 12,
-      attendees: ['A', 'B'],
-      keyPoints: ['Reviewed launch status'],
-      actionItems: [
-        {
-          description: 'Send recap',
-          owner: 'A',
-          deadline: 'Friday',
+    ],
+    decisions: ['Ship on Monday'],
+    openQuestions: ['Need final QA sign-off'],
+    blockers: ['Waiting on analytics'],
+  };
+  const formatTime = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+    return [hours, minutes, secs]
+      .map(value => value.toString().padStart(2, '0'))
+      .join(':');
+  };
+  const buildTranscriptActionResult = (
+    route: {
+      provider_id?: string;
+      request?: {
+        messages?: Array<{ content?: string | Array<{ text?: string }> }>;
+      };
+    },
+    model: string,
+    metadataFallback: {
+      sourceAudio?: unknown;
+      quality?: unknown;
+      infos?: unknown;
+      sliceManifest?: Array<{ startSec?: number }> | null;
+    } = {}
+  ) => {
+    const getContentText = (content?: string | Array<{ text?: string }>) =>
+      typeof content === 'string'
+        ? content
+        : content?.map(item => item.text ?? '').join('');
+    const metadataContent = route.request?.messages
+      ?.map(message => getContentText(message.content))
+      .find(content => content?.startsWith('{'));
+    const metadata = {
+      ...metadataFallback,
+      ...(metadataContent ? JSON.parse(metadataContent) : {}),
+    };
+    const sliceManifest: Array<{ startSec?: number }> = metadata.sliceManifest
+      ?.length
+      ? metadata.sliceManifest
+      : [{ startSec: 0 }];
+    const normalizedSegments = sliceManifest.flatMap(
+      (slice: { startSec?: number }) =>
+        transcriptOutput.map(segment => {
+          const startSec = (slice.startSec ?? 0) + segment.s;
+          const endSec = (slice.startSec ?? 0) + segment.e;
+          const speaker = segment.a;
+          return {
+            speaker,
+            start: formatTime(startSec),
+            end: formatTime(endSec),
+            startSec,
+            endSec,
+            text: segment.t,
+          };
+        })
+    );
+    return {
+      sourceAudio: metadata.sourceAudio ?? null,
+      quality: metadata.quality ?? null,
+      infos: metadata.infos ?? null,
+      sliceManifest: metadata.sliceManifest ?? null,
+      normalizedSegments,
+      normalizedTranscript: normalizedSegments
+        .map(segment => `${segment.start} ${segment.speaker}: ${segment.text}`)
+        .join('\n'),
+      summaryJson: summaryOutput,
+      providerMeta: {
+        provider: 'gemini',
+        model,
+      },
+    };
+  };
+  const originalActionPreparedStream = (serverNativeModule as any)
+    .runNativeActionRecipePreparedStream;
+  (serverNativeModule as any).runNativeActionRecipePreparedStream = (
+    input: {
+      recipeId: string;
+      recipeVersion?: string;
+      input?: {
+        sourceAudio?: unknown;
+        quality?: unknown;
+        infos?: unknown;
+        sliceManifest?: Array<{ startSec?: number }> | null;
+        preparedRoutes?: {
+          transcribe?: Array<{
+            provider_id?: string;
+            request?: {
+              messages?: Array<{
+                content?: string | Array<{ text?: string }>;
+              }>;
+            };
+          }>;
+        };
+      };
+    },
+    callback: (error: Error | null, eventJson: string) => void
+  ) => {
+    if (!input.recipeId.startsWith('transcript.audio.')) {
+      return originalActionPreparedStream(input, callback);
+    }
+
+    const route = input.input?.preparedRoutes?.transcribe?.[0] ?? {};
+    const result = buildTranscriptActionResult(
+      route,
+      'gemini-2.5-flash',
+      input.input ?? {}
+    );
+    const actionVersion = input.recipeVersion ?? 'v1';
+    const events = [
+      {
+        type: 'action_start',
+        actionId: input.recipeId,
+        actionVersion,
+        status: 'running',
+      },
+      {
+        type: 'step_start',
+        actionId: input.recipeId,
+        actionVersion,
+        stepId: 'transcribe',
+        status: 'running',
+      },
+      {
+        type: 'step_end',
+        actionId: input.recipeId,
+        actionVersion,
+        stepId: 'transcribe',
+        status: 'running',
+      },
+      {
+        type: 'action_done',
+        actionId: input.recipeId,
+        actionVersion,
+        status: 'succeeded',
+        result,
+        trace: {
+          actionId: input.recipeId,
+          actionVersion,
+          status: 'succeeded',
+          lightweight: [
+            { type: 'action_start', status: 'running' },
+            { type: 'action_trace', status: 'succeeded' },
+          ],
         },
-      ],
-      decisions: ['Ship on Monday'],
-      openQuestions: ['Need final QA sign-off'],
-      blockers: ['Waiting on analytics'],
-    })
-  );
+      },
+    ];
+    for (const event of events) {
+      callback(null, JSON.stringify(event));
+    }
+    callback(null, '__AFFINE_LLM_STREAM_END__');
+    return { abort() {} };
+  };
+  t.teardown(() => {
+    (serverNativeModule as any).runNativeActionRecipePreparedStream =
+      originalActionPreparedStream;
+  });
 
   {
-    const job = await submitAudioTranscription(
+    const job = await submitTranscriptTask(
       app,
       workspaceId,
       '1',
@@ -1218,15 +1996,28 @@ test('should be able to transcript', async t => {
     );
     t.truthy(job.id, 'should have job id');
 
-    let status = '';
-    while (status !== 'finished') {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      status =
-        (await audioTranscription(app, workspaceId, job.id))?.status || '';
-    }
+    await waitForStatus(
+      async () => {
+        const status = (await getTranscriptTask(app, workspaceId, job.id))
+          ?.status;
+        if (status === 'failed') {
+          const task = await db.aiTranscriptTask.findUnique({
+            where: { id: job.id },
+            select: { errorCode: true },
+          });
+          throw new Error(
+            `audio transcription job failed: ${
+              task?.errorCode ?? 'unknown error'
+            }`
+          );
+        }
+        return status;
+      },
+      'finished',
+      'audio transcription job'
+    );
 
-    const result = await claimAudioTranscription(app, job.id);
-    t.is(result.title, 'Weekly Sync');
+    const result = await settleTranscriptTask(app, workspaceId, job.id);
     t.is(result.summaryJson?.title, 'Weekly Sync');
     t.is(result.summaryJson?.actionItems[0]?.description, 'Send recap');
     t.is(result.sourceAudio?.blobId, '1');
@@ -1235,13 +2026,13 @@ test('should be able to transcript', async t => {
     t.is(result.quality?.overflowCount, 4);
     t.is(result.normalizedSegments?.[0]?.start, '00:00:42');
     t.is(result.normalizedSegments?.[0]?.text, 'Hello, everyone.');
-    t.is(result.transcription?.[0]?.start, '00:00:42');
-    t.true(result.summary?.includes('Reviewed launch status') ?? false);
-    t.is(result.actions, '- [ ] Send recap (A · Friday)');
+    t.true(
+      result.summaryJson?.keyPoints.includes('Reviewed launch status') ?? false
+    );
   }
 
   {
-    const job = await submitAudioTranscription(
+    const job = await submitTranscriptTask(
       app,
       workspaceId,
       '2',
@@ -1270,20 +2061,30 @@ test('should be able to transcript', async t => {
     );
     t.truthy(job.id, 'should have job id');
 
-    let status = '';
-    while (status !== 'finished') {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      status =
-        (await audioTranscription(app, workspaceId, job.id))?.status || '';
-    }
+    await waitForStatus(
+      async () => {
+        const status = (await getTranscriptTask(app, workspaceId, job.id))
+          ?.status;
+        if (status === 'failed') {
+          const task = await db.aiTranscriptTask.findUnique({
+            where: { id: job.id },
+            select: { errorCode: true },
+          });
+          throw new Error(
+            `audio transcription job failed: ${
+              task?.errorCode ?? 'unknown error'
+            }`
+          );
+        }
+        return status;
+      },
+      'finished',
+      'audio transcription job'
+    );
 
-    const result = await claimAudioTranscription(app, job.id);
+    const result = await settleTranscriptTask(app, workspaceId, job.id);
     t.deepEqual(
       result.normalizedSegments?.map(segment => segment.start),
-      ['00:00:30', '00:00:46', '00:10:35', '00:10:51']
-    );
-    t.deepEqual(
-      result.transcription?.map(segment => segment.start),
       ['00:00:30', '00:00:46', '00:10:35', '00:10:51']
     );
     t.is(

@@ -7,19 +7,16 @@ import {
   clearEmbeddingChunk,
   type Models,
 } from '../../../models';
+import { CopilotContextService } from '../context/service';
 import { workspaceSyncRequiredError } from './doc-sync';
 import { toolError } from './error';
 import { defineTool } from './tool';
-import type {
-  ContextSession,
-  CopilotChatOptions,
-  CopilotContextService,
-} from './types';
+import type { CopilotChatOptions } from './types';
 
 export const buildDocSearchGetter = (
   ac: AccessController,
   context: CopilotContextService,
-  docContext: ContextSession | null,
+  sessionId: string | undefined,
   models: Models
 ) => {
   const searchDocs = async (
@@ -48,7 +45,11 @@ export const buildDocSearchGetter = (
       );
     const [chunks, contextChunks] = await Promise.all([
       context.matchWorkspaceAll(options.workspace, query, 10, signal),
-      docContext?.matchFiles(query, 10, signal) ?? [],
+      sessionId
+        ? context
+            .getBySessionId(sessionId)
+            .then(current => current?.matchFiles(query, 10, signal) ?? [])
+        : [],
     ]);
 
     const docChunks = await ac

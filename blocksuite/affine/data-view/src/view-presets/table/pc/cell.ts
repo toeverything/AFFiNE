@@ -46,6 +46,18 @@ export class TableViewCellContainer extends SignalWatcher(
   @property({ attribute: false })
   accessor rowId!: string;
 
+  private _tagDraft: string | undefined;
+
+  setTagDraft(value: string) {
+    this._tagDraft = value;
+  }
+
+  consumeTagDraft(): string | undefined {
+    const value = this._tagDraft;
+    this._tagDraft = undefined;
+    return value;
+  }
+
   cell$ = computed(() => {
     return this.column.cellGetOrCreate(this.rowId);
   });

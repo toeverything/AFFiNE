@@ -18,8 +18,10 @@ export type TextToTextOptions = {
   signal?: AbortSignal;
   retry?: boolean;
   endpoint?: Endpoint;
+  actionId?: string;
+  actionVersion?: string;
+  runId?: string;
   isRootSession?: boolean;
-  postfix?: (text: string) => string;
   reasoning?: boolean;
   modelId?: string;
   toolsConfig?: AIToolsConfig;
@@ -120,7 +122,9 @@ export function textToText({
   timeout = TIMEOUT,
   retry = false,
   endpoint = Endpoint.StreamObject,
-  postfix,
+  actionId,
+  actionVersion,
+  runId,
   reasoning,
   modelId,
   toolsConfig,
@@ -148,6 +152,10 @@ export function textToText({
             reasoning,
             modelId,
             toolsConfig,
+            actionId,
+            actionVersion,
+            runId,
+            retry,
           },
           endpoint
         );
@@ -166,25 +174,12 @@ export function textToText({
             signal.addEventListener('abort', onAbort, { once: true });
           }
 
-          if (postfix) {
-            const messages: string[] = [];
-            for await (const event of toTextStream(eventSource, {
-              timeout,
-              signal,
-            })) {
-              if (event.type === 'message') {
-                messages.push(event.data);
-              }
-            }
-            yield postfix(messages.join(''));
-          } else {
-            for await (const event of toTextStream(eventSource, {
-              timeout,
-              signal,
-            })) {
-              if (event.type === 'message') {
-                yield event.data;
-              }
+          for await (const event of toTextStream(eventSource, {
+            timeout,
+            signal,
+          })) {
+            if (event.type === 'message') {
+              yield event.data;
             }
           }
         } finally {
@@ -215,6 +210,10 @@ export function textToText({
           reasoning,
           modelId,
           toolsConfig,
+          actionId,
+          actionVersion,
+          runId,
+          retry,
         },
         endpoint
       );
@@ -244,7 +243,7 @@ export function textToText({
         }
 
         const result = messages.join('');
-        return postfix ? postfix(result) : result;
+        return result;
       } finally {
         eventSource.close();
         if (signal && onAbort) {
@@ -266,6 +265,9 @@ export function toImage({
   timeout = TIMEOUT,
   retry = false,
   endpoint,
+  actionId,
+  actionVersion,
+  runId,
   client,
 }: ToImageOptions) {
   let messageId: string | undefined;
@@ -282,12 +284,20 @@ export function toImage({
           signal,
         });
       }
-      const eventSource = client.imagesStream(
-        sessionId,
-        messageId,
-        seed,
-        endpoint
-      );
+      const eventSource =
+        endpoint === Endpoint.Action
+          ? client.chatTextStream(
+              {
+                sessionId,
+                messageId,
+                actionId,
+                actionVersion,
+                runId,
+                retry,
+              },
+              Endpoint.Action
+            )
+          : client.imagesStream(sessionId, messageId, seed, endpoint);
       AIProvider.LAST_ACTION_SESSIONID = sessionId;
 
       for await (const event of toTextStream(eventSource, {

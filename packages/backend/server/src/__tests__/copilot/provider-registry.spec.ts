@@ -1,5 +1,7 @@
 import test from 'ava';
 
+import { OpenAIProvider } from '../../plugins/copilot/providers';
+import { CopilotProviderLifecycleService } from '../../plugins/copilot/providers/lifecycle-service';
 import {
   buildProviderRegistry,
   resolveModel,
@@ -142,6 +144,46 @@ test('resolveModel should follow defaults -> fallback -> order and apply filters
   t.deepEqual(routed.candidateProviderIds, ['openai-main', 'fal-main']);
 });
 
+test('resolveModel should resolve bare model ids by provider priority order', t => {
+  const registry = buildProviderRegistry({
+    profiles: [
+      {
+        id: 'openai-main',
+        type: CopilotProviderType.OpenAI,
+        priority: 10,
+        config: { apiKey: '1' },
+      },
+      {
+        id: 'anthropic-main',
+        type: CopilotProviderType.Anthropic,
+        priority: 5,
+        config: { apiKey: '2' },
+      },
+      {
+        id: 'fal-main',
+        type: CopilotProviderType.FAL,
+        priority: 1,
+        config: { apiKey: '3' },
+      },
+    ],
+    defaults: {
+      [ModelOutputType.Text]: 'anthropic-main',
+      fallback: 'fal-main',
+    },
+  });
+
+  const routed = resolveModel({
+    registry,
+    modelId: 'shared-model',
+  });
+
+  t.deepEqual(routed.candidateProviderIds, [
+    'openai-main',
+    'anthropic-main',
+    'fal-main',
+  ]);
+});
+
 test('stripProviderPrefix should only strip matched provider prefix', t => {
   const registry = buildProviderRegistry({
     profiles: [
@@ -165,4 +207,76 @@ test('stripProviderPrefix should only strip matched provider prefix', t => {
     stripProviderPrefix(registry, 'openai-main', 'gpt-5-mini'),
     'gpt-5-mini'
   );
+});
+
+test('CopilotProviderLifecycleService should register current profiles and unregister stale ones', async t => {
+  const calls: string[] = [];
+  let registry = buildProviderRegistry({
+    profiles: [
+      {
+        id: 'openai-main',
+        type: CopilotProviderType.OpenAI,
+        config: { apiKey: '1' },
+      },
+      {
+        id: 'openai-backup',
+        type: CopilotProviderType.OpenAI,
+        config: { apiKey: '2' },
+      },
+    ],
+  });
+
+  const provider = {
+    type: CopilotProviderType.OpenAI,
+    configured(execution: { providerId?: string } | undefined) {
+      return execution?.providerId === 'openai-main';
+    },
+  };
+  const service = new CopilotProviderLifecycleService(
+    {
+      get(token: unknown) {
+        return token === OpenAIProvider ? provider : undefined;
+      },
+    } as any,
+    {
+      register(providerId: string) {
+        calls.push(`register:${providerId}`);
+      },
+      unregister(providerId: string) {
+        calls.push(`unregister:${providerId}`);
+      },
+    } as any,
+    {
+      getRegistry() {
+        return registry;
+      },
+    } as any
+  );
+
+  await service.syncProviders();
+
+  t.deepEqual(calls.slice().sort(), [
+    'register:openai-main',
+    'unregister:openai-backup',
+  ]);
+
+  calls.length = 0;
+  registry = buildProviderRegistry({
+    profiles: [
+      {
+        id: 'openai-backup',
+        type: CopilotProviderType.OpenAI,
+        config: { apiKey: '2' },
+      },
+    ],
+  });
+  provider.configured = (execution: { providerId?: string } | undefined) =>
+    execution?.providerId === 'openai-backup';
+
+  await service.syncProviders();
+
+  t.deepEqual(calls.slice().sort(), [
+    'register:openai-backup',
+    'unregister:openai-main',
+  ]);
 });

@@ -2,7 +2,6 @@ import type {
   LegacyTranscriptionSegment,
   MeetingSummaryV2,
   NormalizedTranscriptSegment,
-  RawTranscriptSegment,
   TranscriptionLegacyProjection,
   TranscriptionPayloadV2,
 } from './types';
@@ -25,62 +24,6 @@ export function formatTranscriptTime(time: number) {
   return [hours, minutes, seconds]
     .map(part => String(part).padStart(2, '0'))
     .join(':');
-}
-
-export function normalizeTranscriptSegments(
-  rawSegments: RawTranscriptSegment[]
-): NormalizedTranscriptSegment[] {
-  const normalized: NormalizedTranscriptSegment[] = [];
-  const dedupe = new Set<string>();
-
-  const sorted = [...rawSegments].sort((left, right) => {
-    return (
-      left.startSec - right.startSec ||
-      left.endSec - right.endSec ||
-      left.sliceIndex - right.sliceIndex
-    );
-  });
-
-  for (const segment of sorted) {
-    const text = segment.text.trim();
-    if (!text) {
-      continue;
-    }
-
-    const previous = normalized.at(-1);
-    const startSec = Math.max(previous?.endSec ?? 0, segment.startSec, 0);
-    const endSec = Math.max(segment.endSec, startSec);
-    if (endSec <= startSec) {
-      continue;
-    }
-
-    const speaker = segment.speaker.trim() || 'Speaker';
-    const key = `${speaker}|${startSec}|${endSec}|${text}`;
-    if (dedupe.has(key)) {
-      continue;
-    }
-
-    dedupe.add(key);
-    normalized.push({
-      speaker,
-      startSec,
-      endSec,
-      start: formatTranscriptTime(startSec),
-      end: formatTranscriptTime(endSec),
-      text,
-    });
-  }
-
-  return normalized;
-}
-
-export function buildNormalizedTranscript(
-  segments: NormalizedTranscriptSegment[]
-) {
-  return segments
-    .map(segment => `${segment.start} ${segment.speaker}: ${segment.text}`)
-    .join('\n')
-    .trim();
 }
 
 export function toLegacyTranscriptionSegments(
@@ -127,22 +70,16 @@ export function actionItemsToMarkdown(summaryJson?: MeetingSummaryV2 | null) {
 }
 
 export function buildLegacyProjection(
-  payload: Pick<
-    TranscriptionPayloadV2,
-    'legacy' | 'normalizedSegments' | 'summaryJson'
-  >
+  payload: Pick<TranscriptionPayloadV2, 'normalizedSegments' | 'summaryJson'>
 ): TranscriptionLegacyProjection {
-  const legacy = payload.legacy ?? {};
   const normalizedSegments = payload.normalizedSegments ?? [];
 
   return {
-    title: legacy.title ?? payload.summaryJson?.title ?? null,
-    summary: legacy.summary ?? summaryToMarkdown(payload.summaryJson),
-    actions: legacy.actions ?? actionItemsToMarkdown(payload.summaryJson),
-    transcription:
-      legacy.transcription ??
-      (normalizedSegments.length
-        ? toLegacyTranscriptionSegments(normalizedSegments)
-        : null),
+    title: payload.summaryJson?.title ?? null,
+    summary: summaryToMarkdown(payload.summaryJson),
+    actions: actionItemsToMarkdown(payload.summaryJson),
+    transcription: normalizedSegments.length
+      ? toLegacyTranscriptionSegments(normalizedSegments)
+      : null,
   };
 }
