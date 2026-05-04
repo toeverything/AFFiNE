@@ -191,6 +191,54 @@ class NoteKeymap {
     );
   };
 
+  private readonly _changeHeadingLevel = (direction: 'up' | 'down') => {
+    const selection = this._std.selection;
+    const textSelection = selection.find(TextSelection);
+    const blockSelections = selection.filter(BlockSelection);
+
+    let blockId: string | undefined;
+    if (textSelection) {
+      blockId = textSelection.from.blockId;
+    } else if (blockSelections.length > 0) {
+      blockId = blockSelections[0].blockId;
+    }
+
+    if (!blockId) return false;
+
+    const model = this._std.store.getBlock(blockId)?.model;
+    if (!model) return false;
+
+    let currentType = 'text';
+    if (model.flavour === 'affine:paragraph') {
+      currentType = (model as any).props?.type || (model as any).type || 'text';
+    }
+
+    const levels = ['text', 'h6', 'h5', 'h4', 'h3', 'h2', 'h1'];
+    const currentIndex = levels.indexOf(currentType);
+    let nextType = 'text';
+    if (currentIndex === -1) {
+      nextType = direction === 'up' ? 'h6' : 'text';
+    } else {
+      const nextIndex =
+        direction === 'up'
+          ? Math.min(currentIndex + 1, levels.length - 1)
+          : Math.max(currentIndex - 1, 0);
+      nextType = levels[nextIndex];
+    }
+
+    const [result] = this._std.command
+      .chain()
+      .pipe(updateBlockType, {
+        flavour: 'affine:paragraph',
+        props: {
+          type: nextType,
+        },
+      })
+      .run();
+
+    return result;
+  };
+
   private _focusBlock: BlockComponent | null = null;
 
   private readonly _getClosestNoteByBlockId = (blockId: string) => {
@@ -603,6 +651,14 @@ class NoteKeymap {
       ...this._bindQuickActionHotKey(),
       ...this._bindTextConversionHotKey(),
       ...this._bindTextAlignHotKey(),
+      'Mod-Alt-[': ctx => {
+        ctx.get('defaultState').event.preventDefault();
+        return this._changeHeadingLevel('up');
+      },
+      'Mod-Alt-]': ctx => {
+        ctx.get('defaultState').event.preventDefault();
+        return this._changeHeadingLevel('down');
+      },
       Tab: ctx => {
         const [success] = this.std.command.exec(indentBlocks);
 
