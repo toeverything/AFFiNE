@@ -30,6 +30,7 @@ async function waitForConnectorElement(
     }
 
     if (surfaceView.renderer instanceof DomRenderer) {
+      surfaceView.renderer.markElementDirty(connectorId);
       surfaceView.renderer.forceFullRender();
     }
 

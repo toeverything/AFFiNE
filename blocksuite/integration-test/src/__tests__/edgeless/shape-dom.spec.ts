@@ -22,6 +22,7 @@ async function waitForShapeElement(
 
   while (Date.now() - startedAt < timeout) {
     if (surfaceView.renderer instanceof DomRenderer) {
+      surfaceView.renderer.markElementDirty(shapeId);
       surfaceView.renderer.forceFullRender();
     }
 
