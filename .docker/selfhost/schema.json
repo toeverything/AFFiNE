@@ -861,9 +861,12 @@
       "properties": {
         "google": {
           "type": "object",
-          "description": "Google Calendar integration config\n@default {\"enabled\":false,\"clientId\":\"\",\"clientSecret\":\"\",\"externalWebhookUrl\":\"\",\"webhookVerificationToken\":\"\",\"requestTimeoutMs\":10000}\n@link https://developers.google.com/calendar/api/guides/push",
+          "description": "Google Calendar integration config\n@default {\"enabled\":false,\"allowNewAccounts\":true,\"clientId\":\"\",\"clientSecret\":\"\",\"externalWebhookUrl\":\"\",\"webhookVerificationToken\":\"\",\"requestTimeoutMs\":10000}\n@link https://developers.google.com/calendar/api/guides/push",
           "properties": {
             "enabled": {
+              "type": "boolean"
+            },
+            "allowNewAccounts": {
               "type": "boolean"
             },
             "clientId": {
@@ -884,6 +887,7 @@
           },
           "default": {
             "enabled": false,
+            "allowNewAccounts": true,
             "clientId": "",
             "clientSecret": "",
             "externalWebhookUrl": "",
