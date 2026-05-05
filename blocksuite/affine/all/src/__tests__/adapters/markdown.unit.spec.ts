@@ -65,10 +65,10 @@ function markdownFixture(relativePath: string): File {
   );
 }
 
-function markdownZipFixture(files: Record<string, string>): Blob {
+function zipFixture(entries: Record<string, string>) {
   const zipped = fflate.zipSync(
     Object.fromEntries(
-      Object.entries(files).map(([path, content]) => [
+      Object.entries(entries).map(([path, content]) => [
         path,
         fflate.strToU8(content),
       ])
@@ -88,6 +88,17 @@ function exportSnapshot(doc: Store): DocSnapshot {
   const snapshot = job.docToSnapshot(doc);
   expect(snapshot).toBeTruthy();
   return snapshot!;
+}
+
+function noteSnapshotByTitle(collection: TestWorkspace, title: string) {
+  const meta = collection.meta.docMetas.find(meta => meta.title === title);
+  expect(meta).toBeTruthy();
+  const doc = collection.getDoc(meta!.id)?.getStore({ id: meta!.id });
+  expect(doc).toBeTruthy();
+  const snapshot = exportSnapshot(doc!);
+  return snapshot.blocks.children.find(
+    block => block.flavour === 'affine:note'
+  );
 }
 
 function normalizeDeltaForSnapshot(
@@ -301,13 +312,101 @@ Hello world
     expect(meta?.tags).toEqual(['a', 'b']);
   });
 
+  test('imports notion markdown zip titles and folder names', async () => {
+    const schema = new Schema().register(AffineSchemas);
+    const collection = new TestWorkspace();
+    collection.storeExtensions = testStoreExtensions;
+    collection.meta.initialize();
+
+    const imported = zipFixture({
+      'Notion Export/Workspace 11111111111111111111111111111111.md':
+        '# Workspace\nRoot body',
+      'Notion Export/Workspace 11111111111111111111111111111111/Nested Page 22222222222222222222222222222222.md':
+        '# Nested Page\nNested body',
+    });
+
+    const { docIds, folderHierarchy } =
+      await MarkdownTransformer.importNotionMarkdownZip({
+        collection,
+        schema,
+        imported,
+        extensions: testStoreExtensions,
+      });
+
+    expect(docIds).toHaveLength(2);
+    expect(
+      collection.meta.docMetas
+        .map(meta => meta.title)
+        .sort((a, b) => (a ?? '').localeCompare(b ?? ''))
+    ).toEqual(['Nested Page', 'Workspace']);
+
+    const nestedNote = noteSnapshotByTitle(collection, 'Nested Page');
+    expect(JSON.stringify(nestedNote)).toContain('Nested body');
+    expect(JSON.stringify(nestedNote)).not.toContain('Nested Page');
+
+    const [folder] = [...(folderHierarchy?.children.values() ?? [])];
+    expect(folder?.name).toBe('Notion Export');
+    const workspaceMeta = collection.meta.docMetas.find(
+      meta => meta.title === 'Workspace'
+    );
+    expect([...folder!.children.values()]).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ pageId: workspaceMeta?.id }),
+      ])
+    );
+    const workspaceFolder = [...folder!.children.values()].find(
+      child => child.name === 'Workspace'
+    );
+    const nestedMeta = collection.meta.docMetas.find(
+      meta => meta.title === 'Nested Page'
+    );
+    expect([...workspaceFolder!.children.values()]).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ pageId: nestedMeta?.id }),
+      ])
+    );
+  });
+
+  test('imports notion markdown zip folders with CJK names', async () => {
+    const schema = new Schema().register(AffineSchemas);
+    const collection = new TestWorkspace();
+    collection.storeExtensions = testStoreExtensions;
+    collection.meta.initialize();
+
+    const imported = zipFixture({
+      'Export/工作 11111111111111111111111111111111.md': '# 工作\nRoot body',
+      'Export/工作 11111111111111111111111111111111/SDK架构 22222222222222222222222222222222.md':
+        '# SDK架构\nNested body',
+    });
+
+    const { folderHierarchy } =
+      await MarkdownTransformer.importNotionMarkdownZip({
+        collection,
+        schema,
+        imported,
+        extensions: testStoreExtensions,
+      });
+
+    const [rootFolder] = [...(folderHierarchy?.children.values() ?? [])];
+    expect(rootFolder?.name).toBe('Export');
+    const workFolder = [...(rootFolder?.children.values() ?? [])].find(
+      child => child.name === '工作'
+    );
+    expect(workFolder?.name).toBe('工作');
+    expect([...workFolder!.children.values()]).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ pageId: expect.any(String) }),
+      ])
+    );
+  });
+
   test('imports markdown zip relative doc links as linked pages', async () => {
     const schema = new Schema().register(AffineSchemas);
     const collection = new TestWorkspace();
     collection.storeExtensions = testStoreExtensions;
     collection.meta.initialize();
 
-    const imported = markdownZipFixture({
+    const imported = zipFixture({
       'entry.md': [
         '[引用](./test/2.md)',
         '[missing](./missing.md)',
@@ -349,6 +448,47 @@ Hello world
     expect(entryDeltas).toContainEqual({
       insert: 'external',
       link: 'https://example.com/test.md',
+    });
+  });
+
+  test('imports notion markdown zip relative doc links as linked pages', async () => {
+    const schema = new Schema().register(AffineSchemas);
+    const collection = new TestWorkspace();
+    collection.storeExtensions = testStoreExtensions;
+    collection.meta.initialize();
+
+    const imported = zipFixture({
+      'Workspace 11111111111111111111111111111111/Entry 22222222222222222222222222222222.md':
+        '# Entry\n[引用](./test/Target%2033333333333333333333333333333333.md)',
+      'Workspace 11111111111111111111111111111111/test/Target 33333333333333333333333333333333.md':
+        '# Target\ntarget page',
+    });
+
+    const { docIds } = await MarkdownTransformer.importNotionMarkdownZip({
+      collection,
+      schema,
+      imported,
+      extensions: testStoreExtensions,
+    });
+    expect(docIds).toHaveLength(2);
+
+    const titleById = new Map(
+      collection.meta.docMetas.map(meta => [
+        meta.id,
+        meta.title ?? '<untitled>',
+      ])
+    );
+    const entryDeltas = collectSimplifiedDeltas(
+      snapshotDocByTitle(collection, 'Entry', titleById)
+    );
+
+    expect(entryDeltas).toContainEqual({
+      insert: ' ',
+      reference: {
+        type: 'LinkedPage',
+        page: 'Target',
+        title: '引用',
+      },
     });
   });
 

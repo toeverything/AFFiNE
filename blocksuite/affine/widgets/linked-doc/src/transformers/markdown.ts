@@ -350,6 +350,93 @@ type ImportMarkdownZipOptions = {
   extensions: ExtensionType[];
 };
 
+type PrepareMarkdownFileOptions = {
+  filename: string;
+  markdown: string;
+};
+
+type PreparedMarkdownFile = {
+  content: string;
+  meta: ParsedFrontmatterMeta;
+  preferredTitle: string;
+};
+
+type ImportMarkdownZipInternalOptions = ImportMarkdownZipOptions & {
+  createRootFolderForTopLevelDocs?: boolean;
+  normalizeFolderName?: (folderName: string) => string;
+  prepareMarkdownFile?: (
+    options: PrepareMarkdownFileOptions
+  ) => PreparedMarkdownFile;
+  preserveCommonRoot?: boolean;
+  recursiveZip?: boolean;
+};
+
+function getFileNameWithoutExtension(filename: string) {
+  return filename.replace(/\.[^/.]+$/, '');
+}
+
+function stripNotionHash(name: string) {
+  return name
+    .replace(
+      /\s+[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+      ''
+    )
+    .replace(/\s+[0-9a-f]{32}$/i, '');
+}
+
+function parseNotionMarkdownTitle(markdown: string):
+  | {
+      title: string;
+      content: string;
+    }
+  | undefined {
+  const match = markdown.match(/^\uFEFF?#(?!#)\s+(.+?)\s*(?:\r?\n|$)/);
+  if (!match) {
+    return;
+  }
+
+  const title = match?.[1]?.trim();
+  if (!title) {
+    return;
+  }
+
+  return {
+    title,
+    content: markdown.slice(match[0].length),
+  };
+}
+
+function prepareDefaultMarkdownFile({
+  filename,
+  markdown,
+}: PrepareMarkdownFileOptions): PreparedMarkdownFile {
+  const fileNameWithoutExt = getFileNameWithoutExtension(filename);
+  const { content, meta } = parseFrontmatter(markdown);
+  return {
+    content,
+    meta,
+    preferredTitle: meta.title ?? fileNameWithoutExt,
+  };
+}
+
+function prepareNotionMarkdownFile({
+  filename,
+  markdown,
+}: PrepareMarkdownFileOptions): PreparedMarkdownFile {
+  const notionTitle = parseNotionMarkdownTitle(markdown);
+  const { content, meta } = parseFrontmatter(notionTitle?.content ?? markdown);
+  const fallbackTitle = stripNotionHash(getFileNameWithoutExtension(filename));
+
+  return {
+    content,
+    meta: {
+      ...meta,
+      title: notionTitle?.title ?? fallbackTitle,
+    },
+    preferredTitle: notionTitle?.title ?? fallbackTitle,
+  };
+}
+
 /**
  * Filters hidden/system entries that should never participate in imports.
  */
@@ -616,13 +703,48 @@ async function importMarkdownZip({
   imported,
   extensions,
 }: ImportMarkdownZipOptions): Promise<ImportMarkdownZipResult> {
+  return importMarkdownZipInternal({
+    collection,
+    schema,
+    imported,
+    extensions,
+  });
+}
+
+async function importNotionMarkdownZip({
+  collection,
+  schema,
+  imported,
+  extensions,
+}: ImportMarkdownZipOptions): Promise<ImportMarkdownZipResult> {
+  return importMarkdownZipInternal({
+    collection,
+    schema,
+    imported,
+    extensions,
+    normalizeFolderName: stripNotionHash,
+    prepareMarkdownFile: prepareNotionMarkdownFile,
+    preserveCommonRoot: true,
+    createRootFolderForTopLevelDocs: true,
+    recursiveZip: true,
+  });
+}
+
+async function importMarkdownZipInternal({
+  collection,
+  schema,
+  imported,
+  extensions,
+  createRootFolderForTopLevelDocs = false,
+  normalizeFolderName,
+  prepareMarkdownFile = prepareDefaultMarkdownFile,
+  preserveCommonRoot = false,
+  recursiveZip = false,
+}: ImportMarkdownZipInternalOptions): Promise<ImportMarkdownZipResult> {
   const provider = getProvider([
     markdownZipDocLinkToDeltaMatcher,
     ...extensions,
   ]);
-  const unzip = new Unzip();
-  await unzip.load(imported);
-
   const docIds: string[] = [];
   const pendingAssets: AssetMap = new Map();
   const pendingPathBlobIdMap: PathBlobIdMap = new Map();
@@ -630,43 +752,49 @@ async function importMarkdownZip({
   const pendingPagePathIdMap = new Map<string, string>();
   const markdownBlobs: Array<ImportedFileEntry & { pageId: string }> = [];
 
-  // Iterate over all files in the zip
-  for (const { path, content: blob } of unzip) {
-    // Skip the files that are not markdown files
-    if (isSystemImportPath(path)) {
-      continue;
-    }
+  async function collectZipEntries(zipBlob: Blob) {
+    const unzip = new Unzip();
+    await unzip.load(zipBlob);
 
-    // Get the file name
-    const fileName = path.split('/').pop() ?? '';
-    // If the file is a markdown file, store it to markdownBlobs
-    if (fileName.endsWith('.md')) {
-      const pageId = collection.idGenerator();
-      registerMarkdownZipPagePath(pendingPagePathIdMap, path, pageId);
-      markdownBlobs.push({
-        filename: fileName,
-        contentBlob: blob,
-        fullPath: path,
-        pageId,
-      });
-    } else {
-      await stageImportedAsset({
-        pendingAssets,
-        pendingPathBlobIdMap,
-        path,
-        content: blob,
-        fileName,
-      });
+    for (const { path, content: blob } of unzip) {
+      if (isSystemImportPath(path)) {
+        continue;
+      }
+
+      const fileName = path.split('/').pop() ?? '';
+      if (fileName.endsWith('.md')) {
+        const pageId = collection.idGenerator();
+        registerMarkdownZipPagePath(pendingPagePathIdMap, path, pageId);
+        markdownBlobs.push({
+          filename: fileName,
+          contentBlob: blob,
+          fullPath: path,
+          pageId,
+        });
+      } else if (recursiveZip && fileName.endsWith('.zip')) {
+        await collectZipEntries(blob);
+      } else {
+        await stageImportedAsset({
+          pendingAssets,
+          pendingPathBlobIdMap,
+          path,
+          content: blob,
+          fileName,
+        });
+      }
     }
   }
+
+  await collectZipEntries(imported);
 
   await Promise.all(
     markdownBlobs.map(async markdownFile => {
       const { filename, contentBlob, fullPath, pageId } = markdownFile;
-      const fileNameWithoutExt = filename.replace(/\.[^/.]+$/, '');
       const markdown = await contentBlob.text();
-      const { content, meta } = parseFrontmatter(markdown);
-      const preferredTitle = meta.title ?? fileNameWithoutExt;
+      const { content, meta, preferredTitle } = prepareMarkdownFile({
+        filename,
+        markdown,
+      });
       const job = createMarkdownImportJob({
         collection,
         schema,
@@ -692,7 +820,12 @@ async function importMarkdownZip({
   );
 
   // Build folder hierarchy from zip paths
-  const folderHierarchy = buildMarkdownZipFolderHierarchy(docPathMap);
+  const folderHierarchy = buildMarkdownZipFolderHierarchy(
+    docPathMap,
+    normalizeFolderName,
+    preserveCommonRoot,
+    createRootFolderForTopLevelDocs
+  );
 
   return { docIds, folderHierarchy };
 }
@@ -705,15 +838,28 @@ async function importMarkdownZip({
  * hierarchy starts one level deeper.
  */
 function buildMarkdownZipFolderHierarchy(
-  entries: Array<{ fullPath: string; docId: string }>
+  entries: Array<{ fullPath: string; docId: string }>,
+  normalizeFolderName?: (folderName: string) => string,
+  preserveCommonRoot = false,
+  createRootFolderForTopLevelDocs = false
 ): FolderHierarchy | undefined {
   if (entries.length === 0) return undefined;
 
-  // Check if any entries have folder structure
+  // Check once whether all entries share a common root directory
+  const candidateRoot = entries[0]?.fullPath.split('/').find(Boolean);
+  const skipRoot =
+    !preserveCommonRoot &&
+    !!candidateRoot &&
+    entries.every(e => e.fullPath.startsWith(candidateRoot + '/'));
+
+  // Check if any entries have folder structure after the common root is stripped.
   const hasSubfolders = entries.some(e => {
     const parts = e.fullPath.split('/').filter(Boolean);
-    // More than just "root/file.md" -- need at least one real subfolder
-    return parts.length > 2;
+    const fileName = parts.pop();
+    const folderParts = skipRoot ? parts.slice(1) : parts;
+    return (
+      folderParts.length > 0 || (createRootFolderForTopLevelDocs && !!fileName)
+    );
   });
   if (!hasSubfolders) {
     // All files are at the same level, no folder hierarchy needed
@@ -726,18 +872,15 @@ function buildMarkdownZipFolderHierarchy(
     children: new Map(),
   };
 
-  // Check once whether all entries share a common root directory
-  const candidateRoot = entries[0]?.fullPath.split('/').find(Boolean);
-  const skipRoot =
-    !!candidateRoot &&
-    entries.every(e => e.fullPath.startsWith(candidateRoot + '/'));
-
   for (const { fullPath, docId } of entries) {
     const parts = fullPath.split('/').filter(Boolean);
     const fileName = parts.pop(); // Remove filename
     if (!fileName) continue;
 
-    let folderParts = skipRoot ? parts.slice(1) : parts;
+    const folderParts = skipRoot ? parts.slice(1) : parts;
+    if (folderParts.length === 0 && createRootFolderForTopLevelDocs) {
+      folderParts.push(getFileNameWithoutExtension(fileName));
+    }
 
     if (folderParts.length === 0) {
       // Root-level file, no folder needed
@@ -753,7 +896,7 @@ function buildMarkdownZipFolderHierarchy(
 
       if (!current.children.has(folderName)) {
         current.children.set(folderName, {
-          name: folderName,
+          name: normalizeFolderName?.(folderName) ?? folderName,
           path: currentPath,
           parentPath: parentPath || undefined,
           children: new Map(),
@@ -781,4 +924,5 @@ export const MarkdownTransformer = {
   importMarkdownToBlock,
   importMarkdownToDoc,
   importMarkdownZip,
+  importNotionMarkdownZip,
 };
