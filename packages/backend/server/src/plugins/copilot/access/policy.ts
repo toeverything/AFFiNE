@@ -28,12 +28,12 @@ export type CopilotTurnRouteAccess = {
 export class CopilotAccessPolicy {
   constructor(
     private readonly conversationPolicy: ConversationPolicy,
-    private readonly byok?: ByokService
+    private readonly byok: ByokService
   ) {}
 
   async getByokProfiles(context: CopilotAccessContext = {}) {
     const coverage = getByokSourceCoverage(context.featureKind);
-    return (await this.byok?.getProfiles(context, coverage)) ?? [];
+    return await this.byok.getProfiles(context, coverage);
   }
 
   async canUseQuotaBackedRoutes(context: CopilotAccessContext = {}) {

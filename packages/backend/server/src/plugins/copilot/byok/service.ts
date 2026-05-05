@@ -262,7 +262,7 @@ export class ByokService {
     workspaceId: string;
     provider: ByokProvider;
     storage: ByokKeyStorage;
-    apiKey: string;
+    apiKey?: string | null;
     endpoint?: string | null;
     configId?: string | null;
     userId?: string;
@@ -280,10 +280,31 @@ export class ByokService {
       );
     }
     this.assertProvider(input.provider);
-    const endpoint = this.normalizeEndpoint(input.endpoint);
+    let apiKey = input.apiKey;
+    let endpoint = this.normalizeEndpoint(input.endpoint);
+    if (!apiKey && input.configId && input.storage === ByokKeyStorage.server) {
+      const config = await this.models.copilotWorkspaceByokConfig.get(
+        input.configId
+      );
+      if (
+        !config ||
+        config.workspaceId !== input.workspaceId ||
+        config.provider !== input.provider
+      ) {
+        throw new BadRequestException('BYOK config not found.');
+      }
+      apiKey = this.crypto.decrypt(config.encryptedApiKey);
+      endpoint =
+        input.endpoint !== undefined
+          ? endpoint
+          : this.normalizeEndpoint(config.endpoint);
+    }
+    if (!apiKey) {
+      throw new BadRequestException('apiKey is required.');
+    }
 
     try {
-      await this.runProviderProbe(input.provider, input.apiKey, endpoint);
+      await this.runProviderProbe(input.provider, apiKey, endpoint);
       if (input.configId && input.storage === ByokKeyStorage.server) {
         await this.models.copilotWorkspaceByokConfig.markValidated(
           input.workspaceId,
@@ -703,7 +724,7 @@ export class ByokService {
       const request = this.buildProbeRequest(provider, apiKey, endpoint);
       const response = await fetch(request.url, {
         method: request.method,
-        headers: request.headers as Record<string, string>,
+        headers: request.headers as unknown as Record<string, string>,
         signal: controller.signal,
       });
       if (!response.ok) {
@@ -738,8 +759,8 @@ export class ByokService {
       case ByokProvider.gemini:
         return {
           method: 'GET',
-          url: `${endpoint ?? 'https://generativelanguage.googleapis.com/v1beta'}/models?key=${encodeURIComponent(apiKey)}`,
-          headers: {},
+          url: `${endpoint ?? 'https://generativelanguage.googleapis.com/v1beta'}/models`,
+          headers: { 'x-goog-api-key': apiKey },
         };
       case ByokProvider.fal:
         return {
@@ -761,6 +782,7 @@ export class ByokService {
       .replaceAll(/sk-[a-zA-Z0-9_-]+/g, 'sk-***')
       .replaceAll(/Bearer\s+[a-zA-Z0-9._-]+/gi, 'Bearer ***')
       .replaceAll(/Key\s+[a-zA-Z0-9._:-]+/gi, 'Key ***')
+      .replaceAll(/([?&]key=)[^&\s]+/gi, '$1***')
       .slice(0, 300);
   }
 

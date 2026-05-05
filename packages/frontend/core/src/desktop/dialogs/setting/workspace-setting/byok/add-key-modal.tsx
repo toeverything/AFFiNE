@@ -8,6 +8,7 @@ import {
 import { useI18n } from '@affine/i18n';
 import { useCallback, useEffect, useState } from 'react';
 
+import { logByokError } from './errors';
 import * as styles from './index.css';
 import { readLocalKeys, upsertLocalKey } from './local-storage';
 import { byokT, providerLabels, storageLabel } from './metadata';
@@ -55,6 +56,11 @@ export const AddKeyModal = ({
   const [endpoint, setEndpoint] = useState('');
   const [testResult, setTestResult] = useState<ByokTestResult | null>(null);
   const [testing, setTesting] = useState(false);
+  const canTestStoredConfig =
+    storage === ByokKeyStorage.server &&
+    editingKey?.storage === ByokKeyStorage.server &&
+    editingKey.provider === provider;
+  const canTest = !!apiKey || canTestStoredConfig;
 
   useEffect(() => {
     if (!open) {
@@ -85,12 +91,9 @@ export const AddKeyModal = ({
             workspaceId,
             provider,
             storage,
-            apiKey,
+            apiKey: apiKey || null,
             endpoint: endpoint || null,
-            configId:
-              editingKey?.storage === ByokKeyStorage.server
-                ? editingKey.id
-                : null,
+            configId: canTestStoredConfig ? editingKey.id : null,
           },
         },
       });
@@ -107,7 +110,17 @@ export const AddKeyModal = ({
     } finally {
       setTesting(false);
     }
-  }, [apiKey, editingKey, endpoint, gql, provider, storage, t, workspaceId]);
+  }, [
+    apiKey,
+    canTestStoredConfig,
+    editingKey,
+    endpoint,
+    gql,
+    provider,
+    storage,
+    t,
+    workspaceId,
+  ]);
 
   const save = useCallback(async () => {
     if (!testResult?.ok || !gql) {
@@ -152,7 +165,7 @@ export const AddKeyModal = ({
             name,
             description,
             storage,
-            apiKey,
+            apiKey: apiKey || null,
             endpoint: endpoint || null,
             enabled: true,
           },
@@ -295,10 +308,14 @@ export const AddKeyModal = ({
           </span>
           <Button
             variant="secondary"
-            disabled={!apiKey || testing}
+            disabled={!canTest || testing}
             onClick={() => {
               testKey().catch(error => {
-                console.error(error);
+                logByokError('Failed to test BYOK key', error);
+                notify.error({
+                  title: byokT(t, 'notify.test-failed.title'),
+                  message: byokT(t, 'notify.operation-failed.message'),
+                });
               });
             }}
           >
@@ -312,7 +329,11 @@ export const AddKeyModal = ({
             disabled={!testResult?.ok || !name}
             onClick={() => {
               save().catch(error => {
-                console.error(error);
+                logByokError('Failed to save BYOK key', error);
+                notify.error({
+                  title: byokT(t, 'notify.save-failed.title'),
+                  message: byokT(t, 'notify.operation-failed.message'),
+                });
               });
             }}
           >

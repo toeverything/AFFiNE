@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
 import { NoCopilotProviderAvailable } from '../../../base';
 import {
@@ -28,6 +28,8 @@ import {
   NativeProviderAdapter,
   type NativeProviderAdapterOptions,
 } from './tool/native-adapter';
+
+const logger = new Logger('NativeExecutionEngine');
 
 function modelIdForError(modelId?: string) {
   return modelId ?? 'auto';
@@ -87,15 +89,23 @@ async function recordByokUsage(
   }
 ) {
   const context = getUsageContext(plan);
-  await byok?.recordUsage({
-    workspaceId: context.workspaceId,
-    userId: context.userId,
-    sessionId: context.sessionId,
-    featureKind: context.featureKind as ByokFeatureKind,
-    providerId: input.providerId,
-    model: input.model,
-    usage: input.usage,
-  });
+  try {
+    await byok?.recordUsage({
+      workspaceId: context.workspaceId,
+      userId: context.userId,
+      sessionId: context.sessionId,
+      featureKind: context.featureKind as ByokFeatureKind,
+      providerId: input.providerId,
+      model: input.model,
+      usage: input.usage,
+    });
+  } catch (error) {
+    logger.warn(
+      `Failed to record BYOK usage: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    );
+  }
 }
 
 async function recordSingleByokRouteFailure(
@@ -108,12 +118,20 @@ async function recordSingleByokRouteFailure(
     return;
   }
   const context = getUsageContext(plan);
-  await byok?.recordProviderFailure({
-    workspaceId: context.workspaceId,
-    providerId,
-    featureKind: context.featureKind as ByokFeatureKind,
-    error,
-  });
+  try {
+    await byok?.recordProviderFailure({
+      workspaceId: context.workspaceId,
+      providerId,
+      featureKind: context.featureKind as ByokFeatureKind,
+      error,
+    });
+  } catch (recordError) {
+    logger.warn(
+      `Failed to record BYOK provider failure: ${
+        recordError instanceof Error ? recordError.message : String(recordError)
+      }`
+    );
+  }
 }
 
 function recordPreparedDispatch(

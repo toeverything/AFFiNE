@@ -201,8 +201,8 @@ class TestWorkspaceByokConfigInput {
   @Field(() => ByokKeyStorage)
   storage!: ByokKeyStorage;
 
-  @Field(() => String)
-  apiKey!: string;
+  @Field(() => String, { nullable: true })
+  apiKey?: string | null;
 
   @Field(() => String, { nullable: true })
   endpoint?: string | null;
@@ -321,6 +321,7 @@ export class WorkspaceByokResolver {
   }
 
   @Mutation(() => WorkspaceByokKeyConfigType)
+  @Throttle('strict')
   async upsertWorkspaceByokConfig(
     @CurrentUser() user: CurrentUser,
     @Args('input') input: UpsertWorkspaceByokConfigInput
@@ -336,6 +337,7 @@ export class WorkspaceByokResolver {
   }
 
   @Mutation(() => [WorkspaceByokKeyConfigType])
+  @Throttle('strict')
   async reorderWorkspaceByokConfigs(
     @CurrentUser() user: CurrentUser,
     @Args('input') input: ReorderWorkspaceByokConfigsInput
@@ -351,6 +353,7 @@ export class WorkspaceByokResolver {
   }
 
   @Mutation(() => Boolean)
+  @Throttle('strict')
   async deleteWorkspaceByokConfig(
     @CurrentUser() user: CurrentUser,
     @Args('id', { type: () => ID }) id: string,
@@ -367,6 +370,7 @@ export class WorkspaceByokResolver {
   }
 
   @Mutation(() => Boolean)
+  @Throttle('strict')
   async clearWorkspaceByokConfigs(
     @CurrentUser() user: CurrentUser,
     @Args('workspaceId', { type: () => String }) workspaceId: string,
@@ -384,6 +388,7 @@ export class WorkspaceByokResolver {
   }
 
   @Mutation(() => CreateWorkspaceByokLocalLeaseResultType)
+  @Throttle('strict')
   async createWorkspaceByokLocalLease(
     @CurrentUser() user: CurrentUser,
     @Args('input') input: CreateWorkspaceByokLocalLeaseInput

@@ -145,6 +145,8 @@ vi.mock('@affine/i18n', () => {
     'com.affine.settings.workspace.byok.action.test-key': 'Test key',
     'com.affine.settings.workspace.byok.action.save-key': 'Save key',
     'com.affine.settings.workspace.byok.action.cancel': 'Cancel',
+    'com.affine.settings.workspace.byok.action.clear-all':
+      'Clear all BYOK keys',
     'com.affine.settings.workspace.byok.field.api-key': 'API key',
     'com.affine.settings.workspace.byok.field.storage': 'Key storage',
     'com.affine.settings.workspace.byok.placeholder.key-name': 'Primary',
@@ -157,6 +159,21 @@ vi.mock('@affine/i18n', () => {
       'Local (this device)',
     'com.affine.settings.workspace.byok.storage.local-desktop-only':
       'Local (Desktop only)',
+    'com.affine.settings.workspace.byok.usage.tokens': '{{count}} tokens',
+    'com.affine.settings.workspace.byok.notify.operation-failed.message':
+      'Please try again.',
+    'com.affine.settings.workspace.byok.notify.test-failed.title':
+      'Key test failed',
+    'com.affine.settings.workspace.byok.notify.load-failed.title':
+      'BYOK settings not loaded',
+    'com.affine.settings.workspace.byok.notify.save-failed.title':
+      'BYOK key not saved',
+    'com.affine.settings.workspace.byok.notify.delete-failed.title':
+      'BYOK key not deleted',
+    'com.affine.settings.workspace.byok.notify.reorder-failed.title':
+      'BYOK keys not reordered',
+    'com.affine.settings.workspace.byok.notify.clear-failed.title':
+      'BYOK keys not cleared',
   };
   const translate = (key: string, options?: Record<string, unknown>) => {
     let message = messages[key] ?? key;
@@ -218,6 +235,7 @@ vi.mock('@toeverything/infra', async importOriginal => {
 });
 
 import { WorkspaceByokSetting } from '.';
+import { UsagePanel } from './usage';
 
 function settings(overrides: Record<string, unknown> = {}) {
   return {
@@ -562,5 +580,94 @@ describe('WorkspaceByokSetting', () => {
         })
       );
     });
+  });
+
+  test('tests a saved server key without resending plaintext', async () => {
+    gqlMock.mockImplementation(async ({ query }) => {
+      if (query === workspaceByokSettingsQuery) {
+        return settingsResponse({
+          keys: [byokKey()],
+        });
+      }
+      if (query === testWorkspaceByokConfigMutation) {
+        return {
+          testWorkspaceByokConfig: {
+            ok: true,
+            status: 'passed',
+            message: null,
+          },
+        };
+      }
+      if (query === upsertWorkspaceByokConfigMutation) {
+        return {
+          upsertWorkspaceByokConfig: {
+            id: 'server-key',
+          },
+        };
+      }
+      throw new Error('Unexpected GraphQL operation');
+    });
+
+    render(<WorkspaceByokSetting />);
+
+    await screen.findByText('OpenAI / Primary');
+    fireEvent.click(screen.getByText('Edit'));
+    expect(screen.getByText<HTMLButtonElement>('Test key').disabled).toBe(
+      false
+    );
+    fireEvent.click(screen.getByText('Test key'));
+
+    await waitFor(() => {
+      expect(gqlMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          query: testWorkspaceByokConfigMutation,
+          variables: expect.objectContaining({
+            input: expect.objectContaining({
+              apiKey: null,
+              configId: 'server-key',
+            }),
+          }),
+        })
+      );
+    });
+
+    await screen.findByText('Key verified');
+    fireEvent.click(screen.getByText('Save key'));
+
+    await waitFor(() => {
+      expect(gqlMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          query: upsertWorkspaceByokConfigMutation,
+          variables: expect.objectContaining({
+            input: expect.objectContaining({
+              apiKey: null,
+              id: 'server-key',
+            }),
+          }),
+        })
+      );
+    });
+  });
+});
+
+describe('UsagePanel', () => {
+  afterEach(() => {
+    cleanup();
+  });
+
+  test('aggregates usage rows by date before rendering bars', () => {
+    const today = new Date().toISOString();
+    render(
+      <UsagePanel
+        keys={[byokKey()]}
+        usage={[
+          { date: today, featureKind: 'chat', totalTokens: 3 },
+          { date: today, featureKind: 'transcript', totalTokens: 5 },
+        ]}
+        onClearAll={() => {}}
+      />
+    );
+
+    expect(screen.getByTitle('8 tokens')).not.toBeNull();
   });
 });

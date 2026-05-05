@@ -76,7 +76,17 @@ async function createWorkspaceByokLocalLease(
     });
     return result.createWorkspaceByokLocalLease.leaseId;
   } catch (error) {
-    console.error('Failed to create workspace BYOK local lease', error);
+    const message =
+      error instanceof Error ? error.message : 'Unknown BYOK lease error';
+    console.warn(
+      `Failed to create workspace BYOK local lease: ${message
+        .replaceAll(/sk-[a-zA-Z0-9_-]+/g, 'sk-***')
+        .replaceAll(/Bearer\s+[a-zA-Z0-9._-]+/gi, 'Bearer ***')
+        .replaceAll(/Key\s+[a-zA-Z0-9._:-]+/gi, 'Key ***')
+        .replaceAll(/([?&]key=)[^&\s]+/gi, '$1***')
+        .replaceAll(/("apiKey"\s*:\s*")[^"]+/gi, '$1***')
+        .slice(0, 300)}`
+    );
     return undefined;
   }
 }

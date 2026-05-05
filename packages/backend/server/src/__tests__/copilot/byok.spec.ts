@@ -566,7 +566,6 @@ test('test key failure disables a saved key and success restores it', async t =>
     userId: user.id,
     provider: ByokProvider.openai,
     storage: ByokKeyStorage.server,
-    apiKey: 'sk-test-primary',
     configId: key.id,
   });
   t.true(passed.ok);
@@ -627,6 +626,40 @@ test('local key test does not mutate saved server config', async t => {
   t.true(unchanged.enabled);
   t.is(unchanged.disabledReason, null);
   t.is(unchanged.lastValidationError, null);
+});
+
+test('Gemini key test sends key in header and redacts query key errors', async t => {
+  const { user, workspace } = await createUserWorkspace(t);
+  await t.context.models.userFeature.add(user.id, 'pro_plan_v1', 'test');
+
+  const fetch = Sinon.stub(globalThis, 'fetch').resolves(
+    new Response(
+      'failed https://generativelanguage.googleapis.com/v1beta/models?key=gemini-secret',
+      { status: 401 }
+    )
+  );
+  t.teardown(() => fetch.restore());
+
+  const result = await t.context.byok.testConfig({
+    workspaceId: workspace.id,
+    userId: user.id,
+    provider: ByokProvider.gemini,
+    storage: ByokKeyStorage.server,
+    apiKey: 'gemini-secret',
+  });
+
+  t.false(result.ok);
+  t.is(
+    fetch.firstCall.args[0],
+    'https://generativelanguage.googleapis.com/v1beta/models'
+  );
+  t.is(
+    (fetch.firstCall.args[1]!.headers as Record<string, string>)[
+      'x-goog-api-key'
+    ],
+    'gemini-secret'
+  );
+  t.false(result.message?.includes('gemini-secret'));
 });
 
 test('dispatch failure disables server BYOK key by provider id', async t => {
@@ -785,4 +818,75 @@ test('usage query only returns byok sources', async t => {
   t.is(usage.length, 1);
   t.is(usage[0].featureKind, 'chat');
   t.is(usage[0].totalTokens, 3);
+});
+
+test('usage query aggregates BYOK usage by day and feature in the database', async t => {
+  const { user, workspace } = await createUserWorkspace(t);
+  const day = new Date('2026-01-02T08:30:00.000Z');
+  await t.context.db.aiUsageEvent.createMany({
+    data: [
+      {
+        workspaceId: workspace.id,
+        userId: user.id,
+        provider: 'openai',
+        providerSource: 'byok_server',
+        featureKind: 'chat',
+        totalTokens: 3,
+        createdAt: day,
+      },
+      {
+        workspaceId: workspace.id,
+        userId: user.id,
+        provider: 'openai',
+        providerSource: 'byok_server',
+        featureKind: 'chat',
+        totalTokens: 5,
+        createdAt: new Date('2026-01-02T20:10:00.000Z'),
+      },
+      {
+        workspaceId: workspace.id,
+        userId: user.id,
+        provider: 'gemini',
+        providerSource: 'byok_local',
+        featureKind: 'transcript',
+        totalTokens: 7,
+        createdAt: new Date('2026-01-02T21:00:00.000Z'),
+      },
+      {
+        workspaceId: workspace.id,
+        userId: user.id,
+        provider: 'openai',
+        providerSource: 'affine_plan',
+        featureKind: 'chat',
+        totalTokens: 99,
+        createdAt: day,
+      },
+    ],
+  });
+
+  const usage = await t.context.byok.getUsage(
+    workspace.id,
+    new Date('2026-01-01T00:00:00.000Z'),
+    new Date('2026-01-03T00:00:00.000Z')
+  );
+
+  t.deepEqual(
+    usage.map(point => ({
+      date: point.date.toISOString(),
+      featureKind: point.featureKind,
+      totalTokens: point.totalTokens,
+    })),
+    [
+      {
+        date: '2026-01-02T00:00:00.000Z',
+        featureKind: 'chat',
+        totalTokens: 8,
+      },
+      {
+        date: '2026-01-02T00:00:00.000Z',
+        featureKind: 'transcript',
+        totalTokens: 7,
+      },
+    ]
+  );
 });

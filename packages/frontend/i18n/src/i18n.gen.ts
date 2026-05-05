@@ -6170,6 +6170,30 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.workspace.byok.notify.local-save-failed.message"](): string;
     /**
+      * `BYOK settings not loaded`
+      */
+    ["com.affine.settings.workspace.byok.notify.load-failed.title"](): string;
+    /**
+      * `BYOK key not saved`
+      */
+    ["com.affine.settings.workspace.byok.notify.save-failed.title"](): string;
+    /**
+      * `BYOK key not deleted`
+      */
+    ["com.affine.settings.workspace.byok.notify.delete-failed.title"](): string;
+    /**
+      * `BYOK keys not reordered`
+      */
+    ["com.affine.settings.workspace.byok.notify.reorder-failed.title"](): string;
+    /**
+      * `BYOK keys not cleared`
+      */
+    ["com.affine.settings.workspace.byok.notify.clear-failed.title"](): string;
+    /**
+      * `Please try again.`
+      */
+    ["com.affine.settings.workspace.byok.notify.operation-failed.message"](): string;
+    /**
       * `Cannot reorder across storage`
       */
     ["com.affine.settings.workspace.byok.notify.cross-storage-reorder.title"](): string;

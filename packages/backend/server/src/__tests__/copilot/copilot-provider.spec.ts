@@ -976,8 +976,10 @@ for (const testCase of TRANSCRIPT_AUDIO_CASES) {
     runIfCopilotConfigured,
     async t => {
       const { models, transcript } = t.context;
-      const userId = `copilot-provider-transcript-user-${randomUUID()}`;
-      const workspaceId = `copilot-provider-transcript-workspace-${randomUUID()}`;
+      const user = await models.user.create({
+        email: `copilot-provider-transcript-${randomUUID()}@affine.pro`,
+      });
+      const workspace = await models.workspace.create(user.id);
       const blobId = `copilot-provider-transcript-blob-${randomUUID()}`;
       const payload = TranscriptPayloadSchema.parse({
         sourceAudio: { blobId, mimeType: testCase.mimeType },
@@ -990,8 +992,8 @@ for (const testCase of TRANSCRIPT_AUDIO_CASES) {
         ],
       });
       const task = await models.copilotTranscriptTask.create({
-        userId,
-        workspaceId,
+        userId: user.id,
+        workspaceId: workspace.id,
         blobId,
         strategy: 'gemini',
         recipeId: 'transcript.audio.gemini',

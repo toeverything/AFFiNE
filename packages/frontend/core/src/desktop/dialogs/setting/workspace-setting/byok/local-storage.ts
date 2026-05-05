@@ -60,7 +60,11 @@ export async function upsertLocalKey(
   if (!(await localByokStorageSupported()) || !storage) {
     return null;
   }
-  return await storage.upsertWorkspaceKey(workspaceId, key);
+  try {
+    return await storage.upsertWorkspaceKey(workspaceId, key);
+  } catch {
+    return null;
+  }
 }
 
 export async function deleteLocalKey(workspaceId: string, keyId: string) {
@@ -68,7 +72,11 @@ export async function deleteLocalKey(workspaceId: string, keyId: string) {
   if (!(await localByokStorageSupported()) || !storage) {
     return false;
   }
-  return await storage.deleteWorkspaceKey(workspaceId, keyId);
+  try {
+    return await storage.deleteWorkspaceKey(workspaceId, keyId);
+  } catch {
+    return false;
+  }
 }
 
 export async function reorderLocalKeys(workspaceId: string, ids: string[]) {
@@ -76,11 +84,15 @@ export async function reorderLocalKeys(workspaceId: string, ids: string[]) {
   if (!(await localByokStorageSupported()) || !storage) {
     return [];
   }
-  const keys = (await storage.reorderWorkspaceKeys(
-    workspaceId,
-    ids
-  )) as LocalByokPublicKey[];
-  return keys.map(toLocalByokKey);
+  try {
+    const keys = (await storage.reorderWorkspaceKeys(
+      workspaceId,
+      ids
+    )) as LocalByokPublicKey[];
+    return keys.map(toLocalByokKey);
+  } catch {
+    return [];
+  }
 }
 
 export async function clearLocalKeys(workspaceId: string) {
@@ -88,5 +100,9 @@ export async function clearLocalKeys(workspaceId: string) {
   if (!(await localByokStorageSupported()) || !storage) {
     return false;
   }
-  return await storage.clearWorkspaceKeys(workspaceId);
+  try {
+    return await storage.clearWorkspaceKeys(workspaceId);
+  } catch {
+    return false;
+  }
 }

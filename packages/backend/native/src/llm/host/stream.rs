@@ -109,7 +109,7 @@ fn spawn_prepared_stream(
     if let Err(error) = &result
       && !aborted_in_worker.load(Ordering::Relaxed)
       && !callback_dispatch_failed
-      && !is_abort_error(&error)
+      && !is_abort_error(error)
     {
       emit_error_event(&callback, error.to_string(), "dispatch_error");
     }

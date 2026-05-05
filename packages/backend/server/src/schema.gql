@@ -2389,7 +2389,7 @@ enum SubscriptionVariant {
 }
 
 input TestWorkspaceByokConfigInput {
-  apiKey: String!
+  apiKey: String
   configId: ID
   endpoint: String
   provider: ByokProvider!

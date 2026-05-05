@@ -3103,7 +3103,7 @@ export enum SubscriptionVariant {
 }
 
 export interface TestWorkspaceByokConfigInput {
-  apiKey: Scalars['String']['input'];
+  apiKey?: InputMaybe<Scalars['String']['input']>;
   configId?: InputMaybe<Scalars['ID']['input']>;
   endpoint?: InputMaybe<Scalars['String']['input']>;
   provider: ByokProvider;

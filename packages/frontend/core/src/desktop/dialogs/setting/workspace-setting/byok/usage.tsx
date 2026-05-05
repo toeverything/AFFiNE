@@ -1,5 +1,6 @@
 import { Button } from '@affine/component';
 import { useI18n } from '@affine/i18n';
+import { useMemo } from 'react';
 
 import * as styles from './index.css';
 import { byokT } from './metadata';
@@ -15,6 +16,27 @@ export const UsagePanel = ({
   onClearAll: () => void;
 }) => {
   const t = useI18n();
+  const dailyUsage = useMemo(() => {
+    const totals = new Map<string, number>();
+    for (const point of usage) {
+      const day = point.date.slice(0, 10);
+      totals.set(day, (totals.get(day) ?? 0) + point.totalTokens);
+    }
+
+    const now = new Date();
+    const todayUtc = Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate()
+    );
+    const startUtc = todayUtc - 29 * 24 * 60 * 60 * 1000;
+    return Array.from({ length: 30 }).map((_, index) => {
+      const day = new Date(startUtc + index * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .slice(0, 10);
+      return totals.get(day) ?? 0;
+    });
+  }, [usage]);
 
   return (
     <div className={styles.panel}>
@@ -28,8 +50,7 @@ export const UsagePanel = ({
         </Button>
       </div>
       <div className={styles.chart}>
-        {Array.from({ length: 30 }).map((_, index) => {
-          const total = usage[index]?.totalTokens ?? 0;
+        {dailyUsage.map((total, index) => {
           const height = Math.max(2, Math.min(120, total / 1000));
           return (
             <div

@@ -18,6 +18,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { AddKeyModal } from './add-key-modal';
 import { CoveragePanel } from './coverage';
+import { logByokError } from './errors';
 import * as styles from './index.css';
 import { KeyList } from './key-list';
 import {
@@ -92,9 +93,13 @@ export const WorkspaceByokSetting = () => {
 
   useEffect(() => {
     load().catch(error => {
-      console.error(error);
+      logByokError('Failed to load BYOK settings', error);
+      notify.error({
+        title: byokT(t, 'notify.load-failed.title'),
+        message: byokT(t, 'notify.operation-failed.message'),
+      });
     });
-  }, [load]);
+  }, [load, t]);
 
   const keys = useMemo(() => {
     return [...localKeys, ...(settings?.keys ?? [])].toSorted((a, b) => {
@@ -286,7 +291,11 @@ export const WorkspaceByokSetting = () => {
                 }}
                 onDelete={key => {
                   deleteKey(key).catch(error => {
-                    console.error(error);
+                    logByokError('Failed to delete BYOK key', error);
+                    notify.error({
+                      title: byokT(t, 'notify.delete-failed.title'),
+                      message: byokT(t, 'notify.operation-failed.message'),
+                    });
                   });
                 }}
                 onDragStart={key => {
@@ -295,7 +304,11 @@ export const WorkspaceByokSetting = () => {
                 onDragEnd={() => setDraggingKey(null)}
                 onDrop={key => {
                   reorderKey(key).catch(error => {
-                    console.error(error);
+                    logByokError('Failed to reorder BYOK keys', error);
+                    notify.error({
+                      title: byokT(t, 'notify.reorder-failed.title'),
+                      message: byokT(t, 'notify.operation-failed.message'),
+                    });
                   });
                 }}
               />
@@ -316,7 +329,11 @@ export const WorkspaceByokSetting = () => {
             usage={usage}
             onClearAll={() => {
               clearAll().catch(error => {
-                console.error(error);
+                logByokError('Failed to clear BYOK keys', error);
+                notify.error({
+                  title: byokT(t, 'notify.clear-failed.title'),
+                  message: byokT(t, 'notify.operation-failed.message'),
+                });
               });
             }}
           />

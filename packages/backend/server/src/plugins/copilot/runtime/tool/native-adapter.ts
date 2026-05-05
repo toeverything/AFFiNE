@@ -1,3 +1,5 @@
+import { Logger } from '@nestjs/common';
+
 import type { LlmRequest, LlmToolLoopStreamEvent } from '../../../../native';
 import type { NodeTextMiddleware } from '../../config';
 import type { PromptMessage, StreamObject } from '../../providers/types';
@@ -108,6 +110,7 @@ function formatAttachmentFootnotes(
 }
 
 export class NativeProviderAdapter {
+  readonly logger = new Logger(NativeProviderAdapter.name);
   readonly #runtime: NativeRuntimeAdapter;
   readonly #enableCallout: boolean;
   readonly #enableCitationFootnote: boolean;
@@ -142,11 +145,19 @@ export class NativeProviderAdapter {
     ) {
       return;
     }
-    await this.#onUsage?.({
-      providerId: event.provider_id,
-      model: state.model,
-      usage: state.usage,
-    });
+    try {
+      await this.#onUsage?.({
+        providerId: event.provider_id,
+        model: state.model,
+        usage: state.usage,
+      });
+    } catch (error) {
+      this.logger.warn(
+        `Provider usage callback failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    }
     state.usage = undefined;
   }
 

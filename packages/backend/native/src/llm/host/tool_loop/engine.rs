@@ -14,8 +14,10 @@ use napi::{
   threadsafe_function::{ThreadsafeFunction, ThreadsafeFunctionCallMode},
 };
 
-use super::super::emit_provider_selected_event;
-use super::callback::{NapiEventSink, NapiToolExecutor, emit_tool_loop_event};
+use super::{
+  super::emit_provider_selected_event,
+  callback::{NapiEventSink, NapiToolExecutor, emit_tool_loop_event},
+};
 use crate::llm::{
   LlmDispatchPayload, LlmMiddlewarePayload, LlmStreamHandle, STREAM_ABORTED_REASON,
   STREAM_CALLBACK_DISPATCH_FAILED_REASON, STREAM_END_MARKER, StreamPipeline, apply_request_middlewares,

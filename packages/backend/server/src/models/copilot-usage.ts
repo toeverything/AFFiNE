@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Transactional } from '@nestjs-cls/transactional';
+import { Prisma } from '@prisma/client';
 
 import { BaseModel } from './base';
 
@@ -17,6 +18,12 @@ type CreateAiUsageEventInput = {
   completionTokens?: number;
   totalTokens?: number;
   cachedTokens?: number;
+};
+
+type UsageAggregateRow = {
+  date: Date | string;
+  featureKind: string;
+  totalTokens: number | bigint | null;
 };
 
 @Injectable()
@@ -48,32 +55,32 @@ export class CopilotUsageModel extends BaseModel {
     to: Date;
     providerSources: string[];
   }) {
-    const rows = await this.db.aiUsageEvent.groupBy({
-      by: ['featureKind', 'createdAt'],
-      where: {
-        workspaceId: input.workspaceId,
-        providerSource: { in: input.providerSources },
-        createdAt: { gte: input.from, lt: input.to },
-      },
-      _sum: { totalTokens: true },
+    if (!input.providerSources.length) return [];
+
+    const rows = await this.db.$queryRaw<UsageAggregateRow[]>(Prisma.sql`
+      SELECT
+        date_trunc('day', "created_at" AT TIME ZONE 'UTC')::date AS "date",
+        "feature_kind" AS "featureKind",
+        COALESCE(SUM("total_tokens"), 0)::bigint AS "totalTokens"
+      FROM "ai_usage_events"
+      WHERE "workspace_id" = ${input.workspaceId}
+        AND "provider_source" IN (${Prisma.join(input.providerSources)})
+        AND "created_at" >= ${input.from}
+        AND "created_at" < ${input.to}
+      GROUP BY 1, 2
+      ORDER BY 1 ASC, 2 ASC
+    `);
+
+    return rows.map(row => {
+      const day =
+        row.date instanceof Date
+          ? row.date.toISOString().slice(0, 10)
+          : row.date;
+      return {
+        date: new Date(`${day}T00:00:00.000Z`),
+        featureKind: row.featureKind,
+        totalTokens: Number(row.totalTokens ?? 0),
+      };
     });
-
-    const totals = new Map<string, number>();
-    for (const row of rows) {
-      const day = row.createdAt.toISOString().slice(0, 10);
-      const key = `${day}:${row.featureKind}`;
-      totals.set(key, (totals.get(key) ?? 0) + (row._sum.totalTokens ?? 0));
-    }
-
-    return Array.from(totals.entries())
-      .map(([key, totalTokens]) => {
-        const [day, featureKind] = key.split(':');
-        return {
-          date: new Date(`${day}T00:00:00.000Z`),
-          featureKind,
-          totalTokens,
-        };
-      })
-      .toSorted((a, b) => a.date.getTime() - b.date.getTime());
   }
 }
