@@ -188,6 +188,29 @@ function createFolderStructure(
   return { folderId: rootFolderId, docLinks };
 }
 
+function createFoldersAndLinksFromHierarchy(
+  organizeService: OrganizeService,
+  hierarchy: FolderHierarchy,
+  explorerIconService?: ExplorerIconService
+) {
+  const { folderId, docLinks } = createFolderStructure(
+    organizeService,
+    hierarchy,
+    null,
+    explorerIconService
+  );
+
+  for (const { folderId, docId } of docLinks) {
+    const folder = organizeService.folderTree.folderNode$(folderId).value;
+    if (folder) {
+      const index = folder.indexAt('after');
+      folder.createLink('doc', docId, index);
+    }
+  }
+
+  return folderId || undefined;
+}
+
 type ImportType =
   | 'markdown'
   | 'markdownZip'
@@ -365,21 +388,40 @@ const importConfigs: Record<ImportType, ImportConfig> = {
       docCollection,
       files,
       _handleImportAffineFile,
-      _organizeService,
+      organizeService,
       _explorerIconService
     ) => {
       const file = files.length === 1 ? files[0] : null;
       if (!file) {
         throw new Error('Expected a single zip file for markdownZip import');
       }
-      const docIds = await MarkdownTransformer.importMarkdownZip({
-        collection: docCollection,
-        schema: getAFFiNEWorkspaceSchema(),
-        imported: file,
-        extensions: getStoreManager().config.init().value.get('store'),
-      });
+      const { docIds, folderHierarchy } =
+        await MarkdownTransformer.importMarkdownZip({
+          collection: docCollection,
+          schema: getAFFiNEWorkspaceSchema(),
+          imported: file,
+          extensions: getStoreManager().config.init().value.get('store'),
+        });
+
+      let rootFolderId: string | undefined;
+      if (
+        folderHierarchy &&
+        organizeService &&
+        folderHierarchy.children.size > 0
+      ) {
+        try {
+          rootFolderId = createFoldersAndLinksFromHierarchy(
+            organizeService,
+            folderHierarchy
+          );
+        } catch (error) {
+          logger.warn('Failed to create markdown zip folder structure:', error);
+        }
+      }
+
       return {
         docIds,
+        rootFolderId,
       };
     },
   },
@@ -440,23 +482,11 @@ const importConfigs: Record<ImportType, ImportConfig> = {
         folderHierarchy.children.size > 0
       ) {
         try {
-          const { folderId, docLinks } = createFolderStructure(
+          rootFolderId = createFoldersAndLinksFromHierarchy(
             organizeService,
             folderHierarchy,
-            null,
             explorerIconService
           );
-          rootFolderId = folderId || undefined;
-
-          // Create links for all documents to their respective folders
-          for (const { folderId, docId } of docLinks) {
-            const folder =
-              organizeService.folderTree.folderNode$(folderId).value;
-            if (folder) {
-              const index = folder.indexAt('after');
-              folder.createLink('doc', docId, index);
-            }
-          }
         } catch (error) {
           logger.warn('Failed to create folder structure:', error);
           // Continue with import even if folder creation fails

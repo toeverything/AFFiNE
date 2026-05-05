@@ -445,7 +445,7 @@ export class StarterDebugMenu extends ShadowlessElement {
       if (!this.editor.host) return;
       toast(
         this.editor.host,
-        `Successfully imported ${result.length} markdown files.`
+        `Successfully imported ${result.docIds.length} markdown files.`
       );
     } catch (error) {
       console.error('Import markdown zip files failed:', error);

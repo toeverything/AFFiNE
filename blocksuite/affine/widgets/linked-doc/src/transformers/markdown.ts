@@ -234,6 +234,63 @@ type ImportMarkdownZipOptions = {
   extensions: ExtensionType[];
 };
 
+export type MarkdownZipFolderHierarchy = {
+  name: string;
+  path: string;
+  children: Map<string, MarkdownZipFolderHierarchy>;
+  pageId?: string;
+  parentPath?: string;
+};
+
+export type ImportMarkdownZipResult = {
+  docIds: string[];
+  folderHierarchy?: MarkdownZipFolderHierarchy;
+};
+
+function buildMarkdownZipFolderHierarchy(
+  pagePaths: Array<{ path: string; pageId: string }>
+): MarkdownZipFolderHierarchy {
+  const root: MarkdownZipFolderHierarchy = {
+    name: '',
+    path: '',
+    children: new Map(),
+  };
+
+  for (const { path, pageId } of pagePaths) {
+    const parts = path.split('/').filter(part => part.length > 0);
+    const fileName = parts.pop() ?? '';
+    if (!fileName.endsWith('.md')) {
+      continue;
+    }
+
+    let current = root;
+    let currentPath = '';
+    for (const folderName of parts) {
+      currentPath = currentPath ? `${currentPath}/${folderName}` : folderName;
+      const folderKey = `folder:${currentPath}`;
+      if (!current.children.has(folderKey)) {
+        current.children.set(folderKey, {
+          name: folderName,
+          path: currentPath,
+          parentPath: current.path || undefined,
+          children: new Map(),
+        });
+      }
+      current = current.children.get(folderKey)!;
+    }
+
+    current.children.set(`page:${path}`, {
+      name: fileName.replace(/\.md$/, ''),
+      path,
+      parentPath: current.path || undefined,
+      children: new Map(),
+      pageId,
+    });
+  }
+
+  return root;
+}
+
 /**
  * Filters hidden/system entries that should never participate in imports.
  */
@@ -460,19 +517,20 @@ async function importMarkdownToDoc({
  * @param options.collection The target doc collection
  * @param options.schema The schema of the target doc collection
  * @param options.imported The zip file as a Blob
- * @returns A Promise that resolves to an array of IDs of the newly created docs
+ * @returns A Promise that resolves to the imported doc IDs and folder hierarchy
  */
 async function importMarkdownZip({
   collection,
   schema,
   imported,
   extensions,
-}: ImportMarkdownZipOptions) {
+}: ImportMarkdownZipOptions): Promise<ImportMarkdownZipResult> {
   const provider = getProvider(extensions);
   const unzip = new Unzip();
   await unzip.load(imported);
 
   const docIds: string[] = [];
+  const pagePathsWithIds: Array<{ path: string; pageId: string }> = [];
   const pendingAssets: AssetMap = new Map();
   const pendingPathBlobIdMap: PathBlobIdMap = new Map();
   const markdownBlobs: ImportedFileEntry[] = [];
@@ -527,10 +585,17 @@ async function importMarkdownZip({
       if (doc) {
         applyMetaPatch(collection, doc.id, meta);
         docIds.push(doc.id);
+        pagePathsWithIds.push({ path: fullPath, pageId: doc.id });
       }
     })
   );
-  return docIds;
+
+  return {
+    docIds,
+    folderHierarchy: pagePathsWithIds.length
+      ? buildMarkdownZipFolderHierarchy(pagePathsWithIds)
+      : undefined,
+  };
 }
 
 export const MarkdownTransformer = {
