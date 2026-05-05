@@ -24,6 +24,7 @@ export type PasswordAesSession = {
 const AES_KEY_LENGTH = 256;
 const DEFAULT_ITERATIONS = 210_000;
 const IV_LENGTH = 12;
+const MAX_ITERATIONS = 5_000_000;
 const SALT_LENGTH = 16;
 
 const decoder = new TextDecoder();
@@ -45,15 +46,23 @@ function randomBytes(length: number): Uint8Array {
   return bytes;
 }
 
-function toArrayBuffer(data: Uint8Array | ArrayBuffer): ArrayBuffer {
-  if (data instanceof ArrayBuffer) {
-    return data;
+function toArrayBuffer(data: ArrayBuffer | ArrayBufferView): ArrayBuffer {
+  if (ArrayBuffer.isView(data)) {
+    const bytes = new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
+    return bytes.slice().buffer;
   }
 
-  return data.buffer.slice(
-    data.byteOffset,
-    data.byteOffset + data.byteLength
-  ) as ArrayBuffer;
+  return data;
+}
+
+function assertSupportedIterations(iterations: number) {
+  if (
+    !Number.isInteger(iterations) ||
+    iterations <= 0 ||
+    iterations > MAX_ITERATIONS
+  ) {
+    throw new Error('Unsupported encrypted payload iterations.');
+  }
 }
 
 export function bytesToBase64(bytes: Uint8Array): string {
@@ -123,6 +132,8 @@ function assertSupportedPayload(payload: PasswordEncryptedPayload) {
   ) {
     throw new Error('Unsupported encrypted payload.');
   }
+
+  assertSupportedIterations(payload.iterations);
 }
 
 async function decryptBytesWithKey(
@@ -205,6 +216,7 @@ export async function encryptBytesWithPassword(
   const salt = randomBytes(SALT_LENGTH);
   const iv = randomBytes(IV_LENGTH);
   const iterations = options.iterations ?? DEFAULT_ITERATIONS;
+  assertSupportedIterations(iterations);
   const key = await deriveAesKey(password, salt, iterations, ['encrypt']);
   const ciphertext = await crypto.subtle.encrypt(
     {

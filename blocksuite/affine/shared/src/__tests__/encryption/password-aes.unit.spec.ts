@@ -30,6 +30,20 @@ describe('password AES encryption', () => {
     );
   });
 
+  test('rejects unsupported payload iterations', async () => {
+    const payload = await encryptStringWithPassword('secret', 'p');
+
+    await expect(
+      decryptStringWithPassword(
+        {
+          ...payload,
+          iterations: Number.MAX_SAFE_INTEGER,
+        },
+        'p'
+      )
+    ).rejects.toThrow('Unsupported encrypted payload iterations.');
+  });
+
   test('re-encrypts updated content with an unlocked session', async () => {
     const payload = await encryptStringWithPassword('first version', 'p');
     const session = await createPasswordAesSession(payload, 'p');

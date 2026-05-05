@@ -33,7 +33,6 @@ type EncryptedBlockOverlay = {
   left: number;
   width: number;
   height: number;
-  unlocked: boolean;
 };
 
 const LOCKED_MIN_HEIGHT = 104;
@@ -183,6 +182,9 @@ export class AffineEncryptedBlocksWidget extends WidgetComponent<RootBlockModel>
     if (blockElement.dataset.affineEncryptedLocked === 'true') {
       blockElement.style.removeProperty('visibility');
       blockElement.style.removeProperty('min-height');
+      blockElement.style.removeProperty('pointer-events');
+      blockElement.removeAttribute('aria-hidden');
+      blockElement.removeAttribute('inert');
       delete blockElement.dataset.affineEncryptedLocked;
     }
   }
@@ -238,17 +240,22 @@ export class AffineEncryptedBlocksWidget extends WidgetComponent<RootBlockModel>
       .filter(model => model.role === 'content' && isBlockEncrypted(model));
   }
 
+  private _flushPendingAutoEncrypt(model: BlockModel) {
+    const timer = this._pendingEncryptTimers.get(model.id);
+    if (!timer) return;
+
+    window.clearTimeout(timer);
+    this._pendingEncryptTimers.delete(model.id);
+    persistUnlockedBlockEdits(this.store, model).catch(console.error);
+  }
+
   private _clearAutoEncrypt(model: BlockModel) {
+    this._flushPendingAutoEncrypt(model);
+
     this._autoEncryptDisposables.get(model.id)?.forEach(dispose => {
       dispose();
     });
     this._autoEncryptDisposables.delete(model.id);
-
-    const timer = this._pendingEncryptTimers.get(model.id);
-    if (timer) {
-      window.clearTimeout(timer);
-      this._pendingEncryptTimers.delete(model.id);
-    }
   }
 
   private _ensureAutoEncrypt(model: BlockModel) {
@@ -321,21 +328,25 @@ export class AffineEncryptedBlocksWidget extends WidgetComponent<RootBlockModel>
         blockElement.dataset.affineEncryptedLocked = 'true';
         blockElement.style.visibility = 'hidden';
         blockElement.style.minHeight = `${LOCKED_MIN_HEIGHT}px`;
+        blockElement.style.pointerEvents = 'none';
+        blockElement.setAttribute('aria-hidden', 'true');
+        blockElement.setAttribute('inert', '');
       }
 
       const rect = blockElement.getBoundingClientRect();
       if (rect.width <= 0 || rect.height <= 0) return;
 
-      overlays.push({
-        id: model.id,
-        flavour: model.flavour,
-        preview: getBlockEncryptedPreview(model),
-        top: rect.top - containerRect.top,
-        left: rect.left - containerRect.left,
-        width: rect.width,
-        height: Math.max(rect.height, LOCKED_MIN_HEIGHT),
-        unlocked,
-      });
+      if (!unlocked) {
+        overlays.push({
+          id: model.id,
+          flavour: model.flavour,
+          preview: getBlockEncryptedPreview(model),
+          top: rect.top - containerRect.top,
+          left: rect.left - containerRect.left,
+          width: rect.width,
+          height: Math.max(rect.height, LOCKED_MIN_HEIGHT),
+        });
+      }
     });
 
     this._styledBlockIds.forEach(blockId => {
@@ -356,22 +367,22 @@ export class AffineEncryptedBlocksWidget extends WidgetComponent<RootBlockModel>
   private async _unlock(model: BlockModel) {
     if (this._unlockingBlockId) return;
 
-    const notification = this.std.getOptional(NotificationProvider);
-    const password = await notification?.prompt({
-      title: 'Decrypt block',
-      message: 'Use the block password. This password is not stored.',
-      placeholder: 'Password',
-      confirmText: 'Decrypt',
-    });
-
-    if (!password) return;
-
     this._unlockingBlockId = model.id;
     this._error = '';
     this._errorBlockId = null;
     this.requestUpdate();
 
     try {
+      const notification = this.std.getOptional(NotificationProvider);
+      const password = await notification?.prompt({
+        title: 'Decrypt block',
+        message: 'Use the block password. This password is not stored.',
+        placeholder: 'Password',
+        confirmText: 'Decrypt',
+      });
+
+      if (!password) return;
+
       await unlockBlockWithPassword(model, password);
       this._scheduleRefresh();
     } catch (error) {
@@ -408,6 +419,14 @@ export class AffineEncryptedBlocksWidget extends WidgetComponent<RootBlockModel>
         @paste=${stopPropagation}
         @keydown=${stopPropagation}
         @keyup=${stopPropagation}
+        @beforeinput=${stopPropagation}
+        @compositionstart=${stopPropagation}
+        @compositionupdate=${stopPropagation}
+        @compositionend=${stopPropagation}
+        @dragstart=${stopPropagation}
+        @drop=${stopPropagation}
+        @focusin=${stopPropagation}
+        @focusout=${stopPropagation}
       >
         <div class="affine-encrypted-block-overlay-header">
           <span class="affine-encrypted-block-overlay-title">
@@ -485,9 +504,8 @@ export class AffineEncryptedBlocksWidget extends WidgetComponent<RootBlockModel>
     return html`
       ${repeat(
         this._overlays,
-        overlay => `${overlay.id}:${overlay.unlocked ? 'u' : 'l'}`,
-        overlay =>
-          overlay.unlocked ? nothing : this._renderLockedOverlay(overlay)
+        overlay => overlay.id,
+        overlay => this._renderLockedOverlay(overlay)
       )}
     `;
   }

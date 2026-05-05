@@ -226,6 +226,13 @@ export async function persistUnlockedBlockEdits(
     session
   );
 
+  if (
+    localEncryptionSessions.get(model) !== session ||
+    !isBlockLocallyUnlocked(model)
+  ) {
+    return;
+  }
+
   const nextState: BlockEncryptionState = {
     ...state,
     payload,

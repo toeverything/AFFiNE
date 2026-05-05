@@ -452,17 +452,6 @@ export const builtinToolbarConfig = {
           },
           run({ chain, host, std, store }) {
             (async () => {
-              const notification = std.getOptional(NotificationProvider);
-              const password = await notification?.prompt({
-                title: 'Encrypt block',
-                message:
-                  'Use a block password. This is not your account password and will not be stored.',
-                placeholder: 'Password',
-                confirmText: 'Encrypt',
-              });
-
-              if (!password) return;
-
               const [ok, { selectedModels = [] }] = chain
                 .tryAll(chain => [
                   chain.pipe(getTextSelectionCommand),
@@ -477,6 +466,17 @@ export const builtinToolbarConfig = {
 
               if (!ok || selectedModels.length === 0) return;
 
+              const notification = std.getOptional(NotificationProvider);
+              const password = await notification?.prompt({
+                title: 'Encrypt block',
+                message:
+                  'Use a block password. This is not your account password and will not be stored.',
+                placeholder: 'Password',
+                confirmText: 'Encrypt',
+              });
+
+              if (!password) return;
+
               const targets = selectedModels.filter(canEncryptBlock);
 
               if (targets.length === 0) {
@@ -484,12 +484,29 @@ export const builtinToolbarConfig = {
                 return;
               }
 
-              await Promise.all(
+              const results = await Promise.allSettled(
                 targets.map(model =>
                   encryptBlockWithPassword(store, model, password)
                 )
               );
-              toast(host, 'Encrypted');
+              const failed = results.filter(
+                result => result.status === 'rejected'
+              );
+              failed.forEach(result => {
+                console.error(result.reason);
+              });
+
+              const succeeded = results.length - failed.length;
+              if (failed.length === 0) {
+                toast(host, 'Encrypted');
+              } else if (succeeded === 0) {
+                toast(host, 'Encryption failed');
+              } else {
+                toast(
+                  host,
+                  `Encrypted ${succeeded} blocks, ${failed.length} failed`
+                );
+              }
             })().catch(error => {
               console.error(error);
               toast(host, 'Encryption failed');
@@ -521,7 +538,7 @@ export const builtinToolbarConfig = {
               )
             );
           },
-          run({ chain, store }) {
+          run({ chain, host, store }) {
             const [ok, { selectedModels = [] }] = chain
               .tryAll(chain => [
                 chain.pipe(getTextSelectionCommand),
@@ -536,14 +553,29 @@ export const builtinToolbarConfig = {
 
             if (!ok || selectedModels.length === 0) return;
 
-            void Promise.all(
-              selectedModels
-                .filter(
-                  model =>
-                    isBlockEncrypted(model) && isBlockLocallyUnlocked(model)
-                )
-                .map(model => lockBlockWithEncryptedEdits(store, model))
-            ).catch(console.error);
+            const targets = selectedModels.filter(
+              model => isBlockEncrypted(model) && isBlockLocallyUnlocked(model)
+            );
+
+            void Promise.allSettled(
+              targets.map(model => lockBlockWithEncryptedEdits(store, model))
+            )
+              .then(results => {
+                const failed = results.filter(
+                  result => result.status === 'rejected'
+                );
+                failed.forEach(result => {
+                  console.error(result.reason);
+                });
+
+                if (failed.length > 0) {
+                  toast(host, 'Some encrypted blocks failed to lock');
+                }
+              })
+              .catch(error => {
+                console.error(error);
+                toast(host, 'Some encrypted blocks failed to lock');
+              });
           },
         },
       ],
