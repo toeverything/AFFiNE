@@ -234,6 +234,25 @@ type ImportMarkdownZipOptions = {
   extensions: ExtensionType[];
 };
 
+type PrepareMarkdownFileOptions = {
+  filename: string;
+  markdown: string;
+};
+
+type PreparedMarkdownFile = {
+  content: string;
+  meta: ParsedFrontmatterMeta;
+  preferredTitle: string;
+};
+
+type ImportMarkdownZipInternalOptions = ImportMarkdownZipOptions & {
+  normalizeFolderName?: (folderName: string) => string;
+  prepareMarkdownFile?: (
+    options: PrepareMarkdownFileOptions
+  ) => PreparedMarkdownFile;
+  recursiveZip?: boolean;
+};
+
 export type MarkdownZipFolderHierarchy = {
   name: string;
   path: string;
@@ -248,7 +267,8 @@ export type ImportMarkdownZipResult = {
 };
 
 function buildMarkdownZipFolderHierarchy(
-  pagePaths: Array<{ path: string; pageId: string }>
+  pagePaths: Array<{ path: string; pageId: string }>,
+  normalizeFolderName?: (folderName: string) => string
 ): MarkdownZipFolderHierarchy {
   const root: MarkdownZipFolderHierarchy = {
     name: '',
@@ -270,7 +290,7 @@ function buildMarkdownZipFolderHierarchy(
       const folderKey = `folder:${currentPath}`;
       if (!current.children.has(folderKey)) {
         current.children.set(folderKey, {
-          name: folderName,
+          name: normalizeFolderName?.(folderName) ?? folderName,
           path: currentPath,
           parentPath: current.path || undefined,
           children: new Map(),
@@ -289,6 +309,72 @@ function buildMarkdownZipFolderHierarchy(
   }
 
   return root;
+}
+
+function getFileNameWithoutExtension(filename: string) {
+  return filename.replace(/\.[^/.]+$/, '');
+}
+
+function stripNotionHash(name: string) {
+  return name
+    .replace(
+      /\s+[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+      ''
+    )
+    .replace(/\s+[0-9a-f]{32}$/i, '');
+}
+
+function parseNotionMarkdownTitle(markdown: string):
+  | {
+      title: string;
+      content: string;
+    }
+  | undefined {
+  const match = markdown.match(/^\uFEFF?#(?!#)\s+(.+?)\s*(?:\r?\n|$)/);
+  if (!match) {
+    return;
+  }
+
+  const title = match?.[1]?.trim();
+  if (!title) {
+    return;
+  }
+
+  return {
+    title,
+    content: markdown.slice(match[0].length),
+  };
+}
+
+function prepareDefaultMarkdownFile({
+  filename,
+  markdown,
+}: PrepareMarkdownFileOptions): PreparedMarkdownFile {
+  const fileNameWithoutExt = getFileNameWithoutExtension(filename);
+  const { content, meta } = parseFrontmatter(markdown);
+  return {
+    content,
+    meta,
+    preferredTitle: meta.title ?? fileNameWithoutExt,
+  };
+}
+
+function prepareNotionMarkdownFile({
+  filename,
+  markdown,
+}: PrepareMarkdownFileOptions): PreparedMarkdownFile {
+  const notionTitle = parseNotionMarkdownTitle(markdown);
+  const { content, meta } = parseFrontmatter(notionTitle?.content ?? markdown);
+  const fallbackTitle = stripNotionHash(getFileNameWithoutExtension(filename));
+
+  return {
+    content,
+    meta: {
+      ...meta,
+      title: notionTitle?.title ?? fallbackTitle,
+    },
+    preferredTitle: notionTitle?.title ?? fallbackTitle,
+  };
 }
 
 /**
@@ -525,50 +611,87 @@ async function importMarkdownZip({
   imported,
   extensions,
 }: ImportMarkdownZipOptions): Promise<ImportMarkdownZipResult> {
-  const provider = getProvider(extensions);
-  const unzip = new Unzip();
-  await unzip.load(imported);
+  return importMarkdownZipInternal({
+    collection,
+    schema,
+    imported,
+    extensions,
+  });
+}
 
+async function importNotionMarkdownZip({
+  collection,
+  schema,
+  imported,
+  extensions,
+}: ImportMarkdownZipOptions): Promise<ImportMarkdownZipResult> {
+  return importMarkdownZipInternal({
+    collection,
+    schema,
+    imported,
+    extensions,
+    normalizeFolderName: stripNotionHash,
+    prepareMarkdownFile: prepareNotionMarkdownFile,
+    recursiveZip: true,
+  });
+}
+
+async function importMarkdownZipInternal({
+  collection,
+  schema,
+  imported,
+  extensions,
+  normalizeFolderName,
+  prepareMarkdownFile = prepareDefaultMarkdownFile,
+  recursiveZip = false,
+}: ImportMarkdownZipInternalOptions): Promise<ImportMarkdownZipResult> {
+  const provider = getProvider(extensions);
   const docIds: string[] = [];
   const pagePathsWithIds: Array<{ path: string; pageId: string }> = [];
   const pendingAssets: AssetMap = new Map();
   const pendingPathBlobIdMap: PathBlobIdMap = new Map();
   const markdownBlobs: ImportedFileEntry[] = [];
 
-  // Iterate over all files in the zip
-  for (const { path, content: blob } of unzip) {
-    // Skip the files that are not markdown files
-    if (isSystemImportPath(path)) {
-      continue;
-    }
+  async function collectZipEntries(zipBlob: Blob) {
+    const unzip = new Unzip();
+    await unzip.load(zipBlob);
 
-    // Get the file name
-    const fileName = path.split('/').pop() ?? '';
-    // If the file is a markdown file, store it to markdownBlobs
-    if (fileName.endsWith('.md')) {
-      markdownBlobs.push({
-        filename: fileName,
-        contentBlob: blob,
-        fullPath: path,
-      });
-    } else {
-      await stageImportedAsset({
-        pendingAssets,
-        pendingPathBlobIdMap,
-        path,
-        content: blob,
-        fileName,
-      });
+    for (const { path, content: blob } of unzip) {
+      if (isSystemImportPath(path)) {
+        continue;
+      }
+
+      const fileName = path.split('/').pop() ?? '';
+      if (fileName.endsWith('.md')) {
+        markdownBlobs.push({
+          filename: fileName,
+          contentBlob: blob,
+          fullPath: path,
+        });
+      } else if (recursiveZip && fileName.endsWith('.zip')) {
+        await collectZipEntries(blob);
+      } else {
+        await stageImportedAsset({
+          pendingAssets,
+          pendingPathBlobIdMap,
+          path,
+          content: blob,
+          fileName,
+        });
+      }
     }
   }
+
+  await collectZipEntries(imported);
 
   await Promise.all(
     markdownBlobs.map(async markdownFile => {
       const { filename, contentBlob, fullPath } = markdownFile;
-      const fileNameWithoutExt = filename.replace(/\.[^/.]+$/, '');
       const markdown = await contentBlob.text();
-      const { content, meta } = parseFrontmatter(markdown);
-      const preferredTitle = meta.title ?? fileNameWithoutExt;
+      const { content, meta, preferredTitle } = prepareMarkdownFile({
+        filename,
+        markdown,
+      });
       const job = createMarkdownImportJob({
         collection,
         schema,
@@ -593,7 +716,7 @@ async function importMarkdownZip({
   return {
     docIds,
     folderHierarchy: pagePathsWithIds.length
-      ? buildMarkdownZipFolderHierarchy(pagePathsWithIds)
+      ? buildMarkdownZipFolderHierarchy(pagePathsWithIds, normalizeFolderName)
       : undefined,
   };
 }
@@ -603,4 +726,5 @@ export const MarkdownTransformer = {
   importMarkdownToBlock,
   importMarkdownToDoc,
   importMarkdownZip,
+  importNotionMarkdownZip,
 };

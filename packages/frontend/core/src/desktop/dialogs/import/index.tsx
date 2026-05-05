@@ -215,6 +215,7 @@ type ImportType =
   | 'markdown'
   | 'markdownZip'
   | 'notion'
+  | 'notionMarkdown'
   | 'obsidian'
   | 'snapshot'
   | 'html'
@@ -299,6 +300,17 @@ const importOptions = [
     suffixTooltip: 'com.affine.import.notion.tooltip',
     testId: 'editor-option-menu-import-notion',
     type: 'notion' as ImportType,
+  },
+  {
+    key: 'notionMarkdown',
+    label: 'com.affine.import.notion-markdown',
+    prefixIcon: <NotionIcon color={cssVar('black')} width={20} height={20} />,
+    suffixIcon: (
+      <HelpIcon color={cssVarV2('icon/primary')} width={20} height={20} />
+    ),
+    suffixTooltip: 'com.affine.import.notion-markdown.tooltip',
+    testId: 'editor-option-menu-import-notion-markdown',
+    type: 'notionMarkdown' as ImportType,
   },
   {
     key: 'obsidian',
@@ -497,6 +509,52 @@ const importConfigs: Record<ImportType, ImportConfig> = {
         docIds: pageIds,
         entryId,
         isWorkspaceFile,
+        rootFolderId,
+      };
+    },
+  },
+  notionMarkdown: {
+    fileOptions: { acceptType: 'Zip', multiple: false },
+    importFunction: async (
+      docCollection,
+      files,
+      _handleImportAffineFile,
+      organizeService,
+      _explorerIconService
+    ) => {
+      const file = files.length === 1 ? files[0] : null;
+      if (!file) {
+        throw new Error('Expected a single zip file for notionMarkdown import');
+      }
+      const { docIds, folderHierarchy } =
+        await MarkdownTransformer.importNotionMarkdownZip({
+          collection: docCollection,
+          schema: getAFFiNEWorkspaceSchema(),
+          imported: file,
+          extensions: getStoreManager().config.init().value.get('store'),
+        });
+
+      let rootFolderId: string | undefined;
+      if (
+        folderHierarchy &&
+        organizeService &&
+        folderHierarchy.children.size > 0
+      ) {
+        try {
+          rootFolderId = createFoldersAndLinksFromHierarchy(
+            organizeService,
+            folderHierarchy
+          );
+        } catch (error) {
+          logger.warn(
+            'Failed to create notion markdown zip folder structure:',
+            error
+          );
+        }
+      }
+
+      return {
+        docIds,
         rootFolderId,
       };
     },

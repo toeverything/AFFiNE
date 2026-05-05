@@ -30,6 +30,7 @@ import type {
 } from '@blocksuite/store';
 import { AssetsManager, MemoryBlobCRUD, Schema } from '@blocksuite/store';
 import { TestWorkspace } from '@blocksuite/store/test';
+import * as fflate from 'fflate';
 import { describe, expect, test } from 'vitest';
 
 import { AffineSchemas } from '../../schemas.js';
@@ -64,6 +65,20 @@ function markdownFixture(relativePath: string): File {
   );
 }
 
+function zipFixture(entries: Record<string, string>) {
+  const zipped = fflate.zipSync(
+    Object.fromEntries(
+      Object.entries(entries).map(([path, content]) => [
+        path,
+        fflate.strToU8(content),
+      ])
+    )
+  );
+  return new Blob([zipped as unknown as BlobPart], {
+    type: 'application/zip',
+  });
+}
+
 function exportSnapshot(doc: Store): DocSnapshot {
   const job = doc.getTransformer([
     docLinkBaseURLMiddleware(doc.workspace.id),
@@ -72,6 +87,17 @@ function exportSnapshot(doc: Store): DocSnapshot {
   const snapshot = job.docToSnapshot(doc);
   expect(snapshot).toBeTruthy();
   return snapshot!;
+}
+
+function noteSnapshotByTitle(collection: TestWorkspace, title: string) {
+  const meta = collection.meta.docMetas.find(meta => meta.title === title);
+  expect(meta).toBeTruthy();
+  const doc = collection.getDoc(meta!.id)?.getStore({ id: meta!.id });
+  expect(doc).toBeTruthy();
+  const snapshot = exportSnapshot(doc!);
+  return snapshot.blocks.children.find(
+    block => block.flavour === 'affine:note'
+  );
 }
 
 function normalizeDeltaForSnapshot(
@@ -268,6 +294,41 @@ Hello world
     expect(meta?.updatedDate).toBe(Date.parse('2018-04-12T10:00:00'));
     expect(meta?.favorite).toBe(true);
     expect(meta?.tags).toEqual(['a', 'b']);
+  });
+
+  test('imports notion markdown zip titles and folder names', async () => {
+    const schema = new Schema().register(AffineSchemas);
+    const collection = new TestWorkspace();
+    collection.storeExtensions = testStoreExtensions;
+    collection.meta.initialize();
+
+    const imported = zipFixture({
+      'Workspace 11111111111111111111111111111111/Nested Page 22222222222222222222222222222222.md':
+        '# Nested Page\nNested body',
+      'Fallback Page 33333333333333333333333333333333.md': 'Fallback body',
+    });
+
+    const { docIds, folderHierarchy } =
+      await MarkdownTransformer.importNotionMarkdownZip({
+        collection,
+        schema,
+        imported,
+        extensions: testStoreExtensions,
+      });
+
+    expect(docIds).toHaveLength(2);
+    expect(
+      collection.meta.docMetas
+        .map(meta => meta.title)
+        .sort((a, b) => (a ?? '').localeCompare(b ?? ''))
+    ).toEqual(['Fallback Page', 'Nested Page']);
+
+    const nestedNote = noteSnapshotByTitle(collection, 'Nested Page');
+    expect(JSON.stringify(nestedNote)).toContain('Nested body');
+    expect(JSON.stringify(nestedNote)).not.toContain('Nested Page');
+
+    const [folder] = [...(folderHierarchy?.children.values() ?? [])];
+    expect(folder?.name).toBe('Workspace');
   });
 
   test('imports obsidian vault fixtures', async () => {
