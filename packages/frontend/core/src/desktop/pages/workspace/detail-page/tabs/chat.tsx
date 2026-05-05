@@ -46,7 +46,10 @@ import { useFramework, useService } from '@toeverything/infra';
 import { html } from 'lit';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { createSessionDeleteHandler } from '../../chat-panel-utils';
+import {
+  createSessionDeleteHandler,
+  useAIChatOpenTabs,
+} from '../../chat-panel-utils';
 import * as styles from './chat.css';
 import {
   resolveInitialSession,
@@ -95,8 +98,6 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
   const [chatTabs, setChatTabs] = useState<AIChatTabs | null>(null);
   const [isBodyProvided, setIsBodyProvided] = useState(false);
   const [isHeaderProvided, setIsHeaderProvided] = useState(false);
-  const [openTabs, setOpenTabs] = useState<CopilotChatHistoryFragment[]>([]);
-
   const chatContainerRef = useRef<HTMLDivElement | null>(null);
   const chatToolbarContainerRef = useRef<HTMLDivElement | null>(null);
   const chatTabsContainerRef = useRef<HTMLDivElement | null>(null);
@@ -107,6 +108,36 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
 
   const doc = editor?.doc;
   const host = editor?.host;
+  const workspaceId = doc?.workspace.id;
+
+  const [sessionServiceReady, setSessionServiceReady] = useState(
+    () => !!AIProvider.session
+  );
+
+  useEffect(() => {
+    if (sessionServiceReady) return;
+    if (AIProvider.session) {
+      setSessionServiceReady(true);
+      return;
+    }
+    const sub = AIProvider.slots.sessionReady.subscribe(ready => {
+      if (ready) setSessionServiceReady(true);
+    });
+    return () => sub.unsubscribe();
+  }, [sessionServiceReady]);
+
+  const loadSession = useMemo(() => {
+    if (!sessionServiceReady || !workspaceId) return null;
+    const sessionService = AIProvider.session;
+    if (!sessionService) return null;
+    return async (
+      sessionId: string
+    ): Promise<CopilotChatHistoryFragment | null | undefined> =>
+      sessionService.getSession(workspaceId, sessionId);
+  }, [sessionServiceReady, workspaceId]);
+
+  const { openTabs, setOpenTabs } =
+    useAIChatOpenTabs<CopilotChatHistoryFragment>(loadSession);
 
   const appSidebarConfig = useMemo<AppSidebarConfig>(() => {
     return {
@@ -238,8 +269,7 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
         );
         if (requestSeq !== sessionLoadSeqRef.current) return;
         if (!nextSession) {
-          // Session was deleted or is no longer accessible — drop the stale tab
-          // instead of switching to an empty chat.
+          // Drop stale tab if session no longer exists.
           setOpenTabs(prev => prev.filter(tab => tab.sessionId !== sessionId));
           return;
         }
@@ -249,7 +279,7 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
         console.error(error);
       }
     },
-    [doc, session?.sessionId]
+    [doc, session?.sessionId, setOpenTabs]
   );
 
   const openDoc = useCallback(
@@ -314,7 +344,7 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
         newSession().catch(console.error);
       }
     },
-    [newSession, openSession, session?.sessionId]
+    [newSession, openSession, session?.sessionId, setOpenTabs]
   );
 
   const togglePin = useCallback(async () => {
@@ -379,83 +409,6 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
     }
   }, [chatContent, chatTabs, chatToolbar, session]);
 
-  const [sessionServiceReady, setSessionServiceReady] = useState(
-    () => !!AIProvider.session
-  );
-  const [hydratedWorkspaceId, setHydratedWorkspaceId] = useState<string | null>(
-    null
-  );
-
-  useEffect(() => {
-    if (sessionServiceReady) return;
-    if (AIProvider.session) {
-      setSessionServiceReady(true);
-      return;
-    }
-    const sub = AIProvider.slots.sessionReady.subscribe(ready => {
-      if (ready) setSessionServiceReady(true);
-    });
-    return () => sub.unsubscribe();
-  }, [sessionServiceReady]);
-
-  const workspaceId = doc?.workspace.id;
-
-  useEffect(() => {
-    const sessionService = AIProvider.session;
-    if (!workspaceId || !sessionService) return;
-    const storageKey = `ai-chat-open-tabs:${workspaceId}`;
-    let rawIds: string[] = [];
-    try {
-      const raw = localStorage.getItem(storageKey);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) {
-          rawIds = parsed.filter(
-            (id: unknown): id is string =>
-              typeof id === 'string' && id.length > 0
-          );
-        }
-      }
-    } catch (error) {
-      console.error(error);
-    }
-    if (!rawIds.length) {
-      setHydratedWorkspaceId(workspaceId);
-      return;
-    }
-    let cancelled = false;
-    Promise.all(
-      rawIds.map(id =>
-        sessionService.getSession(workspaceId, id).catch(() => null)
-      )
-    )
-      .then(results => {
-        if (cancelled) return;
-        const hydrated = results.filter(
-          (entry): entry is CopilotChatHistoryFragment =>
-            !!entry && !!entry.sessionId
-        );
-        if (hydrated.length) {
-          setOpenTabs(prev => {
-            const seen = new Set(prev.map(tab => tab.sessionId));
-            const merged = [...prev];
-            for (const entry of hydrated) {
-              if (!seen.has(entry.sessionId)) merged.push(entry);
-            }
-            return merged;
-          });
-        }
-        setHydratedWorkspaceId(workspaceId);
-      })
-      .catch(error => {
-        console.error(error);
-        if (!cancelled) setHydratedWorkspaceId(workspaceId);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [workspaceId, sessionServiceReady]);
-
   useEffect(() => {
     if (!session?.sessionId) return;
     setOpenTabs(prev => {
@@ -470,30 +423,7 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
       }
       return [...prev, session];
     });
-  }, [session]);
-
-  useEffect(() => {
-    if (!workspaceId || hydratedWorkspaceId !== workspaceId) return;
-    const storageKey = `ai-chat-open-tabs:${workspaceId}`;
-    try {
-      if (openTabs.length) {
-        localStorage.setItem(
-          storageKey,
-          JSON.stringify(openTabs.map(tab => tab.sessionId))
-        );
-      } else {
-        localStorage.removeItem(storageKey);
-      }
-    } catch (error) {
-      console.error(error);
-    }
-  }, [workspaceId, openTabs, hydratedWorkspaceId]);
-
-  // Reset tabs on workspace change so tabs don't leak across workspaces.
-  useEffect(() => {
-    setOpenTabs([]);
-    setHydratedWorkspaceId(null);
-  }, [workspaceId]);
+  }, [session, setOpenTabs]);
 
   useEffect(() => {
     const subscription = AIProvider.slots.userInfo.subscribe(() => {

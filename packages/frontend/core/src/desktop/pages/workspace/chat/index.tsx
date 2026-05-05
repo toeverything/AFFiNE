@@ -50,7 +50,10 @@ import { useFramework, useService } from '@toeverything/infra';
 import { nanoid } from 'nanoid';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { createSessionDeleteHandler } from '../chat-panel-utils';
+import {
+  createSessionDeleteHandler,
+  useAIChatOpenTabs,
+} from '../chat-panel-utils';
 import * as styles from './index.css';
 
 type CopilotSession = Awaited<ReturnType<CopilotClient['getSession']>>;
@@ -98,10 +101,6 @@ export const Component = () => {
   const [currentSession, setCurrentSession] = useState<CopilotSession | null>(
     null
   );
-  const [openTabs, setOpenTabs] = useState<NonNullable<CopilotSession>[]>([]);
-  const [hydratedWorkspaceId, setHydratedWorkspaceId] = useState<string | null>(
-    null
-  );
   const [status, setStatus] = useState<ChatStatus>('idle');
   const [isTogglingPin, setIsTogglingPin] = useState(false);
   const [isOpeningSession, setIsOpeningSession] = useState(false);
@@ -114,6 +113,12 @@ export const Component = () => {
   const workbench = useService(WorkbenchService).workbench;
 
   const workspaceId = useService(WorkspaceService).workspace.id;
+
+  const loadSession = useCallback(
+    (sessionId: string) => client.getSession(workspaceId, sessionId),
+    [client, workspaceId]
+  );
+  const { openTabs, setOpenTabs } = useAIChatOpenTabs(loadSession);
 
   useEffect(() => {
     hasRestoredPinnedSessionRef.current = false;
@@ -200,8 +205,7 @@ export const Component = () => {
       try {
         const session = await client.getSession(workspaceId, sessionId);
         if (!session) {
-          // Session was deleted or is no longer accessible — drop the stale tab
-          // instead of switching to an empty chat.
+          // Drop stale tab if session no longer exists.
           setOpenTabs(prev => prev.filter(tab => tab.sessionId !== sessionId));
           return;
         }
@@ -220,6 +224,7 @@ export const Component = () => {
       currentSession?.sessionId,
       isOpeningSession,
       reMountChatContent,
+      setOpenTabs,
       workspaceId,
     ]
   );
@@ -241,7 +246,7 @@ export const Component = () => {
         createFreshSession().catch(console.error);
       }
     },
-    [createFreshSession, currentSession?.sessionId, onOpenSession]
+    [createFreshSession, currentSession?.sessionId, onOpenSession, setOpenTabs]
   );
 
   const onContextChange = useCallback((context: Partial<ChatContextValue>) => {
@@ -433,59 +438,6 @@ export const Component = () => {
   }, [framework, mockStd]);
 
   useEffect(() => {
-    if (!workspaceId) return;
-    const storageKey = `ai-chat-open-tabs:${workspaceId}`;
-    let rawIds: string[] = [];
-    try {
-      const raw = localStorage.getItem(storageKey);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) {
-          rawIds = parsed.filter(
-            (id: unknown): id is string =>
-              typeof id === 'string' && id.length > 0
-          );
-        }
-      }
-    } catch (error) {
-      console.error(error);
-    }
-    if (!rawIds.length) {
-      setHydratedWorkspaceId(workspaceId);
-      return;
-    }
-    let cancelled = false;
-    Promise.all(
-      rawIds.map(id => client.getSession(workspaceId, id).catch(() => null))
-    )
-      .then(results => {
-        if (cancelled) return;
-        const hydrated = results.filter(
-          (entry): entry is NonNullable<CopilotSession> =>
-            !!entry && !!entry.sessionId
-        );
-        if (hydrated.length) {
-          setOpenTabs(prev => {
-            const seen = new Set(prev.map(tab => tab.sessionId));
-            const merged = [...prev];
-            for (const entry of hydrated) {
-              if (!seen.has(entry.sessionId)) merged.push(entry);
-            }
-            return merged;
-          });
-        }
-        setHydratedWorkspaceId(workspaceId);
-      })
-      .catch(error => {
-        console.error(error);
-        if (!cancelled) setHydratedWorkspaceId(workspaceId);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [client, workspaceId]);
-
-  useEffect(() => {
     if (!currentSession?.sessionId) return;
     setOpenTabs(prev => {
       const existing = prev.findIndex(
@@ -499,30 +451,7 @@ export const Component = () => {
       }
       return [...prev, currentSession];
     });
-  }, [currentSession]);
-
-  useEffect(() => {
-    if (!workspaceId || hydratedWorkspaceId !== workspaceId) return;
-    const storageKey = `ai-chat-open-tabs:${workspaceId}`;
-    try {
-      if (openTabs.length) {
-        localStorage.setItem(
-          storageKey,
-          JSON.stringify(openTabs.map(tab => tab.sessionId))
-        );
-      } else {
-        localStorage.removeItem(storageKey);
-      }
-    } catch (error) {
-      console.error(error);
-    }
-  }, [openTabs, workspaceId, hydratedWorkspaceId]);
-
-  // Reset tabs on workspace change so tabs don't leak across workspaces.
-  useEffect(() => {
-    setOpenTabs([]);
-    setHydratedWorkspaceId(null);
-  }, [workspaceId]);
+  }, [currentSession, setOpenTabs]);
 
   useEffect(() => {
     if (!chatTabsContainerRef.current) return;
