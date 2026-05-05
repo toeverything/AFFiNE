@@ -1,4 +1,8 @@
 import {
+  AFFINE_ENCRYPTED_BLOCKS_WIDGET,
+  AffineEncryptedBlocksWidget,
+} from './encryption/index.js';
+import {
   EdgelessRootBlockComponent,
   EdgelessRootPreviewBlockComponent,
   PageRootBlockComponent,
@@ -11,6 +15,10 @@ export function effects() {
 }
 
 function registerRootComponents() {
+  customElements.define(
+    AFFINE_ENCRYPTED_BLOCKS_WIDGET,
+    AffineEncryptedBlocksWidget
+  );
   customElements.define('affine-page-root', PageRootBlockComponent);
   customElements.define('affine-preview-root', PreviewRootBlockComponent);
   customElements.define('affine-edgeless-root', EdgelessRootBlockComponent);

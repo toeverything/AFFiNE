@@ -21,6 +21,7 @@ import { EdgelessElementToolbarExtension } from './edgeless/configs/toolbar';
 import { EdgelessLocker } from './edgeless/edgeless-root-spec';
 import { AltCloneExtension } from './edgeless/interact-extensions/clone-ext';
 import { effects } from './effects';
+import { encryptedBlocksWidget } from './encryption';
 import { fallbackKeymap } from './keyboard/keymap';
 
 export class RootViewExtension extends ViewExtensionProvider {
@@ -65,7 +66,7 @@ export class RootViewExtension extends ViewExtensionProvider {
     context.register(
       BlockViewExtension('affine:page', literal`affine-page-root`)
     );
-    context.register(PageClipboard);
+    context.register([PageClipboard, encryptedBlocksWidget]);
   };
 
   private readonly _setupEdgeless = (context: ViewExtensionContext) => {

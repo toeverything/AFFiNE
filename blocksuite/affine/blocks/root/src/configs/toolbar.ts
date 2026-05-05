@@ -43,6 +43,13 @@ import {
   getSelectedModelsCommand,
   getTextSelectionCommand,
 } from '@blocksuite/affine-shared/commands';
+import {
+  canEncryptBlock,
+  encryptBlockWithPassword,
+  isBlockEncrypted,
+  isBlockLocallyUnlocked,
+  lockBlockWithEncryptedEdits,
+} from '@blocksuite/affine-shared/encryption';
 import type {
   ToolbarAction,
   ToolbarActionGenerator,
@@ -52,6 +59,7 @@ import type {
 import {
   ActionPlacement,
   blockCommentToolbarButton,
+  NotificationProvider,
 } from '@blocksuite/affine-shared/services';
 import { getMostCommonValue } from '@blocksuite/affine-shared/utils';
 import { tableViewMeta } from '@blocksuite/data-view/view-presets';
@@ -61,6 +69,7 @@ import {
   DeleteIcon,
   DuplicateIcon,
   LinkedPageIcon,
+  LockIcon,
 } from '@blocksuite/icons/lit';
 import {
   type BlockComponent,
@@ -420,6 +429,121 @@ export const builtinToolbarConfig = {
               })
               .pipe(duplicateSelectedModelsCommand)
               .run();
+          },
+        },
+        {
+          id: 'encrypt',
+          label: 'Encrypt',
+          icon: LockIcon(),
+          when({ chain }) {
+            const [ok, { selectedModels = [] }] = chain
+              .tryAll(chain => [
+                chain.pipe(getTextSelectionCommand),
+                chain.pipe(getBlockSelectionsCommand),
+                chain.pipe(getImageSelectionsCommand),
+              ])
+              .pipe(getSelectedModelsCommand, {
+                types: ['text', 'block', 'image'],
+                mode: 'highest',
+              })
+              .run();
+
+            return ok && selectedModels.some(canEncryptBlock);
+          },
+          run({ chain, host, std, store }) {
+            (async () => {
+              const notification = std.getOptional(NotificationProvider);
+              const password = await notification?.prompt({
+                title: 'Encrypt block',
+                message:
+                  'Use a block password. This is not your account password and will not be stored.',
+                placeholder: 'Password',
+                confirmText: 'Encrypt',
+              });
+
+              if (!password) return;
+
+              const [ok, { selectedModels = [] }] = chain
+                .tryAll(chain => [
+                  chain.pipe(getTextSelectionCommand),
+                  chain.pipe(getBlockSelectionsCommand),
+                  chain.pipe(getImageSelectionsCommand),
+                ])
+                .pipe(getSelectedModelsCommand, {
+                  types: ['text', 'block', 'image'],
+                  mode: 'highest',
+                })
+                .run();
+
+              if (!ok || selectedModels.length === 0) return;
+
+              const targets = selectedModels.filter(canEncryptBlock);
+
+              if (targets.length === 0) {
+                toast(host, 'Selected blocks cannot be encrypted');
+                return;
+              }
+
+              await Promise.all(
+                targets.map(model =>
+                  encryptBlockWithPassword(store, model, password)
+                )
+              );
+              toast(host, 'Encrypted');
+            })().catch(error => {
+              console.error(error);
+              toast(host, 'Encryption failed');
+            });
+          },
+        },
+        {
+          id: 'lock-encrypted',
+          label: 'Lock',
+          icon: LockIcon(),
+          when({ chain }) {
+            const [ok, { selectedModels = [] }] = chain
+              .tryAll(chain => [
+                chain.pipe(getTextSelectionCommand),
+                chain.pipe(getBlockSelectionsCommand),
+                chain.pipe(getImageSelectionsCommand),
+              ])
+              .pipe(getSelectedModelsCommand, {
+                types: ['text', 'block', 'image'],
+                mode: 'highest',
+              })
+              .run();
+
+            return (
+              ok &&
+              selectedModels.some(
+                model =>
+                  isBlockEncrypted(model) && isBlockLocallyUnlocked(model)
+              )
+            );
+          },
+          run({ chain, store }) {
+            const [ok, { selectedModels = [] }] = chain
+              .tryAll(chain => [
+                chain.pipe(getTextSelectionCommand),
+                chain.pipe(getBlockSelectionsCommand),
+                chain.pipe(getImageSelectionsCommand),
+              ])
+              .pipe(getSelectedModelsCommand, {
+                types: ['text', 'block', 'image'],
+                mode: 'highest',
+              })
+              .run();
+
+            if (!ok || selectedModels.length === 0) return;
+
+            void Promise.all(
+              selectedModels
+                .filter(
+                  model =>
+                    isBlockEncrypted(model) && isBlockLocallyUnlocked(model)
+                )
+                .map(model => lockBlockWithEncryptedEdits(store, model))
+            ).catch(console.error);
           },
         },
       ],
