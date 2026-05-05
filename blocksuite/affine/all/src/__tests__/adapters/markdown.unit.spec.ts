@@ -17,6 +17,7 @@ import {
   docLinkBaseURLMiddleware,
   embedSyncedDocMiddleware,
   MarkdownAdapter,
+  MixTextAdapter,
   titleMiddleware,
 } from '@blocksuite/affine-shared/adapters';
 import type { AffineTextAttributes } from '@blocksuite/affine-shared/types';
@@ -4308,6 +4309,8 @@ bbb
   describe('latex block', () => {
     test.each([
       ['dollar sign syntax', '$$\nE=mc^2\n$$\n'],
+      ['single-line dollar sign syntax', '$$E=mc^2$$\n'],
+      ['single-line dollar sign syntax with spaces', '$$ E=mc^2 $$\n'],
       ['backslash syntax', '\\[\nE=mc^2\n\\]\n'],
     ])('should convert %s correctly', async (_, markdown) => {
       const blockSnapshot: BlockSnapshot = {
@@ -4339,6 +4342,65 @@ bbb
         file: markdown,
       });
       expect(nanoidReplacement(rawBlockSnapshot)).toEqual(blockSnapshot);
+    });
+
+    test('should convert single-line block latex from pasted plain text', async () => {
+      const pasteAdapter = new MixTextAdapter(createJob(), provider);
+      const rawSliceSnapshot = await pasteAdapter.toSliceSnapshot({
+        file: 'Energy equation:\n$$E=mc^2$$\n',
+        workspaceId: '',
+        pageId: '',
+      });
+
+      const children = rawSliceSnapshot?.content?.[0]?.children;
+      expect(children?.[0]?.flavour).toBe('affine:paragraph');
+      expect(children?.[1]?.flavour).toBe('affine:latex');
+      expect(children?.[1]?.props).toEqual({
+        latex: 'E=mc^2',
+      });
+    });
+
+    test('should not keep encoded spaces in pasted indented block latex', async () => {
+      const pasteAdapter = new MixTextAdapter(createJob(), provider);
+      const rawSliceSnapshot = await pasteAdapter.toSliceSnapshot({
+        file: 'Energy equation:\n$$\n    E = mc^2\n \n$$\n',
+        workspaceId: '',
+        pageId: '',
+      });
+
+      const children = rawSliceSnapshot?.content?.[0]?.children;
+      expect(children?.[0]?.flavour).toBe('affine:paragraph');
+      expect(children?.[1]?.flavour).toBe('affine:latex');
+      expect(children?.[1]?.props.latex).not.toContain('&#x20;');
+      expect(children?.[1]?.props.latex).toBe('    E = mc^2\n ');
+    });
+
+    test('should not close pasted block latex when content starts with delimiter', async () => {
+      const pasteAdapter = new MixTextAdapter(createJob(), provider);
+      const rawSliceSnapshot = await pasteAdapter.toSliceSnapshot({
+        file: 'Energy equation:\n$$\n$$\\vec{v}\n    E = mc^2\n$$\n',
+        workspaceId: '',
+        pageId: '',
+      });
+
+      const children = rawSliceSnapshot?.content?.[0]?.children;
+      expect(children?.[1]?.flavour).toBe('affine:latex');
+      expect(children?.[1]?.props.latex).not.toContain('&#x20;');
+      expect(children?.[1]?.props.latex).toBe('$$\\vec{v}\n    E = mc^2');
+    });
+
+    test('should not encode spaces in pasted bracket block latex', async () => {
+      const pasteAdapter = new MixTextAdapter(createJob(), provider);
+      const rawSliceSnapshot = await pasteAdapter.toSliceSnapshot({
+        file: 'Energy equation:\n\\[\n    E = mc^2\n\\]\n',
+        workspaceId: '',
+        pageId: '',
+      });
+
+      const children = rawSliceSnapshot?.content?.[0]?.children;
+      expect(children?.[1]?.flavour).toBe('affine:latex');
+      expect(children?.[1]?.props.latex).not.toContain('&#x20;');
+      expect(children?.[1]?.props.latex).toBe('    E = mc^2');
     });
 
     test('escapes dollar signs followed by a digit or space and digit', async () => {

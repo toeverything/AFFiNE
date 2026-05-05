@@ -25,6 +25,13 @@ function escapeMhchem(text: string) {
   return text.replaceAll('$\\ce{', '$\\\\ce{').replaceAll('$\\pu{', '$\\\\pu{');
 }
 
+function normalizeSingleLineBlockLatex(text: string) {
+  return text.replaceAll(
+    /^([ \t]*)\$\$[ \t]*(\S(?:.*?\S)?)[ \t]*\$\$[ \t]*\r?$/gm,
+    (_, indent: string, latex: string) => `${indent}$$\n${latex}\n${indent}$$`
+  );
+}
+
 /**
  * Preprocess the content to protect code blocks and LaTeX expressions
  * reference issue: https://github.com/remarkjs/react-markdown/issues/785
@@ -43,6 +50,8 @@ function preprocessLatex(content: string) {
       return `<<CODE_BLOCK_${codeBlocks.length - 1}>>`;
     }
   );
+
+  preprocessedContent = normalizeSingleLineBlockLatex(preprocessedContent);
 
   // Protect existing LaTeX expressions
   const latexExpressions: string[] = [];

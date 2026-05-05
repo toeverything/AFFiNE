@@ -9,6 +9,7 @@ const codePreprocessor: MarkdownAdapterPreprocessor = {
   levels: ['slice'],
   preprocess: content => {
     let codeFence = '';
+    let mathFence: '$$' | '\\]' | '' = '';
     const lines = content
       .split('\n')
       .map(line => {
@@ -16,6 +17,30 @@ const codePreprocessor: MarkdownAdapterPreprocessor = {
           return line;
         }
         let trimmedLine = line.trimStart();
+
+        if (!codeFence) {
+          if (mathFence) {
+            if (trimmedLine.trimEnd() === mathFence) {
+              mathFence = '';
+            }
+            return line;
+          }
+
+          if (trimmedLine.startsWith('$$')) {
+            if (!trimmedLine.includes('$$', 2)) {
+              mathFence = '$$';
+            }
+            return line;
+          }
+
+          if (trimmedLine.startsWith('\\[')) {
+            if (!trimmedLine.includes('\\]')) {
+              mathFence = '\\]';
+            }
+            return line;
+          }
+        }
+
         if (!codeFence && trimmedLine.startsWith('```')) {
           codeFence = trimmedLine.substring(
             0,
