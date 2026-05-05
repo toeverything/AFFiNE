@@ -11,7 +11,7 @@ import {
   FileChunkSimilarity,
   Models,
 } from '../../../models';
-import { EmbeddingClient } from '../embedding/types';
+import type { EmbeddingCallOptions, EmbeddingClient } from '../embedding/types';
 
 export class ContextSession implements AsyncDisposable {
   constructor(
@@ -67,6 +67,14 @@ export class ContextSession implements AsyncDisposable {
           .map(d => d.id)
       )
     );
+  }
+
+  private embeddingOptions(signal?: AbortSignal): EmbeddingCallOptions {
+    return {
+      workspaceId: this.workspaceId,
+      signal,
+      featureKind: 'embedding',
+    };
   }
 
   async addCategoryRecord(type: ContextCategories, id: string, docs: string[]) {
@@ -272,7 +280,8 @@ export class ContextSession implements AsyncDisposable {
     threshold: number = 0.5
   ): Promise<FileChunkSimilarity[]> {
     if (!this.client) return [];
-    const embedding = await this.client.getEmbedding(content, signal);
+    const options = this.embeddingOptions(signal);
+    const embedding = await this.client.getEmbedding(content, options);
     if (!embedding) return [];
 
     const [context, workspace] = await Promise.all([
@@ -305,7 +314,7 @@ export class ContextSession implements AsyncDisposable {
         ...workspace,
       ],
       topK,
-      signal
+      options
     );
   }
 
@@ -325,7 +334,8 @@ export class ContextSession implements AsyncDisposable {
     threshold: number = 0.5
   ) {
     if (!this.client) return [];
-    const embedding = await this.client.getEmbedding(content, signal);
+    const options = this.embeddingOptions(signal);
+    const embedding = await this.client.getEmbedding(content, options);
     if (!embedding) return [];
 
     const docIds = this.docIds;
@@ -349,7 +359,7 @@ export class ContextSession implements AsyncDisposable {
       content,
       [...inContext, ...workspace],
       topK,
-      signal
+      options
     );
 
     // sort result, doc recorded in context first

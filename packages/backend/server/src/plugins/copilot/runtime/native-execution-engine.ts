@@ -13,6 +13,7 @@ import {
   llmValidateJsonSchema,
   parseNativeStructuredOutput,
 } from '../../../native';
+import { type ByokFeatureKind, ByokService } from '../byok';
 import { type StreamObject } from '../providers/types';
 import { CopilotExecutionMetrics } from './execution-metrics';
 import {
@@ -25,6 +26,7 @@ import { mapNativeSemanticError } from './native-errors';
 import {
   createNativeToolLoopAdapter,
   NativeProviderAdapter,
+  type NativeProviderAdapterOptions,
 } from './tool/native-adapter';
 
 function modelIdForError(modelId?: string) {
@@ -60,6 +62,60 @@ function extractTextResponse(response: LlmDispatchResponse) {
     .trim();
 }
 
+function getUsageContext(plan: ExecutionPlan) {
+  const options = 'options' in plan.request ? plan.request.options : undefined;
+  return {
+    workspaceId: options?.workspace,
+    userId: options?.user,
+    sessionId: options?.session,
+    featureKind:
+      options?.featureKind ??
+      (plan.request.kind === 'streamText' ||
+      plan.request.kind === 'streamObject'
+        ? 'chat'
+        : plan.request.kind),
+  };
+}
+
+async function recordByokUsage(
+  byok: ByokService | undefined,
+  plan: ExecutionPlan,
+  input: {
+    providerId?: string;
+    model?: string | null;
+    usage?: LlmDispatchResponse['usage'];
+  }
+) {
+  const context = getUsageContext(plan);
+  await byok?.recordUsage({
+    workspaceId: context.workspaceId,
+    userId: context.userId,
+    sessionId: context.sessionId,
+    featureKind: context.featureKind as ByokFeatureKind,
+    providerId: input.providerId,
+    model: input.model,
+    usage: input.usage,
+  });
+}
+
+async function recordSingleByokRouteFailure(
+  byok: ByokService | undefined,
+  plan: ExecutionPlan,
+  error: unknown
+) {
+  const [providerId] = plan.routePolicy.fallbackOrder;
+  if (plan.routePolicy.fallbackOrder.length !== 1 || !providerId) {
+    return;
+  }
+  const context = getUsageContext(plan);
+  await byok?.recordProviderFailure({
+    workspaceId: context.workspaceId,
+    providerId,
+    featureKind: context.featureKind as ByokFeatureKind,
+    error,
+  });
+}
+
 function recordPreparedDispatch(
   executionMetrics: CopilotExecutionMetrics | undefined,
   plan: ExecutionPlan,
@@ -72,7 +128,12 @@ function recordPreparedDispatch(
   );
 }
 
-function createNativeChatAdapter(dispatch: NativeChatDispatchPlan) {
+function createNativeChatAdapter(
+  dispatch: NativeChatDispatchPlan,
+  options?: {
+    onUsage?: NativeProviderAdapterOptions['onUsage'];
+  }
+) {
   if (dispatch.hasTools) {
     return createNativeToolLoopAdapter(
       { preparedRoutes: dispatch.routes },
@@ -80,6 +141,7 @@ function createNativeChatAdapter(dispatch: NativeChatDispatchPlan) {
       {
         maxSteps: dispatch.prepared.maxSteps,
         nodeTextMiddleware: dispatch.prepared.postprocess?.nodeTextMiddleware,
+        onUsage: options?.onUsage,
       }
     );
   }
@@ -95,6 +157,7 @@ function createNativeChatAdapter(dispatch: NativeChatDispatchPlan) {
 
   return new NativeProviderAdapter(nativeDispatch, {
     nodeTextMiddleware: dispatch.prepared.postprocess?.nodeTextMiddleware,
+    onUsage: options?.onUsage,
   });
 }
 
@@ -102,30 +165,38 @@ async function runPreparedValuePlan<TResult>(
   plan: ExecutionPlan,
   routeCount: number,
   executionMetrics: CopilotExecutionMetrics | undefined,
-  run: () => Promise<TResult>
+  run: () => Promise<TResult>,
+  byok?: ByokService
 ) {
   recordPreparedDispatch(executionMetrics, plan, routeCount);
   try {
     return await run();
   } catch (error) {
-    throw mapNativeSemanticError(error);
+    const mapped = mapNativeSemanticError(error);
+    await recordSingleByokRouteFailure(byok, plan, mapped);
+    throw mapped;
   }
 }
 
 async function* mapPreparedStreamErrors<T>(
-  source: AsyncIterable<T>
+  source: AsyncIterable<T>,
+  plan: ExecutionPlan,
+  byok?: ByokService
 ): AsyncIterableIterator<T> {
   try {
     yield* source;
   } catch (error) {
-    throw mapNativeSemanticError(error);
+    const mapped = mapNativeSemanticError(error);
+    await recordSingleByokRouteFailure(byok, plan, mapped);
+    throw mapped;
   }
 }
 
 async function runChatValuePlan(
   plan: ExecutionPlan,
   dispatch: NativeChatDispatchPlan,
-  executionMetrics?: CopilotExecutionMetrics
+  executionMetrics?: CopilotExecutionMetrics,
+  byok?: ByokService
 ) {
   const adapter = createNativeChatAdapter(dispatch);
   return await runPreparedValuePlan(
@@ -140,6 +211,11 @@ async function runChatValuePlan(
         const result = await llmDispatchPlan({
           preparedRoutes: dispatch.routes,
         });
+        await recordByokUsage(byok, plan, {
+          providerId: result.provider_id,
+          model: result.response.model,
+          usage: result.response.usage,
+        });
         return extractTextResponse(result.response);
       }
 
@@ -152,16 +228,26 @@ async function runChatValuePlan(
         plan.hostContext.signal,
         plan.request.messages
       );
-    }
+    },
+    byok
   );
 }
 
 async function* runChatStreamPlan(
   plan: ExecutionPlan,
   dispatch: NativeChatDispatchPlan,
-  executionMetrics?: CopilotExecutionMetrics
+  executionMetrics?: CopilotExecutionMetrics,
+  byok?: ByokService
 ): AsyncIterableIterator<string | StreamObject> {
-  const adapter = createNativeChatAdapter(dispatch);
+  const adapter = createNativeChatAdapter(dispatch, {
+    onUsage: async usage => {
+      await recordByokUsage(byok, plan, {
+        providerId: usage.providerId,
+        model: usage.model,
+        usage: usage.usage,
+      });
+    },
+  });
   recordPreparedDispatch(executionMetrics, plan, dispatch.routes.length);
 
   if (plan.request.kind === 'streamText') {
@@ -170,7 +256,9 @@ async function* runChatStreamPlan(
         dispatch.prepared.request,
         plan.hostContext.signal,
         plan.request.messages
-      )
+      ),
+      plan,
+      byok
     );
     return;
   }
@@ -181,7 +269,9 @@ async function* runChatStreamPlan(
         dispatch.prepared.request,
         plan.hostContext.signal,
         plan.request.messages
-      )
+      ),
+      plan,
+      byok
     );
     return;
   }
@@ -192,7 +282,8 @@ async function* runChatStreamPlan(
 async function* runPreparedImageArtifactPlan(
   dispatch: NativeImageDispatchPlan,
   plan: ExecutionPlan,
-  executionMetrics?: CopilotExecutionMetrics
+  executionMetrics?: CopilotExecutionMetrics,
+  byok?: ByokService
 ): AsyncIterableIterator<NativeImageArtifact> {
   if (plan.request.kind !== 'image') {
     throw new Error('image dispatch requires image plan');
@@ -204,8 +295,21 @@ async function* runPreparedImageArtifactPlan(
     result = await llmImageDispatchPlan({
       preparedRoutes: dispatch.routes,
     });
+    await recordByokUsage(byok, plan, {
+      providerId: result.provider_id,
+      model: dispatch.prepared.route.model,
+      usage: result.response.usage
+        ? {
+            prompt_tokens: result.response.usage.input_tokens ?? 0,
+            completion_tokens: result.response.usage.output_tokens ?? 0,
+            total_tokens: result.response.usage.total_tokens ?? 0,
+          }
+        : undefined,
+    });
   } catch (error) {
-    throw mapNativeSemanticError(error);
+    const mapped = mapNativeSemanticError(error);
+    await recordSingleByokRouteFailure(byok, plan, mapped);
+    throw mapped;
   }
   for (const artifact of result.response.images) {
     yield artifact;
@@ -214,13 +318,14 @@ async function* runPreparedImageArtifactPlan(
 
 async function executePreparedPlan(
   plan: ExecutionPlan,
-  executionMetrics?: CopilotExecutionMetrics
+  executionMetrics?: CopilotExecutionMetrics,
+  byok?: ByokService
 ): Promise<string | number[][] | number[] | null> {
   switch (plan.request.kind) {
     case 'text': {
       const dispatch = plan.nativeDispatch?.chat;
       return dispatch
-        ? await runChatValuePlan(plan, dispatch, executionMetrics)
+        ? await runChatValuePlan(plan, dispatch, executionMetrics, byok)
         : null;
     }
     case 'structured': {
@@ -236,13 +341,19 @@ async function executePreparedPlan(
           const result = await llmStructuredDispatchPlan({
             preparedRoutes: dispatch.routes,
           });
+          await recordByokUsage(byok, plan, {
+            providerId: result.provider_id,
+            model: result.response.model,
+            usage: result.response.usage,
+          });
           const parsed = parseNativeStructuredOutput(result.response);
           const validated = llmValidateJsonSchema(
             dispatch.prepared.request.schema,
             parsed
           );
           return JSON.stringify(validated);
-        }
+        },
+        byok
       );
     }
     case 'embedding': {
@@ -258,8 +369,20 @@ async function executePreparedPlan(
           const result = await llmEmbeddingDispatchPlan({
             preparedRoutes: dispatch.routes,
           });
+          await recordByokUsage(byok, plan, {
+            providerId: result.provider_id,
+            model: result.response.model,
+            usage: result.response.usage
+              ? {
+                  prompt_tokens: result.response.usage.prompt_tokens,
+                  completion_tokens: 0,
+                  total_tokens: result.response.usage.total_tokens,
+                }
+              : undefined,
+          });
           return result.response.embeddings;
-        }
+        },
+        byok
       );
     }
     case 'rerank': {
@@ -275,8 +398,13 @@ async function executePreparedPlan(
           const result = await llmRerankDispatchPlan({
             preparedRoutes: dispatch.routes,
           });
+          await recordByokUsage(byok, plan, {
+            providerId: result.provider_id,
+            model: result.response.model,
+          });
           return result.response.scores;
-        }
+        },
+        byok
       );
     }
     default:
@@ -286,14 +414,15 @@ async function executePreparedPlan(
 
 function executePreparedStreamPlan(
   plan: ExecutionPlan,
-  executionMetrics?: CopilotExecutionMetrics
+  executionMetrics?: CopilotExecutionMetrics,
+  byok?: ByokService
 ): AsyncIterableIterator<string | StreamObject> | null {
   switch (plan.request.kind) {
     case 'streamText':
     case 'streamObject': {
       const dispatch = plan.nativeDispatch?.chat;
       return dispatch
-        ? runChatStreamPlan(plan, dispatch, executionMetrics)
+        ? runChatStreamPlan(plan, dispatch, executionMetrics, byok)
         : null;
     }
     default:
@@ -312,7 +441,10 @@ function noRouteStream<T>(plan: ExecutionPlan) {
 
 @Injectable()
 export class NativeExecutionEngine {
-  constructor(private readonly executionMetrics?: CopilotExecutionMetrics) {}
+  constructor(
+    private readonly executionMetrics?: CopilotExecutionMetrics,
+    private readonly byok?: ByokService
+  ) {}
 
   private noRoute(plan: ExecutionPlan): never {
     throw new NoCopilotProviderAvailable({
@@ -328,7 +460,11 @@ export class NativeExecutionEngine {
   async execute(
     plan: ExecutionPlanForKind<ValueExecutionKind>
   ): Promise<string | number[][] | number[]> {
-    const result = await executePreparedPlan(plan, this.executionMetrics);
+    const result = await executePreparedPlan(
+      plan,
+      this.executionMetrics,
+      this.byok
+    );
     if (result === null) {
       return this.noRoute(plan);
     }
@@ -345,7 +481,11 @@ export class NativeExecutionEngine {
   executeStream(
     plan: ExecutionPlanForKind<StreamExecutionKind>
   ): AsyncIterableIterator<string | StreamObject> {
-    const result = executePreparedStreamPlan(plan, this.executionMetrics);
+    const result = executePreparedStreamPlan(
+      plan,
+      this.executionMetrics,
+      this.byok
+    );
     if (result) {
       return result;
     }
@@ -361,7 +501,8 @@ export class NativeExecutionEngine {
       return runPreparedImageArtifactPlan(
         dispatch,
         plan,
-        this.executionMetrics
+        this.executionMetrics,
+        this.byok
       );
     }
 

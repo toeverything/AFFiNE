@@ -319,7 +319,7 @@ pub struct RequestedModelMatchResponse {
 pub struct ModelRegistryResolveRequest {
   #[napi(
     ts_type = "'openai_chat' | 'openai_responses' | 'anthropic' | 'cloudflare_workers_ai' | 'gemini_api' | \
-               'gemini_vertex' | 'fal' | 'perplexity' | 'anthropic_vertex' | 'morph'"
+               'gemini_vertex' | 'fal' | 'anthropic_vertex'"
   )]
   #[serde(skip_serializing_if = "Option::is_none")]
   pub backend_kind: Option<String>,
@@ -333,7 +333,7 @@ pub struct ModelRegistryResolveRequest {
 pub struct ModelRegistryMatchRequest {
   #[napi(
     ts_type = "'openai_chat' | 'openai_responses' | 'anthropic' | 'cloudflare_workers_ai' | 'gemini_api' | \
-               'gemini_vertex' | 'fal' | 'perplexity' | 'anthropic_vertex' | 'morph'"
+               'gemini_vertex' | 'fal' | 'anthropic_vertex'"
   )]
   pub backend_kind: String,
   pub cond: ModelConditionsContract,
@@ -346,7 +346,7 @@ pub struct ModelRegistryMatchRequest {
 pub struct ModelRegistryVariantContract {
   #[napi(
     ts_type = "'openai_chat' | 'openai_responses' | 'anthropic' | 'cloudflare_workers_ai' | 'gemini_api' | \
-               'gemini_vertex' | 'fal' | 'perplexity' | 'anthropic_vertex' | 'morph'"
+               'gemini_vertex' | 'fal' | 'anthropic_vertex'"
   )]
   pub backend_kind: String,
   pub canonical_key: String,

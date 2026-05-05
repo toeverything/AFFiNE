@@ -1,12 +1,11 @@
 import { CopilotProviderSideError, UserFriendlyError } from '../../../base';
 import { type LlmBackendConfig } from '../../../native';
-import type { CopilotTool } from '../tools';
 import { CopilotProvider } from './provider';
 import {
   type CopilotProviderExecution,
   type ProviderDriverSpec,
 } from './provider-runtime-contract';
-import { type CopilotChatTools, CopilotProviderType } from './types';
+import { CopilotProviderType } from './types';
 
 export type CloudflareWorkersAIConfig = {
   apiToken: string;
@@ -25,16 +24,6 @@ export class CloudflareWorkersAIProvider extends CopilotProvider<CloudflareWorke
     const config = this.getConfig(execution);
     return !!config.apiToken && (!!config.accountId || !!config.baseURL);
   }
-  override getProviderSpecificTools(
-    toolName: CopilotChatTools,
-    _model: string
-  ): [string, CopilotTool?] | undefined {
-    if (toolName === 'docEdit') {
-      return ['doc_edit', undefined];
-    }
-    return;
-  }
-
   private handleError(e: any) {
     if (e instanceof UserFriendlyError) {
       return e;

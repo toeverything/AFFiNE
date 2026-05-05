@@ -1,4 +1,4 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
 import {
   Args,
   Field,
@@ -7,7 +7,6 @@ import {
   Mutation,
   ObjectType,
   Parent,
-  Query,
   registerEnumType,
   ResolveField,
   Resolver,
@@ -19,7 +18,6 @@ import {
   CallMetric,
   CopilotDocNotFound,
   CopilotFailedToCreateMessage,
-  CopilotProviderSideError,
   CopilotSessionNotFound,
   type FileUpload,
   paginate,
@@ -28,10 +26,8 @@ import {
   RequestMutex,
   Throttle,
   TooManyRequest,
-  UserFriendlyError,
 } from '../../base';
 import { CurrentUser } from '../../core/auth';
-import { DocReader } from '../../core/doc';
 import { AccessController, DocAction } from '../../core/permission';
 import { UserType } from '../../core/user';
 import type { ListSessionOptions, UpdateChatSession } from '../../models';
@@ -40,7 +36,6 @@ import { ConversationInboxService } from './conversation/inbox';
 import { PromptService } from './prompt/service';
 import { CopilotProviderFactory } from './providers/factory';
 import { ModelOutputType, type StreamObject } from './providers/types';
-import { CapabilityRuntime } from './runtime/capability-runtime';
 import { ChatSessionService } from './session';
 import { type ChatHistory, type ChatMessage, SubmittedMessage } from './types';
 
@@ -376,9 +371,7 @@ export class CopilotResolver {
     private readonly chatSession: ChatSessionService,
     private readonly historyProjector: CompatHistoryProjector,
     private readonly inbox: ConversationInboxService,
-    private readonly docReader: DocReader,
-    private readonly providerFactory: CopilotProviderFactory,
-    private readonly runtime: CapabilityRuntime
+    private readonly providerFactory: CopilotProviderFactory
   ) {}
 
   @ResolveField(() => CopilotQuotaType, {
@@ -641,8 +634,6 @@ export class CopilotResolver {
       throw new TooManyRequest('Server is busy');
     }
 
-    await this.chatSession.checkQuota(user.id);
-
     return await this.chatSession.create({
       ...options,
       pinned: options.pinned ?? false,
@@ -724,7 +715,6 @@ export class CopilotResolver {
       throw new TooManyRequest('Server is busy');
     }
 
-    await this.chatSession.checkQuota(user.id);
     return await this.chatSession.update({
       ...options,
       userId: user.id,
@@ -751,8 +741,6 @@ export class CopilotResolver {
       // filter out session create request for root doc
       throw new CopilotDocNotFound({ docId: options.docId });
     }
-
-    await this.chatSession.checkQuota(user.id);
 
     return await this.chatSession.fork({
       ...options,
@@ -816,96 +804,6 @@ export class CopilotResolver {
       return await this.inbox.createMessage(user.id, options);
     } catch (e: any) {
       throw new CopilotFailedToCreateMessage(e.message);
-    }
-  }
-
-  @Query(() => String, {
-    description:
-      'Apply updates to a doc using LLM and return the merged markdown.',
-    deprecationReason: 'use Mutation.applyDocUpdates',
-  })
-  async applyDocUpdates(
-    @CurrentUser() user: CurrentUser,
-    @Args({ name: 'workspaceId', type: () => String })
-    workspaceId: string,
-    @Args({ name: 'docId', type: () => String })
-    docId: string,
-    @Args({ name: 'op', type: () => String })
-    op: string,
-    @Args({ name: 'updates', type: () => String })
-    updates: string
-  ): Promise<string> {
-    return this.applyDocUpdatesInternal(user, workspaceId, docId, op, updates);
-  }
-
-  @Mutation(() => String, {
-    description:
-      'Apply updates to a doc using LLM and return the merged markdown.',
-    name: 'applyDocUpdates',
-  })
-  async applyDocUpdatesMutation(
-    @CurrentUser() user: CurrentUser,
-    @Args({ name: 'workspaceId', type: () => String })
-    workspaceId: string,
-    @Args({ name: 'docId', type: () => String })
-    docId: string,
-    @Args({ name: 'op', type: () => String })
-    op: string,
-    @Args({ name: 'updates', type: () => String })
-    updates: string
-  ): Promise<string> {
-    return this.applyDocUpdatesInternal(user, workspaceId, docId, op, updates);
-  }
-
-  private async applyDocUpdatesInternal(
-    user: CurrentUser,
-    workspaceId: string,
-    docId: string,
-    op: string,
-    updates: string
-  ): Promise<string> {
-    await this.assertPermission(user, { workspaceId, docId });
-
-    const docContent = await this.docReader.getDocMarkdown(
-      workspaceId,
-      docId,
-      true
-    );
-    if (!docContent || !docContent.markdown) {
-      throw new NotFoundException('Doc not found or empty');
-    }
-
-    const markdown = docContent.markdown.trim();
-
-    const resolved = await this.providerFactory.resolveProvider({
-      modelId: 'morph-v3-large',
-      outputType: ModelOutputType.Text,
-    });
-    if (!resolved) {
-      throw new BadRequestException('No LLM provider available');
-    }
-
-    try {
-      return await this.runtime.text(
-        { modelId: 'morph-v3-large' },
-        [
-          {
-            role: 'user',
-            content: `<instruction>${op}</instruction>\n<code>${markdown}</code>\n<update>${updates}</update>`,
-          },
-        ],
-        { reasoning: false }
-      );
-    } catch (e: any) {
-      if (e instanceof UserFriendlyError) {
-        throw e;
-      } else {
-        throw new CopilotProviderSideError({
-          provider: resolved.provider.type,
-          kind: 'unexpected_response',
-          message: e?.message || 'Unexpected apply response',
-        });
-      }
     }
   }
 

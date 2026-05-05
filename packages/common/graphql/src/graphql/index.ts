@@ -1033,19 +1033,6 @@ export const uploadCommentAttachmentMutation = {
   file: true,
 };
 
-export const applyDocUpdatesMutation = {
-  id: 'applyDocUpdatesMutation' as const,
-  op: 'applyDocUpdates',
-  query: `mutation applyDocUpdates($workspaceId: String!, $docId: String!, $op: String!, $updates: String!) {
-  applyDocUpdates(
-    workspaceId: $workspaceId
-    docId: $docId
-    op: $op
-    updates: $updates
-  )
-}`,
-};
-
 export const addContextBlobMutation = {
   id: 'addContextBlobMutation' as const,
   op: 'addContextBlob',
@@ -2992,6 +2979,117 @@ export const workspaceBlobQuotaQuery = {
       humanReadable {
         blobLimit
       }
+    }
+  }
+}`,
+};
+
+export const clearWorkspaceByokConfigsMutation = {
+  id: 'clearWorkspaceByokConfigsMutation' as const,
+  op: 'clearWorkspaceByokConfigs',
+  query: `mutation clearWorkspaceByokConfigs($workspaceId: String!) {
+  clearWorkspaceByokConfigs(workspaceId: $workspaceId)
+}`,
+};
+
+export const deleteWorkspaceByokConfigMutation = {
+  id: 'deleteWorkspaceByokConfigMutation' as const,
+  op: 'deleteWorkspaceByokConfig',
+  query: `mutation deleteWorkspaceByokConfig($workspaceId: String!, $id: ID!) {
+  deleteWorkspaceByokConfig(workspaceId: $workspaceId, id: $id)
+}`,
+};
+
+export const reorderWorkspaceByokConfigsMutation = {
+  id: 'reorderWorkspaceByokConfigsMutation' as const,
+  op: 'reorderWorkspaceByokConfigs',
+  query: `mutation reorderWorkspaceByokConfigs($input: ReorderWorkspaceByokConfigsInput!) {
+  reorderWorkspaceByokConfigs(input: $input) {
+    id
+    sortOrder
+  }
+}`,
+};
+
+export const testWorkspaceByokConfigMutation = {
+  id: 'testWorkspaceByokConfigMutation' as const,
+  op: 'testWorkspaceByokConfig',
+  query: `mutation testWorkspaceByokConfig($input: TestWorkspaceByokConfigInput!) {
+  testWorkspaceByokConfig(input: $input) {
+    ok
+    status
+    message
+  }
+}`,
+};
+
+export const upsertWorkspaceByokConfigMutation = {
+  id: 'upsertWorkspaceByokConfigMutation' as const,
+  op: 'upsertWorkspaceByokConfig',
+  query: `mutation upsertWorkspaceByokConfig($input: UpsertWorkspaceByokConfigInput!) {
+  upsertWorkspaceByokConfig(input: $input) {
+    id
+  }
+}`,
+};
+
+export const createWorkspaceByokLocalLeaseMutation = {
+  id: 'createWorkspaceByokLocalLeaseMutation' as const,
+  op: 'createWorkspaceByokLocalLease',
+  query: `mutation createWorkspaceByokLocalLease($input: CreateWorkspaceByokLocalLeaseInput!) {
+  createWorkspaceByokLocalLease(input: $input) {
+    leaseId
+    expiresAt
+  }
+}`,
+};
+
+export const workspaceByokSettingsQuery = {
+  id: 'workspaceByokSettingsQuery' as const,
+  op: 'workspaceByokSettings',
+  query: `query workspaceByokSettings($id: String!, $from: DateTime!, $to: DateTime!) {
+  workspace(id: $id) {
+    id
+    byokSettings {
+      workspaceId
+      entitled
+      serverEntitled
+      localEntitled
+      entitlementRequired
+      allowedProviders
+      localStorageSupported
+      customEndpointSupported
+      hasAiPlan
+      keys {
+        id
+        provider
+        name
+        description
+        storage
+        configured
+        enabled
+        endpoint
+        endpointEditable
+        sortOrder
+        capabilities
+        testStatus
+        disabledReason
+        lastTestedAt
+        lastTestError
+        lastUsedAt
+        lastErrorAt
+        lastError
+      }
+      warnings {
+        featureKind
+        reason
+        requiredProviders
+      }
+    }
+    byokUsage(from: $from, to: $to) {
+      date
+      featureKind
+      totalTokens
     }
   }
 }`,

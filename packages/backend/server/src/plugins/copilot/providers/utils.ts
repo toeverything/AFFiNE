@@ -164,11 +164,6 @@ export function toError(error: unknown): Error {
   }
 }
 
-type DocEditFootnote = {
-  intent: string;
-  result: string;
-};
-
 function asRecord(value: unknown): Record<string, unknown> | null {
   if (value && typeof value === 'object' && !Array.isArray(value)) {
     return value as Record<string, unknown>;
@@ -183,8 +178,6 @@ export class TextStreamParser {
   private lastType: ChunkType | undefined;
 
   private prefix: string | null = this.CALLOUT_PREFIX;
-
-  private readonly docEditFootnotes: DocEditFootnote[] = [];
 
   public parse(chunk: CopilotTextStreamPart) {
     let result = '';
@@ -233,13 +226,6 @@ export class TextStreamParser {
             result += `\nWriting document "${chunk.input.title}"\n`;
             break;
           }
-          case 'doc_edit': {
-            this.docEditFootnotes.push({
-              intent: String(chunk.input.instructions ?? ''),
-              result: '',
-            });
-            break;
-          }
         }
         result = this.markAsCallout(result);
         break;
@@ -250,22 +236,6 @@ export class TextStreamParser {
         );
         result = this.addPrefix(result);
         switch (chunk.toolName) {
-          case 'doc_edit': {
-            const output = asRecord(chunk.output);
-            const array = output?.result;
-            if (Array.isArray(array)) {
-              result += array
-                .map(item => {
-                  return `\n${String(asRecord(item)?.changedContent ?? '')}\n`;
-                })
-                .join('');
-              this.docEditFootnotes[this.docEditFootnotes.length - 1].result =
-                result;
-            } else {
-              this.docEditFootnotes.pop();
-            }
-            break;
-          }
           case 'doc_semantic_search': {
             const output = chunk.output;
             if (Array.isArray(output)) {
@@ -319,10 +289,7 @@ export class TextStreamParser {
   }
 
   public end() {
-    const footnotes = this.docEditFootnotes.map((footnote, index) => {
-      return `[^edit${index + 1}]: ${JSON.stringify({ type: 'doc-edit', ...footnote })}`;
-    });
-    return footnotes.join('\n');
+    return '';
   }
 
   private addPrefix(text: string) {

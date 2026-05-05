@@ -14,7 +14,6 @@ import {
   AttachmentAdmissionHost,
 } from '../runtime/hosts/attachment-admission';
 import { AttachmentMaterializer } from '../runtime/hosts/attachment-materializer';
-import type { CopilotTool } from '../tools';
 import { CopilotProvider } from './provider';
 import { hasProviderModelBehaviorFlag } from './provider-model-runtime';
 import type {
@@ -22,7 +21,6 @@ import type {
   ProviderDriverSpec,
 } from './provider-runtime-contract';
 import {
-  CopilotChatTools,
   CopilotProviderType,
   type PromptAttachment,
   type PromptMessage,
@@ -62,16 +60,6 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
       kind: 'unexpected_response',
       message: e?.message || 'Unexpected openai response',
     });
-  }
-
-  override getProviderSpecificTools(
-    toolName: CopilotChatTools,
-    _model: string
-  ): [string, CopilotTool?] | undefined {
-    if (toolName === 'docEdit') {
-      return ['doc_edit', undefined];
-    }
-    return;
   }
 
   protected createNativeConfig(

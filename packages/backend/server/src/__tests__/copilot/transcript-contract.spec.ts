@@ -215,7 +215,7 @@ test('settleTask checks copilot quota before unlocking ready task', async t => {
     status: 'settled',
     protectedResult: payload,
   });
-  const checkQuota = Sinon.stub().rejects(new Error('quota exceeded'));
+  const assertQuotaOrByok = Sinon.stub().rejects(new Error('quota exceeded'));
   const service = new CopilotTranscriptionService(
     {
       copilotTranscriptTask: {
@@ -232,14 +232,18 @@ test('settleTask checks copilot quota before unlocking ready task', async t => {
     {} as never,
     {} as never,
     {} as never,
-    { checkQuota } as never
+    { assertQuotaOrByok } as never
   );
 
   await t.throwsAsync(
     () => service.settleTask('user-1', 'workspace-1', 'task-1'),
     { message: /quota exceeded/ }
   );
-  Sinon.assert.calledOnceWithExactly(checkQuota, 'user-1');
+  Sinon.assert.calledOnceWithMatch(assertQuotaOrByok, {
+    userId: 'user-1',
+    workspaceId: 'workspace-1',
+    featureKind: 'transcript',
+  });
   Sinon.assert.notCalled(settle);
 });
 

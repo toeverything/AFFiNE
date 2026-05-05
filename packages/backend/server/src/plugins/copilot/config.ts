@@ -12,9 +12,7 @@ import {
 import { CloudflareWorkersAIConfig } from './providers/cloudflare';
 import type { FalConfig } from './providers/fal';
 import { GeminiGenerativeConfig, GeminiVertexConfig } from './providers/gemini';
-import { MorphConfig } from './providers/morph';
 import { OpenAIConfig } from './providers/openai';
-import { PerplexityConfig } from './providers/perplexity';
 import {
   CopilotProviderType,
   ModelOutputType,
@@ -27,10 +25,8 @@ export type CopilotProviderConfigMap = {
   [CopilotProviderType.FAL]: FalConfig;
   [CopilotProviderType.Gemini]: GeminiGenerativeConfig;
   [CopilotProviderType.GeminiVertex]: GeminiVertexConfig;
-  [CopilotProviderType.Perplexity]: PerplexityConfig;
   [CopilotProviderType.Anthropic]: AnthropicOfficialConfig;
   [CopilotProviderType.AnthropicVertex]: AnthropicVertexConfig;
-  [CopilotProviderType.Morph]: MorphConfig;
 };
 
 export type ProviderSpecificConfig =
@@ -138,18 +134,9 @@ const VertexProviderConfigShape = z.object({
   fetch: z.any().optional(),
 });
 
-const PerplexityConfigShape = z.object({
-  apiKey: z.string(),
-  endpoint: z.string().optional(),
-});
-
 const AnthropicOfficialConfigShape = z.object({
   apiKey: z.string(),
   baseURL: z.string().optional(),
-});
-
-const MorphConfigShape = z.object({
-  apiKey: z.string().optional(),
 });
 
 const CopilotProviderProfileShape = z.discriminatedUnion('type', [
@@ -174,20 +161,12 @@ const CopilotProviderProfileShape = z.discriminatedUnion('type', [
     config: VertexProviderConfigShape,
   }),
   CopilotProviderProfileBaseShape.extend({
-    type: z.literal(CopilotProviderType.Perplexity),
-    config: PerplexityConfigShape,
-  }),
-  CopilotProviderProfileBaseShape.extend({
     type: z.literal(CopilotProviderType.Anthropic),
     config: AnthropicOfficialConfigShape,
   }),
   CopilotProviderProfileBaseShape.extend({
     type: z.literal(CopilotProviderType.AnthropicVertex),
     config: VertexProviderConfigShape,
-  }),
-  CopilotProviderProfileBaseShape.extend({
-    type: z.literal(CopilotProviderType.Morph),
-    config: MorphConfigShape,
   }),
 ]);
 
@@ -205,6 +184,13 @@ declare global {
   interface AppConfigSchema {
     copilot: {
       enabled: boolean;
+      byok: {
+        enabled: ConfigItem<boolean>;
+        allowedProviders: ConfigItem<
+          Array<'openai' | 'anthropic' | 'gemini' | 'fal'>
+        >;
+        allowCustomEndpoint: ConfigItem<boolean>;
+      };
       unsplash: ConfigItem<{
         key: string;
       }>;
@@ -220,10 +206,8 @@ declare global {
         fal: ConfigItem<FalConfig>;
         gemini: ConfigItem<GeminiGenerativeConfig>;
         geminiVertex: ConfigItem<GeminiVertexConfig>;
-        perplexity: ConfigItem<PerplexityConfig>;
         anthropic: ConfigItem<AnthropicOfficialConfig>;
         anthropicVertex: ConfigItem<AnthropicVertexConfig>;
-        morph: ConfigItem<MorphConfig>;
       };
     };
   }
@@ -233,6 +217,21 @@ defineModuleConfig('copilot', {
   enabled: {
     desc: 'Whether to enable the copilot plugin. <br> Document: <a href="https://docs.affine.pro/self-host-affine/administer/ai" target="_blank">https://docs.affine.pro/self-host-affine/administer/ai</a>',
     default: false,
+  },
+  'byok.enabled': {
+    desc: 'Whether to enable workspace BYOK.',
+    default: true,
+    shape: z.boolean(),
+  },
+  'byok.allowedProviders': {
+    desc: 'The allowlist for workspace BYOK providers.',
+    default: ['openai', 'anthropic', 'gemini', 'fal'],
+    shape: z.array(z.enum(['openai', 'anthropic', 'gemini', 'fal'])),
+  },
+  'byok.allowCustomEndpoint': {
+    desc: 'Whether workspace BYOK custom endpoints are accepted.',
+    default: false,
+    shape: z.boolean(),
   },
   'providers.profiles': {
     desc: 'The profile list for copilot providers.',
@@ -277,12 +276,6 @@ defineModuleConfig('copilot', {
     default: {},
     schema: VertexSchema,
   },
-  'providers.perplexity': {
-    desc: 'The config for the perplexity provider.',
-    default: {
-      apiKey: '',
-    },
-  },
   'providers.anthropic': {
     desc: 'The config for the anthropic provider.',
     default: {
@@ -294,10 +287,6 @@ defineModuleConfig('copilot', {
     desc: 'The config for the anthropic provider in Google Vertex AI.',
     default: {},
     schema: VertexSchema,
-  },
-  'providers.morph': {
-    desc: 'The config for the morph provider.',
-    default: {},
   },
   unsplash: {
     desc: 'The config for the unsplash key.',

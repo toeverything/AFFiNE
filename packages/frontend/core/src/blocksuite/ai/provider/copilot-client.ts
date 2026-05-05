@@ -6,7 +6,6 @@ import {
   addContextCategoryMutation,
   addContextDocMutation,
   addContextFileMutation,
-  applyDocUpdatesMutation,
   cleanupCopilotSessionMutation,
   createCopilotContextMutation,
   createCopilotMessageMutation,
@@ -473,6 +472,7 @@ export class CopilotClient {
       actionVersion,
       runId,
       retry,
+      byokLeaseId,
     }: {
       sessionId: string;
       messageId?: string;
@@ -483,6 +483,7 @@ export class CopilotClient {
       actionVersion?: string;
       runId?: string;
       retry?: boolean;
+      byokLeaseId?: string;
     },
     endpoint = Endpoint.StreamObject
   ) {
@@ -499,6 +500,7 @@ export class CopilotClient {
       actionVersion,
       runId,
       retry,
+      byokLeaseId,
     });
     if (queryString) {
       url += `?${queryString}`;
@@ -511,12 +513,14 @@ export class CopilotClient {
     sessionId: string,
     messageId?: string,
     seed?: string,
-    endpoint = Endpoint.Images
+    endpoint = Endpoint.Images,
+    byokLeaseId?: string
   ) {
     let url = `/api/copilot/chat/${sessionId}/${endpoint}`;
     const queryString = this.paramsToQueryString({
       messageId,
       seed,
+      byokLeaseId,
     });
     if (queryString) {
       url += `?${queryString}`;
@@ -547,23 +551,6 @@ export class CopilotClient {
       query: getWorkspaceEmbeddingStatusQuery,
       variables: { workspaceId },
     }).then(res => res.queryWorkspaceEmbeddingStatus);
-  }
-
-  applyDocUpdates(
-    workspaceId: string,
-    docId: string,
-    op: string,
-    updates: string
-  ) {
-    return this.gql({
-      query: applyDocUpdatesMutation,
-      variables: {
-        workspaceId,
-        docId,
-        op,
-        updates,
-      },
-    }).then(res => res.applyDocUpdates);
   }
 
   addContextBlob(options: OptionsField<typeof addContextBlobMutation>) {

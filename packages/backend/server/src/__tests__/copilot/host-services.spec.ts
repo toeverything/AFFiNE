@@ -1,11 +1,13 @@
 import test from 'ava';
 import Sinon from 'sinon';
 
-import type { Models } from '../../models';
+import { type Models } from '../../models';
+import { CopilotAccessPolicy } from '../../plugins/copilot/access';
 import { HistoryAttachmentUrlProjector } from '../../plugins/copilot/compat/history-attachment-url-projector';
 import { CompatHistoryProjector } from '../../plugins/copilot/compat/history-projector';
 import { HistoryPromptPreloadProjector } from '../../plugins/copilot/compat/history-prompt-preload-projector';
 import { HistoryVisibilityPolicy } from '../../plugins/copilot/compat/history-visibility-policy';
+import { ConversationPolicy } from '../../plugins/copilot/conversation/policy';
 import { CopilotEmbeddingClientService } from '../../plugins/copilot/embedding/client';
 import { CopilotProviderType } from '../../plugins/copilot/providers/types';
 import {
@@ -29,9 +31,11 @@ import {
   AttachmentMaterializer,
   resolveAttachmentFetchUrl,
 } from '../../plugins/copilot/runtime/hosts/attachment-materializer';
+import { ConversationHost } from '../../plugins/copilot/runtime/hosts/conversation-host';
 import { ImageResultHost } from '../../plugins/copilot/runtime/hosts/image-result-host';
 import { ResponsePostprocessor } from '../../plugins/copilot/runtime/hosts/response-postprocessor';
 import { TurnPersistence } from '../../plugins/copilot/runtime/hosts/turn-persistence';
+import { ToolRuntime } from '../../plugins/copilot/runtime/tool-runtime';
 
 function stubTurnPersistence(
   persistProjectedResult: Sinon.SinonStub = Sinon.stub().resolves(null)
@@ -40,6 +44,201 @@ function stubTurnPersistence(
     persistProjectedResult,
   } as unknown as TurnPersistence;
 }
+
+function stubConversationSession(latestUserTurn?: unknown) {
+  return {
+    config: {
+      sessionId: 'session-1',
+      userId: 'user-1',
+      workspaceId: 'workspace-1',
+    },
+    model: 'gpt-4o-mini',
+    stashTurns: latestUserTurn ? [latestUserTurn] : [],
+    latestUserTurn,
+    revertLatestMessage: Sinon.stub(),
+  };
+}
+
+test('ConversationPolicy should treat zero quota limit as exhausted', async t => {
+  const policy = new ConversationPolicy(
+    {
+      userFeature: { has: Sinon.stub().resolves(false) },
+      copilotSession: { countUserMessages: Sinon.stub().resolves(0) },
+    } as any,
+    {
+      getUserQuota: Sinon.stub().resolves({ copilotActionLimit: 0 }),
+    } as any
+  );
+
+  t.false(await policy.hasQuota('user-1'));
+  await t.throwsAsync(policy.checkQuota('user-1'));
+});
+
+test('CopilotAccessPolicy should check quota when BYOK does not cover the route', async t => {
+  const checkQuota = Sinon.stub().rejects(new Error('quota exceeded'));
+  const access = new CopilotAccessPolicy(
+    { checkQuota } as any,
+    { getProfiles: Sinon.stub().resolves([]) } as any
+  );
+
+  await t.throwsAsync(
+    access.resolveTurnRouteAccess({
+      userId: 'user-1',
+      workspaceId: 'workspace-1',
+    }),
+    { message: 'quota exceeded' }
+  );
+  Sinon.assert.calledOnceWithExactly(checkQuota, 'user-1');
+});
+
+test('CopilotAccessPolicy should skip quota when BYOK covers the route', async t => {
+  const checkQuota = Sinon.stub().rejects(new Error('quota exceeded'));
+  const access = new CopilotAccessPolicy(
+    { checkQuota } as any,
+    { getProfiles: Sinon.stub().resolves([{ id: 'profile-1' }]) } as any
+  );
+
+  const routeAccess = await access.resolveTurnRouteAccess({
+    userId: 'user-1',
+    workspaceId: 'workspace-1',
+  });
+
+  t.is(routeAccess.quotaBackedRoutesAllowed, undefined);
+  Sinon.assert.notCalled(checkQuota);
+});
+
+test('CopilotAccessPolicy should resolve BYOK coverage by feature kind', async t => {
+  const getProfiles = Sinon.stub().resolves([]);
+  const access = new CopilotAccessPolicy(
+    { hasQuota: Sinon.stub().resolves(true) } as any,
+    { getProfiles } as any
+  );
+
+  await access.getByokProfiles({
+    userId: 'user-1',
+    workspaceId: 'workspace-1',
+    featureKind: 'transcript',
+  });
+  await access.getByokProfiles({
+    userId: 'user-1',
+    workspaceId: 'workspace-1',
+    featureKind: 'rerank',
+  });
+
+  t.like(getProfiles.firstCall.args[0], {
+    userId: 'user-1',
+    workspaceId: 'workspace-1',
+    featureKind: 'transcript',
+  });
+  t.deepEqual(getProfiles.firstCall.args[1], { local: false, server: true });
+  t.like(getProfiles.secondCall.args[0], {
+    userId: 'user-1',
+    workspaceId: 'workspace-1',
+    featureKind: 'rerank',
+  });
+  t.deepEqual(getProfiles.secondCall.args[1], {
+    local: false,
+    server: false,
+  });
+});
+
+test('ConversationHost should delegate empty no-message stream access', async t => {
+  const session = stubConversationSession();
+  const resolveTurnRouteAccess = Sinon.stub().rejects(
+    new Error('quota exceeded')
+  );
+  const host = new ConversationHost(
+    {
+      get: Sinon.stub().resolves(session),
+      revertLatestMessage: Sinon.stub().resolves(undefined),
+    } as any,
+    {} as any,
+    {} as any,
+    { resolveTurnRouteAccess } as any
+  );
+
+  await t.throwsAsync(host.prepareTurn('user-1', 'session-1', {}), {
+    message: 'quota exceeded',
+  });
+  Sinon.assert.calledOnceWithMatch(resolveTurnRouteAccess, {
+    userId: 'user-1',
+    workspaceId: 'workspace-1',
+  });
+});
+
+test('ConversationHost should return access decision for empty no-message stream', async t => {
+  const session = stubConversationSession();
+  const resolveTurnRouteAccess = Sinon.stub().resolves({
+    byokProfiles: [{ id: 'profile-1' }],
+    quotaBackedRoutesAllowed: undefined,
+  });
+  const host = new ConversationHost(
+    {
+      get: Sinon.stub().resolves(session),
+      revertLatestMessage: Sinon.stub().resolves(undefined),
+    } as any,
+    {} as any,
+    {} as any,
+    { resolveTurnRouteAccess } as any
+  );
+
+  const prepared = await host.prepareTurn('user-1', 'session-1', {});
+
+  t.is(prepared.latestTurn, undefined);
+  t.is(prepared.quotaBackedRoutesAllowed, undefined);
+  Sinon.assert.calledOnce(resolveTurnRouteAccess);
+});
+
+test('ToolRuntime should pass route context into prompt-backed tools', async t => {
+  const promptRuntime = {
+    runText: Sinon.stub().resolves('<html><body>done</body></html>'),
+  };
+  const runtime = new ToolRuntime(
+    {} as any,
+    {} as any,
+    {} as any,
+    {} as any,
+    {} as any,
+    {} as any,
+    promptRuntime as any,
+    {} as any
+  );
+
+  const tools = await runtime.getTools(
+    {
+      tools: ['codeArtifact'],
+      user: 'user-1',
+      session: 'session-1',
+      workspace: 'workspace-1',
+      byokLeaseId: 'lease-1',
+      featureKind: 'chat',
+      quotaBackedRoutesAllowed: false,
+    },
+    'gpt-4o-mini'
+  );
+
+  const result = await tools.code_artifact.execute?.(
+    { title: 'Demo', userPrompt: 'build a page' },
+    {}
+  );
+
+  t.like(result as object, { title: 'Demo' });
+  Sinon.assert.calledOnceWithMatch(
+    promptRuntime.runText,
+    'Code Artifact',
+    { content: 'build a page' },
+    {
+      providerOptions: {
+        user: 'user-1',
+        session: 'session-1',
+        workspace: 'workspace-1',
+        byokLeaseId: 'lease-1',
+        featureKind: 'chat',
+        quotaBackedRoutesAllowed: false,
+      },
+    }
+  );
+});
 
 test('ResponsePostprocessor should build text, object and image assistant turns', t => {
   const postprocessor = new ResponsePostprocessor();
@@ -294,6 +493,96 @@ test('CopilotEmbeddingClientService should refresh configured client and clear u
   Sinon.assert.alwaysCalledWithExactly(
     runtime.embeddingConfigured,
     'text-embedding-3-large'
+  );
+});
+
+test('CopilotEmbeddingClientService should keep dynamic BYOK embedding client without global provider', async t => {
+  const taskPolicy = {
+    resolveEmbeddingModelId: () => 'gemini-embedding-001',
+    resolveRerankModelId: () => 'gpt-4o-mini',
+  };
+  const runtime = {
+    embeddingConfigured: Sinon.stub().resolves(false),
+  };
+  const service = new CopilotEmbeddingClientService(
+    taskPolicy as any,
+    runtime as any,
+    {} as any
+  );
+
+  const client = await service.refresh();
+
+  t.truthy(client);
+  t.is(service.getClient(), client);
+  Sinon.assert.calledOnceWithExactly(
+    runtime.embeddingConfigured,
+    'gemini-embedding-001'
+  );
+});
+
+test('CopilotEmbeddingClientService should pass workspace context into embedding routes', async t => {
+  const signal = new AbortController().signal;
+  const taskPolicy = {
+    resolveEmbeddingModelId: () => 'gemini-embedding-001',
+    resolveRerankModelId: () => 'gpt-4o-mini',
+  };
+  const runtime = {
+    embeddingConfigured: Sinon.stub().resolves(true),
+    embed: Sinon.stub().resolves([[0.1]]),
+    rerank: Sinon.stub().resolves([0.8]),
+  };
+  const service = new CopilotEmbeddingClientService(
+    taskPolicy as any,
+    runtime as any
+  );
+  const client = await service.refresh();
+
+  t.truthy(client);
+  await client?.getEmbeddings(['hello'], {
+    workspaceId: 'workspace-1',
+    userId: 'user-1',
+    featureKind: 'workspace_indexing',
+    signal,
+  });
+
+  Sinon.assert.calledOnceWithMatch(
+    runtime.embed,
+    'gemini-embedding-001',
+    ['hello'],
+    {
+      dimensions: Sinon.match.number,
+      workspace: 'workspace-1',
+      user: 'user-1',
+      featureKind: 'workspace_indexing',
+      signal,
+    }
+  );
+
+  await client?.reRank(
+    'hello',
+    [{ chunk: 0, content: 'hello', distance: 0.2 }],
+    1,
+    {
+      workspaceId: 'workspace-1',
+      userId: 'user-1',
+      featureKind: 'workspace_indexing',
+      signal,
+    }
+  );
+
+  Sinon.assert.calledOnceWithMatch(
+    runtime.rerank,
+    'gpt-4o-mini',
+    {
+      query: 'hello',
+      candidates: [{ id: '0', text: 'hello' }],
+    },
+    {
+      workspace: 'workspace-1',
+      user: 'user-1',
+      featureKind: 'rerank',
+      signal,
+    }
   );
 });
 

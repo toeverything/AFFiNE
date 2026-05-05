@@ -48,7 +48,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createSessionDeleteHandler } from '../../chat-panel-utils';
 import * as styles from './chat.css';
 import {
+  getChatContentKey,
   resolveInitialSession,
+  shouldResetChatPanelOnUserInfoChange,
   type WorkbenchLike,
 } from './chat-panel-session';
 
@@ -98,8 +100,10 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
   const chatToolbarContainerRef = useRef<HTMLDivElement | null>(null);
   const contentKeyRef = useRef<string | null>(null);
   const prevSessionIdRef = useRef<string | null>(null);
+  const prevSessionDocIdRef = useRef<string | null>(null);
   const lastDocIdRef = useRef<string | null>(null);
   const sessionLoadSeqRef = useRef(0);
+  const userIdRef = useRef<string | null | undefined>(undefined);
 
   const doc = editor?.doc;
   const host = editor?.host;
@@ -346,11 +350,31 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
   }, [chatContent, chatToolbar, session]);
 
   useEffect(() => {
-    const subscription = AIProvider.slots.userInfo.subscribe(() => {
+    let disposed = false;
+    Promise.resolve(AIProvider.userInfo)
+      .then(userInfo => {
+        if (!disposed && userIdRef.current === undefined) {
+          userIdRef.current = userInfo?.id ?? null;
+        }
+      })
+      .catch(console.error);
+    const subscription = AIProvider.slots.userInfo.subscribe(userInfo => {
+      const nextUserId = userInfo?.id ?? null;
+      const shouldReset = shouldResetChatPanelOnUserInfoChange({
+        previousUserId: userIdRef.current,
+        nextUserId,
+      });
+      userIdRef.current = nextUserId;
+      if (!shouldReset) {
+        return;
+      }
       resetPanel();
       initPanel().catch(console.error);
     });
-    return () => subscription.unsubscribe();
+    return () => {
+      disposed = true;
+      subscription.unsubscribe();
+    };
   }, [initPanel, resetPanel]);
 
   useEffect(() => {
@@ -383,22 +407,20 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
     return () => subscription.unsubscribe();
   }, [doc, initPanel, session]);
 
-  const hasSessionHistory = !!session?.messages?.length;
-  const sessionSwitched = !!(
-    session?.sessionId &&
-    prevSessionIdRef.current &&
-    prevSessionIdRef.current !== session.sessionId
-  );
-  const contentKey =
-    hasPinned || (session?.sessionId && (hasSessionHistory || sessionSwitched))
-      ? (session?.sessionId ?? doc?.id ?? 'chat-panel')
-      : (doc?.id ?? 'chat-panel');
+  const contentKey = getChatContentKey({
+    docId: doc?.id,
+    hasPinned,
+    previousSessionDocId: prevSessionDocIdRef.current,
+    previousSessionId: prevSessionIdRef.current,
+    session,
+  });
 
   useEffect(() => {
     if (session?.sessionId) {
       prevSessionIdRef.current = session.sessionId;
+      prevSessionDocIdRef.current = session.docId ?? doc?.id ?? null;
     }
-  }, [session?.sessionId]);
+  }, [doc?.id, session?.docId, session?.sessionId]);
 
   useEffect(() => {
     if (!chatContent) {

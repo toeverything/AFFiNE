@@ -1,4 +1,9 @@
 import type { AIToolsConfig } from '@affine/core/modules/ai-button';
+import { apis, type ClientHandler } from '@affine/electron-api';
+import {
+  ByokProvider,
+  createWorkspaceByokLocalLeaseMutation,
+} from '@affine/graphql';
 import { partition } from 'lodash-es';
 
 import { AIProvider } from './ai-provider';
@@ -7,9 +12,79 @@ import { toTextStream } from './event-source';
 
 const TIMEOUT = 50000;
 
+function isElectronBuild() {
+  return typeof BUILD_CONFIG !== 'undefined' && BUILD_CONFIG.isElectron;
+}
+
+function byokStorageApi(): ClientHandler['byokStorage'] | undefined {
+  return isElectronBuild() ? apis?.byokStorage : undefined;
+}
+
+function toGraphqlByokProvider(provider: string): ByokProvider | null {
+  switch (provider) {
+    case ByokProvider.openai:
+      return ByokProvider.openai;
+    case ByokProvider.anthropic:
+      return ByokProvider.anthropic;
+    case ByokProvider.gemini:
+      return ByokProvider.gemini;
+    case ByokProvider.fal:
+      return ByokProvider.fal;
+    default:
+      return null;
+  }
+}
+
+async function createWorkspaceByokLocalLease(
+  client: CopilotClient,
+  workspaceId?: string
+) {
+  const storage = byokStorageApi();
+  if (!workspaceId || !storage) {
+    return undefined;
+  }
+
+  try {
+    if (!(await storage.isSupported())) return undefined;
+    const providers = await storage.getWorkspaceLeaseProviders(workspaceId);
+    if (!providers.length) return undefined;
+    const leaseProviders = providers.flatMap(provider => {
+      const gqlProvider = toGraphqlByokProvider(provider.provider);
+      return gqlProvider
+        ? [
+            {
+              provider: gqlProvider,
+              name: provider.name,
+              description: provider.description ?? null,
+              apiKey: provider.apiKey,
+              endpoint: provider.endpoint ?? null,
+              sortOrder: provider.sortOrder ?? 0,
+              enabled: provider.enabled ?? true,
+            },
+          ]
+        : [];
+    });
+    if (!leaseProviders.length) return undefined;
+    const result = await client.gql({
+      query: createWorkspaceByokLocalLeaseMutation,
+      variables: {
+        input: {
+          workspaceId,
+          providers: leaseProviders,
+        },
+      },
+    });
+    return result.createWorkspaceByokLocalLease.leaseId;
+  } catch (error) {
+    console.error('Failed to create workspace BYOK local lease', error);
+    return undefined;
+  }
+}
+
 export type TextToTextOptions = {
   client: CopilotClient;
   sessionId: string;
+  workspaceId?: string;
   content?: string;
   attachments?: (string | Blob | File)[];
   params?: Record<string, any>;
@@ -114,6 +189,7 @@ async function createMessage({
 export function textToText({
   client,
   sessionId,
+  workspaceId,
   content,
   attachments,
   params,
@@ -145,6 +221,10 @@ export function textToText({
             signal,
           });
         }
+        const byokLeaseId = await createWorkspaceByokLocalLease(
+          client,
+          workspaceId
+        );
         const eventSource = client.chatTextStream(
           {
             sessionId,
@@ -156,6 +236,7 @@ export function textToText({
             actionVersion,
             runId,
             retry,
+            byokLeaseId,
           },
           endpoint
         );
@@ -203,6 +284,10 @@ export function textToText({
           signal,
         });
       }
+      const byokLeaseId = await createWorkspaceByokLocalLease(
+        client,
+        workspaceId
+      );
       const eventSource = client.chatTextStream(
         {
           sessionId,
@@ -214,6 +299,7 @@ export function textToText({
           actionVersion,
           runId,
           retry,
+          byokLeaseId,
         },
         endpoint
       );
@@ -258,6 +344,7 @@ export function textToText({
 export function toImage({
   content,
   sessionId,
+  workspaceId,
   attachments,
   params,
   seed,
@@ -284,6 +371,10 @@ export function toImage({
           signal,
         });
       }
+      const byokLeaseId = await createWorkspaceByokLocalLease(
+        client,
+        workspaceId
+      );
       const eventSource =
         endpoint === Endpoint.Action
           ? client.chatTextStream(
@@ -294,10 +385,17 @@ export function toImage({
                 actionVersion,
                 runId,
                 retry,
+                byokLeaseId,
               },
               Endpoint.Action
             )
-          : client.imagesStream(sessionId, messageId, seed, endpoint);
+          : client.imagesStream(
+              sessionId,
+              messageId,
+              seed,
+              endpoint,
+              byokLeaseId
+            );
       AIProvider.LAST_ACTION_SESSIONID = sessionId;
 
       for await (const event of toTextStream(eventSource, {

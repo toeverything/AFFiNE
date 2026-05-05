@@ -10,7 +10,7 @@ import {
   sniffMime,
 } from '../../../base';
 import { Models } from '../../../models';
-import { ConversationPolicy } from '../conversation/policy';
+import { CopilotAccessPolicy } from '../access';
 import { PromptService } from '../prompt';
 import { CopilotProviderType } from '../providers/types';
 import { ActionRuntimeBridge } from '../runtime/action-runtime-bridge';
@@ -62,7 +62,7 @@ export class CopilotTranscriptionService {
     private readonly tasks: TaskPolicy,
     private readonly prompts: PromptService,
     private readonly actionBridge: ActionRuntimeBridge,
-    @Optional() private readonly conversationPolicy?: ConversationPolicy
+    @Optional() private readonly access?: CopilotAccessPolicy
   ) {}
 
   private parseTaskPayload(payload: unknown): TranscriptionPayloadV2 {
@@ -307,13 +307,17 @@ export class CopilotTranscriptionService {
       return null;
     }
 
-    const settled =
-      task.status === 'settled'
-        ? task
-        : await (async () => {
-            await this.conversationPolicy?.checkQuota(userId);
-            return await this.models.copilotTranscriptTask.settle(task.id);
-          })();
+    if (task.status === 'settled') {
+      return this.taskToJob(task);
+    }
+
+    await this.access?.assertQuotaOrByok({
+      userId,
+      workspaceId,
+      featureKind: 'transcript',
+    });
+
+    const settled = await this.models.copilotTranscriptTask.settle(task.id);
     return this.taskToJob(settled);
   }
 
@@ -378,6 +382,11 @@ export class CopilotTranscriptionService {
           stepId: 'transcribe',
           modelId,
           messages,
+          options: {
+            user: task.userId,
+            workspace: task.workspaceId,
+            featureKind: 'transcript',
+          },
           prefer: CopilotProviderType.Gemini,
           responseContract: TranscriptActionResultContract,
         },

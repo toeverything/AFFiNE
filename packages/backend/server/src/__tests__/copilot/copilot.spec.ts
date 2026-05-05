@@ -139,9 +139,6 @@ test.before(async t => {
             fal: {
               apiKey: process.env.COPILOT_FAL_API_KEY ?? '1',
             },
-            perplexity: {
-              apiKey: process.env.COPILOT_PERPLEXITY_API_KEY ?? '1',
-            },
             anthropic: {
               apiKey: process.env.COPILOT_ANTHROPIC_API_KEY ?? '1',
             },

@@ -21,18 +21,6 @@ const DEFAULT_MIDDLEWARE_BY_TYPE: Record<
   [CopilotProviderType.AnthropicVertex]: {
     node: { text: DEFAULT_NODE_TEXT_MIDDLEWARE },
   },
-  [CopilotProviderType.Morph]: {
-    rust: {
-      request: ['clamp_max_tokens'],
-    },
-    node: { text: DEFAULT_NODE_TEXT_MIDDLEWARE },
-  },
-  [CopilotProviderType.Perplexity]: {
-    rust: {
-      request: ['clamp_max_tokens'],
-    },
-    node: { text: DEFAULT_NODE_TEXT_MIDDLEWARE },
-  },
   [CopilotProviderType.Gemini]: {
     node: { text: DEFAULT_NODE_TEXT_MIDDLEWARE },
   },
