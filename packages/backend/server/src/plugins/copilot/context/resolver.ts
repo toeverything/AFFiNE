@@ -750,14 +750,17 @@ export class CopilotContextResolver {
         sniffMime(buffer, mimetype) || mimetype
       );
 
-      await this.jobs.addFileEmbeddingQueue({
-        userId: user.id,
-        workspaceId: session.workspaceId,
-        contextId: session.id,
-        blobId: file.blobId,
-        fileId: file.id,
-        fileName: file.name,
-      });
+      await this.jobs.addFileEmbeddingQueue(
+        {
+          userId: user.id,
+          workspaceId: session.workspaceId,
+          contextId: session.id,
+          blobId: file.blobId,
+          fileId: file.id,
+          fileName: file.name,
+        },
+        { priority: 0 }
+      );
 
       return file;
     } catch (e: any) {

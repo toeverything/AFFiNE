@@ -7,14 +7,7 @@ import { CopilotProviderType } from '../../plugins/copilot/providers/types';
 test('resolveProviderMiddleware should include anthropic defaults', t => {
   const middleware = resolveProviderMiddleware(CopilotProviderType.Anthropic);
 
-  t.deepEqual(middleware.rust?.request, [
-    'normalize_messages',
-    'tool_schema_rewrite',
-  ]);
-  t.deepEqual(middleware.rust?.stream, [
-    'stream_event_normalize',
-    'citation_indexing',
-  ]);
+  t.is(middleware.rust, undefined);
   t.deepEqual(middleware.node?.text, ['citation_footnote', 'callout']);
 });
 
@@ -24,10 +17,7 @@ test('resolveProviderMiddleware should merge defaults and overrides', t => {
     node: { text: ['thinking_format'] },
   });
 
-  t.deepEqual(middleware.rust?.request, [
-    'normalize_messages',
-    'clamp_max_tokens',
-  ]);
+  t.deepEqual(middleware.rust?.request, ['clamp_max_tokens']);
   t.deepEqual(middleware.node?.text, [
     'citation_footnote',
     'callout',
@@ -48,9 +38,6 @@ test('buildProviderRegistry should normalize profile middleware defaults', t => 
 
   const profile = registry.profiles.get('openai-main');
   t.truthy(profile);
-  t.deepEqual(profile?.middleware.rust?.stream, [
-    'stream_event_normalize',
-    'citation_indexing',
-  ]);
+  t.is(profile?.middleware.rust, undefined);
   t.deepEqual(profile?.middleware.node?.text, ['citation_footnote', 'callout']);
 });

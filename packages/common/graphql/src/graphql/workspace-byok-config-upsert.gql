@@ -1,0 +1,5 @@
+mutation upsertWorkspaceByokConfig($input: UpsertWorkspaceByokConfigInput!) {
+  upsertWorkspaceByokConfig(input: $input) {
+    id
+  }
+}

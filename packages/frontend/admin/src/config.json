@@ -313,9 +313,17 @@
       "type": "Boolean",
       "desc": "Whether to enable the copilot plugin. <br> Document: <a href=\"https://docs.affine.pro/self-host-affine/administer/ai\" target=\"_blank\">https://docs.affine.pro/self-host-affine/administer/ai</a>"
     },
-    "scenarios": {
-      "type": "Object",
-      "desc": "Use custom models in scenarios and override default settings."
+    "byok.enabled": {
+      "type": "Boolean",
+      "desc": "Whether to enable workspace BYOK."
+    },
+    "byok.allowedProviders": {
+      "type": "Array",
+      "desc": "The allowlist for workspace BYOK providers."
+    },
+    "byok.allowCustomEndpoint": {
+      "type": "Boolean",
+      "desc": "Whether workspace BYOK custom endpoints are accepted."
     },
     "providers.profiles": {
       "type": "Array",
@@ -346,10 +354,6 @@
       "type": "Object",
       "desc": "The config for the gemini provider in Google Vertex AI."
     },
-    "providers.perplexity": {
-      "type": "Object",
-      "desc": "The config for the perplexity provider."
-    },
     "providers.anthropic": {
       "type": "Object",
       "desc": "The config for the anthropic provider."
@@ -357,10 +361,6 @@
     "providers.anthropicVertex": {
       "type": "Object",
       "desc": "The config for the anthropic provider in Google Vertex AI."
-    },
-    "providers.morph": {
-      "type": "Object",
-      "desc": "The config for the morph provider."
     },
     "unsplash": {
       "type": "Object",

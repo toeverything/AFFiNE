@@ -1,4 +1,10 @@
 import type { AIToolsConfig } from '@affine/core/modules/ai-button';
+import { apis, type ClientHandler } from '@affine/electron-api';
+import { UserFriendlyError } from '@affine/error';
+import {
+  ByokProvider,
+  createWorkspaceByokLocalLeaseMutation,
+} from '@affine/graphql';
 import { partition } from 'lodash-es';
 
 import { AIProvider } from './ai-provider';
@@ -7,9 +13,99 @@ import { toTextStream } from './event-source';
 
 const TIMEOUT = 50000;
 
+function isElectronBuild() {
+  return typeof BUILD_CONFIG !== 'undefined' && BUILD_CONFIG.isElectron;
+}
+
+function byokStorageApi(): ClientHandler['byokStorage'] | undefined {
+  return isElectronBuild() ? apis?.byokStorage : undefined;
+}
+
+function toGraphqlByokProvider(provider: string): ByokProvider | null {
+  switch (provider) {
+    case ByokProvider.openai:
+      return ByokProvider.openai;
+    case ByokProvider.anthropic:
+      return ByokProvider.anthropic;
+    case ByokProvider.gemini:
+      return ByokProvider.gemini;
+    case ByokProvider.fal:
+      return ByokProvider.fal;
+    default:
+      return null;
+  }
+}
+
+function errorMetadata(error: unknown) {
+  if (!error || typeof error !== 'object') {
+    return { kind: typeof error };
+  }
+  const record = error as Record<string, unknown>;
+  return {
+    name: typeof record.name === 'string' ? record.name : undefined,
+    code: typeof record.code === 'string' ? record.code : undefined,
+    status:
+      typeof record.status === 'number' || typeof record.status === 'string'
+        ? record.status
+        : undefined,
+    type: typeof record.type === 'string' ? record.type : undefined,
+  };
+}
+
+async function createWorkspaceByokLocalLease(
+  client: CopilotClient,
+  workspaceId?: string
+) {
+  const storage = byokStorageApi();
+  if (!workspaceId || !storage) {
+    return undefined;
+  }
+
+  try {
+    if (!(await storage.isSupported())) return undefined;
+    const providers = await storage.getWorkspaceLeaseProviders(workspaceId);
+    if (!providers.length) return undefined;
+    const leaseProviders = providers.flatMap(provider => {
+      const gqlProvider = toGraphqlByokProvider(provider.provider);
+      return gqlProvider
+        ? [
+            {
+              provider: gqlProvider,
+              name: provider.name,
+              description: provider.description ?? null,
+              apiKey: provider.apiKey,
+              endpoint: provider.endpoint ?? null,
+              sortOrder: provider.sortOrder ?? 0,
+              enabled: provider.enabled ?? true,
+            },
+          ]
+        : [];
+    });
+    if (!leaseProviders.length) return undefined;
+
+    const result = await client.gql({
+      query: createWorkspaceByokLocalLeaseMutation,
+      variables: {
+        input: {
+          workspaceId,
+          providers: leaseProviders,
+        },
+      },
+    });
+    return result.createWorkspaceByokLocalLease.leaseId;
+  } catch (error) {
+    console.warn(
+      'Failed to create workspace BYOK local lease',
+      errorMetadata(error)
+    );
+    throw UserFriendlyError.fromAny(error);
+  }
+}
+
 export type TextToTextOptions = {
   client: CopilotClient;
   sessionId: string;
+  workspaceId?: string;
   content?: string;
   attachments?: (string | Blob | File)[];
   params?: Record<string, any>;
@@ -18,8 +114,10 @@ export type TextToTextOptions = {
   signal?: AbortSignal;
   retry?: boolean;
   endpoint?: Endpoint;
+  actionId?: string;
+  actionVersion?: string;
+  runId?: string;
   isRootSession?: boolean;
-  postfix?: (text: string) => string;
   reasoning?: boolean;
   modelId?: string;
   toolsConfig?: AIToolsConfig;
@@ -112,6 +210,7 @@ async function createMessage({
 export function textToText({
   client,
   sessionId,
+  workspaceId,
   content,
   attachments,
   params,
@@ -120,7 +219,9 @@ export function textToText({
   timeout = TIMEOUT,
   retry = false,
   endpoint = Endpoint.StreamObject,
-  postfix,
+  actionId,
+  actionVersion,
+  runId,
   reasoning,
   modelId,
   toolsConfig,
@@ -141,6 +242,16 @@ export function textToText({
             signal,
           });
         }
+        if (signal?.aborted) {
+          return;
+        }
+        const byokLeaseId = await createWorkspaceByokLocalLease(
+          client,
+          workspaceId
+        );
+        if (signal?.aborted) {
+          return;
+        }
         const eventSource = client.chatTextStream(
           {
             sessionId,
@@ -148,6 +259,11 @@ export function textToText({
             reasoning,
             modelId,
             toolsConfig,
+            actionId,
+            actionVersion,
+            runId,
+            retry,
+            byokLeaseId,
           },
           endpoint
         );
@@ -166,25 +282,12 @@ export function textToText({
             signal.addEventListener('abort', onAbort, { once: true });
           }
 
-          if (postfix) {
-            const messages: string[] = [];
-            for await (const event of toTextStream(eventSource, {
-              timeout,
-              signal,
-            })) {
-              if (event.type === 'message') {
-                messages.push(event.data);
-              }
-            }
-            yield postfix(messages.join(''));
-          } else {
-            for await (const event of toTextStream(eventSource, {
-              timeout,
-              signal,
-            })) {
-              if (event.type === 'message') {
-                yield event.data;
-              }
+          for await (const event of toTextStream(eventSource, {
+            timeout,
+            signal,
+          })) {
+            if (event.type === 'message') {
+              yield event.data;
             }
           }
         } finally {
@@ -208,6 +311,16 @@ export function textToText({
           signal,
         });
       }
+      if (signal?.aborted) {
+        return '';
+      }
+      const byokLeaseId = await createWorkspaceByokLocalLease(
+        client,
+        workspaceId
+      );
+      if (signal?.aborted) {
+        return '';
+      }
       const eventSource = client.chatTextStream(
         {
           sessionId,
@@ -215,6 +328,11 @@ export function textToText({
           reasoning,
           modelId,
           toolsConfig,
+          actionId,
+          actionVersion,
+          runId,
+          retry,
+          byokLeaseId,
         },
         endpoint
       );
@@ -244,7 +362,7 @@ export function textToText({
         }
 
         const result = messages.join('');
-        return postfix ? postfix(result) : result;
+        return result;
       } finally {
         eventSource.close();
         if (signal && onAbort) {
@@ -259,6 +377,7 @@ export function textToText({
 export function toImage({
   content,
   sessionId,
+  workspaceId,
   attachments,
   params,
   seed,
@@ -266,6 +385,9 @@ export function toImage({
   timeout = TIMEOUT,
   retry = false,
   endpoint,
+  actionId,
+  actionVersion,
+  runId,
   client,
 }: ToImageOptions) {
   let messageId: string | undefined;
@@ -282,12 +404,37 @@ export function toImage({
           signal,
         });
       }
-      const eventSource = client.imagesStream(
-        sessionId,
-        messageId,
-        seed,
-        endpoint
+      if (signal?.aborted) {
+        return;
+      }
+      const byokLeaseId = await createWorkspaceByokLocalLease(
+        client,
+        workspaceId
       );
+      if (signal?.aborted) {
+        return;
+      }
+      const eventSource =
+        endpoint === Endpoint.Action
+          ? client.chatTextStream(
+              {
+                sessionId,
+                messageId,
+                actionId,
+                actionVersion,
+                runId,
+                retry,
+                byokLeaseId,
+              },
+              Endpoint.Action
+            )
+          : client.imagesStream(
+              sessionId,
+              messageId,
+              seed,
+              endpoint,
+              byokLeaseId
+            );
       AIProvider.LAST_ACTION_SESSIONID = sessionId;
 
       for await (const event of toTextStream(eventSource, {

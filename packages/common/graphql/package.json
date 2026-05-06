@@ -26,7 +26,7 @@
     "@affine/debug": "workspace:*",
     "@affine/error": "workspace:*",
     "graphql": "^16.9.0",
-    "lodash": "^4.17.23",
+    "lodash": "^4.18.1",
     "lodash-es": "^4.17.23"
   }
 }

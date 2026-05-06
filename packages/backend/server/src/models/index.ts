@@ -16,9 +16,13 @@ import { CalendarSubscriptionModel } from './calendar-subscription';
 import { CommentModel } from './comment';
 import { CommentAttachmentModel } from './comment-attachment';
 import { AppConfigModel } from './config';
+import { CopilotActionRunModel } from './copilot-action-run';
+import { CopilotWorkspaceByokConfigModel } from './copilot-byok';
 import { CopilotContextModel } from './copilot-context';
 import { CopilotJobModel } from './copilot-job';
 import { CopilotSessionModel } from './copilot-session';
+import { CopilotTranscriptTaskModel } from './copilot-transcript-task';
+import { CopilotUsageModel } from './copilot-usage';
 import { CopilotWorkspaceConfigModel } from './copilot-workspace';
 import { DocModel } from './doc';
 import { DocUserModel } from './doc-user';
@@ -56,8 +60,12 @@ const MODELS = {
   notification: NotificationModel,
   userSettings: UserSettingsModel,
   copilotSession: CopilotSessionModel,
+  copilotUsage: CopilotUsageModel,
+  copilotTranscriptTask: CopilotTranscriptTaskModel,
+  copilotActionRun: CopilotActionRunModel,
   copilotContext: CopilotContextModel,
   copilotWorkspace: CopilotWorkspaceConfigModel,
+  copilotWorkspaceByokConfig: CopilotWorkspaceByokConfigModel,
   copilotJob: CopilotJobModel,
   appConfig: AppConfigModel,
   comment: CommentModel,
@@ -129,9 +137,12 @@ export * from './calendar-subscription';
 export * from './comment';
 export * from './comment-attachment';
 export * from './common';
+export * from './copilot-byok';
 export * from './copilot-context';
 export * from './copilot-job';
 export * from './copilot-session';
+export * from './copilot-transcript-task';
+export * from './copilot-usage';
 export * from './copilot-workspace';
 export * from './doc';
 export * from './doc-user';

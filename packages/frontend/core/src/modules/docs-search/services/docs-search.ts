@@ -3,7 +3,13 @@ import type { IndexerPreferOptions, IndexerSyncState } from '@affine/nbstore';
 import type { ReferenceParams } from '@blocksuite/affine/model';
 import { fromPromise, LiveData, Service } from '@toeverything/infra';
 import { isEmpty, omit } from 'lodash-es';
-import { map, type Observable, of, switchMap } from 'rxjs';
+import {
+  distinctUntilChanged,
+  map,
+  type Observable,
+  of,
+  switchMap,
+} from 'rxjs';
 import { z } from 'zod';
 
 import { normalizeSearchText } from '../../../utils/normalize-search-text';
@@ -234,6 +240,20 @@ export class DocsSearchService extends Service {
               })
               .filter(ref => !!ref);
           });
+        }),
+        // Only propagate downstream when the actual set of linked docs
+        // changes (a link was added or removed). Without this guard,
+        // every re-index triggered by typing emits a new array (same
+        // docs, arbitrary search-engine order) and the navigation panel
+        // visibly reorders on every keystroke.
+        //
+        // Note: this compares docId sets, not order. A stable, meaningful
+        // sort order (e.g. document appearance order) requires block
+        // position data from the indexer and is tracked separately.
+        distinctUntilChanged((prev, curr) => {
+          if (prev.length !== curr.length) return false;
+          const currIds = new Set(curr.map(r => r.docId));
+          return prev.every(r => currIds.has(r.docId));
         })
       );
   }

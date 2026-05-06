@@ -1,3 +1,4 @@
+import { notify } from '@affine/component';
 import { getStoreManager } from '@affine/core/blocksuite/manager/store';
 import { AffineContext } from '@affine/core/components/context';
 import { AppFallback } from '@affine/core/mobile/components/app-fallback';
@@ -295,6 +296,24 @@ window.addEventListener('focus', () => {
 });
 frameworkProvider.get(LifecycleService).applicationStart();
 
+const getErrorMessage = (error: unknown, fallback: string) => {
+  if (typeof error === 'string' && error) {
+    return error;
+  }
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+  return fallback;
+};
+
+const notifyAuthenticationError = (error: unknown, fallback: string) => {
+  console.error(fallback, error);
+  notify.error({
+    title: I18n['com.affine.auth.toast.title.failed'](),
+    message: getErrorMessage(error, fallback),
+  });
+};
+
 CapacitorApp.addListener('appUrlOpen', ({ url }) => {
   // try to close browser if it's open
   InAppBrowser.close().catch(e => console.error('Failed to close browser', e));
@@ -304,31 +323,55 @@ CapacitorApp.addListener('appUrlOpen', ({ url }) => {
   if (urlObj.hostname === 'authentication') {
     const method = urlObj.searchParams.get('method');
     const payload = JSON.parse(urlObj.searchParams.get('payload') ?? 'false');
+    const serverBaseUrl = urlObj.searchParams.get('server');
 
     if (
       !method ||
       (method !== 'magic-link' && method !== 'oauth') ||
       !payload
     ) {
-      console.error('Invalid authentication url', url);
+      notifyAuthenticationError(
+        new Error('Invalid authentication url'),
+        'Invalid authentication url'
+      );
       return;
     }
 
-    const authService = frameworkProvider
+    let authService = frameworkProvider
       .get(DefaultServerService)
       .server.scope.get(AuthService);
+
+    if (serverBaseUrl) {
+      const serversService = frameworkProvider.get(ServersService);
+      const server = serversService.getServerByBaseUrl(serverBaseUrl);
+      if (!server) {
+        notifyAuthenticationError(
+          new Error(
+            `Authentication callback server not found: ${serverBaseUrl}`
+          ),
+          'Authentication callback server not found'
+        );
+        return;
+      }
+      authService = server.scope.get(AuthService);
+    }
+
     if (method === 'oauth') {
       authService
         .signInOauth(payload.code, payload.state, payload.provider)
-        .catch(console.error);
+        .catch(error =>
+          notifyAuthenticationError(error, 'Failed to sign in with OAuth')
+        );
     } else if (method === 'magic-link') {
       authService
         .signInMagicLink(payload.email, payload.token)
-        .catch(console.error);
+        .catch(error =>
+          notifyAuthenticationError(error, 'Failed to sign in with magic link')
+        );
     }
   }
 }).catch(e => {
-  console.error(e);
+  notifyAuthenticationError(e, 'Failed to handle authentication callback');
 });
 
 const ThemeProvider = () => {

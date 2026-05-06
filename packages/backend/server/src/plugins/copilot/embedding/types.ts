@@ -6,6 +6,7 @@ import { CopilotContextFileNotSupported } from '../../../base';
 import type { PageDocContent } from '../../../core/utils/blocksuite';
 import { ChunkSimilarity, Embedding } from '../../../models';
 import { parseDoc } from '../../../native';
+import type { ByokFeatureKind } from '../byok/types';
 
 declare global {
   interface Events {
@@ -32,6 +33,11 @@ declare global {
     }>;
 
     'workspace.doc.embed.failed': {
+      contextId: string;
+      docId: string;
+    };
+
+    'workspace.doc.embed.finished': {
       contextId: string;
       docId: string;
     };
@@ -98,6 +104,35 @@ export type Chunk = {
   content: string;
 };
 
+export type EmbeddingCallOptions = {
+  signal?: AbortSignal;
+  userId?: string;
+  workspaceId?: string;
+  byokLeaseId?: string;
+  featureKind?: Extract<
+    ByokFeatureKind,
+    'embedding' | 'workspace_indexing' | 'rerank'
+  >;
+};
+
+export type EmbeddingCallOptionsInput = AbortSignal | EmbeddingCallOptions;
+export type EmbeddingRouteContext = Pick<
+  EmbeddingCallOptions,
+  'userId' | 'byokLeaseId'
+>;
+
+export function normalizeEmbeddingCallOptions(
+  options?: EmbeddingCallOptionsInput
+): EmbeddingCallOptions {
+  if (!options) {
+    return {};
+  }
+  if ('aborted' in options && 'addEventListener' in options) {
+    return { signal: options };
+  }
+  return options;
+}
+
 export abstract class EmbeddingClient {
   async configured() {
     return true;
@@ -106,11 +141,14 @@ export abstract class EmbeddingClient {
   async getFileEmbeddings(
     file: File,
     chunkMapper: (chunk: Chunk[]) => Chunk[],
-    signal?: AbortSignal
+    options?: EmbeddingCallOptionsInput
   ): Promise<Embedding[][]> {
-    const chunks = await this.getFileChunks(file, signal);
+    const normalizedOptions = normalizeEmbeddingCallOptions(options);
+    const chunks = await this.getFileChunks(file, normalizedOptions.signal);
     const chunkedEmbeddings = await Promise.all(
-      chunks.map(chunk => this.generateEmbeddings(chunkMapper(chunk)))
+      chunks.map(chunk =>
+        this.generateEmbeddings(chunkMapper(chunk), normalizedOptions)
+      )
     );
     return chunkedEmbeddings;
   }
@@ -149,8 +187,9 @@ export abstract class EmbeddingClient {
 
   async generateEmbeddings(
     chunks: Chunk[],
-    signal?: AbortSignal
+    options?: EmbeddingCallOptionsInput
   ): Promise<Embedding[]> {
+    const normalizedOptions = normalizeEmbeddingCallOptions(options);
     const retry = 3;
 
     let embeddings: Embedding[] = [];
@@ -159,7 +198,7 @@ export abstract class EmbeddingClient {
       try {
         embeddings = await this.getEmbeddings(
           chunks.map(c => c.content),
-          signal
+          normalizedOptions
         );
         break;
       } catch (e) {
@@ -176,7 +215,7 @@ export abstract class EmbeddingClient {
     _query: string,
     embeddings: Chunk[],
     topK: number,
-    _signal?: AbortSignal
+    _options?: EmbeddingCallOptionsInput
   ): Promise<Chunk[]> {
     // sort by distance with ascending order
     return embeddings
@@ -184,14 +223,14 @@ export abstract class EmbeddingClient {
       .slice(0, topK);
   }
 
-  async getEmbedding(query: string, signal?: AbortSignal) {
-    const embedding = await this.getEmbeddings([query], signal);
+  async getEmbedding(query: string, options?: EmbeddingCallOptionsInput) {
+    const embedding = await this.getEmbeddings([query], options);
     return embedding?.[0]?.embedding;
   }
 
   abstract getEmbeddings(
     input: string[],
-    signal?: AbortSignal
+    options?: EmbeddingCallOptionsInput
   ): Promise<Embedding[]>;
 }
 

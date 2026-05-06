@@ -5,6 +5,67 @@ import { wait } from '../utils/common.js';
 import { getSurface } from '../utils/edgeless.js';
 import { setupEditor } from '../utils/setup.js';
 
+function hasConnectorPath(
+  surfaceView: ReturnType<typeof getSurface>,
+  connectorId: string
+) {
+  const connector = surfaceView.model.getElementById(connectorId);
+  if (!connector || !('path' in connector)) return false;
+
+  const { path } = connector as { path: unknown };
+  return Array.isArray(path) && path.length >= 2;
+}
+
+async function waitForConnectorElement(
+  surfaceView: ReturnType<typeof getSurface>,
+  connectorId: string,
+  timeout = 5000
+) {
+  const startedAt = Date.now();
+
+  while (Date.now() - startedAt < timeout) {
+    if (!hasConnectorPath(surfaceView, connectorId)) {
+      await wait(50);
+      continue;
+    }
+
+    if (surfaceView.renderer instanceof DomRenderer) {
+      surfaceView.renderer.markElementDirty(connectorId);
+      surfaceView.renderer.forceFullRender();
+    }
+
+    const connectorElement = surfaceView.renderRoot.querySelector<HTMLElement>(
+      `[data-element-id="${connectorId}"]`
+    );
+
+    if (connectorElement) return connectorElement;
+
+    await wait(50);
+  }
+
+  return null;
+}
+
+async function waitForConnectorElementRemoval(
+  surfaceView: ReturnType<typeof getSurface>,
+  connectorId: string,
+  timeout = 5000
+) {
+  const startedAt = Date.now();
+
+  while (Date.now() - startedAt < timeout) {
+    const connectorElement = surfaceView.renderRoot.querySelector(
+      `[data-element-id="${connectorId}"]`
+    );
+
+    if (!connectorElement) return true;
+
+    await wait(50);
+  }
+
+  return false;
+}
+
 describe('Connector rendering with DOM renderer', () => {
   beforeEach(async () => {
     const cleanup = await setupEditor('edgeless', [], {
@@ -44,10 +105,9 @@ describe('Connector rendering with DOM renderer', () => {
     };
     const connectorId = surfaceModel.addElement(connectorProps);
 
-    await wait(100);
-
-    const connectorElement = surfaceView?.renderRoot.querySelector(
-      `[data-element-id="${connectorId}"]`
+    const connectorElement = await waitForConnectorElement(
+      surfaceView,
+      connectorId
     );
 
     expect(connectorElement).not.toBeNull();
@@ -73,11 +133,9 @@ describe('Connector rendering with DOM renderer', () => {
     };
     const connectorId = surfaceModel.addElement(connectorProps);
 
-    // Wait for path generation and rendering
-    await wait(500);
-
-    const connectorElement = surfaceView?.renderRoot.querySelector(
-      `[data-element-id="${connectorId}"]`
+    const connectorElement = await waitForConnectorElement(
+      surfaceView,
+      connectorId
     );
 
     expect(connectorElement).not.toBeNull();
@@ -110,10 +168,9 @@ describe('Connector rendering with DOM renderer', () => {
     };
     const connectorId = surfaceModel.addElement(connectorProps);
 
-    await wait(100);
-
-    const connectorElement = surfaceView?.renderRoot.querySelector(
-      `[data-element-id="${connectorId}"]`
+    const connectorElement = await waitForConnectorElement(
+      surfaceView,
+      connectorId
     );
 
     expect(connectorElement).not.toBeNull();
@@ -139,20 +196,18 @@ describe('Connector rendering with DOM renderer', () => {
     };
     const connectorId = surfaceModel.addElement(connectorProps);
 
-    await wait(100);
-
-    let connectorElement = surfaceView.renderRoot.querySelector(
-      `[data-element-id="${connectorId}"]`
+    let connectorElement = await waitForConnectorElement(
+      surfaceView,
+      connectorId
     );
     expect(connectorElement).not.toBeNull();
 
     surfaceModel.deleteElement(connectorId);
 
-    await wait(100);
-
-    connectorElement = surfaceView.renderRoot.querySelector(
-      `[data-element-id="${connectorId}"]`
+    const removed = await waitForConnectorElementRemoval(
+      surfaceView,
+      connectorId
     );
-    expect(connectorElement).toBeNull();
+    expect(removed).toBe(true);
   });
 });

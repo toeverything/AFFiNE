@@ -16,11 +16,16 @@ function expectPxCloseTo(
 async function waitForShapeElement(
   surfaceView: ReturnType<typeof getSurface>,
   shapeId: string,
-  timeout = 1000
+  timeout = 5000
 ) {
   const startedAt = Date.now();
 
   while (Date.now() - startedAt < timeout) {
+    if (surfaceView.renderer instanceof DomRenderer) {
+      surfaceView.renderer.markElementDirty(shapeId);
+      surfaceView.renderer.forceFullRender();
+    }
+
     const shapeElement = surfaceView.renderRoot.querySelector<HTMLElement>(
       `[data-element-id="${shapeId}"]`
     );

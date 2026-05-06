@@ -2,6 +2,7 @@ import { I18n } from '@affine/i18n';
 import { ipcMain } from 'electron';
 
 import { AFFINE_API_CHANNEL_NAME } from '../shared/type';
+import { byokStorageHandlers } from './byok-storage/handlers';
 import { clipboardHandlers } from './clipboard';
 import { configStorageHandlers } from './config-storage';
 import { findInPageHandlers } from './find-in-page';
@@ -42,6 +43,7 @@ export const allHandlers = {
   recording: recordingHandlers,
   popup: popupHandlers,
   i18n: i18nHandlers,
+  byokStorage: byokStorageHandlers,
 };
 
 export const registerHandlers = () => {

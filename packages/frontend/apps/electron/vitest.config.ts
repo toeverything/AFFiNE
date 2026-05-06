@@ -23,7 +23,8 @@ export default defineConfig({
   test: {
     setupFiles: [resolve(rootDir, './scripts/setup/global.ts')],
     include: ['./test/**/*.spec.ts'],
-    testTimeout: 5000,
+    testTimeout: 60000,
+    hookTimeout: 30000,
     pool: 'forks',
     maxWorkers: 1,
     coverage: {

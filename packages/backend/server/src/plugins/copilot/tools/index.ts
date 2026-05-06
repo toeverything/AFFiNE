@@ -2,7 +2,6 @@ export * from './blob-read';
 export * from './code-artifact';
 export * from './conversation-summary';
 export * from './doc-compose';
-export * from './doc-edit';
 export * from './doc-keyword-search';
 export * from './doc-read';
 export * from './doc-semantic-search';

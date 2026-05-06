@@ -35,6 +35,7 @@ export type NodeStyle = {
   strokeColor: Color;
 
   textResizing: TextResizing;
+  maxWidth: false | number;
 
   fontSize: number;
   fontFamily: string;
@@ -61,6 +62,8 @@ export type ConnectorStyle = {
 
   mode: ConnectorMode;
 };
+
+export const MINDMAP_NODE_MAX_WIDTH = 512;
 
 export abstract class MindmapStyleGetter {
   abstract readonly root: NodeStyle;
@@ -90,6 +93,7 @@ export class StyleOne extends MindmapStyleGetter {
     radius: 8,
 
     textResizing: TextResizing.AUTO_WIDTH_AND_HEIGHT,
+    maxWidth: MINDMAP_NODE_MAX_WIDTH,
 
     strokeWidth: 4,
     strokeColor: '#53b2ef',
@@ -161,6 +165,7 @@ export class StyleOne extends MindmapStyleGetter {
         radius: 8,
 
         textResizing: TextResizing.AUTO_WIDTH_AND_HEIGHT,
+        maxWidth: MINDMAP_NODE_MAX_WIDTH,
 
         strokeWidth: 3,
         strokeColor: color,
@@ -198,6 +203,7 @@ export class StyleTwo extends MindmapStyleGetter {
     radius: 3,
 
     textResizing: TextResizing.AUTO_WIDTH_AND_HEIGHT,
+    maxWidth: MINDMAP_NODE_MAX_WIDTH,
 
     strokeWidth: 3,
     strokeColor: DefaultTheme.black,
@@ -271,6 +277,7 @@ export class StyleTwo extends MindmapStyleGetter {
         radius: 3,
 
         textResizing: TextResizing.AUTO_WIDTH_AND_HEIGHT,
+        maxWidth: MINDMAP_NODE_MAX_WIDTH,
 
         strokeWidth: 3,
         strokeColor: DefaultTheme.black,
@@ -308,6 +315,7 @@ export class StyleThree extends MindmapStyleGetter {
     radius: 10,
 
     textResizing: TextResizing.AUTO_WIDTH_AND_HEIGHT,
+    maxWidth: MINDMAP_NODE_MAX_WIDTH,
 
     strokeWidth: 0,
     strokeColor: 'transparent',
@@ -343,6 +351,7 @@ export class StyleThree extends MindmapStyleGetter {
         radius: 10,
 
         textResizing: TextResizing.AUTO_WIDTH_AND_HEIGHT,
+        maxWidth: MINDMAP_NODE_MAX_WIDTH,
 
         strokeWidth: 2,
         strokeColor,
@@ -420,6 +429,7 @@ export class StyleFour extends MindmapStyleGetter {
     radius: 0,
 
     textResizing: TextResizing.AUTO_WIDTH_AND_HEIGHT,
+    maxWidth: MINDMAP_NODE_MAX_WIDTH,
 
     strokeWidth: 0,
     strokeColor: 'transparent',

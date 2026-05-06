@@ -2,90 +2,9 @@ import { AiJobStatus } from '@prisma/client';
 import test from 'ava';
 import Sinon from 'sinon';
 
-import {
-  buildLegacyProjection,
-  buildNormalizedTranscript,
-  normalizeTranscriptSegments,
-} from '../../plugins/copilot/transcript/projection';
+import { buildLegacyProjection } from '../../plugins/copilot/transcript/projection';
 import { TranscriptPayloadSchema } from '../../plugins/copilot/transcript/schema';
 import { CopilotTranscriptionService } from '../../plugins/copilot/transcript/service';
-
-test('normalizeTranscriptSegments trims, sorts and clips overlaps', t => {
-  const normalized = normalizeTranscriptSegments([
-    {
-      source: 'asr',
-      sliceIndex: 1,
-      speaker: ' B ',
-      startSec: 12,
-      endSec: 16,
-      text: ' second ',
-    },
-    {
-      source: 'asr',
-      sliceIndex: 0,
-      speaker: 'A',
-      startSec: 10,
-      endSec: 13,
-      text: ' first ',
-    },
-    {
-      source: 'asr',
-      sliceIndex: 1,
-      speaker: 'B',
-      startSec: 12,
-      endSec: 16,
-      text: 'second',
-    },
-    {
-      source: 'asr',
-      sliceIndex: 2,
-      speaker: '',
-      startSec: 16,
-      endSec: 18,
-      text: '   ',
-    },
-    {
-      source: 'asr',
-      sliceIndex: 2,
-      speaker: 'C',
-      startSec: 15,
-      endSec: 20,
-      text: 'third',
-    },
-  ]);
-
-  t.deepEqual(normalized, [
-    {
-      speaker: 'A',
-      startSec: 10,
-      endSec: 13,
-      start: '00:00:10',
-      end: '00:00:13',
-      text: 'first',
-    },
-    {
-      speaker: 'B',
-      startSec: 13,
-      endSec: 16,
-      start: '00:00:13',
-      end: '00:00:16',
-      text: 'second',
-    },
-    {
-      speaker: 'C',
-      startSec: 16,
-      endSec: 20,
-      start: '00:00:16',
-      end: '00:00:20',
-      text: 'third',
-    },
-  ]);
-
-  t.is(
-    buildNormalizedTranscript(normalized),
-    ['00:00:10 A: first', '00:00:13 B: second', '00:00:16 C: third'].join('\n')
-  );
-});
 
 test('buildLegacyProjection backfills summary, actions and transcription', t => {
   const legacy = buildLegacyProjection({
@@ -131,46 +50,7 @@ test('buildLegacyProjection backfills summary, actions and transcription', t => 
   ]);
 });
 
-test('TranscriptPayloadSchema keeps legacy payload readable as v2', t => {
-  const parsed = TranscriptPayloadSchema.parse({
-    url: 'https://example.com/audio.opus',
-    mimeType: 'audio/opus',
-    title: 'Legacy title',
-    summary: '- summary',
-    actions: '- [ ] task',
-    transcription: [
-      {
-        speaker: 'A',
-        start: '00:00:01',
-        end: '00:00:03',
-        transcription: 'legacy line',
-      },
-    ],
-  });
-
-  t.deepEqual(parsed.infos, [
-    {
-      url: 'https://example.com/audio.opus',
-      mimeType: 'audio/opus',
-      index: 0,
-    },
-  ]);
-  t.deepEqual(parsed.legacy, {
-    title: 'Legacy title',
-    summary: '- summary',
-    actions: '- [ ] task',
-    transcription: [
-      {
-        speaker: 'A',
-        start: '00:00:01',
-        end: '00:00:03',
-        transcription: 'legacy line',
-      },
-    ],
-  });
-});
-
-test('TranscriptPayloadSchema rejects empty legacy payloads', t => {
+test('TranscriptPayloadSchema rejects empty payloads', t => {
   const emptyError = t.throws(() => TranscriptPayloadSchema.parse({}));
   t.truthy(emptyError);
 
@@ -180,244 +60,84 @@ test('TranscriptPayloadSchema rejects empty legacy payloads', t => {
   t.truthy(unknownOnlyError);
 });
 
-test('transcriptAudio persists transcript payload before summary failure', async t => {
-  const event = { emit: Sinon.spy() };
-  const persistedPayloads: any[] = [];
-  let currentPayload: any = {};
-  const service = new CopilotTranscriptionService(
-    event as never,
-    {} as never,
-    {} as never,
-    {} as never,
-    {} as never,
-    {} as never
-  );
-
-  Sinon.stub(service as any, 'callTranscript').resolves([
-    {
-      source: 'asr',
-      sliceIndex: 0,
-      speaker: 'A',
-      startSec: 5,
-      endSec: 9,
-      text: 'Kickoff',
-    },
-    {
-      source: 'asr',
-      sliceIndex: 0,
-      speaker: 'B',
-      startSec: 10,
-      endSec: 14,
-      text: 'Status update',
-    },
-  ]);
-  Sinon.stub(service as any, 'summarizeMeeting').rejects(
-    new Error('summary provider unavailable')
-  );
-  Sinon.stub(service as any, 'updatePayload').callsFake(
-    async (...args: any[]) => {
-      const updater = args[1] as (payload: any) => any;
-      currentPayload = await updater(currentPayload);
-      persistedPayloads.push(currentPayload);
-      return currentPayload;
-    }
-  );
-
-  await t.throwsAsync(() =>
-    service.transcriptAudio({
-      jobId: 'job-1',
-      modelId: 'model-1',
-      payload: {
-        infos: [
-          {
-            url: 'https://example.com/audio-0.m4a',
-            mimeType: 'audio/m4a',
-            index: 0,
-          },
-        ],
-        sliceManifest: [
-          {
-            index: 0,
-            fileName: 'audio-0.m4a',
-            mimeType: 'audio/m4a',
-            startSec: 0,
-            durationSec: 30,
-          },
-        ],
-      },
-    } as Jobs['copilot.transcript.submit'])
-  );
-
-  t.is(persistedPayloads.length, 2);
-  t.deepEqual(
-    persistedPayloads[0].rawSegments?.map((segment: any) => segment.text),
-    ['Kickoff', 'Status update']
-  );
-  t.deepEqual(
-    persistedPayloads[0].normalizedSegments?.map(
-      (segment: any) => segment.start
-    ),
-    ['00:00:05', '00:00:10']
-  );
-  t.is(
-    persistedPayloads[0].normalizedTranscript,
-    ['00:00:05 A: Kickoff', '00:00:10 B: Status update'].join('\n')
-  );
-  t.is(persistedPayloads[0].summaryJson, null);
-  t.deepEqual(persistedPayloads[1].retryMeta, { skipAsrOnRetry: true });
-  Sinon.assert.calledWith(event.emit, 'workspace.file.transcript.failed', {
-    jobId: 'job-1',
-  });
-});
-
-test('transcriptAudio reuses persisted transcript once after summary failure', async t => {
-  const event = { emit: Sinon.spy() };
-  let currentPayload: any = {
-    infos: [
+function createTranscriptPromptService() {
+  return {
+    get: Sinon.stub().resolves({ name: 'Transcript audio structured' }),
+    finish: Sinon.stub().callsFake((_prompt, params) => [
       {
-        url: 'https://example.com/audio-0.m4a',
-        mimeType: 'audio/m4a',
-        index: 0,
+        role: 'user',
+        content: params.content,
       },
-    ],
-    rawSegments: [
-      {
-        source: 'asr',
-        sliceIndex: 0,
-        speaker: 'A',
-        startSec: 5,
-        endSec: 9,
-        text: 'Kickoff',
-      },
-    ],
-    normalizedSegments: [
-      {
-        speaker: 'A',
-        startSec: 5,
-        endSec: 9,
-        start: '00:00:05',
-        end: '00:00:09',
-        text: 'Kickoff',
-      },
-    ],
-    normalizedTranscript: '00:00:05 A: Kickoff',
-    summaryJson: null,
-    retryMeta: { skipAsrOnRetry: true },
+    ]),
   };
-  const service = new CopilotTranscriptionService(
-    event as never,
-    {} as never,
-    {} as never,
-    {} as never,
-    {} as never,
-    {} as never
-  );
+}
 
-  const callTranscript = Sinon.stub(service as any, 'callTranscript');
-  Sinon.stub(service as any, 'summarizeMeeting').resolves({
-    title: 'Weekly Sync',
-    durationMinutes: 12,
-    attendees: ['A'],
-    keyPoints: ['Kickoff'],
-    actionItems: [],
-    decisions: [],
-    openQuestions: [],
-    blockers: [],
-  });
-  Sinon.stub(service as any, 'updatePayload').callsFake(
-    async (...args: any[]) => {
-      const updater = args[1] as (payload: any) => any;
-      currentPayload = await updater(currentPayload);
-      return currentPayload;
-    }
-  );
-
-  await service.transcriptAudio({
-    jobId: 'job-2',
-    modelId: 'model-1',
-    payload: currentPayload,
-  } as Jobs['copilot.transcript.submit']);
-
-  Sinon.assert.notCalled(callTranscript);
-  t.is(currentPayload.summaryJson?.title, 'Weekly Sync');
-  t.is(currentPayload.retryMeta, undefined);
-  Sinon.assert.calledWith(event.emit, 'workspace.file.transcript.finished', {
-    jobId: 'job-2',
-  });
-});
-
-test('transcriptAudio clears reuse flag after repeated summary failure', async t => {
-  const event = { emit: Sinon.spy() };
-  let currentPayload: any = {
-    infos: [
-      {
-        url: 'https://example.com/audio-0.m4a',
-        mimeType: 'audio/m4a',
-        index: 0,
+async function buildNativeTranscriptResult(input: any, runId: string) {
+  await input.onRunCreated?.({ runId, attempt: 1 });
+  const nativeInput = input.nativeInput;
+  return {
+    nativeInput,
+    result: {
+      sourceAudio: nativeInput.input.sourceAudio ?? null,
+      quality: nativeInput.input.quality ?? null,
+      infos: [{ url: 'about:invalid', mimeType: 'text/plain', index: 0 }],
+      sliceManifest: null,
+      normalizedSegments: [
+        {
+          speaker: 'A',
+          startSec: 5,
+          endSec: 9,
+          start: '00:00:05',
+          end: '00:00:09',
+          text: 'Kickoff',
+        },
+      ],
+      normalizedTranscript: '00:00:05 A: Kickoff',
+      summaryJson: {
+        title: 'Weekly Sync',
+        durationMinutes: 1,
+        attendees: ['A'],
+        keyPoints: ['Kickoff'],
+        actionItems: [],
+        decisions: [],
+        openQuestions: [],
+        blockers: [],
       },
-    ],
-    rawSegments: [
-      {
-        source: 'asr',
-        sliceIndex: 0,
-        speaker: 'A',
-        startSec: 5,
-        endSec: 9,
-        text: 'Kickoff',
-      },
-    ],
-    normalizedSegments: [
-      {
-        speaker: 'A',
-        startSec: 5,
-        endSec: 9,
-        start: '00:00:05',
-        end: '00:00:09',
-        text: 'Kickoff',
-      },
-    ],
-    normalizedTranscript: '00:00:05 A: Kickoff',
-    summaryJson: null,
-    retryMeta: { skipAsrOnRetry: true },
+      providerMeta: { provider: 'gemini', model: 'gemini-2.5-flash' },
+      version: 'transcript-result-v1',
+      strategy: 'gemini',
+    },
   };
-  const service = new CopilotTranscriptionService(
-    event as never,
-    {} as never,
-    {} as never,
-    {} as never,
-    {} as never,
-    {} as never
-  );
+}
 
-  const callTranscript = Sinon.stub(service as any, 'callTranscript');
-  Sinon.stub(service as any, 'summarizeMeeting').rejects(
-    new Error('summary still unavailable')
-  );
-  Sinon.stub(service as any, 'updatePayload').callsFake(
-    async (...args: any[]) => {
-      const updater = args[1] as (payload: any) => any;
-      currentPayload = await updater(currentPayload);
-      return currentPayload;
-    }
-  );
+function createSuccessfulTranscriptBridge(
+  runId: string,
+  bridgeInputs: unknown[]
+) {
+  return {
+    runStream: (input: unknown) =>
+      (async function* () {
+        const { nativeInput, result } = await buildNativeTranscriptResult(
+          input,
+          runId
+        );
+        bridgeInputs.push({
+          ...(input as Record<string, unknown>),
+          nativeInput,
+        });
+        yield {
+          type: 'action_done' as const,
+          actionId: 'transcript.audio.gemini',
+          actionVersion: 'v1',
+          status: 'succeeded' as const,
+          runId,
+          result,
+        };
+      })(),
+  };
+}
 
-  await t.throwsAsync(() =>
-    service.transcriptAudio({
-      jobId: 'job-3',
-      modelId: 'model-1',
-      payload: currentPayload,
-    } as Jobs['copilot.transcript.submit'])
-  );
-
-  Sinon.assert.notCalled(callTranscript);
-  t.is(currentPayload.retryMeta, undefined);
-  t.is(currentPayload.normalizedTranscript, '00:00:05 A: Kickoff');
-  Sinon.assert.calledWith(event.emit, 'workspace.file.transcript.failed', {
-    jobId: 'job-3',
-  });
-});
-
-test('queryJob returns transcript payload for finished jobs', async t => {
+test('queryTask hides ready transcript task result until settlement', async t => {
   const payload = TranscriptPayloadSchema.parse({
     infos: [
       {
@@ -426,161 +146,492 @@ test('queryJob returns transcript payload for finished jobs', async t => {
         index: 0,
       },
     ],
-    normalizedSegments: [
-      {
-        speaker: 'A',
-        startSec: 5,
-        endSec: 9,
-        start: '00:00:05',
-        end: '00:00:09',
-        text: 'Kickoff',
-      },
-    ],
     normalizedTranscript: '00:00:05 A: Kickoff',
   });
   const service = new CopilotTranscriptionService(
-    {} as never,
     {
-      copilotJob: {
+      copilotTranscriptTask: {
         getWithUser: Sinon.stub().resolves({
-          id: 'job-4',
-          status: AiJobStatus.finished,
-          payload,
+          id: 'task-1',
+          status: 'ready',
+          protectedResult: payload,
         }),
       },
     } as never,
     {} as never,
     {} as never,
     {} as never,
+    {} as never,
     {} as never
   );
 
-  const result = await service.queryJob('user-1', 'workspace-1', 'job-4');
+  const result = await service.queryTask('user-1', 'workspace-1', 'task-1');
 
   t.is(result?.status, AiJobStatus.finished);
   t.deepEqual(result?.infos, payload.infos);
-  t.is(result?.transcription?.normalizedTranscript, '00:00:05 A: Kickoff');
+  t.is(result?.transcription, undefined);
 });
 
-test('createCanonicalPayload keeps sliceManifest undefined when input omits it', async t => {
-  const service = new CopilotTranscriptionService(
-    {} as never,
-    {} as never,
-    {} as never,
-    {} as never,
-    {} as never,
-    {} as never
-  );
-
-  const payload = await (service as any).createCanonicalPayload('blob-1', [
-    {
-      url: 'https://example.com/audio-0.m4a',
-      mimeType: 'audio/m4a',
-      index: 0,
-    },
-    {
-      url: 'https://example.com/audio-1.m4a',
-      mimeType: 'audio/m4a',
-      index: 1,
-    },
-  ]);
-
-  t.is(payload.sliceManifest, undefined);
-});
-
-test('transcriptAudio derives manifest-less slice offsets from observed durations', async t => {
-  const event = { emit: Sinon.spy() };
-  let currentPayload: any = {};
-  const service = new CopilotTranscriptionService(
-    event as never,
-    {} as never,
-    {} as never,
-    {} as never,
-    {} as never,
-    {} as never
-  );
-
-  const callTranscript = Sinon.stub(service as any, 'callTranscript');
-  callTranscript.onCall(0).resolves([
-    {
-      source: 'asr',
-      sliceIndex: 0,
-      speaker: 'A',
-      startSec: 30,
-      endSec: 45,
-      text: 'Hello, everyone.',
-    },
-    {
-      source: 'asr',
-      sliceIndex: 0,
-      speaker: 'B',
-      startSec: 46,
-      endSec: 70,
-      text: 'Hi, thank you for joining the meeting today.',
-    },
-  ]);
-  callTranscript.onCall(1).resolves([
-    {
-      source: 'asr',
-      sliceIndex: 1,
-      speaker: 'A',
-      startSec: 30,
-      endSec: 45,
-      text: 'Second slice hello.',
-    },
-    {
-      source: 'asr',
-      sliceIndex: 1,
-      speaker: 'B',
-      startSec: 46,
-      endSec: 70,
-      text: 'Second slice response.',
-    },
-  ]);
-  Sinon.stub(service as any, 'summarizeMeeting').resolves({
-    title: 'Weekly Sync',
-    durationMinutes: 12,
-    attendees: ['A', 'B'],
-    keyPoints: ['Reviewed launch status'],
-    actionItems: [],
-    decisions: [],
-    openQuestions: [],
-    blockers: [],
+test('settleTask unlocks ready transcript task result idempotently', async t => {
+  const payload = TranscriptPayloadSchema.parse({
+    normalizedTranscript: '00:00:05 A: Kickoff',
   });
-  Sinon.stub(service as any, 'updatePayload').callsFake(
-    async (...args: any[]) => {
-      const updater = args[1] as (payload: any) => any;
-      currentPayload = await updater(currentPayload);
-      return currentPayload;
+  const settle = Sinon.stub().resolves({
+    id: 'task-1',
+    status: 'settled',
+    protectedResult: payload,
+  });
+  const service = new CopilotTranscriptionService(
+    {
+      copilotTranscriptTask: {
+        getWithUser: Sinon.stub().resolves({
+          id: 'task-1',
+          status: 'ready',
+          protectedResult: payload,
+        }),
+        settle,
+      },
+    } as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never
+  );
+
+  const result = await service.settleTask('user-1', 'workspace-1', 'task-1');
+
+  t.is(result?.status, AiJobStatus.finished);
+  t.is(result?.transcription?.normalizedTranscript, '00:00:05 A: Kickoff');
+  Sinon.assert.calledOnceWithExactly(settle, 'task-1');
+});
+
+test('settleTask checks copilot quota before unlocking ready task', async t => {
+  const payload = TranscriptPayloadSchema.parse({
+    normalizedTranscript: '00:00:05 A: Kickoff',
+  });
+  const settle = Sinon.stub().resolves({
+    id: 'task-1',
+    status: 'settled',
+    protectedResult: payload,
+  });
+  const assertQuotaOrByok = Sinon.stub().rejects(new Error('quota exceeded'));
+  const service = new CopilotTranscriptionService(
+    {
+      copilotTranscriptTask: {
+        getWithUser: Sinon.stub().resolves({
+          id: 'task-1',
+          status: 'ready',
+          protectedResult: payload,
+        }),
+        settle,
+      },
+    } as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    { assertQuotaOrByok } as never
+  );
+
+  await t.throwsAsync(
+    () => service.settleTask('user-1', 'workspace-1', 'task-1'),
+    { message: /quota exceeded/ }
+  );
+  Sinon.assert.calledOnceWithMatch(assertQuotaOrByok, {
+    userId: 'user-1',
+    workspaceId: 'workspace-1',
+    featureKind: 'transcript',
+  });
+  Sinon.assert.notCalled(settle);
+});
+
+test('retryTask rejects ready transcript tasks', async t => {
+  const service = new CopilotTranscriptionService(
+    {
+      copilotTranscriptTask: {
+        getWithUser: Sinon.stub().resolves({
+          id: 'task-1',
+          status: 'ready',
+          protectedResult: {},
+        }),
+      },
+    } as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never
+  );
+
+  await t.throwsAsync(
+    () => service.retryTask('user-1', 'workspace-1', 'task-1'),
+    { message: /cannot be retried/ }
+  );
+});
+
+test('retryTask rejects settled transcript tasks', async t => {
+  const service = new CopilotTranscriptionService(
+    {
+      copilotTranscriptTask: {
+        getWithUser: Sinon.stub().resolves({
+          id: 'task-1',
+          status: 'settled',
+          protectedResult: {},
+        }),
+      },
+    } as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never
+  );
+
+  await t.throwsAsync(
+    () => service.retryTask('user-1', 'workspace-1', 'task-1'),
+    { message: /cannot be retried/ }
+  );
+});
+
+test('retryTask reuses failed task and queues a new action attempt', async t => {
+  const queuedJobs: unknown[] = [];
+  const markRunning = Sinon.stub().resolves({
+    id: 'task-1',
+    status: 'running',
+  });
+  const payload = TranscriptPayloadSchema.parse({
+    normalizedTranscript: '00:00:05 A: Kickoff',
+    summaryJson: null,
+    providerMeta: { provider: 'gemini', model: 'gemini-2.5-flash' },
+  });
+  const service = new CopilotTranscriptionService(
+    {
+      copilotTranscriptTask: {
+        getWithUser: Sinon.stub().resolves({
+          id: 'task-1',
+          status: 'failed',
+          strategy: 'gemini',
+          actionRunId: 'run-failed',
+          protectedResult: payload,
+        }),
+        markRunning,
+      },
+    } as never,
+    {
+      add: Sinon.stub().callsFake(async (name, payload) => {
+        queuedJobs.push({ name, payload });
+      }),
+    } as never,
+    {} as never,
+    {
+      resolveTranscriptionModel: Sinon.stub().resolves('gemini-2.5-flash'),
+    } as never,
+    {} as never,
+    {} as never
+  );
+
+  const result = await service.retryTask('user-1', 'workspace-1', 'task-1');
+
+  t.is(result.status, AiJobStatus.running);
+  t.like(queuedJobs[0] as Record<string, unknown>, {
+    name: 'copilot.transcript.task.submit',
+  });
+  t.like((queuedJobs[0] as { payload: Record<string, unknown> }).payload, {
+    taskId: 'task-1',
+    retryOf: 'run-failed',
+  });
+  Sinon.assert.calledOnceWithExactly(markRunning, 'task-1');
+});
+
+test('retryTask prechecks quota or BYOK before queueing provider work', async t => {
+  const add = Sinon.stub().resolves(undefined);
+  const markRunning = Sinon.stub().resolves({ id: 'task-1' });
+  const assertQuotaOrByok = Sinon.stub().rejects(new Error('quota exceeded'));
+  const payload = TranscriptPayloadSchema.parse({
+    normalizedTranscript: '00:00:05 A: Kickoff',
+  });
+  const service = new CopilotTranscriptionService(
+    {
+      copilotTranscriptTask: {
+        getWithUser: Sinon.stub().resolves({
+          id: 'task-1',
+          status: 'failed',
+          strategy: 'gemini',
+          protectedResult: payload,
+        }),
+        markRunning,
+      },
+    } as never,
+    { add } as never,
+    {} as never,
+    {
+      resolveTranscriptionModel: Sinon.stub().resolves('gemini-2.5-flash'),
+    } as never,
+    {} as never,
+    {} as never,
+    { assertQuotaOrByok } as never
+  );
+
+  await t.throwsAsync(
+    () => service.retryTask('user-1', 'workspace-1', 'task-1'),
+    { message: /quota exceeded/ }
+  );
+  Sinon.assert.calledOnceWithMatch(assertQuotaOrByok, {
+    userId: 'user-1',
+    workspaceId: 'workspace-1',
+    featureKind: 'transcript',
+  });
+  Sinon.assert.notCalled(add);
+  Sinon.assert.notCalled(markRunning);
+});
+
+for (const status of ['ready', 'settled']) {
+  test(`submitTask allows a new task for the same blob after ${status} task`, async t => {
+    const createdTasks: unknown[] = [];
+    const queuedJobs: unknown[] = [];
+    const service = new CopilotTranscriptionService(
+      {
+        copilotTranscriptTask: {
+          getWithUser: Sinon.stub().resolves({
+            id: `task-${status}`,
+            status,
+          }),
+          create: Sinon.stub().callsFake(async input => {
+            createdTasks.push(input);
+            return { id: 'task-next' };
+          }),
+          markRunning: Sinon.stub().resolves({ id: 'task-next' }),
+        },
+      } as never,
+      {
+        add: Sinon.stub().callsFake(async (name, payload) => {
+          queuedJobs.push({ name, payload });
+        }),
+      } as never,
+      {} as never,
+      {
+        resolveTranscriptionModel: Sinon.stub().resolves('gemini-2.5-flash'),
+      } as never,
+      {} as never,
+      {} as never
+    );
+
+    const result = await service.submitTask(
+      'user-1',
+      'workspace-1',
+      'blob-1',
+      []
+    );
+
+    t.is(result.id, 'task-next');
+    t.like(createdTasks[0] as Record<string, unknown>, {
+      blobId: 'blob-1',
+      recipeId: 'transcript.audio.gemini',
+    });
+    t.like(queuedJobs[0] as Record<string, unknown>, {
+      name: 'copilot.transcript.task.submit',
+    });
+  });
+}
+
+test('submitTask prechecks quota or BYOK before persisting uploads', async t => {
+  const assertQuotaOrByok = Sinon.stub().rejects(new Error('quota exceeded'));
+  const resolveTranscriptionModel = Sinon.stub().resolves('gemini-2.5-flash');
+  const service = new CopilotTranscriptionService(
+    {
+      copilotTranscriptTask: {
+        getWithUser: Sinon.stub().resolves(null),
+      },
+    } as never,
+    {} as never,
+    {} as never,
+    {
+      resolveTranscriptionModel,
+    } as never,
+    {} as never,
+    {} as never,
+    { assertQuotaOrByok } as never
+  );
+
+  await t.throwsAsync(
+    () => service.submitTask('user-1', 'workspace-1', 'blob-1', []),
+    { message: /quota exceeded/ }
+  );
+  Sinon.assert.calledOnceWithMatch(assertQuotaOrByok, {
+    userId: 'user-1',
+    workspaceId: 'workspace-1',
+    featureKind: 'transcript',
+  });
+  Sinon.assert.notCalled(resolveTranscriptionModel);
+});
+
+test('submitTask rejects unavailable transcript strategy', async t => {
+  const service = new CopilotTranscriptionService(
+    {
+      copilotTranscriptTask: {
+        getWithUser: Sinon.stub().resolves(null),
+      },
+    } as never,
+    {} as never,
+    {} as never,
+    {
+      resolveTranscriptionModel: Sinon.stub().resolves('gemini-2.5-flash'),
+    } as never,
+    {} as never,
+    {} as never
+  );
+
+  await t.throwsAsync(
+    () =>
+      service.submitTask('user-1', 'workspace-1', 'blob-1', [], {
+        strategy: 'local-asr',
+      }),
+    { message: /not available/ }
+  );
+});
+
+test('transcriptTask runs native transcript recipe through action bridge when available', async t => {
+  const payload = TranscriptPayloadSchema.parse({
+    sourceAudio: { blobId: 'blob-1', mimeType: 'audio/opus' },
+    sliceManifest: [
+      {
+        index: 0,
+        fileName: 'audio-0.opus',
+        mimeType: 'audio/opus',
+        startSec: 12,
+        durationSec: 30,
+      },
+    ],
+    infos: [
+      {
+        url: 'data:image/png;base64,YXVkaW8=',
+        mimeType: 'audio/opus',
+        index: 0,
+      },
+    ],
+  });
+  const bridgeInputs: unknown[] = [];
+  const markRunning = Sinon.stub().resolves({ id: 'task-1' });
+  const complete = Sinon.stub().resolves({ id: 'task-1', status: 'ready' });
+  const service = new CopilotTranscriptionService(
+    {
+      copilotTranscriptTask: {
+        get: Sinon.stub().resolves({
+          id: 'task-1',
+          userId: 'user-1',
+          workspaceId: 'workspace-1',
+          blobId: 'blob-1',
+          status: 'pending',
+          actionRunId: null,
+        }),
+        markRunning,
+        complete,
+      },
+    } as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    createTranscriptPromptService() as never,
+    createSuccessfulTranscriptBridge('run-bridge', bridgeInputs) as never
+  );
+
+  await service.transcriptTask({
+    taskId: 'task-1',
+    payload,
+    modelId: 'gemini-2.5-flash',
+  });
+
+  t.like(bridgeInputs[0] as Record<string, unknown>, {
+    actionId: 'transcript.audio.gemini',
+    actionVersion: 'v1',
+  });
+  t.like(
+    (bridgeInputs[0] as { prepareStructuredRoutes: Record<string, unknown> })
+      .prepareStructuredRoutes,
+    {
+      stepId: 'transcribe',
+      modelId: 'gemini-2.5-flash',
     }
   );
-
-  await service.transcriptAudio({
-    jobId: 'job-5',
-    modelId: 'model-1',
-    payload: {
-      infos: [
-        {
-          url: 'https://example.com/audio-0.m4a',
-          mimeType: 'audio/m4a',
-          index: 0,
-        },
-        {
-          url: 'https://example.com/audio-1.m4a',
-          mimeType: 'audio/m4a',
-          index: 1,
-        },
-      ],
-    },
-  } as Jobs['copilot.transcript.submit']);
-
-  t.deepEqual(
-    currentPayload.normalizedSegments?.map((segment: any) => segment.start),
-    ['00:00:30', '00:00:46', '00:01:40', '00:01:56']
-  );
+  const messages = (
+    bridgeInputs[0] as {
+      prepareStructuredRoutes: {
+        messages: { content?: string; attachments?: unknown[] }[];
+      };
+    }
+  ).prepareStructuredRoutes.messages;
+  t.false(messages[0].content?.includes('data:image/png'));
+  t.like(JSON.parse(messages[0].content ?? '{}'), {
+    infos: [{ mimeType: 'audio/opus', index: 0 }],
+  });
+  t.deepEqual(messages.at(-1)?.attachments, [
+    { attachment: 'data:image/png;base64,YXVkaW8=', mimeType: 'audio/opus' },
+  ]);
+  t.like(complete.firstCall.args[1], {
+    status: 'ready',
+    actionRunId: 'run-bridge',
+    errorCode: null,
+  });
+  Sinon.assert.calledWith(markRunning, 'task-1', 'run-bridge');
   t.is(
-    currentPayload.normalizedTranscript?.split('\n')[2],
-    '00:01:40 A: Second slice hello.'
+    complete.firstCall.args[1].protectedResult.normalizedTranscript,
+    '00:00:05 A: Kickoff'
   );
-  t.is(currentPayload.sliceManifest, undefined);
+});
+
+test('transcriptTask fails task when native action bridge reports an error event', async t => {
+  const payload = TranscriptPayloadSchema.parse({
+    normalizedTranscript: '00:00:05 A: Kickoff',
+  });
+  const complete = Sinon.stub().resolves({ id: 'task-1', status: 'failed' });
+  const service = new CopilotTranscriptionService(
+    {
+      copilotTranscriptTask: {
+        get: Sinon.stub().resolves({
+          id: 'task-1',
+          userId: 'user-1',
+          workspaceId: 'workspace-1',
+          blobId: 'blob-1',
+          status: 'pending',
+          actionRunId: null,
+        }),
+        markRunning: Sinon.stub().resolves({ id: 'task-1' }),
+        complete,
+      },
+    } as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    createTranscriptPromptService() as never,
+    {
+      runStream: (input: unknown) =>
+        (async function* () {
+          await buildNativeTranscriptResult(input, 'run-bridge');
+          yield {
+            type: 'error' as const,
+            actionId: 'transcript.audio.gemini',
+            actionVersion: 'v1',
+            status: 'failed' as const,
+            runId: 'run-bridge',
+            errorCode: 'native_failed',
+          };
+        })(),
+    } as never
+  );
+
+  await t.throwsAsync(
+    () =>
+      service.transcriptTask({
+        taskId: 'task-1',
+        payload,
+        modelId: 'gemini-2.5-flash',
+      }),
+    { message: /native_failed/ }
+  );
+  t.like(complete.firstCall.args[1], {
+    status: 'failed',
+    actionRunId: 'run-bridge',
+  });
 });

@@ -353,7 +353,7 @@
                   "properties": {
                     "endpoint": {
                       "type": "string",
-                      "description": "The S3 compatible endpoint. Example: \"https://s3.us-east-1.amazonaws.com\" or \"https://<account>.r2.cloudflarestorage.com\"."
+                      "description": "The S3 compatible endpoint (used by aws-s3 provider). Optional; if omitted, endpoint is derived from region."
                     },
                     "region": {
                       "type": "string",
@@ -420,10 +420,6 @@
                   "type": "object",
                   "description": "The config for the S3 compatible storage provider.",
                   "properties": {
-                    "endpoint": {
-                      "type": "string",
-                      "description": "The S3 compatible endpoint. Example: \"https://s3.us-east-1.amazonaws.com\" or \"https://<account>.r2.cloudflarestorage.com\"."
-                    },
                     "region": {
                       "type": "string",
                       "description": "The region for the storage provider. Example: \"us-east-1\" or \"auto\" for R2."
@@ -472,6 +468,13 @@
                     "accountId": {
                       "type": "string",
                       "description": "The account id for the cloudflare r2 storage provider."
+                    },
+                    "jurisdiction": {
+                      "type": "string",
+                      "enum": [
+                        "eu"
+                      ],
+                      "description": "Optional jurisdiction for the cloudflare r2 endpoint. Set to \"eu\" for EU buckets."
                     },
                     "usePresignedURL": {
                       "type": "object",
@@ -548,7 +551,7 @@
                   "properties": {
                     "endpoint": {
                       "type": "string",
-                      "description": "The S3 compatible endpoint. Example: \"https://s3.us-east-1.amazonaws.com\" or \"https://<account>.r2.cloudflarestorage.com\"."
+                      "description": "The S3 compatible endpoint (used by aws-s3 provider). Optional; if omitted, endpoint is derived from region."
                     },
                     "region": {
                       "type": "string",
@@ -615,10 +618,6 @@
                   "type": "object",
                   "description": "The config for the S3 compatible storage provider.",
                   "properties": {
-                    "endpoint": {
-                      "type": "string",
-                      "description": "The S3 compatible endpoint. Example: \"https://s3.us-east-1.amazonaws.com\" or \"https://<account>.r2.cloudflarestorage.com\"."
-                    },
                     "region": {
                       "type": "string",
                       "description": "The region for the storage provider. Example: \"us-east-1\" or \"auto\" for R2."
@@ -667,6 +666,13 @@
                     "accountId": {
                       "type": "string",
                       "description": "The account id for the cloudflare r2 storage provider."
+                    },
+                    "jurisdiction": {
+                      "type": "string",
+                      "enum": [
+                        "eu"
+                      ],
+                      "description": "Optional jurisdiction for the cloudflare r2 endpoint. Set to \"eu\" for EU buckets."
                     },
                     "usePresignedURL": {
                       "type": "object",
@@ -855,9 +861,12 @@
       "properties": {
         "google": {
           "type": "object",
-          "description": "Google Calendar integration config\n@default {\"enabled\":false,\"clientId\":\"\",\"clientSecret\":\"\",\"externalWebhookUrl\":\"\",\"webhookVerificationToken\":\"\",\"requestTimeoutMs\":10000}\n@link https://developers.google.com/calendar/api/guides/push",
+          "description": "Google Calendar integration config\n@default {\"enabled\":false,\"allowNewAccounts\":true,\"clientId\":\"\",\"clientSecret\":\"\",\"externalWebhookUrl\":\"\",\"webhookVerificationToken\":\"\",\"requestTimeoutMs\":10000}\n@link https://developers.google.com/calendar/api/guides/push",
           "properties": {
             "enabled": {
+              "type": "boolean"
+            },
+            "allowNewAccounts": {
               "type": "boolean"
             },
             "clientId": {
@@ -878,6 +887,7 @@
           },
           "default": {
             "enabled": false,
+            "allowNewAccounts": true,
             "clientId": "",
             "clientSecret": "",
             "externalWebhookUrl": "",
@@ -985,23 +995,25 @@
           "description": "Whether to enable the copilot plugin. <br> Document: <a href=\"https://docs.affine.pro/self-host-affine/administer/ai\" target=\"_blank\">https://docs.affine.pro/self-host-affine/administer/ai</a>\n@default false",
           "default": false
         },
-        "scenarios": {
-          "type": "object",
-          "description": "Use custom models in scenarios and override default settings.\n@default {\"override_enabled\":false,\"scenarios\":{\"audio_transcribing\":\"gemini-2.5-flash\",\"chat\":\"gemini-2.5-flash\",\"embedding\":\"gemini-embedding-001\",\"image\":\"gpt-image-1\",\"coding\":\"claude-sonnet-4-5@20250929\",\"complex_text_generation\":\"gpt-5-mini\",\"quick_decision_making\":\"gpt-5-mini\",\"quick_text_generation\":\"gemini-2.5-flash\",\"polish_and_summarize\":\"gemini-2.5-flash\"}}",
-          "default": {
-            "override_enabled": false,
-            "scenarios": {
-              "audio_transcribing": "gemini-2.5-flash",
-              "chat": "gemini-2.5-flash",
-              "embedding": "gemini-embedding-001",
-              "image": "gpt-image-1",
-              "coding": "claude-sonnet-4-5@20250929",
-              "complex_text_generation": "gpt-5-mini",
-              "quick_decision_making": "gpt-5-mini",
-              "quick_text_generation": "gemini-2.5-flash",
-              "polish_and_summarize": "gemini-2.5-flash"
-            }
-          }
+        "byok.enabled": {
+          "type": "boolean",
+          "description": "Whether to enable workspace BYOK.\n@default true",
+          "default": true
+        },
+        "byok.allowedProviders": {
+          "type": "array",
+          "description": "The allowlist for workspace BYOK providers.\n@default [\"openai\",\"anthropic\",\"gemini\",\"fal\"]",
+          "default": [
+            "openai",
+            "anthropic",
+            "gemini",
+            "fal"
+          ]
+        },
+        "byok.allowCustomEndpoint": {
+          "type": "boolean",
+          "description": "Whether workspace BYOK custom endpoints are accepted.\n@default false",
+          "default": false
         },
         "providers.profiles": {
           "type": "array",
@@ -1079,13 +1091,6 @@
           },
           "default": {}
         },
-        "providers.perplexity": {
-          "type": "object",
-          "description": "The config for the perplexity provider.\n@default {\"apiKey\":\"\"}",
-          "default": {
-            "apiKey": ""
-          }
-        },
         "providers.anthropic": {
           "type": "object",
           "description": "The config for the anthropic provider.\n@default {\"apiKey\":\"\",\"baseURL\":\"https://api.anthropic.com/v1\"}",
@@ -1127,11 +1132,6 @@
               }
             }
           },
-          "default": {}
-        },
-        "providers.morph": {
-          "type": "object",
-          "description": "The config for the morph provider.\n@default {}",
           "default": {}
         },
         "unsplash": {
@@ -1192,7 +1192,7 @@
                   "properties": {
                     "endpoint": {
                       "type": "string",
-                      "description": "The S3 compatible endpoint. Example: \"https://s3.us-east-1.amazonaws.com\" or \"https://<account>.r2.cloudflarestorage.com\"."
+                      "description": "The S3 compatible endpoint (used by aws-s3 provider). Optional; if omitted, endpoint is derived from region."
                     },
                     "region": {
                       "type": "string",
@@ -1259,10 +1259,6 @@
                   "type": "object",
                   "description": "The config for the S3 compatible storage provider.",
                   "properties": {
-                    "endpoint": {
-                      "type": "string",
-                      "description": "The S3 compatible endpoint. Example: \"https://s3.us-east-1.amazonaws.com\" or \"https://<account>.r2.cloudflarestorage.com\"."
-                    },
                     "region": {
                       "type": "string",
                       "description": "The region for the storage provider. Example: \"us-east-1\" or \"auto\" for R2."
@@ -1311,6 +1307,13 @@
                     "accountId": {
                       "type": "string",
                       "description": "The account id for the cloudflare r2 storage provider."
+                    },
+                    "jurisdiction": {
+                      "type": "string",
+                      "enum": [
+                        "eu"
+                      ],
+                      "description": "Optional jurisdiction for the cloudflare r2 endpoint. Set to \"eu\" for EU buckets."
                     },
                     "usePresignedURL": {
                       "type": "object",

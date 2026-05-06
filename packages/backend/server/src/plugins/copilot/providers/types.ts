@@ -2,6 +2,23 @@ import { AiPromptRole } from '@prisma/client';
 import { z } from 'zod';
 
 import { JSONSchema } from '../../../base';
+import type {
+  CapabilityAttachmentContract,
+  CapabilityModelCapability,
+  ModelConditionsContract,
+} from '../../../native';
+import type { CopilotModelBackendKind } from '../runtime/contracts';
+import {
+  type StreamObject,
+  StreamObjectSchema,
+} from '../runtime/contracts/runtime-event-contract';
+
+// Owner map:
+// - provider/profile/config schemas in this file are backend host ingress.
+// - prompt/message/attachment Zod schemas validate Node host ingress and
+//   persistence surfaces before values cross into native prompt DTOs.
+// - model condition/capability types are native-generated facades.
+// - StreamObject is app-facing projection, not runtime event truth.
 
 // ========== provider ==========
 
@@ -13,8 +30,6 @@ export enum CopilotProviderType {
   Gemini = 'gemini',
   GeminiVertex = 'geminiVertex',
   OpenAI = 'openai',
-  Perplexity = 'perplexity',
-  Morph = 'morph',
 }
 
 export const CopilotProviderSchema = z.object({
@@ -63,8 +78,6 @@ export const PromptToolsSchema = z
     'blobRead',
     'codeArtifact',
     'conversationSummary',
-    // work with morph
-    'docEdit',
     // work with indexer
     'docRead',
     'docCreate',
@@ -163,6 +176,8 @@ const PromptAttachmentSchema = z.discriminatedUnion('kind', [
     .object({
       kind: z.literal('url'),
       url: AttachmentUrlSchema,
+      data: z.string().optional(),
+      encoding: z.literal('base64').optional(),
       mimeType: z.string().optional(),
       fileName: z.string().optional(),
       providerHint: AttachmentProviderHintSchema.optional(),
@@ -211,34 +226,14 @@ export const ChatMessageAttachment = z.union([
 export const PromptResponseFormatSchema = z
   .object({
     type: z.literal('json_schema'),
-    schema: z.any(),
+    responseSchemaJson: z.record(z.unknown()).optional(),
+    schemaHash: z.string().optional(),
     strict: z.boolean().optional(),
   })
-  .strict();
-
-export const StreamObjectSchema = z.discriminatedUnion('type', [
-  z.object({
-    type: z.literal('text-delta'),
-    textDelta: z.string(),
-  }),
-  z.object({
-    type: z.literal('reasoning'),
-    textDelta: z.string(),
-  }),
-  z.object({
-    type: z.literal('tool-call'),
-    toolCallId: z.string(),
-    toolName: z.string(),
-    args: z.record(z.any()),
-  }),
-  z.object({
-    type: z.literal('tool-result'),
-    toolCallId: z.string(),
-    toolName: z.string(),
-    args: z.record(z.any()),
-    result: z.any(),
-  }),
-]);
+  .strict()
+  .refine(value => value.responseSchemaJson !== undefined, {
+    message: 'responseSchemaJson is required',
+  });
 
 export const PureMessageSchema = z.object({
   content: z.string(),
@@ -253,7 +248,8 @@ export const PromptMessageSchema = PureMessageSchema.extend({
 }).strict();
 export type PromptMessage = z.infer<typeof PromptMessageSchema>;
 export type PromptParams = NonNullable<PromptMessage['params']>;
-export type StreamObject = z.infer<typeof StreamObjectSchema>;
+export { StreamObjectSchema };
+export type { StreamObject };
 export type PromptAttachment = z.infer<typeof ChatMessageAttachment>;
 export type PromptAttachmentSourceKind = z.infer<
   typeof PromptAttachmentSourceKindSchema
@@ -268,6 +264,22 @@ const CopilotProviderOptionsSchema = z.object({
   user: z.string().optional(),
   session: z.string().optional(),
   workspace: z.string().optional(),
+  byokLeaseId: z.string().optional(),
+  billingUnitId: z.string().optional(),
+  taskId: z.string().optional(),
+  actionId: z.string().optional(),
+  quotaBackedRoutesAllowed: z.boolean().optional(),
+  featureKind: z
+    .enum([
+      'chat',
+      'action',
+      'image',
+      'embedding',
+      'workspace_indexing',
+      'rerank',
+      'transcript',
+    ])
+    .optional(),
 });
 
 export const CopilotChatOptionsSchema = CopilotProviderOptionsSchema.merge(
@@ -286,7 +298,11 @@ export type CopilotChatTools = NonNullable<
 
 export const CopilotStructuredOptionsSchema =
   CopilotProviderOptionsSchema.merge(PromptConfigStrictSchema)
-    .extend({ schema: z.any().optional(), strict: z.boolean().optional() })
+    .extend({
+      responseSchemaJson: z.record(z.unknown()).optional(),
+      schemaHash: z.string().optional(),
+      strict: z.boolean().optional(),
+    })
     .optional();
 
 export type CopilotStructuredOptions = z.infer<
@@ -299,6 +315,16 @@ export const CopilotImageOptionsSchema = CopilotProviderOptionsSchema.merge(
   .extend({
     quality: z.string().optional(),
     seed: z.number().optional(),
+    modelName: z.string().nullable().optional(),
+    loras: z
+      .array(
+        z.object({
+          path: z.string(),
+          scale: z.number().nullable().optional(),
+        })
+      )
+      .nullable()
+      .optional(),
   })
   .optional();
 
@@ -306,7 +332,7 @@ export type CopilotImageOptions = z.infer<typeof CopilotImageOptionsSchema>;
 
 export const CopilotEmbeddingOptionsSchema =
   CopilotProviderOptionsSchema.extend({
-    dimensions: z.number(),
+    dimensions: z.number().optional(),
   }).optional();
 
 export type CopilotEmbeddingOptions = z.infer<
@@ -324,35 +350,29 @@ export type CopilotRerankRequest = {
   topK?: number;
 };
 
-export enum ModelInputType {
-  Text = 'text',
-  Image = 'image',
-  Audio = 'audio',
-  File = 'file',
-}
+export const ModelInputType = {
+  Text: 'text',
+  Image: 'image',
+  Audio: 'audio',
+  File: 'file',
+} as const;
 
-export enum ModelOutputType {
-  Text = 'text',
-  Object = 'object',
-  Embedding = 'embedding',
-  Image = 'image',
-  Rerank = 'rerank',
-  Structured = 'structured',
-}
+export type ModelInputType = CapabilityModelCapability['input'][number];
 
-export interface ModelAttachmentCapability {
-  kinds: PromptAttachmentKind[];
-  sourceKinds?: PromptAttachmentSourceKind[];
-  allowRemoteUrls?: boolean;
-}
+export const ModelOutputType = {
+  Text: 'text',
+  Object: 'object',
+  Embedding: 'embedding',
+  Image: 'image',
+  Rerank: 'rerank',
+  Structured: 'structured',
+} as const;
 
-export interface ModelCapability {
-  input: ModelInputType[];
-  output: ModelOutputType[];
-  attachments?: ModelAttachmentCapability;
-  structuredAttachments?: ModelAttachmentCapability;
-  defaultForOutputType?: boolean;
-}
+export type ModelOutputType = CapabilityModelCapability['output'][number];
+
+export type ModelAttachmentCapability = CapabilityAttachmentContract;
+
+export type ModelCapability = CapabilityModelCapability;
 
 export interface CopilotProviderModel {
   id: string;
@@ -360,14 +380,8 @@ export interface CopilotProviderModel {
   capabilities: ModelCapability[];
 }
 
-export type ModelConditions = {
-  inputTypes?: ModelInputType[];
-  attachmentKinds?: PromptAttachmentKind[];
-  attachmentSourceKinds?: PromptAttachmentSourceKind[];
-  hasRemoteAttachments?: boolean;
-  modelId?: string;
-};
+export type { CopilotModelBackendKind };
 
-export type ModelFullConditions = ModelConditions & {
-  outputType?: ModelOutputType;
-};
+export type ModelConditions = Omit<ModelConditionsContract, 'outputType'>;
+
+export type ModelFullConditions = ModelConditionsContract;

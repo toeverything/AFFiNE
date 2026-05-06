@@ -116,6 +116,7 @@
     { "path": "./blocksuite/affine/widgets/toolbar" },
     { "path": "./blocksuite/affine/widgets/viewport-overlay" },
     { "path": "./blocksuite/docs" },
+    { "path": "./blocksuite/docs-site" },
     { "path": "./blocksuite/framework/global" },
     { "path": "./blocksuite/framework/std" },
     { "path": "./blocksuite/framework/store" },

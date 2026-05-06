@@ -6,6 +6,7 @@ import ava, { ExecutionContext, TestFn } from 'ava';
 import { CopilotPromptInvalid, CopilotSessionInvalidInput } from '../../base';
 import {
   CopilotSessionModel,
+  Models,
   UpdateChatSessionOptions,
   UserModel,
   WorkspaceModel,
@@ -19,6 +20,7 @@ interface Context {
   user: UserModel;
   workspace: WorkspaceModel;
   copilotSession: CopilotSessionModel;
+  models: Models;
 }
 
 const test = ava as TestFn<Context>;
@@ -28,6 +30,7 @@ test.before(async t => {
   t.context.user = module.get(UserModel);
   t.context.workspace = module.get(WorkspaceModel);
   t.context.copilotSession = module.get(CopilotSessionModel);
+  t.context.models = module.get(Models);
   t.context.db = module.get(PrismaClient);
   t.context.module = module;
 });
@@ -55,10 +58,12 @@ const TEST_PROMPTS = {
 
 // Helper functions
 const createTestPrompts = async (
-  copilotSession: CopilotSessionModel,
+  _copilotSession: CopilotSessionModel,
   db: PrismaClient
 ) => {
-  await copilotSession.createPrompt(TEST_PROMPTS.NORMAL, 'gpt-5-mini');
+  await db.aiPrompt.create({
+    data: { name: TEST_PROMPTS.NORMAL, model: 'gpt-5-mini', action: null },
+  });
   await db.aiPrompt.create({
     data: { name: TEST_PROMPTS.ACTION, model: 'gpt-5-mini', action: 'edit' },
   });
@@ -998,6 +1003,250 @@ test('should cleanup empty sessions correctly', async t => {
     },
     'cleanup empty sessions results'
   );
+});
+
+test('should append durable message and account durable costs', async t => {
+  const { copilotSession, db } = t.context;
+  await createTestPrompts(copilotSession, db);
+
+  const { sessionId } = await createTestSession(t);
+  const appended = await copilotSession.appendMessage({
+    sessionId,
+    userId: user.id,
+    prompt: { model: 'gpt-5-mini' },
+    message: {
+      role: 'user',
+      content: 'hello durable world',
+      params: { foo: 'bar' },
+      createdAt: new Date(),
+    },
+  });
+
+  const afterAppend = await db.aiSession.findUniqueOrThrow({
+    where: { id: sessionId },
+    select: { messageCost: true, tokenCost: true },
+  });
+
+  t.truthy(appended.id);
+  t.is(afterAppend.messageCost, 1);
+  t.true(afterAppend.tokenCost > 0);
+  t.deepEqual(appended.params, { foo: 'bar' });
+
+  const appendedBare = await copilotSession.appendMessage({
+    sessionId,
+    userId: user.id,
+    prompt: { model: 'gpt-5-mini' },
+    message: {
+      role: 'assistant',
+      content: 'assistant reply',
+      createdAt: new Date(),
+    },
+  });
+
+  const storedBare = await db.aiSessionMessage.findUniqueOrThrow({
+    where: { id: appendedBare.id },
+    select: { params: true },
+  });
+
+  t.deepEqual(appendedBare.params, {});
+  t.deepEqual(storedBare.params, {});
+
+  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  await db.aiSession.update({
+    where: { id: sessionId },
+    data: { updatedAt: oneDayAgo },
+  });
+
+  const cleanup = await copilotSession.cleanupEmptySessions(oneDayAgo);
+  const persisted = await db.aiSession.findUnique({
+    where: { id: sessionId },
+    select: { deletedAt: true, messageCost: true },
+  });
+
+  t.deepEqual(cleanup, { removed: 0, cleaned: 0 });
+  t.truthy(persisted);
+  t.is(persisted?.deletedAt, null);
+  t.is(persisted?.messageCost, 1);
+});
+
+test('should count action runs without double-counting legacy action sessions', async t => {
+  const { copilotSession, db, models } = t.context;
+  await createTestPrompts(copilotSession, db);
+
+  const regular = await createTestSession(t);
+  await copilotSession.appendMessage({
+    sessionId: regular.sessionId,
+    userId: user.id,
+    prompt: { model: 'gpt-5-mini' },
+    message: {
+      role: 'user',
+      content: 'regular message',
+      createdAt: new Date(),
+    },
+  });
+
+  const legacyAction = await createTestSession(t, {
+    promptName: TEST_PROMPTS.ACTION,
+    promptAction: 'edit',
+  });
+  const migratedAction = await createTestSession(t, {
+    promptName: TEST_PROMPTS.ACTION,
+    promptAction: 'edit',
+  });
+  const run = await models.copilotActionRun.create({
+    userId: user.id,
+    workspaceId: workspace.id,
+    sessionId: migratedAction.sessionId,
+    actionId: 'mindmap.generate',
+    actionVersion: 'v1',
+  });
+  await models.copilotActionRun.complete(run.id, {
+    status: 'succeeded',
+    result: { ok: true },
+    trace: [{ type: 'action_done', status: 'succeeded' }],
+  });
+  const retryRun = await models.copilotActionRun.create({
+    userId: user.id,
+    workspaceId: workspace.id,
+    sessionId: migratedAction.sessionId,
+    actionId: 'mindmap.generate',
+    actionVersion: 'v1',
+    attempt: 2,
+    retryOf: run.id,
+  });
+  await models.copilotActionRun.complete(retryRun.id, {
+    status: 'aborted',
+    errorCode: 'action_aborted',
+    trace: [{ type: 'error', status: 'aborted' }],
+  });
+  const persistedRetry = await models.copilotActionRun.get(retryRun.id);
+  const transcriptTask = await models.copilotTranscriptTask.create({
+    userId: user.id,
+    workspaceId: workspace.id,
+    blobId: 'audio-1',
+    strategy: 'gemini',
+    recipeId: 'transcript.audio.gemini',
+    recipeVersion: 'v1',
+  });
+  await models.copilotTranscriptTask.complete(transcriptTask.id, {
+    status: 'ready',
+    protectedResult: { normalizedTranscript: '00:00:01 A: Hello' },
+  });
+  await models.copilotTranscriptTask.settle(transcriptTask.id);
+
+  t.like(persistedRetry, {
+    status: 'aborted',
+    attempt: 2,
+    retryOf: run.id,
+    errorCode: 'action_aborted',
+    trace: [{ type: 'error', status: 'aborted' }],
+  });
+  t.is(await copilotSession.countUserMessages(user.id), 4);
+  t.truthy(legacyAction.sessionId);
+});
+
+test('should exclude BYOK provider usage from copilot quota cost', async t => {
+  const { copilotSession, db, models } = t.context;
+  await createTestPrompts(copilotSession, db);
+
+  const regular = await createTestSession(t);
+  const firstMessage = await copilotSession.appendMessage({
+    sessionId: regular.sessionId,
+    userId: user.id,
+    prompt: { model: 'gpt-5-mini' },
+    message: {
+      role: 'user',
+      content: 'regular message',
+      createdAt: new Date(),
+    },
+  });
+  const secondMessage = await copilotSession.appendMessage({
+    sessionId: regular.sessionId,
+    userId: user.id,
+    prompt: { model: 'gpt-5-mini' },
+    message: {
+      role: 'user',
+      content: 'second BYOK message',
+      createdAt: new Date(),
+    },
+  });
+  await copilotSession.appendMessage({
+    sessionId: regular.sessionId,
+    userId: user.id,
+    prompt: { model: 'gpt-5-mini' },
+    message: {
+      role: 'user',
+      content: 'quota-backed message',
+      createdAt: new Date(),
+    },
+  });
+  const failedRun = await models.copilotActionRun.create({
+    userId: user.id,
+    workspaceId: workspace.id,
+    actionId: 'mindmap.generate',
+    actionVersion: 'v1',
+  });
+  await models.copilotActionRun.complete(failedRun.id, {
+    status: 'failed',
+    errorCode: 'test_failed',
+  });
+  const pendingTranscriptTask = await models.copilotTranscriptTask.create({
+    userId: user.id,
+    workspaceId: workspace.id,
+    blobId: 'pending-audio',
+    strategy: 'gemini',
+    recipeId: 'transcript.audio.gemini',
+    recipeVersion: 'v1',
+  });
+  await models.copilotUsage.create({
+    workspaceId: workspace.id,
+    userId: user.id,
+    provider: 'openai',
+    providerSource: 'byok_server',
+    featureKind: 'chat',
+    billingUnitId: firstMessage.id,
+  });
+  await models.copilotUsage.create({
+    workspaceId: workspace.id,
+    userId: user.id,
+    provider: 'openai',
+    providerSource: 'byok_server',
+    featureKind: 'chat',
+    billingUnitId: firstMessage.id,
+  });
+  await models.copilotUsage.create({
+    workspaceId: workspace.id,
+    userId: user.id,
+    provider: 'fal',
+    providerSource: 'byok_server',
+    featureKind: 'image',
+    billingUnitId: secondMessage.id,
+  });
+  await models.copilotUsage.create({
+    workspaceId: workspace.id,
+    userId: user.id,
+    provider: 'fal',
+    providerSource: 'byok_server',
+    featureKind: 'image',
+  });
+  await models.copilotUsage.create({
+    workspaceId: workspace.id,
+    userId: user.id,
+    provider: 'openai',
+    providerSource: 'byok_server',
+    featureKind: 'action',
+    billingUnitId: failedRun.id,
+  });
+  await models.copilotUsage.create({
+    workspaceId: workspace.id,
+    userId: user.id,
+    provider: 'gemini',
+    providerSource: 'byok_server',
+    featureKind: 'transcript',
+    billingUnitId: pendingTranscriptTask.id,
+  });
+
+  t.is(await copilotSession.countUserMessages(user.id), 1);
 });
 
 test('should get sessions for title generation correctly', async t => {

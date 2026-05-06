@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { Readable } from 'node:stream';
 
 import { ProjectRoot } from '@affine-tools/utils/path';
@@ -29,12 +29,17 @@ import {
 import { CopilotModule } from '../../plugins/copilot';
 import { CopilotContextService } from '../../plugins/copilot/context';
 import { CopilotContextResolver } from '../../plugins/copilot/context/resolver';
+import {
+  chatMessageFromTurn,
+  turnFromChatMessage,
+} from '../../plugins/copilot/core';
 import { CopilotCronJobs } from '../../plugins/copilot/cron';
 import {
+  CopilotEmbeddingClientService,
   CopilotEmbeddingJob,
   MockEmbeddingClient,
 } from '../../plugins/copilot/embedding';
-import { prompts, PromptService } from '../../plugins/copilot/prompt';
+import { PromptService } from '../../plugins/copilot/prompt';
 import {
   CopilotProviderFactory,
   CopilotProviderType,
@@ -43,35 +48,32 @@ import {
   OpenAIProvider,
 } from '../../plugins/copilot/providers';
 import { TextStreamParser } from '../../plugins/copilot/providers/utils';
+import { CopilotResolver } from '../../plugins/copilot/resolver';
+import { ActionRuntimeBridge } from '../../plugins/copilot/runtime/action-runtime-bridge';
+import { CapabilityRuntime } from '../../plugins/copilot/runtime/capability-runtime';
+import {
+  parsePromptRenderContract,
+  parsePromptSessionContract,
+} from '../../plugins/copilot/runtime/contracts';
+import { projectActionEventToChatEvent } from '../../plugins/copilot/runtime/hosts/action-stream-host';
+import { CapabilityPolicyHost } from '../../plugins/copilot/runtime/hosts/capability-policy-host';
+import { ConversationHost } from '../../plugins/copilot/runtime/hosts/conversation-host';
+import { ImageResultHost } from '../../plugins/copilot/runtime/hosts/image-result-host';
+import { ModelSelectionPolicy } from '../../plugins/copilot/runtime/model-selection-policy';
+import { PromptRuntime } from '../../plugins/copilot/runtime/prompt-runtime';
+import { getProviderRuntimeHost } from '../../plugins/copilot/runtime/provider-runtime-context';
+import { TurnOrchestrator } from '../../plugins/copilot/runtime/turn-orchestrator';
 import { ChatSessionService } from '../../plugins/copilot/session';
 import { CopilotStorage } from '../../plugins/copilot/storage';
 import { CopilotTranscriptionService } from '../../plugins/copilot/transcript';
-import {
-  CopilotChatTextExecutor,
-  CopilotWorkflowService,
-  GraphExecutorState,
-  type WorkflowGraph,
-  WorkflowGraphExecutor,
-  type WorkflowNodeData,
-  WorkflowNodeType,
-} from '../../plugins/copilot/workflow';
-import {
-  CopilotChatImageExecutor,
-  CopilotCheckHtmlExecutor,
-  CopilotCheckJsonExecutor,
-  getWorkflowExecutor,
-  NodeExecuteState,
-  NodeExecutorType,
-} from '../../plugins/copilot/workflow/executor';
-import { AutoRegisteredWorkflowExecutor } from '../../plugins/copilot/workflow/executor/utils';
-import { WorkflowGraphList } from '../../plugins/copilot/workflow/graph';
 import { CopilotWorkspaceService } from '../../plugins/copilot/workspace';
 import { PaymentModule } from '../../plugins/payment';
 import { SubscriptionService } from '../../plugins/payment/service';
 import { SubscriptionStatus } from '../../plugins/payment/types';
-import { MockCopilotProvider } from '../mocks';
+import { installMockCopilotRuntime, MockCopilotProvider } from '../mocks';
+import { TestingPromptService } from '../mocks/prompt-service.mock';
 import { createTestingModule, TestingModule } from '../utils';
-import { WorkflowTestCases } from '../utils/copilot';
+import { singleUserPromptMessages, systemPrompt } from './prompt-test-helper';
 
 type Context = {
   auth: AuthService;
@@ -83,27 +85,49 @@ type Context = {
   workspaceStorage: WorkspaceBlobStorage;
   copilotSession: CopilotSessionModel;
   context: CopilotContextService;
-  prompt: PromptService;
+  prompt: TestingPromptService;
   transcript: CopilotTranscriptionService;
   workspaceEmbedding: CopilotWorkspaceService;
   factory: CopilotProviderFactory;
   session: ChatSessionService;
+  promptRuntime: PromptRuntime;
+  chatRuntime: CapabilityRuntime;
+  conversationHost: ConversationHost;
+  embeddingClients: CopilotEmbeddingClientService;
   jobs: CopilotEmbeddingJob;
+  imageResults: ImageResultHost;
+  orchestrator: TurnOrchestrator;
   storage: CopilotStorage;
-  workflow: CopilotWorkflowService;
+  actionBridge: ActionRuntimeBridge;
   cronJobs: CopilotCronJobs;
   subscription: SubscriptionService;
-  executors: {
-    image: CopilotChatImageExecutor;
-    text: CopilotChatTextExecutor;
-    html: CopilotCheckHtmlExecutor;
-    json: CopilotCheckJsonExecutor;
-  };
 };
+
+const buildTurn = (
+  sessionId: string,
+  message: Parameters<typeof turnFromChatMessage>[0]
+) => turnFromChatMessage(message, sessionId);
+
+const cleanSnapshotObject = (obj: unknown, omittedKeys: string[] = []) =>
+  JSON.parse(
+    JSON.stringify(obj, (k, v) =>
+      ['id', 'createdAt', ...omittedKeys].includes(k) ||
+      v === null ||
+      (typeof v === 'object' && !Object.keys(v).length)
+        ? undefined
+        : v
+    )
+  );
+
+const cleanFinalMessages = (messages: unknown) =>
+  cleanSnapshotObject(messages, ['attachments']);
+
 const test = ava as TestFn<Context>;
 let userId: string;
+let restoreMockCopilotNativeRuntime: (() => void) | undefined;
 
 test.before(async t => {
+  restoreMockCopilotNativeRuntime = installMockCopilotRuntime();
   const module = await createTestingModule({
     imports: [
       ConfigModule.override({
@@ -114,9 +138,6 @@ test.before(async t => {
             },
             fal: {
               apiKey: process.env.COPILOT_FAL_API_KEY ?? '1',
-            },
-            perplexity: {
-              apiKey: process.env.COPILOT_PERPLEXITY_API_KEY ?? '1',
             },
             anthropic: {
               apiKey: process.env.COPILOT_ANTHROPIC_API_KEY ?? '1',
@@ -140,6 +161,7 @@ test.before(async t => {
           async [Symbol.asyncDispose]() {},
         }),
       });
+      builder.overrideProvider(PromptService).useClass(TestingPromptService);
       builder.overrideProvider(OpenAIProvider).useClass(MockCopilotProvider);
       builder.overrideProvider(SubscriptionService).useClass(
         class {
@@ -158,14 +180,20 @@ test.before(async t => {
   const workspace = module.get(WorkspaceModel);
   const workspaceStorage = module.get(WorkspaceBlobStorage);
   const copilotSession = module.get(CopilotSessionModel);
-  const prompt = module.get(PromptService);
+  const prompt = module.get(PromptService) as TestingPromptService;
   const factory = module.get(CopilotProviderFactory);
 
   const session = module.get(ChatSessionService);
-  const workflow = module.get(CopilotWorkflowService);
+  const promptRuntime = module.get(PromptRuntime);
+  const chatRuntime = module.get(CapabilityRuntime);
+  const conversationHost = module.get(ConversationHost);
+  const imageResults = module.get(ImageResultHost);
+  const orchestrator = module.get(TurnOrchestrator);
+  const actionBridge = module.get(ActionRuntimeBridge);
   const storage = module.get(CopilotStorage);
 
   const context = module.get(CopilotContextService);
+  const embeddingClients = module.get(CopilotEmbeddingClientService);
   const jobs = module.get(CopilotEmbeddingJob);
   const transcript = module.get(CopilotTranscriptionService);
   const workspaceEmbedding = module.get(CopilotWorkspaceService);
@@ -183,21 +211,20 @@ test.before(async t => {
   t.context.prompt = prompt;
   t.context.factory = factory;
   t.context.session = session;
-  t.context.workflow = workflow;
+  t.context.promptRuntime = promptRuntime;
+  t.context.chatRuntime = chatRuntime;
+  t.context.conversationHost = conversationHost;
+  t.context.imageResults = imageResults;
+  t.context.orchestrator = orchestrator;
+  t.context.actionBridge = actionBridge;
   t.context.storage = storage;
   t.context.context = context;
+  t.context.embeddingClients = embeddingClients;
   t.context.jobs = jobs;
   t.context.transcript = transcript;
   t.context.workspaceEmbedding = workspaceEmbedding;
   t.context.cronJobs = cronJobs;
   t.context.subscription = subscription;
-
-  t.context.executors = {
-    image: module.get(CopilotChatImageExecutor),
-    text: module.get(CopilotChatTextExecutor),
-    html: module.get(CopilotCheckHtmlExecutor),
-    json: module.get(CopilotCheckJsonExecutor),
-  };
 
   await module.initTestingDB();
 });
@@ -207,55 +234,15 @@ let promptName = 'prompt';
 test.beforeEach(async t => {
   Sinon.restore();
   const { auth, prompt } = t.context;
-  await prompt.onApplicationBootstrap();
+  prompt.reset();
   const user = await auth.signUp(`test-${randomUUID()}@affine.pro`, '123456');
   userId = user.id;
   promptName = randomUUID().replaceAll('-', '');
 });
 
 test.after.always(async t => {
+  restoreMockCopilotNativeRuntime?.();
   await t.context.module?.close();
-});
-
-// ==================== prompt ====================
-
-test('should be able to manage prompt', async t => {
-  const { prompt } = t.context;
-
-  const internalPromptCount = (await prompt.listNames()).length;
-  t.is(internalPromptCount, prompts.length, 'should list names');
-
-  await prompt.set(promptName, 'test', [
-    { role: 'system', content: 'hello' },
-    { role: 'user', content: 'hello' },
-  ]);
-  t.is(
-    (await prompt.listNames()).length,
-    internalPromptCount + 1,
-    'should have one prompt'
-  );
-  t.is(
-    (await prompt.get(promptName))!.finish({}).length,
-    2,
-    'should have two messages'
-  );
-
-  await prompt.update(promptName, {
-    messages: [{ role: 'system', content: 'hello' }],
-  });
-  t.is(
-    (await prompt.get(promptName))!.finish({}).length,
-    1,
-    'should have one message'
-  );
-
-  await prompt.delete(promptName);
-  t.is(
-    (await prompt.listNames()).length,
-    internalPromptCount,
-    'should be delete prompt'
-  );
-  t.is(await prompt.get(promptName), null, 'should not have the prompt');
 });
 
 test('should reject context file uploads after workspace write access is revoked', async t => {
@@ -316,6 +303,88 @@ test('should reject context file uploads after workspace write access is revoked
   t.false(put.called);
 });
 
+test('should prioritize user-added context file embedding jobs', async t => {
+  const { context, jobs, prompt, session, storage, workspace } = t.context;
+  const contextResolver = await t.context.module.resolve(
+    CopilotContextResolver
+  );
+
+  const ws = await workspace.create(userId);
+  await prompt.set(promptName, 'test', [
+    { role: 'system', content: 'hello {{word}}' },
+  ]);
+
+  const sessionId = await session.create({
+    userId,
+    workspaceId: ws.id,
+    docId: randomUUID(),
+    promptName,
+    pinned: false,
+  });
+  const contextSession = await context.create(sessionId);
+
+  Sinon.stub(context, 'canEmbedding').get(() => true);
+  Sinon.stub(context, 'embeddingClient').get(() => new MockEmbeddingClient());
+  const put = Sinon.stub(storage, 'put').resolves();
+  const queue = Sinon.stub(jobs, 'addFileEmbeddingQueue').resolves();
+  const buffer = Buffer.from('test pdf');
+
+  await contextResolver.addContextFile(
+    { id: userId } as any,
+    {
+      req: {
+        headers: {
+          'content-length': String(buffer.length),
+        },
+      },
+    } as any,
+    { contextId: contextSession.id },
+    {
+      filename: 'sample.pdf',
+      mimetype: 'application/pdf',
+      createReadStream: () => Readable.from(buffer),
+    } as any
+  );
+
+  t.true(put.calledOnce);
+  t.true(queue.calledOnce);
+  t.deepEqual(queue.firstCall.args[0], {
+    userId,
+    workspaceId: ws.id,
+    contextId: contextSession.id,
+    blobId: createHash('sha256').update(buffer).digest('base64url'),
+    fileId: queue.firstCall.args[0].fileId,
+    fileName: 'sample.pdf',
+  });
+  t.deepEqual(queue.firstCall.args[1], { priority: 0 });
+});
+
+test('should resolve context sessions with the shared embedding client', async t => {
+  const { context, embeddingClients, prompt, session, workspace } = t.context;
+
+  const ws = await workspace.create(userId);
+  await prompt.set(promptName, 'test', [
+    { role: 'system', content: 'hello {{word}}' },
+  ]);
+
+  const sessionId = await session.create({
+    userId,
+    workspaceId: ws.id,
+    docId: randomUUID(),
+    promptName,
+    pinned: false,
+  });
+  const client = new MockEmbeddingClient();
+
+  Sinon.stub(embeddingClients, 'refresh').resolves(undefined);
+  Sinon.stub(embeddingClients, 'getClient').returns(client);
+  await context.onConfigChanged();
+
+  const contextSession = await context.create(sessionId);
+  t.is(context.embeddingClient, client);
+  await t.notThrowsAsync(context.get(contextSession.id));
+});
+
 test('should be able to render prompt', async t => {
   const { prompt } = t.context;
 
@@ -334,7 +403,7 @@ test('should be able to render prompt', async t => {
   const testPrompt = await prompt.get(promptName);
   t.assert(testPrompt, 'should have prompt');
   t.is(
-    testPrompt?.finish(params).pop()?.content,
+    prompt.finish(testPrompt!, params).pop()?.content,
     'translate eng to chs: hello world',
     'should render the prompt'
   );
@@ -345,7 +414,7 @@ test('should be able to render prompt', async t => {
   );
   t.deepEqual(testPrompt?.params, msg.params, 'should have params');
   // will use first option if a params not provided
-  t.deepEqual(testPrompt?.finish({ src_language: 'abc' }), [
+  t.deepEqual(prompt.finish(testPrompt!, { src_language: 'abc' }), [
     {
       content: 'translate eng to chs: ',
       params: { dest_language: 'chs', src_language: 'eng' },
@@ -369,10 +438,96 @@ test('should be able to render listed prompt', async t => {
   const testPrompt = await prompt.get(promptName);
 
   t.is(
-    testPrompt?.finish(params).pop()?.content,
+    prompt.finish(testPrompt!, params).pop()?.content,
     'links:\n- https://affine.pro\n- https://github.com/toeverything/affine\n',
     'should render the prompt'
   );
+});
+
+test('PromptContract should preserve render/session payloads and reject legacy aliases', t => {
+  const render = parsePromptRenderContract({
+    messages: [
+      {
+        role: 'system',
+        content: 'Return JSON only.',
+        responseFormat: {
+          type: 'json_schema',
+          responseSchemaJson: {
+            type: 'object',
+            properties: { summary: { type: 'string' } },
+            required: ['summary'],
+          },
+          schemaHash: 'schema-hash',
+        },
+      },
+    ],
+    templateParams: {},
+    renderParams: { tone: 'brief' },
+  });
+
+  t.deepEqual(
+    { messages: render.messages, warnings: [] },
+    {
+      messages: render.messages,
+      warnings: [],
+    }
+  );
+
+  const session = parsePromptSessionContract({
+    prompt: {
+      model: 'gpt-5-mini',
+      promptTokens: 12,
+      templateParams: {},
+      messages: [systemPrompt('Return JSON only.')],
+    },
+    turns: singleUserPromptMessages('hello'),
+    renderParams: { tone: 'brief' },
+    maxTokenSize: 1024,
+  });
+
+  t.is(session.prompt.model, 'gpt-5-mini');
+
+  const error = t.throws(() =>
+    parsePromptRenderContract({
+      messages: [
+        {
+          role: 'system',
+          content: 'Return JSON only.',
+          responseFormat: {
+            type: 'json_schema',
+            schemaJson: { type: 'object' },
+            schemaHash: 'schema-hash',
+          },
+        },
+      ],
+      templateParams: {},
+      renderParams: {},
+    })
+  );
+
+  t.truthy(error);
+});
+
+test('capability runtime should require explicit structured schema contract', async t => {
+  const runtime = new CapabilityRuntime({} as never, {} as never);
+
+  const error = await t.throwsAsync(() =>
+    runtime.generateStructuredValue(
+      { modelId: 'gpt-5-mini' },
+      singleUserPromptMessages('Summarize AFFiNE.'),
+      {
+        responseSchemaJson: {
+          type: 'object',
+          properties: { summary: { type: 'string' } },
+          required: ['summary'],
+          additionalProperties: false,
+        },
+      }
+    )
+  );
+
+  t.true(error instanceof Error);
+  t.regex(error.message, /Structured schema contract is required/);
 });
 
 // ==================== session ====================
@@ -399,31 +554,26 @@ test('should be able to manage chat session', async t => {
   t.is(s.config.promptName, promptName, 'should have prompt name');
   t.is(s.model, 'model', 'should have model');
 
-  const cleanObject = (obj: any[]) =>
-    JSON.parse(
-      JSON.stringify(obj, (k, v) =>
-        ['id', 'attachments', 'createdAt'].includes(k) ||
-        v === null ||
-        (typeof v === 'object' && !Object.keys(v).length)
-          ? undefined
-          : v
-      )
-    );
+  s.pushTurn(
+    buildTurn(sessionId, {
+      role: 'user',
+      content: 'hello',
+      createdAt: new Date(),
+    })
+  );
 
-  s.push({ role: 'user', content: 'hello', createdAt: new Date() });
-
-  const finalMessages = cleanObject(s.finish(params));
+  const finalMessages = cleanFinalMessages(s.finish(params));
   t.snapshot(finalMessages, 'should generate the final message');
   await s.save();
 
   const s1 = (await session.get(sessionId))!;
   t.deepEqual(
-    cleanObject(s1.finish(params)),
+    cleanFinalMessages(s1.finish(params)),
     finalMessages,
     'should same as before message'
   );
   t.snapshot(
-    cleanObject(s1.finish(params)),
+    cleanFinalMessages(s1.finish(params)),
     'should generate different message with another params'
   );
 
@@ -505,20 +655,45 @@ test('should be able to fork chat session', async t => {
     ...commonParams,
   });
   const s = (await session.get(sessionId))!;
-  s.push({ role: 'user', content: 'hello', createdAt: new Date() });
-  s.push({ role: 'assistant', content: 'world', createdAt: new Date() });
-  s.push({ role: 'user', content: 'aaa', createdAt: new Date() });
-  s.push({ role: 'assistant', content: 'bbb', createdAt: new Date() });
+  s.pushTurn(
+    buildTurn(sessionId, {
+      role: 'user',
+      content: 'hello',
+      createdAt: new Date(),
+    })
+  );
+  s.pushTurn(
+    buildTurn(sessionId, {
+      role: 'assistant',
+      content: 'world',
+      createdAt: new Date(),
+    })
+  );
+  s.pushTurn(
+    buildTurn(sessionId, {
+      role: 'user',
+      content: 'aaa',
+      createdAt: new Date(),
+    })
+  );
+  s.pushTurn(
+    buildTurn(sessionId, {
+      role: 'assistant',
+      content: 'bbb',
+      createdAt: new Date(),
+    })
+  );
   await s.save();
 
   // fork session
-  const s1 = (await session.get(sessionId))!;
-  // @ts-expect-error find maybe return undefined
-  const latestMessageId = s1.finish({}).find(m => m.role === 'assistant')!.id;
+  const latestMessageId = (await session.getState(sessionId))?.turns.find(
+    turn => turn.role === 'assistant'
+  )?.id;
+  t.truthy(latestMessageId);
   const forkedSessionId1 = await session.fork({
     userId,
     sessionId,
-    latestMessageId,
+    latestMessageId: latestMessageId!,
     ...commonParams,
   });
   t.not(sessionId, forkedSessionId1, 'should fork a new session');
@@ -527,7 +702,7 @@ test('should be able to fork chat session', async t => {
   const forkedSessionId2 = await session.fork({
     userId: newUser.id,
     sessionId,
-    latestMessageId,
+    latestMessageId: latestMessageId!,
     ...commonParams,
   });
   t.not(
@@ -557,19 +732,15 @@ test('should be able to fork chat session', async t => {
     'should not able to fork new session with wrong latestMessageId'
   );
 
-  const cleanObject = (obj: any[]) =>
-    JSON.parse(
-      JSON.stringify(obj, (k, v) =>
-        ['id', 'createdAt'].includes(k) || v === null ? undefined : v
-      )
-    );
-
   // check forked session messages
   {
     const s2 = (await session.get(forkedSessionId1))!;
 
     const finalMessages = s2.finish(params);
-    t.snapshot(cleanObject(finalMessages), 'should generate the final message');
+    t.snapshot(
+      cleanSnapshotObject(finalMessages),
+      'should generate the final message'
+    );
   }
 
   // check second times forked session
@@ -580,21 +751,30 @@ test('should be able to fork chat session', async t => {
     t.is(s2.config.userId, newUser.id, 'should have same user id');
 
     const finalMessages = s2.finish(params);
-    t.snapshot(cleanObject(finalMessages), 'should generate the final message');
+    t.snapshot(
+      cleanSnapshotObject(finalMessages),
+      'should generate the final message'
+    );
   }
 
   // check third times forked session
   {
     const s3 = (await session.get(forkedSessionId3))!;
     const finalMessages = s3.finish(params);
-    t.snapshot(cleanObject(finalMessages), 'should generate the final message');
+    t.snapshot(
+      cleanSnapshotObject(finalMessages),
+      'should generate the final message'
+    );
   }
 
   // check original session messages
   {
     const s4 = (await session.get(sessionId))!;
     const finalMessages = s4.finish(params);
-    t.snapshot(cleanObject(finalMessages), 'should generate the final message');
+    t.snapshot(
+      cleanSnapshotObject(finalMessages),
+      'should generate the final message'
+    );
   }
 
   // should get main session after fork if re-create a chat session for same docId and workspaceId
@@ -608,57 +788,74 @@ test('should be able to fork chat session', async t => {
   }
 });
 
-test('should be able to process message id', async t => {
-  const { prompt, session } = t.context;
+test('should schedule title generation as a background job', async t => {
+  const { prompt, session, module, workspace } = t.context;
+  const jobs = module.get(JobQueue);
 
+  const ws = await workspace.create(userId);
   await prompt.set(promptName, 'model', [
     { role: 'system', content: 'hello {{word}}' },
   ]);
 
   const sessionId = await session.create({
-    docId: 'test',
-    workspaceId: 'test',
     userId,
     promptName,
+    docId: 'test',
+    workspaceId: ws.id,
     pinned: false,
   });
-  const s = (await session.get(sessionId))!;
+  const chatSession = await session.get(sessionId);
+  t.truthy(chatSession);
 
-  const textMessage = await session.createMessage({
-    sessionId,
-    content: 'hello',
-  });
-  const anotherSessionMessage = await session.createMessage({
-    sessionId: 'another-session-id',
-  });
+  const addJob = Sinon.stub(jobs, 'add').resolves();
 
-  await t.notThrowsAsync(
-    s.pushByMessageId(textMessage),
-    'should push by message id'
+  chatSession!.pushTurn(
+    buildTurn(sessionId, {
+      role: 'user',
+      content: 'hello',
+      createdAt: new Date(),
+    })
   );
-  await t.throwsAsync(
-    s.pushByMessageId(anotherSessionMessage),
-    {
-      instanceOf: Error,
-    },
-    'should throw error if push by another session message id'
-  );
-  await t.throwsAsync(
-    s.pushByMessageId('invalid'),
-    { instanceOf: Error },
-    'should throw error if push by invalid message id'
-  );
+  await chatSession!.save();
+
+  t.true(addJob.calledOnce);
+  t.deepEqual(addJob.firstCall.args, [
+    'copilot.session.generateTitle',
+    { sessionId },
+    { priority: 100 },
+  ]);
 });
 
-test('should be able to generate with message id', async t => {
+test('should merge latest user turn content and attachments into prompt', async t => {
   const { prompt, session } = t.context;
 
   await prompt.set(promptName, 'model', [
     { role: 'system', content: 'hello {{word}}' },
   ]);
 
-  // text message
-  {
+  for (const testCase of [
+    {
+      title: 'text message',
+      message: { content: 'hello' },
+      project: (messages: { content: string }[]) =>
+        messages.map(({ content }) => content),
+      expected: ['hello world', 'hello'],
+    },
+    {
+      title: 'attachment message',
+      message: { attachments: ['https://affine.pro/example.jpg'] as string[] },
+      project: (messages: { attachments?: unknown }[]) =>
+        messages.map(({ attachments }) => attachments),
+      expected: [undefined, ['https://affine.pro/example.jpg']],
+    },
+    {
+      title: 'empty message',
+      message: {},
+      project: (messages: { content: string }[]) =>
+        messages.map(({ content }) => content),
+      expected: ['hello world'],
+    },
+  ]) {
     const sessionId = await session.create({
       docId: 'test',
       workspaceId: 'test',
@@ -667,68 +864,19 @@ test('should be able to generate with message id', async t => {
       pinned: false,
     });
     const s = (await session.get(sessionId))!;
-
-    const message = await session.createMessage({
-      sessionId,
-      content: 'hello',
-    });
-
-    await s.pushByMessageId(message);
-    const finalMessages = s
-      .finish({ word: 'world' })
-      .map(({ content }) => content);
-    t.deepEqual(finalMessages, ['hello world', 'hello']);
-  }
-
-  // attachment message
-  {
-    const sessionId = await session.create({
-      docId: 'test',
-      workspaceId: 'test',
-      userId,
-      promptName,
-      pinned: false,
-    });
-    const s = (await session.get(sessionId))!;
-
-    const message = await session.createMessage({
-      sessionId,
-      attachments: ['https://affine.pro/example.jpg'],
-    });
-
-    await s.pushByMessageId(message);
-    const finalMessages = s
-      .finish({ word: 'world' })
-      .map(({ attachments }) => attachments);
-    t.deepEqual(finalMessages, [
-      // system prompt
-      undefined,
-      // user prompt
-      ['https://affine.pro/example.jpg'],
-    ]);
-  }
-
-  // empty message
-  {
-    const sessionId = await session.create({
-      docId: 'test',
-      workspaceId: 'test',
-      userId,
-      promptName,
-      pinned: false,
-    });
-    const s = (await session.get(sessionId))!;
-
-    const message = await session.createMessage({
-      sessionId,
-    });
-
-    await s.pushByMessageId(message);
-    const finalMessages = s
-      .finish({ word: 'world' })
-      .map(({ content }) => content);
-    // empty message should be filtered
-    t.deepEqual(finalMessages, ['hello world']);
+    s.pushTurn(
+      buildTurn(sessionId, {
+        role: 'user',
+        content: testCase.message.content ?? '',
+        attachments: testCase.message.attachments,
+        createdAt: new Date(),
+      })
+    );
+    t.deepEqual(
+      testCase.project(s.finish({ word: 'world' })),
+      testCase.expected,
+      testCase.title
+    );
   }
 });
 
@@ -748,19 +896,20 @@ test('should preserve file handle attachments when merging user content into pro
   });
   const s = (await session.get(sessionId))!;
 
-  const message = await session.createMessage({
-    sessionId,
-    content: 'Summarize this file',
-    attachments: [
-      {
-        kind: 'file_handle',
-        fileHandle: 'file_123',
-        mimeType: 'application/pdf',
-      },
-    ],
-  });
-
-  await s.pushByMessageId(message);
+  s.pushTurn(
+    buildTurn(sessionId, {
+      role: 'user',
+      content: 'Summarize this file',
+      attachments: [
+        {
+          kind: 'file_handle',
+          fileHandle: 'file_123',
+          mimeType: 'application/pdf',
+        },
+      ],
+      createdAt: new Date(),
+    })
+  );
   const finalMessages = s.finish({});
 
   t.deepEqual(finalMessages, [
@@ -781,6 +930,55 @@ test('should preserve file handle attachments when merging user content into pro
   ]);
 });
 
+test('should preserve assistant render trace when converting between chat message and turn', t => {
+  const sessionId = randomUUID();
+  const createdAt = new Date('2025-01-01T00:00:00.000Z');
+  const message = {
+    id: 'message-1',
+    role: 'assistant' as const,
+    content: 'Final answer',
+    attachments: [
+      {
+        kind: 'file_handle' as const,
+        fileHandle: 'file_123',
+        mimeType: 'application/pdf',
+      },
+    ],
+    params: {
+      schemaVersion: 'v1',
+    },
+    streamObjects: [
+      { type: 'reasoning' as const, textDelta: 'Plan' },
+      {
+        type: 'tool-call' as const,
+        toolCallId: 'call_1',
+        toolName: 'doc_read',
+        args: { docId: 'doc-1' },
+        rawArgumentsText: '{"docId":"doc-1"}',
+        thought: 'Need the current doc',
+      },
+      { type: 'text-delta' as const, textDelta: 'Final answer' },
+      {
+        type: 'tool-result' as const,
+        toolCallId: 'call_2',
+        toolName: 'doc_keyword_search',
+        args: { query: 'affine' },
+        result: { hits: ['doc-2'] },
+      },
+    ],
+    createdAt,
+  };
+
+  const turn = turnFromChatMessage(message, sessionId);
+
+  t.deepEqual(turn.renderTrace, message.streamObjects);
+  t.deepEqual(
+    turn.toolEvents.map(event => event.type),
+    ['tool_call', 'tool_result']
+  );
+  t.deepEqual(chatMessageFromTurn(turn), message);
+});
+
 test('should save message correctly', async t => {
   const { prompt, session } = t.context;
 
@@ -797,15 +995,16 @@ test('should save message correctly', async t => {
   });
   const s = (await session.get(sessionId))!;
 
-  const message = await session.createMessage({
-    sessionId,
-    content: 'hello',
-  });
-
-  await s.pushByMessageId(message);
-  t.is(s.stashMessages.length, 1, 'should get stash messages');
+  s.pushTurn(
+    buildTurn(sessionId, {
+      role: 'user',
+      content: 'hello',
+      createdAt: new Date(),
+    })
+  );
+  t.is(s.stashTurns.length, 1, 'should get stash turns');
   await s.save();
-  t.is(s.stashMessages.length, 0, 'should empty stash messages after save');
+  t.is(s.stashTurns.length, 0, 'should empty stash turns after save');
 });
 
 test('should revert message correctly', async t => {
@@ -827,36 +1026,44 @@ test('should revert message correctly', async t => {
     });
     const s = (await session.get(sessionId))!;
 
-    const message = await session.createMessage({
-      sessionId,
-      content: '1',
-    });
-
-    await s.pushByMessageId(message);
+    s.pushTurn(
+      buildTurn(sessionId, {
+        role: 'user',
+        content: '1',
+        createdAt: new Date(),
+      })
+    );
     await s.save();
   }
-
-  const cleanObject = (obj: any[]) =>
-    JSON.parse(
-      JSON.stringify(obj, (k, v) =>
-        ['id', 'createdAt'].includes(k) ||
-        v === null ||
-        (typeof v === 'object' && !Object.keys(v).length)
-          ? undefined
-          : v
-      )
-    );
 
   // check ChatSession behavior
   {
     const s = (await session.get(sessionId))!;
-    s.push({ role: 'assistant', content: '2', createdAt: new Date() });
-    s.push({ role: 'user', content: '3', createdAt: new Date() });
-    s.push({ role: 'assistant', content: '4', createdAt: new Date() });
+    s.pushTurn(
+      buildTurn(sessionId, {
+        role: 'assistant',
+        content: '2',
+        createdAt: new Date(),
+      })
+    );
+    s.pushTurn(
+      buildTurn(sessionId, {
+        role: 'user',
+        content: '3',
+        createdAt: new Date(),
+      })
+    );
+    s.pushTurn(
+      buildTurn(sessionId, {
+        role: 'assistant',
+        content: '4',
+        createdAt: new Date(),
+      })
+    );
     await s.save();
     const beforeRevert = s.finish({ word: 'world' });
     t.snapshot(
-      cleanObject(beforeRevert),
+      cleanSnapshotObject(beforeRevert),
       'should have three messages before revert'
     );
 
@@ -864,7 +1071,7 @@ test('should revert message correctly', async t => {
       s.revertLatestMessage(false);
       const afterRevert = s.finish({ word: 'world' });
       t.snapshot(
-        cleanObject(afterRevert),
+        cleanSnapshotObject(afterRevert),
         'should remove assistant message after revert'
       );
     }
@@ -873,7 +1080,7 @@ test('should revert message correctly', async t => {
       s.revertLatestMessage(true);
       const afterRevert = s.finish({ word: 'world' });
       t.snapshot(
-        cleanObject(afterRevert),
+        cleanSnapshotObject(afterRevert),
         'should remove assistant message after revert'
       );
     }
@@ -885,7 +1092,7 @@ test('should revert message correctly', async t => {
 
     const beforeRevert = s.finish({ word: 'world' });
     t.snapshot(
-      cleanObject(beforeRevert),
+      cleanSnapshotObject(beforeRevert),
       'should have three messages before revert'
     );
 
@@ -894,7 +1101,7 @@ test('should revert message correctly', async t => {
       s = (await session.get(sessionId))!;
       const afterRevert = s.finish({ word: 'world' });
       t.snapshot(
-        cleanObject(afterRevert),
+        cleanSnapshotObject(afterRevert),
         'should remove assistant message after revert'
       );
     }
@@ -904,7 +1111,7 @@ test('should revert message correctly', async t => {
       s = (await session.get(sessionId))!;
       const afterRevert = s.finish({ word: 'world' });
       t.snapshot(
-        cleanObject(afterRevert),
+        cleanSnapshotObject(afterRevert),
         'should remove assistant message after revert'
       );
     }
@@ -937,12 +1144,14 @@ test('should handle params correctly in chat session', async t => {
 
   // Case 2: When no params provided but last message has params
   {
-    s.push({
-      role: 'user',
-      content: 'test message',
-      params: { word: 'fromMessage' },
-      createdAt: new Date(),
-    });
+    s.pushTurn(
+      buildTurn(sessionId, {
+        role: 'user',
+        content: 'test message',
+        params: { word: 'fromMessage' },
+        createdAt: new Date(),
+      })
+    );
     const messages = s.finish({});
     t.is(
       messages[0].content,
@@ -953,11 +1162,13 @@ test('should handle params correctly in chat session', async t => {
 
   // Case 3: When neither params provided nor last message has params
   {
-    s.push({
-      role: 'user',
-      content: 'test message without params',
-      createdAt: new Date(),
-    });
+    s.pushTurn(
+      buildTurn(sessionId, {
+        role: 'user',
+        content: 'test message without params',
+        createdAt: new Date(),
+      })
+    );
     const messages = s.finish({});
     t.is(messages[0].content, 'hello ', 'should use empty params');
   }
@@ -1020,13 +1231,23 @@ test('should be able to get provider', async t => {
 test('should resolve provider by prefixed model id', async t => {
   const { factory } = t.context;
 
-  const provider = await factory.getProviderByModel('openai-default/test');
-  t.truthy(provider, 'should resolve prefixed model id');
-  t.is(provider?.type, CopilotProviderType.OpenAI);
+  const resolved = await factory.resolveProvider({
+    modelId: 'openai-default/test',
+    outputType: ModelOutputType.Text,
+  });
+  t.truthy(resolved, 'should resolve prefixed model id');
+  if (!resolved) {
+    throw new Error('should resolve prefixed model id');
+  }
 
-  const result = await provider?.text({ modelId: 'openai-default/test' }, [
-    { role: 'user', content: 'hello' },
-  ]);
+  t.is(resolved.provider.type, CopilotProviderType.OpenAI);
+
+  const result = await getProviderRuntimeHost(resolved.provider).run.text(
+    { modelId: resolved.modelId },
+    [{ role: 'user', content: 'hello' }],
+    undefined,
+    resolved.execution
+  );
   t.is(result, 'generate text to text');
 });
 
@@ -1037,151 +1258,7 @@ test('should fallback to null when prefixed provider id does not exist', async t
   t.is(provider, null);
 });
 
-// ==================== workflow ====================
-
-// this test used to preview the final result of the workflow
-// for the functional test of the API itself, refer to the follow tests
-test.skip('should be able to preview workflow', async t => {
-  const { prompt, workflow, executors } = t.context;
-
-  executors.text.register();
-
-  for (const p of prompts) {
-    await prompt.set(p.name, p.model, p.messages, p.config);
-  }
-
-  let result = '';
-  for await (const ret of workflow.runGraph(
-    { content: 'apple company' },
-    'presentation'
-  )) {
-    if (ret.status === GraphExecutorState.EnterNode) {
-      console.log('enter node:', ret.node.name);
-    } else if (ret.status === GraphExecutorState.ExitNode) {
-      console.log('exit node:', ret.node.name);
-    } else if (ret.status === GraphExecutorState.EmitAttachment) {
-      console.log('stream attachment:', ret);
-    } else {
-      result += ret.content;
-      // console.log('stream result:', ret);
-    }
-  }
-  console.log('final stream result:', result);
-  t.truthy(result, 'should return result');
-});
-
-const runWorkflow = async function* runWorkflow(
-  workflowService: CopilotWorkflowService,
-  graph: WorkflowGraph,
-  params: Record<string, string>
-) {
-  const instance = workflowService.initWorkflow(graph);
-  const workflow = new WorkflowGraphExecutor(instance);
-  for await (const result of workflow.runGraph(params)) {
-    yield result;
-  }
-};
-
-test('should be able to run pre defined workflow', async t => {
-  const { prompt, workflow, executors } = t.context;
-
-  executors.text.register();
-  executors.html.register();
-  executors.json.register();
-
-  const executor = Sinon.spy(executors.text, 'next');
-
-  for (const testCase of WorkflowTestCases) {
-    const { graph, prompts, callCount, input, params, result } = testCase;
-    console.log('running workflow test:', graph.name);
-    for (const p of prompts) {
-      await prompt.set(p.name, p.model, p.messages, p.config);
-    }
-
-    for (const [idx, i] of input.entries()) {
-      let content: string | undefined = undefined;
-      const param: any = Object.assign({ content: i }, params[idx]);
-      for await (const ret of runWorkflow(workflow, graph!, param)) {
-        if (ret.status === GraphExecutorState.EmitContent) {
-          if (!content) content = '';
-          content += ret.content;
-        }
-      }
-      t.is(
-        content,
-        result[idx],
-        `workflow ${graph.name} should generate correct text: ${result[idx]}`
-      );
-      t.is(
-        executor.callCount,
-        callCount[idx],
-        `should call executor ${callCount} times`
-      );
-
-      // check run order
-      for (const [idx, node] of graph!.graph
-        .filter(g => g.nodeType === WorkflowNodeType.Basic)
-        .entries()) {
-        const params = executor.getCall(idx);
-        t.is(params.args[0].id, node.id, 'graph id should correct');
-      }
-    }
-  }
-});
-
-test('should be able to run workflow', async t => {
-  const { workflow, executors } = t.context;
-
-  executors.text.register();
-
-  const executor = Sinon.spy(executors.text, 'next');
-
-  const graphName = 'presentation';
-  const graph = WorkflowGraphList.find(g => g.name === graphName);
-  t.truthy(graph, `graph ${graphName} not defined`);
-
-  // TODO(@darkskygit): use Array.fromAsync
-  let result = '';
-  for await (const ret of workflow.runGraph(
-    { content: 'apple company' },
-    graphName
-  )) {
-    if (ret.status === GraphExecutorState.EmitContent) {
-      result += ret;
-    }
-  }
-  t.assert(result, 'generate text to text stream');
-
-  // presentation workflow has condition node, it will always false
-  // so the latest 2 nodes will not be executed
-  const callCount = graph!.graph.length - 2;
-  t.is(
-    executor.callCount,
-    callCount,
-    `should call executor ${callCount} times`
-  );
-
-  for (const [idx, node] of graph!.graph
-    .filter(g => g.nodeType === WorkflowNodeType.Basic)
-    .entries()) {
-    const params = executor.getCall(idx);
-
-    t.is(params.args[0].id, node.id, 'graph id should correct');
-
-    t.is(
-      params.args[1].content,
-      'generate text to text stream',
-      'graph params should correct'
-    );
-    t.is(
-      params.args[1].language,
-      'generate text to text',
-      'graph params should correct'
-    );
-  }
-});
-
-// ==================== workflow executor ====================
+// ==================== action runtime ====================
 
 const wrapAsyncIter = async <T>(iter: AsyncIterable<T>) => {
   const result: T[] = [];
@@ -1191,159 +1268,107 @@ const wrapAsyncIter = async <T>(iter: AsyncIterable<T>) => {
   return result;
 };
 
-test('should be able to run executor', async t => {
-  const { executors } = t.context;
-
-  const assertExecutor = async (proto: AutoRegisteredWorkflowExecutor) => {
-    proto.register();
-    const executor = getWorkflowExecutor(proto.type);
-    t.is(executor.type, proto.type, 'should get executor');
-    await t.throwsAsync(
-      wrapAsyncIter(
-        executor.next(
-          { id: 'nope', name: 'nope', nodeType: WorkflowNodeType.Nope },
-          {}
-        )
-      ),
-      { instanceOf: Error },
-      'should throw error if run non basic node'
-    );
-  };
-
-  await assertExecutor(executors.image);
-  await assertExecutor(executors.text);
+test('action stream should expose successful text action result as message', t => {
+  t.deepEqual(
+    projectActionEventToChatEvent('message-1', {
+      type: 'action_done',
+      actionId: 'slides.outline',
+      actionVersion: 'v1',
+      status: 'succeeded',
+      runId: 'run-1',
+      result: '- Launch deck',
+    }),
+    {
+      type: 'message',
+      id: 'message-1',
+      data: '- Launch deck',
+    }
+  );
 });
 
-test('should be able to run text executor', async t => {
-  const { executors, factory, prompt } = t.context;
-
-  executors.text.register();
-  const executor = getWorkflowExecutor(executors.text.type);
-  await prompt.set(promptName, 'test', [
-    { role: 'system', content: 'hello {{word}}' },
-  ]);
-  // mock provider
-  const testProvider = (await factory.getProviderByModel('test'))!;
-  const text = Sinon.spy(testProvider, 'text');
-  const textStream = Sinon.spy(testProvider, 'streamText');
-
-  const nodeData: WorkflowNodeData = {
-    id: 'basic',
-    name: 'basic',
-    nodeType: WorkflowNodeType.Basic,
-    promptName,
-    type: NodeExecutorType.ChatText,
-  };
-
-  // text
-  {
-    const ret = await wrapAsyncIter(
-      executor.next({ ...nodeData, paramKey: 'key' }, { word: 'world' })
-    );
-
-    t.deepEqual(ret, [
+test('turn orchestrator should persist generated image links through image result host', async t => {
+  const { conversationHost, imageResults, orchestrator, chatRuntime, module } =
+    t.context;
+  const capabilityPolicy = module.get(CapabilityPolicyHost);
+  const session = {
+    latestUserTurn: { attachments: ['https://example.com/source.png'] },
+    config: { sessionId: 'session-1' },
+    finish: Sinon.stub().returns([
       {
-        type: NodeExecuteState.Params,
-        params: { key: 'generate text to text' },
+        role: 'system',
+        content: 'generate image',
+        params: { quality: 'hd', seed: '7' },
       },
-    ]);
-    t.deepEqual(
-      text.lastCall.args[1][0].content,
-      'hello world',
-      'should render the prompt with params'
-    );
-  }
+    ]),
+  } as any;
 
-  // text stream with attachment
-  {
-    const ret = await wrapAsyncIter(
-      executor.next(nodeData, {
-        attachments: ['https://affine.pro/example.jpg'],
-      })
-    );
+  Sinon.stub(conversationHost, 'prepareTurn').resolves({
+    messageId: 'message-1',
+    params: {},
+    session,
+    latestTurn: undefined,
+  } as any);
+  Sinon.stub(capabilityPolicy, 'selectChat').resolves({
+    model: 'test-image-model',
+    providerOptions: { format: 'png' },
+  } as any);
+  Sinon.stub(chatRuntime, 'streamImageArtifacts').callsFake(async function* () {
+    yield { url: 'https://remote.example/1.png', media_type: 'image/png' };
+    yield { url: 'https://remote.example/2.png', media_type: 'image/png' };
+  });
+  const persistNativeArtifact = Sinon.stub(
+    imageResults,
+    'persistNativeArtifact'
+  ).callsFake(
+    async (_userId, _workspaceId, artifact) => `stored:${artifact.url}`
+  );
+  const persistAssistantTurn = Sinon.stub(
+    conversationHost,
+    'persistAssistantTurn'
+  ).resolves();
 
-    t.deepEqual(
-      ret,
-      Array.from('generate text to text stream').map(t => ({
-        content: t,
-        nodeId: 'basic',
-        type: NodeExecuteState.Content,
-      }))
-    );
-    t.deepEqual(
-      textStream.lastCall.args[1][0].params?.attachments,
-      ['https://affine.pro/example.jpg'],
-      'should pass attachments to provider'
-    );
-  }
+  const prepared = await orchestrator.streamImages('user-1', 'session-1', {
+    modelId: 'chat-model',
+  });
+  const result = await wrapAsyncIter(prepared.stream);
 
-  Sinon.restore();
-});
-
-test('should be able to run image executor', async t => {
-  const { executors, factory, prompt } = t.context;
-
-  executors.image.register();
-  const executor = getWorkflowExecutor(executors.image.type);
-  await prompt.set(promptName, 'test-image', [
-    { role: 'user', content: 'tag1, tag2, tag3, {{#tags}}{{.}}, {{/tags}}' },
+  t.deepEqual(result, [
+    'stored:https://remote.example/1.png',
+    'stored:https://remote.example/2.png',
   ]);
-  // mock provider
-  const testProvider = (await factory.getProviderByModel('test'))!;
-
-  const imageStream = Sinon.spy(testProvider, 'streamImages');
-
-  const nodeData: WorkflowNodeData = {
-    id: 'basic',
-    name: 'basic',
-    nodeType: WorkflowNodeType.Basic,
-    promptName,
-    type: NodeExecutorType.ChatText,
-  };
-
-  // image
-  {
-    const ret = await wrapAsyncIter(
-      executor.next(
-        { ...nodeData, paramKey: 'key' },
-        { tags: ['tag4', 'tag5'] }
-      )
-    );
-
-    t.snapshot(ret, 'should generate image stream');
-    t.snapshot(
-      imageStream.lastCall.args,
-      'should render the prompt with params array'
-    );
-  }
-
-  // image stream with attachment
-  {
-    const ret = await wrapAsyncIter(
-      executor.next(nodeData, {
-        attachments: ['https://affine.pro/example.jpg'],
-      })
-    );
-
-    t.deepEqual(
-      ret,
-      Array.from([
-        'https://example.com/test-image.jpg',
-        'tag1, tag2, tag3, ',
-      ]).map(t => ({
-        attachment: t,
-        nodeId: 'basic',
-        type: NodeExecuteState.Attachment,
-      }))
-    );
-    t.deepEqual(
-      imageStream.lastCall.args[1][0].params?.attachments,
-      ['https://affine.pro/example.jpg'],
-      'should pass attachments to provider'
-    );
-  }
-
-  Sinon.restore();
+  t.deepEqual(
+    (chatRuntime.streamImageArtifacts as Sinon.SinonStub).firstCall.args[0],
+    {
+      modelId: undefined,
+      inputTypes: [ModelInputType.Image],
+    }
+  );
+  t.deepEqual(
+    (chatRuntime.streamImageArtifacts as Sinon.SinonStub).firstCall.args[2],
+    {
+      format: 'png',
+      quality: 'hd',
+      seed: 7,
+      signal: undefined,
+    }
+  );
+  t.deepEqual(
+    persistNativeArtifact.getCalls().map(call => call.args),
+    [
+      [
+        'user-1',
+        'session-1',
+        { url: 'https://remote.example/1.png', media_type: 'image/png' },
+      ],
+      [
+        'user-1',
+        'session-1',
+        { url: 'https://remote.example/2.png', media_type: 'image/png' },
+      ],
+    ]
+  );
+  t.true(persistAssistantTurn.calledOnce);
+  t.deepEqual(persistAssistantTurn.firstCall.args[1].attachments, result);
 });
 
 test('TextStreamParser should format different types of chunks correctly', t => {
@@ -1841,7 +1866,8 @@ test('should be able to manage workspace embedding', async t => {
 });
 
 test('should handle generateSessionTitle correctly under various conditions', async t => {
-  const { prompt, session, workspace, copilotSession } = t.context;
+  const { prompt, session, promptRuntime, workspace, copilotSession } =
+    t.context;
 
   await prompt.set(promptName, 'model', [
     { role: 'user', content: '{{content}}' },
@@ -1873,18 +1899,22 @@ test('should handle generateSessionTitle correctly under various conditions', as
     const chatSession = await session.get(sessionId);
     if (chatSession) {
       if (options.userMessage) {
-        chatSession.push({
-          role: 'user',
-          content: options.userMessage,
-          createdAt: new Date(),
-        });
+        chatSession.pushTurn(
+          buildTurn(sessionId, {
+            role: 'user',
+            content: options.userMessage,
+            createdAt: new Date(),
+          })
+        );
       }
       if (options.assistantMessage) {
-        chatSession.push({
-          role: 'assistant',
-          content: options.assistantMessage,
-          createdAt: new Date(),
-        });
+        chatSession.pushTurn(
+          buildTurn(sessionId, {
+            role: 'assistant',
+            content: options.assistantMessage,
+            createdAt: new Date(),
+          })
+        );
       }
       await chatSession.save();
     }
@@ -1949,7 +1979,7 @@ test('should handle generateSessionTitle correctly under various conditions', as
     const sessionId = await testCase.setup();
     let chatWithPromptCalled = false;
 
-    const mockStub = Sinon.stub(session, 'chatWithPrompt').callsFake(
+    const mockStub = Sinon.stub(promptRuntime, 'runText').callsFake(
       async () => {
         chatWithPromptCalled = true;
         return testCase.mockFn();
@@ -1966,13 +1996,13 @@ test('should handle generateSessionTitle correctly under various conditions', as
       await session.generateSessionTitle({ sessionId });
 
       if (testCase.expectSnapshot) {
-        const sessionState = await session.getSessionInfo(sessionId);
+        const sessionState = await session.getState(sessionId);
         t.snapshot(
           {
             chatWithPromptCalled: testCase.expectNotCalled
               ? chatWithPromptCalled
               : undefined,
-            title: sessionState?.title,
+            title: sessionState?.conversation.title,
             exists: !!sessionState,
           },
           testCase.name
@@ -1990,7 +2020,7 @@ test('should handle generateSessionTitle correctly under various conditions', as
     });
 
     let capturedArgs: any[] = [];
-    Sinon.stub(session, 'chatWithPrompt').callsFake(async (...args) => {
+    Sinon.stub(promptRuntime, 'runText').callsFake(async (...args) => {
       capturedArgs = args;
       return 'Quantum Computing Explained';
     });
@@ -2075,34 +2105,75 @@ test('should handle copilot cron jobs correctly', async t => {
   jobAddStub.restore();
 });
 
-test('should resolve model correctly based on subscription status and prompt config', async t => {
-  const { prompt, session, subscription } = t.context;
+test('model selection policy should resolve requested optional models consistently', async t => {
+  const { module } = t.context;
+  const modelSelection = module.get(ModelSelectionPolicy);
 
-  // 1) Seed a prompt that has optionalModels and proModels in config
-  const promptName = 'resolve-model-test';
-  await prompt.set(
-    promptName,
-    'gemini-2.5-flash',
-    [{ role: 'system', content: 'test' }],
-    { proModels: ['gemini-2.5-pro', 'claude-sonnet-4-5@20250929'] },
-    {
+  t.deepEqual(
+    modelSelection.resolveRequestedModel({
+      defaultModel: 'gemini-2.5-flash',
       optionalModels: [
         'gemini-2.5-flash',
         'gemini-2.5-pro',
         'claude-sonnet-4-5@20250929',
       ],
+      requestedModelId: 'gemini-2.5-pro',
+    }),
+    {
+      selectedModel: 'gemini-2.5-pro',
+      matchedOptionalModel: true,
     }
   );
 
-  // 2) Create a chat session with this prompt
-  const sessionId = await session.create({
-    promptName,
-    docId: 'test',
-    workspaceId: 'test',
-    userId,
-    pinned: false,
-  });
-  const s = (await session.get(sessionId))!;
+  t.deepEqual(
+    modelSelection.resolveRequestedModel({
+      defaultModel: 'gemini-2.5-flash',
+      optionalModels: [
+        'gemini-2.5-flash',
+        'gemini-2.5-pro',
+        'claude-sonnet-4-5@20250929',
+      ],
+      requestedModelId: 'openai-default/gemini-2.5-pro',
+    }),
+    {
+      selectedModel: 'openai-default/gemini-2.5-pro',
+      matchedOptionalModel: true,
+    }
+  );
+
+  t.deepEqual(
+    modelSelection.resolveRequestedModel({
+      defaultModel: 'gemini-2.5-flash',
+      optionalModels: [
+        'gemini-2.5-flash',
+        'gemini-2.5-pro',
+        'claude-sonnet-4-5@20250929',
+      ],
+      requestedModelId: 'not-in-optional',
+    }),
+    {
+      selectedModel: 'gemini-2.5-flash',
+      matchedOptionalModel: false,
+    }
+  );
+
+  t.is(
+    modelSelection.resolveRequestedModel({
+      defaultModel: 'gemini-2.5-flash',
+      optionalModels: [
+        'gemini-2.5-flash',
+        'gemini-2.5-pro',
+        'claude-sonnet-4-5@20250929',
+      ],
+      requestedModelId: 'not-in-optional',
+    }).selectedModel,
+    'gemini-2.5-flash'
+  );
+});
+
+test('capability policy host should gate pro model requests by subscription status', async t => {
+  const { subscription, module } = t.context;
+  const capabilityPolicy = module.get(CapabilityPolicyHost);
 
   const mockStatus = (status?: SubscriptionStatus) => {
     Sinon.restore();
@@ -2114,46 +2185,116 @@ test('should resolve model correctly based on subscription status and prompt con
 
   // payment disabled -> allow requested if in optional; pro not blocked
   {
-    const model1 = await s.resolveModel(false, 'gemini-2.5-pro');
+    const model1 = await capabilityPolicy.resolveChatModel({
+      userId,
+      defaultModel: 'gemini-2.5-flash',
+      optionalModels: [
+        'gemini-2.5-flash',
+        'gemini-2.5-pro',
+        'claude-sonnet-4-5@20250929',
+      ],
+      proModels: ['gemini-2.5-pro', 'claude-sonnet-4-5@20250929'],
+      requestedModelId: 'gemini-2.5-pro',
+      paymentEnabled: false,
+    });
     t.snapshot(model1, 'should honor requested pro model');
 
-    const model1WithPrefix = await s.resolveModel(
-      false,
-      'openai-default/gemini-2.5-pro'
-    );
+    const model1WithPrefix = await capabilityPolicy.resolveChatModel({
+      userId,
+      defaultModel: 'gemini-2.5-flash',
+      optionalModels: [
+        'gemini-2.5-flash',
+        'gemini-2.5-pro',
+        'claude-sonnet-4-5@20250929',
+      ],
+      proModels: ['gemini-2.5-pro', 'claude-sonnet-4-5@20250929'],
+      requestedModelId: 'openai-default/gemini-2.5-pro',
+      paymentEnabled: false,
+    });
     t.is(
       model1WithPrefix,
       'openai-default/gemini-2.5-pro',
       'should honor requested prefixed pro model'
     );
 
-    const model2 = await s.resolveModel(false, 'not-in-optional');
+    const model2 = await capabilityPolicy.resolveChatModel({
+      userId,
+      defaultModel: 'gemini-2.5-flash',
+      optionalModels: [
+        'gemini-2.5-flash',
+        'gemini-2.5-pro',
+        'claude-sonnet-4-5@20250929',
+      ],
+      proModels: ['gemini-2.5-pro', 'claude-sonnet-4-5@20250929'],
+      requestedModelId: 'not-in-optional',
+      paymentEnabled: false,
+    });
     t.snapshot(model2, 'should fallback to default model');
   }
 
   // payment enabled + trialing: requesting pro should fallback to default
   {
     mockStatus(SubscriptionStatus.Trialing);
-    const model3 = await s.resolveModel(true, 'gemini-2.5-pro');
+    const model3 = await capabilityPolicy.resolveChatModel({
+      userId,
+      defaultModel: 'gemini-2.5-flash',
+      optionalModels: [
+        'gemini-2.5-flash',
+        'gemini-2.5-pro',
+        'claude-sonnet-4-5@20250929',
+      ],
+      proModels: ['gemini-2.5-pro', 'claude-sonnet-4-5@20250929'],
+      requestedModelId: 'gemini-2.5-pro',
+      paymentEnabled: true,
+    });
     t.snapshot(
       model3,
       'should fallback to default model when requesting pro model during trialing'
     );
 
-    const model3WithPrefix = await s.resolveModel(
-      true,
-      'openai-default/gemini-2.5-pro'
-    );
+    const model3WithPrefix = await capabilityPolicy.resolveChatModel({
+      userId,
+      defaultModel: 'gemini-2.5-flash',
+      optionalModels: [
+        'gemini-2.5-flash',
+        'gemini-2.5-pro',
+        'claude-sonnet-4-5@20250929',
+      ],
+      proModels: ['gemini-2.5-pro', 'claude-sonnet-4-5@20250929'],
+      requestedModelId: 'openai-default/gemini-2.5-pro',
+      paymentEnabled: true,
+    });
     t.is(
       model3WithPrefix,
       'gemini-2.5-flash',
       'should fallback to default model when requesting prefixed pro model during trialing'
     );
 
-    const model4 = await s.resolveModel(true, 'gemini-2.5-flash');
+    const model4 = await capabilityPolicy.resolveChatModel({
+      userId,
+      defaultModel: 'gemini-2.5-flash',
+      optionalModels: [
+        'gemini-2.5-flash',
+        'gemini-2.5-pro',
+        'claude-sonnet-4-5@20250929',
+      ],
+      proModels: ['gemini-2.5-pro', 'claude-sonnet-4-5@20250929'],
+      requestedModelId: 'gemini-2.5-flash',
+      paymentEnabled: true,
+    });
     t.snapshot(model4, 'should honor requested non-pro model during trialing');
 
-    const model5 = await s.resolveModel(true);
+    const model5 = await capabilityPolicy.resolveChatModel({
+      userId,
+      defaultModel: 'gemini-2.5-flash',
+      optionalModels: [
+        'gemini-2.5-flash',
+        'gemini-2.5-pro',
+        'claude-sonnet-4-5@20250929',
+      ],
+      proModels: ['gemini-2.5-pro', 'claude-sonnet-4-5@20250929'],
+      paymentEnabled: true,
+    });
     t.snapshot(
       model5,
       'should pick default model when no requested model during trialing'
@@ -2163,29 +2304,158 @@ test('should resolve model correctly based on subscription status and prompt con
   // payment enabled + active: without requested -> default model; requested pro should be honored
   {
     mockStatus(SubscriptionStatus.Active);
-    const model6 = await s.resolveModel(true);
+    const model6 = await capabilityPolicy.resolveChatModel({
+      userId,
+      defaultModel: 'gemini-2.5-flash',
+      optionalModels: [
+        'gemini-2.5-flash',
+        'gemini-2.5-pro',
+        'claude-sonnet-4-5@20250929',
+      ],
+      proModels: ['gemini-2.5-pro', 'claude-sonnet-4-5@20250929'],
+      paymentEnabled: true,
+    });
     t.snapshot(
       model6,
       'should pick default model when no requested model during active'
     );
 
-    const model7 = await s.resolveModel(true, 'claude-sonnet-4-5@20250929');
+    const model7 = await capabilityPolicy.resolveChatModel({
+      userId,
+      defaultModel: 'gemini-2.5-flash',
+      optionalModels: [
+        'gemini-2.5-flash',
+        'gemini-2.5-pro',
+        'claude-sonnet-4-5@20250929',
+      ],
+      proModels: ['gemini-2.5-pro', 'claude-sonnet-4-5@20250929'],
+      requestedModelId: 'claude-sonnet-4-5@20250929',
+      paymentEnabled: true,
+    });
     t.snapshot(model7, 'should honor requested pro model during active');
 
-    const model7WithPrefix = await s.resolveModel(
-      true,
-      'openai-default/claude-sonnet-4-5@20250929'
-    );
+    const model7WithPrefix = await capabilityPolicy.resolveChatModel({
+      userId,
+      defaultModel: 'gemini-2.5-flash',
+      optionalModels: [
+        'gemini-2.5-flash',
+        'gemini-2.5-pro',
+        'claude-sonnet-4-5@20250929',
+      ],
+      proModels: ['gemini-2.5-pro', 'claude-sonnet-4-5@20250929'],
+      requestedModelId: 'openai-default/claude-sonnet-4-5@20250929',
+      paymentEnabled: true,
+    });
     t.is(
       model7WithPrefix,
       'openai-default/claude-sonnet-4-5@20250929',
       'should honor requested prefixed pro model during active'
     );
 
-    const model8 = await s.resolveModel(true, 'not-in-optional');
+    const model8 = await capabilityPolicy.resolveChatModel({
+      userId,
+      defaultModel: 'gemini-2.5-flash',
+      optionalModels: [
+        'gemini-2.5-flash',
+        'gemini-2.5-pro',
+        'claude-sonnet-4-5@20250929',
+      ],
+      proModels: ['gemini-2.5-pro', 'claude-sonnet-4-5@20250929'],
+      requestedModelId: 'not-in-optional',
+      paymentEnabled: true,
+    });
     t.snapshot(
       model8,
       'should fallback to default model when requesting non-optional model during active'
     );
   }
+});
+
+test('prompt runtime should resolve prefixed optional models consistently', async t => {
+  const { prompt, promptRuntime, chatRuntime } = t.context;
+
+  const promptName = randomUUID().replaceAll('-', '');
+  await prompt.set(
+    promptName,
+    'gemini-2.5-flash',
+    [{ role: 'user', content: '{{content}}' }],
+    { proModels: ['gemini-2.5-pro'] },
+    { optionalModels: ['gemini-2.5-pro'] }
+  );
+
+  const textStub = Sinon.stub(chatRuntime, 'text').resolves('ok');
+
+  await promptRuntime.runText(
+    promptName,
+    { content: 'hello' },
+    { modelId: 'openai-default/gemini-2.5-pro' }
+  );
+  t.is(
+    textStub.firstCall.args[0].modelId,
+    'openai-default/gemini-2.5-pro',
+    'should preserve accepted provider-prefixed optional model'
+  );
+
+  await promptRuntime.runText(
+    promptName,
+    { content: 'hello' },
+    { modelId: 'openai-default/not-in-optional' }
+  );
+  t.is(
+    textStub.secondCall.args[0].modelId,
+    'gemini-2.5-flash',
+    'should fallback to default model for non-optional prefixed model'
+  );
+});
+
+test('resolver models should use resolved provider metadata for display names', async t => {
+  const { prompt, factory, module } = t.context;
+  const resolver = module.get(CopilotResolver);
+
+  const promptName = randomUUID().replaceAll('-', '');
+  await prompt.set(
+    promptName,
+    'gemini-2.5-flash',
+    [{ role: 'system', content: 'test' }],
+    { proModels: ['gemini-2.5-pro'] },
+    { optionalModels: ['gemini-2.5-flash', 'gemini-2.5-pro'] }
+  );
+
+  const resolveProvider = Sinon.stub(factory, 'resolveProvider').callsFake(
+    async cond =>
+      ({
+        providerId: 'openai-default',
+        rawModelId: cond.modelId,
+        modelId: cond.modelId,
+        profile: {
+          id: 'openai-default',
+          type: CopilotProviderType.OpenAI,
+          enabled: true,
+          priority: 10,
+          config: {},
+          middleware: {},
+        },
+        provider: {
+          resolveModel: (modelId: string) => ({
+            id: modelId,
+            name: `Resolved ${modelId}`,
+          }),
+        },
+      }) as any
+  );
+
+  const models = await resolver.models(promptName);
+
+  t.deepEqual(models.optionalModels, [
+    { id: 'gemini-2.5-flash', name: 'Resolved gemini-2.5-flash' },
+    { id: 'gemini-2.5-pro', name: 'Resolved gemini-2.5-pro' },
+  ]);
+  t.deepEqual(models.proModels, [
+    { id: 'gemini-2.5-pro', name: 'Resolved gemini-2.5-pro' },
+  ]);
+  t.true(
+    resolveProvider.alwaysCalledWithMatch({
+      outputType: ModelOutputType.Text,
+    })
+  );
 });

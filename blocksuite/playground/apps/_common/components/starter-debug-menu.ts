@@ -70,6 +70,7 @@ import { css, html } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import * as lz from 'lz-string';
 import type { Pane } from 'tweakpane';
+import * as Y from 'yjs';
 
 import type { CommentPanel } from '../../comment/index.js';
 import { createTestEditor } from '../../starter/utils/extensions.js';
@@ -335,6 +336,14 @@ export class StarterDebugMenu extends ShadowlessElement {
         collection.getStore()
       )
     );
+  }
+
+  private _exportYDoc() {
+    const encodeUpdate = Y.encodeStateAsUpdate(this.doc.spaceDoc);
+    const blob = new Blob([new Uint8Array(encodeUpdate)], {
+      type: 'application/octet-stream',
+    });
+    download(blob, 'ydoc-update');
   }
 
   private _getStoreManager() {
@@ -833,6 +842,9 @@ export class StarterDebugMenu extends ShadowlessElement {
                   </sl-menu-item>
                   <sl-menu-item @click="${this._exportSnapshot}">
                     Export Snapshot
+                  </sl-menu-item>
+                  <sl-menu-item @click="${this._exportYDoc}">
+                    Export Y.Doc
                   </sl-menu-item>
                 </sl-menu>
               </sl-menu-item>

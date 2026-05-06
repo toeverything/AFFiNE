@@ -1,81 +1,31 @@
 import type { ProviderMiddlewareConfig } from '../config';
 import { CopilotProviderType } from './types';
 
+const DEFAULT_NODE_TEXT_MIDDLEWARE: NonNullable<
+  NonNullable<ProviderMiddlewareConfig['node']>['text']
+> = ['citation_footnote', 'callout'];
+
 const DEFAULT_MIDDLEWARE_BY_TYPE: Record<
   CopilotProviderType,
   ProviderMiddlewareConfig
 > = {
   [CopilotProviderType.OpenAI]: {
-    rust: {
-      request: ['normalize_messages'],
-      stream: ['stream_event_normalize', 'citation_indexing'],
-    },
-    node: {
-      text: ['citation_footnote', 'callout'],
-    },
+    node: { text: DEFAULT_NODE_TEXT_MIDDLEWARE },
   },
   [CopilotProviderType.CloudflareWorkersAi]: {
-    rust: {
-      request: ['normalize_messages'],
-      stream: ['stream_event_normalize', 'citation_indexing'],
-    },
-    node: {
-      text: ['citation_footnote', 'callout'],
-    },
+    node: { text: DEFAULT_NODE_TEXT_MIDDLEWARE },
   },
   [CopilotProviderType.Anthropic]: {
-    rust: {
-      request: ['normalize_messages', 'tool_schema_rewrite'],
-      stream: ['stream_event_normalize', 'citation_indexing'],
-    },
-    node: {
-      text: ['citation_footnote', 'callout'],
-    },
+    node: { text: DEFAULT_NODE_TEXT_MIDDLEWARE },
   },
   [CopilotProviderType.AnthropicVertex]: {
-    rust: {
-      request: ['normalize_messages', 'tool_schema_rewrite'],
-      stream: ['stream_event_normalize', 'citation_indexing'],
-    },
-    node: {
-      text: ['citation_footnote', 'callout'],
-    },
-  },
-  [CopilotProviderType.Morph]: {
-    rust: {
-      request: ['clamp_max_tokens'],
-      stream: ['stream_event_normalize', 'citation_indexing'],
-    },
-    node: {
-      text: ['citation_footnote', 'callout'],
-    },
-  },
-  [CopilotProviderType.Perplexity]: {
-    rust: {
-      request: ['clamp_max_tokens'],
-      stream: ['stream_event_normalize', 'citation_indexing'],
-    },
-    node: {
-      text: ['citation_footnote', 'callout'],
-    },
+    node: { text: DEFAULT_NODE_TEXT_MIDDLEWARE },
   },
   [CopilotProviderType.Gemini]: {
-    rust: {
-      request: ['normalize_messages', 'tool_schema_rewrite'],
-      stream: ['stream_event_normalize', 'citation_indexing'],
-    },
-    node: {
-      text: ['citation_footnote', 'callout'],
-    },
+    node: { text: DEFAULT_NODE_TEXT_MIDDLEWARE },
   },
   [CopilotProviderType.GeminiVertex]: {
-    rust: {
-      request: ['normalize_messages', 'tool_schema_rewrite'],
-      stream: ['stream_event_normalize', 'citation_indexing'],
-    },
-    node: {
-      text: ['citation_footnote', 'callout'],
-    },
+    node: { text: DEFAULT_NODE_TEXT_MIDDLEWARE },
   },
   [CopilotProviderType.FAL]: {},
 };
@@ -91,18 +41,26 @@ function mergeArray<T>(base: T[] | undefined, override: T[] | undefined) {
   return unique([...(base ?? []), ...(override ?? [])]);
 }
 
+function compactMiddlewareSection<T extends Record<string, unknown>>(
+  section: T
+): T | undefined {
+  return Object.values(section).some(value => value !== undefined)
+    ? section
+    : undefined;
+}
+
 export function mergeProviderMiddleware(
   defaults: ProviderMiddlewareConfig,
   override?: ProviderMiddlewareConfig
 ): ProviderMiddlewareConfig {
   return {
-    rust: {
+    rust: compactMiddlewareSection({
       request: mergeArray(defaults.rust?.request, override?.rust?.request),
       stream: mergeArray(defaults.rust?.stream, override?.rust?.stream),
-    },
-    node: {
+    }),
+    node: compactMiddlewareSection({
       text: mergeArray(defaults.node?.text, override?.node?.text),
-    },
+    }),
   };
 }
 

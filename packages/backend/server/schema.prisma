@@ -147,6 +147,8 @@ model Workspace {
   blobs                      Blob[]
   ignoredDocs                AiWorkspaceIgnoredDocs[]
   embedFiles                 AiWorkspaceFiles[]
+  byokConfigs                AiWorkspaceByokConfig[]
+  aiUsageEvents              AiUsageEvent[]
   comments                   Comment[]
   commentAttachments         CommentAttachment[]
   workspaceCalendars         WorkspaceCalendar[]
@@ -494,7 +496,7 @@ model AiPrompt {
   config         Json?    @db.Json
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt      DateTime @default(now()) @map("updated_at") @db.Timestamptz(3)
-  // whether the prompt is modified by the admin panel
+  // whether the prompt metadata is manually overridden in compat storage
   modified       Boolean  @default(false)
 
   messages AiPromptMessage[]
@@ -504,19 +506,21 @@ model AiPrompt {
 }
 
 model AiSessionMessage {
-  id            String       @id @default(uuid()) @db.VarChar
-  sessionId     String       @map("session_id") @db.VarChar
-  role          AiPromptRole
-  content       String       @db.Text
-  streamObjects Json?        @db.Json
-  attachments   Json?        @db.Json
-  params        Json?        @db.Json
-  createdAt     DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt     DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+  id                 String       @id @default(uuid()) @db.VarChar
+  sessionId          String       @map("session_id") @db.VarChar
+  compatSubmissionId String?      @map("compat_submission_id") @db.VarChar
+  role               AiPromptRole
+  content            String       @db.Text
+  streamObjects      Json?        @db.Json
+  attachments        Json?        @db.Json
+  params             Json?        @db.Json
+  createdAt          DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   session AiSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@index([sessionId])
+  @@index([sessionId, compatSubmissionId])
   @@index([createdAt, role])
   @@map("ai_sessions_messages")
 }
@@ -538,10 +542,11 @@ model AiSession {
   updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
   deletedAt       DateTime? @map("deleted_at") @db.Timestamptz(3)
 
-  user     User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  prompt   AiPrompt           @relation(fields: [promptName], references: [name], onDelete: Cascade)
-  messages AiSessionMessage[]
-  context  AiContext[]
+  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  prompt     AiPrompt           @relation(fields: [promptName], references: [name], onDelete: Cascade)
+  messages   AiSessionMessage[]
+  context    AiContext[]
+  actionRuns AiActionRun[]
 
   //NOTE:
   // unrecorded index:
@@ -552,6 +557,64 @@ model AiSession {
   @@index([userId])
   @@index([userId, workspaceId, docId])
   @@map("ai_sessions_metadata")
+}
+
+model AiActionRun {
+  id                 String   @id @default(uuid()) @db.VarChar
+  userId             String   @map("user_id") @db.VarChar
+  workspaceId        String   @map("workspace_id") @db.VarChar
+  docId              String?  @map("doc_id") @db.VarChar
+  sessionId          String?  @map("session_id") @db.VarChar
+  userMessageId      String?  @map("user_message_id") @db.VarChar
+  compatSubmissionId String?  @map("compat_submission_id") @db.VarChar
+  assistantMessageId String?  @map("assistant_message_id") @db.VarChar
+  actionId           String   @map("action_id") @db.VarChar
+  actionVersion      String   @map("action_version") @db.VarChar
+  status             String   @db.VarChar
+  attempt            Int      @default(1)
+  retryOf            String?  @map("retry_of") @db.VarChar
+  inputSnapshot      Json?    @map("input_snapshot") @db.Json
+  result             Json?    @db.Json
+  artifacts          Json?    @db.Json
+  resultSummary      String?  @map("result_summary") @db.Text
+  errorCode          String?  @map("error_code") @db.VarChar
+  trace              Json?    @db.Json
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  session AiSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+  @@index([userId, workspaceId])
+  @@index([sessionId])
+  @@index([actionId, actionVersion])
+  @@index([status])
+  @@index([retryOf])
+  @@map("ai_action_runs")
+}
+
+model AiTranscriptTask {
+  id              String    @id @default(uuid()) @db.VarChar
+  userId          String    @map("user_id") @db.VarChar
+  workspaceId     String    @map("workspace_id") @db.VarChar
+  blobId          String    @map("blob_id") @db.VarChar
+  status          String    @db.VarChar
+  strategy        String    @db.VarChar
+  recipeId        String    @map("recipe_id") @db.VarChar
+  recipeVersion   String    @map("recipe_version") @db.VarChar
+  actionRunId     String?   @map("action_run_id") @db.VarChar
+  inputSnapshot   Json?     @map("input_snapshot") @db.Json
+  publicMeta      Json?     @map("public_meta") @db.Json
+  protectedResult Json?     @map("protected_result") @db.Json
+  errorCode       String?   @map("error_code") @db.VarChar
+  settledAt       DateTime? @map("settled_at") @db.Timestamptz(3)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([userId, workspaceId])
+  @@index([workspaceId, blobId])
+  @@index([status])
+  @@index([actionRunId])
+  @@map("ai_transcript_tasks")
 }
 
 model AiContext {
@@ -669,6 +732,62 @@ model AiWorkspaceBlobEmbedding {
   @@id([workspaceId, blobId, chunk])
   @@index([embedding], map: "ai_workspace_blob_embeddings_idx")
   @@map("ai_workspace_blob_embeddings")
+}
+
+model AiWorkspaceByokConfig {
+  id                  String    @id @default(uuid()) @db.VarChar
+  workspaceId         String    @map("workspace_id") @db.VarChar
+  provider            String    @db.VarChar
+  name                String    @db.VarChar
+  description         String?   @db.VarChar
+  encryptedApiKey     String    @map("encrypted_api_key") @db.Text
+  endpoint            String?   @db.Text
+  sortOrder           Int       @default(0) @map("sort_order")
+  enabled             Boolean   @default(true)
+  disabledReason      String?   @map("disabled_reason") @db.VarChar
+  lastValidatedAt     DateTime? @map("last_validated_at") @db.Timestamptz(3)
+  lastValidationError String?   @map("last_validation_error") @db.Text
+  lastUsedAt          DateTime? @map("last_used_at") @db.Timestamptz(3)
+  lastErrorAt         DateTime? @map("last_error_at") @db.Timestamptz(3)
+  lastError           String?   @map("last_error") @db.Text
+  createdBy           String?   @map("created_by") @db.VarChar
+  updatedBy           String?   @map("updated_by") @db.VarChar
+  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt           DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, provider, name])
+  @@index([workspaceId])
+  @@index([workspaceId, provider, enabled, sortOrder])
+  @@map("ai_workspace_byok_configs")
+}
+
+model AiUsageEvent {
+  id               String   @id @default(uuid()) @db.VarChar
+  workspaceId      String   @map("workspace_id") @db.VarChar
+  userId           String?  @map("user_id") @db.VarChar
+  provider         String   @db.VarChar
+  providerSource   String   @map("provider_source") @db.VarChar
+  featureKind      String   @map("feature_kind") @db.VarChar
+  model            String?  @db.VarChar
+  sessionId        String?  @map("session_id") @db.VarChar
+  taskId           String?  @map("task_id") @db.VarChar
+  actionId         String?  @map("action_id") @db.VarChar
+  billingUnitId    String?  @map("billing_unit_id") @db.VarChar
+  promptTokens     Int      @default(0) @map("prompt_tokens")
+  completionTokens Int      @default(0) @map("completion_tokens")
+  totalTokens      Int      @default(0) @map("total_tokens")
+  cachedTokens     Int      @default(0) @map("cached_tokens")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, createdAt])
+  @@index([workspaceId, providerSource, createdAt])
+  @@index([featureKind, createdAt])
+  @@index([userId, providerSource, featureKind, billingUnitId], map: "ai_usage_events_quota_exempt_idx")
+  @@map("ai_usage_events")
 }
 
 enum AiJobStatus {

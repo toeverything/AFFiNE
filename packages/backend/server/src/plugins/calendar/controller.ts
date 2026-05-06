@@ -46,6 +46,8 @@ export class CalendarController {
       throw new UnknownOauthProvider({ name: providerName });
     }
 
+    await this.calendar.assertCanLinkProvider(user.id, providerName);
+
     const state = await this.oauth.saveOAuthState({
       provider: providerName,
       userId: user.id,

@@ -1,7 +1,11 @@
 import { z } from 'zod';
 
-import { buildLegacyProjection } from './projection';
+import { llmGetContractSchema } from '../../../native';
+import { buildStructuredResponseFromSchemaJson } from '../runtime/contracts';
 
+// Owner: DB/job/API legacy compatibility and transcript projection.
+// Native owns transcript domain result schemas; this file accepts historical
+// nullable/partial payloads used by backend persistence and resolver surfaces.
 export const LegacyTranscriptionSegmentSchema = z.object({
   speaker: z.string(),
   start: z.string(),
@@ -28,15 +32,6 @@ export const AudioSliceManifestItemSchema = z.object({
   startSec: z.number(),
   durationSec: z.number(),
   byteSize: z.number().nullable().optional(),
-});
-
-export const RawTranscriptSegmentSchema = z.object({
-  source: z.literal('asr'),
-  sliceIndex: z.number().int(),
-  speaker: z.string(),
-  startSec: z.number(),
-  endSec: z.number(),
-  text: z.string(),
 });
 
 export const NormalizedTranscriptSegmentSchema = z.object({
@@ -83,10 +78,6 @@ export const TranscriptProviderMetaSchema = z.object({
   model: z.string().nullable().optional(),
 });
 
-export const TranscriptionRetryMetaSchema = z.object({
-  skipAsrOnRetry: z.boolean().optional(),
-});
-
 export const TranscriptionLegacyProjectionSchema = z.object({
   title: z.string().nullable().optional(),
   summary: z.string().nullable().optional(),
@@ -95,17 +86,19 @@ export const TranscriptionLegacyProjectionSchema = z.object({
 });
 
 export const TranscriptionPayloadV2Schema = z.object({
-  sourceAudio: TranscriptionSourceAudioSchema.optional(),
-  quality: TranscriptionQualitySchema.optional(),
-  sliceManifest: z.array(AudioSliceManifestItemSchema).optional(),
-  infos: AudioBlobInfosSchema.optional(),
-  rawSegments: z.array(RawTranscriptSegmentSchema).optional(),
-  normalizedSegments: z.array(NormalizedTranscriptSegmentSchema).optional(),
+  sourceAudio: TranscriptionSourceAudioSchema.nullable().optional(),
+  quality: TranscriptionQualitySchema.nullable().optional(),
+  sliceManifest: z.array(AudioSliceManifestItemSchema).nullable().optional(),
+  infos: AudioBlobInfosSchema.nullable().optional(),
+  normalizedSegments: z
+    .array(NormalizedTranscriptSegmentSchema)
+    .nullable()
+    .optional(),
   normalizedTranscript: z.string().nullable().optional(),
   summaryJson: MeetingSummaryV2Schema.nullable().optional(),
-  legacy: TranscriptionLegacyProjectionSchema.nullable().optional(),
   providerMeta: TranscriptProviderMetaSchema.nullable().optional(),
-  retryMeta: TranscriptionRetryMetaSchema.optional(),
+  version: z.string().optional(),
+  strategy: z.string().optional(),
 });
 
 export const TranscriptionSubmitInputSchema = TranscriptionPayloadV2Schema.pick(
@@ -116,31 +109,22 @@ export const TranscriptionSubmitInputSchema = TranscriptionPayloadV2Schema.pick(
   }
 );
 
-export const TranscriptionResponseSchema = z
-  .object({
-    a: z.string().describe("speaker's name, for example A, B, C"),
-    s: z.number().describe('start time(second) of the transcription'),
-    e: z.number().describe('end time(second) of the transcription'),
-    t: z.string().describe('transcription text'),
-  })
-  .array();
+function buildRequiredStructuredContract(schema: Record<string, unknown>) {
+  const contract = buildStructuredResponseFromSchemaJson(schema);
+  if (!contract.responseSchemaJson || !contract.schemaHash) {
+    throw new Error('Structured transcript contract is required');
+  }
 
-const LegacyTranscriptPayloadSchema = z
-  .object({
-    url: z.string().nullable().optional(),
-    mimeType: z.string().nullable().optional(),
-    infos: AudioBlobInfosSchema.nullable().optional(),
-    title: z.string().nullable().optional(),
-    summary: z.string().nullable().optional(),
-    actions: z.string().nullable().optional(),
-    transcription: LegacyTranscriptionSchema.nullable().optional(),
-  })
-  .refine(
-    payload => Object.values(payload).some(value => value !== undefined),
-    { message: 'legacy transcript payload must contain known fields' }
-  );
+  return {
+    responseSchemaJson: contract.responseSchemaJson,
+    schemaHash: contract.schemaHash,
+  };
+}
 
-type LegacyTranscriptPayload = z.infer<typeof LegacyTranscriptPayloadSchema>;
+export const TranscriptActionResultContract = buildRequiredStructuredContract(
+  llmGetContractSchema('transcriptGeneratedResult')
+);
+
 type CanonicalTranscriptPayload = z.infer<typeof TranscriptionPayloadV2Schema>;
 
 const CanonicalTranscriptPayloadSchema = TranscriptionPayloadV2Schema.refine(
@@ -148,71 +132,28 @@ const CanonicalTranscriptPayloadSchema = TranscriptionPayloadV2Schema.refine(
     payload.sourceAudio !== undefined ||
     payload.quality !== undefined ||
     payload.sliceManifest !== undefined ||
-    payload.rawSegments !== undefined ||
     payload.normalizedSegments !== undefined ||
     payload.normalizedTranscript !== undefined ||
     payload.summaryJson !== undefined ||
     payload.providerMeta !== undefined ||
-    payload.legacy !== undefined,
+    payload.version !== undefined ||
+    payload.strategy !== undefined,
   {
     message:
       'canonical transcript payload must contain canonical transcript fields',
   }
 );
 
-function normalizePayload(
-  payload: LegacyTranscriptPayload | CanonicalTranscriptPayload
-): CanonicalTranscriptPayload {
-  const canonical = CanonicalTranscriptPayloadSchema.safeParse(payload);
-  if (canonical.success) {
-    return {
-      ...canonical.data,
-      legacy: buildLegacyProjection(canonical.data),
-    };
-  }
-
-  const legacy = LegacyTranscriptPayloadSchema.parse(payload);
-  const infos = legacy.infos ?? [];
-  const mergedInfos = [...infos];
-  if (
-    legacy.url &&
-    legacy.mimeType &&
-    !mergedInfos.some(info => info.url === legacy.url)
-  ) {
-    mergedInfos.unshift({
-      url: legacy.url,
-      mimeType: legacy.mimeType,
-      index: 0,
-    });
-  }
-
-  return {
-    infos: mergedInfos.length ? mergedInfos : undefined,
-    legacy: {
-      title: legacy.title,
-      summary: legacy.summary,
-      actions: legacy.actions,
-      transcription: legacy.transcription,
-    },
-  };
-}
-
 export const TranscriptPayloadSchema = z.unknown().transform((input, ctx) => {
   const canonical = CanonicalTranscriptPayloadSchema.safeParse(input);
   if (canonical.success) {
-    return normalizePayload(canonical.data);
+    return canonical.data;
   }
 
-  const legacy = LegacyTranscriptPayloadSchema.safeParse(input);
-  if (legacy.success) {
-    return normalizePayload(legacy.data);
-  }
-
-  const issue = canonical.error.issues[0] ??
-    legacy.error.issues[0] ?? {
-      code: z.ZodIssueCode.custom,
-      message: 'invalid transcript payload',
-    };
+  const issue = canonical.error.issues[0] ?? {
+    code: z.ZodIssueCode.custom,
+    message: 'invalid transcript payload',
+  };
 
   ctx.addIssue(issue);
   return z.NEVER;

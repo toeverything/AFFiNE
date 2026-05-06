@@ -3,6 +3,7 @@ import './config';
 import { BullModule } from '@nestjs/bullmq';
 import { DynamicModule } from '@nestjs/common';
 import { type QueueOptions } from 'bullmq';
+import { type Redis as IORedis } from 'ioredis';
 
 import { Config } from '../../config';
 import { QueueRedis } from '../../redis';
@@ -31,7 +32,7 @@ export class JobModule {
               //   to avoid new jobs been dropped by old deployments
               prefix,
               defaultJobOptions: config.job.queue,
-              connection: redis,
+              connection: redis as IORedis,
             };
           },
           inject: [Config, QueueRedis],

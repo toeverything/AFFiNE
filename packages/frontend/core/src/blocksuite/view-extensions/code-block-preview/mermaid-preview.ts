@@ -50,7 +50,6 @@ export class MermaidPreview extends SignalWatcher(
     .mermaid-preview-container {
       width: 100%;
       min-height: 300px;
-      max-height: 600px;
       border: 1px solid ${unsafeCSSVarV2('layer/insideBorder/border')};
       border-radius: 8px;
       background: ${unsafeCSSVarV2('layer/background/primary')};

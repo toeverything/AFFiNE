@@ -37,7 +37,8 @@ public enum SchemaMetadata: ApolloAPI.SchemaMetadata {
     "BlobUploadPart": AffineGraphQL.Objects.BlobUploadPart,
     "BlobUploadedPart": AffineGraphQL.Objects.BlobUploadedPart,
     "CalendarAccountObjectType": AffineGraphQL.Objects.CalendarAccountObjectType,
-    "CalendarCalDAVProviderPresetObjectType": AffineGraphQL.Objects.CalendarCalDAVProviderPresetObjectType,
+    "CalendarCalDAVProviderPresetObjectType": AffineGraphQL.Objects
+      .CalendarCalDAVProviderPresetObjectType,
     "CalendarEventObjectType": AffineGraphQL.Objects.CalendarEventObjectType,
     "CalendarSubscriptionObjectType": AffineGraphQL.Objects.CalendarSubscriptionObjectType,
     "ChatMessage": AffineGraphQL.Objects.ChatMessage,
@@ -139,7 +140,7 @@ public enum SchemaMetadata: ApolloAPI.SchemaMetadata {
     "WorkspaceRolePermissions": AffineGraphQL.Objects.WorkspaceRolePermissions,
     "WorkspaceType": AffineGraphQL.Objects.WorkspaceType,
     "WorkspaceUserType": AffineGraphQL.Objects.WorkspaceUserType,
-    "tokenType": AffineGraphQL.Objects.TokenType
+    "tokenType": AffineGraphQL.Objects.TokenType,
   ]
 
   public static func objectType(forTypename typename: String) -> ApolloAPI.Object? {

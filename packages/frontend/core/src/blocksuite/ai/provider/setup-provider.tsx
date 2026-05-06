@@ -10,7 +10,6 @@ import {
   type RequestOptions,
   type UpdateChatSessionInput,
 } from '@affine/graphql';
-import { z } from 'zod';
 
 import { AIProvider } from './ai-provider';
 import { type CopilotClient, Endpoint } from './copilot-client';
@@ -30,10 +29,10 @@ function toAIUserInfo(account: AuthAccountInfo | null) {
 
 const filterStyleToPromptName = new Map<string, PromptKey>(
   Object.entries({
-    'Clay style': 'Convert to Clay style',
-    'Pixel style': 'Convert to Pixel style',
-    'Sketch style': 'Convert to Sketch style',
-    'Anime style': 'Convert to Anime style',
+    'Clay style': 'image.filter.clay',
+    'Pixel style': 'image.filter.pixel',
+    'Sketch style': 'image.filter.sketch',
+    'Anime style': 'image.filter.anime',
   })
 );
 
@@ -350,7 +349,7 @@ export function setupAIProvider(
 
   AIProvider.provide('brainstormMindmap', async options => {
     const sessionId = await createSession({
-      promptName: 'workflow:brainstorm',
+      promptName: 'mindmap.generate',
       ...options,
     });
     return textToText({
@@ -360,7 +359,9 @@ export function setupAIProvider(
       content: options.input,
       // 3 minutes
       timeout: 180000,
-      endpoint: Endpoint.Workflow,
+      endpoint: Endpoint.Action,
+      actionId: 'mindmap.generate',
+      actionVersion: 'v1',
     });
   });
 
@@ -439,44 +440,8 @@ Could you make a new website based on these notes and send back just the html fi
   });
 
   AIProvider.provide('createSlides', async options => {
-    const SlideSchema = z.object({
-      page: z.number(),
-      type: z.enum(['name', 'title', 'content']),
-      content: z.string(),
-    });
-    type Slide = z.infer<typeof SlideSchema>;
-    const parseJson = (json: string) => {
-      try {
-        return SlideSchema.parse(JSON.parse(json));
-      } catch {
-        return null;
-      }
-    };
-    // TODO(@darkskygit): move this to backend's workflow after workflow support custom code action
-    const postfix = (text: string): string => {
-      const slides = text
-        .split('\n')
-        .map(parseJson)
-        .filter((v): v is Slide => !!v);
-      return slides
-        .map(slide => {
-          if (slide.type === 'name') {
-            return `- ${slide.content}`;
-          } else if (slide.type === 'title') {
-            return `  - ${slide.content}`;
-          } else if (slide.content.includes('\n')) {
-            return slide.content
-              .split('\n')
-              .map(c => `    - ${c}`)
-              .join('\n');
-          } else {
-            return `    - ${slide.content}`;
-          }
-        })
-        .join('\n');
-    };
     const sessionId = await createSession({
-      promptName: 'workflow:presentation',
+      promptName: 'slides.outline',
       ...options,
     });
     return textToText({
@@ -486,8 +451,9 @@ Could you make a new website based on these notes and send back just the html fi
       content: options.input,
       // 3 minutes
       timeout: 180000,
-      endpoint: Endpoint.Workflow,
-      postfix,
+      endpoint: Endpoint.Action,
+      actionId: 'slides.outline',
+      actionVersion: 'v1',
     });
   });
 
@@ -521,14 +487,15 @@ Could you make a new website based on these notes and send back just the html fi
       promptName,
       ...options,
     });
-    const isWorkflow = !!promptName?.startsWith('workflow:');
     return toImage({
       ...options,
       client,
       sessionId,
       content: options.input,
       timeout: 180000,
-      endpoint: isWorkflow ? Endpoint.Workflow : Endpoint.Images,
+      endpoint: Endpoint.Action,
+      actionId: promptName,
+      actionVersion: 'v1',
     });
   });
 
@@ -754,14 +721,6 @@ Could you make a new website based on these notes and send back just the html fi
         scopedThreshold,
         threshold
       );
-    },
-    applyDocUpdates: async (
-      workspaceId: string,
-      docId: string,
-      op: string,
-      updates: string
-    ) => {
-      return client.applyDocUpdates(workspaceId, docId, op, updates);
     },
     addContextBlob: async (options: { blobId: string; contextId: string }) => {
       return client.addContextBlob({

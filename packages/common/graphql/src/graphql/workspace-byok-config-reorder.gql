@@ -1,0 +1,8 @@
+mutation reorderWorkspaceByokConfigs(
+  $input: ReorderWorkspaceByokConfigsInput!
+) {
+  reorderWorkspaceByokConfigs(input: $input) {
+    id
+    sortOrder
+  }
+}

@@ -6,7 +6,6 @@ import {
   addContextCategoryMutation,
   addContextDocMutation,
   addContextFileMutation,
-  applyDocUpdatesMutation,
   cleanupCopilotSessionMutation,
   createCopilotContextMutation,
   createCopilotMessageMutation,
@@ -42,8 +41,8 @@ import {
 } from './error';
 
 export enum Endpoint {
+  Action = 'action',
   StreamObject = 'stream-object',
-  Workflow = 'workflow',
   Images = 'images',
 }
 
@@ -469,21 +468,39 @@ export class CopilotClient {
       reasoning,
       modelId,
       toolsConfig,
+      actionId,
+      actionVersion,
+      runId,
+      retry,
+      byokLeaseId,
     }: {
       sessionId: string;
       messageId?: string;
       reasoning?: boolean;
       modelId?: string;
       toolsConfig?: AIToolsConfig;
+      actionId?: string;
+      actionVersion?: string;
+      runId?: string;
+      retry?: boolean;
+      byokLeaseId?: string;
     },
     endpoint = Endpoint.StreamObject
   ) {
-    let url = `/api/copilot/chat/${sessionId}/${endpoint}`;
+    let url =
+      endpoint === Endpoint.Action
+        ? `/api/copilot/actions/${sessionId}/stream`
+        : `/api/copilot/chat/${sessionId}/${endpoint}`;
     const queryString = this.paramsToQueryString({
       messageId,
       reasoning,
       modelId,
       toolsConfig,
+      actionId,
+      actionVersion,
+      runId,
+      retry,
+      byokLeaseId,
     });
     if (queryString) {
       url += `?${queryString}`;
@@ -496,12 +513,14 @@ export class CopilotClient {
     sessionId: string,
     messageId?: string,
     seed?: string,
-    endpoint = Endpoint.Images
+    endpoint = Endpoint.Images,
+    byokLeaseId?: string
   ) {
     let url = `/api/copilot/chat/${sessionId}/${endpoint}`;
     const queryString = this.paramsToQueryString({
       messageId,
       seed,
+      byokLeaseId,
     });
     if (queryString) {
       url += `?${queryString}`;
@@ -532,23 +551,6 @@ export class CopilotClient {
       query: getWorkspaceEmbeddingStatusQuery,
       variables: { workspaceId },
     }).then(res => res.queryWorkspaceEmbeddingStatus);
-  }
-
-  applyDocUpdates(
-    workspaceId: string,
-    docId: string,
-    op: string,
-    updates: string
-  ) {
-    return this.gql({
-      query: applyDocUpdatesMutation,
-      variables: {
-        workspaceId,
-        docId,
-        op,
-        updates,
-      },
-    }).then(res => res.applyDocUpdates);
   }
 
   addContextBlob(options: OptionsField<typeof addContextBlobMutation>) {

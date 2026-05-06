@@ -12,7 +12,7 @@
   "devDependencies": {
     "@affine-tools/cli": "workspace:*",
     "@affine-tools/utils": "workspace:*",
-    "path-to-regexp": "^8.3.0",
+    "path-to-regexp": "^8.4.2",
     "vitest": "^4.0.18"
   },
   "peerDependencies": {

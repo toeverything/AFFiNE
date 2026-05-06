@@ -1,4 +1,5 @@
 import { SettingHeader } from '@affine/component/setting-components';
+import { useWorkspaceInfo } from '@affine/core/components/hooks/use-workspace-info';
 import { WorkspaceService } from '@affine/core/modules/workspace';
 import { useI18n } from '@affine/i18n';
 import { useService } from '@toeverything/infra';
@@ -29,11 +30,13 @@ export const IntegrationSetting = ({
   const t = useI18n();
   const [opened, setOpened] = useState<string | null>(null);
   const workspaceService = useService(WorkspaceService);
+  const info = useWorkspaceInfo(workspaceService.workspace);
   const isCloudWorkspace = workspaceService.workspace.flavour !== 'local';
+  const showByok = isCloudWorkspace && !!(info?.isOwner || info?.isAdmin);
 
   const integrationList = useMemo(
-    () => getAllowedIntegrationList(isCloudWorkspace),
-    [isCloudWorkspace]
+    () => getAllowedIntegrationList(isCloudWorkspace, showByok),
+    [isCloudWorkspace, showByok]
   );
 
   useEffect(() => {
