@@ -249,6 +249,9 @@ export function textToText({
           client,
           workspaceId
         );
+        if (signal?.aborted) {
+          return;
+        }
         const eventSource = client.chatTextStream(
           {
             sessionId,
@@ -315,6 +318,9 @@ export function textToText({
         client,
         workspaceId
       );
+      if (signal?.aborted) {
+        return '';
+      }
       const eventSource = client.chatTextStream(
         {
           sessionId,
@@ -405,6 +411,9 @@ export function toImage({
         client,
         workspaceId
       );
+      if (signal?.aborted) {
+        return;
+      }
       const eventSource =
         endpoint === Endpoint.Action
           ? client.chatTextStream(

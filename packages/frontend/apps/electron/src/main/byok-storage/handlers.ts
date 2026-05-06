@@ -9,6 +9,10 @@ const byokStorage = new PersistentJSONFileStorage(
   path.join(app.getPath('userData'), 'workspace-byok-keys.json')
 );
 
+export function disposeWorkspaceByokStorage() {
+  byokStorage.dispose();
+}
+
 const allowedProviders = new Set(['openai', 'anthropic', 'gemini', 'fal']);
 
 type WorkspaceByokKey = {

@@ -147,6 +147,53 @@ describe('AI request BYOK local lease handling', () => {
     expect(client.chatTextStream).not.toHaveBeenCalled();
   });
 
+  test('does not create text stream when cancelled while creating local BYOK lease', async () => {
+    const controller = new AbortController();
+    const client = createClient({
+      gql: vi.fn().mockImplementation(async () => {
+        controller.abort();
+        return { createWorkspaceByokLocalLease: { leaseId: 'lease-1' } };
+      }),
+    });
+
+    await drain(
+      textToText({
+        client,
+        sessionId: 'session-1',
+        workspaceId: 'workspace-1',
+        content: 'hello',
+        stream: true,
+        signal: controller.signal,
+      }) as AsyncIterable<string>
+    );
+
+    expect(client.gql).toHaveBeenCalled();
+    expect(client.chatTextStream).not.toHaveBeenCalled();
+  });
+
+  test('does not create text request when cancelled while creating local BYOK lease', async () => {
+    const controller = new AbortController();
+    const client = createClient({
+      gql: vi.fn().mockImplementation(async () => {
+        controller.abort();
+        return { createWorkspaceByokLocalLease: { leaseId: 'lease-1' } };
+      }),
+    });
+
+    await expect(
+      textToText({
+        client,
+        sessionId: 'session-1',
+        workspaceId: 'workspace-1',
+        content: 'hello',
+        signal: controller.signal,
+      }) as Promise<string>
+    ).resolves.toBe('');
+
+    expect(client.gql).toHaveBeenCalled();
+    expect(client.chatTextStream).not.toHaveBeenCalled();
+  });
+
   test('does not create image local BYOK lease after cancellation', async () => {
     const controller = new AbortController();
     const client = createClient({
@@ -168,6 +215,30 @@ describe('AI request BYOK local lease handling', () => {
     );
 
     expect(client.gql).not.toHaveBeenCalled();
+    expect(client.imagesStream).not.toHaveBeenCalled();
+  });
+
+  test('does not create image stream when cancelled while creating local BYOK lease', async () => {
+    const controller = new AbortController();
+    const client = createClient({
+      gql: vi.fn().mockImplementation(async () => {
+        controller.abort();
+        return { createWorkspaceByokLocalLease: { leaseId: 'lease-1' } };
+      }),
+    });
+
+    await drain(
+      toImage({
+        client,
+        sessionId: 'session-1',
+        workspaceId: 'workspace-1',
+        content: 'image',
+        endpoint: Endpoint.Images,
+        signal: controller.signal,
+      }) as AsyncIterable<string>
+    );
+
+    expect(client.gql).toHaveBeenCalled();
     expect(client.imagesStream).not.toHaveBeenCalled();
   });
 });

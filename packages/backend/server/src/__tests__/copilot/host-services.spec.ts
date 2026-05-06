@@ -79,6 +79,7 @@ type TurnRouteAccessCase = {
   name: string;
   profiles: Array<{ id: string }>;
   featureKind?: 'embedding' | 'rerank' | 'workspace_indexing';
+  byokLeaseId?: string;
   quotaBackedRoutesAllowed?: boolean;
   expectedQuotaCalls: number;
   expectedError?: string;
@@ -95,6 +96,7 @@ const turnRouteAccessCases: TurnRouteAccessCase[] = [
   {
     name: 'skips quota when BYOK covers the route',
     profiles: [{ id: 'profile-1' }],
+    byokLeaseId: 'lease-1',
     expectedQuotaCalls: 0,
     expectedQuotaBackedRoutesAllowed: undefined,
   },
@@ -117,14 +119,16 @@ const turnRouteAccessCases: TurnRouteAccessCase[] = [
 for (const matrixCase of turnRouteAccessCases) {
   test(`CopilotAccessPolicy resolve turn route access: ${matrixCase.name}`, async t => {
     const checkQuota = Sinon.stub().rejects(new Error('quota exceeded'));
+    const getProfiles = Sinon.stub().resolves(matrixCase.profiles);
     const access = new CopilotAccessPolicy(
       { checkQuota } as any,
-      { getProfiles: Sinon.stub().resolves(matrixCase.profiles) } as any
+      { getProfiles } as any
     );
 
     const promise = access.resolveTurnRouteAccess({
       userId: 'user-1',
       workspaceId: 'workspace-1',
+      byokLeaseId: matrixCase.byokLeaseId,
       featureKind: matrixCase.featureKind,
       quotaBackedRoutesAllowed: matrixCase.quotaBackedRoutesAllowed,
     });
@@ -141,6 +145,11 @@ for (const matrixCase of turnRouteAccessCases) {
     t.is(checkQuota.callCount, matrixCase.expectedQuotaCalls);
     if (matrixCase.expectedQuotaCalls) {
       Sinon.assert.calledWithExactly(checkQuota, 'user-1');
+    }
+    if (matrixCase.byokLeaseId) {
+      Sinon.assert.calledWithMatch(getProfiles, {
+        byokLeaseId: matrixCase.byokLeaseId,
+      });
     }
   });
 }
@@ -285,6 +294,58 @@ test('ConversationHost should replay accepted tokens without rechecking quota', 
 
   t.is(prepared.latestTurn, acceptedTurn);
   t.true(prepared.quotaBackedRoutesAllowed);
+  Sinon.assert.notCalled(resolveTurnRouteAccess);
+});
+
+test('ConversationHost should replay durable tokens without rechecking quota', async t => {
+  const durableTurn: Turn = {
+    id: 'turn-1',
+    conversationId: 'session-1',
+    role: 'user',
+    content: 'hello',
+    attachments: [],
+    metadata: {},
+    renderTrace: [],
+    toolEvents: [],
+    createdAt: new Date(),
+  };
+  const session = {
+    ...stubConversationSession(durableTurn),
+    findTurn: Sinon.stub().withArgs('turn-1').returns(durableTurn),
+    pushPersistedTurn: Sinon.stub(),
+  };
+  const resolveTurnRouteAccess = Sinon.stub().rejects(
+    new Error('quota exceeded')
+  );
+  const markAccepted = Sinon.stub().resolves(undefined);
+  const host = new ConversationHost(
+    {
+      get: Sinon.stub().resolves(session),
+      findTurnByCompatSubmissionId: Sinon.stub().resolves(durableTurn),
+      revertLatestMessage: Sinon.stub().resolves(undefined),
+    } as any,
+    {
+      getAccepted: Sinon.stub().resolves(undefined),
+      markAccepted,
+    } as any,
+    {
+      acquire: Sinon.stub().resolves({
+        [Symbol.asyncDispose]: Sinon.stub().resolves(undefined),
+      }),
+    } as any,
+    { resolveTurnRouteAccess } as any
+  );
+
+  const prepared = await host.prepareTurn('user-1', 'session-1', {
+    messageId: 'message-1',
+  });
+
+  t.is(prepared.latestTurn, durableTurn);
+  t.true(prepared.quotaBackedRoutesAllowed);
+  Sinon.assert.calledOnceWithMatch(markAccepted, 'message-1', {
+    sessionId: 'session-1',
+    turnId: 'turn-1',
+  });
   Sinon.assert.notCalled(resolveTurnRouteAccess);
 });
 

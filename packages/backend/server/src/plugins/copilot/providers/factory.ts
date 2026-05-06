@@ -435,11 +435,10 @@ export class CopilotProviderFactory {
       prefer?: CopilotProviderType;
     } = {}
   ): Promise<ResolvedCopilotProvider[]> {
-    const routes = await this.resolveRoutes(
-      cond,
-      filter,
-      this.getRequestContext(options)
-    );
+    const routes = await this.resolveRoutes(cond, filter, {
+      ...this.getRequestContext(options),
+      featureKind: options?.featureKind ?? 'image',
+    });
     return await this.prepareResolvedRoutes(routes, async route => {
       const preparedImage =
         (await getProviderRuntimeHost(route.provider).prepare.image(

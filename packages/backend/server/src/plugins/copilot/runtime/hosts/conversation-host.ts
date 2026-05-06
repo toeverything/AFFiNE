@@ -171,10 +171,9 @@ export class ConversationHost {
       retry
     );
     if (durableTurn) {
-      const routeAccess = await resolveChatRouteAccess();
       return {
         turn: durableTurn,
-        quotaBackedRoutesAllowed: routeAccess.quotaBackedRoutesAllowed,
+        quotaBackedRoutesAllowed: true,
       };
     }
 

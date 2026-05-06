@@ -1,7 +1,7 @@
 import path from 'node:path';
 
 import fs from 'fs-extra';
-import { afterEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 const tmpDir = path.join(__dirname, 'tmp-byok-storage');
 
@@ -17,7 +17,16 @@ vi.mock('electron', () => ({
   },
 }));
 
+beforeEach(async () => {
+  vi.resetModules();
+  await fs.remove(tmpDir);
+});
+
 afterEach(async () => {
+  const { disposeWorkspaceByokStorage } =
+    await import('@affine/electron/main/byok-storage/handlers');
+  disposeWorkspaceByokStorage();
+  vi.resetModules();
   await fs.remove(tmpDir);
 });
 

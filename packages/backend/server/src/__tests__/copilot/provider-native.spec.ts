@@ -1566,6 +1566,22 @@ test('CopilotProviderFactory should resolve BYOK rerank routes before quota-back
   });
 });
 
+test('CopilotProviderFactory should treat image preparation as image feature by default', async t => {
+  const { factory, byok } = createProviderFactoryWithByokRoutes();
+
+  await factory.prepareImageRoutes(
+    { modelId: 'gpt-image-1', outputType: ModelOutputType.Image },
+    singleUserPromptMessages('draw a cat'),
+    { workspace: 'workspace-1' }
+  );
+
+  t.true(byok.getProfiles.calledOnce);
+  Sinon.assert.calledOnceWithMatch(byok.getProfiles, {
+    workspaceId: 'workspace-1',
+    featureKind: 'image',
+  });
+});
+
 test('CopilotProviderFactory should omit quota-backed routes when quota is exhausted', async t => {
   const { factory } = createProviderFactoryWithByokRoutes({ hasQuota: false });
 
