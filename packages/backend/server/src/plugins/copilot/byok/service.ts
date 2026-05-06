@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from 'node:crypto';
+import { createHash, createHmac, randomUUID } from 'node:crypto';
 
 import { BadRequestException, Injectable } from '@nestjs/common';
 
@@ -805,7 +805,10 @@ export class ByokService {
     userId: string;
     providers: ByokLocalLeaseProvider[];
   }) {
-    const fingerprint = createHash('sha256')
+    const fingerprint = createHmac(
+      'sha256',
+      this.crypto.keyPair.sha256.privateKey
+    )
       .update(
         JSON.stringify(
           input.providers.map(provider => ({

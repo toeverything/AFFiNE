@@ -858,6 +858,40 @@ test('NativeProviderAdapter streamObject should finalize usage with selected pro
   ]);
 });
 
+test('NativeProviderAdapter streamObject should keep streaming when usage callback fails', async t => {
+  const adapter = new NativeProviderAdapter(
+    () =>
+      stream(() => [
+        { type: 'message_start', model: 'gpt-5-mini' },
+        { type: 'text_delta', text: 'ok' },
+        {
+          type: 'done',
+          finish_reason: 'stop',
+          usage: { prompt_tokens: 2, completion_tokens: 3, total_tokens: 5 },
+        },
+        {
+          type: 'provider_selected',
+          provider_id: 'byok-aaaaaaaaaaaa-openai-server-key1',
+        },
+      ]),
+    {
+      onUsage: () => {
+        throw new Error('usage callback failed');
+      },
+    }
+  );
+
+  const events = await collectChunks(
+    adapter.streamObject({
+      model: 'gpt-5-mini',
+      stream: true,
+      messages: nativeMessages(nativeUserText('hi')),
+    })
+  );
+
+  t.deepEqual(events, [{ type: 'text-delta', textDelta: 'ok' }]);
+});
+
 test('NativeRuntimeAdapter streamObject should keep raw runtime stream objects only', async t => {
   const adapter = new NativeRuntimeAdapter(
     createTestToolLoopBridge(mockDispatch, {}, 3)

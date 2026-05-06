@@ -771,6 +771,86 @@ test('NativeExecutionEngine should record BYOK usage when stream finalizes with 
   });
 });
 
+test('NativeExecutionEngine should not fail stream when BYOK usage recording fails', async t => {
+  const byok = {
+    recordUsage: Sinon.stub().rejects(new Error('usage db down')),
+  };
+  const engine = new NativeExecutionEngine(undefined, byok as never);
+  const providerId = 'byok-aaaaaaaaaaaa-openai-server-key1';
+
+  const originalStream = (serverNativeModule as any).llmDispatchPreparedStream;
+  (serverNativeModule as any).llmDispatchPreparedStream = (
+    _routesJson: string,
+    callback: (error: Error | null, arg: string) => void
+  ) => {
+    callback(
+      null,
+      JSON.stringify({ type: 'message_start', model: 'gpt-5-mini' })
+    );
+    callback(null, JSON.stringify({ type: 'text_delta', text: 'ok' }));
+    callback(
+      null,
+      JSON.stringify({
+        type: 'done',
+        finish_reason: 'stop',
+        usage: { prompt_tokens: 2, completion_tokens: 3, total_tokens: 5 },
+      })
+    );
+    callback(
+      null,
+      JSON.stringify({ type: 'provider_selected', provider_id: providerId })
+    );
+    callback(null, '__AFFINE_LLM_STREAM_END__');
+    return { abort() {} };
+  };
+  t.teardown(() => {
+    (serverNativeModule as any).llmDispatchPreparedStream = originalStream;
+  });
+
+  const chunks = await collectAsync(
+    engine.executeStream({
+      nativeDispatch: {
+        chat: {
+          routes: [
+            nativeRoute({
+              providerId,
+              authToken: 'byok-key',
+              request: nativeTextRequest('hello'),
+            }),
+          ],
+          prepared: {
+            route: preparedRoute({ providerId, authToken: 'byok-key' }),
+            request: nativeTextRequest('hello'),
+            tools: {},
+            postprocess: { nodeTextMiddleware: [] },
+          },
+          hasTools: false,
+        },
+      },
+      request: {
+        kind: 'streamText',
+        cond: { modelId: 'gpt-5-mini' },
+        messages: singleUserPromptMessages('hello'),
+        options: {
+          workspace: 'workspace-1',
+          user: 'user-1',
+          session: 'session-1',
+          featureKind: 'chat',
+        },
+      },
+      routePolicy: { fallbackOrder: [providerId] },
+      runtimePolicy: {},
+      attachmentPolicy: { materializeRemoteAttachments: true },
+      responsePostprocess: { mode: 'streamText' },
+      hostPersistence: { persistAssistantTurn: true, outputKind: 'streamText' },
+      hostContext: {},
+    })
+  );
+
+  t.deepEqual(chunks, ['ok']);
+  Sinon.assert.calledOnce(byok.recordUsage);
+});
+
 test('CopilotProviderFactory should return no prepared routes when native prepare returns null', async t => {
   const provider = new DriverOnlyProvider();
   (provider as any).AFFiNEConfig = { copilot: { providers: { openai: {} } } };

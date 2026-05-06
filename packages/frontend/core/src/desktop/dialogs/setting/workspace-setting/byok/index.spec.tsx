@@ -659,7 +659,7 @@ describe('UsagePanel', () => {
     const today = new Date().toISOString();
     render(
       <UsagePanel
-        keys={[byokKey()]}
+        keys={[]}
         usage={[
           { date: today, featureKind: 'chat', totalTokens: 3 },
           { date: today, featureKind: 'transcript', totalTokens: 5 },

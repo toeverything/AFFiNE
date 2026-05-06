@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
 import { CopilotFailedToGenerateEmbedding } from '../../../base/error/errors.gen';
 import {
@@ -207,7 +207,7 @@ export class CopilotEmbeddingClientService {
   constructor(
     private readonly taskPolicy: TaskPolicy,
     private readonly runtime: CapabilityRuntime,
-    @Optional() private readonly byok?: ByokService
+    private readonly byok: ByokService
   ) {}
 
   async refresh() {
