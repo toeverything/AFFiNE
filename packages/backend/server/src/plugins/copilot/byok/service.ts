@@ -366,11 +366,15 @@ export class ByokService {
       input.userId
     );
     await this.entitlement.assertLocalEntitled(input.workspaceId, input.userId);
-    for (const provider of input.providers) {
+    const providers = input.providers.map(provider => {
       this.assertProvider(provider.provider);
-      this.normalizeEndpoint(provider.endpoint);
-    }
-    const activeCacheKey = this.localLeaseActiveCacheKey(input);
+      const endpoint = this.normalizeEndpoint(provider.endpoint);
+      return { ...provider, endpoint };
+    });
+    const activeCacheKey = this.localLeaseActiveCacheKey({
+      ...input,
+      providers,
+    });
     const activeLease = await this.getActiveLocalLease(activeCacheKey);
     if (activeLease) return activeLease;
 
@@ -379,7 +383,7 @@ export class ByokService {
     const payload: LocalLeasePayload = {
       workspaceId: input.workspaceId,
       userId: input.userId,
-      providers: input.providers.map(provider => ({
+      providers: providers.map(provider => ({
         provider: provider.provider,
         name: provider.name,
         description: provider.description,

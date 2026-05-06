@@ -479,6 +479,57 @@ test('local leases are short lived and do not persist keys to server configs', a
   t.not(renewedLease.leaseId, lease.leaseId);
 });
 
+test('local leases persist normalized custom endpoints', async t => {
+  const customEndpointSupported = Sinon.stub(
+    t.context.byok,
+    'customEndpointSupported'
+  ).get(() => true);
+  t.teardown(() => customEndpointSupported.restore());
+  const { user, workspace } = await createUserWorkspace(t);
+  await t.context.models.userFeature.add(user.id, 'pro_plan_v1', 'test');
+
+  const lease = await t.context.byok.createLocalLease({
+    workspaceId: workspace.id,
+    userId: user.id,
+    providers: [
+      {
+        provider: ByokProvider.openai,
+        name: 'Local',
+        apiKey: 'sk-local',
+        endpoint: 'https://api.openai.example/v1/',
+      },
+    ],
+  });
+  const reusedLease = await t.context.byok.createLocalLease({
+    workspaceId: workspace.id,
+    userId: user.id,
+    providers: [
+      {
+        provider: ByokProvider.openai,
+        name: 'Local',
+        apiKey: 'sk-local',
+        endpoint: 'https://api.openai.example/v1',
+      },
+    ],
+  });
+
+  t.is(reusedLease.leaseId, lease.leaseId);
+  const cachedLease = await t.context.cache.get<{
+    providers: Array<{ endpoint?: string | null }>;
+  }>(`copilot:byok:lease:${lease.leaseId}`);
+  t.is(cachedLease?.providers[0]?.endpoint, 'https://api.openai.example/v1');
+
+  const profiles = await t.context.byok.getProfiles({
+    workspaceId: workspace.id,
+    userId: user.id,
+    byokLeaseId: lease.leaseId,
+  });
+  t.is(
+    (profiles[0]!.config as { baseURL?: string }).baseURL,
+    'https://api.openai.example/v1'
+  );
+});
+
 type ByokProfileAvailabilityCase = {
   name: string;
   actorRole: WorkspaceRole;
