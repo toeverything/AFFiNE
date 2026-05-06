@@ -8,6 +8,7 @@ import { CompatHistoryProjector } from '../../plugins/copilot/compat/history-pro
 import { HistoryPromptPreloadProjector } from '../../plugins/copilot/compat/history-prompt-preload-projector';
 import { HistoryVisibilityPolicy } from '../../plugins/copilot/compat/history-visibility-policy';
 import { ConversationPolicy } from '../../plugins/copilot/conversation/policy';
+import type { Turn } from '../../plugins/copilot/core';
 import { CopilotEmbeddingClientService } from '../../plugins/copilot/embedding/client';
 import { CopilotProviderType } from '../../plugins/copilot/providers/types';
 import {
@@ -179,6 +180,24 @@ test('CopilotAccessPolicy should resolve BYOK coverage by feature kind', async t
   });
 });
 
+test('CopilotAccessPolicy assertQuotaOrByok should honor quota-backed route disable', async t => {
+  const checkQuota = Sinon.stub().resolves(undefined);
+  const access = new CopilotAccessPolicy(
+    { checkQuota } as any,
+    { getProfiles: Sinon.stub().resolves([]) } as any
+  );
+
+  await t.throwsAsync(
+    access.assertQuotaOrByok({
+      userId: 'user-1',
+      workspaceId: 'workspace-1',
+      featureKind: 'transcript',
+      quotaBackedRoutesAllowed: false,
+    })
+  );
+  Sinon.assert.notCalled(checkQuota);
+});
+
 test('ConversationHost should delegate empty no-message stream access', async t => {
   const session = stubConversationSession();
   const resolveTurnRouteAccess = Sinon.stub().rejects(
@@ -224,6 +243,49 @@ test('ConversationHost should return access decision for empty no-message stream
   t.is(prepared.latestTurn, undefined);
   t.is(prepared.quotaBackedRoutesAllowed, undefined);
   Sinon.assert.calledOnce(resolveTurnRouteAccess);
+});
+
+test('ConversationHost should replay accepted tokens without rechecking quota', async t => {
+  const acceptedTurn: Turn = {
+    id: 'turn-1',
+    conversationId: 'session-1',
+    role: 'user',
+    content: 'hello',
+    attachments: [],
+    metadata: {},
+    renderTrace: [],
+    toolEvents: [],
+    createdAt: new Date(),
+  };
+  const session = {
+    ...stubConversationSession(acceptedTurn),
+    findTurn: Sinon.stub().withArgs('turn-1').returns(acceptedTurn),
+  };
+  const resolveTurnRouteAccess = Sinon.stub().rejects(
+    new Error('quota exceeded')
+  );
+  const host = new ConversationHost(
+    {
+      get: Sinon.stub().resolves(session),
+      revertLatestMessage: Sinon.stub().resolves(undefined),
+    } as any,
+    {
+      getAccepted: Sinon.stub().resolves({
+        sessionId: 'session-1',
+        turnId: 'turn-1',
+      }),
+    } as any,
+    {} as any,
+    { resolveTurnRouteAccess } as any
+  );
+
+  const prepared = await host.prepareTurn('user-1', 'session-1', {
+    messageId: 'message-1',
+  });
+
+  t.is(prepared.latestTurn, acceptedTurn);
+  t.true(prepared.quotaBackedRoutesAllowed);
+  Sinon.assert.notCalled(resolveTurnRouteAccess);
 });
 
 test('ToolRuntime should pass route context into prompt-backed tools', async t => {

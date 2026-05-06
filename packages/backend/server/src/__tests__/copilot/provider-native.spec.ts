@@ -1521,6 +1521,20 @@ test('CopilotProviderFactory should resolve BYOK embedding routes with workspace
   });
 });
 
+test('CopilotProviderFactory should treat embedding preparation as embedding feature by default', async t => {
+  const { factory, byok } = createProviderFactoryWithByokRoutes();
+
+  await factory.prepareEmbeddingRoutes('text-embedding-3-small', 'hello', {
+    workspace: 'workspace-1',
+  });
+
+  t.true(byok.getProfiles.calledOnce);
+  Sinon.assert.calledOnceWithMatch(byok.getProfiles, {
+    workspaceId: 'workspace-1',
+    featureKind: 'embedding',
+  });
+});
+
 test('CopilotProviderFactory should resolve BYOK rerank routes before quota-backed routes', async t => {
   const { factory, byok } = createProviderFactoryWithByokRoutes();
 

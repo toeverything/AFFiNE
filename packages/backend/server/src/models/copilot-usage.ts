@@ -21,7 +21,7 @@ type CreateAiUsageEventInput = {
 };
 
 type UsageAggregateRow = {
-  date: Date | string;
+  date: string;
   featureKind: string;
   totalTokens: number | bigint | null;
 };
@@ -72,7 +72,7 @@ export class CopilotUsageModel extends BaseModel {
 
     const rows = await this.db.$queryRaw<UsageAggregateRow[]>(Prisma.sql`
       SELECT
-        date_trunc('day', "created_at" AT TIME ZONE 'UTC')::date AS "date",
+        to_char(date_trunc('day', "created_at" AT TIME ZONE 'UTC'), 'YYYY-MM-DD') AS "date",
         "feature_kind" AS "featureKind",
         COALESCE(SUM("total_tokens"), 0)::bigint AS "totalTokens"
       FROM "ai_usage_events"
@@ -85,12 +85,8 @@ export class CopilotUsageModel extends BaseModel {
     `);
 
     return rows.map(row => {
-      const day =
-        row.date instanceof Date
-          ? row.date.toISOString().slice(0, 10)
-          : row.date;
       return {
-        date: new Date(`${day}T00:00:00.000Z`),
+        date: new Date(`${row.date}T00:00:00.000Z`),
         featureKind: row.featureKind,
         totalTokens: Number(row.totalTokens ?? 0),
       };

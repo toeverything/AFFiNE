@@ -144,11 +144,7 @@ export class ConversationHost {
       retry
     );
     if (acceptedTurn) {
-      const routeAccess = await resolveChatRouteAccess();
-      return {
-        turn: acceptedTurn,
-        quotaBackedRoutesAllowed: routeAccess.quotaBackedRoutesAllowed,
-      };
+      return { turn: acceptedTurn, quotaBackedRoutesAllowed: true };
     }
 
     await using lock = await this.mutex.acquire(
@@ -165,11 +161,7 @@ export class ConversationHost {
       retry
     );
     if (acceptedAfterLock) {
-      const routeAccess = await resolveChatRouteAccess();
-      return {
-        turn: acceptedAfterLock,
-        quotaBackedRoutesAllowed: routeAccess.quotaBackedRoutesAllowed,
-      };
+      return { turn: acceptedAfterLock, quotaBackedRoutesAllowed: true };
     }
 
     const durableTurn = await this.loadDurableTurn(

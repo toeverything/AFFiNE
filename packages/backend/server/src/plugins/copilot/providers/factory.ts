@@ -369,12 +369,12 @@ export class CopilotProviderFactory {
     options: CopilotEmbeddingOptions = {}
   ): Promise<ResolvedCopilotProvider[]> {
     const routes = await this.resolveRoutes(
-      {
-        modelId,
-        outputType: ModelOutputType.Embedding,
-      },
+      { modelId, outputType: ModelOutputType.Embedding },
       {},
-      this.getRequestContext(options)
+      {
+        ...this.getRequestContext(options),
+        featureKind: options?.featureKind ?? 'embedding',
+      }
     );
     return await this.prepareResolvedRoutes(routes, async route => {
       const preparedEmbedding =

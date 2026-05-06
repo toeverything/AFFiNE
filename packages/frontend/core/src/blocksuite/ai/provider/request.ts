@@ -1,5 +1,6 @@
 import type { AIToolsConfig } from '@affine/core/modules/ai-button';
 import { apis, type ClientHandler } from '@affine/electron-api';
+import { UserFriendlyError } from '@affine/error';
 import {
   ByokProvider,
   createWorkspaceByokLocalLeaseMutation,
@@ -60,27 +61,28 @@ async function createWorkspaceByokLocalLease(
     return undefined;
   }
 
+  if (!(await storage.isSupported())) return undefined;
+  const providers = await storage.getWorkspaceLeaseProviders(workspaceId);
+  if (!providers.length) return undefined;
+  const leaseProviders = providers.flatMap(provider => {
+    const gqlProvider = toGraphqlByokProvider(provider.provider);
+    return gqlProvider
+      ? [
+          {
+            provider: gqlProvider,
+            name: provider.name,
+            description: provider.description ?? null,
+            apiKey: provider.apiKey,
+            endpoint: provider.endpoint ?? null,
+            sortOrder: provider.sortOrder ?? 0,
+            enabled: provider.enabled ?? true,
+          },
+        ]
+      : [];
+  });
+  if (!leaseProviders.length) return undefined;
+
   try {
-    if (!(await storage.isSupported())) return undefined;
-    const providers = await storage.getWorkspaceLeaseProviders(workspaceId);
-    if (!providers.length) return undefined;
-    const leaseProviders = providers.flatMap(provider => {
-      const gqlProvider = toGraphqlByokProvider(provider.provider);
-      return gqlProvider
-        ? [
-            {
-              provider: gqlProvider,
-              name: provider.name,
-              description: provider.description ?? null,
-              apiKey: provider.apiKey,
-              endpoint: provider.endpoint ?? null,
-              sortOrder: provider.sortOrder ?? 0,
-              enabled: provider.enabled ?? true,
-            },
-          ]
-        : [];
-    });
-    if (!leaseProviders.length) return undefined;
     const result = await client.gql({
       query: createWorkspaceByokLocalLeaseMutation,
       variables: {
@@ -96,7 +98,7 @@ async function createWorkspaceByokLocalLease(
       'Failed to create workspace BYOK local lease',
       errorMetadata(error)
     );
-    return undefined;
+    throw UserFriendlyError.fromAny(error);
   }
 }
 
@@ -240,6 +242,9 @@ export function textToText({
             signal,
           });
         }
+        if (signal?.aborted) {
+          return;
+        }
         const byokLeaseId = await createWorkspaceByokLocalLease(
           client,
           workspaceId
@@ -302,6 +307,9 @@ export function textToText({
           timeout,
           signal,
         });
+      }
+      if (signal?.aborted) {
+        return '';
       }
       const byokLeaseId = await createWorkspaceByokLocalLease(
         client,
@@ -389,6 +397,9 @@ export function toImage({
           timeout,
           signal,
         });
+      }
+      if (signal?.aborted) {
+        return;
       }
       const byokLeaseId = await createWorkspaceByokLocalLease(
         client,

@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
+import { CopilotQuotaExceeded } from '../../../base';
 import { ByokService } from '../byok/service';
 import type { ByokFeatureKind } from '../byok/types';
 import type { CopilotProviderProfile } from '../config';
@@ -91,6 +92,12 @@ export class CopilotAccessPolicy {
 
   async assertQuotaOrByok(context: CopilotAccessContext) {
     const byokProfiles = await this.getByokProfiles(context);
+    if (context.quotaBackedRoutesAllowed === false) {
+      if (!byokProfiles.length) {
+        throw new CopilotQuotaExceeded();
+      }
+      return;
+    }
     const featureAccess = getCopilotFeatureAccess(context.featureKind);
     if (!byokProfiles.length && context.userId && featureAccess.quotaMetered) {
       await this.conversationPolicy.checkQuota(context.userId);
