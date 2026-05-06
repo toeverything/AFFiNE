@@ -13,6 +13,11 @@ import { toolError } from './error';
 import { defineTool } from './tool';
 import type { CopilotChatOptions } from './types';
 
+const getEmbeddingRouteContext = (options: CopilotChatOptions) => ({
+  userId: options?.user,
+  byokLeaseId: options?.byokLeaseId,
+});
+
 export const buildDocSearchGetter = (
   ac: AccessController,
   context: CopilotContextService,
@@ -43,12 +48,32 @@ export const buildDocSearchGetter = (
         'Doc Semantic Search Failed',
         'You do not have permission to access this workspace.'
       );
+    const routeContext = getEmbeddingRouteContext(options);
     const [chunks, contextChunks] = await Promise.all([
-      context.matchWorkspaceAll(options.workspace, query, 10, signal),
+      context.matchWorkspaceAll(
+        options.workspace,
+        query,
+        10,
+        signal,
+        0.8,
+        undefined,
+        0.85,
+        routeContext
+      ),
       sessionId
         ? context
             .getBySessionId(sessionId)
-            .then(current => current?.matchFiles(query, 10, signal) ?? [])
+            .then(
+              current =>
+                current?.matchFiles(
+                  query,
+                  10,
+                  signal,
+                  0.85,
+                  0.5,
+                  routeContext
+                ) ?? []
+            )
         : [],
     ]);
 

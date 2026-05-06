@@ -235,6 +235,7 @@ vi.mock('@toeverything/infra', async importOriginal => {
 });
 
 import { WorkspaceByokSetting } from '.';
+import { logByokError } from './errors';
 import { UsagePanel } from './usage';
 
 function settings(overrides: Record<string, unknown> = {}) {
@@ -290,6 +291,7 @@ function settingsResponse(overrides: Record<string, unknown> = {}) {
 describe('WorkspaceByokSetting', () => {
   afterEach(() => {
     cleanup();
+    vi.unstubAllGlobals();
   });
 
   beforeEach(() => {
@@ -300,9 +302,7 @@ describe('WorkspaceByokSetting', () => {
       }
       throw new Error('Unexpected GraphQL operation');
     });
-    Object.assign(globalThis, {
-      BUILD_CONFIG: { isElectron: false },
-    });
+    vi.stubGlobal('BUILD_CONFIG', { isElectron: false });
     electronApiState.apis = undefined;
   });
 
@@ -669,5 +669,32 @@ describe('UsagePanel', () => {
     );
 
     expect(screen.getByTitle('8 tokens')).not.toBeNull();
+  });
+});
+
+describe('logByokError', () => {
+  test('logs safe metadata without raw error message', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const error = Object.assign(
+      new Error('authorization: Bearer token=a+b%2F=='),
+      {
+        code: 'BAD_REQUEST',
+        status: 400,
+        type: 'bad_request',
+      }
+    );
+
+    try {
+      logByokError('byok', error);
+      expect(warn).toHaveBeenCalledWith('byok', {
+        name: 'Error',
+        code: 'BAD_REQUEST',
+        status: 400,
+        type: 'bad_request',
+      });
+      expect(JSON.stringify(warn.mock.calls)).not.toContain('token=a+b%2F==');
+    } finally {
+      warn.mockRestore();
+    }
   });
 });

@@ -26,6 +26,9 @@ type UsageAggregateRow = {
   totalTokens: number | bigint | null;
 };
 
+const BYOK_PROVIDER_SOURCES = ['byok_server', 'byok_local'];
+const QUOTA_EXEMPT_BYOK_FEATURES = ['chat', 'action', 'image', 'transcript'];
+
 @Injectable()
 export class CopilotUsageModel extends BaseModel {
   @Transactional()
@@ -45,6 +48,16 @@ export class CopilotUsageModel extends BaseModel {
         completionTokens: input.completionTokens ?? 0,
         totalTokens: input.totalTokens ?? 0,
         cachedTokens: input.cachedTokens ?? 0,
+      },
+    });
+  }
+
+  async countQuotaExemptByokUsage(userId: string) {
+    return await this.db.aiUsageEvent.count({
+      where: {
+        userId,
+        providerSource: { in: BYOK_PROVIDER_SOURCES },
+        featureKind: { in: QUOTA_EXEMPT_BYOK_FEATURES },
       },
     });
   }

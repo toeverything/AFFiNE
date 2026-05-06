@@ -35,6 +35,22 @@ function toGraphqlByokProvider(provider: string): ByokProvider | null {
   }
 }
 
+function errorMetadata(error: unknown) {
+  if (!error || typeof error !== 'object') {
+    return { kind: typeof error };
+  }
+  const record = error as Record<string, unknown>;
+  return {
+    name: typeof record.name === 'string' ? record.name : undefined,
+    code: typeof record.code === 'string' ? record.code : undefined,
+    status:
+      typeof record.status === 'number' || typeof record.status === 'string'
+        ? record.status
+        : undefined,
+    type: typeof record.type === 'string' ? record.type : undefined,
+  };
+}
+
 async function createWorkspaceByokLocalLease(
   client: CopilotClient,
   workspaceId?: string
@@ -76,16 +92,9 @@ async function createWorkspaceByokLocalLease(
     });
     return result.createWorkspaceByokLocalLease.leaseId;
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : 'Unknown BYOK lease error';
     console.warn(
-      `Failed to create workspace BYOK local lease: ${message
-        .replaceAll(/sk-[a-zA-Z0-9_-]+/g, 'sk-***')
-        .replaceAll(/Bearer\s+[a-zA-Z0-9._-]+/gi, 'Bearer ***')
-        .replaceAll(/Key\s+[a-zA-Z0-9._:-]+/gi, 'Key ***')
-        .replaceAll(/([?&]key=)[^&\s]+/gi, '$1***')
-        .replaceAll(/("apiKey"\s*:\s*")[^"]+/gi, '$1***')
-        .slice(0, 300)}`
+      'Failed to create workspace BYOK local lease',
+      errorMetadata(error)
     );
     return undefined;
   }

@@ -223,6 +223,12 @@ export class CopilotTranscriptionService {
       throw new CopilotTranscriptionJobExists();
     }
 
+    await this.access?.assertQuotaOrByok({
+      userId,
+      workspaceId,
+      featureKind: 'transcript',
+    });
+
     const { model, strategy } = await this.resolveTranscriptStrategy(
       userId,
       input?.strategy ?? undefined
@@ -269,6 +275,12 @@ export class CopilotTranscriptionService {
         'Only failed transcript tasks can be retried'
       );
     }
+
+    await this.access?.assertQuotaOrByok({
+      userId,
+      workspaceId,
+      featureKind: 'transcript',
+    });
 
     const payload = this.parseTaskPayload(task.protectedResult);
     const { model } = await this.resolveTranscriptStrategy(

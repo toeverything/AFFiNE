@@ -15,7 +15,11 @@ import {
   Models,
 } from '../../../models';
 import { CopilotEmbeddingClientService } from '../embedding/client';
-import type { EmbeddingCallOptions, EmbeddingClient } from '../embedding/types';
+import type {
+  EmbeddingCallOptions,
+  EmbeddingClient,
+  EmbeddingRouteContext,
+} from '../embedding/types';
 import { ContextSession } from './session';
 
 const CONTEXT_SESSION_KEY = 'context-session';
@@ -64,9 +68,10 @@ export class CopilotContextService implements OnApplicationBootstrap {
 
   private embeddingOptions(
     workspaceId: string,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    routeContext: EmbeddingRouteContext = {}
   ): EmbeddingCallOptions {
-    return { workspaceId, signal, featureKind: 'embedding' };
+    return { workspaceId, signal, ...routeContext, featureKind: 'embedding' };
   }
 
   private async saveConfig(
@@ -179,11 +184,12 @@ export class CopilotContextService implements OnApplicationBootstrap {
     content: string,
     topK: number = 5,
     signal?: AbortSignal,
-    threshold: number = 0.5
+    threshold: number = 0.5,
+    routeContext?: EmbeddingRouteContext
   ) {
     const client = this.embeddingClient;
     if (!client) return [];
-    const options = this.embeddingOptions(workspaceId, signal);
+    const options = this.embeddingOptions(workspaceId, signal, routeContext);
     const embedding = await client.getEmbedding(content, options);
     if (!embedding) return [];
 
@@ -203,11 +209,12 @@ export class CopilotContextService implements OnApplicationBootstrap {
     content: string,
     topK: number = 5,
     signal?: AbortSignal,
-    threshold: number = 0.5
+    threshold: number = 0.5,
+    routeContext?: EmbeddingRouteContext
   ) {
     const client = this.embeddingClient;
     if (!client) return [];
-    const options = this.embeddingOptions(workspaceId, signal);
+    const options = this.embeddingOptions(workspaceId, signal, routeContext);
     const embedding = await client.getEmbedding(content, options);
     if (!embedding) return [];
 
@@ -227,11 +234,12 @@ export class CopilotContextService implements OnApplicationBootstrap {
     content: string,
     topK: number = 5,
     signal?: AbortSignal,
-    threshold: number = 0.5
+    threshold: number = 0.5,
+    routeContext?: EmbeddingRouteContext
   ) {
     const client = this.embeddingClient;
     if (!client) return [];
-    const options = this.embeddingOptions(workspaceId, signal);
+    const options = this.embeddingOptions(workspaceId, signal, routeContext);
     const embedding = await client.getEmbedding(content, options);
     if (!embedding) return [];
 
@@ -254,11 +262,12 @@ export class CopilotContextService implements OnApplicationBootstrap {
     signal?: AbortSignal,
     threshold: number = 0.8,
     docIds?: string[],
-    scopedThreshold: number = 0.85
+    scopedThreshold: number = 0.85,
+    routeContext?: EmbeddingRouteContext
   ) {
     const client = this.embeddingClient;
     if (!client) return [];
-    const options = this.embeddingOptions(workspaceId, signal);
+    const options = this.embeddingOptions(workspaceId, signal, routeContext);
     const embedding = await client.getEmbedding(content, options);
     if (!embedding) return [];
 

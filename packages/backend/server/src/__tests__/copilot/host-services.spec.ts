@@ -74,38 +74,75 @@ test('ConversationPolicy should treat zero quota limit as exhausted', async t =>
   await t.throwsAsync(policy.checkQuota('user-1'));
 });
 
-test('CopilotAccessPolicy should check quota when BYOK does not cover the route', async t => {
-  const checkQuota = Sinon.stub().rejects(new Error('quota exceeded'));
-  const access = new CopilotAccessPolicy(
-    { checkQuota } as any,
-    { getProfiles: Sinon.stub().resolves([]) } as any
-  );
+type TurnRouteAccessCase = {
+  name: string;
+  profiles: Array<{ id: string }>;
+  featureKind?: 'embedding' | 'rerank' | 'workspace_indexing';
+  quotaBackedRoutesAllowed?: boolean;
+  expectedQuotaCalls: number;
+  expectedError?: string;
+  expectedQuotaBackedRoutesAllowed?: boolean;
+};
 
-  await t.throwsAsync(
-    access.resolveTurnRouteAccess({
+const turnRouteAccessCases: TurnRouteAccessCase[] = [
+  {
+    name: 'checks quota when BYOK does not cover the route',
+    profiles: [],
+    expectedQuotaCalls: 1,
+    expectedError: 'quota exceeded',
+  },
+  {
+    name: 'skips quota when BYOK covers the route',
+    profiles: [{ id: 'profile-1' }],
+    expectedQuotaCalls: 0,
+    expectedQuotaBackedRoutesAllowed: undefined,
+  },
+  {
+    name: 'preserves explicit quota-backed route disable override',
+    profiles: [],
+    quotaBackedRoutesAllowed: false,
+    expectedQuotaCalls: 0,
+    expectedQuotaBackedRoutesAllowed: false,
+  },
+  {
+    name: 'does not check user quota for unmetered service features',
+    profiles: [],
+    featureKind: 'rerank',
+    expectedQuotaCalls: 0,
+    expectedQuotaBackedRoutesAllowed: true,
+  },
+];
+
+for (const matrixCase of turnRouteAccessCases) {
+  test(`CopilotAccessPolicy resolve turn route access: ${matrixCase.name}`, async t => {
+    const checkQuota = Sinon.stub().rejects(new Error('quota exceeded'));
+    const access = new CopilotAccessPolicy(
+      { checkQuota } as any,
+      { getProfiles: Sinon.stub().resolves(matrixCase.profiles) } as any
+    );
+
+    const promise = access.resolveTurnRouteAccess({
       userId: 'user-1',
       workspaceId: 'workspace-1',
-    }),
-    { message: 'quota exceeded' }
-  );
-  Sinon.assert.calledOnceWithExactly(checkQuota, 'user-1');
-});
+      featureKind: matrixCase.featureKind,
+      quotaBackedRoutesAllowed: matrixCase.quotaBackedRoutesAllowed,
+    });
 
-test('CopilotAccessPolicy should skip quota when BYOK covers the route', async t => {
-  const checkQuota = Sinon.stub().rejects(new Error('quota exceeded'));
-  const access = new CopilotAccessPolicy(
-    { checkQuota } as any,
-    { getProfiles: Sinon.stub().resolves([{ id: 'profile-1' }]) } as any
-  );
-
-  const routeAccess = await access.resolveTurnRouteAccess({
-    userId: 'user-1',
-    workspaceId: 'workspace-1',
+    if (matrixCase.expectedError) {
+      await t.throwsAsync(promise, { message: matrixCase.expectedError });
+    } else {
+      const routeAccess = await promise;
+      t.is(
+        routeAccess.quotaBackedRoutesAllowed,
+        matrixCase.expectedQuotaBackedRoutesAllowed
+      );
+    }
+    t.is(checkQuota.callCount, matrixCase.expectedQuotaCalls);
+    if (matrixCase.expectedQuotaCalls) {
+      Sinon.assert.calledWithExactly(checkQuota, 'user-1');
+    }
   });
-
-  t.is(routeAccess.quotaBackedRoutesAllowed, undefined);
-  Sinon.assert.notCalled(checkQuota);
-});
+}
 
 test('CopilotAccessPolicy should resolve BYOK coverage by feature kind', async t => {
   const getProfiles = Sinon.stub().resolves([]);
@@ -137,8 +174,8 @@ test('CopilotAccessPolicy should resolve BYOK coverage by feature kind', async t
     featureKind: 'rerank',
   });
   t.deepEqual(getProfiles.secondCall.args[1], {
-    local: false,
-    server: false,
+    local: true,
+    server: true,
   });
 });
 
@@ -466,7 +503,7 @@ test('action result projection should map image result url to assistant attachme
   t.deepEqual(turn?.attachments, ['https://example.com/final.png']);
 });
 
-test('CopilotEmbeddingClientService should refresh configured client and clear unavailable client', async t => {
+test('CopilotEmbeddingClientService should keep dispatch client across global config refreshes', async t => {
   const taskPolicy = {
     resolveEmbeddingModelId: () => 'text-embedding-3-large',
   };
@@ -487,8 +524,8 @@ test('CopilotEmbeddingClientService should refresh configured client and clear u
   t.truthy(service.getClient());
 
   const second = await service.refresh();
-  t.is(second, undefined);
-  t.is(service.getClient(), undefined);
+  t.truthy(second);
+  t.is(service.getClient(), second);
   Sinon.assert.calledTwice(runtime.embeddingConfigured);
   Sinon.assert.alwaysCalledWithExactly(
     runtime.embeddingConfigured,
@@ -496,7 +533,7 @@ test('CopilotEmbeddingClientService should refresh configured client and clear u
   );
 });
 
-test('CopilotEmbeddingClientService should keep dynamic BYOK embedding client without global provider', async t => {
+test('CopilotEmbeddingClientService should keep workspace-routed embedding client without global provider', async t => {
   const taskPolicy = {
     resolveEmbeddingModelId: () => 'gemini-embedding-001',
     resolveRerankModelId: () => 'gpt-4o-mini',
@@ -506,8 +543,7 @@ test('CopilotEmbeddingClientService should keep dynamic BYOK embedding client wi
   };
   const service = new CopilotEmbeddingClientService(
     taskPolicy as any,
-    runtime as any,
-    {} as any
+    runtime as any
   );
 
   const client = await service.refresh();

@@ -302,6 +302,13 @@ test('local leases are short lived and do not persist keys to server configs', a
     ],
   });
   t.is(reusedLease.leaseId, lease.leaseId);
+  const cachedLease = await t.context.cache.get<{
+    providers: Array<{ apiKey?: string; encryptedApiKey?: string }>;
+  }>(`copilot:byok:lease:${lease.leaseId}`);
+  t.truthy(cachedLease);
+  t.false(JSON.stringify(cachedLease).includes('sk-local'));
+  t.is(cachedLease?.providers[0].apiKey, undefined);
+  t.truthy(cachedLease?.providers[0].encryptedApiKey);
 
   const updatedLease = await t.context.byok.createLocalLease({
     workspaceId: workspace.id,
@@ -378,6 +385,7 @@ type ByokProfileAvailabilityCase = {
   createOwnerLocalLease?: boolean;
   revokeOwnerPlan?: boolean;
   revokeTeam?: boolean;
+  demoteActor?: boolean;
   expectedSources: Array<'server' | 'local'>;
 };
 
@@ -422,6 +430,14 @@ const byokProfileAvailabilityMatrix: ByokProfileAvailabilityCase[] = [
     createServerKey: true,
     createActorLocalLease: true,
     revokeTeam: true,
+    expectedSources: [],
+  },
+  {
+    name: 'local BYOK lease stops after an admin is demoted',
+    actorRole: WorkspaceRole.Admin,
+    actorPlan: true,
+    createActorLocalLease: true,
+    demoteActor: true,
     expectedSources: [],
   },
 ];
@@ -486,6 +502,14 @@ for (const matrixCase of byokProfileAvailabilityMatrix) {
       await t.context.models.workspaceFeature.remove(
         workspace.id,
         'team_plan_v1'
+      );
+    }
+    if (matrixCase.demoteActor) {
+      await t.context.models.workspaceUser.set(
+        workspace.id,
+        actor.id,
+        WorkspaceRole.Collaborator,
+        { status: WorkspaceMemberStatus.Accepted }
       );
     }
 
@@ -628,7 +652,7 @@ test('local key test does not mutate saved server config', async t => {
   t.is(unchanged.lastValidationError, null);
 });
 
-test('Gemini key test sends key in header and redacts query key errors', async t => {
+test('Gemini key test sends key in header and returns safe failure message', async t => {
   const { user, workspace } = await createUserWorkspace(t);
   await t.context.models.userFeature.add(user.id, 'pro_plan_v1', 'test');
 
@@ -660,6 +684,80 @@ test('Gemini key test sends key in header and redacts query key errors', async t
     'gemini-secret'
   );
   t.false(result.message?.includes('gemini-secret'));
+  t.is(result.message, 'Provider rejected the BYOK key.');
+});
+
+test('FAL key test uses read-only platform API probe endpoint', async t => {
+  const { user, workspace } = await createUserWorkspace(t);
+  await t.context.models.userFeature.add(user.id, 'pro_plan_v1', 'test');
+
+  const fetch = Sinon.stub(globalThis, 'fetch').resolves(
+    new Response('{}', { status: 200 })
+  );
+  t.teardown(() => fetch.restore());
+
+  const result = await t.context.byok.testConfig({
+    workspaceId: workspace.id,
+    userId: user.id,
+    provider: ByokProvider.fal,
+    storage: ByokKeyStorage.server,
+    apiKey: 'fal-secret',
+  });
+
+  t.true(result.ok);
+  t.is(fetch.firstCall.args[0], 'https://api.fal.ai/v1/models?limit=10');
+  t.is(
+    (fetch.firstCall.args[1]!.headers as Record<string, string>).Authorization,
+    'Key fal-secret'
+  );
+});
+
+test('provider test failures do not return raw provider response body', async t => {
+  const { user, workspace } = await createUserWorkspace(t);
+  await t.context.models.userFeature.add(user.id, 'pro_plan_v1', 'test');
+  const cases = [
+    {
+      body: 'authorization: Bearer token=a+b%2F==',
+      status: 401,
+      message: 'Provider rejected the BYOK key.',
+    },
+    {
+      body: 'failed https://example.com/models?token=tok+%2F==&limit=1',
+      status: 403,
+      message: 'Provider rejected the BYOK key permissions.',
+    },
+    {
+      body: '{"api_key":"key+value==","accessToken":"tok%2Fvalue"}',
+      status: 429,
+      message: 'Provider rate limit exceeded while testing the key.',
+    },
+    {
+      body: 'Key fal-key+value==',
+      status: 500,
+      message: 'Provider service is unavailable.',
+    },
+  ];
+  const fetch = Sinon.stub(globalThis, 'fetch');
+  for (const [index, matrixCase] of cases.entries()) {
+    fetch
+      .onCall(index)
+      .resolves(new Response(matrixCase.body, { status: matrixCase.status }));
+  }
+  t.teardown(() => fetch.restore());
+
+  for (const matrixCase of cases) {
+    const result = await t.context.byok.testConfig({
+      workspaceId: workspace.id,
+      userId: user.id,
+      provider: ByokProvider.openai,
+      storage: ByokKeyStorage.local,
+      apiKey: 'submitted-secret',
+    });
+
+    t.false(result.ok);
+    t.is(result.message, matrixCase.message);
+    t.false(result.message?.includes(matrixCase.body));
+  }
 });
 
 test('dispatch failure disables server BYOK key by provider id', async t => {
@@ -690,7 +788,47 @@ test('dispatch failure disables server BYOK key by provider id', async t => {
   }
   t.false(disabled.enabled);
   t.is(disabled.disabledReason, 'recent_failure');
-  t.false(disabled.lastError?.includes('sk-dispatch-primary'));
+  t.is(disabled.lastError, 'Provider request failed.');
+});
+
+test('dispatch accounting ignores provider ids from another workspace hash', async t => {
+  const { user, workspace } = await createUserWorkspace(t);
+  await t.context.models.userFeature.add(user.id, 'pro_plan_v1', 'test');
+  const otherWorkspace = await t.context.models.workspace.create(user.id);
+  const key = await t.context.byok.upsertConfig({
+    workspaceId: workspace.id,
+    userId: user.id,
+    provider: ByokProvider.openai,
+    storage: ByokKeyStorage.server,
+    name: 'Primary',
+    apiKey: 'sk-dispatch-primary',
+  });
+  const mismatchedProviderId = `byok-${workspaceHash(otherWorkspace.id)}-openai-${key.id}`;
+
+  await t.context.byok.recordProviderFailure({
+    workspaceId: workspace.id,
+    providerId: mismatchedProviderId,
+    featureKind: 'chat',
+    error: new Error('401 invalid sk-dispatch-primary'),
+  });
+  await t.context.byok.recordUsage({
+    workspaceId: workspace.id,
+    userId: user.id,
+    providerId: mismatchedProviderId,
+    featureKind: 'chat',
+    usage: { total_tokens: 3 },
+  });
+
+  const config = await t.context.models.copilotWorkspaceByokConfig.get(key.id);
+  t.truthy(config);
+  t.true(config?.enabled);
+  t.is(config?.lastError, null);
+  const usage = await t.context.byok.getUsage(
+    workspace.id,
+    new Date(Date.now() - 60_000),
+    new Date(Date.now() + 60_000)
+  );
+  t.deepEqual(usage, []);
 });
 
 test('effective profiles use local lease before server keys and skip disabled keys', async t => {
@@ -795,7 +933,7 @@ test('usage query only returns byok sources', async t => {
   await t.context.byok.recordUsage({
     workspaceId: workspace.id,
     userId: user.id,
-    providerId: 'byok-aaaaaaaaaaaa-openai-server-key1',
+    providerId: `byok-${workspaceHash(workspace.id)}-openai-server-key1`,
     featureKind: 'chat',
     model: 'gpt-5-mini',
     usage: { prompt_tokens: 1, completion_tokens: 2, total_tokens: 3 },

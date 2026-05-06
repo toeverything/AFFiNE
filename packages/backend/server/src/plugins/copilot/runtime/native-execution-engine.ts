@@ -80,7 +80,7 @@ function getUsageContext(plan: ExecutionPlan) {
 }
 
 async function recordByokUsage(
-  byok: ByokService | undefined,
+  byok: ByokService,
   plan: ExecutionPlan,
   input: {
     providerId?: string;
@@ -90,7 +90,7 @@ async function recordByokUsage(
 ) {
   const context = getUsageContext(plan);
   try {
-    await byok?.recordUsage({
+    await byok.recordUsage({
       workspaceId: context.workspaceId,
       userId: context.userId,
       sessionId: context.sessionId,
@@ -109,7 +109,7 @@ async function recordByokUsage(
 }
 
 async function recordSingleByokRouteFailure(
-  byok: ByokService | undefined,
+  byok: ByokService,
   plan: ExecutionPlan,
   error: unknown
 ) {
@@ -119,7 +119,7 @@ async function recordSingleByokRouteFailure(
   }
   const context = getUsageContext(plan);
   try {
-    await byok?.recordProviderFailure({
+    await byok.recordProviderFailure({
       workspaceId: context.workspaceId,
       providerId,
       featureKind: context.featureKind as ByokFeatureKind,
@@ -184,7 +184,7 @@ async function runPreparedValuePlan<TResult>(
   routeCount: number,
   executionMetrics: CopilotExecutionMetrics | undefined,
   run: () => Promise<TResult>,
-  byok?: ByokService
+  byok: ByokService
 ) {
   recordPreparedDispatch(executionMetrics, plan, routeCount);
   try {
@@ -199,7 +199,7 @@ async function runPreparedValuePlan<TResult>(
 async function* mapPreparedStreamErrors<T>(
   source: AsyncIterable<T>,
   plan: ExecutionPlan,
-  byok?: ByokService
+  byok: ByokService
 ): AsyncIterableIterator<T> {
   try {
     yield* source;
@@ -213,8 +213,8 @@ async function* mapPreparedStreamErrors<T>(
 async function runChatValuePlan(
   plan: ExecutionPlan,
   dispatch: NativeChatDispatchPlan,
-  executionMetrics?: CopilotExecutionMetrics,
-  byok?: ByokService
+  executionMetrics: CopilotExecutionMetrics | undefined,
+  byok: ByokService
 ) {
   const adapter = createNativeChatAdapter(dispatch);
   return await runPreparedValuePlan(
@@ -254,8 +254,8 @@ async function runChatValuePlan(
 async function* runChatStreamPlan(
   plan: ExecutionPlan,
   dispatch: NativeChatDispatchPlan,
-  executionMetrics?: CopilotExecutionMetrics,
-  byok?: ByokService
+  executionMetrics: CopilotExecutionMetrics | undefined,
+  byok: ByokService
 ): AsyncIterableIterator<string | StreamObject> {
   const adapter = createNativeChatAdapter(dispatch, {
     onUsage: async usage => {
@@ -300,8 +300,8 @@ async function* runChatStreamPlan(
 async function* runPreparedImageArtifactPlan(
   dispatch: NativeImageDispatchPlan,
   plan: ExecutionPlan,
-  executionMetrics?: CopilotExecutionMetrics,
-  byok?: ByokService
+  executionMetrics: CopilotExecutionMetrics | undefined,
+  byok: ByokService
 ): AsyncIterableIterator<NativeImageArtifact> {
   if (plan.request.kind !== 'image') {
     throw new Error('image dispatch requires image plan');
@@ -336,8 +336,8 @@ async function* runPreparedImageArtifactPlan(
 
 async function executePreparedPlan(
   plan: ExecutionPlan,
-  executionMetrics?: CopilotExecutionMetrics,
-  byok?: ByokService
+  executionMetrics: CopilotExecutionMetrics | undefined,
+  byok: ByokService
 ): Promise<string | number[][] | number[] | null> {
   switch (plan.request.kind) {
     case 'text': {
@@ -432,8 +432,8 @@ async function executePreparedPlan(
 
 function executePreparedStreamPlan(
   plan: ExecutionPlan,
-  executionMetrics?: CopilotExecutionMetrics,
-  byok?: ByokService
+  executionMetrics: CopilotExecutionMetrics | undefined,
+  byok: ByokService
 ): AsyncIterableIterator<string | StreamObject> | null {
   switch (plan.request.kind) {
     case 'streamText':
@@ -460,8 +460,8 @@ function noRouteStream<T>(plan: ExecutionPlan) {
 @Injectable()
 export class NativeExecutionEngine {
   constructor(
-    private readonly executionMetrics?: CopilotExecutionMetrics,
-    private readonly byok?: ByokService
+    private readonly byok: ByokService,
+    private readonly executionMetrics?: CopilotExecutionMetrics
   ) {}
 
   private noRoute(plan: ExecutionPlan): never {

@@ -112,22 +112,29 @@ export class ConversationHost {
     retry = false,
     byokLeaseId?: string
   ): Promise<AppendedSessionMessage> {
+    const resolveChatRouteAccess = () =>
+      this.access.resolveTurnRouteAccess({
+        userId,
+        workspaceId: session.config.workspaceId,
+        byokLeaseId,
+        featureKind: 'chat',
+      });
+
     if (!messageId) {
       await this.sessions.revertLatestMessage(sessionId, false);
       session.revertLatestMessage(false);
       if (!session.latestUserTurn) {
-        const routeAccess = await this.access.resolveTurnRouteAccess({
-          userId,
-          workspaceId: session.config.workspaceId,
-          byokLeaseId,
-          featureKind: 'chat',
-        });
+        const routeAccess = await resolveChatRouteAccess();
         return {
           turn: session.latestUserTurn,
           quotaBackedRoutesAllowed: routeAccess.quotaBackedRoutesAllowed,
         };
       }
-      return { turn: session.latestUserTurn, quotaBackedRoutesAllowed: true };
+      const routeAccess = await resolveChatRouteAccess();
+      return {
+        turn: session.latestUserTurn,
+        quotaBackedRoutesAllowed: routeAccess.quotaBackedRoutesAllowed,
+      };
     }
 
     const acceptedTurn = await this.loadAcceptedTurn(
@@ -137,7 +144,11 @@ export class ConversationHost {
       retry
     );
     if (acceptedTurn) {
-      return { turn: acceptedTurn, quotaBackedRoutesAllowed: true };
+      const routeAccess = await resolveChatRouteAccess();
+      return {
+        turn: acceptedTurn,
+        quotaBackedRoutesAllowed: routeAccess.quotaBackedRoutesAllowed,
+      };
     }
 
     await using lock = await this.mutex.acquire(
@@ -154,7 +165,11 @@ export class ConversationHost {
       retry
     );
     if (acceptedAfterLock) {
-      return { turn: acceptedAfterLock, quotaBackedRoutesAllowed: true };
+      const routeAccess = await resolveChatRouteAccess();
+      return {
+        turn: acceptedAfterLock,
+        quotaBackedRoutesAllowed: routeAccess.quotaBackedRoutesAllowed,
+      };
     }
 
     const durableTurn = await this.loadDurableTurn(
@@ -164,15 +179,14 @@ export class ConversationHost {
       retry
     );
     if (durableTurn) {
-      return { turn: durableTurn, quotaBackedRoutesAllowed: true };
+      const routeAccess = await resolveChatRouteAccess();
+      return {
+        turn: durableTurn,
+        quotaBackedRoutesAllowed: routeAccess.quotaBackedRoutesAllowed,
+      };
     }
 
-    const routeAccess = await this.access.resolveTurnRouteAccess({
-      userId,
-      workspaceId: session.config.workspaceId,
-      byokLeaseId,
-      featureKind: 'chat',
-    });
+    const routeAccess = await resolveChatRouteAccess();
 
     const submission = await this.submissions.get(messageId);
     if (!submission || submission.sessionId !== sessionId) {

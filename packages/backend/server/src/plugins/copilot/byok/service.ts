@@ -85,7 +85,9 @@ export type ByokLocalLeaseProvider = {
 type LocalLeasePayload = {
   workspaceId: string;
   userId: string;
-  providers: ByokLocalLeaseProvider[];
+  providers: Array<
+    Omit<ByokLocalLeaseProvider, 'apiKey'> & { encryptedApiKey: string }
+  >;
 };
 
 type LocalLeaseActive = {
@@ -361,7 +363,15 @@ export class ByokService {
     const payload: LocalLeasePayload = {
       workspaceId: input.workspaceId,
       userId: input.userId,
-      providers: input.providers,
+      providers: input.providers.map(provider => ({
+        provider: provider.provider,
+        name: provider.name,
+        description: provider.description,
+        encryptedApiKey: this.crypto.encrypt(provider.apiKey),
+        endpoint: provider.endpoint,
+        sortOrder: provider.sortOrder,
+        enabled: provider.enabled,
+      })),
     };
     await this.cache.set(this.leaseCacheKey(leaseId), payload, {
       ttl: LOCAL_LEASE_TTL_MS,
@@ -420,13 +430,10 @@ export class ByokService {
       cached_tokens?: number;
     };
   }) {
-    if (!input.workspaceId || !input.providerId) {
-      return;
-    }
-    const meta = this.parseProfileMeta(input.providerId);
-    if (!meta) {
-      return;
-    }
+    if (!input.workspaceId || !input.providerId) return;
+    const meta = this.parseProfileMeta(input.providerId, input.workspaceId);
+    if (!meta) return;
+
     metrics.ai.counter('byok_usage').add(1, {
       workspace: input.workspaceId,
       provider: meta.provider,
@@ -462,13 +469,10 @@ export class ByokService {
     featureKind: ByokFeatureKind;
     error: unknown;
   }) {
-    if (!input.workspaceId || !input.providerId) {
-      return;
-    }
-    const meta = this.parseProfileMeta(input.providerId);
-    if (!meta) {
-      return;
-    }
+    if (!input.workspaceId || !input.providerId) return;
+    const meta = this.parseProfileMeta(input.providerId, input.workspaceId);
+    if (!meta) return;
+
     const message = this.sanitizeError(input.error);
     metrics.ai.counter('byok_route_failure').add(1, {
       workspace: input.workspaceId,
@@ -520,6 +524,14 @@ export class ByokService {
     if (!context.byokLeaseId || !context.workspaceId || !context.userId) {
       return [];
     }
+    if (
+      !(await this.entitlement.hasManagementAccess(
+        context.workspaceId,
+        context.userId
+      ))
+    ) {
+      return [];
+    }
     const lease = await this.cache.get<LocalLeasePayload>(
       this.leaseCacheKey(context.byokLeaseId)
     );
@@ -544,7 +556,7 @@ export class ByokService {
           priority: BYOK_PROFILE_PRIORITY_BASE - index,
           config: this.providerConfig(
             provider.provider,
-            this.crypto.encrypt(provider.apiKey),
+            provider.encryptedApiKey,
             provider.endpoint ?? null
           ),
         } as CopilotProviderProfile;
@@ -573,26 +585,29 @@ export class ByokService {
     keyId: string,
     storage: 'server' | 'local'
   ) {
-    const hash = createHash('sha256')
-      .update(workspaceId)
-      .digest('hex')
-      .slice(0, 12);
+    const hash = this.workspaceHash(workspaceId);
     const sanitizedKeyId = keyId.replaceAll(/[^a-zA-Z0-9-_]/g, '');
     return storage === 'local'
       ? `byok-${hash}-${provider}-local-${sanitizedKeyId}`
       : `byok-${hash}-${provider}-${sanitizedKeyId}`;
   }
 
-  parseProfileMeta(providerId: string): ByokProfileMeta | null {
-    const match = /^byok-[a-f0-9]{12}-(openai|anthropic|gemini|fal)-(.+)$/.exec(
-      providerId
-    );
-    if (!match) {
+  parseProfileMeta(
+    providerId: string,
+    workspaceId?: string
+  ): ByokProfileMeta | null {
+    const match =
+      /^byok-([a-f0-9]{12})-(openai|anthropic|gemini|fal)-(.+)$/.exec(
+        providerId
+      );
+    if (!match) return null;
+    if (workspaceId && match[1] !== this.workspaceHash(workspaceId)) {
       return null;
     }
-    const keyId = match[2];
+
+    const keyId = match[3];
     return {
-      provider: match[1] as ByokProvider,
+      provider: match[2] as ByokProvider,
       source: keyId.startsWith('local-')
         ? ByokProviderSource.Local
         : ByokProviderSource.Server,
@@ -728,7 +743,9 @@ export class ByokService {
         signal: controller.signal,
       });
       if (!response.ok) {
-        throw new Error(`${response.status} ${await response.text()}`);
+        throw new BadRequestException(
+          this.providerProbeFailureMessage(response.status)
+        );
       }
     } finally {
       clearTimeout(timeout);
@@ -765,25 +782,41 @@ export class ByokService {
       case ByokProvider.fal:
         return {
           method: 'GET',
-          url: 'https://queue.fal.run/fal-ai/fast-sdxl/requests',
+          url: 'https://api.fal.ai/v1/models?limit=10',
           headers: { Authorization: `Key ${apiKey}` },
         };
     }
   }
 
   private sanitizeError(error: unknown) {
-    const message =
-      error instanceof Error
-        ? error.message
-        : typeof error === 'string'
-          ? error
-          : 'Unknown provider error';
-    return message
-      .replaceAll(/sk-[a-zA-Z0-9_-]+/g, 'sk-***')
-      .replaceAll(/Bearer\s+[a-zA-Z0-9._-]+/gi, 'Bearer ***')
-      .replaceAll(/Key\s+[a-zA-Z0-9._:-]+/gi, 'Key ***')
-      .replaceAll(/([?&]key=)[^&\s]+/gi, '$1***')
-      .slice(0, 300);
+    if (error instanceof Error && error.name === 'AbortError') {
+      return 'Provider key test timed out.';
+    }
+    if (error instanceof BadRequestException && error.message) {
+      return error.message.slice(0, 300);
+    }
+    return 'Provider request failed.';
+  }
+
+  private providerProbeFailureMessage(status: number) {
+    switch (status) {
+      case 401:
+        return 'Provider rejected the BYOK key.';
+      case 403:
+        return 'Provider rejected the BYOK key permissions.';
+      case 404:
+        return 'Provider probe endpoint was not found.';
+      case 429:
+        return 'Provider rate limit exceeded while testing the key.';
+      default:
+        return status >= 500
+          ? 'Provider service is unavailable.'
+          : `Provider key test failed with HTTP ${status}.`;
+    }
+  }
+
+  private workspaceHash(workspaceId: string) {
+    return createHash('sha256').update(workspaceId).digest('hex').slice(0, 12);
   }
 
   private leaseCacheKey(leaseId: string) {

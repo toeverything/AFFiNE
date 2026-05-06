@@ -1145,6 +1145,32 @@ test('should count action runs without double-counting legacy action sessions', 
   t.truthy(legacyAction.sessionId);
 });
 
+test('should exclude BYOK provider usage from copilot quota cost', async t => {
+  const { copilotSession, db, models } = t.context;
+  await createTestPrompts(copilotSession, db);
+
+  const regular = await createTestSession(t);
+  await copilotSession.appendMessage({
+    sessionId: regular.sessionId,
+    userId: user.id,
+    prompt: { model: 'gpt-5-mini' },
+    message: {
+      role: 'user',
+      content: 'regular message',
+      createdAt: new Date(),
+    },
+  });
+  await models.copilotUsage.create({
+    workspaceId: workspace.id,
+    userId: user.id,
+    provider: 'openai',
+    providerSource: 'byok_server',
+    featureKind: 'chat',
+  });
+
+  t.is(await copilotSession.countUserMessages(user.id), 0);
+});
+
 test('should get sessions for title generation correctly', async t => {
   const { copilotSession, db } = t.context;
   await createTestPrompts(copilotSession, db);

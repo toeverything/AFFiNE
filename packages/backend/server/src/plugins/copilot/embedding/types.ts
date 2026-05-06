@@ -6,6 +6,7 @@ import { CopilotContextFileNotSupported } from '../../../base';
 import type { PageDocContent } from '../../../core/utils/blocksuite';
 import { ChunkSimilarity, Embedding } from '../../../models';
 import { parseDoc } from '../../../native';
+import type { ByokFeatureKind } from '../byok/types';
 
 declare global {
   interface Events {
@@ -107,10 +108,18 @@ export type EmbeddingCallOptions = {
   signal?: AbortSignal;
   userId?: string;
   workspaceId?: string;
-  featureKind?: 'embedding' | 'workspace_indexing';
+  byokLeaseId?: string;
+  featureKind?: Extract<
+    ByokFeatureKind,
+    'embedding' | 'workspace_indexing' | 'rerank'
+  >;
 };
 
 export type EmbeddingCallOptionsInput = AbortSignal | EmbeddingCallOptions;
+export type EmbeddingRouteContext = Pick<
+  EmbeddingCallOptions,
+  'userId' | 'byokLeaseId'
+>;
 
 export function normalizeEmbeddingCallOptions(
   options?: EmbeddingCallOptionsInput

@@ -5,24 +5,40 @@ export type ByokSourceCoverage = {
   server: boolean;
 };
 
+export type CopilotFeatureAccessRule = ByokSourceCoverage & {
+  quotaMetered: boolean;
+};
+
 const DEFAULT_BYOK_COVERAGE: ByokSourceCoverage = {
   local: true,
   server: true,
 };
 
-const BYOK_FEATURE_COVERAGE: Partial<
-  Record<ByokFeatureKind, ByokSourceCoverage>
+const DEFAULT_FEATURE_ACCESS: CopilotFeatureAccessRule = {
+  ...DEFAULT_BYOK_COVERAGE,
+  quotaMetered: true,
+};
+
+const COPILOT_FEATURE_ACCESS: Partial<
+  Record<ByokFeatureKind, CopilotFeatureAccessRule>
 > = {
-  transcript: { local: false, server: true },
-  embedding: { local: false, server: true },
-  workspace_indexing: { local: false, server: true },
-  rerank: { local: false, server: false },
+  transcript: { local: false, server: true, quotaMetered: true },
+  embedding: { local: true, server: true, quotaMetered: false },
+  workspace_indexing: { local: true, server: true, quotaMetered: false },
+  rerank: { local: true, server: true, quotaMetered: false },
 };
 
 export function getByokSourceCoverage(
   featureKind?: ByokFeatureKind
 ): ByokSourceCoverage {
+  const access = getCopilotFeatureAccess(featureKind);
+  return { local: access.local, server: access.server };
+}
+
+export function getCopilotFeatureAccess(
+  featureKind?: ByokFeatureKind
+): CopilotFeatureAccessRule {
   return featureKind
-    ? (BYOK_FEATURE_COVERAGE[featureKind] ?? DEFAULT_BYOK_COVERAGE)
-    : DEFAULT_BYOK_COVERAGE;
+    ? (COPILOT_FEATURE_ACCESS[featureKind] ?? DEFAULT_FEATURE_ACCESS)
+    : DEFAULT_FEATURE_ACCESS;
 }

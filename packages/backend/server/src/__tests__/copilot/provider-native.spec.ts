@@ -68,6 +68,13 @@ import {
   userPrompt,
 } from './prompt-test-helper';
 
+function createNativeExecutionEngine() {
+  return new NativeExecutionEngine({
+    recordUsage: Sinon.stub().resolves(),
+    recordProviderFailure: Sinon.stub().resolves(),
+  } as never);
+}
+
 function structuredOptions(
   schema: z.ZodTypeAny,
   extra?: Record<string, unknown>
@@ -547,7 +554,7 @@ test('CapabilityRuntime should defer no-route embedding plans to native engine',
 });
 
 test('NativeExecutionEngine should expose execute/executeStream as the single plan entrypoints', async t => {
-  const engine = new NativeExecutionEngine();
+  const engine = createNativeExecutionEngine();
   let dispatchCalls = 0;
   let streamCalls = 0;
 
@@ -670,7 +677,7 @@ test('NativeExecutionEngine should record BYOK usage when stream finalizes with 
   const byok = {
     recordUsage: Sinon.stub().resolves(),
   };
-  const engine = new NativeExecutionEngine(undefined, byok as never);
+  const engine = new NativeExecutionEngine(byok as never);
   const providerId = 'byok-aaaaaaaaaaaa-openai-server-key1';
 
   const originalStream = (serverNativeModule as any).llmDispatchPreparedStream;
@@ -775,7 +782,7 @@ test('NativeExecutionEngine should not fail stream when BYOK usage recording fai
   const byok = {
     recordUsage: Sinon.stub().rejects(new Error('usage db down')),
   };
-  const engine = new NativeExecutionEngine(undefined, byok as never);
+  const engine = new NativeExecutionEngine(byok as never);
   const providerId = 'byok-aaaaaaaaaaaa-openai-server-key1';
 
   const originalStream = (serverNativeModule as any).llmDispatchPreparedStream;
@@ -1460,7 +1467,7 @@ function createProviderFactoryWithByokRoutes({
   return { factory, byok };
 }
 
-test('CopilotProviderFactory should keep BYOK routes before quota-backed routes while quota is available', async t => {
+test('CopilotProviderFactory should use matching BYOK routes before quota-backed routes', async t => {
   const { factory } = createProviderFactoryWithByokRoutes();
 
   const routes = await factory.resolveRoutes(
@@ -1471,7 +1478,7 @@ test('CopilotProviderFactory should keep BYOK routes before quota-backed routes 
 
   t.deepEqual(
     routes.map(route => route.providerId),
-    ['byok-aaaaaaaaaaaa-openai-server-key1', 'openai-main']
+    ['byok-aaaaaaaaaaaa-openai-server-key1']
   );
 });
 
@@ -1506,7 +1513,7 @@ test('CopilotProviderFactory should resolve BYOK embedding routes with workspace
 
   t.deepEqual(
     routes.map(route => route.providerId),
-    ['byok-aaaaaaaaaaaa-openai-server-key1', 'openai-main']
+    ['byok-aaaaaaaaaaaa-openai-server-key1']
   );
   Sinon.assert.calledOnceWithMatch(byok.getProfiles, {
     workspaceId: 'workspace-1',
@@ -1514,11 +1521,8 @@ test('CopilotProviderFactory should resolve BYOK embedding routes with workspace
   });
 });
 
-test('CopilotProviderFactory should keep rerank on quota-backed routes for first BYOK phase', async t => {
+test('CopilotProviderFactory should resolve BYOK rerank routes before quota-backed routes', async t => {
   const { factory, byok } = createProviderFactoryWithByokRoutes();
-  byok.getProfiles.callsFake(async (context: { featureKind?: string }) =>
-    context.featureKind === 'rerank' ? [] : [BYOK_OPENAI_PROFILE]
-  );
 
   const preparedRoutes = await factory.prepareRerankRoutes(
     'gpt-4o-mini',
@@ -1540,7 +1544,7 @@ test('CopilotProviderFactory should keep rerank on quota-backed routes for first
   );
   t.deepEqual(
     resolvedRoutes.map(route => route.providerId),
-    ['openai-main']
+    ['byok-aaaaaaaaaaaa-openai-server-key1']
   );
   Sinon.assert.calledWithMatch(byok.getProfiles, {
     workspaceId: 'workspace-1',
@@ -1813,7 +1817,7 @@ test('ProviderDriverSpec should freeze declarative driver shape', t => {
 });
 
 test('NativeExecutionEngine should dispatch prepared text routes through native fallback', async t => {
-  const engine = new NativeExecutionEngine();
+  const engine = createNativeExecutionEngine();
   const registry = buildProviderRegistry({
     profiles: [
       {
@@ -1917,7 +1921,7 @@ test('NativeExecutionEngine should record single BYOK route dispatch failure', a
     recordProviderFailure: Sinon.stub().resolves(),
     recordUsage: Sinon.stub().resolves(),
   };
-  const engine = new NativeExecutionEngine(undefined, byok as never);
+  const engine = new NativeExecutionEngine(byok as never);
   const providerId = 'byok-aaaaaaaaaaaa-openai-server-key1';
 
   const original = (serverNativeModule as any).llmDispatchPrepared;
@@ -1983,7 +1987,7 @@ test('NativeExecutionEngine should record single BYOK route dispatch failure', a
 });
 
 test('NativeExecutionEngine should reject single-route plans when no native route is prepared', async t => {
-  const engine = new NativeExecutionEngine();
+  const engine = createNativeExecutionEngine();
 
   const error = await t.throwsAsync(
     engine.execute({
@@ -2011,7 +2015,7 @@ test('NativeExecutionEngine should reject single-route plans when no native rout
 });
 
 test('NativeExecutionEngine should prefer prepared native fallback dispatch for explicit routes', async t => {
-  const engine = new NativeExecutionEngine();
+  const engine = createNativeExecutionEngine();
   let capturedRoutes: unknown;
   let called = false;
 
@@ -2090,7 +2094,7 @@ test('NativeExecutionEngine should prefer prepared native fallback dispatch for 
 });
 
 test('NativeExecutionEngine should stream through prepared native fallback dispatch', async t => {
-  const engine = new NativeExecutionEngine();
+  const engine = createNativeExecutionEngine();
   let called = false;
 
   const original = (serverNativeModule as any).llmDispatchPreparedStream;
@@ -2319,7 +2323,7 @@ test('ExecutionPlanBuilder should keep single-route tool chat plans on prepared_
 });
 
 test('NativeExecutionEngine should route tool-loop chat prepared routes through native dispatch', async t => {
-  const engine = new NativeExecutionEngine();
+  const engine = createNativeExecutionEngine();
   let capturedRoutes: unknown;
   let called = false;
   let toolCallbackCount = 0;
@@ -2669,7 +2673,7 @@ test('ExecutionPlanBuilder should build native prepared routes for structured, i
 });
 
 test('NativeExecutionEngine should dispatch structured prepared routes through native execution', async t => {
-  const engine = new NativeExecutionEngine();
+  const engine = createNativeExecutionEngine();
   let capturedRoutes: unknown;
   let called = false;
 
@@ -2757,7 +2761,7 @@ test('NativeExecutionEngine should dispatch structured prepared routes through n
 });
 
 test('NativeExecutionEngine should dispatch embedding prepared routes through native execution', async t => {
-  const engine = new NativeExecutionEngine();
+  const engine = createNativeExecutionEngine();
   let capturedRoutes: unknown;
   let called = false;
 
@@ -2831,7 +2835,7 @@ test('NativeExecutionEngine should dispatch embedding prepared routes through na
 });
 
 test('NativeExecutionEngine should dispatch rerank prepared routes through native execution', async t => {
-  const engine = new NativeExecutionEngine();
+  const engine = createNativeExecutionEngine();
   let capturedRoutes: unknown;
   let called = false;
 
@@ -2914,7 +2918,7 @@ test('NativeExecutionEngine should dispatch rerank prepared routes through nativ
 });
 
 test('NativeExecutionEngine should dispatch image plans through prepared native routes', async t => {
-  const engine = new NativeExecutionEngine();
+  const engine = createNativeExecutionEngine();
   let capturedRoutes: unknown;
   const original = (serverNativeModule as any).llmImageDispatchPrepared;
   (serverNativeModule as any).llmImageDispatchPrepared = (
@@ -2998,7 +3002,7 @@ test('NativeExecutionEngine should record zero-token BYOK image usage without pr
   const byok = {
     recordUsage: Sinon.stub().resolves(),
   };
-  const engine = new NativeExecutionEngine(undefined, byok as never);
+  const engine = new NativeExecutionEngine(byok as never);
   const providerId = 'byok-aaaaaaaaaaaa-fal-server-key1';
 
   const original = (serverNativeModule as any).llmImageDispatchPrepared;
@@ -3077,7 +3081,7 @@ test('NativeExecutionEngine should record zero-token BYOK image usage without pr
 });
 
 test('NativeExecutionEngine should reject image plans without native dispatch', async t => {
-  const engine = new NativeExecutionEngine();
+  const engine = createNativeExecutionEngine();
 
   await t.throwsAsync(
     collectAsync(

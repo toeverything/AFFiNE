@@ -4,7 +4,10 @@ import { ByokService } from '../byok/service';
 import type { ByokFeatureKind } from '../byok/types';
 import type { CopilotProviderProfile } from '../config';
 import { ConversationPolicy } from '../conversation/policy';
-import { getByokSourceCoverage } from './feature-coverage';
+import {
+  getByokSourceCoverage,
+  getCopilotFeatureAccess,
+} from './feature-coverage';
 
 export type CopilotAccessContext = {
   userId?: string;
@@ -40,6 +43,9 @@ export class CopilotAccessPolicy {
     if (context.quotaBackedRoutesAllowed !== undefined) {
       return context.quotaBackedRoutesAllowed;
     }
+    if (!getCopilotFeatureAccess(context.featureKind).quotaMetered) {
+      return true;
+    }
     if (!context.userId) {
       return true;
     }
@@ -69,17 +75,24 @@ export class CopilotAccessPolicy {
     context: CopilotAccessContext
   ): Promise<CopilotTurnRouteAccess> {
     const byokProfiles = await this.getByokProfiles(context);
-    if (!byokProfiles.length && context.userId) {
+    if (context.quotaBackedRoutesAllowed === false) {
+      return { byokProfiles, quotaBackedRoutesAllowed: false };
+    }
+    const featureAccess = getCopilotFeatureAccess(context.featureKind);
+    if (!byokProfiles.length && context.userId && featureAccess.quotaMetered) {
       await this.conversationPolicy.checkQuota(context.userId);
     }
 
-    const quotaBackedRoutesAllowed = byokProfiles.length ? undefined : true;
+    const quotaBackedRoutesAllowed = byokProfiles.length
+      ? context.quotaBackedRoutesAllowed
+      : true;
     return { byokProfiles, quotaBackedRoutesAllowed };
   }
 
   async assertQuotaOrByok(context: CopilotAccessContext) {
     const byokProfiles = await this.getByokProfiles(context);
-    if (!byokProfiles.length && context.userId) {
+    const featureAccess = getCopilotFeatureAccess(context.featureKind);
+    if (!byokProfiles.length && context.userId && featureAccess.quotaMetered) {
       await this.conversationPolicy.checkQuota(context.userId);
     }
   }

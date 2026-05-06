@@ -8,7 +8,6 @@ import {
   Embedding,
   EMBEDDING_DIMENSIONS,
 } from '../../../models';
-import { ByokService } from '../byok';
 import { type CopilotRerankRequest } from '../providers/types';
 import { CapabilityRuntime } from '../runtime/capability-runtime';
 import { TaskPolicy } from '../runtime/task-policy';
@@ -52,6 +51,7 @@ class ProductionEmbeddingClient extends EmbeddingClient {
       signal: normalizedOptions.signal,
       user: normalizedOptions.userId,
       workspace: normalizedOptions.workspaceId,
+      byokLeaseId: normalizedOptions.byokLeaseId,
       featureKind: normalizedOptions.featureKind ?? 'embedding',
     });
     if (embeddings.length !== input.length) {
@@ -101,6 +101,7 @@ class ProductionEmbeddingClient extends EmbeddingClient {
         signal: normalizedOptions.signal,
         user: normalizedOptions.userId,
         workspace: normalizedOptions.workspaceId,
+        byokLeaseId: normalizedOptions.byokLeaseId,
         featureKind: 'rerank',
       }
     );
@@ -206,13 +207,13 @@ export class CopilotEmbeddingClientService {
 
   constructor(
     private readonly taskPolicy: TaskPolicy,
-    private readonly runtime: CapabilityRuntime,
-    private readonly byok: ByokService
+    private readonly runtime: CapabilityRuntime
   ) {}
 
   async refresh() {
     const client = new ProductionEmbeddingClient(this.taskPolicy, this.runtime);
-    this.client = (await client.configured()) || this.byok ? client : undefined;
+    await client.configured();
+    this.client = client;
     return this.client;
   }
 

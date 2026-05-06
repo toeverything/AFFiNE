@@ -3,7 +3,6 @@ import { Injectable, Logger } from '@nestjs/common';
 import { CopilotQuotaExceeded } from '../../../base';
 import { ServerFeature, ServerService } from '../../../core';
 import { type CopilotAccessContext, CopilotAccessPolicy } from '../access';
-import type { CopilotProviderProfile } from '../config';
 import type { RequiredStructuredOutputContract } from '../runtime/contracts';
 import { getProviderRuntimeHost } from '../runtime/provider-runtime-context';
 import type { CopilotProvider } from './provider';
@@ -63,7 +62,7 @@ type RoutePreparationResult = Partial<
 >;
 
 type EffectiveProviderRegistry = {
-  registry: CopilotProviderRegistry;
+  byokRegistry: CopilotProviderRegistry;
   quotaBackedRegistry: CopilotProviderRegistry;
   quotaBackedRoutesAvailable: boolean;
 };
@@ -132,41 +131,6 @@ export class CopilotProviderFactory {
     return { ...cond, modelId };
   }
 
-  private filterDefaults(
-    registry: CopilotProviderRegistry,
-    profiles: CopilotProviderProfile[]
-  ) {
-    const profileIds = new Set(profiles.map(profile => profile.id));
-    return Object.fromEntries(
-      Object.entries(registry.defaults).filter(
-        ([, providerId]) => providerId && profileIds.has(providerId)
-      )
-    );
-  }
-
-  private buildEffectiveRegistry(
-    registry: CopilotProviderRegistry,
-    byokProfiles: CopilotProviderProfile[],
-    quotaBackedRoutesAvailable: boolean
-  ) {
-    if (!byokProfiles.length) {
-      return quotaBackedRoutesAvailable
-        ? registry
-        : buildProviderRegistry({ profiles: [], defaults: {} });
-    }
-    return buildProviderRegistry({
-      profiles: [
-        ...byokProfiles,
-        ...(quotaBackedRoutesAvailable
-          ? (Array.from(registry.profiles.values()) as CopilotProviderProfile[])
-          : []),
-      ],
-      defaults: quotaBackedRoutesAvailable
-        ? registry.defaults
-        : this.filterDefaults(registry, byokProfiles),
-    });
-  }
-
   private async getEffectiveRegistry(
     context: CopilotAccessContext = {}
   ): Promise<EffectiveProviderRegistry> {
@@ -174,11 +138,10 @@ export class CopilotProviderFactory {
     const routeAccess = await this.access.resolveRouteAccess(context);
 
     return {
-      registry: this.buildEffectiveRegistry(
-        quotaBackedRegistry,
-        routeAccess.byokProfiles,
-        routeAccess.quotaBackedRoutesAvailable
-      ),
+      byokRegistry: buildProviderRegistry({
+        profiles: routeAccess.byokProfiles,
+        defaults: {},
+      }),
       quotaBackedRegistry,
       quotaBackedRoutesAvailable: routeAccess.quotaBackedRoutesAvailable,
     };
@@ -241,13 +204,22 @@ export class CopilotProviderFactory {
     this.logger.debug(
       `Resolving copilot provider for output type: ${cond.outputType}`
     );
-    const { registry, quotaBackedRegistry, quotaBackedRoutesAvailable } =
+    const { byokRegistry, quotaBackedRegistry, quotaBackedRoutesAvailable } =
       await this.getEffectiveRegistry(context);
-    const resolved = await this.resolveRoutesFromRegistry(
-      registry,
+    const byokRoutes = await this.resolveRoutesFromRegistry(
+      byokRegistry,
       cond,
       filter
     );
+    const resolved = byokRoutes.length
+      ? byokRoutes
+      : quotaBackedRoutesAvailable
+        ? await this.resolveRoutesFromRegistry(
+            quotaBackedRegistry,
+            cond,
+            filter
+          )
+        : [];
     for (const route of resolved) {
       this.logger.debug(
         `Copilot provider candidate found: ${route.provider.type} (${route.providerId})`

@@ -11,7 +11,11 @@ import {
   FileChunkSimilarity,
   Models,
 } from '../../../models';
-import type { EmbeddingCallOptions, EmbeddingClient } from '../embedding/types';
+import type {
+  EmbeddingCallOptions,
+  EmbeddingClient,
+  EmbeddingRouteContext,
+} from '../embedding/types';
 
 export class ContextSession implements AsyncDisposable {
   constructor(
@@ -69,10 +73,14 @@ export class ContextSession implements AsyncDisposable {
     );
   }
 
-  private embeddingOptions(signal?: AbortSignal): EmbeddingCallOptions {
+  private embeddingOptions(
+    signal?: AbortSignal,
+    routeContext: EmbeddingRouteContext = {}
+  ): EmbeddingCallOptions {
     return {
       workspaceId: this.workspaceId,
       signal,
+      ...routeContext,
       featureKind: 'embedding',
     };
   }
@@ -277,10 +285,11 @@ export class ContextSession implements AsyncDisposable {
     topK: number = 5,
     signal?: AbortSignal,
     scopedThreshold: number = 0.85,
-    threshold: number = 0.5
+    threshold: number = 0.5,
+    routeContext?: EmbeddingRouteContext
   ): Promise<FileChunkSimilarity[]> {
     if (!this.client) return [];
-    const options = this.embeddingOptions(signal);
+    const options = this.embeddingOptions(signal, routeContext);
     const embedding = await this.client.getEmbedding(content, options);
     if (!embedding) return [];
 
@@ -331,10 +340,11 @@ export class ContextSession implements AsyncDisposable {
     topK: number = 5,
     signal?: AbortSignal,
     scopedThreshold: number = 0.85,
-    threshold: number = 0.5
+    threshold: number = 0.5,
+    routeContext?: EmbeddingRouteContext
   ) {
     if (!this.client) return [];
-    const options = this.embeddingOptions(signal);
+    const options = this.embeddingOptions(signal, routeContext);
     const embedding = await this.client.getEmbedding(content, options);
     if (!embedding) return [];
 
