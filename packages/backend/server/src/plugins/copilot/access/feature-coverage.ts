@@ -23,9 +23,9 @@ const COPILOT_FEATURE_ACCESS: Partial<
   Record<ByokFeatureKind, CopilotFeatureAccessRule>
 > = {
   transcript: { local: false, server: true, quotaMetered: true },
-  embedding: { local: true, server: true, quotaMetered: false },
-  workspace_indexing: { local: true, server: true, quotaMetered: false },
-  rerank: { local: true, server: true, quotaMetered: false },
+  embedding: { local: false, server: true, quotaMetered: false },
+  workspace_indexing: { local: false, server: true, quotaMetered: false },
+  rerank: { local: false, server: true, quotaMetered: false },
 };
 
 export function getByokSourceCoverage(

@@ -9,6 +9,7 @@ import { Models, WorkspaceRole } from '../../models';
 import { CopilotAccessPolicy } from '../../plugins/copilot/access';
 import { ByokService } from '../../plugins/copilot/byok';
 import {
+  type ByokFeatureKind,
   ByokKeyStorage,
   ByokKeyTestStatus,
   ByokProvider,
@@ -63,7 +64,9 @@ type ByokMatrixCase = {
   role: WorkspaceRole;
   team?: boolean;
   ownerPlan?: boolean;
+  ownerPlanFeature?: ByokUserPlanFeature;
   actorPlan?: boolean;
+  actorPlanFeature?: ByokUserPlanFeature;
   settings: {
     entitled: boolean;
     serverEntitled: boolean;
@@ -73,9 +76,22 @@ type ByokMatrixCase = {
   canConfigureLocal: boolean;
 };
 
+type ByokUserPlanFeature =
+  | 'pro_plan_v1'
+  | 'lifetime_pro_plan_v1'
+  | 'unlimited_copilot';
+
 async function createByokMatrixWorkspace(
   t: ExecutionContext<Context>,
-  input: Pick<ByokMatrixCase, 'role' | 'team' | 'ownerPlan' | 'actorPlan'>
+  input: Pick<
+    ByokMatrixCase,
+    | 'role'
+    | 'team'
+    | 'ownerPlan'
+    | 'ownerPlanFeature'
+    | 'actorPlan'
+    | 'actorPlanFeature'
+  >
 ) {
   const { user: owner, workspace } = await createUserWorkspace(t);
   const actor =
@@ -101,10 +117,18 @@ async function createByokMatrixWorkspace(
     );
   }
   if (input.ownerPlan) {
-    await t.context.models.userFeature.add(owner.id, 'pro_plan_v1', 'test');
+    await t.context.models.userFeature.add(
+      owner.id,
+      input.ownerPlanFeature ?? 'pro_plan_v1',
+      'test'
+    );
   }
   if (input.actorPlan && actor.id !== owner.id) {
-    await t.context.models.userFeature.add(actor.id, 'pro_plan_v1', 'test');
+    await t.context.models.userFeature.add(
+      actor.id,
+      input.actorPlanFeature ?? 'pro_plan_v1',
+      'test'
+    );
   }
 
   return { owner, actor, workspace };
@@ -127,20 +151,37 @@ const byokManagementMatrix: ByokMatrixCase[] = [
     canConfigureLocal: true,
   },
   {
-    name: 'admin in owner-backed personal workspace',
-    role: WorkspaceRole.Admin,
-    ownerPlan: true,
+    name: 'owner in team workspace without user plan',
+    role: WorkspaceRole.Owner,
+    team: true,
     settings: { entitled: true, serverEntitled: true, localEntitled: true },
     canConfigureServer: true,
     canConfigureLocal: true,
   },
   {
-    name: 'admin with own plan but no owner-backed server entitlement',
+    name: 'admin in believer owner-backed personal workspace',
+    role: WorkspaceRole.Admin,
+    ownerPlan: true,
+    ownerPlanFeature: 'unlimited_copilot',
+    settings: { entitled: true, serverEntitled: true, localEntitled: true },
+    canConfigureServer: true,
+    canConfigureLocal: true,
+  },
+  {
+    name: 'admin with own lifetime plan but no owner-backed server entitlement',
     role: WorkspaceRole.Admin,
     actorPlan: true,
+    actorPlanFeature: 'lifetime_pro_plan_v1',
     settings: { entitled: true, serverEntitled: false, localEntitled: true },
     canConfigureServer: false,
     canConfigureLocal: true,
+  },
+  {
+    name: 'admin without plan in non-entitled personal workspace',
+    role: WorkspaceRole.Admin,
+    settings: { entitled: false, serverEntitled: false, localEntitled: false },
+    canConfigureServer: false,
+    canConfigureLocal: false,
   },
   {
     name: 'admin in team workspace without user plan',
@@ -149,6 +190,14 @@ const byokManagementMatrix: ByokMatrixCase[] = [
     settings: { entitled: true, serverEntitled: true, localEntitled: true },
     canConfigureServer: true,
     canConfigureLocal: true,
+  },
+  {
+    name: 'ordinary member in team workspace without user plan',
+    role: WorkspaceRole.Collaborator,
+    team: true,
+    settings: { entitled: false, serverEntitled: false, localEntitled: false },
+    canConfigureServer: false,
+    canConfigureLocal: false,
   },
   {
     name: 'ordinary member with own plan',
@@ -274,6 +323,62 @@ test('byok service persists encrypted server keys and never returns plaintext', 
   );
 });
 
+test('byok service preserves server key fields during partial updates', async t => {
+  const { user, workspace } = await createUserWorkspace(t);
+  await t.context.models.userFeature.add(user.id, 'pro_plan_v1', 'test');
+
+  const key = await t.context.byok.upsertConfig({
+    workspaceId: workspace.id,
+    userId: user.id,
+    provider: ByokProvider.openai,
+    storage: ByokKeyStorage.server,
+    name: 'Primary',
+    description: 'Team key',
+    apiKey: 'sk-test-primary',
+    sortOrder: 3,
+    enabled: false,
+  });
+
+  await t.context.byok.upsertConfig({
+    id: key.id,
+    workspaceId: workspace.id,
+    userId: user.id,
+    provider: ByokProvider.openai,
+    storage: ByokKeyStorage.server,
+    name: 'Primary renamed',
+    apiKey: 'sk-test-primary-next',
+  });
+
+  const updated = await t.context.models.copilotWorkspaceByokConfig.get(key.id);
+  t.truthy(updated);
+  if (!updated) {
+    return;
+  }
+  t.is(updated.name, 'Primary renamed');
+  t.is(updated.description, 'Team key');
+  t.is(
+    t.context.crypto.decrypt(updated.encryptedApiKey),
+    'sk-test-primary-next'
+  );
+  t.is(updated.sortOrder, 3);
+  t.false(updated.enabled);
+
+  await t.context.byok.upsertConfig({
+    id: key.id,
+    workspaceId: workspace.id,
+    userId: user.id,
+    provider: ByokProvider.openai,
+    storage: ByokKeyStorage.server,
+    name: 'Primary renamed',
+    description: null,
+  });
+
+  const cleared = await t.context.models.copilotWorkspaceByokConfig.get(key.id);
+  t.is(cleared?.description, null);
+  t.is(cleared?.sortOrder, 3);
+  t.false(cleared?.enabled ?? true);
+});
+
 test('local leases are short lived and do not persist keys to server configs', async t => {
   const { user, workspace } = await createUserWorkspace(t);
   await t.context.models.userFeature.add(user.id, 'pro_plan_v1', 'test');
@@ -394,6 +499,13 @@ const byokProfileAvailabilityMatrix: ByokProfileAvailabilityCase[] = [
     name: 'ordinary members can use server BYOK while the owner is entitled',
     actorRole: WorkspaceRole.Collaborator,
     ownerPlan: true,
+    createServerKey: true,
+    expectedSources: ['server'],
+  },
+  {
+    name: 'ordinary members can use server BYOK in team workspaces',
+    actorRole: WorkspaceRole.Collaborator,
+    team: true,
     createServerKey: true,
     expectedSources: ['server'],
   },
@@ -882,16 +994,24 @@ test('effective profiles use local lease before server keys and skip disabled ke
     ['openai', 'gemini']
   );
 
-  const transcriptProfiles = await t.context.access.getByokProfiles({
-    workspaceId: workspace.id,
-    userId: user.id,
-    byokLeaseId: lease.leaseId,
-    featureKind: 'transcript',
-  });
-  t.deepEqual(
-    transcriptProfiles.map(profile => profile.type),
-    ['gemini']
-  );
+  const serverOnlyFeatureKinds: ByokFeatureKind[] = [
+    'transcript',
+    'embedding',
+    'workspace_indexing',
+    'rerank',
+  ];
+  for (const featureKind of serverOnlyFeatureKinds) {
+    const featureProfiles = await t.context.access.getByokProfiles({
+      workspaceId: workspace.id,
+      userId: user.id,
+      byokLeaseId: lease.leaseId,
+      featureKind,
+    });
+    t.deepEqual(
+      featureProfiles.map(profile => profile.type),
+      ['gemini']
+    );
+  }
 });
 
 test('capability warnings match server Gemini background coverage', async t => {

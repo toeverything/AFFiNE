@@ -2,7 +2,7 @@ import { createHash, createHmac, randomUUID } from 'node:crypto';
 
 import { BadRequestException, Injectable } from '@nestjs/common';
 
-import { Cache, CryptoHelper, metrics } from '../../../base';
+import { BadRequest, Cache, CryptoHelper, metrics } from '../../../base';
 import { Models } from '../../../models';
 import type { CopilotProviderProfile } from '../config';
 import { ByokEntitlementPolicy } from './policy';
@@ -195,7 +195,12 @@ export class ByokService {
     if (input.storage !== ByokKeyStorage.server) {
       throw new BadRequestException('Only server BYOK keys are persisted.');
     }
-    const endpoint = this.normalizeEndpoint(input.endpoint);
+    const existing = input.id
+      ? await this.models.copilotWorkspaceByokConfig.get(input.id)
+      : null;
+    if (input.id && (!existing || existing.workspaceId !== input.workspaceId)) {
+      throw new BadRequest('BYOK config not found.');
+    }
     const encryptedApiKey = input.apiKey
       ? this.crypto.encrypt(input.apiKey)
       : undefined;
@@ -204,16 +209,27 @@ export class ByokService {
       throw new BadRequestException('apiKey is required.');
     }
 
+    const description =
+      input.description !== undefined
+        ? input.description?.trim() || null
+        : (existing?.description ?? null);
+    const endpoint =
+      input.endpoint !== undefined
+        ? this.normalizeEndpoint(input.endpoint)
+        : (existing?.endpoint ?? null);
+    const sortOrder = input.sortOrder ?? existing?.sortOrder ?? 0;
+    const enabled = input.enabled ?? existing?.enabled ?? true;
+
     const row = await this.models.copilotWorkspaceByokConfig.upsert({
       id: input.id,
       workspaceId: input.workspaceId,
       provider: input.provider,
       name: input.name.trim(),
-      description: input.description?.trim() || null,
+      description,
       encryptedApiKey,
       endpoint,
-      sortOrder: input.sortOrder ?? 0,
-      enabled: input.enabled ?? true,
+      sortOrder,
+      enabled,
       userId: input.userId,
     });
 

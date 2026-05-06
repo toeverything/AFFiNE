@@ -26,28 +26,52 @@ type WorkspaceByokKey = {
   enabled?: boolean | null;
 };
 
+type WorkspaceByokKeyInput = Omit<WorkspaceByokKey, 'apiKey'> & {
+  apiKey?: string | null;
+};
+
 function assertSupported() {
   if (!safeStorage.isEncryptionAvailable()) {
     throw new Error('Secure BYOK key storage is not available.');
   }
 }
 
-function normalizeKey(key: WorkspaceByokKey): WorkspaceByokKey {
+function hasOwnField(
+  key: WorkspaceByokKeyInput,
+  field: keyof WorkspaceByokKey
+) {
+  return Object.prototype.hasOwnProperty.call(key, field);
+}
+
+function normalizeKey(
+  key: WorkspaceByokKeyInput,
+  existing?: WorkspaceByokKey,
+  defaultSortOrder = 0
+): WorkspaceByokKey {
   if (!allowedProviders.has(key.provider)) {
     throw new Error('Unsupported BYOK provider.');
   }
-  if (!key.id || !key.name || !key.apiKey) {
+  const apiKey = key.apiKey ?? existing?.apiKey;
+  if (!key.id || !key.name || !apiKey) {
     throw new Error('Invalid BYOK key.');
   }
   return {
     id: key.id,
     provider: key.provider,
     name: key.name,
-    description: key.description ?? null,
-    apiKey: key.apiKey,
-    endpoint: key.endpoint ?? null,
-    sortOrder: key.sortOrder ?? 0,
-    enabled: key.enabled ?? true,
+    description: hasOwnField(key, 'description')
+      ? (key.description ?? null)
+      : (existing?.description ?? null),
+    apiKey,
+    endpoint: hasOwnField(key, 'endpoint')
+      ? (key.endpoint ?? null)
+      : (existing?.endpoint ?? null),
+    sortOrder: hasOwnField(key, 'sortOrder')
+      ? (key.sortOrder ?? defaultSortOrder)
+      : (existing?.sortOrder ?? defaultSortOrder),
+    enabled: hasOwnField(key, 'enabled')
+      ? (key.enabled ?? true)
+      : (existing?.enabled ?? true),
   };
 }
 
@@ -108,13 +132,17 @@ export const byokStorageHandlers = {
   upsertWorkspaceKey: async (
     _e,
     workspaceId: string,
-    key: WorkspaceByokKey
+    key: WorkspaceByokKeyInput
   ) => {
     const keys = readWorkspaceKeys(workspaceId);
-    const nextKey = normalizeKey(key);
-    const index = keys.findIndex(key => key.id === nextKey.id);
+    const index = keys.findIndex(storedKey => storedKey.id === key.id);
+    const nextKey = normalizeKey(
+      key,
+      index === -1 ? undefined : keys[index],
+      keys.length
+    );
     if (index === -1) {
-      keys.push({ ...nextKey, sortOrder: nextKey.sortOrder ?? keys.length });
+      keys.push(nextKey);
     } else {
       keys[index] = nextKey;
     }

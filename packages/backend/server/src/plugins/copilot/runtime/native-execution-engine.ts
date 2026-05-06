@@ -66,6 +66,12 @@ function extractTextResponse(response: LlmDispatchResponse) {
 
 function getUsageContext(plan: ExecutionPlan) {
   const options = 'options' in plan.request ? plan.request.options : undefined;
+  const requestFeatureKind =
+    plan.request.kind === 'text' ||
+    plan.request.kind === 'streamText' ||
+    plan.request.kind === 'streamObject'
+      ? 'chat'
+      : plan.request.kind;
   return {
     workspaceId: options?.workspace,
     userId: options?.user,
@@ -73,12 +79,7 @@ function getUsageContext(plan: ExecutionPlan) {
     taskId: options?.taskId,
     actionId: options?.actionId,
     billingUnitId: options?.billingUnitId,
-    featureKind:
-      options?.featureKind ??
-      (plan.request.kind === 'streamText' ||
-      plan.request.kind === 'streamObject'
-        ? 'chat'
-        : plan.request.kind),
+    featureKind: options?.featureKind ?? requestFeatureKind,
   };
 }
 

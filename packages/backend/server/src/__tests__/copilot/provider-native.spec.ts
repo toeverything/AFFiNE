@@ -778,6 +778,94 @@ test('NativeExecutionEngine should record BYOK usage when stream finalizes with 
   });
 });
 
+test('NativeExecutionEngine should record plain text BYOK usage as chat by default', async t => {
+  const byok = {
+    recordUsage: Sinon.stub().resolves(),
+    recordProviderFailure: Sinon.stub().resolves(),
+  };
+  const engine = new NativeExecutionEngine(byok as never);
+  const providerId = 'byok-aaaaaaaaaaaa-openai-server-key1';
+
+  const originalDispatch = (serverNativeModule as any).llmDispatchPrepared;
+  (serverNativeModule as any).llmDispatchPrepared = () => {
+    return JSON.stringify({
+      provider_id: providerId,
+      response: {
+        id: 'chat_execute',
+        model: 'gpt-5-mini',
+        message: {
+          role: 'assistant',
+          content: [{ type: 'text', text: 'execute-ok' }],
+        },
+        usage: {
+          prompt_tokens: 1,
+          completion_tokens: 2,
+          total_tokens: 3,
+        },
+        finish_reason: 'stop',
+      },
+    });
+  };
+  t.teardown(() => {
+    (serverNativeModule as any).llmDispatchPrepared = originalDispatch;
+  });
+
+  const text = await engine.execute({
+    nativeDispatch: {
+      chat: {
+        routes: [
+          nativeRoute({
+            providerId,
+            authToken: 'byok-key',
+            request: nativeTextRequest('hello'),
+          }),
+        ],
+        prepared: {
+          route: preparedRoute({
+            providerId,
+            authToken: 'byok-key',
+          }),
+          request: nativeTextRequest('hello'),
+          tools: {},
+          postprocess: { nodeTextMiddleware: [] },
+        },
+        hasTools: false,
+      },
+    },
+    request: {
+      kind: 'text',
+      cond: { modelId: 'gpt-5-mini' },
+      messages: singleUserPromptMessages('hello'),
+      options: {
+        workspace: 'workspace-1',
+        user: 'user-1',
+        session: 'session-1',
+      },
+    },
+    routePolicy: { fallbackOrder: [providerId] },
+    runtimePolicy: {},
+    attachmentPolicy: { materializeRemoteAttachments: true },
+    responsePostprocess: { mode: 'text' },
+    hostPersistence: { persistAssistantTurn: true, outputKind: 'text' },
+    hostContext: {},
+  });
+
+  t.is(text, 'execute-ok');
+  Sinon.assert.calledOnceWithMatch(byok.recordUsage, {
+    workspaceId: 'workspace-1',
+    userId: 'user-1',
+    sessionId: 'session-1',
+    featureKind: 'chat',
+    providerId,
+    model: 'gpt-5-mini',
+    usage: {
+      prompt_tokens: 1,
+      completion_tokens: 2,
+      total_tokens: 3,
+    },
+  });
+});
+
 test('NativeExecutionEngine should not fail stream when BYOK usage recording fails', async t => {
   const byok = {
     recordUsage: Sinon.stub().rejects(new Error('usage db down')),

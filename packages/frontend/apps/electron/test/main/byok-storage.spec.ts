@@ -83,4 +83,69 @@ describe('byok storage handlers', () => {
       byokStorageHandlers.listWorkspaceKeys(ipcEvent, 'workspace-1')
     ).resolves.toEqual([]);
   });
+
+  test('preserves existing local key fields during partial updates', async () => {
+    const { byokStorageHandlers, disposeWorkspaceByokStorage: dispose } =
+      await import('@affine/electron/main/byok-storage/handlers');
+    disposeWorkspaceByokStorage = dispose;
+    const ipcEvent = undefined;
+
+    await byokStorageHandlers.upsertWorkspaceKey(ipcEvent, 'workspace-1', {
+      id: 'local-openai',
+      provider: 'openai',
+      name: 'OpenAI',
+      description: 'Primary key',
+      apiKey: 'sk-openai',
+      endpoint: 'https://api.openai.example/v1',
+      sortOrder: 4,
+      enabled: false,
+    });
+
+    await byokStorageHandlers.upsertWorkspaceKey(ipcEvent, 'workspace-1', {
+      id: 'local-openai',
+      provider: 'openai',
+      name: 'OpenAI renamed',
+      apiKey: 'sk-openai-next',
+    });
+
+    const [publicKey] = await byokStorageHandlers.listWorkspaceKeys(
+      ipcEvent,
+      'workspace-1'
+    );
+    expect(publicKey).toMatchObject({
+      id: 'local-openai',
+      name: 'OpenAI renamed',
+      description: 'Primary key',
+      endpoint: 'https://api.openai.example/v1',
+      sortOrder: 4,
+      enabled: false,
+    });
+
+    const [leaseProvider] =
+      await byokStorageHandlers.getWorkspaceLeaseProviders(
+        ipcEvent,
+        'workspace-1'
+      );
+    expect(leaseProvider).toBeUndefined();
+
+    await byokStorageHandlers.upsertWorkspaceKey(ipcEvent, 'workspace-1', {
+      id: 'local-openai',
+      provider: 'openai',
+      name: 'OpenAI renamed again',
+      enabled: true,
+    });
+
+    const [enabledLeaseProvider] =
+      await byokStorageHandlers.getWorkspaceLeaseProviders(
+        ipcEvent,
+        'workspace-1'
+      );
+    expect(enabledLeaseProvider).toMatchObject({
+      name: 'OpenAI renamed again',
+      apiKey: 'sk-openai-next',
+      endpoint: 'https://api.openai.example/v1',
+      sortOrder: 4,
+      enabled: true,
+    });
+  });
 });

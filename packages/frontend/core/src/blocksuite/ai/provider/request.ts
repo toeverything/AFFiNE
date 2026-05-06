@@ -61,28 +61,28 @@ async function createWorkspaceByokLocalLease(
     return undefined;
   }
 
-  if (!(await storage.isSupported())) return undefined;
-  const providers = await storage.getWorkspaceLeaseProviders(workspaceId);
-  if (!providers.length) return undefined;
-  const leaseProviders = providers.flatMap(provider => {
-    const gqlProvider = toGraphqlByokProvider(provider.provider);
-    return gqlProvider
-      ? [
-          {
-            provider: gqlProvider,
-            name: provider.name,
-            description: provider.description ?? null,
-            apiKey: provider.apiKey,
-            endpoint: provider.endpoint ?? null,
-            sortOrder: provider.sortOrder ?? 0,
-            enabled: provider.enabled ?? true,
-          },
-        ]
-      : [];
-  });
-  if (!leaseProviders.length) return undefined;
-
   try {
+    if (!(await storage.isSupported())) return undefined;
+    const providers = await storage.getWorkspaceLeaseProviders(workspaceId);
+    if (!providers.length) return undefined;
+    const leaseProviders = providers.flatMap(provider => {
+      const gqlProvider = toGraphqlByokProvider(provider.provider);
+      return gqlProvider
+        ? [
+            {
+              provider: gqlProvider,
+              name: provider.name,
+              description: provider.description ?? null,
+              apiKey: provider.apiKey,
+              endpoint: provider.endpoint ?? null,
+              sortOrder: provider.sortOrder ?? 0,
+              enabled: provider.enabled ?? true,
+            },
+          ]
+        : [];
+    });
+    if (!leaseProviders.length) return undefined;
+
     const result = await client.gql({
       query: createWorkspaceByokLocalLeaseMutation,
       variables: {

@@ -3,6 +3,7 @@ import Sinon from 'sinon';
 
 import { type Models } from '../../models';
 import { CopilotAccessPolicy } from '../../plugins/copilot/access';
+import type { ByokFeatureKind } from '../../plugins/copilot/byok/types';
 import { HistoryAttachmentUrlProjector } from '../../plugins/copilot/compat/history-attachment-url-projector';
 import { CompatHistoryProjector } from '../../plugins/copilot/compat/history-projector';
 import { HistoryPromptPreloadProjector } from '../../plugins/copilot/compat/history-prompt-preload-projector';
@@ -154,40 +155,47 @@ for (const matrixCase of turnRouteAccessCases) {
   });
 }
 
-test('CopilotAccessPolicy should resolve BYOK coverage by feature kind', async t => {
-  const getProfiles = Sinon.stub().resolves([]);
-  const access = new CopilotAccessPolicy(
-    { hasQuota: Sinon.stub().resolves(true) } as any,
-    { getProfiles } as any
-  );
+type ByokCoverageCase = {
+  featureKind?: ByokFeatureKind;
+  expected: { local: boolean; server: boolean };
+};
 
-  await access.getByokProfiles({
-    userId: 'user-1',
-    workspaceId: 'workspace-1',
-    featureKind: 'transcript',
-  });
-  await access.getByokProfiles({
-    userId: 'user-1',
-    workspaceId: 'workspace-1',
-    featureKind: 'rerank',
-  });
+const byokCoverageCases: ByokCoverageCase[] = [
+  { featureKind: 'chat', expected: { local: true, server: true } },
+  { featureKind: 'action', expected: { local: true, server: true } },
+  { featureKind: 'image', expected: { local: true, server: true } },
+  { featureKind: 'transcript', expected: { local: false, server: true } },
+  { featureKind: 'embedding', expected: { local: false, server: true } },
+  {
+    featureKind: 'workspace_indexing',
+    expected: { local: false, server: true },
+  },
+  { featureKind: 'rerank', expected: { local: false, server: true } },
+  { expected: { local: true, server: true } },
+];
 
-  t.like(getProfiles.firstCall.args[0], {
-    userId: 'user-1',
-    workspaceId: 'workspace-1',
-    featureKind: 'transcript',
+for (const matrixCase of byokCoverageCases) {
+  test(`CopilotAccessPolicy should resolve BYOK coverage for ${matrixCase.featureKind ?? 'default'}`, async t => {
+    const getProfiles = Sinon.stub().resolves([]);
+    const access = new CopilotAccessPolicy(
+      { hasQuota: Sinon.stub().resolves(true) } as any,
+      { getProfiles } as any
+    );
+
+    await access.getByokProfiles({
+      userId: 'user-1',
+      workspaceId: 'workspace-1',
+      featureKind: matrixCase.featureKind,
+    });
+
+    t.like(getProfiles.firstCall.args[0], {
+      userId: 'user-1',
+      workspaceId: 'workspace-1',
+    });
+    t.is(getProfiles.firstCall.args[0].featureKind, matrixCase.featureKind);
+    t.deepEqual(getProfiles.firstCall.args[1], matrixCase.expected);
   });
-  t.deepEqual(getProfiles.firstCall.args[1], { local: false, server: true });
-  t.like(getProfiles.secondCall.args[0], {
-    userId: 'user-1',
-    workspaceId: 'workspace-1',
-    featureKind: 'rerank',
-  });
-  t.deepEqual(getProfiles.secondCall.args[1], {
-    local: true,
-    server: true,
-  });
-});
+}
 
 test('CopilotAccessPolicy assertQuotaOrByok should honor quota-backed route disable', async t => {
   const checkQuota = Sinon.stub().resolves(undefined);

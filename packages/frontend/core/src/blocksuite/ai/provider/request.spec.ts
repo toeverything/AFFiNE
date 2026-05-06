@@ -101,6 +101,46 @@ describe('AI request BYOK local lease handling', () => {
     expect(client.chatTextStream).not.toHaveBeenCalled();
   });
 
+  test('wraps local BYOK storage support failures as user friendly errors', async () => {
+    electronApis.byokStorage = {
+      isSupported: vi.fn().mockRejectedValue(new Error('support check failed')),
+      getWorkspaceLeaseProviders: vi.fn(),
+    };
+    const client = createClient();
+
+    const result = textToText({
+      client,
+      sessionId: 'session-1',
+      workspaceId: 'workspace-1',
+      content: 'hello',
+    }) as Promise<string>;
+
+    await expect(result).rejects.toThrow('support check failed');
+    await expect(result).rejects.toBeInstanceOf(UserFriendlyError);
+    expect(client.chatTextStream).not.toHaveBeenCalled();
+  });
+
+  test('wraps local BYOK provider loading failures as user friendly errors', async () => {
+    electronApis.byokStorage = {
+      isSupported: vi.fn().mockResolvedValue(true),
+      getWorkspaceLeaseProviders: vi
+        .fn()
+        .mockRejectedValue(new Error('provider load failed')),
+    };
+    const client = createClient();
+
+    const result = textToText({
+      client,
+      sessionId: 'session-1',
+      workspaceId: 'workspace-1',
+      content: 'hello',
+    }) as Promise<string>;
+
+    await expect(result).rejects.toThrow('provider load failed');
+    await expect(result).rejects.toBeInstanceOf(UserFriendlyError);
+    expect(client.chatTextStream).not.toHaveBeenCalled();
+  });
+
   test('does not create local BYOK lease after cancellation', async () => {
     const controller = new AbortController();
     const client = createClient({
