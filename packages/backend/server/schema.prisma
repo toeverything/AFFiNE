@@ -774,6 +774,7 @@ model AiUsageEvent {
   sessionId        String?  @map("session_id") @db.VarChar
   taskId           String?  @map("task_id") @db.VarChar
   actionId         String?  @map("action_id") @db.VarChar
+  billingUnitId    String?  @map("billing_unit_id") @db.VarChar
   promptTokens     Int      @default(0) @map("prompt_tokens")
   completionTokens Int      @default(0) @map("completion_tokens")
   totalTokens      Int      @default(0) @map("total_tokens")
@@ -785,6 +786,7 @@ model AiUsageEvent {
   @@index([workspaceId, createdAt])
   @@index([workspaceId, providerSource, createdAt])
   @@index([featureKind, createdAt])
+  @@index([userId, providerSource, featureKind, billingUnitId], map: "ai_usage_events_quota_exempt_idx")
   @@map("ai_usage_events")
 }
 

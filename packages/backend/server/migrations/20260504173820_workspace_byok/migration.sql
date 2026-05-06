@@ -35,6 +35,7 @@ CREATE TABLE "ai_usage_events" (
     "session_id" VARCHAR,
     "task_id" VARCHAR,
     "action_id" VARCHAR,
+    "billing_unit_id" VARCHAR,
     "prompt_tokens" INTEGER NOT NULL DEFAULT 0,
     "completion_tokens" INTEGER NOT NULL DEFAULT 0,
     "total_tokens" INTEGER NOT NULL DEFAULT 0,
@@ -61,6 +62,9 @@ CREATE INDEX "ai_usage_events_workspace_id_provider_source_created_at_idx" ON "a
 
 -- CreateIndex
 CREATE INDEX "ai_usage_events_feature_kind_created_at_idx" ON "ai_usage_events"("feature_kind", "created_at");
+
+-- CreateIndex
+CREATE INDEX "ai_usage_events_quota_exempt_idx" ON "ai_usage_events"("user_id", "provider_source", "feature_kind", "billing_unit_id");
 
 -- AddForeignKey
 ALTER TABLE "ai_workspace_byok_configs" ADD CONSTRAINT "ai_workspace_byok_configs_workspace_id_fkey" FOREIGN KEY ("workspace_id") REFERENCES "workspaces"("id") ON DELETE CASCADE ON UPDATE CASCADE;

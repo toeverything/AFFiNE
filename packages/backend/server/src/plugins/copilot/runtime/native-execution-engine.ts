@@ -70,6 +70,9 @@ function getUsageContext(plan: ExecutionPlan) {
     workspaceId: options?.workspace,
     userId: options?.user,
     sessionId: options?.session,
+    taskId: options?.taskId,
+    actionId: options?.actionId,
+    billingUnitId: options?.billingUnitId,
     featureKind:
       options?.featureKind ??
       (plan.request.kind === 'streamText' ||
@@ -94,6 +97,9 @@ async function recordByokUsage(
       workspaceId: context.workspaceId,
       userId: context.userId,
       sessionId: context.sessionId,
+      taskId: context.taskId,
+      actionId: context.actionId,
+      billingUnitId: context.billingUnitId,
       featureKind: context.featureKind as ByokFeatureKind,
       providerId: input.providerId,
       model: input.model,

@@ -14,6 +14,7 @@ type CreateAiUsageEventInput = {
   sessionId?: string;
   taskId?: string;
   actionId?: string;
+  billingUnitId?: string;
   promptTokens?: number;
   completionTokens?: number;
   totalTokens?: number;
@@ -24,6 +25,10 @@ type UsageAggregateRow = {
   date: string;
   featureKind: string;
   totalTokens: number | bigint | null;
+};
+
+type CountRow = {
+  count: number | bigint;
 };
 
 const BYOK_PROVIDER_SOURCES = ['byok_server', 'byok_local'];
@@ -44,6 +49,7 @@ export class CopilotUsageModel extends BaseModel {
         sessionId: input.sessionId,
         taskId: input.taskId,
         actionId: input.actionId,
+        billingUnitId: input.billingUnitId,
         promptTokens: input.promptTokens ?? 0,
         completionTokens: input.completionTokens ?? 0,
         totalTokens: input.totalTokens ?? 0,
@@ -53,13 +59,54 @@ export class CopilotUsageModel extends BaseModel {
   }
 
   async countQuotaExemptByokUsage(userId: string) {
-    return await this.db.aiUsageEvent.count({
-      where: {
-        userId,
-        providerSource: { in: BYOK_PROVIDER_SOURCES },
-        featureKind: { in: QUOTA_EXEMPT_BYOK_FEATURES },
-      },
-    });
+    const rows = await this.db.$queryRaw<CountRow[]>(Prisma.sql`
+      WITH "byok_usage" AS (
+        SELECT "billing_unit_id", "feature_kind"
+        FROM "ai_usage_events"
+        WHERE "user_id" = ${userId}
+          AND "provider_source" IN (${Prisma.join(BYOK_PROVIDER_SOURCES)})
+          AND "feature_kind" IN (${Prisma.join(QUOTA_EXEMPT_BYOK_FEATURES)})
+          AND "billing_unit_id" IS NOT NULL
+      ),
+      "message_units" AS (
+        SELECT DISTINCT "usage"."billing_unit_id"
+        FROM "byok_usage" AS "usage"
+        JOIN "ai_sessions_messages" AS "message"
+          ON "message"."id" = "usage"."billing_unit_id"
+        JOIN "ai_sessions_metadata" AS "session"
+          ON "session"."id" = "message"."session_id"
+        WHERE "usage"."feature_kind" IN ('chat', 'action', 'image')
+          AND "message"."role" = 'user'
+          AND "session"."user_id" = ${userId}
+          AND ("session"."prompt_action" IS NULL OR "session"."prompt_action" = '')
+      ),
+      "action_units" AS (
+        SELECT DISTINCT "usage"."billing_unit_id"
+        FROM "byok_usage" AS "usage"
+        JOIN "ai_action_runs" AS "run"
+          ON "run"."id" = "usage"."billing_unit_id"
+        WHERE "usage"."feature_kind" IN ('action', 'image')
+          AND "run"."user_id" = ${userId}
+          AND "run"."status" = 'succeeded'
+          AND "run"."action_id" NOT LIKE 'transcript.audio.%'
+      ),
+      "transcript_units" AS (
+        SELECT DISTINCT "usage"."billing_unit_id"
+        FROM "byok_usage" AS "usage"
+        JOIN "ai_transcript_tasks" AS "task"
+          ON "task"."id" = "usage"."billing_unit_id"
+        WHERE "usage"."feature_kind" = 'transcript'
+          AND "task"."user_id" = ${userId}
+          AND "task"."status" = 'settled'
+      )
+      SELECT (
+        (SELECT COUNT(*) FROM "message_units") +
+        (SELECT COUNT(*) FROM "action_units") +
+        (SELECT COUNT(*) FROM "transcript_units")
+      ) AS "count"
+    `);
+    const count = rows[0]?.count ?? 0;
+    return typeof count === 'bigint' ? Number(count) : count;
   }
 
   async aggregateByDay(input: {

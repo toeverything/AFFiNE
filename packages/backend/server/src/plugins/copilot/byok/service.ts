@@ -423,6 +423,7 @@ export class ByokService {
     sessionId?: string;
     taskId?: string;
     actionId?: string;
+    billingUnitId?: string;
     usage?: {
       prompt_tokens?: number;
       completion_tokens?: number;
@@ -450,6 +451,7 @@ export class ByokService {
       sessionId: input.sessionId,
       taskId: input.taskId,
       actionId: input.actionId,
+      billingUnitId: input.billingUnitId,
       promptTokens: input.usage?.prompt_tokens ?? 0,
       completionTokens: input.usage?.completion_tokens ?? 0,
       totalTokens: input.usage?.total_tokens ?? 0,

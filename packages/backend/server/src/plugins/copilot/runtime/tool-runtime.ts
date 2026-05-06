@@ -76,6 +76,7 @@ export class ToolRuntime {
           session: options.session,
           workspace: options.workspace,
           byokLeaseId: options.byokLeaseId,
+          billingUnitId: options.billingUnitId,
           quotaBackedRoutesAllowed: options.quotaBackedRoutesAllowed,
           featureKind: options.featureKind,
         },

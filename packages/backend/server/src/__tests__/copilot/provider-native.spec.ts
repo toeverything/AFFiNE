@@ -1613,6 +1613,25 @@ test('CopilotProviderFactory should raise quota exceeded when only quota-backed 
   );
 });
 
+test('CopilotProviderFactory should not report quota exhausted when quota-backed routes are disabled', async t => {
+  const { factory } = createProviderFactoryWithByokRoutes({
+    byokProfiles: [],
+    hasQuota: true,
+  });
+
+  const routes = await factory.resolveRoutes(
+    { modelId: 'gpt-5-mini', outputType: ModelOutputType.Text },
+    {},
+    {
+      userId: 'user-1',
+      workspaceId: 'workspace-1',
+      quotaBackedRoutesAllowed: false,
+    }
+  );
+
+  t.deepEqual(routes, []);
+});
+
 test('selectModel should reject unknown models without online fallback', t => {
   const provider = new TestOpenAIProvider();
   t.is(provider.resolveModel('online-preview'), undefined);

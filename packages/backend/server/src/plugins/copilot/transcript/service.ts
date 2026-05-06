@@ -397,6 +397,8 @@ export class CopilotTranscriptionService {
           options: {
             user: task.userId,
             workspace: task.workspaceId,
+            taskId,
+            billingUnitId: taskId,
             featureKind: 'transcript',
           },
           prefer: CopilotProviderType.Gemini,

@@ -226,7 +226,11 @@ export class CopilotProviderFactory {
       );
     }
 
-    if (!resolved.length && !quotaBackedRoutesAvailable) {
+    if (
+      !resolved.length &&
+      !quotaBackedRoutesAvailable &&
+      context.quotaBackedRoutesAllowed !== false
+    ) {
       const quotaBackedRoutes = await this.resolveRoutesFromRegistry(
         quotaBackedRegistry,
         cond,

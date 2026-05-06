@@ -4,6 +4,7 @@ import fs from 'fs-extra';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 const tmpDir = path.join(__dirname, 'tmp-byok-storage');
+let disposeWorkspaceByokStorage: (() => void) | undefined;
 
 vi.mock('electron', () => ({
   app: {
@@ -19,21 +20,21 @@ vi.mock('electron', () => ({
 
 beforeEach(async () => {
   vi.resetModules();
+  disposeWorkspaceByokStorage = undefined;
   await fs.remove(tmpDir);
 });
 
 afterEach(async () => {
-  const { disposeWorkspaceByokStorage } =
-    await import('@affine/electron/main/byok-storage/handlers');
-  disposeWorkspaceByokStorage();
+  disposeWorkspaceByokStorage?.();
   vi.resetModules();
   await fs.remove(tmpDir);
 });
 
 describe('byok storage handlers', () => {
   test('stores encrypted local keys and keeps lease providers sorted', async () => {
-    const { byokStorageHandlers } =
+    const { byokStorageHandlers, disposeWorkspaceByokStorage: dispose } =
       await import('@affine/electron/main/byok-storage/handlers');
+    disposeWorkspaceByokStorage = dispose;
     const ipcEvent = undefined;
 
     await byokStorageHandlers.upsertWorkspaceKey(ipcEvent, 'workspace-1', {

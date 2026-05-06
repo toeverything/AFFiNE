@@ -83,6 +83,7 @@ export class TurnOrchestrator {
         webSearch,
         toolsConfig,
         byokLeaseId,
+        billingUnitId: prepared.latestTurn?.id,
         quotaBackedRoutesAllowed: prepared.quotaBackedRoutesAllowed,
         featureKind:
           selection.responseMode === 'image'

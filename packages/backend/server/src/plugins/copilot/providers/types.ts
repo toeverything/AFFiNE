@@ -265,6 +265,9 @@ const CopilotProviderOptionsSchema = z.object({
   session: z.string().optional(),
   workspace: z.string().optional(),
   byokLeaseId: z.string().optional(),
+  billingUnitId: z.string().optional(),
+  taskId: z.string().optional(),
+  actionId: z.string().optional(),
   quotaBackedRoutesAllowed: z.boolean().optional(),
   featureKind: z
     .enum([
