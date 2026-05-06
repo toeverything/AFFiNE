@@ -27358,11 +27358,11 @@ __metadata:
   linkType: hard
 
 "link-preview-js@npm:^4.0.0":
-  version: 4.0.0
-  resolution: "link-preview-js@npm:4.0.0"
+  version: 4.0.1
+  resolution: "link-preview-js@npm:4.0.1"
   dependencies:
     cheerio: "npm:1.0.0-rc.11"
-  checksum: 10/6a31e37cdc2d114bf425c4aa7243f58ee1e473842a7874f16a05fd5afbaf0792c15071ba8ae31ce845b1ef1c54dc8c3495fdfe9fa8375fcf3725216f24f6d68c
+  checksum: 10/882cea2456c7c08a25f87848e4e6937996d73521c658c9dc3a4bb2d740159cc424f992b11fb53c61086e940af57c57a89eca6bb4970ec364dc1d9fa59d7a877f
   languageName: node
   linkType: hard
 
