@@ -72,67 +72,21 @@ const noteSlashMenuConfig: SlashMenuConfig = {
           description: item.description,
           when: item.when,
           subMenu: [
-            {
-              name: 'Solid',
-              icon: item.icon,
-              action: (ctx: SlashMenuContext) => {
-                ctx.std.command.exec(updateBlockType, {
-                  flavour: 'affine:divider',
-                  props: { type: 'solid' },
-                });
-              },
+            { label: 'Solid', type: 'solid' },
+            { label: 'Dotted', type: 'dotted' },
+            { label: 'Dashed', type: 'dashed' },
+            { label: 'Loosely Dashed', type: 'loosely-dashed' },
+            { label: 'Lines', type: 'lines' },
+          ].map(({ label, type }) => ({
+            name: label,
+            icon: item.icon,
+            action: (ctx: SlashMenuContext) => {
+              ctx.std.command.exec(updateBlockType, {
+                flavour: 'affine:divider',
+                props: { type },
+              });
             },
-            {
-              name: 'Dotted',
-              icon: item.icon,
-              action: (ctx: SlashMenuContext) => {
-                ctx.std.command.exec(updateBlockType, {
-                  flavour: 'affine:divider',
-                  props: { type: 'dotted' },
-                });
-              },
-            },
-            {
-              name: 'Dashed',
-              icon: item.icon,
-              action: (ctx: SlashMenuContext) => {
-                ctx.std.command.exec(updateBlockType, {
-                  flavour: 'affine:divider',
-                  props: { type: 'dashed' },
-                });
-              },
-            },
-            {
-              name: 'loosely dashed',
-              icon: item.icon,
-              action: (ctx: SlashMenuContext) => {
-                ctx.std.command.exec(updateBlockType, {
-                  flavour: 'affine:divider',
-                  props: { type: 'loosely-dashed' },
-                });
-              },
-            },
-            {
-              name: 'divider',
-              icon: item.icon,
-              action: (ctx: SlashMenuContext) => {
-                ctx.std.command.exec(updateBlockType, {
-                  flavour: 'affine:divider',
-                  props: { type: 'divider' },
-                });
-              },
-            },
-            {
-              name: 'lines',
-              icon: item.icon,
-              action: (ctx: SlashMenuContext) => {
-                ctx.std.command.exec(updateBlockType, {
-                  flavour: 'affine:divider',
-                  props: { type: 'lines' },
-                });
-              },
-            },
-          ],
+          })),
         };
       }),
 

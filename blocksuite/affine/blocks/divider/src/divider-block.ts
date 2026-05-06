@@ -32,17 +32,13 @@ export class DividerBlockComponent extends CaptionedBlockComponent<DividerBlockM
       ${this.renderChildren(this.model)}
     </div>`;
 
-    const type =
-      (this.model.props as any).type$?.value ||
-      (this.model as any).type ||
-      'solid';
+    const type = this.model.props.type$.value || 'solid';
     const color = 'var(--affine-divider-color, #e3e3e3)';
     const borderTopStyleMap: Record<string, string> = {
       solid: `1px solid ${color}`,
       dotted: `2px dotted ${color}`,
       dashed: `1px dashed ${color}`,
       'loosely-dashed': `2px dashed ${color}`,
-      divider: `1px solid ${color}`,
       lines: `3px double ${color}`,
     };
 

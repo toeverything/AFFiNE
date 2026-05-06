@@ -9,7 +9,6 @@ export type DividerType =
   | 'dotted'
   | 'dashed'
   | 'loosely-dashed'
-  | 'divider'
   | 'lines';
 
 export type DividerProps = {
@@ -29,9 +28,7 @@ export const DividerBlockSchema = defineBlockSchema({
   toModel: () => new DividerBlockModel(),
 });
 
-export class DividerBlockModel extends BlockModel<DividerProps> {
-  declare type: DividerType;
-}
+export class DividerBlockModel extends BlockModel<DividerProps> {}
 
 export const DividerBlockSchemaExtension =
   BlockSchemaExtension(DividerBlockSchema);
