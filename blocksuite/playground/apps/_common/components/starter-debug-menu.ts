@@ -436,7 +436,7 @@ export class StarterDebugMenu extends ShadowlessElement {
     try {
       const file = await openSingleFileWith('Zip');
       if (!file) return;
-      const result = await MarkdownTransformer.importMarkdownZip({
+      const { docIds } = await MarkdownTransformer.importMarkdownZip({
         collection: this.collection,
         schema: this.editor.doc.schema,
         imported: file,
@@ -445,7 +445,7 @@ export class StarterDebugMenu extends ShadowlessElement {
       if (!this.editor.host) return;
       toast(
         this.editor.host,
-        `Successfully imported ${result.length} markdown files.`
+        `Successfully imported ${docIds.length} markdown files.`
       );
     } catch (error) {
       console.error('Import markdown zip files failed:', error);

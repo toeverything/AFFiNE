@@ -2463,6 +2463,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.import.affine-workspace-data"](): string;
     /**
+      * `Bear (.bear2bk) (Experimental)`
+      */
+    ["com.affine.import.bear"](): string;
+    /**
+      * `Import your Bear note backup. Tags will be converted to AFFiNE tags and folders.`
+      */
+    ["com.affine.import.bear.tooltip"](): string;
+    /**
       * `Docx`
       */
     ["com.affine.import.docx"](): string;
@@ -2495,7 +2503,7 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.import.modal.tip"](): string;
     /**
-      * `Notion`
+      * `Notion (Experimental)`
       */
     ["com.affine.import.notion"](): string;
     /**
@@ -2503,7 +2511,7 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.import.notion.tooltip"](): string;
     /**
-      * `Obsidian Vault`
+      * `Obsidian Vault (Experimental)`
       */
     ["com.affine.import.obsidian"](): string;
     /**
@@ -5891,6 +5899,316 @@ export function useAFFiNEI18N(): {
       * `You can view current workspace's information here.`
       */
     ["com.affine.settings.workspace.description"](): string;
+    /**
+      * `AI BYOK (Beta)`
+      */
+    ["com.affine.settings.workspace.byok.title-beta"](): string;
+    /**
+      * `AI BYOK`
+      */
+    ["com.affine.settings.workspace.byok.title"](): string;
+    /**
+      * `Loading provider keys.`
+      */
+    ["com.affine.settings.workspace.byok.loading"](): string;
+    /**
+      * `Use your own provider keys for this workspace.`
+      */
+    ["com.affine.settings.workspace.byok.subtitle"](): string;
+    /**
+      * `Use workspace provider keys before AFFiNE AI plan routes.`
+      */
+    ["com.affine.settings.workspace.byok.header"](): string;
+    /**
+      * `BYOK requires Pro, Team, or Believer`
+      */
+    ["com.affine.settings.workspace.byok.locked.title"](): string;
+    /**
+      * `Upgrade this workspace to add provider keys and route AFFiNE AI through your own OpenAI, Anthropic, Gemini, or FAL account.`
+      */
+    ["com.affine.settings.workspace.byok.locked.description"](): string;
+    /**
+      * `AI plan stays available`
+      */
+    ["com.affine.settings.workspace.byok.notice.title"](): string;
+    /**
+      * `Local keys on this device are tried first. Workspace server keys follow, then AFFiNE AI plan routes when quota is available.`
+      */
+    ["com.affine.settings.workspace.byok.notice.description"](): string;
+    /**
+      * `Provider keys`
+      */
+    ["com.affine.settings.workspace.byok.keys.title"](): string;
+    /**
+      * `List order controls fallback within each storage group.`
+      */
+    ["com.affine.settings.workspace.byok.keys.description"](): string;
+    /**
+      * `No provider keys`
+      */
+    ["com.affine.settings.workspace.byok.empty.title"](): string;
+    /**
+      * `Add a key to create the first route for this workspace. Provider rows are not shown until a key exists.`
+      */
+    ["com.affine.settings.workspace.byok.empty.description"](): string;
+    /**
+      * `Local`
+      */
+    ["com.affine.settings.workspace.byok.storage.local"](): string;
+    /**
+      * `Server`
+      */
+    ["com.affine.settings.workspace.byok.storage.server"](): string;
+    /**
+      * `Local (this device)`
+      */
+    ["com.affine.settings.workspace.byok.storage.local-this-device"](): string;
+    /**
+      * `Local (Desktop only)`
+      */
+    ["com.affine.settings.workspace.byok.storage.local-desktop-only"](): string;
+    /**
+      * `Disabled after failure`
+      */
+    ["com.affine.settings.workspace.byok.status.disabled-after-failure"](): string;
+    /**
+      * `Key verified`
+      */
+    ["com.affine.settings.workspace.byok.status.key-verified"](): string;
+    /**
+      * `Key test failed`
+      */
+    ["com.affine.settings.workspace.byok.status.key-test-failed"](): string;
+    /**
+      * `Text`
+      */
+    ["com.affine.settings.workspace.byok.capability.text"](): string;
+    /**
+      * `Image input`
+      */
+    ["com.affine.settings.workspace.byok.capability.image-input"](): string;
+    /**
+      * `Actions`
+      */
+    ["com.affine.settings.workspace.byok.capability.actions"](): string;
+    /**
+      * `Image generate`
+      */
+    ["com.affine.settings.workspace.byok.capability.image-generate"](): string;
+    /**
+      * `Transcript`
+      */
+    ["com.affine.settings.workspace.byok.capability.transcript"](): string;
+    /**
+      * `Indexing`
+      */
+    ["com.affine.settings.workspace.byok.capability.indexing"](): string;
+    /**
+      * `failed {{date}}`
+      */
+    ["com.affine.settings.workspace.byok.row.activity.failed"](options: {
+        readonly date: string;
+    }): string;
+    /**
+      * `used {{date}}`
+      */
+    ["com.affine.settings.workspace.byok.row.activity.used"](options: {
+        readonly date: string;
+    }): string;
+    /**
+      * `used today`
+      */
+    ["com.affine.settings.workspace.byok.row.activity.used-today"](): string;
+    /**
+      * `not used yet`
+      */
+    ["com.affine.settings.workspace.byok.row.activity.unused"](): string;
+    /**
+      * `Feature coverage`
+      */
+    ["com.affine.settings.workspace.byok.coverage.title"](): string;
+    /**
+      * `Writing and chat`
+      */
+    ["com.affine.settings.workspace.byok.feature.chat.title"](): string;
+    /**
+      * `Covered when an OpenAI, Anthropic, or Gemini BYOK key exists.`
+      */
+    ["com.affine.settings.workspace.byok.feature.chat.fallback"](): string;
+    /**
+      * `Actions and structured output`
+      */
+    ["com.affine.settings.workspace.byok.feature.action.title"](): string;
+    /**
+      * `Covered when an OpenAI or Gemini BYOK key exists.`
+      */
+    ["com.affine.settings.workspace.byok.feature.action.fallback"](): string;
+    /**
+      * `Image generation`
+      */
+    ["com.affine.settings.workspace.byok.feature.image.title"](): string;
+    /**
+      * `Covered when an OpenAI, Gemini, or FAL BYOK key exists.`
+      */
+    ["com.affine.settings.workspace.byok.feature.image.fallback"](): string;
+    /**
+      * `Transcript`
+      */
+    ["com.affine.settings.workspace.byok.feature.transcript.title"](): string;
+    /**
+      * `Covered when a server Gemini BYOK key exists.`
+      */
+    ["com.affine.settings.workspace.byok.feature.transcript.fallback"](): string;
+    /**
+      * `Workspace indexing`
+      */
+    ["com.affine.settings.workspace.byok.feature.workspace-indexing.title"](): string;
+    /**
+      * `Covered when a server Gemini BYOK key exists.`
+      */
+    ["com.affine.settings.workspace.byok.feature.workspace-indexing.fallback"](): string;
+    /**
+      * `Transcript and workspace indexing require a server Gemini BYOK key or AFFiNE AI plan fallback.`
+      */
+    ["com.affine.settings.workspace.byok.warning.transcript"](): string;
+    /**
+      * `Workspace indexing requires a server Gemini BYOK key or AFFiNE AI plan fallback.`
+      */
+    ["com.affine.settings.workspace.byok.warning.workspace-indexing"](): string;
+    /**
+      * `BYOK usage`
+      */
+    ["com.affine.settings.workspace.byok.usage.title"](): string;
+    /**
+      * `Last 30 days`
+      */
+    ["com.affine.settings.workspace.byok.usage.period"](): string;
+    /**
+      * `{{count}} tokens`
+      */
+    ["com.affine.settings.workspace.byok.usage.tokens"](options: {
+        readonly count: string;
+    }): string;
+    /**
+      * `Add provider key`
+      */
+    ["com.affine.settings.workspace.byok.modal.add-title"](): string;
+    /**
+      * `Edit provider key`
+      */
+    ["com.affine.settings.workspace.byok.modal.edit-title"](): string;
+    /**
+      * `Re-enter the API key and test it before saving changes.`
+      */
+    ["com.affine.settings.workspace.byok.modal.description"](): string;
+    /**
+      * `Provider`
+      */
+    ["com.affine.settings.workspace.byok.field.provider"](): string;
+    /**
+      * `Key name`
+      */
+    ["com.affine.settings.workspace.byok.field.key-name"](): string;
+    /**
+      * `Description`
+      */
+    ["com.affine.settings.workspace.byok.field.description"](): string;
+    /**
+      * `Key storage`
+      */
+    ["com.affine.settings.workspace.byok.field.storage"](): string;
+    /**
+      * `API key`
+      */
+    ["com.affine.settings.workspace.byok.field.api-key"](): string;
+    /**
+      * `Endpoint`
+      */
+    ["com.affine.settings.workspace.byok.field.endpoint"](): string;
+    /**
+      * `Primary`
+      */
+    ["com.affine.settings.workspace.byok.placeholder.key-name"](): string;
+    /**
+      * `Workspace fallback key`
+      */
+    ["com.affine.settings.workspace.byok.placeholder.description"](): string;
+    /**
+      * `Add key`
+      */
+    ["com.affine.settings.workspace.byok.action.add-key"](): string;
+    /**
+      * `Test key`
+      */
+    ["com.affine.settings.workspace.byok.action.test-key"](): string;
+    /**
+      * `Cancel`
+      */
+    ["com.affine.settings.workspace.byok.action.cancel"](): string;
+    /**
+      * `Save key`
+      */
+    ["com.affine.settings.workspace.byok.action.save-key"](): string;
+    /**
+      * `Clear all BYOK keys`
+      */
+    ["com.affine.settings.workspace.byok.action.clear-all"](): string;
+    /**
+      * `Reorder`
+      */
+    ["com.affine.settings.workspace.byok.action.reorder"](): string;
+    /**
+      * `Edit`
+      */
+    ["com.affine.settings.workspace.byok.action.edit"](): string;
+    /**
+      * `Delete`
+      */
+    ["com.affine.settings.workspace.byok.action.delete"](): string;
+    /**
+      * `Key test failed`
+      */
+    ["com.affine.settings.workspace.byok.notify.test-failed.title"](): string;
+    /**
+      * `Local key not saved`
+      */
+    ["com.affine.settings.workspace.byok.notify.local-save-failed.title"](): string;
+    /**
+      * `Secure device storage is unavailable.`
+      */
+    ["com.affine.settings.workspace.byok.notify.local-save-failed.message"](): string;
+    /**
+      * `BYOK settings not loaded`
+      */
+    ["com.affine.settings.workspace.byok.notify.load-failed.title"](): string;
+    /**
+      * `BYOK key not saved`
+      */
+    ["com.affine.settings.workspace.byok.notify.save-failed.title"](): string;
+    /**
+      * `BYOK key not deleted`
+      */
+    ["com.affine.settings.workspace.byok.notify.delete-failed.title"](): string;
+    /**
+      * `BYOK keys not reordered`
+      */
+    ["com.affine.settings.workspace.byok.notify.reorder-failed.title"](): string;
+    /**
+      * `BYOK keys not cleared`
+      */
+    ["com.affine.settings.workspace.byok.notify.clear-failed.title"](): string;
+    /**
+      * `Please try again.`
+      */
+    ["com.affine.settings.workspace.byok.notify.operation-failed.message"](): string;
+    /**
+      * `Cannot reorder across storage`
+      */
+    ["com.affine.settings.workspace.byok.notify.cross-storage-reorder.title"](): string;
+    /**
+      * `Local keys and server keys keep separate fallback order.`
+      */
+    ["com.affine.settings.workspace.byok.notify.cross-storage-reorder.message"](): string;
     /**
       * `Experimental features`
       */

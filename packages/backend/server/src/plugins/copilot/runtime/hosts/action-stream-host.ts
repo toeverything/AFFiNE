@@ -90,6 +90,8 @@ export class ActionStreamHost {
       prepared.session,
       params,
       userId,
+      parsedQuery.byokLeaseId,
+      prepared.quotaBackedRoutesAllowed,
       signal
     );
     const runStream = this.bridge.runStream({
@@ -130,6 +132,9 @@ export class ActionStreamHost {
               user: userId,
               workspace: prepared.session.config.workspaceId,
               session: sessionId,
+              byokLeaseId: parsedQuery.byokLeaseId,
+              quotaBackedRoutesAllowed: prepared.quotaBackedRoutesAllowed,
+              featureKind: 'action',
             },
           },
       prepareImageRoutes: imageRoutes
@@ -177,6 +182,8 @@ export class ActionStreamHost {
     session: ChatSession,
     params: Record<string, unknown>,
     userId: string,
+    byokLeaseId?: string,
+    quotaBackedRoutesAllowed?: boolean,
     signal?: AbortSignal
   ): Promise<ImageActionRoutePreparation | undefined> {
     if (!isImageAction(actionId)) {
@@ -201,6 +208,9 @@ export class ActionStreamHost {
         user: userId,
         workspace: session.config.workspaceId,
         session: session.config.sessionId,
+        byokLeaseId,
+        quotaBackedRoutesAllowed,
+        featureKind: 'image',
       },
     };
   }

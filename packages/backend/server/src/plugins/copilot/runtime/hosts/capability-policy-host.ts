@@ -18,6 +18,10 @@ export type ChatSelectionOptions = {
   reasoning?: boolean;
   webSearch?: boolean;
   toolsConfig?: ToolsConfig;
+  byokLeaseId?: string;
+  billingUnitId?: string;
+  featureKind?: 'chat' | 'action' | 'image';
+  quotaBackedRoutesAllowed?: boolean;
 };
 
 type ResolvePolicyModelInput = ResolveModelInput & {
@@ -97,6 +101,10 @@ export class CapabilityPolicyHost {
         user: session.config.userId,
         session: session.config.sessionId,
         workspace: session.config.workspaceId,
+        byokLeaseId: options.byokLeaseId,
+        billingUnitId: options.billingUnitId,
+        featureKind: options.featureKind ?? 'chat',
+        quotaBackedRoutesAllowed: options.quotaBackedRoutesAllowed,
         reasoning: options.reasoning,
         webSearch: options.webSearch,
         tools,

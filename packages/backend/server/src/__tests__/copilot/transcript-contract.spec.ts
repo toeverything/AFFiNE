@@ -215,7 +215,7 @@ test('settleTask checks copilot quota before unlocking ready task', async t => {
     status: 'settled',
     protectedResult: payload,
   });
-  const checkQuota = Sinon.stub().rejects(new Error('quota exceeded'));
+  const assertQuotaOrByok = Sinon.stub().rejects(new Error('quota exceeded'));
   const service = new CopilotTranscriptionService(
     {
       copilotTranscriptTask: {
@@ -232,14 +232,18 @@ test('settleTask checks copilot quota before unlocking ready task', async t => {
     {} as never,
     {} as never,
     {} as never,
-    { checkQuota } as never
+    { assertQuotaOrByok } as never
   );
 
   await t.throwsAsync(
     () => service.settleTask('user-1', 'workspace-1', 'task-1'),
     { message: /quota exceeded/ }
   );
-  Sinon.assert.calledOnceWithExactly(checkQuota, 'user-1');
+  Sinon.assert.calledOnceWithMatch(assertQuotaOrByok, {
+    userId: 'user-1',
+    workspaceId: 'workspace-1',
+    featureKind: 'transcript',
+  });
   Sinon.assert.notCalled(settle);
 });
 
@@ -341,6 +345,48 @@ test('retryTask reuses failed task and queues a new action attempt', async t => 
   Sinon.assert.calledOnceWithExactly(markRunning, 'task-1');
 });
 
+test('retryTask prechecks quota or BYOK before queueing provider work', async t => {
+  const add = Sinon.stub().resolves(undefined);
+  const markRunning = Sinon.stub().resolves({ id: 'task-1' });
+  const assertQuotaOrByok = Sinon.stub().rejects(new Error('quota exceeded'));
+  const payload = TranscriptPayloadSchema.parse({
+    normalizedTranscript: '00:00:05 A: Kickoff',
+  });
+  const service = new CopilotTranscriptionService(
+    {
+      copilotTranscriptTask: {
+        getWithUser: Sinon.stub().resolves({
+          id: 'task-1',
+          status: 'failed',
+          strategy: 'gemini',
+          protectedResult: payload,
+        }),
+        markRunning,
+      },
+    } as never,
+    { add } as never,
+    {} as never,
+    {
+      resolveTranscriptionModel: Sinon.stub().resolves('gemini-2.5-flash'),
+    } as never,
+    {} as never,
+    {} as never,
+    { assertQuotaOrByok } as never
+  );
+
+  await t.throwsAsync(
+    () => service.retryTask('user-1', 'workspace-1', 'task-1'),
+    { message: /quota exceeded/ }
+  );
+  Sinon.assert.calledOnceWithMatch(assertQuotaOrByok, {
+    userId: 'user-1',
+    workspaceId: 'workspace-1',
+    featureKind: 'transcript',
+  });
+  Sinon.assert.notCalled(add);
+  Sinon.assert.notCalled(markRunning);
+});
+
 for (const status of ['ready', 'settled']) {
   test(`submitTask allows a new task for the same blob after ${status} task`, async t => {
     const createdTasks: unknown[] = [];
@@ -389,6 +435,37 @@ for (const status of ['ready', 'settled']) {
     });
   });
 }
+
+test('submitTask prechecks quota or BYOK before persisting uploads', async t => {
+  const assertQuotaOrByok = Sinon.stub().rejects(new Error('quota exceeded'));
+  const resolveTranscriptionModel = Sinon.stub().resolves('gemini-2.5-flash');
+  const service = new CopilotTranscriptionService(
+    {
+      copilotTranscriptTask: {
+        getWithUser: Sinon.stub().resolves(null),
+      },
+    } as never,
+    {} as never,
+    {} as never,
+    {
+      resolveTranscriptionModel,
+    } as never,
+    {} as never,
+    {} as never,
+    { assertQuotaOrByok } as never
+  );
+
+  await t.throwsAsync(
+    () => service.submitTask('user-1', 'workspace-1', 'blob-1', []),
+    { message: /quota exceeded/ }
+  );
+  Sinon.assert.calledOnceWithMatch(assertQuotaOrByok, {
+    userId: 'user-1',
+    workspaceId: 'workspace-1',
+    featureKind: 'transcript',
+  });
+  Sinon.assert.notCalled(resolveTranscriptionModel);
+});
 
 test('submitTask rejects unavailable transcript strategy', async t => {
   const service = new CopilotTranscriptionService(

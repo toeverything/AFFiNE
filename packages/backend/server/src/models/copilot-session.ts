@@ -1005,20 +1005,26 @@ export class CopilotSessionModel extends BaseModel {
       .filter(({ promptAction }) => !promptAction)
       .map(({ messageCost }) => messageCost)
       .reduce((prev, cost) => prev + cost, 0);
-    const [actionRunCost, legacyActionSessionCost, transcriptSettlementCost] =
-      await Promise.all([
-        this.models.copilotActionRun.countSucceededByUser(userId),
-        this.models.copilotActionRun.countLegacyPromptActionSessionsWithoutRun(
-          userId
-        ),
-        this.models.copilotTranscriptTask.countSettledByUser(userId),
-      ]);
-    return (
+    const [
+      actionRunCost,
+      legacyActionSessionCost,
+      transcriptSettlementCost,
+      byokQuotaExemptCost,
+    ] = await Promise.all([
+      this.models.copilotActionRun.countSucceededByUser(userId),
+      this.models.copilotActionRun.countLegacyPromptActionSessionsWithoutRun(
+        userId
+      ),
+      this.models.copilotTranscriptTask.countSettledByUser(userId),
+      this.models.copilotUsage.countQuotaExemptByokUsage(userId),
+    ]);
+    const quotaBackedCost =
       regularMessageCost +
       actionRunCost +
       legacyActionSessionCost +
-      transcriptSettlementCost
-    );
+      transcriptSettlementCost -
+      byokQuotaExemptCost;
+    return Math.max(0, quotaBackedCost);
   }
 
   async cleanupEmptySessions(earlyThen: Date) {

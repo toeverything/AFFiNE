@@ -458,6 +458,7 @@ type LlmRerankResponse = {
 
 export type LlmToolLoopStreamEvent =
   | { type: 'message_start'; id?: string; model?: string }
+  | { type: 'provider_selected'; provider_id: string }
   | { type: 'text_delta'; text: string }
   | { type: 'reasoning_delta'; text: string }
   | {
@@ -537,7 +538,14 @@ function parseLlmEventJson(eventJson: string): LlmStreamEvent {
 function parseLlmToolLoopStreamEvent(
   eventJson: string
 ): LlmToolLoopStreamEvent {
-  return parseToolLoopStreamEvent(parseLlmEventJson(eventJson));
+  const event = parseLlmEventJson(eventJson);
+  if (
+    event.type === 'provider_selected' &&
+    typeof event.provider_id === 'string'
+  ) {
+    return event;
+  }
+  return parseToolLoopStreamEvent(event);
 }
 
 export function llmMatchModelCapabilities(

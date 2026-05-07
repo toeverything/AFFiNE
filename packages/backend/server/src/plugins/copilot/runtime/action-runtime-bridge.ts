@@ -269,19 +269,20 @@ export class ActionRuntimeBridge {
       attempt,
     });
 
+    const inputWithBillingUnit = this.withBillingUnit(input, run.id);
     let finalEvent: NativeActionEvent | undefined;
     const attachments: unknown[] = [];
     try {
       const nativeInput = await this.prepareNativeInput({
-        ...input,
+        ...inputWithBillingUnit,
       });
       for await (const event of this.runNativeStream(
         {
           ...nativeInput,
-          recipeId: input.actionId,
-          recipeVersion: input.actionVersion,
+          recipeId: inputWithBillingUnit.actionId,
+          recipeVersion: inputWithBillingUnit.actionVersion,
         },
-        input.signal
+        inputWithBillingUnit.signal
       )) {
         finalEvent = event;
         let projectedEvent = event;
@@ -342,5 +343,41 @@ export class ActionRuntimeBridge {
         assistantMessageId,
       });
     }
+  }
+
+  private withBillingUnit(
+    input: ActionRuntimeBridgeInput,
+    billingUnitId: string
+  ): ActionRuntimeBridgeInput {
+    return {
+      ...input,
+      prepareStructuredRoutes: input.prepareStructuredRoutes
+        ? {
+            ...input.prepareStructuredRoutes,
+            options: {
+              ...input.prepareStructuredRoutes.options,
+              actionId:
+                input.prepareStructuredRoutes.options?.actionId ??
+                input.actionId,
+              billingUnitId:
+                input.prepareStructuredRoutes.options?.billingUnitId ??
+                billingUnitId,
+            },
+          }
+        : undefined,
+      prepareImageRoutes: input.prepareImageRoutes
+        ? {
+            ...input.prepareImageRoutes,
+            options: {
+              ...input.prepareImageRoutes.options,
+              actionId:
+                input.prepareImageRoutes.options?.actionId ?? input.actionId,
+              billingUnitId:
+                input.prepareImageRoutes.options?.billingUnitId ??
+                billingUnitId,
+            },
+          }
+        : undefined,
+    };
   }
 }

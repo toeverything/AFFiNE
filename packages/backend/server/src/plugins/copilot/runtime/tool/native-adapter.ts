@@ -1,3 +1,5 @@
+import { Logger } from '@nestjs/common';
+
 import type { LlmRequest, LlmToolLoopStreamEvent } from '../../../../native';
 import type { NodeTextMiddleware } from '../../config';
 import type { PromptMessage, StreamObject } from '../../providers/types';
@@ -20,9 +22,14 @@ type AttachmentFootnote = {
   fileType: string;
 };
 
-type NativeProviderAdapterOptions = {
+export type NativeProviderAdapterOptions = {
   maxSteps?: number;
   nodeTextMiddleware?: NodeTextMiddleware[];
+  onUsage?: (input: {
+    providerId: string;
+    model?: string;
+    usage?: Extract<LlmToolLoopStreamEvent, { type: 'usage' }>['usage'];
+  }) => void | Promise<void>;
 };
 
 type NativeStreamDispatch = ConstructorParameters<
@@ -103,9 +110,11 @@ function formatAttachmentFootnotes(
 }
 
 export class NativeProviderAdapter {
+  readonly logger = new Logger(NativeProviderAdapter.name);
   readonly #runtime: NativeRuntimeAdapter;
   readonly #enableCallout: boolean;
   readonly #enableCitationFootnote: boolean;
+  readonly #onUsage?: NativeProviderAdapterOptions['onUsage'];
 
   constructor(
     dispatchWithTools: NativeStreamDispatch,
@@ -120,6 +129,36 @@ export class NativeProviderAdapter {
       enabledNodeTextMiddlewares.has('thinking_format');
     this.#enableCitationFootnote =
       enabledNodeTextMiddlewares.has('citation_footnote');
+    this.#onUsage = options.onUsage;
+  }
+
+  async #recordUsageOnProviderSelected(
+    event: { type: string; [key: string]: unknown },
+    state: {
+      model?: string;
+      usage?: Extract<LlmToolLoopStreamEvent, { type: 'usage' }>['usage'];
+    }
+  ) {
+    if (
+      event.type !== 'provider_selected' ||
+      typeof event.provider_id !== 'string'
+    ) {
+      return;
+    }
+    try {
+      await this.#onUsage?.({
+        providerId: event.provider_id,
+        model: state.model,
+        usage: state.usage,
+      });
+    } catch (error) {
+      this.logger.warn(
+        `Provider usage callback failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    }
+    state.usage = undefined;
   }
 
   async text(
@@ -144,6 +183,10 @@ export class NativeProviderAdapter {
       ? new CitationFootnoteFormatter()
       : null;
     let streamPartId = 0;
+    const usageState: {
+      model?: string;
+      usage?: Extract<LlmToolLoopStreamEvent, { type: 'usage' }>['usage'];
+    } = {};
 
     for await (const event of this.#runtime.streamEvents(
       request,
@@ -151,6 +194,22 @@ export class NativeProviderAdapter {
       messages
     )) {
       switch (event.type) {
+        case 'message_start': {
+          const startEvent = event as Extract<
+            LlmToolLoopStreamEvent,
+            { type: 'message_start' }
+          >;
+          usageState.model = startEvent.model;
+          break;
+        }
+        case 'usage': {
+          const usageEvent = event as Extract<
+            LlmToolLoopStreamEvent,
+            { type: 'usage' }
+          >;
+          usageState.usage = usageEvent.usage;
+          break;
+        }
         case 'text_delta': {
           const textEvent = event as unknown as { text: string };
           if (textParser) {
@@ -216,6 +275,11 @@ export class NativeProviderAdapter {
           break;
         }
         case 'done': {
+          const doneEvent = event as Extract<
+            LlmToolLoopStreamEvent,
+            { type: 'done' }
+          >;
+          usageState.usage = doneEvent.usage ?? usageState.usage;
           const footnotes = textParser?.end() ?? '';
           const citations = citationFormatter?.end() ?? '';
           const tails = [citations, footnotes].filter(Boolean).join('\n');
@@ -224,6 +288,9 @@ export class NativeProviderAdapter {
           }
           break;
         }
+        case 'provider_selected':
+          await this.#recordUsageOnProviderSelected(event, usageState);
+          break;
         case 'error':
           throw new Error(
             typeof event.message === 'string'
@@ -246,6 +313,10 @@ export class NativeProviderAdapter {
       : null;
     const fallbackAttachmentFootnotes = new Map<string, AttachmentFootnote>();
     let hasFootnoteReference = false;
+    const usageState: {
+      model?: string;
+      usage?: Extract<LlmToolLoopStreamEvent, { type: 'usage' }>['usage'];
+    } = {};
 
     for await (const event of this.#runtime.streamEvents(
       request,
@@ -253,6 +324,22 @@ export class NativeProviderAdapter {
       messages
     )) {
       switch (event.type) {
+        case 'message_start': {
+          const startEvent = event as Extract<
+            LlmToolLoopStreamEvent,
+            { type: 'message_start' }
+          >;
+          usageState.model = startEvent.model;
+          break;
+        }
+        case 'usage': {
+          const usageEvent = event as Extract<
+            LlmToolLoopStreamEvent,
+            { type: 'usage' }
+          >;
+          usageState.usage = usageEvent.usage;
+          break;
+        }
         case 'text_delta': {
           const textEvent = event as unknown as { text: string };
           if (textEvent.text.includes('[^')) {
@@ -302,6 +389,11 @@ export class NativeProviderAdapter {
           break;
         }
         case 'done': {
+          const doneEvent = event as Extract<
+            LlmToolLoopStreamEvent,
+            { type: 'done' }
+          >;
+          usageState.usage = doneEvent.usage ?? usageState.usage;
           const citations = citationFormatter?.end() ?? '';
           if (citations) {
             hasFootnoteReference = true;
@@ -318,6 +410,9 @@ export class NativeProviderAdapter {
           }
           break;
         }
+        case 'provider_selected':
+          await this.#recordUsageOnProviderSelected(event, usageState);
+          break;
         case 'error':
           throw new Error(
             typeof event.message === 'string'

@@ -771,7 +771,7 @@ function actionRunRecord(
   };
 }
 
-function installActionSessionMock(
+async function installActionSessionMock(
   t: ExecutionContext<Tester>,
   {
     actionId,
@@ -786,8 +786,12 @@ function installActionSessionMock(
   const { models, session } = t.context;
   const sandbox = Sinon.createSandbox();
   const sessionId = `copilot-provider-action-${actionId}-${randomUUID()}`;
-  const userId = `copilot-provider-user-${randomUUID()}`;
-  const workspaceId = `copilot-provider-action-${actionId}`;
+  const user = await models.user.create({
+    email: `copilot-provider-user-${randomUUID()}@affine.test`,
+  });
+  const userId = user.id;
+  const workspace = await models.workspace.create(userId);
+  const workspaceId = workspace.id;
   const docId = `copilot-provider-action-${actionId}-doc`;
   const savedTurns: Array<{ role: string }> = [];
   const userTurn = {
@@ -904,7 +908,11 @@ for (const { actionId, content, verifier } of actionRecipeCases) {
         }
 
         const { sandbox, sessionId, userId, savedTurns } =
-          installActionSessionMock(t, { actionId, actionPrompt, content });
+          await installActionSessionMock(t, {
+            actionId,
+            actionPrompt,
+            content,
+          });
 
         let result = '';
         try {
@@ -976,8 +984,10 @@ for (const testCase of TRANSCRIPT_AUDIO_CASES) {
     runIfCopilotConfigured,
     async t => {
       const { models, transcript } = t.context;
-      const userId = `copilot-provider-transcript-user-${randomUUID()}`;
-      const workspaceId = `copilot-provider-transcript-workspace-${randomUUID()}`;
+      const user = await models.user.create({
+        email: `copilot-provider-transcript-${randomUUID()}@affine.pro`,
+      });
+      const workspace = await models.workspace.create(user.id);
       const blobId = `copilot-provider-transcript-blob-${randomUUID()}`;
       const payload = TranscriptPayloadSchema.parse({
         sourceAudio: { blobId, mimeType: testCase.mimeType },
@@ -990,8 +1000,8 @@ for (const testCase of TRANSCRIPT_AUDIO_CASES) {
         ],
       });
       const task = await models.copilotTranscriptTask.create({
-        userId,
-        workspaceId,
+        userId: user.id,
+        workspaceId: workspace.id,
         blobId,
         strategy: 'gemini',
         recipeId: 'transcript.audio.gemini',

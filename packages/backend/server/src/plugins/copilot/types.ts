@@ -37,6 +37,7 @@ export const ChatQuerySchema = z
   .object({
     messageId: zMaybeString,
     modelId: zMaybeString,
+    byokLeaseId: zMaybeString,
     retry: zBool,
     reasoning: zBool,
     webSearch: zBool,
@@ -47,6 +48,7 @@ export const ChatQuerySchema = z
     ({
       messageId,
       modelId,
+      byokLeaseId,
       retry,
       reasoning,
       webSearch,
@@ -55,6 +57,7 @@ export const ChatQuerySchema = z
     }) => ({
       messageId,
       modelId,
+      byokLeaseId,
       retry,
       reasoning,
       webSearch,

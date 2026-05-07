@@ -5,7 +5,7 @@ import type { NotificationService } from '@blocksuite/affine/shared/services';
 import { unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import { ShadowlessElement } from '@blocksuite/affine/std';
 import {
-  ArrowDownSmallIcon,
+  HistoryIcon,
   PinedIcon,
   PinIcon,
   PlusIcon,
@@ -120,8 +120,9 @@ export class AIChatToolbar extends WithDisposable(ShadowlessElement) {
         <div
           class="chat-toolbar-icon history-button"
           @click=${this.toggleHistoryMenu}
+          data-testid="ai-panel-chat-history"
         >
-          ${ArrowDownSmallIcon()}
+          ${HistoryIcon()}
           <affine-tooltip>Chat History</affine-tooltip>
         </div>
       </div>

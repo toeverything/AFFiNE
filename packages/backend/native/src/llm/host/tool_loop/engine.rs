@@ -14,7 +14,10 @@ use napi::{
   threadsafe_function::{ThreadsafeFunction, ThreadsafeFunctionCallMode},
 };
 
-use super::callback::{NapiEventSink, NapiToolExecutor, emit_tool_loop_event};
+use super::{
+  super::emit_provider_selected_event,
+  callback::{NapiEventSink, NapiToolExecutor, emit_tool_loop_event},
+};
 use crate::llm::{
   LlmDispatchPayload, LlmMiddlewarePayload, LlmStreamHandle, STREAM_ABORTED_REASON,
   STREAM_CALLBACK_DISPATCH_FAILED_REASON, STREAM_END_MARKER, StreamPipeline, apply_request_middlewares,
@@ -39,11 +42,13 @@ fn dispatch_prepared_round_with_fallback(
     })
     .collect::<std::result::Result<Vec<_>, BackendError>>()?;
 
-  run_prepared_stream_round_with_fallback(
+  let mut selected_provider_id: Option<String> = None;
+  let outcome = run_prepared_stream_round_with_fallback(
     &mut pipelines,
     |on_event| {
-      let (selected_index, _) =
+      let (selected_index, provider_id) =
         dispatch_prepared_stream_with_fallback_index(&DefaultHttpClient::default(), &adapter_routes, on_event)?;
+      selected_provider_id = Some(provider_id);
       Ok(selected_index)
     },
     || aborted.load(Ordering::Relaxed),
@@ -53,7 +58,11 @@ fn dispatch_prepared_round_with_fallback(
       emitted.store(true, Ordering::Relaxed);
       emit_tool_loop_event(callback, loop_event)
     },
-  )
+  )?;
+  if let Some(provider_id) = selected_provider_id {
+    emit_provider_selected_event(callback, provider_id);
+  }
+  Ok(outcome)
 }
 
 fn prepare_tool_loop_route(

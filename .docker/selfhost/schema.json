@@ -995,6 +995,26 @@
           "description": "Whether to enable the copilot plugin. <br> Document: <a href=\"https://docs.affine.pro/self-host-affine/administer/ai\" target=\"_blank\">https://docs.affine.pro/self-host-affine/administer/ai</a>\n@default false",
           "default": false
         },
+        "byok.enabled": {
+          "type": "boolean",
+          "description": "Whether to enable workspace BYOK.\n@default true",
+          "default": true
+        },
+        "byok.allowedProviders": {
+          "type": "array",
+          "description": "The allowlist for workspace BYOK providers.\n@default [\"openai\",\"anthropic\",\"gemini\",\"fal\"]",
+          "default": [
+            "openai",
+            "anthropic",
+            "gemini",
+            "fal"
+          ]
+        },
+        "byok.allowCustomEndpoint": {
+          "type": "boolean",
+          "description": "Whether workspace BYOK custom endpoints are accepted.\n@default false",
+          "default": false
+        },
         "providers.profiles": {
           "type": "array",
           "description": "The profile list for copilot providers.\n@default []",
@@ -1071,13 +1091,6 @@
           },
           "default": {}
         },
-        "providers.perplexity": {
-          "type": "object",
-          "description": "The config for the perplexity provider.\n@default {\"apiKey\":\"\"}",
-          "default": {
-            "apiKey": ""
-          }
-        },
         "providers.anthropic": {
           "type": "object",
           "description": "The config for the anthropic provider.\n@default {\"apiKey\":\"\",\"baseURL\":\"https://api.anthropic.com/v1\"}",
@@ -1119,11 +1132,6 @@
               }
             }
           },
-          "default": {}
-        },
-        "providers.morph": {
-          "type": "object",
-          "description": "The config for the morph provider.\n@default {}",
           "default": {}
         },
         "unsplash": {

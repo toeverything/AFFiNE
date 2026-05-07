@@ -11,7 +11,12 @@ import {
 import { type CopilotRerankRequest } from '../providers/types';
 import { CapabilityRuntime } from '../runtime/capability-runtime';
 import { TaskPolicy } from '../runtime/task-policy';
-import { EmbeddingClient, type ReRankResult } from './types';
+import {
+  type EmbeddingCallOptionsInput,
+  EmbeddingClient,
+  normalizeEmbeddingCallOptions,
+  type ReRankResult,
+} from './types';
 
 class ProductionEmbeddingClient extends EmbeddingClient {
   private readonly logger = new Logger(ProductionEmbeddingClient.name);
@@ -35,10 +40,19 @@ class ProductionEmbeddingClient extends EmbeddingClient {
     return result;
   }
 
-  async getEmbeddings(input: string[]): Promise<Embedding[]> {
+  async getEmbeddings(
+    input: string[],
+    options?: EmbeddingCallOptionsInput
+  ): Promise<Embedding[]> {
+    const normalizedOptions = normalizeEmbeddingCallOptions(options);
     const modelId = this.taskPolicy.resolveEmbeddingModelId();
     const embeddings = await this.runtime.embed(modelId, input, {
       dimensions: EMBEDDING_DIMENSIONS,
+      signal: normalizedOptions.signal,
+      user: normalizedOptions.userId,
+      workspace: normalizedOptions.workspaceId,
+      byokLeaseId: normalizedOptions.byokLeaseId,
+      featureKind: normalizedOptions.featureKind ?? 'embedding',
     });
     if (embeddings.length !== input.length) {
       throw new CopilotFailedToGenerateEmbedding({
@@ -67,8 +81,9 @@ class ProductionEmbeddingClient extends EmbeddingClient {
   >(
     query: string,
     embeddings: Chunk[],
-    signal?: AbortSignal
+    options?: EmbeddingCallOptionsInput
   ): Promise<ReRankResult> {
+    const normalizedOptions = normalizeEmbeddingCallOptions(options);
     if (!embeddings.length) return [];
 
     const rerankRequest: CopilotRerankRequest = {
@@ -82,7 +97,13 @@ class ProductionEmbeddingClient extends EmbeddingClient {
     const ranks = await this.runtime.rerank(
       this.taskPolicy.resolveRerankModelId(),
       rerankRequest,
-      { signal }
+      {
+        signal: normalizedOptions.signal,
+        user: normalizedOptions.userId,
+        workspace: normalizedOptions.workspaceId,
+        byokLeaseId: normalizedOptions.byokLeaseId,
+        featureKind: 'rerank',
+      }
     );
 
     try {
@@ -105,8 +126,9 @@ class ProductionEmbeddingClient extends EmbeddingClient {
     query: string,
     embeddings: Chunk[],
     topK: number,
-    signal?: AbortSignal
+    options?: EmbeddingCallOptionsInput
   ): Promise<Chunk[]> {
+    const normalizedOptions = normalizeEmbeddingCallOptions(options);
     // search in context and workspace may find same chunks, de-duplicate them
     const { deduped: dedupedEmbeddings } = embeddings.reduce(
       (acc, e) => {
@@ -138,14 +160,19 @@ class ProductionEmbeddingClient extends EmbeddingClient {
       const ranks = await this.getEmbeddingRelevance(
         query,
         sortedEmbeddings,
-        signal
+        normalizedOptions
       );
       if (sortedEmbeddings.length !== ranks.length) {
         // llm return wrong result, fallback to default sorting
         this.logger.warn(
           `Batch size mismatch: expected ${sortedEmbeddings.length}, got ${ranks.length}`
         );
-        return await super.reRank(query, dedupedEmbeddings, topK, signal);
+        return await super.reRank(
+          query,
+          dedupedEmbeddings,
+          topK,
+          normalizedOptions
+        );
       }
 
       const highConfidenceChunks = ranks
@@ -164,7 +191,12 @@ class ProductionEmbeddingClient extends EmbeddingClient {
       return highConfidenceChunks.slice(0, topK);
     } catch (error) {
       this.logger.warn('ReRank failed, falling back to default sorting', error);
-      return await super.reRank(query, dedupedEmbeddings, topK, signal);
+      return await super.reRank(
+        query,
+        dedupedEmbeddings,
+        topK,
+        normalizedOptions
+      );
     }
   }
 }
@@ -180,7 +212,8 @@ export class CopilotEmbeddingClientService {
 
   async refresh() {
     const client = new ProductionEmbeddingClient(this.taskPolicy, this.runtime);
-    this.client = (await client.configured()) ? client : undefined;
+    await client.configured();
+    this.client = client;
     return this.client;
   }
 

@@ -462,12 +462,23 @@ async function importMarkdownToDoc({
  * @param options.imported The zip file as a Blob
  * @returns A Promise that resolves to an array of IDs of the newly created docs
  */
+type FolderHierarchy = {
+  name: string;
+  path: string;
+  children: Map<string, FolderHierarchy>;
+  pageId?: string;
+  parentPath?: string;
+};
+
 async function importMarkdownZip({
   collection,
   schema,
   imported,
   extensions,
-}: ImportMarkdownZipOptions) {
+}: ImportMarkdownZipOptions): Promise<{
+  docIds: string[];
+  folderHierarchy?: FolderHierarchy;
+}> {
   const provider = getProvider(extensions);
   const unzip = new Unzip();
   await unzip.load(imported);
@@ -476,6 +487,7 @@ async function importMarkdownZip({
   const pendingAssets: AssetMap = new Map();
   const pendingPathBlobIdMap: PathBlobIdMap = new Map();
   const markdownBlobs: ImportedFileEntry[] = [];
+  const docPathMap: Array<{ fullPath: string; docId: string }> = [];
 
   // Iterate over all files in the zip
   for (const { path, content: blob } of unzip) {
@@ -527,10 +539,94 @@ async function importMarkdownZip({
       if (doc) {
         applyMetaPatch(collection, doc.id, meta);
         docIds.push(doc.id);
+        docPathMap.push({ fullPath, docId: doc.id });
       }
     })
   );
-  return docIds;
+
+  // Build folder hierarchy from zip paths
+  const folderHierarchy = buildMarkdownZipFolderHierarchy(docPathMap);
+
+  return { docIds, folderHierarchy };
+}
+
+/**
+ * Builds a tree of {@link FolderHierarchy} nodes from the zip paths of
+ * imported markdown files. Returns `undefined` when every entry sits at
+ * the same level (no real subfolder structure). A common root directory
+ * shared by all entries is stripped automatically so that the resulting
+ * hierarchy starts one level deeper.
+ */
+function buildMarkdownZipFolderHierarchy(
+  entries: Array<{ fullPath: string; docId: string }>
+): FolderHierarchy | undefined {
+  if (entries.length === 0) return undefined;
+
+  // Check if any entries have folder structure
+  const hasSubfolders = entries.some(e => {
+    const parts = e.fullPath.split('/').filter(Boolean);
+    // More than just "root/file.md" -- need at least one real subfolder
+    return parts.length > 2;
+  });
+  if (!hasSubfolders) {
+    // All files are at the same level, no folder hierarchy needed
+    return undefined;
+  }
+
+  const root: FolderHierarchy = {
+    name: '',
+    path: '',
+    children: new Map(),
+  };
+
+  // Check once whether all entries share a common root directory
+  const candidateRoot = entries[0]?.fullPath.split('/').find(Boolean);
+  const skipRoot =
+    !!candidateRoot &&
+    entries.every(e => e.fullPath.startsWith(candidateRoot + '/'));
+
+  for (const { fullPath, docId } of entries) {
+    const parts = fullPath.split('/').filter(Boolean);
+    const fileName = parts.pop(); // Remove filename
+    if (!fileName) continue;
+
+    let folderParts = skipRoot ? parts.slice(1) : parts;
+
+    if (folderParts.length === 0) {
+      // Root-level file, no folder needed
+      continue;
+    }
+
+    let current = root;
+    let currentPath = '';
+
+    for (const folderName of folderParts) {
+      const parentPath = currentPath;
+      currentPath = currentPath ? `${currentPath}/${folderName}` : folderName;
+
+      if (!current.children.has(folderName)) {
+        current.children.set(folderName, {
+          name: folderName,
+          path: currentPath,
+          parentPath: parentPath || undefined,
+          children: new Map(),
+        });
+      }
+      current = current.children.get(folderName)!;
+    }
+
+    // Add the doc as a leaf
+    const docNodeKey = `__doc__${docId}`;
+    current.children.set(docNodeKey, {
+      name: docNodeKey,
+      path: `${current.path}/${docNodeKey}`,
+      parentPath: current.path,
+      children: new Map(),
+      pageId: docId,
+    });
+  }
+
+  return root.children.size > 0 ? root : undefined;
 }
 
 export const MarkdownTransformer = {

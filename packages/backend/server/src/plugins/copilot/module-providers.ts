@@ -1,3 +1,9 @@
+import { CopilotAccessPolicy } from './access';
+import {
+  ByokEntitlementPolicy,
+  ByokService,
+  WorkspaceByokResolver,
+} from './byok';
 import { HistoryAttachmentUrlProjector } from './compat/history-attachment-url-projector';
 import { CompatHistoryProjector } from './compat/history-projector';
 import { HistoryPromptPreloadProjector } from './compat/history-prompt-preload-projector';
@@ -64,10 +70,13 @@ export const COPILOT_PROVIDER_PROVIDERS = [
 ];
 
 export const COPILOT_RUNTIME_PROVIDERS = [
+  ByokEntitlementPolicy,
+  ByokService,
   ChatSessionService,
   ConversationStore,
   ConversationInboxService,
   ConversationPolicy,
+  CopilotAccessPolicy,
   HistoryAttachmentUrlProjector,
   CompatHistoryProjector,
   HistoryPromptPreloadProjector,
@@ -114,6 +123,7 @@ export const COPILOT_RESOLVER_PROVIDERS = [
   CopilotResolver,
   UserCopilotResolver,
   CopilotContextRootResolver,
+  WorkspaceByokResolver,
 ];
 
 export const COPILOT_JOB_PROVIDERS = [CopilotEmbeddingJob, CopilotCronJobs];

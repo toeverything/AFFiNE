@@ -7,6 +7,7 @@ import {
 import type { ChatStatus } from '@affine/core/blocksuite/ai/components/ai-chat-messages';
 import type { AIChatToolbar } from '@affine/core/blocksuite/ai/components/ai-chat-toolbar';
 import {
+  AIChatTabs,
   configureAIChatToolbar,
   getOrCreateAIChatToolbar,
 } from '@affine/core/blocksuite/ai/components/ai-chat-toolbar';
@@ -49,7 +50,10 @@ import { useFramework, useService } from '@toeverything/infra';
 import { nanoid } from 'nanoid';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { createSessionDeleteHandler } from '../chat-panel-utils';
+import {
+  createSessionDeleteHandler,
+  useAIChatOpenTabs,
+} from '../chat-panel-utils';
 import * as styles from './index.css';
 
 type CopilotSession = Awaited<ReturnType<CopilotClient['getSession']>>;
@@ -93,6 +97,7 @@ export const Component = () => {
   const [isHeaderProvided, setIsHeaderProvided] = useState(false);
   const [chatContent, setChatContent] = useState<AIChatContent | null>(null);
   const [chatTool, setChatTool] = useState<AIChatToolbar | null>(null);
+  const [chatTabs, setChatTabs] = useState<AIChatTabs | null>(null);
   const [currentSession, setCurrentSession] = useState<CopilotSession | null>(
     null
   );
@@ -102,11 +107,18 @@ export const Component = () => {
   const hasRestoredPinnedSessionRef = useRef(false);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const chatToolContainerRef = useRef<HTMLDivElement>(null);
+  const chatTabsContainerRef = useRef<HTMLDivElement | null>(null);
   const widthSignalRef = useRef<Signal<number>>(signal(0));
   const client = useCopilotClient();
   const workbench = useService(WorkbenchService).workbench;
 
   const workspaceId = useService(WorkspaceService).workspace.id;
+
+  const loadSession = useCallback(
+    (sessionId: string) => client.getSession(workspaceId, sessionId),
+    [client, workspaceId]
+  );
+  const { openTabs, setOpenTabs } = useAIChatOpenTabs(loadSession);
 
   useEffect(() => {
     hasRestoredPinnedSessionRef.current = false;
@@ -192,6 +204,11 @@ export const Component = () => {
       setIsOpeningSession(true);
       try {
         const session = await client.getSession(workspaceId, sessionId);
+        if (!session) {
+          // Drop stale tab if session no longer exists.
+          setOpenTabs(prev => prev.filter(tab => tab.sessionId !== sessionId));
+          return;
+        }
         setCurrentSession(session);
         reMountChatContent();
         chatTool?.closeHistoryMenu();
@@ -207,8 +224,29 @@ export const Component = () => {
       currentSession?.sessionId,
       isOpeningSession,
       reMountChatContent,
+      setOpenTabs,
       workspaceId,
     ]
+  );
+
+  const closeTab = useCallback(
+    (sessionId: string) => {
+      let fallback: NonNullable<CopilotSession> | undefined;
+      setOpenTabs(prev => {
+        const idx = prev.findIndex(tab => tab.sessionId === sessionId);
+        if (idx === -1) return prev;
+        const next = prev.filter(tab => tab.sessionId !== sessionId);
+        fallback = next[idx] ?? next[idx - 1] ?? next[0];
+        return next;
+      });
+      if (currentSession?.sessionId !== sessionId) return;
+      if (fallback) {
+        onOpenSession(fallback.sessionId).catch(console.error);
+      } else {
+        createFreshSession().catch(console.error);
+      }
+    },
+    [createFreshSession, currentSession?.sessionId, onOpenSession, setOpenTabs]
   );
 
   const onContextChange = useCallback((context: Partial<ChatContextValue>) => {
@@ -399,6 +437,40 @@ export const Component = () => {
     return () => sub.unsubscribe();
   }, [framework, mockStd]);
 
+  useEffect(() => {
+    if (!currentSession?.sessionId) return;
+    setOpenTabs(prev => {
+      const existing = prev.findIndex(
+        tab => tab.sessionId === currentSession.sessionId
+      );
+      if (existing !== -1) {
+        if (prev[existing] === currentSession) return prev;
+        const next = prev.slice();
+        next[existing] = currentSession;
+        return next;
+      }
+      return [...prev, currentSession];
+    });
+  }, [currentSession, setOpenTabs]);
+
+  useEffect(() => {
+    if (!chatTabsContainerRef.current) return;
+    let tabs = chatTabs;
+    if (!tabs) {
+      tabs = new AIChatTabs();
+      chatTabsContainerRef.current.append(tabs);
+      setChatTabs(tabs);
+    }
+    tabs.sessions = openTabs;
+    tabs.activeSessionId = currentSession?.sessionId;
+    tabs.onSelectTab = (sessionId: string) => {
+      onOpenSession(sessionId).catch(console.error);
+    };
+    tabs.onCloseTab = (sessionId: string) => {
+      closeTab(sessionId);
+    };
+  }, [chatTabs, closeTab, currentSession?.sessionId, onOpenSession, openTabs]);
+
   // restore pinned session
   useEffect(() => {
     if (hasRestoredPinnedSessionRef.current || currentSession) return;
@@ -462,6 +534,10 @@ export const Component = () => {
     }
   }, []);
 
+  const onChatTabsContainerRef = useCallback((node: HTMLDivElement | null) => {
+    chatTabsContainerRef.current = node;
+  }, []);
+
   // observe chat container width and provide to ai-chat-content
   useEffect(() => {
     if (!isBodyProvided || !chatContainerRef.current) return;
@@ -476,7 +552,10 @@ export const Component = () => {
       <ViewIcon icon="ai" />
       <ViewHeader>
         <div className={styles.chatHeader}>
-          <div />
+          <div
+            className={styles.chatTabsContainer}
+            ref={onChatTabsContainerRef}
+          />
           <div ref={onChatToolContainerRef} />
         </div>
       </ViewHeader>

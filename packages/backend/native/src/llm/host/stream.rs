@@ -106,12 +106,16 @@ fn spawn_prepared_stream(
         if reason.starts_with(STREAM_CALLBACK_DISPATCH_FAILED_REASON)
     );
 
-    if let Err(error) = result
+    if let Err(error) = &result
       && !aborted_in_worker.load(Ordering::Relaxed)
       && !callback_dispatch_failed
-      && !is_abort_error(&error)
+      && !is_abort_error(error)
     {
       emit_error_event(&callback, error.to_string(), "dispatch_error");
+    }
+
+    if let Ok(provider_id) = result {
+      emit_provider_selected_event(&callback, provider_id);
     }
 
     if !callback_dispatch_failed {
@@ -129,7 +133,7 @@ fn dispatch_prepared_stream_with_fallback(
   routes: &[PreparedDispatchRoute],
   callback: &ThreadsafeFunction<String, ()>,
   aborted: &AtomicBool,
-) -> std::result::Result<(), BackendError> {
+) -> std::result::Result<String, BackendError> {
   dispatch_prepared_stream_with_fallback_using_client(&DefaultHttpClient::default(), routes, aborted, |event| {
     emit_stream_event(callback, event)
   })
@@ -140,7 +144,7 @@ fn dispatch_prepared_stream_with_fallback_using_client<F>(
   routes: &[PreparedDispatchRoute],
   aborted: &AtomicBool,
   mut emit_event: F,
-) -> std::result::Result<(), BackendError>
+) -> std::result::Result<String, BackendError>
 where
   F: FnMut(&StreamEvent) -> Status,
 {
@@ -154,7 +158,7 @@ where
     .collect::<std::result::Result<Vec<_>, BackendError>>()?;
   let mut callback_dispatch_failed = false;
 
-  dispatch_prepared_stream_with_pipeline(
+  let provider_id = dispatch_prepared_stream_with_pipeline(
     client,
     &mut adapter_routes,
     || aborted.load(Ordering::Relaxed),
@@ -174,7 +178,7 @@ where
       "{STREAM_CALLBACK_DISPATCH_FAILED_REASON}:unknown"
     )))
   } else {
-    Ok(())
+    Ok(provider_id)
   }
 }
 
@@ -193,6 +197,16 @@ pub(crate) fn emit_error_event(callback: &ThreadsafeFunction<String, ()>, messag
   });
 
   let _ = callback.call(Ok(error_event), ThreadsafeFunctionCallMode::NonBlocking);
+}
+
+pub(crate) fn emit_provider_selected_event(callback: &ThreadsafeFunction<String, ()>, provider_id: String) {
+  let event = serde_json::json!({
+    "type": "provider_selected",
+    "provider_id": provider_id,
+  })
+  .to_string();
+
+  let _ = callback.call(Ok(event), ThreadsafeFunctionCallMode::NonBlocking);
 }
 
 fn emit_stream_event(callback: &ThreadsafeFunction<String, ()>, event: &StreamEvent) -> Status {

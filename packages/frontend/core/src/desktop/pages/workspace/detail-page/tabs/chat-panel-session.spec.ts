@@ -1,10 +1,12 @@
 /* eslint-disable rxjs/finnish */
-import type { CopilotChatHistoryFragment } from '@affine/graphql';
+import { type CopilotChatHistoryFragment } from '@affine/graphql';
 import { describe, expect, test, vi } from 'vitest';
 
 import {
+  getChatContentKey,
   resolveInitialSession,
   type SessionService,
+  shouldResetChatPanelOnUserInfoChange,
   type WorkbenchLike,
 } from './chat-panel-session';
 
@@ -19,6 +21,129 @@ const createWorkbench = (search: string) => {
 };
 
 const doc = { id: 'doc-1', workspace: { id: 'ws-1' } };
+
+describe('getChatContentKey', () => {
+  const cases = [
+    {
+      name: 'uses doc id before a session is created',
+      input: {
+        docId: 'doc-1',
+        hasPinned: false,
+        session: null,
+      },
+      expected: 'doc-1',
+    },
+    {
+      name: 'keeps a new empty doc session on the doc key',
+      input: {
+        docId: 'doc-2',
+        hasPinned: false,
+        previousSessionDocId: 'doc-1',
+        previousSessionId: 'session-1',
+        session: {
+          sessionId: 'session-2',
+          docId: 'doc-2',
+          messages: [],
+        },
+      },
+      expected: 'doc-2',
+    },
+    {
+      name: 'uses session id for a session with history',
+      input: {
+        docId: 'doc-1',
+        hasPinned: false,
+        session: {
+          sessionId: 'session-1',
+          docId: 'doc-1',
+          messages: [{ id: 'message-1' }],
+        },
+      },
+      expected: 'session-1',
+    },
+    {
+      name: 'uses session id for a pinned session',
+      input: {
+        docId: 'doc-1',
+        hasPinned: true,
+        session: {
+          sessionId: 'session-1',
+          docId: 'doc-1',
+          messages: [],
+        },
+      },
+      expected: 'session-1',
+    },
+    {
+      name: 'uses session id for same-doc session switch',
+      input: {
+        docId: 'doc-1',
+        hasPinned: false,
+        previousSessionDocId: 'doc-1',
+        previousSessionId: 'session-1',
+        session: {
+          sessionId: 'session-2',
+          docId: 'doc-1',
+          messages: [],
+        },
+      },
+      expected: 'session-2',
+    },
+  ] satisfies {
+    name: string;
+    input: Parameters<typeof getChatContentKey>[0];
+    expected: string;
+  }[];
+
+  test.each(cases)('$name', ({ input, expected }) => {
+    expect(getChatContentKey(input)).toBe(expected);
+  });
+});
+
+describe('shouldResetChatPanelOnUserInfoChange', () => {
+  const cases = [
+    {
+      name: 'ignores the initial user info emission',
+      input: {
+        previousUserId: undefined,
+        nextUserId: 'user-1',
+      },
+      expected: false,
+    },
+    {
+      name: 'ignores same-user refreshes',
+      input: {
+        previousUserId: 'user-1',
+        nextUserId: 'user-1',
+      },
+      expected: false,
+    },
+    {
+      name: 'resets when the effective user changes',
+      input: {
+        previousUserId: 'user-1',
+        nextUserId: 'user-2',
+      },
+      expected: true,
+    },
+    {
+      name: 'resets when the effective user signs out',
+      input: {
+        previousUserId: 'user-1',
+        nextUserId: null,
+      },
+      expected: true,
+    },
+  ] satisfies {
+    name: string;
+    input: Parameters<typeof shouldResetChatPanelOnUserInfoChange>[0];
+    expected: boolean;
+  }[];
+
+  test.each(cases)('$name', ({ input, expected }) => {
+    expect(shouldResetChatPanelOnUserInfoChange(input)).toBe(expected);
+  });
+});
 
 test('returns undefined without session service or doc', async () => {
   await expect(

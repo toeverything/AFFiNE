@@ -364,7 +364,7 @@ export interface ModelConditionsContract {
 }
 
 export interface ModelRegistryMatchRequest {
-  backendKind: 'openai_chat' | 'openai_responses' | 'anthropic' | 'cloudflare_workers_ai' | 'gemini_api' | 'gemini_vertex' | 'fal' | 'perplexity' | 'anthropic_vertex' | 'morph'
+  backendKind: 'openai_chat' | 'openai_responses' | 'anthropic' | 'cloudflare_workers_ai' | 'gemini_api' | 'gemini_vertex' | 'fal' | 'anthropic_vertex'
   cond: ModelConditionsContract
 }
 
@@ -373,7 +373,7 @@ export interface ModelRegistryMatchResponse {
 }
 
 export interface ModelRegistryResolveRequest {
-  backendKind?: 'openai_chat' | 'openai_responses' | 'anthropic' | 'cloudflare_workers_ai' | 'gemini_api' | 'gemini_vertex' | 'fal' | 'perplexity' | 'anthropic_vertex' | 'morph'
+  backendKind?: 'openai_chat' | 'openai_responses' | 'anthropic' | 'cloudflare_workers_ai' | 'gemini_api' | 'gemini_vertex' | 'fal' | 'anthropic_vertex'
   modelId: string
 }
 
@@ -388,7 +388,7 @@ export interface ModelRegistryRouteContract {
 }
 
 export interface ModelRegistryVariantContract {
-  backendKind: 'openai_chat' | 'openai_responses' | 'anthropic' | 'cloudflare_workers_ai' | 'gemini_api' | 'gemini_vertex' | 'fal' | 'perplexity' | 'anthropic_vertex' | 'morph'
+  backendKind: 'openai_chat' | 'openai_responses' | 'anthropic' | 'cloudflare_workers_ai' | 'gemini_api' | 'gemini_vertex' | 'fal' | 'anthropic_vertex'
   canonicalKey: string
   rawModelId: string
   displayName?: string
