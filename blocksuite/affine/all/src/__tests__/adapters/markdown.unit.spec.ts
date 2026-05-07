@@ -4255,8 +4255,13 @@ bbb
   describe('inline latex', () => {
     test.each([
       ['dollar sign syntax', 'inline $E=mc^2$ latex\n'],
+      ['dollar sign syntax starting with digit', 'inline $1f + 2f$ latex\n'],
       ['backslash syntax', 'inline \\(E=mc^2\\) latex\n'],
-    ])('should convert %s correctly', async (_, markdown) => {
+    ])('should convert %s correctly', async (name, markdown) => {
+      const latex =
+        name === 'dollar sign syntax starting with digit'
+          ? '1f + 2f'
+          : 'E=mc^2';
       const blockSnapshot: BlockSnapshot = {
         type: 'block',
         id: 'matchesReplaceMap[0]',
@@ -4284,7 +4289,7 @@ bbb
                   {
                     insert: ' ',
                     attributes: {
-                      latex: 'E=mc^2',
+                      latex,
                     },
                   },
                   {
@@ -4303,6 +4308,52 @@ bbb
         file: markdown,
       });
       expect(nanoidReplacement(rawBlockSnapshot)).toEqual(blockSnapshot);
+    });
+
+    test('should convert inline latex mixed with CJK text and bold text', async () => {
+      const markdown =
+        '如果你提到的 $1f + 2f$ 信号是一个**理想的、无限长**的正弦波组合：\n\n' +
+        '此时的功率谱密度确实不是连续曲线，而是两个**狄拉克脉冲（$\\delta$ 函数）**。\n\n' +
+        '* **频谱图**：在 $f$ 和 $2f$ 处有两个离散的柱子（幅度谱）。\n';
+
+      const mdAdapter = new MarkdownAdapter(createJob(), provider);
+      const rawBlockSnapshot = await mdAdapter.toBlockSnapshot({
+        file: markdown,
+      });
+      const children = rawBlockSnapshot?.children ?? [];
+
+      expect(children[0]?.flavour).toBe('affine:paragraph');
+      expect(children[0]?.props.text.delta).toContainEqual({
+        insert: ' ',
+        attributes: {
+          latex: '1f + 2f',
+        },
+      });
+      expect(children[1]?.flavour).toBe('affine:paragraph');
+      expect(children[1]?.props.text.delta).toContainEqual({
+        insert: ' ',
+        attributes: {
+          bold: true,
+          latex: '\\delta',
+        },
+      });
+      expect(children[2]?.flavour).toBe('affine:list');
+      expect(children[2]?.props.text.delta).toEqual(
+        expect.arrayContaining([
+          {
+            insert: ' ',
+            attributes: {
+              latex: 'f',
+            },
+          },
+          {
+            insert: ' ',
+            attributes: {
+              latex: '2f',
+            },
+          },
+        ])
+      );
     });
   });
 
