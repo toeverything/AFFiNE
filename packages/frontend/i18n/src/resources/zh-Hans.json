@@ -2151,7 +2151,7 @@
   "com.affine.integration.calendar.show-all-day-events": "显示全天事件",
   "com.affine.integration.calendar.unsubscribe-content": "您确定要取消订阅“{{name}}”吗？取消订阅此帐户将从 Journal 中删除其数据。",
   "com.affine.integration.mcp-server.name": "MCP服务器",
-  "com.affine.integration.mcp-server.desc": "允许其他 MCP 客户端搜索和 AFFiNE 的文档。",
+  "com.affine.integration.mcp-server.desc": "允许其他 MCP 客户端搜索、读取和编辑 AFFiNE 文档。",
   "com.affine.audio.notes": "笔记",
   "com.affine.audio.transcribing": "转录",
   "com.affine.audio.transcribe.non-owner.confirm.title": "无法检索他人的 AI 结果",

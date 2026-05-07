@@ -8860,7 +8860,7 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.integration.mcp-server.name"](): string;
     /**
-      * `Enable other MCP Client to search and read the doc of AFFiNE.`
+      * `Enable other MCP clients to search, read, and edit AFFiNE docs.`
       */
     ["com.affine.integration.mcp-server.desc"](): string;
     /**

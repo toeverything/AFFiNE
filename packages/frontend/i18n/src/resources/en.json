@@ -2218,7 +2218,7 @@
   "com.affine.integration.calendar.no-journal": "No journal page found for {{date}}. Please create a journal page first.",
   "com.affine.integration.calendar.no-calendar": "No subscribed calendars yet.",
   "com.affine.integration.mcp-server.name": "MCP Server",
-  "com.affine.integration.mcp-server.desc": "Enable other MCP Client to search and read the doc of AFFiNE.",
+  "com.affine.integration.mcp-server.desc": "Enable other MCP clients to search, read, and edit AFFiNE docs.",
   "com.affine.integration.mcp-server.copy-json.disabled-hint": "The MCP token is shown only once. Delete and recreate it to copy the JSON configuration.",
   "com.affine.audio.notes": "Notes",
   "com.affine.audio.transcribing": "Transcribing",

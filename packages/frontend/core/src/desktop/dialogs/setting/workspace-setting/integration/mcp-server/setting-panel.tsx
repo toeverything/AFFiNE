@@ -59,7 +59,7 @@ const McpServerSetting = () => {
               [`affine_workspace_${workspaceService.workspace.id}`]: {
                 type: 'streamable-http',
                 url: `${serverService.server.baseUrl}/api/workspaces/${workspaceService.workspace.id}/mcp`,
-                note: `Read docs from AFFiNE workspace "${workspaceName}"`,
+                note: `Read and edit docs from AFFiNE workspace "${workspaceName}"`,
                 headers: {
                   Authorization: `Bearer ${displayedToken.token}`,
                 },
@@ -206,18 +206,16 @@ const McpServerSetting = () => {
 
         <div className={styles.section}>
           <div className={styles.sectionHeader}>
-            <div className={styles.sectionTitle}>doc-read</div>
+            <div className={styles.sectionTitle}>read_document</div>
           </div>
           <div className={styles.sectionDescription}>
-            Return the complete text and basic metadata of a single document
-            identified by docId; use this when the user needs the full content
-            of a specific file rather than a search result.
+            Read a document identified by docId and return its markdown content.
           </div>
         </div>
 
         <div className={styles.section}>
           <div className={styles.sectionHeader}>
-            <div className={styles.sectionTitle}>doc-semantic-search</div>
+            <div className={styles.sectionTitle}>semantic_search</div>
           </div>
           <div className={styles.sectionDescription}>
             Retrieve conceptually related passages by performing vector-based
@@ -230,13 +228,42 @@ const McpServerSetting = () => {
 
         <div className={styles.section}>
           <div className={styles.sectionHeader}>
-            <div className={styles.sectionTitle}>doc-keyword-search</div>
+            <div className={styles.sectionTitle}>keyword_search</div>
           </div>
           <div className={styles.sectionDescription}>
             Fuzzy search all workspace documents for the exact keyword or phrase
             supplied and return passages ranked by textual match. Use this tool
             by default whenever a straightforward term-based or keyword-base
             lookup is sufficient.
+          </div>
+        </div>
+
+        <div className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <div className={styles.sectionTitle}>create_document</div>
+          </div>
+          <div className={styles.sectionDescription}>
+            Create a new document in the workspace from a title and markdown
+            body.
+          </div>
+        </div>
+
+        <div className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <div className={styles.sectionTitle}>update_document</div>
+          </div>
+          <div className={styles.sectionDescription}>
+            Replace an existing document body with markdown content while
+            preserving document history.
+          </div>
+        </div>
+
+        <div className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <div className={styles.sectionTitle}>update_document_meta</div>
+          </div>
+          <div className={styles.sectionDescription}>
+            Update document metadata, including the document title.
           </div>
         </div>
       </div>

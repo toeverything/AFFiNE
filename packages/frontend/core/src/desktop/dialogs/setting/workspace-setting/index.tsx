@@ -7,7 +7,6 @@ import { ServerDeploymentType } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import {
   AiEmbeddingIcon,
-  CollaborationIcon,
   IntegrationsIcon,
   PaymentIcon,
   PropertyIcon,
@@ -21,7 +20,6 @@ import type { SettingSidebarItem, SettingState } from '../types';
 import { WorkspaceSettingBilling } from './billing';
 import { IntegrationSetting } from './integration';
 import { WorkspaceSettingLicense } from './license';
-import { MembersPanel } from './members';
 import { WorkspaceSettingDetail } from './preference';
 import { WorkspaceSettingProperties } from './properties';
 import { WorkspaceSettingStorage } from './storage';
@@ -30,7 +28,6 @@ export const WorkspaceSetting = ({
   activeTab,
   scrollAnchor,
   onCloseSetting,
-  onChangeSettingState,
 }: {
   activeTab: SettingTab;
   scrollAnchor?: string;
@@ -42,13 +39,6 @@ export const WorkspaceSetting = ({
       return <WorkspaceSettingDetail onCloseSetting={onCloseSetting} />;
     case 'workspace:properties':
       return <WorkspaceSettingProperties />;
-    case 'workspace:members':
-      return (
-        <MembersPanel
-          onCloseSetting={onCloseSetting}
-          onChangeSettingState={onChangeSettingState}
-        />
-      );
     case 'workspace:billing':
       return <WorkspaceSettingBilling />;
     case 'workspace:storage':
@@ -93,12 +83,6 @@ export const useWorkspaceSettingList = (): SettingSidebarItem[] => {
         title: t['com.affine.settings.workspace.properties'](),
         icon: <PropertyIcon />,
         testId: 'workspace-setting:properties',
-      },
-      {
-        key: 'workspace:members',
-        title: t['Members'](),
-        icon: <CollaborationIcon />,
-        testId: 'workspace-setting:members',
       },
       {
         key: 'workspace:integrations',

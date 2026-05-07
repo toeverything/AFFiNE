@@ -239,190 +239,193 @@ export class WorkspaceMcpProvider {
       },
     });
 
-    const tools = [readDocument, semanticSearch, keywordSearch];
-
-    if (env.dev || env.namespaces.canary) {
-      const createDocument = defineTool({
-        name: 'create_document',
-        title: 'Create Document',
-        description:
-          'Create a new document in the workspace with the given title and markdown content. Returns the ID of the created document. This tool not support insert or update database block and image yet.',
-        parser: z.object({
-          title: z.string().min(1),
-          content: z.string(),
-        }),
-        inputSchema: {
-          type: 'object',
-          properties: {
-            title: {
-              type: 'string',
-              description: 'The title of the new document',
-            },
-            content: {
-              type: 'string',
-              description: 'The markdown content for the document body',
-            },
+    const createDocument = defineTool({
+      name: 'create_document',
+      title: 'Create Document',
+      description:
+        'Create a new document in the workspace with the given title and markdown content. Returns the ID of the created document. This tool not support insert or update database block and image yet.',
+      parser: z.object({
+        title: z.string().min(1),
+        content: z.string(),
+      }),
+      inputSchema: {
+        type: 'object',
+        properties: {
+          title: {
+            type: 'string',
+            description: 'The title of the new document',
           },
-          required: ['title', 'content'],
-          additionalProperties: false,
-        },
-        execute: async ({ title, content }, options) => {
-          try {
-            await this.ac
-              .user(userId)
-              .workspace(workspaceId)
-              .assert('Workspace.CreateDoc');
-
-            const abortedAfterPermission = abortIfNeeded(options.signal);
-            if (abortedAfterPermission) return abortedAfterPermission;
-
-            const sanitizedTitle = title.replace(/[\r\n]+/g, ' ').trim();
-            if (!sanitizedTitle) throw new Error('Title cannot be empty');
-            const strippedContent = content.replace(
-              /^[ \t]{0,3}#\s+[^\n]*#*\s*\n*/,
-              ''
-            );
-            const result = await this.writer.createDoc(
-              workspaceId,
-              sanitizedTitle,
-              strippedContent,
-              userId
-            );
-
-            return toolText(
-              JSON.stringify({
-                success: true,
-                docId: result.docId,
-                message: `Document "${title}" created successfully`,
-              })
-            );
-          } catch (error) {
-            return toolError(
-              `Failed to create document: ${error instanceof Error ? error.message : 'Unknown error'}`
-            );
-          }
-        },
-      });
-
-      const updateDocument = defineTool({
-        name: 'update_document',
-        title: 'Update Document',
-        description:
-          'Update an existing document with new markdown content (body only). Uses structural diffing to apply minimal changes, preserving document history and enabling real-time collaboration. This does NOT update the document title. This tool not support insert or update database block and image yet.',
-        parser: z.object({
-          docId: z.string(),
-          content: z.string(),
-        }),
-        inputSchema: {
-          type: 'object',
-          properties: {
-            docId: {
-              type: 'string',
-              description: 'The ID of the document to update',
-            },
-            content: {
-              type: 'string',
-              description:
-                'The complete new markdown content for the document body (do NOT include a title H1)',
-            },
+          content: {
+            type: 'string',
+            description: 'The markdown content for the document body',
           },
-          required: ['docId', 'content'],
-          additionalProperties: false,
         },
-        execute: async ({ docId, content }, options) => {
-          const notFoundError = toolError(`Doc with id ${docId} not found.`);
-
-          const accessible = await this.ac
+        required: ['title', 'content'],
+        additionalProperties: false,
+      },
+      execute: async ({ title, content }, options) => {
+        try {
+          await this.ac
             .user(userId)
             .workspace(workspaceId)
-            .doc(docId)
-            .can('Doc.Update');
-          if (!accessible) return notFoundError;
-
-          const abortedBeforeWrite = abortIfNeeded(options.signal);
-          if (abortedBeforeWrite) return abortedBeforeWrite;
-
-          try {
-            await this.writer.updateDoc(workspaceId, docId, content, userId);
-            return toolText(
-              JSON.stringify({
-                success: true,
-                docId,
-                message: 'Document updated successfully',
-              })
-            );
-          } catch (error) {
-            return toolError(
-              `Failed to update document: ${error instanceof Error ? error.message : 'Unknown error'}`
-            );
-          }
-        },
-      });
-
-      const updateDocumentMeta = defineTool({
-        name: 'update_document_meta',
-        title: 'Update Document Metadata',
-        description: 'Update document metadata (currently title only).',
-        parser: z.object({
-          docId: z.string(),
-          title: z.string().min(1),
-        }),
-        inputSchema: {
-          type: 'object',
-          properties: {
-            docId: {
-              type: 'string',
-              description: 'The ID of the document to update',
-            },
-            title: {
-              type: 'string',
-              description: 'The new document title',
-            },
-          },
-          required: ['docId', 'title'],
-          additionalProperties: false,
-        },
-        execute: async ({ docId, title }, options) => {
-          const notFoundError = toolError(`Doc with id ${docId} not found.`);
-
-          const accessible = await this.ac
-            .user(userId)
-            .workspace(workspaceId)
-            .doc(docId)
-            .can('Doc.Update');
-          if (!accessible) return notFoundError;
+            .assert('Workspace.CreateDoc');
 
           const abortedAfterPermission = abortIfNeeded(options.signal);
           if (abortedAfterPermission) return abortedAfterPermission;
 
-          try {
-            const sanitizedTitle = title.replace(/[\r\n]+/g, ' ').trim();
-            if (!sanitizedTitle) throw new Error('Title cannot be empty');
+          const sanitizedTitle = title.replace(/[\r\n]+/g, ' ').trim();
+          if (!sanitizedTitle) throw new Error('Title cannot be empty');
+          const strippedContent = content.replace(
+            /^[ \t]{0,3}#\s+[^\n]*#*\s*\n*/,
+            ''
+          );
+          const result = await this.writer.createDoc(
+            workspaceId,
+            sanitizedTitle,
+            strippedContent,
+            userId
+          );
 
-            await this.writer.updateDocMeta(
-              workspaceId,
-              docId,
-              { title: sanitizedTitle },
-              userId
-            );
+          return toolText(
+            JSON.stringify({
+              success: true,
+              docId: result.docId,
+              message: `Document "${title}" created successfully`,
+            })
+          );
+        } catch (error) {
+          return toolError(
+            `Failed to create document: ${error instanceof Error ? error.message : 'Unknown error'}`
+          );
+        }
+      },
+    });
 
-            return toolText(
-              JSON.stringify({
-                success: true,
-                docId,
-                message: 'Document title updated successfully',
-              })
-            );
-          } catch (error) {
-            return toolError(
-              `Failed to update document metadata: ${error instanceof Error ? error.message : 'Unknown error'}`
-            );
-          }
+    const updateDocument = defineTool({
+      name: 'update_document',
+      title: 'Update Document',
+      description:
+        'Update an existing document with new markdown content (body only). Uses structural diffing to apply minimal changes, preserving document history and enabling real-time collaboration. This does NOT update the document title. This tool not support insert or update database block and image yet.',
+      parser: z.object({
+        docId: z.string(),
+        content: z.string(),
+      }),
+      inputSchema: {
+        type: 'object',
+        properties: {
+          docId: {
+            type: 'string',
+            description: 'The ID of the document to update',
+          },
+          content: {
+            type: 'string',
+            description:
+              'The complete new markdown content for the document body (do NOT include a title H1)',
+          },
         },
-      });
+        required: ['docId', 'content'],
+        additionalProperties: false,
+      },
+      execute: async ({ docId, content }, options) => {
+        const notFoundError = toolError(`Doc with id ${docId} not found.`);
 
-      tools.push(createDocument, updateDocument, updateDocumentMeta);
-    }
+        const accessible = await this.ac
+          .user(userId)
+          .workspace(workspaceId)
+          .doc(docId)
+          .can('Doc.Update');
+        if (!accessible) return notFoundError;
+
+        const abortedBeforeWrite = abortIfNeeded(options.signal);
+        if (abortedBeforeWrite) return abortedBeforeWrite;
+
+        try {
+          await this.writer.updateDoc(workspaceId, docId, content, userId);
+          return toolText(
+            JSON.stringify({
+              success: true,
+              docId,
+              message: 'Document updated successfully',
+            })
+          );
+        } catch (error) {
+          return toolError(
+            `Failed to update document: ${error instanceof Error ? error.message : 'Unknown error'}`
+          );
+        }
+      },
+    });
+
+    const updateDocumentMeta = defineTool({
+      name: 'update_document_meta',
+      title: 'Update Document Metadata',
+      description: 'Update document metadata (currently title only).',
+      parser: z.object({
+        docId: z.string(),
+        title: z.string().min(1),
+      }),
+      inputSchema: {
+        type: 'object',
+        properties: {
+          docId: {
+            type: 'string',
+            description: 'The ID of the document to update',
+          },
+          title: {
+            type: 'string',
+            description: 'The new document title',
+          },
+        },
+        required: ['docId', 'title'],
+        additionalProperties: false,
+      },
+      execute: async ({ docId, title }, options) => {
+        const notFoundError = toolError(`Doc with id ${docId} not found.`);
+
+        const accessible = await this.ac
+          .user(userId)
+          .workspace(workspaceId)
+          .doc(docId)
+          .can('Doc.Update');
+        if (!accessible) return notFoundError;
+
+        const abortedAfterPermission = abortIfNeeded(options.signal);
+        if (abortedAfterPermission) return abortedAfterPermission;
+
+        try {
+          const sanitizedTitle = title.replace(/[\r\n]+/g, ' ').trim();
+          if (!sanitizedTitle) throw new Error('Title cannot be empty');
+
+          await this.writer.updateDocMeta(
+            workspaceId,
+            docId,
+            { title: sanitizedTitle },
+            userId
+          );
+
+          return toolText(
+            JSON.stringify({
+              success: true,
+              docId,
+              message: 'Document title updated successfully',
+            })
+          );
+        } catch (error) {
+          return toolError(
+            `Failed to update document metadata: ${error instanceof Error ? error.message : 'Unknown error'}`
+          );
+        }
+      },
+    });
+
+    const tools = [
+      readDocument,
+      semanticSearch,
+      keywordSearch,
+      createDocument,
+      updateDocument,
+      updateDocumentMeta,
+    ];
 
     return {
       name: `AFFiNE MCP Server for Workspace ${workspaceId}`,
