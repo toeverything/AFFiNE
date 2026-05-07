@@ -32,6 +32,16 @@ function normalizeSingleLineBlockLatex(text: string) {
   );
 }
 
+function protectInlineDollarLatex(text: string, latexExpressions: string[]) {
+  return text.replace(
+    /(^|[^\\$])\$(?!\$|\s)((?:\\.|[^\n\\$])*?[^\s\\$])\$(?!\$)/g,
+    (_, prefix: string, latex: string) => {
+      latexExpressions.push(`$${latex}$`);
+      return `${prefix}<<LATEX_${latexExpressions.length - 1}>>`;
+    }
+  );
+}
+
 /**
  * Preprocess the content to protect code blocks and LaTeX expressions
  * reference issue: https://github.com/remarkjs/react-markdown/issues/785
@@ -61,6 +71,10 @@ function preprocessLatex(content: string) {
       latexExpressions.push(match);
       return `<<LATEX_${latexExpressions.length - 1}>>`;
     }
+  );
+  preprocessedContent = protectInlineDollarLatex(
+    preprocessedContent,
+    latexExpressions
   );
 
   // Escape dollar signs that are likely currency indicators
