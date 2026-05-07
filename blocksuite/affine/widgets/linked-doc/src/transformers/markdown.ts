@@ -3,7 +3,12 @@ import {
   docLinkBaseURLMiddleware,
   fileNameMiddleware,
   filePathMiddleware,
+  FULL_FILE_PATH_KEY,
+  getImageFullPath,
   MarkdownAdapter,
+  type MarkdownAST,
+  MarkdownASTToDeltaExtension,
+  normalizeFilePathReference,
   titleMiddleware,
 } from '@blocksuite/affine-shared/adapters';
 import { Container } from '@blocksuite/global/di';
@@ -60,6 +65,117 @@ const FRONTMATTER_KEYS = {
   favorite: ['favorite', 'favourite', 'star', 'starred', 'pinned'],
   trash: ['trash', 'trashed', 'deleted', 'archived'],
 };
+
+const MARKDOWN_ZIP_PAGE_ID_CONFIG_PREFIX = 'markdown-zip:page-id:';
+
+function normalizeMarkdownZipLookupPath(path: string) {
+  return normalizeFilePathReference(path).toLowerCase();
+}
+
+function stripMarkdownExtension(path: string) {
+  return path.replace(/\.md$/i, '');
+}
+
+function splitMarkdownLinkTarget(url: string) {
+  const queryIndex = url.indexOf('?');
+  const hashIndex = url.indexOf('#');
+  const splitIndex = [queryIndex, hashIndex]
+    .filter(index => index >= 0)
+    .sort((a, b) => a - b)[0];
+
+  return splitIndex === undefined ? url : url.slice(0, splitIndex);
+}
+
+function isLocalMarkdownDocLink(url: string) {
+  const path = splitMarkdownLinkTarget(url).trim();
+  if (!path || path.startsWith('//') || path.startsWith('#')) {
+    return false;
+  }
+  if (/^[a-z][a-z0-9+.-]*:/i.test(path)) {
+    return false;
+  }
+
+  const fileName = path.split('/').at(-1) ?? '';
+  return path.toLowerCase().endsWith('.md') || !fileName.includes('.');
+}
+
+function markdownAstText(ast: MarkdownAST): string {
+  if ('value' in ast && typeof ast.value === 'string') {
+    return ast.value;
+  }
+  if ('children' in ast && Array.isArray(ast.children)) {
+    return ast.children.map(child => markdownAstText(child)).join('');
+  }
+  return '';
+}
+
+function getMarkdownZipPageIdConfigKey(path: string) {
+  return `${MARKDOWN_ZIP_PAGE_ID_CONFIG_PREFIX}${normalizeMarkdownZipLookupPath(
+    path
+  )}`;
+}
+
+function getMarkdownZipTargetPageId(
+  configs: Map<string, string>,
+  currentFilePath: string,
+  url: string
+) {
+  const targetPath = splitMarkdownLinkTarget(url);
+  const fullPath = getImageFullPath(currentFilePath, targetPath);
+  const candidates = [fullPath, stripMarkdownExtension(fullPath)];
+
+  for (const candidate of candidates) {
+    const pageId = configs.get(getMarkdownZipPageIdConfigKey(candidate));
+    if (pageId) {
+      return pageId;
+    }
+  }
+
+  return null;
+}
+
+const markdownZipDocLinkToDeltaMatcher = MarkdownASTToDeltaExtension({
+  name: 'markdown-zip-doc-link',
+  match: ast =>
+    ast.type === 'link' &&
+    'url' in ast &&
+    typeof ast.url === 'string' &&
+    isLocalMarkdownDocLink(ast.url),
+  toDelta: (ast, context) => {
+    if (!('children' in ast) || !('url' in ast)) {
+      return [];
+    }
+
+    const currentFilePath = context.configs.get(FULL_FILE_PATH_KEY);
+    const targetPageId =
+      typeof currentFilePath === 'string'
+        ? getMarkdownZipTargetPageId(context.configs, currentFilePath, ast.url)
+        : null;
+
+    if (targetPageId) {
+      const title = markdownAstText(ast).trim();
+      return [
+        {
+          insert: ' ',
+          attributes: {
+            reference: {
+              type: 'LinkedPage',
+              pageId: targetPageId,
+              ...(title ? { title } : {}),
+            },
+          },
+        },
+      ];
+    }
+
+    return ast.children.flatMap(child =>
+      context.toDelta(child).map(delta => {
+        delta.attributes = { ...delta.attributes, link: ast.url };
+        return delta;
+      })
+    );
+  },
+});
 
 const truthyStrings = new Set(['true', 'yes', 'y', '1', 'on']);
 const falsyStrings = new Set(['false', 'no', 'n', '0', 'off']);
@@ -331,6 +447,25 @@ export function bindImportedAssetsToJob(
   return pathBlobIdMap;
 }
 
+function bindImportedMarkdownPagesToJob(
+  job: Transformer,
+  pagePathIdMap: ReadonlyMap<string, string>
+) {
+  for (const [path, pageId] of pagePathIdMap.entries()) {
+    job.adapterConfigs.set(getMarkdownZipPageIdConfigKey(path), pageId);
+  }
+}
+
+function registerMarkdownZipPagePath(
+  pagePathIdMap: Map<string, string>,
+  path: string,
+  pageId: string
+) {
+  const normalizedPath = normalizeFilePathReference(path);
+  pagePathIdMap.set(normalizedPath, pageId);
+  pagePathIdMap.set(stripMarkdownExtension(normalizedPath), pageId);
+}
+
 /**
  * Exports a doc to a Markdown file or a zip archive containing Markdown and assets.
  * @param doc The doc to export
@@ -470,24 +605,30 @@ type FolderHierarchy = {
   parentPath?: string;
 };
 
+export type ImportMarkdownZipResult = {
+  docIds: string[];
+  folderHierarchy?: FolderHierarchy;
+};
+
 async function importMarkdownZip({
   collection,
   schema,
   imported,
   extensions,
-}: ImportMarkdownZipOptions): Promise<{
-  docIds: string[];
-  folderHierarchy?: FolderHierarchy;
-}> {
-  const provider = getProvider(extensions);
+}: ImportMarkdownZipOptions): Promise<ImportMarkdownZipResult> {
+  const provider = getProvider([
+    markdownZipDocLinkToDeltaMatcher,
+    ...extensions,
+  ]);
   const unzip = new Unzip();
   await unzip.load(imported);
 
   const docIds: string[] = [];
   const pendingAssets: AssetMap = new Map();
   const pendingPathBlobIdMap: PathBlobIdMap = new Map();
-  const markdownBlobs: ImportedFileEntry[] = [];
   const docPathMap: Array<{ fullPath: string; docId: string }> = [];
+  const pendingPagePathIdMap = new Map<string, string>();
+  const markdownBlobs: Array<ImportedFileEntry & { pageId: string }> = [];
 
   // Iterate over all files in the zip
   for (const { path, content: blob } of unzip) {
@@ -500,10 +641,13 @@ async function importMarkdownZip({
     const fileName = path.split('/').pop() ?? '';
     // If the file is a markdown file, store it to markdownBlobs
     if (fileName.endsWith('.md')) {
+      const pageId = collection.idGenerator();
+      registerMarkdownZipPagePath(pendingPagePathIdMap, path, pageId);
       markdownBlobs.push({
         filename: fileName,
         contentBlob: blob,
         fullPath: path,
+        pageId,
       });
     } else {
       await stageImportedAsset({
@@ -518,7 +662,7 @@ async function importMarkdownZip({
 
   await Promise.all(
     markdownBlobs.map(async markdownFile => {
-      const { filename, contentBlob, fullPath } = markdownFile;
+      const { filename, contentBlob, fullPath, pageId } = markdownFile;
       const fileNameWithoutExt = filename.replace(/\.[^/.]+$/, '');
       const markdown = await contentBlob.text();
       const { content, meta } = parseFrontmatter(markdown);
@@ -530,12 +674,15 @@ async function importMarkdownZip({
         fullPath,
       });
       bindImportedAssetsToJob(job, pendingAssets, pendingPathBlobIdMap);
+      bindImportedMarkdownPagesToJob(job, pendingPagePathIdMap);
 
       const mdAdapter = new MarkdownAdapter(job, provider);
-      const doc = await mdAdapter.toDoc({
+      const snapshot = await mdAdapter.toDocSnapshot({
         file: content,
         assets: job.assetsManager,
       });
+      snapshot.meta.id = pageId;
+      const doc = await job.snapshotToDoc(snapshot);
       if (doc) {
         applyMetaPatch(collection, doc.id, meta);
         docIds.push(doc.id);

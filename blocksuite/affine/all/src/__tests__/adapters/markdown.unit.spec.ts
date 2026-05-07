@@ -30,6 +30,7 @@ import type {
 } from '@blocksuite/store';
 import { AssetsManager, MemoryBlobCRUD, Schema } from '@blocksuite/store';
 import { TestWorkspace } from '@blocksuite/store/test';
+import * as fflate from 'fflate';
 import { describe, expect, test } from 'vitest';
 
 import { AffineSchemas } from '../../schemas.js';
@@ -62,6 +63,21 @@ function markdownFixture(relativePath: string): File {
     ),
     `vault/${relativePath}`
   );
+}
+
+function markdownZipFixture(files: Record<string, string>): Blob {
+  const zipped = fflate.zipSync(
+    Object.fromEntries(
+      Object.entries(files).map(([path, content]) => [
+        path,
+        fflate.strToU8(content),
+      ])
+    )
+  );
+  const buffer = new ArrayBuffer(zipped.byteLength);
+  new Uint8Array(buffer).set(zipped);
+
+  return new Blob([buffer], { type: 'application/zip' });
 }
 
 function exportSnapshot(doc: Store): DocSnapshot {
@@ -172,6 +188,21 @@ function snapshotDocByTitle(
   return simplifyBlockForSnapshot(exportSnapshot(doc!).blocks, titleById);
 }
 
+function collectSimplifiedDeltas(
+  block: Record<string, unknown>
+): Record<string, unknown>[] {
+  const deltas = Array.isArray(block.delta)
+    ? (block.delta as Record<string, unknown>[])
+    : [];
+  const childDeltas = Array.isArray(block.children)
+    ? (block.children as Record<string, unknown>[]).flatMap(child =>
+        collectSimplifiedDeltas(child)
+      )
+    : [];
+
+  return [...deltas, ...childDeltas];
+}
+
 describe('snapshot to markdown', () => {
   test('code', async () => {
     const blockSnapshot: BlockSnapshot = {
@@ -268,6 +299,57 @@ Hello world
     expect(meta?.updatedDate).toBe(Date.parse('2018-04-12T10:00:00'));
     expect(meta?.favorite).toBe(true);
     expect(meta?.tags).toEqual(['a', 'b']);
+  });
+
+  test('imports markdown zip relative doc links as linked pages', async () => {
+    const schema = new Schema().register(AffineSchemas);
+    const collection = new TestWorkspace();
+    collection.storeExtensions = testStoreExtensions;
+    collection.meta.initialize();
+
+    const imported = markdownZipFixture({
+      'entry.md': [
+        '[引用](./test/2.md)',
+        '[missing](./missing.md)',
+        '[external](https://example.com/test.md)',
+      ].join('\n\n'),
+      'test/2.md': 'target page',
+    });
+
+    const { docIds } = await MarkdownTransformer.importMarkdownZip({
+      collection,
+      schema,
+      imported,
+      extensions: testStoreExtensions,
+    });
+    expect(docIds).toHaveLength(2);
+
+    const titleById = new Map(
+      collection.meta.docMetas.map(meta => [
+        meta.id,
+        meta.title ?? '<untitled>',
+      ])
+    );
+    const entryDeltas = collectSimplifiedDeltas(
+      snapshotDocByTitle(collection, 'entry', titleById)
+    );
+
+    expect(entryDeltas).toContainEqual({
+      insert: ' ',
+      reference: {
+        type: 'LinkedPage',
+        page: '2',
+        title: '引用',
+      },
+    });
+    expect(entryDeltas).toContainEqual({
+      insert: 'missing',
+      link: './missing.md',
+    });
+    expect(entryDeltas).toContainEqual({
+      insert: 'external',
+      link: 'https://example.com/test.md',
+    });
   });
 
   test('imports obsidian vault fixtures', async () => {
