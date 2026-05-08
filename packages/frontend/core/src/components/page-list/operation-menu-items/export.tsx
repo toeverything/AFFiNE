@@ -31,6 +31,7 @@ interface ExportProps {
       | 'html'
       | 'png'
       | 'markdown'
+      | 'markdown-with-linked-images'
       | 'copy-markdown'
       | 'snapshot'
       | 'pdf-export'
@@ -110,6 +111,13 @@ export const ExportMenuItems = ({
         type="markdown"
         icon={<ExportToMarkdownIcon />}
         label={t['Export to Markdown']()}
+      />
+      <ExportMenuItem
+        onSelect={() => exportHandler('markdown-with-linked-images')}
+        className={className}
+        type="markdown-with-linked-images"
+        icon={<ExportToMarkdownIcon />}
+        label={t['com.affine.export.markdown-with-linked-images']()}
       />
       <ExportMenuItem
         onSelect={() => exportHandler('copy-markdown')}

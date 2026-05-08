@@ -2,6 +2,7 @@ import { ImageBlockSchema } from '@blocksuite/affine-model';
 import {
   BlockMarkdownAdapterExtension,
   type BlockMarkdownAdapterMatcher,
+  MARKDOWN_EXPORT_PRESERVE_IMAGE_URL_KEY,
   type MarkdownAST,
 } from '@blocksuite/affine-shared/adapters';
 import { getAssetName } from '@blocksuite/store';
@@ -26,8 +27,35 @@ export const imageBlockMarkdownAdapterMatcher: BlockMarkdownAdapterMatcher = {
   },
   fromBlockSnapshot: {
     enter: async (o, context) => {
-      const { assets, walkerContext, updateAssetIds } = context;
+      const { assets, configs, walkerContext, updateAssetIds } = context;
       const blobId = (o.node.props.sourceId ?? '') as string;
+      const sourceUrl = (o.node.props.sourceUrl ?? '') as string;
+      const preserveImageUrl =
+        configs.get(MARKDOWN_EXPORT_PRESERVE_IMAGE_URL_KEY) === 'true';
+
+      if (preserveImageUrl && sourceUrl) {
+        walkerContext
+          .openNode(
+            {
+              type: 'paragraph',
+              children: [],
+            },
+            'children'
+          )
+          .openNode(
+            {
+              type: 'image',
+              url: sourceUrl,
+              title: (o.node.props.caption as string | undefined) ?? null,
+              alt: null,
+            },
+            'children'
+          )
+          .closeNode()
+          .closeNode();
+        return;
+      }
+
       if (!assets) {
         return;
       }

@@ -290,6 +290,23 @@ export function useRegisterBlocksuiteEditorCommands(
 
     unsubs.push(
       registerAffineCommand({
+        id: `editor:${mode}-export-to-markdown-with-linked-images`,
+        preconditionStrategy,
+        category: `editor:${mode}`,
+        icon: mode === 'page' ? <PageIcon /> : <EdgelessIcon />,
+        label: t['com.affine.export.markdown-with-linked-images'](),
+        async run() {
+          track.$.cmdk.editor.export({
+            type: 'markdown-with-linked-images',
+          });
+
+          exportHandler('markdown-with-linked-images');
+        },
+      })
+    );
+
+    unsubs.push(
+      registerAffineCommand({
         id: `editor:${mode}-export-to-snapshot`,
         preconditionStrategy,
         category: `editor:${mode}`,

@@ -4,6 +4,7 @@ export * from './copy';
 export * from './doc-link';
 export * from './file-name';
 export * from './file-path';
+export * from './markdown-export-options';
 export * from './paste';
 export * from './proxy';
 export * from './replace-id';
