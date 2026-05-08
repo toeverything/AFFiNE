@@ -35,7 +35,7 @@ const extractBvid = (url: string) => {
 
 const buildBiliPlayerEmbedUrl = (url: string) => {
   // If the user pasted the embed URL directly, keep it
-  if (validateEmbedIframeUrl(url, biliPlayerValidationOptions)) {
+  if (isValidBiliPlayerUrl(url)) {
     return url;
   }
   const avid = extractAvid(url);

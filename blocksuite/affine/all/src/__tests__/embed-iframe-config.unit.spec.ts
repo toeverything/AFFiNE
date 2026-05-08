@@ -45,6 +45,13 @@ describe('embed iframe provider config', () => {
       )
     ).toBe(true);
     expect(
+      bilibiliConfig.buildOEmbedUrl(
+        'https://player.bilibili.com/video/BV1xx411c7mD'
+      )
+    ).toBe(
+      'https://player.bilibili.com/player.html?bvid=BV1xx411c7mD&autoplay=0'
+    );
+    expect(
       bilibiliConfig.validateIframeUrl?.(
         'https://www.bilibili.com/video/BV1xx411c7mD'
       )
