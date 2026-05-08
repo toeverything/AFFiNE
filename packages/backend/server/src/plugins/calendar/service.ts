@@ -272,7 +272,10 @@ export class CalendarService {
       throw error;
     }
 
-    return account;
+    const calendars = await this.models.calendarSubscription.listByAccount(
+      account.id
+    );
+    return { ...account, calendarsCount: calendars.length };
   }
 
   async syncAccountCalendars(accountId: string) {
