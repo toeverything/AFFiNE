@@ -20,6 +20,7 @@ import {
   type UpdateChatSession,
   UpdateChatSessionOptions,
 } from '../../models';
+import { CopilotAccessPolicy } from './access';
 import { ConversationPolicy } from './conversation/policy';
 import { ConversationStore } from './conversation/store';
 import { type Conversation, promptMessageFromTurn, type Turn } from './core';
@@ -186,6 +187,7 @@ export class ChatSessionService {
     private readonly models: Models,
     private readonly jobs: JobQueue,
     private readonly store: ConversationStore,
+    private readonly access: CopilotAccessPolicy,
     private readonly conversationPolicy: ConversationPolicy,
     private readonly prompts: PromptService,
     private readonly promptRuntime: PromptRuntime
@@ -298,11 +300,11 @@ export class ChatSessionService {
   }
 
   async getQuota(userId: string) {
-    return await this.conversationPolicy.getQuota(userId);
+    return await this.access.getQuota(userId);
   }
 
   async checkQuota(userId: string) {
-    await this.conversationPolicy.checkQuota(userId);
+    await this.access.checkQuota(userId);
   }
 
   async create(options: ChatSessionOptions): Promise<string> {

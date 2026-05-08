@@ -20,7 +20,6 @@ import {
 import { GeminiProvider } from '../../plugins/copilot/providers/gemini/gemini';
 import { GeminiVertexProvider } from '../../plugins/copilot/providers/gemini/vertex';
 import { OpenAIProvider } from '../../plugins/copilot/providers/openai';
-import { PerplexityProvider } from '../../plugins/copilot/providers/perplexity';
 import {
   CopilotProviderType,
   type PromptMessage,
@@ -589,16 +588,6 @@ class TestOpenAIProvider extends OpenAIProvider {
   }
 }
 
-class TestPerplexityProvider extends PerplexityProvider {
-  override get config() {
-    return { apiKey: 'perplexity-key' };
-  }
-
-  override configured() {
-    return true;
-  }
-}
-
 test('NativeProviderAdapter should append citation and attachment footnotes', async t => {
   const dispatch = () =>
     (async function* (): AsyncIterableIterator<LlmToolLoopStreamEvent> {
@@ -816,6 +805,91 @@ test('NativeProviderAdapter streamObject should map tool and text events', async
     ['tool-call', 'tool-result', 'text-delta']
   );
   t.snapshot(events);
+});
+
+test('NativeProviderAdapter streamObject should finalize usage with selected provider', async t => {
+  const usageEvents: Array<{
+    providerId: string;
+    model?: string;
+    usage?: {
+      prompt_tokens: number;
+      completion_tokens: number;
+      total_tokens: number;
+      cached_tokens?: number;
+    };
+  }> = [];
+  const adapter = new NativeProviderAdapter(
+    () =>
+      stream(() => [
+        { type: 'message_start', model: 'gpt-5-mini' },
+        { type: 'text_delta', text: 'ok' },
+        {
+          type: 'done',
+          finish_reason: 'stop',
+          usage: { prompt_tokens: 2, completion_tokens: 3, total_tokens: 5 },
+        },
+        {
+          type: 'provider_selected',
+          provider_id: 'byok-aaaaaaaaaaaa-openai-server-key1',
+        },
+      ]),
+    {
+      onUsage: input => {
+        usageEvents.push(input);
+      },
+    }
+  );
+
+  const events = await collectChunks(
+    adapter.streamObject({
+      model: 'gpt-5-mini',
+      stream: true,
+      messages: nativeMessages(nativeUserText('hi')),
+    })
+  );
+
+  t.deepEqual(events, [{ type: 'text-delta', textDelta: 'ok' }]);
+  t.deepEqual(usageEvents, [
+    {
+      providerId: 'byok-aaaaaaaaaaaa-openai-server-key1',
+      model: 'gpt-5-mini',
+      usage: { prompt_tokens: 2, completion_tokens: 3, total_tokens: 5 },
+    },
+  ]);
+});
+
+test('NativeProviderAdapter streamObject should keep streaming when usage callback fails', async t => {
+  const adapter = new NativeProviderAdapter(
+    () =>
+      stream(() => [
+        { type: 'message_start', model: 'gpt-5-mini' },
+        { type: 'text_delta', text: 'ok' },
+        {
+          type: 'done',
+          finish_reason: 'stop',
+          usage: { prompt_tokens: 2, completion_tokens: 3, total_tokens: 5 },
+        },
+        {
+          type: 'provider_selected',
+          provider_id: 'byok-aaaaaaaaaaaa-openai-server-key1',
+        },
+      ]),
+    {
+      onUsage: () => {
+        throw new Error('usage callback failed');
+      },
+    }
+  );
+
+  const events = await collectChunks(
+    adapter.streamObject({
+      model: 'gpt-5-mini',
+      stream: true,
+      messages: nativeMessages(nativeUserText('hi')),
+    })
+  );
+
+  t.deepEqual(events, [{ type: 'text-delta', textDelta: 'ok' }]);
 });
 
 test('NativeRuntimeAdapter streamObject should keep raw runtime stream objects only', async t => {
@@ -1651,36 +1725,6 @@ test('GeminiProvider should not pass materialized inline attachment URL to nativ
   t.is(attachmentPart?.source?.data, inlineData);
   t.is(attachmentPart?.source?.media_type, 'image/jpeg');
   t.false('url' in (attachmentPart?.source ?? {}));
-});
-
-test('PerplexityProvider should ignore attachments during text model matching', async t => {
-  const provider = new TestPerplexityProvider();
-  let capturedRequest: LlmRequest | undefined;
-
-  (provider as any).getActiveProviderMiddleware = () => ({});
-  (provider as any).getTools = async () => ({});
-  (provider as any).createNativeAdapter = () => ({
-    text: async (request: LlmRequest) => {
-      capturedRequest = request;
-      return 'ok';
-    },
-  });
-
-  const result = await getProviderRuntimeHost(provider).run.text(
-    { modelId: 'sonar' },
-    [
-      {
-        role: 'user',
-        content: 'summarize this',
-        attachments: ['https://example.com/a.pdf'],
-        params: { mimetype: 'application/pdf' },
-      },
-    ],
-    {}
-  );
-
-  t.is(result, 'ok');
-  t.snapshot(capturedRequest?.messages[0]?.content);
 });
 
 test('GeminiProvider should reject unsupported attachment schemes at input validation', async t => {

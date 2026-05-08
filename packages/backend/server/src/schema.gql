@@ -288,6 +288,24 @@ type BlobUploadedPart {
   partNumber: Int!
 }
 
+enum ByokKeyStorage {
+  local
+  server
+}
+
+enum ByokKeyTestStatus {
+  failed
+  passed
+  untested
+}
+
+enum ByokProvider {
+  anthropic
+  fal
+  gemini
+  openai
+}
+
 type CalendarAccountObjectType {
   calendars: [CalendarSubscriptionObjectType!]!
   calendarsCount: Int!
@@ -729,6 +747,26 @@ input CreateUserInput {
   email: String!
   name: String
   password: String
+}
+
+input CreateWorkspaceByokLocalLeaseInput {
+  providers: [CreateWorkspaceByokLocalLeaseProviderInput!]!
+  workspaceId: String!
+}
+
+input CreateWorkspaceByokLocalLeaseProviderInput {
+  apiKey: String!
+  description: String
+  enabled: Boolean
+  endpoint: String
+  name: String!
+  provider: ByokProvider!
+  sortOrder: SafeInt
+}
+
+type CreateWorkspaceByokLocalLeaseResultType {
+  expiresAt: DateTime!
+  leaseId: String!
 }
 
 type CredentialsRequirementType {
@@ -1514,9 +1552,6 @@ type Mutation {
 
   """Update workspace flags and features for admin"""
   adminUpdateWorkspace(input: AdminUpdateWorkspaceInput!): AdminWorkspace
-
-  """Apply updates to a doc using LLM and return the merged markdown."""
-  applyDocUpdates(docId: String!, op: String!, updates: String!, workspaceId: String!): String!
   approveMember(userId: String!, workspaceId: String!): Boolean!
 
   """Ban an user"""
@@ -1527,6 +1562,7 @@ type Mutation {
 
   """Cleanup sessions"""
   cleanupCopilotSession(options: DeleteSessionInput!): [String!]!
+  clearWorkspaceByokConfigs(provider: ByokProvider, workspaceId: String!): Boolean!
   completeBlobUpload(key: String!, parts: [BlobUploadPartInput!], uploadId: String, workspaceId: String!): String!
   createBlobUpload(key: String!, mime: String!, size: Int!, workspaceId: String!): BlobUploadInit!
 
@@ -1560,6 +1596,7 @@ type Mutation {
 
   """Create a new workspace"""
   createWorkspace(init: Upload): WorkspaceType!
+  createWorkspaceByokLocalLease(input: CreateWorkspaceByokLocalLeaseInput!): CreateWorkspaceByokLocalLeaseResultType!
   deactivateLicense(workspaceId: String!): Boolean!
   deleteAccount: DeleteAccount!
   deleteBlob(hash: String @deprecated(reason: "use parameter [key]"), key: String, permanently: Boolean! = false, workspaceId: String!): Boolean!
@@ -1573,6 +1610,7 @@ type Mutation {
   """Delete a user account"""
   deleteUser(id: String!): DeleteAccount!
   deleteWorkspace(id: String!): Boolean!
+  deleteWorkspaceByokConfig(id: ID!, workspaceId: String!): Boolean!
 
   """Reenable an banned user"""
   enableUser(id: String!): UserType!
@@ -1628,6 +1666,7 @@ type Mutation {
   """Remove workspace embedding files"""
   removeWorkspaceEmbeddingFiles(fileId: String!, workspaceId: String!): Boolean!
   removeWorkspaceFeature(feature: FeatureType!, workspaceId: String!): Boolean!
+  reorderWorkspaceByokConfigs(input: ReorderWorkspaceByokConfigsInput!): [WorkspaceByokKeyConfigType!]!
 
   """Request to apply the subscription in advance"""
   requestApplySubscription(transactionId: String!): [SubscriptionType!]!
@@ -1650,6 +1689,7 @@ type Mutation {
   setBlob(blob: Upload!, workspaceId: String!): String!
   settleTranscriptTask(taskId: String!, workspaceId: String!): TranscriptionResultType
   submitTranscriptTask(blob: Upload, blobId: String!, blobs: [Upload!], input: SubmitAudioTranscriptionInput, workspaceId: String!): TranscriptionResultType
+  testWorkspaceByokConfig(input: TestWorkspaceByokConfigInput!): TestWorkspaceByokConfigResultType!
   unlinkCalendarAccount(accountId: String!): Boolean!
 
   """update app configuration"""
@@ -1690,6 +1730,7 @@ type Mutation {
 
   """Upload a comment attachment and return the access url"""
   uploadCommentAttachment(attachment: Upload!, docId: String!, workspaceId: String!): String!
+  upsertWorkspaceByokConfig(input: UpsertWorkspaceByokConfigInput!): WorkspaceByokKeyConfigType!
   verifyEmail(token: String!): Boolean!
 }
 
@@ -1907,9 +1948,6 @@ type Query {
   """get the whole app configuration"""
   appConfig: JSONObject!
 
-  """Apply updates to a doc using LLM and return the merged markdown."""
-  applyDocUpdates(docId: String!, op: String!, updates: String!, workspaceId: String!): String! @deprecated(reason: "use Mutation.applyDocUpdates")
-
   """Get current user"""
   currentUser: UserType
   error(name: ErrorNames!): ErrorDataUnion!
@@ -2011,6 +2049,12 @@ input RemoveContextDocInput {
 input RemoveContextFileInput {
   contextId: String!
   fileId: String!
+}
+
+input ReorderWorkspaceByokConfigsInput {
+  ids: [ID!]!
+  storage: ByokKeyStorage!
+  workspaceId: String!
 }
 
 input ReplyCreateInput {
@@ -2344,6 +2388,21 @@ enum SubscriptionVariant {
   Onetime
 }
 
+input TestWorkspaceByokConfigInput {
+  apiKey: String
+  configId: ID
+  endpoint: String
+  provider: ByokProvider!
+  storage: ByokKeyStorage!
+  workspaceId: String!
+}
+
+type TestWorkspaceByokConfigResultType {
+  message: String
+  ok: Boolean!
+  status: ByokKeyTestStatus!
+}
+
 enum TimeBucket {
   Day
   Minute
@@ -2501,6 +2560,19 @@ input UpdateWorkspaceInput {
 """The `Upload` scalar type represents a file upload."""
 scalar Upload
 
+input UpsertWorkspaceByokConfigInput {
+  apiKey: String
+  description: String
+  enabled: Boolean
+  endpoint: String
+  id: ID
+  name: String!
+  provider: ByokProvider!
+  sortOrder: SafeInt
+  storage: ByokKeyStorage!
+  workspaceId: String!
+}
+
 type UserImportFailedType {
   email: String!
   error: String!
@@ -2602,6 +2674,53 @@ type ValidationErrorDataType {
 type VersionRejectedDataType {
   serverVersion: String!
   version: String!
+}
+
+type WorkspaceByokCapabilityWarningType {
+  featureKind: String!
+  reason: String!
+  requiredProviders: [ByokProvider!]!
+}
+
+type WorkspaceByokKeyConfigType {
+  capabilities: [String!]!
+  configured: Boolean!
+  description: String
+  disabledReason: String
+  enabled: Boolean!
+  endpoint: String
+  endpointEditable: Boolean!
+  id: ID!
+  lastError: String
+  lastErrorAt: DateTime
+  lastTestError: String
+  lastTestedAt: DateTime
+  lastUsedAt: DateTime
+  name: String!
+  provider: ByokProvider!
+  sortOrder: SafeInt!
+  storage: ByokKeyStorage!
+  testStatus: ByokKeyTestStatus!
+}
+
+type WorkspaceByokSettingsType {
+  allowedProviders: [ByokProvider!]!
+  customEndpointSupported: Boolean!
+  entitled: Boolean!
+  entitlementRequired: [String!]!
+  hasAiPlan: Boolean!
+  keys: [WorkspaceByokKeyConfigType!]!
+  localEntitled: Boolean!
+  localStorageSupported: Boolean!
+  serverEntitled: Boolean!
+  warnings: [WorkspaceByokCapabilityWarningType!]!
+  workspaceId: String!
+}
+
+type WorkspaceByokUsagePointType {
+  date: DateTime!
+  featureKind: String!
+  totalTokens: SafeInt!
 }
 
 input WorkspaceCalendarItemInput {
@@ -2722,6 +2841,8 @@ type WorkspaceType {
 
   """Blobs size of workspace"""
   blobsSize: Int!
+  byokSettings: WorkspaceByokSettingsType!
+  byokUsage(from: DateTime!, to: DateTime!): [WorkspaceByokUsagePointType!]!
   calendars: [WorkspaceCalendarObjectType!]!
 
   """Get comment changes of a doc"""

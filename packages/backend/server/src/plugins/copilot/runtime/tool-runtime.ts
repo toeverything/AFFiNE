@@ -13,7 +13,6 @@ import {
 } from '../providers/types';
 import {
   buildBlobContentGetter,
-  buildContentGetter,
   buildDocContentGetter,
   buildDocCreateHandler,
   buildDocKeywordSearchGetter,
@@ -27,7 +26,6 @@ import {
   createConversationSummaryTool,
   createDocComposeTool,
   createDocCreateTool,
-  createDocEditTool,
   createDocKeywordSearchTool,
   createDocReadTool,
   createDocSemanticSearchTool,
@@ -68,6 +66,21 @@ export class ToolRuntime {
     if (!options?.tools?.length) {
       return tools;
     }
+    const runPromptText = (
+      promptName: string,
+      params: Record<string, unknown>
+    ) =>
+      this.promptRuntime.runText(promptName, params, {
+        providerOptions: {
+          user: options.user,
+          session: options.session,
+          workspace: options.workspace,
+          byokLeaseId: options.byokLeaseId,
+          billingUnitId: options.billingUnitId,
+          quotaBackedRoutesAllowed: options.quotaBackedRoutesAllowed,
+          featureKind: options.featureKind,
+        },
+      });
 
     for (const tool of options.tools) {
       const toolDef = resolveProviderSpecificTool?.(tool, model);
@@ -97,23 +110,13 @@ export class ToolRuntime {
           break;
         }
         case 'codeArtifact': {
-          tools.code_artifact = createCodeArtifactTool(
-            this.promptRuntime.runText.bind(this.promptRuntime)
-          );
+          tools.code_artifact = createCodeArtifactTool(runPromptText);
           break;
         }
         case 'conversationSummary': {
           tools.conversation_summary = createConversationSummaryTool(
             options.session,
-            this.promptRuntime.runText.bind(this.promptRuntime)
-          );
-          break;
-        }
-        case 'docEdit': {
-          const getDocContent = buildContentGetter(this.ac, this.docReader);
-          tools.doc_edit = createDocEditTool(
-            this.promptRuntime.runText.bind(this.promptRuntime),
-            getDocContent.bind(null, options)
+            runPromptText
           );
           break;
         }
@@ -177,15 +180,11 @@ export class ToolRuntime {
           break;
         }
         case 'docCompose': {
-          tools.doc_compose = createDocComposeTool(
-            this.promptRuntime.runText.bind(this.promptRuntime)
-          );
+          tools.doc_compose = createDocComposeTool(runPromptText);
           break;
         }
         case 'sectionEdit': {
-          tools.section_edit = createSectionEditTool(
-            this.promptRuntime.runText.bind(this.promptRuntime)
-          );
+          tools.section_edit = createSectionEditTool(runPromptText);
           break;
         }
       }

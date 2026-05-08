@@ -722,14 +722,6 @@ Could you make a new website based on these notes and send back just the html fi
         threshold
       );
     },
-    applyDocUpdates: async (
-      workspaceId: string,
-      docId: string,
-      op: string,
-      updates: string
-    ) => {
-      return client.applyDocUpdates(workspaceId, docId, op, updates);
-    },
     addContextBlob: async (options: { blobId: string; contextId: string }) => {
       return client.addContextBlob({
         contextId: options.contextId,

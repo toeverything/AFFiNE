@@ -5,8 +5,9 @@ import ava, { ExecutionContext, TestFn } from 'ava';
 import Sinon from 'sinon';
 import { Doc as YDoc } from 'yjs';
 
+import { MockEventBus } from '../../../__tests__/mocks';
 import { createTestingApp, type TestingApp } from '../../../__tests__/utils';
-import { ConfigFactory } from '../../../base';
+import { ConfigFactory, EventBus } from '../../../base';
 import { Flavor } from '../../../env';
 import { Models } from '../../../models';
 import { DocReader, PgWorkspaceDocStorageAdapter } from '../../doc';
@@ -16,6 +17,7 @@ interface Context {
   app: TestingApp;
   adapter: PgWorkspaceDocStorageAdapter;
   docReader: DocReader;
+  recordDocView: Sinon.SinonStub;
 }
 
 const test = ava as TestFn<Context>;
@@ -23,7 +25,9 @@ const test = ava as TestFn<Context>;
 test.before(async t => {
   // @ts-expect-error testing
   env.FLAVOR = Flavor.Renderer;
-  const app = await createTestingApp();
+  const app = await createTestingApp({
+    tapModule: m => m.overrideProvider(EventBus).useClass(MockEventBus),
+  });
 
   t.context.models = app.get(Models);
   t.context.adapter = app.get(PgWorkspaceDocStorageAdapter);
@@ -45,6 +49,14 @@ test.beforeEach(async t => {
     email: 'test@affine.pro',
   });
   workspace = await t.context.models.workspace.create(user.id);
+  t.context.recordDocView = Sinon.stub(
+    t.context.models.workspaceAnalytics,
+    'recordDocView'
+  ).resolves();
+});
+
+test.afterEach.always(t => {
+  t.context.recordDocView?.restore();
 });
 
 test.after.always(async t => {
@@ -88,10 +100,7 @@ test('should record page view when rendering shared page', async t => {
     title: 'analytics-doc',
     summary: 'summary',
   });
-  const record = Sinon.stub(
-    models.workspaceAnalytics,
-    'recordDocView'
-  ).resolves();
+  const record = t.context.recordDocView;
 
   await app.GET(`/workspace/${workspace.id}/${docId}`).expect(200);
 
@@ -103,7 +112,6 @@ test('should record page view when rendering shared page', async t => {
   });
 
   docContent.restore();
-  record.restore();
 });
 
 const policyCases: Array<{
@@ -146,10 +154,7 @@ const policyCases: Array<{
           unknownBlocks: [],
         }),
         docContent: Sinon.stub(docReader, 'getDocContent'),
-        record: Sinon.stub(
-          models.workspaceAnalytics,
-          'recordDocView'
-        ).resolves(),
+        record: models.workspaceAnalytics.recordDocView as Sinon.SinonStub,
       };
     },
     request: (app, docId) =>

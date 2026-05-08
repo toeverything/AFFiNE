@@ -27,7 +27,11 @@ import { AIChatInput } from '../components/ai-chat-input';
 import { AIChatEmbeddingStatusTooltip } from '../components/ai-chat-input/embedding-status-tooltip';
 import { ChatInputPreference } from '../components/ai-chat-input/preference-popup';
 import { AIChatMessages } from '../components/ai-chat-messages/ai-chat-messages';
-import { AIChatToolbar, AISessionHistory } from '../components/ai-chat-toolbar';
+import {
+  AIChatTabs,
+  AIChatToolbar,
+  AISessionHistory,
+} from '../components/ai-chat-toolbar';
 import { AIHistoryClear } from '../components/ai-history-clear';
 import { AssistantAvatar } from '../components/ai-message-content/assistant-avatar';
 import { ChatActionList } from '../components/chat-action-list';
@@ -53,6 +57,7 @@ const appElements = {
   'action-text': ActionText,
   'ai-loading': AILoading,
   'ai-chat-content': AIChatContent,
+  'ai-chat-tabs': AIChatTabs,
   'ai-chat-toolbar': AIChatToolbar,
   'ai-session-history': AISessionHistory,
   'ai-chat-messages': AIChatMessages,

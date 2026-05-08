@@ -1,11 +1,15 @@
 import test from 'ava';
 import Sinon from 'sinon';
 
-import type { Models } from '../../models';
+import { type Models } from '../../models';
+import { CopilotAccessPolicy } from '../../plugins/copilot/access';
+import type { ByokFeatureKind } from '../../plugins/copilot/byok/types';
 import { HistoryAttachmentUrlProjector } from '../../plugins/copilot/compat/history-attachment-url-projector';
 import { CompatHistoryProjector } from '../../plugins/copilot/compat/history-projector';
 import { HistoryPromptPreloadProjector } from '../../plugins/copilot/compat/history-prompt-preload-projector';
 import { HistoryVisibilityPolicy } from '../../plugins/copilot/compat/history-visibility-policy';
+import { ConversationPolicy } from '../../plugins/copilot/conversation/policy';
+import type { Turn } from '../../plugins/copilot/core';
 import { CopilotEmbeddingClientService } from '../../plugins/copilot/embedding/client';
 import { CopilotProviderType } from '../../plugins/copilot/providers/types';
 import {
@@ -29,9 +33,11 @@ import {
   AttachmentMaterializer,
   resolveAttachmentFetchUrl,
 } from '../../plugins/copilot/runtime/hosts/attachment-materializer';
+import { ConversationHost } from '../../plugins/copilot/runtime/hosts/conversation-host';
 import { ImageResultHost } from '../../plugins/copilot/runtime/hosts/image-result-host';
 import { ResponsePostprocessor } from '../../plugins/copilot/runtime/hosts/response-postprocessor';
 import { TurnPersistence } from '../../plugins/copilot/runtime/hosts/turn-persistence';
+import { ToolRuntime } from '../../plugins/copilot/runtime/tool-runtime';
 
 function stubTurnPersistence(
   persistProjectedResult: Sinon.SinonStub = Sinon.stub().resolves(null)
@@ -40,6 +46,367 @@ function stubTurnPersistence(
     persistProjectedResult,
   } as unknown as TurnPersistence;
 }
+
+function stubConversationSession(latestUserTurn?: unknown) {
+  return {
+    config: {
+      sessionId: 'session-1',
+      userId: 'user-1',
+      workspaceId: 'workspace-1',
+    },
+    model: 'gpt-4o-mini',
+    stashTurns: latestUserTurn ? [latestUserTurn] : [],
+    latestUserTurn,
+    revertLatestMessage: Sinon.stub(),
+  };
+}
+
+test('ConversationPolicy should treat zero quota limit as exhausted', async t => {
+  const policy = new ConversationPolicy(
+    {
+      userFeature: { has: Sinon.stub().resolves(false) },
+      copilotSession: { countUserMessages: Sinon.stub().resolves(0) },
+    } as any,
+    {
+      getUserQuota: Sinon.stub().resolves({ copilotActionLimit: 0 }),
+    } as any
+  );
+
+  t.false(await policy.hasQuota('user-1'));
+  await t.throwsAsync(policy.checkQuota('user-1'));
+});
+
+type TurnRouteAccessCase = {
+  name: string;
+  profiles: Array<{ id: string }>;
+  featureKind?: 'embedding' | 'rerank' | 'workspace_indexing';
+  byokLeaseId?: string;
+  quotaBackedRoutesAllowed?: boolean;
+  expectedQuotaCalls: number;
+  expectedError?: string;
+  expectedQuotaBackedRoutesAllowed?: boolean;
+};
+
+const turnRouteAccessCases: TurnRouteAccessCase[] = [
+  {
+    name: 'checks quota when BYOK does not cover the route',
+    profiles: [],
+    expectedQuotaCalls: 1,
+    expectedError: 'quota exceeded',
+  },
+  {
+    name: 'skips quota when BYOK covers the route',
+    profiles: [{ id: 'profile-1' }],
+    byokLeaseId: 'lease-1',
+    expectedQuotaCalls: 0,
+    expectedQuotaBackedRoutesAllowed: undefined,
+  },
+  {
+    name: 'preserves explicit quota-backed route disable override',
+    profiles: [],
+    quotaBackedRoutesAllowed: false,
+    expectedQuotaCalls: 0,
+    expectedQuotaBackedRoutesAllowed: false,
+  },
+  {
+    name: 'does not check user quota for unmetered service features',
+    profiles: [],
+    featureKind: 'rerank',
+    expectedQuotaCalls: 0,
+    expectedQuotaBackedRoutesAllowed: true,
+  },
+];
+
+for (const matrixCase of turnRouteAccessCases) {
+  test(`CopilotAccessPolicy resolve turn route access: ${matrixCase.name}`, async t => {
+    const checkQuota = Sinon.stub().rejects(new Error('quota exceeded'));
+    const getProfiles = Sinon.stub().resolves(matrixCase.profiles);
+    const access = new CopilotAccessPolicy(
+      { checkQuota } as any,
+      { getProfiles } as any
+    );
+
+    const promise = access.resolveTurnRouteAccess({
+      userId: 'user-1',
+      workspaceId: 'workspace-1',
+      byokLeaseId: matrixCase.byokLeaseId,
+      featureKind: matrixCase.featureKind,
+      quotaBackedRoutesAllowed: matrixCase.quotaBackedRoutesAllowed,
+    });
+
+    if (matrixCase.expectedError) {
+      await t.throwsAsync(promise, { message: matrixCase.expectedError });
+    } else {
+      const routeAccess = await promise;
+      t.is(
+        routeAccess.quotaBackedRoutesAllowed,
+        matrixCase.expectedQuotaBackedRoutesAllowed
+      );
+    }
+    t.is(checkQuota.callCount, matrixCase.expectedQuotaCalls);
+    if (matrixCase.expectedQuotaCalls) {
+      Sinon.assert.calledWithExactly(checkQuota, 'user-1');
+    }
+    if (matrixCase.byokLeaseId) {
+      Sinon.assert.calledWithMatch(getProfiles, {
+        byokLeaseId: matrixCase.byokLeaseId,
+      });
+    }
+  });
+}
+
+type ByokCoverageCase = {
+  featureKind?: ByokFeatureKind;
+  expected: { local: boolean; server: boolean };
+};
+
+const byokCoverageCases: ByokCoverageCase[] = [
+  { featureKind: 'chat', expected: { local: true, server: true } },
+  { featureKind: 'action', expected: { local: true, server: true } },
+  { featureKind: 'image', expected: { local: true, server: true } },
+  { featureKind: 'transcript', expected: { local: false, server: true } },
+  { featureKind: 'embedding', expected: { local: false, server: true } },
+  {
+    featureKind: 'workspace_indexing',
+    expected: { local: false, server: true },
+  },
+  { featureKind: 'rerank', expected: { local: false, server: true } },
+  { expected: { local: true, server: true } },
+];
+
+for (const matrixCase of byokCoverageCases) {
+  test(`CopilotAccessPolicy should resolve BYOK coverage for ${matrixCase.featureKind ?? 'default'}`, async t => {
+    const getProfiles = Sinon.stub().resolves([]);
+    const access = new CopilotAccessPolicy(
+      { hasQuota: Sinon.stub().resolves(true) } as any,
+      { getProfiles } as any
+    );
+
+    await access.getByokProfiles({
+      userId: 'user-1',
+      workspaceId: 'workspace-1',
+      featureKind: matrixCase.featureKind,
+    });
+
+    t.like(getProfiles.firstCall.args[0], {
+      userId: 'user-1',
+      workspaceId: 'workspace-1',
+    });
+    t.is(getProfiles.firstCall.args[0].featureKind, matrixCase.featureKind);
+    t.deepEqual(getProfiles.firstCall.args[1], matrixCase.expected);
+  });
+}
+
+test('CopilotAccessPolicy assertQuotaOrByok should honor quota-backed route disable', async t => {
+  const checkQuota = Sinon.stub().resolves(undefined);
+  const access = new CopilotAccessPolicy(
+    { checkQuota } as any,
+    { getProfiles: Sinon.stub().resolves([]) } as any
+  );
+
+  await t.throwsAsync(
+    access.assertQuotaOrByok({
+      userId: 'user-1',
+      workspaceId: 'workspace-1',
+      featureKind: 'transcript',
+      quotaBackedRoutesAllowed: false,
+    })
+  );
+  Sinon.assert.notCalled(checkQuota);
+});
+
+test('ConversationHost should delegate empty no-message stream access', async t => {
+  const session = stubConversationSession();
+  const resolveTurnRouteAccess = Sinon.stub().rejects(
+    new Error('quota exceeded')
+  );
+  const host = new ConversationHost(
+    {
+      get: Sinon.stub().resolves(session),
+      revertLatestMessage: Sinon.stub().resolves(undefined),
+    } as any,
+    {} as any,
+    {} as any,
+    { resolveTurnRouteAccess } as any
+  );
+
+  await t.throwsAsync(host.prepareTurn('user-1', 'session-1', {}), {
+    message: 'quota exceeded',
+  });
+  Sinon.assert.calledOnceWithMatch(resolveTurnRouteAccess, {
+    userId: 'user-1',
+    workspaceId: 'workspace-1',
+  });
+});
+
+test('ConversationHost should return access decision for empty no-message stream', async t => {
+  const session = stubConversationSession();
+  const resolveTurnRouteAccess = Sinon.stub().resolves({
+    byokProfiles: [{ id: 'profile-1' }],
+    quotaBackedRoutesAllowed: undefined,
+  });
+  const host = new ConversationHost(
+    {
+      get: Sinon.stub().resolves(session),
+      revertLatestMessage: Sinon.stub().resolves(undefined),
+    } as any,
+    {} as any,
+    {} as any,
+    { resolveTurnRouteAccess } as any
+  );
+
+  const prepared = await host.prepareTurn('user-1', 'session-1', {});
+
+  t.is(prepared.latestTurn, undefined);
+  t.is(prepared.quotaBackedRoutesAllowed, undefined);
+  Sinon.assert.calledOnce(resolveTurnRouteAccess);
+});
+
+test('ConversationHost should replay accepted tokens without rechecking quota', async t => {
+  const acceptedTurn: Turn = {
+    id: 'turn-1',
+    conversationId: 'session-1',
+    role: 'user',
+    content: 'hello',
+    attachments: [],
+    metadata: {},
+    renderTrace: [],
+    toolEvents: [],
+    createdAt: new Date(),
+  };
+  const session = {
+    ...stubConversationSession(acceptedTurn),
+    findTurn: Sinon.stub().withArgs('turn-1').returns(acceptedTurn),
+  };
+  const resolveTurnRouteAccess = Sinon.stub().rejects(
+    new Error('quota exceeded')
+  );
+  const host = new ConversationHost(
+    {
+      get: Sinon.stub().resolves(session),
+      revertLatestMessage: Sinon.stub().resolves(undefined),
+    } as any,
+    {
+      getAccepted: Sinon.stub().resolves({
+        sessionId: 'session-1',
+        turnId: 'turn-1',
+      }),
+    } as any,
+    {} as any,
+    { resolveTurnRouteAccess } as any
+  );
+
+  const prepared = await host.prepareTurn('user-1', 'session-1', {
+    messageId: 'message-1',
+  });
+
+  t.is(prepared.latestTurn, acceptedTurn);
+  t.true(prepared.quotaBackedRoutesAllowed);
+  Sinon.assert.notCalled(resolveTurnRouteAccess);
+});
+
+test('ConversationHost should replay durable tokens without rechecking quota', async t => {
+  const durableTurn: Turn = {
+    id: 'turn-1',
+    conversationId: 'session-1',
+    role: 'user',
+    content: 'hello',
+    attachments: [],
+    metadata: {},
+    renderTrace: [],
+    toolEvents: [],
+    createdAt: new Date(),
+  };
+  const session = {
+    ...stubConversationSession(durableTurn),
+    findTurn: Sinon.stub().withArgs('turn-1').returns(durableTurn),
+    pushPersistedTurn: Sinon.stub(),
+  };
+  const resolveTurnRouteAccess = Sinon.stub().rejects(
+    new Error('quota exceeded')
+  );
+  const markAccepted = Sinon.stub().resolves(undefined);
+  const host = new ConversationHost(
+    {
+      get: Sinon.stub().resolves(session),
+      findTurnByCompatSubmissionId: Sinon.stub().resolves(durableTurn),
+      revertLatestMessage: Sinon.stub().resolves(undefined),
+    } as any,
+    {
+      getAccepted: Sinon.stub().resolves(undefined),
+      markAccepted,
+    } as any,
+    {
+      acquire: Sinon.stub().resolves({
+        [Symbol.asyncDispose]: Sinon.stub().resolves(undefined),
+      }),
+    } as any,
+    { resolveTurnRouteAccess } as any
+  );
+
+  const prepared = await host.prepareTurn('user-1', 'session-1', {
+    messageId: 'message-1',
+  });
+
+  t.is(prepared.latestTurn, durableTurn);
+  t.true(prepared.quotaBackedRoutesAllowed);
+  Sinon.assert.calledOnceWithMatch(markAccepted, 'message-1', {
+    sessionId: 'session-1',
+    turnId: 'turn-1',
+  });
+  Sinon.assert.notCalled(resolveTurnRouteAccess);
+});
+
+test('ToolRuntime should pass route context into prompt-backed tools', async t => {
+  const promptRuntime = {
+    runText: Sinon.stub().resolves('<html><body>done</body></html>'),
+  };
+  const runtime = new ToolRuntime(
+    {} as any,
+    {} as any,
+    {} as any,
+    {} as any,
+    {} as any,
+    {} as any,
+    promptRuntime as any,
+    {} as any
+  );
+
+  const tools = await runtime.getTools(
+    {
+      tools: ['codeArtifact'],
+      user: 'user-1',
+      session: 'session-1',
+      workspace: 'workspace-1',
+      byokLeaseId: 'lease-1',
+      featureKind: 'chat',
+      quotaBackedRoutesAllowed: false,
+    },
+    'gpt-4o-mini'
+  );
+
+  const result = await tools.code_artifact.execute?.(
+    { title: 'Demo', userPrompt: 'build a page' },
+    {}
+  );
+
+  t.like(result as object, { title: 'Demo' });
+  Sinon.assert.calledOnceWithMatch(
+    promptRuntime.runText,
+    'Code Artifact',
+    { content: 'build a page' },
+    {
+      providerOptions: {
+        user: 'user-1',
+        session: 'session-1',
+        workspace: 'workspace-1',
+        byokLeaseId: 'lease-1',
+        featureKind: 'chat',
+        quotaBackedRoutesAllowed: false,
+      },
+    }
+  );
+});
 
 test('ResponsePostprocessor should build text, object and image assistant turns', t => {
   const postprocessor = new ResponsePostprocessor();
@@ -267,7 +634,7 @@ test('action result projection should map image result url to assistant attachme
   t.deepEqual(turn?.attachments, ['https://example.com/final.png']);
 });
 
-test('CopilotEmbeddingClientService should refresh configured client and clear unavailable client', async t => {
+test('CopilotEmbeddingClientService should keep dispatch client across global config refreshes', async t => {
   const taskPolicy = {
     resolveEmbeddingModelId: () => 'text-embedding-3-large',
   };
@@ -288,12 +655,101 @@ test('CopilotEmbeddingClientService should refresh configured client and clear u
   t.truthy(service.getClient());
 
   const second = await service.refresh();
-  t.is(second, undefined);
-  t.is(service.getClient(), undefined);
+  t.truthy(second);
+  t.is(service.getClient(), second);
   Sinon.assert.calledTwice(runtime.embeddingConfigured);
   Sinon.assert.alwaysCalledWithExactly(
     runtime.embeddingConfigured,
     'text-embedding-3-large'
+  );
+});
+
+test('CopilotEmbeddingClientService should keep workspace-routed embedding client without global provider', async t => {
+  const taskPolicy = {
+    resolveEmbeddingModelId: () => 'gemini-embedding-001',
+    resolveRerankModelId: () => 'gpt-4o-mini',
+  };
+  const runtime = {
+    embeddingConfigured: Sinon.stub().resolves(false),
+  };
+  const service = new CopilotEmbeddingClientService(
+    taskPolicy as any,
+    runtime as any
+  );
+
+  const client = await service.refresh();
+
+  t.truthy(client);
+  t.is(service.getClient(), client);
+  Sinon.assert.calledOnceWithExactly(
+    runtime.embeddingConfigured,
+    'gemini-embedding-001'
+  );
+});
+
+test('CopilotEmbeddingClientService should pass workspace context into embedding routes', async t => {
+  const signal = new AbortController().signal;
+  const taskPolicy = {
+    resolveEmbeddingModelId: () => 'gemini-embedding-001',
+    resolveRerankModelId: () => 'gpt-4o-mini',
+  };
+  const runtime = {
+    embeddingConfigured: Sinon.stub().resolves(true),
+    embed: Sinon.stub().resolves([[0.1]]),
+    rerank: Sinon.stub().resolves([0.8]),
+  };
+  const service = new CopilotEmbeddingClientService(
+    taskPolicy as any,
+    runtime as any
+  );
+  const client = await service.refresh();
+
+  t.truthy(client);
+  await client?.getEmbeddings(['hello'], {
+    workspaceId: 'workspace-1',
+    userId: 'user-1',
+    featureKind: 'workspace_indexing',
+    signal,
+  });
+
+  Sinon.assert.calledOnceWithMatch(
+    runtime.embed,
+    'gemini-embedding-001',
+    ['hello'],
+    {
+      dimensions: Sinon.match.number,
+      workspace: 'workspace-1',
+      user: 'user-1',
+      featureKind: 'workspace_indexing',
+      signal,
+    }
+  );
+
+  await client?.reRank(
+    'hello',
+    [{ chunk: 0, content: 'hello', distance: 0.2 }],
+    1,
+    {
+      workspaceId: 'workspace-1',
+      userId: 'user-1',
+      featureKind: 'workspace_indexing',
+      signal,
+    }
+  );
+
+  Sinon.assert.calledOnceWithMatch(
+    runtime.rerank,
+    'gpt-4o-mini',
+    {
+      query: 'hello',
+      candidates: [{ id: '0', text: 'hello' }],
+    },
+    {
+      workspace: 'workspace-1',
+      user: 'user-1',
+      featureKind: 'rerank',
+      signal,
+    }
   );
 });
 

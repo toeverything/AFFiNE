@@ -153,7 +153,6 @@ export const KNOWN_CONFIG_GROUPS = [
       'scenarios',
       'providers.openai',
       'providers.gemini',
-      'providers.perplexity',
       'providers.anthropic',
       'providers.fal',
       'unsplash',

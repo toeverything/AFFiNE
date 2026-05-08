@@ -2,7 +2,6 @@ import track from '@affine/track';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
 import { unsafeCSSVar, unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import { type EditorHost, ShadowlessElement } from '@blocksuite/affine/std';
-import { LoadingIcon } from '@blocksuite/affine-components/icons';
 import type { NotificationService } from '@blocksuite/affine-shared/services';
 import {
   CloseIcon,
@@ -17,8 +16,6 @@ import { css, html, nothing } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
-import { AIProvider } from '../../provider';
-import { BlockDiffProvider } from '../../services/block-diff';
 import { diffMarkdown } from '../../utils/apply-model/markdown-diff';
 import { copyText } from '../../utils/editor-actions';
 import { AI_CHAT_AUTO_SCROLL_PAUSE_EVENT } from '../ai-chat-messages/auto-scroll';
@@ -218,61 +215,21 @@ export class DocEditTool extends WithDisposable(ShadowlessElement) {
   @state()
   accessor isCollapsed = false;
 
-  @state()
-  accessor applyingMap: Record<string, boolean> = {};
-
-  @state()
-  accessor acceptingMap: Record<string, boolean> = {};
-
-  get blockDiffService() {
-    return this.host?.std.getOptional(BlockDiffProvider);
-  }
-
   get isBusy() {
     return undefined;
   }
 
-  isBusyForOp(op: string) {
-    return this.applyingMap[op] || this.acceptingMap[op];
-  }
-
-  private async _handleApply(op: string, updates: string) {
-    if (
-      !this.host ||
-      this.data.type !== 'tool-result' ||
-      this.isBusyForOp(op)
-    ) {
+  private _handleApply(op: string) {
+    if (!this.host || this.data.type !== 'tool-result') {
       return;
     }
-    this.applyingMap = { ...this.applyingMap, [op]: true };
-    try {
-      const markdown = await AIProvider.context?.applyDocUpdates(
-        this.host.std.workspace.id,
-        this.data.args.doc_id,
-        op,
-        updates
-      );
-      if (!markdown) {
-        return;
-      }
-      track.applyModel.chat.$.apply({
-        instruction: this.data.args.instructions,
-        operation: op,
-      });
-      await this.blockDiffService?.apply(this.host.store, markdown);
-    } catch (error) {
-      this.notificationService.notify({
-        title: 'Failed to apply updates',
-        message: error instanceof Error ? error.message : 'Unknown error',
-        accent: 'error',
-        onClose: function (): void {},
-      });
-    } finally {
-      this.applyingMap = { ...this.applyingMap, [op]: false };
-    }
+    track.applyModel.chat.$.apply({
+      instruction: this.data.args.instructions,
+      operation: op,
+    });
   }
 
-  private async _handleReject(op: string) {
+  private _handleReject(op: string) {
     if (!this.host || this.data.type !== 'tool-result') {
       return;
     }
@@ -281,45 +238,16 @@ export class DocEditTool extends WithDisposable(ShadowlessElement) {
       instruction: this.data.args.instructions,
       operation: op,
     });
-    this.blockDiffService?.setChangedMarkdown(null);
-    this.blockDiffService?.rejectAll();
   }
 
-  private async _handleAccept(op: string, updates: string) {
-    if (
-      !this.host ||
-      this.data.type !== 'tool-result' ||
-      this.isBusyForOp(op)
-    ) {
+  private _handleAccept(op: string) {
+    if (!this.host || this.data.type !== 'tool-result') {
       return;
     }
-    this.acceptingMap = { ...this.acceptingMap, [op]: true };
-    try {
-      const changedMarkdown = await AIProvider.context?.applyDocUpdates(
-        this.host.std.workspace.id,
-        this.data.args.doc_id,
-        op,
-        updates
-      );
-      if (!changedMarkdown) {
-        return;
-      }
-      track.applyModel.chat.$.accept({
-        instruction: this.data.args.instructions,
-        operation: op,
-      });
-      await this.blockDiffService?.apply(this.host.store, changedMarkdown);
-      await this.blockDiffService?.acceptAll(this.host.store);
-    } catch (error) {
-      this.notificationService.notify({
-        title: 'Failed to apply updates',
-        message: error instanceof Error ? error.message : 'Unknown error',
-        accent: 'error',
-        onClose: function (): void {},
-      });
-    } finally {
-      this.acceptingMap = { ...this.acceptingMap, [op]: false };
-    }
+    track.applyModel.chat.$.accept({
+      instruction: this.data.args.instructions,
+      operation: op,
+    });
   }
 
   private async _toggleCollapse() {
@@ -421,7 +349,7 @@ export class DocEditTool extends WithDisposable(ShadowlessElement) {
       return repeat(
         result.result,
         change => change.op,
-        ({ op, updates, originalContent, changedContent }) => {
+        ({ op, originalContent, changedContent }) => {
           const diffs = diffMarkdown(originalContent, changedContent);
           return html`
             <div class="doc-edit-tool-result-wrapper">
@@ -449,14 +377,7 @@ export class DocEditTool extends WithDisposable(ShadowlessElement) {
                       ${CopyIcon()}
                       <affine-tooltip>Copy</affine-tooltip>
                     </button>
-                    <button
-                      @click=${() => this._handleApply(op, updates)}
-                      ?disabled=${this.isBusyForOp(op)}
-                    >
-                      ${this.applyingMap[op]
-                        ? html`${LoadingIcon()} Applying`
-                        : 'Apply'}
-                    </button>
+                    <button @click=${() => this._handleApply(op)}>Apply</button>
                   </div>
                 </div>
                 <div class="doc-edit-tool-result-card-content">
@@ -473,18 +394,12 @@ export class DocEditTool extends WithDisposable(ShadowlessElement) {
                     </button>
                     <button
                       class="doc-edit-tool-result-accept"
-                      @click=${() => this._handleAccept(op, updates)}
-                      ?disabled=${this.isBusyForOp(op)}
-                      style="${this.isBusyForOp(op)
-                        ? 'pointer-events: none; opacity: 0.6;'
-                        : ''}"
+                      @click=${() => this._handleAccept(op)}
                     >
-                      ${this.acceptingMap[op]
-                        ? html`${LoadingIcon()}`
-                        : DoneIcon({
-                            style: `color: ${unsafeCSSVarV2('icon/activated')}`,
-                          })}
-                      ${this.acceptingMap[op] ? 'Accepting...' : 'Accept'}
+                      ${DoneIcon({
+                        style: `color: ${unsafeCSSVarV2('icon/activated')}`,
+                      })}
+                      Accept
                     </button>
                   </div>
                 </div>

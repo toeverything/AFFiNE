@@ -15,7 +15,11 @@ import {
   Models,
 } from '../../../models';
 import { CopilotEmbeddingClientService } from '../embedding/client';
-import type { EmbeddingClient } from '../embedding/types';
+import type {
+  EmbeddingCallOptions,
+  EmbeddingClient,
+  EmbeddingRouteContext,
+} from '../embedding/types';
 import { ContextSession } from './session';
 
 const CONTEXT_SESSION_KEY = 'context-session';
@@ -60,6 +64,14 @@ export class CopilotContextService implements OnApplicationBootstrap {
   // public this client to allow overriding in tests
   get embeddingClient(): EmbeddingClient | undefined {
     return this.client ?? this.embeddingClients.getClient();
+  }
+
+  private embeddingOptions(
+    workspaceId: string,
+    signal?: AbortSignal,
+    routeContext: EmbeddingRouteContext = {}
+  ): EmbeddingCallOptions {
+    return { workspaceId, signal, ...routeContext, featureKind: 'embedding' };
   }
 
   private async saveConfig(
@@ -172,11 +184,13 @@ export class CopilotContextService implements OnApplicationBootstrap {
     content: string,
     topK: number = 5,
     signal?: AbortSignal,
-    threshold: number = 0.5
+    threshold: number = 0.5,
+    routeContext?: EmbeddingRouteContext
   ) {
     const client = this.embeddingClient;
     if (!client) return [];
-    const embedding = await client.getEmbedding(content, signal);
+    const options = this.embeddingOptions(workspaceId, signal, routeContext);
+    const embedding = await client.getEmbedding(content, options);
     if (!embedding) return [];
 
     const blobChunks = await this.models.copilotWorkspace.matchBlobEmbedding(
@@ -187,7 +201,7 @@ export class CopilotContextService implements OnApplicationBootstrap {
     );
     if (!blobChunks.length) return [];
 
-    return await client.reRank(content, blobChunks, topK, signal);
+    return await client.reRank(content, blobChunks, topK, options);
   }
 
   async matchWorkspaceFiles(
@@ -195,11 +209,13 @@ export class CopilotContextService implements OnApplicationBootstrap {
     content: string,
     topK: number = 5,
     signal?: AbortSignal,
-    threshold: number = 0.5
+    threshold: number = 0.5,
+    routeContext?: EmbeddingRouteContext
   ) {
     const client = this.embeddingClient;
     if (!client) return [];
-    const embedding = await client.getEmbedding(content, signal);
+    const options = this.embeddingOptions(workspaceId, signal, routeContext);
+    const embedding = await client.getEmbedding(content, options);
     if (!embedding) return [];
 
     const fileChunks = await this.models.copilotWorkspace.matchFileEmbedding(
@@ -210,7 +226,7 @@ export class CopilotContextService implements OnApplicationBootstrap {
     );
     if (!fileChunks.length) return [];
 
-    return await client.reRank(content, fileChunks, topK, signal);
+    return await client.reRank(content, fileChunks, topK, options);
   }
 
   async matchWorkspaceDocs(
@@ -218,11 +234,13 @@ export class CopilotContextService implements OnApplicationBootstrap {
     content: string,
     topK: number = 5,
     signal?: AbortSignal,
-    threshold: number = 0.5
+    threshold: number = 0.5,
+    routeContext?: EmbeddingRouteContext
   ) {
     const client = this.embeddingClient;
     if (!client) return [];
-    const embedding = await client.getEmbedding(content, signal);
+    const options = this.embeddingOptions(workspaceId, signal, routeContext);
+    const embedding = await client.getEmbedding(content, options);
     if (!embedding) return [];
 
     const workspaceChunks =
@@ -234,7 +252,7 @@ export class CopilotContextService implements OnApplicationBootstrap {
       );
     if (!workspaceChunks.length) return [];
 
-    return await client.reRank(content, workspaceChunks, topK, signal);
+    return await client.reRank(content, workspaceChunks, topK, options);
   }
 
   async matchWorkspaceAll(
@@ -244,11 +262,13 @@ export class CopilotContextService implements OnApplicationBootstrap {
     signal?: AbortSignal,
     threshold: number = 0.8,
     docIds?: string[],
-    scopedThreshold: number = 0.85
+    scopedThreshold: number = 0.85,
+    routeContext?: EmbeddingRouteContext
   ) {
     const client = this.embeddingClient;
     if (!client) return [];
-    const embedding = await client.getEmbedding(content, signal);
+    const options = this.embeddingOptions(workspaceId, signal, routeContext);
+    const embedding = await client.getEmbedding(content, options);
     if (!embedding) return [];
 
     const [fileChunks, blobChunks, workspaceChunks, scopedWorkspaceChunks] =
@@ -300,7 +320,7 @@ export class CopilotContextService implements OnApplicationBootstrap {
         ...(scopedWorkspaceChunks || []),
       ],
       topK,
-      signal
+      options
     );
   }
 

@@ -3,7 +3,11 @@ import test from 'ava';
 import Sinon from 'sinon';
 import { z } from 'zod';
 
-import { CopilotPromptInvalid, NoCopilotProviderAvailable } from '../../base';
+import {
+  CopilotPromptInvalid,
+  CopilotQuotaExceeded,
+  NoCopilotProviderAvailable,
+} from '../../base';
 import {
   type LlmBackendConfig,
   type LlmEmbeddingRequest,
@@ -20,9 +24,11 @@ import {
   llmResolveRequestedModelMatch,
   type LlmStructuredRequest,
 } from '../../native';
-import type { ProviderMiddlewareConfig } from '../../plugins/copilot/config';
+import type {
+  CopilotProviderProfile,
+  ProviderMiddlewareConfig,
+} from '../../plugins/copilot/config';
 import { CopilotProviderFactory } from '../../plugins/copilot/providers/factory';
-import { MorphProvider } from '../../plugins/copilot/providers/morph';
 import { OpenAIProvider } from '../../plugins/copilot/providers/openai';
 import { CopilotProvider } from '../../plugins/copilot/providers/provider';
 import { buildProviderRegistry } from '../../plugins/copilot/providers/provider-registry';
@@ -61,6 +67,13 @@ import {
   systemPrompt,
   userPrompt,
 } from './prompt-test-helper';
+
+function createNativeExecutionEngine() {
+  return new NativeExecutionEngine({
+    recordUsage: Sinon.stub().resolves(),
+    recordProviderFailure: Sinon.stub().resolves(),
+  } as never);
+}
 
 function structuredOptions(
   schema: z.ZodTypeAny,
@@ -541,7 +554,7 @@ test('CapabilityRuntime should defer no-route embedding plans to native engine',
 });
 
 test('NativeExecutionEngine should expose execute/executeStream as the single plan entrypoints', async t => {
-  const engine = new NativeExecutionEngine();
+  const engine = createNativeExecutionEngine();
   let dispatchCalls = 0;
   let streamCalls = 0;
 
@@ -660,6 +673,279 @@ test('NativeExecutionEngine should expose execute/executeStream as the single pl
   t.is(streamCalls, 1);
 });
 
+test('NativeExecutionEngine should record BYOK usage when stream finalizes with selected provider', async t => {
+  const byok = {
+    recordUsage: Sinon.stub().resolves(),
+  };
+  const engine = new NativeExecutionEngine(byok as never);
+  const providerId = 'byok-aaaaaaaaaaaa-openai-server-key1';
+
+  const originalStream = (serverNativeModule as any).llmDispatchPreparedStream;
+  (serverNativeModule as any).llmDispatchPreparedStream = (
+    _routesJson: string,
+    callback: (error: Error | null, arg: string) => void
+  ) => {
+    callback(
+      null,
+      JSON.stringify({
+        type: 'message_start',
+        model: 'gpt-5-mini',
+      })
+    );
+    callback(null, JSON.stringify({ type: 'text_delta', text: 'ok' }));
+    callback(
+      null,
+      JSON.stringify({
+        type: 'done',
+        finish_reason: 'stop',
+        usage: {
+          prompt_tokens: 2,
+          completion_tokens: 3,
+          total_tokens: 5,
+        },
+      })
+    );
+    callback(
+      null,
+      JSON.stringify({
+        type: 'provider_selected',
+        provider_id: providerId,
+      })
+    );
+    callback(null, '__AFFINE_LLM_STREAM_END__');
+    return { abort() {} };
+  };
+  t.teardown(() => {
+    (serverNativeModule as any).llmDispatchPreparedStream = originalStream;
+  });
+
+  const chunks = await collectAsync(
+    engine.executeStream({
+      nativeDispatch: {
+        chat: {
+          routes: [
+            nativeRoute({
+              providerId,
+              authToken: 'byok-key',
+              request: nativeTextRequest('hello'),
+            }),
+          ],
+          prepared: {
+            route: preparedRoute({
+              providerId,
+              authToken: 'byok-key',
+            }),
+            request: nativeTextRequest('hello'),
+            tools: {},
+            postprocess: { nodeTextMiddleware: [] },
+          },
+          hasTools: false,
+        },
+      },
+      request: {
+        kind: 'streamText',
+        cond: { modelId: 'gpt-5-mini' },
+        messages: singleUserPromptMessages('hello'),
+        options: {
+          workspace: 'workspace-1',
+          user: 'user-1',
+          session: 'session-1',
+          featureKind: 'chat',
+        },
+      },
+      routePolicy: { fallbackOrder: [providerId] },
+      runtimePolicy: {},
+      attachmentPolicy: { materializeRemoteAttachments: true },
+      responsePostprocess: { mode: 'streamText' },
+      hostPersistence: { persistAssistantTurn: true, outputKind: 'streamText' },
+      hostContext: {},
+    })
+  );
+
+  t.deepEqual(chunks, ['ok']);
+  Sinon.assert.calledOnceWithMatch(byok.recordUsage, {
+    workspaceId: 'workspace-1',
+    userId: 'user-1',
+    sessionId: 'session-1',
+    featureKind: 'chat',
+    providerId,
+    model: 'gpt-5-mini',
+    usage: {
+      prompt_tokens: 2,
+      completion_tokens: 3,
+      total_tokens: 5,
+    },
+  });
+});
+
+test('NativeExecutionEngine should record plain text BYOK usage as chat by default', async t => {
+  const byok = {
+    recordUsage: Sinon.stub().resolves(),
+    recordProviderFailure: Sinon.stub().resolves(),
+  };
+  const engine = new NativeExecutionEngine(byok as never);
+  const providerId = 'byok-aaaaaaaaaaaa-openai-server-key1';
+
+  const originalDispatch = (serverNativeModule as any).llmDispatchPrepared;
+  (serverNativeModule as any).llmDispatchPrepared = () => {
+    return JSON.stringify({
+      provider_id: providerId,
+      response: {
+        id: 'chat_execute',
+        model: 'gpt-5-mini',
+        message: {
+          role: 'assistant',
+          content: [{ type: 'text', text: 'execute-ok' }],
+        },
+        usage: {
+          prompt_tokens: 1,
+          completion_tokens: 2,
+          total_tokens: 3,
+        },
+        finish_reason: 'stop',
+      },
+    });
+  };
+  t.teardown(() => {
+    (serverNativeModule as any).llmDispatchPrepared = originalDispatch;
+  });
+
+  const text = await engine.execute({
+    nativeDispatch: {
+      chat: {
+        routes: [
+          nativeRoute({
+            providerId,
+            authToken: 'byok-key',
+            request: nativeTextRequest('hello'),
+          }),
+        ],
+        prepared: {
+          route: preparedRoute({
+            providerId,
+            authToken: 'byok-key',
+          }),
+          request: nativeTextRequest('hello'),
+          tools: {},
+          postprocess: { nodeTextMiddleware: [] },
+        },
+        hasTools: false,
+      },
+    },
+    request: {
+      kind: 'text',
+      cond: { modelId: 'gpt-5-mini' },
+      messages: singleUserPromptMessages('hello'),
+      options: {
+        workspace: 'workspace-1',
+        user: 'user-1',
+        session: 'session-1',
+      },
+    },
+    routePolicy: { fallbackOrder: [providerId] },
+    runtimePolicy: {},
+    attachmentPolicy: { materializeRemoteAttachments: true },
+    responsePostprocess: { mode: 'text' },
+    hostPersistence: { persistAssistantTurn: true, outputKind: 'text' },
+    hostContext: {},
+  });
+
+  t.is(text, 'execute-ok');
+  Sinon.assert.calledOnceWithMatch(byok.recordUsage, {
+    workspaceId: 'workspace-1',
+    userId: 'user-1',
+    sessionId: 'session-1',
+    featureKind: 'chat',
+    providerId,
+    model: 'gpt-5-mini',
+    usage: {
+      prompt_tokens: 1,
+      completion_tokens: 2,
+      total_tokens: 3,
+    },
+  });
+});
+
+test('NativeExecutionEngine should not fail stream when BYOK usage recording fails', async t => {
+  const byok = {
+    recordUsage: Sinon.stub().rejects(new Error('usage db down')),
+  };
+  const engine = new NativeExecutionEngine(byok as never);
+  const providerId = 'byok-aaaaaaaaaaaa-openai-server-key1';
+
+  const originalStream = (serverNativeModule as any).llmDispatchPreparedStream;
+  (serverNativeModule as any).llmDispatchPreparedStream = (
+    _routesJson: string,
+    callback: (error: Error | null, arg: string) => void
+  ) => {
+    callback(
+      null,
+      JSON.stringify({ type: 'message_start', model: 'gpt-5-mini' })
+    );
+    callback(null, JSON.stringify({ type: 'text_delta', text: 'ok' }));
+    callback(
+      null,
+      JSON.stringify({
+        type: 'done',
+        finish_reason: 'stop',
+        usage: { prompt_tokens: 2, completion_tokens: 3, total_tokens: 5 },
+      })
+    );
+    callback(
+      null,
+      JSON.stringify({ type: 'provider_selected', provider_id: providerId })
+    );
+    callback(null, '__AFFINE_LLM_STREAM_END__');
+    return { abort() {} };
+  };
+  t.teardown(() => {
+    (serverNativeModule as any).llmDispatchPreparedStream = originalStream;
+  });
+
+  const chunks = await collectAsync(
+    engine.executeStream({
+      nativeDispatch: {
+        chat: {
+          routes: [
+            nativeRoute({
+              providerId,
+              authToken: 'byok-key',
+              request: nativeTextRequest('hello'),
+            }),
+          ],
+          prepared: {
+            route: preparedRoute({ providerId, authToken: 'byok-key' }),
+            request: nativeTextRequest('hello'),
+            tools: {},
+            postprocess: { nodeTextMiddleware: [] },
+          },
+          hasTools: false,
+        },
+      },
+      request: {
+        kind: 'streamText',
+        cond: { modelId: 'gpt-5-mini' },
+        messages: singleUserPromptMessages('hello'),
+        options: {
+          workspace: 'workspace-1',
+          user: 'user-1',
+          session: 'session-1',
+          featureKind: 'chat',
+        },
+      },
+      routePolicy: { fallbackOrder: [providerId] },
+      runtimePolicy: {},
+      attachmentPolicy: { materializeRemoteAttachments: true },
+      responsePostprocess: { mode: 'streamText' },
+      hostPersistence: { persistAssistantTurn: true, outputKind: 'streamText' },
+      hostContext: {},
+    })
+  );
+
+  t.deepEqual(chunks, ['ok']);
+  Sinon.assert.calledOnce(byok.recordUsage);
+});
+
 test('CopilotProviderFactory should return no prepared routes when native prepare returns null', async t => {
   const provider = new DriverOnlyProvider();
   (provider as any).AFFiNEConfig = { copilot: { providers: { openai: {} } } };
@@ -693,9 +979,16 @@ test('CopilotProviderFactory should return no prepared routes when native prepar
     enableFeature: Sinon.stub(),
     disableFeature: Sinon.stub(),
   };
+  const access = {
+    resolveRouteAccess: Sinon.stub().resolves({
+      byokProfiles: [],
+      quotaBackedRoutesAvailable: true,
+    }),
+  };
   const factory = new CopilotProviderFactory(
     server as never,
-    registryService as never
+    registryService as never,
+    access as never
   );
   factory.register('openai-main', provider);
 
@@ -921,52 +1214,6 @@ test('driver-only provider should require explicit structured response contracts
 
   t.true(error instanceof CopilotPromptInvalid);
   t.is(capturedRequest, undefined);
-});
-
-test('MorphProvider should reuse the base native chat driver template', async t => {
-  const provider = new MorphProvider();
-  (provider as any).AFFiNEConfig = {
-    copilot: { providers: { morph: { apiKey: 'test-key' } } },
-  };
-  (provider as any).toolExecutorHost = {
-    createNativeAdapter: () => ({
-      text: async () => 'morph text',
-      streamText: async function* () {
-        yield 'morph stream';
-      },
-      streamObject: async function* () {
-        yield { type: 'text-delta', textDelta: 'unused' };
-      },
-    }),
-    getTools: async () => ({}),
-  };
-
-  t.is(
-    await getProviderRuntimeHost(provider).run.text(
-      { modelId: 'morph-v3-fast' },
-      promptMessages(userPrompt('hello'))
-    ),
-    'morph text'
-  );
-  t.deepEqual(
-    await collectAsync(
-      getProviderRuntimeHost(provider).run.streamText(
-        { modelId: 'morph-v3-fast' },
-        promptMessages(userPrompt('hello'))
-      )
-    ),
-    ['morph stream']
-  );
-  t.is(
-    await getProviderRuntimeHost(provider).prepare.chat(
-      'streamObject',
-      {
-        modelId: 'morph-v3-fast',
-      },
-      promptMessages(userPrompt('hello'))
-    ),
-    null
-  );
 });
 
 test('getActiveProviderMiddleware should merge defaults with profile override', t => {
@@ -1231,15 +1478,246 @@ test('CopilotProviderFactory should resolve legacy model ids through native regi
     enableFeature: Sinon.stub(),
     disableFeature: Sinon.stub(),
   };
+  const access = {
+    resolveRouteAccess: Sinon.stub().resolves({
+      byokProfiles: [],
+      quotaBackedRoutesAvailable: true,
+    }),
+  };
   const factory = new CopilotProviderFactory(
     server as never,
-    registryService as never
+    registryService as never,
+    access as never
   );
   factory.register('openai-main', provider);
 
   const resolvedProvider = await factory.getProviderByModel('gpt-5-2025-08-07');
   t.is(resolvedProvider, provider);
   t.is(provider.resolveModel('gpt-5-2025-08-07')?.id, 'gpt-5');
+});
+
+const BYOK_OPENAI_PROFILE: CopilotProviderProfile = {
+  id: 'byok-aaaaaaaaaaaa-openai-server-key1',
+  type: CopilotProviderType.OpenAI,
+  priority: 10_000,
+  config: { apiKey: 'byok-key' },
+};
+
+const BYOK_FAL_PROFILE: CopilotProviderProfile = {
+  id: 'byok-aaaaaaaaaaaa-fal-server-key1',
+  type: CopilotProviderType.FAL,
+  priority: 10_000,
+  config: { apiKey: 'byok-key' },
+};
+
+function createProviderFactoryWithByokRoutes({
+  byokProfiles = [BYOK_OPENAI_PROFILE],
+  hasQuota = true,
+}: {
+  byokProfiles?: CopilotProviderProfile[];
+  hasQuota?: boolean;
+} = {}) {
+  const provider = createProvider();
+  const registryService = {
+    getRegistry: () =>
+      buildProviderRegistry({
+        profiles: [
+          {
+            id: 'openai-main',
+            type: CopilotProviderType.OpenAI,
+            priority: 1,
+            config: { apiKey: 'test-key' },
+          },
+        ],
+        defaults: {},
+      }),
+  };
+  const server = {
+    enableFeature: Sinon.stub(),
+    disableFeature: Sinon.stub(),
+  };
+  const byok = {
+    getProfiles: Sinon.stub().resolves(byokProfiles),
+  };
+  const access = {
+    resolveRouteAccess: Sinon.stub().callsFake(async context => ({
+      byokProfiles: await byok.getProfiles(context),
+      quotaBackedRoutesAvailable: context.quotaBackedRoutesAllowed ?? hasQuota,
+    })),
+  };
+  const factory = new CopilotProviderFactory(
+    server as never,
+    registryService as never,
+    access as never
+  );
+  factory.register('openai-main', provider);
+
+  return { factory, byok };
+}
+
+test('CopilotProviderFactory should use matching BYOK routes before quota-backed routes', async t => {
+  const { factory } = createProviderFactoryWithByokRoutes();
+
+  const routes = await factory.resolveRoutes(
+    { modelId: 'gpt-5-mini', outputType: ModelOutputType.Text },
+    {},
+    { userId: 'user-1', workspaceId: 'workspace-1' }
+  );
+
+  t.deepEqual(
+    routes.map(route => route.providerId),
+    ['byok-aaaaaaaaaaaa-openai-server-key1']
+  );
+});
+
+test('CopilotProviderFactory should skip unsupported BYOK profiles and use quota-backed fallback', async t => {
+  const { factory } = createProviderFactoryWithByokRoutes({
+    byokProfiles: [BYOK_FAL_PROFILE],
+  });
+
+  const routes = await factory.resolveRoutes(
+    { modelId: 'gpt-5-mini', outputType: ModelOutputType.Text },
+    {},
+    { userId: 'user-1', workspaceId: 'workspace-1' }
+  );
+
+  t.deepEqual(
+    routes.map(route => route.providerId),
+    ['openai-main']
+  );
+});
+
+test('CopilotProviderFactory should resolve BYOK embedding routes with workspace context', async t => {
+  const { factory, byok } = createProviderFactoryWithByokRoutes();
+
+  const routes = await factory.resolveRoutes(
+    {
+      modelId: 'text-embedding-3-small',
+      outputType: ModelOutputType.Embedding,
+    },
+    {},
+    { workspaceId: 'workspace-1', featureKind: 'workspace_indexing' }
+  );
+
+  t.deepEqual(
+    routes.map(route => route.providerId),
+    ['byok-aaaaaaaaaaaa-openai-server-key1']
+  );
+  Sinon.assert.calledOnceWithMatch(byok.getProfiles, {
+    workspaceId: 'workspace-1',
+    featureKind: 'workspace_indexing',
+  });
+});
+
+test('CopilotProviderFactory should treat embedding preparation as embedding feature by default', async t => {
+  const { factory, byok } = createProviderFactoryWithByokRoutes();
+
+  await factory.prepareEmbeddingRoutes('text-embedding-3-small', 'hello', {
+    workspace: 'workspace-1',
+  });
+
+  t.true(byok.getProfiles.calledOnce);
+  Sinon.assert.calledOnceWithMatch(byok.getProfiles, {
+    workspaceId: 'workspace-1',
+    featureKind: 'embedding',
+  });
+});
+
+test('CopilotProviderFactory should resolve BYOK rerank routes before quota-backed routes', async t => {
+  const { factory, byok } = createProviderFactoryWithByokRoutes();
+
+  const preparedRoutes = await factory.prepareRerankRoutes(
+    'gpt-4o-mini',
+    {
+      query: 'programming',
+      candidates: [{ text: 'React is a UI library.' }],
+    },
+    { workspace: 'workspace-1' }
+  );
+  const resolvedRoutes = await factory.resolveRoutes(
+    { modelId: 'gpt-4o-mini', outputType: ModelOutputType.Rerank },
+    {},
+    { workspaceId: 'workspace-1', featureKind: 'rerank' }
+  );
+
+  t.deepEqual(
+    preparedRoutes.map(route => route.providerId),
+    []
+  );
+  t.deepEqual(
+    resolvedRoutes.map(route => route.providerId),
+    ['byok-aaaaaaaaaaaa-openai-server-key1']
+  );
+  Sinon.assert.calledWithMatch(byok.getProfiles, {
+    workspaceId: 'workspace-1',
+    featureKind: 'rerank',
+  });
+});
+
+test('CopilotProviderFactory should treat image preparation as image feature by default', async t => {
+  const { factory, byok } = createProviderFactoryWithByokRoutes();
+
+  await factory.prepareImageRoutes(
+    { modelId: 'gpt-image-1', outputType: ModelOutputType.Image },
+    singleUserPromptMessages('draw a cat'),
+    { workspace: 'workspace-1' }
+  );
+
+  t.true(byok.getProfiles.calledOnce);
+  Sinon.assert.calledOnceWithMatch(byok.getProfiles, {
+    workspaceId: 'workspace-1',
+    featureKind: 'image',
+  });
+});
+
+test('CopilotProviderFactory should omit quota-backed routes when quota is exhausted', async t => {
+  const { factory } = createProviderFactoryWithByokRoutes({ hasQuota: false });
+
+  const routes = await factory.resolveRoutes(
+    { modelId: 'gpt-5-mini', outputType: ModelOutputType.Text },
+    {},
+    { userId: 'user-1', workspaceId: 'workspace-1' }
+  );
+
+  t.deepEqual(
+    routes.map(route => route.providerId),
+    ['byok-aaaaaaaaaaaa-openai-server-key1']
+  );
+});
+
+test('CopilotProviderFactory should raise quota exceeded when only quota-backed routes match', async t => {
+  const { factory } = createProviderFactoryWithByokRoutes({
+    byokProfiles: [],
+    hasQuota: false,
+  });
+
+  await t.throwsAsync(
+    factory.resolveRoutes(
+      { modelId: 'gpt-5-mini', outputType: ModelOutputType.Text },
+      {},
+      { userId: 'user-1', workspaceId: 'workspace-1' }
+    ),
+    { instanceOf: CopilotQuotaExceeded }
+  );
+});
+
+test('CopilotProviderFactory should not report quota exhausted when quota-backed routes are disabled', async t => {
+  const { factory } = createProviderFactoryWithByokRoutes({
+    byokProfiles: [],
+    hasQuota: true,
+  });
+
+  const routes = await factory.resolveRoutes(
+    { modelId: 'gpt-5-mini', outputType: ModelOutputType.Text },
+    {},
+    {
+      userId: 'user-1',
+      workspaceId: 'workspace-1',
+      quotaBackedRoutesAllowed: false,
+    }
+  );
+
+  t.deepEqual(routes, []);
 });
 
 test('selectModel should reject unknown models without online fallback', t => {
@@ -1476,7 +1954,7 @@ test('ProviderDriverSpec should freeze declarative driver shape', t => {
 });
 
 test('NativeExecutionEngine should dispatch prepared text routes through native fallback', async t => {
-  const engine = new NativeExecutionEngine();
+  const engine = createNativeExecutionEngine();
   const registry = buildProviderRegistry({
     profiles: [
       {
@@ -1575,8 +2053,78 @@ test('NativeExecutionEngine should dispatch prepared text routes through native 
   t.snapshot(summarizePreparedDispatchRoutes(capturedRoutes));
 });
 
+test('NativeExecutionEngine should record single BYOK route dispatch failure', async t => {
+  const byok = {
+    recordProviderFailure: Sinon.stub().resolves(),
+    recordUsage: Sinon.stub().resolves(),
+  };
+  const engine = new NativeExecutionEngine(byok as never);
+  const providerId = 'byok-aaaaaaaaaaaa-openai-server-key1';
+
+  const original = (serverNativeModule as any).llmDispatchPrepared;
+  (serverNativeModule as any).llmDispatchPrepared = () => {
+    throw new Error('401 invalid sk-test-primary');
+  };
+  t.teardown(() => {
+    (serverNativeModule as any).llmDispatchPrepared = original;
+  });
+
+  const error = await t.throwsAsync(
+    engine.execute({
+      nativeDispatch: {
+        chat: {
+          routes: [
+            nativeRoute({
+              providerId,
+              authToken: 'primary-key',
+              request: nativeTextRequest('hello'),
+            }),
+          ],
+          prepared: {
+            route: preparedRoute({
+              providerId,
+              authToken: 'primary-key',
+            }),
+            request: nativeTextRequest('hello'),
+            tools: {},
+            postprocess: { nodeTextMiddleware: [] },
+          },
+          hasTools: false,
+        },
+      },
+      request: {
+        kind: 'text',
+        cond: { modelId: 'gpt-5-mini' },
+        messages: singleUserPromptMessages('hello'),
+        options: {
+          workspace: 'workspace-1',
+          user: 'user-1',
+          session: 'session-1',
+          featureKind: 'chat',
+        },
+      },
+      routePolicy: { fallbackOrder: [providerId] },
+      runtimePolicy: {},
+      attachmentPolicy: { materializeRemoteAttachments: true },
+      responsePostprocess: { mode: 'text' },
+      hostPersistence: { persistAssistantTurn: true, outputKind: 'text' },
+      hostContext: {
+        currentMessages: singleUserPromptMessages('hello'),
+      },
+    })
+  );
+
+  t.truthy(error);
+  Sinon.assert.calledOnceWithMatch(byok.recordProviderFailure, {
+    workspaceId: 'workspace-1',
+    providerId,
+    featureKind: 'chat',
+  });
+  Sinon.assert.notCalled(byok.recordUsage);
+});
+
 test('NativeExecutionEngine should reject single-route plans when no native route is prepared', async t => {
-  const engine = new NativeExecutionEngine();
+  const engine = createNativeExecutionEngine();
 
   const error = await t.throwsAsync(
     engine.execute({
@@ -1604,7 +2152,7 @@ test('NativeExecutionEngine should reject single-route plans when no native rout
 });
 
 test('NativeExecutionEngine should prefer prepared native fallback dispatch for explicit routes', async t => {
-  const engine = new NativeExecutionEngine();
+  const engine = createNativeExecutionEngine();
   let capturedRoutes: unknown;
   let called = false;
 
@@ -1683,7 +2231,7 @@ test('NativeExecutionEngine should prefer prepared native fallback dispatch for 
 });
 
 test('NativeExecutionEngine should stream through prepared native fallback dispatch', async t => {
-  const engine = new NativeExecutionEngine();
+  const engine = createNativeExecutionEngine();
   let called = false;
 
   const original = (serverNativeModule as any).llmDispatchPreparedStream;
@@ -1912,7 +2460,7 @@ test('ExecutionPlanBuilder should keep single-route tool chat plans on prepared_
 });
 
 test('NativeExecutionEngine should route tool-loop chat prepared routes through native dispatch', async t => {
-  const engine = new NativeExecutionEngine();
+  const engine = createNativeExecutionEngine();
   let capturedRoutes: unknown;
   let called = false;
   let toolCallbackCount = 0;
@@ -2262,7 +2810,7 @@ test('ExecutionPlanBuilder should build native prepared routes for structured, i
 });
 
 test('NativeExecutionEngine should dispatch structured prepared routes through native execution', async t => {
-  const engine = new NativeExecutionEngine();
+  const engine = createNativeExecutionEngine();
   let capturedRoutes: unknown;
   let called = false;
 
@@ -2350,7 +2898,7 @@ test('NativeExecutionEngine should dispatch structured prepared routes through n
 });
 
 test('NativeExecutionEngine should dispatch embedding prepared routes through native execution', async t => {
-  const engine = new NativeExecutionEngine();
+  const engine = createNativeExecutionEngine();
   let capturedRoutes: unknown;
   let called = false;
 
@@ -2424,7 +2972,7 @@ test('NativeExecutionEngine should dispatch embedding prepared routes through na
 });
 
 test('NativeExecutionEngine should dispatch rerank prepared routes through native execution', async t => {
-  const engine = new NativeExecutionEngine();
+  const engine = createNativeExecutionEngine();
   let capturedRoutes: unknown;
   let called = false;
 
@@ -2507,7 +3055,7 @@ test('NativeExecutionEngine should dispatch rerank prepared routes through nativ
 });
 
 test('NativeExecutionEngine should dispatch image plans through prepared native routes', async t => {
-  const engine = new NativeExecutionEngine();
+  const engine = createNativeExecutionEngine();
   let capturedRoutes: unknown;
   const original = (serverNativeModule as any).llmImageDispatchPrepared;
   (serverNativeModule as any).llmImageDispatchPrepared = (
@@ -2587,8 +3135,90 @@ test('NativeExecutionEngine should dispatch image plans through prepared native 
   t.snapshot(summarizePreparedDispatchRoutes(capturedRoutes));
 });
 
+test('NativeExecutionEngine should record zero-token BYOK image usage without provider usage', async t => {
+  const byok = {
+    recordUsage: Sinon.stub().resolves(),
+  };
+  const engine = new NativeExecutionEngine(byok as never);
+  const providerId = 'byok-aaaaaaaaaaaa-fal-server-key1';
+
+  const original = (serverNativeModule as any).llmImageDispatchPrepared;
+  (serverNativeModule as any).llmImageDispatchPrepared = () => {
+    return JSON.stringify({
+      provider_id: providerId,
+      response: {
+        images: [
+          {
+            url: 'https://cdn.example.com/image.png',
+            media_type: 'image/png',
+          },
+        ],
+      },
+    });
+  };
+  t.teardown(() => {
+    (serverNativeModule as any).llmImageDispatchPrepared = original;
+  });
+
+  const request = nativeImageRequest('draw a cat');
+  const imageArtifacts = await collectAsync(
+    engine.executeImageArtifacts({
+      nativeDispatch: {
+        image: {
+          routes: [
+            nativeRoute({
+              providerId,
+              authToken: 'image-key',
+              protocol: 'fal_image',
+              model: 'fal-ai/fast-sdxl',
+              request,
+            }),
+          ],
+          prepared: {
+            route: preparedRoute({
+              providerId,
+              authToken: 'image-key',
+              protocol: 'fal_image',
+              model: 'fal-ai/fast-sdxl',
+            }),
+            request,
+          },
+        },
+      },
+      request: {
+        kind: 'image',
+        cond: { modelId: 'fal-ai/fast-sdxl' },
+        messages: singleUserPromptMessages('draw a cat'),
+        options: {
+          workspace: 'workspace-1',
+          user: 'user-1',
+          session: 'session-1',
+          featureKind: 'image',
+        },
+      },
+      routePolicy: { fallbackOrder: [providerId] },
+      runtimePolicy: {},
+      attachmentPolicy: { materializeRemoteAttachments: true },
+      responsePostprocess: { mode: 'image' },
+      hostPersistence: { persistAssistantTurn: true, outputKind: 'image' },
+      hostContext: {},
+    })
+  );
+
+  t.is(imageArtifacts.length, 1);
+  Sinon.assert.calledOnceWithMatch(byok.recordUsage, {
+    workspaceId: 'workspace-1',
+    userId: 'user-1',
+    sessionId: 'session-1',
+    featureKind: 'image',
+    providerId,
+    model: 'fal-ai/fast-sdxl',
+    usage: undefined,
+  });
+});
+
 test('NativeExecutionEngine should reject image plans without native dispatch', async t => {
-  const engine = new NativeExecutionEngine();
+  const engine = createNativeExecutionEngine();
 
   await t.throwsAsync(
     collectAsync(

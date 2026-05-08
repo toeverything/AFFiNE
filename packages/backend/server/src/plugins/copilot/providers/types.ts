@@ -30,8 +30,6 @@ export enum CopilotProviderType {
   Gemini = 'gemini',
   GeminiVertex = 'geminiVertex',
   OpenAI = 'openai',
-  Perplexity = 'perplexity',
-  Morph = 'morph',
 }
 
 export const CopilotProviderSchema = z.object({
@@ -80,8 +78,6 @@ export const PromptToolsSchema = z
     'blobRead',
     'codeArtifact',
     'conversationSummary',
-    // work with morph
-    'docEdit',
     // work with indexer
     'docRead',
     'docCreate',
@@ -268,6 +264,22 @@ const CopilotProviderOptionsSchema = z.object({
   user: z.string().optional(),
   session: z.string().optional(),
   workspace: z.string().optional(),
+  byokLeaseId: z.string().optional(),
+  billingUnitId: z.string().optional(),
+  taskId: z.string().optional(),
+  actionId: z.string().optional(),
+  quotaBackedRoutesAllowed: z.boolean().optional(),
+  featureKind: z
+    .enum([
+      'chat',
+      'action',
+      'image',
+      'embedding',
+      'workspace_indexing',
+      'rerank',
+      'transcript',
+    ])
+    .optional(),
 });
 
 export const CopilotChatOptionsSchema = CopilotProviderOptionsSchema.merge(

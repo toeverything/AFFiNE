@@ -5,6 +5,7 @@ import {
   CopilotSessionNotFound,
   Mutex,
 } from '../../../../base';
+import { CopilotAccessPolicy } from '../../access';
 import { CompatSubmissionStore } from '../../compat/submission-store';
 import {
   canonicalizeTurnTrace,
@@ -20,6 +21,12 @@ export type PreparedConversationTurn = {
   params: Record<string, string>;
   session: ChatSession;
   latestTurn?: Turn;
+  quotaBackedRoutesAllowed?: boolean;
+};
+
+type AppendedSessionMessage = {
+  turn?: Turn;
+  quotaBackedRoutesAllowed?: boolean;
 };
 
 @Injectable()
@@ -27,7 +34,8 @@ export class ConversationHost {
   constructor(
     private readonly sessions: ChatSessionService,
     private readonly submissions: CompatSubmissionStore,
-    private readonly mutex: Mutex
+    private readonly mutex: Mutex,
+    private readonly access: CopilotAccessPolicy
   ) {}
 
   private async loadAcceptedTurn(
@@ -101,12 +109,32 @@ export class ConversationHost {
     session: ChatSession,
     sessionId: string,
     messageId?: string,
-    retry = false
-  ): Promise<Turn | undefined> {
+    retry = false,
+    byokLeaseId?: string
+  ): Promise<AppendedSessionMessage> {
+    const resolveChatRouteAccess = () =>
+      this.access.resolveTurnRouteAccess({
+        userId,
+        workspaceId: session.config.workspaceId,
+        byokLeaseId,
+        featureKind: 'chat',
+      });
+
     if (!messageId) {
       await this.sessions.revertLatestMessage(sessionId, false);
       session.revertLatestMessage(false);
-      return session.latestUserTurn;
+      if (!session.latestUserTurn) {
+        const routeAccess = await resolveChatRouteAccess();
+        return {
+          turn: session.latestUserTurn,
+          quotaBackedRoutesAllowed: routeAccess.quotaBackedRoutesAllowed,
+        };
+      }
+      const routeAccess = await resolveChatRouteAccess();
+      return {
+        turn: session.latestUserTurn,
+        quotaBackedRoutesAllowed: routeAccess.quotaBackedRoutesAllowed,
+      };
     }
 
     const acceptedTurn = await this.loadAcceptedTurn(
@@ -116,7 +144,7 @@ export class ConversationHost {
       retry
     );
     if (acceptedTurn) {
-      return acceptedTurn;
+      return { turn: acceptedTurn, quotaBackedRoutesAllowed: true };
     }
 
     await using lock = await this.mutex.acquire(
@@ -132,7 +160,9 @@ export class ConversationHost {
       messageId,
       retry
     );
-    if (acceptedAfterLock) return acceptedAfterLock;
+    if (acceptedAfterLock) {
+      return { turn: acceptedAfterLock, quotaBackedRoutesAllowed: true };
+    }
 
     const durableTurn = await this.loadDurableTurn(
       session,
@@ -140,9 +170,14 @@ export class ConversationHost {
       messageId,
       retry
     );
-    if (durableTurn) return durableTurn;
+    if (durableTurn) {
+      return {
+        turn: durableTurn,
+        quotaBackedRoutesAllowed: true,
+      };
+    }
 
-    await this.sessions.checkQuota(userId);
+    const routeAccess = await resolveChatRouteAccess();
 
     const submission = await this.submissions.get(messageId);
     if (!submission || submission.sessionId !== sessionId) {
@@ -176,7 +211,10 @@ export class ConversationHost {
       turnId: turn.id ?? '',
     });
     session.pushPersistedTurn(turn);
-    return turn;
+    return {
+      turn,
+      quotaBackedRoutesAllowed: routeAccess.quotaBackedRoutesAllowed,
+    };
   }
 
   async prepareTurn(
@@ -184,27 +222,30 @@ export class ConversationHost {
     sessionId: string,
     query: Record<string, string | string[]>
   ): Promise<PreparedConversationTurn> {
-    const { messageId, retry, params } = ChatQuerySchema.parse(query);
+    const { messageId, retry, params, byokLeaseId } =
+      ChatQuerySchema.parse(query);
     const session = await this.sessions.get(sessionId);
     if (!session || session.config.userId !== userId) {
       throw new CopilotSessionNotFound();
     }
-    const latestMessage = await this.appendSessionMessage(
+    const appended = await this.appendSessionMessage(
       userId,
       session,
       sessionId,
       messageId,
-      retry
+      retry,
+      byokLeaseId
     );
     const currentUserMessage =
       session.stashTurns.findLast(turn => turn.role === 'user') ??
-      latestMessage;
+      appended.turn;
 
     return {
       messageId,
       params,
       session,
       latestTurn: currentUserMessage,
+      quotaBackedRoutesAllowed: appended.quotaBackedRoutesAllowed,
     };
   }
 

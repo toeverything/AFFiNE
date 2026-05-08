@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
 import { CopilotQuotaExceeded } from '../../../base';
-import { QuotaService } from '../../../core/quota';
+import { QuotaService } from '../../../core/quota/service';
 import { Models } from '../../../models';
 import type { Turn } from '../core';
 import type { ResolvedPrompt } from '../prompt';
@@ -31,10 +31,14 @@ export class ConversationPolicy {
   }
 
   async checkQuota(userId: string) {
-    const { limit, used } = await this.getQuota(userId);
-    if (limit && Number.isFinite(limit) && used >= limit) {
+    if (!(await this.hasQuota(userId))) {
       throw new CopilotQuotaExceeded();
     }
+  }
+
+  async hasQuota(userId: string) {
+    const { limit, used } = await this.getQuota(userId);
+    return !(limit !== undefined && Number.isFinite(limit) && used >= limit);
   }
 
   shouldScheduleTitle(prompt: Pick<ResolvedPrompt, 'action'>) {

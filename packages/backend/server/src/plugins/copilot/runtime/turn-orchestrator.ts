@@ -62,7 +62,7 @@ export class TurnOrchestrator {
       sessionId,
       query
     );
-    const { modelId, reasoning, webSearch, toolsConfig } =
+    const { modelId, reasoning, webSearch, toolsConfig, byokLeaseId } =
       ChatQuerySchema.parse(query);
     const promptParams = await this.buildPromptParams(sessionId, {
       latestTurn: prepared.latestTurn,
@@ -82,6 +82,15 @@ export class TurnOrchestrator {
         reasoning,
         webSearch,
         toolsConfig,
+        byokLeaseId,
+        billingUnitId: prepared.latestTurn?.id,
+        quotaBackedRoutesAllowed: prepared.quotaBackedRoutesAllowed,
+        featureKind:
+          selection.responseMode === 'image'
+            ? 'image'
+            : selection.responseMode === 'object'
+              ? 'action'
+              : 'chat',
       }),
     };
   }

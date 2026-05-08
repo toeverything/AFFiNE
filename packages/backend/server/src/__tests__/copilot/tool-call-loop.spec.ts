@@ -534,6 +534,58 @@ test('doc_semantic_search should return empty array when nothing matches', async
   t.deepEqual(result, []);
 });
 
+test('doc_semantic_search should pass BYOK route context into embedding matches', async t => {
+  const ac = {
+    user: () => ({
+      workspace: () => ({
+        can: async () => true,
+        docs: async () => [],
+      }),
+    }),
+  } as unknown as AccessController;
+
+  const models = {
+    workspace: {
+      get: async () => ({ id: 'workspace-1' }),
+    },
+  } as unknown as Models;
+
+  let workspaceRouteContext: unknown;
+  let sessionRouteContext: unknown;
+  const contextService = {
+    matchWorkspaceAll: async (...args: unknown[]) => {
+      workspaceRouteContext = args[7];
+      return [];
+    },
+    getBySessionId: async () => ({
+      matchFiles: async (...args: unknown[]) => {
+        sessionRouteContext = args[5];
+        return [];
+      },
+    }),
+  } as unknown as Parameters<typeof buildDocSearchGetter>[1];
+
+  const semanticTool = createDocSemanticSearchTool(
+    buildDocSearchGetter(ac, contextService, 'session-1', models).bind(null, {
+      user: 'user-1',
+      workspace: 'workspace-1',
+      byokLeaseId: 'lease-1',
+    })
+  );
+
+  const result = await semanticTool.execute?.({ query: 'hello' }, {});
+
+  t.deepEqual(result, []);
+  t.deepEqual(workspaceRouteContext, {
+    userId: 'user-1',
+    byokLeaseId: 'lease-1',
+  });
+  t.deepEqual(sessionRouteContext, {
+    userId: 'user-1',
+    byokLeaseId: 'lease-1',
+  });
+});
+
 test('blob_read should return explicit error when attachment context is missing', async t => {
   const ac = {
     user: () => ({

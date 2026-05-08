@@ -411,6 +411,7 @@ function stripHostOnlyOptions<TOptions extends object | undefined>(
     user: _user,
     session: _session,
     workspace: _workspace,
+    quotaBackedRoutesAllowed: _quotaBackedRoutesAllowed,
     ...serializable
   } = options as Record<string, unknown>;
 

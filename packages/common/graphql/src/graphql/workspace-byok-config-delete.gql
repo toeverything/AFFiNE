@@ -1,0 +1,3 @@
+mutation deleteWorkspaceByokConfig($workspaceId: String!, $id: ID!) {
+  deleteWorkspaceByokConfig(workspaceId: $workspaceId, id: $id)
+}

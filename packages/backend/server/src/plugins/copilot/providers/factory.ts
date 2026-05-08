@@ -1,10 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
 
+import { CopilotQuotaExceeded } from '../../../base';
 import { ServerFeature, ServerService } from '../../../core';
+import { type CopilotAccessContext, CopilotAccessPolicy } from '../access';
 import type { RequiredStructuredOutputContract } from '../runtime/contracts';
 import { getProviderRuntimeHost } from '../runtime/provider-runtime-context';
 import type { CopilotProvider } from './provider';
 import {
+  buildProviderRegistry,
+  type CopilotProviderRegistry,
   type NormalizedCopilotProviderProfile,
   resolveModel,
   stripProviderPrefix,
@@ -57,11 +61,18 @@ type RoutePreparationResult = Partial<
   >
 >;
 
+type EffectiveProviderRegistry = {
+  byokRegistry: CopilotProviderRegistry;
+  quotaBackedRegistry: CopilotProviderRegistry;
+  quotaBackedRoutesAvailable: boolean;
+};
+
 @Injectable()
 export class CopilotProviderFactory {
   constructor(
     private readonly server: ServerService,
-    private readonly registries: CopilotProviderRegistryService
+    private readonly registries: CopilotProviderRegistryService,
+    private readonly access: CopilotAccessPolicy
   ) {}
 
   private readonly logger = new Logger(CopilotProviderFactory.name);
@@ -73,18 +84,82 @@ export class CopilotProviderFactory {
     return this.registries.getRegistry();
   }
 
-  private getPreferredProviderIds(type?: CopilotProviderType) {
+  private getProviderByProfile(
+    providerId: string,
+    profile: NormalizedCopilotProviderProfile
+  ) {
+    return (
+      this.#providers.get(providerId) ??
+      Array.from(this.#providerIdsByType.get(profile.type) ?? [])
+        .map(id => this.#providers.get(id))
+        .find((provider): provider is CopilotProvider => !!provider)
+    );
+  }
+
+  private providerAvailable(
+    providerId: string,
+    profile: NormalizedCopilotProviderProfile
+  ) {
+    return !!this.getProviderByProfile(providerId, profile);
+  }
+
+  private getAvailableProviderIds(registry: CopilotProviderRegistry) {
+    return Array.from(registry.profiles.entries())
+      .filter(([providerId, profile]) =>
+        this.providerAvailable(providerId, profile)
+      )
+      .map(([providerId]) => providerId);
+  }
+
+  private getPreferredProviderIds(
+    registry: CopilotProviderRegistry,
+    type?: CopilotProviderType
+  ) {
     if (!type) return undefined;
-    return this.#providerIdsByType.get(type);
+    return registry.byType.get(type)?.filter(providerId => {
+      const profile = registry.profiles.get(providerId);
+      return profile ? this.providerAvailable(providerId, profile) : false;
+    });
   }
 
   private normalizeCond(
+    registry: CopilotProviderRegistry,
     providerId: string,
     cond: ModelFullConditions
   ): ModelFullConditions {
-    const registry = this.getRegistry();
     const modelId = stripProviderPrefix(registry, providerId, cond.modelId);
     return { ...cond, modelId };
+  }
+
+  private async getEffectiveRegistry(
+    context: CopilotAccessContext = {}
+  ): Promise<EffectiveProviderRegistry> {
+    const quotaBackedRegistry = this.getRegistry();
+    const routeAccess = await this.access.resolveRouteAccess(context);
+
+    return {
+      byokRegistry: buildProviderRegistry({
+        profiles: routeAccess.byokProfiles,
+        defaults: {},
+      }),
+      quotaBackedRegistry,
+      quotaBackedRoutesAvailable: routeAccess.quotaBackedRoutesAvailable,
+    };
+  }
+
+  private getRequestContext(
+    options?:
+      | CopilotChatOptions
+      | CopilotStructuredOptions
+      | CopilotImageOptions
+  ): CopilotAccessContext {
+    return {
+      userId: options?.user,
+      workspaceId: options?.workspace,
+      byokLeaseId: options?.byokLeaseId,
+      featureKind: options?.featureKind,
+      quotaBackedRoutesAllowed: options?.quotaBackedRoutesAllowed,
+    };
   }
 
   private filterPreparedRoutes(routes: Array<ResolvedCopilotProvider | null>) {
@@ -113,36 +188,89 @@ export class CopilotProviderFactory {
     cond: ModelFullConditions,
     filter: {
       prefer?: CopilotProviderType;
-    } = {}
+    } = {},
+    context: CopilotAccessContext = {}
   ): Promise<ResolvedCopilotProvider | null> {
-    return (await this.resolveRoutes(cond, filter))[0] ?? null;
+    return (await this.resolveRoutes(cond, filter, context))[0] ?? null;
   }
 
   async resolveRoutes(
     cond: ModelFullConditions,
     filter: {
       prefer?: CopilotProviderType;
-    } = {}
+    } = {},
+    context: CopilotAccessContext = {}
   ): Promise<ResolvedCopilotProvider[]> {
     this.logger.debug(
       `Resolving copilot provider for output type: ${cond.outputType}`
     );
-    const registry = this.getRegistry();
+    const { byokRegistry, quotaBackedRegistry, quotaBackedRoutesAvailable } =
+      await this.getEffectiveRegistry(context);
+    const byokRoutes = await this.resolveRoutesFromRegistry(
+      byokRegistry,
+      cond,
+      filter
+    );
+    const resolved = byokRoutes.length
+      ? byokRoutes
+      : quotaBackedRoutesAvailable
+        ? await this.resolveRoutesFromRegistry(
+            quotaBackedRegistry,
+            cond,
+            filter
+          )
+        : [];
+    for (const route of resolved) {
+      this.logger.debug(
+        `Copilot provider candidate found: ${route.provider.type} (${route.providerId})`
+      );
+    }
+
+    if (
+      !resolved.length &&
+      !quotaBackedRoutesAvailable &&
+      context.quotaBackedRoutesAllowed !== false
+    ) {
+      const quotaBackedRoutes = await this.resolveRoutesFromRegistry(
+        quotaBackedRegistry,
+        cond,
+        filter
+      );
+      if (quotaBackedRoutes.length) {
+        throw new CopilotQuotaExceeded();
+      }
+    }
+
+    return resolved;
+  }
+
+  private async resolveRoutesFromRegistry(
+    registry: CopilotProviderRegistry,
+    cond: ModelFullConditions,
+    filter: {
+      prefer?: CopilotProviderType;
+    } = {}
+  ): Promise<ResolvedCopilotProvider[]> {
     const route = resolveModel({
       registry,
       modelId: cond.modelId,
       outputType: cond.outputType,
-      availableProviderIds: this.#providers.keys(),
-      preferredProviderIds: this.getPreferredProviderIds(filter.prefer),
+      availableProviderIds: this.getAvailableProviderIds(registry),
+      preferredProviderIds: this.getPreferredProviderIds(
+        registry,
+        filter.prefer
+      ),
     });
 
     const resolved: ResolvedCopilotProvider[] = [];
     for (const providerId of route.candidateProviderIds) {
-      const provider = this.#providers.get(providerId);
       const profile = registry.profiles.get(providerId);
+      const provider = profile
+        ? this.getProviderByProfile(providerId, profile)
+        : undefined;
       if (!provider || !profile) continue;
 
-      const normalizedCond = this.normalizeCond(providerId, cond);
+      const normalizedCond = this.normalizeCond(registry, providerId, cond);
       if (
         normalizedCond.modelId &&
         profile.models?.length &&
@@ -155,9 +283,6 @@ export class CopilotProviderFactory {
       const matched = await provider.match(normalizedCond, execution);
       if (!matched) continue;
 
-      this.logger.debug(
-        `Copilot provider candidate found: ${provider.type} (${providerId})`
-      );
       resolved.push({
         providerId,
         provider,
@@ -181,7 +306,11 @@ export class CopilotProviderFactory {
       prefer?: CopilotProviderType;
     } = {}
   ): Promise<ResolvedCopilotProvider[]> {
-    const routes = await this.resolveRoutes(cond, filter);
+    const routes = await this.resolveRoutes(
+      cond,
+      filter,
+      this.getRequestContext(options)
+    );
     return await this.prepareResolvedRoutes(routes, async route => {
       const prepared = await getProviderRuntimeHost(
         route.provider
@@ -213,7 +342,11 @@ export class CopilotProviderFactory {
     } = {},
     responseContract?: RequiredStructuredOutputContract
   ): Promise<ResolvedCopilotProvider[]> {
-    const routes = await this.resolveRoutes(cond, filter);
+    const routes = await this.resolveRoutes(
+      cond,
+      filter,
+      this.getRequestContext(options)
+    );
     return await this.prepareResolvedRoutes(routes, async route => {
       const preparedStructured =
         (await getProviderRuntimeHost(route.provider).prepare.structured(
@@ -239,10 +372,14 @@ export class CopilotProviderFactory {
     input: string | string[],
     options: CopilotEmbeddingOptions = {}
   ): Promise<ResolvedCopilotProvider[]> {
-    const routes = await this.resolveRoutes({
-      modelId,
-      outputType: ModelOutputType.Embedding,
-    });
+    const routes = await this.resolveRoutes(
+      { modelId, outputType: ModelOutputType.Embedding },
+      {},
+      {
+        ...this.getRequestContext(options),
+        featureKind: options?.featureKind ?? 'embedding',
+      }
+    );
     return await this.prepareResolvedRoutes(routes, async route => {
       const preparedEmbedding =
         (await getProviderRuntimeHost(route.provider).prepare.embedding(
@@ -267,10 +404,14 @@ export class CopilotProviderFactory {
     request: CopilotRerankRequest,
     options: CopilotChatOptions = {}
   ): Promise<ResolvedCopilotProvider[]> {
-    const routes = await this.resolveRoutes({
-      modelId,
-      outputType: ModelOutputType.Rerank,
-    });
+    const routes = await this.resolveRoutes(
+      {
+        modelId,
+        outputType: ModelOutputType.Rerank,
+      },
+      {},
+      { ...this.getRequestContext(options), featureKind: 'rerank' }
+    );
     return await this.prepareResolvedRoutes(routes, async route => {
       const preparedRerank =
         (await getProviderRuntimeHost(route.provider).prepare.rerank(
@@ -298,7 +439,10 @@ export class CopilotProviderFactory {
       prefer?: CopilotProviderType;
     } = {}
   ): Promise<ResolvedCopilotProvider[]> {
-    const routes = await this.resolveRoutes(cond, filter);
+    const routes = await this.resolveRoutes(cond, filter, {
+      ...this.getRequestContext(options),
+      featureKind: options?.featureKind ?? 'image',
+    });
     return await this.prepareResolvedRoutes(routes, async route => {
       const preparedImage =
         (await getProviderRuntimeHost(route.provider).prepare.image(

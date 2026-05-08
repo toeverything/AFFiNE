@@ -43,6 +43,57 @@ export interface DocLike {
   };
 }
 
+interface ChatContentKeySession {
+  sessionId?: string | null;
+  docId?: string | null;
+  messages?: readonly unknown[] | null;
+}
+
+export const shouldResetChatPanelOnUserInfoChange = ({
+  previousUserId,
+  nextUserId,
+}: {
+  previousUserId?: string | null;
+  nextUserId?: string | null;
+}) => {
+  return previousUserId !== undefined && previousUserId !== nextUserId;
+};
+
+export const getChatContentKey = ({
+  docId,
+  hasPinned,
+  previousSessionDocId,
+  previousSessionId,
+  session,
+}: {
+  docId?: string | null;
+  hasPinned: boolean;
+  previousSessionDocId?: string | null;
+  previousSessionId?: string | null;
+  session?: ChatContentKeySession | null;
+}) => {
+  const fallbackKey = docId ?? 'chat-panel';
+  const sessionId = session?.sessionId;
+  if (!sessionId) {
+    return fallbackKey;
+  }
+
+  const sessionDocId = session.docId ?? docId ?? null;
+  const hasSessionHistory = !!session.messages?.length;
+  const sessionSwitchedWithinDoc = !!(
+    previousSessionId &&
+    previousSessionId !== sessionId &&
+    previousSessionDocId &&
+    sessionDocId &&
+    previousSessionDocId === sessionDocId &&
+    sessionDocId === docId
+  );
+
+  return hasPinned || hasSessionHistory || sessionSwitchedWithinDoc
+    ? sessionId
+    : fallbackKey;
+};
+
 export const getSessionIdFromUrl = (workbench?: WorkbenchLike | null) => {
   if (!workbench) {
     return undefined;

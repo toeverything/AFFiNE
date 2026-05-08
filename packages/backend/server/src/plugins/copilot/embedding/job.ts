@@ -18,7 +18,7 @@ import { Models } from '../../../models';
 import { CopilotStorage } from '../storage';
 import { readStream } from '../utils';
 import { CopilotEmbeddingClientService } from './client';
-import type { Chunk, DocFragment } from './types';
+import type { Chunk, DocFragment, EmbeddingCallOptions } from './types';
 import { EmbeddingClient } from './types';
 
 @Injectable()
@@ -242,6 +242,19 @@ export class CopilotEmbeddingJob {
     return new File([buffer], fileName);
   }
 
+  private workspaceIndexingOptions(
+    workspaceId: string,
+    signal?: AbortSignal,
+    userId?: string
+  ): EmbeddingCallOptions {
+    return {
+      workspaceId,
+      userId,
+      signal,
+      featureKind: 'workspace_indexing',
+    };
+  }
+
   @OnJob('copilot.embedding.files')
   async embedPendingFile({
     userId,
@@ -266,7 +279,10 @@ export class CopilotEmbeddingJob {
       const total = chunks.reduce((acc, c) => acc + c.length, 0);
 
       for (const chunk of chunks) {
-        const embeddings = await this.embeddingClient.generateEmbeddings(chunk);
+        const embeddings = await this.embeddingClient.generateEmbeddings(
+          chunk,
+          this.workspaceIndexingOptions(workspaceId, undefined, userId)
+        );
         if (contextId) {
           // for context files
           await this.models.copilotContext.insertFileEmbedding(
@@ -320,7 +336,10 @@ export class CopilotEmbeddingJob {
       const total = chunks.reduce((acc, c) => acc + c.length, 0);
 
       for (const chunk of chunks) {
-        const embeddings = await this.embeddingClient.generateEmbeddings(chunk);
+        const embeddings = await this.embeddingClient.generateEmbeddings(
+          chunk,
+          this.workspaceIndexingOptions(workspaceId)
+        );
         await this.models.copilotWorkspace.insertBlobEmbeddings(
           workspaceId,
           blobId,
@@ -462,7 +481,7 @@ export class CopilotEmbeddingJob {
                 `${fragment.title || 'Untitled'}.md`
               ),
               chunks => this.formatDocChunks(chunks, fragment),
-              signal
+              this.workspaceIndexingOptions(workspaceId, signal)
             );
 
             for (const chunks of embeddings) {
