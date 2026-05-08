@@ -31,11 +31,16 @@ mp4parse = { workspace = true }
 napi = { workspace = true, features = ["async", "serde-json"] }
 napi-derive = { workspace = true }
 rand = { workspace = true }
+reqwest = { version = "0.13.3", default-features = false, features = [
+  "blocking",
+  "rustls",
+] }
 schemars = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 sha3 = { workspace = true }
 tiktoken-rs = { workspace = true }
+url = { workspace = true }
 v_htmlescape = { workspace = true }
 y-octo = { workspace = true, features = ["large_refs"] }
 

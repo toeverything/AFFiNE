@@ -57,13 +57,30 @@ const buildBiliPlayerEmbedUrl = (url: string) => {
   return undefined;
 };
 
-const bilibiliConfig = {
+function isValidBiliPlayerUrl(url: string) {
+  try {
+    if (!validateEmbedIframeUrl(url, biliPlayerValidationOptions)) {
+      return false;
+    }
+    const parsedUrl = new URL(url);
+    return (
+      parsedUrl.pathname === '/player.html' &&
+      (!!parsedUrl.searchParams.get('aid') ||
+        !!parsedUrl.searchParams.get('bvid'))
+    );
+  } catch {
+    return false;
+  }
+}
+
+export const bilibiliConfig = {
   name: 'bilibili',
   match: (url: string) =>
     validateEmbedIframeUrl(url, bilibiliValidationOptions) &&
     (!!extractAvid(url) || !!extractBvid(url)),
   buildOEmbedUrl: buildBiliPlayerEmbedUrl,
   useOEmbedUrlDirectly: true,
+  validateIframeUrl: (iframeUrl: string) => isValidBiliPlayerUrl(iframeUrl),
   options: {
     widthInSurface: BILIBILI_DEFAULT_WIDTH_IN_SURFACE,
     heightInSurface: BILIBILI_DEFAULT_HEIGHT_IN_SURFACE,

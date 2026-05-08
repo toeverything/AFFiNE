@@ -1,6 +1,7 @@
 import serverNativeModule, {
   type ActionEvent as NativeActionEventContract,
   type ActionRuntimeInput as NativeActionRuntimeInputContract,
+  type AssertSafeUrlRequest,
   type BuiltInPromptRenderContract,
   type BuiltInPromptSessionContract,
   type BuiltInPromptSpec,
@@ -8,6 +9,8 @@ import serverNativeModule, {
   type CanonicalStructuredRequestContract,
   type CapabilityAttachmentContract,
   type CapabilityModelCapability,
+  type ImageInspection,
+  type ImageInspectionOptions,
   type LlmCoreMessage,
   type LlmEmbeddingRequestContract,
   type LlmImageRequestContract,
@@ -27,16 +30,29 @@ import serverNativeModule, {
   type PromptStructuredResponseContract,
   type PromptTokenCountContract,
   type PromptTokenCountResult,
+  type RemoteAttachmentFetchRequest,
+  type RemoteAttachmentFetchResponse,
+  type RemoteMimeTypeRequest,
   type RequestedModelMatchResponse,
+  type SafeFetchRequest,
+  type SafeFetchResponse,
   type Tokenizer,
 } from '@affine/server-native';
 
 export type {
+  AssertSafeUrlRequest,
   CapabilityAttachmentContract,
   CapabilityModelCapability,
+  ImageInspection,
+  ImageInspectionOptions,
   ModelConditionsContract,
   PromptMessageContract,
   PromptStructuredResponseContract,
+  RemoteAttachmentFetchRequest,
+  RemoteAttachmentFetchResponse,
+  RemoteMimeTypeRequest,
+  SafeFetchRequest,
+  SafeFetchResponse,
 };
 
 export type ActionEventType =
@@ -118,6 +134,11 @@ export function getTokenEncoder(model?: string | null): Tokenizer | null {
 }
 
 export const getMime = serverNativeModule.getMime;
+export const inspectImageForProxy = serverNativeModule.inspectImageForProxy;
+export const fetchRemoteAttachment = serverNativeModule.fetchRemoteAttachment;
+export const inferRemoteMimeType = serverNativeModule.inferRemoteMimeType;
+export const assertSafeUrl = serverNativeModule.assertSafeUrl;
+export const safeFetch = serverNativeModule.safeFetch;
 export const parseDoc = serverNativeModule.parseDoc;
 export const htmlSanitize = serverNativeModule.htmlSanitize;
 export const processImage = serverNativeModule.processImage;

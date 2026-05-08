@@ -35,8 +35,6 @@ const XML_PARSER = new XMLParser({
 
 const DEFAULT_REQUEST_TIMEOUT_MS = 10_000;
 const DEFAULT_MAX_REDIRECTS = 5;
-const CALDAV_ALLOWED_PROTOCOLS = new Set(['https:']);
-const CALDAV_ALLOWED_PROTOCOLS_INSECURE = new Set(['http:', 'https:']);
 
 type CalDAVCredentials = {
   username: string;
@@ -607,11 +605,7 @@ class CalDAVRequestPolicy {
     }
 
     try {
-      await assertSsrFSafeUrl(url, {
-        allowedProtocols: this.allowInsecureHttp
-          ? CALDAV_ALLOWED_PROTOCOLS_INSECURE
-          : CALDAV_ALLOWED_PROTOCOLS,
-      });
+      await assertSsrFSafeUrl(url);
     } catch (error) {
       if (error instanceof SsrfBlockedError) {
         const reason = String(error.data?.reason ?? '');
