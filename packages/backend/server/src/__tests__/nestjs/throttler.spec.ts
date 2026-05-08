@@ -92,7 +92,7 @@ test.before(async t => {
         throttle: {
           throttlers: {
             default: {
-              ttl: 60,
+              ttl: 60_000,
               limit: 120,
             },
           },
@@ -109,6 +109,7 @@ test.before(async t => {
 
 test.beforeEach(async t => {
   const { app } = t.context;
+  t.context.storage.storage.clear();
   await app.initTestingDB();
 });
 

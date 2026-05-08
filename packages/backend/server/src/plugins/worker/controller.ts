@@ -65,7 +65,7 @@ function toBadRequestReason(reason: SSRFBlockReason) {
 
 @Public()
 @UseNamedGuard('selfhost')
-@Throttle('default', { limit: 60, ttl: 60 })
+@Throttle('default', { limit: 60, ttl: 60_000 })
 @Controller('/api/worker')
 export class WorkerController {
   private readonly logger = new Logger(WorkerController.name);

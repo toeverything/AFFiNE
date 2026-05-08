@@ -40,6 +40,11 @@ describe('embed iframe provider config', () => {
       )
     ).toBe(true);
     expect(
+      bilibiliConfig.match(
+        'https://player.bilibili.com/player.html?aid=123&autoplay=0'
+      )
+    ).toBe(true);
+    expect(
       bilibiliConfig.validateIframeUrl?.(
         'https://www.bilibili.com/video/BV1xx411c7mD'
       )

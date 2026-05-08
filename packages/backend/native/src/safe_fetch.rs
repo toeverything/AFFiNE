@@ -464,10 +464,10 @@ fn response_to_output(
     });
   }
   let mut body = Vec::new();
-  if let Some(len) = response.content_length() {
-    if len > max_bytes as u64 {
-      bail!("response_too_large");
-    }
+  if let Some(len) = response.content_length()
+    && len > max_bytes as u64
+  {
+    bail!("response_too_large");
   }
   response
     .by_ref()
@@ -517,7 +517,10 @@ fn is_blocked_ip(ip: IpAddr) -> bool {
       if let Some(v4) = ip.to_ipv4_mapped() {
         return is_blocked_ip(IpAddr::V4(v4));
       }
-      !(ip.segments()[0] & 0xe000 == 0x2000)
+      if let Some(v4) = extract_6to4_ipv4(ip).or_else(|| extract_teredo_client_ipv4(ip)) {
+        return is_blocked_ip(IpAddr::V4(v4));
+      }
+      (ip.segments()[0] & 0xe000 != 0x2000)
         || ip.is_loopback()
         || ip.is_unspecified()
         || ip.is_multicast()
@@ -526,6 +529,32 @@ fn is_blocked_ip(ip: IpAddr) -> bool {
         || (ip.segments()[0] == 0x2001 && ip.segments()[1] == 0x0db8)
     }
   }
+}
+
+fn extract_6to4_ipv4(ip: std::net::Ipv6Addr) -> Option<std::net::Ipv4Addr> {
+  let segments = ip.segments();
+  if segments[0] != 0x2002 {
+    return None;
+  }
+  Some(std::net::Ipv4Addr::new(
+    (segments[1] >> 8) as u8,
+    segments[1] as u8,
+    (segments[2] >> 8) as u8,
+    segments[2] as u8,
+  ))
+}
+
+fn extract_teredo_client_ipv4(ip: std::net::Ipv6Addr) -> Option<std::net::Ipv4Addr> {
+  let segments = ip.segments();
+  if segments[0] != 0x2001 || segments[1] != 0 {
+    return None;
+  }
+  Some(std::net::Ipv4Addr::new(
+    (!(segments[6] >> 8)) as u8,
+    (!segments[6]) as u8,
+    (!(segments[7] >> 8)) as u8,
+    (!segments[7]) as u8,
+  ))
 }
 
 fn inspect_image_for_proxy_inner(input: &[u8], options: ImageInspectionOptions) -> AnyResult<ImageInspection> {
@@ -585,7 +614,13 @@ mod tests {
     assert!(is_blocked_ip("169.254.169.254".parse().unwrap()));
     assert!(is_blocked_ip("::1".parse().unwrap()));
     assert!(is_blocked_ip("::ffff:127.0.0.1".parse().unwrap()));
+    assert!(is_blocked_ip("2002:7f00:0001::1".parse().unwrap()));
+    assert!(is_blocked_ip("2002:c0a8:0001::1".parse().unwrap()));
+    assert!(is_blocked_ip(
+      "2001:0000:4136:e378:8000:63bf:807f:fffe".parse().unwrap()
+    ));
     assert!(!is_blocked_ip("8.8.8.8".parse().unwrap()));
+    assert!(!is_blocked_ip("2002:0808:0808::1".parse().unwrap()));
   }
 
   #[test]

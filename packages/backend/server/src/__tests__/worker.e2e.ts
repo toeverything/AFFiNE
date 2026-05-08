@@ -191,6 +191,7 @@ test('should proxy image', async t => {
       invalidFetchSpy.restore();
     }
 
+    const validImageUrl = `http://example.com/valid-image-${Date.now()}.png`;
     const fakeBuffer = Buffer.from(
       'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jfJ8AAAAASUVORK5CYII=',
       'base64'
@@ -201,7 +202,7 @@ test('should proxy image', async t => {
     }));
     try {
       await t.context.app
-        .GET(`/api/worker/image-proxy?url=${invalidImageUrl}`)
+        .GET(`/api/worker/image-proxy?url=${validImageUrl}`)
         .set('Origin', 'http://localhost:3010')
         .send()
         .expect(200);

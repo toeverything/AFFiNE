@@ -76,8 +76,9 @@ function isValidBiliPlayerUrl(url: string) {
 export const bilibiliConfig = {
   name: 'bilibili',
   match: (url: string) =>
-    validateEmbedIframeUrl(url, bilibiliValidationOptions) &&
-    (!!extractAvid(url) || !!extractBvid(url)),
+    isValidBiliPlayerUrl(url) ||
+    (validateEmbedIframeUrl(url, bilibiliValidationOptions) &&
+      (!!extractAvid(url) || !!extractBvid(url))),
   buildOEmbedUrl: buildBiliPlayerEmbedUrl,
   useOEmbedUrlDirectly: true,
   validateIframeUrl: (iframeUrl: string) => isValidBiliPlayerUrl(iframeUrl),
