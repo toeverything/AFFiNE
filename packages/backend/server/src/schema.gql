@@ -91,6 +91,20 @@ type AdminDashboardValueDayPoint {
   value: SafeInt!
 }
 
+type AdminLicensePreview {
+  endAt: DateTime!
+  entity: String!
+  expiresAt: DateTime!
+  id: String!
+  issuedAt: DateTime!
+  issuer: String!
+  plan: SubscriptionPlan!
+  quantity: Int!
+  recurring: SubscriptionRecurring!
+  valid: Boolean!
+  workspaceId: String!
+}
+
 type AdminSharedLinkTopItem {
   docId: String!
   guestViews: SafeInt!
@@ -1632,6 +1646,7 @@ type Mutation {
 
   """mention user in a doc"""
   mentionUser(input: MentionInput!): ID!
+  previewLicense(license: Upload!): AdminLicensePreview!
   publishDoc(docId: String!, mode: PublicDocMode = Page, workspaceId: String!): DocType!
 
   """queue workspace doc embedding"""

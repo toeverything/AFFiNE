@@ -14,9 +14,14 @@ import GraphQLUpload, {
 
 import { toBuffer, UseNamedGuard } from '../../base';
 import { CurrentUser } from '../../core/auth';
+import { Admin } from '../../core/common';
 import { AccessController } from '../../core/permission';
 import { WorkspaceType } from '../../core/workspaces';
-import { SubscriptionRecurring, SubscriptionVariant } from '../payment/types';
+import {
+  SubscriptionPlan,
+  SubscriptionRecurring,
+  SubscriptionVariant,
+} from '../payment/types';
 import { LicenseService } from './service';
 
 @ObjectType()
@@ -38,6 +43,42 @@ export class License {
 
   @Field(() => Date, { nullable: true })
   expiredAt!: Date | null;
+}
+
+@ObjectType()
+export class AdminLicensePreview {
+  @Field()
+  id!: string;
+
+  @Field()
+  workspaceId!: string;
+
+  @Field(() => SubscriptionPlan)
+  plan!: string;
+
+  @Field(() => SubscriptionRecurring)
+  recurring!: string;
+
+  @Field(() => Int)
+  quantity!: number;
+
+  @Field(() => Date)
+  issuedAt!: Date;
+
+  @Field(() => Date)
+  expiresAt!: Date;
+
+  @Field(() => Date)
+  endAt!: Date;
+
+  @Field()
+  entity!: string;
+
+  @Field()
+  issuer!: string;
+
+  @Field()
+  valid!: boolean;
 }
 
 @UseNamedGuard('selfhost')
@@ -122,5 +163,20 @@ export class LicenseResolver {
     const license = await this.service.installLicense(workspaceId, buffer);
 
     return license;
+  }
+}
+
+@Admin()
+@Resolver(() => AdminLicensePreview)
+export class AdminLicenseResolver {
+  constructor(private readonly service: LicenseService) {}
+
+  @Mutation(() => AdminLicensePreview)
+  async previewLicense(
+    @Args('license', { type: () => GraphQLUpload }) licenseFile: FileUpload
+  ) {
+    const buffer = await toBuffer(licenseFile.createReadStream());
+
+    return this.service.previewLicense(buffer);
   }
 }

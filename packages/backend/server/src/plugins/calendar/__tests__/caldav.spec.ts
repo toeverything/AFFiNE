@@ -147,6 +147,7 @@ const calendarQueryResponse = `<?xml version="1.0" encoding="UTF-8"?>
 </multistatus>`;
 
 const createCalDAVServer = async (options?: {
+  discoveryGetStatus?: number;
   syncCollectionStatus?: number;
 }) => {
   const requests: Array<{ method: string; url: string; body: string }> = [];
@@ -169,6 +170,16 @@ const createCalDAVServer = async (options?: {
     }
 
     if (req.url === '/.well-known/caldav') {
+      if (options?.discoveryGetStatus) {
+        res.writeHead(options.discoveryGetStatus, {
+          'Content-Type': 'application/xml',
+        });
+        res.end(`<?xml version="1.0" encoding="utf-8"?>
+<d:error xmlns:d="DAV:" xmlns:s="http://sabredav.org/ns">
+  <s:exception>Sabre\\DAV\\Exception\\NotImplemented</s:exception>
+</d:error>`);
+        return;
+      }
       res.writeHead(302, { Location: '/caldav/' });
       res.end();
       return;
@@ -275,7 +286,7 @@ const createCalendarModule = async (caldavConfig: Record<string, unknown>) => {
 };
 
 test('linkCalDAVAccount discovers calendars and parses events', async t => {
-  const server = await createCalDAVServer();
+  const server = await createCalDAVServer({ discoveryGetStatus: 501 });
   t.teardown(() => server.server.close());
 
   const module = await createCalendarModule({
@@ -311,6 +322,18 @@ test('linkCalDAVAccount discovers calendars and parses events', async t => {
     account.id
   );
   t.is(subscriptions.length, 1);
+  t.is(account.calendarsCount, 1);
+  t.true(
+    server.requests.some(
+      request =>
+        request.method === 'GET' && request.url === '/.well-known/caldav'
+    )
+  );
+  t.true(
+    server.requests.some(
+      request => request.method === 'PROPFIND' && request.url === '/caldav/'
+    )
+  );
 
   const events = await models.calendarEvent.listBySubscriptionsInRange(
     [subscriptions[0].id],

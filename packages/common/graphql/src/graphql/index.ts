@@ -2582,6 +2582,27 @@ ${licenseBodyFragment}`,
   file: true,
 };
 
+export const previewLicenseMutation = {
+  id: 'previewLicenseMutation' as const,
+  op: 'previewLicense',
+  query: `mutation previewLicense($license: Upload!) {
+  previewLicense(license: $license) {
+    id
+    workspaceId
+    plan
+    recurring
+    quantity
+    issuedAt
+    expiresAt
+    endAt
+    entity
+    issuer
+    valid
+  }
+}`,
+  file: true,
+};
+
 export const listNotificationsQuery = {
   id: 'listNotificationsQuery' as const,
   op: 'listNotifications',

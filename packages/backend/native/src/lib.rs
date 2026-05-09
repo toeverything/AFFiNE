@@ -9,6 +9,7 @@ pub mod hashcash;
 pub mod html_sanitize;
 pub mod image;
 pub mod llm;
+pub mod safe_fetch;
 pub mod tiktoken;
 
 use affine_common::napi_utils::map_napi_err;

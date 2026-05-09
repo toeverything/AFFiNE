@@ -132,6 +132,21 @@ export interface AdminDashboardValueDayPoint {
   value: Scalars['SafeInt']['output'];
 }
 
+export interface AdminLicensePreview {
+  __typename?: 'AdminLicensePreview';
+  endAt: Scalars['DateTime']['output'];
+  entity: Scalars['String']['output'];
+  expiresAt: Scalars['DateTime']['output'];
+  id: Scalars['String']['output'];
+  issuedAt: Scalars['DateTime']['output'];
+  issuer: Scalars['String']['output'];
+  plan: SubscriptionPlan;
+  quantity: Scalars['Int']['output'];
+  recurring: SubscriptionRecurring;
+  valid: Scalars['Boolean']['output'];
+  workspaceId: Scalars['String']['output'];
+}
+
 export interface AdminSharedLinkTopItem {
   __typename?: 'AdminSharedLinkTopItem';
   docId: Scalars['String']['output'];
@@ -1831,6 +1846,7 @@ export interface Mutation {
   linkCalendarAccount: Scalars['String']['output'];
   /** mention user in a doc */
   mentionUser: Scalars['ID']['output'];
+  previewLicense: AdminLicensePreview;
   publishDoc: DocType;
   /** queue workspace doc embedding */
   queueWorkspaceEmbedding: Scalars['Boolean']['output'];
@@ -2150,6 +2166,10 @@ export interface MutationLinkCalendarAccountArgs {
 
 export interface MutationMentionUserArgs {
   input: MentionInput;
+}
+
+export interface MutationPreviewLicenseArgs {
+  license: Scalars['Upload']['input'];
 }
 
 export interface MutationPublishDocArgs {
@@ -7172,6 +7192,28 @@ export type LicenseBodyFragment = {
   variant: SubscriptionVariant | null;
 };
 
+export type PreviewLicenseMutationVariables = Exact<{
+  license: Scalars['Upload']['input'];
+}>;
+
+export type PreviewLicenseMutation = {
+  __typename?: 'Mutation';
+  previewLicense: {
+    __typename?: 'AdminLicensePreview';
+    id: string;
+    workspaceId: string;
+    plan: SubscriptionPlan;
+    recurring: SubscriptionRecurring;
+    quantity: number;
+    issuedAt: string;
+    expiresAt: string;
+    endAt: string;
+    entity: string;
+    issuer: string;
+    valid: boolean;
+  };
+};
+
 export type ListNotificationsQueryVariables = Exact<{
   pagination: PaginationInput;
 }>;
@@ -8741,6 +8783,11 @@ export type Mutations =
       name: 'installLicenseMutation';
       variables: InstallLicenseMutationVariables;
       response: InstallLicenseMutation;
+    }
+  | {
+      name: 'previewLicenseMutation';
+      variables: PreviewLicenseMutationVariables;
+      response: PreviewLicenseMutation;
     }
   | {
       name: 'mentionUserMutation';

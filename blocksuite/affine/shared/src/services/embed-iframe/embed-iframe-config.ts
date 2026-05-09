@@ -67,6 +67,10 @@ export type EmbedIframeConfig = {
    */
   buildOEmbedUrl: (url: string) => string | undefined;
   /**
+   * Validate the final iframe src before rendering.
+   */
+  validateIframeUrl?: (iframeUrl: string, originalUrl?: string) => boolean;
+  /**
    * Use oEmbed URL directly as iframe src without fetching oEmbed data
    */
   useOEmbedUrlDirectly: boolean;

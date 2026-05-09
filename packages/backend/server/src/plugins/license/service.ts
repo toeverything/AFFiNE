@@ -31,6 +31,20 @@ interface License {
   endAt: number;
 }
 
+export interface LicensePreview {
+  id: string;
+  workspaceId: string;
+  plan: SubscriptionPlan.SelfHostedTeam;
+  recurring: SubscriptionRecurring;
+  quantity: number;
+  issuedAt: Date;
+  expiresAt: Date;
+  endAt: Date;
+  entity: string;
+  issuer: string;
+  valid: boolean;
+}
+
 const BaseLicenseSchema = z.object({
   entity: z.string().nonempty(),
   issuer: z.string().nonempty(),
@@ -165,6 +179,34 @@ export class LicenseService {
     });
 
     return installed;
+  }
+
+  previewLicense(license: Buffer): LicensePreview {
+    const payload = this.decryptWorkspaceTeamLicensePayload(license);
+    const data = payload.data;
+    const now = new Date();
+    const expiresAt = new Date(payload.expiresAt);
+    const endAt = new Date(data.endAt);
+
+    if (expiresAt < now || endAt < now) {
+      throw new InvalidLicenseToActivate({
+        reason: 'Invalid license.',
+      });
+    }
+
+    return {
+      id: data.id,
+      workspaceId: data.workspaceId,
+      plan: data.plan,
+      recurring: data.recurring,
+      quantity: data.quantity,
+      issuedAt: new Date(payload.issuedAt),
+      expiresAt,
+      endAt,
+      entity: payload.entity,
+      issuer: payload.issuer,
+      valid: true,
+    };
   }
 
   async activateTeamLicense(workspaceId: string, licenseKey: string) {
@@ -480,6 +522,25 @@ export class LicenseService {
   }
 
   private decryptWorkspaceTeamLicense(workspaceId: string, buf: Buffer) {
+    const payload = this.decryptWorkspaceTeamLicensePayload(buf);
+
+    if (new Date(payload.expiresAt) < new Date()) {
+      throw new InvalidLicenseToActivate({
+        reason:
+          'License file has expired. Please contact with Affine support to fetch a latest one.',
+      });
+    }
+
+    if (payload.data.workspaceId !== workspaceId) {
+      throw new InvalidLicenseToActivate({
+        reason: 'Workspace mismatched with license.',
+      });
+    }
+
+    return payload;
+  }
+
+  private decryptWorkspaceTeamLicensePayload(buf: Buffer) {
     if (!this.crypto.AFFiNEProPublicKey) {
       throw new InternalServerError(
         'License public key is not loaded. Please contact with Affine support.'
@@ -511,19 +572,6 @@ export class LicenseService {
     if (!parseResult.success) {
       throw new InvalidLicenseToActivate({
         reason: 'Invalid license payload.',
-      });
-    }
-
-    if (new Date(parseResult.data.expiresAt) < new Date()) {
-      throw new InvalidLicenseToActivate({
-        reason:
-          'License file has expired. Please contact with Affine support to fetch a latest one.',
-      });
-    }
-
-    if (parseResult.data.data.workspaceId !== workspaceId) {
-      throw new InvalidLicenseToActivate({
-        reason: 'Workspace mismatched with license.',
       });
     }
 

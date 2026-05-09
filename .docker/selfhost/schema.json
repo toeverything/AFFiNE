@@ -135,17 +135,17 @@
         },
         "throttlers.default": {
           "type": "object",
-          "description": "The config for the default throttler.\n@default {\"ttl\":60,\"limit\":120}",
+          "description": "The config for the default throttler.\n@default {\"ttl\":60000,\"limit\":120}",
           "default": {
-            "ttl": 60,
+            "ttl": 60000,
             "limit": 120
           }
         },
         "throttlers.strict": {
           "type": "object",
-          "description": "The config for the strict throttler.\n@default {\"ttl\":60,\"limit\":20}",
+          "description": "The config for the strict throttler.\n@default {\"ttl\":60000,\"limit\":20}",
           "default": {
-            "ttl": 60,
+            "ttl": 60000,
             "limit": 20
           }
         }

@@ -2,7 +2,8 @@ import { Logger } from '@nestjs/common';
 import { GoogleAuth, GoogleAuthOptions } from 'google-auth-library';
 import z from 'zod';
 
-import { OneMinute, safeFetch } from '../../../base';
+import { OneMinute } from '../../../base';
+import { inferRemoteMimeType } from '../../../native';
 import { PromptAttachment, StreamObject } from './types';
 
 export type VertexProviderConfig = {
@@ -33,30 +34,7 @@ type CopilotTextStreamPart =
     }
   | { type: 'error'; error: unknown };
 
-const ATTACH_HEAD_PARAMS = { timeoutMs: OneMinute / 12, maxRedirects: 3 };
-const FORMAT_INFER_MAP: Record<string, string> = {
-  pdf: 'application/pdf',
-  mp3: 'audio/mpeg',
-  opus: 'audio/opus',
-  ogg: 'audio/ogg',
-  aac: 'audio/aac',
-  m4a: 'audio/aac',
-  flac: 'audio/flac',
-  ogv: 'video/ogg',
-  wav: 'audio/wav',
-  png: 'image/png',
-  jpeg: 'image/jpeg',
-  jpg: 'image/jpeg',
-  webp: 'image/webp',
-  txt: 'text/plain',
-  md: 'text/plain',
-  mov: 'video/mov',
-  mpeg: 'video/mpeg',
-  mp4: 'video/mp4',
-  avi: 'video/avi',
-  wmv: 'video/wmv',
-  flv: 'video/flv',
-};
+const ATTACH_HEAD_TIMEOUT_MS = OneMinute / 12;
 
 function toBase64Data(data: string, encoding: 'base64' | 'utf8' = 'base64') {
   return encoding === 'base64'
@@ -97,25 +75,7 @@ export async function inferMimeType(url: string) {
   if (url.startsWith('data:')) {
     return url.split(';')[0].split(':')[1];
   }
-  const pathname = new URL(url).pathname;
-  const extension = pathname.split('.').pop();
-  if (extension) {
-    const ext = FORMAT_INFER_MAP[extension];
-    if (ext) {
-      return ext;
-    }
-  }
-  try {
-    const mimeType = await safeFetch(
-      url,
-      { method: 'HEAD' },
-      ATTACH_HEAD_PARAMS
-    ).then(res => res.headers.get('content-type'));
-    if (mimeType) return mimeType;
-  } catch {
-    // ignore and fallback to default
-  }
-  return 'application/octet-stream';
+  return inferRemoteMimeType({ url, timeoutMs: ATTACH_HEAD_TIMEOUT_MS });
 }
 
 type CitationIndexedEvent = {
