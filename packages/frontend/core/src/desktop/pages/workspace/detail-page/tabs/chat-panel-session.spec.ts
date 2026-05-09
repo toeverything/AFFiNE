@@ -3,7 +3,11 @@ import { type CopilotChatHistoryFragment } from '@affine/graphql';
 import { describe, expect, test, vi } from 'vitest';
 
 import {
+  canCreateNewDocPanelSession,
+  filterDocPanelTabs,
   getChatContentKey,
+  hasSessionMessages,
+  isSessionAvailableInDocPanel,
   resolveInitialSession,
   type SessionService,
   shouldResetChatPanelOnUserInfoChange,
@@ -89,6 +93,22 @@ describe('getChatContentKey', () => {
       },
       expected: 'session-2',
     },
+    {
+      name: 'keeps generating draft session on the doc key',
+      input: {
+        docId: 'doc-1',
+        hasPinned: false,
+        isGenerating: true,
+        previousSessionDocId: 'doc-1',
+        previousSessionId: 'session-1',
+        session: {
+          sessionId: 'session-2',
+          docId: 'doc-1',
+          messages: [],
+        },
+      },
+      expected: 'doc-1',
+    },
   ] satisfies {
     name: string;
     input: Parameters<typeof getChatContentKey>[0];
@@ -142,6 +162,55 @@ describe('shouldResetChatPanelOnUserInfoChange', () => {
 
   test.each(cases)('$name', ({ input, expected }) => {
     expect(shouldResetChatPanelOnUserInfoChange(input)).toBe(expected);
+  });
+});
+
+describe('doc panel tabs', () => {
+  const sessions = [
+    { sessionId: 'current-doc-session', docId: 'doc-1' },
+    { sessionId: 'workspace-session', docId: null },
+    { sessionId: 'other-doc-session', docId: 'doc-2' },
+  ];
+
+  test('allows only current doc or workspace sessions', () => {
+    expect(filterDocPanelTabs(sessions, 'doc-1')).toEqual([
+      sessions[0],
+      sessions[1],
+    ]);
+  });
+
+  test('rejects other document sessions', () => {
+    expect(isSessionAvailableInDocPanel(sessions[2], 'doc-1')).toBe(false);
+  });
+});
+
+describe('new session guard', () => {
+  test('allows a new session only after the current chat has messages', () => {
+    expect(
+      canCreateNewDocPanelSession({
+        hasContextMessages: false,
+        session: { messages: [] },
+        status: 'idle',
+      })
+    ).toBe(false);
+    expect(
+      canCreateNewDocPanelSession({
+        hasContextMessages: true,
+        session: { messages: [] },
+        status: 'idle',
+      })
+    ).toBe(true);
+    expect(hasSessionMessages({ messages: [{ id: 'message-1' }] })).toBe(true);
+  });
+
+  test('does not allow a new session while generating', () => {
+    expect(
+      canCreateNewDocPanelSession({
+        hasContextMessages: true,
+        session: null,
+        status: 'loading',
+      })
+    ).toBe(false);
   });
 });
 

@@ -52,7 +52,10 @@ import {
 } from '../../chat-panel-utils';
 import * as styles from './chat.css';
 import {
+  canCreateNewDocPanelSession,
+  filterDocPanelTabs,
   getChatContentKey,
+  isSessionAvailableInDocPanel,
   resolveInitialSession,
   shouldResetChatPanelOnUserInfoChange,
   type WorkbenchLike,
@@ -108,6 +111,14 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
   const prevSessionDocIdRef = useRef<string | null>(null);
   const lastDocIdRef = useRef<string | null>(null);
   const sessionLoadSeqRef = useRef(0);
+  const creatingSessionRef = useRef<{
+    docId: string;
+    promise: Promise<CopilotChatHistoryFragment | undefined>;
+  } | null>(null);
+  const creatingFreshSessionRef = useRef<{
+    docId: string;
+    promise: Promise<void>;
+  } | null>(null);
   const userIdRef = useRef<string | null | undefined>(undefined);
 
   const doc = editor?.doc;
@@ -117,6 +128,7 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
   const [sessionServiceReady, setSessionServiceReady] = useState(
     () => !!AIProvider.session
   );
+  const [hasContextMessages, setHasContextMessages] = useState(false);
 
   useEffect(() => {
     if (sessionServiceReady) return;
@@ -142,6 +154,15 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
 
   const { openTabs, setOpenTabs } =
     useAIChatOpenTabs<CopilotChatHistoryFragment>(loadSession);
+  const visibleOpenTabs = useMemo(
+    () => filterDocPanelTabs(openTabs, doc?.id),
+    [doc?.id, openTabs]
+  );
+  const canCreateNewSession = canCreateNewDocPanelSession({
+    hasContextMessages,
+    session,
+    status,
+  });
 
   const appSidebarConfig = useMemo<AppSidebarConfig>(() => {
     return {
@@ -200,18 +221,32 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
       if (session || !AIProvider.session || !doc) {
         return session ?? undefined;
       }
+      if (creatingSessionRef.current?.docId === doc.id) {
+        return creatingSessionRef.current.promise;
+      }
       const requestSeq = ++sessionLoadSeqRef.current;
-      const nextSession = await AIProvider.session.createSessionWithHistory({
-        docId: doc.id,
-        workspaceId: doc.workspace.id,
-        promptName: 'Chat With AFFiNE AI',
-        reuseLatestChat: false,
-        ...options,
-      });
-      if (requestSeq !== sessionLoadSeqRef.current) return undefined;
-      setSession(nextSession ?? null);
-      setHasPinned(!!nextSession?.pinned);
-      return nextSession ?? undefined;
+      let promise: Promise<CopilotChatHistoryFragment | undefined>;
+      promise = AIProvider.session
+        .createSessionWithHistory({
+          docId: doc.id,
+          workspaceId: doc.workspace.id,
+          promptName: 'Chat With AFFiNE AI',
+          reuseLatestChat: false,
+          ...options,
+        })
+        .then(nextSession => {
+          if (requestSeq !== sessionLoadSeqRef.current) return undefined;
+          setSession(nextSession ?? null);
+          setHasPinned(!!nextSession?.pinned);
+          return nextSession ?? undefined;
+        })
+        .finally(() => {
+          if (creatingSessionRef.current?.promise === promise) {
+            creatingSessionRef.current = null;
+          }
+        });
+      creatingSessionRef.current = { docId: doc.id, promise };
+      return promise;
     },
     [doc, session]
   );
@@ -236,29 +271,44 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
   );
 
   const newSession = useCallback(async () => {
+    if (!canCreateNewSession) {
+      return;
+    }
+    if (doc && creatingFreshSessionRef.current?.docId === doc.id) {
+      return creatingFreshSessionRef.current.promise;
+    }
     resetPanel();
     const requestSeq = sessionLoadSeqRef.current;
     setSession(null);
+    setHasContextMessages(false);
 
     if (!AIProvider.session || !doc) {
       return;
     }
 
-    try {
-      const nextSession = await AIProvider.session.createSessionWithHistory({
+    let promise: Promise<void>;
+    promise = AIProvider.session
+      .createSessionWithHistory({
         docId: doc.id,
         workspaceId: doc.workspace.id,
         promptName: 'Chat With AFFiNE AI',
         reuseLatestChat: false,
+      })
+      .then(nextSession => {
+        if (requestSeq === sessionLoadSeqRef.current) {
+          setSession(nextSession ?? null);
+          setHasPinned(!!nextSession?.pinned);
+        }
+      })
+      .catch(console.error)
+      .finally(() => {
+        if (creatingFreshSessionRef.current?.promise === promise) {
+          creatingFreshSessionRef.current = null;
+        }
       });
-      if (requestSeq === sessionLoadSeqRef.current) {
-        setSession(nextSession ?? null);
-        setHasPinned(!!nextSession?.pinned);
-      }
-    } catch (error) {
-      console.error(error);
-    }
-  }, [doc, resetPanel]);
+    creatingFreshSessionRef.current = { docId: doc.id, promise };
+    return promise;
+  }, [canCreateNewSession, doc, resetPanel]);
 
   const openSession = useCallback(
     async (sessionId: string) => {
@@ -277,13 +327,20 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
           setOpenTabs(prev => prev.filter(tab => tab.sessionId !== sessionId));
           return;
         }
+        if (!isSessionAvailableInDocPanel(nextSession, doc.id)) {
+          setOpenTabs([]);
+          workbench.open(`/${nextSession.docId}?sessionId=${sessionId}`, {
+            at: 'active',
+          });
+          return;
+        }
         setSession(nextSession);
         setHasPinned(!!nextSession.pinned);
       } catch (error) {
         console.error(error);
       }
     },
-    [doc, session?.sessionId, setOpenTabs]
+    [doc, session?.sessionId, setOpenTabs, workbench]
   );
 
   const openDoc = useCallback(
@@ -304,9 +361,17 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
         workbench.open(`/${docId}`, { at: 'active' });
         return;
       }
+      setOpenTabs([]);
       workbench.open(`/${docId}?sessionId=${sessionId}`, { at: 'active' });
     },
-    [doc, openSession, session?.pinned, session?.sessionId, workbench]
+    [
+      doc,
+      openSession,
+      session?.pinned,
+      session?.sessionId,
+      setOpenTabs,
+      workbench,
+    ]
   );
 
   const deleteSession = useMemo(
@@ -325,10 +390,12 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
         isActiveSession: sessionToDelete =>
           sessionToDelete.sessionId === session?.sessionId,
         onActiveSessionDeleted: () => {
-          newSession().catch(console.error);
+          resetPanel();
+          setSession(null);
+          setHasContextMessages(false);
         },
       }),
-    [newSession, notificationService, session?.sessionId, t]
+    [notificationService, resetPanel, session?.sessionId, t]
   );
 
   const closeTab = useCallback(
@@ -338,17 +405,20 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
         const idx = prev.findIndex(tab => tab.sessionId === sessionId);
         if (idx === -1) return prev;
         const next = prev.filter(tab => tab.sessionId !== sessionId);
-        fallback = next[idx] ?? next[idx - 1] ?? next[0];
+        const visibleNext = filterDocPanelTabs(next, doc?.id);
+        fallback = visibleNext[idx] ?? visibleNext[idx - 1] ?? visibleNext[0];
         return next;
       });
       if (session?.sessionId !== sessionId) return;
       if (fallback) {
         openSession(fallback.sessionId).catch(console.error);
       } else {
-        newSession().catch(console.error);
+        resetPanel();
+        setSession(null);
+        setHasContextMessages(false);
       }
     },
-    [newSession, openSession, session?.sessionId, setOpenTabs]
+    [doc?.id, openSession, resetPanel, session?.sessionId, setOpenTabs]
   );
 
   const togglePin = useCallback(async () => {
@@ -387,7 +457,12 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
 
   const onContextChange = useCallback(
     (context: Partial<ChatContextValue>) => {
-      setStatus(context.status ?? 'idle');
+      if (context.status) {
+        setStatus(context.status);
+      }
+      if (context.messages) {
+        setHasContextMessages(context.messages.length > 0);
+      }
       if (context.status === 'success') {
         rebindSession().catch(console.error);
       }
@@ -468,6 +543,7 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
       !session?.pinned
     ) {
       resetPanel();
+      setHasContextMessages(false);
     }
     lastDocIdRef.current = docId;
   }, [doc?.id, resetPanel, session?.pinned]);
@@ -490,6 +566,7 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
   const contentKey = getChatContentKey({
     docId: doc?.id,
     hasPinned,
+    isGenerating: status === 'loading' || status === 'transmitting',
     previousSessionDocId: prevSessionDocIdRef.current,
     previousSessionId: prevSessionIdRef.current,
     session,
@@ -597,6 +674,7 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
       workspaceId: doc.workspace.id,
       docId: doc.id,
       status,
+      canCreateNewSession,
       docDisplayConfig,
       notificationService,
       onNewSession: () => {
@@ -620,6 +698,7 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
     }
   }, [
     chatToolbar,
+    canCreateNewSession,
     deleteSession,
     doc,
     docDisplayConfig,
@@ -647,15 +726,17 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
       chatTabsContainerRef.current.append(tabs);
       setChatTabs(tabs);
     }
-    tabs.sessions = openTabs;
+    tabs.sessions = visibleOpenTabs;
     tabs.activeSessionId = session?.sessionId;
+    tabs.showDraftTab =
+      visibleOpenTabs.length === 0 && !session?.sessionId && !!doc;
     tabs.onSelectTab = (sessionId: string) => {
       openSession(sessionId).catch(console.error);
     };
     tabs.onCloseTab = (sessionId: string) => {
       closeTab(sessionId);
     };
-  }, [chatTabs, closeTab, doc, openSession, openTabs, session]);
+  }, [chatTabs, closeTab, doc, openSession, session, visibleOpenTabs]);
 
   useEffect(() => {
     if (!editor?.host || !chatContent) {

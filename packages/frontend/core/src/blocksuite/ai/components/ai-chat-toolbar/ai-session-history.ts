@@ -160,6 +160,9 @@ export class AISessionHistory extends WithDisposable(ShadowlessElement) {
   accessor workspaceId!: string;
 
   @property({ attribute: false })
+  accessor docId: string | undefined;
+
+  @property({ attribute: false })
   accessor docDisplayConfig!: DocDisplayConfig;
 
   @property({ attribute: false })
@@ -178,6 +181,11 @@ export class AISessionHistory extends WithDisposable(ShadowlessElement) {
 
   @state()
   private accessor sessions: BlockSuitePresets.AIRecentSession[] | undefined;
+
+  @state()
+  private accessor currentDocSessions:
+    | BlockSuitePresets.AIRecentSession[]
+    | undefined;
 
   @state()
   private accessor loadingMore = false;
@@ -256,6 +264,18 @@ export class AISessionHistory extends WithDisposable(ShadowlessElement) {
     this.loadingMore = false;
   }
 
+  private async getCurrentDocSessions() {
+    if (!this.docId) {
+      this.currentDocSessions = [];
+      return;
+    }
+    this.currentDocSessions =
+      (await AIProvider.session?.getSessions(this.workspaceId, this.docId, {
+        action: false,
+        fork: false,
+      })) || [];
+  }
+
   private readonly onScroll = () => {
     if (!this.hasMore || this.loadingMore) {
       return;
@@ -271,6 +291,7 @@ export class AISessionHistory extends WithDisposable(ShadowlessElement) {
   override connectedCallback() {
     super.connectedCallback();
     this.selectedSessionId = this.session?.sessionId ?? undefined;
+    this.getCurrentDocSessions().catch(console.error);
     this.getRecentSessions().catch(console.error);
   }
 
@@ -305,7 +326,11 @@ export class AISessionHistory extends WithDisposable(ShadowlessElement) {
               @click=${(e: MouseEvent) => {
                 e.stopPropagation();
                 this.selectedSessionId = session.sessionId;
-                this.onSessionClick(session.sessionId);
+                if (session.docId) {
+                  this.onDocClick(session.docId, session.sessionId);
+                } else {
+                  this.onSessionClick(session.sessionId);
+                }
               }}
               aria-selected=${this.selectedSessionId === session.sessionId}
               data-session-id=${session.sessionId}
@@ -374,12 +399,23 @@ export class AISessionHistory extends WithDisposable(ShadowlessElement) {
       return this.renderLoading();
     }
 
-    if (this.sessions.length === 0) {
+    const currentDocSessions = this.currentDocSessions ?? [];
+    const currentDocSessionIds = new Set(
+      currentDocSessions.map(session => session.sessionId)
+    );
+    const otherSessions = this.sessions.filter(
+      session =>
+        !currentDocSessionIds.has(session.sessionId) &&
+        (!this.docId || session.docId !== this.docId)
+    );
+
+    if (currentDocSessions.length === 0 && otherSessions.length === 0) {
       return this.renderEmpty();
     }
 
-    const groupedSessions = this.groupSessionsByTime(this.sessions);
+    const groupedSessions = this.groupSessionsByTime(otherSessions);
     return html`
+      ${this.renderSessionGroup('Current document', currentDocSessions)}
       ${this.renderSessionGroup('Today', groupedSessions.today)}
       ${this.renderSessionGroup('Last 7 days', groupedSessions.last7Days)}
       ${this.renderSessionGroup('Last 30 days', groupedSessions.last30Days)}

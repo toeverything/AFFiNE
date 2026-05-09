@@ -33,6 +33,9 @@ export class AIChatTabs extends WithDisposable(ShadowlessElement) {
   accessor activeSessionId: string | undefined;
 
   @property({ attribute: false })
+  accessor showDraftTab = false;
+
+  @property({ attribute: false })
   accessor onSelectTab!: (sessionId: string) => void;
 
   @property({ attribute: false })
@@ -129,10 +132,11 @@ export class AIChatTabs extends WithDisposable(ShadowlessElement) {
   `;
 
   override render() {
-    if (!this.sessions.length) return html``;
+    if (!this.sessions.length && !this.showDraftTab) return html``;
     return html`
       <div class="ai-chat-tabs" data-testid="ai-chat-tabs">
         <div class="tabs-scroll" @wheel=${this._handleWheel}>
+          ${this.showDraftTab ? this._renderDraftTab() : null}
           ${repeat(
             this.sessions,
             session => session.sessionId,
@@ -173,6 +177,19 @@ export class AIChatTabs extends WithDisposable(ShadowlessElement) {
         >
           ${CloseIcon()}
         </button>
+      </div>
+    `;
+  }
+
+  private _renderDraftTab() {
+    return html`
+      <div
+        class="tab"
+        data-active="true"
+        data-testid="ai-chat-draft-tab"
+        title=${DEFAULT_TAB_TITLE}
+      >
+        <span class="tab-title">${DEFAULT_TAB_TITLE}</span>
       </div>
     `;
   }

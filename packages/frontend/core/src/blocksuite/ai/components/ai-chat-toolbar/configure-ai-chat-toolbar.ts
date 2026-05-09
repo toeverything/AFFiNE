@@ -13,6 +13,7 @@ export type ConfigureAIChatToolbarOptions = {
   docDisplayConfig: DocDisplayConfig;
   notificationService: NotificationService;
   onNewSession: () => void;
+  canCreateNewSession?: boolean;
   onTogglePin: () => Promise<void>;
   onOpenSession: (sessionId: string) => void;
   onOpenDoc: (docId: string, sessionId: string) => void;
@@ -36,6 +37,7 @@ export function configureAIChatToolbar(
   tool.docDisplayConfig = options.docDisplayConfig;
   tool.notificationService = options.notificationService;
   tool.onNewSession = options.onNewSession;
+  tool.canCreateNewSession = options.canCreateNewSession ?? true;
   tool.onTogglePin = options.onTogglePin;
   tool.onOpenSession = options.onOpenSession;
   tool.onOpenDoc = options.onOpenDoc;

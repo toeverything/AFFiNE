@@ -34,6 +34,9 @@ export class AIChatToolbar extends WithDisposable(ShadowlessElement) {
   accessor onNewSession!: () => void;
 
   @property({ attribute: false })
+  accessor canCreateNewSession = true;
+
+  @property({ attribute: false })
   accessor onTogglePin!: () => Promise<void>;
 
   @property({ attribute: false })
@@ -97,14 +100,16 @@ export class AIChatToolbar extends WithDisposable(ShadowlessElement) {
     const pinned = this.session?.pinned;
     return html`
       <div class="ai-chat-toolbar">
-        <div
-          class="chat-toolbar-icon"
-          @click=${this.onPlusClick}
-          data-testid="ai-panel-new-chat"
-        >
-          ${PlusIcon()}
-          <affine-tooltip>New Chat</affine-tooltip>
-        </div>
+        ${this.canCreateNewSession
+          ? html` <div
+              class="chat-toolbar-icon"
+              @click=${this.onPlusClick}
+              data-testid="ai-panel-new-chat"
+            >
+              ${PlusIcon()}
+              <affine-tooltip>New Chat</affine-tooltip>
+            </div>`
+          : null}
         <div
           class="chat-toolbar-icon"
           @click=${this.onPinClick}
@@ -202,6 +207,7 @@ export class AIChatToolbar extends WithDisposable(ShadowlessElement) {
         <ai-session-history
           .session=${this.session}
           .workspaceId=${this.workspaceId}
+          .docId=${this.docId}
           .docDisplayConfig=${this.docDisplayConfig}
           .onSessionClick=${this.onSessionClick}
           .onSessionDelete=${this.onSessionDelete}

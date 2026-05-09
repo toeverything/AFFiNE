@@ -1,5 +1,8 @@
 import { applyDecorators, SetMetadata } from '@nestjs/common';
-import { SkipThrottle, Throttle as RawThrottle } from '@nestjs/throttler';
+import {
+  SkipThrottle as RawSkipThrottle,
+  Throttle as RawThrottle,
+} from '@nestjs/throttler';
 
 import { ThrottlerType } from './config';
 
@@ -38,4 +41,11 @@ export function Throttle(
   );
 }
 
-export { SkipThrottle };
+export function SkipThrottle(
+  skip: Partial<Record<ThrottlerType, boolean>> = {
+    default: true,
+    strict: true,
+  }
+): MethodDecorator & ClassDecorator {
+  return RawSkipThrottle(skip);
+}

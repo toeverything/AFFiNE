@@ -213,6 +213,8 @@ export class AIChatContent extends SignalWatcher(
   // request counter to track the latest request
   private updateHistoryCounter = 0;
 
+  private historyKey: string | undefined;
+
   private lastScrollTop: number | undefined;
 
   get messages() {
@@ -230,13 +232,19 @@ export class AIChatContent extends SignalWatcher(
     return false;
   }
 
-  private readonly updateHistory = async () => {
+  private async updateHistory() {
     const currentRequest = ++this.updateHistoryCounter;
     if (!AIProvider.histories) {
       return;
     }
 
     const sessionId = this.session?.sessionId;
+    const nextHistoryKey = `${this.workspaceId}:${this.docId ?? ''}:${
+      sessionId ?? ''
+    }`;
+    const previousHistoryKey = this.historyKey;
+    const preserveCurrentMessages = previousHistoryKey === nextHistoryKey;
+    this.historyKey = nextHistoryKey;
     const [histories, actions] = await Promise.all([
       sessionId
         ? AIProvider.histories.chats(this.workspaceId, sessionId)
@@ -251,9 +259,18 @@ export class AIChatContent extends SignalWatcher(
       return;
     }
 
-    const messages: HistoryMessage[] = this.chatContextValue.messages
-      .slice()
-      .filter(isChatMessage);
+    if (
+      !preserveCurrentMessages &&
+      (this.chatContextValue.status === 'loading' ||
+        this.chatContextValue.status === 'transmitting') &&
+      this.chatContextValue.messages.length
+    ) {
+      return;
+    }
+
+    const messages: HistoryMessage[] = preserveCurrentMessages
+      ? this.chatContextValue.messages.slice().filter(isChatMessage)
+      : [];
 
     const chatActions = (actions || []) as ChatAction[];
     messages.push(...chatActions);
@@ -267,7 +284,7 @@ export class AIChatContent extends SignalWatcher(
           new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
       ),
     });
-  };
+  }
 
   private readonly updateActions = async () => {
     if (!this.docId || !AIProvider.histories || !this.showActions) {
@@ -337,6 +354,17 @@ export class AIChatContent extends SignalWatcher(
   }
 
   protected override updated(changedProperties: PropertyValues) {
+    const historySourceChanged =
+      (changedProperties.has('session') &&
+        changedProperties.get('session') !== undefined) ||
+      (changedProperties.has('docId') &&
+        changedProperties.get('docId') !== undefined) ||
+      (changedProperties.has('workspaceId') &&
+        changedProperties.get('workspaceId') !== undefined);
+    if (historySourceChanged) {
+      this.initChatContent().catch(console.error);
+    }
+
     // restore pinned chat scroll position
     if (
       changedProperties.has('host') &&

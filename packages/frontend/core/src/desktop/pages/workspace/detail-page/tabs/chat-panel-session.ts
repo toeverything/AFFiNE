@@ -49,6 +49,12 @@ interface ChatContentKeySession {
   messages?: readonly unknown[] | null;
 }
 
+type TabSession = {
+  sessionId: string;
+  docId?: string | null;
+  messages?: readonly unknown[] | null;
+};
+
 export const shouldResetChatPanelOnUserInfoChange = ({
   previousUserId,
   nextUserId,
@@ -62,12 +68,14 @@ export const shouldResetChatPanelOnUserInfoChange = ({
 export const getChatContentKey = ({
   docId,
   hasPinned,
+  isGenerating,
   previousSessionDocId,
   previousSessionId,
   session,
 }: {
   docId?: string | null;
   hasPinned: boolean;
+  isGenerating?: boolean;
   previousSessionDocId?: string | null;
   previousSessionId?: string | null;
   session?: ChatContentKeySession | null;
@@ -80,6 +88,7 @@ export const getChatContentKey = ({
 
   const sessionDocId = session.docId ?? docId ?? null;
   const hasSessionHistory = !!session.messages?.length;
+  const shouldPreserveTransientMessages = isGenerating && !hasSessionHistory;
   const sessionSwitchedWithinDoc = !!(
     previousSessionId &&
     previousSessionId !== sessionId &&
@@ -89,9 +98,49 @@ export const getChatContentKey = ({
     sessionDocId === docId
   );
 
-  return hasPinned || hasSessionHistory || sessionSwitchedWithinDoc
+  return hasPinned ||
+    hasSessionHistory ||
+    (sessionSwitchedWithinDoc && !shouldPreserveTransientMessages)
     ? sessionId
     : fallbackKey;
+};
+
+export const isSessionAvailableInDocPanel = (
+  session: TabSession,
+  docId?: string | null
+) => {
+  return !session.docId || session.docId === docId;
+};
+
+export const filterDocPanelTabs = <T extends TabSession>(
+  sessions: T[],
+  docId?: string | null
+) => {
+  return sessions.filter(session =>
+    isSessionAvailableInDocPanel(session, docId)
+  );
+};
+
+export const hasSessionMessages = (
+  session?: Pick<TabSession, 'messages'> | null
+) => {
+  return !!session?.messages?.length;
+};
+
+export const canCreateNewDocPanelSession = ({
+  hasContextMessages,
+  session,
+  status,
+}: {
+  hasContextMessages: boolean;
+  session?: Pick<TabSession, 'messages'> | null;
+  status?: string | null;
+}) => {
+  return (
+    (hasContextMessages || hasSessionMessages(session)) &&
+    status !== 'loading' &&
+    status !== 'transmitting'
+  );
 };
 
 export const getSessionIdFromUrl = (workbench?: WorkbenchLike | null) => {
