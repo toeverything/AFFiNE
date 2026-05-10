@@ -11,6 +11,10 @@ import {
   updateReplyMutation,
   uploadCommentAttachmentMutation,
 } from '@affine/graphql';
+import type {
+  RealtimeSubscriptionReady,
+  RealtimeTopicEventOf,
+} from '@affine/realtime';
 import { Entity } from '@toeverything/infra';
 import type { Observable } from 'rxjs';
 
@@ -144,11 +148,11 @@ export class DocCommentStore extends Entity<{
       { after, workspaceId: this.currentWorkspaceId, docId: this.props.docId }
     );
     return {
-      changes: commentChanges.changes.map((change: any) => ({
+      changes: commentChanges.changes.map(change => ({
         id: change.id,
         action: change.action,
         comment: normalizeComment(change.item as GQLCommentType),
-        commentId: change.commentId,
+        commentId: change.commentId ?? undefined,
       })),
       startCursor: commentChanges.startCursor,
       endCursor: commentChanges.endCursor,
@@ -156,7 +160,9 @@ export class DocCommentStore extends Entity<{
     };
   }
 
-  subscribeCommentChanged(): Observable<unknown> {
+  subscribeCommentChanged(): Observable<
+    RealtimeTopicEventOf<'comment.changed'> | RealtimeSubscriptionReady
+  > {
     return this.nbstoreService.realtime.subscribe('comment.changed', {
       workspaceId: this.currentWorkspaceId,
       docId: this.props.docId,

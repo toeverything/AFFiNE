@@ -3,15 +3,17 @@ import { z } from 'zod';
 
 import { OnEvent } from '../../../base';
 import { AccessController } from '../../../core/permission';
-import type {
+import {
   RealtimePublisher,
   RealtimeRegistry,
+  realtimeWorkspaceEmbeddingProgressRoom,
+  registerRealtimeLiveQuery,
 } from '../../../core/realtime';
 import { Models } from '../../../models';
 import { CopilotContextService } from './service';
 
 export function workspaceEmbeddingRoom(workspaceId: string) {
-  return `workspace:${workspaceId}:embedding-progress`;
+  return realtimeWorkspaceEmbeddingProgressRoom(workspaceId);
 }
 
 @Injectable()
@@ -27,27 +29,28 @@ export class CopilotEmbeddingRealtimeProvider implements OnModuleInit {
   onModuleInit() {
     const input = z.object({ workspaceId: z.string() });
 
-    this.registry?.registerRequest({
-      name: 'workspace.embedding.progress.get',
-      input,
-      handle: async (user, payload) => {
-        await this.assertCopilot(user.id, payload.workspaceId);
-        if (!this.context.canEmbedding) {
-          return { total: 0, embedded: 0 };
-        }
-        return await this.models.copilotWorkspace.getEmbeddingStatus(
-          payload.workspaceId
-        );
+    registerRealtimeLiveQuery(this.registry, {
+      request: {
+        name: 'workspace.embedding.progress.get',
+        input,
+        handle: async (user, payload) => {
+          await this.assertCopilot(user.id, payload.workspaceId);
+          if (!this.context.canEmbedding) {
+            return { total: 0, embedded: 0 };
+          }
+          return await this.models.copilotWorkspace.getEmbeddingStatus(
+            payload.workspaceId
+          );
+        },
       },
-    });
-
-    this.registry?.registerTopic({
-      name: 'workspace.embedding.progress.changed',
-      input,
-      authorize: async (user, payload) => {
-        await this.assertCopilot(user.id, payload.workspaceId);
+      topic: {
+        name: 'workspace.embedding.progress.changed',
+        input,
+        authorize: async (user, payload) => {
+          await this.assertCopilot(user.id, payload.workspaceId);
+        },
+        room: (_user, payload) => workspaceEmbeddingRoom(payload.workspaceId),
       },
-      room: (_user, payload) => workspaceEmbeddingRoom(payload.workspaceId),
     });
   }
 

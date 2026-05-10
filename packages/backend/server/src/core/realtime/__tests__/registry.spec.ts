@@ -1,11 +1,18 @@
+import { getRealtimeInputKey } from '@affine/realtime';
 import test from 'ava';
 import { z } from 'zod';
 
 import type { CurrentUser } from '../../auth';
 import { RealtimeGateway } from '../gateway';
-import type { RealtimePublisher } from '../publisher';
+import {
+  realtimeCommentRoom,
+  realtimeNotificationRoom,
+  realtimeTranscriptTaskRoom,
+  realtimeWorkspaceEmbeddingProgressRoom,
+  registerRealtimeLiveQuery,
+} from '../index';
+import { RealtimePublisher } from '../publisher';
 import { RealtimeRegistry } from '../registry';
-import { stableStringify } from '../stable-stringify';
 
 const user: CurrentUser = {
   id: 'u1',
@@ -109,7 +116,7 @@ test('gateway authorizes subscription and joins room', async t => {
   t.deepEqual(joined, ['workspace:space']);
   t.deepEqual(result, {
     data: {
-      subscriptionId: `socket-1:comment.changed:${stableStringify({
+      subscriptionId: `socket-1:comment.changed:${getRealtimeInputKey({
         workspaceId: 'space',
         docId: 'doc',
       })}`,
@@ -126,20 +133,99 @@ test('gateway authorizes subscription and joins room', async t => {
   );
 });
 
-test('stableStringify is deterministic for subscription input keys', t => {
+test('getRealtimeInputKey is deterministic for subscription input keys', t => {
   t.is(
-    stableStringify({ docId: 'doc', workspaceId: 'space' }),
-    stableStringify({ workspaceId: 'space', docId: 'doc' })
+    getRealtimeInputKey({ docId: 'doc', workspaceId: 'space' }),
+    getRealtimeInputKey({ workspaceId: 'space', docId: 'doc' })
   );
 });
 
-test('stableStringify follows JSON semantics for subscription input keys', t => {
-  t.is(stableStringify({ after: undefined }), stableStringify({}));
-  t.is(stableStringify([undefined]), '[null]');
+test('getRealtimeInputKey follows JSON semantics for subscription input keys', t => {
+  t.is(getRealtimeInputKey({ after: undefined }), getRealtimeInputKey({}));
+  t.is(getRealtimeInputKey([undefined]), '[null]');
   t.is(
-    stableStringify(new Date('2026-01-02T03:04:05.000Z')),
+    getRealtimeInputKey(new Date('2026-01-02T03:04:05.000Z')),
     '"2026-01-02T03:04:05.000Z"'
   );
+});
+
+test('room helpers produce stable realtime room names', t => {
+  t.is(realtimeNotificationRoom('u1'), 'user:u1:notification');
+  t.is(realtimeCommentRoom('space', 'doc'), 'workspace:space:doc:doc:comment');
+  t.is(
+    realtimeWorkspaceEmbeddingProgressRoom('space'),
+    'workspace:space:embedding-progress'
+  );
+  t.is(
+    realtimeTranscriptTaskRoom('space', 'task'),
+    'copilot:transcript:space:task'
+  );
+});
+
+test('registerRealtimeLiveQuery registers paired request and topic handlers', async t => {
+  const registry = new RealtimeRegistry();
+
+  registerRealtimeLiveQuery(registry, {
+    request: {
+      name: 'notification.count.get',
+      input: z.object({}).strict(),
+      handle: async () => ({ count: 7 }),
+    },
+    topic: {
+      name: 'notification.count.changed',
+      input: z.object({}).strict(),
+      authorize: async () => {},
+      room: currentUser => `user:${currentUser?.id}:notification`,
+    },
+  });
+
+  t.deepEqual(
+    await registry.getRequest('notification.count.get').handle(user, {}),
+    {
+      count: 7,
+    }
+  );
+  t.is(
+    registry.getTopic('notification.count.changed').room(user, {}),
+    'user:u1:notification'
+  );
+});
+
+test('publisher emits realtime event with shared input key', t => {
+  const registry = new RealtimeRegistry();
+  registry.registerTopic({
+    name: 'comment.changed',
+    input: z.object({ workspaceId: z.string(), docId: z.string() }),
+    authorize: async () => {},
+    room: (_currentUser, input) =>
+      realtimeCommentRoom(input.workspaceId, input.docId),
+  });
+  const emitted: unknown[] = [];
+  const publisher = new RealtimePublisher(registry, {
+    broadcast: () => {},
+  } as never);
+  publisher.attachServer({
+    to: (room: string) => ({
+      emit: (event: string, payload: unknown) =>
+        emitted.push({ room, event, payload }),
+    }),
+  } as never);
+
+  publisher.publishLocal({
+    topic: 'comment.changed',
+    input: { docId: 'doc', workspaceId: 'space' },
+    event: { changed: true },
+  });
+
+  t.like(emitted[0], {
+    room: 'workspace:space:doc:doc:comment',
+    event: 'realtime:event',
+    payload: {
+      topic: 'comment.changed',
+      inputKey: getRealtimeInputKey({ workspaceId: 'space', docId: 'doc' }),
+      event: { changed: true },
+    },
+  });
 });
 
 test('gateway removes subscriptions on socket disconnect', async t => {

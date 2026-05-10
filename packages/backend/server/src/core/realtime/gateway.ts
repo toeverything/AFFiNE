@@ -3,6 +3,7 @@ import type {
   RealtimeSubscribeEnvelope,
   RealtimeUnsubscribeEnvelope,
 } from '@affine/realtime';
+import { getRealtimeInputKey } from '@affine/realtime';
 import { applyDecorators, Logger, UseInterceptors } from '@nestjs/common';
 import {
   ConnectedSocket,
@@ -25,7 +26,6 @@ import {
 import { CurrentUser } from '../auth';
 import { RealtimePublisher } from './publisher';
 import { RealtimeRegistry } from './registry';
-import { stableStringify } from './stable-stringify';
 import type { RealtimePublishPayload } from './types';
 
 const SubscribeMessage = (event: string) =>
@@ -87,7 +87,7 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayDisconnect {
     await handler.authorize(user, input as never);
     const room = handler.room(user, input as never);
     await client.join(room);
-    const subscriptionId = `${client.id}:${envelope.topic}:${stableStringify(input)}`;
+    const subscriptionId = `${client.id}:${envelope.topic}:${getRealtimeInputKey(input)}`;
     this.subscriptions.set(subscriptionId, {
       socketId: client.id,
       room,

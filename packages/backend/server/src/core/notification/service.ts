@@ -18,12 +18,12 @@ import {
 import { DocReader } from '../doc';
 import { Mailer } from '../mail';
 import type { RealtimePublisher } from '../realtime';
+import { realtimeNotificationRoom } from '../realtime';
 import { generateDocPath } from '../utils/doc';
 import {
   generateWorkspaceSettingsPath,
   WorkspaceSettingsTab,
 } from '../utils/workspace';
-import { notificationCountRoom } from './realtime-room';
 
 @Injectable()
 export class NotificationService {
@@ -499,7 +499,7 @@ export class NotificationService {
         'notification.count.changed',
         {},
         { count: await this.countByUserId(userId), reason },
-        { room: notificationCountRoom(userId) }
+        { room: realtimeNotificationRoom(userId) }
       );
     } catch (error) {
       this.logger.error(

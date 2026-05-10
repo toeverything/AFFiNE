@@ -1,10 +1,13 @@
-import type { RealtimeEvent, RealtimeTopicName } from '@affine/realtime';
+import {
+  getRealtimeInputKey,
+  type RealtimeEvent,
+  type RealtimeTopicName,
+} from '@affine/realtime';
 import { Injectable, Logger } from '@nestjs/common';
 import type { Server } from 'socket.io';
 
 import { EventBus } from '../../base';
 import { RealtimeRegistry } from './registry';
-import { stableStringify } from './stable-stringify';
 import type { RealtimePublishPayload } from './types';
 
 @Injectable()
@@ -46,7 +49,7 @@ export class RealtimePublisher {
     const room = payload.room ?? handler.room(null, payload.input as never);
     const envelope: RealtimeEvent = {
       topic: payload.topic,
-      inputKey: stableStringify(payload.input),
+      inputKey: getRealtimeInputKey(payload.input),
       sentAt: Date.now(),
       event: payload.event as never,
     };

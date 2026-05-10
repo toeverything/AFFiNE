@@ -16,17 +16,9 @@ import {
   onStart,
 } from '@toeverything/infra';
 import { nanoid } from 'nanoid';
-import {
-  catchError,
-  filter,
-  first,
-  of,
-  Subject,
-  type Subscription,
-  switchMap,
-  tap,
-} from 'rxjs';
+import { catchError, filter, first, of, Subject, switchMap, tap } from 'rxjs';
 
+import { RealtimeLiveQuery } from '../../cloud/realtime/live-query';
 import { type DocDisplayMetaService } from '../../doc-display-meta';
 import { GlobalContextService } from '../../global-context';
 import type { SnapshotHelper } from '../services/snapshot-helper';
@@ -93,11 +85,18 @@ export class DocCommentEntity extends Entity<{
   private readonly commentDeleted$ = new Subject<CommentId>();
   readonly commentHighlighted$ = new LiveData<CommentId | null>(null);
 
-  private realtimeDisposable?: DisposeCallback;
-  private realtimeSubscription?: Subscription;
+  private readonly liveQuery = new RealtimeLiveQuery({
+    request: () => this.store.listCommentChanges({ after: this.startCursor }),
+    subscribe: () => this.store.subscribeCommentChanged(),
+    applySnapshot: result => {
+      this.handleCommentChanges(result);
+      this.startCursor = result.endCursor;
+    },
+    onError: error => {
+      console.error('Failed to sync comment changes:', error);
+    },
+  });
   private startCursor?: string;
-  private fetchingCommentChanges = false;
-  private pendingCommentChangeFetch = false;
 
   async addComment(
     selections?: BaseSelection[],
@@ -490,53 +489,13 @@ export class DocCommentEntity extends Entity<{
   }
 
   start(): void {
-    if (this.realtimeDisposable) {
-      this.realtimeDisposable();
-    }
-    this.realtimeSubscription?.unsubscribe();
-
     this.revalidate();
     this.revalidateCommentsInEditor();
-
-    this.realtimeSubscription = this.store.subscribeCommentChanged().subscribe({
-      next: () => {
-        this.fetchCommentChanges().catch(() => {});
-      },
-      error: error => {
-        console.error('Failed to subscribe comment changes:', error);
-      },
-    });
-    this.realtimeDisposable = () => this.realtimeSubscription?.unsubscribe();
+    this.liveQuery.start();
   }
 
   stop(): void {
-    if (this.realtimeDisposable) {
-      this.realtimeDisposable();
-    }
-    this.realtimeSubscription?.unsubscribe();
-  }
-
-  private async fetchCommentChanges() {
-    if (this.fetchingCommentChanges) {
-      this.pendingCommentChangeFetch = true;
-      return;
-    }
-
-    this.fetchingCommentChanges = true;
-    try {
-      do {
-        this.pendingCommentChangeFetch = false;
-        const result = await this.store.listCommentChanges({
-          after: this.startCursor,
-        });
-        this.handleCommentChanges(result);
-        this.startCursor = result.endCursor;
-      } while (this.pendingCommentChangeFetch);
-    } catch (error) {
-      console.error('Failed to fetch comment changes:', error);
-    } finally {
-      this.fetchingCommentChanges = false;
-    }
+    this.liveQuery.stop();
   }
 
   private handleCommentChanges(result: DocCommentChangeListResult): void {

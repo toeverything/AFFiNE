@@ -1,20 +1,8 @@
-import {
-  catchErrorInto,
-  effect,
-  exhaustMapWithTrailing,
-  fromPromise,
-  LiveData,
-  onComplete,
-  OnEvent,
-  onStart,
-  Service,
-  smartRetry,
-} from '@toeverything/infra';
-import type { Subscription } from 'rxjs';
-import { tap } from 'rxjs';
+import { LiveData, OnEvent, Service } from '@toeverything/infra';
 
 import { AccountChanged, type AuthService } from '../../cloud';
 import { ServerStarted } from '../../cloud/events/server-started';
+import { RealtimeLiveQuery } from '../../cloud/realtime/live-query';
 import { ApplicationFocused } from '../../lifecycle';
 import type { NbstoreService } from '../../storage';
 import type { NotificationStore } from '../stores/notification';
@@ -36,30 +24,25 @@ export class NotificationCountService extends Service {
   readonly count$ = LiveData.from(this.store.watchNotificationCountCache(), 0);
   readonly isLoading$ = new LiveData(false);
   readonly error$ = new LiveData<any>(null);
-  private subscription?: Subscription;
+  private readonly liveQuery = new RealtimeLiveQuery({
+    request: signal => this.requestCount(signal),
+    subscribe: () =>
+      this.nbstoreService.realtime.subscribe('notification.count.changed', {}),
+    applySnapshot: result => this.setCount(result.count),
+    applyEvent: event => {
+      this.setCount(event.count);
+      return 'applied';
+    },
+    onError: error => this.error$.setValue(error),
+  });
 
-  revalidate = effect(
-    exhaustMapWithTrailing(() => {
-      return fromPromise(() => {
-        if (!this.loggedIn$.value) {
-          return Promise.resolve(0);
-        }
-        return this.nbstoreService.realtime
-          .request('notification.count.get', {}, { timeoutMs: 10000 })
-          .then(result => result.count);
-      }).pipe(
-        tap(result => {
-          this.setCount(result ?? 0);
-        }),
-        smartRetry(),
-        catchErrorInto(this.error$),
-        onStart(() => {
-          this.isLoading$.setValue(true);
-        }),
-        onComplete(() => this.isLoading$.setValue(false))
-      );
-    })
-  );
+  revalidate = () => {
+    if (!this.loggedIn$.value) {
+      this.setCount(0);
+      return;
+    }
+    this.liveQuery.revalidate();
+  };
 
   handleApplicationFocused() {
     this.revalidate();
@@ -81,28 +64,28 @@ export class NotificationCountService extends Service {
 
   override dispose(): void {
     super.dispose();
-    this.revalidate.unsubscribe();
-    this.subscription?.unsubscribe();
+    this.liveQuery.dispose();
   }
 
   private subscribe() {
-    this.subscription?.unsubscribe();
     if (!this.loggedIn$.value) {
+      this.liveQuery.stop();
+      this.setCount(0);
       return;
     }
-    this.subscription = this.nbstoreService.realtime
-      .subscribe('notification.count.changed', {})
-      .subscribe({
-        next: event => {
-          if ('type' in event) {
-            this.revalidate();
-          } else {
-            this.setCount(event.count);
-          }
-        },
-        error: error => {
-          this.error$.setValue(error);
-        },
-      });
+    this.liveQuery.start();
+  }
+
+  private async requestCount(signal: AbortSignal) {
+    this.isLoading$.setValue(true);
+    try {
+      return await this.nbstoreService.realtime.request(
+        'notification.count.get',
+        {},
+        { signal, timeoutMs: 10000 }
+      );
+    } finally {
+      this.isLoading$.setValue(false);
+    }
   }
 }

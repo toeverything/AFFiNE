@@ -9,7 +9,10 @@ import {
   OnJob,
   sniffMime,
 } from '../../../base';
-import type { RealtimePublisher } from '../../../core/realtime';
+import {
+  type RealtimePublisher,
+  realtimeTranscriptTaskRoom,
+} from '../../../core/realtime';
 import { Models } from '../../../models';
 import { CopilotAccessPolicy } from '../access';
 import { PromptService } from '../prompt';
@@ -32,10 +35,6 @@ import { readStream } from './utils';
 const TRANSCRIPT_ACTION_ID = 'transcript.audio.gemini';
 const TRANSCRIPT_ACTION_VERSION = 'v1';
 const TRANSCRIPT_STRATEGY = 'gemini';
-
-export function transcriptTaskRoom(workspaceId: string, taskId: string) {
-  return `copilot:transcript:${workspaceId}:${taskId}`;
-}
 
 export type TranscriptionJob = {
   id: string;
@@ -468,7 +467,7 @@ export class CopilotTranscriptionService {
       'copilot.transcript.task.changed',
       { workspaceId, taskId },
       { taskId, status, error },
-      { room: transcriptTaskRoom(workspaceId, taskId) }
+      { room: realtimeTranscriptTaskRoom(workspaceId, taskId) }
     );
   }
 }

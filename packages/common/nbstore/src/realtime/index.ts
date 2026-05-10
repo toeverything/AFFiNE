@@ -1,1 +1,1 @@
-export { RealtimeManager, stableStringify } from './manager';
+export { RealtimeManager } from './manager';

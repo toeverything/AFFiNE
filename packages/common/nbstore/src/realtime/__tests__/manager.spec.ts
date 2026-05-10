@@ -1,7 +1,7 @@
-import type { RealtimeEvent } from '@affine/realtime';
+import { getRealtimeInputKey, type RealtimeEvent } from '@affine/realtime';
 import { beforeEach, expect, test, vi } from 'vitest';
 
-import { RealtimeManager, stableStringify } from '../manager';
+import { RealtimeManager } from '../manager';
 
 type Handler = (payload?: unknown) => void;
 
@@ -70,16 +70,16 @@ beforeEach(() => {
   socket.disconnected = false;
 });
 
-test('stableStringify is deterministic for realtime subscription inputs', () => {
-  expect(stableStringify({ workspaceId: 'space', docId: 'doc' })).toBe(
-    stableStringify({ docId: 'doc', workspaceId: 'space' })
+test('getRealtimeInputKey is deterministic for realtime subscription inputs', () => {
+  expect(getRealtimeInputKey({ workspaceId: 'space', docId: 'doc' })).toBe(
+    getRealtimeInputKey({ docId: 'doc', workspaceId: 'space' })
   );
 });
 
-test('stableStringify follows JSON semantics for edge values', () => {
-  expect(stableStringify({ a: undefined })).toBe(stableStringify({}));
-  expect(stableStringify([undefined])).toBe('[null]');
-  expect(stableStringify(new Date('2026-01-02T03:04:05.000Z'))).toBe(
+test('getRealtimeInputKey follows JSON semantics for edge values', () => {
+  expect(getRealtimeInputKey({ a: undefined })).toBe(getRealtimeInputKey({}));
+  expect(getRealtimeInputKey([undefined])).toBe('[null]');
+  expect(getRealtimeInputKey(new Date('2026-01-02T03:04:05.000Z'))).toBe(
     '"2026-01-02T03:04:05.000Z"'
   );
 });
@@ -159,13 +159,13 @@ test('subscribe routes events by topic and stable input key', async () => {
 
   socket.emit('realtime:event', {
     topic: 'comment.changed',
-    inputKey: stableStringify({ workspaceId: 'space', docId: 'other' }),
+    inputKey: getRealtimeInputKey({ workspaceId: 'space', docId: 'other' }),
     sentAt: 1,
     event: { changed: true },
   } satisfies RealtimeEvent);
   socket.emit('realtime:event', {
     topic: 'comment.changed',
-    inputKey: stableStringify({ workspaceId: 'space', docId: 'doc' }),
+    inputKey: getRealtimeInputKey({ workspaceId: 'space', docId: 'doc' }),
     sentAt: 2,
     event: { changed: true },
   } satisfies RealtimeEvent);

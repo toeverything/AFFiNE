@@ -1,10 +1,11 @@
 import { shallowEqual } from '@affine/component';
 import type { TranscriptionBlockProps } from '@affine/core/blocksuite/ai/blocks/transcription-block/model';
+import { RealtimeLiveQuery } from '@affine/core/modules/cloud/realtime/live-query';
 import { DebugLogger } from '@affine/debug';
 import { UserFriendlyError } from '@affine/error';
-import { AiJobStatus } from '@affine/graphql';
+import { AiJobStatus, type TranscriptionResultType } from '@affine/graphql';
+import type { RealtimeTopicEventOf } from '@affine/realtime';
 import { Entity, LiveData } from '@toeverything/infra';
-import type { Subscription } from 'rxjs';
 
 import type { DefaultServerService, WorkspaceServerService } from '../../cloud';
 import { AuthService } from '../../cloud/services/auth';
@@ -65,7 +66,10 @@ export class AudioTranscriptionJob extends Entity<{
   }
 
   disposed = false;
-  private taskSubscription?: Subscription;
+  private taskLiveQuery?: RealtimeLiveQuery<
+    TranscriptionResultType | null,
+    RealtimeTopicEventOf<'copilot.transcript.task.changed'>
+  >;
   private taskWaitReject?: (error: unknown) => void;
 
   private readonly _status$ = new LiveData<TranscriptionStatus>({
@@ -205,45 +209,56 @@ export class AudioTranscriptionJob extends Entity<{
 
     await new Promise<void>((resolve, reject) => {
       this.taskWaitReject = reject;
-      this.taskSubscription = this.store
-        .subscribeTranscriptTask(taskId)
-        .subscribe({
-          next: event => {
-            if (
-              'type' in event ||
-              (event.status as AiJobStatus) === AiJobStatus.finished
-            ) {
-              this.checkTranscriptTask(taskId).then(() => {
-                if (this.status$.value.status === AiJobStatus.finished) {
-                  resolve();
-                }
-              }, reject);
-            } else if ((event.status as AiJobStatus) === AiJobStatus.failed) {
-              reject(
-                UserFriendlyError.fromAny(
-                  event.error ?? 'Transcription job failed'
-                )
-              );
+      this.taskLiveQuery = new RealtimeLiveQuery({
+        request: () => this.store.getTranscriptTask(this.props.blobId, taskId),
+        subscribe: () => this.store.subscribeTranscriptTask(taskId),
+        applySnapshot: job => {
+          this.applyTranscriptTaskSnapshot(taskId, job).then(() => {
+            if (this.status$.value.status === AiJobStatus.finished) {
+              resolve();
             }
-          },
-          error: reject,
-        });
+          }, reject);
+        },
+        applyEvent: event => {
+          if (event.status === AiJobStatus.failed) {
+            reject(
+              UserFriendlyError.fromAny(
+                event.error ?? 'Transcription job failed'
+              )
+            );
+            return 'applied';
+          }
+          return event.status === AiJobStatus.finished
+            ? 'revalidate'
+            : 'applied';
+        },
+        onError: reject,
+      });
+      this.taskLiveQuery.start();
     }).finally(() => {
       this.taskWaitReject = undefined;
-      this.taskSubscription?.unsubscribe();
-      this.taskSubscription = undefined;
+      this.taskLiveQuery?.dispose();
+      this.taskLiveQuery = undefined;
     });
   }
 
   private rejectTaskWait(error: unknown) {
     const reject = this.taskWaitReject;
     this.taskWaitReject = undefined;
-    this.taskSubscription?.unsubscribe();
-    this.taskSubscription = undefined;
+    this.taskLiveQuery?.dispose();
+    this.taskLiveQuery = undefined;
     reject?.(error);
   }
 
   private async checkTranscriptTask(taskId: string) {
+    const job = await this.store.getTranscriptTask(this.props.blobId, taskId);
+    await this.applyTranscriptTaskSnapshot(taskId, job);
+  }
+
+  private async applyTranscriptTaskSnapshot(
+    taskId: string,
+    job: TranscriptionResultType | null
+  ) {
     if (
       this.disposed ||
       this.props.blockProps.jobId !== taskId ||
@@ -251,7 +266,6 @@ export class AudioTranscriptionJob extends Entity<{
     ) {
       return;
     }
-    const job = await this.store.getTranscriptTask(this.props.blobId, taskId);
 
     if (!job || job.status === AiJobStatus.failed) {
       logger.debug('Job failed during realtime status check', {

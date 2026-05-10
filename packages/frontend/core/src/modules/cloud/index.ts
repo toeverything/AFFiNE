@@ -6,6 +6,11 @@ export { AccountLoggedIn } from './events/account-logged-in';
 export { AccountLoggedOut } from './events/account-logged-out';
 export { AuthProvider } from './provider/auth';
 export { ValidatorProvider } from './provider/validator';
+export {
+  RealtimeLiveQuery,
+  type RealtimeLiveQueryEventResult,
+  type RealtimeLiveQueryOptions,
+} from './realtime/live-query';
 export { ServerScope } from './scopes/server';
 export { AccessTokenService } from './services/access-token';
 export { AuthService } from './services/auth';
