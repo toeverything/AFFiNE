@@ -97,6 +97,7 @@ export class DocCommentEntity extends Entity<{
     },
   });
   private startCursor?: string;
+  private startVersion = 0;
 
   async addComment(
     selections?: BaseSelection[],
@@ -489,13 +490,34 @@ export class DocCommentEntity extends Entity<{
   }
 
   start(): void {
-    this.revalidate();
     this.revalidateCommentsInEditor();
-    this.liveQuery.start();
+    this.startLiveQueryAfterInitialLoad().catch(error => {
+      console.error('Failed to start comment realtime:', error);
+    });
   }
 
   stop(): void {
+    this.startVersion++;
     this.liveQuery.stop();
+  }
+
+  private async startLiveQueryAfterInitialLoad() {
+    const version = ++this.startVersion;
+    this.liveQuery.stop();
+    this.loading$.setValue(true);
+    try {
+      const allComments = await this.loadAllComments();
+      if (version !== this.startVersion) {
+        return;
+      }
+      this.revalidateCommentsInEditor();
+      this.comments$.setValue(allComments);
+      this.liveQuery.start();
+    } finally {
+      if (version === this.startVersion) {
+        this.loading$.setValue(false);
+      }
+    }
   }
 
   private handleCommentChanges(result: DocCommentChangeListResult): void {
@@ -609,31 +631,9 @@ export class DocCommentEntity extends Entity<{
 
   revalidate = effect(
     switchMap(() => {
-      return fromPromise(async () => {
-        const allComments: DocComment[] = [];
-        let cursor = '';
-        let firstResult: DocCommentListResult | null = null;
-        this.revalidateCommentsInEditor();
-        // Fetch all pages of comments
-        while (true) {
-          const result = await this.store.listComments({ after: cursor });
-          if (!firstResult) {
-            firstResult = result;
-            // Store the startCursor from the first page for incremental changes
-            this.startCursor = result.startCursor;
-          }
-          allComments.push(...result.comments);
-          cursor = result.endCursor;
-          if (!result.hasNextPage) {
-            break;
-          }
-        }
-
-        return allComments;
-      }).pipe(
+      return fromPromise(() => this.loadAllComments()).pipe(
         tap(allComments => {
           this.revalidateCommentsInEditor();
-          // Update state with all comments
           this.comments$.setValue(allComments);
         }),
         onStart(() => this.loading$.setValue(true)),
@@ -646,6 +646,27 @@ export class DocCommentEntity extends Entity<{
       );
     })
   );
+
+  private async loadAllComments() {
+    const allComments: DocComment[] = [];
+    let cursor = '';
+    let firstResult: DocCommentListResult | null = null;
+    this.revalidateCommentsInEditor();
+    while (true) {
+      const result = await this.store.listComments({ after: cursor });
+      if (!firstResult) {
+        firstResult = result;
+        this.startCursor = result.startCursor;
+      }
+      allComments.push(...result.comments);
+      cursor = result.endCursor;
+      if (!result.hasNextPage) {
+        break;
+      }
+    }
+
+    return allComments;
+  }
 
   private readonly revalidateCommentsInEditor = () => {
     this.commentsInEditor$.setValue(this.getCommentsInEditor());

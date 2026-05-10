@@ -59,6 +59,7 @@ export class NotificationCountService extends Service {
   }
 
   setCount(count: number) {
+    this.error$.setValue(null);
     this.store.setNotificationCountCache(count);
   }
 

@@ -39,17 +39,19 @@ export class CommentRealtimeProvider implements OnModuleInit {
         handle: async (user, payload) => {
           await this.assertRead(user.id, payload.workspaceId, payload.docId);
           const cursor: CommentCursor = decodeWithJson(payload.after) ?? {};
+          const limit = payload.first;
           const changes = await this.service.listCommentChanges(
             payload.workspaceId,
             payload.docId,
             {
               commentUpdatedAt: cursor.commentUpdatedAt,
               replyUpdatedAt: cursor.replyUpdatedAt,
-              take: payload.first,
+              take: limit ? limit + 1 : undefined,
             }
           );
+          const pageChanges = limit ? changes.slice(0, limit) : changes;
           const endCursor = cursor;
-          for (const change of changes) {
+          for (const change of pageChanges) {
             if (change.commentId) {
               endCursor.replyUpdatedAt = change.item.updatedAt;
             } else {
@@ -57,15 +59,15 @@ export class CommentRealtimeProvider implements OnModuleInit {
             }
           }
           return {
-            changes: changes.map(change => ({
+            changes: pageChanges.map(change => ({
               id: change.id,
               action: change.action,
               item: change.item,
-              commentId: change.commentId ?? undefined,
-            })) as never,
+              commentId: change.commentId ?? null,
+            })),
             startCursor: '',
             endCursor: encodeWithJson(endCursor),
-            hasNextPage: changes.length > 0,
+            hasNextPage: limit ? changes.length > limit : false,
           };
         },
       },

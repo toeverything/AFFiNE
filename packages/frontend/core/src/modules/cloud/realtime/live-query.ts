@@ -11,6 +11,12 @@ export type RealtimeLiveQueryOptions<TSnapshot, TEvent extends object> = {
   onError?: (error: unknown) => void;
 };
 
+function isReadyEvent<TEvent extends object>(
+  event: TEvent | RealtimeSubscriptionReady
+): event is RealtimeSubscriptionReady {
+  return 'type' in event && event.type === 'ready';
+}
+
 export class RealtimeLiveQuery<TSnapshot, TEvent extends object> {
   private subscription?: Subscription;
   private requestController?: AbortController;
@@ -27,7 +33,7 @@ export class RealtimeLiveQuery<TSnapshot, TEvent extends object> {
     const generation = this.generation;
     this.subscription = this.options.subscribe().subscribe({
       next: event => {
-        if ('type' in event && event.type === 'ready') {
+        if (isReadyEvent(event)) {
           this.revalidate();
           return;
         }
