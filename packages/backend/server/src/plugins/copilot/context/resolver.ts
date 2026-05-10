@@ -412,12 +412,15 @@ export class CopilotContextRootResolver {
   @Throttle('strict')
   @Query(() => ContextWorkspaceEmbeddingStatus, {
     description: 'query workspace embedding status',
+    deprecationReason:
+      'Use realtime subscription "workspace.embedding.progress.changed" instead.',
   })
   @CallMetric('ai', 'context_query_workspace_embedding_status')
   async queryWorkspaceEmbeddingStatus(
     @CurrentUser() user: CurrentUser,
     @Args('workspaceId') workspaceId: string
   ): Promise<ContextWorkspaceEmbeddingStatus> {
+    // DEPRECATED-0.26-COMPAT(realtime): remove after server no longer supports 0.26.x clients.
     await this.ac
       .user(user.id)
       .workspace(workspaceId)

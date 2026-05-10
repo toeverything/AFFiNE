@@ -10,11 +10,13 @@ import {
   Service,
   smartRetry,
 } from '@toeverything/infra';
-import { switchMap, tap, timer } from 'rxjs';
+import type { Subscription } from 'rxjs';
+import { tap } from 'rxjs';
 
 import { AccountChanged, type AuthService } from '../../cloud';
 import { ServerStarted } from '../../cloud/events/server-started';
 import { ApplicationFocused } from '../../lifecycle';
+import type { NbstoreService } from '../../storage';
 import type { NotificationStore } from '../stores/notification';
 
 @OnEvent(ApplicationFocused, s => s.handleApplicationFocused)
@@ -23,7 +25,8 @@ import type { NotificationStore } from '../stores/notification';
 export class NotificationCountService extends Service {
   constructor(
     private readonly store: NotificationStore,
-    private readonly authService: AuthService
+    private readonly authService: AuthService,
+    private readonly nbstoreService: NbstoreService
   ) {
     super();
   }
@@ -33,17 +36,17 @@ export class NotificationCountService extends Service {
   readonly count$ = LiveData.from(this.store.watchNotificationCountCache(), 0);
   readonly isLoading$ = new LiveData(false);
   readonly error$ = new LiveData<any>(null);
+  private subscription?: Subscription;
 
   revalidate = effect(
-    switchMap(() => {
-      return timer(0, 30000); // revalidate every 30 seconds
-    }),
     exhaustMapWithTrailing(() => {
-      return fromPromise(signal => {
+      return fromPromise(() => {
         if (!this.loggedIn$.value) {
           return Promise.resolve(0);
         }
-        return this.store.getNotificationCount(signal);
+        return this.nbstoreService.realtime
+          .request('notification.count.get', {}, { timeoutMs: 10000 })
+          .then(result => result.count);
       }).pipe(
         tap(result => {
           this.setCount(result ?? 0);
@@ -63,10 +66,12 @@ export class NotificationCountService extends Service {
   }
 
   handleServerStarted() {
+    this.subscribe();
     this.revalidate();
   }
 
   handleAccountChanged() {
+    this.subscribe();
     this.revalidate();
   }
 
@@ -77,5 +82,27 @@ export class NotificationCountService extends Service {
   override dispose(): void {
     super.dispose();
     this.revalidate.unsubscribe();
+    this.subscription?.unsubscribe();
+  }
+
+  private subscribe() {
+    this.subscription?.unsubscribe();
+    if (!this.loggedIn$.value) {
+      return;
+    }
+    this.subscription = this.nbstoreService.realtime
+      .subscribe('notification.count.changed', {})
+      .subscribe({
+        next: event => {
+          if ('type' in event) {
+            this.revalidate();
+          } else {
+            this.setCount(event.count);
+          }
+        },
+        error: error => {
+          this.error$.setValue(error);
+        },
+      });
   }
 }

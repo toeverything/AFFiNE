@@ -818,6 +818,7 @@ __metadata:
     "@affine/error": "workspace:*"
     "@affine/graphql": "workspace:*"
     "@affine/reader": "workspace:*"
+    "@affine/realtime": "workspace:*"
     "@blocksuite/affine": "workspace:*"
     "@toeverything/infra": "workspace:*"
     eventemitter2: "npm:^6.4.9"
@@ -835,6 +836,7 @@ __metadata:
   peerDependencies:
     "@affine/error": "workspace:*"
     "@affine/graphql": "workspace:*"
+    "@affine/realtime": "workspace:*"
     "@blocksuite/affine": "workspace:*"
     idb: ^8.0.0
     socket.io-client: ^4.8.3
@@ -863,6 +865,14 @@ __metadata:
     yjs: "npm:^13.6.27"
   peerDependencies:
     "@blocksuite/affine": "workspace:*"
+  languageName: unknown
+  linkType: soft
+
+"@affine/realtime@workspace:*, @affine/realtime@workspace:packages/common/realtime":
+  version: 0.0.0-use.local
+  resolution: "@affine/realtime@workspace:packages/common/realtime"
+  dependencies:
+    "@affine/graphql": "workspace:*"
   languageName: unknown
   linkType: soft
 
@@ -918,6 +928,7 @@ __metadata:
     "@affine-tools/cli": "workspace:*"
     "@affine-tools/utils": "workspace:*"
     "@affine/graphql": "workspace:*"
+    "@affine/realtime": "workspace:*"
     "@affine/s3-compat": "workspace:*"
     "@affine/server-native": "workspace:*"
     "@apollo/server": "npm:^5.5.0"

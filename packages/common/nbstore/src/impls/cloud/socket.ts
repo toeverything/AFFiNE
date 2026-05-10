@@ -1,4 +1,10 @@
 import {
+  type RealtimeEvent,
+  type RealtimeRequestEnvelope,
+  type RealtimeSubscribeEnvelope,
+  type RealtimeUnsubscribeEnvelope,
+} from '@affine/realtime';
+import {
   Manager as SocketIOManager,
   type Socket as SocketIO,
 } from 'socket.io-client';
@@ -52,6 +58,8 @@ interface ServerEvents {
     docId: string;
     awarenessUpdate: string;
   };
+
+  'realtime:event': RealtimeEvent;
 }
 
 interface ClientEvents {
@@ -116,6 +124,10 @@ interface ClientEvents {
   'space:delete-doc': { spaceType: string; spaceId: string; docId: string };
 
   'telemetry:batch': [TelemetryBatch, TelemetryAck];
+
+  'realtime:request': [RealtimeRequestEnvelope, unknown];
+  'realtime:subscribe': [RealtimeSubscribeEnvelope, { subscriptionId: string }];
+  'realtime:unsubscribe': [RealtimeUnsubscribeEnvelope, { ok: true }];
 }
 
 export type ServerEventsMap = {
@@ -227,10 +239,11 @@ class SocketManager {
 
 const SOCKET_MANAGER_CACHE = new Map<string, SocketManager>();
 function getSocketManager(endpoint: string, isSelfHosted: boolean) {
-  let manager = SOCKET_MANAGER_CACHE.get(endpoint);
+  const key = `${endpoint}:${isSelfHosted ? 'selfhosted' : 'cloud'}`;
+  let manager = SOCKET_MANAGER_CACHE.get(key);
   if (!manager) {
     manager = new SocketManager(endpoint, isSelfHosted);
-    SOCKET_MANAGER_CACHE.set(endpoint, manager);
+    SOCKET_MANAGER_CACHE.set(key, manager);
   }
   return manager;
 }

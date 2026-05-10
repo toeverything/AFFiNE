@@ -4,7 +4,6 @@ import {
   deleteCommentMutation,
   deleteReplyMutation,
   type DocMode,
-  listCommentChangesQuery,
   type ListCommentsQuery,
   listCommentsQuery,
   resolveCommentMutation,
@@ -13,9 +12,11 @@ import {
   uploadCommentAttachmentMutation,
 } from '@affine/graphql';
 import { Entity } from '@toeverything/infra';
+import type { Observable } from 'rxjs';
 
 import type { DefaultServerService, WorkspaceServerService } from '../../cloud';
 import { GraphQLService } from '../../cloud/services/graphql';
+import type { NbstoreService } from '../../storage';
 import type { WorkspaceService } from '../../workspace';
 import type {
   DocComment,
@@ -75,7 +76,8 @@ export class DocCommentStore extends Entity<{
   constructor(
     private readonly workspaceService: WorkspaceService,
     private readonly workspaceServerService: WorkspaceServerService,
-    private readonly defaultServerService: DefaultServerService
+    private readonly defaultServerService: DefaultServerService,
+    private readonly nbstoreService: NbstoreService
   ) {
     super();
   }
@@ -132,49 +134,33 @@ export class DocCommentStore extends Entity<{
     };
   }
 
-  // pool every 30s
   async listCommentChanges({
     after,
   }: {
     after?: string;
   }): Promise<DocCommentChangeListResult> {
-    const graphql = this.graphqlService;
-    if (!graphql) {
-      throw new Error('GraphQL service not found');
-    }
-
-    const response = await graphql.gql({
-      query: listCommentChangesQuery,
-      variables: {
-        pagination: {
-          after,
-        },
-        workspaceId: this.currentWorkspaceId,
-        docId: this.props.docId,
-      },
-    });
-
-    const commentChanges = response.workspace?.commentChanges;
-    if (!commentChanges) {
-      return {
-        changes: [],
-        startCursor: '',
-        endCursor: after ?? '',
-        hasNextPage: false,
-      };
-    }
-
+    const commentChanges = await this.nbstoreService.realtime.request(
+      'comment.changes.get',
+      { after, workspaceId: this.currentWorkspaceId, docId: this.props.docId }
+    );
     return {
-      changes: commentChanges.edges.map(edge => ({
-        id: edge.node.id,
-        action: edge.node.action,
-        comment: normalizeComment(edge.node.item),
-        commentId: edge.node.commentId || undefined,
+      changes: commentChanges.changes.map((change: any) => ({
+        id: change.id,
+        action: change.action,
+        comment: normalizeComment(change.item as GQLCommentType),
+        commentId: change.commentId,
       })),
-      startCursor: commentChanges.pageInfo.startCursor || '',
-      endCursor: commentChanges.pageInfo.endCursor || '',
-      hasNextPage: commentChanges.pageInfo.hasNextPage,
+      startCursor: commentChanges.startCursor,
+      endCursor: commentChanges.endCursor,
+      hasNextPage: commentChanges.hasNextPage,
     };
+  }
+
+  subscribeCommentChanged(): Observable<unknown> {
+    return this.nbstoreService.realtime.subscribe('comment.changed', {
+      workspaceId: this.currentWorkspaceId,
+      docId: this.props.docId,
+    });
   }
 
   async createComment(commentInput: {

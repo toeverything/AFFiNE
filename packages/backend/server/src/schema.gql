@@ -519,7 +519,7 @@ type Copilot {
 
   """Get the session list in the workspace"""
   sessions(docId: String, options: QueryChatSessionsInput): [CopilotSessionType!]! @deprecated(reason: "use `chats` instead")
-  transcriptTask(blobId: String, taskId: String): TranscriptionResultType
+  transcriptTask(blobId: String, taskId: String): TranscriptionResultType @deprecated(reason: "Use realtime subscription \"copilot.transcript.task.changed\" instead.")
   workspaceId: ID
 }
 
@@ -1975,7 +1975,7 @@ type Query {
   publicUserById(id: String!): PublicUserType
 
   """query workspace embedding status"""
-  queryWorkspaceEmbeddingStatus(workspaceId: String!): ContextWorkspaceEmbeddingStatus!
+  queryWorkspaceEmbeddingStatus(workspaceId: String!): ContextWorkspaceEmbeddingStatus! @deprecated(reason: "Use realtime subscription \"workspace.embedding.progress.changed\" instead.")
   revealedAccessTokens: [RevealedAccessToken!]! @deprecated(reason: "use currentUser.revealedAccessTokens")
 
   """server config"""
@@ -2668,7 +2668,7 @@ type UserType {
   name: String!
 
   """Get user notification count"""
-  notificationCount: Int!
+  notificationCount: Int! @deprecated(reason: "Use realtime subscription \"notification.count.changed\" instead.")
 
   """Get current user notifications"""
   notifications(pagination: PaginationInput!): PaginatedNotificationObjectType!

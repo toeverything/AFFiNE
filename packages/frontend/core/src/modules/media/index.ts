@@ -1,7 +1,7 @@
 import type { Framework } from '@toeverything/infra';
 
 import { DefaultServerService, WorkspaceServerService } from '../cloud';
-import { GlobalState, GlobalStateService } from '../storage';
+import { GlobalState, GlobalStateService, NbstoreService } from '../storage';
 import { WorkbenchService } from '../workbench';
 import { WorkspaceScope, WorkspaceService } from '../workspace';
 import { AudioAttachmentBlock } from './entities/audio-attachment-block';
@@ -35,6 +35,7 @@ export function configureMediaModule(framework: Framework) {
       WorkspaceService,
       WorkspaceServerService,
       DefaultServerService,
+      NbstoreService,
     ])
     .service(AudioAttachmentService)
     .service(AudioMediaManagerService, [

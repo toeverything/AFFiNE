@@ -10,8 +10,8 @@ import {
   onStart,
   smartRetry,
 } from '@toeverything/infra';
-import { EMPTY, interval, Subject } from 'rxjs';
-import { exhaustMap, mergeMap, switchMap, takeUntil } from 'rxjs/operators';
+import { EMPTY, type Subscription } from 'rxjs';
+import { exhaustMap, mergeMap } from 'rxjs/operators';
 
 import type { EmbeddingStore } from '../stores/embedding';
 import type { LocalAttachmentFile } from '../types';
@@ -26,8 +26,7 @@ export class EmbeddingProgress extends Entity {
   error$ = new LiveData<any>(null);
   loading$ = new LiveData(true);
 
-  private readonly EMBEDDING_PROGRESS_POLL_INTERVAL = 3000;
-  private readonly stopEmbeddingProgress$ = new Subject<void>();
+  private progressSubscription?: Subscription;
   uploadingAttachments$ = new LiveData<LocalAttachmentFile[]>([]);
 
   constructor(
@@ -37,50 +36,49 @@ export class EmbeddingProgress extends Entity {
     super();
   }
 
-  startEmbeddingProgressPolling() {
-    this.stopEmbeddingProgressPolling();
+  startEmbeddingProgress() {
+    this.stopEmbeddingProgress();
+    this.progressSubscription = this.store
+      .subscribeEmbeddingProgress(this.workspaceService.workspace.id)
+      .subscribe({
+        next: () => this.getEmbeddingProgress(),
+        error: error => this.error$.setValue(error),
+      });
     this.getEmbeddingProgress();
   }
 
-  stopEmbeddingProgressPolling() {
-    this.stopEmbeddingProgress$.next();
+  stopEmbeddingProgress() {
+    this.progressSubscription?.unsubscribe();
+    this.progressSubscription = undefined;
   }
 
   getEmbeddingProgress = effect(
     exhaustMap(() => {
-      return interval(this.EMBEDDING_PROGRESS_POLL_INTERVAL).pipe(
-        takeUntil(this.stopEmbeddingProgress$),
-        switchMap(() =>
-          fromPromise(signal =>
-            this.store.getEmbeddingProgress(
-              this.workspaceService.workspace.id,
-              signal
-            )
-          ).pipe(
-            smartRetry(),
-            mergeMap(value => {
-              this.progress$.next(value);
-              if (value && value.embedded === value.total && value.total > 0) {
-                this.stopEmbeddingProgressPolling();
-              }
-              return EMPTY;
-            }),
-            catchErrorInto(this.error$, error => {
-              logger.error(
-                'Failed to fetch workspace embedding progress',
-                error
-              );
-            }),
-            onStart(() => this.loading$.setValue(true)),
-            onComplete(() => this.loading$.setValue(false))
-          )
+      return fromPromise(signal =>
+        this.store.getEmbeddingProgress(
+          this.workspaceService.workspace.id,
+          signal
         )
+      ).pipe(
+        smartRetry(),
+        mergeMap(value => {
+          this.progress$.next(value);
+          if (value && value.embedded === value.total && value.total > 0) {
+            this.stopEmbeddingProgress();
+          }
+          return EMPTY;
+        }),
+        catchErrorInto(this.error$, error => {
+          logger.error('Failed to fetch workspace embedding progress', error);
+        }),
+        onStart(() => this.loading$.setValue(true)),
+        onComplete(() => this.loading$.setValue(false))
       );
     })
   );
 
   override dispose(): void {
-    this.stopEmbeddingProgress$.next();
+    this.progressSubscription?.unsubscribe();
     this.getEmbeddingProgress.unsubscribe();
   }
 }

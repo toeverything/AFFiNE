@@ -114,6 +114,7 @@
     "@affine-tools/cli": "workspace:*",
     "@affine-tools/utils": "workspace:*",
     "@affine/graphql": "workspace:*",
+    "@affine/realtime": "workspace:*",
     "@faker-js/faker": "^10.1.0",
     "@nestjs/swagger": "^11.2.7",
     "@nestjs/testing": "patch:@nestjs/testing@npm%3A11.1.18#~/.yarn/patches/@nestjs-testing-npm-11.1.18-32c0f6af12.patch",

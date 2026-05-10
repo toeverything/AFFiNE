@@ -42,6 +42,7 @@ import { NotificationModule } from './core/notification';
 import { PermissionModule } from './core/permission';
 import { QueueDashboardModule } from './core/queue-dashboard';
 import { QuotaModule } from './core/quota';
+import { RealtimeModule } from './core/realtime';
 import { SelfhostModule } from './core/selfhost';
 import { StaticFileModule } from './core/static-files';
 import { StorageModule } from './core/storage';
@@ -117,6 +118,7 @@ export const FunctionalityModules = [
   ErrorModule,
   WebSocketModule,
   JobModule.forRoot(),
+  RealtimeModule,
   ModelsModule,
   ScheduleModule.forRoot(),
   MonitorModule,

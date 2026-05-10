@@ -580,6 +580,7 @@ export interface Copilot {
    * @deprecated use `chats` instead
    */
   sessions: Array<CopilotSessionType>;
+  /** @deprecated Use realtime subscription "copilot.transcript.task.changed" instead. */
   transcriptTask: Maybe<TranscriptionResultType>;
   workspaceId: Maybe<Scalars['ID']['output']>;
 }
@@ -2635,7 +2636,10 @@ export interface Query {
   prices: Array<SubscriptionPrice>;
   /** Get public user by id */
   publicUserById: Maybe<PublicUserType>;
-  /** query workspace embedding status */
+  /**
+   * query workspace embedding status
+   * @deprecated Use realtime subscription "workspace.embedding.progress.changed" instead.
+   */
   queryWorkspaceEmbeddingStatus: ContextWorkspaceEmbeddingStatus;
   /** @deprecated use currentUser.revealedAccessTokens */
   revealedAccessTokens: Array<RevealedAccessToken>;
@@ -3390,7 +3394,10 @@ export interface UserType {
   invoices: Array<InvoiceType>;
   /** User name */
   name: Scalars['String']['output'];
-  /** Get user notification count */
+  /**
+   * Get user notification count
+   * @deprecated Use realtime subscription "notification.count.changed" instead.
+   */
   notificationCount: Scalars['Int']['output'];
   /** Get current user notifications */
   notifications: PaginatedNotificationObjectType;
@@ -7263,13 +7270,7 @@ export type NotificationCountQueryVariables = Exact<{ [key: string]: never }>;
 
 export type NotificationCountQuery = {
   __typename?: 'Query';
-  currentUser: {
-    __typename?: 'UserType';
-    notifications: {
-      __typename?: 'PaginatedNotificationObjectType';
-      totalCount: number;
-    };
-  } | null;
+  currentUser: { __typename?: 'UserType'; notificationCount: number } | null;
 };
 
 export type PricesQueryVariables = Exact<{ [key: string]: never }>;

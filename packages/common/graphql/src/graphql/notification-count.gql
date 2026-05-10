@@ -1,7 +1,5 @@
 query notificationCount {
   currentUser {
-    notifications(pagination: { first: 1 }) {
-      totalCount
-    }
+    notificationCount
   }
 }

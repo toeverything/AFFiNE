@@ -13,6 +13,7 @@ import {
   CopilotContextResolver,
   CopilotContextRootResolver,
   CopilotContextService,
+  CopilotEmbeddingRealtimeProvider,
 } from './context';
 import { ConversationInboxService } from './conversation/inbox';
 import { ConversationPolicy } from './conversation/policy';
@@ -55,6 +56,7 @@ import { CopilotStorage } from './storage';
 import {
   CopilotTranscriptionResolver,
   CopilotTranscriptionService,
+  CopilotTranscriptRealtimeProvider,
 } from './transcript';
 import {
   CopilotWorkspaceEmbeddingConfigResolver,
@@ -106,11 +108,15 @@ export const COPILOT_RUNTIME_PROVIDERS = [
   TurnPersistence,
 ];
 
-export const COPILOT_CONTEXT_PROVIDERS = [CopilotContextResolver];
+export const COPILOT_CONTEXT_PROVIDERS = [
+  CopilotContextResolver,
+  CopilotEmbeddingRealtimeProvider,
+];
 
 export const COPILOT_TRANSCRIPT_PROVIDERS = [
   CopilotTranscriptionService,
   CopilotTranscriptionResolver,
+  CopilotTranscriptRealtimeProvider,
 ];
 
 export const COPILOT_WORKSPACE_PROVIDERS = [

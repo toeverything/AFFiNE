@@ -94,6 +94,7 @@ configureLocalStorageStateStorageImpls(framework);
 configureBrowserWorkspaceFlavours(framework);
 configureMobileModules(framework);
 framework.impl(NbstoreProvider, {
+  realtime: storeManagerClient.realtime,
   openStore(key, options) {
     const { store, dispose } = storeManagerClient.open(key, options);
     return {

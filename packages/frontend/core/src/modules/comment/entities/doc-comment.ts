@@ -22,9 +22,9 @@ import {
   first,
   of,
   Subject,
+  type Subscription,
   switchMap,
   tap,
-  timer,
 } from 'rxjs';
 
 import { type DocDisplayMetaService } from '../../doc-display-meta';
@@ -93,7 +93,8 @@ export class DocCommentEntity extends Entity<{
   private readonly commentDeleted$ = new Subject<CommentId>();
   readonly commentHighlighted$ = new LiveData<CommentId | null>(null);
 
-  private pollingDisposable?: DisposeCallback;
+  private realtimeDisposable?: DisposeCallback;
+  private realtimeSubscription?: Subscription;
   private startCursor?: string;
 
   async addComment(
@@ -486,85 +487,53 @@ export class DocCommentEntity extends Entity<{
     return () => subscription.unsubscribe();
   }
 
-  // Start polling comments every 30s
-  // 1. when comments$ is empty, fetch all comments
-  // 2. when comments$ is not empty, fetch changes (using end cursor)
-  // 3. loop. when doc is not loaded, skip
   start(): void {
-    if (this.pollingDisposable) {
-      this.pollingDisposable();
+    if (this.realtimeDisposable) {
+      this.realtimeDisposable();
     }
+    this.realtimeSubscription?.unsubscribe();
 
-    // Initial load
     this.revalidate();
     this.revalidateCommentsInEditor();
 
-    // Set up polling every 10 seconds
-    const polling$ = timer(10000, 10000).pipe(
-      switchMap(() => {
-        // If we have comments, fetch changes; otherwise fetch all
-        if (this.comments$.value.length > 0) {
-          return fromPromise(async () => {
-            const res = await this.store.listCommentChanges({
-              after: this.startCursor,
-            });
-            return res;
-          }).pipe(
-            tap(result => {
-              if (result) {
-                this.handleCommentChanges(result);
-                this.startCursor = result.endCursor;
-              }
-            }),
-            catchError(error => {
-              console.error('Failed to fetch comment changes:', error);
-              return of(null);
-            })
-          );
-        } else {
-          return fromPromise(async () => {
-            const allComments: DocComment[] = [];
-            let cursor = '';
-            let firstResult: DocCommentListResult | null = null;
-
-            // Fetch all pages of comments
-            while (true) {
-              const result = await this.store.listComments({ after: cursor });
-              if (!firstResult) {
-                firstResult = result;
-                // Store the startCursor from the first page for future polling
-                this.startCursor = result.startCursor;
-              }
-              allComments.push(...result.comments);
-              cursor = result.endCursor;
-              if (!result.hasNextPage) {
-                break;
-              }
-            }
-
-            // Update state with all comments
-            this.comments$.setValue(allComments);
-
-            return allComments;
-          }).pipe(
-            tap(() => this.revalidateCommentsInEditor()),
-            catchError(error => {
-              console.error('Failed to fetch comments:', error);
-              return of(null);
-            })
-          );
-        }
-      })
-    );
-
-    const subscription = polling$.subscribe();
-    this.pollingDisposable = () => subscription.unsubscribe();
+    this.realtimeSubscription = this.store.subscribeCommentChanged().subscribe({
+      next: () => {
+        this.fetchCommentChanges();
+      },
+      error: error => {
+        console.error('Failed to subscribe comment changes:', error);
+      },
+    });
+    this.realtimeDisposable = () => this.realtimeSubscription?.unsubscribe();
   }
 
   stop(): void {
-    if (this.pollingDisposable) {
-      this.pollingDisposable();
+    if (this.realtimeDisposable) {
+      this.realtimeDisposable();
     }
+    this.realtimeSubscription?.unsubscribe();
+  }
+
+  private fetchCommentChanges() {
+    fromPromise(async () => {
+      const res = await this.store.listCommentChanges({
+        after: this.startCursor,
+      });
+      return res;
+    })
+      .pipe(
+        tap(result => {
+          if (result) {
+            this.handleCommentChanges(result);
+            this.startCursor = result.endCursor;
+          }
+        }),
+        catchError(error => {
+          console.error('Failed to fetch comment changes:', error);
+          return of(null);
+        })
+      )
+      .subscribe();
   }
 
   private handleCommentChanges(result: DocCommentChangeListResult): void {
@@ -688,7 +657,7 @@ export class DocCommentEntity extends Entity<{
           const result = await this.store.listComments({ after: cursor });
           if (!firstResult) {
             firstResult = result;
-            // Store the startCursor from the first page for polling
+            // Store the startCursor from the first page for incremental changes
             this.startCursor = result.startCursor;
           }
           allComments.push(...result.comments);

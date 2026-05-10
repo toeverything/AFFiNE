@@ -1296,6 +1296,7 @@ export const getWorkspaceEmbeddingStatusQuery = {
     embedded
   }
 }`,
+  deprecations: ["'queryWorkspaceEmbeddingStatus' is deprecated: Use realtime subscription \"workspace.embedding.progress.changed\" instead."],
 };
 
 export const queueWorkspaceEmbeddingMutation = {
@@ -1621,6 +1622,7 @@ export const getTranscriptTaskQuery = {
     }
   }
 }`,
+  deprecations: ["'transcriptTask' is deprecated: Use realtime subscription \"copilot.transcript.task.changed\" instead."],
 };
 
 export const retryTranscriptTaskMutation = {
@@ -2646,11 +2648,10 @@ export const notificationCountQuery = {
   op: 'notificationCount',
   query: `query notificationCount {
   currentUser {
-    notifications(pagination: {first: 1}) {
-      totalCount
-    }
+    notificationCount
   }
 }`,
+  deprecations: ["'notificationCount' is deprecated: Use realtime subscription \"notification.count.changed\" instead."],
 };
 
 export const pricesQuery = {

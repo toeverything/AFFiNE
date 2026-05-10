@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
+import { Optional } from '@nestjs/common';
 import {
   Args,
   Mutation,
@@ -26,9 +27,11 @@ import { Comment, DocMode, Models, Reply } from '../../models';
 import { CurrentUser } from '../auth/session';
 import { ServerFeature, ServerService } from '../config';
 import { AccessController, DocAction } from '../permission';
+import type { RealtimePublisher } from '../realtime';
 import { CommentAttachmentStorage } from '../storage';
 import { UserType } from '../user';
 import { WorkspaceType } from '../workspaces';
+import { publishCommentChanged } from './realtime';
 import { CommentService } from './service';
 import {
   CommentCreateInput,
@@ -56,7 +59,8 @@ export class CommentResolver {
     private readonly commentAttachmentStorage: CommentAttachmentStorage,
     private readonly queue: JobQueue,
     private readonly models: Models,
-    private readonly server: ServerService
+    private readonly server: ServerService,
+    @Optional() private readonly realtime?: RealtimePublisher
   ) {
     // enable comment feature by default
     this.server.enableFeature(ServerFeature.Comment);
@@ -81,6 +85,7 @@ export class CommentResolver {
       input.docMode,
       input.mentions
     );
+    publishCommentChanged(this.realtime, comment.workspaceId, comment.docId);
 
     return {
       ...comment,
@@ -108,6 +113,7 @@ export class CommentResolver {
     await this.assertPermission(me, comment, 'Doc.Comments.Update');
 
     await this.service.updateComment(input);
+    publishCommentChanged(this.realtime, comment.workspaceId, comment.docId);
     return true;
   }
 
@@ -126,6 +132,7 @@ export class CommentResolver {
     await this.assertPermission(me, comment, 'Doc.Comments.Resolve');
 
     await this.service.resolveComment(input);
+    publishCommentChanged(this.realtime, comment.workspaceId, comment.docId);
     return true;
   }
 
@@ -141,6 +148,7 @@ export class CommentResolver {
     await this.assertPermission(me, comment, 'Doc.Comments.Delete');
 
     await this.service.deleteComment(id);
+    publishCommentChanged(this.realtime, comment.workspaceId, comment.docId);
     return true;
   }
 
@@ -169,6 +177,7 @@ export class CommentResolver {
       input.mentions,
       reply
     );
+    publishCommentChanged(this.realtime, comment.workspaceId, comment.docId);
 
     return {
       ...reply,
@@ -195,6 +204,7 @@ export class CommentResolver {
     await this.assertPermission(me, reply, 'Doc.Comments.Update');
 
     await this.service.updateReply(input);
+    publishCommentChanged(this.realtime, reply.workspaceId, reply.docId);
     return true;
   }
 
@@ -210,6 +220,7 @@ export class CommentResolver {
     await this.assertPermission(me, reply, 'Doc.Comments.Delete');
 
     await this.service.deleteReply(id);
+    publishCommentChanged(this.realtime, reply.workspaceId, reply.docId);
     return true;
   }
 
@@ -294,6 +305,7 @@ export class CommentResolver {
     })
     pagination: PaginationInput
   ): Promise<PaginatedCommentChangeObjectType> {
+    // DEPRECATED-0.26-COMPAT(realtime): remove after server no longer supports 0.26.x clients.
     await this.assertPermission(
       me,
       {

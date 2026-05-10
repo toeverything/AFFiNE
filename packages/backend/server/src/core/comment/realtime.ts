@@ -1,0 +1,99 @@
+import { Injectable, OnModuleInit, Optional } from '@nestjs/common';
+import { z } from 'zod';
+
+import { decodeWithJson, encodeWithJson } from '../../base/graphql';
+import { AccessController } from '../permission';
+import type { RealtimePublisher, RealtimeRegistry } from '../realtime';
+import type { CommentCursor } from './resolver';
+import { CommentService } from './service';
+
+export function commentRoom(workspaceId: string, docId: string) {
+  return `workspace:${workspaceId}:doc:${docId}:comment`;
+}
+
+@Injectable()
+export class CommentRealtimeProvider implements OnModuleInit {
+  constructor(
+    private readonly service: CommentService,
+    private readonly ac: AccessController,
+    @Optional() private readonly registry?: RealtimeRegistry
+  ) {}
+
+  onModuleInit() {
+    const input = z.object({
+      workspaceId: z.string(),
+      docId: z.string(),
+      after: z.string().optional(),
+      first: z.number().optional(),
+    });
+
+    this.registry?.registerRequest({
+      name: 'comment.changes.get',
+      input,
+      handle: async (user, payload) => {
+        await this.assertRead(user.id, payload.workspaceId, payload.docId);
+        const cursor: CommentCursor = decodeWithJson(payload.after) ?? {};
+        const changes = await this.service.listCommentChanges(
+          payload.workspaceId,
+          payload.docId,
+          {
+            commentUpdatedAt: cursor.commentUpdatedAt,
+            replyUpdatedAt: cursor.replyUpdatedAt,
+            take: payload.first,
+          }
+        );
+        const endCursor = cursor;
+        for (const change of changes) {
+          if (change.commentId) {
+            endCursor.replyUpdatedAt = change.item.updatedAt;
+          } else {
+            endCursor.commentUpdatedAt = change.item.updatedAt;
+          }
+        }
+        return {
+          changes: changes.map(change => ({
+            id: change.id,
+            action: change.action,
+            item: change.item,
+            commentId: change.commentId ?? undefined,
+          })) as never,
+          startCursor: '',
+          endCursor: encodeWithJson(endCursor),
+          hasNextPage: changes.length > 0,
+        };
+      },
+    });
+
+    this.registry?.registerTopic({
+      name: 'comment.changed',
+      input: z.object({
+        workspaceId: z.string(),
+        docId: z.string(),
+      }),
+      authorize: async (user, payload) => {
+        await this.assertRead(user.id, payload.workspaceId, payload.docId);
+      },
+      room: (_user, payload) => commentRoom(payload.workspaceId, payload.docId),
+    });
+  }
+
+  private async assertRead(userId: string, workspaceId: string, docId: string) {
+    await this.ac
+      .user(userId)
+      .workspace(workspaceId)
+      .doc(docId)
+      .assert('Doc.Comments.Read');
+  }
+}
+
+export function publishCommentChanged(
+  publisher: RealtimePublisher | undefined,
+  workspaceId: string,
+  docId: string
+) {
+  publisher?.publish(
+    'comment.changed',
+    { workspaceId, docId },
+    { changed: true }
+  );
+}

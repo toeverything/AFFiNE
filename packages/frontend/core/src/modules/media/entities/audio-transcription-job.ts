@@ -4,6 +4,7 @@ import { DebugLogger } from '@affine/debug';
 import { UserFriendlyError } from '@affine/error';
 import { AiJobStatus } from '@affine/graphql';
 import { Entity, LiveData } from '@toeverything/infra';
+import type { Subscription } from 'rxjs';
 
 import type { DefaultServerService, WorkspaceServerService } from '../../cloud';
 import { AuthService } from '../../cloud/services/auth';
@@ -59,10 +60,12 @@ export class AudioTranscriptionJob extends Entity<{
     super();
     this.disposables.push(() => {
       this.disposed = true;
+      this.taskSubscription?.unsubscribe();
     });
   }
 
   disposed = false;
+  private taskSubscription?: Subscription;
 
   private readonly _status$ = new LiveData<TranscriptionStatus>({
     status: 'waiting-for-job',
@@ -190,38 +193,64 @@ export class AudioTranscriptionJob extends Entity<{
   }
 
   private async untilTaskReadyOrSettled() {
-    while (
-      !this.disposed &&
-      this.props.blockProps.jobId &&
-      this.props.blockProps.createdBy === this.currentUserId
+    const taskId = this.props.blockProps.jobId;
+    if (!taskId || this.props.blockProps.createdBy !== this.currentUserId) {
+      return;
+    }
+
+    await this.checkTranscriptTask(taskId);
+
+    await new Promise<void>((resolve, reject) => {
+      this.taskSubscription?.unsubscribe();
+      this.taskSubscription = this.store
+        .subscribeTranscriptTask(taskId)
+        .subscribe({
+          next: event => {
+            if (
+              'type' in event ||
+              (event.status as AiJobStatus) === AiJobStatus.finished
+            ) {
+              this.checkTranscriptTask(taskId).then(() => {
+                if (this.status$.value.status === AiJobStatus.finished) {
+                  resolve();
+                }
+              }, reject);
+            } else if ((event.status as AiJobStatus) === AiJobStatus.failed) {
+              reject(
+                UserFriendlyError.fromAny(
+                  event.error ?? 'Transcription job failed'
+                )
+              );
+            }
+          },
+          error: reject,
+        });
+    });
+    this.taskSubscription?.unsubscribe();
+  }
+
+  private async checkTranscriptTask(taskId: string) {
+    if (
+      this.disposed ||
+      this.props.blockProps.jobId !== taskId ||
+      this.props.blockProps.createdBy !== this.currentUserId
     ) {
-      logger.debug('Polling job status', {
-        jobId: this.props.blockProps.jobId,
+      return;
+    }
+    const job = await this.store.getTranscriptTask(this.props.blobId, taskId);
+
+    if (!job || job.status === AiJobStatus.failed) {
+      logger.debug('Job failed during realtime status check', {
+        jobId: taskId,
       });
-      const job = await this.store.getTranscriptTask(
-        this.props.blobId,
-        this.props.blockProps.jobId
-      );
+      throw UserFriendlyError.fromAny('Transcription job failed');
+    }
 
-      if (!job || job?.status === 'failed') {
-        logger.debug('Job failed during polling', {
-          jobId: this.props.blockProps.jobId,
-        });
-        throw UserFriendlyError.fromAny('Transcription job failed');
-      }
-
-      if (job?.status === AiJobStatus.finished) {
-        logger.debug('Transcript task is ready to settle', {
-          jobId: this.props.blockProps.jobId,
-        });
-        this._status$.value = {
-          status: AiJobStatus.finished,
-        };
-        return;
-      }
-
-      // Add delay between polling attempts
-      await new Promise(resolve => setTimeout(resolve, 3000));
+    if (job.status === AiJobStatus.finished) {
+      logger.debug('Transcript task is ready to settle', { jobId: taskId });
+      this._status$.value = {
+        status: AiJobStatus.finished,
+      };
     }
   }
 

@@ -1,0 +1,293 @@
+import type {
+  RealtimeConfigureInput,
+  RealtimeEvent,
+  RealtimeRequestInputOf,
+  RealtimeRequestName,
+  RealtimeRequestOutputOf,
+  RealtimeStatus,
+  RealtimeSubscriptionReady,
+  RealtimeTopicEventOf,
+  RealtimeTopicInputOf,
+  RealtimeTopicName,
+} from '@affine/realtime';
+import { Observable, Subject } from 'rxjs';
+
+import { SocketConnection } from '../impls/cloud/socket';
+
+const DEFAULT_REQUEST_TIMEOUT = 10_000;
+
+type RealtimeContext = RealtimeConfigureInput;
+
+function normalizeError(error: unknown) {
+  if (error instanceof Error) {
+    return { name: error.name, message: error.message };
+  }
+  return { name: 'RealtimeError', message: String(error) };
+}
+
+function rejectAck(error: { name?: string; message?: string; code?: string }) {
+  const err = new Error(error.message ?? 'Realtime request failed');
+  err.name = error.name ?? 'RealtimeError';
+  return err;
+}
+
+export class RealtimeManager {
+  private context?: RealtimeContext;
+  private socketConnection?: SocketConnection;
+  private socketKey?: string;
+  private lastError?: { name: string; message: string };
+  private readonly subscriptions = new Map<
+    string,
+    {
+      topic: RealtimeTopicName;
+      input: RealtimeTopicInputOf<RealtimeTopicName>;
+      inputKey: string;
+      subject$: Subject<RealtimeEvent | RealtimeSubscriptionReady>;
+    }
+  >();
+
+  setContext(context: RealtimeContext) {
+    const nextContext = { ...context };
+    const changed =
+      !this.context ||
+      this.context.endpoint !== nextContext.endpoint ||
+      this.context.isSelfHosted !== nextContext.isSelfHosted ||
+      this.context.authenticated !== nextContext.authenticated;
+
+    this.context = nextContext;
+
+    if (changed) {
+      this.resetConnection();
+    }
+  }
+
+  async request<Op extends RealtimeRequestName>(
+    op: Op,
+    input: RealtimeRequestInputOf<Op>,
+    options?: { timeoutMs?: number }
+  ): Promise<RealtimeRequestOutputOf<Op>> {
+    const socket = await this.connect();
+    const timeoutMs = options?.timeoutMs ?? DEFAULT_REQUEST_TIMEOUT;
+    const timeout = new Promise<never>((_resolve, reject) => {
+      const timeoutId = setTimeout(() => {
+        const error = new Error(`Realtime request timed out: ${op}`);
+        error.name = 'RealtimeRequestTimeout';
+        reject(error);
+      }, timeoutMs);
+      timeoutId.unref?.();
+    });
+
+    const ack = await Promise.race([
+      socket.emitWithAck('realtime:request', {
+        op,
+        input,
+        clientVersion: BUILD_CONFIG.appVersion,
+      }),
+      timeout,
+    ]);
+
+    if ('error' in ack) {
+      throw rejectAck(ack.error);
+    }
+
+    return ack.data as unknown as RealtimeRequestOutputOf<Op>;
+  }
+
+  subscribe<Topic extends RealtimeTopicName>(
+    topic: Topic,
+    input: RealtimeTopicInputOf<Topic>
+  ): Observable<RealtimeTopicEventOf<Topic> | RealtimeSubscriptionReady> {
+    return new Observable(subscriber => {
+      let subscriptionId: string | undefined;
+      let subject$: Subject<RealtimeEvent | RealtimeSubscriptionReady>;
+      let closed = false;
+
+      const setup = async () => {
+        try {
+          const socket = await this.connect();
+          const ack = await socket.emitWithAck('realtime:subscribe', {
+            topic,
+            input,
+            clientVersion: BUILD_CONFIG.appVersion,
+          });
+          if ('error' in ack) {
+            throw rejectAck(ack.error);
+          }
+          const data = ack.data;
+          if (closed) {
+            await socket.emitWithAck('realtime:unsubscribe', {
+              subscriptionId: data.subscriptionId,
+              topic,
+              input,
+              clientVersion: BUILD_CONFIG.appVersion,
+            });
+            return;
+          }
+
+          subscriptionId = data.subscriptionId;
+          subject$ = new Subject();
+          this.subscriptions.set(subscriptionId, {
+            topic,
+            input,
+            inputKey: stableStringify(input),
+            subject$,
+          });
+          subscriber.next({
+            type: 'ready',
+          });
+          subject$.subscribe({
+            next: event => {
+              if ('type' in event) {
+                subscriber.next(event);
+              } else {
+                subscriber.next(event.event as RealtimeTopicEventOf<Topic>);
+              }
+            },
+            error: error => subscriber.error(error),
+            complete: () => subscriber.complete(),
+          });
+        } catch (error) {
+          this.lastError = normalizeError(error);
+          subscriber.error(error);
+        }
+      };
+
+      setup().catch(error => subscriber.error(error));
+
+      return () => {
+        closed = true;
+        if (!subscriptionId) {
+          return;
+        }
+        const currentSubscriptionId = subscriptionId;
+        this.subscriptions.delete(currentSubscriptionId);
+        subject$?.complete();
+        if (this.socketConnection?.inner?.socket.connected) {
+          this.socketConnection.inner.socket
+            .emitWithAck('realtime:unsubscribe', {
+              subscriptionId: currentSubscriptionId,
+              topic,
+              input,
+              clientVersion: BUILD_CONFIG.appVersion,
+            })
+            .catch(() => {});
+        }
+      };
+    });
+  }
+
+  getStatus(): RealtimeStatus {
+    return {
+      endpoint: this.context?.endpoint,
+      connected: this.socketConnection?.status === 'connected',
+      connecting: this.socketConnection?.status === 'connecting',
+      subscriptions: this.subscriptions.size,
+      lastError: this.lastError,
+    };
+  }
+
+  private async connect() {
+    if (!this.context?.endpoint || !this.context.authenticated) {
+      const error = new Error('Realtime is not authenticated');
+      error.name = 'RealtimeUnauthenticated';
+      throw error;
+    }
+
+    const key = `${this.context.endpoint}:${this.context.isSelfHosted}`;
+    if (!this.socketConnection || this.socketKey !== key) {
+      this.resetConnection();
+      this.socketKey = key;
+      this.socketConnection = new SocketConnection(
+        this.context.endpoint,
+        this.context.isSelfHosted
+      );
+      this.socketConnection.connect();
+    }
+
+    await this.socketConnection.waitForConnected();
+    this.socketConnection.inner.socket.off('realtime:event', this.handleEvent);
+    this.socketConnection.inner.socket.on('realtime:event', this.handleEvent);
+    this.socketConnection.inner.socket.off('connect', this.handleReconnect);
+    this.socketConnection.inner.socket.on('connect', this.handleReconnect);
+    return this.socketConnection.inner.socket;
+  }
+
+  private readonly handleEvent = (event: RealtimeEvent) => {
+    for (const subscription of this.subscriptions.values()) {
+      if (
+        subscription.topic === event.topic &&
+        subscription.inputKey === event.inputKey
+      ) {
+        subscription.subject$.next(event);
+      }
+    }
+  };
+
+  private readonly handleReconnect = () => {
+    this.resubscribeAll().catch(error => {
+      this.lastError = normalizeError(error);
+      for (const subscription of this.subscriptions.values()) {
+        subscription.subject$.error(error);
+      }
+    });
+  };
+
+  private async resubscribeAll() {
+    const socket = this.socketConnection?.inner.socket;
+    if (!socket?.connected || this.subscriptions.size === 0) {
+      return;
+    }
+
+    const subscriptions = Array.from(this.subscriptions.entries());
+    for (const [subscriptionId, subscription] of subscriptions) {
+      const ack = await socket.emitWithAck('realtime:subscribe', {
+        topic: subscription.topic,
+        input: subscription.input,
+        clientVersion: BUILD_CONFIG.appVersion,
+      });
+      if ('error' in ack) {
+        throw rejectAck(ack.error);
+      }
+
+      this.subscriptions.delete(subscriptionId);
+      this.subscriptions.set(ack.data.subscriptionId, subscription);
+      subscription.subject$.next({
+        type: 'ready',
+      });
+    }
+  }
+
+  private resetConnection() {
+    if (this.socketConnection) {
+      this.socketConnection.maybeConnection?.socket.off(
+        'realtime:event',
+        this.handleEvent
+      );
+      this.socketConnection.maybeConnection?.socket.off(
+        'connect',
+        this.handleReconnect
+      );
+      this.socketConnection.disconnect(true);
+    }
+    this.socketConnection = undefined;
+    this.socketKey = undefined;
+    for (const subscription of this.subscriptions.values()) {
+      subscription.subject$.complete();
+    }
+    this.subscriptions.clear();
+  }
+}
+
+export function stableStringify(value: unknown): string {
+  if (value === null || typeof value !== 'object') {
+    return JSON.stringify(value);
+  }
+  if (Array.isArray(value)) {
+    return `[${value.map(stableStringify).join(',')}]`;
+  }
+  const record = value as Record<string, unknown>;
+  return `{${Object.keys(record)
+    .sort()
+    .map(key => `${JSON.stringify(key)}:${stableStringify(record[key])}`)
+    .join(',')}}`;
+}
