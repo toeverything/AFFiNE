@@ -96,6 +96,8 @@ export class DocCommentEntity extends Entity<{
   private realtimeDisposable?: DisposeCallback;
   private realtimeSubscription?: Subscription;
   private startCursor?: string;
+  private fetchingCommentChanges = false;
+  private pendingCommentChangeFetch = false;
 
   async addComment(
     selections?: BaseSelection[],
@@ -498,7 +500,7 @@ export class DocCommentEntity extends Entity<{
 
     this.realtimeSubscription = this.store.subscribeCommentChanged().subscribe({
       next: () => {
-        this.fetchCommentChanges();
+        this.fetchCommentChanges().catch(() => {});
       },
       error: error => {
         console.error('Failed to subscribe comment changes:', error);
@@ -514,26 +516,27 @@ export class DocCommentEntity extends Entity<{
     this.realtimeSubscription?.unsubscribe();
   }
 
-  private fetchCommentChanges() {
-    fromPromise(async () => {
-      const res = await this.store.listCommentChanges({
-        after: this.startCursor,
-      });
-      return res;
-    })
-      .pipe(
-        tap(result => {
-          if (result) {
-            this.handleCommentChanges(result);
-            this.startCursor = result.endCursor;
-          }
-        }),
-        catchError(error => {
-          console.error('Failed to fetch comment changes:', error);
-          return of(null);
-        })
-      )
-      .subscribe();
+  private async fetchCommentChanges() {
+    if (this.fetchingCommentChanges) {
+      this.pendingCommentChangeFetch = true;
+      return;
+    }
+
+    this.fetchingCommentChanges = true;
+    try {
+      do {
+        this.pendingCommentChangeFetch = false;
+        const result = await this.store.listCommentChanges({
+          after: this.startCursor,
+        });
+        this.handleCommentChanges(result);
+        this.startCursor = result.endCursor;
+      } while (this.pendingCommentChangeFetch);
+    } catch (error) {
+      console.error('Failed to fetch comment changes:', error);
+    } finally {
+      this.fetchingCommentChanges = false;
+    }
   }
 
   private handleCommentChanges(result: DocCommentChangeListResult): void {

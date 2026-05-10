@@ -1,6 +1,7 @@
 import { Injectable, OnModuleInit, Optional } from '@nestjs/common';
 import { z } from 'zod';
 
+import { CopilotTranscriptionJobNotFound } from '../../../base';
 import { AccessController } from '../../../core/permission';
 import type { RealtimeRegistry } from '../../../core/realtime';
 import { CopilotTranscriptionService, transcriptTaskRoom } from './service';
@@ -50,7 +51,7 @@ export class CopilotTranscriptRealtimeProvider implements OnModuleInit {
           input.taskId
         );
         if (!task) {
-          throw new Error('Transcript task not found');
+          throw new CopilotTranscriptionJobNotFound();
         }
       },
       room: (_user, input) =>

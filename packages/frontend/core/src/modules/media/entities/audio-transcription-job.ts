@@ -61,11 +61,13 @@ export class AudioTranscriptionJob extends Entity<{
     this.disposables.push(() => {
       this.disposed = true;
       this.taskSubscription?.unsubscribe();
+      this.taskWaitReject?.(new Error('Job disposed'));
     });
   }
 
   disposed = false;
   private taskSubscription?: Subscription;
+  private taskWaitReject?: (error: unknown) => void;
 
   private readonly _status$ = new LiveData<TranscriptionStatus>({
     status: 'waiting-for-job',
@@ -202,6 +204,7 @@ export class AudioTranscriptionJob extends Entity<{
 
     await new Promise<void>((resolve, reject) => {
       this.taskSubscription?.unsubscribe();
+      this.taskWaitReject = reject;
       this.taskSubscription = this.store
         .subscribeTranscriptTask(taskId)
         .subscribe({
@@ -225,8 +228,10 @@ export class AudioTranscriptionJob extends Entity<{
           },
           error: reject,
         });
+    }).finally(() => {
+      this.taskWaitReject = undefined;
+      this.taskSubscription?.unsubscribe();
     });
-    this.taskSubscription?.unsubscribe();
   }
 
   private async checkTranscriptTask(taskId: string) {

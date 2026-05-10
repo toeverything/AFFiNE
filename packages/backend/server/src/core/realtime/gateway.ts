@@ -7,6 +7,7 @@ import { applyDecorators, Logger, UseInterceptors } from '@nestjs/common';
 import {
   ConnectedSocket,
   MessageBody,
+  OnGatewayDisconnect,
   OnGatewayInit,
   SubscribeMessage as RawSubscribeMessage,
   WebSocketGateway,
@@ -36,7 +37,7 @@ const MIN_REALTIME_CLIENT_VERSION = new semver.Range('>=0.26.0-0', {
 
 @WebSocketGateway()
 @UseInterceptors(ClsInterceptor)
-export class RealtimeGateway implements OnGatewayInit {
+export class RealtimeGateway implements OnGatewayInit, OnGatewayDisconnect {
   private readonly logger = new Logger(RealtimeGateway.name);
   private readonly subscriptions = new Map<
     string,
@@ -53,6 +54,14 @@ export class RealtimeGateway implements OnGatewayInit {
 
   afterInit(_server: Server) {
     this.publisher.attachServer(this.server);
+  }
+
+  handleDisconnect(client: Socket) {
+    for (const [subscriptionId, subscription] of this.subscriptions) {
+      if (subscription.socketId === client.id) {
+        this.subscriptions.delete(subscriptionId);
+      }
+    }
   }
 
   @SubscribeMessage('realtime:request')

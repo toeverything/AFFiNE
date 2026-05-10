@@ -132,3 +132,39 @@ test('stableStringify is deterministic for subscription input keys', t => {
     stableStringify({ workspaceId: 'space', docId: 'doc' })
   );
 });
+
+test('stableStringify follows JSON semantics for subscription input keys', t => {
+  t.is(stableStringify({ after: undefined }), stableStringify({}));
+  t.is(stableStringify([undefined]), '[null]');
+  t.is(
+    stableStringify(new Date('2026-01-02T03:04:05.000Z')),
+    '"2026-01-02T03:04:05.000Z"'
+  );
+});
+
+test('gateway removes subscriptions on socket disconnect', async t => {
+  const registry = new RealtimeRegistry();
+  registry.registerTopic({
+    name: 'notification.count.changed',
+    input: z.object({}).strict(),
+    authorize: async () => {},
+    room: () => 'user:u1:notification-count',
+  });
+  const gateway = createGateway(registry);
+  const client = {
+    id: 'socket-1',
+    join: async () => {},
+    leave: async () => {},
+  };
+
+  await gateway.onSubscribe(user, client as never, {
+    topic: 'notification.count.changed',
+    input: {},
+    clientVersion: '0.26.0',
+  });
+  t.is((gateway as any).subscriptions.size, 1);
+
+  gateway.handleDisconnect(client as never);
+
+  t.is((gateway as any).subscriptions.size, 0);
+});

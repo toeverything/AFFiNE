@@ -1,5 +1,5 @@
 import type { RealtimeEvent, RealtimeTopicName } from '@affine/realtime';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import type { Server } from 'socket.io';
 
 import { EventBus } from '../../base';
@@ -9,6 +9,7 @@ import type { RealtimePublishPayload } from './types';
 
 @Injectable()
 export class RealtimePublisher {
+  private readonly logger = new Logger(RealtimePublisher.name);
   private server?: Server;
 
   constructor(
@@ -32,8 +33,12 @@ export class RealtimePublisher {
       event,
       room: options?.room,
     } as RealtimePublishPayload<Topic>;
-    this.publishLocal(payload);
-    this.event.broadcast('realtime.topic.changed', payload);
+    try {
+      this.publishLocal(payload);
+      this.event.broadcast('realtime.topic.changed', payload);
+    } catch (error) {
+      this.logger.error(`Failed to publish realtime topic ${topic}`, error);
+    }
   }
 
   publishLocal(payload: RealtimePublishPayload) {

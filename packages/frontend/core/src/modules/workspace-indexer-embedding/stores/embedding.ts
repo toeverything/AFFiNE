@@ -184,7 +184,7 @@ export class EmbeddingStore extends Store {
     return await this.nbstoreService.realtime.request(
       'workspace.embedding.progress.get',
       { workspaceId },
-      { timeoutMs: signal ? undefined : 10000 }
+      { signal, timeoutMs: 10000 }
     );
   }
 

@@ -195,14 +195,32 @@ export type RealtimeConfigureInput = {
 };
 
 export function getRealtimeInputKey(input: unknown): string {
+  if (
+    input === undefined ||
+    typeof input === 'function' ||
+    typeof input === 'symbol'
+  ) {
+    return 'null';
+  }
   if (input === null || typeof input !== 'object') {
     return JSON.stringify(input);
   }
   if (Array.isArray(input)) {
     return `[${input.map(getRealtimeInputKey).join(',')}]`;
   }
+  if (input instanceof Date) {
+    return JSON.stringify(input.toJSON());
+  }
   const record = input as Record<string, unknown>;
   return `{${Object.keys(record)
+    .filter(key => {
+      const property = record[key];
+      return (
+        property !== undefined &&
+        typeof property !== 'function' &&
+        typeof property !== 'symbol'
+      );
+    })
     .sort()
     .map(key => `${JSON.stringify(key)}:${getRealtimeInputKey(record[key])}`)
     .join(',')}}`;

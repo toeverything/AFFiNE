@@ -494,12 +494,19 @@ export class NotificationService {
     reason: 'created' | 'read' | 'read-all' | 'expired-cleanup'
   ) {
     if (!this.realtime) return;
-    this.realtime.publish(
-      'notification.count.changed',
-      {},
-      { count: await this.countByUserId(userId), reason },
-      { room: notificationCountRoom(userId) }
-    );
+    try {
+      this.realtime.publish(
+        'notification.count.changed',
+        {},
+        { count: await this.countByUserId(userId), reason },
+        { room: notificationCountRoom(userId) }
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to publish notification count for user ${userId}`,
+        error
+      );
+    }
   }
 
   private formatWorkspaceInfo(workspace: Workspace) {

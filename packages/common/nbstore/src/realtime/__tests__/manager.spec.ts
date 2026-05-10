@@ -11,6 +11,7 @@ class FakeSocket {
   connected = true;
   disconnected = false;
   nextRequestAck: unknown = { data: { count: 1 } };
+  subscribeAcks: unknown[] = [];
   nextSubscriptionId = 0;
 
   on(event: string, handler: Handler) {
@@ -24,6 +25,8 @@ class FakeSocket {
   async emitWithAck(event: string, payload: unknown) {
     this.emitted.push({ event, payload });
     if (event === 'realtime:subscribe') {
+      const ack = this.subscribeAcks.shift();
+      if (ack) return ack;
       this.nextSubscriptionId += 1;
       return { data: { subscriptionId: `sub-${this.nextSubscriptionId}` } };
     }
@@ -61,6 +64,7 @@ beforeEach(() => {
   socket.handlers.clear();
   socket.emitted.length = 0;
   socket.nextRequestAck = { data: { count: 1 } };
+  socket.subscribeAcks = [];
   socket.nextSubscriptionId = 0;
   socket.connected = true;
   socket.disconnected = false;
@@ -69,6 +73,14 @@ beforeEach(() => {
 test('stableStringify is deterministic for realtime subscription inputs', () => {
   expect(stableStringify({ workspaceId: 'space', docId: 'doc' })).toBe(
     stableStringify({ docId: 'doc', workspaceId: 'space' })
+  );
+});
+
+test('stableStringify follows JSON semantics for edge values', () => {
+  expect(stableStringify({ a: undefined })).toBe(stableStringify({}));
+  expect(stableStringify([undefined])).toBe('[null]');
+  expect(stableStringify(new Date('2026-01-02T03:04:05.000Z'))).toBe(
+    '"2026-01-02T03:04:05.000Z"'
   );
 });
 
@@ -110,6 +122,26 @@ test('request rejects server ack error', async () => {
   await expect(manager.request('notification.count.get', {})).rejects.toThrow(
     'No access'
   );
+});
+
+test('request rejects when aborted', async () => {
+  const manager = new RealtimeManager();
+  manager.setContext({
+    endpoint: 'http://server',
+    isSelfHosted: false,
+    authenticated: true,
+  });
+  const controller = new AbortController();
+  socket.nextRequestAck = new Promise(() => {});
+  const request = manager.request(
+    'notification.count.get',
+    {},
+    { signal: controller.signal }
+  );
+
+  controller.abort();
+
+  await expect(request).rejects.toThrow('Realtime request aborted');
 });
 
 test('subscribe routes events by topic and stable input key', async () => {
@@ -221,4 +253,44 @@ test('subscribe registers server room again after reconnect', async () => {
   );
   expect(received).toEqual([{ type: 'ready' }, { type: 'ready' }]);
   subscription.unsubscribe();
+});
+
+test('failed reconnect only errors the affected subscription', async () => {
+  const manager = new RealtimeManager();
+  manager.setContext({
+    endpoint: 'http://server',
+    isSelfHosted: false,
+    authenticated: true,
+  });
+  const first: unknown[] = [];
+  const firstErrors: unknown[] = [];
+  const second: unknown[] = [];
+  const secondErrors: unknown[] = [];
+  const firstSubscription = manager
+    .subscribe('notification.count.changed', {})
+    .subscribe({
+      next: event => first.push(event),
+      error: error => firstErrors.push(error),
+    });
+  const secondSubscription = manager
+    .subscribe('comment.changed', { workspaceId: 'space', docId: 'doc' })
+    .subscribe({
+      next: event => second.push(event),
+      error: error => secondErrors.push(error),
+    });
+  await vi.waitFor(() => expect(manager.getStatus().subscriptions).toBe(2));
+
+  socket.subscribeAcks = [
+    { data: { subscriptionId: 'resub-1' } },
+    { error: { name: 'Forbidden', message: 'No access' } },
+  ];
+  socket.emit('connect');
+
+  await vi.waitFor(() => expect(first).toHaveLength(2));
+  await vi.waitFor(() => expect(secondErrors).toHaveLength(1));
+  expect(firstErrors).toEqual([]);
+  expect(manager.getStatus().subscriptions).toBe(1);
+
+  firstSubscription.unsubscribe();
+  secondSubscription.unsubscribe();
 });

@@ -67,6 +67,12 @@ type RealtimeWorkerClient = {
   ): Observable<RealtimeTopicEventOf<Topic> | RealtimeSubscriptionReady>;
 };
 
+function realtimeAbortError(op: RealtimeRequestName) {
+  const error = new Error(`Realtime request aborted: ${op}`);
+  error.name = 'AbortError';
+  return error;
+}
+
 export class StoreManagerClient {
   private readonly connections = new Map<
     string,
@@ -179,9 +185,9 @@ export class RealtimeClient {
   request<Op extends RealtimeRequestName>(
     op: Op,
     input: RealtimeRequestInputOf<Op>,
-    options?: { timeoutMs?: number }
+    options?: { timeoutMs?: number; signal?: AbortSignal }
   ): Promise<RealtimeRequestOutputOf<Op>> {
-    return (this.client as unknown as RealtimeWorkerClient).call(
+    const request = (this.client as unknown as RealtimeWorkerClient).call(
       'realtime.request',
       {
         op,
@@ -189,6 +195,22 @@ export class RealtimeClient {
         timeoutMs: options?.timeoutMs,
       }
     );
+    if (!options?.signal) {
+      return request;
+    }
+    if (options.signal.aborted) {
+      return Promise.reject(realtimeAbortError(op));
+    }
+    let abortHandler: (() => void) | undefined;
+    const aborted = new Promise<never>((_resolve, reject) => {
+      abortHandler = () => reject(realtimeAbortError(op));
+      options.signal?.addEventListener('abort', abortHandler, { once: true });
+    });
+    return Promise.race([request, aborted]).finally(() => {
+      if (abortHandler) {
+        options.signal?.removeEventListener('abort', abortHandler);
+      }
+    });
   }
 
   subscribe<Topic extends RealtimeTopicName>(

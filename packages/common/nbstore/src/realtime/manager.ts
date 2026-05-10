@@ -64,17 +64,31 @@ export class RealtimeManager {
   async request<Op extends RealtimeRequestName>(
     op: Op,
     input: RealtimeRequestInputOf<Op>,
-    options?: { timeoutMs?: number }
+    options?: { timeoutMs?: number; signal?: AbortSignal }
   ): Promise<RealtimeRequestOutputOf<Op>> {
     const socket = await this.connect();
     const timeoutMs = options?.timeoutMs ?? DEFAULT_REQUEST_TIMEOUT;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    let abortHandler: (() => void) | undefined;
+    const abort = () => {
+      const error = new Error(`Realtime request aborted: ${op}`);
+      error.name = 'AbortError';
+      return error;
+    };
+    if (options?.signal?.aborted) {
+      throw abort();
+    }
     const timeout = new Promise<never>((_resolve, reject) => {
-      const timeoutId = setTimeout(() => {
+      timeoutId = setTimeout(() => {
         const error = new Error(`Realtime request timed out: ${op}`);
         error.name = 'RealtimeRequestTimeout';
         reject(error);
       }, timeoutMs);
       timeoutId.unref?.();
+    });
+    const aborted = new Promise<never>((_resolve, reject) => {
+      abortHandler = () => reject(abort());
+      options?.signal?.addEventListener('abort', abortHandler, { once: true });
     });
 
     const ack = await Promise.race([
@@ -84,7 +98,15 @@ export class RealtimeManager {
         clientVersion: BUILD_CONFIG.appVersion,
       }),
       timeout,
-    ]);
+      aborted,
+    ]).finally(() => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      if (abortHandler) {
+        options?.signal?.removeEventListener('abort', abortHandler);
+      }
+    });
 
     if ('error' in ack) {
       throw rejectAck(ack.error);
@@ -114,6 +136,7 @@ export class RealtimeManager {
             throw rejectAck(ack.error);
           }
           const data = ack.data;
+          subscriptionId = data.subscriptionId;
           if (closed) {
             await socket.emitWithAck('realtime:unsubscribe', {
               subscriptionId: data.subscriptionId,
@@ -124,7 +147,6 @@ export class RealtimeManager {
             return;
           }
 
-          subscriptionId = data.subscriptionId;
           subject$ = new Subject();
           this.subscriptions.set(subscriptionId, {
             topic,
@@ -226,9 +248,6 @@ export class RealtimeManager {
   private readonly handleReconnect = () => {
     this.resubscribeAll().catch(error => {
       this.lastError = normalizeError(error);
-      for (const subscription of this.subscriptions.values()) {
-        subscription.subject$.error(error);
-      }
     });
   };
 
@@ -240,20 +259,26 @@ export class RealtimeManager {
 
     const subscriptions = Array.from(this.subscriptions.entries());
     for (const [subscriptionId, subscription] of subscriptions) {
-      const ack = await socket.emitWithAck('realtime:subscribe', {
-        topic: subscription.topic,
-        input: subscription.input,
-        clientVersion: BUILD_CONFIG.appVersion,
-      });
-      if ('error' in ack) {
-        throw rejectAck(ack.error);
-      }
+      try {
+        const ack = await socket.emitWithAck('realtime:subscribe', {
+          topic: subscription.topic,
+          input: subscription.input,
+          clientVersion: BUILD_CONFIG.appVersion,
+        });
+        if ('error' in ack) {
+          throw rejectAck(ack.error);
+        }
 
-      this.subscriptions.delete(subscriptionId);
-      this.subscriptions.set(ack.data.subscriptionId, subscription);
-      subscription.subject$.next({
-        type: 'ready',
-      });
+        this.subscriptions.delete(subscriptionId);
+        this.subscriptions.set(ack.data.subscriptionId, subscription);
+        subscription.subject$.next({
+          type: 'ready',
+        });
+      } catch (error) {
+        this.lastError = normalizeError(error);
+        this.subscriptions.delete(subscriptionId);
+        subscription.subject$.error(error);
+      }
     }
   }
 
@@ -279,14 +304,32 @@ export class RealtimeManager {
 }
 
 export function stableStringify(value: unknown): string {
+  if (
+    value === undefined ||
+    typeof value === 'function' ||
+    typeof value === 'symbol'
+  ) {
+    return 'null';
+  }
   if (value === null || typeof value !== 'object') {
     return JSON.stringify(value);
   }
   if (Array.isArray(value)) {
     return `[${value.map(stableStringify).join(',')}]`;
   }
+  if (value instanceof Date) {
+    return JSON.stringify(value.toJSON());
+  }
   const record = value as Record<string, unknown>;
   return `{${Object.keys(record)
+    .filter(key => {
+      const property = record[key];
+      return (
+        property !== undefined &&
+        typeof property !== 'function' &&
+        typeof property !== 'symbol'
+      );
+    })
     .sort()
     .map(key => `${JSON.stringify(key)}:${stableStringify(record[key])}`)
     .join(',')}}`;
