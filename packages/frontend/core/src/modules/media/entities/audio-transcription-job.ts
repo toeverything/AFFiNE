@@ -60,8 +60,7 @@ export class AudioTranscriptionJob extends Entity<{
     super();
     this.disposables.push(() => {
       this.disposed = true;
-      this.taskSubscription?.unsubscribe();
-      this.taskWaitReject?.(new Error('Job disposed'));
+      this.rejectTaskWait(new Error('Job disposed'));
     });
   }
 
@@ -202,8 +201,9 @@ export class AudioTranscriptionJob extends Entity<{
 
     await this.checkTranscriptTask(taskId);
 
+    this.rejectTaskWait(new Error('Transcript task wait replaced'));
+
     await new Promise<void>((resolve, reject) => {
-      this.taskSubscription?.unsubscribe();
       this.taskWaitReject = reject;
       this.taskSubscription = this.store
         .subscribeTranscriptTask(taskId)
@@ -231,7 +231,16 @@ export class AudioTranscriptionJob extends Entity<{
     }).finally(() => {
       this.taskWaitReject = undefined;
       this.taskSubscription?.unsubscribe();
+      this.taskSubscription = undefined;
     });
+  }
+
+  private rejectTaskWait(error: unknown) {
+    const reject = this.taskWaitReject;
+    this.taskWaitReject = undefined;
+    this.taskSubscription?.unsubscribe();
+    this.taskSubscription = undefined;
+    reject?.(error);
   }
 
   private async checkTranscriptTask(taskId: string) {
