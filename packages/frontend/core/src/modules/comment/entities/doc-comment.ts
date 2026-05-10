@@ -499,6 +499,7 @@ export class DocCommentEntity extends Entity<{
   stop(): void {
     this.startVersion++;
     this.liveQuery.stop();
+    this.loading$.setValue(false);
   }
 
   private async startLiveQueryAfterInitialLoad() {
