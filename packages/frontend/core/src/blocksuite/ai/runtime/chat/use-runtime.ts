@@ -2,6 +2,9 @@ import { useEffect, useSyncExternalStore } from 'react';
 
 import type { AIChatRuntime } from './runtime';
 
+/**
+ * Initializes and owns the passed runtime for the current React mount.
+ */
 export function useAIChatRuntime(runtime: AIChatRuntime | null) {
   const snapshot = useSyncExternalStore(
     runtime?.subscribe ?? (() => () => {}),

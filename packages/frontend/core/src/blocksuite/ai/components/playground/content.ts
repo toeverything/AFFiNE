@@ -180,7 +180,6 @@ export class PlaygroundContent extends SignalWatcher(
       workspaceId: this.doc.workspace.id,
       docId: this.doc.id,
       parentSessionId,
-      latestMessageId: '',
     });
     try {
       return (await runtime.createSession()) ?? undefined;

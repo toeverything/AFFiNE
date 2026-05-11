@@ -497,6 +497,38 @@ describe('AIChatRuntime', () => {
     ]);
   });
 
+  test('stop marks the active assistant response as complete', async () => {
+    let release!: () => void;
+    const blockedStream = {
+      async *[Symbol.asyncIterator]() {
+        yield 'partial';
+        await new Promise<void>(resolve => {
+          release = resolve;
+        });
+        yield 'late';
+      },
+    };
+    const request = createRequest({
+      executeAction: vi.fn().mockResolvedValue(blockedStream),
+    });
+    const runtime = createRuntime(request);
+    await runtime.dispatch({ type: 'initialize' });
+
+    const send = runtime.dispatch({ type: 'send', input: 'hello' });
+    await waitUntil(() => {
+      expect(runtime.getSnapshot().status).toBe('transmitting');
+    });
+
+    await runtime.dispatch({ type: 'stop' });
+    release();
+    await send;
+
+    expect(runtime.getSnapshot().status).toBe('success');
+    expect(runtime.getSnapshot().messages.at(-1)).toEqual(
+      expect.objectContaining({ role: 'assistant', content: 'partial' })
+    );
+  });
+
   test('clearError resets error status', async () => {
     const error = new Error('network failed');
     const runtime = createRuntime(
@@ -619,6 +651,32 @@ describe('AIChatRuntime', () => {
       'chat',
       expect.objectContaining({ retry: true, sessionId: 'session-1' })
     );
+  });
+
+  test('retry reuses failed initial messages when no session was created', async () => {
+    const error = new Error('create session failed');
+    const request = createRequest({
+      createSessionWithHistory: vi
+        .fn()
+        .mockRejectedValueOnce(error)
+        .mockResolvedValueOnce(session({ sessionId: 'session-2' })),
+      executeAction: vi.fn().mockResolvedValue(stream(['retry'])),
+    });
+    const runtime = createRuntime(request);
+    await runtime.dispatch({ type: 'initialize' });
+    await runtime.dispatch({ type: 'send', input: 'hello' });
+
+    expect(runtime.getSnapshot().activeSessionId).toBeNull();
+    expect(runtime.getSnapshot().status).toBe('error');
+
+    await runtime.dispatch({ type: 'retry', messageId: '' });
+
+    expect(runtime.getSnapshot().activeSessionId).toBe('session-2');
+    expect(runtime.getSnapshot().status).toBe('success');
+    expect(runtime.getSnapshot().messages).toEqual([
+      expect.objectContaining({ role: 'user', content: 'hello' }),
+      expect.objectContaining({ role: 'assistant', content: 'retry' }),
+    ]);
   });
 
   test('history refresh does not stale an active stream', async () => {
@@ -857,7 +915,6 @@ describe('AIChatRuntime', () => {
         workspaceId: 'workspace-1',
         docId: 'doc-1',
         parentSessionId: 'root-session',
-        latestMessageId: '',
       },
       strategy: new PlaygroundAIChatSessionStrategy(),
     });
@@ -868,7 +925,6 @@ describe('AIChatRuntime', () => {
       workspaceId: 'workspace-1',
       docId: 'doc-1',
       sessionId: 'root-session',
-      latestMessageId: '',
     });
     expect(forkSession?.sessionId).toBe('playground-fork');
   });

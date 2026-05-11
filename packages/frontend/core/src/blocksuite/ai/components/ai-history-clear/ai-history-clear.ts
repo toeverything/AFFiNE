@@ -26,9 +26,7 @@ export class AIHistoryClear extends WithDisposable(ShadowlessElement) {
   accessor onHistoryCleared!: () => void;
 
   @property({ attribute: false })
-  accessor onClearHistory!:
-    | ((sessionIds: string[]) => Promise<void> | void)
-    | undefined;
+  accessor onClearHistory!: (sessionIds: string[]) => Promise<void> | void;
 
   static override styles = css`
     .chat-history-clear {
@@ -68,7 +66,7 @@ export class AIHistoryClear extends WithDisposable(ShadowlessElement) {
         const actionIds = this.chatContextValue.messages
           .filter(item => 'sessionId' in item)
           .map(item => item.sessionId);
-        await this.onClearHistory?.([
+        await this.onClearHistory([
           ...(sessionId ? [sessionId] : []),
           ...(actionIds || []),
         ]);

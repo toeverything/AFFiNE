@@ -113,17 +113,19 @@ export const EditorChatPanel = ({
     [eventSourceService.eventSource, graphqlService.gql]
   );
 
-  const pendingSessionId = useMemo(() => {
+  const [pendingSessionId] = useState(() => {
     const searchParams = new URLSearchParams(workbench.location$.value.search);
-    const sessionId = searchParams.get('sessionId') ?? undefined;
-    if (sessionId) {
+    return searchParams.get('sessionId') ?? undefined;
+  });
+
+  useEffect(() => {
+    if (pendingSessionId) {
       workbench.activeView$.value.updateQueryString(
         { sessionId: undefined },
         { replace: true }
       );
     }
-    return sessionId;
-  }, [workbench]);
+  }, [pendingSessionId, workbench]);
 
   const runtime = useMemo(() => {
     if (!doc || !workspaceId) return null;

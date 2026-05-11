@@ -199,12 +199,13 @@ export class ForkAIChatSessionStrategy implements AIChatSessionStrategy {
       });
     }
 
+    const latestMessageId =
+      'latestMessageId' in scope ? scope.latestMessageId : undefined;
     const forkSessionId = await request.forkChat({
       workspaceId: scope.workspaceId,
       docId: docId ?? '',
       sessionId: parentSessionId,
-      latestMessageId:
-        'latestMessageId' in scope ? (scope.latestMessageId ?? '') : '',
+      ...(latestMessageId ? { latestMessageId } : {}),
     });
     if (!forkSessionId) return null;
     return request.getSession(scope.workspaceId, forkSessionId);

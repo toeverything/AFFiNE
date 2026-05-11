@@ -332,7 +332,19 @@ export class AIChatRuntime {
     return this.createSessionPromise;
   }
 
-  private async send(options: AIChatSendOptions) {
+  private resetLastAssistantMessage(messages: AIChatMessage[]) {
+    return messages.map((message, index) =>
+      index === messages.length - 1 && message.role === 'assistant'
+        ? { ...message, content: '', createdAt: new Date().toISOString() }
+        : message
+    );
+  }
+
+  private getLastUserMessage() {
+    return this.snapshot.messages.findLast(message => message.role === 'user');
+  }
+
+  private async send(options: AIChatSendOptions, retryExisting = false) {
     const content = options.input || this.snapshot.composer.text;
     if (!content.trim() || !this.snapshot.uiPolicy.canSend) return;
     const seq = ++this.requestSeq;
@@ -341,14 +353,16 @@ export class AIChatRuntime {
     this.commit({
       status: 'loading',
       error: null,
-      messages: [
-        ...this.snapshot.messages,
-        this.createMessage('user', content, {
-          attachments: options.attachmentPreviews,
-          ...options.userInfo,
-        }),
-        this.createMessage('assistant', ''),
-      ],
+      messages: retryExisting
+        ? this.resetLastAssistantMessage(this.snapshot.messages)
+        : [
+            ...this.snapshot.messages,
+            this.createMessage('user', content, {
+              attachments: options.attachmentPreviews,
+              ...options.userInfo,
+            }),
+            this.createMessage('assistant', ''),
+          ],
     });
     try {
       const session = await this.ensureSession();
@@ -406,7 +420,14 @@ export class AIChatRuntime {
   }
 
   private async retry() {
-    if (!this.snapshot.activeSessionId || !this.snapshot.uiPolicy.canSend) {
+    if (!this.snapshot.uiPolicy.canSend) {
+      return;
+    }
+    if (!this.snapshot.activeSessionId) {
+      const lastUserMessage = this.getLastUserMessage();
+      if (lastUserMessage) {
+        await this.send({ input: lastUserMessage.content }, true);
+      }
       return;
     }
     const seq = ++this.requestSeq;
@@ -415,11 +436,7 @@ export class AIChatRuntime {
     this.commit({
       status: 'loading',
       error: null,
-      messages: this.snapshot.messages.map((message, index, messages) =>
-        index === messages.length - 1 && message.role === 'assistant'
-          ? { ...message, content: '', createdAt: new Date().toISOString() }
-          : message
-      ),
+      messages: this.resetLastAssistantMessage(this.snapshot.messages),
     });
     try {
       const stream = (await this.options.request.executeAction('chat', {
@@ -453,7 +470,7 @@ export class AIChatRuntime {
       this.snapshot.status === 'loading' ||
       this.snapshot.status === 'transmitting'
     ) {
-      this.commit({ status: 'idle' });
+      this.commit({ status: 'success' });
     }
   }
 
