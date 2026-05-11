@@ -22,6 +22,7 @@ import type { Variable } from '../../../core/expression/types.js';
 import { filterMatcher } from '../../../core/filter/filter-fn/matcher.js';
 import { literalItemsMatcher } from '../../../core/filter/literal/index.js';
 import type { Filter, SingleFilter } from '../../../core/filter/types.js';
+import { getDefaultArgsForFilter } from '../../../core/filter/utils.js';
 import {
   renderUniLit,
   t,
@@ -223,9 +224,16 @@ export class FilterConditionView extends SignalWatcher(ShadowlessElement) {
         name: v.label,
         isSelected: selected,
         select: () => {
+          // If switching to a different filter, reinitialize args
+          const newArgs =
+            v.name !== filter.function
+              ? getDefaultArgsForFilter(v.name)
+              : filter.args;
+
           this.setFilter({
             ...filter,
             function: v.name,
+            args: newArgs,
           });
           onSelect?.();
           this.popConditionEdit(target);
