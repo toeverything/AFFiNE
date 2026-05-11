@@ -46,7 +46,7 @@
     "@node-rs/crc32": "^1.10.6",
     "@opentelemetry/api": "^1.9.0",
     "@opentelemetry/core": "^2.2.0",
-    "@opentelemetry/exporter-prometheus": "^0.215.0",
+    "@opentelemetry/exporter-prometheus": "^0.217.0",
     "@opentelemetry/exporter-zipkin": "^2.6.0",
     "@opentelemetry/host-metrics": "^0.38.3",
     "@opentelemetry/instrumentation": "^0.215.0",
