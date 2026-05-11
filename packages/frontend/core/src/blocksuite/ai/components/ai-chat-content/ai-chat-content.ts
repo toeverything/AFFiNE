@@ -12,10 +12,7 @@ import type { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import type { PeekViewService } from '@affine/core/modules/peek-view';
 import type { AppThemeService } from '@affine/core/modules/theme';
-import type {
-  ContextEmbedStatus,
-  CopilotChatHistoryFragment,
-} from '@affine/graphql';
+import type { CopilotChatHistoryFragment } from '@affine/graphql';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import { type EditorHost, ShadowlessElement } from '@blocksuite/affine/std';
 import type { ExtensionType } from '@blocksuite/affine/store';
@@ -28,7 +25,9 @@ import { createRef, type Ref, ref } from 'lit/directives/ref.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import { pick } from 'lodash-es';
 
-import { type AIChatParams, AIProvider } from '../../provider/ai-provider';
+import { AIAppEvents } from '../../provider/ai-app-events';
+import type { AIChatParams } from '../../provider/ai-provider';
+import type { AIChatRuntime, AIChatSnapshot } from '../../runtime/chat';
 import { extractSelectedContent } from '../../utils/extract';
 import { HISTORY_IMAGE_ACTIONS } from '../../utils/history-image-actions';
 import type { SearchMenuConfig } from '../ai-chat-add-context';
@@ -36,8 +35,6 @@ import type { DocDisplayConfig } from '../ai-chat-chips';
 import type { AIReasoningConfig } from '../ai-chat-input';
 import {
   type AIChatMessages,
-  type ChatAction,
-  type ChatMessage,
   type HistoryMessage,
   isChatMessage,
 } from '../ai-chat-messages';
@@ -126,9 +123,10 @@ export class AIChatContent extends SignalWatcher(
   accessor session!: CopilotChatHistoryFragment | null | undefined;
 
   @property({ attribute: false })
-  accessor createSession!: () => Promise<
-    CopilotChatHistoryFragment | undefined
-  >;
+  accessor runtime: AIChatRuntime | null | undefined;
+
+  @property({ attribute: false })
+  accessor runtimeSnapshot: AIChatSnapshot | null | undefined;
 
   @property({ attribute: false })
   accessor workspaceId!: string;
@@ -173,14 +171,6 @@ export class AIChatContent extends SignalWatcher(
   accessor aiModelService!: AIModelService;
 
   @property({ attribute: false })
-  accessor onEmbeddingProgressChange:
-    | ((count: Record<ContextEmbedStatus, number>) => void)
-    | undefined;
-
-  @property({ attribute: false })
-  accessor onContextChange!: (context: Partial<ChatContextValue>) => void;
-
-  @property({ attribute: false })
   accessor onOpenDoc!: (docId: string, sessionId?: string) => void;
 
   @property({ attribute: false })
@@ -199,9 +189,6 @@ export class AIChatContent extends SignalWatcher(
   accessor chatContextValue: ChatContextValue = DEFAULT_CHAT_CONTEXT_VALUE;
 
   @state()
-  accessor isHistoryLoading = false;
-
-  @state()
   private accessor showPreviewPanel = false;
 
   @state()
@@ -210,15 +197,13 @@ export class AIChatContent extends SignalWatcher(
   private readonly chatMessagesRef: Ref<AIChatMessages> =
     createRef<AIChatMessages>();
 
-  // request counter to track the latest request
-  private updateHistoryCounter = 0;
-
-  private historyKey: string | undefined;
-
   private lastScrollTop: number | undefined;
 
   get messages() {
-    return this.chatContextValue.messages.filter(item => {
+    const messages =
+      (this.runtimeSnapshot?.messages as HistoryMessage[] | undefined) ??
+      this.chatContextValue.messages;
+    return messages.filter(item => {
       return (
         isChatMessage(item) ||
         item.messages?.length === 3 ||
@@ -232,86 +217,15 @@ export class AIChatContent extends SignalWatcher(
     return false;
   }
 
-  private async updateHistory() {
-    const currentRequest = ++this.updateHistoryCounter;
-    if (!AIProvider.histories) {
-      return;
-    }
-
-    const sessionId = this.session?.sessionId;
-    const nextHistoryKey = `${this.workspaceId}:${this.docId ?? ''}:${
-      sessionId ?? ''
-    }`;
-    const previousHistoryKey = this.historyKey;
-    const preserveCurrentMessages = previousHistoryKey === nextHistoryKey;
-    this.historyKey = nextHistoryKey;
-    const [histories, actions] = await Promise.all([
-      sessionId
-        ? AIProvider.histories.chats(this.workspaceId, sessionId)
-        : Promise.resolve([]),
-      this.docId && this.showActions
-        ? AIProvider.histories.actions(this.workspaceId, this.docId)
-        : Promise.resolve([]),
-    ]);
-
-    // Check if this is still the latest request
-    if (currentRequest !== this.updateHistoryCounter) {
-      return;
-    }
-
-    if (
-      !preserveCurrentMessages &&
-      (this.chatContextValue.status === 'loading' ||
-        this.chatContextValue.status === 'transmitting') &&
-      this.chatContextValue.messages.length
-    ) {
-      return;
-    }
-
-    const messages: HistoryMessage[] = preserveCurrentMessages
-      ? this.chatContextValue.messages.slice().filter(isChatMessage)
-      : [];
-
-    const chatActions = (actions || []) as ChatAction[];
-    messages.push(...chatActions);
-
-    const chatMessages = (histories?.[0]?.messages || []) as ChatMessage[];
-    messages.push(...chatMessages);
-
-    this.updateContext({
-      messages: messages.sort(
-        (a, b) =>
-          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-      ),
-    });
-  }
-
-  private readonly updateActions = async () => {
-    if (!this.docId || !AIProvider.histories || !this.showActions) {
-      return;
-    }
-    const actions = await AIProvider.histories.actions(
-      this.workspaceId,
-      this.docId
+  get isHistoryLoading() {
+    const snapshot = this.runtimeSnapshot;
+    return (
+      snapshot?.readiness === 'initializing' || !!snapshot?.history.loading
     );
-    if (actions && actions.length) {
-      const chatMessages = this.chatContextValue.messages.filter(message =>
-        isChatMessage(message)
-      );
-      const chatActions = actions as ChatAction[];
-      const messages: HistoryMessage[] = [...chatMessages, ...chatActions];
-      this.updateContext({
-        messages: messages.sort(
-          (a, b) =>
-            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-        ),
-      });
-    }
-  };
+  }
 
   private readonly updateContext = (context: Partial<ChatContextValue>) => {
     this.chatContextValue = { ...this.chatContextValue, ...context };
-    this.onContextChange?.(context);
     this.updateDraft(context).catch(console.error);
   };
 
@@ -331,9 +245,7 @@ export class AIChatContent extends SignalWatcher(
   };
 
   private readonly initChatContent = async () => {
-    this.isHistoryLoading = true;
-    await this.updateHistory();
-    this.isHistoryLoading = false;
+    this._initializeScrollListeners();
   };
 
   protected override firstUpdated(): void {}
@@ -382,13 +294,13 @@ export class AIChatContent extends SignalWatcher(
   public openPreviewPanel(content?: TemplateResult<1>) {
     this.showPreviewPanel = true;
     if (content) this.previewPanelContent = content;
-    AIProvider.slots.previewPanelOpenChange.next(true);
+    AIAppEvents.previewPanelOpenChange.next(true);
   }
 
   public closePreviewPanel(destroyContent: boolean = false) {
     this.showPreviewPanel = false;
     if (destroyContent) this.previewPanelContent = null;
-    AIProvider.slots.previewPanelOpenChange.next(false);
+    AIAppEvents.previewPanelOpenChange.next(false);
   }
 
   public get isPreviewPanelOpen() {
@@ -416,19 +328,7 @@ export class AIChatContent extends SignalWatcher(
     this.subscriptionService.subscription.revalidate();
 
     this._disposables.add(
-      AIProvider.slots.actions.subscribe(({ event }) => {
-        const { status } = this.chatContextValue;
-        if (
-          event === 'finished' &&
-          (status === 'idle' || status === 'success')
-        ) {
-          this.updateActions().catch(console.error);
-        }
-      })
-    );
-
-    this._disposables.add(
-      AIProvider.slots.requestOpenWithChat.subscribe(
+      AIAppEvents.requestOpenWithChat.subscribe(
         (params: AIChatParams | null) => {
           if (!params) {
             return;
@@ -445,7 +345,7 @@ export class AIChatContent extends SignalWatcher(
                 .catch(console.error);
             }
           }
-          AIProvider.slots.requestOpenWithChat.next(null);
+          AIAppEvents.requestOpenWithChat.next(null);
         }
       )
     );
@@ -463,7 +363,8 @@ export class AIChatContent extends SignalWatcher(
         .workspaceId=${this.workspaceId}
         .docId=${this.docId}
         .session=${this.session}
-        .createSession=${this.createSession}
+        .runtime=${this.runtime}
+        .runtimeSnapshot=${this.runtimeSnapshot}
         .chatContextValue=${this.chatContextValue}
         .updateContext=${this.updateContext}
         .isHistoryLoading=${this.isHistoryLoading}
@@ -491,10 +392,10 @@ export class AIChatContent extends SignalWatcher(
         .workspaceId=${this.workspaceId}
         .docId=${this.docId}
         .session=${this.session}
-        .createSession=${this.createSession}
+        .runtime=${this.runtime}
+        .runtimeSnapshot=${this.runtimeSnapshot}
         .chatContextValue=${this.chatContextValue}
         .updateContext=${this.updateContext}
-        .onEmbeddingProgressChange=${this.onEmbeddingProgressChange}
         .reasoningConfig=${this.reasoningConfig}
         .docDisplayConfig=${this.docDisplayConfig}
         .searchMenuConfig=${this.searchMenuConfig}

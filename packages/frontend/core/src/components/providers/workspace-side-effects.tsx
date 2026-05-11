@@ -4,8 +4,8 @@ import {
   resolveGlobalLoadingEventAtom,
 } from '@affine/component/global-loading';
 import {
-  AIProvider,
-  CopilotClient,
+  AIAppEvents,
+  createAIRequestService,
   setupAIProvider,
 } from '@affine/core/blocksuite/ai';
 import { useRegisterFindInPageCommands } from '@affine/core/components/hooks/affine/use-register-find-in-page-commands';
@@ -103,7 +103,7 @@ export const WorkspaceSideEffects = () => {
       })
     );
 
-    const disposable = AIProvider.slots.requestInsertTemplate.subscribe(
+    const disposable = AIAppEvents.requestInsertTemplate.subscribe(
       ({ template, mode }) => {
         insertTemplate({ template, mode });
       }
@@ -126,7 +126,7 @@ export const WorkspaceSideEffects = () => {
   const globalDialogService = useService(GlobalDialogService);
 
   useEffect(() => {
-    const disposable = AIProvider.slots.requestUpgradePlan.subscribe(() => {
+    const disposable = AIAppEvents.requestUpgradePlan.subscribe(() => {
       workspaceDialogService.open('setting', {
         activeTab: 'billing',
       });
@@ -143,7 +143,10 @@ export const WorkspaceSideEffects = () => {
 
   useEffect(() => {
     const dispose = setupAIProvider(
-      new CopilotClient(graphqlService.gql, eventSourceService.eventSource),
+      createAIRequestService(
+        graphqlService.gql,
+        eventSourceService.eventSource
+      ),
       globalDialogService,
       authService
     );

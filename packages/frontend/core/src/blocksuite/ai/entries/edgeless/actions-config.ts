@@ -49,7 +49,7 @@ import {
   translateLangs,
 } from '../../actions/types';
 import type { AIItemGroupConfig } from '../../components/ai-item/types';
-import { AIProvider } from '../../provider';
+import { AIAppEvents } from '../../provider';
 import { getAIPanelWidget } from '../../utils/ai-widgets';
 import {
   getEdgelessCopilotWidget,
@@ -121,7 +121,7 @@ const othersGroup: AIItemGroupConfig = {
         const edgelessCopilot = getEdgelessCopilotWidget(host);
         extractSelectedContent(host)
           .then(context => {
-            AIProvider.slots.requestOpenWithChat.next({
+            AIAppEvents.requestOpenWithChat.next({
               host,
               mode: 'edgeless',
               autoSelect: true,

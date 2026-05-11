@@ -93,4 +93,35 @@ describe('AIChatMessages scrolling', () => {
     expect(element.canScrollDown).toBe(false);
     expect(scrollToEnd).toHaveBeenCalled();
   });
+
+  test('message keys are scoped by active tab', () => {
+    const element = {} as AIChatMessages;
+    const message = {
+      id: 'message-1',
+      role: 'assistant',
+      content: 'reply',
+      createdAt: new Date().toISOString(),
+    };
+
+    element.runtimeSnapshot = {
+      activeTabId: 'session-1',
+    } as AIChatMessages['runtimeSnapshot'];
+    const firstKey = (AIChatMessages.prototype as any)._getMessageKey.call(
+      element,
+      message,
+      0
+    );
+
+    element.runtimeSnapshot = {
+      activeTabId: 'session-2',
+    } as AIChatMessages['runtimeSnapshot'];
+    const secondKey = (AIChatMessages.prototype as any)._getMessageKey.call(
+      element,
+      message,
+      0
+    );
+
+    expect(firstKey).toBe('session-1:message-1');
+    expect(secondKey).toBe('session-2:message-1');
+  });
 });

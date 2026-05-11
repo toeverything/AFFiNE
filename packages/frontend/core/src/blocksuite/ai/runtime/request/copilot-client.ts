@@ -38,7 +38,7 @@ import {
   GeneralNetworkError,
   PaymentRequiredError,
   UnauthorizedError,
-} from './error';
+} from '../../provider/error';
 
 export enum Endpoint {
   Action = 'action',

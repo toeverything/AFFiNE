@@ -14,33 +14,21 @@ import { flip, offset } from '@floating-ui/dom';
 import { css, html } from 'lit';
 import { property, query } from 'lit/decorators.js';
 
+import type { AIChatRuntime, AIChatSnapshot } from '../../runtime/chat';
 import type { DocDisplayConfig } from '../ai-chat-chips';
-import type { ChatStatus } from '../ai-chat-messages';
 
 export class AIChatToolbar extends WithDisposable(ShadowlessElement) {
   @property({ attribute: false })
   accessor session!: CopilotChatHistoryFragment | null | undefined;
 
   @property({ attribute: false })
-  accessor workspaceId!: string;
+  accessor runtime!: AIChatRuntime;
+
+  @property({ attribute: false })
+  accessor runtimeSnapshot!: AIChatSnapshot;
 
   @property({ attribute: false })
   accessor docId: string | undefined;
-
-  @property({ attribute: false })
-  accessor status!: ChatStatus;
-
-  @property({ attribute: false })
-  accessor onNewSession!: () => void;
-
-  @property({ attribute: false })
-  accessor canCreateNewSession = true;
-
-  @property({ attribute: false })
-  accessor onTogglePin!: () => Promise<void>;
-
-  @property({ attribute: false })
-  accessor onOpenSession!: (sessionId: string) => void;
 
   @property({ attribute: false })
   accessor onOpenDoc!: (docId: string, sessionId: string) => void;
@@ -62,7 +50,12 @@ export class AIChatToolbar extends WithDisposable(ShadowlessElement) {
   private abortController: AbortController | null = null;
 
   get isGenerating() {
-    return this.status === 'transmitting' || this.status === 'loading';
+    const status = this.runtimeSnapshot.status;
+    return status === 'transmitting' || status === 'loading';
+  }
+
+  get canCreateNewSession() {
+    return this.runtimeSnapshot.uiPolicy.canCreateNewSession;
   }
 
   static override styles = css`
@@ -141,7 +134,7 @@ export class AIChatToolbar extends WithDisposable(ShadowlessElement) {
       );
       return;
     }
-    await this.onTogglePin();
+    await this.runtime.dispatch({ type: 'togglePinActiveSession' });
   };
 
   private readonly unpinConfirm = async () => {
@@ -157,7 +150,7 @@ export class AIChatToolbar extends WithDisposable(ShadowlessElement) {
         if (!confirm) {
           return false;
         }
-        await this.onTogglePin();
+        await this.runtime.dispatch({ type: 'togglePinActiveSession' });
       } catch {
         this.notificationService.toast('Failed to unpin the chat');
       }
@@ -168,7 +161,7 @@ export class AIChatToolbar extends WithDisposable(ShadowlessElement) {
   private readonly onPlusClick = async () => {
     const confirm = await this.unpinConfirm();
     if (confirm) {
-      this.onNewSession();
+      await this.runtime.dispatch({ type: 'createNewSession' });
     }
   };
 
@@ -179,7 +172,11 @@ export class AIChatToolbar extends WithDisposable(ShadowlessElement) {
     }
     const confirm = await this.unpinConfirm();
     if (confirm) {
-      this.onOpenSession(sessionId);
+      await this.runtime.dispatch({
+        type: 'openSession',
+        sessionId,
+      });
+      this.closeHistoryMenu();
     }
   };
 
@@ -191,7 +188,7 @@ export class AIChatToolbar extends WithDisposable(ShadowlessElement) {
     this.onOpenDoc(docId, sessionId);
   };
 
-  private readonly toggleHistoryMenu = () => {
+  private readonly toggleHistoryMenu = async () => {
     if (this.abortController) {
       this.abortController.abort();
       return;
@@ -202,12 +199,23 @@ export class AIChatToolbar extends WithDisposable(ShadowlessElement) {
       this.abortController = null;
     });
 
+    try {
+      await this.runtime.dispatch({ type: 'refreshHistory' });
+    } catch (error) {
+      console.error(error);
+    }
+    if (this.abortController.signal.aborted) {
+      return;
+    }
+
     createLitPortal({
       template: html`
         <ai-session-history
           .session=${this.session}
-          .workspaceId=${this.workspaceId}
           .docId=${this.docId}
+          .recentSessions=${this.runtime.getSnapshot().history.recent}
+          .currentDocSessions=${this.runtime.getSnapshot().history.currentDoc}
+          .loading=${this.runtime.getSnapshot().history.loading}
           .docDisplayConfig=${this.docDisplayConfig}
           .onSessionClick=${this.onSessionClick}
           .onSessionDelete=${this.onSessionDelete}

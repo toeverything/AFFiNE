@@ -1,16 +1,9 @@
 /**
  * @vitest-environment happy-dom
  */
-import { afterEach, describe, expect, test, vi } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 
-import { AIProvider } from '../../provider';
 import { AIChatContent } from './ai-chat-content';
-
-const originalHistories = AIProvider.histories;
-
-afterEach(() => {
-  AIProvider.provide('histories', originalHistories as any);
-});
 
 describe('AIChatContent pinned scroll tracking', () => {
   test('records scroll position from the chat messages host', async () => {
@@ -47,103 +40,44 @@ describe('AIChatContent pinned scroll tracking', () => {
   });
 });
 
-describe('AIChatContent history loading', () => {
-  test('replaces messages when the active session changes', async () => {
-    const histories = {
-      chats: vi.fn(async (_workspaceId: string, sessionId: string) => [
-        {
-          messages: [
-            {
-              id: `${sessionId}-message`,
-              role: 'user',
-              content: sessionId,
-              createdAt: '2026-01-01T00:00:00.000Z',
-            },
-          ],
-        },
-      ]),
-      actions: vi.fn(async () => []),
-      cleanup: vi.fn(),
-      ids: vi.fn(),
+describe('AIChatContent runtime snapshot sync', () => {
+  test('derives messages and loading state from runtime snapshot', () => {
+    const runtimeMessage = {
+      id: 'message-1',
+      role: 'user',
+      content: 'hello',
+      createdAt: '2026-01-01T00:00:00.000Z',
     };
-    AIProvider.provide('histories', histories as any);
-
-    const content: {
-      updateHistoryCounter: number;
-      historyKey: string | undefined;
-      workspaceId: string;
-      docId: string;
-      session: { sessionId: string };
-      chatContextValue: { messages: unknown[]; status?: string };
-      updateContext: (context: { messages: unknown[] }) => void;
-    } = {
-      updateHistoryCounter: 0,
-      historyKey: undefined,
-      workspaceId: 'ws-1',
-      docId: 'doc-1',
-      session: { sessionId: 'session-1' },
-      chatContextValue: { messages: [] },
-      updateContext(context: { messages: unknown[] }) {
-        this.chatContextValue = {
-          ...this.chatContextValue,
-          ...context,
-        };
-      },
-    };
-
-    await (AIChatContent.prototype as any).updateHistory.call(content);
-    expect(
-      content.chatContextValue.messages.map((message: any) => message.id)
-    ).toEqual(['session-1-message']);
-
-    content.session = { sessionId: 'session-2' };
-    await (AIChatContent.prototype as any).updateHistory.call(content);
-
-    expect(
-      content.chatContextValue.messages.map((message: any) => message.id)
-    ).toEqual(['session-2-message']);
-  });
-
-  test('does not overwrite in-flight optimistic messages when a session is created', async () => {
-    const histories = {
-      chats: vi.fn(async () => [{ messages: [] }]),
-      actions: vi.fn(async () => []),
-      cleanup: vi.fn(),
-      ids: vi.fn(),
-    };
-    AIProvider.provide('histories', histories as any);
-
-    const optimisticMessages = [
-      {
-        id: '',
-        role: 'user',
-        content: 'hello',
-        createdAt: '2026-01-01T00:00:00.000Z',
-      },
-      {
-        id: '',
-        role: 'assistant',
-        content: '',
-        createdAt: '2026-01-01T00:00:01.000Z',
-      },
-    ];
-    const updateContext = vi.fn();
-    const content = {
-      updateHistoryCounter: 0,
-      historyKey: 'ws-1:doc-1:',
-      workspaceId: 'ws-1',
-      docId: 'doc-1',
-      session: { sessionId: 'session-1' },
-      chatContextValue: {
-        messages: optimisticMessages,
+    const content = Object.create(AIChatContent.prototype) as AIChatContent;
+    Object.defineProperty(content, 'runtimeSnapshot', {
+      configurable: true,
+      value: {
+        messages: [runtimeMessage],
         status: 'loading',
+        error: null,
+        readiness: 'initializing',
+        history: { loading: false },
       },
-      updateContext,
-    };
+    });
+    Object.defineProperty(content, 'chatContextValue', {
+      configurable: true,
+      value: {
+        messages: [],
+        status: 'idle',
+        error: null,
+        abortController: null,
+      },
+    });
+    Object.defineProperty(content, '_initializeScrollListeners', {
+      configurable: true,
+      value: vi.fn(),
+    });
 
-    await (AIChatContent.prototype as any).updateHistory.call(content);
+    (content as any).updated(new Map([['runtimeSnapshot', null]]));
 
-    expect(updateContext).not.toHaveBeenCalled();
-    expect(content.chatContextValue.messages).toBe(optimisticMessages);
+    expect(content.messages).toEqual([runtimeMessage]);
+    expect(content.isHistoryLoading).toBe(true);
+    expect(content.chatContextValue.messages).toEqual([]);
+    expect(content.chatContextValue.status).toBe('idle');
   });
 });

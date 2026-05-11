@@ -5,9 +5,8 @@ import { unsafeCSSVar, unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import { ShadowlessElement } from '@blocksuite/affine/std';
 import { DeleteIcon } from '@blocksuite/icons/lit';
 import { css, html, nothing, type PropertyValues } from 'lit';
-import { property, query, state } from 'lit/decorators.js';
+import { property, state } from 'lit/decorators.js';
 
-import { AIProvider } from '../../provider';
 import type { DocDisplayConfig } from '../ai-chat-chips';
 
 interface GroupedSessions {
@@ -15,6 +14,31 @@ interface GroupedSessions {
   last7Days: BlockSuitePresets.AIRecentSession[];
   last30Days: BlockSuitePresets.AIRecentSession[];
   older: BlockSuitePresets.AIRecentSession[];
+}
+
+type HistorySessionWithMessages = BlockSuitePresets.AIRecentSession &
+  Partial<Pick<CopilotChatHistoryFragment, 'messages'>>;
+
+const DEFAULT_SESSION_TITLE = 'New chat';
+const TITLE_MAX_LENGTH = 28;
+
+function truncateSessionTitle(text: string) {
+  if (text.length <= TITLE_MAX_LENGTH) return text;
+  return `${text.slice(0, TITLE_MAX_LENGTH).trimEnd()}…`;
+}
+
+function deriveSessionTitle(session: HistorySessionWithMessages) {
+  const explicit = session.title?.trim();
+  if (explicit) return truncateSessionTitle(explicit);
+  const firstUserMessage = session.messages?.find(
+    message => message.role === 'user'
+  );
+  const raw = firstUserMessage?.content?.trim();
+  if (!raw) return DEFAULT_SESSION_TITLE;
+  const newlineIdx = raw.indexOf('\n');
+  return truncateSessionTitle(
+    newlineIdx === -1 ? raw : raw.slice(0, newlineIdx)
+  );
 }
 
 export class AISessionHistory extends WithDisposable(ShadowlessElement) {
@@ -157,10 +181,16 @@ export class AISessionHistory extends WithDisposable(ShadowlessElement) {
   accessor session!: CopilotChatHistoryFragment | null | undefined;
 
   @property({ attribute: false })
-  accessor workspaceId!: string;
+  accessor docId: string | undefined;
 
   @property({ attribute: false })
-  accessor docId: string | undefined;
+  accessor recentSessions: BlockSuitePresets.AIRecentSession[] = [];
+
+  @property({ attribute: false })
+  accessor currentDocSessions: BlockSuitePresets.AIRecentSession[] = [];
+
+  @property({ attribute: false })
+  accessor loading = false;
 
   @property({ attribute: false })
   accessor docDisplayConfig!: DocDisplayConfig;
@@ -176,29 +206,8 @@ export class AISessionHistory extends WithDisposable(ShadowlessElement) {
   @property({ attribute: false })
   accessor onDocClick!: (docId: string, sessionId: string) => void;
 
-  @query('.ai-session-history')
-  accessor scrollContainer!: HTMLElement;
-
-  @state()
-  private accessor sessions: BlockSuitePresets.AIRecentSession[] | undefined;
-
-  @state()
-  private accessor currentDocSessions:
-    | BlockSuitePresets.AIRecentSession[]
-    | undefined;
-
-  @state()
-  private accessor loadingMore = false;
-
-  @state()
-  private accessor hasMore = true;
-
   @state()
   private accessor selectedSessionId: string | undefined;
-
-  private accessor currentOffset = 0;
-
-  private readonly pageSize = 10;
 
   private groupSessionsByTime(
     sessions: BlockSuitePresets.AIRecentSession[]
@@ -248,65 +257,15 @@ export class AISessionHistory extends WithDisposable(ShadowlessElement) {
     return grouped;
   }
 
-  private async getRecentSessions() {
-    this.loadingMore = true;
-
-    const moreSessions =
-      (await AIProvider.session?.getRecentSessions(
-        this.workspaceId,
-        this.pageSize,
-        this.currentOffset
-      )) || [];
-    this.sessions = [...(this.sessions || []), ...moreSessions];
-
-    this.currentOffset += moreSessions.length;
-    this.hasMore = moreSessions.length === this.pageSize;
-    this.loadingMore = false;
-  }
-
-  private async getCurrentDocSessions() {
-    if (!this.docId) {
-      this.currentDocSessions = [];
-      return;
-    }
-    this.currentDocSessions =
-      (await AIProvider.session?.getSessions(this.workspaceId, this.docId, {
-        action: false,
-        fork: false,
-      })) || [];
-  }
-
-  private readonly onScroll = () => {
-    if (!this.hasMore || this.loadingMore) {
-      return;
-    }
-    // load more when within 50px of bottom
-    const { scrollTop, scrollHeight, clientHeight } = this.scrollContainer;
-    const threshold = 50;
-    if (scrollTop + clientHeight >= scrollHeight - threshold) {
-      this.getRecentSessions().catch(console.error);
-    }
-  };
-
   override connectedCallback() {
     super.connectedCallback();
     this.selectedSessionId = this.session?.sessionId ?? undefined;
-    this.getCurrentDocSessions().catch(console.error);
-    this.getRecentSessions().catch(console.error);
   }
 
   protected override willUpdate(changedProperties: PropertyValues) {
     if (changedProperties.has('session')) {
       this.selectedSessionId = this.session?.sessionId ?? undefined;
     }
-  }
-
-  override firstUpdated(changedProperties: PropertyValues) {
-    super.firstUpdated(changedProperties);
-    this.disposables.add(() => {
-      this.scrollContainer.removeEventListener('scroll', this.onScroll);
-    });
-    this.scrollContainer.addEventListener('scroll', this.onScroll);
   }
 
   private renderSessionGroup(
@@ -320,6 +279,7 @@ export class AISessionHistory extends WithDisposable(ShadowlessElement) {
       <div class="ai-session-group">
         <div class="ai-session-group-title">${title}</div>
         ${sessions.map(session => {
+          const sessionTitle = deriveSessionTitle(session);
           return html`
             <div
               class="ai-session-item"
@@ -336,7 +296,7 @@ export class AISessionHistory extends WithDisposable(ShadowlessElement) {
               data-session-id=${session.sessionId}
             >
               <div class="ai-session-title">
-                ${session.title || 'New chat'}
+                ${sessionTitle}
                 <affine-tooltip .offsetX=${60}>
                   Click to open this chat
                 </affine-tooltip>
@@ -395,15 +355,15 @@ export class AISessionHistory extends WithDisposable(ShadowlessElement) {
   }
 
   private renderHistory() {
-    if (!this.sessions) {
+    if (this.loading) {
       return this.renderLoading();
     }
 
-    const currentDocSessions = this.currentDocSessions ?? [];
+    const currentDocSessions = this.currentDocSessions;
     const currentDocSessionIds = new Set(
       currentDocSessions.map(session => session.sessionId)
     );
-    const otherSessions = this.sessions.filter(
+    const otherSessions = this.recentSessions.filter(
       session =>
         !currentDocSessionIds.has(session.sessionId) &&
         (!this.docId || session.docId !== this.docId)

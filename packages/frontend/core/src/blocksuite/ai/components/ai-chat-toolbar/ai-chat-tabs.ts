@@ -7,8 +7,14 @@ import { css, html, type PropertyValues } from 'lit';
 import { property } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
+import type { AIChatRuntime, AIChatSnapshot } from '../../runtime/chat';
+
 const DEFAULT_TAB_TITLE = 'New chat';
 const TITLE_MAX_LENGTH = 28;
+
+type RenderTabItem =
+  | { kind: 'draft' }
+  | { kind: 'session'; session: CopilotChatHistoryFragment };
 
 function truncate(text: string): string {
   if (text.length <= TITLE_MAX_LENGTH) return text;
@@ -27,19 +33,10 @@ function deriveTabTitle(session: CopilotChatHistoryFragment): string {
 
 export class AIChatTabs extends WithDisposable(ShadowlessElement) {
   @property({ attribute: false })
-  accessor sessions: CopilotChatHistoryFragment[] = [];
+  accessor runtimeSnapshot: AIChatSnapshot | null | undefined;
 
   @property({ attribute: false })
-  accessor activeSessionId: string | undefined;
-
-  @property({ attribute: false })
-  accessor showDraftTab = false;
-
-  @property({ attribute: false })
-  accessor onSelectTab!: (sessionId: string) => void;
-
-  @property({ attribute: false })
-  accessor onCloseTab!: (sessionId: string) => void;
+  accessor runtime!: AIChatRuntime;
 
   static override styles = css`
     ai-chat-tabs {
@@ -100,6 +97,10 @@ export class AIChatTabs extends WithDisposable(ShadowlessElement) {
       color: ${unsafeCSSVarV2('text/primary')};
     }
 
+    .tab[data-kind='draft'] {
+      padding: 0 10px;
+    }
+
     .tab-title {
       white-space: nowrap;
       overflow: hidden;
@@ -132,19 +133,44 @@ export class AIChatTabs extends WithDisposable(ShadowlessElement) {
   `;
 
   override render() {
-    if (!this.sessions.length && !this.showDraftTab) return html``;
+    const items = this._getRenderItems();
+    if (!items.length) return html``;
     return html`
       <div class="ai-chat-tabs" data-testid="ai-chat-tabs">
         <div class="tabs-scroll" @wheel=${this._handleWheel}>
-          ${this.showDraftTab ? this._renderDraftTab() : null}
           ${repeat(
-            this.sessions,
-            session => session.sessionId,
-            session => this._renderTab(session)
+            items,
+            item => (item.kind === 'draft' ? 'draft' : item.session.sessionId),
+            item =>
+              item.kind === 'draft'
+                ? this._renderDraftTab()
+                : this._renderTab(item.session)
           )}
         </div>
       </div>
     `;
+  }
+
+  private _getRenderItems(): RenderTabItem[] {
+    const snapshot = this.runtimeSnapshot;
+    if (!snapshot) return [];
+    const sessions = new Map(
+      snapshot.sessions.map(session => [session.sessionId, session])
+    );
+    const items: RenderTabItem[] = [];
+    for (const tab of snapshot.tabs) {
+      if (tab.kind === 'draft') {
+        if (snapshot.uiPolicy.showDraftTab) {
+          items.push({ kind: 'draft' });
+        }
+        continue;
+      }
+      const session = sessions.get(tab.sessionId);
+      if (session) {
+        items.push({ kind: 'session', session });
+      }
+    }
+    return items;
   }
 
   private readonly _handleWheel = (e: WheelEvent) => {
@@ -157,7 +183,7 @@ export class AIChatTabs extends WithDisposable(ShadowlessElement) {
   };
 
   private _renderTab(session: CopilotChatHistoryFragment) {
-    const active = session.sessionId === this.activeSessionId;
+    const active = session.sessionId === this.runtimeSnapshot?.activeSessionId;
     const title = deriveTabTitle(session);
     return html`
       <div
@@ -182,10 +208,12 @@ export class AIChatTabs extends WithDisposable(ShadowlessElement) {
   }
 
   private _renderDraftTab() {
+    const active = this.runtimeSnapshot?.activeTabId?.startsWith('draft:');
     return html`
       <div
         class="tab"
-        data-active="true"
+        data-kind="draft"
+        data-active=${active}
         data-testid="ai-chat-draft-tab"
         title=${DEFAULT_TAB_TITLE}
       >
@@ -195,23 +223,27 @@ export class AIChatTabs extends WithDisposable(ShadowlessElement) {
   }
 
   private readonly _handleSelect = (sessionId: string) => {
-    if (sessionId === this.activeSessionId) return;
-    this.onSelectTab(sessionId);
+    if (sessionId === this.runtimeSnapshot?.activeSessionId) return;
+    this.runtime
+      .dispatch({ type: 'openSession', sessionId })
+      .catch(console.error);
   };
 
   private readonly _handleClose = (e: Event, sessionId: string) => {
     e.stopPropagation();
-    this.onCloseTab(sessionId);
+    this.runtime
+      .dispatch({ type: 'closeTab', tabId: sessionId })
+      .catch(console.error);
   };
 
   override updated(changedProps: PropertyValues) {
     super.updated(changedProps);
-    if (
-      (changedProps.has('activeSessionId') || changedProps.has('sessions')) &&
-      this.activeSessionId
-    ) {
+    if (changedProps.has('runtimeSnapshot')) {
+      const activeSessionId = this.runtimeSnapshot?.activeSessionId;
       const activeTab = this.renderRoot.querySelector(
-        `[data-session-id="${this.activeSessionId}"]`
+        activeSessionId
+          ? `[data-session-id="${activeSessionId}"]`
+          : `[data-testid="ai-chat-draft-tab"]`
       );
       activeTab?.scrollIntoView({
         behavior: 'smooth',
