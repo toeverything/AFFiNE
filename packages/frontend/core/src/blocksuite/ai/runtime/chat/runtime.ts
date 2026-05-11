@@ -411,7 +411,7 @@ export class AIChatRuntime {
           attachments: [],
         },
       });
-      await this.refreshLastMessageId(session.sessionId);
+      await this.refreshLastMessageId(session.sessionId).catch(console.error);
       await this.bindActiveSessionToDoc().catch(console.error);
     } catch (error) {
       if (seq !== this.requestSeq) return;
@@ -453,7 +453,9 @@ export class AIChatRuntime {
       }
       if (seq === this.requestSeq) {
         this.commit({ status: 'success' });
-        await this.refreshLastMessageId(this.snapshot.activeSessionId);
+        await this.refreshLastMessageId(this.snapshot.activeSessionId).catch(
+          console.error
+        );
         await this.bindActiveSessionToDoc().catch(console.error);
       }
     } catch (error) {

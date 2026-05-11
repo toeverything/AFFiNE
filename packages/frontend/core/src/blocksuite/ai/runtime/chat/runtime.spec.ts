@@ -497,6 +497,29 @@ describe('AIChatRuntime', () => {
     ]);
   });
 
+  test('send remains successful when refreshing the assistant message id fails', async () => {
+    const error = new Error('history unavailable');
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+    const request = createRequest();
+    (request.histories.ids as ReturnType<typeof vi.fn>).mockRejectedValue(
+      error
+    );
+    const runtime = createRuntime(request);
+    await runtime.dispatch({ type: 'initialize' });
+
+    await runtime.dispatch({ type: 'send', input: 'hello' });
+
+    expect(runtime.getSnapshot().status).toBe('success');
+    expect(runtime.getSnapshot().error).toBeNull();
+    expect(runtime.getSnapshot().messages.at(-1)).toEqual(
+      expect.objectContaining({ role: 'assistant', content: 'hello' })
+    );
+    expect(consoleError).toHaveBeenCalledWith(error);
+    consoleError.mockRestore();
+  });
+
   test('stop marks the active assistant response as complete', async () => {
     let release!: () => void;
     const blockedStream = {
@@ -651,6 +674,53 @@ describe('AIChatRuntime', () => {
       'chat',
       expect.objectContaining({ retry: true, sessionId: 'session-1' })
     );
+  });
+
+  test('retry remains successful when refreshing the assistant message id fails', async () => {
+    const error = new Error('history unavailable');
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+    const request = createRequest({
+      executeAction: vi.fn().mockResolvedValue(stream(['retry'])),
+    });
+    (request.histories.ids as ReturnType<typeof vi.fn>).mockRejectedValue(
+      error
+    );
+    const runtime = createRuntime(request);
+    await runtime.dispatch({
+      type: 'openSessionObject',
+      session: session({
+        messages: [
+          {
+            id: 'user-1',
+            role: 'user',
+            content: 'hello',
+            createdAt: new Date().toISOString(),
+            attachments: null,
+            streamObjects: null,
+          },
+          {
+            id: '',
+            role: 'assistant',
+            content: 'old',
+            createdAt: new Date().toISOString(),
+            attachments: null,
+            streamObjects: null,
+          },
+        ],
+      }),
+    });
+
+    await runtime.dispatch({ type: 'retry', messageId: '' });
+
+    expect(runtime.getSnapshot().status).toBe('success');
+    expect(runtime.getSnapshot().error).toBeNull();
+    expect(runtime.getSnapshot().messages[1]).toEqual(
+      expect.objectContaining({ role: 'assistant', content: 'retry' })
+    );
+    expect(consoleError).toHaveBeenCalledWith(error);
+    consoleError.mockRestore();
   });
 
   test('retry reuses failed initial messages when no session was created', async () => {
