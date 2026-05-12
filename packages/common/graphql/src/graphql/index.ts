@@ -3126,10 +3126,6 @@ export const getWorkspaceConfigQuery = {
     enableSharing
     enableUrlPreview
     enableDocEmbedding
-    inviteLink {
-      link
-      expireTime
-    }
   }
 }`,
 };
@@ -3192,6 +3188,19 @@ export const acceptInviteByInviteIdMutation = {
   op: 'acceptInviteByInviteId',
   query: `mutation acceptInviteByInviteId($workspaceId: String!, $inviteId: String!) {
   acceptInviteById(workspaceId: $workspaceId, inviteId: $inviteId)
+}`,
+};
+
+export const getWorkspaceInviteLinkQuery = {
+  id: 'getWorkspaceInviteLinkQuery' as const,
+  op: 'getWorkspaceInviteLink',
+  query: `query getWorkspaceInviteLink($id: String!) {
+  workspace(id: $id) {
+    inviteLink {
+      link
+      expireTime
+    }
+  }
 }`,
 };
 

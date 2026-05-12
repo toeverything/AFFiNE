@@ -52,7 +52,6 @@ export class WorkspaceShareSetting extends Entity {
             this.enableAi$.next(value.enableAi);
             this.enableSharing$.next(value.enableSharing);
             this.enableUrlPreview$.next(value.enableUrlPreview);
-            this.inviteLink$.next(value.inviteLink);
           }
         }),
         catchErrorInto(this.error$, error => {
@@ -60,6 +59,22 @@ export class WorkspaceShareSetting extends Entity {
         }),
         onStart(() => this.isLoading$.setValue(true)),
         onComplete(() => this.isLoading$.setValue(false))
+      );
+    })
+  );
+
+  revalidateInviteLink = effect(
+    exhaustMap(() => {
+      return fromPromise(signal =>
+        this.store.fetchInviteLink(this.workspaceService.workspace.id, signal)
+      ).pipe(
+        smartRetry(),
+        tap(value => {
+          this.inviteLink$.next(value);
+        }),
+        catchErrorInto(this.error$, error => {
+          logger.error('Failed to fetch workspace invite link', error);
+        })
       );
     })
   );
@@ -95,5 +110,6 @@ export class WorkspaceShareSetting extends Entity {
 
   override dispose(): void {
     this.revalidate.unsubscribe();
+    this.revalidateInviteLink.unsubscribe();
   }
 }

@@ -8,13 +8,13 @@ import {
   realtimeTranscriptTaskRoom,
   registerRealtimeLiveQuery,
 } from '../../../core/realtime';
-import { CopilotTranscriptionService } from './service';
+import { CopilotTranscriptionReader } from './reader';
 
 @Injectable()
 export class CopilotTranscriptRealtimeProvider implements OnModuleInit {
   constructor(
     private readonly ac: AccessController,
-    private readonly transcript: CopilotTranscriptionService,
+    private readonly transcript: CopilotTranscriptionReader,
     @Optional() private readonly registry?: RealtimeRegistry
   ) {}
 

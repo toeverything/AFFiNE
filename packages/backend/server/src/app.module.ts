@@ -55,7 +55,7 @@ import { Env } from './env';
 import { ModelsModule } from './models';
 import { CalendarModule } from './plugins/calendar';
 import { CaptchaModule } from './plugins/captcha';
-import { CopilotModule } from './plugins/copilot';
+import { CopilotModule, CopilotRealtimeModule } from './plugins/copilot';
 import { CustomerIoModule } from './plugins/customerio';
 import { GCloudModule } from './plugins/gcloud';
 import { IndexerModule } from './plugins/indexer';
@@ -185,7 +185,8 @@ export function buildAppModule(env: Env) {
     .useIf(
       () => env.flavors.sync || env.flavors.front,
       SyncModule,
-      TelemetryModule
+      TelemetryModule,
+      CopilotRealtimeModule
     )
     // graphql server only
     .useIf(

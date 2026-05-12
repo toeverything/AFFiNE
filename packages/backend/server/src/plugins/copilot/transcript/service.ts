@@ -20,13 +20,13 @@ import { CopilotProviderType } from '../providers/types';
 import { ActionRuntimeBridge } from '../runtime/action-runtime-bridge';
 import { TaskPolicy } from '../runtime/task-policy';
 import { CopilotStorage } from '../storage';
+import { taskToJob, type TranscriptionJob } from './job';
 import {
   TranscriptActionResultContract,
   TranscriptPayloadSchema,
 } from './schema';
 import type {
   AudioBlobInfos,
-  TranscriptionPayload,
   TranscriptionPayloadV2,
   TranscriptionSubmitInput,
 } from './types';
@@ -35,27 +35,6 @@ import { readStream } from './utils';
 const TRANSCRIPT_ACTION_ID = 'transcript.audio.gemini';
 const TRANSCRIPT_ACTION_VERSION = 'v1';
 const TRANSCRIPT_STRATEGY = 'gemini';
-
-export type TranscriptionJob = {
-  id: string;
-  status: AiJobStatus;
-  infos?: AudioBlobInfos;
-  transcription?: TranscriptionPayload;
-};
-
-function taskStatusToPublicStatus(status: string): AiJobStatus {
-  switch (status) {
-    case 'pending':
-      return AiJobStatus.pending;
-    case 'running':
-      return AiJobStatus.running;
-    case 'ready':
-    case 'settled':
-      return AiJobStatus.finished;
-    default:
-      return AiJobStatus.failed;
-  }
-}
 
 @Injectable()
 export class CopilotTranscriptionService {
@@ -83,33 +62,6 @@ export class CopilotTranscriptionService {
       version: 'transcript-result-v1',
       strategy: TRANSCRIPT_STRATEGY,
     };
-  }
-
-  private taskToJob(
-    task: {
-      id: string;
-      status: string;
-      protectedResult: unknown;
-    } | null,
-    mapStatus: (status: string) => AiJobStatus = taskStatusToPublicStatus
-  ): TranscriptionJob | null {
-    if (!task) {
-      return null;
-    }
-
-    const status = mapStatus(task.status);
-    const ret: TranscriptionJob = {
-      id: task.id,
-      status,
-    };
-    if (task.protectedResult) {
-      const parsed = TranscriptPayloadSchema.safeParse(task.protectedResult);
-      ret.infos = parsed.success ? (parsed.data.infos ?? []) : [];
-      if (task.status === 'settled' && parsed.success) {
-        ret.transcription = parsed.data;
-      }
-    }
-    return ret;
   }
 
   private async resolveTranscriptStrategy(userId: string, strategy?: string) {
@@ -327,7 +279,7 @@ export class CopilotTranscriptionService {
     }
 
     if (task.status === 'settled') {
-      return this.taskToJob(task);
+      return taskToJob(task);
     }
 
     await this.access?.assertQuotaOrByok({
@@ -337,7 +289,7 @@ export class CopilotTranscriptionService {
     });
 
     const settled = await this.models.copilotTranscriptTask.settle(task.id);
-    return this.taskToJob(settled);
+    return taskToJob(settled);
   }
 
   async queryTask(
@@ -352,10 +304,7 @@ export class CopilotTranscriptionService {
       taskId,
       blobId
     );
-    if (task) {
-      return this.taskToJob(task);
-    }
-    return null;
+    return taskToJob(task);
   }
 
   @OnJob('copilot.transcript.task.submit')

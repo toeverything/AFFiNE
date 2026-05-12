@@ -23,8 +23,9 @@ import {
 import { CurrentUser } from '../../../core/auth';
 import { AccessController } from '../../../core/permission';
 import { CopilotType } from '../resolver';
+import type { TranscriptionJob } from './job';
 import { buildLegacyProjection } from './projection';
-import { CopilotTranscriptionService, TranscriptionJob } from './service';
+import { CopilotTranscriptionService } from './service';
 import type {
   AudioSliceManifestItem,
   MeetingActionItem,

@@ -7,7 +7,7 @@ public class GetWorkspaceConfigQuery: GraphQLQuery {
   public static let operationName: String = "getWorkspaceConfig"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"query getWorkspaceConfig($id: String!) { workspace(id: $id) { __typename enableAi enableSharing enableUrlPreview enableDocEmbedding inviteLink { __typename link expireTime } } }"#
+      #"query getWorkspaceConfig($id: String!) { workspace(id: $id) { __typename enableAi enableSharing enableUrlPreview enableDocEmbedding } }"#
     ))
 
   public var id: String
@@ -47,7 +47,6 @@ public class GetWorkspaceConfigQuery: GraphQLQuery {
         .field("enableSharing", Bool.self),
         .field("enableUrlPreview", Bool.self),
         .field("enableDocEmbedding", Bool.self),
-        .field("inviteLink", InviteLink?.self),
       ] }
       public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
         GetWorkspaceConfigQuery.Data.Workspace.self
@@ -61,31 +60,6 @@ public class GetWorkspaceConfigQuery: GraphQLQuery {
       public var enableUrlPreview: Bool { __data["enableUrlPreview"] }
       /// Enable doc embedding
       public var enableDocEmbedding: Bool { __data["enableDocEmbedding"] }
-      /// invite link for workspace
-      public var inviteLink: InviteLink? { __data["inviteLink"] }
-
-      /// Workspace.InviteLink
-      ///
-      /// Parent Type: `InviteLink`
-      public struct InviteLink: AffineGraphQL.SelectionSet {
-        public let __data: DataDict
-        public init(_dataDict: DataDict) { __data = _dataDict }
-
-        public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.InviteLink }
-        public static var __selections: [ApolloAPI.Selection] { [
-          .field("__typename", String.self),
-          .field("link", String.self),
-          .field("expireTime", AffineGraphQL.DateTime.self),
-        ] }
-        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
-          GetWorkspaceConfigQuery.Data.Workspace.InviteLink.self
-        ] }
-
-        /// Invite link
-        public var link: String { __data["link"] }
-        /// Invite link expire time
-        public var expireTime: AffineGraphQL.DateTime { __data["expireTime"] }
-      }
     }
   }
 }

@@ -1,6 +1,7 @@
 import type { WorkspaceServerService } from '@affine/core/modules/cloud';
 import {
   getWorkspaceConfigQuery,
+  getWorkspaceInviteLinkQuery,
   setEnableAiMutation,
   setEnableSharingMutation,
   setEnableUrlPreviewMutation,
@@ -26,6 +27,22 @@ export class WorkspaceShareSettingStore extends Store {
       },
     });
     return data.workspace;
+  }
+
+  async fetchInviteLink(workspaceId: string, signal?: AbortSignal) {
+    if (!this.workspaceServerService.server) {
+      throw new Error('No Server');
+    }
+    const data = await this.workspaceServerService.server.gql({
+      query: getWorkspaceInviteLinkQuery,
+      variables: {
+        id: workspaceId,
+      },
+      context: {
+        signal,
+      },
+    });
+    return data.workspace.inviteLink;
   }
 
   async updateWorkspaceEnableAi(

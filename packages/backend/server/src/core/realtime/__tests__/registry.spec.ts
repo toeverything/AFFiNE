@@ -2,7 +2,10 @@ import { getRealtimeInputKey } from '@affine/realtime';
 import test from 'ava';
 import { z } from 'zod';
 
+import type { CopilotTranscriptionReader } from '../../../plugins/copilot/transcript';
+import { CopilotTranscriptRealtimeProvider } from '../../../plugins/copilot/transcript';
 import type { CurrentUser } from '../../auth';
+import type { AccessController } from '../../permission';
 import { RealtimeGateway } from '../gateway';
 import {
   realtimeCommentRoom,
@@ -189,6 +192,61 @@ test('registerRealtimeLiveQuery registers paired request and topic handlers', as
     registry.getTopic('notification.count.changed').room(user, {}),
     'user:u1:notification'
   );
+});
+
+test('copilot transcript realtime provider registers task live query handlers', async t => {
+  const registry = new RealtimeRegistry();
+  const assertions: unknown[] = [];
+  const ac = {
+    user(userId: string) {
+      return {
+        workspace(workspaceId: string) {
+          return {
+            allowLocal() {
+              return this;
+            },
+            async assert(action: string) {
+              assertions.push({ userId, workspaceId, action });
+            },
+          };
+        },
+      };
+    },
+  } as unknown as AccessController;
+  const transcript = {
+    async queryTask(
+      userId: string,
+      workspaceId: string,
+      taskId?: string,
+      blobId?: string
+    ) {
+      return { id: taskId ?? blobId, status: 'finished', userId, workspaceId };
+    },
+  } as unknown as CopilotTranscriptionReader;
+
+  new CopilotTranscriptRealtimeProvider(
+    ac,
+    transcript,
+    registry
+  ).onModuleInit();
+
+  t.deepEqual(
+    await registry.getRequest('copilot.transcript.task.get').handle(user, {
+      workspaceId: 'space',
+      taskId: 'task',
+    }),
+    {
+      task: {
+        id: 'task',
+        status: 'finished',
+        userId: 'u1',
+        workspaceId: 'space',
+      },
+    }
+  );
+  t.deepEqual(assertions, [
+    { userId: 'u1', workspaceId: 'space', action: 'Workspace.Copilot' },
+  ]);
 });
 
 test('publisher emits realtime event with shared input key', t => {

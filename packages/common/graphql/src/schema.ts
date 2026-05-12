@@ -7794,11 +7794,6 @@ export type GetWorkspaceConfigQuery = {
     enableSharing: boolean;
     enableUrlPreview: boolean;
     enableDocEmbedding: boolean;
-    inviteLink: {
-      __typename?: 'InviteLink';
-      link: string;
-      expireTime: string;
-    } | null;
   };
 };
 
@@ -7865,6 +7860,22 @@ export type AcceptInviteByInviteIdMutationVariables = Exact<{
 export type AcceptInviteByInviteIdMutation = {
   __typename?: 'Mutation';
   acceptInviteById: boolean;
+};
+
+export type GetWorkspaceInviteLinkQueryVariables = Exact<{
+  id: Scalars['String']['input'];
+}>;
+
+export type GetWorkspaceInviteLinkQuery = {
+  __typename?: 'Query';
+  workspace: {
+    __typename?: 'WorkspaceType';
+    inviteLink: {
+      __typename?: 'InviteLink';
+      link: string;
+      expireTime: string;
+    } | null;
+  };
 };
 
 export type CreateInviteLinkMutationVariables = Exact<{
@@ -8417,6 +8428,11 @@ export type Queries =
       name: 'getWorkspaceConfigQuery';
       variables: GetWorkspaceConfigQueryVariables;
       response: GetWorkspaceConfigQuery;
+    }
+  | {
+      name: 'getWorkspaceInviteLinkQuery';
+      variables: GetWorkspaceInviteLinkQueryVariables;
+      response: GetWorkspaceInviteLinkQuery;
     }
   | {
       name: 'workspaceInvoicesQuery';

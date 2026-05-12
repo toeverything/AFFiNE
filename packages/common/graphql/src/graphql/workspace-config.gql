@@ -4,9 +4,5 @@ query getWorkspaceConfig($id: String!) {
     enableSharing
     enableUrlPreview
     enableDocEmbedding
-    inviteLink {
-      link
-      expireTime
-    }
   }
 }

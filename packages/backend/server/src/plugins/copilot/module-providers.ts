@@ -54,6 +54,7 @@ import { TurnOrchestrator } from './runtime/turn-orchestrator';
 import { ChatSessionService } from './session';
 import { CopilotStorage } from './storage';
 import {
+  CopilotTranscriptionReader,
   CopilotTranscriptionResolver,
   CopilotTranscriptionService,
   CopilotTranscriptRealtimeProvider,
@@ -113,10 +114,15 @@ export const COPILOT_CONTEXT_PROVIDERS = [
   CopilotEmbeddingRealtimeProvider,
 ];
 
+export const COPILOT_TRANSCRIPT_REALTIME_PROVIDERS = [
+  CopilotTranscriptionReader,
+  CopilotTranscriptRealtimeProvider,
+];
+
 export const COPILOT_TRANSCRIPT_PROVIDERS = [
   CopilotTranscriptionService,
   CopilotTranscriptionResolver,
-  CopilotTranscriptRealtimeProvider,
+  ...COPILOT_TRANSCRIPT_REALTIME_PROVIDERS,
 ];
 
 export const COPILOT_WORKSPACE_PROVIDERS = [
