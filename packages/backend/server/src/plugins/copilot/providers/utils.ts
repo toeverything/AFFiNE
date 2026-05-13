@@ -403,18 +403,22 @@ export function getVertexAnthropicBaseUrl(options: VertexProviderConfig) {
   return `https://${location}-aiplatform.googleapis.com/v1/projects/${project}/locations/${location}/publishers/anthropic`;
 }
 
+export function getVertexGoogleBaseUrl(options: VertexProviderConfig) {
+  const normalizedBaseUrl = normalizeUrl(options.baseURL);
+  if (normalizedBaseUrl) return normalizedBaseUrl;
+  const { location, project } = options;
+  if (!location || !project) return undefined;
+  return `https://${location}-aiplatform.googleapis.com/v1/projects/${project}/locations/${location}/publishers/google`;
+}
+
 export async function getGoogleAuth(
   options: VertexProviderConfig,
   publisher: 'anthropic' | 'google'
 ) {
   function getBaseUrl() {
-    const normalizedBaseUrl = normalizeUrl(options.baseURL);
-    if (normalizedBaseUrl) return normalizedBaseUrl;
-    const { location } = options;
-    if (location) {
-      return `https://${location}-aiplatform.googleapis.com/v1beta1/publishers/${publisher}`;
-    }
-    return undefined;
+    return publisher === 'google'
+      ? getVertexGoogleBaseUrl(options)
+      : getVertexAnthropicBaseUrl(options);
   }
 
   async function generateAuthToken() {

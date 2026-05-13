@@ -112,6 +112,21 @@ mod tests {
   }
 
   #[test]
+  fn should_resolve_gemini_embedding_2() {
+    let response = llm_resolve_model_registry_variant(ModelRegistryResolveRequest {
+      backend_kind: Some("gemini_api".to_string()),
+      model_id: "gemini-embedding-2".to_string(),
+    })
+    .unwrap();
+    let variant = response.variant.unwrap();
+
+    assert_eq!(variant.raw_model_id, "gemini-embedding-2");
+    assert_eq!(variant.protocol.as_deref(), Some("gemini"));
+    assert_eq!(variant.request_layer.as_deref(), Some("gemini_api"));
+    assert_eq!(variant.display_name.as_deref(), Some("Gemini Embedding 2"));
+  }
+
+  #[test]
   fn should_keep_same_raw_id_as_two_backend_variants() {
     let api_variant = llm_resolve_model_registry_variant(ModelRegistryResolveRequest {
       backend_kind: Some("gemini_api".to_string()),
