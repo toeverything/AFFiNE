@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, Optional } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { AiJobStatus } from '@prisma/client';
 
 import {
@@ -10,7 +10,7 @@ import {
   sniffMime,
 } from '../../../base';
 import {
-  type RealtimePublisher,
+  RealtimePublisher,
   realtimeTranscriptTaskRoom,
 } from '../../../core/realtime';
 import { Models } from '../../../models';
@@ -45,8 +45,8 @@ export class CopilotTranscriptionService {
     private readonly tasks: TaskPolicy,
     private readonly prompts: PromptService,
     private readonly actionBridge: ActionRuntimeBridge,
-    @Optional() private readonly access?: CopilotAccessPolicy,
-    @Optional() private readonly realtime?: RealtimePublisher
+    private readonly access: CopilotAccessPolicy,
+    private readonly realtime: RealtimePublisher
   ) {}
 
   private parseTaskPayload(payload: unknown): TranscriptionPayloadV2 {
@@ -180,7 +180,7 @@ export class CopilotTranscriptionService {
       throw new CopilotTranscriptionJobExists();
     }
 
-    await this.access?.assertQuotaOrByok({
+    await this.access.assertQuotaOrByok({
       userId,
       workspaceId,
       featureKind: 'transcript',
@@ -234,7 +234,7 @@ export class CopilotTranscriptionService {
       );
     }
 
-    await this.access?.assertQuotaOrByok({
+    await this.access.assertQuotaOrByok({
       userId,
       workspaceId,
       featureKind: 'transcript',
@@ -282,7 +282,7 @@ export class CopilotTranscriptionService {
       return taskToJob(task);
     }
 
-    await this.access?.assertQuotaOrByok({
+    await this.access.assertQuotaOrByok({
       userId,
       workspaceId,
       featureKind: 'transcript',
@@ -412,7 +412,7 @@ export class CopilotTranscriptionService {
     status: AiJobStatus,
     error?: string
   ) {
-    this.realtime?.publish(
+    this.realtime.publish(
       'copilot.transcript.task.changed',
       { workspaceId, taskId },
       { taskId, status, error },

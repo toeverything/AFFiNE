@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto';
 
-import { Optional } from '@nestjs/common';
 import {
   Args,
   Mutation,
@@ -27,7 +26,7 @@ import { Comment, DocMode, Models, Reply } from '../../models';
 import { CurrentUser } from '../auth/session';
 import { ServerFeature, ServerService } from '../config';
 import { AccessController, DocAction } from '../permission';
-import type { RealtimePublisher } from '../realtime';
+import { RealtimePublisher } from '../realtime';
 import { CommentAttachmentStorage } from '../storage';
 import { UserType } from '../user';
 import { WorkspaceType } from '../workspaces';
@@ -60,7 +59,7 @@ export class CommentResolver {
     private readonly queue: JobQueue,
     private readonly models: Models,
     private readonly server: ServerService,
-    @Optional() private readonly realtime?: RealtimePublisher
+    private readonly realtime: RealtimePublisher
   ) {
     // enable comment feature by default
     this.server.enableFeature(ServerFeature.Comment);

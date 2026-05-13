@@ -5,6 +5,8 @@ import { z } from 'zod';
 import type { CopilotTranscriptionReader } from '../../../plugins/copilot/transcript';
 import { CopilotTranscriptRealtimeProvider } from '../../../plugins/copilot/transcript';
 import type { CurrentUser } from '../../auth';
+import { CommentRealtimeProvider } from '../../comment/realtime';
+import { NotificationRealtimeProvider } from '../../notification/realtime';
 import type { AccessController } from '../../permission';
 import { RealtimeGateway } from '../gateway';
 import {
@@ -191,6 +193,26 @@ test('registerRealtimeLiveQuery registers paired request and topic handlers', as
   t.is(
     registry.getTopic('notification.count.changed').room(user, {}),
     'user:u1:notification'
+  );
+});
+
+test('realtime providers expose runtime injection metadata for registry dependencies', t => {
+  t.true(
+    Reflect.getMetadata(
+      'design:paramtypes',
+      NotificationRealtimeProvider
+    ).includes(RealtimeRegistry)
+  );
+  t.true(
+    Reflect.getMetadata('design:paramtypes', CommentRealtimeProvider).includes(
+      RealtimeRegistry
+    )
+  );
+  t.true(
+    Reflect.getMetadata(
+      'design:paramtypes',
+      CopilotTranscriptRealtimeProvider
+    ).includes(RealtimeRegistry)
   );
 });
 

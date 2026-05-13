@@ -1,12 +1,12 @@
-import { Injectable, OnModuleInit, Optional } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { z } from 'zod';
 
 import { decodeWithJson, encodeWithJson } from '../../base/graphql';
 import { AccessController } from '../permission';
 import {
   realtimeCommentRoom,
-  type RealtimePublisher,
-  type RealtimeRegistry,
+  RealtimePublisher,
+  RealtimeRegistry,
   registerRealtimeLiveQuery,
 } from '../realtime';
 import type { CommentCursor } from './resolver';
@@ -21,7 +21,7 @@ export class CommentRealtimeProvider implements OnModuleInit {
   constructor(
     private readonly service: CommentService,
     private readonly ac: AccessController,
-    @Optional() private readonly registry?: RealtimeRegistry
+    private readonly registry: RealtimeRegistry
   ) {}
 
   onModuleInit() {

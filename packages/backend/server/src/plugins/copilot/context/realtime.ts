@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit, Optional } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { z } from 'zod';
 
 import { OnEvent } from '../../../base';
@@ -22,8 +22,8 @@ export class CopilotEmbeddingRealtimeProvider implements OnModuleInit {
     private readonly ac: AccessController,
     private readonly models: Models,
     private readonly context: CopilotContextService,
-    @Optional() private readonly registry?: RealtimeRegistry,
-    @Optional() private readonly publisher?: RealtimePublisher
+    private readonly registry: RealtimeRegistry,
+    private readonly publisher: RealtimePublisher
   ) {}
 
   onModuleInit() {

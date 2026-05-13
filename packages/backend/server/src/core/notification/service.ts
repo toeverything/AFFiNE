@@ -1,4 +1,4 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
 import { NotificationNotFound, PaginationInput, URLHelper } from '../../base';
@@ -17,8 +17,7 @@ import {
 } from '../../models';
 import { DocReader } from '../doc';
 import { Mailer } from '../mail';
-import type { RealtimePublisher } from '../realtime';
-import { realtimeNotificationRoom } from '../realtime';
+import { realtimeNotificationRoom, RealtimePublisher } from '../realtime';
 import { generateDocPath } from '../utils/doc';
 import {
   generateWorkspaceSettingsPath,
@@ -34,7 +33,7 @@ export class NotificationService {
     private readonly docReader: DocReader,
     private readonly mailer: Mailer,
     private readonly url: URLHelper,
-    @Optional() private readonly realtime?: RealtimePublisher
+    private readonly realtime: RealtimePublisher
   ) {}
 
   async cleanExpiredNotifications() {
