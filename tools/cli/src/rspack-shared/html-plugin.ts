@@ -3,8 +3,10 @@ import { readFileSync } from 'node:fs';
 
 import { Path, ProjectRoot } from '@affine-tools/utils/path';
 import { Repository } from '@napi-rs/simple-git';
-import HTMLPlugin from 'html-webpack-plugin';
+import { HtmlRspackPlugin, type HtmlRspackPluginOptions } from '@rspack/core';
 import { once } from 'lodash-es';
+
+type HtmlRspackPluginInstance = InstanceType<typeof HtmlRspackPlugin>;
 
 type PluginLike = {
   apply: (compiler: CompilerLike) => void;
@@ -109,45 +111,44 @@ function getHTMLPluginOptions(BUILD_CONFIG: BUILD_CONFIG_TYPE) {
     templateParameters: templateParams,
     chunks: ['app'],
     scriptLoading: 'blocking',
-  } satisfies HTMLPlugin.Options;
+  } satisfies HtmlRspackPluginOptions;
 }
 
 const AssetsManifestPlugin = {
   apply(compiler: CompilerLike) {
     compiler.hooks.compilation.tap('assets-manifest-plugin', compilation => {
-      HTMLPlugin.getHooks(compilation).beforeAssetTagGeneration.tap(
-        'assets-manifest-plugin',
-        arg => {
-          if (!compilation.getAsset('assets-manifest.json')) {
-            compilation.emitAsset(
-              `assets-manifest.json`,
-              createRawSource(
-                compiler,
-                JSON.stringify(
-                  {
-                    ...arg.assets,
-                    js: arg.assets.js.map(file =>
-                      file.substring(arg.assets.publicPath.length)
-                    ),
-                    css: arg.assets.css.map(file =>
-                      file.substring(arg.assets.publicPath.length)
-                    ),
-                    gitHash: gitShortHash(),
-                    description: DESCRIPTION,
-                  },
-                  null,
-                  2
-                )
-              ),
-              {
-                immutable: false,
-              }
-            );
-          }
-
-          return arg;
+      HtmlRspackPlugin.getCompilationHooks(
+        compilation
+      ).beforeAssetTagGeneration.tap('assets-manifest-plugin', arg => {
+        if (!compilation.getAsset('assets-manifest.json')) {
+          compilation.emitAsset(
+            `assets-manifest.json`,
+            createRawSource(
+              compiler,
+              JSON.stringify(
+                {
+                  ...arg.assets,
+                  js: arg.assets.js.map(file =>
+                    file.substring(arg.assets.publicPath.length)
+                  ),
+                  css: arg.assets.css.map(file =>
+                    file.substring(arg.assets.publicPath.length)
+                  ),
+                  gitHash: gitShortHash(),
+                  description: DESCRIPTION,
+                },
+                null,
+                2
+              )
+            ),
+            {
+              immutable: false,
+            }
+          );
         }
-      );
+
+        return arg;
+      });
     });
   },
 };
@@ -162,22 +163,21 @@ const GlobalErrorHandlerPlugin = {
     compiler.hooks.compilation.tap(
       'global-error-handler-plugin',
       compilation => {
-        HTMLPlugin.getHooks(compilation).beforeAssetTagGeneration.tap(
-          'global-error-handler-plugin',
-          arg => {
-            if (!compilation.getAsset(globalErrorHandler[0])) {
-              compilation.emitAsset(
-                globalErrorHandler[0],
-                createRawSource(compiler, globalErrorHandler[1])
-              );
-              arg.assets.js.unshift(
-                arg.assets.publicPath + globalErrorHandler[0]
-              );
-            }
-
-            return arg;
+        HtmlRspackPlugin.getCompilationHooks(
+          compilation
+        ).beforeAssetTagGeneration.tap('global-error-handler-plugin', arg => {
+          if (!compilation.getAsset(globalErrorHandler[0])) {
+            compilation.emitAsset(
+              globalErrorHandler[0],
+              createRawSource(compiler, globalErrorHandler[1])
+            );
+            arg.assets.js.unshift(
+              arg.assets.publicPath + globalErrorHandler[0]
+            );
           }
-        );
+
+          return arg;
+        });
       }
     );
   },
@@ -186,7 +186,7 @@ const GlobalErrorHandlerPlugin = {
 const CorsPlugin = {
   apply(compiler: CompilerLike) {
     compiler.hooks.compilation.tap('html-js-cors-plugin', compilation => {
-      HTMLPlugin.getHooks(compilation).alterAssetTags.tap(
+      HtmlRspackPlugin.getCompilationHooks(compilation).alterAssetTags.tap(
         'html-js-cors-plugin',
         options => {
           if (options.publicPath !== '/') {
@@ -207,14 +207,14 @@ const CorsPlugin = {
 export function createHTMLPlugins(
   BUILD_CONFIG: BUILD_CONFIG_TYPE,
   config: CreateHTMLPluginConfig
-): (HTMLPlugin | PluginLike)[] {
+): (HtmlRspackPluginInstance | PluginLike)[] {
   const publicPath = getPublicPath(BUILD_CONFIG);
   const htmlPluginOptions = getHTMLPluginOptions(BUILD_CONFIG);
   const selfhostPublicPath = config.selfhostPublicPath ?? '/';
 
-  const plugins: (HTMLPlugin | PluginLike)[] = [];
+  const plugins: (HtmlRspackPluginInstance | PluginLike)[] = [];
   plugins.push(
-    new HTMLPlugin({
+    new HtmlRspackPlugin({
       ...htmlPluginOptions,
       chunks: ['index'],
       filename: config.filename,
@@ -227,7 +227,7 @@ export function createHTMLPlugins(
 
   if (BUILD_CONFIG.isElectron) {
     plugins.push(
-      new HTMLPlugin({
+      new HtmlRspackPlugin({
         ...htmlPluginOptions,
         chunks: ['shell'],
         filename: 'shell.html',
@@ -236,7 +236,7 @@ export function createHTMLPlugins(
           'env:publicPath': publicPath,
         },
       }),
-      new HTMLPlugin({
+      new HtmlRspackPlugin({
         ...htmlPluginOptions,
         filename: 'popup.html',
         chunks: ['popup'],
@@ -245,7 +245,7 @@ export function createHTMLPlugins(
           'env:publicPath': publicPath,
         },
       }),
-      new HTMLPlugin({
+      new HtmlRspackPlugin({
         ...htmlPluginOptions,
         filename: 'background-worker.html',
         chunks: ['backgroundWorker'],
@@ -271,7 +271,7 @@ export function createHTMLPlugins(
 
   if (config.additionalEntryForSelfhost) {
     plugins.push(
-      new HTMLPlugin({
+      new HtmlRspackPlugin({
         ...htmlPluginOptions,
         chunks: ['index'],
         publicPath: selfhostPublicPath,
