@@ -152,6 +152,104 @@ export const AFFINE_PRO_PUBLIC_KEY = serverNativeModule.AFFINE_PRO_PUBLIC_KEY;
 export const AFFINE_PRO_LICENSE_AES_KEY =
   serverNativeModule.AFFINE_PRO_LICENSE_AES_KEY;
 
+export type PermissionWorkspaceRole = 'external' | 'member' | 'admin' | 'owner';
+export type PermissionDocRole =
+  | 'none'
+  | 'external'
+  | 'reader'
+  | 'commenter'
+  | 'editor'
+  | 'manager'
+  | 'owner';
+
+export type PermissionEvaluationInputV1 = {
+  version: 1;
+  legacyCompatMode?: boolean;
+  subject?: {
+    userId?: string;
+    groupIds?: string[];
+    allowLocal?: boolean;
+  };
+  runtime?: {
+    known?: boolean;
+    stale?: boolean;
+    readonly?: boolean;
+    readonlyReason?: string;
+    sharingEnabled?: boolean;
+    urlPreviewEnabled?: boolean;
+  };
+  workspace?: {
+    role?: PermissionWorkspaceRole | 'collaborator';
+    memberState?: 'active' | 'pending' | 'waiting_review' | 'waiting_seat';
+    public?: boolean;
+    sharingEnabled?: boolean;
+    urlPreviewEnabled?: boolean;
+    local?: boolean;
+  };
+  workspaceActions?: string[];
+  docs?: Array<{
+    docId: string;
+    actions?: string[];
+    explicitUserRole?: PermissionDocRole;
+    groupGrants?: Array<{ groupId: string; role: PermissionDocRole }>;
+    groupGrantsEnabled?: boolean;
+    memberDefaultRole?: PermissionDocRole;
+    publicRole?: 'external';
+    visibility?: 'private' | 'public';
+    sharingEnabled?: boolean;
+    previewEnabled?: boolean;
+  }>;
+};
+
+export type PermissionDecisionV1 = {
+  action: string;
+  allowed: boolean;
+  sources: Array<{
+    type:
+      | 'workspace-member'
+      | 'workspace-policy'
+      | 'workspace-preview-policy'
+      | 'local-workspace'
+      | 'inherited-workspace-role'
+      | 'doc-grant'
+      | 'group-grant'
+      | 'member-default-policy'
+      | 'public-policy'
+      | 'doc-preview-policy';
+    role?: string;
+  }>;
+  restrictions: Array<{
+    type: 'runtime_unknown' | 'runtime_stale' | 'readonly' | 'sharing-disabled';
+    reason?: string;
+  }>;
+};
+
+export type PermissionEvaluationOutputV1 = {
+  version: 1;
+  workspace: {
+    resourceOwnerRole?: PermissionWorkspaceRole;
+    effectiveRole?: PermissionWorkspaceRole;
+    decisions: PermissionDecisionV1[];
+  };
+  docs: Array<{
+    docId: string;
+    resourceOwnerRole?: 'owner';
+    effectiveRole?: PermissionDocRole;
+    decisions: PermissionDecisionV1[];
+  }>;
+};
+
+export const evaluatePermissionV1 = (
+  input: PermissionEvaluationInputV1
+): PermissionEvaluationOutputV1 =>
+  serverNativeModule.evaluatePermissionV1(input);
+
+export const permissionActionRoleMatrixV1 = (): unknown =>
+  serverNativeModule.permissionActionRoleMatrixV1();
+
+export const permissionActionRoleMatrixV1Json =
+  serverNativeModule.permissionActionRoleMatrixV1Json;
+
 // MCP write tools exports
 export const createDocWithMarkdown = serverNativeModule.createDocWithMarkdown;
 export const updateDocWithMarkdown = serverNativeModule.updateDocWithMarkdown;

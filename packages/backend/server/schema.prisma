@@ -28,6 +28,9 @@ model User {
   features                    UserFeature[]
   userStripeCustomer          UserStripeCustomer?
   workspaces                  WorkspaceUserRole[]
+  workspaceMembers            WorkspaceMember[]
+  workspaceInvitations        WorkspaceInvitation[]       @relation("workspace_invitation_invitee")
+  createdWorkspaceInvitations WorkspaceInvitation[]       @relation("workspace_invitation_inviter")
   // Invite others to join the workspace
   WorkspaceInvitations        WorkspaceUserRole[]         @relation("inviter")
   docPermissions              WorkspaceDocUserRole[]
@@ -157,10 +160,134 @@ model Workspace {
   workspaceAdminStatsDaily   WorkspaceAdminStatsDaily[]
   workspaceDocViewDaily      WorkspaceDocViewDaily[]
   workspaceMemberLastAccess  WorkspaceMemberLastAccess[]
+  runtimeState               WorkspaceRuntimeState?
+  accessPolicy               WorkspaceAccessPolicy?
+  projectedMembers           WorkspaceMember[]
+  projectedInvitations       WorkspaceInvitation[]
+  docAccessPolicies          DocAccessPolicy[]
+  docGrants                  DocGrant[]
 
   @@index([lastCheckEmbeddings])
   @@index([createdAt])
   @@map("workspaces")
+}
+
+model WorkspaceRuntimeState {
+  workspaceId        String    @id @map("workspace_id") @db.VarChar
+  known              Boolean   @default(false)
+  readonly           Boolean   @default(false)
+  readonlyReasons    String[]  @default([]) @map("readonly_reasons")
+  lastReconciledAt   DateTime? @map("last_reconciled_at") @db.Timestamptz(3)
+  staleAfter         DateTime? @map("stale_after") @db.Timestamptz(3)
+  updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("workspace_runtime_states")
+}
+
+model WorkspaceMember {
+  id                 String   @id @default(uuid()) @db.VarChar
+  workspaceId        String   @map("workspace_id") @db.VarChar
+  userId             String   @map("user_id") @db.VarChar
+  role               String   @db.Text
+  state              String   @default("active") @db.Text
+  source             String   @default("legacy") @db.Text
+  legacyPermissionId String?  @map("legacy_permission_id") @db.VarChar
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, state])
+  @@index([workspaceId, role, state])
+  @@unique([workspaceId, userId, state])
+  @@map("workspace_members")
+}
+
+model WorkspaceInvitation {
+  id                 String   @id @default(uuid()) @db.VarChar
+  workspaceId        String   @map("workspace_id") @db.VarChar
+  inviteeUserId      String?  @map("invitee_user_id") @db.VarChar
+  normalizedEmail    String?  @map("normalized_email") @db.VarChar
+  inviterUserId      String?  @map("inviter_user_id") @db.VarChar
+  requestedRole      String   @default("member") @map("requested_role") @db.Text
+  status             String   @db.Text
+  kind               String   @default("email") @db.Text
+  tokenHash          String?  @unique(map: "workspace_invitations_token_hash_key") @map("token_hash") @db.Text
+  legacyPermissionId String?  @map("legacy_permission_id") @db.VarChar
+  expiresAt          DateTime? @map("expires_at") @db.Timestamptz(3)
+  acceptedAt         DateTime? @map("accepted_at") @db.Timestamptz(3)
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  inviteeUser User?     @relation("workspace_invitation_invitee", fields: [inviteeUserId], references: [id], onDelete: SetNull)
+  inviter     User?     @relation("workspace_invitation_inviter", fields: [inviterUserId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId, status])
+  @@index([inviteeUserId, status])
+  @@index([workspaceId, normalizedEmail, status])
+  @@unique([workspaceId, inviteeUserId])
+  @@map("workspace_invitations")
+}
+
+model WorkspaceAccessPolicy {
+  workspaceId          String   @id @map("workspace_id") @db.VarChar
+  visibility           String   @default("private") @db.Text
+  sharingEnabled       Boolean  @default(true) @map("sharing_enabled")
+  urlPreviewEnabled    Boolean  @default(false) @map("url_preview_enabled")
+  memberDefaultDocRole String   @default("manager") @map("member_default_doc_role") @db.Text
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt            DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([visibility])
+  @@index([urlPreviewEnabled, sharingEnabled])
+  @@map("workspace_access_policies")
+}
+
+model DocAccessPolicy {
+  workspaceId       String    @map("workspace_id") @db.VarChar
+  docId             String    @map("doc_id") @db.VarChar
+  visibility        String    @default("private") @db.Text
+  publicRole        String?   @map("public_role") @db.Text
+  memberDefaultRole String?   @map("member_default_role") @db.Text
+  urlPreviewEnabled Boolean   @default(false) @map("url_preview_enabled")
+  publishedAt       DateTime? @map("published_at") @db.Timestamptz(3)
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@id([workspaceId, docId])
+  @@index([workspaceId, docId])
+  @@map("doc_access_policies")
+}
+
+model DocGrant {
+  workspaceId   String   @map("workspace_id") @db.VarChar
+  docId         String   @map("doc_id") @db.VarChar
+  principalType String   @map("principal_type") @db.Text
+  principalId   String   @map("principal_id") @db.VarChar
+  role          String   @db.Text
+  grantedBy     String?  @map("granted_by") @db.VarChar
+  legacyWorkspaceId String? @map("legacy_workspace_id") @db.VarChar
+  legacyDocId       String? @map("legacy_doc_id") @db.VarChar
+  legacyUserId      String? @map("legacy_user_id") @db.VarChar
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@id([workspaceId, docId, principalType, principalId])
+  @@unique([legacyWorkspaceId, legacyDocId, legacyUserId])
+  @@index([principalType, principalId, role])
+  @@index([workspaceId, docId, role])
+  @@map("doc_grants")
 }
 
 // Table for workspace page meta data

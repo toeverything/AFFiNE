@@ -169,6 +169,8 @@ export interface Chunk {
  */
 export declare function createDocWithMarkdown(title: string, markdown: string, docId: string): Buffer
 
+export declare function evaluatePermissionV1(input: any): any
+
 export declare function fetchRemoteAttachment(request: RemoteAttachmentFetchRequest): Promise<RemoteAttachmentFetchResponse>
 
 export declare function fromModelName(modelName: string): Tokenizer | null
@@ -474,6 +476,10 @@ export declare function parseDocToMarkdown(docBin: Buffer, docId: string, aiEdit
 export declare function parsePageDoc(docBin: Buffer, maxSummaryLength?: number | undefined | null): NativePageDocContent | null
 
 export declare function parseWorkspaceDoc(docBin: Buffer): NativeWorkspaceDocContent | null
+
+export declare function permissionActionRoleMatrixV1(): any
+
+export declare function permissionActionRoleMatrixV1Json(): string
 
 export declare function processImage(input: Buffer, maxEdge: number, keepExif: boolean): Promise<Buffer>
 
