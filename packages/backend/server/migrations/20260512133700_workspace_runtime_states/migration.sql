@@ -738,7 +738,9 @@ BEGIN
   END IF;
 
   IF NEW.state <> 'active' THEN
-    RAISE EXCEPTION 'Cannot project unsupported workspace member state % for %.%', NEW.state, NEW.workspace_id, NEW.user_id;
+    DELETE FROM workspace_user_permissions
+    WHERE workspace_id = NEW.workspace_id AND user_id = NEW.user_id;
+    RETURN NEW;
   END IF;
 
   legacy_role := affine_permission_new_workspace_role(NEW.role);
@@ -812,7 +814,9 @@ BEGIN
       RETURN OLD;
     END IF;
     DELETE FROM workspace_user_permissions
-    WHERE workspace_id = OLD.workspace_id AND user_id = OLD.invitee_user_id;
+    WHERE workspace_id = OLD.workspace_id
+      AND user_id = OLD.invitee_user_id
+      AND status <> 'Accepted'::"WorkspaceMemberStatus";
     RETURN OLD;
   END IF;
 
@@ -823,7 +827,11 @@ BEGIN
   legacy_status := affine_permission_new_invitation_status(NEW.status);
   legacy_role := CASE WHEN NEW.requested_role = 'admin' THEN 10::SMALLINT ELSE 1::SMALLINT END;
   IF legacy_status IS NULL THEN
-    RAISE EXCEPTION 'Cannot project unsupported invitation status % for %.%', NEW.status, NEW.workspace_id, NEW.invitee_user_id;
+    DELETE FROM workspace_user_permissions
+    WHERE workspace_id = NEW.workspace_id
+      AND user_id = NEW.invitee_user_id
+      AND status <> 'Accepted'::"WorkspaceMemberStatus";
+    RETURN NEW;
   END IF;
 
   DELETE FROM workspace_members
@@ -918,7 +926,21 @@ BEGIN
   END IF;
 
   IF TG_OP = 'DELETE' THEN
-    DELETE FROM workspace_pages
+    legacy_default_role := affine_permission_new_doc_role(
+      COALESCE(
+        (SELECT member_default_doc_role FROM workspace_access_policies WHERE workspace_id = OLD.workspace_id),
+        'manager'
+      )
+    );
+    IF legacy_default_role IS NULL OR legacy_default_role = 99 THEN
+      legacy_default_role := 30::SMALLINT;
+    END IF;
+
+    UPDATE workspace_pages
+    SET
+      public = FALSE,
+      "defaultRole" = legacy_default_role,
+      published_at = NULL
     WHERE workspace_id = OLD.workspace_id AND page_id = OLD.doc_id;
     RETURN OLD;
   END IF;
@@ -975,6 +997,9 @@ BEGIN
   END IF;
 
   IF TG_OP = 'DELETE' THEN
+    IF OLD.principal_type <> 'user' THEN
+      RETURN OLD;
+    END IF;
     DELETE FROM workspace_page_user_permissions
     WHERE workspace_id = OLD.workspace_id
       AND page_id = OLD.doc_id
@@ -983,7 +1008,7 @@ BEGIN
   END IF;
 
   IF NEW.principal_type <> 'user' THEN
-    RAISE EXCEPTION 'Cannot project unsupported doc principal type % for %.%', NEW.principal_type, NEW.workspace_id, NEW.doc_id;
+    RETURN NEW;
   END IF;
 
   legacy_role := affine_permission_new_doc_role(NEW.role);

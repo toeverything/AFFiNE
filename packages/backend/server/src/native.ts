@@ -179,7 +179,7 @@ export type PermissionEvaluationInputV1 = {
     urlPreviewEnabled?: boolean;
   };
   workspace?: {
-    role?: PermissionWorkspaceRole | 'collaborator';
+    role?: PermissionWorkspaceRole;
     memberState?: 'active' | 'pending' | 'waiting_review' | 'waiting_seat';
     public?: boolean;
     sharingEnabled?: boolean;

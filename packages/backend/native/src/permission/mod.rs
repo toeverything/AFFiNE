@@ -3,12 +3,11 @@ mod candidates;
 mod evaluator;
 mod types;
 
+use actions::role_matrix_json;
+pub use evaluator::evaluate_permission;
 use napi::{Error as NapiError, Result, Status};
 use napi_derive::napi;
 use serde_json::Value;
-
-use actions::role_matrix_json;
-pub use evaluator::evaluate_permission;
 pub use types::*;
 
 #[napi]

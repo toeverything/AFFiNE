@@ -2,19 +2,21 @@ use std::collections::BTreeSet;
 
 use serde::Serialize;
 
-use super::actions::{
-  DOC_PREVIEW_ACTION, WORKSPACE_PREVIEW_ACTION, doc_actions_for_role, is_readonly_restricted_action, is_write_action,
-  workspace_actions_for_role,
-};
-use super::types::{
-  Candidate, DocRole, PermissionDecisionRestrictionV1, PermissionDecisionSourceV1, PermissionDecisionV1,
-  PermissionDocInputV1, PermissionEvaluationInputV1, WorkspaceRole,
+use super::{
+  actions::{
+    DOC_PREVIEW_ACTION, WORKSPACE_PREVIEW_ACTION, doc_actions_for_role, is_readonly_restricted_action, is_write_action,
+    workspace_actions_for_role,
+  },
+  types::{
+    Candidate, DocRole, PermissionDecisionRestrictionV1, PermissionDecisionSourceV1, PermissionDecisionV1,
+    PermissionDocInputV1, PermissionEvaluationInputV1, WorkspaceRole,
+  },
 };
 
 pub(super) fn parse_workspace_role(role: &str) -> anyhow::Result<WorkspaceRole> {
   match role {
     "external" => Ok(WorkspaceRole::External),
-    "member" | "collaborator" => Ok(WorkspaceRole::Member),
+    "member" => Ok(WorkspaceRole::Member),
     "admin" => Ok(WorkspaceRole::Admin),
     "owner" => Ok(WorkspaceRole::Owner),
     _ => anyhow::bail!("unknown workspace role: {role}"),
@@ -258,28 +260,30 @@ pub(super) fn doc_candidates(
     }
   }
 
-  if matches!(active_workspace_role, Some(role) if role != WorkspaceRole::External) && explicit_user_role.is_none() {
-    if let Some(role) = doc.member_default_role.as_deref() {
-      let role = parse_doc_role(role)?;
-      candidates.push(Candidate {
-        source_type: "member-default-policy",
-        role: role_name(role),
-        actions: doc_actions_for_role(role),
-        owner: false,
-      });
-    }
+  if matches!(active_workspace_role, Some(role) if role != WorkspaceRole::External)
+    && explicit_user_role.is_none()
+    && let Some(role) = doc.member_default_role.as_deref()
+  {
+    let role = parse_doc_role(role)?;
+    candidates.push(Candidate {
+      source_type: "member-default-policy",
+      role: role_name(role),
+      actions: doc_actions_for_role(role),
+      owner: false,
+    });
   }
 
-  if sharing && doc.visibility.as_deref() == Some("public") {
-    if let Some(role) = doc.public_role.as_deref() {
-      let role = parse_doc_role(role)?;
-      candidates.push(Candidate {
-        source_type: "public-policy",
-        role: role_name(role),
-        actions: doc_actions_for_role(role),
-        owner: false,
-      });
-    }
+  if sharing
+    && doc.visibility.as_deref() == Some("public")
+    && let Some(role) = doc.public_role.as_deref()
+  {
+    let role = parse_doc_role(role)?;
+    candidates.push(Candidate {
+      source_type: "public-policy",
+      role: role_name(role),
+      actions: doc_actions_for_role(role),
+      owner: false,
+    });
   }
 
   if sharing && (doc.preview_enabled || doc.visibility.as_deref() == Some("public") || url_preview_enabled(input)) {

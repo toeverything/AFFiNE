@@ -1,10 +1,12 @@
-use super::actions::VERSION;
-use super::candidates::{
-  best_doc_role, decide, decide_doc, doc_candidates, parse_workspace_role, role_name, workspace_candidates,
-};
-use super::types::{
-  PermissionDocEvaluationOutputV1, PermissionEvaluationInputV1, PermissionEvaluationOutputV1,
-  PermissionWorkspaceEvaluationOutputV1,
+use super::{
+  actions::VERSION,
+  candidates::{
+    best_doc_role, decide, decide_doc, doc_candidates, parse_workspace_role, role_name, workspace_candidates,
+  },
+  types::{
+    PermissionDocEvaluationOutputV1, PermissionEvaluationInputV1, PermissionEvaluationOutputV1,
+    PermissionWorkspaceEvaluationOutputV1,
+  },
 };
 
 pub fn evaluate_permission(input: PermissionEvaluationInputV1) -> anyhow::Result<PermissionEvaluationOutputV1> {
