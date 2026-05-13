@@ -365,6 +365,7 @@ export const PackageList = [
       'blocksuite/affine/gfx/pointer',
       'blocksuite/affine/gfx/shape',
       'blocksuite/affine/gfx/text',
+      'blocksuite/affine/inlines/latex',
       'blocksuite/affine/inlines/preset',
       'blocksuite/affine/model',
       'blocksuite/affine/rich-text',
