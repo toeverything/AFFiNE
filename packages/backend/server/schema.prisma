@@ -307,6 +307,7 @@ model WorkspaceInvitation {
   requestedRole      String    @default("member") @map("requested_role") @db.Text
   status             String    @db.Text
   kind               String    @default("email") @db.Text
+  // Partial unique index exists in migration: token_hash WHERE token_hash IS NOT NULL.
   tokenHash          String?   @map("token_hash") @db.Text
   legacyPermissionId String?   @map("legacy_permission_id") @db.VarChar
   expiresAt          DateTime? @map("expires_at") @db.Timestamptz(3)
@@ -375,6 +376,7 @@ model DocGrant {
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@id([workspaceId, docId, principalType, principalId])
+  // Partial unique index exists in migration for non-null legacy ids.
   @@index([principalType, principalId, role])
   @@index([workspaceId, docId, role])
   @@map("doc_grants")

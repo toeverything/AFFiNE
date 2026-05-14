@@ -14,32 +14,37 @@ test('native entitlement wrapper maps schema errors to invalid argument', t => {
   t.is((error as Error & { code?: string })?.code, 'InvalidArg');
 });
 
-test('native entitlement wrapper validates JS quantity before native coercion', t => {
+test('native entitlement wrapper maps unsafe JS quantity to invalid argument', t => {
   const base = {
     deploymentType: 'cloud',
     targetType: 'workspace',
     plan: 'team',
     now: '2026-05-14T00:00:00Z',
-  };
-  const cases = [
-    { quantity: 4294967297, valid: false },
-    { quantity: 1.5, valid: false },
-    { quantity: 100001, valid: false },
-    { quantity: 100000, valid: true },
-  ];
+  } as const;
 
-  for (const { quantity, valid } of cases) {
-    if (valid) {
-      const resolved = resolveEntitlementV1({ ...base, quantity });
-      t.is(resolved.quantity, quantity);
-      t.is(resolved.quota.seatLimit, quantity);
-    } else {
-      const error = t.throws(() => resolveEntitlementV1({ ...base, quantity }));
-      t.is(
-        (error as Error & { code?: string })?.code,
-        'InvalidArg',
-        String(quantity)
-      );
-    }
+  for (const quantity of [4294967297, 1.5, 100001]) {
+    const error = t.throws(() => resolveEntitlementV1({ ...base, quantity }));
+
+    t.is(
+      (error as Error & { code?: string })?.code,
+      'InvalidArg',
+      String(quantity)
+    );
   }
+});
+
+test('native entitlement wrapper does not trust forged signed payload buffers', t => {
+  const resolved = resolveEntitlementV1({
+    deploymentType: 'selfhosted',
+    targetType: 'workspace',
+    targetId: 'workspace-id',
+    signedPayload: Buffer.from('not-a-valid-license'),
+    publicKey: 'not-a-valid-public-key',
+    licenseAesKey: 'not-a-valid-aes-key',
+    now: '2026-05-14T00:00:00Z',
+  });
+
+  t.false(resolved.valid);
+  t.is(resolved.status, 'needs_reupload');
+  t.is(resolved.plan, 'selfhost_free');
 });

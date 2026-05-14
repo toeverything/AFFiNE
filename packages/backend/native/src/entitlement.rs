@@ -2,7 +2,10 @@ use std::collections::HashMap;
 
 use aes_gcm::{
   AesGcm, KeyInit,
-  aead::{Aead, generic_array::GenericArray, generic_array::typenum::U12},
+  aead::{
+    Aead,
+    generic_array::{GenericArray, typenum::U12},
+  },
   aes::Aes256,
 };
 use chrono::{DateTime, Utc};
@@ -126,6 +129,9 @@ pub fn resolve_entitlement_v1(input: ResolveEntitlementInput) -> Result<Resolved
       "free"
     }
   });
+  if input.deployment_type == "selfhosted" && plan != "selfhost_free" {
+    return invalid_arg("selfhosted commercial entitlements require signedPayload");
+  }
   let quantity = parse_quantity(input.quantity.as_ref())?;
   Ok(active(plan, quantity, None))
 }
@@ -180,13 +186,13 @@ fn resolve_selfhost_license(input: ResolveEntitlementInput, now: DateTime<Utc>) 
     return Ok(invalid_license("invalid_payload", "license plan is not selfhostedteam"));
   }
 
-  if let Some(target_id) = input.target_id.as_deref() {
-    if target_id != payload.data.workspace_id.as_str() {
-      return Ok(invalid_license(
-        "workspace_mismatch",
-        "workspace mismatched with license",
-      ));
-    }
+  if let Some(target_id) = input.target_id.as_deref()
+    && target_id != payload.data.workspace_id.as_str()
+  {
+    return Ok(invalid_license(
+      "workspace_mismatch",
+      "workspace mismatched with license",
+    ));
   }
 
   if payload.issued_at.is_empty() || payload.entity.is_empty() || payload.issuer.is_empty() {
@@ -208,6 +214,14 @@ fn resolve_selfhost_license(input: ResolveEntitlementInput, now: DateTime<Utc>) 
       "selfhost_team",
       Some(payload.data.quantity),
       Some(expires_at.to_rfc3339()),
+    );
+    entitlement.error_code = Some(
+      if license_expires_at < now && license_expires_at <= file_expires_at {
+        "expired_end_at"
+      } else {
+        "expired"
+      }
+      .to_string(),
     );
     fill_license_metadata(&mut entitlement, &payload);
     return Ok(entitlement);
@@ -273,14 +287,13 @@ fn decrypt_license(buf: &[u8], aes_key: &str) -> std::result::Result<(Vec<u8>, V
 }
 
 fn license_aes_key(aes_key: &str) -> std::result::Result<[u8; 32], (&'static str, &'static str)> {
-  if aes_key.len() == 64 {
-    if let Ok(decoded) = hex::decode(aes_key) {
-      if decoded.len() == 32 {
-        let mut key = [0; 32];
-        key.copy_from_slice(&decoded);
-        return Ok(key);
-      }
-    }
+  if aes_key.len() == 64
+    && let Ok(decoded) = hex::decode(aes_key)
+    && decoded.len() == 32
+  {
+    let mut key = [0; 32];
+    key.copy_from_slice(&decoded);
+    return Ok(key);
   }
 
   Ok(Sha256::digest(aes_key.as_bytes()).into())
@@ -308,6 +321,7 @@ fn verify_license(
 }
 
 fn active(plan: &str, quantity: Option<i32>, expires_at: Option<String>) -> ResolvedEntitlement {
+  let quantity = quantity_for_plan(plan, quantity);
   let catalog = plan_catalog(plan, quantity);
   ResolvedEntitlement {
     plan: catalog.name.to_string(),
@@ -329,6 +343,7 @@ fn active(plan: &str, quantity: Option<i32>, expires_at: Option<String>) -> Reso
 }
 
 fn expired(plan: &str, quantity: Option<i32>, expires_at: Option<String>) -> ResolvedEntitlement {
+  let quantity = quantity_for_plan(plan, quantity);
   let catalog = plan_catalog(plan, quantity);
   ResolvedEntitlement {
     plan: catalog.name.to_string(),
@@ -367,6 +382,14 @@ fn invalid_license(code: &'static str, message: &'static str) -> ResolvedEntitle
     flags: flags(&catalog),
     error_code: Some(code.to_string()),
     error_message: Some(message.to_string()),
+  }
+}
+
+fn quantity_for_plan(plan: &str, quantity: Option<i32>) -> Option<i32> {
+  if matches!(plan, "team" | "selfhost_team") {
+    quantity
+  } else {
+    None
   }
 }
 
@@ -422,10 +445,10 @@ fn plan_catalog(plan: &str, quantity: Option<i32>) -> PlanQuota {
     }
     "selfhost_free" => PlanQuota {
       name: "selfhost_free",
-      blob_limit: 10 * ONE_MB,
-      storage_quota: 10 * ONE_GB,
-      history_period: 7 * ONE_DAY_SECONDS,
-      member_limit: Some(3),
+      blob_limit: 100 * ONE_MB,
+      storage_quota: 100 * ONE_GB,
+      history_period: 30 * ONE_DAY_SECONDS,
+      member_limit: Some(10),
       seat_quota: None,
       copilot_action_limit: Some(10),
       unlimited_copilot: false,
@@ -475,7 +498,11 @@ mod tests {
   use super::*;
 
   const TEST_WORKSPACE_ID: &str = "d6f52bc7-d62a-4822-804a-335fa7dfe5a6";
-  const TEST_PUBLIC_KEY: &str = "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEqrxlczPknUuj4q4xx1VGr063Cgu7\nHc3w7v4FGmoA5MNzzhrkho1ckDYw2wrX6zBnehFzcivURv80HherE2GQjg==\n-----END PUBLIC KEY-----";
+  #[rustfmt::skip]
+  const TEST_PUBLIC_KEY: &str = "-----BEGIN PUBLIC KEY-----\n\
+MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEqrxlczPknUuj4q4xx1VGr063Cgu7\n\
+Hc3w7v4FGmoA5MNzzhrkho1ckDYw2wrX6zBnehFzcivURv80HherE2GQjg==\n\
+-----END PUBLIC KEY-----";
   const TEST_LICENSE_AES_KEY: &str = "TEST_LICENSE_AES_KEY";
 
   fn input(plan: Option<&str>, quantity: Option<i32>) -> ResolveEntitlementInput {
@@ -536,7 +563,7 @@ mod tests {
       ("lifetime_pro", None, 10, 1024 * ONE_GB, Some(10)),
       ("team", Some(5), 5, 200 * ONE_GB, None),
       ("selfhost_team", Some(20), 20, 500 * ONE_GB, None),
-      ("selfhost_free", None, 3, 10 * ONE_GB, Some(10)),
+      ("selfhost_free", None, 10, 100 * ONE_GB, Some(10)),
     ];
 
     for (plan, quantity, seat_limit, storage_quota, copilot_limit) in cases {
@@ -546,9 +573,33 @@ mod tests {
       }
       let resolved = resolve_entitlement_v1(input).unwrap();
       assert!(resolved.valid, "{plan}");
+      assert_eq!(
+        resolved.quantity,
+        if matches!(plan, "team" | "selfhost_team") {
+          quantity
+        } else {
+          None
+        },
+        "{plan}"
+      );
       assert_eq!(resolved.quota.seat_limit, Some(seat_limit), "{plan}");
       assert_eq!(resolved.quota.storage_quota, storage_quota, "{plan}");
       assert_eq!(resolved.quota.copilot_action_limit, copilot_limit, "{plan}");
+    }
+  }
+
+  #[test]
+  fn ignores_quantity_for_fixed_catalog_plans() {
+    for plan in ["free", "pro", "lifetime_pro", "ai", "selfhost_free"] {
+      let mut input = input(Some(plan), Some(50));
+      if plan == "selfhost_free" {
+        input.deployment_type = "selfhosted".to_string();
+      }
+
+      let resolved = resolve_entitlement_v1(input).unwrap();
+
+      assert_eq!(resolved.quantity, None, "{plan}");
+      assert_ne!(resolved.quota.seat_limit, Some(50), "{plan}");
     }
   }
 
@@ -557,6 +608,18 @@ mod tests {
     for quantity in [0, -1, MAX_SEAT_QUANTITY + 1] {
       let err = resolve_entitlement_v1(input(Some("team"), Some(quantity))).unwrap_err();
       assert_eq!(err.status, Status::InvalidArg, "{quantity}");
+    }
+  }
+
+  #[test]
+  fn rejects_unsigned_selfhosted_commercial_entitlements() {
+    for plan in ["pro", "lifetime_pro", "ai", "team", "selfhost_team"] {
+      let mut input = input(Some(plan), Some(50));
+      input.deployment_type = "selfhosted".to_string();
+
+      let err = resolve_entitlement_v1(input).unwrap_err();
+
+      assert_eq!(err.status, Status::InvalidArg, "{plan}");
     }
   }
 
@@ -610,7 +673,7 @@ mod tests {
         TEST_WORKSPACE_ID,
         false,
         "expired",
-        Some("expired"),
+        Some("expired_end_at"),
         Some(20),
       ),
     ];

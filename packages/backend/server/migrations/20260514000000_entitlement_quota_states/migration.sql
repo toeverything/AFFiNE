@@ -131,163 +131,18 @@ ALTER TABLE "effective_workspace_quota_states" ADD CONSTRAINT "effective_workspa
 -- AddForeignKey
 ALTER TABLE "effective_workspace_quota_states" ADD CONSTRAINT "effective_workspace_quota_states_source_entitlement_id_fkey" FOREIGN KEY ("source_entitlement_id") REFERENCES "entitlements"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
-CREATE OR REPLACE FUNCTION "project_legacy_entitlement_features"()
-RETURNS trigger
-LANGUAGE plpgsql
-AS $$
-DECLARE
-  active_quota_plan TEXT;
-  active_team_quantity INTEGER;
-BEGIN
-  IF NEW."target_type" = 'user' THEN
-    SELECT "plan"
-      INTO active_quota_plan
-      FROM "entitlements"
-     WHERE "target_type" = 'user'
-       AND "target_id" = NEW."target_id"
-       AND (
-         ("status" = 'active' AND ("expires_at" IS NULL OR "expires_at" > now()))
-         OR ("status" = 'grace' AND "grace_until" > now())
-       )
-       AND "plan" IN ('lifetime_pro', 'pro')
-     ORDER BY CASE "plan" WHEN 'lifetime_pro' THEN 0 ELSE 1 END, "updated_at" DESC
-     LIMIT 1;
-
-    IF active_quota_plan IS NOT NULL THEN
-      UPDATE "user_features"
-         SET "activated" = false
-       WHERE "user_id" = NEW."target_id"
-         AND "name" IN ('pro_plan_v1', 'lifetime_pro_plan_v1')
-         AND "name" <> CASE
-           WHEN active_quota_plan = 'lifetime_pro' THEN 'lifetime_pro_plan_v1'
-           ELSE 'pro_plan_v1'
-         END
-         AND "activated" = true;
-
-      IF NOT EXISTS (
-        SELECT 1 FROM "user_features"
-         WHERE "user_id" = NEW."target_id"
-           AND "name" = CASE
-             WHEN active_quota_plan = 'lifetime_pro' THEN 'lifetime_pro_plan_v1'
-             ELSE 'pro_plan_v1'
-           END
-           AND "activated" = true
-      ) THEN
-        INSERT INTO "user_features"("user_id", "name", "type", "reason", "activated")
-        VALUES (
-          NEW."target_id",
-          CASE
-            WHEN active_quota_plan = 'lifetime_pro' THEN 'lifetime_pro_plan_v1'
-            ELSE 'pro_plan_v1'
-          END,
-          1,
-          'legacy entitlement projection trigger',
-          true
-        );
-      END IF;
-    ELSE
-      UPDATE "user_features"
-         SET "activated" = false
-       WHERE "user_id" = NEW."target_id"
-         AND "name" IN ('pro_plan_v1', 'lifetime_pro_plan_v1')
-         AND "activated" = true;
-    END IF;
-
-    IF EXISTS (
-      SELECT 1 FROM "entitlements"
-       WHERE "target_type" = 'user'
-         AND "target_id" = NEW."target_id"
-         AND (
-           ("status" = 'active' AND ("expires_at" IS NULL OR "expires_at" > now()))
-           OR ("status" = 'grace' AND "grace_until" > now())
-         )
-         AND "plan" = 'ai'
-    ) THEN
-      IF NOT EXISTS (
-        SELECT 1 FROM "user_features"
-         WHERE "user_id" = NEW."target_id"
-           AND "name" = 'unlimited_copilot'
-           AND "activated" = true
-      ) THEN
-        INSERT INTO "user_features"("user_id", "name", "type", "reason", "activated")
-        VALUES (
-          NEW."target_id",
-          'unlimited_copilot',
-          0,
-          'legacy entitlement projection trigger',
-          true
-        );
-      END IF;
-    ELSE
-      UPDATE "user_features"
-         SET "activated" = false
-       WHERE "user_id" = NEW."target_id"
-         AND "name" = 'unlimited_copilot'
-         AND "activated" = true;
-    END IF;
-  ELSIF NEW."target_type" = 'workspace' THEN
-    SELECT "quantity"
-      INTO active_team_quantity
-      FROM "entitlements"
-     WHERE "target_type" = 'workspace'
-       AND "target_id" = NEW."target_id"
-       AND (
-         ("status" = 'active' AND ("expires_at" IS NULL OR "expires_at" > now()))
-         OR ("status" = 'grace' AND "grace_until" > now())
-       )
-       AND "plan" IN ('team', 'selfhost_team')
-       AND "quantity" IS NOT NULL
-     ORDER BY CASE "plan" WHEN 'selfhost_team' THEN 0 ELSE 1 END, "updated_at" DESC
-     LIMIT 1;
-
-    IF active_team_quantity IS NULL THEN
-      DELETE FROM "workspace_features"
-       WHERE "workspace_id" = NEW."target_id"
-         AND "name" = 'team_plan_v1';
-    ELSE
-      UPDATE "workspace_features"
-         SET "configs" = json_build_object('memberLimit', active_team_quantity),
-             "reason" = 'legacy entitlement projection trigger',
-             "activated" = true
-       WHERE "workspace_id" = NEW."target_id"
-         AND "name" = 'team_plan_v1'
-         AND "activated" = true;
-
-      IF NOT FOUND THEN
-        INSERT INTO "workspace_features"(
-          "workspace_id",
-          "name",
-          "type",
-          "configs",
-          "reason",
-          "activated"
-        )
-        VALUES (
-          NEW."target_id",
-          'team_plan_v1',
-          1,
-          json_build_object('memberLimit', active_team_quantity),
-          'legacy entitlement projection trigger',
-          true
-        );
-      END IF;
-    END IF;
-  END IF;
-
-  RETURN NEW;
-END;
-$$;
-
-CREATE TRIGGER "project_legacy_entitlement_features_trigger"
-AFTER INSERT OR UPDATE ON "entitlements"
-FOR EACH ROW
-EXECUTE FUNCTION "project_legacy_entitlement_features"();
-
 CREATE OR REPLACE FUNCTION "project_legacy_workspace_readonly_feature"()
 RETURNS trigger
 LANGUAGE plpgsql
 AS $$
 BEGIN
+  IF TG_OP = 'DELETE' THEN
+    DELETE FROM "workspace_features"
+     WHERE "workspace_id" = OLD."workspace_id"
+       AND "name" = 'quota_exceeded_readonly_workspace_v1';
+    RETURN OLD;
+  END IF;
+
   IF NEW."readonly" THEN
     UPDATE "workspace_features"
        SET "reason" = 'legacy quota state projection trigger',
@@ -325,6 +180,6 @@ END;
 $$;
 
 CREATE TRIGGER "project_legacy_workspace_readonly_feature_trigger"
-AFTER INSERT OR UPDATE OF "readonly" ON "effective_workspace_quota_states"
+AFTER INSERT OR UPDATE OF "readonly" OR DELETE ON "effective_workspace_quota_states"
 FOR EACH ROW
 EXECUTE FUNCTION "project_legacy_workspace_readonly_feature"();
