@@ -148,8 +148,7 @@ BEGIN
        SET "reason" = 'legacy quota state projection trigger',
            "activated" = true
      WHERE "workspace_id" = NEW."workspace_id"
-       AND "name" = 'quota_exceeded_readonly_workspace_v1'
-       AND "activated" = true;
+       AND "name" = 'quota_exceeded_readonly_workspace_v1';
 
     IF NOT FOUND THEN
       INSERT INTO "workspace_features"(

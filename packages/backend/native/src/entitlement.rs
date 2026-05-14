@@ -684,6 +684,12 @@ Hc3w7v4FGmoA5MNzzhrkho1ckDYw2wrX6zBnehFzcivURv80HherE2GQjg==\n\
       assert_eq!(resolved.status, status, "{file}");
       assert_eq!(resolved.error_code.as_deref(), error_code, "{file}");
       assert_eq!(resolved.quantity, quantity, "{file}");
+      if valid {
+        assert_eq!(resolved.plan, "selfhost_team", "{file}");
+        assert_eq!(resolved.quota.seat_limit, quantity, "{file}");
+        assert_eq!(resolved.quota.storage_quota, 500 * ONE_GB, "{file}");
+        assert_eq!(resolved.quota.blob_limit, 500 * ONE_MB, "{file}");
+      }
     }
   }
 
