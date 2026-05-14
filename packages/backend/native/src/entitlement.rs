@@ -20,6 +20,8 @@ use serde_json::Value;
 use sha2::{Digest, Sha256};
 
 type Aes256Gcm12 = AesGcm<Aes256, U12, U12>;
+type LicenseError = (&'static str, &'static str);
+type LicenseResult<T> = std::result::Result<T, LicenseError>;
 
 const ONE_MB: i64 = 1024 * 1024;
 const ONE_GB: i64 = 1024 * ONE_MB;
@@ -245,7 +247,7 @@ fn fill_license_metadata(entitlement: &mut ResolvedEntitlement, payload: &Licens
   entitlement.issuer = Some(payload.issuer.clone());
 }
 
-fn validate_license_payload(payload: &LicensePayload) -> std::result::Result<(), (&'static str, &'static str)> {
+fn validate_license_payload(payload: &LicensePayload) -> LicenseResult<()> {
   if payload.data.id.is_empty()
     || payload.data.workspace_id.is_empty()
     || !matches!(payload.data.recurring.as_str(), "monthly" | "yearly" | "lifetime")
@@ -258,7 +260,7 @@ fn validate_license_payload(payload: &LicensePayload) -> std::result::Result<(),
   Ok(())
 }
 
-fn decrypt_license(buf: &[u8], aes_key: &str) -> std::result::Result<(Vec<u8>, Vec<u8>), (&'static str, &'static str)> {
+fn decrypt_license(buf: &[u8], aes_key: &str) -> LicenseResult<(Vec<u8>, Vec<u8>)> {
   if buf.len() < 2 {
     return Err(("invalid_file", "invalid license file"));
   }
@@ -286,7 +288,7 @@ fn decrypt_license(buf: &[u8], aes_key: &str) -> std::result::Result<(Vec<u8>, V
   Ok((iv.to_vec(), decrypted))
 }
 
-fn license_aes_key(aes_key: &str) -> std::result::Result<[u8; 32], (&'static str, &'static str)> {
+fn license_aes_key(aes_key: &str) -> LicenseResult<[u8; 32]> {
   if aes_key.len() == 64
     && let Ok(decoded) = hex::decode(aes_key)
     && decoded.len() == 32
@@ -299,10 +301,7 @@ fn license_aes_key(aes_key: &str) -> std::result::Result<[u8; 32], (&'static str
   Ok(Sha256::digest(aes_key.as_bytes()).into())
 }
 
-fn verify_license(
-  decrypted: &(Vec<u8>, Vec<u8>),
-  public_key: &str,
-) -> std::result::Result<LicensePayload, (&'static str, &'static str)> {
+fn verify_license(decrypted: &(Vec<u8>, Vec<u8>), public_key: &str) -> LicenseResult<LicensePayload> {
   let (iv, decrypted) = decrypted;
   let envelope: LicenseEnvelope =
     serde_json::from_slice(decrypted).map_err(|_| ("invalid_file", "invalid license file"))?;
