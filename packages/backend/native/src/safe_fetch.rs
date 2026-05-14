@@ -412,9 +412,23 @@ fn build_pinned_client(url: &Url, addrs: &[SocketAddr], timeout: Duration) -> An
     .timeout(timeout)
     .no_proxy()
     .redirect(reqwest::redirect::Policy::none())
+    .tls_backend_preconfigured(webpki_tls_config()?)
     .resolve_to_addrs(host, addrs)
     .build()
     .context("failed to build http client")
+}
+
+fn webpki_tls_config() -> AnyResult<rustls::ClientConfig> {
+  let root_store = rustls::RootCertStore {
+    roots: webpki_roots::TLS_SERVER_ROOTS.to_vec(),
+  };
+  Ok(
+    rustls::ClientConfig::builder_with_provider(rustls::crypto::aws_lc_rs::default_provider().into())
+      .with_safe_default_protocol_versions()
+      .context("failed to build tls protocol config")?
+      .with_root_certificates(root_store)
+      .with_no_client_auth(),
+  )
 }
 
 fn build_headers(headers: Option<&HashMap<String, String>>) -> AnyResult<HeaderMap> {
@@ -621,6 +635,13 @@ mod tests {
     ));
     assert!(!is_blocked_ip("8.8.8.8".parse().unwrap()));
     assert!(!is_blocked_ip("2002:0808:0808::1".parse().unwrap()));
+  }
+
+  #[test]
+  fn builds_https_client_with_embedded_roots() {
+    let url = Url::parse("https://example.com/").unwrap();
+    let addrs = ["93.184.216.34:443".parse().unwrap()];
+    build_pinned_client(&url, &addrs, Duration::from_secs(1)).unwrap();
   }
 
   #[test]

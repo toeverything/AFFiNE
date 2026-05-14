@@ -110,7 +110,6 @@ resolver = "3"
     "migrate",
     "runtime-tokio",
     "sqlite",
-    "tls-rustls",
   ] }
   strum_macros = "0.27.0"
   symphonia = { version = "0.5", features = ["all", "opt-simd"] }

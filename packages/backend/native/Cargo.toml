@@ -9,13 +9,13 @@ version      = "1.0.0"
 crate-type = ["cdylib"]
 
 [dependencies]
+aes-gcm = { workspace = true }
 affine_common = { workspace = true, features = [
   "doc-loader",
   "hashcash",
   "napi",
   "ydoc-loader",
 ] }
-aes-gcm = { workspace = true }
 anyhow = { workspace = true }
 base64-simd = { workspace = true }
 chrono = { workspace = true }
@@ -38,6 +38,7 @@ reqwest = { version = "0.13.3", default-features = false, features = [
   "blocking",
   "rustls",
 ] }
+rustls = "0.23"
 schemars = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
@@ -46,6 +47,7 @@ sha3 = { workspace = true }
 tiktoken-rs = { workspace = true }
 url = { workspace = true }
 v_htmlescape = { workspace = true }
+webpki-roots = "1"
 y-octo = { workspace = true, features = ["large_refs"] }
 
 [target.'cfg(not(target_os = "linux"))'.dependencies]
