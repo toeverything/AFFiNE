@@ -185,7 +185,10 @@ export function buildAppModule(env: Env) {
     .useIf(
       () => env.flavors.sync || env.flavors.front,
       SyncModule,
-      TelemetryModule,
+      TelemetryModule
+    )
+    .useIf(
+      () => !env.flavors.graphql && (env.flavors.sync || env.flavors.front),
       CopilotRealtimeModule
     )
     // graphql server only
