@@ -641,6 +641,47 @@ export interface RerankCandidate {
   text: string
 }
 
+export interface ResolvedEntitlement {
+  plan: string
+  valid: boolean
+  status: string
+  quantity?: number
+  expiresAt?: string
+  subjectId?: string
+  targetId?: string
+  recurring?: string
+  issuedAt?: string
+  entity?: string
+  issuer?: string
+  quota: ResolvedQuota
+  flags: Record<string, boolean>
+  errorCode?: string
+  errorMessage?: string
+}
+
+export interface ResolvedQuota {
+  blobLimit: number
+  storageQuota: number
+  seatLimit?: number
+  seatQuota?: number
+  historyPeriod: number
+  copilotActionLimit?: number
+}
+
+export interface ResolveEntitlementInput {
+  deploymentType: string
+  targetType: string
+  targetId?: string
+  plan?: string
+  quantity?: number
+  signedPayload?: Buffer
+  publicKey?: string
+  licenseAesKey?: string
+  now: string
+}
+
+export declare function resolveEntitlementV1(input: ResolveEntitlementInput): ResolvedEntitlement
+
 export declare function runNativeActionRecipePreparedStream(input: ActionRuntimeInput, callback: ((err: Error | null, arg: string) => void)): LlmStreamHandle
 
 export declare function safeFetch(request: SafeFetchRequest): Promise<SafeFetchResponse>

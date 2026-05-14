@@ -141,7 +141,7 @@ CREATE INDEX "workspace_invitations_workspace_id_status_idx" ON "workspace_invit
 CREATE INDEX "workspace_invitations_invitee_user_id_status_idx" ON "workspace_invitations"("invitee_user_id", "status");
 
 -- CreateIndex
-CREATE INDEX "workspace_invitations_email_status_idx" ON "workspace_invitations"("workspace_id", "normalized_email", "status");
+CREATE INDEX "workspace_invitations_workspace_id_normalized_email_status_idx" ON "workspace_invitations"("workspace_id", "normalized_email", "status");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "workspace_invitations_workspace_id_invitee_user_id_key" ON "workspace_invitations"("workspace_id", "invitee_user_id");
@@ -150,13 +150,13 @@ CREATE UNIQUE INDEX "workspace_invitations_workspace_id_invitee_user_id_key" ON 
 CREATE INDEX "workspace_access_policies_visibility_idx" ON "workspace_access_policies"("visibility");
 
 -- CreateIndex
-CREATE INDEX "workspace_access_policies_preview_idx" ON "workspace_access_policies"("url_preview_enabled", "sharing_enabled");
+CREATE INDEX "workspace_access_policies_url_preview_enabled_sharing_enabl_idx" ON "workspace_access_policies"("url_preview_enabled", "sharing_enabled");
 
 -- CreateIndex
 CREATE INDEX "doc_access_policies_public_idx" ON "doc_access_policies"("workspace_id", "visibility", "published_at") WHERE "visibility" = 'public';
 
 -- CreateIndex
-CREATE INDEX "doc_access_policies_doc_idx" ON "doc_access_policies"("workspace_id", "doc_id");
+CREATE INDEX "doc_access_policies_workspace_id_doc_id_idx" ON "doc_access_policies"("workspace_id", "doc_id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "doc_grants_owner_key" ON "doc_grants"("workspace_id", "doc_id") WHERE "principal_type" = 'user' AND "role" = 'owner';
@@ -165,10 +165,10 @@ CREATE UNIQUE INDEX "doc_grants_owner_key" ON "doc_grants"("workspace_id", "doc_
 CREATE UNIQUE INDEX "doc_grants_legacy_key" ON "doc_grants"("legacy_workspace_id", "legacy_doc_id", "legacy_user_id") WHERE "legacy_workspace_id" IS NOT NULL AND "legacy_doc_id" IS NOT NULL AND "legacy_user_id" IS NOT NULL;
 
 -- CreateIndex
-CREATE INDEX "doc_grants_principal_idx" ON "doc_grants"("principal_type", "principal_id", "role");
+CREATE INDEX "doc_grants_principal_type_principal_id_role_idx" ON "doc_grants"("principal_type", "principal_id", "role");
 
 -- CreateIndex
-CREATE INDEX "doc_grants_doc_role_idx" ON "doc_grants"("workspace_id", "doc_id", "role");
+CREATE INDEX "doc_grants_workspace_id_doc_id_role_idx" ON "doc_grants"("workspace_id", "doc_id", "role");
 
 -- AddForeignKey
 ALTER TABLE "workspace_runtime_states" ADD CONSTRAINT "workspace_runtime_states_workspace_id_fkey" FOREIGN KEY ("workspace_id") REFERENCES "workspaces"("id") ON DELETE CASCADE ON UPDATE CASCADE;

@@ -34,6 +34,14 @@ export interface RealtimeRequestMap {
     };
     output: { task: unknown | null };
   };
+  'user.quota-state.get': {
+    input: Record<string, never>;
+    output: { state: unknown };
+  };
+  'workspace.quota-state.get': {
+    input: { workspaceId: string };
+    output: { state: unknown };
+  };
 }
 
 export type NotificationCountChangedReason =
@@ -86,6 +94,14 @@ export interface RealtimeTopicMap {
       status: string;
       error?: string;
     };
+  };
+  'user.quota-state.changed': {
+    input: Record<string, never>;
+    event: { changed: true };
+  };
+  'workspace.quota-state.changed': {
+    input: { workspaceId: string };
+    event: { changed: true };
   };
 }
 

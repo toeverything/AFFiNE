@@ -34,6 +34,8 @@ import serverNativeModule, {
   type RemoteAttachmentFetchResponse,
   type RemoteMimeTypeRequest,
   type RequestedModelMatchResponse,
+  type ResolvedEntitlement,
+  type ResolveEntitlementInput,
   type SafeFetchRequest,
   type SafeFetchResponse,
   type Tokenizer,
@@ -51,6 +53,8 @@ export type {
   RemoteAttachmentFetchRequest,
   RemoteAttachmentFetchResponse,
   RemoteMimeTypeRequest,
+  ResolvedEntitlement,
+  ResolveEntitlementInput,
   SafeFetchRequest,
   SafeFetchResponse,
 };
@@ -249,6 +253,10 @@ export const permissionActionRoleMatrixV1 = (): unknown =>
 
 export const permissionActionRoleMatrixV1Json =
   serverNativeModule.permissionActionRoleMatrixV1Json;
+
+export const resolveEntitlementV1 = (
+  input: ResolveEntitlementInput
+): ResolvedEntitlement => serverNativeModule.resolveEntitlementV1(input);
 
 // MCP write tools exports
 export const createDocWithMarkdown = serverNativeModule.createDocWithMarkdown;
