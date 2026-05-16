@@ -15,7 +15,7 @@ export type MenuOptions = {
   onClose?: () => void;
   title?: {
     text: string;
-    onBack?: (menu: Menu) => void;
+    onBack?: (menu: Menu) => boolean | void;
     onClose?: () => void;
     postfix?: () => TemplateResult;
   };

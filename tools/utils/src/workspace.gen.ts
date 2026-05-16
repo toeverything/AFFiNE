@@ -1302,6 +1302,7 @@ export const PackageList = [
       'blocksuite/affine/blocks/root',
       'blocksuite/affine/components',
       'blocksuite/affine/shared',
+      'blocksuite/affine/data-view',
       'blocksuite/framework/global',
       'blocksuite/framework/std',
       'packages/common/infra',
