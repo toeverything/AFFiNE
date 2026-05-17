@@ -178,6 +178,19 @@ export class CalendarViewUILogic extends DataViewUILogicBase<CalendarSingleView>
 
   focusFirstCell = () => {};
 
+  onWheel = (event: WheelEvent) => {
+    if (event.metaKey || event.ctrlKey) {
+      return;
+    }
+    const ele = event.currentTarget;
+    if (ele instanceof HTMLElement) {
+      if (ele.scrollWidth === ele.clientWidth) {
+        return;
+      }
+      event.stopPropagation();
+    }
+  };
+
   showIndicator = () => false;
 
   hideIndicator = () => {};
@@ -1076,7 +1089,9 @@ export class CalendarViewUI extends DataViewUIBase<CalendarViewUILogic> {
           })
         : nothing}
       <div class=${setup ? 'calendar-setup-wrap' : ''}>
-        ${this.renderCalendar(setup)}
+        <div class="calendar-scroll" @wheel="${this.logic.onWheel}">
+          ${this.renderCalendar(setup)}
+        </div>
         ${setup
           ? html`<div class="calendar-setup">
               <button

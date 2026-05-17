@@ -3,7 +3,9 @@ import { css } from 'lit';
 export const calendarViewStyles = css`
   affine-data-view-calendar {
     display: block;
-    min-width: 720px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
     --calendar-entry-height: 22px;
     --calendar-entry-gap: 3px;
     --calendar-entry-slot-height: calc(
@@ -32,8 +34,15 @@ export const calendarViewStyles = css`
     --calendar-external-fallback-color: #b45309;
   }
 
+  .calendar-scroll {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
   .calendar-shell {
     position: relative;
+    min-width: 720px;
     padding: 0 0 12px;
   }
 
