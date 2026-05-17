@@ -354,11 +354,12 @@ test(
       readonly: true,
     });
     await waitNextFrame(page);
-    const readonlyDatabase = page.locator(
-      `affine-database[data-block-id="${readonlyIds.databaseId}"]`
-    );
+    const readonlyCalendar = page.getByTestId('dv-calendar-view').last();
     await expect(
-      readonlyDatabase.locator('.calendar-entry').filter({ hasText: 'Task 1' })
+      readonlyCalendar
+        .locator('.calendar-entry')
+        .filter({ hasText: 'Task 1' })
+        .first()
     ).toHaveAttribute('draggable', 'false');
 
     await page.evaluate(() => {
@@ -381,7 +382,8 @@ test(
 
     const entry = page
       .locator('.calendar-entry.row')
-      .filter({ hasText: 'Task 1' });
+      .filter({ hasText: 'Task 1' })
+      .first();
     const targetDay = page
       .locator('.calendar-day')
       .filter({ has: page.locator('.calendar-day-number', { hasText: '20' }) })
@@ -431,7 +433,9 @@ test(scoped`database calendar resizes row range end date`, async ({ page }) => {
 
   const entry = page
     .locator('.calendar-entry.row')
-    .filter({ hasText: 'Task 1' });
+    .filter({ hasText: 'Task 1' })
+    .filter({ has: page.locator('.calendar-resize-handle.right') })
+    .first();
   await entry.hover();
   const handle = entry.locator('.calendar-resize-handle.right');
   const targetDay = page

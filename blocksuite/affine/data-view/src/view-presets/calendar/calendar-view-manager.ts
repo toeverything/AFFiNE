@@ -41,10 +41,10 @@ export type CalendarDateMapping =
     };
 
 const getStartColumnId = (data?: CalendarStoredViewData) =>
-  data?.date.startColumnId;
+  data?.date?.startColumnId;
 
 const getEndColumnId = (data?: CalendarStoredViewData) => {
-  return data?.date.endColumnId;
+  return data?.date?.endColumnId;
 };
 
 const getDateData = (data: CalendarStoredViewData) => ({

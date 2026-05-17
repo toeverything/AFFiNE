@@ -539,7 +539,7 @@ export class CalendarViewUILogic extends DataViewUILogicBase<CalendarSingleView>
   }
 
   bindEntryDraggable(key: string, entry: CalendarEntry, element?: Element) {
-    this.dnd.bindEntry(key, entry, element);
+    this.dnd.bindEntry(key, entry, element, this.view.readonly$.value);
   }
 
   private canDropDndEntity(entity: CalendarDndEntity) {

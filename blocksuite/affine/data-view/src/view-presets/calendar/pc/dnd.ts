@@ -144,13 +144,22 @@ export class CalendarDnd {
     this.rootCleanup = { element, cleanup };
   }
 
-  bindEntry(key: string, entry: CalendarEntry, element?: Element) {
+  bindEntry(
+    key: string,
+    entry: CalendarEntry,
+    element?: Element,
+    disabled = false
+  ) {
     if (
       !this.dnd ||
       !(element instanceof HTMLElement) ||
-      entry.kind !== 'row'
+      entry.kind !== 'row' ||
+      disabled
     ) {
       this.cleanupEntry(key);
+      if (element instanceof HTMLElement) {
+        element.setAttribute('draggable', 'false');
+      }
       return;
     }
 

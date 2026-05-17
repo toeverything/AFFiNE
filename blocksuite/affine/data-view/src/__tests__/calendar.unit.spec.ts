@@ -367,6 +367,26 @@ describe('CalendarSingleView', () => {
     });
   });
 
+  it('enters setup state when legacy view data has no date config', () => {
+    const { view, viewData } = createCalendarView({
+      startColumnId: 'date',
+      endColumnId: 'end-date',
+    });
+    viewData.value = {
+      ...viewData.value,
+      date: undefined as unknown as CalendarStoredViewData['date'],
+    };
+
+    expect(view.dateMapping$.value).toEqual({
+      status: 'setup',
+      propertyId: undefined,
+    });
+    expect(view.endDateMapping$.value).toEqual({
+      status: 'setup',
+      propertyId: undefined,
+    });
+  });
+
   it('generates card properties from visible property ids', () => {
     const { view } = createCalendarView({
       startColumnId: 'date',
