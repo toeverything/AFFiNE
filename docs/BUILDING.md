@@ -21,17 +21,15 @@ AFFiNE client has both **Node.js** & **Rust** toolchains.
 
 ### Install Node.js
 
-We suggest develop our product under node.js LTS(Long-term support) version
+AFFiNE requires Node.js `>=22.12.0 <23.0.0`. The exact version used by the project is pinned in [`.nvmrc`](../.nvmrc).
 
-#### Option 1: Manually install node.js
+#### Option 1: Manually install Node.js
 
-install [Node LTS version](https://nodejs.org/en/download)
-
-> Up to now, the major node.js version is 20.x
+Install a Node.js 22 release that satisfies the version range above.
 
 #### Option 2: Use node version manager
 
-install [fnm](https://github.com/Schniz/fnm)
+Install [fnm](https://github.com/Schniz/fnm), then run:
 
 ```sh
 fnm use
