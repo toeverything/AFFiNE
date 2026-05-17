@@ -113,7 +113,6 @@ export const PeekViewManagerModal = () => {
   const [animating, setAnimating] = useState(false);
 
   const onAnimationStart = useCallback(() => {
-    console.log('onAnimationStart');
     setAnimating(true);
   }, []);
 
