@@ -635,10 +635,10 @@ test.describe('slash search', () => {
     await expect(slashItems).toHaveCount(3);
     await expect(slashItems.nth(0).locator('.text')).toHaveText(['Table View']);
     await expect(slashItems.nth(1).locator('.text')).toHaveText([
-      'Calendar View',
+      'Kanban View',
     ]);
     await expect(slashItems.nth(2).locator('.text')).toHaveText([
-      'Kanban View',
+      'Calendar View',
     ]);
     await type(page, 'v');
     await expect(slashItems).toHaveCount(0);
