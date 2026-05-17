@@ -111,6 +111,8 @@ export class CalendarViewUILogic extends DataViewUILogicBase<CalendarSingleView>
 
   private suppressNextClick = false;
 
+  private cleanupResize?: () => void;
+
   getPreviewRange(): { start: number; end: number } | undefined {
     const state = this.interactionState;
     const target = state?.targetDay;
@@ -191,6 +193,7 @@ export class CalendarViewUILogic extends DataViewUILogicBase<CalendarSingleView>
 
   detach(ui: CalendarViewUI) {
     if (this.ui !== ui) return;
+    this.cleanupResizeInteraction();
     this.dnd.cleanup();
     this.endInteraction();
     this.ui = undefined;
@@ -583,6 +586,7 @@ export class CalendarViewUILogic extends DataViewUILogicBase<CalendarSingleView>
     }
     event.preventDefault();
     event.stopPropagation();
+    this.cleanupResizeInteraction();
 
     this.interactionState = {
       type: 'resize',
@@ -593,6 +597,7 @@ export class CalendarViewUILogic extends DataViewUILogicBase<CalendarSingleView>
     const root = (event.currentTarget as HTMLElement).closest<HTMLElement>(
       '.calendar-grid'
     );
+    const doc = (event.currentTarget as HTMLElement).ownerDocument;
 
     const dayFromPointer = (pointerEvent: PointerEvent) => {
       if (!root) {
@@ -610,8 +615,7 @@ export class CalendarViewUILogic extends DataViewUILogicBase<CalendarSingleView>
     };
 
     const onPointerUp = (pointerEvent: PointerEvent) => {
-      document.removeEventListener('pointermove', onPointerMove);
-      document.removeEventListener('pointerup', onPointerUp);
+      cleanup();
 
       const date = dayFromPointer(pointerEvent);
       if (date !== undefined) {
@@ -628,8 +632,22 @@ export class CalendarViewUILogic extends DataViewUILogicBase<CalendarSingleView>
       });
     };
 
-    document.addEventListener('pointermove', onPointerMove);
-    document.addEventListener('pointerup', onPointerUp);
+    const cleanup = () => {
+      doc.removeEventListener('pointermove', onPointerMove);
+      doc.removeEventListener('pointerup', onPointerUp);
+      if (this.cleanupResize === cleanup) {
+        this.cleanupResize = undefined;
+      }
+    };
+
+    this.cleanupResize = cleanup;
+    doc.addEventListener('pointermove', onPointerMove);
+    doc.addEventListener('pointerup', onPointerUp);
+  }
+
+  private cleanupResizeInteraction() {
+    this.cleanupResize?.();
+    this.cleanupResize = undefined;
   }
 
   handleEntryClick(entry: CalendarEntry, target: HTMLElement) {
@@ -637,6 +655,14 @@ export class CalendarViewUILogic extends DataViewUILogicBase<CalendarSingleView>
       return;
     }
     this.openEntry(entry, target);
+  }
+
+  handleEntryKeydown(entry: CalendarEntry, event: KeyboardEvent) {
+    if (event.key !== 'Enter' && event.key !== ' ') {
+      return;
+    }
+    event.preventDefault();
+    this.handleEntryClick(entry, event.currentTarget as HTMLElement);
   }
 
   private loadExternalEntries() {
@@ -691,12 +717,18 @@ export class CalendarViewUI extends DataViewUIBase<CalendarViewUILogic> {
           .selectedEntryId === entry.id
           ? 'selected'
           : ''}"
+        role="button"
+        tabindex="0"
+        aria-label=${entry.title || 'Untitled'}
         style=${`${colorStyle}${extraStyle}`}
         @click=${(event: MouseEvent) => {
           this.logic.handleEntryClick(
             entry,
             event.currentTarget as HTMLElement
           );
+        }}
+        @keydown=${(event: KeyboardEvent) => {
+          this.logic.handleEntryKeydown(entry, event);
         }}
       >
         ${showLeftHandle

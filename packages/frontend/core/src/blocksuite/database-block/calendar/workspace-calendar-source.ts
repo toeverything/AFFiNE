@@ -105,7 +105,7 @@ export const selectWorkspaceCalendarSubscriptionIds = (
     subscriptionId: string;
     enabled: boolean;
   }>,
-  viewConfig: CalendarViewData['sources']['workspaceCalendar']
+  viewConfig?: CalendarViewData['sources']['workspaceCalendar']
 ) => {
   if (!viewConfig?.enabled) {
     return new Set<string>();
@@ -184,7 +184,7 @@ export class WorkspaceCalendarExternalSource {
     const workspaceItems = workspaceCalendar?.items ?? [];
     const subscriptionIds = selectWorkspaceCalendarSubscriptionIds(
       workspaceItems,
-      this.viewData.sources.workspaceCalendar
+      this.viewData.sources?.workspaceCalendar
     );
     if (subscriptionIds.size === 0) {
       return [];

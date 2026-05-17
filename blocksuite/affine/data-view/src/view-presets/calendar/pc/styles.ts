@@ -253,6 +253,11 @@ export const calendarViewStyles = css`
     background: var(--calendar-entry-hover-bg);
   }
 
+  .calendar-entry:focus-visible {
+    outline: 1px solid var(--affine-primary-color);
+    outline-offset: 1px;
+  }
+
   .calendar-entry.external:hover {
     opacity: 0.9;
   }

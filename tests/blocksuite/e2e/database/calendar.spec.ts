@@ -354,8 +354,11 @@ test(
       readonly: true,
     });
     await waitNextFrame(page);
+    const readonlyDatabase = page.locator(
+      `affine-database[data-block-id="${readonlyIds.databaseId}"]`
+    );
     await expect(
-      page.locator('.calendar-entry').filter({ hasText: 'Task 1' }).last()
+      readonlyDatabase.locator('.calendar-entry').filter({ hasText: 'Task 1' })
     ).toHaveAttribute('draggable', 'false');
 
     await page.evaluate(() => {

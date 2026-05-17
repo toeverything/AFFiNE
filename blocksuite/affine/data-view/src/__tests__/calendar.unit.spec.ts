@@ -351,6 +351,22 @@ describe('CalendarSingleView', () => {
     });
   });
 
+  it('updates workspace calendar settings when legacy view data has no sources', () => {
+    const { view, viewData } = createCalendarView({
+      startColumnId: 'date',
+    });
+    viewData.value = {
+      ...viewData.value,
+      sources: undefined as unknown as CalendarStoredViewData['sources'],
+    };
+
+    view.setWorkspaceCalendarEnabled(false);
+
+    expect(viewData.value.sources.workspaceCalendar).toEqual({
+      enabled: false,
+    });
+  });
+
   it('generates card properties from visible property ids', () => {
     const { view } = createCalendarView({
       startColumnId: 'date',
@@ -566,6 +582,116 @@ describe('CalendarSingleView', () => {
       })
     ).resolves.toEqual([externalEntry, anotherExternalEntry]);
     expect(JSON.stringify(viewData.value)).toBe(viewDataBefore);
+  });
+
+  it('keeps successful external entries when another source fails', async () => {
+    const externalEntry = {
+      kind: 'external',
+      id: 'external:1',
+      sourceId: 'source',
+      externalId: '1',
+      title: 'External',
+      startAt: day('2026-05-15'),
+      canResizeRange: false,
+    } as const;
+    const { view } = createCalendarView({
+      startColumnId: 'date',
+      externalFactories: new Map([
+        [
+          'source',
+          {
+            create: () => ({
+              id: 'source',
+              getEntries: () => [externalEntry],
+            }),
+          },
+        ],
+        [
+          'failing-source',
+          {
+            create: () => ({
+              id: 'failing-source',
+              getEntries: () => Promise.reject(new Error('denied')),
+            }),
+          },
+        ],
+      ]),
+    });
+
+    await expect(
+      view.loadExternalEntries({
+        from: day('2026-05-01'),
+        to: day('2026-05-31'),
+      })
+    ).resolves.toEqual([externalEntry]);
+  });
+
+  it('does not let stale external entry loads overwrite newer entries', async () => {
+    const oldEntry = {
+      kind: 'external',
+      id: 'external:old',
+      sourceId: 'source',
+      externalId: 'old',
+      title: 'Old',
+      startAt: day('2026-05-15'),
+      canResizeRange: false,
+    } as const;
+    const newEntry = {
+      kind: 'external',
+      id: 'external:new',
+      sourceId: 'source',
+      externalId: 'new',
+      title: 'New',
+      startAt: day('2026-06-15'),
+      canResizeRange: false,
+    } as const;
+    let resolveOld!: (entries: [typeof oldEntry]) => void;
+    let resolveNew!: (entries: [typeof newEntry]) => void;
+    const oldRequest = new Promise<[typeof oldEntry]>(resolve => {
+      resolveOld = resolve;
+    });
+    const newRequest = new Promise<[typeof newEntry]>(resolve => {
+      resolveNew = resolve;
+    });
+    const getEntries = vi
+      .fn()
+      .mockReturnValueOnce(oldRequest)
+      .mockReturnValueOnce(newRequest);
+    const { view } = createCalendarView({
+      startColumnId: 'date',
+      externalFactories: new Map([
+        [
+          'source',
+          {
+            create: () => ({
+              id: 'source',
+              getEntries,
+            }),
+          },
+        ],
+      ]),
+    });
+
+    const firstLoad = view.loadExternalEntries({
+      from: day('2026-05-01'),
+      to: day('2026-05-31'),
+    });
+    const secondLoad = view.loadExternalEntries({
+      from: day('2026-06-01'),
+      to: day('2026-06-30'),
+    });
+
+    resolveNew([newEntry]);
+    await expect(secondLoad).resolves.toEqual([newEntry]);
+    expect(
+      view.entries$.value.filter(entry => entry.kind === 'external')
+    ).toEqual([newEntry]);
+
+    resolveOld([oldEntry]);
+    await expect(firstLoad).resolves.toEqual([oldEntry]);
+    expect(
+      view.entries$.value.filter(entry => entry.kind === 'external')
+    ).toEqual([newEntry]);
   });
 });
 

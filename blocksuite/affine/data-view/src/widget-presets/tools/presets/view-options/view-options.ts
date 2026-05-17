@@ -127,7 +127,15 @@ export const popViewOptions = (
   let customPageTitle = '';
   let customPageItems: () => MenuConfig[] = () => [];
 
+  const isDesktopMenu = () =>
+    menuHandler.menu.menuElement.tagName.toLowerCase() === 'affine-menu';
+
   const navigate = (page: Page) => {
+    if (!isDesktopMenu()) {
+      pageStack.push(page);
+      currentPage.value = page;
+      return;
+    }
     if (mainPageHeight === null) {
       mainPageHeight =
         menuHandler.menu.menuElement.getBoundingClientRect().height;
@@ -289,8 +297,11 @@ export const popViewOptions = (
     if (!groupTrait) return getMainPageItems();
     return buildGroupSelectItems(groupTrait, id => {
       if (id) {
-        pageStack.pop();
-        pageStack.push('group');
+        if (pageStack.at(-1) === 'group-select') {
+          pageStack[pageStack.length - 1] = 'group';
+        } else {
+          pageStack.push('group');
+        }
         currentPage.value = 'group';
       } else {
         while (pageStack.length > 1) pageStack.pop();
@@ -570,21 +581,23 @@ export const popViewOptions = (
       shift({ crossAxis: true }),
     ],
   });
-  menuHandler.menu.menuElement.style.minWidth = '380px';
-  menuHandler.menu.menuElement.style.maxWidth = '380px';
-  menuHandler.menu.menuElement.style.borderRadius = '10px';
-  menuHandler.menu.menuElement.style.padding = '12px';
-  menuHandler.menu.menuElement.style.gap = '10px';
-  requestAnimationFrame(() => {
-    const bodyEl =
-      menuHandler.menu.menuElement.querySelector<HTMLElement>(
-        '.affine-menu-body'
-      );
-    if (bodyEl) {
-      bodyEl.style.overflowY = 'auto';
-      bodyEl.style.flex = '1';
-      bodyEl.style.minHeight = '0';
-    }
-  });
+  if (isDesktopMenu()) {
+    menuHandler.menu.menuElement.style.minWidth = '380px';
+    menuHandler.menu.menuElement.style.maxWidth = '380px';
+    menuHandler.menu.menuElement.style.borderRadius = '10px';
+    menuHandler.menu.menuElement.style.padding = '12px';
+    menuHandler.menu.menuElement.style.gap = '10px';
+    requestAnimationFrame(() => {
+      const bodyEl =
+        menuHandler.menu.menuElement.querySelector<HTMLElement>(
+          '.affine-menu-body'
+        );
+      if (bodyEl) {
+        bodyEl.style.overflowY = 'auto';
+        bodyEl.style.flex = '1';
+        bodyEl.style.minHeight = '0';
+      }
+    });
+  }
   return menuHandler;
 };

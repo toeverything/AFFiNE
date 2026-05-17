@@ -166,6 +166,8 @@ const getTitleSegments = (
 export class CalendarSingleView extends SingleViewBase<CalendarStoredViewData> {
   private readonly externalEntries$ = signal<CalendarExternalEntry[]>([]);
 
+  private externalEntriesRequestId = 0;
+
   propertiesRaw$ = computed(() => {
     return this.dataSource.properties$.value.map(id =>
       this.propertyGetOrCreate(id)
@@ -417,7 +419,7 @@ export class CalendarSingleView extends SingleViewBase<CalendarStoredViewData> {
       sources: {
         ...data.sources,
         workspaceCalendar: {
-          ...(data.sources.workspaceCalendar ?? { enabled: true }),
+          ...(data.sources?.workspaceCalendar ?? { enabled: true }),
           enabled,
         },
       },
@@ -429,7 +431,7 @@ export class CalendarSingleView extends SingleViewBase<CalendarStoredViewData> {
       sources: {
         ...data.sources,
         workspaceCalendar: {
-          ...(data.sources.workspaceCalendar ?? { enabled: true }),
+          ...(data.sources?.workspaceCalendar ?? { enabled: true }),
           subscriptionIds,
         },
       },
@@ -560,19 +562,23 @@ export class CalendarSingleView extends SingleViewBase<CalendarStoredViewData> {
   }
 
   async loadExternalEntries(range: CalendarEntryRange) {
+    const requestId = ++this.externalEntriesRequestId;
     const viewData = this.data$.value;
     if (!viewData) {
       this.externalEntries$.value = [];
       return [];
     }
-    const entries = (
-      await Promise.all(
-        this.externalSources$.value.map(source =>
-          Promise.resolve(source.getEntries(range))
-        )
+    const results = await Promise.allSettled(
+      this.externalSources$.value.map(source =>
+        Promise.resolve(source.getEntries(range))
       )
-    ).flat();
-    this.externalEntries$.value = entries;
+    );
+    const entries = results.flatMap(result =>
+      result.status === 'fulfilled' ? result.value : []
+    );
+    if (requestId === this.externalEntriesRequestId) {
+      this.externalEntries$.value = entries;
+    }
     return entries;
   }
 }

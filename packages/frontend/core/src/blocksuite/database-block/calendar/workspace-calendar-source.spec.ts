@@ -49,7 +49,7 @@ describe('workspace calendar source', () => {
     }
   });
 
-  it('maps event range to readonly external entry', () => {
+  it('maps event range to an external entry', () => {
     const entry = calendarEventToExternalEntry(
       {
         id: 'event-1',
