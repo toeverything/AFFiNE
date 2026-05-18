@@ -623,7 +623,7 @@ e2e(
       name: faker.internet.displayName({ firstName: 'Lucy' }),
     });
     const user2 = await app.create(Mockers.User, {
-      email: `jeanne.doe.${randomUUID()}@affine.pro`,
+      email: `jeanne_doe.${randomUUID()}@affine.pro`,
     });
     await app.create(Mockers.WorkspaceUser, {
       workspaceId: workspace.id,

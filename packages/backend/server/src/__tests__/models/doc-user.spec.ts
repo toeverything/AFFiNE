@@ -114,6 +114,23 @@ test('should delete doc user role', async t => {
   t.is(role, null);
 });
 
+test('should delete doc grants by user id', async t => {
+  const workspace = await create();
+  const user = await models.user.create({ email: 'u1@affine.pro' });
+  const docId = 'fake-doc-id';
+
+  await models.docUser.set(workspace.id, docId, user.id, DocRole.Manager);
+  await models.docUser.deleteByUserId(user.id);
+
+  t.is(await models.docUser.get(workspace.id, docId, user.id), null);
+  t.is(
+    await db.docGrant.count({
+      where: { principalType: 'user', principalId: user.id },
+    }),
+    0
+  );
+});
+
 test('should paginate doc user roles', async t => {
   const workspace = await create();
   const docId = 'fake-doc-id';

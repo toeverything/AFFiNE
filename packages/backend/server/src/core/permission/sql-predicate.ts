@@ -9,6 +9,8 @@ export type PermissionSqlPredicate = {
   params: unknown[];
 };
 
+type RawDocIdColumn = 'doc_id' | 'docs.id';
+
 @Injectable()
 export class PermissionSqlPredicateBuilder {
   private readonly matrix = permissionActionRoleMatrixV1() as {
@@ -64,11 +66,21 @@ export class PermissionSqlPredicateBuilder {
       .filter(role => role !== undefined);
   }
 
+  private rawDocIdColumn(column: RawDocIdColumn = 'doc_id') {
+    switch (column) {
+      case 'doc_id':
+      case 'docs.id':
+        return column;
+      default:
+        throw new Error(`Unsupported doc id column: ${column}`);
+    }
+  }
+
   docReadableByLegacyTables(input: {
     workspaceId: string;
     userId: string;
     action: DocAction;
-    docIdColumn?: string;
+    docIdColumn?: RawDocIdColumn;
   }): PermissionSqlPredicate {
     const roles = this.docRolesForAction(input.action)
       .map(role => this.legacyDocRoleValues.get(role))
@@ -87,16 +99,17 @@ export class PermissionSqlPredicateBuilder {
     )
       .map(role => this.legacyWorkspaceRoleValues.get(role))
       .filter(role => role !== undefined);
+    const docIdColumn = this.rawDocIdColumn(input.docIdColumn);
 
     return {
       sql: [
         `EXISTS (SELECT 1 FROM workspaces w`,
         `LEFT JOIN workspace_pages wp ON wp.workspace_id = w.id`,
-        `AND wp.page_id = ${input.docIdColumn ?? 'doc_id'}`,
+        `AND wp.page_id = ${docIdColumn}`,
         `LEFT JOIN workspace_user_permissions wup ON wup.workspace_id = w.id`,
         `AND wup.user_id = ? AND wup.status = 'Accepted'`,
         `LEFT JOIN workspace_page_user_permissions p ON p.workspace_id = w.id`,
-        `AND p.user_id = ? AND p.page_id = ${input.docIdColumn ?? 'doc_id'}`,
+        `AND p.user_id = ? AND p.page_id = ${docIdColumn}`,
         `WHERE w.id = ? AND (`,
         `(wup.type = ANY(?) AND p.type = ANY(?))`,
         `OR ((wup.id IS NULL OR wup.type <> ALL(?)) AND w.enable_sharing AND p.type = ANY(?))`,
@@ -204,7 +217,7 @@ export class PermissionSqlPredicateBuilder {
     workspaceId: string;
     userId?: string;
     action: DocAction;
-    docIdColumn?: string;
+    docIdColumn?: RawDocIdColumn;
   }): PermissionSqlPredicate {
     const docRoles = this.docRolesForAction(input.action);
     const inheritedWorkspaceRoles = this.inheritedWorkspaceRolesForDocAction(
@@ -214,7 +227,7 @@ export class PermissionSqlPredicateBuilder {
     const nonMemberGrantRoles = this.nonMemberDocGrantRolesForAction(
       input.action
     );
-    const docIdColumn = input.docIdColumn ?? 'doc_id';
+    const docIdColumn = this.rawDocIdColumn(input.docIdColumn);
 
     return {
       sql: [

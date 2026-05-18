@@ -66,7 +66,15 @@ export class DocUserModel extends BaseModel {
     await this.models.docGrant.delete(workspaceId, docId, userId);
   }
 
+  @Transactional()
   async deleteByUserId(userId: string) {
+    await this.models.permissionProjection.markNewWriteOrigin();
+    await this.db.docGrant.deleteMany({
+      where: {
+        principalType: 'user',
+        principalId: userId,
+      },
+    });
     await this.withPermissionProjectionMetric(
       this.db.workspaceDocUserRole.deleteMany({
         where: {

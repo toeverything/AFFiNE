@@ -235,6 +235,14 @@ export class WorkspaceMemberModel extends BaseModel {
   @Transactional()
   async delete(workspaceId: string, userId: string) {
     await this.models.permissionProjection.markNewWriteOrigin();
+    await this.db.$queryRaw`
+      SELECT id
+      FROM workspace_members
+      WHERE workspace_id = ${workspaceId}
+        AND role = 'owner'
+        AND state = 'active'
+      FOR UPDATE
+    `;
     const existingOwners = await this.db.workspaceMember.count({
       where: {
         workspaceId,
@@ -316,8 +324,11 @@ export class WorkspaceInvitationModel extends BaseModel {
     const invitationStatus = workspaceStatusToInvitationState(status);
     if (!invitationStatus) {
       const invitation = await this.findInvitation(workspaceId, userId);
+      if (!invitation) {
+        throw new Error('Cannot activate a missing workspace invitation.');
+      }
       const role =
-        invitation?.requestedRole === 'admin'
+        invitation.requestedRole === 'admin'
           ? WorkspaceRole.Admin
           : WorkspaceRole.Collaborator;
       return await this.models.workspaceMember.setActive(
@@ -325,8 +336,8 @@ export class WorkspaceInvitationModel extends BaseModel {
         userId,
         role,
         {
-          legacyPermissionId: invitation?.legacyPermissionId,
-          source: invitation?.source,
+          legacyPermissionId: invitation.legacyPermissionId,
+          source: invitation.source,
         }
       );
     }
@@ -688,6 +699,15 @@ export class DocGrantModel extends BaseModel {
   @Transactional()
   async delete(workspaceId: string, docId: string, userId: string) {
     await this.models.permissionProjection.markNewWriteOrigin();
+    await this.db.$queryRaw`
+      SELECT 1
+      FROM doc_grants
+      WHERE workspace_id = ${workspaceId}
+        AND doc_id = ${docId}
+        AND principal_type = 'user'
+        AND role = 'owner'
+      FOR UPDATE
+    `;
     const deletingOwner = await this.db.docGrant.count({
       where: {
         workspaceId,

@@ -1071,6 +1071,31 @@ test('PermissionSqlPredicateBuilder builds legacy-table predicate parameters', t
   );
 });
 
+test('PermissionSqlPredicateBuilder rejects unsafe raw doc id columns', t => {
+  const builder = new PermissionSqlPredicateBuilder();
+
+  t.throws(
+    () =>
+      builder.docReadableByLegacyTables({
+        workspaceId: 'w1',
+        userId: 'u1',
+        action: 'Doc.Read',
+        docIdColumn: 'docs.id; DROP TABLE docs' as never,
+      }),
+    { message: 'Unsupported doc id column: docs.id; DROP TABLE docs' }
+  );
+  t.throws(
+    () =>
+      builder.docReadableByNewTables({
+        workspaceId: 'w1',
+        userId: 'u1',
+        action: 'Doc.Read',
+        docIdColumn: 'docs.id; DROP TABLE docs' as never,
+      }),
+    { message: 'Unsupported doc id column: docs.id; DROP TABLE docs' }
+  );
+});
+
 test('PermissionSqlPredicateBuilder drops dirty legacy external explicit grants', t => {
   const predicate =
     new PermissionSqlPredicateBuilder().docReadableByLegacyTables({

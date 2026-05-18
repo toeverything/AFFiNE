@@ -36,11 +36,12 @@ type WorkspaceQuotaSnapshot = Awaited<
 };
 
 const readonlyWorkspaceState = (
+  workspaceId: string,
   readonlyReasons: string[],
   overrides: Partial<WorkspaceQuotaSnapshot> = {}
 ) =>
   ({
-    workspaceId: workspace.id,
+    workspaceId,
     plan: 'free',
     sourceEntitlementId: null,
     ownerUserId: owner.id,
@@ -160,7 +161,9 @@ test('should enter readonly mode when fallback owner storage quota overflows', a
     Reflect.get(t.context.policy, 'quotaState') as QuotaStateService,
     'reconcileWorkspaceQuotaState'
   );
-  quotaState.resolves(readonlyWorkspaceState(['storage_overflow']));
+  quotaState.callsFake(async workspaceId =>
+    readonlyWorkspaceState(workspaceId, ['storage_overflow'])
+  );
 
   const state = await t.context.policy.reconcileWorkspaceQuotaState(
     workspace.id
@@ -179,9 +182,15 @@ test('should report recovered state after workspace usage recovers', async t => 
   );
   quotaState
     .onFirstCall()
-    .resolves(readonlyWorkspaceState(['storage_overflow']));
-  quotaState.onSecondCall().resolves(readonlyWorkspaceState([]));
-  quotaState.onThirdCall().resolves(readonlyWorkspaceState([]));
+    .callsFake(async workspaceId =>
+      readonlyWorkspaceState(workspaceId, ['storage_overflow'])
+    );
+  quotaState
+    .onSecondCall()
+    .callsFake(async workspaceId => readonlyWorkspaceState(workspaceId, []));
+  quotaState
+    .onThirdCall()
+    .callsFake(async workspaceId => readonlyWorkspaceState(workspaceId, []));
 
   await t.context.policy.reconcileWorkspaceQuotaState(workspace.id);
 

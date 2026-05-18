@@ -151,6 +151,22 @@ test('should not get inactive workspace role', async t => {
   t.is(role, null);
 });
 
+test('should not activate a missing workspace invitation', async t => {
+  const workspace = await module.create(Mockers.Workspace);
+  const user = await module.create(Mockers.User);
+
+  await t.throwsAsync(
+    models.workspaceUser.setStatus(
+      workspace.id,
+      user.id,
+      WorkspaceMemberStatus.Accepted
+    ),
+    { message: 'Cannot activate a missing workspace invitation.' }
+  );
+
+  t.is(await models.workspaceUser.get(workspace.id, user.id), null);
+});
+
 test('should update user role', async t => {
   const workspace = await module.create(Mockers.Workspace);
   const user = await module.create(Mockers.User);

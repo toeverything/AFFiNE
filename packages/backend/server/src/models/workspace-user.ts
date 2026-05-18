@@ -261,7 +261,15 @@ export class WorkspaceUserModel extends BaseModel {
     );
   }
 
+  @Transactional()
   async deleteByUserId(userId: string) {
+    await this.models.permissionProjection.markNewWriteOrigin();
+    await this.db.workspaceMember.deleteMany({
+      where: { userId },
+    });
+    await this.db.workspaceInvitation.deleteMany({
+      where: { inviteeUserId: userId },
+    });
     await this.withPermissionProjectionMetric(
       this.db.workspaceUserRole.deleteMany({
         where: {
