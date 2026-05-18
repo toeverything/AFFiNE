@@ -308,7 +308,7 @@
   "com.affine.auth.sent.verify.email.hint": "Растау сілтемесі жіберілді.",
   "com.affine.auth.set.email.save": "Email-ді сақта",
   "com.affine.auth.set.password": "Құпиясөз орнат",
-"com.affine.auth.set.password.message": "Тіркелуді жалғастыру үшін әріптер мен сандардан тұратын {{min}}-{{max}} таңбалы құпиясөз орнат.",
+  "com.affine.auth.set.password.message": "Тіркелуді жалғастыру үшін әріптер мен сандардан тұратын {{min}}-{{max}} таңбалы құпиясөз орнат.",
   "com.affine.auth.set.password.message.maxlength": "Ең көбі {{max}} таңба",
   "com.affine.auth.set.password.message.minlength": "Ең кемі {{min}} таңба",
   "com.affine.auth.set.password.page.success": "Құпиясөз сәтті орнатылды",

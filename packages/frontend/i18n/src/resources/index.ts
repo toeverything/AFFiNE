@@ -35,8 +35,8 @@ export const SUPPORTED_LANGUAGES: Record<
     flagEmoji: string;
     rtl?: boolean;
     resource:
-    | LanguageResource
-    | (() => Promise<{ default: Partial<LanguageResource> }>);
+      | LanguageResource
+      | (() => Promise<{ default: Partial<LanguageResource> }>);
   }
 > = {
   en: {
