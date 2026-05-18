@@ -266,21 +266,25 @@ export class PermissionService {
   ) {
     if (this.readModel() === PermissionReadModel.Projection) {
       try {
-        if (this.needsFreshRuntimeState(input)) {
-          try {
-            await this.workspacePolicy?.getWorkspaceState(input.workspaceId);
-          } catch (error) {
-            if (
-              !(error instanceof Error) ||
-              error.message !== 'Workspace owner not found'
-            ) {
-              throw error;
-            }
-          }
+        if (
+          this.needsFreshRuntimeState(input) &&
+          (await this.loader.workspaceExists(input.workspaceId))
+        ) {
+          await this.workspacePolicy?.getWorkspaceState(input.workspaceId);
           this.loader.invalidateWorkspaceQuotaRuntime(input.workspaceId);
         }
         return this.evaluate(await this.loader.loadFromNewTables(input));
       } catch (error) {
+        if (
+          input.allowLocal &&
+          error instanceof Error &&
+          error.message === 'Workspace owner not found'
+        ) {
+          const loaded = await this.loader.loadFromNewTables(input);
+          if (loaded.workspace?.local) {
+            return this.evaluate(loaded);
+          }
+        }
         if (!(this.config?.permission.fallbackLegacyLoader ?? false)) {
           throw error;
         }

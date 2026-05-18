@@ -32,7 +32,7 @@ interface Context {
   state: QuotaStateService;
 }
 
-const test = ava as TestFn<Context>;
+const test = ava.serial as TestFn<Context>;
 const ONE_GB = 1024 * 1024 * 1024;
 const ONE_DAY_SECONDS = 24 * 60 * 60;
 type CaseState = {

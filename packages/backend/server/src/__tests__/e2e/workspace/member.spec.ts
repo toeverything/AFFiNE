@@ -1,27 +1,31 @@
+import { randomUUID } from 'node:crypto';
+
 import {
   acceptInviteByInviteIdMutation,
   approveWorkspaceTeamMemberMutation,
   createInviteLinkMutation,
-  deleteBlobMutation,
   getInviteInfoQuery,
   getMembersByWorkspaceIdQuery,
   inviteByEmailsMutation,
   leaveWorkspaceMutation,
-  releaseDeletedBlobsMutation,
   revokeMemberPermissionMutation,
   WorkspaceInviteLinkExpireTime,
   WorkspaceMemberStatus,
 } from '@affine/graphql';
 import { faker } from '@faker-js/faker';
 
+import { EntitlementService } from '../../../core/entitlement';
+import { WorkspacePolicyService } from '../../../core/permission';
 import { Models } from '../../../models';
-import { FeatureConfigs } from '../../../models/common/feature';
 import {
   SubscriptionPlan,
   SubscriptionRecurring,
+  SubscriptionStatus,
 } from '../../../plugins/payment/types';
 import { Mockers } from '../../mocks';
 import { app, e2e } from '../test';
+
+const TWO_BILLION_BYTES = 2_000_000_000;
 
 async function createWorkspace() {
   const owner = await app.create(Mockers.User);
@@ -33,6 +37,23 @@ async function createWorkspace() {
     owner,
     workspace,
   };
+}
+
+async function grantTeamPlan(workspaceId: string, quantity: number) {
+  await app.get(EntitlementService).upsertFromCloudSubscription({
+    targetId: workspaceId,
+    plan: SubscriptionPlan.Team,
+    recurring: SubscriptionRecurring.Yearly,
+    status: SubscriptionStatus.Active,
+    quantity,
+  });
+}
+
+async function revokeTeamPlan(workspaceId: string) {
+  await app.get(EntitlementService).revokeCloudSubscription({
+    targetId: workspaceId,
+    plan: SubscriptionPlan.Team,
+  });
 }
 
 e2e('should invite a user', async t => {
@@ -91,19 +112,16 @@ e2e('should invite a user', async t => {
 e2e('should re-check seat when accepting an email invitation', async t => {
   const { owner, workspace } = await createWorkspace();
   const member = await app.create(Mockers.User);
-  await app.create(Mockers.TeamWorkspace, {
-    id: workspace.id,
-    quantity: 4,
-  });
+  await grantTeamPlan(workspace.id, 12);
 
-  await app.create(Mockers.WorkspaceUser, {
-    workspaceId: workspace.id,
-    userId: (await app.create(Mockers.User)).id,
-  });
-  await app.create(Mockers.WorkspaceUser, {
-    workspaceId: workspace.id,
-    userId: (await app.create(Mockers.User)).id,
-  });
+  await Promise.all(
+    Array.from({ length: 10 }).map(async () => {
+      await app.create(Mockers.WorkspaceUser, {
+        workspaceId: workspace.id,
+        userId: (await app.create(Mockers.User)).id,
+      });
+    })
+  );
 
   await app.login(owner);
   const invite = await app.gql({
@@ -116,10 +134,10 @@ e2e('should re-check seat when accepting an email invitation', async t => {
 
   await app.eventBus.emitAsync('workspace.members.allocateSeats', {
     workspaceId: workspace.id,
-    quantity: 4,
+    quantity: 12,
   });
 
-  await app.models.workspaceFeature.remove(workspace.id, 'team_plan_v1');
+  await revokeTeamPlan(workspace.id);
 
   await app.login(member);
   await t.throwsAsync(
@@ -147,24 +165,6 @@ e2e.serial(
   async t => {
     const { owner, workspace } = await createWorkspace();
     const member = await app.create(Mockers.User);
-    const freeStorageQuota = FeatureConfigs.free_plan_v1.configs.storageQuota;
-    const lifetimeStorageQuota =
-      FeatureConfigs.lifetime_pro_plan_v1.configs.storageQuota;
-
-    FeatureConfigs.free_plan_v1.configs.storageQuota = 1;
-    FeatureConfigs.lifetime_pro_plan_v1.configs.storageQuota = 2;
-    t.teardown(() => {
-      FeatureConfigs.free_plan_v1.configs.storageQuota = freeStorageQuota;
-      FeatureConfigs.lifetime_pro_plan_v1.configs.storageQuota =
-        lifetimeStorageQuota;
-    });
-
-    await app.models.userFeature.switchQuota(
-      owner.id,
-      'lifetime_pro_plan_v1',
-      'test setup'
-    );
-
     await app.login(owner);
     const invite = await app.gql({
       query: inviteByEmailsMutation,
@@ -174,26 +174,26 @@ e2e.serial(
       },
     });
 
-    await app.models.blob.upsert({
-      workspaceId: workspace.id,
-      key: 'overflow-blob',
-      mime: 'application/octet-stream',
-      size: 2,
-      status: 'completed',
-      uploadId: null,
-    });
-
-    await app.eventBus.emitAsync('user.subscription.canceled', {
-      userId: owner.id,
-      plan: SubscriptionPlan.Pro,
-      recurring: SubscriptionRecurring.Lifetime,
-    });
+    const overflowBlobKeys = Array.from(
+      { length: 6 },
+      (_, index) => `overflow-blob-${index}`
+    );
+    await Promise.all(
+      overflowBlobKeys.map(key =>
+        app.models.blob.upsert({
+          workspaceId: workspace.id,
+          key,
+          mime: 'application/octet-stream',
+          size: TWO_BILLION_BYTES,
+          status: 'completed',
+          uploadId: null,
+        })
+      )
+    );
 
     t.true(
-      await app.models.workspaceFeature.has(
-        workspace.id,
-        'quota_exceeded_readonly_workspace_v1'
-      )
+      (await app.get(WorkspacePolicyService).getWorkspaceState(workspace.id))
+        .isReadonly
     );
 
     await app.login(member);
@@ -216,26 +216,13 @@ e2e.serial(
     t.is(pendingInvite.status, WorkspaceMemberStatus.Pending);
 
     await app.login(owner);
-    await app.gql({
-      query: deleteBlobMutation,
-      variables: {
-        workspaceId: workspace.id,
-        key: 'overflow-blob',
-        permanently: false,
-      },
-    });
-    await app.gql({
-      query: releaseDeletedBlobsMutation,
-      variables: {
-        workspaceId: workspace.id,
-      },
-    });
+    for (const key of overflowBlobKeys) {
+      await app.models.blob.delete(workspace.id, key, true);
+    }
 
     t.false(
-      await app.models.workspaceFeature.has(
-        workspace.id,
-        'quota_exceeded_readonly_workspace_v1'
-      )
+      (await app.get(WorkspacePolicyService).getWorkspaceState(workspace.id))
+        .isReadonly
     );
 
     await app.login(member);
@@ -596,10 +583,7 @@ e2e(
   'should invite by link and send review request notification over quota limit',
   async t => {
     const { owner, workspace } = await createWorkspace();
-    await app.create(Mockers.TeamWorkspace, {
-      id: workspace.id,
-      quantity: 3,
-    });
+    await grantTeamPlan(workspace.id, 3);
 
     await app.login(owner);
     const { createInviteLink } = await app.gql({
@@ -639,10 +623,7 @@ e2e(
       name: faker.internet.displayName({ firstName: 'Lucy' }),
     });
     const user2 = await app.create(Mockers.User, {
-      email: faker.internet.email({
-        firstName: 'Jeanne',
-        lastName: 'Doe',
-      }),
+      email: `jeanne.doe.${randomUUID()}@affine.pro`,
     });
     await app.create(Mockers.WorkspaceUser, {
       workspaceId: workspace.id,

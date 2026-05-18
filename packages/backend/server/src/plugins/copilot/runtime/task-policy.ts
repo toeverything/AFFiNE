@@ -27,7 +27,9 @@ export class TaskPolicy {
 
     const state = await this.quotaState.reconcileUserQuotaState(userId);
     const flags = state.flags as { unlimitedCopilot?: boolean };
-    const hasAccess = !!flags.unlimitedCopilot;
+    const hasAccess =
+      !!flags.unlimitedCopilot ||
+      ['pro', 'lifetime_pro', 'ai'].includes(state.plan);
     return prompt.optionalModels[hasAccess ? 1 : 0] ?? prompt.model;
   }
 }

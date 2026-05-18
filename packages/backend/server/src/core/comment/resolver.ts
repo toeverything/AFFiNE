@@ -12,6 +12,7 @@ import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 import {
   CommentAttachmentQuotaExceeded,
   CommentNotFound,
+  DocActionDenied,
   type FileUpload,
   JobQueue,
   readableToBuffer,
@@ -109,7 +110,7 @@ export class CommentResolver {
       throw new CommentNotFound();
     }
 
-    await this.assertPermission(me, comment, 'Doc.Comments.Update');
+    this.assertCommentOwner(me, comment, 'Doc.Comments.Update');
 
     await this.service.updateComment(input);
     publishCommentChanged(this.realtime, comment.workspaceId, comment.docId);
@@ -200,7 +201,7 @@ export class CommentResolver {
       throw new ReplyNotFound();
     }
 
-    await this.assertPermission(me, reply, 'Doc.Comments.Update');
+    this.assertCommentOwner(me, reply, 'Doc.Comments.Update');
 
     await this.service.updateReply(input);
     publishCommentChanged(this.realtime, reply.workspaceId, reply.docId);
@@ -469,11 +470,7 @@ export class CommentResolver {
 
   private async assertPermission(
     me: UserType,
-    item: {
-      workspaceId: string;
-      docId: string;
-      userId?: string;
-    },
+    item: { workspaceId: string; docId: string; userId?: string },
     action: DocAction
   ) {
     // the owner of the comment/reply can update, delete, resolve it
@@ -486,5 +483,21 @@ export class CommentResolver {
       .workspace(item.workspaceId)
       .doc(item.docId)
       .assert(action);
+  }
+
+  private assertCommentOwner(
+    me: UserType,
+    item: { workspaceId: string; docId: string; userId?: string },
+    action: DocAction
+  ) {
+    if (item.userId === me.id) {
+      return;
+    }
+
+    throw new DocActionDenied({
+      action,
+      docId: item.docId,
+      spaceId: item.workspaceId,
+    });
   }
 }

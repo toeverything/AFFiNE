@@ -181,42 +181,45 @@ test('installed license scanner never trusts quantity without raw license', asyn
   t.is(entitlement?.quantity, null);
 });
 
-test('selfhosted legacy projection ignores unknown entitlements', async t => {
-  const previousDeploymentType = globalThis.env.DEPLOYMENT_TYPE;
-  // @ts-expect-error test mutates env singleton for deployment-specific projection semantics
-  globalThis.env.DEPLOYMENT_TYPE = 'selfhosted';
-  try {
-    const user = await t.context.models.user.create({
-      email: `${randomUUID()}@affine.pro`,
-    });
-    await t.context.db.entitlement.create({
-      data: {
+test.serial(
+  'selfhosted legacy projection ignores unknown entitlements',
+  async t => {
+    const previousDeploymentType = globalThis.env.DEPLOYMENT_TYPE;
+    // @ts-expect-error test mutates env singleton for deployment-specific projection semantics
+    globalThis.env.DEPLOYMENT_TYPE = 'selfhosted';
+    try {
+      const user = await t.context.models.user.create({
+        email: `${randomUUID()}@affine.pro`,
+      });
+      await t.context.db.entitlement.create({
+        data: {
+          targetType: 'user',
+          targetId: user.id,
+          source: 'cloud_subscription',
+          plan: 'ai',
+          status: 'active',
+          subjectId: `forged-ai:${user.id}`,
+        },
+      });
+
+      await t.context.projection.onEntitlementChanged({
         targetType: 'user',
         targetId: user.id,
-        source: 'cloud_subscription',
-        plan: 'ai',
-        status: 'active',
-        subjectId: `forged-ai:${user.id}`,
-      },
-    });
+      });
 
-    await t.context.projection.onEntitlementChanged({
-      targetType: 'user',
-      targetId: user.id,
-    });
-
-    t.false(
-      await t.context.models.userFeature.has(user.id, 'unlimited_copilot')
-    );
-    t.is(
-      await t.context.db.subscription.count({ where: { targetId: user.id } }),
-      0
-    );
-  } finally {
-    // @ts-expect-error restore mutable test env singleton
-    globalThis.env.DEPLOYMENT_TYPE = previousDeploymentType;
+      t.false(
+        await t.context.models.userFeature.has(user.id, 'unlimited_copilot')
+      );
+      t.is(
+        await t.context.db.subscription.count({ where: { targetId: user.id } }),
+        0
+      );
+    } finally {
+      // @ts-expect-error restore mutable test env singleton
+      globalThis.env.DEPLOYMENT_TYPE = previousDeploymentType;
+    }
   }
-});
+);
 
 test('backfill marks selfhost team subscriptions as needing license revalidation', async t => {
   await t.context.db.subscription.create({
@@ -320,50 +323,112 @@ test('revoked selfhost entitlement removes installed license projection', async 
   );
 });
 
-test('selfhosted projection does not trust non-null signed payload', async t => {
-  const previousDeploymentType = globalThis.env.DEPLOYMENT_TYPE;
-  // @ts-expect-error test mutates env singleton for deployment-specific projection semantics
-  globalThis.env.DEPLOYMENT_TYPE = 'selfhosted';
-  try {
-    const owner = await t.context.models.user.create({
-      email: `${randomUUID()}@affine.pro`,
-    });
-    const workspace = await t.context.models.workspace.create(owner.id);
+test('installed license projection uses explicit entitlement status priority', async t => {
+  const owner = await t.context.models.user.create({
+    email: `${randomUUID()}@affine.pro`,
+  });
+  const workspace = await t.context.models.workspace.create(owner.id);
 
-    await t.context.db.entitlement.create({
-      data: {
+  await t.context.db.entitlement.createMany({
+    data: [
+      {
         targetType: 'workspace',
         targetId: workspace.id,
         source: 'selfhost_license',
         plan: 'selfhost_team',
-        status: 'active',
-        subjectId: 'forged-key',
-        quantity: 100,
-        signedPayload: Buffer.from('not-a-valid-license'),
+        status: 'expired',
+        subjectId: 'expired-key',
+        quantity: 5,
         metadata: {
           recurring: SubscriptionRecurring.Yearly,
-          validateKey: 'validate-key',
+          validateKey: 'expired-validate-key',
         },
-        expiresAt: new Date(Date.now() + 3600_000),
+        expiresAt: new Date(Date.now() - 3600_000),
         validatedAt: new Date(),
       },
-    });
+      {
+        targetType: 'workspace',
+        targetId: workspace.id,
+        source: 'selfhost_license',
+        plan: 'selfhost_team',
+        status: 'grace',
+        subjectId: 'grace-key',
+        quantity: 6,
+        metadata: {
+          recurring: SubscriptionRecurring.Yearly,
+          validateKey: 'grace-validate-key',
+        },
+        expiresAt: new Date(Date.now() - 1800_000),
+        graceUntil: new Date(Date.now() + 3600_000),
+        validatedAt: new Date(),
+      },
+    ],
+  });
 
-    await t.context.projection.onEntitlementChanged({
-      targetType: 'workspace',
-      targetId: workspace.id,
-    });
+  await t.context.projection.onEntitlementChanged({
+    targetType: 'workspace',
+    targetId: workspace.id,
+  });
 
-    t.falsy(
-      await t.context.models.workspaceFeature.get(workspace.id, 'team_plan_v1')
-    );
-    t.falsy(
-      await t.context.db.installedLicense.findUnique({
-        where: { workspaceId: workspace.id },
-      })
-    );
-  } finally {
-    // @ts-expect-error restore mutable test env singleton
-    globalThis.env.DEPLOYMENT_TYPE = previousDeploymentType;
-  }
+  const installedLicense =
+    await t.context.db.installedLicense.findUniqueOrThrow({
+      where: { workspaceId: workspace.id },
+    });
+  t.is(installedLicense.key, 'grace-key');
+  t.is(installedLicense.quantity, 6);
+  t.is(installedLicense.validateKey, 'grace-validate-key');
 });
+
+test.serial(
+  'selfhosted projection does not trust non-null signed payload',
+  async t => {
+    const previousDeploymentType = globalThis.env.DEPLOYMENT_TYPE;
+    // @ts-expect-error test mutates env singleton for deployment-specific projection semantics
+    globalThis.env.DEPLOYMENT_TYPE = 'selfhosted';
+    try {
+      const owner = await t.context.models.user.create({
+        email: `${randomUUID()}@affine.pro`,
+      });
+      const workspace = await t.context.models.workspace.create(owner.id);
+
+      await t.context.db.entitlement.create({
+        data: {
+          targetType: 'workspace',
+          targetId: workspace.id,
+          source: 'selfhost_license',
+          plan: 'selfhost_team',
+          status: 'active',
+          subjectId: 'forged-key',
+          quantity: 100,
+          signedPayload: Buffer.from('not-a-valid-license'),
+          metadata: {
+            recurring: SubscriptionRecurring.Yearly,
+            validateKey: 'validate-key',
+          },
+          expiresAt: new Date(Date.now() + 3600_000),
+          validatedAt: new Date(),
+        },
+      });
+
+      await t.context.projection.onEntitlementChanged({
+        targetType: 'workspace',
+        targetId: workspace.id,
+      });
+
+      t.falsy(
+        await t.context.models.workspaceFeature.get(
+          workspace.id,
+          'team_plan_v1'
+        )
+      );
+      t.falsy(
+        await t.context.db.installedLicense.findUnique({
+          where: { workspaceId: workspace.id },
+        })
+      );
+    } finally {
+      // @ts-expect-error restore mutable test env singleton
+      globalThis.env.DEPLOYMENT_TYPE = previousDeploymentType;
+    }
+  }
+);

@@ -313,21 +313,24 @@ export class LegacyEntitlementProjectionService {
   }
 
   private async projectInstalledLicense(workspaceId: string) {
-    const [entitlement, resolved] = await Promise.all([
-      this.db.entitlement.findFirst({
+    const [entitlements, resolved] = await Promise.all([
+      this.db.entitlement.findMany({
         where: {
           targetType: 'workspace',
           targetId: workspaceId,
           source: 'selfhost_license',
         },
-        orderBy: [
-          { status: 'asc' },
-          { signedPayload: 'desc' },
-          { updatedAt: 'desc' },
-        ],
+        orderBy: [{ signedPayload: 'desc' }, { updatedAt: 'desc' }],
       }),
       this.entitlement.resolveWorkspaceEntitlement(workspaceId),
     ]);
+    const entitlement = entitlements.sort(
+      (left, right) =>
+        this.installedLicenseStatusPriority(right.status) -
+          this.installedLicenseStatusPriority(left.status) ||
+        Number(!!right.signedPayload) - Number(!!left.signedPayload) ||
+        right.updatedAt.getTime() - left.updatedAt.getTime()
+    )[0];
 
     if (!entitlement) {
       return;
@@ -381,6 +384,19 @@ export class LegacyEntitlementProjectionService {
           : null,
       },
     });
+  }
+
+  private installedLicenseStatusPriority(status: string) {
+    if (status === 'active' || status === 'grace') {
+      return 3;
+    }
+    if (status === 'expired') {
+      return 2;
+    }
+    if (status === 'needs_reupload') {
+      return 1;
+    }
+    return 0;
   }
 
   private async projectReadonlyFeature(workspaceId: string) {

@@ -104,8 +104,18 @@ export class ByokEntitlementPolicy {
   }
 
   private async hasWorkspaceTeamPlan(workspaceId: string) {
-    const state =
-      await this.quotaState.reconcileWorkspaceQuotaState(workspaceId);
-    return ['team', 'selfhost_team'].includes(state.plan);
+    try {
+      const state =
+        await this.quotaState.reconcileWorkspaceQuotaState(workspaceId);
+      return ['team', 'selfhost_team'].includes(state.plan);
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message === 'Workspace owner not found'
+      ) {
+        return false;
+      }
+      throw error;
+    }
   }
 }

@@ -1066,7 +1066,8 @@ test('PermissionSqlPredicateBuilder builds legacy-table predicate parameters', t
   t.true(
     predicate.params
       .slice(3)
-      .every(value => Array.isArray(value) && value.every(Number.isInteger))
+      .filter(Array.isArray)
+      .every(value => value.every(Number.isInteger))
   );
 });
 

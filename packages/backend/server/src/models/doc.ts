@@ -351,6 +351,7 @@ export class DocModel extends BaseModel {
   /**
    * Create or update the doc meta.
    */
+  @Transactional()
   async upsertMeta(
     workspaceId: string,
     docId: string,

@@ -744,6 +744,7 @@ export class CopilotContextResolver {
       await this.ac
         .user(user.id)
         .workspace(session.workspaceId)
+        .allowLocal()
         .assert('Workspace.Blobs.Write');
       await this.storage.put(user.id, session.workspaceId, blobId, buffer);
       const file = await session.addFile(

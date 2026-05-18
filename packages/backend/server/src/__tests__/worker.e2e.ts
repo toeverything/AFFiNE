@@ -9,7 +9,7 @@ import type { TestingApp } from './utils';
 type TestContext = {
   app: TestingApp;
 };
-const test = ava as TestFn<TestContext>;
+const test = ava.serial as TestFn<TestContext>;
 
 let safeFetchStub: Sinon.SinonStub | undefined;
 let safeFetchHandler:

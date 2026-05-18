@@ -82,10 +82,17 @@ export class PermissionSqlPredicateBuilder {
       WorkspaceRole.Admin,
       WorkspaceRole.Owner,
     ];
+    const inheritedWorkspaceRoles = this.inheritedWorkspaceRolesForDocAction(
+      input.action
+    )
+      .map(role => this.legacyWorkspaceRoleValues.get(role))
+      .filter(role => role !== undefined);
 
     return {
       sql: [
         `EXISTS (SELECT 1 FROM workspaces w`,
+        `LEFT JOIN workspace_pages wp ON wp.workspace_id = w.id`,
+        `AND wp.page_id = ${input.docIdColumn ?? 'doc_id'}`,
         `LEFT JOIN workspace_user_permissions wup ON wup.workspace_id = w.id`,
         `AND wup.user_id = ? AND wup.status = 'Accepted'`,
         `LEFT JOIN workspace_page_user_permissions p ON p.workspace_id = w.id`,
@@ -93,6 +100,10 @@ export class PermissionSqlPredicateBuilder {
         `WHERE w.id = ? AND (`,
         `(wup.type = ANY(?) AND p.type = ANY(?))`,
         `OR ((wup.id IS NULL OR wup.type <> ALL(?)) AND w.enable_sharing AND p.type = ANY(?))`,
+        `OR wup.type = ANY(?)`,
+        `OR (wup.type = ANY(?) AND (p.user_id IS NULL OR p.type IN (?, ?))`,
+        `AND COALESCE(wp."defaultRole", 30) = ANY(?))`,
+        `OR (w.enable_sharing AND wp.public AND ? = ANY(?))`,
         `))`,
       ].join(' '),
       params: [
@@ -103,6 +114,13 @@ export class PermissionSqlPredicateBuilder {
         grantRoles,
         legacyActiveMemberRoles,
         nonMemberGrantRoles,
+        inheritedWorkspaceRoles,
+        legacyActiveMemberRoles,
+        DocRole.None,
+        DocRole.External,
+        grantRoles,
+        DocRole.External,
+        roles,
       ],
     };
   }

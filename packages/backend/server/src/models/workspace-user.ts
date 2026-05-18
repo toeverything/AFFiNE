@@ -245,6 +245,7 @@ export class WorkspaceUserModel extends BaseModel {
     return role;
   }
 
+  @Transactional()
   async delete(workspaceId: string, userId: string) {
     await this.models.workspaceMember.delete(workspaceId, userId);
     await this.db.workspaceInvitation.deleteMany({
@@ -274,6 +275,7 @@ export class WorkspaceUserModel extends BaseModel {
     return await this.models.workspaceInvitation.deleteNonAccepted(workspaceId);
   }
 
+  @Transactional()
   async demoteAcceptedAdmins(workspaceId: string) {
     await this.models.permissionProjection.markNewWriteOrigin();
     return await this.db.workspaceMember.updateMany({

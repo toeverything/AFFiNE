@@ -1,6 +1,7 @@
 import assert from 'node:assert';
 
 import { Injectable } from '@nestjs/common';
+import { Transactional } from '@nestjs-cls/transactional';
 import { WorkspaceMemberSource, WorkspaceMemberStatus } from '@prisma/client';
 
 import { CanNotBatchGrantDocOwnerPermissions } from '../base';
@@ -134,6 +135,7 @@ export function docRoleFromNew(role: DocGrantRole): DocRole {
 
 @Injectable()
 export class WorkspaceMemberModel extends BaseModel {
+  @Transactional()
   async setOwner(
     workspaceId: string,
     userId: string,
@@ -190,7 +192,13 @@ export class WorkspaceMemberModel extends BaseModel {
     });
   }
 
-  async setActive(workspaceId: string, userId: string, role: WorkspaceRole) {
+  @Transactional()
+  async setActive(
+    workspaceId: string,
+    userId: string,
+    role: WorkspaceRole,
+    data: { legacyPermissionId?: string | null; source?: PermissionSource } = {}
+  ) {
     await this.models.permissionProjection.markNewWriteOrigin();
     if (role === WorkspaceRole.Owner) {
       throw new Error('Cannot grant Owner role of a workspace to a user.');
@@ -210,17 +218,21 @@ export class WorkspaceMemberModel extends BaseModel {
       },
       update: {
         role: workspaceRoleToNew(role),
+        legacyPermissionId: data.legacyPermissionId,
+        source: data.source,
       },
       create: {
         workspaceId,
         userId,
         role: workspaceRoleToNew(role),
         state: 'active',
-        source: 'legacy',
+        source: data.source ?? 'legacy',
+        legacyPermissionId: data.legacyPermissionId,
       },
     });
   }
 
+  @Transactional()
   async delete(workspaceId: string, userId: string) {
     await this.models.permissionProjection.markNewWriteOrigin();
     const existingOwners = await this.db.workspaceMember.count({
@@ -254,6 +266,7 @@ export class WorkspaceMemberModel extends BaseModel {
 export class WorkspaceInvitationModel extends BaseModel {
   private hasCurrentColumns?: Promise<boolean>;
 
+  @Transactional()
   async set(
     workspaceId: string,
     userId: string,
@@ -290,6 +303,7 @@ export class WorkspaceInvitationModel extends BaseModel {
     });
   }
 
+  @Transactional()
   async setState(
     workspaceId: string,
     userId: string,
@@ -309,7 +323,11 @@ export class WorkspaceInvitationModel extends BaseModel {
       return await this.models.workspaceMember.setActive(
         workspaceId,
         userId,
-        role
+        role,
+        {
+          legacyPermissionId: invitation?.legacyPermissionId,
+          source: invitation?.source,
+        }
       );
     }
 
@@ -321,6 +339,7 @@ export class WorkspaceInvitationModel extends BaseModel {
     });
   }
 
+  @Transactional()
   async deleteNonAccepted(workspaceId: string) {
     await this.models.permissionProjection.markNewWriteOrigin();
     return await this.db.workspaceInvitation.deleteMany({
@@ -411,9 +430,16 @@ export class WorkspaceInvitationModel extends BaseModel {
   private async findInvitation(workspaceId: string, userId: string) {
     if (await this.supportsCurrentInvitationColumns()) {
       const rows = await this.db.$queryRaw<
-        Array<{ requestedRole: 'admin' | 'member' }>
+        Array<{
+          requestedRole: 'admin' | 'member';
+          legacyPermissionId: string | null;
+          source: PermissionSource;
+        }>
       >`
-        SELECT requested_role AS "requestedRole"
+        SELECT
+          requested_role AS "requestedRole",
+          legacy_permission_id AS "legacyPermissionId",
+          kind AS source
         FROM workspace_invitations
         WHERE workspace_id = ${workspaceId}
           AND invitee_user_id = ${userId}
@@ -423,9 +449,16 @@ export class WorkspaceInvitationModel extends BaseModel {
     }
 
     const rows = await this.db.$queryRaw<
-      Array<{ requestedRole: 'admin' | 'member' }>
+      Array<{
+        requestedRole: 'admin' | 'member';
+        legacyPermissionId: string | null;
+        source: PermissionSource;
+      }>
     >`
-      SELECT role AS "requestedRole"
+      SELECT
+        role AS "requestedRole",
+        legacy_permission_id AS "legacyPermissionId",
+        source
       FROM workspace_invitations
       WHERE workspace_id = ${workspaceId}
         AND invitee_user_id = ${userId}
@@ -466,6 +499,7 @@ export class WorkspaceInvitationModel extends BaseModel {
 
 @Injectable()
 export class WorkspaceAccessPolicyModel extends BaseModel {
+  @Transactional()
   async upsert(
     workspaceId: string,
     policy: {
@@ -510,6 +544,7 @@ export class DocAccessPolicyModel extends BaseModel {
     return count > 0;
   }
 
+  @Transactional()
   async upsert(
     workspaceId: string,
     docId: string,
@@ -561,6 +596,7 @@ export class DocAccessPolicyModel extends BaseModel {
 
 @Injectable()
 export class DocGrantModel extends BaseModel {
+  @Transactional()
   async setOwner(workspaceId: string, docId: string, userId: string) {
     await this.models.permissionProjection.markNewWriteOrigin();
     await this.models.permissionProjection.lockDocOwnerTransfer(
@@ -581,6 +617,7 @@ export class DocGrantModel extends BaseModel {
     return await this.set(workspaceId, docId, userId, DocRole.Owner);
   }
 
+  @Transactional()
   async set(workspaceId: string, docId: string, userId: string, role: DocRole) {
     await this.models.permissionProjection.markNewWriteOrigin();
     assert(role !== DocRole.None && role !== DocRole.External);
@@ -607,6 +644,7 @@ export class DocGrantModel extends BaseModel {
     });
   }
 
+  @Transactional()
   async batchSetUserRoles(
     workspaceId: string,
     docId: string,
@@ -621,19 +659,33 @@ export class DocGrantModel extends BaseModel {
       return 0;
     }
 
-    const result = await this.db.docGrant.createMany({
-      skipDuplicates: true,
-      data: userIds.map(userId => ({
-        workspaceId,
-        docId,
-        principalType: 'user',
-        principalId: userId,
-        role: docRoleToNew(role),
-      })),
-    });
-    return result.count;
+    const grantRole = docRoleToNew(role);
+    for (const userId of userIds) {
+      await this.db.docGrant.upsert({
+        where: {
+          workspaceId_docId_principalType_principalId: {
+            workspaceId,
+            docId,
+            principalType: 'user',
+            principalId: userId,
+          },
+        },
+        update: {
+          role: grantRole,
+        },
+        create: {
+          workspaceId,
+          docId,
+          principalType: 'user',
+          principalId: userId,
+          role: grantRole,
+        },
+      });
+    }
+    return userIds.length;
   }
 
+  @Transactional()
   async delete(workspaceId: string, docId: string, userId: string) {
     await this.models.permissionProjection.markNewWriteOrigin();
     const deletingOwner = await this.db.docGrant.count({

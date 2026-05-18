@@ -117,7 +117,8 @@ export class WorkspaceMemberResolver {
 
       return list.map(({ id, status, type, user }) => ({
         ...user,
-        permission: type,
+        permission: Number(type),
+        role: Number(type),
         inviteId: id,
         status,
       }));
@@ -129,7 +130,8 @@ export class WorkspaceMemberResolver {
 
       return list.map(({ id, status, type, user }) => ({
         ...user,
-        permission: type,
+        permission: Number(type),
+        role: Number(type),
         inviteId: id,
         status,
       }));

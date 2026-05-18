@@ -17,12 +17,18 @@ export class BackfillEntitlementProjection1765600000000 {
       db.workspace.findMany({ select: { id: true } }),
     ]);
 
-    await Promise.all([
-      ...users.map(user => quota.reconcileUserQuotaState(user.id)),
-      ...workspaces.map(workspace =>
-        quota.reconcileWorkspaceQuotaState(workspace.id)
+    const tasks = [
+      ...users.map(user => () => quota.reconcileUserQuotaState(user.id)),
+      ...workspaces.map(
+        workspace => () => quota.reconcileWorkspaceQuotaState(workspace.id)
       ),
-    ]);
+    ];
+    const batchSize = 16;
+    for (let index = 0; index < tasks.length; index += batchSize) {
+      await Promise.all(
+        tasks.slice(index, index + batchSize).map(task => task())
+      );
+    }
   }
 
   static async down(_db: PrismaClient) {}

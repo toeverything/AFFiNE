@@ -38,6 +38,7 @@ export class DocUserModel extends BaseModel {
     return await this.get(workspaceId, docId, userId);
   }
 
+  @Transactional()
   async batchSetUserRoles(
     workspaceId: string,
     docId: string,
@@ -60,6 +61,7 @@ export class DocUserModel extends BaseModel {
     );
   }
 
+  @Transactional()
   async delete(workspaceId: string, docId: string, userId: string) {
     await this.models.docGrant.delete(workspaceId, docId, userId);
   }

@@ -52,6 +52,7 @@ export class ConversationInboxService {
       await this.ac
         .user(userId)
         .workspace(session.config.workspaceId)
+        .allowLocal()
         .assert('Workspace.Blobs.Write');
     }
 

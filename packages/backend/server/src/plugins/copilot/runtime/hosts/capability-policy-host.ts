@@ -50,7 +50,10 @@ export class CapabilityPolicyHost {
         .get(QuotaStateService, { strict: false })
         .reconcileUserQuotaState(userId);
       const flags = state.flags as { unlimitedCopilot?: boolean };
-      return !!flags.unlimitedCopilot || state.plan === 'ai';
+      return (
+        !!flags.unlimitedCopilot ||
+        ['pro', 'lifetime_pro', 'ai'].includes(state.plan)
+      );
     } catch {
       return false;
     }

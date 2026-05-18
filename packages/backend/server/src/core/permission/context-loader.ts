@@ -418,7 +418,7 @@ export class PermissionContextLoader {
     return rows[0] ?? null;
   }
 
-  private async workspaceExists(workspaceId: string) {
+  async workspaceExists(workspaceId: string) {
     const workspace = await this.db.workspace.findUnique({
       where: { id: workspaceId },
       select: { id: true },

@@ -145,9 +145,13 @@ const roleCases: Array<{
     title: 'should return null if doc role is [None]',
     setup: async () => {
       await models.doc.setDefaultRole(ws.id, 'doc1', DocRole.None);
+      const u2 = await models.user.create({
+        email: `${randomUUID()}@affine.pro`,
+      });
+      underReviewUserId = u2.id;
       await models.workspaceUser.set(
         ws.id,
-        user.id,
+        underReviewUserId,
         WorkspaceRole.Collaborator,
         {
           status: WorkspaceMemberStatus.Accepted,
@@ -157,7 +161,7 @@ const roleCases: Array<{
     resource: () => ({
       workspaceId: ws.id,
       docId: 'doc1',
-      userId: user.id,
+      userId: underReviewUserId,
     }),
     expectedRole: null,
   },
@@ -165,14 +169,6 @@ const roleCases: Array<{
     title: 'should return [External] if doc role is [None] but doc is public',
     setup: async () => {
       await models.doc.setDefaultRole(ws.id, 'doc1', DocRole.None);
-      await models.workspaceUser.set(
-        ws.id,
-        user.id,
-        WorkspaceRole.Collaborator,
-        {
-          status: WorkspaceMemberStatus.Accepted,
-        }
-      );
       await models.doc.publish(ws.id, 'doc1');
     },
     resource: () => ({

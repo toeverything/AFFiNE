@@ -105,13 +105,14 @@ export class QuotaStateService {
     const quota = ownerEntitlement?.quota ?? resolved.quota;
     const plan = ownerEntitlement?.plan ?? resolved.plan;
     const usedStorageQuota = ownerState
-      ? Number(ownerState.usedStorageQuota)
+      ? ownerState.usedStorageQuota
       : workspaceStorageUsage;
+    const storageQuota = BigInt(quota.storageQuota);
     const seatLimit = quota.seatLimit ?? 0;
     const overcapacityMemberCount = Math.max(memberCount - seatLimit, 0);
     const readonlyReasons = [
       overcapacityMemberCount > 0 ? 'member_overflow' : null,
-      usedStorageQuota > quota.storageQuota ? 'storage_overflow' : null,
+      usedStorageQuota > storageQuota ? 'storage_overflow' : null,
     ].filter((reason): reason is string => !!reason);
     const now = new Date();
 
@@ -169,10 +170,10 @@ export class QuotaStateService {
       this.db.workspace.findMany({ select: { id: true } }),
     ]);
 
-    await Promise.all([
-      ...users.map(user => this.reconcileUserQuotaState(user.id)),
-      ...workspaces.map(workspace =>
-        this.reconcileWorkspaceQuotaState(workspace.id)
+    await this.reconcileMany([
+      ...users.map(user => () => this.reconcileUserQuotaState(user.id)),
+      ...workspaces.map(
+        workspace => () => this.reconcileWorkspaceQuotaState(workspace.id)
       ),
     ]);
   }
@@ -224,27 +225,25 @@ export class QuotaStateService {
   private async reconcileOwnedWorkspaces(userId: string) {
     const workspaces = await this.getOwnedWorkspaceIds(userId);
 
-    await Promise.all(
-      workspaces.map(workspaceId =>
-        this.reconcileWorkspaceQuotaState(workspaceId)
+    await this.reconcileMany(
+      workspaces.map(
+        workspaceId => () => this.reconcileWorkspaceQuotaState(workspaceId)
       )
     );
   }
 
   private async getOwnerStorageUsage(userId: string) {
     const workspaces = await this.getOwnedWorkspaceIds(userId);
-    const usages = await Promise.all(
-      workspaces.map(async workspaceId => {
-        const entitlement =
-          await this.entitlement.resolveWorkspaceEntitlement(workspaceId);
+    const usages = await this.mapMany(workspaces, async workspaceId => {
+      const entitlement =
+        await this.entitlement.resolveWorkspaceEntitlement(workspaceId);
 
-        return this.hasStandaloneWorkspaceQuota(entitlement.plan)
-          ? 0
-          : this.getWorkspaceStorageUsage(workspaceId);
-      })
-    );
+      return this.hasStandaloneWorkspaceQuota(entitlement.plan)
+        ? 0n
+        : this.getWorkspaceStorageUsage(workspaceId);
+    });
 
-    return usages.reduce((total, usage) => total + usage, 0);
+    return usages.reduce((total, usage) => total + usage, 0n);
   }
 
   private async getWorkspaceOwner(workspaceId: string) {
@@ -310,7 +309,7 @@ export class QuotaStateService {
       },
     });
 
-    return sum._sum.size ?? 0;
+    return BigInt(sum._sum.size ?? 0);
   }
 
   private hasStandaloneWorkspaceQuota(plan: string) {
@@ -332,6 +331,23 @@ export class QuotaStateService {
       storageQuota: BigInt(quota.storageQuota),
       historyPeriodSeconds: quota.historyPeriod,
     };
+  }
+
+  private async reconcileMany(tasks: Array<() => Promise<unknown>>) {
+    await this.mapMany(tasks, task => task());
+  }
+
+  private async mapMany<T, U>(items: T[], mapper: (item: T) => Promise<U>) {
+    const batchSize = 16;
+    const results: U[] = [];
+    for (let index = 0; index < items.length; index += batchSize) {
+      results.push(
+        ...(await Promise.all(
+          items.slice(index, index + batchSize).map(item => mapper(item))
+        ))
+      );
+    }
+    return results;
   }
 
   private userQuotaStateChanged(

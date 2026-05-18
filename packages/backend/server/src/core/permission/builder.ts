@@ -12,22 +12,26 @@ import {
   WorkspaceRole,
 } from './types';
 
+function assertPerm(permission?: PermissionService) {
+  if (!permission) {
+    throw new Error('PermissionService is required for permission checks.');
+  }
+  return permission;
+}
+
 @Injectable()
 export class AccessControllerBuilder {
   constructor(private readonly permission?: PermissionService) {}
 
   user(userId: string) {
-    return new UserAccessControllerBuilder(
-      userId,
-      this.permission as PermissionService
-    );
+    return new UserAccessControllerBuilder(userId, this.permission);
   }
 }
 
 export class UserAccessControllerBuilder {
   constructor(
     private readonly userId: string,
-    private readonly permission: PermissionService
+    private readonly permission?: PermissionService
   ) {}
 
   workspace(workspaceId: string) {
@@ -76,7 +80,7 @@ export class UserAccessControllerBuilder {
 class WorkspaceAccessControllerBuilder {
   constructor(
     public readonly data: Resource<'ws'>,
-    private readonly permission: PermissionService
+    private readonly permission?: PermissionService
   ) {}
 
   allowLocal() {
@@ -105,7 +109,7 @@ class WorkspaceAccessControllerBuilder {
     action: DocAction
   ): Promise<T[]> {
     const docIds = items.map(item => item.docId);
-    const docRoles = await this.permission.batchDocPermissions({
+    const docRoles = await assertPerm(this.permission).batchDocPermissions({
       userId: this.data.userId,
       workspaceId: this.data.workspaceId,
       docs: docIds.map(docId => ({
@@ -128,21 +132,21 @@ class WorkspaceAccessControllerBuilder {
   }
 
   async assert(action: WorkspaceAction) {
-    await this.permission.assertWorkspace({
+    await assertPerm(this.permission).assertWorkspace({
       ...this.data,
       action,
     });
   }
 
   async can(action: WorkspaceAction) {
-    return await this.permission.canWorkspace({
+    return await assertPerm(this.permission).canWorkspace({
       ...this.data,
       action,
     });
   }
 
   async permissions() {
-    const result = await this.permission.workspacePermissions({
+    const result = await assertPerm(this.permission).workspacePermissions({
       ...this.data,
       actions: [...WORKSPACE_ACTIONS],
     });
@@ -158,7 +162,7 @@ class WorkspaceAccessControllerBuilder {
 class DocAccessControllerBuilder {
   constructor(
     public readonly data: Resource<'doc'>,
-    private readonly permission: PermissionService
+    private readonly permission?: PermissionService
   ) {}
 
   allowLocal() {
@@ -167,21 +171,21 @@ class DocAccessControllerBuilder {
   }
 
   async assert(action: DocAction) {
-    await this.permission.assertDoc({
+    await assertPerm(this.permission).assertDoc({
       ...this.data,
       action,
     });
   }
 
   async can(action: DocAction) {
-    return await this.permission.canDoc({
+    return await assertPerm(this.permission).canDoc({
       ...this.data,
       action,
     });
   }
 
   async permissions() {
-    const result = await this.permission.docPermissions({
+    const result = await assertPerm(this.permission).docPermissions({
       ...this.data,
       actions: [...DOC_ACTIONS],
     });
