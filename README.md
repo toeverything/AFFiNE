@@ -32,7 +32,6 @@
 
 [![Releases](https://img.shields.io/github/downloads/toeverything/AFFiNE/total)](https://github.com/toeverything/AFFiNE/releases/latest)
 [![All Contributors][all-contributors-badge]](#contributors)
-[![Node-version-icon]](https://nodejs.org/)
 [![TypeScript-version-icon]](https://www.typescriptlang.org/)
 
 </div>
@@ -92,23 +91,57 @@ Thanks for checking us out, we appreciate your interest and sincerely hope that 
 ## Contributing
 
 | Bug Reports                                                                                                                                         | Feature Requests                                                                                                                                               | Questions/Discussions                                                         | AFFiNE Community                                                  |
-| --------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| [Report a Bug](https://github.com/toeverything/AFFiNE/issues/new?assignees=&labels=bug&template=bug_report.yaml&title=)                              | [Request a Feature](https://github.com/toeverything/AFFiNE/issues/new?assignees=&labels=feature%2C+request&template=feature_request.yaml&title=)             | [Discussions](https://github.com/toeverything/AFFiNE/discussions)            | [Discord](https://affine.pro/redirect/discord)                  |
+| --------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| [Create a bug report](https://github.com/toeverything/AFFiNE/issues/new?assignees=&labels=bug%2Cproduct-review&template=BUG-REPORT.yml&title=TITLE) | [Submit a feature request](https://github.com/toeverything/AFFiNE/issues/new?assignees=&labels=feat%2Cproduct-review&template=FEATURE-REQUEST.yml&title=TITLE) | [Check GitHub Discussion](https://github.com/toeverything/AFFiNE/discussions) | [Visit the AFFiNE's Discord](https://affine.pro/redirect/discord) |
+| Something isn't working as expected                                                                                                                 | An idea for a new feature, or improvements                                                                                                                     | Discuss and ask questions                                                     | A place to ask, learn and engage with others                      |
 
-If you are interested in contributing to AFFiNE, please take a look at our [contribution guide](docs/contributing/CONTRIBUTING.md).
+Calling all developers, testers, tech writers and more! Contributions of all types are more than welcome, you can read more in [docs/types-of-contributions.md](docs/types-of-contributions.md). If you are interested in contributing code, read our [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) and feel free to check out our GitHub issues to get stuck in to show us what you’re made of.
 
-### Our contributors
+**Before you start contributing, please make sure you have read and accepted our [Contributor License Agreement]. To indicate your agreement, simply edit this file and submit a pull request.**
 
-Thanks to all the contributors who have contributed to AFFiNE!
+For **bug reports**, **feature requests** and other **suggestions** you can also [create a new issue](https://github.com/toeverything/AFFiNE/issues/new/choose) and choose the most appropriate template for your feedback.
 
-<a href="https://github.com/toeverything/AFFiNE/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=toeverything/AFFiNE" />
-</a>
+For **translation** and **language support** you can visit our [Discord](https://affine.pro/redirect/discord).
 
-## Packages
+If you have questions, you are welcome to contact us. One of the best places to get more info and learn more is in the [Discord](https://affine.pro/redirect/discord) where you can engage with other like-minded individuals.
 
-| Name                                         | Description                | Version                                                                                                                                |
-| -------------------------------------------- | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+## Templates
+
+AFFiNE now provides pre-built [templates](https://affine.pro/templates) from our team. Following are the Top 10 most popular templates among AFFiNE users,if you want to contribute, you can contribute your own template so other people can use it too.
+
+- [vision board template](https://affine.pro/templates/category-vision-board-template)
+- [one pager template](https://affine.pro/templates/category-one-pager-template-free)
+- [sample lesson plan math template](https://affine.pro/templates/sample-lesson-plan-math-template)
+- [grr lesson plan template free](https://affine.pro/templates/grr-lesson-plan-template-free)
+- [free editable lesson plan template for pre k](https://affine.pro/templates/free-editable-lesson-plan-template-for-pre-k)
+- [high note collection planners](https://affine.pro/templates/high-note-collection-planners)
+- [digital planner](https://affine.pro/templates/category-digital-planner)
+- [ADHD Planner](https://affine.pro/templates/adhd-planner)
+- [Reading Log](https://affine.pro/templates/reading-log)
+- [Cornell Notes Template](https://affine.pro/templates/category-cornell-notes-template)
+
+## Blog
+
+Welcome to the AFFiNE blog section! Here, you’ll find the latest insights, tips, and guides on how to maximize your experience with AFFiNE and AFFiNE AI, the leading Canvas AI tool for flexible note-taking and creative organization.
+
+- [vision board template](https://affine.pro/blog/8-free-printable-vision-board-templates-examples-2023)
+- [ai homework helper](https://affine.pro/blog/ai-homework-helper)
+- [vision board maker](https://affine.pro/blog/vision-board-maker)
+- [itinerary template](https://affine.pro/blog/free-customized-travel-itinerary-planner-templates)
+- [one pager template](https://affine.pro/blog/top-12-one-pager-examples-how-to-create-your-own)
+- [cornell notes template](https://affine.pro/blog/the-cornell-notes-template-and-system-learning-tips)
+- [swot chart template](https://affine.pro/blog/top-10-free-editable-swot-analysis-template-examples)
+- [apps like luna task](https://affine.pro/blog/apps-like-luna-task)
+- [note taking ai from rough notes to mind map](https://affine.pro/blog/dynamic-AI-notes)
+- [canvas ai](https://affine.pro/blog/best-canvas-ai)
+- [one pager](https://affine.pro/blog/top-12-one-pager-examples-how-to-create-your-own)
+- [SOP Template](https://affine.pro/blog/how-to-write-sop-step-by-step-guide-5-best-free-tools-templates)
+- [Chore Chart](https://affine.pro/blog/10-best-free-chore-chart-templates-kids-adults)
+
+## Ecosystem
+
+| Name                                             |                            |                                                                                                                                         |
+| ------------------------------------------------ | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
 | [@affine/component](packages/frontend/component) | AFFiNE Component Resources | ![](https://img.shields.io/codecov/c/github/toeverything/affine?style=flat-square)                                                      |
 | [@toeverything/theme](packages/common/theme)     | AFFiNE theme               | [![](https://img.shields.io/npm/dm/@toeverything/theme?style=flat-square&color=eee)](https://www.npmjs.com/package/@toeverything/theme) |
 
@@ -116,7 +149,7 @@ Thanks to all the contributors who have contributed to AFFiNE!
 
 We would also like to give thanks to open-source projects that make AFFiNE possible:
 
-- [Blocksuite](https://github.com/toeverything/BlockSuite) - 💡 BlockSuite is the open-source collaborative editor project behind AFFiNE.
+- [Blocksuite](https://github.com/toeverything/BlockSuite) - 💠 BlockSuite is the open-source collaborative editor project behind AFFiNE.
 - [y-octo](https://github.com/y-crdt/y-octo) - 🐙 y-octo is a native, high-performance, thread-safe YJS CRDT implementation, serving as the core engine enabling the AFFiNE Client/Server to achieve "local-first" functionality.
 - [OctoBase](https://github.com/toeverything/OctoBase) - 🐙 OctoBase is the open-source database behind AFFiNE, local-first, yet collaborative. A light-weight, scalable, data engine written in Rust.
 
