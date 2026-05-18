@@ -3,7 +3,7 @@ import { pick } from 'lodash-es';
 import z from 'zod/v3';
 
 import { DocReader, DocWriter } from '../../../core/doc';
-import { AccessController } from '../../../core/permission';
+import { PermissionAccess } from '../../../core/permission';
 import { clearEmbeddingChunk } from '../../../models';
 import { IndexerService } from '../../indexer';
 import { CopilotContextService } from '../context/service';
@@ -99,7 +99,7 @@ function defineTool<T extends z.ZodTypeAny>(
 @Injectable()
 export class WorkspaceMcpProvider {
   constructor(
-    private readonly ac: AccessController,
+    private readonly ac: PermissionAccess,
     private readonly reader: DocReader,
     private readonly writer: DocWriter,
     private readonly context: CopilotContextService,

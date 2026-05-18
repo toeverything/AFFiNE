@@ -32,3 +32,11 @@ export function realtimeCommentRoom(workspaceId: string, docId: string) {
 export function realtimeWorkspaceEmbeddingProgressRoom(workspaceId: string) {
   return realtimeWorkspaceRoom(workspaceId, 'embedding-progress');
 }
+
+export function realtimeUserQuotaStateRoom(userId: string) {
+  return realtimeUserRoom(userId, 'quota-state');
+}
+
+export function realtimeWorkspaceQuotaStateRoom(workspaceId: string) {
+  return realtimeWorkspaceRoom(workspaceId, 'quota-state');
+}

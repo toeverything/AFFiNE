@@ -18,9 +18,11 @@ export {
   realtimeCommentRoom,
   realtimeNotificationRoom,
   realtimeTranscriptTaskRoom,
+  realtimeUserQuotaStateRoom,
   realtimeUserRoom,
   realtimeWorkspaceDocRoom,
   realtimeWorkspaceEmbeddingProgressRoom,
+  realtimeWorkspaceQuotaStateRoom,
   realtimeWorkspaceRoom,
 } from './rooms';
 export type { RealtimeRequestHandler, RealtimeTopicHandler } from './types';

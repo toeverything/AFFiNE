@@ -5,7 +5,6 @@ import {
   deleteWorkspaceMutation,
   getWorkspaceInfoQuery,
   getWorkspacesQuery,
-  Permission,
   ServerDeploymentType,
   ServerFeature,
 } from '@affine/graphql';
@@ -355,13 +354,12 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
 
     const info = await this.getWorkspaceInfo(id, signal);
 
+    const isOwner = info.workspace.permissions.Workspace_Delete;
+    const isAdmin =
+      !isOwner && info.workspace.permissions.Workspace_Settings_Update;
+
     if (!cloudData && !localData) {
-      return {
-        isOwner: info.workspace.role === Permission.Owner,
-        isAdmin: info.workspace.role === Permission.Admin,
-        isTeam: info.workspace.team,
-        isEmpty,
-      };
+      return { isOwner, isAdmin, isTeam: info.workspace.team, isEmpty };
     }
 
     const client = getWorkspaceProfileWorker();
@@ -374,8 +372,8 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
     return {
       name: result.name,
       avatar: result.avatar,
-      isOwner: info.workspace.role === Permission.Owner,
-      isAdmin: info.workspace.role === Permission.Admin,
+      isOwner,
+      isAdmin,
       isTeam: info.workspace.team,
       isEmpty,
     };

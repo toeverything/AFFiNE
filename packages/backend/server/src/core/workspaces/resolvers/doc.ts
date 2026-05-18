@@ -11,7 +11,7 @@ import {
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import { SafeIntResolver } from 'graphql-scalars';
 
 import {
@@ -34,11 +34,11 @@ import { Models, PublicDocMode } from '../../../models';
 import { CurrentUser } from '../../auth';
 import { Editor } from '../../doc';
 import {
-  AccessController,
   DOC_ACTIONS,
   DocAction,
   DocRole,
-  WorkspacePolicyService,
+  PermissionAccess,
+  PermissionService,
 } from '../../permission';
 import { PublicUserType, WorkspaceUserType } from '../../user';
 import { WorkspaceType } from '../types';
@@ -295,8 +295,8 @@ export class WorkspaceDocResolver {
      * @deprecated migrate to models
      */
     private readonly prisma: PrismaClient,
-    private readonly ac: AccessController,
-    private readonly policy: WorkspacePolicyService,
+    private readonly ac: PermissionAccess,
+    private readonly permission: PermissionService,
     private readonly models: Models,
     private readonly cache: Cache
   ) {}
@@ -361,16 +361,32 @@ export class WorkspaceDocResolver {
     @Parent() workspace: WorkspaceType,
     @Args('pagination', PaginationInput.decode) pagination: PaginationInput
   ): Promise<PaginatedDocType> {
-    const [count, rows] = await this.models.doc.paginateDocInfoByUpdatedAt(
-      workspace.id,
-      pagination
-    );
-    const needs = await this.ac
-      .user(me.id)
-      .workspace(workspace.id)
-      .docs(rows, 'Doc.Read');
+    const predicate = this.permission.docReadableSqlPredicate({
+      userId: me.id,
+      workspaceId: workspace.id,
+      action: 'Doc.Read',
+      docIdColumn: Prisma.raw('"workspace_pages"."page_id"'),
+    });
+    const fallbackPredicate = this.permission.fallbackDocReadableSqlPredicate({
+      userId: me.id,
+      workspaceId: workspace.id,
+      action: 'Doc.Read',
+      docIdColumn: Prisma.raw('"workspace_pages"."page_id"'),
+    });
+    const [count, rows] = await this.models.doc
+      .paginateDocInfoByUpdatedAt(workspace.id, pagination, predicate)
+      .catch(error => {
+        if (!fallbackPredicate) {
+          throw error;
+        }
+        return this.models.doc.paginateDocInfoByUpdatedAt(
+          workspace.id,
+          pagination,
+          fallbackPredicate
+        );
+      });
 
-    return paginate(needs, 'updatedAt', pagination, count);
+    return paginate(rows, 'updatedAt', pagination, count);
   }
 
   @ResolveField(() => DocType, {
@@ -423,7 +439,7 @@ export class WorkspaceDocResolver {
       throw new ExpectToPublishDoc();
     }
 
-    await this.policy.assertCanPublishDoc(user.id, workspaceId, docId);
+    await this.ac.user(user.id).doc(workspaceId, docId).assert('Doc.Publish');
 
     const doc = await this.models.doc.publish(workspaceId, docId, mode);
 
@@ -448,7 +464,7 @@ export class WorkspaceDocResolver {
       throw new ExpectToRevokePublicDoc('Expect doc not to be workspace');
     }
 
-    await this.policy.assertCanUnpublishDoc(user.id, workspaceId, docId);
+    await this.ac.user(user.id).doc(workspaceId, docId).assert('Doc.Publish');
 
     const doc = await this.models.doc.unpublish(workspaceId, docId);
 
@@ -518,7 +534,7 @@ export class DocResolver {
   private readonly logger = new Logger(DocResolver.name);
 
   constructor(
-    private readonly ac: AccessController,
+    private readonly ac: PermissionAccess,
     private readonly models: Models
   ) {}
 

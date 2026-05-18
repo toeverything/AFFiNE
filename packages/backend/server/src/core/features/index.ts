@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 
+import { EntitlementModule } from '../entitlement';
 import {
   AdminFeatureManagementResolver,
   UserFeatureResolver,
@@ -7,6 +8,7 @@ import {
 import { EarlyAccessType, FeatureService } from './service';
 
 @Module({
+  imports: [EntitlementModule],
   providers: [
     UserFeatureResolver,
     AdminFeatureManagementResolver,

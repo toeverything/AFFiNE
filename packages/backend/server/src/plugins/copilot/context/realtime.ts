@@ -2,7 +2,7 @@ import { Injectable, OnModuleInit } from '@nestjs/common';
 import { z } from 'zod';
 
 import { OnEvent } from '../../../base';
-import { AccessController } from '../../../core/permission';
+import { PermissionAccess } from '../../../core/permission';
 import {
   RealtimePublisher,
   RealtimeRegistry,
@@ -19,7 +19,7 @@ export function workspaceEmbeddingRoom(workspaceId: string) {
 @Injectable()
 export class CopilotEmbeddingRealtimeProvider implements OnModuleInit {
   constructor(
-    private readonly ac: AccessController,
+    private readonly ac: PermissionAccess,
     private readonly models: Models,
     private readonly context: CopilotContextService,
     private readonly registry: RealtimeRegistry,

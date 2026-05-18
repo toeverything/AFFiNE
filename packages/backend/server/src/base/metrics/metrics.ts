@@ -62,6 +62,7 @@ export type KnownMetricScopes =
   | 'queue'
   | 'storage'
   | 'process'
+  | 'permission'
   | 'workspace';
 
 const metricCreators: MetricCreators = {

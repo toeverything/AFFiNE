@@ -172,7 +172,6 @@ export interface AdminUpdateWorkspaceInput {
   enableDocEmbedding?: InputMaybe<Scalars['Boolean']['input']>;
   enableSharing?: InputMaybe<Scalars['Boolean']['input']>;
   enableUrlPreview?: InputMaybe<Scalars['Boolean']['input']>;
-  features?: InputMaybe<Array<FeatureType>>;
   id: Scalars['String']['input'];
   name?: InputMaybe<Scalars['String']['input']>;
   public?: InputMaybe<Scalars['Boolean']['input']>;
@@ -1021,6 +1020,7 @@ export interface DocPermissions {
   Doc_Comments_Delete: Scalars['Boolean']['output'];
   Doc_Comments_Read: Scalars['Boolean']['output'];
   Doc_Comments_Resolve: Scalars['Boolean']['output'];
+  Doc_Comments_Update: Scalars['Boolean']['output'];
   Doc_Copy: Scalars['Boolean']['output'];
   Doc_Delete: Scalars['Boolean']['output'];
   Doc_Duplicate: Scalars['Boolean']['output'];
@@ -1779,8 +1779,7 @@ export interface Mutation {
   addContextFile: CopilotContextFile;
   /** Update workspace embedding files */
   addWorkspaceEmbeddingFiles: CopilotWorkspaceFile;
-  addWorkspaceFeature: Scalars['Boolean']['output'];
-  /** Update workspace flags and features for admin */
+  /** Update workspace flags for admin */
   adminUpdateWorkspace: Maybe<AdminWorkspace>;
   approveMember: Scalars['Boolean']['output'];
   /** Ban an user */
@@ -1836,6 +1835,7 @@ export interface Mutation {
   forkCopilotSession: Scalars['String']['output'];
   generateLicenseKey: Scalars['String']['output'];
   generateUserAccessToken: RevealedAccessToken;
+  grantCommercialEntitlement: Scalars['Boolean']['output'];
   grantDocUserRoles: Scalars['Boolean']['output'];
   grantMember: Scalars['Boolean']['output'];
   /** import users */
@@ -1871,7 +1871,6 @@ export interface Mutation {
   removeContextFile: Scalars['Boolean']['output'];
   /** Remove workspace embedding files */
   removeWorkspaceEmbeddingFiles: Scalars['Boolean']['output'];
-  removeWorkspaceFeature: Scalars['Boolean']['output'];
   reorderWorkspaceByokConfigs: Array<WorkspaceByokKeyConfigType>;
   /** Request to apply the subscription in advance */
   requestApplySubscription: Array<SubscriptionType>;
@@ -1879,6 +1878,7 @@ export interface Mutation {
   resolveComment: Scalars['Boolean']['output'];
   resumeSubscription: SubscriptionType;
   retryTranscriptTask: Maybe<TranscriptionResultType>;
+  revokeCommercialEntitlement: Scalars['Boolean']['output'];
   revokeDocUserRoles: Scalars['Boolean']['output'];
   revokeInviteLink: Scalars['Boolean']['output'];
   revokeMember: Scalars['Boolean']['output'];
@@ -1963,11 +1963,6 @@ export interface MutationAddContextFileArgs {
 
 export interface MutationAddWorkspaceEmbeddingFilesArgs {
   blob: Scalars['Upload']['input'];
-  workspaceId: Scalars['String']['input'];
-}
-
-export interface MutationAddWorkspaceFeatureArgs {
-  feature: FeatureType;
   workspaceId: Scalars['String']['input'];
 }
 
@@ -2127,6 +2122,13 @@ export interface MutationGenerateUserAccessTokenArgs {
   input: GenerateAccessTokenInput;
 }
 
+export interface MutationGrantCommercialEntitlementArgs {
+  plan: Scalars['String']['input'];
+  quantity?: InputMaybe<Scalars['Int']['input']>;
+  targetId: Scalars['String']['input'];
+  targetType: Scalars['String']['input'];
+}
+
 export interface MutationGrantDocUserRolesArgs {
   input: GrantDocUserRolesInput;
 }
@@ -2219,11 +2221,6 @@ export interface MutationRemoveWorkspaceEmbeddingFilesArgs {
   workspaceId: Scalars['String']['input'];
 }
 
-export interface MutationRemoveWorkspaceFeatureArgs {
-  feature: FeatureType;
-  workspaceId: Scalars['String']['input'];
-}
-
 export interface MutationReorderWorkspaceByokConfigsArgs {
   input: ReorderWorkspaceByokConfigsInput;
 }
@@ -2245,6 +2242,11 @@ export interface MutationResumeSubscriptionArgs {
 export interface MutationRetryTranscriptTaskArgs {
   taskId: Scalars['String']['input'];
   workspaceId: Scalars['String']['input'];
+}
+
+export interface MutationRevokeCommercialEntitlementArgs {
+  targetId: Scalars['String']['input'];
+  targetType: Scalars['String']['input'];
 }
 
 export interface MutationRevokeDocUserRolesArgs {

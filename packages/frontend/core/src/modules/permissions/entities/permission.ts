@@ -1,4 +1,3 @@
-import { Permission } from '@affine/graphql';
 import {
   backoffRetry,
   effect,
@@ -46,9 +45,11 @@ export class WorkspacePermission extends Entity {
             signal
           );
 
+          const isOwner = info.workspace.permissions.Workspace_Delete;
           return {
-            isOwner: info.workspace.role === Permission.Owner,
-            isAdmin: info.workspace.role === Permission.Admin,
+            isOwner,
+            isAdmin:
+              !isOwner && info.workspace.permissions.Workspace_Settings_Update,
             isTeam: info.workspace.team,
           };
         } else {

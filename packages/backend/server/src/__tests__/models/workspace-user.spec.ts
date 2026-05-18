@@ -215,6 +215,114 @@ test('should delete workspace user role', async t => {
   t.is(role, null);
 });
 
+test('should delete legacy-only external workspace user role', async t => {
+  const workspace = await module.create(Mockers.Workspace);
+  const u1 = await module.create(Mockers.User);
+
+  await models.workspaceUser.set(workspace.id, u1.id, WorkspaceRole.External, {
+    status: WorkspaceMemberStatus.Accepted,
+  });
+
+  t.truthy(await models.workspaceUser.get(workspace.id, u1.id));
+
+  await models.workspaceUser.delete(workspace.id, u1.id);
+
+  t.is(await models.workspaceUser.get(workspace.id, u1.id), null);
+});
+
+test('should convert existing workspace user role to legacy-only external role', async t => {
+  const workspace = await module.create(Mockers.Workspace);
+  const u1 = await module.create(Mockers.User);
+
+  await models.workspaceUser.set(
+    workspace.id,
+    u1.id,
+    WorkspaceRole.Collaborator,
+    {
+      status: WorkspaceMemberStatus.Accepted,
+    }
+  );
+  await models.workspaceUser.set(workspace.id, u1.id, WorkspaceRole.External, {
+    status: WorkspaceMemberStatus.Accepted,
+  });
+
+  const role = await models.workspaceUser.get(workspace.id, u1.id);
+  t.is(role?.type, WorkspaceRole.External);
+  t.is(
+    await db.workspaceMember.count({
+      where: {
+        workspaceId: workspace.id,
+        userId: u1.id,
+        state: 'active',
+      },
+    }),
+    0
+  );
+});
+
+test('should backfill legacy permission id for new workspace member writes', async t => {
+  const workspace = await module.create(Mockers.Workspace);
+  const u1 = await module.create(Mockers.User);
+
+  await models.workspaceUser.set(
+    workspace.id,
+    u1.id,
+    WorkspaceRole.Collaborator,
+    {
+      status: WorkspaceMemberStatus.Accepted,
+    }
+  );
+
+  const legacyRole = await db.workspaceUserRole.findUniqueOrThrow({
+    where: {
+      workspaceId_userId: {
+        workspaceId: workspace.id,
+        userId: u1.id,
+      },
+    },
+  });
+  const member = await db.workspaceMember.findFirstOrThrow({
+    where: {
+      workspaceId: workspace.id,
+      userId: u1.id,
+      state: 'active',
+    },
+  });
+
+  t.is(member.legacyPermissionId, legacyRole.id);
+});
+
+test('should backfill legacy permission id for new workspace invitation writes', async t => {
+  const workspace = await module.create(Mockers.Workspace);
+  const u1 = await module.create(Mockers.User);
+
+  await models.workspaceUser.set(
+    workspace.id,
+    u1.id,
+    WorkspaceRole.Collaborator,
+    {
+      status: WorkspaceMemberStatus.Pending,
+    }
+  );
+
+  const legacyRole = await db.workspaceUserRole.findUniqueOrThrow({
+    where: {
+      workspaceId_userId: {
+        workspaceId: workspace.id,
+        userId: u1.id,
+      },
+    },
+  });
+  const invitation = await db.workspaceInvitation.findFirstOrThrow({
+    where: {
+      workspaceId: workspace.id,
+      inviteeUserId: u1.id,
+    },
+  });
+
+  t.is(invitation.legacyPermissionId, legacyRole.id);
+});
+
 test('should get user workspace roles with filter', async t => {
   const ws1 = await module.create(Mockers.Workspace);
   const ws2 = await module.create(Mockers.Workspace);

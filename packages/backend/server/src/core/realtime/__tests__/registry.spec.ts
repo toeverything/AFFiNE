@@ -1,4 +1,7 @@
-import { getRealtimeInputKey } from '@affine/realtime';
+import {
+  getRealtimeInputKey,
+  type WorkspaceQuotaStateSnapshot,
+} from '@affine/realtime';
 import test from 'ava';
 import { z } from 'zod';
 
@@ -7,13 +10,15 @@ import { CopilotTranscriptRealtimeProvider } from '../../../plugins/copilot/tran
 import type { CurrentUser } from '../../auth';
 import { CommentRealtimeProvider } from '../../comment/realtime';
 import { NotificationRealtimeProvider } from '../../notification/realtime';
-import type { AccessController } from '../../permission';
+import type { PermissionAccess } from '../../permission';
+import { QuotaStateRealtimeProvider } from '../../quota/realtime';
 import { RealtimeGateway } from '../gateway';
 import {
   realtimeCommentRoom,
   realtimeNotificationRoom,
   realtimeTranscriptTaskRoom,
   realtimeWorkspaceEmbeddingProgressRoom,
+  realtimeWorkspaceQuotaStateRoom,
   registerRealtimeLiveQuery,
 } from '../index';
 import { RealtimePublisher } from '../publisher';
@@ -214,6 +219,103 @@ test('realtime providers expose runtime injection metadata for registry dependen
       CopilotTranscriptRealtimeProvider
     ).includes(RealtimeRegistry)
   );
+  t.true(
+    Reflect.getMetadata(
+      'design:paramtypes',
+      QuotaStateRealtimeProvider
+    ).includes(RealtimeRegistry)
+  );
+});
+
+test('quota realtime provider exposes effective quota state snapshots', async t => {
+  const registry = new RealtimeRegistry();
+  const provider = new QuotaStateRealtimeProvider(
+    {
+      workspaceUser: {
+        getActive: async () => ({ role: 'admin' }),
+      },
+    } as never,
+    {
+      reconcileUserQuotaState: async () => ({
+        userId: 'u1',
+        plan: 'pro',
+        sourceEntitlementId: null,
+        blobLimit: 1n,
+        storageQuota: 2n,
+        usedStorageQuota: 3n,
+        historyPeriodSeconds: 4,
+        copilotActionLimit: null,
+        flags: {},
+        known: true,
+        stale: false,
+        lastReconciledAt: null,
+        staleAfter: null,
+        createdAt: new Date(0),
+        updatedAt: new Date(0),
+      }),
+      reconcileWorkspaceQuotaState: async () => ({
+        workspaceId: 'space',
+        plan: 'team',
+        sourceEntitlementId: null,
+        ownerUserId: 'u1',
+        usesOwnerQuota: false,
+        seatLimit: 5,
+        memberCount: 4,
+        overcapacityMemberCount: 0,
+        blobLimit: 6n,
+        storageQuota: 7n,
+        usedStorageQuota: 8n,
+        historyPeriodSeconds: 9,
+        readonly: false,
+        readonlyReasons: [],
+        flags: {},
+        known: true,
+        stale: false,
+        lastReconciledAt: null,
+        staleAfter: null,
+        createdAt: new Date(0),
+        updatedAt: new Date(0),
+      }),
+    } as never,
+    registry
+  );
+
+  provider.onModuleInit();
+
+  t.deepEqual(
+    await registry.getRequest('user.quota-state.get').handle(user, {}),
+    {
+      state: {
+        userId: 'u1',
+        plan: 'pro',
+        sourceEntitlementId: null,
+        blobLimit: 1,
+        storageQuota: 2,
+        usedStorageQuota: 3,
+        historyPeriodSeconds: 4,
+        copilotActionLimit: null,
+        flags: {},
+        known: true,
+        stale: false,
+        lastReconciledAt: null,
+        staleAfter: null,
+        createdAt: new Date(0),
+        updatedAt: new Date(0),
+      },
+    }
+  );
+  const workspaceQuotaState = (await registry
+    .getRequest('workspace.quota-state.get')
+    .handle(user, { workspaceId: 'space' })) as {
+    state: WorkspaceQuotaStateSnapshot;
+  };
+  t.is(workspaceQuotaState.state.memberCount, 4);
+  t.is(
+    registry
+      .getTopic('workspace.quota-state.changed')
+      .room(user, { workspaceId: 'space' }),
+    realtimeWorkspaceQuotaStateRoom('space')
+  );
 });
 
 test('copilot transcript realtime provider registers task live query handlers', async t => {
@@ -234,7 +336,7 @@ test('copilot transcript realtime provider registers task live query handlers', 
         },
       };
     },
-  } as unknown as AccessController;
+  } as unknown as PermissionAccess;
   const transcript = {
     async queryTask(
       userId: string,

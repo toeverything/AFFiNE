@@ -29,7 +29,7 @@ import { buildPublicRootDoc } from '../../native';
 import { CurrentUser, Public } from '../auth';
 import { PgWorkspaceDocStorageAdapter } from '../doc';
 import { DocReader } from '../doc/reader';
-import { AccessController, WorkspacePolicyService } from '../permission';
+import { PermissionAccess } from '../permission';
 import { CommentAttachmentStorage, WorkspaceBlobStorage } from '../storage';
 import { DocID } from '../utils/doc';
 
@@ -39,8 +39,7 @@ export class WorkspacesController {
   constructor(
     private readonly storage: WorkspaceBlobStorage,
     private readonly commentAttachmentStorage: CommentAttachmentStorage,
-    private readonly ac: AccessController,
-    private readonly workspacePolicy: WorkspacePolicyService,
+    private readonly ac: PermissionAccess,
     private readonly workspace: PgWorkspaceDocStorageAdapter,
     private readonly docReader: DocReader,
     private readonly models: Models
@@ -113,7 +112,7 @@ export class WorkspacesController {
       .workspace(workspaceId)
       .can('Workspace.Read');
     const canReadSharedWorkspaceBlobs =
-      await this.workspacePolicy.canReadWorkspaceBySharedDocs(workspaceId);
+      await this.canReadSharedWorkspaceBlobs(workspaceId);
     if (!canReadWorkspace && !canReadSharedWorkspaceBlobs) {
       throw new SpaceAccessDenied({ spaceId: workspaceId });
     }
@@ -161,6 +160,14 @@ export class WorkspacesController {
 
     res.setHeader('cache-control', 'public, max-age=2592000, immutable');
     body.pipe(res);
+  }
+
+  private async canReadSharedWorkspaceBlobs(workspaceId: string) {
+    const [sharingEnabled, publicDocs] = await Promise.all([
+      this.models.workspace.allowSharing(workspaceId),
+      this.models.docAccessPolicy.hasPublicExternal(workspaceId),
+    ]);
+    return sharingEnabled && publicDocs;
   }
 
   // get doc binary

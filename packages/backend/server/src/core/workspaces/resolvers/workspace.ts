@@ -20,7 +20,7 @@ import {
 import { Models } from '../../../models';
 import { CurrentUser } from '../../auth';
 import {
-  AccessController,
+  PermissionAccess,
   WORKSPACE_ACTIONS,
   WorkspaceAction,
   WorkspaceRole,
@@ -79,7 +79,7 @@ export class WorkspaceRolePermissions {
 @Resolver(() => WorkspaceType)
 export class WorkspaceResolver {
   constructor(
-    private readonly ac: AccessController,
+    private readonly ac: PermissionAccess,
     private readonly quota: QuotaService,
     private readonly models: Models,
     private readonly workspaceService: WorkspaceService,

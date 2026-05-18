@@ -25,8 +25,10 @@ import {
   mapAnyError,
   MemberNotFoundInSpace,
   NoMoreSeat,
+  OwnerCanNotLeaveWorkspace,
   QueryTooLong,
   RequestMutex,
+  SpaceAccessDenied,
   Throttle,
   TooManyRequest,
   URLHelper,
@@ -35,7 +37,7 @@ import {
 import { Models } from '../../../models';
 import { CurrentUser, Public } from '../../auth';
 import {
-  AccessController,
+  PermissionAccess,
   WorkspacePolicyService,
   WorkspaceRole,
 } from '../../permission';
@@ -63,7 +65,7 @@ export class WorkspaceMemberResolver {
     private readonly cache: Cache,
     private readonly event: EventBus,
     private readonly url: URLHelper,
-    private readonly ac: AccessController,
+    private readonly ac: PermissionAccess,
     private readonly models: Models,
     private readonly mutex: RequestMutex,
     private readonly policy: WorkspacePolicyService,
@@ -157,7 +159,7 @@ export class WorkspaceMemberResolver {
     }
 
     const quota = await this.quota.getWorkspaceSeatQuota(workspaceId);
-    const isTeam = await this.models.workspace.isTeamWorkspace(workspaceId);
+    const isTeam = await this.workspaceService.isTeamWorkspace(workspaceId);
 
     const results: InviteResult[] = [];
 
@@ -307,7 +309,10 @@ export class WorkspaceMemberResolver {
     @CurrentUser() user: CurrentUser,
     @Args('workspaceId') workspaceId: string
   ) {
-    await this.policy.assertCanManageInviteLink(user.id, workspaceId);
+    await this.ac
+      .user(user.id)
+      .workspace(workspaceId)
+      .assert('Workspace.Users.Manage');
 
     const cacheId = `workspace:inviteLink:${workspaceId}`;
     return await this.cache.delete(cacheId);
@@ -324,7 +329,8 @@ export class WorkspaceMemberResolver {
       .workspace(workspaceId)
       .assert('Workspace.Users.Manage');
 
-    const isTeam = await this.models.workspace.isTeamWorkspace(workspaceId);
+    const quota = await this.quota.getWorkspaceSeatQuota(workspaceId);
+    const isTeam = await this.workspaceService.isTeamWorkspace(workspaceId);
     const role = await this.models.workspaceUser.get(workspaceId, userId);
 
     if (role) {
@@ -339,7 +345,6 @@ export class WorkspaceMemberResolver {
             }
           );
         } else {
-          const quota = await this.quota.getWorkspaceSeatQuota(workspaceId);
           if (quota.memberCount >= quota.memberLimit) {
             throw new NoMoreSeat({ spaceId: workspaceId });
           } else {
@@ -454,7 +459,14 @@ export class WorkspaceMemberResolver {
       throw new MemberNotFoundInSpace({ spaceId: workspaceId });
     }
 
-    await this.policy.assertCanRevokeMember(me.id, workspaceId, role.type);
+    await this.ac
+      .user(me.id)
+      .workspace(workspaceId)
+      .assert(
+        role.type === WorkspaceRole.Admin
+          ? 'Workspace.Administrators.Manage'
+          : 'Workspace.Users.Manage'
+      );
 
     await this.models.workspaceUser.delete(workspaceId, userId);
 
@@ -554,7 +566,16 @@ export class WorkspaceMemberResolver {
     })
     _workspaceName?: string
   ) {
-    await this.policy.assertCanLeaveWorkspace(user.id, workspaceId);
+    const role = await this.models.workspaceUser.getActive(
+      workspaceId,
+      user.id
+    );
+    if (!role) {
+      throw new MemberNotFoundInSpace({ spaceId: workspaceId });
+    }
+    if (role.type === WorkspaceRole.Owner) {
+      throw new OwnerCanNotLeaveWorkspace();
+    }
 
     await this.models.workspaceUser.delete(workspaceId, user.id);
     this.event.emit('workspace.members.leave', {
@@ -571,7 +592,7 @@ export class WorkspaceMemberResolver {
   }
 
   private async acceptInvitationByEmail(role: WorkspaceUserRole) {
-    await this.policy.assertCanInviteMembers(role.workspaceId);
+    await this.assertWorkspaceAcceptsMemberChange(role.workspaceId);
 
     const hasSeat = await this.quota.tryCheckSeat(role.workspaceId, true);
 
@@ -598,7 +619,7 @@ export class WorkspaceMemberResolver {
     workspaceId: string,
     inviterId: string
   ) {
-    await this.policy.assertCanInviteMembers(workspaceId);
+    await this.assertWorkspaceAcceptsMemberChange(workspaceId);
 
     let inviter = await this.models.user.getPublicUser(inviterId);
     if (!inviter) {
@@ -618,5 +639,12 @@ export class WorkspaceMemberResolver {
 
     await this.workspaceService.sendReviewRequestNotification(role.id);
     return;
+  }
+
+  private async assertWorkspaceAcceptsMemberChange(workspaceId: string) {
+    const state = await this.policy.getWorkspaceState(workspaceId);
+    if (state.isReadonly) {
+      throw new SpaceAccessDenied({ spaceId: workspaceId });
+    }
   }
 }

@@ -129,7 +129,6 @@ input AdminUpdateWorkspaceInput {
   enableDocEmbedding: Boolean
   enableSharing: Boolean
   enableUrlPreview: Boolean
-  features: [FeatureType!]
   id: String!
   name: String
   public: Boolean
@@ -874,6 +873,7 @@ type DocPermissions {
   Doc_Comments_Delete: Boolean!
   Doc_Comments_Read: Boolean!
   Doc_Comments_Resolve: Boolean!
+  Doc_Comments_Update: Boolean!
   Doc_Copy: Boolean!
   Doc_Delete: Boolean!
   Doc_Duplicate: Boolean!
@@ -1562,9 +1562,8 @@ type Mutation {
 
   """Update workspace embedding files"""
   addWorkspaceEmbeddingFiles(blob: Upload!, workspaceId: String!): CopilotWorkspaceFile!
-  addWorkspaceFeature(feature: FeatureType!, workspaceId: String!): Boolean!
 
-  """Update workspace flags and features for admin"""
+  """Update workspace flags for admin"""
   adminUpdateWorkspace(input: AdminUpdateWorkspaceInput!): AdminWorkspace
   approveMember(userId: String!, workspaceId: String!): Boolean!
 
@@ -1633,6 +1632,7 @@ type Mutation {
   forkCopilotSession(options: ForkChatSessionInput!): String!
   generateLicenseKey(sessionId: String!): String!
   generateUserAccessToken(input: GenerateAccessTokenInput!): RevealedAccessToken!
+  grantCommercialEntitlement(plan: String!, quantity: Int, targetId: String!, targetType: String!): Boolean!
   grantDocUserRoles(input: GrantDocUserRolesInput!): Boolean!
   grantMember(permission: Permission!, userId: String!, workspaceId: String!): Boolean!
 
@@ -1680,7 +1680,6 @@ type Mutation {
 
   """Remove workspace embedding files"""
   removeWorkspaceEmbeddingFiles(fileId: String!, workspaceId: String!): Boolean!
-  removeWorkspaceFeature(feature: FeatureType!, workspaceId: String!): Boolean!
   reorderWorkspaceByokConfigs(input: ReorderWorkspaceByokConfigsInput!): [WorkspaceByokKeyConfigType!]!
 
   """Request to apply the subscription in advance"""
@@ -1690,6 +1689,7 @@ type Mutation {
   resolveComment(input: CommentResolveInput!): Boolean!
   resumeSubscription(idempotencyKey: String @deprecated(reason: "use header `Idempotency-Key`"), plan: SubscriptionPlan = Pro, workspaceId: String): SubscriptionType!
   retryTranscriptTask(taskId: String!, workspaceId: String!): TranscriptionResultType
+  revokeCommercialEntitlement(targetId: String!, targetType: String!): Boolean!
   revokeDocUserRoles(input: RevokeDocUserRoleInput!): Boolean!
   revokeInviteLink(workspaceId: String!): Boolean!
   revokeMember(userId: String!, workspaceId: String!): Boolean!

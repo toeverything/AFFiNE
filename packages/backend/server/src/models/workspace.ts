@@ -90,9 +90,11 @@ export class WorkspaceModel extends BaseModel {
    */
   @Transactional()
   async create(userId: string) {
-    const workspace = await this.db.workspace.create({
-      data: { public: false },
-    });
+    const workspace = await this.withPermissionProjectionMetric(
+      this.db.workspace.create({
+        data: { public: false },
+      })
+    );
     this.logger.log(`Workspace created with id ${workspace.id}`);
     await this.models.workspaceUser.setOwner(workspace.id, userId);
     return workspace;
@@ -106,12 +108,26 @@ export class WorkspaceModel extends BaseModel {
     data: UpdateWorkspaceInput,
     notifyUpdate = true
   ) {
-    const workspace = await this.db.workspace.update({
-      where: {
-        id: workspaceId,
-      },
-      data,
-    });
+    if (
+      data.public !== undefined ||
+      data.enableSharing !== undefined ||
+      data.enableUrlPreview !== undefined
+    ) {
+      await this.models.workspaceAccessPolicy.upsert(workspaceId, {
+        public: data.public,
+        enableSharing: data.enableSharing,
+        enableUrlPreview: data.enableUrlPreview,
+      });
+    }
+
+    const workspace = await this.withPermissionProjectionMetric(
+      this.db.workspace.update({
+        where: {
+          id: workspaceId,
+        },
+        data,
+      })
+    );
     this.logger.debug(
       `Updated workspace ${workspaceId} with data ${JSON.stringify(data)}`
     );
@@ -155,11 +171,13 @@ export class WorkspaceModel extends BaseModel {
   }
 
   async delete(workspaceId: string) {
-    const rawResult = await this.db.workspace.deleteMany({
-      where: {
-        id: workspaceId,
-      },
-    });
+    const rawResult = await this.withPermissionProjectionMetric(
+      this.db.workspace.deleteMany({
+        where: {
+          id: workspaceId,
+        },
+      })
+    );
 
     if (rawResult.count > 0) {
       this.event.emit('workspace.deleted', { id: workspaceId });
@@ -183,7 +201,23 @@ export class WorkspaceModel extends BaseModel {
   }
 
   async isTeamWorkspace(workspaceId: string) {
-    return this.models.workspaceFeature.has(workspaceId, 'team_plan_v1');
+    const now = new Date();
+    const count = await this.db.entitlement.count({
+      where: {
+        targetType: 'workspace',
+        targetId: workspaceId,
+        plan: { in: ['team', 'selfhost_team'] },
+        OR: [
+          {
+            status: 'active',
+            OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+          },
+          { status: 'grace', graceUntil: { gt: now } },
+        ],
+      },
+    });
+
+    return count > 0;
   }
   // #endregion
 

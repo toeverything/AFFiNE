@@ -36,12 +36,54 @@ export interface RealtimeRequestMap {
   };
   'user.quota-state.get': {
     input: Record<string, never>;
-    output: { state: unknown };
+    output: { state: UserQuotaStateSnapshot };
   };
   'workspace.quota-state.get': {
     input: { workspaceId: string };
-    output: { state: unknown };
+    output: { state: WorkspaceQuotaStateSnapshot };
   };
+}
+
+export interface UserQuotaStateSnapshot {
+  userId: string;
+  plan: string;
+  sourceEntitlementId: string | null;
+  blobLimit: number;
+  storageQuota: number;
+  usedStorageQuota: number;
+  historyPeriodSeconds: number;
+  copilotActionLimit: number | null;
+  flags: Record<string, unknown>;
+  known: boolean;
+  stale: boolean;
+  lastReconciledAt: string | Date | null;
+  staleAfter: string | Date | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+}
+
+export interface WorkspaceQuotaStateSnapshot {
+  workspaceId: string;
+  plan: string;
+  sourceEntitlementId: string | null;
+  ownerUserId: string | null;
+  usesOwnerQuota: boolean;
+  seatLimit: number;
+  memberCount: number;
+  overcapacityMemberCount: number;
+  blobLimit: number;
+  storageQuota: number;
+  usedStorageQuota: number;
+  historyPeriodSeconds: number;
+  readonly: boolean;
+  readonlyReasons: string[];
+  flags: Record<string, unknown>;
+  known: boolean;
+  stale: boolean;
+  lastReconciledAt: string | Date | null;
+  staleAfter: string | Date | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
 }
 
 export type NotificationCountChangedReason =

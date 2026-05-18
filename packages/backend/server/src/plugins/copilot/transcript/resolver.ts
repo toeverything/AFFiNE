@@ -21,7 +21,7 @@ import {
   type FileUpload,
 } from '../../../base';
 import { CurrentUser } from '../../../core/auth';
-import { AccessController } from '../../../core/permission';
+import { PermissionAccess } from '../../../core/permission';
 import { CopilotType } from '../resolver';
 import type { TranscriptionJob } from './job';
 import { buildLegacyProjection } from './projection';
@@ -295,7 +295,7 @@ const FinishedStatus: Set<AiJobStatus> = new Set([
 @Resolver(() => CopilotType)
 export class CopilotTranscriptionResolver {
   constructor(
-    private readonly ac: AccessController,
+    private readonly ac: PermissionAccess,
     private readonly transcript: CopilotTranscriptionService
   ) {}
 
