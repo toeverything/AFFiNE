@@ -78,7 +78,6 @@ Star us, and you will receive all release notifications from GitHub without any 
 ## Acknowledgement
 
 “We shape our tools and thereafter our tools shape us”. A lot of pioneers have inspired us along the way, e.g.:
-
 - Quip & Notion with their great concept of “everything is a block”
 - Trello with their Kanban
 - Airtable & Miro with their no-code programmable datasheets
@@ -102,7 +101,7 @@ If you are interested in contributing to AFFiNE, please take a look at our [cont
 Thanks to all the contributors who have contributed to AFFiNE!
 
 <a href="https://github.com/toeverything/AFFiNE/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=toeverything/AFFiNE" />
+  <img alt="AFFiNE contributors" src="https://contrib.rocks/image?repo=toeverything/AFFiNE" />
 </a>
 
 ## Packages
@@ -157,7 +156,6 @@ For feature requests, please see [discussions](https://github.com/toeverything/A
 
 From the GitHub repo main page, click the green "Code" button and select "Create codespace on master". This will open a new Codespace with the (supposedly auto-forked
 AFFiNE repo cloned, built, and ready to go).
-
 ### Local
 
 See [BUILDING.md] for instructions on how to build AFFiNE from source code.
