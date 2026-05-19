@@ -101,7 +101,6 @@ import { ServerConfigStore } from './stores/server-config';
 import { ServerListStore } from './stores/server-list';
 import { SubscriptionStore } from './stores/subscription';
 import { UserCopilotQuotaStore } from './stores/user-copilot-quota';
-import { UserFeatureStore } from './stores/user-feature';
 import { UserQuotaStore } from './stores/user-quota';
 import { UserSettingsStore } from './stores/user-settings';
 import { DocCreatedByService } from './services/doc-created-by';
@@ -177,8 +176,7 @@ export function configureCloudModule(framework: Framework) {
       ServerService,
     ])
     .service(UserFeatureService)
-    .entity(UserFeature, [AuthService, UserFeatureStore])
-    .store(UserFeatureStore, [NbstoreService])
+    .entity(UserFeature, [AuthService])
     .service(InvoicesService)
     .store(InvoicesStore, [GraphQLService])
     .entity(Invoices, [InvoicesStore])

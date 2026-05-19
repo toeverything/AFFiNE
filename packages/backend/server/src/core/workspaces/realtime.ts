@@ -8,7 +8,13 @@ import {
 import { Injectable, OnModuleInit, Optional } from '@nestjs/common';
 import { z } from 'zod';
 
-import { Cache, OnEvent, QueryTooLong, URLHelper } from '../../base';
+import {
+  Cache,
+  isValidCacheTtl,
+  OnEvent,
+  QueryTooLong,
+  URLHelper,
+} from '../../base';
 import { Models } from '../../models';
 import type { WorkspaceUserCompat } from '../../models/workspace-user-compat';
 import type { CurrentUser } from '../auth';
@@ -124,10 +130,10 @@ export class WorkspaceAccessRealtimeProvider implements OnModuleInit {
   }
 
   private publish(workspaceId: string, reason: string) {
-    this.publisher?.publish(
+    this.publisher?.publishChanged(
       'workspace.access.changed',
       { workspaceId },
-      { changed: true, reason },
+      reason,
       { room: realtimeWorkspaceAccessRoom(workspaceId) }
     );
   }
@@ -166,10 +172,10 @@ export class WorkspaceConfigRealtimeProvider implements OnModuleInit {
 
   @OnEvent('workspace.updated', { suppressError: true })
   onWorkspaceUpdated(workspace: Events['workspace.updated']) {
-    this.publisher?.publish(
+    this.publisher?.publishChanged(
       'workspace.config.changed',
       { workspaceId: workspace.id },
-      { changed: true, reason: 'workspace-updated' },
+      'workspace-updated',
       { room: realtimeWorkspaceConfigRoom(workspace.id) }
     );
   }
@@ -351,7 +357,7 @@ export class WorkspaceMembersRealtimeProvider implements OnModuleInit {
     }
 
     const expireTime = await this.cache.ttl(cacheId);
-    if (!Number.isSafeInteger(expireTime)) {
+    if (!isValidCacheTtl(expireTime)) {
       return null;
     }
 
@@ -376,19 +382,19 @@ export class WorkspaceMembersRealtimeProvider implements OnModuleInit {
   }
 
   private publishMembers(workspaceId: string, reason: string) {
-    this.publisher?.publish(
+    this.publisher?.publishChanged(
       'workspace.members.changed',
       { workspaceId },
-      { changed: true, reason },
+      reason,
       { room: realtimeWorkspaceMembersRoom(workspaceId) }
     );
   }
 
   private publishInviteLink(workspaceId: string, reason: string) {
-    this.publisher?.publish(
+    this.publisher?.publishChanged(
       'workspace.invite-link.changed',
       { workspaceId },
-      { changed: true, reason },
+      reason,
       { room: realtimeWorkspaceInviteLinkRoom(workspaceId) }
     );
   }

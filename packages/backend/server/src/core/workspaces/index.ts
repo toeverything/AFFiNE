@@ -10,6 +10,7 @@ import { QuotaModule } from '../quota';
 import { StorageModule } from '../storage';
 import { UserModule } from '../user';
 import { WorkspacesController } from './controller';
+import { DocGrantsService } from './doc-grants';
 import {
   DocGrantsRealtimeProvider,
   DocShareRealtimeProvider,
@@ -53,6 +54,7 @@ import { WorkspaceStatsJob } from './stats.job';
     DocHistoryResolver,
     WorkspaceBlobResolver,
     WorkspaceService,
+    DocGrantsService,
     WorkspaceEvents,
     WorkspaceAccessRealtimeProvider,
     WorkspaceConfigRealtimeProvider,

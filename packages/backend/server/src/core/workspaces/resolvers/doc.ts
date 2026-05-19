@@ -44,6 +44,7 @@ import {
   PermissionService,
 } from '../../permission';
 import { PublicUserType, WorkspaceUserType } from '../../user';
+import { DocGrantsService } from '../doc-grants';
 import { WorkspaceType } from '../types';
 import { TimeBucket, TimeWindow } from './analytics-types';
 
@@ -538,6 +539,7 @@ export class DocResolver {
   constructor(
     private readonly ac: PermissionAccess,
     private readonly models: Models,
+    private readonly grants: DocGrantsService,
     private readonly event: EventBus
   ) {}
 
@@ -663,27 +665,10 @@ export class DocResolver {
     @Args('pagination', PaginationInput.decode) pagination: PaginationInput
   ): Promise<PaginatedGrantedDocUserType> {
     await this.ac.user(user.id).doc(doc).assert('Doc.Users.Read');
-
-    const [permissions, totalCount] = await this.models.docUser.paginate(
+    return await this.grants.paginateGrantedUsers(
       doc.workspaceId,
       doc.docId,
       pagination
-    );
-
-    const workspaceUsers = await this.models.user.getWorkspaceUsers(
-      permissions.map(p => p.userId)
-    );
-
-    const workspaceUsersMap = new Map(workspaceUsers.map(wu => [wu.id, wu]));
-
-    return paginate(
-      permissions.map(p => ({
-        ...p,
-        user: workspaceUsersMap.get(p.userId) as WorkspaceUserType,
-      })),
-      'createdAt',
-      pagination,
-      totalCount
     );
   }
 

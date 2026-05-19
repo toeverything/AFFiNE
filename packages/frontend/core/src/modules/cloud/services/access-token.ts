@@ -1,18 +1,7 @@
-import {
-  effect,
-  exhaustMapWithTrailing,
-  fromPromise,
-  LiveData,
-  onComplete,
-  OnEvent,
-  onStart,
-  Service,
-  smartRetry,
-} from '@toeverything/infra';
-import type { Subscription } from 'rxjs';
-import { catchError, EMPTY, tap } from 'rxjs';
+import { LiveData, OnEvent, Service } from '@toeverything/infra';
 
 import { AccountChanged } from '../events/account-changed';
+import { RealtimeLiveQuery } from '../realtime/live-query';
 import type {
   AccessToken,
   AccessTokenStore,
@@ -23,19 +12,24 @@ import type {
 export class AccessTokenService extends Service {
   constructor(private readonly accessTokenStore: AccessTokenStore) {
     super();
-    this.subscription = this.accessTokenStore
-      .subscribeUserAccessTokens()
-      .subscribe({
-        next: () => this.revalidate(),
-        error: error => this.error$.setValue(error),
-      });
+    this.liveQuery.start();
   }
-
-  private readonly subscription: Subscription;
 
   accessTokens$ = new LiveData<ListedAccessToken[] | null>(null);
   isRevalidating$ = new LiveData(false);
   error$ = new LiveData<any>(null);
+  private readonly liveQuery = new RealtimeLiveQuery({
+    request: signal => this.requestAccessTokens(signal),
+    subscribe: () => this.accessTokenStore.subscribeUserAccessTokens(),
+    applySnapshot: accessTokens => {
+      this.error$.value = null;
+      this.accessTokens$.value = accessTokens;
+    },
+    applyEvent: () => 'revalidate' as const,
+    onError: error => {
+      this.error$.value = error;
+    },
+  });
 
   async generateUserAccessToken(name: string): Promise<AccessToken> {
     const accessToken =
@@ -58,28 +52,9 @@ export class AccessTokenService extends Service {
     await this.waitForRevalidation();
   }
 
-  revalidate = effect(
-    exhaustMapWithTrailing(() => {
-      return fromPromise(() => {
-        return this.accessTokenStore.listUserAccessTokens();
-      }).pipe(
-        smartRetry(),
-        tap(accessTokens => {
-          this.accessTokens$.value = accessTokens;
-        }),
-        catchError(error => {
-          this.error$.value = error;
-          return EMPTY;
-        }),
-        onStart(() => {
-          this.isRevalidating$.value = true;
-        }),
-        onComplete(() => {
-          this.isRevalidating$.value = false;
-        })
-      );
-    })
-  );
+  revalidate = () => {
+    this.liveQuery.revalidate();
+  };
 
   private onAccountChanged() {
     this.accessTokens$.value = null;
@@ -95,7 +70,16 @@ export class AccessTokenService extends Service {
   }
 
   override dispose(): void {
-    this.revalidate.unsubscribe();
-    this.subscription.unsubscribe();
+    super.dispose();
+    this.liveQuery.dispose();
+  }
+
+  private async requestAccessTokens(signal: AbortSignal) {
+    this.isRevalidating$.value = true;
+    try {
+      return await this.accessTokenStore.listUserAccessTokens(signal);
+    } finally {
+      this.isRevalidating$.value = false;
+    }
   }
 }

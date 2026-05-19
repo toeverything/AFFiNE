@@ -20,11 +20,13 @@ export class UserSettingsStore extends Store {
     super();
   }
 
-  async getUserSettings(): Promise<UserSettings | undefined> {
+  async getUserSettings(
+    signal?: AbortSignal
+  ): Promise<UserSettings | undefined> {
     const { settings } = await this.nbstoreService.realtime.request(
       'user.settings.get',
       {},
-      { timeoutMs: 10000 }
+      { signal, timeoutMs: 10000 }
     );
     return settings;
   }

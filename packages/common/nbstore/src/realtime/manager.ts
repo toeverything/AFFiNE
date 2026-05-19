@@ -240,7 +240,7 @@ export class RealtimeManager {
     this.socketConnection.inner.socket.on('realtime:event', this.handleEvent);
     this.socketConnection.inner.socket.off('connect', this.handleReconnect);
     this.socketConnection.inner.socket.on('connect', this.handleReconnect);
-    if (this.subscriptionsNeedResubscribe) {
+    if (this.subscriptionsNeedResubscribe && this.context.authenticated) {
       await this.resubscribeAll();
     }
     return this.socketConnection.inner.socket;

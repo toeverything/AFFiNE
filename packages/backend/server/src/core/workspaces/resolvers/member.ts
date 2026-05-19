@@ -22,6 +22,7 @@ import {
   CanNotRevokeYourself,
   EventBus,
   InvalidInvitation,
+  isValidCacheTtl,
   mapAnyError,
   MemberNotFoundInSpace,
   NoMoreSeat,
@@ -258,7 +259,7 @@ export class WorkspaceMemberResolver {
     const id = await this.cache.get<{ inviteId: string }>(cacheId);
     if (id) {
       const expireTime = await this.cache.ttl(cacheId);
-      if (Number.isSafeInteger(expireTime)) {
+      if (isValidCacheTtl(expireTime)) {
         return {
           link: this.url.link(`/invite/${id.inviteId}`),
           expireTime: new Date(Date.now() + expireTime * 1000), // Convert seconds to milliseconds
@@ -284,7 +285,7 @@ export class WorkspaceMemberResolver {
     const invite = await this.cache.get<{ inviteId: string }>(cacheWorkspaceId);
     if (typeof invite?.inviteId === 'string') {
       const expireTime = await this.cache.ttl(cacheWorkspaceId);
-      if (Number.isSafeInteger(expireTime)) {
+      if (isValidCacheTtl(expireTime)) {
         return {
           link: this.url.link(`/invite/${invite.inviteId}`),
           expireTime: new Date(Date.now() + expireTime * 1000), // Convert seconds to milliseconds
@@ -318,7 +319,11 @@ export class WorkspaceMemberResolver {
       .assert('Workspace.Users.Manage');
 
     const cacheId = `workspace:inviteLink:${workspaceId}`;
+    const invite = await this.cache.get<{ inviteId: string }>(cacheId);
     const deleted = await this.cache.delete(cacheId);
+    if (invite?.inviteId) {
+      await this.cache.delete(`workspace:inviteLinkId:${invite.inviteId}`);
+    }
     this.event.emit('workspace.invite_link.revoked', { workspaceId });
     return deleted;
   }

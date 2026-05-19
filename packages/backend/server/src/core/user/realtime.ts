@@ -6,7 +6,7 @@ import type {
 import { Injectable, OnModuleInit, Optional } from '@nestjs/common';
 import { z } from 'zod';
 
-import { OnEvent, UserNotFound } from '../../base';
+import { AuthenticationRequired, OnEvent, UserNotFound } from '../../base';
 import { Feature, Models } from '../../models';
 import { sessionUser } from '../auth/service';
 import { AvailableUserFeatureConfig } from '../features/types';
@@ -20,6 +20,13 @@ import {
 } from '../realtime/rooms';
 
 const emptyInput = z.object({}).strict();
+
+function assertAuthenticated(user?: { id: string }) {
+  if (!user) {
+    throw new AuthenticationRequired();
+  }
+  return user;
+}
 
 @Injectable()
 export class UserRealtimeProvider
@@ -63,7 +70,7 @@ export class UserRealtimeProvider
         name: 'user.settings.get',
         input: emptyInput,
         handle: async user => ({
-          settings: await this.getSettings(user.id),
+          settings: await this.getSettings(assertAuthenticated(user).id),
         }),
       },
       topic: {
@@ -84,7 +91,7 @@ export class UserRealtimeProvider
         name: 'user.access-tokens.get',
         input: emptyInput,
         handle: async user => ({
-          tokens: await this.getAccessTokens(user.id),
+          tokens: await this.getAccessTokens(assertAuthenticated(user).id),
         }),
       },
       topic: {
@@ -103,20 +110,17 @@ export class UserRealtimeProvider
 
   @OnEvent('user.updated', { suppressError: true })
   onUserUpdated(user: Events['user.updated']) {
-    this.publisher?.publish(
-      'user.profile.changed',
-      {},
-      { changed: true, reason: 'user-updated' },
-      { room: realtimeUserProfileRoom(user.id) }
-    );
+    this.publisher?.publishChanged('user.profile.changed', {}, 'user-updated', {
+      room: realtimeUserProfileRoom(user.id),
+    });
   }
 
   @OnEvent('user.settings.updated', { suppressError: true })
   onUserSettingsUpdated({ userId }: Events['user.settings.updated']) {
-    this.publisher?.publish(
+    this.publisher?.publishChanged(
       'user.settings.changed',
       {},
-      { changed: true, reason: 'settings-updated' },
+      'settings-updated',
       { room: realtimeUserSettingsRoom(userId) }
     );
   }
@@ -176,11 +180,8 @@ export class UserRealtimeProvider
   }
 
   private publishAccessTokens(userId: string, reason: string) {
-    this.publisher?.publish(
-      'user.access-tokens.changed',
-      {},
-      { changed: true, reason },
-      { room: realtimeUserAccessTokensRoom(userId) }
-    );
+    this.publisher?.publishChanged('user.access-tokens.changed', {}, reason, {
+      room: realtimeUserAccessTokensRoom(userId),
+    });
   }
 }

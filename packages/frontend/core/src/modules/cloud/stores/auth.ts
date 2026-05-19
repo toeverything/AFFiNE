@@ -20,6 +20,7 @@ export interface AccountProfile {
   hasPassword: boolean;
   avatarUrl: string | null;
   emailVerified: string | null;
+  features?: string[];
 }
 
 export class AuthStore extends Store {

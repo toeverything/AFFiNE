@@ -459,6 +459,7 @@ test('workspace realtime providers register access, config, members and invite l
 
 test('doc realtime providers register share state and grants handlers', async t => {
   const registry = new RealtimeRegistry();
+  const assertedActions: string[] = [];
   const ac = {
     user(userId: string) {
       return {
@@ -466,14 +467,14 @@ test('doc realtime providers register share state and grants handlers', async t 
           return {
             async assert(action: string) {
               t.deepEqual(
-                { userId, workspaceId, docId, action },
+                { userId, workspaceId, docId },
                 {
                   userId: 'u1',
                   workspaceId: 'space',
                   docId: 'doc',
-                  action,
                 }
               );
+              assertedActions.push(action);
             },
           };
         },
@@ -513,8 +514,33 @@ test('doc realtime providers register share state and grants handlers', async t 
     },
   };
 
+  const grants = {
+    paginateGrantedUsers: async () => ({
+      totalCount: 1,
+      pageInfo: { endCursor: null, hasNextPage: false },
+      edges: [
+        {
+          node: {
+            type: DocRole.Manager,
+            user: {
+              id: 'u2',
+              name: 'User 2',
+              email: 'u2@affine.pro',
+              avatarUrl: null,
+            },
+          },
+        },
+      ],
+    }),
+  };
+
   new DocShareRealtimeProvider(ac, models as never, registry).onModuleInit();
-  new DocGrantsRealtimeProvider(ac, models as never, registry).onModuleInit();
+  new DocGrantsRealtimeProvider(
+    ac,
+    models as never,
+    grants as never,
+    registry
+  ).onModuleInit();
 
   t.deepEqual(
     await registry.getRequest('doc.share-state.get').handle(user, {
@@ -537,6 +563,7 @@ test('doc realtime providers register share state and grants handlers', async t 
     }),
     { totalCount: 1 }
   );
+  t.deepEqual(assertedActions, ['Doc.Read', 'Doc.Users.Read']);
   t.is(
     registry
       .getTopic('doc.share-state.changed')
@@ -644,6 +671,7 @@ test('new realtime providers publish changed events from domain events', t => {
   const published: unknown[][] = [];
   const publisher = {
     publish: (...args: unknown[]) => published.push(args),
+    publishChanged: (...args: unknown[]) => published.push(args),
   } as unknown as RealtimePublisher;
 
   const workspaceAccess = new WorkspaceAccessRealtimeProvider(
@@ -681,6 +709,7 @@ test('new realtime providers publish changed events from domain events', t => {
   docShare.onPublicStateChanged({ workspaceId: 'space', docId: 'doc' });
 
   const docGrants = new DocGrantsRealtimeProvider(
+    {} as never,
     {} as never,
     {} as never,
     undefined,

@@ -5,7 +5,7 @@ import type {
 import { Injectable, OnModuleInit, Optional } from '@nestjs/common';
 import { z } from 'zod';
 
-import { OnEvent, paginate, PaginationInput } from '../../base';
+import { OnEvent, PaginationInput } from '../../base';
 import { DocRole, Models, PublicDocMode } from '../../models';
 import { PermissionAccess } from '../permission';
 import { registerRealtimeLiveQuery } from '../realtime/provider';
@@ -15,6 +15,7 @@ import {
   realtimeDocGrantsRoom,
   realtimeDocShareStateRoom,
 } from '../realtime/rooms';
+import { DocGrantsService } from './doc-grants';
 
 const docInput = z
   .object({ workspaceId: z.string(), docId: z.string() })
@@ -94,10 +95,10 @@ export class DocShareRealtimeProvider implements OnModuleInit {
   }
 
   private publish(workspaceId: string, docId: string, reason: string) {
-    this.publisher?.publish(
+    this.publisher?.publishChanged(
       'doc.share-state.changed',
       { workspaceId, docId },
-      { changed: true, reason },
+      reason,
       { room: realtimeDocShareStateRoom(workspaceId, docId) }
     );
   }
@@ -108,6 +109,7 @@ export class DocGrantsRealtimeProvider implements OnModuleInit {
   constructor(
     private readonly ac: PermissionAccess,
     private readonly models: Models,
+    private readonly grants: DocGrantsService,
     @Optional() private readonly registry?: RealtimeRegistry,
     @Optional() private readonly publisher?: RealtimePublisher
   ) {}
@@ -178,28 +180,10 @@ export class DocGrantsRealtimeProvider implements OnModuleInit {
   ): Promise<PaginatedDocGrantedUsersSnapshot> {
     await this.assertRead(userId, workspaceId, docId);
     const pagination = PaginationInput.decode.transform(input, {} as never);
-    const [permissions, totalCount] = await this.models.docUser.paginate(
+    const page = await this.grants.paginateGrantedUsers(
       workspaceId,
       docId,
       pagination
-    );
-    const workspaceUsers = await this.models.user.getWorkspaceUsers(
-      permissions.map(p => p.userId)
-    );
-    const workspaceUsersMap = new Map(
-      workspaceUsers.map(user => [user.id, user])
-    );
-    const page = paginate(
-      permissions.map(p => {
-        const user = workspaceUsersMap.get(p.userId);
-        if (!user) {
-          throw new Error(`Doc grant user ${p.userId} not found`);
-        }
-        return { ...p, user };
-      }),
-      'createdAt',
-      pagination,
-      totalCount
     );
 
     return {
@@ -227,10 +211,10 @@ export class DocGrantsRealtimeProvider implements OnModuleInit {
   }
 
   private publish(workspaceId: string, docId: string, reason: string) {
-    this.publisher?.publish(
+    this.publisher?.publishChanged(
       'doc.grants.changed',
       { workspaceId, docId },
-      { changed: true, reason },
+      reason,
       { room: realtimeDocGrantsRoom(workspaceId, docId) }
     );
   }
