@@ -41,10 +41,15 @@ class FakeSocket {
   }
 }
 
+const { resetSharedConnection } = vi.hoisted(() => ({
+  resetSharedConnection: vi.fn(),
+}));
 const socket = new FakeSocket();
 
 vi.mock('../../impls/cloud/socket', () => ({
   SocketConnection: class {
+    static resetSharedConnection = resetSharedConnection;
+
     readonly inner = { socket };
     status = 'connected';
     readonly maybeConnection = { socket };
@@ -68,6 +73,7 @@ beforeEach(() => {
   socket.nextSubscriptionId = 0;
   socket.connected = true;
   socket.disconnected = false;
+  resetSharedConnection.mockClear();
 });
 
 test('getRealtimeInputKey is deterministic for realtime subscription inputs', () => {
@@ -256,6 +262,23 @@ test('context switch disconnects socket and keeps subscriptions for reauth', asy
     connected: false,
     subscriptions: 1,
   });
+});
+
+test('auth context switch resets shared socket connection', () => {
+  const manager = new RealtimeManager();
+  manager.setContext({
+    endpoint: 'http://server',
+    isSelfHosted: false,
+    authenticated: true,
+  });
+
+  manager.setContext({
+    endpoint: 'http://server',
+    isSelfHosted: false,
+    authenticated: false,
+  });
+
+  expect(resetSharedConnection).toHaveBeenCalledWith('http://server', false);
 });
 
 test('context switch resubscribes existing subscriptions on next connect', async () => {

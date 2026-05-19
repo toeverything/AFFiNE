@@ -51,16 +51,26 @@ export class RealtimeManager {
 
   setContext(context: RealtimeContext) {
     const nextContext = { ...context };
+    const previousContext = this.context;
     const changed =
-      !this.context ||
-      this.context.endpoint !== nextContext.endpoint ||
-      this.context.isSelfHosted !== nextContext.isSelfHosted ||
-      this.context.authenticated !== nextContext.authenticated;
+      !previousContext ||
+      previousContext.endpoint !== nextContext.endpoint ||
+      previousContext.isSelfHosted !== nextContext.isSelfHosted ||
+      previousContext.authenticated !== nextContext.authenticated;
 
     this.context = nextContext;
 
     if (changed) {
       this.resetConnection();
+      if (
+        previousContext &&
+        previousContext.authenticated !== nextContext.authenticated
+      ) {
+        SocketConnection.resetSharedConnection(
+          previousContext.endpoint,
+          previousContext.isSelfHosted
+        );
+      }
     }
   }
 
