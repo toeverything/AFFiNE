@@ -1,6 +1,7 @@
 import {
   deleteAccountMutation,
   removeAvatarMutation,
+  ServerDeploymentType,
   updateUserProfileMutation,
   uploadAvatarMutation,
 } from '@affine/graphql';
@@ -104,6 +105,13 @@ export class AuthStore extends Store {
 
   async signOut() {
     await this.authProvider.signOut();
+    await this.nbstoreService.realtime.configure({
+      endpoint: this.serverService.server.baseUrl,
+      authenticated: false,
+      isSelfHosted:
+        this.serverService.server.config$.value.type ===
+        ServerDeploymentType.Selfhosted,
+    });
   }
 
   async uploadAvatar(file: File) {
