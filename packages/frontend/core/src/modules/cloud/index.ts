@@ -146,6 +146,7 @@ export function configureCloudModule(framework: Framework) {
       AuthStore,
       UrlService,
       GlobalDialogService,
+      NbstoreService,
     ])
     .store(AuthStore, [
       FetchService,
@@ -153,6 +154,7 @@ export function configureCloudModule(framework: Framework) {
       GlobalState,
       ServerService,
       AuthProvider,
+      NbstoreService,
     ])
     .entity(AuthSession, [AuthStore])
     .service(SubscriptionService, [SubscriptionStore])
@@ -165,7 +167,7 @@ export function configureCloudModule(framework: Framework) {
     .entity(Subscription, [AuthService, ServerService, SubscriptionStore])
     .entity(SubscriptionPrices, [ServerService, SubscriptionStore])
     .service(UserQuotaService)
-    .store(UserQuotaStore, [GraphQLService, NbstoreService])
+    .store(UserQuotaStore, [NbstoreService])
     .entity(UserQuota, [AuthService, UserQuotaStore])
     .service(UserCopilotQuotaService)
     .store(UserCopilotQuotaStore, [GraphQLService])
@@ -176,7 +178,7 @@ export function configureCloudModule(framework: Framework) {
     ])
     .service(UserFeatureService)
     .entity(UserFeature, [AuthService, UserFeatureStore])
-    .store(UserFeatureStore, [GraphQLService])
+    .store(UserFeatureStore, [NbstoreService])
     .service(InvoicesService)
     .store(InvoicesStore, [GraphQLService])
     .entity(Invoices, [InvoicesStore])
@@ -188,9 +190,9 @@ export function configureCloudModule(framework: Framework) {
     .service(PublicUserService, [PublicUserStore])
     .store(PublicUserStore, [GraphQLService])
     .service(UserSettingsService, [UserSettingsStore])
-    .store(UserSettingsStore, [GraphQLService])
+    .store(UserSettingsStore, [GraphQLService, NbstoreService])
     .service(AccessTokenService, [AccessTokenStore])
-    .store(AccessTokenStore, [GraphQLService]);
+    .store(AccessTokenStore, [GraphQLService, NbstoreService]);
 
   framework
     .scope(WorkspaceScope)

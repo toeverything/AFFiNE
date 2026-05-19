@@ -5,7 +5,6 @@ import {
   approveWorkspaceTeamMemberMutation,
   createInviteLinkMutation,
   getInviteInfoQuery,
-  getMembersByWorkspaceIdQuery,
   inviteByEmailsMutation,
   leaveWorkspaceMutation,
   revokeMemberPermissionMutation,
@@ -13,16 +12,21 @@ import {
   WorkspaceMemberStatus,
 } from '@affine/graphql';
 import { faker } from '@faker-js/faker';
+import {
+  WorkspaceMemberSource,
+  WorkspaceMemberStatus as PrismaWorkspaceMemberStatus,
+} from '@prisma/client';
 
 import { EntitlementService } from '../../../core/entitlement';
 import { WorkspacePolicyService } from '../../../core/permission';
-import { Models } from '../../../models';
+import { Models, WorkspaceRole as ModelWorkspaceRole } from '../../../models';
 import {
   SubscriptionPlan,
   SubscriptionRecurring,
   SubscriptionStatus,
 } from '../../../plugins/payment/types';
 import { Mockers } from '../../mocks';
+import { createRealtimeClient, realtimeRequest } from '../realtime';
 import { app, e2e } from '../test';
 
 const TWO_BILLION_BYTES = 2_000_000_000;
@@ -380,39 +384,31 @@ e2e('should support pagination for member', async t => {
     userId: u2.id,
   });
 
-  await app.login(owner);
-  let result = await app.gql({
-    query: getMembersByWorkspaceIdQuery,
-    variables: {
-      workspaceId: workspace.id,
-      skip: 0,
-      take: 2,
-    },
+  const socket = await createRealtimeClient(app, owner);
+  t.teardown(() => socket.disconnect());
+  let result = await realtimeRequest(socket, 'workspace.members.get', {
+    workspaceId: workspace.id,
+    skip: 0,
+    take: 2,
   });
-  t.is(result.workspace.memberCount, 3);
-  t.is(result.workspace.members.length, 2);
+  t.is(result.memberCount, 3);
+  t.is(result.members.length, 2);
 
-  result = await app.gql({
-    query: getMembersByWorkspaceIdQuery,
-    variables: {
-      workspaceId: workspace.id,
-      skip: 2,
-      take: 2,
-    },
+  result = await realtimeRequest(socket, 'workspace.members.get', {
+    workspaceId: workspace.id,
+    skip: 2,
+    take: 2,
   });
-  t.is(result.workspace.memberCount, 3);
-  t.is(result.workspace.members.length, 1);
+  t.is(result.memberCount, 3);
+  t.is(result.members.length, 1);
 
-  result = await app.gql({
-    query: getMembersByWorkspaceIdQuery,
-    variables: {
-      workspaceId: workspace.id,
-      skip: 3,
-      take: 2,
-    },
+  result = await realtimeRequest(socket, 'workspace.members.get', {
+    workspaceId: workspace.id,
+    skip: 3,
+    take: 2,
   });
-  t.is(result.workspace.memberCount, 3);
-  t.is(result.workspace.members.length, 0);
+  t.is(result.memberCount, 3);
+  t.is(result.members.length, 0);
 });
 
 e2e('should limit member count correctly', async t => {
@@ -428,17 +424,15 @@ e2e('should limit member count correctly', async t => {
     })
   );
 
-  await app.login(owner);
-  const result = await app.gql({
-    query: getMembersByWorkspaceIdQuery,
-    variables: {
-      workspaceId: workspace.id,
-      skip: 0,
-      take: 10,
-    },
+  const socket = await createRealtimeClient(app, owner);
+  t.teardown(() => socket.disconnect());
+  const result = await realtimeRequest(socket, 'workspace.members.get', {
+    workspaceId: workspace.id,
+    skip: 0,
+    take: 10,
   });
-  t.is(result.workspace.memberCount, 11);
-  t.is(result.workspace.members.length, 10);
+  t.is(result.memberCount, 11);
+  t.is(result.members.length, 10);
 });
 
 e2e('should get invite link info with status', async t => {
@@ -634,38 +628,54 @@ e2e(
       userId: user2.id,
     });
 
-    await app.login(owner);
-    let result = await app.gql({
-      query: getMembersByWorkspaceIdQuery,
-      variables: {
-        workspaceId: workspace.id,
-        query: 'lucy',
-      },
+    const socket = await createRealtimeClient(app, owner);
+    t.teardown(() => socket.disconnect());
+    let result = await realtimeRequest(socket, 'workspace.members.get', {
+      workspaceId: workspace.id,
+      query: 'lucy',
     });
-    t.is(result.workspace.memberCount, 3);
-    t.is(result.workspace.members.length, 1);
-    t.is(result.workspace.members[0].name, user1.name);
+    t.is(result.memberCount, 3);
+    t.is(result.members.length, 1);
+    t.is(result.members[0].name, user1.name);
 
-    result = await app.gql({
-      query: getMembersByWorkspaceIdQuery,
-      variables: {
-        workspaceId: workspace.id,
-        query: 'LUCY',
-      },
+    result = await realtimeRequest(socket, 'workspace.members.get', {
+      workspaceId: workspace.id,
+      query: 'LUCY',
     });
-    t.is(result.workspace.memberCount, 3);
-    t.is(result.workspace.members.length, 1);
-    t.is(result.workspace.members[0].name, user1.name);
+    t.is(result.memberCount, 3);
+    t.is(result.members.length, 1);
+    t.is(result.members[0].name, user1.name);
 
-    result = await app.gql({
-      query: getMembersByWorkspaceIdQuery,
-      variables: {
-        workspaceId: workspace.id,
-        query: 'jeanne_doe',
-      },
+    result = await realtimeRequest(socket, 'workspace.members.get', {
+      workspaceId: workspace.id,
+      query: 'jeanne_doe',
     });
-    t.is(result.workspace.memberCount, 3);
-    t.is(result.workspace.members.length, 1);
-    t.is(result.workspace.members[0].email, user2.email);
+    t.is(result.memberCount, 3);
+    t.is(result.members.length, 1);
+    t.is(result.members[0].email, user2.email);
+
+    const pendingEmail = `pending_search.${randomUUID()}@affine.pro`;
+    const pendingUser = await app.create(Mockers.User, {
+      email: pendingEmail,
+    });
+    await app
+      .get(Models)
+      .workspaceUser.set(
+        workspace.id,
+        pendingUser.id,
+        ModelWorkspaceRole.Collaborator,
+        {
+          status: PrismaWorkspaceMemberStatus.Pending,
+          source: WorkspaceMemberSource.Email,
+        }
+      );
+    result = await realtimeRequest(socket, 'workspace.members.get', {
+      workspaceId: workspace.id,
+      query: 'pending_search',
+    });
+    t.is(result.memberCount, 4);
+    t.is(result.members.length, 1);
+    t.is(result.members[0].email, pendingEmail);
+    t.is(result.members[0].status, WorkspaceMemberStatus.Pending);
   }
 );

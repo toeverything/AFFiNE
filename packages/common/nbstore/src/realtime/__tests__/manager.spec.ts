@@ -124,6 +124,33 @@ test('request rejects server ack error', async () => {
   );
 });
 
+test('user profile request can bootstrap without authenticated context', async () => {
+  const manager = new RealtimeManager();
+  manager.setContext({
+    endpoint: 'http://server',
+    isSelfHosted: false,
+    authenticated: false,
+  });
+  socket.nextRequestAck = { data: { user: null } };
+
+  await expect(manager.request('user.profile.get', {})).resolves.toEqual({
+    user: null,
+  });
+});
+
+test('non-bootstrap request still requires authenticated context', async () => {
+  const manager = new RealtimeManager();
+  manager.setContext({
+    endpoint: 'http://server',
+    isSelfHosted: false,
+    authenticated: false,
+  });
+
+  await expect(manager.request('notification.count.get', {})).rejects.toThrow(
+    'Realtime is not authenticated'
+  );
+});
+
 test('request rejects when aborted', async () => {
   const manager = new RealtimeManager();
   manager.setContext({
@@ -203,7 +230,7 @@ test('unsubscribe leaves server room and clears status', async () => {
   });
 });
 
-test('context switch disconnects socket and completes subscriptions', async () => {
+test('context switch disconnects socket and keeps subscriptions for reauth', async () => {
   const manager = new RealtimeManager();
   manager.setContext({
     endpoint: 'http://server',
@@ -223,11 +250,78 @@ test('context switch disconnects socket and completes subscriptions', async () =
   });
 
   expect(socket.disconnected).toBe(true);
-  expect(completed).toHaveBeenCalled();
+  expect(completed).not.toHaveBeenCalled();
   expect(manager.getStatus()).toMatchObject({
     endpoint: 'http://other-server',
     connected: false,
-    subscriptions: 0,
+    subscriptions: 1,
+  });
+});
+
+test('context switch resubscribes existing subscriptions on next connect', async () => {
+  const manager = new RealtimeManager();
+  manager.setContext({
+    endpoint: 'http://server',
+    isSelfHosted: false,
+    authenticated: true,
+  });
+  const received: unknown[] = [];
+  const subscription = manager
+    .subscribe('notification.count.changed', {})
+    .subscribe(event => received.push(event));
+  await vi.waitFor(() => expect(received).toEqual([{ type: 'ready' }]));
+
+  manager.setContext({
+    endpoint: 'http://other-server',
+    isSelfHosted: false,
+    authenticated: true,
+  });
+  await manager.request('notification.count.get', {});
+
+  await vi.waitFor(() =>
+    expect(
+      socket.emitted.filter(item => item.event === 'realtime:subscribe')
+    ).toHaveLength(2)
+  );
+  expect(received).toEqual([{ type: 'ready' }, { type: 'ready' }]);
+  subscription.unsubscribe();
+});
+
+test('unsubscribe uses resubscribed server subscription id', async () => {
+  const manager = new RealtimeManager();
+  manager.setContext({
+    endpoint: 'http://server',
+    isSelfHosted: false,
+    authenticated: true,
+  });
+  const subscription = manager
+    .subscribe('notification.count.changed', {})
+    .subscribe();
+  await vi.waitFor(() => expect(manager.getStatus().subscriptions).toBe(1));
+
+  manager.setContext({
+    endpoint: 'http://other-server',
+    isSelfHosted: false,
+    authenticated: true,
+  });
+  await manager.request('notification.count.get', {});
+  await vi.waitFor(() =>
+    expect(
+      socket.emitted.filter(item => item.event === 'realtime:subscribe')
+    ).toHaveLength(2)
+  );
+
+  subscription.unsubscribe();
+
+  expect(manager.getStatus().subscriptions).toBe(0);
+  expect(socket.emitted.at(-1)).toEqual({
+    event: 'realtime:unsubscribe',
+    payload: {
+      subscriptionId: 'sub-2',
+      topic: 'notification.count.changed',
+      input: {},
+      clientVersion: 'test',
+    },
   });
 });
 

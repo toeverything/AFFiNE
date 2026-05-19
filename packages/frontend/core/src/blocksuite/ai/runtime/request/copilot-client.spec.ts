@@ -31,4 +31,22 @@ describe('CopilotClient action streams', () => {
       '/api/copilot/actions/session-1/stream?messageId=message-1&actionId=mindmap.generate&actionVersion=v1&runId=run-1&retry=true'
     );
   });
+
+  test('loads embedding status through realtime request', async () => {
+    const gql = vi.fn();
+    const request = vi.fn().mockResolvedValue({ total: 4, embedded: 2 });
+    const client = new CopilotClient(gql, vi.fn(), { request });
+
+    await expect(client.getEmbeddingStatus('workspace-1')).resolves.toEqual({
+      total: 4,
+      embedded: 2,
+    });
+
+    expect(gql).not.toHaveBeenCalled();
+    expect(request).toHaveBeenCalledWith(
+      'workspace.embedding.progress.get',
+      { workspaceId: 'workspace-1' },
+      { timeoutMs: 10000 }
+    );
+  });
 });

@@ -5,19 +5,43 @@ import {
 import test from 'ava';
 import { z } from 'zod';
 
+import { PublicDocMode } from '../../../models';
 import type { CopilotTranscriptionReader } from '../../../plugins/copilot/transcript';
 import { CopilotTranscriptRealtimeProvider } from '../../../plugins/copilot/transcript';
 import type { CurrentUser } from '../../auth';
 import { CommentRealtimeProvider } from '../../comment/realtime';
 import { NotificationRealtimeProvider } from '../../notification/realtime';
-import type { PermissionAccess } from '../../permission';
+import {
+  DocRole,
+  type PermissionAccess,
+  WorkspaceRole,
+} from '../../permission';
 import { QuotaStateRealtimeProvider } from '../../quota/realtime';
+import { UserRealtimeProvider } from '../../user/realtime';
+import {
+  DocGrantsRealtimeProvider,
+  DocShareRealtimeProvider,
+} from '../../workspaces/doc-realtime';
+import {
+  WorkspaceAccessRealtimeProvider,
+  WorkspaceConfigRealtimeProvider,
+  WorkspaceMembersRealtimeProvider,
+} from '../../workspaces/realtime';
 import { RealtimeGateway } from '../gateway';
 import {
   realtimeCommentRoom,
+  realtimeDocGrantsRoom,
+  realtimeDocShareStateRoom,
   realtimeNotificationRoom,
   realtimeTranscriptTaskRoom,
+  realtimeUserAccessTokensRoom,
+  realtimeUserProfileRoom,
+  realtimeUserSettingsRoom,
+  realtimeWorkspaceAccessRoom,
+  realtimeWorkspaceConfigRoom,
   realtimeWorkspaceEmbeddingProgressRoom,
+  realtimeWorkspaceInviteLinkRoom,
+  realtimeWorkspaceMembersRoom,
   realtimeWorkspaceQuotaStateRoom,
   registerRealtimeLiveQuery,
 } from '../index';
@@ -166,6 +190,18 @@ test('room helpers produce stable realtime room names', t => {
     realtimeWorkspaceEmbeddingProgressRoom('space'),
     'workspace:space:embedding-progress'
   );
+  t.is(realtimeWorkspaceAccessRoom('space'), 'workspace:space:access');
+  t.is(realtimeWorkspaceConfigRoom('space'), 'workspace:space:config');
+  t.is(realtimeWorkspaceMembersRoom('space'), 'workspace:space:members');
+  t.is(realtimeWorkspaceInviteLinkRoom('space'), 'workspace:space:invite-link');
+  t.is(
+    realtimeDocShareStateRoom('space', 'doc'),
+    'workspace:space:doc:doc:share-state'
+  );
+  t.is(realtimeDocGrantsRoom('space', 'doc'), 'workspace:space:doc:doc:grants');
+  t.is(realtimeUserProfileRoom('u1'), 'user:u1:profile');
+  t.is(realtimeUserSettingsRoom('u1'), 'user:u1:settings');
+  t.is(realtimeUserAccessTokensRoom('u1'), 'user:u1:access-tokens');
   t.is(
     realtimeTranscriptTaskRoom('space', 'task'),
     'copilot:transcript:space:task'
@@ -224,6 +260,455 @@ test('realtime providers expose runtime injection metadata for registry dependen
       'design:paramtypes',
       QuotaStateRealtimeProvider
     ).includes(RealtimeRegistry)
+  );
+  t.true(
+    Reflect.getMetadata(
+      'design:paramtypes',
+      WorkspaceAccessRealtimeProvider
+    ).includes(RealtimeRegistry)
+  );
+  t.true(
+    Reflect.getMetadata(
+      'design:paramtypes',
+      WorkspaceConfigRealtimeProvider
+    ).includes(RealtimeRegistry)
+  );
+  t.true(
+    Reflect.getMetadata(
+      'design:paramtypes',
+      WorkspaceMembersRealtimeProvider
+    ).includes(RealtimeRegistry)
+  );
+  t.true(
+    Reflect.getMetadata('design:paramtypes', DocShareRealtimeProvider).includes(
+      RealtimeRegistry
+    )
+  );
+  t.true(
+    Reflect.getMetadata(
+      'design:paramtypes',
+      DocGrantsRealtimeProvider
+    ).includes(RealtimeRegistry)
+  );
+  t.true(
+    Reflect.getMetadata('design:paramtypes', UserRealtimeProvider).includes(
+      RealtimeRegistry
+    )
+  );
+});
+
+test('workspace realtime providers register access, config, members and invite link handlers', async t => {
+  const registry = new RealtimeRegistry();
+  const assertions: unknown[] = [];
+  const ac = {
+    user(userId: string) {
+      return {
+        workspace(workspaceId: string) {
+          return {
+            async assert(action: string) {
+              assertions.push({ userId, workspaceId, action });
+            },
+            async permissions() {
+              return {
+                role: WorkspaceRole.Admin,
+                permissions: { 'Workspace.Read': true },
+              };
+            },
+          };
+        },
+      };
+    },
+  } as unknown as PermissionAccess;
+  const models = {
+    workspace: {
+      get: async () => ({
+        enableAi: true,
+        enableSharing: false,
+        enableUrlPreview: true,
+        enableDocEmbedding: false,
+      }),
+    },
+    workspaceUser: {
+      search: async () => [],
+      paginate: async () => [
+        [
+          {
+            id: 'invite',
+            type: WorkspaceRole.Collaborator,
+            status: 'Accepted',
+            user: {
+              id: 'u1',
+              name: 'User',
+              email: 'u1@affine.pro',
+              avatarUrl: null,
+            },
+          },
+        ],
+        1,
+      ],
+      count: async () => 1,
+    },
+  };
+  const workspaceService = {
+    isTeamWorkspace: async () => true,
+  };
+  const cache = {
+    get: async () => ({ inviteId: 'invite-link' }),
+    ttl: async () => 10,
+  };
+  const url = {
+    link: (path: string) => `https://app.affine.pro${path}`,
+  };
+
+  new WorkspaceAccessRealtimeProvider(
+    ac,
+    workspaceService as never,
+    registry
+  ).onModuleInit();
+  new WorkspaceConfigRealtimeProvider(
+    ac,
+    models as never,
+    registry
+  ).onModuleInit();
+  new WorkspaceMembersRealtimeProvider(
+    cache as never,
+    url as never,
+    ac,
+    models as never,
+    registry
+  ).onModuleInit();
+
+  t.deepEqual(
+    await registry.getRequest('workspace.access.get').handle(user, {
+      workspaceId: 'space',
+    }),
+    {
+      access: {
+        role: 'Admin',
+        permissions: { Workspace_Read: true },
+        team: true,
+      },
+    }
+  );
+  t.deepEqual(
+    await registry.getRequest('workspace.config.get').handle(user, {
+      workspaceId: 'space',
+    }),
+    {
+      config: {
+        enableAi: true,
+        enableSharing: false,
+        enableUrlPreview: true,
+        enableDocEmbedding: false,
+      },
+    }
+  );
+  t.like(
+    await registry.getRequest('workspace.members.get').handle(user, {
+      workspaceId: 'space',
+      take: 1000,
+    }),
+    { memberCount: 1 }
+  );
+  t.like(
+    await registry.getRequest('workspace.invite-link.get').handle(user, {
+      workspaceId: 'space',
+    }),
+    {
+      inviteLink: {
+        link: 'https://app.affine.pro/invite/invite-link',
+      },
+    }
+  );
+  t.is(
+    registry
+      .getTopic('workspace.access.changed')
+      .room(user, { workspaceId: 'space' }),
+    realtimeWorkspaceAccessRoom('space')
+  );
+  t.is(
+    registry
+      .getTopic('workspace.config.changed')
+      .room(user, { workspaceId: 'space' }),
+    realtimeWorkspaceConfigRoom('space')
+  );
+  t.is(
+    registry
+      .getTopic('workspace.members.changed')
+      .room(user, { workspaceId: 'space' }),
+    realtimeWorkspaceMembersRoom('space')
+  );
+  t.is(
+    registry
+      .getTopic('workspace.invite-link.changed')
+      .room(user, { workspaceId: 'space' }),
+    realtimeWorkspaceInviteLinkRoom('space')
+  );
+  t.true(
+    assertions.some(
+      item =>
+        JSON.stringify(item) ===
+        JSON.stringify({
+          userId: 'u1',
+          workspaceId: 'space',
+          action: 'Workspace.Users.Read',
+        })
+    )
+  );
+});
+
+test('doc realtime providers register share state and grants handlers', async t => {
+  const registry = new RealtimeRegistry();
+  const ac = {
+    user(userId: string) {
+      return {
+        doc(workspaceId: string, docId: string) {
+          return {
+            async assert(action: string) {
+              t.deepEqual(
+                { userId, workspaceId, docId, action },
+                {
+                  userId: 'u1',
+                  workspaceId: 'space',
+                  docId: 'doc',
+                  action,
+                }
+              );
+            },
+          };
+        },
+      };
+    },
+  } as unknown as PermissionAccess;
+  const models = {
+    doc: {
+      getDocInfo: async () => ({
+        public: true,
+        mode: PublicDocMode.Page,
+        defaultRole: DocRole.Reader,
+      }),
+    },
+    docUser: {
+      findDirectGrantDocIdsByUser: async () => [],
+      paginate: async () => [
+        [
+          {
+            userId: 'u2',
+            type: DocRole.Manager,
+            createdAt: new Date('2026-01-01T00:00:00.000Z'),
+          },
+        ],
+        1,
+      ],
+    },
+    user: {
+      getWorkspaceUsers: async () => [
+        {
+          id: 'u2',
+          name: 'User 2',
+          email: 'u2@affine.pro',
+          avatarUrl: null,
+        },
+      ],
+    },
+  };
+
+  new DocShareRealtimeProvider(ac, models as never, registry).onModuleInit();
+  new DocGrantsRealtimeProvider(ac, models as never, registry).onModuleInit();
+
+  t.deepEqual(
+    await registry.getRequest('doc.share-state.get').handle(user, {
+      workspaceId: 'space',
+      docId: 'doc',
+    }),
+    {
+      state: {
+        public: true,
+        mode: 'Page',
+        defaultRole: 'Reader',
+      },
+    }
+  );
+  t.like(
+    await registry.getRequest('doc.grants.get').handle(user, {
+      workspaceId: 'space',
+      docId: 'doc',
+      pagination: { first: 10 },
+    }),
+    { totalCount: 1 }
+  );
+  t.is(
+    registry
+      .getTopic('doc.share-state.changed')
+      .room(user, { workspaceId: 'space', docId: 'doc' }),
+    realtimeDocShareStateRoom('space', 'doc')
+  );
+  t.is(
+    registry
+      .getTopic('doc.grants.changed')
+      .room(user, { workspaceId: 'space', docId: 'doc' }),
+    realtimeDocGrantsRoom('space', 'doc')
+  );
+});
+
+test('user realtime provider snapshots private profile settings and access tokens without plaintext token', async t => {
+  const registry = new RealtimeRegistry();
+  const models = {
+    user: {
+      get: async () => ({
+        id: 'u1',
+        name: 'User',
+        email: 'u1@affine.pro',
+        avatarUrl: null,
+        emailVerifiedAt: new Date(0),
+        password: 'hash',
+        disabled: false,
+      }),
+    },
+    userSettings: {
+      get: async () => ({
+        receiveInvitationEmail: true,
+        receiveMentionEmail: false,
+        receiveCommentEmail: true,
+      }),
+    },
+    userFeature: {
+      list: async () => ['administrator'],
+    },
+    accessToken: {
+      list: async () => [
+        {
+          id: 'token',
+          name: 'Token',
+          createdAt: new Date('2026-01-01T00:00:00.000Z'),
+          expiresAt: null,
+        },
+      ],
+    },
+  };
+
+  new UserRealtimeProvider(models as never, registry).onModuleInit();
+
+  t.deepEqual(await registry.getRequest('user.profile.get').handle(user, {}), {
+    user: {
+      id: 'u1',
+      name: 'User',
+      email: 'u1@affine.pro',
+      emailVerified: true,
+      hasPassword: true,
+      avatarUrl: null,
+      features: ['Admin'],
+    },
+  });
+  t.deepEqual(
+    await registry
+      .getRequest('user.profile.get')
+      .handle(undefined as never, {}),
+    { user: null }
+  );
+  t.is(
+    registry.getTopic('user.profile.changed').room(user, {}),
+    realtimeUserProfileRoom('u1')
+  );
+  t.is(
+    registry.getTopic('user.settings.changed').room(user, {}),
+    realtimeUserSettingsRoom('u1')
+  );
+  t.is(
+    registry.getTopic('user.access-tokens.changed').room(user, {}),
+    realtimeUserAccessTokensRoom('u1')
+  );
+  t.deepEqual(await registry.getRequest('user.settings.get').handle(user, {}), {
+    settings: {
+      receiveInvitationEmail: true,
+      receiveMentionEmail: false,
+      receiveCommentEmail: true,
+    },
+  });
+  t.deepEqual(
+    await registry.getRequest('user.access-tokens.get').handle(user, {}),
+    {
+      tokens: [
+        {
+          id: 'token',
+          name: 'Token',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          expiresAt: null,
+        },
+      ],
+    }
+  );
+});
+
+test('new realtime providers publish changed events from domain events', t => {
+  const published: unknown[][] = [];
+  const publisher = {
+    publish: (...args: unknown[]) => published.push(args),
+  } as unknown as RealtimePublisher;
+
+  const workspaceAccess = new WorkspaceAccessRealtimeProvider(
+    {} as never,
+    {} as never,
+    undefined,
+    publisher
+  );
+  workspaceAccess.onMembersUpdated({ workspaceId: 'space' });
+
+  const workspaceConfig = new WorkspaceConfigRealtimeProvider(
+    {} as never,
+    {} as never,
+    undefined,
+    publisher
+  );
+  workspaceConfig.onWorkspaceUpdated({ id: 'space' } as never);
+
+  const workspaceMembers = new WorkspaceMembersRealtimeProvider(
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    undefined,
+    publisher
+  );
+  workspaceMembers.onInviteLinkCreated({ workspaceId: 'space' });
+
+  const docShare = new DocShareRealtimeProvider(
+    {} as never,
+    {} as never,
+    undefined,
+    publisher
+  );
+  docShare.onPublicStateChanged({ workspaceId: 'space', docId: 'doc' });
+
+  const docGrants = new DocGrantsRealtimeProvider(
+    {} as never,
+    {} as never,
+    undefined,
+    publisher
+  );
+  docGrants.onOwnerChanged({
+    workspaceId: 'space',
+    docId: 'doc',
+    userId: 'u2',
+  });
+
+  const userProvider = new UserRealtimeProvider(
+    {} as never,
+    undefined,
+    publisher
+  );
+  userProvider.onUserAccessTokenCreated({ userId: 'u1' });
+
+  t.deepEqual(
+    published.map(args => args[0]),
+    [
+      'workspace.access.changed',
+      'workspace.config.changed',
+      'workspace.invite-link.changed',
+      'doc.share-state.changed',
+      'doc.grants.changed',
+      'user.access-tokens.changed',
+    ]
   );
 });
 

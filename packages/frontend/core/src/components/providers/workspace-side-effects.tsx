@@ -24,6 +24,7 @@ import { DocsService } from '@affine/core/modules/doc';
 import { EditorSettingService } from '@affine/core/modules/editor-setting';
 import { useRegisterNavigationCommands } from '@affine/core/modules/navigation/view/use-register-navigation-commands';
 import { QuickSearchContainer } from '@affine/core/modules/quicksearch';
+import { NbstoreService } from '@affine/core/modules/storage';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import {
   getAFFiNEWorkspaceSchema,
@@ -140,12 +141,14 @@ export const WorkspaceSideEffects = () => {
   const graphqlService = useService(GraphQLService);
   const eventSourceService = useService(EventSourceService);
   const authService = useService(AuthService);
+  const nbstoreService = useService(NbstoreService);
 
   useEffect(() => {
     const dispose = setupAIProvider(
       createAIRequestService(
         graphqlService.gql,
-        eventSourceService.eventSource
+        eventSourceService.eventSource,
+        nbstoreService.realtime
       ),
       globalDialogService,
       authService
@@ -155,6 +158,7 @@ export const WorkspaceSideEffects = () => {
     };
   }, [
     eventSourceService,
+    nbstoreService,
     workspaceDialogService,
     graphqlService,
     globalDialogService,

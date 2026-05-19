@@ -1,5 +1,4 @@
 import { DebugLogger } from '@affine/debug';
-import type { WorkspaceQuotaQuery } from '@affine/graphql';
 import type {
   RealtimeTopicEventOf,
   WorkspaceQuotaStateSnapshot,
@@ -12,7 +11,25 @@ import { RealtimeLiveQuery } from '../../cloud/realtime/live-query';
 import type { WorkspaceService } from '../../workspace';
 import type { WorkspaceQuotaStore } from '../stores/quota';
 
-type QuotaType = WorkspaceQuotaQuery['workspace']['quota'];
+type QuotaType = {
+  name: string;
+  blobLimit: number;
+  storageQuota: number;
+  usedStorageQuota: number;
+  historyPeriod: number;
+  memberLimit: number;
+  memberCount: number;
+  overcapacityMemberCount: number;
+  humanReadable: {
+    name: string;
+    blobLimit: string;
+    storageQuota: string;
+    historyPeriod: string;
+    memberLimit: string;
+    memberCount: string;
+    overcapacityMemberCount: string;
+  };
+};
 
 const logger = new DebugLogger('affine:workspace-permission');
 const DAY_SECONDS = 24 * 60 * 60;
@@ -171,11 +188,6 @@ export class WorkspaceQuota extends Entity {
           this.workspaceService.workspace.id,
           signal
         )
-      );
-    } catch {
-      return await this.store.fetchWorkspaceQuota(
-        this.workspaceService.workspace.id,
-        signal
       );
     } finally {
       this.isRevalidating$.setValue(false);

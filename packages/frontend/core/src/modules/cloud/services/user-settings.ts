@@ -8,6 +8,7 @@ import {
   Service,
   smartRetry,
 } from '@toeverything/infra';
+import type { Subscription } from 'rxjs';
 import { catchError, EMPTY, tap } from 'rxjs';
 
 import type {
@@ -21,7 +22,13 @@ export type { UserSettings };
 export class UserSettingsService extends Service {
   constructor(private readonly store: UserSettingsStore) {
     super();
+    this.subscription = this.store.subscribeUserSettings().subscribe({
+      next: () => this.revalidate(),
+      error: error => this.error$.setValue(error),
+    });
   }
+
+  private readonly subscription: Subscription;
 
   userSettings$ = new LiveData<UserSettings | undefined>(undefined);
   isLoading$ = new LiveData<boolean>(false);
@@ -57,5 +64,10 @@ export class UserSettingsService extends Service {
       ...(settings as UserSettings),
     };
     this.revalidate();
+  }
+
+  override dispose(): void {
+    this.revalidate.unsubscribe();
+    this.subscription.unsubscribe();
   }
 }

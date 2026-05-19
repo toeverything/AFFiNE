@@ -186,36 +186,68 @@ export async function searchCompatRows(
   pagination: { first: number; offset: number; after?: string | Date }
 ) {
   const after = pagination.after
-    ? Prisma.sql`AND wm.created_at >= ${pagination.after}::timestamptz`
+    ? Prisma.sql`AND created_at >= ${pagination.after}::timestamptz`
     : Prisma.empty;
   const rows = await db.$queryRaw<WorkspaceUserCompatRow[]>`
-    SELECT
-      COALESCE(wm.legacy_permission_id, wm.id) AS id,
-      wm.workspace_id AS "workspaceId",
-      wm.user_id AS "userId",
-      CASE wm.role
-        WHEN 'owner' THEN ${WorkspaceRole.Owner}
-        WHEN 'admin' THEN ${WorkspaceRole.Admin}
-        ELSE ${WorkspaceRole.Collaborator}
-      END AS type,
-      'Accepted'::"WorkspaceMemberStatus" AS status,
-      CASE wm.source
-        WHEN 'link' THEN 'Link'::"WorkspaceMemberSource"
-        ELSE 'Email'::"WorkspaceMemberSource"
-      END AS source,
-      NULL::varchar AS "inviterId",
-      wm.created_at AS "createdAt",
-      wm.updated_at AS "updatedAt",
-      u.name AS "userName",
-      u.email AS "userEmail",
-      u.avatar_url AS "userAvatarUrl"
-    FROM workspace_members wm
-    INNER JOIN users u ON u.id = wm.user_id
-    WHERE wm.workspace_id = ${workspaceId}
-      AND wm.state = 'active'
-      AND (u.email ILIKE ${`%${query}%`} OR u.name ILIKE ${`%${query}%`})
+    SELECT *
+    FROM (
+      SELECT
+        COALESCE(wm.legacy_permission_id, wm.id) AS id,
+        wm.workspace_id AS "workspaceId",
+        wm.user_id AS "userId",
+        CASE wm.role
+          WHEN 'owner' THEN ${WorkspaceRole.Owner}
+          WHEN 'admin' THEN ${WorkspaceRole.Admin}
+          ELSE ${WorkspaceRole.Collaborator}
+        END AS type,
+        'Accepted'::"WorkspaceMemberStatus" AS status,
+        CASE wm.source
+          WHEN 'link' THEN 'Link'::"WorkspaceMemberSource"
+          ELSE 'Email'::"WorkspaceMemberSource"
+        END AS source,
+        NULL::varchar AS "inviterId",
+        wm.created_at AS "createdAt",
+        wm.updated_at AS "updatedAt",
+        u.name AS "userName",
+        u.email AS "userEmail",
+        u.avatar_url AS "userAvatarUrl",
+        wm.created_at AS created_at
+      FROM workspace_members wm
+      INNER JOIN users u ON u.id = wm.user_id
+      WHERE wm.workspace_id = ${workspaceId}
+        AND wm.state = 'active'
+      UNION ALL
+      SELECT
+        COALESCE(wi.legacy_permission_id, wi.id) AS id,
+        wi.workspace_id AS "workspaceId",
+        wi.invitee_user_id AS "userId",
+        CASE wi.requested_role
+          WHEN 'admin' THEN ${WorkspaceRole.Admin}
+          ELSE ${WorkspaceRole.Collaborator}
+        END AS type,
+        CASE wi.status
+          WHEN 'waiting_review' THEN 'UnderReview'::"WorkspaceMemberStatus"
+          WHEN 'waiting_seat' THEN 'NeedMoreSeat'::"WorkspaceMemberStatus"
+          ELSE 'Pending'::"WorkspaceMemberStatus"
+        END AS status,
+        CASE wi.kind
+          WHEN 'link' THEN 'Link'::"WorkspaceMemberSource"
+          ELSE 'Email'::"WorkspaceMemberSource"
+        END AS source,
+        wi.inviter_user_id AS "inviterId",
+        wi.created_at AS "createdAt",
+        wi.updated_at AS "updatedAt",
+        u.name AS "userName",
+        u.email AS "userEmail",
+        u.avatar_url AS "userAvatarUrl",
+        wi.created_at AS created_at
+      FROM workspace_invitations wi
+      INNER JOIN users u ON u.id = wi.invitee_user_id
+      WHERE wi.workspace_id = ${workspaceId}
+    ) roles
+    WHERE ("userEmail" ILIKE ${`%${query}%`} OR "userName" ILIKE ${`%${query}%`})
       ${after}
-    ORDER BY wm.created_at ASC
+    ORDER BY created_at ASC
     OFFSET ${pagination.offset}
     LIMIT ${pagination.first}
   `;

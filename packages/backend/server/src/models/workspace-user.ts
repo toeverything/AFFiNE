@@ -422,6 +422,26 @@ export class WorkspaceUserModel extends BaseModel {
     return await findUserActiveWorkspaceRoles(this.db, userId, filter);
   }
 
+  async getUserWorkspaceIds(userId: string) {
+    const [roles, invitations] = await Promise.all([
+      this.db.workspaceMember.findMany({
+        where: { userId, state: 'active' },
+        select: { workspaceId: true },
+      }),
+      this.db.workspaceInvitation.findMany({
+        where: { inviteeUserId: userId },
+        select: { workspaceId: true },
+      }),
+    ]);
+
+    return Array.from(
+      new Set([
+        ...roles.map(role => role.workspaceId),
+        ...invitations.map(invitation => invitation.workspaceId),
+      ])
+    );
+  }
+
   async hasSharedWorkspace(userId: string, otherUserId: string) {
     return await hasSharedWorkspace(this.db, userId, otherUserId);
   }

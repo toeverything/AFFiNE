@@ -3785,25 +3785,6 @@ export type GenerateUserAccessTokenMutation = {
   };
 };
 
-export type ListUserAccessTokensQueryVariables = Exact<{
-  [key: string]: never;
-}>;
-
-export type ListUserAccessTokensQuery = {
-  __typename?: 'Query';
-  currentUser: {
-    __typename?: 'UserType';
-    revealedAccessTokens: Array<{
-      __typename?: 'RevealedAccessToken';
-      id: string;
-      name: string;
-      createdAt: string;
-      expiresAt: string | null;
-      token: string;
-    }>;
-  } | null;
-};
-
 export type RevokeUserAccessTokenMutationVariables = Exact<{
   id: Scalars['String']['input'];
 }>;
@@ -5112,19 +5093,6 @@ export type MatchFilesQuery = {
   } | null;
 };
 
-export type GetWorkspaceEmbeddingStatusQueryVariables = Exact<{
-  workspaceId: Scalars['String']['input'];
-}>;
-
-export type GetWorkspaceEmbeddingStatusQuery = {
-  __typename?: 'Query';
-  queryWorkspaceEmbeddingStatus: {
-    __typename?: 'ContextWorkspaceEmbeddingStatus';
-    total: number;
-    embedded: number;
-  };
-};
-
 export type QueueWorkspaceEmbeddingMutationVariables = Exact<{
   workspaceId: Scalars['String']['input'];
   docId: Array<Scalars['String']['input']> | Scalars['String']['input'];
@@ -6271,43 +6239,6 @@ export type CredentialsRequirementsFragment = {
   };
 };
 
-export type CurrentUserProfileFragment = {
-  __typename?: 'UserType';
-  id: string;
-  name: string;
-  email: string;
-  avatarUrl: string | null;
-  emailVerified: boolean;
-  features: Array<FeatureType>;
-  settings: {
-    __typename?: 'UserSettingsType';
-    receiveInvitationEmail: boolean;
-    receiveMentionEmail: boolean;
-    receiveCommentEmail: boolean;
-  };
-  quota: {
-    __typename?: 'UserQuotaType';
-    name: string;
-    blobLimit: number;
-    storageQuota: number;
-    historyPeriod: number;
-    memberLimit: number;
-    humanReadable: {
-      __typename?: 'UserQuotaHumanReadableType';
-      name: string;
-      blobLimit: string;
-      storageQuota: string;
-      historyPeriod: string;
-      memberLimit: string;
-    };
-  };
-  quotaUsage: { __typename?: 'UserQuotaUsageType'; storageQuota: number };
-  copilot: {
-    __typename?: 'Copilot';
-    quota: { __typename?: 'CopilotQuota'; limit: number | null; used: number };
-  };
-};
-
 export type PaginatedCopilotChatsFragment = {
   __typename?: 'PaginatedCopilotHistoriesType';
   pageInfo: {
@@ -6388,54 +6319,6 @@ export type GetCurrentUserFeaturesQuery = {
   } | null;
 };
 
-export type GetCurrentUserProfileQueryVariables = Exact<{
-  [key: string]: never;
-}>;
-
-export type GetCurrentUserProfileQuery = {
-  __typename?: 'Query';
-  currentUser: {
-    __typename?: 'UserType';
-    id: string;
-    name: string;
-    email: string;
-    avatarUrl: string | null;
-    emailVerified: boolean;
-    features: Array<FeatureType>;
-    settings: {
-      __typename?: 'UserSettingsType';
-      receiveInvitationEmail: boolean;
-      receiveMentionEmail: boolean;
-      receiveCommentEmail: boolean;
-    };
-    quota: {
-      __typename?: 'UserQuotaType';
-      name: string;
-      blobLimit: number;
-      storageQuota: number;
-      historyPeriod: number;
-      memberLimit: number;
-      humanReadable: {
-        __typename?: 'UserQuotaHumanReadableType';
-        name: string;
-        blobLimit: string;
-        storageQuota: string;
-        historyPeriod: string;
-        memberLimit: string;
-      };
-    };
-    quotaUsage: { __typename?: 'UserQuotaUsageType'; storageQuota: number };
-    copilot: {
-      __typename?: 'Copilot';
-      quota: {
-        __typename?: 'CopilotQuota';
-        limit: number | null;
-        used: number;
-      };
-    };
-  } | null;
-};
-
 export type GetCurrentUserQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GetCurrentUserQuery = {
@@ -6478,19 +6361,6 @@ export type GetDocCreatedByUpdatedByListQuery = {
         };
       }>;
     };
-  };
-};
-
-export type GetDocDefaultRoleQueryVariables = Exact<{
-  workspaceId: Scalars['String']['input'];
-  docId: Scalars['String']['input'];
-}>;
-
-export type GetDocDefaultRoleQuery = {
-  __typename?: 'Query';
-  workspace: {
-    __typename?: 'WorkspaceType';
-    doc: { __typename?: 'DocType'; defaultRole: DocRole };
   };
 };
 
@@ -6634,32 +6504,6 @@ export type GetMemberCountByWorkspaceIdQuery = {
   workspace: { __typename?: 'WorkspaceType'; memberCount: number };
 };
 
-export type GetMembersByWorkspaceIdQueryVariables = Exact<{
-  workspaceId: Scalars['String']['input'];
-  skip?: InputMaybe<Scalars['Int']['input']>;
-  take?: InputMaybe<Scalars['Int']['input']>;
-  query?: InputMaybe<Scalars['String']['input']>;
-}>;
-
-export type GetMembersByWorkspaceIdQuery = {
-  __typename?: 'Query';
-  workspace: {
-    __typename?: 'WorkspaceType';
-    memberCount: number;
-    members: Array<{
-      __typename?: 'InviteUserType';
-      id: string;
-      name: string | null;
-      email: string | null;
-      avatarUrl: string | null;
-      permission: Permission;
-      inviteId: string;
-      emailVerified: boolean | null;
-      status: WorkspaceMemberStatus;
-    }>;
-  };
-};
-
 export type OauthProvidersQueryVariables = Exact<{ [key: string]: never }>;
 
 export type OauthProvidersQuery = {
@@ -6667,45 +6511,6 @@ export type OauthProvidersQuery = {
   serverConfig: {
     __typename?: 'ServerConfigType';
     oauthProviders: Array<OAuthProviderType>;
-  };
-};
-
-export type GetPageGrantedUsersListQueryVariables = Exact<{
-  pagination: PaginationInput;
-  docId: Scalars['String']['input'];
-  workspaceId: Scalars['String']['input'];
-}>;
-
-export type GetPageGrantedUsersListQuery = {
-  __typename?: 'Query';
-  workspace: {
-    __typename?: 'WorkspaceType';
-    doc: {
-      __typename?: 'DocType';
-      grantedUsersList: {
-        __typename?: 'PaginatedGrantedDocUserType';
-        totalCount: number;
-        pageInfo: {
-          __typename?: 'PageInfo';
-          endCursor: string | null;
-          hasNextPage: boolean;
-        };
-        edges: Array<{
-          __typename?: 'GrantedDocUserTypeEdge';
-          node: {
-            __typename?: 'GrantedDocUserType';
-            role: DocRole;
-            user: {
-              __typename?: 'WorkspaceUserType';
-              id: string;
-              name: string;
-              email: string;
-              avatarUrl: string | null;
-            };
-          };
-        }>;
-      };
-    };
   };
 };
 
@@ -6803,42 +6608,6 @@ export type GetUserQuery = {
         hasPassword: boolean | null;
       }
     | null;
-};
-
-export type GetWorkspaceInfoQueryVariables = Exact<{
-  workspaceId: Scalars['String']['input'];
-}>;
-
-export type GetWorkspaceInfoQuery = {
-  __typename?: 'Query';
-  workspace: {
-    __typename?: 'WorkspaceType';
-    role: Permission;
-    team: boolean;
-    permissions: {
-      __typename?: 'WorkspacePermissions';
-      Workspace_Administrators_Manage: boolean;
-      Workspace_Blobs_List: boolean;
-      Workspace_Blobs_Read: boolean;
-      Workspace_Blobs_Write: boolean;
-      Workspace_Copilot: boolean;
-      Workspace_CreateDoc: boolean;
-      Workspace_Delete: boolean;
-      Workspace_Organize_Read: boolean;
-      Workspace_Payment_Manage: boolean;
-      Workspace_Properties_Create: boolean;
-      Workspace_Properties_Delete: boolean;
-      Workspace_Properties_Read: boolean;
-      Workspace_Properties_Update: boolean;
-      Workspace_Read: boolean;
-      Workspace_Settings_Read: boolean;
-      Workspace_Settings_Update: boolean;
-      Workspace_Sync: boolean;
-      Workspace_TransferOwner: boolean;
-      Workspace_Users_Manage: boolean;
-      Workspace_Users_Read: boolean;
-    };
-  };
 };
 
 export type GetWorkspacePageByIdQueryVariables = Exact<{
@@ -7266,13 +7035,6 @@ export type MentionUserMutationVariables = Exact<{
 export type MentionUserMutation = {
   __typename?: 'Mutation';
   mentionUser: string;
-};
-
-export type NotificationCountQueryVariables = Exact<{ [key: string]: never }>;
-
-export type NotificationCountQuery = {
-  __typename?: 'Query';
-  currentUser: { __typename?: 'UserType'; notificationCount: number } | null;
 };
 
 export type PricesQueryVariables = Exact<{ [key: string]: never }>;
@@ -7784,21 +7546,6 @@ export type WorkspaceByokSettingsQuery = {
   };
 };
 
-export type GetWorkspaceConfigQueryVariables = Exact<{
-  id: Scalars['String']['input'];
-}>;
-
-export type GetWorkspaceConfigQuery = {
-  __typename?: 'Query';
-  workspace: {
-    __typename?: 'WorkspaceType';
-    enableAi: boolean;
-    enableSharing: boolean;
-    enableUrlPreview: boolean;
-    enableDocEmbedding: boolean;
-  };
-};
-
 export type SetEnableAiMutationVariables = Exact<{
   id: Scalars['ID']['input'];
   enableAi: Scalars['Boolean']['input'];
@@ -7864,22 +7611,6 @@ export type AcceptInviteByInviteIdMutation = {
   acceptInviteById: boolean;
 };
 
-export type GetWorkspaceInviteLinkQueryVariables = Exact<{
-  id: Scalars['String']['input'];
-}>;
-
-export type GetWorkspaceInviteLinkQuery = {
-  __typename?: 'Query';
-  workspace: {
-    __typename?: 'WorkspaceType';
-    inviteLink: {
-      __typename?: 'InviteLink';
-      link: string;
-      expireTime: string;
-    } | null;
-  };
-};
-
 export type CreateInviteLinkMutationVariables = Exact<{
   workspaceId: Scalars['String']['input'];
   expireTime: WorkspaceInviteLinkExpireTime;
@@ -7925,38 +7656,6 @@ export type WorkspaceInvoicesQuery = {
       link: string | null;
       createdAt: string;
     }>;
-  };
-};
-
-export type WorkspaceQuotaQueryVariables = Exact<{
-  id: Scalars['String']['input'];
-}>;
-
-export type WorkspaceQuotaQuery = {
-  __typename?: 'Query';
-  workspace: {
-    __typename?: 'WorkspaceType';
-    quota: {
-      __typename?: 'WorkspaceQuotaType';
-      name: string;
-      blobLimit: number;
-      storageQuota: number;
-      usedStorageQuota: number;
-      historyPeriod: number;
-      memberLimit: number;
-      memberCount: number;
-      overcapacityMemberCount: number;
-      humanReadable: {
-        __typename?: 'WorkspaceQuotaHumanReadableType';
-        name: string;
-        blobLimit: string;
-        storageQuota: string;
-        historyPeriod: string;
-        memberLimit: string;
-        memberCount: string;
-        overcapacityMemberCount: string;
-      };
-    };
   };
 };
 
@@ -8016,11 +7715,6 @@ export type GrantWorkspaceTeamMemberMutation = {
 };
 
 export type Queries =
-  | {
-      name: 'listUserAccessTokensQuery';
-      variables: ListUserAccessTokensQueryVariables;
-      response: ListUserAccessTokensQuery;
-    }
   | {
       name: 'adminAllSharedLinksQuery';
       variables: AdminAllSharedLinksQueryVariables;
@@ -8137,11 +7831,6 @@ export type Queries =
       response: MatchFilesQuery;
     }
   | {
-      name: 'getWorkspaceEmbeddingStatusQuery';
-      variables: GetWorkspaceEmbeddingStatusQueryVariables;
-      response: GetWorkspaceEmbeddingStatusQuery;
-    }
-  | {
       name: 'getCopilotHistoryIdsQuery';
       variables: GetCopilotHistoryIdsQueryVariables;
       response: GetCopilotHistoryIdsQuery;
@@ -8227,11 +7916,6 @@ export type Queries =
       response: GetCurrentUserFeaturesQuery;
     }
   | {
-      name: 'getCurrentUserProfileQuery';
-      variables: GetCurrentUserProfileQueryVariables;
-      response: GetCurrentUserProfileQuery;
-    }
-  | {
       name: 'getCurrentUserQuery';
       variables: GetCurrentUserQueryVariables;
       response: GetCurrentUserQuery;
@@ -8240,11 +7924,6 @@ export type Queries =
       name: 'getDocCreatedByUpdatedByListQuery';
       variables: GetDocCreatedByUpdatedByListQueryVariables;
       response: GetDocCreatedByUpdatedByListQuery;
-    }
-  | {
-      name: 'getDocDefaultRoleQuery';
-      variables: GetDocDefaultRoleQueryVariables;
-      response: GetDocDefaultRoleQuery;
     }
   | {
       name: 'getDocLastAccessedMembersQuery';
@@ -8272,19 +7951,9 @@ export type Queries =
       response: GetMemberCountByWorkspaceIdQuery;
     }
   | {
-      name: 'getMembersByWorkspaceIdQuery';
-      variables: GetMembersByWorkspaceIdQueryVariables;
-      response: GetMembersByWorkspaceIdQuery;
-    }
-  | {
       name: 'oauthProvidersQuery';
       variables: OauthProvidersQueryVariables;
       response: OauthProvidersQuery;
-    }
-  | {
-      name: 'getPageGrantedUsersListQuery';
-      variables: GetPageGrantedUsersListQueryVariables;
-      response: GetPageGrantedUsersListQuery;
     }
   | {
       name: 'getPublicUserByIdQuery';
@@ -8310,11 +7979,6 @@ export type Queries =
       name: 'getUserQuery';
       variables: GetUserQueryVariables;
       response: GetUserQuery;
-    }
-  | {
-      name: 'getWorkspaceInfoQuery';
-      variables: GetWorkspaceInfoQueryVariables;
-      response: GetWorkspaceInfoQuery;
     }
   | {
       name: 'getWorkspacePageByIdQuery';
@@ -8392,11 +8056,6 @@ export type Queries =
       response: ListNotificationsQuery;
     }
   | {
-      name: 'notificationCountQuery';
-      variables: NotificationCountQueryVariables;
-      response: NotificationCountQuery;
-    }
-  | {
       name: 'pricesQuery';
       variables: PricesQueryVariables;
       response: PricesQuery;
@@ -8427,24 +8086,9 @@ export type Queries =
       response: WorkspaceByokSettingsQuery;
     }
   | {
-      name: 'getWorkspaceConfigQuery';
-      variables: GetWorkspaceConfigQueryVariables;
-      response: GetWorkspaceConfigQuery;
-    }
-  | {
-      name: 'getWorkspaceInviteLinkQuery';
-      variables: GetWorkspaceInviteLinkQueryVariables;
-      response: GetWorkspaceInviteLinkQuery;
-    }
-  | {
       name: 'workspaceInvoicesQuery';
       variables: WorkspaceInvoicesQueryVariables;
       response: WorkspaceInvoicesQuery;
-    }
-  | {
-      name: 'workspaceQuotaQuery';
-      variables: WorkspaceQuotaQueryVariables;
-      response: WorkspaceQuotaQuery;
     }
   | {
       name: 'getWorkspaceRolePermissionsQuery';

@@ -10,7 +10,16 @@ import { QuotaModule } from '../quota';
 import { StorageModule } from '../storage';
 import { UserModule } from '../user';
 import { WorkspacesController } from './controller';
+import {
+  DocGrantsRealtimeProvider,
+  DocShareRealtimeProvider,
+} from './doc-realtime';
 import { WorkspaceEvents } from './event';
+import {
+  WorkspaceAccessRealtimeProvider,
+  WorkspaceConfigRealtimeProvider,
+  WorkspaceMembersRealtimeProvider,
+} from './realtime';
 import {
   DocHistoryResolver,
   DocResolver,
@@ -45,6 +54,11 @@ import { WorkspaceStatsJob } from './stats.job';
     WorkspaceBlobResolver,
     WorkspaceService,
     WorkspaceEvents,
+    WorkspaceAccessRealtimeProvider,
+    WorkspaceConfigRealtimeProvider,
+    WorkspaceMembersRealtimeProvider,
+    DocShareRealtimeProvider,
+    DocGrantsRealtimeProvider,
     AdminWorkspaceResolver,
     WorkspaceStatsJob,
   ],

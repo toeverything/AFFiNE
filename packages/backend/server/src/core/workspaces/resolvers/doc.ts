@@ -19,6 +19,7 @@ import {
   DocActionDenied,
   DocDefaultRoleCanNotBeOwner,
   DocNotFound,
+  EventBus,
   ExpectToGrantDocUserRoles,
   ExpectToPublishDoc,
   ExpectToRevokeDocUserRoles,
@@ -37,16 +38,14 @@ import {
   DOC_ACTIONS,
   DocAction,
   DocRole,
+  type DotToUnderline,
+  mapPermissionsToGraphqlPermissions,
   PermissionAccess,
   PermissionService,
 } from '../../permission';
 import { PublicUserType, WorkspaceUserType } from '../../user';
 import { WorkspaceType } from '../types';
 import { TimeBucket, TimeWindow } from './analytics-types';
-import {
-  DotToUnderline,
-  mapPermissionsToGraphqlPermissions,
-} from './workspace';
 
 registerEnumType(PublicDocMode, {
   name: 'PublicDocMode',
@@ -298,7 +297,8 @@ export class WorkspaceDocResolver {
     private readonly ac: PermissionAccess,
     private readonly permission: PermissionService,
     private readonly models: Models,
-    private readonly cache: Cache
+    private readonly cache: Cache,
+    private readonly event: EventBus
   ) {}
 
   @ResolveField(() => WorkspaceDocMeta, {
@@ -442,6 +442,7 @@ export class WorkspaceDocResolver {
     await this.ac.user(user.id).doc(workspaceId, docId).assert('Doc.Publish');
 
     const doc = await this.models.doc.publish(workspaceId, docId, mode);
+    this.event.emit('doc.public_state.changed', { workspaceId, docId });
 
     this.logger.log(
       `Publish page ${docId} with mode ${mode} in workspace ${workspaceId}`
@@ -467,6 +468,7 @@ export class WorkspaceDocResolver {
     await this.ac.user(user.id).doc(workspaceId, docId).assert('Doc.Publish');
 
     const doc = await this.models.doc.unpublish(workspaceId, docId);
+    this.event.emit('doc.public_state.changed', { workspaceId, docId });
 
     this.logger.log(`Revoke public doc ${docId} in workspace ${workspaceId}`);
 
@@ -535,7 +537,8 @@ export class DocResolver {
 
   constructor(
     private readonly ac: PermissionAccess,
-    private readonly models: Models
+    private readonly models: Models,
+    private readonly event: EventBus
   ) {}
 
   @ResolveField(() => PublicUserType, {
@@ -713,6 +716,10 @@ export class DocResolver {
       input.userIds,
       input.role
     );
+    this.event.emit('doc.grants.changed', {
+      workspaceId: input.workspaceId,
+      docId: input.docId,
+    });
 
     const info = {
       ...pairs,
@@ -749,6 +756,10 @@ export class DocResolver {
       input.docId,
       input.userId
     );
+    this.event.emit('doc.grants.changed', {
+      workspaceId: input.workspaceId,
+      docId: input.docId,
+    });
 
     const info = {
       ...pairs,
@@ -791,6 +802,11 @@ export class DocResolver {
         input.docId,
         input.userId
       );
+      this.event.emit('doc.owner.changed', {
+        workspaceId: input.workspaceId,
+        docId: input.docId,
+        userId: input.userId,
+      });
       this.logger.log(`Transfer doc owner (${JSON.stringify(info)})`);
     } else {
       await this.ac.user(user.id).doc(input).assert('Doc.Users.Manage');
@@ -800,6 +816,10 @@ export class DocResolver {
         input.userId,
         input.role
       );
+      this.event.emit('doc.grants.changed', {
+        workspaceId: input.workspaceId,
+        docId: input.docId,
+      });
       this.logger.log(`Update doc user role (${JSON.stringify(info)})`);
     }
 
@@ -851,6 +871,10 @@ export class DocResolver {
       input.docId,
       input.role
     );
+    this.event.emit('doc.default_role.changed', {
+      workspaceId: input.workspaceId,
+      docId: input.docId,
+    });
     return true;
   }
 }

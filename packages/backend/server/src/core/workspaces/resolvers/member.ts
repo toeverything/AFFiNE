@@ -300,6 +300,7 @@ export class WorkspaceMemberResolver {
       { workspaceId, inviterUserId: user.id },
       { ttl: expireTime }
     );
+    this.event.emit('workspace.invite_link.created', { workspaceId });
     return {
       link: this.url.link(`/invite/${inviteId}`),
       expireTime: new Date(Date.now() + expireTime),
@@ -317,7 +318,9 @@ export class WorkspaceMemberResolver {
       .assert('Workspace.Users.Manage');
 
     const cacheId = `workspace:inviteLink:${workspaceId}`;
-    return await this.cache.delete(cacheId);
+    const deleted = await this.cache.delete(cacheId);
+    this.event.emit('workspace.invite_link.revoked', { workspaceId });
+    return deleted;
   }
 
   @Mutation(() => Boolean)
@@ -406,6 +409,11 @@ export class WorkspaceMemberResolver {
       }
 
       await this.models.workspaceUser.set(workspaceId, userId, newRole);
+      if (role.status !== WorkspaceMemberStatus.Accepted) {
+        this.event.emit('workspace.members.updated', {
+          workspaceId,
+        });
+      }
     }
 
     return true;
@@ -608,6 +616,10 @@ export class WorkspaceMemberResolver {
       WorkspaceMemberStatus.Accepted
     );
 
+    this.event.emit('workspace.members.updated', {
+      workspaceId: role.workspaceId,
+    });
+
     await this.workspaceService.sendInvitationAcceptedNotification(
       role.inviterId ??
         (await this.models.workspaceUser.getOwner(role.workspaceId)).id,
@@ -640,6 +652,7 @@ export class WorkspaceMemberResolver {
     );
 
     await this.workspaceService.sendReviewRequestNotification(role.id);
+    this.event.emit('workspace.members.updated', { workspaceId });
     return;
   }
 

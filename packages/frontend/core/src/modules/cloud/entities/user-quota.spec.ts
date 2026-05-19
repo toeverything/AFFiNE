@@ -1,4 +1,3 @@
-import type { GetCurrentUserProfileQuery } from '@affine/graphql';
 import type { UserQuotaStateSnapshot } from '@affine/realtime';
 import { Framework } from '@toeverything/infra';
 import { Subject } from 'rxjs';
@@ -7,8 +6,6 @@ import { describe, expect, test, vi } from 'vitest';
 import { AuthService } from '../services/auth';
 import { UserQuotaStore } from '../stores/user-quota';
 import { UserQuota } from './user-quota';
-
-type Quota = NonNullable<GetCurrentUserProfileQuery['currentUser']>['quota'];
 
 const authService = {
   session: {
@@ -41,24 +38,6 @@ function createQuotaState(
   };
 }
 
-function createQuota(overrides: Partial<Quota> = {}): Quota {
-  return {
-    name: 'Legacy',
-    blobLimit: 1024,
-    storageQuota: 2048,
-    historyPeriod: 30 * 24 * 60 * 60,
-    memberLimit: 8,
-    humanReadable: {
-      name: 'Legacy',
-      blobLimit: '1 KB',
-      storageQuota: '2 KB',
-      historyPeriod: '30 days',
-      memberLimit: '8',
-    },
-    ...overrides,
-  };
-}
-
 function createStore(
   overrides: Partial<UserQuotaStore>,
   eventSubject = new Subject<{ type: 'ready' } | { changed: true }>()
@@ -66,7 +45,6 @@ function createStore(
   return {
     fetchUserQuotaState: vi.fn(),
     subscribeUserQuotaState: vi.fn(() => eventSubject),
-    fetchUserQuota: vi.fn(),
     ...overrides,
   } as unknown as UserQuotaStore;
 }
@@ -103,24 +81,20 @@ describe('UserQuota', () => {
     await vi.waitFor(() => expect(quota.used$.value).toBe(768));
 
     expect(store.fetchUserQuotaState).toHaveBeenCalledTimes(2);
-    expect(store.fetchUserQuota).not.toHaveBeenCalled();
     quota.dispose();
   });
 
-  test('falls back to legacy GraphQL quota when realtime request fails', async () => {
+  test('surfaces realtime quota errors without GraphQL fallback', async () => {
+    const error = new Error('offline');
     const store = createStore({
-      fetchUserQuotaState: vi.fn().mockRejectedValue(new Error('offline')),
-      fetchUserQuota: vi.fn().mockResolvedValue({
-        quota: createQuota(),
-        used: 256,
-      }),
+      fetchUserQuotaState: vi.fn().mockRejectedValue(error),
     });
     const quota = createEntity(store);
 
     quota.revalidate();
 
-    await vi.waitFor(() => expect(quota.quota$.value?.name).toBe('Legacy'));
-    expect(quota.used$.value).toBe(256);
+    await vi.waitFor(() => expect(quota.error$.value).toBe(error));
+    expect(quota.quota$.value).toBeNull();
     quota.dispose();
   });
 });

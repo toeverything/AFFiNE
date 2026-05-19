@@ -1,5 +1,4 @@
 import { WorkspaceService } from '@affine/core/modules/workspace';
-import type { WorkspaceQuotaQuery } from '@affine/graphql';
 import type { WorkspaceQuotaStateSnapshot } from '@affine/realtime';
 import { Framework } from '@toeverything/infra';
 import { Subject } from 'rxjs';
@@ -7,8 +6,6 @@ import { describe, expect, test, vi } from 'vitest';
 
 import { WorkspaceQuotaStore } from '../stores/quota';
 import { WorkspaceQuota } from './quota';
-
-type Quota = WorkspaceQuotaQuery['workspace']['quota'];
 
 const workspaceService = {
   workspace: { id: 'workspace-1' },
@@ -43,29 +40,6 @@ function createQuotaState(
   };
 }
 
-function createQuota(overrides: Partial<Quota> = {}): Quota {
-  return {
-    name: 'Legacy',
-    blobLimit: 1024,
-    storageQuota: 2048,
-    usedStorageQuota: 256,
-    historyPeriod: 30 * 24 * 60 * 60 * 1000,
-    memberLimit: 8,
-    memberCount: 2,
-    overcapacityMemberCount: 0,
-    humanReadable: {
-      name: 'Legacy',
-      blobLimit: '1 KB',
-      storageQuota: '2 KB',
-      historyPeriod: '30 days',
-      memberLimit: '8',
-      memberCount: '2',
-      overcapacityMemberCount: '0',
-    },
-    ...overrides,
-  };
-}
-
 function createStore(
   overrides: Partial<WorkspaceQuotaStore>,
   eventSubject = new Subject<{ type: 'ready' } | { changed: true }>()
@@ -73,7 +47,6 @@ function createStore(
   return {
     fetchWorkspaceQuotaState: vi.fn(),
     subscribeWorkspaceQuotaState: vi.fn(() => eventSubject),
-    fetchWorkspaceQuota: vi.fn(),
     ...overrides,
   } as unknown as WorkspaceQuotaStore;
 }
@@ -110,21 +83,20 @@ describe('WorkspaceQuota', () => {
     await vi.waitFor(() => expect(quota.quota$.value?.memberCount).toBe(4));
 
     expect(store.fetchWorkspaceQuotaState).toHaveBeenCalledTimes(2);
-    expect(store.fetchWorkspaceQuota).not.toHaveBeenCalled();
     quota.dispose();
   });
 
-  test('falls back to legacy GraphQL quota when realtime request fails', async () => {
+  test('surfaces realtime quota errors without GraphQL fallback', async () => {
+    const error = new Error('offline');
     const store = createStore({
-      fetchWorkspaceQuotaState: vi.fn().mockRejectedValue(new Error('offline')),
-      fetchWorkspaceQuota: vi.fn().mockResolvedValue(createQuota()),
+      fetchWorkspaceQuotaState: vi.fn().mockRejectedValue(error),
     });
     const quota = createEntity(store);
 
     quota.revalidate();
 
-    await vi.waitFor(() => expect(quota.quota$.value?.name).toBe('Legacy'));
-    expect(quota.error$.value).toBeNull();
+    await vi.waitFor(() => expect(quota.error$.value).toBe(error));
+    expect(quota.quota$.value).toBeNull();
     quota.dispose();
   });
 });

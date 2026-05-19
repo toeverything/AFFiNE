@@ -1,4 +1,3 @@
-import type { GetCurrentUserProfileQuery } from '@affine/graphql';
 import type {
   RealtimeTopicEventOf,
   UserQuotaStateSnapshot,
@@ -11,9 +10,20 @@ import { RealtimeLiveQuery } from '../realtime/live-query';
 import type { AuthService } from '../services/auth';
 import type { UserQuotaStore } from '../stores/user-quota';
 
-type QuotaType = NonNullable<
-  GetCurrentUserProfileQuery['currentUser']
->['quota'];
+type QuotaType = {
+  name: string;
+  blobLimit: number;
+  storageQuota: number;
+  historyPeriod: number;
+  memberLimit: number;
+  humanReadable: {
+    name: string;
+    blobLimit: string;
+    storageQuota: string;
+    historyPeriod: string;
+    memberLimit: string;
+  };
+};
 
 const DAY_SECONDS = 24 * 60 * 60;
 
@@ -159,9 +169,6 @@ export class UserQuota extends Entity {
         quota: userQuotaFromState(state),
         used: state.usedStorageQuota,
       };
-    } catch {
-      const { quota, used } = await this.store.fetchUserQuota(signal);
-      return { quota, used };
     } finally {
       this.isRevalidating$.setValue(false);
     }

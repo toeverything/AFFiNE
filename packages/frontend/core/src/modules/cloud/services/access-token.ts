@@ -9,32 +9,46 @@ import {
   Service,
   smartRetry,
 } from '@toeverything/infra';
+import type { Subscription } from 'rxjs';
 import { catchError, EMPTY, tap } from 'rxjs';
 
 import { AccountChanged } from '../events/account-changed';
-import type { AccessToken, AccessTokenStore } from '../stores/access-token';
+import type {
+  AccessToken,
+  AccessTokenStore,
+  ListedAccessToken,
+} from '../stores/access-token';
 
 @OnEvent(AccountChanged, e => e.onAccountChanged)
 export class AccessTokenService extends Service {
   constructor(private readonly accessTokenStore: AccessTokenStore) {
     super();
+    this.subscription = this.accessTokenStore
+      .subscribeUserAccessTokens()
+      .subscribe({
+        next: () => this.revalidate(),
+        error: error => this.error$.setValue(error),
+      });
   }
 
-  accessTokens$ = new LiveData<AccessToken[] | null>(null);
+  private readonly subscription: Subscription;
+
+  accessTokens$ = new LiveData<ListedAccessToken[] | null>(null);
   isRevalidating$ = new LiveData(false);
   error$ = new LiveData<any>(null);
 
   async generateUserAccessToken(name: string): Promise<AccessToken> {
     const accessToken =
       await this.accessTokenStore.generateUserAccessToken(name);
+    const { token: _token, ...listedAccessToken } = accessToken;
     this.accessTokens$.value = [
       ...(this.accessTokens$.value || []),
-      accessToken as AccessToken,
+      listedAccessToken,
     ];
 
     await this.waitForRevalidation();
 
-    return accessToken as AccessToken;
+    return accessToken;
   }
 
   async revokeUserAccessToken(id: string) {
@@ -78,5 +92,10 @@ export class AccessTokenService extends Service {
       isRevalidating => !isRevalidating,
       signal
     );
+  }
+
+  override dispose(): void {
+    this.revalidate.unsubscribe();
+    this.subscription.unsubscribe();
   }
 }

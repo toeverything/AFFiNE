@@ -9,7 +9,7 @@ import {
 } from '@nestjs/graphql';
 import { difference } from 'lodash-es';
 
-import { BadRequest } from '../../base';
+import { BadRequest, EventBus } from '../../base';
 import { Feature, Models, type UserFeatureName } from '../../models';
 import { Admin } from '../common';
 import { EntitlementService } from '../entitlement';
@@ -42,7 +42,8 @@ export class UserFeatureResolver extends AvailableUserFeatureConfig {
 export class AdminFeatureManagementResolver extends AvailableUserFeatureConfig {
   constructor(
     private readonly models: Models,
-    private readonly entitlement: EntitlementService
+    private readonly entitlement: EntitlementService,
+    private readonly event: EventBus
   ) {
     super();
   }
@@ -75,6 +76,11 @@ export class AdminFeatureManagementResolver extends AvailableUserFeatureConfig {
     await Promise.all(
       removed.map(feature => this.models.userFeature.remove(id, feature))
     );
+
+    const user = await this.models.user.get(id);
+    if (user) {
+      this.event.emit('user.updated', user);
+    }
 
     return features;
   }

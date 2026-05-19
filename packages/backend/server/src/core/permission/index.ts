@@ -41,6 +41,10 @@ export {
   PERMISSION_SHADOW_MISMATCH_CATEGORIES,
   PermissionDiagnosticService,
 } from './diagnostic';
+export {
+  type DotToUnderline,
+  mapPermissionsToGraphqlPermissions,
+} from './permission-map';
 export { WorkspacePolicyService } from './policy';
 export { PermissionProjectionChecker } from './projection-checker';
 export { PermissionService } from './service';

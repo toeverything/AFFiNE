@@ -10,6 +10,20 @@ import { BaseModel } from './base';
 import { DocRole } from './common';
 import { docRoleFromNew } from './permission-write';
 
+declare global {
+  interface Events {
+    'doc.grants.changed': {
+      workspaceId: string;
+      docId: string;
+    };
+    'doc.owner.changed': {
+      workspaceId: string;
+      docId: string;
+      userId: string;
+    };
+  }
+}
+
 @Injectable()
 export class DocUserModel extends BaseModel {
   /**
@@ -122,6 +136,14 @@ export class DocUserModel extends BaseModel {
       },
     });
     return grants.map(grant => this.docGrantToCompat(grant));
+  }
+
+  async findDirectGrantDocIdsByUser(userId: string) {
+    return await this.db.docGrant.findMany({
+      where: { principalType: 'user', principalId: userId },
+      select: { workspaceId: true, docId: true },
+      distinct: ['workspaceId', 'docId'],
+    });
   }
 
   count(workspaceId: string, docId: string) {

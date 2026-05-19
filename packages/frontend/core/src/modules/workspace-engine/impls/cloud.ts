@@ -3,7 +3,6 @@ import { DebugLogger } from '@affine/debug';
 import {
   createWorkspaceMutation,
   deleteWorkspaceMutation,
-  getWorkspaceInfoQuery,
   getWorkspacesQuery,
   ServerDeploymentType,
   ServerFeature,
@@ -67,7 +66,7 @@ import {
   GraphQLService,
   WorkspaceServerService,
 } from '../../cloud';
-import type { GlobalState } from '../../storage';
+import { type GlobalState, NbstoreService } from '../../storage';
 import type {
   Workspace,
   WorkspaceFlavourProvider,
@@ -90,6 +89,7 @@ const logger = new DebugLogger('affine:cloud-workspace-flavour-provider');
 class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
   private readonly authService: AuthService;
   private readonly graphqlService: GraphQLService;
+  private readonly nbstoreService: NbstoreService;
   private readonly unsubscribeAccountChanged: () => void;
 
   constructor(
@@ -98,6 +98,7 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
   ) {
     this.authService = server.scope.get(AuthService);
     this.graphqlService = server.scope.get(GraphQLService);
+    this.nbstoreService = server.scope.get(NbstoreService);
     this.unsubscribeAccountChanged = this.server.scope.eventBus.on(
       AccountChanged,
       () => {
@@ -444,13 +445,12 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
   }
 
   private async getWorkspaceInfo(workspaceId: string, signal?: AbortSignal) {
-    return await this.graphqlService.gql({
-      query: getWorkspaceInfoQuery,
-      variables: {
-        workspaceId,
-      },
-      context: { signal },
-    });
+    const { access } = await this.nbstoreService.realtime.request(
+      'workspace.access.get',
+      { workspaceId },
+      { signal, timeoutMs: 10000 }
+    );
+    return { workspace: access };
   }
 
   getEngineWorkerInitOptions(workspaceId: string): WorkerInitOptions {

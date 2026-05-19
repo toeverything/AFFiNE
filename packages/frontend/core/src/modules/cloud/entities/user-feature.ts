@@ -44,14 +44,16 @@ export class UserFeature extends Entity {
       accountId: this.authService.session.account$.value?.id,
     })),
     exhaustMapSwitchUntilChanged(
-      (a, b) => a.accountId === b.accountId,
+      () => false,
       ({ accountId }) => {
         return fromPromise(async signal => {
           if (!accountId) {
             return; // no feature if no user
           }
 
-          const { userId, features } = await this.store.getUserFeatures(signal);
+          const profile = await this.store.getUserFeatures(signal);
+          if (!profile) return;
+          const { userId, features } = profile;
           if (userId !== accountId) {
             // The user has changed, ignore the result
             this.authService.session.revalidate();

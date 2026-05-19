@@ -19,6 +19,14 @@ declare global {
       workspaceId: string;
       docId: string;
     };
+    'doc.public_state.changed': {
+      workspaceId: string;
+      docId: string;
+    };
+    'doc.default_role.changed': {
+      workspaceId: string;
+      docId: string;
+    };
   }
 }
 

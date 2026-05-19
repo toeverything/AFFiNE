@@ -150,7 +150,8 @@ export class DocCommentStore extends Entity<{
     return {
       changes: commentChanges.changes.map(change => ({
         id: change.id,
-        action: change.action,
+        action:
+          change.action as DocCommentChangeListResult['changes'][number]['action'],
         comment: normalizeComment(change.item as GQLCommentType),
         commentId: change.commentId ?? undefined,
       })),
