@@ -25,6 +25,7 @@ export type Language =
   | 'fa'
   | 'nb-NO'
   | 'kk';
+  | 'tr';
 
 export type LanguageResource = typeof en;
 export const SUPPORTED_LANGUAGES: Record<
@@ -186,4 +187,10 @@ export const SUPPORTED_LANGUAGES: Record<
     flagEmoji: '🇰🇿',
     resource: () => import('./kk.json'),
   },
+  tr: {
+    name: 'Turkish',
+    originalName: 'Türkçe',
+    flagEmoji: '🇹🇷',
+    resource: () => import('./tr.json'),
+  }
 };
