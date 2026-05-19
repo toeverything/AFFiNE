@@ -8713,8 +8713,8 @@ __metadata:
   linkType: hard
 
 "@nestjs/apollo@npm:^13.2.4":
-  version: 13.4.0
-  resolution: "@nestjs/apollo@npm:13.4.0"
+  version: 13.4.1
+  resolution: "@nestjs/apollo@npm:13.4.1"
   dependencies:
     "@apollo/server-plugin-landing-page-graphql-playground": "npm:4.0.1"
     iterall: "npm:1.3.0"
@@ -8738,7 +8738,7 @@ __metadata:
       optional: true
     "@as-integrations/fastify":
       optional: true
-  checksum: 10/976bc1ee794a7aa7a50810eb7f36e31acab44af5f0377bfc7d81da032a94b1113acf61e1d827c90f6c5fcf3bccb3d77bf2bf4fea877df7a2d74a46d43b339a44
+  checksum: 10/7753a3f4df40f81e8123fcbf34e66750f6b8eebc9979c7b0f39b065ee463d0b299e4697c62b063daed6c142733dff6433db7ca7a0525731b23d8f2ac77c0403f
   languageName: node
   linkType: hard
 
@@ -8820,8 +8820,8 @@ __metadata:
   linkType: hard
 
 "@nestjs/graphql@npm:^13.2.5":
-  version: 13.4.0
-  resolution: "@nestjs/graphql@npm:13.4.0"
+  version: 13.4.1
+  resolution: "@nestjs/graphql@npm:13.4.1"
   dependencies:
     "@graphql-tools/merge": "npm:9.1.9"
     "@graphql-tools/schema": "npm:10.0.33"
@@ -8835,7 +8835,7 @@ __metadata:
     normalize-path: "npm:3.0.0"
     subscriptions-transport-ws: "npm:0.11.0"
     tslib: "npm:2.8.1"
-    ws: "npm:8.20.0"
+    ws: "npm:8.20.1"
   peerDependencies:
     "@apollo/subgraph": ^2.9.3
     "@nestjs/common": ^11.0.1
@@ -8854,7 +8854,7 @@ __metadata:
       optional: true
     ts-morph:
       optional: true
-  checksum: 10/1716dbef43dece6ac1991fd3ded20ef5bdc7a0671d8a51352dd0847cf914067eb62a12668c0b992555c817d69cdb14dc5253eae1b0f03a5d2dcb40e894f393f6
+  checksum: 10/918f909bf408d3fc84b153cbc06d23c6ce0fe4776cd0044f0ee175c5ba5923f4ac5693196e164734c6ccbc2c6db309f3699a90cff508edddebd09f742f5c014b
   languageName: node
   linkType: hard
 
@@ -35778,9 +35778,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ws@npm:8.20.0, ws@npm:^8.18.0, ws@npm:^8.18.3, ws@npm:^8.19.0":
-  version: 8.20.0
-  resolution: "ws@npm:8.20.0"
+"ws@npm:8.20.1, ws@npm:^8.18.0, ws@npm:^8.18.3, ws@npm:^8.19.0":
+  version: 8.20.1
+  resolution: "ws@npm:8.20.1"
   peerDependencies:
     bufferutil: ^4.0.1
     utf-8-validate: ">=5.0.2"
@@ -35789,7 +35789,7 @@ __metadata:
       optional: true
     utf-8-validate:
       optional: true
-  checksum: 10/b7ab934b21ffdea9f25a5af5097e8c1ec7625db553bca026c5a23e35b7c236f3fb89782f2b57fab9da553864512f9aa7d245827ef998d26ffa1b2187a19a6d10
+  checksum: 10/8c4d2b06dc65381b6bfab1f2e584275dabd30a99a5ce058b4dc76f3d03fad1921cef3a21d8f53127d30a808cfd1864aa2fe6890a5d43359f682457315baec873
   languageName: node
   linkType: hard
 
