@@ -19,6 +19,7 @@ import {
   TooManyRequest,
   URLHelper,
 } from '../../../base';
+import { EntitlementService } from '../../../core/entitlement';
 import { EarlyAccessType, FeatureService } from '../../../core/features';
 import { StripeFactory } from '../stripe';
 import {
@@ -64,7 +65,8 @@ export class UserSubscriptionManager extends SubscriptionManager {
     private readonly feature: FeatureService,
     private readonly event: EventBus,
     private readonly url: URLHelper,
-    private readonly mutex: Mutex
+    private readonly mutex: Mutex,
+    private readonly entitlement: EntitlementService
   ) {
     super(stripeProvider, db);
   }
@@ -254,7 +256,7 @@ export class UserSubscriptionManager extends SubscriptionManager {
 
     const subscriptionData = this.transformSubscription(subscription);
 
-    return this.db.subscription.upsert({
+    const saved = await this.db.subscription.upsert({
       where: {
         stripeSubscriptionId: stripeSubscription.id,
       },
@@ -270,6 +272,8 @@ export class UserSubscriptionManager extends SubscriptionManager {
         ...omit(subscriptionData, ['provider', 'iapStore']),
       },
     });
+    await this.entitlement.upsertFromCloudSubscription(saved);
+    return saved;
   }
 
   async deleteStripeSubscription({
@@ -285,6 +289,11 @@ export class UserSubscriptionManager extends SubscriptionManager {
     });
 
     if (result.count > 0) {
+      await this.entitlement.revokeCloudSubscription({
+        targetId: userId,
+        plan: lookupKey.plan,
+        stripeSubscriptionId: stripeSubscription.id,
+      });
       this.event.emit('user.subscription.canceled', {
         userId,
         plan: lookupKey.plan,
@@ -416,7 +425,7 @@ export class UserSubscriptionManager extends SubscriptionManager {
 
     if (prevSubscription) {
       if (prevSubscription.stripeSubscriptionId) {
-        await this.db.subscription.update({
+        const subscription = await this.db.subscription.update({
           where: {
             id: prevSubscription.id,
           },
@@ -431,6 +440,7 @@ export class UserSubscriptionManager extends SubscriptionManager {
             nextBillAt: null,
           },
         });
+        await this.entitlement.upsertFromCloudSubscription(subscription);
 
         await this.stripe.subscriptions.cancel(
           prevSubscription.stripeSubscriptionId,
@@ -440,7 +450,7 @@ export class UserSubscriptionManager extends SubscriptionManager {
         );
       }
     } else {
-      await this.db.subscription.create({
+      const subscription = await this.db.subscription.create({
         data: {
           targetId: knownInvoice.userId,
           stripeSubscriptionId: null,
@@ -452,6 +462,7 @@ export class UserSubscriptionManager extends SubscriptionManager {
           nextBillAt: null,
         },
       });
+      await this.entitlement.upsertFromCloudSubscription(subscription);
     }
 
     this.event.emit('user.subscription.activated', {
@@ -552,6 +563,10 @@ export class UserSubscriptionManager extends SubscriptionManager {
       plan: lookupKey.plan,
       recurring: lookupKey.recurring,
     });
+    await this.entitlement.upsertFromCloudSubscription({
+      ...subscription,
+      targetId: userId,
+    });
 
     return subscription;
   }
@@ -581,6 +596,12 @@ export class UserSubscriptionManager extends SubscriptionManager {
         nextBillAt: null,
         canceledAt: new Date(),
       },
+    });
+    await this.entitlement.revokeCloudSubscription({
+      targetId: userId,
+      plan: lookupKey.plan,
+      subscriptionId: subscription.id,
+      stripeSubscriptionId: subscription.stripeSubscriptionId,
     });
 
     this.event.emit('user.subscription.canceled', {
@@ -621,7 +642,7 @@ export class UserSubscriptionManager extends SubscriptionManager {
     }
 
     if (subscription) {
-      await this.db.subscription.update({
+      const saved = await this.db.subscription.update({
         where: { id: subscription.id },
         data: {
           status: SubscriptionStatus.Active,
@@ -631,8 +652,9 @@ export class UserSubscriptionManager extends SubscriptionManager {
           end,
         },
       });
+      await this.entitlement.upsertFromCloudSubscription(saved);
     } else {
-      await this.db.subscription.create({
+      const saved = await this.db.subscription.create({
         data: {
           targetId: userId,
           stripeSubscriptionId: null,
@@ -643,6 +665,7 @@ export class UserSubscriptionManager extends SubscriptionManager {
           nextBillAt: null,
         },
       });
+      await this.entitlement.upsertFromCloudSubscription(saved);
     }
 
     this.event.emit('user.subscription.activated', {

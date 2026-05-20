@@ -1,6 +1,11 @@
 import { randomUUID } from 'node:crypto';
 import { mock } from 'node:test';
 
+import {
+  Config,
+  ConfigFactory,
+  type StorageProviderConfig,
+} from '../../../base';
 import { CommentAttachmentStorage } from '../../../core/storage';
 import { Mockers } from '../../mocks';
 import { app, e2e } from '../test';
@@ -20,6 +25,11 @@ async function createWorkspace() {
 e2e.afterEach.always(() => {
   mock.reset();
 });
+
+async function useCommentAttachmentBlobStorage(storage: StorageProviderConfig) {
+  app.get(ConfigFactory).override({ storages: { blob: { storage } } });
+  await app.get(CommentAttachmentStorage).onConfigInit();
+}
 
 // #region comment attachment
 
@@ -61,35 +71,50 @@ e2e(
   }
 );
 
-e2e('should get comment attachment body', async t => {
+e2e.serial('should get comment attachment body', async t => {
+  const defaultBlobStorage = structuredClone(
+    app.get(Config).storages.blob.storage
+  );
+  await useCommentAttachmentBlobStorage({
+    provider: 'fs',
+    bucket: 'test-comment-attachment',
+    config: {
+      path: '/tmp/affine-test-comment-attachment',
+    },
+  });
+
   const { owner, workspace } = await createWorkspace();
   await app.login(owner);
 
-  const docId = randomUUID();
-  const key = randomUUID();
-  const attachment = app.get(CommentAttachmentStorage);
-  await attachment.put(
-    workspace.id,
-    docId,
-    key,
-    'test.txt',
-    Buffer.from('test'),
-    owner.id
-  );
+  try {
+    const docId = randomUUID();
+    const key = randomUUID();
+    const attachment = app.get(CommentAttachmentStorage);
+    await attachment.put(
+      workspace.id,
+      docId,
+      key,
+      'test.txt',
+      Buffer.from('test'),
+      owner.id
+    );
 
-  const res = await app.GET(
-    `/api/workspaces/${workspace.id}/docs/${docId}/comment-attachments/${key}`
-  );
+    const res = await app.GET(
+      `/api/workspaces/${workspace.id}/docs/${docId}/comment-attachments/${key}`
+    );
 
-  t.is(res.status, 200);
-  t.is(res.headers['content-type'], 'text/plain');
-  t.is(res.headers['content-length'], '4');
-  t.is(res.headers['cache-control'], 'private, max-age=2592000, immutable');
-  t.regex(
-    res.headers['last-modified'],
-    /^\w{3}, \d{2} \w{3} \d{4} \d{2}:\d{2}:\d{2} GMT$/
-  );
-  t.is(res.text, 'test');
+    t.is(res.status, 200);
+    t.is(res.headers['content-type'], 'text/plain');
+    t.is(res.headers['content-length'], '4');
+    t.is(res.headers['cache-control'], 'private, max-age=2592000, immutable');
+    t.regex(
+      res.headers['last-modified'],
+      /^\w{3}, \d{2} \w{3} \d{4} \d{2}:\d{2}:\d{2} GMT$/
+    );
+    t.is(res.text, 'test');
+  } finally {
+    await useCommentAttachmentBlobStorage(defaultBlobStorage);
+  }
 });
 
 e2e('should get comment attachment redirect url', async t => {

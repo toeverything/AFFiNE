@@ -16,11 +16,22 @@ export { RealtimePublisher } from './publisher';
 export { RealtimeRegistry } from './registry';
 export {
   realtimeCommentRoom,
+  realtimeDocGrantsRoom,
+  realtimeDocShareStateRoom,
   realtimeNotificationRoom,
   realtimeTranscriptTaskRoom,
+  realtimeUserAccessTokensRoom,
+  realtimeUserProfileRoom,
+  realtimeUserQuotaStateRoom,
   realtimeUserRoom,
+  realtimeUserSettingsRoom,
+  realtimeWorkspaceAccessRoom,
+  realtimeWorkspaceConfigRoom,
   realtimeWorkspaceDocRoom,
   realtimeWorkspaceEmbeddingProgressRoom,
+  realtimeWorkspaceInviteLinkRoom,
+  realtimeWorkspaceMembersRoom,
+  realtimeWorkspaceQuotaStateRoom,
   realtimeWorkspaceRoom,
 } from './rooms';
 export type { RealtimeRequestHandler, RealtimeTopicHandler } from './types';

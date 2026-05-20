@@ -1,6 +1,8 @@
 import {
   getRealtimeInputKey,
   type RealtimeEvent,
+  type RealtimeTopicEventOf,
+  type RealtimeTopicInputOf,
   type RealtimeTopicName,
 } from '@affine/realtime';
 import { Injectable, Logger } from '@nestjs/common';
@@ -42,6 +44,20 @@ export class RealtimePublisher {
     } catch (error) {
       this.logger.error(`Failed to publish realtime topic ${topic}`, error);
     }
+  }
+
+  publishChanged<Topic extends RealtimeTopicName>(
+    topic: Topic,
+    input: RealtimeTopicInputOf<Topic>,
+    reason: string,
+    options?: { room?: string }
+  ) {
+    this.publish(
+      topic,
+      input,
+      { changed: true, reason } as RealtimeTopicEventOf<Topic>,
+      options
+    );
   }
 
   publishLocal(payload: RealtimePublishPayload) {

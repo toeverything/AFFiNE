@@ -84,6 +84,10 @@ fn restricted_decision(input: &PermissionEvaluationInputV1, action: &str) -> Vec
     return Vec::new();
   }
 
+  if input.legacy_compat_mode && input.subject.allow_local && input.workspace.local {
+    return Vec::new();
+  }
+
   let mut restrictions = Vec::new();
   if !input.runtime.known {
     restrictions.push(PermissionDecisionRestrictionV1 {

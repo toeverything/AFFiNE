@@ -347,9 +347,12 @@ mod tests {
       local: true,
       ..Default::default()
     };
+    input.runtime.known = false;
+    input.runtime.stale = true;
     input.workspace_actions = vec!["Workspace.Delete".to_string()];
     let output = evaluate_permission(input).unwrap();
     assert!(decision(&output.workspace.decisions, "Workspace.Delete").allowed);
+    assert!(decision(&output.docs[0].decisions, "Doc.Update").allowed);
   }
 
   #[test]

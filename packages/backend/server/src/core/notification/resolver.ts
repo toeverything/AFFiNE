@@ -14,7 +14,7 @@ import {
 import { paginate, PaginationInput } from '../../base/graphql';
 import { MentionNotificationCreateSchema } from '../../models';
 import { CurrentUser } from '../auth/session';
-import { AccessController } from '../permission';
+import { PermissionAccess } from '../permission';
 import { UserType } from '../user';
 import { NotificationService } from './service';
 import {
@@ -28,7 +28,7 @@ import {
 export class UserNotificationResolver {
   constructor(
     private readonly service: NotificationService,
-    private readonly ac: AccessController
+    private readonly ac: PermissionAccess
   ) {}
 
   @ResolveField(() => PaginatedNotificationObjectType, {

@@ -9,7 +9,7 @@ import {
   Resolver,
 } from '@nestjs/graphql';
 
-import { ActionForbidden } from '../../base';
+import { ActionForbidden, EventBus } from '../../base';
 import { Models } from '../../models';
 import { CurrentUser } from '../auth/session';
 import { UserType } from '../user';
@@ -26,7 +26,10 @@ class GenerateAccessTokenInput {
 
 @Resolver(() => AccessToken)
 export class AccessTokenResolver {
-  constructor(private readonly models: Models) {}
+  constructor(
+    private readonly models: Models,
+    private readonly event: EventBus
+  ) {}
 
   @Query(() => [RevealedAccessToken], {
     deprecationReason: 'use currentUser.revealedAccessTokens',
@@ -42,11 +45,13 @@ export class AccessTokenResolver {
     @CurrentUser() user: CurrentUser,
     @Args('input') input: GenerateAccessTokenInput
   ): Promise<RevealedAccessToken> {
-    return await this.models.accessToken.create({
+    const token = await this.models.accessToken.create({
       userId: user.id,
       name: input.name,
       expiresAt: input.expiresAt,
     });
+    this.event.emit('user.access_token.created', { userId: user.id });
+    return token;
   }
 
   @Mutation(() => Boolean)
@@ -55,6 +60,7 @@ export class AccessTokenResolver {
     @Args('id') id: string
   ): Promise<boolean> {
     await this.models.accessToken.revoke(id, user.id);
+    this.event.emit('user.access_token.revoked', { userId: user.id });
     return true;
   }
 }

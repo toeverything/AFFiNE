@@ -2313,6 +2313,67 @@ test('should search docs by keyword work', async t => {
   );
 });
 
+test('should search docs by keyword with doc id filter', async t => {
+  const workspaceId = workspace.id;
+  const docId1 = randomUUID();
+  const docId2 = randomUUID();
+
+  await module.create(Mockers.DocMeta, {
+    workspaceId,
+    docId: docId1,
+    title: 'hello filtered 1',
+  });
+  await module.create(Mockers.DocMeta, {
+    workspaceId,
+    docId: docId2,
+    title: 'hello filtered 2',
+  });
+
+  await indexerService.write(
+    SearchTable.block,
+    [
+      {
+        workspaceId,
+        docId: docId1,
+        blockId: 'filtered-block1',
+        content: 'hello filtered',
+        flavour: 'affine:text',
+        createdByUserId: user.id,
+        updatedByUserId: user.id,
+        createdAt: new Date('2025-06-20T00:00:00.000Z'),
+        updatedAt: new Date('2025-06-20T00:00:00.000Z'),
+      },
+      {
+        workspaceId,
+        docId: docId2,
+        blockId: 'filtered-block2',
+        content: 'hello filtered',
+        flavour: 'affine:text',
+        createdByUserId: user.id,
+        updatedByUserId: user.id,
+        createdAt: new Date('2025-06-20T00:00:01.000Z'),
+        updatedAt: new Date('2025-06-20T00:00:01.000Z'),
+      },
+    ],
+    {
+      refresh: true,
+    }
+  );
+
+  const rows = await indexerService.searchDocsByKeyword(
+    workspaceId,
+    'hello filtered',
+    {
+      docIds: [docId2],
+    }
+  );
+
+  t.deepEqual(
+    rows.map(row => row.docId),
+    [docId2]
+  );
+});
+
 // #endregion
 
 test('should rebuild manticore indexes and requeue workspaces', async t => {

@@ -4,6 +4,7 @@ import { Module } from '@nestjs/common';
 
 import { ServerConfigModule } from '../../core/config';
 import { PermissionModule } from '../../core/permission';
+import { QuotaServiceModule } from '../../core/quota';
 import { IndexerEvent } from './event';
 import { SearchProviderFactory } from './factory';
 import { IndexerJob } from './job';
@@ -12,7 +13,7 @@ import { IndexerResolver } from './resolver';
 import { IndexerService } from './service';
 
 @Module({
-  imports: [ServerConfigModule, PermissionModule],
+  imports: [ServerConfigModule, PermissionModule, QuotaServiceModule],
   providers: [
     IndexerResolver,
     IndexerService,

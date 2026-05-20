@@ -7,7 +7,9 @@ import Sinon from 'sinon';
 import supertest from 'supertest';
 import { applyUpdate, Doc as YDoc, Map as YMap } from 'yjs';
 
+import { ConfigFactory } from '../../base';
 import { PgWorkspaceDocStorageAdapter } from '../../core/doc';
+import { PermissionReadModel } from '../../core/permission/config';
 import { WorkspaceBlobStorage } from '../../core/storage';
 import { Models, PublicDocMode, WorkspaceRole } from '../../models';
 import {
@@ -150,6 +152,31 @@ test('should be able to get private workspace with public pages', async t => {
   t.is(res.status, HttpStatus.OK);
   t.is(res.get('content-type'), 'text/plain');
   t.is(res.text, 'blob');
+});
+
+test('should be able to get private workspace with public pages using new permission model', async t => {
+  const { app, storage } = t.context;
+  const config = app.get(ConfigFactory);
+
+  config.override({
+    permission: {
+      readModel: PermissionReadModel.Projection,
+    },
+  });
+  try {
+    storage.get.resolves(blob());
+    const res = await app.GET('/api/workspaces/private/blobs/test');
+
+    t.is(res.status, HttpStatus.OK);
+    t.is(res.get('content-type'), 'text/plain');
+    t.is(res.text, 'blob');
+  } finally {
+    config.override({
+      permission: {
+        readModel: PermissionReadModel.Legacy,
+      },
+    });
+  }
 });
 
 test('should not be able to get private workspace with no public pages', async t => {

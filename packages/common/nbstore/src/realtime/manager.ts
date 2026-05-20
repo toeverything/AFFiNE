@@ -37,6 +37,7 @@ export class RealtimeManager {
   private socketConnection?: SocketConnection;
   private socketKey?: string;
   private lastError?: { name: string; message: string };
+  private subscriptionsNeedResubscribe = false;
   private readonly subscriptions = new Map<
     string,
     {
@@ -44,21 +45,32 @@ export class RealtimeManager {
       input: RealtimeTopicInputOf<RealtimeTopicName>;
       inputKey: string;
       subject$: Subject<RealtimeEvent | RealtimeSubscriptionReady>;
+      onResubscribed: (subscriptionId: string) => void;
     }
   >();
 
   setContext(context: RealtimeContext) {
     const nextContext = { ...context };
+    const previousContext = this.context;
     const changed =
-      !this.context ||
-      this.context.endpoint !== nextContext.endpoint ||
-      this.context.isSelfHosted !== nextContext.isSelfHosted ||
-      this.context.authenticated !== nextContext.authenticated;
+      !previousContext ||
+      previousContext.endpoint !== nextContext.endpoint ||
+      previousContext.isSelfHosted !== nextContext.isSelfHosted ||
+      previousContext.authenticated !== nextContext.authenticated;
 
     this.context = nextContext;
 
     if (changed) {
       this.resetConnection();
+      if (
+        previousContext &&
+        previousContext.authenticated !== nextContext.authenticated
+      ) {
+        SocketConnection.resetSharedConnection(
+          previousContext.endpoint,
+          previousContext.isSelfHosted
+        );
+      }
     }
   }
 
@@ -67,7 +79,7 @@ export class RealtimeManager {
     input: RealtimeRequestInputOf<Op>,
     options?: { timeoutMs?: number; signal?: AbortSignal }
   ): Promise<RealtimeRequestOutputOf<Op>> {
-    const socket = await this.connect();
+    const socket = await this.connect(op === 'user.profile.get');
     const timeoutMs = options?.timeoutMs ?? DEFAULT_REQUEST_TIMEOUT;
     let timeoutId: ReturnType<typeof setTimeout> | undefined;
     let abortHandler: (() => void) | undefined;
@@ -154,6 +166,9 @@ export class RealtimeManager {
             input,
             inputKey: getRealtimeInputKey(input),
             subject$,
+            onResubscribed: nextSubscriptionId => {
+              subscriptionId = nextSubscriptionId;
+            },
           });
           subscriber.next({
             type: 'ready',
@@ -167,7 +182,7 @@ export class RealtimeManager {
               }
             },
             error: error => subscriber.error(error),
-            complete: () => subscriber.complete(),
+            complete: () => {},
           });
         } catch (error) {
           this.lastError = normalizeError(error);
@@ -209,8 +224,11 @@ export class RealtimeManager {
     };
   }
 
-  private async connect() {
-    if (!this.context?.endpoint || !this.context.authenticated) {
+  private async connect(allowUnauthenticated = false) {
+    if (
+      !this.context?.endpoint ||
+      (!this.context.authenticated && !allowUnauthenticated)
+    ) {
       const error = new Error('Realtime is not authenticated');
       error.name = 'RealtimeUnauthenticated';
       throw error;
@@ -232,6 +250,9 @@ export class RealtimeManager {
     this.socketConnection.inner.socket.on('realtime:event', this.handleEvent);
     this.socketConnection.inner.socket.off('connect', this.handleReconnect);
     this.socketConnection.inner.socket.on('connect', this.handleReconnect);
+    if (this.subscriptionsNeedResubscribe && this.context.authenticated) {
+      await this.resubscribeAll();
+    }
     return this.socketConnection.inner.socket;
   }
 
@@ -272,6 +293,7 @@ export class RealtimeManager {
 
         this.subscriptions.delete(subscriptionId);
         this.subscriptions.set(ack.data.subscriptionId, subscription);
+        subscription.onResubscribed(ack.data.subscriptionId);
         subscription.subject$.next({
           type: 'ready',
         });
@@ -281,6 +303,7 @@ export class RealtimeManager {
         subscription.subject$.error(error);
       }
     }
+    this.subscriptionsNeedResubscribe = false;
   }
 
   private resetConnection() {
@@ -297,9 +320,6 @@ export class RealtimeManager {
     }
     this.socketConnection = undefined;
     this.socketKey = undefined;
-    for (const subscription of this.subscriptions.values()) {
-      subscription.subject$.complete();
-    }
-    this.subscriptions.clear();
+    this.subscriptionsNeedResubscribe = this.subscriptions.size > 0;
   }
 }

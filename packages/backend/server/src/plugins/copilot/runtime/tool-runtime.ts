@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 
 import { Config } from '../../../base';
 import { DocReader, DocWriter } from '../../../core/doc';
-import { AccessController } from '../../../core/permission';
+import { PermissionAccess } from '../../../core/permission';
 import { Models } from '../../../models';
 import { IndexerService } from '../../indexer';
 import type { NodeTextMiddleware } from '../config';
@@ -48,7 +48,7 @@ export type ProviderSpecificToolResolver = (
 export class ToolRuntime {
   constructor(
     private readonly config: Config,
-    private readonly ac: AccessController,
+    private readonly ac: PermissionAccess,
     private readonly context: CopilotContextService,
     private readonly docReader: DocReader,
     private readonly docWriter: DocWriter,

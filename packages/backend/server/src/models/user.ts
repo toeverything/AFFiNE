@@ -221,7 +221,7 @@ export class UserModel extends BaseModel {
     });
 
     this.logger.debug(`User [${user.id}] updated`);
-    this.event.emit('user.updated', user);
+    this.event.emitDetached('user.updated', user);
     return user;
   }
 

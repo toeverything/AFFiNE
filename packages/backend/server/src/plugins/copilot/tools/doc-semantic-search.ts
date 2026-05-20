@@ -1,7 +1,7 @@
 import { omit } from 'lodash-es';
 import { z } from 'zod';
 
-import type { AccessController } from '../../../core/permission';
+import type { PermissionAccess } from '../../../core/permission';
 import {
   type ChunkSimilarity,
   clearEmbeddingChunk,
@@ -19,7 +19,7 @@ const getEmbeddingRouteContext = (options: CopilotChatOptions) => ({
 });
 
 export const buildDocSearchGetter = (
-  ac: AccessController,
+  ac: PermissionAccess,
   context: CopilotContextService,
   sessionId: string | undefined,
   models: Models

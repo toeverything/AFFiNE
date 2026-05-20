@@ -3,11 +3,26 @@ import assert from 'node:assert';
 import { Injectable } from '@nestjs/common';
 import { Transactional } from '@nestjs-cls/transactional';
 import type { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
-import { WorkspaceDocUserRole } from '@prisma/client';
+import { DocGrant, WorkspaceDocUserRole } from '@prisma/client';
 
 import { CanNotBatchGrantDocOwnerPermissions, PaginationInput } from '../base';
 import { BaseModel } from './base';
 import { DocRole } from './common';
+import { docRoleFromNew } from './permission-write';
+
+declare global {
+  interface Events {
+    'doc.grants.changed': {
+      workspaceId: string;
+      docId: string;
+    };
+    'doc.owner.changed': {
+      workspaceId: string;
+      docId: string;
+      userId: string;
+    };
+  }
+}
 
 @Injectable()
 export class DocUserModel extends BaseModel {
@@ -17,36 +32,7 @@ export class DocUserModel extends BaseModel {
    */
   @Transactional<TransactionalAdapterPrisma>({ timeout: 15000 })
   async setOwner(workspaceId: string, docId: string, userId: string) {
-    await this.db.workspaceDocUserRole.updateMany({
-      where: {
-        workspaceId,
-        docId,
-        type: DocRole.Owner,
-        userId: { not: userId },
-      },
-      data: {
-        type: DocRole.Manager,
-      },
-    });
-
-    await this.db.workspaceDocUserRole.upsert({
-      where: {
-        workspaceId_docId_userId: {
-          workspaceId,
-          docId,
-          userId,
-        },
-      },
-      update: {
-        type: DocRole.Owner,
-      },
-      create: {
-        workspaceId,
-        docId,
-        userId,
-        type: DocRole.Owner,
-      },
-    });
+    await this.models.docGrant.setOwner(workspaceId, docId, userId);
     this.logger.log(
       `Set doc owner of [${workspaceId}/${docId}] to [${userId}]`
     );
@@ -62,34 +48,11 @@ export class DocUserModel extends BaseModel {
     // internal misuse, throw directly
     assert(role !== DocRole.Owner, 'Cannot set Owner role of a doc to a user.');
 
-    const oldRole = await this.get(workspaceId, docId, userId);
-
-    if (oldRole && oldRole.type === role) {
-      return oldRole;
-    }
-
-    const newRole = await this.db.workspaceDocUserRole.upsert({
-      where: {
-        workspaceId_docId_userId: {
-          workspaceId,
-          docId,
-          userId,
-        },
-      },
-      update: {
-        type: role,
-      },
-      create: {
-        workspaceId,
-        docId,
-        userId,
-        type: role,
-      },
-    });
-
-    return newRole;
+    await this.models.docGrant.set(workspaceId, docId, userId, role);
+    return await this.get(workspaceId, docId, userId);
   }
 
+  @Transactional()
   async batchSetUserRoles(
     workspaceId: string,
     docId: string,
@@ -104,76 +67,91 @@ export class DocUserModel extends BaseModel {
       throw new CanNotBatchGrantDocOwnerPermissions();
     }
 
-    const result = await this.db.workspaceDocUserRole.createMany({
-      skipDuplicates: true,
-      data: userIds.map(userId => ({
-        workspaceId,
-        docId,
-        userId,
-        type: role,
-      })),
-    });
-
-    return result.count;
+    return await this.models.docGrant.batchSetUserRoles(
+      workspaceId,
+      docId,
+      userIds,
+      role
+    );
   }
 
+  @Transactional()
   async delete(workspaceId: string, docId: string, userId: string) {
-    await this.db.workspaceDocUserRole.deleteMany({
-      where: {
-        workspaceId,
-        docId,
-        userId,
-      },
-    });
+    await this.models.docGrant.delete(workspaceId, docId, userId);
   }
 
+  @Transactional()
   async deleteByUserId(userId: string) {
-    await this.db.workspaceDocUserRole.deleteMany({
+    await this.models.permissionProjection.markNewWriteOrigin();
+    await this.db.docGrant.deleteMany({
       where: {
-        userId,
+        principalType: 'user',
+        principalId: userId,
       },
     });
+    await this.withPermissionProjectionMetric(
+      this.db.workspaceDocUserRole.deleteMany({
+        where: {
+          userId,
+        },
+      })
+    );
   }
 
   async getOwner(workspaceId: string, docId: string) {
-    return await this.db.workspaceDocUserRole.findFirst({
+    const grant = await this.db.docGrant.findFirst({
       where: {
         workspaceId,
         docId,
-        type: DocRole.Owner,
+        principalType: 'user',
+        role: 'owner',
       },
     });
+    return grant ? this.docGrantToCompat(grant) : null;
   }
 
   async get(workspaceId: string, docId: string, userId: string) {
-    return await this.db.workspaceDocUserRole.findUnique({
+    const grant = await this.db.docGrant.findUnique({
       where: {
-        workspaceId_docId_userId: {
+        workspaceId_docId_principalType_principalId: {
           workspaceId,
           docId,
-          userId,
+          principalType: 'user',
+          principalId: userId,
         },
       },
     });
+    return grant ? this.docGrantToCompat(grant) : null;
   }
 
   async findMany(workspaceId: string, docIds: string[], userId: string) {
-    return await this.db.workspaceDocUserRole.findMany({
+    const grants = await this.db.docGrant.findMany({
       where: {
         workspaceId,
         docId: {
           in: docIds,
         },
-        userId,
+        principalType: 'user',
+        principalId: userId,
       },
+    });
+    return grants.map(grant => this.docGrantToCompat(grant));
+  }
+
+  async findDirectGrantDocIdsByUser(userId: string) {
+    return await this.db.docGrant.findMany({
+      where: { principalType: 'user', principalId: userId },
+      select: { workspaceId: true, docId: true },
+      distinct: ['workspaceId', 'docId'],
     });
   }
 
   count(workspaceId: string, docId: string) {
-    return this.db.workspaceDocUserRole.count({
+    return this.db.docGrant.count({
       where: {
         workspaceId,
         docId,
+        principalType: 'user',
       },
     });
   }
@@ -183,11 +161,12 @@ export class DocUserModel extends BaseModel {
     docId: string,
     pagination: PaginationInput
   ): Promise<[WorkspaceDocUserRole[], number]> {
-    return await Promise.all([
-      this.db.workspaceDocUserRole.findMany({
+    const [grants, total] = await Promise.all([
+      this.db.docGrant.findMany({
         where: {
           workspaceId,
           docId,
+          principalType: 'user',
           createdAt: pagination.after
             ? {
                 gte: pagination.after,
@@ -202,5 +181,16 @@ export class DocUserModel extends BaseModel {
       }),
       this.count(workspaceId, docId),
     ]);
+    return [grants.map(grant => this.docGrantToCompat(grant)), total];
+  }
+
+  private docGrantToCompat(grant: DocGrant): WorkspaceDocUserRole {
+    return {
+      workspaceId: grant.workspaceId,
+      docId: grant.docId,
+      userId: grant.principalId,
+      type: docRoleFromNew(grant.role as never),
+      createdAt: grant.createdAt,
+    };
   }
 }

@@ -28,7 +28,7 @@ import {
   TooManyRequest,
 } from '../../base';
 import { CurrentUser } from '../../core/auth';
-import { AccessController, DocAction } from '../../core/permission';
+import { DocAction, PermissionAccess } from '../../core/permission';
 import { UserType } from '../../core/user';
 import type { ListSessionOptions, UpdateChatSession } from '../../models';
 import { CompatHistoryProjector } from './compat/history-projector';
@@ -365,7 +365,7 @@ export class CopilotResolver {
   private readonly modelNames = new Map<string, string>();
 
   constructor(
-    private readonly ac: AccessController,
+    private readonly ac: PermissionAccess,
     private readonly mutex: RequestMutex,
     private readonly prompt: PromptService,
     private readonly chatSession: ChatSessionService,
@@ -815,7 +815,7 @@ export class CopilotResolver {
 @Throttle()
 @Resolver(() => UserType)
 export class UserCopilotResolver {
-  constructor(private readonly ac: AccessController) {}
+  constructor(private readonly ac: PermissionAccess) {}
 
   @ResolveField(() => CopilotType)
   async copilot(

@@ -425,9 +425,6 @@ class AdminUpdateWorkspaceInput extends PartialType(
 ) {
   @Field()
   id!: string;
-
-  @Field(() => [Feature], { nullable: true })
-  features?: WorkspaceFeatureName[];
 }
 
 @Injectable()
@@ -617,28 +614,40 @@ export class AdminWorkspaceResolver {
         query,
         pagination
       );
-      return list.map(({ user, status, type }) => ({
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        avatarUrl: user.avatarUrl,
-        role: type,
-        status,
-      }));
+      return list.flatMap(({ user, status, type }) =>
+        user
+          ? [
+              {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                avatarUrl: user.avatarUrl,
+                role: type,
+                status,
+              },
+            ]
+          : []
+      );
     }
 
     const [list] = await this.models.workspaceUser.paginate(
       workspaceId,
       pagination
     );
-    return list.map(({ user, status, type }) => ({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      avatarUrl: user.avatarUrl,
-      role: type,
-      status,
-    }));
+    return list.flatMap(({ user, status, type }) =>
+      user
+        ? [
+            {
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              avatarUrl: user.avatarUrl,
+              role: type,
+              status,
+            },
+          ]
+        : []
+    );
   }
 
   @ResolveField(() => [AdminWorkspaceSharedLink], {
@@ -654,7 +663,7 @@ export class AdminWorkspaceResolver {
   }
 
   @Mutation(() => AdminWorkspace, {
-    description: 'Update workspace flags and features for admin',
+    description: 'Update workspace flags for admin',
     nullable: true,
   })
   async adminUpdateWorkspace(
@@ -662,25 +671,10 @@ export class AdminWorkspaceResolver {
     input: AdminUpdateWorkspaceInput
   ) {
     this.assertCloudOnly();
-    const { id, features, ...updates } = input;
+    const { id, ...updates } = input;
 
     if (Object.keys(updates).length) {
       await this.models.workspace.update(id, updates);
-    }
-
-    if (features) {
-      const current = await this.models.workspaceFeature.list(id);
-      const toAdd = features.filter(feature => !current.includes(feature));
-      const toRemove = current.filter(feature => !features.includes(feature));
-
-      await Promise.all([
-        ...toAdd.map(feature =>
-          this.models.workspaceFeature.add(id, feature, 'admin panel update')
-        ),
-        ...toRemove.map(feature =>
-          this.models.workspaceFeature.remove(id, feature)
-        ),
-      ]);
     }
 
     const { rows } = await this.models.workspace.adminListWorkspaces({

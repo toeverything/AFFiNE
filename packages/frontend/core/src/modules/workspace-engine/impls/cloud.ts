@@ -3,9 +3,7 @@ import { DebugLogger } from '@affine/debug';
 import {
   createWorkspaceMutation,
   deleteWorkspaceMutation,
-  getWorkspaceInfoQuery,
   getWorkspacesQuery,
-  Permission,
   ServerDeploymentType,
   ServerFeature,
 } from '@affine/graphql';
@@ -68,7 +66,7 @@ import {
   GraphQLService,
   WorkspaceServerService,
 } from '../../cloud';
-import type { GlobalState } from '../../storage';
+import { type GlobalState, NbstoreService } from '../../storage';
 import type {
   Workspace,
   WorkspaceFlavourProvider,
@@ -91,6 +89,7 @@ const logger = new DebugLogger('affine:cloud-workspace-flavour-provider');
 class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
   private readonly authService: AuthService;
   private readonly graphqlService: GraphQLService;
+  private readonly nbstoreService: NbstoreService;
   private readonly unsubscribeAccountChanged: () => void;
 
   constructor(
@@ -99,6 +98,7 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
   ) {
     this.authService = server.scope.get(AuthService);
     this.graphqlService = server.scope.get(GraphQLService);
+    this.nbstoreService = server.scope.get(NbstoreService);
     this.unsubscribeAccountChanged = this.server.scope.eventBus.on(
       AccountChanged,
       () => {
@@ -355,13 +355,12 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
 
     const info = await this.getWorkspaceInfo(id, signal);
 
+    const isOwner = info.workspace.permissions.Workspace_Delete;
+    const isAdmin =
+      !isOwner && info.workspace.permissions.Workspace_Settings_Update;
+
     if (!cloudData && !localData) {
-      return {
-        isOwner: info.workspace.role === Permission.Owner,
-        isAdmin: info.workspace.role === Permission.Admin,
-        isTeam: info.workspace.team,
-        isEmpty,
-      };
+      return { isOwner, isAdmin, isTeam: info.workspace.team, isEmpty };
     }
 
     const client = getWorkspaceProfileWorker();
@@ -374,8 +373,8 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
     return {
       name: result.name,
       avatar: result.avatar,
-      isOwner: info.workspace.role === Permission.Owner,
-      isAdmin: info.workspace.role === Permission.Admin,
+      isOwner,
+      isAdmin,
       isTeam: info.workspace.team,
       isEmpty,
     };
@@ -446,13 +445,12 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
   }
 
   private async getWorkspaceInfo(workspaceId: string, signal?: AbortSignal) {
-    return await this.graphqlService.gql({
-      query: getWorkspaceInfoQuery,
-      variables: {
-        workspaceId,
-      },
-      context: { signal },
-    });
+    const { access } = await this.nbstoreService.realtime.request(
+      'workspace.access.get',
+      { workspaceId },
+      { signal, timeoutMs: 10000 }
+    );
+    return { workspace: access };
   }
 
   getEngineWorkerInitOptions(workspaceId: string): WorkerInitOptions {

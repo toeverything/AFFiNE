@@ -1,6 +1,7 @@
 import { Workspace } from '@prisma/client';
 import ava, { TestFn } from 'ava';
 
+import { AdminWorkspaceResolver } from '../../core/workspaces/resolvers/admin';
 import {
   FeatureType,
   UserModel,
@@ -12,6 +13,7 @@ import { createTestingModule, type TestingModule } from '../utils';
 interface Context {
   module: TestingModule;
   model: WorkspaceFeatureModel;
+  resolver: AdminWorkspaceResolver;
   ws: Workspace;
 }
 
@@ -21,6 +23,7 @@ test.before(async t => {
   const module = await createTestingModule({});
 
   t.context.model = module.get(WorkspaceFeatureModel);
+  t.context.resolver = module.get(AdminWorkspaceResolver);
   t.context.module = module;
 });
 
@@ -42,6 +45,17 @@ test('should get null if workspace feature not found', async t => {
   const { model, ws } = t.context;
   const userFeature = await model.get(ws.id, 'unlimited_workspace');
   t.is(userFeature, null);
+});
+
+test('admin workspace update changes workspace flags', async t => {
+  await t.context.resolver.adminUpdateWorkspace({
+    id: t.context.ws.id,
+    name: 'updated',
+  });
+  t.is(
+    (await t.context.module.get(WorkspaceModel).get(t.context.ws.id))?.name,
+    'updated'
+  );
 });
 
 test('should directly test workspace feature existence', async t => {
