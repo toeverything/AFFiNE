@@ -1478,7 +1478,7 @@
   "com.affine.settings.workspace.byok.title-beta": "AI BYOK (Beta)",
   "com.affine.settings.workspace.byok.title": "AI BYOK",
   "com.affine.settings.workspace.byok.loading": "Provider-Schlüssel werden geladen.",
-  "com.affine.settings.workspace.byok.subtitle": "Benutze deine eigenen AnbieterProvider-Schlüsselchlüssel für diesen Workspace.",
+  "com.affine.settings.workspace.byok.subtitle": "Benutze deine eigenen Provider-Schlüssel für diesen Workspace.",
   "com.affine.settings.workspace.byok.header": "Benutze die Workspace-Provider-Schlüssel, vor der Verwendung des AFFiNE AI Plans.",
   "com.affine.settings.workspace.byok.locked.title": "Für BYOK ist die Pro-, Team- oder Believer-Version erforderlich",
   "com.affine.settings.workspace.byok.locked.description": "Upgrade diesen Workspace, um Provider-Schlüssel hinzuzufügen und AFFiNE AI über dein eigenes OpenAI-, Anthropic-, Gemini- oder FAL-Konto zu routen.",
