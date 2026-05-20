@@ -4,6 +4,7 @@ import type { FlagInfo } from './types';
 const isCanaryBuild = BUILD_CONFIG.appBuildType === 'canary';
 const isMobile = BUILD_CONFIG.isMobileEdition;
 const isIOS = BUILD_CONFIG.isIOS;
+const isAndroid = BUILD_CONFIG.isAndroid;
 
 export const AFFINE_FLAGS = {
   enable_ai: {
@@ -203,6 +204,14 @@ export const AFFINE_FLAGS = {
     configurable: isMobile && isIOS,
     defaultState: isMobile && isIOS,
   },
+  enable_mermaid_wasm_native_renderer: {
+    category: 'affine',
+    displayName: 'Enable Native Mermaid Renderer',
+    description:
+      'Use the new Mermaid renderer backend. Web uses WASM, desktop uses native, and mobile always uses native. The native renderer is more than 10x faster, but its styling/aesthetic quality and the types of graphics it supports are not as good as the JS version.',
+    configurable: !isIOS && !isAndroid,
+    defaultState: isIOS || isAndroid,
+  },
   enable_turbo_renderer: {
     category: 'blocksuite',
     bsFlag: 'enable_turbo_renderer',
@@ -253,6 +262,13 @@ export const AFFINE_FLAGS = {
     description:
       'com.affine.settings.workspace.experimental-features.enable-adapter-panel.description',
     configurable: isCanaryBuild,
+    defaultState: false,
+  },
+  enable_view_analytics_panel: {
+    category: 'affine',
+    displayName: 'Enable View Analytics Panel',
+    description: 'Show the View analytics tab in the right sidebar.',
+    configurable: true,
     defaultState: false,
   },
   enable_two_step_journal_confirmation: {

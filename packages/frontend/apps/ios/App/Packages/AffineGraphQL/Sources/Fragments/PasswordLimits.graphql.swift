@@ -17,6 +17,9 @@ public struct PasswordLimits: AffineGraphQL.SelectionSet, Fragment {
     .field("minLength", Int.self),
     .field("maxLength", Int.self),
   ] }
+  public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+    PasswordLimits.self
+  ] }
 
   public var minLength: Int { __data["minLength"] }
   public var maxLength: Int { __data["maxLength"] }

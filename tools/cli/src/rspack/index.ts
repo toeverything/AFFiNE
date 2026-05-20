@@ -7,20 +7,51 @@ import { Package } from '@affine-tools/utils/workspace';
 import rspack, {
   type Configuration as RspackConfiguration,
 } from '@rspack/core';
-import { sentryWebpackPlugin } from '@sentry/webpack-plugin';
+import type { sentryWebpackPlugin as SentryWebpackPluginFactory } from '@sentry/webpack-plugin';
 import { VanillaExtractPlugin } from '@vanilla-extract/webpack-plugin';
 import cssnano from 'cssnano';
 import { compact, merge } from 'lodash-es';
 
-import { productionCacheGroups } from '../webpack/cache-group.js';
+import { queuedashScopePostcssPlugin } from '../postcss/queuedash-scope.js';
+import { productionCacheGroups } from '../rspack-shared/cache-group.js';
 import {
   type CreateHTMLPluginConfig,
-  createHTMLPlugins as createWebpackCompatibleHTMLPlugins,
-} from '../webpack/html-plugin.js';
+  createHTMLPlugins,
+} from '../rspack-shared/html-plugin.js';
 
 const require = createRequire(import.meta.url);
 
 const IN_CI = !!process.env.CI;
+const hasSentryBuildEnvs = () =>
+  !!(
+    process.env.SENTRY_AUTH_TOKEN &&
+    process.env.SENTRY_ORG &&
+    process.env.SENTRY_PROJECT
+  );
+
+function createSentryPlugin() {
+  if (!hasSentryBuildEnvs()) {
+    return null;
+  }
+
+  try {
+    const { sentryWebpackPlugin } = require('@sentry/webpack-plugin') as {
+      sentryWebpackPlugin: typeof SentryWebpackPluginFactory;
+    };
+
+    return sentryWebpackPlugin({
+      org: process.env.SENTRY_ORG!,
+      project: process.env.SENTRY_PROJECT!,
+      authToken: process.env.SENTRY_AUTH_TOKEN!,
+    });
+  } catch (error) {
+    const reason =
+      error instanceof Error ? error.message : 'unknown load error';
+    throw new Error(
+      `Failed to load @sentry/webpack-plugin while SENTRY_* envs are set: ${reason}`
+    );
+  }
+}
 
 const availableChannels = ['canary', 'beta', 'stable', 'internal'];
 function getBuildConfigFromEnv(pkg: Package) {
@@ -59,6 +90,22 @@ export function createHTMLTargetConfig(
   );
 
   const buildConfig = getBuildConfigFromEnv(pkg);
+  const codeBlockPreviewBackendFile =
+    buildConfig.distribution === 'desktop'
+      ? 'platform-backend.desktop.ts'
+      : buildConfig.distribution === 'ios' ||
+          buildConfig.distribution === 'android'
+        ? 'platform-backend.mobile.ts'
+        : 'platform-backend.ts';
+  const codeBlockPreviewBackendAlias = ProjectRoot.join(
+    'packages',
+    'frontend',
+    'core',
+    'src',
+    'modules',
+    'code-block-preview-renderer',
+    codeBlockPreviewBackendFile
+  ).value;
 
   console.log(
     `Building [${pkg.name}] for [${buildConfig.appBuildType}] channel in [${buildConfig.debug ? 'development' : 'production'}] mode.`
@@ -72,13 +119,11 @@ export function createHTMLTargetConfig(
   console.log(`Config: ${JSON.stringify(buildConfig, null, 2)}`);
 
   const config: RspackConfiguration = {
-    //#region basic webpack config
+    //#region basic bundler config
     name: entry['index'],
     dependencies: deps,
     context: ProjectRoot.value,
     experiments: {
-      topLevelAwait: true,
-      outputModule: false,
       asyncWebAssembly: true,
     },
     entry,
@@ -114,6 +159,8 @@ export function createHTMLTargetConfig(
           '@preact',
           'signals-core'
         ).value,
+        '@affine/core/modules/code-block-preview-renderer/platform-backend':
+          codeBlockPreviewBackendAlias,
       },
     },
     //#endregion
@@ -228,6 +275,9 @@ export function createHTMLTargetConfig(
                               require(pkg.join('tailwind.config.js').value),
                             ],
                             ['autoprefixer'],
+                            ...(buildConfig.isAdmin
+                              ? [queuedashScopePostcssPlugin()]
+                              : []),
                           ]
                         : [
                             cssnano({
@@ -249,7 +299,7 @@ export function createHTMLTargetConfig(
     //#region plugins
     plugins: compact([
       !IN_CI && new rspack.ProgressPlugin(),
-      ...createWebpackCompatibleHTMLPlugins(buildConfig, htmlConfig),
+      ...createHTMLPlugins(buildConfig, htmlConfig),
       new rspack.DefinePlugin({
         'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV),
         ...Object.entries(buildConfig).reduce(
@@ -276,14 +326,7 @@ export function createHTMLTargetConfig(
             },
           ],
         }),
-      process.env.SENTRY_AUTH_TOKEN &&
-        process.env.SENTRY_ORG &&
-        process.env.SENTRY_PROJECT &&
-        sentryWebpackPlugin({
-          org: process.env.SENTRY_ORG,
-          project: process.env.SENTRY_PROJECT,
-          authToken: process.env.SENTRY_AUTH_TOKEN,
-        }),
+      createSentryPlugin(),
       // sourcemap url like # sourceMappingURL=76-6370cd185962bc89.js.map wont load in electron
       // this is because the default file:// protocol will be ignored by Chromium
       // so we need to replace the sourceMappingURL to assets:// protocol
@@ -319,7 +362,6 @@ export function createHTMLTargetConfig(
       providedExports: true,
       usedExports: true,
       sideEffects: true,
-      removeAvailableModules: true,
       runtimeChunk: { name: 'runtime' },
       splitChunks: {
         chunks: 'all',
@@ -381,8 +423,6 @@ export function createWorkerTargetConfig(
     name: entry,
     context: ProjectRoot.value,
     experiments: {
-      topLevelAwait: true,
-      outputModule: false,
       asyncWebAssembly: true,
     },
     entry: { [workerName]: entry },
@@ -466,14 +506,7 @@ export function createWorkerTargetConfig(
         )
       ),
       new rspack.optimize.LimitChunkCountPlugin({ maxChunks: 1 }),
-      process.env.SENTRY_AUTH_TOKEN &&
-        process.env.SENTRY_ORG &&
-        process.env.SENTRY_PROJECT &&
-        sentryWebpackPlugin({
-          org: process.env.SENTRY_ORG,
-          project: process.env.SENTRY_PROJECT,
-          authToken: process.env.SENTRY_AUTH_TOKEN,
-        }),
+      createSentryPlugin(),
     ]),
     stats: { errorDetails: true },
     optimization: {
@@ -492,7 +525,6 @@ export function createWorkerTargetConfig(
       providedExports: true,
       usedExports: true,
       sideEffects: true,
-      removeAvailableModules: true,
       runtimeChunk: false,
       splitChunks: false,
     },
@@ -502,30 +534,49 @@ export function createWorkerTargetConfig(
 
 export function createNodeTargetConfig(
   pkg: Package,
-  entry: string
+  entry: string,
+  options: {
+    outputFilename?: string;
+    decoratorVersion?: 'legacy' | '2022-03';
+    libraryType?: 'module' | 'commonjs2';
+    bundleAllDependencies?: boolean;
+    forceExternal?: string[];
+  } = {}
 ): Omit<RspackConfiguration, 'name'> & { name: string } {
   const dev = process.env.NODE_ENV === 'development';
+  const useLegacyDecorator = options.decoratorVersion !== '2022-03';
+  const forceExternal = options.forceExternal ?? [];
   return {
     name: entry,
     context: ProjectRoot.value,
     experiments: {
-      topLevelAwait: true,
-      outputModule: pkg.packageJson.type === 'module',
       asyncWebAssembly: true,
     },
     entry: { index: entry },
     output: {
-      filename: `main.js`,
+      filename: options.outputFilename ?? 'main.js',
       path: pkg.distPath.value,
       clean: true,
       globalObject: 'globalThis',
+      module: pkg.packageJson.type === 'module',
+      ...(options.libraryType
+        ? { library: { type: options.libraryType } }
+        : {}),
     },
     target: ['node', 'es2022'],
     externals: ((data: any, callback: (err: null, value: boolean) => void) => {
       if (
         data.request &&
+        forceExternal.some(
+          dep => data.request === dep || data.request.startsWith(`${dep}/`)
+        )
+      ) {
+        callback(null, true);
+      } else if (
+        data.request &&
         // import ... from 'module'
         /^[a-zA-Z@]/.test(data.request) &&
+        !options.bundleAllDependencies &&
         // not workspace deps
         !pkg.deps.some(dep => data.request!.startsWith(dep.name))
       ) {
@@ -557,8 +608,9 @@ export function createNodeTargetConfig(
         },
         {
           test: /\.node$/,
-          loader: Path.dir(import.meta.url).join('../webpack/node-loader.js')
-            .value,
+          loader: Path.dir(import.meta.url).join(
+            '../rspack-shared/node-loader.js'
+          ).value,
         },
         {
           test: /\.tsx?$/,
@@ -578,8 +630,15 @@ export function createNodeTargetConfig(
               target: 'es2022',
               externalHelpers: false,
               transform: {
-                legacyDecorator: true,
-                decoratorMetadata: true,
+                ...(useLegacyDecorator
+                  ? {
+                      legacyDecorator: true,
+                      decoratorMetadata: true,
+                    }
+                  : {
+                      useDefineForClassFields: false,
+                      decoratorVersion: '2022-03',
+                    }),
                 react: { runtime: 'automatic' },
               },
             },

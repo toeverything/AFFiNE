@@ -27,6 +27,10 @@
       "type": "Object",
       "desc": "The config for copilot job queue"
     },
+    "queues.calendar": {
+      "type": "Object",
+      "desc": "The config for calendar job queue"
+    },
     "queues.doc": {
       "type": "Object",
       "desc": "The config for doc job queue"
@@ -91,7 +95,7 @@
   "mailer": {
     "SMTP.name": {
       "type": "String",
-      "desc": "Name of the email server (e.g. your domain name)",
+      "desc": "Hostname used for SMTP HELO/EHLO (e.g. mail.example.com). Leave empty to use the system hostname.",
       "env": "MAILER_SERVERNAME"
     },
     "SMTP.host": {
@@ -130,7 +134,7 @@
     },
     "fallbackSMTP.name": {
       "type": "String",
-      "desc": "Name of the fallback email server (e.g. your domain name)"
+      "desc": "Hostname used for fallback SMTP HELO/EHLO (e.g. mail.example.com). Leave empty to use the system hostname."
     },
     "fallbackSMTP.host": {
       "type": "String",
@@ -165,6 +169,18 @@
     "history.interval": {
       "type": "Number",
       "desc": "The minimum time interval in milliseconds of creating a new history snapshot when doc get updated."
+    }
+  },
+  "permission": {
+    "readModel": {
+      "type": "String",
+      "desc": "Permission data source for Rust evaluation",
+      "env": "AFFINE_PERMISSION_READ_MODEL"
+    },
+    "fallbackLegacyLoader": {
+      "type": "Boolean",
+      "desc": "Fallback from projection loader to legacy loader when projection input loading fails",
+      "env": "AFFINE_PERMISSION_FALLBACK_LEGACY_LOADER"
     }
   },
   "storages": {
@@ -309,14 +325,34 @@
       "type": "Boolean",
       "desc": "Whether to enable the copilot plugin. <br> Document: <a href=\"https://docs.affine.pro/self-host-affine/administer/ai\" target=\"_blank\">https://docs.affine.pro/self-host-affine/administer/ai</a>"
     },
-    "scenarios": {
+    "byok.enabled": {
+      "type": "Boolean",
+      "desc": "Whether to enable workspace BYOK."
+    },
+    "byok.allowedProviders": {
+      "type": "Array",
+      "desc": "The allowlist for workspace BYOK providers."
+    },
+    "byok.allowCustomEndpoint": {
+      "type": "Boolean",
+      "desc": "Whether workspace BYOK custom endpoints are accepted."
+    },
+    "providers.profiles": {
+      "type": "Array",
+      "desc": "The profile list for copilot providers."
+    },
+    "providers.defaults": {
       "type": "Object",
-      "desc": "Use custom models in scenarios and override default settings."
+      "desc": "The default provider ids for model output types and global fallback."
     },
     "providers.openai": {
       "type": "Object",
       "desc": "The config for the openai provider.",
       "link": "https://github.com/openai/openai-node"
+    },
+    "providers.cloudflareWorkersAi": {
+      "type": "Object",
+      "desc": "The config for the Cloudflare Workers AI provider."
     },
     "providers.fal": {
       "type": "Object",
@@ -330,10 +366,6 @@
       "type": "Object",
       "desc": "The config for the gemini provider in Google Vertex AI."
     },
-    "providers.perplexity": {
-      "type": "Object",
-      "desc": "The config for the perplexity provider."
-    },
     "providers.anthropic": {
       "type": "Object",
       "desc": "The config for the anthropic provider."
@@ -341,10 +373,6 @@
     "providers.anthropicVertex": {
       "type": "Object",
       "desc": "The config for the anthropic provider in Google Vertex AI."
-    },
-    "providers.morph": {
-      "type": "Object",
-      "desc": "The config for the morph provider."
     },
     "unsplash": {
       "type": "Object",

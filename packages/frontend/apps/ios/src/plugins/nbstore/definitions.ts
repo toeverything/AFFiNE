@@ -2,7 +2,7 @@ import type { CrawlResult, DocIndexedClock } from '@affine/nbstore';
 
 export interface Blob {
   key: string;
-  // base64 encoded data
+  // base64 encoded data, or "__AFFINE_BLOB_FILE__:<absolutePath>" for large blobs
   data: string;
   mime: string;
   size: number;
@@ -41,6 +41,7 @@ export interface NbStorePlugin {
   pushUpdate: (options: {
     id: string;
     docId: string;
+    // base64 encoded data
     data: string;
   }) => Promise<{ timestamp: number }>;
   getDocSnapshot: (options: { id: string; docId: string }) => Promise<
@@ -55,6 +56,7 @@ export interface NbStorePlugin {
   setDocSnapshot: (options: {
     id: string;
     docId: string;
+    // base64 encoded data
     bin: string;
     timestamp: number;
   }) => Promise<{ success: boolean }>;

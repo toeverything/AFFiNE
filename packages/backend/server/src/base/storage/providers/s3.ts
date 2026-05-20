@@ -47,10 +47,46 @@ function resolveEndpoint(config: S3StorageConfig) {
   return `https://s3.${config.region}.amazonaws.com`;
 }
 
+function joinPath(basePath: string, suffix: string) {
+  const trimmedBase = basePath.endsWith('/') ? basePath.slice(0, -1) : basePath;
+  const trimmedSuffix = suffix.startsWith('/') ? suffix.slice(1) : suffix;
+  if (!trimmedBase) {
+    return `/${trimmedSuffix}`;
+  }
+  if (!trimmedSuffix) {
+    return trimmedBase;
+  }
+  return `${trimmedBase}/${trimmedSuffix}`;
+}
+
+function composeEndpointUrl(config: S3CompatConfig) {
+  const url = new URL(config.endpoint);
+  if (config.forcePathStyle) {
+    const firstSegment = url.pathname.split('/').find(Boolean);
+    if (firstSegment !== config.bucket) {
+      url.pathname = joinPath(url.pathname, config.bucket);
+    }
+    return url.toString();
+  }
+
+  const firstSegment = url.pathname.split('/').find(Boolean);
+  const hostHasBucket = url.hostname.startsWith(`${config.bucket}.`);
+  const pathHasBucket = firstSegment === config.bucket;
+  if (!hostHasBucket && !pathHasBucket) {
+    url.hostname = `${config.bucket}.${url.hostname}`;
+  }
+  return url.toString();
+}
+
 export class S3StorageProvider implements StorageProvider {
   protected logger: Logger;
   protected client: S3CompatClient;
   private readonly usePresignedURL: boolean;
+  private readonly endpoint: string;
+
+  get endpointUrl() {
+    return this.endpoint;
+  }
 
   constructor(
     config: S3StorageConfig,
@@ -69,6 +105,7 @@ export class S3StorageProvider implements StorageProvider {
       },
     };
 
+    this.endpoint = composeEndpointUrl(compatConfig);
     this.client = createS3CompatClient(compatConfig, credentials);
     this.usePresignedURL = usePresignedURL?.enabled ?? false;
     this.logger = new Logger(`${S3StorageProvider.name}:${bucket}`);

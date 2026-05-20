@@ -7,15 +7,11 @@ export * from './transformer';
 export { type IdGenerator, nanoid, uuidv4 } from './utils/id-generator';
 export * from './yjs';
 
-const env = (
-  typeof globalThis !== 'undefined'
-    ? globalThis
-    : typeof window !== 'undefined'
-      ? window
-      : typeof global !== 'undefined'
-        ? global
-        : {}
-) as Record<string, boolean>;
+const env = (typeof globalThis !== 'undefined'
+  ? globalThis
+  : typeof window !== 'undefined'
+    ? window
+    : {}) as unknown as Record<string, boolean>;
 const importIdentifier = '__ $BLOCKSUITE_STORE$ __';
 
 if (env[importIdentifier] === true) {

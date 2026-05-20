@@ -34,6 +34,7 @@ use screencapturekit::shareable_content::SCShareableContent;
 use uuid::Uuid;
 
 use crate::{
+  audio_callback::AudioCallback,
   error::CoreAudioError,
   pid::{audio_process_list, get_process_property},
   tap_audio::{AggregateDeviceManager, AudioCaptureSession},
@@ -651,10 +652,9 @@ impl ShareableContent {
     Ok(false)
   }
 
-  #[napi]
-  pub fn tap_audio(
+  pub(crate) fn tap_audio_with_callback(
     process_id: u32,
-    audio_stream_callback: ThreadsafeFunction<napi::bindgen_prelude::Float32Array, ()>,
+    audio_stream_callback: AudioCallback,
   ) -> Result<AudioCaptureSession> {
     let app = ShareableContent::applications()?
       .into_iter()
@@ -668,13 +668,10 @@ impl ShareableContent {
         ));
       }
 
-      // Convert ThreadsafeFunction to Arc<ThreadsafeFunction>
-      let callback_arc = Arc::new(audio_stream_callback);
-
       // Use AggregateDeviceManager instead of AggregateDevice directly
       // This provides automatic default device change detection
       let mut device_manager = AggregateDeviceManager::new(&app)?;
-      device_manager.start_capture(callback_arc)?;
+      device_manager.start_capture(audio_stream_callback)?;
       let boxed_manager = Box::new(device_manager);
       Ok(AudioCaptureSession::new(boxed_manager))
     } else {
@@ -686,9 +683,16 @@ impl ShareableContent {
   }
 
   #[napi]
-  pub fn tap_global_audio(
-    excluded_processes: Option<Vec<&ApplicationInfo>>,
+  pub fn tap_audio(
+    process_id: u32,
     audio_stream_callback: ThreadsafeFunction<napi::bindgen_prelude::Float32Array, ()>,
+  ) -> Result<AudioCaptureSession> {
+    ShareableContent::tap_audio_with_callback(process_id, AudioCallback::Js(Arc::new(audio_stream_callback)))
+  }
+
+  pub(crate) fn tap_global_audio_with_callback(
+    excluded_processes: Option<Vec<&ApplicationInfo>>,
+    audio_stream_callback: AudioCallback,
   ) -> Result<AudioCaptureSession> {
     let excluded_object_ids = excluded_processes
       .unwrap_or_default()
@@ -696,13 +700,21 @@ impl ShareableContent {
       .map(|app| app.object_id)
       .collect::<Vec<_>>();
 
-    // Convert ThreadsafeFunction to Arc<ThreadsafeFunction>
-    let callback_arc = Arc::new(audio_stream_callback);
-
     // Use the new AggregateDeviceManager for automatic device adaptation
     let mut device_manager = AggregateDeviceManager::new_global(&excluded_object_ids)?;
-    device_manager.start_capture(callback_arc)?;
+    device_manager.start_capture(audio_stream_callback)?;
     let boxed_manager = Box::new(device_manager);
     Ok(AudioCaptureSession::new(boxed_manager))
+  }
+
+  #[napi]
+  pub fn tap_global_audio(
+    excluded_processes: Option<Vec<&ApplicationInfo>>,
+    audio_stream_callback: ThreadsafeFunction<napi::bindgen_prelude::Float32Array, ()>,
+  ) -> Result<AudioCaptureSession> {
+    ShareableContent::tap_global_audio_with_callback(
+      excluded_processes,
+      AudioCallback::Js(Arc::new(audio_stream_callback)),
+    )
   }
 }

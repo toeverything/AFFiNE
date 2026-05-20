@@ -1,6 +1,7 @@
 export {
   Cache,
   CacheInterceptor,
+  isValidCacheTtl,
   MakeCache,
   PreventCache,
   SessionCache,
@@ -11,6 +12,7 @@ export {
   defineModuleConfig,
   type JSONSchema,
 } from './config';
+export * from './cors';
 export * from './error';
 export { EventBus, OnEvent } from './event';
 export {

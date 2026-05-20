@@ -1,15 +1,21 @@
 import { describe, expect, test } from 'vitest';
 
+import type { FilterGroup } from '../core/filter/types.js';
 import { numberFormats } from '../property-presets/number/utils/formats.js';
 import {
   formatNumber,
   NumberFormatSchema,
   parseNumber,
 } from '../property-presets/number/utils/formatter.js';
+import { DEFAULT_COLUMN_WIDTH } from '../view-presets/table/consts.js';
 import { mobileEffects } from '../view-presets/table/mobile/effect.js';
 import type { MobileTableGroup } from '../view-presets/table/mobile/group.js';
 import { pcEffects } from '../view-presets/table/pc/effect.js';
 import type { TableGroup } from '../view-presets/table/pc/group.js';
+import {
+  materializeTableColumns,
+  TableSingleView,
+} from '../view-presets/table/table-view-manager.js';
 
 /** @vitest-environment happy-dom */
 
@@ -38,6 +44,146 @@ describe('TableGroup', () => {
     expect(group.collapsed$.value).toBe(true);
     (group as any)._toggleCollapse();
     expect(group.collapsed$.value).toBe(false);
+  });
+});
+
+describe('table column materialization', () => {
+  test('appends missing properties while preserving existing order and state', () => {
+    const columns = [
+      { id: 'status', width: 240, hide: true },
+      { id: 'title', width: 320 },
+    ];
+
+    const next = materializeTableColumns(columns, ['title', 'status', 'date']);
+
+    expect(next).toEqual([
+      { id: 'status', width: 240, hide: true },
+      { id: 'title', width: 320 },
+      { id: 'date', width: DEFAULT_COLUMN_WIDTH },
+    ]);
+  });
+
+  test('drops stale columns that no longer exist in data source', () => {
+    const columns = [
+      { id: 'title', width: 320 },
+      { id: 'removed', width: 200, hide: true },
+    ];
+
+    const next = materializeTableColumns(columns, ['title']);
+
+    expect(next).toEqual([{ id: 'title', width: 320 }]);
+  });
+
+  test('returns original reference when columns are already materialized', () => {
+    const columns = [
+      { id: 'title', width: 320 },
+      { id: 'status', width: 240, hide: true },
+    ];
+
+    const next = materializeTableColumns(columns, ['title', 'status']);
+
+    expect(next).toBe(columns);
+  });
+
+  test('supports type-aware default width when materializing missing columns', () => {
+    const next = materializeTableColumns([], ['title', 'status'], id =>
+      id === 'title' ? 260 : DEFAULT_COLUMN_WIDTH
+    );
+
+    expect(next).toEqual([
+      { id: 'title', width: 260 },
+      { id: 'status', width: DEFAULT_COLUMN_WIDTH },
+    ]);
+  });
+});
+
+describe('table filtering', () => {
+  test('evaluates filters with hidden columns', () => {
+    const filter: FilterGroup = {
+      type: 'group',
+      op: 'and',
+      conditions: [
+        {
+          type: 'filter',
+          left: {
+            type: 'ref',
+            name: 'status',
+          },
+          function: 'is',
+          args: [{ type: 'literal', value: 'Done' }],
+        },
+      ],
+    };
+
+    const titleProperty = {
+      id: 'title',
+      cellGetOrCreate: () => ({
+        jsonValue$: {
+          value: 'Task 1',
+        },
+      }),
+    };
+    const statusProperty = {
+      id: 'status',
+      cellGetOrCreate: () => ({
+        jsonValue$: {
+          value: 'Done',
+        },
+      }),
+    };
+
+    const view = {
+      filter$: { value: filter },
+      // Simulate status being hidden in current view.
+      properties$: { value: [titleProperty] },
+      propertiesRaw$: { value: [titleProperty, statusProperty] },
+    } as unknown as TableSingleView;
+
+    expect(TableSingleView.prototype.isShow.call(view, 'row-1')).toBe(true);
+  });
+
+  test('returns false when hidden filtered column does not match', () => {
+    const filter: FilterGroup = {
+      type: 'group',
+      op: 'and',
+      conditions: [
+        {
+          type: 'filter',
+          left: {
+            type: 'ref',
+            name: 'status',
+          },
+          function: 'is',
+          args: [{ type: 'literal', value: 'Done' }],
+        },
+      ],
+    };
+
+    const titleProperty = {
+      id: 'title',
+      cellGetOrCreate: () => ({
+        jsonValue$: {
+          value: 'Task 1',
+        },
+      }),
+    };
+    const statusProperty = {
+      id: 'status',
+      cellGetOrCreate: () => ({
+        jsonValue$: {
+          value: 'In Progress',
+        },
+      }),
+    };
+
+    const view = {
+      filter$: { value: filter },
+      // Simulate status being hidden in current view.
+      properties$: { value: [titleProperty] },
+      propertiesRaw$: { value: [titleProperty, statusProperty] },
+    } as unknown as TableSingleView;
+
+    expect(TableSingleView.prototype.isShow.call(view, 'row-1')).toBe(false);
   });
 });
 

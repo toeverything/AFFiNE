@@ -9,10 +9,7 @@ import type {
 } from '@affine/core/modules/cloud';
 import type { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
-import type {
-  ContextEmbedStatus,
-  CopilotChatHistoryFragment,
-} from '@affine/graphql';
+import type { CopilotChatHistoryFragment } from '@affine/graphql';
 import {
   CanvasElementType,
   EdgelessCRUDIdentifier,
@@ -42,18 +39,17 @@ import type { SearchMenuConfig } from '../components/ai-chat-add-context';
 import type { DocDisplayConfig } from '../components/ai-chat-chips';
 import type { AIReasoningConfig } from '../components/ai-chat-input';
 import type { ChatMessage } from '../components/ai-chat-messages';
-import {
-  ChatMessagesSchema,
-  isChatMessage,
-  StreamObjectSchema,
-} from '../components/ai-chat-messages';
+import { ChatMessagesSchema } from '../components/ai-chat-messages';
 import type { TextRendererOptions } from '../components/text-renderer';
 import { AIChatErrorRenderer } from '../messages/error';
-import { type AIError, AIProvider } from '../provider';
+import { AIAppEvents, type AIError } from '../provider';
 import {
-  mergeStreamContent,
-  mergeStreamObjects,
-} from '../utils/stream-objects';
+  AIChatRuntime,
+  type AIChatSnapshot,
+  ChatBlockAIChatSessionStrategy,
+} from '../runtime/chat';
+import { getAIRequestService } from '../runtime/request';
+import { mergeStreamContent } from '../utils/stream-objects';
 import { PeekViewStyles } from './styles';
 import type { ChatContext } from './types';
 import { calcChildBound } from './utils';
@@ -85,13 +81,13 @@ export class AIChatBlockPeekView extends LitElement {
     return this.blockModel.props.rootWorkspaceId;
   }
 
-  private get _isReasoningActive() {
-    return !!this.reasoningConfig.enabled.value;
-  }
-
   private _textRendererOptions: TextRendererOptions = {};
 
   private _forkBlockId: string | undefined = undefined;
+
+  private runtime: AIChatRuntime | null = null;
+
+  private disposeRuntime: (() => void) | null = null;
 
   private readonly _deserializeHistoryChatMessages = (
     historyMessagesString: string
@@ -115,7 +111,7 @@ export class AIChatBlockPeekView extends LitElement {
     forkSessionId: string,
     docId?: string
   ) => {
-    const currentUserInfo = await AIProvider.userInfo;
+    const currentUserInfo = AIAppEvents.userInfo.value;
     const forkMessages = (await queryHistoryMessages(
       rootWorkspaceId,
       forkSessionId,
@@ -160,36 +156,28 @@ export class AIChatBlockPeekView extends LitElement {
     this._forkBlockId = undefined;
   };
 
-  private readonly initSession = async () => {
-    const session = await AIProvider.session?.getSession(
-      this.rootWorkspaceId,
-      this._sessionId
-    );
-    this.session = session ?? null;
-  };
-
-  private readonly createForkSession = async () => {
-    if (this.forkSession) {
-      return this.forkSession;
-    }
-    const lastMessage = this._historyMessages.at(-1);
-    if (!lastMessage) return;
-
-    const { store } = this.host;
-    const forkSessionId = await AIProvider.forkChat?.({
-      workspaceId: store.workspace.id,
-      docId: store.id,
-      sessionId: this._sessionId,
-      latestMessageId: lastMessage.id,
+  private createRuntime() {
+    return new AIChatRuntime({
+      request: getAIRequestService(),
+      scope: {
+        kind: 'chat-block',
+        workspaceId: this.rootWorkspaceId,
+        docId: this.rootDocId,
+        blockId: this.blockId,
+        parentSessionId: this._sessionId,
+        latestMessageId: this._historyMessages.at(-1)?.id,
+      },
+      strategy: new ChatBlockAIChatSessionStrategy(),
     });
-    if (forkSessionId) {
-      const session = await AIProvider.session?.getSession(
-        this.rootWorkspaceId,
-        forkSessionId
-      );
-      this.forkSession = session ?? null;
+  }
+
+  private readonly initSession = async () => {
+    const runtime = this.createRuntime();
+    try {
+      this.session = (await runtime.loadInitialSession()) ?? null;
+    } finally {
+      runtime.dispose();
     }
-    return this.forkSession;
   };
 
   private readonly _onChatSuccess = async () => {
@@ -312,11 +300,37 @@ export class AIChatBlockPeekView extends LitElement {
     this.chatContext = { ...this.chatContext, ...context };
   };
 
-  private readonly onEmbeddingProgressChange = (
-    count: Record<ContextEmbedStatus, number>
-  ) => {
-    const total = count.finished + count.processing + count.failed;
-    this.embeddingProgress = [count.finished, total];
+  private readonly syncContextFromRuntime = () => {
+    const snapshot = this.runtimeSnapshot;
+    if (!snapshot) return;
+    const activeSession = snapshot.sessions.find(
+      session => session.sessionId === snapshot.activeSessionId
+    );
+    this.forkSession = activeSession ?? this.forkSession;
+    this.chatContext = {
+      ...this.chatContext,
+      messages: snapshot.messages as ChatMessage[],
+      status: snapshot.status,
+      error: snapshot.error as AIError | null,
+    };
+  };
+
+  private readonly ensureRuntime = () => {
+    if (this.runtime || !this.session || !this._historyMessages.length) return;
+    this.runtime = this.createRuntime();
+    this.disposeRuntime = this.runtime.subscribe(() => {
+      this.runtimeSnapshot = this.runtime?.getSnapshot() ?? null;
+      this.syncContextFromRuntime();
+    });
+    this.runtimeSnapshot = this.runtime.getSnapshot();
+    if (this.forkSession) {
+      this.runtime
+        .dispatch({
+          type: 'openSessionObject',
+          session: this.forkSession,
+        })
+        .catch(console.error);
+    }
   };
 
   /**
@@ -359,72 +373,16 @@ export class AIChatBlockPeekView extends LitElement {
    * Retry the last chat message
    */
   retry = async () => {
-    try {
-      const forkSessionId = this.forkSession?.sessionId;
-      if (!this._forkBlockId || !forkSessionId) return;
-      if (!AIProvider.actions.chat) return;
-
-      const abortController = new AbortController();
-      const messages = [...this.chatContext.messages];
-      const last = messages[messages.length - 1];
-      if ('content' in last) {
-        last.content = '';
-        last.streamObjects = [];
-        last.createdAt = new Date().toISOString();
-      }
-      this.updateContext({
-        messages,
-        status: 'loading',
-        error: null,
-        abortController,
+    if (this.runtime) {
+      const lastAssistantMessage = this.chatContext.messages.findLast(
+        message => message.role === 'assistant'
+      );
+      await this.runtime.dispatch({
+        type: 'retry',
+        messageId: lastAssistantMessage?.id ?? '',
       });
-
-      const { store } = this.host;
-      const stream = await AIProvider.actions.chat({
-        sessionId: forkSessionId,
-        retry: true,
-        docId: store.id,
-        workspaceId: store.workspace.id,
-        host: this.host,
-        stream: true,
-        signal: abortController.signal,
-        where: 'ai-chat-block',
-        control: 'chat-send',
-        reasoning: this._isReasoningActive,
-        toolsConfig: this.aiToolsConfigService.config.value,
-      });
-
-      for await (const text of stream) {
-        const messages = this.chatContext.messages.slice(0);
-        const last = messages.at(-1);
-        if (last && isChatMessage(last)) {
-          try {
-            const parsed = StreamObjectSchema.parse(JSON.parse(text));
-            const streamObjects = mergeStreamObjects([
-              ...(last.streamObjects ?? []),
-              parsed,
-            ]);
-            messages[messages.length - 1] = {
-              ...last,
-              streamObjects,
-            };
-          } catch {
-            messages[messages.length - 1] = {
-              ...last,
-              content: last.content + text,
-            };
-          }
-          this.updateContext({ messages, status: 'transmitting' });
-        }
-      }
-
-      this.updateContext({ status: 'success' });
-      // Update new chat block messages if there are contents returned from AI
       await this.updateChatBlockMessages();
-    } catch (error) {
-      this.updateContext({ status: 'error', error: error as AIError });
-    } finally {
-      this.updateContext({ abortController: null });
+      return;
     }
   };
 
@@ -526,10 +484,19 @@ export class AIChatBlockPeekView extends LitElement {
             attachments: messages[idx]?.attachments ?? [],
           };
         });
+        this.ensureRuntime();
       })
       .catch((err: Error) => {
         console.error('Query history messages failed', err);
       });
+  }
+
+  override disconnectedCallback() {
+    super.disconnectedCallback();
+    this.disposeRuntime?.();
+    this.runtime?.dispose();
+    this.disposeRuntime = null;
+    this.runtime = null;
   }
 
   override firstUpdated() {
@@ -537,6 +504,13 @@ export class AIChatBlockPeekView extends LitElement {
   }
 
   protected override updated(changedProperties: PropertyValues) {
+    if (
+      changedProperties.has('session') ||
+      changedProperties.has('_historyMessages')
+    ) {
+      this.ensureRuntime();
+    }
+
     if (
       changedProperties.has('chatContext') &&
       (this.chatContext.status === 'loading' ||
@@ -572,6 +546,14 @@ export class AIChatBlockPeekView extends LitElement {
         <ai-history-clear
           .doc=${this.host.store}
           .session=${this.forkSession}
+          .onClearHistory=${async (sessionIds: string[]) => {
+            for (const sessionId of sessionIds) {
+              await this.runtime?.dispatch({
+                type: 'deleteSession',
+                sessionId,
+              });
+            }
+          }}
           .onHistoryCleared=${this._onHistoryCleared}
           .chatContextValue=${chatContext}
           .notificationService=${notificationService}
@@ -593,10 +575,10 @@ export class AIChatBlockPeekView extends LitElement {
         .workspaceId=${this.rootWorkspaceId}
         .docId=${this.rootDocId}
         .session=${this.forkSession ?? this.session}
-        .createSession=${this.createForkSession}
+        .runtime=${this.runtime}
+        .runtimeSnapshot=${this.runtimeSnapshot}
         .chatContextValue=${chatContext}
         .updateContext=${updateContext}
-        .onEmbeddingProgressChange=${this.onEmbeddingProgressChange}
         .docDisplayConfig=${this.docDisplayConfig}
         .searchMenuConfig=${this.searchMenuConfig}
         .affineWorkspaceDialogService=${this.affineWorkspaceDialogService}
@@ -673,7 +655,7 @@ export class AIChatBlockPeekView extends LitElement {
   };
 
   @state()
-  accessor embeddingProgress: [number, number] = [0, 0];
+  accessor runtimeSnapshot: AIChatSnapshot | null = null;
 
   @state()
   accessor session: CopilotChatHistoryFragment | null | undefined;

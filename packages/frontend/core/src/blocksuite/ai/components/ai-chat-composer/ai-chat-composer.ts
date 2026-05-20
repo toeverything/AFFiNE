@@ -10,14 +10,7 @@ import type {
   SubscriptionService,
 } from '@affine/core/modules/cloud';
 import type { WorkspaceDialogService } from '@affine/core/modules/dialogs';
-import type {
-  ContextEmbedStatus,
-  ContextWorkspaceEmbeddingStatus,
-  CopilotChatHistoryFragment,
-  CopilotContextBlob,
-  CopilotContextDoc,
-  CopilotContextFile,
-} from '@affine/graphql';
+import type { CopilotChatHistoryFragment } from '@affine/graphql';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import type { EditorHost } from '@blocksuite/affine/std';
 import { ShadowlessElement } from '@blocksuite/affine/std';
@@ -30,14 +23,16 @@ import { css, html, type PropertyValues } from 'lit';
 import { property, state } from 'lit/decorators.js';
 
 import {
+  AIAppEvents,
   type AIChatParams,
-  AIProvider,
   type AISendParams,
 } from '../../provider';
+import type { AIChatRuntime, AIChatSnapshot } from '../../runtime/chat';
 import type { SearchMenuConfig } from '../ai-chat-add-context';
 import type {
   AttachmentChip,
   ChatChip,
+  ChipState,
   CollectionChip,
   DocChip,
   DocDisplayConfig,
@@ -57,8 +52,6 @@ import {
 } from '../ai-chat-chips';
 import type { AIChatInputContext, AIReasoningConfig } from '../ai-chat-input';
 import { MAX_IMAGE_COUNT } from '../ai-chat-input/const';
-
-export const EMBEDDING_STATUS_CHECK_INTERVAL = 10000;
 
 export class AIChatComposer extends SignalWatcher(
   WithDisposable(ShadowlessElement)
@@ -91,20 +84,16 @@ export class AIChatComposer extends SignalWatcher(
   accessor session!: CopilotChatHistoryFragment | null | undefined;
 
   @property({ attribute: false })
-  accessor createSession!: () => Promise<
-    CopilotChatHistoryFragment | undefined
-  >;
+  accessor runtime: AIChatRuntime | null | undefined;
+
+  @property({ attribute: false })
+  accessor runtimeSnapshot: AIChatSnapshot | null | undefined;
 
   @property({ attribute: false })
   accessor chatContextValue!: AIChatInputContext;
 
   @property({ attribute: false })
   accessor updateContext!: (context: Partial<AIChatInputContext>) => void;
-
-  @property({ attribute: false })
-  accessor onEmbeddingProgressChange:
-    | ((count: Record<ContextEmbedStatus, number>) => void)
-    | undefined;
 
   @property({ attribute: false })
   accessor docDisplayConfig!: DocDisplayConfig;
@@ -160,12 +149,6 @@ export class AIChatComposer extends SignalWatcher(
   @state()
   accessor embeddingCompleted = false;
 
-  private _contextId: string | undefined = undefined;
-
-  private _pollAbortController: AbortController | null = null;
-
-  private _pollEmbeddingStatusAbortController: AbortController | null = null;
-
   override render() {
     return html`
       <chat-panel-chips
@@ -186,10 +169,11 @@ export class AIChatComposer extends SignalWatcher(
         .workspaceId=${this.workspaceId}
         .docId=${this.docId}
         .session=${this.session}
+        .runtime=${this.runtime}
+        .runtimeSnapshot=${this.runtimeSnapshot}
         .chips=${this.chips}
         .addChip=${this.addChip}
         .addImages=${this.addImages}
-        .createSession=${this.createSession}
         .chatContextValue=${this.chatContextValue}
         .updateContext=${this.updateContext}
         .reasoningConfig=${this.reasoningConfig}
@@ -222,28 +206,37 @@ export class AIChatComposer extends SignalWatcher(
   override connectedCallback() {
     super.connectedCallback();
     this._disposables.add(
-      AIProvider.slots.requestOpenWithChat.subscribe(this.beforeChatContextSend)
+      AIAppEvents.requestOpenWithChat.subscribe(this.beforeChatContextSend)
     );
     this._disposables.add(
-      AIProvider.slots.requestSendWithChat.subscribe(this.beforeChatContextSend)
+      AIAppEvents.requestSendWithChat.subscribe(this.beforeChatContextSend)
     );
     this.initComposer().catch(console.error);
   }
 
   override disconnectedCallback() {
     super.disconnectedCallback();
-    this._abortPoll();
-    this._abortPollEmbeddingStatus();
+    this.runtime?.dispatch({ type: 'stopContextPolling' }).catch(console.error);
   }
 
   protected override willUpdate(changedProperties: PropertyValues): void {
+    const previousSnapshot = changedProperties.get('runtimeSnapshot') as
+      | AIChatSnapshot
+      | null
+      | undefined;
     if (
-      changedProperties.has('chatContextValue') &&
-      changedProperties.get('chatContextValue')?.status !== 'loading' &&
-      this.chatContextValue.status === 'loading' &&
+      changedProperties.has('runtimeSnapshot') &&
+      previousSnapshot?.status !== 'loading' &&
+      this.runtimeSnapshot?.status === 'loading' &&
       this.isChipsCollapsed === false
     ) {
       this.isChipsCollapsed = true;
+    }
+  }
+
+  protected override updated(changedProperties: PropertyValues): void {
+    if (changedProperties.has('runtimeSnapshot')) {
+      this.syncChipsFromRuntimeSnapshot();
     }
   }
 
@@ -276,100 +269,115 @@ export class AIChatComposer extends SignalWatcher(
     return this.chips.some(chip => chip.state === 'processing');
   }
 
-  private readonly _getContextId = async () => {
-    if (this._contextId) {
-      return this._contextId;
+  private readonly toChipState = (state?: string): ChipState => {
+    if (state === 'finished' || state === 'processing' || state === 'failed') {
+      return state;
     }
-
-    const sessionId = this.session?.sessionId;
-    if (!sessionId) return;
-
-    const contextId = await AIProvider.context?.getContextId(
-      this.workspaceId,
-      sessionId
-    );
-    this._contextId = contextId;
-    return this._contextId;
+    return 'processing';
   };
 
-  private readonly createContextId = async () => {
-    if (this._contextId) {
-      return this._contextId;
+  private readonly runtimeItemToChip = (
+    item: AIChatSnapshot['composer']['context']['items'][number]
+  ): ChatChip => {
+    switch (item.kind) {
+      case 'doc':
+        return {
+          docId: item.docId,
+          state: this.toChipState(item.state),
+          createdAt: item.createdAt,
+          tooltip: item.tooltip,
+        };
+      case 'file':
+        return {
+          file: item.file,
+          fileId: item.fileId,
+          blobId: item.blobId,
+          state: this.toChipState(item.state),
+          createdAt: item.createdAt,
+          tooltip: item.tooltip,
+        };
+      case 'tag':
+        return {
+          tagId: item.tagId,
+          state: this.toChipState(item.state),
+          createdAt: item.createdAt,
+          tooltip: item.tooltip,
+        };
+      case 'collection':
+        return {
+          collectionId: item.collectionId,
+          state: this.toChipState(item.state),
+          createdAt: item.createdAt,
+          tooltip: item.tooltip,
+        };
+      case 'blob':
+        return {
+          sourceId: item.blobId,
+          name: item.blobId,
+          state: this.toChipState(item.state),
+          createdAt: item.createdAt,
+          tooltip: item.tooltip,
+        };
     }
+  };
 
-    const sessionId = (await this.createSession())?.sessionId;
-    if (!sessionId) return;
+  private readonly syncChipsFromRuntimeSnapshot = (
+    snapshot = this.runtimeSnapshot
+  ) => {
+    const context = snapshot?.composer.context;
+    if (!context) return;
+    this.embeddingCompleted = context.embeddingCompleted;
+    const selectedChips = this.chips.filter(isSelectedContextChip);
+    this.updateChips([
+      ...context.items.map(this.runtimeItemToChip),
+      ...selectedChips,
+    ]);
+  };
 
-    this._contextId = await AIProvider.context?.createContext(
-      this.workspaceId,
-      sessionId
-    );
-    return this._contextId;
+  private readonly syncChipsFromRuntime = () => {
+    this.syncChipsFromRuntimeSnapshot(this.runtime?.getSnapshot());
+  };
+
+  private readonly chipToContextItem = (
+    chip: ChatChip
+  ): AIChatSnapshot['composer']['context']['items'][number] | null => {
+    if (isDocChip(chip)) {
+      return { kind: 'doc', docId: chip.docId, state: chip.state };
+    }
+    if (isFileChip(chip)) {
+      return {
+        kind: 'file',
+        file: chip.file,
+        fileId: chip.fileId ?? undefined,
+        blobId: chip.blobId ?? undefined,
+        state: chip.state,
+      };
+    }
+    if (isTagChip(chip)) {
+      return {
+        kind: 'tag',
+        tagId: chip.tagId,
+        docIds: this.docDisplayConfig.getTagPageIds(chip.tagId),
+        state: chip.state,
+      };
+    }
+    if (isCollectionChip(chip)) {
+      return {
+        kind: 'collection',
+        collectionId: chip.collectionId,
+        docIds: this.docDisplayConfig.getCollectionPageIds(chip.collectionId),
+        state: chip.state,
+      };
+    }
+    if (isAttachmentChip(chip)) {
+      return { kind: 'blob', blobId: chip.sourceId, state: chip.state };
+    }
+    return null;
   };
 
   private readonly initChips = async () => {
-    // context not initialized
-    const sessionId = this.session?.sessionId;
-    const contextId = await this._getContextId();
-    if (!sessionId || !contextId) {
-      return;
-    }
-
-    // context initialized, show the chips
-    const {
-      docs = [],
-      files = [],
-      tags = [],
-      collections = [],
-    } = (await AIProvider.context?.getContextDocsAndFiles(
-      this.workspaceId,
-      sessionId,
-      contextId
-    )) || {};
-
-    const docChips: DocChip[] = docs.map(doc => ({
-      docId: doc.id,
-      state: doc.status || 'processing',
-      createdAt: doc.createdAt,
-    }));
-
-    const fileChips: FileChip[] = await Promise.all(
-      files.map(async file => {
-        return {
-          file: new File([], file.name),
-          blobId: file.blobId,
-          fileId: file.id,
-          state: file.status,
-          tooltip: file.error,
-          createdAt: file.createdAt,
-        };
-      })
-    );
-
-    const tagChips: TagChip[] = tags.map(tag => ({
-      tagId: tag.id,
-      state: 'finished',
-      createdAt: tag.createdAt,
-    }));
-
-    const collectionChips: CollectionChip[] = collections.map(collection => ({
-      collectionId: collection.id,
-      state: 'finished',
-      createdAt: collection.createdAt,
-    }));
-
-    const chips: ChatChip[] = [
-      ...docChips,
-      ...fileChips,
-      ...tagChips,
-      ...collectionChips,
-    ].sort((a, b) => {
-      const aTime = a.createdAt ?? Date.now();
-      const bTime = b.createdAt ?? Date.now();
-      return aTime - bTime;
-    });
-
-    this.updateChips(chips);
+    await this.runtime?.dispatch({ type: 'loadContext' });
+    this.syncChipsFromRuntime();
   };
 
   private readonly updateChips = (chips: ChatChip[]) => {
@@ -487,14 +495,11 @@ export class AIChatComposer extends SignalWatcher(
 
   private readonly addDocToContext = async (chip: DocChip) => {
     try {
-      const contextId = await this.createContextId();
-      if (!contextId || !AIProvider.context) {
-        throw new Error('Context not found');
-      }
-      await AIProvider.context.addContextDoc({
-        contextId,
-        docId: chip.docId,
+      await this.runtime?.dispatch({
+        type: 'addContextItem',
+        item: { kind: 'doc', docId: chip.docId, state: chip.state },
       });
+      this.syncChipsFromRuntime();
     } catch (e) {
       this.updateChip(chip, {
         state: 'failed',
@@ -505,18 +510,17 @@ export class AIChatComposer extends SignalWatcher(
 
   private readonly addFileToContext = async (chip: FileChip) => {
     try {
-      const contextId = await this.createContextId();
-      if (!contextId || !AIProvider.context) {
-        throw new Error('Context not found');
-      }
-      const contextFile = await AIProvider.context.addContextFile(chip.file, {
-        contextId,
+      await this.runtime?.dispatch({
+        type: 'addContextItem',
+        item: {
+          kind: 'file',
+          file: chip.file,
+          fileId: chip.fileId ?? undefined,
+          blobId: chip.blobId ?? undefined,
+          state: chip.state,
+        },
       });
-      this.updateChip(chip, {
-        state: contextFile.status,
-        blobId: contextFile.blobId,
-        fileId: contextFile.id,
-      });
+      this.syncChipsFromRuntime();
     } catch (e) {
       this.updateChip(chip, {
         state: 'failed',
@@ -527,20 +531,16 @@ export class AIChatComposer extends SignalWatcher(
 
   private readonly addTagToContext = async (chip: TagChip) => {
     try {
-      const contextId = await this.createContextId();
-      if (!contextId || !AIProvider.context) {
-        throw new Error('Context not found');
-      }
-      // TODO: server side docIds calculation
-      const docIds = this.docDisplayConfig.getTagPageIds(chip.tagId);
-      await AIProvider.context.addContextTag({
-        contextId,
-        tagId: chip.tagId,
-        docIds,
+      await this.runtime?.dispatch({
+        type: 'addContextItem',
+        item: {
+          kind: 'tag',
+          tagId: chip.tagId,
+          docIds: this.docDisplayConfig.getTagPageIds(chip.tagId),
+          state: chip.state,
+        },
       });
-      this.updateChip(chip, {
-        state: 'finished',
-      });
+      this.syncChipsFromRuntime();
     } catch (e) {
       this.updateChip(chip, {
         state: 'failed',
@@ -551,22 +551,16 @@ export class AIChatComposer extends SignalWatcher(
 
   private readonly addCollectionToContext = async (chip: CollectionChip) => {
     try {
-      const contextId = await this.createContextId();
-      if (!contextId || !AIProvider.context) {
-        throw new Error('Context not found');
-      }
-      // TODO: server side docIds calculation
-      const docIds = this.docDisplayConfig.getCollectionPageIds(
-        chip.collectionId
-      );
-      await AIProvider.context.addContextCollection({
-        contextId,
-        collectionId: chip.collectionId,
-        docIds,
+      await this.runtime?.dispatch({
+        type: 'addContextItem',
+        item: {
+          kind: 'collection',
+          collectionId: chip.collectionId,
+          docIds: this.docDisplayConfig.getCollectionPageIds(chip.collectionId),
+          state: chip.state,
+        },
       });
-      this.updateChip(chip, {
-        state: 'finished',
-      });
+      this.syncChipsFromRuntime();
     } catch (e) {
       this.updateChip(chip, {
         state: 'failed',
@@ -579,19 +573,12 @@ export class AIChatComposer extends SignalWatcher(
   private readonly addAttachmentChipToContext = async (
     chip: AttachmentChip
   ) => {
-    const contextId = await this.createContextId();
-    if (!contextId || !AIProvider.context) {
-      throw new Error('Context not found');
-    }
     try {
-      const contextBlob = await AIProvider.context.addContextBlob({
-        blobId: chip.sourceId,
-        contextId,
+      await this.runtime?.dispatch({
+        type: 'addContextItem',
+        item: { kind: 'blob', blobId: chip.sourceId, state: chip.state },
       });
-      this.updateChip(chip, {
-        state: contextBlob.status || 'processing',
-        blobId: chip.sourceId,
-      });
+      this.syncChipsFromRuntime();
     } catch (e) {
       this.updateChip(chip, {
         state: 'failed',
@@ -604,48 +591,19 @@ export class AIChatComposer extends SignalWatcher(
   private readonly removeFromContext = async (
     chip: ChatChip
   ): Promise<boolean> => {
+    if (isSelectedContextChip(chip)) {
+      this.updateContext({
+        ...this.chatContextValue,
+        snapshot: null,
+        combinedElementsMarkdown: null,
+      });
+      return true;
+    }
+    const item = this.chipToContextItem(chip);
+    if (!item) return true;
     try {
-      const contextId = await this.createContextId();
-      if (!contextId || !AIProvider.context) {
-        return true;
-      }
-      if (isDocChip(chip)) {
-        return await AIProvider.context.removeContextDoc({
-          contextId,
-          docId: chip.docId,
-        });
-      }
-      if (isFileChip(chip) && chip.fileId) {
-        return await AIProvider.context.removeContextFile({
-          contextId,
-          fileId: chip.fileId,
-        });
-      }
-      if (isTagChip(chip)) {
-        return await AIProvider.context.removeContextTag({
-          contextId,
-          tagId: chip.tagId,
-        });
-      }
-      if (isCollectionChip(chip)) {
-        return await AIProvider.context.removeContextCollection({
-          contextId,
-          collectionId: chip.collectionId,
-        });
-      }
-      if (isAttachmentChip(chip)) {
-        return await AIProvider.context.removeContextBlob({
-          contextId,
-          blobId: chip.sourceId,
-        });
-      }
-      if (isSelectedContextChip(chip)) {
-        this.updateContext({
-          ...this.chatContextValue,
-          snapshot: null,
-          combinedElementsMarkdown: null,
-        });
-      }
+      await this.runtime?.dispatch({ type: 'removeContextItem', item });
+      this.syncChipsFromRuntime();
       return true;
     } catch {
       return true;
@@ -669,136 +627,19 @@ export class AIChatComposer extends SignalWatcher(
   };
 
   private readonly pollContextDocsAndFiles = async () => {
-    const sessionId = this.session?.sessionId;
-    const contextId = await this._getContextId();
-    if (!sessionId || !contextId || !AIProvider.context) {
-      return;
-    }
-    if (this._pollAbortController) {
-      // already polling, reset timer
-      this._abortPoll();
-    }
-    this._pollAbortController = new AbortController();
-    await AIProvider.context.pollContextDocsAndFiles(
-      this.workspaceId,
-      sessionId,
-      contextId,
-      this._onPoll,
-      this._pollAbortController.signal
-    );
+    if (!this.runtime) return;
+    await this.runtime.dispatch({ type: 'startContextPolling' });
+    this.syncChipsFromRuntime();
   };
 
   private readonly pollEmbeddingStatus = async () => {
-    if (this._pollEmbeddingStatusAbortController) {
-      this._pollEmbeddingStatusAbortController.abort();
-    }
-    this._pollEmbeddingStatusAbortController = new AbortController();
-    const signal = this._pollEmbeddingStatusAbortController.signal;
-
-    try {
-      await AIProvider.context?.pollEmbeddingStatus(
-        this.workspaceId,
-        (status: ContextWorkspaceEmbeddingStatus) => {
-          if (!status) {
-            this.embeddingCompleted = false;
-            return;
-          }
-          const prevCompleted = this.embeddingCompleted;
-          const completed = status.embedded === status.total;
-          this.embeddingCompleted = completed;
-          if (prevCompleted !== completed) {
-            this.requestUpdate();
-          }
-        },
-        signal
-      );
-    } catch {
-      this.embeddingCompleted = false;
-    }
-  };
-
-  private readonly _onPoll = (
-    result?: BlockSuitePresets.AIDocsAndFilesContext
-  ) => {
-    if (!result) {
-      this._abortPoll();
-      return;
-    }
-    const {
-      docs: sDocs = [],
-      files = [],
-      tags = [],
-      collections = [],
-      blobs = [],
-    } = result;
-    const docs = [
-      ...sDocs,
-      ...tags.flatMap(tag => tag.docs),
-      ...collections.flatMap(collection => collection.docs),
-    ];
-    const hashMap = new Map<
-      string,
-      CopilotContextDoc | CopilotContextFile | CopilotContextBlob
-    >();
-    const count: Record<ContextEmbedStatus, number> = {
-      finished: 0,
-      processing: 0,
-      failed: 0,
-    };
-    docs.forEach(doc => {
-      hashMap.set(doc.id, doc);
-      doc.status && count[doc.status]++;
-    });
-    files.forEach(file => {
-      hashMap.set(file.id, file);
-      file.status && count[file.status]++;
-    });
-    blobs.forEach(blob => {
-      hashMap.set(blob.id, blob);
-      blob.status && count[blob.status]++;
-    });
-    const nextChips = this.chips.map(chip => {
-      if (isTagChip(chip) || isCollectionChip(chip)) {
-        return chip;
-      }
-      const id = isDocChip(chip)
-        ? chip.docId
-        : isFileChip(chip)
-          ? chip.fileId
-          : isAttachmentChip(chip)
-            ? chip.sourceId
-            : isSelectedContextChip(chip)
-              ? chip.uuid
-              : undefined;
-      const item = id && hashMap.get(id);
-      if (item && item.status) {
-        return {
-          ...chip,
-          state: item.status,
-          tooltip: 'error' in item ? item.error : undefined,
-        };
-      }
-      return chip;
-    });
-    this.updateChips(nextChips);
-    this.onEmbeddingProgressChange?.(count);
-    if (count.processing === 0) {
-      this._abortPoll();
-    }
-  };
-
-  private readonly _abortPoll = () => {
-    this._pollAbortController?.abort();
-    this._pollAbortController = null;
-  };
-
-  private readonly _abortPollEmbeddingStatus = () => {
-    this._pollEmbeddingStatusAbortController?.abort();
-    this._pollEmbeddingStatusAbortController = null;
+    if (!this.runtime) return;
+    await this.runtime.dispatch({ type: 'pollEmbeddingStatus' });
+    this.syncChipsFromRuntime();
   };
 
   private readonly initComposer = async () => {
-    const userId = (await AIProvider.userInfo)?.id;
+    const userId = AIAppEvents.userInfo.value?.id;
     if (!userId || !this.session) return;
 
     await this.initChips();

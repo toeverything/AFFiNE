@@ -8,11 +8,12 @@ import { createModule } from '../../../__tests__/create-module';
 import { Mockers } from '../../../__tests__/mocks';
 import { ConfigModule } from '../../../base/config';
 import { ServerConfigModule } from '../../../core/config';
-import { IndexerModule, IndexerService } from '..';
+import { Models } from '../../../models';
 import { SearchProviderFactory } from '../factory';
+import { IndexerModule, IndexerService } from '../index';
 import { ManticoresearchProvider } from '../providers';
 import { UpsertDoc } from '../service';
-import { SearchTable } from '../tables';
+import { blockSQL, docSQL, SearchTable } from '../tables';
 import {
   AggregateInput,
   SearchInput,
@@ -35,6 +36,7 @@ const module = await createModule({
 const indexerService = module.get(IndexerService);
 const searchProviderFactory = module.get(SearchProviderFactory);
 const manticoresearch = module.get(ManticoresearchProvider);
+const models = module.get(Models);
 const user = await module.create(Mockers.User);
 const workspace = await module.create(Mockers.Workspace, {
   snapshot: true,
@@ -50,7 +52,8 @@ test.after.always(async () => {
 });
 
 test.before(async () => {
-  await indexerService.createTables();
+  await manticoresearch.recreateTable(SearchTable.block, blockSQL);
+  await manticoresearch.recreateTable(SearchTable.doc, docSQL);
 });
 
 test.afterEach.always(async () => {
@@ -2310,4 +2313,91 @@ test('should search docs by keyword work', async t => {
   );
 });
 
+test('should search docs by keyword with doc id filter', async t => {
+  const workspaceId = workspace.id;
+  const docId1 = randomUUID();
+  const docId2 = randomUUID();
+
+  await module.create(Mockers.DocMeta, {
+    workspaceId,
+    docId: docId1,
+    title: 'hello filtered 1',
+  });
+  await module.create(Mockers.DocMeta, {
+    workspaceId,
+    docId: docId2,
+    title: 'hello filtered 2',
+  });
+
+  await indexerService.write(
+    SearchTable.block,
+    [
+      {
+        workspaceId,
+        docId: docId1,
+        blockId: 'filtered-block1',
+        content: 'hello filtered',
+        flavour: 'affine:text',
+        createdByUserId: user.id,
+        updatedByUserId: user.id,
+        createdAt: new Date('2025-06-20T00:00:00.000Z'),
+        updatedAt: new Date('2025-06-20T00:00:00.000Z'),
+      },
+      {
+        workspaceId,
+        docId: docId2,
+        blockId: 'filtered-block2',
+        content: 'hello filtered',
+        flavour: 'affine:text',
+        createdByUserId: user.id,
+        updatedByUserId: user.id,
+        createdAt: new Date('2025-06-20T00:00:01.000Z'),
+        updatedAt: new Date('2025-06-20T00:00:01.000Z'),
+      },
+    ],
+    {
+      refresh: true,
+    }
+  );
+
+  const rows = await indexerService.searchDocsByKeyword(
+    workspaceId,
+    'hello filtered',
+    {
+      docIds: [docId2],
+    }
+  );
+
+  t.deepEqual(
+    rows.map(row => row.docId),
+    [docId2]
+  );
+});
+
 // #endregion
+
+test('should rebuild manticore indexes and requeue workspaces', async t => {
+  const workspace1 = await module.create(Mockers.Workspace, {
+    indexed: true,
+  });
+  const workspace2 = await module.create(Mockers.Workspace, {
+    indexed: true,
+  });
+  const queueCount = module.queue.count('indexer.indexWorkspace');
+
+  await indexerService.rebuildManticoreIndexes();
+
+  const queuedWorkspaceIds = new Set(
+    module.queue.add
+      .getCalls()
+      .filter(call => call.args[0] === 'indexer.indexWorkspace')
+      .slice(queueCount)
+      .map(call => call.args[1].workspaceId)
+  );
+
+  t.true(queuedWorkspaceIds.has(workspace1.id));
+  t.true(queuedWorkspaceIds.has(workspace2.id));
+
+  t.is((await models.workspace.get(workspace1.id))?.indexed, false);
+  t.is((await models.workspace.get(workspace2.id))?.indexed, false);
+});

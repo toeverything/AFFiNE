@@ -1,7 +1,7 @@
 {
   "name": "@affine/nbstore",
   "type": "module",
-  "version": "0.26.1",
+  "version": "0.26.3",
   "private": true,
   "sideEffects": false,
   "exports": {
@@ -19,29 +19,31 @@
   },
   "dependencies": {
     "@affine/reader": "workspace:*",
+    "@affine/realtime": "workspace:*",
     "@toeverything/infra": "workspace:*",
     "eventemitter2": "^6.4.9",
     "graphemer": "^1.4.0",
-    "lib0": "^0.2.114",
     "lodash-es": "^4.17.23",
     "nanoid": "^5.1.6",
     "rxjs": "^7.8.2",
-    "uuid": "^13.0.0",
+    "uuid": "^14.0.0",
     "y-protocols": "^1.0.6",
     "yjs": "^13.6.27"
   },
   "devDependencies": {
     "@affine/error": "workspace:*",
     "@affine/graphql": "workspace:*",
+    "@affine/realtime": "workspace:*",
     "@blocksuite/affine": "workspace:*",
     "fake-indexeddb": "^6.0.0",
     "idb": "^8.0.0",
     "socket.io-client": "^4.8.3",
-    "vitest": "^3.2.4"
+    "vitest": "^4.0.18"
   },
   "peerDependencies": {
     "@affine/error": "workspace:*",
     "@affine/graphql": "workspace:*",
+    "@affine/realtime": "workspace:*",
     "@blocksuite/affine": "workspace:*",
     "idb": "^8.0.0",
     "socket.io-client": "^4.8.3"

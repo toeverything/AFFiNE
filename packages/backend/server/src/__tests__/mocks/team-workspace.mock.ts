@@ -27,6 +27,16 @@ export class MockTeamWorkspace extends Mocker<
         quantity,
       },
     });
+    await this.db.entitlement.create({
+      data: {
+        targetType: 'workspace',
+        targetId: id,
+        source: 'cloud_subscription',
+        plan: 'team',
+        status: 'active',
+        quantity,
+      },
+    });
 
     await this.db.workspaceFeature.create({
       data: {

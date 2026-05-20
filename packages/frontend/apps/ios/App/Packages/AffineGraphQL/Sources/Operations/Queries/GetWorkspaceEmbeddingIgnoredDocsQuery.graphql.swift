@@ -34,6 +34,9 @@ public class GetWorkspaceEmbeddingIgnoredDocsQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("workspace", Workspace.self, arguments: ["id": .variable("workspaceId")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      GetWorkspaceEmbeddingIgnoredDocsQuery.Data.self
+    ] }
 
     /// Get workspace by id
     public var workspace: Workspace { __data["workspace"] }
@@ -50,6 +53,9 @@ public class GetWorkspaceEmbeddingIgnoredDocsQuery: GraphQLQuery {
         .field("__typename", String.self),
         .field("embedding", Embedding.self),
       ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        GetWorkspaceEmbeddingIgnoredDocsQuery.Data.Workspace.self
+      ] }
 
       public var embedding: Embedding { __data["embedding"] }
 
@@ -64,6 +70,9 @@ public class GetWorkspaceEmbeddingIgnoredDocsQuery: GraphQLQuery {
         public static var __selections: [ApolloAPI.Selection] { [
           .field("__typename", String.self),
           .field("ignoredDocs", IgnoredDocs.self, arguments: ["pagination": .variable("pagination")]),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          GetWorkspaceEmbeddingIgnoredDocsQuery.Data.Workspace.Embedding.self
         ] }
 
         public var ignoredDocs: IgnoredDocs { __data["ignoredDocs"] }
@@ -81,6 +90,9 @@ public class GetWorkspaceEmbeddingIgnoredDocsQuery: GraphQLQuery {
             .field("totalCount", Int.self),
             .field("pageInfo", PageInfo.self),
             .field("edges", [Edge].self),
+          ] }
+          public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+            GetWorkspaceEmbeddingIgnoredDocsQuery.Data.Workspace.Embedding.IgnoredDocs.self
           ] }
 
           public var totalCount: Int { __data["totalCount"] }
@@ -100,6 +112,9 @@ public class GetWorkspaceEmbeddingIgnoredDocsQuery: GraphQLQuery {
               .field("endCursor", String?.self),
               .field("hasNextPage", Bool.self),
             ] }
+            public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+              GetWorkspaceEmbeddingIgnoredDocsQuery.Data.Workspace.Embedding.IgnoredDocs.PageInfo.self
+            ] }
 
             public var endCursor: String? { __data["endCursor"] }
             public var hasNextPage: Bool { __data["hasNextPage"] }
@@ -116,6 +131,9 @@ public class GetWorkspaceEmbeddingIgnoredDocsQuery: GraphQLQuery {
             public static var __selections: [ApolloAPI.Selection] { [
               .field("__typename", String.self),
               .field("node", Node.self),
+            ] }
+            public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+              GetWorkspaceEmbeddingIgnoredDocsQuery.Data.Workspace.Embedding.IgnoredDocs.Edge.self
             ] }
 
             public var node: Node { __data["node"] }
@@ -138,6 +156,9 @@ public class GetWorkspaceEmbeddingIgnoredDocsQuery: GraphQLQuery {
                 .field("createdBy", String?.self),
                 .field("createdByAvatar", String?.self),
                 .field("updatedBy", String?.self),
+              ] }
+              public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+                GetWorkspaceEmbeddingIgnoredDocsQuery.Data.Workspace.Embedding.IgnoredDocs.Edge.Node.self
               ] }
 
               public var docId: String { __data["docId"] }

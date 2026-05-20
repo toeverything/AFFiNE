@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Transactional } from '@nestjs-cls/transactional';
 import type { CalendarSubscription, Prisma } from '@prisma/client';
 
 import { BaseModel } from './base';
@@ -16,6 +17,8 @@ export interface UpsertCalendarSubscriptionInput {
 export interface UpdateCalendarSubscriptionSyncInput {
   syncToken?: string | null;
   lastSyncAt?: Date | null;
+  nextSyncAt?: Date;
+  syncRetryCount?: number;
 }
 
 export interface UpdateCalendarSubscriptionChannelInput {
@@ -80,13 +83,21 @@ export class CalendarSubscriptionModel extends BaseModel {
   }
 
   async updateSync(id: string, input: UpdateCalendarSubscriptionSyncInput) {
-    return await this.db.calendarSubscription.update({
-      where: { id },
-      data: {
-        syncToken: input.syncToken ?? null,
-        lastSyncAt: input.lastSyncAt ?? null,
-      },
-    });
+    const data: Prisma.CalendarSubscriptionUncheckedUpdateInput = {};
+    if (input.syncToken !== undefined) {
+      data.syncToken = input.syncToken ?? null;
+    }
+    if (input.lastSyncAt !== undefined) {
+      data.lastSyncAt = input.lastSyncAt ?? null;
+    }
+    if (input.nextSyncAt !== undefined) {
+      data.nextSyncAt = input.nextSyncAt;
+    }
+    if (input.syncRetryCount !== undefined) {
+      data.syncRetryCount = input.syncRetryCount;
+    }
+
+    return await this.db.calendarSubscription.update({ where: { id }, data });
   }
 
   async updateChannel(
@@ -154,10 +165,16 @@ export class CalendarSubscriptionModel extends BaseModel {
     });
   }
 
-  async listAllWithAccountForSync() {
+  async listDueForSync(now: Date, limit: number) {
     return await this.db.calendarSubscription.findMany({
-      where: { enabled: true },
-      include: { account: true },
+      where: {
+        enabled: true,
+        nextSyncAt: { lte: now },
+        account: { status: 'active' },
+      },
+      select: { id: true },
+      orderBy: { nextSyncAt: 'asc' },
+      take: limit,
     });
   }
 
@@ -165,13 +182,6 @@ export class CalendarSubscriptionModel extends BaseModel {
     return await this.db.calendarSubscription.findMany({
       where: { accountId, enabled: true },
       include: { account: true },
-    });
-  }
-
-  async updateLastSyncAt(id: string, lastSyncAt: Date) {
-    return await this.db.calendarSubscription.update({
-      where: { id },
-      data: { lastSyncAt },
     });
   }
 
@@ -190,5 +200,22 @@ export class CalendarSubscriptionModel extends BaseModel {
       where: { id: { in: ids } },
       data,
     });
+  }
+
+  @Transactional()
+  async disableAndPurge(subscriptionId: string) {
+    await this.db.calendarSubscription.update({
+      where: { id: subscriptionId },
+      data: {
+        enabled: false,
+        syncToken: null,
+        syncRetryCount: 0,
+        customChannelId: null,
+        customResourceId: null,
+        channelExpiration: null,
+      },
+    });
+
+    await this.models.calendarEvent.deleteBySubscriptionIds([subscriptionId]);
   }
 }

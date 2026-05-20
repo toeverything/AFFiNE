@@ -1,4 +1,6 @@
 pub mod hashcash;
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
+pub mod preview;
 
 #[cfg(not(target_arch = "arm"))]
 #[global_allocator]

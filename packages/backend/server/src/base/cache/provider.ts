@@ -7,6 +7,10 @@ export interface CacheSetOptions {
   ttl?: number;
 }
 
+export function isValidCacheTtl(ttl: unknown): ttl is number {
+  return typeof ttl === 'number' && Number.isSafeInteger(ttl) && ttl > 0;
+}
+
 export class CacheProvider {
   constructor(private readonly redis: Redis) {}
 

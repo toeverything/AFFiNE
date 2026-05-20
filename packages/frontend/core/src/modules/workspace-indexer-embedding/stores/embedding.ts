@@ -1,11 +1,10 @@
 import type { WorkspaceServerService } from '@affine/core/modules/cloud';
+import type { NbstoreService } from '@affine/core/modules/storage';
 import {
   addWorkspaceEmbeddingFilesMutation,
   addWorkspaceEmbeddingIgnoredDocsMutation,
   getAllWorkspaceEmbeddingIgnoredDocsQuery,
-  getWorkspaceConfigQuery,
   getWorkspaceEmbeddingFilesQuery,
-  getWorkspaceEmbeddingStatusQuery,
   type PaginationInput,
   removeWorkspaceEmbeddingFilesMutation,
   removeWorkspaceEmbeddingIgnoredDocsMutation,
@@ -14,24 +13,20 @@ import {
 import { Store } from '@toeverything/infra';
 
 export class EmbeddingStore extends Store {
-  constructor(private readonly workspaceServerService: WorkspaceServerService) {
+  constructor(
+    private readonly workspaceServerService: WorkspaceServerService,
+    private readonly nbstoreService: NbstoreService
+  ) {
     super();
   }
 
   async getEnabled(workspaceId: string, signal?: AbortSignal) {
-    if (!this.workspaceServerService.server) {
-      throw new Error('No Server');
-    }
-    const data = await this.workspaceServerService.server.gql({
-      query: getWorkspaceConfigQuery,
-      variables: {
-        id: workspaceId,
-      },
-      context: {
-        signal,
-      },
-    });
-    return data.workspace.enableDocEmbedding;
+    const { config } = await this.nbstoreService.realtime.request(
+      'workspace.config.get',
+      { workspaceId },
+      { signal, timeoutMs: 10000 }
+    );
+    return config.enableDocEmbedding;
   }
 
   async updateEnabled(
@@ -178,17 +173,17 @@ export class EmbeddingStore extends Store {
   }
 
   async getEmbeddingProgress(workspaceId: string, signal?: AbortSignal) {
-    if (!this.workspaceServerService.server) {
-      throw new Error('No Server');
-    }
+    return await this.nbstoreService.realtime.request(
+      'workspace.embedding.progress.get',
+      { workspaceId },
+      { signal, timeoutMs: 10000 }
+    );
+  }
 
-    const data = await this.workspaceServerService.server.gql({
-      query: getWorkspaceEmbeddingStatusQuery,
-      variables: {
-        workspaceId,
-      },
-      context: { signal },
-    });
-    return data.queryWorkspaceEmbeddingStatus;
+  subscribeEmbeddingProgress(workspaceId: string) {
+    return this.nbstoreService.realtime.subscribe(
+      'workspace.embedding.progress.changed',
+      { workspaceId }
+    );
   }
 }

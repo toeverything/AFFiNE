@@ -2,28 +2,29 @@
 
 // Should not load @affine/native for unsupported platforms
 
-import path from 'node:path';
-
 import { shell } from 'electron';
 
-import { isMacOS } from '../../shared/utils';
+import { isMacOS, resolvePathInBase } from '../../shared/utils';
 import { openExternalSafely } from '../security/open-external';
 import type { NamespaceHandlers } from '../type';
 import {
   askForMeetingPermission,
   checkMeetingPermissions,
   checkRecordingAvailable,
+  claimRecordingImport,
+  completeRecordingImport,
   disableRecordingFeature,
-  getRawAudioBuffers,
+  dismissRecordingStatus,
+  failRecordingImport,
+  getCurrentRecordingStatus,
   getRecording,
-  handleBlockCreationFailed,
-  handleBlockCreationSuccess,
-  pauseRecording,
+  getRecordingImportQueue,
   readRecordingFile,
-  readyRecording,
+  recordingImportQueue$,
   recordingStatus$,
   removeRecording,
   SAVED_RECORDINGS_DIR,
+  type SerializedRecordingImportStatus,
   type SerializedRecordingStatus,
   serializeRecordingStatus,
   setupRecordingFeature,
@@ -38,34 +39,32 @@ export const recordingHandlers = {
   },
   getCurrentRecording: async () => {
     // not all properties are serializable, so we need to return a subset of the status
-    return recordingStatus$.value
-      ? serializeRecordingStatus(recordingStatus$.value)
-      : null;
+    const status = getCurrentRecordingStatus();
+    return status ? serializeRecordingStatus(status) : null;
   },
   startRecording: async (_, appGroup?: AppGroupInfo | number) => {
     return startRecording(appGroup);
   },
-  pauseRecording: async (_, id: number) => {
-    return pauseRecording(id);
-  },
   stopRecording: async (_, id: number) => {
     return stopRecording(id);
-  },
-  getRawAudioBuffers: async (_, id: number, cursor?: number) => {
-    return getRawAudioBuffers(id, cursor);
   },
   readRecordingFile: async (_, filepath: string) => {
     return readRecordingFile(filepath);
   },
-  // save the encoded recording buffer to the file system
-  readyRecording: async (_, id: number, buffer: Uint8Array) => {
-    return readyRecording(id, Buffer.from(buffer));
+  getRecordingImportQueue: async () => {
+    return getRecordingImportQueue();
   },
-  handleBlockCreationSuccess: async (_, id: number) => {
-    return handleBlockCreationSuccess(id);
+  claimRecordingImport: async (_, id: number, workspaceId: string) => {
+    return claimRecordingImport(id, workspaceId);
   },
-  handleBlockCreationFailed: async (_, id: number, error?: Error) => {
-    return handleBlockCreationFailed(id, error);
+  completeRecordingImport: async (_, id: number) => {
+    return completeRecordingImport(id);
+  },
+  dismissRecordingStatus: async (_, id: number) => {
+    return dismissRecordingStatus(id);
+  },
+  failRecordingImport: async (_, id: number, errorMessage?: string) => {
+    return failRecordingImport(id, errorMessage);
   },
   removeRecording: async (_, id: number) => {
     return removeRecording(id);
@@ -100,15 +99,10 @@ export const recordingHandlers = {
     return false;
   },
   showSavedRecordings: async (_, subpath?: string) => {
-    const normalizedDir = path.normalize(
-      path.join(SAVED_RECORDINGS_DIR, subpath ?? '')
-    );
-    const normalizedBase = path.normalize(SAVED_RECORDINGS_DIR);
-
-    if (!normalizedDir.startsWith(normalizedBase)) {
-      throw new Error('Invalid directory');
-    }
-    return shell.showItemInFolder(normalizedDir);
+    const directory = resolvePathInBase(SAVED_RECORDINGS_DIR, subpath ?? '', {
+      label: 'directory',
+    });
+    return shell.showItemInFolder(directory);
   },
 } satisfies NamespaceHandlers;
 
@@ -118,6 +112,39 @@ export const recordingEvents = {
   ) => {
     const sub = recordingStatus$.subscribe(status => {
       fn(status ? serializeRecordingStatus(status) : null);
+    });
+    return () => {
+      try {
+        sub.unsubscribe();
+      } catch {
+        // ignore unsubscribe error
+      }
+    };
+  },
+  onRecordingImportQueueChanged: (
+    fn: (queue: SerializedRecordingImportStatus[]) => void
+  ) => {
+    const sub = recordingImportQueue$.subscribe(queue => {
+      fn(
+        queue.map(item => ({
+          id: item.id,
+          appName: item.appName,
+          workspaceId: item.workspaceId,
+          docId: item.docId,
+          startTime: item.startTime,
+          filepath: item.filepath,
+          sampleRate: item.sampleRate,
+          numberOfChannels: item.numberOfChannels,
+          durationMs: item.durationMs,
+          size: item.size,
+          degraded: item.degraded,
+          overflowCount: item.overflowCount,
+          importStatus: item.importStatus,
+          errorMessage: item.errorMessage,
+          createdAt: item.createdAt,
+          updatedAt: item.updatedAt,
+        }))
+      );
     });
     return () => {
       try {

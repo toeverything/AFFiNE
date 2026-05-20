@@ -1,9 +1,10 @@
+import { randomUUID } from 'node:crypto';
+
 import {
   acceptInviteByInviteIdMutation,
   approveWorkspaceTeamMemberMutation,
   createInviteLinkMutation,
   getInviteInfoQuery,
-  getMembersByWorkspaceIdQuery,
   inviteByEmailsMutation,
   leaveWorkspaceMutation,
   revokeMemberPermissionMutation,
@@ -11,10 +12,24 @@ import {
   WorkspaceMemberStatus,
 } from '@affine/graphql';
 import { faker } from '@faker-js/faker';
+import {
+  WorkspaceMemberSource,
+  WorkspaceMemberStatus as PrismaWorkspaceMemberStatus,
+} from '@prisma/client';
 
-import { Models } from '../../../models';
+import { EntitlementService } from '../../../core/entitlement';
+import { WorkspacePolicyService } from '../../../core/permission';
+import { Models, WorkspaceRole as ModelWorkspaceRole } from '../../../models';
+import {
+  SubscriptionPlan,
+  SubscriptionRecurring,
+  SubscriptionStatus,
+} from '../../../plugins/payment/types';
 import { Mockers } from '../../mocks';
+import { createRealtimeClient, realtimeRequest } from '../realtime';
 import { app, e2e } from '../test';
+
+const TWO_BILLION_BYTES = 2_000_000_000;
 
 async function createWorkspace() {
   const owner = await app.create(Mockers.User);
@@ -26,6 +41,23 @@ async function createWorkspace() {
     owner,
     workspace,
   };
+}
+
+async function grantTeamPlan(workspaceId: string, quantity: number) {
+  await app.get(EntitlementService).upsertFromCloudSubscription({
+    targetId: workspaceId,
+    plan: SubscriptionPlan.Team,
+    recurring: SubscriptionRecurring.Yearly,
+    status: SubscriptionStatus.Active,
+    quantity,
+  });
+}
+
+async function revokeTeamPlan(workspaceId: string) {
+  await app.get(EntitlementService).revokeCloudSubscription({
+    targetId: workspaceId,
+    plan: SubscriptionPlan.Team,
+  });
 }
 
 e2e('should invite a user', async t => {
@@ -80,6 +112,141 @@ e2e('should invite a user', async t => {
   });
   t.is(getInviteInfo2.status, WorkspaceMemberStatus.Accepted);
 });
+
+e2e('should re-check seat when accepting an email invitation', async t => {
+  const { owner, workspace } = await createWorkspace();
+  const member = await app.create(Mockers.User);
+  await grantTeamPlan(workspace.id, 12);
+
+  await Promise.all(
+    Array.from({ length: 10 }).map(async () => {
+      await app.create(Mockers.WorkspaceUser, {
+        workspaceId: workspace.id,
+        userId: (await app.create(Mockers.User)).id,
+      });
+    })
+  );
+
+  await app.login(owner);
+  const invite = await app.gql({
+    query: inviteByEmailsMutation,
+    variables: {
+      emails: [member.email],
+      workspaceId: workspace.id,
+    },
+  });
+
+  await app.eventBus.emitAsync('workspace.members.allocateSeats', {
+    workspaceId: workspace.id,
+    quantity: 12,
+  });
+
+  await revokeTeamPlan(workspace.id);
+
+  await app.login(member);
+  await t.throwsAsync(
+    app.gql({
+      query: acceptInviteByInviteIdMutation,
+      variables: {
+        workspaceId: workspace.id,
+        inviteId: invite.inviteMembers[0].inviteId!,
+      },
+    })
+  );
+
+  const { getInviteInfo } = await app.gql({
+    query: getInviteInfoQuery,
+    variables: {
+      inviteId: invite.inviteMembers[0].inviteId!,
+    },
+  });
+
+  t.is(getInviteInfo.status, WorkspaceMemberStatus.Pending);
+});
+
+e2e.serial(
+  'should block accepting pending invitations in readonly mode and recover after blob cleanup',
+  async t => {
+    const { owner, workspace } = await createWorkspace();
+    const member = await app.create(Mockers.User);
+    await app.login(owner);
+    const invite = await app.gql({
+      query: inviteByEmailsMutation,
+      variables: {
+        emails: [member.email],
+        workspaceId: workspace.id,
+      },
+    });
+
+    const overflowBlobKeys = Array.from(
+      { length: 6 },
+      (_, index) => `overflow-blob-${index}`
+    );
+    await Promise.all(
+      overflowBlobKeys.map(key =>
+        app.models.blob.upsert({
+          workspaceId: workspace.id,
+          key,
+          mime: 'application/octet-stream',
+          size: TWO_BILLION_BYTES,
+          status: 'completed',
+          uploadId: null,
+        })
+      )
+    );
+
+    t.true(
+      (await app.get(WorkspacePolicyService).getWorkspaceState(workspace.id))
+        .isReadonly
+    );
+
+    await app.login(member);
+    await t.throwsAsync(
+      app.gql({
+        query: acceptInviteByInviteIdMutation,
+        variables: {
+          workspaceId: workspace.id,
+          inviteId: invite.inviteMembers[0].inviteId!,
+        },
+      })
+    );
+
+    const { getInviteInfo: pendingInvite } = await app.gql({
+      query: getInviteInfoQuery,
+      variables: {
+        inviteId: invite.inviteMembers[0].inviteId!,
+      },
+    });
+    t.is(pendingInvite.status, WorkspaceMemberStatus.Pending);
+
+    await app.login(owner);
+    for (const key of overflowBlobKeys) {
+      await app.models.blob.delete(workspace.id, key, true);
+    }
+
+    t.false(
+      (await app.get(WorkspacePolicyService).getWorkspaceState(workspace.id))
+        .isReadonly
+    );
+
+    await app.login(member);
+    await app.gql({
+      query: acceptInviteByInviteIdMutation,
+      variables: {
+        workspaceId: workspace.id,
+        inviteId: invite.inviteMembers[0].inviteId!,
+      },
+    });
+
+    const { getInviteInfo: acceptedInvite } = await app.gql({
+      query: getInviteInfoQuery,
+      variables: {
+        inviteId: invite.inviteMembers[0].inviteId!,
+      },
+    });
+    t.is(acceptedInvite.status, WorkspaceMemberStatus.Accepted);
+  }
+);
 
 e2e('should leave a workspace', async t => {
   const { owner, workspace } = await createWorkspace();
@@ -217,39 +384,31 @@ e2e('should support pagination for member', async t => {
     userId: u2.id,
   });
 
-  await app.login(owner);
-  let result = await app.gql({
-    query: getMembersByWorkspaceIdQuery,
-    variables: {
-      workspaceId: workspace.id,
-      skip: 0,
-      take: 2,
-    },
+  const socket = await createRealtimeClient(app, owner);
+  t.teardown(() => socket.disconnect());
+  let result = await realtimeRequest(socket, 'workspace.members.get', {
+    workspaceId: workspace.id,
+    skip: 0,
+    take: 2,
   });
-  t.is(result.workspace.memberCount, 3);
-  t.is(result.workspace.members.length, 2);
+  t.is(result.memberCount, 3);
+  t.is(result.members.length, 2);
 
-  result = await app.gql({
-    query: getMembersByWorkspaceIdQuery,
-    variables: {
-      workspaceId: workspace.id,
-      skip: 2,
-      take: 2,
-    },
+  result = await realtimeRequest(socket, 'workspace.members.get', {
+    workspaceId: workspace.id,
+    skip: 2,
+    take: 2,
   });
-  t.is(result.workspace.memberCount, 3);
-  t.is(result.workspace.members.length, 1);
+  t.is(result.memberCount, 3);
+  t.is(result.members.length, 1);
 
-  result = await app.gql({
-    query: getMembersByWorkspaceIdQuery,
-    variables: {
-      workspaceId: workspace.id,
-      skip: 3,
-      take: 2,
-    },
+  result = await realtimeRequest(socket, 'workspace.members.get', {
+    workspaceId: workspace.id,
+    skip: 3,
+    take: 2,
   });
-  t.is(result.workspace.memberCount, 3);
-  t.is(result.workspace.members.length, 0);
+  t.is(result.memberCount, 3);
+  t.is(result.members.length, 0);
 });
 
 e2e('should limit member count correctly', async t => {
@@ -265,17 +424,15 @@ e2e('should limit member count correctly', async t => {
     })
   );
 
-  await app.login(owner);
-  const result = await app.gql({
-    query: getMembersByWorkspaceIdQuery,
-    variables: {
-      workspaceId: workspace.id,
-      skip: 0,
-      take: 10,
-    },
+  const socket = await createRealtimeClient(app, owner);
+  t.teardown(() => socket.disconnect());
+  const result = await realtimeRequest(socket, 'workspace.members.get', {
+    workspaceId: workspace.id,
+    skip: 0,
+    take: 10,
   });
-  t.is(result.workspace.memberCount, 11);
-  t.is(result.workspace.members.length, 10);
+  t.is(result.memberCount, 11);
+  t.is(result.members.length, 10);
 });
 
 e2e('should get invite link info with status', async t => {
@@ -420,10 +577,7 @@ e2e(
   'should invite by link and send review request notification over quota limit',
   async t => {
     const { owner, workspace } = await createWorkspace();
-    await app.create(Mockers.TeamWorkspace, {
-      id: workspace.id,
-      quantity: 3,
-    });
+    await grantTeamPlan(workspace.id, 3);
 
     await app.login(owner);
     const { createInviteLink } = await app.gql({
@@ -463,10 +617,7 @@ e2e(
       name: faker.internet.displayName({ firstName: 'Lucy' }),
     });
     const user2 = await app.create(Mockers.User, {
-      email: faker.internet.email({
-        firstName: 'Jeanne',
-        lastName: 'Doe',
-      }),
+      email: `jeanne_doe.${randomUUID()}@affine.pro`,
     });
     await app.create(Mockers.WorkspaceUser, {
       workspaceId: workspace.id,
@@ -477,38 +628,54 @@ e2e(
       userId: user2.id,
     });
 
-    await app.login(owner);
-    let result = await app.gql({
-      query: getMembersByWorkspaceIdQuery,
-      variables: {
-        workspaceId: workspace.id,
-        query: 'lucy',
-      },
+    const socket = await createRealtimeClient(app, owner);
+    t.teardown(() => socket.disconnect());
+    let result = await realtimeRequest(socket, 'workspace.members.get', {
+      workspaceId: workspace.id,
+      query: 'lucy',
     });
-    t.is(result.workspace.memberCount, 3);
-    t.is(result.workspace.members.length, 1);
-    t.is(result.workspace.members[0].name, user1.name);
+    t.is(result.memberCount, 3);
+    t.is(result.members.length, 1);
+    t.is(result.members[0].name, user1.name);
 
-    result = await app.gql({
-      query: getMembersByWorkspaceIdQuery,
-      variables: {
-        workspaceId: workspace.id,
-        query: 'LUCY',
-      },
+    result = await realtimeRequest(socket, 'workspace.members.get', {
+      workspaceId: workspace.id,
+      query: 'LUCY',
     });
-    t.is(result.workspace.memberCount, 3);
-    t.is(result.workspace.members.length, 1);
-    t.is(result.workspace.members[0].name, user1.name);
+    t.is(result.memberCount, 3);
+    t.is(result.members.length, 1);
+    t.is(result.members[0].name, user1.name);
 
-    result = await app.gql({
-      query: getMembersByWorkspaceIdQuery,
-      variables: {
-        workspaceId: workspace.id,
-        query: 'jeanne_doe',
-      },
+    result = await realtimeRequest(socket, 'workspace.members.get', {
+      workspaceId: workspace.id,
+      query: 'jeanne_doe',
     });
-    t.is(result.workspace.memberCount, 3);
-    t.is(result.workspace.members.length, 1);
-    t.is(result.workspace.members[0].email, user2.email);
+    t.is(result.memberCount, 3);
+    t.is(result.members.length, 1);
+    t.is(result.members[0].email, user2.email);
+
+    const pendingEmail = `pending_search.${randomUUID()}@affine.pro`;
+    const pendingUser = await app.create(Mockers.User, {
+      email: pendingEmail,
+    });
+    await app
+      .get(Models)
+      .workspaceUser.set(
+        workspace.id,
+        pendingUser.id,
+        ModelWorkspaceRole.Collaborator,
+        {
+          status: PrismaWorkspaceMemberStatus.Pending,
+          source: WorkspaceMemberSource.Email,
+        }
+      );
+    result = await realtimeRequest(socket, 'workspace.members.get', {
+      workspaceId: workspace.id,
+      query: 'pending_search',
+    });
+    t.is(result.memberCount, 4);
+    t.is(result.members.length, 1);
+    t.is(result.members[0].email, pendingEmail);
+    t.is(result.members[0].status, WorkspaceMemberStatus.Pending);
   }
 );

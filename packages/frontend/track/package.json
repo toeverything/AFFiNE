@@ -2,18 +2,18 @@
   "name": "@affine/track",
   "type": "module",
   "private": true,
-  "version": "0.26.1",
+  "version": "0.26.3",
   "exports": {
     ".": "./src/index.ts"
   },
   "dependencies": {
     "@affine/debug": "workspace:*",
-    "@sentry/react": "^9.47.1",
+    "@sentry/react": "^10.47.0",
     "nanoid": "^5.1.6",
     "react-router-dom": "^6.30.3"
   },
   "devDependencies": {
     "@types/react": "^19.0.1",
-    "vitest": "^3.2.4"
+    "vitest": "^4.0.18"
   }
 }

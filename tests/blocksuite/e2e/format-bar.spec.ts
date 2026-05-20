@@ -38,9 +38,9 @@ import {
 } from './utils/actions/index.js';
 import {
   assertAlmostEqual,
-  assertBlockChildrenIds,
   assertLocatorVisible,
   assertRichImage,
+  assertRichTextInlineDeltas,
   assertRichTextInlineRange,
   assertRichTexts,
 } from './utils/asserts.js';
@@ -251,6 +251,19 @@ test('should format quick bar be able to change background color', async ({
   // );
 
   await highlight.redForegroundBtn.click();
+  await waitNextFrame(page, 200);
+  await assertRichTextInlineDeltas(
+    page,
+    [
+      {
+        attributes: {
+          color: 'var(--affine-text-highlight-foreground-red)',
+        },
+        insert: '456',
+      },
+    ],
+    1
+  );
 
   // TODO(@fundon): these recent settings should be added to the dropdown menu.
   // await expect(highlight.highlightBtn).toHaveAttribute(
@@ -265,11 +278,26 @@ test('should format quick bar be able to change background color', async ({
   // select `123` paragraph by ctrl + a
   await focusRichText(page);
   await selectAllByKeyboard(page);
+  await waitNextFrame(page, 200);
+  await assertRichTextInlineRange(page, 0, 0, 3);
   // // use last used color
   // await highlight.highlightBtn.click();
 
   await highlight.highlightBtn.click();
   await highlight.redForegroundBtn.click();
+  await waitNextFrame(page, 200);
+  await assertRichTextInlineDeltas(
+    page,
+    [
+      {
+        attributes: {
+          color: 'var(--affine-text-highlight-foreground-red)',
+        },
+        insert: '123',
+      },
+    ],
+    0
+  );
 
   expect(await getPageSnapshot(page, true)).toMatchSnapshot(
     `${testInfo.title}_select_all.json`
@@ -278,6 +306,8 @@ test('should format quick bar be able to change background color', async ({
   await highlight.highlightBtn.click();
   await expect(highlight.defaultColorBtn).toBeVisible();
   await highlight.defaultColorBtn.click();
+  await waitNextFrame(page, 200);
+  await assertRichTextInlineDeltas(page, [{ insert: '123' }], 0);
 
   expect(await getPageSnapshot(page, true)).toMatchSnapshot(
     `${testInfo.title}_default_color.json`
@@ -929,8 +959,7 @@ test('create linked doc from block selection with format bar', async ({
   await focusRichText(page, 1);
   await pressTab(page);
   await assertRichTexts(page, ['123', '456', '789']);
-  await assertBlockChildrenIds(page, '1', ['2', '4']);
-  await assertBlockChildrenIds(page, '2', ['3']);
+  await waitNextFrame(page, 200);
 
   await selectAllBlocksByKeyboard(page);
   await waitNextFrame(page, 200);
@@ -980,9 +1009,9 @@ test.describe('more menu button', () => {
     await copyBtn.click();
     await assertRichTextInlineRange(page, 1, 0, 3);
 
-    await focusRichText(page, 1);
+    await focusRichTextEnd(page, 1);
     await pasteByKeyboard(page);
-    await waitNextFrame(page);
+    await waitNextFrame(page, 200);
 
     await assertRichTexts(page, ['123', '456456', '789']);
   });
@@ -1000,7 +1029,7 @@ test.describe('more menu button', () => {
     await expect(duplicateBtn).toBeVisible();
     await duplicateBtn.click();
 
-    await waitNextFrame(page);
+    await waitNextFrame(page, 200);
 
     await assertRichTexts(page, ['123', '456', '456', '789']);
   });

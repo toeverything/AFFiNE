@@ -1,94 +1,34 @@
+import type { LlmBackendConfig } from '../../../../native';
+import type { CopilotProviderExecution } from '../provider-runtime-contract';
+import { CopilotProviderType } from '../types';
 import {
-  createVertex,
-  type GoogleVertexProvider,
-  type GoogleVertexProviderSettings,
-} from '@ai-sdk/google-vertex';
-
-import { CopilotProviderType, ModelInputType, ModelOutputType } from '../types';
-import { getGoogleAuth, VertexModelListSchema } from '../utils';
+  getGoogleAuth,
+  getVertexGoogleBaseUrl,
+  type VertexProviderConfig,
+} from '../utils';
 import { GeminiProvider } from './gemini';
 
-export type GeminiVertexConfig = GoogleVertexProviderSettings;
+export type GeminiVertexConfig = VertexProviderConfig;
 
 export class GeminiVertexProvider extends GeminiProvider<GeminiVertexConfig> {
   override readonly type = CopilotProviderType.GeminiVertex;
-
-  readonly models = [
-    {
-      name: 'Gemini 2.5 Flash',
-      id: 'gemini-2.5-flash',
-      capabilities: [
-        {
-          input: [
-            ModelInputType.Text,
-            ModelInputType.Image,
-            ModelInputType.Audio,
-          ],
-          output: [
-            ModelOutputType.Text,
-            ModelOutputType.Object,
-            ModelOutputType.Structured,
-          ],
-        },
-      ],
-    },
-    {
-      name: 'Gemini 2.5 Pro',
-      id: 'gemini-2.5-pro',
-      capabilities: [
-        {
-          input: [
-            ModelInputType.Text,
-            ModelInputType.Image,
-            ModelInputType.Audio,
-          ],
-          output: [
-            ModelOutputType.Text,
-            ModelOutputType.Object,
-            ModelOutputType.Structured,
-          ],
-        },
-      ],
-    },
-    {
-      name: 'Gemini Embedding',
-      id: 'gemini-embedding-001',
-      capabilities: [
-        {
-          input: [ModelInputType.Text],
-          output: [ModelOutputType.Embedding],
-          defaultForOutputType: true,
-        },
-      ],
-    },
-  ];
-
-  protected instance!: GoogleVertexProvider;
-
-  override configured(): boolean {
-    return !!this.config.location && !!this.config.googleAuthOptions;
+  override configured(execution?: CopilotProviderExecution): boolean {
+    const config = this.getConfig(execution);
+    return !!getVertexGoogleBaseUrl(config) && !!config.googleAuthOptions;
+  }
+  protected async resolveVertexAuth(execution?: CopilotProviderExecution) {
+    return await getGoogleAuth(this.getConfig(execution), 'google');
   }
 
-  protected override setup() {
-    super.setup();
-    this.instance = createVertex(this.config);
-  }
+  protected override async createNativeConfig(
+    execution?: CopilotProviderExecution
+  ): Promise<LlmBackendConfig> {
+    const auth = await this.resolveVertexAuth(execution);
+    const { Authorization: authHeader } = auth.headers();
 
-  override async refreshOnlineModels() {
-    try {
-      const { baseUrl, headers } = await getGoogleAuth(this.config, 'google');
-      if (baseUrl && !this.onlineModelList.length) {
-        const { publisherModels } = await fetch(`${baseUrl}/models`, {
-          headers: headers(),
-        })
-          .then(r => r.json())
-          .then(r => VertexModelListSchema.parse(r));
-        this.onlineModelList = publisherModels.map(model =>
-          model.name.replace('publishers/google/models/', '')
-        );
-      }
-    } catch (e) {
-      this.logger.error('Failed to fetch available models', e);
-    }
+    return {
+      base_url: auth.baseUrl || '',
+      auth_token: authHeader.replace(/^Bearer\s+/i, ''),
+    };
   }
 }

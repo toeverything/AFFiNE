@@ -9,6 +9,8 @@ use napi_derive::napi;
 pub struct NativeMarkdownResult {
   pub title: String,
   pub markdown: String,
+  pub known_unsupported_blocks: Vec<String>,
+  pub unknown_blocks: Vec<String>,
 }
 
 impl From<MarkdownResult> for NativeMarkdownResult {
@@ -16,6 +18,8 @@ impl From<MarkdownResult> for NativeMarkdownResult {
     Self {
       title: result.title,
       markdown: result.markdown,
+      known_unsupported_blocks: result.known_unsupported_blocks,
+      unknown_blocks: result.unknown_blocks,
     }
   }
 }
@@ -48,6 +52,12 @@ impl From<WorkspaceDocContent> for NativeWorkspaceDocContent {
       avatar_key: result.avatar_key,
     }
   }
+}
+
+#[napi(object)]
+pub struct PublicDocMetaInput {
+  pub id: String,
+  pub title: Option<String>,
 }
 
 #[napi(object)]
@@ -245,6 +255,19 @@ pub fn update_doc_properties(
 pub fn add_doc_to_root_doc(root_doc_bin: Buffer, doc_id: String, title: Option<String>) -> Result<Buffer> {
   let result = map_napi_err(
     doc_parser::add_doc_to_root_doc(root_doc_bin.into(), &doc_id, title.as_deref()),
+    Status::GenericFailure,
+  )?;
+  Ok(Buffer::from(result))
+}
+
+#[napi]
+pub fn build_public_root_doc(root_doc_bin: Buffer, doc_metas: Vec<PublicDocMetaInput>) -> Result<Buffer> {
+  let metas = doc_metas
+    .iter()
+    .map(|meta| (meta.id.as_str(), meta.title.as_deref()))
+    .collect::<Vec<_>>();
+  let result = map_napi_err(
+    doc_parser::build_public_root_doc(&root_doc_bin, &metas),
     Status::GenericFailure,
   )?;
   Ok(Buffer::from(result))

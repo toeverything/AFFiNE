@@ -16,21 +16,26 @@ import { css, html, nothing, type PropertyValues } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { repeat } from 'lit/directives/repeat.js';
-import { debounce } from 'lodash-es';
+import { debounce, throttle } from 'lodash-es';
 
 import { AffineIcon } from '../../_common/icons';
-import { type AIError, AIProvider, UnauthorizedError } from '../../provider';
-import { mergeStreamObjects } from '../../utils/stream-objects';
+import {
+  AIAppEvents,
+  type AIError,
+  GeneralNetworkError,
+  UnauthorizedError,
+} from '../../provider';
+import type { AIChatRuntime, AIChatSnapshot } from '../../runtime/chat';
 import type { DocDisplayConfig } from '../ai-chat-chips';
 import { type ChatContextValue } from '../ai-chat-content/type';
 import type { AIReasoningConfig } from '../ai-chat-input';
-import { AIPreloadConfig } from './preload-config';
 import {
-  type HistoryMessage,
-  isChatAction,
-  isChatMessage,
-  StreamObjectSchema,
-} from './type';
+  AI_CHAT_AUTO_SCROLL_PAUSE_EVENT,
+  AI_CHAT_AUTO_SCROLL_RESUME_THRESHOLD,
+  AI_CHAT_SCROLL_DOWN_INDICATOR_THRESHOLD,
+} from './auto-scroll';
+import { AIPreloadConfig } from './preload-config';
+import { type HistoryMessage, isChatAction, isChatMessage } from './type';
 
 export class AIChatMessages extends WithDisposable(ShadowlessElement) {
   static override styles = css`
@@ -174,9 +179,10 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
   accessor session!: CopilotChatHistoryFragment | null | undefined;
 
   @property({ attribute: false })
-  accessor createSession!: () => Promise<
-    CopilotChatHistoryFragment | undefined
-  >;
+  accessor runtime: AIChatRuntime | null | undefined;
+
+  @property({ attribute: false })
+  accessor runtimeSnapshot: AIChatSnapshot | null | undefined;
 
   @property({ attribute: false })
   accessor updateContext!: (context: Partial<ChatContextValue>) => void;
@@ -218,8 +224,25 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
   })
   accessor testId = 'chat-panel-messages';
 
-  private get _isReasoningActive() {
-    return !!this.reasoningConfig.enabled.value;
+  private _autoScrollEnabled = true;
+
+  private _lastObservedScrollTop = 0;
+
+  private get chatStatus() {
+    return this.runtimeSnapshot?.status ?? this.chatContextValue.status;
+  }
+
+  private get chatError(): AIError | null {
+    return this.toAIError(
+      this.runtimeSnapshot?.error ?? this.chatContextValue.error
+    );
+  }
+
+  private toAIError(error: Error | null): AIError | null {
+    if (!error) return null;
+    return 'type' in error
+      ? (error as AIError)
+      : new GeneralNetworkError(error.message);
   }
 
   private _renderAIOnboarding() {
@@ -243,23 +266,64 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
         </div>`;
   }
 
-  private readonly _onScroll = () => {
-    const { clientHeight, scrollTop, scrollHeight } = this;
-    this.canScrollDown = scrollHeight - scrollTop - clientHeight > 200;
-  };
+  private _onScroll() {
+    const { scrollTop } = this;
+    const distanceFromBottom = this._getDistanceFromBottom();
+
+    this.canScrollDown =
+      distanceFromBottom > AI_CHAT_SCROLL_DOWN_INDICATOR_THRESHOLD;
+
+    if (distanceFromBottom <= AI_CHAT_AUTO_SCROLL_RESUME_THRESHOLD) {
+      this._autoScrollEnabled = true;
+    } else if (scrollTop < this._lastObservedScrollTop) {
+      this._autoScrollEnabled = false;
+    }
+
+    this._lastObservedScrollTop = scrollTop;
+  }
 
   private readonly _debouncedOnScroll = debounce(
     this._onScroll.bind(this),
     100
   );
 
-  private readonly _onDownIndicatorClick = () => {
+  private readonly _throttledScrollToEnd = throttle(() => {
+    if (!this._autoScrollEnabled) {
+      return;
+    }
+    this.scrollToEnd();
+  }, 200);
+
+  private _onDownIndicatorClick() {
+    this._autoScrollEnabled = true;
     this.canScrollDown = false;
     this.scrollToEnd();
-  };
+  }
+
+  private _pauseAutoScroll() {
+    this._autoScrollEnabled = false;
+    requestAnimationFrame(() => this._onScroll());
+  }
+
+  private _getDistanceFromBottom() {
+    const { clientHeight, scrollTop, scrollHeight } = this;
+    return scrollHeight - scrollTop - clientHeight;
+  }
+
+  private _getMessageKey(item: HistoryMessage, index: number) {
+    const tabKey =
+      this.runtimeSnapshot?.activeTabId ??
+      this.runtimeSnapshot?.activeSessionId ??
+      'legacy';
+    if (isChatMessage(item)) {
+      return `${tabKey}:${item.id || index}`;
+    }
+    return `${tabKey}:${index}`;
+  }
 
   protected override render() {
-    const { status, error } = this.chatContextValue;
+    const status = this.chatStatus;
+    const error = this.chatError;
     const { isHistoryLoading } = this;
     const filteredItems = this.messages;
 
@@ -299,7 +363,7 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
             </div> `
           : repeat(
               filteredItems,
-              (_, index) => index,
+              (item, index) => this._getMessageKey(item, index),
               (item, index) => {
                 const isLast = index === filteredItems.length - 1;
                 if (isChatMessage(item) && item.role === 'user') {
@@ -351,21 +415,19 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
     super.connectedCallback();
     const { disposables } = this;
 
-    Promise.resolve(AIProvider.userInfo)
-      .then(res => {
-        this.avatarUrl = res?.avatarUrl ?? '';
-      })
-      .catch(console.error);
+    this.avatarUrl = AIAppEvents.userInfo.value?.avatarUrl ?? '';
 
     disposables.add(
-      AIProvider.slots.userInfo.subscribe(userInfo => {
-        const { status, error } = this.chatContextValue;
+      AIAppEvents.userInfo.subscribe(userInfo => {
+        const status = this.chatStatus;
+        const error = this.chatError;
         this.avatarUrl = userInfo?.avatarUrl ?? '';
         if (
           status === 'error' &&
           error instanceof UnauthorizedError &&
           userInfo
         ) {
+          this.runtime?.dispatch({ type: 'clearError' }).catch(console.error);
           this.updateContext({ status: 'idle', error: null });
         }
       })
@@ -392,19 +454,39 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
 
     // Add scroll event listener to the host element
     this.addEventListener('scroll', this._debouncedOnScroll);
+    this.addEventListener(
+      AI_CHAT_AUTO_SCROLL_PAUSE_EVENT,
+      this._pauseAutoScroll as EventListener
+    );
     disposables.add(() => {
       this.removeEventListener('scroll', this._debouncedOnScroll);
+      this.removeEventListener(
+        AI_CHAT_AUTO_SCROLL_PAUSE_EVENT,
+        this._pauseAutoScroll as EventListener
+      );
     });
   }
 
-  protected override updated(_changedProperties: PropertyValues) {
-    if (_changedProperties.has('isHistoryLoading')) {
+  protected override updated(changedProperties: PropertyValues) {
+    if (changedProperties.has('isHistoryLoading')) {
       this.canScrollDown = false;
+      this._autoScrollEnabled = true;
+    }
+
+    if (changedProperties.has('messages')) {
+      this._onScroll();
+
+      if (this.chatStatus === 'transmitting') {
+        this._throttledScrollToEnd();
+      } else if (this._autoScrollEnabled) {
+        this.scrollToEnd();
+      }
     }
 
     if (
-      _changedProperties.has('chatContextValue') &&
-      this.chatContextValue.status === 'transmitting'
+      (changedProperties.has('chatContextValue') ||
+        changedProperties.has('runtimeSnapshot')) &&
+      (this.chatStatus === 'success' || this.chatStatus === 'error')
     ) {
       this._onScroll();
     }
@@ -426,69 +508,11 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
   }
 
   retry = async () => {
-    try {
-      const sessionId = (await this.createSession())?.sessionId;
-      if (!sessionId) return;
-      if (!AIProvider.actions.chat) return;
-
-      const abortController = new AbortController();
-      const messages = [...this.chatContextValue.messages];
-      const last = messages[messages.length - 1];
-      if ('content' in last) {
-        last.content = '';
-        last.streamObjects = [];
-        last.createdAt = new Date().toISOString();
-      }
-      this.updateContext({
-        messages,
-        status: 'loading',
-        error: null,
-        abortController,
-      });
-
-      const stream = await AIProvider.actions.chat({
-        sessionId,
-        retry: true,
-        docId: this.docId,
-        workspaceId: this.workspaceId,
-        stream: true,
-        signal: abortController.signal,
-        where: 'chat-panel',
-        control: 'chat-send',
-        isRootSession: true,
-        reasoning: this._isReasoningActive,
-        toolsConfig: this.aiToolsConfigService.config.value,
-      });
-
-      for await (const text of stream) {
-        const messages = this.chatContextValue.messages.slice(0);
-        const last = messages.at(-1);
-        if (last && isChatMessage(last)) {
-          try {
-            const parsed = StreamObjectSchema.parse(JSON.parse(text));
-            const streamObjects = mergeStreamObjects([
-              ...(last.streamObjects ?? []),
-              parsed,
-            ]);
-            messages[messages.length - 1] = {
-              ...last,
-              streamObjects,
-            };
-          } catch {
-            messages[messages.length - 1] = {
-              ...last,
-              content: last.content + text,
-            };
-          }
-          this.updateContext({ messages, status: 'transmitting' });
-        }
-      }
-
-      this.updateContext({ status: 'success' });
-    } catch (error) {
-      this.updateContext({ status: 'error', error: error as AIError });
-    } finally {
-      this.updateContext({ abortController: null });
-    }
+    if (!this.runtime) return;
+    const last = this.messages.at(-1);
+    await this.runtime.dispatch({
+      type: 'retry',
+      messageId: last && isChatMessage(last) ? last.id : '',
+    });
   };
 }

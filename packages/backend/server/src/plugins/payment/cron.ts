@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaClient, Provider } from '@prisma/client';
 
 import { EventBus, JobQueue, OneHour, OnJob } from '../../base';
+import { EntitlementService } from '../../core/entitlement';
 import { RevenueCatWebhookHandler } from './revenuecat';
 import { SubscriptionService } from './service';
 import { StripeFactory } from './stripe';
@@ -18,6 +19,7 @@ declare global {
     'nightly.cleanExpiredOnetimeSubscriptions': {};
     'nightly.notifyAboutToExpireWorkspaceSubscriptions': {};
     'nightly.reconcileRevenueCatSubscriptions': {};
+    'nightly.reconcileStripeSubscriptions': {};
     'nightly.reconcileStripeRefunds': {};
     'nightly.revenuecat.syncUser': { userId: string };
   }
@@ -25,13 +27,16 @@ declare global {
 
 @Injectable()
 export class SubscriptionCronJobs {
+  private readonly logger = new Logger(SubscriptionCronJobs.name);
+
   constructor(
     private readonly db: PrismaClient,
     private readonly event: EventBus,
     private readonly queue: JobQueue,
     private readonly rcHandler: RevenueCatWebhookHandler,
     private readonly stripeFactory: StripeFactory,
-    private readonly subscription: SubscriptionService
+    private readonly subscription: SubscriptionService,
+    private readonly entitlement: EntitlementService
   ) {}
 
   private getDateRange(after: number, base: number | Date = Date.now()) {
@@ -59,6 +64,12 @@ export class SubscriptionCronJobs {
       'nightly.reconcileRevenueCatSubscriptions',
       {},
       { jobId: 'nightly-payment-reconcile-revenuecat-subscriptions' }
+    );
+
+    await this.queue.add(
+      'nightly.reconcileStripeSubscriptions',
+      {},
+      { jobId: 'nightly-payment-reconcile-stripe-subscriptions' }
     );
 
     await this.queue.add(
@@ -148,6 +159,12 @@ export class SubscriptionCronJobs {
     });
 
     for (const subscription of subscriptions) {
+      await this.entitlement.revokeCloudSubscription({
+        targetId: subscription.targetId,
+        plan: subscription.plan,
+        subscriptionId: subscription.id,
+        stripeSubscriptionId: subscription.stripeSubscriptionId,
+      });
       await this.db.subscription.delete({
         where: {
           targetId_plan: {
@@ -200,6 +217,48 @@ export class SubscriptionCronJobs {
   @OnJob('nightly.revenuecat.syncUser')
   async reconcileRevenueCatSubscriptionOfUser(payload: { userId: string }) {
     await this.rcHandler.syncAppUser(payload.userId);
+  }
+
+  @OnJob('nightly.reconcileStripeSubscriptions')
+  async reconcileStripeSubscriptions() {
+    const stripe = this.stripeFactory.stripe;
+    const subs = await this.db.subscription.findMany({
+      where: {
+        provider: Provider.stripe,
+        stripeSubscriptionId: { not: null },
+        status: {
+          in: [
+            SubscriptionStatus.Active,
+            SubscriptionStatus.Trialing,
+            SubscriptionStatus.PastDue,
+          ],
+        },
+      },
+      select: { stripeSubscriptionId: true },
+    });
+
+    const subscriptionIds = Array.from(
+      new Set(
+        subs
+          .map(sub => sub.stripeSubscriptionId)
+          .filter((id): id is string => !!id)
+      )
+    );
+
+    for (const subscriptionId of subscriptionIds) {
+      try {
+        const subscription = await stripe.subscriptions.retrieve(
+          subscriptionId,
+          { expand: ['customer'] }
+        );
+        await this.subscription.saveStripeSubscription(subscription);
+      } catch (e) {
+        this.logger.error(
+          `Failed to reconcile stripe subscription ${subscriptionId}`,
+          e
+        );
+      }
+    }
   }
 
   @OnJob('nightly.reconcileStripeRefunds')

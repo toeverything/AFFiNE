@@ -4,8 +4,8 @@ import Sinon from 'sinon';
 import { createModule } from '../../../__tests__/create-module';
 import { Config } from '../../../base';
 import { ConfigModule } from '../../../base/config';
-import { IndexerModule } from '..';
 import { IndexerEvent } from '../event';
+import { IndexerModule } from '../index';
 
 const module = await createModule({
   imports: [
@@ -33,17 +33,35 @@ test('should not index workspace if indexer is disabled', async t => {
   const count = module.queue.count('indexer.indexWorkspace');
 
   // @ts-expect-error ignore missing fields
-  await indexerEvent.indexWorkspace({ id: 'test-workspace' });
+  await indexerEvent.indexWorkspace({
+    workspaceId: 'test-workspace',
+    docId: 'test-workspace',
+  });
 
   t.is(module.queue.count('indexer.indexWorkspace'), count);
 });
 
-test('should index workspace if indexer is enabled', async t => {
+test('should index workspace when root snapshot is updated', async t => {
   // @ts-expect-error ignore missing fields
-  await indexerEvent.indexWorkspace({ id: 'test-workspace' });
+  await indexerEvent.indexWorkspace({
+    workspaceId: 'test-workspace',
+    docId: 'test-workspace',
+  });
 
   const { payload } = await module.queue.waitFor('indexer.indexWorkspace');
   t.is(payload.workspaceId, 'test-workspace');
+});
+
+test('should not index workspace when non-root snapshot is updated', async t => {
+  const count = module.queue.count('indexer.indexWorkspace');
+
+  // @ts-expect-error ignore missing fields
+  await indexerEvent.indexWorkspace({
+    workspaceId: 'test-workspace',
+    docId: 'child-doc',
+  });
+
+  t.is(module.queue.count('indexer.indexWorkspace'), count);
 });
 
 test('should not delete workspace if indexer is disabled', async t => {

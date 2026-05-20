@@ -376,12 +376,18 @@ export async function setEdgelessTool(
         'shape',
         false
       );
-      // Avoid clicking on the shape-element (will trigger dragging mode)
-      await shapeToolButton.click({ position: { x: 5, y: 5 } });
+      await shapeToolButton.click({ position: { x: 2, y: 2 } });
 
-      const squareShapeButton = page
-        .locator('edgeless-slide-menu edgeless-tool-icon-button')
+      const shapeMenu = page.locator('edgeless-shape-menu');
+      if ((await shapeMenu.count()) === 0 && shape === Shape.Square) {
+        break;
+      }
+      await expect(shapeMenu).toBeVisible();
+
+      const squareShapeButton = shapeMenu
+        .locator('edgeless-tool-icon-button')
         .filter({ hasText: shape });
+      await expect(squareShapeButton).toBeVisible();
       await squareShapeButton.click();
       break;
     }
@@ -820,10 +826,10 @@ export async function updateExistedBrushElementSize(
   page: Page,
   nthSizeButton: 1 | 2 | 3 | 4 | 5 | 6
 ) {
-  // get the nth brush size button
-  const btn = page.locator(
-    `edgeless-line-width-panel .point-button:nth-child(${nthSizeButton})`
-  );
+  // pick from the visible panel to avoid strict-mode collisions from hidden/duplicate toolbars
+  const btn = page
+    .locator('edgeless-line-width-panel:visible .point-button')
+    .nth(nthSizeButton - 1);
 
   await btn.click();
 }

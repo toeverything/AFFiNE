@@ -106,7 +106,7 @@ impl DocStoragePool {
     })
   }
 
-  async fn get(&self, universal_id: String) -> Result<Ref<'_, SqliteDocStorage>> {
+  async fn get(&self, universal_id: String) -> Result<Ref<SqliteDocStorage>> {
     Ok(self.pool.get(universal_id).await?)
   }
 
@@ -126,6 +126,12 @@ impl DocStoragePool {
   #[napi]
   pub async fn checkpoint(&self, universal_id: String) -> Result<()> {
     self.pool.get(universal_id).await?.checkpoint().await?;
+    Ok(())
+  }
+
+  #[napi]
+  pub async fn vacuum_into(&self, universal_id: String, path: String) -> Result<()> {
+    self.pool.get(universal_id).await?.vacuum_into(path).await?;
     Ok(())
   }
 
@@ -486,6 +492,17 @@ impl DocStorage {
   }
 
   #[napi]
+  pub async fn validate_import_schema(&self) -> Result<bool> {
+    Ok(self.storage.validate_import_schema().await?)
+  }
+
+  #[napi]
+  pub async fn vacuum_into(&self, path: String) -> Result<()> {
+    self.storage.vacuum_into(path).await?;
+    Ok(())
+  }
+
+  #[napi]
   pub async fn set_space_id(&self, space_id: String) -> Result<()> {
     self.storage.connect().await?;
     self.storage.set_space_id(space_id).await?;
@@ -503,5 +520,12 @@ mod tests {
     let err: napi::Error = error::Error::InvalidOperation.into();
     assert_eq!(err.status, napi::Status::GenericFailure);
     assert!(err.reason.contains("Invalid operation"));
+  }
+
+  #[test]
+  fn napi_error_mapping_connection_in_progress() {
+    let err: napi::Error = error::Error::ConnectionInProgress.into();
+    assert_eq!(err.status, napi::Status::GenericFailure);
+    assert!(err.reason.contains("Connection in progress"));
   }
 }

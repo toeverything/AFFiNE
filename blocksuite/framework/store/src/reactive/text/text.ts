@@ -331,7 +331,7 @@ export class Text<
 
     if (delta && delta instanceof Array) {
       let charNum = 0;
-      // eslint-disable-next-line @typescript-eslint/prefer-for-of
+      // oxlint-disable-next-line @typescript-eslint/prefer-for-of
       for (let i = 0; i < delta.length; i++) {
         const content = delta[i];
         let contentText: string = content.insert || '';

@@ -119,7 +119,6 @@ export const PackageList = [
       'blocksuite/affine/rich-text',
       'blocksuite/affine/shared',
       'blocksuite/affine/widgets/slash-menu',
-      'blocksuite/framework/global',
       'blocksuite/framework/std',
       'blocksuite/framework/store',
     ],
@@ -188,7 +187,6 @@ export const PackageList = [
       'blocksuite/affine/model',
       'blocksuite/affine/rich-text',
       'blocksuite/affine/shared',
-      'blocksuite/framework/global',
       'blocksuite/framework/std',
       'blocksuite/framework/store',
     ],
@@ -198,14 +196,12 @@ export const PackageList = [
     name: '@blocksuite/affine-block-edgeless-text',
     workspaceDependencies: [
       'blocksuite/affine/blocks/surface',
-      'blocksuite/affine/components',
       'blocksuite/affine/ext-loader',
       'blocksuite/affine/gfx/text',
       'blocksuite/affine/inlines/preset',
       'blocksuite/affine/model',
       'blocksuite/affine/rich-text',
       'blocksuite/affine/shared',
-      'blocksuite/affine/widgets/edgeless-toolbar',
       'blocksuite/framework/global',
       'blocksuite/framework/std',
       'blocksuite/framework/store',
@@ -218,10 +214,7 @@ export const PackageList = [
       'blocksuite/affine/blocks/surface',
       'blocksuite/affine/components',
       'blocksuite/affine/ext-loader',
-      'blocksuite/affine/gfx/pointer',
-      'blocksuite/affine/inlines/reference',
       'blocksuite/affine/model',
-      'blocksuite/affine/rich-text',
       'blocksuite/affine/shared',
       'blocksuite/affine/widgets/slash-menu',
       'blocksuite/framework/global',
@@ -290,10 +283,8 @@ export const PackageList = [
       'blocksuite/affine/ext-loader',
       'blocksuite/affine/inlines/latex',
       'blocksuite/affine/model',
-      'blocksuite/affine/rich-text',
       'blocksuite/affine/shared',
       'blocksuite/affine/widgets/slash-menu',
-      'blocksuite/framework/global',
       'blocksuite/framework/std',
       'blocksuite/framework/store',
     ],
@@ -374,11 +365,11 @@ export const PackageList = [
       'blocksuite/affine/gfx/pointer',
       'blocksuite/affine/gfx/shape',
       'blocksuite/affine/gfx/text',
+      'blocksuite/affine/inlines/latex',
       'blocksuite/affine/inlines/preset',
       'blocksuite/affine/model',
       'blocksuite/affine/rich-text',
       'blocksuite/affine/shared',
-      'blocksuite/affine/widgets/edgeless-selected-rect',
       'blocksuite/affine/widgets/edgeless-toolbar',
       'blocksuite/affine/data-view',
       'blocksuite/framework/global',
@@ -390,10 +381,8 @@ export const PackageList = [
     location: 'blocksuite/affine/blocks/surface',
     name: '@blocksuite/affine-block-surface',
     workspaceDependencies: [
-      'blocksuite/affine/components',
       'blocksuite/affine/ext-loader',
       'blocksuite/affine/model',
-      'blocksuite/affine/rich-text',
       'blocksuite/affine/shared',
       'blocksuite/framework/global',
       'blocksuite/framework/std',
@@ -428,7 +417,6 @@ export const PackageList = [
       'blocksuite/affine/rich-text',
       'blocksuite/affine/shared',
       'blocksuite/affine/widgets/slash-menu',
-      'blocksuite/affine/data-view',
       'blocksuite/framework/global',
       'blocksuite/framework/std',
       'blocksuite/framework/store',
@@ -474,7 +462,6 @@ export const PackageList = [
       'blocksuite/affine/rich-text',
       'blocksuite/affine/shared',
       'blocksuite/affine/data-view',
-      'blocksuite/framework/global',
       'blocksuite/framework/std',
       'blocksuite/framework/store',
     ],
@@ -485,10 +472,8 @@ export const PackageList = [
     workspaceDependencies: [
       'blocksuite/affine/components',
       'blocksuite/affine/ext-loader',
-      'blocksuite/affine/model',
       'blocksuite/affine/shared',
       'blocksuite/framework/global',
-      'blocksuite/framework/std',
       'blocksuite/framework/store',
     ],
   },
@@ -496,9 +481,6 @@ export const PackageList = [
     location: 'blocksuite/affine/fragments/doc-title',
     name: '@blocksuite/affine-fragment-doc-title',
     workspaceDependencies: [
-      'blocksuite/affine/blocks/frame',
-      'blocksuite/affine/blocks/surface',
-      'blocksuite/affine/components',
       'blocksuite/affine/ext-loader',
       'blocksuite/affine/model',
       'blocksuite/affine/rich-text',
@@ -514,7 +496,6 @@ export const PackageList = [
     workspaceDependencies: [
       'blocksuite/affine/blocks/frame',
       'blocksuite/affine/blocks/surface',
-      'blocksuite/affine/components',
       'blocksuite/affine/ext-loader',
       'blocksuite/affine/model',
       'blocksuite/affine/rich-text',
@@ -529,11 +510,9 @@ export const PackageList = [
     name: '@blocksuite/affine-fragment-outline',
     workspaceDependencies: [
       'blocksuite/affine/blocks/note',
-      'blocksuite/affine/components',
       'blocksuite/affine/ext-loader',
       'blocksuite/affine/fragments/doc-title',
       'blocksuite/affine/model',
-      'blocksuite/affine/rich-text',
       'blocksuite/affine/shared',
       'blocksuite/framework/global',
       'blocksuite/framework/std',
@@ -548,12 +527,10 @@ export const PackageList = [
       'blocksuite/affine/components',
       'blocksuite/affine/ext-loader',
       'blocksuite/affine/model',
-      'blocksuite/affine/rich-text',
       'blocksuite/affine/shared',
       'blocksuite/affine/widgets/edgeless-toolbar',
       'blocksuite/framework/global',
       'blocksuite/framework/std',
-      'blocksuite/framework/store',
     ],
   },
   {
@@ -587,7 +564,6 @@ export const PackageList = [
       'blocksuite/affine/widgets/edgeless-toolbar',
       'blocksuite/framework/global',
       'blocksuite/framework/std',
-      'blocksuite/framework/store',
     ],
   },
   {
@@ -599,14 +575,9 @@ export const PackageList = [
       'blocksuite/affine/blocks/surface',
       'blocksuite/affine/components',
       'blocksuite/affine/ext-loader',
-      'blocksuite/affine/gfx/pointer',
-      'blocksuite/affine/model',
-      'blocksuite/affine/rich-text',
       'blocksuite/affine/shared',
       'blocksuite/affine/widgets/edgeless-toolbar',
-      'blocksuite/framework/global',
       'blocksuite/framework/std',
-      'blocksuite/framework/store',
     ],
   },
   {
@@ -614,7 +585,6 @@ export const PackageList = [
     name: '@blocksuite/affine-gfx-mindmap',
     workspaceDependencies: [
       'blocksuite/affine/blocks/attachment',
-      'blocksuite/affine/blocks/edgeless-text',
       'blocksuite/affine/blocks/image',
       'blocksuite/affine/blocks/surface',
       'blocksuite/affine/components',
@@ -624,7 +594,6 @@ export const PackageList = [
       'blocksuite/affine/gfx/shape',
       'blocksuite/affine/gfx/text',
       'blocksuite/affine/model',
-      'blocksuite/affine/rich-text',
       'blocksuite/affine/shared',
       'blocksuite/affine/widgets/edgeless-toolbar',
       'blocksuite/framework/global',
@@ -648,7 +617,6 @@ export const PackageList = [
       'blocksuite/affine/widgets/edgeless-toolbar',
       'blocksuite/framework/global',
       'blocksuite/framework/std',
-      'blocksuite/framework/store',
     ],
   },
   {
@@ -656,15 +624,12 @@ export const PackageList = [
     name: '@blocksuite/affine-gfx-pointer',
     workspaceDependencies: [
       'blocksuite/affine/blocks/surface',
-      'blocksuite/affine/components',
       'blocksuite/affine/ext-loader',
       'blocksuite/affine/model',
-      'blocksuite/affine/rich-text',
       'blocksuite/affine/shared',
       'blocksuite/affine/widgets/edgeless-toolbar',
       'blocksuite/framework/global',
       'blocksuite/framework/std',
-      'blocksuite/framework/store',
     ],
   },
   {
@@ -691,9 +656,7 @@ export const PackageList = [
       'blocksuite/affine/blocks/surface',
       'blocksuite/affine/components',
       'blocksuite/affine/ext-loader',
-      'blocksuite/affine/gfx/text',
       'blocksuite/affine/model',
-      'blocksuite/affine/rich-text',
       'blocksuite/affine/shared',
       'blocksuite/affine/widgets/edgeless-toolbar',
       'blocksuite/framework/global',
@@ -714,7 +677,6 @@ export const PackageList = [
       'blocksuite/affine/widgets/edgeless-toolbar',
       'blocksuite/framework/global',
       'blocksuite/framework/std',
-      'blocksuite/framework/store',
     ],
   },
   {
@@ -731,7 +693,6 @@ export const PackageList = [
     name: '@blocksuite/affine-inline-comment',
     workspaceDependencies: [
       'blocksuite/affine/ext-loader',
-      'blocksuite/affine/model',
       'blocksuite/affine/rich-text',
       'blocksuite/affine/shared',
       'blocksuite/framework/global',
@@ -745,7 +706,6 @@ export const PackageList = [
     workspaceDependencies: [
       'blocksuite/affine/components',
       'blocksuite/affine/ext-loader',
-      'blocksuite/affine/inlines/reference',
       'blocksuite/affine/model',
       'blocksuite/affine/shared',
       'blocksuite/framework/global',
@@ -759,7 +719,6 @@ export const PackageList = [
     workspaceDependencies: [
       'blocksuite/affine/components',
       'blocksuite/affine/ext-loader',
-      'blocksuite/affine/inlines/reference',
       'blocksuite/affine/model',
       'blocksuite/affine/rich-text',
       'blocksuite/affine/shared',
@@ -786,9 +745,7 @@ export const PackageList = [
     location: 'blocksuite/affine/inlines/mention',
     name: '@blocksuite/affine-inline-mention',
     workspaceDependencies: [
-      'blocksuite/affine/components',
       'blocksuite/affine/ext-loader',
-      'blocksuite/affine/model',
       'blocksuite/affine/shared',
       'blocksuite/framework/global',
       'blocksuite/framework/std',
@@ -810,7 +767,6 @@ export const PackageList = [
       'blocksuite/affine/model',
       'blocksuite/affine/rich-text',
       'blocksuite/affine/shared',
-      'blocksuite/framework/global',
       'blocksuite/framework/std',
       'blocksuite/framework/store',
     ],
@@ -882,7 +838,6 @@ export const PackageList = [
     location: 'blocksuite/affine/widgets/edgeless-auto-connect',
     name: '@blocksuite/affine-widget-edgeless-auto-connect',
     workspaceDependencies: [
-      'blocksuite/affine/blocks/note',
       'blocksuite/affine/blocks/surface',
       'blocksuite/affine/components',
       'blocksuite/affine/ext-loader',
@@ -896,13 +851,9 @@ export const PackageList = [
     location: 'blocksuite/affine/widgets/edgeless-dragging-area',
     name: '@blocksuite/affine-widget-edgeless-dragging-area',
     workspaceDependencies: [
-      'blocksuite/affine/blocks/note',
       'blocksuite/affine/blocks/surface',
-      'blocksuite/affine/components',
       'blocksuite/affine/ext-loader',
       'blocksuite/affine/model',
-      'blocksuite/affine/shared',
-      'blocksuite/framework/global',
       'blocksuite/framework/std',
     ],
   },
@@ -911,7 +862,6 @@ export const PackageList = [
     name: '@blocksuite/affine-widget-edgeless-selected-rect',
     workspaceDependencies: [
       'blocksuite/affine/blocks/frame',
-      'blocksuite/affine/blocks/note',
       'blocksuite/affine/blocks/surface',
       'blocksuite/affine/components',
       'blocksuite/affine/ext-loader',
@@ -932,7 +882,6 @@ export const PackageList = [
       'blocksuite/affine/components',
       'blocksuite/affine/ext-loader',
       'blocksuite/affine/model',
-      'blocksuite/affine/rich-text',
       'blocksuite/affine/shared',
       'blocksuite/framework/global',
       'blocksuite/framework/std',
@@ -986,21 +935,18 @@ export const PackageList = [
       'blocksuite/affine/inlines/latex',
       'blocksuite/affine/inlines/link',
       'blocksuite/affine/inlines/preset',
-      'blocksuite/affine/inlines/reference',
       'blocksuite/affine/model',
       'blocksuite/affine/rich-text',
       'blocksuite/affine/shared',
       'blocksuite/affine/data-view',
       'blocksuite/framework/global',
       'blocksuite/framework/std',
-      'blocksuite/framework/store',
     ],
   },
   {
     location: 'blocksuite/affine/widgets/linked-doc',
     name: '@blocksuite/affine-widget-linked-doc',
     workspaceDependencies: [
-      'blocksuite/affine/blocks/image',
       'blocksuite/affine/components',
       'blocksuite/affine/ext-loader',
       'blocksuite/affine/inlines/reference',
@@ -1018,7 +964,6 @@ export const PackageList = [
     workspaceDependencies: [
       'blocksuite/affine/blocks/note',
       'blocksuite/affine/blocks/surface',
-      'blocksuite/affine/components',
       'blocksuite/affine/ext-loader',
       'blocksuite/affine/model',
       'blocksuite/affine/shared',
@@ -1031,13 +976,10 @@ export const PackageList = [
     location: 'blocksuite/affine/widgets/page-dragging-area',
     name: '@blocksuite/affine-widget-page-dragging-area',
     workspaceDependencies: [
-      'blocksuite/affine/components',
       'blocksuite/affine/ext-loader',
       'blocksuite/affine/model',
       'blocksuite/affine/shared',
-      'blocksuite/framework/global',
       'blocksuite/framework/std',
-      'blocksuite/framework/store',
     ],
   },
   {
@@ -1045,11 +987,9 @@ export const PackageList = [
     name: '@blocksuite/affine-widget-remote-selection',
     workspaceDependencies: [
       'blocksuite/affine/blocks/surface',
-      'blocksuite/affine/components',
       'blocksuite/affine/ext-loader',
       'blocksuite/affine/model',
       'blocksuite/affine/shared',
-      'blocksuite/framework/global',
       'blocksuite/framework/std',
     ],
   },
@@ -1096,17 +1036,19 @@ export const PackageList = [
     location: 'blocksuite/affine/widgets/viewport-overlay',
     name: '@blocksuite/affine-widget-viewport-overlay',
     workspaceDependencies: [
-      'blocksuite/affine/components',
       'blocksuite/affine/ext-loader',
       'blocksuite/affine/model',
-      'blocksuite/affine/shared',
-      'blocksuite/framework/global',
       'blocksuite/framework/std',
     ],
   },
   {
     location: 'blocksuite/docs',
     name: '@blocksuite/bs-docs',
+    workspaceDependencies: [],
+  },
+  {
+    location: 'blocksuite/docs-site',
+    name: '@blocksuite/docs',
     workspaceDependencies: ['blocksuite/affine/all'],
   },
   {
@@ -1145,7 +1087,6 @@ export const PackageList = [
     name: '@blocksuite/playground',
     workspaceDependencies: [
       'blocksuite/affine/all',
-      'blocksuite/affine/components',
       'blocksuite/affine/model',
       'blocksuite/affine/shared',
       'blocksuite/affine/data-view',
@@ -1171,6 +1112,7 @@ export const PackageList = [
       'tools/cli',
       'tools/utils',
       'packages/common/graphql',
+      'packages/common/realtime',
     ],
   },
   {
@@ -1191,11 +1133,7 @@ export const PackageList = [
   {
     location: 'packages/common/graphql',
     name: '@affine/graphql',
-    workspaceDependencies: [
-      'packages/common/debug',
-      'packages/common/env',
-      'packages/common/error',
-    ],
+    workspaceDependencies: ['packages/common/debug', 'packages/common/error'],
   },
   {
     location: 'packages/common/infra',
@@ -1212,6 +1150,7 @@ export const PackageList = [
     name: '@affine/nbstore',
     workspaceDependencies: [
       'packages/common/reader',
+      'packages/common/realtime',
       'packages/common/infra',
       'packages/common/error',
       'packages/common/graphql',
@@ -1222,6 +1161,11 @@ export const PackageList = [
     location: 'packages/common/reader',
     name: '@affine/reader',
     workspaceDependencies: ['blocksuite/affine/all'],
+  },
+  {
+    location: 'packages/common/realtime',
+    name: '@affine/realtime',
+    workspaceDependencies: ['packages/common/graphql'],
   },
   {
     location: 'packages/common/s3-compat',
@@ -1237,7 +1181,6 @@ export const PackageList = [
       'packages/common/error',
       'packages/common/graphql',
       'packages/frontend/routes',
-      'packages/common/infra',
     ],
   },
   {
@@ -1248,6 +1191,7 @@ export const PackageList = [
       'packages/frontend/core',
       'packages/common/env',
       'packages/frontend/i18n',
+      'packages/frontend/apps/mobile-shared',
       'packages/common/nbstore',
       'packages/frontend/track',
       'blocksuite/affine/all',
@@ -1278,7 +1222,6 @@ export const PackageList = [
       'packages/frontend/track',
       'blocksuite/affine/all',
       'packages/common/infra',
-      'tools/utils',
     ],
   },
   {
@@ -1290,13 +1233,13 @@ export const PackageList = [
       'packages/common/env',
       'packages/common/graphql',
       'packages/frontend/i18n',
+      'packages/frontend/apps/mobile-shared',
       'packages/common/nbstore',
       'packages/frontend/track',
       'blocksuite/affine/all',
       'packages/common/infra',
       'tools/cli',
       'tools/utils',
-      'packages/frontend/native',
     ],
   },
   {
@@ -1306,12 +1249,16 @@ export const PackageList = [
       'packages/frontend/component',
       'packages/frontend/core',
       'packages/common/env',
-      'packages/frontend/i18n',
       'packages/common/nbstore',
       'packages/frontend/track',
       'blocksuite/affine/all',
       'packages/common/infra',
     ],
+  },
+  {
+    location: 'packages/frontend/apps/mobile-shared',
+    name: '@affine/mobile-shared',
+    workspaceDependencies: ['packages/frontend/core'],
   },
   {
     location: 'packages/frontend/apps/web',
@@ -1320,7 +1267,6 @@ export const PackageList = [
       'packages/frontend/component',
       'packages/frontend/core',
       'packages/common/env',
-      'packages/frontend/i18n',
       'packages/common/nbstore',
       'packages/frontend/track',
       'packages/common/infra',
@@ -1331,12 +1277,10 @@ export const PackageList = [
     name: '@affine/component',
     workspaceDependencies: [
       'packages/common/debug',
-      'packages/frontend/electron-api',
       'packages/common/error',
       'packages/common/graphql',
       'packages/frontend/i18n',
       'tools/utils',
-      'blocksuite/affine/all',
     ],
   },
   {
@@ -1358,6 +1302,7 @@ export const PackageList = [
       'blocksuite/affine/blocks/root',
       'blocksuite/affine/components',
       'blocksuite/affine/shared',
+      'blocksuite/affine/data-view',
       'blocksuite/framework/global',
       'blocksuite/framework/std',
       'packages/common/infra',
@@ -1426,7 +1371,7 @@ export const PackageList = [
   {
     location: 'tests/affine-local',
     name: '@affine-test/affine-local',
-    workspaceDependencies: ['tests/kit', 'tools/cli', 'tools/utils'],
+    workspaceDependencies: ['tests/kit'],
   },
   {
     location: 'tests/affine-mobile',
@@ -1437,6 +1382,7 @@ export const PackageList = [
     location: 'tests/blocksuite',
     name: '@affine-test/blocksuite',
     workspaceDependencies: [
+      'tests/kit',
       'blocksuite/affine/all',
       'blocksuite/integration-test',
     ],
@@ -1570,6 +1516,7 @@ export type PackageName =
   | '@blocksuite/affine-widget-toolbar'
   | '@blocksuite/affine-widget-viewport-overlay'
   | '@blocksuite/bs-docs'
+  | '@blocksuite/docs'
   | '@blocksuite/global'
   | '@blocksuite/std'
   | '@blocksuite/store'
@@ -1586,6 +1533,7 @@ export type PackageName =
   | '@toeverything/infra'
   | '@affine/nbstore'
   | '@affine/reader'
+  | '@affine/realtime'
   | '@affine/s3-compat'
   | '@affine/admin'
   | '@affine/android'
@@ -1593,6 +1541,7 @@ export type PackageName =
   | '@affine/electron-renderer'
   | '@affine/ios'
   | '@affine/mobile'
+  | '@affine/mobile-shared'
   | '@affine/web'
   | '@affine/component'
   | '@affine/core'

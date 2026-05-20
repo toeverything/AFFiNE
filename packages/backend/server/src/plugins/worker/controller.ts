@@ -14,17 +14,19 @@ import type {
 import { HTMLRewriter } from 'htmlrewriter';
 
 import {
+  applyAttachHeaders,
   BadRequest,
   Cache,
-  readResponseBufferWithLimit,
   ResponseTooLargeError,
   safeFetch,
   SsrfBlockedError,
   type SSRFBlockReason,
+  Throttle,
   URLHelper,
   UseNamedGuard,
 } from '../../base';
 import { Public } from '../../core/auth';
+import { inspectImageForProxy } from '../../native';
 import { WorkerService } from './service';
 import type { LinkPreviewRequest, LinkPreviewResponse } from './types';
 import {
@@ -63,6 +65,7 @@ function toBadRequestReason(reason: SSRFBlockReason) {
 
 @Public()
 @UseNamedGuard('selfhost')
+@Throttle('default', { limit: 60, ttl: 60_000 })
 @Controller('/api/worker')
 export class WorkerController {
   private readonly logger = new Logger(WorkerController.name);
@@ -127,15 +130,19 @@ export class WorkerController {
       if (buffer.length === 0) {
         return resp.status(404).header(getCorsHeaders(origin)).send();
       }
-      return resp
-        .status(200)
-        .header({
-          ...getCorsHeaders(origin),
-          ...(origin ? { Vary: 'Origin' } : {}),
-          'Access-Control-Allow-Methods': 'GET',
-          'Content-Type': 'image/*',
-        })
-        .send(buffer);
+      resp.header({
+        ...getCorsHeaders(origin),
+        ...(origin ? { Vary: 'Origin' } : {}),
+        'Access-Control-Allow-Methods': 'GET',
+      });
+      const image = this.inspectProxyImage(buffer, imageURL);
+      applyAttachHeaders(resp, { buffer, contentType: image.mimeType });
+      const contentType = resp.getHeader('Content-Type') as string | undefined;
+      if (contentType?.startsWith('image/')) {
+        return resp.status(200).send(buffer);
+      } else {
+        throw new BadRequest('Invalid content type');
+      }
     }
 
     let response: Response;
@@ -143,7 +150,11 @@ export class WorkerController {
       response = await safeFetch(
         targetURL.toString(),
         { method: 'GET', headers: cloneHeader(req.headers) },
-        { timeoutMs: FETCH_TIMEOUT_MS, maxRedirects: MAX_REDIRECTS }
+        {
+          timeoutMs: FETCH_TIMEOUT_MS,
+          maxRedirects: MAX_REDIRECTS,
+          maxBytes: IMAGE_PROXY_MAX_BYTES,
+        }
       );
     } catch (error) {
       if (error instanceof SsrfBlockedError) {
@@ -151,7 +162,6 @@ export class WorkerController {
         this.logger.warn('Blocked image proxy target', {
           url: imageURL,
           reason,
-          context: (error as any).context,
         });
         throw new BadRequest(toBadRequestReason(reason ?? 'invalid_url'));
       }
@@ -171,39 +181,24 @@ export class WorkerController {
       throw new BadRequest('Failed to fetch image');
     }
     if (response.ok) {
-      const contentType = response.headers.get('Content-Type');
+      const buffer = Buffer.from(await response.arrayBuffer());
+      const image = this.inspectProxyImage(buffer, imageURL);
+      await this.cache.set(cachedUrl, buffer.toString('base64'), {
+        ttl: CACHE_TTL,
+      });
+      const contentDisposition = response.headers.get('Content-Disposition');
+      resp.header({
+        ...getCorsHeaders(origin),
+        ...(origin ? { Vary: 'Origin' } : {}),
+        'Access-Control-Allow-Methods': 'GET',
+      });
+      if (contentDisposition) {
+        resp.setHeader('Content-Disposition', contentDisposition);
+      }
+      applyAttachHeaders(resp, { buffer, contentType: image.mimeType });
+      const contentType = resp.getHeader('Content-Type') as string | undefined;
       if (contentType?.startsWith('image/')) {
-        let buffer: Buffer;
-        try {
-          buffer = await readResponseBufferWithLimit(
-            response,
-            IMAGE_PROXY_MAX_BYTES
-          );
-        } catch (error) {
-          if (error instanceof ResponseTooLargeError) {
-            this.logger.warn('Image proxy response too large', {
-              url: imageURL,
-              limitBytes: error.data?.limitBytes,
-              receivedBytes: error.data?.receivedBytes,
-            });
-            throw new BadRequest('Response too large');
-          }
-          throw error;
-        }
-        await this.cache.set(cachedUrl, buffer.toString('base64'), {
-          ttl: CACHE_TTL,
-        });
-        const contentDisposition = response.headers.get('Content-Disposition');
-        return resp
-          .status(200)
-          .header({
-            ...getCorsHeaders(origin),
-            ...(origin ? { Vary: 'Origin' } : {}),
-            'Access-Control-Allow-Methods': 'GET',
-            'Content-Type': contentType,
-            'Content-Disposition': contentDisposition,
-          })
-          .send(buffer);
+        return resp.status(200).send(buffer);
       } else {
         throw new BadRequest('Invalid content type');
       }
@@ -220,6 +215,18 @@ export class WorkerController {
         status: response.status,
       });
       throw new BadRequest('Failed to fetch image');
+    }
+  }
+
+  private inspectProxyImage(buffer: Buffer, url: string) {
+    try {
+      return inspectImageForProxy(buffer);
+    } catch (error) {
+      this.logger.warn('Image proxy rejected invalid image', {
+        url,
+        error,
+      });
+      throw new BadRequest('Invalid image');
     }
   }
 
@@ -287,7 +294,11 @@ export class WorkerController {
       const response = await safeFetch(
         targetURL.toString(),
         { method, headers: cloneHeader(request.headers) },
-        { timeoutMs: FETCH_TIMEOUT_MS, maxRedirects: MAX_REDIRECTS }
+        {
+          timeoutMs: FETCH_TIMEOUT_MS,
+          maxRedirects: MAX_REDIRECTS,
+          maxBytes: LINK_PREVIEW_MAX_BYTES,
+        }
       );
       this.logger.debug('Fetched URL', {
         origin,
@@ -314,10 +325,7 @@ export class WorkerController {
       };
 
       if (response.body) {
-        const body = await readResponseBufferWithLimit(
-          response,
-          LINK_PREVIEW_MAX_BYTES
-        );
+        const body = Buffer.from(await response.arrayBuffer());
         const limitedResponse = new Response(body, response);
         const resp = await decodeWithCharset(limitedResponse, res);
 
@@ -398,7 +406,11 @@ export class WorkerController {
         const faviconResponse = await safeFetch(
           faviconUrl.toString(),
           { method: 'HEAD' },
-          { timeoutMs: FETCH_TIMEOUT_MS, maxRedirects: MAX_REDIRECTS }
+          {
+            timeoutMs: FETCH_TIMEOUT_MS,
+            maxRedirects: MAX_REDIRECTS,
+            maxBytes: 0,
+          }
         );
         if (faviconResponse.ok) {
           appendUrl(faviconUrl.toString(), res.favicons);
@@ -429,7 +441,6 @@ export class WorkerController {
           origin,
           url: requestBody?.url,
           reason,
-          context: (error as any).context,
         });
         throw new BadRequest(toBadRequestReason(reason ?? 'invalid_url'));
       }

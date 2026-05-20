@@ -325,7 +325,7 @@ export class ReactiveYMap extends BaseReactiveYData<UnRecord, YMap<unknown>> {
 
   protected readonly _proxy: UnRecord;
 
-  // eslint-disable-next-line sonarjs/no-identical-functions
+  // oxlint-disable-next-line sonarjs/no-identical-functions
   constructor(
     protected readonly _source: UnRecord,
     protected readonly _ySource: YMap<unknown>,
@@ -337,7 +337,7 @@ export class ReactiveYMap extends BaseReactiveYData<UnRecord, YMap<unknown>> {
     _ySource.observe(this._observer);
   }
 
-  // eslint-disable-next-line sonarjs/no-identical-functions
+  // oxlint-disable-next-line sonarjs/no-identical-functions
   pop(prop: string) {
     const value = this._source[prop];
     this._stashed.delete(prop);

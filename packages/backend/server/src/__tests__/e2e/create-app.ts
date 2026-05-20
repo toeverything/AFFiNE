@@ -18,6 +18,7 @@ import {
   JobQueue,
   OneMB,
 } from '../../base';
+import { ThrottlerStorage } from '../../base/throttler';
 import { SocketIoAdapter } from '../../base/websocket';
 import { AuthGuard, AuthService } from '../../core/auth';
 import { Mailer } from '../../core/mail';
@@ -163,6 +164,10 @@ export class TestingApp extends NestApplication {
     return await this.create(MockUser, overrides);
   }
 
+  resetRateLimit() {
+    this.get(ThrottlerStorage, { strict: false }).storage.clear();
+  }
+
   async signup(overrides?: Partial<MockUserInput>) {
     const user = await this.create(MockUser, overrides);
     await this.login(user);
@@ -170,6 +175,7 @@ export class TestingApp extends NestApplication {
   }
 
   async login(user: MockedUser) {
+    this.resetRateLimit();
     return await this.POST('/api/auth/sign-in').send({
       email: user.email,
       password: user.password,
@@ -195,6 +201,7 @@ export class TestingApp extends NestApplication {
   }
 
   async logout(userId?: string) {
+    this.resetRateLimit();
     const res = await this.POST(
       '/api/auth/sign-out' + (userId ? `?user_id=${userId}` : '')
     ).expect(200);

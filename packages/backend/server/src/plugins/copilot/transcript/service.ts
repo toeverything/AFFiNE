@@ -1,78 +1,90 @@
-import { Injectable } from '@nestjs/common';
-import { AiJobStatus, AiJobType } from '@prisma/client';
-import { ZodType } from 'zod';
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { AiJobStatus } from '@prisma/client';
 
 import {
-  CopilotPromptNotFound,
   CopilotTranscriptionJobExists,
   CopilotTranscriptionJobNotFound,
-  EventBus,
   type FileUpload,
   JobQueue,
-  NoCopilotProviderAvailable,
-  OnEvent,
   OnJob,
   sniffMime,
 } from '../../../base';
-import { Models } from '../../../models';
-import { PromptService } from '../prompt/service';
-import type { CopilotProvider, PromptMessage } from '../providers';
-import { CopilotProviderFactory } from '../providers/factory';
-import { CopilotProviderType, ModelOutputType } from '../providers/types';
-import { CopilotStorage } from '../storage';
 import {
-  AudioBlobInfos,
-  TranscriptionPayload,
-  TranscriptionResponseSchema,
+  RealtimePublisher,
+  realtimeTranscriptTaskRoom,
+} from '../../../core/realtime';
+import { Models } from '../../../models';
+import { CopilotAccessPolicy } from '../access';
+import { PromptService } from '../prompt';
+import { CopilotProviderType } from '../providers/types';
+import { ActionRuntimeBridge } from '../runtime/action-runtime-bridge';
+import { TaskPolicy } from '../runtime/task-policy';
+import { CopilotStorage } from '../storage';
+import { taskToJob, type TranscriptionJob } from './job';
+import {
+  TranscriptActionResultContract,
   TranscriptPayloadSchema,
+} from './schema';
+import type {
+  AudioBlobInfos,
+  TranscriptionPayloadV2,
+  TranscriptionSubmitInput,
 } from './types';
 import { readStream } from './utils';
 
-export type TranscriptionJob = {
-  id: string;
-  status: AiJobStatus;
-  infos?: AudioBlobInfos;
-  transcription?: TranscriptionPayload;
-};
+const TRANSCRIPT_ACTION_ID = 'transcript.audio.gemini';
+const TRANSCRIPT_ACTION_VERSION = 'v1';
+const TRANSCRIPT_STRATEGY = 'gemini';
 
 @Injectable()
 export class CopilotTranscriptionService {
   constructor(
-    private readonly event: EventBus,
     private readonly models: Models,
     private readonly job: JobQueue,
     private readonly storage: CopilotStorage,
-    private readonly prompt: PromptService,
-    private readonly providerFactory: CopilotProviderFactory
+    private readonly tasks: TaskPolicy,
+    private readonly prompts: PromptService,
+    private readonly actionBridge: ActionRuntimeBridge,
+    private readonly access: CopilotAccessPolicy,
+    private readonly realtime: RealtimePublisher
   ) {}
 
-  private async getModel(userId: string) {
-    const prompt = await this.prompt.get('Transcript audio');
-    const hasAccess = await this.models.userFeature.has(
-      userId,
-      'unlimited_copilot'
-    );
-    // choose the pro model if user has copilot plan
-    return prompt?.optionalModels[hasAccess ? 1 : 0];
+  private parseTaskPayload(payload: unknown): TranscriptionPayloadV2 {
+    return TranscriptPayloadSchema.parse(payload);
   }
 
-  async submitJob(
+  private buildTaskPublicMeta(payload: TranscriptionPayloadV2) {
+    return {
+      sourceAudio: payload.sourceAudio,
+      quality: payload.quality,
+      sliceManifest: payload.sliceManifest,
+      providerMeta: payload.providerMeta,
+      version: 'transcript-result-v1',
+      strategy: TRANSCRIPT_STRATEGY,
+    };
+  }
+
+  private async resolveTranscriptStrategy(userId: string, strategy?: string) {
+    if (strategy && strategy !== TRANSCRIPT_STRATEGY) {
+      throw new BadRequestException(
+        `Transcript strategy ${strategy} is not available`
+      );
+    }
+    const model = await this.tasks.resolveTranscriptionModel(userId);
+    if (!model) {
+      throw new BadRequestException(
+        'Transcript strategy gemini is not available'
+      );
+    }
+    return { model, strategy: TRANSCRIPT_STRATEGY };
+  }
+
+  private async persistUploads(
     userId: string,
     workspaceId: string,
     blobId: string,
     blobs: FileUpload[]
-  ): Promise<TranscriptionJob> {
-    if (await this.models.copilotJob.has(userId, workspaceId, blobId)) {
-      throw new CopilotTranscriptionJobExists();
-    }
-
-    const { id: jobId } = await this.models.copilotJob.create({
-      workspaceId,
-      blobId,
-      createdBy: userId,
-      type: AiJobType.transcription,
-    });
-
+  ) {
     const infos: AudioBlobInfos = [];
     for (const [idx, blob] of blobs.entries()) {
       const buffer = await readStream(blob.createReadStream());
@@ -85,344 +97,326 @@ export class CopilotTranscriptionService {
       infos.push({
         url,
         mimeType: sniffMime(buffer, blob.mimetype) || blob.mimetype,
+        index: idx,
       });
     }
-
-    const model = await this.getModel(userId);
-    return await this.executeJob(jobId, infos, model);
+    return infos;
   }
 
-  async retryJob(userId: string, workspaceId: string, jobId: string) {
-    const job = await this.queryJob(userId, workspaceId, jobId);
-    if (!job || !job.infos) {
-      throw new CopilotTranscriptionJobNotFound();
-    }
-
-    const model = await this.getModel(userId);
-    const jobResult = await this.executeJob(job.id, job.infos, model);
-
-    return jobResult;
-  }
-
-  async executeJob(
-    jobId: string,
+  private createCanonicalPayload(
+    blobId: string,
     infos: AudioBlobInfos,
-    modelId?: string
-  ): Promise<TranscriptionJob> {
-    const status = AiJobStatus.running;
-    const success = await this.models.copilotJob.update(jobId, {
-      status,
-      payload: { infos },
-    });
+    input?: TranscriptionSubmitInput
+  ) {
+    const sliceManifest = input?.sliceManifest?.length
+      ? input.sliceManifest.map(item => ({
+          ...item,
+          byteSize: item.byteSize ?? null,
+        }))
+      : undefined;
 
-    if (!success) {
-      throw new CopilotTranscriptionJobNotFound();
-    }
-
-    await this.job.add('copilot.transcript.submit', {
-      jobId,
+    return {
       infos,
-      modelId,
-    });
-
-    return { id: jobId, status };
+      sourceAudio: { blobId, ...input?.sourceAudio },
+      quality: input?.quality,
+      sliceManifest,
+    } satisfies TranscriptionPayloadV2;
   }
 
-  async claimJob(
-    userId: string,
-    jobId: string
-  ): Promise<TranscriptionJob | null> {
-    const status = await this.models.copilotJob.claim(jobId, userId);
-    if (status === AiJobStatus.claimed) {
-      const transcription = await this.models.copilotJob.getPayload(
-        jobId,
-        TranscriptPayloadSchema
-      );
-      return { id: jobId, transcription, status };
+  private async buildTranscriptActionMessages(
+    payload: TranscriptionPayloadV2,
+    modelId?: string
+  ) {
+    const prompt = await this.prompts.get('Transcript audio structured');
+    if (!prompt) {
+      throw new Error('Transcript action prompt not found');
     }
-    return null;
+    const metadata = {
+      sourceAudio: payload.sourceAudio ?? null,
+      quality: payload.quality ?? null,
+      sliceManifest: payload.sliceManifest ?? null,
+      infos:
+        payload.infos?.map(info => ({
+          mimeType: info.mimeType,
+          index: info.index ?? null,
+        })) ?? null,
+      providerMeta: {
+        provider: CopilotProviderType.Gemini,
+        model: modelId ?? payload.providerMeta?.model ?? null,
+      },
+    };
+    const attachments =
+      payload.infos?.map(info => ({
+        role: 'user' as const,
+        content: `Audio attachment ${info.index ?? 0}`,
+        attachments: [{ attachment: info.url, mimeType: info.mimeType }],
+        params: { mimetype: info.mimeType },
+      })) ?? [];
+    return [
+      ...this.prompts.finish(prompt, {
+        content: JSON.stringify(metadata),
+      }),
+      ...attachments,
+    ];
   }
 
-  async queryJob(
+  async submitTask(
     userId: string,
     workspaceId: string,
-    jobId?: string,
-    blobId?: string
-  ) {
-    const job = await this.models.copilotJob.getWithUser(
+    blobId: string,
+    blobs: FileUpload[],
+    input?: TranscriptionSubmitInput & { strategy?: string | null }
+  ): Promise<TranscriptionJob> {
+    const existingTask = await this.models.copilotTranscriptTask.getWithUser(
       userId,
       workspaceId,
-      jobId,
-      blobId,
-      AiJobType.transcription
+      undefined,
+      blobId
     );
+    if (
+      existingTask &&
+      (existingTask.status === 'pending' || existingTask.status === 'running')
+    ) {
+      throw new CopilotTranscriptionJobExists();
+    }
 
-    if (!job) {
+    await this.access.assertQuotaOrByok({
+      userId,
+      workspaceId,
+      featureKind: 'transcript',
+    });
+
+    const { model, strategy } = await this.resolveTranscriptStrategy(
+      userId,
+      input?.strategy ?? undefined
+    );
+    const infos = await this.persistUploads(userId, workspaceId, blobId, blobs);
+    const payload = this.createCanonicalPayload(blobId, infos, input);
+    const task = await this.models.copilotTranscriptTask.create({
+      userId,
+      workspaceId,
+      blobId,
+      strategy,
+      recipeId: TRANSCRIPT_ACTION_ID,
+      recipeVersion: TRANSCRIPT_ACTION_VERSION,
+      inputSnapshot: payload,
+      publicMeta: this.buildTaskPublicMeta(payload),
+    });
+
+    await this.job.add('copilot.transcript.task.submit', {
+      taskId: task.id,
+      payload,
+      modelId: model,
+    });
+    await this.models.copilotTranscriptTask.markRunning(task.id);
+    this.publishTaskChanged(workspaceId, task.id, AiJobStatus.running);
+
+    return { id: task.id, status: AiJobStatus.running, infos };
+  }
+
+  async retryTask(userId: string, workspaceId: string, taskId: string) {
+    const task = await this.models.copilotTranscriptTask.getWithUser(
+      userId,
+      workspaceId,
+      taskId
+    );
+    if (!task) {
+      throw new CopilotTranscriptionJobNotFound();
+    }
+    if (task.status === 'ready' || task.status === 'settled') {
+      throw new BadRequestException(
+        'Ready or settled transcript tasks cannot be retried'
+      );
+    }
+    if (task.status !== 'failed') {
+      throw new BadRequestException(
+        'Only failed transcript tasks can be retried'
+      );
+    }
+
+    await this.access.assertQuotaOrByok({
+      userId,
+      workspaceId,
+      featureKind: 'transcript',
+    });
+
+    const payload = this.parseTaskPayload(task.protectedResult);
+    const { model } = await this.resolveTranscriptStrategy(
+      userId,
+      task.strategy
+    );
+    await this.job.add('copilot.transcript.task.submit', {
+      taskId,
+      payload,
+      modelId: model,
+      retryOf: task.actionRunId ?? undefined,
+    });
+    await this.models.copilotTranscriptTask.markRunning(taskId);
+    this.publishTaskChanged(workspaceId, taskId, AiJobStatus.running);
+    return {
+      id: taskId,
+      status: AiJobStatus.running,
+      infos: payload.infos ?? undefined,
+    };
+  }
+
+  async settleTask(userId: string, workspaceId: string, taskId: string) {
+    const task = await this.models.copilotTranscriptTask.getWithUser(
+      userId,
+      workspaceId,
+      taskId
+    );
+    if (!task) {
+      throw new CopilotTranscriptionJobNotFound();
+    }
+    if (task.status === 'failed') {
+      throw new BadRequestException(
+        'Failed transcript tasks cannot be settled'
+      );
+    }
+    if (task.status !== 'ready' && task.status !== 'settled') {
       return null;
     }
 
-    const ret: TranscriptionJob = { id: job.id, status: job.status };
-
-    const payload = TranscriptPayloadSchema.safeParse(job.payload);
-    if (payload.success) {
-      let { url, mimeType, infos } = payload.data;
-      infos = infos || [];
-      if (url && mimeType && !infos.some(i => i.url === url)) {
-        infos.push({ url, mimeType });
-      }
-
-      ret.infos = infos;
-      if (job.status === AiJobStatus.claimed) {
-        ret.transcription = payload.data;
-      }
+    if (task.status === 'settled') {
+      return taskToJob(task);
     }
 
-    return ret;
+    await this.access.assertQuotaOrByok({
+      userId,
+      workspaceId,
+      featureKind: 'transcript',
+    });
+
+    const settled = await this.models.copilotTranscriptTask.settle(task.id);
+    return taskToJob(settled);
   }
 
-  private async getProvider(
-    modelId: string,
-    structured: boolean,
-    prefer?: CopilotProviderType
-  ): Promise<CopilotProvider> {
-    let provider = await this.providerFactory.getProvider(
-      {
-        outputType: structured
-          ? ModelOutputType.Structured
-          : ModelOutputType.Text,
-        modelId,
-      },
-      { prefer }
-    );
-
-    if (!provider) {
-      throw new NoCopilotProviderAvailable({ modelId });
-    }
-
-    return provider;
-  }
-
-  private async chatWithPrompt(
-    promptName: string,
-    message: Partial<PromptMessage>,
-    schema?: ZodType<any>,
-    prefer?: CopilotProviderType,
-    modelId?: string
-  ): Promise<string> {
-    const prompt = await this.prompt.get(promptName);
-    if (!prompt) {
-      throw new CopilotPromptNotFound({ name: promptName });
-    }
-
-    const cond = {
-      modelId:
-        modelId && prompt.optionalModels.includes(modelId)
-          ? modelId
-          : prompt.model,
-    };
-    const msg = { role: 'user' as const, content: '', ...message };
-    const config = Object.assign({}, prompt.config);
-    if (schema) {
-      const provider = await this.getProvider(prompt.model, true, prefer);
-      return provider.structure(
-        cond,
-        [...prompt.finish({ schema }), msg],
-        config
-      );
-    } else {
-      const provider = await this.getProvider(prompt.model, false);
-      return provider.text(cond, [...prompt.finish({}), msg], config);
-    }
-  }
-
-  private convertTime(time: number, offset = 0) {
-    time = time + offset;
-    const minutes = Math.floor(time / 60);
-    const seconds = Math.floor(time % 60);
-    const hours = Math.floor(minutes / 60);
-    const minutesStr = String(minutes % 60).padStart(2, '0');
-    const secondsStr = String(seconds).padStart(2, '0');
-    const hoursStr = String(hours).padStart(2, '0');
-    return `${hoursStr}:${minutesStr}:${secondsStr}`;
-  }
-
-  private async callTranscript(
-    url: string,
-    mimeType: string,
-    offset: number,
-    modelId?: string
+  async queryTask(
+    userId: string,
+    workspaceId: string,
+    taskId?: string,
+    blobId?: string
   ) {
-    // NOTE: Vertex provider not support transcription yet, we always use Gemini here
-    const result = await this.chatWithPrompt(
-      'Transcript audio',
-      { attachments: [url], params: { mimetype: mimeType } },
-      TranscriptionResponseSchema,
-      CopilotProviderType.Gemini,
-      modelId
+    const task = await this.models.copilotTranscriptTask.getWithUser(
+      userId,
+      workspaceId,
+      taskId,
+      blobId
     );
-
-    const transcription = TranscriptionResponseSchema.parse(
-      JSON.parse(result)
-    ).map(t => ({
-      speaker: t.a,
-      start: this.convertTime(t.s, offset),
-      end: this.convertTime(t.e, offset),
-      transcription: t.t,
-    }));
-
-    return transcription;
+    return taskToJob(task);
   }
 
-  @OnJob('copilot.transcript.submit')
-  async transcriptAudio({
-    jobId,
-    infos,
+  @OnJob('copilot.transcript.task.submit')
+  async transcriptTask({
+    taskId,
+    payload,
     modelId,
-  }: Jobs['copilot.transcript.submit']) {
+    retryOf,
+  }: Jobs['copilot.transcript.task.submit']) {
+    const task = await this.models.copilotTranscriptTask.get(taskId);
+    if (!task) {
+      throw new CopilotTranscriptionJobNotFound();
+    }
+
+    let actionRunId: string | null = null;
     try {
-      const transcriptions = await Promise.all(
-        Array.from(infos.entries()).map(([idx, { url, mimeType }]) =>
-          this.callTranscript(url, mimeType, idx * 10 * 60, modelId)
-        )
+      let bridgeFailed = false;
+      let bridgeError = 'transcript native recipe failed';
+      let finalResult: unknown = null;
+      const messages = await this.buildTranscriptActionMessages(
+        payload,
+        modelId
       );
-
-      await this.models.copilotJob.update(jobId, {
-        payload: { transcription: transcriptions.flat() },
+      for await (const event of this.actionBridge.runStream({
+        userId: task.userId,
+        workspaceId: task.workspaceId,
+        actionId: TRANSCRIPT_ACTION_ID,
+        actionVersion: TRANSCRIPT_ACTION_VERSION,
+        retryOf: retryOf ?? null,
+        inputSnapshot: payload,
+        nativeInput: {
+          input: {
+            sourceAudio: payload.sourceAudio ?? null,
+            quality: payload.quality ?? null,
+            infos: payload.infos ?? null,
+            sliceManifest: payload.sliceManifest ?? null,
+          },
+        },
+        onRunCreated: async ({ runId }) => {
+          await this.models.copilotTranscriptTask.markRunning(taskId, runId);
+          this.publishTaskChanged(
+            task.workspaceId,
+            taskId,
+            AiJobStatus.running
+          );
+        },
+        prepareStructuredRoutes: {
+          stepId: 'transcribe',
+          modelId,
+          messages,
+          options: {
+            user: task.userId,
+            workspace: task.workspaceId,
+            taskId,
+            billingUnitId: taskId,
+            featureKind: 'transcript',
+          },
+          prefer: CopilotProviderType.Gemini,
+          responseContract: TranscriptActionResultContract,
+        },
+      })) {
+        actionRunId = event.runId;
+        if (event.type === 'error' || event.status === 'failed') {
+          bridgeFailed = true;
+          bridgeError = event.errorMessage ?? event.errorCode ?? bridgeError;
+        }
+        if (event.type === 'action_done' && event.status === 'succeeded') {
+          finalResult = event.result;
+        }
+      }
+      if (bridgeFailed) {
+        throw new Error(bridgeError);
+      }
+      const parsedResult = TranscriptPayloadSchema.parse(finalResult);
+      await this.models.copilotTranscriptTask.complete(taskId, {
+        status: 'ready',
+        actionRunId,
+        publicMeta: this.buildTaskPublicMeta(parsedResult),
+        protectedResult: parsedResult,
+        errorCode: null,
       });
-
-      await this.job.add('copilot.transcript.summary.submit', {
-        jobId,
+      this.publishTaskChanged(task.workspaceId, taskId, AiJobStatus.finished);
+    } catch (error) {
+      await this.models.copilotTranscriptTask.complete(taskId, {
+        status: 'failed',
+        actionRunId,
+        publicMeta: this.buildTaskPublicMeta(payload),
+        protectedResult: payload,
+        errorCode:
+          error instanceof Error ? error.message : 'transcript_task_failed',
       });
-      return;
-    } catch (error: any) {
-      // record failed status and passthrough error
-      this.event.emit('workspace.file.transcript.failed', {
-        jobId,
-      });
+      this.publishTaskChanged(
+        task.workspaceId,
+        taskId,
+        AiJobStatus.failed,
+        error instanceof Error ? error.message : 'transcript_task_failed'
+      );
       throw error;
     }
   }
 
-  @OnJob('copilot.transcript.summary.submit')
-  async transcriptSummary({
-    jobId,
-  }: Jobs['copilot.transcript.summary.submit']) {
-    try {
-      const payload = await this.models.copilotJob.getPayload(
-        jobId,
-        TranscriptPayloadSchema
-      );
-      if (payload.transcription) {
-        const content = payload.transcription
-          .map(t => t.transcription.trim())
-          .join('\n')
-          .trim();
-
-        if (content.length) {
-          payload.summary = await this.chatWithPrompt('Summarize the meeting', {
-            content,
-          });
-          await this.models.copilotJob.update(jobId, {
-            payload,
-          });
-
-          await this.job.add('copilot.transcript.title.submit', {
-            jobId,
-          });
-          return;
-        }
-      }
-      this.event.emit('workspace.file.transcript.failed', {
-        jobId,
-      });
-    } catch (error: any) {
-      // record failed status and passthrough error
-      this.event.emit('workspace.file.transcript.failed', {
-        jobId,
-      });
-      throw error;
-    }
-  }
-
-  @OnJob('copilot.transcript.title.submit')
-  async transcriptTitle({ jobId }: Jobs['copilot.transcript.title.submit']) {
-    try {
-      const payload = await this.models.copilotJob.getPayload(
-        jobId,
-        TranscriptPayloadSchema
-      );
-      if (payload.transcription && payload.summary) {
-        const content = payload.transcription
-          .map(t => t.transcription.trim())
-          .join('\n')
-          .trim();
-
-        if (content.length) {
-          payload.title = await this.chatWithPrompt('Summary as title', {
-            content,
-          });
-          await this.models.copilotJob.update(jobId, {
-            payload,
-          });
-          await this.job.add('copilot.transcript.findAction.submit', {
-            jobId,
-          });
-          return;
-        }
-      }
-      this.event.emit('workspace.file.transcript.failed', {
-        jobId,
-      });
-    } catch (error: any) {
-      // record failed status and passthrough error
-      this.event.emit('workspace.file.transcript.failed', {
-        jobId,
-      });
-      throw error;
-    }
-  }
-
-  @OnJob('copilot.transcript.findAction.submit')
-  async transcriptFindAction({
-    jobId,
-  }: Jobs['copilot.transcript.findAction.submit']) {
-    try {
-      const payload = await this.models.copilotJob.getPayload(
-        jobId,
-        TranscriptPayloadSchema
-      );
-      if (payload.summary) {
-        const actions = await this.chatWithPrompt('Find action for summary', {
-          content: payload.summary,
-        }).then(a => a.trim());
-        if (actions) {
-          payload.actions = actions;
-          await this.models.copilotJob.update(jobId, {
-            payload,
-          });
-        }
-      }
-    } catch {} // finish even if failed
-    this.event.emit('workspace.file.transcript.finished', {
-      jobId,
-    });
-  }
-
-  @OnEvent('workspace.file.transcript.finished')
-  async onFileTranscriptFinish({
-    jobId,
-  }: Events['workspace.file.transcript.finished']) {
-    await this.models.copilotJob.update(jobId, {
-      status: AiJobStatus.finished,
-    });
-  }
-
-  @OnEvent('workspace.file.transcript.failed')
-  async onFileTranscriptFailed({
-    jobId,
-  }: Events['workspace.file.transcript.failed']) {
-    await this.models.copilotJob.update(jobId, {
-      status: AiJobStatus.failed,
-    });
+  private publishTaskChanged(
+    workspaceId: string,
+    taskId: string,
+    status: AiJobStatus,
+    error?: string
+  ) {
+    this.realtime.publish(
+      'copilot.transcript.task.changed',
+      { workspaceId, taskId },
+      { taskId, status, error },
+      { room: realtimeTranscriptTaskRoom(workspaceId, taskId) }
+    );
   }
 }

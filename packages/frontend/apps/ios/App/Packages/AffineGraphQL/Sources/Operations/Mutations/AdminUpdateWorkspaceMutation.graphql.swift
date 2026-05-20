@@ -26,6 +26,9 @@ public class AdminUpdateWorkspaceMutation: GraphQLMutation {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("adminUpdateWorkspace", AdminUpdateWorkspace?.self, arguments: ["input": .variable("input")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      AdminUpdateWorkspaceMutation.Data.self
+    ] }
 
     /// Update workspace flags and features for admin
     public var adminUpdateWorkspace: AdminUpdateWorkspace? { __data["adminUpdateWorkspace"] }
@@ -57,6 +60,9 @@ public class AdminUpdateWorkspaceMutation: GraphQLMutation {
         .field("snapshotSize", AffineGraphQL.SafeInt.self),
         .field("blobCount", Int.self),
         .field("blobSize", AffineGraphQL.SafeInt.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        AdminUpdateWorkspaceMutation.Data.AdminUpdateWorkspace.self
       ] }
 
       public var id: String { __data["id"] }
@@ -91,6 +97,9 @@ public class AdminUpdateWorkspaceMutation: GraphQLMutation {
           .field("name", String.self),
           .field("email", String.self),
           .field("avatarUrl", String?.self),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          AdminUpdateWorkspaceMutation.Data.AdminUpdateWorkspace.Owner.self
         ] }
 
         public var id: String { __data["id"] }

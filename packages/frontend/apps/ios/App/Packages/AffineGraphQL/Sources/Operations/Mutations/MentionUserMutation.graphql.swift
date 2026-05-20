@@ -26,6 +26,9 @@ public class MentionUserMutation: GraphQLMutation {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("mentionUser", AffineGraphQL.ID.self, arguments: ["input": .variable("input")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      MentionUserMutation.Data.self
+    ] }
 
     /// mention user in a doc
     public var mentionUser: AffineGraphQL.ID { __data["mentionUser"] }

@@ -1,9 +1,11 @@
 import {
   CancelWrapIcon,
   CaptionIcon,
+  CollapseCodeIcon,
   CopyIcon,
   DeleteIcon,
   DuplicateIcon,
+  ExpandCodeIcon,
   WrapIcon,
 } from '@blocksuite/affine-components/icons';
 import type { MenuItemGroup } from '@blocksuite/affine-components/toolbar';
@@ -82,6 +84,38 @@ export const PRIMARY_GROUPS: MenuItemGroup<CodeBlockToolbarContext>[] = [
                 ${item.icon}
               </editor-icon-button>
             `,
+          };
+        },
+      },
+      {
+        type: 'collapse',
+        when: ({ doc }) => !doc.readonly,
+        generate: ({ blockComponent }) => {
+          return {
+            action: () => {
+              blockComponent.setCollapsed(!blockComponent.collapsed$.value);
+            },
+            render: item => {
+              const collapsed = blockComponent.collapsed$.value;
+              const icon = collapsed ? ExpandCodeIcon : CollapseCodeIcon;
+              const label = collapsed ? 'Expand code' : 'Collapse code';
+              return html`
+                <editor-icon-button
+                  class="code-toolbar-button collapse"
+                  aria-label=${label}
+                  .tooltip=${label}
+                  .tooltipOffset=${4}
+                  .iconSize=${'16px'}
+                  .iconContainerPadding=${4}
+                  @click=${(e: MouseEvent) => {
+                    e.stopPropagation();
+                    item.action();
+                  }}
+                >
+                  ${icon}
+                </editor-icon-button>
+              `;
+            },
           };
         },
       },
@@ -174,7 +208,8 @@ export const toggleGroup: MenuItemGroup<CodeBlockToolbarContext> = {
             return html`
               <editor-menu-action
                 @click=${() => {
-                  blockComponent.setWrap(!wrapped);
+                  const currentWrap = blockComponent.model.props.wrap;
+                  blockComponent.setWrap(!currentWrap);
                 }}
                 aria-label=${label}
               >
@@ -204,8 +239,10 @@ export const toggleGroup: MenuItemGroup<CodeBlockToolbarContext> = {
             return html`
               <editor-menu-action
                 @click=${() => {
+                  const currentLineNumber =
+                    blockComponent.model.props.lineNumber ?? true;
                   blockComponent.store.updateBlock(blockComponent.model, {
-                    lineNumber: !lineNumber,
+                    lineNumber: !currentLineNumber,
                   });
                 }}
                 aria-label=${label}

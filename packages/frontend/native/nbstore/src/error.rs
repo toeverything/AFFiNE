@@ -8,6 +8,8 @@ pub enum Error {
   SqlxError(#[from] sqlx::Error),
   #[error("Migrate Error: {0}")]
   MigrateError(#[from] sqlx::migrate::MigrateError),
+  #[error("Connection in progress")]
+  ConnectionInProgress,
   #[error("Invalid operation")]
   InvalidOperation,
   #[error("Serialization Error: {0}")]

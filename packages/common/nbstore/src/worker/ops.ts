@@ -1,3 +1,15 @@
+import type {
+  RealtimeConfigureInput,
+  RealtimeRequestInputOf,
+  RealtimeRequestName,
+  RealtimeRequestOutputOf,
+  RealtimeStatus,
+  RealtimeSubscriptionReady,
+  RealtimeTopicEventOf,
+  RealtimeTopicInputOf,
+  RealtimeTopicName,
+} from '@affine/realtime';
+
 import type { AvailableStorageImplementations } from '../impls';
 import type {
   AggregateResult,
@@ -189,4 +201,25 @@ export type WorkerManagerOps = {
   'telemetry.pageview': [TelemetryEvent, { queued: boolean }];
   'telemetry.flush': [void, TelemetryAck];
   'telemetry.getQueueState': [void, TelemetryQueueState];
+  'realtime.configure': [RealtimeConfigureInput, void];
+  'realtime.request': [
+    {
+      [Op in RealtimeRequestName]: {
+        op: Op;
+        input: RealtimeRequestInputOf<Op>;
+        timeoutMs?: number;
+      };
+    }[RealtimeRequestName],
+    RealtimeRequestOutputOf<RealtimeRequestName>,
+  ];
+  'realtime.subscribe': [
+    {
+      [Topic in RealtimeTopicName]: {
+        topic: Topic;
+        input: RealtimeTopicInputOf<Topic>;
+      };
+    }[RealtimeTopicName],
+    RealtimeTopicEventOf<RealtimeTopicName> | RealtimeSubscriptionReady,
+  ];
+  'realtime.status': [void, RealtimeStatus];
 };

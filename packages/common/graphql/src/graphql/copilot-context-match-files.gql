@@ -1,8 +1,20 @@
-query matchFiles($contextId: String, $workspaceId: String, $content: String!, $limit: SafeInt, $scopedThreshold: Float, $threshold: Float) {
+query matchFiles(
+  $contextId: String
+  $workspaceId: String
+  $content: String!
+  $limit: SafeInt
+  $scopedThreshold: Float
+  $threshold: Float
+) {
   currentUser {
     copilot(workspaceId: $workspaceId) {
       contexts(contextId: $contextId) {
-        matchFiles(content: $content, limit: $limit, scopedThreshold: $scopedThreshold, threshold: $threshold) {
+        matchFiles(
+          content: $content
+          limit: $limit
+          scopedThreshold: $scopedThreshold
+          threshold: $threshold
+        ) {
           fileId
           blobId
           chunk

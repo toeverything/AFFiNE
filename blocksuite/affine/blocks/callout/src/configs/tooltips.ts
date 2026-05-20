@@ -25,4 +25,4 @@ export const calloutTooltip = html`<svg width="170" height="106" viewBox="0 0 17
 </clipPath>
 </defs>
 </svg>
-`
+`;

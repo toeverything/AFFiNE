@@ -2,6 +2,7 @@
 edition      = "2024"
 license-file = "LICENSE"
 name         = "affine_common"
+publish      = false
 version      = "0.1.0"
 
 [features]

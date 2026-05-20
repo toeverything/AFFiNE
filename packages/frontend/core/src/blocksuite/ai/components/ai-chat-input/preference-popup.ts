@@ -26,9 +26,16 @@ import {
   ThinkingIcon,
 } from '@blocksuite/icons/lit';
 import { ShadowlessElement } from '@blocksuite/std';
+import { autoPlacement, offset, shift } from '@floating-ui/dom';
 import { computed } from '@preact/signals-core';
 import { css, html } from 'lit';
 import { property } from 'lit/decorators.js';
+
+const modelSubMenuMiddleware = [
+  autoPlacement({ allowedPlacements: ['right-start', 'left-start'] }),
+  offset({ mainAxis: 4, crossAxis: 0 }),
+  shift({ crossAxis: true, padding: 8 }),
+];
 
 export class ChatInputPreference extends SignalWatcher(
   WithDisposable(ShadowlessElement)
@@ -140,6 +147,7 @@ export class ChatInputPreference extends SignalWatcher(
       menu.subMenu({
         name: 'Model',
         prefix: AiOutlineIcon(),
+        middleware: modelSubMenuMiddleware,
         postfix: html`
           <span class="ai-active-model-name"> ${this.model.value?.name} </span>
         `,

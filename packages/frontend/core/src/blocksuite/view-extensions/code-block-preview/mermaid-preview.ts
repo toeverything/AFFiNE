@@ -1,3 +1,4 @@
+import { renderMermaidSvg } from '@affine/core/modules/code-block-preview-renderer/bridge';
 import { CodeBlockPreviewExtension } from '@blocksuite/affine/blocks/code';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import type { CodeBlockModel } from '@blocksuite/affine/model';
@@ -7,7 +8,6 @@ import { css, html, nothing, type PropertyValues } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
 import { choose } from 'lit/directives/choose.js';
 import { styleMap } from 'lit/directives/style-map.js';
-import type { Mermaid } from 'mermaid';
 
 export const CodeBlockMermaidPreview = CodeBlockPreviewExtension(
   'mermaid',
@@ -50,7 +50,6 @@ export class MermaidPreview extends SignalWatcher(
     .mermaid-preview-container {
       width: 100%;
       min-height: 300px;
-      max-height: 600px;
       border: 1px solid ${unsafeCSSVarV2('layer/insideBorder/border')};
       border-radius: 8px;
       background: ${unsafeCSSVarV2('layer/background/primary')};
@@ -154,7 +153,6 @@ export class MermaidPreview extends SignalWatcher(
   @query('.mermaid-preview-container')
   accessor container!: HTMLDivElement;
 
-  private mermaid: Mermaid | null = null;
   private retryCount = 0;
   private readonly maxRetries = 3;
   private renderTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -169,9 +167,6 @@ export class MermaidPreview extends SignalWatcher(
   private lastMouseY = 0;
 
   override firstUpdated(_changedProperties: PropertyValues): void {
-    this._loadMermaid().catch(error => {
-      console.error('Failed to load mermaid in firstUpdated:', error);
-    });
     this._scheduleRender();
     this._setupEventListeners();
 
@@ -271,7 +266,8 @@ export class MermaidPreview extends SignalWatcher(
     event.preventDefault();
 
     const delta = event.deltaY > 0 ? 0.9 : 1.1;
-    const newScale = Math.max(0.1, Math.min(5, this.scale * delta));
+    const previousScale = this.scale;
+    const newScale = Math.max(0.1, Math.min(5, previousScale * delta));
 
     // calculate mouse position relative to container
     const rect = this.container.getBoundingClientRect();
@@ -284,8 +280,8 @@ export class MermaidPreview extends SignalWatcher(
 
     // update transform
     this.scale = newScale;
-    this.translateX = mouseX - scaleCenterX * (newScale / this.scale);
-    this.translateY = mouseY - scaleCenterY * (newScale / this.scale);
+    this.translateX = mouseX - scaleCenterX * (newScale / previousScale);
+    this.translateY = mouseY - scaleCenterY * (newScale / previousScale);
 
     this._updateTransform();
   };
@@ -309,44 +305,6 @@ export class MermaidPreview extends SignalWatcher(
     );
   }
 
-  private async _loadMermaid() {
-    try {
-      // dynamic load mermaid
-      const mermaidModule = await import('mermaid');
-      this.mermaid = mermaidModule.default;
-
-      // initialize mermaid
-      this.mermaid.initialize({
-        startOnLoad: false,
-        theme: 'default',
-        securityLevel: 'strict',
-        fontFamily: 'IBM Plex Mono',
-        flowchart: {
-          useMaxWidth: true,
-          htmlLabels: true,
-        },
-        sequence: {
-          useMaxWidth: true,
-        },
-        gantt: {
-          useMaxWidth: true,
-        },
-        pie: {
-          useMaxWidth: true,
-        },
-        journey: {
-          useMaxWidth: true,
-        },
-        gitGraph: {
-          useMaxWidth: true,
-        },
-      });
-    } catch (error) {
-      console.error('Failed to load mermaid:', error);
-      this.state = 'error';
-    }
-  }
-
   private async _render() {
     // prevent duplicate rendering
     if (this.isRendering) {
@@ -356,28 +314,25 @@ export class MermaidPreview extends SignalWatcher(
     this.isRendering = true;
     this.state = 'loading';
 
-    if (!this.normalizedMermaidCode) {
+    const code = this.normalizedMermaidCode?.trim();
+
+    if (!code) {
+      this.svgContent = '';
       this.state = 'fallback';
       this.isRendering = false;
       return;
     }
 
-    if (!this.mermaid) {
-      await this._loadMermaid();
-    }
-    if (!this.mermaid) {
-      return;
-    }
-
     try {
-      // generate unique ID
-      const diagramId = `mermaid-diagram-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
-      // generate SVG
-      const { svg } = await this.mermaid.render(
-        diagramId,
-        this.normalizedMermaidCode
-      );
+      const { svg } = await renderMermaidSvg({
+        code,
+        options: {
+          fastText: true,
+          svgOnly: true,
+          theme: 'default',
+          fontFamily: 'IBM Plex Mono',
+        },
+      });
 
       // update SVG content
       this.svgContent = svg;

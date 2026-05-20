@@ -24,7 +24,7 @@ import {
   UserFriendlyError,
 } from '../../../base';
 import { CurrentUser } from '../../../core/auth';
-import { AccessController } from '../../../core/permission';
+import { PermissionAccess } from '../../../core/permission';
 import { WorkspaceType } from '../../../core/workspaces';
 import { COPILOT_LOCKER } from '../resolver';
 import { MAX_EMBEDDABLE_SIZE } from '../utils';
@@ -49,7 +49,7 @@ export class CopilotWorkspaceConfigType {
  */
 @Resolver(() => WorkspaceType)
 export class CopilotWorkspaceEmbeddingResolver {
-  constructor(private readonly ac: AccessController) {}
+  constructor(private readonly ac: PermissionAccess) {}
 
   @ResolveField(() => CopilotWorkspaceConfigType, {
     complexity: 2,
@@ -70,7 +70,7 @@ export class CopilotWorkspaceEmbeddingResolver {
 @Resolver(() => CopilotWorkspaceConfigType)
 export class CopilotWorkspaceEmbeddingConfigResolver {
   constructor(
-    private readonly ac: AccessController,
+    private readonly ac: PermissionAccess,
     private readonly mutex: Mutex,
     private readonly copilotWorkspace: CopilotWorkspaceService
   ) {}

@@ -53,6 +53,10 @@ globalStyle(
   { display: 'table !important', minWidth: '100%' }
 );
 globalStyle(
+  `${pageModeViewportContentBox} >:first-child:has(>[data-affine-editor-container].full-screen)`,
+  { display: 'block !important', width: '100%', minWidth: '100%' }
+);
+globalStyle(
   `${pageModeViewportContentBox} >:first-child:has(>[data-editor-loading="true"]) > [data-editor-loading="true"]`,
   { flex: 1, minHeight: '100%' }
 );

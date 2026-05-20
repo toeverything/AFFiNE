@@ -1,3 +1,4 @@
+use affine_schema::import_validation::{V1_IMPORT_SCHEMA_RULES, validate_import_schema};
 use chrono::NaiveDateTime;
 use napi::bindgen_prelude::{Buffer, Uint8Array};
 use napi_derive::napi;
@@ -423,7 +424,7 @@ impl SqliteConnection {
 
   #[napi]
   pub async fn validate(path: String) -> ValidationResult {
-    let pool = match SqlitePoolOptions::new().max_connections(1).connect(&path).await {
+    let pool = match open_readonly_pool(&path).await {
       Ok(pool) => pool,
       Err(_) => return ValidationResult::GeneralError,
     };
@@ -474,6 +475,16 @@ impl SqliteConnection {
   }
 
   #[napi]
+  pub async fn validate_import_schema(&self) -> napi::Result<bool> {
+    let pool = open_readonly_pool(&self.path).await?;
+    Ok(
+      validate_import_schema(&pool, &V1_IMPORT_SCHEMA_RULES)
+        .await
+        .map_err(anyhow::Error::from)?,
+    )
+  }
+
+  #[napi]
   pub async fn migrate_add_doc_id(&self) -> napi::Result<()> {
     // ignore errors
     match sqlx::query("ALTER TABLE updates ADD COLUMN doc_id TEXT")
@@ -504,6 +515,17 @@ impl SqliteConnection {
     Ok(())
   }
 
+  #[napi]
+  pub async fn vacuum_into(&self, path: String) -> napi::Result<()> {
+    let pool = open_readonly_pool(&self.path).await?;
+    sqlx::query("VACUUM INTO ?;")
+      .bind(path)
+      .execute(&pool)
+      .await
+      .map_err(anyhow::Error::from)?;
+    Ok(())
+  }
+
   pub async fn migrate_add_doc_id_index(&self) -> napi::Result<()> {
     // ignore errors
     match sqlx::query("CREATE INDEX IF NOT EXISTS idx_doc_id ON updates(doc_id);")
@@ -515,5 +537,66 @@ impl SqliteConnection {
         Err(anyhow::Error::from(err).into()) // Propagate other errors
       }
     }
+  }
+}
+
+async fn open_readonly_pool(path: &str) -> anyhow::Result<Pool<Sqlite>> {
+  let options = SqliteConnectOptions::new()
+    .filename(path)
+    .foreign_keys(false)
+    .read_only(true);
+
+  Ok(
+    SqlitePoolOptions::new()
+      .max_connections(1)
+      .connect_with(options)
+      .await?,
+  )
+}
+
+#[cfg(test)]
+mod tests {
+  use std::{
+    fs,
+    time::{SystemTime, UNIX_EPOCH},
+  };
+
+  use super::*;
+
+  #[tokio::test]
+  async fn validate_import_schema_accepts_current_v1_schema() {
+    let unique = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
+    let base = std::env::temp_dir().join(format!("sqlite-v1-schema-valid-{unique}"));
+    fs::create_dir_all(&base).unwrap();
+
+    let source = base.join("storage.db");
+    let connection = SqliteConnection::new(source.to_string_lossy().into_owned()).unwrap();
+    connection.connect().await.unwrap();
+
+    assert!(connection.validate_import_schema().await.unwrap());
+
+    connection.close().await;
+    fs::remove_dir_all(base).unwrap();
+  }
+
+  #[tokio::test]
+  async fn validate_import_schema_rejects_unexpected_schema_objects() {
+    let unique = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
+    let base = std::env::temp_dir().join(format!("sqlite-v1-schema-{unique}"));
+    fs::create_dir_all(&base).unwrap();
+
+    let source = base.join("storage.db");
+    let connection = SqliteConnection::new(source.to_string_lossy().into_owned()).unwrap();
+    connection.connect().await.unwrap();
+
+    sqlx::query("CREATE TRIGGER rogue_trigger AFTER INSERT ON updates BEGIN SELECT 1; END;")
+      .execute(&connection.pool)
+      .await
+      .unwrap();
+
+    assert!(!connection.validate_import_schema().await.unwrap());
+
+    connection.close().await;
+    fs::remove_dir_all(base).unwrap();
   }
 }

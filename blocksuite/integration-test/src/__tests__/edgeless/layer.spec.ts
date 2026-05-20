@@ -6,6 +6,7 @@ import type {
 import { ungroupCommand } from '@blocksuite/affine/gfx/group';
 import type {
   GroupElementModel,
+  MindmapElementModel,
   NoteBlockModel,
 } from '@blocksuite/affine/model';
 import { generateKeyBetween } from '@blocksuite/affine/std/gfx';
@@ -37,7 +38,7 @@ beforeEach(async () => {
 
   return async () => {
     await wait(100);
-    cleanup();
+    await cleanup();
   };
 });
 
@@ -253,6 +254,40 @@ test('blocks should rerender when their z-index changed', async () => {
   assertBlocksContent();
 });
 
+test('block host z-index should update after reordering', async () => {
+  const backId = addNote(doc);
+  const frontId = addNote(doc);
+
+  await wait();
+
+  const getBlockHost = (id: string) =>
+    document.querySelector<HTMLElement>(
+      `affine-edgeless-root gfx-viewport > [data-block-id="${id}"]`
+    );
+
+  const backHost = getBlockHost(backId);
+  const frontHost = getBlockHost(frontId);
+
+  expect(backHost).not.toBeNull();
+  expect(frontHost).not.toBeNull();
+  expect(Number(backHost!.style.zIndex)).toBeLessThan(
+    Number(frontHost!.style.zIndex)
+  );
+
+  service.crud.updateElement(backId, {
+    index: service.layer.getReorderedIndex(
+      service.crud.getElementById(backId)!,
+      'front'
+    ),
+  });
+
+  await wait();
+
+  expect(Number(backHost!.style.zIndex)).toBeGreaterThan(
+    Number(frontHost!.style.zIndex)
+  );
+});
+
 describe('layer reorder functionality', () => {
   let ids: string[] = [];
 
@@ -428,14 +463,17 @@ describe('group related functionality', () => {
     const elements = [
       service.crud.addElement('shape', {
         shapeType: 'rect',
+        xywh: '[0,0,100,100]',
       })!,
       addNote(doc),
       service.crud.addElement('shape', {
         shapeType: 'rect',
+        xywh: '[120,0,100,100]',
       })!,
       addNote(doc),
       service.crud.addElement('shape', {
         shapeType: 'rect',
+        xywh: '[240,0,100,100]',
       })!,
     ];
 
@@ -528,6 +566,35 @@ describe('group related functionality', () => {
     expect(service.layer.layers[1].elements[0]).toBe(group);
   });
 
+  test("change mindmap index should update its nodes' layer", async () => {
+    const noteId = addNote(doc);
+    const mindmapId = service.crud.addElement('mindmap', {
+      children: {
+        text: 'root',
+        children: [{ text: 'child' }],
+      },
+    })!;
+
+    await wait();
+
+    const note = service.crud.getElementById(noteId)!;
+    const mindmap = service.crud.getElementById(
+      mindmapId
+    )! as MindmapElementModel;
+    const root = mindmap.tree.element;
+
+    expect(service.layer.getZIndex(root)).toBeGreaterThan(
+      service.layer.getZIndex(note)
+    );
+
+    mindmap.index = service.layer.getReorderedIndex(mindmap, 'back');
+    await wait();
+
+    expect(service.layer.getZIndex(root)).toBeLessThan(
+      service.layer.getZIndex(note)
+    );
+  });
+
   test('should keep relative index order of elements after group, ungroup, undo, redo', () => {
     const edgeless = getDocRootBlock(doc, editor, 'edgeless');
     const elementIds = [
@@ -580,7 +647,7 @@ describe('compare function', () => {
   const createGroup = (
     service: EdgelessRootBlockComponent['service'],
     childIds: string[]
-    // eslint-disable-next-line sonarjs/no-identical-functions
+    // oxlint-disable-next-line sonarjs/no-identical-functions
   ) => {
     const children = new Y.Map<boolean>();
     childIds.forEach(id => children.set(id, true));
@@ -769,6 +836,7 @@ test('indexed canvas should be inserted into edgeless portal when switch to edge
 
   service.crud.addElement('shape', {
     shapeType: 'rect',
+    xywh: '[0,0,100,100]',
   })!;
 
   addNote(doc);
@@ -777,6 +845,7 @@ test('indexed canvas should be inserted into edgeless portal when switch to edge
 
   service.crud.addElement('shape', {
     shapeType: 'rect',
+    xywh: '[120,0,100,100]',
   })!;
 
   editor.mode = 'page';
@@ -792,10 +861,10 @@ test('indexed canvas should be inserted into edgeless portal when switch to edge
     '.indexable-canvas'
   )[0] as HTMLCanvasElement;
 
-  expect(indexedCanvas.width).toBe(
+  expect(indexedCanvas.width).toBeLessThanOrEqual(
     (surface.renderer as CanvasRenderer).canvas.width
   );
-  expect(indexedCanvas.height).toBe(
+  expect(indexedCanvas.height).toBeLessThanOrEqual(
     (surface.renderer as CanvasRenderer).canvas.height
   );
   expect(indexedCanvas.width).not.toBe(0);

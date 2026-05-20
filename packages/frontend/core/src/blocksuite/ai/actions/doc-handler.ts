@@ -12,7 +12,8 @@ import {
 } from '../ai-panel';
 import { StreamObjectSchema } from '../components/ai-chat-messages';
 import { type AIItemGroupConfig } from '../components/ai-item/types';
-import { type AIError, AIProvider } from '../provider';
+import { type AIError } from '../provider';
+import { getAIRequestService } from '../runtime/request';
 import { reportResponse } from '../utils/action-reporter';
 import { getAIPanelWidget } from '../utils/ai-widgets';
 import { AIContext } from '../utils/context';
@@ -33,10 +34,12 @@ export function bindTextStream(
     update,
     finish,
     signal,
+    host,
   }: {
     update: (answer: AIActionAnswer) => void;
     finish: (state: 'success' | 'error' | 'aborted', err?: AIError) => void;
     signal?: AbortSignal;
+    host?: EditorHost;
   }
 ) {
   (async () => {
@@ -45,7 +48,7 @@ export function bindTextStream(
     };
     signal?.addEventListener('abort', () => {
       finish('aborted');
-      reportResponse('aborted:stop');
+      reportResponse('aborted:stop', host);
     });
     for await (const data of stream) {
       if (signal?.aborted) {
@@ -88,9 +91,6 @@ function actionToStream<T extends keyof BlockSuitePresets.AIActions>(
   >,
   trackerOptions?: BlockSuitePresets.TrackerOptions
 ): BlockSuitePresets.TextStream | undefined {
-  const action = AIProvider.actions[id];
-  if (!action || typeof action !== 'function') return;
-
   let stream: BlockSuitePresets.TextStream | undefined;
   return {
     async *[Symbol.asyncIterator]() {
@@ -123,9 +123,11 @@ function actionToStream<T extends keyof BlockSuitePresets.AIActions>(
         where,
         docId: host.store.id,
         workspaceId: host.store.workspace.id,
-      } as Parameters<typeof action>[0];
-      // @ts-expect-error TODO(@Peng): maybe fix this
-      stream = await action(options);
+      } as BlockSuitePresets.AITextActionOptions & Record<string, unknown>;
+      stream = (await getAIRequestService().executeAction(
+        id,
+        options
+      )) as BlockSuitePresets.TextStream;
       if (!stream) return;
       yield* stream;
     },
@@ -163,7 +165,7 @@ function actionToGenerateAnswer<T extends keyof BlockSuitePresets.AIActions>(
       trackerOptions
     );
     if (!stream) return;
-    bindTextStream(stream, { update, finish, signal });
+    bindTextStream(stream, { update, finish, signal, host });
   };
 }
 
@@ -198,7 +200,7 @@ function updateAIPanelConfig<T extends keyof BlockSuitePresets.AIActions>(
   config.errorStateConfig = buildErrorConfig(aiPanel);
   config.copy = buildCopyConfig(aiPanel);
   config.discardCallback = () => {
-    reportResponse('result:discard');
+    reportResponse('result:discard', host);
   };
 }
 

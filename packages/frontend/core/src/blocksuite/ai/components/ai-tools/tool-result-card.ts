@@ -1,12 +1,14 @@
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import { unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import { ShadowlessElement } from '@blocksuite/affine/std';
-import { DEFAULT_IMAGE_PROXY_ENDPOINT } from '@blocksuite/affine-shared/consts';
+import { isImageProxyURL } from '@blocksuite/affine-shared/adapters';
 import { ToggleDownIcon, ToolIcon } from '@blocksuite/icons/lit';
 import { type Signal } from '@preact/signals-core';
 import { css, html, nothing, type TemplateResult } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { ifDefined } from 'lit/directives/if-defined.js';
+
+import { AI_CHAT_AUTO_SCROLL_PAUSE_EVENT } from '../ai-chat-messages/auto-scroll';
 
 export interface ToolResult {
   title: string | TemplateResult<1>;
@@ -250,7 +252,7 @@ export class ToolResultCard extends SignalWatcher(
   @state()
   private accessor isCollapsed = true;
 
-  private readonly imageProxyURL = DEFAULT_IMAGE_PROXY_ENDPOINT;
+  private readonly imageProxyURL = BUILD_CONFIG.imageProxyUrl;
 
   protected override render() {
     return html`
@@ -323,7 +325,7 @@ export class ToolResultCard extends SignalWatcher(
   }
 
   buildUrl(imageUrl: string) {
-    if (imageUrl.startsWith(this.imageProxyURL)) {
+    if (imageUrl.startsWith(this.imageProxyURL) || isImageProxyURL(imageUrl)) {
       return imageUrl;
     }
     return `${this.imageProxyURL}?url=${encodeURIComponent(imageUrl)}`;
@@ -352,6 +354,12 @@ export class ToolResultCard extends SignalWatcher(
   }
 
   private toggleCard() {
+    this.dispatchEvent(
+      new CustomEvent(AI_CHAT_AUTO_SCROLL_PAUSE_EVENT, {
+        bubbles: true,
+        composed: true,
+      })
+    );
     this.isCollapsed = !this.isCollapsed;
   }
 }

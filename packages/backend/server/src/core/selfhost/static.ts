@@ -52,7 +52,7 @@ export class StaticFilesResolver implements OnModuleInit {
 
     // serve all static files
     app.use(
-      basePath,
+      basePath + '/admin',
       serveStatic(join(staticPath, 'admin'), {
         redirect: false,
         index: false,

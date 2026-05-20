@@ -35,8 +35,6 @@ const XML_PARSER = new XMLParser({
 
 const DEFAULT_REQUEST_TIMEOUT_MS = 10_000;
 const DEFAULT_MAX_REDIRECTS = 5;
-const CALDAV_ALLOWED_PROTOCOLS = new Set(['https:']);
-const CALDAV_ALLOWED_PROTOCOLS_INSECURE = new Set(['http:', 'https:']);
 
 type CalDAVCredentials = {
   username: string;
@@ -607,11 +605,7 @@ class CalDAVRequestPolicy {
     }
 
     try {
-      await assertSsrFSafeUrl(url, {
-        allowedProtocols: this.allowInsecureHttp
-          ? CALDAV_ALLOWED_PROTOCOLS_INSECURE
-          : CALDAV_ALLOWED_PROTOCOLS,
-      });
+      await assertSsrFSafeUrl(url);
     } catch (error) {
       if (error instanceof SsrfBlockedError) {
         const reason = String(error.data?.reason ?? '');
@@ -820,7 +814,7 @@ export class CalDAVProvider extends CalendarProvider {
     });
   }
 
-  // eslint-disable-next-line sonarjs/no-identical-functions
+  // oxlint-disable-next-line sonarjs/no-identical-functions
   override async exchangeCode(): Promise<any> {
     throw new GraphqlBadRequest({
       code: 'caldav_oauth_unsupported',
@@ -828,7 +822,7 @@ export class CalDAVProvider extends CalendarProvider {
     });
   }
 
-  // eslint-disable-next-line sonarjs/no-identical-functions
+  // oxlint-disable-next-line sonarjs/no-identical-functions
   override async refreshTokens(): Promise<any> {
     throw new GraphqlBadRequest({
       code: 'caldav_oauth_unsupported',
@@ -836,7 +830,7 @@ export class CalDAVProvider extends CalendarProvider {
     });
   }
 
-  // eslint-disable-next-line sonarjs/no-identical-functions
+  // oxlint-disable-next-line sonarjs/no-identical-functions
   override async getAccountProfile(): Promise<any> {
     throw new GraphqlBadRequest({
       code: 'caldav_oauth_unsupported',
@@ -1020,7 +1014,7 @@ export class CalDAVProvider extends CalendarProvider {
     if (response.ok) {
       return response.url;
     }
-    if ([404, 405].includes(response.status)) {
+    if ([400, 404, 405, 501].includes(response.status)) {
       return serverUrl;
     }
     const text = await response.text();

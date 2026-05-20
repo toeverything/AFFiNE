@@ -35,7 +35,7 @@ import {
 } from './actions/page-response';
 import type { AIItemConfig } from './components/ai-item/types';
 import { createAIScrollableTextRenderer } from './components/ai-scrollable-text-renderer';
-import { AIProvider } from './provider';
+import { AIAppEvents } from './provider';
 import { reportResponse } from './utils/action-reporter';
 import { getAIPanelWidget } from './utils/ai-widgets';
 import { AIContext } from './utils/context';
@@ -58,7 +58,7 @@ function asCaption<T extends keyof BlockSuitePresets.AIActions>(
       return id === 'generateCaption' && !!panel.answer;
     },
     handler: () => {
-      reportResponse('result:use-as-caption');
+      reportResponse('result:use-as-caption', host);
       const panel = getAIPanelWidget(host);
       const caption = panel.answer;
       if (!caption) return;
@@ -85,7 +85,7 @@ function createNewNote(host: EditorHost): AIItemConfig {
       return !!panel.answer && isInsideEdgelessEditor(host);
     },
     handler: () => {
-      reportResponse('result:add-note');
+      reportResponse('result:add-note', host);
       // get the note block
       const { selectedBlocks } = getSelections(host);
       if (!selectedBlocks || !selectedBlocks.length) return;
@@ -157,7 +157,7 @@ function buildPageResponseConfig<T extends keyof BlockSuitePresets.AIActions>(
           showWhen: () =>
             !!panel.answer && (!id || !INSERT_ABOVE_ACTIONS.includes(id)),
           handler: () => {
-            reportResponse('result:insert');
+            reportResponse('result:insert', host);
             pageResponseHandler(id, host, ctx, 'after').catch(console.error);
             panel.hide();
           },
@@ -169,7 +169,7 @@ function buildPageResponseConfig<T extends keyof BlockSuitePresets.AIActions>(
           showWhen: () =>
             !!panel.answer && !!id && INSERT_ABOVE_ACTIONS.includes(id),
           handler: () => {
-            reportResponse('result:insert');
+            reportResponse('result:insert', host);
             pageResponseHandler(id, host, ctx, 'before').catch(console.error);
             panel.hide();
           },
@@ -182,7 +182,7 @@ function buildPageResponseConfig<T extends keyof BlockSuitePresets.AIActions>(
           showWhen: () =>
             !!panel.answer && !EXCLUDING_REPLACE_ACTIONS.includes(id),
           handler: () => {
-            reportResponse('result:replace');
+            reportResponse('result:replace', host);
             replaceWithMarkdown(host).catch(console.error);
             panel.hide();
           },
@@ -199,8 +199,8 @@ function buildPageResponseConfig<T extends keyof BlockSuitePresets.AIActions>(
           icon: ChatWithAiIcon(),
           testId: 'answer-continue-in-chat',
           handler: () => {
-            reportResponse('result:continue-in-chat');
-            AIProvider.slots.requestOpenWithChat.next({ host });
+            reportResponse('result:continue-in-chat', host);
+            AIAppEvents.requestOpenWithChat.next({ host });
             panel.hide();
           },
         },
@@ -209,7 +209,7 @@ function buildPageResponseConfig<T extends keyof BlockSuitePresets.AIActions>(
           icon: ResetIcon(),
           testId: 'answer-regenerate',
           handler: () => {
-            reportResponse('result:retry');
+            reportResponse('result:retry', host);
             panel.generate();
           },
         },
@@ -237,7 +237,7 @@ export function buildErrorResponseConfig(panel: AffineAIPanelWidget) {
           testId: 'error-retry',
           showWhen: () => true,
           handler: () => {
-            reportResponse('result:retry');
+            reportResponse('result:retry', panel.host);
             panel.generate();
           },
         },
@@ -269,11 +269,11 @@ export function buildFinishConfig<T extends keyof BlockSuitePresets.AIActions>(
 export function buildErrorConfig(panel: AffineAIPanelWidget) {
   return {
     upgrade: () => {
-      AIProvider.slots.requestUpgradePlan.next({ host: panel.host });
+      AIAppEvents.requestUpgradePlan.next({ host: panel.host });
       panel.hide();
     },
     login: () => {
-      AIProvider.slots.requestLogin.next({ host: panel.host });
+      AIAppEvents.requestLogin.next({ host: panel.host });
       panel.hide();
     },
     cancel: () => {

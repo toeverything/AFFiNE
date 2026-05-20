@@ -6,21 +6,6 @@ export interface GraphQLQuery {
   file?: boolean;
   deprecations?: string[];
 }
-export const copilotChatMessageFragment = `fragment CopilotChatMessage on ChatMessage {
-  id
-  role
-  content
-  attachments
-  streamObjects {
-    type
-    textDelta
-    toolCallId
-    toolName
-    args
-    result
-  }
-  createdAt
-}`;
 export const copilotChatHistoryFragment = `fragment CopilotChatHistory on CopilotHistories {
   sessionId
   workspaceId
@@ -34,10 +19,27 @@ export const copilotChatHistoryFragment = `fragment CopilotChatHistory on Copilo
   title
   tokens
   messages {
-    ...CopilotChatMessage
+    id
+    role
+    content
+    attachments
+    streamObjects {
+      type
+      textDelta
+      toolCallId
+      toolName
+      args
+      result
+    }
+    createdAt
   }
   createdAt
   updatedAt
+}`;
+export const credentialsRequirementsFragment = `fragment CredentialsRequirements on CredentialsRequirementType {
+  password {
+    ...PasswordLimits
+  }
 }`;
 export const paginatedCopilotChatsFragment = `fragment PaginatedCopilotChats on PaginatedCopilotHistoriesType {
   pageInfo {
@@ -52,48 +54,7 @@ export const paginatedCopilotChatsFragment = `fragment PaginatedCopilotChats on 
       ...CopilotChatHistory
     }
   }
-}`;
-export const credentialsRequirementsFragment = `fragment CredentialsRequirements on CredentialsRequirementType {
-  password {
-    ...PasswordLimits
-  }
-}`;
-export const currentUserProfileFragment = `fragment CurrentUserProfile on UserType {
-  id
-  name
-  email
-  avatarUrl
-  emailVerified
-  features
-  settings {
-    receiveInvitationEmail
-    receiveMentionEmail
-    receiveCommentEmail
-  }
-  quota {
-    name
-    blobLimit
-    storageQuota
-    historyPeriod
-    memberLimit
-    humanReadable {
-      name
-      blobLimit
-      storageQuota
-      historyPeriod
-      memberLimit
-    }
-  }
-  quotaUsage {
-    storageQuota
-  }
-  copilot {
-    quota {
-      limit
-      used
-    }
-  }
-}`;
+}${copilotChatHistoryFragment}`;
 export const passwordLimitsFragment = `fragment PasswordLimits on PasswordLimitsType {
   minLength
   maxLength
@@ -116,22 +77,6 @@ export const generateUserAccessTokenMutation = {
     token
     createdAt
     expiresAt
-  }
-}`,
-};
-
-export const listUserAccessTokensQuery = {
-  id: 'listUserAccessTokensQuery' as const,
-  op: 'listUserAccessTokens',
-  query: `query listUserAccessTokens {
-  currentUser {
-    revealedAccessTokens {
-      id
-      name
-      createdAt
-      expiresAt
-      token
-    }
   }
 }`,
 };
@@ -401,52 +346,6 @@ export const appConfigQuery = {
   op: 'appConfig',
   query: `query appConfig {
   appConfig
-}`,
-};
-
-export const getPromptsQuery = {
-  id: 'getPromptsQuery' as const,
-  op: 'getPrompts',
-  query: `query getPrompts {
-  listCopilotPrompts {
-    name
-    model
-    action
-    config {
-      frequencyPenalty
-      presencePenalty
-      temperature
-      topP
-    }
-    messages {
-      role
-      content
-      params
-    }
-  }
-}`,
-};
-
-export const updatePromptMutation = {
-  id: 'updatePromptMutation' as const,
-  op: 'updatePrompt',
-  query: `mutation updatePrompt($name: String!, $messages: [CopilotPromptMessageInput!]!) {
-  updateCopilotPrompt(name: $name, messages: $messages) {
-    name
-    model
-    action
-    config {
-      frequencyPenalty
-      presencePenalty
-      temperature
-      topP
-    }
-    messages {
-      role
-      content
-      params
-    }
-  }
 }`,
 };
 
@@ -1082,19 +981,6 @@ export const uploadCommentAttachmentMutation = {
   file: true,
 };
 
-export const applyDocUpdatesMutation = {
-  id: 'applyDocUpdatesMutation' as const,
-  op: 'applyDocUpdates',
-  query: `mutation applyDocUpdates($workspaceId: String!, $docId: String!, $op: String!, $updates: String!) {
-  applyDocUpdates(
-    workspaceId: $workspaceId
-    docId: $docId
-    op: $op
-    updates: $updates
-  )
-}`,
-};
-
 export const addContextBlobMutation = {
   id: 'addContextBlobMutation' as const,
   op: 'addContextBlob',
@@ -1349,17 +1235,6 @@ export const matchFilesQuery = {
 }`,
 };
 
-export const getWorkspaceEmbeddingStatusQuery = {
-  id: 'getWorkspaceEmbeddingStatusQuery' as const,
-  op: 'getWorkspaceEmbeddingStatus',
-  query: `query getWorkspaceEmbeddingStatus($workspaceId: String!) {
-  queryWorkspaceEmbeddingStatus(workspaceId: $workspaceId) {
-    total
-    embedded
-  }
-}`,
-};
-
 export const queueWorkspaceEmbeddingMutation = {
   id: 'queueWorkspaceEmbeddingMutation' as const,
   op: 'queueWorkspaceEmbedding',
@@ -1411,8 +1286,6 @@ export const getCopilotDocSessionsQuery = {
     }
   }
 }
-${copilotChatMessageFragment}
-${copilotChatHistoryFragment}
 ${paginatedCopilotChatsFragment}`,
 };
 
@@ -1432,8 +1305,6 @@ export const getCopilotPinnedSessionsQuery = {
     }
   }
 }
-${copilotChatMessageFragment}
-${copilotChatHistoryFragment}
 ${paginatedCopilotChatsFragment}`,
 };
 
@@ -1449,8 +1320,6 @@ export const getCopilotWorkspaceSessionsQuery = {
     }
   }
 }
-${copilotChatMessageFragment}
-${copilotChatHistoryFragment}
 ${paginatedCopilotChatsFragment}`,
 };
 
@@ -1466,80 +1335,7 @@ export const getCopilotHistoriesQuery = {
     }
   }
 }
-${copilotChatMessageFragment}
-${copilotChatHistoryFragment}
 ${paginatedCopilotChatsFragment}`,
-};
-
-export const submitAudioTranscriptionMutation = {
-  id: 'submitAudioTranscriptionMutation' as const,
-  op: 'submitAudioTranscription',
-  query: `mutation submitAudioTranscription($workspaceId: String!, $blobId: String!, $blob: Upload, $blobs: [Upload!]) {
-  submitAudioTranscription(
-    blob: $blob
-    blobs: $blobs
-    blobId: $blobId
-    workspaceId: $workspaceId
-  ) {
-    id
-    status
-  }
-}`,
-  file: true,
-};
-
-export const claimAudioTranscriptionMutation = {
-  id: 'claimAudioTranscriptionMutation' as const,
-  op: 'claimAudioTranscription',
-  query: `mutation claimAudioTranscription($jobId: String!) {
-  claimAudioTranscription(jobId: $jobId) {
-    id
-    status
-    title
-    summary
-    actions
-    transcription {
-      speaker
-      start
-      end
-      transcription
-    }
-  }
-}`,
-};
-
-export const getAudioTranscriptionQuery = {
-  id: 'getAudioTranscriptionQuery' as const,
-  op: 'getAudioTranscription',
-  query: `query getAudioTranscription($workspaceId: String!, $jobId: String, $blobId: String) {
-  currentUser {
-    copilot(workspaceId: $workspaceId) {
-      audioTranscription(jobId: $jobId, blobId: $blobId) {
-        id
-        status
-        title
-        summary
-        transcription {
-          speaker
-          start
-          end
-          transcription
-        }
-      }
-    }
-  }
-}`,
-};
-
-export const retryAudioTranscriptionMutation = {
-  id: 'retryAudioTranscriptionMutation' as const,
-  op: 'retryAudioTranscription',
-  query: `mutation retryAudioTranscription($workspaceId: String!, $jobId: String!) {
-  retryAudioTranscription(workspaceId: $workspaceId, jobId: $jobId) {
-    id
-    status
-  }
-}`,
 };
 
 export const createCopilotMessageMutation = {
@@ -1596,12 +1392,24 @@ export const cleanupCopilotSessionMutation = {
 }`,
 };
 
+export const createCopilotSessionWithHistoryMutation = {
+  id: 'createCopilotSessionWithHistoryMutation' as const,
+  op: 'createCopilotSessionWithHistory',
+  query: `mutation createCopilotSessionWithHistory($options: CreateChatSessionInput!) {
+  createCopilotSessionWithHistory(options: $options) {
+    ...CopilotChatHistory
+  }
+}
+${copilotChatHistoryFragment}`,
+};
+
 export const createCopilotSessionMutation = {
   id: 'createCopilotSessionMutation' as const,
   op: 'createCopilotSession',
   query: `mutation createCopilotSession($options: CreateChatSessionInput!) {
   createCopilotSession(options: $options)
 }`,
+  deprecations: ["'createCopilotSession' is deprecated: use `createCopilotSessionWithHistory` instead"],
 };
 
 export const forkCopilotSessionMutation = {
@@ -1628,8 +1436,6 @@ export const getCopilotLatestDocSessionQuery = {
     }
   }
 }
-${copilotChatMessageFragment}
-${copilotChatHistoryFragment}
 ${paginatedCopilotChatsFragment}`,
 };
 
@@ -1645,8 +1451,6 @@ export const getCopilotSessionQuery = {
     }
   }
 }
-${copilotChatMessageFragment}
-${copilotChatHistoryFragment}
 ${paginatedCopilotChatsFragment}`,
 };
 
@@ -1665,8 +1469,6 @@ export const getCopilotRecentSessionsQuery = {
     }
   }
 }
-${copilotChatMessageFragment}
-${copilotChatHistoryFragment}
 ${paginatedCopilotChatsFragment}`,
 };
 
@@ -1690,9 +1492,164 @@ export const getCopilotSessionsQuery = {
     }
   }
 }
-${copilotChatMessageFragment}
-${copilotChatHistoryFragment}
 ${paginatedCopilotChatsFragment}`,
+};
+
+export const getTranscriptTaskQuery = {
+  id: 'getTranscriptTaskQuery' as const,
+  op: 'getTranscriptTask',
+  query: `query getTranscriptTask($workspaceId: String!, $taskId: String, $blobId: String) {
+  currentUser {
+    copilot(workspaceId: $workspaceId) {
+      transcriptTask(taskId: $taskId, blobId: $blobId) {
+        id
+        status
+        title
+        summary
+        sourceAudio {
+          blobId
+          mimeType
+          durationMs
+          sampleRate
+          channels
+        }
+        quality {
+          degraded
+          overflowCount
+        }
+        sliceManifest {
+          index
+          fileName
+          mimeType
+          startSec
+          durationSec
+          byteSize
+        }
+        normalizedSegments {
+          speaker
+          startSec
+          endSec
+          start
+          end
+          text
+        }
+        normalizedTranscript
+        summaryJson {
+          title
+          durationMinutes
+          attendees
+          keyPoints
+          actionItems {
+            description
+            owner
+            deadline
+          }
+          decisions
+          openQuestions
+          blockers
+        }
+        transcription {
+          speaker
+          start
+          end
+          transcription
+        }
+      }
+    }
+  }
+}`,
+  deprecations: ["'transcriptTask' is deprecated: Use realtime subscription \"copilot.transcript.task.changed\" instead."],
+};
+
+export const retryTranscriptTaskMutation = {
+  id: 'retryTranscriptTaskMutation' as const,
+  op: 'retryTranscriptTask',
+  query: `mutation retryTranscriptTask($workspaceId: String!, $taskId: String!) {
+  retryTranscriptTask(workspaceId: $workspaceId, taskId: $taskId) {
+    id
+    status
+  }
+}`,
+};
+
+export const settleTranscriptTaskMutation = {
+  id: 'settleTranscriptTaskMutation' as const,
+  op: 'settleTranscriptTask',
+  query: `mutation settleTranscriptTask($workspaceId: String!, $taskId: String!) {
+  settleTranscriptTask(workspaceId: $workspaceId, taskId: $taskId) {
+    id
+    status
+    title
+    summary
+    actions
+    sourceAudio {
+      blobId
+      mimeType
+      durationMs
+      sampleRate
+      channels
+    }
+    quality {
+      degraded
+      overflowCount
+    }
+    sliceManifest {
+      index
+      fileName
+      mimeType
+      startSec
+      durationSec
+      byteSize
+    }
+    normalizedSegments {
+      speaker
+      startSec
+      endSec
+      start
+      end
+      text
+    }
+    normalizedTranscript
+    summaryJson {
+      title
+      durationMinutes
+      attendees
+      keyPoints
+      actionItems {
+        description
+        owner
+        deadline
+      }
+      decisions
+      openQuestions
+      blockers
+    }
+    transcription {
+      speaker
+      start
+      end
+      transcription
+    }
+  }
+}`,
+};
+
+export const submitTranscriptTaskMutation = {
+  id: 'submitTranscriptTaskMutation' as const,
+  op: 'submitTranscriptTask',
+  query: `mutation submitTranscriptTask($workspaceId: String!, $blobId: String!, $blob: Upload, $blobs: [Upload!], $input: SubmitAudioTranscriptionInput) {
+  submitTranscriptTask(
+    blob: $blob
+    blobs: $blobs
+    blobId: $blobId
+    workspaceId: $workspaceId
+    input: $input
+  ) {
+    id
+    status
+  }
+}`,
+  file: true,
 };
 
 export const addWorkspaceEmbeddingFilesMutation = {
@@ -1915,17 +1872,6 @@ export const getCurrentUserFeaturesQuery = {
 }`,
 };
 
-export const getCurrentUserProfileQuery = {
-  id: 'getCurrentUserProfileQuery' as const,
-  op: 'getCurrentUserProfile',
-  query: `query getCurrentUserProfile {
-  currentUser {
-    ...CurrentUserProfile
-  }
-}
-${currentUserProfileFragment}`,
-};
-
 export const getCurrentUserQuery = {
   id: 'getCurrentUserQuery' as const,
   op: 'getCurrentUser',
@@ -1962,18 +1908,6 @@ export const getDocCreatedByUpdatedByListQuery = {
           lastUpdaterId
         }
       }
-    }
-  }
-}`,
-};
-
-export const getDocDefaultRoleQuery = {
-  id: 'getDocDefaultRoleQuery' as const,
-  op: 'getDocDefaultRole',
-  query: `query getDocDefaultRole($workspaceId: String!, $docId: String!) {
-  workspace(id: $workspaceId) {
-    doc(docId: $docId) {
-      defaultRole
     }
   }
 }`,
@@ -2097,62 +2031,12 @@ export const getMemberCountByWorkspaceIdQuery = {
 }`,
 };
 
-export const getMembersByWorkspaceIdQuery = {
-  id: 'getMembersByWorkspaceIdQuery' as const,
-  op: 'getMembersByWorkspaceId',
-  query: `query getMembersByWorkspaceId($workspaceId: String!, $skip: Int, $take: Int, $query: String) {
-  workspace(id: $workspaceId) {
-    memberCount
-    members(skip: $skip, take: $take, query: $query) {
-      id
-      name
-      email
-      avatarUrl
-      permission
-      inviteId
-      emailVerified
-      status
-    }
-  }
-}`,
-  deprecations: ["'permission' is deprecated: Use role instead"],
-};
-
 export const oauthProvidersQuery = {
   id: 'oauthProvidersQuery' as const,
   op: 'oauthProviders',
   query: `query oauthProviders {
   serverConfig {
     oauthProviders
-  }
-}`,
-};
-
-export const getPageGrantedUsersListQuery = {
-  id: 'getPageGrantedUsersListQuery' as const,
-  op: 'getPageGrantedUsersList',
-  query: `query getPageGrantedUsersList($pagination: PaginationInput!, $docId: String!, $workspaceId: String!) {
-  workspace(id: $workspaceId) {
-    doc(docId: $docId) {
-      grantedUsersList(pagination: $pagination) {
-        totalCount
-        pageInfo {
-          endCursor
-          hasNextPage
-        }
-        edges {
-          node {
-            role
-            user {
-              id
-              name
-              email
-              avatarUrl
-            }
-          }
-        }
-      }
-    }
   }
 }`,
 };
@@ -2237,39 +2121,6 @@ export const getUserQuery = {
       email
       hasPassword
     }
-  }
-}`,
-};
-
-export const getWorkspaceInfoQuery = {
-  id: 'getWorkspaceInfoQuery' as const,
-  op: 'getWorkspaceInfo',
-  query: `query getWorkspaceInfo($workspaceId: String!) {
-  workspace(id: $workspaceId) {
-    permissions {
-      Workspace_Administrators_Manage
-      Workspace_Blobs_List
-      Workspace_Blobs_Read
-      Workspace_Blobs_Write
-      Workspace_Copilot
-      Workspace_CreateDoc
-      Workspace_Delete
-      Workspace_Organize_Read
-      Workspace_Payment_Manage
-      Workspace_Properties_Create
-      Workspace_Properties_Delete
-      Workspace_Properties_Read
-      Workspace_Properties_Update
-      Workspace_Read
-      Workspace_Settings_Read
-      Workspace_Settings_Update
-      Workspace_Sync
-      Workspace_TransferOwner
-      Workspace_Users_Manage
-      Workspace_Users_Read
-    }
-    role
-    team
   }
 }`,
 };
@@ -2563,6 +2414,27 @@ ${licenseBodyFragment}`,
   file: true,
 };
 
+export const previewLicenseMutation = {
+  id: 'previewLicenseMutation' as const,
+  op: 'previewLicense',
+  query: `mutation previewLicense($license: Upload!) {
+  previewLicense(license: $license) {
+    id
+    workspaceId
+    plan
+    recurring
+    quantity
+    issuedAt
+    expiresAt
+    endAt
+    entity
+    issuer
+    valid
+  }
+}`,
+  file: true,
+};
+
 export const listNotificationsQuery = {
   id: 'listNotificationsQuery' as const,
   op: 'listNotifications',
@@ -2598,18 +2470,6 @@ export const mentionUserMutation = {
   op: 'mentionUser',
   query: `mutation mentionUser($input: MentionInput!) {
   mentionUser(input: $input)
-}`,
-};
-
-export const notificationCountQuery = {
-  id: 'notificationCountQuery' as const,
-  op: 'notificationCount',
-  query: `query notificationCount {
-  currentUser {
-    notifications(pagination: {first: 1}) {
-      totalCount
-    }
-  }
 }`,
 };
 
@@ -2965,18 +2825,112 @@ export const workspaceBlobQuotaQuery = {
 }`,
 };
 
-export const getWorkspaceConfigQuery = {
-  id: 'getWorkspaceConfigQuery' as const,
-  op: 'getWorkspaceConfig',
-  query: `query getWorkspaceConfig($id: String!) {
+export const clearWorkspaceByokConfigsMutation = {
+  id: 'clearWorkspaceByokConfigsMutation' as const,
+  op: 'clearWorkspaceByokConfigs',
+  query: `mutation clearWorkspaceByokConfigs($workspaceId: String!) {
+  clearWorkspaceByokConfigs(workspaceId: $workspaceId)
+}`,
+};
+
+export const deleteWorkspaceByokConfigMutation = {
+  id: 'deleteWorkspaceByokConfigMutation' as const,
+  op: 'deleteWorkspaceByokConfig',
+  query: `mutation deleteWorkspaceByokConfig($workspaceId: String!, $id: ID!) {
+  deleteWorkspaceByokConfig(workspaceId: $workspaceId, id: $id)
+}`,
+};
+
+export const reorderWorkspaceByokConfigsMutation = {
+  id: 'reorderWorkspaceByokConfigsMutation' as const,
+  op: 'reorderWorkspaceByokConfigs',
+  query: `mutation reorderWorkspaceByokConfigs($input: ReorderWorkspaceByokConfigsInput!) {
+  reorderWorkspaceByokConfigs(input: $input) {
+    id
+    sortOrder
+  }
+}`,
+};
+
+export const testWorkspaceByokConfigMutation = {
+  id: 'testWorkspaceByokConfigMutation' as const,
+  op: 'testWorkspaceByokConfig',
+  query: `mutation testWorkspaceByokConfig($input: TestWorkspaceByokConfigInput!) {
+  testWorkspaceByokConfig(input: $input) {
+    ok
+    status
+    message
+  }
+}`,
+};
+
+export const upsertWorkspaceByokConfigMutation = {
+  id: 'upsertWorkspaceByokConfigMutation' as const,
+  op: 'upsertWorkspaceByokConfig',
+  query: `mutation upsertWorkspaceByokConfig($input: UpsertWorkspaceByokConfigInput!) {
+  upsertWorkspaceByokConfig(input: $input) {
+    id
+  }
+}`,
+};
+
+export const createWorkspaceByokLocalLeaseMutation = {
+  id: 'createWorkspaceByokLocalLeaseMutation' as const,
+  op: 'createWorkspaceByokLocalLease',
+  query: `mutation createWorkspaceByokLocalLease($input: CreateWorkspaceByokLocalLeaseInput!) {
+  createWorkspaceByokLocalLease(input: $input) {
+    leaseId
+    expiresAt
+  }
+}`,
+};
+
+export const workspaceByokSettingsQuery = {
+  id: 'workspaceByokSettingsQuery' as const,
+  op: 'workspaceByokSettings',
+  query: `query workspaceByokSettings($id: String!, $from: DateTime!, $to: DateTime!) {
   workspace(id: $id) {
-    enableAi
-    enableSharing
-    enableUrlPreview
-    enableDocEmbedding
-    inviteLink {
-      link
-      expireTime
+    id
+    byokSettings {
+      workspaceId
+      entitled
+      serverEntitled
+      localEntitled
+      entitlementRequired
+      allowedProviders
+      localStorageSupported
+      customEndpointSupported
+      hasAiPlan
+      keys {
+        id
+        provider
+        name
+        description
+        storage
+        configured
+        enabled
+        endpoint
+        endpointEditable
+        sortOrder
+        capabilities
+        testStatus
+        disabledReason
+        lastTestedAt
+        lastTestError
+        lastUsedAt
+        lastErrorAt
+        lastError
+      }
+      warnings {
+        featureKind
+        reason
+        requiredProviders
+      }
+    }
+    byokUsage(from: $from, to: $to) {
+      date
+      featureKind
+      totalTokens
     }
   }
 }`,
@@ -3081,34 +3035,6 @@ export const workspaceInvoicesQuery = {
   }
 }`,
   deprecations: ["'id' is deprecated: removed"],
-};
-
-export const workspaceQuotaQuery = {
-  id: 'workspaceQuotaQuery' as const,
-  op: 'workspaceQuota',
-  query: `query workspaceQuota($id: String!) {
-  workspace(id: $id) {
-    quota {
-      name
-      blobLimit
-      storageQuota
-      usedStorageQuota
-      historyPeriod
-      memberLimit
-      memberCount
-      overcapacityMemberCount
-      humanReadable {
-        name
-        blobLimit
-        storageQuota
-        historyPeriod
-        memberLimit
-        memberCount
-        overcapacityMemberCount
-      }
-    }
-  }
-}`,
 };
 
 export const getWorkspaceRolePermissionsQuery = {

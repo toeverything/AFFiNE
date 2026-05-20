@@ -12,6 +12,7 @@ import {
 import { z } from 'zod';
 
 import { supportedClient } from './common';
+import { attachOAuthFlowToAuthUrl, resolveOAuthFlowMode } from './oauth-flow';
 
 const supportedProvider = z.nativeEnum(OAuthProviderType);
 const CSRF_COOKIE_NAME = 'affine_csrf_token';
@@ -36,12 +37,14 @@ const oauthParameters = z.object({
   provider: supportedProvider,
   client: supportedClient,
   redirectUri: z.string().optional().nullable(),
+  flow: z.string().optional().nullable(),
 });
 
 interface LoaderData {
   provider: OAuthProviderType;
   client: string;
   redirectUri?: string;
+  flow: string;
 }
 
 export const loader: LoaderFunction = async ({ request }) => {
@@ -50,6 +53,7 @@ export const loader: LoaderFunction = async ({ request }) => {
   const provider = searchParams.get('provider');
   const client = searchParams.get('client') ?? 'web';
   const redirectUri = searchParams.get('redirect_uri');
+  const flow = searchParams.get('flow');
 
   // sign out first, web only
   if (client === 'web') {
@@ -64,6 +68,7 @@ export const loader: LoaderFunction = async ({ request }) => {
     provider,
     client,
     redirectUri,
+    flow,
   });
 
   if (paramsParseResult.success) {
@@ -71,6 +76,7 @@ export const loader: LoaderFunction = async ({ request }) => {
       provider,
       client,
       redirectUri,
+      flow: resolveOAuthFlowMode(flow),
     };
   }
 
@@ -90,7 +96,10 @@ export const Component = () => {
       .oauthPreflight(data.provider, data.client, data.redirectUri)
       .then(({ url }) => {
         // this is the url of oauth provider auth page, can't navigate with react-router
-        location.href = url;
+        location.href = attachOAuthFlowToAuthUrl(
+          url,
+          resolveOAuthFlowMode(data.flow)
+        );
       })
       .catch(e => {
         nav(`/sign-in?error=${encodeURIComponent(e.message)}`);

@@ -16,10 +16,8 @@
     "@types/lodash.ismatch": "^4.4.9",
     "file-type": "^21.0.0",
     "lib0": "^0.2.114",
-    "lodash.clonedeep": "^4.5.0",
     "lodash.ismatch": "^4.4.0",
-    "lodash.merge": "^4.6.2",
-    "minimatch": "^10.1.1",
+    "minimatch": "^10.2.5",
     "nanoid": "^5.1.6",
     "rxjs": "^7.8.2",
     "y-protocols": "^1.0.6",
@@ -27,9 +25,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
-    "@types/lodash.clonedeep": "^4.5.9",
-    "@types/lodash.merge": "^4.6.9",
-    "vitest": "^3.2.4"
+    "vitest": "^4.0.18"
   },
   "exports": {
     ".": "./src/index.ts",
@@ -42,5 +38,5 @@
     "!dist/__tests__",
     "shim.d.ts"
   ],
-  "version": "0.26.1"
+  "version": "0.26.3"
 }

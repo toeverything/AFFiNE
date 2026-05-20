@@ -11,7 +11,11 @@ import {
   FileChunkSimilarity,
   Models,
 } from '../../../models';
-import { EmbeddingClient } from '../embedding/types';
+import type {
+  EmbeddingCallOptions,
+  EmbeddingClient,
+  EmbeddingRouteContext,
+} from '../embedding/types';
 
 export class ContextSession implements AsyncDisposable {
   constructor(
@@ -67,6 +71,18 @@ export class ContextSession implements AsyncDisposable {
           .map(d => d.id)
       )
     );
+  }
+
+  private embeddingOptions(
+    signal?: AbortSignal,
+    routeContext: EmbeddingRouteContext = {}
+  ): EmbeddingCallOptions {
+    return {
+      workspaceId: this.workspaceId,
+      signal,
+      ...routeContext,
+      featureKind: 'embedding',
+    };
   }
 
   async addCategoryRecord(type: ContextCategories, id: string, docs: string[]) {
@@ -269,10 +285,12 @@ export class ContextSession implements AsyncDisposable {
     topK: number = 5,
     signal?: AbortSignal,
     scopedThreshold: number = 0.85,
-    threshold: number = 0.5
+    threshold: number = 0.5,
+    routeContext?: EmbeddingRouteContext
   ): Promise<FileChunkSimilarity[]> {
     if (!this.client) return [];
-    const embedding = await this.client.getEmbedding(content, signal);
+    const options = this.embeddingOptions(signal, routeContext);
+    const embedding = await this.client.getEmbedding(content, options);
     if (!embedding) return [];
 
     const [context, workspace] = await Promise.all([
@@ -305,7 +323,7 @@ export class ContextSession implements AsyncDisposable {
         ...workspace,
       ],
       topK,
-      signal
+      options
     );
   }
 
@@ -322,10 +340,12 @@ export class ContextSession implements AsyncDisposable {
     topK: number = 5,
     signal?: AbortSignal,
     scopedThreshold: number = 0.85,
-    threshold: number = 0.5
+    threshold: number = 0.5,
+    routeContext?: EmbeddingRouteContext
   ) {
     if (!this.client) return [];
-    const embedding = await this.client.getEmbedding(content, signal);
+    const options = this.embeddingOptions(signal, routeContext);
+    const embedding = await this.client.getEmbedding(content, options);
     if (!embedding) return [];
 
     const docIds = this.docIds;
@@ -349,7 +369,7 @@ export class ContextSession implements AsyncDisposable {
       content,
       [...inContext, ...workspace],
       topK,
-      signal
+      options
     );
 
     // sort result, doc recorded in context first

@@ -81,26 +81,40 @@ export class EditorUtils {
     return page.getByTestId('title-edit-button').innerText();
   }
 
-  public static async waitForAiAnswer(page: Page) {
-    const answer = await page.getByTestId('ai-penel-answer');
-    await answer.waitFor({
-      state: 'visible',
-      timeout: 2 * 60000,
-    });
+  public static async waitForAiAnswer(page: Page, timeout = 2 * 60000) {
+    const answer = page.getByTestId('ai-penel-answer').last();
+    await answer.waitFor({ state: 'visible', timeout });
     return answer;
   }
 
-  private static createAction(page: Page, action: () => Promise<void>) {
+  private static createAction(
+    page: Page,
+    action: () => Promise<void>,
+    options?: { responseTimeoutMs?: number }
+  ) {
     return async () => {
+      const responseTimeoutMs = options?.responseTimeoutMs ?? 60000;
+
       await action();
+      await this.waitForAiAnswer(page, responseTimeoutMs);
+      await page.getByTestId('ai-generating').waitFor({
+        state: 'hidden',
+        timeout: responseTimeoutMs,
+      });
+
       const responses = new Set<string>();
       const answer = await this.waitForAiAnswer(page);
       const responsesMenu = answer.getByTestId('answer-responses');
-      await responsesMenu.isVisible();
-      await responsesMenu.scrollIntoViewIfNeeded({ timeout: 60000 });
+      await responsesMenu.waitFor({
+        state: 'visible',
+        timeout: responseTimeoutMs,
+      });
+      await responsesMenu.scrollIntoViewIfNeeded({
+        timeout: responseTimeoutMs,
+      });
       await responsesMenu
         .getByTestId('answer-insert-below-loading')
-        .waitFor({ state: 'hidden' });
+        .waitFor({ state: 'hidden', timeout: responseTimeoutMs });
 
       if (await responsesMenu.getByTestId('answer-insert-below').isVisible()) {
         responses.add('insert-below');
@@ -458,8 +472,10 @@ export class EditorUtils {
       generateOutline: this.createAction(page, () =>
         page.getByTestId('action-generate-outline').click()
       ),
-      generatePresentation: this.createAction(page, () =>
-        page.getByTestId('action-generate-presentation').click()
+      generatePresentation: this.createAction(
+        page,
+        () => page.getByTestId('action-generate-presentation').click(),
+        { responseTimeoutMs: 120000 }
       ),
       imageProcessing: this.createAction(page, () =>
         page.getByTestId('action-image-processing').click()
@@ -554,24 +570,43 @@ export class EditorUtils {
       explainImage: this.createAction(page, () =>
         page.getByTestId('action-explain-image').click()
       ),
-      generateImage: this.createAction(page, async () => {
-        await page.getByTestId('action-generate-image').click();
-        await page.keyboard.type('generate an image');
-        await page.getByTestId('ai-panel-input-send').click();
-      }),
+      generateImage: this.createAction(
+        page,
+        async () => {
+          await page.getByTestId('action-generate-image').click();
+          const input = page.locator(
+            'affine-ai-panel-widget .ai-panel-container textarea'
+          );
+          await input.waitFor({ state: 'visible' });
+          await input.fill('generate an image');
+          await page.getByTestId('ai-panel-input-send').waitFor({
+            state: 'visible',
+          });
+          await page.getByTestId('ai-panel-input-send').click();
+        },
+        { responseTimeoutMs: 4 * 60000 }
+      ),
       generateCaption: this.createAction(page, () =>
         page.getByTestId('action-generate-caption').click()
       ),
       imageProcessing: (type: string) =>
-        this.createAction(page, async () => {
-          await page.getByTestId('action-image-processing').hover();
-          await page.getByTestId(`action-image-processing-${type}`).click();
-        })(),
+        this.createAction(
+          page,
+          async () => {
+            await page.getByTestId('action-image-processing').hover();
+            await page.getByTestId(`action-image-processing-${type}`).click();
+          },
+          { responseTimeoutMs: 4 * 60000 }
+        )(),
       imageFilter: (style: string) =>
-        this.createAction(page, async () => {
-          await page.getByTestId('action-ai-image-filter').hover();
-          await page.getByTestId(`action-image-filter-${style}`).click();
-        })(),
+        this.createAction(
+          page,
+          async () => {
+            await page.getByTestId('action-ai-image-filter').hover();
+            await page.getByTestId(`action-image-filter-${style}`).click();
+          },
+          { responseTimeoutMs: 4 * 60000 }
+        )(),
     };
   }
 
@@ -634,8 +669,10 @@ export class EditorUtils {
       generateOutline: this.createAction(page, () =>
         page.getByTestId('action-generate-outline').click()
       ),
-      generatePresentation: this.createAction(page, () =>
-        page.getByTestId('action-generate-presentation').click()
+      generatePresentation: this.createAction(
+        page,
+        () => page.getByTestId('action-generate-presentation').click(),
+        { responseTimeoutMs: 120000 }
       ),
       imageProcessing: this.createAction(page, () =>
         page.getByTestId('action-image-processing').click()

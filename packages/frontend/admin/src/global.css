@@ -1,5 +1,7 @@
 @config '../tailwind.config.js';
 
+@layer properties, theme, base, components, utilities, queuedash;
+
 @import 'tailwindcss';
 @import 'tailwindcss/utilities';
 @import '@toeverything/theme/style.css';

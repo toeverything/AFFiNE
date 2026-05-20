@@ -7,7 +7,6 @@ import {
   BlobQuotaExceeded,
   CallMetric,
   Config,
-  fetchBuffer,
   type FileUpload,
   OneMB,
   OnEvent,
@@ -17,6 +16,7 @@ import {
   URLHelper,
 } from '../../base';
 import { QuotaService } from '../../core/quota';
+import { fetchRemoteAttachment } from '../../native';
 
 const REMOTE_BLOB_MAX_BYTES = 20 * OneMB;
 
@@ -48,13 +48,14 @@ export class CopilotStorage {
     userId: string,
     workspaceId: string,
     key: string,
-    blob: BlobInputType
+    blob: BlobInputType,
+    mimeType = 'image/png'
   ) {
     const name = `${userId}/${workspaceId}/${key}`;
     await this.provider.put(name, blob);
     if (!env.prod) {
       // return image base64url for dev environment
-      return `data:image/png;base64,${blob.toString('base64')}`;
+      return `data:${mimeType};base64,${blob.toString('base64')}`;
     }
     return this.url.link(`/api/copilot/blob/${name}`);
   }
@@ -92,8 +93,15 @@ export class CopilotStorage {
 
   @CallMetric('ai', 'blob_proxy_remote_url')
   async handleRemoteLink(userId: string, workspaceId: string, link: string) {
-    const { buffer } = await fetchBuffer(link, REMOTE_BLOB_MAX_BYTES, 'image/');
+    const { body, mimeType } = await fetchRemoteAttachment({
+      url: link,
+      maxBytes: REMOTE_BLOB_MAX_BYTES,
+      expectedContentTypePrefix: 'image/',
+      maxImageHeight: 4096,
+      maxImageWidth: 4096,
+    });
+    const buffer = Buffer.from(body);
     const filename = createHash('sha256').update(buffer).digest('base64url');
-    return this.put(userId, workspaceId, filename, buffer);
+    return this.put(userId, workspaceId, filename, buffer, mimeType);
   }
 }

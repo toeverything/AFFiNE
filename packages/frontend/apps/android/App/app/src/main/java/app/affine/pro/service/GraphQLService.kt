@@ -72,7 +72,7 @@ class GraphQLService @Inject constructor() {
     ).mapCatching { data ->
         data.currentUser?.copilot?.chats?.paginatedCopilotChats?.edges?.map { item -> item.node.copilotChatHistory }?.firstOrNull { history ->
           history.sessionId == sessionId
-        }?.messages?.map { msg -> msg.copilotChatMessage } ?: emptyList()
+        }?.messages ?: emptyList()
     }
 
     suspend fun getCopilotHistoryIds(

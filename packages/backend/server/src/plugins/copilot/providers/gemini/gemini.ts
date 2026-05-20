@@ -1,58 +1,63 @@
-import type {
-  GoogleGenerativeAIProvider,
-  GoogleGenerativeAIProviderOptions,
-} from '@ai-sdk/google';
-import type { GoogleVertexProvider } from '@ai-sdk/google-vertex';
-import {
-  AISDKError,
-  embedMany,
-  generateObject,
-  generateText,
-  JSONParseError,
-  stepCountIs,
-  streamText,
-} from 'ai';
+import { setTimeout as delay } from 'node:timers/promises';
+
+import { Inject } from '@nestjs/common';
+import { ZodError } from 'zod';
 
 import {
-  CopilotPromptInvalid,
   CopilotProviderSideError,
-  metrics,
+  OneMB,
   UserFriendlyError,
 } from '../../../../base';
-import { CopilotProvider } from '../provider';
-import type {
-  CopilotChatOptions,
-  CopilotEmbeddingOptions,
-  CopilotImageOptions,
-  CopilotProviderModel,
-  ModelConditions,
-  PromptMessage,
-  StreamObject,
-} from '../types';
-import { ModelOutputType } from '../types';
 import {
-  chatToGPTMessage,
-  StreamObjectParser,
-  TextStreamParser,
-} from '../utils';
+  isInvalidStructuredOutputError,
+  type LlmBackendConfig,
+  llmResolveRequestIntentOptions,
+} from '../../../../native';
+import {
+  admittedAttachmentToPromptAttachment,
+  AttachmentAdmissionHost,
+} from '../../runtime/hosts/attachment-admission';
+import {
+  planAdmittedAttachmentMaterialization,
+  planHostUrlAttachmentMaterialization,
+} from '../../runtime/hosts/attachment-materialization-planner';
+import { AttachmentMaterializer } from '../../runtime/hosts/attachment-materializer';
+import { CopilotProvider } from '../provider';
+import { hasProviderModelBehaviorFlag } from '../provider-model-runtime';
+import {
+  type CopilotProviderExecution,
+  type ProviderDriverSpec,
+} from '../provider-runtime-contract';
+import type { PromptAttachment, PromptMessage } from '../types';
+import { promptAttachmentMimeType, promptAttachmentToUrl } from '../utils';
 
 export const DEFAULT_DIMENSIONS = 256;
+const GEMINI_REMOTE_ATTACHMENT_MAX_BYTES = 64 * OneMB;
+const TRUSTED_ATTACHMENT_HOST_SUFFIXES = ['cdn.affine.pro'];
+const GEMINI_RETRY_INITIAL_DELAY_MS = 2_000;
+
+function normalizeMimeType(mediaType?: string) {
+  return mediaType?.split(';', 1)[0]?.trim() || 'application/octet-stream';
+}
 
 export abstract class GeminiProvider<T> extends CopilotProvider<T> {
-  protected abstract instance:
-    | GoogleGenerativeAIProvider
-    | GoogleVertexProvider;
+  @Inject() protected readonly attachmentMaterializer!: AttachmentMaterializer;
+  @Inject()
+  protected readonly attachmentAdmissionHost?: AttachmentAdmissionHost;
+
+  protected resolveModelBackendKind() {
+    return this.type === 'geminiVertex'
+      ? ('gemini_vertex' as const)
+      : ('gemini_api' as const);
+  }
+
+  protected abstract createNativeConfig(
+    execution?: CopilotProviderExecution
+  ): Promise<LlmBackendConfig>;
 
   private handleError(e: any) {
     if (e instanceof UserFriendlyError) {
       return e;
-    } else if (e instanceof AISDKError) {
-      this.logger.error('Throw error from ai sdk:', e);
-      return new CopilotProviderSideError({
-        provider: this.type,
-        kind: e.name || 'unknown',
-        message: e.message,
-      });
     } else {
       return new CopilotProviderSideError({
         provider: this.type,
@@ -62,239 +67,184 @@ export abstract class GeminiProvider<T> extends CopilotProvider<T> {
     }
   }
 
-  async text(
-    cond: ModelConditions,
-    messages: PromptMessage[],
-    options: CopilotChatOptions = {}
-  ): Promise<string> {
-    const fullCond = { ...cond, outputType: ModelOutputType.Text };
-    await this.checkParams({ cond: fullCond, messages, options });
-    const model = this.selectModel(fullCond);
-
-    try {
-      metrics.ai.counter('chat_text_calls').add(1, { model: model.id });
-
-      const [system, msgs] = await chatToGPTMessage(messages);
-
-      const modelInstance = this.instance(model.id);
-      const { text } = await generateText({
-        model: modelInstance,
-        system,
-        messages: msgs,
-        abortSignal: options.signal,
-        providerOptions: {
-          google: this.getGeminiOptions(options, model.id),
-        },
-        tools: await this.getTools(options, model.id),
-        stopWhen: stepCountIs(this.MAX_STEPS),
-      });
-
-      if (!text) throw new Error('Failed to generate text');
-      return text.trim();
-    } catch (e: any) {
-      metrics.ai.counter('chat_text_errors').add(1, { model: model.id });
-      throw this.handleError(e);
-    }
+  private getAttachmentAdmissionHost() {
+    return (
+      this.attachmentAdmissionHost ??
+      new AttachmentAdmissionHost(this.attachmentMaterializer)
+    );
   }
 
-  override async structure(
-    cond: ModelConditions,
+  protected async prepareMessages(
     messages: PromptMessage[],
-    options: CopilotChatOptions = {}
-  ): Promise<string> {
-    const fullCond = { ...cond, outputType: ModelOutputType.Structured };
-    await this.checkParams({ cond: fullCond, messages, options });
-    const model = this.selectModel(fullCond);
+    backendConfig: LlmBackendConfig,
+    options?: {
+      signal?: AbortSignal;
+      user?: string;
+      workspace?: string;
+      session?: string;
+    }
+  ): Promise<PromptMessage[]> {
+    const prepared: PromptMessage[] = [];
 
-    try {
-      metrics.ai.counter('chat_text_calls').add(1, { model: model.id });
-
-      const [system, msgs, schema] = await chatToGPTMessage(messages);
-      if (!schema) {
-        throw new CopilotPromptInvalid('Schema is required');
+    for (const message of messages) {
+      options?.signal?.throwIfAborted();
+      if (!Array.isArray(message.attachments) || !message.attachments.length) {
+        prepared.push(message);
+        continue;
       }
 
-      const modelInstance = this.instance(model.id);
-      const { object } = await generateObject({
-        model: modelInstance,
-        system,
-        messages: msgs,
-        schema,
-        providerOptions: {
-          google: {
-            thinkingConfig: {
-              thinkingBudget: -1,
-              includeThoughts: false,
-            },
-          },
-        },
-        abortSignal: options.signal,
-        maxRetries: options.maxRetries || 3,
-        experimental_repairText: async ({ text, error }) => {
-          if (error instanceof JSONParseError) {
-            // strange fixed response, temporarily replace it
-            const ret = text.replaceAll(/^ny\n/g, ' ').trim();
-            if (ret.startsWith('```') || ret.endsWith('```')) {
-              return ret
-                .replace(/```[\w\s]+\n/g, '')
-                .replace(/\n```/g, '')
-                .trim();
-            }
-            return ret;
+      const attachments: PromptAttachment[] = [];
+      let changed = false;
+      for (const attachment of message.attachments) {
+        options?.signal?.throwIfAborted();
+        const rawUrl = promptAttachmentToUrl(attachment);
+        if (!rawUrl || rawUrl.startsWith('data:')) {
+          attachments.push(attachment);
+          continue;
+        }
+
+        try {
+          new URL(rawUrl);
+        } catch {
+          attachments.push(attachment);
+          continue;
+        }
+
+        const declaredMimeType = promptAttachmentMimeType(
+          attachment,
+          typeof message.params?.mimetype === 'string'
+            ? message.params.mimetype
+            : undefined
+        );
+        const referencePlan = await planHostUrlAttachmentMaterialization(
+          'gemini',
+          backendConfig,
+          {
+            attachmentId: rawUrl,
+            url: rawUrl,
+            expectedMime: declaredMimeType
+              ? normalizeMimeType(declaredMimeType)
+              : undefined,
+            maxSize: GEMINI_REMOTE_ATTACHMENT_MAX_BYTES,
           }
-          return null;
-        },
-      });
-
-      return JSON.stringify(object);
-    } catch (e: any) {
-      metrics.ai.counter('chat_text_errors').add(1, { model: model.id });
-      throw this.handleError(e);
-    }
-  }
-
-  async *streamText(
-    cond: ModelConditions,
-    messages: PromptMessage[],
-    options: CopilotChatOptions | CopilotImageOptions = {}
-  ): AsyncIterable<string> {
-    const fullCond = { ...cond, outputType: ModelOutputType.Text };
-    await this.checkParams({ cond: fullCond, messages, options });
-    const model = this.selectModel(fullCond);
-
-    try {
-      metrics.ai.counter('chat_text_stream_calls').add(1, { model: model.id });
-      const fullStream = await this.getFullStream(model, messages, options);
-      const parser = new TextStreamParser();
-      for await (const chunk of fullStream) {
-        const result = parser.parse(chunk);
-        yield result;
-        if (options.signal?.aborted) {
-          await fullStream.cancel();
-          break;
+        );
+        if (referencePlan.mode === 'remote_reference') {
+          attachments.push(attachment);
+          continue;
         }
+
+        const admitted =
+          await this.getAttachmentAdmissionHost().admitPromptAttachment(
+            attachment,
+            {
+              userId: options?.user ?? 'provider-runtime',
+              workspaceId: options?.workspace ?? 'provider-runtime',
+              sessionId: options?.session,
+              signal: options?.signal,
+              maxBytes: referencePlan.request.maxSize,
+              trustedHostSuffixes: TRUSTED_ATTACHMENT_HOST_SUFFIXES,
+            }
+          );
+        const materialization = planAdmittedAttachmentMaterialization(admitted);
+        attachments.push(
+          materialization.mode === 'inline'
+            ? materialization.attachment
+            : admittedAttachmentToPromptAttachment(admitted)
+        );
+        changed = true;
       }
-      if (!options.signal?.aborted) {
-        const footnotes = parser.end();
-        if (footnotes.length) {
-          yield `\n\n${footnotes}`;
-        }
-      }
-    } catch (e: any) {
-      metrics.ai.counter('chat_text_stream_errors').add(1, { model: model.id });
-      throw this.handleError(e);
+
+      prepared.push(changed ? { ...message, attachments } : message);
     }
+
+    return prepared;
   }
 
-  override async *streamObject(
-    cond: ModelConditions,
-    messages: PromptMessage[],
-    options: CopilotChatOptions = {}
-  ): AsyncIterable<StreamObject> {
-    const fullCond = { ...cond, outputType: ModelOutputType.Object };
-    await this.checkParams({ cond: fullCond, messages, options });
-    const model = this.selectModel(fullCond);
-
-    try {
-      metrics.ai
-        .counter('chat_object_stream_calls')
-        .add(1, { model: model.id });
-      const fullStream = await this.getFullStream(model, messages, options);
-      const parser = new StreamObjectParser();
-      for await (const chunk of fullStream) {
-        const result = parser.parse(chunk);
-        if (result) {
-          yield result;
-        }
-        if (options.signal?.aborted) {
-          await fullStream.cancel();
-          break;
-        }
-      }
-    } catch (e: any) {
-      metrics.ai
-        .counter('chat_object_stream_errors')
-        .add(1, { model: model.id });
-      throw this.handleError(e);
-    }
-  }
-
-  override async embedding(
-    cond: ModelConditions,
-    messages: string | string[],
-    options: CopilotEmbeddingOptions = { dimensions: DEFAULT_DIMENSIONS }
-  ): Promise<number[][]> {
-    messages = Array.isArray(messages) ? messages : [messages];
-    const fullCond = { ...cond, outputType: ModelOutputType.Embedding };
-    await this.checkParams({ embeddings: messages, cond: fullCond, options });
-    const model = this.selectModel(fullCond);
-
-    try {
-      metrics.ai
-        .counter('generate_embedding_calls')
-        .add(1, { model: model.id });
-
-      const modelInstance = this.instance.textEmbeddingModel(model.id);
-
-      const embeddings = await Promise.allSettled(
-        messages.map(m =>
-          embedMany({
-            model: modelInstance,
-            values: [m],
-            maxRetries: 3,
-            providerOptions: {
-              google: {
-                outputDimensionality: options.dimensions || DEFAULT_DIMENSIONS,
-                taskType: 'RETRIEVAL_DOCUMENT',
-              },
-            },
-          })
-        )
-      );
-
-      return embeddings
-        .flatMap(e => (e.status === 'fulfilled' ? e.value.embeddings : null))
-        .filter((v): v is number[] => !!v && Array.isArray(v));
-    } catch (e: any) {
-      metrics.ai
-        .counter('generate_embedding_errors')
-        .add(1, { model: model.id });
-      throw this.handleError(e);
-    }
-  }
-
-  private async getFullStream(
-    model: CopilotProviderModel,
-    messages: PromptMessage[],
-    options: CopilotChatOptions = {}
+  protected async waitForStructuredRetry(
+    delayMs: number,
+    signal?: AbortSignal
   ) {
-    const [system, msgs] = await chatToGPTMessage(messages);
-    const { fullStream } = streamText({
-      model: this.instance(model.id),
-      system,
-      messages: msgs,
-      abortSignal: options.signal,
-      providerOptions: {
-        google: this.getGeminiOptions(options, model.id),
+    await delay(delayMs, undefined, signal ? { signal } : undefined);
+  }
+
+  override getDriverSpec(): ProviderDriverSpec {
+    return {
+      createBackendConfig: execution => this.createNativeConfig(execution),
+      mapError: error => this.handleError(error),
+      chat: {
+        prepareMessages: async context =>
+          await this.prepareMessages(
+            context.input.messages,
+            context.backendConfig,
+            context.options
+          ),
+        resolveRequestOptions: async context => {
+          const requestIntent = await llmResolveRequestIntentOptions({
+            protocol: context.protocol,
+            backendConfig: context.backendConfig,
+            reasoning: {
+              enabled: context.options.reasoning,
+              supported:
+                hasProviderModelBehaviorFlag(
+                  context.model,
+                  'reasoning_medium'
+                ) ||
+                hasProviderModelBehaviorFlag(context.model, 'reasoning_high'),
+              effort: hasProviderModelBehaviorFlag(
+                context.model,
+                'reasoning_high'
+              )
+                ? 'high'
+                : 'medium',
+              includeReasoning:
+                hasProviderModelBehaviorFlag(
+                  context.model,
+                  'reasoning_medium'
+                ) ||
+                hasProviderModelBehaviorFlag(context.model, 'reasoning_high'),
+            },
+          });
+
+          return {
+            attachmentCapability: this.getAttachCapability(
+              context.model,
+              context.outputType
+            ),
+            include: requestIntent.include,
+            reasoning: requestIntent.reasoning,
+          };
+        },
       },
-      tools: await this.getTools(options, model.id),
-      stopWhen: stepCountIs(this.MAX_STEPS),
-    });
-    return fullStream;
-  }
-
-  private getGeminiOptions(options: CopilotChatOptions, model: string) {
-    const result: GoogleGenerativeAIProviderOptions = {};
-    if (options?.reasoning && this.isReasoningModel(model)) {
-      result.thinkingConfig = {
-        thinkingBudget: 12000,
-        includeThoughts: true,
-      };
-    }
-    return result;
-  }
-
-  private isReasoningModel(model: string) {
-    return model.startsWith('gemini-2.5');
+      structured: {
+        prepareMessages: (inputMessages, backendConfig, structuredOptions) =>
+          this.prepareMessages(inputMessages, backendConfig, structuredOptions),
+        shouldRetry: async ({ error, attempt, options: structuredOptions }) => {
+          const isParsingError =
+            isInvalidStructuredOutputError(error) || error instanceof ZodError;
+          const retryableError =
+            isParsingError || !(error instanceof UserFriendlyError);
+          const maxRetries = Math.max(structuredOptions.maxRetries ?? 3, 0);
+          if (!retryableError || attempt >= maxRetries) {
+            return false;
+          }
+          if (!isParsingError) {
+            await this.waitForStructuredRetry(
+              GEMINI_RETRY_INITIAL_DELAY_MS * 2 ** attempt,
+              structuredOptions.signal
+            );
+          }
+          return true;
+        },
+      },
+      embedding: {
+        defaultDimensions: DEFAULT_DIMENSIONS,
+        taskType: 'RETRIEVAL_DOCUMENT',
+      },
+      rerank: false,
+      image: {
+        prepareMessages: (inputMessages, backendConfig, imageOptions) =>
+          this.prepareMessages(inputMessages, backendConfig, imageOptions),
+      },
+    };
   }
 }

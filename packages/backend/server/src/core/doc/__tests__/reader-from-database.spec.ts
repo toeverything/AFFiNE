@@ -7,7 +7,11 @@ import { applyUpdate, Doc as YDoc } from 'yjs';
 import { createModule } from '../../../__tests__/create-module';
 import { Mockers } from '../../../__tests__/mocks';
 import { Models } from '../../../models';
-import { DocReader, DocStorageModule, PgWorkspaceDocStorageAdapter } from '..';
+import {
+  DocReader,
+  DocStorageModule,
+  PgWorkspaceDocStorageAdapter,
+} from '../index';
 import { DatabaseDocReader } from '../reader';
 
 const module = await createModule({

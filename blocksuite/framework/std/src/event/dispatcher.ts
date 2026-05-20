@@ -78,6 +78,8 @@ export type EventHandlerRunner = {
   blockId?: string;
 };
 
+const syntheticEventNames = new Set(['click', 'doubleClick', 'tripleClick']);
+
 export class UIEventDispatcher extends LifeCycleWatcher {
   private static _activeDispatcher: UIEventDispatcher | null = null;
 
@@ -435,7 +437,10 @@ export class UIEventDispatcher extends LifeCycleWatcher {
       const { fn } = runner;
       const result = fn(context);
       if (result) {
-        context.get('defaultState').event.stopPropagation();
+        // Only stop propagation for non-synthetic events
+        if (!syntheticEventNames.has(name)) {
+          context.get('defaultState').event.stopPropagation();
+        }
         return;
       }
     }

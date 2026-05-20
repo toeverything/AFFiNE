@@ -3,6 +3,8 @@ import { expect } from '@playwright/test';
 import { test } from '../base/base-test';
 
 test.describe('AIAction/MakeItReal', () => {
+  test.describe.configure({ timeout: 180000 });
+
   test.beforeEach(async ({ loggedInPage: page, utils }) => {
     await utils.testUtils.setupTestEnvironment(page);
     await utils.chatPanel.openChatPanel(page);

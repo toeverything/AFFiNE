@@ -12,8 +12,8 @@ import {
 } from '@toeverything/infra';
 import { map, tap } from 'rxjs';
 
+import { mapRealtimeEnum } from '../realtime/enum';
 import type { AuthService } from '../services/auth';
-import type { UserFeatureStore } from '../stores/user-feature';
 
 export class UserFeature extends Entity {
   // undefined means no user, null means loading
@@ -32,10 +32,7 @@ export class UserFeature extends Entity {
   isRevalidating$ = new LiveData(false);
   error$ = new LiveData<any | null>(null);
 
-  constructor(
-    private readonly authService: AuthService,
-    private readonly store: UserFeatureStore
-  ) {
+  constructor(private readonly authService: AuthService) {
     super();
   }
 
@@ -44,23 +41,20 @@ export class UserFeature extends Entity {
       accountId: this.authService.session.account$.value?.id,
     })),
     exhaustMapSwitchUntilChanged(
-      (a, b) => a.accountId === b.accountId,
+      () => false,
       ({ accountId }) => {
-        return fromPromise(async signal => {
+        return fromPromise(async () => {
           if (!accountId) {
             return; // no feature if no user
           }
 
-          const { userId, features } = await this.store.getUserFeatures(signal);
-          if (userId !== accountId) {
-            // The user has changed, ignore the result
-            this.authService.session.revalidate();
-            await this.authService.session.waitForRevalidation();
-            return;
-          }
+          const account = this.authService.session.account$.value;
+          if (account?.id !== accountId) return;
           return {
-            userId: userId,
-            features: features,
+            userId: account.id,
+            features: account.info?.features?.map(feature =>
+              mapRealtimeEnum(FeatureType, feature, 'user feature')
+            ),
           };
         }).pipe(
           smartRetry(),

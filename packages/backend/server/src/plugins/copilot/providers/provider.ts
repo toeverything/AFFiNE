@@ -1,426 +1,249 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { ModuleRef } from '@nestjs/core';
-import { Tool, ToolSet } from 'ai';
-import { z } from 'zod';
 
+import { Config } from '../../../base';
+import type { NodeTextMiddleware, ProviderMiddlewareConfig } from '../config';
+import { ToolExecutorHost } from '../runtime/hosts/tool-executor-host';
+import { mapNativeSemanticError } from '../runtime/native-errors';
+import type { ToolLoopBackend } from '../runtime/tool/bridge';
+import type { CopilotTool, CopilotToolSet } from '../tools';
+import { resolveProviderMiddleware } from './provider-middleware';
 import {
-  Config,
-  CopilotPromptInvalid,
-  CopilotProviderNotSupported,
-  OnEvent,
-} from '../../../base';
-import { DocReader, DocWriter } from '../../../core/doc';
-import { AccessController } from '../../../core/permission';
-import { Models } from '../../../models';
-import { IndexerService } from '../../indexer';
-import { CopilotContextService } from '../context/service';
-import { PromptService } from '../prompt/service';
+  checkProviderParams,
+  getAttachCapability as getAttachCapabilityHelper,
+  matchProviderModel as matchProviderModelHelper,
+  type ProviderModelRuntimeContext,
+  requireProviderModelSelection,
+  resolveProviderModel,
+} from './provider-model-runtime';
 import {
-  buildBlobContentGetter,
-  buildContentGetter,
-  buildDocContentGetter,
-  buildDocCreateHandler,
-  buildDocKeywordSearchGetter,
-  buildDocSearchGetter,
-  buildDocUpdateHandler,
-  buildDocUpdateMetaHandler,
-  createBlobReadTool,
-  createCodeArtifactTool,
-  createConversationSummaryTool,
-  createDocComposeTool,
-  createDocCreateTool,
-  createDocEditTool,
-  createDocKeywordSearchTool,
-  createDocReadTool,
-  createDocSemanticSearchTool,
-  createDocUpdateMetaTool,
-  createDocUpdateTool,
-  createExaCrawlTool,
-  createExaSearchTool,
-  createSectionEditTool,
-} from '../tools';
-import { CopilotProviderFactory } from './factory';
+  type CopilotProviderExecution,
+  createNativeExecutionDriverSpec,
+  type ProviderDriverSpec,
+  type ProviderExecutionDrivers,
+  type ProviderRuntimeHostSeed,
+} from './provider-runtime-contract';
 import {
   type CopilotChatOptions,
   CopilotChatTools,
-  type CopilotEmbeddingOptions,
   type CopilotImageOptions,
+  type CopilotModelBackendKind,
   CopilotProviderModel,
   CopilotProviderType,
-  CopilotStructuredOptions,
-  EmbeddingMessage,
-  ModelCapability,
-  ModelConditions,
+  type CopilotStructuredOptions,
+  type ModelAttachmentCapability,
   ModelFullConditions,
-  ModelInputType,
+  ModelOutputType,
   type PromptMessage,
-  PromptMessageSchema,
-  StreamObject,
 } from './types';
+export type {
+  CopilotProviderExecution,
+  ProviderDriverSpec,
+  ProviderExecutionDrivers,
+  ProviderRuntimeHostSeed,
+} from './provider-runtime-contract';
 
 @Injectable()
 export abstract class CopilotProvider<C = any> {
   protected readonly logger = new Logger(this.constructor.name);
   protected readonly MAX_STEPS = 20;
-  protected onlineModelList: string[] = [];
+
   abstract readonly type: CopilotProviderType;
-  abstract readonly models: CopilotProviderModel[];
-  abstract configured(): boolean;
+  protected abstract resolveModelBackendKind(
+    execution?: CopilotProviderExecution
+  ): CopilotModelBackendKind;
+  abstract configured(execution?: CopilotProviderExecution): boolean;
 
   @Inject() protected readonly AFFiNEConfig!: Config;
-  @Inject() protected readonly factory!: CopilotProviderFactory;
-  @Inject() protected readonly moduleRef!: ModuleRef;
+  @Inject() protected readonly toolExecutorHost!: ToolExecutorHost;
 
-  get config(): C {
-    return this.AFFiNEConfig.copilot.providers[this.type] as C;
+  get maxSteps() {
+    return this.MAX_STEPS;
   }
 
-  @OnEvent('config.init')
-  async onConfigInit() {
-    this.setup();
+  protected resolveModelRuntimeContext(
+    execution?: CopilotProviderExecution
+  ): ProviderModelRuntimeContext {
+    return {
+      type: this.type,
+      backendKind: this.resolveModelBackendKind(execution),
+    };
   }
 
-  @OnEvent('config.changed')
-  async onConfigChanged(event: Events['config.changed']) {
-    if ('copilot' in event.updates) {
-      this.setup();
-    }
+  protected get modelRuntimeContext(): ProviderModelRuntimeContext {
+    return this.resolveModelRuntimeContext();
   }
 
-  protected setup() {
-    if (this.configured()) {
-      this.factory.register(this);
-      if (env.selfhosted) {
-        this.refreshOnlineModels().catch(e =>
-          this.logger.error('Failed to refresh online models', e)
-        );
-      }
-    } else {
-      this.factory.unregister(this);
-    }
+  getDriverSpec(): ProviderDriverSpec | undefined {
+    return undefined;
   }
 
-  async refreshOnlineModels() {}
+  getExecutionDrivers(): ProviderExecutionDrivers | undefined {
+    const spec = this.getDriverSpec();
+    return spec ? this.createDriverSpec(spec) : undefined;
+  }
 
-  private findValidModel(
-    cond: ModelFullConditions
-  ): CopilotProviderModel | undefined {
-    const { modelId, outputType, inputTypes } = cond;
-    const matcher = (cap: ModelCapability) =>
-      (!outputType || cap.output.includes(outputType)) &&
-      (!inputTypes?.length ||
-        inputTypes.every(type => cap.input.includes(type)));
+  protected createDriverSpec(
+    spec: ProviderDriverSpec
+  ): ProviderExecutionDrivers {
+    return createNativeExecutionDriverSpec(spec, {
+      createBackendConfig: spec.createBackendConfig,
+      mapError: error => {
+        const mapped = mapNativeSemanticError(error);
+        return mapped === error ? spec.mapError(error) : mapped;
+      },
+      checkParams: input =>
+        checkProviderParams(
+          this.resolveModelRuntimeContext(input.execution),
+          input
+        ),
+      selectModel: (cond, execution) =>
+        requireProviderModelSelection(
+          this.resolveModelRuntimeContext(execution),
+          cond
+        ),
+      getTools: this.getTools.bind(this),
+      getActiveProviderMiddleware: this.getActiveProviderMiddleware.bind(this),
+    });
+  }
 
-    if (modelId) {
-      const hasOnlineModel = this.onlineModelList.includes(modelId);
-
-      const model = this.models.find(
-        m => m.id === modelId && m.capabilities.some(matcher)
-      );
-
-      if (model) return model;
-      // allow online model without capabilities check
-      if (hasOnlineModel) return { id: modelId, capabilities: [] };
-      return undefined;
-    }
-    if (!outputType) return undefined;
-
-    return this.models.find(m =>
-      m.capabilities.some(c => matcher(c) && c.defaultForOutputType)
+  selectModel(
+    cond: ModelFullConditions,
+    execution?: CopilotProviderExecution
+  ): CopilotProviderModel {
+    return requireProviderModelSelection(
+      this.resolveModelRuntimeContext(execution),
+      cond
     );
   }
 
-  // make it async to allow dynamic check available models in some providers
-  async match(cond: ModelFullConditions = {}): Promise<boolean> {
-    return this.configured() && !!this.findValidModel(cond);
+  checkParams(input: {
+    cond: ModelFullConditions;
+    messages?: PromptMessage[];
+    embeddings?: string[];
+    options?:
+      | CopilotChatOptions
+      | CopilotStructuredOptions
+      | CopilotImageOptions;
+    withAttachment?: boolean;
+    execution?: CopilotProviderExecution;
+  }) {
+    return checkProviderParams(
+      this.resolveModelRuntimeContext(input.execution),
+      input
+    );
   }
 
-  protected selectModel(cond: ModelFullConditions): CopilotProviderModel {
-    const model = this.findValidModel(cond);
-    if (model) return model;
+  getRuntimeHostSeed(): ProviderRuntimeHostSeed {
+    return {
+      model: this.resolveModelRuntimeContext(),
+      resolveExecutionDrivers: () => this.getExecutionDrivers(),
+      selectModel: this.selectModel.bind(this),
+      checkParams: this.checkParams.bind(this),
+      getAttachCapability: this.getAttachCapability.bind(this),
+      getActiveProviderMiddleware: this.getActiveProviderMiddleware.bind(this),
+      getTools: this.getTools.bind(this),
+      metricLabels: this.metricLabels.bind(this),
+    };
+  }
 
-    const { modelId, outputType, inputTypes } = cond;
-    throw new CopilotPromptInvalid(
+  protected getExecutionProfile(execution?: CopilotProviderExecution) {
+    return execution?.profile?.type === this.type
+      ? execution.profile
+      : undefined;
+  }
+
+  getActiveProviderMiddleware(
+    execution?: CopilotProviderExecution
+  ): ProviderMiddlewareConfig {
+    return (
+      this.getExecutionProfile(execution)?.middleware ??
+      resolveProviderMiddleware(this.type)
+    );
+  }
+
+  metricLabels(
+    model: string,
+    labels: Record<string, string | number | boolean | undefined> = {},
+    execution?: CopilotProviderExecution
+  ) {
+    return {
+      model,
+      providerId: execution?.providerId ?? `${this.type}-default`,
+      ...labels,
+    };
+  }
+
+  protected get config(): C {
+    return this.AFFiNEConfig.copilot.providers[this.type] as C;
+  }
+
+  protected getConfig(execution?: CopilotProviderExecution): C {
+    const profile = this.getExecutionProfile(execution);
+    if (profile) {
+      return profile.config as C;
+    }
+    return this.config;
+  }
+  getAttachCapability(
+    model: CopilotProviderModel,
+    outputType: ModelOutputType
+  ): ModelAttachmentCapability | undefined {
+    return getAttachCapabilityHelper(model, outputType);
+  }
+
+  // make it async to allow dynamic check available models in some providers
+  async match(
+    cond: ModelFullConditions = {},
+    execution?: CopilotProviderExecution
+  ): Promise<boolean> {
+    return (
+      this.configured(execution) &&
+      matchProviderModelHelper(this.resolveModelRuntimeContext(execution), cond)
+    );
+  }
+
+  resolveModel(
+    modelId: string,
+    execution?: CopilotProviderExecution
+  ): CopilotProviderModel | undefined {
+    return resolveProviderModel(
+      this.resolveModelRuntimeContext(execution),
       modelId
-        ? `Model ${modelId} does not support ${outputType ?? '<any>'} output with ${inputTypes ?? '<any>'} input`
-        : outputType
-          ? `No model supports ${outputType} output with ${inputTypes ?? '<any>'} input for provider ${this.type}`
-          : 'Output type is required when modelId is not provided'
     );
   }
 
   protected getProviderSpecificTools(
     _toolName: CopilotChatTools,
     _model: string
-  ): [string, Tool?] | undefined {
+  ): [string, CopilotTool?] | undefined {
     return;
   }
 
   // use for tool use, shared between providers
-  protected async getTools(
+  async getTools(
     options: CopilotChatOptions,
     model: string
-  ): Promise<ToolSet> {
-    const tools: ToolSet = {};
-    if (options?.tools?.length) {
-      this.logger.debug(`getTools: ${JSON.stringify(options.tools)}`);
-      const ac = this.moduleRef.get(AccessController, { strict: false });
-      const context = this.moduleRef.get(CopilotContextService, {
-        strict: false,
-      });
-      const docReader = this.moduleRef.get(DocReader, { strict: false });
-      const docWriter = this.moduleRef.get(DocWriter, { strict: false });
-      const models = this.moduleRef.get(Models, { strict: false });
-      const prompt = this.moduleRef.get(PromptService, {
-        strict: false,
-      });
-
-      for (const tool of options.tools) {
-        const toolDef = this.getProviderSpecificTools(tool, model);
-        if (toolDef) {
-          // allow provider prevent tool creation
-          if (toolDef[1]) {
-            tools[toolDef[0]] = toolDef[1];
-          }
-          continue;
-        }
-        if (
-          !(env.dev || env.namespaces.canary) &&
-          ['docCreate', 'docUpdate', 'docUpdateMeta'].includes(tool)
-        ) {
-          continue;
-        }
-        switch (tool) {
-          case 'blobRead': {
-            const docContext = options.session
-              ? await context.getBySessionId(options.session)
-              : null;
-            const getBlobContent = buildBlobContentGetter(ac, docContext);
-            tools.blob_read = createBlobReadTool(
-              getBlobContent.bind(null, options)
-            );
-            break;
-          }
-          case 'codeArtifact': {
-            tools.code_artifact = createCodeArtifactTool(prompt, this.factory);
-            break;
-          }
-          case 'conversationSummary': {
-            tools.conversation_summary = createConversationSummaryTool(
-              options.session,
-              prompt,
-              this.factory
-            );
-            break;
-          }
-          case 'docEdit': {
-            const getDocContent = buildContentGetter(ac, docReader);
-            tools.doc_edit = createDocEditTool(
-              this.factory,
-              prompt,
-              getDocContent.bind(null, options)
-            );
-            break;
-          }
-          case 'docSemanticSearch': {
-            const docContext = options.session
-              ? await context.getBySessionId(options.session)
-              : null;
-            const searchDocs = buildDocSearchGetter(
-              ac,
-              context,
-              docContext,
-              models
-            );
-            tools.doc_semantic_search = createDocSemanticSearchTool(
-              searchDocs.bind(null, options)
-            );
-            break;
-          }
-          case 'docKeywordSearch': {
-            if (this.AFFiNEConfig.indexer.enabled) {
-              const indexerService = this.moduleRef.get(IndexerService, {
-                strict: false,
-              });
-              const searchDocs = buildDocKeywordSearchGetter(
-                ac,
-                indexerService
-              );
-              tools.doc_keyword_search = createDocKeywordSearchTool(
-                searchDocs.bind(null, options)
-              );
-            }
-            break;
-          }
-          case 'docRead': {
-            const getDoc = buildDocContentGetter(ac, docReader, models);
-            tools.doc_read = createDocReadTool(getDoc.bind(null, options));
-            break;
-          }
-          case 'docCreate': {
-            const createDoc = buildDocCreateHandler(ac, docWriter);
-            tools.doc_create = createDocCreateTool(
-              createDoc.bind(null, options)
-            );
-            break;
-          }
-          case 'docUpdate': {
-            const updateDoc = buildDocUpdateHandler(ac, docWriter);
-            tools.doc_update = createDocUpdateTool(
-              updateDoc.bind(null, options)
-            );
-            break;
-          }
-          case 'docUpdateMeta': {
-            const updateDocMeta = buildDocUpdateMetaHandler(ac, docWriter);
-            tools.doc_update_meta = createDocUpdateMetaTool(
-              updateDocMeta.bind(null, options)
-            );
-            break;
-          }
-          case 'webSearch': {
-            tools.web_search_exa = createExaSearchTool(this.AFFiNEConfig);
-            tools.web_crawl_exa = createExaCrawlTool(this.AFFiNEConfig);
-            break;
-          }
-          case 'docCompose': {
-            tools.doc_compose = createDocComposeTool(prompt, this.factory);
-            break;
-          }
-          case 'sectionEdit': {
-            tools.section_edit = createSectionEditTool(prompt, this.factory);
-            break;
-          }
-        }
-      }
-      return tools;
-    }
-    return tools;
-  }
-
-  private handleZodError(ret: z.SafeParseReturnType<any, any>) {
-    if (ret.success) return;
-    const issues = ret.error.issues.map(i => {
-      const path =
-        'root' +
-        (i.path.length
-          ? `.${i.path.map(seg => (typeof seg === 'number' ? `[${seg}]` : `.${seg}`)).join('')}`
-          : '');
-      return `${i.message}${path}`;
-    });
-    throw new CopilotPromptInvalid(issues.join('; '));
-  }
-
-  protected async checkParams({
-    cond,
-    messages,
-    embeddings,
-    options = {},
-  }: {
-    cond: ModelFullConditions;
-    messages?: PromptMessage[];
-    embeddings?: string[];
-    options?: CopilotChatOptions;
-  }) {
-    const model = this.selectModel(cond);
-    const multimodal = model.capabilities.some(c =>
-      [ModelInputType.Image, ModelInputType.Audio].some(t =>
-        c.input.includes(t)
-      )
+  ): Promise<CopilotToolSet> {
+    this.logger.debug(`getTools: ${JSON.stringify(options?.tools ?? [])}`);
+    return await this.toolExecutorHost.getTools(
+      options,
+      model,
+      this.getProviderSpecificTools.bind(this)
     );
-
-    if (messages) {
-      const { requireContent = true, requireAttachment = false } = options;
-
-      const MessageSchema = z
-        .array(
-          PromptMessageSchema.extend({
-            content: requireContent
-              ? z.string().trim().min(1)
-              : z.string().optional().nullable(),
-          })
-            .passthrough()
-            .catchall(z.union([z.string(), z.number(), z.date(), z.null()]))
-            .refine(
-              m =>
-                !(multimodal && requireAttachment && m.role === 'user') ||
-                (m.attachments ? m.attachments.length > 0 : true),
-              { message: 'attachments required in multimodal mode' }
-            )
-        )
-        .optional();
-
-      this.handleZodError(MessageSchema.safeParse(messages));
-    }
-    if (embeddings) {
-      this.handleZodError(EmbeddingMessage.safeParse(embeddings));
-    }
   }
 
-  abstract text(
-    model: ModelConditions,
-    messages: PromptMessage[],
-    options?: CopilotChatOptions
-  ): Promise<string>;
-
-  abstract streamText(
-    model: ModelConditions,
-    messages: PromptMessage[],
-    options?: CopilotChatOptions
-  ): AsyncIterable<string>;
-
-  streamObject(
-    _model: ModelConditions,
-    _messages: PromptMessage[],
-    _options?: CopilotChatOptions
-  ): AsyncIterable<StreamObject> {
-    throw new CopilotProviderNotSupported({
-      provider: this.type,
-      kind: 'object',
-    });
-  }
-
-  structure(
-    _cond: ModelConditions,
-    _messages: PromptMessage[],
-    _options?: CopilotStructuredOptions
-  ): Promise<string> {
-    throw new CopilotProviderNotSupported({
-      provider: this.type,
-      kind: 'structure',
-    });
-  }
-
-  streamImages(
-    _model: ModelConditions,
-    _messages: PromptMessage[],
-    _options?: CopilotImageOptions
-  ): AsyncIterable<string> {
-    throw new CopilotProviderNotSupported({
-      provider: this.type,
-      kind: 'image',
-    });
-  }
-
-  embedding(
-    _model: ModelConditions,
-    _text: string | string[],
-    _options?: CopilotEmbeddingOptions
-  ): Promise<number[][]> {
-    throw new CopilotProviderNotSupported({
-      provider: this.type,
-      kind: 'embedding',
-    });
-  }
-
-  async rerank(
-    _model: ModelConditions,
-    _messages: PromptMessage[][],
-    _options?: CopilotChatOptions
-  ): Promise<number[]> {
-    throw new CopilotProviderNotSupported({
-      provider: this.type,
-      kind: 'rerank',
+  createNativeAdapter(
+    backend: ToolLoopBackend,
+    tools: CopilotToolSet,
+    nodeTextMiddleware?: NodeTextMiddleware[],
+    options: {
+      maxSteps?: number;
+      nodeTextMiddleware?: NodeTextMiddleware[];
+    } = {}
+  ) {
+    return this.toolExecutorHost.createNativeAdapter(backend, tools, {
+      ...options,
+      nodeTextMiddleware: nodeTextMiddleware ?? options.nodeTextMiddleware,
     });
   }
 }
