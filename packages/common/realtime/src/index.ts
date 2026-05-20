@@ -1,9 +1,50 @@
-import type { CommentChangeObjectType } from '@affine/graphql';
-
 export type RealtimeRequestName = keyof RealtimeRequestMap;
 export type RealtimeTopicName = keyof RealtimeTopicMap;
 
+export const WORKSPACE_MEMBERS_REQUEST_TAKE_MAX = 100;
+
 export interface RealtimeRequestMap {
+  'workspace.access.get': {
+    input: { workspaceId: string };
+    output: { access: WorkspaceAccessSnapshot };
+  };
+  'workspace.config.get': {
+    input: { workspaceId: string };
+    output: { config: WorkspaceConfigSnapshot };
+  };
+  'workspace.members.get': {
+    input: {
+      workspaceId: string;
+      skip?: number;
+      take?: number;
+      query?: string;
+    };
+    output: { members: WorkspaceMemberSnapshot[]; memberCount: number };
+  };
+  'workspace.invite-link.get': {
+    input: { workspaceId: string };
+    output: { inviteLink: WorkspaceInviteLinkSnapshot | null };
+  };
+  'doc.share-state.get': {
+    input: { workspaceId: string; docId: string };
+    output: { state: DocShareStateSnapshot | null };
+  };
+  'doc.grants.get': {
+    input: { workspaceId: string; docId: string; pagination: PaginationInput };
+    output: PaginatedDocGrantedUsersSnapshot;
+  };
+  'user.profile.get': {
+    input: Record<string, never>;
+    output: { user: CurrentUserProfileSnapshot | null };
+  };
+  'user.settings.get': {
+    input: Record<string, never>;
+    output: { settings: UserSettingsSnapshot };
+  };
+  'user.access-tokens.get': {
+    input: Record<string, never>;
+    output: { tokens: AccessTokenSnapshot[] };
+  };
   'notification.count.get': {
     input: Record<string, never>;
     output: { count: number };
@@ -16,7 +57,7 @@ export interface RealtimeRequestMap {
       first?: number;
     };
     output: {
-      changes: CommentChangeObjectType[];
+      changes: CommentChangeSnapshot[];
       startCursor: string;
       endCursor: string;
       hasNextPage: boolean;
@@ -36,12 +77,165 @@ export interface RealtimeRequestMap {
   };
   'user.quota-state.get': {
     input: Record<string, never>;
-    output: { state: unknown };
+    output: { state: UserQuotaStateSnapshot };
   };
   'workspace.quota-state.get': {
     input: { workspaceId: string };
-    output: { state: unknown };
+    output: { state: WorkspaceQuotaStateSnapshot };
   };
+}
+
+export type WorkspaceRoleSnapshot =
+  | 'Owner'
+  | 'Admin'
+  | 'Collaborator'
+  | 'External'
+  | string;
+
+export type DocRoleSnapshot =
+  | 'Owner'
+  | 'Manager'
+  | 'Editor'
+  | 'Commenter'
+  | 'Reader'
+  | 'External'
+  | string;
+
+export type PublicDocModeSnapshot = 'Page' | 'Edgeless' | string;
+
+export interface WorkspaceAccessSnapshot {
+  role: WorkspaceRoleSnapshot;
+  permissions: Record<string, boolean>;
+  team: boolean;
+}
+
+export interface WorkspaceConfigSnapshot {
+  enableAi: boolean;
+  enableSharing: boolean;
+  enableUrlPreview: boolean;
+  enableDocEmbedding: boolean;
+}
+
+export interface WorkspaceMemberSnapshot {
+  id: string;
+  name: string;
+  email: string;
+  avatarUrl: string | null;
+  permission: WorkspaceRoleSnapshot;
+  role: WorkspaceRoleSnapshot;
+  inviteId: string;
+  emailVerified: boolean | null;
+  status: string;
+}
+
+export interface WorkspaceInviteLinkSnapshot {
+  link: string;
+  expireTime: string;
+}
+
+export interface DocShareStateSnapshot {
+  public: boolean;
+  mode: PublicDocModeSnapshot;
+  defaultRole: DocRoleSnapshot;
+}
+
+export interface PaginationInput {
+  first: number;
+  offset?: number;
+  after?: string;
+}
+
+export interface DocGrantedUserSnapshot {
+  role: DocRoleSnapshot;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    avatarUrl: string | null;
+  };
+}
+
+export interface PaginatedDocGrantedUsersSnapshot {
+  totalCount: number;
+  pageInfo: {
+    endCursor: string | null;
+    hasNextPage: boolean;
+  };
+  edges: { node: DocGrantedUserSnapshot }[];
+}
+
+export interface CurrentUserProfileSnapshot {
+  id: string;
+  name: string;
+  email: string;
+  emailVerified: boolean;
+  hasPassword: boolean | null;
+  avatarUrl: string | null;
+  features?: string[];
+}
+
+export interface UserSettingsSnapshot {
+  receiveInvitationEmail: boolean;
+  receiveMentionEmail: boolean;
+  receiveCommentEmail: boolean;
+}
+
+export interface AccessTokenSnapshot {
+  id: string;
+  name: string;
+  createdAt: string;
+  expiresAt: string | null;
+}
+
+export type CommentChangeActionSnapshot = 'update' | 'delete';
+
+export interface CommentChangeSnapshot {
+  id: string;
+  action: CommentChangeActionSnapshot;
+  item: object;
+  commentId: string | null;
+}
+
+export interface UserQuotaStateSnapshot {
+  userId: string;
+  plan: string;
+  sourceEntitlementId: string | null;
+  blobLimit: number;
+  storageQuota: number;
+  usedStorageQuota: number;
+  historyPeriodSeconds: number;
+  copilotActionLimit: number | null;
+  flags: Record<string, unknown>;
+  known: boolean;
+  stale: boolean;
+  lastReconciledAt: string | Date | null;
+  staleAfter: string | Date | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+}
+
+export interface WorkspaceQuotaStateSnapshot {
+  workspaceId: string;
+  plan: string;
+  sourceEntitlementId: string | null;
+  ownerUserId: string | null;
+  usesOwnerQuota: boolean;
+  seatLimit: number;
+  memberCount: number;
+  overcapacityMemberCount: number;
+  blobLimit: number;
+  storageQuota: number;
+  usedStorageQuota: number;
+  historyPeriodSeconds: number;
+  readonly: boolean;
+  readonlyReasons: string[];
+  flags: Record<string, unknown>;
+  known: boolean;
+  stale: boolean;
+  lastReconciledAt: string | Date | null;
+  staleAfter: string | Date | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
 }
 
 export type NotificationCountChangedReason =
@@ -59,6 +253,42 @@ export type WorkspaceEmbeddingProgressReason =
   | 'resync';
 
 export interface RealtimeTopicMap {
+  'workspace.access.changed': {
+    input: { workspaceId: string };
+    event: { changed: true; reason: string };
+  };
+  'workspace.config.changed': {
+    input: { workspaceId: string };
+    event: { changed: true; reason: string };
+  };
+  'workspace.members.changed': {
+    input: { workspaceId: string };
+    event: { changed: true; reason: string };
+  };
+  'workspace.invite-link.changed': {
+    input: { workspaceId: string };
+    event: { changed: true; reason: string };
+  };
+  'doc.share-state.changed': {
+    input: { workspaceId: string; docId: string };
+    event: { changed: true; reason: string };
+  };
+  'doc.grants.changed': {
+    input: { workspaceId: string; docId: string };
+    event: { changed: true; reason: string };
+  };
+  'user.profile.changed': {
+    input: Record<string, never>;
+    event: { changed: true; reason: string };
+  };
+  'user.settings.changed': {
+    input: Record<string, never>;
+    event: { changed: true; reason: string };
+  };
+  'user.access-tokens.changed': {
+    input: Record<string, never>;
+    event: { changed: true; reason: string };
+  };
   'notification.count.changed': {
     input: Record<string, never>;
     event: {

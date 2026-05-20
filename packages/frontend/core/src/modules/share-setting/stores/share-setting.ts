@@ -1,48 +1,50 @@
 import type { WorkspaceServerService } from '@affine/core/modules/cloud';
 import {
-  getWorkspaceConfigQuery,
-  getWorkspaceInviteLinkQuery,
   setEnableAiMutation,
   setEnableSharingMutation,
   setEnableUrlPreviewMutation,
 } from '@affine/graphql';
 import { Store } from '@toeverything/infra';
 
+import type { NbstoreService } from '../../storage';
+
 export class WorkspaceShareSettingStore extends Store {
-  constructor(private readonly workspaceServerService: WorkspaceServerService) {
+  constructor(
+    private readonly workspaceServerService: WorkspaceServerService,
+    private readonly nbstoreService: NbstoreService
+  ) {
     super();
   }
 
   async fetchWorkspaceConfig(workspaceId: string, signal?: AbortSignal) {
-    if (!this.workspaceServerService.server) {
-      throw new Error('No Server');
-    }
-    const data = await this.workspaceServerService.server.gql({
-      query: getWorkspaceConfigQuery,
-      variables: {
-        id: workspaceId,
-      },
-      context: {
-        signal,
-      },
+    const { config } = await this.nbstoreService.realtime.request(
+      'workspace.config.get',
+      { workspaceId },
+      { signal, timeoutMs: 10000 }
+    );
+    return config;
+  }
+
+  subscribeWorkspaceConfig(workspaceId: string) {
+    return this.nbstoreService.realtime.subscribe('workspace.config.changed', {
+      workspaceId,
     });
-    return data.workspace;
   }
 
   async fetchInviteLink(workspaceId: string, signal?: AbortSignal) {
-    if (!this.workspaceServerService.server) {
-      throw new Error('No Server');
-    }
-    const data = await this.workspaceServerService.server.gql({
-      query: getWorkspaceInviteLinkQuery,
-      variables: {
-        id: workspaceId,
-      },
-      context: {
-        signal,
-      },
-    });
-    return data.workspace.inviteLink;
+    const { inviteLink } = await this.nbstoreService.realtime.request(
+      'workspace.invite-link.get',
+      { workspaceId },
+      { signal, timeoutMs: 10000 }
+    );
+    return inviteLink;
+  }
+
+  subscribeInviteLink(workspaceId: string) {
+    return this.nbstoreService.realtime.subscribe(
+      'workspace.invite-link.changed',
+      { workspaceId }
+    );
   }
 
   async updateWorkspaceEnableAi(

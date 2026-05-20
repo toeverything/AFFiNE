@@ -777,7 +777,7 @@ __metadata:
     eslint-import-resolver-typescript: "npm:^4.4.4"
     eslint-plugin-import-x: "npm:^4.16.1"
     eslint-plugin-lit: "npm:^2.2.1"
-    eslint-plugin-oxlint: "npm:1.64.0"
+    eslint-plugin-oxlint: "npm:1.66.0"
     eslint-plugin-react: "npm:^7.37.5"
     eslint-plugin-react-hooks: "npm:^7.0.1"
     eslint-plugin-simple-import-sort: "npm:^12.1.1"
@@ -787,7 +787,7 @@ __metadata:
     lint-staged: "npm:^16.0.0"
     msw: "npm:^2.13.2"
     oxlint: "npm:1.58.0"
-    oxlint-tsgolint: "npm:^0.19.0"
+    oxlint-tsgolint: "npm:^0.23.0"
     prettier: "npm:^3.7.4"
     semver: "npm:^7.7.3"
     typescript: "npm:^5.9.3"
@@ -8713,8 +8713,8 @@ __metadata:
   linkType: hard
 
 "@nestjs/apollo@npm:^13.2.4":
-  version: 13.4.0
-  resolution: "@nestjs/apollo@npm:13.4.0"
+  version: 13.4.1
+  resolution: "@nestjs/apollo@npm:13.4.1"
   dependencies:
     "@apollo/server-plugin-landing-page-graphql-playground": "npm:4.0.1"
     iterall: "npm:1.3.0"
@@ -8738,7 +8738,7 @@ __metadata:
       optional: true
     "@as-integrations/fastify":
       optional: true
-  checksum: 10/976bc1ee794a7aa7a50810eb7f36e31acab44af5f0377bfc7d81da032a94b1113acf61e1d827c90f6c5fcf3bccb3d77bf2bf4fea877df7a2d74a46d43b339a44
+  checksum: 10/7753a3f4df40f81e8123fcbf34e66750f6b8eebc9979c7b0f39b065ee463d0b299e4697c62b063daed6c142733dff6433db7ca7a0525731b23d8f2ac77c0403f
   languageName: node
   linkType: hard
 
@@ -8820,8 +8820,8 @@ __metadata:
   linkType: hard
 
 "@nestjs/graphql@npm:^13.2.5":
-  version: 13.4.0
-  resolution: "@nestjs/graphql@npm:13.4.0"
+  version: 13.4.1
+  resolution: "@nestjs/graphql@npm:13.4.1"
   dependencies:
     "@graphql-tools/merge": "npm:9.1.9"
     "@graphql-tools/schema": "npm:10.0.33"
@@ -8835,7 +8835,7 @@ __metadata:
     normalize-path: "npm:3.0.0"
     subscriptions-transport-ws: "npm:0.11.0"
     tslib: "npm:2.8.1"
-    ws: "npm:8.20.0"
+    ws: "npm:8.20.1"
   peerDependencies:
     "@apollo/subgraph": ^2.9.3
     "@nestjs/common": ^11.0.1
@@ -8854,7 +8854,7 @@ __metadata:
       optional: true
     ts-morph:
       optional: true
-  checksum: 10/1716dbef43dece6ac1991fd3ded20ef5bdc7a0671d8a51352dd0847cf914067eb62a12668c0b992555c817d69cdb14dc5253eae1b0f03a5d2dcb40e894f393f6
+  checksum: 10/918f909bf408d3fc84b153cbc06d23c6ce0fe4776cd0044f0ee175c5ba5923f4ac5693196e164734c6ccbc2c6db309f3699a90cff508edddebd09f742f5c014b
   languageName: node
   linkType: hard
 
@@ -10421,44 +10421,44 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@oxlint-tsgolint/darwin-arm64@npm:0.19.0":
-  version: 0.19.0
-  resolution: "@oxlint-tsgolint/darwin-arm64@npm:0.19.0"
+"@oxlint-tsgolint/darwin-arm64@npm:0.23.0":
+  version: 0.23.0
+  resolution: "@oxlint-tsgolint/darwin-arm64@npm:0.23.0"
   conditions: os=darwin & cpu=arm64
   languageName: node
   linkType: hard
 
-"@oxlint-tsgolint/darwin-x64@npm:0.19.0":
-  version: 0.19.0
-  resolution: "@oxlint-tsgolint/darwin-x64@npm:0.19.0"
+"@oxlint-tsgolint/darwin-x64@npm:0.23.0":
+  version: 0.23.0
+  resolution: "@oxlint-tsgolint/darwin-x64@npm:0.23.0"
   conditions: os=darwin & cpu=x64
   languageName: node
   linkType: hard
 
-"@oxlint-tsgolint/linux-arm64@npm:0.19.0":
-  version: 0.19.0
-  resolution: "@oxlint-tsgolint/linux-arm64@npm:0.19.0"
+"@oxlint-tsgolint/linux-arm64@npm:0.23.0":
+  version: 0.23.0
+  resolution: "@oxlint-tsgolint/linux-arm64@npm:0.23.0"
   conditions: os=linux & cpu=arm64
   languageName: node
   linkType: hard
 
-"@oxlint-tsgolint/linux-x64@npm:0.19.0":
-  version: 0.19.0
-  resolution: "@oxlint-tsgolint/linux-x64@npm:0.19.0"
+"@oxlint-tsgolint/linux-x64@npm:0.23.0":
+  version: 0.23.0
+  resolution: "@oxlint-tsgolint/linux-x64@npm:0.23.0"
   conditions: os=linux & cpu=x64
   languageName: node
   linkType: hard
 
-"@oxlint-tsgolint/win32-arm64@npm:0.19.0":
-  version: 0.19.0
-  resolution: "@oxlint-tsgolint/win32-arm64@npm:0.19.0"
+"@oxlint-tsgolint/win32-arm64@npm:0.23.0":
+  version: 0.23.0
+  resolution: "@oxlint-tsgolint/win32-arm64@npm:0.23.0"
   conditions: os=win32 & cpu=arm64
   languageName: node
   linkType: hard
 
-"@oxlint-tsgolint/win32-x64@npm:0.19.0":
-  version: 0.19.0
-  resolution: "@oxlint-tsgolint/win32-x64@npm:0.19.0"
+"@oxlint-tsgolint/win32-x64@npm:0.23.0":
+  version: 0.23.0
+  resolution: "@oxlint-tsgolint/win32-x64@npm:0.23.0"
   conditions: os=win32 & cpu=x64
   languageName: node
   linkType: hard
@@ -22939,14 +22939,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-plugin-oxlint@npm:1.64.0":
-  version: 1.64.0
-  resolution: "eslint-plugin-oxlint@npm:1.64.0"
+"eslint-plugin-oxlint@npm:1.66.0":
+  version: 1.66.0
+  resolution: "eslint-plugin-oxlint@npm:1.66.0"
   dependencies:
     jsonc-parser: "npm:^3.3.1"
   peerDependencies:
-    oxlint: ~1.64.0
-  checksum: 10/4a94e59669b2aeb8cb58889c3b595bf166c344a7d86a4b1742dacb594ef98bbc49c337dd3716c05ba370f77ee8eed76eb9d4b6a99950c39a943a4c2d8ff505a9
+    oxlint: ~1.66.0
+  checksum: 10/0eaa737a5d6c16954b2e8ba18615eb73e8664fa0e9ee9ec4354b4bf93f8719d9a6415ffcc8c29b8b7bc2593cd60acbe88743eb84d6c13337369edba4839964d9
   languageName: node
   linkType: hard
 
@@ -29434,16 +29434,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"oxlint-tsgolint@npm:^0.19.0":
-  version: 0.19.0
-  resolution: "oxlint-tsgolint@npm:0.19.0"
+"oxlint-tsgolint@npm:^0.23.0":
+  version: 0.23.0
+  resolution: "oxlint-tsgolint@npm:0.23.0"
   dependencies:
-    "@oxlint-tsgolint/darwin-arm64": "npm:0.19.0"
-    "@oxlint-tsgolint/darwin-x64": "npm:0.19.0"
-    "@oxlint-tsgolint/linux-arm64": "npm:0.19.0"
-    "@oxlint-tsgolint/linux-x64": "npm:0.19.0"
-    "@oxlint-tsgolint/win32-arm64": "npm:0.19.0"
-    "@oxlint-tsgolint/win32-x64": "npm:0.19.0"
+    "@oxlint-tsgolint/darwin-arm64": "npm:0.23.0"
+    "@oxlint-tsgolint/darwin-x64": "npm:0.23.0"
+    "@oxlint-tsgolint/linux-arm64": "npm:0.23.0"
+    "@oxlint-tsgolint/linux-x64": "npm:0.23.0"
+    "@oxlint-tsgolint/win32-arm64": "npm:0.23.0"
+    "@oxlint-tsgolint/win32-x64": "npm:0.23.0"
   dependenciesMeta:
     "@oxlint-tsgolint/darwin-arm64":
       optional: true
@@ -29459,7 +29459,7 @@ __metadata:
       optional: true
   bin:
     tsgolint: bin/tsgolint.js
-  checksum: 10/b87f9650029b8f4b2cd9ca4042a7807965453f0cae7842d56d5ad2068d6d15475f726dad94d6d7ac31224bec0bfdf28a60765c16f620ebd0602974bbe5c5b5dd
+  checksum: 10/7f4d61fbdedbce703ac61278f060f4717e061afe5a5fadece5253fd50c333a676366bdd35895b2f464c5d5640bf2cd6b017b259fd1b5d777d154cd307aa3ba22
   languageName: node
   linkType: hard
 
@@ -35778,9 +35778,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ws@npm:8.20.0, ws@npm:^8.18.0, ws@npm:^8.18.3, ws@npm:^8.19.0":
-  version: 8.20.0
-  resolution: "ws@npm:8.20.0"
+"ws@npm:8.20.1, ws@npm:^8.18.0, ws@npm:^8.18.3, ws@npm:^8.19.0":
+  version: 8.20.1
+  resolution: "ws@npm:8.20.1"
   peerDependencies:
     bufferutil: ^4.0.1
     utf-8-validate: ">=5.0.2"
@@ -35789,7 +35789,7 @@ __metadata:
       optional: true
     utf-8-validate:
       optional: true
-  checksum: 10/b7ab934b21ffdea9f25a5af5097e8c1ec7625db553bca026c5a23e35b7c236f3fb89782f2b57fab9da553864512f9aa7d245827ef998d26ffa1b2187a19a6d10
+  checksum: 10/8c4d2b06dc65381b6bfab1f2e584275dabd30a99a5ce058b4dc76f3d03fad1921cef3a21d8f53127d30a808cfd1864aa2fe6890a5d43359f682457315baec873
   languageName: node
   linkType: hard
 

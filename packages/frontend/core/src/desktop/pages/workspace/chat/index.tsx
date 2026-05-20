@@ -31,6 +31,7 @@ import {
 import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { PeekViewService } from '@affine/core/modules/peek-view';
+import { NbstoreService } from '@affine/core/modules/storage';
 import { AppThemeService } from '@affine/core/modules/theme';
 import {
   ViewBody,
@@ -55,14 +56,16 @@ import * as styles from './index.css';
 function useAIRequestService() {
   const graphqlService = useService(GraphQLService);
   const eventSourceService = useService(EventSourceService);
+  const nbstoreService = useService(NbstoreService);
 
   return useMemo(
     () =>
       createAIRequestService(
         graphqlService.gql,
-        eventSourceService.eventSource
+        eventSourceService.eventSource,
+        nbstoreService.realtime
       ),
-    [graphqlService, eventSourceService]
+    [graphqlService, eventSourceService, nbstoreService]
   );
 }
 

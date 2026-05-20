@@ -4,7 +4,6 @@ import {
   addWorkspaceEmbeddingFilesMutation,
   addWorkspaceEmbeddingIgnoredDocsMutation,
   getAllWorkspaceEmbeddingIgnoredDocsQuery,
-  getWorkspaceConfigQuery,
   getWorkspaceEmbeddingFilesQuery,
   type PaginationInput,
   removeWorkspaceEmbeddingFilesMutation,
@@ -22,19 +21,12 @@ export class EmbeddingStore extends Store {
   }
 
   async getEnabled(workspaceId: string, signal?: AbortSignal) {
-    if (!this.workspaceServerService.server) {
-      throw new Error('No Server');
-    }
-    const data = await this.workspaceServerService.server.gql({
-      query: getWorkspaceConfigQuery,
-      variables: {
-        id: workspaceId,
-      },
-      context: {
-        signal,
-      },
-    });
-    return data.workspace.enableDocEmbedding;
+    const { config } = await this.nbstoreService.realtime.request(
+      'workspace.config.get',
+      { workspaceId },
+      { signal, timeoutMs: 10000 }
+    );
+    return config.enableDocEmbedding;
   }
 
   async updateEnabled(

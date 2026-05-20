@@ -1,15 +1,6 @@
-import {
-  effect,
-  exhaustMapWithTrailing,
-  fromPromise,
-  LiveData,
-  onComplete,
-  onStart,
-  Service,
-  smartRetry,
-} from '@toeverything/infra';
-import { catchError, EMPTY, tap } from 'rxjs';
+import { LiveData, Service } from '@toeverything/infra';
 
+import { RealtimeLiveQuery } from '../realtime/live-query';
 import type {
   UpdateUserSettingsInput,
   UserSettings,
@@ -21,34 +12,28 @@ export type { UserSettings };
 export class UserSettingsService extends Service {
   constructor(private readonly store: UserSettingsStore) {
     super();
+    this.liveQuery.start();
   }
 
   userSettings$ = new LiveData<UserSettings | undefined>(undefined);
   isLoading$ = new LiveData<boolean>(false);
   error$ = new LiveData<any | undefined>(undefined);
+  private readonly liveQuery = new RealtimeLiveQuery({
+    request: signal => this.requestUserSettings(signal),
+    subscribe: () => this.store.subscribeUserSettings(),
+    applySnapshot: settings => {
+      this.error$.value = undefined;
+      this.userSettings$.value = settings;
+    },
+    applyEvent: () => 'revalidate' as const,
+    onError: error => {
+      this.error$.value = error;
+    },
+  });
 
-  revalidate = effect(
-    exhaustMapWithTrailing(() => {
-      return fromPromise(() => {
-        return this.store.getUserSettings();
-      }).pipe(
-        smartRetry(),
-        tap(settings => {
-          this.userSettings$.value = settings;
-        }),
-        catchError(error => {
-          this.error$.value = error;
-          return EMPTY;
-        }),
-        onStart(() => {
-          this.isLoading$.value = true;
-        }),
-        onComplete(() => {
-          this.isLoading$.value = false;
-        })
-      );
-    })
-  );
+  revalidate = () => {
+    this.liveQuery.revalidate();
+  };
 
   async updateUserSettings(settings: UpdateUserSettingsInput) {
     await this.store.updateUserSettings(settings);
@@ -57,5 +42,19 @@ export class UserSettingsService extends Service {
       ...(settings as UserSettings),
     };
     this.revalidate();
+  }
+
+  override dispose(): void {
+    super.dispose();
+    this.liveQuery.dispose();
+  }
+
+  private async requestUserSettings(signal: AbortSignal) {
+    this.isLoading$.value = true;
+    try {
+      return await this.store.getUserSettings(signal);
+    } finally {
+      this.isLoading$.value = false;
+    }
   }
 }

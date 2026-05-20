@@ -235,11 +235,19 @@ class SocketManager {
       },
     };
   }
+
+  reset() {
+    this.socket.disconnect();
+  }
 }
 
 const SOCKET_MANAGER_CACHE = new Map<string, SocketManager>();
+function getSocketManagerKey(endpoint: string, isSelfHosted: boolean) {
+  return `${endpoint}:${isSelfHosted ? 'selfhosted' : 'cloud'}`;
+}
+
 function getSocketManager(endpoint: string, isSelfHosted: boolean) {
-  const key = `${endpoint}:${isSelfHosted ? 'selfhosted' : 'cloud'}`;
+  const key = getSocketManagerKey(endpoint, isSelfHosted);
   let manager = SOCKET_MANAGER_CACHE.get(key);
   if (!manager) {
     manager = new SocketManager(endpoint, isSelfHosted);
@@ -252,6 +260,12 @@ export class SocketConnection extends AutoReconnectConnection<{
   socket: Socket;
   disconnect: () => void;
 }> {
+  static resetSharedConnection(endpoint: string, isSelfHosted: boolean) {
+    SOCKET_MANAGER_CACHE.get(
+      getSocketManagerKey(endpoint, isSelfHosted)
+    )?.reset();
+  }
+
   manager = getSocketManager(this.endpoint, this.isSelfHosted);
 
   constructor(

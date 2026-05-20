@@ -101,7 +101,6 @@ import { ServerConfigStore } from './stores/server-config';
 import { ServerListStore } from './stores/server-list';
 import { SubscriptionStore } from './stores/subscription';
 import { UserCopilotQuotaStore } from './stores/user-copilot-quota';
-import { UserFeatureStore } from './stores/user-feature';
 import { UserQuotaStore } from './stores/user-quota';
 import { UserSettingsStore } from './stores/user-settings';
 import { DocCreatedByService } from './services/doc-created-by';
@@ -146,6 +145,7 @@ export function configureCloudModule(framework: Framework) {
       AuthStore,
       UrlService,
       GlobalDialogService,
+      NbstoreService,
     ])
     .store(AuthStore, [
       FetchService,
@@ -153,6 +153,7 @@ export function configureCloudModule(framework: Framework) {
       GlobalState,
       ServerService,
       AuthProvider,
+      NbstoreService,
     ])
     .entity(AuthSession, [AuthStore])
     .service(SubscriptionService, [SubscriptionStore])
@@ -165,7 +166,7 @@ export function configureCloudModule(framework: Framework) {
     .entity(Subscription, [AuthService, ServerService, SubscriptionStore])
     .entity(SubscriptionPrices, [ServerService, SubscriptionStore])
     .service(UserQuotaService)
-    .store(UserQuotaStore, [GraphQLService])
+    .store(UserQuotaStore, [NbstoreService])
     .entity(UserQuota, [AuthService, UserQuotaStore])
     .service(UserCopilotQuotaService)
     .store(UserCopilotQuotaStore, [GraphQLService])
@@ -175,8 +176,7 @@ export function configureCloudModule(framework: Framework) {
       ServerService,
     ])
     .service(UserFeatureService)
-    .entity(UserFeature, [AuthService, UserFeatureStore])
-    .store(UserFeatureStore, [GraphQLService])
+    .entity(UserFeature, [AuthService])
     .service(InvoicesService)
     .store(InvoicesStore, [GraphQLService])
     .entity(Invoices, [InvoicesStore])
@@ -188,9 +188,9 @@ export function configureCloudModule(framework: Framework) {
     .service(PublicUserService, [PublicUserStore])
     .store(PublicUserStore, [GraphQLService])
     .service(UserSettingsService, [UserSettingsStore])
-    .store(UserSettingsStore, [GraphQLService])
+    .store(UserSettingsStore, [GraphQLService, NbstoreService])
     .service(AccessTokenService, [AccessTokenStore])
-    .store(AccessTokenStore, [GraphQLService]);
+    .store(AccessTokenStore, [GraphQLService, NbstoreService]);
 
   framework
     .scope(WorkspaceScope)

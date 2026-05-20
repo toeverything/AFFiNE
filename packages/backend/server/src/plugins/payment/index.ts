@@ -3,6 +3,7 @@ import './config';
 import { Module } from '@nestjs/common';
 
 import { ServerConfigModule } from '../../core';
+import { EntitlementModule } from '../../core/entitlement';
 import { FeatureModule } from '../../core/features';
 import { MailModule } from '../../core/mail';
 import { PermissionModule } from '../../core/permission';
@@ -41,6 +42,7 @@ import { StripeWebhook } from './webhook';
     WorkspaceModule,
     MailModule,
     ServerConfigModule,
+    EntitlementModule,
   ],
   providers: [
     StripeFactory,

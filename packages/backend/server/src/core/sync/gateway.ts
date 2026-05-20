@@ -41,8 +41,8 @@ import {
 } from '../doc';
 import { applyUpdatesWithNative } from '../doc/merge-updates';
 import {
-  AccessController,
   type DocAction,
+  PermissionAccess,
   WorkspaceAction,
 } from '../permission';
 import { DocID } from '../utils/doc';
@@ -223,7 +223,7 @@ export class SpaceSyncGateway
   private activeUsersFlushQueued = false;
 
   constructor(
-    private readonly ac: AccessController,
+    private readonly ac: PermissionAccess,
     private readonly event: EventBus,
     private readonly workspace: PgWorkspaceDocStorageAdapter,
     private readonly userspace: PgUserspaceDocStorageAdapter,
@@ -899,7 +899,7 @@ class WorkspaceSyncAdapter extends SyncSocketAdapter {
   constructor(
     client: Socket,
     storage: DocStorageAdapter,
-    private readonly ac: AccessController,
+    private readonly ac: PermissionAccess,
     private readonly docReader: DocReader,
     private readonly models: Models
   ) {

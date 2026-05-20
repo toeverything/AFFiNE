@@ -32,3 +32,47 @@ export function realtimeCommentRoom(workspaceId: string, docId: string) {
 export function realtimeWorkspaceEmbeddingProgressRoom(workspaceId: string) {
   return realtimeWorkspaceRoom(workspaceId, 'embedding-progress');
 }
+
+export function realtimeUserQuotaStateRoom(userId: string) {
+  return realtimeUserRoom(userId, 'quota-state');
+}
+
+export function realtimeWorkspaceQuotaStateRoom(workspaceId: string) {
+  return realtimeWorkspaceRoom(workspaceId, 'quota-state');
+}
+
+export function realtimeWorkspaceAccessRoom(workspaceId: string) {
+  return realtimeWorkspaceRoom(workspaceId, 'access');
+}
+
+export function realtimeWorkspaceConfigRoom(workspaceId: string) {
+  return realtimeWorkspaceRoom(workspaceId, 'config');
+}
+
+export function realtimeWorkspaceMembersRoom(workspaceId: string) {
+  return realtimeWorkspaceRoom(workspaceId, 'members');
+}
+
+export function realtimeWorkspaceInviteLinkRoom(workspaceId: string) {
+  return realtimeWorkspaceRoom(workspaceId, 'invite-link');
+}
+
+export function realtimeDocShareStateRoom(workspaceId: string, docId: string) {
+  return realtimeWorkspaceDocRoom(workspaceId, docId, 'share-state');
+}
+
+export function realtimeDocGrantsRoom(workspaceId: string, docId: string) {
+  return realtimeWorkspaceDocRoom(workspaceId, docId, 'grants');
+}
+
+export function realtimeUserProfileRoom(userId: string) {
+  return realtimeUserRoom(userId, 'profile');
+}
+
+export function realtimeUserSettingsRoom(userId: string) {
+  return realtimeUserRoom(userId, 'settings');
+}
+
+export function realtimeUserAccessTokensRoom(userId: string) {
+  return realtimeUserRoom(userId, 'access-tokens');
+}

@@ -1,12 +1,13 @@
 import {
   deleteAccountMutation,
   removeAvatarMutation,
+  ServerDeploymentType,
   updateUserProfileMutation,
   uploadAvatarMutation,
 } from '@affine/graphql';
 import { Store } from '@toeverything/infra';
 
-import type { GlobalState } from '../../storage';
+import type { GlobalState, NbstoreService } from '../../storage';
 import type { AuthSessionInfo } from '../entities/session';
 import type { AuthProvider } from '../provider/auth';
 import type { FetchService } from '../services/fetch';
@@ -20,6 +21,7 @@ export interface AccountProfile {
   hasPassword: boolean;
   avatarUrl: string | null;
   emailVerified: string | null;
+  features?: string[];
 }
 
 export class AuthStore extends Store {
@@ -28,7 +30,8 @@ export class AuthStore extends Store {
     private readonly gqlService: GraphQLService,
     private readonly globalState: GlobalState,
     private readonly serverService: ServerService,
-    private readonly authProvider: AuthProvider
+    private readonly authProvider: AuthProvider,
+    private readonly nbstoreService: NbstoreService
   ) {
     super();
   }
@@ -58,20 +61,20 @@ export class AuthStore extends Store {
   }
 
   async fetchSession() {
-    const url = `/api/auth/session`;
-    const options: RequestInit = {
-      headers: {
-        'Content-Type': 'application/json',
-      },
+    const { user } = await this.nbstoreService.realtime.request(
+      'user.profile.get',
+      {},
+      { timeoutMs: 10000 }
+    );
+    return {
+      user: user
+        ? {
+            ...user,
+            hasPassword: Boolean(user.hasPassword),
+            emailVerified: user.emailVerified ? 'true' : null,
+          }
+        : null,
     };
-
-    const res = await this.fetchService.fetch(url, options);
-    const data = (await res.json()) as {
-      user?: AccountProfile | null;
-    };
-    if (!res.ok)
-      throw new Error('Get session fetch error: ' + JSON.stringify(data));
-    return data; // Return null if data empty
   }
 
   async signInMagicLink(email: string, token: string) {
@@ -102,6 +105,13 @@ export class AuthStore extends Store {
 
   async signOut() {
     await this.authProvider.signOut();
+    await this.nbstoreService.realtime.configure({
+      endpoint: this.serverService.server.baseUrl,
+      authenticated: false,
+      isSelfHosted:
+        this.serverService.server.config$.value.type ===
+        ServerDeploymentType.Selfhosted,
+    });
   }
 
   async uploadAvatar(file: File) {

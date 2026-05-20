@@ -25,7 +25,7 @@ import {
 import { Comment, DocMode, Models, Reply } from '../../models';
 import { CurrentUser } from '../auth/session';
 import { ServerFeature, ServerService } from '../config';
-import { AccessController, DocAction } from '../permission';
+import { DocAction, PermissionAccess } from '../permission';
 import { RealtimePublisher } from '../realtime';
 import { CommentAttachmentStorage } from '../storage';
 import { UserType } from '../user';
@@ -54,7 +54,7 @@ export interface CommentCursor {
 export class CommentResolver {
   constructor(
     private readonly service: CommentService,
-    private readonly ac: AccessController,
+    private readonly ac: PermissionAccess,
     private readonly commentAttachmentStorage: CommentAttachmentStorage,
     private readonly queue: JobQueue,
     private readonly models: Models,
@@ -469,11 +469,7 @@ export class CommentResolver {
 
   private async assertPermission(
     me: UserType,
-    item: {
-      workspaceId: string;
-      docId: string;
-      userId?: string;
-    },
+    item: { workspaceId: string; docId: string; userId?: string },
     action: DocAction
   ) {
     // the owner of the comment/reply can update, delete, resolve it

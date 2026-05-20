@@ -15,7 +15,7 @@ import GraphQLUpload, {
 import { toBuffer, UseNamedGuard } from '../../base';
 import { CurrentUser } from '../../core/auth';
 import { Admin } from '../../core/common';
-import { AccessController } from '../../core/permission';
+import { PermissionAccess } from '../../core/permission';
 import { WorkspaceType } from '../../core/workspaces';
 import {
   SubscriptionPlan,
@@ -86,7 +86,7 @@ export class AdminLicensePreview {
 export class LicenseResolver {
   constructor(
     private readonly service: LicenseService,
-    private readonly ac: AccessController
+    private readonly ac: PermissionAccess
   ) {}
 
   @ResolveField(() => License, {

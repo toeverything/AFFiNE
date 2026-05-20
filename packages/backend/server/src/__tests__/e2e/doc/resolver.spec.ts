@@ -69,6 +69,64 @@ e2e('should get recently updated docs', async t => {
   t.is(recentlyUpdatedDocs.edges[2].node.title, doc1.title);
 });
 
+e2e('should filter recently updated docs by doc read permission', async t => {
+  const owner = await app.signup();
+  const member = await app.createUser();
+  await app.login(member);
+
+  await app.switchUser(owner);
+  const workspace = await app.create(Mockers.Workspace, {
+    owner: { id: owner.id },
+  });
+  await app.create(Mockers.WorkspaceUser, {
+    workspaceId: workspace.id,
+    userId: member.id,
+    type: WorkspaceRole.Collaborator,
+  });
+
+  const privateSnapshot = await app.create(Mockers.DocSnapshot, {
+    workspaceId: workspace.id,
+    user: owner,
+  });
+  await app.create(Mockers.DocMeta, {
+    workspaceId: workspace.id,
+    docId: privateSnapshot.id,
+    title: 'private-doc',
+    defaultRole: DocRole.None,
+  });
+
+  const publicSnapshot = await app.create(Mockers.DocSnapshot, {
+    workspaceId: workspace.id,
+    user: owner,
+  });
+  const publicDoc = await app.create(Mockers.DocMeta, {
+    workspaceId: workspace.id,
+    docId: publicSnapshot.id,
+    title: 'public-doc',
+    defaultRole: DocRole.None,
+    public: true,
+  });
+
+  await app.switchUser(member);
+  const {
+    workspace: { recentlyUpdatedDocs },
+  } = await app.gql({
+    query: getRecentlyUpdatedDocsQuery,
+    variables: {
+      workspaceId: workspace.id,
+      pagination: {
+        first: 10,
+      },
+    },
+  });
+
+  t.is(recentlyUpdatedDocs.totalCount, 1);
+  t.deepEqual(
+    recentlyUpdatedDocs.edges.map(edge => edge.node.id),
+    [publicDoc.docId]
+  );
+});
+
 e2e(
   'should get doc with public attribute when doc snapshot not exists',
   async t => {

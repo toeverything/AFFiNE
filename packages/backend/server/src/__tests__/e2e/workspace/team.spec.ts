@@ -6,6 +6,7 @@ import {
   revokePublicPageMutation,
   WorkspaceMemberStatus,
 } from '@affine/graphql';
+import { PrismaClient } from '@prisma/client';
 
 import { QuotaService } from '../../../core/quota/service';
 import { WorkspaceRole } from '../../../models';
@@ -98,7 +99,31 @@ const revokeMember = async (workspaceId: string, userId: string) => {
   return revokeMember;
 };
 
-e2e('should set new invited users to AllocatingSeat', async t => {
+const cancelTeamWorkspace = async (workspaceId: string) => {
+  const db = app.get(PrismaClient);
+  await db.entitlement.updateMany({
+    where: {
+      targetType: 'workspace',
+      targetId: workspaceId,
+      plan: 'team',
+    },
+    data: { status: 'revoked' },
+  });
+  await db.subscription.updateMany({
+    where: {
+      targetId: workspaceId,
+      plan: SubscriptionPlan.Team,
+    },
+    data: { status: 'canceled' },
+  });
+  await app.eventBus.emitAsync('workspace.subscription.canceled', {
+    workspaceId,
+    plan: SubscriptionPlan.Team,
+    recurring: SubscriptionRecurring.Monthly,
+  });
+};
+
+e2e('should set new invited users to waiting-seat status', async t => {
   const { owner, workspace } = await createTeamWorkspace();
   await app.login(owner);
 
@@ -117,7 +142,7 @@ e2e('should set new invited users to AllocatingSeat', async t => {
   const invitationInfo = await getInvitationInfo(
     result.inviteMembers[0].inviteId!
   );
-  t.is(invitationInfo.status, WorkspaceMemberStatus.AllocatingSeat);
+  t.is(invitationInfo.status, WorkspaceMemberStatus.NeedMoreSeat);
 });
 
 e2e('should allocate seats', async t => {
@@ -151,11 +176,11 @@ e2e('should allocate seats', async t => {
   });
 
   t.is(
-    members.find(m => m.user.id === u1.id)?.status,
+    members.find(m => m.user?.id === u1.id)?.status,
     WorkspaceMemberStatus.Pending
   );
   t.is(
-    members.find(m => m.user.id === u2.id)?.status,
+    members.find(m => m.user?.id === u2.id)?.status,
     WorkspaceMemberStatus.Accepted
   );
 
@@ -201,11 +226,11 @@ e2e('should set all rests to NeedMoreSeat', async t => {
   });
 
   t.is(
-    members.find(m => m.user.id === u2.id)?.status,
+    members.find(m => m.user?.id === u2.id)?.status,
     WorkspaceMemberStatus.NeedMoreSeat
   );
   t.is(
-    members.find(m => m.user.id === u3.id)?.status,
+    members.find(m => m.user?.id === u3.id)?.status,
     WorkspaceMemberStatus.NeedMoreSeat
   );
 });
@@ -237,11 +262,7 @@ e2e(
       status: WorkspaceMemberStatus.UnderReview,
     });
 
-    await app.eventBus.emitAsync('workspace.subscription.canceled', {
-      workspaceId: workspace.id,
-      plan: SubscriptionPlan.Team,
-      recurring: SubscriptionRecurring.Monthly,
-    });
+    await cancelTeamWorkspace(workspace.id);
 
     const [members] = await app.models.workspaceUser.paginate(workspace.id, {
       first: 20,
@@ -265,11 +286,7 @@ e2e(
   async t => {
     const { workspace, owner, admin } = await createTeamWorkspace();
 
-    await app.eventBus.emitAsync('workspace.subscription.canceled', {
-      workspaceId: workspace.id,
-      plan: SubscriptionPlan.Team,
-      recurring: SubscriptionRecurring.Monthly,
-    });
+    await cancelTeamWorkspace(workspace.id);
 
     t.false(await app.models.workspace.isTeamWorkspace(workspace.id));
     t.false(
@@ -306,11 +323,7 @@ e2e(
     await app.login(owner);
     await publishDoc(workspace.id, 'published-doc');
 
-    await app.eventBus.emitAsync('workspace.subscription.canceled', {
-      workspaceId: workspace.id,
-      plan: SubscriptionPlan.Team,
-      recurring: SubscriptionRecurring.Monthly,
-    });
+    await cancelTeamWorkspace(workspace.id);
 
     t.false(await app.models.workspace.isTeamWorkspace(workspace.id));
     t.true(
@@ -325,7 +338,7 @@ e2e(
     );
 
     await t.throwsAsync(publishDoc(workspace.id, 'blocked-doc'));
-    await t.notThrowsAsync(revokePublicDoc(workspace.id, 'published-doc'));
+    await t.throwsAsync(revokePublicDoc(workspace.id, 'published-doc'));
 
     const quota = await app
       .get(QuotaService)

@@ -45,6 +45,55 @@ export class MockWorkspace extends Mocker<MockWorkspaceInput, MockedWorkspace> {
           : undefined,
       },
     });
+    const runtimeStateColumns = await this.db.$queryRaw<
+      Array<{ exists: boolean }>
+    >`
+      SELECT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = 'workspace_runtime_states'
+          AND column_name = 'known'
+      ) AS "exists"
+    `;
+    if (runtimeStateColumns[0]?.exists) {
+      await this.db.$executeRaw`
+        INSERT INTO workspace_runtime_states (
+          workspace_id,
+          known,
+          readonly,
+          readonly_reasons,
+          last_reconciled_at,
+          stale_after,
+          updated_at
+        )
+        VALUES (${workspace.id}, true, false, ARRAY[]::TEXT[], now(), NULL, now())
+        ON CONFLICT (workspace_id)
+        DO UPDATE SET
+          known = true,
+          readonly = false,
+          readonly_reasons = ARRAY[]::TEXT[],
+          last_reconciled_at = now(),
+          stale_after = NULL,
+          updated_at = now()
+      `;
+    } else {
+      await this.db.$executeRaw`
+        INSERT INTO workspace_runtime_states (
+          workspace_id,
+          readonly,
+          readonly_reasons,
+          stale_at,
+          updated_at
+        )
+        VALUES (${workspace.id}, false, ARRAY[]::TEXT[], NULL, now())
+        ON CONFLICT (workspace_id)
+        DO UPDATE SET
+          readonly = false,
+          readonly_reasons = ARRAY[]::TEXT[],
+          stale_at = NULL,
+          updated_at = now()
+      `;
+    }
 
     // create a rootDoc snapshot
     if (snapshot) {

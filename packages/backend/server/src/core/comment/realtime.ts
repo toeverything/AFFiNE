@@ -2,7 +2,7 @@ import { Injectable, OnModuleInit } from '@nestjs/common';
 import { z } from 'zod';
 
 import { decodeWithJson, encodeWithJson } from '../../base/graphql';
-import { AccessController } from '../permission';
+import { PermissionAccess } from '../permission';
 import {
   realtimeCommentRoom,
   RealtimePublisher,
@@ -20,7 +20,7 @@ export function commentRoom(workspaceId: string, docId: string) {
 export class CommentRealtimeProvider implements OnModuleInit {
   constructor(
     private readonly service: CommentService,
-    private readonly ac: AccessController,
+    private readonly ac: PermissionAccess,
     private readonly registry: RealtimeRegistry
   ) {}
 

@@ -1,3 +1,4 @@
+import type { NbstoreService } from '@affine/core/modules/storage';
 import {
   ContextCategories,
   type CopilotChatHistoryFragment,
@@ -390,7 +391,8 @@ export function createAIRequestService(
   eventSource: (
     url: string,
     eventSourceInitDict?: EventSourceInit
-  ) => EventSource
+  ) => EventSource,
+  realtime: Pick<NbstoreService['realtime'], 'request'>
 ) {
-  return new AIRequestService(new CopilotClient(gql, eventSource));
+  return new AIRequestService(new CopilotClient(gql, eventSource, realtime));
 }

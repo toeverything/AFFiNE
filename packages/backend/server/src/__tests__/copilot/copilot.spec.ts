@@ -17,6 +17,7 @@ import {
 import { ConfigModule } from '../../base/config';
 import { AuthService } from '../../core/auth';
 import { QuotaModule } from '../../core/quota';
+import { QuotaStateService } from '../../core/quota/state';
 import { StorageModule, WorkspaceBlobStorage } from '../../core/storage';
 import {
   ContextCategories,
@@ -101,6 +102,7 @@ type Context = {
   actionBridge: ActionRuntimeBridge;
   cronJobs: CopilotCronJobs;
   subscription: SubscriptionService;
+  quotaState: QuotaStateService;
 };
 
 const buildTurn = (
@@ -199,6 +201,7 @@ test.before(async t => {
   const workspaceEmbedding = module.get(CopilotWorkspaceService);
   const cronJobs = module.get(CopilotCronJobs);
   const subscription = module.get(SubscriptionService);
+  const quotaState = module.get(QuotaStateService);
 
   t.context.module = module;
   t.context.auth = auth;
@@ -225,6 +228,7 @@ test.before(async t => {
   t.context.workspaceEmbedding = workspaceEmbedding;
   t.context.cronJobs = cronJobs;
   t.context.subscription = subscription;
+  t.context.quotaState = quotaState;
 
   await module.initTestingDB();
 });
@@ -2172,7 +2176,7 @@ test('model selection policy should resolve requested optional models consistent
 });
 
 test('capability policy host should gate pro model requests by subscription status', async t => {
-  const { subscription, module } = t.context;
+  const { quotaState, subscription, module } = t.context;
   const capabilityPolicy = module.get(CapabilityPolicyHost);
 
   const mockStatus = (status?: SubscriptionStatus) => {
@@ -2181,6 +2185,10 @@ test('capability policy host should gate pro model requests by subscription stat
       // @ts-expect-error mock
       getSubscription: async () => (status ? { status } : null),
     }));
+    Sinon.stub(quotaState, 'reconcileUserQuotaState').resolves({
+      plan: status === SubscriptionStatus.Active ? 'pro' : 'free',
+      flags: {},
+    } as Awaited<ReturnType<QuotaStateService['reconcileUserQuotaState']>>);
   };
 
   // payment disabled -> allow requested if in optional; pro not blocked

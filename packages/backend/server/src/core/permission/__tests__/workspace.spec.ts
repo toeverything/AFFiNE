@@ -10,14 +10,13 @@ import {
   WorkspaceMemberStatus,
   WorkspaceRole,
 } from '../../../models';
-import { PermissionModule } from '../index';
+import { PermissionAccess, PermissionModule } from '../index';
 import { WorkspacePolicyService } from '../policy';
 import { mapWorkspaceRoleToPermissions } from '../types';
-import { WorkspaceAccessController } from '../workspace';
 
 let module: TestingModule;
 let models: Models;
-let ac: WorkspaceAccessController;
+let ac: PermissionAccess;
 let policy: WorkspacePolicyService;
 let user: User;
 let ws: Workspace;
@@ -26,7 +25,7 @@ let underReviewUserId: string;
 test.before(async () => {
   module = await createTestingModule({ imports: [PermissionModule] });
   models = module.get<Models>(Models);
-  ac = module.get(WorkspaceAccessController);
+  ac = module.get(PermissionAccess);
   policy = module.get(WorkspacePolicyService);
 });
 
@@ -138,10 +137,34 @@ const roleCases: Array<{
   },
 ];
 
+async function getRole(resource: {
+  workspaceId: string;
+  userId: string;
+  allowLocal?: boolean;
+}) {
+  const checker = ac.user(resource.userId).workspace(resource.workspaceId);
+  if (resource.allowLocal) {
+    checker.allowLocal();
+  }
+  return (await checker.permissions()).role;
+}
+
+function workspace(resource: {
+  workspaceId: string;
+  userId: string;
+  allowLocal?: boolean;
+}) {
+  const checker = ac.user(resource.userId).workspace(resource.workspaceId);
+  if (resource.allowLocal) {
+    checker.allowLocal();
+  }
+  return checker;
+}
+
 for (const roleCase of roleCases) {
   test(roleCase.title, async t => {
     await roleCase.setup?.();
-    const role = await ac.getRole(roleCase.resource());
+    const role = await getRole(roleCase.resource());
 
     t.is(role, roleCase.expectedRole);
   });
@@ -150,10 +173,10 @@ for (const roleCase of roleCases) {
 test('should return mapped null permission even workspace has public docs', async t => {
   await models.doc.publish(ws.id, 'doc1');
 
-  const { permissions } = await ac.role({
+  const { permissions } = await workspace({
     workspaceId: ws.id,
     userId: 'random-user-id',
-  });
+  }).permissions();
 
   t.deepEqual(permissions, mapWorkspaceRoleToPermissions(null));
 });
@@ -162,13 +185,10 @@ test('should deny external read assert even workspace has public docs', async t 
   await models.doc.publish(ws.id, 'doc1');
 
   await t.throwsAsync(
-    ac.assert(
-      {
-        workspaceId: ws.id,
-        userId: 'random-user-id',
-      },
-      'Workspace.Read'
-    )
+    workspace({
+      workspaceId: ws.id,
+      userId: 'random-user-id',
+    }).assert('Workspace.Read')
   );
 });
 
@@ -177,13 +197,10 @@ test('should deny external read assert when sharing disabled even if workspace h
   await models.workspace.update(ws.id, { enableSharing: false });
 
   await t.throwsAsync(
-    ac.assert(
-      {
-        workspaceId: ws.id,
-        userId: 'random-user-id',
-      },
-      'Workspace.Read'
-    )
+    workspace({
+      workspaceId: ws.id,
+      userId: 'random-user-id',
+    }).assert('Workspace.Read')
   );
 });
 
@@ -193,31 +210,27 @@ test('should reject external doc roles when sharing disabled', async t => {
     enableSharing: false,
   });
 
-  const [docRole] = await ac.docRoles(
-    {
-      workspaceId: ws.id,
-      userId: 'random-user-id',
-    },
-    ['doc1']
-  );
+  const docRole = await ac
+    .user('random-user-id')
+    .doc(ws.id, 'doc1')
+    .permissions();
 
   t.is(docRole.role, null);
   t.false(docRole.permissions['Doc.Read']);
 });
 
 test('should return mapped permissions', async t => {
-  const { permissions } = await ac.role({
+  const { permissions } = await workspace({
     workspaceId: ws.id,
     userId: user.id,
-  });
+  }).permissions();
 
   t.deepEqual(permissions, mapWorkspaceRoleToPermissions(WorkspaceRole.Owner));
 });
 
 test('should assert action', async t => {
   await t.notThrowsAsync(
-    ac.assert(
-      { workspaceId: ws.id, userId: user.id },
+    workspace({ workspaceId: ws.id, userId: user.id }).assert(
       'Workspace.TransferOwner'
     )
   );
@@ -225,7 +238,7 @@ test('should assert action', async t => {
   const u2 = await models.user.create({ email: 'u2@affine.pro' });
 
   await t.throwsAsync(
-    ac.assert({ workspaceId: ws.id, userId: u2.id }, 'Workspace.Sync')
+    workspace({ workspaceId: ws.id, userId: u2.id }).assert('Workspace.Sync')
   );
 
   await models.workspaceUser.set(ws.id, u2.id, WorkspaceRole.Admin, {
@@ -233,8 +246,7 @@ test('should assert action', async t => {
   });
 
   await t.notThrowsAsync(
-    ac.assert(
-      { workspaceId: ws.id, userId: u2.id },
+    workspace({ workspaceId: ws.id, userId: u2.id }).assert(
       'Workspace.Settings.Update'
     )
   );
@@ -256,10 +268,10 @@ test('should apply readonly workspace restrictions while keeping cleanup actions
   }
   await policy.reconcileWorkspaceQuotaState(ws.id);
 
-  const { permissions } = await ac.role({
+  const { permissions } = await workspace({
     workspaceId: ws.id,
     userId: user.id,
-  });
+  }).permissions();
 
   t.false(permissions['Workspace.CreateDoc']);
   t.false(permissions['Workspace.Settings.Update']);

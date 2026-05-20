@@ -27,7 +27,7 @@ import {
   WorkspaceIdRequiredToUpdateTeamSubscription,
 } from '../../base';
 import { CurrentUser, Public } from '../../core/auth';
-import { AccessController } from '../../core/permission';
+import { PermissionAccess } from '../../core/permission';
 import { UserType } from '../../core/user';
 import { WorkspaceType } from '../../core/workspaces';
 import { Invoice, Subscription, WorkspaceSubscriptionManager } from './manager';
@@ -665,7 +665,7 @@ export class WorkspaceSubscriptionResolver {
   constructor(
     private readonly service: WorkspaceSubscriptionManager,
     private readonly db: PrismaClient,
-    private readonly ac: AccessController
+    private readonly ac: PermissionAccess
   ) {}
 
   @ResolveField(() => SubscriptionType, {

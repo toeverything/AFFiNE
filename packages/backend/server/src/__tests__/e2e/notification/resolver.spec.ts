@@ -5,7 +5,6 @@ import {
   listNotificationsQuery,
   MentionNotificationBodyType,
   mentionUserMutation,
-  notificationCountQuery,
   NotificationObjectType,
   NotificationType,
   readAllNotificationsMutation,
@@ -13,6 +12,7 @@ import {
 } from '@affine/graphql';
 
 import { Mockers } from '../../mocks';
+import { createRealtimeClient, realtimeRequest } from '../realtime';
 import { app, e2e } from '../test';
 
 async function init() {
@@ -270,10 +270,10 @@ e2e('should mark notification as read', async t => {
       },
     });
   }
-  const count = await app.gql({
-    query: notificationCountQuery,
-  });
-  t.is(count.currentUser!.notificationCount, 0);
+  const socket = await createRealtimeClient(app, member);
+  t.teardown(() => socket.disconnect());
+  const count = await realtimeRequest(socket, 'notification.count.get', {});
+  t.is(count.count, 0);
 
   // read again should work
   for (const notification of notifications) {

@@ -1,90 +1,91 @@
 import { DebugLogger } from '@affine/debug';
-import type { GetWorkspaceConfigQuery, InviteLink } from '@affine/graphql';
-import {
-  catchErrorInto,
-  effect,
-  Entity,
-  fromPromise,
-  LiveData,
-  onComplete,
-  onStart,
-  smartRetry,
-} from '@toeverything/infra';
-import { exhaustMap, tap } from 'rxjs';
+import type {
+  RealtimeTopicEventOf,
+  WorkspaceConfigSnapshot,
+  WorkspaceInviteLinkSnapshot,
+} from '@affine/realtime';
+import { Entity, LiveData } from '@toeverything/infra';
 
+import { RealtimeLiveQuery } from '../../cloud/realtime/live-query';
 import type { WorkspaceService } from '../../workspace';
 import type { WorkspaceShareSettingStore } from '../stores/share-setting';
 
-type EnableAi = GetWorkspaceConfigQuery['workspace']['enableAi'];
-type EnableSharing = GetWorkspaceConfigQuery['workspace']['enableSharing'];
-type EnableUrlPreview =
-  GetWorkspaceConfigQuery['workspace']['enableUrlPreview'];
-
 const logger = new DebugLogger('affine:workspace-permission');
+type InviteLink = WorkspaceInviteLinkSnapshot;
 
 export class WorkspaceShareSetting extends Entity {
-  enableAi$ = new LiveData<EnableAi | null>(null);
-  enableSharing$ = new LiveData<EnableSharing | null>(null);
-  enableUrlPreview$ = new LiveData<EnableUrlPreview | null>(null);
+  enableAi$ = new LiveData<boolean | null>(null);
+  enableSharing$ = new LiveData<boolean | null>(null);
+  enableUrlPreview$ = new LiveData<boolean | null>(null);
   inviteLink$ = new LiveData<InviteLink | null>(null);
   isLoading$ = new LiveData(false);
   error$ = new LiveData<any>(null);
+  private inviteLinkStarted = false;
+  private inviteLinkExpireTimer?: ReturnType<typeof setTimeout>;
+  private readonly configLiveQuery = new RealtimeLiveQuery<
+    WorkspaceConfigSnapshot,
+    RealtimeTopicEventOf<'workspace.config.changed'>
+  >({
+    request: signal => this.requestWorkspaceConfig(signal),
+    subscribe: () =>
+      this.store.subscribeWorkspaceConfig(this.workspaceService.workspace.id),
+    applySnapshot: value => {
+      this.error$.next(null);
+      this.enableAi$.next(value.enableAi);
+      this.enableSharing$.next(value.enableSharing);
+      this.enableUrlPreview$.next(value.enableUrlPreview);
+    },
+    applyEvent: () => 'revalidate',
+    onError: error => {
+      logger.error('Failed to fetch workspace share settings', error);
+      this.error$.setValue(error);
+    },
+  });
+  private readonly inviteLinkLiveQuery = new RealtimeLiveQuery<
+    InviteLink | null,
+    RealtimeTopicEventOf<'workspace.invite-link.changed'>
+  >({
+    request: signal =>
+      this.store.fetchInviteLink(this.workspaceService.workspace.id, signal),
+    subscribe: () =>
+      this.store.subscribeInviteLink(this.workspaceService.workspace.id),
+    applySnapshot: value => {
+      this.error$.next(null);
+      this.inviteLink$.next(value);
+      this.scheduleInviteLinkExpiry(value);
+    },
+    applyEvent: () => 'revalidate',
+    onError: error => {
+      logger.error('Failed to fetch workspace invite link', error);
+      this.error$.setValue(error);
+      this.inviteLinkLiveQuery.stop();
+      this.inviteLinkStarted = false;
+    },
+  });
 
   constructor(
     private readonly workspaceService: WorkspaceService,
     private readonly store: WorkspaceShareSettingStore
   ) {
     super();
-    this.revalidate();
+    this.configLiveQuery.start();
   }
 
-  revalidate = effect(
-    exhaustMap(() => {
-      return fromPromise(signal =>
-        this.store.fetchWorkspaceConfig(
-          this.workspaceService.workspace.id,
-          signal
-        )
-      ).pipe(
-        smartRetry(),
-        tap(value => {
-          if (value) {
-            this.enableAi$.next(value.enableAi);
-            this.enableSharing$.next(value.enableSharing);
-            this.enableUrlPreview$.next(value.enableUrlPreview);
-          }
-        }),
-        catchErrorInto(this.error$, error => {
-          logger.error('Failed to fetch workspace share settings', error);
-        }),
-        onStart(() => this.isLoading$.setValue(true)),
-        onComplete(() => this.isLoading$.setValue(false))
-      );
-    })
-  );
+  revalidate = () => {
+    this.configLiveQuery.revalidate();
+  };
 
-  revalidateInviteLink = effect(
-    exhaustMap(() => {
-      return fromPromise(signal =>
-        this.store.fetchInviteLink(this.workspaceService.workspace.id, signal)
-      ).pipe(
-        smartRetry(),
-        tap(value => {
-          this.inviteLink$.next(value);
-        }),
-        catchErrorInto(this.error$, error => {
-          logger.error('Failed to fetch workspace invite link', error);
-        })
-      );
-    })
-  );
+  revalidateInviteLink = () => {
+    this.ensureInviteLinkStarted();
+    this.inviteLinkLiveQuery.revalidate();
+  };
 
   async waitForRevalidation(signal?: AbortSignal) {
     this.revalidate();
     await this.isLoading$.waitFor(isLoading => !isLoading, signal);
   }
 
-  async setEnableUrlPreview(enableUrlPreview: EnableUrlPreview) {
+  async setEnableUrlPreview(enableUrlPreview: boolean) {
     await this.store.updateWorkspaceEnableUrlPreview(
       this.workspaceService.workspace.id,
       enableUrlPreview
@@ -92,7 +93,7 @@ export class WorkspaceShareSetting extends Entity {
     await this.waitForRevalidation();
   }
 
-  async setEnableSharing(enableSharing: EnableSharing) {
+  async setEnableSharing(enableSharing: boolean) {
     await this.store.updateWorkspaceEnableSharing(
       this.workspaceService.workspace.id,
       enableSharing
@@ -100,7 +101,7 @@ export class WorkspaceShareSetting extends Entity {
     await this.waitForRevalidation();
   }
 
-  async setEnableAi(enableAi: EnableAi) {
+  async setEnableAi(enableAi: boolean) {
     await this.store.updateWorkspaceEnableAi(
       this.workspaceService.workspace.id,
       enableAi
@@ -109,7 +110,55 @@ export class WorkspaceShareSetting extends Entity {
   }
 
   override dispose(): void {
-    this.revalidate.unsubscribe();
-    this.revalidateInviteLink.unsubscribe();
+    this.configLiveQuery.dispose();
+    this.inviteLinkLiveQuery.dispose();
+    this.clearInviteLinkExpireTimer();
+  }
+
+  private ensureInviteLinkStarted() {
+    if (this.inviteLinkStarted) {
+      return;
+    }
+    this.inviteLinkStarted = true;
+    this.inviteLinkLiveQuery.start();
+  }
+
+  private scheduleInviteLinkExpiry(inviteLink: InviteLink | null) {
+    this.clearInviteLinkExpireTimer();
+    if (!inviteLink) {
+      return;
+    }
+    const expireAt = new Date(inviteLink.expireTime).getTime();
+    if (!Number.isFinite(expireAt)) {
+      return;
+    }
+    const delay = expireAt - Date.now();
+    if (delay <= 0) {
+      this.inviteLink$.next(null);
+      return;
+    }
+    this.inviteLinkExpireTimer = setTimeout(() => {
+      this.inviteLink$.next(null);
+    }, delay);
+    this.inviteLinkExpireTimer.unref?.();
+  }
+
+  private clearInviteLinkExpireTimer() {
+    if (this.inviteLinkExpireTimer) {
+      clearTimeout(this.inviteLinkExpireTimer);
+      this.inviteLinkExpireTimer = undefined;
+    }
+  }
+
+  private async requestWorkspaceConfig(signal: AbortSignal) {
+    this.isLoading$.setValue(true);
+    try {
+      return await this.store.fetchWorkspaceConfig(
+        this.workspaceService.workspace.id,
+        signal
+      );
+    } finally {
+      this.isLoading$.setValue(false);
+    }
   }
 }

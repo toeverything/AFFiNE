@@ -1,5 +1,6 @@
 import { showAILoginRequiredAtom } from '@affine/core/components/affine/auth/ai-login-required';
 import type { AIToolsConfig } from '@affine/core/modules/ai-button';
+import type { NbstoreService } from '@affine/core/modules/storage';
 import { UserFriendlyError } from '@affine/error';
 import {
   addContextBlobMutation,
@@ -17,7 +18,6 @@ import {
   getCopilotRecentSessionsQuery,
   getCopilotSessionQuery,
   getCopilotSessionsQuery,
-  getWorkspaceEmbeddingStatusQuery,
   type GraphQLQuery,
   listContextObjectQuery,
   listContextQuery,
@@ -98,7 +98,8 @@ export class CopilotClient {
     readonly eventSource: (
       url: string,
       eventSourceInitDict?: EventSourceInit
-    ) => EventSource
+    ) => EventSource,
+    readonly realtime?: Pick<NbstoreService['realtime'], 'request'>
   ) {}
 
   async createSession(
@@ -546,11 +547,15 @@ export class CopilotClient {
     return queryString.toString();
   }
 
-  getEmbeddingStatus(workspaceId: string) {
-    return this.gql({
-      query: getWorkspaceEmbeddingStatusQuery,
-      variables: { workspaceId },
-    }).then(res => res.queryWorkspaceEmbeddingStatus);
+  async getEmbeddingStatus(workspaceId: string) {
+    if (!this.realtime) {
+      throw new Error('Realtime client is required');
+    }
+    return await this.realtime.request(
+      'workspace.embedding.progress.get',
+      { workspaceId },
+      { timeoutMs: 10000 }
+    );
   }
 
   addContextBlob(options: OptionsField<typeof addContextBlobMutation>) {

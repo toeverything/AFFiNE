@@ -36,6 +36,7 @@ import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import { useSignalValue } from '@affine/core/modules/doc-info/utils';
 import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { PeekViewService } from '@affine/core/modules/peek-view';
+import { NbstoreService } from '@affine/core/modules/storage';
 import { AppThemeService } from '@affine/core/modules/theme';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { useI18n } from '@affine/i18n';
@@ -75,6 +76,7 @@ export const EditorChatPanel = ({
   const framework = useFramework();
   const graphqlService = useService(GraphQLService);
   const eventSourceService = useService(EventSourceService);
+  const nbstoreService = useService(NbstoreService);
   const workbench = useService(WorkbenchService).workbench;
   const t = useI18n();
 
@@ -108,9 +110,10 @@ export const EditorChatPanel = ({
     () =>
       createAIRequestService(
         graphqlService.gql,
-        eventSourceService.eventSource
+        eventSourceService.eventSource,
+        nbstoreService.realtime
       ),
-    [eventSourceService.eventSource, graphqlService.gql]
+    [eventSourceService.eventSource, graphqlService.gql, nbstoreService]
   );
 
   const [pendingSessionId] = useState(() => {

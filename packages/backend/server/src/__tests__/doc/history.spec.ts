@@ -57,6 +57,21 @@ function getSnapshot(timestamp: number = Date.now()): DocRecord {
   };
 }
 
+test('history max age converts quota seconds to milliseconds', async t => {
+  Sinon.restore();
+  const options = m.get(DocStorageOptions);
+  // @ts-expect-error private service boundary is asserted here
+  Sinon.stub(options.quota, 'getWorkspaceQuota').resolves({
+    name: 'Pro',
+    blobLimit: 1,
+    storageQuota: 1,
+    historyPeriod: 30,
+    memberLimit: 1,
+  });
+
+  t.is(await options.historyMaxAge('1'), 30_000);
+});
+
 test('should create doc history if never created before', async t => {
   // @ts-expect-error private method
   Sinon.stub(adapter, 'lastDocHistory').resolves(null);
