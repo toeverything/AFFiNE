@@ -14,6 +14,7 @@ const editorSettingService = {
       value: {
         autoTitleNewDocWithCurrentDate: true,
         newDocDateTitleFormat: 'DD-MM-YYYY',
+        displayAddIconOption: true,
       },
     },
     set: editorSettingSet,
