@@ -14,6 +14,7 @@ const editorSettingService = {
       value: {
         autoTitleNewDocWithCurrentDate: true,
         newDocDateTitleFormat: 'DD-MM-YYYY',
+        displayAddIconOption: true,
       },
     },
     set: editorSettingSet,
@@ -38,6 +39,10 @@ vi.mock('@affine/i18n', () => {
       'YYYY-MM-DD',
     'com.affine.settings.editorSettings.general.auto-date-title.format.journal':
       'Journal style (localized)',
+    'com.affine.settings.editorSettings.general.add-icon-option.title':
+      'Display add icon option',
+    'com.affine.settings.editorSettings.general.add-icon-option.description':
+      'Show or hide the add icon option for docs without an icon.',
   };
 
   const useI18n = () =>
@@ -86,6 +91,7 @@ describe('NewDocDateTitleSettings', () => {
     editorSettingService.editorSetting['settings$'].value = {
       autoTitleNewDocWithCurrentDate: true,
       newDocDateTitleFormat: 'DD-MM-YYYY',
+      displayAddIconOption: true,
     };
   });
 
@@ -97,7 +103,7 @@ describe('NewDocDateTitleSettings', () => {
   test('persists the auto title toggle through EditorSettingService', () => {
     render(<NewDocDateTitleSettings />);
 
-    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByTestId('auto-title-new-doc-trigger'));
 
     expect(editorSettingSet).toHaveBeenCalledWith(
       'autoTitleNewDocWithCurrentDate',
@@ -140,6 +146,7 @@ describe('NewDocDateTitleSettings', () => {
     editorSettingService.editorSetting['settings$'].value = {
       autoTitleNewDocWithCurrentDate: false,
       newDocDateTitleFormat: 'DD-MM-YYYY',
+      displayAddIconOption: true,
     };
 
     render(<NewDocDateTitleSettings />);
@@ -148,5 +155,16 @@ describe('NewDocDateTitleSettings', () => {
       screen.queryByTestId('new-doc-date-title-format-trigger')
     ).toBeNull();
     expect(screen.queryByText('New doc date format')).toBeNull();
+  });
+
+  test('persists the add icon option toggle through EditorSettingService', () => {
+    render(<NewDocDateTitleSettings />);
+
+    fireEvent.click(screen.getByTestId('display-add-icon-option-trigger'));
+
+    expect(editorSettingSet).toHaveBeenCalledWith(
+      'displayAddIconOption',
+      false
+    );
   });
 });

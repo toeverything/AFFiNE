@@ -15,7 +15,8 @@ type ProjectionBackfillDb = {
   $transaction: (
     callback: (
       tx: Pick<Prisma.TransactionClient, '$executeRaw'>
-    ) => Promise<void>
+    ) => Promise<void>,
+    options?: { timeout?: number }
   ) => Promise<void>;
 };
 
@@ -75,8 +76,13 @@ export class PermissionProjectionModel extends BaseModel {
   async backfillLegacyProjection() {
     const db = (this.prisma ?? this.db) as unknown as ProjectionBackfillDb;
 
-    await db.$transaction(async tx => {
-      await tx.$executeRaw`
+    await db.$transaction(
+      async tx => {
+        await tx.$executeRaw`
+        SELECT set_config('affine.permission_sync_origin', 'legacy', true)
+      `;
+
+        await tx.$executeRaw`
         DELETE FROM workspace_members projected
         WHERE projected.legacy_permission_id IS NOT NULL
           AND NOT EXISTS (
@@ -88,7 +94,7 @@ export class PermissionProjectionModel extends BaseModel {
           )
       `;
 
-      await tx.$executeRaw`
+        await tx.$executeRaw`
         DELETE FROM workspace_invitations projected
         WHERE projected.legacy_permission_id IS NOT NULL
           AND NOT EXISTS (
@@ -101,7 +107,7 @@ export class PermissionProjectionModel extends BaseModel {
           )
       `;
 
-      await tx.$executeRaw`
+        await tx.$executeRaw`
         DELETE FROM doc_grants projected
         WHERE projected.principal_type = 'user'
           AND NOT EXISTS (
@@ -114,7 +120,7 @@ export class PermissionProjectionModel extends BaseModel {
           )
       `;
 
-      await tx.$executeRaw`
+        await tx.$executeRaw`
         DELETE FROM doc_access_policies projected
         WHERE NOT EXISTS (
           SELECT 1
@@ -125,7 +131,7 @@ export class PermissionProjectionModel extends BaseModel {
         )
       `;
 
-      await tx.$executeRaw`
+        await tx.$executeRaw`
         DELETE FROM workspace_access_policies projected
         WHERE NOT EXISTS (
           SELECT 1
@@ -134,7 +140,7 @@ export class PermissionProjectionModel extends BaseModel {
         )
       `;
 
-      await tx.$executeRaw`
+        await tx.$executeRaw`
         INSERT INTO workspace_access_policies (
           workspace_id,
           visibility,
@@ -157,7 +163,7 @@ export class PermissionProjectionModel extends BaseModel {
           updated_at = now()
       `;
 
-      await tx.$executeRaw`
+        await tx.$executeRaw`
         INSERT INTO workspace_members (
           workspace_id,
           user_id,
@@ -193,7 +199,7 @@ export class PermissionProjectionModel extends BaseModel {
           updated_at = EXCLUDED.updated_at
       `;
 
-      await tx.$executeRaw`
+        await tx.$executeRaw`
         INSERT INTO workspace_invitations (
           workspace_id,
           invitee_user_id,
@@ -232,7 +238,7 @@ export class PermissionProjectionModel extends BaseModel {
           updated_at = EXCLUDED.updated_at
       `;
 
-      await tx.$executeRaw`
+        await tx.$executeRaw`
         INSERT INTO doc_access_policies (
           workspace_id,
           doc_id,
@@ -261,7 +267,7 @@ export class PermissionProjectionModel extends BaseModel {
           updated_at = now()
       `;
 
-      await tx.$executeRaw`
+        await tx.$executeRaw`
         INSERT INTO doc_grants (
           workspace_id,
           doc_id,
@@ -292,7 +298,9 @@ export class PermissionProjectionModel extends BaseModel {
           role = EXCLUDED.role,
           updated_at = now()
       `;
-    });
+      },
+      { timeout: 10 * 60 * 1000 }
+    );
   }
 
   recordTriggerErrorMetric(error: unknown) {
