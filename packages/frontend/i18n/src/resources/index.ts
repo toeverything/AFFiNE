@@ -24,7 +24,7 @@ export type Language =
   | 'pt-BR'
   | 'fa'
   | 'nb-NO'
-  | 'kk';
+  | 'kk'
   | 'tr';
 
 export type LanguageResource = typeof en;
