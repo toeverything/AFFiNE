@@ -116,10 +116,15 @@ test('PermissionProjectionModel checker returns mismatch and dirty-row counts', 
   });
 });
 
-test('PermissionProjectionModel backfill runs as a single transaction', async t => {
+test('PermissionProjectionModel backfill runs with legacy origin in a long transaction', async t => {
   const executed: unknown[] = [];
+  let transactionOptions: unknown;
   const model = new TestPermissionProjectionModel({
-    $transaction: async (callback: (tx: unknown) => Promise<void>) => {
+    $transaction: async (
+      callback: (tx: unknown) => Promise<void>,
+      options: unknown
+    ) => {
+      transactionOptions = options;
       await callback({
         $executeRaw: async (query: unknown) => {
           executed.push(query);
@@ -130,7 +135,9 @@ test('PermissionProjectionModel backfill runs as a single transaction', async t 
 
   await model.backfillLegacyProjection();
 
-  t.is(executed.length, 10);
+  t.is(executed.length, 11);
+  t.deepEqual(transactionOptions, { timeout: 10 * 60 * 1000 });
+  t.regex(String(executed[0]), /affine\.permission_sync_origin/);
 });
 
 test('PermissionProjectionModel exposes stable trigger metric categories', t => {
