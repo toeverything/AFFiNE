@@ -61,12 +61,12 @@ mod tests {
   fn should_resolve_backend_scoped_alias() {
     let response = llm_resolve_model_registry_variant(ModelRegistryResolveRequest {
       backend_kind: Some("anthropic_vertex".to_string()),
-      model_id: "claude-sonnet-4.5".to_string(),
+      model_id: "claude-sonnet-4.6".to_string(),
     })
     .unwrap();
 
     assert_eq!(response.matched_by.as_deref(), Some("canonical"));
-    assert_eq!(response.variant.unwrap().raw_model_id, "claude-sonnet-4-5@20250929");
+    assert_eq!(response.variant.unwrap().raw_model_id, "claude-sonnet-4-6");
   }
 
   #[test]

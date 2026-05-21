@@ -5539,6 +5539,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.editorSettings.general.auto-date-title.format.journal"](): string;
     /**
+      * `Display add icon option`
+      */
+    ["com.affine.settings.editorSettings.general.add-icon-option.title"](): string;
+    /**
+      * `Show or hide the add icon option for docs without an icon.`
+      */
+    ["com.affine.settings.editorSettings.general.add-icon-option.description"](): string;
+    /**
       * `Customize your text experience.`
       */
     ["com.affine.settings.editorSettings.general.font-family.custom.description"](): string;
