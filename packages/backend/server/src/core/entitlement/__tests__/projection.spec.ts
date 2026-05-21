@@ -250,6 +250,52 @@ test('backfill marks selfhost team subscriptions as needing license revalidation
   );
 });
 
+test('backfill removes dangling legacy subscriptions and entitlements', async t => {
+  await t.context.db.subscription.createMany({
+    data: [
+      {
+        targetId: randomUUID(),
+        plan: SubscriptionPlan.Pro,
+        recurring: SubscriptionRecurring.Yearly,
+        status: SubscriptionStatus.Active,
+        start: new Date(),
+      },
+      {
+        targetId: randomUUID(),
+        plan: SubscriptionPlan.Team,
+        recurring: SubscriptionRecurring.Yearly,
+        status: SubscriptionStatus.Active,
+        start: new Date(),
+      },
+    ],
+  });
+  await t.context.db.entitlement.createMany({
+    data: [
+      {
+        targetType: 'user',
+        targetId: randomUUID(),
+        source: 'cloud_subscription',
+        plan: 'pro',
+        status: 'active',
+        subjectId: randomUUID(),
+      },
+      {
+        targetType: 'workspace',
+        targetId: randomUUID(),
+        source: 'cloud_subscription',
+        plan: 'team',
+        status: 'active',
+        subjectId: randomUUID(),
+      },
+    ],
+  });
+
+  await t.context.projection.backfillEntitlementsAndQuotaStates();
+
+  t.is(await t.context.db.subscription.count(), 0);
+  t.is(await t.context.db.entitlement.count(), 0);
+});
+
 test('key based selfhost entitlements without raw payload need reupload', async t => {
   const owner = await t.context.models.user.create({
     email: `${randomUUID()}@affine.pro`,
