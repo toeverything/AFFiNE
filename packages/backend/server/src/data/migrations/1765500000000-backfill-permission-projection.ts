@@ -8,8 +8,8 @@ export class BackfillPermissionProjection1765500000000 {
   static async up(db: PrismaClient, ref: ModuleRef) {
     const models = ref.get(Models, { strict: false });
     await models.permissionProjection.backfillLegacyProjection();
-    await this.#ensureWorkspaceAdminStatsDirtyTriggerGuard(db);
-    await this.#repairOwnerlessWorkspaces(db);
+    await ensureWorkspaceAdminStatsDirtyTriggerGuard(db);
+    await repairOwnerlessWorkspaces(db);
 
     const policy = ref.get(WorkspacePolicyService, { strict: false });
     const workspaces = await db.workspace.findMany({
@@ -27,9 +27,10 @@ export class BackfillPermissionProjection1765500000000 {
   }
 
   static async down(_db: PrismaClient) {}
+}
 
-  static async #ensureWorkspaceAdminStatsDirtyTriggerGuard(db: PrismaClient) {
-    await db.$executeRaw`
+async function ensureWorkspaceAdminStatsDirtyTriggerGuard(db: PrismaClient) {
+  await db.$executeRaw`
       CREATE OR REPLACE FUNCTION workspace_admin_stats_mark_dirty() RETURNS TRIGGER AS $$
       DECLARE
         wid VARCHAR;
@@ -52,10 +53,10 @@ export class BackfillPermissionProjection1765500000000 {
       END;
       $$ LANGUAGE plpgsql
     `;
-  }
+}
 
-  static async #repairOwnerlessWorkspaces(db: PrismaClient) {
-    await db.$executeRaw`
+async function repairOwnerlessWorkspaces(db: PrismaClient) {
+  await db.$executeRaw`
       WITH ownerless AS (
         SELECT w.id
         FROM workspaces w
@@ -88,7 +89,7 @@ export class BackfillPermissionProjection1765500000000 {
       WHERE wm.id = am.id
     `;
 
-    await db.$executeRaw`
+  await db.$executeRaw`
       DELETE FROM workspaces w
       WHERE NOT EXISTS (
           SELECT 1
@@ -104,5 +105,4 @@ export class BackfillPermissionProjection1765500000000 {
             AND member.state = 'active'
         )
     `;
-  }
 }
