@@ -34,13 +34,13 @@ export class LegacyEntitlementProjectionService {
     targetId,
   }: Events['entitlement.changed']) {
     if (targetType === 'user') {
-      await this.projectCloudSubscriptions('user', targetId);
-      await this.projectUserFeatures(targetId);
+      await this.#projectCloudSubscriptions('user', targetId);
+      await this.#projectUserFeatures(targetId);
     } else if (targetType === 'workspace') {
-      await this.projectCloudSubscriptions('workspace', targetId);
+      await this.#projectCloudSubscriptions('workspace', targetId);
       await Promise.all([
-        this.projectWorkspaceFeatures(targetId),
-        this.projectInstalledLicense(targetId),
+        this.#projectWorkspaceFeatures(targetId),
+        this.#projectInstalledLicense(targetId),
       ]);
     }
   }
@@ -49,7 +49,7 @@ export class LegacyEntitlementProjectionService {
   async onWorkspaceQuotaStateChanged({
     workspaceId,
   }: Events['workspace.quota_state.changed']) {
-    await this.projectReadonlyFeature(workspaceId);
+    await this.#projectReadonlyFeature(workspaceId);
   }
 
   async scanInstalledLicenses() {
@@ -88,6 +88,8 @@ export class LegacyEntitlementProjectionService {
   }
 
   async backfillEntitlementsAndQuotaStates() {
+    await this.#cleanupDanglingLegacyEntitlements();
+
     const [subscriptions, users, workspaces] = await Promise.all([
       this.db.subscription.findMany(),
       this.db.user.findMany({ select: { id: true } }),
@@ -95,6 +97,9 @@ export class LegacyEntitlementProjectionService {
     ]);
 
     for (const subscription of subscriptions) {
+      if (!(await this.#subscriptionTargetExists(subscription))) {
+        continue;
+      }
       if (subscription.plan === SubscriptionPlan.SelfHostedTeam) {
         await this.entitlement.markSelfhostLicenseNeedsReupload({
           licenseKey: subscription.targetId,
@@ -148,8 +153,74 @@ export class LegacyEntitlementProjectionService {
     ]);
   }
 
-  private async projectUserFeatures(userId: string) {
-    const entitlements = await this.activeEntitlements('user', userId);
+  async #cleanupDanglingLegacyEntitlements() {
+    await this.db.$executeRaw`
+      DELETE FROM entitlements entitlement
+      WHERE (
+          entitlement.target_type = 'user'
+          AND NOT EXISTS (
+            SELECT 1
+            FROM users
+            WHERE users.id = entitlement.target_id
+          )
+        )
+        OR (
+          entitlement.target_type = 'workspace'
+          AND NOT EXISTS (
+            SELECT 1
+            FROM workspaces
+            WHERE workspaces.id = entitlement.target_id
+          )
+        )
+    `;
+
+    await this.db.$executeRaw`
+      DELETE FROM subscriptions subscription
+      WHERE (
+          subscription.plan IN (${SubscriptionPlan.Pro}, ${SubscriptionPlan.AI})
+          AND NOT EXISTS (
+            SELECT 1
+            FROM users
+            WHERE users.id = subscription.target_id
+          )
+        )
+        OR (
+          subscription.plan = ${SubscriptionPlan.Team}
+          AND NOT EXISTS (
+            SELECT 1
+            FROM workspaces
+            WHERE workspaces.id = subscription.target_id
+          )
+        )
+    `;
+  }
+
+  async #subscriptionTargetExists(subscription: {
+    targetId: string;
+    plan: string;
+  }) {
+    if (
+      subscription.plan === SubscriptionPlan.Pro ||
+      subscription.plan === SubscriptionPlan.AI
+    ) {
+      return !!(await this.db.user.findUnique({
+        where: { id: subscription.targetId },
+        select: { id: true },
+      }));
+    }
+
+    if (subscription.plan === SubscriptionPlan.Team) {
+      return !!(await this.db.workspace.findUnique({
+        where: { id: subscription.targetId },
+        select: { id: true },
+      }));
+    }
+
+    return true;
+  }
+
+  async #projectUserFeatures(userId: string) {
+    const entitlements = await this.#activeEntitlements('user', userId);
     const quotaEntitlement = entitlements.find(entitlement =>
       ['lifetime_pro', 'pro'].includes(entitlement.plan)
     );
@@ -190,7 +261,7 @@ export class LegacyEntitlementProjectionService {
     }
   }
 
-  private async projectWorkspaceFeatures(workspaceId: string) {
+  async #projectWorkspaceFeatures(workspaceId: string) {
     const [entitlement, resolved] = await Promise.all([
       this.entitlement.getBestEntitlement('workspace', workspaceId),
       this.entitlement.resolveWorkspaceEntitlement(workspaceId),
@@ -215,7 +286,7 @@ export class LegacyEntitlementProjectionService {
     }
   }
 
-  private async projectCloudSubscriptions(
+  async #projectCloudSubscriptions(
     targetType: 'user' | 'workspace',
     targetId: string
   ) {
@@ -229,13 +300,15 @@ export class LegacyEntitlementProjectionService {
       orderBy: { updatedAt: 'asc' },
     });
 
-    for (const entitlement of this.projectableCloudEntitlements(entitlements)) {
+    for (const entitlement of this.#projectableCloudEntitlements(
+      entitlements
+    )) {
       const metadata = entitlement.metadata as Metadata;
       await this.db.subscription.upsert({
         where: {
           targetId_plan: {
             targetId,
-            plan: this.subscriptionPlan(entitlement.plan),
+            plan: this.#subscriptionPlan(entitlement.plan),
           },
         },
         update: {
@@ -243,21 +316,21 @@ export class LegacyEntitlementProjectionService {
           variant: metadata.variant ?? null,
           quantity: entitlement.quantity ?? 1,
           stripeSubscriptionId: metadata.stripeSubscriptionId ?? null,
-          provider: this.provider(metadata.provider),
-          status: this.subscriptionStatus(entitlement.status),
+          provider: this.#provider(metadata.provider),
+          status: this.#subscriptionStatus(entitlement.status),
           start: entitlement.startsAt ?? entitlement.createdAt,
           end: entitlement.expiresAt,
           trialEnd: entitlement.graceUntil,
         },
         create: {
           targetId,
-          plan: this.subscriptionPlan(entitlement.plan),
+          plan: this.#subscriptionPlan(entitlement.plan),
           recurring: metadata.recurring ?? SubscriptionRecurring.Monthly,
           variant: metadata.variant ?? null,
           quantity: entitlement.quantity ?? 1,
           stripeSubscriptionId: metadata.stripeSubscriptionId ?? null,
-          provider: this.provider(metadata.provider),
-          status: this.subscriptionStatus(entitlement.status),
+          provider: this.#provider(metadata.provider),
+          status: this.#subscriptionStatus(entitlement.status),
           start: entitlement.startsAt ?? entitlement.createdAt,
           end: entitlement.expiresAt,
           trialEnd: entitlement.graceUntil,
@@ -277,17 +350,17 @@ export class LegacyEntitlementProjectionService {
     }
   }
 
-  private *projectableCloudEntitlements(entitlements: Entitlement[]) {
+  *#projectableCloudEntitlements(entitlements: Entitlement[]) {
     const byPlan = new Map<string, Entitlement>();
 
     for (const entitlement of entitlements) {
-      const plan = this.subscriptionPlan(entitlement.plan);
+      const plan = this.#subscriptionPlan(entitlement.plan);
       const current = byPlan.get(plan);
 
       if (
         !current ||
-        this.subscriptionProjectionPriority(entitlement) >
-          this.subscriptionProjectionPriority(current)
+        this.#subscriptionProjectionPriority(entitlement) >
+          this.#subscriptionProjectionPriority(current)
       ) {
         byPlan.set(plan, entitlement);
       }
@@ -296,7 +369,7 @@ export class LegacyEntitlementProjectionService {
     yield* byPlan.values();
   }
 
-  private subscriptionProjectionPriority(entitlement: {
+  #subscriptionProjectionPriority(entitlement: {
     status: string;
     updatedAt: Date;
   }) {
@@ -312,7 +385,7 @@ export class LegacyEntitlementProjectionService {
     );
   }
 
-  private async projectInstalledLicense(workspaceId: string) {
+  async #projectInstalledLicense(workspaceId: string) {
     const [entitlements, resolved] = await Promise.all([
       this.db.entitlement.findMany({
         where: {
@@ -326,8 +399,8 @@ export class LegacyEntitlementProjectionService {
     ]);
     const entitlement = entitlements.sort(
       (left, right) =>
-        this.installedLicenseStatusPriority(right.status) -
-          this.installedLicenseStatusPriority(left.status) ||
+        this.#installedLicenseStatusPriority(right.status) -
+          this.#installedLicenseStatusPriority(left.status) ||
         Number(!!right.signedPayload) - Number(!!left.signedPayload) ||
         right.updatedAt.getTime() - left.updatedAt.getTime()
     )[0];
@@ -386,7 +459,7 @@ export class LegacyEntitlementProjectionService {
     });
   }
 
-  private installedLicenseStatusPriority(status: string) {
+  #installedLicenseStatusPriority(status: string) {
     if (status === 'active' || status === 'grace') {
       return 3;
     }
@@ -399,7 +472,7 @@ export class LegacyEntitlementProjectionService {
     return 0;
   }
 
-  private async projectReadonlyFeature(workspaceId: string) {
+  async #projectReadonlyFeature(workspaceId: string) {
     const state = await this.db.effectiveWorkspaceQuotaState.findUnique({
       where: {
         workspaceId,
@@ -420,7 +493,7 @@ export class LegacyEntitlementProjectionService {
     }
   }
 
-  private async activeEntitlements(
+  async #activeEntitlements(
     targetType: 'user' | 'workspace',
     targetId: string
   ) {
@@ -439,7 +512,7 @@ export class LegacyEntitlementProjectionService {
     return count > 0;
   }
 
-  private subscriptionPlan(plan: string) {
+  #subscriptionPlan(plan: string) {
     if (plan === 'lifetime_pro') {
       return SubscriptionPlan.Pro;
     }
@@ -449,7 +522,7 @@ export class LegacyEntitlementProjectionService {
     return plan;
   }
 
-  private subscriptionStatus(status: string) {
+  #subscriptionStatus(status: string) {
     if (status === 'active') {
       return SubscriptionStatus.Active;
     }
@@ -459,7 +532,7 @@ export class LegacyEntitlementProjectionService {
     return SubscriptionStatus.Canceled;
   }
 
-  private provider(provider: string | null | undefined) {
+  #provider(provider: string | null | undefined) {
     return provider === 'revenuecat' ? 'revenuecat' : 'stripe';
   }
 }
