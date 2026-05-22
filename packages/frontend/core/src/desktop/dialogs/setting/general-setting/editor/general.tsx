@@ -487,20 +487,6 @@ export const NewDocDateTitleSettings = () => {
           onChange={onToggleAutoDateTitle}
         />
       </SettingRow>
-      <SettingRow
-        name={t.t(
-          'com.affine.settings.editorSettings.general.add-icon-option.title'
-        )}
-        desc={t.t(
-          'com.affine.settings.editorSettings.general.add-icon-option.description'
-        )}
-      >
-        <Switch
-          data-testid="display-add-icon-option-trigger"
-          checked={settings.displayAddIconOption}
-          onChange={onToggleDisplayAddIconOption}
-        />
-      </SettingRow>
       {settings.autoTitleNewDocWithCurrentDate ? (
         <SettingRow
           name={t[
@@ -535,6 +521,20 @@ export const NewDocDateTitleSettings = () => {
           </Menu>
         </SettingRow>
       ) : null}
+      <SettingRow
+        name={t.t(
+          'com.affine.settings.editorSettings.general.add-icon-option.title'
+        )}
+        desc={t.t(
+          'com.affine.settings.editorSettings.general.add-icon-option.description'
+        )}
+      >
+        <Switch
+          data-testid="display-add-icon-option-trigger"
+          checked={settings.displayAddIconOption}
+          onChange={onToggleDisplayAddIconOption}
+        />
+      </SettingRow>
     </>
   );
 };
