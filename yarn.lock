@@ -8713,8 +8713,8 @@ __metadata:
   linkType: hard
 
 "@nestjs/apollo@npm:^13.2.4":
-  version: 13.4.1
-  resolution: "@nestjs/apollo@npm:13.4.1"
+  version: 13.4.2
+  resolution: "@nestjs/apollo@npm:13.4.2"
   dependencies:
     "@apollo/server-plugin-landing-page-graphql-playground": "npm:4.0.1"
     iterall: "npm:1.3.0"
@@ -8738,7 +8738,7 @@ __metadata:
       optional: true
     "@as-integrations/fastify":
       optional: true
-  checksum: 10/7753a3f4df40f81e8123fcbf34e66750f6b8eebc9979c7b0f39b065ee463d0b299e4697c62b063daed6c142733dff6433db7ca7a0525731b23d8f2ac77c0403f
+  checksum: 10/dd9ce04e666cad80992ff35deed624b3ed55f0a90aad834dc7ceab466d7a7d1e044512b417da09b410e3555d194904fdd1648d1ae1eb3dd8de6f904ad4b1c6d3
   languageName: node
   linkType: hard
 
@@ -8769,8 +8769,8 @@ __metadata:
   linkType: hard
 
 "@nestjs/common@npm:^11.1.18":
-  version: 11.1.21
-  resolution: "@nestjs/common@npm:11.1.21"
+  version: 11.1.23
+  resolution: "@nestjs/common@npm:11.1.23"
   dependencies:
     file-type: "npm:21.3.4"
     iterare: "npm:1.2.1"
@@ -8787,13 +8787,13 @@ __metadata:
       optional: true
     class-validator:
       optional: true
-  checksum: 10/d40a3cae684c3c524da7e3e53d322f0f79317cb9ae9c2f306e1d07bbf31e09ace2a2fb0491d83aef5535bb8f4e28054eafe0f83a9fec62aae2e004a5e554db56
+  checksum: 10/9ef8d6b314a85062f3a99bec212cf5f3cdd81d745b54aef8c7130b41ffd177becddb2d50993b9fc17830a006b974cb487ee3ab92c5528e493d9d5a2d41dc7bcc
   languageName: node
   linkType: hard
 
 "@nestjs/core@npm:^11.1.18":
-  version: 11.1.21
-  resolution: "@nestjs/core@npm:11.1.21"
+  version: 11.1.23
+  resolution: "@nestjs/core@npm:11.1.23"
   dependencies:
     "@nuxt/opencollective": "npm:0.4.1"
     fast-safe-stringify: "npm:2.1.1"
@@ -8815,13 +8815,13 @@ __metadata:
       optional: true
     "@nestjs/websockets":
       optional: true
-  checksum: 10/bb975e542fbd960e87a9a44647c0bc801c629edba04bb426501a229600be9102ed11783f262e421d5457481d87b44a826ef403aed822555176444de38d628050
+  checksum: 10/6e8d5b08332211f186bcadb4d1ae4ce40d3d80554cc610d9125a7df0a6fb0dd53f42fdcebb6dd38338ecd1e6d483bdad313d5eb148076c84b7b4c8cf55e11bb9
   languageName: node
   linkType: hard
 
 "@nestjs/graphql@npm:^13.2.5":
-  version: 13.4.1
-  resolution: "@nestjs/graphql@npm:13.4.1"
+  version: 13.4.2
+  resolution: "@nestjs/graphql@npm:13.4.2"
   dependencies:
     "@graphql-tools/merge": "npm:9.1.9"
     "@graphql-tools/schema": "npm:10.0.33"
@@ -8854,7 +8854,7 @@ __metadata:
       optional: true
     ts-morph:
       optional: true
-  checksum: 10/918f909bf408d3fc84b153cbc06d23c6ce0fe4776cd0044f0ee175c5ba5923f4ac5693196e164734c6ccbc2c6db309f3699a90cff508edddebd09f742f5c014b
+  checksum: 10/a7c7c9473b215aca294889f74383c8c50269651d1c1c5e469be67b72d482276a33cfc8ac433c0e9eadfb8515ed5ae138a6fe461c1797d36b714b801c415545b4
   languageName: node
   linkType: hard
 
@@ -8876,8 +8876,8 @@ __metadata:
   linkType: hard
 
 "@nestjs/platform-express@npm:^11.1.18":
-  version: 11.1.21
-  resolution: "@nestjs/platform-express@npm:11.1.21"
+  version: 11.1.23
+  resolution: "@nestjs/platform-express@npm:11.1.23"
   dependencies:
     cors: "npm:2.8.6"
     express: "npm:5.2.1"
@@ -8887,13 +8887,13 @@ __metadata:
   peerDependencies:
     "@nestjs/common": ^11.0.0
     "@nestjs/core": ^11.0.0
-  checksum: 10/c101efcadac8aa973e93659384e4ed2de894e5cc08b45c04a56cc0046aa1b8aa084d1d15a60ef6b0f89ee74b1de849cdfd9d35714fbcfa694c05ea91e4263115
+  checksum: 10/a3b5d8831a844c9348ce837cc9dedfd1ee56b91f508726ddbee54cd80755c87df3d295e2fc0f893bd171890ae98ffac2988c11fbf51ffe4dfa8a1c7db0e7bde8
   languageName: node
   linkType: hard
 
 "@nestjs/platform-socket.io@npm:^11.1.18":
-  version: 11.1.21
-  resolution: "@nestjs/platform-socket.io@npm:11.1.21"
+  version: 11.1.23
+  resolution: "@nestjs/platform-socket.io@npm:11.1.23"
   dependencies:
     socket.io: "npm:4.8.3"
     tslib: "npm:2.8.1"
@@ -8901,7 +8901,7 @@ __metadata:
     "@nestjs/common": ^11.0.0
     "@nestjs/websockets": ^11.0.0
     rxjs: ^7.1.0
-  checksum: 10/248c3c758ecd16e302461384d8c46d7a7f28f7206d7ead038453092c987a371599cd2ebd082aa44001958008706c8eb8e927bc8a0b703fd13f9682a659704750
+  checksum: 10/4841b78e5b6ea24e8529f8173c8bf3854652de60fc4f9482e969e4e30a7afa1899bdcb3f4e03eeba467f315c18f9a0273a78647159b9685858cb0ee1e468cb31
   languageName: node
   linkType: hard
 
@@ -8918,8 +8918,8 @@ __metadata:
   linkType: hard
 
 "@nestjs/swagger@npm:^11.2.7":
-  version: 11.4.3
-  resolution: "@nestjs/swagger@npm:11.4.3"
+  version: 11.4.4
+  resolution: "@nestjs/swagger@npm:11.4.4"
   dependencies:
     "@microsoft/tsdoc": "npm:0.16.0"
     "@nestjs/mapped-types": "npm:2.1.1"
@@ -8941,7 +8941,7 @@ __metadata:
       optional: true
     class-validator:
       optional: true
-  checksum: 10/1d1e0f2af4532466dea89d89250a84e638562410b7d8420f1853d3e4c70bd714934eadc9a9d18849bbdaba36eb5118367eb5cfa267eeed8b9f23f9f2cec5ac60
+  checksum: 10/3dc6920a2e98704b926af825e66d4ada4bc5f22098db8469c32de2bdfbf6ac410f1f3c4e85b49f61f995085c6d7a1f2d29d3affa9e8860bdb0f7257c909e8c80
   languageName: node
   linkType: hard
 
@@ -8995,8 +8995,8 @@ __metadata:
   linkType: hard
 
 "@nestjs/websockets@npm:^11.1.18":
-  version: 11.1.21
-  resolution: "@nestjs/websockets@npm:11.1.21"
+  version: 11.1.23
+  resolution: "@nestjs/websockets@npm:11.1.23"
   dependencies:
     iterare: "npm:1.2.1"
     object-hash: "npm:3.0.0"
@@ -9010,7 +9010,7 @@ __metadata:
   peerDependenciesMeta:
     "@nestjs/platform-socket.io":
       optional: true
-  checksum: 10/c826c573569b3ad52de5b55d40dbf6845db9c1c5c27b3695d806a4898bf4d850548395725be55a471de298926f2396911f5bbb27c41f62242d9a9228207a3a7a
+  checksum: 10/6d8916a6369542db41a6e2307656b2a46ec697dad849bd0f6c39667bf7a77e1a5f114d705fa40df7752cbc27a4ff7f8596b1c0c83d12340ee122df61b1e1b850
   languageName: node
   linkType: hard
 
