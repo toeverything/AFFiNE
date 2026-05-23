@@ -17,7 +17,7 @@ let package = Package(
   ],
   dependencies: [
     .package(path: "../AffineResources"),
-    .package(url: "https://github.com/RevenueCat/purchases-ios-spm.git", from: "5.73.0"),
+    .package(url: "https://github.com/RevenueCat/purchases-ios-spm.git", from: "5.74.0"),
   ],
   targets: [
     .target(
