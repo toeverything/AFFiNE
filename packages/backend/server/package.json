@@ -127,7 +127,7 @@
     "@types/lodash-es": "^4.17.12",
     "@types/mustache": "^4.2.5",
     "@types/node": "^22.0.0",
-    "@types/nodemailer": "^7.0.0",
+    "@types/nodemailer": "^8.0.0",
     "@types/on-headers": "^1.0.3",
     "@types/react": "^19.0.1",
     "@types/semver": "^7.7.1",
