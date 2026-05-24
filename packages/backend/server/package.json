@@ -29,7 +29,7 @@
     "@as-integrations/express5": "^1.1.2",
     "@google-cloud/opentelemetry-cloud-trace-exporter": "^3.0.0",
     "@google-cloud/opentelemetry-resource-util": "^3.0.0",
-    "@inquirer/prompts": "^7.10.1",
+    "@inquirer/prompts": "^8.0.0",
     "@nestjs-cls/transactional": "^3.2.0",
     "@nestjs-cls/transactional-adapter-prisma": "^1.3.4",
     "@nestjs/apollo": "^13.2.4",

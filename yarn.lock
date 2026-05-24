@@ -936,7 +936,7 @@ __metadata:
     "@faker-js/faker": "npm:^10.1.0"
     "@google-cloud/opentelemetry-cloud-trace-exporter": "npm:^3.0.0"
     "@google-cloud/opentelemetry-resource-util": "npm:^3.0.0"
-    "@inquirer/prompts": "npm:^7.10.1"
+    "@inquirer/prompts": "npm:^8.0.0"
     "@nestjs-cls/transactional": "npm:^3.2.0"
     "@nestjs-cls/transactional-adapter-prisma": "npm:^1.3.4"
     "@nestjs/apollo": "npm:^13.2.4"
@@ -6802,7 +6802,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@inquirer/prompts@npm:^7.10.1, @inquirer/prompts@npm:^7.5.1, @inquirer/prompts@npm:^7.8.2":
+"@inquirer/prompts@npm:^7.5.1, @inquirer/prompts@npm:^7.8.2":
   version: 7.10.1
   resolution: "@inquirer/prompts@npm:7.10.1"
   dependencies:
