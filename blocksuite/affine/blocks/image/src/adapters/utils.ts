@@ -79,6 +79,7 @@ export async function processImageNodeToBlock(
         flavour: ImageBlockSchema.model.flavour,
         props: {
           sourceId: blobId,
+          sourceUrl: FetchUtils.fetchable(imageURL) ? imageURL : '',
         },
         children: [],
       },

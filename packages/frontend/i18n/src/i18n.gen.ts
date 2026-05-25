@@ -1831,6 +1831,10 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.export.copied-as-markdown"](): string;
     /**
+      * `Export to Markdown (Keep Image Links)`
+      */
+    ["com.affine.export.markdown-with-linked-images"](): string;
+    /**
       * `Cancel`
       */
     ["com.affine.confirmModal.button.cancel"](): string;

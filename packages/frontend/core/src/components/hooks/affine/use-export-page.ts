@@ -14,6 +14,7 @@ import {
   embedSyncedDocMiddleware,
   HtmlAdapterFactoryIdentifier,
   MarkdownAdapterFactoryIdentifier,
+  markdownExportPreserveImageUrlMiddleware,
   titleMiddleware,
 } from '@blocksuite/affine/shared/adapters';
 import { printToPdf } from '@blocksuite/affine/shared/utils';
@@ -38,6 +39,7 @@ type ExportType =
   | 'html'
   | 'png'
   | 'markdown'
+  | 'markdown-with-linked-images'
   | 'copy-markdown'
   | 'snapshot'
   | 'pdf-export';
@@ -64,7 +66,7 @@ interface AdapterConfig {
   indexFileName: string;
 }
 
-function createTransformer(doc: Store) {
+function createTransformer(doc: Store, preserveImageUrls = false) {
   return new Transformer({
     schema: getAFFiNEWorkspaceSchema(),
     blobCRUD: doc.workspace.blobSync,
@@ -77,6 +79,9 @@ function createTransformer(doc: Store) {
       docLinkBaseURLMiddleware(doc.workspace.id),
       titleMiddleware(doc.workspace.meta.docMetas),
       embedSyncedDocMiddleware('content'),
+      ...(preserveImageUrls
+        ? [markdownExportPreserveImageUrlMiddleware()]
+        : []),
     ],
   });
 }
@@ -84,9 +89,10 @@ function createTransformer(doc: Store) {
 async function exportDoc(
   doc: Store,
   std: BlockStdScope,
-  config: AdapterConfig
+  config: AdapterConfig,
+  preserveImageUrls = false
 ) {
-  const transformer = createTransformer(doc);
+  const transformer = createTransformer(doc, preserveImageUrls);
 
   const adapterFactory = std.store.provider.get(config.identifier);
   const adapter = adapterFactory.get(transformer);
@@ -146,6 +152,27 @@ async function exportToMarkdown(doc: Store, std?: BlockStdScope) {
   }
 }
 
+async function exportToMarkdownWithLinkedImages(
+  doc: Store,
+  std?: BlockStdScope
+) {
+  if (!std) {
+    await MarkdownTransformer.exportDoc(doc);
+  } else {
+    await exportDoc(
+      doc,
+      std,
+      {
+        identifier: MarkdownAdapterFactoryIdentifier,
+        fileExtension: '.md',
+        contentType: 'text/plain',
+        indexFileName: 'index.md',
+      },
+      true
+    );
+  }
+}
+
 async function copyAsMarkdown(doc: Store, std?: BlockStdScope) {
   if (!std) {
     return false;
@@ -186,6 +213,9 @@ async function exportHandler({
       return true;
     case 'markdown':
       await exportToMarkdown(page, editorRoot?.std);
+      return true;
+    case 'markdown-with-linked-images':
+      await exportToMarkdownWithLinkedImages(page, editorRoot?.std);
       return true;
     case 'copy-markdown':
       return await copyAsMarkdown(page, editorRoot?.std);

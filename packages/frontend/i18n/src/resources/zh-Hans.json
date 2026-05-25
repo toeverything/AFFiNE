@@ -446,6 +446,7 @@
   "com.affine.copy.asImage.notAvailable.action": "下载客户端",
   "com.affine.copy.asImage.success": "图片已复制",
   "com.affine.copy.asImage.failed": "图片复制失败",
+  "com.affine.export.markdown-with-linked-images": "导出为 Markdown（保留图片链接）",
   "com.affine.confirmModal.button.cancel": "取消",
   "com.affine.confirmModal.button.ok": "确认",
   "com.affine.currentYear": "今年",

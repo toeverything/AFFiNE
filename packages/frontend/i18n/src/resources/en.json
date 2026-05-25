@@ -451,6 +451,7 @@
   "com.affine.copy.asImage.failed": "Image copy failed",
   "com.affine.export.copy-markdown": "Copy as Markdown",
   "com.affine.export.copied-as-markdown": "Copied as Markdown",
+  "com.affine.export.markdown-with-linked-images": "Export to Markdown (Keep Image Links)",
   "com.affine.confirmModal.button.cancel": "Cancel",
   "com.affine.confirmModal.button.ok": "Ok",
   "com.affine.currentYear": "Current year",

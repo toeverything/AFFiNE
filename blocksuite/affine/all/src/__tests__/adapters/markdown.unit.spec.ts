@@ -17,6 +17,7 @@ import {
   docLinkBaseURLMiddleware,
   embedSyncedDocMiddleware,
   MarkdownAdapter,
+  markdownExportPreserveImageUrlMiddleware,
   titleMiddleware,
 } from '@blocksuite/affine-shared/adapters';
 import type { AffineTextAttributes } from '@blocksuite/affine-shared/types';
@@ -30,7 +31,7 @@ import type {
 } from '@blocksuite/store';
 import { AssetsManager, MemoryBlobCRUD, Schema } from '@blocksuite/store';
 import { TestWorkspace } from '@blocksuite/store/test';
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 
 import { AffineSchemas } from '../../schemas.js';
 import { createJob } from '../utils/create-job.js';
@@ -1684,6 +1685,74 @@ hhh
     expect(target.file).toBe(markdown);
   });
 
+  test('image with preserved source url', async () => {
+    const imageUrl =
+      'https://somnusblog.oss-cn-shanghai.aliyuncs.com/images/20260422003757409.png';
+    const blockSnapshot: BlockSnapshot = {
+      type: 'block',
+      id: 'block:WcYcyv-oZY',
+      flavour: 'affine:page',
+      props: {
+        title: {
+          '$blocksuite:internal:text$': true,
+          delta: [],
+        },
+      },
+      children: [
+        {
+          type: 'block',
+          id: 'block:zqtuv999Ww',
+          flavour: 'affine:surface',
+          props: {
+            elements: {},
+          },
+          children: [],
+        },
+        {
+          type: 'block',
+          id: 'block:UTUZojv22c',
+          flavour: 'affine:note',
+          props: {
+            xywh: '[0,0,800,95]',
+            background: DefaultTheme.noteBackgrounColor,
+            index: 'a0',
+            hidden: false,
+            displayMode: NoteDisplayMode.DocAndEdgeless,
+          },
+          children: [
+            {
+              type: 'block',
+              id: 'block:Gan31s-dYK',
+              flavour: 'affine:image',
+              props: {
+                sourceId: 'YXXTjRmLlNyiOUnHb8nAIvUP6V7PAXhwW9F5_tc2LGs=',
+                sourceUrl: imageUrl,
+                caption: 'aaa',
+                width: 0,
+                height: 0,
+                index: 'a0',
+                xywh: '[0,0,0,0]',
+                rotate: 0,
+              },
+              children: [],
+            },
+          ],
+        },
+      ],
+    };
+
+    const mdAdapter = new MarkdownAdapter(
+      createJob([markdownExportPreserveImageUrlMiddleware()]),
+      provider
+    );
+    const target = await mdAdapter.fromBlockSnapshot({
+      snapshot: blockSnapshot,
+      assets: new AssetsManager({ blob: new MemoryBlobCRUD() }),
+    });
+    expect(target.file).toBe(`![](${imageUrl} "aaa")\n`);
+    expect(target.assetsIds).toEqual([]);
+  });
+
   test('table', async () => {
     const blockSnapshot: BlockSnapshot = {
       type: 'block',
@@ -2958,6 +3027,46 @@ Text in details callout with new line
 });
 
 describe('markdown to snapshot', () => {
+  describe('image', () => {
+    test('remote image preserves source url', async () => {
+      const imageUrl = 'https://example.com/image.png';
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+        new Response(new Blob(['image'], { type: 'image/png' }), {
+          headers: {
+            'Content-Type': 'image/png',
+          },
+        })
+      );
+
+      try {
+        const mdAdapter = new MarkdownAdapter(createJob(), provider);
+        const rawBlockSnapshot = await mdAdapter.toBlockSnapshot({
+          file: `![](${imageUrl})`,
+          assets: new AssetsManager({ blob: new MemoryBlobCRUD() }),
+        });
+        const findImageBlock = (
+          block: BlockSnapshot
+        ): BlockSnapshot | undefined => {
+          if (block.flavour === 'affine:image') {
+            return block;
+          }
+          for (const child of block.children ?? []) {
+            const imageBlock = findImageBlock(child);
+            if (imageBlock) {
+              return imageBlock;
+            }
+          }
+          return undefined;
+        };
+        const imageBlock = findImageBlock(rawBlockSnapshot as BlockSnapshot);
+
+        expect(imageBlock?.props.sourceUrl).toBe(imageUrl);
+      } finally {
+        fetchSpy.mockRestore();
+      }
+    });
+  });
+
   describe('code', () => {
     test('markdown code block', async () => {
       const markdown = '```python\nimport this\n```\n';
