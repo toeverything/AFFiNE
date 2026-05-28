@@ -30,7 +30,12 @@ import { CurrentUser, Public } from '../../core/auth';
 import { PermissionAccess } from '../../core/permission';
 import { UserType } from '../../core/user';
 import { WorkspaceType } from '../../core/workspaces';
-import { Invoice, Subscription, WorkspaceSubscriptionManager } from './manager';
+import {
+  Invoice,
+  Subscription,
+  visibleSubscriptionWhere,
+  WorkspaceSubscriptionManager,
+} from './manager';
 import { RevenueCatWebhookHandler } from './revenuecat';
 import { CheckoutParams, SubscriptionService } from './service';
 import {
@@ -493,13 +498,7 @@ export class UserSubscriptionResolver {
     const subscriptions = await this.db.subscription.findMany({
       where: {
         targetId: user.id,
-        status: {
-          in: [
-            SubscriptionStatus.Active,
-            SubscriptionStatus.Trialing,
-            SubscriptionStatus.PastDue,
-          ],
-        },
+        ...visibleSubscriptionWhere(),
       },
     });
 
@@ -577,13 +576,7 @@ export class UserSubscriptionResolver {
       current = await this.db.subscription.findMany({
         where: {
           targetId: user.id,
-          status: {
-            in: [
-              SubscriptionStatus.Active,
-              SubscriptionStatus.Trialing,
-              SubscriptionStatus.PastDue,
-            ],
-          },
+          ...visibleSubscriptionWhere(),
         },
       });
       // ignore errors
@@ -608,13 +601,7 @@ export class UserSubscriptionResolver {
     let current = await this.db.subscription.findMany({
       where: {
         targetId: user.id,
-        status: {
-          in: [
-            SubscriptionStatus.Active,
-            SubscriptionStatus.Trialing,
-            SubscriptionStatus.PastDue,
-          ],
-        },
+        ...visibleSubscriptionWhere(),
       },
     });
 
@@ -641,13 +628,7 @@ export class UserSubscriptionResolver {
         current = await this.db.subscription.findMany({
           where: {
             targetId: user.id,
-            status: {
-              in: [
-                SubscriptionStatus.Active,
-                SubscriptionStatus.Trialing,
-                SubscriptionStatus.PastDue,
-              ],
-            },
+            ...visibleSubscriptionWhere(),
           },
         });
         // ignore errors

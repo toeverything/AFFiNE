@@ -1,4 +1,4 @@
-import { PrismaClient, UserStripeCustomer } from '@prisma/client';
+import { type Prisma, PrismaClient, UserStripeCustomer } from '@prisma/client';
 import Stripe from 'stripe';
 import { z } from 'zod';
 
@@ -13,8 +13,39 @@ import {
   LookupKey,
   SubscriptionPlan,
   SubscriptionRecurring,
+  SubscriptionStatus,
   SubscriptionVariant,
 } from '../types';
+
+export function validSubscriptionPeriodWhere(
+  now = new Date()
+): Prisma.SubscriptionWhereInput {
+  return { OR: [{ end: null }, { end: { gt: now } }] };
+}
+
+export function activeSubscriptionWhere(
+  now = new Date()
+): Prisma.SubscriptionWhereInput {
+  return {
+    status: { in: [SubscriptionStatus.Active, SubscriptionStatus.Trialing] },
+    ...validSubscriptionPeriodWhere(now),
+  };
+}
+
+export function visibleSubscriptionWhere(
+  now = new Date()
+): Prisma.SubscriptionWhereInput {
+  return {
+    status: {
+      in: [
+        SubscriptionStatus.Active,
+        SubscriptionStatus.Trialing,
+        SubscriptionStatus.PastDue,
+      ],
+    },
+    ...validSubscriptionPeriodWhere(now),
+  };
+}
 
 export interface Subscription {
   stripeSubscriptionId: string | null;

@@ -1043,3 +1043,44 @@ test('should refresh user subscriptions (empty / revenuecat / stripe-only)', asy
     t.is(subs.length, 1, 'case3: only stripe subscription returned');
   }
 });
+
+test('user subscriptions ignore active rows after their current period ended', async t => {
+  const { db, subResolver } = t.context;
+
+  await db.subscription.createMany({
+    data: [
+      {
+        targetId: user.id,
+        plan: 'ai',
+        provider: 'stripe',
+        status: 'active',
+        recurring: 'yearly',
+        start: new Date('2025-01-01T00:00:00.000Z'),
+        end: new Date('2025-01-08T00:00:00.000Z'),
+        stripeSubscriptionId: 'sub_expired_ai',
+      },
+      {
+        targetId: user.id,
+        plan: 'pro',
+        provider: 'stripe',
+        status: 'active',
+        recurring: 'yearly',
+        start: new Date('2025-01-01T00:00:00.000Z'),
+        end: new Date('2099-01-01T00:00:00.000Z'),
+        stripeSubscriptionId: 'sub_current_pro',
+      },
+    ],
+  });
+
+  const subscriptions = await subResolver.subscriptions(user, user);
+  t.deepEqual(subscriptions.map(subscription => subscription.plan).sort(), [
+    'pro',
+  ]);
+
+  const manager = t.context.module.get(UserSubscriptionManager);
+  const activeAI = await manager.getActiveSubscription({
+    userId: user.id,
+    plan: SubscriptionPlan.AI,
+  });
+  t.is(activeAI, null);
+});

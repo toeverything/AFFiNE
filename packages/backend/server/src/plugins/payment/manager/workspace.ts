@@ -24,6 +24,7 @@ import {
   SubscriptionStatus,
 } from '../types';
 import {
+  activeSubscriptionWhere,
   CheckoutParams,
   Invoice,
   Subscription,
@@ -225,9 +226,7 @@ export class WorkspaceSubscriptionManager extends SubscriptionManager {
     return this.db.subscription.findFirst({
       where: {
         targetId: identity.workspaceId,
-        status: {
-          in: [SubscriptionStatus.Active, SubscriptionStatus.Trialing],
-        },
+        ...activeSubscriptionWhere(),
       },
     });
   }

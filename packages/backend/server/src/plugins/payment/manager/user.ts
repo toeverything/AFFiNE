@@ -34,7 +34,12 @@ import {
   SubscriptionStatus,
   SubscriptionVariant,
 } from '../types';
-import { CheckoutParams, Subscription, SubscriptionManager } from './common';
+import {
+  activeSubscriptionWhere,
+  CheckoutParams,
+  Subscription,
+  SubscriptionManager,
+} from './common';
 
 interface PriceStrategyStatus {
   proEarlyAccess: boolean;
@@ -224,9 +229,7 @@ export class UserSubscriptionManager extends SubscriptionManager {
       where: {
         targetId: args.userId,
         plan: args.plan,
-        status: {
-          in: [SubscriptionStatus.Active, SubscriptionStatus.Trialing],
-        },
+        ...activeSubscriptionWhere(),
       },
     });
   }
