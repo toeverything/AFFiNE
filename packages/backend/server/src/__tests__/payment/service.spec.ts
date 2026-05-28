@@ -420,7 +420,7 @@ test('should throw if user has subscription already', async t => {
       recurring: SubscriptionRecurring.Monthly,
       status: SubscriptionStatus.Active,
       start: new Date(),
-      end: new Date(),
+      end: new Date(Date.now() + 100000),
     },
   });
 
@@ -848,7 +848,7 @@ test('should be able to cancel subscription', async t => {
       recurring: SubscriptionRecurring.Yearly,
       status: SubscriptionStatus.Active,
       start: new Date(),
-      end: new Date(),
+      end: new Date(Date.now() + 100000),
     },
   });
 
@@ -1368,7 +1368,7 @@ test('should be able to subscribe to lifetime recurring with old subscription', 
       recurring: SubscriptionRecurring.Monthly,
       status: SubscriptionStatus.Active,
       start: new Date(),
-      end: new Date(),
+      end: new Date(Date.now() + 100000),
     },
   });
 
@@ -1402,7 +1402,7 @@ test('should not be able to cancel lifetime subscription', async t => {
       recurring: SubscriptionRecurring.Lifetime,
       status: SubscriptionStatus.Active,
       start: new Date(),
-      end: new Date(),
+      end: null,
     },
   });
 
@@ -1426,7 +1426,7 @@ test('should not be able to update lifetime recurring', async t => {
       recurring: SubscriptionRecurring.Lifetime,
       status: SubscriptionStatus.Active,
       start: new Date(),
-      end: new Date(),
+      end: null,
     },
   });
 
@@ -1481,7 +1481,7 @@ test('should be able to checkout onetime payment if previous subscription is one
       variant: SubscriptionVariant.Onetime,
       status: SubscriptionStatus.Active,
       start: new Date(),
-      end: new Date(),
+      end: new Date(Date.now() + 100000),
     },
   });
 
@@ -1518,7 +1518,7 @@ test('should not be able to checkout out onetime payment if previous subscriptio
       recurring: SubscriptionRecurring.Monthly,
       status: SubscriptionStatus.Active,
       start: new Date(),
-      end: new Date(),
+      end: new Date(Date.now() + 100000),
     },
   });
 
@@ -1698,7 +1698,7 @@ test('should not be able to checkout for workspace if subscribed', async t => {
       recurring: SubscriptionRecurring.Monthly,
       status: SubscriptionStatus.Active,
       start: new Date(),
-      end: new Date(),
+      end: new Date(Date.now() + 100000),
       quantity: 1,
     },
   });
