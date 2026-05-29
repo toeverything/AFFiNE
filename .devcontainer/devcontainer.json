@@ -5,7 +5,9 @@
   "service": "app",
   "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
   "containerEnv": {
-    "COREPACK_ENABLE_DOWNLOAD_PROMPT": "0"
+    "COREPACK_ENABLE_DOWNLOAD_PROMPT": "0",
+    "DISPLAY": null,
+    "WAYLAND_DISPLAY": null
   },
   "features": {
     "ghcr.io/devcontainers/features/node:1": {

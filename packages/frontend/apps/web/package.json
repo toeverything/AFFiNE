@@ -18,6 +18,7 @@
     "@toeverything/infra": "workspace:*",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
+    "react-pageflip": "^2.0.3",
     "react-router-dom": "^6.30.3"
   },
   "devDependencies": {

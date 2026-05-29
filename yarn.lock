@@ -1081,6 +1081,7 @@ __metadata:
     "@types/react-dom": "npm:^19.0.2"
     react: "npm:^19.2.1"
     react-dom: "npm:^19.2.1"
+    react-pageflip: "npm:^2.0.3"
     react-router-dom: "npm:^6.30.3"
     typescript: "npm:^5.9.3"
   languageName: unknown
@@ -29682,6 +29683,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"page-flip@npm:latest":
+  version: 2.0.7
+  resolution: "page-flip@npm:2.0.7"
+  checksum: 10/28d92bf595d11f1cf2bb91a161b40400b611856b6385c9a4ea4bcf7a0e22b04d58bd5fd6b07a92a66d1b4007d35d32aaa4ac5b0738a73429113fc493bc78e65d
+  languageName: node
+  linkType: hard
+
 "pako@npm:^0.2.5":
   version: 0.2.9
   resolution: "pako@npm:0.2.9"
@@ -31355,6 +31363,15 @@ __metadata:
     "@types/react": ">=18"
     react: ">=18"
   checksum: 10/886c037d18266e94750abbc00c6096435bccd4da5f2d1727984bcbdf83e9f2a5cc9a6b0eecfe6c30456dc26546fee41c7f6aecbf176e6d7453963df4abefd7df
+  languageName: node
+  linkType: hard
+
+"react-pageflip@npm:^2.0.3":
+  version: 2.0.3
+  resolution: "react-pageflip@npm:2.0.3"
+  dependencies:
+    page-flip: "npm:latest"
+  checksum: 10/197010230050a81b7348c053229d77b006ea9b1f9519593ce222d10aacf2dc17e369343d5211d22acecee239e933f3b74d1d4a5f69315f8fdc81c5f6aff4ef4d
   languageName: node
   linkType: hard
 

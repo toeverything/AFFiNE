@@ -10,6 +10,8 @@ services:
     command: sleep infinity
     network_mode: service:db
     environment:
+      DISPLAY: ""
+      WAYLAND_DISPLAY: ""
       DATABASE_URL: postgresql://affine:affine@db:5432/affine
       REDIS_SERVER_HOST: redis
       AFFINE_INDEXER_SEARCH_ENDPOINT: http://indexer:9308
@@ -17,12 +19,15 @@ services:
   db:
     image: pgvector/pgvector:pg16
     restart: unless-stopped
+    ports:
+      - "8080:8080"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     environment:
       POSTGRES_PASSWORD: affine
       POSTGRES_USER: affine
       POSTGRES_DB: affine
+      
   redis:
     image: redis
 
