@@ -809,7 +809,7 @@ app.delete('/recordings/:foldername', rateLimiter, (async (
     const resolvedPath = await fs.realpath(recordingDir);
     const recordingDirPath = await fs.realpath(RECORDING_DIR);
 
-    if (!resolvedPath.startsWith(recordingDirPath)) {
+    if (!resolvedPath.startsWith(recordingDirPath + path.sep) && resolvedPath !== recordingDirPath) {
       console.error('❌ Path traversal attempt detected:', {
         resolvedPath,
         recordingDirPath,
