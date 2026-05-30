@@ -140,7 +140,11 @@ export class MailSender {
       return true;
     } catch (e) {
       metrics.mail.counter('failed_total').add(1, { name });
-      this.logger.error(`Failed to send mail [${name}].`, e);
+      this.logger.error(`Failed to send mail [${name}].`, e, {
+        subject: options.subject,
+        from: options.from,
+        to: options.to,
+      });
       return false;
     }
   }

@@ -175,7 +175,7 @@ export class MailJob {
       }
       return undefined;
     } catch (e) {
-      this.logger.error(`Failed to send mail [${name}] to [${to}]`, e);
+      this.logger.error(`Failed to send mail [${name}] to [${to}]`, e, props);
       // wait for a while before retrying
       const retryDelay = this.calculateRetryDelay(startTime);
       await sleep(retryDelay);
