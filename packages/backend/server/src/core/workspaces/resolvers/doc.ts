@@ -15,6 +15,7 @@ import { Prisma, PrismaClient } from '@prisma/client';
 import { SafeIntResolver } from 'graphql-scalars';
 
 import {
+  ActionForbidden,
   Cache,
   DocActionDenied,
   DocDefaultRoleCanNotBeOwner,
@@ -44,6 +45,7 @@ import {
   PermissionService,
 } from '../../permission';
 import { PublicUserType, WorkspaceUserType } from '../../user';
+import { isUserOldEnoughForShareActions } from '../abuse';
 import { DocGrantsService } from '../doc-grants';
 import { WorkspaceType } from '../types';
 import { TimeBucket, TimeWindow } from './analytics-types';
@@ -302,6 +304,15 @@ export class WorkspaceDocResolver {
     private readonly event: EventBus
   ) {}
 
+  private async assertCanShare(userId: string) {
+    const user = await this.models.user.get(userId);
+    if (!user || !isUserOldEnoughForShareActions(user)) {
+      throw new ActionForbidden(
+        'Sharing links is unavailable during the first 24 hours after signup.'
+      );
+    }
+  }
+
   @ResolveField(() => WorkspaceDocMeta, {
     description: 'Cloud page metadata of workspace',
     complexity: 2,
@@ -441,6 +452,7 @@ export class WorkspaceDocResolver {
     }
 
     await this.ac.user(user.id).doc(workspaceId, docId).assert('Doc.Publish');
+    await this.assertCanShare(user.id);
 
     const doc = await this.models.doc.publish(workspaceId, docId, mode);
     this.event.emit('doc.public_state.changed', { workspaceId, docId });

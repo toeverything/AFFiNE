@@ -15,6 +15,7 @@ import {
 import { nanoid } from 'nanoid';
 
 import {
+  ActionForbidden,
   ActionForbiddenOnNonTeamWorkspace,
   AlreadyInSpace,
   AuthenticationRequired,
@@ -45,6 +46,7 @@ import {
 import { QuotaService } from '../../quota';
 import { UserType } from '../../user';
 import { validators } from '../../utils/validators';
+import { containsUrlOrDomain, isUserOldEnoughForShareActions } from '../abuse';
 import { WorkspaceService } from '../service';
 import {
   InvitationType,
@@ -73,6 +75,24 @@ export class WorkspaceMemberResolver {
     private readonly workspaceService: WorkspaceService,
     private readonly quota: QuotaService
   ) {}
+
+  private async assertCanInviteOrShare(userId: string) {
+    const user = await this.models.user.get(userId);
+    if (!user || !isUserOldEnoughForShareActions(user)) {
+      throw new ActionForbidden(
+        'Inviting members and creating share links are unavailable during the first 24 hours after signup.'
+      );
+    }
+  }
+
+  private async assertWorkspaceNameCanInvite(workspaceId: string) {
+    const workspace = await this.workspaceService.getWorkspaceInfo(workspaceId);
+    if (containsUrlOrDomain(workspace.name)) {
+      throw new ActionForbidden(
+        'Workspace names containing links or domains cannot be used to invite members.'
+      );
+    }
+  }
 
   @ResolveField(() => UserType, {
     description: 'Owner of workspace',
@@ -149,6 +169,8 @@ export class WorkspaceMemberResolver {
       .user(me.id)
       .workspace(workspaceId)
       .assert('Workspace.Users.Manage');
+    await this.assertCanInviteOrShare(me.id);
+    await this.assertWorkspaceNameCanInvite(workspaceId);
 
     if (emails.length > 512) {
       throw new TooManyRequest();
@@ -280,6 +302,8 @@ export class WorkspaceMemberResolver {
       .user(user.id)
       .workspace(workspaceId)
       .assert('Workspace.Users.Manage');
+    await this.assertCanInviteOrShare(user.id);
+    await this.assertWorkspaceNameCanInvite(workspaceId);
 
     const cacheWorkspaceId = `workspace:inviteLink:${workspaceId}`;
     const invite = await this.cache.get<{ inviteId: string }>(cacheWorkspaceId);

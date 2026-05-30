@@ -121,22 +121,17 @@ export class UserSubscriptionManager extends SubscriptionManager {
       throw new ManagedByAppStoreOrPlay();
     }
 
-    const subscription = await this.getSubscription({
-      plan: lookupKey.plan,
-      userId: user.id,
-    });
-
     if (
-      subscription &&
+      active &&
       // do not allow to re-subscribe unless
       !(
         /* current subscription is a onetime subscription and so as the one that's checking out */
         (
-          (subscription.variant === SubscriptionVariant.Onetime &&
+          (active.variant === SubscriptionVariant.Onetime &&
             lookupKey.variant === SubscriptionVariant.Onetime) ||
           /* current subscription is normal subscription and is checking-out a lifetime subscription */
-          (subscription.recurring !== SubscriptionRecurring.Lifetime &&
-            subscription.variant !== SubscriptionVariant.Onetime &&
+          (active.recurring !== SubscriptionRecurring.Lifetime &&
+            active.variant !== SubscriptionVariant.Onetime &&
             lookupKey.recurring === SubscriptionRecurring.Lifetime)
         )
       )

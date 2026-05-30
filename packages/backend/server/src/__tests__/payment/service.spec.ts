@@ -438,6 +438,37 @@ test('should throw if user has subscription already', async t => {
   );
 });
 
+test('should allow checkout after local subscription period ended', async t => {
+  const { service, u1, db, stripe } = t.context;
+
+  await db.subscription.create({
+    data: {
+      targetId: u1.id,
+      stripeSubscriptionId: 'sub_expired_ai',
+      plan: SubscriptionPlan.AI,
+      recurring: SubscriptionRecurring.Yearly,
+      status: SubscriptionStatus.Active,
+      start: new Date('2026-05-04T13:11:45.000Z'),
+      end: new Date('2026-05-11T13:11:45.000Z'),
+    },
+  });
+
+  await service.checkout(
+    {
+      plan: SubscriptionPlan.AI,
+      recurring: SubscriptionRecurring.Yearly,
+      successCallbackLink: '',
+    },
+    { user: u1 }
+  );
+
+  t.true(stripe.checkout.sessions.create.calledOnce);
+  t.deepEqual(getLastCheckoutPrice(stripe.checkout.sessions.create), {
+    price: AI_YEARLY,
+    coupon: undefined,
+  });
+});
+
 test('should get correct pro plan price for checking out', async t => {
   const { app, service, u1, stripe, feature } = t.context;
   // non-ea user
