@@ -36,7 +36,11 @@ type SendMailJob<Mail extends MailName = MailName, Props = MailProps<Mail>> = {
 
 declare global {
   interface Jobs {
-    'notification.sendMail': { startTime: number; retryCount?: number } & {
+    'notification.sendMail': {
+      startTime: number;
+      retryCount?: number;
+      expiresAt?: number;
+    } & {
       [K in MailName]: SendMailJob<K>;
     }[MailName];
   }
@@ -50,6 +54,17 @@ const retryMaxPerTick = 20;
 const retryFirstTime = 3;
 const retryMaxAttempts = 12;
 const retryMaxAge = 24 * 60 * 60 * 1000;
+const magicLinkExpiresIn = 30 * 60 * 1000;
+
+const mailExpiresIn: Partial<Record<MailName, number>> = {
+  SignIn: magicLinkExpiresIn,
+  SignUp: magicLinkExpiresIn,
+  SetPassword: magicLinkExpiresIn,
+  ChangePassword: magicLinkExpiresIn,
+  VerifyEmail: magicLinkExpiresIn,
+  ChangeEmail: magicLinkExpiresIn,
+  VerifyChangeEmail: magicLinkExpiresIn,
+};
 
 @Injectable()
 export class MailJob {
@@ -72,8 +87,12 @@ export class MailJob {
   private getRetryExhaustedReason({
     startTime,
     retryCount,
+    expiresAt,
+    name,
   }: Jobs['notification.sendMail']) {
-    if (Date.now() - startTime > retryMaxAge) {
+    const expiredAt =
+      expiresAt ?? startTime + (mailExpiresIn[name] ?? retryMaxAge);
+    if (Date.now() > expiredAt) {
       return 'expired';
     }
 
