@@ -116,6 +116,7 @@ export async function createRandomUser(): Promise<{
       data: {
         ...user,
         emailVerifiedAt: new Date(),
+        createdAt: new Date(Date.now() - 25 * 60 * 60 * 1000),
         password: await hash(user.password),
         features: {
           create: {
