@@ -122,12 +122,14 @@ test('should remove jobs by payload predicate', async t => {
   const keep = await queue.add('nightly.__test__job', { name: 'keep' });
   const remove = await queue.add('nightly.__test__job', { name: 'remove' });
   const other = await queue.add('nightly.__test__job2', { name: 'remove' });
+  const getJobs = Sinon.spy(bullmq, 'getJobs');
 
   const removed = await queue.removeWhere(
     'nightly.__test__job',
     job => job.name === 'remove'
   );
 
+  t.deepEqual(getJobs.firstCall.args.slice(0, 3), [['waiting'], 0, 99]);
   t.deepEqual(removed, [{ name: 'remove' }]);
   t.truthy(await queue.get(keep.id!, 'nightly.__test__job'));
   t.is(await queue.get(remove.id!, 'nightly.__test__job'), undefined);

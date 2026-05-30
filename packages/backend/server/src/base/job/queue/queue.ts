@@ -12,6 +12,15 @@ interface JobData<T extends JobName> {
   payload: Jobs[T];
 }
 
+const removableJobStates = [
+  'waiting',
+  'delayed',
+  'prioritized',
+  'paused',
+  'waiting-children',
+] as const;
+const removeWhereBatchSize = 100;
+
 @Injectable()
 export class JobQueue {
   private readonly logger = new Logger(JobQueue.name);
@@ -61,28 +70,48 @@ export class JobQueue {
   ): Promise<Jobs[T][]> {
     const ns = namespace(jobName);
     const queue = this.getQueue(ns);
-    const jobs = (await queue.getJobs([
-      'waiting',
-      'delayed',
-      'prioritized',
-      'paused',
-      'waiting-children',
-    ])) as Job<JobData<T>>[];
     const removed: Jobs[T][] = [];
 
-    for (const job of jobs) {
-      if (job.name !== jobName) {
-        continue;
-      }
+    for (const state of removableJobStates) {
+      let start = 0;
+      let removedFromBatch = false;
+      let hasMoreJobs = true;
 
-      const payload = job.data.payload;
-      if (!(await predicate(payload))) {
-        continue;
-      }
+      while (hasMoreJobs) {
+        removedFromBatch = false;
+        const jobs = (await queue.getJobs(
+          [state],
+          start,
+          start + removeWhereBatchSize - 1
+        )) as Job<JobData<T>>[];
 
-      await job.remove();
-      this.logger.log(`Job ${jobName}(id=${job.id}) removed from queue ${ns}`);
-      removed.push(payload);
+        if (!jobs.length) {
+          hasMoreJobs = false;
+          break;
+        }
+
+        for (const job of jobs) {
+          if (job.name !== jobName) {
+            continue;
+          }
+
+          const payload = job.data.payload;
+          if (!(await predicate(payload))) {
+            continue;
+          }
+
+          await job.remove();
+          this.logger.log(
+            `Job ${jobName}(id=${job.id}) removed from queue ${ns}`
+          );
+          removed.push(payload);
+          removedFromBatch = true;
+        }
+
+        if (!removedFromBatch) {
+          start += removeWhereBatchSize;
+        }
+      }
     }
 
     return removed;
