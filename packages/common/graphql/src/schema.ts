@@ -4027,6 +4027,7 @@ export type ListUsersQuery = {
 };
 
 export type SendTestEmailMutationVariables = Exact<{
+  name: Scalars['String']['input'];
   host: Scalars['String']['input'];
   port: Scalars['Int']['input'];
   sender: Scalars['String']['input'];

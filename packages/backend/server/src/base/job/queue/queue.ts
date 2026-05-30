@@ -55,6 +55,39 @@ export class JobQueue {
     return undefined;
   }
 
+  async removeWhere<T extends JobName>(
+    jobName: T,
+    predicate: (payload: Jobs[T]) => boolean | Promise<boolean>
+  ): Promise<Jobs[T][]> {
+    const ns = namespace(jobName);
+    const queue = this.getQueue(ns);
+    const jobs = (await queue.getJobs([
+      'waiting',
+      'delayed',
+      'prioritized',
+      'paused',
+      'waiting-children',
+    ])) as Job<JobData<T>>[];
+    const removed: Jobs[T][] = [];
+
+    for (const job of jobs) {
+      if (job.name !== jobName) {
+        continue;
+      }
+
+      const payload = job.data.payload;
+      if (!(await predicate(payload))) {
+        continue;
+      }
+
+      await job.remove();
+      this.logger.log(`Job ${jobName}(id=${job.id}) removed from queue ${ns}`);
+      removed.push(payload);
+    }
+
+    return removed;
+  }
+
   async get<T extends JobName>(jobId: string, jobName: T) {
     const ns = namespace(jobName);
     const queue = this.getQueue(ns);
