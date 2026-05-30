@@ -22,6 +22,7 @@ import {
   generateWorkspaceSettingsPath,
   WorkspaceSettingsTab,
 } from '../utils/workspace';
+import { containsUrlOrDomain } from '../workspaces/abuse';
 
 @Injectable()
 export class NotificationService {
@@ -151,6 +152,16 @@ export class NotificationService {
   }
 
   private async sendInvitationEmail(input: InvitationNotificationCreate) {
+    const workspace = await this.docReader.getWorkspaceContent(
+      input.body.workspaceId
+    );
+    if (containsUrlOrDomain(workspace?.name)) {
+      this.logger.warn(
+        `Skip invitation email for workspace ${input.body.workspaceId}, reason=workspace name contains url or domain`
+      );
+      return;
+    }
+
     const inviteUrl = this.url.link(`/invite/${input.body.inviteId}`);
     if (env.dev) {
       // make it easier to test in dev mode

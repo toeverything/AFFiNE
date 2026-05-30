@@ -8,6 +8,7 @@ import { UserProps, WorkspaceProps } from '../../mails/components';
 import { Models } from '../../models';
 import { DocReader } from '../doc/reader';
 import { WorkspaceBlobStorage } from '../storage';
+import { containsUrlOrDomain } from '../workspaces/abuse';
 import { MailSender, SendOptions } from './sender';
 
 type DynamicallyFetchedProps<Props> = {
@@ -35,7 +36,11 @@ type SendMailJob<Mail extends MailName = MailName, Props = MailProps<Mail>> = {
 
 declare global {
   interface Jobs {
-    'notification.sendMail': { startTime: number; retryCount?: number } & {
+    'notification.sendMail': {
+      startTime: number;
+      retryCount?: number;
+      expiresAt?: number;
+    } & {
       [K in MailName]: SendMailJob<K>;
     }[MailName];
   }
@@ -49,6 +54,17 @@ const retryMaxPerTick = 20;
 const retryFirstTime = 3;
 const retryMaxAttempts = 12;
 const retryMaxAge = 24 * 60 * 60 * 1000;
+const magicLinkExpiresIn = 30 * 60 * 1000;
+
+const mailExpiresIn: Partial<Record<MailName, number>> = {
+  SignIn: magicLinkExpiresIn,
+  SignUp: magicLinkExpiresIn,
+  SetPassword: magicLinkExpiresIn,
+  ChangePassword: magicLinkExpiresIn,
+  VerifyEmail: magicLinkExpiresIn,
+  ChangeEmail: magicLinkExpiresIn,
+  VerifyChangeEmail: magicLinkExpiresIn,
+};
 
 @Injectable()
 export class MailJob {
@@ -71,8 +87,12 @@ export class MailJob {
   private getRetryExhaustedReason({
     startTime,
     retryCount,
+    expiresAt,
+    name,
   }: Jobs['notification.sendMail']) {
-    if (Date.now() - startTime > retryMaxAge) {
+    const expiredAt =
+      expiresAt ?? startTime + (mailExpiresIn[name] ?? retryMaxAge);
+    if (Date.now() > expiredAt) {
       return 'expired';
     }
 
@@ -118,10 +138,11 @@ export class MailJob {
     }
 
     let options: Partial<SendOptions> = {};
+    const renderedProps = { ...props };
 
-    for (const key in props) {
+    for (const key in renderedProps) {
       // @ts-expect-error allow
-      const val = props[key];
+      const val = renderedProps[key];
       if (val && typeof val === 'object') {
         if ('$$workspaceId' in val) {
           const workspaceProps = await this.fetchWorkspaceProps(
@@ -129,6 +150,16 @@ export class MailJob {
           );
 
           if (!workspaceProps) {
+            return;
+          }
+
+          if (
+            name === 'MemberInvitation' &&
+            containsUrlOrDomain(workspaceProps.name)
+          ) {
+            this.logger.warn(
+              `Skip mail [${name}] to [${to}], reason=workspace name contains url or domain`
+            );
             return;
           }
 
@@ -144,7 +175,7 @@ export class MailJob {
             workspaceProps.avatar = 'cid:workspaceAvatar';
           }
           // @ts-expect-error replacement
-          props[key] = workspaceProps;
+          renderedProps[key] = workspaceProps;
         } else if ('$$userId' in val) {
           const userProps = await this.fetchUserProps(val.$$userId);
 
@@ -153,9 +184,22 @@ export class MailJob {
           }
 
           // @ts-expect-error replacement
-          props[key] = userProps;
+          renderedProps[key] = userProps;
         }
       }
+    }
+
+    if (
+      name === 'MemberInvitation' &&
+      'workspace' in renderedProps &&
+      containsUrlOrDomain(
+        (renderedProps.workspace as WorkspaceProps | undefined)?.name
+      )
+    ) {
+      this.logger.warn(
+        `Skip mail [${name}] to [${to}], reason=workspace name contains url or domain`
+      );
+      return;
     }
 
     try {
@@ -163,7 +207,7 @@ export class MailJob {
         to,
         ...(await Renderers[name](
           // @ts-expect-error the job trigger part has been typechecked
-          props
+          renderedProps
         )),
         ...options,
       });

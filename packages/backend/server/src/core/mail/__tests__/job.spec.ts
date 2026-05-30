@@ -106,6 +106,44 @@ test('should drop expired mail retry', async t => {
   t.false(send.called);
 });
 
+test('should drop time-sensitive mail after its business expiration', async t => {
+  const send = Sinon.stub(sender, 'send').resolves(true);
+
+  await mailJob.sendMail({
+    startTime: Date.now() - 31 * 60 * 1000,
+    name: 'SignIn',
+    to: 'expired-sign-in@example.com',
+    props: {
+      url: 'https://affine.pro/sign-in',
+      otp: '123456',
+    },
+  });
+
+  t.false(send.called);
+});
+
+test('should use explicit mail expiration when provided', async t => {
+  const send = Sinon.stub(sender, 'send').resolves(true);
+
+  await mailJob.sendMail({
+    startTime: Date.now(),
+    expiresAt: Date.now() - 1,
+    name: 'MemberInvitation',
+    to: 'expired-invitation@example.com',
+    props: {
+      user: {
+        $$userId: 'owner-id',
+      },
+      workspace: {
+        $$workspaceId: 'workspace-id',
+      },
+      url: 'https://affine.pro/invite/test',
+    },
+  });
+
+  t.false(send.called);
+});
+
 test('should drop mail retry after max attempts', async t => {
   const send = Sinon.stub(sender, 'send').resolves(true);
 
@@ -146,4 +184,60 @@ test('should requeue legacy stringified retry mail', async t => {
 
   t.true(module.queue.add.calledWith('notification.sendMail', job));
   t.is(await cache.mapGet(retryMailKey, cacheKey), undefined);
+});
+
+test('should skip member invitation mail when rendered workspace name contains domain', async t => {
+  const owner = await module.create(Mockers.User);
+  const member = await module.create(Mockers.User);
+  const workspace = await module.create(Mockers.Workspace, {
+    owner: { id: owner.id },
+    name: 'BTC https://spam.example',
+  });
+  const send = Sinon.stub(sender, 'send').resolves(true);
+
+  await mailJob.sendMail({
+    startTime: Date.now(),
+    name: 'MemberInvitation',
+    to: member.email,
+    props: {
+      user: {
+        $$userId: owner.id,
+      },
+      workspace: {
+        $$workspaceId: workspace.id,
+      },
+      url: 'https://affine.pro/invite/test',
+    },
+  });
+
+  t.false(send.called);
+});
+
+test('should keep dynamic mail props untouched for retry', async t => {
+  const owner = await module.create(Mockers.User);
+  const member = await module.create(Mockers.User);
+  const workspace = await module.create(Mockers.Workspace, {
+    owner: { id: owner.id },
+    name: 'Safe Workspace',
+  });
+  Sinon.stub(sender, 'send').resolves(false);
+  const job: Jobs['notification.sendMail'] = {
+    startTime: Date.now(),
+    name: 'MemberInvitation',
+    to: member.email,
+    props: {
+      user: {
+        $$userId: owner.id,
+      },
+      workspace: {
+        $$workspaceId: workspace.id,
+      },
+      url: 'https://affine.pro/invite/test',
+    },
+  };
+
+  await mailJob.sendMail(job);
+
+  t.deepEqual(job.props.user, { $$userId: owner.id });
+  t.deepEqual(job.props.workspace, { $$workspaceId: workspace.id });
 });
