@@ -1,5 +1,5 @@
 import { wrapCreateBrowserRouterV6 } from '@sentry/react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { RouteObject } from 'react-router-dom';
 import {
   createBrowserRouter as reactRouterCreateBrowserRouter,
@@ -9,6 +9,7 @@ import {
 
 import { AffineErrorComponent } from '../components/affine/affine-error-boundary/affine-error-fallback';
 import { NavigateContext } from '../components/hooks/use-navigate-helper';
+import { withPageFlipTransition } from '../components/page-transition';
 import { RootWrapper } from './pages/root';
 import {
   CATCH_ALL_ROUTE_PATH,
@@ -26,9 +27,22 @@ export function RootRouter() {
     setReady(true);
   }, []);
 
+  const wrappedNavigate = useMemo<typeof navigate>(() => {
+    const fn: typeof navigate = (...args: Parameters<typeof navigate>) => {
+      let result: ReturnType<typeof navigate>;
+      withPageFlipTransition(() => {
+        // @ts-expect-error react-router overloads the navigate signature
+        result = navigate(...args);
+      });
+      // @ts-expect-error assigned inside the synchronous callback
+      return result;
+    };
+    return fn;
+  }, [navigate]);
+
   return (
     ready && (
-      <NavigateContext.Provider value={navigate}>
+      <NavigateContext.Provider value={wrappedNavigate}>
         <RootWrapper />
       </NavigateContext.Provider>
     )

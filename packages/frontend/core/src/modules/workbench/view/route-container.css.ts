@@ -10,6 +10,9 @@ export const root = style({
   flexDirection: 'column',
   minWidth: 0,
   background: cssVar('backgroundPrimaryColor'),
+  // Scope the view-transition flip to the page-content area; the surrounding
+  // sidebar / chrome stays put. See page-transition.css.ts for the keyframes.
+  viewTransitionName: 'page-content',
 });
 
 export const header = style({

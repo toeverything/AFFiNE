@@ -1,5 +1,5 @@
 import { FrameworkScope, useLiveData } from '@toeverything/infra';
-import { useLayoutEffect, useMemo } from 'react';
+import { useLayoutEffect, useMemo, useRef } from 'react';
 import type { RouteObject } from 'react-router-dom';
 import {
   createMemoryRouter,
@@ -8,6 +8,7 @@ import {
   UNSAFE_RouteContext,
 } from 'react-router-dom';
 
+import { withPageFlipTransition } from '../../../components/page-transition';
 import type { View } from '../entities/view';
 
 export const ViewRoot = ({
@@ -24,11 +25,21 @@ export const ViewRoot = ({
   );
 
   const location = useLiveData(view.location$);
+  const firstNavigationRef = useRef(true);
 
   useLayoutEffect(() => {
-    viewRouter.navigate(location).catch(err => {
-      console.error('navigate error', err);
-    });
+    const doNavigate = () => {
+      viewRouter.navigate(location).catch(err => {
+        console.error('navigate error', err);
+      });
+    };
+
+    if (firstNavigationRef.current) {
+      firstNavigationRef.current = false;
+      doNavigate();
+    } else {
+      withPageFlipTransition(doNavigate);
+    }
   }, [location, view, viewRouter]);
 
   // https://github.com/remix-run/react-router/issues/7375#issuecomment-975431736
