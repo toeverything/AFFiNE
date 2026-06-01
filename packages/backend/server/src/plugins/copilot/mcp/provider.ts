@@ -191,10 +191,10 @@ export class WorkspaceMcpProvider {
         if (abortedAfterDocs) return abortedAfterDocs;
 
         return {
-          content: docs.map(doc => ({
+          content: (docs?.map(doc => ({
             type: 'text',
             text: clearEmbeddingChunk(doc).content,
-          })),
+          })) ?? []),
         };
       },
     });
@@ -242,10 +242,10 @@ export class WorkspaceMcpProvider {
         }
 
         return {
-          content: docs.map(doc => ({
+          content: (docs?.map(doc => ({
             type: 'text',
             text: JSON.stringify(pick(doc, 'docId', 'title', 'createdAt')),
-          })),
+          })) ?? []),
         };
       },
     });
