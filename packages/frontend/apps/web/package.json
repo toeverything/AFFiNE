@@ -16,6 +16,7 @@
     "@affine/track": "workspace:*",
     "@emotion/react": "^11.14.0",
     "@toeverything/infra": "workspace:*",
+    "html2canvas": "^1.4.1",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
     "react-pageflip": "^2.0.3",
