@@ -22,7 +22,7 @@
     "lit": "^3.2.0"
   },
   "devDependencies": {
-    "vitest": "^4.0.18"
+    "vitest": "^4.1.8"
   },
   "exports": {
     ".": "./src/index.ts",

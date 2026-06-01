@@ -32,7 +32,7 @@
     "@testing-library/react": "^16.1.0",
     "@types/react": "^19.0.1",
     "rxjs": "^7.8.2",
-    "vitest": "^4.0.18"
+    "vitest": "^4.1.8"
   },
   "peerDependencies": {
     "electron": "*",

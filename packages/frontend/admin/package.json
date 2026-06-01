@@ -65,7 +65,7 @@
     "tailwind-merge": "^3.4.0",
     "tailwindcss": "^4.1.17",
     "tailwindcss-animate": "^1.0.7",
-    "vitest": "^4.0.18"
+    "vitest": "^4.1.8"
   },
   "scripts": {
     "build": "affine bundle",

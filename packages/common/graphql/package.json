@@ -17,7 +17,7 @@
     "@graphql-codegen/typescript-operations": "^5.0.9",
     "@types/lodash-es": "^4.17.12",
     "prettier": "^3.7.4",
-    "vitest": "^4.0.18"
+    "vitest": "^4.1.8"
   },
   "scripts": {
     "build": "gql-gen --errors-only"

@@ -51,7 +51,6 @@
     "@sentry/esbuild-plugin": "^5.3.0",
     "@toeverything/infra": "workspace:*",
     "@types/set-cookie-parser": "^2.4.10",
-    "@vitejs/plugin-react": "^5.2.0",
     "app-builder-lib": "^26.8.1",
     "builder-util-runtime": "^9.5.1",
     "cross-env": "^10.1.0",
@@ -71,7 +70,7 @@
     "tree-kill": "^1.2.2",
     "typescript": "^5.9.3",
     "uuid": "^14.0.0",
-    "vitest": "^4.0.18",
+    "vitest": "^4.1.8",
     "zod": "^3.25.76"
   },
   "dependencies": {
