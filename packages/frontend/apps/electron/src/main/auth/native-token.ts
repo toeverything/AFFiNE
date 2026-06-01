@@ -11,6 +11,9 @@ type TokenRecord = {
   token: string;
 };
 
+// safeStorage may not be available in some environments (e.g. Linux without a keyring), so we fall back to an in-memory store in that case
+const memoryTokenStore: Record<string, string> = {};
+
 function normalizeEndpoint(endpoint: string) {
   return new URL(endpoint).origin;
 }
@@ -51,19 +54,33 @@ function decryptToken(value: string): TokenRecord | null {
 }
 
 export function setNativeAuthToken(endpoint: string, token: string) {
+  const normalizedEndpoint = normalizeEndpoint(endpoint);
+  if (!safeStorage.isEncryptionAvailable()) {
+    memoryTokenStore[normalizedEndpoint] = token;
+    return false;
+  }
+
   const store = readStore();
-  store[normalizeEndpoint(endpoint)] = encryptToken({ token });
+  store[normalizedEndpoint] = encryptToken({ token });
   writeStore(store);
+  return true;
 }
 
 export function deleteNativeAuthToken(endpoint: string) {
+  const normalizedEndpoint = normalizeEndpoint(endpoint);
+  delete memoryTokenStore[normalizedEndpoint];
+
   const store = readStore();
-  delete store[normalizeEndpoint(endpoint)];
+  delete store[normalizedEndpoint];
   writeStore(store);
 }
 
 export function getNativeAuthToken(endpoint: string) {
-  const encrypted = readStore()[normalizeEndpoint(endpoint)];
+  const normalizedEndpoint = normalizeEndpoint(endpoint);
+  const memoryToken = memoryTokenStore[normalizedEndpoint];
+  if (memoryToken) return memoryToken;
+
+  const encrypted = readStore()[normalizedEndpoint];
   if (!encrypted) return null;
   return decryptToken(encrypted)?.token ?? null;
 }

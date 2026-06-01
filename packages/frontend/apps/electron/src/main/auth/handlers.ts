@@ -26,6 +26,7 @@ export interface PasswordSignInResponse extends SignInResponse {
   hasPassword: boolean | null;
   avatarUrl: string | null;
   emailVerified: boolean;
+  sessionOnly?: boolean;
 }
 
 interface ExchangeResponse {
@@ -95,8 +96,9 @@ async function exchangeSession(endpoint: string, response: SignInResponse) {
     throw new Error('Missing native auth token.');
   }
 
-  setNativeAuthToken(endpoint, body.token);
+  const persistent = setNativeAuthToken(endpoint, body.token);
   await clearAuthCookies(endpoint);
+  return { persistent };
 }
 
 export const authHandlers = {
@@ -113,7 +115,8 @@ export const authHandlers = {
       client_nonce: clientNonce,
     });
     const body = await readJson<SignInResponse>(response);
-    await exchangeSession(endpoint, body);
+    const { persistent } = await exchangeSession(endpoint, body);
+    return { sessionOnly: !persistent };
   },
 
   signInOauth: async (
@@ -129,8 +132,8 @@ export const authHandlers = {
       client_nonce: clientNonce,
     });
     const body = await readJson<SignInResponse>(response);
-    await exchangeSession(endpoint, body);
-    return { redirectUri: body.redirectUri };
+    const { persistent } = await exchangeSession(endpoint, body);
+    return { redirectUri: body.redirectUri, sessionOnly: !persistent };
   },
 
   signInPassword: async (
@@ -162,15 +165,19 @@ export const authHandlers = {
       }),
     });
     const body = await readJson<PasswordSignInResponse>(response);
-    await exchangeSession(endpoint, body);
-    return body;
+    const { persistent } = await exchangeSession(endpoint, body);
+    return { ...body, sessionOnly: !persistent };
   },
 
   signInOpenAppSignInCode: async (_e, endpoint: string, code: string) => {
     const response = await fetchAuth(endpoint, '/api/auth/open-app/sign-in', {
       code,
     });
-    await exchangeSession(endpoint, await readJson(response));
+    const { persistent } = await exchangeSession(
+      endpoint,
+      await readJson(response)
+    );
+    return { sessionOnly: !persistent };
   },
 
   signOut: async (_e, endpoint: string) => {

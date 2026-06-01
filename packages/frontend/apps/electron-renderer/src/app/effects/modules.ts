@@ -1,3 +1,4 @@
+import { notify } from '@affine/component';
 import { configureElectronStateStorageImpls } from '@affine/core/desktop/storage';
 import { configureCommonModules } from '@affine/core/modules';
 import { configureAppTabsHeaderModule } from '@affine/core/modules/app-tabs-header';
@@ -24,6 +25,16 @@ import {
 import { configureDesktopWorkbenchModule } from '@affine/core/modules/workbench';
 import { configureBrowserWorkspaceFlavours } from '@affine/core/modules/workspace-engine';
 import { Framework } from '@toeverything/infra';
+
+function notifySessionOnlySignIn(sessionOnly?: boolean) {
+  if (!sessionOnly) return;
+
+  notify.warning({
+    title: 'Sign-in is only valid for this session',
+    message:
+      'Encrypted storage is unavailable, so you will need to sign in again after restarting AFFiNE.',
+  });
+}
 
 export function setupModules() {
   const framework = new Framework();
@@ -75,26 +86,38 @@ export function setupModules() {
 
     return {
       async signInMagicLink(email, token, clientNonce) {
-        await apis.handler.auth.signInMagicLink(
+        const result = await apis.handler.auth.signInMagicLink(
           endpoint,
           email,
           token,
           clientNonce
         );
+        notifySessionOnlySignIn(result.sessionOnly);
       },
       async signInOauth(code, state, _provider, clientNonce) {
-        return await apis.handler.auth.signInOauth(
+        const result = await apis.handler.auth.signInOauth(
           endpoint,
           code,
           state,
           clientNonce
         );
+        notifySessionOnlySignIn(result.sessionOnly);
+        return result;
       },
       async signInPassword(credential) {
-        return await apis.handler.auth.signInPassword(endpoint, credential);
+        const result = await apis.handler.auth.signInPassword(
+          endpoint,
+          credential
+        );
+        notifySessionOnlySignIn(result.sessionOnly);
+        return result;
       },
       async signInOpenAppSignInCode(code) {
-        await apis.handler.auth.signInOpenAppSignInCode(endpoint, code);
+        const result = await apis.handler.auth.signInOpenAppSignInCode(
+          endpoint,
+          code
+        );
+        notifySessionOnlySignIn(result.sessionOnly);
       },
       async signOut() {
         await apis.handler.auth.signOut(endpoint);

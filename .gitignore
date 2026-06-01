@@ -49,6 +49,7 @@ testem.log
 tsconfig.tsbuildinfo
 .context
 /*.md
+.codex
 
 # System Files
 .DS_Store
