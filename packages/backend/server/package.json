@@ -65,7 +65,7 @@
     "@queuedash/api": "^3.16.0",
     "@react-email/components": "^0.5.7",
     "@socket.io/redis-adapter": "^8.3.0",
-    "bullmq": "5.53.0",
+    "bullmq": "5.77.6",
     "commander": "^13.1.0",
     "cookie-parser": "^1.4.7",
     "cross-env": "^10.1.0",
