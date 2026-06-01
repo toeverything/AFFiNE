@@ -138,7 +138,7 @@ export class ServerConfigResolver {
       const releases = (await response.json()) as Array<{
         name: string;
         url: string;
-        body: string;
+        body: string | null;
         published_at: string;
       }>;
 
@@ -150,7 +150,7 @@ export class ServerConfigResolver {
       return {
         version: latest.name,
         url: latest.url,
-        changelog: latest.body,
+        changelog: latest.body ?? '',
         publishedAt: new Date(latest.published_at),
       };
     } catch (e) {
