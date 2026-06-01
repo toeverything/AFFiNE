@@ -91,7 +91,7 @@ export function setupModules() {
         );
       },
       async signInPassword(credential) {
-        await apis.handler.auth.signInPassword(endpoint, credential);
+        return await apis.handler.auth.signInPassword(endpoint, credential);
       },
       async signInOpenAppSignInCode(code) {
         await apis.handler.auth.signInOpenAppSignInCode(endpoint, code);
