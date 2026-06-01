@@ -12,6 +12,10 @@ const defaultLookups: DomainLookups = {
   resolveTxt,
 };
 
+function joinTxtRecords(records: string[][]) {
+  return records.map(record => record.join(''));
+}
+
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number) {
   let timeout: ReturnType<typeof setTimeout> | undefined;
   const timeoutPromise = new Promise<never>((_, reject) => {
@@ -51,7 +55,7 @@ export async function verifyEmailDomainRecords(
       lookups
         .resolveTxt(domain)
         .then(records =>
-          records.map(([txt]) => txt).filter(txt => txt.includes('v=spf1'))
+          joinTxtRecords(records).filter(txt => txt.includes('v=spf1'))
         ),
       timeoutMs
     ),
@@ -59,7 +63,7 @@ export async function verifyEmailDomainRecords(
       lookups
         .resolveTxt('_dmarc.' + domain)
         .then(records =>
-          records.map(([txt]) => txt).filter(txt => txt.includes('v=DMARC1'))
+          joinTxtRecords(records).filter(txt => txt.includes('v=DMARC1'))
         ),
       timeoutMs
     ),
