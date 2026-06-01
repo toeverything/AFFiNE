@@ -65,17 +65,56 @@ export const PageDetailEditor = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const shareCardRef = useRef<HTMLDivElement>(null);
 
-  // 模擬呼叫 AI 提煉大綱
+  // 模擬呼叫 AI 提煉大綱（升級版：即時撈取目前編輯器的真實內文）
   const handleFetchAISummary = async () => {
     setIsGenerating(true);
-    setTimeout(() => {
-      setAiSummary([
-        "☕ 在公館靜謐的咖啡廳度過悠閒午後 [cite: 108]",
-        "💻 直球對決！成功馴服了複雜的全端環境",
-        "🍜 犒賞自己一碗熱騰騰的辣味噌拉麵，滿足！ [cite: 108]"
-      ]);
+    
+    try {
+      // 💡 核心科技：從 AFFiNE 的 blockSuiteDoc 中，一口氣撈出使用者目前打的所有文字！
+      const rawText = editor.doc.blockSuiteDoc.getText().toString().trim();
+      
+      if (!rawText) {
+        // 如果使用者什麼都沒打，我們給一個貼心的提示
+        setAiSummary([
+          "📖 今天是個神祕的日子...",
+          "✍️ 稍微在日記本裡敲點字，",
+          "✨ 就能一鍵生成專屬的 IG 限動大綱喔！"
+        ]);
+        setIsGenerating(false);
+        return;
+      }
+
+      // ✂️ 純前端文字處理大法的超酷邏輯：
+      // 我們把整篇日記依照「句號」、「問號」或「換行」切開，抓出最前面的三句話當作精選大綱！
+      const sentences = rawText
+        .split(/[。\n!?]/) // 遇到句號、換行、驚嘆號就切斷
+        .map(s => s.trim())
+        .filter(s => s.length > 3) // 過濾掉太短的碎字
+        .slice(0, 3); // 霸氣抓取前 3 句！
+
+      // 萬一使用者只打了一長串沒有標點符號的字，我們就暴力每 25 個字切一列
+      if (sentences.length === 0) {
+        sentences.push(rawText.slice(0, 25));
+        if (rawText.length > 25) sentences.push(rawText.slice(25, 50));
+        if (rawText.length > 50) sentences.push(rawText.slice(50, 75));
+      }
+
+      // 延遲 0.5 秒模擬 AI 在思考的酷炫動態
+      setTimeout(() => {
+        // 把前三句加上文青必備的 Emoji 圖示，塞進 IG 卡片裡！
+        const emojiList = ["✨", "📌", "⏳"];
+        const formattedSummary = sentences.map((sentence, idx) => {
+          return `${emojiList[idx] || "▪️"} ${sentence}`;
+        });
+
+        setAiSummary(formattedSummary);
+        setIsGenerating(false);
+      }, 600);
+
+    } catch (error) {
+      console.error("撈取編輯器文字失敗:", error);
       setIsGenerating(false);
-    }, 1500);
+    }
   };
 
   // 處理使用者上傳的 IG 背景照片
