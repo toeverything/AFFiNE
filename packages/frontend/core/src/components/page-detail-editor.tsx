@@ -70,24 +70,36 @@ export const PageDetailEditor = ({
     setIsGenerating(true);
     
     try {
-      // 💡 終極科技：直接去網頁畫面上，把 AFFiNE 編輯器裡所有打出來的文字區塊通通抓過來！
-      // AFFiNE 的 BlockSuite 編輯器常用的文字節點通常帶有 'affine-paragraph' 或 '.v-text' 或 'v-line'
-      // 這裡我們把所有可能是文字段落的標籤和常見的 class 通通掃描一遍
+      // 💡 終極精準特調：只抓取使用者打在富文本（Rich Text）裡面的真實文字
+      // 我們鎖定 BlockSuite 內層真正的文字渲染節點 '.v-line' 或是 '[data-block-id]' 下的文字
       const textElements = document.querySelectorAll(
-        '.affine-paragraph, [data-block-type="paragraph"], .v-text, p, [contenteditable="true"]'
+        '.v-line, .affine-paragraph-block-container [data-block-id] span, [contenteditable="true"] .v-text'
       );
       
-      // 把抓到的網頁元件文字抽取出來，用換行黏起來
+      // 把抓到的文字抽取出來
       let rawText = Array.from(textElements)
         .map(el => el.textContent || '')
-        .filter(text => text.trim().length > 0)
+        .map(text => text.trim())
+        .filter(text => {
+          // 🛑 核心濾鏡：如果抓到的文字包含 AFFiNE 內部的系統元件名稱或 class 關鍵字，直接過濾掉！
+          const isSystemNoise = 
+            text.includes('affine-') || 
+            text.includes('block-container') || 
+            text.includes('-icon') ||
+            text.length === 0;
+          return !isSystemNoise;
+        })
         .join('\n')
         .trim();
 
-      // 💡 備份草案：如果因為免登入導致抓不到特定的 class，我們直接抓整塊編輯器容器裡的文字
+      // 💡 備份草案二：如果上面被濾光了，我們退而求其次，抓取 contenteditable 容器裡所有非空的 p 或 div 文字
       if (!rawText) {
-        const editorContainer = document.querySelector('.affine-editor-container, #editor, [data-page-id]');
-        rawText = editorContainer?.textContent?.trim() || '';
+        const fallbackElements = document.querySelectorAll('[contenteditable="true"] .affine-paragraph-block-container');
+        rawText = Array.from(fallbackElements)
+          .map(el => el.textContent || '')
+          .filter(text => text.trim().length > 0 && !text.includes('affine-'))
+          .join('\n')
+          .trim();
       }
       
       // 萬一真的還是空的，就走貼心提示
