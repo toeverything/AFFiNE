@@ -230,6 +230,17 @@ export class WorkspaceMcpProvider {
         const abortedAfterDocs = abortIfNeeded(options.signal);
         if (abortedAfterDocs) return abortedAfterDocs;
 
+        if (!docs || docs.length === 0) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: 'No matching documents found.',
+              },
+            ],
+          };
+        }
+
         return {
           content: docs.map(doc => ({
             type: 'text',
