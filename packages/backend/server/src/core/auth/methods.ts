@@ -1,11 +1,10 @@
-import { resolveMx, resolveTxt } from 'node:dns/promises';
-
 import { Injectable } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import { PrismaClient } from '@prisma/client';
 
 import { Config } from '../../base';
 import { Models, type User } from '../../models';
+import { verifyEmailDomainRecords } from './email-domain';
 
 export const AUTH_OAUTH_PROVIDER_READER = Symbol('AUTH_OAUTH_PROVIDER_READER');
 
@@ -115,22 +114,7 @@ export class AuthMethodsService {
       return true;
     }
 
-    const [name, domain, ...rest] = email.split('@');
-    if (rest.length || !domain || name.includes('+')) {
-      return false;
-    }
-
-    const [mx, spf, dmarc] = await Promise.allSettled([
-      resolveMx(domain).then(t => t.map(mx => mx.exchange).filter(Boolean)),
-      resolveTxt(domain).then(t =>
-        t.map(([k]) => k).filter(txt => txt.includes('v=spf1'))
-      ),
-      resolveTxt('_dmarc.' + domain).then(t =>
-        t.map(([k]) => k).filter(txt => txt.includes('v=DMARC1'))
-      ),
-    ]).then(t => t.filter(t => t.status === 'fulfilled').map(t => t.value));
-
-    return !!mx?.length && !!spf?.length && !!dmarc?.length;
+    return verifyEmailDomainRecords(email);
   }
 
   private oauthProviders() {

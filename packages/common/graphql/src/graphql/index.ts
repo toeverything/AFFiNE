@@ -1887,7 +1887,7 @@ export const getCurrentUserQuery = {
     }
   }
 }`,
-  deprecations: ["'token' is deprecated: use [/api/auth/sign-in?native=true] instead"],
+  deprecations: ["'token' is deprecated: use native session exchange instead"],
 };
 
 export const getDocCreatedByUpdatedByListQuery = {

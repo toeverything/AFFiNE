@@ -1,5 +1,7 @@
 import ava, { TestFn } from 'ava';
+import Sinon from 'sinon';
 
+import { SessionCache } from '../../base';
 import { AuthChallengeStore, AuthModule } from '../../core/auth';
 import { createTestingApp, TestingApp } from '../utils';
 
@@ -15,6 +17,10 @@ test.before(async t => {
 
   t.context.app = app;
   t.context.challenges = app.get(AuthChallengeStore);
+});
+
+test.beforeEach(() => {
+  Sinon.restore();
 });
 
 test.after.always(async t => {
@@ -74,6 +80,22 @@ test('should return null for expired challenge', async t => {
 
   t.is(await t.context.challenges.get('open_app_sign_in', token), null);
   t.is(await t.context.challenges.consume('open_app_sign_in', token), null);
+});
+
+test('should reject invalid challenge ttl', async t => {
+  await t.throwsAsync(
+    t.context.challenges.create('open_app_sign_in', { userId: 'u1' }, 0),
+    { message: /Invalid auth state/ }
+  );
+});
+
+test('should reject challenge creation when cache write fails', async t => {
+  Sinon.stub(t.context.app.get(SessionCache), 'set').resolves(false);
+
+  await t.throwsAsync(
+    t.context.challenges.create('open_app_sign_in', { userId: 'u1' }, 30_000),
+    { message: /Invalid auth state/ }
+  );
 });
 
 test('should atomically allow one concurrent consume', async t => {

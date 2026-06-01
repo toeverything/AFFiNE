@@ -63,6 +63,14 @@ export class TestingApp extends NestApplication {
     await this.close();
   }
 
+  clearAuth() {
+    this.resetRateLimit();
+    this.sessionCookie = null;
+    this.currentUserCookie = null;
+    this.csrfCookie = null;
+    this.userCookies.clear();
+  }
+
   request(
     method: 'options' | 'get' | 'post' | 'put' | 'delete' | 'patch',
     path: string

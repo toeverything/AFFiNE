@@ -247,6 +247,7 @@ test('should forbid preflight with untrusted redirect_uri', async t => {
 
 test('should throw if client_nonce is missing in preflight', async t => {
   const { app } = t.context;
+  app.clearAuth();
 
   await app
     .POST('/api/oauth/preflight')
@@ -307,6 +308,32 @@ test('should save oauth state with three hour ttl', async t => {
 
   t.true(ttl > 2 * 3600);
   t.true(ttl <= 3 * 3600);
+});
+
+test('should not log oauth callback secrets when token exchange fails', async t => {
+  const { app, oauth } = t.context;
+  const provider = app.get(GoogleOAuthProvider);
+  Sinon.stub(provider, 'getToken').rejects(new Error('exchange failed'));
+  const warn = Sinon.stub((oauth as any).logger, 'warn');
+
+  await t.throwsAsync(
+    oauth.verifyCallbackIdentity(
+      'secret-code',
+      { provider: OAuthProviderName.Google },
+      'secret-state',
+      Buffer.from('secret-body')
+    )
+  );
+
+  const message = warn
+    .getCalls()
+    .map(call => String(call.args[0]))
+    .find(message => message.includes('Error getting oauth token'));
+  t.truthy(message);
+  if (!message) return;
+  t.false(message.includes('secret-code'));
+  t.false(message.includes('secret-state'));
+  t.false(message.includes('secret-body'));
 });
 
 test('should be able to get registered oauth providers', async t => {

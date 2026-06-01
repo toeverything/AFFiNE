@@ -217,8 +217,11 @@ framework.scope(ServerScope).override(AuthProvider, resolver => {
     },
     async signOut() {
       const token = await readEndpointToken(endpoint);
-      await Auth.signOut({ endpoint, token });
-      await deleteEndpointToken(endpoint);
+      try {
+        await Auth.signOut({ endpoint, token });
+      } finally {
+        await deleteEndpointToken(endpoint);
+      }
     },
   };
 });

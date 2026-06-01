@@ -1,10 +1,18 @@
 import { Auth } from './plugins/auth';
 
 function authEndpointForUrl(url: string | URL) {
-  const parsed = new URL(url, globalThis.location.origin);
-  return parsed.protocol === 'http:' || parsed.protocol === 'https:'
-    ? parsed.origin
-    : null;
+  try {
+    const parsed = new URL(url, globalThis.location.origin);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:'
+      ? parsed.origin
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function canonicalEndpoint(endpoint: string) {
+  return authEndpointForUrl(endpoint) ?? endpoint;
 }
 
 /**
@@ -17,7 +25,9 @@ globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
 
   const origin = authEndpointForUrl(request.url);
 
-  const token = origin ? await readEndpointToken(origin) : null;
+  const token = origin
+    ? await readEndpointToken(origin).catch(() => null)
+    : null;
   if (token) {
     request.headers.set('Authorization', `Bearer ${token}`);
   }
@@ -66,14 +76,19 @@ globalThis.XMLHttpRequest = class extends rawXMLHttpRequest {
 export async function readEndpointToken(
   endpoint: string
 ): Promise<string | null> {
-  const { token } = await Auth.readEndpointToken({ endpoint });
+  const { token } = await Auth.readEndpointToken({
+    endpoint: canonicalEndpoint(endpoint),
+  });
   return token ?? null;
 }
 
 export async function writeEndpointToken(endpoint: string, token: string) {
-  await Auth.writeEndpointToken({ endpoint, token });
+  await Auth.writeEndpointToken({
+    endpoint: canonicalEndpoint(endpoint),
+    token,
+  });
 }
 
 export async function deleteEndpointToken(endpoint: string) {
-  await Auth.deleteEndpointToken({ endpoint });
+  await Auth.deleteEndpointToken({ endpoint: canonicalEndpoint(endpoint) });
 }

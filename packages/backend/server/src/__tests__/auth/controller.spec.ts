@@ -13,6 +13,7 @@ import {
   getRequestHeader,
   parseCookies as safeParseCookies,
 } from '../../base/utils/request';
+import { MagicLinkAuthService } from '../../core/auth/magic-link';
 import { AuthService } from '../../core/auth/service';
 import {
   createTestingApp,
@@ -23,6 +24,7 @@ import {
 
 const test = ava as TestFn<{
   auth: AuthService;
+  magicLink: MagicLinkAuthService;
   db: PrismaClient;
   config: ConfigFactory;
   app: TestingApp;
@@ -32,6 +34,7 @@ test.before(async t => {
   const app = await createTestingApp();
 
   t.context.auth = app.get(AuthService);
+  t.context.magicLink = app.get(MagicLinkAuthService);
   t.context.db = app.get(PrismaClient);
   t.context.config = app.get(ConfigFactory);
   t.context.app = app;
@@ -367,6 +370,17 @@ test('should not be able to sign in if email is invalid', async t => {
     .expect(400);
 
   t.is(res.body.message, 'An invalid email provided: ');
+});
+
+test('should not create magic-link state if email is invalid', async t => {
+  const { app, magicLink } = t.context;
+
+  await t.throwsAsync(magicLink.send('invalid-email'), {
+    message: 'An invalid email provided: invalid-email',
+  });
+
+  t.is(app.mails.count('SignIn'), 0);
+  t.is(app.mails.count('SignUp'), 0);
 });
 
 test('should not be able to sign in if forbidden', async t => {

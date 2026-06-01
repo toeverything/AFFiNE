@@ -2,7 +2,8 @@ import { randomUUID } from 'node:crypto';
 
 import { Injectable } from '@nestjs/common';
 
-import { SessionCache } from '../../base';
+import { InvalidAuthState, SessionCache } from '../../base';
+import { isValidCacheTtl } from '../../base/cache/provider';
 
 export type AuthChallengePurpose =
   | 'oauth_state'
@@ -21,12 +22,21 @@ export class AuthChallengeStore {
     payload: T | ((token: string) => T),
     ttlMs: number
   ): Promise<string> {
+    if (!isValidCacheTtl(ttlMs)) {
+      throw new InvalidAuthState();
+    }
+
     const token = randomUUID();
     const value =
       typeof payload === 'function'
         ? (payload as (token: string) => T)(token)
         : payload;
-    await this.cache.set(this.key(purpose, token), value, { ttl: ttlMs });
+    const stored = await this.cache.set(this.key(purpose, token), value, {
+      ttl: ttlMs,
+    });
+    if (!stored) {
+      throw new InvalidAuthState();
+    }
     return token;
   }
 

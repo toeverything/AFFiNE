@@ -40,11 +40,14 @@ export class CacheProvider {
     value: T,
     opts: CacheSetOptions = {}
   ): Promise<boolean> {
-    if (opts.ttl) {
+    if (isValidCacheTtl(opts.ttl)) {
       return this.redis
         .set(key, JSON.stringify(value), 'PX', opts.ttl)
         .then(() => true)
         .catch(() => false);
+    }
+    if (opts.ttl !== undefined) {
+      return false;
     }
 
     return this.redis
@@ -66,11 +69,14 @@ export class CacheProvider {
     value: T,
     opts: CacheSetOptions = {}
   ): Promise<boolean> {
-    if (opts.ttl) {
+    if (isValidCacheTtl(opts.ttl)) {
       return this.redis
         .set(key, JSON.stringify(value), 'PX', opts.ttl, 'NX')
         .then(v => !!v)
         .catch(() => false);
+    }
+    if (opts.ttl !== undefined) {
+      return false;
     }
 
     return this.redis

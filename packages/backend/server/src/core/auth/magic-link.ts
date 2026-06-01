@@ -1,5 +1,3 @@
-import { resolveMx, resolveTxt } from 'node:dns/promises';
-
 import { Injectable, Logger } from '@nestjs/common';
 
 import {
@@ -15,6 +13,7 @@ import {
 } from '../../base';
 import { Models, TokenType } from '../../models';
 import { validators } from '../utils/validators';
+import { verifyEmailDomainRecords } from './email-domain';
 import type { VerifiedIdentity } from './identity';
 import { AuthService } from './service';
 
@@ -31,6 +30,8 @@ export class MagicLinkAuthService {
   ) {}
 
   async send(email: string, callbackUrl = '/magic-link', clientNonce?: string) {
+    validators.assertValidEmail(email);
+
     if (!this.url.isAllowedCallbackUrl(callbackUrl)) {
       throw new ActionForbidden();
     }
@@ -120,23 +121,7 @@ export class MagicLinkAuthService {
       return;
     }
 
-    const [name, domain, ...rest] = email.split('@');
-    if (rest.length || !domain) {
-      throw new InvalidEmail({ email });
-    }
-    const [mx, spf, dmarc] = await Promise.allSettled([
-      resolveMx(domain).then(t => t.map(mx => mx.exchange).filter(Boolean)),
-      resolveTxt(domain).then(t =>
-        t.map(([k]) => k).filter(txt => txt.includes('v=spf1'))
-      ),
-      resolveTxt('_dmarc.' + domain).then(t =>
-        t.map(([k]) => k).filter(txt => txt.includes('v=DMARC1'))
-      ),
-    ]).then(t => t.filter(t => t.status === 'fulfilled').map(t => t.value));
-    if (!mx?.length || !spf?.length || !dmarc?.length) {
-      throw new InvalidEmail({ email });
-    }
-    if (name.includes('+')) {
+    if (!(await verifyEmailDomainRecords(email))) {
       throw new InvalidEmail({ email });
     }
   }

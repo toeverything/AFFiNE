@@ -18,6 +18,7 @@ import com.getcapacitor.PluginMethod
 import com.getcapacitor.annotation.CapacitorPlugin
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Request
@@ -34,7 +35,16 @@ import javax.crypto.spec.GCMParameterSpec
 @OptIn(ExperimentalCoroutinesApi::class)
 @CapacitorPlugin(name = "Auth")
 class AuthPlugin : Plugin() {
-    private fun tokenKey(endpoint: String) = "auth-token:$endpoint"
+    private fun canonicalEndpoint(endpoint: String): String = try {
+        val url = endpoint.toHttpUrl()
+        val port = if (url.port == HttpUrl.defaultPort(url.scheme)) "" else ":${url.port}"
+        "${url.scheme}://${url.host}$port"
+    } catch (_: Exception) {
+        endpoint
+    }
+
+    private fun tokenKey(endpoint: String) = "auth-token:${canonicalEndpoint(endpoint)}"
+    private fun legacyTokenKey(endpoint: String) = "auth-token:$endpoint"
     private val tokenCipher = TokenCipher()
 
     @PluginMethod
@@ -43,13 +53,25 @@ class AuthPlugin : Plugin() {
             try {
                 val endpoint = call.getStringEnsure("endpoint")
                 val key = tokenKey(endpoint)
-                val storedToken = AFFiNEApp.context().dataStore.get(key)
-                    .takeIf { it.isNotEmpty() }
+                val legacyKey = legacyTokenKey(endpoint)
+                val store = AFFiNEApp.context().dataStore
+                val storedKey = key.takeIf { store.get(it).isNotEmpty() }
+                    ?: legacyKey.takeIf { it != key && store.get(it).isNotEmpty() }
+                val storedToken = storedKey?.let { store.get(it) }?.takeIf { it.isNotEmpty() }
                 val token = storedToken?.let {
                     tokenCipher.decrypt(it) ?: tokenCipher.legacyPlaintext(it)
                 }
-                if (storedToken != null && token != null && !tokenCipher.isEncrypted(storedToken)) {
-                    AFFiNEApp.context().dataStore.set(key, tokenCipher.encrypt(token))
+                if (
+                    storedToken != null &&
+                    token != null &&
+                    (storedKey != key || !tokenCipher.isEncrypted(storedToken))
+                ) {
+                    store.set(key, tokenCipher.encrypt(token))
+                    storedKey?.let {
+                        if (it != key) {
+                            store.del(it)
+                        }
+                    }
                 }
                 call.resolve(JSObject().put("token", token))
             } catch (e: Exception) {
@@ -81,6 +103,7 @@ class AuthPlugin : Plugin() {
             try {
                 val endpoint = call.getStringEnsure("endpoint")
                 AFFiNEApp.context().dataStore.del(tokenKey(endpoint))
+                AFFiNEApp.context().dataStore.del(legacyTokenKey(endpoint))
                 call.resolve(JSObject().put("ok", true))
             } catch (e: Exception) {
                 call.reject("Failed to delete endpoint token.", null, e)
@@ -271,7 +294,7 @@ class AuthPlugin : Plugin() {
 
         AuthHttp.client.newCall(request).executeAsync().use { response ->
             if (response.code >= 400) {
-                throw Error(response.body.string())
+                throw Exception(response.body.string())
             }
             return JSONObject(response.body.string()).optString("token")
         }

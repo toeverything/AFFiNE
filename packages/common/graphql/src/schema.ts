@@ -3409,7 +3409,7 @@ export interface UserType {
   /** Get user settings */
   settings: UserSettingsType;
   subscriptions: Array<SubscriptionType>;
-  /** @deprecated use [/api/auth/sign-in?native=true] instead */
+  /** @deprecated use native session exchange instead */
   token: TokenType;
 }
 

@@ -19,6 +19,25 @@ public class AuthPlugin: CAPPlugin, CAPBridgedPlugin {
   private let tokenService = "app.affine.pro.auth-token"
   private let authCookieNames = Set(["affine_session", "affine_user_id", "affine_csrf_token"])
 
+  private func canonicalEndpoint(_ endpoint: String) -> String {
+    guard let url = URL(string: endpoint), let scheme = url.scheme, let host = url.host else {
+      return endpoint
+    }
+
+    let normalizedScheme = scheme.lowercased()
+    let normalizedHost = host.lowercased()
+    let defaultPort: Int?
+    if normalizedScheme == "http" {
+      defaultPort = 80
+    } else if normalizedScheme == "https" {
+      defaultPort = 443
+    } else {
+      defaultPort = nil
+    }
+    let port = url.port.flatMap { $0 == defaultPort ? nil : ":\($0)" } ?? ""
+    return "\(normalizedScheme)://\(normalizedHost)\(port)"
+  }
+
   @objc public func readEndpointToken(_ call: CAPPluginCall) {
     do {
       let endpoint = try call.getStringEnsure("endpoint")
@@ -244,15 +263,26 @@ public class AuthPlugin: CAPPlugin, CAPBridgedPlugin {
     guard let url = URL(string: endpoint), let host = url.host else {
       return
     }
+    let normalizedHost = host.lowercased()
 
     HTTPCookieStorage.shared.cookies?.forEach { cookie in
-      if cookie.domain.contains(host) && authCookieNames.contains(cookie.name) {
+      let domain = cookie.domain.lowercased().trimmingCharacters(in: CharacterSet(charactersIn: "."))
+      let domainMatches = normalizedHost == domain || normalizedHost.hasSuffix(".\(domain)")
+      if domainMatches && authCookieNames.contains(cookie.name) {
         HTTPCookieStorage.shared.deleteCookie(cookie)
       }
     }
   }
 
   private func tokenQuery(_ endpoint: String) -> [String: Any] {
+    [
+      kSecClass as String: kSecClassGenericPassword,
+      kSecAttrService as String: tokenService,
+      kSecAttrAccount as String: canonicalEndpoint(endpoint),
+    ]
+  }
+
+  private func legacyTokenQuery(_ endpoint: String) -> [String: Any] {
     [
       kSecClass as String: kSecClassGenericPassword,
       kSecAttrService as String: tokenService,
@@ -268,7 +298,29 @@ public class AuthPlugin: CAPPlugin, CAPBridgedPlugin {
     var item: CFTypeRef?
     let status = SecItemCopyMatching(query as CFDictionary, &item)
     if status == errSecItemNotFound {
-      return nil
+      guard canonicalEndpoint(endpoint) != endpoint else {
+        return nil
+      }
+
+      var legacyQuery = legacyTokenQuery(endpoint)
+      legacyQuery[kSecReturnData as String] = true
+      legacyQuery[kSecMatchLimit as String] = kSecMatchLimitOne
+      let legacyStatus = SecItemCopyMatching(legacyQuery as CFDictionary, &item)
+      if legacyStatus == errSecItemNotFound {
+        return nil
+      }
+      guard legacyStatus == errSecSuccess, let data = item as? Data else {
+        throw AuthError.internalError
+      }
+      let token = String(data: data, encoding: .utf8)
+      if let token = token {
+        try writeToken(endpoint, token)
+        let deleteStatus = SecItemDelete(legacyTokenQuery(endpoint) as CFDictionary)
+        guard deleteStatus == errSecSuccess || deleteStatus == errSecItemNotFound else {
+          throw AuthError.internalError
+        }
+      }
+      return token
     }
     guard status == errSecSuccess, let data = item as? Data else {
       throw AuthError.internalError
@@ -292,6 +344,12 @@ public class AuthPlugin: CAPPlugin, CAPBridgedPlugin {
     let status = SecItemDelete(tokenQuery(endpoint) as CFDictionary)
     guard status == errSecSuccess || status == errSecItemNotFound else {
       throw AuthError.internalError
+    }
+    if canonicalEndpoint(endpoint) != endpoint {
+      let legacyStatus = SecItemDelete(legacyTokenQuery(endpoint) as CFDictionary)
+      guard legacyStatus == errSecSuccess || legacyStatus == errSecItemNotFound else {
+        throw AuthError.internalError
+      }
     }
   }
 
