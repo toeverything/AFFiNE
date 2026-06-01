@@ -13,6 +13,7 @@ export const styles = css`
     left: 0;
     top: 0;
     contain: size layout;
+    pointer-events: none;
   }
 
   .affine-add-block-widget-container {
@@ -23,7 +24,7 @@ export const styles = css`
     justify-content: center;
     width: ${ADD_BLOCK_WIDGET_WIDTH}px;
     min-height: 12px;
-    pointer-events: auto;
+    pointer-events: none;
     user-select: none;
     box-sizing: border-box;
   }

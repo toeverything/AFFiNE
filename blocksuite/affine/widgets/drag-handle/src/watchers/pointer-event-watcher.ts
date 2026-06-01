@@ -253,8 +253,13 @@ export class PointerEventWatcher {
         return;
       }
 
-      // When pointer on drag handle, should do nothing
-      if (element.closest('.affine-drag-handle-container')) return;
+      // When pointer on drag handle or add-block widget, should do nothing
+      if (
+        element.closest('.affine-drag-handle-container') ||
+        element.closest('.affine-add-block-widget-container')
+      ) {
+        return;
+      }
 
       if (!this.widget.rootComponent) return;
 
@@ -340,12 +345,15 @@ export class PointerEventWatcher {
 
       container.style.display = 'flex';
 
-      // Position the add-block widget container to the left of the drag handle
-      if (addBlockWidgetContainer) {
+      // Position the add-block widget beside the drag handle, aligned to the first line.
+      if (addBlockWidgetContainer && this.widget.showAddBlockWidget) {
+        const posTop = this._getTopWithBlockComponent(block);
         addBlockWidgetContainer.style.left = `${draggingAreaRect.left - ADD_BLOCK_WIDGET_WIDTH}px`;
-        addBlockWidgetContainer.style.top = `${draggingAreaRect.top}px`;
-        addBlockWidgetContainer.style.height = `${draggingAreaRect.height}px`;
+        addBlockWidgetContainer.style.top = `${posTop}px`;
+        addBlockWidgetContainer.style.height = 'auto';
         addBlockWidgetContainer.style.display = 'flex';
+      } else if (addBlockWidgetContainer) {
+        addBlockWidgetContainer.style.display = 'none';
       }
     };
 

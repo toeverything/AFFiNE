@@ -8,6 +8,7 @@ export class AffineAddBlockWidget extends LitElement {
   static override styles = css`
     :host {
       display: block;
+      pointer-events: none;
     }
 
     .affine-add-block-widget {
