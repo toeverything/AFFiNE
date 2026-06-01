@@ -153,31 +153,10 @@ export const markdownToSnapshot = async (
     pageId: store.id,
   };
 
-  const page = await markdownAdapter.toDoc(payload);
-
-  if (page) {
-    const pageSnapshot = transformer.docToSnapshot(page);
-    if (pageSnapshot) {
-      const snapshot: SliceSnapshot = {
-        type: 'slice',
-        content: [
-          pageSnapshot.blocks.children.find(
-            b => b.flavour === 'affine:note'
-          ) as BlockSnapshot,
-        ],
-        workspaceId: payload.workspaceId,
-        pageId: payload.pageId,
-      };
-
-      return {
-        snapshot,
-        transformer,
-      };
-    }
-  }
+  const snapshot = await markdownAdapter.toSliceSnapshot(payload);
 
   return {
-    snapshot: null,
+    snapshot,
     transformer,
   };
 };

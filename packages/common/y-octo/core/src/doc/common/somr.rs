@@ -299,9 +299,7 @@ impl<T: PartialEq> PartialEq for SomrInner<T> {
   }
 }
 
-impl<T: PartialEq> Eq for Somr<T> {
-  fn assert_receiver_is_total_eq(&self) {}
-}
+impl<T: Eq> Eq for Somr<T> {}
 
 impl<T: PartialOrd> PartialOrd for Somr<T> {
   fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {

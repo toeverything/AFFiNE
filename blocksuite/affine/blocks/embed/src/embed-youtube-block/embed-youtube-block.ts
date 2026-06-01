@@ -96,21 +96,15 @@ export class EmbedYoutubeBlockComponent extends EmbedBlockComponent<
   }
 
   override renderBlock() {
-    const {
-      image,
-      title = 'YouTube',
-      description,
-      creator,
-      creatorImage,
-      videoId,
-    } = this.model.props;
+    const { image, title, description, creator, creatorImage, videoId } =
+      this.model.props;
 
     const loading = this.loading;
     const theme = this.std.get(ThemeProvider).theme;
     const imageProxyService = this.store.get(ImageProxyService);
     const { EmbedCardBannerIcon } = getEmbedCardIcons(theme);
     const titleIcon = loading ? LoadingIcon() : YoutubeIcon;
-    const titleText = loading ? 'Loading...' : title;
+    const titleText = loading ? 'Loading...' : title || 'YouTube';
     const descriptionText = loading ? null : description;
     const bannerImage =
       !loading && image

@@ -16,6 +16,7 @@ import {
   COPILOT_API_PROVIDERS,
   COPILOT_FEATURE_PROVIDERS,
   COPILOT_KERNEL_PROVIDERS,
+  COPILOT_TRANSCRIPT_REALTIME_PROVIDERS,
 } from './module-providers';
 
 const COPILOT_SHARED_IMPORTS = [
@@ -35,6 +36,12 @@ const COPILOT_SHARED_IMPORTS = [
   exports: [...COPILOT_KERNEL_PROVIDERS],
 })
 export class CopilotKernelModule {}
+
+@Module({
+  imports: [PermissionModule],
+  providers: [...COPILOT_TRANSCRIPT_REALTIME_PROVIDERS],
+})
+export class CopilotRealtimeModule {}
 
 @Module({
   imports: [...COPILOT_SHARED_IMPORTS, CopilotKernelModule],

@@ -6,13 +6,18 @@ import type { MenuSubProps } from '../menu.types';
 import { useMenuItem } from '../use-menu-item';
 import { useMobileSubMenuHelper } from './context';
 
+const EMPTY_SUB_CONTENT_OPTIONS: NonNullable<
+  MenuSubProps['subContentOptions']
+> = {};
+
 export const MobileMenuSub = ({
   title,
   children: propsChildren,
   items,
   triggerOptions,
-  subContentOptions: contentOptions = {},
+  subContentOptions,
 }: MenuSubProps & { title?: string }) => {
+  const contentOptions = subContentOptions ?? EMPTY_SUB_CONTENT_OPTIONS;
   const {
     className,
     children,
@@ -43,11 +48,12 @@ export const MobileMenuSubRaw = ({
   children,
   items,
   subOptions,
-  subContentOptions: contentOptions = {},
+  subContentOptions,
 }: MenuSubProps & {
   onClick?: (e: MouseEvent<HTMLDivElement>) => void;
   title?: string;
 }) => {
+  const contentOptions = subContentOptions ?? EMPTY_SUB_CONTENT_OPTIONS;
   const id = useId();
   const { addSubMenu } = useMobileSubMenuHelper();
 

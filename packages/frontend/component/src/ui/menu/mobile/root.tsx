@@ -24,11 +24,18 @@ import {
 import * as styles from './styles.css';
 import { MobileMenuSubRaw } from './sub';
 
+const EMPTY_CONTENT_OPTIONS: NonNullable<MenuProps['contentOptions']> = {};
+
 export const MobileMenu = ({
   children,
   items,
   title,
-  contentOptions: {
+  contentOptions,
+  contentWrapperStyle,
+  rootOptions,
+  ref,
+}: MenuProps) => {
+  const {
     className,
     onPointerDownOutside,
     onInteractOutside,
@@ -38,11 +45,7 @@ export const MobileMenu = ({
     align: _align,
 
     ...otherContentOptions
-  } = {},
-  contentWrapperStyle,
-  rootOptions,
-  ref,
-}: MenuProps) => {
+  } = contentOptions ?? EMPTY_CONTENT_OPTIONS;
   const [subMenus, setSubMenus] = useState<SubMenuContent[]>([]);
   const [open, setOpen] = useState(false);
   const mobileContextValue = useMemo(

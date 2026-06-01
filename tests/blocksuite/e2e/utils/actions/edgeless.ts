@@ -376,28 +376,19 @@ export async function setEdgelessTool(
         'shape',
         false
       );
-      const shapeToolBox = await shapeToolButton.boundingBox();
-      if (!shapeToolBox) {
-        throw new Error('shapeToolBox is not found');
-      }
-
-      await page.mouse.click(shapeToolBox.x + 2, shapeToolBox.y + 2);
+      await shapeToolButton.click({ position: { x: 2, y: 2 } });
 
       const shapeMenu = page.locator('edgeless-shape-menu');
+      if ((await shapeMenu.count()) === 0 && shape === Shape.Square) {
+        break;
+      }
       await expect(shapeMenu).toBeVisible();
 
       const squareShapeButton = shapeMenu
         .locator('edgeless-tool-icon-button')
         .filter({ hasText: shape });
       await expect(squareShapeButton).toBeVisible();
-      const squareShapeBox = await squareShapeButton.boundingBox();
-      if (!squareShapeBox) {
-        throw new Error('squareShapeBox is not found');
-      }
-      await page.mouse.click(
-        squareShapeBox.x + squareShapeBox.width / 2,
-        squareShapeBox.y + squareShapeBox.height / 2
-      );
+      await squareShapeButton.click();
       break;
     }
   }

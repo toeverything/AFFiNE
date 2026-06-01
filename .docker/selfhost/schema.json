@@ -135,17 +135,17 @@
         },
         "throttlers.default": {
           "type": "object",
-          "description": "The config for the default throttler.\n@default {\"ttl\":60,\"limit\":120}",
+          "description": "The config for the default throttler.\n@default {\"ttl\":60000,\"limit\":120}",
           "default": {
-            "ttl": 60,
+            "ttl": 60000,
             "limit": 120
           }
         },
         "throttlers.strict": {
           "type": "object",
-          "description": "The config for the strict throttler.\n@default {\"ttl\":60,\"limit\":20}",
+          "description": "The config for the strict throttler.\n@default {\"ttl\":60000,\"limit\":20}",
           "default": {
-            "ttl": 60,
+            "ttl": 60000,
             "limit": 20
           }
         }
@@ -297,6 +297,22 @@
           "type": "number",
           "description": "The minimum time interval in milliseconds of creating a new history snapshot when doc get updated.\n@default 600000",
           "default": 600000
+        }
+      }
+    },
+    "permission": {
+      "type": "object",
+      "description": "Configuration for permission module",
+      "properties": {
+        "readModel": {
+          "type": "string",
+          "description": "Permission data source for Rust evaluation\n@default \"projection\"\n@environment `AFFINE_PERMISSION_READ_MODEL`",
+          "default": "projection"
+        },
+        "fallbackLegacyLoader": {
+          "type": "boolean",
+          "description": "Fallback from projection loader to legacy loader when projection input loading fails\n@default false\n@environment `AFFINE_PERMISSION_FALLBACK_LEGACY_LOADER`",
+          "default": false
         }
       }
     },

@@ -12,6 +12,15 @@ interface JobData<T extends JobName> {
   payload: Jobs[T];
 }
 
+const removableJobStates = [
+  'waiting',
+  'delayed',
+  'prioritized',
+  'paused',
+  'waiting-children',
+] as const;
+const removeWhereBatchSize = 100;
+
 @Injectable()
 export class JobQueue {
   private readonly logger = new Logger(JobQueue.name);
@@ -53,6 +62,59 @@ export class JobQueue {
     }
 
     return undefined;
+  }
+
+  async removeWhere<T extends JobName>(
+    jobName: T,
+    predicate: (payload: Jobs[T]) => boolean | Promise<boolean>
+  ): Promise<Jobs[T][]> {
+    const ns = namespace(jobName);
+    const queue = this.getQueue(ns);
+    const removed: Jobs[T][] = [];
+
+    for (const state of removableJobStates) {
+      let start = 0;
+      let removedFromBatch = false;
+      let hasMoreJobs = true;
+
+      while (hasMoreJobs) {
+        removedFromBatch = false;
+        const jobs = (await queue.getJobs(
+          [state],
+          start,
+          start + removeWhereBatchSize - 1
+        )) as Job<JobData<T>>[];
+
+        if (!jobs.length) {
+          hasMoreJobs = false;
+          break;
+        }
+
+        for (const job of jobs) {
+          if (job.name !== jobName) {
+            continue;
+          }
+
+          const payload = job.data.payload;
+          if (!(await predicate(payload))) {
+            continue;
+          }
+
+          await job.remove();
+          this.logger.log(
+            `Job ${jobName}(id=${job.id}) removed from queue ${ns}`
+          );
+          removed.push(payload);
+          removedFromBatch = true;
+        }
+
+        if (!removedFromBatch) {
+          start += removeWhereBatchSize;
+        }
+      }
+    }
+
+    return removed;
   }
 
   async get<T extends JobName>(jobId: string, jobName: T) {

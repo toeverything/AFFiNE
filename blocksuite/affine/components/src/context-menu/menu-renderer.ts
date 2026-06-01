@@ -111,8 +111,10 @@ export class MenuComponent
         }
         const onBack = this.menu.options.title?.onBack;
         if (e.key === 'Backspace' && onBack && !this.menu.showSearch$.value) {
-          this.menu.close();
-          onBack(this.menu);
+          const result = onBack(this.menu);
+          if (result !== false) {
+            this.menu.close();
+          }
           return;
         }
         if (e.key === 'Enter' && !e.isComposing) {
@@ -214,8 +216,10 @@ export class MenuComponent
         ${title.onBack
           ? html` <div
               @click="${() => {
-                title.onBack?.(this.menu);
-                this.menu.close();
+                const result = title.onBack?.(this.menu);
+                if (result !== false) {
+                  this.menu.close();
+                }
               }}"
               class="dv-icon-20 dv-hover dv-pd-2 dv-round-4"
               style="display:flex;"

@@ -5,6 +5,7 @@ import { MailModule } from '../mail';
 import { PermissionModule } from '../permission';
 import { StorageModule } from '../storage';
 import { NotificationJob } from './job';
+import { NotificationRealtimeProvider } from './realtime';
 import { NotificationResolver, UserNotificationResolver } from './resolver';
 import { NotificationService } from './service';
 
@@ -15,6 +16,7 @@ import { NotificationService } from './service';
     NotificationResolver,
     NotificationService,
     NotificationJob,
+    NotificationRealtimeProvider,
   ],
   exports: [NotificationService],
 })

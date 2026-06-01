@@ -11,6 +11,7 @@ import {
   OnJob,
   sleep,
 } from '../../../base';
+import { EntitlementService } from '../../../core/entitlement';
 import {
   SubscriptionPlan,
   SubscriptionRecurring,
@@ -32,7 +33,8 @@ export class RevenueCatWebhookHandler {
     private readonly db: PrismaClient,
     private readonly config: Config,
     private readonly event: EventBus,
-    private readonly queue: JobQueue
+    private readonly queue: JobQueue,
+    private readonly entitlement: EntitlementService
   ) {}
 
   @OnEvent('revenuecat.webhook')
@@ -197,6 +199,10 @@ export class RevenueCatWebhookHandler {
           },
         });
         if (result.count > 0) {
+          await this.entitlement.revokeCloudSubscription({
+            targetId: appUserId,
+            plan: mapping.plan,
+          });
           this.event.emit('user.subscription.canceled', {
             userId: appUserId,
             plan: mapping.plan,
@@ -207,7 +213,7 @@ export class RevenueCatWebhookHandler {
         continue;
       }
 
-      await this.db.subscription.upsert({
+      const saved = await this.db.subscription.upsert({
         where: {
           targetId_plan: { targetId: appUserId, plan: mapping.plan },
         },
@@ -252,6 +258,7 @@ export class RevenueCatWebhookHandler {
           trialEnd: null,
         },
       });
+      await this.entitlement.upsertFromCloudSubscription(saved);
 
       if (
         status === SubscriptionStatus.Active ||
@@ -278,6 +285,12 @@ export class RevenueCatWebhookHandler {
     if (toBeCleanup.length) {
       for (const sub of toBeCleanup) {
         await this.db.subscription.deleteMany({ where: { id: sub.id } });
+        await this.entitlement.revokeCloudSubscription({
+          targetId: appUserId,
+          plan: sub.plan as SubscriptionPlan,
+          subscriptionId: sub.id,
+          stripeSubscriptionId: sub.stripeSubscriptionId,
+        });
         this.event.emit('user.subscription.canceled', {
           userId: appUserId,
           plan: sub.plan as SubscriptionPlan,

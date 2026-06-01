@@ -83,95 +83,70 @@ export const Renderers = {
   //#region Workspace
   MemberInvitation: make(
     Invitation,
-    props => `${props.user.email} invited you to join ${props.workspace.name}`
+    'You were invited to join a workspace on AFFiNE'
   ),
   MemberAccepted: make(
     InvitationAccepted,
-    props => `${props.user.email} accepted your invitation`
+    'Your workspace invitation was accepted'
   ),
-  MemberLeave: make(
-    MemberLeave,
-    props => `${props.user.email} left ${props.workspace.name}`
-  ),
+  MemberLeave: make(MemberLeave, 'A workspace member left'),
   LinkInvitationReviewRequest: make(
     LinkInvitationReviewRequest,
-    props => `New request to join ${props.workspace.name}`
+    'New request to join a workspace'
   ),
   LinkInvitationApprove: make(
     LinkInvitationApproved,
-    props => `Your request to join ${props.workspace.name} has been approved`
+    'Your request to join a workspace has been approved'
   ),
   LinkInvitationDecline: make(
     LinkInvitationReviewDeclined,
-    props => `Your request to join ${props.workspace.name} was declined`
+    'Your request to join a workspace was declined'
   ),
-  MemberRemoved: make(
-    MemberRemoved,
-    props => `You have been removed from ${props.workspace.name}`
-  ),
+  MemberRemoved: make(MemberRemoved, 'You have been removed from a workspace'),
   OwnershipTransferred: make(
     OwnershipTransferred,
-    props => `Your ownership of ${props.workspace.name} has been transferred`
+    'Your workspace ownership has been transferred'
   ),
   OwnershipReceived: make(
     OwnershipReceived,
-    props => `You are now the owner of ${props.workspace.name}`
+    'You are now the owner of a workspace'
   ),
   //#endregion
 
   //#region Doc
-  Mention: make(
-    Mention,
-    props => `${props.user.email} mentioned you in ${props.doc.title}`
-  ),
-  Comment: make(
-    Comment,
-    props => `${props.user.email} commented on ${props.doc.title}`
-  ),
-  CommentMention: make(
-    CommentMention,
-    props =>
-      `${props.user.email} mentioned you in a comment on ${props.doc.title}`
-  ),
+  Mention: make(Mention, 'You were mentioned in AFFiNE'),
+  Comment: make(Comment, 'New comment in AFFiNE'),
+  CommentMention: make(CommentMention, 'You were mentioned in a comment'),
   //#endregion
 
   //#region Team
   TeamWorkspaceUpgraded: make(TeamWorkspaceUpgraded, props =>
     props.isOwner
       ? 'Your workspace has been upgraded to team workspace! 🎉'
-      : `${props.workspace.name} has been upgraded to team workspace! 🎉`
+      : 'A workspace has been upgraded to team workspace! 🎉'
   ),
-  TeamBecomeAdmin: make(
-    TeamBecomeAdmin,
-    props => `You are now an admin of ${props.workspace.name}`
-  ),
+  TeamBecomeAdmin: make(TeamBecomeAdmin, 'You are now a workspace admin'),
   TeamBecomeCollaborator: make(
     TeamBecomeCollaborator,
-    props => `Your role has been changed in ${props.workspace.name}`
+    'Your workspace role has been changed'
   ),
   TeamDeleteIn24Hours: make(
     TeamDeleteIn24Hours,
-    props =>
-      `[Action Required] Final warning: Your workspace ${props.workspace.name} will be deleted in 24 hours`
+    '[Action Required] Final warning: Your workspace will be deleted in 24 hours'
   ),
   TeamDeleteInOneMonth: make(
     TeamDeleteInOneMonth,
-    props =>
-      `[Action Required] Important: Your workspace ${props.workspace.name} will be deleted soon`
+    '[Action Required] Important: Your workspace will be deleted soon'
   ),
   TeamWorkspaceDeleted: make(
     TeamWorkspaceDeleted,
-    props => `Your workspace ${props.workspace.name} has been deleted`
+    'Your workspace has been deleted'
   ),
   TeamWorkspaceExpireSoon: make(
     TeamExpireSoon,
-    props =>
-      `[Action Required] Your ${props.workspace.name} team workspace will expire soon`
+    '[Action Required] Your team workspace will expire soon'
   ),
-  TeamWorkspaceExpired: make(
-    TeamExpired,
-    props => `Your ${props.workspace.name} team workspace has expired`
-  ),
+  TeamWorkspaceExpired: make(TeamExpired, 'Your team workspace has expired'),
   //#endregion
 
   //#region License

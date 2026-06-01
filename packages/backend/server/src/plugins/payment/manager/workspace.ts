@@ -10,6 +10,7 @@ import {
   SubscriptionPlanNotFound,
   URLHelper,
 } from '../../../base';
+import { EntitlementService } from '../../../core/entitlement';
 import { Models } from '../../../models';
 import { StripeFactory } from '../stripe';
 import {
@@ -23,6 +24,7 @@ import {
   SubscriptionStatus,
 } from '../types';
 import {
+  activeSubscriptionWhere,
   CheckoutParams,
   Invoice,
   Subscription,
@@ -50,7 +52,8 @@ export class WorkspaceSubscriptionManager extends SubscriptionManager {
     db: PrismaClient,
     private readonly url: URLHelper,
     private readonly event: EventBus,
-    private readonly models: Models
+    private readonly models: Models,
+    private readonly entitlement: EntitlementService
   ) {
     super(stripeProvider, db);
   }
@@ -155,7 +158,7 @@ export class WorkspaceSubscriptionManager extends SubscriptionManager {
       });
     }
 
-    return this.db.subscription.upsert({
+    const saved = await this.db.subscription.upsert({
       where: {
         provider: Provider.stripe,
         stripeSubscriptionId: stripeSubscription.id,
@@ -175,6 +178,8 @@ export class WorkspaceSubscriptionManager extends SubscriptionManager {
         ...omit(subscriptionData, 'provider', 'iapStore'),
       },
     });
+    await this.entitlement.upsertFromCloudSubscription(saved);
+    return saved;
   }
 
   async deleteStripeSubscription({
@@ -194,6 +199,11 @@ export class WorkspaceSubscriptionManager extends SubscriptionManager {
     });
 
     if (result.count > 0) {
+      await this.entitlement.revokeCloudSubscription({
+        targetId: workspaceId,
+        plan: lookupKey.plan,
+        stripeSubscriptionId: stripeSubscription.id,
+      });
       this.event.emit('workspace.subscription.canceled', {
         workspaceId,
         plan: lookupKey.plan,
@@ -216,9 +226,7 @@ export class WorkspaceSubscriptionManager extends SubscriptionManager {
     return this.db.subscription.findFirst({
       where: {
         targetId: identity.workspaceId,
-        status: {
-          in: [SubscriptionStatus.Active, SubscriptionStatus.Trialing],
-        },
+        ...activeSubscriptionWhere(),
       },
     });
   }

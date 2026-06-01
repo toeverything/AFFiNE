@@ -280,6 +280,7 @@ export class TestingApp extends ApplyType<INestApplication>() {
       password: '1',
       name: email,
       emailVerifiedAt: new Date(),
+      createdAt: new Date(Date.now() - 25 * 60 * 60 * 1000),
       ...override,
     });
 

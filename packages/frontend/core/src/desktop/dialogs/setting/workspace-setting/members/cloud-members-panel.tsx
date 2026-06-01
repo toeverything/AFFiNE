@@ -85,6 +85,12 @@ export const CloudWorkspaceMembersPanel = ({
     membersService.members.revalidate();
   }, [membersService]);
 
+  useEffect(() => {
+    if (isOwnerOrAdmin) {
+      workspaceShareSettingService.sharePreview.revalidateInviteLink();
+    }
+  }, [isOwnerOrAdmin, workspaceShareSettingService.sharePreview]);
+
   const workspaceQuotaService = useService(WorkspaceQuotaService);
   useEffect(() => {
     workspaceQuotaService.quota.revalidate();
@@ -178,7 +184,7 @@ export const CloudWorkspaceMembersPanel = ({
   const onGenerateInviteLink = useCallback(
     async (expireTime: WorkspaceInviteLinkExpireTime) => {
       const { link } = await membersService.generateInviteLink(expireTime);
-      workspaceShareSettingService.sharePreview.revalidate();
+      workspaceShareSettingService.sharePreview.revalidateInviteLink();
       return link;
     },
     [membersService, workspaceShareSettingService.sharePreview]
@@ -186,7 +192,7 @@ export const CloudWorkspaceMembersPanel = ({
 
   const onRevokeInviteLink = useCallback(async () => {
     const success = await membersService.revokeInviteLink();
-    workspaceShareSettingService.sharePreview.revalidate();
+    workspaceShareSettingService.sharePreview.revalidateInviteLink();
     return success;
   }, [membersService, workspaceShareSettingService.sharePreview]);
 

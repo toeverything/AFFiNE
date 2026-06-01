@@ -27,9 +27,6 @@ export function assertRspackSupportedPackageName(name: string) {
   );
 }
 
-const IN_CI = !!process.env.CI;
-const httpProxyMiddlewareLogLevel = IN_CI ? 'silent' : 'error';
-
 export const DEFAULT_DEV_SERVER_CONFIG: RspackDevServerConfiguration = {
   host: '0.0.0.0',
   allowedHosts: 'all',
@@ -61,18 +58,15 @@ export const DEFAULT_DEV_SERVER_CONFIG: RspackDevServerConfiguration = {
     {
       context: '/api',
       target: 'http://localhost:3010',
-      logLevel: httpProxyMiddlewareLogLevel,
     },
     {
       context: '/socket.io',
       target: 'http://localhost:3010',
       ws: true,
-      logLevel: httpProxyMiddlewareLogLevel,
     },
     {
       context: '/graphql',
       target: 'http://localhost:3010',
-      logLevel: httpProxyMiddlewareLogLevel,
     },
   ],
 };

@@ -132,6 +132,21 @@ export interface AdminDashboardValueDayPoint {
   value: Scalars['SafeInt']['output'];
 }
 
+export interface AdminLicensePreview {
+  __typename?: 'AdminLicensePreview';
+  endAt: Scalars['DateTime']['output'];
+  entity: Scalars['String']['output'];
+  expiresAt: Scalars['DateTime']['output'];
+  id: Scalars['String']['output'];
+  issuedAt: Scalars['DateTime']['output'];
+  issuer: Scalars['String']['output'];
+  plan: SubscriptionPlan;
+  quantity: Scalars['Int']['output'];
+  recurring: SubscriptionRecurring;
+  valid: Scalars['Boolean']['output'];
+  workspaceId: Scalars['String']['output'];
+}
+
 export interface AdminSharedLinkTopItem {
   __typename?: 'AdminSharedLinkTopItem';
   docId: Scalars['String']['output'];
@@ -157,7 +172,6 @@ export interface AdminUpdateWorkspaceInput {
   enableDocEmbedding?: InputMaybe<Scalars['Boolean']['input']>;
   enableSharing?: InputMaybe<Scalars['Boolean']['input']>;
   enableUrlPreview?: InputMaybe<Scalars['Boolean']['input']>;
-  features?: InputMaybe<Array<FeatureType>>;
   id: Scalars['String']['input'];
   name?: InputMaybe<Scalars['String']['input']>;
   public?: InputMaybe<Scalars['Boolean']['input']>;
@@ -565,6 +579,7 @@ export interface Copilot {
    * @deprecated use `chats` instead
    */
   sessions: Array<CopilotSessionType>;
+  /** @deprecated Use realtime subscription "copilot.transcript.task.changed" instead. */
   transcriptTask: Maybe<TranscriptionResultType>;
   workspaceId: Maybe<Scalars['ID']['output']>;
 }
@@ -1005,6 +1020,7 @@ export interface DocPermissions {
   Doc_Comments_Delete: Scalars['Boolean']['output'];
   Doc_Comments_Read: Scalars['Boolean']['output'];
   Doc_Comments_Resolve: Scalars['Boolean']['output'];
+  Doc_Comments_Update: Scalars['Boolean']['output'];
   Doc_Copy: Scalars['Boolean']['output'];
   Doc_Delete: Scalars['Boolean']['output'];
   Doc_Duplicate: Scalars['Boolean']['output'];
@@ -1763,8 +1779,7 @@ export interface Mutation {
   addContextFile: CopilotContextFile;
   /** Update workspace embedding files */
   addWorkspaceEmbeddingFiles: CopilotWorkspaceFile;
-  addWorkspaceFeature: Scalars['Boolean']['output'];
-  /** Update workspace flags and features for admin */
+  /** Update workspace flags for admin */
   adminUpdateWorkspace: Maybe<AdminWorkspace>;
   approveMember: Scalars['Boolean']['output'];
   /** Ban an user */
@@ -1820,6 +1835,7 @@ export interface Mutation {
   forkCopilotSession: Scalars['String']['output'];
   generateLicenseKey: Scalars['String']['output'];
   generateUserAccessToken: RevealedAccessToken;
+  grantCommercialEntitlement: Scalars['Boolean']['output'];
   grantDocUserRoles: Scalars['Boolean']['output'];
   grantMember: Scalars['Boolean']['output'];
   /** import users */
@@ -1831,6 +1847,7 @@ export interface Mutation {
   linkCalendarAccount: Scalars['String']['output'];
   /** mention user in a doc */
   mentionUser: Scalars['ID']['output'];
+  previewLicense: AdminLicensePreview;
   publishDoc: DocType;
   /** queue workspace doc embedding */
   queueWorkspaceEmbedding: Scalars['Boolean']['output'];
@@ -1854,7 +1871,6 @@ export interface Mutation {
   removeContextFile: Scalars['Boolean']['output'];
   /** Remove workspace embedding files */
   removeWorkspaceEmbeddingFiles: Scalars['Boolean']['output'];
-  removeWorkspaceFeature: Scalars['Boolean']['output'];
   reorderWorkspaceByokConfigs: Array<WorkspaceByokKeyConfigType>;
   /** Request to apply the subscription in advance */
   requestApplySubscription: Array<SubscriptionType>;
@@ -1862,6 +1878,7 @@ export interface Mutation {
   resolveComment: Scalars['Boolean']['output'];
   resumeSubscription: SubscriptionType;
   retryTranscriptTask: Maybe<TranscriptionResultType>;
+  revokeCommercialEntitlement: Scalars['Boolean']['output'];
   revokeDocUserRoles: Scalars['Boolean']['output'];
   revokeInviteLink: Scalars['Boolean']['output'];
   revokeMember: Scalars['Boolean']['output'];
@@ -1946,11 +1963,6 @@ export interface MutationAddContextFileArgs {
 
 export interface MutationAddWorkspaceEmbeddingFilesArgs {
   blob: Scalars['Upload']['input'];
-  workspaceId: Scalars['String']['input'];
-}
-
-export interface MutationAddWorkspaceFeatureArgs {
-  feature: FeatureType;
   workspaceId: Scalars['String']['input'];
 }
 
@@ -2110,6 +2122,13 @@ export interface MutationGenerateUserAccessTokenArgs {
   input: GenerateAccessTokenInput;
 }
 
+export interface MutationGrantCommercialEntitlementArgs {
+  plan: Scalars['String']['input'];
+  quantity?: InputMaybe<Scalars['Int']['input']>;
+  targetId: Scalars['String']['input'];
+  targetType: Scalars['String']['input'];
+}
+
 export interface MutationGrantDocUserRolesArgs {
   input: GrantDocUserRolesInput;
 }
@@ -2150,6 +2169,10 @@ export interface MutationLinkCalendarAccountArgs {
 
 export interface MutationMentionUserArgs {
   input: MentionInput;
+}
+
+export interface MutationPreviewLicenseArgs {
+  license: Scalars['Upload']['input'];
 }
 
 export interface MutationPublishDocArgs {
@@ -2198,11 +2221,6 @@ export interface MutationRemoveWorkspaceEmbeddingFilesArgs {
   workspaceId: Scalars['String']['input'];
 }
 
-export interface MutationRemoveWorkspaceFeatureArgs {
-  feature: FeatureType;
-  workspaceId: Scalars['String']['input'];
-}
-
 export interface MutationReorderWorkspaceByokConfigsArgs {
   input: ReorderWorkspaceByokConfigsInput;
 }
@@ -2224,6 +2242,11 @@ export interface MutationResumeSubscriptionArgs {
 export interface MutationRetryTranscriptTaskArgs {
   taskId: Scalars['String']['input'];
   workspaceId: Scalars['String']['input'];
+}
+
+export interface MutationRevokeCommercialEntitlementArgs {
+  targetId: Scalars['String']['input'];
+  targetType: Scalars['String']['input'];
 }
 
 export interface MutationRevokeDocUserRolesArgs {
@@ -2615,7 +2638,10 @@ export interface Query {
   prices: Array<SubscriptionPrice>;
   /** Get public user by id */
   publicUserById: Maybe<PublicUserType>;
-  /** query workspace embedding status */
+  /**
+   * query workspace embedding status
+   * @deprecated Use realtime subscription "workspace.embedding.progress.changed" instead.
+   */
   queryWorkspaceEmbeddingStatus: ContextWorkspaceEmbeddingStatus;
   /** @deprecated use currentUser.revealedAccessTokens */
   revealedAccessTokens: Array<RevealedAccessToken>;
@@ -3370,7 +3396,10 @@ export interface UserType {
   invoices: Array<InvoiceType>;
   /** User name */
   name: Scalars['String']['output'];
-  /** Get user notification count */
+  /**
+   * Get user notification count
+   * @deprecated Use realtime subscription "notification.count.changed" instead.
+   */
   notificationCount: Scalars['Int']['output'];
   /** Get current user notifications */
   notifications: PaginatedNotificationObjectType;
@@ -3754,25 +3783,6 @@ export type GenerateUserAccessTokenMutation = {
     createdAt: string;
     expiresAt: string | null;
   };
-};
-
-export type ListUserAccessTokensQueryVariables = Exact<{
-  [key: string]: never;
-}>;
-
-export type ListUserAccessTokensQuery = {
-  __typename?: 'Query';
-  currentUser: {
-    __typename?: 'UserType';
-    revealedAccessTokens: Array<{
-      __typename?: 'RevealedAccessToken';
-      id: string;
-      name: string;
-      createdAt: string;
-      expiresAt: string | null;
-      token: string;
-    }>;
-  } | null;
 };
 
 export type RevokeUserAccessTokenMutationVariables = Exact<{
@@ -4165,6 +4175,7 @@ export type ListUsersQuery = {
 };
 
 export type SendTestEmailMutationVariables = Exact<{
+  name: Scalars['String']['input'];
   host: Scalars['String']['input'];
   port: Scalars['Int']['input'];
   sender: Scalars['String']['input'];
@@ -5081,19 +5092,6 @@ export type MatchFilesQuery = {
       }>;
     };
   } | null;
-};
-
-export type GetWorkspaceEmbeddingStatusQueryVariables = Exact<{
-  workspaceId: Scalars['String']['input'];
-}>;
-
-export type GetWorkspaceEmbeddingStatusQuery = {
-  __typename?: 'Query';
-  queryWorkspaceEmbeddingStatus: {
-    __typename?: 'ContextWorkspaceEmbeddingStatus';
-    total: number;
-    embedded: number;
-  };
 };
 
 export type QueueWorkspaceEmbeddingMutationVariables = Exact<{
@@ -6242,43 +6240,6 @@ export type CredentialsRequirementsFragment = {
   };
 };
 
-export type CurrentUserProfileFragment = {
-  __typename?: 'UserType';
-  id: string;
-  name: string;
-  email: string;
-  avatarUrl: string | null;
-  emailVerified: boolean;
-  features: Array<FeatureType>;
-  settings: {
-    __typename?: 'UserSettingsType';
-    receiveInvitationEmail: boolean;
-    receiveMentionEmail: boolean;
-    receiveCommentEmail: boolean;
-  };
-  quota: {
-    __typename?: 'UserQuotaType';
-    name: string;
-    blobLimit: number;
-    storageQuota: number;
-    historyPeriod: number;
-    memberLimit: number;
-    humanReadable: {
-      __typename?: 'UserQuotaHumanReadableType';
-      name: string;
-      blobLimit: string;
-      storageQuota: string;
-      historyPeriod: string;
-      memberLimit: string;
-    };
-  };
-  quotaUsage: { __typename?: 'UserQuotaUsageType'; storageQuota: number };
-  copilot: {
-    __typename?: 'Copilot';
-    quota: { __typename?: 'CopilotQuota'; limit: number | null; used: number };
-  };
-};
-
 export type PaginatedCopilotChatsFragment = {
   __typename?: 'PaginatedCopilotHistoriesType';
   pageInfo: {
@@ -6359,54 +6320,6 @@ export type GetCurrentUserFeaturesQuery = {
   } | null;
 };
 
-export type GetCurrentUserProfileQueryVariables = Exact<{
-  [key: string]: never;
-}>;
-
-export type GetCurrentUserProfileQuery = {
-  __typename?: 'Query';
-  currentUser: {
-    __typename?: 'UserType';
-    id: string;
-    name: string;
-    email: string;
-    avatarUrl: string | null;
-    emailVerified: boolean;
-    features: Array<FeatureType>;
-    settings: {
-      __typename?: 'UserSettingsType';
-      receiveInvitationEmail: boolean;
-      receiveMentionEmail: boolean;
-      receiveCommentEmail: boolean;
-    };
-    quota: {
-      __typename?: 'UserQuotaType';
-      name: string;
-      blobLimit: number;
-      storageQuota: number;
-      historyPeriod: number;
-      memberLimit: number;
-      humanReadable: {
-        __typename?: 'UserQuotaHumanReadableType';
-        name: string;
-        blobLimit: string;
-        storageQuota: string;
-        historyPeriod: string;
-        memberLimit: string;
-      };
-    };
-    quotaUsage: { __typename?: 'UserQuotaUsageType'; storageQuota: number };
-    copilot: {
-      __typename?: 'Copilot';
-      quota: {
-        __typename?: 'CopilotQuota';
-        limit: number | null;
-        used: number;
-      };
-    };
-  } | null;
-};
-
 export type GetCurrentUserQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GetCurrentUserQuery = {
@@ -6449,19 +6362,6 @@ export type GetDocCreatedByUpdatedByListQuery = {
         };
       }>;
     };
-  };
-};
-
-export type GetDocDefaultRoleQueryVariables = Exact<{
-  workspaceId: Scalars['String']['input'];
-  docId: Scalars['String']['input'];
-}>;
-
-export type GetDocDefaultRoleQuery = {
-  __typename?: 'Query';
-  workspace: {
-    __typename?: 'WorkspaceType';
-    doc: { __typename?: 'DocType'; defaultRole: DocRole };
   };
 };
 
@@ -6605,32 +6505,6 @@ export type GetMemberCountByWorkspaceIdQuery = {
   workspace: { __typename?: 'WorkspaceType'; memberCount: number };
 };
 
-export type GetMembersByWorkspaceIdQueryVariables = Exact<{
-  workspaceId: Scalars['String']['input'];
-  skip?: InputMaybe<Scalars['Int']['input']>;
-  take?: InputMaybe<Scalars['Int']['input']>;
-  query?: InputMaybe<Scalars['String']['input']>;
-}>;
-
-export type GetMembersByWorkspaceIdQuery = {
-  __typename?: 'Query';
-  workspace: {
-    __typename?: 'WorkspaceType';
-    memberCount: number;
-    members: Array<{
-      __typename?: 'InviteUserType';
-      id: string;
-      name: string | null;
-      email: string | null;
-      avatarUrl: string | null;
-      permission: Permission;
-      inviteId: string;
-      emailVerified: boolean | null;
-      status: WorkspaceMemberStatus;
-    }>;
-  };
-};
-
 export type OauthProvidersQueryVariables = Exact<{ [key: string]: never }>;
 
 export type OauthProvidersQuery = {
@@ -6638,45 +6512,6 @@ export type OauthProvidersQuery = {
   serverConfig: {
     __typename?: 'ServerConfigType';
     oauthProviders: Array<OAuthProviderType>;
-  };
-};
-
-export type GetPageGrantedUsersListQueryVariables = Exact<{
-  pagination: PaginationInput;
-  docId: Scalars['String']['input'];
-  workspaceId: Scalars['String']['input'];
-}>;
-
-export type GetPageGrantedUsersListQuery = {
-  __typename?: 'Query';
-  workspace: {
-    __typename?: 'WorkspaceType';
-    doc: {
-      __typename?: 'DocType';
-      grantedUsersList: {
-        __typename?: 'PaginatedGrantedDocUserType';
-        totalCount: number;
-        pageInfo: {
-          __typename?: 'PageInfo';
-          endCursor: string | null;
-          hasNextPage: boolean;
-        };
-        edges: Array<{
-          __typename?: 'GrantedDocUserTypeEdge';
-          node: {
-            __typename?: 'GrantedDocUserType';
-            role: DocRole;
-            user: {
-              __typename?: 'WorkspaceUserType';
-              id: string;
-              name: string;
-              email: string;
-              avatarUrl: string | null;
-            };
-          };
-        }>;
-      };
-    };
   };
 };
 
@@ -6774,42 +6609,6 @@ export type GetUserQuery = {
         hasPassword: boolean | null;
       }
     | null;
-};
-
-export type GetWorkspaceInfoQueryVariables = Exact<{
-  workspaceId: Scalars['String']['input'];
-}>;
-
-export type GetWorkspaceInfoQuery = {
-  __typename?: 'Query';
-  workspace: {
-    __typename?: 'WorkspaceType';
-    role: Permission;
-    team: boolean;
-    permissions: {
-      __typename?: 'WorkspacePermissions';
-      Workspace_Administrators_Manage: boolean;
-      Workspace_Blobs_List: boolean;
-      Workspace_Blobs_Read: boolean;
-      Workspace_Blobs_Write: boolean;
-      Workspace_Copilot: boolean;
-      Workspace_CreateDoc: boolean;
-      Workspace_Delete: boolean;
-      Workspace_Organize_Read: boolean;
-      Workspace_Payment_Manage: boolean;
-      Workspace_Properties_Create: boolean;
-      Workspace_Properties_Delete: boolean;
-      Workspace_Properties_Read: boolean;
-      Workspace_Properties_Update: boolean;
-      Workspace_Read: boolean;
-      Workspace_Settings_Read: boolean;
-      Workspace_Settings_Update: boolean;
-      Workspace_Sync: boolean;
-      Workspace_TransferOwner: boolean;
-      Workspace_Users_Manage: boolean;
-      Workspace_Users_Read: boolean;
-    };
-  };
 };
 
 export type GetWorkspacePageByIdQueryVariables = Exact<{
@@ -7172,6 +6971,28 @@ export type LicenseBodyFragment = {
   variant: SubscriptionVariant | null;
 };
 
+export type PreviewLicenseMutationVariables = Exact<{
+  license: Scalars['Upload']['input'];
+}>;
+
+export type PreviewLicenseMutation = {
+  __typename?: 'Mutation';
+  previewLicense: {
+    __typename?: 'AdminLicensePreview';
+    id: string;
+    workspaceId: string;
+    plan: SubscriptionPlan;
+    recurring: SubscriptionRecurring;
+    quantity: number;
+    issuedAt: string;
+    expiresAt: string;
+    endAt: string;
+    entity: string;
+    issuer: string;
+    valid: boolean;
+  };
+};
+
 export type ListNotificationsQueryVariables = Exact<{
   pagination: PaginationInput;
 }>;
@@ -7215,19 +7036,6 @@ export type MentionUserMutationVariables = Exact<{
 export type MentionUserMutation = {
   __typename?: 'Mutation';
   mentionUser: string;
-};
-
-export type NotificationCountQueryVariables = Exact<{ [key: string]: never }>;
-
-export type NotificationCountQuery = {
-  __typename?: 'Query';
-  currentUser: {
-    __typename?: 'UserType';
-    notifications: {
-      __typename?: 'PaginatedNotificationObjectType';
-      totalCount: number;
-    };
-  } | null;
 };
 
 export type PricesQueryVariables = Exact<{ [key: string]: never }>;
@@ -7739,26 +7547,6 @@ export type WorkspaceByokSettingsQuery = {
   };
 };
 
-export type GetWorkspaceConfigQueryVariables = Exact<{
-  id: Scalars['String']['input'];
-}>;
-
-export type GetWorkspaceConfigQuery = {
-  __typename?: 'Query';
-  workspace: {
-    __typename?: 'WorkspaceType';
-    enableAi: boolean;
-    enableSharing: boolean;
-    enableUrlPreview: boolean;
-    enableDocEmbedding: boolean;
-    inviteLink: {
-      __typename?: 'InviteLink';
-      link: string;
-      expireTime: string;
-    } | null;
-  };
-};
-
 export type SetEnableAiMutationVariables = Exact<{
   id: Scalars['ID']['input'];
   enableAi: Scalars['Boolean']['input'];
@@ -7872,38 +7660,6 @@ export type WorkspaceInvoicesQuery = {
   };
 };
 
-export type WorkspaceQuotaQueryVariables = Exact<{
-  id: Scalars['String']['input'];
-}>;
-
-export type WorkspaceQuotaQuery = {
-  __typename?: 'Query';
-  workspace: {
-    __typename?: 'WorkspaceType';
-    quota: {
-      __typename?: 'WorkspaceQuotaType';
-      name: string;
-      blobLimit: number;
-      storageQuota: number;
-      usedStorageQuota: number;
-      historyPeriod: number;
-      memberLimit: number;
-      memberCount: number;
-      overcapacityMemberCount: number;
-      humanReadable: {
-        __typename?: 'WorkspaceQuotaHumanReadableType';
-        name: string;
-        blobLimit: string;
-        storageQuota: string;
-        historyPeriod: string;
-        memberLimit: string;
-        memberCount: string;
-        overcapacityMemberCount: string;
-      };
-    };
-  };
-};
-
 export type GetWorkspaceRolePermissionsQueryVariables = Exact<{
   id: Scalars['String']['input'];
 }>;
@@ -7960,11 +7716,6 @@ export type GrantWorkspaceTeamMemberMutation = {
 };
 
 export type Queries =
-  | {
-      name: 'listUserAccessTokensQuery';
-      variables: ListUserAccessTokensQueryVariables;
-      response: ListUserAccessTokensQuery;
-    }
   | {
       name: 'adminAllSharedLinksQuery';
       variables: AdminAllSharedLinksQueryVariables;
@@ -8081,11 +7832,6 @@ export type Queries =
       response: MatchFilesQuery;
     }
   | {
-      name: 'getWorkspaceEmbeddingStatusQuery';
-      variables: GetWorkspaceEmbeddingStatusQueryVariables;
-      response: GetWorkspaceEmbeddingStatusQuery;
-    }
-  | {
       name: 'getCopilotHistoryIdsQuery';
       variables: GetCopilotHistoryIdsQueryVariables;
       response: GetCopilotHistoryIdsQuery;
@@ -8171,11 +7917,6 @@ export type Queries =
       response: GetCurrentUserFeaturesQuery;
     }
   | {
-      name: 'getCurrentUserProfileQuery';
-      variables: GetCurrentUserProfileQueryVariables;
-      response: GetCurrentUserProfileQuery;
-    }
-  | {
       name: 'getCurrentUserQuery';
       variables: GetCurrentUserQueryVariables;
       response: GetCurrentUserQuery;
@@ -8184,11 +7925,6 @@ export type Queries =
       name: 'getDocCreatedByUpdatedByListQuery';
       variables: GetDocCreatedByUpdatedByListQueryVariables;
       response: GetDocCreatedByUpdatedByListQuery;
-    }
-  | {
-      name: 'getDocDefaultRoleQuery';
-      variables: GetDocDefaultRoleQueryVariables;
-      response: GetDocDefaultRoleQuery;
     }
   | {
       name: 'getDocLastAccessedMembersQuery';
@@ -8216,19 +7952,9 @@ export type Queries =
       response: GetMemberCountByWorkspaceIdQuery;
     }
   | {
-      name: 'getMembersByWorkspaceIdQuery';
-      variables: GetMembersByWorkspaceIdQueryVariables;
-      response: GetMembersByWorkspaceIdQuery;
-    }
-  | {
       name: 'oauthProvidersQuery';
       variables: OauthProvidersQueryVariables;
       response: OauthProvidersQuery;
-    }
-  | {
-      name: 'getPageGrantedUsersListQuery';
-      variables: GetPageGrantedUsersListQueryVariables;
-      response: GetPageGrantedUsersListQuery;
     }
   | {
       name: 'getPublicUserByIdQuery';
@@ -8254,11 +7980,6 @@ export type Queries =
       name: 'getUserQuery';
       variables: GetUserQueryVariables;
       response: GetUserQuery;
-    }
-  | {
-      name: 'getWorkspaceInfoQuery';
-      variables: GetWorkspaceInfoQueryVariables;
-      response: GetWorkspaceInfoQuery;
     }
   | {
       name: 'getWorkspacePageByIdQuery';
@@ -8336,11 +8057,6 @@ export type Queries =
       response: ListNotificationsQuery;
     }
   | {
-      name: 'notificationCountQuery';
-      variables: NotificationCountQueryVariables;
-      response: NotificationCountQuery;
-    }
-  | {
       name: 'pricesQuery';
       variables: PricesQueryVariables;
       response: PricesQuery;
@@ -8371,19 +8087,9 @@ export type Queries =
       response: WorkspaceByokSettingsQuery;
     }
   | {
-      name: 'getWorkspaceConfigQuery';
-      variables: GetWorkspaceConfigQueryVariables;
-      response: GetWorkspaceConfigQuery;
-    }
-  | {
       name: 'workspaceInvoicesQuery';
       variables: WorkspaceInvoicesQueryVariables;
       response: WorkspaceInvoicesQuery;
-    }
-  | {
-      name: 'workspaceQuotaQuery';
-      variables: WorkspaceQuotaQueryVariables;
-      response: WorkspaceQuotaQuery;
     }
   | {
       name: 'getWorkspaceRolePermissionsQuery';
@@ -8741,6 +8447,11 @@ export type Mutations =
       name: 'installLicenseMutation';
       variables: InstallLicenseMutationVariables;
       response: InstallLicenseMutation;
+    }
+  | {
+      name: 'previewLicenseMutation';
+      variables: PreviewLicenseMutationVariables;
+      response: PreviewLicenseMutation;
     }
   | {
       name: 'mentionUserMutation';

@@ -1,4 +1,5 @@
-import { DocRole, type GetPageGrantedUsersListQuery } from '@affine/graphql';
+import { DocRole } from '@affine/graphql';
+import type { DocGrantedUserSnapshot } from '@affine/realtime';
 import {
   catchErrorInto,
   effect,
@@ -9,14 +10,16 @@ import {
   Service,
   smartRetry,
 } from '@toeverything/infra';
+import type { Subscription } from 'rxjs';
 import { EMPTY, exhaustMap, tap } from 'rxjs';
 
 import type { DocService } from '../../doc';
 import type { WorkspaceService } from '../../workspace';
 import type { DocGrantedUsersStore } from '../stores/doc-granted-users';
 
-export type GrantedUser =
-  GetPageGrantedUsersListQuery['workspace']['doc']['grantedUsersList']['edges'][number]['node'];
+export type GrantedUser = Omit<DocGrantedUserSnapshot, 'role'> & {
+  role: DocRole;
+};
 
 export class DocGrantedUsersService extends Service {
   constructor(
@@ -25,7 +28,21 @@ export class DocGrantedUsersService extends Service {
     private readonly docService: DocService
   ) {
     super();
+    this.subscription = this.store
+      .subscribeDocGrants(
+        this.workspaceService.workspace.id,
+        this.docService.doc.id
+      )
+      .subscribe({
+        next: () => {
+          this.reset();
+          this.loadMore();
+        },
+        error: error => this.error$.setValue(error),
+      });
   }
+
+  private readonly subscription: Subscription;
 
   readonly PAGE_SIZE = 8;
 
@@ -149,5 +166,6 @@ export class DocGrantedUsersService extends Service {
 
   override dispose(): void {
     this.loadMore.unsubscribe();
+    this.subscription.unsubscribe();
   }
 }

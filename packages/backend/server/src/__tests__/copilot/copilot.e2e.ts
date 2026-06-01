@@ -732,7 +732,7 @@ test('should be able to chat with special image model', async t => {
       promptName
     );
     const messageId = await createCopilotMessage(app, sessionId, 'some-tag', [
-      `https://example.com/${promptName}.jpg`,
+      smallestPng,
     ]);
     const ret3 = await chatWithImages(app, sessionId, messageId);
     t.is(

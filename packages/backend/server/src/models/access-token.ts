@@ -5,6 +5,17 @@ import { BaseModel } from './base';
 
 const REDACTED_TOKEN = '[REDACTED]';
 
+declare global {
+  interface Events {
+    'user.access_token.created': {
+      userId: string;
+    };
+    'user.access_token.revoked': {
+      userId: string;
+    };
+  }
+}
+
 export interface CreateAccessTokenInput {
   userId: string;
   name: string;

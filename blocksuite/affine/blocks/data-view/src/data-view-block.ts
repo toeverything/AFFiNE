@@ -254,6 +254,7 @@ export class DataViewBlockComponent extends CaptionedBlockComponent<DataViewBloc
     dataSource: this.dataSource,
     headerWidget: this.headerWidget,
     clipboard: this.std.clipboard,
+    dnd: this.std.dnd,
     notification: {
       toast: message => {
         const notification = this.std.getOptional(NotificationProvider);

@@ -95,7 +95,9 @@ export class MenuInput extends MenuFocusable {
     });
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        this.inputRef.select();
+        if (!this.data.disableAutoFocus) {
+          this.inputRef.select();
+        }
       });
     });
   }
@@ -223,6 +225,7 @@ export const menuInputItems = {
       onComplete?: (value: string) => void;
       onChange?: (value: string) => void;
       onBlur?: (value: string) => void;
+      disableAutoFocus?: boolean;
       class?: string;
       style?: Readonly<StyleInfo>;
     }) =>
@@ -237,6 +240,7 @@ export const menuInputItems = {
         onComplete: config.onComplete,
         onChange: config.onChange,
         onBlur: config.onBlur,
+        disableAutoFocus: config.disableAutoFocus,
       };
       const style = styleMap({
         display: 'flex',

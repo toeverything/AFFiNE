@@ -2,7 +2,7 @@ import { Logger } from '@nestjs/common';
 import { z } from 'zod';
 
 import { DocReader } from '../../../core/doc';
-import { AccessController } from '../../../core/permission';
+import { PermissionAccess } from '../../../core/permission';
 import { Models } from '../../../models';
 import {
   documentSyncPendingError,
@@ -18,7 +18,7 @@ const isToolError = (result: ToolError | object): result is ToolError =>
   'type' in result && result.type === 'error';
 
 export const buildDocContentGetter = (
-  ac: AccessController,
+  ac: PermissionAccess,
   docReader: DocReader,
   models: Models
 ) => {

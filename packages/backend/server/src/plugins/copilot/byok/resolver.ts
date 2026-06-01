@@ -13,7 +13,7 @@ import { SafeIntResolver } from 'graphql-scalars';
 
 import { Throttle } from '../../../base';
 import { CurrentUser } from '../../../core/auth';
-import { AccessController } from '../../../core/permission';
+import { PermissionAccess } from '../../../core/permission';
 import { WorkspaceType } from '../../../core/workspaces';
 import { ByokEntitlementPolicy } from './policy';
 import { ByokKeyConfig, ByokLocalLeaseProvider, ByokService } from './service';
@@ -259,7 +259,7 @@ class CreateWorkspaceByokLocalLeaseInput {
 @Resolver(() => WorkspaceType)
 export class WorkspaceByokResolver {
   constructor(
-    private readonly ac: AccessController,
+    private readonly ac: PermissionAccess,
     private readonly entitlement: ByokEntitlementPolicy,
     private readonly byok: ByokService
   ) {}

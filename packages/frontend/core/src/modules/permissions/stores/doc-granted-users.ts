@@ -1,7 +1,5 @@
 import type { WorkspaceServerService } from '@affine/core/modules/cloud';
 import {
-  type DocRole,
-  getPageGrantedUsersListQuery,
   type GrantDocUserRolesInput,
   grantDocUserRolesMutation,
   type PaginationInput,
@@ -12,8 +10,14 @@ import {
 } from '@affine/graphql';
 import { Store } from '@toeverything/infra';
 
+import type { NbstoreService } from '../../storage';
+import { mapDocGrantedUserSnapshot } from './realtime-mappers';
+
 export class DocGrantedUsersStore extends Store {
-  constructor(private readonly workspaceServerService: WorkspaceServerService) {
+  constructor(
+    private readonly workspaceServerService: WorkspaceServerService,
+    private readonly nbstoreService: NbstoreService
+  ) {
     super();
   }
 
@@ -23,20 +27,33 @@ export class DocGrantedUsersStore extends Store {
     pagination: PaginationInput,
     signal?: AbortSignal
   ) {
-    if (!this.workspaceServerService.server) {
-      throw new Error('No Server');
-    }
-    const res = await this.workspaceServerService.server.gql({
-      query: getPageGrantedUsersListQuery,
-      variables: {
-        workspaceId,
-        docId,
-        pagination,
-      },
-      context: { signal },
-    });
+    return await this.nbstoreService.realtime
+      .request(
+        'doc.grants.get',
+        {
+          workspaceId,
+          docId,
+          pagination: {
+            first: pagination.first ?? 10,
+            offset: pagination.offset ?? 0,
+            after: pagination.after ?? undefined,
+          },
+        },
+        { signal, timeoutMs: 10000 }
+      )
+      .then(data => ({
+        ...data,
+        edges: data.edges.map(edge => ({
+          node: mapDocGrantedUserSnapshot(edge.node),
+        })),
+      }));
+  }
 
-    return res.workspace.doc.grantedUsersList;
+  subscribeDocGrants(workspaceId: string, docId: string) {
+    return this.nbstoreService.realtime.subscribe('doc.grants.changed', {
+      workspaceId,
+      docId,
+    });
   }
 
   async grantDocUserRoles(input: GrantDocUserRolesInput) {
@@ -75,7 +92,7 @@ export class DocGrantedUsersStore extends Store {
     workspaceId: string,
     docId: string,
     userId: string,
-    role: DocRole
+    role: GrantDocUserRolesInput['role']
   ) {
     if (!this.workspaceServerService.server) {
       throw new Error('No Server');

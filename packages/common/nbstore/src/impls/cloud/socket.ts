@@ -1,4 +1,10 @@
 import {
+  type RealtimeEvent,
+  type RealtimeRequestEnvelope,
+  type RealtimeSubscribeEnvelope,
+  type RealtimeUnsubscribeEnvelope,
+} from '@affine/realtime';
+import {
   Manager as SocketIOManager,
   type Socket as SocketIO,
 } from 'socket.io-client';
@@ -52,6 +58,8 @@ interface ServerEvents {
     docId: string;
     awarenessUpdate: string;
   };
+
+  'realtime:event': RealtimeEvent;
 }
 
 interface ClientEvents {
@@ -116,6 +124,10 @@ interface ClientEvents {
   'space:delete-doc': { spaceType: string; spaceId: string; docId: string };
 
   'telemetry:batch': [TelemetryBatch, TelemetryAck];
+
+  'realtime:request': [RealtimeRequestEnvelope, unknown];
+  'realtime:subscribe': [RealtimeSubscribeEnvelope, { subscriptionId: string }];
+  'realtime:unsubscribe': [RealtimeUnsubscribeEnvelope, { ok: true }];
 }
 
 export type ServerEventsMap = {
@@ -223,14 +235,23 @@ class SocketManager {
       },
     };
   }
+
+  reset() {
+    this.socket.disconnect();
+  }
 }
 
 const SOCKET_MANAGER_CACHE = new Map<string, SocketManager>();
+function getSocketManagerKey(endpoint: string, isSelfHosted: boolean) {
+  return `${endpoint}:${isSelfHosted ? 'selfhosted' : 'cloud'}`;
+}
+
 function getSocketManager(endpoint: string, isSelfHosted: boolean) {
-  let manager = SOCKET_MANAGER_CACHE.get(endpoint);
+  const key = getSocketManagerKey(endpoint, isSelfHosted);
+  let manager = SOCKET_MANAGER_CACHE.get(key);
   if (!manager) {
     manager = new SocketManager(endpoint, isSelfHosted);
-    SOCKET_MANAGER_CACHE.set(endpoint, manager);
+    SOCKET_MANAGER_CACHE.set(key, manager);
   }
   return manager;
 }
@@ -239,6 +260,12 @@ export class SocketConnection extends AutoReconnectConnection<{
   socket: Socket;
   disconnect: () => void;
 }> {
+  static resetSharedConnection(endpoint: string, isSelfHosted: boolean) {
+    SOCKET_MANAGER_CACHE.get(
+      getSocketManagerKey(endpoint, isSelfHosted)
+    )?.reset();
+  }
+
   manager = getSocketManager(this.endpoint, this.isSelfHosted);
 
   constructor(

@@ -24,14 +24,14 @@ defineModuleConfig('throttle', {
   'throttlers.default': {
     desc: 'The config for the default throttler.',
     default: {
-      ttl: 60,
+      ttl: 60_000,
       limit: 120,
     },
   },
   'throttlers.strict': {
     desc: 'The config for the strict throttler.',
     default: {
-      ttl: 60,
+      ttl: 60_000,
       limit: 20,
     },
   },

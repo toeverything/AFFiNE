@@ -36,7 +36,7 @@ import { styleMap } from 'lit/directives/style-map.js';
 import { insertFromMarkdown } from '../../utils';
 import type { ChatContextValue } from '../components/ai-chat-content/type';
 import type { AIItemConfig } from '../components/ai-item/types';
-import { AIProvider } from '../provider';
+import { AIAppEvents } from '../provider';
 import { reportResponse } from '../utils/action-reporter';
 import { getAIPanelWidget } from '../utils/ai-widgets';
 import type { AIContext } from '../utils/context';
@@ -98,7 +98,7 @@ export function retry(panel: AffineAIPanelWidget): AIItemConfig {
     icon: ResetIcon(),
     testId: 'answer-retry',
     handler: () => {
-      reportResponse('result:retry');
+      reportResponse('result:retry', panel.host);
       panel.generate();
     },
   };
@@ -152,7 +152,7 @@ export function createInsertItems<T extends keyof BlockSuitePresets.AIActions>(
         );
       },
       handler: () => {
-        reportResponse('result:insert');
+        reportResponse('result:insert', host);
         edgelessResponseHandler(id, host, ctx).catch(console.error);
         const panel = getAIPanelWidget(host);
         panel.hide();
@@ -201,7 +201,7 @@ export function asCaption<T extends keyof BlockSuitePresets.AIActions>(
       return id === 'generateCaption' && !!panel.answer;
     },
     handler: () => {
-      reportResponse('result:use-as-caption');
+      reportResponse('result:use-as-caption', host);
       const panel = getAIPanelWidget(host);
       const caption = panel.answer;
       if (!caption) return;
@@ -589,7 +589,7 @@ export function actionToResponse<T extends keyof BlockSuitePresets.AIActions>(
             testId: 'answer-continue-in-chat',
             icon: ChatWithAiIcon({}),
             handler: () => {
-              reportResponse('result:continue-in-chat');
+              reportResponse('result:continue-in-chat', host);
               edgelesContinueResponseHandler(id, host, ctx).catch(
                 console.error
               );
@@ -700,7 +700,7 @@ async function edgelesContinueResponseHandler<
   }
 
   const panel = getAIPanelWidget(host);
-  AIProvider.slots.requestOpenWithChat.next({
+  AIAppEvents.requestOpenWithChat.next({
     host,
     context,
     fromAnswer: true,
@@ -732,11 +732,11 @@ export function actionToErrorResponse<
 ): ErrorConfig {
   return {
     upgrade: () => {
-      AIProvider.slots.requestUpgradePlan.next({ host: panel.host });
+      AIAppEvents.requestUpgradePlan.next({ host: panel.host });
       panel.hide();
     },
     login: () => {
-      AIProvider.slots.requestLogin.next({ host: panel.host });
+      AIAppEvents.requestLogin.next({ host: panel.host });
       panel.hide();
     },
     cancel: () => {

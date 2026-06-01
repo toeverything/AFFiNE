@@ -497,8 +497,13 @@ export class IndexerService {
     keyword: string,
     options?: {
       limit?: number;
+      docIds?: string[];
     }
   ): Promise<SearchDoc[]> {
+    if (options?.docIds?.length === 0) {
+      return [];
+    }
+
     const limit = options?.limit ?? 20;
     const result = await this.aggregate({
       table: SearchTable.block,
@@ -512,6 +517,19 @@ export class IndexerService {
             field: 'workspaceId',
             match: workspaceId,
           },
+          ...(options?.docIds
+            ? [
+                {
+                  type: SearchQueryType.boolean,
+                  occur: SearchQueryOccur.should,
+                  queries: options.docIds.map(docId => ({
+                    type: SearchQueryType.match,
+                    field: 'docId',
+                    match: docId,
+                  })),
+                },
+              ]
+            : []),
           {
             type: SearchQueryType.boolean,
             occur: SearchQueryOccur.must,

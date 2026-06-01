@@ -22,6 +22,8 @@ import * as styles from './node.css';
 
 interface NavigationPanelTreeNodeProps extends BaseNavigationPanelTreeNodeProps {}
 
+const EMPTY_OPERATIONS: BaseNavigationPanelTreeNodeProps['operations'] = [];
+
 export const NavigationPanelTreeNode = ({
   children,
   icon: Icon,
@@ -33,9 +35,9 @@ export const NavigationPanelTreeNode = ({
   collapsed,
   extractEmojiAsIcon,
   setCollapsed,
-  operations = [],
+  operations = EMPTY_OPERATIONS,
   postfix,
-  childrenOperations = [],
+  childrenOperations = EMPTY_OPERATIONS,
   childrenPlaceholder,
   linkComponent: LinkComponent = WorkbenchLink,
   ...otherProps

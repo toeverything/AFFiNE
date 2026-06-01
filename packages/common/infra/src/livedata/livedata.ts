@@ -255,9 +255,7 @@ export class LiveData<T = unknown>
 
   constructor(
     initialValue: T,
-    upstream:
-      | ((upstream: Observable<LiveDataOperation>) => Observable<T>)
-      | undefined = undefined
+    upstream?: (upstream: Observable<LiveDataOperation>) => Observable<T>
   ) {
     super();
     this.raw$ = new BehaviorSubject(initialValue);

@@ -25,6 +25,7 @@ import {
   type PromptMessage,
   type StreamObject,
 } from '../../plugins/copilot/providers/types';
+import { getVertexGoogleBaseUrl } from '../../plugins/copilot/providers/utils';
 import {
   buildPromptStructuredResponseFromFields,
   buildStructuredResponseContract,
@@ -1821,6 +1822,17 @@ test('GeminiVertexProvider should prefetch bearer token for native config', asyn
   const provider = new TestGeminiVertexProvider();
   const config = await provider.exposeNativeConfig();
   t.snapshot(config);
+});
+
+test('GeminiVertexProvider should build project scoped Vertex base URL', t => {
+  t.is(
+    getVertexGoogleBaseUrl({
+      project: 'p1',
+      location: 'us-central1',
+      googleAuthOptions: {},
+    }),
+    'https://us-central1-aiplatform.googleapis.com/v1/projects/p1/locations/us-central1/publishers/google'
+  );
 });
 
 test('GeminiVertexProvider should materialize remote attachments before native text path', async t => {

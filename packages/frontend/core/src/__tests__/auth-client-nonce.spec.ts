@@ -3,6 +3,7 @@ import { AuthService } from '@affine/core/modules/cloud/services/auth';
 import { FetchService } from '@affine/core/modules/cloud/services/fetch';
 import { AuthStore } from '@affine/core/modules/cloud/stores/auth';
 import { GlobalDialogService } from '@affine/core/modules/dialogs/services/dialog';
+import { NbstoreService } from '@affine/core/modules/storage';
 import { UrlService } from '@affine/core/modules/url/services/url';
 import { Framework } from '@toeverything/infra';
 import { of } from 'rxjs';
@@ -37,12 +38,16 @@ describe('AuthService oauthPreflight', () => {
     } as any);
     framework.service(UrlService, { getClientScheme: () => null } as any);
     framework.service(GlobalDialogService, { open: vi.fn() } as any);
+    framework.service(NbstoreService, {
+      realtime: { subscribe: () => of() },
+    } as any);
 
     framework.service(AuthService, [
       FetchService,
       AuthStore,
       UrlService,
       GlobalDialogService,
+      NbstoreService,
     ]);
 
     const auth = framework.provider().get(AuthService);

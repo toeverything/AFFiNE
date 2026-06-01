@@ -2,8 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 
 import { ServerFeature, ServerService } from '../../../../core';
-import { SubscriptionService } from '../../../payment/service';
-import { SubscriptionPlan, SubscriptionStatus } from '../../../payment/types';
+import { QuotaStateService } from '../../../../core/quota/state';
 import type { ChatSession } from '../../session';
 import { type ToolsConfig } from '../../types';
 import { getTools } from '../../utils';
@@ -47,15 +46,14 @@ export class CapabilityPolicyHost {
     }
 
     try {
-      const subscription = await this.moduleRef
-        .get(SubscriptionService, { strict: false })
-        .select(SubscriptionPlan.AI)
-        .getSubscription({
-          userId,
-          plan: SubscriptionPlan.AI,
-        } as never);
-
-      return subscription?.status === SubscriptionStatus.Active;
+      const state = await this.moduleRef
+        .get(QuotaStateService, { strict: false })
+        .reconcileUserQuotaState(userId);
+      const flags = state.flags as { unlimitedCopilot?: boolean };
+      return (
+        !!flags.unlimitedCopilot ||
+        ['pro', 'lifetime_pro', 'ai'].includes(state.plan)
+      );
     } catch {
       return false;
     }

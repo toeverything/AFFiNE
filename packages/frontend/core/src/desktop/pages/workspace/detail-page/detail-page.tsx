@@ -1,7 +1,6 @@
 import { Scrollable } from '@affine/component';
 import { PageDetailLoading } from '@affine/component/page-detail-skeleton';
-import type { AIChatParams } from '@affine/core/blocksuite/ai';
-import { AIProvider } from '@affine/core/blocksuite/ai';
+import { AIAppEvents, type AIChatParams } from '@affine/core/blocksuite/ai';
 import type { AffineEditorContainer } from '@affine/core/blocksuite/block-suite-editor';
 import { EditorOutlineViewer } from '@affine/core/blocksuite/outline-viewer';
 import { AffineErrorBoundary } from '@affine/core/components/affine/affine-error-boundary';
@@ -145,12 +144,8 @@ const DetailPageImpl = memo(function DetailPageImpl() {
       workbench.openSidebar();
       view.activeSidebarTab('chat');
     };
-    disposables.push(
-      AIProvider.slots.requestOpenWithChat.subscribe(openHandler)
-    );
-    disposables.push(
-      AIProvider.slots.requestSendWithChat.subscribe(openHandler)
-    );
+    disposables.push(AIAppEvents.requestOpenWithChat.subscribe(openHandler));
+    disposables.push(AIAppEvents.requestSendWithChat.subscribe(openHandler));
     return () => disposables.forEach(d => d.unsubscribe());
   }, [activeSidebarTab, view, workbench]);
 
@@ -378,7 +373,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
           icon={<AiIcon />}
           unmountOnInactive={false}
         >
-          <EditorChatPanel editor={editorContainer} />
+          <EditorChatPanel editor={editorContainer} doc={doc.blockSuiteDoc} />
         </ViewSidebarTab>
       )}
 

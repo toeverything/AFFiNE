@@ -1,4 +1,4 @@
-export function BulledListIcon({ color = 'currentColor' }: { color: string }) {
+export function BulledListIcon({ color = 'currentColor' }: { color?: string }) {
   return (
     <svg
       width="16"

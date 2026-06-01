@@ -173,7 +173,7 @@ export class ServerFeatureConfigResolver extends AvailableUserFeatureConfig {
     description: 'Workspace features available for admin configuration',
   })
   availableWorkspaceFeatures(): WorkspaceFeatureName[] {
-    return ['unlimited_workspace', 'team_plan_v1'];
+    return [];
   }
 }
 

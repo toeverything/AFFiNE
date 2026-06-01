@@ -3,10 +3,11 @@ import type { OAuthProviderType } from '@affine/graphql';
 import { track } from '@affine/track';
 import { OnEvent, Service } from '@toeverything/infra';
 import { nanoid } from 'nanoid';
-import { distinctUntilChanged, map, skip } from 'rxjs';
+import { distinctUntilChanged, map, skip, type Subscription } from 'rxjs';
 
 import type { GlobalDialogService } from '../../dialogs';
 import { ApplicationFocused } from '../../lifecycle';
+import type { NbstoreService } from '../../storage';
 import type { UrlService } from '../../url';
 import { AuthSession } from '../entities/session';
 import { AccountChanged } from '../events/account-changed';
@@ -20,12 +21,14 @@ import type { FetchService } from './fetch';
 @OnEvent(ServerStarted, e => e.onServerStarted)
 export class AuthService extends Service {
   session = this.framework.createEntity(AuthSession);
+  private profileSubscription?: Subscription;
 
   constructor(
     private readonly fetchService: FetchService,
     private readonly store: AuthStore,
     private readonly urlService: UrlService,
-    private readonly dialogService: GlobalDialogService
+    private readonly dialogService: GlobalDialogService,
+    private readonly nbstoreService: NbstoreService
   ) {
     super();
 
@@ -41,19 +44,51 @@ export class AuthService extends Service {
       .subscribe(({ account }) => {
         if (account === null) {
           this.eventBus.emit(AccountLoggedOut, account);
+          this.profileSubscription?.unsubscribe();
+          this.profileSubscription = undefined;
         } else {
           this.eventBus.emit(AccountLoggedIn, account);
+          this.subscribeProfile();
         }
         this.eventBus.emit(AccountChanged, account);
       });
+
+    this.subscribeProfile();
   }
 
   private onServerStarted() {
     this.session.revalidate();
+    this.subscribeProfile();
   }
 
   private onApplicationFocused() {
     this.session.revalidate();
+  }
+
+  private subscribeProfile() {
+    this.profileSubscription?.unsubscribe();
+    this.profileSubscription = undefined;
+    if (!this.session.account$.value) return;
+    this.profileSubscription = this.nbstoreService.realtime
+      .subscribe('user.profile.changed', {})
+      .subscribe({
+        next: () => {
+          void (async () => {
+            this.session.revalidate();
+            await this.session.waitForRevalidation();
+            this.eventBus.emit(AccountChanged, this.session.account$.value);
+          })().catch(() => {});
+        },
+        error: () => {
+          this.profileSubscription = undefined;
+        },
+      });
+  }
+
+  override dispose() {
+    super.dispose();
+    this.profileSubscription?.unsubscribe();
+    this.profileSubscription = undefined;
   }
 
   async sendEmailMagicLink(
