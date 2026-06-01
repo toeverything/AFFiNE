@@ -231,14 +231,7 @@ export class WorkspaceMcpProvider {
         if (abortedAfterDocs) return abortedAfterDocs;
 
         if (!docs || docs.length === 0) {
-          return {
-            content: [
-              {
-                type: 'text',
-                text: 'No matching documents found.',
-              },
-            ],
-          };
+          return toolText('No matching documents found.');
         }
 
         return {
