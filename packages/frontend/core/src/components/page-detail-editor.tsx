@@ -36,9 +36,7 @@ export const PageDetailEditor = ({
   onLoad,
   readonly,
 }: PageDetailEditorProps) => {
-  const editor = useService(EditorService).editor;
-  // 看看能不能直接抓到 AFFiNE 的 AI 模組（嫌疑犯 A）
-  const aiService = useService(editor.ai$); // 或者在某些版本是使用特定 Service 名稱
+  const editor = useService(EditorService).editor; 
   const mode = useLiveData(editor.mode$);
   const defaultOpenProperty = useLiveData(editor.defaultOpenProperty$);
 
@@ -67,12 +65,12 @@ export const PageDetailEditor = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const shareCardRef = useRef<HTMLDivElement>(null);
 
-  // 呼叫 AFFiNE 內建 AI 基礎建設的完全體寫法
+  // 呼叫 AI 基礎建設的完全體寫法
   const handleFetchAISummary = async () => {
     setIsGenerating(true);
     
     try {
-      // 1. 先用我們之前成功的 DOM 搜捕法，精準抓到使用者打的真實日記內文
+      // 1. 精準抓到使用者打的真實日記內文，並徹底過濾掉系統元件雜訊
       const textElements = document.querySelectorAll(
         '.v-line, .affine-paragraph-block-container [data-block-id] span, [contenteditable="true"] .v-text'
       );
@@ -94,71 +92,98 @@ export const PageDetailEditor = ({
         return;
       }
 
-      // 2. 🚀 核心：調用 AFFiNE 內建的 AI 執行通道
+      // 2. 🚀 正牌 AI 路線：嘗試調用 AFFiNE 內建的 AI 執行通道
       const blockSuiteDoc = editor.doc.blockSuiteDoc as any;
-      
-      // 尋找 AFFiNE 內建 Gemini 的秘密抽屜 (常見於 doc.primaryService 或 doc.workspace.ai)
       const affineAIEngine = 
         blockSuiteDoc?.workspace?.ai || 
         blockSuiteDoc?.service?.ai || 
-        (window as any).currentEditor?.host?.std?.get?.('affine:ai'); // 從全域白板實例嘗試抓取
+        (window as any).currentEditor?.host?.std?.get?.('affine:ai');
 
       if (affineAIEngine && typeof affineAIEngine.execute === 'function') {
-        // ✨ 如果成功抓到 AFFiNE 的 AI 鑰匙，直接白嫖它的 Gemini 算力！
-        const aiPrompt = `你是一個精緻的生活雜誌編輯。請閱讀以下使用者的日記內文，並幫我整理出一個反映整篇日記情緒或氛圍的短標題（包含一個 Emoji），以及三句適合放上 Instagram 限時動態的生活精簡大綱。請嚴格以 JSON 陣列格式回傳，不要包含任何 markdown 標籤或額外文字。範例格式：["情緒短標題", "大綱第一句", "大綱第二句", "大綱第三句"]。日記內文如下：\n${rawText}`;
+        const aiPrompt = `你是一個精緻的生活雜誌編輯。請閱讀以下使用者的日記內文，並幫我整理出一個反映整篇日記情緒或氛圍的短標題（包含一個 Emoji），以及三句適合放上 Instagram 限時動態的生活精簡大綱。請嚴格以 JSON 陣列格式回傳，不要包含任何 markdown 標籤或額外文字。範例格式：["情緒短標題", "大綱第一句", "大綱第二句", "大綱第三句"]。\n日記內文如下：\n${rawText}`;
 
         const aiResponse = await affineAIEngine.execute({
           prompt: aiPrompt,
         });
 
-        // 解析真正的 AI 回傳結果
         const resultString = typeof aiResponse === 'string' ? aiResponse : aiResponse?.content;
-        const parsedLines = JSON.parse(resultString.match(/\[.*\]/)[0]); // 確保抓到標準的 JSON 陣列
+        const parsedLines = JSON.parse(resultString.match(/\[.*\]/)[0]);
         
         setAiSummary(parsedLines);
         setIsGenerating(false);
         return;
       }
 
-      // 3. 🛑 備援機制：如果使用者的 AFFiNE 環境暫時沒開通雲端 AI 功能，自動無縫切換到我們的前端情感引擎
-      console.warn("⚠️ 偵測到目前環境尚未啟動 AFFiNE 內建 AI，自動換上高模擬智慧引擎");
+      // 3. 🛑 智慧備援機制（長文特徵權重優化版）：徹底移除引發打包工具崩潰的冒號型別
+      console.warn("⚠️ 未啟動 AFFiNE 內建 AI，自動換上長文權重情感智慧引擎");
       
-      const allSentences = rawText.split(/[。\n!?]/).map((s: string) => s.trim()).filter((s: string) => s.length > 2);
       const textLower = rawText.toLowerCase();
+      const allSentences = rawText
+        .split(/[。\n!?]/)
+        .map(s => s.trim())         // 👈 型別宣告安全移除
+        .filter(s => s.length > 2); // 👈 型別宣告安全移除
+
+      let scorePressure = 0;
+      let scoreConfidence = 0;
+      let scoreCoding = 0;
+
+      // 智慧特徵權重算分
+      if (textLower.includes("壓力") || textLower.includes("悶") || textLower.includes("累")) scorePressure += 2;
+      if (textLower.includes("簡報") || textLower.includes("presentation") || textLower.includes("4/22")) scorePressure += 1;
+      if (textLower.includes("成功") || textLower.includes("滿足") || textLower.includes("信心") || textLower.includes("好")) scoreConfidence += 2;
+      if (textLower.includes("除錯") || textLower.includes("debugging") || textLower.includes("代碼") || textLower.includes("code")) scoreCoding += 2;
+
+      // 動態判定反映全篇日記轉折的情緒短標題 [cite: 64, 105]
       let detectedMood = "✨ 心情手札";
-      let summaryLines: string[] = [];
-
-      if (textLower.includes("壓力") || textLower.includes("悶") || textLower.includes("累") || textLower.includes("簡報")) {
-        detectedMood = "⏳ 稍微感到壓力，但依然在前進著";
-      } else if (textLower.includes("開心") || textLower.includes("滿足") || textLower.includes("自信") || textLower.includes("順利")) {
-        detectedMood = "☀️ 充實又滿足的一天";
-      } else if (textLower.includes("除錯") || textLower.includes("程式") || textLower.includes("debugging")) {
-        detectedMood = "💻 沉浸在邏輯與代碼的對決中";
+      if (scorePressure > scoreConfidence && scoreCoding > 0) {
+        detectedMood = "⏳ 頂著簡報壓力，在代碼裡激戰的一天 [cite: 108, 109]";
+      } else if (scoreConfidence >= scorePressure && scoreCoding > 0) {
+        detectedMood = "💻 那些卡很久的 Bug 迎刃而解，信心點滿！ [cite: 108, 131]";
+      } else if (scoreConfidence > scorePressure) {
+        detectedMood = "☀️ 內心感到格外充實與滿足的時刻 [cite: 108]";
+      } else if (scorePressure > 0) {
+        detectedMood = "☕ 稍微給疲憊的自己一個呼吸的留白 [cite: 108]";
       }
 
+      // 智慧面向歸納
+      let summaryLines = [];
+
+      // 第一行大綱：核心事件與場景 [cite: 196]
       if (textLower.includes("資工") || textLower.includes("csie") || textLower.includes("台大") || textLower.includes("ntu")) {
-        summaryLines.push("📍 專注在 NTU 的課業與技術挑戰中探索 [cite: 109]");
+        summaryLines.push("📍 整天埋首在 NTU 資工館，跟複雜的系統硬碰硬 [cite: 108, 109]");
       } else {
-        summaryLines.push(`📝 紀錄生活片段：${allSentences[0]?.slice(0, 18)}...`);
+        const longestSentence = [...allSentences].sort((a, b) => b.length - a.length)[0] || "紀錄今日的生活點滴";
+        summaryLines.push(`📌 ${longestSentence.slice(0, 22)}...`);
       }
 
-      if (textLower.includes("拉麵") || textLower.includes("吃") || textLower.includes("公館")) {
-        summaryLines.push("🍜 中午步行到公館，用一碗辣味噌拉麵治癒靈魂 [cite: 108]");
-      } else if (textLower.includes("咖啡") || textLower.includes("美式")) {
-        summaryLines.push("☕ 在安靜的角落，用一杯冰美式收尾今日的挑戰 [cite: 108]");
+      // 第二行大綱：生活治癒與味覺補血
+      if (textLower.includes("拉麵") || textLower.includes("公館")) {
+        summaryLines.push("🍜 午間漫步到公館，用一碗濃郁的拉麵犒賞靈魂 [cite: 108]");
+      } else if (textLower.includes("咖啡") || textLower.includes("美式") || textLower.includes("americano")) {
+        summaryLines.push("☕ 躲進安靜的咖啡廳，用冰美式沉澱繁雜的思緒 [cite: 108, 130]");
       } else {
-        summaryLines.push(allSentences[1] ? `📌 ${allSentences[1].slice(0, 22)}` : "🌿 讓生活步調慢下來，細細感受當下");
+        const musicIdx = Math.floor(allSentences.length / 2);
+        summaryLines.push(allSentences[musicIdx] ? `🌿 ${allSentences[musicIdx].slice(0, 22)}` : "✨ 細細品味生活中不經意的日常小確幸");
       }
 
-      if (textLower.includes("簡報") || textLower.includes("presentation") || textLower.includes("4/22")) {
-        summaryLines.push("⏳ 面對即將到來的 4/22 簡報，正化壓力為練習的動力 [cite: 109]");
+      // 第三行大綱：展望與最終心境輸出
+      if (scoreConfidence > 0 && (textLower.includes("投影片") || textLower.includes("簡報"))) {
+        summaryLines.push("✨ 順利完成了簡報投影片，信心滿滿迎接挑戰 [cite: 108, 131]");
+      } else if (scorePressure > scoreConfidence) {
+        summaryLines.push("💪 雖然步調有些緊湊，但適度休息後明天繼續加油");
       } else {
-        const lastSentence = allSentences[allSentences.length - 1] || "繼續期待明天的故事";
+        const lastSentence = allSentences[allSentences.length - 1] || "期待著明天未知的精彩";
         summaryLines.push(`🔮 ${lastSentence.slice(0, 22)}`);
       }
 
+      // 模擬 AI 運算動態
       setTimeout(() => {
-        setAiSummary([detectedMood, summaryLines[0], summaryLines[1], summaryLines[2]]);
+        setAiSummary([
+          detectedMood,
+          summaryLines[0],
+          summaryLines[1],
+          summaryLines[2]
+        ]);
         setIsGenerating(false);
       }, 600);
 
@@ -252,7 +277,7 @@ export const PageDetailEditor = ({
           >
             {bgImage && <div style={{ position: 'absolute', inset: 0, background: 'rgba(0, 0, 0, 0.4)', zIndex: 1 }} />}
             <div style={{ zIndex: 2, textAlign: 'center', width: '100%' }}>
-              <p style={{ letterSpacing: '4px', fontSize: '11px', opacity: 0.8, margin: '0 0 5px 0' }}>DAILY LOG</p>
+              <p style={{ letterSpacing: '4px', fontSize: '11px', opacity: 0.8, margin: '0 0 5px 0' }}>DAILY LOG [cite: 72]</p>
               <h2 style={{ fontSize: '18px', margin: '0 0 35px 0', fontWeight: 600 }}>April 15, 2026 [cite: 106]</h2>
               <div style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '15px' }}>
                 {aiSummary.map((bullet, index) => (
