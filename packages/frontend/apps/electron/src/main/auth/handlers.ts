@@ -19,6 +19,15 @@ export interface SignInResponse {
   redirectUri?: string;
 }
 
+export interface PasswordSignInResponse extends SignInResponse {
+  id: string;
+  email: string;
+  name: string;
+  hasPassword: boolean | null;
+  avatarUrl: string | null;
+  emailVerified: boolean;
+}
+
 interface ExchangeResponse {
   token?: string;
 }
@@ -152,7 +161,7 @@ export const authHandlers = {
         password: credential.password,
       }),
     });
-    const body = await readJson<SignInResponse>(response);
+    const body = await readJson<PasswordSignInResponse>(response);
     await exchangeSession(endpoint, body);
     return body;
   },
