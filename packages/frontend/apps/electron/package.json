@@ -51,7 +51,7 @@
     "@sentry/esbuild-plugin": "^5.3.0",
     "@toeverything/infra": "workspace:*",
     "@types/set-cookie-parser": "^2.4.10",
-    "@vitejs/plugin-react": "^5.2.0",
+    "@vitejs/plugin-react": "^6.0.0",
     "app-builder-lib": "^26.8.1",
     "builder-util-runtime": "^9.5.1",
     "cross-env": "^10.1.0",
