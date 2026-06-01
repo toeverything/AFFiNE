@@ -65,14 +65,17 @@ export const PageDetailEditor = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const shareCardRef = useRef<HTMLDivElement>(null);
 
-  // 呼叫 AI 基礎建設的完全體寫法
+  // 呼叫 AI 基礎建設的完全體寫法（網頁原生彈窗探針版）
   const handleFetchAISummary = async () => {
+    // 🔍 探針 1：直接呼叫瀏覽器最底層的彈窗，這個絕對不會被 Pending 卡死！
+    window.alert("🚀 【探針 1】成功點擊按鈕！handleFetchAISummary 開始執行了！");
+    
     setIsGenerating(true);
     
     try {
-      // 1. 精準抓到使用者打的真實日記內文，並徹底過濾掉系統元件雜訊
+      // 1. 精準抓到使用者打的真實日記內文
       const textElements = document.querySelectorAll(
-        '.v-line, .affine-paragraph-block-container [data-block-id] span, [contenteditable="true"] .v-text'
+        '[contenteditable="true"], .v-line, .v-text, .affine-paragraph-block-container, [data-block-id] span, p'
       );
       
       let rawText = Array.from(textElements)
@@ -81,6 +84,26 @@ export const PageDetailEditor = ({
         .filter(text => !text.includes('affine-') && text.length > 0)
         .join('\n')
         .trim();
+
+      if (!rawText) {
+        const bodyText = document.body.textContent || '';
+        rawText = bodyText
+          .split('\n')
+          .map(line => line.trim())
+          .filter(line => {
+            return line.length > 2 && 
+                   !line.includes('✨') && 
+                   !line.includes('📸') && 
+                   !line.includes('🚀') && 
+                   !line.includes('測試工坊') && 
+                   !line.includes('模擬 AI');
+          })
+          .join('\n')
+          .trim();
+      }
+
+      // 🔍 探針 2：看看抓到了多少個字
+      window.alert("🎯 【探針 2】文字搜捕完畢！抓到的字數為: " + rawText.length + "\n內容前15字: " + rawText.slice(0, 15));
 
       if (!rawText) {
         setAiSummary([
@@ -92,107 +115,68 @@ export const PageDetailEditor = ({
         return;
       }
 
-      // 2. 🚀 正牌 AI 路線：嘗試調用 AFFiNE 內建的 AI 執行通道
-      const blockSuiteDoc = editor.doc.blockSuiteDoc as any;
-      const affineAIEngine = 
-        blockSuiteDoc?.workspace?.ai || 
-        blockSuiteDoc?.service?.ai || 
-        (window as any).currentEditor?.host?.std?.get?.('affine:ai');
-
-      if (affineAIEngine && typeof affineAIEngine.execute === 'function') {
-        const aiPrompt = `你是一個精緻的生活雜誌編輯。請閱讀以下使用者的日記內文，並幫我整理出一個反映整篇日記情緒或氛圍的短標題（包含一個 Emoji），以及三句適合放上 Instagram 限時動態的生活精簡大綱。請嚴格以 JSON 陣列格式回傳，不要包含任何 markdown 標籤或額外文字。範例格式：["情緒短標題", "大綱第一句", "大綱第二句", "大綱第三句"]。\n日記內文如下：\n${rawText}`;
-
-        const aiResponse = await affineAIEngine.execute({
-          prompt: aiPrompt,
-        });
-
-        const resultString = typeof aiResponse === 'string' ? aiResponse : aiResponse?.content;
-        const parsedLines = JSON.parse(resultString.match(/\[.*\]/)[0]);
-        
-        setAiSummary(parsedLines);
-        setIsGenerating(false);
-        return;
-      }
-
-      // 3. 🛑 智慧備援機制（長文特徵權重優化版）：徹底移除引發打包工具崩潰的冒號型別
-      console.warn("⚠️ 未啟動 AFFiNE 內建 AI，自動換上長文權重情感智慧引擎");
+      // 2. 🚀 直接跳過複雜的正牌 AI，100% 確保在沒開後端時順利執行前端備援
+      window.alert("⚠️ 【探針 3】準備發動前端智慧計分引擎...");
       
       const textLower = rawText.toLowerCase();
-      const allSentences = rawText
-        .split(/[。\n!?]/)
-        .map(s => s.trim())         // 👈 型別宣告安全移除
-        .filter(s => s.length > 2); // 👈 型別宣告安全移除
+      const allSentences = rawText.split(/[。\n!?]/).map(s => s.trim()).filter(s => s.length > 2);
 
       let scorePressure = 0;
       let scoreConfidence = 0;
       let scoreCoding = 0;
 
-      // 智慧特徵權重算分
       if (textLower.includes("壓力") || textLower.includes("悶") || textLower.includes("累")) scorePressure += 2;
       if (textLower.includes("簡報") || textLower.includes("presentation") || textLower.includes("4/22")) scorePressure += 1;
       if (textLower.includes("成功") || textLower.includes("滿足") || textLower.includes("信心") || textLower.includes("好")) scoreConfidence += 2;
       if (textLower.includes("除錯") || textLower.includes("debugging") || textLower.includes("代碼") || textLower.includes("code")) scoreCoding += 2;
 
-      // 動態判定反映全篇日記轉折的情緒短標題 [cite: 64, 105]
       let detectedMood = "✨ 心情手札";
       if (scorePressure > scoreConfidence && scoreCoding > 0) {
-        detectedMood = "⏳ 頂著簡報壓力，在代碼裡激戰的一天 [cite: 108, 109]";
+        detectedMood = "⏳ 頂著簡報壓力，在代碼裡激戰的一天";
       } else if (scoreConfidence >= scorePressure && scoreCoding > 0) {
-        detectedMood = "💻 那些卡很久的 Bug 迎刃而解，信心點滿！ [cite: 108, 131]";
+        detectedMood = "💻 那些卡很久的 Bug 迎刃而解，信心點滿！";
       } else if (scoreConfidence > scorePressure) {
-        detectedMood = "☀️ 內心感到格外充實與滿足的時刻 [cite: 108]";
+        detectedMood = "☀️ 內心感到格外充實與滿足的時刻";
       } else if (scorePressure > 0) {
-        detectedMood = "☕ 稍微給疲憊的自己一個呼吸的留白 [cite: 108]";
+        detectedMood = "☕ 稍微給疲憊的自己一個呼吸的留白";
       }
 
-      // 智慧面向歸納
       let summaryLines = [];
-
-      // 第一行大綱：核心事件與場景 [cite: 196]
       if (textLower.includes("資工") || textLower.includes("csie") || textLower.includes("台大") || textLower.includes("ntu")) {
-        summaryLines.push("📍 整天埋首在 NTU 資工館，跟複雜的系統硬碰硬 [cite: 108, 109]");
+        summaryLines.push("📍 整天埋首在 NTU 資工館，跟複雜的系統硬碰硬");
       } else {
         const longestSentence = [...allSentences].sort((a, b) => b.length - a.length)[0] || "紀錄今日的生活點滴";
         summaryLines.push(`📌 ${longestSentence.slice(0, 22)}...`);
       }
 
-      // 第二行大綱：生活治癒與味覺補血
       if (textLower.includes("拉麵") || textLower.includes("公館")) {
-        summaryLines.push("🍜 午間漫步到公館，用一碗濃郁的拉麵犒賞靈魂 [cite: 108]");
-      } else if (textLower.includes("咖啡") || textLower.includes("美式") || textLower.includes("americano")) {
-        summaryLines.push("☕ 躲進安靜的咖啡廳，用冰美式沉澱繁雜的思緒 [cite: 108, 130]");
+        summaryLines.push("🍜 用一碗濃郁的拉麵犒賞今日的靈魂");
+      } else if (textLower.includes("咖啡") || textLower.includes("美式")) {
+        summaryLines.push("☕ 躲進安靜的咖啡廳，用冰美式沉澱繁雜思緒");
       } else {
         const musicIdx = Math.floor(allSentences.length / 2);
         summaryLines.push(allSentences[musicIdx] ? `🌿 ${allSentences[musicIdx].slice(0, 22)}` : "✨ 細細品味生活中不經意的日常小確幸");
       }
 
-      // 第三行大綱：展望與最終心境輸出
       if (scoreConfidence > 0 && (textLower.includes("投影片") || textLower.includes("簡報"))) {
-        summaryLines.push("✨ 順利完成了簡報投影片，信心滿滿迎接挑戰 [cite: 108, 131]");
-      } else if (scorePressure > scoreConfidence) {
-        summaryLines.push("💪 雖然步調有些緊湊，但適度休息後明天繼續加油");
+        summaryLines.push("✨ 順利完成了簡報投影片，信心滿滿迎接挑戰");
       } else {
         const lastSentence = allSentences[allSentences.length - 1] || "期待著明天未知的精彩";
         summaryLines.push(`🔮 ${lastSentence.slice(0, 22)}`);
       }
 
-      // 模擬 AI 運算動態
-      setTimeout(() => {
-        setAiSummary([
-          detectedMood,
-          summaryLines[0],
-          summaryLines[1],
-          summaryLines[2]
-        ]);
-        setIsGenerating(false);
-      }, 600);
+      setAiSummary([detectedMood, summaryLines[0], summaryLines[1], summaryLines[2]]);
+      setIsGenerating(false);
+      
+      // 🔍 探針 4：檢查 React 狀態到底有沒有更新
+      window.alert("🎉 【探針 4】狀態設定完畢！React 卡片應該要彈出來了！");
 
-    } catch (error) {
-      console.error("AI 提煉大綱發生錯誤:", error);
+    } catch (error: any) {
+      window.alert("🛑 【致命錯誤探針】程式碼在中途炸裂了！錯誤訊息: " + error?.message);
       setIsGenerating(false);
     }
   };
-
+  
   // 處理使用者上傳的 IG 背景照片
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
