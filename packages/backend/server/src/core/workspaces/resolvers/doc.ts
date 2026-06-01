@@ -17,6 +17,7 @@ import { SafeIntResolver } from 'graphql-scalars';
 import {
   ActionForbidden,
   Cache,
+  Config,
   DocActionDenied,
   DocDefaultRoleCanNotBeOwner,
   DocNotFound,
@@ -45,7 +46,7 @@ import {
   PermissionService,
 } from '../../permission';
 import { PublicUserType, WorkspaceUserType } from '../../user';
-import { isUserOldEnoughForShareActions } from '../abuse';
+import { canUserExecuteLimitedActions } from '../abuse';
 import { DocGrantsService } from '../doc-grants';
 import { WorkspaceType } from '../types';
 import { TimeBucket, TimeWindow } from './analytics-types';
@@ -301,14 +302,27 @@ export class WorkspaceDocResolver {
     private readonly permission: PermissionService,
     private readonly models: Models,
     private readonly cache: Cache,
-    private readonly event: EventBus
+    private readonly event: EventBus,
+    private readonly config: Config
   ) {}
 
-  private async assertCanShare(userId: string) {
+  private async assertCanShare(
+    userId: string,
+    context: { workspaceId: string; docId: string; action: 'publishDoc' }
+  ) {
     const user = await this.models.user.get(userId);
-    if (!user || !isUserOldEnoughForShareActions(user)) {
+    const newAccountAgeMs = this.config.auth.newAccountShareActionDelay * 1000;
+    if (!user || !canUserExecuteLimitedActions(user, newAccountAgeMs)) {
+      this.logger.warn('Share action blocked for new account', {
+        userId,
+        email: user?.email,
+        createdAt: user?.createdAt,
+        accountAgeMs: user ? Date.now() - user.createdAt.getTime() : null,
+        minimumAccountAgeMs: newAccountAgeMs,
+        ...context,
+      });
       throw new ActionForbidden(
-        'Sharing links is unavailable during the first 24 hours after signup.'
+        'This feature is temporarily unavailable for you.'
       );
     }
   }
@@ -452,7 +466,11 @@ export class WorkspaceDocResolver {
     }
 
     await this.ac.user(user.id).doc(workspaceId, docId).assert('Doc.Publish');
-    await this.assertCanShare(user.id);
+    await this.assertCanShare(user.id, {
+      workspaceId,
+      docId,
+      action: 'publishDoc',
+    });
 
     const doc = await this.models.doc.publish(workspaceId, docId, mode);
     this.event.emit('doc.public_state.changed', { workspaceId, docId });

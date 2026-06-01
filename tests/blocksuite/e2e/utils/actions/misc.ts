@@ -667,7 +667,11 @@ export async function getInlineSelectionIndex(page: Page) {
     const selection = window.getSelection() as Selection;
 
     const range = selection.getRangeAt(0);
-    const component = range.startContainer.parentElement?.closest('rich-text');
+    const startElement =
+      range.startContainer instanceof Element
+        ? range.startContainer
+        : range.startContainer.parentElement;
+    const component = startElement?.closest('rich-text');
     const index = component?.inlineEditor?.getInlineRange()?.index;
     return index !== undefined ? index : -1;
   });
@@ -677,7 +681,11 @@ export async function getInlineSelectionText(page: Page) {
   return page.evaluate(() => {
     const selection = window.getSelection() as Selection;
     const range = selection.getRangeAt(0);
-    const component = range.startContainer.parentElement?.closest('rich-text');
+    const startElement =
+      range.startContainer instanceof Element
+        ? range.startContainer
+        : range.startContainer.parentElement;
+    const component = startElement?.closest('rich-text');
     return component?.inlineEditor?.yText.toString() ?? '';
   });
 }
@@ -686,7 +694,11 @@ export async function getSelectedTextByInlineEditor(page: Page) {
   return page.evaluate(() => {
     const selection = window.getSelection() as Selection;
     const range = selection.getRangeAt(0);
-    const component = range.startContainer.parentElement?.closest('rich-text');
+    const startElement =
+      range.startContainer instanceof Element
+        ? range.startContainer
+        : range.startContainer.parentElement;
+    const component = startElement?.closest('rich-text');
 
     const inlineRange = component?.inlineEditor?.getInlineRange();
     if (!inlineRange) return '';
@@ -736,12 +748,27 @@ export async function setInlineRangeInSelectedRichText(
       const selection = window.getSelection() as Selection;
 
       const range = selection.getRangeAt(0);
-      const component =
-        range.startContainer.parentElement?.closest('rich-text');
-      component?.inlineEditor?.setInlineRange({
+      const startElement =
+        range.startContainer instanceof Element
+          ? range.startContainer
+          : range.startContainer.parentElement;
+      const component = startElement?.closest('rich-text');
+      const inlineEditor = component?.inlineEditor;
+      if (!inlineEditor) {
+        throw new Error('Cannot find inline editor from current selection');
+      }
+      component.focus();
+      inlineEditor.setInlineRange({
         index,
         length,
       });
+      const domRange = inlineEditor.toDomRange({ index, length });
+      if (!domRange) {
+        throw new Error('Cannot remap inline range to DOM range');
+      }
+      selection.removeAllRanges();
+      selection.addRange(domRange);
+      document.dispatchEvent(new Event('selectionchange'));
     },
     { index, length }
   );
@@ -946,6 +973,7 @@ export async function setSelection(
         length: 0,
       })!;
 
+      anchorRichText.focus();
       const sl = getSelection();
       if (!sl) throw new Error('Cannot get selection');
       const range = document.createRange();
@@ -959,6 +987,7 @@ export async function setSelection(
       );
       sl.removeAllRanges();
       sl.addRange(range);
+      document.dispatchEvent(new Event('selectionchange'));
     },
     {
       anchorBlockId,
