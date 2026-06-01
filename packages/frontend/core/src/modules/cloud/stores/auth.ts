@@ -67,7 +67,7 @@ export class AuthStore extends Store {
 
   async fetchSession() {
     const { user } = await this.fetchService
-      .fetch('/api/auth/session')
+      .fetch('/api/auth/session', { cache: 'no-store' })
       .then(res => res.json());
     const authMethods = user
       ? await this.fetchService

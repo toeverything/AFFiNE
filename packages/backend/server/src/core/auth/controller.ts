@@ -256,6 +256,7 @@ export class AuthController {
   @Throttle('default', { limit: 1200 })
   @Public()
   @Get('/session')
+  @Header('Cache-Control', 'no-store')
   async currentSessionUser(@CurrentUser() user?: CurrentUser) {
     return { user };
   }
