@@ -104,6 +104,23 @@ test('should add job to queue', async t => {
   t.is(queuedJob!.name, job.name);
 });
 
+test('should accept job id containing colon', async t => {
+  const job = await queue.add(
+    'nightly.__test__job',
+    { name: 'test' },
+    { jobId: 'custom:id' }
+  );
+
+  const queuedJob = await queue.get('custom:id', 'nightly.__test__job');
+  const roundTripJob = await queue.get(job.id!, 'nightly.__test__job');
+  const data = await queue.remove(job.id!, 'nightly.__test__job');
+
+  t.is(job.id, 'custom%3Aid');
+  t.is(queuedJob!.name, job.name);
+  t.is(roundTripJob!.name, job.name);
+  t.deepEqual(data, { name: 'test' });
+});
+
 test('should remove job from queue', async t => {
   const job = await queue.add('nightly.__test__job', { name: 'test' });
 

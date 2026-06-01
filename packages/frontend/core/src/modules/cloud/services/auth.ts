@@ -235,7 +235,10 @@ export class AuthService extends Service {
   }) {
     track.$.$.auth.signIn({ method: 'password' });
     try {
-      await this.store.signInPassword(credential);
+      const user = await this.store.signInPassword(credential);
+      if (user) {
+        this.store.setCachedSignInUser(user);
+      }
       this.session.revalidate();
       track.$.$.auth.signedIn({ method: 'password' });
     } catch (e) {

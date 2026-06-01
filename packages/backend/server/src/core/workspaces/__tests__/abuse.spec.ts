@@ -1,10 +1,6 @@
 import test from 'ava';
 
-import {
-  containsUrlOrDomain,
-  isUserOldEnoughForShareActions,
-  SHARE_ACTION_ACCOUNT_AGE_MS,
-} from '../abuse';
+import { canUserExecuteLimitedActions, containsUrlOrDomain } from '../abuse';
 
 test('should detect links and bare domains in workspace names', t => {
   t.true(containsUrlOrDomain('BTC https://spam.example'));
@@ -20,10 +16,21 @@ test('should not detect email addresses or partial domain words', t => {
 });
 
 test('should check account age for share actions', t => {
-  t.false(isUserOldEnoughForShareActions({ createdAt: new Date() }));
-  t.true(
-    isUserOldEnoughForShareActions({
-      createdAt: new Date(Date.now() - SHARE_ACTION_ACCOUNT_AGE_MS - 1),
-    })
+  const minimumAccountAgeMs = 24 * 60 * 60 * 1000;
+
+  t.false(
+    canUserExecuteLimitedActions({ createdAt: new Date() }, minimumAccountAgeMs)
   );
+  t.true(
+    canUserExecuteLimitedActions(
+      {
+        createdAt: new Date(Date.now() - minimumAccountAgeMs - 1),
+      },
+      minimumAccountAgeMs
+    )
+  );
+});
+
+test('should skip account age check when share action delay is disabled', t => {
+  t.true(canUserExecuteLimitedActions({ createdAt: new Date() }, 0));
 });

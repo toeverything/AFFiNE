@@ -70,7 +70,7 @@ export function configureDefaultAuthProvider(framework: Framework) {
           headers['x-captcha-challenge'] = credential.challenge;
         }
 
-        await fetchService.fetch('/api/auth/sign-in', {
+        const res = await fetchService.fetch('/api/auth/sign-in', {
           method: 'POST',
           body: JSON.stringify(credential),
           headers: {
@@ -78,6 +78,7 @@ export function configureDefaultAuthProvider(framework: Framework) {
             ...headers,
           },
         });
+        return await res.json();
       },
       async signInOpenAppSignInCode(code: string) {
         await fetchService.fetch('/api/auth/open-app/sign-in', {

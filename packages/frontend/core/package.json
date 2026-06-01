@@ -74,7 +74,7 @@
     "lit": "^3.2.1",
     "lodash-es": "^4.17.23",
     "lottie-react": "^2.4.0",
-    "mermaid": "^11.13.0",
+    "mermaid": "^11.15.0",
     "mp4-muxer": "^5.2.2",
     "nanoid": "^5.1.6",
     "next-themes": "^0.4.4",

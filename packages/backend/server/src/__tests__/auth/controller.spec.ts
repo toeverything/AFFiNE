@@ -70,6 +70,14 @@ test('should be able to sign in with credential', async t => {
   t.is(session?.id, u1.id);
 });
 
+test('should not cache auth session response', async t => {
+  const { app } = t.context;
+
+  const res = await app.GET('/api/auth/session').expect(200);
+
+  t.is(res.headers['cache-control'], 'no-store');
+});
+
 async function exchangeSession(app: TestingApp, code: string) {
   return await supertest(app.getHttpServer())
     .post('/api/auth/native/exchange')

@@ -175,6 +175,11 @@
           "description": "Whether require email verification before accessing restricted resources(not implemented).\n@default true",
           "default": true
         },
+        "newAccountShareActionDelay": {
+          "type": "number",
+          "description": "Minimum account age in seconds before new accounts can invite members or create share links.\n@default 86400",
+          "default": 86400
+        },
         "passwordRequirements": {
           "type": "object",
           "description": "The password strength requirements when set new password.\n@default {\"min\":8,\"max\":32}",
