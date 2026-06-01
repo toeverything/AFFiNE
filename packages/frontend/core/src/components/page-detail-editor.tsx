@@ -65,34 +65,49 @@ export const PageDetailEditor = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const shareCardRef = useRef<HTMLDivElement>(null);
 
-  // 模擬呼叫 AI 提煉大綱（升級版：即時撈取目前編輯器的真實內文）
+  // 模擬呼叫 AI 提煉大綱（DOM 畫面暴力搜捕版，絕不噴型別錯誤）
   const handleFetchAISummary = async () => {
     setIsGenerating(true);
     
     try {
-      // 💡 核心科技：從 AFFiNE 的 blockSuiteDoc 中，一口氣撈出使用者目前打的所有文字！
-      const rawText = editor.doc.blockSuiteDoc.getText().toString().trim();
+      // 💡 終極科技：直接去網頁畫面上，把 AFFiNE 編輯器裡所有打出來的文字區塊通通抓過來！
+      // AFFiNE 的 BlockSuite 編輯器常用的文字節點通常帶有 'affine-paragraph' 或 '.v-text' 或 'v-line'
+      // 這裡我們把所有可能是文字段落的標籤和常見的 class 通通掃描一遍
+      const textElements = document.querySelectorAll(
+        '.affine-paragraph, [data-block-type="paragraph"], .v-text, p, [contenteditable="true"]'
+      );
       
+      // 把抓到的網頁元件文字抽取出來，用換行黏起來
+      let rawText = Array.from(textElements)
+        .map(el => el.textContent || '')
+        .filter(text => text.trim().length > 0)
+        .join('\n')
+        .trim();
+
+      // 💡 備份草案：如果因為免登入導致抓不到特定的 class，我們直接抓整塊編輯器容器裡的文字
       if (!rawText) {
-        // 如果使用者什麼都沒打，我們給一個貼心的提示
+        const editorContainer = document.querySelector('.affine-editor-container, #editor, [data-page-id]');
+        rawText = editorContainer?.textContent?.trim() || '';
+      }
+      
+      // 萬一真的還是空的，就走貼心提示
+      if (!rawText) {
         setAiSummary([
           "📖 今天是個神祕的日子...",
-          "✍️ 稍微在日記本裡敲點字，",
+          "✍️ 稍微在下方編輯器裡敲點字，",
           "✨ 就能一鍵生成專屬的 IG 限動大綱喔！"
         ]);
         setIsGenerating(false);
         return;
       }
 
-      // ✂️ 純前端文字處理大法的超酷邏輯：
-      // 我們把整篇日記依照「句號」、「問號」或「換行」切開，抓出最前面的三句話當作精選大綱！
+      // ✂️ 依據標點符號或換行切出前 3 句
       const sentences = rawText
-        .split(/[。\n!?]/) // 遇到句號、換行、驚嘆號就切斷
-        .map(s => s.trim())
-        .filter(s => s.length > 3) // 過濾掉太短的碎字
+        .split(/[。\n!?]/)
+        .map((s: string) => s.trim())
+        .filter((s: string) => s.length > 2) // 過濾掉太短的碎字
         .slice(0, 3); // 霸氣抓取前 3 句！
 
-      // 萬一使用者只打了一長串沒有標點符號的字，我們就暴力每 25 個字切一列
       if (sentences.length === 0) {
         sentences.push(rawText.slice(0, 25));
         if (rawText.length > 25) sentences.push(rawText.slice(25, 50));
@@ -101,9 +116,8 @@ export const PageDetailEditor = ({
 
       // 延遲 0.5 秒模擬 AI 在思考的酷炫動態
       setTimeout(() => {
-        // 把前三句加上文青必備的 Emoji 圖示，塞進 IG 卡片裡！
         const emojiList = ["✨", "📌", "⏳"];
-        const formattedSummary = sentences.map((sentence, idx) => {
+        const formattedSummary = sentences.map((sentence: string, idx: number) => {
           return `${emojiList[idx] || "▪️"} ${sentence}`;
         });
 
@@ -112,7 +126,7 @@ export const PageDetailEditor = ({
       }, 600);
 
     } catch (error) {
-      console.error("撈取編輯器文字失敗:", error);
+      console.error("從網頁畫面撈取文字失敗:", error);
       setIsGenerating(false);
     }
   };
