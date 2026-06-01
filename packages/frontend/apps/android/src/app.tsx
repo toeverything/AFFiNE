@@ -57,7 +57,11 @@ import { Auth } from './plugins/auth';
 import { HashCash } from './plugins/hashcash';
 import { NbStoreNativeDBApis } from './plugins/nbstore';
 import { Preview } from './plugins/preview';
-import { writeEndpointToken } from './proxy';
+import {
+  deleteEndpointToken,
+  readEndpointToken,
+  writeEndpointToken,
+} from './proxy';
 
 const storeManagerClient = createStoreManagerClient();
 setTelemetryTransport(storeManagerClient.telemetry);
@@ -206,10 +210,17 @@ framework.scope(ServerScope).override(AuthProvider, resolver => {
       });
       await writeEndpointToken(endpoint, token);
     },
-    async signOut() {
-      await Auth.signOut({
+    async signInOpenAppSignInCode(code) {
+      const { token } = await Auth.signInOpenApp({
         endpoint,
+        code,
       });
+      await writeEndpointToken(endpoint, token);
+    },
+    async signOut() {
+      const token = await readEndpointToken(endpoint);
+      await Auth.signOut({ endpoint, token });
+      await deleteEndpointToken(endpoint);
     },
   };
 });
@@ -441,6 +452,21 @@ function createStoreManagerClient() {
       port: nativeDBApiChannelClient,
     },
     [nativeDBApiChannelClient]
+  );
+
+  const { port1: authTokenChannelServer, port2: authTokenChannelClient } =
+    new MessageChannel();
+  authTokenChannelServer.addEventListener('message', event => {
+    const { id, endpoint } = event.data as { id?: string; endpoint?: string };
+    if (!id || !endpoint) return;
+    readEndpointToken(endpoint)
+      .then(token => authTokenChannelServer.postMessage({ id, token }))
+      .catch(() => authTokenChannelServer.postMessage({ id, token: null }));
+  });
+  authTokenChannelServer.start();
+  worker.postMessage(
+    { type: 'native-auth-token-channel', port: authTokenChannelClient },
+    [authTokenChannelClient]
   );
   return new StoreManagerClient(new OpClient(worker));
 }

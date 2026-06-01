@@ -74,7 +74,11 @@ import { Hashcash } from './plugins/hashcash';
 import { NbStoreNativeDBApis } from './plugins/nbstore';
 import { PayWall } from './plugins/paywall';
 import { Preview } from './plugins/preview';
-import { writeEndpointToken } from './proxy';
+import {
+  deleteEndpointToken,
+  readEndpointToken,
+  writeEndpointToken,
+} from './proxy';
 import { enableNavigationGesture$ } from './web-navigation-control';
 
 const storeManagerClient = createStoreManagerClient();
@@ -204,10 +208,17 @@ framework.scope(ServerScope).override(AuthProvider, resolver => {
       });
       await writeEndpointToken(endpoint, token);
     },
-    async signOut() {
-      await Auth.signOut({
+    async signInOpenAppSignInCode(code) {
+      const { token } = await Auth.signInOpenApp({
         endpoint,
+        code,
       });
+      await writeEndpointToken(endpoint, token);
+    },
+    async signOut() {
+      const token = await readEndpointToken(endpoint);
+      await Auth.signOut({ endpoint, token });
+      await deleteEndpointToken(endpoint);
     },
   };
 });
@@ -541,13 +552,9 @@ function createStoreManagerClient() {
   AsyncCall<typeof NbStoreNativeDBApis>(NbStoreNativeDBApis, {
     channel: {
       on(listener) {
-        const f = (e: MessageEvent<any>) => {
-          listener(e.data);
-        };
+        const f = (e: MessageEvent<any>) => listener(e.data);
         nativeDBApiChannelServer.addEventListener('message', f);
-        return () => {
-          nativeDBApiChannelServer.removeEventListener('message', f);
-        };
+        return () => nativeDBApiChannelServer.removeEventListener('message', f);
       },
       send(data) {
         nativeDBApiChannelServer.postMessage(data);
@@ -557,11 +564,23 @@ function createStoreManagerClient() {
   });
   nativeDBApiChannelServer.start();
   worker.postMessage(
-    {
-      type: 'native-db-api-channel',
-      port: nativeDBApiChannelClient,
-    },
+    { type: 'native-db-api-channel', port: nativeDBApiChannelClient },
     [nativeDBApiChannelClient]
+  );
+
+  const { port1: authTokenChannelServer, port2: authTokenChannelClient } =
+    new MessageChannel();
+  authTokenChannelServer.addEventListener('message', event => {
+    const { id, endpoint } = event.data as { id?: string; endpoint?: string };
+    if (!id || !endpoint) return;
+    readEndpointToken(endpoint)
+      .then(token => authTokenChannelServer.postMessage({ id, token }))
+      .catch(() => authTokenChannelServer.postMessage({ id, token: null }));
+  });
+  authTokenChannelServer.start();
+  worker.postMessage(
+    { type: 'native-auth-token-channel', port: authTokenChannelClient },
+    [authTokenChannelClient]
   );
   return new StoreManagerClient(new OpClient(worker));
 }

@@ -2679,7 +2679,7 @@ type UserType {
   """Get user settings"""
   settings: UserSettingsType!
   subscriptions: [SubscriptionType!]!
-  token: tokenType! @deprecated(reason: "use [/api/auth/sign-in?native=true] instead")
+  token: tokenType! @deprecated(reason: "use native session exchange instead")
 }
 
 type ValidationErrorDataType {

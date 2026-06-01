@@ -19,6 +19,11 @@ export interface AccountProfile {
   email: string;
   name: string;
   hasPassword: boolean;
+  authMethods?: {
+    password: { bound: boolean };
+    oauth: { bound: boolean; providers: string[] };
+    passkey: { bound: boolean; count: number };
+  };
   avatarUrl: string | null;
   emailVerified: string | null;
   features?: string[];
@@ -61,16 +66,20 @@ export class AuthStore extends Store {
   }
 
   async fetchSession() {
-    const { user } = await this.nbstoreService.realtime.request(
-      'user.profile.get',
-      {},
-      { timeoutMs: 10000 }
-    );
+    const { user } = await this.fetchService
+      .fetch('/api/auth/session')
+      .then(res => res.json());
+    const authMethods = user
+      ? await this.fetchService
+          .fetch('/api/auth/methods')
+          .then(res => (res.ok ? res.json() : undefined))
+      : undefined;
     return {
       user: user
         ? {
             ...user,
             hasPassword: Boolean(user.hasPassword),
+            authMethods,
             emailVerified: user.emailVerified ? 'true' : null,
           }
         : null,
@@ -101,6 +110,10 @@ export class AuthStore extends Store {
     challenge?: string;
   }) {
     await this.authProvider.signInPassword(credential);
+  }
+
+  async signInOpenAppSignInCode(code: string) {
+    await this.authProvider.signInOpenAppSignInCode(code);
   }
 
   async signOut() {
@@ -155,8 +168,12 @@ export class AuthStore extends Store {
 
     const data = (await res.json()) as {
       registered: boolean;
-      hasPassword: boolean;
-      magicLink: boolean;
+      methods: {
+        password: { available: boolean };
+        magicLink: { available: boolean };
+        oauth: { available: boolean; providers: string[] };
+        passkey: { available: boolean; discoverable: boolean };
+      };
     };
 
     return data;

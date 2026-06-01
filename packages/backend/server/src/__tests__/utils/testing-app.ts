@@ -110,6 +110,10 @@ export class TestingApp extends ApplyType<INestApplication>() {
 
   async initTestingDB() {
     await initTestingDB(this);
+    this.clearAuth();
+  }
+
+  clearAuth() {
     this.sessionCookie = null;
     this.currentUserCookie = null;
     this.csrfCookie = null;

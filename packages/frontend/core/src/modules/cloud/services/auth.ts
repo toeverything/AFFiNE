@@ -222,11 +222,7 @@ export class AuthService extends Service {
   }
 
   async signInOpenAppSignInCode(code: string) {
-    await this.fetchService.fetch('/api/auth/open-app/sign-in', {
-      method: 'POST',
-      body: JSON.stringify({ code }),
-      headers: { 'content-type': 'application/json' },
-    });
+    await this.store.signInOpenAppSignInCode(code);
 
     this.session.revalidate();
   }

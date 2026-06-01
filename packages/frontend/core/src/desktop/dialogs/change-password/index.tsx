@@ -25,6 +25,7 @@ import { useEffect, useState } from 'react';
 
 export const ChangePasswordDialog = ({
   close,
+  hasPassword: hasPasswordProp,
   server: serverBaseUrl,
 }: DialogComponentProps<GLOBAL_DIALOG_SCHEMA['change-password']>) => {
   const t = useI18n();
@@ -44,7 +45,8 @@ export const ChangePasswordDialog = ({
   const authService = server.scope.get(AuthService);
   const account = useLiveData(authService.session.account$);
   const email = account?.email;
-  const hasPassword = account?.info?.hasPassword;
+  const hasPassword =
+    hasPasswordProp ?? account?.info?.authMethods?.password.bound ?? false;
   const [hasSentEmail, setHasSentEmail] = useState(false);
   const [loading, setLoading] = useState(false);
   const passwordLimits = useLiveData(

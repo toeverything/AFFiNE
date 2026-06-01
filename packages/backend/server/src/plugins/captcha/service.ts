@@ -12,7 +12,7 @@ import {
   OnEvent,
 } from '../../base';
 import { ServerFeature, ServerService } from '../../core';
-import { Models, TokenType } from '../../models';
+import { AuthChallengeStore } from '../../core/auth';
 import { verifyChallengeResponse } from '../../native';
 import { CaptchaConfig } from './types';
 
@@ -28,7 +28,7 @@ export class CaptchaService {
 
   constructor(
     private readonly config: Config,
-    private readonly models: Models,
+    private readonly challenges: AuthChallengeStore,
     private readonly server: ServerService
   ) {
     this.captcha = config.captcha.config;
@@ -93,10 +93,10 @@ export class CaptchaService {
 
   async getChallengeToken() {
     const resource = randomUUID();
-    const challenge = await this.models.verificationToken.create(
-      TokenType.Challenge,
+    const challenge = await this.challenges.create(
+      'captcha',
       resource,
-      5 * 60
+      5 * 60 * 1000
     );
 
     return {
@@ -117,9 +117,7 @@ export class CaptchaService {
     const challenge = credential.challenge;
     let resource: string | null = null;
     if (typeof challenge === 'string' && challenge) {
-      resource = await this.models.verificationToken
-        .get(TokenType.Challenge, challenge)
-        .then(token => token?.credential || null);
+      resource = await this.challenges.consume<string>('captcha', challenge);
     }
 
     if (resource) {

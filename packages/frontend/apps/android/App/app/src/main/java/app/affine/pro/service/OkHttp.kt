@@ -50,6 +50,20 @@ object OkHttp {
 
 }
 
+object AuthHttp {
+    val client = OkHttpClient.Builder()
+        .cookieJar(CookieJar.NO_COOKIES)
+        .addInterceptor {
+            it.proceed(
+                it.request()
+                    .newBuilder()
+                    .addHeader("x-affine-version", CapacitorConfig.getAffineVersion())
+                    .build()
+            )
+        }
+        .build()
+}
+
 object CookieStore {
 
     const val AFFINE_SESSION = "affine_session"
@@ -61,9 +75,6 @@ object CookieStore {
     fun saveCookies(host: String, cookies: List<Cookie>) {
         _cookies[host] = cookies
         MainScope().launch(Dispatchers.IO) {
-            cookies.find { it.name == AFFINE_SESSION }?.let {
-                AFFiNEApp.context().dataStore.set(host + AFFINE_SESSION, it.toString())
-            }
             cookies.find { it.name == AFFINE_USER_ID }?.let {
                 Timber.d("Update user id [${it.value}]")
                 AFFiNEApp.context().dataStore.set(host + AFFINE_USER_ID, it.toString())
@@ -76,6 +87,13 @@ object CookieStore {
     }
 
     fun getCookies(host: String) = _cookies[host] ?: emptyList()
+
+    fun clearAuthCookies(host: String) {
+        val cookies = _cookies[host] ?: return
+        _cookies[host] = cookies.filter {
+            it.name != AFFINE_SESSION && it.name != AFFINE_USER_ID && it.name != AFFINE_CSRF_TOKEN
+        }
+    }
 
     fun getCookie(url: HttpUrl, name: String) = url.host
         .let { _cookies[it] }

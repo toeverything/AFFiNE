@@ -18,19 +18,28 @@ import {
 import { type MessageCommunicapable, OpConsumer } from '@toeverything/infra/op';
 import { AsyncCall } from 'async-call-rpc';
 
-import { readEndpointToken } from './proxy';
+let authTokenPort: MessagePort | undefined;
+const pendingTokenRequests = new Map<string, (token: string | null) => void>();
 
 configureSocketAuthMethod((endpoint, cb) => {
   readEndpointToken(endpoint)
-    .then(token => {
-      cb({ token });
-    })
-    .catch(e => {
-      console.error(e);
-    });
+    .then(token => cb(token ? { token, tokenType: 'jwt' } : {}))
+    .catch(() => cb({}));
 });
 
 globalThis.addEventListener('message', e => {
+  if (e.data.type === 'native-auth-token-channel') {
+    authTokenPort = e.ports[0] as MessagePort;
+    authTokenPort.addEventListener('message', e => {
+      const { id, token } = e.data as { id?: string; token?: string | null };
+      if (!id) return;
+      pendingTokenRequests.get(id)?.(token ?? null);
+      pendingTokenRequests.delete(id);
+    });
+    authTokenPort.start();
+    return;
+  }
+
   if (e.data.type === 'native-db-api-channel') {
     const port = e.ports[0] as MessagePort;
     const rpc = AsyncCall<NativeDBApis>(
@@ -56,6 +65,25 @@ globalThis.addEventListener('message', e => {
     port.start();
   }
 });
+
+function readEndpointToken(endpoint: string) {
+  if (!authTokenPort) {
+    return Promise.resolve(null);
+  }
+
+  const id = `${Date.now()}:${Math.random()}`;
+  return new Promise<string | null>(resolve => {
+    const timeout = setTimeout(() => {
+      pendingTokenRequests.delete(id);
+      resolve(null);
+    }, 5000);
+    pendingTokenRequests.set(id, token => {
+      clearTimeout(timeout);
+      resolve(token);
+    });
+    authTokenPort?.postMessage({ id, endpoint });
+  });
+}
 
 const consumer = new OpConsumer<WorkerManagerOps>(
   globalThis as MessageCommunicapable

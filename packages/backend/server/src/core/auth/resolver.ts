@@ -63,7 +63,7 @@ export class AuthResolver {
 
   @ResolveField(() => ClientTokenType, {
     name: 'token',
-    deprecationReason: 'use [/api/auth/sign-in?native=true] instead',
+    deprecationReason: 'use native session exchange instead',
   })
   async clientToken(
     @CurrentUser() currentUser: CurrentUser,

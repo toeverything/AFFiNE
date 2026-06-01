@@ -41,7 +41,6 @@ describe('AuthService oauthPreflight', () => {
     framework.service(NbstoreService, {
       realtime: { subscribe: () => of() },
     } as any);
-
     framework.service(AuthService, [
       FetchService,
       AuthStore,
