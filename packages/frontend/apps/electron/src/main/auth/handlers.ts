@@ -8,7 +8,13 @@ import {
   setNativeAuthToken,
 } from './native-token';
 
-interface SignInResponse {
+export interface SignInResponse {
+  id?: string;
+  email?: string;
+  name?: string;
+  hasPassword?: boolean | null;
+  avatarUrl?: string | null;
+  emailVerified?: boolean;
   exchangeCode?: string;
   redirectUri?: string;
 }
@@ -97,7 +103,8 @@ export const authHandlers = {
       token,
       client_nonce: clientNonce,
     });
-    await exchangeSession(endpoint, await readJson(response));
+    const body = await readJson<SignInResponse>(response);
+    await exchangeSession(endpoint, body);
   },
 
   signInOauth: async (
@@ -145,7 +152,9 @@ export const authHandlers = {
         password: credential.password,
       }),
     });
-    await exchangeSession(endpoint, await readJson(response));
+    const body = await readJson<SignInResponse>(response);
+    await exchangeSession(endpoint, body);
+    return body;
   },
 
   signInOpenAppSignInCode: async (_e, endpoint: string, code: string) => {
