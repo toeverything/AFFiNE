@@ -346,7 +346,11 @@ export class PointerEventWatcher {
       container.style.display = 'flex';
 
       // Position the add-block widget beside the drag handle, aligned to the first line.
-      if (addBlockWidgetContainer && this.widget.showAddBlockWidget) {
+      if (
+        addBlockWidgetContainer &&
+        this.widget.showAddBlockWidget &&
+        this.widget.mode === 'page'
+      ) {
         const posTop = this._getTopWithBlockComponent(block);
         addBlockWidgetContainer.style.left = `${draggingAreaRect.left - ADD_BLOCK_WIDGET_WIDTH}px`;
         addBlockWidgetContainer.style.top = `${posTop}px`;
