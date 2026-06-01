@@ -1378,6 +1378,8 @@
   "com.affine.settings.editorSettings.general.auto-date-title.format.mm-dd-yyyy": "MM-DD-YYYY",
   "com.affine.settings.editorSettings.general.auto-date-title.format.yyyy-mm-dd": "YYYY-MM-DD",
   "com.affine.settings.editorSettings.general.auto-date-title.format.journal": "Journal style (localized)",
+  "com.affine.settings.editorSettings.general.add-icon-option.title": "Display add icon option",
+  "com.affine.settings.editorSettings.general.add-icon-option.description": "Show or hide the add icon option for docs without an icon.",
   "com.affine.settings.editorSettings.general.font-family.custom.description": "Customize your text experience.",
   "com.affine.settings.editorSettings.general.font-family.custom.title": "Custom font family",
   "com.affine.settings.editorSettings.general.font-family.description": "Choose your editor's font family.",

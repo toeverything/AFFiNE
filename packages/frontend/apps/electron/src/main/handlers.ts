@@ -2,6 +2,7 @@ import { I18n } from '@affine/i18n';
 import { ipcMain } from 'electron';
 
 import { AFFINE_API_CHANNEL_NAME } from '../shared/type';
+import { authHandlers } from './auth/handlers';
 import { byokStorageHandlers } from './byok-storage/handlers';
 import { clipboardHandlers } from './clipboard';
 import { configStorageHandlers } from './config-storage';
@@ -44,6 +45,7 @@ export const allHandlers = {
   popup: popupHandlers,
   i18n: i18nHandlers,
   byokStorage: byokStorageHandlers,
+  auth: authHandlers,
 };
 
 export const registerHandlers = () => {

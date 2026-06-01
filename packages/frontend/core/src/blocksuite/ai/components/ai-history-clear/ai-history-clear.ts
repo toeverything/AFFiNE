@@ -7,7 +7,6 @@ import type { Store } from '@blocksuite/affine/store';
 import { css, html } from 'lit';
 import { property } from 'lit/decorators.js';
 
-import { AIProvider } from '../../provider';
 import type { ChatContextValue } from '../ai-chat-content';
 
 export class AIHistoryClear extends WithDisposable(ShadowlessElement) {
@@ -25,6 +24,9 @@ export class AIHistoryClear extends WithDisposable(ShadowlessElement) {
 
   @property({ attribute: false })
   accessor onHistoryCleared!: () => void;
+
+  @property({ attribute: false })
+  accessor onClearHistory!: (sessionIds: string[]) => Promise<void> | void;
 
   static override styles = css`
     .chat-history-clear {
@@ -64,11 +66,10 @@ export class AIHistoryClear extends WithDisposable(ShadowlessElement) {
         const actionIds = this.chatContextValue.messages
           .filter(item => 'sessionId' in item)
           .map(item => item.sessionId);
-        await AIProvider.histories?.cleanup(
-          this.doc.workspace.id,
-          this.doc.id,
-          [...(sessionId ? [sessionId] : []), ...(actionIds || [])]
-        );
+        await this.onClearHistory([
+          ...(sessionId ? [sessionId] : []),
+          ...(actionIds || []),
+        ]);
         this.notificationService.toast('History cleared');
         this.onHistoryCleared?.();
       }

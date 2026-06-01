@@ -46,13 +46,12 @@ const McpServerSetting = () => {
     return accessTokens?.find(token => token.name === 'mcp');
   }, [accessTokens]);
 
-  const displayedToken = revealedAccessToken ?? mcpAccessToken;
   const hasMcpToken = Boolean(revealedAccessToken || mcpAccessToken);
   const hasCopyableToken = Boolean(revealedAccessToken);
   const isRedactedDisplay = hasMcpToken && !hasCopyableToken;
 
   const code = useMemo(() => {
-    return displayedToken
+    return revealedAccessToken
       ? JSON.stringify(
           {
             mcpServers: {
@@ -61,7 +60,7 @@ const McpServerSetting = () => {
                 url: `${serverService.server.baseUrl}/api/workspaces/${workspaceService.workspace.id}/mcp`,
                 note: `Read docs from AFFiNE workspace "${workspaceName}"`,
                 headers: {
-                  Authorization: `Bearer ${displayedToken.token}`,
+                  Authorization: `Bearer ${revealedAccessToken.token}`,
                 },
               },
             },
@@ -70,7 +69,7 @@ const McpServerSetting = () => {
           2
         )
       : null;
-  }, [displayedToken, workspaceName, workspaceService, serverService]);
+  }, [revealedAccessToken, workspaceName, workspaceService, serverService]);
 
   const copyJsonDisabled = !code || mutating || isRedactedDisplay;
   const copyJsonTooltip = isRedactedDisplay

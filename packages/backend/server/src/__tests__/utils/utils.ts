@@ -11,13 +11,39 @@ async function flushDB(client: PrismaClient) {
                            FROM pg_catalog.pg_tables
                            WHERE schemaname != 'pg_catalog'
                              AND schemaname != 'information_schema'`;
+  const query = `TRUNCATE TABLE ${result
+    .map(({ tablename }) => tablename)
+    .filter(name => !name.includes('migrations'))
+    .join(', ')}`;
 
-  // remove all table data
-  await client.$executeRawUnsafe(
-    `TRUNCATE TABLE ${result
-      .map(({ tablename }) => tablename)
-      .filter(name => !name.includes('migrations'))
-      .join(', ')}`
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      // remove all table data
+      await client.$executeRawUnsafe(query);
+      return;
+    } catch (error) {
+      if (!isDeadlockError(error) || attempt === 2) {
+        throw error;
+      }
+      await sleep((attempt + 1) * 50);
+    }
+  }
+}
+
+function isDeadlockError(error: unknown) {
+  if (typeof error !== 'object' || error === null || !('code' in error)) {
+    return false;
+  }
+
+  const prismaError = error as {
+    code?: string;
+    meta?: { code?: string; message?: string };
+  };
+
+  return (
+    prismaError.code === 'P2010' &&
+    (prismaError.meta?.code === '40P01' ||
+      /deadlock detected/i.test(prismaError.meta?.message ?? ''))
   );
 }
 

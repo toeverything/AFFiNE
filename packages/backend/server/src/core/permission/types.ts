@@ -145,6 +145,7 @@ export const RoleActionsMap = {
         Action.Doc.Delete,
         Action.Doc.Properties.Update,
         Action.Doc.Update,
+        Action.Doc.Comments.Update,
         Action.Doc.Comments.Resolve,
         Action.Doc.Comments.Delete,
       ];

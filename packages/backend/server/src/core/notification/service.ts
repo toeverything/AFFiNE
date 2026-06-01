@@ -17,11 +17,13 @@ import {
 } from '../../models';
 import { DocReader } from '../doc';
 import { Mailer } from '../mail';
+import { realtimeNotificationRoom, RealtimePublisher } from '../realtime';
 import { generateDocPath } from '../utils/doc';
 import {
   generateWorkspaceSettingsPath,
   WorkspaceSettingsTab,
 } from '../utils/workspace';
+import { containsUrlOrDomain } from '../workspaces/abuse';
 
 @Injectable()
 export class NotificationService {
@@ -31,11 +33,22 @@ export class NotificationService {
     private readonly models: Models,
     private readonly docReader: DocReader,
     private readonly mailer: Mailer,
-    private readonly url: URLHelper
+    private readonly url: URLHelper,
+    private readonly realtime: RealtimePublisher
   ) {}
 
   async cleanExpiredNotifications() {
-    return await this.models.notification.cleanExpiredNotifications();
+    const userIds =
+      await this.models.notification.findExpiredNotificationUserIds();
+    const count = await this.models.notification.cleanExpiredNotifications();
+    if (count > 0) {
+      await Promise.all(
+        userIds.map(userId =>
+          this.publishCountChanged(userId, 'expired-cleanup')
+        )
+      );
+    }
+    return count;
   }
 
   async createComment(input: CommentNotificationCreate, isMention?: boolean) {
@@ -43,6 +56,7 @@ export class NotificationService {
       ? await this.models.notification.createCommentMention(input)
       : await this.models.notification.createComment(input);
     await this.sendCommentEmail(input, isMention);
+    await this.publishCountChanged(input.userId, 'created');
     return notification;
   }
 
@@ -93,6 +107,7 @@ export class NotificationService {
   async createMention(input: MentionNotificationCreate) {
     const notification = await this.models.notification.createMention(input);
     await this.sendMentionEmail(input);
+    await this.publishCountChanged(input.userId, 'created');
     return notification;
   }
 
@@ -147,10 +162,21 @@ export class NotificationService {
       NotificationType.Invitation
     );
     await this.sendInvitationEmail(input);
+    await this.publishCountChanged(input.userId, 'created');
     return notification;
   }
 
   private async sendInvitationEmail(input: InvitationNotificationCreate) {
+    const workspace = await this.docReader.getWorkspaceContent(
+      input.body.workspaceId
+    );
+    if (containsUrlOrDomain(workspace?.name)) {
+      this.logger.warn(
+        `Skip invitation email for workspace ${input.body.workspaceId}, reason=workspace name contains url or domain`
+      );
+      return;
+    }
+
     const inviteUrl = this.url.link(`/invite/${input.body.inviteId}`);
     if (env.dev) {
       // make it easier to test in dev mode
@@ -198,6 +224,7 @@ export class NotificationService {
       NotificationType.InvitationAccepted
     );
     await this.sendInvitationAcceptedEmail(input);
+    await this.publishCountChanged(input.userId, 'created');
     return notification;
   }
 
@@ -240,18 +267,22 @@ export class NotificationService {
 
   async createInvitationBlocked(input: InvitationNotificationCreate) {
     await this.ensureWorkspaceContentExists(input.body.workspaceId);
-    return await this.models.notification.createInvitation(
+    const notification = await this.models.notification.createInvitation(
       input,
       NotificationType.InvitationBlocked
     );
+    await this.publishCountChanged(input.userId, 'created');
+    return notification;
   }
 
   async createInvitationRejected(input: InvitationNotificationCreate) {
     await this.ensureWorkspaceContentExists(input.body.workspaceId);
-    return await this.models.notification.createInvitation(
+    const notification = await this.models.notification.createInvitation(
       input,
       NotificationType.InvitationRejected
     );
+    await this.publishCountChanged(input.userId, 'created');
+    return notification;
   }
 
   async createInvitationReviewRequest(input: InvitationNotificationCreate) {
@@ -267,6 +298,7 @@ export class NotificationService {
       NotificationType.InvitationReviewRequest
     );
     await this.sendInvitationReviewRequestEmail(input);
+    await this.publishCountChanged(input.userId, 'created');
     return notification;
   }
 
@@ -315,6 +347,7 @@ export class NotificationService {
       NotificationType.InvitationReviewApproved
     );
     await this.sendInvitationReviewApprovedEmail(input);
+    await this.publishCountChanged(input.userId, 'created');
     return notification;
   }
 
@@ -354,6 +387,7 @@ export class NotificationService {
     const notification =
       await this.models.notification.createInvitationReviewDeclined(input);
     await this.sendInvitationReviewDeclinedEmail(input);
+    await this.publishCountChanged(input.userId, 'created');
     return notification;
   }
 
@@ -397,10 +431,12 @@ export class NotificationService {
       }
       throw err;
     }
+    await this.publishCountChanged(userId, 'read');
   }
 
   async markAllAsRead(userId: string) {
     await this.models.notification.markAllAsRead(userId);
+    await this.publishCountChanged(userId, 'read-all');
   }
 
   /**
@@ -461,6 +497,26 @@ export class NotificationService {
 
   async countByUserId(userId: string) {
     return await this.models.notification.countByUserId(userId);
+  }
+
+  private async publishCountChanged(
+    userId: string,
+    reason: 'created' | 'read' | 'read-all' | 'expired-cleanup'
+  ) {
+    if (!this.realtime) return;
+    try {
+      this.realtime.publish(
+        'notification.count.changed',
+        {},
+        { count: await this.countByUserId(userId), reason },
+        { room: realtimeNotificationRoom(userId) }
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to publish notification count for user ${userId}`,
+        error
+      );
+    }
   }
 
   private formatWorkspaceInfo(workspace: Workspace) {

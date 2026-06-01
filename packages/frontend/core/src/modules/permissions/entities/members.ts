@@ -1,21 +1,22 @@
-import type { GetMembersByWorkspaceIdQuery } from '@affine/graphql';
-import {
-  catchErrorInto,
-  effect,
-  Entity,
-  fromPromise,
-  LiveData,
-  onComplete,
-  onStart,
-  smartRetry,
-} from '@toeverything/infra';
-import { map, switchMap, tap } from 'rxjs';
+import type { WorkspaceMemberStatus } from '@affine/graphql';
+import type {
+  RealtimeTopicEventOf,
+  WorkspaceMemberSnapshot,
+} from '@affine/realtime';
+import { Entity, LiveData } from '@toeverything/infra';
 
+import { RealtimeLiveQuery } from '../../cloud/realtime/live-query';
 import type { WorkspaceService } from '../../workspace';
 import type { WorkspaceMembersStore } from '../stores/members';
 
-export type Member =
-  GetMembersByWorkspaceIdQuery['workspace']['members'][number];
+export type Member = Omit<
+  WorkspaceMemberSnapshot,
+  'permission' | 'role' | 'status'
+> & {
+  permission: string;
+  role: string;
+  status: WorkspaceMemberStatus;
+};
 
 export class WorkspaceMembers extends Entity {
   constructor(
@@ -23,6 +24,7 @@ export class WorkspaceMembers extends Entity {
     private readonly workspaceService: WorkspaceService
   ) {
     super();
+    this.liveQuery.start();
   }
 
   pageNum$ = new LiveData(0);
@@ -34,37 +36,48 @@ export class WorkspaceMembers extends Entity {
 
   readonly PAGE_SIZE = 8;
 
-  readonly revalidate = effect(
-    map(() => this.pageNum$.value),
-    switchMap(pageNum => {
-      return fromPromise(async signal => {
-        return this.store.fetchMembers(
-          this.workspaceService.workspace.id,
-          pageNum * this.PAGE_SIZE,
-          this.PAGE_SIZE,
-          signal
-        );
-      }).pipe(
-        tap(data => {
-          this.memberCount$.setValue(data.memberCount);
-          this.pageMembers$.setValue(data.members);
-        }),
-        smartRetry(),
-        catchErrorInto(this.error$),
-        onStart(() => {
-          this.pageMembers$.setValue(undefined);
-          this.isLoading$.setValue(true);
-        }),
-        onComplete(() => this.isLoading$.setValue(false))
-      );
-    })
-  );
+  private readonly liveQuery = new RealtimeLiveQuery<
+    { members: Member[]; memberCount: number },
+    RealtimeTopicEventOf<'workspace.members.changed'>
+  >({
+    request: signal => this.requestMembers(signal),
+    subscribe: () =>
+      this.store.subscribeMembers(this.workspaceService.workspace.id),
+    applySnapshot: data => {
+      this.error$.next(null);
+      this.memberCount$.setValue(data.memberCount);
+      this.pageMembers$.setValue(data.members);
+    },
+    applyEvent: () => 'revalidate',
+    onError: error => this.error$.setValue(error),
+  });
+
+  revalidate = () => {
+    this.liveQuery.revalidate();
+  };
 
   setPageNum(pageNum: number) {
     this.pageNum$.setValue(pageNum);
+    this.revalidate();
   }
 
   override dispose(): void {
-    this.revalidate.unsubscribe();
+    this.liveQuery.dispose();
+  }
+
+  private async requestMembers(signal: AbortSignal) {
+    this.pageMembers$.setValue(undefined);
+    this.isLoading$.setValue(true);
+    try {
+      const pageNum = this.pageNum$.value;
+      return await this.store.fetchMembers(
+        this.workspaceService.workspace.id,
+        pageNum * this.PAGE_SIZE,
+        this.PAGE_SIZE,
+        signal
+      );
+    } finally {
+      this.isLoading$.setValue(false);
+    }
   }
 }

@@ -1,6 +1,6 @@
 import { Scrollable } from '@affine/component';
 import { PageDetailLoading } from '@affine/component/page-detail-skeleton';
-import { type AIChatParams, AIProvider } from '@affine/core/blocksuite/ai';
+import { AIAppEvents, type AIChatParams } from '@affine/core/blocksuite/ai';
 import type { AffineEditorContainer } from '@affine/core/blocksuite/block-suite-editor';
 import { EditorOutlineViewer } from '@affine/core/blocksuite/outline-viewer';
 import { AffineErrorBoundary } from '@affine/core/components/affine/affine-error-boundary';
@@ -137,12 +137,8 @@ function DocPeekPreviewEditor({
         // chat panel open is already handled in <DetailPageImpl />
       }
     };
-    disposables.push(
-      AIProvider.slots.requestOpenWithChat.subscribe(openHandler)
-    );
-    disposables.push(
-      AIProvider.slots.requestSendWithChat.subscribe(openHandler)
-    );
+    disposables.push(AIAppEvents.requestOpenWithChat.subscribe(openHandler));
+    disposables.push(AIAppEvents.requestSendWithChat.subscribe(openHandler));
     return () => disposables.forEach(d => d.unsubscribe());
   }, [doc, peekView, workbench, workspace.id]);
 

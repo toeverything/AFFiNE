@@ -117,7 +117,7 @@ export class EmbedGithubBlockComponent extends EmbedBlockComponent<
 
   override renderBlock() {
     const {
-      title = 'GitHub',
+      title,
       githubType,
       status,
       statusReason,
@@ -139,7 +139,7 @@ export class EmbedGithubBlockComponent extends EmbedBlockComponent<
       ? getGithubStatusIcon(githubType, status, statusReason)
       : nothing;
     const statusText = loading ? '' : status;
-    const titleText = loading ? 'Loading...' : title;
+    const titleText = loading ? 'Loading...' : title || 'GitHub';
     const descriptionText = loading ? '' : description;
     const bannerImage =
       !loading && image

@@ -66,7 +66,7 @@ const EmbeddingCloud: React.FC<{ disabled: boolean }> = ({ disabled }) => {
         .setEnabled(checked)
         .then(() => {
           if (checked) {
-            embeddingService.embeddingProgress.startEmbeddingProgressPolling();
+            embeddingService.embeddingProgress.startEmbeddingProgress();
           }
         })
         .catch(error => {
@@ -91,8 +91,7 @@ const EmbeddingCloud: React.FC<{ disabled: boolean }> = ({ disabled }) => {
         docType: file.type,
       });
       embeddingService.additionalAttachments.addAttachments([file]);
-      // Restart polling to track progress of newly uploaded files
-      embeddingService.embeddingProgress.startEmbeddingProgressPolling();
+      embeddingService.embeddingProgress.startEmbeddingProgress();
     },
     [embeddingService.additionalAttachments, embeddingService.embeddingProgress]
   );
@@ -168,7 +167,7 @@ const EmbeddingCloud: React.FC<{ disabled: boolean }> = ({ disabled }) => {
   ]);
 
   useEffect(() => {
-    embeddingService.embeddingProgress.startEmbeddingProgressPolling();
+    embeddingService.embeddingProgress.startEmbeddingProgress();
     embeddingService.embeddingEnabled.getEnabled();
     embeddingService.additionalAttachments.getAttachments({
       first: COUNT_PER_PAGE,
@@ -178,7 +177,7 @@ const EmbeddingCloud: React.FC<{ disabled: boolean }> = ({ disabled }) => {
     embeddingService.embeddingProgress.getEmbeddingProgress();
 
     return () => {
-      embeddingService.embeddingProgress.stopEmbeddingProgressPolling();
+      embeddingService.embeddingProgress.stopEmbeddingProgress();
     };
   }, [
     embeddingService.embeddingProgress,

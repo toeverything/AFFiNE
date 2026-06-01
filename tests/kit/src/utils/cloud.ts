@@ -116,6 +116,7 @@ export async function createRandomUser(): Promise<{
       data: {
         ...user,
         emailVerifiedAt: new Date(),
+        createdAt: new Date(Date.now() - 25 * 60 * 60 * 1000),
         password: await hash(user.password),
         features: {
           create: {
@@ -179,7 +180,7 @@ export async function createRandomAIUser(): Promise<{
     password: '123456',
   };
   const result = await runPrisma(async client => {
-    await client.user.create({
+    const created = await client.user.create({
       data: {
         ...user,
         emailVerifiedAt: new Date(),
@@ -203,11 +204,21 @@ export async function createRandomAIUser(): Promise<{
       },
     });
 
-    return await client.user.findUnique({
-      where: {
-        email: user.email,
+    await client.entitlement.create({
+      data: {
+        targetType: 'user',
+        targetId: created.id,
+        source: 'cloud_subscription',
+        plan: 'ai',
+        status: 'active',
+        subjectId: `test-ai:${created.id}`,
+        metadata: {
+          legacySync: false,
+        },
       },
     });
+
+    return created;
   });
   cloudUserSchema.parse(result);
   return {

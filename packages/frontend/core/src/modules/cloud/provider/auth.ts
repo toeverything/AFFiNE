@@ -21,6 +21,8 @@ export interface AuthProvider {
     challenge?: string;
   }): Promise<void>;
 
+  signInOpenAppSignInCode(code: string): Promise<void>;
+
   signOut(): Promise<void>;
 }
 

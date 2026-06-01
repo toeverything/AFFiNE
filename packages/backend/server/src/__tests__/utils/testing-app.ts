@@ -110,6 +110,10 @@ export class TestingApp extends ApplyType<INestApplication>() {
 
   async initTestingDB() {
     await initTestingDB(this);
+    this.clearAuth();
+  }
+
+  clearAuth() {
     this.sessionCookie = null;
     this.currentUserCookie = null;
     this.csrfCookie = null;
@@ -280,6 +284,7 @@ export class TestingApp extends ApplyType<INestApplication>() {
       password: '1',
       name: email,
       emailVerifiedAt: new Date(),
+      createdAt: new Date(Date.now() - 25 * 60 * 60 * 1000),
       ...override,
     });
 

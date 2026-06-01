@@ -552,6 +552,27 @@ export async function focusRichText(
   await expect(locator).toBeVisible();
   // need to set `force` to true when clicking on `affine-selected-blocks`
   await locator.click({ force: true, position: options?.clickPosition });
+  await expect
+    .poll(() =>
+      page.evaluate(
+        ([i, currentEditorIndex]) => {
+          const editorHost =
+            document.querySelectorAll('editor-host')[currentEditorIndex];
+          const richText =
+            editorHost?.querySelectorAll<RichText>('rich-text')[i];
+          const inlineEditor = richText?.inlineEditor;
+          if (!inlineEditor) {
+            return false;
+          }
+          if (inlineEditor.getInlineRange() === null) {
+            inlineEditor.focusIndex(0);
+          }
+          return inlineEditor.getInlineRange() !== null;
+        },
+        [i, currentEditorIndex]
+      )
+    )
+    .toBe(true);
 }
 
 export async function focusRichTextEnd(page: Page, i = 0) {

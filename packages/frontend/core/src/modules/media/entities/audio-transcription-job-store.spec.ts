@@ -1,5 +1,4 @@
 import {
-  getTranscriptTaskQuery,
   retryTranscriptTaskMutation,
   settleTranscriptTaskMutation,
   submitTranscriptTaskMutation,
@@ -10,6 +9,7 @@ import { describe, expect, test, vi } from 'vitest';
 import { DefaultServerService } from '../../cloud/services/default-server';
 import { GraphQLService } from '../../cloud/services/graphql';
 import { WorkspaceServerService } from '../../cloud/services/workspace-server';
+import { NbstoreService } from '../../storage';
 import { WorkspaceService } from '../../workspace';
 import { AudioTranscriptionJobStore } from './audio-transcription-job-store';
 
@@ -30,6 +30,10 @@ function createStore(
       get: (key: unknown) => (key === GraphQLService ? { gql } : null),
     },
   };
+  const realtime = {
+    request: vi.fn().mockResolvedValue({ task: { id: 'task-2' } }),
+    subscribe: vi.fn(),
+  };
   framework
     .service(WorkspaceService, {
       workspace: { id: 'workspace-1' },
@@ -42,10 +46,14 @@ function createStore(
     .service(DefaultServerService, {
       server: null,
     } as unknown as DefaultServerService)
+    .service(NbstoreService, {
+      realtime,
+    } as unknown as NbstoreService)
     .entity(AudioTranscriptionJobStore, [
       WorkspaceService,
       WorkspaceServerService,
       DefaultServerService,
+      NbstoreService,
     ]);
   return framework.provider().createEntity(AudioTranscriptionJobStore, {
     blobId: 'blob-1',
@@ -60,13 +68,6 @@ describe('AudioTranscriptionJobStore transcript task API', () => {
       .fn()
       .mockResolvedValueOnce({ submitTranscriptTask: { id: 'task-1' } })
       .mockResolvedValueOnce({ retryTranscriptTask: { id: 'task-2' } })
-      .mockResolvedValueOnce({
-        currentUser: {
-          copilot: {
-            transcriptTask: { id: 'task-2' },
-          },
-        },
-      })
       .mockResolvedValueOnce({ settleTranscriptTask: { id: 'task-2' } });
     const store = createStore(gql, async () => ({
       files: [file],
@@ -102,17 +103,6 @@ describe('AudioTranscriptionJobStore transcript task API', () => {
     );
     expect(gql).toHaveBeenNthCalledWith(
       3,
-      expect.objectContaining({
-        query: getTranscriptTaskQuery,
-        variables: {
-          workspaceId: 'workspace-1',
-          taskId: 'task-2',
-          blobId: 'blob-1',
-        },
-      })
-    );
-    expect(gql).toHaveBeenNthCalledWith(
-      4,
       expect.objectContaining({
         query: settleTranscriptTaskMutation,
         variables: {

@@ -374,10 +374,10 @@ export class CopilotEmbeddingJob {
     const docContent = await this.doc.getFullDocContent(workspaceId, docId);
     const authors = await this.models.doc.getAuthors(workspaceId, docId);
     if (docContent && authors) {
-      const { title = 'Untitled', summary } = docContent;
+      const { title, summary } = docContent;
       const { createdAt, updatedAt, createdByUser, updatedByUser } = authors;
       return {
-        title,
+        title: title || 'Untitled',
         summary,
         createdAt: createdAt.toDateString(),
         updatedAt: updatedAt.toDateString(),

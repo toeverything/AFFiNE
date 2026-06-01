@@ -107,7 +107,7 @@ export const AFFINE_FLAGS = {
     feedbackType: 'discord',
     feedbackLink:
       'https://discord.com/channels/959027316334407691/1280014319865696351/1280014319865696351',
-    configurable: true,
+    configurable: false,
     defaultState: true,
   },
   enable_emoji_doc_icon: {
@@ -119,7 +119,7 @@ export const AFFINE_FLAGS = {
     feedbackType: 'discord',
     feedbackLink:
       'https://discord.com/channels/959027316334407691/1280014319865696351',
-    configurable: true,
+    configurable: false,
     defaultState: true,
   },
   enable_editor_settings: {

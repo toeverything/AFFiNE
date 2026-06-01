@@ -36,7 +36,7 @@ import type {
   AIItemGroupConfig,
   AISubItemConfig,
 } from '../components/ai-item/types';
-import { AIProvider } from '../provider';
+import { AIAppEvents } from '../provider';
 import { getAIPanelWidget } from '../utils/ai-widgets';
 import { getEdgelessCopilotWidget } from '../utils/get-edgeless-copilot-widget';
 import {
@@ -386,7 +386,7 @@ const OthersAIGroup: AIItemGroupConfig = {
       handler: host => {
         const panel = getAIPanelWidget(host);
         const edgelessCopilot = getEdgelessCopilotWidget(host);
-        AIProvider.slots.requestOpenWithChat.next({
+        AIAppEvents.requestOpenWithChat.next({
           host,
           autoSelect: true,
         });

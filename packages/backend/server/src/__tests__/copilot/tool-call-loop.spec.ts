@@ -3,7 +3,7 @@ import test from 'ava';
 import { z } from 'zod';
 
 import type { DocReader } from '../../core/doc';
-import type { AccessController } from '../../core/permission';
+import type { PermissionAccess } from '../../core/permission';
 import type { Models } from '../../models';
 import {
   LlmRequest,
@@ -404,7 +404,7 @@ test('doc_read should return specific sync errors for unavailable docs', async t
     user: () => ({
       workspace: () => ({ doc: () => ({ can: async () => true }) }),
     }),
-  } as unknown as AccessController;
+  } as unknown as PermissionAccess;
 
   for (const testCase of cases) {
     let docReaderCalled = false;
@@ -447,7 +447,7 @@ test('document search tools should return sync error for local workspace', async
         docs: async () => [],
       }),
     }),
-  } as unknown as AccessController;
+  } as unknown as PermissionAccess;
 
   const models = {
     workspace: {
@@ -510,7 +510,7 @@ test('doc_semantic_search should return empty array when nothing matches', async
         docs: async () => [],
       }),
     }),
-  } as unknown as AccessController;
+  } as unknown as PermissionAccess;
 
   const models = {
     workspace: {
@@ -542,7 +542,7 @@ test('doc_semantic_search should pass BYOK route context into embedding matches'
         docs: async () => [],
       }),
     }),
-  } as unknown as AccessController;
+  } as unknown as PermissionAccess;
 
   const models = {
     workspace: {
@@ -595,7 +595,7 @@ test('blob_read should return explicit error when attachment context is missing'
         }),
       }),
     }),
-  } as unknown as AccessController;
+  } as unknown as PermissionAccess;
 
   const blobTool = createBlobReadTool(
     buildBlobContentGetter(ac, null).bind(null, {

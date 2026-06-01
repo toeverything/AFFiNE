@@ -14,16 +14,8 @@ export class ConversationPolicy {
   ) {}
 
   async getQuota(userId: string) {
-    const isCopilotUser = await this.models.userFeature.has(
-      userId,
-      'unlimited_copilot'
-    );
-
-    let limit: number | undefined;
-    if (!isCopilotUser) {
-      const quota = await this.quota.getUserQuota(userId);
-      limit = quota.copilotActionLimit;
-    }
+    const quota = await this.quota.getUserQuota(userId);
+    const limit = quota.copilotActionLimit;
 
     const used = await this.models.copilotSession.countUserMessages(userId);
 

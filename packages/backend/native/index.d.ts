@@ -66,6 +66,12 @@ export const AFFINE_PRO_LICENSE_AES_KEY: string | undefined | null
 
 export const AFFINE_PRO_PUBLIC_KEY: string | undefined | null
 
+export declare function assertSafeUrl(request: AssertSafeUrlRequest): void
+
+export interface AssertSafeUrlRequest {
+  url: string
+}
+
 export declare function buildPublicRootDoc(rootDocBin: Buffer, docMetas: Array<PublicDocMetaInput>): Buffer
 
 export interface BuiltInPromptRenderContract {
@@ -163,11 +169,31 @@ export interface Chunk {
  */
 export declare function createDocWithMarkdown(title: string, markdown: string, docId: string): Buffer
 
+export declare function evaluatePermissionV1(input: any): any
+
+export declare function fetchRemoteAttachment(request: RemoteAttachmentFetchRequest): Promise<RemoteAttachmentFetchResponse>
+
 export declare function fromModelName(modelName: string): Tokenizer | null
 
 export declare function getMime(input: Uint8Array): string
 
 export declare function htmlSanitize(input: string): string
+
+export interface ImageInspection {
+  mimeType: string
+  width: number
+  height: number
+}
+
+export interface ImageInspectionOptions {
+  maxWidth?: number
+  maxHeight?: number
+  maxPixels?: number
+}
+
+export declare function inferRemoteMimeType(request: RemoteMimeTypeRequest): Promise<string>
+
+export declare function inspectImageForProxy(input: Buffer, options?: ImageInspectionOptions | undefined | null): ImageInspection
 
 export declare function llmBuildCanonicalRequest(request: CanonicalChatRequestContract): LlmRequestContract
 
@@ -451,6 +477,10 @@ export declare function parsePageDoc(docBin: Buffer, maxSummaryLength?: number |
 
 export declare function parseWorkspaceDoc(docBin: Buffer): NativeWorkspaceDocContent | null
 
+export declare function permissionActionRoleMatrixV1(): any
+
+export declare function permissionActionRoleMatrixV1Json(): string
+
 export declare function processImage(input: Buffer, maxEdge: number, keepExif: boolean): Promise<Buffer>
 
 export type PromptBuiltin =  'Date'|
@@ -572,6 +602,28 @@ export interface PublicDocMetaInput {
 
 export declare function readAllDocIdsFromRootDoc(docBin: Buffer, includeTrash?: boolean | undefined | null): Array<string>
 
+export interface RemoteAttachmentFetchRequest {
+  url: string
+  timeoutMs?: number
+  maxBytes: number
+  allowPrivateTargetOrigin?: boolean
+  expectedContentTypePrefix?: string
+  maxImageWidth?: number
+  maxImageHeight?: number
+  maxImagePixels?: number
+}
+
+export interface RemoteAttachmentFetchResponse {
+  finalUrl: string
+  mimeType: string
+  body: Buffer
+}
+
+export interface RemoteMimeTypeRequest {
+  url: string
+  timeoutMs?: number
+}
+
 export interface RequestedModelMatchRequest {
   providerIds: Array<string>
   optionalModels: Array<string>
@@ -589,7 +641,69 @@ export interface RerankCandidate {
   text: string
 }
 
+export interface ResolvedEntitlement {
+  plan: string
+  valid: boolean
+  status: string
+  quantity?: number
+  expiresAt?: string
+  subjectId?: string
+  targetId?: string
+  recurring?: string
+  issuedAt?: string
+  entity?: string
+  issuer?: string
+  quota: ResolvedQuota
+  flags: Record<string, boolean>
+  errorCode?: string
+  errorMessage?: string
+}
+
+export interface ResolvedQuota {
+  blobLimit: number
+  storageQuota: number
+  seatLimit?: number
+  seatQuota?: number
+  historyPeriod: number
+  copilotActionLimit?: number
+}
+
+export interface ResolveEntitlementInput {
+  deploymentType: string
+  targetType: string
+  targetId?: string
+  plan?: string
+  quantity?: number
+  signedPayload?: Buffer
+  publicKey?: string
+  licenseAesKey?: string
+  now: string
+}
+
+export declare function resolveEntitlementV1(input: ResolveEntitlementInput): ResolvedEntitlement
+
 export declare function runNativeActionRecipePreparedStream(input: ActionRuntimeInput, callback: ((err: Error | null, arg: string) => void)): LlmStreamHandle
+
+export declare function safeFetch(request: SafeFetchRequest): Promise<SafeFetchResponse>
+
+export type SafeFetchMethod =  'get'|
+'head';
+
+export interface SafeFetchRequest {
+  url: string
+  method?: SafeFetchMethod
+  headers?: Record<string, string>
+  timeoutMs?: number
+  maxRedirects?: number
+  maxBytes?: number
+}
+
+export interface SafeFetchResponse {
+  status: number
+  finalUrl: string
+  headers: Record<string, string>
+  body: Buffer
+}
 
 export interface ToolContract {
   name: string

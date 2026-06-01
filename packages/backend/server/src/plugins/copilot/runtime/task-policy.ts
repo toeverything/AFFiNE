@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-import { Models } from '../../../models';
+import { QuotaStateService } from '../../../core/quota/state';
 import { PromptService } from '../prompt/service';
 
 export const DEFAULT_EMBEDDING_MODEL = 'gemini-embedding-001';
@@ -9,7 +9,7 @@ export const DEFAULT_RERANK_MODEL = 'gpt-4o-mini';
 @Injectable()
 export class TaskPolicy {
   constructor(
-    private readonly models: Models,
+    private readonly quotaState: QuotaStateService,
     private readonly prompts: PromptService
   ) {}
 
@@ -25,10 +25,11 @@ export class TaskPolicy {
     const prompt = await this.prompts.get('Transcript audio');
     if (!prompt) return;
 
-    const hasAccess = await this.models.userFeature.has(
-      userId,
-      'unlimited_copilot'
-    );
+    const state = await this.quotaState.reconcileUserQuotaState(userId);
+    const flags = state.flags as { unlimitedCopilot?: boolean };
+    const hasAccess =
+      !!flags.unlimitedCopilot ||
+      ['pro', 'lifetime_pro', 'ai'].includes(state.plan);
     return prompt.optionalModels[hasAccess ? 1 : 0] ?? prompt.model;
   }
 }

@@ -60,14 +60,17 @@ async function withTimeout<T>(
   }
 }
 
-function createClient(url: string, cookie: string): SocketIOClient {
+function createClient(
+  url: string,
+  cookie?: string,
+  auth?: Record<string, unknown>
+): SocketIOClient {
   return io(url, {
     transports: ['websocket'],
     reconnection: false,
     forceNew: true,
-    extraHeaders: {
-      cookie,
-    },
+    ...(cookie ? { extraHeaders: { cookie } } : {}),
+    ...(auth ? { auth } : {}),
   });
 }
 
@@ -146,14 +149,24 @@ function expectNoEvent(
 
 async function login(app: TestingApp) {
   const user = await app.createUser();
-  const res = await app
+  const cookieRes = await app
     .POST('/api/auth/sign-in')
     .send({ email: user.email, password: user.password })
     .expect(200);
+  const nativeRes = await app
+    .POST('/api/auth/sign-in')
+    .set('x-affine-client-kind', 'native')
+    .send({ email: user.email, password: user.password })
+    .expect(200);
+  const tokenRes = await app
+    .POST('/api/auth/native/exchange')
+    .set('x-affine-client-kind', 'native')
+    .send({ code: nativeRes.body.exchangeCode })
+    .expect(201);
 
-  const cookies = res.get('Set-Cookie') ?? [];
+  const cookies = cookieRes.get('Set-Cookie') ?? [];
   const cookieHeader = cookies.map(c => c.split(';')[0]).join('; ');
-  return { user, cookieHeader };
+  return { user, cookieHeader, token: tokenRes.body.token as string };
 }
 
 function createYjsUpdateBase64() {
@@ -215,6 +228,52 @@ test.beforeEach(async () => {
 
 test.after.always(async () => {
   await app.close();
+});
+
+test('should reject websocket legacy session token auth', async t => {
+  const { cookieHeader } = await login(app);
+  const sessionCookie = cookieHeader
+    .split('; ')
+    .find(cookie => cookie.startsWith('affine_session='));
+  const token = sessionCookie?.split('=')[1];
+  t.truthy(token);
+
+  const socket = createClient(url, undefined, { token });
+
+  try {
+    await t.throwsAsync(() => waitForConnect(socket));
+  } finally {
+    socket.disconnect();
+  }
+});
+
+test('should connect websocket with jwt auth', async t => {
+  const { token } = await login(app);
+  const socket = createClient(url, undefined, { token, tokenType: 'jwt' });
+
+  try {
+    await waitForConnect(socket);
+    t.true(socket.connected);
+  } finally {
+    socket.disconnect();
+  }
+});
+
+test('should reject websocket jwt auth after session deletion', async t => {
+  const { token } = await login(app);
+
+  await app
+    .POST('/api/auth/sign-out')
+    .set('Authorization', `Bearer ${token}`)
+    .expect(200);
+
+  const socket = createClient(url, undefined, { token, tokenType: 'jwt' });
+
+  try {
+    await t.throwsAsync(() => waitForConnect(socket));
+  } finally {
+    socket.disconnect();
+  }
 });
 
 test('clientVersion=0.25.0 should only receive space:broadcast-doc-update', async t => {

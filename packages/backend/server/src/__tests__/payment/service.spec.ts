@@ -420,7 +420,7 @@ test('should throw if user has subscription already', async t => {
       recurring: SubscriptionRecurring.Monthly,
       status: SubscriptionStatus.Active,
       start: new Date(),
-      end: new Date(),
+      end: new Date(Date.now() + 100000),
     },
   });
 
@@ -436,6 +436,37 @@ test('should throw if user has subscription already', async t => {
       ),
     { message: 'You have already subscribed to the pro plan.' }
   );
+});
+
+test('should allow checkout after local subscription period ended', async t => {
+  const { service, u1, db, stripe } = t.context;
+
+  await db.subscription.create({
+    data: {
+      targetId: u1.id,
+      stripeSubscriptionId: 'sub_expired_ai',
+      plan: SubscriptionPlan.AI,
+      recurring: SubscriptionRecurring.Yearly,
+      status: SubscriptionStatus.Active,
+      start: new Date('2026-05-04T13:11:45.000Z'),
+      end: new Date('2026-05-11T13:11:45.000Z'),
+    },
+  });
+
+  await service.checkout(
+    {
+      plan: SubscriptionPlan.AI,
+      recurring: SubscriptionRecurring.Yearly,
+      successCallbackLink: '',
+    },
+    { user: u1 }
+  );
+
+  t.true(stripe.checkout.sessions.create.calledOnce);
+  t.deepEqual(getLastCheckoutPrice(stripe.checkout.sessions.create), {
+    price: AI_YEARLY,
+    coupon: undefined,
+  });
 });
 
 test('should get correct pro plan price for checking out', async t => {
@@ -848,7 +879,7 @@ test('should be able to cancel subscription', async t => {
       recurring: SubscriptionRecurring.Yearly,
       status: SubscriptionStatus.Active,
       start: new Date(),
-      end: new Date(),
+      end: new Date(Date.now() + 100000),
     },
   });
 
@@ -1368,7 +1399,7 @@ test('should be able to subscribe to lifetime recurring with old subscription', 
       recurring: SubscriptionRecurring.Monthly,
       status: SubscriptionStatus.Active,
       start: new Date(),
-      end: new Date(),
+      end: new Date(Date.now() + 100000),
     },
   });
 
@@ -1402,7 +1433,7 @@ test('should not be able to cancel lifetime subscription', async t => {
       recurring: SubscriptionRecurring.Lifetime,
       status: SubscriptionStatus.Active,
       start: new Date(),
-      end: new Date(),
+      end: null,
     },
   });
 
@@ -1426,7 +1457,7 @@ test('should not be able to update lifetime recurring', async t => {
       recurring: SubscriptionRecurring.Lifetime,
       status: SubscriptionStatus.Active,
       start: new Date(),
-      end: new Date(),
+      end: null,
     },
   });
 
@@ -1481,7 +1512,7 @@ test('should be able to checkout onetime payment if previous subscription is one
       variant: SubscriptionVariant.Onetime,
       status: SubscriptionStatus.Active,
       start: new Date(),
-      end: new Date(),
+      end: new Date(Date.now() + 100000),
     },
   });
 
@@ -1518,7 +1549,7 @@ test('should not be able to checkout out onetime payment if previous subscriptio
       recurring: SubscriptionRecurring.Monthly,
       status: SubscriptionStatus.Active,
       start: new Date(),
-      end: new Date(),
+      end: new Date(Date.now() + 100000),
     },
   });
 
@@ -1698,7 +1729,7 @@ test('should not be able to checkout for workspace if subscribed', async t => {
       recurring: SubscriptionRecurring.Monthly,
       status: SubscriptionStatus.Active,
       start: new Date(),
-      end: new Date(),
+      end: new Date(Date.now() + 100000),
       quantity: 1,
     },
   });

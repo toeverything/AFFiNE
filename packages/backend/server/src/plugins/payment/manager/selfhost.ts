@@ -15,9 +15,9 @@ import {
   LookupKey,
   SubscriptionPlan,
   SubscriptionRecurring,
-  SubscriptionStatus,
 } from '../types';
 import {
+  activeSubscriptionWhere,
   CheckoutParams,
   Invoice,
   Subscription,
@@ -199,9 +199,7 @@ export class SelfhostTeamSubscriptionManager extends SubscriptionManager {
       where: {
         targetId: identity.key,
         plan: identity.plan,
-        status: {
-          in: [SubscriptionStatus.Active, SubscriptionStatus.Trialing],
-        },
+        ...activeSubscriptionWhere(),
       },
     });
   }

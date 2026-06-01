@@ -59,6 +59,7 @@ export function setupStoreManager(framework: Framework) {
   });
 
   framework.impl(NbstoreProvider, {
+    realtime: storeManagerClient.realtime,
     openStore(key, options) {
       const { store, dispose } = storeManagerClient.open(key, options);
 

@@ -19,4 +19,5 @@ export class QuotaModule {}
 
 export { QuotaService };
 export { QuotaServiceModule };
+export { QuotaStateService } from './state';
 export { WorkspaceQuotaHumanReadableType, WorkspaceQuotaType } from './types';

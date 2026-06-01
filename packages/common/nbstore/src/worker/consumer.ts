@@ -2,6 +2,7 @@ import { OpConsumer } from '@toeverything/infra/op';
 import { Observable } from 'rxjs';
 
 import { type StorageConstructor } from '../impls';
+import { RealtimeManager } from '../realtime';
 import { SpaceStorage } from '../storage';
 import type { AwarenessRecord } from '../storage/awareness';
 import { Sync } from '../sync';
@@ -340,6 +341,7 @@ export class StoreManagerConsumer {
     { store: StoreConsumer; refCount: number }
   >();
   private readonly telemetry = new TelemetryManager();
+  private readonly realtime = new RealtimeManager();
 
   constructor(
     private readonly availableStorageImplementations: StorageConstructor[]
@@ -393,6 +395,12 @@ export class StoreManagerConsumer {
       'telemetry.pageview': event => this.telemetry.pageview(event),
       'telemetry.flush': () => this.telemetry.flush(),
       'telemetry.getQueueState': () => this.telemetry.getQueueState(),
+      'realtime.configure': context => this.realtime.setContext(context),
+      'realtime.request': ({ op, input, timeoutMs }) =>
+        this.realtime.request(op, input, { timeoutMs }),
+      'realtime.subscribe': ({ topic, input }) =>
+        this.realtime.subscribe(topic, input),
+      'realtime.status': () => this.realtime.getStatus(),
     });
   }
 }

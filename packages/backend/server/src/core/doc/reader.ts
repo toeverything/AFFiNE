@@ -16,6 +16,7 @@ import {
   parseDocToMarkdownFromDocSnapshot,
   parsePageDoc,
   parseWorkspaceDoc,
+  type WorkspaceDocContent,
 } from '../utils/blocksuite';
 import { PgWorkspaceDocStorageAdapter } from './adapters/workspace';
 import { type DocDiff, type DocRecord } from './storage';
@@ -242,10 +243,17 @@ export class DatabaseDocReader extends DocReader {
     if (!docRecord) {
       return null;
     }
-    const content = this.parseWorkspaceContent(docRecord.bin);
-    if (!content) {
+    let content: WorkspaceDocContent | null;
+    try {
+      content = this.parseWorkspaceContent(docRecord.bin);
+    } catch (error) {
+      this.logger.warn(
+        `Failed to parse workspace ${workspaceId} content`,
+        error as Error
+      );
       return null;
     }
+    if (!content) return null;
     let avatarUrl: string | undefined;
     if (content.avatarKey) {
       avatarUrl = this.blobStorage.getAvatarUrl(workspaceId, content.avatarKey);

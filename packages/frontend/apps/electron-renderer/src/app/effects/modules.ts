@@ -2,7 +2,12 @@ import { configureElectronStateStorageImpls } from '@affine/core/desktop/storage
 import { configureCommonModules } from '@affine/core/modules';
 import { configureAppTabsHeaderModule } from '@affine/core/modules/app-tabs-header';
 import { configureDesktopBackupModule } from '@affine/core/modules/backup';
-import { ValidatorProvider } from '@affine/core/modules/cloud';
+import {
+  AuthProvider,
+  ServerScope,
+  ServerService,
+  ValidatorProvider,
+} from '@affine/core/modules/cloud';
 import {
   configureDesktopApiModule,
   DesktopApiService,
@@ -60,6 +65,39 @@ export function setupModules() {
           throw new Error('Challenge failed');
         }
         return token;
+      },
+    };
+  });
+  framework.scope(ServerScope).override(AuthProvider, p => {
+    const apis = p.get(DesktopApiService).api;
+    const serverService = p.get(ServerService);
+    const endpoint = serverService.server.baseUrl;
+
+    return {
+      async signInMagicLink(email, token, clientNonce) {
+        await apis.handler.auth.signInMagicLink(
+          endpoint,
+          email,
+          token,
+          clientNonce
+        );
+      },
+      async signInOauth(code, state, _provider, clientNonce) {
+        return await apis.handler.auth.signInOauth(
+          endpoint,
+          code,
+          state,
+          clientNonce
+        );
+      },
+      async signInPassword(credential) {
+        await apis.handler.auth.signInPassword(endpoint, credential);
+      },
+      async signInOpenAppSignInCode(code) {
+        await apis.handler.auth.signInOpenAppSignInCode(endpoint, code);
+      },
+      async signOut() {
+        await apis.handler.auth.signOut(endpoint);
       },
     };
   });

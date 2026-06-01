@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@affine/reader": "workspace:*",
+    "@affine/realtime": "workspace:*",
     "@toeverything/infra": "workspace:*",
     "eventemitter2": "^6.4.9",
     "graphemer": "^1.4.0",
@@ -32,6 +33,7 @@
   "devDependencies": {
     "@affine/error": "workspace:*",
     "@affine/graphql": "workspace:*",
+    "@affine/realtime": "workspace:*",
     "@blocksuite/affine": "workspace:*",
     "fake-indexeddb": "^6.0.0",
     "idb": "^8.0.0",
@@ -41,6 +43,7 @@
   "peerDependencies": {
     "@affine/error": "workspace:*",
     "@affine/graphql": "workspace:*",
+    "@affine/realtime": "workspace:*",
     "@blocksuite/affine": "workspace:*",
     "idb": "^8.0.0",
     "socket.io-client": "^4.8.3"

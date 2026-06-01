@@ -7,6 +7,7 @@ import Sinon from 'sinon';
 
 import { AppModule } from '../../app.module';
 import { ConfigFactory, InvalidOauthResponse, URLHelper } from '../../base';
+import { SessionCache } from '../../base/cache';
 import { ConfigModule } from '../../base/config';
 import { CurrentUser } from '../../core/auth';
 import { AuthService } from '../../core/auth/service';
@@ -23,6 +24,7 @@ import { createTestingApp, currentUser, TestingApp } from '../utils';
 const test = ava as TestFn<{
   auth: AuthService;
   oauth: OAuthService;
+  cache: SessionCache;
   models: Models;
   u1: CurrentUser;
   db: PrismaClient;
@@ -62,6 +64,7 @@ test.before(async t => {
 
   t.context.auth = app.get(AuthService);
   t.context.oauth = app.get(OAuthService);
+  t.context.cache = app.get(SessionCache);
   t.context.models = app.get(Models);
   t.context.db = app.get(PrismaClient);
   t.context.app = app;
@@ -244,6 +247,7 @@ test('should forbid preflight with untrusted redirect_uri', async t => {
 
 test('should throw if client_nonce is missing in preflight', async t => {
   const { app } = t.context;
+  app.clearAuth();
 
   await app
     .POST('/api/oauth/preflight')
@@ -291,6 +295,19 @@ test('should be able to save oauth state', async t => {
 
   t.truthy(state);
   t.is(state!.provider, OAuthProviderName.Google);
+});
+
+test('should save oauth state with three hour ttl', async t => {
+  const { cache, oauth } = t.context;
+
+  const id = await oauth.saveOAuthState({
+    provider: OAuthProviderName.Google,
+  });
+
+  const ttl = await cache.ttl(`auth_challenge:oauth_state:${id}`);
+
+  t.true(ttl > 2 * 3600);
+  t.true(ttl <= 3 * 3600);
 });
 
 test('should be able to get registered oauth providers', async t => {
@@ -550,12 +567,40 @@ test('should be able to sign up with oauth', async t => {
 
   const clientNonce = mockOAuthProvider(app, 'u2@affine.pro');
 
-  await app
+  const res = await app
     .POST('/api/oauth/callback')
+    .set('x-affine-client-kind', 'native')
     .send({ code: '1', state: '1', client_nonce: clientNonce })
     .expect(HttpStatus.OK);
 
-  const sessionUser = await currentUser(app);
+  t.truthy(res.body.exchangeCode);
+  const tokenRes = await app
+    .POST('/api/auth/native/exchange')
+    .set('x-affine-client-kind', 'native')
+    .send({ code: res.body.exchangeCode })
+    .expect(201);
+  t.truthy(tokenRes.body.token);
+  t.truthy(tokenRes.body.expiresAt);
+  const setCookies = res.get('Set-Cookie') ?? [];
+  for (const name of [
+    AuthService.sessionCookieName,
+    AuthService.userCookieName,
+    AuthService.csrfCookieName,
+  ]) {
+    t.true(
+      setCookies.some(
+        cookie =>
+          cookie.startsWith(`${name}=;`) &&
+          /Expires=Thu, 01 Jan 1970/i.test(cookie)
+      )
+    );
+  }
+
+  const sessionUserRes = await app
+    .GET('/api/auth/session')
+    .set('Authorization', `Bearer ${tokenRes.body.token}`)
+    .expect(200);
+  const sessionUser = sessionUserRes.body.user;
 
   t.truthy(sessionUser);
   t.is(sessionUser!.email, 'u2@affine.pro');
