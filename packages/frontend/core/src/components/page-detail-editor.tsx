@@ -28,6 +28,7 @@ export interface PageDetailEditorProps {
 
 type DocMetaWithHeaderImage = {
   headerImage?: string;
+  title?: string;
 };
 
 export const PageDetailEditor = ({
@@ -63,17 +64,37 @@ export const PageDetailEditor = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const shareCardRef = useRef<HTMLDivElement>(null);
 
-  // 💡 【全端總開關】
-  // 如果你現在想專心測試 UI、下載功能，或者後端 Gemini 還沒完全調通，請保持 false（1秒盲測出圖）
-  // 如果你已經登入正式帳號、確認 AFFiNE 雲端 AI 通道暢通，可以手動改成 true 呼叫 Gemini！
   const isBackendAIReady = false; 
+
+  // 💡 提取日記真實日期的核心輔助函式（完美咬合日記標題）
+  const getJournalTargetDate = () => {
+    // 1. 優先嘗試獲取 AFFiNE 日記頁面的真實標題 (例如 "2026-06-01" 或 "2026/06/01")
+    const docTitle = docMeta?.title || (doc as any).meta?.title;
+    
+    if (docTitle && docTitle.trim().length > 0) {
+      // 嘗試將標題字串轉換成 Date 物件
+      const parsedDate = new Date(docTitle);
+      // 檢查是否為合法日期，如果是，直接採用標題日期！
+      if (!isNaN(parsedDate.getTime())) {
+        return parsedDate;
+      }
+    }
+
+    // 2. 備援方案：如果標題不是日期格式，才抓建立或更新時間
+    const docMetaTime = (doc as any).meta?.updatedDate || (doc as any).meta?.createDate;
+    if (docMetaTime) return new Date(docMetaTime);
+
+    // 3. 終極防線：手動強制指定測試日期（若需要強制卡在 6/1，可把下面一行的註解解除）
+    // return new Date('2026-06-01');
+
+    return new Date();
+  };
 
   const handleFetchAISummary = async () => {
     setIsGenerating(true);
     console.log("🚀 IG 分享工坊：開始提煉日記內文...");
     
     try {
-      // 1. 精準抓到使用者打的真實日記內文
       const textElements = document.querySelectorAll(
         '[contenteditable="true"], .v-line, .v-text, .affine-paragraph-block-container, [data-block-id] span, p'
       );
@@ -112,9 +133,7 @@ export const PageDetailEditor = ({
         return;
       }
 
-      // 2. 🚀 雙軌分流控制
       if (isBackendAIReady) {
-        console.log("🤖 正在呼叫 AFFiNE 原生 Gemini AI...");
         const blockSuiteDoc = editor.doc.blockSuiteDoc as any;
         const affineAIEngine = 
           blockSuiteDoc?.workspace?.ai || 
@@ -122,7 +141,7 @@ export const PageDetailEditor = ({
           (window as any).currentEditor?.host?.std?.get?.('affine:ai');
 
         if (affineAIEngine && typeof affineAIEngine.execute === 'function') {
-          const aiPrompt = `你是一個精緻的生活雜誌編輯。請閱讀以下使用者的日記內文，並幫我整理出一個反映整篇日記情緒或氛圍的短標題（包含一個 Emoji），以及三句適合放上 Instagram 限時動態的生活精簡大綱。請嚴格以 JSON 陣列格式回傳，不要包含任何 markdown 標籤或額外文字。範例格式：["情緒短標題", "大綱第一句", "大綱第二句", "大綱第三句"]。\n日記內文如下：\n${rawText}`;
+          const aiPrompt = `你是一個精緻的生活雜誌編輯。請閱讀以下使用者的日記內文，並幫我整理出一個反映整篇日記情緒或氛圍的短標題（包含一個 Emoji），以及三句適合放上 Instagram 限時動態的生活精簡大綱。請嚴格以 JSON 陣列格式回傳，不要包含 any markdown 標籤。範例格式：["情緒短標題", "大綱第一句", "大綱第二句", "大綱 third"]。\n日記內文如下：\n${rawText}`;
           
           const aiResponse = await affineAIEngine.execute({ prompt: aiPrompt });
           const resultString = typeof aiResponse === 'string' ? aiResponse : aiResponse?.content;
@@ -136,8 +155,6 @@ export const PageDetailEditor = ({
         }
       }
 
-      // 3. 🛑 智慧備援核心（當開關為 false，或正牌 AI 未響應時，100% 絕對觸發）
-      console.log("⚡ 啟動前端長文特徵權重智慧引擎...");
       const textLower = rawText.toLowerCase();
       const allSentences = rawText.split(/[。\n!?]/).map(s => s.trim()).filter(s => s.length > 2);
 
@@ -208,18 +225,25 @@ export const PageDetailEditor = ({
     }
   };
 
+  // 將 HTML 渲染成一張圖並下載（日記真實標題同步版）
   const handleDownloadForIG = async () => {
     if (!shareCardRef.current) return;
     const canvas = await html2canvas(shareCardRef.current, { useCORS: true, scale: 2 });
     const dataUrl = canvas.toDataURL('image/png');
+    
+    // 💡 同步使用標題日期解析器
+    const targetDate = getJournalTargetDate();
+    const localDateStr = targetDate.toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei' }).replace(/\//g, '-');
+    
     const link = document.createElement('a');
-    link.download = `AFFiNE-Story-${new Date().toISOString().slice(0,10)}.png`;
+    link.download = `AFFiNE-Journal-${localDateStr}.png`;
     link.href = dataUrl;
     link.click();
   };
 
   return (
     <>
+      {/* --- 🚀 方案 A 強制外掛分享面板 --- */}
       <div className="ig-share-panel" style={{ padding: '20px', background: '#f5f5f7', borderRadius: '12px', marginBottom: '20px', border: '2px dashed #E1306C', zIndex: 9999, position: 'relative' }}>
         <h4 style={{ margin: '0 0 10px 0', color: '#E1306C' }}>✨ Instagram Story 分享工坊</h4>
         
@@ -270,7 +294,16 @@ export const PageDetailEditor = ({
             <div style={{ zIndex: 2, textAlign: 'center', width: '100%' }}>
               <p style={{ letterSpacing: '4px', fontSize: '11px', opacity: 0.8, margin: '0 0 5px 0' }}>DAILY LOG</p>
               <h2 style={{ fontSize: '18px', margin: '0 0 35px 0', fontWeight: 600 }}>
-                {new Date().toLocaleDateString('zh-TW', { month: 'long', day: 'numeric', weekday: 'short' })}
+                {(() => {
+                  // 💡 呼叫標題日期解析器
+                  const targetDate = getJournalTargetDate();
+                  return targetDate.toLocaleDateString('zh-TW', { 
+                    timeZone: 'Asia/Taipei',
+                    year: 'numeric',
+                    month: 'long', 
+                    day: 'numeric'
+                  });
+                })()}
               </h2>
               <div style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '15px' }}>
                 {aiSummary.map((bullet, index) => (
