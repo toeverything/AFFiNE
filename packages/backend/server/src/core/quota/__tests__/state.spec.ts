@@ -327,6 +327,9 @@ test.after.always(async t => {
 });
 
 test('reconciles quota states from entitlements and business tables', async t => {
+  const previousDeploymentType = globalThis.env.DEPLOYMENT_TYPE;
+  // @ts-expect-error test mutates env singleton for cloud entitlement semantics
+  globalThis.env.DEPLOYMENT_TYPE = 'affine';
   const cases = [
     {
       name: 'owner fallback uses user entitlement and owner storage usage',
@@ -444,10 +447,15 @@ test('reconciles quota states from entitlements and business tables', async t =>
     },
   ];
 
-  for (const item of cases) {
-    await t.context.module.initTestingDB();
-    const state = await item.setup();
-    await item.assert(state);
+  try {
+    for (const item of cases) {
+      await t.context.module.initTestingDB();
+      const state = await item.setup();
+      await item.assert(state);
+    }
+  } finally {
+    // @ts-expect-error restore mutable test env singleton
+    globalThis.env.DEPLOYMENT_TYPE = previousDeploymentType;
   }
 });
 
