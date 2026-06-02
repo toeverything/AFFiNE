@@ -4,8 +4,8 @@
 import ApolloAPI
 
 public extension Objects {
-  static let ContextWorkspaceEmbeddingStatus = ApolloAPI.Object(
-    typename: "ContextWorkspaceEmbeddingStatus",
+  static let CreateWorkspaceByokLocalLeaseResultType = ApolloAPI.Object(
+    typename: "CreateWorkspaceByokLocalLeaseResultType",
     implementedInterfaces: [],
     keyFields: nil
   )

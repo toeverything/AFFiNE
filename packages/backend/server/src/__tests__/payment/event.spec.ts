@@ -7,7 +7,7 @@ import { WorkspacePolicyService } from '../../core/permission';
 import { QuotaStateService } from '../../core/quota/state';
 import { WorkspaceService } from '../../core/workspaces';
 import { Models } from '../../models';
-import { LicenseService } from '../../plugins/license/service';
+import { licenseClient, LicenseService } from '../../plugins/license/service';
 import { PaymentEventHandlers } from '../../plugins/payment/event';
 import {
   SubscriptionPlan,
@@ -18,6 +18,12 @@ import {
 type Context = Record<string, never>;
 
 const test = ava as TestFn<Context>;
+
+const originalActivateLicense = licenseClient.activate;
+
+test.afterEach.always(() => {
+  licenseClient.activate = originalActivateLicense;
+});
 
 test('workspace subscription activation only sends upgrade notification', async t => {
   const events: Array<{ name: string; payload: unknown }> = [];
@@ -120,7 +126,6 @@ test('onetime selfhost license seat allocation ignores projected license quantit
 
 test('recurring selfhost license activation returns activation projection without remote health recheck', async t => {
   const events: Array<{ name: string; payload: unknown }> = [];
-  const affineProRequests: string[] = [];
   const upserts: unknown[] = [];
   const entitlements: unknown[] = [];
   const expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000;
@@ -154,28 +159,17 @@ test('recurring selfhost license activation returns activation projection withou
     {} as unknown as QuotaStateService
   );
 
-  (
-    service as unknown as {
-      fetchAffinePro: (path: string) => Promise<{
-        plan: SubscriptionPlan;
-        recurring: SubscriptionRecurring;
-        quantity: number;
-        endAt: number;
-        res: Response;
-      }>;
-    }
-  ).fetchAffinePro = async (path: string) => {
-    affineProRequests.push(path);
+  let activatedLicenseKey: string | undefined;
+  licenseClient.activate = async ({ licenseKey }) => {
+    activatedLicenseKey = licenseKey;
     return {
-      plan: SubscriptionPlan.SelfHostedTeam,
-      recurring: SubscriptionRecurring.Monthly,
-      quantity: 3,
-      endAt: expiresAt,
-      res: new Response(null, {
-        headers: {
-          'x-next-validate-key': 'next-validate-key',
-        },
-      }),
+      license: {
+        plan: SubscriptionPlan.SelfHostedTeam,
+        recurring: SubscriptionRecurring.Monthly,
+        quantity: 3,
+        expiresAt,
+        validateKey: 'next-validate-key',
+      },
     };
   };
 
@@ -189,7 +183,7 @@ test('recurring selfhost license activation returns activation projection withou
   });
   t.is(entitlements.length, 1);
   t.is(upserts.length, 1);
-  t.deepEqual(affineProRequests, ['/api/team/licenses/license-key/activate']);
+  t.is(activatedLicenseKey, 'license-key');
   t.deepEqual(events, [
     {
       name: 'workspace.subscription.activated',

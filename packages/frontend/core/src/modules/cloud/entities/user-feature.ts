@@ -23,12 +23,6 @@ export class UserFeature extends Entity {
     features === null ? null : features?.some(f => f === FeatureType.Admin)
   );
 
-  isEarlyAccess$ = this.features$.map(features =>
-    features === null
-      ? null
-      : features?.some(f => f === FeatureType.EarlyAccess)
-  );
-
   isRevalidating$ = new LiveData(false);
   error$ = new LiveData<any | null>(null);
 

@@ -1044,7 +1044,6 @@
   "com.affine.payment.member.team.invite.generate": "Oluştur",
   "com.affine.payment.member.team.invite.copy": "Kopyala",
   "com.affine.payment.member.team.invite.done": "Tamam",
-  "com.affine.payment.member.team.invite.notify.title": "Davetiye gönderildi,{{successCount}} başarılı, {{failedCount}} başarısız oldu",
   "com.affine.payment.member.team.invite.notify.fail-message": "Bu e-posta adresleri zaten davet edildi:",
   "com.affine.payment.member.team.revoke": "Daveti iptal et",
   "com.affine.payment.member.team.approve": "Onayla",

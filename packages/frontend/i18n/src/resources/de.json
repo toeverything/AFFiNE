@@ -1044,7 +1044,6 @@
   "com.affine.payment.member.team.invite.generate": "Erzeugen",
   "com.affine.payment.member.team.invite.copy": "Kopieren",
   "com.affine.payment.member.team.invite.done": "Fertig",
-  "com.affine.payment.member.team.invite.notify.title": "Einladung gesendet, {{successCount}} erfolgreich, {{failedCount}} fehlgeschlagen",
   "com.affine.payment.member.team.invite.notify.fail-message": "Diese E-Mail-Adressen wurden bereits eingeladen:",
   "com.affine.payment.member.team.revoke": "Einladung widerrufen",
   "com.affine.payment.member.team.approve": "Genehmigen",

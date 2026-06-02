@@ -1044,7 +1044,7 @@
   "com.affine.payment.member.team.invite.generate": "Generate",
   "com.affine.payment.member.team.invite.copy": "Copy",
   "com.affine.payment.member.team.invite.done": "Done",
-  "com.affine.payment.member.team.invite.notify.title": "Invitation sent,{{successCount}} successful, {{failedCount}} failed",
+  "com.affine.payment.member.team.invite.notify.title": "Invitation sent {{count}}.",
   "com.affine.payment.member.team.invite.notify.fail-message": "These email addresses have already been invited:",
   "com.affine.payment.member.team.revoke": "Revoke invitation",
   "com.affine.payment.member.team.approve": "Approve",

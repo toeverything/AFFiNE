@@ -9,6 +9,7 @@ pub mod file_type;
 pub mod hashcash;
 pub mod html_sanitize;
 pub mod image;
+pub mod license;
 pub mod llm;
 pub mod permission;
 pub mod safe_fetch;

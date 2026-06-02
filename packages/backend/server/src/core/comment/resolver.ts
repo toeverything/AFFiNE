@@ -299,18 +299,13 @@ export class CommentResolver {
     @CurrentUser() me: UserType,
     @Parent() workspace: WorkspaceType,
     @Args('docId') docId: string,
-    @Args({
-      name: 'pagination',
-    })
+    @Args({ name: 'pagination' })
     pagination: PaginationInput
   ): Promise<PaginatedCommentChangeObjectType> {
     // DEPRECATED-0.26-COMPAT(realtime): remove after server no longer supports 0.26.x clients.
     await this.assertPermission(
       me,
-      {
-        workspaceId: workspace.id,
-        docId,
-      },
+      { workspaceId: workspace.id, docId },
       'Doc.Comments.Read'
     );
 

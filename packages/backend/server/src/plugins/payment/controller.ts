@@ -19,9 +19,7 @@ export class StripeWebhookController {
   @Public()
   @Post('/webhook')
   async handleWebhook(@Req() req: RawBodyRequest<Request>) {
-    const nestedWebhookKey = this.config.payment.stripe?.webhookKey;
-    const legacyWebhookKey = this.config.payment.webhookKey;
-    const webhookKey = nestedWebhookKey || legacyWebhookKey || '';
+    const webhookKey = this.config.payment.stripe?.webhookKey || '';
     // Retrieve the event by verifying the signature using the raw body and secret.
     const signature = req.headers['stripe-signature'];
     try {

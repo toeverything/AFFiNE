@@ -787,7 +787,7 @@ test('test key failure disables a saved key and success restores it', async t =>
     apiKey: 'sk-test-primary',
   });
 
-  const fetch = Sinon.stub(globalThis, 'fetch');
+  const fetch = Sinon.stub(t.context.byok as any, 'probeFetch');
   fetch
     .onFirstCall()
     .resolves(
@@ -858,7 +858,7 @@ test('local key test does not mutate saved server config', async t => {
     apiKey: 'sk-server',
   });
 
-  const fetch = Sinon.stub(globalThis, 'fetch').resolves(
+  const fetch = Sinon.stub(t.context.byok as any, 'probeFetch').resolves(
     new Response('{"error":"invalid sk-local"}', { status: 401 })
   );
   t.teardown(() => fetch.restore());
@@ -889,7 +889,7 @@ test('Gemini key test sends key in header and returns safe failure message', asy
   const { user, workspace } = await createUserWorkspace(t);
   await grantUserPlan(t, user.id);
 
-  const fetch = Sinon.stub(globalThis, 'fetch').resolves(
+  const fetch = Sinon.stub(t.context.byok as any, 'probeFetch').resolves(
     new Response(
       'failed https://generativelanguage.googleapis.com/v1beta/models?key=gemini-secret',
       { status: 401 }
@@ -916,6 +916,7 @@ test('Gemini key test sends key in header and returns safe failure message', asy
     ],
     'gemini-secret'
   );
+  t.deepEqual(fetch.firstCall.args[2]?.allowedHeaders, ['x-goog-api-key']);
   t.false(result.message?.includes('gemini-secret'));
   t.is(result.message, 'Provider rejected the BYOK key.');
 });
@@ -924,7 +925,7 @@ test('FAL key test uses read-only platform API probe endpoint', async t => {
   const { user, workspace } = await createUserWorkspace(t);
   await grantUserPlan(t, user.id);
 
-  const fetch = Sinon.stub(globalThis, 'fetch').resolves(
+  const fetch = Sinon.stub(t.context.byok as any, 'probeFetch').resolves(
     new Response('{}', { status: 200 })
   );
   t.teardown(() => fetch.restore());
@@ -943,6 +944,7 @@ test('FAL key test uses read-only platform API probe endpoint', async t => {
     (fetch.firstCall.args[1]!.headers as Record<string, string>).Authorization,
     'Key fal-secret'
   );
+  t.deepEqual(fetch.firstCall.args[2]?.allowedHeaders, ['Authorization']);
 });
 
 test('provider test failures do not return raw provider response body', async t => {
@@ -970,7 +972,7 @@ test('provider test failures do not return raw provider response body', async t 
       message: 'Provider service is unavailable.',
     },
   ];
-  const fetch = Sinon.stub(globalThis, 'fetch');
+  const fetch = Sinon.stub(t.context.byok as any, 'probeFetch');
   for (const [index, matrixCase] of cases.entries()) {
     fetch
       .onCall(index)

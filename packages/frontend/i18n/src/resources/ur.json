@@ -1331,7 +1331,6 @@
   "com.affine.payment.member.team.invite.invite-link": "لنک کو مدعو کریں۔",
   "com.affine.payment.member.team.invite.link-expiration": "لنک کی میعاد ختم",
   "com.affine.payment.member.team.invite.notify.fail-message": "یہ ای میل پتے پہلے ہی مدعو کیے جا چکے ہیں:",
-  "com.affine.payment.member.team.invite.notify.title": "دعوت نامہ بھیجا گیا،{{successCount}} کامیاب، {{failedCount}} ناکام",
   "com.affine.payment.member.team.invite.send-invites": "دعوت نامے بھیجیں۔",
   "com.affine.payment.member.team.invite.title": "ٹیم کے ارکان کو مدعو کریں۔",
   "com.affine.payment.member.team.remove": "ممبر کو ہٹا دیں۔",

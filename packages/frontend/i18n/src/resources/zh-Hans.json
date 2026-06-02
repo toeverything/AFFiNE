@@ -1044,7 +1044,7 @@
   "com.affine.payment.member.team.invite.generate": "生成",
   "com.affine.payment.member.team.invite.copy": "复制",
   "com.affine.payment.member.team.invite.done": "完成",
-  "com.affine.payment.member.team.invite.notify.title": "邀请已发送，成功 {{successCount}} 条，失败 {{failedCount}} 条",
+  "com.affine.payment.member.team.invite.notify.title": "邀请已发送 {{count}} 条",
   "com.affine.payment.member.team.invite.notify.fail-message": "这些电子邮件地址已被邀请：",
   "com.affine.payment.member.team.revoke": "撤回邀请",
   "com.affine.payment.member.team.approve": "批准",

@@ -1,11 +1,4 @@
-import {
-  Args,
-  ID,
-  Int,
-  Mutation,
-  ResolveField,
-  Resolver,
-} from '@nestjs/graphql';
+import { Args, ID, Mutation, ResolveField, Resolver } from '@nestjs/graphql';
 
 import {
   MentionUserDocAccessDenied,
@@ -43,16 +36,6 @@ export class UserNotificationResolver {
       this.service.countByUserId(me.id),
     ]);
     return paginate(notifications, 'createdAt', pagination, totalCount);
-  }
-
-  @ResolveField(() => Int, {
-    description: 'Get user notification count',
-    deprecationReason:
-      'Use realtime subscription "notification.count.changed" instead.',
-  })
-  async notificationCount(@CurrentUser() me: UserType): Promise<number> {
-    // DEPRECATED-0.26-COMPAT(realtime): remove after server no longer supports 0.26.x clients.
-    return await this.service.countByUserId(me.id);
   }
 
   @Mutation(() => ID, {

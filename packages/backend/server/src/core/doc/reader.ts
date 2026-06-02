@@ -7,6 +7,7 @@ import {
   Config,
   CryptoHelper,
   getOrGenRequestId,
+  safeFetch,
   UserFriendlyError,
 } from '../../base';
 import { Models } from '../../models';
@@ -303,7 +304,17 @@ export class RpcDocReader extends DatabaseDocReader {
     if (body) {
       requestInit.body = body;
     }
-    const res = await fetch(url, requestInit);
+    const res = await safeFetch(url, requestInit, {
+      timeoutMs: 10_000,
+      maxRedirects: 0,
+      maxBytes: 50 * 1024 * 1024,
+      allowedHeaders: [
+        'content-type',
+        'x-access-token',
+        'x-cloud-trace-context',
+      ],
+      allowPrivateTargetOrigin: true,
+    });
     if (!res.ok) {
       if (res.status === 404) {
         return null;

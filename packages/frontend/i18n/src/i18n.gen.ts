@@ -4208,12 +4208,11 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.payment.member.team.invite.done"](): string;
     /**
-      * `Invitation sent,{{successCount}} successful, {{failedCount}} failed`
+      * `Invitation sent {{count}}.`
       */
-    ["com.affine.payment.member.team.invite.notify.title"](options: Readonly<{
-        successCount: string;
-        failedCount: string;
-    }>): string;
+    ["com.affine.payment.member.team.invite.notify.title"](options: {
+        readonly count: string;
+    }): string;
     /**
       * `These email addresses have already been invited:`
       */

@@ -155,7 +155,6 @@ test('quota service exposes history period in seconds', async t => {
       usedStorageQuota: 0,
       memberCount: 1,
       overcapacityMemberCount: 0,
-      usedSize: 0,
     }).historyPeriod,
     '30 days'
   );

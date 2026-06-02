@@ -48,6 +48,8 @@ export interface ActionTrace {
   errorCode?: string
 }
 
+export declare function activateLicense(request: LicenseKeyRequest): Promise<LicenseResponse>
+
 /**
  * Adds a document ID to the workspace root doc's meta.pages array.
  * This registers the document in the workspace so it appears in the UI.
@@ -151,9 +153,15 @@ export interface CapabilityModelContract {
   capabilities: Array<CapabilityModelCapability>
 }
 
+export declare function checkLicenseHealth(request: LicenseHealthRequest): Promise<LicenseResponse>
+
 export interface Chunk {
   index: number
   content: string
+}
+
+export interface CommandResponse {
+  error?: LicenseError
 }
 
 /**
@@ -168,6 +176,10 @@ export interface Chunk {
  * A Buffer containing the y-octo document update binary
  */
 export declare function createDocWithMarkdown(title: string, markdown: string, docId: string): Buffer
+
+export declare function createLicenseCustomerPortal(request: LicenseKeyRequest): Promise<PortalResponse>
+
+export declare function deactivateLicense(request: LicenseKeyRequest): Promise<CommandResponse>
 
 export declare function evaluatePermissionV1(input: any): any
 
@@ -194,6 +206,43 @@ export interface ImageInspectionOptions {
 export declare function inferRemoteMimeType(request: RemoteMimeTypeRequest): Promise<string>
 
 export declare function inspectImageForProxy(input: Buffer, options?: ImageInspectionOptions | undefined | null): ImageInspection
+
+export interface LicenseError {
+  status: number
+  body: string
+}
+
+export interface LicenseHealthRequest {
+  licenseKey: string
+  validateKey: string
+}
+
+export interface LicenseInfo {
+  plan: string
+  recurring: string
+  quantity: number
+  expiresAt: number
+  validateKey: string
+}
+
+export interface LicenseKeyRequest {
+  licenseKey: string
+}
+
+export interface LicenseRecurringRequest {
+  licenseKey: string
+  recurring: string
+}
+
+export interface LicenseResponse {
+  license?: LicenseInfo
+  error?: LicenseError
+}
+
+export interface LicenseSeatsRequest {
+  licenseKey: string
+  seats: number
+}
 
 export declare function llmBuildCanonicalRequest(request: CanonicalChatRequestContract): LlmRequestContract
 
@@ -481,6 +530,11 @@ export declare function permissionActionRoleMatrixV1(): any
 
 export declare function permissionActionRoleMatrixV1Json(): string
 
+export interface PortalResponse {
+  url?: string
+  error?: LicenseError
+}
+
 export declare function processImage(input: Buffer, maxEdge: number, keepExif: boolean): Promise<Buffer>
 
 export type PromptBuiltin =  'Date'|
@@ -687,15 +741,26 @@ export declare function runNativeActionRecipePreparedStream(input: ActionRuntime
 export declare function safeFetch(request: SafeFetchRequest): Promise<SafeFetchResponse>
 
 export type SafeFetchMethod =  'get'|
-'head';
+'head'|
+'post'|
+'put'|
+'propfind'|
+'report';
 
 export interface SafeFetchRequest {
   url: string
   method?: SafeFetchMethod
   headers?: Record<string, string>
+  body?: Buffer
   timeoutMs?: number
   maxRedirects?: number
   maxBytes?: number
+  allowedHeaders?: Array<string>
+  allowedHosts?: Array<string>
+  allowHttp?: boolean
+  allowPrivateTargetOrigin?: boolean
+  enableEch?: boolean
+  echConfigList?: Buffer
 }
 
 export interface SafeFetchResponse {
@@ -753,6 +818,10 @@ export declare function updateDocTitle(existingBinary: Buffer, title: string, do
  * A Buffer containing only the delta (changes) as a y-octo update binary
  */
 export declare function updateDocWithMarkdown(existingBinary: Buffer, newMarkdown: string, docId: string): Buffer
+
+export declare function updateLicenseRecurring(request: LicenseRecurringRequest): Promise<CommandResponse>
+
+export declare function updateLicenseSeats(request: LicenseSeatsRequest): Promise<CommandResponse>
 
 /**
  * Updates a document title in the workspace root doc's meta.pages array.

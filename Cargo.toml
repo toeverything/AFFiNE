@@ -97,6 +97,7 @@ resolver = "3"
   readability = { version = "0.3.0", default-features = false }
   regex = "1.10"
   rubato = "0.16"
+  safefetch = "0.1.0"
   schemars = "0.8"
   screencapturekit = "0.3"
   serde = "1"

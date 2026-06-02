@@ -429,16 +429,6 @@
       "desc": "Number of workspaces automatically indexed per batch"
     }
   },
-  "customerIo": {
-    "enabled": {
-      "type": "Boolean",
-      "desc": "Enable customer.io integration"
-    },
-    "token": {
-      "type": "String",
-      "desc": "Customer.io token"
-    }
-  },
   "oauth": {
     "providers.google": {
       "type": "Object",
@@ -469,16 +459,6 @@
     "showLifetimePrice": {
       "type": "Boolean",
       "desc": "Whether enable lifetime price and allow user to pay for it."
-    },
-    "apiKey": {
-      "type": "String",
-      "desc": "[Deprecated] Stripe API key. Use payment.stripe.apiKey instead.",
-      "env": "STRIPE_API_KEY"
-    },
-    "webhookKey": {
-      "type": "String",
-      "desc": "[Deprecated] Stripe webhook key. Use payment.stripe.webhookKey instead.",
-      "env": "STRIPE_WEBHOOK_KEY"
     },
     "stripe": {
       "type": "Object",

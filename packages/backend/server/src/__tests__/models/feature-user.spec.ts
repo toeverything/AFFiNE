@@ -53,7 +53,7 @@ test('admin feature resolver rejects commercial projection features', async t =>
 
 test('should get null if user feature not found', async t => {
   const { model, u1 } = t.context;
-  const userFeature = await model.get(u1.id, 'ai_early_access');
+  const userFeature = await model.get(u1.id, 'administrator');
   t.is(userFeature, null);
 });
 
@@ -93,7 +93,7 @@ test('should directly test user feature existence', async t => {
 
   await model.add(u1.id, 'free_plan_v1', 'legacy projection');
   t.true(await model.has(u1.id, 'free_plan_v1'));
-  t.false(await model.has(u1.id, 'ai_early_access'));
+  t.false(await model.has(u1.id, 'administrator'));
 });
 
 test('should add user feature', async t => {

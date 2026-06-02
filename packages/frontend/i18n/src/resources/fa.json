@@ -1010,7 +1010,6 @@
   "com.affine.payment.member.team.invite.generate": "ایجاد",
   "com.affine.payment.member.team.invite.copy": "کپی",
   "com.affine.payment.member.team.invite.done": "انجام شد",
-  "com.affine.payment.member.team.invite.notify.title": "دعوت ارسال شد، {{successCount}} موفق، {{failedCount}} ناموفق",
   "com.affine.payment.member.team.invite.notify.fail-message": "این آدرس‌های ایمیل قبلاً دعوت شده‌اند:",
   "com.affine.payment.member.team.revoke": "دعوت را لغو کنید",
   "com.affine.payment.member.team.approve": "تأیید",

@@ -37,13 +37,7 @@ type ConfigGroup<T extends AppConfigModule> = {
 const IGNORED_MODULES: (keyof AppConfig)[] = [];
 
 if (environment.isSelfHosted) {
-  IGNORED_MODULES.push(
-    'payment',
-    'customerIo',
-    'captcha',
-    'telemetry',
-    'metrics'
-  );
+  IGNORED_MODULES.push('payment', 'captcha', 'telemetry', 'metrics');
 }
 
 const ALL_CONFIGURABLE_MODULES = Object.keys(CONFIG_DESCRIPTORS).filter(

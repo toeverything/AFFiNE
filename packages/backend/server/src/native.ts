@@ -9,8 +9,16 @@ import serverNativeModule, {
   type CanonicalStructuredRequestContract,
   type CapabilityAttachmentContract,
   type CapabilityModelCapability,
+  type CommandResponse,
   type ImageInspection,
   type ImageInspectionOptions,
+  type LicenseError,
+  type LicenseHealthRequest,
+  type LicenseInfo,
+  type LicenseKeyRequest,
+  type LicenseRecurringRequest,
+  type LicenseResponse,
+  type LicenseSeatsRequest,
   type LlmCoreMessage,
   type LlmEmbeddingRequestContract,
   type LlmImageRequestContract,
@@ -20,6 +28,7 @@ import serverNativeModule, {
   type ModelConditionsContract,
   type ModelRegistryMatchResponse,
   type ModelRegistryResolveResponse,
+  type PortalResponse,
   type PromptMessageContract,
   type PromptMetadataContract,
   type PromptMetadataResult,
@@ -45,9 +54,18 @@ export type {
   AssertSafeUrlRequest,
   CapabilityAttachmentContract,
   CapabilityModelCapability,
+  CommandResponse,
   ImageInspection,
   ImageInspectionOptions,
+  LicenseError,
+  LicenseHealthRequest,
+  LicenseInfo,
+  LicenseKeyRequest,
+  LicenseRecurringRequest,
+  LicenseResponse,
+  LicenseSeatsRequest,
   ModelConditionsContract,
+  PortalResponse,
   PromptMessageContract,
   PromptStructuredResponseContract,
   RemoteAttachmentFetchRequest,
@@ -143,6 +161,13 @@ export const fetchRemoteAttachment = serverNativeModule.fetchRemoteAttachment;
 export const inferRemoteMimeType = serverNativeModule.inferRemoteMimeType;
 export const assertSafeUrl = serverNativeModule.assertSafeUrl;
 export const safeFetch = serverNativeModule.safeFetch;
+export const activateLicense = serverNativeModule.activateLicense;
+export const checkLicenseHealth = serverNativeModule.checkLicenseHealth;
+export const createCustomerPortal =
+  serverNativeModule.createLicenseCustomerPortal;
+export const deactivateLicense = serverNativeModule.deactivateLicense;
+export const updateLicenseRecurring = serverNativeModule.updateLicenseRecurring;
+export const updateLicenseSeats = serverNativeModule.updateLicenseSeats;
 export const parseDoc = serverNativeModule.parseDoc;
 export const htmlSanitize = serverNativeModule.htmlSanitize;
 export const processImage = serverNativeModule.processImage;

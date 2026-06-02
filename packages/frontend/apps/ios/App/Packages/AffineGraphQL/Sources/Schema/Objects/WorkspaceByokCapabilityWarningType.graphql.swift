@@ -4,8 +4,8 @@
 import ApolloAPI
 
 public extension Objects {
-  static let InviteUserType = ApolloAPI.Object(
-    typename: "InviteUserType",
+  static let WorkspaceByokCapabilityWarningType = ApolloAPI.Object(
+    typename: "WorkspaceByokCapabilityWarningType",
     implementedInterfaces: [],
     keyFields: nil
   )

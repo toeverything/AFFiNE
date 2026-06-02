@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { omit } from 'lodash-es';
 
-import { InternalServerError } from '../../../base';
+import { InternalServerError, safeFetch } from '../../../base';
 import { SearchProviderType } from '../config';
 import { SearchTable } from '../tables';
 import {
@@ -31,6 +31,14 @@ interface MSSearchResponse {
   };
   scroll: string;
 }
+
+const INDEXER_FETCH_OPTIONS = {
+  timeoutMs: 30_000,
+  maxRedirects: 0,
+  maxBytes: 50 * 1024 * 1024,
+  allowedHeaders: ['authorization', 'content-type'],
+  allowPrivateTargetOrigin: true,
+};
 
 const SupportIndexedAttributes = [
   'flavour',
@@ -460,11 +468,11 @@ export class ManticoresearchProvider extends ElasticsearchProvider {
       headers.Authorization = `Basic ${Buffer.from(`${this.config.provider.username}:${this.config.provider.password}`).toString('base64')}`;
     }
 
-    const response = await fetch(url, {
-      method: 'POST',
-      body: sql,
-      headers,
-    });
+    const response = await safeFetch(
+      url,
+      { method: 'POST', body: sql, headers },
+      INDEXER_FETCH_OPTIONS
+    );
     const text = (await response.text()).trim();
     if (!response.ok) {
       this.logger.error(`failed to execute SQL "${sql}", response: ${text}`);

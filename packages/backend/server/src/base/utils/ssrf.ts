@@ -10,6 +10,7 @@ export type SSRFBlockReason =
   | 'disallowed_protocol'
   | 'url_has_credentials'
   | 'blocked_hostname'
+  | 'host_not_allowed'
   | 'unresolvable_hostname'
   | 'blocked_ip'
   | 'too_many_redirects';
@@ -19,6 +20,7 @@ const SSRF_REASONS = new Set<string>([
   'disallowed_protocol',
   'url_has_credentials',
   'blocked_hostname',
+  'host_not_allowed',
   'unresolvable_hostname',
   'blocked_ip',
   'too_many_redirects',
@@ -47,6 +49,12 @@ export interface SafeFetchOptions {
   timeoutMs?: number;
   maxRedirects?: number;
   maxBytes?: number;
+  allowedHeaders?: string[];
+  allowedHosts?: string[];
+  allowHttp?: boolean;
+  allowPrivateTargetOrigin?: boolean;
+  enableEch?: boolean;
+  echConfigList?: Buffer;
 }
 
 export async function assertSsrFSafeUrl(rawUrl: string | URL): Promise<URL> {
@@ -72,20 +80,25 @@ export async function safeFetch(
 ): Promise<Response> {
   const url = rawUrl.toString();
   const method = String(init.method ?? 'GET').toUpperCase();
-  if (method !== 'GET' && method !== 'HEAD') {
+  if (!['GET', 'HEAD', 'POST', 'PUT', 'PROPFIND', 'REPORT'].includes(method)) {
     throw new Error(`Unsupported safeFetch method: ${method}`);
   }
 
   try {
     const response = await safeFetchFromNative({
       url,
-      method: (method === 'HEAD' ? 'head' : 'get') as NonNullable<
-        SafeFetchRequest['method']
-      >,
+      method: method.toLowerCase() as NonNullable<SafeFetchRequest['method']>,
       headers: normalizeHeaders(init.headers),
+      body: normalizeBody(init.body),
       timeoutMs: options.timeoutMs,
       maxRedirects: options.maxRedirects,
       maxBytes: options.maxBytes,
+      allowedHeaders: options.allowedHeaders,
+      allowedHosts: options.allowedHosts,
+      allowHttp: options.allowHttp,
+      allowPrivateTargetOrigin: options.allowPrivateTargetOrigin,
+      enableEch: options.enableEch,
+      echConfigList: options.echConfigList,
     });
     const body =
       method === 'HEAD' || [204, 205, 304].includes(response.status)
@@ -115,6 +128,22 @@ function normalizeHeaders(headers: RequestInit['headers'] | undefined) {
   return Object.fromEntries(
     Object.entries(headers).map(([key, value]) => [key, String(value)])
   );
+}
+
+function normalizeBody(body: RequestInit['body'] | null | undefined) {
+  if (body === null || body === undefined) {
+    return undefined;
+  }
+  if (typeof body === 'string') {
+    return Buffer.from(body);
+  }
+  if (body instanceof ArrayBuffer) {
+    return Buffer.from(body);
+  }
+  if (ArrayBuffer.isView(body)) {
+    return Buffer.from(body.buffer, body.byteOffset, body.byteLength);
+  }
+  throw new Error('Unsupported safeFetch body type.');
 }
 
 export function bufferToArrayBuffer(buffer: Buffer): ArrayBuffer {

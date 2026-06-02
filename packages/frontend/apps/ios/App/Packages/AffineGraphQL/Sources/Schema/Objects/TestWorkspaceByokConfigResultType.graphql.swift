@@ -4,8 +4,8 @@
 import ApolloAPI
 
 public extension Objects {
-  static let GrantedDocUserType = ApolloAPI.Object(
-    typename: "GrantedDocUserType",
+  static let TestWorkspaceByokConfigResultType = ApolloAPI.Object(
+    typename: "TestWorkspaceByokConfigResultType",
     implementedInterfaces: [],
     keyFields: nil
   )

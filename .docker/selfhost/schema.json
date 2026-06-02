@@ -1410,22 +1410,6 @@
         }
       }
     },
-    "customerIo": {
-      "type": "object",
-      "description": "Configuration for customerIo module",
-      "properties": {
-        "enabled": {
-          "type": "boolean",
-          "description": "Enable customer.io integration\n@default false",
-          "default": false
-        },
-        "token": {
-          "type": "string",
-          "description": "Customer.io token\n@default \"\"",
-          "default": ""
-        }
-      }
-    },
     "oauth": {
       "type": "object",
       "description": "Configuration for oauth module",
@@ -1523,16 +1507,6 @@
           "type": "boolean",
           "description": "Whether enable lifetime price and allow user to pay for it.\n@default true",
           "default": true
-        },
-        "apiKey": {
-          "type": "string",
-          "description": "[Deprecated] Stripe API key. Use payment.stripe.apiKey instead.\n@default \"\"\n@environment `STRIPE_API_KEY`",
-          "default": ""
-        },
-        "webhookKey": {
-          "type": "string",
-          "description": "[Deprecated] Stripe webhook key. Use payment.stripe.webhookKey instead.\n@default \"\"\n@environment `STRIPE_WEBHOOK_KEY`",
-          "default": ""
         },
         "stripe": {
           "type": "object",

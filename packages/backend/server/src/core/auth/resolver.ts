@@ -187,9 +187,7 @@ export class AuthResolver {
   @Mutation(() => Boolean)
   async sendChangeEmail(
     @CurrentUser() user: CurrentUser,
-    @Args('callbackUrl') callbackUrl: string,
-    // @deprecated
-    @Args('email', { nullable: true }) _email?: string
+    @Args('callbackUrl') callbackUrl: string
   ) {
     if (!user.emailVerified) {
       throw new EmailVerificationRequired();

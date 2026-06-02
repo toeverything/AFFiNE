@@ -256,19 +256,21 @@ export abstract class SubscriptionManager {
   }
 
   async getPrice(lookupKey: LookupKey): Promise<KnownStripePrice | null> {
+    let key: string;
+    try {
+      key = encodeLookupKey(lookupKey);
+    } catch {
+      return null;
+    }
+
     const prices = await this.stripe.prices.list({
-      lookup_keys: [encodeLookupKey(lookupKey)],
+      lookup_keys: [key],
       limit: 1,
     });
 
     const price = prices.data[0];
 
-    return price
-      ? {
-          lookupKey,
-          price,
-        }
-      : null;
+    return price ? { lookupKey, price } : null;
   }
 
   protected async getCouponFromPromotionCode(

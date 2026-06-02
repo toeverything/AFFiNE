@@ -4,8 +4,8 @@
 import ApolloAPI
 
 public extension Objects {
-  static let GrantedDocUserTypeEdge = ApolloAPI.Object(
-    typename: "GrantedDocUserTypeEdge",
+  static let WorkspaceByokUsagePointType = ApolloAPI.Object(
+    typename: "WorkspaceByokUsagePointType",
     implementedInterfaces: [],
     keyFields: nil
   )

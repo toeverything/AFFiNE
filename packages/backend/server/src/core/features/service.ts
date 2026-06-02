@@ -4,11 +4,6 @@ import { Models } from '../../models';
 
 const STAFF = ['@toeverything.info', '@affine.pro'];
 
-export enum EarlyAccessType {
-  App = 'app',
-  AI = 'ai',
-}
-
 @Injectable()
 export class FeatureService {
   protected logger = new Logger(FeatureService.name);
@@ -31,16 +26,5 @@ export class FeatureService {
 
   addAdmin(userId: string) {
     return this.models.userFeature.add(userId, 'administrator', 'Admin user');
-  }
-
-  // ======== Early Access ========
-  async isEarlyAccessUser(
-    userId: string,
-    type: EarlyAccessType = EarlyAccessType.App
-  ) {
-    return await this.models.userFeature.has(
-      userId,
-      type === EarlyAccessType.App ? 'early_access' : 'ai_early_access'
-    );
   }
 }

@@ -213,21 +213,12 @@ export const CloudWorkspaceMembersPanel = ({
         return;
       }
       const results = await membersService.inviteMembers(uniqueEmails);
-      const unSuccessInvites = results.reduce<string[]>((acc, result) => {
-        if (!result.sentSuccess) {
-          acc.push(result.email);
-        }
-        return acc;
-      }, []);
       if (results) {
         notify({
           title: t['com.affine.payment.member.team.invite.notify.title']({
-            successCount: (
-              uniqueEmails.length - unSuccessInvites.length
-            ).toString(),
-            failedCount: unSuccessInvites.length.toString(),
+            count: results.length.toString(),
           }),
-          message: <NotifyMessage unSuccessInvites={unSuccessInvites} />,
+          message: t['Invitation sent hint'](),
         });
         setOpenInvite(false);
         membersService.members.revalidate();
@@ -348,27 +339,6 @@ export const CloudWorkspaceMembersPanel = ({
         />
       </div>
     </>
-  );
-};
-
-const NotifyMessage = ({
-  unSuccessInvites,
-}: {
-  unSuccessInvites: string[];
-}) => {
-  const t = useI18n();
-
-  if (unSuccessInvites.length === 0) {
-    return t['Invitation sent hint']();
-  }
-
-  return (
-    <div>
-      {t['com.affine.payment.member.team.invite.notify.fail-message']()}
-      {unSuccessInvites.map((email, index) => (
-        <div key={`${index}:${email}`}>{email}</div>
-      ))}
-    </div>
   );
 };
 

@@ -1338,9 +1338,7 @@ export interface ExpectToUpdateDocUserRoleDataType {
 }
 
 export enum FeatureType {
-  AIEarlyAccess = 'AIEarlyAccess',
   Admin = 'Admin',
-  EarlyAccess = 'EarlyAccess',
   FreePlan = 'FreePlan',
   LifetimeProPlan = 'LifetimeProPlan',
   ProPlan = 'ProPlan',
@@ -1564,11 +1562,6 @@ export interface InviteResult {
   error: Maybe<Scalars['JSONObject']['output']>;
   /** Invite id, null if invite record create failed */
   inviteId: Maybe<Scalars['String']['output']>;
-  /**
-   * Invite email sent success
-   * @deprecated Notification will be sent asynchronously
-   */
-  sentSuccess: Scalars['Boolean']['output'];
 }
 
 export interface InviteUserType {
@@ -1617,8 +1610,6 @@ export interface InvoiceType {
   amount: Scalars['Int']['output'];
   createdAt: Scalars['DateTime']['output'];
   currency: Scalars['String']['output'];
-  /** @deprecated removed */
-  id: Maybe<Scalars['String']['output']>;
   lastPaymentError: Maybe<Scalars['String']['output']>;
   link: Maybe<Scalars['String']['output']>;
   /** @deprecated removed */
@@ -2273,7 +2264,6 @@ export interface MutationRevokeUserAccessTokenArgs {
 
 export interface MutationSendChangeEmailArgs {
   callbackUrl: Scalars['String']['input'];
-  email?: InputMaybe<Scalars['String']['input']>;
 }
 
 export interface MutationSendChangePasswordEmailArgs {
@@ -3124,7 +3114,6 @@ export interface SubscriptionType {
 }
 
 export enum SubscriptionVariant {
-  EA = 'EA',
   Onetime = 'Onetime',
 }
 
@@ -3396,11 +3385,6 @@ export interface UserType {
   invoices: Array<InvoiceType>;
   /** User name */
   name: Scalars['String']['output'];
-  /**
-   * Get user notification count
-   * @deprecated Use realtime subscription "notification.count.changed" instead.
-   */
-  notificationCount: Scalars['Int']['output'];
   /** Get current user notifications */
   notifications: PaginatedNotificationObjectType;
   quota: UserQuotaType;
@@ -3597,8 +3581,6 @@ export interface WorkspaceQuotaType {
   name: Scalars['String']['output'];
   overcapacityMemberCount: Scalars['Int']['output'];
   storageQuota: Scalars['SafeInt']['output'];
-  /** @deprecated use `usedStorageQuota` instead */
-  usedSize: Scalars['SafeInt']['output'];
   usedStorageQuota: Scalars['SafeInt']['output'];
 }
 
@@ -6874,7 +6856,6 @@ export type InvoicesQuery = {
     invoiceCount: number;
     invoices: Array<{
       __typename?: 'InvoiceType';
-      id: string | null;
       status: InvoiceStatus;
       currency: string;
       amount: number;
@@ -7598,7 +7579,6 @@ export type InviteByEmailsMutation = {
     __typename?: 'InviteResult';
     email: string;
     inviteId: string | null;
-    sentSuccess: boolean;
   }>;
 };
 
@@ -7648,7 +7628,6 @@ export type WorkspaceInvoicesQuery = {
     invoiceCount: number;
     invoices: Array<{
       __typename?: 'InvoiceType';
-      id: string | null;
       status: InvoiceStatus;
       currency: string;
       amount: number;

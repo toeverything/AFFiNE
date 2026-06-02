@@ -5,9 +5,9 @@ import { XMLParser } from 'fast-xml-parser';
 import { escape } from 'lodash-es';
 
 import {
-  assertSsrFSafeUrl,
   CalendarProviderRequestError,
   GraphqlBadRequest,
+  safeFetch,
   SsrfBlockedError,
 } from '../../../base';
 import type {
@@ -35,6 +35,8 @@ const XML_PARSER = new XMLParser({
 
 const DEFAULT_REQUEST_TIMEOUT_MS = 10_000;
 const DEFAULT_MAX_REDIRECTS = 5;
+const DEFAULT_MAX_RESPONSE_BYTES = 50 * 1024 * 1024;
+const CALDAV_SAFE_FETCH_HEADERS = ['authorization', 'content-type', 'depth'];
 
 type CalDAVCredentials = {
   username: string;
@@ -105,9 +107,6 @@ const formatUtcForIcal = (iso: string) => {
     'Z',
   ].join('');
 };
-
-const isRedirectStatus = (status: number) =>
-  [301, 302, 303, 307, 308].includes(status);
 
 const splitHeaderTokens = (value: string) =>
   value
@@ -536,36 +535,24 @@ class CalDAVRequestPolicy {
     return this.config.calendar.caldav.maxRedirects ?? DEFAULT_MAX_REDIRECTS;
   }
 
-  async fetch(
-    url: string,
-    init: RequestInit,
-    redirects = 0
-  ): Promise<Response> {
+  async fetch(url: string, init: RequestInit): Promise<Response> {
     await this.assertAllowedUrl(url);
 
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), this.timeoutMs);
-    const response = await fetch(url, {
-      ...init,
-      redirect: 'manual',
-      signal: controller.signal,
-    }).finally(() => clearTimeout(timer));
-
-    if (isRedirectStatus(response.status)) {
-      const location = response.headers.get('location');
-      if (location) {
-        if (redirects >= this.maxRedirects) {
-          throw new GraphqlBadRequest({
-            code: 'caldav_max_redirects',
-            message: 'CalDAV request exceeded redirect limit.',
-          });
-        }
-        const nextUrl = resolveHref(location, url);
-        return this.fetch(nextUrl, init, redirects + 1);
-      }
+    try {
+      return await safeFetch(url, init, {
+        timeoutMs: this.timeoutMs,
+        maxRedirects: this.maxRedirects,
+        maxBytes: DEFAULT_MAX_RESPONSE_BYTES,
+        allowedHeaders: CALDAV_SAFE_FETCH_HEADERS,
+        allowedHosts: this.allowedHosts,
+        allowHttp: this.allowInsecureHttp,
+        allowPrivateTargetOrigin: !this.blockPrivateNetwork,
+      });
+    } catch (error) {
+      const ssrfError = this.toGraphqlSsrfError(error);
+      if (ssrfError) throw ssrfError;
+      throw error;
     }
-
-    return response;
   }
 
   private async assertAllowedUrl(urlValue: string) {
@@ -599,52 +586,62 @@ class CalDAVRequestPolicy {
         message: 'CalDAV host is not allowed.',
       });
     }
+  }
 
-    if (!this.blockPrivateNetwork) {
-      return;
+  private toGraphqlSsrfError(error: unknown) {
+    if (!(error instanceof SsrfBlockedError)) {
+      return null;
     }
 
-    try {
-      await assertSsrFSafeUrl(url);
-    } catch (error) {
-      if (error instanceof SsrfBlockedError) {
-        const reason = String(error.data?.reason ?? '');
+    const reason = String(error.data?.reason ?? '');
 
-        if (reason === 'blocked_ip') {
-          throw new GraphqlBadRequest({
-            code: 'caldav_private_network',
-            message: 'CalDAV host is in a private network.',
-          });
-        }
-
-        if (reason === 'unresolvable_hostname') {
-          throw new GraphqlBadRequest({
-            code: 'caldav_dns_failed',
-            message: 'Unable to resolve CalDAV host.',
-          });
-        }
-
-        if (reason === 'disallowed_protocol') {
-          throw new GraphqlBadRequest({
-            code: 'caldav_insecure_url',
-            message: 'CalDAV URL must use https.',
-          });
-        }
-
-        if (
-          reason === 'invalid_url' ||
-          reason === 'blocked_hostname' ||
-          reason === 'url_has_credentials'
-        ) {
-          throw new GraphqlBadRequest({
-            code: 'caldav_invalid_url',
-            message: 'CalDAV URL is invalid.',
-          });
-        }
-      }
-
-      throw error;
+    if (reason === 'blocked_ip') {
+      return new GraphqlBadRequest({
+        code: 'caldav_private_network',
+        message: 'CalDAV host is in a private network.',
+      });
     }
+
+    if (reason === 'unresolvable_hostname') {
+      return new GraphqlBadRequest({
+        code: 'caldav_dns_failed',
+        message: 'Unable to resolve CalDAV host.',
+      });
+    }
+
+    if (reason === 'disallowed_protocol') {
+      return new GraphqlBadRequest({
+        code: 'caldav_insecure_url',
+        message: 'CalDAV URL must use https.',
+      });
+    }
+
+    if (reason === 'too_many_redirects') {
+      return new GraphqlBadRequest({
+        code: 'caldav_max_redirects',
+        message: 'CalDAV request exceeded redirect limit.',
+      });
+    }
+
+    if (reason === 'host_not_allowed') {
+      return new GraphqlBadRequest({
+        code: 'caldav_host_blocked',
+        message: 'CalDAV host is not allowed.',
+      });
+    }
+
+    if (
+      reason === 'invalid_url' ||
+      reason === 'blocked_hostname' ||
+      reason === 'url_has_credentials'
+    ) {
+      return new GraphqlBadRequest({
+        code: 'caldav_invalid_url',
+        message: 'CalDAV URL is invalid.',
+      });
+    }
+
+    return null;
   }
 }
 

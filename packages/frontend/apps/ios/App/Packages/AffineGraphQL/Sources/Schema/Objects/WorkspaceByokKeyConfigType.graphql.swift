@@ -4,8 +4,8 @@
 import ApolloAPI
 
 public extension Objects {
-  static let PaginatedGrantedDocUserType = ApolloAPI.Object(
-    typename: "PaginatedGrantedDocUserType",
+  static let WorkspaceByokKeyConfigType = ApolloAPI.Object(
+    typename: "WorkspaceByokKeyConfigType",
     implementedInterfaces: [],
     keyFields: nil
   )

@@ -1113,9 +1113,7 @@ type ExpectToUpdateDocUserRoleDataType {
 }
 
 enum FeatureType {
-  AIEarlyAccess
   Admin
-  EarlyAccess
   FreePlan
   LifetimeProPlan
   ProPlan
@@ -1340,9 +1338,6 @@ type InviteResult {
 
   """Invite id, null if invite record create failed"""
   inviteId: String
-
-  """Invite email sent success"""
-  sentSuccess: Boolean! @deprecated(reason: "Notification will be sent asynchronously")
 }
 
 type InviteUserType {
@@ -1393,7 +1388,6 @@ type InvoiceType {
   amount: Int!
   createdAt: DateTime!
   currency: String!
-  id: String @deprecated(reason: "removed")
   lastPaymentError: String
   link: String
   plan: SubscriptionPlan @deprecated(reason: "removed")
@@ -1695,7 +1689,7 @@ type Mutation {
   revokeMember(userId: String!, workspaceId: String!): Boolean!
   revokePublicDoc(docId: String!, workspaceId: String!): DocType!
   revokeUserAccessToken(id: String!): Boolean!
-  sendChangeEmail(callbackUrl: String!, email: String): Boolean!
+  sendChangeEmail(callbackUrl: String!): Boolean!
   sendChangePasswordEmail(callbackUrl: String!, email: String @deprecated(reason: "fetched from signed in user")): Boolean!
   sendSetPasswordEmail(callbackUrl: String!, email: String @deprecated(reason: "fetched from signed in user")): Boolean!
   sendTestEmail(config: JSONObject!): Boolean!
@@ -2399,7 +2393,6 @@ type SubscriptionType {
 }
 
 enum SubscriptionVariant {
-  EA
   Onetime
 }
 
@@ -2667,9 +2660,6 @@ type UserType {
   """User name"""
   name: String!
 
-  """Get user notification count"""
-  notificationCount: Int! @deprecated(reason: "Use realtime subscription \"notification.count.changed\" instead.")
-
   """Get current user notifications"""
   notifications(pagination: PaginationInput!): PaginatedNotificationObjectType!
   quota: UserQuotaType!
@@ -2835,7 +2825,6 @@ type WorkspaceQuotaType {
   name: String!
   overcapacityMemberCount: Int!
   storageQuota: SafeInt!
-  usedSize: SafeInt! @deprecated(reason: "use `usedStorageQuota` instead")
   usedStorageQuota: SafeInt!
 }
 

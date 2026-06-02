@@ -166,14 +166,6 @@ export class InvoiceType implements Partial<Invoice> {
   @Field(() => Date)
   updatedAt!: Date;
 
-  // deprecated fields
-  @Field(() => String, {
-    name: 'id',
-    nullable: true,
-    deprecationReason: 'removed',
-  })
-  stripeInvoiceId?: string;
-
   @Field(() => SubscriptionPlan, {
     nullable: true,
     deprecationReason: 'removed',
@@ -475,12 +467,7 @@ export class UserSubscriptionResolver {
   ) {}
 
   private normalizeSubscription(s: Subscription) {
-    if (
-      s.variant &&
-      ![SubscriptionVariant.EA, SubscriptionVariant.Onetime].includes(
-        s.variant as SubscriptionVariant
-      )
-    ) {
+    if (s.variant && s.variant !== SubscriptionVariant.Onetime) {
       s.variant = null;
     }
     return s;

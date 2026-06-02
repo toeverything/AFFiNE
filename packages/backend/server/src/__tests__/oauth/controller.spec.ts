@@ -924,7 +924,7 @@ test('oidc should not fall back to default email claim when custom claim is conf
 
 test('oidc discovery should remove oauth feature on failure and restore it after backoff retry succeeds', async t => {
   const { provider, factory, server } = createOidcRegistrationHarness();
-  const fetchStub = Sinon.stub(globalThis, 'fetch');
+  const fetchStub = Sinon.stub(provider as any, 'oidcFetch');
   const scheduledRetries: Array<() => void> = [];
   const retryDelays: number[] = [];
   const setTimeoutStub = Sinon.stub(globalThis, 'setTimeout').callsFake(((

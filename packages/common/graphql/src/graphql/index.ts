@@ -2348,7 +2348,6 @@ export const invoicesQuery = {
   currentUser {
     invoiceCount
     invoices(take: $take, skip: $skip) {
-      id
       status
       currency
       amount
@@ -2359,7 +2358,6 @@ export const invoicesQuery = {
     }
   }
 }`,
-  deprecations: ["'id' is deprecated: removed"],
 };
 
 export const leaveWorkspaceMutation = {
@@ -2983,10 +2981,8 @@ export const inviteByEmailsMutation = {
   inviteMembers(workspaceId: $workspaceId, emails: $emails) {
     email
     inviteId
-    sentSuccess
   }
 }`,
-  deprecations: ["'sentSuccess' is deprecated: Notification will be sent asynchronously"],
 };
 
 export const acceptInviteByInviteIdMutation = {
@@ -3023,7 +3019,6 @@ export const workspaceInvoicesQuery = {
   workspace(id: $workspaceId) {
     invoiceCount
     invoices(take: $take, skip: $skip) {
-      id
       status
       currency
       amount
@@ -3034,7 +3029,6 @@ export const workspaceInvoicesQuery = {
     }
   }
 }`,
-  deprecations: ["'id' is deprecated: removed"],
 };
 
 export const getWorkspaceRolePermissionsQuery = {

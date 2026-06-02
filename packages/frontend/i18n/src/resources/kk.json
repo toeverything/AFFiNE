@@ -1044,7 +1044,6 @@
   "com.affine.payment.member.team.invite.generate": "Жаса",
   "com.affine.payment.member.team.invite.copy": "Көшір",
   "com.affine.payment.member.team.invite.done": "Дайын",
-  "com.affine.payment.member.team.invite.notify.title": "Шақыру жіберілді: {{successCount}} сәтті, {{failedCount}} сәтсіз",
   "com.affine.payment.member.team.invite.notify.fail-message": "Мына электрондық пошта мекенжайлары бұрын шақырылған:",
   "com.affine.payment.member.team.revoke": "Шақыруды қайтарып ал",
   "com.affine.payment.member.team.approve": "Мақұлда",

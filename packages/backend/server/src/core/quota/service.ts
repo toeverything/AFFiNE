@@ -76,7 +76,6 @@ export class QuotaService {
       usedStorageQuota: Number(state.usedStorageQuota),
       memberCount: state.memberCount,
       overcapacityMemberCount: state.overcapacityMemberCount,
-      usedSize: Number(state.usedStorageQuota),
     };
   }
 
