@@ -66,33 +66,21 @@ export const PageDetailEditor = ({
 
   const isBackendAIReady = false; 
 
-  // 💡 提取日記真實日期的核心輔助函式（完美咬合日記標題）
+  // 提取日記真實日期的核心輔助函式
   const getJournalTargetDate = () => {
-    // 1. 優先嘗試獲取 AFFiNE 日記頁面的真實標題 (例如 "2026-06-01" 或 "2026/06/01")
     const docTitle = docMeta?.title || (doc as any).meta?.title;
-    
     if (docTitle && docTitle.trim().length > 0) {
-      // 嘗試將標題字串轉換成 Date 物件
       const parsedDate = new Date(docTitle);
-      // 檢查是否為合法日期，如果是，直接採用標題日期！
-      if (!isNaN(parsedDate.getTime())) {
-        return parsedDate;
-      }
+      if (!isNaN(parsedDate.getTime())) return parsedDate;
     }
-
-    // 2. 備援方案：如果標題不是日期格式，才抓建立或更新時間
     const docMetaTime = (doc as any).meta?.updatedDate || (doc as any).meta?.createDate;
     if (docMetaTime) return new Date(docMetaTime);
-
-    // 3. 終極防線：手動強制指定測試日期（若需要強制卡在 6/1，可把下面一行的註解解除）
-    // return new Date('2026-06-01');
-
     return new Date();
   };
 
   const handleFetchAISummary = async () => {
     setIsGenerating(true);
-    console.log("🚀 IG 分享工坊：開始提煉日記內文...");
+    console.log("🚀 IG 分享工坊：開始動態提煉日記...");
     
     try {
       const textElements = document.querySelectorAll(
@@ -126,8 +114,7 @@ export const PageDetailEditor = ({
       if (!rawText) {
         setAiSummary([
           "📖 今天是個神祕的日子...",
-          "✍️ 稍微在下方編輯器裡敲點字，",
-          "✨ 就能一鍵生成專屬的 IG 限動大綱喔！"
+          "✍️ 稍微在下方編輯器裡敲點字，就能一鍵生成專屬的 IG 限動大綱喔！"
         ]);
         setIsGenerating(false);
         return;
@@ -141,7 +128,7 @@ export const PageDetailEditor = ({
           (window as any).currentEditor?.host?.std?.get?.('affine:ai');
 
         if (affineAIEngine && typeof affineAIEngine.execute === 'function') {
-          const aiPrompt = `你是一個精緻的生活雜誌編輯。請閱讀以下使用者的日記內文，並幫我整理出一個反映整篇日記情緒或氛圍的短標題（包含一個 Emoji），以及三句適合放上 Instagram 限時動態的生活精簡大綱。請嚴格以 JSON 陣列格式回傳，不要包含 any markdown 標籤。範例格式：["情緒短標題", "大綱第一句", "大綱第二句", "大綱 third"]。\n日記內文如下：\n${rawText}`;
+          const aiPrompt = `你是一個精緻的生活雜誌編輯。請閱讀以下使用者的日記內文，並幫我整理出一個反映整篇日記情緒或氛圍的短標題（包含一個 Emoji），以及適合放上 Instagram 限時動態的生活精簡大綱（根據內容豐富度，提供 1 到 3 句即可，不需要強行湊數）。請嚴格以 JSON 陣列格式回傳，例如：["情緒短標題", "大綱第一句", "大綱第二句"]。\n日記內文如下：\n${rawText}`;
           
           const aiResponse = await affineAIEngine.execute({ prompt: aiPrompt });
           const resultString = typeof aiResponse === 'string' ? aiResponse : aiResponse?.content;
@@ -155,6 +142,7 @@ export const PageDetailEditor = ({
         }
       }
 
+      // 🛑 智慧備援核心
       const textLower = rawText.toLowerCase();
       const allSentences = rawText.split(/[。\n!?]/).map(s => s.trim()).filter(s => s.length > 2);
 
@@ -178,36 +166,30 @@ export const PageDetailEditor = ({
         detectedMood = "☕ 稍微給疲憊的自己一個呼吸的留白";
       }
 
-      let summaryLines = [];
+      let dynamicSummary = [detectedMood];
+
       if (textLower.includes("資工") || textLower.includes("csie") || textLower.includes("台大") || textLower.includes("ntu")) {
-        summaryLines.push("📍 整天埋首在 NTU 資工館，跟複雜的系統硬碰硬");
-      } else {
-        const longestSentence = [...allSentences].sort((a, b) => b.length - a.length)[0] || "紀錄今日的生活點滴";
-        summaryLines.push(`📌 ${longestSentence.slice(0, 22)}...`);
+        dynamicSummary.push("📍 整天埋首在 NTU 資工館，跟複雜的系統硬碰硬");
       }
 
       if (textLower.includes("拉麵") || textLower.includes("公館")) {
-        summaryLines.push("🍜 用一碗濃郁的拉麵犒賞今日的靈魂");
+        dynamicSummary.push("🍜 用一碗濃郁的拉麵犒賞今日的靈魂");
       } else if (textLower.includes("咖啡") || textLower.includes("美式") || textLower.includes("americano")) {
-        summaryLines.push("☕ 躲進安靜的咖啡廳，用冰美式沉澱繁雜思緒");
-      } else {
-        const musicIdx = Math.floor(allSentences.length / 2);
-        summaryLines.push(allSentences[musicIdx] ? `🌿 ${allSentences[musicIdx].slice(0, 22)}` : "✨ 細細品味生活中不經意的日常小確幸");
+        dynamicSummary.push("☕ 躲進安靜的咖啡廳，用冰美式沉澱繁雜思緒");
       }
 
       if (scoreConfidence > 0 && (textLower.includes("投影片") || textLower.includes("簡報"))) {
-        summaryLines.push("✨ 順利完成了簡報投影片，信心滿滿迎接挑戰");
-      } else if (scorePressure > scoreConfidence) {
-        summaryLines.push("💪 雖然步調有些緊湊，但適度休息後明天繼續加油");
-      } else {
-        const lastSentence = allSentences[allSentences.length - 1] || "期待著明天未知的精彩";
-        summaryLines.push(`🔮 ${lastSentence.slice(0, 22)}`);
+        dynamicSummary.push("✨ 順利完成了簡報投影片，信心滿滿迎接挑戰");
+      }
+
+      if (dynamicSummary.length === 1 && allSentences.length > 0) {
+        const longestSentence = [...allSentences].sort((a, b) => b.length - a.length)[0];
+        dynamicSummary.push(`📝 ${longestSentence.slice(0, 24)}...`);
       }
 
       setTimeout(() => {
-        setAiSummary([detectedMood, summaryLines[0], summaryLines[1], summaryLines[2]]);
+        setAiSummary(dynamicSummary); 
         setIsGenerating(false);
-        console.log("🔥 卡片狀態更新成功，React 畫面已重繪！");
       }, 300);
 
     } catch (error) {
@@ -225,13 +207,11 @@ export const PageDetailEditor = ({
     }
   };
 
-  // 將 HTML 渲染成一張圖並下載（日記真實標題同步版）
   const handleDownloadForIG = async () => {
     if (!shareCardRef.current) return;
     const canvas = await html2canvas(shareCardRef.current, { useCORS: true, scale: 2 });
     const dataUrl = canvas.toDataURL('image/png');
     
-    // 💡 同步使用標題日期解析器
     const targetDate = getJournalTargetDate();
     const localDateStr = targetDate.toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei' }).replace(/\//g, '-');
     
@@ -245,7 +225,7 @@ export const PageDetailEditor = ({
     <>
       {/* --- 🚀 方案 A 強制外掛分享面板 --- */}
       <div className="ig-share-panel" style={{ padding: '20px', background: '#f5f5f7', borderRadius: '12px', marginBottom: '20px', border: '2px dashed #E1306C', zIndex: 9999, position: 'relative' }}>
-        <h4 style={{ margin: '0 0 10px 0', color: '#E1306C' }}>✨ Instagram Story 分享工坊</h4>
+        <h4 style={{ margin: '0 0 10px 0', color: '#E1306C' }}>✨ Instagram Story 分享工坊 (動態視覺補償版)</h4>
         
         <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
           <button 
@@ -281,9 +261,9 @@ export const PageDetailEditor = ({
               position: 'relative',
               display: 'flex',
               flexDirection: 'column',
-              justifyContent: 'center',
+              justifyContent: 'space-between', // 💡 改為上下均勻散開，消滅死白太空感
               alignItems: 'center',
-              padding: '30px',
+              padding: '45px 30px 40px 30px', 
               color: bgImage ? '#ffffff' : '#111111',
               borderRadius: '16px',
               overflow: 'hidden',
@@ -291,11 +271,12 @@ export const PageDetailEditor = ({
             }}
           >
             {bgImage && <div style={{ position: 'absolute', inset: 0, background: 'rgba(0, 0, 0, 0.4)', zIndex: 1 }} />}
+            
+            {/* 🔝 上半部：標題區塊 */}
             <div style={{ zIndex: 2, textAlign: 'center', width: '100%' }}>
               <p style={{ letterSpacing: '4px', fontSize: '11px', opacity: 0.8, margin: '0 0 5px 0' }}>DAILY LOG</p>
-              <h2 style={{ fontSize: '18px', margin: '0 0 35px 0', fontWeight: 600 }}>
+              <h2 style={{ fontSize: '18px', margin: '0 0 25px 0', fontWeight: 600 }}>
                 {(() => {
-                  // 💡 呼叫標題日期解析器
                   const targetDate = getJournalTargetDate();
                   return targetDate.toLocaleDateString('zh-TW', { 
                     timeZone: 'Asia/Taipei',
@@ -305,21 +286,53 @@ export const PageDetailEditor = ({
                   });
                 })()}
               </h2>
-              <div style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                {aiSummary.map((bullet, index) => (
-                  <div key={index} style={{ 
-                    fontSize: '14px', lineHeight: '1.6', 
-                    background: bgImage ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.03)',
-                    backdropFilter: bgImage ? 'blur(8px)' : 'none',
-                    padding: '10px 14px', borderRadius: '8px',
-                    border: bgImage ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(0,0,0,0.05)'
-                  }}>{bullet}</div>
-                ))}
-              </div>
-              <p style={{ position: 'absolute', bottom: '20px', left: 0, right: 0, fontSize: '10px', opacity: 0.5, letterSpacing: '2px' }}>
+            </div>
+              
+            {/* 📂 中半部：動態大綱格子群組 */}
+            <div style={{ 
+              zIndex: 2, 
+              textAlign: 'left', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              gap: '16px', 
+              width: '100%',
+              flexGrow: 1,                 // 💡 讓中段具備拉伸彈性
+              justifyContent: 'center'     // 💡 當數量少時，格子會在中央優雅排開，絕不突兀
+            }}>
+              {aiSummary.map((bullet, index) => (
+                <div key={index} style={{ 
+                  fontSize: aiSummary.length <= 2 ? '15px' : '14px', // 💡 句子少時，字體自動微微放大提升飽滿度
+                  lineHeight: '1.6', 
+                  background: bgImage ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.03)',
+                  backdropFilter: bgImage ? 'blur(8px)' : 'none',
+                  padding: aiSummary.length <= 2 ? '16px 20px' : '12px 16px', // 💡 句子少時，格子自動加厚
+                  borderRadius: '10px',
+                  border: bgImage ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(0,0,0,0.05)',
+                  fontWeight: index === 0 ? 600 : 400, // 第一格情緒標題加粗
+                  letterSpacing: '0.5px'
+                }}>{bullet}</div>
+              ))}
+            </div>
+              
+            {/* 🎨 下半部：設計師生活金句簽名（消滅底部空洞感的靈魂補償） */}
+            <div style={{ zIndex: 2, textAlign: 'center', width: '100%', marginTop: '20px' }}>
+              {aiSummary.length <= 2 && (
+                <p style={{ 
+                  fontSize: '11px', 
+                  fontStyle: 'italic', 
+                  opacity: 0.6, 
+                  margin: '0 0 25px 0',
+                  letterSpacing: '1px'
+                }}>
+                  “ 將當下的思緒，釀成明天的勇氣 ”
+                </p>
+              )}
+              
+              <p style={{ fontSize: '10px', opacity: 0.5, letterSpacing: '2px', margin: 0 }}>
                 via AFFiNE Journal
               </p>
             </div>
+
           </div>
         )}
       </div>
