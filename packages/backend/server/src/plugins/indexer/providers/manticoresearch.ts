@@ -318,12 +318,12 @@ export class ManticoresearchProvider extends ElasticsearchProvider {
               if (
                 childBool &&
                 Object.keys(childBool).length === 1 &&
-                Array.isArray(childBool.must_not)
+                childBool.must_not !== undefined
               ) {
                 node.bool.must.splice(i, 1);
                 node.bool.must_not = [
                   ...boolClauses(node.bool.must_not),
-                  ...childBool.must_not,
+                  ...boolClauses(childBool.must_not),
                 ];
               }
             }
