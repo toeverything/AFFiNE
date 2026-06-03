@@ -66,6 +66,11 @@ const ConvertEmptyStringToNullValueFields = new Set([
   'parent_flavour',
 ]);
 
+function boolClauses(value: unknown) {
+  if (value === undefined) return [];
+  return Array.isArray(value) ? value : [value];
+}
+
 @Injectable()
 export class ManticoresearchProvider extends ElasticsearchProvider {
   override type = SearchProviderType.Manticoresearch;
@@ -290,7 +295,9 @@ export class ManticoresearchProvider extends ElasticsearchProvider {
       for (const occur in query.bool) {
         const conditions = query.bool[occur];
         if (Array.isArray(conditions)) {
-          node.bool[occur] = [];
+          const parsedConditions: Record<string, any>[] = [];
+          const existing = node.bool[occur];
+          node.bool[occur] = parsedConditions;
           // { must: [ { term: [Object] }, { bool: [Object] } ] }
           // {
           //   must: [ { term: [Object] }, { term: [Object] }, { bool: [Object] } ]
@@ -298,8 +305,11 @@ export class ManticoresearchProvider extends ElasticsearchProvider {
           for (const item of conditions) {
             this.parseESQuery(item, {
               ...options,
-              parentNodes: node.bool[occur],
+              parentNodes: parsedConditions,
             });
+          }
+          if (existing !== undefined) {
+            node.bool[occur] = [...boolClauses(existing), ...parsedConditions];
           }
           if (occur === 'must') {
             for (let i = node.bool.must.length - 1; i >= 0; i--) {
@@ -312,7 +322,7 @@ export class ManticoresearchProvider extends ElasticsearchProvider {
               ) {
                 node.bool.must.splice(i, 1);
                 node.bool.must_not = [
-                  ...(node.bool.must_not ?? []),
+                  ...boolClauses(node.bool.must_not),
                   ...childBool.must_not,
                 ];
               }
@@ -322,9 +332,14 @@ export class ManticoresearchProvider extends ElasticsearchProvider {
           // {
           //   must_not: { term: { doc_id: 'docId' } }
           // }
-          node.bool[occur] = this.parseESQuery(conditions, {
+          const parsed = this.parseESQuery(conditions, {
             termMappingField: options?.termMappingField,
           });
+          if (node.bool[occur] !== undefined) {
+            node.bool[occur] = [...boolClauses(node.bool[occur]), parsed];
+          } else {
+            node.bool[occur] = parsed;
+          }
         }
       }
     } else if (query.term) {

@@ -1803,6 +1803,41 @@ test('should parse es query with custom term mapping field work', async t => {
   t.snapshot(result3);
 });
 
+test('should parse es query with parent and nested must_not work', async t => {
+  const nestedMust = {
+    must: [
+      { term: { workspace_id: 'workspaceId1' } },
+      { bool: { must_not: { term: { doc_id: 'docId1' } } } },
+    ],
+  };
+  const parentMustNot = { term: { doc_id: 'docId2' } };
+  const expectedMust = [{ equals: { workspace_id: 'workspaceId1' } }];
+  const expectedMustNot = ['docId1', 'docId2'];
+
+  const queryWithParentMustNotFirst = {
+    bool: { must_not: parentMustNot, must: nestedMust.must },
+  };
+  const queryWithParentMustNotLast = {
+    bool: { must: nestedMust.must, must_not: parentMustNot },
+  };
+
+  // @ts-expect-error use private method
+  const result = searchProvider.parseESQuery(queryWithParentMustNotFirst);
+  // @ts-expect-error use private method
+  const result2 = searchProvider.parseESQuery(queryWithParentMustNotLast);
+
+  t.deepEqual(result.bool.must, expectedMust);
+  t.deepEqual(result2.bool.must, expectedMust);
+  t.deepEqual(
+    result.bool.must_not.map((clause: any) => clause.equals.doc_id).sort(),
+    expectedMustNot
+  );
+  t.deepEqual(
+    result2.bool.must_not.map((clause: any) => clause.equals.doc_id).sort(),
+    expectedMustNot
+  );
+});
+
 test('should parse es query exists work', async t => {
   const query = {
     exists: {
