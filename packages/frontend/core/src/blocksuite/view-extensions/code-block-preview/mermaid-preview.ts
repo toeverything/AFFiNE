@@ -170,6 +170,7 @@ export class MermaidPreview extends SignalWatcher(
   private readonly maxRetries = 3;
   private renderTimeout: ReturnType<typeof setTimeout> | null = null;
   private isRendering = false;
+  private pendingRender = false;
 
   // zoom and pan
   private scale = 1;
@@ -359,13 +360,23 @@ export class MermaidPreview extends SignalWatcher(
     );
   }
 
+  private _finishRendering() {
+    this.isRendering = false;
+    if (!this.pendingRender) {
+      return;
+    }
+    this.pendingRender = false;
+    this._scheduleRender();
+  }
+
   private async _render() {
-    // prevent duplicate rendering
     if (this.isRendering) {
+      this.pendingRender = true;
       return;
     }
 
     this.isRendering = true;
+    this.pendingRender = false;
     this.state = 'loading';
 
     const code = this.normalizedMermaidCode?.trim();
@@ -373,7 +384,7 @@ export class MermaidPreview extends SignalWatcher(
     if (!code) {
       this.svgContent = '';
       this.state = 'fallback';
-      this.isRendering = false;
+      this._finishRendering();
       return;
     }
 
@@ -415,7 +426,7 @@ export class MermaidPreview extends SignalWatcher(
       this.state = 'error';
       this.retryCount = 0; // reset retry count
     } finally {
-      this.isRendering = false;
+      this._finishRendering();
     }
   }
 
