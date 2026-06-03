@@ -301,6 +301,23 @@ export class ManticoresearchProvider extends ElasticsearchProvider {
               parentNodes: node.bool[occur],
             });
           }
+          if (occur === 'must') {
+            for (let i = node.bool.must.length - 1; i >= 0; i--) {
+              const child = node.bool.must[i];
+              const childBool = child.bool;
+              if (
+                childBool &&
+                Object.keys(childBool).length === 1 &&
+                Array.isArray(childBool.must_not)
+              ) {
+                node.bool.must.splice(i, 1);
+                node.bool.must_not = [
+                  ...(node.bool.must_not ?? []),
+                  ...childBool.must_not,
+                ];
+              }
+            }
+          }
         } else {
           // {
           //   must_not: { term: { doc_id: 'docId' } }

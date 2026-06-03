@@ -4208,7 +4208,7 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.payment.member.team.invite.done"](): string;
     /**
-      * `Invitation sent {{count}}.`
+      * `Invitations sent: {{count}}`
       */
     ["com.affine.payment.member.team.invite.notify.title"](options: {
         readonly count: string;
