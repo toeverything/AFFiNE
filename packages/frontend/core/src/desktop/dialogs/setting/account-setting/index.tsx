@@ -201,13 +201,19 @@ export const AccountSetting = ({
 
   const onPasswordButtonClick = useCallback(() => {
     globalDialogService.open('change-password', {
+      hasPassword: account?.info?.authMethods?.password.bound,
       server: serverService.server.baseUrl,
     });
-  }, [globalDialogService, serverService.server.baseUrl]);
+  }, [
+    account?.info?.authMethods?.password.bound,
+    globalDialogService,
+    serverService.server.baseUrl,
+  ]);
 
   if (!account) {
     return null;
   }
+  const hasPassword = account.info?.authMethods?.password.bound;
 
   return (
     <>
@@ -233,7 +239,7 @@ export const AccountSetting = ({
           desc={t['com.affine.settings.password.message']()}
         >
           <Button onClick={onPasswordButtonClick}>
-            {account.info?.hasPassword
+            {hasPassword
               ? t['com.affine.settings.password.action.change']()
               : t['com.affine.settings.password.action.set']()}
           </Button>

@@ -1,6 +1,7 @@
 export {
   Cache,
   CacheInterceptor,
+  isValidCacheTtl,
   MakeCache,
   PreventCache,
   SessionCache,

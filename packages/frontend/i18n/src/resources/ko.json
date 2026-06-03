@@ -1016,7 +1016,6 @@
   "com.affine.payment.member.team.invite.generate": "생성",
   "com.affine.payment.member.team.invite.copy": "복사",
   "com.affine.payment.member.team.invite.done": "완료",
-  "com.affine.payment.member.team.invite.notify.title": "초대장 전송됨, {{successCount}}건 성공, {{failedCount}}건 실패",
   "com.affine.payment.member.team.invite.notify.fail-message": "다음 이메일 주소는 이미 초대되었습니다:",
   "com.affine.payment.member.team.revoke": "초대 취소",
   "com.affine.payment.member.team.approve": "승인",

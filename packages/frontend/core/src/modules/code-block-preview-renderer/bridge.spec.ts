@@ -28,7 +28,7 @@ vi.mock('dompurify', () => ({
   },
 }));
 
-import { renderMermaidSvg, renderTypstSvg } from './bridge';
+import { renderMermaidSvg, renderTypstSvg, sanitizeSvg } from './bridge';
 
 describe('preview render bridge', () => {
   beforeEach(() => {
@@ -60,6 +60,45 @@ describe('preview render bridge', () => {
     expect(typst.svg).toBe(
       '<div><script>window.__xss__=1</script><svg><text>typst</text></svg></div>'
     );
+  });
+
+  test('sanitizeSvg keeps svg text nodes', () => {
+    if (typeof DOMParser === 'undefined') {
+      return;
+    }
+
+    const sanitized = sanitizeSvg(
+      '<svg xmlns="http://www.w3.org/2000/svg"><text>A</text></svg>'
+    );
+
+    expect(sanitized).toContain('>A<');
+  });
+
+  test('sanitizeSvg keeps use elements for mermaid label references', () => {
+    if (typeof DOMParser === 'undefined') {
+      return;
+    }
+
+    const sanitized = sanitizeSvg(
+      '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><defs><text id="lbl">A</text></defs><use xlink:href="#lbl"/></svg>'
+    );
+
+    expect(sanitized).toMatch(/<use[\s>]/i);
+    expect(sanitized).toContain('#lbl');
+  });
+
+  test('sanitizeSvg keeps sanitized foreignObject label text', () => {
+    if (typeof DOMParser === 'undefined') {
+      return;
+    }
+
+    const sanitized = sanitizeSvg(
+      '<svg xmlns="http://www.w3.org/2000/svg"><foreignObject width="10" height="10"><div xmlns="http://www.w3.org/1999/xhtml"><script>alert(1)</script>A</div></foreignObject></svg>'
+    );
+
+    expect(sanitized).toMatch(/foreignObject/i);
+    expect(sanitized).toContain('>A<');
+    expect(sanitized).not.toContain('<script');
   });
 
   test('throws when sanitized svg is empty', async () => {

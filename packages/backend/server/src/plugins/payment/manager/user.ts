@@ -7,22 +7,18 @@ import { z } from 'zod';
 import {
   Config,
   EventBus,
-  InternalServerError,
   InvalidCheckoutParameters,
   ManagedByAppStoreOrPlay,
   Mutex,
-  OneMonth,
   OnEvent,
-  OneYear,
   SubscriptionAlreadyExists,
   SubscriptionPlanNotFound,
   TooManyRequest,
   URLHelper,
 } from '../../../base';
-import { EarlyAccessType, FeatureService } from '../../../core/features';
+import { EntitlementService } from '../../../core/entitlement';
 import { StripeFactory } from '../stripe';
 import {
-  CouponType,
   KnownStripeInvoice,
   KnownStripePrice,
   KnownStripeSubscription,
@@ -31,16 +27,17 @@ import {
   SubscriptionPlan,
   SubscriptionRecurring,
   SubscriptionStatus,
-  SubscriptionVariant,
 } from '../types';
-import { CheckoutParams, Subscription, SubscriptionManager } from './common';
+import {
+  activeSubscriptionWhere,
+  CheckoutParams,
+  Subscription,
+  SubscriptionManager,
+} from './common';
 
 interface PriceStrategyStatus {
-  proEarlyAccess: boolean;
-  aiEarlyAccess: boolean;
   proSubscribed: boolean;
   aiSubscribed: boolean;
-  onetime: boolean;
 }
 
 export const UserSubscriptionIdentity = z.object({
@@ -61,32 +58,22 @@ export class UserSubscriptionManager extends SubscriptionManager {
     stripeProvider: StripeFactory,
     db: PrismaClient,
     private readonly config: Config,
-    private readonly feature: FeatureService,
     private readonly event: EventBus,
     private readonly url: URLHelper,
-    private readonly mutex: Mutex
+    private readonly mutex: Mutex,
+    private readonly entitlement: EntitlementService
   ) {
     super(stripeProvider, db);
   }
 
   async filterPrices(
     prices: KnownStripePrice[],
-    customer?: UserStripeCustomer
+    _customer?: UserStripeCustomer
   ) {
-    const strategyStatus = customer
-      ? await this.strategyStatus(customer)
-      : {
-          proEarlyAccess: false,
-          aiEarlyAccess: false,
-          proSubscribed: false,
-          aiSubscribed: false,
-          onetime: false,
-        };
-
     const availablePrices: KnownStripePrice[] = [];
 
     for (const price of prices) {
-      if (await this.isPriceAvailable(price, strategyStatus)) {
+      if (await this.isPriceAvailable(price)) {
         availablePrices.push(price);
       }
     }
@@ -100,8 +87,9 @@ export class UserSubscriptionManager extends SubscriptionManager {
     { user }: z.infer<typeof UserSubscriptionCheckoutArgs>
   ) {
     if (
-      lookupKey.plan !== SubscriptionPlan.Pro &&
-      lookupKey.plan !== SubscriptionPlan.AI
+      (lookupKey.plan !== SubscriptionPlan.Pro &&
+        lookupKey.plan !== SubscriptionPlan.AI) ||
+      lookupKey.variant !== null
     ) {
       throw new InvalidCheckoutParameters();
     }
@@ -114,24 +102,12 @@ export class UserSubscriptionManager extends SubscriptionManager {
       throw new ManagedByAppStoreOrPlay();
     }
 
-    const subscription = await this.getSubscription({
-      plan: lookupKey.plan,
-      userId: user.id,
-    });
-
     if (
-      subscription &&
+      active &&
       // do not allow to re-subscribe unless
       !(
-        /* current subscription is a onetime subscription and so as the one that's checking out */
-        (
-          (subscription.variant === SubscriptionVariant.Onetime &&
-            lookupKey.variant === SubscriptionVariant.Onetime) ||
-          /* current subscription is normal subscription and is checking-out a lifetime subscription */
-          (subscription.recurring !== SubscriptionRecurring.Lifetime &&
-            subscription.variant !== SubscriptionVariant.Onetime &&
-            lookupKey.recurring === SubscriptionRecurring.Lifetime)
-        )
+        active.recurring !== SubscriptionRecurring.Lifetime &&
+        lookupKey.recurring === SubscriptionRecurring.Lifetime
       )
     ) {
       throw new SubscriptionAlreadyExists({ plan: lookupKey.plan });
@@ -139,12 +115,9 @@ export class UserSubscriptionManager extends SubscriptionManager {
 
     const customer = await this.getOrCreateCustomer(user.id);
     const strategy = await this.strategyStatus(customer);
-    const price = await this.autoPrice(lookupKey, strategy);
+    const price = await this.getPrice(lookupKey);
 
-    if (
-      !price ||
-      !(await this.isPriceAvailable(price, { ...strategy, onetime: true }))
-    ) {
+    if (!price || !(await this.isPriceAvailable(price))) {
       throw new SubscriptionPlanNotFound({
         plan: lookupKey.plan,
         recurring: lookupKey.recurring,
@@ -152,10 +125,7 @@ export class UserSubscriptionManager extends SubscriptionManager {
     }
 
     const discounts = await (async () => {
-      const coupon = await this.getBuildInCoupon(customer, price);
-      if (coupon) {
-        return { discounts: [{ coupon }] };
-      } else if (params.coupon) {
+      if (params.coupon) {
         const couponId = await this.getCouponFromPromotionCode(
           params.coupon,
           customer
@@ -177,10 +147,9 @@ export class UserSubscriptionManager extends SubscriptionManager {
       return undefined;
     })();
 
-    // mode: 'subscription' or 'payment' for lifetime and onetime payment
+    // mode: 'subscription' or 'payment' for lifetime payment
     const mode =
-      lookupKey.recurring === SubscriptionRecurring.Lifetime ||
-      lookupKey.variant === SubscriptionVariant.Onetime
+      lookupKey.recurring === SubscriptionRecurring.Lifetime
         ? {
             mode: 'payment' as const,
             invoice_creation: {
@@ -222,9 +191,7 @@ export class UserSubscriptionManager extends SubscriptionManager {
       where: {
         targetId: args.userId,
         plan: args.plan,
-        status: {
-          in: [SubscriptionStatus.Active, SubscriptionStatus.Trialing],
-        },
+        ...activeSubscriptionWhere(),
       },
     });
   }
@@ -254,7 +221,7 @@ export class UserSubscriptionManager extends SubscriptionManager {
 
     const subscriptionData = this.transformSubscription(subscription);
 
-    return this.db.subscription.upsert({
+    const saved = await this.db.subscription.upsert({
       where: {
         stripeSubscriptionId: stripeSubscription.id,
       },
@@ -270,6 +237,8 @@ export class UserSubscriptionManager extends SubscriptionManager {
         ...omit(subscriptionData, ['provider', 'iapStore']),
       },
     });
+    await this.entitlement.upsertFromCloudSubscription(saved);
+    return saved;
   }
 
   async deleteStripeSubscription({
@@ -285,6 +254,11 @@ export class UserSubscriptionManager extends SubscriptionManager {
     });
 
     if (result.count > 0) {
+      await this.entitlement.revokeCloudSubscription({
+        targetId: userId,
+        plan: lookupKey.plan,
+        stripeSubscriptionId: stripeSubscription.id,
+      });
       this.event.emit('user.subscription.canceled', {
         userId,
         plan: lookupKey.plan,
@@ -332,37 +306,6 @@ export class UserSubscriptionManager extends SubscriptionManager {
     });
   }
 
-  private async getBuildInCoupon(
-    customer: UserStripeCustomer,
-    price: KnownStripePrice
-  ) {
-    const strategyStatus = await this.strategyStatus(customer);
-
-    // onetime price is allowed for checkout
-    strategyStatus.onetime = true;
-
-    if (!(await this.isPriceAvailable(price, strategyStatus))) {
-      return null;
-    }
-
-    let coupon: CouponType | undefined;
-
-    if (price.lookupKey.variant === SubscriptionVariant.EA) {
-      if (price.lookupKey.plan === SubscriptionPlan.Pro) {
-        coupon = CouponType.ProEarlyAccessOneYearFree;
-      } else if (price.lookupKey.plan === SubscriptionPlan.AI) {
-        coupon = CouponType.AIEarlyAccessOneYearFree;
-      }
-    } else if (price.lookupKey.plan === SubscriptionPlan.AI) {
-      const { proEarlyAccess, aiSubscribed } = strategyStatus;
-      if (proEarlyAccess && !aiSubscribed) {
-        coupon = CouponType.ProEarlyAccessAIOneYearFree;
-      }
-    }
-
-    return coupon;
-  }
-
   async saveInvoice(knownInvoice: KnownStripeInvoice) {
     const { userId, lookupKey, stripeInvoice } = knownInvoice;
     this.assertUserIdExists(userId);
@@ -380,11 +323,11 @@ export class UserSubscriptionManager extends SubscriptionManager {
       },
     });
 
-    // onetime and lifetime subscription is a special "subscription" that doesn't get involved with stripe subscription system
-    // we track the deals by invoice only.
+    // Lifetime subscription does not get involved with the Stripe subscription system.
+    // We track the deal by invoice only.
     if (stripeInvoice.status === 'paid') {
       await using lock = await this.mutex.acquire(
-        `redeem-onetime-subscription:${stripeInvoice.id}`
+        `redeem-lifetime-subscription:${stripeInvoice.id}`
       );
 
       if (!lock) {
@@ -393,8 +336,6 @@ export class UserSubscriptionManager extends SubscriptionManager {
 
       if (lookupKey.recurring === SubscriptionRecurring.Lifetime) {
         await this.saveLifetimeSubscription(knownInvoice);
-      } else if (lookupKey.variant === SubscriptionVariant.Onetime) {
-        await this.saveOnetimePaymentSubscription(knownInvoice);
       }
     }
 
@@ -416,7 +357,7 @@ export class UserSubscriptionManager extends SubscriptionManager {
 
     if (prevSubscription) {
       if (prevSubscription.stripeSubscriptionId) {
-        await this.db.subscription.update({
+        const subscription = await this.db.subscription.update({
           where: {
             id: prevSubscription.id,
           },
@@ -431,6 +372,7 @@ export class UserSubscriptionManager extends SubscriptionManager {
             nextBillAt: null,
           },
         });
+        await this.entitlement.upsertFromCloudSubscription(subscription);
 
         await this.stripe.subscriptions.cancel(
           prevSubscription.stripeSubscriptionId,
@@ -440,7 +382,7 @@ export class UserSubscriptionManager extends SubscriptionManager {
         );
       }
     } else {
-      await this.db.subscription.create({
+      const subscription = await this.db.subscription.create({
         data: {
           targetId: knownInvoice.userId,
           stripeSubscriptionId: null,
@@ -452,6 +394,7 @@ export class UserSubscriptionManager extends SubscriptionManager {
           nextBillAt: null,
         },
       });
+      await this.entitlement.upsertFromCloudSubscription(subscription);
     }
 
     this.event.emit('user.subscription.activated', {
@@ -461,102 +404,7 @@ export class UserSubscriptionManager extends SubscriptionManager {
     });
   }
 
-  async saveOnetimePaymentSubscription(knownInvoice: KnownStripeInvoice) {
-    this.assertUserIdExists(knownInvoice.userId);
-    const { userId, lookupKey, stripeInvoice } = knownInvoice;
-
-    const invoice = await this.db.invoice.findUnique({
-      where: {
-        stripeInvoiceId: stripeInvoice.id,
-      },
-    });
-
-    if (!invoice) {
-      // never happens
-      throw new InternalServerError('Invoice not found');
-    }
-
-    if (invoice.onetimeSubscriptionRedeemed) {
-      return;
-    }
-
-    await this.db.invoice.update({
-      select: {
-        onetimeSubscriptionRedeemed: true,
-      },
-      where: {
-        stripeInvoiceId: stripeInvoice.id,
-      },
-      data: { onetimeSubscriptionRedeemed: true },
-    });
-
-    const existingSubscription = await this.db.subscription.findUnique({
-      where: {
-        targetId_plan: {
-          targetId: userId,
-          plan: lookupKey.plan,
-        },
-      },
-    });
-
-    const subscriptionTime =
-      lookupKey.recurring === SubscriptionRecurring.Monthly
-        ? OneMonth
-        : OneYear;
-
-    let subscription: Subscription;
-
-    // extends the subscription time if exists
-    if (existingSubscription) {
-      if (!existingSubscription.end) {
-        throw new InternalServerError(
-          'Unexpected onetime subscription with no end date'
-        );
-      }
-
-      const period =
-        // expired, reset the period
-        existingSubscription.end <= new Date()
-          ? {
-              start: new Date(),
-              end: new Date(Date.now() + subscriptionTime),
-            }
-          : {
-              end: new Date(
-                existingSubscription.end.getTime() + subscriptionTime
-              ),
-            };
-
-      subscription = await this.db.subscription.update({
-        where: {
-          id: existingSubscription.id,
-        },
-        data: period,
-      });
-    } else {
-      subscription = await this.db.subscription.create({
-        data: {
-          targetId: userId,
-          stripeSubscriptionId: null,
-          ...lookupKey,
-          start: new Date(),
-          end: new Date(Date.now() + subscriptionTime),
-          status: SubscriptionStatus.Active,
-          nextBillAt: null,
-        },
-      });
-    }
-
-    this.event.emit('user.subscription.activated', {
-      userId,
-      plan: lookupKey.plan,
-      recurring: lookupKey.recurring,
-    });
-
-    return subscription;
-  }
-
-  async revokeOnetimeOrLifetime(knownInvoice: KnownStripeInvoice) {
+  async revokeLifetime(knownInvoice: KnownStripeInvoice) {
     this.assertUserIdExists(knownInvoice.userId);
     const { userId, lookupKey } = knownInvoice;
 
@@ -582,6 +430,12 @@ export class UserSubscriptionManager extends SubscriptionManager {
         canceledAt: new Date(),
       },
     });
+    await this.entitlement.revokeCloudSubscription({
+      targetId: userId,
+      plan: lookupKey.plan,
+      subscriptionId: subscription.id,
+      stripeSubscriptionId: subscription.stripeSubscriptionId,
+    });
 
     this.event.emit('user.subscription.canceled', {
       userId,
@@ -590,7 +444,7 @@ export class UserSubscriptionManager extends SubscriptionManager {
     });
   }
 
-  async restoreOnetimeOrLifetime(knownInvoice: KnownStripeInvoice) {
+  async restoreLifetime(knownInvoice: KnownStripeInvoice) {
     this.assertUserIdExists(knownInvoice.userId);
     const { userId, lookupKey, stripeInvoice } = knownInvoice;
 
@@ -608,41 +462,31 @@ export class UserSubscriptionManager extends SubscriptionManager {
         ? stripeInvoice.created
         : Date.now() / 1000);
 
-    let end: Date | null = null;
-
-    if (lookupKey.recurring === SubscriptionRecurring.Lifetime) {
-      end = null;
-    } else if (lookupKey.variant === SubscriptionVariant.Onetime) {
-      const isMonthly = lookupKey.recurring === SubscriptionRecurring.Monthly;
-      const duration = isMonthly ? OneMonth : OneYear;
-      end = subscription?.end ?? new Date(start * 1000 + duration);
-    } else {
-      end = subscription?.end ?? null;
-    }
-
     if (subscription) {
-      await this.db.subscription.update({
+      const saved = await this.db.subscription.update({
         where: { id: subscription.id },
         data: {
           status: SubscriptionStatus.Active,
           canceledAt: null,
           nextBillAt: null,
           start: subscription.start ?? new Date(start * 1000),
-          end,
+          end: null,
         },
       });
+      await this.entitlement.upsertFromCloudSubscription(saved);
     } else {
-      await this.db.subscription.create({
+      const saved = await this.db.subscription.create({
         data: {
           targetId: userId,
           stripeSubscriptionId: null,
           ...lookupKey,
           start: new Date(start * 1000),
-          end,
+          end: null,
           status: SubscriptionStatus.Active,
           nextBillAt: null,
         },
       });
+      await this.entitlement.upsertFromCloudSubscription(saved);
     }
 
     this.event.emit('user.subscription.activated', {
@@ -652,65 +496,21 @@ export class UserSubscriptionManager extends SubscriptionManager {
     });
   }
 
-  private async autoPrice(lookupKey: LookupKey, strategy: PriceStrategyStatus) {
-    // auto select ea variant when available if not specified
-    let variant: SubscriptionVariant | null = lookupKey.variant;
-
-    if (!variant) {
-      // make the if conditions separated, more readable
-      // pro early access
-      if (
-        lookupKey.plan === SubscriptionPlan.Pro &&
-        lookupKey.recurring === SubscriptionRecurring.Yearly &&
-        strategy.proEarlyAccess &&
-        !strategy.proSubscribed
-      ) {
-        variant = SubscriptionVariant.EA;
-      }
-
-      // ai early access
-      if (
-        lookupKey.plan === SubscriptionPlan.AI &&
-        lookupKey.recurring === SubscriptionRecurring.Yearly &&
-        strategy.aiEarlyAccess &&
-        !strategy.aiSubscribed
-      ) {
-        variant = SubscriptionVariant.EA;
-      }
-    }
-
-    return this.getPrice({
-      plan: lookupKey.plan,
-      recurring: lookupKey.recurring,
-      variant,
-    });
-  }
-
-  private async isPriceAvailable(
-    price: KnownStripePrice,
-    strategy: PriceStrategyStatus
-  ) {
+  private async isPriceAvailable(price: KnownStripePrice) {
     if (price.lookupKey.plan === SubscriptionPlan.Pro) {
-      return this.isProPriceAvailable(price, strategy);
+      return this.isProPriceAvailable(price);
     }
 
     if (price.lookupKey.plan === SubscriptionPlan.AI) {
-      return this.isAIPriceAvailable(price, strategy);
+      return this.isAIPriceAvailable(price);
     }
 
     return false;
   }
 
-  private async isProPriceAvailable(
-    { lookupKey }: KnownStripePrice,
-    { proEarlyAccess, proSubscribed, onetime }: PriceStrategyStatus
-  ) {
+  private async isProPriceAvailable({ lookupKey }: KnownStripePrice) {
     if (lookupKey.recurring === SubscriptionRecurring.Lifetime) {
       return this.config.payment.showLifetimePrice;
-    }
-
-    if (lookupKey.variant === SubscriptionVariant.Onetime) {
-      return onetime;
     }
 
     // no special price for monthly plan
@@ -718,45 +518,21 @@ export class UserSubscriptionManager extends SubscriptionManager {
       return true;
     }
 
-    // show EA price instead of normal price if early access is available
-    return proEarlyAccess && !proSubscribed
-      ? lookupKey.variant === SubscriptionVariant.EA
-      : lookupKey.variant !== SubscriptionVariant.EA;
+    return lookupKey.variant === null;
   }
 
-  private async isAIPriceAvailable(
-    { lookupKey }: KnownStripePrice,
-    { aiEarlyAccess, aiSubscribed, onetime }: PriceStrategyStatus
-  ) {
+  private async isAIPriceAvailable({ lookupKey }: KnownStripePrice) {
     // no lifetime price for AI
     if (lookupKey.recurring === SubscriptionRecurring.Lifetime) {
       return false;
     }
 
-    // never show onetime prices
-    if (lookupKey.variant === SubscriptionVariant.Onetime) {
-      return onetime;
-    }
-
-    // show EA price instead of normal price if early access is available
-    return aiEarlyAccess && !aiSubscribed
-      ? lookupKey.variant === SubscriptionVariant.EA
-      : lookupKey.variant !== SubscriptionVariant.EA;
+    return lookupKey.variant === null;
   }
 
   private async strategyStatus(
     customer: UserStripeCustomer
   ): Promise<PriceStrategyStatus> {
-    const proEarlyAccess = await this.feature.isEarlyAccessUser(
-      customer.userId,
-      EarlyAccessType.App
-    );
-
-    const aiEarlyAccess = await this.feature.isEarlyAccessUser(
-      customer.userId,
-      EarlyAccessType.AI
-    );
-
     let proSubscribed = false;
     let aiSubscribed = false;
 
@@ -765,8 +541,6 @@ export class UserSubscriptionManager extends SubscriptionManager {
       status: 'all',
     });
 
-    // if the early access user had early access subscription in the past, but it got canceled or past due,
-    // the user will lose the early access privilege
     for (const sub of subscriptions.data) {
       const lookupKey = retriveLookupKeyFromStripeSubscription(sub);
       if (!lookupKey) {
@@ -782,13 +556,7 @@ export class UserSubscriptionManager extends SubscriptionManager {
       }
     }
 
-    return {
-      proEarlyAccess,
-      aiEarlyAccess,
-      proSubscribed,
-      aiSubscribed,
-      onetime: false,
-    };
+    return { proSubscribed, aiSubscribed };
   }
 
   private assertUserIdExists(

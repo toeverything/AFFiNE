@@ -1028,7 +1028,6 @@
   "com.affine.payment.member.team.invite.generate": "Создать",
   "com.affine.payment.member.team.invite.copy": "Копировать",
   "com.affine.payment.member.team.invite.done": "Готово",
-  "com.affine.payment.member.team.invite.notify.title": "Приглашение отправлено: {{successCount}} успешно, {{failedCount}} не удалось",
   "com.affine.payment.member.team.invite.notify.fail-message": "Эти адреса электронной почты уже были приглашены:",
   "com.affine.payment.member.team.revoke": "Отменить приглашение",
   "com.affine.payment.member.team.approve": "Одобрить",

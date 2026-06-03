@@ -2,7 +2,13 @@ import { createHash, createHmac, randomUUID } from 'node:crypto';
 
 import { BadRequestException, Injectable } from '@nestjs/common';
 
-import { BadRequest, Cache, CryptoHelper, metrics } from '../../../base';
+import {
+  BadRequest,
+  Cache,
+  CryptoHelper,
+  metrics,
+  safeFetch,
+} from '../../../base';
 import { Models } from '../../../models';
 import type { CopilotProviderProfile } from '../config';
 import { ByokEntitlementPolicy } from './policy';
@@ -103,6 +109,8 @@ type ByokProfileMeta = {
 
 @Injectable()
 export class ByokService {
+  private readonly probeFetch = safeFetch;
+
   constructor(
     private readonly models: Models,
     private readonly crypto: CryptoHelper,
@@ -755,22 +763,24 @@ export class ByokService {
     apiKey: string,
     endpoint: string | null
   ) {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), TEST_TIMEOUT_MS);
-    try {
-      const request = this.buildProbeRequest(provider, apiKey, endpoint);
-      const response = await fetch(request.url, {
+    const request = this.buildProbeRequest(provider, apiKey, endpoint);
+    const response = await this.probeFetch(
+      request.url,
+      {
         method: request.method,
         headers: request.headers as unknown as Record<string, string>,
-        signal: controller.signal,
-      });
-      if (!response.ok) {
-        throw new BadRequestException(
-          this.providerProbeFailureMessage(response.status)
-        );
+      },
+      {
+        timeoutMs: TEST_TIMEOUT_MS,
+        maxRedirects: 3,
+        maxBytes: 1024,
+        allowedHeaders: Object.keys(request.headers),
       }
-    } finally {
-      clearTimeout(timeout);
+    );
+    if (!response.ok) {
+      throw new BadRequestException(
+        this.providerProbeFailureMessage(response.status)
+      );
     }
   }
 

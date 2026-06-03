@@ -6,7 +6,7 @@ export type MermaidTextMetrics = {
   space: number;
 };
 
-export type MermaidRenderTheme = 'modern' | 'default';
+export type MermaidRenderTheme = 'modern' | 'default' | 'dark';
 
 export type MermaidRenderOptions = {
   fastText?: boolean;

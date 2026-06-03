@@ -141,7 +141,7 @@ export class EmbedIframeBlockComponent extends CaptionedBlockComponent<EmbedIfra
       });
       return;
     }
-    window.open(link, '_blank');
+    window.open(link, '_blank', 'noopener,noreferrer');
   };
 
   refreshData = async () => {
@@ -183,6 +183,12 @@ export class EmbedIframeBlockComponent extends CaptionedBlockComponent<EmbedIfra
 
       // update model
       const iframeUrl = this._getIframeUrl(embedData) ?? currentIframeUrl;
+      if (!this._validateIframeUrl(url, iframeUrl)) {
+        throw new BlockSuiteError(
+          ErrorCode.ValueNotExists,
+          'Invalid embed iframe url'
+        );
+      }
       this.store.updateBlock(this.model, {
         iframeUrl,
         title: embedData?.title || previewData?.title,
@@ -291,6 +297,19 @@ export class EmbedIframeBlockComponent extends CaptionedBlockComponent<EmbedIfra
     }
   };
 
+  private readonly _validateIframeUrl = (url: string, iframeUrl?: string) => {
+    if (!iframeUrl) {
+      return false;
+    }
+    const config = this.embedIframeService?.getConfig(url);
+    if (!config) {
+      return false;
+    }
+    return config.validateIframeUrl
+      ? config.validateIframeUrl(iframeUrl, url)
+      : config.match(iframeUrl);
+  };
+
   private readonly _handleDoubleClick = () => {
     this.open();
   };
@@ -329,6 +348,16 @@ export class EmbedIframeBlockComponent extends CaptionedBlockComponent<EmbedIfra
 
   private readonly _renderIframe = () => {
     const { iframeUrl } = this.model.props;
+    if (!iframeUrl || !this._isIframeUrlAllowed(iframeUrl)) {
+      return html`<embed-iframe-error-card
+        .error=${new Error('Invalid iframe URL')}
+        .model=${this.model}
+        .onRetry=${this._handleRetry}
+        .std=${this.std}
+        .inSurface=${this.inSurface}
+        .options=${this._statusCardOptions}
+      ></embed-iframe-error-card>`;
+    }
     const {
       widthPercent,
       heightInNote,
@@ -366,6 +395,10 @@ export class EmbedIframeBlockComponent extends CaptionedBlockComponent<EmbedIfra
       ${sourceHost
         ? html`<div class="affine-embed-iframe-source">${sourceHost}</div>`
         : nothing}`;
+  };
+
+  private readonly _isIframeUrlAllowed = (iframeUrl: string) => {
+    return this._validateIframeUrl(this.model.props.url, iframeUrl);
   };
 
   private readonly _getSourceHost = () => {
@@ -437,7 +470,12 @@ export class EmbedIframeBlockComponent extends CaptionedBlockComponent<EmbedIfra
     } else {
       // update iframe options, to ensure the iframe is rendered with the correct options
       this._updateIframeOptions(this.model.props.url);
-      this.status$.value = 'success';
+      this.status$.value = this._validateIframeUrl(
+        this.model.props.url,
+        this.model.props.iframeUrl
+      )
+        ? 'success'
+        : 'error';
     }
 
     // refresh data when original url changes

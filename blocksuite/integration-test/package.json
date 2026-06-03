@@ -35,11 +35,11 @@
   ],
   "devDependencies": {
     "@vanilla-extract/vite-plugin": "^5.0.0",
-    "@vitest/browser-playwright": "^4.0.18",
+    "@vitest/browser-playwright": "^4.1.8",
     "playwright": "=1.58.2",
     "vite": "^7.2.7",
     "vite-plugin-wasm": "^3.5.0",
-    "vitest": "^4.0.18"
+    "vitest": "^4.1.8"
   },
   "version": "0.26.3"
 }

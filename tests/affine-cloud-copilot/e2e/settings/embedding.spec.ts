@@ -127,10 +127,8 @@ test.describe('AISettings/Embedding', () => {
     await page.getByTestId('embedding-progress-wrapper');
 
     const progress = await page.getByTestId('embedding-progress');
-    // wait for the progress to be loading
     const title = await page.getByTestId('embedding-progress-title');
-    await expect(title).toHaveText(/Loading sync status/i);
-    await expect(progress).not.toBeVisible();
+    await expect(title).not.toHaveAttribute('data-progress', 'loading');
 
     const count = await page.getByTestId('embedding-progress-count');
     await expect(count).toHaveText(/\d+\/\d+/);

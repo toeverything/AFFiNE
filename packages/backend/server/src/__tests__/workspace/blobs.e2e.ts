@@ -3,7 +3,8 @@ import { createHash } from 'node:crypto';
 import test from 'ava';
 import Sinon from 'sinon';
 
-import { Config, StorageProviderFactory } from '../../base';
+import { Config, ConfigFactory, StorageProviderFactory } from '../../base';
+import { QuotaStateService } from '../../core/quota/state';
 import { WorkspaceBlobStorage } from '../../core/storage/wrappers/blob';
 import { BlobModel, WorkspaceFeatureModel } from '../../models';
 import {
@@ -35,6 +36,18 @@ let model: WorkspaceFeatureModel;
 test.before(async () => {
   app = await createTestingApp();
   model = app.get(WorkspaceFeatureModel);
+  app.get(ConfigFactory).override({
+    storages: {
+      blob: {
+        storage: {
+          provider: 'fs',
+          bucket: 'test',
+          config: { path: '/tmp/affine-test-storage' },
+        },
+      },
+    },
+  });
+  await app.get(WorkspaceBlobStorage).onConfigInit();
 });
 
 test.beforeEach(async () => {
@@ -44,6 +57,26 @@ test.beforeEach(async () => {
 test.after.always(async () => {
   await app.close();
 });
+
+async function withRestrictedWorkspaceQuota(workspaceId: string) {
+  const quotaState = app.get(QuotaStateService);
+  const blobModel = app.get(BlobModel);
+  const base = await quotaState.reconcileWorkspaceQuotaState(workspaceId);
+  return Sinon.stub(quotaState, 'reconcileWorkspaceQuotaState').callsFake(
+    async id => {
+      if (id !== workspaceId) {
+        return base;
+      }
+
+      return {
+        ...base,
+        blobLimit: BigInt(RESTRICTED_QUOTA.blobLimit),
+        storageQuota: BigInt(RESTRICTED_QUOTA.storageQuota),
+        usedStorageQuota: BigInt(await blobModel.totalSize(workspaceId)),
+      };
+    }
+  );
+}
 
 test('should set blobs', async t => {
   await app.signupV1('u1@affine.pro');
@@ -233,7 +266,8 @@ test('should reject blob exceeded limit', async t => {
   await app.signupV1('u1@affine.pro');
 
   const workspace1 = await createWorkspace(app);
-  await model.add(workspace1.id, 'team_plan_v1', 'test', RESTRICTED_QUOTA);
+  const quotaStub = await withRestrictedWorkspaceQuota(workspace1.id);
+  t.teardown(() => quotaStub.restore());
 
   const buffer1 = Buffer.from(
     Array.from({ length: RESTRICTED_QUOTA.blobLimit + 1 }, () => 0)
@@ -247,7 +281,8 @@ test('should reject blob exceeded storage quota', async t => {
   await app.signupV1('u1@affine.pro');
 
   const workspace = await createWorkspace(app);
-  await model.add(workspace.id, 'team_plan_v1', 'test', RESTRICTED_QUOTA);
+  const quotaStub = await withRestrictedWorkspaceQuota(workspace.id);
+  t.teardown(() => quotaStub.restore());
 
   const buffer = Buffer.from(Array.from({ length: OneMB }, () => 0));
 

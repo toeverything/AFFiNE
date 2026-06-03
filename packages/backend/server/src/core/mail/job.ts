@@ -2,12 +2,13 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { getStreamAsBuffer } from 'get-stream';
 
-import { Cache, JOB_SIGNAL, JobQueue, OnJob, sleep } from '../../base';
+import { Cache, JOB_SIGNAL, JobQueue, OnEvent, OnJob, sleep } from '../../base';
 import { type MailName, MailProps, Renderers } from '../../mails';
 import { UserProps, WorkspaceProps } from '../../mails/components';
 import { Models } from '../../models';
 import { DocReader } from '../doc/reader';
 import { WorkspaceBlobStorage } from '../storage';
+import { containsUrlOrDomain } from '../workspaces/abuse';
 import { MailSender, SendOptions } from './sender';
 
 type DynamicallyFetchedProps<Props> = {
@@ -35,7 +36,11 @@ type SendMailJob<Mail extends MailName = MailName, Props = MailProps<Mail>> = {
 
 declare global {
   interface Jobs {
-    'notification.sendMail': { startTime: number } & {
+    'notification.sendMail': {
+      startTime: number;
+      retryCount?: number;
+      expiresAt?: number;
+    } & {
       [K in MailName]: SendMailJob<K>;
     }[MailName];
   }
@@ -47,6 +52,19 @@ const sendMailCacheKey = (name: string, to: string) =>
   `${sendMailKey}:${name}:${to}`;
 const retryMaxPerTick = 20;
 const retryFirstTime = 3;
+const retryMaxAttempts = 12;
+const retryMaxAge = 24 * 60 * 60 * 1000;
+const magicLinkExpiresIn = 30 * 60 * 1000;
+
+const mailExpiresIn: Partial<Record<MailName, number>> = {
+  SignIn: magicLinkExpiresIn,
+  SignUp: magicLinkExpiresIn,
+  SetPassword: magicLinkExpiresIn,
+  ChangePassword: magicLinkExpiresIn,
+  VerifyEmail: magicLinkExpiresIn,
+  ChangeEmail: magicLinkExpiresIn,
+  VerifyChangeEmail: magicLinkExpiresIn,
+};
 
 @Injectable()
 export class MailJob {
@@ -66,17 +84,65 @@ export class MailJob {
     return Math.min(30 * 1000, Math.round(elapsed / 2000) * 1000);
   }
 
+  private getRetryExhaustedReason({
+    startTime,
+    retryCount,
+    expiresAt,
+    name,
+  }: Jobs['notification.sendMail']) {
+    const expiredAt =
+      expiresAt ?? startTime + (mailExpiresIn[name] ?? retryMaxAge);
+    if (Date.now() > expiredAt) {
+      return 'expired';
+    }
+
+    if ((retryCount ?? 0) > retryMaxAttempts) {
+      return 'max attempts reached';
+    }
+
+    return;
+  }
+
+  private async shouldSkipRecipient(to: string) {
+    const user = await this.models.user.getUserByEmail(to, {
+      withDisabled: true,
+    });
+
+    return user?.disabled === true;
+  }
+
+  private async deleteRecipientMailCache(to: string) {
+    const suffix = `:${to}`;
+
+    await Promise.all(
+      [sendMailKey, retryMailKey].map(async map => {
+        const keys = await this.cache.mapKeys(map);
+        await Promise.all(
+          keys
+            .filter(key => key.endsWith(suffix))
+            .map(key => this.cache.mapDelete(map, key))
+        );
+      })
+    );
+  }
+
   private async sendMailInternal({
     startTime,
     name,
     to,
     props,
   }: Jobs['notification.sendMail']) {
-    let options: Partial<SendOptions> = {};
+    if (await this.shouldSkipRecipient(to)) {
+      this.logger.debug(`Skip mail [${name}] to disabled user [${to}]`);
+      return;
+    }
 
-    for (const key in props) {
+    let options: Partial<SendOptions> = {};
+    const renderedProps = { ...props };
+
+    for (const key in renderedProps) {
       // @ts-expect-error allow
-      const val = props[key];
+      const val = renderedProps[key];
       if (val && typeof val === 'object') {
         if ('$$workspaceId' in val) {
           const workspaceProps = await this.fetchWorkspaceProps(
@@ -84,6 +150,16 @@ export class MailJob {
           );
 
           if (!workspaceProps) {
+            return;
+          }
+
+          if (
+            name === 'MemberInvitation' &&
+            containsUrlOrDomain(workspaceProps.name)
+          ) {
+            this.logger.warn(
+              `Skip mail [${name}] to [${to}], reason=workspace name contains url or domain`
+            );
             return;
           }
 
@@ -99,7 +175,7 @@ export class MailJob {
             workspaceProps.avatar = 'cid:workspaceAvatar';
           }
           // @ts-expect-error replacement
-          props[key] = workspaceProps;
+          renderedProps[key] = workspaceProps;
         } else if ('$$userId' in val) {
           const userProps = await this.fetchUserProps(val.$$userId);
 
@@ -108,9 +184,22 @@ export class MailJob {
           }
 
           // @ts-expect-error replacement
-          props[key] = userProps;
+          renderedProps[key] = userProps;
         }
       }
+    }
+
+    if (
+      name === 'MemberInvitation' &&
+      'workspace' in renderedProps &&
+      containsUrlOrDomain(
+        (renderedProps.workspace as WorkspaceProps | undefined)?.name
+      )
+    ) {
+      this.logger.warn(
+        `Skip mail [${name}] to [${to}], reason=workspace name contains url or domain`
+      );
+      return;
     }
 
     try {
@@ -118,7 +207,7 @@ export class MailJob {
         to,
         ...(await Renderers[name](
           // @ts-expect-error the job trigger part has been typechecked
-          props
+          renderedProps
         )),
         ...options,
       });
@@ -177,15 +266,39 @@ export class MailJob {
   @OnJob('notification.sendMail')
   async sendMail(job: Jobs['notification.sendMail']) {
     const cacheKey = sendMailCacheKey(job.name, job.to);
+    job.retryCount = (job.retryCount ?? 0) + 1;
+    const exhaustedReason = this.getRetryExhaustedReason(job);
+    if (exhaustedReason) {
+      this.logger.warn(
+        `Drop mail [${job.name}] to [${job.to}], reason=${exhaustedReason}`
+      );
+      await Promise.all([
+        this.cache.mapDelete(sendMailKey, cacheKey),
+        this.cache.mapDelete(retryMailKey, cacheKey),
+      ]);
+      return;
+    }
+
     const retried = await this.cache.mapIncrease(sendMailKey, cacheKey, 1);
     if (retried <= retryFirstTime) {
       const ret = await this.sendMailInternal(job);
       if (!ret) await this.cache.mapDelete(sendMailKey, cacheKey);
       return ret;
     }
-    await this.cache.mapSet(retryMailKey, cacheKey, JSON.stringify(job));
+    await this.cache.mapSet(retryMailKey, cacheKey, job);
     await this.cache.mapDelete(sendMailKey, cacheKey);
     return undefined;
+  }
+
+  @OnEvent('user.deleted')
+  async onUserDeleted(user: Events['user.deleted']) {
+    await Promise.all([
+      this.deleteRecipientMailCache(user.email),
+      this.queue.removeWhere(
+        'notification.sendMail',
+        job => job.to === user.email
+      ),
+    ]);
   }
 
   @Cron(CronExpression.EVERY_MINUTE)
@@ -195,9 +308,14 @@ export class MailJob {
     let key = await this.cache.mapRandomKey(retryMailKey);
     while (key && processed < retryMaxPerTick) {
       try {
-        const job = await this.cache.mapGet<string>(retryMailKey, key);
+        const job = await this.cache.mapGet<
+          Jobs['notification.sendMail'] | string
+        >(retryMailKey, key);
         if (job) {
-          const jobData = JSON.parse(job) as Jobs['notification.sendMail'];
+          const jobData =
+            typeof job === 'string'
+              ? (JSON.parse(job) as Jobs['notification.sendMail'])
+              : job;
           await this.queue.add('notification.sendMail', jobData);
           // wait for a while before retrying
           const retryDelay = this.calculateRetryDelay(jobData.startTime);

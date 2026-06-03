@@ -15,6 +15,9 @@ const workspace = await module.create(Mockers.Workspace, {
   owner,
 });
 
+const waitNextMillisecond = () =>
+  new Promise(resolve => setTimeout(resolve, 1));
+
 test.after.always(async () => {
   await module.close();
 });
@@ -77,7 +80,6 @@ test('should get a comment', async t => {
     docId,
     userId: owner.id,
   });
-
   const comment2 = await models.comment.get(comment1.id);
   t.deepEqual(comment2, comment1);
   t.deepEqual(comment2?.content, {
@@ -146,7 +148,7 @@ test('should resolve a comment', async t => {
     docId,
     userId: owner.id,
   });
-
+  await waitNextMillisecond();
   const comment2 = await models.comment.resolve({
     id: comment.id,
     resolved: true,
@@ -158,6 +160,7 @@ test('should resolve a comment', async t => {
   // updatedAt should be changed
   t.true(comment3!.updatedAt.getTime() > comment3!.createdAt.getTime());
 
+  await waitNextMillisecond();
   const comment4 = await models.comment.resolve({
     id: comment.id,
     resolved: false,
@@ -272,6 +275,7 @@ test('should update a reply', async t => {
     commentId: comment.id,
   });
 
+  await waitNextMillisecond();
   const reply2 = await models.comment.updateReply({
     id: reply.id,
     content: {
@@ -322,6 +326,7 @@ test('should list comments with replies', async t => {
     userId: owner.id,
   });
 
+  await waitNextMillisecond();
   const comment2 = await models.comment.create({
     content: {
       type: 'paragraph',
@@ -342,6 +347,7 @@ test('should list comments with replies', async t => {
     userId: owner.id,
   });
 
+  await waitNextMillisecond();
   const reply1 = await models.comment.createReply({
     userId: owner.id,
     content: {
@@ -351,6 +357,7 @@ test('should list comments with replies', async t => {
     commentId: comment1.id,
   });
 
+  await waitNextMillisecond();
   const reply2 = await models.comment.createReply({
     userId: owner.id,
     content: {
@@ -421,7 +428,9 @@ test('should list changes', async t => {
     docId,
     userId: owner.id,
   });
+  const comment1Cursor = comment1.updatedAt;
 
+  await waitNextMillisecond();
   const comment2 = await models.comment.create({
     content: {
       type: 'paragraph',
@@ -432,6 +441,7 @@ test('should list changes', async t => {
     userId: owner.id,
   });
 
+  await waitNextMillisecond();
   const reply1 = await models.comment.createReply({
     userId: owner.id,
     content: {
@@ -441,6 +451,7 @@ test('should list changes', async t => {
     commentId: comment1.id,
   });
 
+  await waitNextMillisecond();
   const reply2 = await models.comment.createReply({
     userId: owner.id,
     content: {
@@ -465,7 +476,7 @@ test('should list changes', async t => {
   t.is((changes1[2].item as Reply).commentId, comment1.id);
 
   const changes2 = await models.comment.listChanges(workspace.id, docId, {
-    commentUpdatedAt: comment1.updatedAt,
+    commentUpdatedAt: comment1Cursor,
     replyUpdatedAt: reply1.updatedAt,
   });
   t.is(changes2.length, 2);
@@ -476,6 +487,7 @@ test('should list changes', async t => {
   t.is(changes2[1].commentId, comment1.id);
 
   // update comment1
+  await waitNextMillisecond();
   const comment1Updated = await models.comment.update({
     id: comment1.id,
     content: {
@@ -493,8 +505,10 @@ test('should list changes', async t => {
   t.is(changes3[0].id, comment1Updated.id);
 
   // delete comment1 and reply1, update reply2
+  await waitNextMillisecond();
   await models.comment.delete(comment1.id);
   await models.comment.deleteReply(reply1.id);
+  await waitNextMillisecond();
   await models.comment.updateReply({
     id: reply2.id,
     content: {

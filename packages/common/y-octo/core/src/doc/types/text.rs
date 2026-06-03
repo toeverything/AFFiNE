@@ -266,11 +266,7 @@ fn advance_text_position(store: &mut DocStore, pos: &mut TextPosition, mut remai
 }
 
 fn minimize_attribute_changes(pos: &mut TextPosition, attrs: &TextAttributes) {
-  loop {
-    let Some(item) = pos.right.get() else {
-      break;
-    };
-
+  while let Some(item) = pos.right.get() {
     if item.deleted() {
       pos.forward();
       continue;
@@ -345,11 +341,7 @@ fn insert_negated_attributes(
   pos: &mut TextPosition,
   mut negated: TextAttributes,
 ) -> JwstCodecResult {
-  loop {
-    let Some(item) = pos.right.get() else {
-      break;
-    };
-
+  while let Some(item) = pos.right.get() {
     if item.deleted() {
       pos.forward();
       continue;

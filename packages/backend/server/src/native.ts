@@ -1,6 +1,7 @@
 import serverNativeModule, {
   type ActionEvent as NativeActionEventContract,
   type ActionRuntimeInput as NativeActionRuntimeInputContract,
+  type AssertSafeUrlRequest,
   type BuiltInPromptRenderContract,
   type BuiltInPromptSessionContract,
   type BuiltInPromptSpec,
@@ -8,6 +9,16 @@ import serverNativeModule, {
   type CanonicalStructuredRequestContract,
   type CapabilityAttachmentContract,
   type CapabilityModelCapability,
+  type CommandResponse,
+  type ImageInspection,
+  type ImageInspectionOptions,
+  type LicenseError,
+  type LicenseHealthRequest,
+  type LicenseInfo,
+  type LicenseKeyRequest,
+  type LicenseRecurringRequest,
+  type LicenseResponse,
+  type LicenseSeatsRequest,
   type LlmCoreMessage,
   type LlmEmbeddingRequestContract,
   type LlmImageRequestContract,
@@ -17,6 +28,7 @@ import serverNativeModule, {
   type ModelConditionsContract,
   type ModelRegistryMatchResponse,
   type ModelRegistryResolveResponse,
+  type PortalResponse,
   type PromptMessageContract,
   type PromptMetadataContract,
   type PromptMetadataResult,
@@ -27,16 +39,42 @@ import serverNativeModule, {
   type PromptStructuredResponseContract,
   type PromptTokenCountContract,
   type PromptTokenCountResult,
+  type RemoteAttachmentFetchRequest,
+  type RemoteAttachmentFetchResponse,
+  type RemoteMimeTypeRequest,
   type RequestedModelMatchResponse,
+  type ResolvedEntitlement,
+  type ResolveEntitlementInput,
+  type SafeFetchRequest,
+  type SafeFetchResponse,
   type Tokenizer,
 } from '@affine/server-native';
 
 export type {
+  AssertSafeUrlRequest,
   CapabilityAttachmentContract,
   CapabilityModelCapability,
+  CommandResponse,
+  ImageInspection,
+  ImageInspectionOptions,
+  LicenseError,
+  LicenseHealthRequest,
+  LicenseInfo,
+  LicenseKeyRequest,
+  LicenseRecurringRequest,
+  LicenseResponse,
+  LicenseSeatsRequest,
   ModelConditionsContract,
+  PortalResponse,
   PromptMessageContract,
   PromptStructuredResponseContract,
+  RemoteAttachmentFetchRequest,
+  RemoteAttachmentFetchResponse,
+  RemoteMimeTypeRequest,
+  ResolvedEntitlement,
+  ResolveEntitlementInput,
+  SafeFetchRequest,
+  SafeFetchResponse,
 };
 
 export type ActionEventType =
@@ -118,6 +156,18 @@ export function getTokenEncoder(model?: string | null): Tokenizer | null {
 }
 
 export const getMime = serverNativeModule.getMime;
+export const inspectImageForProxy = serverNativeModule.inspectImageForProxy;
+export const fetchRemoteAttachment = serverNativeModule.fetchRemoteAttachment;
+export const inferRemoteMimeType = serverNativeModule.inferRemoteMimeType;
+export const assertSafeUrl = serverNativeModule.assertSafeUrl;
+export const safeFetch = serverNativeModule.safeFetch;
+export const activateLicense = serverNativeModule.activateLicense;
+export const checkLicenseHealth = serverNativeModule.checkLicenseHealth;
+export const createCustomerPortal =
+  serverNativeModule.createLicenseCustomerPortal;
+export const deactivateLicense = serverNativeModule.deactivateLicense;
+export const updateLicenseRecurring = serverNativeModule.updateLicenseRecurring;
+export const updateLicenseSeats = serverNativeModule.updateLicenseSeats;
 export const parseDoc = serverNativeModule.parseDoc;
 export const htmlSanitize = serverNativeModule.htmlSanitize;
 export const processImage = serverNativeModule.processImage;
@@ -130,6 +180,108 @@ export const readAllDocIdsFromRootDoc =
 export const AFFINE_PRO_PUBLIC_KEY = serverNativeModule.AFFINE_PRO_PUBLIC_KEY;
 export const AFFINE_PRO_LICENSE_AES_KEY =
   serverNativeModule.AFFINE_PRO_LICENSE_AES_KEY;
+
+export type PermissionWorkspaceRole = 'external' | 'member' | 'admin' | 'owner';
+export type PermissionDocRole =
+  | 'none'
+  | 'external'
+  | 'reader'
+  | 'commenter'
+  | 'editor'
+  | 'manager'
+  | 'owner';
+
+export type PermissionEvaluationInputV1 = {
+  version: 1;
+  legacyCompatMode?: boolean;
+  subject?: {
+    userId?: string;
+    groupIds?: string[];
+    allowLocal?: boolean;
+  };
+  runtime?: {
+    known?: boolean;
+    stale?: boolean;
+    readonly?: boolean;
+    readonlyReason?: string;
+    sharingEnabled?: boolean;
+    urlPreviewEnabled?: boolean;
+  };
+  workspace?: {
+    role?: PermissionWorkspaceRole;
+    memberState?: 'active' | 'pending' | 'waiting_review' | 'waiting_seat';
+    public?: boolean;
+    sharingEnabled?: boolean;
+    urlPreviewEnabled?: boolean;
+    local?: boolean;
+  };
+  workspaceActions?: string[];
+  docs?: Array<{
+    docId: string;
+    actions?: string[];
+    explicitUserRole?: PermissionDocRole;
+    groupGrants?: Array<{ groupId: string; role: PermissionDocRole }>;
+    groupGrantsEnabled?: boolean;
+    memberDefaultRole?: PermissionDocRole;
+    publicRole?: 'external';
+    visibility?: 'private' | 'public';
+    sharingEnabled?: boolean;
+    previewEnabled?: boolean;
+  }>;
+};
+
+export type PermissionDecisionV1 = {
+  action: string;
+  allowed: boolean;
+  sources: Array<{
+    type:
+      | 'workspace-member'
+      | 'workspace-policy'
+      | 'workspace-preview-policy'
+      | 'local-workspace'
+      | 'inherited-workspace-role'
+      | 'doc-grant'
+      | 'group-grant'
+      | 'member-default-policy'
+      | 'public-policy'
+      | 'doc-preview-policy';
+    role?: string;
+  }>;
+  restrictions: Array<{
+    type: 'runtime_unknown' | 'runtime_stale' | 'readonly' | 'sharing-disabled';
+    reason?: string;
+  }>;
+};
+
+export type PermissionEvaluationOutputV1 = {
+  version: 1;
+  workspace: {
+    resourceOwnerRole?: PermissionWorkspaceRole;
+    effectiveRole?: PermissionWorkspaceRole;
+    decisions: PermissionDecisionV1[];
+  };
+  docs: Array<{
+    docId: string;
+    resourceOwnerRole?: 'owner';
+    effectiveRole?: PermissionDocRole;
+    decisions: PermissionDecisionV1[];
+  }>;
+};
+
+export const evaluatePermissionV1 = (
+  input: PermissionEvaluationInputV1
+): PermissionEvaluationOutputV1 =>
+  serverNativeModule.evaluatePermissionV1(input);
+
+export const permissionActionRoleMatrixV1 = (): unknown =>
+  serverNativeModule.permissionActionRoleMatrixV1();
+
+export const permissionActionRoleMatrixV1Json =
+  serverNativeModule.permissionActionRoleMatrixV1Json;
+
+export const resolveEntitlementV1 = (
+  input: ResolveEntitlementInput
+): ResolvedEntitlement => serverNativeModule.resolveEntitlementV1(input);
 
 // MCP write tools exports
 export const createDocWithMarkdown = serverNativeModule.createDocWithMarkdown;

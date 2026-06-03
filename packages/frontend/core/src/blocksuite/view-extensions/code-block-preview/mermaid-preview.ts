@@ -1,4 +1,5 @@
 import { renderMermaidSvg } from '@affine/core/modules/code-block-preview-renderer/bridge';
+import type { MermaidRenderTheme } from '@affine/core/modules/mermaid/renderer';
 import { CodeBlockPreviewExtension } from '@blocksuite/affine/blocks/code';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import type { CodeBlockModel } from '@blocksuite/affine/model';
@@ -86,6 +87,18 @@ export class MermaidPreview extends SignalWatcher(
       transform-origin: center;
     }
 
+    /* Mermaid embeds theme CSS that may not apply after sanitization. */
+    .mermaid-preview-svg svg text,
+    .mermaid-preview-svg svg tspan {
+      fill: ${unsafeCSSVarV2('text/primary')} !important;
+    }
+
+    .mermaid-preview-svg foreignObject div,
+    .mermaid-preview-svg foreignObject span,
+    .mermaid-preview-svg foreignObject p {
+      color: ${unsafeCSSVarV2('text/primary')} !important;
+    }
+
     .mermaid-controls {
       position: absolute;
       top: 8px;
@@ -157,6 +170,7 @@ export class MermaidPreview extends SignalWatcher(
   private readonly maxRetries = 3;
   private renderTimeout: ReturnType<typeof setTimeout> | null = null;
   private isRendering = false;
+  private pendingRender = false;
 
   // zoom and pan
   private scale = 1;
@@ -165,8 +179,11 @@ export class MermaidPreview extends SignalWatcher(
   private isDragging = false;
   private lastMouseX = 0;
   private lastMouseY = 0;
+  private mermaidTheme: MermaidRenderTheme = 'default';
 
   override firstUpdated(_changedProperties: PropertyValues): void {
+    this._syncMermaidTheme();
+    this._observeAppTheme();
     this._scheduleRender();
     this._setupEventListeners();
 
@@ -196,6 +213,44 @@ export class MermaidPreview extends SignalWatcher(
 
   get normalizedMermaidCode() {
     return this.model?.props.text.toString() ?? this.mermaidCode;
+  }
+
+  private _resolveMermaidTheme(): MermaidRenderTheme {
+    const themedElement =
+      this.closest('[data-theme]') ??
+      document.querySelector('[data-theme]') ??
+      document.documentElement;
+    return (themedElement as HTMLElement).dataset.theme === 'dark'
+      ? 'dark'
+      : 'default';
+  }
+
+  private _syncMermaidTheme() {
+    this.mermaidTheme = this._resolveMermaidTheme();
+  }
+
+  private _observeAppTheme() {
+    const targets = new Set<Element>([
+      document.documentElement,
+      ...document.querySelectorAll('[data-theme]'),
+    ]);
+
+    const observer = new MutationObserver(() => {
+      const nextTheme = this._resolveMermaidTheme();
+      if (nextTheme === this.mermaidTheme) {
+        return;
+      }
+      this.mermaidTheme = nextTheme;
+      this._scheduleRender();
+    });
+
+    targets.forEach(target => {
+      observer.observe(target, {
+        attributes: true,
+        attributeFilter: ['data-theme'],
+      });
+    });
+    this.disposables.add(() => observer.disconnect());
   }
 
   private _scheduleRender() {
@@ -305,13 +360,23 @@ export class MermaidPreview extends SignalWatcher(
     );
   }
 
+  private _finishRendering() {
+    this.isRendering = false;
+    if (!this.pendingRender) {
+      return;
+    }
+    this.pendingRender = false;
+    this._scheduleRender();
+  }
+
   private async _render() {
-    // prevent duplicate rendering
     if (this.isRendering) {
+      this.pendingRender = true;
       return;
     }
 
     this.isRendering = true;
+    this.pendingRender = false;
     this.state = 'loading';
 
     const code = this.normalizedMermaidCode?.trim();
@@ -319,7 +384,7 @@ export class MermaidPreview extends SignalWatcher(
     if (!code) {
       this.svgContent = '';
       this.state = 'fallback';
-      this.isRendering = false;
+      this._finishRendering();
       return;
     }
 
@@ -329,7 +394,7 @@ export class MermaidPreview extends SignalWatcher(
         options: {
           fastText: true,
           svgOnly: true,
-          theme: 'default',
+          theme: this.mermaidTheme,
           fontFamily: 'IBM Plex Mono',
         },
       });
@@ -361,7 +426,7 @@ export class MermaidPreview extends SignalWatcher(
       this.state = 'error';
       this.retryCount = 0; // reset retry count
     } finally {
-      this.isRendering = false;
+      this._finishRendering();
     }
   }
 

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { omit } from 'lodash-es';
 
-import { InternalServerError } from '../../../base';
+import { InternalServerError, safeFetch } from '../../../base';
 import { SearchProviderType } from '../config';
 import { SearchTable } from '../tables';
 import {
@@ -32,6 +32,14 @@ interface MSSearchResponse {
   scroll: string;
 }
 
+const INDEXER_FETCH_OPTIONS = {
+  timeoutMs: 30_000,
+  maxRedirects: 0,
+  maxBytes: 50 * 1024 * 1024,
+  allowedHeaders: ['authorization', 'content-type'],
+  allowPrivateTargetOrigin: true,
+};
+
 const SupportIndexedAttributes = [
   'flavour',
   'parent_flavour',
@@ -57,6 +65,11 @@ const ConvertEmptyStringToNullValueFields = new Set([
   'parent_block_id',
   'parent_flavour',
 ]);
+
+function boolClauses(value: unknown) {
+  if (value === undefined) return [];
+  return Array.isArray(value) ? value : [value];
+}
 
 @Injectable()
 export class ManticoresearchProvider extends ElasticsearchProvider {
@@ -282,7 +295,9 @@ export class ManticoresearchProvider extends ElasticsearchProvider {
       for (const occur in query.bool) {
         const conditions = query.bool[occur];
         if (Array.isArray(conditions)) {
-          node.bool[occur] = [];
+          const parsedConditions: Record<string, any>[] = [];
+          const existing = node.bool[occur];
+          node.bool[occur] = parsedConditions;
           // { must: [ { term: [Object] }, { bool: [Object] } ] }
           // {
           //   must: [ { term: [Object] }, { term: [Object] }, { bool: [Object] } ]
@@ -290,16 +305,41 @@ export class ManticoresearchProvider extends ElasticsearchProvider {
           for (const item of conditions) {
             this.parseESQuery(item, {
               ...options,
-              parentNodes: node.bool[occur],
+              parentNodes: parsedConditions,
             });
+          }
+          if (existing !== undefined) {
+            node.bool[occur] = [...boolClauses(existing), ...parsedConditions];
+          }
+          if (occur === 'must') {
+            for (let i = node.bool.must.length - 1; i >= 0; i--) {
+              const child = node.bool.must[i];
+              const childBool = child.bool;
+              if (
+                childBool &&
+                Object.keys(childBool).length === 1 &&
+                childBool.must_not !== undefined
+              ) {
+                node.bool.must.splice(i, 1);
+                node.bool.must_not = [
+                  ...boolClauses(node.bool.must_not),
+                  ...boolClauses(childBool.must_not),
+                ];
+              }
+            }
           }
         } else {
           // {
           //   must_not: { term: { doc_id: 'docId' } }
           // }
-          node.bool[occur] = this.parseESQuery(conditions, {
+          const parsed = this.parseESQuery(conditions, {
             termMappingField: options?.termMappingField,
           });
+          if (node.bool[occur] !== undefined) {
+            node.bool[occur] = [...boolClauses(node.bool[occur]), parsed];
+          } else {
+            node.bool[occur] = parsed;
+          }
         }
       }
     } else if (query.term) {
@@ -460,11 +500,11 @@ export class ManticoresearchProvider extends ElasticsearchProvider {
       headers.Authorization = `Basic ${Buffer.from(`${this.config.provider.username}:${this.config.provider.password}`).toString('base64')}`;
     }
 
-    const response = await fetch(url, {
-      method: 'POST',
-      body: sql,
-      headers,
-    });
+    const response = await safeFetch(
+      url,
+      { method: 'POST', body: sql, headers },
+      INDEXER_FETCH_OPTIONS
+    );
     const text = (await response.text()).trim();
     if (!response.ok) {
       this.logger.error(`failed to execute SQL "${sql}", response: ${text}`);

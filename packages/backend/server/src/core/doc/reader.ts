@@ -7,6 +7,7 @@ import {
   Config,
   CryptoHelper,
   getOrGenRequestId,
+  safeFetch,
   UserFriendlyError,
 } from '../../base';
 import { Models } from '../../models';
@@ -16,6 +17,7 @@ import {
   parseDocToMarkdownFromDocSnapshot,
   parsePageDoc,
   parseWorkspaceDoc,
+  type WorkspaceDocContent,
 } from '../utils/blocksuite';
 import { PgWorkspaceDocStorageAdapter } from './adapters/workspace';
 import { type DocDiff, type DocRecord } from './storage';
@@ -242,10 +244,17 @@ export class DatabaseDocReader extends DocReader {
     if (!docRecord) {
       return null;
     }
-    const content = this.parseWorkspaceContent(docRecord.bin);
-    if (!content) {
+    let content: WorkspaceDocContent | null;
+    try {
+      content = this.parseWorkspaceContent(docRecord.bin);
+    } catch (error) {
+      this.logger.warn(
+        `Failed to parse workspace ${workspaceId} content`,
+        error as Error
+      );
       return null;
     }
+    if (!content) return null;
     let avatarUrl: string | undefined;
     if (content.avatarKey) {
       avatarUrl = this.blobStorage.getAvatarUrl(workspaceId, content.avatarKey);
@@ -295,7 +304,17 @@ export class RpcDocReader extends DatabaseDocReader {
     if (body) {
       requestInit.body = body;
     }
-    const res = await fetch(url, requestInit);
+    const res = await safeFetch(url, requestInit, {
+      timeoutMs: 10_000,
+      maxRedirects: 0,
+      maxBytes: 50 * 1024 * 1024,
+      allowedHeaders: [
+        'content-type',
+        'x-access-token',
+        'x-cloud-trace-context',
+      ],
+      allowPrivateTargetOrigin: true,
+    });
     if (!res.ok) {
       if (res.status === 404) {
         return null;

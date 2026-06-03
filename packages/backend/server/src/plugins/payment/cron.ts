@@ -3,6 +3,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaClient, Provider } from '@prisma/client';
 
 import { EventBus, JobQueue, OneHour, OnJob } from '../../base';
+import { EntitlementService } from '../../core/entitlement';
 import { RevenueCatWebhookHandler } from './revenuecat';
 import { SubscriptionService } from './service';
 import { StripeFactory } from './stripe';
@@ -34,7 +35,8 @@ export class SubscriptionCronJobs {
     private readonly queue: JobQueue,
     private readonly rcHandler: RevenueCatWebhookHandler,
     private readonly stripeFactory: StripeFactory,
-    private readonly subscription: SubscriptionService
+    private readonly subscription: SubscriptionService,
+    private readonly entitlement: EntitlementService
   ) {}
 
   private getDateRange(after: number, base: number | Date = Date.now()) {
@@ -157,6 +159,12 @@ export class SubscriptionCronJobs {
     });
 
     for (const subscription of subscriptions) {
+      await this.entitlement.revokeCloudSubscription({
+        targetId: subscription.targetId,
+        plan: subscription.plan,
+        subscriptionId: subscription.id,
+        stripeSubscriptionId: subscription.stripeSubscriptionId,
+      });
       await this.db.subscription.delete({
         where: {
           targetId_plan: {

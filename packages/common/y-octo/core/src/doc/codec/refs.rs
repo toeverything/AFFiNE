@@ -44,9 +44,7 @@ impl PartialEq for Node {
   }
 }
 
-impl Eq for Node {
-  fn assert_receiver_is_total_eq(&self) {}
-}
+impl Eq for Node {}
 
 impl From<Item> for Node {
   fn from(value: Item) -> Self {

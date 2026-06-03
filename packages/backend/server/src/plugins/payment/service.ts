@@ -55,7 +55,6 @@ import {
   SubscriptionPlan,
   SubscriptionRecurring,
   SubscriptionStatus,
-  SubscriptionVariant,
 } from './types';
 
 export const CheckoutExtraArgs = z.union([
@@ -536,9 +535,8 @@ export class SubscriptionService {
         reason === 'dispute_open' ||
         reason === 'dispute_lost';
       const restore = reason === 'dispute_won';
-      const isOneTimeOrLifetime =
-        knownInvoice.lookupKey.recurring === SubscriptionRecurring.Lifetime ||
-        knownInvoice.lookupKey.variant === SubscriptionVariant.Onetime;
+      const isLifetime =
+        knownInvoice.lookupKey.recurring === SubscriptionRecurring.Lifetime;
 
       if (restore) {
         if (invoice.subscription) {
@@ -564,11 +562,11 @@ export class SubscriptionService {
         }
 
         if (
-          isOneTimeOrLifetime &&
+          isLifetime &&
           (knownInvoice.lookupKey.plan === SubscriptionPlan.Pro ||
             knownInvoice.lookupKey.plan === SubscriptionPlan.AI)
         ) {
-          await this.userManager.restoreOnetimeOrLifetime(knownInvoice);
+          await this.userManager.restoreLifetime(knownInvoice);
         }
 
         return;
@@ -615,11 +613,11 @@ export class SubscriptionService {
       }
 
       if (
-        isOneTimeOrLifetime &&
+        isLifetime &&
         (knownInvoice.lookupKey.plan === SubscriptionPlan.Pro ||
           knownInvoice.lookupKey.plan === SubscriptionPlan.AI)
       ) {
-        await this.userManager.revokeOnetimeOrLifetime(knownInvoice);
+        await this.userManager.revokeLifetime(knownInvoice);
         return;
       }
 

@@ -11,7 +11,14 @@ let mermaidPromise: Promise<Mermaid> | null = null;
 let mermaidRenderQueue: Promise<void> = Promise.resolve();
 
 function toTheme(theme: MermaidRenderTheme | undefined) {
-  return theme === 'modern' ? ('base' as const) : ('default' as const);
+  switch (theme) {
+    case 'modern':
+      return 'base' as const;
+    case 'dark':
+      return 'dark' as const;
+    default:
+      return 'default' as const;
+  }
 }
 
 function createClassicMermaidConfig(options?: MermaidRenderOptions) {
@@ -19,8 +26,9 @@ function createClassicMermaidConfig(options?: MermaidRenderOptions) {
     startOnLoad: false,
     theme: toTheme(options?.theme),
     securityLevel: 'strict' as const,
+    htmlLabels: false,
     fontFamily: options?.fontFamily ?? 'IBM Plex Mono',
-    flowchart: { useMaxWidth: true, htmlLabels: true },
+    flowchart: { useMaxWidth: true },
     sequence: { useMaxWidth: true },
     gantt: { useMaxWidth: true },
     pie: { useMaxWidth: true },

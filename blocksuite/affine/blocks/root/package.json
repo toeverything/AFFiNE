@@ -30,6 +30,7 @@
     "@blocksuite/affine-gfx-pointer": "workspace:*",
     "@blocksuite/affine-gfx-shape": "workspace:*",
     "@blocksuite/affine-gfx-text": "workspace:*",
+    "@blocksuite/affine-inline-latex": "workspace:*",
     "@blocksuite/affine-inline-preset": "workspace:*",
     "@blocksuite/affine-model": "workspace:*",
     "@blocksuite/affine-rich-text": "workspace:*",

@@ -1,4 +1,19 @@
-import { openDB } from 'idb';
+import { Auth } from './plugins/auth';
+
+function authEndpointForUrl(url: string | URL) {
+  try {
+    const parsed = new URL(url, globalThis.location.origin);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:'
+      ? parsed.origin
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function canonicalEndpoint(endpoint: string) {
+  return authEndpointForUrl(endpoint) ?? endpoint;
+}
 
 /**
  * the below code includes the custom fetch and xmlhttprequest implementation for ios webview.
@@ -8,9 +23,11 @@ const rawFetch = globalThis.fetch;
 globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
   const request = new Request(input, init);
 
-  const origin = new URL(request.url, globalThis.location.origin).origin;
+  const origin = authEndpointForUrl(request.url);
 
-  const token = await readEndpointToken(origin);
+  const token = origin
+    ? await readEndpointToken(origin).catch(() => null)
+    : null;
   if (token) {
     request.headers.set('Authorization', `Bearer ${token}`);
   }
@@ -19,11 +36,30 @@ globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
 };
 
 const rawXMLHttpRequest = globalThis.XMLHttpRequest;
+const xhrRequestUrls = new WeakMap<XMLHttpRequest, string>();
 globalThis.XMLHttpRequest = class extends rawXMLHttpRequest {
-  override send(body?: Document | XMLHttpRequestBodyInit | null): void {
-    const origin = new URL(this.responseURL, globalThis.location.origin).origin;
+  override open(
+    method: string,
+    url: string | URL,
+    async: boolean = true,
+    username?: string | null,
+    password?: string | null
+  ): void {
+    xhrRequestUrls.set(this, url.toString());
+    return super.open(
+      method,
+      url,
+      async,
+      username ?? undefined,
+      password ?? undefined
+    );
+  }
 
-    readEndpointToken(origin).then(
+  override send(body?: Document | XMLHttpRequestBodyInit | null): void {
+    const requestUrl = xhrRequestUrls.get(this);
+    const origin = authEndpointForUrl(requestUrl ?? globalThis.location.href);
+
+    (origin ? readEndpointToken(origin) : Promise.resolve(null)).then(
       token => {
         if (token) {
           this.setRequestHeader('Authorization', `Bearer ${token}`);
@@ -31,7 +67,7 @@ globalThis.XMLHttpRequest = class extends rawXMLHttpRequest {
         return super.send(body);
       },
       () => {
-        throw new Error('Failed to read token');
+        return super.send(body);
       }
     );
   }
@@ -40,26 +76,19 @@ globalThis.XMLHttpRequest = class extends rawXMLHttpRequest {
 export async function readEndpointToken(
   endpoint: string
 ): Promise<string | null> {
-  const idb = await openDB('affine-token', 1, {
-    upgrade(db) {
-      if (!db.objectStoreNames.contains('tokens')) {
-        db.createObjectStore('tokens', { keyPath: 'endpoint' });
-      }
-    },
+  const { token } = await Auth.readEndpointToken({
+    endpoint: canonicalEndpoint(endpoint),
   });
-
-  const token = await idb.get('tokens', endpoint);
-  return token ? token.token : null;
+  return token ?? null;
 }
 
 export async function writeEndpointToken(endpoint: string, token: string) {
-  const db = await openDB('affine-token', 1, {
-    upgrade(db) {
-      if (!db.objectStoreNames.contains('tokens')) {
-        db.createObjectStore('tokens', { keyPath: 'endpoint' });
-      }
-    },
+  await Auth.writeEndpointToken({
+    endpoint: canonicalEndpoint(endpoint),
+    token,
   });
+}
 
-  await db.put('tokens', { endpoint, token });
+export async function deleteEndpointToken(endpoint: string) {
+  await Auth.deleteEndpointToken({ endpoint: canonicalEndpoint(endpoint) });
 }

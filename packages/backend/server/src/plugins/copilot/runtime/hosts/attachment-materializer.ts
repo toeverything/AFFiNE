@@ -1,10 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
-import {
-  Config,
-  readResponseBufferWithLimit,
-  safeFetch,
-} from '../../../../base';
+import { Config } from '../../../../base';
+import { fetchRemoteAttachment } from '../../../../native';
 
 type FetchRemoteAttachmentOptions = {
   signal?: AbortSignal;
@@ -37,9 +34,12 @@ export class AttachmentMaterializer {
   constructor(private readonly config: Config) {}
 
   private buildFetchOptions(url: URL, trustedHostSuffixes: string[]) {
-    const baseOptions = { timeoutMs: 15_000, maxRedirects: 3 } as const;
+    const baseOptions = {
+      timeoutMs: 15_000,
+      allowPrivateTargetOrigin: false,
+    };
     if (!env.prod) {
-      return { ...baseOptions, allowPrivateOrigins: new Set([url.origin]) };
+      return { ...baseOptions, allowPrivateTargetOrigin: true };
     }
 
     const trustedOrigins = new Set<string>();
@@ -80,7 +80,7 @@ export class AttachmentMaterializer {
       suffix => hostname === suffix || hostname.endsWith(`.${suffix}`)
     );
     if (trustedOrigins.has(url.origin) || trustedByHost) {
-      return { ...baseOptions, allowPrivateOrigins: new Set([url.origin]) };
+      return { ...baseOptions, allowPrivateTargetOrigin: true };
     }
 
     return baseOptions;
@@ -91,30 +91,22 @@ export class AttachmentMaterializer {
     options: FetchRemoteAttachmentOptions
   ) {
     const parsed = resolveAttachmentFetchUrl(url);
-    const response = await safeFetch(
-      parsed,
-      { method: 'GET', signal: options.signal },
-      this.buildFetchOptions(parsed, options.trustedHostSuffixes ?? [])
-    );
-    if (!response.ok) {
-      throw new Error(
-        `Failed to fetch attachment: ${response.status} ${response.statusText}`
-      );
-    }
-
-    const buffer = await readResponseBufferWithLimit(
-      response,
-      options.maxBytes
-    );
-    const headerMimeType = normalizeMimeType(
-      response.headers.get('content-type') || ''
-    );
+    options.signal?.throwIfAborted();
+    const response = await fetchRemoteAttachment({
+      url: parsed.toString(),
+      ...this.buildFetchOptions(parsed, options.trustedHostSuffixes ?? []),
+      maxBytes: options.maxBytes,
+    });
+    options.signal?.throwIfAborted();
 
     return {
-      data: buffer.toString('base64'),
+      data: response.body.toString('base64'),
       mimeType: options.detectMimeType
-        ? options.detectMimeType(buffer, headerMimeType)
-        : headerMimeType,
+        ? options.detectMimeType(
+            response.body,
+            normalizeMimeType(response.mimeType)
+          )
+        : normalizeMimeType(response.mimeType),
     };
   }
 }

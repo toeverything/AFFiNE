@@ -5,6 +5,7 @@ import ava, { type ExecutionContext, type TestFn } from 'ava';
 import Sinon from 'sinon';
 
 import { Cache, CryptoHelper } from '../../base';
+import { EntitlementService } from '../../core/entitlement';
 import { Models, WorkspaceRole } from '../../models';
 import { CopilotAccessPolicy } from '../../plugins/copilot/access';
 import { ByokService } from '../../plugins/copilot/byok';
@@ -14,6 +15,11 @@ import {
   ByokKeyTestStatus,
   ByokProvider,
 } from '../../plugins/copilot/byok/types';
+import {
+  SubscriptionPlan,
+  SubscriptionRecurring,
+  SubscriptionStatus,
+} from '../../plugins/payment/types';
 import { createTestingModule, type TestingModule } from '../utils';
 
 interface Context {
@@ -24,11 +30,18 @@ interface Context {
   byok: ByokService;
   crypto: CryptoHelper;
   cache: Cache;
+  entitlement: EntitlementService;
 }
 
-const test = ava as TestFn<Context>;
+const test = ava.serial as TestFn<Context>;
+const originalNamespace = globalThis.env.NAMESPACE;
+const originalDeploymentType = globalThis.env.DEPLOYMENT_TYPE;
 
 test.before(async t => {
+  Object.assign(globalThis.env, {
+    NAMESPACE: 'dev',
+    DEPLOYMENT_TYPE: 'affine',
+  });
   const module = await createTestingModule();
   t.context.module = module;
   t.context.models = module.get(Models);
@@ -37,6 +50,7 @@ test.before(async t => {
   t.context.byok = module.get(ByokService);
   t.context.crypto = module.get(CryptoHelper);
   t.context.cache = module.get(Cache);
+  t.context.entitlement = module.get(EntitlementService);
 });
 
 test.beforeEach(async t => {
@@ -45,6 +59,10 @@ test.beforeEach(async t => {
 
 test.after.always(async t => {
   await t.context.module.close();
+  Object.assign(globalThis.env, {
+    NAMESPACE: originalNamespace,
+    DEPLOYMENT_TYPE: originalDeploymentType,
+  });
 });
 
 async function createUserWorkspace(t: ExecutionContext<Context>) {
@@ -57,6 +75,73 @@ async function createUserWorkspace(t: ExecutionContext<Context>) {
 
 function workspaceHash(workspaceId: string) {
   return createHash('sha256').update(workspaceId).digest('hex').slice(0, 12);
+}
+
+async function grantUserPlan(
+  t: ExecutionContext<Context>,
+  userId: string,
+  feature: ByokUserPlanFeature = 'pro_plan_v1'
+) {
+  if (feature === 'unlimited_copilot') {
+    await t.context.entitlement.upsertFromCloudSubscription({
+      targetId: userId,
+      plan: SubscriptionPlan.AI,
+      recurring: SubscriptionRecurring.Monthly,
+      status: SubscriptionStatus.Active,
+    });
+    return;
+  }
+
+  await t.context.entitlement.upsertFromCloudSubscription({
+    targetId: userId,
+    plan: SubscriptionPlan.Pro,
+    recurring:
+      feature === 'lifetime_pro_plan_v1'
+        ? SubscriptionRecurring.Lifetime
+        : SubscriptionRecurring.Monthly,
+    status: SubscriptionStatus.Active,
+  });
+}
+
+async function revokeUserPlan(
+  t: ExecutionContext<Context>,
+  userId: string,
+  feature: ByokUserPlanFeature = 'pro_plan_v1'
+) {
+  if (feature === 'unlimited_copilot') {
+    await t.context.entitlement.revokeCloudSubscription({
+      targetId: userId,
+      plan: SubscriptionPlan.AI,
+    });
+    return;
+  }
+
+  await t.context.entitlement.revokeCloudSubscription({
+    targetId: userId,
+    plan: SubscriptionPlan.Pro,
+  });
+}
+
+async function grantTeamPlan(
+  t: ExecutionContext<Context>,
+  workspaceId: string
+) {
+  await t.context.entitlement.upsertFromCloudSubscription({
+    targetId: workspaceId,
+    plan: SubscriptionPlan.Team,
+    recurring: SubscriptionRecurring.Yearly,
+    status: SubscriptionStatus.Active,
+  });
+}
+
+async function revokeTeamPlan(
+  t: ExecutionContext<Context>,
+  workspaceId: string
+) {
+  await t.context.entitlement.revokeCloudSubscription({
+    targetId: workspaceId,
+    plan: SubscriptionPlan.Team,
+  });
 }
 
 type ByokMatrixCase = {
@@ -110,25 +195,13 @@ async function createByokMatrixWorkspace(
     );
   }
   if (input.team) {
-    await t.context.models.workspaceFeature.add(
-      workspace.id,
-      'team_plan_v1',
-      'test'
-    );
+    await grantTeamPlan(t, workspace.id);
   }
   if (input.ownerPlan) {
-    await t.context.models.userFeature.add(
-      owner.id,
-      input.ownerPlanFeature ?? 'pro_plan_v1',
-      'test'
-    );
+    await grantUserPlan(t, owner.id, input.ownerPlanFeature);
   }
   if (input.actorPlan && actor.id !== owner.id) {
-    await t.context.models.userFeature.add(
-      actor.id,
-      input.actorPlanFeature ?? 'pro_plan_v1',
-      'test'
-    );
+    await grantUserPlan(t, actor.id, input.actorPlanFeature);
   }
 
   return { owner, actor, workspace };
@@ -252,7 +325,7 @@ for (const matrixCase of byokManagementMatrix) {
 
 test('byok service persists encrypted server keys and never returns plaintext', async t => {
   const { user, workspace } = await createUserWorkspace(t);
-  await t.context.models.userFeature.add(user.id, 'pro_plan_v1', 'test');
+  await grantUserPlan(t, user.id);
 
   const primary = await t.context.byok.upsertConfig({
     workspaceId: workspace.id,
@@ -325,7 +398,7 @@ test('byok service persists encrypted server keys and never returns plaintext', 
 
 test('byok service preserves server key fields during partial updates', async t => {
   const { user, workspace } = await createUserWorkspace(t);
-  await t.context.models.userFeature.add(user.id, 'pro_plan_v1', 'test');
+  await grantUserPlan(t, user.id);
 
   const key = await t.context.byok.upsertConfig({
     workspaceId: workspace.id,
@@ -381,7 +454,7 @@ test('byok service preserves server key fields during partial updates', async t 
 
 test('local leases are short lived and do not persist keys to server configs', async t => {
   const { user, workspace } = await createUserWorkspace(t);
-  await t.context.models.userFeature.add(user.id, 'pro_plan_v1', 'test');
+  await grantUserPlan(t, user.id);
 
   const before = Date.now();
   const lease = await t.context.byok.createLocalLease({
@@ -486,7 +559,7 @@ test('local leases persist normalized custom endpoints', async t => {
   ).get(() => true);
   t.teardown(() => customEndpointSupported.restore());
   const { user, workspace } = await createUserWorkspace(t);
-  await t.context.models.userFeature.add(user.id, 'pro_plan_v1', 'test');
+  await grantUserPlan(t, user.id);
 
   const lease = await t.context.byok.createLocalLease({
     workspaceId: workspace.id,
@@ -659,13 +732,10 @@ for (const matrixCase of byokProfileAvailabilityMatrix) {
     }
 
     if (matrixCase.revokeOwnerPlan) {
-      await t.context.models.userFeature.remove(owner.id, 'pro_plan_v1');
+      await revokeUserPlan(t, owner.id);
     }
     if (matrixCase.revokeTeam) {
-      await t.context.models.workspaceFeature.remove(
-        workspace.id,
-        'team_plan_v1'
-      );
+      await revokeTeamPlan(t, workspace.id);
     }
     if (matrixCase.demoteActor) {
       await t.context.models.workspaceUser.set(
@@ -695,7 +765,7 @@ test('BYOK profile availability: local-only workspace does not resolve BYOK prof
   const user = await t.context.models.user.create({
     email: `${randomUUID()}@affine.pro`,
   });
-  await t.context.models.userFeature.add(user.id, 'pro_plan_v1', 'test');
+  await grantUserPlan(t, user.id);
 
   const profiles = await t.context.byok.getProfiles({
     workspaceId: randomUUID(),
@@ -707,7 +777,7 @@ test('BYOK profile availability: local-only workspace does not resolve BYOK prof
 
 test('test key failure disables a saved key and success restores it', async t => {
   const { user, workspace } = await createUserWorkspace(t);
-  await t.context.models.userFeature.add(user.id, 'pro_plan_v1', 'test');
+  await grantUserPlan(t, user.id);
   const key = await t.context.byok.upsertConfig({
     workspaceId: workspace.id,
     userId: user.id,
@@ -717,7 +787,7 @@ test('test key failure disables a saved key and success restores it', async t =>
     apiKey: 'sk-test-primary',
   });
 
-  const fetch = Sinon.stub(globalThis, 'fetch');
+  const fetch = Sinon.stub(t.context.byok as any, 'probeFetch');
   fetch
     .onFirstCall()
     .resolves(
@@ -778,7 +848,7 @@ test('test key failure disables a saved key and success restores it', async t =>
 
 test('local key test does not mutate saved server config', async t => {
   const { user, workspace } = await createUserWorkspace(t);
-  await t.context.models.userFeature.add(user.id, 'pro_plan_v1', 'test');
+  await grantUserPlan(t, user.id);
   const key = await t.context.byok.upsertConfig({
     workspaceId: workspace.id,
     userId: user.id,
@@ -788,7 +858,7 @@ test('local key test does not mutate saved server config', async t => {
     apiKey: 'sk-server',
   });
 
-  const fetch = Sinon.stub(globalThis, 'fetch').resolves(
+  const fetch = Sinon.stub(t.context.byok as any, 'probeFetch').resolves(
     new Response('{"error":"invalid sk-local"}', { status: 401 })
   );
   t.teardown(() => fetch.restore());
@@ -817,9 +887,9 @@ test('local key test does not mutate saved server config', async t => {
 
 test('Gemini key test sends key in header and returns safe failure message', async t => {
   const { user, workspace } = await createUserWorkspace(t);
-  await t.context.models.userFeature.add(user.id, 'pro_plan_v1', 'test');
+  await grantUserPlan(t, user.id);
 
-  const fetch = Sinon.stub(globalThis, 'fetch').resolves(
+  const fetch = Sinon.stub(t.context.byok as any, 'probeFetch').resolves(
     new Response(
       'failed https://generativelanguage.googleapis.com/v1beta/models?key=gemini-secret',
       { status: 401 }
@@ -846,15 +916,16 @@ test('Gemini key test sends key in header and returns safe failure message', asy
     ],
     'gemini-secret'
   );
+  t.deepEqual(fetch.firstCall.args[2]?.allowedHeaders, ['x-goog-api-key']);
   t.false(result.message?.includes('gemini-secret'));
   t.is(result.message, 'Provider rejected the BYOK key.');
 });
 
 test('FAL key test uses read-only platform API probe endpoint', async t => {
   const { user, workspace } = await createUserWorkspace(t);
-  await t.context.models.userFeature.add(user.id, 'pro_plan_v1', 'test');
+  await grantUserPlan(t, user.id);
 
-  const fetch = Sinon.stub(globalThis, 'fetch').resolves(
+  const fetch = Sinon.stub(t.context.byok as any, 'probeFetch').resolves(
     new Response('{}', { status: 200 })
   );
   t.teardown(() => fetch.restore());
@@ -873,11 +944,12 @@ test('FAL key test uses read-only platform API probe endpoint', async t => {
     (fetch.firstCall.args[1]!.headers as Record<string, string>).Authorization,
     'Key fal-secret'
   );
+  t.deepEqual(fetch.firstCall.args[2]?.allowedHeaders, ['Authorization']);
 });
 
 test('provider test failures do not return raw provider response body', async t => {
   const { user, workspace } = await createUserWorkspace(t);
-  await t.context.models.userFeature.add(user.id, 'pro_plan_v1', 'test');
+  await grantUserPlan(t, user.id);
   const cases = [
     {
       body: 'authorization: Bearer token=a+b%2F==',
@@ -900,7 +972,7 @@ test('provider test failures do not return raw provider response body', async t 
       message: 'Provider service is unavailable.',
     },
   ];
-  const fetch = Sinon.stub(globalThis, 'fetch');
+  const fetch = Sinon.stub(t.context.byok as any, 'probeFetch');
   for (const [index, matrixCase] of cases.entries()) {
     fetch
       .onCall(index)
@@ -925,7 +997,7 @@ test('provider test failures do not return raw provider response body', async t 
 
 test('dispatch failure disables server BYOK key by provider id', async t => {
   const { user, workspace } = await createUserWorkspace(t);
-  await t.context.models.userFeature.add(user.id, 'pro_plan_v1', 'test');
+  await grantUserPlan(t, user.id);
   const key = await t.context.byok.upsertConfig({
     workspaceId: workspace.id,
     userId: user.id,
@@ -956,7 +1028,7 @@ test('dispatch failure disables server BYOK key by provider id', async t => {
 
 test('dispatch accounting ignores provider ids from another workspace hash', async t => {
   const { user, workspace } = await createUserWorkspace(t);
-  await t.context.models.userFeature.add(user.id, 'pro_plan_v1', 'test');
+  await grantUserPlan(t, user.id);
   const otherWorkspace = await t.context.models.workspace.create(user.id);
   const key = await t.context.byok.upsertConfig({
     workspaceId: workspace.id,
@@ -996,7 +1068,7 @@ test('dispatch accounting ignores provider ids from another workspace hash', asy
 
 test('effective profiles use local lease before server keys and skip disabled keys', async t => {
   const { user, workspace } = await createUserWorkspace(t);
-  await t.context.models.userFeature.add(user.id, 'pro_plan_v1', 'test');
+  await grantUserPlan(t, user.id);
   const serverKey = await t.context.byok.upsertConfig({
     workspaceId: workspace.id,
     userId: user.id,
@@ -1067,7 +1139,7 @@ test('effective profiles use local lease before server keys and skip disabled ke
 
 test('capability warnings match server Gemini background coverage', async t => {
   const { user, workspace } = await createUserWorkspace(t);
-  await t.context.models.userFeature.add(user.id, 'pro_plan_v1', 'test');
+  await grantUserPlan(t, user.id);
 
   const emptySettings = await t.context.byok.getSettings(workspace.id, user.id);
   t.deepEqual(

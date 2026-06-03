@@ -2,7 +2,10 @@ import '@affine/core/bootstrap/electron';
 
 import { apis } from '@affine/electron-api';
 import { broadcastChannelStorages } from '@affine/nbstore/broadcast-channel';
-import { cloudStorages } from '@affine/nbstore/cloud';
+import {
+  cloudStorages,
+  configureSocketAuthMethod,
+} from '@affine/nbstore/cloud';
 import { bindNativeDBApis, sqliteStorages } from '@affine/nbstore/sqlite';
 import {
   bindNativeDBV1Apis,
@@ -18,6 +21,15 @@ import { OpConsumer } from '@toeverything/infra/op';
 bindNativeDBApis(apis!.nbstore);
 // oxlint-disable-next-line no-non-null-assertion
 bindNativeDBV1Apis(apis!.db);
+configureSocketAuthMethod((endpoint, cb) => {
+  // oxlint-disable-next-line no-non-null-assertion
+  apis!.auth
+    .readEndpointToken(endpoint)
+    .then(({ token }: { token?: string | null }) => {
+      cb(token ? { token, tokenType: 'jwt' } : {});
+    })
+    .catch(() => cb({}));
+});
 
 const storeManager = new StoreManagerConsumer([
   ...sqliteStorages,

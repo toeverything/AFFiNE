@@ -1,12 +1,6 @@
-import { type ActionEventType, AIProvider } from '../provider';
+import type { ActionEventType } from '../provider';
+import { getAIRequestService } from '../runtime/request';
 
-export function reportResponse(event: ActionEventType) {
-  const lastAction = AIProvider.actionHistory.at(-1);
-  if (!lastAction) return;
-
-  AIProvider.slots.actions.next({
-    action: lastAction.action,
-    options: lastAction.options,
-    event,
-  });
+export function reportResponse(event: ActionEventType, host?: unknown) {
+  getAIRequestService().reportLastAction(event, host);
 }

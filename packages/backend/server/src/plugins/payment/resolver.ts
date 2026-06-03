@@ -27,10 +27,15 @@ import {
   WorkspaceIdRequiredToUpdateTeamSubscription,
 } from '../../base';
 import { CurrentUser, Public } from '../../core/auth';
-import { AccessController } from '../../core/permission';
+import { PermissionAccess } from '../../core/permission';
 import { UserType } from '../../core/user';
 import { WorkspaceType } from '../../core/workspaces';
-import { Invoice, Subscription, WorkspaceSubscriptionManager } from './manager';
+import {
+  Invoice,
+  Subscription,
+  visibleSubscriptionWhere,
+  WorkspaceSubscriptionManager,
+} from './manager';
 import { RevenueCatWebhookHandler } from './revenuecat';
 import { CheckoutParams, SubscriptionService } from './service';
 import {
@@ -160,14 +165,6 @@ export class InvoiceType implements Partial<Invoice> {
 
   @Field(() => Date)
   updatedAt!: Date;
-
-  // deprecated fields
-  @Field(() => String, {
-    name: 'id',
-    nullable: true,
-    deprecationReason: 'removed',
-  })
-  stripeInvoiceId?: string;
 
   @Field(() => SubscriptionPlan, {
     nullable: true,
@@ -470,12 +467,7 @@ export class UserSubscriptionResolver {
   ) {}
 
   private normalizeSubscription(s: Subscription) {
-    if (
-      s.variant &&
-      ![SubscriptionVariant.EA, SubscriptionVariant.Onetime].includes(
-        s.variant as SubscriptionVariant
-      )
-    ) {
+    if (s.variant && s.variant !== SubscriptionVariant.Onetime) {
       s.variant = null;
     }
     return s;
@@ -493,13 +485,7 @@ export class UserSubscriptionResolver {
     const subscriptions = await this.db.subscription.findMany({
       where: {
         targetId: user.id,
-        status: {
-          in: [
-            SubscriptionStatus.Active,
-            SubscriptionStatus.Trialing,
-            SubscriptionStatus.PastDue,
-          ],
-        },
+        ...visibleSubscriptionWhere(),
       },
     });
 
@@ -577,13 +563,7 @@ export class UserSubscriptionResolver {
       current = await this.db.subscription.findMany({
         where: {
           targetId: user.id,
-          status: {
-            in: [
-              SubscriptionStatus.Active,
-              SubscriptionStatus.Trialing,
-              SubscriptionStatus.PastDue,
-            ],
-          },
+          ...visibleSubscriptionWhere(),
         },
       });
       // ignore errors
@@ -608,13 +588,7 @@ export class UserSubscriptionResolver {
     let current = await this.db.subscription.findMany({
       where: {
         targetId: user.id,
-        status: {
-          in: [
-            SubscriptionStatus.Active,
-            SubscriptionStatus.Trialing,
-            SubscriptionStatus.PastDue,
-          ],
-        },
+        ...visibleSubscriptionWhere(),
       },
     });
 
@@ -641,13 +615,7 @@ export class UserSubscriptionResolver {
         current = await this.db.subscription.findMany({
           where: {
             targetId: user.id,
-            status: {
-              in: [
-                SubscriptionStatus.Active,
-                SubscriptionStatus.Trialing,
-                SubscriptionStatus.PastDue,
-              ],
-            },
+            ...visibleSubscriptionWhere(),
           },
         });
         // ignore errors
@@ -665,7 +633,7 @@ export class WorkspaceSubscriptionResolver {
   constructor(
     private readonly service: WorkspaceSubscriptionManager,
     private readonly db: PrismaClient,
-    private readonly ac: AccessController
+    private readonly ac: PermissionAccess
   ) {}
 
   @ResolveField(() => SubscriptionType, {

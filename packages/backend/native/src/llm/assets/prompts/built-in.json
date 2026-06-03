@@ -706,8 +706,8 @@
     "optionalModels": [
       "gemini-2.5-flash",
       "gemini-2.5-pro",
-      "gemini-3.1-pro-preview",
-      "claude-sonnet-4-5@20250929"
+      "gemini-3.5-flash",
+      "claude-sonnet-4-6"
     ],
     "config": {
       "tools": [
@@ -722,11 +722,7 @@
         "codeArtifact",
         "blobRead"
       ],
-      "proModels": [
-        "gemini-2.5-pro",
-        "gemini-3.1-pro-preview",
-        "claude-sonnet-4-5@20250929"
-      ]
+      "proModels": ["gemini-2.5-pro", "gemini-3.5-flash", "claude-sonnet-4-6"]
     },
     "builtins": [
       "date",

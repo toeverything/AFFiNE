@@ -1,4 +1,5 @@
 mutation sendTestEmail(
+  $name: String!
   $host: String!
   $port: Int!
   $sender: String!
@@ -8,6 +9,7 @@ mutation sendTestEmail(
 ) {
   sendTestEmail(
     config: {
+      name: $name
       host: $host
       port: $port
       sender: $sender

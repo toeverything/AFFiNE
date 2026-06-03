@@ -18,5 +18,17 @@ export interface AuthPlugin {
     verifyToken?: string;
     challenge?: string;
   }): Promise<{ token: string }>;
-  signOut(options: { endpoint: string }): Promise<void>;
+  signInOpenApp(options: {
+    endpoint: string;
+    code: string;
+  }): Promise<{ token: string }>;
+  signOut(options: { endpoint: string; token?: string | null }): Promise<void>;
+  readEndpointToken(options: {
+    endpoint: string;
+  }): Promise<{ token?: string | null }>;
+  writeEndpointToken(options: {
+    endpoint: string;
+    token: string;
+  }): Promise<void>;
+  deleteEndpointToken(options: { endpoint: string }): Promise<void>;
 }

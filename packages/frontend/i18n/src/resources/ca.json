@@ -1146,7 +1146,6 @@
   "com.affine.payment.member.team.invite.invite-link": "Enllaç d'invitació",
   "com.affine.payment.member.team.invite.link-expiration": "Expiració de l'enllaç",
   "com.affine.payment.member.team.invite.notify.fail-message": "Aquestes adreces de correu electrònic ja han estat convidades:",
-  "com.affine.payment.member.team.invite.notify.title": "Invitació enviada, {{successCount}} exitoses, {{failedCount}} fallides",
   "com.affine.payment.member.team.invite.send-invites": "Envia invitacions",
   "com.affine.payment.member.team.invite.title": "Convida membres de l'equip",
   "com.affine.payment.member.team.remove": "Suprimeix membre",

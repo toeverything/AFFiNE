@@ -224,6 +224,7 @@ class ViewProvider {
   };
 
   private readonly _configureDatabase = (framework?: FrameworkProvider) => {
+    this._manager.configure(AffineDatabaseViewExtension, { framework });
     if (framework) {
       this._manager.configure(
         DatabaseViewExtension,

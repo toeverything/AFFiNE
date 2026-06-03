@@ -27,6 +27,7 @@ pub struct MermaidRenderResult {
 fn resolve_mermaid_render_options(options: Option<MermaidRenderOptions>) -> RenderOptions {
   let mut render_options = match options.as_ref().and_then(|options| options.theme.as_deref()) {
     Some("default") => RenderOptions::mermaid_default(),
+    Some("dark") | Some("modern") => RenderOptions::modern(),
     _ => RenderOptions::modern(),
   };
 

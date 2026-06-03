@@ -65,4 +65,29 @@ describe('renderClassicMermaidSvg', () => {
       'render:second:start',
     ]);
   });
+
+  test('maps dark theme to mermaid dark palette', async () => {
+    render.mockResolvedValue({ svg: '<svg>ok</svg>' });
+
+    await renderClassicMermaidSvg({
+      code: 'flowchart TD;A-->B',
+      options: { theme: 'dark' },
+    });
+
+    expect(initialize).toHaveBeenCalledWith(
+      expect.objectContaining({ theme: 'dark' })
+    );
+  });
+
+  test('uses svg text labels so preview sanitization keeps diagram text', async () => {
+    render.mockResolvedValue({ svg: '<svg>ok</svg>' });
+
+    await renderClassicMermaidSvg({ code: 'flowchart TD;A-->B' });
+
+    expect(initialize).toHaveBeenCalledWith(
+      expect.objectContaining({
+        htmlLabels: false,
+      })
+    );
+  });
 });

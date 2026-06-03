@@ -4,8 +4,8 @@ import {
   resolveGlobalLoadingEventAtom,
 } from '@affine/component/global-loading';
 import {
-  AIProvider,
-  CopilotClient,
+  AIAppEvents,
+  createAIRequestService,
   setupAIProvider,
 } from '@affine/core/blocksuite/ai';
 import { useRegisterFindInPageCommands } from '@affine/core/components/hooks/affine/use-register-find-in-page-commands';
@@ -24,6 +24,7 @@ import { DocsService } from '@affine/core/modules/doc';
 import { EditorSettingService } from '@affine/core/modules/editor-setting';
 import { useRegisterNavigationCommands } from '@affine/core/modules/navigation/view/use-register-navigation-commands';
 import { QuickSearchContainer } from '@affine/core/modules/quicksearch';
+import { NbstoreService } from '@affine/core/modules/storage';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import {
   getAFFiNEWorkspaceSchema,
@@ -103,7 +104,7 @@ export const WorkspaceSideEffects = () => {
       })
     );
 
-    const disposable = AIProvider.slots.requestInsertTemplate.subscribe(
+    const disposable = AIAppEvents.requestInsertTemplate.subscribe(
       ({ template, mode }) => {
         insertTemplate({ template, mode });
       }
@@ -126,7 +127,7 @@ export const WorkspaceSideEffects = () => {
   const globalDialogService = useService(GlobalDialogService);
 
   useEffect(() => {
-    const disposable = AIProvider.slots.requestUpgradePlan.subscribe(() => {
+    const disposable = AIAppEvents.requestUpgradePlan.subscribe(() => {
       workspaceDialogService.open('setting', {
         activeTab: 'billing',
       });
@@ -140,10 +141,15 @@ export const WorkspaceSideEffects = () => {
   const graphqlService = useService(GraphQLService);
   const eventSourceService = useService(EventSourceService);
   const authService = useService(AuthService);
+  const nbstoreService = useService(NbstoreService);
 
   useEffect(() => {
     const dispose = setupAIProvider(
-      new CopilotClient(graphqlService.gql, eventSourceService.eventSource),
+      createAIRequestService(
+        graphqlService.gql,
+        eventSourceService.eventSource,
+        nbstoreService.realtime
+      ),
       globalDialogService,
       authService
     );
@@ -152,6 +158,7 @@ export const WorkspaceSideEffects = () => {
     };
   }, [
     eventSourceService,
+    nbstoreService,
     workspaceDialogService,
     graphqlService,
     globalDialogService,

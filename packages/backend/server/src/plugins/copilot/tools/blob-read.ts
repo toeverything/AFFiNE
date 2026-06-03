@@ -1,7 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { z } from 'zod';
 
-import { AccessController } from '../../../core/permission';
+import { PermissionAccess } from '../../../core/permission';
 import { toolError } from './error';
 import { defineTool } from './tool';
 import type { ContextSession, CopilotChatOptions } from './types';
@@ -9,7 +9,7 @@ import type { ContextSession, CopilotChatOptions } from './types';
 const logger = new Logger('ContextBlobReadTool');
 
 export const buildBlobContentGetter = (
-  ac: AccessController,
+  ac: PermissionAccess,
   context: ContextSession | null
 ) => {
   const getBlobContent = async (

@@ -1010,7 +1010,6 @@
   "com.affine.payment.member.team.invite.generate": "Створити",
   "com.affine.payment.member.team.invite.copy": "Копіювати",
   "com.affine.payment.member.team.invite.done": "Готово",
-  "com.affine.payment.member.team.invite.notify.title": "Запрошення надіслано, успішних {{successCount}}, невдалих {{failedCount}}",
   "com.affine.payment.member.team.invite.notify.fail-message": "Ці електронні адреси вже були запрошені:",
   "com.affine.payment.member.team.revoke": "Відкликати запрошення",
   "com.affine.payment.member.team.approve": "Затвердити",

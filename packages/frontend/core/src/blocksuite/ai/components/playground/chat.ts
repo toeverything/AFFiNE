@@ -7,10 +7,7 @@ import type {
 import type { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import type { AppThemeService } from '@affine/core/modules/theme';
-import type {
-  ContextEmbedStatus,
-  CopilotChatHistoryFragment,
-} from '@affine/graphql';
+import type { CopilotChatHistoryFragment } from '@affine/graphql';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import { type NotificationService } from '@blocksuite/affine/shared/services';
 import { unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
@@ -24,7 +21,13 @@ import { createRef, type Ref, ref } from 'lit/directives/ref.js';
 import { throttle } from 'lodash-es';
 
 import type { AppSidebarConfig } from '../../chat-panel/chat-config';
-import { AIProvider } from '../../provider';
+import { AIAppEvents, type AIError } from '../../provider';
+import {
+  AIChatRuntime,
+  type AIChatSnapshot,
+  PlaygroundAIChatSessionStrategy,
+} from '../../runtime/chat';
+import { getAIRequestService } from '../../runtime/request';
 import { HISTORY_IMAGE_ACTIONS } from '../../utils/history-image-actions';
 import type { SearchMenuConfig } from '../ai-chat-add-context';
 import type { DocDisplayConfig } from '../ai-chat-chips';
@@ -32,8 +35,6 @@ import type { ChatContextValue } from '../ai-chat-content';
 import type { AIPlaygroundConfig, AIReasoningConfig } from '../ai-chat-input';
 import {
   type AIChatMessages,
-  type ChatAction,
-  type ChatMessage,
   type HistoryMessage,
   isChatMessage,
 } from '../ai-chat-messages';
@@ -202,16 +203,20 @@ export class PlaygroundChat extends SignalWatcher(
   accessor chatContextValue: ChatContextValue = DEFAULT_CHAT_CONTEXT_VALUE;
 
   @state()
-  accessor embeddingProgress: [number, number] = [0, 0];
+  accessor runtimeSnapshot: AIChatSnapshot | null = null;
 
   private readonly _chatMessagesRef: Ref<AIChatMessages> =
     createRef<AIChatMessages>();
 
-  // request counter to track the latest request
-  private _updateHistoryCounter = 0;
+  private runtime: AIChatRuntime | null = null;
+
+  private disposeRuntime: (() => void) | null = null;
 
   get messages() {
-    return this.chatContextValue.messages.filter(item => {
+    const messages =
+      (this.runtimeSnapshot?.messages as HistoryMessage[] | undefined) ??
+      this.chatContextValue.messages;
+    return messages.filter(item => {
       return (
         isChatMessage(item) ||
         item.messages?.length === 3 ||
@@ -226,66 +231,46 @@ export class PlaygroundChat extends SignalWatcher(
   }
 
   private readonly _initPanel = async () => {
-    const userId = (await AIProvider.userInfo)?.id;
+    const userId = AIAppEvents.userInfo.value?.id;
     if (!userId) return;
 
-    this.isLoading = true;
-    await this._updateHistory();
-    this.isLoading = false;
+    this.ensureRuntime();
   };
 
-  private readonly _createSession = async () => {
-    return this.session;
-  };
-
-  private readonly _updateHistory = async () => {
-    if (!AIProvider.histories) {
-      return;
-    }
-
-    const currentRequest = ++this._updateHistoryCounter;
-
-    const sessionId = this.session?.sessionId;
-    const [histories, actions] = await Promise.all([
-      sessionId
-        ? AIProvider.histories.chats(
-            this.doc.workspace.id,
-            sessionId,
-            this.doc.id
-          )
-        : Promise.resolve([]),
-      this.doc.id && this.showActions
-        ? AIProvider.histories.actions(this.doc.workspace.id, this.doc.id)
-        : Promise.resolve([]),
-    ]);
-
-    // Check if this is still the latest request
-    if (currentRequest !== this._updateHistoryCounter) {
-      return;
-    }
-
-    const chatActions = (actions || []) as ChatAction[];
-    const messages: HistoryMessage[] = chatActions;
-
-    const chatMessages = (histories?.[0]?.messages || []) as ChatMessage[];
-    messages.push(...chatMessages);
-
+  private readonly syncContextFromRuntime = () => {
+    const snapshot = this.runtimeSnapshot;
+    if (!snapshot) return;
     this.chatContextValue = {
       ...this.chatContextValue,
-      messages: messages.sort(
-        (a, b) =>
-          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-      ),
+      messages: snapshot.messages as HistoryMessage[],
+      status: snapshot.status,
+      error: snapshot.error as AIError | null,
     };
-
-    this._scrollToEnd();
   };
 
-  private readonly onEmbeddingProgressChange = (
-    count: Record<ContextEmbedStatus, number>
-  ) => {
-    const total = count.finished + count.processing + count.failed;
-    this.embeddingProgress = [count.finished, total];
+  private readonly ensureRuntime = () => {
+    if (!this.session || this.runtime) return;
+    this.runtime = new AIChatRuntime({
+      request: getAIRequestService(),
+      scope: {
+        kind: 'fork',
+        workspaceId: this.doc.workspace.id,
+        docId: this.doc.id,
+        parentSessionId: this.session.parentSessionId ?? this.session.sessionId,
+      },
+      strategy: new PlaygroundAIChatSessionStrategy(),
+    });
+    this.disposeRuntime = this.runtime.subscribe(() => {
+      this.runtimeSnapshot = this.runtime?.getSnapshot() ?? null;
+      this.syncContextFromRuntime();
+    });
+    this.runtimeSnapshot = this.runtime.getSnapshot();
+    this.runtime
+      .dispatch({
+        type: 'openSessionObject',
+        session: this.session,
+      })
+      .catch(console.error);
   };
 
   private readonly updateContext = (context: Partial<ChatContextValue>) => {
@@ -303,7 +288,23 @@ export class PlaygroundChat extends SignalWatcher(
     this._initPanel().catch(console.error);
   }
 
+  override disconnectedCallback() {
+    super.disconnectedCallback();
+    this.disposeRuntime?.();
+    this.runtime?.dispose();
+    this.runtime = null;
+    this.disposeRuntime = null;
+  }
+
   protected override updated(_changedProperties: PropertyValues) {
+    if (_changedProperties.has('session')) {
+      this.disposeRuntime?.();
+      this.runtime?.dispose();
+      this.runtime = null;
+      this.disposeRuntime = null;
+      this.ensureRuntime();
+    }
+
     if (
       _changedProperties.has('chatContextValue') &&
       (this.chatContextValue.status === 'loading' ||
@@ -322,7 +323,11 @@ export class PlaygroundChat extends SignalWatcher(
   }
 
   override render() {
-    const [done, total] = this.embeddingProgress;
+    const embeddingCount =
+      this.runtimeSnapshot?.composer.context.embeddingCount;
+    const done = embeddingCount?.finished ?? 0;
+    const total =
+      done + (embeddingCount?.processing ?? 0) + (embeddingCount?.failed ?? 0);
     const isEmbedding = total > 0 && done < total;
 
     return html`<div class="chat-panel-container">
@@ -342,7 +347,23 @@ export class PlaygroundChat extends SignalWatcher(
           .doc=${this.doc}
           .session=${this.session}
           .notificationService=${this.notificationService}
-          .onHistoryCleared=${this._updateHistory}
+          .onClearHistory=${async (sessionIds: string[]) => {
+            for (const sessionId of sessionIds) {
+              await this.runtime?.dispatch({
+                type: 'deleteSession',
+                sessionId,
+              });
+            }
+          }}
+          .onHistoryCleared=${() =>
+            this.session
+              ? this.runtime
+                  ?.dispatch({
+                    type: 'openSessionObject',
+                    session: this.session,
+                  })
+                  .catch(console.error)
+              : undefined}
           .chatContextValue=${this.chatContextValue}
         ></ai-history-clear>
         <div class="chat-panel-delete">${DeleteIcon()}</div>
@@ -355,7 +376,8 @@ export class PlaygroundChat extends SignalWatcher(
         .isHistoryLoading=${this.isLoading}
         .chatContextValue=${this.chatContextValue}
         .session=${this.session}
-        .createSession=${this._createSession}
+        .runtime=${this.runtime}
+        .runtimeSnapshot=${this.runtimeSnapshot}
         .updateContext=${this.updateContext}
         .extensions=${this.extensions}
         .affineFeatureFlagService=${this.affineFeatureFlagService}
@@ -370,10 +392,10 @@ export class PlaygroundChat extends SignalWatcher(
         .workspaceId=${this.doc.workspace.id}
         .docId=${this.doc.id}
         .session=${this.session}
-        .createSession=${this._createSession}
+        .runtime=${this.runtime}
+        .runtimeSnapshot=${this.runtimeSnapshot}
         .chatContextValue=${this.chatContextValue}
         .updateContext=${this.updateContext}
-        .onEmbeddingProgressChange=${this.onEmbeddingProgressChange}
         .reasoningConfig=${this.reasoningConfig}
         .playgroundConfig=${this.playgroundConfig}
         .docDisplayConfig=${this.docDisplayConfig}

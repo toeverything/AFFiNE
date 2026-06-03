@@ -13,6 +13,9 @@ vi.mock('@affine/admin/use-query', () => ({
 }));
 
 vi.mock('../../use-mutation', () => ({
+  useMutation: () => ({
+    trigger: vi.fn(),
+  }),
   useMutateQueryResource: () => () => {
     mutateQueryResourceMock();
     return Promise.resolve();

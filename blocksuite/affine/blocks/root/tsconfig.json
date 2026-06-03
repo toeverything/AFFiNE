@@ -27,6 +27,7 @@
     { "path": "../../gfx/pointer" },
     { "path": "../../gfx/shape" },
     { "path": "../../gfx/text" },
+    { "path": "../../inlines/latex" },
     { "path": "../../inlines/preset" },
     { "path": "../../model" },
     { "path": "../../rich-text" },

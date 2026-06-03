@@ -1,40 +1,48 @@
-import {
-  effect,
-  exhaustMapWithTrailing,
-  fromPromise,
-  LiveData,
-  onComplete,
-  OnEvent,
-  onStart,
-  Service,
-  smartRetry,
-} from '@toeverything/infra';
-import { catchError, EMPTY, tap } from 'rxjs';
+import { LiveData, OnEvent, Service } from '@toeverything/infra';
 
 import { AccountChanged } from '../events/account-changed';
-import type { AccessToken, AccessTokenStore } from '../stores/access-token';
+import { RealtimeLiveQuery } from '../realtime/live-query';
+import type {
+  AccessToken,
+  AccessTokenStore,
+  ListedAccessToken,
+} from '../stores/access-token';
 
 @OnEvent(AccountChanged, e => e.onAccountChanged)
 export class AccessTokenService extends Service {
   constructor(private readonly accessTokenStore: AccessTokenStore) {
     super();
+    this.liveQuery.start();
   }
 
-  accessTokens$ = new LiveData<AccessToken[] | null>(null);
+  accessTokens$ = new LiveData<ListedAccessToken[] | null>(null);
   isRevalidating$ = new LiveData(false);
   error$ = new LiveData<any>(null);
+  private readonly liveQuery = new RealtimeLiveQuery({
+    request: signal => this.requestAccessTokens(signal),
+    subscribe: () => this.accessTokenStore.subscribeUserAccessTokens(),
+    applySnapshot: accessTokens => {
+      this.error$.value = null;
+      this.accessTokens$.value = accessTokens;
+    },
+    applyEvent: () => 'revalidate' as const,
+    onError: error => {
+      this.error$.value = error;
+    },
+  });
 
   async generateUserAccessToken(name: string): Promise<AccessToken> {
     const accessToken =
       await this.accessTokenStore.generateUserAccessToken(name);
+    const { token: _token, ...listedAccessToken } = accessToken;
     this.accessTokens$.value = [
       ...(this.accessTokens$.value || []),
-      accessToken as AccessToken,
+      listedAccessToken,
     ];
 
     await this.waitForRevalidation();
 
-    return accessToken as AccessToken;
+    return accessToken;
   }
 
   async revokeUserAccessToken(id: string) {
@@ -44,28 +52,9 @@ export class AccessTokenService extends Service {
     await this.waitForRevalidation();
   }
 
-  revalidate = effect(
-    exhaustMapWithTrailing(() => {
-      return fromPromise(() => {
-        return this.accessTokenStore.listUserAccessTokens();
-      }).pipe(
-        smartRetry(),
-        tap(accessTokens => {
-          this.accessTokens$.value = accessTokens;
-        }),
-        catchError(error => {
-          this.error$.value = error;
-          return EMPTY;
-        }),
-        onStart(() => {
-          this.isRevalidating$.value = true;
-        }),
-        onComplete(() => {
-          this.isRevalidating$.value = false;
-        })
-      );
-    })
-  );
+  revalidate = () => {
+    this.liveQuery.revalidate();
+  };
 
   private onAccountChanged() {
     this.accessTokens$.value = null;
@@ -78,5 +67,19 @@ export class AccessTokenService extends Service {
       isRevalidating => !isRevalidating,
       signal
     );
+  }
+
+  override dispose(): void {
+    super.dispose();
+    this.liveQuery.dispose();
+  }
+
+  private async requestAccessTokens(signal: AbortSignal) {
+    this.isRevalidating$.value = true;
+    try {
+      return await this.accessTokenStore.listUserAccessTokens(signal);
+    } finally {
+      this.isRevalidating$.value = false;
+    }
   }
 }

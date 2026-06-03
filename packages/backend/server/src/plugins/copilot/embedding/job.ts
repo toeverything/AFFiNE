@@ -300,21 +300,19 @@ export class CopilotEmbeddingJob {
         }
       }
 
-      if (contextId) {
-        this.event.emit('workspace.file.embed.finished', {
-          contextId,
-          fileId,
-          chunkSize: total,
-        });
-      }
+      this.event.emit('workspace.file.embed.finished', {
+        contextId,
+        workspaceId,
+        fileId,
+        chunkSize: total,
+      });
     } catch (error: any) {
-      if (contextId) {
-        this.event.emit('workspace.file.embed.failed', {
-          contextId,
-          fileId,
-          error: mapAnyError(error).message,
-        });
-      }
+      this.event.emit('workspace.file.embed.failed', {
+        contextId,
+        workspaceId,
+        fileId,
+        error: mapAnyError(error).message,
+      });
 
       // passthrough error to job queue
       throw error;
@@ -374,10 +372,10 @@ export class CopilotEmbeddingJob {
     const docContent = await this.doc.getFullDocContent(workspaceId, docId);
     const authors = await this.models.doc.getAuthors(workspaceId, docId);
     if (docContent && authors) {
-      const { title = 'Untitled', summary } = docContent;
+      const { title, summary } = docContent;
       const { createdAt, updatedAt, createdByUser, updatedByUser } = authors;
       return {
-        title,
+        title: title || 'Untitled',
         summary,
         createdAt: createdAt.toDateString(),
         updatedAt: updatedAt.toDateString(),

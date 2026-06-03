@@ -1,5 +1,14 @@
 import { createIdentifier } from '@toeverything/infra';
 
+export interface SignInUserInfo {
+  id: string;
+  email: string;
+  name: string;
+  hasPassword: boolean | null;
+  avatarUrl: string | null;
+  emailVerified: boolean;
+}
+
 export interface AuthProvider {
   signInMagicLink(
     email: string,
@@ -19,7 +28,9 @@ export interface AuthProvider {
     password: string;
     verifyToken?: string;
     challenge?: string;
-  }): Promise<void>;
+  }): Promise<SignInUserInfo | void>;
+
+  signInOpenAppSignInCode(code: string): Promise<void>;
 
   signOut(): Promise<void>;
 }

@@ -2,6 +2,7 @@ import { randomBytes } from 'node:crypto';
 
 import type { TestFn } from 'ava';
 import ava from 'ava';
+import supertest from 'supertest';
 
 import {
   changeEmail,
@@ -33,7 +34,11 @@ test('change email', async t => {
   const u2Email = 'u2@affine.pro';
 
   const user = await app.signupV1(u1Email);
-  await sendChangeEmail(app, u1Email, '/email-change');
+  const signedIn = await currentUser(app);
+  const jwt = signedIn?.token.token;
+  t.truthy(jwt);
+
+  await sendChangeEmail(app, '/email-change');
 
   const changeMail = app.mails.last('ChangeEmail');
 
@@ -77,7 +82,16 @@ test('change email', async t => {
   t.is(changedMail.to, u2Email);
   t.is(changedMail.props.to, u2Email);
 
-  await app.logout();
+  const revokedCookieSession = await currentUser(app);
+  t.is(revokedCookieSession, null);
+
+  const revokedJwtSession = await supertest(app.getHttpServer())
+    .get('/api/auth/session')
+    .set('Authorization', `Bearer ${jwt}`)
+    .expect(200);
+  t.falsy(revokedJwtSession.body.user);
+
+  app.clearAuth();
   await app.login({
     ...user,
     email: u2Email,
@@ -143,12 +157,11 @@ test('should forbid graphql callbackUrl to external origin', async t => {
     .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
     .send({
       query: `
-        mutation($email: String!, $callbackUrl: String!) {
-          sendChangeEmail(email: $email, callbackUrl: $callbackUrl)
+        mutation($callbackUrl: String!) {
+          sendChangeEmail(callbackUrl: $callbackUrl)
         }
       `,
       variables: {
-        email: u1Email,
         callbackUrl: 'https://evil.example',
       },
     })
