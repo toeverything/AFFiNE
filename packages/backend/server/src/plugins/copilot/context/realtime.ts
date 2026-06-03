@@ -66,12 +66,12 @@ export class CopilotEmbeddingRealtimeProvider implements OnModuleInit {
 
   @OnEvent('workspace.file.embed.finished', { suppressError: true })
   async onFileEmbedFinished(payload: Events['workspace.file.embed.finished']) {
-    await this.publishContext(payload.contextId, 'finished');
+    await this.publishEmbeddingProgress(payload, 'finished');
   }
 
   @OnEvent('workspace.file.embed.failed', { suppressError: true })
   async onFileEmbedFailed(payload: Events['workspace.file.embed.failed']) {
-    await this.publishContext(payload.contextId, 'failed');
+    await this.publishEmbeddingProgress(payload, 'failed');
   }
 
   @OnEvent('workspace.blob.embed.finished', { suppressError: true })
@@ -90,11 +90,29 @@ export class CopilotEmbeddingRealtimeProvider implements OnModuleInit {
   ) {
     if (!this.publisher) return;
     const context = await this.context.get(contextId);
+    this.publishWorkspace(context.workspaceId, reason);
+  }
+
+  private async publishEmbeddingProgress(
+    payload:
+      | Events['workspace.file.embed.finished']
+      | Events['workspace.file.embed.failed'],
+    reason: 'finished' | 'failed'
+  ) {
+    if (!this.publisher) return;
+    if (payload.contextId) {
+      await this.publishContext(payload.contextId, reason);
+      return;
+    }
+    this.publishWorkspace(payload.workspaceId, reason);
+  }
+
+  private publishWorkspace(workspaceId: string, reason: 'finished' | 'failed') {
     this.publisher.publish(
       'workspace.embedding.progress.changed',
-      { workspaceId: context.workspaceId },
+      { workspaceId },
       { reason },
-      { room: workspaceEmbeddingRoom(context.workspaceId) }
+      { room: workspaceEmbeddingRoom(workspaceId) }
     );
   }
 

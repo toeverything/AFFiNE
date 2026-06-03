@@ -300,21 +300,19 @@ export class CopilotEmbeddingJob {
         }
       }
 
-      if (contextId) {
-        this.event.emit('workspace.file.embed.finished', {
-          contextId,
-          fileId,
-          chunkSize: total,
-        });
-      }
+      this.event.emit('workspace.file.embed.finished', {
+        contextId,
+        workspaceId,
+        fileId,
+        chunkSize: total,
+      });
     } catch (error: any) {
-      if (contextId) {
-        this.event.emit('workspace.file.embed.failed', {
-          contextId,
-          fileId,
-          error: mapAnyError(error).message,
-        });
-      }
+      this.event.emit('workspace.file.embed.failed', {
+        contextId,
+        workspaceId,
+        fileId,
+        error: mapAnyError(error).message,
+      });
 
       // passthrough error to job queue
       throw error;

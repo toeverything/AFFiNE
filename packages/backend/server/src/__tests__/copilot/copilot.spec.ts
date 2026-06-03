@@ -1673,6 +1673,7 @@ test('should be able to manage context', async t => {
         'workspace.file.embed.finished',
         {
           contextId: session.id,
+          workspaceId: session.workspaceId,
           fileId: file.id,
           chunkSize: 1,
         },
