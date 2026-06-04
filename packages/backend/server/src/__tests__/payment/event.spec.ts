@@ -221,6 +221,7 @@ test('stripe webhook persists failed async processing for retry visibility', asy
   } as unknown as PrismaClient;
   const controller = new StripeWebhookController(
     { payment: { stripe: { webhookKey: 'whsec' } } } as never,
+    db,
     {
       stripe: {
         webhooks: {
@@ -232,8 +233,7 @@ test('stripe webhook persists failed async processing for retry visibility', asy
       emitAsync: async () => {
         throw new Error('handler failed');
       },
-    } as unknown as EventBus,
-    db
+    } as unknown as EventBus
   );
 
   await controller.handleWebhook({

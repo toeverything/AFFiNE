@@ -58,7 +58,7 @@ export class StripeWebhookController {
         },
       });
 
-      // Stripe requires responseing webhook immediately and handle event asynchronously.
+      // Stripe requires responding to webhooks immediately and handling events asynchronously.
       setImmediate(() => {
         this.processEvent(paymentEvent.id, event).catch(e => {
           this.logger.error('Failed to persist Stripe Webhook failure.', e);
