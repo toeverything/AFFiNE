@@ -209,9 +209,14 @@ test('stripe webhook persists failed async processing for retry visibility', asy
   const updates: unknown[] = [];
   const db = {
     paymentEvent: {
-      upsert: async (input: unknown) => {
+      findUnique: async () => null,
+      create: async (input: unknown) => {
         updates.push(input);
         return { id: 'payment_event_1' };
+      },
+      updateMany: async (input: unknown) => {
+        updates.push(input);
+        return { count: 1 };
       },
       update: async (input: unknown) => {
         updates.push(input);
@@ -243,7 +248,7 @@ test('stripe webhook persists failed async processing for retry visibility', asy
   await new Promise(resolve => setImmediate(resolve));
 
   t.like(updates[0], {
-    create: {
+    data: {
       provider: 'stripe',
       eventType: 'invoice.paid',
       externalEventId: 'evt_1',
@@ -264,6 +269,85 @@ test('stripe webhook persists failed async processing for retry visibility', asy
   );
 });
 
+test('stripe webhook skips already processed events', async t => {
+  const event = {
+    id: 'evt_processed',
+    type: 'invoice.paid',
+    created: 1710000000,
+    data: { object: { id: 'in_1' } },
+  };
+  const controller = new StripeWebhookController(
+    { payment: { stripe: { webhookKey: 'whsec' } } } as never,
+    {
+      paymentEvent: {
+        findUnique: async () => ({
+          id: 'payment_event_processed',
+          processingStatus: 'processed',
+        }),
+      },
+    } as unknown as PrismaClient,
+    {
+      stripe: {
+        webhooks: {
+          constructEvent: () => event,
+        },
+      },
+    } as never,
+    {
+      emitAsync: async () => {
+        t.fail('processed event should not be emitted again');
+      },
+    } as unknown as EventBus
+  );
+
+  await controller.handleWebhook({
+    rawBody: Buffer.from('{}'),
+    headers: { 'stripe-signature': 'sig' },
+  } as never);
+  await new Promise(resolve => setImmediate(resolve));
+
+  t.pass();
+});
+
+test('stripe webhook skips events already claimed by another processor', async t => {
+  const event = {
+    id: 'evt_claimed',
+    type: 'invoice.paid',
+    created: 1710000000,
+    data: { object: { id: 'in_1' } },
+  };
+  const controller = new StripeWebhookController(
+    { payment: { stripe: { webhookKey: 'whsec' } } } as never,
+    {
+      paymentEvent: {
+        findUnique: async () => null,
+        create: async () => ({ id: 'payment_event_claimed' }),
+        updateMany: async () => ({ count: 0 }),
+      },
+    } as unknown as PrismaClient,
+    {
+      stripe: {
+        webhooks: {
+          constructEvent: () => event,
+        },
+      },
+    } as never,
+    {
+      emitAsync: async () => {
+        t.fail('unclaimed event should not be emitted');
+      },
+    } as unknown as EventBus
+  );
+
+  await controller.handleWebhook({
+    rawBody: Buffer.from('{}'),
+    headers: { 'stripe-signature': 'sig' },
+  } as never);
+  await new Promise(resolve => setImmediate(resolve));
+
+  t.pass();
+});
+
 test('stripe webhook replay job reprocesses pending events', async t => {
   const updates: unknown[] = [];
   const emitted: unknown[] = [];
@@ -280,6 +364,10 @@ test('stripe webhook replay job reprocesses pending events', async t => {
               metadata: { id: 'in_1' },
             },
           ];
+        },
+        updateMany: async (input: unknown) => {
+          updates.push(input);
+          return { count: 1 };
         },
         update: async (input: unknown) => {
           updates.push(input);
@@ -338,6 +426,10 @@ test('stripe webhook replay job keeps failed events retryable', async t => {
             metadata: { id: 'in_1' },
           },
         ],
+        updateMany: async (input: unknown) => {
+          updates.push(input);
+          return { count: 1 };
+        },
         update: async (input: unknown) => {
           updates.push(input);
           return {};

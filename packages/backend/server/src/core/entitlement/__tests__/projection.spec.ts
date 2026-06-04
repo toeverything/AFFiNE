@@ -60,6 +60,10 @@ test('projects user entitlement to legacy user features and subscriptions', asyn
     recurring: SubscriptionRecurring.Monthly,
     status: 'active',
   });
+  await t.context.projection.onEntitlementChanged({
+    targetType: 'user',
+    targetId: user.id,
+  });
 
   t.true(await t.context.models.userFeature.has(user.id, 'pro_plan_v1'));
   t.true(await t.context.models.userFeature.has(user.id, 'unlimited_copilot'));
@@ -304,6 +308,9 @@ test('shadow backfill preserves legacy rows and records provider facts', async t
   const user = await t.context.models.user.create({
     email: `${randomUUID()}@affine.pro`,
   });
+  const paidAiUser = await t.context.models.user.create({
+    email: `${randomUUID()}@affine.pro`,
+  });
   const owner = await t.context.models.user.create({
     email: `${randomUUID()}@affine.pro`,
   });
@@ -321,6 +328,14 @@ test('shadow backfill preserves legacy rows and records provider facts', async t
         start: new Date('2026-01-01T00:00:00.000Z'),
         trialStart: new Date('2026-01-01T00:00:00.000Z'),
         trialEnd: new Date('2026-01-08T00:00:00.000Z'),
+      },
+      {
+        targetId: paidAiUser.id,
+        stripeSubscriptionId: 'sub_ai_paid',
+        plan: SubscriptionPlan.AI,
+        recurring: SubscriptionRecurring.Yearly,
+        status: SubscriptionStatus.Active,
+        start: new Date('2026-01-01T00:00:00.000Z'),
       },
       {
         targetId: danglingTargetId,
@@ -381,6 +396,17 @@ test('shadow backfill preserves legacy rows and records provider facts', async t
         targetType_targetId_plan: {
           targetType: 'user',
           targetId: user.id,
+          plan: SubscriptionPlan.AI,
+        },
+      },
+    })
+  );
+  t.falsy(
+    await t.context.db.subscriptionTrialUsage.findUnique({
+      where: {
+        targetType_targetId_plan: {
+          targetType: 'user',
+          targetId: paidAiUser.id,
           plan: SubscriptionPlan.AI,
         },
       },

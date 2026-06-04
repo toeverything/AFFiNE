@@ -137,7 +137,10 @@ export class LegacyEntitlementProjectionService {
         legacySync: true,
       });
       await this.#backfillProviderSubscription(subscription);
-      if (subscription.plan === SubscriptionPlan.AI) {
+      if (
+        subscription.plan === SubscriptionPlan.AI &&
+        (subscription.trialStart || subscription.trialEnd)
+      ) {
         await this.#backfillTrialUsage(subscription);
       }
     }

@@ -26,7 +26,9 @@ CREATE TABLE "provider_subscriptions" (
     "updated_at" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "provider_subscriptions_pkey" PRIMARY KEY ("id"),
-    CONSTRAINT "provider_subscriptions_target_type_check" CHECK ("target_type" IN ('user', 'workspace', 'instance'))
+    CONSTRAINT "provider_subscriptions_target_type_check" CHECK ("target_type" IN ('user', 'workspace', 'instance')),
+    CONSTRAINT "provider_subscriptions_stripe_identity_check" CHECK ("provider" <> 'stripe' OR "external_subscription_id" IS NOT NULL),
+    CONSTRAINT "provider_subscriptions_revenuecat_identity_check" CHECK ("provider" <> 'revenuecat' OR ("iap_store" IS NOT NULL AND "external_ref" IS NOT NULL AND "external_product_id" IS NOT NULL AND "external_customer_id" IS NOT NULL))
 );
 
 -- CreateTable

@@ -27,6 +27,7 @@ import { SubscriptionService } from '../../plugins/payment/service';
 import {
   SubscriptionPlan,
   SubscriptionRecurring,
+  SubscriptionStatus,
 } from '../../plugins/payment/types';
 import { createTestingApp, TestingApp } from '../utils';
 
@@ -1083,4 +1084,41 @@ test('user subscriptions ignore active rows after their current period ended', a
     plan: SubscriptionPlan.AI,
   });
   t.is(activeAI, null);
+});
+
+test('user subscriptions preserve provider trialing status', async t => {
+  const { db, models, subResolver } = t.context;
+  const trialUser = await models.user.create({
+    email: `${Date.now()}-trial-status@affine.pro`,
+  });
+
+  await db.subscription.create({
+    data: {
+      targetId: trialUser.id,
+      plan: SubscriptionPlan.Pro,
+      provider: 'stripe',
+      status: SubscriptionStatus.Trialing,
+      recurring: SubscriptionRecurring.Yearly,
+      start: new Date('2026-01-01T00:00:00.000Z'),
+      end: new Date('2099-01-01T00:00:00.000Z'),
+      stripeSubscriptionId: 'sub_trialing_status',
+    },
+  });
+  await db.providerSubscription.create({
+    data: {
+      provider: 'stripe',
+      targetType: 'user',
+      targetId: trialUser.id,
+      plan: SubscriptionPlan.Pro,
+      recurring: SubscriptionRecurring.Yearly,
+      status: SubscriptionStatus.Trialing,
+      externalSubscriptionId: 'sub_trialing_status',
+      periodStart: new Date('2026-01-01T00:00:00.000Z'),
+      periodEnd: new Date('2099-01-01T00:00:00.000Z'),
+    },
+  });
+
+  const subscriptions = await subResolver.subscriptions(trialUser, trialUser);
+
+  t.is(subscriptions[0]?.status, SubscriptionStatus.Trialing);
 });

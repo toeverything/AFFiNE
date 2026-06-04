@@ -518,7 +518,7 @@ export class UserSubscriptionResolver {
           metadata.stripeSubscriptionId ??
           null,
         stripeScheduleId: null,
-        status: this.subscriptionStatus(entitlement),
+        status: providerFact?.status ?? this.subscriptionStatus(entitlement),
         plan,
         recurring:
           providerFact?.recurring ??
@@ -735,9 +735,10 @@ export class WorkspaceSubscriptionResolver {
         null,
       stripeScheduleId: null,
       status:
-        entitlement.status === 'grace'
+        providerFact?.status ??
+        (entitlement.status === 'grace'
           ? SubscriptionStatus.PastDue
-          : SubscriptionStatus.Active,
+          : SubscriptionStatus.Active),
       plan: SubscriptionPlan.Team,
       recurring:
         providerFact?.recurring ??

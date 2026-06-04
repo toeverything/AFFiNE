@@ -242,13 +242,23 @@ export class SubscriptionCronJobs {
     });
 
     for (const event of events) {
-      await this.db.paymentEvent.update({
-        where: { id: event.id },
+      const locked = await this.db.paymentEvent.updateMany({
+        where: {
+          id: event.id,
+          OR: [
+            { processingStatus: { in: ['pending', 'failed'] } },
+            { processingStatus: 'processing', updatedAt: { lt: stuckBefore } },
+          ],
+        },
         data: {
           processingStatus: 'processing',
           processingAttempts: { increment: 1 },
         },
       });
+      if (locked.count === 0) {
+        continue;
+      }
+
       try {
         await this.event.emitAsync(
           `stripe.${event.eventType}` as keyof Events,
