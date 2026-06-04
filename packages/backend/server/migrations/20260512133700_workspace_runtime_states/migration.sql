@@ -637,6 +637,18 @@ BEGIN
     RAISE EXCEPTION 'Cannot project unknown doc role % for %.% user %', NEW.type, NEW.workspace_id, NEW.page_id, NEW.user_id;
   END IF;
 
+  IF projected_role = 'owner' AND EXISTS (
+    SELECT 1
+    FROM doc_grants
+    WHERE workspace_id = NEW.workspace_id
+      AND doc_id = NEW.page_id
+      AND principal_type = 'user'
+      AND role = 'owner'
+      AND principal_id <> NEW.user_id
+  ) THEN
+    RETURN NEW;
+  END IF;
+
   INSERT INTO doc_grants (
     workspace_id,
     doc_id,
