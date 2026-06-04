@@ -1,6 +1,8 @@
 import type { RawBodyRequest } from '@nestjs/common';
 import { Controller, Logger, Post, Req } from '@nestjs/common';
+import { Prisma, PrismaClient, Provider } from '@prisma/client';
 import type { Request } from 'express';
+import Stripe from 'stripe';
 
 import { Config, EventBus, InternalServerError } from '../../base';
 import { Public } from '../../core/auth';
@@ -12,6 +14,7 @@ export class StripeWebhookController {
 
   constructor(
     private readonly config: Config,
+    private readonly db: PrismaClient,
     private readonly stripeProvider: StripeFactory,
     private readonly event: EventBus
   ) {}
@@ -33,14 +36,71 @@ export class StripeWebhookController {
         `[${event.id}] Stripe Webhook {${event.type}} received.`
       );
 
+      const paymentEvent = await this.db.paymentEvent.upsert({
+        where: {
+          provider_externalEventId: {
+            provider: Provider.stripe,
+            externalEventId: event.id,
+          },
+        },
+        update: {
+          eventType: event.type,
+          processingStatus: 'pending',
+          lastError: null,
+          metadata: event as unknown as Prisma.InputJsonValue,
+        },
+        create: {
+          provider: Provider.stripe,
+          eventType: event.type,
+          externalEventId: event.id,
+          occurredAt: new Date(event.created * 1000),
+          metadata: event as unknown as Prisma.InputJsonValue,
+        },
+      });
+
       // Stripe requires responseing webhook immediately and handle event asynchronously.
       setImmediate(() => {
-        this.event.emitAsync(`stripe.${event.type}` as any, event).catch(e => {
-          this.logger.error('Failed to handle Stripe Webhook event.', e);
+        this.processEvent(paymentEvent.id, event).catch(e => {
+          this.logger.error('Failed to persist Stripe Webhook failure.', e);
         });
       });
-    } catch (err: any) {
-      throw new InternalServerError(err.message);
+    } catch (err: unknown) {
+      throw new InternalServerError(
+        err instanceof Error ? err.message : String(err)
+      );
+    }
+  }
+
+  private async processEvent(id: string, event: Stripe.Event) {
+    await this.db.paymentEvent.update({
+      where: { id },
+      data: {
+        processingStatus: 'processing',
+        processingAttempts: { increment: 1 },
+      },
+    });
+    try {
+      await this.event.emitAsync(
+        `stripe.${event.type}` as keyof Events,
+        event as never
+      );
+      await this.db.paymentEvent.update({
+        where: { id },
+        data: {
+          processingStatus: 'processed',
+          processedAt: new Date(),
+          lastError: null,
+        },
+      });
+    } catch (e) {
+      await this.db.paymentEvent.update({
+        where: { id },
+        data: {
+          processingStatus: 'failed',
+          lastError: e instanceof Error ? e.message : String(e),
+        },
+      });
+      this.logger.error('Failed to handle Stripe Webhook event.', e);
     }
   }
 }

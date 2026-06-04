@@ -29,7 +29,10 @@ export class QuotaStateService {
     private readonly event: EventBus
   ) {}
 
-  async reconcileUserQuotaState(userId: string) {
+  async reconcileUserQuotaState(
+    userId: string,
+    options: { emit?: boolean } = {}
+  ) {
     const [previous, entitlement, entitlements, resolved, usedStorageQuota] =
       await Promise.all([
         this.db.effectiveUserQuotaState.findUnique({ where: { userId } }),
@@ -72,13 +75,16 @@ export class QuotaStateService {
         staleAfter: this.staleAfter(now),
       },
     });
-    if (this.userQuotaStateChanged(previous, state)) {
+    if ((options.emit ?? true) && this.userQuotaStateChanged(previous, state)) {
       await this.event.emitAsync('user.quota_state.changed', { userId });
     }
     return state;
   }
 
-  async reconcileWorkspaceQuotaState(workspaceId: string) {
+  async reconcileWorkspaceQuotaState(
+    workspaceId: string,
+    options: { emit?: boolean } = {}
+  ) {
     const owner = await this.getWorkspaceOwner(workspaceId);
     const [
       previous,
@@ -98,7 +104,7 @@ export class QuotaStateService {
     const usesOwnerQuota = !this.hasStandaloneWorkspaceQuota(resolved.plan);
     const [ownerState, ownerEntitlement] = usesOwnerQuota
       ? await Promise.all([
-          this.reconcileUserQuotaState(owner.id),
+          this.reconcileUserQuotaState(owner.id, options),
           this.entitlement.resolveUserEntitlement(owner.id),
         ])
       : [null, null];
@@ -156,7 +162,10 @@ export class QuotaStateService {
         staleAfter: this.staleAfter(now),
       },
     });
-    if (this.workspaceQuotaStateChanged(previous, state)) {
+    if (
+      (options.emit ?? true) &&
+      this.workspaceQuotaStateChanged(previous, state)
+    ) {
       await this.event.emitAsync('workspace.quota_state.changed', {
         workspaceId,
       });

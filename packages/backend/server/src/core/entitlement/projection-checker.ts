@@ -16,6 +16,8 @@ export class EntitlementProjectionChecker {
       selfhostLicenseProjectionMissing,
       cloudSubscriptionEntitlementMissing,
       selfhostLicenseEntitlementMissing,
+      providerActiveEntitlementMissing,
+      entitlementProviderMissing,
       dirtyLegacyUserFeatures,
       dirtyLegacyWorkspaceFeatures,
       missingUserFeatureProjection,
@@ -41,6 +43,8 @@ export class EntitlementProjectionChecker {
       this.selfhostLicenseProjectionMissing(),
       this.cloudSubscriptionEntitlementMissing(),
       this.selfhostLicenseEntitlementMissing(),
+      this.providerActiveEntitlementMissing(),
+      this.entitlementProviderMissing(),
       this.dirtyLegacyUserFeatures(),
       this.dirtyLegacyWorkspaceFeatures(),
       this.missingUserFeatureProjection(),
@@ -56,6 +60,8 @@ export class EntitlementProjectionChecker {
       selfhostLicenseProjectionMissing,
       cloudSubscriptionEntitlementMissing,
       selfhostLicenseEntitlementMissing,
+      providerActiveEntitlementMissing,
+      entitlementProviderMissing,
       dirtyLegacyUserFeatures,
       dirtyLegacyWorkspaceFeatures,
       missingUserFeatureProjection,
@@ -145,6 +151,39 @@ export class EntitlementProjectionChecker {
     );
 
     return licenses.filter(license => !validKeys.has(license.key)).length;
+  }
+
+  private async providerActiveEntitlementMissing() {
+    const activeProviderKeys = await this.activeProviderSubscriptionKeys();
+    const valid = new Set(
+      (
+        await this.validEntitlements({
+          source: 'cloud_subscription',
+        })
+      ).map(
+        entitlement =>
+          `${entitlement.targetId}:${this.subscriptionPlan(entitlement.plan)}`
+      )
+    );
+
+    return activeProviderKeys.filter(key => !valid.has(key)).length;
+  }
+
+  private async entitlementProviderMissing() {
+    const activeProviderKeys = new Set(
+      await this.activeProviderSubscriptionKeys()
+    );
+    const entitlements = await this.validEntitlements({
+      source: 'cloud_subscription',
+    });
+
+    return entitlements.filter(
+      entitlement =>
+        entitlement.targetId &&
+        !activeProviderKeys.has(
+          `${entitlement.targetId}:${this.subscriptionPlan(entitlement.plan)}`
+        )
+    ).length;
   }
 
   private async dirtyLegacyUserFeatures() {
@@ -286,5 +325,23 @@ export class EntitlementProjectionChecker {
 
   private subscriptionPlan(plan: string) {
     return plan === 'lifetime_pro' ? 'pro' : plan;
+  }
+
+  private async activeProviderSubscriptionKeys() {
+    const now = new Date();
+    const subscriptions = await this.db.providerSubscription.findMany({
+      where: {
+        status: { in: ['active', 'trialing', 'past_due'] },
+        OR: [{ periodEnd: null }, { periodEnd: { gt: now } }],
+      },
+      select: {
+        targetId: true,
+        plan: true,
+      },
+    });
+
+    return subscriptions.map(
+      subscription => `${subscription.targetId}:${subscription.plan}`
+    );
   }
 }

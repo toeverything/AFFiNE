@@ -133,3 +133,43 @@ test('checker reports legal legacy facts missing entitlements', async t => {
   t.is(report.cloudSubscriptionEntitlementMissing, 1);
   t.is(report.selfhostLicenseEntitlementMissing, 1);
 });
+
+test('checker reports provider facts missing entitlements', async t => {
+  const user = await t.context.models.user.create({
+    email: `${randomUUID()}@affine.pro`,
+  });
+  await t.context.db.providerSubscription.create({
+    data: {
+      provider: 'stripe',
+      targetType: 'user',
+      targetId: user.id,
+      plan: SubscriptionPlan.Pro,
+      recurring: SubscriptionRecurring.Yearly,
+      status: SubscriptionStatus.Active,
+      externalSubscriptionId: 'sub_provider_without_entitlement',
+      periodStart: new Date(),
+      periodEnd: new Date('2099-01-01T00:00:00.000Z'),
+    },
+  });
+
+  const report = await t.context.checker.checkEntitlementProjection();
+
+  t.is(report.providerActiveEntitlementMissing, 1);
+});
+
+test('checker reports entitlements missing active provider facts', async t => {
+  const user = await t.context.models.user.create({
+    email: `${randomUUID()}@affine.pro`,
+  });
+  await t.context.entitlement.upsertFromCloudSubscription({
+    targetId: user.id,
+    plan: SubscriptionPlan.Pro,
+    recurring: SubscriptionRecurring.Yearly,
+    status: SubscriptionStatus.Active,
+    stripeSubscriptionId: 'sub_entitlement_without_active_provider',
+  });
+
+  const report = await t.context.checker.checkEntitlementProjection();
+
+  t.is(report.entitlementProviderMissing, 1);
+});

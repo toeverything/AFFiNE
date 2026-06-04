@@ -139,6 +139,11 @@ export class WorkspaceSubscriptionManager extends SubscriptionManager {
     }
 
     const subscriptionData = this.transformSubscription(subscription);
+    await this.upsertStripeProviderSubscription(
+      workspaceId,
+      subscription,
+      subscriptionData
+    );
 
     if (
       stripeSubscription.status === SubscriptionStatus.Active ||
@@ -159,6 +164,8 @@ export class WorkspaceSubscriptionManager extends SubscriptionManager {
     }
 
     const saved = await this.db.subscription.upsert({
+      // TODO(stable-upgrade): remove legacy subscriptions dual-write after stable supports provider facts.
+      // TODO(stable-upgrade): remove reliance on target_id_plan unique slot after contract cleanup.
       where: {
         provider: Provider.stripe,
         stripeSubscriptionId: stripeSubscription.id,
@@ -194,6 +201,17 @@ export class WorkspaceSubscriptionManager extends SubscriptionManager {
       );
     }
 
+    await this.db.providerSubscription.updateMany({
+      where: {
+        provider: Provider.stripe,
+        externalSubscriptionId: stripeSubscription.id,
+      },
+      data: {
+        status: SubscriptionStatus.Canceled,
+        canceledAt: new Date(),
+        periodEnd: new Date(),
+      },
+    });
     const result = await this.db.subscription.deleteMany({
       where: { stripeSubscriptionId: stripeSubscription.id },
     });
@@ -336,5 +354,75 @@ export class WorkspaceSubscriptionManager extends SubscriptionManager {
       );
       await schedule.updateQuantity(count);
     }
+  }
+
+  private async upsertStripeProviderSubscription(
+    workspaceId: string,
+    known: KnownStripeSubscription,
+    subscriptionData: Subscription
+  ) {
+    const { lookupKey, stripeSubscription } = known;
+    const price = stripeSubscription.items.data[0]?.price;
+
+    await this.db.providerSubscription.upsert({
+      where: {
+        provider_externalSubscriptionId: {
+          provider: Provider.stripe,
+          externalSubscriptionId: stripeSubscription.id,
+        },
+      },
+      update: {
+        targetType: 'workspace',
+        targetId: workspaceId,
+        plan: lookupKey.plan,
+        recurring: lookupKey.recurring,
+        status: stripeSubscription.status,
+        externalCustomerId:
+          typeof stripeSubscription.customer === 'string'
+            ? stripeSubscription.customer
+            : stripeSubscription.customer.id,
+        externalProductId:
+          typeof price?.product === 'string'
+            ? price.product
+            : price?.product?.id,
+        externalPriceId: price?.id,
+        currency: price?.currency,
+        amount: price?.unit_amount ?? null,
+        quantity: known.quantity,
+        periodStart: subscriptionData.start,
+        periodEnd: subscriptionData.end,
+        trialStart: subscriptionData.trialStart,
+        trialEnd: subscriptionData.trialEnd,
+        canceledAt: subscriptionData.canceledAt,
+        metadata: known.metadata,
+      },
+      create: {
+        provider: Provider.stripe,
+        targetType: 'workspace',
+        targetId: workspaceId,
+        plan: lookupKey.plan,
+        recurring: lookupKey.recurring,
+        status: stripeSubscription.status,
+        externalCustomerId:
+          typeof stripeSubscription.customer === 'string'
+            ? stripeSubscription.customer
+            : stripeSubscription.customer.id,
+        externalSubscriptionId: stripeSubscription.id,
+        externalProductId:
+          typeof price?.product === 'string'
+            ? price.product
+            : price?.product?.id,
+        externalPriceId: price?.id,
+        currency: price?.currency,
+        amount: price?.unit_amount ?? null,
+        quantity: known.quantity,
+        periodStart: subscriptionData.start,
+        periodEnd: subscriptionData.end,
+        trialStart: subscriptionData.trialStart,
+        trialEnd: subscriptionData.trialEnd,
+        canceledAt: subscriptionData.canceledAt,
+        metadata: known.metadata,
+      },
+    });
   }
 }
