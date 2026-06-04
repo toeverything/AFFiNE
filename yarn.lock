@@ -676,7 +676,7 @@ __metadata:
     "@types/react": "npm:^19.0.1"
     "@types/react-dom": "npm:^19.0.2"
     async-call-rpc: "npm:^6.4.2"
-    capacitor-plugin-app-tracking-transparency: "npm:^2.0.5"
+    capacitor-plugin-app-tracking-transparency: "npm:^3.0.0"
     idb: "npm:^8.0.0"
     next-themes: "npm:^0.4.4"
     react: "npm:^19.2.1"
@@ -19698,12 +19698,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"capacitor-plugin-app-tracking-transparency@npm:^2.0.5":
-  version: 2.0.5
-  resolution: "capacitor-plugin-app-tracking-transparency@npm:2.0.5"
+"capacitor-plugin-app-tracking-transparency@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "capacitor-plugin-app-tracking-transparency@npm:3.0.0"
   peerDependencies:
-    "@capacitor/core": ">= 3.0.0"
-  checksum: 10/dc43c3f7e3241067ef960416a53681b44ecf9ac9c9e22aef3a4fe81afd692bc466fe517cf85a260cf1b0ad4e7f8c961ad2660485ff5fb0bdee74f42ad660e4e2
+    "@capacitor/core": ">=7.0.0"
+  checksum: 10/0875f4dfbb651764191c8175b7eefb8378a81e0749051c75b91a94d560d0a5bf21c50e0b3c4cf47e192a00d9b58cc3f9960039a7c9e7da410acd6a76ae55216d
   languageName: node
   linkType: hard
 
