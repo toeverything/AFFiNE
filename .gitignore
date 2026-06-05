@@ -6,6 +6,7 @@
 !.yarn/releases
 !.yarn/sdks
 .yarn/versions
+.corepack-bin
 
 # compiled output
 *dist
