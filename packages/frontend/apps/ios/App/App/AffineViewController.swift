@@ -1,16 +1,50 @@
 import Capacitor
 import Intelligents
 import UIKit
+import WebKit
 
-class AFFiNEViewController: CAPBridgeViewController {
+class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate {
   var intelligentsButton: IntelligentsButton?
+  private var isWebContentProcessTerminated = false
 
   override func viewDidLoad() {
     super.viewDidLoad()
-    webView?.allowsBackForwardNavigationGestures = true
+    webView?.allowsBackForwardNavigationGestures = false
     navigationController?.navigationBar.isHidden = true
     extendedLayoutIncludesOpaqueBars = false
     edgesForExtendedLayout = []
+
+    // Disable WKWebView scrollView zoom/bounce to prevent conflict with edgeless canvas gestures
+    webView?.scrollView.minimumZoomScale = 1.0
+    webView?.scrollView.maximumZoomScale = 1.0
+    webView?.scrollView.bouncesZoom = false
+    webView?.scrollView.bounces = false
+    webView?.scrollView.pinchGestureRecognizer?.isEnabled = false
+    webView?.scrollView.delegate = self
+
+    // Inject viewport meta to prevent WKWebView smart zoom
+    let viewportScript = """
+      (function() {
+        function setViewport() {
+          var meta = document.querySelector('meta[name="viewport"]');
+          if (!meta) {
+            meta = document.createElement('meta');
+            meta.name = 'viewport';
+            (document.head || document.documentElement).appendChild(meta);
+          }
+          meta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover';
+        }
+        if (document.head) {
+          setViewport();
+        } else {
+          document.addEventListener('DOMContentLoaded', setViewport);
+        }
+      })();
+    """
+    webView?.configuration.userContentController.addUserScript(
+      WKUserScript(source: viewportScript, injectionTime: .atDocumentStart, forMainFrameOnly: true)
+    )
+
     let intelligentsButton = installIntelligentsButton()
     intelligentsButton.delegate = self
     self.intelligentsButton = intelligentsButton
@@ -74,5 +108,28 @@ class AFFiNEViewController: CAPBridgeViewController {
   override func viewDidDisappear(_ animated: Bool) {
     super.viewDidDisappear(animated)
     intelligentsButtonTimer?.invalidate()
+  }
+
+  // MARK: - UIScrollViewDelegate
+
+  func viewForZooming(in scrollView: UIScrollView) -> UIView? {
+    return nil
+  }
+
+  func scrollViewDidZoom(_ scrollView: UIScrollView) {
+    scrollView.zoomScale = 1.0
+  }
+
+  func scrollViewDidScroll(_ scrollView: UIScrollView) {
+    if scrollView.contentOffset != .zero {
+      scrollView.contentOffset = .zero
+    }
+  }
+
+  // MARK: - Web Content Process Crash Recovery
+
+  func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+    isWebContentProcessTerminated = true
+    webView.reload()
   }
 }

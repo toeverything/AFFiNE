@@ -106,6 +106,28 @@ export class Viewport {
 
   ZOOM_MIN = ZOOM_MIN;
 
+  /**
+   * Minimum pixel movement before triggering a viewport refresh during panning.
+   * Higher values reduce refresh frequency, lowering memory pressure on mobile.
+   * Default: 18 (desktop-optimized).
+   */
+  VIEWPORT_REFRESH_PIXEL_THRESHOLD = 18;
+
+  /**
+   * Maximum interval (ms) between viewport refreshes during continuous interaction.
+   * Higher values reduce refresh frequency, lowering memory pressure on mobile.
+   * Default: 120 (desktop-optimized).
+   */
+  VIEWPORT_REFRESH_MAX_INTERVAL = 120;
+
+  /**
+   * When true, viewport element visibility refreshes are skipped entirely during
+   * panning/zooming, deferring all DOM mutations until the gesture ends.
+   * Prevents JS main thread blocking that can cause WKWebView process termination.
+   * Default: false (desktop behavior unchanged).
+   */
+  SKIP_REFRESH_DURING_GESTURE = false;
+
   private readonly _resetZooming = debounce(() => {
     this.zooming$.next(false);
   }, 200);
@@ -374,11 +396,20 @@ export class Viewport {
 
     this._center.x = centerX;
     this._center.y = centerY;
+
     this.panning$.next(true);
-    this.viewportUpdated.next({
-      zoom: this.zoom,
-      center: Vec.toVec(this.center) as IVec,
-    });
+
+    // When SKIP_REFRESH_DURING_GESTURE is active, suppress viewportUpdated
+    // emissions during gestures. Heavy subscribers (canvas, DOM visibility,
+    // per-block transforms) would otherwise fire on every gesture event.
+    // Instead, the viewport-element applies a lightweight container-level
+    // CSS transform to keep visuals in sync with zero per-block overhead.
+    if (!this.SKIP_REFRESH_DURING_GESTURE) {
+      this.viewportUpdated.next({
+        zoom: this.zoom,
+        center: Vec.toVec(this.center) as IVec,
+      });
+    }
     this._resetPanning();
   }
 
@@ -532,14 +563,13 @@ export class Viewport {
       Vec.toVec(focusPoint),
       Vec.mul(offset, prevZoom / newZoom)
     );
-    if (wheel) {
-      this.zooming$.next(true);
-    }
+    // Always signal zooming for any zoom change (pinch or wheel).
+    // Previously only wheel=true set this, causing pinch gestures to never
+    // signal zooming$=true, which meant the post-gesture recovery could
+    // fire mid-gesture.
+    this.zooming$.next(true);
     this.setCenter(newCenter[0], newCenter[1], forceUpdate);
-    this.viewportUpdated.next({
-      zoom: this.zoom,
-      center: Vec.toVec(this.center) as IVec,
-    });
+    // setCenter already emits viewportUpdated, no need to emit again here.
     this._resetZooming();
   }
 

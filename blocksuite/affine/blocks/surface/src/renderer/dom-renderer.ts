@@ -222,6 +222,12 @@ export class DomRenderer {
   private _initViewport() {
     this._disposables.add(
       this.viewport.viewportUpdated.subscribe(() => {
+        if (
+          this.viewport.SKIP_REFRESH_DURING_GESTURE &&
+          (this.viewport.panning$.value || this.viewport.zooming$.value)
+        ) {
+          return;
+        }
         this._markViewportDirty();
         this.refresh();
       })
@@ -242,6 +248,9 @@ export class DomRenderer {
 
     this._disposables.add(
       this.viewport.zooming$.subscribe(isZooming => {
+        if (this.viewport.SKIP_REFRESH_DURING_GESTURE) {
+          return;
+        }
         const shouldRenderPlaceholders = this._turboEnabled() && isZooming;
 
         if (this.usePlaceholder !== shouldRenderPlaceholders) {
@@ -251,6 +260,43 @@ export class DomRenderer {
         }
       })
     );
+
+    // Post-gesture refresh for SKIP mode
+    if (this.viewport.SKIP_REFRESH_DURING_GESTURE) {
+      let pendingTimerId: ReturnType<typeof setTimeout> | null = null;
+
+      const cancelRefresh = () => {
+        if (pendingTimerId !== null) {
+          clearTimeout(pendingTimerId);
+          pendingTimerId = null;
+        }
+      };
+
+      const scheduleRefresh = () => {
+        cancelRefresh();
+        pendingTimerId = setTimeout(() => {
+          pendingTimerId = null;
+          if (!this.viewport.panning$.value && !this.viewport.zooming$.value) {
+            this._markViewportDirty();
+            this.refresh();
+          }
+        }, 650);
+      };
+
+      this._disposables.add(
+        this.viewport.panning$.subscribe(panning => {
+          if (panning) cancelRefresh();
+          else if (!this.viewport.zooming$.value) scheduleRefresh();
+        })
+      );
+      this._disposables.add(
+        this.viewport.zooming$.subscribe(zooming => {
+          if (zooming) cancelRefresh();
+          else if (!this.viewport.panning$.value) scheduleRefresh();
+        })
+      );
+      this._disposables.add({ dispose: cancelRefresh });
+    }
 
     this.usePlaceholder = false;
   }

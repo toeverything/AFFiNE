@@ -505,6 +505,12 @@ export class CanvasRenderer {
 
     this._disposables.add(
       this.viewport.viewportUpdated.subscribe(() => {
+        if (
+          this.viewport.SKIP_REFRESH_DURING_GESTURE &&
+          (this.viewport.panning$.value || this.viewport.zooming$.value)
+        ) {
+          return;
+        }
         this.refresh({ type: 'all' });
       })
     );
@@ -522,6 +528,9 @@ export class CanvasRenderer {
 
     this._disposables.add(
       this.viewport.zooming$.subscribe(isZooming => {
+        if (this.viewport.SKIP_REFRESH_DURING_GESTURE) {
+          return;
+        }
         const shouldRenderPlaceholders = this._turboEnabled() && isZooming;
 
         if (this.usePlaceholder !== shouldRenderPlaceholders) {
@@ -531,13 +540,68 @@ export class CanvasRenderer {
       })
     );
 
+    // When SKIP_REFRESH_DURING_GESTURE is enabled, defer the post-gesture
+    // canvas re-render using a fixed minimum delay (setTimeout) so it doesn't
+    // start during the critical window when the user might resume gesturing.
+    // requestIdleCallback fires immediately when idle — we need a guaranteed
+    // minimum wait to avoid blocking the main thread during quick gesture pauses.
+    if (this.viewport.SKIP_REFRESH_DURING_GESTURE) {
+      let pendingCanvasTimerId: ReturnType<typeof setTimeout> | null = null;
+
+      const cancelPendingCanvasRefresh = () => {
+        if (pendingCanvasTimerId !== null) {
+          clearTimeout(pendingCanvasTimerId);
+          pendingCanvasTimerId = null;
+        }
+      };
+
+      const scheduleCanvasRefresh = () => {
+        cancelPendingCanvasRefresh();
+        pendingCanvasTimerId = setTimeout(() => {
+          pendingCanvasTimerId = null;
+          if (!this.viewport.panning$.value && !this.viewport.zooming$.value) {
+            this.refresh({ type: 'all' });
+          }
+        }, 600);
+      };
+
+      this._disposables.add(
+        this.viewport.panning$.subscribe(panning => {
+          if (panning) {
+            cancelPendingCanvasRefresh();
+          } else if (!this.viewport.zooming$.value) {
+            scheduleCanvasRefresh();
+          }
+        })
+      );
+      this._disposables.add(
+        this.viewport.zooming$.subscribe(zooming => {
+          if (zooming) {
+            cancelPendingCanvasRefresh();
+          } else if (!this.viewport.panning$.value) {
+            scheduleCanvasRefresh();
+          }
+        })
+      );
+      this._disposables.add({ dispose: cancelPendingCanvasRefresh });
+    }
+
     let wasDragging = false;
     this._disposables.add(
       effect(() => {
         const isDragging = this._gfx.tool.dragging$.value;
 
         if (wasDragging && !isDragging) {
-          this.refresh({ type: 'all' });
+          if (
+            this.viewport.SKIP_REFRESH_DURING_GESTURE &&
+            (this.viewport.panning$.value || this.viewport.zooming$.value)
+          ) {
+            // Deferred refresh will handle it after gesture ends
+          } else if (!this.viewport.SKIP_REFRESH_DURING_GESTURE) {
+            this.refresh({ type: 'all' });
+          }
+          // When SKIP mode is active and gesture just ended, the post-gesture
+          // setTimeout already handles the refresh — no immediate work needed.
         }
 
         wasDragging = isDragging;

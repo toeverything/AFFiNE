@@ -156,6 +156,12 @@ export class ViewportTurboRendererExtension extends GfxExtension {
 
       this.disposables.add(
         this.viewport.viewportUpdated.subscribe(() => {
+          if (
+            this.viewport.SKIP_REFRESH_DURING_GESTURE &&
+            (this.viewport.panning$.value || this.viewport.zooming$.value)
+          ) {
+            return;
+          }
           this.refresh().catch(console.error);
         })
       );
@@ -166,7 +172,9 @@ export class ViewportTurboRendererExtension extends GfxExtension {
             tap(isZooming => {
               this.debugLog(`Zooming signal changed: ${isZooming}`);
               if (isZooming) {
-                this.state$.next('zooming');
+                if (!this.viewport.SKIP_REFRESH_DURING_GESTURE) {
+                  this.state$.next('zooming');
+                }
               } else if (this.state$.value === 'zooming') {
                 this.clearOptimizedBlocks();
                 this.isRecentlyZoomed$.next(true);
@@ -183,6 +191,45 @@ export class ViewportTurboRendererExtension extends GfxExtension {
           )
           .subscribe()
       );
+
+      // Post-gesture refresh for SKIP mode
+      if (this.viewport.SKIP_REFRESH_DURING_GESTURE) {
+        let pendingTimerId: ReturnType<typeof setTimeout> | null = null;
+
+        const cancelRefresh = () => {
+          if (pendingTimerId !== null) {
+            clearTimeout(pendingTimerId);
+            pendingTimerId = null;
+          }
+        };
+
+        const scheduleRefresh = () => {
+          cancelRefresh();
+          pendingTimerId = setTimeout(() => {
+            pendingTimerId = null;
+            if (
+              !this.viewport.panning$.value &&
+              !this.viewport.zooming$.value
+            ) {
+              this.refresh().catch(console.error);
+            }
+          }, 650);
+        };
+
+        this.disposables.add(
+          this.viewport.panning$.subscribe(panning => {
+            if (panning) cancelRefresh();
+            else if (!this.viewport.zooming$.value) scheduleRefresh();
+          })
+        );
+        this.disposables.add(
+          this.viewport.zooming$.subscribe(zooming => {
+            if (zooming) cancelRefresh();
+            else if (!this.viewport.panning$.value) scheduleRefresh();
+          })
+        );
+        this.disposables.add({ dispose: cancelRefresh });
+      }
     });
 
     // Handle selection and block updates

@@ -8,6 +8,13 @@ export const root = style({
   minHeight: '100dvh',
   display: 'flex',
   flexDirection: 'column',
+  selectors: {
+    '&:has([data-mode="edgeless"])': {
+      height: '100dvh',
+      maxHeight: '100dvh',
+      overflow: 'hidden',
+    },
+  },
 });
 
 export const header = style({
@@ -76,6 +83,8 @@ export const affineDocViewport = style({
       left: 0,
       right: 0,
       bottom: 0,
+      containerType: 'normal',
+      touchAction: 'none',
     },
   },
 });
@@ -121,4 +130,16 @@ export const journalIconButton = style({
 
 export const journalDatePicker = style({
   background: cssVarV2('layer/background/primary'),
+});
+
+// When edgeless mode is active, prevent document-level scrolling
+// so native scrollView pan gestures don't scroll the page away from the canvas
+globalStyle('html:has([data-mode="edgeless"])', {
+  overflow: 'hidden',
+  height: '100dvh',
+});
+
+// Prevent native touch handling on edgeless viewport so canvas handles all gestures
+globalStyle('[data-mode="edgeless"] .affine-edgeless-viewport', {
+  touchAction: 'none',
 });
