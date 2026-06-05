@@ -18,7 +18,7 @@ import {
     UserSettingsResolver,
     UserRealtimeProvider,
   ],
-  controllers: [UserAvatarController],
+  controllers: [UserAvatarController, AiShareController],
 })
 export class UserModule {}
 
