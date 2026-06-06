@@ -21,6 +21,10 @@ const config: CapacitorConfig & AppConfig = {
     scheme: 'AFFiNE',
     path: '.',
     webContentsDebuggingEnabled: true,
+    // Silence Capacitor's bridge logging (⚡️ TO JS / ⚡️ To Native -> / ⚡️ [log]).
+    // The native [AFFiNE-DIAG] telemetry is emitted via Swift `print`, so it
+    // survives this and stays the only thing in the console.
+    loggingBehavior: 'none',
   },
   server: {
     // url: 'http://localhost:8080',

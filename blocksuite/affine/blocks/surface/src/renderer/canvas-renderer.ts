@@ -18,7 +18,7 @@ import type {
   SurfaceBlockModel,
   Viewport,
 } from '@blocksuite/std/gfx';
-import { GfxControllerIdentifier } from '@blocksuite/std/gfx';
+import { getEffectiveDpr, GfxControllerIdentifier } from '@blocksuite/std/gfx';
 import { effect } from '@preact/signals-core';
 import last from 'lodash-es/last';
 import { Subject } from 'rxjs';
@@ -223,7 +223,7 @@ export class CanvasRenderer {
    *
    * It is not recommended to set width and height to 100%.
    */
-  private _canvasSizeUpdater(dpr = window.devicePixelRatio) {
+  private _canvasSizeUpdater(dpr = getEffectiveDpr(this.viewport.zoom)) {
     const { width, height, viewScale } = this.viewport;
     const actualWidth = Math.ceil(width * dpr);
     const actualHeight = Math.ceil(height * dpr);
@@ -246,7 +246,7 @@ export class CanvasRenderer {
   private _applyStackingCanvasLayout(
     canvas: HTMLCanvasElement,
     bound: Bound | null,
-    dpr = window.devicePixelRatio
+    dpr = getEffectiveDpr(this.viewport.zoom)
   ) {
     const state =
       this._stackingCanvasState.get(canvas) ??
@@ -638,7 +638,7 @@ export class CanvasRenderer {
     const renderStart = performance.now();
     const { viewportBounds, zoom } = this.viewport;
     const { ctx } = this;
-    const dpr = window.devicePixelRatio;
+    const dpr = getEffectiveDpr(zoom);
     const scale = zoom * dpr;
     const matrix = new DOMMatrix().scaleSelf(scale);
     const renderStats = this._createRenderPassStats();

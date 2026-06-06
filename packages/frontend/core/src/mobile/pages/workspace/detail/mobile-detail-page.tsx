@@ -27,7 +27,6 @@ import {
   customImageProxyMiddleware,
   ImageProxyService,
 } from '@blocksuite/affine/shared/adapters';
-import { GfxControllerIdentifier } from '@blocksuite/affine/std/gfx';
 import {
   FrameworkScope,
   useLiveData,
@@ -183,21 +182,6 @@ const DetailPageImpl = () => {
   );
 
   const canEdit = useGuard('Doc_Update', doc.id);
-
-  // Limit minimum zoom on mobile to prevent memory pressure crashes
-  // when zooming out too far in edgeless mode.
-  // Also increase viewport refresh thresholds to reduce DOM mutation frequency
-  // during fast panning, which otherwise causes WKWebView process termination.
-  useEffect(() => {
-    if (mode !== 'edgeless' || !editorContainer) return;
-    const gfx = editorContainer.std.getOptional(GfxControllerIdentifier);
-    if (gfx) {
-      gfx.viewport.ZOOM_MIN = 0.5;
-      gfx.viewport.VIEWPORT_REFRESH_PIXEL_THRESHOLD = 60;
-      gfx.viewport.VIEWPORT_REFRESH_MAX_INTERVAL = 300;
-      gfx.viewport.SKIP_REFRESH_DURING_GESTURE = true;
-    }
-  }, [mode, editorContainer]);
 
   const readonly =
     !canEdit ||

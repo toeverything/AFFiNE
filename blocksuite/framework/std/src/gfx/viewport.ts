@@ -23,6 +23,59 @@ export const ZOOM_INITIAL = 1.0;
 
 export const FIT_TO_SCREEN_PADDING = 100;
 
+/**
+ * Process-wide defaults applied to every {@link Viewport} at construction.
+ *
+ * Platforms that need different behavior (e.g. mobile/iOS, which must clamp the
+ * zoom floor and defer DOM mutations during gestures to avoid WKWebView process
+ * termination) override these once at startup, before any editor mounts. This
+ * guarantees both the editor and the readonly preview viewports are born with
+ * the same limits — avoiding the race and wrong-instance problems of patching a
+ * single Viewport asynchronously after it has already mounted.
+ *
+ * Desktop leaves these untouched, so its behavior is unchanged.
+ */
+export const viewportRuntimeConfig = {
+  ZOOM_MIN,
+  ZOOM_MAX,
+  VIEWPORT_REFRESH_PIXEL_THRESHOLD: 18,
+  VIEWPORT_REFRESH_MAX_INTERVAL: 120,
+  SKIP_REFRESH_DURING_GESTURE: false,
+  /**
+   * Caps the canvas backing-store device-pixel-ratio at low zoom.
+   *
+   * Each entry is `[zoomThreshold, dprCap]`, sorted ascending by threshold.
+   * When the live zoom is below a threshold, the corresponding cap bounds the
+   * effective dpr used to size canvases. Far-out zoom makes content tiny on
+   * screen, so a full retina backing store is wasted memory — on iOS that waste
+   * is what pushes WKWebView past its compositing budget and crashes the web
+   * content process during pan/zoom.
+   *
+   * Empty (the desktop default) means no cap: canvases always use the raw
+   * `window.devicePixelRatio`, so desktop behavior is unchanged.
+   */
+  CANVAS_DPR_CAP_BY_ZOOM: [] as Array<[number, number]>,
+};
+
+/**
+ * Resolves the effective device-pixel-ratio for canvas backing stores at the
+ * given zoom, honoring {@link viewportRuntimeConfig.CANVAS_DPR_CAP_BY_ZOOM}.
+ *
+ * Returns the raw `window.devicePixelRatio` when no cap applies.
+ */
+export function getEffectiveDpr(
+  zoom: number,
+  rawDpr = window.devicePixelRatio
+): number {
+  const caps = viewportRuntimeConfig.CANVAS_DPR_CAP_BY_ZOOM;
+  for (const [zoomThreshold, dprCap] of caps) {
+    if (zoom < zoomThreshold) {
+      return Math.min(rawDpr, dprCap);
+    }
+  }
+  return rawDpr;
+}
+
 export interface ViewportRecord {
   left: number;
   top: number;
@@ -102,23 +155,25 @@ export class Viewport {
   zooming$ = new BehaviorSubject<boolean>(false);
   panning$ = new BehaviorSubject<boolean>(false);
 
-  ZOOM_MAX = ZOOM_MAX;
+  ZOOM_MAX = viewportRuntimeConfig.ZOOM_MAX;
 
-  ZOOM_MIN = ZOOM_MIN;
+  ZOOM_MIN = viewportRuntimeConfig.ZOOM_MIN;
 
   /**
    * Minimum pixel movement before triggering a viewport refresh during panning.
    * Higher values reduce refresh frequency, lowering memory pressure on mobile.
    * Default: 18 (desktop-optimized).
    */
-  VIEWPORT_REFRESH_PIXEL_THRESHOLD = 18;
+  VIEWPORT_REFRESH_PIXEL_THRESHOLD =
+    viewportRuntimeConfig.VIEWPORT_REFRESH_PIXEL_THRESHOLD;
 
   /**
    * Maximum interval (ms) between viewport refreshes during continuous interaction.
    * Higher values reduce refresh frequency, lowering memory pressure on mobile.
    * Default: 120 (desktop-optimized).
    */
-  VIEWPORT_REFRESH_MAX_INTERVAL = 120;
+  VIEWPORT_REFRESH_MAX_INTERVAL =
+    viewportRuntimeConfig.VIEWPORT_REFRESH_MAX_INTERVAL;
 
   /**
    * When true, viewport element visibility refreshes are skipped entirely during
@@ -126,7 +181,8 @@ export class Viewport {
    * Prevents JS main thread blocking that can cause WKWebView process termination.
    * Default: false (desktop behavior unchanged).
    */
-  SKIP_REFRESH_DURING_GESTURE = false;
+  SKIP_REFRESH_DURING_GESTURE =
+    viewportRuntimeConfig.SKIP_REFRESH_DURING_GESTURE;
 
   private readonly _resetZooming = debounce(() => {
     this.zooming$.next(false);
