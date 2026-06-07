@@ -42,6 +42,14 @@ export const viewportRuntimeConfig = {
   VIEWPORT_REFRESH_MAX_INTERVAL: 120,
   SKIP_REFRESH_DURING_GESTURE: false,
   /**
+   * Delay (ms) before the post-gesture refresh repaints canvases and reactivates
+   * blocks, used only when {@link SKIP_REFRESH_DURING_GESTURE} is true. The same
+   * value drives both the canvas and block refresh timers so they fire together
+   * (avoiding the "blocks appear, then connectors" staggered reveal). Desktop
+   * never enters that code path, so this is mobile-only.
+   */
+  POST_GESTURE_REFRESH_DELAY: 800,
+  /**
    * Caps the canvas backing-store device-pixel-ratio at low zoom.
    *
    * Each entry is `[zoomThreshold, dprCap]`, sorted ascending by threshold.
@@ -55,6 +63,35 @@ export const viewportRuntimeConfig = {
    * `window.devicePixelRatio`, so desktop behavior is unchanged.
    */
   CANVAS_DPR_CAP_BY_ZOOM: [] as Array<[number, number]>,
+  /**
+   * Fraction by which the *render/activation* viewport bound is enlarged on
+   * every side (see {@link Viewport.overscanViewportBounds}). Pre-painting a
+   * margin around the visible area means moderate pan/zoom gestures move into
+   * content that is already mounted and rasterized, so it does not blank out
+   * and wait for the post-gesture refresh.
+   *
+   * Memory grows by roughly `(1 + 2 * ratio) ** 2`, so this must stay modest
+   * and be paired with a zoom floor + dpr cap on mobile. `0` (desktop default)
+   * makes {@link Viewport.overscanViewportBounds} identical to
+   * {@link Viewport.viewportBounds}, leaving desktop behavior unchanged.
+   *
+   * This governs the *canvas* render bound only (see
+   * {@link Viewport.overscanViewportBounds}). Canvas overscan is cheap: it
+   * paints more vector ops (connectors, shapes) onto the existing fixed set of
+   * canvas tiles, so it does not grow resident memory. Keep this generous so
+   * connectors/elements stay painted through a gesture.
+   */
+  OVERSCAN_RATIO: 0,
+  /**
+   * Like {@link OVERSCAN_RATIO} but for the *DOM block mounting* bound (see
+   * {@link Viewport.overscanBlockBounds}). This one is expensive: every
+   * mounted block becomes its own composited layer subtree in the WebContent
+   * process, so enlarging it multiplies resident memory and is what pushes the
+   * process toward an iOS jetsam kill. Keep this small (or `0`) even when
+   * {@link OVERSCAN_RATIO} is generous. `0` (desktop default) leaves block
+   * mounting on the exact visible bound, unchanged from upstream.
+   */
+  OVERSCAN_RATIO_BLOCK: 0,
 };
 
 /**
@@ -321,6 +358,49 @@ export class Viewport {
       w: viewportMaxXY.x - viewportMinXY.x,
       h: viewportMaxXY.y - viewportMinXY.y,
     });
+  }
+
+  /**
+   * Like {@link viewportBounds} but enlarged by
+   * {@link viewportRuntimeConfig.OVERSCAN_RATIO} on every side. Used only by
+   * the *canvas* render path so that gestures move into already-rasterized
+   * vector content instead of blank space. Cheap: the canvas tile set is
+   * fixed, so this only changes how much is painted, not resident memory.
+   *
+   * Hit-testing, selection and other geometry must keep using the exact
+   * {@link viewportBounds}; do not substitute this for those.
+   */
+  get overscanViewportBounds() {
+    return this._enlargeBounds(viewportRuntimeConfig.OVERSCAN_RATIO);
+  }
+
+  /**
+   * Like {@link overscanViewportBounds} but governed by the separate, smaller
+   * {@link viewportRuntimeConfig.OVERSCAN_RATIO_BLOCK}. Used only by the *DOM
+   * block mounting* path. Expensive: every mounted block adds a composited
+   * layer subtree, so this must stay small to keep the WebContent process
+   * under the iOS jetsam memory limit even when canvas overscan is generous.
+   */
+  get overscanBlockBounds() {
+    return this._enlargeBounds(viewportRuntimeConfig.OVERSCAN_RATIO_BLOCK);
+  }
+
+  private _enlargeBounds(ratio: number) {
+    const bounds = this.viewportBounds;
+
+    if (ratio <= 0) {
+      return bounds;
+    }
+
+    const marginX = bounds.w * ratio;
+    const marginY = bounds.h * ratio;
+
+    return new Bound(
+      bounds.x - marginX,
+      bounds.y - marginY,
+      bounds.w + marginX * 2,
+      bounds.h + marginY * 2
+    );
   }
 
   get viewportMaxXY() {

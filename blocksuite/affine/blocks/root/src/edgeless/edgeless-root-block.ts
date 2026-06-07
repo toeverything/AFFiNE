@@ -484,7 +484,7 @@ export class EdgelessRootBlockComponent extends BlockComponent<
           .viewport=${this.gfx.viewport}
           .getModelsInViewport=${() => {
             const blocks = this.gfx.grid.search(
-              this.gfx.viewport.viewportBounds,
+              this.gfx.viewport.overscanBlockBounds,
               {
                 useSet: true,
                 filter: ['block'],

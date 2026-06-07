@@ -18,7 +18,11 @@ import type {
   SurfaceBlockModel,
   Viewport,
 } from '@blocksuite/std/gfx';
-import { getEffectiveDpr, GfxControllerIdentifier } from '@blocksuite/std/gfx';
+import {
+  getEffectiveDpr,
+  GfxControllerIdentifier,
+  viewportRuntimeConfig,
+} from '@blocksuite/std/gfx';
 import { effect } from '@preact/signals-core';
 import last from 'lodash-es/last';
 import { Subject } from 'rxjs';
@@ -559,10 +563,15 @@ export class CanvasRenderer {
         cancelPendingCanvasRefresh();
         pendingCanvasTimerId = setTimeout(() => {
           pendingCanvasTimerId = null;
-          if (!this.viewport.panning$.value && !this.viewport.zooming$.value) {
-            this.refresh({ type: 'all' });
+          // If a gesture is still in-flight when the timer fires, reschedule
+          // instead of dropping. Dropping here left connectors blank until a
+          // tap forced a synchronous refresh.
+          if (this.viewport.panning$.value || this.viewport.zooming$.value) {
+            scheduleCanvasRefresh();
+            return;
           }
-        }, 600);
+          this.refresh({ type: 'all' });
+        }, viewportRuntimeConfig.POST_GESTURE_REFRESH_DELAY);
       };
 
       this._disposables.add(
@@ -636,7 +645,8 @@ export class CanvasRenderer {
 
   private _render() {
     const renderStart = performance.now();
-    const { viewportBounds, zoom } = this.viewport;
+    const { overscanViewportBounds, zoom } = this.viewport;
+    const viewportBounds = overscanViewportBounds;
     const { ctx } = this;
     const dpr = getEffectiveDpr(zoom);
     const scale = zoom * dpr;
