@@ -11,6 +11,7 @@ import { ConfigFactory, ConfigModule } from '../../base/config';
 import { CurrentUser } from '../../core/auth';
 import { AuthService } from '../../core/auth/service';
 import { SubscriptionCronJobs } from '../../plugins/payment/cron';
+import { RevenueCatService } from '../../plugins/payment/revenuecat';
 import { SubscriptionService } from '../../plugins/payment/service';
 import { StripeFactory } from '../../plugins/payment/stripe';
 import {
@@ -135,6 +136,7 @@ const test = ava as TestFn<{
   app: TestingApp;
   service: SubscriptionService;
   event: Sinon.SinonStubbedInstance<EventBus>;
+  revenueCat: Sinon.SinonStubbedInstance<RevenueCatService>;
   stripe: {
     customers: Sinon.SinonStubbedInstance<Stripe.CustomersResource>;
     prices: Sinon.SinonStubbedInstance<Stripe.PricesResource>;
@@ -155,6 +157,11 @@ function getLastCheckoutPrice(checkoutStub: Sinon.SinonStub) {
     price: arg.line_items?.[0]?.price,
     coupon: arg.discounts?.[0]?.coupon,
   };
+}
+
+function getLastCheckoutParams(checkoutStub: Sinon.SinonStub) {
+  const call = checkoutStub.getCall(checkoutStub.callCount - 1);
+  return call.args[0] as Stripe.Checkout.SessionCreateParams;
 }
 
 test.before(async t => {
@@ -179,6 +186,7 @@ test.before(async t => {
 
   t.context.event = app.get(EventBus);
   t.context.service = app.get(SubscriptionService);
+  t.context.revenueCat = Sinon.stub(app.get(RevenueCatService));
   t.context.db = app.get(PrismaClient);
   t.context.app = app;
 
@@ -209,6 +217,9 @@ test.beforeEach(async t => {
   app.get(ConfigFactory).override({
     payment: {
       showLifetimePrice: true,
+      revenuecat: {
+        enabled: false,
+      },
     },
   });
 
@@ -240,6 +251,8 @@ test.beforeEach(async t => {
 
   // @ts-expect-error stub
   stripe.subscriptions.list.resolves({ data: [] });
+  // @ts-expect-error stub
+  stripe.checkout.sessions.create.resolves({ id: 'cs_1' });
 });
 
 test.after.always(async t => {
@@ -409,6 +422,90 @@ test('should allow checkout after local subscription period ended', async t => {
   });
 });
 
+test('should reject checkout when stripe already has current subscription', async t => {
+  const { service, u1, stripe } = t.context;
+
+  stripe.subscriptions.list.resolves({
+    data: [
+      {
+        ...sub,
+        id: 'sub_pending_webhook',
+        status: SubscriptionStatus.Active,
+        items: {
+          data: [
+            {
+              // @ts-expect-error stub
+              price: {
+                lookup_key: PRO_YEARLY,
+              },
+            },
+          ],
+        },
+      },
+    ],
+  });
+
+  await t.throwsAsync(
+    () =>
+      service.checkout(
+        {
+          plan: SubscriptionPlan.Pro,
+          recurring: SubscriptionRecurring.Yearly,
+          successCallbackLink: '',
+        },
+        { user: u1 }
+      ),
+    { message: 'You have already subscribed to the pro plan.' }
+  );
+
+  t.false(stripe.checkout.sessions.create.called);
+});
+
+test('should reject checkout when revenuecat already has active subscription', async t => {
+  const { app, revenueCat, service, u1, stripe } = t.context;
+
+  app.get(ConfigFactory).override({
+    payment: {
+      revenuecat: {
+        enabled: true,
+      },
+    },
+  });
+
+  revenueCat.getSubscriptions.resolves([
+    {
+      identifier: 'Pro',
+      isTrial: false,
+      isActive: true,
+      latestPurchaseDate: new Date(),
+      expirationDate: new Date(Date.now() + 100000),
+      customerId: 'rc_customer',
+      productId: 'app.affine.pro.Annual',
+      store: 'app_store',
+      willRenew: true,
+      duration: 'P1Y',
+    },
+  ]);
+
+  await t.throwsAsync(
+    () =>
+      service.checkout(
+        {
+          plan: SubscriptionPlan.Pro,
+          recurring: SubscriptionRecurring.Yearly,
+          successCallbackLink: '',
+        },
+        { user: u1 }
+      ),
+    {
+      message:
+        'This subscription is managed by App Store or Google Play. Please manage it in the corresponding store.',
+    }
+  );
+
+  t.false(stripe.checkout.sessions.create.called);
+});
+
 test('should get correct pro plan price for checking out', async t => {
   const { app, service, u1, stripe } = t.context;
   // monthly
@@ -523,29 +620,15 @@ test('should get correct ai plan price for checking out', async t => {
       price: AI_YEARLY,
       coupon: undefined,
     });
+    t.is(
+      getLastCheckoutParams(stripe.checkout.sessions.create).subscription_data
+        ?.trial_period_days,
+      7
+    );
   }
 
-  // user with old subscription
+  // user with recorded trial usage
   {
-    stripe.subscriptions.list.resolves({
-      data: [
-        {
-          id: 'sub_1',
-          status: 'canceled',
-          items: {
-            data: [
-              {
-                // @ts-expect-error stub
-                price: {
-                  lookup_key: AI_YEARLY,
-                },
-              },
-            ],
-          },
-        },
-      ],
-    });
-
     await service.checkout(
       {
         plan: SubscriptionPlan.AI,
@@ -559,7 +642,36 @@ test('should get correct ai plan price for checking out', async t => {
       price: AI_YEARLY,
       coupon: undefined,
     });
+    t.is(
+      getLastCheckoutParams(stripe.checkout.sessions.create).subscription_data
+        ?.trial_period_days,
+      undefined
+    );
   }
+});
+
+test('should record AI trial usage when checkout grants trial', async t => {
+  const { db, service, u1 } = t.context;
+
+  await service.checkout(
+    {
+      plan: SubscriptionPlan.AI,
+      recurring: SubscriptionRecurring.Yearly,
+      successCallbackLink: '',
+    },
+    { user: u1 }
+  );
+
+  const usage = await db.subscriptionTrialUsage.findUnique({
+    where: {
+      targetType_targetId_plan: {
+        targetType: 'user',
+        targetId: u1.id,
+        plan: SubscriptionPlan.AI,
+      },
+    },
+  });
+  t.is(usage?.externalRef, 'cs_1');
 });
 
 test('should apply user coupon for checking out', async t => {
@@ -610,6 +722,22 @@ test('should be able to create subscription', async t => {
     })
   );
   t.is(subInDB?.stripeSubscriptionId, sub.id);
+
+  const providerFact = await db.providerSubscription.findUnique({
+    where: {
+      provider_externalSubscriptionId: {
+        provider: 'stripe',
+        externalSubscriptionId: sub.id,
+      },
+    },
+  });
+  t.like(providerFact, {
+    targetType: 'user',
+    targetId: u1.id,
+    plan: SubscriptionPlan.Pro,
+    recurring: SubscriptionRecurring.Monthly,
+    status: SubscriptionStatus.Active,
+  });
 });
 
 test('should be able to update subscription', async t => {
@@ -640,6 +768,49 @@ test('should be able to update subscription', async t => {
   t.is(subInDB?.canceledAt?.getTime(), canceledAt * 1000);
 });
 
+test('should replace old subscription row when stripe creates a new subscription for the same plan', async t => {
+  const { service, db, u1 } = t.context;
+
+  const old = await db.subscription.create({
+    data: {
+      targetId: u1.id,
+      stripeSubscriptionId: 'sub_old',
+      plan: SubscriptionPlan.Pro,
+      recurring: SubscriptionRecurring.Yearly,
+      status: SubscriptionStatus.Canceled,
+      start: new Date('2026-03-26T08:23:57.000Z'),
+      end: new Date('2027-03-26T08:23:57.000Z'),
+    },
+  });
+
+  await service.saveStripeSubscription({
+    ...sub,
+    id: 'sub_new',
+    status: SubscriptionStatus.Active,
+    items: {
+      ...sub.items,
+      data: [
+        {
+          ...sub.items.data[0],
+          // @ts-expect-error stub
+          price: {
+            lookup_key: PRO_YEARLY,
+          },
+        },
+      ],
+    },
+  });
+
+  const subscriptions = await db.subscription.findMany({
+    where: { targetId: u1.id, plan: SubscriptionPlan.Pro },
+  });
+
+  t.is(subscriptions.length, 1);
+  t.is(subscriptions[0].id, old.id);
+  t.is(subscriptions[0].stripeSubscriptionId, 'sub_new');
+  t.is(subscriptions[0].status, SubscriptionStatus.Active);
+});
+
 test('should be able to delete subscription', async t => {
   const { event, service, db, u1 } = t.context;
   await service.saveStripeSubscription(sub);
@@ -662,6 +833,19 @@ test('should be able to delete subscription', async t => {
   });
 
   t.is(subInDB, null);
+  t.like(
+    await db.providerSubscription.findUnique({
+      where: {
+        provider_externalSubscriptionId: {
+          provider: 'stripe',
+          externalSubscriptionId: sub.id,
+        },
+      },
+    }),
+    {
+      status: SubscriptionStatus.Canceled,
+    }
+  );
 });
 
 test('should be able to cancel subscription', async t => {
@@ -1118,6 +1302,23 @@ test('should be able to subscribe to lifetime recurring', async t => {
   t.is(subInDB?.recurring, SubscriptionRecurring.Lifetime);
   t.is(subInDB?.status, SubscriptionStatus.Active);
   t.is(subInDB?.stripeSubscriptionId, null);
+
+  const paymentFact = await db.paymentEvent.findUnique({
+    where: {
+      provider_externalEventId: {
+        provider: 'stripe',
+        externalEventId: `stripe_invoice:${lifetimeInvoice.id}`,
+      },
+    },
+  });
+  t.like(paymentFact, {
+    targetType: 'user',
+    targetId: u1.id,
+    plan: SubscriptionPlan.Pro,
+    amount: lifetimeInvoice.total,
+    currency: lifetimeInvoice.currency,
+    processingStatus: 'processed',
+  });
 });
 
 test('should be able to subscribe to lifetime recurring with old subscription', async t => {

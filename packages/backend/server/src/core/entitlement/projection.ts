@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Entitlement, PrismaClient } from '@prisma/client';
+import { Entitlement, IapStore, PrismaClient, Provider } from '@prisma/client';
 
 import { OnEvent } from '../../base';
 import { Models } from '../../models';
@@ -52,44 +52,65 @@ export class LegacyEntitlementProjectionService {
     await this.#projectReadonlyFeature(workspaceId);
   }
 
-  async scanInstalledLicenses() {
+  async scanInstalledLicenses(options: { emit?: boolean } = {}) {
     const licenses = await this.db.installedLicense.findMany();
+    const emit = options.emit ?? true;
 
     await Promise.all(
       licenses.map(async license =>
         license.license
-          ? await this.entitlement.upsertFromSelfhostLicense({
-              workspaceId: license.workspaceId,
-              licenseKey: license.key,
-              recurring: license.recurring,
-              quantity: license.quantity,
-              expiresAt: license.expiredAt,
-              validatedAt: license.validatedAt,
-              license: Buffer.from(license.license),
-            })
-          : license.validateKey
-            ? await this.entitlement.upsertFromValidatedSelfhostLicense({
+          ? await this.entitlement.upsertFromSelfhostLicense(
+              {
                 workspaceId: license.workspaceId,
                 licenseKey: license.key,
                 recurring: license.recurring,
                 quantity: license.quantity,
                 expiresAt: license.expiredAt,
                 validatedAt: license.validatedAt,
-                validateKey: license.validateKey,
-                variant: license.variant,
-              })
-            : await this.entitlement.markSelfhostLicenseNeedsReupload({
-                workspaceId: license.workspaceId,
-                licenseKey: license.key,
-                reason: 'Installed license has no raw payload to verify.',
-              })
+                license: Buffer.from(license.license),
+              },
+              { emit }
+            )
+          : license.validateKey
+            ? await this.entitlement.upsertFromValidatedSelfhostLicense(
+                {
+                  workspaceId: license.workspaceId,
+                  licenseKey: license.key,
+                  recurring: license.recurring,
+                  quantity: license.quantity,
+                  expiresAt: license.expiredAt,
+                  validatedAt: license.validatedAt,
+                  validateKey: license.validateKey,
+                  variant: license.variant,
+                },
+                { emit }
+              )
+            : await this.entitlement.markSelfhostLicenseNeedsReupload(
+                {
+                  workspaceId: license.workspaceId,
+                  licenseKey: license.key,
+                  reason: 'Installed license has no raw payload to verify.',
+                },
+                { emit }
+              )
       )
     );
   }
 
   async backfillEntitlementsAndQuotaStates() {
     await this.#cleanupDanglingLegacyEntitlements();
+    await this.#backfillEntitlementsAndQuotaStates({ cleanupLegacy: true });
+  }
 
+  async shadowBackfillEntitlementsAndQuotaStates() {
+    await this.#backfillEntitlementsAndQuotaStates({ cleanupLegacy: false });
+  }
+
+  async #backfillEntitlementsAndQuotaStates({
+    cleanupLegacy,
+  }: {
+    cleanupLegacy: boolean;
+  }) {
     const [subscriptions, users, workspaces] = await Promise.all([
       this.db.subscription.findMany(),
       this.db.user.findMany({ select: { id: true } }),
@@ -101,17 +122,31 @@ export class LegacyEntitlementProjectionService {
         continue;
       }
       if (subscription.plan === SubscriptionPlan.SelfHostedTeam) {
-        await this.entitlement.markSelfhostLicenseNeedsReupload({
-          licenseKey: subscription.targetId,
-          reason:
-            'Historical self-hosted team subscription needs license activation or revalidation.',
-        });
+        await this.entitlement.markSelfhostLicenseNeedsReupload(
+          {
+            licenseKey: subscription.targetId,
+            reason:
+              'Historical self-hosted team subscription needs license activation or revalidation.',
+          },
+          { emit: cleanupLegacy }
+        );
         continue;
       }
-      await this.entitlement.upsertFromCloudSubscription(subscription);
+      await this.entitlement.upsertFromCloudSubscription(subscription, {
+        emit: cleanupLegacy,
+        legacySync: true,
+      });
+      await this.#backfillProviderSubscription(subscription);
+      if (
+        subscription.plan === SubscriptionPlan.AI &&
+        (subscription.trialStart || subscription.trialEnd)
+      ) {
+        await this.#backfillTrialUsage(subscription);
+      }
     }
 
-    await this.scanInstalledLicenses();
+    await this.#backfillPaymentEvents();
+    await this.scanInstalledLicenses({ emit: cleanupLegacy });
 
     await Promise.all([
       ...users.map(user =>
@@ -151,6 +186,206 @@ export class LegacyEntitlementProjectionService {
         })
       ),
     ]);
+  }
+
+  async #backfillProviderSubscription(subscription: {
+    targetId: string;
+    plan: string;
+    recurring: string;
+    status: string;
+    provider: Provider | string;
+    iapStore?: IapStore | null;
+    rcExternalRef?: string | null;
+    rcProductId?: string | null;
+    stripeSubscriptionId?: string | null;
+    quantity: number;
+    start: Date;
+    end?: Date | null;
+    trialStart?: Date | null;
+    trialEnd?: Date | null;
+    canceledAt?: Date | null;
+  }) {
+    const targetType =
+      subscription.plan === SubscriptionPlan.Team ? 'workspace' : 'user';
+    if (
+      subscription.provider === 'stripe' &&
+      subscription.stripeSubscriptionId
+    ) {
+      await this.db.providerSubscription.upsert({
+        where: {
+          provider_externalSubscriptionId: {
+            provider: 'stripe',
+            externalSubscriptionId: subscription.stripeSubscriptionId,
+          },
+        },
+        update: {
+          targetType,
+          targetId: subscription.targetId,
+          plan: subscription.plan,
+          recurring: subscription.recurring,
+          status: subscription.status,
+          quantity: subscription.quantity,
+          periodStart: subscription.start,
+          periodEnd: subscription.end,
+          trialStart: subscription.trialStart,
+          trialEnd: subscription.trialEnd,
+          canceledAt: subscription.canceledAt,
+          metadata: { legacySync: true },
+        },
+        create: {
+          provider: 'stripe',
+          targetType,
+          targetId: subscription.targetId,
+          plan: subscription.plan,
+          recurring: subscription.recurring,
+          status: subscription.status,
+          externalSubscriptionId: subscription.stripeSubscriptionId,
+          quantity: subscription.quantity,
+          periodStart: subscription.start,
+          periodEnd: subscription.end,
+          trialStart: subscription.trialStart,
+          trialEnd: subscription.trialEnd,
+          canceledAt: subscription.canceledAt,
+          metadata: { legacySync: true },
+        },
+      });
+      return;
+    }
+
+    if (
+      subscription.provider === 'revenuecat' &&
+      subscription.iapStore &&
+      subscription.rcExternalRef &&
+      subscription.rcProductId
+    ) {
+      await this.db.providerSubscription.upsert({
+        where: {
+          provider_iapStore_externalRef_externalProductId_externalCustomerId: {
+            provider: 'revenuecat',
+            iapStore: subscription.iapStore,
+            externalRef: subscription.rcExternalRef,
+            externalProductId: subscription.rcProductId,
+            externalCustomerId: subscription.targetId,
+          },
+        },
+        update: {
+          targetType,
+          targetId: subscription.targetId,
+          plan: subscription.plan,
+          recurring: subscription.recurring,
+          status: subscription.status,
+          quantity: subscription.quantity,
+          periodStart: subscription.start,
+          periodEnd: subscription.end,
+          trialStart: subscription.trialStart,
+          trialEnd: subscription.trialEnd,
+          canceledAt: subscription.canceledAt,
+          metadata: { legacySync: true },
+        },
+        create: {
+          provider: 'revenuecat',
+          targetType,
+          targetId: subscription.targetId,
+          plan: subscription.plan,
+          recurring: subscription.recurring,
+          status: subscription.status,
+          externalCustomerId: subscription.targetId,
+          iapStore: subscription.iapStore,
+          externalRef: subscription.rcExternalRef,
+          externalProductId: subscription.rcProductId,
+          quantity: subscription.quantity,
+          periodStart: subscription.start,
+          periodEnd: subscription.end,
+          trialStart: subscription.trialStart,
+          trialEnd: subscription.trialEnd,
+          canceledAt: subscription.canceledAt,
+          metadata: { legacySync: true },
+        },
+      });
+    }
+  }
+
+  async #backfillTrialUsage(subscription: {
+    targetId: string;
+    plan: string;
+    provider: Provider | string;
+    stripeSubscriptionId?: string | null;
+    rcExternalRef?: string | null;
+    trialStart?: Date | null;
+    trialEnd?: Date | null;
+    start: Date;
+  }) {
+    await this.db.subscriptionTrialUsage.upsert({
+      where: {
+        targetType_targetId_plan: {
+          targetType: 'user',
+          targetId: subscription.targetId,
+          plan: subscription.plan,
+        },
+      },
+      update: {},
+      create: {
+        targetType: 'user',
+        targetId: subscription.targetId,
+        plan: subscription.plan,
+        provider:
+          subscription.provider === 'revenuecat' ? 'revenuecat' : 'stripe',
+        externalRef:
+          subscription.stripeSubscriptionId ??
+          subscription.rcExternalRef ??
+          null,
+        firstUsedAt:
+          subscription.trialStart ??
+          subscription.trialEnd ??
+          subscription.start,
+        metadata: { legacySync: true },
+      },
+    });
+  }
+
+  async #backfillPaymentEvents() {
+    const invoices = await this.db.invoice.findMany();
+
+    for (const invoice of invoices) {
+      await this.db.paymentEvent.upsert({
+        where: {
+          provider_externalEventId: {
+            provider: 'stripe',
+            externalEventId: `stripe_invoice:${invoice.stripeInvoiceId}`,
+          },
+        },
+        update: {
+          targetId: invoice.targetId,
+          externalInvoiceId: invoice.stripeInvoiceId,
+          amount: invoice.amount,
+          currency: invoice.currency,
+          processingStatus: 'processed',
+          processedAt: invoice.updatedAt,
+          metadata: {
+            legacySync: true,
+            status: invoice.status,
+            reason: invoice.reason,
+          },
+        },
+        create: {
+          provider: 'stripe',
+          eventType: 'invoice.backfill',
+          externalEventId: `stripe_invoice:${invoice.stripeInvoiceId}`,
+          targetId: invoice.targetId,
+          externalInvoiceId: invoice.stripeInvoiceId,
+          amount: invoice.amount,
+          currency: invoice.currency,
+          occurredAt: invoice.createdAt,
+          processingStatus: 'processed',
+          processedAt: invoice.updatedAt,
+          metadata: {
+            legacySync: true,
+            status: invoice.status,
+            reason: invoice.reason,
+          },
+        },
+      });
+    }
   }
 
   async #cleanupDanglingLegacyEntitlements() {
@@ -220,6 +455,7 @@ export class LegacyEntitlementProjectionService {
   }
 
   async #projectUserFeatures(userId: string) {
+    // TODO(stable-upgrade): contract legacy feature projection after old clients/resolvers are gone.
     const entitlements = await this.#activeEntitlements('user', userId);
     const quotaEntitlement = entitlements.find(entitlement =>
       ['lifetime_pro', 'pro'].includes(entitlement.plan)
@@ -262,6 +498,7 @@ export class LegacyEntitlementProjectionService {
   }
 
   async #projectWorkspaceFeatures(workspaceId: string) {
+    // TODO(stable-upgrade): contract legacy feature projection after old clients/resolvers are gone.
     const [entitlement, resolved] = await Promise.all([
       this.entitlement.getBestEntitlement('workspace', workspaceId),
       this.entitlement.resolveWorkspaceEntitlement(workspaceId),
@@ -290,6 +527,7 @@ export class LegacyEntitlementProjectionService {
     targetType: 'user' | 'workspace',
     targetId: string
   ) {
+    // TODO(stable-upgrade): remove reverse projection after stable no longer depends on old subscriptions.
     if (env.selfhosted) return;
     const entitlements = await this.db.entitlement.findMany({
       where: {

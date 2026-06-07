@@ -60,6 +60,10 @@ test('projects user entitlement to legacy user features and subscriptions', asyn
     recurring: SubscriptionRecurring.Monthly,
     status: 'active',
   });
+  await t.context.projection.onEntitlementChanged({
+    targetType: 'user',
+    targetId: user.id,
+  });
 
   t.true(await t.context.models.userFeature.has(user.id, 'pro_plan_v1'));
   t.true(await t.context.models.userFeature.has(user.id, 'unlimited_copilot'));
@@ -94,6 +98,10 @@ test('projects workspace entitlement and readonly state to legacy workspace feat
     recurring: SubscriptionRecurring.Yearly,
     status: 'active',
     quantity: 8,
+  });
+  await t.context.projection.onEntitlementChanged({
+    targetType: 'workspace',
+    targetId: workspace.id,
   });
 
   const teamFeature = await t.context.models.workspaceFeature.get(
@@ -294,6 +302,135 @@ test('backfill removes dangling legacy subscriptions and entitlements', async t 
 
   t.is(await t.context.db.subscription.count(), 0);
   t.is(await t.context.db.entitlement.count(), 0);
+});
+
+test('shadow backfill preserves legacy rows and records provider facts', async t => {
+  const user = await t.context.models.user.create({
+    email: `${randomUUID()}@affine.pro`,
+  });
+  const paidAiUser = await t.context.models.user.create({
+    email: `${randomUUID()}@affine.pro`,
+  });
+  const owner = await t.context.models.user.create({
+    email: `${randomUUID()}@affine.pro`,
+  });
+  const workspace = await t.context.models.workspace.create(owner.id);
+  const danglingTargetId = randomUUID();
+
+  await t.context.db.subscription.createMany({
+    data: [
+      {
+        targetId: user.id,
+        stripeSubscriptionId: 'sub_ai_trial',
+        plan: SubscriptionPlan.AI,
+        recurring: SubscriptionRecurring.Yearly,
+        status: SubscriptionStatus.Active,
+        start: new Date('2026-01-01T00:00:00.000Z'),
+        trialStart: new Date('2026-01-01T00:00:00.000Z'),
+        trialEnd: new Date('2026-01-08T00:00:00.000Z'),
+      },
+      {
+        targetId: paidAiUser.id,
+        stripeSubscriptionId: 'sub_ai_paid',
+        plan: SubscriptionPlan.AI,
+        recurring: SubscriptionRecurring.Yearly,
+        status: SubscriptionStatus.Active,
+        start: new Date('2026-01-01T00:00:00.000Z'),
+      },
+      {
+        targetId: danglingTargetId,
+        plan: SubscriptionPlan.Pro,
+        recurring: SubscriptionRecurring.Yearly,
+        status: SubscriptionStatus.Active,
+        start: new Date('2026-01-01T00:00:00.000Z'),
+      },
+    ],
+  });
+  await t.context.db.invoice.create({
+    data: {
+      stripeInvoiceId: 'in_backfill_lifetime',
+      targetId: user.id,
+      currency: 'usd',
+      amount: 9999,
+      status: 'paid',
+      reason: 'subscription_create',
+    },
+  });
+  await t.context.db.installedLicense.create({
+    data: {
+      key: 'shadow-license-key',
+      workspaceId: workspace.id,
+      quantity: 3,
+      recurring: SubscriptionRecurring.Yearly,
+      validateKey: 'shadow-validate-key',
+      validatedAt: new Date(),
+    },
+  });
+
+  await t.context.projection.shadowBackfillEntitlementsAndQuotaStates();
+
+  t.truthy(
+    await t.context.db.subscription.findFirst({
+      where: { targetId: danglingTargetId },
+    })
+  );
+  t.like(
+    await t.context.db.providerSubscription.findUnique({
+      where: {
+        provider_externalSubscriptionId: {
+          provider: 'stripe',
+          externalSubscriptionId: 'sub_ai_trial',
+        },
+      },
+    }),
+    {
+      targetType: 'user',
+      targetId: user.id,
+      plan: SubscriptionPlan.AI,
+      status: SubscriptionStatus.Active,
+    }
+  );
+  t.truthy(
+    await t.context.db.subscriptionTrialUsage.findUnique({
+      where: {
+        targetType_targetId_plan: {
+          targetType: 'user',
+          targetId: user.id,
+          plan: SubscriptionPlan.AI,
+        },
+      },
+    })
+  );
+  t.falsy(
+    await t.context.db.subscriptionTrialUsage.findUnique({
+      where: {
+        targetType_targetId_plan: {
+          targetType: 'user',
+          targetId: paidAiUser.id,
+          plan: SubscriptionPlan.AI,
+        },
+      },
+    })
+  );
+  t.like(
+    await t.context.db.paymentEvent.findUnique({
+      where: {
+        provider_externalEventId: {
+          provider: 'stripe',
+          externalEventId: 'stripe_invoice:in_backfill_lifetime',
+        },
+      },
+    }),
+    {
+      targetId: user.id,
+      externalInvoiceId: 'in_backfill_lifetime',
+      amount: 9999,
+      processingStatus: 'processed',
+    }
+  );
+  t.false(
+    await t.context.models.workspaceFeature.has(workspace.id, 'team_plan_v1')
+  );
 });
 
 test('key based selfhost entitlements without raw payload need reupload', async t => {

@@ -165,6 +165,85 @@ export class RevenueCatWebhookHandler {
       const end = overrideExpirationDate || sub.expirationDate || null;
       const nextBillAt = end; // period end serves as next bill anchor for IAP
 
+      if (rcExternalRef && iapStore) {
+        await this.db.providerSubscription.upsert({
+          where: {
+            provider_iapStore_externalRef_externalProductId_externalCustomerId:
+              {
+                provider: Provider.revenuecat,
+                iapStore,
+                externalRef: rcExternalRef,
+                externalProductId: sub.productId,
+                externalCustomerId: sub.customerId,
+              },
+          },
+          update: {
+            targetType: 'user',
+            targetId: appUserId,
+            plan: mapping.plan,
+            recurring: mapping.recurring,
+            status,
+            externalCustomerId: sub.customerId,
+            externalProductId: sub.productId,
+            iapStore,
+            externalRef: rcExternalRef,
+            periodStart: start,
+            periodEnd: end,
+            canceledAt,
+            metadata: {
+              entitlement: sub.identifier,
+              isTrial: sub.isTrial,
+              willRenew: sub.willRenew,
+            },
+          },
+          create: {
+            provider: Provider.revenuecat,
+            targetType: 'user',
+            targetId: appUserId,
+            plan: mapping.plan,
+            recurring: mapping.recurring,
+            status,
+            externalCustomerId: sub.customerId,
+            externalProductId: sub.productId,
+            iapStore,
+            externalRef: rcExternalRef,
+            periodStart: start,
+            periodEnd: end,
+            canceledAt,
+            metadata: {
+              entitlement: sub.identifier,
+              isTrial: sub.isTrial,
+              willRenew: sub.willRenew,
+            },
+          },
+        });
+      }
+
+      if (mapping.plan === SubscriptionPlan.AI && sub.isTrial) {
+        await this.db.subscriptionTrialUsage.upsert({
+          where: {
+            targetType_targetId_plan: {
+              targetType: 'user',
+              targetId: appUserId,
+              plan: SubscriptionPlan.AI,
+            },
+          },
+          update: {},
+          create: {
+            targetType: 'user',
+            targetId: appUserId,
+            plan: SubscriptionPlan.AI,
+            provider: Provider.revenuecat,
+            externalRef: rcExternalRef,
+            firstUsedAt: start,
+            metadata: {
+              entitlement: sub.identifier,
+              productId: sub.productId,
+            },
+          },
+        });
+      }
+
       // Mutual exclusion: skip if Stripe already active for the same plan
       const conflict = await this.db.subscription.findFirst({
         where: {
@@ -214,6 +293,8 @@ export class RevenueCatWebhookHandler {
       }
 
       const saved = await this.db.subscription.upsert({
+        // TODO(stable-upgrade): remove legacy subscriptions dual-write after stable supports provider facts.
+        // TODO(stable-upgrade): remove reliance on target_id_plan unique slot after contract cleanup.
         where: {
           targetId_plan: { targetId: appUserId, plan: mapping.plan },
         },

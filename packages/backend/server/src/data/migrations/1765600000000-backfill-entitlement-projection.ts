@@ -9,7 +9,7 @@ export class BackfillEntitlementProjection1765600000000 {
     const projection = ref.get(LegacyEntitlementProjectionService, {
       strict: false,
     });
-    await projection.backfillEntitlementsAndQuotaStates();
+    await projection.shadowBackfillEntitlementsAndQuotaStates();
 
     const quota = ref.get(QuotaStateService, { strict: false });
     const [users, workspaces] = await Promise.all([
@@ -18,9 +18,12 @@ export class BackfillEntitlementProjection1765600000000 {
     ]);
 
     const tasks = [
-      ...users.map(user => () => quota.reconcileUserQuotaState(user.id)),
+      ...users.map(
+        user => () => quota.reconcileUserQuotaState(user.id, { emit: false })
+      ),
       ...workspaces.map(
-        workspace => () => quota.reconcileWorkspaceQuotaState(workspace.id)
+        workspace => () =>
+          quota.reconcileWorkspaceQuotaState(workspace.id, { emit: false })
       ),
     ];
     const batchSize = 16;
