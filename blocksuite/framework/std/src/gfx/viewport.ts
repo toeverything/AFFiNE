@@ -192,9 +192,32 @@ export class Viewport {
   zooming$ = new BehaviorSubject<boolean>(false);
   panning$ = new BehaviorSubject<boolean>(false);
 
-  ZOOM_MAX = viewportRuntimeConfig.ZOOM_MAX;
+  /**
+   * Per-instance override for the maximum zoom. When unset, the value is read
+   * dynamically from {@link viewportRuntimeConfig} so that runtime overrides
+   * (e.g. iOS mobile-safe limits configured at app startup) always apply,
+   * regardless of whether this instance was constructed before or after the
+   * override ran.
+   */
+  private _zoomMaxOverride?: number;
 
-  ZOOM_MIN = viewportRuntimeConfig.ZOOM_MIN;
+  private _zoomMinOverride?: number;
+
+  get ZOOM_MAX() {
+    return this._zoomMaxOverride ?? viewportRuntimeConfig.ZOOM_MAX;
+  }
+
+  set ZOOM_MAX(value: number) {
+    this._zoomMaxOverride = value;
+  }
+
+  get ZOOM_MIN() {
+    return this._zoomMinOverride ?? viewportRuntimeConfig.ZOOM_MIN;
+  }
+
+  set ZOOM_MIN(value: number) {
+    this._zoomMinOverride = value;
+  }
 
   /**
    * Minimum pixel movement before triggering a viewport refresh during panning.
@@ -465,7 +488,7 @@ export class Viewport {
   getFitToScreenData(
     bounds?: Bound | null,
     padding: [number, number, number, number] = [0, 0, 0, 0],
-    maxZoom = ZOOM_MAX,
+    maxZoom = this.ZOOM_MAX,
     fitToScreenPadding = 100
   ) {
     let { centerX, centerY, zoom } = this;
@@ -482,7 +505,11 @@ export class Viewport {
       (width - fitToScreenPadding - (pr + pl)) / w,
       (height - fitToScreenPadding - (pt + pb)) / h
     );
-    zoom = clamp(zoom, ZOOM_MIN, clamp(maxZoom, ZOOM_MIN, ZOOM_MAX));
+    zoom = clamp(
+      zoom,
+      this.ZOOM_MIN,
+      clamp(maxZoom, this.ZOOM_MIN, this.ZOOM_MAX)
+    );
 
     centerX = x + (w + pr / zoom) / 2 - pl / zoom / 2;
     centerY = y + (h + pb / zoom) / 2 - pt / zoom / 2;
