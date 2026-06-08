@@ -55,8 +55,19 @@ function updateBlockVisibility(view: GfxBlockComponent) {
 function handleGfxConnection(instance: GfxBlockComponent) {
   instance.style.position = 'absolute';
 
+  const viewport = instance.gfx.viewport;
+
   instance.disposables.add(
-    instance.gfx.viewport.viewportUpdated.subscribe(() => {
+    viewport.viewportUpdated.subscribe(() => {
+      // When SKIP_REFRESH_DURING_GESTURE is enabled and a gesture is active,
+      // skip per-block transform updates. The viewport-element applies a
+      // container-level CSS transform to keep visuals in sync instead.
+      if (
+        viewport.SKIP_REFRESH_DURING_GESTURE &&
+        (viewport.panning$.value || viewport.zooming$.value)
+      ) {
+        return;
+      }
       updateTransform(instance);
     })
   );

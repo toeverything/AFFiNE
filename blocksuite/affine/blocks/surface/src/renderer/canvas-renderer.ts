@@ -18,7 +18,11 @@ import type {
   SurfaceBlockModel,
   Viewport,
 } from '@blocksuite/std/gfx';
-import { GfxControllerIdentifier } from '@blocksuite/std/gfx';
+import {
+  getEffectiveDpr,
+  GfxControllerIdentifier,
+  viewportRuntimeConfig,
+} from '@blocksuite/std/gfx';
 import { effect } from '@preact/signals-core';
 import last from 'lodash-es/last';
 import { Subject } from 'rxjs';
@@ -223,7 +227,7 @@ export class CanvasRenderer {
    *
    * It is not recommended to set width and height to 100%.
    */
-  private _canvasSizeUpdater(dpr = window.devicePixelRatio) {
+  private _canvasSizeUpdater(dpr = getEffectiveDpr(this.viewport.zoom)) {
     const { width, height, viewScale } = this.viewport;
     const actualWidth = Math.ceil(width * dpr);
     const actualHeight = Math.ceil(height * dpr);
@@ -246,7 +250,7 @@ export class CanvasRenderer {
   private _applyStackingCanvasLayout(
     canvas: HTMLCanvasElement,
     bound: Bound | null,
-    dpr = window.devicePixelRatio
+    dpr = getEffectiveDpr(this.viewport.zoom)
   ) {
     const state =
       this._stackingCanvasState.get(canvas) ??
@@ -505,6 +509,12 @@ export class CanvasRenderer {
 
     this._disposables.add(
       this.viewport.viewportUpdated.subscribe(() => {
+        if (
+          this.viewport.SKIP_REFRESH_DURING_GESTURE &&
+          (this.viewport.panning$.value || this.viewport.zooming$.value)
+        ) {
+          return;
+        }
         this.refresh({ type: 'all' });
       })
     );
@@ -515,13 +525,23 @@ export class CanvasRenderer {
         sizeUpdatedRafId = requestConnectedFrame(() => {
           sizeUpdatedRafId = null;
           this._resetSize();
-          this._render();
+          // When SKIP_REFRESH_DURING_GESTURE is active, schedule the render
+          // after a short delay to let the layout settle on orientation change,
+          // avoiding a white-flash from resizing + rendering in the same frame.
+          if (this.viewport.SKIP_REFRESH_DURING_GESTURE) {
+            setTimeout(() => this._render(), 16);
+          } else {
+            this._render();
+          }
         }, this._container);
       })
     );
 
     this._disposables.add(
       this.viewport.zooming$.subscribe(isZooming => {
+        if (this.viewport.SKIP_REFRESH_DURING_GESTURE) {
+          return;
+        }
         const shouldRenderPlaceholders = this._turboEnabled() && isZooming;
 
         if (this.usePlaceholder !== shouldRenderPlaceholders) {
@@ -531,13 +551,64 @@ export class CanvasRenderer {
       })
     );
 
+    // Deferred post-gesture canvas refresh when SKIP_REFRESH_DURING_GESTURE
+    if (this.viewport.SKIP_REFRESH_DURING_GESTURE) {
+      let pendingCanvasTimerId: ReturnType<typeof setTimeout> | null = null;
+
+      const cancelPendingCanvasRefresh = () => {
+        if (pendingCanvasTimerId !== null) {
+          clearTimeout(pendingCanvasTimerId);
+          pendingCanvasTimerId = null;
+        }
+      };
+
+      const scheduleCanvasRefresh = () => {
+        cancelPendingCanvasRefresh();
+        pendingCanvasTimerId = setTimeout(() => {
+          pendingCanvasTimerId = null;
+          if (this.viewport.panning$.value || this.viewport.zooming$.value) {
+            scheduleCanvasRefresh();
+            return;
+          }
+          this.refresh({ type: 'all' });
+        }, viewportRuntimeConfig.POST_GESTURE_REFRESH_DELAY);
+      };
+
+      this._disposables.add(
+        this.viewport.panning$.subscribe(panning => {
+          if (panning) {
+            cancelPendingCanvasRefresh();
+          } else if (!this.viewport.zooming$.value) {
+            scheduleCanvasRefresh();
+          }
+        })
+      );
+      this._disposables.add(
+        this.viewport.zooming$.subscribe(zooming => {
+          if (zooming) {
+            cancelPendingCanvasRefresh();
+          } else if (!this.viewport.panning$.value) {
+            scheduleCanvasRefresh();
+          }
+        })
+      );
+      this._disposables.add({ dispose: cancelPendingCanvasRefresh });
+    }
+
     let wasDragging = false;
     this._disposables.add(
       effect(() => {
         const isDragging = this._gfx.tool.dragging$.value;
 
         if (wasDragging && !isDragging) {
-          this.refresh({ type: 'all' });
+          if (
+            this.viewport.SKIP_REFRESH_DURING_GESTURE &&
+            (this.viewport.panning$.value || this.viewport.zooming$.value)
+          ) {
+            // Deferred refresh will handle it after gesture ends
+          } else if (!this.viewport.SKIP_REFRESH_DURING_GESTURE) {
+            this.refresh({ type: 'all' });
+          }
         }
 
         wasDragging = isDragging;
@@ -572,9 +643,10 @@ export class CanvasRenderer {
 
   private _render() {
     const renderStart = performance.now();
-    const { viewportBounds, zoom } = this.viewport;
+    const { overscanViewportBounds, zoom } = this.viewport;
+    const viewportBounds = overscanViewportBounds;
     const { ctx } = this;
-    const dpr = window.devicePixelRatio;
+    const dpr = getEffectiveDpr(zoom);
     const scale = zoom * dpr;
     const matrix = new DOMMatrix().scaleSelf(scale);
     const renderStats = this._createRenderPassStats();

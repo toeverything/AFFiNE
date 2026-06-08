@@ -23,6 +23,62 @@ export const ZOOM_INITIAL = 1.0;
 
 export const FIT_TO_SCREEN_PADDING = 100;
 
+/**
+ * Process-wide defaults applied to every {@link Viewport} at construction.
+ *
+ * Platforms that need different behavior (e.g. mobile/iOS, which must clamp the
+ * zoom floor and defer DOM mutations during gestures to avoid WKWebView process
+ * termination) override these once at startup, before any editor mounts.
+ */
+export const viewportRuntimeConfig = {
+  ZOOM_MIN,
+  ZOOM_MAX,
+  VIEWPORT_REFRESH_PIXEL_THRESHOLD: 18,
+  VIEWPORT_REFRESH_MAX_INTERVAL: 120,
+  SKIP_REFRESH_DURING_GESTURE: false,
+  /**
+   * Delay (ms) before the post-gesture refresh repaints canvases and reactivates
+   * blocks, used only when {@link SKIP_REFRESH_DURING_GESTURE} is true.
+   */
+  POST_GESTURE_REFRESH_DELAY: 800,
+  /**
+   * Caps the canvas backing-store device-pixel-ratio at low zoom.
+   * Each entry is `[zoomThreshold, dprCap]`, sorted ascending by threshold.
+   * Empty (desktop default) means no cap.
+   */
+  CANVAS_DPR_CAP_BY_ZOOM: [] as Array<[number, number]>,
+  /**
+   * Fraction by which the canvas render viewport is enlarged on every side.
+   * Pre-paints a margin so gestures move into already-rasterized content.
+   * Canvas overscan is cheap (fixed tile set, more vector ops).
+   * `0` (desktop default) leaves behavior unchanged.
+   */
+  OVERSCAN_RATIO: 0,
+  /**
+   * Like {@link OVERSCAN_RATIO} but for DOM block mounting only.
+   * Expensive: each mounted block is its own composited layer subtree.
+   * Keep small or `0` to avoid iOS jetsam kills.
+   */
+  OVERSCAN_RATIO_BLOCK: 0,
+};
+
+/**
+ * Resolves the effective device-pixel-ratio for canvas backing stores at the
+ * given zoom, honoring {@link viewportRuntimeConfig.CANVAS_DPR_CAP_BY_ZOOM}.
+ */
+export function getEffectiveDpr(
+  zoom: number,
+  rawDpr = window.devicePixelRatio
+): number {
+  const caps = viewportRuntimeConfig.CANVAS_DPR_CAP_BY_ZOOM;
+  for (const [zoomThreshold, dprCap] of caps) {
+    if (zoom < zoomThreshold) {
+      return Math.min(rawDpr, dprCap);
+    }
+  }
+  return rawDpr;
+}
+
 export interface ViewportRecord {
   left: number;
   top: number;
@@ -102,9 +158,22 @@ export class Viewport {
   zooming$ = new BehaviorSubject<boolean>(false);
   panning$ = new BehaviorSubject<boolean>(false);
 
-  ZOOM_MAX = ZOOM_MAX;
+  ZOOM_MAX = viewportRuntimeConfig.ZOOM_MAX;
 
-  ZOOM_MIN = ZOOM_MIN;
+  ZOOM_MIN = viewportRuntimeConfig.ZOOM_MIN;
+
+  VIEWPORT_REFRESH_PIXEL_THRESHOLD =
+    viewportRuntimeConfig.VIEWPORT_REFRESH_PIXEL_THRESHOLD;
+
+  VIEWPORT_REFRESH_MAX_INTERVAL =
+    viewportRuntimeConfig.VIEWPORT_REFRESH_MAX_INTERVAL;
+
+  /**
+   * When true, viewport element visibility refreshes are skipped entirely during
+   * panning/zooming gestures. A post-gesture refresh syncs state after settle.
+   */
+  SKIP_REFRESH_DURING_GESTURE =
+    viewportRuntimeConfig.SKIP_REFRESH_DURING_GESTURE;
 
   private readonly _resetZooming = debounce(() => {
     this.zooming$.next(false);
@@ -243,6 +312,42 @@ export class Viewport {
       w: viewportMaxXY.x - viewportMinXY.x,
       h: viewportMaxXY.y - viewportMinXY.y,
     });
+  }
+
+  /**
+   * Like {@link viewportBounds} but enlarged by
+   * {@link viewportRuntimeConfig.OVERSCAN_RATIO} on every side.
+   * Used only by the canvas render path.
+   */
+  get overscanViewportBounds() {
+    return this._enlargeBounds(viewportRuntimeConfig.OVERSCAN_RATIO);
+  }
+
+  /**
+   * Like {@link overscanViewportBounds} but governed by the separate, smaller
+   * {@link viewportRuntimeConfig.OVERSCAN_RATIO_BLOCK}.
+   * Used only by the DOM block mounting path.
+   */
+  get overscanBlockBounds() {
+    return this._enlargeBounds(viewportRuntimeConfig.OVERSCAN_RATIO_BLOCK);
+  }
+
+  private _enlargeBounds(ratio: number) {
+    const bounds = this.viewportBounds;
+
+    if (ratio <= 0) {
+      return bounds;
+    }
+
+    const marginX = bounds.w * ratio;
+    const marginY = bounds.h * ratio;
+
+    return new Bound(
+      bounds.x - marginX,
+      bounds.y - marginY,
+      bounds.w + marginX * 2,
+      bounds.h + marginY * 2
+    );
   }
 
   get viewportMaxXY() {
