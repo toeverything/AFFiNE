@@ -525,7 +525,14 @@ export class CanvasRenderer {
         sizeUpdatedRafId = requestConnectedFrame(() => {
           sizeUpdatedRafId = null;
           this._resetSize();
-          this._render();
+          // When SKIP_REFRESH_DURING_GESTURE is active, schedule the render
+          // after a short delay to let the layout settle on orientation change,
+          // avoiding a white-flash from resizing + rendering in the same frame.
+          if (this.viewport.SKIP_REFRESH_DURING_GESTURE) {
+            setTimeout(() => this._render(), 16);
+          } else {
+            this._render();
+          }
         }, this._container);
       })
     );

@@ -347,7 +347,19 @@ export class GfxViewportElement extends WithDisposable(ShadowlessElement) {
       this.viewport.sizeUpdated.subscribe(() => {
         this._clearPendingViewportRefreshTimer();
         this._lastViewportRefreshTime = performance.now();
-        this._refreshViewport();
+        // When SKIP_REFRESH_DURING_GESTURE is enabled, use chunked activation
+        // on resize (orientation change) to avoid a synchronous full refresh
+        // that causes white-screen flash on landscape with many elements.
+        if (this.viewport.SKIP_REFRESH_DURING_GESTURE) {
+          this._chunkedHideOutsideAndNoSelectedBlock(() => {
+            this.viewport.viewportUpdated.next({
+              zoom: this.viewport.zoom,
+              center: [this.viewport.centerX, this.viewport.centerY],
+            });
+          });
+        } else {
+          this._refreshViewport();
+        }
       })
     );
 
