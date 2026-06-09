@@ -298,6 +298,7 @@ export class EntitlementService {
     targetType: TargetType,
     targetId: string
   ) {
+    // TODO(stable-upgrade): remove legacy subscription import after stable no longer writes old subscriptions.
     if (env.selfhosted || targetType === 'instance') {
       return;
     }
@@ -324,7 +325,11 @@ export class EntitlementService {
     return task;
   }
 
-  async upsertFromSelfhostLicense(input: SelfhostLicenseEntitlementInput) {
+  async upsertFromSelfhostLicense(
+    input: SelfhostLicenseEntitlementInput,
+    options: { emit?: boolean } = {}
+  ) {
+    const emit = options.emit ?? true;
     const resolved = input.license
       ? resolveEntitlementV1({
           deploymentType: 'selfhosted',
@@ -372,12 +377,16 @@ export class EntitlementService {
         where: { id: entitlement.id },
         data,
       });
-      await this.emitEntitlementChanged(updated);
+      if (emit) {
+        await this.emitEntitlementChanged(updated);
+      }
       return updated;
     }
 
     const created = await this.db.entitlement.create({ data });
-    await this.emitEntitlementChanged(created);
+    if (emit) {
+      await this.emitEntitlementChanged(created);
+    }
     return created;
   }
 
@@ -385,8 +394,10 @@ export class EntitlementService {
     input: Omit<SelfhostLicenseEntitlementInput, 'license'> & {
       licenseKey: string;
       quantity: number;
-    }
+    },
+    options: { emit?: boolean } = {}
   ) {
+    const emit = options.emit ?? true;
     const entitlement = await this.findBySubject(
       'selfhost_license',
       input.licenseKey
@@ -415,20 +426,28 @@ export class EntitlementService {
         where: { id: entitlement.id },
         data,
       });
-      await this.emitEntitlementChanged(updated);
+      if (emit) {
+        await this.emitEntitlementChanged(updated);
+      }
       return updated;
     }
 
     const created = await this.db.entitlement.create({ data });
-    await this.emitEntitlementChanged(created);
+    if (emit) {
+      await this.emitEntitlementChanged(created);
+    }
     return created;
   }
 
-  async markSelfhostLicenseNeedsReupload(input: {
-    workspaceId?: string;
-    licenseKey: string;
-    reason: string;
-  }) {
+  async markSelfhostLicenseNeedsReupload(
+    input: {
+      workspaceId?: string;
+      licenseKey: string;
+      reason: string;
+    },
+    options: { emit?: boolean } = {}
+  ) {
+    const emit = options.emit ?? true;
     const entitlement = await this.findBySubject(
       'selfhost_license',
       input.licenseKey
@@ -454,12 +473,16 @@ export class EntitlementService {
         where: { id: entitlement.id },
         data,
       });
-      await this.emitEntitlementChanged(updated);
+      if (emit) {
+        await this.emitEntitlementChanged(updated);
+      }
       return updated;
     }
 
     const created = await this.db.entitlement.create({ data });
-    await this.emitEntitlementChanged(created);
+    if (emit) {
+      await this.emitEntitlementChanged(created);
+    }
     return created;
   }
 

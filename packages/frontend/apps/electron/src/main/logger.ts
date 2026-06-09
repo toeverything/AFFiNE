@@ -1,13 +1,15 @@
 import { app, shell } from 'electron';
 import log from 'electron-log/main';
 
+import { isDev } from './config';
+
 export const logger = log.scope('main');
 log.initialize({
   preload: false,
 });
 
 log.transports.file.level = 'info';
-log.transports.console.level = 'info';
+log.transports.console.level = isDev ? 'info' : false;
 
 export function getLogFilePath() {
   return log.transports.file.getFile().path;

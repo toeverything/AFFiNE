@@ -1117,6 +1117,39 @@ model Subscription {
   @@map("subscriptions")
 }
 
+model ProviderSubscription {
+  id                     String    @id @default(uuid()) @db.VarChar
+  provider               Provider
+  targetType             String    @map("target_type") @db.Text
+  targetId               String    @map("target_id") @db.VarChar
+  plan                   String    @db.VarChar(20)
+  recurring              String?   @db.VarChar(20)
+  status                 String    @db.VarChar(20)
+  externalCustomerId     String?   @map("external_customer_id") @db.VarChar
+  externalSubscriptionId String?   @map("external_subscription_id") @db.VarChar
+  externalProductId      String?   @map("external_product_id") @db.VarChar
+  externalPriceId        String?   @map("external_price_id") @db.VarChar
+  iapStore               IapStore? @map("iap_store")
+  externalRef            String?   @map("external_ref") @db.VarChar
+  currency               String?   @db.VarChar(3)
+  amount                 Int?      @db.Integer
+  quantity               Int?      @db.Integer
+  periodStart            DateTime? @map("period_start") @db.Timestamptz(3)
+  periodEnd              DateTime? @map("period_end") @db.Timestamptz(3)
+  trialStart             DateTime? @map("trial_start") @db.Timestamptz(3)
+  trialEnd               DateTime? @map("trial_end") @db.Timestamptz(3)
+  canceledAt             DateTime? @map("canceled_at") @db.Timestamptz(3)
+  metadata               Json      @default("{}") @db.JsonB
+  createdAt              DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt              DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([provider, externalSubscriptionId])
+  @@unique([provider, iapStore, externalRef, externalProductId, externalCustomerId])
+  @@index([targetType, targetId, plan, status])
+  @@index([provider, externalCustomerId])
+  @@map("provider_subscriptions")
+}
+
 enum Provider {
   stripe
   revenuecat
@@ -1146,6 +1179,50 @@ model Invoice {
 
   @@index([targetId])
   @@map("invoices")
+}
+
+model PaymentEvent {
+  id                 String    @id @default(uuid()) @db.VarChar
+  provider           Provider
+  eventType          String    @map("event_type") @db.VarChar
+  externalEventId    String    @map("external_event_id") @db.VarChar
+  targetType         String?   @map("target_type") @db.Text
+  targetId           String?   @map("target_id") @db.VarChar
+  externalInvoiceId  String?   @map("external_invoice_id") @db.VarChar
+  externalPaymentId  String?   @map("external_payment_id") @db.VarChar
+  plan               String?   @db.VarChar(20)
+  amount             Int?      @db.Integer
+  currency           String?   @db.VarChar(3)
+  occurredAt         DateTime? @map("occurred_at") @db.Timestamptz(3)
+  processingStatus   String    @default("pending") @map("processing_status") @db.VarChar(20)
+  processingAttempts Int       @default(0) @map("processing_attempts") @db.Integer
+  processedAt        DateTime? @map("processed_at") @db.Timestamptz(3)
+  lastError          String?   @map("last_error") @db.Text
+  metadata           Json      @default("{}") @db.JsonB
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([provider, externalEventId])
+  @@index([processingStatus, updatedAt])
+  @@index([targetType, targetId])
+  @@map("payment_events")
+}
+
+model SubscriptionTrialUsage {
+  id          String   @id @default(uuid()) @db.VarChar
+  targetType  String   @map("target_type") @db.Text
+  targetId    String   @map("target_id") @db.VarChar
+  plan        String   @db.VarChar(20)
+  provider    Provider
+  externalRef String?  @map("external_ref") @db.VarChar
+  firstUsedAt DateTime @default(now()) @map("first_used_at") @db.Timestamptz(3)
+  metadata    Json     @default("{}") @db.JsonB
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([targetType, targetId, plan])
+  @@index([provider, externalRef])
+  @@map("subscription_trial_usages")
 }
 
 model License {

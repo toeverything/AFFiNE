@@ -23,6 +23,33 @@ test.after.always(async () => {
   await module.close();
 });
 
+test('payment provider facts migration makes nullable provider identities explicit', t => {
+  const migration = readFileSync(
+    join(
+      process.cwd(),
+      'migrations/20260604000000_payment_provider_facts/migration.sql'
+    ),
+    'utf8'
+  );
+
+  t.regex(
+    migration,
+    /provider_subscriptions_stripe_identity_check[\s\S]*"provider" <> 'stripe' OR "external_subscription_id" IS NOT NULL/
+  );
+  t.regex(
+    migration,
+    /provider_subscriptions_revenuecat_identity_check[\s\S]*"provider" <> 'revenuecat' OR \("iap_store" IS NOT NULL AND "external_ref" IS NOT NULL AND "external_product_id" IS NOT NULL AND "external_customer_id" IS NOT NULL\)/
+  );
+  t.regex(
+    migration,
+    /CREATE UNIQUE INDEX "provider_subscriptions_provider_external_subscription_id_key" ON "provider_subscriptions"\("provider", "external_subscription_id"\)/
+  );
+  t.regex(
+    migration,
+    /CREATE UNIQUE INDEX "provider_subscriptions_revenuecat_external_identity_key" ON "provider_subscriptions"\("provider", "iap_store", "external_ref", "external_product_id", "external_customer_id"\)/
+  );
+});
+
 class TestPermissionProjectionModel extends PermissionProjectionModel {
   constructor(private readonly fakeDb: unknown) {
     super();
