@@ -30,6 +30,20 @@ export function shouldEnableEdgelessImmersive({
   return mode === 'edgeless' && isLandscape;
 }
 
+export function shouldLockEdgelessDocumentScroll(mode: 'page' | 'edgeless') {
+  return mode === 'edgeless';
+}
+
+export function shouldTrackMobileDetailPageTitleScroll(
+  mode: 'page' | 'edgeless'
+) {
+  return mode === 'page';
+}
+
+export function shouldShowMobileDetailPageTitle(scrollY: number) {
+  return scrollY >= 158;
+}
+
 export function isImmersiveTapTarget(target: EventTarget | null) {
   if (!(target instanceof HTMLElement)) {
     return false;

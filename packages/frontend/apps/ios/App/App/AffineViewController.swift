@@ -113,25 +113,45 @@ class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate {
         var wMaxHeap = 0;       // peak usedJSHeapSize (MB), if available
         var wMinZoom = null;    // smallest zoom seen (zoom-out is the trigger)
         var wMaxZoom = null;
+        var wMinZoomSource = null;
+        var wMinZoomSurfaceId = null;
         // Best-effort zoom read. The edgeless surface canvas carries a CSS
         // transform of scale(1/viewScale); the gfx viewport zoom is not on the
         // DOM, so we sniff a few known hooks and fall back to null. Wrapped in
         // try/catch so a missing hook can never break sampling.
-        function readZoom() {
+        function readZoomInfo() {
           try {
-            var el = document.querySelector(
+            var elements = document.querySelectorAll(
               'affine-edgeless-root, affine-edgeless-root-preview'
             );
-            if (el) {
+            var best = null;
+            for (var i = 0; i < elements.length; i++) {
+              var el = elements[i];
               var gfx = el.gfx || (el.service && el.service.gfx);
+              var zoom = null;
               if (gfx && gfx.viewport && typeof gfx.viewport.zoom === 'number') {
-                return gfx.viewport.zoom;
+                zoom = gfx.viewport.zoom;
+              } else if (
+                el.service &&
+                el.service.viewport &&
+                typeof el.service.viewport.zoom === 'number'
+              ) {
+                zoom = el.service.viewport.zoom;
               }
-              if (el.service && el.service.viewport &&
-                  typeof el.service.viewport.zoom === 'number') {
-                return el.service.viewport.zoom;
+              if (zoom === null) {
+                continue;
+              }
+              var source = el.tagName.toLowerCase();
+              var surfaceId = el.getAttribute('data-debug-surface-id');
+              if (!best || zoom < best.zoom) {
+                best = {
+                  zoom: zoom,
+                  source: source,
+                  surfaceId: surfaceId,
+                };
               }
             }
+            return best;
           } catch (e) {}
           return null;
         }
@@ -153,9 +173,14 @@ class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate {
             var heap = performance.memory.usedJSHeapSize / 1048576;
             if (heap > wMaxHeap) wMaxHeap = heap;
           }
-          var z = readZoom();
-          if (z !== null) {
-            if (wMinZoom === null || z < wMinZoom) wMinZoom = z;
+          var zoomInfo = readZoomInfo();
+          if (zoomInfo !== null) {
+            var z = zoomInfo.zoom;
+            if (wMinZoom === null || z < wMinZoom) {
+              wMinZoom = z;
+              wMinZoomSource = zoomInfo.source;
+              wMinZoomSurfaceId = zoomInfo.surfaceId;
+            }
             if (wMaxZoom === null || z > wMaxZoom) wMaxZoom = z;
           }
         }
@@ -165,6 +190,49 @@ class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate {
           lastRaf = now;
           sample();
           requestAnimationFrame(rafLoop);
+        }
+        function readAndResetEditorCounters() {
+          var counters = window.__affineDiagCounters;
+          if (!counters) {
+            return null;
+          }
+          var snapshot = {
+            pageScrollSaves: counters.pageScrollSaves || 0,
+            edgelessViewportEvents: counters.edgelessViewportEvents || 0,
+            edgelessViewportWrites: counters.edgelessViewportWrites || 0,
+            edgelessScrollEvents: counters.edgelessScrollEvents || 0,
+            edgelessScrollTopMax: counters.edgelessScrollTopMax || 0,
+            gestureTransformWrites: counters.gestureTransformWrites || 0,
+            gestureTransformSkips: counters.gestureTransformSkips || 0,
+            pureTranslateWrites: counters.pureTranslateWrites || 0,
+            pureTranslateSkips: counters.pureTranslateSkips || 0,
+            viewportRefreshCalls: counters.viewportRefreshCalls || 0,
+            viewportTrailingRefreshCalls: counters.viewportTrailingRefreshCalls || 0,
+            viewportChunkedRefreshCalls: counters.viewportChunkedRefreshCalls || 0,
+            blockActivateCount: counters.blockActivateCount || 0,
+            blockDeactivateCount: counters.blockDeactivateCount || 0,
+            previewViewportUpdated: counters.previewViewportUpdated || 0,
+            previewLayerRefresh: counters.previewLayerRefresh || 0,
+            previewResizeEvents: counters.previewResizeEvents || 0,
+          };
+          counters.pageScrollSaves = 0;
+          counters.edgelessViewportEvents = 0;
+          counters.edgelessViewportWrites = 0;
+          counters.edgelessScrollEvents = 0;
+          counters.edgelessScrollTopMax = 0;
+          counters.gestureTransformWrites = 0;
+          counters.gestureTransformSkips = 0;
+          counters.pureTranslateWrites = 0;
+          counters.pureTranslateSkips = 0;
+          counters.viewportRefreshCalls = 0;
+          counters.viewportTrailingRefreshCalls = 0;
+          counters.viewportChunkedRefreshCalls = 0;
+          counters.blockActivateCount = 0;
+          counters.blockDeactivateCount = 0;
+          counters.previewViewportUpdated = 0;
+          counters.previewLayerRefresh = 0;
+          counters.previewResizeEvents = 0;
+          return snapshot;
         }
         requestAnimationFrame(rafLoop);
         // Every 250ms, post the windowed maxima. setInterval drift is itself a
@@ -176,6 +244,7 @@ class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate {
           expected = now + 250;
           // Make sure we have at least one fresh reading even if rAF is starved.
           sample();
+          var editorCounters = readAndResetEditorCounters();
           post(JSON.stringify({
             t: Math.round(now),
             rafGap: Math.round(maxRafGap),
@@ -187,7 +256,26 @@ class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate {
             blocks: wMaxBlocks,
             heapMB: Math.round(wMaxHeap),
             zMin: wMinZoom === null ? null : Math.round(wMinZoom * 100) / 100,
-            zMax: wMaxZoom === null ? null : Math.round(wMaxZoom * 100) / 100
+            zMinSource: wMinZoomSource,
+            zMinSurfaceId: wMinZoomSurfaceId,
+            zMax: wMaxZoom === null ? null : Math.round(wMaxZoom * 100) / 100,
+            pageScrollSaves: editorCounters ? editorCounters.pageScrollSaves : 0,
+            edgelessViewportEvents: editorCounters ? editorCounters.edgelessViewportEvents : 0,
+            edgelessViewportWrites: editorCounters ? editorCounters.edgelessViewportWrites : 0,
+            edgelessScrollEvents: editorCounters ? editorCounters.edgelessScrollEvents : 0,
+            edgelessScrollTopMax: editorCounters ? editorCounters.edgelessScrollTopMax : 0,
+            gestureTransformWrites: editorCounters ? editorCounters.gestureTransformWrites : 0,
+            gestureTransformSkips: editorCounters ? editorCounters.gestureTransformSkips : 0,
+            pureTranslateWrites: editorCounters ? editorCounters.pureTranslateWrites : 0,
+            pureTranslateSkips: editorCounters ? editorCounters.pureTranslateSkips : 0,
+            viewportRefreshCalls: editorCounters ? editorCounters.viewportRefreshCalls : 0,
+            viewportTrailingRefreshCalls: editorCounters ? editorCounters.viewportTrailingRefreshCalls : 0,
+            viewportChunkedRefreshCalls: editorCounters ? editorCounters.viewportChunkedRefreshCalls : 0,
+            blockActivateCount: editorCounters ? editorCounters.blockActivateCount : 0,
+            blockDeactivateCount: editorCounters ? editorCounters.blockDeactivateCount : 0,
+            previewViewportUpdated: editorCounters ? editorCounters.previewViewportUpdated : 0,
+            previewLayerRefresh: editorCounters ? editorCounters.previewLayerRefresh : 0,
+            previewResizeEvents: editorCounters ? editorCounters.previewResizeEvents : 0
           }));
           maxRafGap = 0;
           wMaxCanvases = 0;
@@ -198,6 +286,8 @@ class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate {
           wMaxHeap = 0;
           wMinZoom = null;
           wMaxZoom = null;
+          wMinZoomSource = null;
+          wMinZoomSurfaceId = null;
         }, 250);
       })();
     """

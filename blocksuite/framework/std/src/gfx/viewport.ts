@@ -182,11 +182,23 @@ export class Viewport {
     top: number;
   }>();
 
+  resizeStarted = new Subject<{
+    width: number;
+    height: number;
+    left: number;
+    top: number;
+  }>();
+
   viewportMoved = new Subject<IVec>();
 
   viewportUpdated = new Subject<{
     zoom: number;
     center: IVec;
+  }>();
+
+  zoomUpdated = new Subject<{
+    previousZoom: number;
+    zoom: number;
   }>();
 
   zooming$ = new BehaviorSubject<boolean>(false);
@@ -478,8 +490,10 @@ export class Viewport {
   dispose() {
     this.clearViewportElement();
     this.sizeUpdated.complete();
+    this.resizeStarted.complete();
     this.viewportMoved.complete();
     this.viewportUpdated.complete();
+    this.zoomUpdated.complete();
     this._resizeSubject.complete();
     this.zooming$.complete();
     this.panning$.complete();
@@ -538,6 +552,12 @@ export class Viewport {
 
     this._left = left;
     this._top = top;
+    this.resizeStarted.next({
+      left,
+      top,
+      width,
+      height,
+    });
     this._resizeSubject.next({
       left,
       top,
@@ -732,6 +752,7 @@ export class Viewport {
     // fire mid-gesture.
     this.zooming$.next(true);
     this.setCenter(newCenter[0], newCenter[1], forceUpdate);
+    this.zoomUpdated.next({ previousZoom: prevZoom, zoom: newZoom });
     // setCenter already emits viewportUpdated, no need to emit again here.
     this._resetZooming();
   }

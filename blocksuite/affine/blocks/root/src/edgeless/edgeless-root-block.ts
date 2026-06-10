@@ -407,6 +407,7 @@ export class EdgelessRootBlockComponent extends BlockComponent<
 
   override connectedCallback() {
     super.connectedCallback();
+    this.dataset.debugSurfaceId = `root-${this.model.id}`;
 
     this._initViewport();
 

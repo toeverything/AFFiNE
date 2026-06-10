@@ -147,7 +147,7 @@ export class ViewportTurboRendererExtension extends GfxExtension {
 
     this.viewport.elementReady.pipe(take(1)).subscribe(element => {
       this.viewportElement = element;
-      syncCanvasSize(this.canvas, this.std.host);
+      syncCanvasSize(this.canvas, this.std.host, this.viewport.zoom);
       this.state$.next('pending');
 
       this.disposables.add(
@@ -463,7 +463,7 @@ export class ViewportTurboRendererExtension extends GfxExtension {
 
   private handleResize() {
     this.debugLog('Container resized, syncing canvas size');
-    syncCanvasSize(this.canvas, this.std.host);
+    syncCanvasSize(this.canvas, this.std.host, this.viewport.zoom);
     this.invalidate();
     this.refresh$.next();
   }

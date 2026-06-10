@@ -39,12 +39,11 @@ viewportRuntimeConfig.VIEWPORT_REFRESH_PIXEL_THRESHOLD = 60;
 viewportRuntimeConfig.VIEWPORT_REFRESH_MAX_INTERVAL = 300;
 viewportRuntimeConfig.SKIP_REFRESH_DURING_GESTURE = true;
 
-// Pre-paint a 35% margin on every side of the viewport for *canvas* culling
-// only. Connectors and shapes land on already-rendered content, so the canvas
-// no longer blanks during the gesture. This is cheap because the canvas tile
-// set is fixed — overscan only paints more vector ops onto it, with near-zero
-// extra resident memory.
-viewportRuntimeConfig.OVERSCAN_RATIO = 0.35;
+// Pre-paint a 20% margin on every side of the viewport for *canvas* culling
+// only. This still keeps nearby connectors/shapes warm during orientation and
+// zoom gestures, but trims the transient paint budget versus the previous 35%
+// setting so low-zoom survival mode has less work to recover from on iOS.
+viewportRuntimeConfig.OVERSCAN_RATIO = 0.2;
 
 // Keep DOM block mounting on the exact visible bound (no overscan). Each mounted
 // block adds a composited layer subtree to the WebContent process; widening this

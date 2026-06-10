@@ -27,6 +27,20 @@ import { type StyleInfo, styleMap } from 'lit/directives/style-map.js';
 
 import { isCanvasElement } from '../edgeless/utils/query';
 
+type AffineDiagCounters = {
+  previewViewportUpdated?: number;
+  previewLayerRefresh?: number;
+  previewResizeEvents?: number;
+};
+
+function getAffineDiagCounters() {
+  const win = globalThis as typeof globalThis & {
+    __affineDiagCounters?: AffineDiagCounters;
+  };
+
+  return (win.__affineDiagCounters ??= {});
+}
+
 export class EdgelessRootPreviewBlockComponent extends BlockComponent<RootBlockModel> {
   static override styles = css`
     affine-edgeless-root-preview {
@@ -70,7 +84,10 @@ export class EdgelessRootPreviewBlockComponent extends BlockComponent<RootBlockM
     () => {
       const { zoom, translateX, translateY } = this._viewport;
       const gap = getBgGridGap(zoom);
+      const diagCounters = getAffineDiagCounters();
 
+      diagCounters.previewLayerRefresh =
+        (diagCounters.previewLayerRefresh ?? 0) + 1;
       this.backgroundStyle = {
         backgroundPosition: `${translateX}px ${translateY}px`,
         backgroundSize: `${gap}px ${gap}px`,
@@ -142,6 +159,9 @@ export class EdgelessRootPreviewBlockComponent extends BlockComponent<RootBlockM
 
   private _initResizeEffect() {
     const resizeObserver = new ResizeObserver((_: ResizeObserverEntry[]) => {
+      const diagCounters = getAffineDiagCounters();
+      diagCounters.previewResizeEvents =
+        (diagCounters.previewResizeEvents ?? 0) + 1;
       this._gfx.selection.set(this._gfx.selection.surfaceSelections);
       this._gfx.viewport.onResize();
     });
@@ -176,6 +196,7 @@ export class EdgelessRootPreviewBlockComponent extends BlockComponent<RootBlockM
 
   override connectedCallback() {
     super.connectedCallback();
+    this.dataset.debugSurfaceId = `preview-${this.model.id}`;
 
     this.handleEvent('selectionChange', () => {
       const surface = this.host.selection.value.find(
@@ -210,6 +231,9 @@ export class EdgelessRootPreviewBlockComponent extends BlockComponent<RootBlockM
 
     this._disposables.add(
       this._gfx.viewport.viewportUpdated.subscribe(() => {
+        const diagCounters = getAffineDiagCounters();
+        diagCounters.previewViewportUpdated =
+          (diagCounters.previewViewportUpdated ?? 0) + 1;
         this._refreshLayerViewport();
       })
     );

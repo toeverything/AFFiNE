@@ -1,5 +1,5 @@
 import type { EditorHost, GfxBlockComponent } from '@blocksuite/std';
-import { type Viewport } from '@blocksuite/std/gfx';
+import { getEffectiveDpr, type Viewport } from '@blocksuite/std/gfx';
 import type { BlockModel } from '@blocksuite/store';
 
 import { BlockLayoutHandlersIdentifier } from './layout/block-layout-provider';
@@ -10,9 +10,13 @@ import type {
   ViewportLayoutTree,
 } from './types';
 
-export function syncCanvasSize(canvas: HTMLCanvasElement, host: HTMLElement) {
+export function syncCanvasSize(
+  canvas: HTMLCanvasElement,
+  host: HTMLElement,
+  zoom = 1
+) {
   const hostRect = host.getBoundingClientRect();
-  const dpr = window.devicePixelRatio;
+  const dpr = getEffectiveDpr(zoom);
   canvas.style.position = 'absolute';
   canvas.style.left = '0px';
   canvas.style.top = '0px';
@@ -186,7 +190,7 @@ export function paintPlaceholder(
   const ctx = canvas.getContext('2d');
   if (!ctx || !layout) return;
 
-  const dpr = window.devicePixelRatio;
+  const dpr = getEffectiveDpr(viewport.zoom);
   const { overallRect } = layout;
   const layoutViewCoord = viewport.toViewCoord(overallRect.x, overallRect.y);
 

@@ -27,6 +27,34 @@ import type { WorkspaceService } from '../../workspace';
 import { EditorScope } from '../scopes/editor';
 import type { EditorSelector } from '../types';
 
+type AffineDiagCounters = {
+  pageScrollSaves: number;
+  edgelessViewportEvents: number;
+  edgelessViewportWrites: number;
+  edgelessScrollEvents: number;
+  edgelessScrollTopMax: number;
+};
+
+function getAffineDiagCounters() {
+  if (!BUILD_CONFIG.isMobileEdition || typeof window === 'undefined') {
+    return null;
+  }
+
+  const win = window as Window & {
+    __affineDiagCounters?: AffineDiagCounters;
+  };
+
+  win.__affineDiagCounters ??= {
+    pageScrollSaves: 0,
+    edgelessViewportEvents: 0,
+    edgelessViewportWrites: 0,
+    edgelessScrollEvents: 0,
+    edgelessScrollTopMax: 0,
+  };
+
+  return win.__affineDiagCounters;
+}
+
 export class Editor extends Entity {
   readonly scope = this.framework.createScope(EditorScope, {
     editor: this as Editor,
@@ -318,29 +346,82 @@ export class Editor extends Entity {
     }
 
     // update scroll position when scrollViewport scroll
-    const saveScrollPosition = () => {
-      if (this.mode$.value === 'page' && scrollViewport) {
-        this.scrollPosition.page = scrollViewport.scrollTop;
-        this.workbenchView?.setScrollPosition(scrollViewport.scrollTop);
-      } else if (this.mode$.value === 'edgeless' && gfx) {
-        const pos = {
-          centerX: gfx.viewport.centerX,
-          centerY: gfx.viewport.centerY,
-          zoom: gfx.viewport.zoom,
-        };
-        this.scrollPosition.edgeless = pos;
-        this.workbenchView?.setScrollPosition(pos);
+    const diagCounters = getAffineDiagCounters();
+    let edgelessWriteTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const flushEdgelessScrollPosition = () => {
+      if (edgelessWriteTimer) {
+        clearTimeout(edgelessWriteTimer);
+        edgelessWriteTimer = null;
       }
+
+      const pos = this.scrollPosition.edgeless;
+      if (!pos) {
+        return;
+      }
+
+      diagCounters && (diagCounters.edgelessViewportWrites += 1);
+      this.workbenchView?.setScrollPosition(pos);
     };
-    scrollViewport?.addEventListener('scroll', saveScrollPosition);
+
+    const savePageScrollPosition = () => {
+      if (!scrollViewport || this.mode$.value !== 'page') {
+        return;
+      }
+
+      diagCounters && (diagCounters.pageScrollSaves += 1);
+      this.scrollPosition.page = scrollViewport.scrollTop;
+      this.workbenchView?.setScrollPosition(scrollViewport.scrollTop);
+    };
+
+    const saveEdgelessScrollPosition = () => {
+      if (!gfx || this.mode$.value !== 'edgeless') {
+        return;
+      }
+
+      diagCounters && (diagCounters.edgelessViewportEvents += 1);
+      this.scrollPosition.edgeless = {
+        centerX: gfx.viewport.centerX,
+        centerY: gfx.viewport.centerY,
+        zoom: gfx.viewport.zoom,
+      };
+
+      if (edgelessWriteTimer) {
+        clearTimeout(edgelessWriteTimer);
+      }
+      edgelessWriteTimer = setTimeout(() => {
+        flushEdgelessScrollPosition();
+      }, 160);
+    };
+
+    const handleViewportScroll = () => {
+      if (this.mode$.value === 'edgeless' && scrollViewport) {
+        if (diagCounters) {
+          diagCounters.edgelessScrollEvents += 1;
+          diagCounters.edgelessScrollTopMax = Math.max(
+            diagCounters.edgelessScrollTopMax,
+            scrollViewport.scrollTop
+          );
+        }
+        return;
+      }
+
+      savePageScrollPosition();
+    };
+
+    scrollViewport?.addEventListener('scroll', handleViewportScroll);
     unsubs.push(() => {
-      scrollViewport?.removeEventListener('scroll', saveScrollPosition);
+      scrollViewport?.removeEventListener('scroll', handleViewportScroll);
     });
     if (gfx) {
-      const subscription =
-        gfx.viewport.viewportUpdated.subscribe(saveScrollPosition);
+      const subscription = gfx.viewport.viewportUpdated.subscribe(() => {
+        saveEdgelessScrollPosition();
+      });
       unsubs.push(subscription.unsubscribe.bind(subscription));
     }
+    unsubs.push(() => {
+      flushEdgelessScrollPosition();
+    });
 
     // update selection when focusAt$ changed
     const subscription = this.focusAt$

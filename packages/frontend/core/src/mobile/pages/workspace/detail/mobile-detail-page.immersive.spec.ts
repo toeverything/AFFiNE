@@ -10,6 +10,9 @@ import {
   isLandscapeWindow,
   isTapWithinSlop,
   shouldEnableEdgelessImmersive,
+  shouldLockEdgelessDocumentScroll,
+  shouldShowMobileDetailPageTitle,
+  shouldTrackMobileDetailPageTitleScroll,
 } from './mobile-detail-page.immersive';
 
 describe('mobile detail page immersive helpers', () => {
@@ -116,5 +119,21 @@ describe('mobile detail page immersive helpers', () => {
         tabBarOffset: 'var(--appTabSafeArea)',
       })
     ).toBeUndefined();
+  });
+
+  test('locks document scroll whenever edgeless mode is active', () => {
+    expect(shouldLockEdgelessDocumentScroll('edgeless')).toBe(true);
+    expect(shouldLockEdgelessDocumentScroll('page')).toBe(false);
+  });
+
+  test('tracks title scroll only in page mode', () => {
+    expect(shouldTrackMobileDetailPageTitleScroll('page')).toBe(true);
+    expect(shouldTrackMobileDetailPageTitleScroll('edgeless')).toBe(false);
+  });
+
+  test('shows title only after crossing the existing scroll threshold', () => {
+    expect(shouldShowMobileDetailPageTitle(157)).toBe(false);
+    expect(shouldShowMobileDetailPageTitle(158)).toBe(true);
+    expect(shouldShowMobileDetailPageTitle(240)).toBe(true);
   });
 });

@@ -8,7 +8,6 @@ import { useNavigateHelper } from '@affine/core/components/hooks/use-navigate-he
 import { PageDetailEditor } from '@affine/core/components/page-detail-editor';
 import { DetailPageWrapper } from '@affine/core/desktop/pages/workspace/detail-page/detail-page-wrapper';
 import { PageHeader } from '@affine/core/mobile/components';
-import { useGlobalEvent } from '@affine/core/mobile/hooks/use-global-events';
 import { AIButtonService } from '@affine/core/modules/ai-button';
 import { ServerService } from '@affine/core/modules/cloud';
 import { DocService } from '@affine/core/modules/doc';
@@ -51,6 +50,9 @@ import {
   isLandscapeWindow,
   isTapWithinSlop,
   shouldEnableEdgelessImmersive,
+  shouldLockEdgelessDocumentScroll,
+  shouldShowMobileDetailPageTitle,
+  shouldTrackMobileDetailPageTitleScroll,
 } from './mobile-detail-page.immersive';
 import { PageHeaderMenuButton } from './page-header-more-button';
 import { PageHeaderShareButton } from './page-header-share-button';
@@ -217,6 +219,7 @@ const DetailPageImpl = ({
     chromeVisible,
     tabBarOffset: globalVars.appTabSafeArea,
   });
+  const lockDocumentScroll = shouldLockEdgelessDocumentScroll(mode);
 
   const immersiveViewportStyle = immersiveZoomToolbarBottom
     ? ({
@@ -229,6 +232,7 @@ const DetailPageImpl = ({
       <div className={styles.mainContainer}>
         <div
           data-mode={mode}
+          data-lock-document-scroll={lockDocumentScroll ? 'true' : undefined}
           ref={scrollViewportRef}
           style={immersiveViewportStyle}
           className={clsx(
@@ -266,7 +270,8 @@ const skeletonWithBack = getSkeleton(true);
 const notFound = getNotFound(false);
 const notFoundWithBack = getNotFound(true);
 
-const checkShowTitle = () => window.scrollY >= 158;
+const getShouldShowTitle = () =>
+  shouldShowMobileDetailPageTitle(window.scrollY);
 
 const getIsLandscape = () =>
   isLandscapeWindow({
@@ -275,12 +280,94 @@ const getIsLandscape = () =>
     matchesLandscape: window.matchMedia('(orientation: landscape)').matches,
   });
 
+const MobileDetailPageHeader = ({
+  date,
+  fromTab,
+  title,
+  allJournalDates,
+  handleDateChange,
+  trackScrollTitle,
+}: {
+  date?: string;
+  fromTab: boolean;
+  title?: string;
+  allJournalDates: Set<string | null | undefined>;
+  handleDateChange: (date: string) => void;
+  trackScrollTitle: boolean;
+}) => {
+  const [showTitle, setShowTitle] = useState(getShouldShowTitle);
+
+  useEffect(() => {
+    if (!trackScrollTitle) {
+      return;
+    }
+
+    let frame = 0;
+
+    const updateShowTitle = () => {
+      frame = 0;
+      setShowTitle(prev => {
+        const next = getShouldShowTitle();
+        return prev === next ? prev : next;
+      });
+    };
+
+    const handleScroll = () => {
+      if (frame) {
+        return;
+      }
+
+      frame = window.requestAnimationFrame(updateShowTitle);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    handleScroll();
+
+    return () => {
+      if (frame) {
+        window.cancelAnimationFrame(frame);
+      }
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [trackScrollTitle]);
+
+  return (
+    <PageHeader
+      back={!fromTab}
+      className={styles.header}
+      contentClassName={styles.headerContent}
+      suffix={
+        <>
+          <PageHeaderShareButton />
+          <PageHeaderMenuButton />
+        </>
+      }
+      bottom={
+        date ? (
+          <JournalDatePicker
+            date={date}
+            onChange={handleDateChange}
+            withDotDates={allJournalDates}
+            className={styles.journalDatePicker}
+          />
+        ) : null
+      }
+      bottomSpacer={94}
+    >
+      <span data-show={!!date || showTitle} className={styles.headerTitle}>
+        {date
+          ? i18nTime(dayjs(date), { absolute: { accuracy: 'month' } })
+          : title}
+      </span>
+    </PageHeader>
+  );
+};
+
 const MobileDetailPageContent = ({
   pageId,
   date,
   fromTab,
   title,
-  showTitle,
   allJournalDates,
   handleDateChange,
 }: {
@@ -288,7 +375,6 @@ const MobileDetailPageContent = ({
   date?: string;
   fromTab: boolean;
   title?: string;
-  showTitle: boolean;
   allJournalDates: Set<string | null | undefined>;
   handleDateChange: (date: string) => void;
 }) => {
@@ -304,16 +390,34 @@ const MobileDetailPageContent = ({
   } | null>(null);
 
   const immersive = shouldEnableEdgelessImmersive({ mode, isLandscape });
+  const trackScrollTitle = shouldTrackMobileDetailPageTitleScroll(mode);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(orientation: landscape)');
-    const updateLandscape = () => setIsLandscape(getIsLandscape());
+    let frame = 0;
+
+    const updateLandscape = () => {
+      if (frame) {
+        window.cancelAnimationFrame(frame);
+      }
+
+      frame = window.requestAnimationFrame(() => {
+        frame = 0;
+        setIsLandscape(prev => {
+          const next = getIsLandscape();
+          return prev === next ? prev : next;
+        });
+      });
+    };
 
     updateLandscape();
     window.addEventListener('resize', updateLandscape);
     mediaQuery.addEventListener('change', updateLandscape);
 
     return () => {
+      if (frame) {
+        window.cancelAnimationFrame(frame);
+      }
       window.removeEventListener('resize', updateLandscape);
       mediaQuery.removeEventListener('change', updateLandscape);
     };
@@ -376,34 +480,14 @@ const MobileDetailPageContent = ({
   return (
     <>
       {(!immersive || chromeVisible) && (
-        <PageHeader
-          back={!fromTab}
-          className={styles.header}
-          contentClassName={styles.headerContent}
-          suffix={
-            <>
-              <PageHeaderShareButton />
-              <PageHeaderMenuButton />
-            </>
-          }
-          bottom={
-            date ? (
-              <JournalDatePicker
-                date={date}
-                onChange={handleDateChange}
-                withDotDates={allJournalDates}
-                className={styles.journalDatePicker}
-              />
-            ) : null
-          }
-          bottomSpacer={94}
-        >
-          <span data-show={!!date || showTitle} className={styles.headerTitle}>
-            {date
-              ? i18nTime(dayjs(date), { absolute: { accuracy: 'month' } })
-              : title}
-          </span>
-        </PageHeader>
+        <MobileDetailPageHeader
+          date={date}
+          fromTab={fromTab}
+          title={title}
+          allJournalDates={allJournalDates}
+          handleDateChange={handleDateChange}
+          trackScrollTitle={trackScrollTitle}
+        />
       )}
       <JournalConflictBlock date={date} />
       <DetailPageImpl
@@ -411,9 +495,10 @@ const MobileDetailPageContent = ({
         chromeVisible={chromeVisible}
         immersiveTapHandlers={immersiveTapHandlers}
       />
-      {(!immersive || chromeVisible) && (
-        <AppTabs background={cssVarV2('layer/background/primary')} />
-      )}
+      <AppTabs
+        background={cssVarV2('layer/background/primary')}
+        hidden={immersive && !chromeVisible}
+      />
     </>
   );
 };
@@ -428,7 +513,6 @@ const MobileDetailPage = ({
   const docDisplayMetaService = useService(DocDisplayMetaService);
   const journalService = useService(JournalService);
   const workbench = useService(WorkbenchService).workbench;
-  const [showTitle, setShowTitle] = useState(checkShowTitle);
   const title = useLiveData(docDisplayMetaService.title$(pageId));
 
   const canAccess = useGuard('Doc_Read', pageId);
@@ -453,11 +537,6 @@ const MobileDetailPage = ({
     [fromTab, journalService, workbench]
   );
 
-  useGlobalEvent(
-    'scroll',
-    useCallback(() => setShowTitle(checkShowTitle()), [])
-  );
-
   return (
     <div className={styles.root}>
       <DetailPageWrapper
@@ -472,7 +551,6 @@ const MobileDetailPage = ({
           date={date}
           fromTab={fromTab}
           title={title}
-          showTitle={showTitle}
           allJournalDates={allJournalDates}
           handleDateChange={handleDateChange}
         />
