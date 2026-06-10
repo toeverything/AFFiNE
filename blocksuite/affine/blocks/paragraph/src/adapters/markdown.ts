@@ -82,7 +82,7 @@ const flattenMarkdownBlockToDelta = (
       const list = node as List;
       return joinDeltaLines(
         list.children.map((item, index) => {
-          const order = list.start ? list.start + index : index + 1;
+          const order = (list.start ?? 1) + index;
           const prefix =
             '  '.repeat(depth) + (list.ordered ? `${order}. ` : '- ');
           return flattenListItemToDelta(item, deltaConverter, prefix, depth);
