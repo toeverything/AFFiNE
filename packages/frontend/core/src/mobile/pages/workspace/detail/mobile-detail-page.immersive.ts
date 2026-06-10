@@ -48,3 +48,23 @@ export function isTapWithinSlop(
     Math.abs(start.clientY - end.clientY) <= slop
   );
 }
+
+export function getImmersiveZoomToolbarBottom({
+  immersive,
+  chromeVisible,
+  tabBarOffset,
+}: {
+  immersive: boolean;
+  chromeVisible: boolean;
+  tabBarOffset?: string;
+}) {
+  if (!immersive) {
+    return undefined;
+  }
+
+  if (chromeVisible && tabBarOffset) {
+    return `calc(10px + ${tabBarOffset})`;
+  }
+
+  return '10px';
+}

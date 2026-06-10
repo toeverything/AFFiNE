@@ -5,6 +5,7 @@
 import { describe, expect, test } from 'vitest';
 
 import {
+  getImmersiveZoomToolbarBottom,
   isImmersiveTapTarget,
   isLandscapeWindow,
   isTapWithinSlop,
@@ -90,5 +91,30 @@ describe('mobile detail page immersive helpers', () => {
         { clientX: 120, clientY: 205 }
       )
     ).toBe(false);
+  });
+
+  test('raises zoom toolbar above tab bar only when immersive chrome is visible', () => {
+    expect(
+      getImmersiveZoomToolbarBottom({
+        immersive: true,
+        chromeVisible: false,
+      })
+    ).toBe('10px');
+
+    expect(
+      getImmersiveZoomToolbarBottom({
+        immersive: true,
+        chromeVisible: true,
+        tabBarOffset: 'var(--appTabSafeArea)',
+      })
+    ).toBe('calc(10px + var(--appTabSafeArea))');
+
+    expect(
+      getImmersiveZoomToolbarBottom({
+        immersive: false,
+        chromeVisible: true,
+        tabBarOffset: 'var(--appTabSafeArea)',
+      })
+    ).toBeUndefined();
   });
 });

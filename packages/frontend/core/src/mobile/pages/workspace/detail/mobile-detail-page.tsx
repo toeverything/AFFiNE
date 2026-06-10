@@ -41,10 +41,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { AppTabs } from '../../../components';
+import { globalVars } from '../../../styles/variables.css';
 import { JournalConflictBlock } from './journal-conflict-block';
 import { JournalDatePicker } from './journal-date-picker';
 import * as styles from './mobile-detail-page.css';
 import {
+  getImmersiveZoomToolbarBottom,
   isImmersiveTapTarget,
   isLandscapeWindow,
   isTapWithinSlop,
@@ -61,9 +63,11 @@ type ImmersiveTapHandlers = {
 
 const DetailPageImpl = ({
   immersive,
+  chromeVisible,
   immersiveTapHandlers,
 }: {
   immersive: boolean;
+  chromeVisible: boolean;
   immersiveTapHandlers?: ImmersiveTapHandlers;
 }) => {
   const {
@@ -208,9 +212,15 @@ const DetailPageImpl = ({
     !enableKeyboardToolbar ||
     (mode === 'edgeless' && !enableEdgelessEditing);
 
-  const immersiveViewportStyle = immersive
+  const immersiveZoomToolbarBottom = getImmersiveZoomToolbarBottom({
+    immersive,
+    chromeVisible,
+    tabBarOffset: globalVars.appTabSafeArea,
+  });
+
+  const immersiveViewportStyle = immersiveZoomToolbarBottom
     ? ({
-        '--affine-edgeless-zoom-toolbar-bottom': '10px',
+        '--affine-edgeless-zoom-toolbar-bottom': immersiveZoomToolbarBottom,
       } as CSSProperties)
     : undefined;
 
@@ -398,6 +408,7 @@ const MobileDetailPageContent = ({
       <JournalConflictBlock date={date} />
       <DetailPageImpl
         immersive={immersive}
+        chromeVisible={chromeVisible}
         immersiveTapHandlers={immersiveTapHandlers}
       />
       {(!immersive || chromeVisible) && (
