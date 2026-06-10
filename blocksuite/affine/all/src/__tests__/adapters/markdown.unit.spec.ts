@@ -270,6 +270,54 @@ Hello world
     expect(meta?.tags).toEqual(['a', 'b']);
   });
 
+  test('preserves list text inside blockquotes without list blocks', async () => {
+    const markdown = `> **Shopping List:**
+> - Apples
+> - Bananas
+> - Oranges
+`;
+    const mdAdapter = new MarkdownAdapter(createJob(), provider);
+    const snapshot = await mdAdapter.toDocSnapshot({
+      file: markdown,
+      assets: new AssetsManager({ blob: new MemoryBlobCRUD() }),
+    });
+
+    expect(simplifyBlockForSnapshot(snapshot.blocks, new Map())).toMatchObject({
+      children: [
+        {
+          flavour: 'affine:note',
+          children: [
+            {
+              flavour: 'affine:paragraph',
+              type: 'quote',
+              delta: [
+                { insert: 'Shopping List:' },
+                { insert: '\n' },
+                { insert: '- ' },
+                { insert: 'Apples' },
+                { insert: '\n' },
+                { insert: '- ' },
+                { insert: 'Bananas' },
+                { insert: '\n' },
+                { insert: '- ' },
+                { insert: 'Oranges' },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    const exported = await mdAdapter.fromDocSnapshot({
+      snapshot,
+      assets: new AssetsManager({ blob: new MemoryBlobCRUD() }),
+    });
+    expect(exported.file).toContain('> **Shopping List:**');
+    expect(exported.file).toContain('> \\- Apples');
+    expect(exported.file).toContain('> \\- Bananas');
+    expect(exported.file).toContain('> \\- Oranges');
+  });
+
   test('imports obsidian vault fixtures', async () => {
     const schema = new Schema().register(AffineSchemas);
     const collection = new TestWorkspace();
