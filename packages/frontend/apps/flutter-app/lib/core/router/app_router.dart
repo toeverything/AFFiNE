@@ -7,7 +7,8 @@ import '../../features/auth/presentation/pages/magic_link_page.dart';
 import '../../features/auth/presentation/pages/oauth_callback_page.dart';
 import '../../features/workspace/presentation/pages/workspace_list_page.dart';
 import '../../features/workspace/presentation/pages/workspace_home_page.dart';
-import '../../shared/widgets/app_scaffold.dart';
+import '../../features/document/presentation/pages/all_docs_page.dart';
+import '../../features/document/presentation/pages/document_detail_page.dart';
 import 'route_names.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -59,17 +60,27 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: 'workspaceList',
         builder: (context, state) => const WorkspaceListPage(),
       ),
-      ShellRoute(
-        builder: (context, state, child) => AppScaffold(child: child),
-        routes: [
-          GoRoute(
-            path: '/workspace/:workspaceId/home',
-            name: 'workspaceHome',
-            builder: (context, state) => WorkspaceHomePage(
-              workspaceId: state.pathParameters['workspaceId']!,
-            ),
-          ),
-        ],
+      GoRoute(
+        path: '/workspace/:workspaceId/home',
+        name: 'workspaceHome',
+        builder: (context, state) => WorkspaceHomePage(
+          workspaceId: state.pathParameters['workspaceId']!,
+        ),
+      ),
+      GoRoute(
+        path: '/workspace/:workspaceId/all',
+        name: 'workspaceAllDocs',
+        builder: (context, state) => AllDocsPage(
+          workspaceId: state.pathParameters['workspaceId']!,
+        ),
+      ),
+      GoRoute(
+        path: '/workspace/:workspaceId/doc/:pageId',
+        name: 'documentDetail',
+        builder: (context, state) => DocumentDetailPage(
+          workspaceId: state.pathParameters['workspaceId']!,
+          documentId: state.pathParameters['pageId']!,
+        ),
       ),
     ],
   );

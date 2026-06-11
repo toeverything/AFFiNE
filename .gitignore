@@ -80,6 +80,8 @@ target
 *.node
 tsconfig.node.tsbuildinfo
 lib
+!/packages/frontend/apps/flutter-app/lib/
+!/packages/frontend/apps/flutter-app/lib/**
 affine.db
 apps/web/next-routes.conf
 .nx

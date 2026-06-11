@@ -31,7 +31,6 @@ dev_dependencies:
   riverpod_generator: ^2.6.3
   freezed: ^2.5.7
   json_serializable: ^6.9.4
-  mockito: ^5.4.5
   mocktail: ^1.0.4
 
 flutter:
