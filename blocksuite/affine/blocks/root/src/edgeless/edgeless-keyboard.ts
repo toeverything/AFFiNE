@@ -702,6 +702,10 @@ export class EdgelessPageKeyboardManager extends PageKeyboardManager {
     const currentTool = edgeless.gfx.tool.currentTool$.peek()!;
     const currentSel = selection.surfaceSelections;
     const isKeyDown = event.type === 'keydown';
+    const temporaryPanTool = currentTool as BaseTool & {
+      pauseForTemporaryPan?: () => void;
+      resumeFromTemporaryPan?: () => void;
+    };
 
     if (edgeless.gfx.tool.dragging$.peek()) {
       return; // Don't do anything if currently dragging
@@ -721,6 +725,7 @@ export class EdgelessPageKeyboardManager extends PageKeyboardManager {
         }
 
         this._setEdgelessTool(toolConstructor, finalOptions);
+        temporaryPanTool.resumeFromTemporaryPan?.();
         selection.set(currentSel);
         document.removeEventListener('keyup', revertToPrevTool, false);
       }
@@ -741,6 +746,7 @@ export class EdgelessPageKeyboardManager extends PageKeyboardManager {
         });
       }
 
+      temporaryPanTool.pauseForTemporaryPan?.();
       this._setEdgelessTool(PanTool, { panning: false });
 
       this.std.event.disposables.addFromEvent(

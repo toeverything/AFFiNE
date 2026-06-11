@@ -36,6 +36,8 @@ const createToolFixture = (options?: {
   currentToolOptions?: Record<string, unknown>;
 }) => {
   const applyDeltaCenter = vi.fn();
+  const pauseForTemporaryPan = vi.fn();
+  const resumeFromTemporaryPan = vi.fn();
   const selectionSet = vi.fn();
   const setTool = vi.fn();
   const navigatorSettingUpdated = {
@@ -62,7 +64,10 @@ const createToolFixture = (options?: {
     },
     tool: {
       currentTool$: {
-        peek: () => null,
+        peek: () => ({
+          pauseForTemporaryPan,
+          resumeFromTemporaryPan,
+        }),
       },
       currentToolOption$: {
         peek: () => currentToolOption,
@@ -85,6 +90,8 @@ const createToolFixture = (options?: {
   return {
     applyDeltaCenter,
     navigatorSettingUpdated,
+    pauseForTemporaryPan,
+    resumeFromTemporaryPan,
     selectionSet,
     setTool,
     tool,
@@ -173,5 +180,52 @@ describe('PanTool', () => {
         restoredAfterPan: true,
       }
     );
+  });
+
+  test('middle click temporary pan suspends and restores the previous tool', () => {
+    const {
+      pauseForTemporaryPan,
+      resumeFromTemporaryPan,
+      selectionSet,
+      setTool,
+      tool,
+    } = createToolFixture({
+      currentToolName: 'connector',
+      currentToolOptions: { mode: 0 },
+    });
+
+    const hooks: Partial<Record<'pointerDown', PointerDownHandler>> = {};
+    (tool as any).eventTarget = {
+      addHook: (eventName: 'pointerDown', handler: PointerDownHandler) => {
+        hooks[eventName] = handler;
+      },
+    };
+
+    tool.mounted();
+
+    hooks.pointerDown!({
+      raw: {
+        button: MouseButton.MIDDLE,
+        preventDefault: vi.fn(),
+      },
+    });
+
+    document.dispatchEvent(
+      new PointerEvent('pointerup', { button: MouseButton.MIDDLE })
+    );
+
+    expect(setTool).toHaveBeenNthCalledWith(1, PanTool, {
+      panning: true,
+    });
+    expect(setTool).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        toolName: 'connector',
+      }),
+      { mode: 0 }
+    );
+    expect(pauseForTemporaryPan).toHaveBeenCalledTimes(1);
+    expect(resumeFromTemporaryPan).toHaveBeenCalledTimes(1);
+    expect(selectionSet).toHaveBeenLastCalledWith([{ elements: ['shape-1'] }]);
   });
 });
