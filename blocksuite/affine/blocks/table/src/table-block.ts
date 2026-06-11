@@ -42,7 +42,8 @@ export class TableBlockComponent extends CaptionedBlockComponent<TableBlockModel
     this.setAttribute(RANGE_SYNC_EXCLUDE_ATTR, 'true');
     this.setAttribute(RANGE_QUERY_EXCLUDE_ATTR, 'true');
     this.style.position = 'relative';
-    this.disposables.addFromEvent(document, 'selectionchange', () => {
+    const doc = this.ownerDocument;
+    this.disposables.addFromEvent(doc, 'selectionchange', () => {
       const hasExternalNativeSelection = this.hasExternalNativeSelection();
       this.toggleAttribute(
         'data-external-range-selection',
@@ -54,14 +55,19 @@ export class TableBlockComponent extends CaptionedBlockComponent<TableBlockModel
       this.setInternalEditablesEnabled(!hasExternalNativeSelection);
     });
     this.disposables.addFromEvent(
-      document,
+      doc,
       'pointerdown',
       event => {
         const target = event.target;
-        if (target instanceof Node && this.contains(target)) {
+        const NodeConstructor = this.ownerDocument.defaultView?.Node;
+        if (
+          NodeConstructor &&
+          target instanceof NodeConstructor &&
+          this.contains(target)
+        ) {
           this.setInternalEditablesEnabled(true);
           if (this.hasExternalNativeSelection()) {
-            getSelection()?.removeAllRanges();
+            this.ownerDocument.getSelection()?.removeAllRanges();
           }
           delete this.dataset.externalRangeSelection;
           this.dataset.internalRangeSelection = 'true';
@@ -91,7 +97,7 @@ export class TableBlockComponent extends CaptionedBlockComponent<TableBlockModel
   }
 
   private hasExternalNativeSelection() {
-    const selection = getSelection();
+    const selection = this.ownerDocument.getSelection();
     if (!selection || selection.isCollapsed || selection.rangeCount === 0) {
       return false;
     }

@@ -1,7 +1,7 @@
 import { css } from '@emotion/css';
 
 const externalRangeSelectionSelector =
-  'affine-table[data-external-range-selection="true"]';
+  'affine-table[data-external-range-selection]';
 const hiddenSelectionBackground = '#fff';
 
 export const tableContainer = css({
