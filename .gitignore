@@ -94,3 +94,24 @@ af.cmd
 
 # playwright
 storageState.json
+
+# Flutter
+**/flutter-app/.dart_tool/
+**/flutter-app/.packages
+**/flutter-app/.pub/
+**/flutter-app/build/
+**/flutter-app/.flutter-plugins
+**/flutter-app/.flutter-plugins-dependencies
+**/flutter-app/ios/Pods/
+**/flutter-app/ios/.symlinks/
+**/flutter-app/ios/Flutter/Flutter.framework
+**/flutter-app/ios/Flutter/Flutter.podspec
+**/flutter-app/android/.gradle/
+**/flutter-app/android/local.properties
+**/flutter-app/android/key.properties
+**/flutter-app/*.iml
+**/flutter-app/.idea/
+**/flutter-app/.vscode/
+**/flutter-app/coverage/
+**/flutter-app/.test-api/
+**/flutter-app/derived_data/
