@@ -32,7 +32,7 @@
       "matchUpdateTypes": ["minor", "patch"],
       "matchManagers": ["npm"],
       "matchPackageNames": ["*"],
-      "excludePackagePatterns": ["^@blocksuite/", "oxlint"]
+      "excludePackagePatterns": ["^@blocksuite/", "^oxlint$"]
     },
     {
       "groupName": "all non-major dependencies",
