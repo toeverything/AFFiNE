@@ -615,6 +615,8 @@ export class Viewport {
     this._center.x = centerX;
     this._center.y = centerY;
 
+    const gestureActive = this.panning$.value || this.zooming$.value;
+
     if (signalPanning) {
       this.panning$.next(true);
     }
@@ -624,7 +626,7 @@ export class Viewport {
     // per-block transforms) would otherwise fire on every gesture event.
     // Instead, the viewport-element applies a lightweight container-level
     // CSS transform to keep visuals in sync with zero per-block overhead.
-    if (!(this.SKIP_REFRESH_DURING_GESTURE && signalPanning)) {
+    if (!(this.SKIP_REFRESH_DURING_GESTURE && gestureActive)) {
       this.viewportUpdated.next({
         zoom: this.zoom,
         center: Vec.toVec(this.center) as IVec,

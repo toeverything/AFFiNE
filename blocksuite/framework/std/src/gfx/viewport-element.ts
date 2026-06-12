@@ -562,6 +562,8 @@ export class GfxViewportElement extends WithDisposable(ShadowlessElement) {
 
   private _lastVisibleModels?: Set<GfxBlockElementModel>;
 
+  private _pendingChunkedHideCancel: (() => void) | null = null;
+
   private _lastViewportUpdate?: { zoom: number; center: [number, number] };
 
   private _lastViewportRefreshTime = 0;
@@ -586,6 +588,23 @@ export class GfxViewportElement extends WithDisposable(ShadowlessElement) {
       clearTimeout(this._pendingViewportRefreshTimer);
       this._pendingViewportRefreshTimer = null;
     }
+  }
+
+  private _cancelPendingChunkedHide() {
+    if (this._pendingChunkedHideCancel) {
+      this._pendingChunkedHideCancel();
+      this._pendingChunkedHideCancel = null;
+    }
+  }
+
+  private _scheduleChunkedHide(onComplete?: () => void) {
+    this._cancelPendingChunkedHide();
+    this._pendingChunkedHideCancel = this._chunkedHideOutsideAndNoSelectedBlock(
+      () => {
+        this._pendingChunkedHideCancel = null;
+        onComplete?.();
+      }
+    );
   }
 
   private _scheduleTrailingViewportRefresh() {
@@ -701,7 +720,7 @@ export class GfxViewportElement extends WithDisposable(ShadowlessElement) {
         this._clearPendingViewportRefreshTimer();
         this._lastViewportRefreshTime = performance.now();
         this._lastVisibleModels = undefined;
-        this._chunkedHideOutsideAndNoSelectedBlock();
+        this._scheduleChunkedHide();
       })
     );
     this.disposables.add(
@@ -712,7 +731,7 @@ export class GfxViewportElement extends WithDisposable(ShadowlessElement) {
         // on resize (orientation change) to avoid a synchronous full refresh
         // that causes white-screen flash on landscape with many elements.
         if (this.viewport.SKIP_REFRESH_DURING_GESTURE) {
-          this._chunkedHideOutsideAndNoSelectedBlock(() => {
+          this._scheduleChunkedHide(() => {
             this.viewport.viewportUpdated.next({
               zoom: this.viewport.zoom,
               center: [this.viewport.centerX, this.viewport.centerY],

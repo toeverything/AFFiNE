@@ -7,6 +7,7 @@ import {
   GfxExtension,
   GfxExtensionIdentifier,
   type GfxViewportElement,
+  viewportRuntimeConfig,
 } from '@blocksuite/std/gfx';
 import {
   BehaviorSubject,
@@ -280,7 +281,7 @@ export class ViewportTurboRendererExtension extends GfxExtension {
             ) {
               this.refresh().catch(console.error);
             }
-          }, 650);
+          }, viewportRuntimeConfig.POST_GESTURE_REFRESH_DELAY);
         };
 
         this.disposables.add(

@@ -196,7 +196,7 @@ const DetailPageImpl = ({
 
       editor.bindEditorContainer(
         editorContainer,
-        (editorContainer as any).docTitle,
+        editorContainer.docTitle,
         scrollViewportRef.current
       );
 

@@ -44,13 +44,16 @@ function getAffineDiagCounters() {
     __affineDiagCounters?: AffineDiagCounters;
   };
 
-  win.__affineDiagCounters ??= {
-    pageScrollSaves: 0,
-    edgelessViewportEvents: 0,
-    edgelessViewportWrites: 0,
-    edgelessScrollEvents: 0,
-    edgelessScrollTopMax: 0,
-  };
+  win.__affineDiagCounters = Object.assign(
+    {
+      pageScrollSaves: 0,
+      edgelessViewportEvents: 0,
+      edgelessViewportWrites: 0,
+      edgelessScrollEvents: 0,
+      edgelessScrollTopMax: 0,
+    },
+    win.__affineDiagCounters
+  );
 
   return win.__affineDiagCounters;
 }

@@ -109,7 +109,7 @@ export class MobileZoomRuler extends WithDisposable(LitElement) {
 
   override render() {
     const formattedZoom = `${Math.round(this.zoom * 100)}%`;
-    const locked = this.viewport.locked || this.std.store.readonly;
+    const locked = this.viewport?.locked || this.std.store.readonly;
 
     return html`
       <div

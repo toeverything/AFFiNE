@@ -998,16 +998,11 @@ export class CanvasRenderer {
         const isDragging = this._gfx.tool.dragging$.value;
 
         if (wasDragging && !isDragging) {
-          if (
-            this.viewport.SKIP_REFRESH_DURING_GESTURE &&
-            (this.viewport.panning$.value || this.viewport.zooming$.value)
-          ) {
+          if (this.viewport.panning$.value || this.viewport.zooming$.value) {
             // Deferred refresh will handle it after gesture ends
-          } else if (!this.viewport.SKIP_REFRESH_DURING_GESTURE) {
+          } else {
             this.refresh({ type: 'all' });
           }
-          // When SKIP mode is active and gesture just ended, the post-gesture
-          // setTimeout already handles the refresh — no immediate work needed.
         }
 
         wasDragging = isDragging;

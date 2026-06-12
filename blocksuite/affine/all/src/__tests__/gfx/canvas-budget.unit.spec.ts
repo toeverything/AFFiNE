@@ -519,7 +519,8 @@ describe('edgeless canvas budget', () => {
       lastCanvasBudgetZoom = update.zoom;
     });
 
-    viewport.setZoom(0.4, { x: 0, y: 0 }, false, false);
+    viewport.panning$.next(true);
+    viewport.setZoom(0.4, { x: 0, y: 0 }, false, false, true);
 
     expect(viewportUpdated).not.toHaveBeenCalled();
     expect(zoomUpdates).toEqual([{ previousZoom: 1, zoom: 0.4 }]);

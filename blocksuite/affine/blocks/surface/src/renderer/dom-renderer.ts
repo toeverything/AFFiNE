@@ -19,6 +19,7 @@ import type {
   SurfaceBlockModel,
   Viewport,
 } from '@blocksuite/std/gfx';
+import { viewportRuntimeConfig } from '@blocksuite/std/gfx';
 import { Subject } from 'rxjs';
 
 import type { SurfaceElementModel } from '../element-model/base.js';
@@ -281,7 +282,7 @@ export class DomRenderer {
             this._markViewportDirty();
             this.refresh();
           }
-        }, 650);
+        }, viewportRuntimeConfig.POST_GESTURE_REFRESH_DELAY);
       };
 
       this._disposables.add(
