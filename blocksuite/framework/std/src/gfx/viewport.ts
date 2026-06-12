@@ -92,7 +92,31 @@ export const viewportRuntimeConfig = {
    * mounting on the exact visible bound, unchanged from upstream.
    */
   OVERSCAN_RATIO_BLOCK: 0,
+  /**
+   * During low-zoom gesture survival mode, keep only a tiny subset of DOM blocks
+   * as real active DOM (selected + a few nearby blocks). `0` keeps the legacy
+   * behavior where every viewport block remains visually mounted as `survival`.
+   */
+  LOW_ZOOM_GESTURE_ACTIVE_BLOCK_LIMIT: 0,
+  /**
+   * Distance threshold (as a fraction of the viewport's shorter side) used to
+   * decide whether an unselected viewport block counts as "nearby" to the
+   * current selection during low-zoom gesture survival mode.
+   */
+  LOW_ZOOM_GESTURE_ACTIVE_DISTANCE_RATIO: 0.35,
 };
+
+export function getPostGestureRecoveryDelay({
+  isPanning,
+  isZooming,
+  fallbackDelayMs,
+}: {
+  isPanning: boolean;
+  isZooming: boolean;
+  fallbackDelayMs: number;
+}) {
+  return isPanning || isZooming ? fallbackDelayMs : 0;
+}
 
 /**
  * Resolves the effective device-pixel-ratio for canvas backing stores at the
@@ -256,6 +280,12 @@ export class Viewport {
   SKIP_REFRESH_DURING_GESTURE =
     viewportRuntimeConfig.SKIP_REFRESH_DURING_GESTURE;
 
+  LOW_ZOOM_GESTURE_ACTIVE_BLOCK_LIMIT =
+    viewportRuntimeConfig.LOW_ZOOM_GESTURE_ACTIVE_BLOCK_LIMIT;
+
+  LOW_ZOOM_GESTURE_ACTIVE_DISTANCE_RATIO =
+    viewportRuntimeConfig.LOW_ZOOM_GESTURE_ACTIVE_DISTANCE_RATIO;
+
   private readonly _resetZooming = debounce(() => {
     this.zooming$.next(false);
   }, 200);
@@ -294,7 +324,7 @@ export class Viewport {
     const newCenterX = initialTopLeftX + width / (2 * this.zoom);
     const newCenterY = initialTopLeftY + height / (2 * this.zoom);
 
-    this.setCenter(newCenterX, newCenterY, false);
+    this.setCenter(newCenterX, newCenterY, false, false);
     this._width = width;
     this._height = height;
     this._left = left;
@@ -572,7 +602,12 @@ export class Viewport {
    * @param centerY The new y coordinate of the center of the viewport.
    * @param forceUpdate Whether to force complete any pending resize operations before setting the viewport.
    */
-  setCenter(centerX: number, centerY: number, forceUpdate = true) {
+  setCenter(
+    centerX: number,
+    centerY: number,
+    forceUpdate = true,
+    signalPanning = true
+  ) {
     if (forceUpdate && this._isResizing) {
       this._forceCompleteResize();
     }
@@ -580,20 +615,24 @@ export class Viewport {
     this._center.x = centerX;
     this._center.y = centerY;
 
-    this.panning$.next(true);
+    if (signalPanning) {
+      this.panning$.next(true);
+    }
 
     // When SKIP_REFRESH_DURING_GESTURE is active, suppress viewportUpdated
     // emissions during gestures. Heavy subscribers (canvas, DOM visibility,
     // per-block transforms) would otherwise fire on every gesture event.
     // Instead, the viewport-element applies a lightweight container-level
     // CSS transform to keep visuals in sync with zero per-block overhead.
-    if (!this.SKIP_REFRESH_DURING_GESTURE) {
+    if (!(this.SKIP_REFRESH_DURING_GESTURE && signalPanning)) {
       this.viewportUpdated.next({
         zoom: this.zoom,
         center: Vec.toVec(this.center) as IVec,
       });
     }
-    this._resetPanning();
+    if (signalPanning) {
+      this._resetPanning();
+    }
   }
 
   setRect(left: number, top: number, width: number, height: number) {
@@ -624,7 +663,8 @@ export class Viewport {
     newZoom: number,
     newCenter = Vec.toVec(this.center),
     smooth = false,
-    forceUpdate = true
+    forceUpdate = true,
+    signalGesture = false
   ) {
     // Force complete any pending resize operations if forceUpdate is true
     if (forceUpdate && this._isResizing) {
@@ -635,19 +675,19 @@ export class Viewport {
     if (smooth) {
       const cofficient = preZoom / newZoom;
       if (cofficient === 1) {
-        this.smoothTranslate(newCenter[0], newCenter[1]);
+        this.smoothTranslate(newCenter[0], newCenter[1], 10, signalGesture);
       } else {
         const center = [this.centerX, this.centerY] as IVec;
         const focusPoint = Vec.mul(
           Vec.sub(newCenter, Vec.mul(center, cofficient)),
           1 / (1 - cofficient)
         );
-        this.smoothZoom(newZoom, Vec.toPoint(focusPoint));
+        this.smoothZoom(newZoom, Vec.toPoint(focusPoint), 10, signalGesture);
       }
     } else {
       this._center.x = newCenter[0];
       this._center.y = newCenter[1];
-      this.setZoom(newZoom, undefined, false, forceUpdate);
+      this.setZoom(newZoom, undefined, false, forceUpdate, signalGesture);
     }
   }
 
@@ -664,7 +704,8 @@ export class Viewport {
     bound: Bound,
     padding: [number, number, number, number] = [0, 0, 0, 0],
     smooth = false,
-    forceUpdate = true
+    forceUpdate = true,
+    signalGesture = false
   ) {
     let [pt, pr, pb, pl] = padding;
 
@@ -699,7 +740,7 @@ export class Viewport {
       bound.y + (bound.h + pb / zoom) / 2 - pt / zoom / 2,
     ] as IVec;
 
-    this.setViewport(zoom, center, smooth, forceUpdate);
+    this.setViewport(zoom, center, smooth, forceUpdate, signalGesture);
   }
 
   /** This is the outer container of the viewport, which is the host of the viewport element */
@@ -730,7 +771,8 @@ export class Viewport {
     zoom: number,
     focusPoint?: IPoint,
     wheel = false,
-    forceUpdate = true
+    forceUpdate = true,
+    signalGesture = true
   ) {
     if (forceUpdate && this._isResizing) {
       this._forceCompleteResize();
@@ -746,18 +788,21 @@ export class Viewport {
       Vec.toVec(focusPoint),
       Vec.mul(offset, prevZoom / newZoom)
     );
-    // Always signal zooming for any zoom change (pinch or wheel).
-    // Previously only wheel=true set this, causing pinch gestures to never
-    // signal zooming$=true, which meant the post-gesture recovery could
-    // fire mid-gesture.
-    this.zooming$.next(true);
-    this.setCenter(newCenter[0], newCenter[1], forceUpdate);
+    // Always signal zooming for any real gesture zoom change (pinch or wheel).
+    // Programmatic viewport changes should use the normal refresh path without
+    // entering low-zoom gesture survival mode.
+    if (signalGesture) {
+      this.zooming$.next(true);
+    }
+    this.setCenter(newCenter[0], newCenter[1], forceUpdate, signalGesture);
     this.zoomUpdated.next({ previousZoom: prevZoom, zoom: newZoom });
     // setCenter already emits viewportUpdated, no need to emit again here.
-    this._resetZooming();
+    if (signalGesture) {
+      this._resetZooming();
+    }
   }
 
-  smoothTranslate(x: number, y: number, numSteps = 10) {
+  smoothTranslate(x: number, y: number, numSteps = 10, signalGesture = false) {
     const { center } = this;
     const delta = { x: x - center.x, y: y - center.y };
     const innerSmoothTranslate = () => {
@@ -772,7 +817,7 @@ export class Viewport {
         const signY = delta.y > 0 ? 1 : -1;
         nextCenter.x = cutoff(nextCenter.x, x, signX);
         nextCenter.y = cutoff(nextCenter.y, y, signY);
-        this.setCenter(nextCenter.x, nextCenter.y, true);
+        this.setCenter(nextCenter.x, nextCenter.y, true, signalGesture);
 
         if (nextCenter.x != x || nextCenter.y != y) innerSmoothTranslate();
       });
@@ -780,7 +825,12 @@ export class Viewport {
     innerSmoothTranslate();
   }
 
-  smoothZoom(zoom: number, focusPoint?: IPoint, numSteps = 10) {
+  smoothZoom(
+    zoom: number,
+    focusPoint?: IPoint,
+    numSteps = 10,
+    signalGesture = false
+  ) {
     const delta = zoom - this.zoom;
     if (this._rafId) cancelAnimationFrame(this._rafId);
 
@@ -790,7 +840,7 @@ export class Viewport {
         const step = delta / numSteps;
         const nextZoom = cutoff(this.zoom + step, zoom, sign);
 
-        this.setZoom(nextZoom, focusPoint, undefined, true);
+        this.setZoom(nextZoom, focusPoint, undefined, true, signalGesture);
 
         if (nextZoom != zoom) innerSmoothZoom();
       });

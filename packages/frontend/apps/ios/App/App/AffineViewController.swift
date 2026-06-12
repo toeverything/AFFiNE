@@ -214,6 +214,19 @@ class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate {
             previewViewportUpdated: counters.previewViewportUpdated || 0,
             previewLayerRefresh: counters.previewLayerRefresh || 0,
             previewResizeEvents: counters.previewResizeEvents || 0,
+            turboZoomPlaceholderPaintCount: counters.turboZoomPlaceholderPaintCount || 0,
+            turboZoomBitmapReuseCount: counters.turboZoomBitmapReuseCount || 0,
+            turboZoomIdleSkipCount: counters.turboZoomIdleSkipCount || 0,
+            turboZoomIdleApplyCount: counters.turboZoomIdleApplyCount || 0,
+            surfaceCanvasRenderCount: counters.surfaceCanvasRenderCount || 0,
+            surfaceCanvasPlaceholderPassCount: counters.surfaceCanvasPlaceholderPassCount || 0,
+            surfaceCanvasPlaceholderElementCountMax: counters.surfaceCanvasPlaceholderElementCountMax || 0,
+            surfaceCanvasFallbackElementCountMax: counters.surfaceCanvasFallbackElementCountMax || 0,
+            surfaceCanvasVisibleStackingCanvasCountMax: counters.surfaceCanvasVisibleStackingCanvasCountMax || 0,
+            surfaceCanvasDirtyLayerRenderCountMax: counters.surfaceCanvasDirtyLayerRenderCountMax || 0,
+            surfaceCanvasViewportSkipRefreshCount: counters.surfaceCanvasViewportSkipRefreshCount || 0,
+            surfaceCanvasDeferredRefreshScheduledCount: counters.surfaceCanvasDeferredRefreshScheduledCount || 0,
+            surfaceCanvasDeferredRefreshRescheduledCount: counters.surfaceCanvasDeferredRefreshRescheduledCount || 0,
           };
           counters.pageScrollSaves = 0;
           counters.edgelessViewportEvents = 0;
@@ -232,6 +245,19 @@ class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate {
           counters.previewViewportUpdated = 0;
           counters.previewLayerRefresh = 0;
           counters.previewResizeEvents = 0;
+          counters.turboZoomPlaceholderPaintCount = 0;
+          counters.turboZoomBitmapReuseCount = 0;
+          counters.turboZoomIdleSkipCount = 0;
+          counters.turboZoomIdleApplyCount = 0;
+          counters.surfaceCanvasRenderCount = 0;
+          counters.surfaceCanvasPlaceholderPassCount = 0;
+          counters.surfaceCanvasPlaceholderElementCountMax = 0;
+          counters.surfaceCanvasFallbackElementCountMax = 0;
+          counters.surfaceCanvasVisibleStackingCanvasCountMax = 0;
+          counters.surfaceCanvasDirtyLayerRenderCountMax = 0;
+          counters.surfaceCanvasViewportSkipRefreshCount = 0;
+          counters.surfaceCanvasDeferredRefreshScheduledCount = 0;
+          counters.surfaceCanvasDeferredRefreshRescheduledCount = 0;
           return snapshot;
         }
         requestAnimationFrame(rafLoop);
@@ -275,7 +301,20 @@ class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate {
             blockDeactivateCount: editorCounters ? editorCounters.blockDeactivateCount : 0,
             previewViewportUpdated: editorCounters ? editorCounters.previewViewportUpdated : 0,
             previewLayerRefresh: editorCounters ? editorCounters.previewLayerRefresh : 0,
-            previewResizeEvents: editorCounters ? editorCounters.previewResizeEvents : 0
+            previewResizeEvents: editorCounters ? editorCounters.previewResizeEvents : 0,
+            turboZoomPlaceholderPaintCount: editorCounters ? editorCounters.turboZoomPlaceholderPaintCount : 0,
+            turboZoomBitmapReuseCount: editorCounters ? editorCounters.turboZoomBitmapReuseCount : 0,
+            turboZoomIdleSkipCount: editorCounters ? editorCounters.turboZoomIdleSkipCount : 0,
+            turboZoomIdleApplyCount: editorCounters ? editorCounters.turboZoomIdleApplyCount : 0,
+            surfaceCanvasRenderCount: editorCounters ? editorCounters.surfaceCanvasRenderCount : 0,
+            surfaceCanvasPlaceholderPassCount: editorCounters ? editorCounters.surfaceCanvasPlaceholderPassCount : 0,
+            surfaceCanvasPlaceholderElementCountMax: editorCounters ? editorCounters.surfaceCanvasPlaceholderElementCountMax : 0,
+            surfaceCanvasFallbackElementCountMax: editorCounters ? editorCounters.surfaceCanvasFallbackElementCountMax : 0,
+            surfaceCanvasVisibleStackingCanvasCountMax: editorCounters ? editorCounters.surfaceCanvasVisibleStackingCanvasCountMax : 0,
+            surfaceCanvasDirtyLayerRenderCountMax: editorCounters ? editorCounters.surfaceCanvasDirtyLayerRenderCountMax : 0,
+            surfaceCanvasViewportSkipRefreshCount: editorCounters ? editorCounters.surfaceCanvasViewportSkipRefreshCount : 0,
+            surfaceCanvasDeferredRefreshScheduledCount: editorCounters ? editorCounters.surfaceCanvasDeferredRefreshScheduledCount : 0,
+            surfaceCanvasDeferredRefreshRescheduledCount: editorCounters ? editorCounters.surfaceCanvasDeferredRefreshRescheduledCount : 0
           }));
           maxRafGap = 0;
           wMaxCanvases = 0;

@@ -38,6 +38,7 @@ viewportRuntimeConfig.ZOOM_MIN = 0.4;
 viewportRuntimeConfig.VIEWPORT_REFRESH_PIXEL_THRESHOLD = 60;
 viewportRuntimeConfig.VIEWPORT_REFRESH_MAX_INTERVAL = 300;
 viewportRuntimeConfig.SKIP_REFRESH_DURING_GESTURE = true;
+viewportRuntimeConfig.LOW_ZOOM_GESTURE_ACTIVE_BLOCK_LIMIT = 1;
 
 // Pre-paint a 20% margin on every side of the viewport for *canvas* culling
 // only. This still keeps nearby connectors/shapes warm during orientation and

@@ -88,8 +88,6 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		9DAE85B72E7BAC3B00DB9F1D /* Plugins */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = Plugins;
 			sourceTree = "<group>";
 		};
@@ -309,8 +307,12 @@
 			);
 			inputFileListPaths = (
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -504,7 +506,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 13;
+				CURRENT_PROJECT_VERSION = 15;
 				DEVELOPMENT_TEAM = 73YMMDVT2M;
 				INFOPLIST_FILE = App/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
@@ -540,7 +542,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 13;
+				CURRENT_PROJECT_VERSION = 15;
 				DEVELOPMENT_TEAM = 73YMMDVT2M;
 				INFOPLIST_FILE = App/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";

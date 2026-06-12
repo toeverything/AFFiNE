@@ -20,6 +20,10 @@ import {
   type PointStyle,
 } from '@blocksuite/affine-model';
 import {
+  getAffinePlaceholderFillColor,
+  inferColorSchemeFromThemeMode,
+} from '@blocksuite/affine-shared/theme';
+import {
   getBezierParameters,
   type PointLocation,
 } from '@blocksuite/global/gfx';
@@ -253,7 +257,10 @@ function renderLabel(
   ctx.setTransform(matrix);
 
   if (renderer.usePlaceholder) {
-    ctx.fillStyle = 'rgba(200, 200, 200, 0.5)';
+    const colorScheme = inferColorSchemeFromThemeMode(
+      document.documentElement.dataset.theme
+    );
+    ctx.fillStyle = getAffinePlaceholderFillColor(colorScheme);
     ctx.fillRect(0, 0, w, h);
     return; // Skip actual label rendering
   }

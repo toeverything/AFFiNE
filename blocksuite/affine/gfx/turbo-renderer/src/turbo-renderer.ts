@@ -1,5 +1,6 @@
 import type { Container } from '@blocksuite/global/di';
 import { DisposableGroup } from '@blocksuite/global/disposable';
+import { IS_IOS } from '@blocksuite/global/env';
 import { ConfigExtensionFactory } from '@blocksuite/std';
 import {
   type GfxController,
@@ -33,7 +34,73 @@ import type {
   WorkerToHostMessage,
 } from './types';
 
+type AffineDiagCounters = {
+  turboZoomPlaceholderPaintCount?: number;
+  turboZoomBitmapReuseCount?: number;
+  turboZoomIdleSkipCount?: number;
+  turboZoomIdleApplyCount?: number;
+};
+
+function getAffineDiagCounters() {
+  const win = globalThis as typeof globalThis & {
+    __affineDiagCounters?: AffineDiagCounters;
+  };
+
+  win.__affineDiagCounters ??= {};
+  return win.__affineDiagCounters;
+}
+
+export function recordTurboRendererDiagCounter(
+  counters: Record<string, number | undefined>,
+  event:
+    | 'zoom-placeholder-paint'
+    | 'zoom-bitmap-reuse'
+    | 'zoom-idle-skip'
+    | 'zoom-idle-apply'
+) {
+  if (event === 'zoom-placeholder-paint') {
+    counters.turboZoomPlaceholderPaintCount =
+      (counters.turboZoomPlaceholderPaintCount ?? 0) + 1;
+    return;
+  }
+
+  if (event === 'zoom-bitmap-reuse') {
+    counters.turboZoomBitmapReuseCount =
+      (counters.turboZoomBitmapReuseCount ?? 0) + 1;
+    return;
+  }
+
+  if (event === 'zoom-idle-skip') {
+    counters.turboZoomIdleSkipCount =
+      (counters.turboZoomIdleSkipCount ?? 0) + 1;
+    return;
+  }
+
+  counters.turboZoomIdleApplyCount =
+    (counters.turboZoomIdleApplyCount ?? 0) + 1;
+}
+
 const debug = false; // Toggle for debug logs
+const IOS_LOW_ZOOM_SURVIVAL_THRESHOLD = 0.5;
+
+export function shouldPreferBitmapCacheDuringLowZoomGesture(params: {
+  isIOS: boolean;
+  zoom: number;
+  hasBitmap: boolean;
+}) {
+  return (
+    params.isIOS &&
+    params.zoom <= IOS_LOW_ZOOM_SURVIVAL_THRESHOLD &&
+    params.hasBitmap
+  );
+}
+
+export function shouldIdleTurboBlocksDuringZooming(params: {
+  isIOS: boolean;
+  zoom: number;
+}) {
+  return !(params.isIOS && params.zoom <= IOS_LOW_ZOOM_SURVIVAL_THRESHOLD);
+}
 
 const defaultOptions = {
   zoomThreshold: 1, // With high enough zoom, fallback to DOM rendering
@@ -282,10 +349,30 @@ export class ViewportTurboRendererExtension extends GfxExtension {
       nextState = 'pending';
       this.clearOptimizedBlocks();
     } else if (this.isZooming()) {
-      this.debugLog('Currently zooming, using placeholder rendering');
       nextState = 'zooming';
-      this.paintPlaceholder();
-      this.updateOptimizedBlocks();
+      if (
+        shouldPreferBitmapCacheDuringLowZoomGesture({
+          isIOS: IS_IOS,
+          zoom: this.viewport.zoom,
+          hasBitmap: !!this.bitmap,
+        })
+      ) {
+        recordTurboRendererDiagCounter(
+          getAffineDiagCounters(),
+          'zoom-bitmap-reuse'
+        );
+        this.debugLog('Currently zooming, reusing cached bitmap');
+        this.clearOptimizedBlocks();
+        this.drawCachedBitmap();
+      } else {
+        recordTurboRendererDiagCounter(
+          getAffineDiagCounters(),
+          'zoom-placeholder-paint'
+        );
+        this.debugLog('Currently zooming, using placeholder rendering');
+        this.paintPlaceholder();
+        this.updateOptimizedBlocks();
+      }
     } else if (this.canUseBitmapCache()) {
       this.debugLog('Using cached bitmap');
       nextState = 'ready';
@@ -436,6 +523,18 @@ export class ViewportTurboRendererExtension extends GfxExtension {
 
   private updateOptimizedBlocks() {
     if (!this.canOptimize()) return;
+    if (
+      !shouldIdleTurboBlocksDuringZooming({
+        isIOS: IS_IOS,
+        zoom: this.viewport.zoom,
+      })
+    ) {
+      recordTurboRendererDiagCounter(getAffineDiagCounters(), 'zoom-idle-skip');
+      this.clearOptimizedBlocks();
+      return;
+    }
+
+    recordTurboRendererDiagCounter(getAffineDiagCounters(), 'zoom-idle-apply');
     requestAnimationFrame(() => {
       if (!this.viewportElement || !this.layoutCache) return;
       const blockElements = this.viewportElement.getModelsInViewport();

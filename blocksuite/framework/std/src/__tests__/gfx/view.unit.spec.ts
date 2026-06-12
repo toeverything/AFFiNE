@@ -3,10 +3,11 @@ import {
   createAutoIncrementIdGenerator,
   TestWorkspace,
 } from '@blocksuite/store/test';
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 
 import { effects } from '../../effects.js';
 import { GfxControllerIdentifier } from '../../gfx/identifiers.js';
+import { getPostGestureRecoveryDelay } from '../../gfx/viewport.js';
 import {
   GfxViewportElement,
   shouldUseLowZoomBlockSurvivalMode,
@@ -153,23 +154,33 @@ describe('gfx element view basic', () => {
     expect(rootView).toBeNull();
   });
 
-  test('detects low-zoom DOM survival mode for gesture-safe viewport configs', () => {
+  test('detects low-zoom DOM survival mode only during active gestures for gesture-safe viewport configs', () => {
     expect(
       shouldUseLowZoomBlockSurvivalMode({
         zoom: 0.4,
         skipRefreshDuringGesture: true,
+        gestureActive: true,
       })
     ).toBe(true);
     expect(
       shouldUseLowZoomBlockSurvivalMode({
+        zoom: 0.4,
+        skipRefreshDuringGesture: true,
+        gestureActive: false,
+      })
+    ).toBe(false);
+    expect(
+      shouldUseLowZoomBlockSurvivalMode({
         zoom: 0.6,
         skipRefreshDuringGesture: true,
+        gestureActive: true,
       })
     ).toBe(false);
     expect(
       shouldUseLowZoomBlockSurvivalMode({
         zoom: 0.4,
         skipRefreshDuringGesture: false,
+        gestureActive: true,
       })
     ).toBe(false);
   });
@@ -246,6 +257,298 @@ describe('gfx element view basic', () => {
     expect(selectedView!.transformState$.value).toBe('active');
     expect(inViewportView!.transformState$.value).toBe('survival');
     expect(outOfViewportView!.transformState$.value).toBe('idle');
+  });
+
+  test('parks non-active low-zoom gesture blocks outside viewport DOM while gesture is running', async () => {
+    const { editorContainer, gfx, surfaceId } = await commonSetup();
+    const waitViewConnected = waitGfxViewConnected(gfx);
+
+    const selectedId = gfx.std.store.addBlock(
+      'test:gfx-block',
+      undefined,
+      surfaceId
+    );
+    const nearbyId = gfx.std.store.addBlock(
+      'test:gfx-block',
+      undefined,
+      surfaceId
+    );
+    const farVisibleId = gfx.std.store.addBlock(
+      'test:gfx-block',
+      undefined,
+      surfaceId
+    );
+    const outOfViewportId = gfx.std.store.addBlock(
+      'test:gfx-block',
+      undefined,
+      surfaceId
+    );
+
+    await Promise.all([
+      waitViewConnected(selectedId),
+      waitViewConnected(nearbyId),
+      waitViewConnected(farVisibleId),
+      waitViewConnected(outOfViewportId),
+    ]);
+
+    setBlockXYWH(gfx, selectedId, '[0,0,10,10]');
+    setBlockXYWH(gfx, nearbyId, '[20,0,10,10]');
+    setBlockXYWH(gfx, farVisibleId, '[120,0,10,10]');
+    setBlockXYWH(gfx, outOfViewportId, '[500,500,10,10]');
+
+    const selectedModel = gfx.getElementById(selectedId);
+    const nearbyModel = gfx.getElementById(nearbyId);
+    const farVisibleModel = gfx.getElementById(farVisibleId);
+    const selectedView = gfx.view.get(selectedId);
+    const nearbyView = gfx.view.get(nearbyId);
+    const farVisibleView = gfx.view.get(farVisibleId);
+    const outOfViewportView = gfx.view.get(outOfViewportId);
+
+    expect(selectedModel).not.toBeNull();
+    expect(nearbyModel).not.toBeNull();
+    expect(farVisibleModel).not.toBeNull();
+    expect(selectedView).not.toBeNull();
+    expect(nearbyView).not.toBeNull();
+    expect(farVisibleView).not.toBeNull();
+    expect(outOfViewportView).not.toBeNull();
+
+    gfx.selection.set({ elements: [selectedId], editing: false });
+    gfx.viewport.SKIP_REFRESH_DURING_GESTURE = true;
+    gfx.viewport.LOW_ZOOM_GESTURE_ACTIVE_BLOCK_LIMIT = 1;
+
+    const shell = document.createElement('div');
+    Object.defineProperty(shell, 'offsetWidth', {
+      configurable: true,
+      get: () => 844,
+    });
+    shell.getBoundingClientRect = () => new DOMRect(0, 0, 844, 390);
+    (
+      gfx.viewport as unknown as {
+        _shell: HTMLElement;
+        _cachedBoundingClientRect: DOMRect;
+        _cachedOffsetWidth: number;
+      }
+    )._shell = shell;
+    (
+      gfx.viewport as unknown as {
+        _shell: HTMLElement;
+        _cachedBoundingClientRect: DOMRect;
+        _cachedOffsetWidth: number;
+      }
+    )._cachedBoundingClientRect = new DOMRect(0, 0, 844, 390);
+    (
+      gfx.viewport as unknown as {
+        _shell: HTMLElement;
+        _cachedBoundingClientRect: DOMRect;
+        _cachedOffsetWidth: number;
+      }
+    )._cachedOffsetWidth = 844;
+
+    gfx.viewport.setZoom(0.4, { x: 0, y: 0 });
+    gfx.viewport.panning$.next(true);
+
+    const viewportElement = new GfxViewportElement();
+    viewportElement.host = editorContainer.std.host;
+    viewportElement.viewport = gfx.viewport;
+    viewportElement.getModelsInViewport = () =>
+      new Set([selectedModel!, nearbyModel!, farVisibleModel!]);
+    document.body.append(viewportElement);
+    viewportElement.append(
+      selectedView!,
+      nearbyView!,
+      farVisibleView!,
+      outOfViewportView!
+    );
+
+    (
+      viewportElement as unknown as {
+        _hideOutsideAndNoSelectedBlock: () => void;
+      }
+    )._hideOutsideAndNoSelectedBlock();
+
+    expect(
+      [...viewportElement.children].map(child => child.dataset.blockId)
+    ).toEqual([selectedId, nearbyId]);
+    expect(farVisibleView!.isConnected).toBe(false);
+    expect(outOfViewportView!.isConnected).toBe(false);
+  });
+
+  test('restores parked low-zoom blocks after gesture recovery completes', async () => {
+    vi.useFakeTimers();
+    try {
+      const { editorContainer, gfx, surfaceId } = await commonSetup();
+      const waitViewConnected = waitGfxViewConnected(gfx);
+
+      const firstId = gfx.std.store.addBlock(
+        'test:gfx-block',
+        undefined,
+        surfaceId
+      );
+      const secondId = gfx.std.store.addBlock(
+        'test:gfx-block',
+        undefined,
+        surfaceId
+      );
+      const thirdId = gfx.std.store.addBlock(
+        'test:gfx-block',
+        undefined,
+        surfaceId
+      );
+
+      await Promise.all([
+        waitViewConnected(firstId),
+        waitViewConnected(secondId),
+        waitViewConnected(thirdId),
+      ]);
+
+      setBlockXYWH(gfx, firstId, '[0,0,10,10]');
+      setBlockXYWH(gfx, secondId, '[20,0,10,10]');
+      setBlockXYWH(gfx, thirdId, '[40,0,10,10]');
+
+      const firstModel = gfx.getElementById(firstId);
+      const secondModel = gfx.getElementById(secondId);
+      const thirdModel = gfx.getElementById(thirdId);
+      const firstView = gfx.view.get(firstId);
+      const secondView = gfx.view.get(secondId);
+      const thirdView = gfx.view.get(thirdId);
+
+      expect(firstModel).not.toBeNull();
+      expect(secondModel).not.toBeNull();
+      expect(thirdModel).not.toBeNull();
+      expect(firstView).not.toBeNull();
+      expect(secondView).not.toBeNull();
+      expect(thirdView).not.toBeNull();
+
+      gfx.selection.clear();
+      gfx.viewport.SKIP_REFRESH_DURING_GESTURE = true;
+      gfx.viewport.LOW_ZOOM_GESTURE_ACTIVE_BLOCK_LIMIT = 1;
+
+      const shell = document.createElement('div');
+      Object.defineProperty(shell, 'offsetWidth', {
+        configurable: true,
+        get: () => 844,
+      });
+      shell.getBoundingClientRect = () => new DOMRect(0, 0, 844, 390);
+      (
+        gfx.viewport as unknown as {
+          _shell: HTMLElement;
+          _cachedBoundingClientRect: DOMRect;
+          _cachedOffsetWidth: number;
+        }
+      )._shell = shell;
+      (
+        gfx.viewport as unknown as {
+          _shell: HTMLElement;
+          _cachedBoundingClientRect: DOMRect;
+          _cachedOffsetWidth: number;
+        }
+      )._cachedBoundingClientRect = new DOMRect(0, 0, 844, 390);
+      (
+        gfx.viewport as unknown as {
+          _shell: HTMLElement;
+          _cachedBoundingClientRect: DOMRect;
+          _cachedOffsetWidth: number;
+        }
+      )._cachedOffsetWidth = 844;
+
+      gfx.viewport.setZoom(0.4, { x: 0, y: 0 });
+      gfx.viewport.panning$.next(true);
+
+      const viewportElement = new GfxViewportElement();
+      viewportElement.host = editorContainer.std.host;
+      viewportElement.viewport = gfx.viewport;
+      viewportElement.getModelsInViewport = () =>
+        new Set([firstModel!, secondModel!, thirdModel!]);
+      document.body.append(viewportElement);
+      viewportElement.append(firstView!, secondView!, thirdView!);
+
+      (
+        viewportElement as unknown as {
+          _hideOutsideAndNoSelectedBlock: () => void;
+        }
+      )._hideOutsideAndNoSelectedBlock();
+
+      expect(viewportElement.children).toHaveLength(1);
+
+      gfx.viewport.panning$.next(false);
+      await vi.advanceTimersByTimeAsync(1200);
+
+      expect(
+        new Set(
+          [...viewportElement.children].map(child => child.dataset.blockId)
+        )
+      ).toEqual(new Set([firstId, secondId, thirdId]));
+      expect(firstView!.transformState$.value).toBe('active');
+      expect(secondView!.transformState$.value).toBe('active');
+      expect(thirdView!.transformState$.value).toBe('active');
+
+      gfx.viewport.panning$.next(true);
+      (
+        viewportElement as unknown as {
+          _hideOutsideAndNoSelectedBlock: () => void;
+        }
+      )._hideOutsideAndNoSelectedBlock();
+      expect(viewportElement.children).toHaveLength(1);
+
+      gfx.viewport.panning$.next(false);
+      await vi.advanceTimersByTimeAsync(1200);
+
+      expect(
+        new Set(
+          [...viewportElement.children].map(child => child.dataset.blockId)
+        )
+      ).toEqual(new Set([firstId, secondId, thirdId]));
+      expect(firstView!.transformState$.value).toBe('active');
+      expect(secondView!.transformState$.value).toBe('active');
+      expect(thirdView!.transformState$.value).toBe('active');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  test('programmatic low-zoom viewport changes do not arm gesture signals', async () => {
+    const { Viewport } = await import('../../gfx/index.js');
+
+    const viewport = new Viewport();
+    viewport.SKIP_REFRESH_DURING_GESTURE = true;
+    viewport.LOW_ZOOM_GESTURE_ACTIVE_BLOCK_LIMIT = 1;
+
+    viewport.setViewport(0.4, [20, 0]);
+
+    expect(viewport.panning$.value).toBe(false);
+    expect(viewport.zooming$.value).toBe(false);
+    expect(
+      shouldUseLowZoomBlockSurvivalMode({
+        zoom: viewport.zoom,
+        skipRefreshDuringGesture: viewport.SKIP_REFRESH_DURING_GESTURE,
+        gestureActive: viewport.panning$.value || viewport.zooming$.value,
+      })
+    ).toBe(false);
+  });
+
+  test('programmatic low-zoom viewport changes still emit viewport updates', async () => {
+    const { Viewport } = await import('../../gfx/index.js');
+
+    const viewport = new Viewport();
+    viewport.SKIP_REFRESH_DURING_GESTURE = true;
+
+    const updates: Array<{ zoom: number; center: [number, number] }> = [];
+    const subscription = viewport.viewportUpdated.subscribe(
+      ({ zoom, center }) => {
+        updates.push({ zoom, center: [center[0], center[1]] });
+      }
+    );
+
+    viewport.setViewport(0.4, [20, 10]);
+
+    subscription.unsubscribe();
+
+    expect(updates).toEqual([
+      {
+        zoom: 0.4,
+        center: [20, 10],
+      },
+    ]);
   });
 
   test('idles out-of-viewport blocks on the first visibility refresh', async () => {
@@ -602,6 +905,74 @@ describe('gfx element view basic', () => {
     expect(selectedView!.transformState$.value).toBe('active');
     expect(inViewportView!.transformState$.value).toBe('survival');
     expect(outOfViewportView!.transformState$.value).toBe('idle');
+  });
+
+  test('resize completion clears low-zoom gesture recovery before sizeUpdated subscribers run', async () => {
+    const { gfx } = await commonSetup();
+
+    gfx.viewport.SKIP_REFRESH_DURING_GESTURE = true;
+
+    const shell = document.createElement('div');
+    Object.defineProperty(shell, 'offsetWidth', {
+      configurable: true,
+      get: () => 844,
+    });
+    shell.getBoundingClientRect = () => new DOMRect(0, 0, 844, 390);
+    (
+      gfx.viewport as unknown as {
+        _shell: HTMLElement;
+        _cachedBoundingClientRect: DOMRect;
+        _cachedOffsetWidth: number;
+      }
+    )._shell = shell;
+    (
+      gfx.viewport as unknown as {
+        _shell: HTMLElement;
+        _cachedBoundingClientRect: DOMRect;
+        _cachedOffsetWidth: number;
+      }
+    )._cachedBoundingClientRect = new DOMRect(0, 0, 844, 390);
+    (
+      gfx.viewport as unknown as {
+        _shell: HTMLElement;
+        _cachedBoundingClientRect: DOMRect;
+        _cachedOffsetWidth: number;
+      }
+    )._cachedOffsetWidth = 844;
+
+    let panningAtSizeUpdated: boolean | null = null;
+    let zoomingAtSizeUpdated: boolean | null = null;
+    let blockSurvivalAtSizeUpdated: boolean | null = null;
+    let canvasRecoveryDelayAtSizeUpdated: number | null = null;
+
+    const subscription = gfx.viewport.sizeUpdated.subscribe(() => {
+      const gestureActive =
+        gfx.viewport.panning$.value || gfx.viewport.zooming$.value;
+
+      panningAtSizeUpdated = gfx.viewport.panning$.value;
+      zoomingAtSizeUpdated = gfx.viewport.zooming$.value;
+      blockSurvivalAtSizeUpdated = shouldUseLowZoomBlockSurvivalMode({
+        zoom: gfx.viewport.zoom,
+        skipRefreshDuringGesture: gfx.viewport.SKIP_REFRESH_DURING_GESTURE,
+        gestureActive,
+      });
+      canvasRecoveryDelayAtSizeUpdated = getPostGestureRecoveryDelay({
+        isPanning: gfx.viewport.panning$.value,
+        isZooming: gfx.viewport.zooming$.value,
+        fallbackDelayMs: 800,
+      });
+    });
+
+    gfx.viewport.setZoom(0.4, { x: 0, y: 0 });
+    gfx.viewport.onResize();
+
+    await new Promise(resolve => setTimeout(resolve, 300));
+    subscription.unsubscribe();
+
+    expect(panningAtSizeUpdated).toBe(false);
+    expect(zoomingAtSizeUpdated).toBe(false);
+    expect(blockSurvivalAtSizeUpdated).toBe(false);
+    expect(canvasRecoveryDelayAtSizeUpdated).toBe(0);
   });
 
   test('local element view should be created', async () => {

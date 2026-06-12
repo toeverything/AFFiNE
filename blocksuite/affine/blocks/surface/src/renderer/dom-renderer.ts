@@ -25,6 +25,7 @@ import type { SurfaceElementModel } from '../element-model/base.js';
 import type { DomElementRenderer } from './dom-elements/index.js';
 import { DomElementRendererIdentifier } from './dom-elements/index.js';
 import type { Overlay } from './overlay.js';
+import { resolveSurfacePlaceholderColor } from './placeholder-style.js';
 
 type EnvProvider = {
   generateColorProperty: (color: Color, fallback?: Color) => string;
@@ -338,11 +339,14 @@ export class DomRenderer {
       domElement = document.createElement('div');
       domElement.dataset.elementId = elementModel.id;
       domElement.style.position = 'absolute';
-      domElement.style.backgroundColor = 'rgba(200, 200, 200, 0.5)';
       this._elementsMap.set(elementModel.id, domElement);
       this.rootElement.append(domElement);
       addedElements.push(domElement);
     }
+
+    domElement.style.backgroundColor = resolveSurfacePlaceholderColor(
+      this.getColorScheme()
+    );
 
     const geometricStyles = calculatePlaceholderRect(
       elementModel,

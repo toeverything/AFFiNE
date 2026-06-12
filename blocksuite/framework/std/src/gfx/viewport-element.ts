@@ -1,3 +1,4 @@
+import type { Bound } from '@blocksuite/global/gfx';
 import { WithDisposable } from '@blocksuite/global/lit';
 import { batch } from '@preact/signals-core';
 import { css, html } from 'lit';
@@ -11,7 +12,11 @@ import {
 import { PropTypes, requiredProperties } from '../view/decorators/required';
 import { GfxControllerIdentifier } from './identifiers';
 import { GfxBlockElementModel } from './model/gfx-block-model';
-import { Viewport, viewportRuntimeConfig } from './viewport';
+import {
+  getPostGestureRecoveryDelay,
+  Viewport,
+  viewportRuntimeConfig,
+} from './viewport';
 
 /**
  * A wrapper around `requestConnectedFrame` that only calls at most once in one frame
@@ -73,11 +78,85 @@ const LOW_ZOOM_BLOCK_SURVIVAL_THRESHOLD = 0.5;
 export function shouldUseLowZoomBlockSurvivalMode({
   zoom,
   skipRefreshDuringGesture,
+  gestureActive,
 }: {
   zoom: number;
   skipRefreshDuringGesture: boolean;
+  gestureActive: boolean;
 }) {
-  return skipRefreshDuringGesture && zoom <= LOW_ZOOM_BLOCK_SURVIVAL_THRESHOLD;
+  return (
+    skipRefreshDuringGesture &&
+    gestureActive &&
+    zoom <= LOW_ZOOM_BLOCK_SURVIVAL_THRESHOLD
+  );
+}
+
+export function getLowZoomGestureActiveModels<
+  T extends { elementBound: Bound; id: string },
+>({
+  selectedModels,
+  viewportModels,
+  viewportBounds,
+  nearbyActiveBlockLimit,
+  nearbyDistanceRatio,
+}: {
+  selectedModels: Set<T>;
+  viewportModels: Set<T>;
+  viewportBounds: Bound;
+  nearbyActiveBlockLimit: number;
+  nearbyDistanceRatio: number;
+}): Set<T> {
+  const activeModels = new Set<T>(selectedModels);
+  if (nearbyActiveBlockLimit <= 0) {
+    return activeModels;
+  }
+
+  const viewportCenter = viewportBounds.center;
+  const maxNearbyDistance =
+    Math.min(viewportBounds.w, viewportBounds.h) * nearbyDistanceRatio;
+
+  if (selectedModels.size === 0) {
+    const fallback = [...viewportModels]
+      .sort((left, right) => {
+        const [leftX, leftY] = left.elementBound.center;
+        const [rightX, rightY] = right.elementBound.center;
+        const leftDistance = Math.hypot(
+          leftX - viewportCenter[0],
+          leftY - viewportCenter[1]
+        );
+        const rightDistance = Math.hypot(
+          rightX - viewportCenter[0],
+          rightY - viewportCenter[1]
+        );
+        return leftDistance - rightDistance;
+      })
+      .slice(0, nearbyActiveBlockLimit);
+
+    fallback.forEach(model => activeModels.add(model));
+    return activeModels;
+  }
+
+  const selectedCenters = [...selectedModels].map(
+    model => model.elementBound.center
+  );
+
+  const nearbyCandidates = [...viewportModels]
+    .filter(model => !selectedModels.has(model))
+    .map(model => {
+      const [x, y] = model.elementBound.center;
+      const distance = Math.min(
+        ...selectedCenters.map(([selectedX, selectedY]) =>
+          Math.hypot(x - selectedX, y - selectedY)
+        )
+      );
+      return { distance, model };
+    })
+    .filter(candidate => candidate.distance <= maxNearbyDistance)
+    .sort((left, right) => left.distance - right.distance)
+    .slice(0, nearbyActiveBlockLimit);
+
+  nearbyCandidates.forEach(candidate => activeModels.add(candidate.model));
+  return activeModels;
 }
 
 type AffineDiagCounters = {
@@ -169,6 +248,80 @@ export class GfxViewportElement extends WithDisposable(ShadowlessElement) {
     }
   `;
 
+  private readonly _parkedBlockViews = new Map<
+    string,
+    { placeholder: Comment; view: HTMLElement }
+  >();
+
+  private readonly _parkedBlockFragment = document.createDocumentFragment();
+
+  private _shouldParkIdleBlocks() {
+    return (
+      shouldUseLowZoomBlockSurvivalMode({
+        zoom: this.viewport.zoom,
+        skipRefreshDuringGesture: this.viewport.SKIP_REFRESH_DURING_GESTURE,
+        gestureActive:
+          this.viewport.panning$.value || this.viewport.zooming$.value,
+      }) && this.viewport.LOW_ZOOM_GESTURE_ACTIVE_BLOCK_LIMIT > 0
+    );
+  }
+
+  private _restoreParkedBlockViews() {
+    this._parkedBlockViews.forEach(({ placeholder, view }) => {
+      if (placeholder.parentNode === this) {
+        placeholder.replaceWith(view);
+      } else if (!view.isConnected) {
+        this.append(view);
+      }
+      placeholder.remove();
+    });
+    this._parkedBlockViews.clear();
+  }
+
+  private _syncMountedBlockViews(
+    shouldRemainMounted: Set<GfxBlockElementModel>
+  ) {
+    if (!this.host) return;
+
+    if (!this._shouldParkIdleBlocks()) {
+      this._restoreParkedBlockViews();
+      return;
+    }
+
+    const gfx = this.host.std.get(GfxControllerIdentifier);
+    gfx.std.view.views.forEach(view => {
+      if (!isGfxBlockComponent(view)) return;
+
+      const parked = this._parkedBlockViews.get(view.model.id);
+      if (shouldRemainMounted.has(view.model)) {
+        if (parked) {
+          if (parked.placeholder.parentNode === this) {
+            parked.placeholder.replaceWith(view);
+          } else if (!view.isConnected) {
+            this.append(view);
+          }
+          parked.placeholder.remove();
+          this._parkedBlockViews.delete(view.model.id);
+        } else if (!view.isConnected || view.parentElement !== this) {
+          this.append(view);
+        }
+        return;
+      }
+
+      if (parked || view.parentElement !== this) {
+        return;
+      }
+
+      const placeholder = document.createComment(`parked:${view.model.id}`);
+      this.replaceChild(placeholder, view);
+      this._parkedBlockFragment.append(view);
+      this._parkedBlockViews.set(view.model.id, {
+        placeholder,
+        view,
+      });
+    });
+  }
+
   private readonly _hideOutsideAndNoSelectedBlock = () => {
     if (!this.host) return;
 
@@ -178,11 +331,26 @@ export class GfxViewportElement extends WithDisposable(ShadowlessElement) {
     const shouldUseSurvivalMode = shouldUseLowZoomBlockSurvivalMode({
       zoom: this.viewport.zoom,
       skipRefreshDuringGesture: this.viewport.SKIP_REFRESH_DURING_GESTURE,
+      gestureActive:
+        this.viewport.panning$.value || this.viewport.zooming$.value,
     });
-    const shouldBeVisible = new Set([
-      ...currentViewportModels,
-      ...currentSelectedModels,
-    ]);
+    const shouldLimitActiveModels =
+      shouldUseSurvivalMode &&
+      this.viewport.LOW_ZOOM_GESTURE_ACTIVE_BLOCK_LIMIT > 0;
+    const limitedActiveModels = shouldLimitActiveModels
+      ? getLowZoomGestureActiveModels({
+          selectedModels: currentSelectedModels,
+          viewportModels: currentViewportModels,
+          viewportBounds: this.viewport.viewportBounds,
+          nearbyActiveBlockLimit:
+            this.viewport.LOW_ZOOM_GESTURE_ACTIVE_BLOCK_LIMIT,
+          nearbyDistanceRatio:
+            this.viewport.LOW_ZOOM_GESTURE_ACTIVE_DISTANCE_RATIO,
+        })
+      : null;
+    const shouldBeVisible =
+      limitedActiveModels ??
+      new Set([...currentViewportModels, ...currentSelectedModels]);
 
     const previousVisible = this._lastVisibleModels
       ? new Set(this._lastVisibleModels)
@@ -204,8 +372,9 @@ export class GfxViewportElement extends WithDisposable(ShadowlessElement) {
       shouldBeVisible.forEach(model => {
         const view = gfx.view.get(model);
         if (!isGfxBlockComponent(view)) return;
-        view.transformState$.value =
-          shouldUseSurvivalMode && !currentSelectedModels.has(model)
+        view.transformState$.value = shouldLimitActiveModels
+          ? 'active'
+          : shouldUseSurvivalMode && !currentSelectedModels.has(model)
             ? 'survival'
             : 'active';
         activatedCount++;
@@ -220,6 +389,8 @@ export class GfxViewportElement extends WithDisposable(ShadowlessElement) {
         deactivatedCount++;
       });
     });
+
+    this._syncMountedBlockViews(shouldBeVisible);
 
     diagCounters.viewportRefreshCalls =
       (diagCounters.viewportRefreshCalls ?? 0) + 1;
@@ -251,11 +422,26 @@ export class GfxViewportElement extends WithDisposable(ShadowlessElement) {
     const shouldUseSurvivalMode = shouldUseLowZoomBlockSurvivalMode({
       zoom: this.viewport.zoom,
       skipRefreshDuringGesture: this.viewport.SKIP_REFRESH_DURING_GESTURE,
+      gestureActive:
+        this.viewport.panning$.value || this.viewport.zooming$.value,
     });
-    const shouldBeVisible = new Set([
-      ...currentViewportModels,
-      ...currentSelectedModels,
-    ]);
+    const shouldLimitActiveModels =
+      shouldUseSurvivalMode &&
+      this.viewport.LOW_ZOOM_GESTURE_ACTIVE_BLOCK_LIMIT > 0;
+    const limitedActiveModels = shouldLimitActiveModels
+      ? getLowZoomGestureActiveModels({
+          selectedModels: currentSelectedModels,
+          viewportModels: currentViewportModels,
+          viewportBounds: this.viewport.viewportBounds,
+          nearbyActiveBlockLimit:
+            this.viewport.LOW_ZOOM_GESTURE_ACTIVE_BLOCK_LIMIT,
+          nearbyDistanceRatio:
+            this.viewport.LOW_ZOOM_GESTURE_ACTIVE_DISTANCE_RATIO,
+        })
+      : null;
+    const shouldBeVisible =
+      limitedActiveModels ??
+      new Set([...currentViewportModels, ...currentSelectedModels]);
 
     const previousVisible = this._lastVisibleModels
       ? new Set(this._lastVisibleModels)
@@ -280,8 +466,9 @@ export class GfxViewportElement extends WithDisposable(ShadowlessElement) {
         if (!isGfxBlockComponent(view)) {
           return;
         }
-        const targetState =
-          shouldUseSurvivalMode && !currentSelectedModels.has(model)
+        const targetState = shouldLimitActiveModels
+          ? 'active'
+          : shouldUseSurvivalMode && !currentSelectedModels.has(model)
             ? 'survival'
             : 'active';
         if (view.transformState$.value !== targetState) {
@@ -310,6 +497,8 @@ export class GfxViewportElement extends WithDisposable(ShadowlessElement) {
       });
     }
 
+    this._syncMountedBlockViews(shouldBeVisible);
+
     diagCounters.blockDeactivateCount =
       (diagCounters.blockDeactivateCount ?? 0) + toHide.length;
 
@@ -335,8 +524,9 @@ export class GfxViewportElement extends WithDisposable(ShadowlessElement) {
           const model = toActivate[i];
           const view = gfx.view.get(model);
           if (!isGfxBlockComponent(view)) continue;
-          view.transformState$.value =
-            shouldUseSurvivalMode && !currentSelectedModels.has(model)
+          view.transformState$.value = shouldLimitActiveModels
+            ? 'active'
+            : shouldUseSurvivalMode && !currentSelectedModels.has(model)
               ? 'survival'
               : 'active';
           activatedInChunk++;
@@ -480,10 +670,14 @@ export class GfxViewportElement extends WithDisposable(ShadowlessElement) {
         const previousMode = shouldUseLowZoomBlockSurvivalMode({
           zoom: previousZoom,
           skipRefreshDuringGesture: this.viewport.SKIP_REFRESH_DURING_GESTURE,
+          gestureActive:
+            this.viewport.panning$.value || this.viewport.zooming$.value,
         });
         const nextMode = shouldUseLowZoomBlockSurvivalMode({
           zoom,
           skipRefreshDuringGesture: this.viewport.SKIP_REFRESH_DURING_GESTURE,
+          gestureActive:
+            this.viewport.panning$.value || this.viewport.zooming$.value,
         });
 
         if (previousMode !== nextMode) {
@@ -497,6 +691,8 @@ export class GfxViewportElement extends WithDisposable(ShadowlessElement) {
           !shouldUseLowZoomBlockSurvivalMode({
             zoom: this.viewport.zoom,
             skipRefreshDuringGesture: this.viewport.SKIP_REFRESH_DURING_GESTURE,
+            gestureActive:
+              this.viewport.panning$.value || this.viewport.zooming$.value,
           })
         ) {
           return;
@@ -527,6 +723,10 @@ export class GfxViewportElement extends WithDisposable(ShadowlessElement) {
         }
       })
     );
+    if (!this.host) {
+      return;
+    }
+
     this.disposables.add(
       this.host.std.view.viewUpdated.subscribe(payload => {
         if (payload.type !== 'block' || payload.method !== 'add') return;
@@ -536,17 +736,41 @@ export class GfxViewportElement extends WithDisposable(ShadowlessElement) {
         const shouldUseSurvivalMode = shouldUseLowZoomBlockSurvivalMode({
           zoom: this.viewport.zoom,
           skipRefreshDuringGesture: this.viewport.SKIP_REFRESH_DURING_GESTURE,
+          gestureActive:
+            this.viewport.panning$.value || this.viewport.zooming$.value,
         });
         const isSelected = currentSelectedModels.has(payload.view.model);
         const isInViewport = this.getModelsInViewport().has(payload.view.model);
+        const shouldLimitActiveModels =
+          shouldUseSurvivalMode &&
+          this.viewport.LOW_ZOOM_GESTURE_ACTIVE_BLOCK_LIMIT > 0;
+        const activeModels = shouldLimitActiveModels
+          ? getLowZoomGestureActiveModels({
+              selectedModels: currentSelectedModels,
+              viewportModels: this.getModelsInViewport(),
+              viewportBounds: this.viewport.viewportBounds,
+              nearbyActiveBlockLimit:
+                this.viewport.LOW_ZOOM_GESTURE_ACTIVE_BLOCK_LIMIT,
+              nearbyDistanceRatio:
+                this.viewport.LOW_ZOOM_GESTURE_ACTIVE_DISTANCE_RATIO,
+            })
+          : null;
 
         payload.view.transformState$.value = isSelected
           ? 'active'
           : isInViewport
-            ? shouldUseSurvivalMode
-              ? 'survival'
-              : 'active'
+            ? shouldLimitActiveModels
+              ? activeModels?.has(payload.view.model)
+                ? 'active'
+                : 'idle'
+              : shouldUseSurvivalMode
+                ? 'survival'
+                : 'active'
             : 'idle';
+
+        if (shouldLimitActiveModels && this._shouldParkIdleBlocks()) {
+          this._syncMountedBlockViews(activeModels ?? new Set());
+        }
       })
     );
 
@@ -676,6 +900,11 @@ export class GfxViewportElement extends WithDisposable(ShadowlessElement) {
 
       const scheduleIdleRefresh = () => {
         cancelPendingRefresh();
+        const delayMs = getPostGestureRecoveryDelay({
+          isPanning: this.viewport.panning$.value,
+          isZooming: this.viewport.zooming$.value,
+          fallbackDelayMs: viewportRuntimeConfig.POST_GESTURE_REFRESH_DELAY,
+        });
         pendingTimerId = setTimeout(() => {
           pendingTimerId = null;
           // If a gesture is still in-flight when the timer fires (e.g. inertial
@@ -700,7 +929,7 @@ export class GfxViewportElement extends WithDisposable(ShadowlessElement) {
               center: [this.viewport.centerX, this.viewport.centerY],
             });
           });
-        }, viewportRuntimeConfig.POST_GESTURE_REFRESH_DELAY);
+        }, delayMs);
       };
 
       // Listen to panning$ to drive the container transform during gestures
@@ -744,6 +973,7 @@ export class GfxViewportElement extends WithDisposable(ShadowlessElement) {
 
   override disconnectedCallback(): void {
     this._clearPendingViewportRefreshTimer();
+    this._restoreParkedBlockViews();
     super.disconnectedCallback();
   }
 

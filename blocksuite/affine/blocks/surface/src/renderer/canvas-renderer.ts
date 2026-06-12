@@ -21,6 +21,7 @@ import type {
 } from '@blocksuite/std/gfx';
 import {
   getEffectiveDpr,
+  getPostGestureRecoveryDelay,
   GfxControllerIdentifier,
   viewportRuntimeConfig,
 } from '@blocksuite/std/gfx';
@@ -33,6 +34,7 @@ import { ElementRendererIdentifier } from '../extensions/element-renderer.js';
 import { RoughCanvas } from '../utils/rough/canvas.js';
 import type { ElementRenderer } from './elements/index.js';
 import type { Overlay } from './overlay.js';
+import { resolveSurfacePlaceholderColor } from './placeholder-style.js';
 
 type EnvProvider = {
   generateColorProperty: (color: Color, fallback?: Color) => string;
@@ -111,6 +113,102 @@ type StackingCanvasState = {
   layerId: string | null;
 };
 
+type AffineDiagCounters = {
+  pageScrollSaves?: number;
+  edgelessViewportEvents?: number;
+  edgelessViewportWrites?: number;
+  edgelessScrollEvents?: number;
+  edgelessScrollTopMax?: number;
+  gestureTransformWrites?: number;
+  gestureTransformSkips?: number;
+  pureTranslateWrites?: number;
+  pureTranslateSkips?: number;
+  viewportRefreshCalls?: number;
+  viewportTrailingRefreshCalls?: number;
+  viewportChunkedRefreshCalls?: number;
+  blockActivateCount?: number;
+  blockDeactivateCount?: number;
+  previewViewportUpdated?: number;
+  previewLayerRefresh?: number;
+  previewResizeEvents?: number;
+  surfaceCanvasRenderCount?: number;
+  surfaceCanvasPlaceholderPassCount?: number;
+  surfaceCanvasPlaceholderElementCountMax?: number;
+  surfaceCanvasFallbackElementCountMax?: number;
+  surfaceCanvasVisibleStackingCanvasCountMax?: number;
+  surfaceCanvasDirtyLayerRenderCountMax?: number;
+  surfaceCanvasViewportSkipRefreshCount?: number;
+  surfaceCanvasDeferredRefreshScheduledCount?: number;
+  surfaceCanvasDeferredRefreshRescheduledCount?: number;
+};
+
+function getAffineDiagCounters() {
+  const win = globalThis as typeof globalThis & {
+    __affineDiagCounters?: AffineDiagCounters;
+  };
+
+  win.__affineDiagCounters ??= {};
+  return win.__affineDiagCounters;
+}
+
+export function recordSurfaceCanvasDiagCounters(
+  counters: Record<string, number | undefined>,
+  metrics: {
+    placeholderElementCount: number;
+    fallbackElementCount: number;
+    visibleStackingCanvasCount: number;
+    dirtyLayerRenderCount: number;
+  }
+) {
+  counters.surfaceCanvasRenderCount =
+    (counters.surfaceCanvasRenderCount ?? 0) + 1;
+
+  if (metrics.placeholderElementCount > 0) {
+    counters.surfaceCanvasPlaceholderPassCount =
+      (counters.surfaceCanvasPlaceholderPassCount ?? 0) + 1;
+  }
+
+  counters.surfaceCanvasPlaceholderElementCountMax = Math.max(
+    counters.surfaceCanvasPlaceholderElementCountMax ?? 0,
+    metrics.placeholderElementCount
+  );
+  counters.surfaceCanvasFallbackElementCountMax = Math.max(
+    counters.surfaceCanvasFallbackElementCountMax ?? 0,
+    metrics.fallbackElementCount
+  );
+  counters.surfaceCanvasVisibleStackingCanvasCountMax = Math.max(
+    counters.surfaceCanvasVisibleStackingCanvasCountMax ?? 0,
+    metrics.visibleStackingCanvasCount
+  );
+  counters.surfaceCanvasDirtyLayerRenderCountMax = Math.max(
+    counters.surfaceCanvasDirtyLayerRenderCountMax ?? 0,
+    metrics.dirtyLayerRenderCount
+  );
+}
+
+export function recordSurfaceCanvasRefreshGapCounter(
+  counters: Record<string, number | undefined>,
+  event:
+    | 'viewport-skip-refresh'
+    | 'deferred-refresh-scheduled'
+    | 'deferred-refresh-rescheduled'
+) {
+  if (event === 'viewport-skip-refresh') {
+    counters.surfaceCanvasViewportSkipRefreshCount =
+      (counters.surfaceCanvasViewportSkipRefreshCount ?? 0) + 1;
+    return;
+  }
+
+  if (event === 'deferred-refresh-scheduled') {
+    counters.surfaceCanvasDeferredRefreshScheduledCount =
+      (counters.surfaceCanvasDeferredRefreshScheduledCount ?? 0) + 1;
+    return;
+  }
+
+  counters.surfaceCanvasDeferredRefreshRescheduledCount =
+    (counters.surfaceCanvasDeferredRefreshRescheduledCount ?? 0) + 1;
+}
+
 type RefreshTarget =
   | { type: 'all' }
   | { type: 'main' }
@@ -145,6 +243,91 @@ export function shouldUseLowZoomSurvivalMode(
   return isIOS && gestureActive && zoom <= IOS_LOW_ZOOM_SURVIVAL_THRESHOLD;
 }
 
+export function getStackingCanvasBypassState(params: {
+  isIOS: boolean;
+  zoom: number;
+  gestureActive: boolean;
+  recoveryActive: boolean;
+  viewportWidth: number;
+  viewportHeight: number;
+}) {
+  const {
+    isIOS,
+    zoom,
+    gestureActive,
+    recoveryActive,
+    viewportWidth,
+    viewportHeight,
+  } = params;
+
+  return (
+    isIOS &&
+    zoom <= IOS_LOW_ZOOM_SURVIVAL_THRESHOLD &&
+    viewportWidth > viewportHeight &&
+    (gestureActive || recoveryActive)
+  );
+}
+
+export function shouldBypassStackingCanvasesDuringLowZoomGesture(params: {
+  isIOS: boolean;
+  zoom: number;
+  gestureActive: boolean;
+  recoveryActive: boolean;
+  viewportWidth: number;
+  viewportHeight: number;
+}) {
+  return getStackingCanvasBypassState(params);
+}
+
+export function getStackingCanvasAttachmentDiff(params: {
+  canvases: HTMLCanvasElement[];
+  wasAttached: boolean;
+  shouldAttach: boolean;
+}) {
+  const { canvases, wasAttached, shouldAttach } = params;
+
+  if (wasAttached === shouldAttach) {
+    return {
+      added: [],
+      removed: [],
+    };
+  }
+
+  return shouldAttach
+    ? {
+        added: canvases,
+        removed: [],
+      }
+    : {
+        added: [],
+        removed: canvases,
+      };
+}
+
+export function shouldRenderCanvasPlaceholders(params: {
+  isIOS: boolean;
+  zoom: number;
+  isPanning: boolean;
+  isZooming: boolean;
+  skipRefreshDuringGesture: boolean;
+  turboEnabled: boolean;
+}) {
+  const {
+    isIOS,
+    zoom,
+    isPanning,
+    isZooming,
+    skipRefreshDuringGesture,
+    turboEnabled,
+  } = params;
+
+  if (shouldUseLowZoomSurvivalMode(isIOS, zoom, isZooming)) {
+    return true;
+  }
+
+  return !skipRefreshDuringGesture && turboEnabled && isZooming && !isPanning;
+}
+
 export class CanvasRenderer {
   private _container!: HTMLElement;
 
@@ -176,6 +359,15 @@ export class CanvasRenderer {
   private _lastCanvasBudgetZoom = 1;
 
   private _lastLowZoomSurvivalMode = false;
+
+  private _lastBypassStackingCanvases = false;
+
+  private _stackingCanvasesAttached = true;
+
+  private _stackingCanvasRecoveryUntil = 0;
+
+  private _stackingCanvasRecoveryTimerId: ReturnType<typeof setTimeout> | null =
+    null;
 
   private _debugMetrics: MutableCanvasRendererDebugMetrics = {
     refreshCount: 0,
@@ -219,6 +411,10 @@ export class CanvasRenderer {
 
   get stackingCanvas() {
     return this._stackingCanvas;
+  }
+
+  get stackingCanvasesAttached() {
+    return this._stackingCanvasesAttached;
   }
 
   constructor(options: RendererOptions) {
@@ -467,6 +663,50 @@ export class CanvasRenderer {
     this._applyStackingCanvasLayout(canvas, null);
   }
 
+  private _syncStackingCanvasAttachment(shouldAttach: boolean) {
+    const payloadDiff = getStackingCanvasAttachmentDiff({
+      canvases: this._stackingCanvas,
+      wasAttached: this._stackingCanvasesAttached,
+      shouldAttach,
+    });
+
+    this._stackingCanvasesAttached = shouldAttach;
+
+    if (!payloadDiff.added.length && !payloadDiff.removed.length) {
+      return;
+    }
+
+    this.stackingCanvasUpdated.next({
+      canvases: this._stackingCanvas,
+      ...payloadDiff,
+    });
+  }
+
+  private _isStackingCanvasRecoveryActive() {
+    return this._stackingCanvasRecoveryUntil > performance.now();
+  }
+
+  private _clearStackingCanvasRecoveryTimer() {
+    if (this._stackingCanvasRecoveryTimerId !== null) {
+      clearTimeout(this._stackingCanvasRecoveryTimerId);
+      this._stackingCanvasRecoveryTimerId = null;
+    }
+  }
+
+  private _scheduleStackingCanvasRecoveryWindow(
+    delayMs = viewportRuntimeConfig.POST_GESTURE_REFRESH_DELAY
+  ) {
+    this._clearStackingCanvasRecoveryTimer();
+    this._stackingCanvasRecoveryUntil = performance.now() + delayMs;
+    this._stackingCanvasRecoveryTimerId = setTimeout(() => {
+      this._stackingCanvasRecoveryTimerId = null;
+      this._stackingCanvasRecoveryUntil = 0;
+      if (this._container) {
+        this._updatePlaceholderMode();
+      }
+    }, delayMs);
+  }
+
   private _syncCanvasBudgetForViewportZoom() {
     const nextZoom = this.viewport.zoom;
 
@@ -488,19 +728,41 @@ export class CanvasRenderer {
   private _updatePlaceholderMode() {
     const gestureActive =
       this.viewport.panning$.value || this.viewport.zooming$.value;
+    const recoveryActive = this._isStackingCanvasRecoveryActive();
     const lowZoomSurvivalMode = shouldUseLowZoomSurvivalMode(
       IS_IOS,
       this.viewport.zoom,
       gestureActive
     );
-    const shouldRenderPlaceholders = lowZoomSurvivalMode
-      ? true
-      : !this.viewport.SKIP_REFRESH_DURING_GESTURE &&
-        this._turboEnabled() &&
-        this.viewport.zooming$.value;
+    const shouldBypassStackingCanvases =
+      shouldBypassStackingCanvasesDuringLowZoomGesture({
+        isIOS: IS_IOS,
+        zoom: this.viewport.zoom,
+        gestureActive,
+        recoveryActive,
+        viewportWidth: this.viewport.width,
+        viewportHeight: this.viewport.height,
+      });
+    const shouldRenderPlaceholders = shouldRenderCanvasPlaceholders({
+      isIOS: IS_IOS,
+      zoom: this.viewport.zoom,
+      isPanning: this.viewport.panning$.value,
+      isZooming: this.viewport.zooming$.value,
+      skipRefreshDuringGesture: this.viewport.SKIP_REFRESH_DURING_GESTURE,
+      turboEnabled: this._turboEnabled(),
+    });
+
+    const bypassModeChanged =
+      this._lastBypassStackingCanvases !== shouldBypassStackingCanvases;
+
+    this._syncStackingCanvasAttachment(!shouldBypassStackingCanvases);
 
     if (this.usePlaceholder === shouldRenderPlaceholders) {
       this._lastLowZoomSurvivalMode = lowZoomSurvivalMode;
+      this._lastBypassStackingCanvases = shouldBypassStackingCanvases;
+      if (bypassModeChanged) {
+        this.refresh({ type: 'all' });
+      }
       return;
     }
 
@@ -508,9 +770,11 @@ export class CanvasRenderer {
     const survivalModeChanged =
       this._lastLowZoomSurvivalMode !== lowZoomSurvivalMode;
     this._lastLowZoomSurvivalMode = lowZoomSurvivalMode;
+    this._lastBypassStackingCanvases = shouldBypassStackingCanvases;
 
     if (
       survivalModeChanged ||
+      bypassModeChanged ||
       !this.viewport.SKIP_REFRESH_DURING_GESTURE ||
       !gestureActive
     ) {
@@ -560,7 +824,9 @@ export class CanvasRenderer {
         };
 
         if (diff > 0) {
-          payload.added = canvases.slice(-diff);
+          if (this._stackingCanvasesAttached) {
+            payload.added = canvases.slice(-diff);
+          }
         } else {
           payload.removed = currentCanvases.slice(diff);
           payload.removed.forEach(canvas => {
@@ -569,7 +835,9 @@ export class CanvasRenderer {
           });
         }
 
-        this.stackingCanvasUpdated.next(payload);
+        if (payload.added.length || payload.removed.length) {
+          this.stackingCanvasUpdated.next(payload);
+        }
       }
 
       this.refresh({ type: 'all' });
@@ -587,6 +855,10 @@ export class CanvasRenderer {
   private _initViewport() {
     let sizeUpdatedRafId: number | null = null;
 
+    this._disposables.add({
+      dispose: () => this._clearStackingCanvasRecoveryTimer(),
+    });
+
     this._disposables.add(
       this.viewport.zoomUpdated.subscribe(() => {
         this._syncCanvasBudgetForViewportZoom();
@@ -600,6 +872,10 @@ export class CanvasRenderer {
           this.viewport.SKIP_REFRESH_DURING_GESTURE &&
           (this.viewport.panning$.value || this.viewport.zooming$.value)
         ) {
+          recordSurfaceCanvasRefreshGapCounter(
+            getAffineDiagCounters(),
+            'viewport-skip-refresh'
+          );
           return;
         }
         this.refresh({ type: 'all' });
@@ -608,6 +884,17 @@ export class CanvasRenderer {
 
     this._disposables.add(
       this.viewport.sizeUpdated.subscribe(() => {
+        if (
+          IS_IOS &&
+          this.viewport.zoom <= IOS_LOW_ZOOM_SURVIVAL_THRESHOLD &&
+          this.viewport.width > this.viewport.height
+        ) {
+          this._scheduleStackingCanvasRecoveryWindow();
+          if (this._container) {
+            this._updatePlaceholderMode();
+          }
+        }
+
         if (sizeUpdatedRafId) return;
         sizeUpdatedRafId = requestConnectedFrame(() => {
           sizeUpdatedRafId = null;
@@ -630,11 +917,9 @@ export class CanvasRenderer {
       })
     );
 
-    // When SKIP_REFRESH_DURING_GESTURE is enabled, defer the post-gesture
-    // canvas re-render using a fixed minimum delay (setTimeout) so it doesn't
-    // start during the critical window when the user might resume gesturing.
-    // requestIdleCallback fires immediately when idle — we need a guaranteed
-    // minimum wait to avoid blocking the main thread during quick gesture pauses.
+    // When SKIP_REFRESH_DURING_GESTURE is enabled, defer heavy canvas work
+    // while the gesture is still in-flight, but start the first recovery frame
+    // immediately once both gesture signals have fully settled.
     if (this.viewport.SKIP_REFRESH_DURING_GESTURE) {
       let pendingCanvasTimerId: ReturnType<typeof setTimeout> | null = null;
 
@@ -646,18 +931,31 @@ export class CanvasRenderer {
       };
 
       const scheduleCanvasRefresh = () => {
+        recordSurfaceCanvasRefreshGapCounter(
+          getAffineDiagCounters(),
+          'deferred-refresh-scheduled'
+        );
         cancelPendingCanvasRefresh();
+        const delayMs = getPostGestureRecoveryDelay({
+          isPanning: this.viewport.panning$.value,
+          isZooming: this.viewport.zooming$.value,
+          fallbackDelayMs: viewportRuntimeConfig.POST_GESTURE_REFRESH_DELAY,
+        });
         pendingCanvasTimerId = setTimeout(() => {
           pendingCanvasTimerId = null;
           // If a gesture is still in-flight when the timer fires, reschedule
           // instead of dropping. Dropping here left connectors blank until a
           // tap forced a synchronous refresh.
           if (this.viewport.panning$.value || this.viewport.zooming$.value) {
+            recordSurfaceCanvasRefreshGapCounter(
+              getAffineDiagCounters(),
+              'deferred-refresh-rescheduled'
+            );
             scheduleCanvasRefresh();
             return;
           }
           this.refresh({ type: 'all' });
-        }, viewportRuntimeConfig.POST_GESTURE_REFRESH_DELAY);
+        }, delayMs);
       };
 
       this._disposables.add(
@@ -665,7 +963,7 @@ export class CanvasRenderer {
           this._updatePlaceholderMode();
           if (panning) {
             cancelPendingCanvasRefresh();
-          } else if (!this.viewport.zooming$.value) {
+          } else {
             scheduleCanvasRefresh();
           }
         })
@@ -675,7 +973,7 @@ export class CanvasRenderer {
           this._updatePlaceholderMode();
           if (zooming) {
             cancelPendingCanvasRefresh();
-          } else if (!this.viewport.panning$.value) {
+          } else {
             scheduleCanvasRefresh();
           }
         })
@@ -741,9 +1039,20 @@ export class CanvasRenderer {
     const matrix = new DOMMatrix().scaleSelf(scale);
     const renderStats = this._createRenderPassStats();
     const fullRender = this._needsFullRender;
-    const stackingIndexesToRender = fullRender
-      ? this._stackingCanvas.map((_, idx) => idx)
-      : [...this._dirtyStackingCanvasIndexes];
+    const bypassStackingCanvases = getStackingCanvasBypassState({
+      isIOS: IS_IOS,
+      zoom: this.viewport.zoom,
+      gestureActive:
+        this.viewport.panning$.value || this.viewport.zooming$.value,
+      recoveryActive: this._isStackingCanvasRecoveryActive(),
+      viewportWidth: this.viewport.width,
+      viewportHeight: this.viewport.height,
+    });
+    const stackingIndexesToRender = bypassStackingCanvases
+      ? []
+      : fullRender
+        ? this._stackingCanvas.map((_, idx) => idx)
+        : [...this._dirtyStackingCanvasIndexes];
     /**
      * if a layer does not have a corresponding canvas
      * its element will be add to this array and drawing on the
@@ -752,6 +1061,12 @@ export class CanvasRenderer {
     let fallbackElement: SurfaceElementModel[] = [];
     const allCanvasLayers = this.layerManager.getCanvasLayers();
     const viewportBound = Bound.from(viewportBounds);
+
+    if (bypassStackingCanvases) {
+      this._stackingCanvas.forEach(canvas => {
+        this._applyStackingCanvasLayout(canvas, null, dpr);
+      });
+    }
 
     for (const idx of stackingIndexesToRender) {
       const layer = allCanvasLayers[idx];
@@ -800,7 +1115,12 @@ export class CanvasRenderer {
 
     if (fullRender || this._mainCanvasDirty) {
       allCanvasLayers.forEach((layer, idx) => {
-        if (!this._stackingCanvas[idx]) {
+        if (
+          bypassStackingCanvases ||
+          !this._stackingCanvas[idx] ||
+          this._stackingCanvas[idx].width === 0 ||
+          this._stackingCanvas[idx].height === 0
+        ) {
           fallbackElement = fallbackElement.concat(layer.elements);
         }
       });
@@ -854,6 +1174,14 @@ export class CanvasRenderer {
         canvas => canvas.width > 0 && canvas.height > 0
       ).length,
     };
+
+    recordSurfaceCanvasDiagCounters(getAffineDiagCounters(), {
+      placeholderElementCount: renderStats.placeholderElementCount,
+      fallbackElementCount: fallbackElement.length,
+      visibleStackingCanvasCount:
+        this._lastDebugSnapshot.visibleStackingCanvasCount,
+      dirtyLayerRenderCount: stackingIndexesToRender.length,
+    });
 
     this._needsFullRender = false;
     this._mainCanvasDirty = false;
@@ -910,7 +1238,7 @@ export class CanvasRenderer {
         ) {
           renderStats && (renderStats.placeholderElementCount += 1);
           ctx.save();
-          ctx.fillStyle = 'rgba(200, 200, 200, 0.5)';
+          ctx.fillStyle = resolveSurfacePlaceholderColor(this.getColorScheme());
           const drawX = element.x - bound.x;
           const drawY = element.y - bound.y;
           ctx.fillRect(drawX, drawY, element.w, element.h);
@@ -1001,6 +1329,7 @@ export class CanvasRenderer {
     this._container = container;
     container.append(this.canvas);
 
+    this._updatePlaceholderMode();
     this._resetSize();
     this.refresh({ type: 'all' });
   }

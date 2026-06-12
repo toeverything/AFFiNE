@@ -1,3 +1,8 @@
+import {
+  getAffinePlaceholderFillColor,
+  getAffinePlaceholderStrokeColor,
+  inferColorSchemeFromThemeMode,
+} from '@blocksuite/affine-shared/theme';
 import type { EditorHost, GfxBlockComponent } from '@blocksuite/std';
 import { getEffectiveDpr, type Viewport } from '@blocksuite/std/gfx';
 import type { BlockModel } from '@blocksuite/store';
@@ -196,15 +201,15 @@ export function paintPlaceholder(
 
   const offsetX = layoutViewCoord[0];
   const offsetY = layoutViewCoord[1];
-  const colors = [
-    'rgba(200, 200, 200, 0.7)',
-    'rgba(180, 180, 180, 0.7)',
-    'rgba(160, 160, 160, 0.7)',
-  ];
+  const colorScheme = inferColorSchemeFromThemeMode(
+    document.documentElement.dataset.theme
+  );
+  const fillColor = getAffinePlaceholderFillColor(colorScheme);
+  const strokeColor = getAffinePlaceholderStrokeColor(colorScheme);
 
-  const paintNode = (node: BlockLayoutTreeNode, depth: number = 0) => {
+  const paintNode = (node: BlockLayoutTreeNode) => {
     const { layout: nodeLayout } = node;
-    ctx.fillStyle = colors[depth % colors.length];
+    ctx.fillStyle = fillColor;
     const rect = nodeLayout.rect;
     const x = ((rect.x - overallRect.x) * viewport.zoom + offsetX) * dpr;
     const y = ((rect.y - overallRect.y) * viewport.zoom + offsetY) * dpr;
@@ -213,12 +218,12 @@ export function paintPlaceholder(
 
     ctx.fillRect(x, y, width, height);
     if (width > 10 && height > 5) {
-      ctx.strokeStyle = 'rgba(150, 150, 150, 0.3)';
+      ctx.strokeStyle = strokeColor;
       ctx.strokeRect(x, y, width, height);
     }
 
     if (node.children.length > 0) {
-      node.children.forEach(childNode => paintNode(childNode, depth + 1));
+      node.children.forEach(childNode => paintNode(childNode));
     }
   };
 
