@@ -145,8 +145,11 @@ describe('edgeless canvas budget', () => {
     ).toBe(true);
   });
 
-  test('shares one bypass decision for placeholder and render paths in the low-zoom iOS landscape danger window', () => {
+  test('shares one bypass decision for placeholder and render paths across the low-zoom iOS landscape danger window and idle steady state', () => {
     expect('getStackingCanvasBypassState' in canvasRendererModule).toBe(true);
+    expect(
+      'shouldBypassStackingCanvasesDuringLowZoomGesture' in canvasRendererModule
+    ).toBe(true);
 
     const getStackingCanvasBypassState = (
       canvasRendererModule as {
@@ -160,6 +163,18 @@ describe('edgeless canvas budget', () => {
         }) => boolean;
       }
     ).getStackingCanvasBypassState;
+    const shouldBypassStackingCanvasesDuringLowZoomGesture = (
+      canvasRendererModule as {
+        shouldBypassStackingCanvasesDuringLowZoomGesture: (params: {
+          isIOS: boolean;
+          zoom: number;
+          gestureActive: boolean;
+          recoveryActive: boolean;
+          viewportWidth: number;
+          viewportHeight: number;
+        }) => boolean;
+      }
+    ).shouldBypassStackingCanvasesDuringLowZoomGesture;
 
     expect(
       getStackingCanvasBypassState({
@@ -190,7 +205,17 @@ describe('edgeless canvas budget', () => {
         viewportWidth: 932,
         viewportHeight: 430,
       })
-    ).toBe(false);
+    ).toBe(true);
+    expect(
+      shouldBypassStackingCanvasesDuringLowZoomGesture({
+        isIOS: true,
+        zoom: 0.4,
+        gestureActive: false,
+        recoveryActive: false,
+        viewportWidth: 932,
+        viewportHeight: 430,
+      })
+    ).toBe(true);
     expect(
       getStackingCanvasBypassState({
         isIOS: true,
@@ -221,6 +246,91 @@ describe('edgeless canvas budget', () => {
         viewportHeight: 430,
       })
     ).toBe(false);
+  });
+
+  test('idle low-zoom landscape bypass detaches stacking canvases through the existing attachment path', () => {
+    expect(
+      'shouldBypassStackingCanvasesDuringLowZoomGesture' in canvasRendererModule
+    ).toBe(true);
+    expect('getStackingCanvasAttachmentDiff' in canvasRendererModule).toBe(
+      true
+    );
+
+    const shouldBypassStackingCanvasesDuringLowZoomGesture = (
+      canvasRendererModule as {
+        shouldBypassStackingCanvasesDuringLowZoomGesture: (params: {
+          isIOS: boolean;
+          zoom: number;
+          gestureActive: boolean;
+          recoveryActive: boolean;
+          viewportWidth: number;
+          viewportHeight: number;
+        }) => boolean;
+      }
+    ).shouldBypassStackingCanvasesDuringLowZoomGesture;
+    const getStackingCanvasAttachmentDiff = (
+      canvasRendererModule as {
+        getStackingCanvasAttachmentDiff: (params: {
+          canvases: HTMLCanvasElement[];
+          wasAttached: boolean;
+          shouldAttach: boolean;
+        }) => {
+          added: HTMLCanvasElement[];
+          removed: HTMLCanvasElement[];
+        };
+      }
+    ).getStackingCanvasAttachmentDiff;
+
+    const canvases = [document.createElement('canvas')];
+    const shouldBypass = shouldBypassStackingCanvasesDuringLowZoomGesture({
+      isIOS: true,
+      zoom: 0.4,
+      gestureActive: false,
+      recoveryActive: false,
+      viewportWidth: 932,
+      viewportHeight: 430,
+    });
+
+    expect(shouldBypass).toBe(true);
+    expect(
+      getStackingCanvasAttachmentDiff({
+        canvases,
+        wasAttached: true,
+        shouldAttach: !shouldBypass,
+      })
+    ).toEqual({
+      added: [],
+      removed: canvases,
+    });
+  });
+
+  test('uses overscan only for main-canvas fallback culling while keeping the render origin on the exact viewport', () => {
+    expect('getMainCanvasFallbackBounds' in canvasRendererModule).toBe(true);
+
+    const getMainCanvasFallbackBounds = (
+      canvasRendererModule as {
+        getMainCanvasFallbackBounds: (params: {
+          viewportBounds: Bound;
+          overscanViewportBounds: Bound;
+        }) => {
+          cullBound: Bound;
+          renderBound: Bound;
+        };
+      }
+    ).getMainCanvasFallbackBounds;
+
+    const viewportBounds = new Bound(100, 200, 300, 150);
+    const overscanViewportBounds = new Bound(40, 170, 420, 210);
+
+    expect(
+      getMainCanvasFallbackBounds({
+        viewportBounds,
+        overscanViewportBounds,
+      })
+    ).toEqual({
+      cullBound: overscanViewportBounds,
+      renderBound: viewportBounds,
+    });
   });
 
   test('computes stacking canvas DOM attachment diffs when bypass toggles', () => {

@@ -254,8 +254,8 @@ export function getStackingCanvasBypassState(params: {
   const {
     isIOS,
     zoom,
-    gestureActive,
-    recoveryActive,
+    gestureActive: _gestureActive,
+    recoveryActive: _recoveryActive,
     viewportWidth,
     viewportHeight,
   } = params;
@@ -263,8 +263,7 @@ export function getStackingCanvasBypassState(params: {
   return (
     isIOS &&
     zoom <= IOS_LOW_ZOOM_SURVIVAL_THRESHOLD &&
-    viewportWidth > viewportHeight &&
-    (gestureActive || recoveryActive)
+    viewportWidth > viewportHeight
   );
 }
 
@@ -302,6 +301,18 @@ export function getStackingCanvasAttachmentDiff(params: {
         added: [],
         removed: canvases,
       };
+}
+
+export function getMainCanvasFallbackBounds(params: {
+  viewportBounds: Bound;
+  overscanViewportBounds: Bound;
+}) {
+  const { viewportBounds, overscanViewportBounds } = params;
+
+  return {
+    cullBound: overscanViewportBounds,
+    renderBound: viewportBounds,
+  };
 }
 
 export function shouldRenderCanvasPlaceholders(params: {
@@ -1031,8 +1042,14 @@ export class CanvasRenderer {
 
   private _render() {
     const renderStart = performance.now();
-    const { overscanViewportBounds, zoom } = this.viewport;
-    const viewportBounds = overscanViewportBounds;
+    const { overscanViewportBounds, viewportBounds, zoom } = this.viewport;
+    const {
+      cullBound: mainCanvasCullBound,
+      renderBound: mainCanvasRenderBound,
+    } = getMainCanvasFallbackBounds({
+      viewportBounds,
+      overscanViewportBounds,
+    });
     const { ctx } = this;
     const dpr = getEffectiveDpr(zoom);
     const scale = zoom * dpr;
@@ -1133,10 +1150,11 @@ export class CanvasRenderer {
         ctx,
         matrix,
         new RoughCanvas(ctx.canvas),
-        viewportBounds,
+        mainCanvasRenderBound,
         fallbackElement,
         true,
-        renderStats
+        renderStats,
+        mainCanvasCullBound
       );
     }
 
@@ -1216,7 +1234,8 @@ export class CanvasRenderer {
     bound: IBound,
     surfaceElements?: SurfaceElementModel[],
     overLay: boolean = false,
-    renderStats?: RenderPassStats
+    renderStats?: RenderPassStats,
+    cullBound: IBound = bound
   ) {
     if (!ctx) return;
 
@@ -1224,13 +1243,13 @@ export class CanvasRenderer {
 
     const elements =
       surfaceElements ??
-      (this.grid.search(bound, {
+      (this.grid.search(cullBound, {
         filter: ['canvas', 'local'],
       }) as SurfaceElementModel[]);
 
     for (const element of elements) {
       const display = (element.display ?? true) && !element.hidden;
-      if (display && intersects(getBoundWithRotation(element), bound)) {
+      if (display && intersects(getBoundWithRotation(element), cullBound)) {
         renderStats && (renderStats.visibleElementCount += 1);
         if (
           this.usePlaceholder &&
