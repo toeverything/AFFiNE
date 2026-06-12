@@ -4,6 +4,7 @@
 
 import { describe, expect, test } from 'vitest';
 
+import * as immersiveModule from './mobile-detail-page.immersive';
 import {
   getImmersiveZoomToolbarBottom,
   isImmersiveTapTarget,
@@ -52,6 +53,56 @@ describe('mobile detail page immersive helpers', () => {
         matchesLandscape: false,
       })
     ).toBe(false);
+  });
+
+  test('marks mismatched orientation signals as unsettled so immersive mode can retry the first rotation sample', () => {
+    expect('getLandscapeWindowMeasurement' in immersiveModule).toBe(true);
+
+    const getLandscapeWindowMeasurement = (
+      immersiveModule as {
+        getLandscapeWindowMeasurement: (params: {
+          width: number;
+          height: number;
+          matchesLandscape: boolean;
+        }) => {
+          isLandscape: boolean;
+          settled: boolean;
+        };
+      }
+    ).getLandscapeWindowMeasurement;
+
+    expect(
+      getLandscapeWindowMeasurement({
+        width: 844,
+        height: 390,
+        matchesLandscape: false,
+      })
+    ).toEqual({
+      isLandscape: false,
+      settled: false,
+    });
+
+    expect(
+      getLandscapeWindowMeasurement({
+        width: 390,
+        height: 844,
+        matchesLandscape: true,
+      })
+    ).toEqual({
+      isLandscape: false,
+      settled: false,
+    });
+
+    expect(
+      getLandscapeWindowMeasurement({
+        width: 844,
+        height: 390,
+        matchesLandscape: true,
+      })
+    ).toEqual({
+      isLandscape: true,
+      settled: true,
+    });
   });
 
   test('ignores taps from edgeless toolbar chrome targets', () => {

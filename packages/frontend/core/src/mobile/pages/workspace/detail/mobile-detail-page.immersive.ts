@@ -8,6 +8,23 @@ const IMMERSIVE_TAP_EXCLUDE_SELECTORS = [
   '.affine-edgeless-selected-rect',
 ].join(', ');
 
+export function getLandscapeWindowMeasurement({
+  width,
+  height,
+  matchesLandscape,
+}: {
+  width: number;
+  height: number;
+  matchesLandscape: boolean;
+}) {
+  const geometryLandscape = width > height;
+
+  return {
+    isLandscape: matchesLandscape && geometryLandscape,
+    settled: matchesLandscape === geometryLandscape,
+  };
+}
+
 export function isLandscapeWindow({
   width,
   height,
@@ -17,7 +34,11 @@ export function isLandscapeWindow({
   height: number;
   matchesLandscape: boolean;
 }) {
-  return matchesLandscape && width > height;
+  return getLandscapeWindowMeasurement({
+    width,
+    height,
+    matchesLandscape,
+  }).isLandscape;
 }
 
 export function shouldEnableEdgelessImmersive({

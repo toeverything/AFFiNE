@@ -46,6 +46,7 @@ import { JournalDatePicker } from './journal-date-picker';
 import * as styles from './mobile-detail-page.css';
 import {
   getImmersiveZoomToolbarBottom,
+  getLandscapeWindowMeasurement,
   isImmersiveTapTarget,
   isLandscapeWindow,
   isTapWithinSlop,
@@ -273,6 +274,8 @@ const notFoundWithBack = getNotFound(true);
 const getShouldShowTitle = () =>
   shouldShowMobileDetailPageTitle(window.scrollY);
 
+const LANDSCAPE_MEASUREMENT_MAX_RETRIES = 4;
+
 const getIsLandscape = () =>
   isLandscapeWindow({
     width: window.innerWidth,
@@ -395,19 +398,40 @@ const MobileDetailPageContent = ({
   useEffect(() => {
     const mediaQuery = window.matchMedia('(orientation: landscape)');
     let frame = 0;
+    let disposed = false;
+    let remainingRetries = 0;
+
+    const sampleLandscape = () => {
+      frame = 0;
+
+      if (disposed) {
+        return;
+      }
+
+      const measurement = getLandscapeWindowMeasurement({
+        width: window.innerWidth,
+        height: window.innerHeight,
+        matchesLandscape: mediaQuery.matches,
+      });
+
+      setIsLandscape(prev => {
+        const next = measurement.isLandscape;
+        return prev === next ? prev : next;
+      });
+
+      if (!measurement.settled && remainingRetries > 0) {
+        remainingRetries -= 1;
+        frame = window.requestAnimationFrame(sampleLandscape);
+      }
+    };
 
     const updateLandscape = () => {
       if (frame) {
         window.cancelAnimationFrame(frame);
       }
 
-      frame = window.requestAnimationFrame(() => {
-        frame = 0;
-        setIsLandscape(prev => {
-          const next = getIsLandscape();
-          return prev === next ? prev : next;
-        });
-      });
+      remainingRetries = LANDSCAPE_MEASUREMENT_MAX_RETRIES;
+      frame = window.requestAnimationFrame(sampleLandscape);
     };
 
     updateLandscape();
@@ -415,6 +439,7 @@ const MobileDetailPageContent = ({
     mediaQuery.addEventListener('change', updateLandscape);
 
     return () => {
+      disposed = true;
       if (frame) {
         window.cancelAnimationFrame(frame);
       }
