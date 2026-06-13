@@ -9,9 +9,9 @@ import { WithDisposable } from '@blocksuite/global/lit';
 import { noop } from '@blocksuite/global/utils';
 import { MoreVerticalIcon } from '@blocksuite/icons/lit';
 import { flip, offset } from '@floating-ui/dom';
+import { effect } from '@preact/signals-core';
 import { css, html, LitElement } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
-import { styleMap } from 'lit/directives/style-map.js';
 
 import type { CodeBlockToolbarContext } from '../context.js';
 
@@ -82,18 +82,10 @@ export class AffineCodeToolbar extends WithDisposable(LitElement) {
 
     createLitPortal({
       template: html`
-        <editor-menu-content
-          data-show
-          class="more-popup-menu"
-          style=${styleMap({
-            '--content-padding': '8px',
-            '--packed-height': '4px',
-          })}
-        >
-          <div data-size="large" data-orientation="vertical">
-            ${renderGroups(this.moreGroups, this.context)}
-          </div>
-        </editor-menu-content>
+        <affine-code-more-menu
+          .context=${this.context}
+          .moreGroups=${this.moreGroups}
+        ></affine-code-more-menu>
       `,
       // should be greater than block-selection z-index as selection and popover wil share the same stacking context(editor-host)
       portalStyles: {
@@ -115,6 +107,17 @@ export class AffineCodeToolbar extends WithDisposable(LitElement) {
   override disconnectedCallback() {
     super.disconnectedCallback();
     this.closeCurrentMenu();
+  }
+
+  override connectedCallback() {
+    super.connectedCallback();
+    // Mirror the collapsed$ signal from the block component into local @state
+    // so this LitElement re-renders when it changes.
+    this.disposables.add(
+      effect(() => {
+        this._collapsed = this.context.blockComponent.collapsed$.value;
+      })
+    );
   }
 
   override render() {
@@ -144,6 +147,9 @@ export class AffineCodeToolbar extends WithDisposable(LitElement) {
 
   @state()
   private accessor _moreMenuOpen = false;
+
+  @state()
+  private accessor _collapsed = false;
 
   @property({ attribute: false })
   accessor context!: CodeBlockToolbarContext;

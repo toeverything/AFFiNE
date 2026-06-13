@@ -1,0 +1,3 @@
+mutation clearWorkspaceByokConfigs($workspaceId: String!) {
+  clearWorkspaceByokConfigs(workspaceId: $workspaceId)
+}

@@ -20,6 +20,9 @@ public class GetCurrentUserQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("currentUser", CurrentUser?.self),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      GetCurrentUserQuery.Data.self
+    ] }
 
     /// Get current user
     public var currentUser: CurrentUser? { __data["currentUser"] }
@@ -41,6 +44,9 @@ public class GetCurrentUserQuery: GraphQLQuery {
         .field("avatarUrl", String?.self),
         .field("token", Token.self),
       ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        GetCurrentUserQuery.Data.CurrentUser.self
+      ] }
 
       public var id: AffineGraphQL.ID { __data["id"] }
       /// User name
@@ -51,7 +57,7 @@ public class GetCurrentUserQuery: GraphQLQuery {
       public var emailVerified: Bool { __data["emailVerified"] }
       /// User avatar url
       public var avatarUrl: String? { __data["avatarUrl"] }
-      @available(*, deprecated, message: "use [/api/auth/sign-in?native=true] instead")
+      @available(*, deprecated, message: "use native session exchange instead")
       public var token: Token { __data["token"] }
 
       /// CurrentUser.Token
@@ -65,6 +71,9 @@ public class GetCurrentUserQuery: GraphQLQuery {
         public static var __selections: [ApolloAPI.Selection] { [
           .field("__typename", String.self),
           .field("sessionToken", String?.self),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          GetCurrentUserQuery.Data.CurrentUser.Token.self
         ] }
 
         public var sessionToken: String? { __data["sessionToken"] }

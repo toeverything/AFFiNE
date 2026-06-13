@@ -2,12 +2,14 @@
 edition      = "2024"
 license-file = "LICENSE"
 name         = "affine_server_native"
+publish      = false
 version      = "1.0.0"
 
 [lib]
 crate-type = ["cdylib"]
 
 [dependencies]
+aes-gcm = { workspace = true }
 affine_common = { workspace = true, features = [
   "doc-loader",
   "hashcash",
@@ -17,22 +19,28 @@ affine_common = { workspace = true, features = [
 anyhow = { workspace = true }
 chrono = { workspace = true }
 file-format = { workspace = true }
+hex = { workspace = true }
 image = { workspace = true }
 infer = { workspace = true }
+jsonschema = "0.46"
 libwebp-sys = { workspace = true }
 little_exif = { workspace = true }
-llm_adapter = { workspace = true, default-features = false, features = [
-  "ureq-client",
-] }
+llm_adapter = { workspace = true, features = ["schema", "ureq-client"] }
+llm_runtime = { workspace = true, features = ["schema", "ureq-client"] }
 matroska = { workspace = true }
 mp4parse = { workspace = true }
-napi = { workspace = true, features = ["async"] }
+napi = { workspace = true, features = ["async", "serde-json"] }
 napi-derive = { workspace = true }
+p256 = { workspace = true }
 rand = { workspace = true }
+safefetch = { workspace = true }
+schemars = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
+sha2 = { workspace = true }
 sha3 = { workspace = true }
 tiktoken-rs = { workspace = true }
+url = { workspace = true }
 v_htmlescape = { workspace = true }
 y-octo = { workspace = true, features = ["large_refs"] }
 

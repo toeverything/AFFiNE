@@ -3,68 +3,63 @@ import {
   Controller,
   HttpCode,
   HttpStatus,
-  Logger,
   Post,
   type RawBodyRequest,
   Req,
   Res,
 } from '@nestjs/common';
-import { ConnectedAccount } from '@prisma/client';
 import type { Request, Response } from 'express';
 
 import {
   ActionForbidden,
-  Config,
   getClientVersionFromRequest,
-  InvalidAuthState,
-  InvalidOauthCallbackState,
   MissingOauthQueryParameter,
-  OauthAccountAlreadyConnected,
-  OauthStateExpired,
-  SignUpForbidden,
   UnknownOauthProvider,
   URLHelper,
   UseNamedGuard,
 } from '../../base';
-import { AuthService, Public } from '../../core/auth';
-import { Models } from '../../models';
+import {
+  OAuthCallbackBodySchema,
+  OAuthPreflightBodySchema,
+  Public,
+  SessionIssuer,
+} from '../../core/auth';
 import { OAuthProviderName } from './config';
 import { OAuthProviderFactory } from './factory';
-import { OAuthAccount, Tokens } from './providers/def';
 import { OAuthService } from './service';
 
 @Controller('/api/oauth')
 export class OAuthController {
-  private readonly logger = new Logger(OAuthController.name);
-
   constructor(
-    private readonly auth: AuthService,
+    private readonly sessionIssuer: SessionIssuer,
     private readonly oauth: OAuthService,
-    private readonly models: Models,
     private readonly providerFactory: OAuthProviderFactory,
-    private readonly url: URLHelper,
-    private readonly config: Config
+    private readonly url: URLHelper
   ) {}
 
   @Public()
   @UseNamedGuard('version')
   @Post('/preflight')
   @HttpCode(HttpStatus.OK)
-  async preflight(
-    @Req() req: Request,
-    @Body('provider') unknownProviderName?: keyof typeof OAuthProviderName,
-    @Body('redirect_uri') redirectUri?: string,
-    @Body('client') client?: string,
-    @Body('client_nonce') clientNonce?: string
-  ) {
-    if (!unknownProviderName) {
+  async preflight(@Req() req: Request, @Body() body?: unknown) {
+    const input = OAuthPreflightBodySchema.safeParse(body);
+    if (!input.success) {
+      const fields = new Set(input.error.issues.map(issue => issue.path[0]));
+      if (fields.has('client_nonce')) {
+        throw new MissingOauthQueryParameter({ name: 'client_nonce' });
+      }
       throw new MissingOauthQueryParameter({ name: 'provider' });
     }
-    if (!clientNonce) {
-      throw new MissingOauthQueryParameter({ name: 'client_nonce' });
-    }
 
-    const providerName = OAuthProviderName[unknownProviderName];
+    const {
+      provider: unknownProviderName,
+      redirect_uri: redirectUri,
+      client,
+      client_nonce: clientNonce,
+    } = input.data;
+
+    const providerName =
+      OAuthProviderName[unknownProviderName as keyof typeof OAuthProviderName];
     const provider = this.providerFactory.get(providerName);
 
     if (!provider) {
@@ -123,57 +118,38 @@ export class OAuthController {
   async callback(
     @Req() req: RawBodyRequest<Request>,
     @Res() res: Response,
-    @Body('code') code?: string,
-    @Body('state') stateStr?: string,
-    @Body('client_nonce') clientNonce?: string
+    @Body() body?: unknown
   ) {
-    // TODO(@forehalo): refactor and remove deprecated code in 0.23
-    if (!code) {
-      throw new MissingOauthQueryParameter({ name: 'code' });
-    }
-
-    if (!stateStr) {
+    const input = OAuthCallbackBodySchema.safeParse(body);
+    if (!input.success) {
+      const fields = new Set(input.error.issues.map(issue => issue.path[0]));
+      if (fields.has('code')) {
+        throw new MissingOauthQueryParameter({ name: 'code' });
+      }
+      if (fields.has('state')) {
+        throw new MissingOauthQueryParameter({ name: 'state' });
+      }
       throw new MissingOauthQueryParameter({ name: 'state' });
     }
 
-    // NOTE(@forehalo): Apple sign in will directly post /callback, with `state` set at #L73
-    let rawState = null;
-    if (typeof stateStr === 'string' && stateStr.length > 36) {
-      try {
-        rawState = JSON.parse(stateStr);
-        stateStr = rawState.state;
-      } catch {
-        /* noop */
-      }
-    }
+    const { code, state: stateStr, client_nonce: clientNonce } = input.data;
 
-    if (typeof stateStr !== 'string' || !this.oauth.isValidState(stateStr)) {
-      throw new InvalidOauthCallbackState();
-    }
+    const verified = await this.oauth.verifyCallback({
+      code,
+      stateStr,
+      clientNonce,
+      rawBody: req.rawBody,
+    });
 
-    const state = await this.oauth.getOAuthState(stateStr);
-
-    if (!state) {
-      throw new OauthStateExpired();
-    }
-    if (!state.token) {
-      state.token = stateStr;
-    }
-
-    if (
-      state.provider === OAuthProviderName.Apple &&
-      rawState &&
-      state.client &&
-      state.client !== 'web'
-    ) {
-      const clientUrl = new URL(`${state.client}://authentication`);
+    if (verified.type === 'handoff') {
+      const clientUrl = new URL(`${verified.state.client}://authentication`);
       clientUrl.searchParams.set('method', 'oauth');
       clientUrl.searchParams.set(
         'payload',
         JSON.stringify({
-          state: stateStr,
+          state: verified.stateToken,
           code,
-          provider: rawState.provider,
+          provider: verified.provider,
         })
       );
       clientUrl.searchParams.set('server', this.url.requestOrigin);
@@ -185,46 +161,8 @@ export class OAuthController {
       );
     }
 
-    if (!state.provider) {
-      throw new MissingOauthQueryParameter({ name: 'provider' });
-    }
-
-    const provider = this.providerFactory.get(state.provider);
-
-    if (!provider) {
-      throw new UnknownOauthProvider({ name: state.provider ?? 'unknown' });
-    }
-
-    if (
-      state.provider !== OAuthProviderName.Apple &&
-      (!clientNonce || !state.clientNonce || state.clientNonce !== clientNonce)
-    ) {
-      throw new InvalidAuthState();
-    }
-
-    let tokens: Tokens;
-    try {
-      tokens = await provider.getToken(code, state);
-    } catch (err) {
-      let rayBodyString = '';
-      if (req.rawBody) {
-        // only log the first 4096 bytes of the raw body
-        rayBodyString = req.rawBody.subarray(0, 4096).toString('utf-8');
-      }
-      this.logger.warn(
-        `Error getting oauth token for ${state.provider}, callback code: ${code}, stateStr: ${stateStr}, rawBody: ${rayBodyString}, error: ${err}`
-      );
-      throw err;
-    }
-
-    const externAccount = await provider.getUser(tokens, state);
-    const user = await this.getOrCreateUserFromOauth(
-      state.provider,
-      externAccount,
-      tokens
-    );
-
-    await this.auth.setCookies(req, res, user.id, state.clientVersion);
+    const { identity, state } = verified;
+    const { exchangeCode } = await this.sessionIssuer.issue(req, res, identity);
 
     if (
       state.provider === OAuthProviderName.Apple &&
@@ -234,96 +172,9 @@ export class OAuthController {
     }
 
     res.send({
-      id: user.id,
+      id: identity.userId,
+      exchangeCode,
       redirectUri: state.redirectUri,
     });
-  }
-
-  private async getOrCreateUserFromOauth(
-    provider: OAuthProviderName,
-    externalAccount: OAuthAccount,
-    tokens: Tokens
-  ) {
-    const connectedAccount = await this.models.user.getConnectedAccount(
-      provider,
-      externalAccount.id
-    );
-
-    if (connectedAccount) {
-      // already connected
-      await this.updateConnectedAccount(connectedAccount, tokens);
-
-      if (
-        !connectedAccount.user.emailVerifiedAt &&
-        // external email may change, check if it matches exists email
-        externalAccount.email.toLowerCase() ===
-          connectedAccount.user.email.toLowerCase()
-      ) {
-        await this.auth.setEmailVerified(connectedAccount.userId);
-      }
-      return connectedAccount.user;
-    }
-
-    if (!this.config.auth.allowSignupForOauth) {
-      throw new SignUpForbidden();
-    }
-
-    const user = await this.models.user.fulfill(externalAccount.email, {
-      name: externalAccount.name,
-      avatarUrl: externalAccount.avatarUrl,
-    });
-
-    await this.models.user.createConnectedAccount({
-      userId: user.id,
-      provider,
-      providerAccountId: externalAccount.id,
-      accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken,
-      expiresAt: tokens.expiresAt,
-    });
-
-    return user;
-  }
-
-  private async updateConnectedAccount(
-    connectedAccount: ConnectedAccount,
-    tokens: Tokens
-  ) {
-    return await this.models.user.updateConnectedAccount(connectedAccount.id, {
-      accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken,
-      expiresAt: tokens.expiresAt,
-    });
-  }
-
-  /**
-   * we currently don't support connect oauth account to existing user
-   * keep it incase we need it in the future
-   */
-  // @ts-expect-error allow unused
-  private async _connectAccount(
-    user: { id: string },
-    provider: OAuthProviderName,
-    externalAccount: OAuthAccount,
-    tokens: Tokens
-  ) {
-    const connectedAccount = await this.models.user.getConnectedAccount(
-      provider,
-      externalAccount.id
-    );
-    if (connectedAccount) {
-      if (connectedAccount.userId !== user.id) {
-        throw new OauthAccountAlreadyConnected();
-      }
-    } else {
-      await this.models.user.createConnectedAccount({
-        userId: user.id,
-        provider,
-        providerAccountId: externalAccount.id,
-        accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken,
-        expiresAt: tokens.expiresAt,
-      });
-    }
   }
 }

@@ -63,6 +63,7 @@ configureBrowserWorkbenchModule(framework);
 configureLocalStorageStateStorageImpls(framework);
 configureBrowserWorkspaceFlavours(framework);
 framework.impl(NbstoreProvider, {
+  realtime: storeManagerClient.realtime,
   openStore(key, options) {
     return storeManagerClient.open(key, options);
   },

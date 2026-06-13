@@ -9,6 +9,7 @@ export const RSPACK_SUPPORTED_PACKAGES = [
   '@affine/electron-renderer',
   '@affine/server',
   '@affine/reader',
+  '@affine/media-capture-playground',
 ] as const;
 
 const rspackSupportedPackageSet = new Set<string>(RSPACK_SUPPORTED_PACKAGES);
@@ -26,9 +27,6 @@ export function assertRspackSupportedPackageName(name: string) {
     `Rspack bundling currently supports: ${Array.from(RSPACK_SUPPORTED_PACKAGES).join(', ')}. Unsupported package: ${name}.`
   );
 }
-
-const IN_CI = !!process.env.CI;
-const httpProxyMiddlewareLogLevel = IN_CI ? 'silent' : 'error';
 
 export const DEFAULT_DEV_SERVER_CONFIG: RspackDevServerConfiguration = {
   host: '0.0.0.0',
@@ -61,18 +59,15 @@ export const DEFAULT_DEV_SERVER_CONFIG: RspackDevServerConfiguration = {
     {
       context: '/api',
       target: 'http://localhost:3010',
-      logLevel: httpProxyMiddlewareLogLevel,
     },
     {
       context: '/socket.io',
       target: 'http://localhost:3010',
       ws: true,
-      logLevel: httpProxyMiddlewareLogLevel,
     },
     {
       context: '/graphql',
       target: 'http://localhost:3010',
-      logLevel: httpProxyMiddlewareLogLevel,
     },
   ],
 };

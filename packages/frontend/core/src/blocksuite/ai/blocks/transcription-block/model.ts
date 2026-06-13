@@ -1,3 +1,7 @@
+import type {
+  TranscriptionQualityInput,
+  TranscriptionSourceAudioInput,
+} from '@affine/graphql';
 import {
   BlockModel,
   BlockSchemaExtension,
@@ -25,7 +29,10 @@ export const TranscriptionBlockSchema = defineBlockSchema({
 });
 
 export type TranscriptionBlockProps = {
-  transcription: Record<string, any>;
+  transcription: {
+    sourceAudio?: TranscriptionSourceAudioInput;
+    quality?: TranscriptionQualityInput;
+  };
   jobId?: string;
   createdBy?: string;
 };

@@ -418,13 +418,14 @@ export class EdgelessTextEditor extends WithDisposable(ShadowlessElement) {
     const lineHeight = getLineHeight(fontFamily, fontSize, fontWeight);
     const rect = getSelectedRect([this.element]);
 
-    const { translateX, translateY, zoom } = this.gfx.viewport;
+    const { translateX, translateY, zoom, viewScale } = this.gfx.viewport;
     const [visualX, visualY] = this.getVisualPosition(this.element);
     const containerOffset = this.getContainerOffset();
+    // Compensate for outer CSS scale, matching GfxBlockComponent.getCSSTransform.
     const transformOperation = [
-      `translate(${translateX}px, ${translateY}px)`,
-      `translate(${visualX * zoom}px, ${visualY * zoom}px)`,
-      `scale(${zoom})`,
+      `translate(${translateX / viewScale}px, ${translateY / viewScale}px)`,
+      `translate(${(visualX * zoom) / viewScale}px, ${(visualY * zoom) / viewScale}px)`,
+      `scale(${zoom / viewScale})`,
       `rotate(${rotate}deg)`,
       `translate(${containerOffset})`,
     ];

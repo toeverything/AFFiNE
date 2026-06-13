@@ -2,15 +2,10 @@ import {
   dropdownSubMenuMiddleware,
   menu,
   type MenuConfig,
-  type MenuOptions,
-  popMenu,
-  type PopupTarget,
 } from '@blocksuite/affine-components/context-menu';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import { DeleteIcon, InvisibleIcon, ViewIcon } from '@blocksuite/icons/lit';
 import { ShadowlessElement } from '@blocksuite/std';
-import type { Middleware } from '@floating-ui/dom';
-import { autoPlacement, offset, shift } from '@floating-ui/dom';
 import { computed } from '@preact/signals-core';
 import { cssVarV2 } from '@toeverything/theme/v2';
 import { css, html, unsafeCSS } from 'lit';
@@ -260,188 +255,183 @@ export class GroupSetting extends SignalWatcher(
   @query('.group-sort-setting') accessor groupContainer!: HTMLElement;
 }
 
-export const selectGroupByProperty = (
+export const buildGroupSelectItems = (
   group: GroupTrait,
-  ops?: {
-    onSelect?: (id?: string) => void;
-    onClose?: () => void;
-    onBack?: () => void;
-  }
-): MenuOptions => {
+  onSelect: (id?: string) => void
+): MenuConfig[] => {
   const view = group.view;
-  return {
-    onClose: ops?.onClose,
-    title: { text: 'Group by', onBack: ops?.onBack, onClose: ops?.onClose },
-    items: [
-      menu.group({
-        items: view.propertiesRaw$.value
-          .filter(property => {
-            if (property.type$.value === 'title') {
-              return false;
-            }
-            if (view instanceof KanbanSingleView) {
-              return canGroupable(view.manager.dataSource, property.id);
-            }
-            const dataType = property.dataType$.value;
-            if (!dataType) {
-              return false;
-            }
-            const groupByService = getGroupByService(view.manager.dataSource);
-            return !!groupByService?.matcher.match(dataType);
-          })
-          .map<MenuConfig>(property => {
-            return menu.action({
-              name: property.name$.value,
-              isSelected: group.property$.value?.id === property.id,
-              prefix: html` <uni-lit .uni="${property.icon}"></uni-lit>`,
-              select: () => {
-                group.changeGroup(property.id);
-                ops?.onSelect?.(property.id);
-              },
-            });
-          }),
-      }),
-      menu.group({
-        items: [
+  return [
+    menu.group({
+      items: view.propertiesRaw$.value
+        .filter(property => {
+          if (property.type$.value === 'title') {
+            return false;
+          }
+          if (view instanceof KanbanSingleView) {
+            return canGroupable(view.manager.dataSource, property.id);
+          }
+          const dataType = property.dataType$.value;
+          if (!dataType) {
+            return false;
+          }
+          const groupByService = getGroupByService(view.manager.dataSource);
+          return !!groupByService?.matcher.match(dataType);
+        })
+        .map<MenuConfig>(property =>
           menu.action({
-            prefix: DeleteIcon(),
-            hide: () =>
-              view instanceof KanbanSingleView || !group.property$.value,
-            class: { 'delete-item': true },
-            name: 'Remove Grouping',
+            name: property.name$.value,
+            isSelected: group.property$.value?.id === property.id,
+            prefix: html`<uni-lit .uni="${property.icon}"></uni-lit>`,
             select: () => {
-              group.changeGroup(undefined);
-              ops?.onSelect?.();
+              group.changeGroup(property.id);
+              onSelect(property.id);
+              return false;
             },
-          }),
-        ],
-      }),
-    ],
-  };
+          })
+        ),
+    }),
+    menu.group({
+      items: [
+        menu.action({
+          prefix: DeleteIcon(),
+          hide: () =>
+            view instanceof KanbanSingleView || !group.property$.value,
+          class: { 'delete-item': true },
+          name: 'Remove Grouping',
+          select: () => {
+            group.changeGroup(undefined);
+            onSelect(undefined);
+            return false;
+          },
+        }),
+      ],
+    }),
+  ];
 };
 
-export const popSelectGroupByProperty = (
-  target: PopupTarget,
+export const buildGroupSettingItems = (
   group: GroupTrait,
-  ops?: { onSelect?: () => void; onClose?: () => void; onBack?: () => void },
-  middleware?: Array<Middleware | null | undefined | false>
-) => {
-  const handler = popMenu(target, {
-    options: selectGroupByProperty(group, ops),
-    middleware,
-  });
-  handler.menu.menuElement.style.minHeight = '550px';
-};
-
-export const popGroupSetting = (
-  target: PopupTarget,
-  group: GroupTrait,
-  onBack: () => void,
-  onClose?: () => void,
-  middleware?: Array<Middleware | null | undefined | false>
-) => {
+  onGroupByClick: () => void,
+  onGroupRemoved?: () => void
+): MenuConfig[] => {
   const view = group.view;
   const gProp = group.property$.value;
-  if (!gProp) return;
+  if (!gProp) return [];
   const type = gProp.type$.value;
-  if (!type) return;
-
+  if (!type) return [];
   const icon = gProp.icon;
-  const menuHandler = popMenu(target, {
-    options: {
-      title: {
-        text: 'Group',
-        onBack,
-        onClose,
-      },
-      items: [
-        menu.group({
-          items: [
-            menu.action({
-              name: 'Group By',
-              postfix: html`
-                <div
-                  style="display:flex;align-items:center;gap:4px;font-size:14px;line-height:20px;color:var(--affine-text-secondary-color);margin-left:8px;"
-                  class="dv-icon-16"
-                >
-                  ${renderUniLit(icon, {})} ${gProp.name$.value}
-                </div>
-              `,
-              select: () => {
-                const subHandler = popMenu(target, {
-                  options: selectGroupByProperty(group, {
-                    onSelect: () => {
-                      menuHandler.close();
-                      popGroupSetting(
-                        target,
-                        group,
-                        onBack,
-                        onClose,
-                        middleware
-                      );
-                    },
-                    onBack: () => {
-                      menuHandler.close();
-                      popGroupSetting(
-                        target,
-                        group,
-                        onBack,
-                        onClose,
-                        middleware
-                      );
-                    },
-                    onClose,
-                  }),
-                  middleware: [
-                    autoPlacement({
-                      allowedPlacements: ['bottom-start', 'top-start'],
-                    }),
-                    offset({ mainAxis: 15, crossAxis: -162 }),
-                    shift({ crossAxis: true }),
-                  ],
-                });
-                subHandler.menu.menuElement.style.minHeight = '550px';
-              },
-            }),
-          ],
-        }),
 
-        ...(type === 'date'
-          ? [
-              menu.group({
-                items: [
-                  menu.dynamic(() => [
-                    menu.subMenu({
-                      name: 'Date by',
-                      openOnHover: false,
-                      middleware: dropdownSubMenuMiddleware,
-                      autoHeight: true,
-                      postfix: html`
-                        <div
-                          style="display:flex;align-items:center;gap:4px;font-size:14px;line-height:20px;color:var(--affine-text-secondary-color);margin-left:30px;"
-                        >
-                          ${dateModeLabel(group.groupInfo$.value?.config.name)}
-                        </div>
-                      `,
-                      options: {
-                        items: [
-                          menu.dynamic(() =>
-                            (
-                              [
-                                ['Relative', 'date-relative'],
-                                ['Day', 'date-day'],
+  return [
+    menu.group({
+      items: [
+        menu.action({
+          name: 'Group By',
+          postfix: html`
+            <div
+              style="display:flex;align-items:center;gap:4px;font-size:14px;line-height:20px;color:var(--affine-text-secondary-color);margin-left:8px;"
+              class="dv-icon-16"
+            >
+              ${renderUniLit(icon, {})} ${gProp.name$.value}
+            </div>
+          `,
+          select: () => {
+            onGroupByClick();
+            return false;
+          },
+        }),
+      ],
+    }),
+
+    ...(type === 'date'
+      ? [
+          menu.group({
+            items: [
+              menu.dynamic(() => [
+                menu.subMenu({
+                  name: 'Date by',
+                  openOnHover: false,
+                  middleware: dropdownSubMenuMiddleware,
+                  autoHeight: true,
+                  postfix: html`
+                    <div
+                      style="display:flex;align-items:center;gap:4px;font-size:14px;line-height:20px;color:var(--affine-text-secondary-color);margin-left:30px;"
+                    >
+                      ${dateModeLabel(group.groupInfo$.value?.config.name)}
+                    </div>
+                  `,
+                  options: {
+                    items: [
+                      menu.dynamic(() =>
+                        (
+                          [
+                            ['Relative', 'date-relative'],
+                            ['Day', 'date-day'],
+                            [
+                              'Week',
+                              group.groupInfo$.value?.config.name ===
+                              'date-week-mon'
+                                ? 'date-week-mon'
+                                : 'date-week-sun',
+                            ],
+                            ['Month', 'date-month'],
+                            ['Year', 'date-year'],
+                          ] as [string, string][]
+                        ).map(
+                          ([label, key]): MenuConfig =>
+                            menu.action({
+                              name: label,
+                              label: () => {
+                                const isSelected =
+                                  group.groupInfo$.value?.config.name === key;
+                                return html`<span
+                                  style="font-size:14px;color:${isSelected
+                                    ? 'var(--affine-text-emphasis-color)'
+                                    : 'var(--affine-text-secondary-color)'}"
+                                  >${label}</span
+                                >`;
+                              },
+                              isSelected:
+                                group.groupInfo$.value?.config.name === key,
+                              select: () => {
+                                group.changeGroupMode(key);
+                                return false;
+                              },
+                            })
+                        )
+                      ),
+                    ],
+                  },
+                }),
+              ]),
+            ],
+          }),
+
+          ...(group.groupInfo$.value?.config.name?.startsWith('date-week')
+            ? [
+                menu.group({
+                  items: [
+                    menu.dynamic(() => [
+                      menu.subMenu({
+                        name: 'Start week on',
+                        postfix: html`
+                          <div
+                            style="display:flex;align-items:center;gap:4px;font-size:14px;line-height:20px;color:var(--affine-text-secondary-color);margin-left:8px;"
+                          >
+                            ${group.groupInfo$.value?.config.name ===
+                            'date-week-mon'
+                              ? 'Monday'
+                              : 'Sunday'}
+                          </div>
+                        `,
+                        options: {
+                          items: [
+                            menu.dynamic(() =>
+                              (
                                 [
-                                  'Week',
-                                  group.groupInfo$.value?.config.name ===
-                                  'date-week-mon'
-                                    ? 'date-week-mon'
-                                    : 'date-week-sun',
-                                ],
-                                ['Month', 'date-month'],
-                                ['Year', 'date-year'],
-                              ] as [string, string][]
-                            ).map(
-                              ([label, key]): MenuConfig =>
+                                  ['Monday', 'date-week-mon'],
+                                  ['Sunday', 'date-week-sun'],
+                                ] as [string, string][]
+                              ).map(([label, key]) =>
                                 menu.action({
                                   name: label,
                                   label: () => {
@@ -462,179 +452,118 @@ export const popGroupSetting = (
                                     return false;
                                   },
                                 })
-                            )
-                          ),
-                        ],
-                      },
-                    }),
-                  ]),
-                ],
-              }),
+                              )
+                            ),
+                          ],
+                        },
+                      }),
+                    ]),
+                  ],
+                }),
+              ]
+            : []),
+          menu.group({
+            items: [
+              menu.dynamic(() => [
+                menu.subMenu({
+                  name: 'Sort',
+                  openOnHover: false,
+                  middleware: dropdownSubMenuMiddleware,
+                  autoHeight: true,
+                  postfix: html`
+                    <div
+                      style="display:flex;align-items:center;gap:4px;font-size:14px;line-height:20px;color:var(--affine-text-secondary-color);margin-left:8px;"
+                    >
+                      ${group.sortAsc$.value ? 'Oldest first' : 'Newest first'}
+                    </div>
+                  `,
+                  options: {
+                    items: [
+                      menu.dynamic(() => [
+                        menu.action({
+                          name: 'Oldest first',
+                          label: () => {
+                            const isSelected = group.sortAsc$.value;
+                            return html`<span
+                              style="font-size:14px;color:${isSelected
+                                ? 'var(--affine-text-emphasis-color)'
+                                : 'var(--affine-text-secondary-color)'}"
+                              >Oldest first</span
+                            >`;
+                          },
+                          isSelected: group.sortAsc$.value,
+                          select: () => {
+                            group.setDateSortOrder(true);
+                            return false;
+                          },
+                        }),
+                        menu.action({
+                          name: 'Newest first',
+                          label: () => {
+                            const isSelected = !group.sortAsc$.value;
+                            return html`<span
+                              style="font-size:14px;color:${isSelected
+                                ? 'var(--affine-text-emphasis-color)'
+                                : 'var(--affine-text-secondary-color)'}"
+                              >Newest first</span
+                            >`;
+                          },
+                          isSelected: !group.sortAsc$.value,
+                          select: () => {
+                            group.setDateSortOrder(false);
+                            return false;
+                          },
+                        }),
+                      ]),
+                    ],
+                  },
+                }),
+              ]),
+            ],
+          }),
+        ]
+      : []),
 
-              ...(group.groupInfo$.value?.config.name?.startsWith('date-week')
-                ? [
-                    menu.group({
-                      items: [
-                        menu.dynamic(() => [
-                          menu.subMenu({
-                            name: 'Start week on',
-                            postfix: html`
-                              <div
-                                style="display:flex;align-items:center;gap:4px;font-size:14px;line-height:20px;color:var(--affine-text-secondary-color);margin-left:8px;"
-                              >
-                                ${group.groupInfo$.value?.config.name ===
-                                'date-week-mon'
-                                  ? 'Monday'
-                                  : 'Sunday'}
-                              </div>
-                            `,
-                            options: {
-                              items: [
-                                menu.dynamic(() =>
-                                  (
-                                    [
-                                      ['Monday', 'date-week-mon'],
-                                      ['Sunday', 'date-week-sun'],
-                                    ] as [string, string][]
-                                  ).map(([label, key]) =>
-                                    menu.action({
-                                      name: label,
-                                      label: () => {
-                                        const isSelected =
-                                          group.groupInfo$.value?.config
-                                            .name === key;
-                                        return html`<span
-                                          style="font-size:14px;color:${isSelected
-                                            ? 'var(--affine-text-emphasis-color)'
-                                            : 'var(--affine-text-secondary-color)'}"
-                                          >${label}</span
-                                        >`;
-                                      },
-                                      isSelected:
-                                        group.groupInfo$.value?.config.name ===
-                                        key,
-                                      select: () => {
-                                        group.changeGroupMode(key);
-                                        return false;
-                                      },
-                                    })
-                                  )
-                                ),
-                              ],
-                            },
-                          }),
-                        ]),
-                      ],
-                    }),
-                  ]
-                : []),
-              menu.group({
-                items: [
-                  menu.dynamic(() => [
-                    menu.subMenu({
-                      name: 'Sort',
-                      openOnHover: false,
-                      middleware: dropdownSubMenuMiddleware,
-                      autoHeight: true,
-                      postfix: html`
-                        <div
-                          style="display:flex;align-items:center;gap:4px;font-size:14px;line-height:20px;color:var(--affine-text-secondary-color);margin-left:8px;"
-                        >
-                          ${group.sortAsc$.value
-                            ? 'Oldest first'
-                            : 'Newest first'}
-                        </div>
-                      `,
-                      options: {
-                        items: [
-                          menu.dynamic(() => [
-                            menu.action({
-                              name: 'Oldest first',
-                              label: () => {
-                                const isSelected = group.sortAsc$.value;
-                                return html`<span
-                                  style="font-size:14px;color:${isSelected
-                                    ? 'var(--affine-text-emphasis-color)'
-                                    : 'var(--affine-text-secondary-color)'}"
-                                  >Oldest first</span
-                                >`;
-                              },
-                              isSelected: group.sortAsc$.value,
-                              select: () => {
-                                group.setDateSortOrder(true);
-                                return false;
-                              },
-                            }),
-                            menu.action({
-                              name: 'Newest first',
-                              label: () => {
-                                const isSelected = !group.sortAsc$.value;
-                                return html`<span
-                                  style="font-size:14px;color:${isSelected
-                                    ? 'var(--affine-text-emphasis-color)'
-                                    : 'var(--affine-text-secondary-color)'}"
-                                  >Newest first</span
-                                >`;
-                              },
-                              isSelected: !group.sortAsc$.value,
-                              select: () => {
-                                group.setDateSortOrder(false);
-                                return false;
-                              },
-                            }),
-                          ]),
-                        ],
-                      },
-                    }),
-                  ]),
-                ],
-              }),
-            ]
-          : []),
+    menu.group({
+      items: [
+        menu.dynamic(() => [
+          menu.action({
+            name: 'Hide empty groups',
+            isSelected: group.hideEmpty$.value,
+            select: () => {
+              group.setHideEmpty(!group.hideEmpty$.value);
+              return false;
+            },
+          }),
+        ]),
+      ],
+    }),
+    menu.group({
+      items: [
+        menuObj => html`
+          <data-view-group-setting
+            @mouseenter=${() => menuObj.closeSubMenu()}
+            .groupTrait=${group}
+            .columnId=${gProp.id}
+          ></data-view-group-setting>
+        `,
+      ],
+    }),
 
-        menu.group({
-          items: [
-            menu.dynamic(() => [
-              menu.action({
-                name: 'Hide empty groups',
-                isSelected: group.hideEmpty$.value,
-                select: () => {
-                  group.setHideEmpty(!group.hideEmpty$.value);
-                  return false;
-                },
-              }),
-            ]),
-          ],
-        }),
-        menu.group({
-          items: [
-            menu => html`
-              <data-view-group-setting
-                @mouseenter=${() => menu.closeSubMenu()}
-                .groupTrait=${group}
-                .columnId=${gProp.id}
-              ></data-view-group-setting>
-            `,
-          ],
-        }),
-
-        menu.group({
-          items: [
-            menu.action({
-              name: 'Remove grouping',
-              prefix: DeleteIcon(),
-              class: { 'delete-item': true },
-              hide: () => !(view instanceof TableSingleView),
-              select: () => {
-                group.changeGroup(undefined);
-                return false;
-              },
-            }),
-          ],
+    menu.group({
+      items: [
+        menu.action({
+          name: 'Remove grouping',
+          prefix: DeleteIcon(),
+          class: { 'delete-item': true },
+          hide: () => !(view instanceof TableSingleView),
+          select: () => {
+            group.changeGroup(undefined);
+            onGroupRemoved?.();
+            return false;
+          },
         }),
       ],
-    },
-    middleware,
-  });
-  menuHandler.menu.menuElement.style.minHeight = '550px';
+    }),
+  ];
 };

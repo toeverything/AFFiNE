@@ -608,7 +608,7 @@ test.describe('slash search', () => {
     await expect(slashMenu).toBeVisible();
 
     await type(page, 'c');
-    await expect(slashItems).toHaveCount(11);
+    await expect(slashItems).toHaveCount(12);
     await expect(slashItems.nth(0).locator('.text')).toHaveText(['Copy']);
     await expect(slashItems.nth(1).locator('.text')).toHaveText(['Italic']);
     await expect(slashItems.nth(2).locator('.text')).toHaveText(['Callout']);
@@ -632,10 +632,13 @@ test.describe('slash search', () => {
 
     const slashItems = slashMenu.locator('icon-button');
     await type(page, 'database');
-    await expect(slashItems).toHaveCount(2);
+    await expect(slashItems).toHaveCount(3);
     await expect(slashItems.nth(0).locator('.text')).toHaveText(['Table View']);
     await expect(slashItems.nth(1).locator('.text')).toHaveText([
       'Kanban View',
+    ]);
+    await expect(slashItems.nth(2).locator('.text')).toHaveText([
+      'Calendar View',
     ]);
     await type(page, 'v');
     await expect(slashItems).toHaveCount(0);

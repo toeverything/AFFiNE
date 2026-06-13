@@ -740,10 +740,8 @@ fn parse_markdown_inner(markdown: &str) -> Result<MarkdownDocument, ParseError> 
           inline.push(InlineAttr::link(dest_url.to_string()));
         }
       }
-      Event::End(TagEnd::Link) => {
-        if pending_bookmark.is_none() {
-          inline.pop(InlineAttr::new(InlineStyle::Link));
-        }
+      Event::End(TagEnd::Link) if pending_bookmark.is_none() => {
+        inline.pop(InlineAttr::new(InlineStyle::Link));
       }
       _ => {}
     }

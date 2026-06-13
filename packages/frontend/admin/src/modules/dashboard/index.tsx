@@ -12,6 +12,20 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from '@affine/admin/components/ui/chart';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@affine/admin/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@affine/admin/components/ui/dropdown-menu';
 import { Label } from '@affine/admin/components/ui/label';
 import {
   Select,
@@ -30,18 +44,30 @@ import {
   TableHeader,
   TableRow,
 } from '@affine/admin/components/ui/table';
+import { useMutation } from '@affine/admin/use-mutation';
 import { useQuery } from '@affine/admin/use-query';
-import { adminDashboardQuery } from '@affine/graphql';
+import { adminDashboardQuery, previewLicenseMutation } from '@affine/graphql';
 import { ROUTES } from '@affine/routes';
 import {
+  ChevronDownIcon,
   DatabaseIcon,
+  FileSearchIcon,
   MessageSquareTextIcon,
   RefreshCwIcon,
   UsersIcon,
 } from 'lucide-react';
-import { type ReactNode, Suspense, useMemo, useState } from 'react';
+import {
+  type ChangeEvent,
+  type ReactNode,
+  Suspense,
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { Link } from 'react-router-dom';
 import { Area, CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts';
+import { toast } from 'sonner';
 
 import { useMutateQueryResource } from '../../use-mutation';
 import { Header } from '../header';
@@ -152,6 +178,20 @@ type TrendPoint = {
   label: string;
   primary: number;
   secondary?: number;
+};
+
+type LicensePreview = {
+  id: string;
+  workspaceId: string;
+  plan: string;
+  recurring: string;
+  quantity: number;
+  issuedAt: string;
+  expiresAt: string;
+  endAt: string;
+  entity: string;
+  issuer: string;
+  valid: boolean;
 };
 
 function formatDateTime(value: string) {
@@ -418,6 +458,198 @@ function WindowSelect({
   );
 }
 
+function LicensePreviewDialog({
+  license,
+  onOpenChange,
+}: {
+  license: LicensePreview | null;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const rows = license
+    ? [
+        ['Status', license.valid ? 'Valid' : 'Invalid'],
+        ['License ID', license.id],
+        ['Workspace ID', license.workspaceId],
+        ['Plan', license.plan],
+        ['Recurring', license.recurring],
+        ['Seats', intFormatter.format(license.quantity)],
+        ['Issued At', formatDateTime(license.issuedAt)],
+        ['File Expires At', formatDateTime(license.expiresAt)],
+        ['License Ends At', formatDateTime(license.endAt)],
+        ['Entity', license.entity],
+        ['Issuer', license.issuer],
+      ]
+    : [];
+
+  return (
+    <Dialog open={!!license} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-xl">
+        <DialogHeader>
+          <DialogTitle>License Preview</DialogTitle>
+          <DialogDescription>
+            Signature and payload format are valid.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="rounded-lg border border-border/60 overflow-hidden">
+          {rows.map(([label, value]) => (
+            <div
+              key={label}
+              className="grid grid-cols-[140px_1fr] gap-4 border-b border-border/60 px-4 py-3 last:border-b-0"
+            >
+              <div className="text-sm text-muted-foreground">{label}</div>
+              <div className="min-w-0 break-words text-sm font-medium tabular-nums">
+                {value}
+              </div>
+            </div>
+          ))}
+        </div>
+        <DialogFooter className="mt-2">
+          <Button onClick={() => onOpenChange(false)}>Confirm</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function DashboardActions({
+  updatedAt,
+  isValidating,
+  onRefresh,
+}: {
+  updatedAt: string;
+  isValidating: boolean;
+  onRefresh: () => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const pickerOpenRef = useRef(false);
+  const [licensePreview, setLicensePreview] = useState<LicensePreview | null>(
+    null
+  );
+  const { trigger: previewLicense } = useMutation({
+    mutation: previewLicenseMutation,
+  });
+
+  const notifyNoFileSelected = useCallback(() => {
+    toast.error('No license file selected.');
+  }, []);
+
+  const openLicensePicker = useCallback(() => {
+    const input = inputRef.current;
+    if (!input) {
+      toast.error('Failed to open license file picker.');
+      return;
+    }
+
+    input.value = '';
+    pickerOpenRef.current = true;
+
+    const handleFocus = () => {
+      window.setTimeout(() => {
+        if (pickerOpenRef.current) {
+          pickerOpenRef.current = false;
+          notifyNoFileSelected();
+        }
+      }, 200);
+      window.removeEventListener('focus', handleFocus);
+    };
+
+    window.addEventListener('focus', handleFocus);
+    input.click();
+  }, [notifyNoFileSelected]);
+
+  const handleLicenseFileChange = useCallback(
+    (event: ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      pickerOpenRef.current = false;
+
+      if (!file) {
+        notifyNoFileSelected();
+        return;
+      }
+
+      previewLicense({ license: file })
+        .then(data => {
+          setLicensePreview(data.previewLicense);
+        })
+        .catch(error => {
+          console.error(error);
+          toast.error('Failed to preview license.');
+        });
+    },
+    [notifyNoFileSelected, previewLicense]
+  );
+
+  const menuItems = useMemo(
+    () =>
+      environment.isSelfHosted
+        ? []
+        : [
+            {
+              key: 'preview-license',
+              label: 'Preview license',
+              onSelect: openLicensePicker,
+            },
+          ],
+    [openLicensePicker]
+  );
+
+  return (
+    <>
+      <div className="flex flex-wrap items-center justify-end gap-3">
+        <span className="text-xs text-muted-foreground tabular-nums">
+          Updated at {formatDateTime(updatedAt)}
+        </span>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onRefresh}
+            disabled={isValidating}
+          >
+            <RefreshCwIcon
+              className={`h-3.5 w-3.5 mr-1.5 ${isValidating ? 'animate-spin' : ''}`}
+              aria-hidden="true"
+            />
+            Refresh
+          </Button>
+          {menuItems.length ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" aria-label="Dashboard menu">
+                  <ChevronDownIcon className="h-3.5 w-3.5" aria-hidden />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {menuItems.map(item => (
+                  <DropdownMenuItem key={item.key} onSelect={item.onSelect}>
+                    <FileSearchIcon className="mr-2 h-3.5 w-3.5" aria-hidden />
+                    {item.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : null}
+        </div>
+      </div>
+      <input
+        ref={inputRef}
+        type="file"
+        accept=".lic,.license"
+        className="hidden"
+        onChange={handleLicenseFileChange}
+      />
+      <LicensePreviewDialog
+        license={licensePreview}
+        onOpenChange={open => {
+          if (!open) {
+            setLicensePreview(null);
+          }
+        }}
+      />
+    </>
+  );
+}
+
 function DashboardPageSkeleton() {
   return (
     <div className="h-dvh flex-1 flex-col flex overflow-hidden">
@@ -665,25 +897,13 @@ function DashboardPageContent() {
       <Header
         title="Dashboard"
         endFix={
-          <div className="flex flex-wrap items-center justify-end gap-3">
-            <span className="text-xs text-muted-foreground tabular-nums">
-              Updated at {formatDateTime(dashboard.generatedAt)}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                revalidateQueryResource(adminDashboardQuery).catch(() => {});
-              }}
-              disabled={isValidating}
-            >
-              <RefreshCwIcon
-                className={`h-3.5 w-3.5 mr-1.5 ${isValidating ? 'animate-spin' : ''}`}
-                aria-hidden="true"
-              />
-              Refresh
-            </Button>
-          </div>
+          <DashboardActions
+            updatedAt={dashboard.generatedAt}
+            isValidating={isValidating}
+            onRefresh={() => {
+              revalidateQueryResource(adminDashboardQuery).catch(() => {});
+            }}
+          />
         }
       />
 

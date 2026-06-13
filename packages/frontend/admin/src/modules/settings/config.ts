@@ -37,13 +37,7 @@ type ConfigGroup<T extends AppConfigModule> = {
 const IGNORED_MODULES: (keyof AppConfig)[] = [];
 
 if (environment.isSelfHosted) {
-  IGNORED_MODULES.push(
-    'payment',
-    'customerIo',
-    'captcha',
-    'telemetry',
-    'metrics'
-  );
+  IGNORED_MODULES.push('payment', 'captcha', 'telemetry', 'metrics');
 }
 
 const ALL_CONFIGURABLE_MODULES = Object.keys(CONFIG_DESCRIPTORS).filter(
@@ -62,6 +56,11 @@ export const KNOWN_CONFIG_GROUPS = [
     fields: [
       'allowSignup',
       'allowSignupForOauth',
+      {
+        key: 'newAccountShareActionDelay',
+        type: 'Number',
+        desc: 'Minimum account age in seconds before new accounts can invite members or create share links.',
+      },
       // nested json object
       {
         key: 'passwordRequirements',
@@ -150,10 +149,8 @@ export const KNOWN_CONFIG_GROUPS = [
     module: 'copilot',
     fields: [
       'enabled',
-      'scenarios',
       'providers.openai',
       'providers.gemini',
-      'providers.perplexity',
       'providers.anthropic',
       'providers.fal',
       'unsplash',

@@ -121,6 +121,38 @@ export const updateBlockType: Command<
     }
     return next({ updatedBlocks: [newModel] });
   };
+  const transformToLatex: Command<{}, { updatedBlocks: BlockModel[] }> = (
+    _,
+    next
+  ) => {
+    if (flavour !== 'affine:latex') return;
+
+    const newModels: BlockModel[] = [];
+    blockModels.forEach(model => {
+      if (
+        !matchModels(model, [
+          ParagraphBlockModel,
+          ListBlockModel,
+          CodeBlockModel,
+        ])
+      ) {
+        return;
+      }
+
+      const latex = model.text?.toString() ?? '';
+      const newId = transformModel(model, 'affine:latex', { latex });
+      if (!newId) {
+        return;
+      }
+      const newModel = doc.getModelById(newId);
+      if (newModel) {
+        newModels.push(newModel);
+      }
+    });
+
+    if (newModels.length === 0) return;
+    return next({ updatedBlocks: newModels });
+  };
 
   const focusText: Command<{ updatedBlocks: BlockModel[] }> = (ctx, next) => {
     const { updatedBlocks } = ctx;
@@ -185,6 +217,27 @@ export const updateBlockType: Command<
     });
     return next();
   };
+  const selectBlocks: Command<{ updatedBlocks: BlockModel[] }> = (
+    ctx,
+    next
+  ) => {
+    const { updatedBlocks } = ctx;
+    if (!updatedBlocks || updatedBlocks.length === 0) {
+      return false;
+    }
+
+    requestAnimationFrame(() => {
+      host.selection.setGroup(
+        'note',
+        updatedBlocks.map(model =>
+          host.selection.create(BlockSelection, {
+            blockId: model.id,
+          })
+        )
+      );
+    });
+    return next();
+  };
 
   const [result, resultCtx] = std.command
     .chain()
@@ -196,6 +249,7 @@ export const updateBlockType: Command<
     .try<{ updatedBlocks: BlockModel[] }>(chain => [
       chain.pipe(mergeToCode),
       chain.pipe(appendDivider),
+      chain.pipe(transformToLatex),
       chain.pipe((_, next) => {
         const newModels: BlockModel[] = [];
         blockModels.forEach(model => {
@@ -227,6 +281,14 @@ export const updateBlockType: Command<
     ])
     // focus
     .try(chain => [
+      chain
+        .pipe((_, next) => {
+          if (flavour === 'affine:latex') {
+            return next();
+          }
+          return false;
+        })
+        .pipe(selectBlocks),
       chain.pipe((_, next) => {
         if (['affine:code', 'affine:divider'].includes(flavour)) {
           return next();

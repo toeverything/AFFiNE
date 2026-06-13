@@ -15,9 +15,18 @@ import {
   R2StorageProvider,
 } from '../../../base/storage/providers/r2';
 import { SIGNED_URL_EXPIRED } from '../../../base/storage/providers/utils';
-import { WorkspaceBlobStorage } from '../../../core/storage';
+import { EntitlementService } from '../../../core/entitlement';
+import {
+  CommentAttachmentStorage,
+  WorkspaceBlobStorage,
+} from '../../../core/storage';
 import { MULTIPART_THRESHOLD } from '../../../core/storage/constants';
 import { R2UploadController } from '../../../core/storage/r2-proxy';
+import {
+  SubscriptionPlan,
+  SubscriptionRecurring,
+  SubscriptionStatus,
+} from '../../../plugins/payment/types';
 import { app, e2e, Mockers } from '../test';
 
 class MockR2Provider extends R2StorageProvider {
@@ -160,6 +169,8 @@ async function setBlobStorage(storage: StorageProviderConfig) {
   configFactory.override({ storages: { blob: { storage } } });
   const blobStorage = app.get(WorkspaceBlobStorage);
   await blobStorage.onConfigInit();
+  const commentAttachmentStorage = app.get(CommentAttachmentStorage);
+  await commentAttachmentStorage.onConfigInit();
   const controller = app.get(R2UploadController);
   // reset cached provider in controller
   (controller as any).provider = null;
@@ -245,7 +256,13 @@ async function getBlobUploadPartUrl(
 }
 
 async function setupWorkspace() {
-  const owner = await app.signup({ feature: 'pro_plan_v1' });
+  const owner = await app.signup();
+  await app.get(EntitlementService).upsertFromCloudSubscription({
+    targetId: owner.id,
+    plan: SubscriptionPlan.Pro,
+    recurring: SubscriptionRecurring.Monthly,
+    status: SubscriptionStatus.Active,
+  });
   const workspace = await app.create(Mockers.Workspace, { owner });
   return { owner, workspace };
 }
@@ -435,7 +452,13 @@ e2e(
 e2e(
   'should still fallback to graphql when provider does not support presign',
   async t => {
-    await setBlobStorage(defaultBlobStorage);
+    await setBlobStorage({
+      provider: 'fs',
+      bucket: 'test-fallback-bucket',
+      config: {
+        path: '/tmp/affine-r2-proxy-test',
+      },
+    });
     const { workspace } = await setupWorkspace();
     const buffer = Buffer.from('graph');
 

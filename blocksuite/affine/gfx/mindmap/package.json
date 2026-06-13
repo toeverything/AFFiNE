@@ -11,7 +11,6 @@
   "license": "MIT",
   "dependencies": {
     "@blocksuite/affine-block-attachment": "workspace:*",
-    "@blocksuite/affine-block-edgeless-text": "workspace:*",
     "@blocksuite/affine-block-image": "workspace:*",
     "@blocksuite/affine-block-surface": "workspace:*",
     "@blocksuite/affine-components": "workspace:*",
@@ -21,7 +20,6 @@
     "@blocksuite/affine-gfx-shape": "workspace:*",
     "@blocksuite/affine-gfx-text": "workspace:*",
     "@blocksuite/affine-model": "workspace:*",
-    "@blocksuite/affine-rich-text": "workspace:*",
     "@blocksuite/affine-shared": "workspace:*",
     "@blocksuite/affine-widget-edgeless-toolbar": "workspace:*",
     "@blocksuite/global": "workspace:*",
@@ -30,14 +28,11 @@
     "@blocksuite/store": "workspace:*",
     "@lit/context": "^1.1.2",
     "@preact/signals-core": "^1.8.0",
-    "@toeverything/theme": "^1.1.23",
     "@types/lodash-es": "^4.17.12",
     "lit": "^3.2.0",
     "lodash-es": "^4.17.23",
-    "rxjs": "^7.8.2",
     "simple-xml-to-json": "^1.2.2",
-    "yjs": "^13.6.27",
-    "zod": "^3.25.76"
+    "yjs": "^13.6.27"
   },
   "exports": {
     ".": "./src/index.ts",

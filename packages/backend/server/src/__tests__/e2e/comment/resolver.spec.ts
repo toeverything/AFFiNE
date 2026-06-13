@@ -273,16 +273,64 @@ e2e('should update comment work', async t => {
   t.truthy(result.updateComment);
 });
 
-e2e('should update comment failed by another user', async t => {
+e2e('should update comment work by doc Editor', async t => {
   const docId = randomUUID();
+  await app.create(Mockers.DocUser, {
+    workspaceId: teamWorkspace.id,
+    docId,
+    userId: member.id,
+    type: DocRole.Editor,
+  });
 
   await app.login(owner);
-
   const createResult = await app.gql({
     query: createCommentMutation,
     variables: {
       input: {
-        workspaceId: workspace.id,
+        workspaceId: teamWorkspace.id,
+        docId,
+        docMode: DocMode.page,
+        docTitle: 'test',
+        content: {
+          type: 'paragraph',
+          content: [{ type: 'text', text: 'test' }],
+        },
+      },
+    },
+  });
+
+  await app.login(member);
+  const result = await app.gql({
+    query: updateCommentMutation,
+    variables: {
+      input: {
+        id: createResult.createComment.id,
+        content: {
+          type: 'paragraph',
+          content: [{ type: 'text', text: 'test update' }],
+        },
+      },
+    },
+  });
+
+  t.truthy(result.updateComment);
+});
+
+e2e('should update comment failed without update permission', async t => {
+  const docId = randomUUID();
+  await app.create(Mockers.DocUser, {
+    workspaceId: teamWorkspace.id,
+    docId,
+    userId: member.id,
+    type: DocRole.Reader,
+  });
+
+  await app.login(owner);
+  const createResult = await app.gql({
+    query: createCommentMutation,
+    variables: {
+      input: {
+        workspaceId: teamWorkspace.id,
         docId,
         docMode: DocMode.page,
         docTitle: 'test',
@@ -1145,15 +1193,79 @@ e2e('should update reply work when user is reply owner', async t => {
   t.truthy(result.updateReply);
 });
 
-e2e('should update reply failed when user is not reply owner', async t => {
+e2e('should update reply work by doc Editor', async t => {
   const docId = randomUUID();
+  await app.create(Mockers.DocUser, {
+    workspaceId: teamWorkspace.id,
+    docId,
+    userId: member.id,
+    type: DocRole.Editor,
+  });
 
   await app.login(owner);
   const createResult = await app.gql({
     query: createCommentMutation,
     variables: {
       input: {
-        workspaceId: workspace.id,
+        workspaceId: teamWorkspace.id,
+        docId,
+        docMode: DocMode.page,
+        docTitle: 'test',
+        content: {
+          type: 'paragraph',
+          content: [{ type: 'text', text: 'test' }],
+        },
+      },
+    },
+  });
+
+  const createReplyResult = await app.gql({
+    query: createReplyMutation,
+    variables: {
+      input: {
+        commentId: createResult.createComment.id,
+        docMode: DocMode.page,
+        docTitle: 'test',
+        content: {
+          type: 'paragraph',
+          content: [{ type: 'text', text: 'test' }],
+        },
+      },
+    },
+  });
+
+  await app.login(member);
+  const result = await app.gql({
+    query: updateReplyMutation,
+    variables: {
+      input: {
+        id: createReplyResult.createReply.id,
+        content: {
+          type: 'paragraph',
+          content: [{ type: 'text', text: 'test update' }],
+        },
+      },
+    },
+  });
+
+  t.truthy(result.updateReply);
+});
+
+e2e('should update reply failed without update permission', async t => {
+  const docId = randomUUID();
+  await app.create(Mockers.DocUser, {
+    workspaceId: teamWorkspace.id,
+    docId,
+    userId: member.id,
+    type: DocRole.Reader,
+  });
+
+  await app.login(owner);
+  const createResult = await app.gql({
+    query: createCommentMutation,
+    variables: {
+      input: {
+        workspaceId: teamWorkspace.id,
         docId,
         docMode: DocMode.page,
         docTitle: 'test',

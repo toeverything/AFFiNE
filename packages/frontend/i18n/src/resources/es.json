@@ -1010,7 +1010,6 @@
   "com.affine.payment.member.team.invite.generate": "Generar",
   "com.affine.payment.member.team.invite.copy": "Copiar",
   "com.affine.payment.member.team.invite.done": "Hecho",
-  "com.affine.payment.member.team.invite.notify.title": "Invitación enviada, {{successCount}} exitosas, {{failedCount}} fallidas",
   "com.affine.payment.member.team.invite.notify.fail-message": "Estas direcciones de correo electrónico ya han sido invitadas:",
   "com.affine.payment.member.team.revoke": "Revocar invitación",
   "com.affine.payment.member.team.approve": "Aprobar",

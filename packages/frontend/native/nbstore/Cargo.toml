@@ -1,6 +1,7 @@
 [package]
 edition = "2024"
 name    = "affine_nbstore"
+publish = false
 version = "0.0.0"
 
 [lib]
@@ -27,7 +28,6 @@ sqlx = { workspace = true, default-features = false, features = [
   "migrate",
   "runtime-tokio",
   "sqlite",
-  "tls-rustls",
 ] }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
@@ -47,7 +47,6 @@ sqlx = { workspace = true, default-features = false, features = [
   "migrate",
   "runtime-tokio",
   "sqlite",
-  "tls-rustls",
 ] }
 tokio = { workspace = true, features = ["full"] }
 

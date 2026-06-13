@@ -34,6 +34,9 @@ public class GetWorkspacePageMetaByIdQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("workspace", Workspace.self, arguments: ["id": .variable("id")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      GetWorkspacePageMetaByIdQuery.Data.self
+    ] }
 
     /// Get workspace by id
     public var workspace: Workspace { __data["workspace"] }
@@ -49,6 +52,9 @@ public class GetWorkspacePageMetaByIdQuery: GraphQLQuery {
       public static var __selections: [ApolloAPI.Selection] { [
         .field("__typename", String.self),
         .field("pageMeta", PageMeta.self, arguments: ["pageId": .variable("pageId")]),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        GetWorkspacePageMetaByIdQuery.Data.Workspace.self
       ] }
 
       /// Cloud page metadata of workspace
@@ -70,6 +76,9 @@ public class GetWorkspacePageMetaByIdQuery: GraphQLQuery {
           .field("createdBy", CreatedBy?.self),
           .field("updatedBy", UpdatedBy?.self),
         ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          GetWorkspacePageMetaByIdQuery.Data.Workspace.PageMeta.self
+        ] }
 
         public var createdAt: AffineGraphQL.DateTime { __data["createdAt"] }
         public var updatedAt: AffineGraphQL.DateTime { __data["updatedAt"] }
@@ -89,6 +98,9 @@ public class GetWorkspacePageMetaByIdQuery: GraphQLQuery {
             .field("name", String.self),
             .field("avatarUrl", String?.self),
           ] }
+          public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+            GetWorkspacePageMetaByIdQuery.Data.Workspace.PageMeta.CreatedBy.self
+          ] }
 
           public var name: String { __data["name"] }
           public var avatarUrl: String? { __data["avatarUrl"] }
@@ -106,6 +118,9 @@ public class GetWorkspacePageMetaByIdQuery: GraphQLQuery {
             .field("__typename", String.self),
             .field("name", String.self),
             .field("avatarUrl", String?.self),
+          ] }
+          public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+            GetWorkspacePageMetaByIdQuery.Data.Workspace.PageMeta.UpdatedBy.self
           ] }
 
           public var name: String { __data["name"] }

@@ -31,6 +31,7 @@ test('should normalize valid SMTP HELO hostnames', t => {
 });
 
 test('should reject invalid SMTP HELO hostnames', t => {
+  t.is(normalizeSMTPHeloHostname(), undefined);
   t.is(normalizeSMTPHeloHostname(''), undefined);
   t.is(normalizeSMTPHeloHostname('  '), undefined);
   t.is(normalizeSMTPHeloHostname('AFFiNE Server'), undefined);

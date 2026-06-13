@@ -23,10 +23,9 @@ import {
   switchMap,
 } from 'rxjs';
 
-import type { ClientOps } from './ops';
-import type { PDFMeta, RenderPageOpts } from './types';
+import type { PDFMeta, PDFOps, RenderPageOpts } from './types';
 
-class PDFRendererBackend extends OpConsumer<ClientOps> {
+class PDFRendererBackend extends OpConsumer<PDFOps> {
   constructor(port: MessageCommunicapable) {
     super(port);
     this.register('open', this.open.bind(this));

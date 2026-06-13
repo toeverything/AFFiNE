@@ -1010,7 +1010,6 @@
   "com.affine.payment.member.team.invite.generate": "Δημιουργία",
   "com.affine.payment.member.team.invite.copy": "Αντιγραφή",
   "com.affine.payment.member.team.invite.done": "Ολοκληρώθηκε",
-  "com.affine.payment.member.team.invite.notify.title": "Η πρόσκληση στάλθηκε, {{successCount}} επιτυχής, {{failedCount}} απέτυχε",
   "com.affine.payment.member.team.invite.notify.fail-message": "Αυτές οι διευθύνσεις email έχουν ήδη προσκληθεί:",
   "com.affine.payment.member.team.revoke": "Ανάκληση πρόσκλησης",
   "com.affine.payment.member.team.approve": "Έγκριση",

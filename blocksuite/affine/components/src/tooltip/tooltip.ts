@@ -24,8 +24,8 @@ const styles = css`
     font-size: var(--affine-font-sm);
     border-radius: 4px;
     padding: 6px 12px;
-    color: var(--affine-white);
-    background: var(--affine-tooltip);
+    color: var(--affine-v2-tooltips-foreground, var(--affine-white));
+    background: var(--affine-v2-tooltips-background, var(--affine-tooltip));
 
     overflow-wrap: anywhere;
     white-space: normal;
@@ -40,6 +40,9 @@ const styles = css`
   }
 `;
 
+const TOOLTIP_ARROW_COLOR =
+  'var(--affine-v2-tooltips-background, var(--affine-tooltip))';
+
 // See http://apps.eky.hk/css-triangle-generator/
 const TRIANGLE_HEIGHT = 6;
 const triangleMap = {
@@ -47,25 +50,25 @@ const triangleMap = {
     bottom: '-6px',
     borderStyle: 'solid',
     borderWidth: '6px 5px 0 5px',
-    borderColor: 'var(--affine-tooltip) transparent transparent transparent',
+    borderColor: `${TOOLTIP_ARROW_COLOR} transparent transparent transparent`,
   },
   right: {
     left: '-6px',
     borderStyle: 'solid',
     borderWidth: '5px 6px 5px 0',
-    borderColor: 'transparent var(--affine-tooltip) transparent transparent',
+    borderColor: `transparent ${TOOLTIP_ARROW_COLOR} transparent transparent`,
   },
   bottom: {
     top: '-6px',
     borderStyle: 'solid',
     borderWidth: '0 5px 6px 5px',
-    borderColor: 'transparent transparent var(--affine-tooltip) transparent',
+    borderColor: `transparent transparent ${TOOLTIP_ARROW_COLOR} transparent`,
   },
   left: {
     right: '-6px',
     borderStyle: 'solid',
     borderWidth: '5px 0 5px 6px',
-    borderColor: 'transparent transparent transparent var(--affine-tooltip)',
+    borderColor: `transparent transparent transparent ${TOOLTIP_ARROW_COLOR}`,
   },
 };
 

@@ -9,8 +9,8 @@ import { css, html, LitElement, nothing, unsafeCSS } from 'lit';
 import { property } from 'lit/decorators.js';
 
 import {
+  AIAppEvents,
   type AIError,
-  AIProvider,
   PaymentRequiredError,
   UnauthorizedError,
 } from '../provider';
@@ -190,7 +190,7 @@ const PaymentRequiredErrorRenderer = (host?: EditorHost | null) => html`
   <ai-error-wrapper
     .text=${"You've reached the current usage cap for AFFiNE AI. You can subscribe to AFFiNE AI(with free 7-day-trial) to continue the AI experience!"}
     .actionText=${'Upgrade'}
-    .onClick=${() => AIProvider.slots.requestUpgradePlan.next({ host })}
+    .onClick=${() => AIAppEvents.requestUpgradePlan.next({ host })}
   ></ai-error-wrapper>
 `;
 
@@ -198,7 +198,7 @@ const LoginRequiredErrorRenderer = (host?: EditorHost | null) => html`
   <ai-error-wrapper
     .text=${'You need to login to AFFiNE Cloud to continue using AFFiNE AI.'}
     .actionText=${'Login'}
-    .onClick=${() => AIProvider.slots.requestLogin.next({ host })}
+    .onClick=${() => AIAppEvents.requestLogin.next({ host })}
   ></ai-error-wrapper>
 `;
 

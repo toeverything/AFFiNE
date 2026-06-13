@@ -8,18 +8,20 @@ import {
   encodeStateAsUpdate,
   encodeStateVector,
   encodeStateVectorFromUpdate,
-  mergeUpdates,
   UndoManager,
 } from 'yjs';
 
 import { CallMetric } from '../../../base';
-import { mergeUpdatesInApplyWay } from '../../../native';
+import { applyUpdatesWithNative, mergeUpdatesWithYjs } from '../merge-updates';
 import { Connection } from './connection';
 import { SingletonLocker } from './lock';
 
-async function nativeMergeUpdates(updates: Uint8Array[]): Promise<Uint8Array> {
-  // use native module to merge updates
-  return mergeUpdatesInApplyWay(updates.map(u => Buffer.from(u)));
+async function nativeApplyUpdates(updates: Uint8Array[]): Promise<Uint8Array> {
+  return applyUpdatesWithNative(updates, 'doc.storage.squash.native');
+}
+
+async function yjsMergeUpdates(updates: Uint8Array[]): Promise<Uint8Array> {
+  return mergeUpdatesWithYjs(updates, 'doc.storage.squash.yjs');
 }
 
 export interface DocRecord {
@@ -62,7 +64,7 @@ export abstract class DocStorageAdapter extends Connection {
 
   constructor(
     protected readonly options: DocStorageOptions = {
-      mergeUpdates,
+      mergeUpdates: yjsMergeUpdates,
     }
   ) {
     super();
@@ -114,7 +116,7 @@ export abstract class DocStorageAdapter extends Connection {
     if (updates.length) {
       const docUpdate = await this.squash(
         snapshot ? [snapshot, ...updates] : updates,
-        nativeMergeUpdates
+        nativeApplyUpdates
       );
       return docUpdate.bin;
     }
@@ -254,7 +256,7 @@ export abstract class DocStorageAdapter extends Connection {
     updates: DocUpdate[],
     merge?: (updates: Uint8Array[]) => Promise<Uint8Array>
   ): Promise<DocUpdate> {
-    const mergeFn = merge ?? this.options?.mergeUpdates ?? mergeUpdates;
+    const mergeFn = merge ?? this.options?.mergeUpdates ?? yjsMergeUpdates;
     const lastUpdate = updates.at(-1);
     if (!lastUpdate) {
       throw new Error('No updates to be squashed.');

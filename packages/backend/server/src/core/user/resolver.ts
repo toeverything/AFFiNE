@@ -16,6 +16,7 @@ import { isNil, omitBy } from 'lodash-es';
 
 import {
   CannotDeleteOwnAccount,
+  EventBus,
   type FileUpload,
   ImageFormatNotSupported,
   OneMB,
@@ -186,7 +187,10 @@ export class UserResolver {
 
 @Resolver(() => UserType)
 export class UserSettingsResolver {
-  constructor(private readonly models: Models) {}
+  constructor(
+    private readonly models: Models,
+    private readonly event: EventBus
+  ) {}
 
   @Mutation(() => Boolean, {
     name: 'updateSettings',
@@ -199,6 +203,7 @@ export class UserSettingsResolver {
   ) {
     UserSettingsSchema.parse(input);
     await this.models.userSettings.set(user.id, input);
+    this.event.emit('user.settings.updated', { userId: user.id });
     return true;
   }
 

@@ -21,7 +21,8 @@ import type { TemplateResult } from 'lit';
 
 import { getContentFromSlice } from '../../utils';
 import { AIChatBlockModel } from '../blocks';
-import { type AIError, AIProvider } from '../provider';
+import { type AIError } from '../provider';
+import { getAIRequestService } from '../runtime/request';
 import { reportResponse } from '../utils/action-reporter';
 import { getAIPanelWidget } from '../utils/ai-widgets';
 import { AIContext } from '../utils/context';
@@ -178,10 +179,6 @@ function actionToStream<T extends keyof BlockSuitePresets.AIActions>(
   trackerOptions?: BlockSuitePresets.TrackerOptions,
   panelInput?: string
 ) {
-  const action = AIProvider.actions[id];
-
-  if (!action || typeof action !== 'function') return;
-
   if (extract && typeof extract === 'function') {
     return (host: EditorHost, ctx: AIContext): BlockSuitePresets.TextStream => {
       let stream: BlockSuitePresets.TextStream | undefined;
@@ -201,7 +198,7 @@ function actionToStream<T extends keyof BlockSuitePresets.AIActions>(
             host,
             docId: host.store.id,
             workspaceId: host.store.workspace.id,
-          } as Parameters<typeof action>[0];
+          } as BlockSuitePresets.AITextActionOptions & Record<string, unknown>;
 
           const content = ctx.get().content;
           if (typeof content === 'string' && !content.length && panelInput) {
@@ -214,8 +211,10 @@ function actionToStream<T extends keyof BlockSuitePresets.AIActions>(
             Object.assign(options, data);
           }
 
-          // @ts-expect-error TODO(@Peng): maybe fix this
-          stream = await action(options);
+          stream = (await getAIRequestService().executeAction(
+            id,
+            options
+          )) as BlockSuitePresets.TextStream;
           if (!stream) return;
           yield* stream;
         },
@@ -242,10 +241,12 @@ function actionToStream<T extends keyof BlockSuitePresets.AIActions>(
           host,
           docId: host.store.id,
           workspaceId: host.store.workspace.id,
-        } as Parameters<typeof action>[0];
+        } as BlockSuitePresets.AITextActionOptions & Record<string, unknown>;
 
-        // @ts-expect-error TODO(@Peng): maybe fix this
-        stream = await action(options);
+        stream = (await getAIRequestService().executeAction(
+          id,
+          options
+        )) as BlockSuitePresets.TextStream;
         if (!stream) return;
         yield* stream;
       },
@@ -351,7 +352,7 @@ function updateEdgelessAIPanelConfig<
     },
   };
   config.discardCallback = () => {
-    reportResponse('result:discard');
+    reportResponse('result:discard', host);
   };
   config.hideCallback = () => {
     aiPanel.updateComplete

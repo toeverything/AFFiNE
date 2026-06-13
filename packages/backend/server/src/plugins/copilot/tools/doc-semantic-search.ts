@@ -1,24 +1,27 @@
 import { omit } from 'lodash-es';
 import { z } from 'zod';
 
-import type { AccessController } from '../../../core/permission';
+import type { PermissionAccess } from '../../../core/permission';
 import {
   type ChunkSimilarity,
   clearEmbeddingChunk,
   type Models,
 } from '../../../models';
+import { CopilotContextService } from '../context/service';
+import { workspaceSyncRequiredError } from './doc-sync';
 import { toolError } from './error';
 import { defineTool } from './tool';
-import type {
-  ContextSession,
-  CopilotChatOptions,
-  CopilotContextService,
-} from './types';
+import type { CopilotChatOptions } from './types';
+
+const getEmbeddingRouteContext = (options: CopilotChatOptions) => ({
+  userId: options?.user,
+  byokLeaseId: options?.byokLeaseId,
+});
 
 export const buildDocSearchGetter = (
-  ac: AccessController,
+  ac: PermissionAccess,
   context: CopilotContextService,
-  docContext: ContextSession | null,
+  sessionId: string | undefined,
   models: Models
 ) => {
   const searchDocs = async (
@@ -27,17 +30,51 @@ export const buildDocSearchGetter = (
     signal?: AbortSignal
   ) => {
     if (!options || !query?.trim() || !options.user || !options.workspace) {
-      return `Invalid search parameters.`;
+      return toolError(
+        'Doc Semantic Search Failed',
+        'Missing workspace, user, or query for doc_semantic_search.'
+      );
+    }
+    const workspace = await models.workspace.get(options.workspace);
+    if (!workspace) {
+      return workspaceSyncRequiredError();
     }
     const canAccess = await ac
       .user(options.user)
       .workspace(options.workspace)
       .can('Workspace.Read');
     if (!canAccess)
-      return 'You do not have permission to access this workspace.';
+      return toolError(
+        'Doc Semantic Search Failed',
+        'You do not have permission to access this workspace.'
+      );
+    const routeContext = getEmbeddingRouteContext(options);
     const [chunks, contextChunks] = await Promise.all([
-      context.matchWorkspaceAll(options.workspace, query, 10, signal),
-      docContext?.matchFiles(query, 10, signal) ?? [],
+      context.matchWorkspaceAll(
+        options.workspace,
+        query,
+        10,
+        signal,
+        0.8,
+        undefined,
+        0.85,
+        routeContext
+      ),
+      sessionId
+        ? context
+            .getBySessionId(sessionId)
+            .then(
+              current =>
+                current?.matchFiles(
+                  query,
+                  10,
+                  signal,
+                  0.85,
+                  0.5,
+                  routeContext
+                ) ?? []
+            )
+        : [],
     ]);
 
     const docChunks = await ac
@@ -53,7 +90,7 @@ export const buildDocSearchGetter = (
       fileChunks.push(...contextChunks);
     }
     if (!blobChunks.length && !docChunks.length && !fileChunks.length) {
-      return `No results found for "${query}".`;
+      return [];
     }
 
     const docIds = docChunks.map(c => ({
@@ -101,7 +138,7 @@ export const createDocSemanticSearchTool = (
   searchDocs: (
     query: string,
     signal?: AbortSignal
-  ) => Promise<ChunkSimilarity[] | string | undefined>
+  ) => Promise<ChunkSimilarity[] | ReturnType<typeof toolError>>
 ) => {
   return defineTool({
     description:

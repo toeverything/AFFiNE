@@ -2,7 +2,8 @@ import { Logger } from '@nestjs/common';
 import { GoogleAuth, GoogleAuthOptions } from 'google-auth-library';
 import z from 'zod';
 
-import { OneMinute, safeFetch } from '../../../base';
+import { OneMinute } from '../../../base';
+import { inferRemoteMimeType } from '../../../native';
 import { PromptAttachment, StreamObject } from './types';
 
 export type VertexProviderConfig = {
@@ -33,30 +34,7 @@ type CopilotTextStreamPart =
     }
   | { type: 'error'; error: unknown };
 
-const ATTACH_HEAD_PARAMS = { timeoutMs: OneMinute / 12, maxRedirects: 3 };
-const FORMAT_INFER_MAP: Record<string, string> = {
-  pdf: 'application/pdf',
-  mp3: 'audio/mpeg',
-  opus: 'audio/opus',
-  ogg: 'audio/ogg',
-  aac: 'audio/aac',
-  m4a: 'audio/aac',
-  flac: 'audio/flac',
-  ogv: 'video/ogg',
-  wav: 'audio/wav',
-  png: 'image/png',
-  jpeg: 'image/jpeg',
-  jpg: 'image/jpeg',
-  webp: 'image/webp',
-  txt: 'text/plain',
-  md: 'text/plain',
-  mov: 'video/mov',
-  mpeg: 'video/mpeg',
-  mp4: 'video/mp4',
-  avi: 'video/avi',
-  wmv: 'video/wmv',
-  flv: 'video/flv',
-};
+const ATTACH_HEAD_TIMEOUT_MS = OneMinute / 12;
 
 function toBase64Data(data: string, encoding: 'base64' | 'utf8' = 'base64') {
   return encoding === 'base64'
@@ -97,25 +75,7 @@ export async function inferMimeType(url: string) {
   if (url.startsWith('data:')) {
     return url.split(';')[0].split(':')[1];
   }
-  const pathname = new URL(url).pathname;
-  const extension = pathname.split('.').pop();
-  if (extension) {
-    const ext = FORMAT_INFER_MAP[extension];
-    if (ext) {
-      return ext;
-    }
-  }
-  try {
-    const mimeType = await safeFetch(
-      url,
-      { method: 'HEAD' },
-      ATTACH_HEAD_PARAMS
-    ).then(res => res.headers.get('content-type'));
-    if (mimeType) return mimeType;
-  } catch {
-    // ignore and fallback to default
-  }
-  return 'application/octet-stream';
+  return inferRemoteMimeType({ url, timeoutMs: ATTACH_HEAD_TIMEOUT_MS });
 }
 
 type CitationIndexedEvent = {
@@ -164,11 +124,6 @@ export function toError(error: unknown): Error {
   }
 }
 
-type DocEditFootnote = {
-  intent: string;
-  result: string;
-};
-
 function asRecord(value: unknown): Record<string, unknown> | null {
   if (value && typeof value === 'object' && !Array.isArray(value)) {
     return value as Record<string, unknown>;
@@ -183,8 +138,6 @@ export class TextStreamParser {
   private lastType: ChunkType | undefined;
 
   private prefix: string | null = this.CALLOUT_PREFIX;
-
-  private readonly docEditFootnotes: DocEditFootnote[] = [];
 
   public parse(chunk: CopilotTextStreamPart) {
     let result = '';
@@ -233,13 +186,6 @@ export class TextStreamParser {
             result += `\nWriting document "${chunk.input.title}"\n`;
             break;
           }
-          case 'doc_edit': {
-            this.docEditFootnotes.push({
-              intent: String(chunk.input.instructions ?? ''),
-              result: '',
-            });
-            break;
-          }
         }
         result = this.markAsCallout(result);
         break;
@@ -250,22 +196,6 @@ export class TextStreamParser {
         );
         result = this.addPrefix(result);
         switch (chunk.toolName) {
-          case 'doc_edit': {
-            const output = asRecord(chunk.output);
-            const array = output?.result;
-            if (Array.isArray(array)) {
-              result += array
-                .map(item => {
-                  return `\n${String(asRecord(item)?.changedContent ?? '')}\n`;
-                })
-                .join('');
-              this.docEditFootnotes[this.docEditFootnotes.length - 1].result =
-                result;
-            } else {
-              this.docEditFootnotes.pop();
-            }
-            break;
-          }
           case 'doc_semantic_search': {
             const output = chunk.output;
             if (Array.isArray(output)) {
@@ -319,10 +249,7 @@ export class TextStreamParser {
   }
 
   public end() {
-    const footnotes = this.docEditFootnotes.map((footnote, index) => {
-      return `[^edit${index + 1}]: ${JSON.stringify({ type: 'doc-edit', ...footnote })}`;
-    });
-    return footnotes.join('\n');
+    return '';
   }
 
   private addPrefix(text: string) {
@@ -476,18 +403,22 @@ export function getVertexAnthropicBaseUrl(options: VertexProviderConfig) {
   return `https://${location}-aiplatform.googleapis.com/v1/projects/${project}/locations/${location}/publishers/anthropic`;
 }
 
+export function getVertexGoogleBaseUrl(options: VertexProviderConfig) {
+  const normalizedBaseUrl = normalizeUrl(options.baseURL);
+  if (normalizedBaseUrl) return normalizedBaseUrl;
+  const { location, project } = options;
+  if (!location || !project) return undefined;
+  return `https://${location}-aiplatform.googleapis.com/v1/projects/${project}/locations/${location}/publishers/google`;
+}
+
 export async function getGoogleAuth(
   options: VertexProviderConfig,
   publisher: 'anthropic' | 'google'
 ) {
   function getBaseUrl() {
-    const normalizedBaseUrl = normalizeUrl(options.baseURL);
-    if (normalizedBaseUrl) return normalizedBaseUrl;
-    const { location } = options;
-    if (location) {
-      return `https://${location}-aiplatform.googleapis.com/v1beta1/publishers/${publisher}`;
-    }
-    return undefined;
+    return publisher === 'google'
+      ? getVertexGoogleBaseUrl(options)
+      : getVertexAnthropicBaseUrl(options);
   }
 
   async function generateAuthToken() {

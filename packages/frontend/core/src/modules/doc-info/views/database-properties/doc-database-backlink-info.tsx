@@ -85,7 +85,7 @@ const DatabaseBacklinkRow = ({
   row$,
   onChange,
 }: {
-  defaultOpen: boolean;
+  defaultOpen?: boolean;
   row$: Observable<DatabaseRow | undefined>;
   onChange?: (
     row: DatabaseRow,

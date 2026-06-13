@@ -5,16 +5,14 @@ import {
   StorageJSONSchema,
   StorageProviderConfig,
 } from '../../base';
-import { CopilotPromptScenario } from './prompt/prompts';
 import {
   AnthropicOfficialConfig,
   AnthropicVertexConfig,
 } from './providers/anthropic';
+import { CloudflareWorkersAIConfig } from './providers/cloudflare';
 import type { FalConfig } from './providers/fal';
 import { GeminiGenerativeConfig, GeminiVertexConfig } from './providers/gemini';
-import { MorphConfig } from './providers/morph';
 import { OpenAIConfig } from './providers/openai';
-import { PerplexityConfig } from './providers/perplexity';
 import {
   CopilotProviderType,
   ModelOutputType,
@@ -23,13 +21,12 @@ import {
 
 export type CopilotProviderConfigMap = {
   [CopilotProviderType.OpenAI]: OpenAIConfig;
+  [CopilotProviderType.CloudflareWorkersAi]: CloudflareWorkersAIConfig;
   [CopilotProviderType.FAL]: FalConfig;
   [CopilotProviderType.Gemini]: GeminiGenerativeConfig;
   [CopilotProviderType.GeminiVertex]: GeminiVertexConfig;
-  [CopilotProviderType.Perplexity]: PerplexityConfig;
   [CopilotProviderType.Anthropic]: AnthropicOfficialConfig;
   [CopilotProviderType.AnthropicVertex]: AnthropicVertexConfig;
-  [CopilotProviderType.Morph]: MorphConfig;
 };
 
 export type ProviderSpecificConfig =
@@ -39,6 +36,7 @@ export const RustRequestMiddlewareValues = [
   'normalize_messages',
   'clamp_max_tokens',
   'tool_schema_rewrite',
+  'openai_request_compat',
 ] as const;
 export type RustRequestMiddleware =
   (typeof RustRequestMiddlewareValues)[number];
@@ -81,7 +79,7 @@ export type CopilotProviderProfile = CopilotProviderProfileCommon &
   }[CopilotProviderType];
 
 export type CopilotProviderDefaults = Partial<
-  Record<Exclude<ModelOutputType, ModelOutputType.Rerank>, string>
+  Record<Exclude<ModelOutputType, typeof ModelOutputType.Rerank>, string>
 > & {
   fallback?: string;
 };
@@ -117,6 +115,12 @@ const FalConfigShape = z.object({
   apiKey: z.string(),
 });
 
+const CloudflareWorkersAIConfigShape = z.object({
+  apiToken: z.string(),
+  accountId: z.string().optional(),
+  baseURL: z.string().optional(),
+});
+
 const GeminiGenerativeConfigShape = z.object({
   apiKey: z.string(),
   baseURL: z.string().optional(),
@@ -130,18 +134,9 @@ const VertexProviderConfigShape = z.object({
   fetch: z.any().optional(),
 });
 
-const PerplexityConfigShape = z.object({
-  apiKey: z.string(),
-  endpoint: z.string().optional(),
-});
-
 const AnthropicOfficialConfigShape = z.object({
   apiKey: z.string(),
   baseURL: z.string().optional(),
-});
-
-const MorphConfigShape = z.object({
-  apiKey: z.string().optional(),
 });
 
 const CopilotProviderProfileShape = z.discriminatedUnion('type', [
@@ -154,6 +149,10 @@ const CopilotProviderProfileShape = z.discriminatedUnion('type', [
     config: FalConfigShape,
   }),
   CopilotProviderProfileBaseShape.extend({
+    type: z.literal(CopilotProviderType.CloudflareWorkersAi),
+    config: CloudflareWorkersAIConfigShape,
+  }),
+  CopilotProviderProfileBaseShape.extend({
     type: z.literal(CopilotProviderType.Gemini),
     config: GeminiGenerativeConfigShape,
   }),
@@ -162,20 +161,12 @@ const CopilotProviderProfileShape = z.discriminatedUnion('type', [
     config: VertexProviderConfigShape,
   }),
   CopilotProviderProfileBaseShape.extend({
-    type: z.literal(CopilotProviderType.Perplexity),
-    config: PerplexityConfigShape,
-  }),
-  CopilotProviderProfileBaseShape.extend({
     type: z.literal(CopilotProviderType.Anthropic),
     config: AnthropicOfficialConfigShape,
   }),
   CopilotProviderProfileBaseShape.extend({
     type: z.literal(CopilotProviderType.AnthropicVertex),
     config: VertexProviderConfigShape,
-  }),
-  CopilotProviderProfileBaseShape.extend({
-    type: z.literal(CopilotProviderType.Morph),
-    config: MorphConfigShape,
   }),
 ]);
 
@@ -193,6 +184,13 @@ declare global {
   interface AppConfigSchema {
     copilot: {
       enabled: boolean;
+      byok: {
+        enabled: ConfigItem<boolean>;
+        allowedProviders: ConfigItem<
+          Array<'openai' | 'anthropic' | 'gemini' | 'fal'>
+        >;
+        allowCustomEndpoint: ConfigItem<boolean>;
+      };
       unsplash: ConfigItem<{
         key: string;
       }>;
@@ -200,18 +198,16 @@ declare global {
         key: string;
       }>;
       storage: ConfigItem<StorageProviderConfig>;
-      scenarios: ConfigItem<CopilotPromptScenario>;
       providers: {
         profiles: ConfigItem<CopilotProviderProfile[]>;
         defaults: ConfigItem<CopilotProviderDefaults>;
         openai: ConfigItem<OpenAIConfig>;
+        cloudflareWorkersAi: ConfigItem<CloudflareWorkersAIConfig>;
         fal: ConfigItem<FalConfig>;
         gemini: ConfigItem<GeminiGenerativeConfig>;
         geminiVertex: ConfigItem<GeminiVertexConfig>;
-        perplexity: ConfigItem<PerplexityConfig>;
         anthropic: ConfigItem<AnthropicOfficialConfig>;
         anthropicVertex: ConfigItem<AnthropicVertexConfig>;
-        morph: ConfigItem<MorphConfig>;
       };
     };
   }
@@ -222,22 +218,20 @@ defineModuleConfig('copilot', {
     desc: 'Whether to enable the copilot plugin. <br> Document: <a href="https://docs.affine.pro/self-host-affine/administer/ai" target="_blank">https://docs.affine.pro/self-host-affine/administer/ai</a>',
     default: false,
   },
-  scenarios: {
-    desc: 'Use custom models in scenarios and override default settings.',
-    default: {
-      override_enabled: false,
-      scenarios: {
-        audio_transcribing: 'gemini-2.5-flash',
-        chat: 'gemini-2.5-flash',
-        embedding: 'gemini-embedding-001',
-        image: 'gpt-image-1',
-        coding: 'claude-sonnet-4-5@20250929',
-        complex_text_generation: 'gpt-5-mini',
-        quick_decision_making: 'gpt-5-mini',
-        quick_text_generation: 'gemini-2.5-flash',
-        polish_and_summarize: 'gemini-2.5-flash',
-      },
-    },
+  'byok.enabled': {
+    desc: 'Whether to enable workspace BYOK.',
+    default: true,
+    shape: z.boolean(),
+  },
+  'byok.allowedProviders': {
+    desc: 'The allowlist for workspace BYOK providers.',
+    default: ['openai', 'anthropic', 'gemini', 'fal'],
+    shape: z.array(z.enum(['openai', 'anthropic', 'gemini', 'fal'])),
+  },
+  'byok.allowCustomEndpoint': {
+    desc: 'Whether workspace BYOK custom endpoints are accepted.',
+    default: false,
+    shape: z.boolean(),
   },
   'providers.profiles': {
     desc: 'The profile list for copilot providers.',
@@ -257,6 +251,13 @@ defineModuleConfig('copilot', {
     },
     link: 'https://github.com/openai/openai-node',
   },
+  'providers.cloudflareWorkersAi': {
+    desc: 'The config for the Cloudflare Workers AI provider.',
+    default: {
+      apiToken: '',
+      accountId: '',
+    },
+  },
   'providers.fal': {
     desc: 'The config for the fal provider.',
     default: {
@@ -275,12 +276,6 @@ defineModuleConfig('copilot', {
     default: {},
     schema: VertexSchema,
   },
-  'providers.perplexity': {
-    desc: 'The config for the perplexity provider.',
-    default: {
-      apiKey: '',
-    },
-  },
   'providers.anthropic': {
     desc: 'The config for the anthropic provider.',
     default: {
@@ -292,10 +287,6 @@ defineModuleConfig('copilot', {
     desc: 'The config for the anthropic provider in Google Vertex AI.',
     default: {},
     schema: VertexSchema,
-  },
-  'providers.morph': {
-    desc: 'The config for the morph provider.',
-    default: {},
   },
   unsplash: {
     desc: 'The config for the unsplash key.',

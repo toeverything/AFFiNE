@@ -5,7 +5,13 @@ import Sinon from 'sinon';
 import request from 'supertest';
 
 import { CANARY_CLIENT_VERSION_MAX_AGE_DAYS, ConfigFactory } from '../../base';
-import { AuthModule, CurrentUser, Public, Session } from '../../core/auth';
+import {
+  AuthModule,
+  CurrentUser,
+  JwtSessionService,
+  Public,
+  Session,
+} from '../../core/auth';
 import { AuthService } from '../../core/auth/service';
 import { Models } from '../../models';
 import { createTestingApp, TestingApp } from '../utils';
@@ -37,6 +43,7 @@ const test = ava as TestFn<{
   app: TestingApp;
   server: any;
   auth: AuthService;
+  jwtSession: JwtSessionService;
   models: Models;
   db: PrismaClient;
   config: ConfigFactory;
@@ -53,6 +60,7 @@ test.before(async t => {
   t.context.app = app;
   t.context.server = app.getHttpServer();
   t.context.auth = app.get(AuthService);
+  t.context.jwtSession = app.get(JwtSessionService);
   t.context.models = app.get(Models);
   t.context.db = app.get(PrismaClient);
   t.context.config = app.get(ConfigFactory);
@@ -110,7 +118,7 @@ test('should not be able to visit private api if not signed in', async t => {
   t.assert(true);
 });
 
-test('should be able to visit private api if signed in', async t => {
+test('should be able to visit private api with cookie session', async t => {
   const res = await request(t.context.server)
     .get('/private')
     .set('Cookie', `${AuthService.sessionCookieName}=${t.context.sessionId}`)
@@ -119,16 +127,115 @@ test('should be able to visit private api if signed in', async t => {
   t.is(res.body.user.id, t.context.u1.id);
 });
 
-test('should be able to visit private api with access token', async t => {
-  const models = t.context.app.get(Models);
-  const token = await models.accessToken.create({
+test('should be able to visit private api with legacy bearer session id', async t => {
+  const res = await request(t.context.server)
+    .get('/private')
+    .set('Authorization', `Bearer ${t.context.sessionId}`)
+    .expect(HttpStatus.OK);
+
+  t.is(res.body.user.id, t.context.u1.id);
+});
+
+test('should be able to visit private api with personal access token', async t => {
+  const accessToken = await t.context.models.accessToken.create({
     userId: t.context.u1.id,
     name: 'test',
   });
 
   const res = await request(t.context.server)
     .get('/private')
-    .set('Authorization', `Bearer ${token.token}`)
+    .set('Authorization', `Bearer ${accessToken.token}`)
+    .expect(HttpStatus.OK);
+
+  t.is(res.body.user.id, t.context.u1.id);
+});
+
+test('should be able to visit private api with jwt session', async t => {
+  const jwt = t.context.jwtSession.sign(t.context.u1.id, t.context.sessionId);
+
+  const res = await request(t.context.server)
+    .get('/private')
+    .set('Authorization', `Bearer ${jwt.token}`)
+    .expect(HttpStatus.OK);
+
+  t.is(res.body.user.id, t.context.u1.id);
+});
+
+test('should prefer bearer jwt over cookie session', async t => {
+  const u2 = await t.context.auth.signUp('u2@affine.pro', '1');
+  const u2Session = await t.context.auth.createUserSession(u2.id);
+  const jwt = t.context.jwtSession.sign(u2.id, u2Session.sessionId);
+
+  const res = await request(t.context.server)
+    .get('/private')
+    .set('Cookie', `${AuthService.sessionCookieName}=${t.context.sessionId}`)
+    .set('Authorization', `Bearer ${jwt.token}`)
+    .expect(HttpStatus.OK);
+
+  t.is(res.body.user.id, u2.id);
+});
+
+test('should reject jwt after its user session is deleted', async t => {
+  const jwt = t.context.jwtSession.sign(t.context.u1.id, t.context.sessionId);
+
+  await t.context.auth.signOut(t.context.sessionId, t.context.u1.id);
+
+  await request(t.context.server)
+    .get('/private')
+    .set('Authorization', `Bearer ${jwt.token}`)
+    .expect(HttpStatus.UNAUTHORIZED);
+
+  t.pass();
+});
+
+test('should enforce client version for jwt and bearer session id auth', async t => {
+  t.context.config.override({
+    client: {
+      versionControl: {
+        enabled: true,
+        requiredVersion: '>=0.25.0',
+      },
+    },
+  });
+
+  const cases = [
+    {
+      name: 'jwt',
+      token: async () => {
+        const session = await t.context.auth.createUserSession(t.context.u1.id);
+        return t.context.jwtSession.sign(t.context.u1.id, session.sessionId)
+          .token;
+      },
+    },
+    {
+      name: 'bearer session id',
+      token: async () => {
+        const session = await t.context.auth.createUserSession(t.context.u1.id);
+        return session.sessionId;
+      },
+    },
+  ];
+
+  for (const testCase of cases) {
+    const res = await request(t.context.server)
+      .get('/private')
+      .set('Authorization', `Bearer ${await testCase.token()}`)
+      .set('x-affine-version', '0.24.0')
+      .expect(HttpStatus.FORBIDDEN);
+
+    t.is(
+      res.body.message,
+      'Unsupported client with version [0.24.0], required version is [>=0.25.0].',
+      testCase.name
+    );
+  }
+});
+
+test('should fall back to cookie session on public api when jwt is invalid', async t => {
+  const res = await request(t.context.server)
+    .get('/public')
+    .set('Cookie', `${AuthService.sessionCookieName}=${t.context.sessionId}`)
+    .set('Authorization', 'Bearer invalid.jwt.token')
     .expect(HttpStatus.OK);
 
   t.is(res.body.user.id, t.context.u1.id);

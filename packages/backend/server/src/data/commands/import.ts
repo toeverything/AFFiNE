@@ -1,29 +1,25 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-import { Logger } from '@nestjs/common';
-import { Command, CommandRunner } from 'nest-commander';
+import { Injectable, Logger } from '@nestjs/common';
 
 import { ConfigFactory, InvalidAppConfigInput } from '../../base';
 import { Models } from '../../models';
 
-@Command({
-  name: 'import-config',
-  arguments: '[name]',
-  description: 'import config from a file',
-})
-export class ImportConfigCommand extends CommandRunner {
+@Injectable()
+export class ImportConfigCommand {
   logger = new Logger(ImportConfigCommand.name);
 
   constructor(
     private readonly models: Models,
     private readonly configFactory: ConfigFactory
-  ) {
-    super();
-  }
+  ) {}
 
-  override async run(inputs: string[]): Promise<void> {
-    let path = inputs[0];
+  async execute(path?: string): Promise<void> {
+    if (!path) {
+      throw new Error('A config file path is required');
+    }
+
     path = resolve(process.cwd(), path);
 
     const overrides: Record<string, Record<string, any>> = JSON.parse(

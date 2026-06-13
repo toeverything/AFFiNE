@@ -115,7 +115,7 @@ export function getSelectingBlockPaths(
   }
 
   // Filter out the blocks which parent is in the blocks
-  // eslint-disable-next-line @typescript-eslint/prefer-for-of
+  // oxlint-disable-next-line @typescript-eslint/prefer-for-of
   for (let i = 0; i < blocks.length; i++) {
     const block = blocks[i];
     const parent = blocks[i].element.store.getParent(block.element.model);

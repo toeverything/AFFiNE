@@ -156,7 +156,7 @@ export class AsyncStorageMemento implements AsyncMemento {
       this.eventEmitter.on(key, eventEmitterCb);
 
       // Listen for cross-tab events
-      // eslint-disable-next-line sonarjs/no-identical-functions
+      // oxlint-disable-next-line sonarjs/no-identical-functions
       const channelCb = (event: MessageEvent) => {
         if (event.data.key === key) {
           subscriber.next(event.data.value);

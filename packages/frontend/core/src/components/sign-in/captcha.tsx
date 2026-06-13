@@ -16,6 +16,7 @@ export const Captcha = () => {
 
   const handleTurnstileSuccess = useCallback(
     (token: string) => {
+      captchaService.challenge$.next(undefined);
       captchaService.verifyToken$.next(token);
     },
     [captchaService]

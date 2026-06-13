@@ -2,25 +2,47 @@ import path, { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import { app, net, protocol, session } from 'electron';
-import cookieParser from 'set-cookie-parser';
 
-import { isWindows, resourcesPath } from '../shared/utils';
+import { anotherHost, mainHost } from '../shared/internal-origin';
+import {
+  isPathInsideBase,
+  isWindows,
+  resolveExistingPathInBase,
+  resolvePathInBase,
+  resourcesPath,
+} from '../shared/utils';
+import { getAuthTokenForUrl } from './auth/native-token';
 import { buildType, isDev } from './config';
-import { anotherHost, mainHost } from './constants';
 import { logger } from './logger';
 
 const webStaticDir = join(resourcesPath, 'web-static');
 const devServerBase = process.env.DEV_SERVER_URL;
 const localWhiteListDirs = [
-  path.resolve(app.getPath('sessionData')).toLowerCase(),
-  path.resolve(app.getPath('temp')).toLowerCase(),
+  path.resolve(app.getPath('sessionData')),
+  path.resolve(app.getPath('temp')),
 ];
 
 function isPathInWhiteList(filepath: string) {
-  const lowerFilePath = filepath.toLowerCase();
   return localWhiteListDirs.some(whitelistDir =>
-    lowerFilePath.startsWith(whitelistDir)
+    isPathInsideBase(whitelistDir, filepath, {
+      caseInsensitive: isWindows(),
+    })
   );
+}
+
+async function resolveWhitelistedLocalPath(filepath: string) {
+  for (const whitelistDir of localWhiteListDirs) {
+    try {
+      return await resolveExistingPathInBase(whitelistDir, filepath, {
+        caseInsensitive: isWindows(),
+        label: 'filepath',
+      });
+    } catch {
+      continue;
+    }
+  }
+
+  throw new Error('Invalid filepath');
 }
 
 const apiBaseByBuildType: Record<typeof buildType, string> = {
@@ -42,7 +64,27 @@ function buildTargetUrl(base: string, urlObject: URL) {
   return new URL(`${urlObject.pathname}${urlObject.search}`, base).toString();
 }
 
-function proxyRequest(
+async function buildAuthorizedRequest(request: Request, targetUrl: string) {
+  const clonedRequest = request.clone();
+  const headers = new Headers(clonedRequest.headers);
+  const token = getAuthTokenForUrl(targetUrl);
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
+
+  return new Request(targetUrl, {
+    body:
+      clonedRequest.method === 'GET' || clonedRequest.method === 'HEAD'
+        ? undefined
+        : clonedRequest.body,
+    headers,
+    method: clonedRequest.method,
+    redirect: clonedRequest.redirect,
+    signal: clonedRequest.signal,
+  });
+}
+
+async function proxyRequest(
   request: Request,
   urlObject: URL,
   base: string,
@@ -50,12 +92,13 @@ function proxyRequest(
 ) {
   const { bypassCustomProtocolHandlers = true } = options;
   const targetUrl = buildTargetUrl(base, urlObject);
+  const authorizedRequest = await buildAuthorizedRequest(request, targetUrl);
   const proxiedRequest = bypassCustomProtocolHandlers
-    ? Object.assign(request.clone(), {
+    ? Object.assign(authorizedRequest, {
         bypassCustomProtocolHandlers: true,
       })
-    : request;
-  return net.fetch(targetUrl, proxiedRequest);
+    : authorizedRequest;
+  return net.fetch(proxiedRequest);
 }
 
 async function handleFileRequest(request: Request) {
@@ -94,15 +137,14 @@ async function handleFileRequest(request: Request) {
   // for relative path, load the file in resources
   if (!isAbsolutePath) {
     if (urlObject.pathname.split('/').at(-1)?.includes('.')) {
-      // Sanitize pathname to prevent path traversal attacks
-      const decodedPath = decodeURIComponent(urlObject.pathname);
-      const normalizedPath = join(webStaticDir, decodedPath).normalize();
-      if (!normalizedPath.startsWith(webStaticDir)) {
-        // Attempted path traversal - reject by using empty path
-        filepath = join(webStaticDir, '');
-      } else {
-        filepath = normalizedPath;
-      }
+      const decodedPath = decodeURIComponent(urlObject.pathname).replace(
+        /^\/+/,
+        ''
+      );
+      filepath = resolvePathInBase(webStaticDir, decodedPath, {
+        caseInsensitive: isWindows(),
+        label: 'filepath',
+      });
     } else {
       // else, fallback to load the index.html instead
       filepath = join(webStaticDir, 'index.html');
@@ -113,10 +155,10 @@ async function handleFileRequest(request: Request) {
     if (isWindows()) {
       filepath = path.resolve(filepath.replace(/^\//, ''));
     }
-    // security check if the filepath is within app.getPath('sessionData')
     if (urlObject.host !== 'local-file' || !isPathInWhiteList(filepath)) {
       throw new Error('Invalid filepath');
     }
+    filepath = await resolveWhitelistedLocalPath(filepath);
   }
   return net.fetch(pathToFileURL(filepath).toString(), clonedRequest);
 }
@@ -197,41 +239,6 @@ export function registerProtocol() {
       const { responseHeaders, url } = responseDetails;
       (async () => {
         if (responseHeaders) {
-          const originalCookie =
-            responseHeaders['set-cookie'] || responseHeaders['Set-Cookie'];
-
-          if (originalCookie) {
-            // save the cookies, to support third party cookies
-            for (const cookies of originalCookie) {
-              const parsedCookies = cookieParser.parse(cookies);
-              for (const parsedCookie of parsedCookies) {
-                if (!parsedCookie.value) {
-                  await session.defaultSession.cookies.remove(
-                    responseDetails.url,
-                    parsedCookie.name
-                  );
-                } else {
-                  await session.defaultSession.cookies.set({
-                    url: responseDetails.url,
-                    domain: parsedCookie.domain,
-                    expirationDate: parsedCookie.expires?.getTime(),
-                    httpOnly: parsedCookie.httpOnly,
-                    secure: parsedCookie.secure,
-                    value: parsedCookie.value,
-                    name: parsedCookie.name,
-                    path: parsedCookie.path,
-                    sameSite: parsedCookie.sameSite?.toLowerCase() as
-                      | 'unspecified'
-                      | 'no_restriction'
-                      | 'lax'
-                      | 'strict'
-                      | undefined,
-                  });
-                }
-              }
-            }
-          }
-
           const { protocol, hostname } = new URL(url);
 
           // Adjust CORS for assets responses and allow blob redirects on affine domains
@@ -263,23 +270,17 @@ export function registerProtocol() {
     const url = new URL(details.url);
 
     (async () => {
-      // session cookies are set to assets:// on production
-      // if sending request to the cloud, attach the session cookie (to affine cloud server)
       if (
         url.protocol === 'http:' ||
         url.protocol === 'https:' ||
         url.protocol === 'ws:' ||
         url.protocol === 'wss:'
       ) {
-        const cookies = await session.defaultSession.cookies.get({
-          url: details.url,
-        });
-
-        const cookieString = cookies
-          .map(c => `${c.name}=${c.value}`)
-          .join('; ');
-        delete details.requestHeaders['cookie'];
-        details.requestHeaders['Cookie'] = cookieString;
+        const token = getAuthTokenForUrl(details.url);
+        if (token) {
+          delete details.requestHeaders.authorization;
+          details.requestHeaders.Authorization = `Bearer ${token}`;
+        }
       }
 
       const hostname = url.hostname;

@@ -6,19 +6,25 @@ import ava, { TestFn } from 'ava';
 import Sinon from 'sinon';
 
 import { AppModule } from '../../app.module';
-import { ConfigFactory, URLHelper } from '../../base';
+import { ConfigFactory, InvalidOauthResponse, URLHelper } from '../../base';
+import { SessionCache } from '../../base/cache';
 import { ConfigModule } from '../../base/config';
 import { CurrentUser } from '../../core/auth';
 import { AuthService } from '../../core/auth/service';
+import { ServerFeature } from '../../core/config/types';
 import { Models } from '../../models';
 import { OAuthProviderName } from '../../plugins/oauth/config';
+import { OAuthProviderFactory } from '../../plugins/oauth/factory';
+import { GithubOAuthProvider } from '../../plugins/oauth/providers/github';
 import { GoogleOAuthProvider } from '../../plugins/oauth/providers/google';
+import { OIDCProvider } from '../../plugins/oauth/providers/oidc';
 import { OAuthService } from '../../plugins/oauth/service';
 import { createTestingApp, currentUser, TestingApp } from '../utils';
 
 const test = ava as TestFn<{
   auth: AuthService;
   oauth: OAuthService;
+  cache: SessionCache;
   models: Models;
   u1: CurrentUser;
   db: PrismaClient;
@@ -35,6 +41,16 @@ test.before(async t => {
               clientId: 'google-client-id',
               clientSecret: 'google-client-secret',
             },
+            github: {
+              clientId: 'github-client-id',
+              clientSecret: 'github-client-secret',
+            },
+            oidc: {
+              clientId: '',
+              clientSecret: '',
+              issuer: '',
+              args: {},
+            },
           },
         },
         server: {
@@ -48,6 +64,7 @@ test.before(async t => {
 
   t.context.auth = app.get(AuthService);
   t.context.oauth = app.get(OAuthService);
+  t.context.cache = app.get(SessionCache);
   t.context.models = app.get(Models);
   t.context.db = app.get(PrismaClient);
   t.context.app = app;
@@ -230,6 +247,7 @@ test('should forbid preflight with untrusted redirect_uri', async t => {
 
 test('should throw if client_nonce is missing in preflight', async t => {
   const { app } = t.context;
+  app.clearAuth();
 
   await app
     .POST('/api/oauth/preflight')
@@ -279,12 +297,25 @@ test('should be able to save oauth state', async t => {
   t.is(state!.provider, OAuthProviderName.Google);
 });
 
+test('should save oauth state with three hour ttl', async t => {
+  const { cache, oauth } = t.context;
+
+  const id = await oauth.saveOAuthState({
+    provider: OAuthProviderName.Google,
+  });
+
+  const ttl = await cache.ttl(`auth_challenge:oauth_state:${id}`);
+
+  t.true(ttl > 2 * 3600);
+  t.true(ttl <= 3 * 3600);
+});
+
 test('should be able to get registered oauth providers', async t => {
   const { oauth } = t.context;
 
   const providers = oauth.availableOAuthProviders();
 
-  t.deepEqual(providers, [OAuthProviderName.Google]);
+  t.deepEqual(providers, [OAuthProviderName.Google, OAuthProviderName.GitHub]);
 });
 
 test('should throw if code is missing in callback uri', async t => {
@@ -432,17 +463,144 @@ function mockOAuthProvider(
   return clientNonce;
 }
 
+function mockGithubOAuthProvider(
+  app: TestingApp,
+  clientNonce: string = randomUUID()
+) {
+  const provider = app.get(GithubOAuthProvider);
+  const oauth = app.get(OAuthService);
+
+  Sinon.stub(oauth, 'isValidState').resolves(true);
+  Sinon.stub(oauth, 'getOAuthState').resolves({
+    provider: OAuthProviderName.GitHub,
+    clientNonce,
+  });
+
+  Sinon.stub(provider, 'getToken').resolves({ accessToken: '1' });
+
+  return { provider, clientNonce };
+}
+
+function mockOidcProvider(
+  provider: OIDCProvider,
+  {
+    args = {},
+    idTokenClaims,
+    userinfo,
+  }: {
+    args?: Record<string, string>;
+    idTokenClaims: Record<string, unknown>;
+    userinfo: Record<string, unknown>;
+  }
+) {
+  Sinon.stub(provider, 'config').get(() => ({
+    clientId: '',
+    clientSecret: '',
+    issuer: '',
+    args,
+  }));
+  Sinon.stub(
+    provider as unknown as { endpoints: { userinfo_endpoint: string } },
+    'endpoints'
+  ).get(() => ({
+    userinfo_endpoint: 'https://oidc.affine.dev/userinfo',
+  }));
+  Sinon.stub(
+    provider as unknown as { verifyIdToken: () => unknown },
+    'verifyIdToken'
+  ).resolves(idTokenClaims);
+  Sinon.stub(
+    provider as unknown as { fetchJson: () => unknown },
+    'fetchJson'
+  ).resolves(userinfo);
+}
+
+function createOidcRegistrationHarness(config?: {
+  clientId?: string;
+  clientSecret?: string;
+  issuer?: string;
+}) {
+  const server = {
+    enableFeature: Sinon.spy(),
+    disableFeature: Sinon.spy(),
+  };
+  const factory = new OAuthProviderFactory(server as any);
+  const affineConfig = {
+    server: {
+      externalUrl: 'https://affine.example',
+      host: 'localhost',
+      path: '',
+      https: true,
+      hosts: [],
+    },
+    oauth: {
+      providers: {
+        oidc: {
+          clientId: config?.clientId ?? 'oidc-client-id',
+          clientSecret: config?.clientSecret ?? 'oidc-client-secret',
+          issuer: config?.issuer ?? 'https://issuer.affine.dev',
+          args: {},
+        },
+      },
+    },
+  };
+  const provider = new OIDCProvider(new URLHelper(affineConfig as any));
+
+  (provider as any).factory = factory;
+  (provider as any).AFFiNEConfig = affineConfig;
+
+  return {
+    provider,
+    factory,
+    server,
+  };
+}
+
+async function flushAsyncWork(iterations = 5) {
+  for (let i = 0; i < iterations; i++) {
+    await new Promise(resolve => setImmediate(resolve));
+  }
+}
+
 test('should be able to sign up with oauth', async t => {
   const { app, db } = t.context;
 
   const clientNonce = mockOAuthProvider(app, 'u2@affine.pro');
 
-  await app
+  const res = await app
     .POST('/api/oauth/callback')
+    .set('x-affine-client-kind', 'native')
     .send({ code: '1', state: '1', client_nonce: clientNonce })
     .expect(HttpStatus.OK);
 
-  const sessionUser = await currentUser(app);
+  t.truthy(res.body.exchangeCode);
+  const tokenRes = await app
+    .POST('/api/auth/native/exchange')
+    .set('x-affine-client-kind', 'native')
+    .send({ code: res.body.exchangeCode })
+    .expect(201);
+  t.truthy(tokenRes.body.token);
+  t.truthy(tokenRes.body.expiresAt);
+  const setCookies = res.get('Set-Cookie') ?? [];
+  for (const name of [
+    AuthService.sessionCookieName,
+    AuthService.userCookieName,
+    AuthService.csrfCookieName,
+  ]) {
+    t.true(
+      setCookies.some(
+        cookie =>
+          cookie.startsWith(`${name}=;`) &&
+          /Expires=Thu, 01 Jan 1970/i.test(cookie)
+      )
+    );
+  }
+
+  const sessionUserRes = await app
+    .GET('/api/auth/session')
+    .set('Authorization', `Bearer ${tokenRes.body.token}`)
+    .expect(200);
+  const sessionUser = sessionUserRes.body.user;
 
   t.truthy(sessionUser);
   t.is(sessionUser!.email, 'u2@affine.pro');
@@ -553,4 +711,280 @@ test('should be able to fullfil user with oauth sign in', async t => {
 
   t.truthy(account);
   t.is(account!.user.id, u3.id);
+});
+
+test('github oauth should resolve private email from emails api', async t => {
+  const { app, db } = t.context;
+
+  const email = 'github-private@affine.pro';
+  const { clientNonce, provider } = mockGithubOAuthProvider(app);
+  const fetchJson = Sinon.stub(provider as any, 'fetchJson');
+
+  fetchJson.onFirstCall().resolves({
+    login: 'github-user',
+    email: null,
+    avatar_url: 'avatar',
+    name: 'DarkSky',
+  });
+  fetchJson.onSecondCall().resolves([
+    { email: 'unverified@affine.pro', primary: true, verified: false },
+    { email, primary: false, verified: true },
+  ]);
+
+  await app
+    .POST('/api/oauth/callback')
+    .send({ code: '1', state: '1', client_nonce: clientNonce })
+    .expect(HttpStatus.OK);
+
+  const sessionUser = await currentUser(app);
+  t.truthy(sessionUser);
+  t.is(sessionUser!.email, email);
+
+  const user = await db.user.findFirst({
+    select: {
+      email: true,
+      connectedAccounts: true,
+    },
+    where: {
+      email,
+    },
+  });
+
+  t.truthy(user);
+  t.is(user!.connectedAccounts[0].provider, OAuthProviderName.GitHub);
+  t.is(user!.connectedAccounts[0].providerAccountId, 'github-user');
+});
+
+test('github oauth should reject responses without a verified email', async t => {
+  const { app } = t.context;
+
+  const provider = app.get(GithubOAuthProvider);
+  const fetchJson = Sinon.stub(provider as any, 'fetchJson');
+
+  fetchJson.onFirstCall().resolves({
+    login: 'github-user',
+    email: null,
+    avatar_url: 'avatar',
+    name: 'DarkSky',
+  });
+  fetchJson
+    .onSecondCall()
+    .resolves([
+      { email: 'private@affine.pro', primary: true, verified: false },
+    ]);
+
+  const error = await t.throwsAsync(
+    provider.getUser(
+      { accessToken: 'token' },
+      { token: 'state', provider: OAuthProviderName.GitHub }
+    )
+  );
+
+  t.true(error instanceof InvalidOauthResponse);
+});
+
+test('oidc should accept email from id token when userinfo email is missing', async t => {
+  const { app } = t.context;
+
+  const provider = app.get(OIDCProvider);
+  mockOidcProvider(provider, {
+    idTokenClaims: {
+      sub: 'oidc-user',
+      email: 'oidc-id-token@affine.pro',
+      name: 'OIDC User',
+    },
+    userinfo: {
+      sub: 'oidc-user',
+      name: 'OIDC User',
+    },
+  });
+
+  const user = await provider.getUser(
+    { accessToken: 'token', idToken: 'id-token' },
+    { token: 'nonce', provider: OAuthProviderName.OIDC }
+  );
+
+  t.is(user.id, 'oidc-user');
+  t.is(user.email, 'oidc-id-token@affine.pro');
+  t.is(user.name, 'OIDC User');
+});
+
+test('oidc should resolve custom email claim from userinfo', async t => {
+  const { app } = t.context;
+
+  const provider = app.get(OIDCProvider);
+  mockOidcProvider(provider, {
+    args: { claim_email: 'mail', claim_name: 'display_name' },
+    idTokenClaims: {
+      sub: 'oidc-user',
+    },
+    userinfo: {
+      sub: 'oidc-user',
+      mail: 'oidc-userinfo@affine.pro',
+      display_name: 'OIDC Custom',
+    },
+  });
+
+  const user = await provider.getUser(
+    { accessToken: 'token', idToken: 'id-token' },
+    { token: 'nonce', provider: OAuthProviderName.OIDC }
+  );
+
+  t.is(user.id, 'oidc-user');
+  t.is(user.email, 'oidc-userinfo@affine.pro');
+  t.is(user.name, 'OIDC Custom');
+});
+
+test('oidc should resolve custom email claim from id token', async t => {
+  const { app } = t.context;
+
+  const provider = app.get(OIDCProvider);
+  mockOidcProvider(provider, {
+    args: { claim_email: 'mail', claim_email_verified: 'mail_verified' },
+    idTokenClaims: {
+      sub: 'oidc-user',
+      mail: 'oidc-custom-id-token@affine.pro',
+      mail_verified: 'true',
+    },
+    userinfo: {
+      sub: 'oidc-user',
+    },
+  });
+
+  const user = await provider.getUser(
+    { accessToken: 'token', idToken: 'id-token' },
+    { token: 'nonce', provider: OAuthProviderName.OIDC }
+  );
+
+  t.is(user.id, 'oidc-user');
+  t.is(user.email, 'oidc-custom-id-token@affine.pro');
+});
+
+test('oidc should reject responses without a usable email claim', async t => {
+  const { app } = t.context;
+
+  const provider = app.get(OIDCProvider);
+  mockOidcProvider(provider, {
+    args: { claim_email: 'mail' },
+    idTokenClaims: {
+      sub: 'oidc-user',
+      mail: 'not-an-email',
+    },
+    userinfo: {
+      sub: 'oidc-user',
+      mail: 'still-not-an-email',
+    },
+  });
+
+  const error = await t.throwsAsync(
+    provider.getUser(
+      { accessToken: 'token', idToken: 'id-token' },
+      { token: 'nonce', provider: OAuthProviderName.OIDC }
+    )
+  );
+
+  t.true(error instanceof InvalidOauthResponse);
+  t.true(
+    error.message.includes(
+      'Missing valid email claim in OIDC response. Tried userinfo and ID token claims: "mail"'
+    )
+  );
+});
+
+test('oidc should not fall back to default email claim when custom claim is configured', async t => {
+  const { app } = t.context;
+
+  const provider = app.get(OIDCProvider);
+  mockOidcProvider(provider, {
+    args: { claim_email: 'mail' },
+    idTokenClaims: {
+      sub: 'oidc-user',
+      email: 'fallback@affine.pro',
+    },
+    userinfo: {
+      sub: 'oidc-user',
+      email: 'userinfo-fallback@affine.pro',
+    },
+  });
+
+  const error = await t.throwsAsync(
+    provider.getUser(
+      { accessToken: 'token', idToken: 'id-token' },
+      { token: 'nonce', provider: OAuthProviderName.OIDC }
+    )
+  );
+
+  t.true(error instanceof InvalidOauthResponse);
+  t.true(
+    error.message.includes(
+      'Missing valid email claim in OIDC response. Tried userinfo and ID token claims: "mail"'
+    )
+  );
+});
+
+test('oidc discovery should remove oauth feature on failure and restore it after backoff retry succeeds', async t => {
+  const { provider, factory, server } = createOidcRegistrationHarness();
+  const fetchStub = Sinon.stub(provider as any, 'oidcFetch');
+  const scheduledRetries: Array<() => void> = [];
+  const retryDelays: number[] = [];
+  const setTimeoutStub = Sinon.stub(globalThis, 'setTimeout').callsFake(((
+    callback: Parameters<typeof setTimeout>[0],
+    delay?: number
+  ) => {
+    retryDelays.push(Number(delay));
+    scheduledRetries.push(callback as () => void);
+    return Symbol('timeout') as unknown as ReturnType<typeof setTimeout>;
+  }) as typeof setTimeout);
+  t.teardown(() => {
+    provider.onModuleDestroy();
+    fetchStub.restore();
+    setTimeoutStub.restore();
+  });
+
+  fetchStub
+    .onFirstCall()
+    .rejects(new Error('temporary discovery failure'))
+    .onSecondCall()
+    .rejects(new Error('temporary discovery failure'))
+    .onThirdCall()
+    .resolves(
+      new Response(
+        JSON.stringify({
+          authorization_endpoint: 'https://issuer.affine.dev/auth',
+          token_endpoint: 'https://issuer.affine.dev/token',
+          userinfo_endpoint: 'https://issuer.affine.dev/userinfo',
+          issuer: 'https://issuer.affine.dev',
+          jwks_uri: 'https://issuer.affine.dev/jwks',
+        }),
+        {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      )
+    );
+
+  (provider as any).setup();
+
+  await flushAsyncWork();
+  t.deepEqual(factory.providers, []);
+  t.true(server.disableFeature.calledWith(ServerFeature.OAuth));
+  t.is(fetchStub.callCount, 1);
+  t.deepEqual(retryDelays, [1000]);
+
+  const firstRetry = scheduledRetries.shift();
+  t.truthy(firstRetry);
+  firstRetry!();
+  await flushAsyncWork();
+  t.is(fetchStub.callCount, 2);
+  t.deepEqual(factory.providers, []);
+  t.deepEqual(retryDelays, [1000, 2000]);
+
+  const secondRetry = scheduledRetries.shift();
+  t.truthy(secondRetry);
+  secondRetry!();
+  await flushAsyncWork();
+  t.is(fetchStub.callCount, 3);
+  t.deepEqual(factory.providers, [OAuthProviderName.OIDC]);
+  t.true(server.enableFeature.calledWith(ServerFeature.OAuth));
+  t.is(scheduledRetries.length, 0);
 });

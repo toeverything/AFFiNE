@@ -25,7 +25,7 @@ import {
 } from '../../../base';
 import { Models } from '../../../models';
 import { CurrentUser } from '../../auth';
-import { AccessController } from '../../permission';
+import { PermissionAccess } from '../../permission';
 import { QuotaService } from '../../quota';
 import { WorkspaceBlobStorage } from '../../storage';
 import {
@@ -125,7 +125,7 @@ class ListedBlob {
 export class WorkspaceBlobResolver {
   logger = new Logger(WorkspaceBlobResolver.name);
   constructor(
-    private readonly ac: AccessController,
+    private readonly ac: PermissionAccess,
     private readonly quota: QuotaService,
     private readonly storage: WorkspaceBlobStorage,
     private readonly models: Models

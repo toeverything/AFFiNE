@@ -16,9 +16,13 @@ import { CalendarSubscriptionModel } from './calendar-subscription';
 import { CommentModel } from './comment';
 import { CommentAttachmentModel } from './comment-attachment';
 import { AppConfigModel } from './config';
+import { CopilotActionRunModel } from './copilot-action-run';
+import { CopilotWorkspaceByokConfigModel } from './copilot-byok';
 import { CopilotContextModel } from './copilot-context';
 import { CopilotJobModel } from './copilot-job';
 import { CopilotSessionModel } from './copilot-session';
+import { CopilotTranscriptTaskModel } from './copilot-transcript-task';
+import { CopilotUsageModel } from './copilot-usage';
 import { CopilotWorkspaceConfigModel } from './copilot-workspace';
 import { DocModel } from './doc';
 import { DocUserModel } from './doc-user';
@@ -26,6 +30,14 @@ import { FeatureModel } from './feature';
 import { HistoryModel } from './history';
 import { MagicLinkOtpModel } from './magic-link-otp';
 import { NotificationModel } from './notification';
+import { PermissionProjectionModel } from './permission-projection';
+import {
+  DocAccessPolicyModel,
+  DocGrantModel,
+  WorkspaceAccessPolicyModel,
+  WorkspaceInvitationModel,
+  WorkspaceMemberModel,
+} from './permission-write';
 import { MODELS_SYMBOL } from './provider';
 import { SessionModel } from './session';
 import { UserModel } from './user';
@@ -37,6 +49,7 @@ import { WorkspaceModel } from './workspace';
 import { WorkspaceAnalyticsModel } from './workspace-analytics';
 import { WorkspaceCalendarModel } from './workspace-calendar';
 import { WorkspaceFeatureModel } from './workspace-feature';
+import { WorkspaceRuntimeStateModel } from './workspace-runtime-state';
 import { WorkspaceUserModel } from './workspace-user';
 
 const MODELS = {
@@ -48,16 +61,27 @@ const MODELS = {
   workspace: WorkspaceModel,
   userFeature: UserFeatureModel,
   workspaceFeature: WorkspaceFeatureModel,
+  workspaceRuntimeState: WorkspaceRuntimeStateModel,
   doc: DocModel,
   userDoc: UserDocModel,
   workspaceUser: WorkspaceUserModel,
   docUser: DocUserModel,
   history: HistoryModel,
   notification: NotificationModel,
+  permissionProjection: PermissionProjectionModel,
+  workspaceMember: WorkspaceMemberModel,
+  workspaceInvitation: WorkspaceInvitationModel,
+  workspaceAccessPolicy: WorkspaceAccessPolicyModel,
+  docAccessPolicy: DocAccessPolicyModel,
+  docGrant: DocGrantModel,
   userSettings: UserSettingsModel,
   copilotSession: CopilotSessionModel,
+  copilotUsage: CopilotUsageModel,
+  copilotTranscriptTask: CopilotTranscriptTaskModel,
+  copilotActionRun: CopilotActionRunModel,
   copilotContext: CopilotContextModel,
   copilotWorkspace: CopilotWorkspaceConfigModel,
+  copilotWorkspaceByokConfig: CopilotWorkspaceByokConfigModel,
   copilotJob: CopilotJobModel,
   appConfig: AppConfigModel,
   comment: CommentModel,
@@ -129,9 +153,12 @@ export * from './calendar-subscription';
 export * from './comment';
 export * from './comment-attachment';
 export * from './common';
+export * from './copilot-byok';
 export * from './copilot-context';
 export * from './copilot-job';
 export * from './copilot-session';
+export * from './copilot-transcript-task';
+export * from './copilot-usage';
 export * from './copilot-workspace';
 export * from './doc';
 export * from './doc-user';
@@ -139,6 +166,8 @@ export * from './feature';
 export * from './history';
 export * from './magic-link-otp';
 export * from './notification';
+export * from './permission-projection';
+export * from './permission-write';
 export * from './session';
 export * from './user';
 export * from './user-doc';
@@ -149,4 +178,5 @@ export * from './workspace';
 export * from './workspace-analytics';
 export * from './workspace-calendar';
 export * from './workspace-feature';
+export * from './workspace-runtime-state';
 export * from './workspace-user';

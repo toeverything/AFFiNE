@@ -46,7 +46,10 @@ export function setupEvents(frameworkProvider: FrameworkProvider) {
         const { workspace } = currentWorkspace;
         const docsService = workspace.scope.get(DocsService);
 
-        const page = docsService.createDoc({ primaryMode: type });
+        const page =
+          type === 'default'
+            ? docsService.createDoc()
+            : docsService.createDoc({ primaryMode: type });
         workspace.scope.get(WorkbenchService).workbench.openDoc(page.id);
       })
       .catch(err => {

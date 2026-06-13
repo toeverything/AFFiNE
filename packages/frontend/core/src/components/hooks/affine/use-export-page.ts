@@ -38,6 +38,7 @@ type ExportType =
   | 'html'
   | 'png'
   | 'markdown'
+  | 'copy-markdown'
   | 'snapshot'
   | 'pdf-export';
 
@@ -63,12 +64,8 @@ interface AdapterConfig {
   indexFileName: string;
 }
 
-async function exportDoc(
-  doc: Store,
-  std: BlockStdScope,
-  config: AdapterConfig
-) {
-  const transformer = new Transformer({
+function createTransformer(doc: Store) {
+  return new Transformer({
     schema: getAFFiNEWorkspaceSchema(),
     blobCRUD: doc.workspace.blobSync,
     docCRUD: {
@@ -82,6 +79,14 @@ async function exportDoc(
       embedSyncedDocMiddleware('content'),
     ],
   });
+}
+
+async function exportDoc(
+  doc: Store,
+  std: BlockStdScope,
+  config: AdapterConfig
+) {
+  const transformer = createTransformer(doc);
 
   const adapterFactory = std.store.provider.get(config.identifier);
   const adapter = adapterFactory.get(transformer);
@@ -141,11 +146,36 @@ async function exportToMarkdown(doc: Store, std?: BlockStdScope) {
   }
 }
 
+async function copyAsMarkdown(doc: Store, std?: BlockStdScope) {
+  if (!std) {
+    return false;
+  }
+
+  try {
+    const transformer = createTransformer(doc);
+    const adapterFactory = std.store.provider.get(
+      MarkdownAdapterFactoryIdentifier
+    );
+    const adapter = adapterFactory.get(transformer);
+    const result = (await adapter.fromDoc(doc)) as AdapterResult;
+
+    if (!result || result.file === undefined) {
+      return false;
+    }
+
+    await navigator.clipboard.writeText(result.file);
+    return true;
+  } catch (err) {
+    console.error(err);
+    return false;
+  }
+}
+
 async function exportHandler({
   page,
   type,
   editorContainer,
-}: ExportHandlerOptions) {
+}: ExportHandlerOptions): Promise<boolean> {
   const editorRoot = document.querySelector('editor-host');
   track.$.sharePanel.$.export({
     type,
@@ -153,29 +183,35 @@ async function exportHandler({
   switch (type) {
     case 'html':
       await exportToHtml(page, editorRoot?.std);
-      return;
+      return true;
     case 'markdown':
       await exportToMarkdown(page, editorRoot?.std);
-      return;
+      return true;
+    case 'copy-markdown':
+      return await copyAsMarkdown(page, editorRoot?.std);
     case 'snapshot':
       await ZipTransformer.exportDocs(
         page.workspace,
         getAFFiNEWorkspaceSchema(),
         [page]
       );
-      return;
+      return true;
     case 'pdf':
       await printToPdf(editorContainer);
-      return;
+      return true;
     case 'png': {
-      await editorRoot?.std.get(ExportManager).exportPng();
-      return;
+      const std = editorRoot?.std;
+      if (!std) return false;
+      await std.get(ExportManager).exportPng();
+      return true;
     }
     case 'pdf-export': {
       await PdfTransformer.exportDoc(page);
-      return;
+      return true;
     }
   }
+
+  return false;
 }
 
 export const useExportPage = () => {
@@ -199,15 +235,30 @@ export const useExportPage = () => {
         key: globalLoadingID,
       });
       try {
-        await exportHandler({
+        const success = await exportHandler({
           page: blocksuiteDoc,
           type,
           editorContainer: originEditorContainer,
         });
-        notify.success({
-          title: t['com.affine.export.success.title'](),
-          message: t['com.affine.export.success.message'](),
-        });
+
+        if (!success) {
+          notify.error({
+            title: t['com.affine.export.error.title'](),
+            message: t['com.affine.export.error.message'](),
+          });
+          return;
+        }
+
+        if (type === 'copy-markdown') {
+          notify.success({
+            title: t['com.affine.export.copied-as-markdown'](),
+          });
+        } else {
+          notify.success({
+            title: t['com.affine.export.success.title'](),
+            message: t['com.affine.export.success.message'](),
+          });
+        }
       } catch (err) {
         console.error(err);
         notify.error({

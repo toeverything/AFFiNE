@@ -5,12 +5,13 @@ import Foundation
 public final class QLService {
   public static let shared = QLService()
   private var endpointURL: URL
+  private var urlSessionClient: URLSessionCookieClient
   public var client: ApolloClient
 
   private init() {
     let store = ApolloStore()
     endpointURL = URL(string: "https://app.affine.pro/graphql")!
-    let urlSessionClient = URLSessionCookieClient()
+    urlSessionClient = URLSessionCookieClient()
     let networkTransport = RequestChainNetworkTransport(
       interceptorProvider: DefaultInterceptorProvider(client: urlSessionClient, store: store),
       endpointURL: endpointURL
@@ -27,12 +28,73 @@ public final class QLService {
 
     let store = ApolloStore()
     endpointURL = url
-    let urlSessionClient = URLSessionCookieClient()
+    urlSessionClient = URLSessionCookieClient()
     let networkTransport = RequestChainNetworkTransport(
       interceptorProvider: DefaultInterceptorProvider(client: urlSessionClient, store: store),
       endpointURL: url
     )
     client = ApolloClient(networkTransport: networkTransport, store: store)
+  }
+
+  var serverBaseURL: URL {
+    if endpointURL.lastPathComponent == "graphql" {
+      return endpointURL.deletingLastPathComponent()
+    }
+    return endpointURL
+  }
+
+  func sendAuthenticatedRequest(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {
+    try await withCheckedThrowingContinuation { continuation in
+      urlSessionClient.sendRequest(request) { result in
+        continuation.resume(with: result)
+      }
+    }
+  }
+
+  func perform<Mutation: GraphQLMutation>(mutation: Mutation) async throws -> Mutation.Data {
+    try await withCheckedThrowingContinuation { continuation in
+      client.perform(mutation: mutation) { result in
+        switch result {
+        case let .success(graphQLResult):
+          if let data = graphQLResult.data {
+            continuation.resume(returning: data)
+          } else if let error = graphQLResult.errors?.first {
+            continuation.resume(throwing: error)
+          } else {
+            continuation.resume(throwing: NSError(
+              domain: "QLService",
+              code: -1,
+              userInfo: [NSLocalizedDescriptionKey: "Missing GraphQL data"]
+            ))
+          }
+        case let .failure(error):
+          continuation.resume(throwing: error)
+        }
+      }
+    }
+  }
+
+  func fetch<Query: GraphQLQuery>(query: Query) async throws -> Query.Data {
+    try await withCheckedThrowingContinuation { continuation in
+      client.fetch(query: query) { result in
+        switch result {
+        case let .success(graphQLResult):
+          if let data = graphQLResult.data {
+            continuation.resume(returning: data)
+          } else if let error = graphQLResult.errors?.first {
+            continuation.resume(throwing: error)
+          } else {
+            continuation.resume(throwing: NSError(
+              domain: "QLService",
+              code: -1,
+              userInfo: [NSLocalizedDescriptionKey: "Missing GraphQL data"]
+            ))
+          }
+        case let .failure(error):
+          continuation.resume(throwing: error)
+        }
+      }
+    }
   }
 
   public func fetchCurrentUser(completion: @escaping (GetCurrentUserQuery.Data.CurrentUser?) -> Void) {

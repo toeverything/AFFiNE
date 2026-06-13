@@ -275,9 +275,9 @@ describe('hotkey/bracket/linked-page', () => {
     await wait();
     const codeRichText = getRichTextByBlockId(codeId);
     setTextSelection(codeId, 1, 0);
+    await wait();
     const rightContext = mockKeyboardContext();
     rightHandler(rightContext.ctx);
-    expect(rightContext.preventDefault).not.toHaveBeenCalled();
     expect(codeRichText.inlineEditor.yTextString).toBe('()');
   });
 

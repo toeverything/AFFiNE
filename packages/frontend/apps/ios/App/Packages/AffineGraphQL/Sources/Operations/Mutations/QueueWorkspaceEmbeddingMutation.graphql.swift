@@ -37,6 +37,9 @@ public class QueueWorkspaceEmbeddingMutation: GraphQLMutation {
         "docId": .variable("docId")
       ]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      QueueWorkspaceEmbeddingMutation.Data.self
+    ] }
 
     /// queue workspace doc embedding
     public var queueWorkspaceEmbedding: Bool { __data["queueWorkspaceEmbedding"] }

@@ -20,6 +20,9 @@ public class GetUserSettingsQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("currentUser", CurrentUser?.self),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      GetUserSettingsQuery.Data.self
+    ] }
 
     /// Get current user
     public var currentUser: CurrentUser? { __data["currentUser"] }
@@ -35,6 +38,9 @@ public class GetUserSettingsQuery: GraphQLQuery {
       public static var __selections: [ApolloAPI.Selection] { [
         .field("__typename", String.self),
         .field("settings", Settings.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        GetUserSettingsQuery.Data.CurrentUser.self
       ] }
 
       /// Get user settings
@@ -53,6 +59,9 @@ public class GetUserSettingsQuery: GraphQLQuery {
           .field("receiveInvitationEmail", Bool.self),
           .field("receiveMentionEmail", Bool.self),
           .field("receiveCommentEmail", Bool.self),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          GetUserSettingsQuery.Data.CurrentUser.Settings.self
         ] }
 
         /// Receive invitation email

@@ -152,7 +152,6 @@ declare global {
         selectedMarkdown?: string;
         html?: string;
       };
-      postfix?: (text: string) => string;
     }
 
     interface TranslateOptions extends AITextActionOptions {
@@ -355,12 +354,6 @@ declare global {
         files?: ContextMatchedFileChunk[];
         docs?: ContextMatchedDocChunk[];
       }>;
-      applyDocUpdates: (
-        workspaceId: string,
-        docId: string,
-        op: string,
-        updates: string
-      ) => Promise<string>;
       addContextBlob: (options: {
         blobId: string;
         contextId: string;

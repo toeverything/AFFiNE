@@ -5,6 +5,10 @@ use serde::Serialize;
 use sqlx::Row;
 use y_octo::DocOptions;
 
+// Increment this whenever there is a breaking change in the index format or how
+// updates are applied
+const NBSTORE_INDEXER_VERSION: u32 = 1;
+
 use super::{
   error::{Error, Result},
   storage::SqliteDocStorage,
@@ -108,7 +112,7 @@ impl SqliteDocStorage {
       return Ok(None);
     }
 
-    updates.sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
+    updates.sort_by_key(|a| a.timestamp);
 
     let mut segments = Vec::with_capacity(snapshot.as_ref().map(|_| 1).unwrap_or(0) + updates.len());
     if let Some(record) = snapshot {
@@ -192,7 +196,7 @@ impl SqliteDocStorage {
   }
 
   pub fn index_version() -> u32 {
-    memory_indexer::InMemoryIndex::snapshot_version()
+    memory_indexer::InMemoryIndex::snapshot_version() + NBSTORE_INDEXER_VERSION
   }
 
   pub async fn fts_add(&self, index_name: &str, doc_id: &str, text: &str, index: bool) -> Result<()> {

@@ -37,6 +37,9 @@ public class ResumeSubscriptionMutation: GraphQLMutation {
         "workspaceId": .variable("workspaceId")
       ]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      ResumeSubscriptionMutation.Data.self
+    ] }
 
     public var resumeSubscription: ResumeSubscription { __data["resumeSubscription"] }
 
@@ -55,6 +58,9 @@ public class ResumeSubscriptionMutation: GraphQLMutation {
         .field("nextBillAt", AffineGraphQL.DateTime?.self),
         .field("start", AffineGraphQL.DateTime.self),
         .field("end", AffineGraphQL.DateTime?.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        ResumeSubscriptionMutation.Data.ResumeSubscription.self
       ] }
 
       @available(*, deprecated, message: "removed")

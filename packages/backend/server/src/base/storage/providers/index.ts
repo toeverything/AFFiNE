@@ -3,7 +3,7 @@ import { Type } from '@nestjs/common';
 import { JSONSchema } from '../../config';
 import { FsStorageConfig, FsStorageProvider } from './fs';
 import { StorageProvider } from './provider';
-import { R2StorageConfig, R2StorageProvider } from './r2';
+import { R2_JURISDICTIONS, R2StorageConfig, R2StorageProvider } from './r2';
 import { S3StorageConfig, S3StorageProvider } from './s3';
 
 export type StorageProviderName = 'fs' | 'aws-s3' | 'cloudflare-r2';
@@ -38,7 +38,7 @@ const S3ConfigSchema: JSONSchema = {
     endpoint: {
       type: 'string',
       description:
-        'The S3 compatible endpoint. Example: "https://s3.us-east-1.amazonaws.com" or "https://<account>.r2.cloudflarestorage.com".',
+        'The S3 compatible endpoint (used by aws-s3 provider). Optional; if omitted, endpoint is derived from region.',
     },
     region: {
       type: 'string',
@@ -89,6 +89,17 @@ const S3ConfigSchema: JSONSchema = {
   },
 };
 
+const S3ConfigPropertiesWithoutEndpoint = Object.fromEntries(
+  Object.entries(
+    (
+      S3ConfigSchema as {
+        type: 'object';
+        properties?: Record<string, JSONSchema>;
+      }
+    ).properties ?? {}
+  ).filter(([key]) => key !== 'endpoint')
+) as Record<string, JSONSchema>;
+
 export const StorageJSONSchema: JSONSchema = {
   oneOf: [
     {
@@ -137,11 +148,17 @@ export const StorageJSONSchema: JSONSchema = {
         config: {
           ...S3ConfigSchema,
           properties: {
-            ...S3ConfigSchema.properties,
+            ...S3ConfigPropertiesWithoutEndpoint,
             accountId: {
               type: 'string' as const,
               description:
                 'The account id for the cloudflare r2 storage provider.',
+            },
+            jurisdiction: {
+              type: 'string' as const,
+              enum: [...R2_JURISDICTIONS],
+              description:
+                'Optional jurisdiction for the cloudflare r2 endpoint. Set to "eu" for EU buckets.',
             },
             usePresignedURL: {
               type: 'object' as const,

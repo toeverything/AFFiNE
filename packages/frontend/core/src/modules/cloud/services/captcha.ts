@@ -33,7 +33,7 @@ export class CaptchaService extends Service {
   revalidate = effect(
     exhaustMap(() => {
       return fromPromise(async signal => {
-        if (!this.needCaptcha$.value) {
+        if (!this.needCaptcha$.value || !this.validatorProvider) {
           return {};
         }
         const res = await this.fetchService.fetch('/api/auth/challenge', {
@@ -46,17 +46,14 @@ export class CaptchaService extends Service {
         if (!data || !data.challenge || !data.resource) {
           throw new Error('Invalid challenge');
         }
-        if (this.validatorProvider) {
-          const token = await this.validatorProvider.validate(
-            data.challenge,
-            data.resource
-          );
-          return {
-            token,
-            challenge: data.challenge,
-          };
-        }
-        return { challenge: data.challenge, token: undefined };
+        const token = await this.validatorProvider.validate(
+          data.challenge,
+          data.resource
+        );
+        return {
+          token,
+          challenge: data.challenge,
+        };
       }).pipe(
         tap(({ challenge, token }) => {
           this.verifyToken$.next(token);

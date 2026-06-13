@@ -1,6 +1,7 @@
 [package]
 edition = "2024"
 name    = "affine_media_capture"
+publish = false
 version = "0.0.0"
 
 [lib]
@@ -11,11 +12,16 @@ harness = false
 name    = "mix_audio_samples"
 
 [dependencies]
-napi        = { workspace = true, features = ["napi4"] }
-napi-derive = { workspace = true, features = ["type-def"] }
-rubato      = { workspace = true }
-symphonia   = { workspace = true, features = ["all", "opt-simd"] }
-thiserror   = { workspace = true }
+crossbeam-channel = { workspace = true }
+napi              = { workspace = true, features = ["napi4"] }
+napi-derive       = { workspace = true, features = ["type-def"] }
+ogg               = { workspace = true }
+opus-codec        = { git = "https://github.com/toeverything/opus-codec", rev = "c2afef2" }
+rand              = { workspace = true }
+rubato            = { workspace = true }
+symphonia         = { workspace = true, features = ["all", "opt-simd"] }
+thiserror         = { workspace = true }
+tokio             = { workspace = true, features = ["rt", "sync"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 block2           = { workspace = true }
@@ -29,10 +35,9 @@ screencapturekit = { workspace = true }
 uuid             = { workspace = true, features = ["v4"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
-cpal              = { workspace = true }
-crossbeam-channel = { workspace = true }
-windows           = { workspace = true }
-windows-core      = { workspace = true }
+cpal         = { workspace = true }
+windows      = { workspace = true }
+windows-core = { workspace = true }
 
 [dev-dependencies]
 criterion2 = { workspace = true }

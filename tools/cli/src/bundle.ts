@@ -27,6 +27,9 @@ import {
 
 type WorkerConfig = { name: string };
 type CreateWorkerTargetConfig = (pkg: Package, entry: string) => WorkerConfig;
+type BaseWorkerOptions = {
+  includeMermaidAndTypst?: boolean;
+};
 
 function assertRspackSupportedPackage(pkg: Package) {
   assertRspackSupportedPackageName(pkg.name);
@@ -49,11 +52,13 @@ async function uploadAssetsForPackage(pkg: Package, logger: Logger) {
 
 function getBaseWorkerConfigs(
   pkg: Package,
-  createWorkerTargetConfig: CreateWorkerTargetConfig
+  createWorkerTargetConfig: CreateWorkerTargetConfig,
+  options: BaseWorkerOptions = {}
 ) {
   const core = new Package('@affine/core');
+  const includeMermaidAndTypst = options.includeMermaidAndTypst ?? true;
 
-  return [
+  const workerConfigs = [
     createWorkerTargetConfig(
       pkg,
       core.srcPath.join(
@@ -71,6 +76,21 @@ function getBaseWorkerConfigs(
       ).value
     ),
   ];
+
+  if (includeMermaidAndTypst) {
+    workerConfigs.push(
+      createWorkerTargetConfig(
+        pkg,
+        core.srcPath.join('modules/mermaid/renderer/mermaid.worker.ts').value
+      ),
+      createWorkerTargetConfig(
+        pkg,
+        core.srcPath.join('modules/typst/renderer/typst.worker.ts').value
+      )
+    );
+  }
+
+  return workerConfigs;
 }
 
 function getRspackBundleConfigs(pkg: Package): MultiRspackOptions {
@@ -85,9 +105,7 @@ function getRspackBundleConfigs(pkg: Package): MultiRspackOptions {
       ] as MultiRspackOptions;
     }
     case '@affine/web':
-    case '@affine/mobile':
-    case '@affine/ios':
-    case '@affine/android': {
+    case '@affine/mobile': {
       const workerConfigs = getBaseWorkerConfigs(
         pkg,
         createRspackWorkerTargetConfig
@@ -109,10 +127,35 @@ function getRspackBundleConfigs(pkg: Package): MultiRspackOptions {
         ...workerConfigs,
       ] as MultiRspackOptions;
     }
+    case '@affine/ios':
+    case '@affine/android': {
+      const workerConfigs = getBaseWorkerConfigs(
+        pkg,
+        createRspackWorkerTargetConfig,
+        { includeMermaidAndTypst: false }
+      );
+      workerConfigs.push(
+        createRspackWorkerTargetConfig(
+          pkg,
+          pkg.srcPath.join('nbstore.worker.ts').value
+        )
+      );
+
+      return [
+        createRspackHTMLTargetConfig(
+          pkg,
+          pkg.srcPath.join('index.tsx').value,
+          {},
+          workerConfigs.map(config => config.name)
+        ),
+        ...workerConfigs,
+      ] as MultiRspackOptions;
+    }
     case '@affine/electron-renderer': {
       const workerConfigs = getBaseWorkerConfigs(
         pkg,
-        createRspackWorkerTargetConfig
+        createRspackWorkerTargetConfig,
+        { includeMermaidAndTypst: false }
       );
 
       return [
@@ -151,9 +194,39 @@ function getRspackBundleConfigs(pkg: Package): MultiRspackOptions {
         }),
       ] as MultiRspackOptions;
     }
+    case '@affine/media-capture-playground': {
+      return [
+        createRspackHTMLTargetConfig(pkg, pkg.join('web/main.tsx').value, {
+          template: pkg.join('web/index.html').value,
+          additionalEntryForSelfhost: false,
+          copySharedPublicAssets: false,
+          injectGlobalErrorHandler: false,
+          emitAssetsManifest: false,
+        }),
+      ] as MultiRspackOptions;
+    }
   }
 
   throw new Error(`Unsupported package: ${pkg.name}`);
+}
+
+function getRspackDevServerConfig(
+  pkg: Package
+): RspackDevServerConfiguration | undefined {
+  if (pkg.name !== '@affine/media-capture-playground') {
+    return;
+  }
+
+  return {
+    proxy: [
+      {
+        context: '/api',
+        target: 'http://localhost:6544',
+        changeOrigin: true,
+        pathRewrite: { '^/api': '' },
+      },
+    ],
+  };
 }
 
 export class BundleCommand extends PackageCommand {
@@ -171,7 +244,7 @@ export class BundleCommand extends PackageCommand {
     const pkg = this.workspace.getPackage(this.package);
 
     if (this.dev) {
-      await BundleCommand.dev(pkg);
+      await BundleCommand.dev(pkg, getRspackDevServerConfig(pkg));
     } else {
       await BundleCommand.build(pkg);
     }
@@ -251,10 +324,12 @@ export class BundleCommand extends PackageCommand {
       throw new Error('Failed to create rspack compiler');
     }
 
-    const devServer = new RspackDevServer(
-      merge({}, DEFAULT_DEV_SERVER_CONFIG, devServerConfig),
-      compiler
-    );
+    const serverConfig = merge({}, DEFAULT_DEV_SERVER_CONFIG, devServerConfig);
+    if (devServerConfig?.proxy) {
+      serverConfig.proxy = devServerConfig.proxy;
+    }
+
+    const devServer = new RspackDevServer(serverConfig, compiler);
 
     await devServer.start();
   }
