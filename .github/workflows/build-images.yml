@@ -272,4 +272,4 @@ jobs:
           platforms: linux/amd64,linux/arm64,linux/arm/v7
           provenance: true
           file: .github/deployment/node/Dockerfile
-          tags: ghcr.io/toeverything/affine:${{inputs.build-type}}-${{ inputs.git-short-hash }}
+          tags: ghcr.io/lesleyxyz/affine:${{inputs.build-type}}-${{ inputs.git-short-hash }}
