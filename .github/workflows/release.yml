@@ -10,7 +10,7 @@ on:
         description: 'Release Web?'
         required: true
         type: boolean
-        default: false
+        default: true
       desktop_macos:
         description: 'Desktop - macOS'
         required: true
@@ -154,8 +154,8 @@ jobs:
           issue-title: Please confirm to release docker image
           issue-body: |
             Env: ${{ needs.prepare.outputs.BUILD_TYPE }}
-            Candidate: ghcr.io/toeverything/affine:${{ needs.prepare.outputs.BUILD_TYPE }}-${{ needs.prepare.outputs.GIT_SHORT_HASH }}
-            Tag: ghcr.io/toeverything/affine:${{ needs.prepare.outputs.BUILD_TYPE }}
+            Candidate: ghcr.io/lesleyxyz/affine:${{ needs.prepare.outputs.BUILD_TYPE }}-${{ needs.prepare.outputs.GIT_SHORT_HASH }}
+            Tag: ghcr.io/lesleyxyz/affine:${{ needs.prepare.outputs.BUILD_TYPE }}
 
             > comment with "approve", "approved", "lgtm", "yes" to approve
             > comment with "deny", "denied", "no" to deny
@@ -171,8 +171,8 @@ jobs:
         uses: docker/setup-buildx-action@v3
       - name: Tag Image
         run: |
-          docker buildx imagetools create --tag ghcr.io/toeverything/affine:${{needs.prepare.outputs.BUILD_TYPE}} ghcr.io/toeverything/affine:${{needs.prepare.outputs.BUILD_TYPE}}-${{needs.prepare.outputs.GIT_SHORT_HASH}}
-          docker buildx imagetools create --tag ghcr.io/toeverything/affine:${{needs.prepare.outputs.APP_VERSION}} ghcr.io/toeverything/affine:${{needs.prepare.outputs.BUILD_TYPE}}-${{needs.prepare.outputs.GIT_SHORT_HASH}}
+          docker buildx imagetools create --tag ghcr.io/lesleyxyz/affine:${{needs.prepare.outputs.BUILD_TYPE}} ghcr.io/lesleyxyz/affine:${{needs.prepare.outputs.BUILD_TYPE}}-${{needs.prepare.outputs.GIT_SHORT_HASH}}
+          docker buildx imagetools create --tag ghcr.io/lesleyxyz/affine:${{needs.prepare.outputs.APP_VERSION}} ghcr.io/lesleyxyz/affine:${{needs.prepare.outputs.BUILD_TYPE}}-${{needs.prepare.outputs.GIT_SHORT_HASH}}
 
   desktop:
     name: Release Desktop
