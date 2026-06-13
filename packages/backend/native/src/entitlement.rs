@@ -426,31 +426,31 @@ fn plan_catalog(plan: &str, quantity: Option<i32>) -> PlanQuota {
       unlimited_copilot: true,
     },
     "team" | "selfhost_team" => {
-      let seat_quota = 20 * ONE_GB;
+      let seat_quota = 2000 * ONE_GB;
       let storage_quota = (seats as i64)
         .checked_mul(seat_quota)
-        .and_then(|storage| storage.checked_add(100 * ONE_GB))
+        .and_then(|storage| storage.checked_add(10000 * ONE_GB))
         .unwrap_or(i64::MAX);
       PlanQuota {
         name: if plan == "team" { "team" } else { "selfhost_team" },
-        blob_limit: 500 * ONE_MB,
+        blob_limit: 2 * ONE_GB,
         storage_quota,
         history_period: 30 * ONE_DAY_SECONDS,
         member_limit: Some(seats),
         seat_quota: Some(seat_quota),
-        copilot_action_limit: None,
-        unlimited_copilot: false,
+        copilot_action_limit: Some(10),
+        unlimited_copilot: true,
       }
     }
     "selfhost_free" => PlanQuota {
       name: "selfhost_free",
-      blob_limit: 100 * ONE_MB,
-      storage_quota: 100 * ONE_GB,
+      blob_limit: 2 * ONE_GB,
+      storage_quota: 10000 * ONE_GB,
       history_period: 30 * ONE_DAY_SECONDS,
       member_limit: Some(10),
       seat_quota: None,
       copilot_action_limit: Some(10),
-      unlimited_copilot: false,
+      unlimited_copilot: true,
     },
     _ => PlanQuota {
       name: "free",
