@@ -10,7 +10,6 @@
   "author": "toeverything",
   "license": "MIT",
   "dependencies": {
-    "@atlaskit/pragmatic-drag-and-drop": "^1.7.7",
     "@blocksuite/affine-components": "workspace:*",
     "@blocksuite/affine-ext-loader": "workspace:*",
     "@blocksuite/affine-inline-preset": "workspace:*",
@@ -18,7 +17,6 @@
     "@blocksuite/affine-rich-text": "workspace:*",
     "@blocksuite/affine-shared": "workspace:*",
     "@blocksuite/affine-widget-slash-menu": "workspace:*",
-    "@blocksuite/data-view": "workspace:*",
     "@blocksuite/global": "workspace:*",
     "@blocksuite/icons": "^2.2.17",
     "@blocksuite/std": "workspace:*",
@@ -27,8 +25,6 @@
     "@floating-ui/dom": "^1.6.13",
     "@preact/signals-core": "^1.8.0",
     "lit": "^3.2.0",
-    "rxjs": "^7.8.2",
-    "yjs": "^13.6.27",
     "zod": "^3.25.76"
   },
   "exports": {

@@ -42,7 +42,7 @@ export class ParagraphHeadingIcon extends SignalWatcher(
       margin-top: 0.3em;
       position: absolute;
       left: 0;
-      transform: translateX(-64px);
+      transform: translateX(-80px);
       border-radius: 4px;
       padding: 2px;
       cursor: pointer;

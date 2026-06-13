@@ -2268,6 +2268,30 @@ fileprivate struct FfiConverterOptionInt64: FfiConverterRustBuffer {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterOptionDouble: FfiConverterRustBuffer {
+    typealias SwiftType = Double?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterDouble.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterDouble.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionString: FfiConverterRustBuffer {
     typealias SwiftType = String?
 
@@ -2644,6 +2668,25 @@ public func newDocStoragePool() -> DocStoragePool  {
     )
 })
 }
+public func renderMermaidPreviewSvg(code: String, theme: String?, fontFamily: String?, fontSize: Double?)throws  -> String  {
+    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeUniffiError_lift) {
+    uniffi_affine_mobile_native_fn_func_render_mermaid_preview_svg(
+        FfiConverterString.lower(code),
+        FfiConverterOptionString.lower(theme),
+        FfiConverterOptionString.lower(fontFamily),
+        FfiConverterOptionDouble.lower(fontSize),$0
+    )
+})
+}
+public func renderTypstPreviewSvg(code: String, fontDirs: [String]?, cacheDir: String?)throws  -> String  {
+    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeUniffiError_lift) {
+    uniffi_affine_mobile_native_fn_func_render_typst_preview_svg(
+        FfiConverterString.lower(code),
+        FfiConverterOptionSequenceString.lower(fontDirs),
+        FfiConverterOptionString.lower(cacheDir),$0
+    )
+})
+}
 
 private enum InitializationResult {
     case ok
@@ -2664,6 +2707,12 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_affine_mobile_native_checksum_func_new_doc_storage_pool() != 32882) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_affine_mobile_native_checksum_func_render_mermaid_preview_svg() != 54334) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_affine_mobile_native_checksum_func_render_typst_preview_svg() != 42796) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_affine_mobile_native_checksum_method_docstoragepool_clear_clocks() != 51151) {

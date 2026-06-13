@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-restricted-imports */
+/* oxlint-disable no-restricted-imports */
 import '@shoelace-style/shoelace/dist/components/button/button.js';
 import '@shoelace-style/shoelace/dist/components/button-group/button-group.js';
 import '@shoelace-style/shoelace/dist/components/color-picker/color-picker.js';
@@ -70,6 +70,7 @@ import { css, html } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import * as lz from 'lz-string';
 import type { Pane } from 'tweakpane';
+import * as Y from 'yjs';
 
 import type { CommentPanel } from '../../comment/index.js';
 import { createTestEditor } from '../../starter/utils/extensions.js';
@@ -337,6 +338,14 @@ export class StarterDebugMenu extends ShadowlessElement {
     );
   }
 
+  private _exportYDoc() {
+    const encodeUpdate = Y.encodeStateAsUpdate(this.doc.spaceDoc);
+    const blob = new Blob([new Uint8Array(encodeUpdate)], {
+      type: 'application/octet-stream',
+    });
+    download(blob, 'ydoc-update');
+  }
+
   private _getStoreManager() {
     return this.editor.std.get(StoreExtensionManagerIdentifier);
   }
@@ -427,7 +436,7 @@ export class StarterDebugMenu extends ShadowlessElement {
     try {
       const file = await openSingleFileWith('Zip');
       if (!file) return;
-      const result = await MarkdownTransformer.importMarkdownZip({
+      const { docIds } = await MarkdownTransformer.importMarkdownZip({
         collection: this.collection,
         schema: this.editor.doc.schema,
         imported: file,
@@ -436,7 +445,7 @@ export class StarterDebugMenu extends ShadowlessElement {
       if (!this.editor.host) return;
       toast(
         this.editor.host,
-        `Successfully imported ${result.length} markdown files.`
+        `Successfully imported ${docIds.length} markdown files.`
       );
     } catch (error) {
       console.error('Import markdown zip files failed:', error);
@@ -833,6 +842,9 @@ export class StarterDebugMenu extends ShadowlessElement {
                   </sl-menu-item>
                   <sl-menu-item @click="${this._exportSnapshot}">
                     Export Snapshot
+                  </sl-menu-item>
+                  <sl-menu-item @click="${this._exportYDoc}">
+                    Export Y.Doc
                   </sl-menu-item>
                 </sl-menu>
               </sl-menu-item>

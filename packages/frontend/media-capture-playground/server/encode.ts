@@ -1,8 +1,8 @@
 export function createWavBuffer(
   samples: Float32Array,
   options: {
-    sampleRate: number;
-    numChannels: number;
+    sampleRate?: number;
+    numChannels?: number;
   }
 ) {
   const { sampleRate = 44100, numChannels = 1 } = options;

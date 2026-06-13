@@ -78,8 +78,7 @@
     "@blocksuite/global": "workspace:*",
     "@blocksuite/std": "workspace:*",
     "@blocksuite/store": "workspace:*",
-    "@blocksuite/sync": "workspace:*",
-    "rxjs": "^7.8.2"
+    "@blocksuite/sync": "workspace:*"
   },
   "exports": {
     ".": "./src/index.ts",
@@ -299,7 +298,7 @@
   "version": "0.26.3",
   "devDependencies": {
     "@vanilla-extract/vite-plugin": "^5.0.0",
-    "msw": "^2.12.4",
-    "vitest": "^4.0.18"
+    "msw": "^2.13.2",
+    "vitest": "^4.1.8"
   }
 }

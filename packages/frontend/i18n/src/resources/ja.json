@@ -1010,7 +1010,6 @@
   "com.affine.payment.member.team.invite.generate": "生成",
   "com.affine.payment.member.team.invite.copy": "コピー",
   "com.affine.payment.member.team.invite.done": "完了",
-  "com.affine.payment.member.team.invite.notify.title": "招待が送信されました。{{successCount}} が成功し、{{failedCount}} が失敗しました",
   "com.affine.payment.member.team.invite.notify.fail-message": "これらのメールアドレスはすでに招待されています：",
   "com.affine.payment.member.team.revoke": "招待を取り消す",
   "com.affine.payment.member.team.approve": "承認",

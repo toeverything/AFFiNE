@@ -109,6 +109,8 @@ CREATE TABLE IF NOT EXISTS doc (
   updated_at timestamp
 )
 morphology = 'jieba_chinese, lemmatize_en_all, lemmatize_de_all, lemmatize_ru_all, libstemmer_ar, libstemmer_ca, stem_cz, libstemmer_da, libstemmer_nl, libstemmer_fi, libstemmer_fr, libstemmer_el, libstemmer_hi, libstemmer_hu, libstemmer_id, libstemmer_ga, libstemmer_it, libstemmer_lt, libstemmer_ne, libstemmer_no, libstemmer_pt, libstemmer_ro, libstemmer_es, libstemmer_sv, libstemmer_ta, libstemmer_tr'
-charset_table = 'non_cjk, cjk'
+charset_table = 'non_cjk, chinese'
+ngram_len = '1'
+ngram_chars = 'U+1100..U+11FF, U+3130..U+318F, U+A960..U+A97F, U+AC00..U+D7AF, U+D7B0..U+D7FF, U+3040..U+30FF, U+0E00..U+0E7F'
 index_field_lengths = '1'
 `;

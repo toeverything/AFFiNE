@@ -1,52 +1,58 @@
 import { shallowEqual } from '@affine/component';
 import type { TranscriptionBlockProps } from '@affine/core/blocksuite/ai/blocks/transcription-block/model';
+import { RealtimeLiveQuery } from '@affine/core/modules/cloud/realtime/live-query';
 import { DebugLogger } from '@affine/debug';
 import { UserFriendlyError } from '@affine/error';
-import { AiJobStatus } from '@affine/graphql';
+import { AiJobStatus, type TranscriptionResultType } from '@affine/graphql';
+import type { RealtimeTopicEventOf } from '@affine/realtime';
 import { Entity, LiveData } from '@toeverything/infra';
 
 import type { DefaultServerService, WorkspaceServerService } from '../../cloud';
 import { AuthService } from '../../cloud/services/auth';
 import { AudioTranscriptionJobStore } from './audio-transcription-job-store';
+import { buildTranscriptionResult } from './transcription-result';
 import type { TranscriptionResult } from './types';
 
 // The UI status of the transcription job
 export type TranscriptionStatus =
-  | {
-      status: 'waiting-for-job';
-    }
-  | {
-      status: 'started';
-    }
-  | {
-      status: AiJobStatus.pending;
-    }
-  | {
-      status: AiJobStatus.running;
-    }
+  | { status: 'waiting-for-job' }
+  | { status: 'started' }
+  | { status: AiJobStatus.pending }
+  | { status: AiJobStatus.running }
   | {
       status: AiJobStatus.failed;
       error: UserFriendlyError; // <<- this is not visible on UI yet
     }
-  | {
-      status: AiJobStatus.finished; // ready to be claimed, but may be rejected because of insufficient credits
-    }
-  | {
-      status: AiJobStatus.claimed;
-      result: TranscriptionResult;
-    };
+  | { status: AiJobStatus.finished }
+  | { status: 'settled'; result: TranscriptionResult };
 
 const logger = new DebugLogger('audio-transcription-job');
 
+function hasSettledTranscriptResult(
+  job: {
+    status: AiJobStatus;
+    normalizedTranscript?: string | null;
+    transcription?: unknown[] | null;
+  } | null
+) {
+  return (
+    job?.status === AiJobStatus.finished &&
+    (!!job.normalizedTranscript || !!job.transcription?.length)
+  );
+}
+
 // facts on transcription job ownership
 // 1. jobid + blobid is unique for a given user
-// 2. only the creator can claim the job
-// 3. all users can query the claimed job result
-// 4. claim a job requires AI credits
+// 2. only the creator can settle/unlock the task result
+// 3. all users can query the settled result
+// 4. settlement requires AI credits
 export class AudioTranscriptionJob extends Entity<{
   readonly blockProps: TranscriptionBlockProps;
   readonly blobId: string;
-  readonly getAudioFiles: () => Promise<File[]>;
+  readonly getAudioTranscriptionInput: () => Promise<{
+    files: File[];
+    input?: Record<string, unknown>;
+  }>;
 }> {
   constructor(
     private readonly workspaceServerService: WorkspaceServerService,
@@ -55,10 +61,16 @@ export class AudioTranscriptionJob extends Entity<{
     super();
     this.disposables.push(() => {
       this.disposed = true;
+      this.rejectTaskWait(new Error('Job disposed'));
     });
   }
 
   disposed = false;
+  private taskLiveQuery?: RealtimeLiveQuery<
+    TranscriptionResultType | null,
+    RealtimeTopicEventOf<'copilot.transcript.task.changed'>
+  >;
+  private taskWaitReject?: (error: unknown) => void;
 
   private readonly _status$ = new LiveData<TranscriptionStatus>({
     status: 'waiting-for-job',
@@ -68,7 +80,7 @@ export class AudioTranscriptionJob extends Entity<{
     AudioTranscriptionJobStore,
     {
       blobId: this.props.blobId,
-      getAudioFiles: this.props.getAudioFiles,
+      getAudioTranscriptionInput: this.props.getAudioTranscriptionInput,
     }
   );
 
@@ -93,12 +105,12 @@ export class AudioTranscriptionJob extends Entity<{
   readonly preflightCheck = async () => {
     // if the job id is given, check if the job exists
     if (this.props.blockProps.jobId) {
-      const existingJob = await this.store.getAudioTranscription(
+      const existingJob = await this.store.getTranscriptTask(
         this.props.blobId,
         this.props.blockProps.jobId
       );
 
-      if (existingJob?.status === AiJobStatus.claimed) {
+      if (hasSettledTranscriptResult(existingJob)) {
         // if job exists, anyone can query it
         return;
       }
@@ -138,24 +150,27 @@ export class AudioTranscriptionJob extends Entity<{
       let job: {
         id: string;
         status: AiJobStatus;
-      } | null = await this.store.getAudioTranscription(
+      } | null = await this.store.getTranscriptTask(
         this.props.blobId,
         this.props.blockProps.jobId
       );
 
       if (!job) {
         logger.debug('No existing job found, submitting new transcription job');
-        job = await this.store.submitAudioTranscription();
+        job = await this.store.submitTranscriptTask();
       } else if (job.status === AiJobStatus.failed) {
         logger.debug('Found existing failed job, retrying', {
           jobId: job.id,
         });
-        job = await this.store.retryAudioTranscription(job.id);
+        job = await this.store.retryTranscriptTask(job.id);
       } else {
         logger.debug('Found existing job', {
           jobId: job.id,
           status: job.status,
         });
+      }
+      if (!job) {
+        throw UserFriendlyError.fromAny('failed to submit transcription');
       }
 
       this.props.blockProps.jobId = job.id;
@@ -170,8 +185,8 @@ export class AudioTranscriptionJob extends Entity<{
         throw UserFriendlyError.fromAny('failed to submit transcription');
       }
 
-      await this.untilJobFinishedOrClaimed();
-      await this.claim();
+      await this.untilTaskReadyOrSettled();
+      await this.settle();
     } catch (err) {
       logger.debug('Error during job submission', { error: err });
       this._status$.value = {
@@ -182,84 +197,122 @@ export class AudioTranscriptionJob extends Entity<{
     return this.status$.value;
   }
 
-  private async untilJobFinishedOrClaimed() {
-    while (
-      !this.disposed &&
-      this.props.blockProps.jobId &&
-      this.props.blockProps.createdBy === this.currentUserId
-    ) {
-      logger.debug('Polling job status', {
-        jobId: this.props.blockProps.jobId,
+  private async untilTaskReadyOrSettled() {
+    const taskId = this.props.blockProps.jobId;
+    if (!taskId || this.props.blockProps.createdBy !== this.currentUserId) {
+      return;
+    }
+
+    await this.checkTranscriptTask(taskId);
+
+    this.rejectTaskWait(new Error('Transcript task wait replaced'));
+
+    await new Promise<void>((resolve, reject) => {
+      this.taskWaitReject = reject;
+      this.taskLiveQuery = new RealtimeLiveQuery({
+        request: () => this.store.getTranscriptTask(this.props.blobId, taskId),
+        subscribe: () => this.store.subscribeTranscriptTask(taskId),
+        applySnapshot: job => {
+          this.applyTranscriptTaskSnapshot(taskId, job).then(() => {
+            if (this.status$.value.status === AiJobStatus.finished) {
+              resolve();
+            }
+          }, reject);
+        },
+        applyEvent: event => {
+          if (event.status === AiJobStatus.failed) {
+            reject(
+              UserFriendlyError.fromAny(
+                event.error ?? 'Transcription job failed'
+              )
+            );
+            return 'applied';
+          }
+          return event.status === AiJobStatus.finished
+            ? 'revalidate'
+            : 'applied';
+        },
+        onError: reject,
       });
-      const job = await this.store.getAudioTranscription(
-        this.props.blobId,
-        this.props.blockProps.jobId
-      );
+      this.taskLiveQuery.start();
+    }).finally(() => {
+      this.taskWaitReject = undefined;
+      this.taskLiveQuery?.dispose();
+      this.taskLiveQuery = undefined;
+    });
+  }
 
-      if (!job || job?.status === 'failed') {
-        logger.debug('Job failed during polling', {
-          jobId: this.props.blockProps.jobId,
-        });
-        throw UserFriendlyError.fromAny('Transcription job failed');
-      }
+  private rejectTaskWait(error: unknown) {
+    const reject = this.taskWaitReject;
+    this.taskWaitReject = undefined;
+    this.taskLiveQuery?.dispose();
+    this.taskLiveQuery = undefined;
+    reject?.(error);
+  }
 
-      if (job?.status === 'finished' || job?.status === 'claimed') {
-        logger.debug('Job finished, ready to claim', {
-          jobId: this.props.blockProps.jobId,
-        });
-        this._status$.value = {
-          status: AiJobStatus.finished,
-        };
-        return;
-      }
+  private async checkTranscriptTask(taskId: string) {
+    const job = await this.store.getTranscriptTask(this.props.blobId, taskId);
+    await this.applyTranscriptTaskSnapshot(taskId, job);
+  }
 
-      // Add delay between polling attempts
-      await new Promise(resolve => setTimeout(resolve, 3000));
+  private async applyTranscriptTaskSnapshot(
+    taskId: string,
+    job: TranscriptionResultType | null
+  ) {
+    if (
+      this.disposed ||
+      this.props.blockProps.jobId !== taskId ||
+      this.props.blockProps.createdBy !== this.currentUserId
+    ) {
+      return;
+    }
+
+    if (!job || job.status === AiJobStatus.failed) {
+      logger.debug('Job failed during realtime status check', {
+        jobId: taskId,
+      });
+      throw UserFriendlyError.fromAny('Transcription job failed');
+    }
+
+    if (job.status === AiJobStatus.finished) {
+      logger.debug('Transcript task is ready to settle', { jobId: taskId });
+      this._status$.value = {
+        status: AiJobStatus.finished,
+      };
     }
   }
 
-  async claim() {
+  async settle() {
     if (this.disposed) {
-      logger.debug('Job already disposed, cannot claim');
+      logger.debug('Job already disposed, cannot settle');
       throw new Error('Job already disposed');
     }
 
-    logger.debug('Attempting to claim job', {
+    logger.debug('Attempting to settle transcript task', {
       jobId: this.props.blockProps.jobId,
     });
 
     if (!this.props.blockProps.jobId) {
-      logger.debug('No job id found, cannot claim');
+      logger.debug('No job id found, cannot settle');
       throw new Error('No job id found');
     }
 
-    const claimedJob = await this.store.claimAudioTranscription(
+    const settledTask = await this.store.settleTranscriptTask(
       this.props.blockProps.jobId
     );
 
-    if (claimedJob) {
-      logger.debug('Successfully claimed job', {
+    if (settledTask) {
+      logger.debug('Successfully settled transcript task', {
         jobId: this.props.blockProps.jobId,
       });
-      const result: TranscriptionResult = {
-        summary: claimedJob.summary ?? '',
-        title: claimedJob.title ?? '',
-        actions: claimedJob.actions ?? '',
-        segments:
-          claimedJob.transcription?.map(segment => ({
-            speaker: segment.speaker,
-            start: segment.start,
-            end: segment.end,
-            transcription: segment.transcription,
-          })) ?? [],
-      };
+      const result: TranscriptionResult = buildTranscriptionResult(settledTask);
 
       this._status$.value = {
-        status: AiJobStatus.claimed,
+        status: 'settled',
         result,
       };
     } else {
-      throw new Error('Failed to claim transcription result');
+      throw new Error('Failed to settle transcription result');
     }
   }
 

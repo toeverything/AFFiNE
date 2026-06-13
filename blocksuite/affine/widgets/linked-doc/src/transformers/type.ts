@@ -1,3 +1,5 @@
+import type { ParsedFrontmatterMeta } from './markdown.js';
+
 /**
  * Represents an imported file entry in the zip archive
  */
@@ -8,6 +10,13 @@ export type ImportedFileEntry = {
   contentBlob: Blob;
   /** The full path of the file in the zip archive */
   fullPath: string;
+};
+
+export type MarkdownFileImportEntry = ImportedFileEntry & {
+  pageId: string;
+  preferredTitle: string;
+  content: string;
+  meta: ParsedFrontmatterMeta;
 };
 
 /**

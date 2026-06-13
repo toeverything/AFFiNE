@@ -43,8 +43,6 @@ export enum FeatureType {
 export enum Feature {
   // user
   Admin = 'administrator',
-  EarlyAccess = 'early_access',
-  AIEarlyAccess = 'ai_early_access',
   UnlimitedCopilot = 'unlimited_copilot',
   FreePlan = 'free_plan_v1',
   ProPlan = 'pro_plan_v1',
@@ -53,25 +51,23 @@ export enum Feature {
   // workspace
   UnlimitedWorkspace = 'unlimited_workspace',
   TeamPlan = 'team_plan_v1',
+  QuotaExceededReadonlyWorkspace = 'quota_exceeded_readonly_workspace_v1',
 }
 
 // TODO(@forehalo): may merge `FeatureShapes` and `FeatureConfigs`?
 export const FeaturesShapes = {
-  early_access: z.object({ whitelist: z.array(z.string()).readonly() }),
   unlimited_workspace: EMPTY_CONFIG,
   unlimited_copilot: EMPTY_CONFIG,
-  ai_early_access: EMPTY_CONFIG,
   administrator: EMPTY_CONFIG,
   free_plan_v1: UserPlanQuotaConfig,
   pro_plan_v1: UserPlanQuotaConfig,
   lifetime_pro_plan_v1: UserPlanQuotaConfig,
   team_plan_v1: WorkspaceQuotaConfig,
+  quota_exceeded_readonly_workspace_v1: EMPTY_CONFIG,
 } satisfies Record<Feature, z.ZodObject<any>>;
 
 export type UserFeatureName = keyof Pick<
   typeof FeaturesShapes,
-  | 'early_access'
-  | 'ai_early_access'
   | 'unlimited_copilot'
   | 'administrator'
   | 'free_plan_v1'
@@ -80,7 +76,9 @@ export type UserFeatureName = keyof Pick<
 >;
 export type WorkspaceFeatureName = keyof Pick<
   typeof FeaturesShapes,
-  'unlimited_workspace' | 'team_plan_v1'
+  | 'unlimited_workspace'
+  | 'team_plan_v1'
+  | 'quota_exceeded_readonly_workspace_v1'
 >;
 
 export type FeatureName = UserFeatureName | WorkspaceFeatureName;
@@ -138,11 +136,6 @@ const TeamFeature = {
   },
 } as const;
 
-const WhitelistFeature = {
-  type: FeatureType.Feature,
-  configs: { whitelist: [] },
-} as const;
-
 const EmptyFeature = {
   type: FeatureType.Feature,
   configs: {},
@@ -160,9 +153,8 @@ export const FeatureConfigs: {
   pro_plan_v1: ProFeature,
   lifetime_pro_plan_v1: LifetimeProFeature,
   team_plan_v1: TeamFeature,
-  early_access: WhitelistFeature,
   unlimited_workspace: EmptyFeature,
+  quota_exceeded_readonly_workspace_v1: EmptyFeature,
   unlimited_copilot: EmptyFeature,
-  ai_early_access: EmptyFeature,
   administrator: EmptyFeature,
 };

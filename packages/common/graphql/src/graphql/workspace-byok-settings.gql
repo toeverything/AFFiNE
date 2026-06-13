@@ -1,0 +1,46 @@
+query workspaceByokSettings($id: String!, $from: DateTime!, $to: DateTime!) {
+  workspace(id: $id) {
+    id
+    byokSettings {
+      workspaceId
+      entitled
+      serverEntitled
+      localEntitled
+      entitlementRequired
+      allowedProviders
+      localStorageSupported
+      customEndpointSupported
+      hasAiPlan
+      keys {
+        id
+        provider
+        name
+        description
+        storage
+        configured
+        enabled
+        endpoint
+        endpointEditable
+        sortOrder
+        capabilities
+        testStatus
+        disabledReason
+        lastTestedAt
+        lastTestError
+        lastUsedAt
+        lastErrorAt
+        lastError
+      }
+      warnings {
+        featureKind
+        reason
+        requiredProviders
+      }
+    }
+    byokUsage(from: $from, to: $to) {
+      date
+      featureKind
+      totalTokens
+    }
+  }
+}

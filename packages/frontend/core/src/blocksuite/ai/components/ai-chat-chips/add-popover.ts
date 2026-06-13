@@ -1,4 +1,3 @@
-import { toast } from '@affine/component';
 import type { TagMeta } from '@affine/core/components/page-list';
 import type { CollectionMeta } from '@affine/core/modules/collection';
 import track, { type EventArgs } from '@affine/track';
@@ -22,6 +21,7 @@ import { property, query, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
 import type { SearchMenuConfig } from '../ai-chat-add-context';
+import { addFilesToChat } from './attachment-utils';
 import type { ChatChip, DocDisplayConfig } from './type';
 
 enum AddPopoverMode {
@@ -172,23 +172,10 @@ export class ChatPanelAddPopover extends SignalWatcher(
     if (!files || files.length === 0) return;
 
     this.abortController.abort();
-    const images = files.filter(file => file.type.startsWith('image/'));
-    if (images.length > 0) {
-      this.addImages(images);
-    }
-
-    const others = files.filter(file => !file.type.startsWith('image/'));
-    const addChipPromises = others.map(async file => {
-      if (file.size > 50 * 1024 * 1024) {
-        toast(`${file.name} is too large, please upload a file less than 50MB`);
-        return;
-      }
-      await this.addChip({
-        file,
-        state: 'processing',
-      });
+    await addFilesToChat(files, {
+      addImages: this.addImages,
+      addChip: this.addChip,
     });
-    await Promise.all(addChipPromises);
     this._track('file');
   };
 

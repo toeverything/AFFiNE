@@ -27,6 +27,10 @@
       "type": "Object",
       "desc": "The config for copilot job queue"
     },
+    "queues.calendar": {
+      "type": "Object",
+      "desc": "The config for calendar job queue"
+    },
     "queues.doc": {
       "type": "Object",
       "desc": "The config for doc job queue"
@@ -74,6 +78,10 @@
     "requireEmailVerification": {
       "type": "Boolean",
       "desc": "Whether require email verification before accessing restricted resources(not implemented)."
+    },
+    "newAccountShareActionDelay": {
+      "type": "Number",
+      "desc": "Minimum account age in seconds before new accounts can invite members or create share links."
     },
     "passwordRequirements": {
       "type": "Object",
@@ -165,6 +173,18 @@
     "history.interval": {
       "type": "Number",
       "desc": "The minimum time interval in milliseconds of creating a new history snapshot when doc get updated."
+    }
+  },
+  "permission": {
+    "readModel": {
+      "type": "String",
+      "desc": "Permission data source for Rust evaluation",
+      "env": "AFFINE_PERMISSION_READ_MODEL"
+    },
+    "fallbackLegacyLoader": {
+      "type": "Boolean",
+      "desc": "Fallback from projection loader to legacy loader when projection input loading fails",
+      "env": "AFFINE_PERMISSION_FALLBACK_LEGACY_LOADER"
     }
   },
   "storages": {
@@ -309,9 +329,17 @@
       "type": "Boolean",
       "desc": "Whether to enable the copilot plugin. <br> Document: <a href=\"https://docs.affine.pro/self-host-affine/administer/ai\" target=\"_blank\">https://docs.affine.pro/self-host-affine/administer/ai</a>"
     },
-    "scenarios": {
-      "type": "Object",
-      "desc": "Use custom models in scenarios and override default settings."
+    "byok.enabled": {
+      "type": "Boolean",
+      "desc": "Whether to enable workspace BYOK."
+    },
+    "byok.allowedProviders": {
+      "type": "Array",
+      "desc": "The allowlist for workspace BYOK providers."
+    },
+    "byok.allowCustomEndpoint": {
+      "type": "Boolean",
+      "desc": "Whether workspace BYOK custom endpoints are accepted."
     },
     "providers.profiles": {
       "type": "Array",
@@ -326,6 +354,10 @@
       "desc": "The config for the openai provider.",
       "link": "https://github.com/openai/openai-node"
     },
+    "providers.cloudflareWorkersAi": {
+      "type": "Object",
+      "desc": "The config for the Cloudflare Workers AI provider."
+    },
     "providers.fal": {
       "type": "Object",
       "desc": "The config for the fal provider."
@@ -338,10 +370,6 @@
       "type": "Object",
       "desc": "The config for the gemini provider in Google Vertex AI."
     },
-    "providers.perplexity": {
-      "type": "Object",
-      "desc": "The config for the perplexity provider."
-    },
     "providers.anthropic": {
       "type": "Object",
       "desc": "The config for the anthropic provider."
@@ -349,10 +377,6 @@
     "providers.anthropicVertex": {
       "type": "Object",
       "desc": "The config for the anthropic provider in Google Vertex AI."
-    },
-    "providers.morph": {
-      "type": "Object",
-      "desc": "The config for the morph provider."
     },
     "unsplash": {
       "type": "Object",
@@ -405,16 +429,6 @@
       "desc": "Number of workspaces automatically indexed per batch"
     }
   },
-  "customerIo": {
-    "enabled": {
-      "type": "Boolean",
-      "desc": "Enable customer.io integration"
-    },
-    "token": {
-      "type": "String",
-      "desc": "Customer.io token"
-    }
-  },
   "oauth": {
     "providers.google": {
       "type": "Object",
@@ -445,16 +459,6 @@
     "showLifetimePrice": {
       "type": "Boolean",
       "desc": "Whether enable lifetime price and allow user to pay for it."
-    },
-    "apiKey": {
-      "type": "String",
-      "desc": "[Deprecated] Stripe API key. Use payment.stripe.apiKey instead.",
-      "env": "STRIPE_API_KEY"
-    },
-    "webhookKey": {
-      "type": "String",
-      "desc": "[Deprecated] Stripe webhook key. Use payment.stripe.webhookKey instead.",
-      "env": "STRIPE_WEBHOOK_KEY"
     },
     "stripe": {
       "type": "Object",

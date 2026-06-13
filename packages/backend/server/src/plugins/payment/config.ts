@@ -27,14 +27,6 @@ declare global {
     payment: {
       enabled: boolean;
       showLifetimePrice: boolean;
-      /**
-       * @deprecated use payment.stripe.apiKey
-       */
-      apiKey: string;
-      /**
-       * @deprecated use payment.stripe.webhookKey
-       */
-      webhookKey: string;
       stripe: ConfigItem<
         {
           /** Preferred place for Stripe API key */
@@ -69,16 +61,6 @@ defineModuleConfig('payment', {
   showLifetimePrice: {
     desc: 'Whether enable lifetime price and allow user to pay for it.',
     default: true,
-  },
-  apiKey: {
-    desc: '[Deprecated] Stripe API key. Use payment.stripe.apiKey instead.',
-    default: '',
-    env: 'STRIPE_API_KEY',
-  },
-  webhookKey: {
-    desc: '[Deprecated] Stripe webhook key. Use payment.stripe.webhookKey instead.',
-    default: '',
-    env: 'STRIPE_WEBHOOK_KEY',
   },
   stripe: {
     desc: 'Stripe sdk options and credentials',

@@ -55,6 +55,12 @@ impl From<WorkspaceDocContent> for NativeWorkspaceDocContent {
 }
 
 #[napi(object)]
+pub struct PublicDocMetaInput {
+  pub id: String,
+  pub title: Option<String>,
+}
+
+#[napi(object)]
 pub struct NativeBlockInfo {
   pub block_id: String,
   pub flavour: String,
@@ -249,6 +255,19 @@ pub fn update_doc_properties(
 pub fn add_doc_to_root_doc(root_doc_bin: Buffer, doc_id: String, title: Option<String>) -> Result<Buffer> {
   let result = map_napi_err(
     doc_parser::add_doc_to_root_doc(root_doc_bin.into(), &doc_id, title.as_deref()),
+    Status::GenericFailure,
+  )?;
+  Ok(Buffer::from(result))
+}
+
+#[napi]
+pub fn build_public_root_doc(root_doc_bin: Buffer, doc_metas: Vec<PublicDocMetaInput>) -> Result<Buffer> {
+  let metas = doc_metas
+    .iter()
+    .map(|meta| (meta.id.as_str(), meta.title.as_deref()))
+    .collect::<Vec<_>>();
+  let result = map_napi_err(
+    doc_parser::build_public_root_doc(&root_doc_bin, &metas),
     Status::GenericFailure,
   )?;
   Ok(Buffer::from(result))

@@ -2,6 +2,7 @@ import {
   Button,
   Checkbox,
   IconButton,
+  type IconData,
   IconType,
   Modal,
 } from '@affine/component';
@@ -26,14 +27,16 @@ import {
 import { DebugLogger } from '@affine/debug';
 import { useI18n } from '@affine/i18n';
 import track from '@affine/track';
-import { openFilesWith } from '@blocksuite/affine/shared/utils';
+import { openDirectory, openFilesWith } from '@blocksuite/affine/shared/utils';
 import type { Workspace } from '@blocksuite/affine/store';
 import {
+  BearTransformer,
   DocxTransformer,
   GoogleKeepTransformer,
   HtmlTransformer,
   MarkdownTransformer,
   NotionHtmlTransformer,
+  ObsidianTransformer,
   ZipTransformer,
 } from '@blocksuite/affine/widgets/linked-doc';
 import {
@@ -127,10 +130,10 @@ function createFolderStructure(
           logger.debug('Icon data:', child.icon);
 
           try {
-            let iconData;
+            let iconData: IconData | undefined;
             if (child.icon.type === 'emoji') {
               iconData = {
-                type: IconType.Emoji as const,
+                type: IconType.Emoji,
                 unicode: child.icon.content,
               };
               logger.debug('Created emoji icon data:', iconData);
@@ -246,6 +249,41 @@ function flattenFolderOptions(node: unknown, depth = 0): FolderOption[] {
     result.push(...flattenFolderOptions(child, depth + 1));
   }
   return result;
+/**
+ * Creates the folder tree described by {@link folderHierarchy} via
+ * {@link OrganizeService} and links every document into its folder.
+ * Returns the root folder ID on success, or `undefined` if the
+ * hierarchy is empty or an error occurs.
+ *
+ * When {@link explorerIconService} is provided, document icons from the
+ * hierarchy (e.g. Notion page emojis) are applied. Callers that do not
+ * need icon support can omit it safely.
+ */
+function applyFolderHierarchy(
+  organizeService: OrganizeService,
+  folderHierarchy: FolderHierarchy,
+  explorerIconService?: ExplorerIconService
+): string | undefined {
+  if (folderHierarchy.children.size === 0) return undefined;
+  try {
+    const { folderId, docLinks } = createFolderStructure(
+      organizeService,
+      folderHierarchy,
+      null,
+      explorerIconService
+    );
+    for (const { folderId, docId } of docLinks) {
+      const folder = organizeService.folderTree.folderNode$(folderId).value;
+      if (folder) {
+        const index = folder.indexAt('after');
+        folder.createLink('doc', docId, index);
+      }
+    }
+    return folderId || undefined;
+  } catch (error) {
+    logger.warn('Failed to create folder structure:', error);
+    return undefined;
+  }
 }
 
 type ImportType =
@@ -253,17 +291,24 @@ type ImportType =
   | 'markdownZip'
   | 'notion'
   | 'googleKeep'
+  | 'obsidian'
+  | 'bear'
   | 'snapshot'
   | 'html'
   | 'docx'
   | 'dotaffinefile';
-type AcceptType = 'Markdown' | 'Zip' | 'Html' | 'Docx' | 'Skip'; // Skip is used for dotaffinefile
+type AcceptType = 'Markdown' | 'Zip' | 'Html' | 'Docx' | 'Directory' | 'Skip'; // Skip is used for dotaffinefile
 type Status = 'idle' | 'googleKeepOptions' | 'importing' | 'success' | 'error';
 type ImportResult = {
   docIds: string[];
   entryId?: string;
   isWorkspaceFile?: boolean;
   rootFolderId?: string;
+  importedWorkspace?: WorkspaceMetadata;
+};
+
+type ImportedWorkspacePayload = {
+  workspace: WorkspaceMetadata;
 };
 
 type ImportProgress = {
@@ -363,6 +408,32 @@ const importOptions = [
     type: 'googleKeep' as ImportType,
   },
   {
+    key: 'obsidian',
+    label: 'com.affine.import.obsidian',
+    prefixIcon: (
+      <ExportToMarkdownIcon color={cssVar('black')} width={20} height={20} />
+    ),
+    suffixIcon: (
+      <HelpIcon color={cssVarV2('icon/primary')} width={20} height={20} />
+    ),
+    suffixTooltip: 'com.affine.import.obsidian.tooltip',
+    testId: 'editor-option-menu-import-obsidian',
+    type: 'obsidian' as ImportType,
+  },
+  {
+    key: 'bear',
+    label: 'com.affine.import.bear',
+    prefixIcon: (
+      <FileIcon color={cssVarV2('icon/primary')} width={20} height={20} />
+    ),
+    suffixIcon: (
+      <HelpIcon color={cssVarV2('icon/primary')} width={20} height={20} />
+    ),
+    suffixTooltip: 'com.affine.import.bear.tooltip',
+    testId: 'editor-option-menu-import-bear',
+    type: 'bear' as ImportType,
+  },
+  {
     key: 'docx',
     label: 'com.affine.import.docx',
     prefixIcon: <FileIcon color={cssVar('black')} width={20} height={20} />,
@@ -437,21 +508,29 @@ const importConfigs: Record<ImportType, ImportConfig> = {
       docCollection,
       files,
       _handleImportAffineFile,
-      _organizeService,
+      organizeService,
       _explorerIconService
     ) => {
       const file = files.length === 1 ? files[0] : null;
       if (!file) {
         throw new Error('Expected a single zip file for markdownZip import');
       }
-      const docIds = await MarkdownTransformer.importMarkdownZip({
-        collection: docCollection,
-        schema: getAFFiNEWorkspaceSchema(),
-        imported: file,
-        extensions: getStoreManager().config.init().value.get('store'),
-      });
+      const { docIds, folderHierarchy } =
+        await MarkdownTransformer.importMarkdownZip({
+          collection: docCollection,
+          schema: getAFFiNEWorkspaceSchema(),
+          imported: file,
+          extensions: getStoreManager().config.init().value.get('store'),
+        });
+
+      const rootFolderId =
+        folderHierarchy && organizeService
+          ? applyFolderHierarchy(organizeService, folderHierarchy)
+          : undefined;
+
       return {
         docIds,
+        rootFolderId,
       };
     },
   },
@@ -503,42 +582,157 @@ const importConfigs: Record<ImportType, ImportConfig> = {
           extensions: getStoreManager().config.init().value.get('store'),
         });
 
-      let rootFolderId: string | undefined;
-
-      // Create folder structure if hierarchy exists and OrganizeService is available
-      if (
-        folderHierarchy &&
-        organizeService &&
-        folderHierarchy.children.size > 0
-      ) {
-        try {
-          const { folderId, docLinks } = createFolderStructure(
-            organizeService,
-            folderHierarchy,
-            null,
-            explorerIconService
-          );
-          rootFolderId = folderId || undefined;
-
-          // Create links for all documents to their respective folders
-          for (const { folderId, docId } of docLinks) {
-            const folder =
-              organizeService.folderTree.folderNode$(folderId).value;
-            if (folder) {
-              const index = folder.indexAt('after');
-              folder.createLink('doc', docId, index);
-            }
-          }
-        } catch (error) {
-          logger.warn('Failed to create folder structure:', error);
-          // Continue with import even if folder creation fails
-        }
-      }
+      const rootFolderId =
+        folderHierarchy && organizeService
+          ? applyFolderHierarchy(
+              organizeService,
+              folderHierarchy,
+              explorerIconService
+            )
+          : undefined;
 
       return {
         docIds: pageIds,
         entryId,
         isWorkspaceFile,
+        rootFolderId,
+      };
+    },
+  },
+  obsidian: {
+    fileOptions: { acceptType: 'Directory', multiple: false },
+    importFunction: async (
+      docCollection,
+      files,
+      _handleImportAffineFile,
+      _organizeService,
+      explorerIconService
+    ) => {
+      const { docIds, docEmojis } =
+        await ObsidianTransformer.importObsidianVault({
+          collection: docCollection,
+          schema: getAFFiNEWorkspaceSchema(),
+          importedFiles: files,
+          extensions: getStoreManager().config.init().value.get('store'),
+        });
+
+      if (explorerIconService) {
+        for (const [id, emoji] of docEmojis.entries()) {
+          explorerIconService.setIcon({
+            where: 'doc',
+            id,
+            icon: { type: IconType.Emoji, unicode: emoji },
+          });
+        }
+      }
+
+      return { docIds };
+    },
+  },
+  bear: {
+    fileOptions: { acceptType: 'Zip', multiple: false },
+    importFunction: async (
+      docCollection,
+      files,
+      _handleImportAffineFile,
+      organizeService,
+      _explorerIconService,
+      tagService
+    ) => {
+      const file = files.length === 1 ? files[0] : null;
+      if (!file) {
+        throw new Error('Expected a single .bear2bk file for Bear import');
+      }
+      let docIds: string[];
+      let tags: Map<string, string[]>;
+      let folderHierarchy: FolderHierarchy;
+      try {
+        const result = await BearTransformer.importBearBackup({
+          collection: docCollection,
+          schema: getAFFiNEWorkspaceSchema(),
+          imported: file,
+          extensions: getStoreManager().config.init().value.get('store'),
+        });
+        docIds = result.docIds;
+        tags = result.tags;
+        folderHierarchy = result.folderHierarchy;
+      } catch (err) {
+        logger.error('Bear import failed:', err);
+        throw err instanceof Error
+          ? err
+          : new Error(String(err) || 'Bear import failed');
+      }
+
+      // Create AFFiNE tags from Bear tags
+      if (tagService && tags.size > 0) {
+        try {
+          // Get existing tags for deduplication
+          const existingTags = tagService.tagList.tags$.value;
+          const existingTagMap = new Map<string, string>(); // lowercase name → tag id
+          for (const tag of existingTags) {
+            const name = tag.value$.value.toLowerCase();
+            existingTagMap.set(name, tag.id);
+          }
+
+          // Consolidate tags by root segment (e.g., "privat/bike" → "privat").
+          // Keyed by lowercase root for case-insensitive dedup, but the
+          // original capitalization of the first occurrence is preserved
+          // so new AFFiNE tags are created with the user's casing.
+          const rootTagDocMap = new Map<
+            string,
+            { displayName: string; docs: Set<string> }
+          >();
+          for (const [tagName, tagDocIds] of tags) {
+            const originalRoot = tagName.split('/')[0];
+            const key = originalRoot.toLowerCase();
+            let entry = rootTagDocMap.get(key);
+            if (!entry) {
+              entry = { displayName: originalRoot, docs: new Set<string>() };
+              rootTagDocMap.set(key, entry);
+            }
+            for (const docId of tagDocIds) {
+              entry.docs.add(docId);
+            }
+          }
+
+          for (const [
+            rootTagKey,
+            { displayName, docs: docIdSet },
+          ] of rootTagDocMap) {
+            // Check if tag already exists (case-insensitive)
+            let tagId = existingTagMap.get(rootTagKey);
+            if (!tagId) {
+              const newTag = tagService.tagList.createTag(
+                displayName,
+                tagService.randomTagColor()
+              );
+              tagId = newTag.id;
+              existingTagMap.set(rootTagKey, tagId);
+            }
+
+            // Assign tag to each doc
+            for (const docId of docIdSet) {
+              const doc = docCollection.getDoc(docId);
+              const currentTags = doc?.meta?.tags ?? [];
+              if (!currentTags.includes(tagId)) {
+                docCollection.meta.setDocMeta(docId, {
+                  tags: [...currentTags, tagId],
+                });
+              }
+            }
+          }
+        } catch (error) {
+          logger.warn('Failed to create Bear tags:', error);
+        }
+      }
+
+      const rootFolderId =
+        folderHierarchy && organizeService
+          ? applyFolderHierarchy(organizeService, folderHierarchy)
+          : undefined;
+
+      return {
+        docIds,
         rootFolderId,
       };
     },
@@ -711,7 +905,7 @@ const importConfigs: Record<ImportType, ImportConfig> = {
           file
         )
       )
-        .filter(doc => doc !== undefined)
+        .filter((doc): doc is NonNullable<typeof doc> => doc !== undefined)
         .map(doc => doc.id);
 
       return {
@@ -728,11 +922,12 @@ const importConfigs: Record<ImportType, ImportConfig> = {
       _organizeService,
       _explorerIconService
     ) => {
-      await handleImportAffineFile();
+      const workspace = await handleImportAffineFile();
       return {
         docIds: [],
         entryId: undefined,
         isWorkspaceFile: true,
+        importedWorkspace: workspace,
       };
     },
   },
@@ -1060,17 +1255,20 @@ export const ImportDialog = ({
       });
 
       return new Promise<WorkspaceMetadata | undefined>((resolve, reject) => {
-        globalDialogService.open('import-workspace', undefined, payload => {
-          if (payload) {
-            handleCreatedWorkspace({ metadata: payload.workspace });
-            resolve(payload.workspace);
-          } else {
-            reject(new Error('No workspace imported'));
+        globalDialogService.open(
+          'import-workspace',
+          undefined,
+          (payload?: ImportedWorkspacePayload) => {
+            if (payload) {
+              resolve(payload.workspace);
+            } else {
+              reject(new Error('No workspace imported'));
+            }
           }
-        });
+        );
       });
     };
-  }, [globalDialogService, handleCreatedWorkspace]);
+  }, [globalDialogService]);
 
   const handleImport = useAsyncCallback(
     async (type: ImportType, options?: GoogleKeepImportOptions) => {
@@ -1083,7 +1281,9 @@ export const ImportDialog = ({
         const files =
           acceptType === 'Skip'
             ? []
-            : await openFilesWith(acceptType, multiple);
+            : acceptType === 'Directory'
+              ? await openDirectory()
+              : await openFilesWith(acceptType, multiple);
 
         if (!files || (files.length === 0 && acceptType !== 'Skip')) {
           throw new Error(
@@ -1099,20 +1299,30 @@ export const ImportDialog = ({
           });
         }
 
-        const { docIds, entryId, isWorkspaceFile, rootFolderId } =
-          await importConfig.importFunction(
-            docCollection,
-            files,
-            handleImportAffineFile,
-            organizeService,
-            explorerIconService,
-            favoriteService,
-            tagService,
-            options,
-            setImportProgress
-          );
+        const {
+          docIds,
+          entryId,
+          isWorkspaceFile,
+          rootFolderId
+        } = await importConfig.importFunction(
+          docCollection,
+          files,
+          handleImportAffineFile,
+          organizeService,
+          explorerIconService,
+          favoriteService,
+          tagService,
+          options,
+          setImportProgress
+        );
 
-        setImportResult({ docIds, entryId, isWorkspaceFile, rootFolderId });
+        setImportResult({
+          docIds,
+          entryId,
+          isWorkspaceFile,
+          rootFolderId,
+          importedWorkspace,
+        });
         setStatus('success');
         track.$.importModal.$.import({
           type,
@@ -1173,10 +1383,21 @@ export const ImportDialog = ({
     }
     void handleImport('googleKeep', googleKeepOptions);
   }, [googleKeepOptions, handleImport, pendingImportType]);
+  const finishImport = useCallback(() => {
+    if (importResult?.importedWorkspace) {
+      handleCreatedWorkspace({ metadata: importResult.importedWorkspace });
+    }
+    if (!importResult) {
+      close();
+      return;
+    }
+    const { importedWorkspace: _workspace, ...result } = importResult;
+    close(result);
+  }, [close, handleCreatedWorkspace, importResult]);
 
   const handleComplete = useCallback(() => {
-    close(importResult || undefined);
-  }, [importResult, close]);
+    finishImport();
+  }, [finishImport]);
 
   const handleRetry = () => {
     setPendingImportType(null);
@@ -1210,7 +1431,7 @@ export const ImportDialog = ({
       open
       onOpenChange={(open: boolean) => {
         if (!open) {
-          close(importResult || undefined);
+          finishImport();
         }
       }}
       width={480}

@@ -59,6 +59,22 @@ export class CopilotContextModel extends BaseModel {
     return row;
   }
 
+  async getAccessInfo(id: string) {
+    return await this.db.aiContext.findFirst({
+      where: { id },
+      select: {
+        id: true,
+        sessionId: true,
+        session: {
+          select: {
+            userId: true,
+            workspaceId: true,
+          },
+        },
+      },
+    });
+  }
+
   async getConfig(id: string) {
     const row = await this.get(id);
     if (row) {

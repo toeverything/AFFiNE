@@ -1,22 +1,19 @@
-import type { GetWorkspacePageByIdQuery, PublicDocMode } from '@affine/graphql';
-import {
-  catchErrorInto,
-  effect,
-  Entity,
-  fromPromise,
-  LiveData,
-  mapInto,
-  onComplete,
-  onStart,
-  smartRetry,
-} from '@toeverything/infra';
-import { switchMap } from 'rxjs';
+import type { DocRole, PublicDocMode } from '@affine/graphql';
+import type {
+  DocShareStateSnapshot,
+  RealtimeTopicEventOf,
+} from '@affine/realtime';
+import { Entity, LiveData } from '@toeverything/infra';
 
+import { RealtimeLiveQuery } from '../../cloud/realtime/live-query';
 import type { DocService } from '../../doc';
 import type { WorkspaceService } from '../../workspace';
 import type { ShareStore } from '../stores/share';
 
-type ShareInfoType = GetWorkspacePageByIdQuery['workspace']['doc'];
+type ShareInfoType = Omit<DocShareStateSnapshot, 'defaultRole' | 'mode'> & {
+  defaultRole: DocRole;
+  mode: PublicDocMode;
+};
 
 export class ShareInfo extends Entity {
   info$ = new LiveData<ShareInfoType | undefined | null>(null);
@@ -32,25 +29,30 @@ export class ShareInfo extends Entity {
     private readonly store: ShareStore
   ) {
     super();
+    this.liveQuery.start();
   }
 
-  revalidate = effect(
-    switchMap(() => {
-      return fromPromise(signal =>
-        this.store.getShareInfoByDocId(
-          this.workspaceService.workspace.id,
-          this.docService.doc.id,
-          signal
-        )
-      ).pipe(
-        smartRetry(),
-        mapInto(this.info$),
-        catchErrorInto(this.error$),
-        onStart(() => this.isRevalidating$.next(true)),
-        onComplete(() => this.isRevalidating$.next(false))
-      );
-    })
-  );
+  private readonly liveQuery = new RealtimeLiveQuery<
+    ShareInfoType | undefined,
+    RealtimeTopicEventOf<'doc.share-state.changed'>
+  >({
+    request: signal => this.requestShareInfo(signal),
+    subscribe: () =>
+      this.store.subscribeShareState(
+        this.workspaceService.workspace.id,
+        this.docService.doc.id
+      ),
+    applySnapshot: info => {
+      this.error$.next(null);
+      this.info$.next(info);
+    },
+    applyEvent: () => 'revalidate',
+    onError: error => this.error$.setValue(error),
+  });
+
+  revalidate = () => {
+    this.liveQuery.revalidate();
+  };
 
   waitForRevalidation(signal?: AbortSignal) {
     this.revalidate();
@@ -76,5 +78,22 @@ export class ShareInfo extends Entity {
       this.docService.doc.id
     );
     await this.waitForRevalidation();
+  }
+
+  override dispose(): void {
+    this.liveQuery.dispose();
+  }
+
+  private async requestShareInfo(signal: AbortSignal) {
+    this.isRevalidating$.next(true);
+    try {
+      return await this.store.getShareInfoByDocId(
+        this.workspaceService.workspace.id,
+        this.docService.doc.id,
+        signal
+      );
+    } finally {
+      this.isRevalidating$.next(false);
+    }
   }
 }

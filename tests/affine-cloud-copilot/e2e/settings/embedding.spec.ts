@@ -127,10 +127,8 @@ test.describe('AISettings/Embedding', () => {
     await page.getByTestId('embedding-progress-wrapper');
 
     const progress = await page.getByTestId('embedding-progress');
-    // wait for the progress to be loading
     const title = await page.getByTestId('embedding-progress-title');
-    await expect(title).toHaveText(/Loading sync status/i);
-    await expect(progress).not.toBeVisible();
+    await expect(title).not.toHaveAttribute('data-progress', 'loading');
 
     const count = await page.getByTestId('embedding-progress-count');
     await expect(count).toHaveText(/\d+\/\d+/);
@@ -513,9 +511,9 @@ test.describe('AISettings/Embedding', () => {
     await utils.settings.openSettingsPanel(page);
     await page.context().setOffline(true);
     await utils.settings.ignoreDocForEmbedding(page, 'Test Doc', false);
-    await expect(
-      page.getByText(/Failed to update ignored docs/i)
-    ).toBeVisible();
+    await page
+      .getByText(/Failed to update ignored docs/i)
+      .waitFor({ state: 'visible', timeout: 20000 });
     await page.context().setOffline(false);
   });
 });

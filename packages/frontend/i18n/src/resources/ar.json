@@ -1325,7 +1325,6 @@
   "com.affine.payment.member.team.invite.invite-link": "رابط الدعوة",
   "com.affine.payment.member.team.invite.link-expiration": "انتهاء صلاحية الرابط",
   "com.affine.payment.member.team.invite.notify.fail-message": "تمت دعوة عناوين البريد الإلكتروني هذه بالفعل:",
-  "com.affine.payment.member.team.invite.notify.title": "تم إرسال الدعوة،{{successCount}} ناجحة، {{failedCount}} فاشلة",
   "com.affine.payment.member.team.invite.send-invites": "إرسال الدعوات",
   "com.affine.payment.member.team.invite.title": "دعوة أعضاء الفريق",
   "com.affine.payment.member.team.remove": "إزالة العضو",

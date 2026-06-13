@@ -11,13 +11,12 @@ const PROVIDER_ID_PATTERN = /^[a-zA-Z0-9-_]+$/;
 
 const LEGACY_PROVIDER_ORDER: CopilotProviderType[] = [
   CopilotProviderType.OpenAI,
+  CopilotProviderType.CloudflareWorkersAi,
   CopilotProviderType.FAL,
   CopilotProviderType.Gemini,
   CopilotProviderType.GeminiVertex,
-  CopilotProviderType.Perplexity,
   CopilotProviderType.Anthropic,
   CopilotProviderType.AnthropicVertex,
-  CopilotProviderType.Morph,
 ];
 
 const LEGACY_PROVIDER_PRIORITY = LEGACY_PROVIDER_ORDER.reduce(
@@ -236,6 +235,16 @@ export function resolveModel({
       candidateProviderIds: isAllowed(prefixed.providerId)
         ? [prefixed.providerId]
         : [],
+    };
+  }
+
+  if (modelId) {
+    return {
+      rawModelId: modelId,
+      modelId,
+      candidateProviderIds: registry.order.filter(providerId =>
+        isAllowed(providerId)
+      ),
     };
   }
 

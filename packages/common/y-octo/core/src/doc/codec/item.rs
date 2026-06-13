@@ -37,6 +37,8 @@ impl PartialEq for Item {
   }
 }
 
+impl Eq for Item {}
+
 impl std::fmt::Debug for Item {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     let mut dbg = f.debug_struct("Item");

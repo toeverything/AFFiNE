@@ -255,9 +255,7 @@ export class LiveData<T = unknown>
 
   constructor(
     initialValue: T,
-    upstream:
-      | ((upstream: Observable<LiveDataOperation>) => Observable<T>)
-      | undefined = undefined
+    upstream?: (upstream: Observable<LiveDataOperation>) => Observable<T>
   ) {
     super();
     this.raw$ = new BehaviorSubject(initialValue);
@@ -516,7 +514,7 @@ export class LiveData<T = unknown>
       const subscription = this.subscribe(v => {
         if (predicate(v)) {
           resolve(v as any);
-          // eslint-disable-next-line @typescript-eslint/no-floating-promises
+          // oxlint-disable-next-line @typescript-eslint/no-floating-promises
           Promise.resolve().then(() => {
             subscription.unsubscribe();
           });
@@ -554,7 +552,7 @@ export class LiveData<T = unknown>
       throw this.poisonedError;
     }
     this.ops$.next('watch');
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises -- never throw
+    // oxlint-disable-next-line @typescript-eslint/no-floating-promises -- never throw
     Promise.resolve().then(() => {
       this.ops$.next('unwatch');
     });

@@ -1,5 +1,4 @@
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
-import { ModuleRef } from '@nestjs/core';
 
 import {
   Cache,
@@ -15,8 +14,12 @@ import {
   ContextFile,
   Models,
 } from '../../../models';
-import { getEmbeddingClient } from '../embedding/client';
-import type { EmbeddingClient } from '../embedding/types';
+import { CopilotEmbeddingClientService } from '../embedding/client';
+import type {
+  EmbeddingCallOptions,
+  EmbeddingClient,
+  EmbeddingRouteContext,
+} from '../embedding/types';
 import { ContextSession } from './session';
 
 const CONTEXT_SESSION_KEY = 'context-session';
@@ -27,7 +30,7 @@ export class CopilotContextService implements OnApplicationBootstrap {
   private client: EmbeddingClient | undefined;
 
   constructor(
-    private readonly moduleRef: ModuleRef,
+    private readonly embeddingClients: CopilotEmbeddingClientService,
     private readonly cache: Cache,
     private readonly models: Models
   ) {}
@@ -43,7 +46,7 @@ export class CopilotContextService implements OnApplicationBootstrap {
   }
 
   private async setup() {
-    this.client = await getEmbeddingClient(this.moduleRef);
+    this.client = await this.embeddingClients.refresh();
   }
 
   async onApplicationBootstrap() {
@@ -59,8 +62,16 @@ export class CopilotContextService implements OnApplicationBootstrap {
   }
 
   // public this client to allow overriding in tests
-  get embeddingClient() {
-    return this.client as EmbeddingClient;
+  get embeddingClient(): EmbeddingClient | undefined {
+    return this.client ?? this.embeddingClients.getClient();
+  }
+
+  private embeddingOptions(
+    workspaceId: string,
+    signal?: AbortSignal,
+    routeContext: EmbeddingRouteContext = {}
+  ): EmbeddingCallOptions {
+    return { workspaceId, signal, ...routeContext, featureKind: 'embedding' };
   }
 
   private async saveConfig(
@@ -141,6 +152,26 @@ export class CopilotContextService implements OnApplicationBootstrap {
     throw new CopilotInvalidContext({ contextId: id });
   }
 
+  async getOwnedContext(
+    userId: string,
+    contextId: string,
+    options: { workspaceId?: string; sessionId?: string } = {}
+  ): Promise<ContextSession> {
+    const accessInfo =
+      await this.models.copilotContext.getAccessInfo(contextId);
+    if (
+      !accessInfo ||
+      accessInfo.session.userId !== userId ||
+      (options.workspaceId &&
+        accessInfo.session.workspaceId !== options.workspaceId) ||
+      (options.sessionId && accessInfo.sessionId !== options.sessionId)
+    ) {
+      throw new CopilotInvalidContext({ contextId });
+    }
+
+    return await this.get(contextId);
+  }
+
   async getBySessionId(sessionId: string): Promise<ContextSession | null> {
     const existsContext =
       await this.models.copilotContext.getBySessionId(sessionId);
@@ -153,10 +184,13 @@ export class CopilotContextService implements OnApplicationBootstrap {
     content: string,
     topK: number = 5,
     signal?: AbortSignal,
-    threshold: number = 0.5
+    threshold: number = 0.5,
+    routeContext?: EmbeddingRouteContext
   ) {
-    if (!this.embeddingClient) return [];
-    const embedding = await this.embeddingClient.getEmbedding(content, signal);
+    const client = this.embeddingClient;
+    if (!client) return [];
+    const options = this.embeddingOptions(workspaceId, signal, routeContext);
+    const embedding = await client.getEmbedding(content, options);
     if (!embedding) return [];
 
     const blobChunks = await this.models.copilotWorkspace.matchBlobEmbedding(
@@ -167,7 +201,7 @@ export class CopilotContextService implements OnApplicationBootstrap {
     );
     if (!blobChunks.length) return [];
 
-    return await this.embeddingClient.reRank(content, blobChunks, topK, signal);
+    return await client.reRank(content, blobChunks, topK, options);
   }
 
   async matchWorkspaceFiles(
@@ -175,10 +209,13 @@ export class CopilotContextService implements OnApplicationBootstrap {
     content: string,
     topK: number = 5,
     signal?: AbortSignal,
-    threshold: number = 0.5
+    threshold: number = 0.5,
+    routeContext?: EmbeddingRouteContext
   ) {
-    if (!this.embeddingClient) return [];
-    const embedding = await this.embeddingClient.getEmbedding(content, signal);
+    const client = this.embeddingClient;
+    if (!client) return [];
+    const options = this.embeddingOptions(workspaceId, signal, routeContext);
+    const embedding = await client.getEmbedding(content, options);
     if (!embedding) return [];
 
     const fileChunks = await this.models.copilotWorkspace.matchFileEmbedding(
@@ -189,7 +226,7 @@ export class CopilotContextService implements OnApplicationBootstrap {
     );
     if (!fileChunks.length) return [];
 
-    return await this.embeddingClient.reRank(content, fileChunks, topK, signal);
+    return await client.reRank(content, fileChunks, topK, options);
   }
 
   async matchWorkspaceDocs(
@@ -197,10 +234,13 @@ export class CopilotContextService implements OnApplicationBootstrap {
     content: string,
     topK: number = 5,
     signal?: AbortSignal,
-    threshold: number = 0.5
+    threshold: number = 0.5,
+    routeContext?: EmbeddingRouteContext
   ) {
-    if (!this.embeddingClient) return [];
-    const embedding = await this.embeddingClient.getEmbedding(content, signal);
+    const client = this.embeddingClient;
+    if (!client) return [];
+    const options = this.embeddingOptions(workspaceId, signal, routeContext);
+    const embedding = await client.getEmbedding(content, options);
     if (!embedding) return [];
 
     const workspaceChunks =
@@ -212,12 +252,7 @@ export class CopilotContextService implements OnApplicationBootstrap {
       );
     if (!workspaceChunks.length) return [];
 
-    return await this.embeddingClient.reRank(
-      content,
-      workspaceChunks,
-      topK,
-      signal
-    );
+    return await client.reRank(content, workspaceChunks, topK, options);
   }
 
   async matchWorkspaceAll(
@@ -227,10 +262,13 @@ export class CopilotContextService implements OnApplicationBootstrap {
     signal?: AbortSignal,
     threshold: number = 0.8,
     docIds?: string[],
-    scopedThreshold: number = 0.85
+    scopedThreshold: number = 0.85,
+    routeContext?: EmbeddingRouteContext
   ) {
-    if (!this.embeddingClient) return [];
-    const embedding = await this.embeddingClient.getEmbedding(content, signal);
+    const client = this.embeddingClient;
+    if (!client) return [];
+    const options = this.embeddingOptions(workspaceId, signal, routeContext);
+    const embedding = await client.getEmbedding(content, options);
     if (!embedding) return [];
 
     const [fileChunks, blobChunks, workspaceChunks, scopedWorkspaceChunks] =
@@ -273,7 +311,7 @@ export class CopilotContextService implements OnApplicationBootstrap {
       return [];
     }
 
-    return await this.embeddingClient.reRank(
+    return await client.reRank(
       content,
       [
         ...fileChunks,
@@ -282,7 +320,7 @@ export class CopilotContextService implements OnApplicationBootstrap {
         ...(scopedWorkspaceChunks || []),
       ],
       topK,
-      signal
+      options
     );
   }
 
@@ -298,12 +336,25 @@ export class CopilotContextService implements OnApplicationBootstrap {
     }));
   }
 
+  @OnEvent('workspace.doc.embed.finished')
+  async onDocEmbedFinished({
+    contextId,
+    docId,
+  }: Events['workspace.doc.embed.finished']) {
+    const context = await this.get(contextId);
+    await context.saveDocRecord(docId, doc => ({
+      ...(doc as ContextDoc),
+      status: ContextEmbedStatus.finished,
+    }));
+  }
+
   @OnEvent('workspace.file.embed.finished')
   async onFileEmbedFinish({
     contextId,
     fileId,
     chunkSize,
   }: Events['workspace.file.embed.finished']) {
+    if (!contextId) return;
     const context = await this.get(contextId);
     await context.saveFileRecord(fileId, file => ({
       ...(file as ContextFile),
@@ -318,6 +369,7 @@ export class CopilotContextService implements OnApplicationBootstrap {
     fileId,
     error,
   }: Events['workspace.file.embed.failed']) {
+    if (!contextId) return;
     const context = await this.get(contextId);
     await context.saveFileRecord(fileId, file => ({
       ...(file as ContextFile),

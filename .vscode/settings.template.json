@@ -32,6 +32,8 @@
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "vitest.include": ["packages/**/*.spec.ts", "packages/**/*.spec.tsx"],
+  "eslint.runtime": "node",
+  "eslint.execArgv": ["--max_old_space_size=16384"],
   "rust-analyzer.check.extraEnv": {
     "DATABASE_URL": "sqlite:affine.db"
   },

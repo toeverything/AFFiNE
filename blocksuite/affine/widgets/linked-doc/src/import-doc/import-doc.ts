@@ -7,6 +7,7 @@ import {
   NotionIcon,
 } from '@blocksuite/affine-components/icons';
 import {
+  openDirectory,
   openFilesWith,
   openSingleFileWith,
 } from '@blocksuite/affine-shared/utils';
@@ -18,11 +19,16 @@ import { query, state } from 'lit/decorators.js';
 import { HtmlTransformer } from '../transformers/html.js';
 import { MarkdownTransformer } from '../transformers/markdown.js';
 import { NotionHtmlTransformer } from '../transformers/notion-html.js';
+import { ObsidianTransformer } from '../transformers/obsidian.js';
 import { styles } from './styles.js';
 
 export type OnSuccessHandler = (
   pageIds: string[],
-  options: { isWorkspaceFile: boolean; importedCount: number }
+  options: {
+    isWorkspaceFile: boolean;
+    importedCount: number;
+    docEmojis?: Map<string, string>;
+  }
 ) => void;
 
 export type OnFailHandler = (message: string) => void;
@@ -140,6 +146,29 @@ export class ImportDoc extends WithDisposable(LitElement) {
     });
   }
 
+  private async _importObsidian() {
+    const files = await openDirectory();
+    if (!files || files.length === 0) return;
+    const needLoading =
+      files.reduce((acc, f) => acc + f.size, 0) > SHOW_LOADING_SIZE;
+    if (needLoading) {
+      this.hidden = false;
+      this._loading = true;
+    } else {
+      this.abortController.abort();
+    }
+    const { docIds, docEmojis } = await ObsidianTransformer.importObsidianVault(
+      {
+        collection: this.collection,
+        schema: this.schema,
+        importedFiles: files,
+        extensions: this.extensions,
+      }
+    );
+    needLoading && this.abortController.abort();
+    this._onImportSuccess(docIds, { docEmojis });
+  }
+
   private _onCloseClick(event: MouseEvent) {
     event.stopPropagation();
     this.abortController.abort();
@@ -151,15 +180,21 @@ export class ImportDoc extends WithDisposable(LitElement) {
 
   private _onImportSuccess(
     pageIds: string[],
-    options: { isWorkspaceFile?: boolean; importedCount?: number } = {}
+    options: {
+      isWorkspaceFile?: boolean;
+      importedCount?: number;
+      docEmojis?: Map<string, string>;
+    } = {}
   ) {
     const {
       isWorkspaceFile = false,
       importedCount: pagesImportedCount = pageIds.length,
+      docEmojis,
     } = options;
     this.onSuccess?.(pageIds, {
       isWorkspaceFile,
       importedCount: pagesImportedCount,
+      docEmojis,
     });
   }
 
@@ -257,6 +292,13 @@ export class ImportDoc extends WithDisposable(LitElement) {
                 Learn how to Import your Notion pages into AFFiNE.
               </affine-tooltip>
             </div>
+          </icon-button>
+          <icon-button
+            class="button-item"
+            text="Obsidian"
+            @click="${this._importObsidian}"
+          >
+            ${ExportToMarkdownIcon}
           </icon-button>
           <icon-button class="button-item" text="Coming soon..." disabled>
             ${NewIcon}

@@ -39,10 +39,7 @@ export class CodeBlockHighlighter extends LifeCycleWatcher {
   private readonly _loadTheme = async (
     highlighter: HighlighterCore
   ): Promise<void> => {
-    // It is possible that by the time the highlighter is ready all instances
-    // have already been unmounted. In that case there is no need to load
-    // themes or update state.
-    if (CodeBlockHighlighter._refCount === 0) {
+    if (!CodeBlockHighlighter._isHighlighterInUse(highlighter)) {
       return;
     }
 
@@ -51,7 +48,17 @@ export class CodeBlockHighlighter extends LifeCycleWatcher {
     const lightTheme = config?.theme?.light ?? CODE_BLOCK_DEFAULT_LIGHT_THEME;
     this._darkThemeKey = (await normalizeGetter(darkTheme)).name;
     this._lightThemeKey = (await normalizeGetter(lightTheme)).name;
+
+    if (!CodeBlockHighlighter._isHighlighterInUse(highlighter)) {
+      return;
+    }
+
     await highlighter.loadTheme(darkTheme, lightTheme);
+
+    if (!CodeBlockHighlighter._isHighlighterInUse(highlighter)) {
+      return;
+    }
+
     this.highlighter$.value = highlighter;
   };
 
@@ -83,30 +90,18 @@ export class CodeBlockHighlighter extends LifeCycleWatcher {
   }
 
   override unmounted(): void {
-    CodeBlockHighlighter._refCount--;
+    CodeBlockHighlighter._refCount = Math.max(
+      0,
+      CodeBlockHighlighter._refCount - 1
+    );
+    this.highlighter$.value = null;
+  }
 
-    // Dispose the shared highlighter **after** any in-flight creation finishes.
-    if (CodeBlockHighlighter._refCount !== 0) {
-      return;
-    }
-
-    const doDispose = (highlighter: HighlighterCore | null) => {
-      if (highlighter) {
-        highlighter.dispose();
-      }
-      CodeBlockHighlighter._sharedHighlighter = null;
-      CodeBlockHighlighter._highlighterPromise = null;
-    };
-
-    if (CodeBlockHighlighter._sharedHighlighter) {
-      // Highlighter already created – dispose immediately.
-      doDispose(CodeBlockHighlighter._sharedHighlighter);
-    } else if (CodeBlockHighlighter._highlighterPromise) {
-      // Highlighter still being created – wait for it, then dispose.
-      CodeBlockHighlighter._highlighterPromise
-        .then(doDispose)
-        .catch(console.error);
-    }
+  private static _isHighlighterInUse(highlighter: HighlighterCore) {
+    return (
+      CodeBlockHighlighter._refCount > 0 &&
+      CodeBlockHighlighter._sharedHighlighter === highlighter
+    );
   }
 }
 

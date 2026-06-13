@@ -20,6 +20,9 @@ public class ReadAllNotificationsMutation: GraphQLMutation {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("readAllNotifications", Bool.self),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      ReadAllNotificationsMutation.Data.self
+    ] }
 
     /// mark all notifications as read
     public var readAllNotifications: Bool { __data["readAllNotifications"] }

@@ -1,18 +1,19 @@
 import { Args, Parent, ResolveField, Resolver } from '@nestjs/graphql';
+import { Prisma, PrismaClient } from '@prisma/client';
 
 import { CurrentUser } from '../../core/auth';
-import { AccessController } from '../../core/permission';
+import { PermissionAccess, PermissionService } from '../../core/permission';
+import { QuotaStateService } from '../../core/quota/state';
 import { UserType } from '../../core/user';
 import { WorkspaceType } from '../../core/workspaces';
-import { Models } from '../../models';
-import { AggregateBucket } from './providers';
-import { IndexerService, SearchNodeWithMeta } from './service';
+import { IndexerService } from './service';
 import {
   AggregateInput,
   AggregateResultObjectType,
   SearchDocObjectType,
   SearchDocsInput,
   SearchInput,
+  SearchQuery,
   SearchQueryOccur,
   SearchQueryType,
   SearchResultObjectType,
@@ -22,8 +23,10 @@ import {
 export class IndexerResolver {
   constructor(
     private readonly indexer: IndexerService,
-    private readonly ac: AccessController,
-    private readonly models: Models
+    private readonly ac: PermissionAccess,
+    private readonly db: PrismaClient,
+    private readonly permission: PermissionService,
+    private readonly quotaState: QuotaStateService
   ) {}
 
   @ResolveField(() => SearchResultObjectType, {
@@ -37,18 +40,22 @@ export class IndexerResolver {
     // currentUser can read the workspace
     await this.ac.user(me.id).workspace(workspace.id).assert('Workspace.Read');
     this.#addWorkspaceFilter(workspace, input);
+    if (!(await this.#addReadableDocFilter(workspace, me, input))) {
+      return {
+        nodes: [],
+        pagination: {
+          count: 0,
+          hasMore: false,
+        },
+      };
+    }
 
     const result = await this.indexer.search(input);
-    const nodes = await this.#filterUserReadableDocs(
-      workspace,
-      me,
-      result.nodes
-    );
     return {
-      nodes,
+      nodes: result.nodes,
       pagination: {
         count: result.total,
-        hasMore: nodes.length > 0,
+        hasMore: result.nodes.length > 0,
         nextCursor: result.nextCursor,
       },
     };
@@ -65,24 +72,22 @@ export class IndexerResolver {
     // currentUser can read the workspace
     await this.ac.user(me.id).workspace(workspace.id).assert('Workspace.Read');
     this.#addWorkspaceFilter(workspace, input);
+    if (!(await this.#addReadableDocFilter(workspace, me, input))) {
+      return {
+        buckets: [],
+        pagination: {
+          count: 0,
+          hasMore: false,
+        },
+      };
+    }
 
     const result = await this.indexer.aggregate(input);
-    const needs: AggregateBucket[] = [];
-    for (const bucket of result.buckets) {
-      bucket.hits.nodes = await this.#filterUserReadableDocs(
-        workspace,
-        me,
-        bucket.hits.nodes as SearchNodeWithMeta[]
-      );
-      if (bucket.hits.nodes.length > 0) {
-        needs.push(bucket);
-      }
-    }
     return {
-      buckets: needs,
+      buckets: result.buckets,
       pagination: {
         count: result.total,
-        hasMore: needs.length > 0,
+        hasMore: result.buckets.length > 0,
         nextCursor: result.nextCursor,
       },
     };
@@ -96,19 +101,17 @@ export class IndexerResolver {
     @Parent() workspace: WorkspaceType,
     @Args('input') input: SearchDocsInput
   ): Promise<SearchDocObjectType[]> {
+    const readableDocIds = await this.#readableDocIdsForSearch(workspace, me);
     const docs = await this.indexer.searchDocsByKeyword(
       workspace.id,
       input.keyword,
       {
         limit: input.limit,
+        docIds: readableDocIds ?? undefined,
       }
     );
 
-    const needs = await this.ac
-      .user(me.id)
-      .workspace(workspace.id)
-      .docs(docs, 'Doc.Read');
-    return needs;
+    return docs;
   }
 
   #addWorkspaceFilter(
@@ -130,36 +133,84 @@ export class IndexerResolver {
     };
   }
 
-  /**
-   * filter user readable docs on team workspace
-   */
-  async #filterUserReadableDocs(
+  async #addReadableDocFilter(
     workspace: WorkspaceType,
     user: UserType,
-    nodes: SearchNodeWithMeta[]
+    input: SearchInput | AggregateInput
   ) {
-    if (nodes.length === 0) {
-      return nodes;
+    const docIds = await this.#readableDocIdsForSearch(workspace, user);
+    if (docIds === null) {
+      return true;
     }
 
-    const isTeamWorkspace = await this.models.workspaceFeature.has(
-      workspace.id,
-      'team_plan_v1'
+    if (docIds.length === 0) {
+      return false;
+    }
+
+    input.query = {
+      type: SearchQueryType.boolean,
+      occur: SearchQueryOccur.must,
+      queries: [input.query, this.#docIdFilterQuery(docIds)],
+    };
+    return true;
+  }
+
+  async #readableDocIdsForSearch(workspace: WorkspaceType, user: UserType) {
+    const state = await this.quotaState.reconcileWorkspaceQuotaState(
+      workspace.id
     );
+    const isTeamWorkspace =
+      state.plan === 'team' || state.plan === 'selfhost_team';
     if (!isTeamWorkspace) {
-      return nodes;
+      return null;
     }
 
-    const needs = await this.ac
-      .user(user.id)
-      .workspace(workspace.id)
-      .docs(
-        nodes.map(node => ({
-          node,
-          docId: node._source.docId,
-        })),
-        'Doc.Read'
-      );
-    return needs.map(node => node.node);
+    return await this.#listReadableDocIds(workspace, user);
+  }
+
+  #docIdFilterQuery(docIds: string[]): SearchQuery {
+    return {
+      type: SearchQueryType.boolean,
+      occur: SearchQueryOccur.should,
+      queries: docIds.map(docId => ({
+        type: SearchQueryType.match,
+        field: 'docId',
+        match: docId,
+      })),
+    };
+  }
+
+  async #listReadableDocIds(workspace: WorkspaceType, user: UserType) {
+    const input = {
+      userId: user.id,
+      workspaceId: workspace.id,
+      action: 'Doc.Read',
+      docIdColumn: Prisma.raw('candidate_docs.doc_id'),
+    } as const;
+    const predicate = this.permission.docReadableSqlPredicate(input);
+    const fallbackPredicate =
+      this.permission.fallbackDocReadableSqlPredicate(input);
+    const query = (predicate: Prisma.Sql) =>
+      this.db.$queryRaw<{ docId: string }[]>`
+        WITH candidate_docs AS (
+          SELECT "workspace_pages"."page_id" AS doc_id
+          FROM "workspace_pages"
+          WHERE "workspace_pages"."workspace_id" = ${workspace.id}
+          UNION
+          SELECT "snapshots"."guid" AS doc_id
+          FROM "snapshots"
+          WHERE "snapshots"."workspace_id" = ${workspace.id}
+        )
+        SELECT candidate_docs.doc_id AS "docId"
+        FROM candidate_docs
+        WHERE ${predicate}
+      `;
+    const rows = await query(predicate).catch(error => {
+      if (!fallbackPredicate) {
+        throw error;
+      }
+      return query(fallbackPredicate);
+    });
+    return rows.map(row => row.docId);
   }
 }

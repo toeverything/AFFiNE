@@ -7,7 +7,7 @@ import { app, e2e, Mockers } from '../test';
 e2e('user(email) should return null without auth', async t => {
   const user = await app.create(Mockers.User);
 
-  await app.logout();
+  app.clearAuth();
 
   const res = await app.gql({
     query: getUserQuery,
@@ -18,7 +18,7 @@ e2e('user(email) should return null without auth', async t => {
 });
 
 e2e('user(email) should return null outside workspace scope', async t => {
-  await app.logout();
+  app.clearAuth();
   const me = await app.signup();
   const other = await app.create(Mockers.User);
 
@@ -43,7 +43,7 @@ e2e('user(email) should return null outside workspace scope', async t => {
 });
 
 e2e('user(email) should return user within workspace scope', async t => {
-  await app.logout();
+  app.clearAuth();
   const me = await app.signup();
   const other = await app.create(Mockers.User);
   const ws = await app.create(Mockers.Workspace, { owner: me });
@@ -67,7 +67,7 @@ e2e('user(email) should return user within workspace scope', async t => {
 });
 
 e2e('user(email) should be rate limited', async t => {
-  await app.logout();
+  app.clearAuth();
   const me = await app.signup();
 
   const stub = Sinon.stub(app.get(ThrottlerStorage), 'increment').resolves({

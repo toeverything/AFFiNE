@@ -1013,7 +1013,6 @@
   "com.affine.payment.member.team.invite.generate": "Generera",
   "com.affine.payment.member.team.invite.copy": "Kopiera",
   "com.affine.payment.member.team.invite.done": "Klar",
-  "com.affine.payment.member.team.invite.notify.title": "Inbjudan skickad,{{successCount}} lyckades, {{failedCount}} misslyckades",
   "com.affine.payment.member.team.invite.notify.fail-message": "Dessa e-postadresser har redan blivit inbjudna:",
   "com.affine.payment.member.team.revoke": "Återkalla inbjudan",
   "com.affine.payment.member.team.approve": "Godkänn",

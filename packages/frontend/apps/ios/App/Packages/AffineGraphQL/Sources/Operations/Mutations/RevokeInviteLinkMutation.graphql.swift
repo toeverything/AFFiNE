@@ -26,6 +26,9 @@ public class RevokeInviteLinkMutation: GraphQLMutation {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("revokeInviteLink", Bool.self, arguments: ["workspaceId": .variable("workspaceId")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      RevokeInviteLinkMutation.Data.self
+    ] }
 
     public var revokeInviteLink: Bool { __data["revokeInviteLink"] }
   }

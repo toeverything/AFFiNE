@@ -26,6 +26,9 @@ public class AddContextDocMutation: GraphQLMutation {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("addContextDoc", AddContextDoc.self, arguments: ["options": .variable("options")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      AddContextDocMutation.Data.self
+    ] }
 
     /// add a doc to context
     public var addContextDoc: AddContextDoc { __data["addContextDoc"] }
@@ -43,6 +46,9 @@ public class AddContextDocMutation: GraphQLMutation {
         .field("id", AffineGraphQL.ID.self),
         .field("createdAt", AffineGraphQL.SafeInt.self),
         .field("status", GraphQLEnum<AffineGraphQL.ContextEmbedStatus>?.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        AddContextDocMutation.Data.AddContextDoc.self
       ] }
 
       public var id: AffineGraphQL.ID { __data["id"] }

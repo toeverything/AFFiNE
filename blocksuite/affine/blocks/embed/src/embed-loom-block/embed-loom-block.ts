@@ -89,14 +89,14 @@ export class EmbedLoomBlockComponent extends EmbedBlockComponent<
   }
 
   override renderBlock() {
-    const { image, title = 'Loom', description, videoId } = this.model.props;
+    const { image, title, description, videoId } = this.model.props;
 
     const loading = this.loading;
     const theme = this.std.get(ThemeProvider).theme;
     const imageProxyService = this.store.get(ImageProxyService);
     const { EmbedCardBannerIcon } = getEmbedCardIcons(theme);
     const titleIcon = loading ? LoadingIcon() : LoomIcon;
-    const titleText = loading ? 'Loading...' : title;
+    const titleText = loading ? 'Loading...' : title || 'Loom';
     const descriptionText = loading ? '' : description;
     const bannerImage =
       !loading && image

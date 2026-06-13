@@ -4,6 +4,7 @@ import type {
   ConnectorElementModel,
   GroupElementModel,
 } from '@blocksuite/affine/model';
+import { serializeXYWH } from '@blocksuite/global/gfx';
 import { beforeEach, describe, expect, test } from 'vitest';
 
 import { wait } from '../utils/common.js';
@@ -137,6 +138,29 @@ describe('group', () => {
     });
 
     expect(group.childIds).toEqual([id]);
+  });
+
+  test('group xywh should update when child xywh changes', () => {
+    const shapeId = model.addElement({
+      type: 'shape',
+      xywh: serializeXYWH(0, 0, 100, 100),
+    });
+    const groupId = model.addElement({
+      type: 'group',
+      children: {
+        [shapeId]: true,
+      },
+    });
+
+    const group = model.getElementById(groupId) as GroupElementModel;
+
+    expect(group.xywh).toBe(serializeXYWH(0, 0, 100, 100));
+
+    model.updateElement(shapeId, {
+      xywh: serializeXYWH(50, 60, 100, 100),
+    });
+
+    expect(group.xywh).toBe(serializeXYWH(50, 60, 100, 100));
   });
 });
 

@@ -20,6 +20,9 @@ public class RefreshSubscriptionMutation: GraphQLMutation {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("refreshUserSubscriptions", [RefreshUserSubscription].self),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      RefreshSubscriptionMutation.Data.self
+    ] }
 
     /// Refresh current user subscriptions and return latest.
     public var refreshUserSubscriptions: [RefreshUserSubscription] { __data["refreshUserSubscriptions"] }
@@ -43,6 +46,9 @@ public class RefreshSubscriptionMutation: GraphQLMutation {
         .field("nextBillAt", AffineGraphQL.DateTime?.self),
         .field("canceledAt", AffineGraphQL.DateTime?.self),
         .field("variant", GraphQLEnum<AffineGraphQL.SubscriptionVariant>?.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        RefreshSubscriptionMutation.Data.RefreshUserSubscription.self
       ] }
 
       @available(*, deprecated, message: "removed")

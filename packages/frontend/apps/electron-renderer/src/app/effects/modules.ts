@@ -1,8 +1,14 @@
+import { notify } from '@affine/component';
 import { configureElectronStateStorageImpls } from '@affine/core/desktop/storage';
 import { configureCommonModules } from '@affine/core/modules';
 import { configureAppTabsHeaderModule } from '@affine/core/modules/app-tabs-header';
 import { configureDesktopBackupModule } from '@affine/core/modules/backup';
-import { ValidatorProvider } from '@affine/core/modules/cloud';
+import {
+  AuthProvider,
+  ServerScope,
+  ServerService,
+  ValidatorProvider,
+} from '@affine/core/modules/cloud';
 import {
   configureDesktopApiModule,
   DesktopApiService,
@@ -19,6 +25,16 @@ import {
 import { configureDesktopWorkbenchModule } from '@affine/core/modules/workbench';
 import { configureBrowserWorkspaceFlavours } from '@affine/core/modules/workspace-engine';
 import { Framework } from '@toeverything/infra';
+
+function notifySessionOnlySignIn(sessionOnly?: boolean) {
+  if (!sessionOnly) return;
+
+  notify.warning({
+    title: 'Sign-in is only valid for this session',
+    message:
+      'Encrypted storage is unavailable, so you will need to sign in again after restarting AFFiNE.',
+  });
+}
 
 export function setupModules() {
   const framework = new Framework();
@@ -60,6 +76,51 @@ export function setupModules() {
           throw new Error('Challenge failed');
         }
         return token;
+      },
+    };
+  });
+  framework.scope(ServerScope).override(AuthProvider, p => {
+    const apis = p.get(DesktopApiService).api;
+    const serverService = p.get(ServerService);
+    const endpoint = serverService.server.baseUrl;
+
+    return {
+      async signInMagicLink(email, token, clientNonce) {
+        const result = await apis.handler.auth.signInMagicLink(
+          endpoint,
+          email,
+          token,
+          clientNonce
+        );
+        notifySessionOnlySignIn(result.sessionOnly);
+      },
+      async signInOauth(code, state, _provider, clientNonce) {
+        const result = await apis.handler.auth.signInOauth(
+          endpoint,
+          code,
+          state,
+          clientNonce
+        );
+        notifySessionOnlySignIn(result.sessionOnly);
+        return result;
+      },
+      async signInPassword(credential) {
+        const result = await apis.handler.auth.signInPassword(
+          endpoint,
+          credential
+        );
+        notifySessionOnlySignIn(result.sessionOnly);
+        return result;
+      },
+      async signInOpenAppSignInCode(code) {
+        const result = await apis.handler.auth.signInOpenAppSignInCode(
+          endpoint,
+          code
+        );
+        notifySessionOnlySignIn(result.sessionOnly);
+      },
+      async signOut() {
+        await apis.handler.auth.signOut(endpoint);
       },
     };
   });

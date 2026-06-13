@@ -20,6 +20,9 @@ public class AppConfigQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("appConfig", AffineGraphQL.JSONObject.self),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      AppConfigQuery.Data.self
+    ] }
 
     /// get the whole app configuration
     public var appConfig: AffineGraphQL.JSONObject { __data["appConfig"] }

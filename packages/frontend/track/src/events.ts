@@ -721,7 +721,7 @@ export type EventArgs = {
   dragStart: { type: string };
   addEmbeddingDoc: {
     type?: 'page' | 'edgeless';
-    control: 'addButton' | 'atMenu';
+    control: 'addButton' | 'atMenu' | 'dragDrop';
     method: 'doc' | 'cur-doc' | 'file' | 'tags' | 'collections' | 'suggestion';
   };
   openAttachmentInFullscreen: AttachmentEventArgs;

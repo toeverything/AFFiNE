@@ -26,7 +26,6 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "importsNotUsedAsValues": "remove",
 
     // Interop Constraints
     "forceConsistentCasingInFileNames": true,
@@ -117,6 +116,7 @@
     { "path": "./blocksuite/affine/widgets/toolbar" },
     { "path": "./blocksuite/affine/widgets/viewport-overlay" },
     { "path": "./blocksuite/docs" },
+    { "path": "./blocksuite/docs-site" },
     { "path": "./blocksuite/framework/global" },
     { "path": "./blocksuite/framework/std" },
     { "path": "./blocksuite/framework/store" },
@@ -132,6 +132,7 @@
     { "path": "./packages/common/infra" },
     { "path": "./packages/common/nbstore" },
     { "path": "./packages/common/reader" },
+    { "path": "./packages/common/realtime" },
     { "path": "./packages/common/s3-compat" },
     { "path": "./packages/frontend/admin" },
     { "path": "./packages/frontend/apps/android" },

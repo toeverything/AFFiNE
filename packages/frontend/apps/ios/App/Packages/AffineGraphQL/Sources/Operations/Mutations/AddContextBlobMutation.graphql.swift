@@ -26,6 +26,9 @@ public class AddContextBlobMutation: GraphQLMutation {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("addContextBlob", AddContextBlob.self, arguments: ["options": .variable("options")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      AddContextBlobMutation.Data.self
+    ] }
 
     /// add a blob to context
     public var addContextBlob: AddContextBlob { __data["addContextBlob"] }
@@ -43,6 +46,9 @@ public class AddContextBlobMutation: GraphQLMutation {
         .field("id", AffineGraphQL.ID.self),
         .field("createdAt", AffineGraphQL.SafeInt.self),
         .field("status", GraphQLEnum<AffineGraphQL.ContextEmbedStatus>?.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        AddContextBlobMutation.Data.AddContextBlob.self
       ] }
 
       public var id: AffineGraphQL.ID { __data["id"] }

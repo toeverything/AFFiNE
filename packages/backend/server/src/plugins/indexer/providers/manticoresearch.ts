@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { omit } from 'lodash-es';
 
-import { InternalServerError } from '../../../base';
+import { InternalServerError, safeFetch } from '../../../base';
 import { SearchProviderType } from '../config';
 import { SearchTable } from '../tables';
 import {
@@ -32,11 +32,30 @@ interface MSSearchResponse {
   scroll: string;
 }
 
+const INDEXER_FETCH_OPTIONS = {
+  timeoutMs: 30_000,
+  maxRedirects: 0,
+  maxBytes: 50 * 1024 * 1024,
+  allowedHeaders: ['authorization', 'content-type'],
+  allowPrivateTargetOrigin: true,
+};
+
 const SupportIndexedAttributes = [
   'flavour',
   'parent_flavour',
   'parent_block_id',
 ];
+
+const SupportExactTermFields = new Set([
+  'workspace_id',
+  'doc_id',
+  'block_id',
+  'flavour',
+  'parent_flavour',
+  'parent_block_id',
+  'created_by_user_id',
+  'updated_by_user_id',
+]);
 
 const ConvertEmptyStringToNullValueFields = new Set([
   'ref_doc_id',
@@ -47,6 +66,11 @@ const ConvertEmptyStringToNullValueFields = new Set([
   'parent_flavour',
 ]);
 
+function boolClauses(value: unknown) {
+  if (value === undefined) return [];
+  return Array.isArray(value) ? value : [value];
+}
+
 @Injectable()
 export class ManticoresearchProvider extends ElasticsearchProvider {
   override type = SearchProviderType.Manticoresearch;
@@ -55,21 +79,18 @@ export class ManticoresearchProvider extends ElasticsearchProvider {
     table: SearchTable,
     mapping: string
   ): Promise<void> {
-    const url = `${this.config.provider.endpoint}/cli`;
-    const response = await fetch(url, {
-      method: 'POST',
-      body: mapping,
-      headers: {
-        'Content-Type': 'text/plain',
-      },
-    });
-    // manticoresearch cli response is not json, so we need to handle it manually
-    const text = (await response.text()).trim();
-    if (!response.ok) {
-      this.logger.error(`failed to create table ${table}, response: ${text}`);
-      throw new InternalServerError();
-    }
+    const text = await this.#executeSQL(mapping);
     this.logger.log(`created table ${table}, response: ${text}`);
+  }
+
+  async dropTable(table: SearchTable): Promise<void> {
+    const text = await this.#executeSQL(`DROP TABLE IF EXISTS ${table}`);
+    this.logger.log(`dropped table ${table}, response: ${text}`);
+  }
+
+  async recreateTable(table: SearchTable, mapping: string): Promise<void> {
+    await this.dropTable(table);
+    await this.createTable(table, mapping);
   }
 
   override async write(
@@ -252,6 +273,12 @@ export class ManticoresearchProvider extends ElasticsearchProvider {
       // 1750389254 => new Date(1750389254 * 1000)
       return new Date(value * 1000);
     }
+    if (value && typeof value === 'string') {
+      const timestamp = Date.parse(value);
+      if (!Number.isNaN(timestamp)) {
+        return new Date(timestamp);
+      }
+    }
     return value;
   }
 
@@ -268,7 +295,9 @@ export class ManticoresearchProvider extends ElasticsearchProvider {
       for (const occur in query.bool) {
         const conditions = query.bool[occur];
         if (Array.isArray(conditions)) {
-          node.bool[occur] = [];
+          const parsedConditions: Record<string, any>[] = [];
+          const existing = node.bool[occur];
+          node.bool[occur] = parsedConditions;
           // { must: [ { term: [Object] }, { bool: [Object] } ] }
           // {
           //   must: [ { term: [Object] }, { term: [Object] }, { bool: [Object] } ]
@@ -276,16 +305,41 @@ export class ManticoresearchProvider extends ElasticsearchProvider {
           for (const item of conditions) {
             this.parseESQuery(item, {
               ...options,
-              parentNodes: node.bool[occur],
+              parentNodes: parsedConditions,
             });
+          }
+          if (existing !== undefined) {
+            node.bool[occur] = [...boolClauses(existing), ...parsedConditions];
+          }
+          if (occur === 'must') {
+            for (let i = node.bool.must.length - 1; i >= 0; i--) {
+              const child = node.bool.must[i];
+              const childBool = child.bool;
+              if (
+                childBool &&
+                Object.keys(childBool).length === 1 &&
+                childBool.must_not !== undefined
+              ) {
+                node.bool.must.splice(i, 1);
+                node.bool.must_not = [
+                  ...boolClauses(node.bool.must_not),
+                  ...boolClauses(childBool.must_not),
+                ];
+              }
+            }
           }
         } else {
           // {
           //   must_not: { term: { doc_id: 'docId' } }
           // }
-          node.bool[occur] = this.parseESQuery(conditions, {
+          const parsed = this.parseESQuery(conditions, {
             termMappingField: options?.termMappingField,
           });
+          if (node.bool[occur] !== undefined) {
+            node.bool[occur] = [...boolClauses(node.bool[occur]), parsed];
+          } else {
+            node.bool[occur] = parsed;
+          }
         }
       }
     } else if (query.term) {
@@ -302,8 +356,10 @@ export class ManticoresearchProvider extends ElasticsearchProvider {
       //     workspace_id: 'workspaceId1'
       //   }
       // }
-      let termField = options?.termMappingField ?? 'term';
       let field = Object.keys(query.term)[0];
+      let termField =
+        options?.termMappingField ??
+        (SupportExactTermFields.has(field) ? 'equals' : 'term');
       let value = query.term[field];
       if (typeof value === 'object' && 'value' in value) {
         if ('boost' in value) {
@@ -431,5 +487,29 @@ export class ManticoresearchProvider extends ElasticsearchProvider {
       return JSON.stringify(value);
     }
     return value;
+  }
+
+  async #executeSQL(sql: string) {
+    const url = `${this.config.provider.endpoint}/cli`;
+    const headers: Record<string, string> = {
+      'Content-Type': 'text/plain',
+    };
+    if (this.config.provider.apiKey) {
+      headers.Authorization = `ApiKey ${this.config.provider.apiKey}`;
+    } else if (this.config.provider.password) {
+      headers.Authorization = `Basic ${Buffer.from(`${this.config.provider.username}:${this.config.provider.password}`).toString('base64')}`;
+    }
+
+    const response = await safeFetch(
+      url,
+      { method: 'POST', body: sql, headers },
+      INDEXER_FETCH_OPTIONS
+    );
+    const text = (await response.text()).trim();
+    if (!response.ok) {
+      this.logger.error(`failed to execute SQL "${sql}", response: ${text}`);
+      throw new InternalServerError();
+    }
+    return text;
   }
 }

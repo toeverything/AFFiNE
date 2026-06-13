@@ -9,6 +9,9 @@ import type {
 } from '@affine/core/modules/cloud';
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import type { CopilotChatHistoryFragment } from '@affine/graphql';
+import track, { type EventArgs } from '@affine/track';
+import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine';
+import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import { unsafeCSSVar, unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import type { EditorHost } from '@blocksuite/affine/std';
@@ -21,18 +24,14 @@ import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
 import { ChatAbortIcon } from '../../_common/icons';
-import { type AIError, AIProvider, type AISendParams } from '../../provider';
+import { AIAppEvents, type AISendParams } from '../../provider';
+import type { AIChatRuntime, AIChatSnapshot } from '../../runtime/chat';
 import { reportResponse } from '../../utils/action-reporter';
 import { readBlobAsURL } from '../../utils/image';
-import { mergeStreamObjects } from '../../utils/stream-objects';
 import type { SearchMenuConfig } from '../ai-chat-add-context';
+import { addFilesToChat } from '../ai-chat-chips/attachment-utils';
 import type { ChatChip, DocDisplayConfig } from '../ai-chat-chips/type';
 import { isDocChip } from '../ai-chat-chips/utils';
-import {
-  type ChatMessage,
-  isChatMessage,
-  StreamObjectSchema,
-} from '../ai-chat-messages';
 import type { AIChatInputContext, AIReasoningConfig } from './type';
 
 function getFirstTwoLines(text: string) {
@@ -257,6 +256,31 @@ export class AIChatInput extends SignalWatcher(
       user-select: none;
     }
 
+    .chat-panel-input[data-drag-over='true'] {
+      --input-border-width: 1px;
+      --input-border-color: var(--affine-v2-layer-insideBorder-primaryBorder);
+      background-color: ${unsafeCSSVarV2('layer/background/hoverOverlay')};
+    }
+
+    .chat-panel-input-drop-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      border-radius: inherit;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 500;
+      color: ${unsafeCSSVarV2('icon/activated')};
+      background-color: color-mix(
+        in srgb,
+        var(--affine-v2-layer-background-primary) 92%,
+        transparent
+      );
+      z-index: 1;
+    }
+
     .chat-panel-send {
       display: flex;
       justify-content: center;
@@ -312,6 +336,12 @@ export class AIChatInput extends SignalWatcher(
   accessor session!: CopilotChatHistoryFragment | null | undefined;
 
   @property({ attribute: false })
+  accessor runtime: AIChatRuntime | null | undefined;
+
+  @property({ attribute: false })
+  accessor runtimeSnapshot: AIChatSnapshot | null | undefined;
+
+  @property({ attribute: false })
   accessor isContextProcessing!: boolean | undefined;
 
   @query('image-preview-grid')
@@ -326,16 +356,21 @@ export class AIChatInput extends SignalWatcher(
   @state()
   accessor focused = false;
 
+  @state()
+  accessor isDragOver = false;
+
+  @query('.chat-panel-input')
+  accessor chatPanelInput!: HTMLDivElement;
+
+  private _dragEnterCounter = 0;
+
+  private _internalDropCleanup: (() => void) | null = null;
+
   @property({ attribute: false })
   accessor chatContextValue!: AIChatInputContext;
 
   @property({ attribute: false })
   accessor chips: ChatChip[] = [];
-
-  @property({ attribute: false })
-  accessor createSession!: () => Promise<
-    CopilotChatHistoryFragment | undefined
-  >;
 
   @property({ attribute: false })
   accessor updateContext!: (context: Partial<AIChatInputContext>) => void;
@@ -402,7 +437,7 @@ export class AIChatInput extends SignalWatcher(
     super.connectedCallback();
 
     this._disposables.add(
-      AIProvider.slots.requestSendWithChat.subscribe(
+      AIAppEvents.requestSendWithChat.subscribe(
         (params: AISendParams | null) => {
           if (!params) {
             return;
@@ -416,13 +451,13 @@ export class AIChatInput extends SignalWatcher(
               this.send(input).catch(console.error);
             }, 0);
           }
-          AIProvider.slots.requestSendWithChat.next(null);
+          AIAppEvents.requestSendWithChat.next(null);
         }
       )
     );
 
     this._disposables.add(
-      AIProvider.slots.requestOpenWithChat.subscribe(params => {
+      AIAppEvents.requestOpenWithChat.subscribe(params => {
         if (!params) return;
 
         const { input, host } = params;
@@ -434,6 +469,18 @@ export class AIChatInput extends SignalWatcher(
         }
       })
     );
+
+    this.updateComplete
+      .then(() => {
+        if (this.isConnected && !this._internalDropCleanup) {
+          this._setupInternalDropTarget();
+        }
+      })
+      .catch(console.error);
+
+    window.addEventListener('dragleave', this._handleWindowDragLeave);
+    window.addEventListener('drop', this._resetDragState);
+    window.addEventListener('dragend', this._resetDragState);
   }
 
   protected override firstUpdated(changedProperties: PropertyValues): void {
@@ -449,8 +496,60 @@ export class AIChatInput extends SignalWatcher(
     }
   }
 
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this._internalDropCleanup?.();
+    this._internalDropCleanup = null;
+    window.removeEventListener('dragleave', this._handleWindowDragLeave);
+    window.removeEventListener('drop', this._resetDragState);
+    window.removeEventListener('dragend', this._resetDragState);
+  }
+
+  private _trackDragDrop(method: EventArgs['addEmbeddingDoc']['method']) {
+    const page = this.independentMode
+      ? track.$.intelligence
+      : track.$.chatPanel;
+    page.chatPanelInput.addEmbeddingDoc({
+      control: 'dragDrop',
+      method,
+    });
+  }
+
+  private _setupInternalDropTarget() {
+    const el = this.chatPanelInput;
+    if (!el) return;
+    const dropTargetCleanup = dropTargetForElements({
+      element: el,
+      canDrop: ({ source }) => {
+        const entity = (source.data as { entity?: { type?: string } }).entity;
+        return entity?.type === 'doc';
+      },
+      onDragEnter: () => {
+        this.isDragOver = true;
+      },
+      onDragLeave: () => {
+        this.isDragOver = false;
+      },
+      onDrop: ({ source }) => {
+        this.isDragOver = false;
+        const entity = (
+          source.data as { entity?: { type?: string; id?: string } }
+        ).entity;
+        if (entity?.type === 'doc' && entity.id) {
+          this.addChip({
+            docId: entity.id,
+            state: 'processing',
+          }).catch(console.error);
+          this._trackDragDrop('doc');
+        }
+      },
+    });
+    this._internalDropCleanup = combine(dropTargetCleanup);
+  }
+
   protected override render() {
-    const { images, status } = this.chatContextValue;
+    const { images } = this.chatContextValue;
+    const status = this.runtimeSnapshot?.status ?? this.chatContextValue.status;
     const hasImages = images.length > 0;
     const maxHeight = hasImages ? 272 + 2 : 200 + 2;
 
@@ -458,11 +557,19 @@ export class AIChatInput extends SignalWatcher(
       class="chat-panel-input"
       data-independent-mode=${this.independentMode}
       data-if-focused=${this.focused}
+      data-drag-over=${this.isDragOver}
       style=${styleMap({
         maxHeight: `${maxHeight}px !important`,
       })}
       @pointerdown=${this._handlePointerDown}
+      @dragenter=${this._handleDragEnter}
+      @dragover=${this._handleDragOver}
+      @dragleave=${this._handleDragLeave}
+      @drop=${this._handleDrop}
     >
+      ${this.isDragOver
+        ? html`<div class="chat-panel-input-drop-overlay">Drop to attach</div>`
+        : nothing}
       ${hasImages
         ? html`
             <image-preview-grid
@@ -554,6 +661,10 @@ export class AIChatInput extends SignalWatcher(
       return true;
     }
 
+    if (this.runtimeSnapshot && !this.runtimeSnapshot.uiPolicy.canSend) {
+      return true;
+    }
+
     if (this.isContextProcessing) {
       return true;
     }
@@ -611,10 +722,72 @@ export class AIChatInput extends SignalWatcher(
     }
   };
 
+  private _dragHasFiles(event: DragEvent) {
+    return Array.from(event.dataTransfer?.types ?? []).includes('Files');
+  }
+
+  private readonly _handleDragEnter = (event: DragEvent) => {
+    if (!this._dragHasFiles(event)) return;
+    event.preventDefault();
+    this._dragEnterCounter += 1;
+    this.isDragOver = true;
+  };
+
+  private readonly _handleDragOver = (event: DragEvent) => {
+    if (!this._dragHasFiles(event)) return;
+    event.preventDefault();
+    if (event.dataTransfer) {
+      event.dataTransfer.dropEffect = 'copy';
+    }
+  };
+
+  private readonly _handleDragLeave = (event: DragEvent) => {
+    if (!this._dragHasFiles(event)) return;
+    this._dragEnterCounter = Math.max(0, this._dragEnterCounter - 1);
+    if (this._dragEnterCounter === 0) {
+      this.isDragOver = false;
+    }
+  };
+
+  private readonly _resetDragState = () => {
+    if (this._dragEnterCounter === 0 && !this.isDragOver) return;
+    this._dragEnterCounter = 0;
+    this.isDragOver = false;
+  };
+
+  // Covers the cases where the drag session ends without dragleave/drop firing
+  // on the input (Esc-cancel, release outside window, drop on another element).
+  private readonly _handleWindowDragLeave = (event: DragEvent) => {
+    if (event.relatedTarget === null) this._resetDragState();
+  };
+
+  private readonly _handleDrop = async (event: DragEvent) => {
+    if (!this._dragHasFiles(event)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    this._dragEnterCounter = 0;
+    this.isDragOver = false;
+
+    const files = Array.from(event.dataTransfer?.files ?? []);
+    if (!files.length) return;
+
+    try {
+      await addFilesToChat(files, {
+        addImages: this.addImages,
+        addChip: this.addChip,
+      });
+      this._trackDragDrop('file');
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   private readonly _handleAbort = () => {
-    this.chatContextValue.abortController?.abort();
-    this.updateContext({ status: 'success' });
-    reportResponse('aborted:stop');
+    if (this.runtime) {
+      this.runtime.dispatch({ type: 'stop' }).catch(console.error);
+      reportResponse('aborted:stop', this.host);
+      return;
+    }
   };
 
   private readonly _toggleReasoning = (extendedThinking: boolean) => {
@@ -647,153 +820,52 @@ export class AIChatInput extends SignalWatcher(
   };
 
   send = async (text: string) => {
-    try {
-      const {
-        status,
-        markdown,
-        images,
-        snapshot,
-        combinedElementsMarkdown,
-        html,
-      } = this.chatContextValue;
+    if (!this.runtime) return;
+    const { markdown, images, snapshot, combinedElementsMarkdown, html } =
+      this.chatContextValue;
+    const userInput = (markdown ? `${markdown}\n` : '') + text;
+    const imageAttachments = await Promise.all(
+      images?.map(image => readBlobAsURL(image))
+    );
+    const contexts = await this._getMatchedContexts();
+    const enableSendDetailedObject =
+      this.affineFeatureFlagService.flags.enable_send_detailed_object_to_ai
+        .value;
+    const userInfo = AIAppEvents.userInfo.value;
 
-      if (status === 'loading' || status === 'transmitting') return;
-      if (!text) return;
-      if (!AIProvider.actions.chat) return;
-
-      const abortController = new AbortController();
-      this.updateContext({
-        images: [],
-        status: 'loading',
-        error: null,
-        quote: '',
-        markdown: '',
-        abortController,
-      });
-
-      const imageAttachments = await Promise.all(
-        images?.map(image => readBlobAsURL(image))
-      );
-      const userInput = (markdown ? `${markdown}\n` : '') + text;
-
-      // optimistic update messages
-      await this._preUpdateMessages(userInput, imageAttachments);
-
-      const sessionId = (await this.createSession())?.sessionId;
-      let contexts = await this._getMatchedContexts();
-      if (abortController.signal.aborted) {
-        return;
-      }
-
-      const enableSendDetailedObject =
-        this.affineFeatureFlagService.flags.enable_send_detailed_object_to_ai
-          .value;
-
-      const modelId = this.aiModelService.modelId.value;
-      const stream = await AIProvider.actions.chat({
-        sessionId,
-        input: userInput,
-        contexts: {
-          ...contexts,
-          selectedSnapshot:
-            snapshot && enableSendDetailedObject ? snapshot : undefined,
-          selectedMarkdown:
-            combinedElementsMarkdown && enableSendDetailedObject
-              ? combinedElementsMarkdown
-              : undefined,
-          html: html || undefined,
-        },
-        docId: this.docId,
-        attachments: images,
-        workspaceId: this.workspaceId,
-        stream: true,
-        signal: abortController.signal,
-        isRootSession: this.isRootSession,
-        where: this.trackOptions?.where,
-        control: this.trackOptions?.control,
-        reasoning: this._isReasoningActive,
-        toolsConfig: this.aiToolsConfigService.config.value,
-        modelId,
-      });
-
-      for await (const text of stream) {
-        const messages = this.chatContextValue.messages.slice(0);
-        const last = messages.at(-1);
-        if (last && isChatMessage(last)) {
-          try {
-            const parsed = StreamObjectSchema.parse(JSON.parse(text));
-            const streamObjects = mergeStreamObjects([
-              ...(last.streamObjects ?? []),
-              parsed,
-            ]);
-            messages[messages.length - 1] = {
-              ...last,
-              streamObjects,
-            };
-          } catch {
-            messages[messages.length - 1] = {
-              ...last,
-              content: last.content + text,
-            };
-          }
-          this.updateContext({ messages, status: 'transmitting' });
-        }
-      }
-
-      this.updateContext({ status: 'success' });
-      this.onChatSuccess?.();
-      // update message id from server
-      await this._postUpdateMessages();
-    } catch (error) {
-      this.updateContext({ status: 'error', error: error as AIError });
-    } finally {
-      this.updateContext({ abortController: null });
-    }
-  };
-
-  private readonly _preUpdateMessages = async (
-    userInput: string,
-    attachments: string[]
-  ) => {
-    const userInfo = await AIProvider.userInfo;
     this.updateContext({
-      messages: [
-        ...this.chatContextValue.messages,
-        {
-          id: '',
-          role: 'user',
-          content: userInput,
-          createdAt: new Date().toISOString(),
-          attachments,
-          userId: userInfo?.id,
-          userName: userInfo?.name,
-          avatarUrl: userInfo?.avatarUrl ?? undefined,
-        },
-        {
-          id: '',
-          role: 'assistant',
-          content: '',
-          createdAt: new Date().toISOString(),
-        },
-      ],
+      images: [],
+      quote: '',
+      markdown: '',
     });
-  };
-
-  private readonly _postUpdateMessages = async () => {
-    const sessionId = this.session?.sessionId;
-    if (!sessionId || !AIProvider.histories) return;
-
-    const { messages } = this.chatContextValue;
-    const last = messages[messages.length - 1] as ChatMessage;
-    if (!last.id) {
-      const historyIds = await AIProvider.histories.ids(
-        this.workspaceId,
-        this.docId,
-        { sessionId, withMessages: true }
-      );
-      if (!historyIds || !historyIds[0]) return;
-      last.id = historyIds[0].messages.at(-1)?.id ?? '';
-    }
+    await this.runtime.dispatch({
+      type: 'send',
+      input: userInput,
+      contexts: {
+        ...contexts,
+        selectedSnapshot:
+          snapshot && enableSendDetailedObject ? snapshot : undefined,
+        selectedMarkdown:
+          combinedElementsMarkdown && enableSendDetailedObject
+            ? combinedElementsMarkdown
+            : undefined,
+        html: html || undefined,
+      },
+      attachments: images,
+      attachmentPreviews: imageAttachments,
+      isRootSession: this.isRootSession,
+      where: this.trackOptions?.where,
+      control: this.trackOptions?.control,
+      reasoning: this._isReasoningActive,
+      toolsConfig: this.aiToolsConfigService.config.value,
+      modelId: this.aiModelService.modelId.value,
+      userInfo: {
+        userId: userInfo?.id,
+        userName: userInfo?.name,
+        avatarUrl: userInfo?.avatarUrl ?? undefined,
+      },
+    });
+    this.onChatSuccess?.();
   };
 
   private async _getMatchedContexts() {

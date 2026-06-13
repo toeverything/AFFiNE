@@ -4,7 +4,7 @@ cd "$(dirname "$0")"
 
 set -euo pipefail
 
-VERSION=${1:-"1.23.0"}  # Use first argument or default to 1.23.0
+VERSION=${1:-"1.25.4"}  # Use first argument or default to 1.25.4
 echo "📦 Apollo Version: $VERSION"
 
 sed -i '' "s|apollo-ios\.git\", from: \"[^\"]*\"|apollo-ios.git\", from: \"$VERSION\"|" "App/Packages/Intelligents/Package.swift"
@@ -23,6 +23,5 @@ echo "✅ Code generated"
 
 rm -rf "App/Packages/AffineGraphQL/apollo-ios-cli"
 echo "🧹 Cleaned up"
-
 
 

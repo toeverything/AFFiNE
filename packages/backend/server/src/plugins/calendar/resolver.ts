@@ -1,6 +1,7 @@
 import {
   Args,
   GraphQLISODateTime,
+  Int,
   Mutation,
   Parent,
   ResolveField,
@@ -10,7 +11,7 @@ import {
 import { ActionForbidden, AuthenticationRequired, Config } from '../../base';
 import { CurrentUser } from '../../core/auth';
 import { ServerConfigType } from '../../core/config/types';
-import { AccessController } from '../../core/permission';
+import { PermissionAccess } from '../../core/permission';
 import { UserType } from '../../core/user';
 import { WorkspaceType } from '../../core/workspaces';
 import { Models } from '../../models';
@@ -32,12 +33,20 @@ import {
 export class CalendarServerConfigResolver {
   constructor(
     private readonly providerFactory: CalendarProviderFactory,
-    private readonly config: Config
+    private readonly config: Config,
+    private readonly calendar: CalendarService
   ) {}
 
   @ResolveField(() => [CalendarProviderName])
-  calendarProviders() {
-    return this.providerFactory.providers;
+  async calendarProviders(@CurrentUser() user?: CurrentUser) {
+    const providers = [];
+    for (const provider of this.providerFactory.providers) {
+      if (!(await this.calendar.canLinkProvider(user?.id, provider))) {
+        continue;
+      }
+      providers.push(provider);
+    }
+    return providers;
   }
 
   @ResolveField(() => [CalendarCalDAVProviderPresetObjectType])
@@ -75,6 +84,22 @@ export class UserCalendarResolver {
 export class CalendarAccountResolver {
   constructor(private readonly calendar: CalendarService) {}
 
+  @ResolveField(() => Int)
+  async calendarsCount(
+    @CurrentUser() user: CurrentUser,
+    @Parent() account: CalendarAccountObjectType
+  ) {
+    if (typeof account.calendarsCount === 'number') {
+      return account.calendarsCount;
+    }
+
+    const calendars = await this.calendar.listAccountCalendars(
+      user.id,
+      account.id
+    );
+    return calendars.length;
+  }
+
   @ResolveField(() => [CalendarSubscriptionObjectType])
   async calendars(
     @CurrentUser() user: CurrentUser,
@@ -88,7 +113,7 @@ export class CalendarAccountResolver {
 export class WorkspaceCalendarResolver {
   constructor(
     private readonly calendar: CalendarService,
-    private readonly access: AccessController
+    private readonly access: PermissionAccess
   ) {}
 
   @ResolveField(() => [WorkspaceCalendarObjectType])
@@ -108,7 +133,7 @@ export class WorkspaceCalendarResolver {
 export class WorkspaceCalendarEventsResolver {
   constructor(
     private readonly calendar: CalendarService,
-    private readonly access: AccessController
+    private readonly access: PermissionAccess
   ) {}
 
   @ResolveField(() => [CalendarEventObjectType])
@@ -137,7 +162,7 @@ export class CalendarMutationResolver {
     private readonly calendar: CalendarService,
     private readonly oauth: CalendarOAuthService,
     private readonly models: Models,
-    private readonly access: AccessController
+    private readonly access: PermissionAccess
   ) {}
 
   @Mutation(() => String)
@@ -148,6 +173,8 @@ export class CalendarMutationResolver {
     if (!user) {
       throw new AuthenticationRequired();
     }
+
+    await this.calendar.assertCanLinkProvider(user.id, input.provider);
 
     const state = await this.oauth.saveOAuthState({
       provider: input.provider,

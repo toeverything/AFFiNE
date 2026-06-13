@@ -19,6 +19,14 @@ declare global {
       workspaceId: string;
       docId: string;
     };
+    'doc.public_state.changed': {
+      workspaceId: string;
+      docId: string;
+    };
+    'doc.default_role.changed': {
+      workspaceId: string;
+      docId: string;
+    };
   }
 }
 
@@ -351,27 +359,44 @@ export class DocModel extends BaseModel {
   /**
    * Create or update the doc meta.
    */
+  @Transactional()
   async upsertMeta(
     workspaceId: string,
     docId: string,
     data?: DocMetaUpsertInput
   ) {
-    const doc = await this.db.workspaceDoc.upsert({
-      where: {
-        workspaceId_docId: {
+    if (
+      data &&
+      ('public' in data || 'defaultRole' in data || 'publishedAt' in data)
+    ) {
+      await this.models.docAccessPolicy.upsert(workspaceId, docId, {
+        public: data.public,
+        defaultRole: data.defaultRole,
+        publishedAt:
+          typeof data.publishedAt === 'string'
+            ? new Date(data.publishedAt)
+            : data.publishedAt,
+      });
+    }
+
+    const doc = await this.withPermissionProjectionMetric(
+      this.db.workspaceDoc.upsert({
+        where: {
+          workspaceId_docId: {
+            workspaceId,
+            docId,
+          },
+        },
+        update: {
+          ...data,
+        },
+        create: {
+          ...data,
           workspaceId,
           docId,
         },
-      },
-      update: {
-        ...data,
-      },
-      create: {
-        ...data,
-        workspaceId,
-        docId,
-      },
-    });
+      })
+    );
     this.event.emit('doc.updated', {
       workspaceId,
       docId,
@@ -643,13 +668,17 @@ export class DocModel extends BaseModel {
 
   async paginateDocInfoByUpdatedAt(
     workspaceId: string,
-    pagination: PaginationInput
+    pagination: PaginationInput,
+    readablePredicate: Prisma.Sql = Prisma.sql`TRUE`
   ) {
-    const count = await this.db.workspaceDoc.count({
-      where: {
-        workspaceId,
-      },
-    });
+    const [countRow] = await this.db.$queryRaw<{ count: bigint | number }[]>`
+      SELECT COUNT(*) AS count
+      FROM "workspace_pages"
+      WHERE
+        "workspace_pages"."workspace_id" = ${workspaceId}
+        AND ${readablePredicate}
+    `;
+    const count = Number(countRow?.count ?? 0);
 
     const after = pagination.after
       ? Prisma.sql`AND "snapshots"."updated_at" < ${new Date(pagination.after)}`
@@ -686,6 +715,7 @@ export class DocModel extends BaseModel {
       AND "workspace_pages"."page_id" = "snapshots"."guid"
       WHERE
         "workspace_pages"."workspace_id" = ${workspaceId}
+        AND ${readablePredicate}
         ${after}
       ORDER BY
         "snapshots"."updated_at" DESC

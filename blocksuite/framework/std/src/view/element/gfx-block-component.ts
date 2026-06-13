@@ -248,7 +248,7 @@ export function toGfxBlockComponent<
       return GfxBlockComponent.prototype.getCSSTransform.call(this);
     }
 
-    // eslint-disable-next-line sonarjs/no-identical-functions
+    // oxlint-disable-next-line sonarjs/no-identical-functions
     getRenderingRect(): {
       x: number;
       y: number;
@@ -290,7 +290,7 @@ export function toGfxBlockComponent<
       return super.renderBlock();
     }
 
-    // eslint-disable-next-line sonarjs/no-identical-functions
+    // oxlint-disable-next-line sonarjs/no-identical-functions
     override async scheduleUpdate() {
       const parent = this.parentElement;
 

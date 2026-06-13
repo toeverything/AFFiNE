@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ModuleRef } from '@nestjs/core';
 
 import {
   BlobNotFound,
@@ -18,8 +17,8 @@ import { readAllDocIdsFromWorkspaceSnapshot } from '../../../core/utils/blocksui
 import { Models } from '../../../models';
 import { CopilotStorage } from '../storage';
 import { readStream } from '../utils';
-import { getEmbeddingClient } from './client';
-import type { Chunk, DocFragment } from './types';
+import { CopilotEmbeddingClientService } from './client';
+import type { Chunk, DocFragment, EmbeddingCallOptions } from './types';
 import { EmbeddingClient } from './types';
 
 @Injectable()
@@ -32,12 +31,13 @@ export class CopilotEmbeddingJob {
   private client: EmbeddingClient | undefined;
 
   constructor(
-    private readonly moduleRef: ModuleRef,
+    private readonly embeddingClients: CopilotEmbeddingClientService,
     private readonly doc: DocReader,
     private readonly event: EventBus,
     private readonly models: Models,
     private readonly queue: JobQueue,
-    private readonly storage: CopilotStorage
+    private readonly storage: CopilotStorage,
+    private readonly workspaceStorage: WorkspaceBlobStorage
   ) {}
 
   @OnEvent('config.init')
@@ -54,7 +54,7 @@ export class CopilotEmbeddingJob {
     this.supportEmbedding =
       await this.models.copilotContext.checkEmbeddingAvailable();
     if (this.supportEmbedding) {
-      this.client = await getEmbeddingClient(this.moduleRef);
+      this.client = await this.embeddingClients.refresh();
     }
   }
 
@@ -64,10 +64,15 @@ export class CopilotEmbeddingJob {
   }
 
   @CallMetric('ai', 'addFileEmbeddingQueue')
-  async addFileEmbeddingQueue(file: Jobs['copilot.embedding.files']) {
+  async addFileEmbeddingQueue(
+    file: Jobs['copilot.embedding.files'],
+    options?: { priority?: number }
+  ) {
     if (!this.supportEmbedding) return;
 
-    await this.queue.add('copilot.embedding.files', file);
+    await this.queue.add('copilot.embedding.files', file, {
+      priority: options?.priority,
+    });
   }
 
   @CallMetric('ai', 'addBlobEmbeddingQueue')
@@ -231,13 +236,23 @@ export class CopilotEmbeddingJob {
     blobId: string,
     fileName: string
   ) {
-    const workspaceStorage = this.moduleRef.get(WorkspaceBlobStorage, {
-      strict: false,
-    });
-    const { body } = await workspaceStorage.get(workspaceId, blobId);
+    const { body } = await this.workspaceStorage.get(workspaceId, blobId);
     if (!body) throw new BlobNotFound({ spaceId: workspaceId, blobId });
     const buffer = await readStream(body);
     return new File([buffer], fileName);
+  }
+
+  private workspaceIndexingOptions(
+    workspaceId: string,
+    signal?: AbortSignal,
+    userId?: string
+  ): EmbeddingCallOptions {
+    return {
+      workspaceId,
+      userId,
+      signal,
+      featureKind: 'workspace_indexing',
+    };
   }
 
   @OnJob('copilot.embedding.files')
@@ -264,7 +279,10 @@ export class CopilotEmbeddingJob {
       const total = chunks.reduce((acc, c) => acc + c.length, 0);
 
       for (const chunk of chunks) {
-        const embeddings = await this.embeddingClient.generateEmbeddings(chunk);
+        const embeddings = await this.embeddingClient.generateEmbeddings(
+          chunk,
+          this.workspaceIndexingOptions(workspaceId, undefined, userId)
+        );
         if (contextId) {
           // for context files
           await this.models.copilotContext.insertFileEmbedding(
@@ -282,21 +300,19 @@ export class CopilotEmbeddingJob {
         }
       }
 
-      if (contextId) {
-        this.event.emit('workspace.file.embed.finished', {
-          contextId,
-          fileId,
-          chunkSize: total,
-        });
-      }
+      this.event.emit('workspace.file.embed.finished', {
+        contextId,
+        workspaceId,
+        fileId,
+        chunkSize: total,
+      });
     } catch (error: any) {
-      if (contextId) {
-        this.event.emit('workspace.file.embed.failed', {
-          contextId,
-          fileId,
-          error: mapAnyError(error).message,
-        });
-      }
+      this.event.emit('workspace.file.embed.failed', {
+        contextId,
+        workspaceId,
+        fileId,
+        error: mapAnyError(error).message,
+      });
 
       // passthrough error to job queue
       throw error;
@@ -318,7 +334,10 @@ export class CopilotEmbeddingJob {
       const total = chunks.reduce((acc, c) => acc + c.length, 0);
 
       for (const chunk of chunks) {
-        const embeddings = await this.embeddingClient.generateEmbeddings(chunk);
+        const embeddings = await this.embeddingClient.generateEmbeddings(
+          chunk,
+          this.workspaceIndexingOptions(workspaceId)
+        );
         await this.models.copilotWorkspace.insertBlobEmbeddings(
           workspaceId,
           blobId,
@@ -353,10 +372,10 @@ export class CopilotEmbeddingJob {
     const docContent = await this.doc.getFullDocContent(workspaceId, docId);
     const authors = await this.models.doc.getAuthors(workspaceId, docId);
     if (docContent && authors) {
-      const { title = 'Untitled', summary } = docContent;
+      const { title, summary } = docContent;
       const { createdAt, updatedAt, createdByUser, updatedByUser } = authors;
       return {
-        title,
+        title: title || 'Untitled',
         summary,
         createdAt: createdAt.toDateString(),
         updatedAt: updatedAt.toDateString(),
@@ -445,6 +464,12 @@ export class CopilotEmbeddingJob {
               this.logger.debug(
                 `Doc ${docId} in workspace ${workspaceId} has no content change, skipping embedding.`
               );
+              if (contextId) {
+                this.event.emit('workspace.doc.embed.finished', {
+                  contextId,
+                  docId,
+                });
+              }
               return;
             }
 
@@ -454,7 +479,7 @@ export class CopilotEmbeddingJob {
                 `${fragment.title || 'Untitled'}.md`
               ),
               chunks => this.formatDocChunks(chunks, fragment),
-              signal
+              this.workspaceIndexingOptions(workspaceId, signal)
             );
 
             for (const chunks of embeddings) {
@@ -486,6 +511,12 @@ export class CopilotEmbeddingJob {
             docId
           );
         }
+      }
+      if (contextId) {
+        this.event.emit('workspace.doc.embed.finished', {
+          contextId,
+          docId,
+        });
       }
     } catch (error: any) {
       if (contextId) {

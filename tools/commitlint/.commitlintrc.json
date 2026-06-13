@@ -27,7 +27,8 @@
         "infra",
         "editor",
         "tools",
-        "y-octo"
+        "y-octo",
+        "client"
       ]
     ]
   }

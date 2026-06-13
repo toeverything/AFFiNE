@@ -1,15 +1,18 @@
 import { useConfirmModal } from '@affine/component';
-import { AIProvider } from '@affine/core/blocksuite/ai';
+import {
+  AIAppEvents,
+  AIChatRuntime,
+  createAIRequestService,
+  DocAIChatSessionStrategy,
+  useAIChatElement,
+  useAIChatRuntime,
+} from '@affine/core/blocksuite/ai';
 import type { AppSidebarConfig } from '@affine/core/blocksuite/ai/chat-panel/chat-config';
+import { AIChatContent } from '@affine/core/blocksuite/ai/components/ai-chat-content';
 import {
-  AIChatContent,
-  type ChatContextValue,
-} from '@affine/core/blocksuite/ai/components/ai-chat-content';
-import type { ChatStatus } from '@affine/core/blocksuite/ai/components/ai-chat-messages';
-import type { AIChatToolbar } from '@affine/core/blocksuite/ai/components/ai-chat-toolbar';
-import {
+  AIChatTabs,
+  AIChatToolbar,
   configureAIChatToolbar,
-  getOrCreateAIChatToolbar,
 } from '@affine/core/blocksuite/ai/components/ai-chat-toolbar';
 import { createPlaygroundModal } from '@affine/core/blocksuite/ai/components/playground/modal';
 import { registerAIAppEffects } from '@affine/core/blocksuite/ai/effects/app';
@@ -23,44 +26,57 @@ import {
   AIToolsConfigService,
 } from '@affine/core/modules/ai-button';
 import { AIModelService } from '@affine/core/modules/ai-button/services/models';
-import { ServerService, SubscriptionService } from '@affine/core/modules/cloud';
+import {
+  EventSourceService,
+  GraphQLService,
+  ServerService,
+  SubscriptionService,
+} from '@affine/core/modules/cloud';
 import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import { useSignalValue } from '@affine/core/modules/doc-info/utils';
 import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { PeekViewService } from '@affine/core/modules/peek-view';
+import { NbstoreService } from '@affine/core/modules/storage';
 import { AppThemeService } from '@affine/core/modules/theme';
 import { WorkbenchService } from '@affine/core/modules/workbench';
-import type {
-  ContextEmbedStatus,
-  CopilotChatHistoryFragment,
-  UpdateChatSessionInput,
-} from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import { RefNodeSlotsProvider } from '@blocksuite/affine/inlines/reference';
 import { DocModeProvider } from '@blocksuite/affine/shared/services';
 import { createSignalFromObservable } from '@blocksuite/affine/shared/utils';
+import type { Store } from '@blocksuite/affine/store';
 import { CenterPeekIcon, Logo1Icon } from '@blocksuite/icons/rc';
 import type { Signal } from '@preact/signals-core';
 import { useFramework, useService } from '@toeverything/infra';
 import { html } from 'lit';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { createSessionDeleteHandler } from '../../chat-panel-utils';
 import * as styles from './chat.css';
-import {
-  resolveInitialSession,
-  type WorkbenchLike,
-} from './chat-panel-session';
 
 registerAIAppEffects();
 
+const shouldResetChatPanelOnUserInfoChange = ({
+  previousUserId,
+  nextUserId,
+}: {
+  previousUserId?: string | null;
+  nextUserId?: string | null;
+}) => previousUserId !== undefined && previousUserId !== nextUserId;
+
 export interface SidebarTabProps {
   editor: AffineEditorContainer | null;
+  doc: Store;
   onLoad?: ((component: HTMLElement) => void) | null;
 }
 
-export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
+export const EditorChatPanel = ({
+  editor,
+  doc: fallbackDoc,
+  onLoad,
+}: SidebarTabProps) => {
   const framework = useFramework();
+  const graphqlService = useService(GraphQLService);
+  const eventSourceService = useService(EventSourceService);
+  const nbstoreService = useService(NbstoreService);
   const workbench = useService(WorkbenchService).workbench;
   const t = useI18n();
 
@@ -80,30 +96,58 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
   } = useAIChatConfig();
   const playgroundVisible = useSignalValue(playgroundConfig.visible) ?? false;
 
-  const [session, setSession] = useState<
-    CopilotChatHistoryFragment | null | undefined
-  >(undefined);
-  const [embeddingProgress, setEmbeddingProgress] = useState<[number, number]>([
-    0, 0,
-  ]);
-  const [status, setStatus] = useState<ChatStatus>('idle');
-  const [hasPinned, setHasPinned] = useState(false);
-
-  const [chatContent, setChatContent] = useState<AIChatContent | null>(null);
-  const [chatToolbar, setChatToolbar] = useState<AIChatToolbar | null>(null);
   const [isBodyProvided, setIsBodyProvided] = useState(false);
   const [isHeaderProvided, setIsHeaderProvided] = useState(false);
-
   const chatContainerRef = useRef<HTMLDivElement | null>(null);
   const chatToolbarContainerRef = useRef<HTMLDivElement | null>(null);
-  const contentKeyRef = useRef<string | null>(null);
-  const prevSessionIdRef = useRef<string | null>(null);
-  const lastDocIdRef = useRef<string | null>(null);
-  const sessionLoadSeqRef = useRef(0);
+  const chatTabsContainerRef = useRef<HTMLDivElement | null>(null);
+  const userIdRef = useRef<string | null | undefined>(undefined);
 
-  const doc = editor?.doc;
+  const doc = editor?.doc ?? fallbackDoc;
   const host = editor?.host;
+  const workspaceId = doc?.workspace.id;
+  const requestService = useMemo(
+    () =>
+      createAIRequestService(
+        graphqlService.gql,
+        eventSourceService.eventSource,
+        nbstoreService.realtime
+      ),
+    [eventSourceService.eventSource, graphqlService.gql, nbstoreService]
+  );
 
+  const [pendingSessionId] = useState(() => {
+    const searchParams = new URLSearchParams(workbench.location$.value.search);
+    return searchParams.get('sessionId') ?? undefined;
+  });
+
+  useEffect(() => {
+    if (pendingSessionId) {
+      workbench.activeView$.value.updateQueryString(
+        { sessionId: undefined },
+        { replace: true }
+      );
+    }
+  }, [pendingSessionId, workbench]);
+
+  const runtime = useMemo(() => {
+    if (!doc || !workspaceId) return null;
+    return new AIChatRuntime({
+      request: requestService,
+      scope: {
+        kind: 'doc',
+        workspaceId,
+        docId: doc.id,
+        pendingSessionId,
+      },
+      strategy: new DocAIChatSessionStrategy(),
+    });
+  }, [doc, pendingSessionId, requestService, workspaceId]);
+  const snapshot = useAIChatRuntime(runtime);
+  const session =
+    snapshot?.sessions.find(
+      item => item.sessionId === snapshot.activeSessionId
+    ) ?? null;
   const appSidebarConfig = useMemo<AppSidebarConfig>(() => {
     return {
       getWidth: () =>
@@ -128,118 +172,14 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
     return cleanup;
   }, [appSidebarConfig]);
 
-  const resetPanel = useCallback(() => {
-    sessionLoadSeqRef.current += 1;
-    setSession(undefined);
-    setEmbeddingProgress([0, 0]);
-    setHasPinned(false);
-  }, []);
-
-  const initPanel = useCallback(async () => {
-    const requestSeq = ++sessionLoadSeqRef.current;
-    try {
-      const nextSession = await resolveInitialSession({
-        sessionService: AIProvider.session ?? undefined,
-        doc,
-        workbench: workbench as WorkbenchLike,
-      });
-
-      if (requestSeq !== sessionLoadSeqRef.current) return;
-      if (nextSession === undefined) {
-        return;
-      }
-
-      setSession(nextSession);
-      setHasPinned(!!nextSession?.pinned);
-    } catch (error) {
-      console.error(error);
-    }
-  }, [doc, workbench]);
-
-  const createSession = useCallback(
-    async (options: Partial<BlockSuitePresets.AICreateSessionOptions> = {}) => {
-      if (session || !AIProvider.session || !doc) {
-        return session ?? undefined;
-      }
-      const requestSeq = ++sessionLoadSeqRef.current;
-      const nextSession = await AIProvider.session.createSessionWithHistory({
-        docId: doc.id,
-        workspaceId: doc.workspace.id,
-        promptName: 'Chat With AFFiNE AI',
-        reuseLatestChat: false,
-        ...options,
-      });
-      if (requestSeq !== sessionLoadSeqRef.current) return undefined;
-      setSession(nextSession ?? null);
-      setHasPinned(!!nextSession?.pinned);
-      return nextSession ?? undefined;
-    },
-    [doc, session]
-  );
-
-  const updateSession = useCallback(
-    async (options: UpdateChatSessionInput) => {
-      if (!AIProvider.session || !doc) {
-        return undefined;
-      }
-      const requestSeq = ++sessionLoadSeqRef.current;
-      await AIProvider.session.updateSession(options);
-      const nextSession = await AIProvider.session.getSession(
-        doc.workspace.id,
-        options.sessionId
-      );
-      if (requestSeq !== sessionLoadSeqRef.current) return undefined;
-      setSession(nextSession ?? null);
-      setHasPinned(!!nextSession?.pinned);
-      return nextSession ?? undefined;
-    },
-    [doc]
-  );
-
-  const newSession = useCallback(async () => {
-    resetPanel();
-    const requestSeq = sessionLoadSeqRef.current;
-    setSession(null);
-
-    if (!AIProvider.session || !doc) {
-      return;
-    }
-
-    try {
-      const nextSession = await AIProvider.session.createSessionWithHistory({
-        docId: doc.id,
-        workspaceId: doc.workspace.id,
-        promptName: 'Chat With AFFiNE AI',
-        reuseLatestChat: false,
-      });
-      if (requestSeq === sessionLoadSeqRef.current) {
-        setSession(nextSession ?? null);
-        setHasPinned(!!nextSession?.pinned);
-      }
-    } catch (error) {
-      console.error(error);
-    }
-  }, [doc, resetPanel]);
-
   const openSession = useCallback(
     async (sessionId: string) => {
-      if (session?.sessionId === sessionId || !AIProvider.session || !doc) {
+      if (session?.sessionId === sessionId || !runtime) {
         return;
       }
-      const requestSeq = ++sessionLoadSeqRef.current;
-      try {
-        const nextSession = await AIProvider.session.getSession(
-          doc.workspace.id,
-          sessionId
-        );
-        if (requestSeq !== sessionLoadSeqRef.current) return;
-        setSession(nextSession ?? null);
-        setHasPinned(!!nextSession?.pinned);
-      } catch (error) {
-        console.error(error);
-      }
+      await runtime.dispatch({ type: 'openSession', sessionId });
     },
-    [doc, session?.sessionId]
+    [runtime, session?.sessionId]
   );
 
   const openDoc = useCallback(
@@ -265,271 +205,135 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
     [doc, openSession, session?.pinned, session?.sessionId, workbench]
   );
 
-  const deleteSession = useMemo(
-    () =>
-      createSessionDeleteHandler({
-        t,
-        notificationService,
-        canDeleteSession: () => Boolean(AIProvider.histories),
-        cleanupSession: async sessionToDelete => {
-          await AIProvider.histories?.cleanup(
-            sessionToDelete.workspaceId,
-            sessionToDelete.docId || undefined,
-            [sessionToDelete.sessionId]
-          );
-        },
-        isActiveSession: sessionToDelete =>
-          sessionToDelete.sessionId === session?.sessionId,
-        onActiveSessionDeleted: () => {
-          newSession().catch(console.error);
-        },
-      }),
-    [newSession, notificationService, session?.sessionId, t]
-  );
-
-  const togglePin = useCallback(async () => {
-    const pinned = !session?.pinned;
-    setHasPinned(true);
-    if (!session) {
-      await createSession({ pinned });
-      return;
-    }
-    setSession(prev => (prev ? { ...prev, pinned } : prev));
-    await updateSession({
-      sessionId: session.sessionId,
-      pinned,
-    });
-  }, [createSession, session, updateSession]);
-
-  const rebindSession = useCallback(async () => {
-    if (!session || !doc) {
-      return;
-    }
-    if (session.docId !== doc.id) {
-      await updateSession({
-        sessionId: session.sessionId,
-        docId: doc.id,
-      });
-    }
-  }, [doc, session, updateSession]);
-
-  const onEmbeddingProgressChange = useCallback(
-    (count: Record<ContextEmbedStatus, number>) => {
-      const total = count.finished + count.processing + count.failed;
-      setEmbeddingProgress([count.finished, total]);
-    },
-    []
-  );
-
-  const onContextChange = useCallback(
-    (context: Partial<ChatContextValue>) => {
-      setStatus(context.status ?? 'idle');
-      if (context.status === 'success') {
-        rebindSession().catch(console.error);
-      }
-    },
-    [rebindSession]
-  );
-
   useEffect(() => {
-    if (session !== undefined) {
+    const navigationRequest = snapshot?.navigationRequest;
+    if (!navigationRequest) {
       return;
     }
-    if (chatContent) {
-      chatContent.remove();
-      setChatContent(null);
-    }
-    if (chatToolbar) {
-      chatToolbar.remove();
-      setChatToolbar(null);
-    }
-  }, [chatContent, chatToolbar, session]);
-
-  useEffect(() => {
-    const subscription = AIProvider.slots.userInfo.subscribe(() => {
-      resetPanel();
-      initPanel().catch(console.error);
-    });
-    return () => subscription.unsubscribe();
-  }, [initPanel, resetPanel]);
-
-  useEffect(() => {
-    const docId = doc?.id;
-    if (!docId) {
-      return;
-    }
-    if (
-      lastDocIdRef.current &&
-      lastDocIdRef.current !== docId &&
-      !session?.pinned
-    ) {
-      resetPanel();
-    }
-    lastDocIdRef.current = docId;
-  }, [doc?.id, resetPanel, session?.pinned]);
-
-  useEffect(() => {
-    if (!doc || session !== undefined) {
-      return;
-    }
-    if (AIProvider.session) {
-      initPanel().catch(console.error);
-      return;
-    }
-    const subscription = AIProvider.slots.sessionReady.subscribe(ready => {
-      if (!ready || session !== undefined) return;
-      initPanel().catch(console.error);
-    });
-    return () => subscription.unsubscribe();
-  }, [doc, initPanel, session]);
-
-  const hasSessionHistory = !!session?.messages?.length;
-  const sessionSwitched = !!(
-    session?.sessionId &&
-    prevSessionIdRef.current &&
-    prevSessionIdRef.current !== session.sessionId
-  );
-  const contentKey =
-    hasPinned || (session?.sessionId && (hasSessionHistory || sessionSwitched))
-      ? (session?.sessionId ?? doc?.id ?? 'chat-panel')
-      : (doc?.id ?? 'chat-panel');
-
-  useEffect(() => {
-    if (session?.sessionId) {
-      prevSessionIdRef.current = session.sessionId;
-    }
-  }, [session?.sessionId]);
-
-  useEffect(() => {
-    if (!chatContent) {
-      contentKeyRef.current = contentKey;
-      return;
-    }
-    if (contentKeyRef.current && contentKeyRef.current !== contentKey) {
-      chatContent.remove();
-      setChatContent(null);
-    }
-    contentKeyRef.current = contentKey;
-  }, [chatContent, contentKey]);
-
-  useEffect(() => {
-    if (!isBodyProvided || !chatContainerRef.current || !doc || !host) {
-      return;
-    }
-    if (session === undefined) {
-      return;
-    }
-
-    let content = chatContent;
-
-    if (!content) {
-      content = new AIChatContent();
-    }
-
-    content.host = host;
-    content.session = session;
-    content.createSession = createSession;
-    content.workspaceId = doc.workspace.id;
-    content.docId = doc.id;
-    content.reasoningConfig = reasoningConfig;
-    content.searchMenuConfig = searchMenuConfig;
-    content.docDisplayConfig = docDisplayConfig;
-    content.extensions = specs;
-    content.serverService = framework.get(ServerService);
-    content.affineFeatureFlagService = framework.get(FeatureFlagService);
-    content.affineWorkspaceDialogService = framework.get(
-      WorkspaceDialogService
+    workbench.open(
+      `/${navigationRequest.docId}?sessionId=${navigationRequest.sessionId}`,
+      { at: 'active' }
     );
-    content.affineThemeService = framework.get(AppThemeService);
-    content.notificationService = notificationService;
-    content.aiDraftService = framework.get(AIDraftService);
-    content.aiToolsConfigService = framework.get(AIToolsConfigService);
-    content.peekViewService = framework.get(PeekViewService);
-    content.subscriptionService = framework.get(SubscriptionService);
-    content.aiModelService = framework.get(AIModelService);
-    content.onAISubscribe = handleAISubscribe;
-    content.onEmbeddingProgressChange = onEmbeddingProgressChange;
-    content.onContextChange = onContextChange;
-    content.width = sidebarWidthSignal;
-    content.onOpenDoc = (docId: string, sessionId?: string) => {
-      openDoc(docId, sessionId).catch(console.error);
-    };
+  }, [snapshot?.navigationRequest, workbench]);
 
-    if (!chatContent) {
-      chatContainerRef.current.append(content);
-      setChatContent(content);
-      onLoad?.(content);
-    }
-  }, [
-    chatContent,
-    createSession,
-    doc,
-    docDisplayConfig,
-    framework,
-    handleAISubscribe,
-    host,
-    isBodyProvided,
-    notificationService,
-    onContextChange,
-    onEmbeddingProgressChange,
-    onLoad,
-    openDoc,
-    reasoningConfig,
-    searchMenuConfig,
-    session,
-    sidebarWidthSignal,
-    specs,
-  ]);
+  const deleteSession = useCallback(
+    async (sessionToDelete: BlockSuitePresets.AIRecentSession) => {
+      if (!runtime) return;
+      const confirm = await notificationService.confirm({
+        title: t['com.affine.ai.chat-panel.session.delete.confirm.title'](),
+        message: t['com.affine.ai.chat-panel.session.delete.confirm.message'](),
+        confirmText: t['Delete'](),
+        cancelText: t['Cancel'](),
+      });
+      if (!confirm) return;
+      await runtime.dispatch({
+        type: 'deleteSession',
+        sessionId: sessionToDelete.sessionId,
+      });
+      notificationService.toast(
+        t['com.affine.ai.chat-panel.session.delete.toast.success'](),
+        {}
+      );
+    },
+    [notificationService, runtime, t]
+  );
 
   useEffect(() => {
-    if (!isHeaderProvided || !chatToolbarContainerRef.current || !doc) {
-      return;
-    }
-    if (session === undefined) {
-      return;
-    }
-
-    const tool = getOrCreateAIChatToolbar(chatToolbar);
-    configureAIChatToolbar(tool, {
-      session,
-      workspaceId: doc.workspace.id,
-      docId: doc.id,
-      status,
-      docDisplayConfig,
-      notificationService,
-      onNewSession: () => {
-        newSession().catch(console.error);
-      },
-      onTogglePin: togglePin,
-      onOpenSession: (sessionId: string) => {
-        openSession(sessionId).catch(console.error);
-      },
-      onOpenDoc: (docId: string, sessionId: string) => {
-        openDoc(docId, sessionId).catch(console.error);
-      },
-      onSessionDelete: (sessionToDelete: BlockSuitePresets.AIRecentSession) => {
-        deleteSession(sessionToDelete).catch(console.error);
-      },
+    userIdRef.current ??= AIAppEvents.userInfo.value?.id ?? null;
+    const subscription = AIAppEvents.userInfo.subscribe(userInfo => {
+      const nextUserId = userInfo?.id ?? null;
+      const shouldReset = shouldResetChatPanelOnUserInfoChange({
+        previousUserId: userIdRef.current,
+        nextUserId,
+      });
+      userIdRef.current = nextUserId;
+      if (!shouldReset) {
+        return;
+      }
+      runtime?.dispatch({ type: 'initialize' }).catch(console.error);
     });
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [runtime]);
 
-    if (!chatToolbar) {
-      chatToolbarContainerRef.current.append(tool);
-      setChatToolbar(tool);
-    }
-  }, [
-    chatToolbar,
-    deleteSession,
-    doc,
-    docDisplayConfig,
-    isHeaderProvided,
-    newSession,
-    notificationService,
-    openDoc,
-    openSession,
-    session,
-    status,
-    togglePin,
-  ]);
+  const chatContent = useAIChatElement({
+    containerRef: chatContainerRef,
+    selector: 'ai-chat-content',
+    enabled: isBodyProvided && !!runtime && !!snapshot,
+    createElement: () => new AIChatContent(),
+    configureElement: content => {
+      if (!runtime || !snapshot) return;
+      content.host = host;
+      content.session = session;
+      content.runtime = runtime;
+      content.runtimeSnapshot = snapshot;
+      content.workspaceId = doc.workspace.id;
+      content.docId = doc.id;
+      content.reasoningConfig = reasoningConfig;
+      content.searchMenuConfig = searchMenuConfig;
+      content.docDisplayConfig = docDisplayConfig;
+      content.extensions = specs;
+      content.serverService = framework.get(ServerService);
+      content.affineFeatureFlagService = framework.get(FeatureFlagService);
+      content.affineWorkspaceDialogService = framework.get(
+        WorkspaceDialogService
+      );
+      content.affineThemeService = framework.get(AppThemeService);
+      content.notificationService = notificationService;
+      content.aiDraftService = framework.get(AIDraftService);
+      content.aiToolsConfigService = framework.get(AIToolsConfigService);
+      content.peekViewService = framework.get(PeekViewService);
+      content.subscriptionService = framework.get(SubscriptionService);
+      content.aiModelService = framework.get(AIModelService);
+      content.onAISubscribe = handleAISubscribe;
+      content.width = sidebarWidthSignal;
+      content.onOpenDoc = (docId: string, sessionId?: string) => {
+        openDoc(docId, sessionId).catch(console.error);
+      };
+    },
+    onElementReady: content => {
+      onLoad?.(content);
+    },
+  });
+
+  useAIChatElement({
+    containerRef: chatToolbarContainerRef,
+    selector: 'ai-chat-toolbar',
+    enabled: isHeaderProvided && !!runtime && !!snapshot,
+    createElement: () => new AIChatToolbar(),
+    configureElement: tool => {
+      if (!runtime || !snapshot) return;
+      configureAIChatToolbar(tool, {
+        session,
+        runtime,
+        runtimeSnapshot: snapshot,
+        docId: doc.id,
+        docDisplayConfig,
+        notificationService,
+        onOpenDoc: (docId: string, sessionId: string) => {
+          openDoc(docId, sessionId).catch(console.error);
+        },
+        onSessionDelete: (
+          sessionToDelete: BlockSuitePresets.AIRecentSession
+        ) => {
+          deleteSession(sessionToDelete).catch(console.error);
+        },
+      });
+    },
+  });
+
+  useAIChatElement({
+    containerRef: chatTabsContainerRef,
+    selector: 'ai-chat-tabs',
+    enabled: !!runtime && !!snapshot,
+    createElement: () => new AIChatTabs(),
+    configureElement: tabs => {
+      if (!runtime || !snapshot) return;
+      tabs.runtime = runtime;
+      tabs.runtimeSnapshot = snapshot;
+    },
+  });
 
   useEffect(() => {
     if (!editor?.host || !chatContent) {
@@ -559,19 +363,17 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
     if (autoResized) {
       return;
     }
-    const subscription = AIProvider.slots.previewPanelOpenChange.subscribe(
-      open => {
-        if (!open) {
-          return;
-        }
-        const sidebarWidth = workbench.sidebarWidth$.value;
-        const minSidebarWidth = 1080;
-        if (!sidebarWidth || sidebarWidth < minSidebarWidth) {
-          workbench.setSidebarWidth(minSidebarWidth);
-          setAutoResized(true);
-        }
+    const subscription = AIAppEvents.previewPanelOpenChange.subscribe(open => {
+      if (!open) {
+        return;
       }
-    );
+      const sidebarWidth = workbench.sidebarWidth$.value;
+      const minSidebarWidth = 1080;
+      if (!sidebarWidth || sidebarWidth < minSidebarWidth) {
+        workbench.setSidebarWidth(minSidebarWidth);
+        setAutoResized(true);
+      }
+    });
     return () => {
       subscription.unsubscribe();
     };
@@ -632,14 +434,20 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
     chatToolbarContainerRef.current = node;
   }, []);
 
-  const isEmbedding =
-    embeddingProgress[1] > 0 && embeddingProgress[0] < embeddingProgress[1];
-  const [done, total] = embeddingProgress;
-  const isInitialized = session !== undefined;
+  const onChatTabsContainerRef = useCallback((node: HTMLDivElement | null) => {
+    chatTabsContainerRef.current = node;
+  }, []);
+
+  const embeddingCount = snapshot?.composer.context.embeddingCount;
+  const done = embeddingCount?.finished ?? 0;
+  const total =
+    done + (embeddingCount?.processing ?? 0) + (embeddingCount?.failed ?? 0);
+  const isEmbedding = total > 0 && done < total;
+  const hasRuntimeSnapshot = !!snapshot;
 
   return (
     <div className={styles.root}>
-      {!isInitialized ? (
+      {!hasRuntimeSnapshot ? (
         <div className={styles.loadingContainer}>
           <div className={styles.loading}>
             <Logo1Icon className={styles.loadingIcon} />
@@ -668,6 +476,10 @@ export const EditorChatPanel = ({ editor, onLoad }: SidebarTabProps) => {
                 <CenterPeekIcon />
               </div>
             ) : null}
+            <div
+              className={styles.tabsContainer}
+              ref={onChatTabsContainerRef}
+            />
             <div ref={onChatToolContainerRef} />
           </div>
           <div className={styles.content} ref={onChatContainerRef} />

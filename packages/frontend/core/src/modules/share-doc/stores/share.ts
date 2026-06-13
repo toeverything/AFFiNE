@@ -1,15 +1,20 @@
-import type { PublicDocMode } from '@affine/graphql';
 import {
-  getWorkspacePageByIdQuery,
+  DocRole,
+  PublicDocMode,
   publishPageMutation,
   revokePublicPageMutation,
 } from '@affine/graphql';
 import { Store } from '@toeverything/infra';
 
 import type { WorkspaceServerService } from '../../cloud';
+import { mapRealtimeEnum } from '../../cloud/realtime/enum';
+import type { NbstoreService } from '../../storage';
 
 export class ShareStore extends Store {
-  constructor(private readonly workspaceServerService: WorkspaceServerService) {
+  constructor(
+    private readonly workspaceServerService: WorkspaceServerService,
+    private readonly nbstoreService: NbstoreService
+  ) {
     super();
   }
 
@@ -18,20 +23,28 @@ export class ShareStore extends Store {
     docId: string,
     signal?: AbortSignal
   ) {
-    if (!this.workspaceServerService.server) {
-      throw new Error('No Server');
-    }
-    const data = await this.workspaceServerService.server.gql({
-      query: getWorkspacePageByIdQuery,
-      variables: {
-        pageId: docId,
-        workspaceId,
-      },
-      context: {
-        signal,
-      },
+    const { state } = await this.nbstoreService.realtime.request(
+      'doc.share-state.get',
+      { workspaceId, docId },
+      { signal, timeoutMs: 10000 }
+    );
+    return state
+      ? {
+          id: docId,
+          ...state,
+          mode: mapRealtimeEnum(PublicDocMode, state.mode, 'public doc mode'),
+          defaultRole: mapRealtimeEnum(DocRole, state.defaultRole, 'doc role'),
+          title: null,
+          summary: null,
+        }
+      : undefined;
+  }
+
+  subscribeShareState(workspaceId: string, docId: string) {
+    return this.nbstoreService.realtime.subscribe('doc.share-state.changed', {
+      workspaceId,
+      docId,
     });
-    return data.workspace.doc ?? undefined;
   }
 
   async enableSharePage(

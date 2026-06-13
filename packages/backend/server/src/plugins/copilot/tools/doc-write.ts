@@ -2,7 +2,7 @@ import { Logger } from '@nestjs/common';
 import { z } from 'zod';
 
 import { DocWriter } from '../../../core/doc';
-import { AccessController } from '../../../core/permission';
+import { PermissionAccess } from '../../../core/permission';
 import { toolError } from './error';
 import { defineTool } from './tool';
 import type { CopilotChatOptions } from './types';
@@ -15,7 +15,7 @@ const stripLeadingH1 = (content: string) =>
 const sanitizeTitle = (title: string) => title.replace(/[\r\n]+/g, ' ').trim();
 
 export const buildDocCreateHandler = (
-  ac: AccessController,
+  ac: PermissionAccess,
   writer: DocWriter
 ) => {
   return async (
@@ -57,7 +57,7 @@ export const buildDocCreateHandler = (
 };
 
 export const buildDocUpdateHandler = (
-  ac: AccessController,
+  ac: PermissionAccess,
   writer: DocWriter
 ) => {
   return async (
@@ -95,7 +95,7 @@ export const buildDocUpdateHandler = (
 };
 
 export const buildDocUpdateMetaHandler = (
-  ac: AccessController,
+  ac: PermissionAccess,
   writer: DocWriter
 ) => {
   return async (options: CopilotChatOptions, docId: string, title: string) => {

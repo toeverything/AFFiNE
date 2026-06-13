@@ -1,3 +1,5 @@
+import { fileURLToPath } from 'node:url';
+
 import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin';
 import { defineConfig } from 'vitest/config';
 
@@ -7,7 +9,9 @@ export default defineConfig({
   },
   plugins: [vanillaExtractPlugin()],
   test: {
-    globalSetup: '../../../scripts/vitest-global.js',
+    globalSetup: fileURLToPath(
+      new URL('../../../scripts/vitest-global.js', import.meta.url)
+    ),
     include: ['src/__tests__/**/*.unit.spec.ts'],
     testTimeout: 1000,
     coverage: {

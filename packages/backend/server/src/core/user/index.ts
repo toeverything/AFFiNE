@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common';
 import { PermissionModule } from '../permission';
 import { StorageModule } from '../storage';
 import { UserAvatarController } from './controller';
+import { UserRealtimeProvider } from './realtime';
 import {
   UserManagementResolver,
   UserResolver,
@@ -11,7 +12,12 @@ import {
 
 @Module({
   imports: [StorageModule, PermissionModule],
-  providers: [UserResolver, UserManagementResolver, UserSettingsResolver],
+  providers: [
+    UserResolver,
+    UserManagementResolver,
+    UserSettingsResolver,
+    UserRealtimeProvider,
+  ],
   controllers: [UserAvatarController],
 })
 export class UserModule {}

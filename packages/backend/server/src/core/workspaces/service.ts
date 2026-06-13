@@ -10,6 +10,7 @@ import {
 import { DocReader } from '../doc';
 import { Mailer } from '../mail';
 import { WorkspaceRole } from '../permission';
+import { QuotaStateService } from '../quota/state';
 import { WorkspaceBlobStorage } from '../storage';
 
 export type InviteInfo = {
@@ -30,7 +31,8 @@ export class WorkspaceService {
     private readonly doc: DocReader,
     private readonly blobStorage: WorkspaceBlobStorage,
     private readonly mailer: Mailer,
-    private readonly queue: JobQueue
+    private readonly queue: JobQueue,
+    private readonly quotaState: QuotaStateService
   ) {}
 
   async getInviteInfo(inviteId: string): Promise<InviteInfo> {
@@ -99,7 +101,9 @@ export class WorkspaceService {
 
   // ================ Team ================
   async isTeamWorkspace(workspaceId: string) {
-    return this.models.workspace.isTeamWorkspace(workspaceId);
+    const state =
+      await this.quotaState.reconcileWorkspaceQuotaState(workspaceId);
+    return ['team', 'selfhost_team'].includes(state.plan);
   }
 
   async sendTeamWorkspaceUpgradedEmail(workspaceId: string) {

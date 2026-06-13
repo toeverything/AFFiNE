@@ -19,7 +19,6 @@ import type { SingleView } from '../view-manager/single-view.js';
 import { compareDateKeys } from './compare-date-keys.js';
 import { defaultGroupBy } from './default.js';
 import { findGroupByConfigByName, getGroupByService } from './matcher.js';
-// Test
 import type { GroupByConfig } from './types.js';
 
 export type GroupInfo<
@@ -87,6 +86,60 @@ function hasGroupProperties(
   const value = (data as { groupProperties?: unknown }).groupProperties;
   return value === undefined || Array.isArray(value);
 }
+
+const getOrderedGroupKeys = (
+  keys: string[],
+  groupInfo: GroupInfo | undefined,
+  sortGroup: (keys: string[], asc?: boolean) => string[],
+  sortAsc: boolean
+) => {
+  if (groupInfo?.config.matchType.name === 'Date') {
+    return [...keys].sort(compareDateKeys(groupInfo.config.name, sortAsc));
+  }
+  return sortGroup(keys, sortAsc);
+};
+
+const applyGroupRowSort = <T extends { rows: Row[] }>(
+  groups: Record<string, T>,
+  orderedKeys: string[],
+  sortRow: (groupKey: string, rows: Row[]) => Row[]
+) => {
+  orderedKeys.forEach(key => {
+    const group = groups[key];
+    if (!group) {
+      return;
+    }
+    group.rows = sortRow(key, group.rows);
+  });
+};
+
+const reorderGroupKeys = (
+  keys: string[],
+  groupKey: string,
+  position: InsertToPosition
+) => {
+  const currentIndex = keys.findIndex(key => key === groupKey);
+  if (currentIndex < 0) {
+    return keys;
+  }
+  if (typeof position === 'object') {
+    if (position.id === groupKey) {
+      return keys;
+    }
+    if (!keys.includes(position.id)) {
+      return keys;
+    }
+  }
+
+  const reordered = [...keys];
+  reordered.splice(currentIndex, 1);
+  const index = insertPositionToIndex(position, reordered, key => key);
+  if (index < 0) {
+    return keys;
+  }
+  reordered.splice(index, 0, groupKey);
+  return reordered;
+};
 
 export class GroupTrait {
   hideEmpty$ = signal<boolean>(true);
@@ -202,15 +255,13 @@ export class GroupTrait {
       if (!map) return;
 
       const gi = this.groupInfo$.value;
-      let ordered: string[];
-
-      if (gi?.config.matchType.name === 'Date') {
-        ordered = Object.keys(map).sort(
-          compareDateKeys(gi.config.name, this.sortAsc$.value)
-        );
-      } else {
-        ordered = this.ops.sortGroup(Object.keys(map), this.sortAsc$.value);
-      }
+      const ordered = getOrderedGroupKeys(
+        Object.keys(map),
+        gi,
+        this.ops.sortGroup,
+        this.sortAsc$.value
+      );
+      applyGroupRowSort(map, ordered, this.ops.sortRow);
 
       return ordered
         .map(k => map[k])
@@ -233,14 +284,13 @@ export class GroupTrait {
       const info = this.groupInfo$.value;
       if (!map || !info) return;
 
-      let orderedKeys: string[];
-      if (info.config.matchType.name === 'Date') {
-        orderedKeys = Object.keys(map).sort(
-          compareDateKeys(info.config.name, this.sortAsc$.value)
-        );
-      } else {
-        orderedKeys = this.ops.sortGroup(Object.keys(map), this.sortAsc$.value);
-      }
+      const orderedKeys = getOrderedGroupKeys(
+        Object.keys(map),
+        info,
+        this.ops.sortGroup,
+        this.sortAsc$.value
+      );
+      applyGroupRowSort(map, orderedKeys, this.ops.sortRow);
 
       const visible: Group[] = [];
       const hidden: Group[] = [];
@@ -430,23 +480,29 @@ export class GroupTrait {
         .map(row => row.rowId) ?? [];
     const index = insertPositionToIndex(position, rows, row => row);
     rows.splice(index, 0, rowId);
-    const groupKeys = Object.keys(groupMap);
+    const groupKeys = getOrderedGroupKeys(
+      Object.keys(groupMap),
+      this.groupInfo$.value,
+      this.ops.sortGroup,
+      this.sortAsc$.value
+    );
     this.ops.changeRowSort(groupKeys, toGroupKey, rows);
   }
 
   moveGroupTo(groupKey: string, position: InsertToPosition) {
-    const groups = this.groupsDataList$.value;
+    const groups = this.groupsDataListAll$.value;
     if (!groups) {
       return;
     }
-    const keys = groups.map(v => v!.key);
-    keys.splice(
-      keys.findIndex(key => key === groupKey),
-      1
-    );
-    const index = insertPositionToIndex(position, keys, key => key);
-    keys.splice(index, 0, groupKey);
-    this.changeGroupSort(keys);
+    const currentKeys = groups.map(group => group.key);
+    const reorderedKeys = reorderGroupKeys(currentKeys, groupKey, position);
+    if (
+      currentKeys.length === reorderedKeys.length &&
+      currentKeys.every((key, index) => key === reorderedKeys[index])
+    ) {
+      return;
+    }
+    this.changeGroupSort(reorderedKeys);
   }
 
   removeFromGroup(rowId: string, key: string) {

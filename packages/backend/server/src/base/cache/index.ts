@@ -10,5 +10,5 @@ import { CacheInterceptor } from './interceptor';
 })
 export class CacheModule {}
 export { Cache, SessionCache };
-
 export { CacheInterceptor, MakeCache, PreventCache } from './interceptor';
+export { isValidCacheTtl } from './provider';

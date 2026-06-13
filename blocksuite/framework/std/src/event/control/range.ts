@@ -110,7 +110,7 @@ export class RangeControl {
       if (current === start) {
         startRecorded = true;
       }
-      // eslint-disable-next-line sonarjs/no-collapsible-if
+      // oxlint-disable-next-line sonarjs/no-collapsible-if
       if (startRecorded) {
         if (
           current.nodeType === Node.TEXT_NODE ||

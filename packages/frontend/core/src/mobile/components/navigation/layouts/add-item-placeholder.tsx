@@ -13,10 +13,12 @@ export interface AddItemPlaceholderProps extends HTMLAttributes<HTMLDivElement> 
   icon?: React.ReactNode;
 }
 
+const DEFAULT_ICON = <PlusIcon />;
+
 export const AddItemPlaceholder = ({
   onClick,
   label = 'Add Item',
-  icon = <PlusIcon />,
+  icon = DEFAULT_ICON,
   className,
   ...attrs
 }: AddItemPlaceholderProps) => {
