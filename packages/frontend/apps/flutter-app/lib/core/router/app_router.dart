@@ -9,6 +9,13 @@ import '../../features/workspace/presentation/pages/workspace_list_page.dart';
 import '../../features/workspace/presentation/pages/workspace_home_page.dart';
 import '../../features/document/presentation/pages/all_docs_page.dart';
 import '../../features/document/presentation/pages/document_detail_page.dart';
+import '../../features/collection/presentation/pages/collections_list_page.dart';
+import '../../features/collection/presentation/pages/collection_detail_page.dart';
+import '../../features/tag/presentation/pages/tags_list_page.dart';
+import '../../features/tag/presentation/pages/tag_detail_page.dart';
+import '../../features/journal/presentation/pages/journals_page.dart';
+import '../../features/search/presentation/pages/search_page.dart';
+import '../../shared/widgets/navigation/workspace_shell.dart';
 import 'route_names.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -24,14 +31,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           state.matchedLocation.startsWith('/magic-link') ||
           state.matchedLocation.startsWith('/oauth');
 
-      if (!isAuthenticated && !isAuthRoute) {
-        return RouteNames.signIn;
-      }
-
-      if (isAuthenticated && isAuthRoute) {
-        return RouteNames.workspaceList;
-      }
-
+      if (!isAuthenticated && !isAuthRoute) return RouteNames.signIn;
+      if (isAuthenticated && isAuthRoute) return RouteNames.workspaceList;
       return null;
     },
     routes: [
@@ -60,27 +61,79 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: 'workspaceList',
         builder: (context, state) => const WorkspaceListPage(),
       ),
-      GoRoute(
-        path: '/workspace/:workspaceId/home',
-        name: 'workspaceHome',
-        builder: (context, state) => WorkspaceHomePage(
-          workspaceId: state.pathParameters['workspaceId']!,
-        ),
-      ),
-      GoRoute(
-        path: '/workspace/:workspaceId/all',
-        name: 'workspaceAllDocs',
-        builder: (context, state) => AllDocsPage(
-          workspaceId: state.pathParameters['workspaceId']!,
-        ),
-      ),
-      GoRoute(
-        path: '/workspace/:workspaceId/doc/:pageId',
-        name: 'documentDetail',
-        builder: (context, state) => DocumentDetailPage(
-          workspaceId: state.pathParameters['workspaceId']!,
-          documentId: state.pathParameters['pageId']!,
-        ),
+      ShellRoute(
+        builder: (context, state, child) {
+          final wsId = state.pathParameters['workspaceId'] ?? '';
+          return WorkspaceShell(workspaceId: wsId, child: child);
+        },
+        routes: [
+          GoRoute(
+            path: '/workspace/:workspaceId/home',
+            name: 'workspaceHome',
+            builder: (context, state) => WorkspaceHomePage(
+              workspaceId: state.pathParameters['workspaceId']!,
+            ),
+          ),
+          GoRoute(
+            path: '/workspace/:workspaceId/all',
+            name: 'workspaceAllDocs',
+            builder: (context, state) => AllDocsPage(
+              workspaceId: state.pathParameters['workspaceId']!,
+            ),
+          ),
+          GoRoute(
+            path: '/workspace/:workspaceId/search',
+            name: 'workspaceSearch',
+            builder: (context, state) => SearchPage(
+              workspaceId: state.pathParameters['workspaceId']!,
+            ),
+          ),
+          GoRoute(
+            path: '/workspace/:workspaceId/journals',
+            name: 'workspaceJournals',
+            builder: (context, state) => JournalsPage(
+              workspaceId: state.pathParameters['workspaceId']!,
+            ),
+          ),
+          GoRoute(
+            path: '/workspace/:workspaceId/collections',
+            name: 'workspaceCollections',
+            builder: (context, state) => CollectionsListPage(
+              workspaceId: state.pathParameters['workspaceId']!,
+            ),
+          ),
+          GoRoute(
+            path: '/workspace/:workspaceId/collection/:collectionId',
+            name: 'collectionDetail',
+            builder: (context, state) => CollectionDetailPage(
+              workspaceId: state.pathParameters['workspaceId']!,
+              collectionId: state.pathParameters['collectionId']!,
+            ),
+          ),
+          GoRoute(
+            path: '/workspace/:workspaceId/tags',
+            name: 'workspaceTags',
+            builder: (context, state) => TagsListPage(
+              workspaceId: state.pathParameters['workspaceId']!,
+            ),
+          ),
+          GoRoute(
+            path: '/workspace/:workspaceId/tag/:tagId',
+            name: 'tagDetail',
+            builder: (context, state) => TagDetailPage(
+              workspaceId: state.pathParameters['workspaceId']!,
+              tagId: state.pathParameters['tagId']!,
+            ),
+          ),
+          GoRoute(
+            path: '/workspace/:workspaceId/doc/:pageId',
+            name: 'documentDetail',
+            builder: (context, state) => DocumentDetailPage(
+              workspaceId: state.pathParameters['workspaceId']!,
+              documentId: state.pathParameters['pageId']!,
+            ),
+          ),
+        ],
       ),
     ],
   );
