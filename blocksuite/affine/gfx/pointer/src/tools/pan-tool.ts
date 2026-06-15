@@ -21,6 +21,11 @@ export type PanToolOption = {
   panning: boolean;
 };
 
+type TemporaryPanSuspendableTool = BaseTool & {
+  pauseForTemporaryPan?: () => void;
+  resumeFromTemporaryPan?: () => void;
+};
+
 export class PanTool extends BaseTool<PanToolOption> {
   static override toolName = 'pan';
 
@@ -94,14 +99,21 @@ export class PanTool extends BaseTool<PanToolOption> {
       evt.raw.preventDefault();
 
       const selectionToRestore = this.gfx.selection.surfaceSelections.slice();
+      const toolToRestore = this.controller.currentTool$.peek() as
+        | TemporaryPanSuspendableTool
+        | undefined;
+      toolToRestore?.pauseForTemporaryPan?.();
 
       const restoreToPrevious = () => {
-        this.gfx.selection.set(selectionToRestore);
+        if (!toolType) {
+          this.gfx.selection.set(selectionToRestore);
+          return;
+        }
 
-        if (!toolType) return;
         // restore to DefaultTool if previous tool is CopilotTool
         if (toolType.toolName === 'copilot') {
           this.controller.setTool(DefaultTool);
+          this.gfx.selection.set(selectionToRestore);
           return;
         }
 
@@ -120,6 +132,8 @@ export class PanTool extends BaseTool<PanToolOption> {
           } as RestorablePresentToolOptions;
         }
         this.controller.setTool(toolType, finalOptions);
+        toolToRestore?.resumeFromTemporaryPan?.();
+        this.gfx.selection.set(selectionToRestore);
       };
 
       // If in presentation mode, disable black background after middle mouse drag

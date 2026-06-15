@@ -53,6 +53,8 @@ export class ConnectorTool extends BaseTool<ConnectorToolOptions> {
 
   private _startPoint: IVec | null = null;
 
+  private _temporaryPan = false;
+
   private get _overlay() {
     return this.std.get(OverlayIdentifier('connection')) as ConnectionOverlay;
   }
@@ -110,11 +112,13 @@ export class ConnectorTool extends BaseTool<ConnectorToolOptions> {
   override deactivate() {
     const id = this._connector?.id;
 
-    if (this._allowCancel && id) {
+    if (this._allowCancel && id && !this._temporaryPan) {
       this.gfx.surface?.deleteElement(id);
     }
 
     this._overlay?.clear();
+    if (this._temporaryPan) return;
+
     this._mode = ConnectorToolMode.Dragging;
     this._connector = null;
     this._source = null;
@@ -233,5 +237,13 @@ export class ConnectorTool extends BaseTool<ConnectorToolOptions> {
     const currentIndex = modes.indexOf(this.activatedOption.mode);
     const nextIndex = (currentIndex + 1) % modes.length;
     return modes[nextIndex];
+  }
+
+  pauseForTemporaryPan() {
+    this._temporaryPan = this._mode === ConnectorToolMode.Quick;
+  }
+
+  resumeFromTemporaryPan() {
+    this._temporaryPan = false;
   }
 }

@@ -101,8 +101,12 @@ type MutableCanvasRendererDebugMetrics = Omit<
 
 type RenderPassStats = CanvasRenderPassMetrics;
 
-type StackingCanvasState = {
+type CanvasViewportState = {
   bound: Bound | null;
+  zoom: number;
+};
+
+type StackingCanvasState = CanvasViewportState & {
   layerId: string | null;
 };
 
@@ -144,6 +148,8 @@ export class CanvasRenderer {
   private _mainCanvasDirty = true;
 
   private _needsFullRender = true;
+
+  private _mainCanvasState: CanvasViewportState | null = null;
 
   private _debugMetrics: MutableCanvasRendererDebugMetrics = {
     refreshCount: 0,
@@ -243,6 +249,43 @@ export class CanvasRenderer {
     };
   }
 
+  private _getCanvasTransform(bound: Bound, renderedZoom: number) {
+    const { viewportBounds, zoom, viewScale } = this.viewport;
+    const left = (bound.x - viewportBounds.x) * zoom;
+    const top = (bound.y - viewportBounds.y) * zoom;
+    const scale = zoom / renderedZoom / viewScale;
+
+    return `translate(${left}px, ${top}px) scale(${scale})`;
+  }
+
+  private _syncCanvasTransform(
+    canvas: HTMLCanvasElement,
+    state: CanvasViewportState | null
+  ) {
+    if (!state?.bound) {
+      return;
+    }
+
+    const transform = this._getCanvasTransform(state.bound, state.zoom);
+
+    if (canvas.style.transform !== transform) {
+      canvas.style.transform = transform;
+    }
+    if (canvas.style.transformOrigin !== 'top left') {
+      canvas.style.transformOrigin = 'top left';
+    }
+  }
+
+  private _syncCanvasTransforms() {
+    // Keep bitmap layers visually locked to DOM blocks while redraw is deferred.
+    this._syncCanvasTransform(this.canvas, this._mainCanvasState);
+
+    for (const canvas of this._stackingCanvas) {
+      const state = this._stackingCanvasState.get(canvas) ?? null;
+      this._syncCanvasTransform(canvas, state);
+    }
+  }
+
   private _applyStackingCanvasLayout(
     canvas: HTMLCanvasElement,
     bound: Bound | null,
@@ -253,6 +296,7 @@ export class CanvasRenderer {
       ({
         bound: null,
         layerId: canvas.dataset.layerId ?? null,
+        zoom: this.viewport.zoom,
       } satisfies StackingCanvasState);
 
     if (!bound || bound.w <= 0 || bound.h <= 0) {
@@ -266,18 +310,17 @@ export class CanvasRenderer {
       canvas.height = 0;
       state.bound = null;
       state.layerId = canvas.dataset.layerId ?? null;
+      state.zoom = this.viewport.zoom;
       this._stackingCanvasState.set(canvas, state);
       return;
     }
 
-    const { viewportBounds, zoom, viewScale } = this.viewport;
+    const { zoom } = this.viewport;
     const width = bound.w * zoom;
     const height = bound.h * zoom;
-    const left = (bound.x - viewportBounds.x) * zoom;
-    const top = (bound.y - viewportBounds.y) * zoom;
     const actualWidth = Math.max(1, Math.ceil(width * dpr));
     const actualHeight = Math.max(1, Math.ceil(height * dpr));
-    const transform = `translate(${left}px, ${top}px) scale(${1 / viewScale})`;
+    const transform = this._getCanvasTransform(bound, zoom);
 
     if (canvas.style.display !== 'block') {
       canvas.style.display = 'block';
@@ -311,6 +354,7 @@ export class CanvasRenderer {
 
     state.bound = bound;
     state.layerId = canvas.dataset.layerId ?? null;
+    state.zoom = zoom;
     this._stackingCanvasState.set(canvas, state);
   }
 
@@ -505,6 +549,7 @@ export class CanvasRenderer {
 
     this._disposables.add(
       this.viewport.viewportUpdated.subscribe(() => {
+        this._syncCanvasTransforms();
         this.refresh({ type: 'all' });
       })
     );
@@ -656,6 +701,12 @@ export class CanvasRenderer {
         true,
         renderStats
       );
+
+      this._mainCanvasState = {
+        bound: viewportBound,
+        zoom,
+      };
+      this._syncCanvasTransform(this.canvas, this._mainCanvasState);
     }
 
     const canvasMemorySnapshots = this._getCanvasMemorySnapshots();
