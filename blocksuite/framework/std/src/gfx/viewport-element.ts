@@ -992,6 +992,7 @@ export class GfxViewportElement extends WithDisposable(ShadowlessElement) {
 
   override disconnectedCallback(): void {
     this._clearPendingViewportRefreshTimer();
+    this._cancelPendingChunkedHide();
     this._restoreParkedBlockViews();
     super.disconnectedCallback();
   }

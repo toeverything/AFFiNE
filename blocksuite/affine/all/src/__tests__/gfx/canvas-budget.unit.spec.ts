@@ -145,7 +145,7 @@ describe('edgeless canvas budget', () => {
     ).toBe(true);
   });
 
-  test('shares one bypass decision for placeholder and render paths across the low-zoom iOS landscape danger window and idle steady state', () => {
+  test('shares one bypass decision for placeholder and render paths only during the low-zoom iOS landscape gesture or recovery window', () => {
     expect('getStackingCanvasBypassState' in canvasRendererModule).toBe(true);
     expect(
       'shouldBypassStackingCanvasesDuringLowZoomGesture' in canvasRendererModule
@@ -205,7 +205,7 @@ describe('edgeless canvas budget', () => {
         viewportWidth: 932,
         viewportHeight: 430,
       })
-    ).toBe(true);
+    ).toBe(false);
     expect(
       shouldBypassStackingCanvasesDuringLowZoomGesture({
         isIOS: true,
@@ -215,7 +215,7 @@ describe('edgeless canvas budget', () => {
         viewportWidth: 932,
         viewportHeight: 430,
       })
-    ).toBe(true);
+    ).toBe(false);
     expect(
       getStackingCanvasBypassState({
         isIOS: true,
@@ -248,7 +248,7 @@ describe('edgeless canvas budget', () => {
     ).toBe(false);
   });
 
-  test('idle low-zoom landscape bypass detaches stacking canvases through the existing attachment path', () => {
+  test('gesture low-zoom landscape bypass detaches stacking canvases through the existing attachment path', () => {
     expect(
       'shouldBypassStackingCanvasesDuringLowZoomGesture' in canvasRendererModule
     ).toBe(true);
@@ -285,7 +285,7 @@ describe('edgeless canvas budget', () => {
     const shouldBypass = shouldBypassStackingCanvasesDuringLowZoomGesture({
       isIOS: true,
       zoom: 0.4,
-      gestureActive: false,
+      gestureActive: true,
       recoveryActive: false,
       viewportWidth: 932,
       viewportHeight: 430,
@@ -710,82 +710,89 @@ describe('edgeless canvas budget', () => {
   });
 
   test('paints turbo placeholders with effective dpr at low zoom', () => {
-    viewportRuntimeConfig.CANVAS_DPR_CAP_BY_ZOOM = [
-      [0.5, 1],
-      [0.8, 2],
-    ];
-    setDevicePixelRatio(2);
+    const previousTheme = document.documentElement.dataset.theme;
+    document.documentElement.dataset.theme = 'light';
 
-    const canvas = document.createElement('canvas');
-    const fillRect = vi.fn();
-    const strokeRect = vi.fn();
-    let fillStyle = '';
-    let strokeStyle = '';
-    vi.spyOn(canvas, 'getContext').mockReturnValue({
-      get fillStyle() {
-        return fillStyle;
-      },
-      set fillStyle(value: string) {
-        fillStyle = value;
-      },
-      get strokeStyle() {
-        return strokeStyle;
-      },
-      set strokeStyle(value: string) {
-        strokeStyle = value;
-      },
-      fillRect,
-      strokeRect,
-    } as unknown as CanvasRenderingContext2D);
+    try {
+      viewportRuntimeConfig.CANVAS_DPR_CAP_BY_ZOOM = [
+        [0.5, 1],
+        [0.8, 2],
+      ];
+      setDevicePixelRatio(2);
 
-    const layout = {
-      roots: [
-        {
-          blockId: 'root',
-          type: 'affine:page',
-          layout: {
+      const canvas = document.createElement('canvas');
+      const fillRect = vi.fn();
+      const strokeRect = vi.fn();
+      let fillStyle = '';
+      let strokeStyle = '';
+      vi.spyOn(canvas, 'getContext').mockReturnValue({
+        get fillStyle() {
+          return fillStyle;
+        },
+        set fillStyle(value: string) {
+          fillStyle = value;
+        },
+        get strokeStyle() {
+          return strokeStyle;
+        },
+        set strokeStyle(value: string) {
+          strokeStyle = value;
+        },
+        fillRect,
+        strokeRect,
+      } as unknown as CanvasRenderingContext2D);
+
+      const layout = {
+        roots: [
+          {
             blockId: 'root',
             type: 'affine:page',
-            rect: { x: 0, y: 0, w: 50, h: 20 },
+            layout: {
+              blockId: 'root',
+              type: 'affine:page',
+              rect: { x: 0, y: 0, w: 50, h: 20 },
+            },
+            children: [],
           },
-          children: [],
-        },
-      ],
-      overallRect: { x: 0, y: 0, w: 50, h: 20 },
-    };
+        ],
+        overallRect: { x: 0, y: 0, w: 50, h: 20 },
+      };
 
-    (
-      paintPlaceholder as unknown as (
-        canvas: HTMLCanvasElement,
-        layout: typeof layout,
-        viewport: {
-          zoom: number;
-          toViewCoord: (x: number, y: number) => [number, number];
-        }
-      ) => void
-    )(canvas, layout, {
-      zoom: 0.4,
-      toViewCoord: () => [0, 0],
-    });
+      (
+        paintPlaceholder as unknown as (
+          canvas: HTMLCanvasElement,
+          layout: typeof layout,
+          viewport: {
+            zoom: number;
+            toViewCoord: (x: number, y: number) => [number, number];
+          }
+        ) => void
+      )(canvas, layout, {
+        zoom: 0.4,
+        toViewCoord: () => [0, 0],
+      });
 
-    expect(fillStyle).toBe('rgba(0, 0, 0, 0.04)');
-    expect(strokeStyle).toBe('rgba(0, 0, 0, 0.02)');
-    expect(fillRect).toHaveBeenLastCalledWith(0, 0, 20, 8);
+      expect(fillStyle).toBe('rgba(0, 0, 0, 0.04)');
+      expect(strokeStyle).toBe('rgba(0, 0, 0, 0.02)');
+      expect(fillRect).toHaveBeenLastCalledWith(0, 0, 20, 8);
 
-    (
-      paintPlaceholder as unknown as (
-        canvas: HTMLCanvasElement,
-        layout: typeof layout,
-        viewport: {
-          zoom: number;
-          toViewCoord: (x: number, y: number) => [number, number];
-        }
-      ) => void
-    )(canvas, layout, {
-      zoom: 0.95,
-      toViewCoord: () => [0, 0],
-    });
+      (
+        paintPlaceholder as unknown as (
+          canvas: HTMLCanvasElement,
+          layout: typeof layout,
+          viewport: {
+            zoom: number;
+            toViewCoord: (x: number, y: number) => [number, number];
+          }
+        ) => void
+      )(canvas, layout, {
+        zoom: 0.95,
+        toViewCoord: () => [0, 0],
+      });
 
-    expect(fillRect).toHaveBeenLastCalledWith(0, 0, 95, 38);
+      expect(fillRect).toHaveBeenLastCalledWith(0, 0, 95, 38);
+    } finally {
+      document.documentElement.dataset.theme = previousTheme;
+    }
   });
 });

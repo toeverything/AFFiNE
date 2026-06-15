@@ -3,6 +3,7 @@ import { DisposableGroup } from '@blocksuite/global/disposable';
 import { IS_IOS } from '@blocksuite/global/env';
 import { ConfigExtensionFactory } from '@blocksuite/std';
 import {
+  getEffectiveDpr,
   type GfxController,
   GfxExtension,
   GfxExtensionIdentifier,
@@ -421,7 +422,7 @@ export class ViewportTurboRendererExtension extends GfxExtension {
       }
 
       const layout = this.layoutCache;
-      const dpr = window.devicePixelRatio;
+      const dpr = getEffectiveDpr(this.viewport.zoom);
       const currentVersion = this.layoutVersion;
 
       this.debugLog(`Requesting bitmap painting (version=${currentVersion})`);
@@ -503,12 +504,14 @@ export class ViewportTurboRendererExtension extends GfxExtension {
       layout.overallRect.y
     );
 
+    const dpr = getEffectiveDpr(this.viewport.zoom);
+
     ctx.drawImage(
       bitmap,
-      layoutViewCoord[0] * window.devicePixelRatio,
-      layoutViewCoord[1] * window.devicePixelRatio,
-      layout.overallRect.w * window.devicePixelRatio * this.viewport.zoom,
-      layout.overallRect.h * window.devicePixelRatio * this.viewport.zoom
+      layoutViewCoord[0] * dpr,
+      layoutViewCoord[1] * dpr,
+      layout.overallRect.w * dpr * this.viewport.zoom,
+      layout.overallRect.h * dpr * this.viewport.zoom
     );
 
     this.debugLog('Bitmap drawn to canvas');

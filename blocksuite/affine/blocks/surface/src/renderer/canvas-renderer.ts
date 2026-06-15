@@ -254,8 +254,8 @@ export function getStackingCanvasBypassState(params: {
   const {
     isIOS,
     zoom,
-    gestureActive: _gestureActive,
-    recoveryActive: _recoveryActive,
+    gestureActive,
+    recoveryActive,
     viewportWidth,
     viewportHeight,
   } = params;
@@ -263,6 +263,7 @@ export function getStackingCanvasBypassState(params: {
   return (
     isIOS &&
     zoom <= IOS_LOW_ZOOM_SURVIVAL_THRESHOLD &&
+    (gestureActive || recoveryActive) &&
     viewportWidth > viewportHeight
   );
 }
