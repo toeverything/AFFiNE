@@ -262,7 +262,7 @@ jobs:
       - name: Setup Rust
         uses: ./.github/actions/build-rust
         with:
-          target: 'aarch64-apple-ios-sim,x86_64-apple-ios'
+          target: 'aarch64-apple-ios-sim'
           package: 'affine_mobile_native'
           no-build: 'true'
 
@@ -282,6 +282,8 @@ jobs:
             -configuration Debug \
             -sdk iphonesimulator \
             -destination 'generic/platform=iOS Simulator' \
+            ARCHS=arm64 \
+            ONLY_ACTIVE_ARCH=YES \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             build
