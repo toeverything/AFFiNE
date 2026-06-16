@@ -2662,6 +2662,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@blocksuite/affine-gfx-turbo-renderer@workspace:blocksuite/affine/gfx/turbo-renderer"
   dependencies:
+    "@blocksuite/affine-shared": "workspace:*"
     "@blocksuite/global": "workspace:*"
     "@blocksuite/std": "workspace:*"
     "@blocksuite/store": "workspace:*"
