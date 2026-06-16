@@ -2,8 +2,6 @@
 members = [
   "./packages/backend/native",
   "./packages/common/native",
-  "./packages/common/y-octo/core",
-  "./packages/common/y-octo/utils",
   "./packages/frontend/mobile-native",
   "./packages/frontend/native",
   "./packages/frontend/native/nbstore",
@@ -23,7 +21,6 @@ resolver = "3"
   anyhow = "1"
   arbitrary = { version = "1.3", features = ["derive"] }
   assert-json-diff = "2.0"
-  async-lock = { version = "3.4.0", features = ["loom"] }
   base64-simd = "0.8"
   bitvec = "1.0"
   block2 = "0.6"
@@ -58,7 +55,6 @@ resolver = "3"
   llm_adapter = { version = "0.2", default-features = false }
   llm_runtime = { version = "0.2", default-features = false }
   log = "0.4"
-  loom = { version = "0.7", features = ["checkpoint"] }
   lru = "0.16"
   matroska = "0.30"
   memory-indexer = "0.3.1"
@@ -155,7 +151,7 @@ resolver = "3"
     "Win32_UI_Shell_PropertiesSystem",
   ] }
   windows-core = { version = "0.61" }
-  y-octo = { path = "./packages/common/y-octo/core" }
+  y-octo = "0.0.3"
   y-sync = { version = "0.4" }
   yrs = "0.23.0"
 
