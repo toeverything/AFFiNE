@@ -93,7 +93,21 @@ class MainActivity : BridgeActivity(), AIButtonPlugin.Callback, AFFiNEThemePlugi
     override fun load() {
         super.load()
         AuthInitializer.initialize(bridge)
-        bridge.webView.settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+        configureEditorWebView()
+    }
+
+    private fun configureEditorWebView() {
+        bridge.webView.apply {
+            overScrollMode = View.OVER_SCROLL_NEVER
+            isHorizontalScrollBarEnabled = false
+            isVerticalScrollBarEnabled = false
+            settings.apply {
+                mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                setSupportZoom(false)
+                builtInZoomControls = false
+                displayZoomControls = false
+            }
+        }
     }
 
     override fun present() {
