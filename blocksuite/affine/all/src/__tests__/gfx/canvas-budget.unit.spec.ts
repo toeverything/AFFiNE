@@ -304,7 +304,7 @@ describe('edgeless canvas budget', () => {
     });
   });
 
-  test('uses overscan only for main-canvas fallback culling while keeping the render origin on the exact viewport', () => {
+  test('uses overscan for main-canvas fallback culling and render origin', () => {
     expect('getMainCanvasFallbackBounds' in canvasRendererModule).toBe(true);
 
     const getMainCanvasFallbackBounds = (
@@ -329,7 +329,45 @@ describe('edgeless canvas budget', () => {
       })
     ).toEqual({
       cullBound: overscanViewportBounds,
-      renderBound: viewportBounds,
+      renderBound: overscanViewportBounds,
+    });
+  });
+
+  test('lays out overscan canvases relative to the exact viewport', () => {
+    expect('getCanvasViewportLayout' in canvasRendererModule).toBe(true);
+
+    const getCanvasViewportLayout = (
+      canvasRendererModule as {
+        getCanvasViewportLayout: (params: {
+          bound: Bound;
+          viewportBounds: Bound;
+          zoom: number;
+          viewScale: number;
+          dpr: number;
+        }) => {
+          actualHeight: number;
+          actualWidth: number;
+          height: number;
+          transform: string;
+          width: number;
+        };
+      }
+    ).getCanvasViewportLayout;
+
+    expect(
+      getCanvasViewportLayout({
+        bound: new Bound(40, 170, 420, 210),
+        viewportBounds: new Bound(100, 200, 300, 150),
+        zoom: 1,
+        viewScale: 1,
+        dpr: 2,
+      })
+    ).toEqual({
+      actualHeight: 420,
+      actualWidth: 840,
+      height: 210,
+      transform: 'translate(-60px, -30px) scale(1)',
+      width: 420,
     });
   });
 
@@ -389,87 +427,6 @@ describe('edgeless canvas budget', () => {
     });
   });
 
-  test('records surface canvas diagnostic maxima for AFFiNE-DIAG windows', () => {
-    expect('recordSurfaceCanvasDiagCounters' in canvasRendererModule).toBe(
-      true
-    );
-
-    const recordSurfaceCanvasDiagCounters = (
-      canvasRendererModule as {
-        recordSurfaceCanvasDiagCounters: (
-          counters: Record<string, number>,
-          metrics: {
-            placeholderElementCount: number;
-            fallbackElementCount: number;
-            visibleStackingCanvasCount: number;
-            dirtyLayerRenderCount: number;
-          }
-        ) => void;
-      }
-    ).recordSurfaceCanvasDiagCounters;
-
-    const counters: Record<string, number> = {};
-
-    recordSurfaceCanvasDiagCounters(counters, {
-      placeholderElementCount: 4,
-      fallbackElementCount: 2,
-      visibleStackingCanvasCount: 3,
-      dirtyLayerRenderCount: 1,
-    });
-    recordSurfaceCanvasDiagCounters(counters, {
-      placeholderElementCount: 0,
-      fallbackElementCount: 5,
-      visibleStackingCanvasCount: 1,
-      dirtyLayerRenderCount: 4,
-    });
-
-    expect(counters.surfaceCanvasRenderCount).toBe(2);
-    expect(counters.surfaceCanvasPlaceholderPassCount).toBe(1);
-    expect(counters.surfaceCanvasPlaceholderElementCountMax).toBe(4);
-    expect(counters.surfaceCanvasFallbackElementCountMax).toBe(5);
-    expect(counters.surfaceCanvasVisibleStackingCanvasCountMax).toBe(3);
-    expect(counters.surfaceCanvasDirtyLayerRenderCountMax).toBe(4);
-  });
-
-  test('records surface canvas refresh-gap counters for AFFiNE-DIAG windows', () => {
-    expect('recordSurfaceCanvasRefreshGapCounter' in canvasRendererModule).toBe(
-      true
-    );
-
-    const recordSurfaceCanvasRefreshGapCounter = (
-      canvasRendererModule as {
-        recordSurfaceCanvasRefreshGapCounter: (
-          counters: Record<string, number>,
-          event:
-            | 'viewport-skip-refresh'
-            | 'deferred-refresh-scheduled'
-            | 'deferred-refresh-rescheduled'
-        ) => void;
-      }
-    ).recordSurfaceCanvasRefreshGapCounter;
-
-    const counters: Record<string, number> = {};
-
-    recordSurfaceCanvasRefreshGapCounter(counters, 'viewport-skip-refresh');
-    recordSurfaceCanvasRefreshGapCounter(counters, 'viewport-skip-refresh');
-    recordSurfaceCanvasRefreshGapCounter(
-      counters,
-      'deferred-refresh-scheduled'
-    );
-    recordSurfaceCanvasRefreshGapCounter(
-      counters,
-      'deferred-refresh-rescheduled'
-    );
-    recordSurfaceCanvasRefreshGapCounter(
-      counters,
-      'deferred-refresh-scheduled'
-    );
-
-    expect(counters.surfaceCanvasViewportSkipRefreshCount).toBe(2);
-    expect(counters.surfaceCanvasDeferredRefreshScheduledCount).toBe(2);
-    expect(counters.surfaceCanvasDeferredRefreshRescheduledCount).toBe(1);
-  });
-
   test('emits a lightweight zoom signal during gesture-skipped zoom updates so canvas budgets can shrink', () => {
     viewportRuntimeConfig.CANVAS_DPR_CAP_BY_ZOOM = [
       [0.5, 1],
@@ -525,6 +482,26 @@ describe('edgeless canvas budget', () => {
     expect(viewportUpdated).not.toHaveBeenCalled();
     expect(zoomUpdates).toEqual([{ previousZoom: 1, zoom: 0.4 }]);
     expect(budgetSyncCount).toBe(1);
+
+    viewport.dispose();
+  });
+
+  test('keeps programmatic setZoom on the normal viewport update path in skip mode', () => {
+    const viewport = new Viewport();
+    viewport.SKIP_REFRESH_DURING_GESTURE = true;
+
+    const viewportUpdated = vi.fn();
+    const zoomUpdated = vi.fn();
+
+    viewport.viewportUpdated.subscribe(viewportUpdated);
+    viewport.zoomUpdated.subscribe(zoomUpdated);
+
+    viewport.setZoom(0.4, { x: 0, y: 0 });
+
+    expect(viewportUpdated).toHaveBeenCalledTimes(1);
+    expect(zoomUpdated).toHaveBeenCalledWith({ previousZoom: 1, zoom: 0.4 });
+    expect(viewport.panning$.value).toBe(false);
+    expect(viewport.zooming$.value).toBe(false);
 
     viewport.dispose();
   });

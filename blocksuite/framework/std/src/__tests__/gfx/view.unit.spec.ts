@@ -231,7 +231,7 @@ describe('gfx element view basic', () => {
 
     gfx.selection.set({ elements: [selectedId], editing: false });
     gfx.viewport.SKIP_REFRESH_DURING_GESTURE = true;
-    gfx.viewport.setZoom(0.4, { x: 0, y: 0 });
+    gfx.viewport.setZoom(0.4, { x: 0, y: 0 }, false, true, true);
 
     const viewportElement = new GfxViewportElement();
     viewportElement.host = editorContainer.std.host;
@@ -344,7 +344,7 @@ describe('gfx element view basic', () => {
       }
     )._cachedOffsetWidth = 844;
 
-    gfx.viewport.setZoom(0.4, { x: 0, y: 0 });
+    gfx.viewport.setZoom(0.4, { x: 0, y: 0 }, false, true, true);
     gfx.viewport.panning$.next(true);
 
     const viewportElement = new GfxViewportElement();
@@ -451,7 +451,7 @@ describe('gfx element view basic', () => {
         }
       )._cachedOffsetWidth = 844;
 
-      gfx.viewport.setZoom(0.4, { x: 0, y: 0 });
+      gfx.viewport.setZoom(0.4, { x: 0, y: 0 }, false, true, true);
       gfx.viewport.panning$.next(true);
 
       const viewportElement = new GfxViewportElement();
@@ -674,7 +674,7 @@ describe('gfx element view basic', () => {
     expect(outOfViewportView!.transformState$.value).toBe('idle');
 
     document.body.append(viewportElement);
-    gfx.viewport.setZoom(0.4, { x: 0, y: 0 });
+    gfx.viewport.setZoom(0.4, { x: 0, y: 0 }, false, true, true);
     await Promise.resolve();
 
     expect(selectedView!.transformState$.value).toBe('active');
@@ -726,7 +726,7 @@ describe('gfx element view basic', () => {
 
     gfx.selection.set({ elements: [selectedId], editing: false });
     gfx.viewport.SKIP_REFRESH_DURING_GESTURE = true;
-    gfx.viewport.setZoom(0.4, { x: 0, y: 0 });
+    gfx.viewport.setZoom(0.4, { x: 0, y: 0 }, false, true, true);
 
     const viewportElement = new GfxViewportElement();
     viewportElement.host = editorContainer.std.host;
@@ -769,7 +769,7 @@ describe('gfx element view basic', () => {
 
     gfx.selection.set({ elements: [selectedId], editing: false });
     gfx.viewport.SKIP_REFRESH_DURING_GESTURE = true;
-    gfx.viewport.setZoom(0.4, { x: 0, y: 0 });
+    gfx.viewport.setZoom(0.4, { x: 0, y: 0 }, false, true, true);
 
     const viewportModels = new Set([selectedModel!]);
     const viewportElement = new GfxViewportElement();
@@ -859,7 +859,7 @@ describe('gfx element view basic', () => {
 
     gfx.selection.set({ elements: [selectedId], editing: false });
     gfx.viewport.SKIP_REFRESH_DURING_GESTURE = true;
-    gfx.viewport.setZoom(0.4, { x: 0, y: 0 });
+    gfx.viewport.setZoom(0.4, { x: 0, y: 0 }, false, true, true);
 
     const viewportElement = new GfxViewportElement();
     viewportElement.host = editorContainer.std.host;
@@ -963,7 +963,7 @@ describe('gfx element view basic', () => {
       });
     });
 
-    gfx.viewport.setZoom(0.4, { x: 0, y: 0 });
+    gfx.viewport.setZoom(0.4, { x: 0, y: 0 }, false, true, true);
     gfx.viewport.onResize();
 
     await new Promise(resolve => setTimeout(resolve, 300));

@@ -51,6 +51,7 @@ tsconfig.tsbuildinfo
 .context
 /*.md
 .codex
+.cursor
 
 # System Files
 .DS_Store

@@ -159,26 +159,6 @@ export function getLowZoomGestureActiveModels<
   return activeModels;
 }
 
-type AffineDiagCounters = {
-  gestureTransformWrites?: number;
-  gestureTransformSkips?: number;
-  pureTranslateWrites?: number;
-  pureTranslateSkips?: number;
-  viewportRefreshCalls?: number;
-  viewportTrailingRefreshCalls?: number;
-  viewportChunkedRefreshCalls?: number;
-  blockActivateCount?: number;
-  blockDeactivateCount?: number;
-};
-
-function getAffineDiagCounters() {
-  const win = globalThis as typeof globalThis & {
-    __affineDiagCounters?: AffineDiagCounters;
-  };
-
-  return (win.__affineDiagCounters ??= {});
-}
-
 @requiredProperties({
   viewport: PropTypes.instanceOf(Viewport),
 })
@@ -364,10 +344,6 @@ export class GfxViewportElement extends WithDisposable(ShadowlessElement) {
       });
     }
 
-    const diagCounters = getAffineDiagCounters();
-    let activatedCount = 0;
-    let deactivatedCount = 0;
-
     batch(() => {
       shouldBeVisible.forEach(model => {
         const view = gfx.view.get(model);
@@ -377,7 +353,6 @@ export class GfxViewportElement extends WithDisposable(ShadowlessElement) {
           : shouldUseSurvivalMode && !currentSelectedModels.has(model)
             ? 'survival'
             : 'active';
-        activatedCount++;
       });
 
       candidatesToHide.forEach(model => {
@@ -386,18 +361,10 @@ export class GfxViewportElement extends WithDisposable(ShadowlessElement) {
         const view = gfx.view.get(model);
         if (!isGfxBlockComponent(view)) return;
         view.transformState$.value = 'idle';
-        deactivatedCount++;
       });
     });
 
     this._syncMountedBlockViews(shouldBeVisible);
-
-    diagCounters.viewportRefreshCalls =
-      (diagCounters.viewportRefreshCalls ?? 0) + 1;
-    diagCounters.blockActivateCount =
-      (diagCounters.blockActivateCount ?? 0) + activatedCount;
-    diagCounters.blockDeactivateCount =
-      (diagCounters.blockDeactivateCount ?? 0) + deactivatedCount;
 
     this._lastVisibleModels = shouldBeVisible;
   };
@@ -411,10 +378,6 @@ export class GfxViewportElement extends WithDisposable(ShadowlessElement) {
     onComplete?: () => void
   ): () => void {
     if (!this.host) return () => {};
-
-    const diagCounters = getAffineDiagCounters();
-    diagCounters.viewportChunkedRefreshCalls =
-      (diagCounters.viewportChunkedRefreshCalls ?? 0) + 1;
 
     const gfx = this.host.std.get(GfxControllerIdentifier);
     const currentViewportModels = this.getModelsInViewport();
@@ -499,9 +462,6 @@ export class GfxViewportElement extends WithDisposable(ShadowlessElement) {
 
     this._syncMountedBlockViews(shouldBeVisible);
 
-    diagCounters.blockDeactivateCount =
-      (diagCounters.blockDeactivateCount ?? 0) + toHide.length;
-
     // Activate blocks in chunks to prevent memory spikes
     const CHUNK_SIZE = 8;
     let chunkIndex = 0;
@@ -518,7 +478,6 @@ export class GfxViewportElement extends WithDisposable(ShadowlessElement) {
         return;
       }
 
-      let activatedInChunk = 0;
       batch(() => {
         for (let i = start; i < end; i++) {
           const model = toActivate[i];
@@ -529,12 +488,8 @@ export class GfxViewportElement extends WithDisposable(ShadowlessElement) {
             : shouldUseSurvivalMode && !currentSelectedModels.has(model)
               ? 'survival'
               : 'active';
-          activatedInChunk++;
         }
       });
-
-      diagCounters.blockActivateCount =
-        (diagCounters.blockActivateCount ?? 0) + activatedInChunk;
 
       chunkIndex++;
       if (chunkIndex * CHUNK_SIZE < toActivate.length) {
@@ -612,9 +567,6 @@ export class GfxViewportElement extends WithDisposable(ShadowlessElement) {
     this._pendingViewportRefreshTimer = globalThis.setTimeout(() => {
       this._pendingViewportRefreshTimer = null;
       this._lastViewportRefreshTime = performance.now();
-      const diagCounters = getAffineDiagCounters();
-      diagCounters.viewportTrailingRefreshCalls =
-        (diagCounters.viewportTrailingRefreshCalls ?? 0) + 1;
       this._refreshViewport();
     }, this._maxInterval);
   }
@@ -819,7 +771,6 @@ export class GfxViewportElement extends WithDisposable(ShadowlessElement) {
       let gestureBaseTranslateY: number | null = null;
       let gestureRAF: number | null = null;
       let lastTransformTime = 0;
-      const diagCounters = getAffineDiagCounters();
 
       const applyContainerTransform = () => {
         gestureRAF = null;
@@ -842,12 +793,6 @@ export class GfxViewportElement extends WithDisposable(ShadowlessElement) {
             elapsedMs: now - lastTransformTime,
           })
         ) {
-          diagCounters.gestureTransformSkips =
-            (diagCounters.gestureTransformSkips ?? 0) + 1;
-          if (isPureTranslate) {
-            diagCounters.pureTranslateSkips =
-              (diagCounters.pureTranslateSkips ?? 0) + 1;
-          }
           gestureRAF = requestAnimationFrame(applyContainerTransform);
           return;
         }
@@ -861,9 +806,9 @@ export class GfxViewportElement extends WithDisposable(ShadowlessElement) {
         // Pure pan (relativeScale === 1) is the common gesture and the one that
         // crashes WKWebView's compositor: a transform that carries scale() keeps
         // the layer on the "non-trivial transform" path, so WebKit re-rasterizes
-        // the whole container — and with OVERSCAN_RATIO that container is ~2.9x
-        // the visible area behind 17 canvas layers, which overruns the GPU
-        // compositor (rafGap spikes while drift stays low). Emitting a bare
+        // the whole container — and with OVERSCAN_RATIO that canvas area is
+        // roughly 2x the visible area behind many canvas layers, which overruns
+        // the GPU compositor (rafGap spikes while drift stays low). Emitting a bare
         // translate() instead routes panning through the cheap layer-move fast
         // path with no re-rasterization. The math is identical when scale === 1
         // (dx/dy already reduce to the pan delta), so this is exact, not a
@@ -872,12 +817,6 @@ export class GfxViewportElement extends WithDisposable(ShadowlessElement) {
           ? `translate(${dx}px, ${dy}px)`
           : `translate(${dx}px, ${dy}px) scale(${relativeScale})`;
         this.style.transformOrigin = '0 0';
-        diagCounters.gestureTransformWrites =
-          (diagCounters.gestureTransformWrites ?? 0) + 1;
-        if (isPureTranslate) {
-          diagCounters.pureTranslateWrites =
-            (diagCounters.pureTranslateWrites ?? 0) + 1;
-        }
       };
 
       const scheduleContainerTransform = () => {

@@ -113,102 +113,6 @@ type StackingCanvasState = {
   layerId: string | null;
 };
 
-type AffineDiagCounters = {
-  pageScrollSaves?: number;
-  edgelessViewportEvents?: number;
-  edgelessViewportWrites?: number;
-  edgelessScrollEvents?: number;
-  edgelessScrollTopMax?: number;
-  gestureTransformWrites?: number;
-  gestureTransformSkips?: number;
-  pureTranslateWrites?: number;
-  pureTranslateSkips?: number;
-  viewportRefreshCalls?: number;
-  viewportTrailingRefreshCalls?: number;
-  viewportChunkedRefreshCalls?: number;
-  blockActivateCount?: number;
-  blockDeactivateCount?: number;
-  previewViewportUpdated?: number;
-  previewLayerRefresh?: number;
-  previewResizeEvents?: number;
-  surfaceCanvasRenderCount?: number;
-  surfaceCanvasPlaceholderPassCount?: number;
-  surfaceCanvasPlaceholderElementCountMax?: number;
-  surfaceCanvasFallbackElementCountMax?: number;
-  surfaceCanvasVisibleStackingCanvasCountMax?: number;
-  surfaceCanvasDirtyLayerRenderCountMax?: number;
-  surfaceCanvasViewportSkipRefreshCount?: number;
-  surfaceCanvasDeferredRefreshScheduledCount?: number;
-  surfaceCanvasDeferredRefreshRescheduledCount?: number;
-};
-
-function getAffineDiagCounters() {
-  const win = globalThis as typeof globalThis & {
-    __affineDiagCounters?: AffineDiagCounters;
-  };
-
-  win.__affineDiagCounters ??= {};
-  return win.__affineDiagCounters;
-}
-
-export function recordSurfaceCanvasDiagCounters(
-  counters: Record<string, number | undefined>,
-  metrics: {
-    placeholderElementCount: number;
-    fallbackElementCount: number;
-    visibleStackingCanvasCount: number;
-    dirtyLayerRenderCount: number;
-  }
-) {
-  counters.surfaceCanvasRenderCount =
-    (counters.surfaceCanvasRenderCount ?? 0) + 1;
-
-  if (metrics.placeholderElementCount > 0) {
-    counters.surfaceCanvasPlaceholderPassCount =
-      (counters.surfaceCanvasPlaceholderPassCount ?? 0) + 1;
-  }
-
-  counters.surfaceCanvasPlaceholderElementCountMax = Math.max(
-    counters.surfaceCanvasPlaceholderElementCountMax ?? 0,
-    metrics.placeholderElementCount
-  );
-  counters.surfaceCanvasFallbackElementCountMax = Math.max(
-    counters.surfaceCanvasFallbackElementCountMax ?? 0,
-    metrics.fallbackElementCount
-  );
-  counters.surfaceCanvasVisibleStackingCanvasCountMax = Math.max(
-    counters.surfaceCanvasVisibleStackingCanvasCountMax ?? 0,
-    metrics.visibleStackingCanvasCount
-  );
-  counters.surfaceCanvasDirtyLayerRenderCountMax = Math.max(
-    counters.surfaceCanvasDirtyLayerRenderCountMax ?? 0,
-    metrics.dirtyLayerRenderCount
-  );
-}
-
-export function recordSurfaceCanvasRefreshGapCounter(
-  counters: Record<string, number | undefined>,
-  event:
-    | 'viewport-skip-refresh'
-    | 'deferred-refresh-scheduled'
-    | 'deferred-refresh-rescheduled'
-) {
-  if (event === 'viewport-skip-refresh') {
-    counters.surfaceCanvasViewportSkipRefreshCount =
-      (counters.surfaceCanvasViewportSkipRefreshCount ?? 0) + 1;
-    return;
-  }
-
-  if (event === 'deferred-refresh-scheduled') {
-    counters.surfaceCanvasDeferredRefreshScheduledCount =
-      (counters.surfaceCanvasDeferredRefreshScheduledCount ?? 0) + 1;
-    return;
-  }
-
-  counters.surfaceCanvasDeferredRefreshRescheduledCount =
-    (counters.surfaceCanvasDeferredRefreshRescheduledCount ?? 0) + 1;
-}
-
 type RefreshTarget =
   | { type: 'all' }
   | { type: 'main' }
@@ -308,12 +212,67 @@ export function getMainCanvasFallbackBounds(params: {
   viewportBounds: Bound;
   overscanViewportBounds: Bound;
 }) {
-  const { viewportBounds, overscanViewportBounds } = params;
+  const { overscanViewportBounds } = params;
 
   return {
     cullBound: overscanViewportBounds,
-    renderBound: viewportBounds,
+    renderBound: overscanViewportBounds,
   };
+}
+
+export function getCanvasViewportLayout(params: {
+  bound: Bound;
+  viewportBounds: Bound;
+  zoom: number;
+  viewScale: number;
+  dpr: number;
+}) {
+  const { bound, viewportBounds, zoom, viewScale, dpr } = params;
+  const width = bound.w * zoom;
+  const height = bound.h * zoom;
+  const left = (bound.x - viewportBounds.x) * zoom;
+  const top = (bound.y - viewportBounds.y) * zoom;
+
+  return {
+    actualHeight: Math.max(0, Math.ceil(height * dpr)),
+    actualWidth: Math.max(0, Math.ceil(width * dpr)),
+    height,
+    transform: `translate(${left}px, ${top}px) scale(${1 / viewScale})`,
+    width,
+  };
+}
+
+function applyCanvasViewportLayout(
+  canvas: HTMLCanvasElement,
+  layout: ReturnType<typeof getCanvasViewportLayout>
+) {
+  const width = `${layout.width}px`;
+  const height = `${layout.height}px`;
+
+  if (canvas.style.left !== '0px') {
+    canvas.style.left = '0px';
+  }
+  if (canvas.style.top !== '0px') {
+    canvas.style.top = '0px';
+  }
+  if (canvas.style.width !== width) {
+    canvas.style.width = width;
+  }
+  if (canvas.style.height !== height) {
+    canvas.style.height = height;
+  }
+  if (canvas.style.transform !== layout.transform) {
+    canvas.style.transform = layout.transform;
+  }
+  if (canvas.style.transformOrigin !== 'top left') {
+    canvas.style.transformOrigin = 'top left';
+  }
+  if (canvas.width !== layout.actualWidth) {
+    canvas.width = layout.actualWidth;
+  }
+  if (canvas.height !== layout.actualHeight) {
+    canvas.height = layout.actualHeight;
+  }
 }
 
 export function shouldRenderCanvasPlaceholders(params: {
@@ -464,22 +423,28 @@ export class CanvasRenderer {
    *
    * It is not recommended to set width and height to 100%.
    */
-  private _canvasSizeUpdater(dpr = getEffectiveDpr(this.viewport.zoom)) {
-    const { width, height, viewScale } = this.viewport;
-    const actualWidth = Math.ceil(width * dpr);
-    const actualHeight = Math.ceil(height * dpr);
+  private _canvasSizeUpdater(
+    bound = this.viewport.overscanViewportBounds,
+    dpr = getEffectiveDpr(this.viewport.zoom)
+  ) {
+    const layout = getCanvasViewportLayout({
+      bound,
+      viewportBounds: this.viewport.viewportBounds,
+      zoom: this.viewport.zoom,
+      viewScale: this.viewport.viewScale,
+      dpr,
+    });
 
     return {
-      filter({ width, height }: HTMLCanvasElement) {
-        return width !== actualWidth || height !== actualHeight;
+      filter(canvas: HTMLCanvasElement) {
+        return (
+          canvas.width !== layout.actualWidth ||
+          canvas.height !== layout.actualHeight ||
+          canvas.style.transform !== layout.transform
+        );
       },
       update(canvas: HTMLCanvasElement) {
-        canvas.style.width = `${width}px`;
-        canvas.style.height = `${height}px`;
-        canvas.style.transform = `scale(${1 / viewScale})`;
-        canvas.style.transformOrigin = `top left`;
-        canvas.width = actualWidth;
-        canvas.height = actualHeight;
+        applyCanvasViewportLayout(canvas, layout);
       },
     };
   }
@@ -511,44 +476,18 @@ export class CanvasRenderer {
       return;
     }
 
-    const { viewportBounds, zoom, viewScale } = this.viewport;
-    const width = bound.w * zoom;
-    const height = bound.h * zoom;
-    const left = (bound.x - viewportBounds.x) * zoom;
-    const top = (bound.y - viewportBounds.y) * zoom;
-    const actualWidth = Math.max(1, Math.ceil(width * dpr));
-    const actualHeight = Math.max(1, Math.ceil(height * dpr));
-    const transform = `translate(${left}px, ${top}px) scale(${1 / viewScale})`;
+    const layout = getCanvasViewportLayout({
+      bound,
+      viewportBounds: this.viewport.viewportBounds,
+      zoom: this.viewport.zoom,
+      viewScale: this.viewport.viewScale,
+      dpr,
+    });
 
     if (canvas.style.display !== 'block') {
       canvas.style.display = 'block';
     }
-    if (canvas.style.left !== '0px') {
-      canvas.style.left = '0px';
-    }
-    if (canvas.style.top !== '0px') {
-      canvas.style.top = '0px';
-    }
-    if (canvas.style.width !== `${width}px`) {
-      canvas.style.width = `${width}px`;
-    }
-    if (canvas.style.height !== `${height}px`) {
-      canvas.style.height = `${height}px`;
-    }
-    if (canvas.style.transform !== transform) {
-      canvas.style.transform = transform;
-    }
-    if (canvas.style.transformOrigin !== 'top left') {
-      canvas.style.transformOrigin = 'top left';
-    }
-
-    if (canvas.width !== actualWidth) {
-      canvas.width = actualWidth;
-    }
-
-    if (canvas.height !== actualHeight) {
-      canvas.height = actualHeight;
-    }
+    applyCanvasViewportLayout(canvas, layout);
 
     state.bound = bound;
     state.layerId = canvas.dataset.layerId ?? null;
@@ -884,10 +823,6 @@ export class CanvasRenderer {
           this.viewport.SKIP_REFRESH_DURING_GESTURE &&
           (this.viewport.panning$.value || this.viewport.zooming$.value)
         ) {
-          recordSurfaceCanvasRefreshGapCounter(
-            getAffineDiagCounters(),
-            'viewport-skip-refresh'
-          );
           return;
         }
         this.refresh({ type: 'all' });
@@ -943,10 +878,6 @@ export class CanvasRenderer {
       };
 
       const scheduleCanvasRefresh = () => {
-        recordSurfaceCanvasRefreshGapCounter(
-          getAffineDiagCounters(),
-          'deferred-refresh-scheduled'
-        );
         cancelPendingCanvasRefresh();
         const delayMs = getPostGestureRecoveryDelay({
           isPanning: this.viewport.panning$.value,
@@ -959,10 +890,6 @@ export class CanvasRenderer {
           // instead of dropping. Dropping here left connectors blank until a
           // tap forced a synchronous refresh.
           if (this.viewport.panning$.value || this.viewport.zooming$.value) {
-            recordSurfaceCanvasRefreshGapCounter(
-              getAffineDiagCounters(),
-              'deferred-refresh-rescheduled'
-            );
             scheduleCanvasRefresh();
             return;
           }
@@ -1073,7 +1000,9 @@ export class CanvasRenderer {
      */
     let fallbackElement: SurfaceElementModel[] = [];
     const allCanvasLayers = this.layerManager.getCanvasLayers();
-    const viewportBound = Bound.from(viewportBounds);
+    const stackingViewportBound = Bound.from(overscanViewportBounds);
+
+    this._canvasSizeUpdater(mainCanvasRenderBound, dpr).update(this.canvas);
 
     if (bypassStackingCanvases) {
       this._stackingCanvas.forEach(canvas => {
@@ -1091,7 +1020,7 @@ export class CanvasRenderer {
 
       const layerRenderBound = this._getLayerRenderBound(
         layer.elements,
-        viewportBound
+        stackingViewportBound
       );
       const resolvedLayerRenderBound = this._getResolvedStackingCanvasBound(
         canvas,
@@ -1189,14 +1118,6 @@ export class CanvasRenderer {
       ).length,
     };
 
-    recordSurfaceCanvasDiagCounters(getAffineDiagCounters(), {
-      placeholderElementCount: renderStats.placeholderElementCount,
-      fallbackElementCount: fallbackElement.length,
-      visibleStackingCanvasCount:
-        this._lastDebugSnapshot.visibleStackingCanvasCount,
-      dirtyLayerRenderCount: stackingIndexesToRender.length,
-    });
-
     this._needsFullRender = false;
     this._mainCanvasDirty = false;
     this._dirtyStackingCanvasIndexes.clear();
@@ -1290,7 +1211,9 @@ export class CanvasRenderer {
   }
 
   private _resetSize() {
-    const sizeUpdater = this._canvasSizeUpdater();
+    const sizeUpdater = this._canvasSizeUpdater(
+      this.viewport.overscanViewportBounds
+    );
 
     sizeUpdater.update(this.canvas);
     this._lastCanvasBudgetZoom = this.viewport.zoom;
@@ -1370,9 +1293,12 @@ export class CanvasRenderer {
   ): HTMLCanvasElement {
     canvas = canvas || document.createElement('canvas');
 
-    const dpr = getEffectiveDpr(this.viewport.zoom);
-    if (canvas.width !== bound.w * dpr) canvas.width = bound.w * dpr;
-    if (canvas.height !== bound.h * dpr) canvas.height = bound.h * dpr;
+    const dpr = window.devicePixelRatio || 1;
+    const actualWidth = Math.ceil(bound.w * dpr);
+    const actualHeight = Math.ceil(bound.h * dpr);
+
+    if (canvas.width !== actualWidth) canvas.width = actualWidth;
+    if (canvas.height !== actualHeight) canvas.height = actualHeight;
 
     canvas.style.width = `${bound.w}px`;
     canvas.style.height = `${bound.h}px`;

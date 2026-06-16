@@ -212,7 +212,7 @@ export class EdgelessRootBlockComponent extends BlockComponent<
           currentCenter.y
         );
 
-        viewport.setZoom(zoom, new Point(baseX, baseY));
+        viewport.setZoom(zoom, new Point(baseX, baseY), false, true, true);
 
         return false;
       })
@@ -351,7 +351,7 @@ export class EdgelessRootBlockComponent extends BlockComponent<
           );
 
           const zoom = normalizeWheelDeltaY(e.deltaY, viewport.zoom);
-          viewport.setZoom(zoom, new Point(baseX, baseY), true);
+          viewport.setZoom(zoom, new Point(baseX, baseY), true, true, true);
           e.stopPropagation();
         }
         // pan
@@ -407,7 +407,6 @@ export class EdgelessRootBlockComponent extends BlockComponent<
 
   override connectedCallback() {
     super.connectedCallback();
-    this.dataset.debugSurfaceId = `root-${this.model.id}`;
 
     this._initViewport();
 

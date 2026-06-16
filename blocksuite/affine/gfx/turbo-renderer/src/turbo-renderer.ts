@@ -36,52 +36,6 @@ import type {
   WorkerToHostMessage,
 } from './types';
 
-type AffineDiagCounters = {
-  turboZoomPlaceholderPaintCount?: number;
-  turboZoomBitmapReuseCount?: number;
-  turboZoomIdleSkipCount?: number;
-  turboZoomIdleApplyCount?: number;
-};
-
-function getAffineDiagCounters() {
-  const win = globalThis as typeof globalThis & {
-    __affineDiagCounters?: AffineDiagCounters;
-  };
-
-  win.__affineDiagCounters ??= {};
-  return win.__affineDiagCounters;
-}
-
-export function recordTurboRendererDiagCounter(
-  counters: Record<string, number | undefined>,
-  event:
-    | 'zoom-placeholder-paint'
-    | 'zoom-bitmap-reuse'
-    | 'zoom-idle-skip'
-    | 'zoom-idle-apply'
-) {
-  if (event === 'zoom-placeholder-paint') {
-    counters.turboZoomPlaceholderPaintCount =
-      (counters.turboZoomPlaceholderPaintCount ?? 0) + 1;
-    return;
-  }
-
-  if (event === 'zoom-bitmap-reuse') {
-    counters.turboZoomBitmapReuseCount =
-      (counters.turboZoomBitmapReuseCount ?? 0) + 1;
-    return;
-  }
-
-  if (event === 'zoom-idle-skip') {
-    counters.turboZoomIdleSkipCount =
-      (counters.turboZoomIdleSkipCount ?? 0) + 1;
-    return;
-  }
-
-  counters.turboZoomIdleApplyCount =
-    (counters.turboZoomIdleApplyCount ?? 0) + 1;
-}
-
 const debug = false; // Toggle for debug logs
 const IOS_LOW_ZOOM_SURVIVAL_THRESHOLD = 0.5;
 
@@ -359,18 +313,10 @@ export class ViewportTurboRendererExtension extends GfxExtension {
           hasBitmap: !!this.bitmap,
         })
       ) {
-        recordTurboRendererDiagCounter(
-          getAffineDiagCounters(),
-          'zoom-bitmap-reuse'
-        );
         this.debugLog('Currently zooming, reusing cached bitmap');
         this.clearOptimizedBlocks();
         this.drawCachedBitmap();
       } else {
-        recordTurboRendererDiagCounter(
-          getAffineDiagCounters(),
-          'zoom-placeholder-paint'
-        );
         this.debugLog('Currently zooming, using placeholder rendering');
         this.paintPlaceholder();
         this.updateOptimizedBlocks();
@@ -533,12 +479,10 @@ export class ViewportTurboRendererExtension extends GfxExtension {
         zoom: this.viewport.zoom,
       })
     ) {
-      recordTurboRendererDiagCounter(getAffineDiagCounters(), 'zoom-idle-skip');
       this.clearOptimizedBlocks();
       return;
     }
 
-    recordTurboRendererDiagCounter(getAffineDiagCounters(), 'zoom-idle-apply');
     requestAnimationFrame(() => {
       if (!this.viewportElement || !this.layoutCache) return;
       const blockElements = this.viewportElement.getModelsInViewport();

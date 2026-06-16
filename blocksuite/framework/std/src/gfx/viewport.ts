@@ -76,10 +76,10 @@ export const viewportRuntimeConfig = {
    * {@link Viewport.viewportBounds}, leaving desktop behavior unchanged.
    *
    * This governs the *canvas* render bound only (see
-   * {@link Viewport.overscanViewportBounds}). Canvas overscan is cheap: it
-   * paints more vector ops (connectors, shapes) onto the existing fixed set of
-   * canvas tiles, so it does not grow resident memory. Keep this generous so
-   * connectors/elements stay painted through a gesture.
+   * {@link Viewport.overscanViewportBounds}). It enlarges the canvas backing
+   * stores, so memory grows with the overscan area. Keep it modest and pair it
+   * with the mobile zoom floor + dpr cap so connectors/elements stay painted
+   * through a gesture without pushing WKWebView over budget.
    */
   OVERSCAN_RATIO: 0,
   /**
@@ -429,8 +429,8 @@ export class Viewport {
    * Like {@link viewportBounds} but enlarged by
    * {@link viewportRuntimeConfig.OVERSCAN_RATIO} on every side. Used only by
    * the *canvas* render path so that gestures move into already-rasterized
-   * vector content instead of blank space. Cheap: the canvas tile set is
-   * fixed, so this only changes how much is painted, not resident memory.
+   * vector content instead of blank space. This also enlarges the canvas
+   * backing store, so keep the ratio conservative.
    *
    * Hit-testing, selection and other geometry must keep using the exact
    * {@link viewportBounds}; do not substitute this for those.
@@ -774,7 +774,7 @@ export class Viewport {
     focusPoint?: IPoint,
     wheel = false,
     forceUpdate = true,
-    signalGesture = true
+    signalGesture = false
   ) {
     if (forceUpdate && this._isResizing) {
       this._forceCompleteResize();

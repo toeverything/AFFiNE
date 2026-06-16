@@ -27,37 +27,6 @@ import type { WorkspaceService } from '../../workspace';
 import { EditorScope } from '../scopes/editor';
 import type { EditorSelector } from '../types';
 
-type AffineDiagCounters = {
-  pageScrollSaves: number;
-  edgelessViewportEvents: number;
-  edgelessViewportWrites: number;
-  edgelessScrollEvents: number;
-  edgelessScrollTopMax: number;
-};
-
-function getAffineDiagCounters() {
-  if (!BUILD_CONFIG.isMobileEdition || typeof window === 'undefined') {
-    return null;
-  }
-
-  const win = window as Window & {
-    __affineDiagCounters?: AffineDiagCounters;
-  };
-
-  win.__affineDiagCounters = Object.assign(
-    {
-      pageScrollSaves: 0,
-      edgelessViewportEvents: 0,
-      edgelessViewportWrites: 0,
-      edgelessScrollEvents: 0,
-      edgelessScrollTopMax: 0,
-    },
-    win.__affineDiagCounters
-  );
-
-  return win.__affineDiagCounters;
-}
-
 export class Editor extends Entity {
   readonly scope = this.framework.createScope(EditorScope, {
     editor: this as Editor,
@@ -349,7 +318,6 @@ export class Editor extends Entity {
     }
 
     // update scroll position when scrollViewport scroll
-    const diagCounters = getAffineDiagCounters();
     let edgelessWriteTimer: ReturnType<typeof setTimeout> | null = null;
 
     const flushEdgelessScrollPosition = () => {
@@ -363,7 +331,6 @@ export class Editor extends Entity {
         return;
       }
 
-      diagCounters && (diagCounters.edgelessViewportWrites += 1);
       this.workbenchView?.setScrollPosition(pos);
     };
 
@@ -372,7 +339,6 @@ export class Editor extends Entity {
         return;
       }
 
-      diagCounters && (diagCounters.pageScrollSaves += 1);
       this.scrollPosition.page = scrollViewport.scrollTop;
       this.workbenchView?.setScrollPosition(scrollViewport.scrollTop);
     };
@@ -382,7 +348,6 @@ export class Editor extends Entity {
         return;
       }
 
-      diagCounters && (diagCounters.edgelessViewportEvents += 1);
       this.scrollPosition.edgeless = {
         centerX: gfx.viewport.centerX,
         centerY: gfx.viewport.centerY,
@@ -399,13 +364,6 @@ export class Editor extends Entity {
 
     const handleViewportScroll = () => {
       if (this.mode$.value === 'edgeless' && scrollViewport) {
-        if (diagCounters) {
-          diagCounters.edgelessScrollEvents += 1;
-          diagCounters.edgelessScrollTopMax = Math.max(
-            diagCounters.edgelessScrollTopMax,
-            scrollViewport.scrollTop
-          );
-        }
         return;
       }
 

@@ -25,8 +25,9 @@ import { viewportRuntimeConfig } from '@blocksuite/affine/std/gfx';
 //   - OVERSCAN_RATIO pre-rasterizes a margin around the visible area on the
 //     *canvas* path, so a pan/zoom moves into content that is *already* painted
 //     instead of blanking out and waiting for the post-gesture refresh. This is
-//     what fixes "connectors/elements vanish for 1-2s". Canvas overscan is cheap
-//     (fixed tile set, more vector ops), so it can stay generous.
+//     what fixes "connectors/elements vanish for 1-2s". Canvas overscan grows
+//     backing-store area, so keep it modest and rely on the dpr cap to bound
+//     mobile memory.
 //   - OVERSCAN_RATIO_BLOCK is the *separate* knob for DOM block mounting, which
 //     is expensive: each mounted block is its own composited layer subtree, so
 //     enlarging this multiplies resident memory and is what drives the iOS
@@ -40,10 +41,10 @@ viewportRuntimeConfig.VIEWPORT_REFRESH_MAX_INTERVAL = 300;
 viewportRuntimeConfig.SKIP_REFRESH_DURING_GESTURE = true;
 viewportRuntimeConfig.LOW_ZOOM_GESTURE_ACTIVE_BLOCK_LIMIT = 1;
 
-// Pre-paint a 20% margin on every side of the viewport for *canvas* culling
-// only. This still keeps nearby connectors/shapes warm during orientation and
-// zoom gestures, but trims the transient paint budget versus the previous 35%
-// setting so low-zoom survival mode has less work to recover from on iOS.
+// Pre-paint a 20% margin on every side of the viewport for the *canvas* render
+// path. This keeps nearby connectors/shapes warm during orientation and zoom
+// gestures, but trims the backing-store and paint budget versus the previous
+// 35% setting so low-zoom survival mode has less work to recover from on iOS.
 viewportRuntimeConfig.OVERSCAN_RATIO = 0.2;
 
 // Keep DOM block mounting on the exact visible bound (no overscan). Each mounted
@@ -69,12 +70,11 @@ viewportRuntimeConfig.POST_GESTURE_REFRESH_DELAY = 220;
 // content process during pan. Cap the canvas backing-store dpr the further out
 // we zoom: the smaller the content, the less resolution it needs.
 //
-// Canvas memory scales with dpr^2, NOT with zoom or cull bounds. On-device
-// diagnostics proved this: at zoom 0.4 with dpr 2 the total canvas megapixels
-// hit ~7.2 and the web process crashed on the first fast zoom-out; the same
-// scene at dpr 1 sits near ~1.8 mp and is stable. So the crash is governed by
-// which dpr bucket the live zoom lands in, and raising ZOOM_MIN alone cannot
-// fix it — it only moves the zoom between buckets.
+// Canvas memory scales with backing-store area and dpr^2. With a fixed viewport
+// and overscan ratio, the dpr bucket dominates: on-device diagnostics showed
+// zoom 0.4 with dpr 2 hitting ~7.2 mp and crashing on the first fast zoom-out;
+// the same scene at dpr 1 sits near ~1.8 mp and is stable. Raising ZOOM_MIN
+// alone cannot fix it — it only moves the zoom between buckets.
 //
 // Therefore force dpr 1 for the entire mobile zoom-out range (zoom < 0.5, which
 // covers the 0.4 floor) to keep the compositing budget bounded. Connectors are

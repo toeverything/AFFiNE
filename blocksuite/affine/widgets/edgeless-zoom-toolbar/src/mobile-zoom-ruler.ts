@@ -105,6 +105,7 @@ export class MobileZoomRuler extends WithDisposable(LitElement) {
     disposables.add(
       viewport.viewportUpdated.subscribe(() => this.requestUpdate())
     );
+    disposables.add(viewport.zoomUpdated.subscribe(() => this.requestUpdate()));
   }
 
   override render() {
