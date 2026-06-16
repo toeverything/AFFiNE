@@ -171,7 +171,7 @@ export interface CurrentUserProfileSnapshot {
   emailVerified: boolean;
   hasPassword: boolean | null;
   avatarUrl: string | null;
-  features?: string[];
+  features: string[];
 }
 
 export interface UserSettingsSnapshot {

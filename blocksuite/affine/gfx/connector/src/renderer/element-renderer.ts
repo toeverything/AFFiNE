@@ -19,6 +19,7 @@ import {
   type LocalConnectorElementModel,
   type PointStyle,
 } from '@blocksuite/affine-model';
+import { getAffinePlaceholderFillColor } from '@blocksuite/affine-shared/theme';
 import {
   getBezierParameters,
   type PointLocation,
@@ -253,7 +254,7 @@ function renderLabel(
   ctx.setTransform(matrix);
 
   if (renderer.usePlaceholder) {
-    ctx.fillStyle = 'rgba(200, 200, 200, 0.5)';
+    ctx.fillStyle = getAffinePlaceholderFillColor(renderer.getColorScheme());
     ctx.fillRect(0, 0, w, h);
     return; // Skip actual label rendering
   }

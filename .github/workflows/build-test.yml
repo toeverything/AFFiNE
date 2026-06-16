@@ -135,6 +135,159 @@ jobs:
             echo "All changes are submitted"
           fi
 
+  mobile-native-build-filter:
+    name: Mobile native build filter
+    runs-on: ubuntu-latest
+    outputs:
+      run-android: ${{ steps.mobile-native-filter.outputs.android }}
+      run-ios: ${{ steps.mobile-native-filter.outputs.ios }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: dorny/paths-filter@v3
+        id: mobile-native-filter
+        with:
+          filters: |
+            android:
+              - '.github/workflows/build-test.yml'
+              - 'packages/frontend/apps/android/**'
+              - 'packages/frontend/mobile-native/**'
+              - '.cargo/**'
+              - 'Cargo.lock'
+              - 'Cargo.toml'
+              - 'rust-toolchain*'
+            ios:
+              - '.github/workflows/build-test.yml'
+              - 'packages/frontend/apps/ios/**'
+              - 'packages/frontend/mobile-native/**'
+              - '.cargo/**'
+              - 'Cargo.lock'
+              - 'Cargo.toml'
+              - 'rust-toolchain*'
+
+  build-android-app:
+    name: Build Android app
+    if: ${{ needs.mobile-native-build-filter.outputs.run-android == 'true' }}
+    runs-on: ubuntu-latest
+    needs:
+      - mobile-native-build-filter
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          extra-flags: workspaces focus @affine/monorepo @affine-tools/cli @affine/android
+          electron-install: false
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'gradle'
+
+      - name: Setup Rust
+        uses: ./.github/actions/build-rust
+        with:
+          target: 'aarch64-linux-android'
+          package: 'affine_mobile_native'
+          no-build: 'true'
+
+      - name: Build Android web assets
+        run: yarn affine @affine/android build
+        env:
+          PUBLIC_PATH: '/'
+
+      - name: Write CI Firebase config
+        run: |
+          cat > packages/frontend/apps/android/App/app/google-services.json <<'JSON'
+          {
+            "project_info": {
+              "project_number": "1",
+              "project_id": "affine-ci",
+              "storage_bucket": "affine-ci.appspot.com"
+            },
+            "client": [
+              {
+                "client_info": {
+                  "mobilesdk_app_id": "1:1:android:0000000000000000",
+                  "android_client_info": {
+                    "package_name": "app.affine.pro"
+                  }
+                },
+                "oauth_client": [],
+                "api_key": [
+                  {
+                    "current_key": "ci-placeholder"
+                  }
+                ],
+                "services": {
+                  "appinvite_service": {
+                    "other_platform_oauth_client": []
+                  }
+                }
+              }
+            ],
+            "configuration_version": "1"
+          }
+          JSON
+
+      - name: Cap sync
+        run: yarn workspace @affine/android cap sync
+
+      - name: Build Android debug app
+        working-directory: packages/frontend/apps/android/App
+        run: ./gradlew :app:assembleCanaryDebug --no-daemon --stacktrace
+
+  build-ios-app:
+    name: Build iOS app
+    if: ${{ needs.mobile-native-build-filter.outputs.run-ios == 'true' }}
+    runs-on: macos-15
+    needs:
+      - mobile-native-build-filter
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          extra-flags: workspaces focus @affine/monorepo @affine-tools/cli @affine/ios
+          electron-install: false
+          hard-link-nm: false
+
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: 26.2
+
+      - name: Setup Rust
+        uses: ./.github/actions/build-rust
+        with:
+          target: 'aarch64-apple-ios-sim'
+          package: 'affine_mobile_native'
+          no-build: 'true'
+
+      - name: Build iOS web assets
+        run: yarn affine @affine/ios build
+        env:
+          PUBLIC_PATH: '/'
+
+      - name: Cap sync
+        run: yarn workspace @affine/ios sync
+
+      - name: Build iOS simulator app
+        run: |
+          xcodebuild \
+            -workspace packages/frontend/apps/ios/App/App.xcworkspace \
+            -scheme App \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            ARCHS=arm64 \
+            ONLY_ACTIVE_ARCH=YES \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            build
+
   rust-test-filter:
     name: Rust test filter
     runs-on: ubuntu-latest
@@ -1328,6 +1481,9 @@ jobs:
       - analyze
       - lint
       - typecheck
+      - mobile-native-build-filter
+      - build-android-app
+      - build-ios-app
       - lint-rust
       - check-git-status
       - check-yarn-binary

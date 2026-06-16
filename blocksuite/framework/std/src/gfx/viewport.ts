@@ -23,6 +23,120 @@ export const ZOOM_INITIAL = 1.0;
 
 export const FIT_TO_SCREEN_PADDING = 100;
 
+/**
+ * Process-wide defaults applied to every {@link Viewport} at construction.
+ *
+ * Platforms that need different behavior (e.g. mobile/iOS, which must clamp the
+ * zoom floor and defer DOM mutations during gestures to avoid WKWebView process
+ * termination) override these once at startup, before any editor mounts. This
+ * guarantees both the editor and the readonly preview viewports are born with
+ * the same limits — avoiding the race and wrong-instance problems of patching a
+ * single Viewport asynchronously after it has already mounted.
+ *
+ * Desktop leaves these untouched, so its behavior is unchanged.
+ */
+export const viewportRuntimeConfig = {
+  ZOOM_MIN,
+  ZOOM_MAX,
+  VIEWPORT_REFRESH_PIXEL_THRESHOLD: 18,
+  VIEWPORT_REFRESH_MAX_INTERVAL: 120,
+  SKIP_REFRESH_DURING_GESTURE: false,
+  /**
+   * Delay (ms) before the post-gesture refresh repaints canvases and reactivates
+   * blocks, used only when {@link SKIP_REFRESH_DURING_GESTURE} is true. The same
+   * value drives both the canvas and block refresh timers so they fire together
+   * (avoiding the "blocks appear, then connectors" staggered reveal). Desktop
+   * never enters that code path, so this is mobile-only.
+   */
+  POST_GESTURE_REFRESH_DELAY: 800,
+  /**
+   * Caps the canvas backing-store device-pixel-ratio at low zoom.
+   *
+   * Each entry is `[zoomThreshold, dprCap]`, sorted ascending by threshold.
+   * When the live zoom is below a threshold, the corresponding cap bounds the
+   * effective dpr used to size canvases. Far-out zoom makes content tiny on
+   * screen, so a full retina backing store is wasted memory — on iOS that waste
+   * is what pushes WKWebView past its compositing budget and crashes the web
+   * content process during pan/zoom.
+   *
+   * Empty (the desktop default) means no cap: canvases always use the raw
+   * `window.devicePixelRatio`, so desktop behavior is unchanged.
+   */
+  CANVAS_DPR_CAP_BY_ZOOM: [] as Array<[number, number]>,
+  /**
+   * Fraction by which the *render/activation* viewport bound is enlarged on
+   * every side (see {@link Viewport.overscanViewportBounds}). Pre-painting a
+   * margin around the visible area means moderate pan/zoom gestures move into
+   * content that is already mounted and rasterized, so it does not blank out
+   * and wait for the post-gesture refresh.
+   *
+   * Memory grows by roughly `(1 + 2 * ratio) ** 2`, so this must stay modest
+   * and be paired with a zoom floor + dpr cap on mobile. `0` (desktop default)
+   * makes {@link Viewport.overscanViewportBounds} identical to
+   * {@link Viewport.viewportBounds}, leaving desktop behavior unchanged.
+   *
+   * This governs the *canvas* render bound only (see
+   * {@link Viewport.overscanViewportBounds}). It enlarges the canvas backing
+   * stores, so memory grows with the overscan area. Keep it modest and pair it
+   * with the mobile zoom floor + dpr cap so connectors/elements stay painted
+   * through a gesture without pushing WKWebView over budget.
+   */
+  OVERSCAN_RATIO: 0,
+  /**
+   * Like {@link OVERSCAN_RATIO} but for the *DOM block mounting* bound (see
+   * {@link Viewport.overscanBlockBounds}). This one is expensive: every
+   * mounted block becomes its own composited layer subtree in the WebContent
+   * process, so enlarging it multiplies resident memory and is what pushes the
+   * process toward an iOS jetsam kill. Keep this small (or `0`) even when
+   * {@link OVERSCAN_RATIO} is generous. `0` (desktop default) leaves block
+   * mounting on the exact visible bound, unchanged from upstream.
+   */
+  OVERSCAN_RATIO_BLOCK: 0,
+  /**
+   * During low-zoom gesture survival mode, keep only a tiny subset of DOM blocks
+   * as real active DOM (selected + a few nearby blocks). `0` keeps the legacy
+   * behavior where every viewport block remains visually mounted as `survival`.
+   */
+  LOW_ZOOM_GESTURE_ACTIVE_BLOCK_LIMIT: 0,
+  /**
+   * Distance threshold (as a fraction of the viewport's shorter side) used to
+   * decide whether an unselected viewport block counts as "nearby" to the
+   * current selection during low-zoom gesture survival mode.
+   */
+  LOW_ZOOM_GESTURE_ACTIVE_DISTANCE_RATIO: 0.35,
+};
+
+export function getPostGestureRecoveryDelay({
+  isPanning,
+  isZooming,
+  fallbackDelayMs,
+}: {
+  isPanning: boolean;
+  isZooming: boolean;
+  fallbackDelayMs: number;
+}) {
+  return isPanning || isZooming ? fallbackDelayMs : 0;
+}
+
+/**
+ * Resolves the effective device-pixel-ratio for canvas backing stores at the
+ * given zoom, honoring {@link viewportRuntimeConfig.CANVAS_DPR_CAP_BY_ZOOM}.
+ *
+ * Returns the raw `window.devicePixelRatio` when no cap applies.
+ */
+export function getEffectiveDpr(
+  zoom: number,
+  rawDpr = window.devicePixelRatio
+): number {
+  const caps = viewportRuntimeConfig.CANVAS_DPR_CAP_BY_ZOOM;
+  for (const [zoomThreshold, dprCap] of caps) {
+    if (zoom < zoomThreshold) {
+      return Math.min(rawDpr, dprCap);
+    }
+  }
+  return rawDpr;
+}
+
 export interface ViewportRecord {
   left: number;
   top: number;
@@ -92,6 +206,13 @@ export class Viewport {
     top: number;
   }>();
 
+  resizeStarted = new Subject<{
+    width: number;
+    height: number;
+    left: number;
+    top: number;
+  }>();
+
   viewportMoved = new Subject<IVec>();
 
   viewportUpdated = new Subject<{
@@ -99,12 +220,71 @@ export class Viewport {
     center: IVec;
   }>();
 
+  zoomUpdated = new Subject<{
+    previousZoom: number;
+    zoom: number;
+  }>();
+
   zooming$ = new BehaviorSubject<boolean>(false);
   panning$ = new BehaviorSubject<boolean>(false);
 
-  ZOOM_MAX = ZOOM_MAX;
+  /**
+   * Per-instance override for the maximum zoom. When unset, the value is read
+   * dynamically from {@link viewportRuntimeConfig} so that runtime overrides
+   * (e.g. iOS mobile-safe limits configured at app startup) always apply,
+   * regardless of whether this instance was constructed before or after the
+   * override ran.
+   */
+  private _zoomMaxOverride?: number;
 
-  ZOOM_MIN = ZOOM_MIN;
+  private _zoomMinOverride?: number;
+
+  get ZOOM_MAX() {
+    return this._zoomMaxOverride ?? viewportRuntimeConfig.ZOOM_MAX;
+  }
+
+  set ZOOM_MAX(value: number) {
+    this._zoomMaxOverride = value;
+  }
+
+  get ZOOM_MIN() {
+    return this._zoomMinOverride ?? viewportRuntimeConfig.ZOOM_MIN;
+  }
+
+  set ZOOM_MIN(value: number) {
+    this._zoomMinOverride = value;
+  }
+
+  /**
+   * Minimum pixel movement before triggering a viewport refresh during panning.
+   * Higher values reduce refresh frequency, lowering memory pressure on mobile.
+   * Default: 18 (desktop-optimized).
+   */
+  VIEWPORT_REFRESH_PIXEL_THRESHOLD =
+    viewportRuntimeConfig.VIEWPORT_REFRESH_PIXEL_THRESHOLD;
+
+  /**
+   * Maximum interval (ms) between viewport refreshes during continuous interaction.
+   * Higher values reduce refresh frequency, lowering memory pressure on mobile.
+   * Default: 120 (desktop-optimized).
+   */
+  VIEWPORT_REFRESH_MAX_INTERVAL =
+    viewportRuntimeConfig.VIEWPORT_REFRESH_MAX_INTERVAL;
+
+  /**
+   * When true, viewport element visibility refreshes are skipped entirely during
+   * panning/zooming, deferring all DOM mutations until the gesture ends.
+   * Prevents JS main thread blocking that can cause WKWebView process termination.
+   * Default: false (desktop behavior unchanged).
+   */
+  SKIP_REFRESH_DURING_GESTURE =
+    viewportRuntimeConfig.SKIP_REFRESH_DURING_GESTURE;
+
+  LOW_ZOOM_GESTURE_ACTIVE_BLOCK_LIMIT =
+    viewportRuntimeConfig.LOW_ZOOM_GESTURE_ACTIVE_BLOCK_LIMIT;
+
+  LOW_ZOOM_GESTURE_ACTIVE_DISTANCE_RATIO =
+    viewportRuntimeConfig.LOW_ZOOM_GESTURE_ACTIVE_DISTANCE_RATIO;
 
   private readonly _resetZooming = debounce(() => {
     this.zooming$.next(false);
@@ -144,7 +324,7 @@ export class Viewport {
     const newCenterX = initialTopLeftX + width / (2 * this.zoom);
     const newCenterY = initialTopLeftY + height / (2 * this.zoom);
 
-    this.setCenter(newCenterX, newCenterY, false);
+    this.setCenter(newCenterX, newCenterY, false, false);
     this._width = width;
     this._height = height;
     this._left = left;
@@ -245,6 +425,49 @@ export class Viewport {
     });
   }
 
+  /**
+   * Like {@link viewportBounds} but enlarged by
+   * {@link viewportRuntimeConfig.OVERSCAN_RATIO} on every side. Used only by
+   * the *canvas* render path so that gestures move into already-rasterized
+   * vector content instead of blank space. This also enlarges the canvas
+   * backing store, so keep the ratio conservative.
+   *
+   * Hit-testing, selection and other geometry must keep using the exact
+   * {@link viewportBounds}; do not substitute this for those.
+   */
+  get overscanViewportBounds() {
+    return this._enlargeBounds(viewportRuntimeConfig.OVERSCAN_RATIO);
+  }
+
+  /**
+   * Like {@link overscanViewportBounds} but governed by the separate, smaller
+   * {@link viewportRuntimeConfig.OVERSCAN_RATIO_BLOCK}. Used only by the *DOM
+   * block mounting* path. Expensive: every mounted block adds a composited
+   * layer subtree, so this must stay small to keep the WebContent process
+   * under the iOS jetsam memory limit even when canvas overscan is generous.
+   */
+  get overscanBlockBounds() {
+    return this._enlargeBounds(viewportRuntimeConfig.OVERSCAN_RATIO_BLOCK);
+  }
+
+  private _enlargeBounds(ratio: number) {
+    const bounds = this.viewportBounds;
+
+    if (ratio <= 0) {
+      return bounds;
+    }
+
+    const marginX = bounds.w * ratio;
+    const marginY = bounds.h * ratio;
+
+    return new Bound(
+      bounds.x - marginX,
+      bounds.y - marginY,
+      bounds.w + marginX * 2,
+      bounds.h + marginY * 2
+    );
+  }
+
   get viewportMaxXY() {
     const { centerX, centerY, width, height, zoom } = this;
     return {
@@ -297,8 +520,10 @@ export class Viewport {
   dispose() {
     this.clearViewportElement();
     this.sizeUpdated.complete();
+    this.resizeStarted.complete();
     this.viewportMoved.complete();
     this.viewportUpdated.complete();
+    this.zoomUpdated.complete();
     this._resizeSubject.complete();
     this.zooming$.complete();
     this.panning$.complete();
@@ -307,7 +532,7 @@ export class Viewport {
   getFitToScreenData(
     bounds?: Bound | null,
     padding: [number, number, number, number] = [0, 0, 0, 0],
-    maxZoom = ZOOM_MAX,
+    maxZoom = this.ZOOM_MAX,
     fitToScreenPadding = 100
   ) {
     let { centerX, centerY, zoom } = this;
@@ -324,7 +549,11 @@ export class Viewport {
       (width - fitToScreenPadding - (pr + pl)) / w,
       (height - fitToScreenPadding - (pt + pb)) / h
     );
-    zoom = clamp(zoom, ZOOM_MIN, clamp(maxZoom, ZOOM_MIN, ZOOM_MAX));
+    zoom = clamp(
+      zoom,
+      this.ZOOM_MIN,
+      clamp(maxZoom, this.ZOOM_MIN, this.ZOOM_MAX)
+    );
 
     centerX = x + (w + pr / zoom) / 2 - pl / zoom / 2;
     centerY = y + (h + pb / zoom) / 2 - pt / zoom / 2;
@@ -353,6 +582,12 @@ export class Viewport {
 
     this._left = left;
     this._top = top;
+    this.resizeStarted.next({
+      left,
+      top,
+      width,
+      height,
+    });
     this._resizeSubject.next({
       left,
       top,
@@ -367,19 +602,39 @@ export class Viewport {
    * @param centerY The new y coordinate of the center of the viewport.
    * @param forceUpdate Whether to force complete any pending resize operations before setting the viewport.
    */
-  setCenter(centerX: number, centerY: number, forceUpdate = true) {
+  setCenter(
+    centerX: number,
+    centerY: number,
+    forceUpdate = true,
+    signalPanning = true
+  ) {
     if (forceUpdate && this._isResizing) {
       this._forceCompleteResize();
     }
 
     this._center.x = centerX;
     this._center.y = centerY;
-    this.panning$.next(true);
-    this.viewportUpdated.next({
-      zoom: this.zoom,
-      center: Vec.toVec(this.center) as IVec,
-    });
-    this._resetPanning();
+
+    const gestureActive = this.panning$.value || this.zooming$.value;
+
+    if (signalPanning) {
+      this.panning$.next(true);
+    }
+
+    // When SKIP_REFRESH_DURING_GESTURE is active, suppress viewportUpdated
+    // emissions during gestures. Heavy subscribers (canvas, DOM visibility,
+    // per-block transforms) would otherwise fire on every gesture event.
+    // Instead, the viewport-element applies a lightweight container-level
+    // CSS transform to keep visuals in sync with zero per-block overhead.
+    if (!(this.SKIP_REFRESH_DURING_GESTURE && gestureActive)) {
+      this.viewportUpdated.next({
+        zoom: this.zoom,
+        center: Vec.toVec(this.center) as IVec,
+      });
+    }
+    if (signalPanning) {
+      this._resetPanning();
+    }
   }
 
   setRect(left: number, top: number, width: number, height: number) {
@@ -410,7 +665,8 @@ export class Viewport {
     newZoom: number,
     newCenter = Vec.toVec(this.center),
     smooth = false,
-    forceUpdate = true
+    forceUpdate = true,
+    signalGesture = false
   ) {
     // Force complete any pending resize operations if forceUpdate is true
     if (forceUpdate && this._isResizing) {
@@ -421,19 +677,19 @@ export class Viewport {
     if (smooth) {
       const cofficient = preZoom / newZoom;
       if (cofficient === 1) {
-        this.smoothTranslate(newCenter[0], newCenter[1]);
+        this.smoothTranslate(newCenter[0], newCenter[1], 10, signalGesture);
       } else {
         const center = [this.centerX, this.centerY] as IVec;
         const focusPoint = Vec.mul(
           Vec.sub(newCenter, Vec.mul(center, cofficient)),
           1 / (1 - cofficient)
         );
-        this.smoothZoom(newZoom, Vec.toPoint(focusPoint));
+        this.smoothZoom(newZoom, Vec.toPoint(focusPoint), 10, signalGesture);
       }
     } else {
       this._center.x = newCenter[0];
       this._center.y = newCenter[1];
-      this.setZoom(newZoom, undefined, false, forceUpdate);
+      this.setZoom(newZoom, undefined, false, forceUpdate, signalGesture);
     }
   }
 
@@ -450,7 +706,8 @@ export class Viewport {
     bound: Bound,
     padding: [number, number, number, number] = [0, 0, 0, 0],
     smooth = false,
-    forceUpdate = true
+    forceUpdate = true,
+    signalGesture = false
   ) {
     let [pt, pr, pb, pl] = padding;
 
@@ -485,7 +742,7 @@ export class Viewport {
       bound.y + (bound.h + pb / zoom) / 2 - pt / zoom / 2,
     ] as IVec;
 
-    this.setViewport(zoom, center, smooth, forceUpdate);
+    this.setViewport(zoom, center, smooth, forceUpdate, signalGesture);
   }
 
   /** This is the outer container of the viewport, which is the host of the viewport element */
@@ -509,14 +766,15 @@ export class Viewport {
    * Set the viewport to the new zoom.
    * @param zoom The new zoom value.
    * @param focusPoint The point to focus on after zooming, default is the center of the viewport.
-   * @param wheel Whether the zoom is caused by wheel event.
+   * @param _wheel Legacy parameter kept for call-site compatibility.
    * @param forceUpdate Whether to force complete any pending resize operations before setting the viewport.
    */
   setZoom(
     zoom: number,
     focusPoint?: IPoint,
-    wheel = false,
-    forceUpdate = true
+    _wheel = false,
+    forceUpdate = true,
+    signalGesture = false
   ) {
     if (forceUpdate && this._isResizing) {
       this._forceCompleteResize();
@@ -532,18 +790,21 @@ export class Viewport {
       Vec.toVec(focusPoint),
       Vec.mul(offset, prevZoom / newZoom)
     );
-    if (wheel) {
+    // Always signal zooming for any real gesture zoom change (pinch or wheel).
+    // Programmatic viewport changes should use the normal refresh path without
+    // entering low-zoom gesture survival mode.
+    if (signalGesture) {
       this.zooming$.next(true);
     }
-    this.setCenter(newCenter[0], newCenter[1], forceUpdate);
-    this.viewportUpdated.next({
-      zoom: this.zoom,
-      center: Vec.toVec(this.center) as IVec,
-    });
-    this._resetZooming();
+    this.setCenter(newCenter[0], newCenter[1], forceUpdate, signalGesture);
+    this.zoomUpdated.next({ previousZoom: prevZoom, zoom: newZoom });
+    // setCenter already emits viewportUpdated, no need to emit again here.
+    if (signalGesture) {
+      this._resetZooming();
+    }
   }
 
-  smoothTranslate(x: number, y: number, numSteps = 10) {
+  smoothTranslate(x: number, y: number, numSteps = 10, signalGesture = false) {
     const { center } = this;
     const delta = { x: x - center.x, y: y - center.y };
     const innerSmoothTranslate = () => {
@@ -558,7 +819,7 @@ export class Viewport {
         const signY = delta.y > 0 ? 1 : -1;
         nextCenter.x = cutoff(nextCenter.x, x, signX);
         nextCenter.y = cutoff(nextCenter.y, y, signY);
-        this.setCenter(nextCenter.x, nextCenter.y, true);
+        this.setCenter(nextCenter.x, nextCenter.y, true, signalGesture);
 
         if (nextCenter.x != x || nextCenter.y != y) innerSmoothTranslate();
       });
@@ -566,7 +827,12 @@ export class Viewport {
     innerSmoothTranslate();
   }
 
-  smoothZoom(zoom: number, focusPoint?: IPoint, numSteps = 10) {
+  smoothZoom(
+    zoom: number,
+    focusPoint?: IPoint,
+    numSteps = 10,
+    signalGesture = false
+  ) {
     const delta = zoom - this.zoom;
     if (this._rafId) cancelAnimationFrame(this._rafId);
 
@@ -576,7 +842,7 @@ export class Viewport {
         const step = delta / numSteps;
         const nextZoom = cutoff(this.zoom + step, zoom, sign);
 
-        this.setZoom(nextZoom, focusPoint, undefined, true);
+        this.setZoom(nextZoom, focusPoint, undefined, true, signalGesture);
 
         if (nextZoom != zoom) innerSmoothZoom();
       });

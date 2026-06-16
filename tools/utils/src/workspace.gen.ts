@@ -683,6 +683,7 @@ export const PackageList = [
     location: 'blocksuite/affine/gfx/turbo-renderer',
     name: '@blocksuite/affine-gfx-turbo-renderer',
     workspaceDependencies: [
+      'blocksuite/affine/shared',
       'blocksuite/framework/global',
       'blocksuite/framework/std',
       'blocksuite/framework/store',
