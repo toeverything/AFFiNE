@@ -13,6 +13,8 @@ viewportRuntimeConfig.VIEWPORT_REFRESH_MAX_INTERVAL = 300;
 viewportRuntimeConfig.SKIP_REFRESH_DURING_GESTURE = true;
 viewportRuntimeConfig.OVERSCAN_RATIO = 0.2;
 viewportRuntimeConfig.OVERSCAN_RATIO_BLOCK = 0;
+// Keep this aligned with iOS: the ~200ms gesture debounce plus this delay gives
+// elements/connectors enough time to settle while still reappearing within ~500ms.
 viewportRuntimeConfig.POST_GESTURE_REFRESH_DELAY = 220;
 viewportRuntimeConfig.CANVAS_DPR_CAP_BY_ZOOM = [
   [0.5, 1],

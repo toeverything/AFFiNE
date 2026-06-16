@@ -1,9 +1,10 @@
+import os from 'node:os';
 import path from 'node:path';
 
 import fs from 'fs-extra';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
-const tmpDir = path.join(__dirname, 'tmp-byok-storage');
+let tmpDir: string;
 let disposeWorkspaceByokStorage: (() => void) | undefined;
 
 vi.mock('electron', () => ({
@@ -18,14 +19,22 @@ vi.mock('electron', () => ({
   },
 }));
 
+vi.mock('../../src/main/logger', () => ({
+  logger: {
+    error: vi.fn(),
+  },
+}));
+
 beforeEach(async () => {
+  vi.useRealTimers();
   vi.resetModules();
   disposeWorkspaceByokStorage = undefined;
-  await fs.remove(tmpDir);
+  tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'affine-byok-storage-'));
 });
 
 afterEach(async () => {
   disposeWorkspaceByokStorage?.();
+  disposeWorkspaceByokStorage = undefined;
   vi.resetModules();
   await fs.remove(tmpDir);
 });
