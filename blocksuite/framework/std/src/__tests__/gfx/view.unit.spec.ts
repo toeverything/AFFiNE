@@ -7,11 +7,13 @@ import { describe, expect, test, vi } from 'vitest';
 
 import { effects } from '../../effects.js';
 import { GfxControllerIdentifier } from '../../gfx/identifiers.js';
+import type { GfxBlockElementModel } from '../../gfx/model/gfx-block-model.js';
 import { getPostGestureRecoveryDelay } from '../../gfx/viewport.js';
 import {
   GfxViewportElement,
   shouldUseLowZoomBlockSurvivalMode,
 } from '../../gfx/viewport-element.js';
+import type { GfxBlockComponent } from '../../view/element/gfx-block-component.js';
 import { TestEditorContainer } from '../test-editor.js';
 import { TestLocalElement } from '../test-gfx-element.js';
 import {
@@ -98,15 +100,39 @@ const waitGfxViewConnected = (gfx: {
   };
 };
 
-const setBlockXYWH = (
-  gfx: { getElementById: (id: string) => { xywh: SerializedXYWH } | null },
-  id: string,
-  xywh: SerializedXYWH
+const getTestGfxBlockModel = (
+  gfx: { getElementById: (id: string) => unknown },
+  id: string
 ) => {
-  const model = gfx.getElementById(id);
+  const model = gfx.getElementById(id) as GfxBlockElementModel | null;
   if (!model) {
     throw new Error(`Missing gfx model for block ${id}`);
   }
+  return model;
+};
+
+const getTestGfxBlockView = (
+  gfx: { view: { get: (id: string) => unknown } },
+  id: string
+) => {
+  const view = gfx.view.get(id) as GfxBlockComponent | null;
+  if (!view) {
+    throw new Error(`Missing gfx view for block ${id}`);
+  }
+  return view;
+};
+
+const getViewportChildBlockIds = (viewportElement: GfxViewportElement) =>
+  [...viewportElement.children].map(
+    child => (child as HTMLElement).dataset.blockId
+  );
+
+const setBlockXYWH = (
+  gfx: { getElementById: (id: string) => unknown },
+  id: string,
+  xywh: SerializedXYWH
+) => {
+  const model = getTestGfxBlockModel(gfx, id);
   model.xywh = xywh;
 };
 
@@ -215,12 +241,12 @@ describe('gfx element view basic', () => {
     setBlockXYWH(gfx, inViewportId, '[20,0,10,10]');
     setBlockXYWH(gfx, outOfViewportId, '[500,500,10,10]');
 
-    const selectedModel = gfx.getElementById(selectedId);
-    const inViewportModel = gfx.getElementById(inViewportId);
-    const outOfViewportModel = gfx.getElementById(outOfViewportId);
-    const selectedView = gfx.view.get(selectedId);
-    const inViewportView = gfx.view.get(inViewportId);
-    const outOfViewportView = gfx.view.get(outOfViewportId);
+    const selectedModel = getTestGfxBlockModel(gfx, selectedId);
+    const inViewportModel = getTestGfxBlockModel(gfx, inViewportId);
+    const outOfViewportModel = getTestGfxBlockModel(gfx, outOfViewportId);
+    const selectedView = getTestGfxBlockView(gfx, selectedId);
+    const inViewportView = getTestGfxBlockView(gfx, inViewportId);
+    const outOfViewportView = getTestGfxBlockView(gfx, outOfViewportId);
 
     expect(selectedModel).not.toBeNull();
     expect(inViewportModel).not.toBeNull();
@@ -237,15 +263,15 @@ describe('gfx element view basic', () => {
     viewportElement.host = editorContainer.std.host;
     viewportElement.viewport = gfx.viewport;
     viewportElement.getModelsInViewport = () =>
-      new Set([selectedModel!, inViewportModel!]);
+      new Set([selectedModel, inViewportModel]);
     (
       viewportElement as unknown as {
         _lastVisibleModels: Set<unknown>;
       }
     )._lastVisibleModels = new Set([
-      selectedModel!,
-      inViewportModel!,
-      outOfViewportModel!,
+      selectedModel,
+      inViewportModel,
+      outOfViewportModel,
     ]);
 
     (
@@ -254,9 +280,9 @@ describe('gfx element view basic', () => {
       }
     )._hideOutsideAndNoSelectedBlock();
 
-    expect(selectedView!.transformState$.value).toBe('active');
-    expect(inViewportView!.transformState$.value).toBe('survival');
-    expect(outOfViewportView!.transformState$.value).toBe('idle');
+    expect(selectedView.transformState$.value).toBe('active');
+    expect(inViewportView.transformState$.value).toBe('survival');
+    expect(outOfViewportView.transformState$.value).toBe('idle');
   });
 
   test('parks non-active low-zoom gesture blocks outside viewport DOM while gesture is running', async () => {
@@ -296,13 +322,13 @@ describe('gfx element view basic', () => {
     setBlockXYWH(gfx, farVisibleId, '[120,0,10,10]');
     setBlockXYWH(gfx, outOfViewportId, '[500,500,10,10]');
 
-    const selectedModel = gfx.getElementById(selectedId);
-    const nearbyModel = gfx.getElementById(nearbyId);
-    const farVisibleModel = gfx.getElementById(farVisibleId);
-    const selectedView = gfx.view.get(selectedId);
-    const nearbyView = gfx.view.get(nearbyId);
-    const farVisibleView = gfx.view.get(farVisibleId);
-    const outOfViewportView = gfx.view.get(outOfViewportId);
+    const selectedModel = getTestGfxBlockModel(gfx, selectedId);
+    const nearbyModel = getTestGfxBlockModel(gfx, nearbyId);
+    const farVisibleModel = getTestGfxBlockModel(gfx, farVisibleId);
+    const selectedView = getTestGfxBlockView(gfx, selectedId);
+    const nearbyView = getTestGfxBlockView(gfx, nearbyId);
+    const farVisibleView = getTestGfxBlockView(gfx, farVisibleId);
+    const outOfViewportView = getTestGfxBlockView(gfx, outOfViewportId);
 
     expect(selectedModel).not.toBeNull();
     expect(nearbyModel).not.toBeNull();
@@ -351,13 +377,13 @@ describe('gfx element view basic', () => {
     viewportElement.host = editorContainer.std.host;
     viewportElement.viewport = gfx.viewport;
     viewportElement.getModelsInViewport = () =>
-      new Set([selectedModel!, nearbyModel!, farVisibleModel!]);
+      new Set([selectedModel, nearbyModel, farVisibleModel]);
     document.body.append(viewportElement);
     viewportElement.append(
-      selectedView!,
-      nearbyView!,
-      farVisibleView!,
-      outOfViewportView!
+      selectedView,
+      nearbyView,
+      farVisibleView,
+      outOfViewportView
     );
 
     (
@@ -366,11 +392,12 @@ describe('gfx element view basic', () => {
       }
     )._hideOutsideAndNoSelectedBlock();
 
-    expect(
-      [...viewportElement.children].map(child => child.dataset.blockId)
-    ).toEqual([selectedId, nearbyId]);
-    expect(farVisibleView!.isConnected).toBe(false);
-    expect(outOfViewportView!.isConnected).toBe(false);
+    expect(getViewportChildBlockIds(viewportElement)).toEqual([
+      selectedId,
+      nearbyId,
+    ]);
+    expect(farVisibleView.isConnected).toBe(false);
+    expect(outOfViewportView.isConnected).toBe(false);
   });
 
   test('restores parked low-zoom blocks after gesture recovery completes', async () => {
@@ -405,12 +432,12 @@ describe('gfx element view basic', () => {
       setBlockXYWH(gfx, secondId, '[20,0,10,10]');
       setBlockXYWH(gfx, thirdId, '[40,0,10,10]');
 
-      const firstModel = gfx.getElementById(firstId);
-      const secondModel = gfx.getElementById(secondId);
-      const thirdModel = gfx.getElementById(thirdId);
-      const firstView = gfx.view.get(firstId);
-      const secondView = gfx.view.get(secondId);
-      const thirdView = gfx.view.get(thirdId);
+      const firstModel = getTestGfxBlockModel(gfx, firstId);
+      const secondModel = getTestGfxBlockModel(gfx, secondId);
+      const thirdModel = getTestGfxBlockModel(gfx, thirdId);
+      const firstView = getTestGfxBlockView(gfx, firstId);
+      const secondView = getTestGfxBlockView(gfx, secondId);
+      const thirdView = getTestGfxBlockView(gfx, thirdId);
 
       expect(firstModel).not.toBeNull();
       expect(secondModel).not.toBeNull();
@@ -458,9 +485,9 @@ describe('gfx element view basic', () => {
       viewportElement.host = editorContainer.std.host;
       viewportElement.viewport = gfx.viewport;
       viewportElement.getModelsInViewport = () =>
-        new Set([firstModel!, secondModel!, thirdModel!]);
+        new Set([firstModel, secondModel, thirdModel]);
       document.body.append(viewportElement);
-      viewportElement.append(firstView!, secondView!, thirdView!);
+      viewportElement.append(firstView, secondView, thirdView);
 
       (
         viewportElement as unknown as {
@@ -473,14 +500,12 @@ describe('gfx element view basic', () => {
       gfx.viewport.panning$.next(false);
       await vi.advanceTimersByTimeAsync(1200);
 
-      expect(
-        new Set(
-          [...viewportElement.children].map(child => child.dataset.blockId)
-        )
-      ).toEqual(new Set([firstId, secondId, thirdId]));
-      expect(firstView!.transformState$.value).toBe('active');
-      expect(secondView!.transformState$.value).toBe('active');
-      expect(thirdView!.transformState$.value).toBe('active');
+      expect(new Set(getViewportChildBlockIds(viewportElement))).toEqual(
+        new Set([firstId, secondId, thirdId])
+      );
+      expect(firstView.transformState$.value).toBe('active');
+      expect(secondView.transformState$.value).toBe('active');
+      expect(thirdView.transformState$.value).toBe('active');
 
       gfx.viewport.panning$.next(true);
       (
@@ -493,14 +518,12 @@ describe('gfx element view basic', () => {
       gfx.viewport.panning$.next(false);
       await vi.advanceTimersByTimeAsync(1200);
 
-      expect(
-        new Set(
-          [...viewportElement.children].map(child => child.dataset.blockId)
-        )
-      ).toEqual(new Set([firstId, secondId, thirdId]));
-      expect(firstView!.transformState$.value).toBe('active');
-      expect(secondView!.transformState$.value).toBe('active');
-      expect(thirdView!.transformState$.value).toBe('active');
+      expect(new Set(getViewportChildBlockIds(viewportElement))).toEqual(
+        new Set([firstId, secondId, thirdId])
+      );
+      expect(firstView.transformState$.value).toBe('active');
+      expect(secondView.transformState$.value).toBe('active');
+      expect(thirdView.transformState$.value).toBe('active');
     } finally {
       vi.useRealTimers();
     }
@@ -581,11 +604,11 @@ describe('gfx element view basic', () => {
     setBlockXYWH(gfx, inViewportId, '[20,0,10,10]');
     setBlockXYWH(gfx, outOfViewportId, '[500,500,10,10]');
 
-    const selectedModel = gfx.getElementById(selectedId);
-    const inViewportModel = gfx.getElementById(inViewportId);
-    const selectedView = gfx.view.get(selectedId);
-    const inViewportView = gfx.view.get(inViewportId);
-    const outOfViewportView = gfx.view.get(outOfViewportId);
+    const selectedModel = getTestGfxBlockModel(gfx, selectedId);
+    const inViewportModel = getTestGfxBlockModel(gfx, inViewportId);
+    const selectedView = getTestGfxBlockView(gfx, selectedId);
+    const inViewportView = getTestGfxBlockView(gfx, inViewportId);
+    const outOfViewportView = getTestGfxBlockView(gfx, outOfViewportId);
 
     expect(selectedModel).not.toBeNull();
     expect(inViewportModel).not.toBeNull();
@@ -599,7 +622,7 @@ describe('gfx element view basic', () => {
     viewportElement.host = editorContainer.std.host;
     viewportElement.viewport = gfx.viewport;
     viewportElement.getModelsInViewport = () =>
-      new Set([selectedModel!, inViewportModel!]);
+      new Set([selectedModel, inViewportModel]);
 
     (
       viewportElement as unknown as {
@@ -607,9 +630,9 @@ describe('gfx element view basic', () => {
       }
     )._hideOutsideAndNoSelectedBlock();
 
-    expect(selectedView!.transformState$.value).toBe('active');
-    expect(inViewportView!.transformState$.value).toBe('active');
-    expect(outOfViewportView!.transformState$.value).toBe('idle');
+    expect(selectedView.transformState$.value).toBe('active');
+    expect(inViewportView.transformState$.value).toBe('active');
+    expect(outOfViewportView.transformState$.value).toBe('idle');
   });
 
   test('demotes visible unselected blocks immediately when zoom crosses into survival mode', async () => {
@@ -642,11 +665,11 @@ describe('gfx element view basic', () => {
     setBlockXYWH(gfx, inViewportId, '[20,0,10,10]');
     setBlockXYWH(gfx, outOfViewportId, '[500,500,10,10]');
 
-    const selectedModel = gfx.getElementById(selectedId);
-    const inViewportModel = gfx.getElementById(inViewportId);
-    const selectedView = gfx.view.get(selectedId);
-    const inViewportView = gfx.view.get(inViewportId);
-    const outOfViewportView = gfx.view.get(outOfViewportId);
+    const selectedModel = getTestGfxBlockModel(gfx, selectedId);
+    const inViewportModel = getTestGfxBlockModel(gfx, inViewportId);
+    const selectedView = getTestGfxBlockView(gfx, selectedId);
+    const inViewportView = getTestGfxBlockView(gfx, inViewportId);
+    const outOfViewportView = getTestGfxBlockView(gfx, outOfViewportId);
 
     expect(selectedModel).not.toBeNull();
     expect(inViewportModel).not.toBeNull();
@@ -661,7 +684,7 @@ describe('gfx element view basic', () => {
     viewportElement.host = editorContainer.std.host;
     viewportElement.viewport = gfx.viewport;
     viewportElement.getModelsInViewport = () =>
-      new Set([selectedModel!, inViewportModel!]);
+      new Set([selectedModel, inViewportModel]);
 
     (
       viewportElement as unknown as {
@@ -669,17 +692,17 @@ describe('gfx element view basic', () => {
       }
     )._hideOutsideAndNoSelectedBlock();
 
-    expect(selectedView!.transformState$.value).toBe('active');
-    expect(inViewportView!.transformState$.value).toBe('active');
-    expect(outOfViewportView!.transformState$.value).toBe('idle');
+    expect(selectedView.transformState$.value).toBe('active');
+    expect(inViewportView.transformState$.value).toBe('active');
+    expect(outOfViewportView.transformState$.value).toBe('idle');
 
     document.body.append(viewportElement);
     gfx.viewport.setZoom(0.4, { x: 0, y: 0 }, false, true, true);
     await Promise.resolve();
 
-    expect(selectedView!.transformState$.value).toBe('active');
-    expect(inViewportView!.transformState$.value).toBe('survival');
-    expect(outOfViewportView!.transformState$.value).toBe('idle');
+    expect(selectedView.transformState$.value).toBe('active');
+    expect(inViewportView.transformState$.value).toBe('survival');
+    expect(outOfViewportView.transformState$.value).toBe('idle');
   });
 
   test('chunked low-zoom refresh idles out-of-viewport blocks on the first pass', async () => {
@@ -712,11 +735,11 @@ describe('gfx element view basic', () => {
     setBlockXYWH(gfx, inViewportId, '[20,0,10,10]');
     setBlockXYWH(gfx, outOfViewportId, '[500,500,10,10]');
 
-    const selectedModel = gfx.getElementById(selectedId);
-    const inViewportModel = gfx.getElementById(inViewportId);
-    const selectedView = gfx.view.get(selectedId);
-    const inViewportView = gfx.view.get(inViewportId);
-    const outOfViewportView = gfx.view.get(outOfViewportId);
+    const selectedModel = getTestGfxBlockModel(gfx, selectedId);
+    const inViewportModel = getTestGfxBlockModel(gfx, inViewportId);
+    const selectedView = getTestGfxBlockView(gfx, selectedId);
+    const inViewportView = getTestGfxBlockView(gfx, inViewportId);
+    const outOfViewportView = getTestGfxBlockView(gfx, outOfViewportId);
 
     expect(selectedModel).not.toBeNull();
     expect(inViewportModel).not.toBeNull();
@@ -732,7 +755,7 @@ describe('gfx element view basic', () => {
     viewportElement.host = editorContainer.std.host;
     viewportElement.viewport = gfx.viewport;
     viewportElement.getModelsInViewport = () =>
-      new Set([selectedModel!, inViewportModel!]);
+      new Set([selectedModel, inViewportModel]);
 
     await new Promise<void>(resolve => {
       (
@@ -744,9 +767,9 @@ describe('gfx element view basic', () => {
       )._chunkedHideOutsideAndNoSelectedBlock(resolve);
     });
 
-    expect(selectedView!.transformState$.value).toBe('active');
-    expect(inViewportView!.transformState$.value).toBe('survival');
-    expect(outOfViewportView!.transformState$.value).toBe('idle');
+    expect(selectedView.transformState$.value).toBe('active');
+    expect(inViewportView.transformState$.value).toBe('survival');
+    expect(outOfViewportView.transformState$.value).toBe('idle');
   });
 
   test('newly mounted blocks inherit the current low-zoom visibility state', async () => {
@@ -761,8 +784,8 @@ describe('gfx element view basic', () => {
     await waitViewConnected(selectedId);
     setBlockXYWH(gfx, selectedId, '[0,0,10,10]');
 
-    const selectedModel = gfx.getElementById(selectedId);
-    const selectedView = gfx.view.get(selectedId);
+    const selectedModel = getTestGfxBlockModel(gfx, selectedId);
+    const selectedView = getTestGfxBlockView(gfx, selectedId);
 
     expect(selectedModel).not.toBeNull();
     expect(selectedView).not.toBeNull();
@@ -771,7 +794,7 @@ describe('gfx element view basic', () => {
     gfx.viewport.SKIP_REFRESH_DURING_GESTURE = true;
     gfx.viewport.setZoom(0.4, { x: 0, y: 0 }, false, true, true);
 
-    const viewportModels = new Set([selectedModel!]);
+    const viewportModels = new Set([selectedModel]);
     const viewportElement = new GfxViewportElement();
     viewportElement.host = editorContainer.std.host;
     viewportElement.viewport = gfx.viewport;
@@ -792,27 +815,27 @@ describe('gfx element view basic', () => {
     setBlockXYWH(gfx, inViewportId, '[20,0,10,10]');
     setBlockXYWH(gfx, outOfViewportId, '[500,500,10,10]');
 
-    const inViewportModel = gfx.getElementById(inViewportId);
-    const outOfViewportModel = gfx.getElementById(outOfViewportId);
+    const inViewportModel = getTestGfxBlockModel(gfx, inViewportId);
+    const outOfViewportModel = getTestGfxBlockModel(gfx, outOfViewportId);
 
     expect(inViewportModel).not.toBeNull();
     expect(outOfViewportModel).not.toBeNull();
 
-    viewportModels.add(inViewportModel!);
+    viewportModels.add(inViewportModel);
 
     await Promise.all([
       waitViewConnected(inViewportId),
       waitViewConnected(outOfViewportId),
     ]);
 
-    const inViewportView = gfx.view.get(inViewportId);
-    const outOfViewportView = gfx.view.get(outOfViewportId);
+    const inViewportView = getTestGfxBlockView(gfx, inViewportId);
+    const outOfViewportView = getTestGfxBlockView(gfx, outOfViewportId);
 
     expect(inViewportView).not.toBeNull();
     expect(outOfViewportView).not.toBeNull();
-    expect(selectedView!.transformState$.value).toBe('active');
-    expect(inViewportView!.transformState$.value).toBe('survival');
-    expect(outOfViewportView!.transformState$.value).toBe('idle');
+    expect(selectedView.transformState$.value).toBe('active');
+    expect(inViewportView.transformState$.value).toBe('survival');
+    expect(outOfViewportView.transformState$.value).toBe('idle');
   });
 
   test('demotes stale active blocks immediately when low-zoom resize starts', async () => {
@@ -845,11 +868,11 @@ describe('gfx element view basic', () => {
     setBlockXYWH(gfx, inViewportId, '[20,0,10,10]');
     setBlockXYWH(gfx, outOfViewportId, '[500,500,10,10]');
 
-    const selectedModel = gfx.getElementById(selectedId);
-    const inViewportModel = gfx.getElementById(inViewportId);
-    const selectedView = gfx.view.get(selectedId);
-    const inViewportView = gfx.view.get(inViewportId);
-    const outOfViewportView = gfx.view.get(outOfViewportId);
+    const selectedModel = getTestGfxBlockModel(gfx, selectedId);
+    const inViewportModel = getTestGfxBlockModel(gfx, inViewportId);
+    const selectedView = getTestGfxBlockView(gfx, selectedId);
+    const inViewportView = getTestGfxBlockView(gfx, inViewportId);
+    const outOfViewportView = getTestGfxBlockView(gfx, outOfViewportId);
 
     expect(selectedModel).not.toBeNull();
     expect(inViewportModel).not.toBeNull();
@@ -865,7 +888,7 @@ describe('gfx element view basic', () => {
     viewportElement.host = editorContainer.std.host;
     viewportElement.viewport = gfx.viewport;
     viewportElement.getModelsInViewport = () =>
-      new Set([selectedModel!, inViewportModel!]);
+      new Set([selectedModel, inViewportModel]);
     document.body.append(viewportElement);
 
     const shell = document.createElement('div');
@@ -896,15 +919,15 @@ describe('gfx element view basic', () => {
       }
     )._cachedOffsetWidth = 844;
 
-    selectedView!.transformState$.value = 'active';
-    inViewportView!.transformState$.value = 'active';
-    outOfViewportView!.transformState$.value = 'active';
+    selectedView.transformState$.value = 'active';
+    inViewportView.transformState$.value = 'active';
+    outOfViewportView.transformState$.value = 'active';
 
     gfx.viewport.onResize();
 
-    expect(selectedView!.transformState$.value).toBe('active');
-    expect(inViewportView!.transformState$.value).toBe('survival');
-    expect(outOfViewportView!.transformState$.value).toBe('idle');
+    expect(selectedView.transformState$.value).toBe('active');
+    expect(inViewportView.transformState$.value).toBe('survival');
+    expect(outOfViewportView.transformState$.value).toBe('idle');
   });
 
   test('resize completion clears low-zoom gesture recovery before sizeUpdated subscribers run', async () => {

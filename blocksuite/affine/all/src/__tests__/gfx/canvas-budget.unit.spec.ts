@@ -9,6 +9,7 @@ import {
   paintPlaceholder,
   syncCanvasSize,
 } from '../../../../gfx/turbo-renderer/src/renderer-utils.js';
+import type { ViewportLayoutTree } from '../../../../gfx/turbo-renderer/src/types.js';
 
 const originalCaps = [...viewportRuntimeConfig.CANVAS_DPR_CAP_BY_ZOOM];
 const originalDevicePixelRatio = Object.getOwnPropertyDescriptor(
@@ -49,6 +50,15 @@ function createFakeBlockModel(
     elementBound: new Bound(x, y, w, h),
   };
 }
+
+type PaintPlaceholderForTest = (
+  canvas: HTMLCanvasElement,
+  layout: ViewportLayoutTree,
+  viewport: {
+    zoom: number;
+    toViewCoord: (x: number, y: number) => [number, number];
+  }
+) => void;
 
 afterEach(() => {
   viewportRuntimeConfig.CANVAS_DPR_CAP_BY_ZOOM = [...originalCaps];
@@ -719,7 +729,7 @@ describe('edgeless canvas budget', () => {
         strokeRect,
       } as unknown as CanvasRenderingContext2D);
 
-      const layout = {
+      const layout: ViewportLayoutTree = {
         roots: [
           {
             blockId: 'root',
@@ -735,16 +745,10 @@ describe('edgeless canvas budget', () => {
         overallRect: { x: 0, y: 0, w: 50, h: 20 },
       };
 
-      (
-        paintPlaceholder as unknown as (
-          canvas: HTMLCanvasElement,
-          layout: typeof layout,
-          viewport: {
-            zoom: number;
-            toViewCoord: (x: number, y: number) => [number, number];
-          }
-        ) => void
-      )(canvas, layout, {
+      const paintPlaceholderForTest =
+        paintPlaceholder as unknown as PaintPlaceholderForTest;
+
+      paintPlaceholderForTest(canvas, layout, {
         zoom: 0.4,
         toViewCoord: () => [0, 0],
       });
@@ -753,16 +757,7 @@ describe('edgeless canvas budget', () => {
       expect(strokeStyle).toBe('rgba(0, 0, 0, 0.02)');
       expect(fillRect).toHaveBeenLastCalledWith(0, 0, 20, 8);
 
-      (
-        paintPlaceholder as unknown as (
-          canvas: HTMLCanvasElement,
-          layout: typeof layout,
-          viewport: {
-            zoom: number;
-            toViewCoord: (x: number, y: number) => [number, number];
-          }
-        ) => void
-      )(canvas, layout, {
+      paintPlaceholderForTest(canvas, layout, {
         zoom: 0.95,
         toViewCoord: () => [0, 0],
       });

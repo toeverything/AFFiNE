@@ -766,13 +766,13 @@ export class Viewport {
    * Set the viewport to the new zoom.
    * @param zoom The new zoom value.
    * @param focusPoint The point to focus on after zooming, default is the center of the viewport.
-   * @param wheel Whether the zoom is caused by wheel event.
+   * @param _wheel Legacy parameter kept for call-site compatibility.
    * @param forceUpdate Whether to force complete any pending resize operations before setting the viewport.
    */
   setZoom(
     zoom: number,
     focusPoint?: IPoint,
-    wheel = false,
+    _wheel = false,
     forceUpdate = true,
     signalGesture = false
   ) {
