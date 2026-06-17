@@ -184,11 +184,16 @@ export class CloudDocStorage extends DocStorageBase<CloudDocStorageOptions> {
   }
 
   override async deleteDoc(docId: string) {
-    this.socket.emit('space:delete-doc', {
+    const response = await this.socket.emitWithAck('space:delete-doc', {
       spaceType: this.spaceType,
       spaceId: this.spaceId,
       docId: this.idConverter.newIdToOldId(docId),
     });
+
+    if ('error' in response) {
+      // TODO(@forehalo): use [UserFriendlyError]
+      throw new Error(response.error.message);
+    }
   }
 
   protected async setDocSnapshot() {
