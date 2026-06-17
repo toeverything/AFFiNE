@@ -24,7 +24,7 @@
     "@toeverything/theme": "^1.1.23",
     "@types/lodash-es": "^4.17.12",
     "fflate": "^0.8.2",
-    "js-yaml": "^4.1.1",
+    "js-yaml": "^4.2.0",
     "jszip": "^3.10.1",
     "lit": "^3.2.0",
     "lodash-es": "^4.17.23",

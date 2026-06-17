@@ -17,6 +17,6 @@
   },
   "peerDependencies": {
     "react": "^19.2.1",
-    "react-router-dom": "^7.12.0"
+    "react-router-dom": "^7.18.0"
   }
 }
