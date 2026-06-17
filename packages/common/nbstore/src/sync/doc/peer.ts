@@ -602,15 +602,6 @@ export class DocSyncPeer {
         this.statusUpdatedSubject$.next(true);
       }
       if (!shouldRetry) {
-        await new Promise<void>(resolve => {
-          if (signal?.aborted) {
-            resolve();
-            return;
-          }
-          signal?.addEventListener('abort', () => resolve(), {
-            once: true,
-          });
-        });
         return;
       }
       // wait for 5s before next retry

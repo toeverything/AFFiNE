@@ -628,6 +628,57 @@ test('doc sync peer stops retrying when remote connection denies permission', as
   }
 });
 
+test('doc sync peer resolves on terminal permission error without abort signal', async () => {
+  const local = new IndexedDBDocStorage({
+    id: 'ws-connection-denied-no-signal',
+    flavour: 'local-connection-denied-no-signal',
+    type: 'workspace',
+  });
+  const syncMetadata = new IndexedDBDocSyncStorage({
+    id: 'ws-connection-denied-no-signal',
+    flavour: 'local-connection-denied-no-signal',
+    type: 'workspace',
+  });
+  const remote = new PermissionDeniedConnectionDocStorage(
+    'ws-connection-denied-no-signal'
+  );
+  const peer = new DocSyncPeer(
+    'remote-connection-denied-no-signal',
+    local,
+    syncMetadata,
+    remote
+  );
+
+  local.connection.connect();
+  syncMetadata.connection.connect();
+  await local.connection.waitForConnected();
+  await syncMetadata.connection.waitForConnected();
+
+  try {
+    await expect(peer.mainLoop()).resolves.toBeUndefined();
+    expect(remote.connection.waitCount).toBe(1);
+
+    let state:
+      | {
+          retrying: boolean;
+          errorMessage: string | null;
+        }
+      | undefined;
+    const dispose = peer.peerState$.subscribe(next => {
+      state = next;
+    });
+    dispose.unsubscribe();
+
+    expect(state).toMatchObject({
+      retrying: false,
+      errorMessage: expect.stringContaining('No permission'),
+    });
+  } finally {
+    local.connection.disconnect();
+    syncMetadata.connection.disconnect();
+  }
+});
+
 test('indexer defers indexed clock persistence until a refresh happens on delayed refresh storages', async () => {
   const calls: string[] = [];
   const docsInRootDoc = new Map([['doc1', { title: 'Doc 1' }]]);

@@ -283,7 +283,7 @@ class CloudDocStorageConnection extends SocketConnection {
               return null;
             }
             // TODO: use [UserFriendlyError]
-            throw new Error(response.error.message);
+            throw createWebsocketError(response.error);
           }
 
           return base64ToUint8Array(response.data.missing);
