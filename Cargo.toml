@@ -2,8 +2,6 @@
 members = [
   "./packages/backend/native",
   "./packages/common/native",
-  "./packages/common/y-octo/core",
-  "./packages/common/y-octo/utils",
   "./packages/frontend/mobile-native",
   "./packages/frontend/native",
   "./packages/frontend/native/nbstore",
@@ -23,7 +21,6 @@ resolver = "3"
   anyhow = "1"
   arbitrary = { version = "1.3", features = ["derive"] }
   assert-json-diff = "2.0"
-  async-lock = { version = "3.4.0", features = ["loom"] }
   base64-simd = "0.8"
   bitvec = "1.0"
   block2 = "0.6"
@@ -37,7 +34,7 @@ resolver = "3"
   criterion2 = { version = "3", default-features = false }
   crossbeam-channel = "0.5"
   dispatch2 = "0.3"
-  docx-parser = { git = "https://github.com/toeverything/docx-parser", rev = "380beea" }
+  doc_extractor = "0.1.0"
   dotenvy = "0.15"
   file-format = { version = "0.28", features = ["reader"] }
   hex = "0.4"
@@ -58,7 +55,6 @@ resolver = "3"
   llm_adapter = { version = "0.2", default-features = false }
   llm_runtime = { version = "0.2", default-features = false }
   log = "0.4"
-  loom = { version = "0.7", features = ["checkpoint"] }
   lru = "0.16"
   matroska = "0.30"
   memory-indexer = "0.3.1"
@@ -84,8 +80,6 @@ resolver = "3"
   ordered-float = "5"
   p256 = { version = "0.13", features = ["ecdsa", "pem"] }
   parking_lot = "0.12"
-  path-ext = "0.1.2"
-  pdf-extract = { git = "https://github.com/toeverything/pdf-extract", branch = "darksky/improve-font-decoding" }
   phf = { version = "0.11", features = ["macros"] }
   proptest = "1.3"
   proptest-derive = "0.5"
@@ -94,7 +88,6 @@ resolver = "3"
   rand_chacha = "0.9"
   rand_distr = "0.5"
   rayon = "1.10"
-  readability = { version = "0.3.0", default-features = false }
   regex = "1.10"
   rubato = "0.16"
   safefetch = "0.1.0"
@@ -112,24 +105,10 @@ resolver = "3"
     "runtime-tokio",
     "sqlite",
   ] }
-  strum_macros = "0.27.0"
   symphonia = { version = "0.5", features = ["all", "opt-simd"] }
-  text-splitter = "0.27"
   thiserror = "2"
   tiktoken-rs = "0.7"
   tokio = "1.45"
-  tree-sitter = { version = "0.25" }
-  tree-sitter-c = { version = "0.24" }
-  tree-sitter-c-sharp = { version = "0.23" }
-  tree-sitter-cpp = { version = "0.23" }
-  tree-sitter-go = { version = "0.23" }
-  tree-sitter-java = { version = "0.23" }
-  tree-sitter-javascript = { version = "0.23" }
-  tree-sitter-kotlin-ng = { version = "1.1" }
-  tree-sitter-python = { version = "0.23" }
-  tree-sitter-rust = { version = "0.24" }
-  tree-sitter-scala = { version = "0.24" }
-  tree-sitter-typescript = { version = "0.23" }
   typst = "0.14.2"
   typst-as-lib = { version = "0.15.4", default-features = false, features = [
     "packages",
@@ -155,7 +134,7 @@ resolver = "3"
     "Win32_UI_Shell_PropertiesSystem",
   ] }
   windows-core = { version = "0.61" }
-  y-octo = { path = "./packages/common/y-octo/core" }
+  y-octo = "0.0.3"
   y-sync = { version = "0.4" }
   yrs = "0.23.0"
 

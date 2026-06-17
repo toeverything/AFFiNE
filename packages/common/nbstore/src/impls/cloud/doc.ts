@@ -22,6 +22,12 @@ interface CloudDocStorageOptions extends DocStorageOptions {
   type: SpaceType;
 }
 
+function createWebsocketError(error: { name: string; message: string }) {
+  const err = new Error(error.message);
+  err.name = error.name;
+  return err;
+}
+
 export class CloudDocStorage extends DocStorageBase<CloudDocStorageOptions> {
   static readonly identifier = 'CloudDocStorage';
 
@@ -88,7 +94,7 @@ export class CloudDocStorage extends DocStorageBase<CloudDocStorageOptions> {
         return null;
       }
       // TODO: use [UserFriendlyError]
-      throw new Error(response.error.message);
+      throw createWebsocketError(response.error);
     }
 
     return {
@@ -111,7 +117,7 @@ export class CloudDocStorage extends DocStorageBase<CloudDocStorageOptions> {
         return null;
       }
       // TODO: use [UserFriendlyError]
-      throw new Error(response.error.message);
+      throw createWebsocketError(response.error);
     }
 
     return {
@@ -132,7 +138,7 @@ export class CloudDocStorage extends DocStorageBase<CloudDocStorageOptions> {
 
     if ('error' in response) {
       // TODO(@forehalo): use [UserFriendlyError]
-      throw new Error(response.error.message);
+      throw createWebsocketError(response.error);
     }
 
     return {
@@ -153,7 +159,7 @@ export class CloudDocStorage extends DocStorageBase<CloudDocStorageOptions> {
 
     if ('error' in response) {
       // TODO: use [UserFriendlyError]
-      throw new Error(response.error.message);
+      throw createWebsocketError(response.error);
     }
 
     return {
@@ -174,7 +180,7 @@ export class CloudDocStorage extends DocStorageBase<CloudDocStorageOptions> {
 
     if ('error' in response) {
       // TODO(@forehalo): use [UserFriendlyError]
-      throw new Error(response.error.message);
+      throw createWebsocketError(response.error);
     }
 
     return Object.entries(response.data).reduce((ret, [docId, timestamp]) => {
@@ -184,11 +190,16 @@ export class CloudDocStorage extends DocStorageBase<CloudDocStorageOptions> {
   }
 
   override async deleteDoc(docId: string) {
-    this.socket.emit('space:delete-doc', {
+    const response = await this.socket.emitWithAck('space:delete-doc', {
       spaceType: this.spaceType,
       spaceId: this.spaceId,
       docId: this.idConverter.newIdToOldId(docId),
     });
+
+    if ('error' in response) {
+      // TODO(@forehalo): use [UserFriendlyError]
+      throw createWebsocketError(response.error);
+    }
   }
 
   protected async setDocSnapshot() {
@@ -224,7 +235,7 @@ class CloudDocStorageConnection extends SocketConnection {
       });
 
       if ('error' in res) {
-        throw new Error(res.error.message);
+        throw createWebsocketError(res.error);
       }
 
       if (!this.idConverter) {
@@ -272,7 +283,7 @@ class CloudDocStorageConnection extends SocketConnection {
               return null;
             }
             // TODO: use [UserFriendlyError]
-            throw new Error(response.error.message);
+            throw createWebsocketError(response.error);
           }
 
           return base64ToUint8Array(response.data.missing);
