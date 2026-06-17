@@ -11,13 +11,13 @@ crate-type = ["cdylib"]
 [dependencies]
 aes-gcm = { workspace = true }
 affine_common = { workspace = true, features = [
-  "doc-loader",
   "hashcash",
   "napi",
   "ydoc-loader",
 ] }
 anyhow = { workspace = true }
 chrono = { workspace = true }
+doc_extractor = { workspace = true }
 file-format = { workspace = true }
 hex = { workspace = true }
 image = { workspace = true }
