@@ -2,11 +2,14 @@ import {
   type ViewExtensionContext,
   ViewExtensionProvider,
 } from '@blocksuite/affine/ext-loader';
+import { FrameworkProvider } from '@toeverything/infra';
 import { z } from 'zod';
 
 import { patchDatabaseBlockConfigService } from './database-block-config-service';
 
-const optionsSchema = z.object({});
+const optionsSchema = z.object({
+  framework: z.instanceof(FrameworkProvider).optional(),
+});
 
 export type AffineDatabaseViewOptions = z.infer<typeof optionsSchema>;
 
@@ -21,6 +24,6 @@ export class AffineDatabaseViewExtension extends ViewExtensionProvider<AffineDat
   ) {
     super.setup(context, options);
 
-    context.register(patchDatabaseBlockConfigService());
+    context.register(patchDatabaseBlockConfigService(options?.framework));
   }
 }

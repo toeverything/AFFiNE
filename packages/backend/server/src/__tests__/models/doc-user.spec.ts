@@ -73,6 +73,24 @@ test('should set doc user role', async t => {
   t.is(role?.type, DocRole.Manager);
 });
 
+test('should batch update existing doc user roles', async t => {
+  const workspace = await create();
+  const user = await models.user.create({ email: 'u1@affine.pro' });
+  const docId = 'fake-doc-id';
+
+  await models.docUser.set(workspace.id, docId, user.id, DocRole.Reader);
+  const count = await models.docUser.batchSetUserRoles(
+    workspace.id,
+    docId,
+    [user.id],
+    DocRole.Editor
+  );
+  const role = await models.docUser.get(workspace.id, docId, user.id);
+
+  t.is(count, 1);
+  t.is(role?.type, DocRole.Editor);
+});
+
 test('should not allow setting doc owner through setDocUserRole', async t => {
   const workspace = await create();
   const user = await models.user.create({ email: 'u1@affine.pro' });
@@ -94,6 +112,23 @@ test('should delete doc user role', async t => {
 
   const role = await models.docUser.get(workspace.id, docId, user.id);
   t.is(role, null);
+});
+
+test('should delete doc grants by user id', async t => {
+  const workspace = await create();
+  const user = await models.user.create({ email: 'u1@affine.pro' });
+  const docId = 'fake-doc-id';
+
+  await models.docUser.set(workspace.id, docId, user.id, DocRole.Manager);
+  await models.docUser.deleteByUserId(user.id);
+
+  t.is(await models.docUser.get(workspace.id, docId, user.id), null);
+  t.is(
+    await db.docGrant.count({
+      where: { principalType: 'user', principalId: user.id },
+    }),
+    0
+  );
 });
 
 test('should paginate doc user roles', async t => {

@@ -365,6 +365,7 @@ export const PackageList = [
       'blocksuite/affine/gfx/pointer',
       'blocksuite/affine/gfx/shape',
       'blocksuite/affine/gfx/text',
+      'blocksuite/affine/inlines/latex',
       'blocksuite/affine/inlines/preset',
       'blocksuite/affine/model',
       'blocksuite/affine/rich-text',
@@ -682,6 +683,7 @@ export const PackageList = [
     location: 'blocksuite/affine/gfx/turbo-renderer',
     name: '@blocksuite/affine-gfx-turbo-renderer',
     workspaceDependencies: [
+      'blocksuite/affine/shared',
       'blocksuite/framework/global',
       'blocksuite/framework/std',
       'blocksuite/framework/store',
@@ -827,6 +829,7 @@ export const PackageList = [
       'blocksuite/affine/components',
       'blocksuite/affine/ext-loader',
       'blocksuite/affine/model',
+      'blocksuite/affine/rich-text',
       'blocksuite/affine/shared',
       'blocksuite/framework/global',
       'blocksuite/framework/std',
@@ -1111,6 +1114,7 @@ export const PackageList = [
       'tools/cli',
       'tools/utils',
       'packages/common/graphql',
+      'packages/common/realtime',
     ],
   },
   {
@@ -1148,6 +1152,7 @@ export const PackageList = [
     name: '@affine/nbstore',
     workspaceDependencies: [
       'packages/common/reader',
+      'packages/common/realtime',
       'packages/common/infra',
       'packages/common/error',
       'packages/common/graphql',
@@ -1158,6 +1163,11 @@ export const PackageList = [
     location: 'packages/common/reader',
     name: '@affine/reader',
     workspaceDependencies: ['blocksuite/affine/all'],
+  },
+  {
+    location: 'packages/common/realtime',
+    name: '@affine/realtime',
+    workspaceDependencies: ['packages/common/graphql'],
   },
   {
     location: 'packages/common/s3-compat',
@@ -1294,6 +1304,7 @@ export const PackageList = [
       'blocksuite/affine/blocks/root',
       'blocksuite/affine/components',
       'blocksuite/affine/shared',
+      'blocksuite/affine/data-view',
       'blocksuite/framework/global',
       'blocksuite/framework/std',
       'packages/common/infra',
@@ -1524,6 +1535,7 @@ export type PackageName =
   | '@toeverything/infra'
   | '@affine/nbstore'
   | '@affine/reader'
+  | '@affine/realtime'
   | '@affine/s3-compat'
   | '@affine/admin'
   | '@affine/android'

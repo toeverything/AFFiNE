@@ -194,9 +194,39 @@ function getRspackBundleConfigs(pkg: Package): MultiRspackOptions {
         }),
       ] as MultiRspackOptions;
     }
+    case '@affine/media-capture-playground': {
+      return [
+        createRspackHTMLTargetConfig(pkg, pkg.join('web/main.tsx').value, {
+          template: pkg.join('web/index.html').value,
+          additionalEntryForSelfhost: false,
+          copySharedPublicAssets: false,
+          injectGlobalErrorHandler: false,
+          emitAssetsManifest: false,
+        }),
+      ] as MultiRspackOptions;
+    }
   }
 
   throw new Error(`Unsupported package: ${pkg.name}`);
+}
+
+function getRspackDevServerConfig(
+  pkg: Package
+): RspackDevServerConfiguration | undefined {
+  if (pkg.name !== '@affine/media-capture-playground') {
+    return;
+  }
+
+  return {
+    proxy: [
+      {
+        context: '/api',
+        target: 'http://localhost:6544',
+        changeOrigin: true,
+        pathRewrite: { '^/api': '' },
+      },
+    ],
+  };
 }
 
 export class BundleCommand extends PackageCommand {
@@ -214,7 +244,7 @@ export class BundleCommand extends PackageCommand {
     const pkg = this.workspace.getPackage(this.package);
 
     if (this.dev) {
-      await BundleCommand.dev(pkg);
+      await BundleCommand.dev(pkg, getRspackDevServerConfig(pkg));
     } else {
       await BundleCommand.build(pkg);
     }
@@ -294,10 +324,12 @@ export class BundleCommand extends PackageCommand {
       throw new Error('Failed to create rspack compiler');
     }
 
-    const devServer = new RspackDevServer(
-      merge({}, DEFAULT_DEV_SERVER_CONFIG, devServerConfig),
-      compiler
-    );
+    const serverConfig = merge({}, DEFAULT_DEV_SERVER_CONFIG, devServerConfig);
+    if (devServerConfig?.proxy) {
+      serverConfig.proxy = devServerConfig.proxy;
+    }
+
+    const devServer = new RspackDevServer(serverConfig, compiler);
 
     await devServer.start();
   }

@@ -12,6 +12,7 @@ import {
   dragBetweenCoords,
   enterPlaygroundRoom,
   focusRichText,
+  focusRichTextEnd,
   getAllNoteIds,
   getClipboardHTML,
   getClipboardSnapshot,
@@ -192,7 +193,7 @@ test('paste a nested list to a nested list', async ({ page }) => {
 
   // paste on end
   await undoByKeyboard(page);
-  await page.keyboard.press('Control+ArrowRight');
+  await focusRichTextEnd(page, 1);
 
   /**
    * - aaa
@@ -284,7 +285,7 @@ test('paste nested lists to a nested list', async ({ page }) => {
 
   // paste on end
   await undoByKeyboard(page);
-  await page.keyboard.press('Control+ArrowRight');
+  await focusRichTextEnd(page, 1);
 
   /**
    * - aaa

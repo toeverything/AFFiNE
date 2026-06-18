@@ -86,7 +86,10 @@ test('should cleanup expired pending blobs', async t => {
     ],
   });
 
-  const abortSpy = Sinon.spy(t.context.storage, 'abortMultipartUpload');
+  const abortSpy = Sinon.stub(
+    t.context.storage,
+    'abortMultipartUpload'
+  ).resolves();
   const deleteSpy = Sinon.spy(t.context.storage, 'delete');
   t.teardown(() => {
     abortSpy.restore();

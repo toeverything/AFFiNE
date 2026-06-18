@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import type { AccessController } from '../../../core/permission';
+import type { PermissionAccess } from '../../../core/permission';
 import type { Models } from '../../../models';
 import type { IndexerService, SearchDoc } from '../../indexer';
 import { workspaceSyncRequiredError } from './doc-sync';
@@ -9,7 +9,7 @@ import { defineTool } from './tool';
 import type { CopilotChatOptions } from './types';
 
 export const buildDocKeywordSearchGetter = (
-  ac: AccessController,
+  ac: PermissionAccess,
   indexerService: IndexerService,
   models: Models
 ) => {

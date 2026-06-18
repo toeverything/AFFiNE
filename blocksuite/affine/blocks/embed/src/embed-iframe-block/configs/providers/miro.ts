@@ -18,7 +18,7 @@ const miroUrlValidationOptions: EmbedIframeUrlValidationOptions = {
   hostnames: ['miro.com'],
 };
 
-const miroConfig = {
+export const miroConfig = {
   name: 'miro',
   match: (url: string) => validateEmbedIframeUrl(url, miroUrlValidationOptions),
   buildOEmbedUrl: (url: string) => {
@@ -31,6 +31,12 @@ const miroConfig = {
     return oEmbedUrl;
   },
   useOEmbedUrlDirectly: false,
+  validateIframeUrl: (iframeUrl: string) => {
+    if (!validateEmbedIframeUrl(iframeUrl, miroUrlValidationOptions)) {
+      return false;
+    }
+    return new URL(iframeUrl).pathname.startsWith('/app/live-embed/');
+  },
   options: {
     widthInSurface: MIRO_DEFAULT_WIDTH_IN_SURFACE,
     heightInSurface: MIRO_DEFAULT_HEIGHT_IN_SURFACE,

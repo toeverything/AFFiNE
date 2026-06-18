@@ -42,7 +42,9 @@ import type { TemplateResult } from 'lit';
 
 import { insertFromMarkdown } from '../../utils';
 import type { ChatMessage } from '../components/ai-chat-messages';
-import { AIProvider, type AIUserInfo } from '../provider';
+import { AIAppEvents, type AIUserInfo } from '../provider';
+import { AIChatRuntime, ForkAIChatSessionStrategy } from '../runtime/chat';
+import { getAIRequestService } from '../runtime/request';
 import { reportResponse } from '../utils/action-reporter';
 import { insertBelow } from '../utils/editor-actions';
 
@@ -72,7 +74,7 @@ export async function queryHistoryMessages(
   docId?: string
 ) {
   // Get fork session messages
-  const histories = await AIProvider.histories?.chats(
+  const histories = await getAIRequestService().histories.chats(
     workspaceId,
     forkSessionId,
     docId
@@ -114,7 +116,7 @@ export async function constructRootChatBlockMessages(
   forkSessionId: string
 ) {
   // Convert chat messages to AI chat block messages
-  const userInfo = await AIProvider.userInfo;
+  const userInfo = AIAppEvents.userInfo.value;
   const forkMessages = (await queryHistoryMessages(
     doc.workspace.id,
     forkSessionId,
@@ -247,7 +249,7 @@ async function insertBelowBlock(
 ): Promise<boolean> {
   if (!block) return false;
 
-  reportResponse('result:insert');
+  reportResponse('result:insert', host);
   await insertBelow(host, content, block);
   return true;
 }
@@ -376,13 +378,20 @@ const SAVE_AS_BLOCK: ChatAction = {
       });
     }
 
-    try {
-      const newSessionId = await AIProvider.forkChat?.({
+    const runtime = new AIChatRuntime({
+      request: getAIRequestService(),
+      scope: {
+        kind: 'fork',
         workspaceId: host.store.workspace.id,
         docId: host.store.id,
-        sessionId: parentSessionId,
+        parentSessionId,
         latestMessageId: messageId,
-      });
+      },
+      strategy: new ForkAIChatSessionStrategy(),
+    });
+    try {
+      const newSession = await runtime.createSession();
+      const newSessionId = newSession?.sessionId;
 
       if (!newSessionId) {
         return false;
@@ -424,6 +433,8 @@ const SAVE_AS_BLOCK: ChatAction = {
         onClose: function (): void {},
       });
       return false;
+    } finally {
+      runtime.dispose();
     }
   },
 };
@@ -439,7 +450,7 @@ const ADD_TO_EDGELESS_AS_NOTE = {
   },
   toast: 'New note created',
   handler: async (host: EditorHost, content: string): Promise<boolean> => {
-    reportResponse('result:add-note');
+    reportResponse('result:add-note', host);
     const { store } = host;
 
     const gfx = host.std.get(GfxControllerIdentifier);
@@ -475,7 +486,7 @@ export const SAVE_AS_DOC = {
   showWhen: () => true,
   toast: 'New doc created',
   handler: (host: EditorHost, content: string) => {
-    reportResponse('result:add-page');
+    reportResponse('result:add-page', host);
     const doc = host.store.workspace.createDoc();
     const newDoc = doc.getStore();
     newDoc.load();
@@ -518,7 +529,7 @@ const CREATE_AS_LINKED_DOC = {
   },
   toast: 'New doc created',
   handler: async (host: EditorHost, content: string) => {
-    reportResponse('result:add-page');
+    reportResponse('result:add-page', host);
 
     const { store } = host;
     const surfaceBlock = store

@@ -6,6 +6,7 @@
 !.yarn/releases
 !.yarn/sdks
 .yarn/versions
+.corepack-bin
 
 # compiled output
 *dist
@@ -49,6 +50,8 @@ testem.log
 tsconfig.tsbuildinfo
 .context
 /*.md
+.codex
+.cursor
 
 # System Files
 .DS_Store
@@ -93,3 +96,9 @@ af.cmd
 
 # playwright
 storageState.json
+/.understand-anything
+
+# local test/browser artifacts
+/.playwright-browsers/
+**/.vitest-attachments/
+/blocksuite/framework/std/src/__tests__/gfx/__screenshots__/

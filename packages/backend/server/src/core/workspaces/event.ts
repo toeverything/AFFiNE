@@ -26,6 +26,12 @@ declare global {
       workspaceId: string;
       quantity: number;
     };
+    'workspace.invite_link.created': {
+      workspaceId: string;
+    };
+    'workspace.invite_link.revoked': {
+      workspaceId: string;
+    };
   }
 }
 

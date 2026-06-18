@@ -13,8 +13,6 @@ export enum TokenType {
   VerifyEmail,
   ChangeEmail,
   ChangePassword,
-  Challenge,
-  OpenAppSignIn,
 }
 
 @Injectable()

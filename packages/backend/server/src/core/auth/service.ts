@@ -4,14 +4,18 @@ import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import type { CookieOptions, Request, Response } from 'express';
 import { assign, pick } from 'lodash-es';
 
-import {
-  Config,
-  getClientVersionFromRequest,
-  SignUpForbidden,
-} from '../../base';
+import { Config, SignUpForbidden } from '../../base';
 import { Models, type User, type UserSession } from '../../models';
 import { Mailer } from '../mail/mailer';
 import { createDevUsers } from './dev';
+import type { VerifiedIdentity } from './identity';
+import {
+  CSRF_COOKIE_NAME,
+  extractTokenFromHeader,
+  getSessionOptionsFromRequest,
+  SESSION_COOKIE_NAME,
+  USER_COOKIE_NAME,
+} from './input';
 import type { CurrentUser } from './session';
 
 export function sessionUser(
@@ -27,20 +31,12 @@ export function sessionUser(
   });
 }
 
-function extractTokenFromHeader(authorization: string) {
-  if (!/^Bearer\s/i.test(authorization)) {
-    return;
-  }
-
-  return authorization.substring(7);
-}
-
 @Injectable()
 export class AuthService implements OnApplicationBootstrap {
   readonly cookieOptions: CookieOptions;
-  static readonly sessionCookieName = 'affine_session';
-  static readonly userCookieName = 'affine_user_id';
-  static readonly csrfCookieName = 'affine_csrf_token';
+  static readonly sessionCookieName = SESSION_COOKIE_NAME;
+  static readonly userCookieName = USER_COOKIE_NAME;
+  static readonly csrfCookieName = CSRF_COOKIE_NAME;
 
   constructor(
     private readonly config: Config,
@@ -90,6 +86,14 @@ export class AuthService implements OnApplicationBootstrap {
     return this.models.user.signIn(email, password).then(sessionUser);
   }
 
+  async verifyPassword(
+    email: string,
+    password: string
+  ): Promise<VerifiedIdentity> {
+    const user = await this.models.user.signIn(email, password);
+    return { userId: user.id, method: 'password' };
+  }
+
   async signOut(sessionId: string, userId?: string) {
     // sign out all users in the session
     if (!userId) {
@@ -104,10 +108,7 @@ export class AuthService implements OnApplicationBootstrap {
     userId?: string
   ): Promise<{ user: CurrentUser; session: UserSession } | null> {
     const sessions = await this.getUserSessions(sessionId);
-
-    if (!sessions.length) {
-      return null;
-    }
+    if (!sessions.length) return null;
 
     let userSession: UserSession | undefined;
 
@@ -201,55 +202,6 @@ export class AuthService implements OnApplicationBootstrap {
     return await this.models.session.deleteUserSessions(userId);
   }
 
-  getSessionOptionsFromRequest(req: Request) {
-    let sessionId: string | undefined =
-      req.cookies[AuthService.sessionCookieName];
-
-    if (!sessionId && req.headers.authorization) {
-      sessionId = extractTokenFromHeader(req.headers.authorization);
-    }
-
-    const userId: string | undefined =
-      req.cookies[AuthService.userCookieName] ||
-      req.headers[AuthService.userCookieName.replaceAll('_', '-')];
-
-    return {
-      sessionId,
-      userId,
-    };
-  }
-
-  async setCookies(
-    req: Request,
-    res: Response,
-    userId: string,
-    clientVersion?: string
-  ) {
-    const { sessionId } = this.getSessionOptionsFromRequest(req);
-
-    const signInClientVersion =
-      clientVersion ?? getClientVersionFromRequest(req);
-    const userSession = await this.createUserSession(
-      userId,
-      sessionId,
-      undefined,
-      signInClientVersion
-    );
-
-    res.cookie(AuthService.sessionCookieName, userSession.sessionId, {
-      ...this.cookieOptions,
-      expires: userSession.expiresAt ?? void 0,
-    });
-
-    res.cookie(AuthService.csrfCookieName, randomUUID(), {
-      ...this.cookieOptions,
-      httpOnly: false,
-      expires: userSession.expiresAt ?? void 0,
-    });
-
-    this.setUserCookie(res, userId);
-  }
-
   async refreshCookies(res: Response, sessionId?: string) {
     if (sessionId) {
       const users = await this.getUserList(sessionId);
@@ -264,7 +216,7 @@ export class AuthService implements OnApplicationBootstrap {
     this.clearCookies(res);
   }
 
-  private clearCookies(res: Response<any, Record<string, any>>) {
+  clearCookies(res: Response<any, Record<string, any>>) {
     res.clearCookie(AuthService.sessionCookieName);
     res.clearCookie(AuthService.userCookieName);
     res.clearCookie(AuthService.csrfCookieName);
@@ -281,12 +233,8 @@ export class AuthService implements OnApplicationBootstrap {
   }
 
   async getUserSessionFromRequest(req: Request, res?: Response) {
-    const { sessionId, userId } = this.getSessionOptionsFromRequest(req);
-
-    if (!sessionId) {
-      return null;
-    }
-
+    const { sessionId, userId } = getSessionOptionsFromRequest(req);
+    if (!sessionId) return null;
     const session = await this.getUserSession(sessionId, userId);
 
     if (res) {

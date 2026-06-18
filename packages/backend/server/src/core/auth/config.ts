@@ -11,6 +11,7 @@ export interface AuthConfig {
   allowSignupForOauth: boolean;
   requireEmailDomainVerification: boolean;
   requireEmailVerification: boolean;
+  newAccountShareActionDelay: number;
   passwordRequirements: ConfigItem<{
     min: number;
     max: number;
@@ -39,6 +40,11 @@ defineModuleConfig('auth', {
   requireEmailVerification: {
     desc: 'Whether require email verification before accessing restricted resources(not implemented).',
     default: true,
+  },
+  newAccountShareActionDelay: {
+    desc: 'Minimum account age in seconds before new accounts can invite members or create share links.',
+    default: 24 * 60 * 60,
+    shape: z.number().int().min(0),
   },
   passwordRequirements: {
     desc: 'The password strength requirements when set new password.',

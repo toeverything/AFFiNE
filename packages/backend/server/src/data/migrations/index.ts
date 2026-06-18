@@ -4,3 +4,5 @@ export * from './1721299086340-refresh-unnamed-user';
 export * from './1745211351719-create-indexer-tables';
 export * from './1751966744168-correct-session-update-time';
 export * from './1763800000000-rebuild-manticore-mixed-script-indexes';
+export * from './1765500000000-backfill-permission-projection';
+export * from './1765600000000-backfill-entitlement-projection';

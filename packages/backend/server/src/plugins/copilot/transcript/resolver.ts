@@ -21,10 +21,11 @@ import {
   type FileUpload,
 } from '../../../base';
 import { CurrentUser } from '../../../core/auth';
-import { AccessController } from '../../../core/permission';
+import { PermissionAccess } from '../../../core/permission';
 import { CopilotType } from '../resolver';
+import type { TranscriptionJob } from './job';
 import { buildLegacyProjection } from './projection';
-import { CopilotTranscriptionService, TranscriptionJob } from './service';
+import { CopilotTranscriptionService } from './service';
 import type {
   AudioSliceManifestItem,
   MeetingActionItem,
@@ -294,7 +295,7 @@ const FinishedStatus: Set<AiJobStatus> = new Set([
 @Resolver(() => CopilotType)
 export class CopilotTranscriptionResolver {
   constructor(
-    private readonly ac: AccessController,
+    private readonly ac: PermissionAccess,
     private readonly transcript: CopilotTranscriptionService
   ) {}
 
@@ -416,6 +417,8 @@ export class CopilotTranscriptionResolver {
 
   @ResolveField(() => TranscriptionResultType, {
     nullable: true,
+    deprecationReason:
+      'Use realtime subscription "copilot.transcript.task.changed" instead.',
   })
   async transcriptTask(
     @Parent() copilot: CopilotType,
@@ -425,6 +428,7 @@ export class CopilotTranscriptionResolver {
     @Args('blobId', { nullable: true })
     blobId?: string
   ): Promise<TranscriptionResultType | null> {
+    // DEPRECATED-0.26-COMPAT(realtime): remove after server no longer supports 0.26.x clients.
     if (!copilot.workspaceId) return null;
     if (!taskId && !blobId) return null;
 

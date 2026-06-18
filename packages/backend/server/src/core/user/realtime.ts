@@ -1,0 +1,187 @@
+import type {
+  AccessTokenSnapshot,
+  CurrentUserProfileSnapshot,
+  UserSettingsSnapshot,
+} from '@affine/realtime';
+import { Injectable, OnModuleInit, Optional } from '@nestjs/common';
+import { z } from 'zod';
+
+import { AuthenticationRequired, OnEvent, UserNotFound } from '../../base';
+import { Feature, Models } from '../../models';
+import { sessionUser } from '../auth/service';
+import { AvailableUserFeatureConfig } from '../features/types';
+import { registerRealtimeLiveQuery } from '../realtime/provider';
+import { RealtimePublisher } from '../realtime/publisher';
+import { RealtimeRegistry } from '../realtime/registry';
+import {
+  realtimeUserAccessTokensRoom,
+  realtimeUserProfileRoom,
+  realtimeUserSettingsRoom,
+} from '../realtime/rooms';
+
+const emptyInput = z.object({}).strict();
+
+function assertAuthenticated(user?: { id: string }) {
+  if (!user) {
+    throw new AuthenticationRequired();
+  }
+  return user;
+}
+
+@Injectable()
+export class UserRealtimeProvider
+  extends AvailableUserFeatureConfig
+  implements OnModuleInit
+{
+  constructor(
+    private readonly models: Models,
+    @Optional() private readonly registry?: RealtimeRegistry,
+    @Optional() private readonly publisher?: RealtimePublisher
+  ) {
+    super();
+  }
+
+  onModuleInit() {
+    if (!this.registry) return;
+
+    registerRealtimeLiveQuery(this.registry, {
+      request: {
+        name: 'user.profile.get',
+        input: emptyInput,
+        handle: async user => ({
+          user: user ? await this.getProfile(user.id) : null,
+        }),
+      },
+      topic: {
+        name: 'user.profile.changed',
+        input: emptyInput,
+        authorize: async () => {},
+        room: user => {
+          if (!user) {
+            throw new Error('Authenticated user is required');
+          }
+          return realtimeUserProfileRoom(user.id);
+        },
+      },
+    });
+
+    registerRealtimeLiveQuery(this.registry, {
+      request: {
+        name: 'user.settings.get',
+        input: emptyInput,
+        handle: async user => ({
+          settings: await this.getSettings(assertAuthenticated(user).id),
+        }),
+      },
+      topic: {
+        name: 'user.settings.changed',
+        input: emptyInput,
+        authorize: async () => {},
+        room: user => {
+          if (!user) {
+            throw new Error('Authenticated user is required');
+          }
+          return realtimeUserSettingsRoom(user.id);
+        },
+      },
+    });
+
+    registerRealtimeLiveQuery(this.registry, {
+      request: {
+        name: 'user.access-tokens.get',
+        input: emptyInput,
+        handle: async user => ({
+          tokens: await this.getAccessTokens(assertAuthenticated(user).id),
+        }),
+      },
+      topic: {
+        name: 'user.access-tokens.changed',
+        input: emptyInput,
+        authorize: async () => {},
+        room: user => {
+          if (!user) {
+            throw new Error('Authenticated user is required');
+          }
+          return realtimeUserAccessTokensRoom(user.id);
+        },
+      },
+    });
+  }
+
+  @OnEvent('user.updated', { suppressError: true })
+  onUserUpdated(user: Events['user.updated']) {
+    this.publisher?.publishChanged('user.profile.changed', {}, 'user-updated', {
+      room: realtimeUserProfileRoom(user.id),
+    });
+  }
+
+  @OnEvent('user.settings.updated', { suppressError: true })
+  onUserSettingsUpdated({ userId }: Events['user.settings.updated']) {
+    this.publisher?.publishChanged(
+      'user.settings.changed',
+      {},
+      'settings-updated',
+      { room: realtimeUserSettingsRoom(userId) }
+    );
+  }
+
+  @OnEvent('user.access_token.created', { suppressError: true })
+  onUserAccessTokenCreated({ userId }: Events['user.access_token.created']) {
+    this.publishAccessTokens(userId, 'access-token-created');
+  }
+
+  @OnEvent('user.access_token.revoked', { suppressError: true })
+  onUserAccessTokenRevoked({ userId }: Events['user.access_token.revoked']) {
+    this.publishAccessTokens(userId, 'access-token-revoked');
+  }
+
+  private async getProfile(
+    userId: string
+  ): Promise<CurrentUserProfileSnapshot> {
+    const user = await this.models.user.get(userId);
+    if (!user) {
+      throw new UserNotFound();
+    }
+    const current = sessionUser(user);
+    return {
+      id: current.id,
+      name: current.name,
+      email: current.email,
+      emailVerified: current.emailVerified,
+      hasPassword: current.hasPassword,
+      avatarUrl: current.avatarUrl ?? null,
+      features: (await this.models.userFeature.list(userId))
+        .filter(feature => this.availableUserFeatures().has(feature))
+        .map(feature => this.serializeFeature(feature)),
+    };
+  }
+
+  private serializeFeature(feature: string) {
+    return (
+      Object.entries(Feature).find(([, value]) => value === feature)?.[0] ??
+      feature
+    );
+  }
+
+  private async getSettings(userId: string): Promise<UserSettingsSnapshot> {
+    return await this.models.userSettings.get(userId);
+  }
+
+  private async getAccessTokens(
+    userId: string
+  ): Promise<AccessTokenSnapshot[]> {
+    const tokens = await this.models.accessToken.list(userId);
+    return tokens.map(token => ({
+      id: token.id,
+      name: token.name,
+      createdAt: token.createdAt.toISOString(),
+      expiresAt: token.expiresAt?.toISOString() ?? null,
+    }));
+  }
+
+  private publishAccessTokens(userId: string, reason: string) {
+    this.publisher?.publishChanged('user.access-tokens.changed', {}, reason, {
+      room: realtimeUserAccessTokensRoom(userId),
+    });
+  }
+}

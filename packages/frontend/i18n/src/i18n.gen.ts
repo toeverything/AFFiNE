@@ -4208,12 +4208,11 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.payment.member.team.invite.done"](): string;
     /**
-      * `Invitation sent,{{successCount}} successful, {{failedCount}} failed`
+      * `Invitations sent: {{count}}`
       */
-    ["com.affine.payment.member.team.invite.notify.title"](options: Readonly<{
-        successCount: string;
-        failedCount: string;
-    }>): string;
+    ["com.affine.payment.member.team.invite.notify.title"](options: {
+        readonly count: string;
+    }): string;
     /**
       * `These email addresses have already been invited:`
       */
@@ -5538,6 +5537,14 @@ export function useAFFiNEI18N(): {
       * `Journal style (localized)`
       */
     ["com.affine.settings.editorSettings.general.auto-date-title.format.journal"](): string;
+    /**
+      * `Display add icon option`
+      */
+    ["com.affine.settings.editorSettings.general.add-icon-option.title"](): string;
+    /**
+      * `Show or hide the add icon option for docs without an icon.`
+      */
+    ["com.affine.settings.editorSettings.general.add-icon-option.description"](): string;
     /**
       * `Customize your text experience.`
       */

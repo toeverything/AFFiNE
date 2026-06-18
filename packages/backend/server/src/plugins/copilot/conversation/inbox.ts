@@ -7,7 +7,7 @@ import {
   ImageFormatNotSupported,
   sniffMime,
 } from '../../../base';
-import { WorkspacePolicyService } from '../../../core/permission';
+import { PermissionAccess } from '../../../core/permission';
 import { processImage } from '../../../native';
 import { CompatSubmissionStore } from '../compat/submission-store';
 import type { PromptMessage } from '../providers/types';
@@ -29,7 +29,7 @@ type CreateInboxMessage = {
 export class ConversationInboxService {
   constructor(
     private readonly chatSession: ChatSessionService,
-    private readonly policy: WorkspacePolicyService,
+    private readonly ac: PermissionAccess,
     private readonly storage: CopilotStorage,
     private readonly submissions: CompatSubmissionStore
   ) {}
@@ -49,7 +49,11 @@ export class ConversationInboxService {
     );
 
     if (blobs.length) {
-      await this.policy.assertCanUploadBlob(userId, session.config.workspaceId);
+      await this.ac
+        .user(userId)
+        .workspace(session.config.workspaceId)
+        .allowLocal()
+        .assert('Workspace.Blobs.Write');
     }
 
     for (const blob of blobs) {

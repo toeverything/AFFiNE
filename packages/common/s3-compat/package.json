@@ -7,7 +7,7 @@
   },
   "dependencies": {
     "aws4": "^1.13.2",
-    "fast-xml-parser": "^5.7.2",
+    "fast-xml-parser": "^5.8.0",
     "s3mini": "^0.9.1"
   },
   "devDependencies": {

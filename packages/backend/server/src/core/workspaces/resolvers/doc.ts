@@ -11,14 +11,17 @@ import {
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import { SafeIntResolver } from 'graphql-scalars';
 
 import {
+  ActionForbidden,
   Cache,
+  Config,
   DocActionDenied,
   DocDefaultRoleCanNotBeOwner,
   DocNotFound,
+  EventBus,
   ExpectToGrantDocUserRoles,
   ExpectToPublishDoc,
   ExpectToRevokeDocUserRoles,
@@ -34,19 +37,19 @@ import { Models, PublicDocMode } from '../../../models';
 import { CurrentUser } from '../../auth';
 import { Editor } from '../../doc';
 import {
-  AccessController,
   DOC_ACTIONS,
   DocAction,
   DocRole,
-  WorkspacePolicyService,
+  type DotToUnderline,
+  mapPermissionsToGraphqlPermissions,
+  PermissionAccess,
+  PermissionService,
 } from '../../permission';
 import { PublicUserType, WorkspaceUserType } from '../../user';
+import { canUserExecuteLimitedActions } from '../abuse';
+import { DocGrantsService } from '../doc-grants';
 import { WorkspaceType } from '../types';
 import { TimeBucket, TimeWindow } from './analytics-types';
-import {
-  DotToUnderline,
-  mapPermissionsToGraphqlPermissions,
-} from './workspace';
 
 registerEnumType(PublicDocMode, {
   name: 'PublicDocMode',
@@ -295,11 +298,34 @@ export class WorkspaceDocResolver {
      * @deprecated migrate to models
      */
     private readonly prisma: PrismaClient,
-    private readonly ac: AccessController,
-    private readonly policy: WorkspacePolicyService,
+    private readonly ac: PermissionAccess,
+    private readonly permission: PermissionService,
     private readonly models: Models,
-    private readonly cache: Cache
+    private readonly cache: Cache,
+    private readonly event: EventBus,
+    private readonly config: Config
   ) {}
+
+  private async assertCanShare(
+    userId: string,
+    context: { workspaceId: string; docId: string; action: 'publishDoc' }
+  ) {
+    const user = await this.models.user.get(userId);
+    const newAccountAgeMs = this.config.auth.newAccountShareActionDelay * 1000;
+    if (!user || !canUserExecuteLimitedActions(user, newAccountAgeMs)) {
+      this.logger.warn('Share action blocked for new account', {
+        userId,
+        email: user?.email,
+        createdAt: user?.createdAt,
+        accountAgeMs: user ? Date.now() - user.createdAt.getTime() : null,
+        minimumAccountAgeMs: newAccountAgeMs,
+        ...context,
+      });
+      throw new ActionForbidden(
+        'This feature is temporarily unavailable for you.'
+      );
+    }
+  }
 
   @ResolveField(() => WorkspaceDocMeta, {
     description: 'Cloud page metadata of workspace',
@@ -361,16 +387,32 @@ export class WorkspaceDocResolver {
     @Parent() workspace: WorkspaceType,
     @Args('pagination', PaginationInput.decode) pagination: PaginationInput
   ): Promise<PaginatedDocType> {
-    const [count, rows] = await this.models.doc.paginateDocInfoByUpdatedAt(
-      workspace.id,
-      pagination
-    );
-    const needs = await this.ac
-      .user(me.id)
-      .workspace(workspace.id)
-      .docs(rows, 'Doc.Read');
+    const predicate = this.permission.docReadableSqlPredicate({
+      userId: me.id,
+      workspaceId: workspace.id,
+      action: 'Doc.Read',
+      docIdColumn: Prisma.raw('"workspace_pages"."page_id"'),
+    });
+    const fallbackPredicate = this.permission.fallbackDocReadableSqlPredicate({
+      userId: me.id,
+      workspaceId: workspace.id,
+      action: 'Doc.Read',
+      docIdColumn: Prisma.raw('"workspace_pages"."page_id"'),
+    });
+    const [count, rows] = await this.models.doc
+      .paginateDocInfoByUpdatedAt(workspace.id, pagination, predicate)
+      .catch(error => {
+        if (!fallbackPredicate) {
+          throw error;
+        }
+        return this.models.doc.paginateDocInfoByUpdatedAt(
+          workspace.id,
+          pagination,
+          fallbackPredicate
+        );
+      });
 
-    return paginate(needs, 'updatedAt', pagination, count);
+    return paginate(rows, 'updatedAt', pagination, count);
   }
 
   @ResolveField(() => DocType, {
@@ -423,9 +465,15 @@ export class WorkspaceDocResolver {
       throw new ExpectToPublishDoc();
     }
 
-    await this.policy.assertCanPublishDoc(user.id, workspaceId, docId);
+    await this.ac.user(user.id).doc(workspaceId, docId).assert('Doc.Publish');
+    await this.assertCanShare(user.id, {
+      workspaceId,
+      docId,
+      action: 'publishDoc',
+    });
 
     const doc = await this.models.doc.publish(workspaceId, docId, mode);
+    this.event.emit('doc.public_state.changed', { workspaceId, docId });
 
     this.logger.log(
       `Publish page ${docId} with mode ${mode} in workspace ${workspaceId}`
@@ -448,9 +496,10 @@ export class WorkspaceDocResolver {
       throw new ExpectToRevokePublicDoc('Expect doc not to be workspace');
     }
 
-    await this.policy.assertCanUnpublishDoc(user.id, workspaceId, docId);
+    await this.ac.user(user.id).doc(workspaceId, docId).assert('Doc.Publish');
 
     const doc = await this.models.doc.unpublish(workspaceId, docId);
+    this.event.emit('doc.public_state.changed', { workspaceId, docId });
 
     this.logger.log(`Revoke public doc ${docId} in workspace ${workspaceId}`);
 
@@ -518,8 +567,10 @@ export class DocResolver {
   private readonly logger = new Logger(DocResolver.name);
 
   constructor(
-    private readonly ac: AccessController,
-    private readonly models: Models
+    private readonly ac: PermissionAccess,
+    private readonly models: Models,
+    private readonly grants: DocGrantsService,
+    private readonly event: EventBus
   ) {}
 
   @ResolveField(() => PublicUserType, {
@@ -644,27 +695,10 @@ export class DocResolver {
     @Args('pagination', PaginationInput.decode) pagination: PaginationInput
   ): Promise<PaginatedGrantedDocUserType> {
     await this.ac.user(user.id).doc(doc).assert('Doc.Users.Read');
-
-    const [permissions, totalCount] = await this.models.docUser.paginate(
+    return await this.grants.paginateGrantedUsers(
       doc.workspaceId,
       doc.docId,
       pagination
-    );
-
-    const workspaceUsers = await this.models.user.getWorkspaceUsers(
-      permissions.map(p => p.userId)
-    );
-
-    const workspaceUsersMap = new Map(workspaceUsers.map(wu => [wu.id, wu]));
-
-    return paginate(
-      permissions.map(p => ({
-        ...p,
-        user: workspaceUsersMap.get(p.userId) as WorkspaceUserType,
-      })),
-      'createdAt',
-      pagination,
-      totalCount
     );
   }
 
@@ -697,6 +731,10 @@ export class DocResolver {
       input.userIds,
       input.role
     );
+    this.event.emit('doc.grants.changed', {
+      workspaceId: input.workspaceId,
+      docId: input.docId,
+    });
 
     const info = {
       ...pairs,
@@ -733,6 +771,10 @@ export class DocResolver {
       input.docId,
       input.userId
     );
+    this.event.emit('doc.grants.changed', {
+      workspaceId: input.workspaceId,
+      docId: input.docId,
+    });
 
     const info = {
       ...pairs,
@@ -775,6 +817,11 @@ export class DocResolver {
         input.docId,
         input.userId
       );
+      this.event.emit('doc.owner.changed', {
+        workspaceId: input.workspaceId,
+        docId: input.docId,
+        userId: input.userId,
+      });
       this.logger.log(`Transfer doc owner (${JSON.stringify(info)})`);
     } else {
       await this.ac.user(user.id).doc(input).assert('Doc.Users.Manage');
@@ -784,6 +831,10 @@ export class DocResolver {
         input.userId,
         input.role
       );
+      this.event.emit('doc.grants.changed', {
+        workspaceId: input.workspaceId,
+        docId: input.docId,
+      });
       this.logger.log(`Update doc user role (${JSON.stringify(info)})`);
     }
 
@@ -835,6 +886,10 @@ export class DocResolver {
       input.docId,
       input.role
     );
+    this.event.emit('doc.default_role.changed', {
+      workspaceId: input.workspaceId,
+      docId: input.docId,
+    });
     return true;
   }
 }

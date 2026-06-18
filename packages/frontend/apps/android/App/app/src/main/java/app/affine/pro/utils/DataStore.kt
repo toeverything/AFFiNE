@@ -17,6 +17,12 @@ suspend fun DataStore<Preferences>.set(key: String, value: String) {
     }
 }
 
+suspend fun DataStore<Preferences>.del(key: String) {
+    edit {
+        it.remove(stringPreferencesKey(key))
+    }
+}
+
 suspend fun DataStore<Preferences>.get(key: String) = data.map {
     it[stringPreferencesKey(key)] ?: ""
 }.first()

@@ -31,7 +31,8 @@
       "groupSlug": "all-minor-patch",
       "matchUpdateTypes": ["minor", "patch"],
       "matchManagers": ["npm"],
-      "matchPackageNames": ["*", "!/^@blocksuite//", "!/oxlint/"]
+      "matchPackageNames": ["*"],
+      "excludePackagePatterns": ["^@blocksuite/", "^oxlint$"]
     },
     {
       "groupName": "all non-major dependencies",

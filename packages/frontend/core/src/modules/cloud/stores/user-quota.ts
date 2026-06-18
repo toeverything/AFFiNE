@@ -1,29 +1,25 @@
-import { getCurrentUserProfileQuery } from '@affine/graphql';
 import { Store } from '@toeverything/infra';
 
-import type { GraphQLService } from '../services/graphql';
+import type { NbstoreService } from '../../storage';
 
 export class UserQuotaStore extends Store {
-  constructor(private readonly graphqlService: GraphQLService) {
+  constructor(private readonly nbstoreService: NbstoreService) {
     super();
   }
 
-  async fetchUserQuota(abortSignal?: AbortSignal) {
-    const data = await this.graphqlService.gql({
-      query: getCurrentUserProfileQuery,
-      context: {
-        signal: abortSignal,
-      },
-    });
+  async fetchUserQuotaState(abortSignal?: AbortSignal) {
+    const response = await this.nbstoreService.realtime.request(
+      'user.quota-state.get',
+      {},
+      { signal: abortSignal, timeoutMs: 10000 }
+    );
+    return response.state;
+  }
 
-    if (!data.currentUser) {
-      throw new Error('No logged in');
-    }
-
-    return {
-      userId: data.currentUser.id,
-      quota: data.currentUser.quota,
-      used: data.currentUser.quotaUsage.storageQuota,
-    };
+  subscribeUserQuotaState() {
+    return this.nbstoreService.realtime.subscribe(
+      'user.quota-state.changed',
+      {}
+    );
   }
 }

@@ -299,6 +299,6 @@
   "devDependencies": {
     "@vanilla-extract/vite-plugin": "^5.0.0",
     "msw": "^2.13.2",
-    "vitest": "^4.0.18"
+    "vitest": "^4.1.8"
   }
 }

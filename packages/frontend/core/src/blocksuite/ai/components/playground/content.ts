@@ -18,7 +18,12 @@ import { property, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
 import type { AppSidebarConfig } from '../../chat-panel/chat-config';
-import { AIProvider } from '../../provider';
+import {
+  AIChatRuntime,
+  type AIChatScope,
+  PlaygroundAIChatSessionStrategy,
+} from '../../runtime/chat';
+import { getAIRequestService } from '../../runtime/request';
 import type { SearchMenuConfig } from '../ai-chat-add-context';
 import type { DocDisplayConfig } from '../ai-chat-chips';
 import type { AIPlaygroundConfig, AIReasoningConfig } from '../ai-chat-input';
@@ -119,27 +124,39 @@ export class PlaygroundContent extends SignalWatcher(
 
   private isSending = false;
 
+  private createSessionRuntime(scope: AIChatScope) {
+    return new AIChatRuntime({
+      request: getAIRequestService(),
+      scope,
+      strategy: new PlaygroundAIChatSessionStrategy(),
+    });
+  }
+
   private readonly getSessions = async () => {
     const sessions =
-      (await AIProvider.session?.getSessions(
+      (await getAIRequestService().getSessions(
         this.doc.workspace.id,
         this.doc.id,
         { action: false }
       )) || [];
     const rootSession = sessions?.findLast(session => !session.parentSessionId);
     if (!rootSession) {
-      // Create a new session
-      const rootSessionId = await AIProvider.session?.createSession({
-        docId: this.doc.id,
+      const runtime = this.createSessionRuntime({
+        kind: 'playground',
         workspaceId: this.doc.workspace.id,
-        promptName: 'Chat With AFFiNE AI',
+        docId: this.doc.id,
       });
-      if (rootSessionId) {
-        this.rootSessionId = rootSessionId;
-        const forkSession = await this.forkSession(rootSessionId);
-        if (forkSession) {
-          this.sessions = [forkSession];
+      try {
+        const rootSession = await runtime.createSession();
+        if (rootSession) {
+          this.rootSessionId = rootSession.sessionId;
+          const forkSession = await this.forkSession(rootSession.sessionId);
+          if (forkSession) {
+            this.sessions = [forkSession];
+          }
         }
+      } finally {
+        runtime.dispose();
       }
     } else {
       this.rootSessionId = rootSession.sessionId;
@@ -158,19 +175,17 @@ export class PlaygroundContent extends SignalWatcher(
   };
 
   private readonly forkSession = async (parentSessionId: string) => {
-    const forkSessionId = await AIProvider.forkChat?.({
+    const runtime = this.createSessionRuntime({
+      kind: 'playground',
       workspaceId: this.doc.workspace.id,
       docId: this.doc.id,
-      sessionId: parentSessionId,
-      latestMessageId: '',
+      parentSessionId,
     });
-    if (!forkSessionId) {
-      return;
+    try {
+      return (await runtime.createSession()) ?? undefined;
+    } finally {
+      runtime.dispose();
     }
-    return await AIProvider.session?.getSession(
-      this.doc.workspace.id,
-      forkSessionId
-    );
   };
 
   private readonly addChat = async () => {

@@ -41,8 +41,8 @@ import {
 } from '../doc';
 import { applyUpdatesWithNative } from '../doc/merge-updates';
 import {
-  AccessController,
   type DocAction,
+  PermissionAccess,
   WorkspaceAction,
 } from '../permission';
 import { DocID } from '../utils/doc';
@@ -223,7 +223,7 @@ export class SpaceSyncGateway
   private activeUsersFlushQueued = false;
 
   constructor(
-    private readonly ac: AccessController,
+    private readonly ac: PermissionAccess,
     private readonly event: EventBus,
     private readonly workspace: PgWorkspaceDocStorageAdapter,
     private readonly userspace: PgUserspaceDocStorageAdapter,
@@ -633,6 +633,7 @@ export class SpaceSyncGateway
   @SubscribeMessage('space:load-doc')
   async onLoadSpaceDoc(
     @ConnectedSocket() client: Socket,
+    @CurrentUser() user: CurrentUser,
     @MessageBody()
     { spaceType, spaceId, docId, stateVector }: LoadDocMessage
   ): Promise<
@@ -641,6 +642,13 @@ export class SpaceSyncGateway
     const id = new DocID(docId, spaceId);
     const adapter = this.selectAdapter(client, spaceType);
     adapter.assertIn(spaceId);
+    await this.assertDocActionAllowed(
+      spaceType,
+      user.id,
+      spaceId,
+      id.guid,
+      'Doc.Read'
+    );
 
     const doc = await adapter.diff(
       spaceId,
@@ -666,7 +674,7 @@ export class SpaceSyncGateway
     @ConnectedSocket() client: Socket,
     @CurrentUser() user: CurrentUser,
     @MessageBody() { spaceType, spaceId, docId }: DeleteDocMessage
-  ) {
+  ): Promise<EventResponse<{ success: true }>> {
     const adapter = this.selectAdapter(client, spaceType);
     await this.assertDocActionAllowed(
       spaceType,
@@ -676,6 +684,7 @@ export class SpaceSyncGateway
       'Doc.Delete'
     );
     await adapter.delete(spaceId, docId);
+    return { data: { success: true } };
   }
 
   /**
@@ -692,8 +701,13 @@ export class SpaceSyncGateway
     const adapter = this.selectAdapter(client, spaceType);
 
     // Quota recovery mode is intentionally not applied to sync in this phase.
-    // TODO(@forehalo): enable after frontend supporting doc revert
-    // await this.ac.user(user.id).doc(spaceId, docId).assert('Doc.Update');
+    await this.assertDocActionAllowed(
+      spaceType,
+      user.id,
+      spaceId,
+      docId,
+      'Doc.Update'
+    );
     const timestamp = await adapter.push(
       spaceId,
       docId,
@@ -740,15 +754,32 @@ export class SpaceSyncGateway
   @SubscribeMessage('space:load-doc-timestamps')
   async onLoadDocTimestamps(
     @ConnectedSocket() client: Socket,
+    @CurrentUser() user: CurrentUser,
     @MessageBody()
     { spaceType, spaceId, timestamp }: LoadDocTimestampsMessage
   ): Promise<EventResponse<Record<string, number>>> {
     const adapter = this.selectAdapter(client, spaceType);
 
     const stats = await adapter.getTimestamps(spaceId, timestamp);
+    if (!stats || spaceType === SpaceType.Userspace) {
+      return {
+        data: stats ?? {},
+      };
+    }
+
+    const readableDocs = await this.ac
+      .user(user.id)
+      .workspace(spaceId)
+      .docs(
+        Object.keys(stats).map(docId => ({ docId })),
+        'Doc.Read'
+      );
+    const readableDocIds = new Set(readableDocs.map(doc => doc.docId));
 
     return {
-      data: stats ?? {},
+      data: Object.fromEntries(
+        Object.entries(stats).filter(([docId]) => readableDocIds.has(docId))
+      ),
     };
   }
 
@@ -899,7 +930,7 @@ class WorkspaceSyncAdapter extends SyncSocketAdapter {
   constructor(
     client: Socket,
     storage: DocStorageAdapter,
-    private readonly ac: AccessController,
+    private readonly ac: PermissionAccess,
     private readonly docReader: DocReader,
     private readonly models: Models
   ) {

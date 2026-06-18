@@ -1,5 +1,10 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
-import { createRemoteJWKSet, type JWTPayload, jwtVerify } from 'jose';
+import {
+  createRemoteJWKSet,
+  customFetch,
+  type JWTPayload,
+  jwtVerify,
+} from 'jose';
 import { omit } from 'lodash-es';
 import { z } from 'zod';
 
@@ -7,6 +12,7 @@ import {
   ExponentialBackoffScheduler,
   InvalidAuthState,
   InvalidOauthResponse,
+  safeFetch,
   URLHelper,
 } from '../../../base';
 import { OAuthOIDCProviderConfig, OAuthProviderName } from '../config';
@@ -59,12 +65,19 @@ type OIDCConfiguration = z.infer<typeof OIDCConfigurationSchema>;
 
 const OIDC_DISCOVERY_INITIAL_RETRY_DELAY = 1000;
 const OIDC_DISCOVERY_MAX_RETRY_DELAY = 60_000;
+const OIDC_FETCH_OPTIONS = {
+  timeoutMs: 10_000,
+  maxRedirects: 3,
+  maxBytes: 1024 * 1024,
+  allowedHeaders: ['accept'],
+};
 
 @Injectable()
 export class OIDCProvider extends OAuthProvider implements OnModuleDestroy {
   override provider = OAuthProviderName.OIDC;
   #endpoints: OIDCConfiguration | null = null;
   #jwks: ReturnType<typeof createRemoteJWKSet> | null = null;
+  private readonly oidcFetch = safeFetch;
   readonly #retryScheduler = new ExponentialBackoffScheduler({
     baseDelayMs: OIDC_DISCOVERY_INITIAL_RETRY_DELAY,
     maxDelayMs: OIDC_DISCOVERY_MAX_RETRY_DELAY,
@@ -132,12 +145,10 @@ export class OIDCProvider extends OAuthProvider implements OnModuleDestroy {
     }
 
     try {
-      const res = await fetch(
+      const res = await this.oidcFetch(
         `${config.issuer}/.well-known/openid-configuration`,
-        {
-          method: 'GET',
-          headers: { Accept: 'application/json' },
-        }
+        { method: 'GET', headers: { Accept: 'application/json' } },
+        OIDC_FETCH_OPTIONS
       );
 
       if (generation !== this.#validationGeneration) {
@@ -163,7 +174,10 @@ export class OIDCProvider extends OAuthProvider implements OnModuleDestroy {
       }
 
       this.#endpoints = configuration;
-      this.#jwks = createRemoteJWKSet(new URL(configuration.jwks_uri));
+      this.#jwks = createRemoteJWKSet(new URL(configuration.jwks_uri), {
+        [customFetch]: (url, init) =>
+          this.oidcFetch(url, init, OIDC_FETCH_OPTIONS),
+      });
       this.#retryScheduler.reset();
       super.setup();
     } catch (e) {

@@ -5,7 +5,10 @@ import { DocModeProvider } from '@blocksuite/affine-shared/services';
 import { VirtualPaddingController } from '@blocksuite/affine-shared/utils';
 import { IS_MOBILE } from '@blocksuite/global/env';
 import type { BlockComponent } from '@blocksuite/std';
-import { RANGE_SYNC_EXCLUDE_ATTR } from '@blocksuite/std/inline';
+import {
+  RANGE_QUERY_EXCLUDE_ATTR,
+  RANGE_SYNC_EXCLUDE_ATTR,
+} from '@blocksuite/std/inline';
 import { signal } from '@preact/signals-core';
 import { html, nothing } from 'lit';
 import { ref } from 'lit/directives/ref.js';
@@ -37,7 +40,80 @@ export class TableBlockComponent extends CaptionedBlockComponent<TableBlockModel
   override connectedCallback() {
     super.connectedCallback();
     this.setAttribute(RANGE_SYNC_EXCLUDE_ATTR, 'true');
+    this.setAttribute(RANGE_QUERY_EXCLUDE_ATTR, 'true');
     this.style.position = 'relative';
+    const doc = this.ownerDocument;
+    this.disposables.addFromEvent(doc, 'selectionchange', () => {
+      const hasExternalNativeSelection = this.hasExternalNativeSelection();
+      this.toggleAttribute(
+        'data-external-range-selection',
+        hasExternalNativeSelection
+      );
+      if (hasExternalNativeSelection) {
+        delete this.dataset.internalRangeSelection;
+      }
+      this.setInternalEditablesEnabled(!hasExternalNativeSelection);
+    });
+    this.disposables.addFromEvent(
+      doc,
+      'pointerdown',
+      event => {
+        const target = event.target;
+        const NodeConstructor = this.ownerDocument.defaultView?.Node;
+        if (
+          NodeConstructor &&
+          target instanceof NodeConstructor &&
+          this.contains(target)
+        ) {
+          this.setInternalEditablesEnabled(true);
+          if (this.hasExternalNativeSelection()) {
+            this.ownerDocument.getSelection()?.removeAllRanges();
+          }
+          delete this.dataset.externalRangeSelection;
+          this.dataset.internalRangeSelection = 'true';
+        } else {
+          delete this.dataset.internalRangeSelection;
+        }
+      },
+      { capture: true }
+    );
+  }
+
+  private setInternalEditablesEnabled(enabled: boolean) {
+    this.querySelectorAll<HTMLElement>('.inline-editor').forEach(editor => {
+      if (enabled) {
+        if (editor.dataset.tableExternalSelectionDisabled === 'true') {
+          editor.contentEditable = 'true';
+          delete editor.dataset.tableExternalSelectionDisabled;
+        }
+        return;
+      }
+
+      if (editor.contentEditable === 'true') {
+        editor.contentEditable = 'false';
+        editor.dataset.tableExternalSelectionDisabled = 'true';
+      }
+    });
+  }
+
+  private hasExternalNativeSelection() {
+    const selection = this.ownerDocument.getSelection();
+    if (!selection || selection.isCollapsed || selection.rangeCount === 0) {
+      return false;
+    }
+
+    const range = selection.getRangeAt(0);
+    if (!range.intersectsNode(this)) {
+      return false;
+    }
+
+    const anchorNode = selection.anchorNode;
+    const focusNode = selection.focusNode;
+    return (
+      !!anchorNode &&
+      !!focusNode &&
+      (!this.contains(anchorNode) || !this.contains(focusNode))
+    );
   }
 
   override get topContenteditableElement() {

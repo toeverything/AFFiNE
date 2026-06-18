@@ -8,7 +8,6 @@ import { useNavigateHelper } from '@affine/core/components/hooks/use-navigate-he
 import { PageDetailEditor } from '@affine/core/components/page-detail-editor';
 import { DetailPageWrapper } from '@affine/core/desktop/pages/workspace/detail-page/detail-page-wrapper';
 import { PageHeader } from '@affine/core/mobile/components';
-import { useGlobalEvent } from '@affine/core/mobile/hooks/use-global-events';
 import { AIButtonService } from '@affine/core/modules/ai-button';
 import { ServerService } from '@affine/core/modules/cloud';
 import { DocService } from '@affine/core/modules/doc';
@@ -36,17 +35,44 @@ import {
 import { cssVarV2 } from '@toeverything/theme/v2';
 import clsx from 'clsx';
 import dayjs from 'dayjs';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { AppTabs } from '../../../components';
+import { globalVars } from '../../../styles/variables.css';
 import { JournalConflictBlock } from './journal-conflict-block';
 import { JournalDatePicker } from './journal-date-picker';
 import * as styles from './mobile-detail-page.css';
+import {
+  getImmersiveZoomToolbarBottom,
+  getLandscapeWindowMeasurement,
+  isImmersiveTapTarget,
+  isLandscapeWindow,
+  isTapWithinSlop,
+  shouldEnableEdgelessImmersive,
+  shouldLockEdgelessDocumentScroll,
+  shouldShowMobileDetailPageTitle,
+  shouldTrackMobileDetailPageTitleScroll,
+} from './mobile-detail-page.immersive';
 import { PageHeaderMenuButton } from './page-header-more-button';
 import { PageHeaderShareButton } from './page-header-share-button';
 
-const DetailPageImpl = () => {
+type ImmersiveTapHandlers = {
+  onPointerDown: (event: ReactPointerEvent<HTMLDivElement>) => void;
+  onPointerUp: (event: ReactPointerEvent<HTMLDivElement>) => void;
+  onPointerCancel: () => void;
+};
+
+const DetailPageImpl = ({
+  immersive,
+  chromeVisible,
+  immersiveTapHandlers,
+}: {
+  immersive: boolean;
+  chromeVisible: boolean;
+  immersiveTapHandlers?: ImmersiveTapHandlers;
+}) => {
   const {
     editorService,
     docService,
@@ -170,7 +196,7 @@ const DetailPageImpl = () => {
 
       editor.bindEditorContainer(
         editorContainer,
-        (editorContainer as any).docTitle, // set from proxy
+        editorContainer.docTitle,
         scrollViewportRef.current
       );
 
@@ -189,19 +215,36 @@ const DetailPageImpl = () => {
     !enableKeyboardToolbar ||
     (mode === 'edgeless' && !enableEdgelessEditing);
 
+  const immersiveZoomToolbarBottom = getImmersiveZoomToolbarBottom({
+    immersive,
+    chromeVisible,
+    tabBarOffset: globalVars.appTabSafeArea,
+  });
+  const lockDocumentScroll = shouldLockEdgelessDocumentScroll(mode);
+
+  const immersiveViewportStyle = immersiveZoomToolbarBottom
+    ? ({
+        '--affine-edgeless-zoom-toolbar-bottom': immersiveZoomToolbarBottom,
+      } as CSSProperties)
+    : undefined;
+
   return (
     <FrameworkScope scope={editor.scope}>
       <div className={styles.mainContainer}>
         <div
           data-mode={mode}
+          data-lock-document-scroll={lockDocumentScroll ? 'true' : undefined}
           ref={scrollViewportRef}
+          style={immersiveViewportStyle}
           className={clsx(
             'affine-page-viewport',
             styles.affineDocViewport,
             styles.editorContainer
           )}
+          onPointerDown={immersiveTapHandlers?.onPointerDown}
+          onPointerUp={immersiveTapHandlers?.onPointerUp}
+          onPointerCancel={immersiveTapHandlers?.onPointerCancel}
         >
-          {/* Add a key to force rerender when page changed, to avoid error boundary persisting. */}
           <AffineErrorBoundary key={doc.id} className={styles.errorBoundary}>
             <PageDetailEditor onLoad={onLoad} readonly={readonly} />
           </AffineErrorBoundary>
@@ -228,7 +271,262 @@ const skeletonWithBack = getSkeleton(true);
 const notFound = getNotFound(false);
 const notFoundWithBack = getNotFound(true);
 
-const checkShowTitle = () => window.scrollY >= 158;
+const getShouldShowTitle = () =>
+  shouldShowMobileDetailPageTitle(window.scrollY);
+
+const LANDSCAPE_MEASUREMENT_MAX_RETRIES = 4;
+
+const getIsLandscape = () =>
+  isLandscapeWindow({
+    width: window.innerWidth,
+    height: window.innerHeight,
+    matchesLandscape: window.matchMedia('(orientation: landscape)').matches,
+  });
+
+const MobileDetailPageHeader = ({
+  date,
+  fromTab,
+  title,
+  allJournalDates,
+  handleDateChange,
+  trackScrollTitle,
+}: {
+  date?: string;
+  fromTab: boolean;
+  title?: string;
+  allJournalDates: Set<string | null | undefined>;
+  handleDateChange: (date: string) => void;
+  trackScrollTitle: boolean;
+}) => {
+  const [showTitle, setShowTitle] = useState(getShouldShowTitle);
+
+  useEffect(() => {
+    if (!trackScrollTitle) {
+      return;
+    }
+
+    let frame = 0;
+
+    const updateShowTitle = () => {
+      frame = 0;
+      setShowTitle(prev => {
+        const next = getShouldShowTitle();
+        return prev === next ? prev : next;
+      });
+    };
+
+    const handleScroll = () => {
+      if (frame) {
+        return;
+      }
+
+      frame = window.requestAnimationFrame(updateShowTitle);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    handleScroll();
+
+    return () => {
+      if (frame) {
+        window.cancelAnimationFrame(frame);
+      }
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [trackScrollTitle]);
+
+  return (
+    <PageHeader
+      back={!fromTab}
+      className={styles.header}
+      contentClassName={styles.headerContent}
+      suffix={
+        <>
+          <PageHeaderShareButton />
+          <PageHeaderMenuButton />
+        </>
+      }
+      bottom={
+        date ? (
+          <JournalDatePicker
+            date={date}
+            onChange={handleDateChange}
+            withDotDates={allJournalDates}
+            className={styles.journalDatePicker}
+          />
+        ) : null
+      }
+      bottomSpacer={94}
+    >
+      <span data-show={!!date || showTitle} className={styles.headerTitle}>
+        {date
+          ? i18nTime(dayjs(date), { absolute: { accuracy: 'month' } })
+          : title}
+      </span>
+    </PageHeader>
+  );
+};
+
+const MobileDetailPageContent = ({
+  pageId,
+  date,
+  fromTab,
+  title,
+  allJournalDates,
+  handleDateChange,
+}: {
+  pageId: string;
+  date?: string;
+  fromTab: boolean;
+  title?: string;
+  allJournalDates: Set<string | null | undefined>;
+  handleDateChange: (date: string) => void;
+}) => {
+  const editor = useService(EditorService).editor;
+  const mode = useLiveData(editor.mode$);
+  const [isLandscape, setIsLandscape] = useState(getIsLandscape);
+  const [chromeVisible, setChromeVisible] = useState(true);
+  const tapStateRef = useRef<{
+    pointerId: number;
+    clientX: number;
+    clientY: number;
+    tappable: boolean;
+  } | null>(null);
+
+  const immersive = shouldEnableEdgelessImmersive({ mode, isLandscape });
+  const trackScrollTitle = shouldTrackMobileDetailPageTitleScroll(mode);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(orientation: landscape)');
+    let frame = 0;
+    let disposed = false;
+    let remainingRetries = 0;
+
+    const sampleLandscape = () => {
+      frame = 0;
+
+      if (disposed) {
+        return;
+      }
+
+      const measurement = getLandscapeWindowMeasurement({
+        width: window.innerWidth,
+        height: window.innerHeight,
+        matchesLandscape: mediaQuery.matches,
+      });
+
+      setIsLandscape(prev => {
+        const next = measurement.isLandscape;
+        return prev === next ? prev : next;
+      });
+
+      if (!measurement.settled && remainingRetries > 0) {
+        remainingRetries -= 1;
+        frame = window.requestAnimationFrame(sampleLandscape);
+      }
+    };
+
+    const updateLandscape = () => {
+      if (frame) {
+        window.cancelAnimationFrame(frame);
+      }
+
+      remainingRetries = LANDSCAPE_MEASUREMENT_MAX_RETRIES;
+      frame = window.requestAnimationFrame(sampleLandscape);
+    };
+
+    updateLandscape();
+    window.addEventListener('resize', updateLandscape);
+    mediaQuery.addEventListener('change', updateLandscape);
+
+    return () => {
+      disposed = true;
+      if (frame) {
+        window.cancelAnimationFrame(frame);
+      }
+      window.removeEventListener('resize', updateLandscape);
+      mediaQuery.removeEventListener('change', updateLandscape);
+    };
+  }, []);
+
+  useEffect(() => {
+    setChromeVisible(!immersive);
+    tapStateRef.current = null;
+  }, [immersive, pageId]);
+
+  useEffect(() => {
+    if (!immersive || !chromeVisible) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      setChromeVisible(false);
+    }, 3000);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [chromeVisible, immersive]);
+
+  const immersiveTapHandlers = useMemo<ImmersiveTapHandlers | undefined>(() => {
+    if (!immersive) {
+      return undefined;
+    }
+
+    return {
+      onPointerDown: event => {
+        tapStateRef.current = {
+          pointerId: event.pointerId,
+          clientX: event.clientX,
+          clientY: event.clientY,
+          tappable: isImmersiveTapTarget(event.target),
+        };
+      },
+      onPointerUp: event => {
+        const tapState = tapStateRef.current;
+        tapStateRef.current = null;
+
+        if (
+          !tapState ||
+          tapState.pointerId !== event.pointerId ||
+          !tapState.tappable ||
+          !isTapWithinSlop(tapState, event)
+        ) {
+          return;
+        }
+
+        setChromeVisible(visible => !visible);
+      },
+      onPointerCancel: () => {
+        tapStateRef.current = null;
+      },
+    };
+  }, [immersive]);
+
+  return (
+    <>
+      {(!immersive || chromeVisible) && (
+        <MobileDetailPageHeader
+          date={date}
+          fromTab={fromTab}
+          title={title}
+          allJournalDates={allJournalDates}
+          handleDateChange={handleDateChange}
+          trackScrollTitle={trackScrollTitle}
+        />
+      )}
+      <JournalConflictBlock date={date} />
+      <DetailPageImpl
+        immersive={immersive}
+        chromeVisible={chromeVisible}
+        immersiveTapHandlers={immersiveTapHandlers}
+      />
+      <AppTabs
+        background={cssVarV2('layer/background/primary')}
+        hidden={immersive && !chromeVisible}
+      />
+    </>
+  );
+};
 
 const MobileDetailPage = ({
   pageId,
@@ -240,7 +538,6 @@ const MobileDetailPage = ({
   const docDisplayMetaService = useService(DocDisplayMetaService);
   const journalService = useService(JournalService);
   const workbench = useService(WorkbenchService).workbench;
-  const [showTitle, setShowTitle] = useState(checkShowTitle);
   const title = useLiveData(docDisplayMetaService.title$(pageId));
 
   const canAccess = useGuard('Doc_Read', pageId);
@@ -265,11 +562,6 @@ const MobileDetailPage = ({
     [fromTab, journalService, workbench]
   );
 
-  useGlobalEvent(
-    'scroll',
-    useCallback(() => setShowTitle(checkShowTitle()), [])
-  );
-
   return (
     <div className={styles.root}>
       <DetailPageWrapper
@@ -278,37 +570,15 @@ const MobileDetailPage = ({
         pageId={pageId}
         canAccess={canAccess}
       >
-        <PageHeader
-          back={!fromTab}
-          className={styles.header}
-          contentClassName={styles.headerContent}
-          suffix={
-            <>
-              <PageHeaderShareButton />
-              <PageHeaderMenuButton />
-            </>
-          }
-          bottom={
-            date ? (
-              <JournalDatePicker
-                date={date}
-                onChange={handleDateChange}
-                withDotDates={allJournalDates}
-                className={styles.journalDatePicker}
-              />
-            ) : null
-          }
-          bottomSpacer={94}
-        >
-          <span data-show={!!date || showTitle} className={styles.headerTitle}>
-            {date
-              ? i18nTime(dayjs(date), { absolute: { accuracy: 'month' } })
-              : title}
-          </span>
-        </PageHeader>
-        <JournalConflictBlock date={date} />
-        <DetailPageImpl />
-        <AppTabs background={cssVarV2('layer/background/primary')} />
+        <MobileDetailPageContent
+          key={pageId}
+          pageId={pageId}
+          date={date}
+          fromTab={fromTab}
+          title={title}
+          allJournalDates={allJournalDates}
+          handleDateChange={handleDateChange}
+        />
       </DetailPageWrapper>
     </div>
   );

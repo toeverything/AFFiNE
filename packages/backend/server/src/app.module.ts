@@ -42,6 +42,7 @@ import { NotificationModule } from './core/notification';
 import { PermissionModule } from './core/permission';
 import { QueueDashboardModule } from './core/queue-dashboard';
 import { QuotaModule } from './core/quota';
+import { RealtimeModule } from './core/realtime';
 import { SelfhostModule } from './core/selfhost';
 import { StaticFileModule } from './core/static-files';
 import { StorageModule } from './core/storage';
@@ -54,8 +55,7 @@ import { Env } from './env';
 import { ModelsModule } from './models';
 import { CalendarModule } from './plugins/calendar';
 import { CaptchaModule } from './plugins/captcha';
-import { CopilotModule } from './plugins/copilot';
-import { CustomerIoModule } from './plugins/customerio';
+import { CopilotModule, CopilotRealtimeModule } from './plugins/copilot';
 import { GCloudModule } from './plugins/gcloud';
 import { IndexerModule } from './plugins/indexer';
 import { LicenseModule } from './plugins/license';
@@ -117,6 +117,7 @@ export const FunctionalityModules = [
   ErrorModule,
   WebSocketModule,
   JobModule.forRoot(),
+  RealtimeModule,
   ModelsModule,
   ScheduleModule.forRoot(),
   MonitorModule,
@@ -185,6 +186,10 @@ export function buildAppModule(env: Env) {
       SyncModule,
       TelemetryModule
     )
+    .useIf(
+      () => !env.flavors.graphql && (env.flavors.sync || env.flavors.front),
+      CopilotRealtimeModule
+    )
     // graphql server only
     .useIf(
       () => env.flavors.graphql,
@@ -199,7 +204,6 @@ export function buildAppModule(env: Env) {
       CaptchaModule,
       OAuthModule,
       CalendarModule,
-      CustomerIoModule,
       TelemetryModule,
       CommentModule,
       AccessTokenModule,

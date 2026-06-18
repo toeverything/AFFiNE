@@ -1,11 +1,4 @@
-import {
-  Args,
-  ID,
-  Int,
-  Mutation,
-  ResolveField,
-  Resolver,
-} from '@nestjs/graphql';
+import { Args, ID, Mutation, ResolveField, Resolver } from '@nestjs/graphql';
 
 import {
   MentionUserDocAccessDenied,
@@ -14,7 +7,7 @@ import {
 import { paginate, PaginationInput } from '../../base/graphql';
 import { MentionNotificationCreateSchema } from '../../models';
 import { CurrentUser } from '../auth/session';
-import { AccessController } from '../permission';
+import { PermissionAccess } from '../permission';
 import { UserType } from '../user';
 import { NotificationService } from './service';
 import {
@@ -28,7 +21,7 @@ import {
 export class UserNotificationResolver {
   constructor(
     private readonly service: NotificationService,
-    private readonly ac: AccessController
+    private readonly ac: PermissionAccess
   ) {}
 
   @ResolveField(() => PaginatedNotificationObjectType, {
@@ -43,13 +36,6 @@ export class UserNotificationResolver {
       this.service.countByUserId(me.id),
     ]);
     return paginate(notifications, 'createdAt', pagination, totalCount);
-  }
-
-  @ResolveField(() => Int, {
-    description: 'Get user notification count',
-  })
-  async notificationCount(@CurrentUser() me: UserType): Promise<number> {
-    return await this.service.countByUserId(me.id);
   }
 
   @Mutation(() => ID, {

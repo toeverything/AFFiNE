@@ -260,6 +260,17 @@ function convertGfmCallouts(markdown: string): string {
   return lines.join('\n');
 }
 
+function stripBearMetadataComments(markdown: string): string {
+  let current = markdown;
+  while (true) {
+    const next = current.replace(/<!--\s*\{[^}]*\}\s*-->/g, '');
+    if (next === current) {
+      return current;
+    }
+    current = next;
+  }
+}
+
 const HIGHLIGHT_COLOR_MAP: Record<string, string> = {
   '\uD83D\uDFE2': 'green',
   '\uD83D\uDD35': 'blue',
@@ -426,9 +437,7 @@ async function importBearBackup({
         entry.bundlePath.split('/').findLast(Boolean) ?? 'Untitled';
       const title = extractTitle(cleanedMarkdown, bundleDirName);
       const markdown = convertHighlights(
-        convertGfmCallouts(
-          cleanedMarkdown.replace(/<!--\s*\{[^}]*\}\s*-->/g, '')
-        )
+        convertGfmCallouts(stripBearMetadataComments(cleanedMarkdown))
       );
 
       // Read assets on demand (decompress only this bundle's assets)

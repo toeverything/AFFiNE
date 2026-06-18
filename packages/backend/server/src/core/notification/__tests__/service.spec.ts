@@ -87,6 +87,29 @@ test('should create invitation notification and email', async t => {
   t.is(invitationMail.payload.name, 'MemberInvitation');
 });
 
+test('should not send invitation email when workspace name contains domain', async t => {
+  const spamWorkspace = await module.create(Mockers.Workspace, {
+    owner: {
+      id: owner.id,
+    },
+    name: 'BTC https://spam.example',
+  });
+  const inviteId = randomUUID();
+  const invitationMailCount = module.queue.count('notification.sendMail');
+
+  const notification = await notificationService.createInvitation({
+    userId: member.id,
+    body: {
+      workspaceId: spamWorkspace.id,
+      createdByUserId: owner.id,
+      inviteId,
+    },
+  });
+
+  t.truthy(notification);
+  t.is(module.queue.count('notification.sendMail'), invitationMailCount);
+});
+
 test('should not send invitation email if user setting is not to receive invitation email', async t => {
   const inviteId = randomUUID();
   await module.create(Mockers.UserSettings, {

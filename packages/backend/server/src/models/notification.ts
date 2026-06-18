@@ -311,6 +311,15 @@ export class NotificationModel extends BaseModel {
     return row as UnionNotification;
   }
 
+  async findExpiredNotificationUserIds() {
+    const rows = await this.db.notification.findMany({
+      distinct: ['userId'],
+      select: { userId: true },
+      where: { createdAt: { lte: new Date(Date.now() - ONE_YEAR) } },
+    });
+    return rows.map(row => row.userId);
+  }
+
   async cleanExpiredNotifications() {
     const { count } = await this.db.notification.deleteMany({
       // delete notifications that are older than one year

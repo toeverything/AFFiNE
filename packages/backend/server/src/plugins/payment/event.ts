@@ -2,47 +2,32 @@ import { Injectable } from '@nestjs/common';
 
 import { EventBus, OnEvent } from '../../base';
 import { WorkspacePolicyService } from '../../core/permission';
+import { QuotaStateService } from '../../core/quota/state';
 import { WorkspaceService } from '../../core/workspaces';
-import { Models } from '../../models';
-import { SubscriptionPlan, SubscriptionRecurring } from './types';
+import { SubscriptionPlan } from './types';
 
 @Injectable()
 export class PaymentEventHandlers {
   constructor(
     private readonly workspace: WorkspaceService,
-    private readonly models: Models,
-    private readonly event: EventBus,
-    private readonly policy: WorkspacePolicyService
+    private readonly policy: WorkspacePolicyService,
+    private readonly quotaState: QuotaStateService,
+    private readonly event: EventBus
   ) {}
 
   @OnEvent('workspace.subscription.activated')
   async onWorkspaceSubscriptionUpdated({
     workspaceId,
     plan,
-    recurring,
-    quantity,
   }: Events['workspace.subscription.activated']) {
     switch (plan) {
       case 'team': {
         const isTeam = await this.workspace.isTeamWorkspace(workspaceId);
-        await this.models.workspaceFeature.add(
-          workspaceId,
-          'team_plan_v1',
-          `${recurring} team subscription activated`,
-          {
-            memberLimit: quantity,
-          }
-        );
-        this.event.emit('workspace.members.allocateSeats', {
-          workspaceId,
-          quantity,
-        });
         if (!isTeam) {
           // this event will triggered when subscription is activated or changed
           // we only send emails when the team workspace is activated
           await this.workspace.sendTeamWorkspaceUpgradedEmail(workspaceId);
         }
-        await this.policy.reconcileWorkspaceQuotaState(workspaceId);
         break;
       }
       default:
@@ -68,22 +53,10 @@ export class PaymentEventHandlers {
   async onUserSubscriptionUpdated({
     userId,
     plan,
-    recurring,
   }: Events['user.subscription.activated']) {
     switch (plan) {
       case SubscriptionPlan.AI:
-        await this.models.userFeature.add(
-          userId,
-          'unlimited_copilot',
-          'subscription activated'
-        );
-        break;
       case SubscriptionPlan.Pro:
-        await this.models.userFeature.switchQuota(
-          userId,
-          recurring === 'lifetime' ? 'lifetime_pro_plan_v1' : 'pro_plan_v1',
-          'subscription activated'
-        );
         await this.policy.reconcileOwnedWorkspaces(userId);
         break;
       default:
@@ -95,43 +68,35 @@ export class PaymentEventHandlers {
   async onUserSubscriptionCanceled({
     userId,
     plan,
-    recurring,
   }: Events['user.subscription.canceled']) {
     switch (plan) {
       case SubscriptionPlan.AI:
-        await this.models.userFeature.remove(userId, 'unlimited_copilot');
-        break;
       case SubscriptionPlan.Pro: {
-        // if user disputed a lifetime plan, we just switch them to free plan directly
-        if (recurring === SubscriptionRecurring.Lifetime) {
-          await this.models.userFeature.switchQuota(
-            userId,
-            'free_plan_v1',
-            'lifetime subscription canceled'
-          );
-          await this.policy.reconcileOwnedWorkspaces(userId);
-          break;
-        }
-
-        // edge case: when user switch from recurring Pro plan to `Lifetime` plan,
-        // a subscription canceled event will be triggered because `Lifetime` plan is not subscription based
-        const isLifetimeUser = await this.models.userFeature.has(
-          userId,
-          'lifetime_pro_plan_v1'
-        );
-
-        if (!isLifetimeUser) {
-          await this.models.userFeature.switchQuota(
-            userId,
-            'free_plan_v1',
-            'subscription canceled'
-          );
-          await this.policy.reconcileOwnedWorkspaces(userId);
-        }
+        await this.policy.reconcileOwnedWorkspaces(userId);
         break;
       }
       default:
         break;
     }
+  }
+
+  @OnEvent('entitlement.changed')
+  async onEntitlementChanged({
+    targetType,
+    targetId,
+  }: Events['entitlement.changed']) {
+    if (targetType !== 'workspace') {
+      return;
+    }
+
+    const state = await this.quotaState.reconcileWorkspaceQuotaState(targetId);
+    if (state.plan !== 'team' && state.plan !== 'selfhost_team') {
+      return;
+    }
+
+    this.event.emit('workspace.members.allocateSeats', {
+      workspaceId: targetId,
+      quantity: state.seatLimit ?? 0,
+    });
   }
 }

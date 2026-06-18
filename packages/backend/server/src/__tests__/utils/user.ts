@@ -34,12 +34,11 @@ export async function getPublicUserById(
 
 export async function sendChangeEmail(
   app: TestingApp,
-  email: string,
   callbackUrl: string
 ): Promise<boolean> {
   const res = await app.gql(`
     mutation {
-      sendChangeEmail(email: "${email}", callbackUrl: "${callbackUrl}")
+      sendChangeEmail(callbackUrl: "${callbackUrl}")
     }
   `);
 

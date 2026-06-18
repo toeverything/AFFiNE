@@ -464,6 +464,13 @@ export const NewDocDateTitleSettings = () => {
     [editorSettingService.editorSetting]
   );
 
+  const onToggleDisplayAddIconOption = useCallback(
+    (checked: boolean) => {
+      editorSettingService.editorSetting.set('displayAddIconOption', checked);
+    },
+    [editorSettingService.editorSetting]
+  );
+
   return (
     <>
       <SettingRow
@@ -475,6 +482,7 @@ export const NewDocDateTitleSettings = () => {
         ]()}
       >
         <Switch
+          data-testid="auto-title-new-doc-trigger"
           checked={settings.autoTitleNewDocWithCurrentDate}
           onChange={onToggleAutoDateTitle}
         />
@@ -513,6 +521,20 @@ export const NewDocDateTitleSettings = () => {
           </Menu>
         </SettingRow>
       ) : null}
+      <SettingRow
+        name={t.t(
+          'com.affine.settings.editorSettings.general.add-icon-option.title'
+        )}
+        desc={t.t(
+          'com.affine.settings.editorSettings.general.add-icon-option.description'
+        )}
+      >
+        <Switch
+          data-testid="display-add-icon-option-trigger"
+          checked={settings.displayAddIconOption}
+          onChange={onToggleDisplayAddIconOption}
+        />
+      </SettingRow>
     </>
   );
 };

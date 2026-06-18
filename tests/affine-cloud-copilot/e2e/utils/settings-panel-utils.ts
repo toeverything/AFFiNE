@@ -226,8 +226,8 @@ export class SettingsPanelUtils {
     timeout: number,
     status = 'synced'
   ) {
+    await cleanupWorkspace(page.url().split('/').slice(-2)[0] || '');
     await expect(async () => {
-      await cleanupWorkspace(page.url().split('/').slice(-2)[0] || '');
       await this.openSettingsPanel(page);
       const title = page.getByTestId('embedding-progress-title');
       // oxlint-disable-next-line prefer-dom-node-dataset

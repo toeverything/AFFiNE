@@ -24,19 +24,14 @@ import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
 import { ChatAbortIcon } from '../../_common/icons';
-import { type AIError, AIProvider, type AISendParams } from '../../provider';
+import { AIAppEvents, type AISendParams } from '../../provider';
+import type { AIChatRuntime, AIChatSnapshot } from '../../runtime/chat';
 import { reportResponse } from '../../utils/action-reporter';
 import { readBlobAsURL } from '../../utils/image';
-import { mergeStreamObjects } from '../../utils/stream-objects';
 import type { SearchMenuConfig } from '../ai-chat-add-context';
 import { addFilesToChat } from '../ai-chat-chips/attachment-utils';
 import type { ChatChip, DocDisplayConfig } from '../ai-chat-chips/type';
 import { isDocChip } from '../ai-chat-chips/utils';
-import {
-  type ChatMessage,
-  isChatMessage,
-  StreamObjectSchema,
-} from '../ai-chat-messages';
 import type { AIChatInputContext, AIReasoningConfig } from './type';
 
 function getFirstTwoLines(text: string) {
@@ -341,6 +336,12 @@ export class AIChatInput extends SignalWatcher(
   accessor session!: CopilotChatHistoryFragment | null | undefined;
 
   @property({ attribute: false })
+  accessor runtime: AIChatRuntime | null | undefined;
+
+  @property({ attribute: false })
+  accessor runtimeSnapshot: AIChatSnapshot | null | undefined;
+
+  @property({ attribute: false })
   accessor isContextProcessing!: boolean | undefined;
 
   @query('image-preview-grid')
@@ -370,11 +371,6 @@ export class AIChatInput extends SignalWatcher(
 
   @property({ attribute: false })
   accessor chips: ChatChip[] = [];
-
-  @property({ attribute: false })
-  accessor createSession!: () => Promise<
-    CopilotChatHistoryFragment | undefined
-  >;
 
   @property({ attribute: false })
   accessor updateContext!: (context: Partial<AIChatInputContext>) => void;
@@ -441,7 +437,7 @@ export class AIChatInput extends SignalWatcher(
     super.connectedCallback();
 
     this._disposables.add(
-      AIProvider.slots.requestSendWithChat.subscribe(
+      AIAppEvents.requestSendWithChat.subscribe(
         (params: AISendParams | null) => {
           if (!params) {
             return;
@@ -455,13 +451,13 @@ export class AIChatInput extends SignalWatcher(
               this.send(input).catch(console.error);
             }, 0);
           }
-          AIProvider.slots.requestSendWithChat.next(null);
+          AIAppEvents.requestSendWithChat.next(null);
         }
       )
     );
 
     this._disposables.add(
-      AIProvider.slots.requestOpenWithChat.subscribe(params => {
+      AIAppEvents.requestOpenWithChat.subscribe(params => {
         if (!params) return;
 
         const { input, host } = params;
@@ -552,7 +548,8 @@ export class AIChatInput extends SignalWatcher(
   }
 
   protected override render() {
-    const { images, status } = this.chatContextValue;
+    const { images } = this.chatContextValue;
+    const status = this.runtimeSnapshot?.status ?? this.chatContextValue.status;
     const hasImages = images.length > 0;
     const maxHeight = hasImages ? 272 + 2 : 200 + 2;
 
@@ -661,6 +658,10 @@ export class AIChatInput extends SignalWatcher(
 
   private get isSendDisabled() {
     if (this.isInputEmpty) {
+      return true;
+    }
+
+    if (this.runtimeSnapshot && !this.runtimeSnapshot.uiPolicy.canSend) {
       return true;
     }
 
@@ -782,9 +783,11 @@ export class AIChatInput extends SignalWatcher(
   };
 
   private readonly _handleAbort = () => {
-    this.chatContextValue.abortController?.abort();
-    this.updateContext({ status: 'success' });
-    reportResponse('aborted:stop');
+    if (this.runtime) {
+      this.runtime.dispatch({ type: 'stop' }).catch(console.error);
+      reportResponse('aborted:stop', this.host);
+      return;
+    }
   };
 
   private readonly _toggleReasoning = (extendedThinking: boolean) => {
@@ -817,153 +820,52 @@ export class AIChatInput extends SignalWatcher(
   };
 
   send = async (text: string) => {
-    try {
-      const {
-        status,
-        markdown,
-        images,
-        snapshot,
-        combinedElementsMarkdown,
-        html,
-      } = this.chatContextValue;
+    if (!this.runtime) return;
+    const { markdown, images, snapshot, combinedElementsMarkdown, html } =
+      this.chatContextValue;
+    const userInput = (markdown ? `${markdown}\n` : '') + text;
+    const imageAttachments = await Promise.all(
+      images?.map(image => readBlobAsURL(image))
+    );
+    const contexts = await this._getMatchedContexts();
+    const enableSendDetailedObject =
+      this.affineFeatureFlagService.flags.enable_send_detailed_object_to_ai
+        .value;
+    const userInfo = AIAppEvents.userInfo.value;
 
-      if (status === 'loading' || status === 'transmitting') return;
-      if (!text) return;
-      if (!AIProvider.actions.chat) return;
-
-      const abortController = new AbortController();
-      this.updateContext({
-        images: [],
-        status: 'loading',
-        error: null,
-        quote: '',
-        markdown: '',
-        abortController,
-      });
-
-      const imageAttachments = await Promise.all(
-        images?.map(image => readBlobAsURL(image))
-      );
-      const userInput = (markdown ? `${markdown}\n` : '') + text;
-
-      // optimistic update messages
-      await this._preUpdateMessages(userInput, imageAttachments);
-
-      const sessionId = (await this.createSession())?.sessionId;
-      let contexts = await this._getMatchedContexts();
-      if (abortController.signal.aborted) {
-        return;
-      }
-
-      const enableSendDetailedObject =
-        this.affineFeatureFlagService.flags.enable_send_detailed_object_to_ai
-          .value;
-
-      const modelId = this.aiModelService.modelId.value;
-      const stream = await AIProvider.actions.chat({
-        sessionId,
-        input: userInput,
-        contexts: {
-          ...contexts,
-          selectedSnapshot:
-            snapshot && enableSendDetailedObject ? snapshot : undefined,
-          selectedMarkdown:
-            combinedElementsMarkdown && enableSendDetailedObject
-              ? combinedElementsMarkdown
-              : undefined,
-          html: html || undefined,
-        },
-        docId: this.docId,
-        attachments: images,
-        workspaceId: this.workspaceId,
-        stream: true,
-        signal: abortController.signal,
-        isRootSession: this.isRootSession,
-        where: this.trackOptions?.where,
-        control: this.trackOptions?.control,
-        reasoning: this._isReasoningActive,
-        toolsConfig: this.aiToolsConfigService.config.value,
-        modelId,
-      });
-
-      for await (const text of stream) {
-        const messages = this.chatContextValue.messages.slice(0);
-        const last = messages.at(-1);
-        if (last && isChatMessage(last)) {
-          try {
-            const parsed = StreamObjectSchema.parse(JSON.parse(text));
-            const streamObjects = mergeStreamObjects([
-              ...(last.streamObjects ?? []),
-              parsed,
-            ]);
-            messages[messages.length - 1] = {
-              ...last,
-              streamObjects,
-            };
-          } catch {
-            messages[messages.length - 1] = {
-              ...last,
-              content: last.content + text,
-            };
-          }
-          this.updateContext({ messages, status: 'transmitting' });
-        }
-      }
-
-      this.updateContext({ status: 'success' });
-      this.onChatSuccess?.();
-      // update message id from server
-      await this._postUpdateMessages();
-    } catch (error) {
-      this.updateContext({ status: 'error', error: error as AIError });
-    } finally {
-      this.updateContext({ abortController: null });
-    }
-  };
-
-  private readonly _preUpdateMessages = async (
-    userInput: string,
-    attachments: string[]
-  ) => {
-    const userInfo = await AIProvider.userInfo;
     this.updateContext({
-      messages: [
-        ...this.chatContextValue.messages,
-        {
-          id: '',
-          role: 'user',
-          content: userInput,
-          createdAt: new Date().toISOString(),
-          attachments,
-          userId: userInfo?.id,
-          userName: userInfo?.name,
-          avatarUrl: userInfo?.avatarUrl ?? undefined,
-        },
-        {
-          id: '',
-          role: 'assistant',
-          content: '',
-          createdAt: new Date().toISOString(),
-        },
-      ],
+      images: [],
+      quote: '',
+      markdown: '',
     });
-  };
-
-  private readonly _postUpdateMessages = async () => {
-    const sessionId = this.session?.sessionId;
-    if (!sessionId || !AIProvider.histories) return;
-
-    const { messages } = this.chatContextValue;
-    const last = messages[messages.length - 1] as ChatMessage;
-    if (!last.id) {
-      const historyIds = await AIProvider.histories.ids(
-        this.workspaceId,
-        this.docId,
-        { sessionId, withMessages: true }
-      );
-      if (!historyIds || !historyIds[0]) return;
-      last.id = historyIds[0].messages.at(-1)?.id ?? '';
-    }
+    await this.runtime.dispatch({
+      type: 'send',
+      input: userInput,
+      contexts: {
+        ...contexts,
+        selectedSnapshot:
+          snapshot && enableSendDetailedObject ? snapshot : undefined,
+        selectedMarkdown:
+          combinedElementsMarkdown && enableSendDetailedObject
+            ? combinedElementsMarkdown
+            : undefined,
+        html: html || undefined,
+      },
+      attachments: images,
+      attachmentPreviews: imageAttachments,
+      isRootSession: this.isRootSession,
+      where: this.trackOptions?.where,
+      control: this.trackOptions?.control,
+      reasoning: this._isReasoningActive,
+      toolsConfig: this.aiToolsConfigService.config.value,
+      modelId: this.aiModelService.modelId.value,
+      userInfo: {
+        userId: userInfo?.id,
+        userName: userInfo?.name,
+        avatarUrl: userInfo?.avatarUrl ?? undefined,
+      },
+    });
+    this.onChatSuccess?.();
   };
 
   private async _getMatchedContexts() {

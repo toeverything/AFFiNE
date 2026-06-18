@@ -30,6 +30,14 @@ import { FeatureModel } from './feature';
 import { HistoryModel } from './history';
 import { MagicLinkOtpModel } from './magic-link-otp';
 import { NotificationModel } from './notification';
+import { PermissionProjectionModel } from './permission-projection';
+import {
+  DocAccessPolicyModel,
+  DocGrantModel,
+  WorkspaceAccessPolicyModel,
+  WorkspaceInvitationModel,
+  WorkspaceMemberModel,
+} from './permission-write';
 import { MODELS_SYMBOL } from './provider';
 import { SessionModel } from './session';
 import { UserModel } from './user';
@@ -41,6 +49,7 @@ import { WorkspaceModel } from './workspace';
 import { WorkspaceAnalyticsModel } from './workspace-analytics';
 import { WorkspaceCalendarModel } from './workspace-calendar';
 import { WorkspaceFeatureModel } from './workspace-feature';
+import { WorkspaceRuntimeStateModel } from './workspace-runtime-state';
 import { WorkspaceUserModel } from './workspace-user';
 
 const MODELS = {
@@ -52,12 +61,19 @@ const MODELS = {
   workspace: WorkspaceModel,
   userFeature: UserFeatureModel,
   workspaceFeature: WorkspaceFeatureModel,
+  workspaceRuntimeState: WorkspaceRuntimeStateModel,
   doc: DocModel,
   userDoc: UserDocModel,
   workspaceUser: WorkspaceUserModel,
   docUser: DocUserModel,
   history: HistoryModel,
   notification: NotificationModel,
+  permissionProjection: PermissionProjectionModel,
+  workspaceMember: WorkspaceMemberModel,
+  workspaceInvitation: WorkspaceInvitationModel,
+  workspaceAccessPolicy: WorkspaceAccessPolicyModel,
+  docAccessPolicy: DocAccessPolicyModel,
+  docGrant: DocGrantModel,
   userSettings: UserSettingsModel,
   copilotSession: CopilotSessionModel,
   copilotUsage: CopilotUsageModel,
@@ -150,6 +166,8 @@ export * from './feature';
 export * from './history';
 export * from './magic-link-otp';
 export * from './notification';
+export * from './permission-projection';
+export * from './permission-write';
 export * from './session';
 export * from './user';
 export * from './user-doc';
@@ -160,4 +178,5 @@ export * from './workspace';
 export * from './workspace-analytics';
 export * from './workspace-calendar';
 export * from './workspace-feature';
+export * from './workspace-runtime-state';
 export * from './workspace-user';

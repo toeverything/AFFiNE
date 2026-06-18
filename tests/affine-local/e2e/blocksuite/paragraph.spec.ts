@@ -328,25 +328,9 @@ test('also move children when dedent collapsed heading', async ({ page }) => {
 
   const paragraph = page.locator('affine-note affine-paragraph');
   const subParagraph = paragraph.nth(0).locator('affine-paragraph');
-  expect(await subParagraph.count()).toBe(2);
-  expect(
-    await subParagraph
-      .nth(0)
-      .evaluate(
-        (block: ParagraphBlockComponent) =>
-          block.model.props.type === 'h1' &&
-          block.model.props.text.toString() === 'bbb'
-      )
-  ).toBeTruthy();
-  expect(
-    await subParagraph
-      .nth(1)
-      .evaluate(
-        (block: ParagraphBlockComponent) =>
-          block.model.props.type === 'text' &&
-          block.model.props.text.toString() === 'ccc'
-      )
-  ).toBeTruthy();
+  await expect.poll(() => subParagraph.count()).toBe(2);
+  await expectParagraphState(subParagraph, 0, 'h1', 'bbb');
+  await expectParagraphState(subParagraph, 1, 'text', 'ccc');
 
   expect(await subParagraph.nth(1).isVisible()).toBeTruthy();
   await subParagraph
@@ -442,7 +426,12 @@ test('unfold collapsed heading when its other blocks indented to be its sibling'
   await type(page, '# bbb\nddd');
   await page.keyboard.press('ArrowUp');
   await pressTab(page);
-  await page.keyboard.press('ArrowRight');
+  const paragraph = page.locator('affine-note affine-paragraph');
+  const subParagraph = paragraph.nth(0).locator('affine-paragraph');
+  await expect.poll(() => subParagraph.count()).toBe(1);
+  await expectParagraphState(subParagraph, 0, 'h1', 'bbb');
+  await subParagraph.nth(0).click();
+  await page.keyboard.press('End');
   await pressEnter(page);
   await type(page, 'ccc');
 
@@ -453,7 +442,6 @@ test('unfold collapsed heading when its other blocks indented to be its sibling'
    * ddd
    */
 
-  const paragraph = page.locator('affine-note affine-paragraph');
   await expectParagraphVisibility(paragraph, 2, true);
   await expectParagraphState(paragraph, 2, 'text', 'ccc');
   await paragraph.locator('blocksuite-toggle-button .toggle-icon').click();

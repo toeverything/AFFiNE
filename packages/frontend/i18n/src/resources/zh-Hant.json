@@ -1017,7 +1017,7 @@
   "com.affine.payment.member.team.invite.generate": "生成",
   "com.affine.payment.member.team.invite.copy": "複製",
   "com.affine.payment.member.team.invite.done": "完成",
-  "com.affine.payment.member.team.invite.notify.title": "邀請已發送，成功 {{successCount}} 條，失敗 {{failedCount}} 條",
+  "com.affine.payment.member.team.invite.notify.title": "邀請已發送 {{count}} 條",
   "com.affine.payment.member.team.invite.notify.fail-message": "這些電子郵件地址已被邀請：",
   "com.affine.payment.member.team.revoke": "撤銷邀請",
   "com.affine.payment.member.team.approve": "批准",

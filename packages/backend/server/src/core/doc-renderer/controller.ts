@@ -11,7 +11,7 @@ import { Models } from '../../models';
 import { htmlSanitize } from '../../native';
 import { Public } from '../auth';
 import { DocReader } from '../doc';
-import { WorkspacePolicyService } from '../permission';
+import { PermissionService } from '../permission';
 
 interface RenderOptions {
   title: string;
@@ -61,7 +61,7 @@ export class DocRendererController {
     private readonly doc: DocReader,
     private readonly models: Models,
     private readonly config: Config,
-    private readonly policy: WorkspacePolicyService
+    private readonly permission: PermissionService
   ) {
     this.webAssets = this.readHtmlAssets(join(env.projectRoot, 'static'));
     this.mobileAssets = this.readHtmlAssets(
@@ -99,10 +99,11 @@ export class DocRendererController {
       req.accepts().some(t => markdownType.has(t.toLowerCase()))
     ) {
       try {
-        const canReadMarkdown = await this.policy.canReadSharedDoc(
+        const canReadMarkdown = await this.permission.canDoc({
           workspaceId,
-          sub
-        );
+          docId: sub,
+          action: 'Doc.Read',
+        });
         if (!canReadMarkdown) {
           res.status(404).end();
           return;
@@ -162,7 +163,7 @@ export class DocRendererController {
     workspaceId: string,
     docId: string
   ): Promise<RenderOptions | null> {
-    if (await this.policy.canPreviewDoc(workspaceId, docId)) {
+    if (await this.permission.canPreviewDoc({ workspaceId, docId })) {
       return this.doc.getDocContent(workspaceId, docId);
     }
 
@@ -172,8 +173,9 @@ export class DocRendererController {
   private async getWorkspaceContent(
     workspaceId: string
   ): Promise<RenderOptions | null> {
-    const canPreviewWorkspace =
-      await this.policy.canPreviewWorkspace(workspaceId);
+    const canPreviewWorkspace = await this.permission.canPreviewWorkspace({
+      workspaceId,
+    });
     if (!canPreviewWorkspace) return null;
 
     const workspaceContent = await this.doc.getWorkspaceContent(workspaceId);

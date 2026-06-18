@@ -63,7 +63,7 @@ export class AuthResolver {
 
   @ResolveField(() => ClientTokenType, {
     name: 'token',
-    deprecationReason: 'use [/api/auth/sign-in?native=true] instead',
+    deprecationReason: 'use native session exchange instead',
   })
   async clientToken(
     @CurrentUser() currentUser: CurrentUser,
@@ -187,9 +187,7 @@ export class AuthResolver {
   @Mutation(() => Boolean)
   async sendChangeEmail(
     @CurrentUser() user: CurrentUser,
-    @Args('callbackUrl') callbackUrl: string,
-    // @deprecated
-    @Args('email', { nullable: true }) _email?: string
+    @Args('callbackUrl') callbackUrl: string
   ) {
     if (!user.emailVerified) {
       throw new EmailVerificationRequired();

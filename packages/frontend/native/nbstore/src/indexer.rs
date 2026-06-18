@@ -112,7 +112,7 @@ impl SqliteDocStorage {
       return Ok(None);
     }
 
-    updates.sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
+    updates.sort_by_key(|a| a.timestamp);
 
     let mut segments = Vec::with_capacity(snapshot.as_ref().map(|_| 1).unwrap_or(0) + updates.len());
     if let Some(record) = snapshot {

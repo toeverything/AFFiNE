@@ -3,6 +3,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaClient, Provider } from '@prisma/client';
 
 import { EventBus, JobQueue, OneHour, OnJob } from '../../base';
+import { EntitlementService } from '../../core/entitlement';
 import { RevenueCatWebhookHandler } from './revenuecat';
 import { SubscriptionService } from './service';
 import { StripeFactory } from './stripe';
@@ -20,6 +21,7 @@ declare global {
     'nightly.reconcileRevenueCatSubscriptions': {};
     'nightly.reconcileStripeSubscriptions': {};
     'nightly.reconcileStripeRefunds': {};
+    'nightly.replayStripeWebhookEvents': {};
     'nightly.revenuecat.syncUser': { userId: string };
   }
 }
@@ -34,7 +36,8 @@ export class SubscriptionCronJobs {
     private readonly queue: JobQueue,
     private readonly rcHandler: RevenueCatWebhookHandler,
     private readonly stripeFactory: StripeFactory,
-    private readonly subscription: SubscriptionService
+    private readonly subscription: SubscriptionService,
+    private readonly entitlement: EntitlementService
   ) {}
 
   private getDateRange(after: number, base: number | Date = Date.now()) {
@@ -74,6 +77,12 @@ export class SubscriptionCronJobs {
       'nightly.reconcileStripeRefunds',
       {},
       { jobId: 'nightly-payment-reconcile-stripe-refunds' }
+    );
+
+    await this.queue.add(
+      'nightly.replayStripeWebhookEvents',
+      {},
+      { jobId: 'nightly-payment-replay-stripe-webhook-events' }
     );
 
     // FIXME(@forehalo): the strategy is totally wrong, for monthly plan. redesign required
@@ -157,6 +166,12 @@ export class SubscriptionCronJobs {
     });
 
     for (const subscription of subscriptions) {
+      await this.entitlement.revokeCloudSubscription({
+        targetId: subscription.targetId,
+        plan: subscription.plan,
+        subscriptionId: subscription.id,
+        stripeSubscriptionId: subscription.stripeSubscriptionId,
+      });
       await this.db.subscription.delete({
         where: {
           targetId_plan: {
@@ -209,6 +224,64 @@ export class SubscriptionCronJobs {
   @OnJob('nightly.revenuecat.syncUser')
   async reconcileRevenueCatSubscriptionOfUser(payload: { userId: string }) {
     await this.rcHandler.syncAppUser(payload.userId);
+  }
+
+  @OnJob('nightly.replayStripeWebhookEvents')
+  async replayStripeWebhookEvents() {
+    const stuckBefore = new Date(Date.now() - OneHour);
+    const events = await this.db.paymentEvent.findMany({
+      where: {
+        provider: Provider.stripe,
+        OR: [
+          { processingStatus: { in: ['pending', 'failed'] } },
+          { processingStatus: 'processing', updatedAt: { lt: stuckBefore } },
+        ],
+      },
+      orderBy: { createdAt: 'asc' },
+      take: 100,
+    });
+
+    for (const event of events) {
+      const locked = await this.db.paymentEvent.updateMany({
+        where: {
+          id: event.id,
+          OR: [
+            { processingStatus: { in: ['pending', 'failed'] } },
+            { processingStatus: 'processing', updatedAt: { lt: stuckBefore } },
+          ],
+        },
+        data: {
+          processingStatus: 'processing',
+          processingAttempts: { increment: 1 },
+        },
+      });
+      if (locked.count === 0) {
+        continue;
+      }
+
+      try {
+        await this.event.emitAsync(
+          `stripe.${event.eventType}` as keyof Events,
+          event.metadata as never
+        );
+        await this.db.paymentEvent.update({
+          where: { id: event.id },
+          data: {
+            processingStatus: 'processed',
+            processedAt: new Date(),
+            lastError: null,
+          },
+        });
+      } catch (e) {
+        await this.db.paymentEvent.update({
+          where: { id: event.id },
+          data: {
+            processingStatus: 'failed',
+            lastError: e instanceof Error ? e.message : String(e),
+          },
+        });
+      }
+    }
   }
 
   @OnJob('nightly.reconcileStripeSubscriptions')

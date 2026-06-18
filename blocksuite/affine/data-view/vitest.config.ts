@@ -1,3 +1,5 @@
+import { fileURLToPath } from 'node:url';
+
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
@@ -5,7 +7,9 @@ export default defineConfig({
     target: 'es2018',
   },
   test: {
-    globalSetup: '../../scripts/vitest-global.js',
+    globalSetup: fileURLToPath(
+      new URL('../../../scripts/vitest-global.js', import.meta.url)
+    ),
     include: ['src/__tests__/**/*.unit.spec.ts'],
     testTimeout: 1000,
     coverage: {

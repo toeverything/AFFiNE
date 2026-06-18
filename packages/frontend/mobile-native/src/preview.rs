@@ -47,6 +47,7 @@ fn resolve_mermaid_render_options(
 ) -> RenderOptions {
   let mut render_options = match theme.as_deref() {
     Some("default") => RenderOptions::mermaid_default(),
+    Some("dark") | Some("modern") => RenderOptions::modern(),
     _ => RenderOptions::modern(),
   };
 

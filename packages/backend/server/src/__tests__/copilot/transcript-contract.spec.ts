@@ -137,6 +137,21 @@ function createSuccessfulTranscriptBridge(
   };
 }
 
+function createCopilotTranscriptionService(...deps: unknown[]) {
+  return new CopilotTranscriptionService(
+    deps[0] as never,
+    deps[1] as never,
+    deps[2] as never,
+    deps[3] as never,
+    deps[4] as never,
+    deps[5] as never,
+    (deps[6] ?? {
+      assertQuotaOrByok: Sinon.stub().resolves(undefined),
+    }) as never,
+    (deps[7] ?? { publish: Sinon.stub() }) as never
+  );
+}
+
 test('queryTask hides ready transcript task result until settlement', async t => {
   const payload = TranscriptPayloadSchema.parse({
     infos: [
@@ -148,7 +163,7 @@ test('queryTask hides ready transcript task result until settlement', async t =>
     ],
     normalizedTranscript: '00:00:05 A: Kickoff',
   });
-  const service = new CopilotTranscriptionService(
+  const service = createCopilotTranscriptionService(
     {
       copilotTranscriptTask: {
         getWithUser: Sinon.stub().resolves({
@@ -181,7 +196,7 @@ test('settleTask unlocks ready transcript task result idempotently', async t => 
     status: 'settled',
     protectedResult: payload,
   });
-  const service = new CopilotTranscriptionService(
+  const service = createCopilotTranscriptionService(
     {
       copilotTranscriptTask: {
         getWithUser: Sinon.stub().resolves({
@@ -216,7 +231,7 @@ test('settleTask checks copilot quota before unlocking ready task', async t => {
     protectedResult: payload,
   });
   const assertQuotaOrByok = Sinon.stub().rejects(new Error('quota exceeded'));
-  const service = new CopilotTranscriptionService(
+  const service = createCopilotTranscriptionService(
     {
       copilotTranscriptTask: {
         getWithUser: Sinon.stub().resolves({
@@ -248,7 +263,7 @@ test('settleTask checks copilot quota before unlocking ready task', async t => {
 });
 
 test('retryTask rejects ready transcript tasks', async t => {
-  const service = new CopilotTranscriptionService(
+  const service = createCopilotTranscriptionService(
     {
       copilotTranscriptTask: {
         getWithUser: Sinon.stub().resolves({
@@ -272,7 +287,7 @@ test('retryTask rejects ready transcript tasks', async t => {
 });
 
 test('retryTask rejects settled transcript tasks', async t => {
-  const service = new CopilotTranscriptionService(
+  const service = createCopilotTranscriptionService(
     {
       copilotTranscriptTask: {
         getWithUser: Sinon.stub().resolves({
@@ -306,7 +321,7 @@ test('retryTask reuses failed task and queues a new action attempt', async t => 
     summaryJson: null,
     providerMeta: { provider: 'gemini', model: 'gemini-2.5-flash' },
   });
-  const service = new CopilotTranscriptionService(
+  const service = createCopilotTranscriptionService(
     {
       copilotTranscriptTask: {
         getWithUser: Sinon.stub().resolves({
@@ -352,7 +367,7 @@ test('retryTask prechecks quota or BYOK before queueing provider work', async t 
   const payload = TranscriptPayloadSchema.parse({
     normalizedTranscript: '00:00:05 A: Kickoff',
   });
-  const service = new CopilotTranscriptionService(
+  const service = createCopilotTranscriptionService(
     {
       copilotTranscriptTask: {
         getWithUser: Sinon.stub().resolves({
@@ -391,7 +406,7 @@ for (const status of ['ready', 'settled']) {
   test(`submitTask allows a new task for the same blob after ${status} task`, async t => {
     const createdTasks: unknown[] = [];
     const queuedJobs: unknown[] = [];
-    const service = new CopilotTranscriptionService(
+    const service = createCopilotTranscriptionService(
       {
         copilotTranscriptTask: {
           getWithUser: Sinon.stub().resolves({
@@ -439,7 +454,7 @@ for (const status of ['ready', 'settled']) {
 test('submitTask prechecks quota or BYOK before persisting uploads', async t => {
   const assertQuotaOrByok = Sinon.stub().rejects(new Error('quota exceeded'));
   const resolveTranscriptionModel = Sinon.stub().resolves('gemini-2.5-flash');
-  const service = new CopilotTranscriptionService(
+  const service = createCopilotTranscriptionService(
     {
       copilotTranscriptTask: {
         getWithUser: Sinon.stub().resolves(null),
@@ -468,7 +483,7 @@ test('submitTask prechecks quota or BYOK before persisting uploads', async t => 
 });
 
 test('submitTask rejects unavailable transcript strategy', async t => {
-  const service = new CopilotTranscriptionService(
+  const service = createCopilotTranscriptionService(
     {
       copilotTranscriptTask: {
         getWithUser: Sinon.stub().resolves(null),
@@ -515,7 +530,7 @@ test('transcriptTask runs native transcript recipe through action bridge when av
   const bridgeInputs: unknown[] = [];
   const markRunning = Sinon.stub().resolves({ id: 'task-1' });
   const complete = Sinon.stub().resolves({ id: 'task-1', status: 'ready' });
-  const service = new CopilotTranscriptionService(
+  const service = createCopilotTranscriptionService(
     {
       copilotTranscriptTask: {
         get: Sinon.stub().resolves({
@@ -586,7 +601,7 @@ test('transcriptTask fails task when native action bridge reports an error event
     normalizedTranscript: '00:00:05 A: Kickoff',
   });
   const complete = Sinon.stub().resolves({ id: 'task-1', status: 'failed' });
-  const service = new CopilotTranscriptionService(
+  const service = createCopilotTranscriptionService(
     {
       copilotTranscriptTask: {
         get: Sinon.stub().resolves({
