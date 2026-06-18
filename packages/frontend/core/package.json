@@ -108,6 +108,7 @@
     "@vanilla-extract/css": "^1.17.0",
     "fake-indexeddb": "^6.0.0",
     "happy-dom": "^20.3.0",
+    "vite": "^7.3.5",
     "vitest": "^4.1.8"
   }
 }

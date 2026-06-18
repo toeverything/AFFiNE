@@ -46,6 +46,7 @@
     "remark-parse": "^11.0.0",
     "remark-stringify": "^11.0.0",
     "rxjs": "^7.8.2",
+    "tldts": "^7.0.19",
     "ts-pattern": "^5.1.0",
     "unified": "^11.0.5",
     "unist-util-visit": "^5.0.0",

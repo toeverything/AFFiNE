@@ -41,12 +41,12 @@ describe('preview render bridge', () => {
     });
   });
 
-  test('uses worker renderers and only sanitizes mermaid output', async () => {
+  test('uses worker renderers and sanitizes preview svg output', async () => {
     mermaidRender.mockResolvedValue({
       svg: '<svg><script>alert(1)</script><text>mermaid</text></svg>',
     });
     typstRender.mockResolvedValue({
-      svg: '<div><script>window.__xss__=1</script><svg><text>typst</text></svg></div>',
+      svg: '<svg><script>window.__xss__=1</script><text>typst</text></svg>',
     });
 
     const mermaid = await renderMermaidSvg({ code: 'flowchart TD;A-->B' });
@@ -57,9 +57,9 @@ describe('preview render bridge', () => {
     expect(mermaid.svg).toContain('<svg');
     expect(mermaid.svg).toContain('mermaid');
     expect(mermaid.svg).not.toContain('<script');
-    expect(typst.svg).toBe(
-      '<div><script>window.__xss__=1</script><svg><text>typst</text></svg></div>'
-    );
+    expect(typst.svg).toContain('<svg');
+    expect(typst.svg).toContain('typst');
+    expect(typst.svg).not.toContain('<script');
   });
 
   test('sanitizeSvg keeps svg text nodes', () => {
@@ -99,6 +99,37 @@ describe('preview render bridge', () => {
     expect(sanitized).toMatch(/foreignObject/i);
     expect(sanitized).toContain('>A<');
     expect(sanitized).not.toContain('<script');
+  });
+
+  test('sanitizeSvg wraps sanitized svg fragments back into root svg', () => {
+    if (typeof DOMParser === 'undefined') {
+      return;
+    }
+
+    domPurifySanitize.mockImplementation((value: unknown) => {
+      if (typeof value !== 'string') {
+        return '';
+      }
+      return '<rect width="100" height="100"></rect>';
+    });
+
+    const sanitized = sanitizeSvg(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100" height="100"></rect></svg>'
+    );
+
+    expect(sanitized).toContain('<svg');
+    expect(sanitized).toContain('width="100"');
+    expect(sanitized).toContain('<rect');
+  });
+
+  test('throws when sanitized typst svg is empty', async () => {
+    typstRender.mockResolvedValue({
+      svg: '<div><text>invalid</text></div>',
+    });
+
+    await expect(renderTypstSvg({ code: '= Title' })).rejects.toThrow(
+      'Preview renderer returned invalid SVG.'
+    );
   });
 
   test('throws when sanitized svg is empty', async () => {
