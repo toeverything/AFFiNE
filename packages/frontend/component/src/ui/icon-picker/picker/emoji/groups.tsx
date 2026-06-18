@@ -124,9 +124,11 @@ export const EmojiGroups = memo(function EmojiGroups({
           .map(group => ({
             ...group,
             emojis: group.emojis.filter(
-              (emoji) =>
+              emoji =>
                 emoji.label.toLowerCase().includes(keyword.toLowerCase()) ||
-                emoji.tags?.some((tag) => tag.toLowerCase().includes(keyword.toLowerCase())),
+                emoji.tags?.some(tag =>
+                  tag.toLowerCase().includes(keyword.toLowerCase())
+                )
             ),
           }))
           .filter(group => group.emojis.length > 0)
