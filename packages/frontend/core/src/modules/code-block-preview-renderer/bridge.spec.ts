@@ -1,3 +1,6 @@
+/**
+ * @vitest-environment happy-dom
+ */
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 const { mermaidRender, typstRender } = vi.hoisted(() => ({
@@ -5,14 +8,30 @@ const { mermaidRender, typstRender } = vi.hoisted(() => ({
   typstRender: vi.fn(),
 }));
 
-const { domPurifySanitize } = vi.hoisted(() => ({
-  domPurifySanitize: vi.fn((value: unknown) => {
+const { domPurifySanitize, sanitizeSvgForMock } = vi.hoisted(() => {
+  const sanitizeSvgForMock = (value: unknown) => {
     if (typeof value !== 'string') {
       return '';
     }
-    return value.replace(/<script[\s\S]*?<\/script>/gi, '');
-  }),
-}));
+    if (
+      typeof DOMParser === 'undefined' ||
+      typeof XMLSerializer === 'undefined'
+    ) {
+      return value;
+    }
+
+    const doc = new DOMParser().parseFromString(value, 'image/svg+xml');
+    doc.querySelectorAll('script').forEach(element => {
+      element.remove();
+    });
+    return new XMLSerializer().serializeToString(doc.documentElement);
+  };
+
+  return {
+    domPurifySanitize: vi.fn(sanitizeSvgForMock),
+    sanitizeSvgForMock,
+  };
+});
 
 vi.mock(
   '@affine/core/modules/code-block-preview-renderer/platform-backend',
@@ -33,12 +52,7 @@ import { renderMermaidSvg, renderTypstSvg, sanitizeSvg } from './bridge';
 describe('preview render bridge', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    domPurifySanitize.mockImplementation((value: unknown) => {
-      if (typeof value !== 'string') {
-        return '';
-      }
-      return value.replace(/<script[\s\S]*?<\/script>/gi, '');
-    });
+    domPurifySanitize.mockImplementation(sanitizeSvgForMock);
   });
 
   test('uses worker renderers and sanitizes preview svg output', async () => {

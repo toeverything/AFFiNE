@@ -21,7 +21,7 @@
     "express-rate-limit": "^7.1.5",
     "fs-extra": "^11.3.0",
     "lodash-es": "^4.17.23",
-    "multer": "^2.0.2",
+    "multer": "^2.2.0",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
     "react-markdown": "^10.1.0",
