@@ -1,0 +1,386 @@
+use chrono::{DateTime, Duration, Utc};
+use napi::Result;
+use sqlx::{FromRow, PgPool, Postgres, Row, Transaction};
+use y_octo::Doc;
+
+use super::{
+  BackendRuntime, constants::DEFAULT_HISTORY_PERIOD_SECONDS, error::napi_error, types::RuntimeDocCompactionResult,
+};
+
+#[derive(FromRow)]
+struct SnapshotRow {
+  blob: Vec<u8>,
+  updated_at: DateTime<Utc>,
+  updated_by: Option<String>,
+}
+
+#[derive(FromRow)]
+struct UpdateRow {
+  blob: Vec<u8>,
+  created_at: DateTime<Utc>,
+  created_by: Option<String>,
+}
+
+struct DocCompactorStore {
+  pool: PgPool,
+}
+
+impl DocCompactorStore {
+  fn new(pool: PgPool) -> Self {
+    Self { pool }
+  }
+
+  async fn compact_doc(
+    &self,
+    workspace_id: &str,
+    doc_id: &str,
+    batch_limit: i64,
+    history_min_interval_ms: i64,
+  ) -> Result<(i64, bool)> {
+    compact_doc(
+      self.pool.clone(),
+      workspace_id,
+      doc_id,
+      batch_limit,
+      history_min_interval_ms,
+    )
+    .await
+  }
+}
+
+fn is_empty_doc(bin: &[u8]) -> bool {
+  bin.is_empty() || (bin.len() == 1 && bin[0] == 0) || (bin.len() == 2 && bin[0] == 0 && bin[1] == 0)
+}
+
+fn apply_updates(updates: impl IntoIterator<Item = Vec<u8>>) -> Result<Vec<u8>> {
+  let mut doc = Doc::default();
+  for update in updates {
+    doc
+      .apply_update_from_binary_v1(&update)
+      .map_err(|err| napi_error(format!("DocCompactor merge failed: {err}")))?;
+  }
+  doc
+    .encode_update_v1()
+    .map_err(|err| napi_error(format!("DocCompactor encode failed: {err}")))
+}
+
+async fn load_snapshot(
+  tx: &mut Transaction<'_, Postgres>,
+  workspace_id: &str,
+  doc_id: &str,
+) -> Result<Option<SnapshotRow>> {
+  sqlx::query_as::<_, SnapshotRow>(
+    r#"
+    SELECT blob, updated_at, updated_by
+    FROM snapshots
+    WHERE workspace_id = $1 AND guid = $2
+    FOR UPDATE
+    "#,
+  )
+  .bind(workspace_id)
+  .bind(doc_id)
+  .fetch_optional(&mut **tx)
+  .await
+  .map_err(|err| napi_error(format!("DocCompactor load snapshot failed: {err}")))
+}
+
+async fn load_updates(
+  tx: &mut Transaction<'_, Postgres>,
+  workspace_id: &str,
+  doc_id: &str,
+  batch_limit: i64,
+) -> Result<Vec<UpdateRow>> {
+  sqlx::query_as::<_, UpdateRow>(
+    r#"
+    SELECT blob, created_at, created_by
+    FROM updates
+    WHERE workspace_id = $1 AND guid = $2
+    ORDER BY created_at ASC
+    LIMIT $3
+    FOR UPDATE
+    "#,
+  )
+  .bind(workspace_id)
+  .bind(doc_id)
+  .bind(batch_limit)
+  .fetch_all(&mut **tx)
+  .await
+  .map_err(|err| napi_error(format!("DocCompactor load updates failed: {err}")))
+}
+
+async fn upsert_snapshot(
+  tx: &mut Transaction<'_, Postgres>,
+  workspace_id: &str,
+  doc_id: &str,
+  blob: &[u8],
+  timestamp: DateTime<Utc>,
+  editor: Option<&str>,
+) -> Result<bool> {
+  if is_empty_doc(blob) {
+    return Ok(false);
+  }
+
+  let row = sqlx::query(
+    r#"
+    INSERT INTO snapshots
+      (workspace_id, guid, blob, size, created_at, updated_at, created_by, updated_by)
+    VALUES
+      ($1, $2, $3, $4, $5, $5, $6, $6)
+    ON CONFLICT (workspace_id, guid)
+    DO UPDATE SET
+      blob = $3,
+      size = $4,
+      updated_at = $5,
+      updated_by = $6
+    WHERE snapshots.workspace_id = $1
+      AND snapshots.guid = $2
+      AND snapshots.updated_at <= $5
+    RETURNING updated_at
+    "#,
+  )
+  .bind(workspace_id)
+  .bind(doc_id)
+  .bind(blob)
+  .bind(blob.len() as i64)
+  .bind(timestamp)
+  .bind(editor)
+  .fetch_optional(&mut **tx)
+  .await
+  .map_err(|err| napi_error(format!("DocCompactor upsert snapshot failed: {err}")))?;
+
+  Ok(row.is_some())
+}
+
+async fn should_create_history(
+  tx: &mut Transaction<'_, Postgres>,
+  snapshot: &SnapshotRow,
+  workspace_id: &str,
+  doc_id: &str,
+  history_min_interval_ms: i64,
+) -> Result<bool> {
+  if is_empty_doc(&snapshot.blob) {
+    return Ok(false);
+  }
+
+  let row = sqlx::query(
+    r#"
+    SELECT timestamp
+    FROM snapshot_histories
+    WHERE workspace_id = $1 AND guid = $2
+    ORDER BY timestamp DESC
+    LIMIT 1
+    "#,
+  )
+  .bind(workspace_id)
+  .bind(doc_id)
+  .fetch_optional(&mut **tx)
+  .await
+  .map_err(|err| napi_error(format!("DocCompactor load latest history failed: {err}")))?;
+
+  let Some(row) = row else {
+    return Ok(true);
+  };
+
+  let last_timestamp: DateTime<Utc> = row.get("timestamp");
+  if last_timestamp == snapshot.updated_at {
+    return Ok(false);
+  }
+
+  Ok(last_timestamp < snapshot.updated_at - Duration::milliseconds(history_min_interval_ms))
+}
+
+async fn history_max_age_seconds(tx: &mut Transaction<'_, Postgres>, workspace_id: &str) -> Result<i32> {
+  let row = sqlx::query(
+    r#"
+    SELECT history_period_seconds
+    FROM effective_workspace_quota_states
+    WHERE workspace_id = $1
+    "#,
+  )
+  .bind(workspace_id)
+  .fetch_optional(&mut **tx)
+  .await
+  .map_err(|err| napi_error(format!("DocCompactor load history quota failed: {err}")))?;
+
+  Ok(
+    row
+      .map(|row| row.get("history_period_seconds"))
+      .unwrap_or(DEFAULT_HISTORY_PERIOD_SECONDS),
+  )
+}
+
+async fn create_history(
+  tx: &mut Transaction<'_, Postgres>,
+  workspace_id: &str,
+  doc_id: &str,
+  snapshot: &SnapshotRow,
+) -> Result<bool> {
+  let max_age_seconds = history_max_age_seconds(tx, workspace_id).await?;
+  if max_age_seconds <= 0 {
+    return Ok(false);
+  }
+
+  let expired_at = Utc::now() + Duration::seconds(max_age_seconds as i64);
+  sqlx::query(
+    r#"
+    INSERT INTO snapshot_histories
+      (workspace_id, guid, timestamp, blob, expired_at, created_by)
+    VALUES
+      ($1, $2, $3, $4, $5, $6)
+    ON CONFLICT (workspace_id, guid, timestamp)
+    DO UPDATE SET expired_at = EXCLUDED.expired_at
+    "#,
+  )
+  .bind(workspace_id)
+  .bind(doc_id)
+  .bind(snapshot.updated_at)
+  .bind(&snapshot.blob)
+  .bind(expired_at)
+  .bind(snapshot.updated_by.as_deref())
+  .execute(&mut **tx)
+  .await
+  .map_err(|err| napi_error(format!("DocCompactor create history failed: {err}")))?;
+
+  Ok(true)
+}
+
+async fn delete_updates(
+  tx: &mut Transaction<'_, Postgres>,
+  workspace_id: &str,
+  doc_id: &str,
+  timestamps: &[DateTime<Utc>],
+) -> Result<i64> {
+  let result = sqlx::query(
+    r#"
+    DELETE FROM updates
+    WHERE workspace_id = $1
+      AND guid = $2
+      AND created_at = ANY($3)
+    "#,
+  )
+  .bind(workspace_id)
+  .bind(doc_id)
+  .bind(timestamps)
+  .execute(&mut **tx)
+  .await
+  .map_err(|err| napi_error(format!("DocCompactor delete updates failed: {err}")))?;
+
+  Ok(result.rows_affected() as i64)
+}
+
+async fn compact_doc(
+  pool: PgPool,
+  workspace_id: &str,
+  doc_id: &str,
+  batch_limit: i64,
+  history_min_interval_ms: i64,
+) -> Result<(i64, bool)> {
+  let mut tx = pool
+    .begin()
+    .await
+    .map_err(|err| napi_error(format!("DocCompactor begin transaction failed: {err}")))?;
+
+  let snapshot = load_snapshot(&mut tx, workspace_id, doc_id).await?;
+  let updates = load_updates(&mut tx, workspace_id, doc_id, batch_limit).await?;
+  if updates.is_empty() {
+    tx.commit()
+      .await
+      .map_err(|err| napi_error(format!("DocCompactor commit transaction failed: {err}")))?;
+    return Ok((0, false));
+  }
+
+  let last = updates.last().expect("updates is not empty");
+  let mut merge_inputs = Vec::with_capacity(updates.len() + usize::from(snapshot.is_some()));
+  if let Some(snapshot) = &snapshot {
+    merge_inputs.push(snapshot.blob.clone());
+  }
+  merge_inputs.extend(updates.iter().map(|update| update.blob.clone()));
+
+  let final_blob = if merge_inputs.len() == 1 {
+    merge_inputs.remove(0)
+  } else {
+    apply_updates(merge_inputs)?
+  };
+
+  let snapshot_updated = upsert_snapshot(
+    &mut tx,
+    workspace_id,
+    doc_id,
+    &final_blob,
+    last.created_at,
+    last.created_by.as_deref(),
+  )
+  .await?;
+
+  let mut history_created = false;
+  if snapshot_updated {
+    if let Some(snapshot) = &snapshot {
+      if should_create_history(&mut tx, snapshot, workspace_id, doc_id, history_min_interval_ms).await? {
+        history_created = create_history(&mut tx, workspace_id, doc_id, snapshot).await?;
+      }
+    }
+  }
+
+  let timestamps = updates.iter().map(|update| update.created_at).collect::<Vec<_>>();
+  let deleted = delete_updates(&mut tx, workspace_id, doc_id, &timestamps).await?;
+
+  tx.commit()
+    .await
+    .map_err(|err| napi_error(format!("DocCompactor commit transaction failed: {err}")))?;
+
+  Ok((deleted, history_created))
+}
+
+#[napi_derive::napi]
+impl BackendRuntime {
+  #[napi]
+  pub async fn compact_pending_doc_updates(
+    &self,
+    workspace_id: String,
+    doc_id: String,
+    batch_limit: i64,
+    history_min_interval_ms: i64,
+    owner: String,
+    lease_ttl_ms: i64,
+  ) -> Result<RuntimeDocCompactionResult> {
+    if batch_limit <= 0 {
+      return Err(napi_error("doc compactor batch limit must be positive"));
+    }
+    if history_min_interval_ms < 0 {
+      return Err(napi_error("doc compactor history interval must be non-negative"));
+    }
+
+    let lease_key = format!("doc:update:{workspace_id}:{doc_id}");
+    let Some(lease) = self.acquire_coordination_lease(lease_key, owner, lease_ttl_ms).await? else {
+      return Ok(RuntimeDocCompactionResult {
+        lease_acquired: false,
+        merged: false,
+        workspace_id,
+        doc_id,
+        updates_merged: 0,
+        history_created: false,
+      });
+    };
+
+    let result = DocCompactorStore::new(self.pool().await?)
+      .compact_doc(&workspace_id, &doc_id, batch_limit, history_min_interval_ms)
+      .await;
+
+    let released = self
+      .release_coordination_lease(lease.key, lease.owner, lease.fencing_token)
+      .await?;
+    if !released {
+      return Err(napi_error("DocCompactor failed to release coordination lease"));
+    }
+
+    let (updates_merged, history_created) = result?;
+    Ok(RuntimeDocCompactionResult {
+      lease_acquired: true,
+      merged: updates_merged > 0,
+      workspace_id,
+      doc_id,
+      updates_merged,
+      history_created,
+    })
+  }
+}

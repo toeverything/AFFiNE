@@ -2,6 +2,7 @@
 
 mod utils;
 
+pub mod backend_runtime;
 pub mod doc;
 pub mod doc_loader;
 pub mod entitlement;

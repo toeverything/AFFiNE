@@ -16,6 +16,7 @@ affine_common = { workspace = true, features = [
   "ydoc-loader",
 ] }
 anyhow = { workspace = true }
+aws-sdk-s3 = "1.115"
 chrono = { workspace = true }
 doc_extractor = { workspace = true }
 file-format = { workspace = true }
@@ -39,8 +40,18 @@ serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 sha2 = { workspace = true }
 sha3 = { workspace = true }
+sqlx = { workspace = true, default-features = false, features = [
+  "chrono",
+  "json",
+  "macros",
+  "migrate",
+  "postgres",
+  "runtime-tokio",
+] }
 tiktoken-rs = { workspace = true }
+tokio = { workspace = true, features = ["rt-multi-thread", "sync"] }
 url = { workspace = true }
+uuid = { workspace = true, features = ["v4"] }
 v_htmlescape = { workspace = true }
 y-octo = { workspace = true, features = ["large_refs"] }
 
@@ -52,7 +63,7 @@ mimalloc = { workspace = true, features = ["local_dynamic_tls"] }
 
 [dev-dependencies]
 rayon = { workspace = true }
-tokio = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 
 [build-dependencies]
 napi-build = { workspace = true }
