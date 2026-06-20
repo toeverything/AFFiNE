@@ -26,8 +26,6 @@ const SAFE_IMAGE_DATA_URL_PATTERN =
   /^data:image\/(?:png|jpe?g|gif|webp|svg\+xml);base64,[a-z0-9+/=]+$/i;
 const UNSAFE_CSS_PATTERN =
   /(?:url\s*\(|@import|javascript\s*:|expression\s*\(|-moz-binding)/i;
-const SVG_ROOT_PATTERN =
-  /^\s*(?:<\?xml[\s\S]*?\?>\s*)?(?:<!doctype[\s\S]*?>\s*)?<svg[\s>]/i;
 
 const SVG_ROOT_ATTRIBUTES = [
   'class',
@@ -63,12 +61,60 @@ function getForeignObjectHtmlSanitizeConfig(options?: SanitizeSvgOptions) {
   };
 }
 
+function isXmlWhitespace(char: string) {
+  return (
+    char === ' ' ||
+    char === '\n' ||
+    char === '\r' ||
+    char === '\t' ||
+    char === '\f'
+  );
+}
+
+function skipXmlWhitespace(value: string, index: number) {
+  while (index < value.length && isXmlWhitespace(value[index])) {
+    index++;
+  }
+  return index;
+}
+
+function startsWithIgnoreCase(value: string, search: string, index: number) {
+  return value.slice(index, index + search.length).toLowerCase() === search;
+}
+
+function getSvgRootStartIndex(value: string) {
+  let index = skipXmlWhitespace(value, 0);
+
+  if (startsWithIgnoreCase(value, '<?xml', index)) {
+    const declarationEnd = value.indexOf('?>', index + 5);
+    if (declarationEnd === -1) return -1;
+    index = skipXmlWhitespace(value, declarationEnd + 2);
+  }
+
+  if (startsWithIgnoreCase(value, '<!doctype', index)) {
+    const doctypeEnd = value.indexOf('>', index + 9);
+    if (doctypeEnd === -1) return -1;
+    index = skipXmlWhitespace(value, doctypeEnd + 1);
+  }
+
+  if (!startsWithIgnoreCase(value, '<svg', index)) return -1;
+
+  const next = value[index + 4];
+  return next === '>' || (next !== undefined && isXmlWhitespace(next))
+    ? index
+    : -1;
+}
+
+function hasSvgRoot(value: string) {
+  return getSvgRootStartIndex(value) !== -1;
+}
+
 function getOriginalSvgRoot(svg: string, parser: DOMParser) {
   const root = parser.parseFromString(svg, 'image/svg+xml').documentElement;
   if (root?.tagName.toLowerCase() === 'svg') {
     return root;
   }
-  if (!SVG_ROOT_PATTERN.test(svg)) {
+  if (!hasSvgRoot(svg)) {
     return null;
   }
   return parser.parseFromString(svg, 'text/html').querySelector('svg');
@@ -79,7 +125,7 @@ function ensureSvgRoot(
   sanitized: string,
   parser: DOMParser
 ) {
-  if (SVG_ROOT_PATTERN.test(sanitized)) {
+  if (hasSvgRoot(sanitized)) {
     const sanitizedDoc = parser.parseFromString(sanitized, 'image/svg+xml');
     const sanitizedRoot = sanitizedDoc.documentElement;
     return sanitizedRoot?.tagName.toLowerCase() === 'svg'
@@ -228,7 +274,7 @@ function sanitizeSvgWithDepth(
   ) {
     const sanitized = DOMPurify.sanitize(svg, svgConfig);
 
-    if (typeof sanitized !== 'string' || !SVG_ROOT_PATTERN.test(sanitized)) {
+    if (typeof sanitized !== 'string' || !hasSvgRoot(sanitized)) {
       return '';
     }
     return sanitized.trim();

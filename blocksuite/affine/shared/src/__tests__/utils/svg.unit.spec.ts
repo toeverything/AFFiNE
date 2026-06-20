@@ -59,6 +59,12 @@ describe('sanitizeSvg', () => {
     expect(sanitizeSvg('<div><svg></svg></div>')).toBe('');
   });
 
+  test('rejects malformed doctype prefixes without regexp backtracking', () => {
+    const maliciousPrefix = '<!doctype' + '?><!doctype'.repeat(10_000);
+
+    expect(sanitizeSvg(`${maliciousPrefix}<div></div>`)).toBe('');
+  });
+
   test('keeps internal glyph references and safe image data urls', () => {
     const sanitized = sanitizeSvg(`
       <svg xmlns="http://www.w3.org/2000/svg">
