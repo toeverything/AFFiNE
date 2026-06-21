@@ -313,12 +313,11 @@ async fn compact_doc(
   .await?;
 
   let mut history_created = false;
-  if snapshot_updated {
-    if let Some(snapshot) = &snapshot {
-      if should_create_history(&mut tx, snapshot, workspace_id, doc_id, history_min_interval_ms).await? {
-        history_created = create_history(&mut tx, workspace_id, doc_id, snapshot).await?;
-      }
-    }
+  if snapshot_updated
+    && let Some(snapshot) = &snapshot
+    && should_create_history(&mut tx, snapshot, workspace_id, doc_id, history_min_interval_ms).await?
+  {
+    history_created = create_history(&mut tx, workspace_id, doc_id, snapshot).await?;
   }
 
   let timestamps = updates.iter().map(|update| update.created_at).collect::<Vec<_>>();
@@ -333,6 +332,10 @@ async fn compact_doc(
 
 #[napi_derive::napi]
 impl BackendRuntime {
+  /// Merge pending doc updates with y-octo and persist the merged snapshot.
+  ///
+  /// Do not use this for snapshots that will be sent back to yjs clients until
+  /// the y-octo/yjs round-trip compatibility issue is resolved.
   #[napi]
   pub async fn compact_pending_doc_updates(
     &self,

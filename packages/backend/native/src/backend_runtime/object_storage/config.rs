@@ -1,14 +1,13 @@
 use aws_sdk_s3::config::{
-  BehaviorVersion, Credentials, Region, RequestChecksumCalculation, ResponseChecksumValidation,
+  BehaviorVersion, Credentials, Region, RequestChecksumCalculation, ResponseChecksumValidation, timeout::TimeoutConfig,
 };
 use napi::Result;
 use serde::Deserialize;
 
+use super::{client::ObjectStorageClient, types::StorageProviderConfig};
 use crate::backend_runtime::{
   config::blob_storage_config_from_config_files, error::napi_error, types::RuntimeObjectStorageHealth,
 };
-
-use super::{client::ObjectStorageClient, types::StorageProviderConfig};
 
 #[derive(Clone, Debug)]
 pub(in crate::backend_runtime) struct ObjectStorageConfig {
@@ -174,6 +173,13 @@ impl ObjectStorageConfig {
 
     if let Some(endpoint) = &self.endpoint {
       builder = builder.endpoint_url(endpoint);
+    }
+    if let Some(request_timeout_ms) = self.request_timeout_ms {
+      builder = builder.timeout_config(
+        TimeoutConfig::builder()
+          .operation_timeout(std::time::Duration::from_millis(request_timeout_ms))
+          .build(),
+      );
     }
 
     Ok(ObjectStorageClient::new(

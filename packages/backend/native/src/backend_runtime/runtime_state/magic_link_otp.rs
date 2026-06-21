@@ -1,12 +1,11 @@
 use napi::Result;
 
+use super::dto::RuntimeStateRows;
 use crate::backend_runtime::{
   constants::{MAGIC_LINK_OTP_PURPOSE, MAX_MAGIC_LINK_OTP_ATTEMPTS},
   error::napi_error,
   types::RuntimeMagicLinkOtpConsumeResult,
 };
-
-use super::dto::RuntimeStateRows;
 
 impl RuntimeMagicLinkOtpConsumeResult {
   fn ok(token: String) -> Self {

@@ -14,6 +14,15 @@ pub(super) struct RuntimeStateLockedRow {
   pub(super) expires_at: chrono::DateTime<chrono::Utc>,
 }
 
+pub(super) struct RuntimeStateInsertPayload<'a> {
+  pub(super) purpose: &'a str,
+  pub(super) token: &'a str,
+  pub(super) lookup_key: &'a str,
+  pub(super) payload: &'a serde_json::Value,
+  pub(super) ttl_ms: i64,
+  pub(super) context: &'a str,
+}
+
 #[derive(Clone)]
 pub(super) struct RuntimeStateRows {
   pub(super) pool: PgPool,
@@ -291,12 +300,7 @@ impl RuntimeStateRows {
   pub(super) async fn insert_payload_returning_expires_in_tx(
     &self,
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    purpose: &str,
-    token: &str,
-    lookup_key: &str,
-    payload: &serde_json::Value,
-    ttl_ms: i64,
-    context: &str,
+    input: RuntimeStateInsertPayload<'_>,
   ) -> Result<i64> {
     let row = sqlx::query(
       r#"
@@ -305,14 +309,14 @@ impl RuntimeStateRows {
       RETURNING (EXTRACT(EPOCH FROM expires_at) * 1000)::BIGINT AS expires_at_ms
       "#,
     )
-    .bind(purpose)
-    .bind(token_hash(token))
-    .bind(lookup_key)
-    .bind(payload)
-    .bind(ttl_ms as f64)
+    .bind(input.purpose)
+    .bind(token_hash(input.token))
+    .bind(input.lookup_key)
+    .bind(input.payload)
+    .bind(input.ttl_ms as f64)
     .fetch_one(&mut **tx)
     .await
-    .map_err(|err| napi_error(format!("{context} failed: {err}")))?;
+    .map_err(|err| napi_error(format!("{} failed: {err}", input.context)))?;
 
     Ok(row.get::<i64, _>("expires_at_ms"))
   }

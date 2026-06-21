@@ -1,11 +1,11 @@
 use napi::Result;
 use sqlx::PgPool;
 
+use super::{auth_challenge, byok_local_lease, dto::RuntimeStateRows, invite_link, magic_link_otp, verification_token};
 use crate::backend_runtime::types::{
-  RuntimeMagicLinkOtpConsumeResult, RuntimeVerificationTokenRecord, RuntimeWorkspaceInviteLinkRecord,
+  RuntimeByokLocalLeaseRecord, RuntimeMagicLinkOtpConsumeResult, RuntimeVerificationTokenRecord,
+  RuntimeWorkspaceInviteLinkRecord,
 };
-
-use super::{auth_challenge, dto::RuntimeStateRows, invite_link, magic_link_otp, verification_token};
 
 pub(super) struct RuntimeStateStore {
   rows: RuntimeStateRows,
@@ -121,5 +121,19 @@ impl RuntimeStateStore {
 
   pub(super) async fn revoke_workspace_invite_link(&self, workspace_id: String) -> Result<bool> {
     invite_link::revoke(&self.rows, workspace_id).await
+  }
+
+  pub(super) async fn create_byok_local_lease(
+    &self,
+    active_key: String,
+    lease_id: String,
+    payload: serde_json::Value,
+    ttl_ms: i64,
+  ) -> Result<RuntimeByokLocalLeaseRecord> {
+    byok_local_lease::create(&self.rows, active_key, lease_id, payload, ttl_ms).await
+  }
+
+  pub(super) async fn get_byok_local_lease(&self, lease_id: String) -> Result<Option<RuntimeByokLocalLeaseRecord>> {
+    byok_local_lease::get(&self.rows, lease_id).await
   }
 }

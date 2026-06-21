@@ -49,10 +49,10 @@ fn database_url_from_config_files() -> Result<Option<String>> {
       .map_err(|err| napi_error(format!("failed to read config file {}: {err}", path.display())))?;
     let config: AppConfigFile = serde_json::from_str(&raw)
       .map_err(|err| napi_error(format!("failed to parse config file {}: {err}", path.display())))?;
-    if let Some(next) = config.db.and_then(|db| db.datasource_url) {
-      if !next.trim().is_empty() {
-        database_url = Some(next);
-      }
+    if let Some(next) = config.db.and_then(|db| db.datasource_url)
+      && !next.trim().is_empty()
+    {
+      database_url = Some(next);
     }
   }
 

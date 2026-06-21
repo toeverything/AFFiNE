@@ -36,6 +36,7 @@ pub struct RuntimeObjectStorageHealth {
 pub struct CoordinationLeaseGrant {
   pub key: String,
   pub owner: String,
+  #[napi(ts_type = "bigint | number")]
   pub fencing_token: i64,
 }
 
@@ -52,6 +53,25 @@ pub struct RuntimeWorkspaceInviteLinkRecord {
   pub invite_id: String,
   pub inviter_user_id: String,
   pub expires_at_ms: i64,
+}
+
+#[napi_derive::napi(object)]
+pub struct RuntimeByokLocalLeaseRecord {
+  pub lease_id: String,
+  pub payload: serde_json::Value,
+  pub expires_at_ms: i64,
+}
+
+#[napi_derive::napi(object)]
+pub struct RuntimeDocHistoryInput {
+  pub workspace_id: String,
+  pub doc_id: String,
+  pub blob: Buffer,
+  pub timestamp_ms: i64,
+  pub editor_id: Option<String>,
+  pub force: bool,
+  pub history_min_interval_ms: i64,
+  pub history_max_age_ms: i64,
 }
 
 #[napi_derive::napi(object)]
@@ -110,6 +130,15 @@ pub struct RuntimeBlobCleanupResult {
 }
 
 #[napi_derive::napi(object)]
+pub struct RuntimeBlobCompleteResult {
+  pub ok: bool,
+  pub reason: Option<String>,
+  pub content_type: Option<String>,
+  pub content_length: Option<i64>,
+  pub last_modified_ms: Option<i64>,
+}
+
+#[napi_derive::napi(object)]
 pub struct RuntimeDocCompactionResult {
   pub lease_acquired: bool,
   pub merged: bool,
@@ -135,6 +164,14 @@ pub struct RuntimeWorkspaceStatsRecalibrationResult {
 
 #[napi_derive::napi(object)]
 pub struct RuntimeWorkspaceStatsSnapshotResult {
+  pub snapshotted: i64,
+  pub skipped: bool,
+}
+
+#[napi_derive::napi(object)]
+pub struct RuntimeWorkspaceStatsDailyRecalibrationResult {
+  pub processed: i64,
+  pub last_sid: i64,
   pub snapshotted: i64,
   pub skipped: bool,
 }

@@ -8,12 +8,11 @@ use aws_sdk_s3::{
 };
 use napi::Result;
 
-use crate::backend_runtime::error::napi_error;
-
 use super::types::{
   MultipartUploadInitResult, MultipartUploadPart, ObjectGetResult, ObjectListEntry, ObjectMetadata, ObjectPutMetadata,
   PresignedObjectRequest, completed_multipart_parts, trim_etag,
 };
+use crate::backend_runtime::error::napi_error;
 
 #[derive(Clone)]
 pub(super) struct ObjectStorageClient {
@@ -121,9 +120,10 @@ impl ObjectStorageClient {
         ))
       })?;
 
+    let expires_at_ms = expires_at_ms(self.presign_expires_in_seconds)?;
     Ok(result.upload_id.map(|upload_id| MultipartUploadInitResult {
       upload_id,
-      expires_at_ms: expires_at_ms(self.presign_expires_in_seconds).unwrap_or(0),
+      expires_at_ms,
     }))
   }
 

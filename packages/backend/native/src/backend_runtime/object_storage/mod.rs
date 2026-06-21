@@ -4,7 +4,10 @@ mod config;
 mod tests;
 mod types;
 
+use client::ObjectStorageClient;
+pub(super) use config::ObjectStorageConfig;
 use napi::{Result, bindgen_prelude::Buffer};
+pub(super) use types::StorageProviderConfig;
 
 use super::{
   BackendRuntime,
@@ -13,10 +16,6 @@ use super::{
     RuntimeObjectMetadata, RuntimeObjectStorageHealth, RuntimeObjectStoragePutOptions, RuntimePresignedObjectRequest,
   },
 };
-
-use client::ObjectStorageClient;
-pub(super) use config::ObjectStorageConfig;
-pub(super) use types::StorageProviderConfig;
 
 #[napi_derive::napi]
 impl BackendRuntime {

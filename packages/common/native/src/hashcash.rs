@@ -61,7 +61,7 @@ impl Stamp {
     let ts = now.format("%Y%m%d%H%M%S");
     let bits = bits.unwrap_or(20);
     let rand = String::from_iter(Alphanumeric.sample_iter(rng()).take(SALT_LENGTH).map(char::from));
-    let challenge = format!("{}:{}:{}:{}:{}:{}", version, bits, ts, &resource, "", rand);
+    let challenge = format!("{}:{}:{}:{}:{}:{}", version, bits, ts, resource, "", rand);
 
     Stamp {
       version: version.to_string(),

@@ -1,12 +1,11 @@
 use napi::Result;
 
+use super::dto::{RuntimeStateInsertPayload, RuntimeStatePayloadRow, RuntimeStateRows};
 use crate::backend_runtime::{
   constants::{WORKSPACE_INVITE_LINK_ID_PURPOSE, WORKSPACE_INVITE_LINK_WORKSPACE_PURPOSE},
   error::napi_error,
   types::RuntimeWorkspaceInviteLinkRecord,
 };
-
-use super::dto::{RuntimeStatePayloadRow, RuntimeStateRows};
 
 pub(super) async fn get_by_workspace(
   rows: &RuntimeStateRows,
@@ -55,23 +54,27 @@ pub(super) async fn create(
   let expires_at_ms = rows
     .insert_payload_returning_expires_in_tx(
       &mut tx,
-      WORKSPACE_INVITE_LINK_WORKSPACE_PURPOSE,
-      &workspace_id,
-      &workspace_id,
-      &payload,
-      ttl_ms,
-      "RuntimeState workspace invite link create",
+      RuntimeStateInsertPayload {
+        purpose: WORKSPACE_INVITE_LINK_WORKSPACE_PURPOSE,
+        token: &workspace_id,
+        lookup_key: &workspace_id,
+        payload: &payload,
+        ttl_ms,
+        context: "RuntimeState workspace invite link create",
+      },
     )
     .await?;
   rows
     .insert_payload_returning_expires_in_tx(
       &mut tx,
-      WORKSPACE_INVITE_LINK_ID_PURPOSE,
-      &invite_id,
-      &invite_id,
-      &payload,
-      ttl_ms,
-      "RuntimeState workspace invite link create",
+      RuntimeStateInsertPayload {
+        purpose: WORKSPACE_INVITE_LINK_ID_PURPOSE,
+        token: &invite_id,
+        lookup_key: &invite_id,
+        payload: &payload,
+        ttl_ms,
+        context: "RuntimeState workspace invite link create",
+      },
     )
     .await?;
 

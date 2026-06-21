@@ -1,6 +1,9 @@
 use super::{runtime_state::*, *};
 
+use anyhow::{Context, Result as AnyResult, anyhow};
+
 static PG_TEST_LOCK: std::sync::OnceLock<tokio::sync::Mutex<()>> = std::sync::OnceLock::new();
+const TEST_VERIFICATION_TOKEN_TYPE: i32 = 99_999;
 
 fn pg_test_lock() -> &'static tokio::sync::Mutex<()> {
   PG_TEST_LOCK.get_or_init(|| tokio::sync::Mutex::new(()))
@@ -30,48 +33,52 @@ fn verification_token_state_uses_typed_purpose_and_token_hash() {
   assert_ne!(token_hash("verification-token"), token_hash("other-token"));
 }
 
-async fn runtime_from_database_url() -> Option<BackendRuntime> {
-  let database_url = std::env::var("DATABASE_URL").ok()?;
+async fn runtime_from_database_url() -> AnyResult<Option<BackendRuntime>> {
+  let Ok(database_url) = std::env::var("DATABASE_URL") else {
+    return Ok(None);
+  };
   let pool = PgPoolOptions::new()
     .max_connections(5)
     .connect(&database_url)
     .await
-    .ok()?;
-  migrate_runtime_tables(&pool).await.ok()?;
+    .context("connect postgres for backend runtime tests")?;
+  migrate_runtime_tables(&pool)
+    .await
+    .map_err(|err| anyhow!(err.to_string()))?;
   sqlx::query(
     r#"
     DELETE FROM runtime_states
     WHERE purpose LIKE 'rust_test:%'
        OR purpose LIKE 'auth_challenge:rust_test:%'
-       OR purpose LIKE 'verification_token:%'
+       OR purpose = 'verification_token:99999'
     "#,
   )
   .execute(&pool)
   .await
-  .ok()?;
+  .context("cleanup runtime_states for backend runtime tests")?;
   sqlx::query("DELETE FROM runtime_gates WHERE key LIKE 'rust-test:%'")
     .execute(&pool)
     .await
-    .ok()?;
+    .context("cleanup runtime_gates for backend runtime tests")?;
   sqlx::query("DELETE FROM runtime_leases WHERE key LIKE 'rust-test:%'")
     .execute(&pool)
     .await
-    .ok()?;
+    .context("cleanup runtime_leases for backend runtime tests")?;
 
-  Some(BackendRuntime {
+  Ok(Some(BackendRuntime {
     config: RuntimeConfig {
       database_url,
       storage: None,
     },
     pool: Mutex::new(Some(pool)),
-  })
+  }))
 }
 
 #[tokio::test]
 async fn runtime_gate_sql_semantics_are_atomic_and_ttl_bound() {
   let _guard = pg_test_lock().lock().await;
-  let Some(runtime) = runtime_from_database_url().await else {
-    eprintln!("skipping postgres integration test: DATABASE_URL is not set or unavailable");
+  let Some(runtime) = runtime_from_database_url().await.unwrap() else {
+    eprintln!("skipping postgres integration test: DATABASE_URL is not set");
     return;
   };
 
@@ -151,8 +158,8 @@ async fn runtime_gate_sql_semantics_are_atomic_and_ttl_bound() {
 #[tokio::test]
 async fn coordination_lease_sql_semantics_are_fenced_and_ttl_bound() {
   let _guard = pg_test_lock().lock().await;
-  let Some(runtime) = runtime_from_database_url().await else {
-    eprintln!("skipping postgres integration test: DATABASE_URL is not set or unavailable");
+  let Some(runtime) = runtime_from_database_url().await.unwrap() else {
+    eprintln!("skipping postgres integration test: DATABASE_URL is not set");
     return;
   };
 
@@ -248,8 +255,8 @@ async fn coordination_lease_sql_semantics_are_fenced_and_ttl_bound() {
 #[tokio::test]
 async fn runtime_state_cleanup_deletes_expired_and_consumed_rows() {
   let _guard = pg_test_lock().lock().await;
-  let Some(runtime) = runtime_from_database_url().await else {
-    eprintln!("skipping postgres integration test: DATABASE_URL is not set or unavailable");
+  let Some(runtime) = runtime_from_database_url().await.unwrap() else {
+    eprintln!("skipping postgres integration test: DATABASE_URL is not set");
     return;
   };
 
@@ -291,65 +298,92 @@ async fn runtime_state_cleanup_deletes_expired_and_consumed_rows() {
 #[tokio::test]
 async fn verification_token_sql_state_machine_handles_keep_verify_and_cleanup() {
   let _guard = pg_test_lock().lock().await;
-  let Some(runtime) = runtime_from_database_url().await else {
-    eprintln!("skipping postgres integration test: DATABASE_URL is not set or unavailable");
+  let Some(runtime) = runtime_from_database_url().await.unwrap() else {
+    eprintln!("skipping postgres integration test: DATABASE_URL is not set");
     return;
   };
 
   let mismatch_token = runtime
-    .create_verification_token(0, Some("user@affine.test".to_string()), 30_000)
+    .create_verification_token(
+      TEST_VERIFICATION_TOKEN_TYPE,
+      Some("user@affine.test".to_string()),
+      30_000,
+    )
     .await
     .unwrap();
   assert!(
     runtime
-      .verify_verification_token(0, mismatch_token.clone(), Some("wrong@affine.test".to_string()), None)
+      .verify_verification_token(
+        TEST_VERIFICATION_TOKEN_TYPE,
+        mismatch_token.clone(),
+        Some("wrong@affine.test".to_string()),
+        None,
+      )
       .await
       .unwrap()
       .is_none()
   );
   assert!(
     runtime
-      .verify_verification_token(0, mismatch_token.clone(), Some("user@affine.test".to_string()), None)
+      .verify_verification_token(
+        TEST_VERIFICATION_TOKEN_TYPE,
+        mismatch_token.clone(),
+        Some("user@affine.test".to_string()),
+        None,
+      )
       .await
       .unwrap()
       .is_some()
   );
   assert!(
     runtime
-      .verify_verification_token(0, mismatch_token.clone(), Some("user@affine.test".to_string()), None)
+      .verify_verification_token(
+        TEST_VERIFICATION_TOKEN_TYPE,
+        mismatch_token.clone(),
+        Some("user@affine.test".to_string()),
+        None,
+      )
       .await
       .unwrap()
       .is_none()
   );
 
   let keep_token = runtime
-    .create_verification_token(0, Some("keep@affine.test".to_string()), 30_000)
+    .create_verification_token(
+      TEST_VERIFICATION_TOKEN_TYPE,
+      Some("keep@affine.test".to_string()),
+      30_000,
+    )
     .await
     .unwrap();
   assert!(
     runtime
-      .get_verification_token(0, keep_token.clone(), Some(true))
+      .get_verification_token(TEST_VERIFICATION_TOKEN_TYPE, keep_token.clone(), Some(true))
       .await
       .unwrap()
       .is_some()
   );
   assert!(
     runtime
-      .get_verification_token(0, keep_token.clone(), None)
+      .get_verification_token(TEST_VERIFICATION_TOKEN_TYPE, keep_token.clone(), None)
       .await
       .unwrap()
       .is_some()
   );
   assert!(
     runtime
-      .get_verification_token(0, keep_token.clone(), None)
+      .get_verification_token(TEST_VERIFICATION_TOKEN_TYPE, keep_token.clone(), None)
       .await
       .unwrap()
       .is_none()
   );
 
   let concurrent_token = runtime
-    .create_verification_token(0, Some("concurrent@affine.test".to_string()), 30_000)
+    .create_verification_token(
+      TEST_VERIFICATION_TOKEN_TYPE,
+      Some("concurrent@affine.test".to_string()),
+      30_000,
+    )
     .await
     .unwrap();
   let mut tasks = Vec::new();
@@ -361,7 +395,12 @@ async fn verification_token_sql_state_machine_handles_keep_verify_and_cleanup() 
     let token = concurrent_token.clone();
     tasks.push(tokio::spawn(async move {
       runtime
-        .verify_verification_token(0, token, Some("concurrent@affine.test".to_string()), None)
+        .verify_verification_token(
+          TEST_VERIFICATION_TOKEN_TYPE,
+          token,
+          Some("concurrent@affine.test".to_string()),
+          None,
+        )
         .await
         .unwrap()
         .is_some()
@@ -376,13 +415,13 @@ async fn verification_token_sql_state_machine_handles_keep_verify_and_cleanup() 
   assert_eq!(successful, 1);
 
   let expired_token = runtime
-    .create_verification_token(0, Some("expired@affine.test".to_string()), 1)
+    .create_verification_token(TEST_VERIFICATION_TOKEN_TYPE, Some("expired@affine.test".to_string()), 1)
     .await
     .unwrap();
   tokio::time::sleep(Duration::from_millis(20)).await;
   assert!(
     runtime
-      .get_verification_token(0, expired_token.clone(), None)
+      .get_verification_token(TEST_VERIFICATION_TOKEN_TYPE, expired_token.clone(), None)
       .await
       .unwrap()
       .is_none()

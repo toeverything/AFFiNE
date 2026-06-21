@@ -108,7 +108,12 @@ impl BackendRuntime {
   }
 
   #[napi]
-  pub async fn release_coordination_lease(&self, key: String, owner: String, fencing_token: i64) -> Result<bool> {
+  pub async fn release_coordination_lease(
+    &self,
+    key: String,
+    owner: String,
+    #[napi(ts_arg_type = "bigint | number")] fencing_token: i64,
+  ) -> Result<bool> {
     CoordinationLeaseStore::new(self.pool().await?)
       .release(&key, &owner, fencing_token)
       .await
@@ -119,7 +124,7 @@ impl BackendRuntime {
     &self,
     key: String,
     owner: String,
-    fencing_token: i64,
+    #[napi(ts_arg_type = "bigint | number")] fencing_token: i64,
     ttl_ms: i64,
   ) -> Result<bool> {
     if ttl_ms <= 0 {

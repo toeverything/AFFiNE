@@ -17,10 +17,12 @@ affine_common = { workspace = true, features = [
 ] }
 anyhow = { workspace = true }
 aws-sdk-s3 = "1.115"
+base64 = { workspace = true }
 chrono = { workspace = true }
 doc_extractor = { workspace = true }
 file-format = { workspace = true }
 hex = { workspace = true }
+homedir = { workspace = true }
 image = { workspace = true }
 infer = { workspace = true }
 jsonschema = "0.46"

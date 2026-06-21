@@ -1,8 +1,10 @@
+mod blob_complete;
 mod blob_reclaimer;
 mod config;
 mod constants;
 mod coordination_lease;
 mod doc_compactor;
+mod doc_storage;
 mod error;
 mod gate;
 mod housekeeping;
@@ -76,8 +78,8 @@ impl BackendRuntime {
 
   #[napi]
   pub async fn health(&self) -> Result<BackendRuntimeHealth> {
-    let guard = self.pool.lock().await;
-    let database_connected = match guard.as_ref() {
+    let pool = self.pool.lock().await.as_ref().cloned();
+    let database_connected = match pool.as_ref() {
       Some(pool) => sqlx::query("SELECT 1")
         .fetch_one(pool)
         .await
@@ -87,7 +89,7 @@ impl BackendRuntime {
     };
 
     Ok(BackendRuntimeHealth {
-      started: guard.is_some(),
+      started: pool.is_some(),
       database_connected,
       object_storage_configured: self.config.storage.is_some(),
     })

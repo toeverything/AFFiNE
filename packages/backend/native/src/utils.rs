@@ -26,11 +26,8 @@ fn try_remove_label(s: &str, i: usize) -> Option<usize> {
     return None;
   }
 
-  if let Some(ch) = s[next_idx..].chars().next() {
-    if !ch.is_whitespace() {
-      return None;
-    }
-  } else {
+  let ch = s[next_idx..].chars().next()?;
+  if !ch.is_whitespace() {
     return None;
   }
 

@@ -3,10 +3,14 @@ use napi::Result;
 use super::{
   BackendRuntime,
   error::napi_error,
-  types::{RuntimeMagicLinkOtpConsumeResult, RuntimeVerificationTokenRecord, RuntimeWorkspaceInviteLinkRecord},
+  types::{
+    RuntimeByokLocalLeaseRecord, RuntimeMagicLinkOtpConsumeResult, RuntimeVerificationTokenRecord,
+    RuntimeWorkspaceInviteLinkRecord,
+  },
 };
 
 mod auth_challenge;
+mod byok_local_lease;
 mod dto;
 mod invite_link;
 mod magic_link_otp;
@@ -169,6 +173,26 @@ impl BackendRuntime {
   pub async fn revoke_workspace_invite_link(&self, workspace_id: String) -> Result<bool> {
     RuntimeStateStore::new(self.pool().await?)
       .revoke_workspace_invite_link(workspace_id)
+      .await
+  }
+
+  #[napi]
+  pub async fn create_byok_local_lease(
+    &self,
+    active_key: String,
+    lease_id: String,
+    payload: serde_json::Value,
+    ttl_ms: i64,
+  ) -> Result<RuntimeByokLocalLeaseRecord> {
+    RuntimeStateStore::new(self.pool().await?)
+      .create_byok_local_lease(active_key, lease_id, payload, ttl_ms)
+      .await
+  }
+
+  #[napi]
+  pub async fn get_byok_local_lease(&self, lease_id: String) -> Result<Option<RuntimeByokLocalLeaseRecord>> {
+    RuntimeStateStore::new(self.pool().await?)
+      .get_byok_local_lease(lease_id)
       .await
   }
 

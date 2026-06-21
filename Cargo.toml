@@ -21,6 +21,7 @@ resolver = "3"
   anyhow = "1"
   arbitrary = { version = "1.3", features = ["derive"] }
   assert-json-diff = "2.0"
+  base64 = "0.22.1"
   base64-simd = "0.8"
   bitvec = "1.0"
   block2 = "0.6"

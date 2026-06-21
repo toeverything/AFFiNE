@@ -2,12 +2,11 @@ use napi::Result;
 use sqlx::{PgPool, Row};
 use uuid::Uuid;
 
-use crate::backend_runtime::{error::napi_error, token_hash, types::RuntimeVerificationTokenRecord};
-
 use super::{
   dto::{RuntimeStatePayloadRow, RuntimeStateRows},
   verification_token_purpose,
 };
+use crate::backend_runtime::{error::napi_error, token_hash, types::RuntimeVerificationTokenRecord};
 
 pub(super) async fn create(
   rows: &RuntimeStateRows,

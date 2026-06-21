@@ -1,13 +1,14 @@
 use napi::Result;
 use sqlx::{FromRow, PgPool, Postgres, Row, Transaction};
+use tokio::time::{Duration as TokioDuration, sleep};
 
 use super::{
   BackendRuntime,
   constants::{WORKSPACE_STATS_LEASE_KEY, WORKSPACE_STATS_LOCK_NAMESPACE, WORKSPACE_STATS_REFRESH_LOCK_KEY},
   error::napi_error,
   types::{
-    CoordinationLeaseGrant, RuntimeWorkspaceStatsRecalibrationResult, RuntimeWorkspaceStatsRefreshResult,
-    RuntimeWorkspaceStatsSnapshotResult,
+    CoordinationLeaseGrant, RuntimeWorkspaceStatsDailyRecalibrationResult, RuntimeWorkspaceStatsRecalibrationResult,
+    RuntimeWorkspaceStatsRefreshResult, RuntimeWorkspaceStatsSnapshotResult,
   },
 };
 
@@ -102,6 +103,94 @@ impl BackendRuntime {
       WorkspaceStatsStore::new(self.pool().await?)
         .write_daily_snapshot()
         .await
+    }
+    .await;
+
+    release_workspace_stats_lease(self, lease).await?;
+    result
+  }
+
+  #[napi]
+  pub async fn recalibrate_workspace_admin_stats_daily(
+    &self,
+    batch_limit: i64,
+    owner: String,
+    lease_ttl_ms: i64,
+    lock_retry_times: i64,
+    lock_retry_delay_ms: i64,
+  ) -> Result<RuntimeWorkspaceStatsDailyRecalibrationResult> {
+    if batch_limit <= 0 {
+      return Err(napi_error("workspace stats daily recalibration limit must be positive"));
+    }
+    if lock_retry_times <= 0 {
+      return Err(napi_error(
+        "workspace stats daily recalibration retry times must be positive",
+      ));
+    }
+    if lock_retry_delay_ms < 0 {
+      return Err(napi_error(
+        "workspace stats daily recalibration retry delay must be non-negative",
+      ));
+    }
+
+    let Some(lease) = acquire_workspace_stats_lease_with_retry(
+      self,
+      owner.clone(),
+      lease_ttl_ms,
+      lock_retry_times,
+      lock_retry_delay_ms,
+    )
+    .await?
+    else {
+      return Ok(RuntimeWorkspaceStatsDailyRecalibrationResult {
+        processed: 0,
+        last_sid: 0,
+        snapshotted: 0,
+        skipped: true,
+      });
+    };
+
+    let result = async {
+      let store = WorkspaceStatsStore::new(self.pool().await?);
+      let mut processed = 0;
+      let mut last_sid = 0;
+
+      loop {
+        let batch = retry_workspace_stats_operation(lock_retry_times, lock_retry_delay_ms, || {
+          store.recalibrate(last_sid, batch_limit)
+        })
+        .await?;
+
+        if batch.skipped {
+          return Ok(RuntimeWorkspaceStatsDailyRecalibrationResult {
+            processed,
+            last_sid,
+            snapshotted: 0,
+            skipped: true,
+          });
+        }
+
+        if batch.processed == 0 {
+          break;
+        }
+
+        processed += batch.processed;
+        last_sid = batch.last_sid;
+
+        if batch.processed < batch_limit {
+          break;
+        }
+      }
+
+      let snapshot =
+        retry_workspace_stats_operation(lock_retry_times, lock_retry_delay_ms, || store.write_daily_snapshot()).await?;
+
+      Ok(RuntimeWorkspaceStatsDailyRecalibrationResult {
+        processed,
+        last_sid,
+        snapshotted: snapshot.snapshotted,
+        skipped: snapshot.skipped,
+      })
     }
     .await;
 
@@ -251,6 +340,69 @@ async fn release_workspace_stats_lease(runtime: &BackendRuntime, lease: Coordina
   Ok(())
 }
 
+async fn acquire_workspace_stats_lease_with_retry(
+  runtime: &BackendRuntime,
+  owner: String,
+  lease_ttl_ms: i64,
+  retry_times: i64,
+  retry_delay_ms: i64,
+) -> Result<Option<CoordinationLeaseGrant>> {
+  for attempt in 0..retry_times {
+    let lease = runtime
+      .acquire_coordination_lease(WORKSPACE_STATS_LEASE_KEY.to_string(), owner.clone(), lease_ttl_ms)
+      .await?;
+    if lease.is_some() {
+      return Ok(lease);
+    }
+
+    if attempt < retry_times - 1 && retry_delay_ms > 0 {
+      sleep(TokioDuration::from_millis(retry_delay_ms as u64)).await;
+    }
+  }
+
+  Ok(None)
+}
+
+async fn retry_workspace_stats_operation<T, F, Fut>(
+  retry_times: i64,
+  retry_delay_ms: i64,
+  mut operation: F,
+) -> Result<T>
+where
+  T: WorkspaceStatsSkippable,
+  F: FnMut() -> Fut,
+  Fut: std::future::Future<Output = Result<T>>,
+{
+  for attempt in 0..retry_times {
+    let result = operation().await?;
+    if !result.skipped() || attempt == retry_times - 1 {
+      return Ok(result);
+    }
+
+    if retry_delay_ms > 0 {
+      sleep(TokioDuration::from_millis(retry_delay_ms as u64)).await;
+    }
+  }
+
+  unreachable!("workspace stats retry loop validates retry_times > 0")
+}
+
+trait WorkspaceStatsSkippable {
+  fn skipped(&self) -> bool;
+}
+
+impl WorkspaceStatsSkippable for RuntimeWorkspaceStatsRecalibrationResult {
+  fn skipped(&self) -> bool {
+    self.skipped
+  }
+}
+
+impl WorkspaceStatsSkippable for RuntimeWorkspaceStatsSnapshotResult {
+  fn skipped(&self) -> bool {
+    self.skipped
+  }
+}
+
 async fn try_transaction_lock(tx: &mut Transaction<'_, Postgres>) -> Result<bool> {
   let row = sqlx::query(
     r#"
@@ -333,7 +485,7 @@ async fn fetch_workspace_batch(
     LIMIT $2
     "#,
   )
-  .bind(last_sid as i32)
+  .bind(last_sid)
   .bind(limit)
   .fetch_all(&mut **tx)
   .await
