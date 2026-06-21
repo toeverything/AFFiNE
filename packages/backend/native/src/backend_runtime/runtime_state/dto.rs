@@ -321,6 +321,38 @@ impl RuntimeStateRows {
     Ok(row.get::<i64, _>("expires_at_ms"))
   }
 
+  pub(super) async fn upsert_expired_or_consumed_payload_returning_expires_in_tx(
+    &self,
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    input: RuntimeStateInsertPayload<'_>,
+  ) -> Result<Option<i64>> {
+    let row = sqlx::query(
+      r#"
+      INSERT INTO runtime_states (purpose, token_hash, lookup_key, payload, expires_at)
+      VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP + ($5 * INTERVAL '1 millisecond'))
+      ON CONFLICT (purpose, token_hash) DO UPDATE
+        SET lookup_key = EXCLUDED.lookup_key,
+            payload = EXCLUDED.payload,
+            attempts = 0,
+            consumed_at = NULL,
+            expires_at = EXCLUDED.expires_at
+        WHERE runtime_states.consumed_at IS NOT NULL
+           OR runtime_states.expires_at <= CURRENT_TIMESTAMP
+      RETURNING (EXTRACT(EPOCH FROM expires_at) * 1000)::BIGINT AS expires_at_ms
+      "#,
+    )
+    .bind(input.purpose)
+    .bind(token_hash(input.token))
+    .bind(input.lookup_key)
+    .bind(input.payload)
+    .bind(input.ttl_ms as f64)
+    .fetch_optional(&mut **tx)
+    .await
+    .map_err(|err| napi_error(format!("{} failed: {err}", input.context)))?;
+
+    Ok(row.map(|row| row.get::<i64, _>("expires_at_ms")))
+  }
+
   pub(super) async fn update_attempts_in_tx(
     &self,
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,

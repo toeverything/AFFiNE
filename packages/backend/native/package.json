@@ -29,7 +29,7 @@
     "test": "node --test ./__tests__/**/*.spec.js",
     "bench": "node ./benchmark/index.js",
     "build": "napi build --release --strip --no-const-enum",
-    "build:debug": "napi build"
+    "build:debug": "napi build --no-const-enum"
   },
   "devDependencies": {
     "@napi-rs/cli": "3.5.0",

@@ -33,6 +33,11 @@ pub(super) async fn create(
   }
 
   let mut tx = rows.begin("RuntimeState workspace invite link").await?;
+  sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))")
+    .bind(&workspace_id)
+    .execute(&mut *tx)
+    .await
+    .map_err(|err| napi_error(format!("RuntimeState workspace invite link active lock failed: {err}")))?;
 
   if let Some(existing) =
     get_by_key_in_tx(rows, &mut tx, WORKSPACE_INVITE_LINK_WORKSPACE_PURPOSE, &workspace_id).await?
@@ -51,8 +56,8 @@ pub(super) async fn create(
     "inviterUserId": inviter_user_id,
   });
 
-  let expires_at_ms = rows
-    .insert_payload_returning_expires_in_tx(
+  let Some(expires_at_ms) = rows
+    .upsert_expired_or_consumed_payload_returning_expires_in_tx(
       &mut tx,
       RuntimeStateInsertPayload {
         purpose: WORKSPACE_INVITE_LINK_WORKSPACE_PURPOSE,
@@ -63,7 +68,16 @@ pub(super) async fn create(
         context: "RuntimeState workspace invite link create",
       },
     )
-    .await?;
+    .await?
+  else {
+    let existing = get_by_key_in_tx(rows, &mut tx, WORKSPACE_INVITE_LINK_WORKSPACE_PURPOSE, &workspace_id).await?;
+    tx.commit().await.map_err(|err| {
+      napi_error(format!(
+        "RuntimeState workspace invite link transaction commit failed: {err}"
+      ))
+    })?;
+    return existing.ok_or_else(|| napi_error("RuntimeState workspace invite link active conflict missing row"));
+  };
   rows
     .insert_payload_returning_expires_in_tx(
       &mut tx,

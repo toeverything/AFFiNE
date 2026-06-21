@@ -3,7 +3,7 @@ use std::{
   path::{Path, PathBuf},
 };
 
-use base64::{Engine as _, engine::general_purpose::URL_SAFE};
+use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
 use napi::Result;
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
@@ -41,8 +41,16 @@ fn blob_complete_success(
   }
 }
 
-fn sha256_base64_url_with_padding(body: &[u8]) -> String {
-  URL_SAFE.encode(Sha256::digest(body))
+fn normalize_base64_url_key(key: &str) -> &str {
+  key.trim_end_matches('=')
+}
+
+fn sha256_base64_url(body: &[u8]) -> String {
+  URL_SAFE_NO_PAD.encode(Sha256::digest(body))
+}
+
+fn sha256_base64_url_matches(body: &[u8], key: &str) -> bool {
+  sha256_base64_url(body) == normalize_base64_url_key(key)
 }
 
 #[derive(Deserialize)]
@@ -178,7 +186,7 @@ impl BackendRuntime {
       return Ok(blob_complete_failure("mime_mismatch"));
     }
 
-    if sha256_base64_url_with_padding(&object.body) != key {
+    if !sha256_base64_url_matches(&object.body, &key) {
       match self.object_storage_delete(object_key).await {
         Ok(()) => {}
         Err(err) if object_missing_error(&err) => {}
@@ -243,7 +251,7 @@ impl BackendRuntime {
       Err(err) => return Err(napi_error(format!("BlobComplete read fs object failed: {err}"))),
     };
 
-    if sha256_base64_url_with_padding(&body) != key {
+    if !sha256_base64_url_matches(&body, &key) {
       let _ = fs::remove_file(&path);
       let _ = fs::remove_file(PathBuf::from(format!("{}.metadata.json", path.display())));
       return Ok(blob_complete_failure("checksum_mismatch"));
@@ -268,13 +276,21 @@ impl BackendRuntime {
 
 #[cfg(test)]
 mod tests {
-  use super::sha256_base64_url_with_padding;
+  use super::{sha256_base64_url, sha256_base64_url_matches};
 
   #[test]
-  fn sha256_base64_url_keeps_padding() {
+  fn sha256_base64_url_omits_padding() {
     assert_eq!(
-      sha256_base64_url_with_padding(b"hello"),
-      "LPJNul-wow4m6DsqxbninhsWHlwfp0JecwQzYpOLmCQ="
+      sha256_base64_url(b"hello"),
+      "LPJNul-wow4m6DsqxbninhsWHlwfp0JecwQzYpOLmCQ"
     );
+  }
+
+  #[test]
+  fn sha256_base64_url_matches_legacy_padding() {
+    assert!(sha256_base64_url_matches(
+      b"hello",
+      "LPJNul-wow4m6DsqxbninhsWHlwfp0JecwQzYpOLmCQ="
+    ));
   }
 }
