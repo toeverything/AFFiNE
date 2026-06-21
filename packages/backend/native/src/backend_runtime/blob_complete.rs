@@ -10,6 +10,8 @@ use sha2::{Digest, Sha256};
 
 use super::{BackendRuntime, error::napi_error, types::RuntimeBlobCompleteResult};
 
+const MAX_BLOB_SIZE: i64 = i32::MAX as i64;
+
 fn object_missing_error(err: &napi::Error) -> bool {
   let message = err.to_string();
   message.contains("NoSuchKey") || message.contains("NotFound") || message.contains("not found")
@@ -110,6 +112,11 @@ async fn upsert_completed_blob(
   mime: &str,
   size: i64,
 ) -> Result<()> {
+  if !(0..=MAX_BLOB_SIZE).contains(&size) {
+    return Err(napi_error("BlobComplete size exceeds limit"));
+  }
+  let size = i32::try_from(size).map_err(|_| napi_error("BlobComplete size exceeds limit"))?;
+
   sqlx::query(
     r#"
     INSERT INTO blobs (workspace_id, key, mime, size, status, upload_id)
@@ -125,7 +132,7 @@ async fn upsert_completed_blob(
   .bind(workspace_id)
   .bind(key)
   .bind(mime)
-  .bind(size as i32)
+  .bind(size)
   .execute(&runtime.pool().await?)
   .await
   .map_err(|err| napi_error(format!("BlobComplete upsert metadata failed: {err}")))?;
@@ -143,6 +150,10 @@ impl BackendRuntime {
     expected_size: i64,
     expected_mime: String,
   ) -> Result<RuntimeBlobCompleteResult> {
+    if !(0..=MAX_BLOB_SIZE).contains(&expected_size) {
+      return Ok(blob_complete_failure("size_too_large"));
+    }
+
     let object_key = format!("{workspace_id}/{key}");
     let object = match self.object_storage_get(object_key.clone()).await {
       Ok(Some(object)) => object,
@@ -151,6 +162,14 @@ impl BackendRuntime {
       Err(err) => return Err(err),
     };
 
+    if !(0..=MAX_BLOB_SIZE).contains(&object.metadata.content_length) {
+      match self.object_storage_delete(object_key).await {
+        Ok(()) => {}
+        Err(err) if object_missing_error(&err) => {}
+        Err(err) => return Err(err),
+      }
+      return Ok(blob_complete_failure("size_too_large"));
+    }
     if object.metadata.content_length != expected_size {
       return Ok(blob_complete_failure("size_mismatch"));
     }
@@ -194,6 +213,10 @@ impl BackendRuntime {
     expected_size: i64,
     expected_mime: String,
   ) -> Result<RuntimeBlobCompleteResult> {
+    if !(0..=MAX_BLOB_SIZE).contains(&expected_size) {
+      return Ok(blob_complete_failure("size_too_large"));
+    }
+
     let storage_key = format!("{workspace_id}/{key}");
     let path = fs_object_path(&root, &bucket, &storage_key)?;
     let metadata = match read_fs_metadata(&path)? {
@@ -201,6 +224,11 @@ impl BackendRuntime {
       None => return Ok(blob_complete_failure("not_found")),
     };
 
+    if !(0..=MAX_BLOB_SIZE).contains(&metadata.content_length) {
+      let _ = fs::remove_file(&path);
+      let _ = fs::remove_file(PathBuf::from(format!("{}.metadata.json", path.display())));
+      return Ok(blob_complete_failure("size_too_large"));
+    }
     if metadata.content_length != expected_size {
       return Ok(blob_complete_failure("size_mismatch"));
     }

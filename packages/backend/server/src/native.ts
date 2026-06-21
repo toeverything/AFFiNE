@@ -2,6 +2,7 @@ import serverNativeModule, {
   type ActionEvent as NativeActionEventContract,
   type ActionRuntimeInput as NativeActionRuntimeInputContract,
   type AssertSafeUrlRequest,
+  type BackendRuntimeHealth,
   type BuiltInPromptRenderContract,
   type BuiltInPromptSessionContract,
   type BuiltInPromptSpec,
@@ -45,6 +46,22 @@ import serverNativeModule, {
   type RequestedModelMatchResponse,
   type ResolvedEntitlement,
   type ResolveEntitlementInput,
+  type RuntimeBlobCleanupResult,
+  type RuntimeBlobCompleteResult,
+  type RuntimeByokLocalLeaseRecord,
+  type RuntimeDocCompactionResult,
+  type RuntimeMagicLinkOtpConsumeResult,
+  type RuntimeMultipartUploadInit,
+  type RuntimeMultipartUploadPart,
+  type RuntimeObjectGetResult,
+  type RuntimeObjectListEntry,
+  type RuntimeObjectMetadata,
+  type RuntimeObjectStorageHealth,
+  type RuntimeObjectStoragePutOptions,
+  type RuntimePresignedObjectRequest,
+  type RuntimeVerificationTokenRecord,
+  type RuntimeWorkspaceInviteLinkRecord,
+  type RuntimeWorkspaceStatsDailyRecalibrationResult,
   type SafeFetchRequest,
   type SafeFetchResponse,
   type Tokenizer,
@@ -52,6 +69,7 @@ import serverNativeModule, {
 
 export type {
   AssertSafeUrlRequest,
+  BackendRuntimeHealth,
   CapabilityAttachmentContract,
   CapabilityModelCapability,
   CommandResponse,
@@ -73,6 +91,22 @@ export type {
   RemoteMimeTypeRequest,
   ResolvedEntitlement,
   ResolveEntitlementInput,
+  RuntimeBlobCleanupResult,
+  RuntimeBlobCompleteResult,
+  RuntimeByokLocalLeaseRecord,
+  RuntimeDocCompactionResult,
+  RuntimeMagicLinkOtpConsumeResult,
+  RuntimeMultipartUploadInit,
+  RuntimeMultipartUploadPart,
+  RuntimeObjectGetResult,
+  RuntimeObjectListEntry,
+  RuntimeObjectMetadata,
+  RuntimeObjectStorageHealth,
+  RuntimeObjectStoragePutOptions,
+  RuntimePresignedObjectRequest,
+  RuntimeVerificationTokenRecord,
+  RuntimeWorkspaceInviteLinkRecord,
+  RuntimeWorkspaceStatsDailyRecalibrationResult,
   SafeFetchRequest,
   SafeFetchResponse,
 };
@@ -180,6 +214,7 @@ export const readAllDocIdsFromRootDoc =
 export const AFFINE_PRO_PUBLIC_KEY = serverNativeModule.AFFINE_PRO_PUBLIC_KEY;
 export const AFFINE_PRO_LICENSE_AES_KEY =
   serverNativeModule.AFFINE_PRO_LICENSE_AES_KEY;
+export const BackendRuntime = serverNativeModule.BackendRuntime;
 
 export type PermissionWorkspaceRole = 'external' | 'member' | 'admin' | 'owner';
 export type PermissionDocRole =
