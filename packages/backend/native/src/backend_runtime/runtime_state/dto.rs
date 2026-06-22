@@ -254,7 +254,7 @@ impl RuntimeStateRows {
       WHERE purpose = $1
         AND token_hash = $2
         AND consumed_at IS NULL
-        AND expires_at > CURRENT_TIMESTAMP
+        AND expires_at > clock_timestamp()
       FOR UPDATE
       "#,
     )
@@ -329,15 +329,15 @@ impl RuntimeStateRows {
     let row = sqlx::query(
       r#"
       INSERT INTO runtime_states (purpose, token_hash, lookup_key, payload, expires_at)
-      VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP + ($5 * INTERVAL '1 millisecond'))
+      VALUES ($1, $2, $3, $4, clock_timestamp() + ($5 * INTERVAL '1 millisecond'))
       ON CONFLICT (purpose, token_hash) DO UPDATE
         SET lookup_key = EXCLUDED.lookup_key,
             payload = EXCLUDED.payload,
             attempts = 0,
             consumed_at = NULL,
-            expires_at = EXCLUDED.expires_at
+            expires_at = clock_timestamp() + ($5 * INTERVAL '1 millisecond')
         WHERE runtime_states.consumed_at IS NOT NULL
-           OR runtime_states.expires_at <= CURRENT_TIMESTAMP
+           OR runtime_states.expires_at <= clock_timestamp()
       RETURNING (EXTRACT(EPOCH FROM expires_at) * 1000)::BIGINT AS expires_at_ms
       "#,
     )
