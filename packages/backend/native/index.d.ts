@@ -13,8 +13,12 @@ export declare class BackendRuntime {
    *
    * Do not use this for snapshots that will be sent back to yjs clients until
    * the y-octo/yjs round-trip compatibility issue is resolved.
+   *
+   * The caller owns quota reconciliation and must pass a fresh
+   * historyMaxAgeSeconds value. The compactor intentionally does not read
+   * effective workspace quota state.
    */
-  compactPendingDocUpdates(workspaceId: string, docId: string, batchLimit: number, historyMinIntervalMs: number, owner: string, leaseTtlMs: number): Promise<RuntimeDocCompactionResult>
+  compactPendingDocUpdates(workspaceId: string, docId: string, batchLimit: number, historyMinIntervalMs: number, historyMaxAgeSeconds: number, owner: string, leaseTtlMs: number): Promise<RuntimeDocCompactionResult>
   upsertDocSnapshot(workspaceId: string, docId: string, blob: Buffer, timestampMs: number, editorId?: string | undefined | null): Promise<boolean>
   createDocHistory(input: RuntimeDocHistoryInput): Promise<boolean>
   deleteDocStorage(workspaceId: string, docId: string): Promise<void>

@@ -3,9 +3,7 @@ use napi::Result;
 use sqlx::{FromRow, PgPool, Postgres, Row, Transaction};
 use y_octo::Doc;
 
-use super::{
-  BackendRuntime, constants::DEFAULT_HISTORY_PERIOD_SECONDS, error::napi_error, types::RuntimeDocCompactionResult,
-};
+use super::{BackendRuntime, error::napi_error, types::RuntimeDocCompactionResult};
 
 #[derive(FromRow)]
 struct SnapshotRow {
@@ -36,6 +34,7 @@ impl DocCompactorStore {
     doc_id: &str,
     batch_limit: i64,
     history_min_interval_ms: i64,
+    history_max_age_seconds: i64,
   ) -> Result<(i64, bool)> {
     compact_doc(
       self.pool.clone(),
@@ -43,6 +42,7 @@ impl DocCompactorStore {
       doc_id,
       batch_limit,
       history_min_interval_ms,
+      history_max_age_seconds,
     )
     .await
   }
@@ -189,38 +189,18 @@ async fn should_create_history(
   Ok(last_timestamp < snapshot.updated_at - Duration::milliseconds(history_min_interval_ms))
 }
 
-async fn history_max_age_seconds(tx: &mut Transaction<'_, Postgres>, workspace_id: &str) -> Result<i32> {
-  let row = sqlx::query(
-    r#"
-    SELECT history_period_seconds
-    FROM effective_workspace_quota_states
-    WHERE workspace_id = $1
-    "#,
-  )
-  .bind(workspace_id)
-  .fetch_optional(&mut **tx)
-  .await
-  .map_err(|err| napi_error(format!("DocCompactor load history quota failed: {err}")))?;
-
-  Ok(
-    row
-      .map(|row| row.get("history_period_seconds"))
-      .unwrap_or(DEFAULT_HISTORY_PERIOD_SECONDS),
-  )
-}
-
 async fn create_history(
   tx: &mut Transaction<'_, Postgres>,
   workspace_id: &str,
   doc_id: &str,
   snapshot: &SnapshotRow,
+  max_age_seconds: i64,
 ) -> Result<bool> {
-  let max_age_seconds = history_max_age_seconds(tx, workspace_id).await?;
   if max_age_seconds <= 0 {
     return Ok(false);
   }
 
-  let expired_at = Utc::now() + Duration::seconds(max_age_seconds as i64);
+  let expired_at = Utc::now() + Duration::seconds(max_age_seconds);
   sqlx::query(
     r#"
     INSERT INTO snapshot_histories
@@ -274,6 +254,7 @@ async fn compact_doc(
   doc_id: &str,
   batch_limit: i64,
   history_min_interval_ms: i64,
+  history_max_age_seconds: i64,
 ) -> Result<(i64, bool)> {
   let mut tx = pool
     .begin()
@@ -317,7 +298,7 @@ async fn compact_doc(
     && let Some(snapshot) = &snapshot
     && should_create_history(&mut tx, snapshot, workspace_id, doc_id, history_min_interval_ms).await?
   {
-    history_created = create_history(&mut tx, workspace_id, doc_id, snapshot).await?;
+    history_created = create_history(&mut tx, workspace_id, doc_id, snapshot, history_max_age_seconds).await?;
   }
 
   let timestamps = updates.iter().map(|update| update.created_at).collect::<Vec<_>>();
@@ -336,6 +317,11 @@ impl BackendRuntime {
   ///
   /// Do not use this for snapshots that will be sent back to yjs clients until
   /// the y-octo/yjs round-trip compatibility issue is resolved.
+  ///
+  /// The caller owns quota reconciliation and must pass a fresh
+  /// history_max_age_seconds value. The compactor intentionally does not read
+  /// effective_workspace_quota_states; if a future caller cannot provide a
+  /// fresh quota state, fail and retry after Node reconciles it.
   #[napi]
   pub async fn compact_pending_doc_updates(
     &self,
@@ -343,6 +329,7 @@ impl BackendRuntime {
     doc_id: String,
     batch_limit: i64,
     history_min_interval_ms: i64,
+    history_max_age_seconds: i64,
     owner: String,
     lease_ttl_ms: i64,
   ) -> Result<RuntimeDocCompactionResult> {
@@ -351,6 +338,9 @@ impl BackendRuntime {
     }
     if history_min_interval_ms < 0 {
       return Err(napi_error("doc compactor history interval must be non-negative"));
+    }
+    if history_max_age_seconds < 0 {
+      return Err(napi_error("doc compactor history max age must be non-negative"));
     }
 
     let lease_key = format!("doc:update:{workspace_id}:{doc_id}");
@@ -366,7 +356,13 @@ impl BackendRuntime {
     };
 
     let result = DocCompactorStore::new(self.pool().await?)
-      .compact_doc(&workspace_id, &doc_id, batch_limit, history_min_interval_ms)
+      .compact_doc(
+        &workspace_id,
+        &doc_id,
+        batch_limit,
+        history_min_interval_ms,
+        history_max_age_seconds,
+      )
       .await;
 
     let released = self

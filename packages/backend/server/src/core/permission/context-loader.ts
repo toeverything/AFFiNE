@@ -310,7 +310,7 @@ export class PermissionContextLoader {
   private async workspaceRuntime(workspaceId: string) {
     return this.memo(this.cache.workspaceRuntime, workspaceId, () =>
       this.models.workspaceRuntimeState.get(workspaceId).then(async state => {
-        if (state.known || !state.stale) {
+        if (state.known && !state.stale) {
           return state;
         }
 

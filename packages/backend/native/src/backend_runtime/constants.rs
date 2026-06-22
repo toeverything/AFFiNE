@@ -1,4 +1,3 @@
-pub(super) const DEFAULT_HISTORY_PERIOD_SECONDS: i32 = 7 * 24 * 60 * 60;
 pub(super) const BYOK_LOCAL_LEASE_ACTIVE_PURPOSE: &str = "copilot_byok_local_lease:active";
 pub(super) const BYOK_LOCAL_LEASE_PURPOSE: &str = "copilot_byok_local_lease";
 pub(super) const MAGIC_LINK_OTP_PURPOSE: &str = "magic_link_otp";
