@@ -27,7 +27,7 @@ We suggest develop our product under node.js LTS(Long-term support) version
 
 install [Node LTS version](https://nodejs.org/en/download)
 
-> Up to now, the major node.js version is 20.x
+> Up to now, the major node.js version is 22.x
 
 #### Option 2: Use node version manager
 
