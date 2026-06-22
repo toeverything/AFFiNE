@@ -156,11 +156,11 @@ export class WorkspaceMemberResolver {
         first: take ?? 8,
       });
 
-      return list.map(({ id, status, type, user }) => ({
+      return list.map(({ status, type, user }) => ({
         ...user,
         permission: Number(type),
         role: Number(type),
-        inviteId: id,
+        inviteId: user?.id ?? '',
         status,
       }));
     } else {
@@ -169,11 +169,11 @@ export class WorkspaceMemberResolver {
         first: take ?? 8,
       });
 
-      return list.map(({ id, status, type, user }) => ({
+      return list.map(({ status, type, user }) => ({
         ...user,
         permission: Number(type),
         role: Number(type),
-        inviteId: id,
+        inviteId: user?.id ?? '',
         status,
       }));
     }

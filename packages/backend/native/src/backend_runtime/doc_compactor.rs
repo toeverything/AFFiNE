@@ -64,6 +64,14 @@ fn apply_updates(updates: impl IntoIterator<Item = Vec<u8>>) -> Result<Vec<u8>> 
     .map_err(|err| napi_error(format!("DocCompactor encode failed: {err}")))
 }
 
+fn checked_milliseconds(value: i64, field: &str) -> Result<Duration> {
+  Duration::try_milliseconds(value).ok_or_else(|| napi_error(format!("DocCompactor {field} is too large")))
+}
+
+fn checked_seconds(value: i64, field: &str) -> Result<Duration> {
+  Duration::try_seconds(value).ok_or_else(|| napi_error(format!("DocCompactor {field} is too large")))
+}
+
 async fn load_snapshot(
   tx: &mut Transaction<'_, Postgres>,
   workspace_id: &str,
@@ -186,7 +194,13 @@ async fn should_create_history(
     return Ok(false);
   }
 
-  Ok(last_timestamp < snapshot.updated_at - Duration::milliseconds(history_min_interval_ms))
+  let min_interval = checked_milliseconds(history_min_interval_ms, "history interval")?;
+  let threshold = snapshot
+    .updated_at
+    .checked_sub_signed(min_interval)
+    .ok_or_else(|| napi_error("DocCompactor history interval is out of range"))?;
+
+  Ok(last_timestamp < threshold)
 }
 
 async fn create_history(
@@ -200,7 +214,10 @@ async fn create_history(
     return Ok(false);
   }
 
-  let expired_at = Utc::now() + Duration::seconds(max_age_seconds);
+  let max_age = checked_seconds(max_age_seconds, "history max age")?;
+  let expired_at = Utc::now()
+    .checked_add_signed(max_age)
+    .ok_or_else(|| napi_error("DocCompactor history max age is out of range"))?;
   sqlx::query(
     r#"
     INSERT INTO snapshot_histories
@@ -323,6 +340,7 @@ impl BackendRuntime {
   /// effective_workspace_quota_states; if a future caller cannot provide a
   /// fresh quota state, fail and retry after Node reconciles it.
   #[napi]
+  #[allow(clippy::too_many_arguments)]
   pub async fn compact_pending_doc_updates(
     &self,
     workspace_id: String,
@@ -341,6 +359,13 @@ impl BackendRuntime {
     }
     if history_max_age_seconds < 0 {
       return Err(napi_error("doc compactor history max age must be non-negative"));
+    }
+    checked_milliseconds(history_min_interval_ms, "history interval")?;
+    if history_max_age_seconds > 0 {
+      let max_age = checked_seconds(history_max_age_seconds, "history max age")?;
+      Utc::now()
+        .checked_add_signed(max_age)
+        .ok_or_else(|| napi_error("DocCompactor history max age is out of range"))?;
     }
 
     let lease_key = format!("doc:update:{workspace_id}:{doc_id}");

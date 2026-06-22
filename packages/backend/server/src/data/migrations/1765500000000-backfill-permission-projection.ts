@@ -75,18 +75,7 @@ async function backfillUnknownQuotaRuntimeStates(db: PrismaClient) {
     FROM users
     ON CONFLICT (user_id)
     DO UPDATE SET
-      plan = EXCLUDED.plan,
-      source_entitlement_id = EXCLUDED.source_entitlement_id,
-      blob_limit = EXCLUDED.blob_limit,
-      storage_quota = EXCLUDED.storage_quota,
-      used_storage_quota = EXCLUDED.used_storage_quota,
-      history_period_seconds = EXCLUDED.history_period_seconds,
-      copilot_action_limit = EXCLUDED.copilot_action_limit,
-      flags = EXCLUDED.flags,
-      known = EXCLUDED.known,
-      stale = EXCLUDED.stale,
-      last_reconciled_at = EXCLUDED.last_reconciled_at,
-      stale_after = EXCLUDED.stale_after,
+      stale = true,
       updated_at = now()
   `;
 
@@ -142,24 +131,7 @@ async function backfillUnknownQuotaRuntimeStates(db: PrismaClient) {
     JOIN owners ON owners.workspace_id = workspaces.id
     ON CONFLICT (workspace_id)
     DO UPDATE SET
-      plan = EXCLUDED.plan,
-      source_entitlement_id = EXCLUDED.source_entitlement_id,
-      owner_user_id = EXCLUDED.owner_user_id,
-      uses_owner_quota = EXCLUDED.uses_owner_quota,
-      seat_limit = EXCLUDED.seat_limit,
-      member_count = EXCLUDED.member_count,
-      overcapacity_member_count = EXCLUDED.overcapacity_member_count,
-      blob_limit = EXCLUDED.blob_limit,
-      storage_quota = EXCLUDED.storage_quota,
-      used_storage_quota = EXCLUDED.used_storage_quota,
-      history_period_seconds = EXCLUDED.history_period_seconds,
-      readonly = EXCLUDED.readonly,
-      readonly_reasons = EXCLUDED.readonly_reasons,
-      flags = EXCLUDED.flags,
-      known = EXCLUDED.known,
-      stale = EXCLUDED.stale,
-      last_reconciled_at = EXCLUDED.last_reconciled_at,
-      stale_after = EXCLUDED.stale_after,
+      stale = true,
       updated_at = now()
   `;
 
@@ -183,13 +155,7 @@ async function backfillUnknownQuotaRuntimeStates(db: PrismaClient) {
       now()
     FROM effective_workspace_quota_states
     ON CONFLICT (workspace_id)
-    DO UPDATE SET
-      known = EXCLUDED.known,
-      readonly = EXCLUDED.readonly,
-      readonly_reasons = EXCLUDED.readonly_reasons,
-      last_reconciled_at = EXCLUDED.last_reconciled_at,
-      stale_after = EXCLUDED.stale_after,
-      updated_at = now()
+    DO NOTHING
   `;
 }
 

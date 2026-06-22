@@ -48,7 +48,7 @@ function serializeWorkspaceMember(
     avatarUrl: row.user.avatarUrl ?? null,
     permission: role,
     role,
-    inviteId: row.id,
+    inviteId: row.user.id,
     emailVerified: null,
     status: row.status,
   };
