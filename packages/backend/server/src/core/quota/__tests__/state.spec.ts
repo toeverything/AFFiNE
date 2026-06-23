@@ -246,6 +246,46 @@ test('user quota state keeps ai capability alongside pro entitlement', async t =
   t.is(quota.copilotActionLimit, undefined);
 });
 
+test('user quota state restores ai overlay after stale expiry is cleared', async t => {
+  const { owner } = await createWorkspace(t);
+  await t.context.entitlement.upsertFromCloudSubscription({
+    targetId: owner.id,
+    plan: SubscriptionPlan.Pro,
+    recurring: SubscriptionRecurring.Yearly,
+    status: 'active',
+  });
+  await t.context.db.entitlement.create({
+    data: {
+      targetType: 'user',
+      targetId: owner.id,
+      source: 'cloud_subscription',
+      plan: 'ai',
+      status: 'active',
+      subjectId: `${owner.id}:${SubscriptionPlan.AI}`,
+      metadata: {},
+      expiresAt: new Date('2020-01-01T00:00:00Z'),
+    },
+  });
+
+  await t.context.entitlement.upsertFromCloudSubscription({
+    targetId: owner.id,
+    plan: SubscriptionPlan.AI,
+    recurring: SubscriptionRecurring.Monthly,
+    status: 'active',
+  });
+  const state = await t.context.state.reconcileUserQuotaState(owner.id);
+  const ai = await t.context.db.entitlement.findFirstOrThrow({
+    where: {
+      targetId: owner.id,
+      source: 'cloud_subscription',
+      plan: 'ai',
+    },
+  });
+
+  t.is(ai.expiresAt, null);
+  t.deepEqual(state.flags, { unlimitedCopilot: true });
+});
+
 test('ai entitlement is a capability overlay on free quota', async t => {
   const { owner } = await createWorkspace(t);
   await t.context.entitlement.upsertFromCloudSubscription({
