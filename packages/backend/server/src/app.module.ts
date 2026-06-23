@@ -55,13 +55,14 @@ import { Env } from './env';
 import { ModelsModule } from './models';
 import { CalendarModule } from './plugins/calendar';
 import { CaptchaModule } from './plugins/captcha';
-import { CopilotModule, CopilotRealtimeModule } from './plugins/copilot';
+import { CopilotModule } from './plugins/copilot';
 import { GCloudModule } from './plugins/gcloud';
 import { IndexerModule } from './plugins/indexer';
 import { LicenseModule } from './plugins/license';
 import { OAuthModule } from './plugins/oauth';
 import { PaymentModule } from './plugins/payment';
 import { WorkerModule } from './plugins/worker';
+import { ServerRealtimeHandlersModule } from './realtime-handlers.module';
 
 export const FunctionalityModules = [
   ClsModule.forRoot({
@@ -188,7 +189,7 @@ export function buildAppModule(env: Env) {
     )
     .useIf(
       () => !env.flavors.graphql && (env.flavors.sync || env.flavors.front),
-      CopilotRealtimeModule
+      ServerRealtimeHandlersModule
     )
     // graphql server only
     .useIf(
