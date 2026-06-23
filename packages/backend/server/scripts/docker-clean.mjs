@@ -118,6 +118,14 @@ async function hardlinkDuplicate(canonicalPath, duplicatePath) {
   }
 }
 
+function hasCompatibleHardlinkMetadata(canonicalStat, duplicateStat) {
+  return (
+    canonicalStat.mode === duplicateStat.mode &&
+    canonicalStat.uid === duplicateStat.uid &&
+    canonicalStat.gid === duplicateStat.gid
+  );
+}
+
 async function hardlinkDuplicateFiles(rootDir) {
   const files = await walkFiles(rootDir);
   const bySize = new Map();
@@ -165,8 +173,14 @@ async function hardlinkDuplicateFiles(rootDir) {
       ]);
 
       if (
-        canonicalStat &&
-        duplicateStat &&
+        !canonicalStat ||
+        !duplicateStat ||
+        !hasCompatibleHardlinkMetadata(canonicalStat, duplicateStat)
+      ) {
+        continue;
+      }
+
+      if (
         canonicalStat.dev === duplicateStat.dev &&
         canonicalStat.ino === duplicateStat.ino
       ) {
@@ -275,7 +289,7 @@ async function deleteFilesByPredicate(rootDir, shouldDelete) {
   return { deleted, bytes };
 }
 
-async function deleteDirsByName(rootDir, names) {
+async function deleteDirsByName(rootDir, names, shouldPreserve = () => false) {
   if (!(await exists(rootDir))) {
     return { deleted: 0, bytes: 0 };
   }
@@ -300,6 +314,11 @@ async function deleteDirsByName(rootDir, names) {
       }
 
       const fullPath = path.join(current, dirent.name);
+      if (shouldPreserve(fullPath)) {
+        stack.push(fullPath);
+        continue;
+      }
+
       if (names.has(dirent.name)) {
         const dirBytes = await directoryBytes(fullPath);
         try {
@@ -586,6 +605,40 @@ async function prunePrismaRuntimeArtifacts(nodeModulesDir) {
   return { deleted, bytes };
 }
 
+function isNodeModulesPackageRoot(nodeModulesDir, dirPath) {
+  const relative = path.relative(nodeModulesDir, dirPath);
+  if (!relative || relative.startsWith('..') || path.isAbsolute(relative)) {
+    return false;
+  }
+
+  const segments = ['node_modules', ...relative.split(path.sep)];
+  const targetIndex = segments.length - 1;
+
+  for (let i = 0; i < segments.length - 1; i += 1) {
+    if (segments[i] !== 'node_modules') {
+      continue;
+    }
+
+    const packageIndex = i + 1;
+    if (!segments[packageIndex]) {
+      continue;
+    }
+
+    if (segments[packageIndex].startsWith('@')) {
+      if (targetIndex === packageIndex + 1) {
+        return true;
+      }
+      continue;
+    }
+
+    if (targetIndex === packageIndex) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 async function pruneNodeModulesArtifacts(nodeModulesDir) {
   const disposableDirs = new Set([
     '.github',
@@ -622,7 +675,11 @@ async function pruneNodeModulesArtifacts(nodeModulesDir) {
     '.tsx',
   ];
 
-  const dirResult = await deleteDirsByName(nodeModulesDir, disposableDirs);
+  const dirResult = await deleteDirsByName(
+    nodeModulesDir,
+    disposableDirs,
+    dirPath => isNodeModulesPackageRoot(nodeModulesDir, dirPath)
+  );
   const fileResult = await deleteFilesByPredicate(
     nodeModulesDir,
     (_filePath, name) => {
