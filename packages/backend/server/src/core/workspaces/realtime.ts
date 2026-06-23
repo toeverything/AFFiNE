@@ -130,8 +130,8 @@ export class WorkspaceAccessRealtimeProvider implements OnModuleInit {
   }
 
   private async isTeamWorkspace(workspaceId: string) {
-    const state =
-      await this.quotaState.reconcileWorkspaceQuotaState(workspaceId);
+    const state = await this.quotaState.getWorkspaceQuotaState(workspaceId);
+    if (!state?.known) return false;
     return ['team', 'selfhost_team'].includes(state.plan);
   }
 

@@ -426,7 +426,10 @@ test('workspace realtime providers register access, config, members and invite l
     },
   };
   const quotaState = {
-    reconcileWorkspaceQuotaState: async () => ({ plan: 'team' }),
+    getWorkspaceQuotaState: async () => ({ known: true, plan: 'team' }),
+    reconcileWorkspaceQuotaState: async () => {
+      throw new Error('workspace.access.get should not reconcile quota state');
+    },
   };
   const cache = {
     get: async () => ({ inviteId: 'invite-link' }),
