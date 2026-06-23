@@ -1,5 +1,6 @@
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 
+import { Flavor } from '../../env';
 import { RealtimeRegistry } from './registry';
 import {
   REALTIME_GATEWAY_REQUIRED_REQUESTS,
@@ -11,7 +12,10 @@ export class RealtimeRegistryCompletenessChecker implements OnApplicationBootstr
   constructor(private readonly registry: RealtimeRegistry) {}
 
   onApplicationBootstrap() {
-    if (!globalThis.env.flavors.front && !globalThis.env.flavors.sync) {
+    if (
+      globalThis.env.FLAVOR !== Flavor.Front &&
+      globalThis.env.FLAVOR !== Flavor.Sync
+    ) {
       return;
     }
 

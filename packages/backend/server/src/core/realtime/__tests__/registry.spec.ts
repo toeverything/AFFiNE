@@ -5,6 +5,7 @@ import {
 import test from 'ava';
 import { z } from 'zod';
 
+import { Flavor } from '../../../env';
 import { PublicDocMode } from '../../../models';
 import { CopilotEmbeddingRealtimeProvider } from '../../../plugins/copilot/context';
 import type { CopilotTranscriptionReader } from '../../../plugins/copilot/transcript';
@@ -28,6 +29,7 @@ import {
   WorkspaceConfigRealtimeProvider,
   WorkspaceMembersRealtimeProvider,
 } from '../../workspaces/realtime';
+import { RealtimeRegistryCompletenessChecker } from '../completeness';
 import { RealtimeGateway } from '../gateway';
 import {
   REALTIME_GATEWAY_REQUIRED_REQUESTS,
@@ -91,6 +93,26 @@ test('registry rejects duplicate request and topic handlers', t => {
   t.throws(() => registry.registerTopic(topic), {
     message: /already registered/,
   });
+});
+
+test('realtime registry completeness check only runs for explicit gateway flavors', t => {
+  const env = globalThis.env as unknown as { FLAVOR: Flavor };
+  const originalFlavor = globalThis.env.FLAVOR;
+  try {
+    const checker = new RealtimeRegistryCompletenessChecker(
+      new RealtimeRegistry()
+    );
+
+    env.FLAVOR = Flavor.AllInOne;
+    t.notThrows(() => checker.onApplicationBootstrap());
+
+    env.FLAVOR = Flavor.Front;
+    t.throws(() => checker.onApplicationBootstrap(), {
+      message: /Realtime gateway missing handlers/,
+    });
+  } finally {
+    env.FLAVOR = originalFlavor;
+  }
 });
 
 test('gateway handles registered request with version gate', async t => {
