@@ -97,33 +97,6 @@ export class OnlyOfficeController {
   }
 
   /**
-   * Standalone version-history page (own window). Public HTML shell; the
-   * version list / delete calls inside are authenticated by the session cookie.
-   */
-  @Public()
-  @Get('/:id/onlyoffice/versions-page/:name')
-  async versionsPage(
-    @Param('id') workspaceId: string,
-    @Param('name') blobId: string,
-    @Query('docId') docId: string | undefined,
-    @Query('blockId') blockId: string | undefined,
-    @Query('filename') filename: string | undefined,
-    @Query('current') current: string | undefined,
-    @Res() res: Response
-  ) {
-    const html = this.service.buildVersionsPage({
-      workspaceId,
-      blobId,
-      docId: docId || '',
-      blockId: blockId || '',
-      filename: filename || blobId,
-      currentBlobId: current || blobId,
-    });
-    res.setHeader('content-type', 'text/html; charset=utf-8');
-    res.send(html);
-  }
-
-  /**
    * Public, token-authenticated blob download for the Document Server.
    * The Document Server fetches `document.url` server-side without a user
    * session, so we authorize it with the signed file token instead.
@@ -155,7 +128,7 @@ export class OnlyOfficeController {
    * flushed to a new blob while the editor window is still open. Auth'd by the
    * user session (called from the editor page with the document key).
    */
-  @Get('/:id/onlyoffice/forcesave/:name')
+  @Post('/:id/onlyoffice/forcesave/:name')
   async forcesave(
     @CurrentUser() user: CurrentUser,
     @Param('id') workspaceId: string,
@@ -209,10 +182,11 @@ export class OnlyOfficeController {
   }
 
   /**
-   * Permanently delete a specific version blob and remove it from the manifest.
-   * Requires write permission.
+   * Remove a specific version from an attachment's history. Requires write
+   * permission. The service validates the blob belongs to this attachment's
+   * manifest before doing anything.
    */
-  @Get('/:id/onlyoffice/delete-version/:name')
+  @Post('/:id/onlyoffice/delete-version/:name')
   async deleteVersion(
     @CurrentUser() user: CurrentUser,
     @Param('id') workspaceId: string,

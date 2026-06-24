@@ -74,11 +74,15 @@ export const ONLYOFFICE_EDITOR_HTML = `<!doctype html>
             if (syncing || !docKey) return;
             syncing = true;
             try {
-              await fetch(
+              var fr = await fetch(
                 wsBase + '/forcesave/' + encodeURIComponent(P.blobId) +
                   '?key=' + encodeURIComponent(docKey),
-                { credentials: 'include' }
+                { method: 'POST', credentials: 'include' }
               );
+              if (!fr.ok) {
+                throw new Error('Force-save request failed: HTTP ' + fr.status);
+              }
+              var delivered = false;
               // Poll the result for up to ~20s.
               for (var i = 0; i < 20; i++) {
                 await new Promise(function (r) { setTimeout(r, 1000); });
@@ -90,6 +94,7 @@ export const ONLYOFFICE_EDITOR_HTML = `<!doctype html>
                 if (!rr.ok) continue;
                 var jr = await rr.json();
                 if (jr && jr.blobId) {
+                  delivered = true;
                   if (window.opener && !window.opener.closed) {
                     window.opener.postMessage({
                       type: 'affine-onlyoffice-saved',
@@ -102,8 +107,9 @@ export const ONLYOFFICE_EDITOR_HTML = `<!doctype html>
                   break;
                 }
               }
-            } catch (e) {
-              // best-effort; ignore
+              if (!delivered) {
+                throw new Error('Timed out waiting for the save result');
+              }
             } finally {
               syncing = false;
             }
@@ -123,15 +129,22 @@ export const ONLYOFFICE_EDITOR_HTML = `<!doctype html>
               if (ev && ev.data) dirty = true;
             },
             onRequestClose: function () {
-              var finish = function () {
+              if (!dirty) {
                 try { window.close(); } catch (e) {}
-              };
-              if (dirty) {
-                dirty = false;
-                syncBack().then(finish, finish);
-              } else {
-                finish();
+                return;
               }
+              // Only close once the edited content is confirmed saved back to
+              // AFFiNE. If the sync fails/times out, keep the window open and
+              // show the error so the user's edits are not silently lost.
+              syncBack().then(
+                function () {
+                  dirty = false;
+                  try { window.close(); } catch (e) {}
+                },
+                function (e) {
+                  fail((e && e.message) || String(e));
+                }
+              );
             },
           };
           new window.DocsAPI.DocEditor('editor', config);

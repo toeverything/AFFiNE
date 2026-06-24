@@ -162,6 +162,7 @@ export class OnlyOfficeVersionPanel extends WithDisposable(LitElement) {
       const data = await res.json();
       this.canWrite = !!data.canWrite;
       this.versions = (data.versions ?? []) as Version[];
+      this.error = ''; // clear any stale error after a successful (re)load
     } catch (e) {
       this.error = `Failed to load versions: ${e instanceof Error ? e.message : e}`;
     }
@@ -182,7 +183,7 @@ export class OnlyOfficeVersionPanel extends WithDisposable(LitElement) {
       });
       await fetch(
         `${this._api('delete-version/' + encodeURIComponent(v.blobId))}?${qs.toString()}`,
-        { credentials: 'include' }
+        { method: 'POST', credentials: 'include' }
       );
       await this._load();
     } catch {
@@ -246,12 +247,14 @@ export class OnlyOfficeVersionPanel extends WithDisposable(LitElement) {
                           </div>
                           ${isCur
                             ? html`<span class="cur">Current</span>`
-                            : html`<button
-                                class="act"
-                                @click=${() => this._switch(v)}
-                              >
-                                Switch to
-                              </button>`}
+                            : this.canWrite
+                              ? html`<button
+                                  class="act"
+                                  @click=${() => this._switch(v)}
+                                >
+                                  Switch to
+                                </button>`
+                              : ''}
                           ${this.canWrite && !isCur
                             ? html`<button
                                 class="act danger"

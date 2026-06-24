@@ -141,6 +141,9 @@ function openOnlyOffice(ctx: ToolbarContext, mode: string): void {
   // content-addressed blob. blobSync.get(newId) lazily fetches it from the
   // server (the backend already stored it), so download/size become correct.
   const onMessage = (e: MessageEvent) => {
+    // Bind to the actual popup window, not just same-origin, so another
+    // same-origin window/tab can't forge a save-back and mutate the block.
+    if (e.source !== win) return;
     if (e.origin !== window.location.origin) return;
     const d = e.data;
     if (

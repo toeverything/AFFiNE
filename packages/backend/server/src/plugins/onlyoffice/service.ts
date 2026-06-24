@@ -16,11 +16,14 @@ import {
   type OnlyOfficeVersion,
   type OnlyOfficeVersionManifest,
 } from './types';
-import { ONLYOFFICE_VERSIONS_HTML } from './versions-page';
 
 @Injectable()
 export class OnlyOfficeService {
   private readonly logger = new Logger(OnlyOfficeService.name);
+
+  // Per-attachment (ws:doc:block) promise chain that serializes manifest
+  // read-modify-write so concurrent save callbacks don't corrupt history.
+  private readonly manifestLocks = new Map<string, Promise<void>>();
 
   constructor(
     private readonly config: Config,
@@ -335,29 +338,6 @@ export class OnlyOfficeService {
     return ONLYOFFICE_EDITOR_HTML.replace('__PARAMS__', json);
   }
 
-  /** Build the standalone version-history page for an attachment. */
-  buildVersionsPage(input: {
-    workspaceId: string;
-    blobId: string;
-    docId: string;
-    blockId: string;
-    filename: string;
-    currentBlobId: string;
-  }): string {
-    const params = {
-      workspaceId: input.workspaceId,
-      blobId: input.blobId,
-      docId: input.docId,
-      blockId: input.blockId,
-      filename: input.filename,
-      currentBlobId: input.currentBlobId,
-      configBase: `${this.url.baseUrl}/api/workspaces`,
-      origin: new URL(this.url.baseUrl).origin,
-    };
-    const json = JSON.stringify(params).replace(/</g, '\\u003c');
-    return ONLYOFFICE_VERSIONS_HTML.replace('__PARAMS__', json);
-  }
-
   /**
    * Verify the JWT attached to an incoming callback (header or body) and
    * return the verified payload.
@@ -559,6 +539,39 @@ export class OnlyOfficeService {
     version: OnlyOfficeVersion,
     originalBlobId: string
   ): Promise<void> {
+    // Serialize read-modify-write of the same manifest: concurrent status-2/6
+    // callbacks for one attachment would otherwise overwrite each other.
+    const lockKey = `${workspaceId}:${docId}:${blockId}`;
+    const prev = this.manifestLocks.get(lockKey) ?? Promise.resolve();
+    const run = prev
+      .catch(() => {})
+      .then(() =>
+        this.recordVersionLocked(
+          workspaceId,
+          docId,
+          blockId,
+          version,
+          originalBlobId
+        )
+      );
+    this.manifestLocks.set(lockKey, run);
+    try {
+      await run;
+    } finally {
+      // Drop the lock entry once this is the tail, to avoid unbounded growth.
+      if (this.manifestLocks.get(lockKey) === run) {
+        this.manifestLocks.delete(lockKey);
+      }
+    }
+  }
+
+  private async recordVersionLocked(
+    workspaceId: string,
+    docId: string,
+    blockId: string,
+    version: OnlyOfficeVersion,
+    originalBlobId: string
+  ): Promise<void> {
     try {
       const manifest = await this.readManifest(workspaceId, docId, blockId);
 
@@ -594,7 +607,7 @@ export class OnlyOfficeService {
           const stale = last.blobId;
           manifest.versions.pop();
           if (stale !== originalBlobId) {
-            await this.hardDeleteBlob(workspaceId, stale);
+            await this.softDeleteBlob(workspaceId, stale);
           }
         }
         await this.writeManifest(workspaceId, docId, blockId, manifest);
@@ -614,7 +627,7 @@ export class OnlyOfficeService {
         await this.writeManifest(workspaceId, docId, blockId, manifest);
         // The superseded intermediate autosave blob is now unreferenced.
         if (replaced !== version.blobId && replaced !== originalBlobId) {
-          await this.hardDeleteBlob(workspaceId, replaced);
+          await this.softDeleteBlob(workspaceId, replaced);
         }
         return;
       }
@@ -627,10 +640,15 @@ export class OnlyOfficeService {
     }
   }
 
-  /** Permanently remove a blob, best-effort. */
-  private async hardDeleteBlob(workspaceId: string, blobId: string) {
+  /**
+   * Soft-delete a blob (frees quota, keeps the file on disk). Used for
+   * superseded version blobs. Soft (not permanent) because blobs are
+   * content-addressed and may be shared by other attachments/docs — physical
+   * deletion must be left to a reference-safe GC. Best-effort.
+   */
+  private async softDeleteBlob(workspaceId: string, blobId: string) {
     try {
-      await this.blobStorage.delete(workspaceId, blobId, true);
+      await this.blobStorage.delete(workspaceId, blobId, false);
     } catch {
       // ignore
     }
@@ -647,8 +665,11 @@ export class OnlyOfficeService {
   }
 
   /**
-   * Permanently delete a specific version blob and remove it from the manifest.
-   * Requires the caller to have verified write permission.
+   * Remove a version from an attachment's manifest. Rejects blob ids that are
+   * not part of THIS attachment's manifest (otherwise the endpoint could be
+   * used to delete arbitrary workspace blobs). The blob is soft-deleted, not
+   * physically removed, because it may be shared by other content-addressed
+   * references. Requires the caller to have verified write permission.
    */
   async deleteVersion(
     workspaceId: string,
@@ -657,16 +678,13 @@ export class OnlyOfficeService {
     blobId: string
   ): Promise<void> {
     const manifest = await this.readManifest(workspaceId, docId, blockId);
+    if (!manifest.versions.some(v => v.blobId === blobId)) {
+      throw new BadRequest('Version not found for this attachment.');
+    }
     manifest.versions = manifest.versions.filter(v => v.blobId !== blobId);
     await this.writeManifest(workspaceId, docId, blockId, manifest);
-    try {
-      await this.blobStorage.delete(workspaceId, blobId, true);
-      this.logger.log(
-        `OnlyOffice deleted version blob ${workspaceId}/${blobId}`
-      );
-    } catch (e) {
-      this.logger.warn(`Failed to delete version blob ${blobId}: ${e}`);
-    }
+    await this.softDeleteBlob(workspaceId, blobId);
+    this.logger.log(`OnlyOffice removed version ${workspaceId}/${blobId}`);
   }
 
   /** Read a previously cached save result for a document key. */
@@ -708,14 +726,26 @@ export class OnlyOfficeService {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 10_000);
     try {
-      await globalThis.fetch(`${base}/coauthoring/CommandService.ashx`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...payload, token }),
-        signal: controller.signal,
-      });
+      const res = await globalThis.fetch(
+        `${base}/coauthoring/CommandService.ashx`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...payload, token }),
+          signal: controller.signal,
+        }
+      );
+      if (!res.ok) {
+        throw new Error(`CommandService HTTP ${res.status}`);
+      }
+      // OnlyOffice signals command errors in the JSON body (error !== 0).
+      const data = (await res.json().catch(() => ({}))) as { error?: number };
+      if (typeof data.error === 'number' && data.error !== 0) {
+        throw new Error(`CommandService error ${data.error}`);
+      }
     } catch (e) {
       this.logger.warn(`OnlyOffice forcesave failed: ${e}`);
+      throw e;
     } finally {
       clearTimeout(timer);
     }
