@@ -425,6 +425,15 @@ export class OnlyOfficeService {
       );
     }
 
+    // KNOWN BEHAVIOR: the saved file may be substantially smaller than the
+    // original (e.g. a 3MB docx coming back as ~50KB). This is NOT data loss on
+    // our side — we store exactly what the Document Server returns. OnlyOffice
+    // re-serializes the document on save and DROPS the original embedded fonts
+    // (`word/fonts/*.odttf`), keeping only the font-name references; body text,
+    // images and structure are preserved. OnlyOffice has no "embed fonts on
+    // save" option (its model is server-side font install + substitution), so
+    // this cannot be fixed here. Only matters for pixel-exact cross-machine
+    // font fidelity; for normal editing/reading the document is intact.
     const buffer = Buffer.from(await response.arrayBuffer());
 
     // Content-addressed key (same scheme as blocksuite `sha()`).

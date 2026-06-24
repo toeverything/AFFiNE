@@ -16,7 +16,7 @@ import {
   ViewIcon,
 } from '@blocksuite/icons/lit';
 import { html } from 'lit';
-import { repeat } from 'lit-html/directives/repeat.js';
+import { repeat } from 'lit/directives/repeat.js';
 
 import { OnlyOfficeVersionPanel } from './version-panel';
 
