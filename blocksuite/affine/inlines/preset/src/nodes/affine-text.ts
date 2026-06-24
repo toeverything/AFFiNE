@@ -20,6 +20,16 @@ export class AffineText extends ShadowlessElement {
         ><v-text .str=${this.delta.insert}></v-text
       ></code>`;
     }
+    if (this.delta.attributes?.superscript) {
+      return html`<sup style=${styleMap(style)}
+        ><v-text .str=${this.delta.insert}></v-text
+      ></sup>`;
+    }
+    if (this.delta.attributes?.subscript) {
+      return html`<sub style=${styleMap(style)}
+        ><v-text .str=${this.delta.insert}></v-text
+      ></sub>`;
+    }
 
     // we need to avoid \n appearing before and after the span element, which will
     // cause the unexpected space

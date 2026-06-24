@@ -7,6 +7,8 @@ export const baseTextAttributes = z.object({
   strike: z.literal(true).optional().nullable().catch(undefined),
   code: z.literal(true).optional().nullable().catch(undefined),
   link: z.string().optional().nullable().catch(undefined),
+  superscript: z.literal(true).optional().nullable().catch(undefined),
+  subscript: z.literal(true).optional().nullable().catch(undefined),
 });
 
 export type BaseTextAttributes = z.infer<typeof baseTextAttributes>;

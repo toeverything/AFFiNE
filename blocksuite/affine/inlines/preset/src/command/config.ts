@@ -16,6 +16,8 @@ import {
   toggleCode,
   toggleItalic,
   toggleStrike,
+  toggleSubscript,
+  toggleSuperscript,
   toggleUnderline,
 } from './text-style.js';
 
@@ -133,6 +135,38 @@ export const textFormatConfigs: TextFormatConfig[] = [
       return Boolean(
         textSelection.from.length + (textSelection.to?.length ?? 0)
       );
+    },
+  },
+  {
+    id: 'superscript',
+    name: 'Superscript',
+    icon: LinkIcon,
+    hotkey: 'Mod-+',
+    activeWhen: host => {
+      const [result] = host.std.command
+        .chain()
+        .pipe(isTextAttributeActive, { key: 'superscript' })
+        .run();
+      return result;
+    },
+    action: host => {
+      host.std.command.chain().pipe(toggleSuperscript).run();
+    },
+  },
+  {
+    id: 'subscript',
+    name: 'Subscript',
+    icon: LinkIcon,
+    hotkey: 'Mod-=',
+    activeWhen: host => {
+      const [result] = host.std.command
+        .chain()
+        .pipe(isTextAttributeActive, { key: 'subscript' })
+        .run();
+      return result;
+    },
+    action: host => {
+      host.std.command.chain().pipe(toggleSubscript).run();
     },
   },
 ];

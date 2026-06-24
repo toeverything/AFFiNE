@@ -14,6 +14,8 @@ import {
   ColorInlineSpecExtension,
   ItalicInlineSpecExtension,
   StrikeInlineSpecExtension,
+  SubscriptInlineSpecExtension,
+  SuperscriptInlineSpecExtension,
   UnderlineInlineSpecExtension,
 } from './inline-spec';
 
@@ -28,6 +30,8 @@ export const DefaultInlineManagerExtension =
       CodeInlineSpecExtension.identifier,
       BackgroundInlineSpecExtension.identifier,
       ColorInlineSpecExtension.identifier,
+      SuperscriptInlineSpecExtension.identifier,
+      SubscriptInlineSpecExtension.identifier,
       LatexInlineSpecExtension.identifier,
       ReferenceInlineSpecExtension.identifier,
       LinkInlineSpecExtension.identifier,
