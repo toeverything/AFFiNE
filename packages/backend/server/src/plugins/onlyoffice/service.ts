@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 import { Injectable, Logger } from '@nestjs/common';
 import jwt from 'jsonwebtoken';
 
-import { BadRequest, Cache, Config, URLHelper } from '../../base';
+import { BadRequest, Cache, Config, Mutex, URLHelper } from '../../base';
 import { WorkspaceBlobStorage } from '../../core/storage';
 import { ONLYOFFICE_EDITOR_HTML } from './editor-page';
 import {
@@ -21,15 +21,14 @@ import {
 export class OnlyOfficeService {
   private readonly logger = new Logger(OnlyOfficeService.name);
 
-  // Per-attachment (ws:doc:block) promise chain that serializes manifest
-  // read-modify-write so concurrent save callbacks don't corrupt history.
-  private readonly manifestLocks = new Map<string, Promise<void>>();
-
   constructor(
     private readonly config: Config,
     private readonly url: URLHelper,
     private readonly blobStorage: WorkspaceBlobStorage,
-    private readonly cache: Cache
+    private readonly cache: Cache,
+    // Distributed (Redis-backed) mutex so manifest updates are serialized
+    // across server instances, not just within one process.
+    private readonly mutex: Mutex
   ) {}
 
   get enabled() {
@@ -539,39 +538,18 @@ export class OnlyOfficeService {
     version: OnlyOfficeVersion,
     originalBlobId: string
   ): Promise<void> {
-    // Serialize read-modify-write of the same manifest: concurrent status-2/6
-    // callbacks for one attachment would otherwise overwrite each other.
-    const lockKey = `${workspaceId}:${docId}:${blockId}`;
-    const prev = this.manifestLocks.get(lockKey) ?? Promise.resolve();
-    const run = prev
-      .catch(() => {})
-      .then(() =>
-        this.recordVersionLocked(
-          workspaceId,
-          docId,
-          blockId,
-          version,
-          originalBlobId
-        )
+    // Serialize read-modify-write of the same manifest across ALL server
+    // instances (distributed Redis mutex): concurrent status-2/6 callbacks for
+    // one attachment would otherwise overwrite each other's history.
+    await using lock = await this.mutex.acquire(
+      `onlyoffice:manifest:${workspaceId}:${docId}:${blockId}`
+    );
+    if (!lock) {
+      this.logger.warn(
+        `Could not acquire manifest lock for ${workspaceId}/${docId}/${blockId}; skipping version record`
       );
-    this.manifestLocks.set(lockKey, run);
-    try {
-      await run;
-    } finally {
-      // Drop the lock entry once this is the tail, to avoid unbounded growth.
-      if (this.manifestLocks.get(lockKey) === run) {
-        this.manifestLocks.delete(lockKey);
-      }
+      return;
     }
-  }
-
-  private async recordVersionLocked(
-    workspaceId: string,
-    docId: string,
-    blockId: string,
-    version: OnlyOfficeVersion,
-    originalBlobId: string
-  ): Promise<void> {
     try {
       const manifest = await this.readManifest(workspaceId, docId, blockId);
 
