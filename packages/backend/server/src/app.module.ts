@@ -60,6 +60,7 @@ import { GCloudModule } from './plugins/gcloud';
 import { IndexerModule } from './plugins/indexer';
 import { LicenseModule } from './plugins/license';
 import { OAuthModule } from './plugins/oauth';
+import { OnlyOfficeModule } from './plugins/onlyoffice';
 import { PaymentModule } from './plugins/payment';
 import { WorkerModule } from './plugins/worker';
 
@@ -207,7 +208,8 @@ export function buildAppModule(env: Env) {
       TelemetryModule,
       CommentModule,
       AccessTokenModule,
-      QueueDashboardModule
+      QueueDashboardModule,
+      OnlyOfficeModule
     )
     // doc service and front service
     .useIf(() => env.flavors.doc || env.flavors.front, DocServiceModule)

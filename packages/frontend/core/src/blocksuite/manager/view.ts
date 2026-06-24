@@ -19,6 +19,7 @@ import { ElectronViewExtension } from '@affine/core/blocksuite/view-extensions/e
 import { AffineIconPickerExtension } from '@affine/core/blocksuite/view-extensions/icon-picker';
 import { AffineLinkPreviewExtension } from '@affine/core/blocksuite/view-extensions/link-preview-service';
 import { MobileViewExtension } from '@affine/core/blocksuite/view-extensions/mobile';
+import { OnlyofficeViewExtension } from '@affine/core/blocksuite/view-extensions/onlyoffice';
 import { PdfViewExtension } from '@affine/core/blocksuite/view-extensions/pdf';
 import { AffineThemeViewExtension } from '@affine/core/blocksuite/view-extensions/theme';
 import { TurboRendererViewExtension } from '@affine/core/blocksuite/view-extensions/turbo-renderer';
@@ -54,6 +55,7 @@ type Configure = {
   cloud: (framework?: FrameworkProvider, enableCloud?: boolean) => Configure;
   turboRenderer: (enableTurboRenderer?: boolean) => Configure;
   pdf: (enablePDFEmbedPreview?: boolean, reactToLit?: ReactToLit) => Configure;
+  onlyoffice: (enableOnlyoffice?: boolean) => Configure;
   mobile: (framework?: FrameworkProvider) => Configure;
   ai: (enable?: boolean, framework?: FrameworkProvider) => Configure;
   electron: (framework?: FrameworkProvider) => Configure;
@@ -94,6 +96,7 @@ class ViewProvider {
       TurboRendererViewExtension,
       CloudViewExtension,
       PdfViewExtension,
+      OnlyofficeViewExtension,
       MobileViewExtension,
       AIViewExtension,
       ElectronViewExtension,
@@ -121,6 +124,7 @@ class ViewProvider {
       cloud: this._configureCloud,
       turboRenderer: this._configureTurboRenderer,
       pdf: this._configurePdf,
+      onlyoffice: this._configureOnlyoffice,
       mobile: this._configureMobile,
       ai: this._configureAI,
       electron: this._configureElectron,
@@ -145,6 +149,7 @@ class ViewProvider {
       .cloud()
       .turboRenderer()
       .pdf()
+      .onlyoffice()
       .mobile()
       .ai()
       .electron()
@@ -305,6 +310,13 @@ class ViewProvider {
     this._manager.configure(PdfViewExtension, {
       enablePDFEmbedPreview,
       reactToLit,
+    });
+    return this.config;
+  };
+
+  private readonly _configureOnlyoffice = (enableOnlyoffice?: boolean) => {
+    this._manager.configure(OnlyofficeViewExtension, {
+      enableOnlyoffice,
     });
     return this.config;
   };

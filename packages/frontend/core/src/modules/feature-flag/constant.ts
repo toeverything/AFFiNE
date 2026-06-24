@@ -188,6 +188,14 @@ export const AFFINE_FLAGS = {
     configurable: !isMobile,
     defaultState: true,
   },
+  enable_onlyoffice: {
+    category: 'affine',
+    displayName: 'OnlyOffice document editing',
+    description:
+      'Add an "Open with OnlyOffice" action to office attachments (docx/xlsx/pptx). Requires a configured OnlyOffice Document Server on the backend.',
+    configurable: !isMobile,
+    defaultState: false,
+  },
   enable_editor_rtl: {
     category: 'affine',
     displayName:

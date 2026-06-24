@@ -83,6 +83,10 @@ const usePatchSpecs = (mode: DocMode, shared?: boolean) => {
     featureFlagService.flags.enable_pdf_embed_preview.$
   );
 
+  const enableOnlyoffice = useLiveData(
+    featureFlagService.flags.enable_onlyoffice.$
+  );
+
   const serverService = useService(ServerService);
   const serverConfig = useLiveData(serverService.server.config$);
 
@@ -105,6 +109,7 @@ const usePatchSpecs = (mode: DocMode, shared?: boolean) => {
       .cloud(framework, isCloud)
       .turboRenderer(enableTurboRenderer)
       .pdf(enablePDFEmbedPreview, reactToLit)
+      .onlyoffice(enableOnlyoffice)
       .edgelessBlockHeader({
         framework,
         isInPeekView,
@@ -133,6 +138,7 @@ const usePatchSpecs = (mode: DocMode, shared?: boolean) => {
     confirmModal,
     enableAI,
     enablePDFEmbedPreview,
+    enableOnlyoffice,
     enableTurboRenderer,
     enableComment,
     framework,
