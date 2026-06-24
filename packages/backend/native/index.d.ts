@@ -15,8 +15,9 @@ export declare class BackendRuntime {
    * the y-octo/yjs round-trip compatibility issue is resolved.
    *
    * The caller owns quota reconciliation and must pass a fresh
-   * historyMaxAgeSeconds value. The compactor intentionally does not read
-   * effective workspace quota state.
+   * history_max_age_seconds value. The compactor intentionally does not read
+   * effective_workspace_quota_states; if a future caller cannot provide a
+   * fresh quota state, fail and retry after Node reconciles it.
    */
   compactPendingDocUpdates(workspaceId: string, docId: string, batchLimit: number, historyMinIntervalMs: number, historyMaxAgeSeconds: number, owner: string, leaseTtlMs: number): Promise<RuntimeDocCompactionResult>
   upsertDocSnapshot(workspaceId: string, docId: string, blob: Buffer, timestampMs: number, editorId?: string | undefined | null): Promise<boolean>

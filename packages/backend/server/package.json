@@ -1,7 +1,7 @@
 {
   "name": "@affine/server",
   "private": true,
-  "version": "0.26.3",
+  "version": "0.27.0",
   "description": "Affine Node.js server",
   "type": "module",
   "scripts": {
@@ -70,7 +70,7 @@
     "commander": "^13.1.0",
     "cookie-parser": "^1.4.7",
     "cross-env": "^10.1.0",
-    "date-fns": "^4.0.0",
+    "date-fns": "^4.4.0",
     "dotenv": "^16.4.7",
     "eventemitter2": "^6.4.9",
     "exa-js": "^2.4.0",
