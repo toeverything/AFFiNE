@@ -5,7 +5,9 @@ import {
 import test from 'ava';
 import { z } from 'zod';
 
+import { Flavor } from '../../../env';
 import { PublicDocMode } from '../../../models';
+import { CopilotEmbeddingRealtimeProvider } from '../../../plugins/copilot/context';
 import type { CopilotTranscriptionReader } from '../../../plugins/copilot/transcript';
 import { CopilotTranscriptRealtimeProvider } from '../../../plugins/copilot/transcript';
 import type { CurrentUser } from '../../auth';
@@ -27,8 +29,11 @@ import {
   WorkspaceConfigRealtimeProvider,
   WorkspaceMembersRealtimeProvider,
 } from '../../workspaces/realtime';
+import { RealtimeRegistryCompletenessChecker } from '../completeness';
 import { RealtimeGateway } from '../gateway';
 import {
+  REALTIME_GATEWAY_REQUIRED_REQUESTS,
+  REALTIME_GATEWAY_REQUIRED_TOPICS,
   realtimeCommentRoom,
   realtimeDocGrantsRoom,
   realtimeDocShareStateRoom,
@@ -88,6 +93,26 @@ test('registry rejects duplicate request and topic handlers', t => {
   t.throws(() => registry.registerTopic(topic), {
     message: /already registered/,
   });
+});
+
+test('realtime registry completeness check only runs for explicit gateway flavors', t => {
+  const env = globalThis.env as unknown as { FLAVOR: Flavor };
+  const originalFlavor = globalThis.env.FLAVOR;
+  try {
+    const checker = new RealtimeRegistryCompletenessChecker(
+      new RealtimeRegistry()
+    );
+
+    env.FLAVOR = Flavor.AllInOne;
+    t.notThrows(() => checker.onApplicationBootstrap());
+
+    env.FLAVOR = Flavor.Front;
+    t.throws(() => checker.onApplicationBootstrap(), {
+      message: /Realtime gateway missing handlers/,
+    });
+  } finally {
+    env.FLAVOR = originalFlavor;
+  }
 });
 
 test('gateway handles registered request with version gate', async t => {
@@ -258,6 +283,12 @@ test('realtime providers expose runtime injection metadata for registry dependen
   t.true(
     Reflect.getMetadata(
       'design:paramtypes',
+      CopilotEmbeddingRealtimeProvider
+    ).includes(RealtimeRegistry)
+  );
+  t.true(
+    Reflect.getMetadata(
+      'design:paramtypes',
       QuotaStateRealtimeProvider
     ).includes(RealtimeRegistry)
   );
@@ -294,6 +325,73 @@ test('realtime providers expose runtime injection metadata for registry dependen
     Reflect.getMetadata('design:paramtypes', UserRealtimeProvider).includes(
       RealtimeRegistry
     )
+  );
+});
+
+test('front and sync realtime gateway required handlers are registered by lightweight providers', t => {
+  const registry = new RealtimeRegistry();
+
+  new WorkspaceAccessRealtimeProvider(
+    {} as never,
+    {} as never,
+    registry
+  ).onModuleInit();
+  new WorkspaceConfigRealtimeProvider(
+    {} as never,
+    {} as never,
+    registry
+  ).onModuleInit();
+  new WorkspaceMembersRealtimeProvider(
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    registry
+  ).onModuleInit();
+  new DocShareRealtimeProvider(
+    {} as never,
+    {} as never,
+    registry
+  ).onModuleInit();
+  new DocGrantsRealtimeProvider(
+    {} as never,
+    {} as never,
+    {} as never,
+    registry
+  ).onModuleInit();
+  new UserRealtimeProvider({} as never, registry).onModuleInit();
+  new NotificationRealtimeProvider({} as never, registry).onModuleInit();
+  new CommentRealtimeProvider(
+    {} as never,
+    {} as never,
+    registry
+  ).onModuleInit();
+  new CopilotEmbeddingRealtimeProvider(
+    {} as never,
+    {} as never,
+    registry,
+    {} as never
+  ).onModuleInit();
+  new CopilotTranscriptRealtimeProvider(
+    {} as never,
+    {} as never,
+    registry
+  ).onModuleInit();
+  new QuotaStateRealtimeProvider(
+    {} as never,
+    {} as never,
+    registry
+  ).onModuleInit();
+
+  t.deepEqual(
+    REALTIME_GATEWAY_REQUIRED_REQUESTS.filter(
+      name => !registry.hasRequest(name)
+    ),
+    []
+  );
+  t.deepEqual(
+    REALTIME_GATEWAY_REQUIRED_TOPICS.filter(name => !registry.hasTopic(name)),
+    []
   );
 });
 
@@ -349,8 +447,11 @@ test('workspace realtime providers register access, config, members and invite l
       count: async () => 1,
     },
   };
-  const workspaceService = {
-    isTeamWorkspace: async () => true,
+  const quotaState = {
+    getWorkspaceQuotaState: async () => ({ known: true, plan: 'team' }),
+    reconcileWorkspaceQuotaState: async () => {
+      throw new Error('workspace.access.get should not reconcile quota state');
+    },
   };
   const cache = {
     get: async () => ({ inviteId: 'invite-link' }),
@@ -362,7 +463,7 @@ test('workspace realtime providers register access, config, members and invite l
 
   new WorkspaceAccessRealtimeProvider(
     ac,
-    workspaceService as never,
+    quotaState as never,
     registry
   ).onModuleInit();
   new WorkspaceConfigRealtimeProvider(
@@ -830,6 +931,76 @@ test('quota realtime provider exposes effective quota state snapshots', async t 
       .room(user, { workspaceId: 'space' }),
     realtimeWorkspaceQuotaStateRoom('space')
   );
+});
+
+test('copilot embedding realtime provider uses lightweight model reads', async t => {
+  const registry = new RealtimeRegistry();
+  const published: unknown[][] = [];
+  const assertions: unknown[] = [];
+  const ac = {
+    user(userId: string) {
+      return {
+        workspace(workspaceId: string) {
+          return {
+            allowLocal() {
+              return this;
+            },
+            async assert(action: string) {
+              assertions.push({ userId, workspaceId, action });
+            },
+          };
+        },
+      };
+    },
+  } as unknown as PermissionAccess;
+  const models = {
+    copilotWorkspace: {
+      checkEmbeddingAvailable: async () => true,
+      getEmbeddingStatus: async () => ({ total: 5, embedded: 3 }),
+    },
+    copilotContext: {
+      getConfig: async () => ({ workspaceId: 'space' }),
+    },
+  };
+  const publisher = {
+    publish: (...args: unknown[]) => published.push(args),
+  } as unknown as RealtimePublisher;
+
+  const provider = new CopilotEmbeddingRealtimeProvider(
+    ac,
+    models as never,
+    registry,
+    publisher
+  );
+  provider.onModuleInit();
+
+  t.deepEqual(
+    await registry
+      .getRequest('workspace.embedding.progress.get')
+      .handle(user, { workspaceId: 'space' }),
+    {
+      total: 5,
+      embedded: 3,
+    }
+  );
+  t.is(
+    registry
+      .getTopic('workspace.embedding.progress.changed')
+      .room(user, { workspaceId: 'space' }),
+    realtimeWorkspaceEmbeddingProgressRoom('space')
+  );
+
+  await provider.onDocEmbedFinished({ contextId: 'context', docId: 'doc' });
+
+  t.deepEqual(assertions, [
+    { userId: 'u1', workspaceId: 'space', action: 'Workspace.Copilot' },
+  ]);
+  t.deepEqual(published[0], [
+    'workspace.embedding.progress.changed',
+    { workspaceId: 'space' },
+    { reason: 'finished' },
+    { room: realtimeWorkspaceEmbeddingProgressRoom('space') },
+  ]);
 });
 
 test('copilot transcript realtime provider registers task live query handlers', async t => {

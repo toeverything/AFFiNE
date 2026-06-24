@@ -14,6 +14,7 @@ import { CopilotController } from './controller';
 import { WorkspaceMcpController } from './mcp/controller';
 import {
   COPILOT_API_PROVIDERS,
+  COPILOT_CONTEXT_REALTIME_PROVIDERS,
   COPILOT_FEATURE_PROVIDERS,
   COPILOT_KERNEL_PROVIDERS,
   COPILOT_TRANSCRIPT_REALTIME_PROVIDERS,
@@ -42,6 +43,12 @@ export class CopilotKernelModule {}
   providers: [...COPILOT_TRANSCRIPT_REALTIME_PROVIDERS],
 })
 export class CopilotRealtimeModule {}
+
+@Module({
+  imports: [PermissionModule],
+  providers: [...COPILOT_CONTEXT_REALTIME_PROVIDERS],
+})
+export class CopilotEmbeddingRealtimeModule {}
 
 @Module({
   imports: [...COPILOT_SHARED_IMPORTS, CopilotKernelModule],

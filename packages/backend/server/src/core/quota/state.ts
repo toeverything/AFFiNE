@@ -29,6 +29,12 @@ export class QuotaStateService {
     private readonly event: EventBus
   ) {}
 
+  async getWorkspaceQuotaState(workspaceId: string) {
+    return await this.db.effectiveWorkspaceQuotaState.findUnique({
+      where: { workspaceId },
+    });
+  }
+
   async reconcileUserQuotaState(
     userId: string,
     options: { emit?: boolean } = {}
