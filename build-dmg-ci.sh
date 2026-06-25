@@ -64,6 +64,28 @@ ensure_yarn() {
   require_cmd yarn
 }
 
+configure_electron_zip_cache() {
+  local repo_root="$1"
+  local cache_dir="$repo_root/.cache/electron-zips"
+
+  if [[ -n "${ELECTRON_FORGE_ELECTRON_ZIP_DIR:-}" ]]; then
+    log "Using preconfigured Electron zip cache: $ELECTRON_FORGE_ELECTRON_ZIP_DIR"
+    return 0
+  fi
+
+  local electron_version
+  electron_version="$(node -p 'require("electron/package.json").version')"
+
+  local expected_zip="$cache_dir/electron-v${electron_version}-darwin-${ELECTRON_ARCH}.zip"
+  if [[ -f "$expected_zip" ]]; then
+    export ELECTRON_FORGE_ELECTRON_ZIP_DIR="$cache_dir"
+    log "Using local Electron zip cache: $expected_zip"
+    return 0
+  fi
+
+  log "Local Electron zip cache not found at $expected_zip; Forge may fall back to network download"
+}
+
 backup_file() {
   local file="$1"
   cp "$file" "$file.cursor-backup"
@@ -74,6 +96,40 @@ restore_file_if_backed_up() {
   if [[ -f "$file.cursor-backup" ]]; then
     mv "$file.cursor-backup" "$file"
   fi
+}
+
+cleanup_electron_node_modules_symlink() {
+  local electron_node_modules="$1/packages/frontend/apps/electron/node_modules"
+
+  if [[ -L "$electron_node_modules" ]]; then
+    rm "$electron_node_modules"
+  fi
+}
+
+cleanup_stale_dmg_mount() {
+  local mount_path="$1"
+
+  if [[ ! -d "$mount_path" ]]; then
+    return 0
+  fi
+
+  log "Detaching stale DMG mount: $mount_path"
+  if hdiutil detach "$mount_path" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  log "Retrying stale DMG mount detach with force: $mount_path"
+  hdiutil detach -force "$mount_path" >/dev/null 2>&1 || true
+}
+
+cleanup_stale_affine_mounts() {
+  local product_name="$1"
+
+  for volume_name in "AFFiNE" "$product_name"; do
+    for suffix in '' ' 1' ' 2' ' 3' ' 4' ' 5' ' 6' ' 7' ' 8' ' 9'; do
+      cleanup_stale_dmg_mount "/Volumes/${volume_name}${suffix}"
+    done
+  done
 }
 
 cleanup() {
@@ -127,20 +183,16 @@ text = path.read_text()
 lines = text.splitlines()
 result = []
 seen_nm_mode = False
-seen_nm_hoisting = False
 for line in lines:
     if line.startswith('nmMode:'):
         result.append('nmMode: classic')
         seen_nm_mode = True
     elif line.startswith('nmHoistingLimits:'):
-        result.append('nmHoistingLimits: workspaces')
-        seen_nm_hoisting = True
+        continue
     else:
         result.append(line)
 if not seen_nm_mode:
     result.append('nmMode: classic')
-if not seen_nm_hoisting:
-    result.append('nmHoistingLimits: workspaces')
 path.write_text('\n'.join(result) + '\n')
 PY
 }
@@ -204,6 +256,7 @@ main() {
   require_cmd codesign
   require_cmd spctl
   require_cmd cargo
+  require_cmd cmake
   require_cmd base64
 
   local repo_root
@@ -222,6 +275,7 @@ main() {
   export NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=14384}"
   export MACOSX_DEPLOYMENT_TARGET="${MACOSX_DEPLOYMENT_TARGET:-12.0}"
   export RELEASE_VERSION="${RELEASE_VERSION:-$(node -p 'require("./packages/frontend/apps/electron/package.json").version')}"
+  configure_electron_zip_cache "$repo_root"
   unset SKIP_WEB_BUILD
   unset SKIP_GENERATE_ASSETS
 
@@ -243,6 +297,7 @@ main() {
 
   patch_forge_config "$FORGE_CONFIG_FILE"
   patch_yarnrc_for_packaging "$YARNRC_FILE"
+  cleanup_electron_node_modules_symlink "$repo_root"
 
   log "Installing dependencies with packaging-compatible Yarn layout"
   yarn install
@@ -261,15 +316,16 @@ main() {
     yarn affine @affine/electron generate-assets
   fi
 
-  log "Making signed and notarized DMG"
-  SKIP_WEB_BUILD=1 SKIP_GENERATE_ASSETS=1 yarn affine @affine/electron make --platform=darwin --arch="$ELECTRON_ARCH"
-
   local product_name
   if [[ "$BUILD_TYPE" == "stable" ]]; then
     product_name="AFFiNE"
   else
     product_name="AFFiNE-$BUILD_TYPE"
   fi
+
+  cleanup_stale_affine_mounts "$product_name"
+  log "Making signed and notarized DMG"
+  SKIP_WEB_BUILD=1 SKIP_GENERATE_ASSETS=1 yarn affine @affine/electron make --platform=darwin --arch="$ELECTRON_ARCH"
 
   local app_path
   app_path="$repo_root/packages/frontend/apps/electron/out/$BUILD_TYPE/${product_name}-darwin-${ELECTRON_ARCH}/${product_name}.app"

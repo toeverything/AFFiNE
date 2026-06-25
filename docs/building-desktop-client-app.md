@@ -13,6 +13,7 @@
 - [Trigger the signed DMG workflow](#trigger-the-signed-dmg-workflow)
 - [Standalone local scripts](#standalone-local-scripts)
 - [Outputs and verification](#outputs-and-verification)
+- [Bundled local AI resources on Apple Silicon](#bundled-local-ai-resources-on-apple-silicon)
 
 ## What gets built
 
@@ -40,6 +41,7 @@ Before building desktop artifacts, make sure you have:
 - Node.js 22
 - Corepack enabled
 - Rust toolchain installed
+- CMake installed
 - Xcode command line tools installed on macOS
 
 You can use the repository's pinned Node version:
@@ -76,7 +78,7 @@ BUILD_TYPE=canary RELEASE_VERSION=$(node -p 'require("./packages/frontend/apps/e
 
 ```bash
 yarn config set nmMode classic
-yarn config set nmHoistingLimits workspaces
+yarn config delete nmHoistingLimits || true
 yarn install
 ```
 
@@ -85,13 +87,13 @@ yarn install
 For macOS:
 
 ```bash
-BUILD_TYPE=canary SKIP_WEB_BUILD=1 HOIST_NODE_MODULES=1 yarn affine @affine/electron make --platform=darwin --arch=arm64
+BUILD_TYPE=canary SKIP_WEB_BUILD=1 yarn affine @affine/electron make --platform=darwin --arch=arm64
 ```
 
 For Linux:
 
 ```bash
-BUILD_TYPE=canary SKIP_WEB_BUILD=1 HOIST_NODE_MODULES=1 yarn affine @affine/electron make --platform=linux --arch=x64
+BUILD_TYPE=canary SKIP_WEB_BUILD=1 yarn affine @affine/electron make --platform=linux --arch=x64
 ```
 
 The generated desktop artifacts are written under:
@@ -347,17 +349,25 @@ If you do not want to route through the GitHub `Release` workflow at all, two he
 - `build-dmg.sh`: interactive local flow
 - `build-dmg-ci.sh`: non-interactive local/CI flow
 
+Both scripts now clean up stale mounted AFFiNE DMG volumes before they call Electron Forge `make`. This guards against `hdiutil detach` failures caused by leftover mounts such as `/Volumes/AFFiNE`, `/Volumes/AFFiNE 1`, or `/Volumes/AFFiNE-canary` from a previous packaging attempt.
+
 ### Interactive local flow
 
 ```bash
 ./build-dmg.sh
 ```
 
+`build-dmg.sh` now supports two macOS signing modes automatically based on the certificate available in your keychain:
+
+1. `Developer ID Application`: signed and notarized DMG flow
+2. `Apple Development`: local-only `.app` packaging flow for the current Mac
+
 This path is useful when:
 
 - you are building on a local Mac
 - your signing certificate already exists in your keychain
 - you prefer prompts over preloaded environment variables
+- you may only have `Apple Development` access and still need a locally signed `.app`
 
 ### Non-interactive local flow
 
@@ -408,6 +418,8 @@ The macOS release pipeline validates:
 - `spctl` accepts the app
 - `stapler validate` succeeds for both app and DMG
 
+These checks apply to the `Developer ID Application + notarization` release path. They are not the right acceptance criteria for a local-only `Apple Development` build.
+
 ### Local verification commands
 
 If you want to verify a generated DMG manually on macOS:
@@ -417,3 +429,60 @@ codesign -dv --verbose=4 /path/to/AFFiNE.dmg
 xcrun stapler validate /path/to/AFFiNE.dmg
 spctl -a -t open --context context:primary-signature -vv /path/to/AFFiNE.dmg
 ```
+
+## Bundled local AI resources on Apple Silicon
+
+Apple Silicon macOS desktop builds stage the local Gemma sidecar and model into the Electron app resources before packaging. This staging only applies to `darwin arm64` packaging.
+
+### Expected staged paths before packaging
+
+```text
+packages/frontend/apps/electron/resources/local-ai/bin/llama-server
+packages/frontend/apps/electron/resources/local-ai/models/gemma-3-4b-it.gguf
+```
+
+### Run the staging script manually
+
+```bash
+node packages/frontend/apps/electron/scripts/stage-local-ai-assets.mjs
+```
+
+The script copies from:
+
+```text
+vendor/local-ai/darwin-arm64/llama-server
+vendor/local-ai/darwin-arm64/gemma-3-4b-it.gguf
+```
+
+### Post-build verification commands
+
+After a successful Apple Silicon build, verify the staged resources inside the generated `.app` bundle:
+
+```bash
+APP_PATH="packages/frontend/apps/electron/out/canary/AFFiNE-canary-darwin-arm64/AFFiNE-canary.app"
+test -f "$APP_PATH/Contents/Resources/local-ai/bin/llama-server"
+test -f "$APP_PATH/Contents/Resources/local-ai/models/gemma-3-4b-it.gguf"
+```
+
+If the app was signed with `Developer ID Application`, also verify Gatekeeper acceptance:
+
+```bash
+spctl -a -t exec -vv "$APP_PATH"
+```
+
+If the app was signed with `Apple Development`, verify local signature integrity instead:
+
+```bash
+codesign --verify --deep --strict --verbose=4 "$APP_PATH"
+xattr -dr com.apple.quarantine "$APP_PATH" || true
+```
+
+Important:
+
+- do not take an old packaged Electron app and overwrite it with a bare manual `codesign --force --deep`
+- Electron local builds depend on the default `@electron/osx-sign` entitlements such as `com.apple.security.cs.allow-jit`
+- if you strip those entitlements during a manual re-sign, the app may pass `codesign --verify` but still crash immediately on launch
+
+`Apple Development` builds are suitable for local testing on the current Mac, but `spctl` rejection is expected because they are not Developer ID distribution builds.
+
+If you are building a different `BUILD_TYPE`, adjust the `APP_PATH` segment accordingly.

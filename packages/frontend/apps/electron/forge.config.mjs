@@ -1,4 +1,4 @@
-import cp from 'node:child_process';
+import cp, { execFileSync } from 'node:child_process';
 import { readdir, rm, symlink } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -18,7 +18,7 @@ import {
   icoPath,
   platform,
   productName,
-} from './scripts/make-env.js';
+} from './scripts/make-env.ts';
 
 const fromBuildIdentifier = utils.fromBuildIdentifier;
 
@@ -171,6 +171,7 @@ const makers = [
         format: 'ULMO',
         icon: icnsPath,
         name: 'AFFiNE',
+        title: productName,
         'icon-size': 128,
         background: path.join(
           __dirname,
@@ -347,6 +348,9 @@ export default {
     extraResource: [
       './resources/app-update.yml',
       ...(platform === 'linux' ? ['./resources/affine.metainfo.xml'] : []),
+      ...(platform === 'darwin' && arch === 'arm64'
+        ? ['./resources/local-ai']
+        : []),
     ],
     protocols: [
       {
@@ -409,9 +413,16 @@ export default {
         });
 
         await symlink(
-          path.join(__dirname, '..', '..', '..', 'node_modules'),
+          path.join(__dirname, '..', '..', '..', '..', 'node_modules'),
           path.join(__dirname, 'node_modules')
         );
+      }
+
+      if (platform === 'darwin' && arch === 'arm64') {
+        execFileSync('node', ['./scripts/stage-local-ai-assets.mjs'], {
+          cwd: __dirname,
+          stdio: 'inherit',
+        });
       }
     },
     generateAssets: async (_, platform, arch) => {
