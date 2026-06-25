@@ -32,18 +32,4 @@ Note:
 
 ## Returns
 
-> (`_`, `context`): `ClassAccessorDecoratorResult`\<`T`, `V`\>
-
-### Parameters
-
-#### \_
-
-`unknown`
-
-#### context
-
-`ClassAccessorDecoratorContext`
-
-### Returns
-
-`ClassAccessorDecoratorResult`\<`T`, `V`\>
+(`_`, `context`) => `ClassAccessorDecoratorResult`\<`T`, `V`\>

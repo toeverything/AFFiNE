@@ -424,12 +424,10 @@ jobs:
     if: >-
       ${{
         always() &&
-        inputs.desktop_macos &&
-        inputs.desktop_linux &&
-        inputs.desktop_windows &&
+        (inputs.desktop_macos || inputs.desktop_linux || inputs.desktop_windows) &&
         needs.before-make.result == 'success' &&
-        needs.make-distribution-macos.result == 'success' &&
-        needs.make-distribution-linux.result == 'success' &&
+        (!inputs.desktop_macos || needs.make-distribution-macos.result == 'success') &&
+        (!inputs.desktop_linux || needs.make-distribution-linux.result == 'success') &&
         (
           !inputs.require-windows-signing ||
           (
@@ -457,11 +455,13 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Download Artifacts (macos-x64)
+        if: ${{ inputs.desktop_macos }}
         uses: actions/download-artifact@v4
         with:
           name: affine-darwin-x64-builds
           path: ./release
       - name: Download Artifacts (macos-arm64)
+        if: ${{ inputs.desktop_macos }}
         uses: actions/download-artifact@v4
         with:
           name: affine-darwin-arm64-builds
@@ -479,6 +479,7 @@ jobs:
           name: affine-win32-arm64-builds
           path: ./release
       - name: Download Artifacts (linux-x64)
+        if: ${{ inputs.desktop_linux }}
         uses: actions/download-artifact@v4
         with:
           name: affine-linux-x64-builds

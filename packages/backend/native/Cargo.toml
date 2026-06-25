@@ -16,7 +16,7 @@ affine_common = { workspace = true, features = [
   "ydoc-loader",
 ] }
 anyhow = { workspace = true }
-aws-sdk-s3 = "1.115"
+aws-sdk-s3 = "1.137.0"
 base64 = { workspace = true }
 chrono = { workspace = true }
 doc_extractor = { workspace = true }

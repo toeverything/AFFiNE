@@ -57,7 +57,7 @@ Toggle the selection state of single element
 
 ##### element
 
-`string` | `GfxModel`
+`string` \| `GfxModel`
 
 #### Returns
 
