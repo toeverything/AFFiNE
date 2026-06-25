@@ -32,14 +32,44 @@ const electronApis = vi.hoisted(() => ({
         >;
       }
     | undefined,
+  localAI: undefined as
+    | {
+        getStatus?: () => Promise<unknown>;
+        ensureReady: () => Promise<unknown>;
+      }
+    | undefined,
 }));
 
 const createWorkspaceByokLocalLeaseMutation = vi.hoisted(() =>
   Symbol('createWorkspaceByokLocalLeaseMutation')
 );
 
+const desktopRoutePolicyMocks = vi.hoisted(() => ({
+  resolveDesktopChatLane: vi.fn(),
+}));
+
+const localRuntimeClientMocks = vi.hoisted(() => ({
+  streamDesktopLocalChat: vi.fn(),
+}));
+
+const aiModelProviderState = vi.hoisted(() => ({
+  hasService: false,
+  service: {
+    modelId: { value: 'gemma-3-4b-it' },
+    getActiveModelId: vi.fn(),
+    getExecutionPreference: vi.fn(),
+  },
+}));
+
 vi.mock('@affine/electron-api', () => ({
   apis: electronApis,
+}));
+
+vi.mock('./desktop-route-policy', () => desktopRoutePolicyMocks);
+vi.mock('./local-runtime-client', () => localRuntimeClientMocks);
+vi.mock('./ai-model-provider', () => ({
+  hasAIModelService: () => aiModelProviderState.hasService,
+  getAIModelService: () => aiModelProviderState.service,
 }));
 
 vi.mock('@affine/graphql', () => ({
@@ -94,10 +124,24 @@ function createClient(
   } as unknown as CopilotClient;
 }
 
+async function* stream(chunks: string[]) {
+  for (const chunk of chunks) {
+    yield chunk;
+  }
+}
+
 async function drain(stream: AsyncIterable<unknown>) {
   for await (const chunk of stream) {
     void chunk;
   }
+}
+
+async function collectText(stream: AsyncIterable<string>) {
+  const chunks: string[] = [];
+  for await (const chunk of stream) {
+    chunks.push(chunk);
+  }
+  return chunks;
 }
 
 async function drainActionResult(
@@ -108,9 +152,17 @@ async function drainActionResult(
   await drain(stream as AsyncIterable<unknown>);
 }
 
+beforeEach(() => {
+  aiModelProviderState.hasService = false;
+  aiModelProviderState.service.modelId.value = 'gemma-3-4b-it';
+  aiModelProviderState.service.getActiveModelId.mockReset();
+  aiModelProviderState.service.getExecutionPreference.mockReset();
+});
+
 describe('runtime request transport BYOK local lease handling', () => {
   beforeEach(() => {
     vi.stubGlobal('BUILD_CONFIG', { isElectron: true });
+    electronApis.localAI = undefined;
     electronApis.byokStorage = {
       isSupported: vi.fn().mockResolvedValue(true),
       getWorkspaceLeaseProviders: vi.fn().mockResolvedValue([
@@ -193,6 +245,236 @@ describe('AIRequestService action definitions', () => {
   beforeEach(() => {
     vi.stubGlobal('BUILD_CONFIG', { isElectron: false });
     electronApis.byokStorage = undefined;
+    electronApis.localAI = undefined;
+    desktopRoutePolicyMocks.resolveDesktopChatLane.mockReset();
+    localRuntimeClientMocks.streamDesktopLocalChat.mockReset();
+    localRuntimeClientMocks.streamDesktopLocalChat.mockResolvedValue(
+      stream(['local chunk'])
+    );
+  });
+
+  test('routes gemma chat through local transport without creating a cloud session when ready', async () => {
+    const client = createClient();
+    const service = new AIRequestService(client);
+    const localStatus = { state: 'ready', canRun: true };
+
+    electronApis.localAI = {
+      ensureReady: vi.fn().mockResolvedValue(localStatus),
+    };
+    desktopRoutePolicyMocks.resolveDesktopChatLane.mockResolvedValue({
+      lane: 'local',
+      reason: 'desktop_gemma_ready',
+    });
+
+    const result = (await service.executeAction('chat', {
+      workspaceId: 'workspace-1',
+      input: 'hello',
+      modelId: 'gemma-3-4b-it',
+      stream: true,
+    })) as AsyncIterable<string>;
+
+    await expect(collectText(result)).resolves.toEqual(['local chunk']);
+    expect(
+      desktopRoutePolicyMocks.resolveDesktopChatLane
+    ).toHaveBeenCalledTimes(1);
+    expect(desktopRoutePolicyMocks.resolveDesktopChatLane).toHaveBeenCalledWith(
+      {
+        requestAction: 'chat',
+        modelId: 'gemma-3-4b-it',
+        retry: undefined,
+        localStatus,
+      }
+    );
+    expect(localRuntimeClientMocks.streamDesktopLocalChat).toHaveBeenCalledWith(
+      expect.objectContaining({
+        modelId: 'gemma-3-4b-it',
+        executionLane: 'local',
+        localCapable: true,
+        sessionId: undefined,
+      })
+    );
+    expect(client.createSession).not.toHaveBeenCalled();
+    expect(client.chatTextStream).not.toHaveBeenCalled();
+  });
+
+  test('keeps local transport when local status probe fails', async () => {
+    const client = createClient();
+    const service = new AIRequestService(client);
+    const error = new Error('probe failed');
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    electronApis.localAI = {
+      ensureReady: vi.fn().mockRejectedValue(error),
+    };
+
+    const result = (await service.executeAction('chat', {
+      workspaceId: 'workspace-1',
+      input: 'hello',
+      modelId: 'gemma-3-4b-it',
+      executionLane: 'local',
+      stream: true,
+    })) as AsyncIterable<string>;
+
+    await expect(collectText(result)).resolves.toEqual(['local chunk']);
+    expect(localRuntimeClientMocks.streamDesktopLocalChat).toHaveBeenCalledWith(
+      expect.objectContaining({
+        modelId: 'gemma-3-4b-it',
+        executionLane: 'local',
+        localCapable: undefined,
+        sessionId: undefined,
+      })
+    );
+    expect(client.createSession).not.toHaveBeenCalled();
+    expect(client.chatTextStream).not.toHaveBeenCalled();
+    expect(consoleWarn).toHaveBeenCalledWith(
+      'Desktop local AI status probe failed, keeping local execution lane',
+      error
+    );
+    consoleWarn.mockRestore();
+  });
+
+  test('does not fall back to server transport when the explicit local request fails before yielding', async () => {
+    const client = createClient();
+    const service = new AIRequestService(client);
+    const error = new Error('local runtime failed');
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    electronApis.localAI = {
+      ensureReady: vi.fn().mockResolvedValue({ state: 'ready', canRun: true }),
+    };
+    desktopRoutePolicyMocks.resolveDesktopChatLane.mockResolvedValue({
+      lane: 'local',
+      reason: 'desktop_gemma_ready',
+    });
+    localRuntimeClientMocks.streamDesktopLocalChat.mockRejectedValueOnce(error);
+
+    const result = (await service.executeAction('chat', {
+      workspaceId: 'workspace-1',
+      input: 'hello',
+      modelId: 'gemma-3-4b-it',
+      executionLane: 'local',
+      stream: true,
+    })) as AsyncIterable<string>;
+
+    await expect(collectText(result)).rejects.toThrow('local runtime failed');
+    expect(client.createSession).not.toHaveBeenCalled();
+    expect(client.chatTextStream).not.toHaveBeenCalled();
+    expect(consoleWarn).not.toHaveBeenCalledWith(
+      'Desktop local AI request failed, falling back to server',
+      error
+    );
+    consoleWarn.mockRestore();
+  });
+
+  test('routes brainstormMindmap through local Gemma when execution lane is local', async () => {
+    const client = createClient();
+    const service = new AIRequestService(client);
+    const localStatus = { state: 'ready', canRun: true };
+
+    electronApis.localAI = {
+      ensureReady: vi.fn().mockResolvedValue(localStatus),
+    };
+    desktopRoutePolicyMocks.resolveDesktopChatLane.mockResolvedValue({
+      lane: 'local',
+      reason: 'desktop_gemma_ready',
+    });
+
+    const result = (await service.executeAction('brainstormMindmap', {
+      workspaceId: 'workspace-1',
+      input: 'make a map',
+      modelId: 'gemma-3-4b-it',
+      executionLane: 'local',
+      stream: true,
+    })) as AsyncIterable<string>;
+
+    await expect(collectText(result)).resolves.toEqual(['local chunk']);
+    expect(localRuntimeClientMocks.streamDesktopLocalChat).toHaveBeenCalledWith(
+      expect.objectContaining({
+        modelId: 'gemma-3-4b-it',
+        executionLane: 'local',
+        content: 'make a map',
+        sessionId: undefined,
+      })
+    );
+    expect(client.createSession).not.toHaveBeenCalled();
+    expect(client.chatTextStream).not.toHaveBeenCalled();
+  });
+
+  test('falls back brainstormMindmap to server when local Gemma is unavailable', async () => {
+    const client = createClient();
+    const service = new AIRequestService(client);
+    const localStatus = {
+      state: 'unsupported',
+      canRun: false,
+      fallbackToServer: true,
+      reason: 'resources_missing',
+      detail: 'binary missing',
+      modelId: 'gemma-3-4b-it-local',
+    };
+
+    electronApis.localAI = {
+      ensureReady: vi.fn().mockResolvedValue(localStatus),
+    };
+    desktopRoutePolicyMocks.resolveDesktopChatLane.mockResolvedValue({
+      lane: 'server',
+      reason: 'local_runtime_unavailable',
+    });
+
+    await drainActionResult(
+      (await service.executeAction('brainstormMindmap', {
+        workspaceId: 'workspace-1',
+        input: 'make a map',
+        modelId: 'gemma-3-4b-it',
+        executionLane: 'local',
+        stream: true,
+      })) as AsyncIterable<string>
+    );
+
+    expect(
+      localRuntimeClientMocks.streamDesktopLocalChat
+    ).not.toHaveBeenCalled();
+    expect(client.createSession).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspaceId: 'workspace-1',
+        promptName: 'mindmap.generate',
+      })
+    );
+    expect(client.chatTextStream).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sessionId: 'session:mindmap.generate',
+        actionId: 'mindmap.generate',
+        executionLane: 'server',
+      }),
+      Endpoint.Action
+    );
+  });
+
+  test('blocks image generation when local Gemma is selected on desktop', async () => {
+    const client = createClient();
+    const service = new AIRequestService(client);
+
+    electronApis.localAI = {
+      ensureReady: vi.fn(),
+    };
+    aiModelProviderState.hasService = true;
+    aiModelProviderState.service.modelId.value = 'gemma-3-4b-it';
+    aiModelProviderState.service.getActiveModelId.mockReturnValue(
+      'gemma-3-4b-it'
+    );
+    aiModelProviderState.service.getExecutionPreference.mockReturnValue(
+      'local'
+    );
+
+    await expect(
+      service.executeAction('createImage', {
+        workspaceId: 'workspace-1',
+        input: 'draw a sunset',
+      })
+    ).rejects.toThrow(
+      'This action is not supported by Local Gemma yet. Please log in to AFFiNE Cloud and switch Chat preference from Local to Cloud to continue.'
+    );
+    expect(client.createSession).not.toHaveBeenCalled();
+    expect(client.imagesStream).not.toHaveBeenCalled();
   });
 
   test('routes action-stream requests through action endpoint', async () => {

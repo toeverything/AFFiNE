@@ -1,3 +1,4 @@
+import { DESKTOP_OFFLINE_GEMMA_MODEL_ID } from '@affine/core/modules/ai-button/services/models';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
 import type { EditorHost } from '@blocksuite/affine/std';
 import { baseTheme } from '@toeverything/theme';
@@ -7,8 +8,36 @@ import { choose } from 'lit/directives/choose.js';
 
 import { type AIItemGroupConfig } from '../../../../components/ai-item/types.js';
 import { AIErrorType } from '../../../../provider';
+import {
+  getAIModelService,
+  hasAIModelService,
+} from '../../../../runtime/request/ai-model-provider';
 import type { AIPanelErrorConfig, CopyConfig } from '../../type.js';
 import { filterAIItemGroup } from '../../utils.js';
+
+const LOCAL_IMAGE_ACTION_UNSUPPORTED_MESSAGE =
+  'This action is not supported by Local Gemma yet.';
+const LOCAL_AI_UNAVAILABLE_MESSAGE_PREFIX = 'Desktop local AI is not ready';
+
+function isLocalAIUnavailableMessage(message?: string) {
+  return message?.startsWith(LOCAL_AI_UNAVAILABLE_MESSAGE_PREFIX) ?? false;
+}
+
+function switchActiveModelToCloud() {
+  if (!hasAIModelService()) {
+    return;
+  }
+
+  const modelService = getAIModelService();
+  const activeModelId =
+    modelService.getActiveModelId(modelService.modelId.value) ??
+    modelService.modelId.value ??
+    DESKTOP_OFFLINE_GEMMA_MODEL_ID;
+
+  if (modelService.getExecutionPreference(activeModelId) === 'local') {
+    modelService.setExecutionPreference(activeModelId, 'cloud');
+  }
+}
 
 export class AIPanelError extends WithDisposable(LitElement) {
   static override styles = css`
@@ -128,7 +157,15 @@ export class AIPanelError extends WithDisposable(LitElement) {
   private readonly _getResponseGroup = () => {
     let responseGroup: AIItemGroupConfig[] = [];
     const errorType = this.config.error?.type;
+    const errorMessage = this.config.error?.message;
     if (errorType && errorType !== AIErrorType.GeneralNetworkError) {
+      return responseGroup;
+    }
+
+    if (
+      errorMessage?.startsWith(LOCAL_IMAGE_ACTION_UNSUPPORTED_MESSAGE) ||
+      isLocalAIUnavailableMessage(errorMessage)
+    ) {
       return responseGroup;
     }
 
@@ -181,6 +218,29 @@ export class AIPanelError extends WithDisposable(LitElement) {
       // default error handler
       () => {
         const tip = this.config.error?.message;
+        if (
+          tip?.startsWith(LOCAL_IMAGE_ACTION_UNSUPPORTED_MESSAGE) ||
+          isLocalAIUnavailableMessage(tip)
+        ) {
+          return html`
+            <div class="error-info">${tip}</div>
+            <div class="action-button-group">
+              <div @click=${this.config.cancel} class="action-button">
+                <span>Cancel</span>
+              </div>
+              <div
+                @click=${() => {
+                  switchActiveModelToCloud();
+                  this.config.login();
+                }}
+                class="action-button primary"
+              >
+                <span>Login & Switch to Cloud</span>
+              </div>
+            </div>
+          `;
+        }
+
         const error = tip
           ? html`<span class="error-tip">
               An error occurred

@@ -1,4 +1,5 @@
 import type { NbstoreService } from '@affine/core/modules/storage';
+import { apis } from '@affine/electron-api';
 import {
   ContextCategories,
   type CopilotChatHistoryFragment,
@@ -13,16 +14,20 @@ import {
 import { Subject } from 'rxjs';
 
 import type { ActionEventType } from '../../provider';
+import { GeneralNetworkError } from '../../provider/error';
 import {
   type AIActionId,
   type AIActionOptions,
   getActionDefinition,
   resolveDefinitionValue,
 } from './action-definitions';
+import { getAIModelService, hasAIModelService } from './ai-model-provider';
 import {
   CopilotClient,
   type CopilotClient as CopilotClientType,
 } from './copilot-client';
+import { enrichDesktopChatActionOptions } from './desktop-chat-options';
+import { resolveDesktopChatLane } from './desktop-route-policy';
 import { textToText, toImage } from './message-transport';
 
 type CreateSessionOptions = BlockSuitePresets.AICreateSessionOptions;
@@ -341,7 +346,141 @@ export class AIRequestService {
     };
   }
 
+  private async resolveChatTransport(
+    id: AIActionId,
+    options: AIActionOptions
+  ): Promise<
+    Pick<Parameters<typeof textToText>[0], 'executionLane' | 'localCapable'>
+  > {
+    if (options.executionLane === 'server') {
+      return {};
+    }
+
+    if (options.executionLane === 'local') {
+      try {
+        const localStatus = (await apis?.localAI?.ensureReady?.()) ?? null;
+        const decision = await resolveDesktopChatLane({
+          requestAction: id,
+          modelId: options.modelId,
+          retry: options.retry,
+          localStatus,
+        });
+
+        if (decision.lane === 'local') {
+          return { executionLane: 'local', localCapable: true };
+        }
+
+        return id === 'chat'
+          ? { executionLane: 'local' }
+          : { executionLane: 'server' };
+      } catch (error) {
+        console.warn(
+          id === 'chat'
+            ? 'Desktop local AI status probe failed, keeping local execution lane'
+            : 'Desktop local AI status probe failed, falling back to server',
+          error
+        );
+        return id === 'chat'
+          ? { executionLane: 'local' }
+          : { executionLane: 'server' };
+      }
+    }
+
+    if (id !== 'chat') {
+      return {};
+    }
+
+    const initialDecision = await resolveDesktopChatLane({
+      requestAction: id,
+      modelId: options.modelId,
+      retry: options.retry,
+      localStatus: null,
+    });
+
+    if (initialDecision.reason !== 'local_runtime_unavailable') {
+      return initialDecision.lane === 'local'
+        ? { executionLane: 'local', localCapable: true }
+        : {};
+    }
+
+    try {
+      const localStatus = (await apis?.localAI?.getStatus?.()) ?? null;
+      const finalDecision = await resolveDesktopChatLane({
+        requestAction: id,
+        modelId: options.modelId,
+        retry: options.retry,
+        localStatus,
+      });
+
+      return finalDecision.lane === 'local'
+        ? { executionLane: 'local', localCapable: true }
+        : {};
+    } catch (error) {
+      console.warn(
+        'Desktop local AI status probe failed, falling back to server',
+        error
+      );
+      return {};
+    }
+  }
+
+  private createLocalChatStreamWithServerFallback(
+    localTransportOptions: Parameters<typeof textToText>[0],
+    buildServerTransportOptions: () => Promise<
+      Parameters<typeof textToText>[0]
+    >,
+    signal?: AbortSignal,
+    allowServerFallback = true
+  ): AsyncIterable<string> {
+    return {
+      async *[Symbol.asyncIterator]() {
+        let yieldedChunk = false;
+
+        try {
+          const localStream = textToText(
+            localTransportOptions
+          ) as AsyncIterable<string>;
+          for await (const chunk of localStream) {
+            yieldedChunk = true;
+            yield chunk;
+          }
+          return;
+        } catch (error) {
+          if (yieldedChunk || signal?.aborted || !allowServerFallback) {
+            throw error;
+          }
+
+          console.warn(
+            'Desktop local AI request failed, falling back to server',
+            error
+          );
+        }
+
+        const serverTransportOptions = await buildServerTransportOptions();
+        yield* textToText(serverTransportOptions) as AsyncIterable<string>;
+      },
+    };
+  }
+
+  private shouldBlockUnsupportedLocalImageAction(options: AIActionOptions) {
+    if (!apis?.localAI || !hasAIModelService()) {
+      return false;
+    }
+
+    const modelService = getAIModelService();
+    const activeModelId = modelService.getActiveModelId(
+      (options.modelId as string | undefined) ?? modelService.modelId.value
+    );
+
+    if (!activeModelId) {
+      return false;
+    }
+
+    return modelService.getExecutionPreference(activeModelId) === 'local';
+  }
+
   async executeAction(id: AIActionId, options: AIActionOptions) {
+    options = enrichDesktopChatActionOptions(options, id) as AIActionOptions;
     this.actionHistory.push({ action: id, options });
     if (this.actionHistory.length > 10) {
       this.actionHistory.shift();
@@ -349,21 +488,44 @@ export class AIRequestService {
     this.actionEvents$.next({ action: id, options, event: 'started' });
     const definition = getActionDefinition(id);
     definition.validate?.(options);
+
+    if (
+      definition.responseType === 'image' &&
+      this.shouldBlockUnsupportedLocalImageAction(options)
+    ) {
+      throw new GeneralNetworkError(
+        'This action is not supported by Local Gemma yet. Please log in to AFFiNE Cloud and switch Chat preference from Local to Cloud to continue.'
+      );
+    }
+
     const promptName = resolveDefinitionValue(
       definition.promptName,
       options
     ) as CreateSessionOptions['promptName'];
-    const sessionId = await this.createSession({
-      promptName,
-      ...options,
-    } as CreateSessionOptions);
-    this.lastActionSessionId = sessionId;
-
     const actionId = resolveDefinitionValue(definition.actionId, options);
     const actionVersion = resolveDefinitionValue(
       definition.actionVersion,
       options
     );
+    const chatTransport =
+      definition.responseType === 'text'
+        ? await this.resolveChatTransport(id, options)
+        : {};
+    const resolvedExecutionLane =
+      chatTransport.executionLane ??
+      (id === 'chat' && options.executionLane === 'local'
+        ? 'server'
+        : options.executionLane);
+
+    let sessionId = options.sessionId;
+    if (resolvedExecutionLane !== 'local') {
+      sessionId = await this.createSession({
+        promptName,
+        ...options,
+      } as CreateSessionOptions);
+      this.lastActionSessionId = sessionId;
+    }
+
     const transportOptions = {
       ...options,
       client: this.client,
@@ -374,7 +536,37 @@ export class AIRequestService {
       endpoint: definition.endpoint,
       actionId,
       actionVersion,
+      executionLane: resolvedExecutionLane,
+      localCapable: chatTransport.localCapable,
     };
+
+    if (
+      definition.responseType === 'text' &&
+      resolvedExecutionLane === 'local'
+    ) {
+      const localStream = this.createLocalChatStreamWithServerFallback(
+        transportOptions,
+        async () => {
+          const fallbackSessionId = await this.createSession({
+            promptName,
+            ...options,
+            executionLane: 'server',
+          } as CreateSessionOptions);
+          this.lastActionSessionId = fallbackSessionId;
+
+          return {
+            ...transportOptions,
+            sessionId: fallbackSessionId,
+            executionLane: 'server' as const,
+            localCapable: undefined,
+          };
+        },
+        options.signal,
+        options.executionLane !== 'local'
+      );
+
+      return this.wrapTextStream(localStream, id, options);
+    }
 
     const stream =
       definition.responseType === 'image'
