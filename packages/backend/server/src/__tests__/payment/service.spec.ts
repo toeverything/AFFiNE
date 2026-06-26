@@ -1645,8 +1645,8 @@ test('should persist mutable team subscription fields on same stripe subscriptio
         {
           ...teamSub.items.data[0],
           quantity: 9,
-          // @ts-expect-error stub
           price: {
+            ...PRICES[TEAM_YEARLY],
             lookup_key: TEAM_YEARLY,
           },
         },
@@ -1688,6 +1688,9 @@ test('should persist mutable team subscription fields on same stripe subscriptio
   });
   t.like(providerFact, {
     recurring: SubscriptionRecurring.Yearly,
+    externalPriceId: TEAM_YEARLY,
+    currency: 'usd',
+    amount: 14400,
     quantity: 9,
     periodStart: new Date(1780000000 * 1000),
     periodEnd: new Date(1811536000 * 1000),
