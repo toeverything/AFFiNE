@@ -5,6 +5,26 @@ import { events, handlers } from './exposed';
 import { logger } from './logger';
 
 function setupRendererConnection(rendererPort: Electron.MessagePortMain) {
+  const connectionUnsubs: Array<() => void> = [];
+  let cleanedUp = false;
+  const onRendererPortClose = () => {
+    cleanupConnection();
+  };
+  const onProcessExit = () => {
+    cleanupConnection();
+  };
+  const cleanupConnection = () => {
+    if (cleanedUp) {
+      return;
+    }
+    cleanedUp = true;
+    rendererPort.off('close', onRendererPortClose);
+    process.off('exit', onProcessExit);
+    for (const unsub of connectionUnsubs) {
+      unsub();
+    }
+  };
+
   const flattenedHandlers = Object.entries(handlers).flatMap(
     ([namespace, namespaceHandlers]) => {
       return Object.entries(namespaceHandlers).map(([name, handler]) => {
@@ -65,11 +85,12 @@ function setupRendererConnection(rendererPort: Electron.MessagePortMain) {
           console.error(err);
         });
       });
-      process.on('exit', () => {
-        unsub();
-      });
+      connectionUnsubs.push(unsub);
     }
   }
+
+  rendererPort.on('close', onRendererPortClose);
+  process.on('exit', onProcessExit);
 }
 
 function main() {

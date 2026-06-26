@@ -23,6 +23,10 @@ import { getContentFromSlice } from '../../utils';
 import { AIChatBlockModel } from '../blocks';
 import { type AIError } from '../provider';
 import { getAIRequestService } from '../runtime/request';
+import {
+  getDesktopModelOptions,
+  shouldApplyDesktopModelOptions,
+} from '../runtime/request/desktop-chat-options';
 import { reportResponse } from '../utils/action-reporter';
 import { getAIPanelWidget } from '../utils/ai-widgets';
 import { AIContext } from '../utils/context';
@@ -187,8 +191,12 @@ function actionToStream<T extends keyof BlockSuitePresets.AIActions>(
       return {
         async *[Symbol.asyncIterator]() {
           const models = getCopilotSelectedElems(host);
+          const desktopModelOptions = shouldApplyDesktopModelOptions(id)
+            ? getDesktopModelOptions()
+            : {};
           const options = {
             ...variants,
+            ...desktopModelOptions,
             signal,
             input: panelInput ?? '',
             stream: true,
@@ -230,8 +238,12 @@ function actionToStream<T extends keyof BlockSuitePresets.AIActions>(
         const models = getCopilotSelectedElems(host);
         const markdown = await getTextFromSelected(panel.host);
 
+        const desktopModelOptions = shouldApplyDesktopModelOptions(id)
+          ? getDesktopModelOptions()
+          : {};
         const options = {
           ...variants,
+          ...desktopModelOptions,
           signal,
           input: markdown,
           stream: true,

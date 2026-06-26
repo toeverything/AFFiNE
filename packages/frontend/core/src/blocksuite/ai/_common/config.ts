@@ -33,10 +33,12 @@ import {
   translateLangs,
 } from '../actions/types';
 import type {
+  AIItemConfig,
   AIItemGroupConfig,
   AISubItemConfig,
 } from '../components/ai-item/types';
 import { AIAppEvents } from '../provider';
+import { shouldShowDesktopAction } from '../runtime/request/desktop-chat-options';
 import { getAIPanelWidget } from '../utils/ai-widgets';
 import { getEdgelessCopilotWidget } from '../utils/get-edgeless-copilot-widget';
 import {
@@ -118,6 +120,15 @@ const textBlockShowWhen = (chain: Chain<InitCommandCtx>) => {
   return selectedModels.some(model =>
     matchModels(model, [ParagraphBlockModel, ListBlockModel])
   );
+};
+
+const withDesktopActionVisibility = (
+  actionId: string,
+  showWhen?: AIItemConfig['showWhen']
+): AIItemConfig['showWhen'] => {
+  return (chain, editorMode, host) =>
+    shouldShowDesktopAction(actionId) &&
+    (showWhen ? showWhen(chain, editorMode, host) : true);
 };
 
 const codeBlockShowWhen = (chain: Chain<InitCommandCtx>) => {
@@ -339,7 +350,7 @@ const GenerateFromTextAIGroup: AIItemGroupConfig = {
       name: 'Generate an image',
       testId: 'action-generate-image',
       icon: ImageIcon(),
-      showWhen: textBlockShowWhen,
+      showWhen: withDesktopActionVisibility('createImage', textBlockShowWhen),
       handler: actionToHandler('createImage', AIImageIconWithAnimation),
     },
     {
@@ -416,7 +427,7 @@ export function buildAIImageItemGroups(): AIItemGroupConfig[] {
           name: 'Explain this image',
           testId: 'action-explain-image',
           icon: ImageIcon(),
-          showWhen: () => true,
+          showWhen: withDesktopActionVisibility('explainImage'),
           handler: actionToHandler(
             'explainImage',
             AIStarIconWithAnimation,
@@ -433,7 +444,7 @@ export function buildAIImageItemGroups(): AIItemGroupConfig[] {
           name: 'Generate an image',
           testId: 'action-generate-image',
           icon: ImageIcon(),
-          showWhen: () => true,
+          showWhen: withDesktopActionVisibility('createImage'),
           handler: actionToHandler(
             'createImage',
             AIImageIconWithAnimation,
@@ -450,7 +461,7 @@ export function buildAIImageItemGroups(): AIItemGroupConfig[] {
           name: 'Image processing',
           testId: 'action-image-processing',
           icon: ImageIcon(),
-          showWhen: () => true,
+          showWhen: withDesktopActionVisibility('processImage'),
           subItem: createImageProcessingSubItem(blockActionTrackerOptions),
           subItemOffset: [12, -6],
           beta: true,
@@ -459,7 +470,7 @@ export function buildAIImageItemGroups(): AIItemGroupConfig[] {
           name: 'AI image filter',
           testId: 'action-ai-image-filter',
           icon: ImproveWritingIcon(),
-          showWhen: () => true,
+          showWhen: withDesktopActionVisibility('filterImage'),
           subItem: createImageFilterSubItem(blockActionTrackerOptions),
           subItemOffset: [12, -4],
           beta: true,
@@ -468,7 +479,7 @@ export function buildAIImageItemGroups(): AIItemGroupConfig[] {
           name: 'Generate a caption',
           testId: 'action-generate-caption',
           icon: PenIcon(),
-          showWhen: () => true,
+          showWhen: withDesktopActionVisibility('generateCaption'),
           beta: true,
           handler: actionToHandler(
             'generateCaption',

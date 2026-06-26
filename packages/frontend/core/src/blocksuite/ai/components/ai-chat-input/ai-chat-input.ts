@@ -2,7 +2,10 @@ import type {
   AIDraftService,
   AIToolsConfigService,
 } from '@affine/core/modules/ai-button';
-import type { AIModelService } from '@affine/core/modules/ai-button/services/models';
+import {
+  type AIModelService,
+  DESKTOP_OFFLINE_GEMMA_MODEL_ID,
+} from '@affine/core/modules/ai-button/services/models';
 import type {
   ServerService,
   SubscriptionService,
@@ -832,6 +835,14 @@ export class AIChatInput extends SignalWatcher(
       this.affineFeatureFlagService.flags.enable_send_detailed_object_to_ai
         .value;
     const userInfo = AIAppEvents.userInfo.value;
+    const activeModelId = this.aiModelService.getActiveModelId(
+      this.aiModelService.modelId.value
+    );
+    const resolvedModelId = activeModelId ?? DESKTOP_OFFLINE_GEMMA_MODEL_ID;
+    const resolvedExecutionLane =
+      this.aiModelService.getExecutionPreference(resolvedModelId) === 'local'
+        ? 'local'
+        : 'server';
 
     this.updateContext({
       images: [],
@@ -858,7 +869,8 @@ export class AIChatInput extends SignalWatcher(
       control: this.trackOptions?.control,
       reasoning: this._isReasoningActive,
       toolsConfig: this.aiToolsConfigService.config.value,
-      modelId: this.aiModelService.modelId.value,
+      modelId: resolvedModelId,
+      executionLane: resolvedExecutionLane,
       userInfo: {
         userId: userInfo?.id,
         userName: userInfo?.name,

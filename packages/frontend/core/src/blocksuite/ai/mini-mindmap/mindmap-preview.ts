@@ -134,7 +134,11 @@ export class MiniMindmapPreview extends WithDisposable(LitElement) {
   }
 
   private _toMindmapNode(answer: string, doc: Store) {
-    return markdownToMindmap(answer, doc, this.host.std.store.provider);
+    try {
+      return markdownToMindmap(answer, doc, this.host.std.store.provider);
+    } catch {
+      return null;
+    }
   }
 
   override connectedCallback(): void {
@@ -238,6 +242,89 @@ type MarkdownNode =
   | RootContent
   | { alt?: string | null; children?: MarkdownNode[]; value?: string };
 
+function normalizeMindmapLabel(text: string) {
+  return text
+    .toLowerCase()
+    .replace(/[·•\-/–—_:：,，;；。.!?()[\]{}"'`]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function dedupeMindmapSiblings(children: Node[]): Node[] {
+  const normalizedChildren = children.filter(
+    child => child.text.trim().length > 0
+  );
+  const deduped: Node[] = [];
+  const indexByLabel = new Map<string, number>();
+
+  for (const child of normalizedChildren) {
+    const normalizedLabel = normalizeMindmapLabel(child.text);
+    const existingIndex = indexByLabel.get(normalizedLabel);
+
+    if (existingIndex === undefined) {
+      indexByLabel.set(normalizedLabel, deduped.length);
+      deduped.push({
+        text: child.text,
+        children: dedupeMindmapSiblings(child.children),
+      });
+      continue;
+    }
+
+    const existing = deduped[existingIndex];
+    existing.text =
+      Array.from(child.text).length > Array.from(existing.text).length
+        ? child.text
+        : existing.text;
+    existing.children = dedupeMindmapSiblings([
+      ...existing.children,
+      ...child.children,
+    ]);
+  }
+
+  return deduped;
+}
+
+function optimizeMindmapNode(node: Node, depth: number): Node | null {
+  const text = node.text.trim();
+  let children = dedupeMindmapSiblings(
+    node.children
+      .map(child => optimizeMindmapNode(child, depth + 1))
+      .filter(Boolean) as Node[]
+  );
+
+  if (!text) {
+    if (children.length === 0) {
+      return null;
+    }
+    if (children.length === 1) {
+      return children[0];
+    }
+  }
+
+  if (text && children.length === 1) {
+    const [child] = children;
+    const mergedText = [text, child.text].join(' · ');
+    const mergedLength = Array.from(mergedText).length;
+    if (
+      depth >= 2 &&
+      child.children.length > 0 &&
+      normalizeMindmapLabel(text) !== normalizeMindmapLabel(child.text) &&
+      mergedLength <= 48
+    ) {
+      children = child.children;
+      return {
+        text: mergedText,
+        children,
+      };
+    }
+  }
+
+  return {
+    text,
+    children,
+  };
+}
+
 export const markdownToMindmap = (
   answer: string,
   doc: Store,
@@ -336,5 +423,6 @@ export const markdownToMindmap = (
     return null;
   };
 
-  return astToMindmap(markdown['_markdownToAst'](answer));
+  const root = astToMindmap(markdown['_markdownToAst'](answer));
+  return root ? optimizeMindmapNode(root, 0) : null;
 };

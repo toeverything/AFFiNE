@@ -1,4 +1,5 @@
 import { dialogHandlers } from './dialog';
+import { localAIEvents, localAIHandlers } from './local-ai';
 import { dbEventsV1, dbHandlersV1, nbstoreHandlers } from './nbstore';
 import { previewHandlers } from './preview';
 import { provideExposed } from './provide';
@@ -10,11 +11,13 @@ export const handlers = {
   workspace: workspaceHandlers,
   dialog: dialogHandlers,
   preview: previewHandlers,
+  localAI: localAIHandlers,
 };
 
 export const events = {
   db: dbEventsV1,
   workspace: workspaceEvents,
+  localAI: localAIEvents,
 };
 
 const getExposedMeta = () => {

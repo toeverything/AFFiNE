@@ -14,6 +14,10 @@ import { StreamObjectSchema } from '../components/ai-chat-messages';
 import { type AIItemGroupConfig } from '../components/ai-item/types';
 import { type AIError } from '../provider';
 import { getAIRequestService } from '../runtime/request';
+import {
+  getDesktopModelOptions,
+  shouldApplyDesktopModelOptions,
+} from '../runtime/request/desktop-chat-options';
 import { reportResponse } from '../utils/action-reporter';
 import { getAIPanelWidget } from '../utils/ai-widgets';
 import { AIContext } from '../utils/context';
@@ -111,8 +115,12 @@ function actionToStream<T extends keyof BlockSuitePresets.AIActions>(
       const models = selectedBlocks?.map(block => block.model);
       const control = trackerOptions?.control ?? 'format-bar';
       const where = trackerOptions?.where ?? 'ai-panel';
+      const desktopModelOptions = shouldApplyDesktopModelOptions(id)
+        ? getDesktopModelOptions()
+        : {};
       const options = {
         ...variants,
+        ...desktopModelOptions,
         attachments,
         input: input ? (markdown ? `${markdown}\n${input}` : input) : markdown,
         stream: true,

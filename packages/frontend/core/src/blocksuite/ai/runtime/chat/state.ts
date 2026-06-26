@@ -53,7 +53,7 @@ export type AIChatTab =
       id: string;
       title: string;
       scope: AIChatScope;
-      hasMessages: false;
+      hasMessages: boolean;
     }
   | {
       kind: 'session';

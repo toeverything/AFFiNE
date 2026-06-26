@@ -73,11 +73,17 @@ vi.mock('./ai-model-provider', () => ({
 }));
 
 vi.mock('@affine/graphql', () => ({
+  ByokKeyStorage: {
+    server: 'server',
+    local: 'local',
+  },
   ByokProvider: {
     openai: 'openai',
     anthropic: 'anthropic',
     gemini: 'gemini',
     fal: 'fal',
+    glm: 'glm',
+    gemma: 'gemma',
   },
   ContextCategories: {
     Tag: 'tag',
@@ -392,12 +398,45 @@ describe('AIRequestService action definitions', () => {
       expect.objectContaining({
         modelId: 'gemma-3-4b-it',
         executionLane: 'local',
+        promptName: 'mindmap.generate',
         content: 'make a map',
         sessionId: undefined,
       })
     );
     expect(client.createSession).not.toHaveBeenCalled();
     expect(client.chatTextStream).not.toHaveBeenCalled();
+  });
+
+  test('passes local text action prompt metadata to the desktop runtime', async () => {
+    const client = createClient();
+    const service = new AIRequestService(client);
+    const localStatus = { state: 'ready', canRun: true };
+
+    electronApis.localAI = {
+      ensureReady: vi.fn().mockResolvedValue(localStatus),
+    };
+    desktopRoutePolicyMocks.resolveDesktopChatLane.mockResolvedValue({
+      lane: 'local',
+      reason: 'desktop_gemma_ready',
+    });
+
+    const result = (await service.executeAction('translate', {
+      workspaceId: 'workspace-1',
+      input: 'Bonjour tout le monde',
+      lang: 'English',
+      modelId: 'gemma-3-4b-it',
+      executionLane: 'local',
+      stream: true,
+    })) as AsyncIterable<string>;
+
+    await expect(collectText(result)).resolves.toEqual(['local chunk']);
+    expect(localRuntimeClientMocks.streamDesktopLocalChat).toHaveBeenCalledWith(
+      expect.objectContaining({
+        promptName: 'Translate to',
+        content: 'Bonjour tout le monde',
+        params: { language: 'English' },
+      })
+    );
   });
 
   test('falls back brainstormMindmap to server when local Gemma is unavailable', async () => {
@@ -526,6 +565,39 @@ describe('AIRequestService action definitions', () => {
       Endpoint.Action
     );
     expect(client.imagesStream).not.toHaveBeenCalled();
+  });
+
+  test('drops the gemma model id for cloud action requests that do not support server actions', async () => {
+    const client = createClient();
+    const service = new AIRequestService(client);
+
+    aiModelProviderState.hasService = true;
+    aiModelProviderState.service.modelId.value = 'gemma-3-4b-it';
+    aiModelProviderState.service.getActiveModelId.mockReturnValue(
+      'gemma-3-4b-it'
+    );
+    aiModelProviderState.service.getExecutionPreference.mockReturnValue(
+      'cloud'
+    );
+
+    await drainActionResult(
+      (await service.executeAction('brainstormMindmap', {
+        workspaceId: 'workspace-1',
+        input: 'make a map',
+        modelId: 'gemma-3-4b-it',
+        executionLane: 'server',
+        stream: true,
+      })) as AsyncIterable<unknown>
+    );
+
+    expect(client.chatTextStream).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actionId: 'mindmap.generate',
+        executionLane: 'server',
+        modelId: undefined,
+      }),
+      Endpoint.Action
+    );
   });
 
   test('reuses the last action session for retry', async () => {

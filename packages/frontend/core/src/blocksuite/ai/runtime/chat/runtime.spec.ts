@@ -181,6 +181,112 @@ describe('AIChatRuntime', () => {
     expect(runtime.getSnapshot().uiPolicy.canCreateNewSession).toBe(true);
   });
 
+  test('send forwards gemma chat through request executeAction', async () => {
+    const request = createRequest();
+    const runtime = createRuntime(request);
+    await runtime.dispatch({ type: 'initialize' });
+
+    await runtime.dispatch({
+      type: 'send',
+      input: 'hello',
+      modelId: 'gemma-3-4b-it',
+    });
+
+    expect(request.executeAction).toHaveBeenCalledWith(
+      'chat',
+      expect.objectContaining({
+        input: 'hello',
+        modelId: 'gemma-3-4b-it',
+        stream: true,
+      })
+    );
+  });
+
+  test('local gemma send bypasses cloud session creation and keeps the draft active', async () => {
+    const request = createRequest();
+    const runtime = createRuntime(request);
+    await runtime.dispatch({ type: 'initialize' });
+
+    await runtime.dispatch({
+      type: 'send',
+      input: 'hello',
+      modelId: 'gemma-3-4b-it',
+      executionLane: 'local',
+    });
+
+    expect(request.createSessionWithHistory).not.toHaveBeenCalled();
+    expect(request.executeAction).toHaveBeenCalledWith(
+      'chat',
+      expect.objectContaining({
+        input: 'hello',
+        modelId: 'gemma-3-4b-it',
+        executionLane: 'local',
+        sessionId: undefined,
+        historyMessages: [],
+      })
+    );
+    expect(runtime.getSnapshot().activeSessionId).toBeNull();
+    expect(runtime.getSnapshot().tabs).toEqual([
+      expect.objectContaining({
+        kind: 'draft',
+        hasMessages: true,
+      }),
+    ]);
+    expect(runtime.getSnapshot().uiPolicy.canCreateNewSession).toBe(true);
+  });
+
+  test('local gemma follow-up send reuses only completed draft turns as history', async () => {
+    const request = createRequest();
+    const runtime = createRuntime(request);
+    await runtime.dispatch({ type: 'initialize' });
+
+    await runtime.dispatch({
+      type: 'send',
+      input: 'hello',
+      modelId: 'gemma-3-4b-it',
+      executionLane: 'local',
+    });
+
+    await runtime.dispatch({
+      type: 'send',
+      input: 'what did I just say?',
+      modelId: 'gemma-3-4b-it',
+      executionLane: 'local',
+    });
+
+    expect(request.executeAction).toHaveBeenNthCalledWith(
+      2,
+      'chat',
+      expect.objectContaining({
+        input: 'what did I just say?',
+        historyMessages: [
+          { role: 'user', content: 'hello' },
+          { role: 'assistant', content: 'hello' },
+        ],
+      })
+    );
+  });
+
+  test('createNewSession resets a local draft instead of duplicating draft tabs', async () => {
+    const request = createRequest();
+    const runtime = createRuntime(request);
+    await runtime.dispatch({ type: 'initialize' });
+    await runtime.dispatch({
+      type: 'send',
+      input: 'hello',
+      modelId: 'gemma-3-4b-it',
+      executionLane: 'local',
+    });
+
+    await runtime.dispatch({ type: 'createNewSession' });
+
+    expect(runtime.getSnapshot().activeSessionId).toBeNull();
+    expect(runtime.getSnapshot().messages).toEqual([]);
+    expect(runtime.getSnapshot().tabs).toEqual([
+      expect.objectContaining({ kind: 'draft', hasMessages: false }),
+    ]);
+  });
+
   test('send binds an unbound session to the active doc after success', async () => {
     const unboundSession = session({ docId: null });
     const boundSession = session({ docId: 'doc-1' });

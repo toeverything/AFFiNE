@@ -1,6 +1,7 @@
 import type { NbstoreService } from '@affine/core/modules/storage';
 import { apis } from '@affine/electron-api';
 import {
+  ByokKeyStorage,
   ContextCategories,
   type CopilotChatHistoryFragment,
   type getCopilotHistoriesQuery,
@@ -13,6 +14,10 @@ import {
 } from '@affine/graphql';
 import { Subject } from 'rxjs';
 
+import {
+  capabilitiesFor,
+  inferProviderFromModel,
+} from '../../../../modules/ai-button/services/catalog';
 import type { ActionEventType } from '../../provider';
 import { GeneralNetworkError } from '../../provider/error';
 import {
@@ -25,6 +30,7 @@ import { getAIModelService, hasAIModelService } from './ai-model-provider';
 import {
   CopilotClient,
   type CopilotClient as CopilotClientType,
+  Endpoint,
 } from './copilot-client';
 import { enrichDesktopChatActionOptions } from './desktop-chat-options';
 import { resolveDesktopChatLane } from './desktop-route-policy';
@@ -37,6 +43,19 @@ export type AIRequestActionEvent = {
   options: AIActionOptions;
   event: ActionEventType;
 };
+
+function supportsServerActionModel(modelId?: string) {
+  if (!modelId) {
+    return true;
+  }
+
+  const provider = inferProviderFromModel(modelId);
+  if (!provider) {
+    return true;
+  }
+
+  return capabilitiesFor(provider, ByokKeyStorage.server).includes('Actions');
+}
 
 export class AIRequestService {
   private lastActionSessionId = '';
@@ -517,6 +536,14 @@ export class AIRequestService {
         ? 'server'
         : options.executionLane);
 
+    const requestedModelId = options.modelId as string | undefined;
+    const transportModelId =
+      resolvedExecutionLane === 'server' &&
+      definition.endpoint === Endpoint.Action &&
+      !supportsServerActionModel(requestedModelId)
+        ? undefined
+        : requestedModelId;
+
     let sessionId = options.sessionId;
     if (resolvedExecutionLane !== 'local') {
       sessionId = await this.createSession({
@@ -528,6 +555,7 @@ export class AIRequestService {
 
     const transportOptions = {
       ...options,
+      modelId: transportModelId,
       client: this.client,
       sessionId,
       content: definition.buildContent?.(options) ?? options.input,
@@ -536,6 +564,7 @@ export class AIRequestService {
       endpoint: definition.endpoint,
       actionId,
       actionVersion,
+      promptName,
       executionLane: resolvedExecutionLane,
       localCapable: chatTransport.localCapable,
     };

@@ -4,12 +4,13 @@ import { partition } from 'lodash-es';
 import { toTextStream } from '../../provider/event-source';
 import { createWorkspaceByokLocalLease } from './byok-local-lease';
 import { type CopilotClient, Endpoint } from './copilot-client';
+import { streamDesktopLocalChat } from './local-runtime-client';
 
 const TIMEOUT = 50000;
 
 export type TextToTextOptions = {
   client: CopilotClient;
-  sessionId: string;
+  sessionId?: string;
   workspaceId?: string;
   content?: string;
   attachments?: (string | Blob | File)[];
@@ -21,11 +22,18 @@ export type TextToTextOptions = {
   endpoint?: Endpoint;
   actionId?: string;
   actionVersion?: string;
+  promptName?: string;
   runId?: string;
   isRootSession?: boolean;
   reasoning?: boolean;
   modelId?: string;
+  executionLane?: 'server' | 'local';
+  localCapable?: boolean;
   toolsConfig?: AIToolsConfig;
+  historyMessages?: Array<{
+    role: 'user' | 'assistant';
+    content: string;
+  }>;
 };
 
 export type ToImageOptions = TextToTextOptions & {
@@ -73,6 +81,27 @@ interface CreateMessageOptions {
   signal?: AbortSignal;
 }
 
+type CreateCopilotMessageOptions = {
+  sessionId: string;
+  content?: string;
+  params?: Record<string, string>;
+  attachments?: string[];
+  blobs?: File[];
+};
+
+function toMessageParams(params?: Record<string, unknown>) {
+  if (!params) {
+    return undefined;
+  }
+  const entries = Object.entries(params).flatMap(([key, value]) => {
+    if (value == null) {
+      return [];
+    }
+    return [[key, String(value)] as const];
+  });
+  return entries.length ? Object.fromEntries(entries) : undefined;
+}
+
 async function createMessage({
   client,
   sessionId,
@@ -83,10 +112,10 @@ async function createMessage({
   signal,
 }: CreateMessageOptions): Promise<string> {
   const hasAttachments = attachments && attachments.length > 0;
-  const options: Parameters<CopilotClient['createMessage']>[0] = {
+  const options: CreateCopilotMessageOptions = {
     sessionId,
     content,
-    params: params as Parameters<CopilotClient['createMessage']>[0]['params'],
+    params: toMessageParams(params),
   };
 
   if (hasAttachments) {
@@ -111,25 +140,51 @@ async function createMessage({
   return await client.createMessage(options, { timeout, signal });
 }
 
-export function textToText({
-  client,
-  sessionId,
-  workspaceId,
-  content,
-  attachments,
-  params,
-  stream,
-  signal,
-  timeout = TIMEOUT,
-  retry = false,
-  endpoint = Endpoint.StreamObject,
-  actionId,
-  actionVersion,
-  runId,
-  reasoning,
-  modelId,
-  toolsConfig,
-}: TextToTextOptions) {
+export function textToText(options: TextToTextOptions) {
+  const {
+    client,
+    sessionId,
+    workspaceId,
+    content,
+    attachments,
+    params,
+    stream,
+    signal,
+    timeout = TIMEOUT,
+    retry = false,
+    endpoint = Endpoint.StreamObject,
+    actionId,
+    actionVersion,
+    runId,
+    reasoning,
+    modelId,
+    executionLane,
+    localCapable,
+    toolsConfig,
+  } = options;
+
+  if (executionLane === 'local') {
+    if (stream) {
+      return {
+        [Symbol.asyncIterator]: async function* () {
+          yield* await streamDesktopLocalChat(options);
+        },
+      };
+    }
+
+    return (async function () {
+      const chunks: string[] = [];
+      for await (const chunk of await streamDesktopLocalChat(options)) {
+        chunks.push(chunk);
+      }
+      return chunks.join('');
+    })();
+  }
+
+  if (!sessionId) {
+    throw new Error('sessionId is required for server AI transport');
+  }
+
   let messageId: string | undefined;
 
   if (stream) {
@@ -162,6 +217,8 @@ export function textToText({
             messageId,
             reasoning,
             modelId,
+            executionLane,
+            localCapable,
             toolsConfig,
             actionId,
             actionVersion,
@@ -230,6 +287,8 @@ export function textToText({
           messageId,
           reasoning,
           modelId,
+          executionLane,
+          localCapable,
           toolsConfig,
           actionId,
           actionVersion,
@@ -290,6 +349,10 @@ export function toImage({
   runId,
   client,
 }: ToImageOptions) {
+  if (!sessionId) {
+    throw new Error('sessionId is required for image transport');
+  }
+
   let messageId: string | undefined;
   return {
     [Symbol.asyncIterator]: async function* () {

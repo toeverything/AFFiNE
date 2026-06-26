@@ -184,6 +184,13 @@ jobs:
           HOIST_NODE_MODULES: 1
           NODE_OPTIONS: --max-old-space-size=14384
 
+      - name: Verify staged local AI assets
+        if: ${{ inputs.platform == 'darwin' && inputs.arch == 'arm64' }}
+        shell: bash
+        run: |
+          test -f packages/frontend/apps/electron/resources/local-ai/bin/llama-server
+          test -f packages/frontend/apps/electron/resources/local-ai/models/gemma-3-4b-it.gguf
+
       - name: package
         if: ${{ inputs.platform == 'win32' }}
         run: |

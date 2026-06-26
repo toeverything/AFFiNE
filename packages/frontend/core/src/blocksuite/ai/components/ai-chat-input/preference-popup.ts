@@ -1,9 +1,13 @@
 import type { AIToolsConfigService } from '@affine/core/modules/ai-button';
-import type { AIModelService } from '@affine/core/modules/ai-button/services/models';
+import type {
+  AIModelExecutionPreference,
+  AIModelService,
+} from '@affine/core/modules/ai-button/services/models';
 import type {
   ServerService,
   SubscriptionService,
 } from '@affine/core/modules/cloud';
+import { apis } from '@affine/electron-api';
 import {
   type CopilotChatHistoryFragment,
   ServerDeploymentType,
@@ -29,7 +33,7 @@ import { ShadowlessElement } from '@blocksuite/std';
 import { autoPlacement, offset, shift } from '@floating-ui/dom';
 import { computed } from '@preact/signals-core';
 import { css, html } from 'lit';
-import { property } from 'lit/decorators.js';
+import { property, state } from 'lit/decorators.js';
 
 const modelSubMenuMiddleware = [
   autoPlacement({ allowedPlacements: ['right-start', 'left-start'] }),
@@ -125,20 +129,58 @@ export class ChatInputPreference extends SignalWatcher(
   @property({ attribute: false })
   accessor onAISubscribe!: () => Promise<void>;
 
+  @state()
+  accessor localStatusLabel = '';
+
   model = computed(() => {
-    const modelId = this.aiModelService.modelId.value;
-    const activeModel = this.aiModelService.models.value.find(
-      model => model.id === modelId
+    return this.aiModelService.getActiveModel(
+      this.aiModelService.modelId.value
     );
-    const defaultModel = this.aiModelService.models.value.find(
-      model => model.isDefault
-    );
-    return activeModel || defaultModel;
   });
 
-  openPreference(e: Event) {
+  override connectedCallback() {
+    super.connectedCallback();
+    this.refreshLocalStatus().catch(() => {});
+  }
+
+  private getExecutionPreference(modelId?: string): AIModelExecutionPreference {
+    return this.aiModelService.getExecutionPreference(modelId);
+  }
+
+  private async refreshLocalStatus() {
+    const model = this.model.value;
+    if (!model?.localCapable) {
+      this.localStatusLabel = '';
+      return;
+    }
+
+    const preference = this.getExecutionPreference(model.id);
+    if (preference === 'cloud') {
+      this.localStatusLabel = 'Cloud';
+      return;
+    }
+
+    try {
+      const status = await apis?.localAI?.getStatus?.();
+
+      if (status?.state === 'ready') {
+        this.localStatusLabel = 'Local';
+        return;
+      }
+
+      if (status?.state === 'starting') {
+        this.localStatusLabel = 'Starting';
+        return;
+      }
+    } catch {}
+
+    this.localStatusLabel = 'Cloud fallback';
+  }
+
+  async openPreference(e: Event) {
     const element = e.currentTarget;
     if (!(element instanceof HTMLElement)) return;
+    await this.refreshLocalStatus();
     const modelItems = [];
     const searchItems = [];
 
@@ -149,7 +191,12 @@ export class ChatInputPreference extends SignalWatcher(
         prefix: AiOutlineIcon(),
         middleware: modelSubMenuMiddleware,
         postfix: html`
-          <span class="ai-active-model-name"> ${this.model.value?.name} </span>
+          <span class="ai-active-model-name">
+            ${this.model.value?.name}${this.model.value?.localCapable &&
+            this.localStatusLabel
+              ? ` • ${this.localStatusLabel}`
+              : ''}
+          </span>
         `,
         options: {
           items: this.aiModelService.models.value.map(model => {
@@ -160,10 +207,23 @@ export class ChatInputPreference extends SignalWatcher(
             const status =
               this.subscriptionService.subscription.ai$.value?.status;
             const isSubscribed = status === SubscriptionStatus.Active;
+            const preference = this.getExecutionPreference(model.id);
+            const localStatusInfo = model.localCapable
+              ? ` • ${
+                  isSelected
+                    ? this.localStatusLabel ||
+                      (preference === 'cloud' ? 'Cloud' : 'Cloud fallback')
+                    : preference === 'cloud'
+                      ? 'Cloud'
+                      : 'Local'
+                }`
+              : '';
             return menu.action({
               name: model.category,
               info: html`
-                <span class="ai-model-version">${model.version}</span>
+                <span class="ai-model-version"
+                  >${model.version}${localStatusInfo}</span
+                >
               `,
               prefix: html`
                 <div class="ai-model-prefix">
@@ -183,12 +243,37 @@ export class ChatInputPreference extends SignalWatcher(
                   return;
                 }
                 this.aiModelService.setModel(model.id);
+                this.refreshLocalStatus().catch(() => {});
               },
             });
           }),
         },
       })
     );
+
+    if (this.model.value?.localCapable) {
+      modelItems.push(
+        menu.toggleSwitch({
+          name: 'Use Local Gemma',
+          prefix: AiOutlineIcon(),
+          on: this.getExecutionPreference(this.model.value.id) === 'local',
+          onChange: (value: boolean) => {
+            if (!this.model.value) {
+              return;
+            }
+            this.aiModelService.setExecutionPreference(
+              this.model.value.id,
+              value ? 'local' : 'cloud'
+            );
+            if (value) {
+              apis?.localAI?.ensureReady?.().catch(() => {});
+            }
+            this.refreshLocalStatus().catch(() => {});
+          },
+          class: { 'preference-action': true },
+        })
+      );
+    }
 
     modelItems.push(
       menu.toggleSwitch({
