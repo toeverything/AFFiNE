@@ -72,7 +72,7 @@ export class WorkspaceSubscriptionManager extends SubscriptionManager {
     params: z.infer<typeof CheckoutParams>,
     args: z.infer<typeof WorkspaceSubscriptionCheckoutArgs>
   ) {
-    const subscription = await this.getSubscription({
+    const subscription = await this.getActiveSubscription({
       plan: SubscriptionPlan.Team,
       workspaceId: args.workspaceId,
     });

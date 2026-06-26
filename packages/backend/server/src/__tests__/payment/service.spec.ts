@@ -1475,6 +1475,41 @@ test('should not be able to checkout for workspace if subscribed', async t => {
   );
 });
 
+test('should be able to checkout for workspace after canceled subscription', async t => {
+  const { service, u1, db, stripe } = t.context;
+
+  await db.subscription.create({
+    data: {
+      targetId: 'ws_1',
+      stripeSubscriptionId: 'sub_1',
+      plan: SubscriptionPlan.Team,
+      recurring: SubscriptionRecurring.Monthly,
+      status: SubscriptionStatus.Canceled,
+      start: new Date(Date.now() - 100000),
+      end: new Date(Date.now() - 1000),
+      quantity: 1,
+    },
+  });
+
+  await service.checkout(
+    {
+      plan: SubscriptionPlan.Team,
+      recurring: SubscriptionRecurring.Monthly,
+      variant: null,
+      successCallbackLink: '',
+    },
+    {
+      user: u1,
+      workspaceId: 'ws_1',
+    }
+  );
+
+  t.deepEqual(getLastCheckoutPrice(stripe.checkout.sessions.create), {
+    price: TEAM_MONTHLY,
+    coupon: undefined,
+  });
+});
+
 const teamSub: Stripe.Subscription = {
   ...sub,
   items: {
