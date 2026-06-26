@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaClient, Provider, UserStripeCustomer } from '@prisma/client';
-import { omit, pick } from 'lodash-es';
+import { omit } from 'lodash-es';
 import { z } from 'zod';
 
 import {
@@ -170,14 +170,14 @@ export class WorkspaceSubscriptionManager extends SubscriptionManager {
     const saved = existingByStripeId
       ? await this.db.subscription.update({
           where: { id: existingByStripeId.id },
-          data: pick(subscriptionData, [
-            'status',
-            'stripeScheduleId',
-            'nextBillAt',
-            'canceledAt',
-            'quantity',
-            'end',
-          ]),
+          data: {
+            ...omit(subscriptionData, ['provider', 'iapStore']),
+            provider: Provider.stripe,
+            iapStore: null,
+            rcEntitlement: null,
+            rcProductId: null,
+            rcExternalRef: null,
+          },
         })
       : await this.db.subscription.upsert({
           // TODO(stable-upgrade): remove legacy subscriptions dual-write after stable supports provider facts.

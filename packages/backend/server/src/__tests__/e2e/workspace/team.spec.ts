@@ -187,6 +187,7 @@ e2e('should allocate seats', async t => {
     source: 'Link',
   });
 
+  const invitationCount = app.queue.count('notification.sendInvitation');
   await app.eventBus.emitAsync('workspace.members.allocateSeats', {
     workspaceId: workspace.id,
     quantity: 5,
@@ -206,7 +207,7 @@ e2e('should allocate seats', async t => {
     WorkspaceMemberStatus.Accepted
   );
 
-  t.is(app.queue.count('notification.sendInvitation'), 1);
+  t.is(app.queue.count('notification.sendInvitation') - invitationCount, 1);
 });
 
 e2e('should set all rests to NeedMoreSeat', async t => {

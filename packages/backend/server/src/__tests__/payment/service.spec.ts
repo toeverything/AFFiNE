@@ -1628,6 +1628,74 @@ test('should be able to update team subscription', async t => {
   );
 });
 
+test('should persist mutable team subscription fields on same stripe subscription update', async t => {
+  const { service, db } = t.context;
+
+  await service.saveStripeSubscription(teamSub);
+
+  await service.saveStripeSubscription({
+    ...teamSub,
+    current_period_start: 1780000000,
+    current_period_end: 1811536000,
+    trial_start: 1780000000,
+    trial_end: 1780604800,
+    items: {
+      ...teamSub.items,
+      data: [
+        {
+          ...teamSub.items.data[0],
+          quantity: 9,
+          // @ts-expect-error stub
+          price: {
+            lookup_key: TEAM_YEARLY,
+          },
+        },
+      ],
+    },
+  });
+
+  const subInDB = await db.subscription.findFirst({
+    where: { targetId: 'ws_1' },
+  });
+  const entitlement = await db.entitlement.findFirst({
+    where: {
+      source: 'cloud_subscription',
+      subjectId: teamSub.id,
+    },
+  });
+  const providerFact = await db.providerSubscription.findUnique({
+    where: {
+      provider_externalSubscriptionId: {
+        provider: 'stripe',
+        externalSubscriptionId: teamSub.id,
+      },
+    },
+  });
+
+  t.like(subInDB, {
+    recurring: SubscriptionRecurring.Yearly,
+    quantity: 9,
+    start: new Date(1780000000 * 1000),
+    end: new Date(1811536000 * 1000),
+    trialStart: new Date(1780000000 * 1000),
+    trialEnd: new Date(1780604800 * 1000),
+  });
+  t.like(entitlement, {
+    plan: 'team',
+    quantity: 9,
+    startsAt: new Date(1780000000 * 1000),
+    expiresAt: new Date(1811536000 * 1000),
+  });
+  t.like(providerFact, {
+    recurring: SubscriptionRecurring.Yearly,
+    quantity: 9,
+    periodStart: new Date(1780000000 * 1000),
+    periodEnd: new Date(1811536000 * 1000),
+    trialStart: new Date(1780000000 * 1000),
+    trialEnd: new Date(1780604800 * 1000),
+  });
+});
+
 test('should suspend on dispute and restore when dispute won', async t => {
   const { service, db, stripe, event } = t.context;
 
