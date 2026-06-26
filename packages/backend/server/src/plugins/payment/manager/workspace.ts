@@ -163,28 +163,44 @@ export class WorkspaceSubscriptionManager extends SubscriptionManager {
       });
     }
 
-    const saved = await this.db.subscription.upsert({
-      // TODO(stable-upgrade): remove legacy subscriptions dual-write after stable supports provider facts.
-      // TODO(stable-upgrade): remove reliance on target_id_plan unique slot after contract cleanup.
-      where: {
-        provider: Provider.stripe,
-        stripeSubscriptionId: stripeSubscription.id,
-      },
-      update: {
-        ...pick(subscriptionData, [
-          'status',
-          'stripeScheduleId',
-          'nextBillAt',
-          'canceledAt',
-          'quantity',
-          'end',
-        ]),
-      },
-      create: {
-        targetId: workspaceId,
-        ...omit(subscriptionData, 'provider', 'iapStore'),
-      },
+    const existingByStripeId = await this.db.subscription.findUnique({
+      where: { stripeSubscriptionId: stripeSubscription.id },
     });
+
+    const saved = existingByStripeId
+      ? await this.db.subscription.update({
+          where: { id: existingByStripeId.id },
+          data: pick(subscriptionData, [
+            'status',
+            'stripeScheduleId',
+            'nextBillAt',
+            'canceledAt',
+            'quantity',
+            'end',
+          ]),
+        })
+      : await this.db.subscription.upsert({
+          // TODO(stable-upgrade): remove legacy subscriptions dual-write after stable supports provider facts.
+          // TODO(stable-upgrade): remove reliance on target_id_plan unique slot after contract cleanup.
+          where: {
+            targetId_plan: {
+              targetId: workspaceId,
+              plan: lookupKey.plan,
+            },
+          },
+          update: {
+            ...omit(subscriptionData, ['provider', 'iapStore']),
+            provider: Provider.stripe,
+            iapStore: null,
+            rcEntitlement: null,
+            rcProductId: null,
+            rcExternalRef: null,
+          },
+          create: {
+            targetId: workspaceId,
+            ...omit(subscriptionData, 'provider', 'iapStore'),
+          },
+        });
     await this.entitlement.upsertFromCloudSubscription(saved);
     return saved;
   }

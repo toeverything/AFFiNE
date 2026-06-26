@@ -1552,6 +1552,48 @@ test('should be able to create team subscription', async t => {
   t.is(subInDB?.stripeSubscriptionId, sub.id);
 });
 
+test('should replace old team subscription row when stripe creates a new subscription', async t => {
+  const { service, db } = t.context;
+
+  const old = await db.subscription.create({
+    data: {
+      targetId: 'ws_1',
+      stripeSubscriptionId: 'sub_old_team',
+      plan: SubscriptionPlan.Team,
+      recurring: SubscriptionRecurring.Yearly,
+      status: SubscriptionStatus.Canceled,
+      start: new Date('2026-03-26T08:23:57.000Z'),
+      end: new Date('2027-03-26T08:23:57.000Z'),
+      quantity: 24,
+    },
+  });
+
+  await service.saveStripeSubscription({
+    ...teamSub,
+    id: 'sub_new_team',
+    status: SubscriptionStatus.Active,
+    items: {
+      ...teamSub.items,
+      data: [
+        {
+          ...teamSub.items.data[0],
+          quantity: 11,
+        },
+      ],
+    },
+  });
+
+  const subscriptions = await db.subscription.findMany({
+    where: { targetId: 'ws_1', plan: SubscriptionPlan.Team },
+  });
+
+  t.is(subscriptions.length, 1);
+  t.is(subscriptions[0].id, old.id);
+  t.is(subscriptions[0].stripeSubscriptionId, 'sub_new_team');
+  t.is(subscriptions[0].status, SubscriptionStatus.Active);
+  t.is(subscriptions[0].quantity, 11);
+});
+
 test('should be able to update team subscription', async t => {
   const { service, db, event } = t.context;
 
