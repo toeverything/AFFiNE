@@ -30,10 +30,8 @@ const electronAppDir = path.resolve(scriptDir, '..');
 
 const sourceRoot = path.join(repoRoot, 'vendor', 'local-ai', 'darwin-arm64');
 const sourceBinaryPath = path.join(sourceRoot, 'llama-server');
-const sourceModelPath = path.join(sourceRoot, 'gemma-3-4b-it.gguf');
 const stagedRoot = path.join(electronAppDir, 'resources', 'local-ai');
 const stagedBinaryPath = path.join(stagedRoot, 'bin', 'llama-server');
-const stagedModelPath = path.join(stagedRoot, 'models', 'gemma-3-4b-it.gguf');
 const stagedLibDir = path.join(stagedRoot, 'lib');
 const dylibEntries = LOCAL_AI_RUNTIME_LIBRARIES.map(fileName => ({
   fileName,
@@ -70,15 +68,12 @@ const adHocSign = targetPath => {
 };
 
 await access(sourceBinaryPath);
-await access(sourceModelPath);
 await Promise.all(dylibEntries.map(entry => access(entry.sourcePath)));
 await Promise.all(backendPluginEntries.map(entry => access(entry.sourcePath)));
 await rm(stagedRoot, { recursive: true, force: true });
 await mkdir(path.dirname(stagedBinaryPath), { recursive: true });
-await mkdir(path.dirname(stagedModelPath), { recursive: true });
 await mkdir(stagedLibDir, { recursive: true });
 await copyFile(sourceBinaryPath, stagedBinaryPath);
-await copyFile(sourceModelPath, stagedModelPath);
 await Promise.all(
   [...dylibEntries, ...backendPluginEntries].map(async entry => {
     await copyFile(entry.sourcePath, entry.stagedPath);

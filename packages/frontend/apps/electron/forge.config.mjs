@@ -163,6 +163,53 @@ const trimElectronPakLocales = async (resourcesAppDir, targetPlatform) => {
   );
 };
 
+const verifyMacOSAppSignature = appPath => {
+  execFileSync(
+    'codesign',
+    ['--verify', '--deep', '--strict', '--verbose=4', appPath],
+    {
+      stdio: 'pipe',
+    }
+  );
+};
+
+const adHocSignMacOSApp = appPath => {
+  execFileSync('codesign', ['--force', '--deep', '--sign', '-', appPath], {
+    stdio: 'inherit',
+  });
+};
+
+const ensureMacOSAppSignature = appPath => {
+  try {
+    verifyMacOSAppSignature(appPath);
+  } catch (error) {
+    if (process.env.CI) {
+      throw error;
+    }
+
+    console.warn(
+      `[forge] codesign verify failed for ${appPath}, applying ad-hoc signature for local execution.`
+    );
+    adHocSignMacOSApp(appPath);
+    verifyMacOSAppSignature(appPath);
+  }
+};
+
+const resolvePackagedMacOSApps = async outputPath => {
+  if (outputPath.endsWith('.app')) {
+    return [outputPath];
+  }
+
+  try {
+    const entries = await readdir(outputPath, { withFileTypes: true });
+    return entries
+      .filter(entry => entry.isDirectory() && entry.name.endsWith('.app'))
+      .map(entry => path.join(outputPath, entry.name));
+  } catch {
+    return [];
+  }
+};
+
 const makers = [
   !process.env.SKIP_BUNDLE &&
     platform === 'darwin' && {
@@ -423,6 +470,18 @@ export default {
           cwd: __dirname,
           stdio: 'inherit',
         });
+      }
+    },
+    postPackage: async (_, packageResult) => {
+      if (packageResult.platform !== 'darwin') {
+        return;
+      }
+
+      for (const outputPath of packageResult.outputPaths) {
+        const appPaths = await resolvePackagedMacOSApps(outputPath);
+        for (const appPath of appPaths) {
+          ensureMacOSAppSignature(appPath);
+        }
       }
     },
     generateAssets: async (_, platform, arch) => {
