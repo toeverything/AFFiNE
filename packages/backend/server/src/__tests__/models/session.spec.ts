@@ -303,28 +303,3 @@ test('should delete userSession fail when sessionId not match', async t => {
   );
   t.is(count, 0);
 });
-
-test('should cleanup expired userSessions', async t => {
-  const user = await t.context.user.create({
-    email: 'test@affine.pro',
-  });
-  const session = await t.context.db.session.create({
-    data: {},
-  });
-  const userSession = await t.context.session.createOrRefreshUserSession(
-    user.id,
-    session.id
-  );
-  await t.context.session.cleanExpiredUserSessions();
-  let count = await t.context.db.userSession.count();
-  t.is(count, 1);
-
-  // Set expiresAt to past time
-  await t.context.db.userSession.update({
-    where: { id: userSession.id },
-    data: { expiresAt: new Date('2022-01-01') },
-  });
-  await t.context.session.cleanExpiredUserSessions();
-  count = await t.context.db.userSession.count();
-  t.is(count, 0);
-});

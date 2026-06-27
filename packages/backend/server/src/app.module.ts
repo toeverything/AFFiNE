@@ -30,6 +30,7 @@ import { RateLimiterModule } from './base/throttler';
 import { WebSocketModule } from './base/websocket';
 import { AccessTokenModule } from './core/access-token';
 import { AuthModule } from './core/auth';
+import { BackendRuntimeModule } from './core/backend-runtime';
 import { CommentModule } from './core/comment';
 import { ServerConfigModule, ServerConfigResolverModule } from './core/config';
 import { DocStorageModule } from './core/doc';
@@ -120,6 +121,7 @@ export const FunctionalityModules = [
   JobModule.forRoot(),
   RealtimeModule,
   ModelsModule,
+  BackendRuntimeModule,
   ScheduleModule.forRoot(),
   MonitorModule,
 ];

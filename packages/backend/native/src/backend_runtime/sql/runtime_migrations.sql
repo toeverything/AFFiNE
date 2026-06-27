@@ -38,3 +38,75 @@ CREATE TABLE IF NOT EXISTS runtime_leases (
 
 CREATE INDEX IF NOT EXISTS runtime_leases_expires_at_idx
   ON runtime_leases (expires_at);
+
+CREATE TABLE IF NOT EXISTS blob_reconciliation_runs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  kind TEXT NOT NULL,
+  mode TEXT NOT NULL,
+  status TEXT NOT NULL,
+  workspace_id TEXT,
+  started_at TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  finished_at TIMESTAMPTZ(3),
+  cursor JSONB NOT NULL DEFAULT '{}',
+  scanned INTEGER NOT NULL DEFAULT 0,
+  changed INTEGER NOT NULL DEFAULT 0,
+  failed INTEGER NOT NULL DEFAULT 0,
+  metadata JSONB NOT NULL DEFAULT '{}'
+);
+
+CREATE INDEX IF NOT EXISTS blob_reconciliation_runs_workspace_idx
+  ON blob_reconciliation_runs (workspace_id, started_at DESC);
+
+CREATE TABLE IF NOT EXISTS blob_reconciliation_checkpoints (
+  kind TEXT NOT NULL,
+  scope TEXT NOT NULL,
+  status TEXT NOT NULL,
+  cursor JSONB NOT NULL DEFAULT '{}',
+  last_key TEXT,
+  last_sid INTEGER,
+  completed_at TIMESTAMPTZ(3),
+  updated_at TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  metadata JSONB NOT NULL DEFAULT '{}',
+  PRIMARY KEY (kind, scope)
+);
+
+CREATE INDEX IF NOT EXISTS blob_reconciliation_checkpoints_status_idx
+  ON blob_reconciliation_checkpoints (kind, status, updated_at DESC);
+
+CREATE TABLE IF NOT EXISTS doc_blob_refs (
+  workspace_id TEXT NOT NULL,
+  doc_id TEXT NOT NULL,
+  blob_key TEXT NOT NULL,
+  block_id TEXT NOT NULL,
+  flavour TEXT NOT NULL,
+  snapshot_updated_at TIMESTAMPTZ(3) NOT NULL,
+  indexed_at TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  parser_version INTEGER NOT NULL,
+  status TEXT NOT NULL DEFAULT 'fresh',
+  error TEXT,
+  PRIMARY KEY (workspace_id, doc_id, blob_key, block_id)
+);
+
+CREATE INDEX IF NOT EXISTS doc_blob_refs_workspace_blob_idx
+  ON doc_blob_refs (workspace_id, blob_key);
+
+CREATE INDEX IF NOT EXISTS doc_blob_refs_workspace_status_idx
+  ON doc_blob_refs (workspace_id, status);
+
+CREATE TABLE IF NOT EXISTS blob_cleanup_candidates (
+  workspace_id TEXT NOT NULL,
+  blob_key TEXT NOT NULL,
+  reason TEXT NOT NULL,
+  status TEXT NOT NULL,
+  object_size BIGINT NOT NULL,
+  object_last_modified TIMESTAMPTZ(3),
+  planned_at TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  executed_at TIMESTAMPTZ(3),
+  run_id UUID NOT NULL,
+  evidence JSONB NOT NULL DEFAULT '{}',
+  error TEXT,
+  PRIMARY KEY (workspace_id, blob_key)
+);
+
+CREATE INDEX IF NOT EXISTS blob_cleanup_candidates_run_idx
+  ON blob_cleanup_candidates (run_id, status);
