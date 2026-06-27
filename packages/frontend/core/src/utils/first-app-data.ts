@@ -80,3 +80,35 @@ export async function createFirstAppData(workspacesService: WorkspacesService) {
   logger.info('create first workspace', defaultDocId);
   return { meta, defaultPageId: defaultDocId };
 }
+
+export async function ensureDefaultLocalWorkspace(
+  workspacesService: WorkspacesService
+) {
+  await workspacesService.list.waitForRevalidation();
+  const list = workspacesService.list.workspaces$.value;
+  const lastId = localStorage.getItem('last_workspace_id');
+  const existing =
+    list.find(workspace => workspace.id === lastId) ??
+    list.find(workspace => workspace.flavour === 'local') ??
+    list[0];
+
+  if (existing) {
+    return { meta: existing, defaultPageId: undefined as string | undefined };
+  }
+
+  const created = await createFirstAppData(workspacesService);
+  if (created) {
+    return created;
+  }
+
+  if (BUILD_CONFIG.isNative) {
+    const { meta, defaultDocId } = await buildShowcaseWorkspace(
+      workspacesService,
+      'local',
+      DEFAULT_WORKSPACE_NAME
+    );
+    return { meta, defaultPageId: defaultDocId };
+  }
+
+  return undefined;
+}

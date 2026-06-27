@@ -1,9 +1,12 @@
+import { buildWorkspaceSettingsPath } from '@affine/core/components/hooks/use-navigate-helper';
 import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import type { SettingTab } from '@affine/core/modules/dialogs/constant';
 import { DocsService } from '@affine/core/modules/doc';
 import { JournalService } from '@affine/core/modules/journal';
 import { LifecycleService } from '@affine/core/modules/lifecycle';
 import { WorkbenchService } from '@affine/core/modules/workbench';
+import { WorkspacesService } from '@affine/core/modules/workspace';
+import { ensureDefaultLocalWorkspace } from '@affine/core/utils/first-app-data';
 import { apis, events } from '@affine/electron-api';
 import type { FrameworkProvider } from '@toeverything/infra';
 
@@ -18,18 +21,49 @@ export function setupEvents(frameworkProvider: FrameworkProvider) {
   frameworkProvider.get(LifecycleService).applicationStart();
 
   events?.applicationMenu.openInSettingModal(({ activeTab, scrollAnchor }) => {
-    using currentWorkspace = getCurrentWorkspace(frameworkProvider);
-    if (!currentWorkspace) {
-      return;
-    }
-    const { workspace } = currentWorkspace;
-    const workspaceDialogService = workspace.scope.get(WorkspaceDialogService);
-    // close all other dialogs first
-    workspaceDialogService.closeAll();
-    workspaceDialogService.open('setting', {
-      activeTab: activeTab as unknown as SettingTab,
-      scrollAnchor,
-    });
+    (async () => {
+      using currentWorkspace = getCurrentWorkspace(frameworkProvider);
+      if (currentWorkspace) {
+        const { workspace } = currentWorkspace;
+        const workspaceDialogService = workspace.scope.get(
+          WorkspaceDialogService
+        );
+        // close all other dialogs first
+        workspaceDialogService.closeAll();
+        workspaceDialogService.open('setting', {
+          activeTab: activeTab as unknown as SettingTab,
+          scrollAnchor,
+        });
+        return;
+      }
+
+      try {
+        const workspacesService = frameworkProvider.get(WorkspacesService);
+        const ensuredWorkspace =
+          await ensureDefaultLocalWorkspace(workspacesService);
+
+        if (!ensuredWorkspace) {
+          if (BUILD_CONFIG.isNative) {
+            console.error('Failed to resolve a local workspace for settings');
+            return;
+          }
+          window.location.replace('/');
+          return;
+        }
+
+        window.location.replace(
+          buildWorkspaceSettingsPath(ensuredWorkspace.meta.id, {
+            tab: activeTab as SettingTab,
+            scrollAnchor,
+          })
+        );
+      } catch (err) {
+        console.error(err);
+        if (!BUILD_CONFIG.isNative) {
+          window.location.replace('/');
+        }
+      }
+    })().catch(console.error);
   });
 
   events?.applicationMenu.onNewPageAction(type => {

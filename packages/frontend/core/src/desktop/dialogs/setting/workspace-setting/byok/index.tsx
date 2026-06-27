@@ -58,15 +58,27 @@ export const WorkspaceByokSetting = () => {
   const [localKeys, setLocalKeys] = useState<ByokKey[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingKey, setEditingKey] = useState<ByokKey | null>(null);
+  const [serverSettingsLoading, setServerSettingsLoading] = useState(true);
   const [draggingKey, setDraggingKey] = useState<{
     id: string;
     storage: ByokStorage;
   } | null>(null);
 
   const load = useCallback(async () => {
+    const [localStorageSupported, nextLocalKeys] = await Promise.all([
+      localByokStorageSupported(),
+      readLocalKeys(workspace.id),
+    ]);
+
+    setLocalKeys(nextLocalKeys);
+
     if (!workspaceServer.server) {
+      setUsage([]);
+      setSettings(null);
+      setServerSettingsLoading(false);
       return;
     }
+
     const to = new Date();
     const from = new Date(to.getTime() - 30 * 24 * 60 * 60 * 1000);
     const gql = workspaceServer.server.gql as GqlFn;
@@ -78,21 +90,20 @@ export const WorkspaceByokSetting = () => {
         to: to.toISOString(),
       },
     });
-    const [localStorageSupported, nextLocalKeys] = await Promise.all([
-      localByokStorageSupported(),
-      readLocalKeys(workspace.id),
-    ]);
+
     setSettings({
       ...data.workspace.byokSettings,
       localStorageSupported:
         data.workspace.byokSettings.localEntitled && localStorageSupported,
     });
     setUsage(data.workspace.byokUsage);
-    setLocalKeys(nextLocalKeys);
+    setServerSettingsLoading(false);
   }, [workspace.id, workspaceServer.server]);
 
   useEffect(() => {
+    setServerSettingsLoading(true);
     load().catch(error => {
+      setServerSettingsLoading(false);
       logByokError('Failed to load BYOK settings', error);
       notify.error({
         title: byokT(t, 'notify.load-failed.title'),
@@ -109,6 +120,7 @@ export const WorkspaceByokSetting = () => {
       return a.sortOrder - b.sortOrder;
     });
   }, [localKeys, settings?.keys]);
+
   const canAddServerKey = settings?.serverEntitled ?? false;
   const canAddLocalKey =
     (settings?.localEntitled ?? false) &&
@@ -209,155 +221,156 @@ export const WorkspaceByokSetting = () => {
     [draggingKey, keys, load, t, workspace.id, workspaceServer.server]
   );
 
-  if (!settings) {
-    return (
-      <SettingHeader
-        title={byokT(t, 'title-beta')}
-        subtitle={byokT(t, 'loading')}
-      />
-    );
-  }
+  const renderByokContent = () => {
+    if (serverSettingsLoading) {
+      return null;
+    }
 
-  if (!settings.entitled) {
-    return (
-      <>
-        <SettingHeader
-          title={byokT(t, 'title-beta')}
-          subtitle={byokT(t, 'subtitle')}
-        />
-        <SettingWrapper>
-          <div className={styles.locked} data-testid="workspace-byok-locked">
-            <div>
-              <div className={styles.title}>{byokT(t, 'locked.title')}</div>
-              <div className={styles.description}>
-                {byokT(t, 'locked.description')}
-              </div>
-            </div>
-            <div className={styles.tags}>
-              {settings.entitlementRequired.map(plan => (
-                <span className={styles.tag} key={plan}>
-                  {plan}
-                </span>
-              ))}
+    if (!settings) {
+      return null;
+    }
+
+    if (!settings.entitled) {
+      return (
+        <div className={styles.locked} data-testid="workspace-byok-locked">
+          <div>
+            <div className={styles.title}>{byokT(t, 'locked.title')}</div>
+            <div className={styles.description}>
+              {byokT(t, 'locked.description')}
             </div>
           </div>
-        </SettingWrapper>
+          <div className={styles.tags}>
+            {settings.entitlementRequired.map(plan => (
+              <span className={styles.tag} key={plan}>
+                {plan}
+              </span>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <>
+        {settings.hasAiPlan ? (
+          <div className={styles.notice}>
+            <div className={styles.title}>{byokT(t, 'notice.title')}</div>
+            <div className={styles.description}>
+              {byokT(t, 'notice.description')}
+            </div>
+          </div>
+        ) : null}
+
+        <div className={styles.panel} data-testid="workspace-byok-keys">
+          <div className={styles.panelHeader}>
+            <div>
+              <div className={styles.title}>{byokT(t, 'keys.title')}</div>
+              <div className={styles.description}>
+                {byokT(t, 'keys.description')}
+              </div>
+            </div>
+            <Button
+              variant="primary"
+              disabled={!canManageKeys}
+              onClick={() => {
+                setEditingKey(null);
+                setModalOpen(true);
+              }}
+            >
+              {byokT(t, 'action.add-key')}
+            </Button>
+          </div>
+          {keys.length ? (
+            <KeyList
+              keys={keys}
+              onEdit={key => {
+                setEditingKey(key);
+                setModalOpen(true);
+              }}
+              onDelete={key => {
+                deleteKey(key).catch(error => {
+                  logByokError('Failed to delete BYOK key', error);
+                  notify.error({
+                    title: byokT(t, 'notify.delete-failed.title'),
+                    message: byokT(t, 'notify.operation-failed.message'),
+                  });
+                });
+              }}
+              onDragStart={key => {
+                setDraggingKey({ id: key.id, storage: key.storage });
+              }}
+              onDragEnd={() => setDraggingKey(null)}
+              onDrop={key => {
+                reorderKey(key).catch(error => {
+                  logByokError('Failed to reorder BYOK keys', error);
+                  notify.error({
+                    title: byokT(t, 'notify.reorder-failed.title'),
+                    message: byokT(t, 'notify.operation-failed.message'),
+                  });
+                });
+              }}
+            />
+          ) : (
+            <div className={styles.empty} data-testid="workspace-byok-empty">
+              <div className={styles.title}>{byokT(t, 'empty.title')}</div>
+              <div className={styles.description}>
+                {byokT(t, 'empty.description')}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <CoveragePanel keys={keys} settings={settings} />
+
+        <UsagePanel
+          keys={keys}
+          usage={usage}
+          onClearAll={() => {
+            clearAll().catch(error => {
+              logByokError('Failed to clear BYOK keys', error);
+              notify.error({
+                title: byokT(t, 'notify.clear-failed.title'),
+                message: byokT(t, 'notify.operation-failed.message'),
+              });
+            });
+          }}
+        />
       </>
     );
-  }
+  };
 
   return (
     <>
       <SettingHeader
         title={byokT(t, 'title-beta')}
-        subtitle={byokT(t, 'header')}
+        subtitle={
+          serverSettingsLoading ? byokT(t, 'loading') : byokT(t, 'header')
+        }
       />
       <SettingWrapper>
-        <div className={styles.stack}>
-          {settings.hasAiPlan ? (
-            <div className={styles.notice}>
-              <div className={styles.title}>{byokT(t, 'notice.title')}</div>
-              <div className={styles.description}>
-                {byokT(t, 'notice.description')}
-              </div>
-            </div>
-          ) : null}
-
-          <div className={styles.panel} data-testid="workspace-byok-keys">
-            <div className={styles.panelHeader}>
-              <div>
-                <div className={styles.title}>{byokT(t, 'keys.title')}</div>
-                <div className={styles.description}>
-                  {byokT(t, 'keys.description')}
-                </div>
-              </div>
-              <Button
-                variant="primary"
-                disabled={!canManageKeys}
-                onClick={() => {
-                  setEditingKey(null);
-                  setModalOpen(true);
-                }}
-              >
-                {byokT(t, 'action.add-key')}
-              </Button>
-            </div>
-            {keys.length ? (
-              <KeyList
-                keys={keys}
-                onEdit={key => {
-                  setEditingKey(key);
-                  setModalOpen(true);
-                }}
-                onDelete={key => {
-                  deleteKey(key).catch(error => {
-                    logByokError('Failed to delete BYOK key', error);
-                    notify.error({
-                      title: byokT(t, 'notify.delete-failed.title'),
-                      message: byokT(t, 'notify.operation-failed.message'),
-                    });
-                  });
-                }}
-                onDragStart={key => {
-                  setDraggingKey({ id: key.id, storage: key.storage });
-                }}
-                onDragEnd={() => setDraggingKey(null)}
-                onDrop={key => {
-                  reorderKey(key).catch(error => {
-                    logByokError('Failed to reorder BYOK keys', error);
-                    notify.error({
-                      title: byokT(t, 'notify.reorder-failed.title'),
-                      message: byokT(t, 'notify.operation-failed.message'),
-                    });
-                  });
-                }}
-              />
-            ) : (
-              <div className={styles.empty} data-testid="workspace-byok-empty">
-                <div className={styles.title}>{byokT(t, 'empty.title')}</div>
-                <div className={styles.description}>
-                  {byokT(t, 'empty.description')}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <CoveragePanel keys={keys} settings={settings} />
-
-          <UsagePanel
-            keys={keys}
-            usage={usage}
-            onClearAll={() => {
-              clearAll().catch(error => {
-                logByokError('Failed to clear BYOK keys', error);
-                notify.error({
-                  title: byokT(t, 'notify.clear-failed.title'),
-                  message: byokT(t, 'notify.operation-failed.message'),
-                });
-              });
-            }}
-          />
-        </div>
+        <div className={styles.stack}>{renderByokContent()}</div>
       </SettingWrapper>
-      <AddKeyModal
-        workspaceId={workspace.id}
-        settings={settings}
-        editingKey={editingKey}
-        open={modalOpen}
-        onOpenChange={open => {
-          setModalOpen(open);
-          if (!open) {
-            setEditingKey(null);
-          }
-        }}
-        onSaved={load}
-        localKeys={localKeys}
-        setLocalKeys={setLocalKeys}
-        localStorageSupported={settings.localStorageSupported}
-        canAddServerKey={canAddServerKey}
-        canAddLocalKey={canAddLocalKey}
-        gql={workspaceServer.server?.gql as GqlFn | undefined}
-      />
+      {settings?.entitled ? (
+        <AddKeyModal
+          workspaceId={workspace.id}
+          settings={settings}
+          editingKey={editingKey}
+          open={modalOpen}
+          onOpenChange={open => {
+            setModalOpen(open);
+            if (!open) {
+              setEditingKey(null);
+            }
+          }}
+          onSaved={load}
+          localKeys={localKeys}
+          setLocalKeys={setLocalKeys}
+          localStorageSupported={settings.localStorageSupported}
+          canAddServerKey={canAddServerKey}
+          canAddLocalKey={canAddLocalKey}
+          gql={workspaceServer.server?.gql as GqlFn | undefined}
+        />
+      ) : null}
     </>
   );
 };

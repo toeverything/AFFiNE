@@ -18,6 +18,7 @@ const {
   loggerWarnMock: vi.fn(),
   mainRPCMock: {
     getAppPath: vi.fn(async () => '/mock-app'),
+    getPath: vi.fn(async () => '/mock-user-data'),
     isPackaged: vi.fn(async () => false),
   },
   spawnMock: vi.fn(),
@@ -135,6 +136,7 @@ describe('local AI manager lifecycle', () => {
     vi.useFakeTimers();
     accessMock.mockReset();
     mainRPCMock.getAppPath.mockReset();
+    mainRPCMock.getPath.mockReset();
     mainRPCMock.isPackaged.mockReset();
     createServerMock.mockReset();
     fetchMock.mockReset();
@@ -143,6 +145,7 @@ describe('local AI manager lifecycle', () => {
 
     accessMock.mockResolvedValue(undefined);
     mainRPCMock.getAppPath.mockResolvedValue('/mock-app');
+    mainRPCMock.getPath.mockResolvedValue('/mock-user-data');
     mainRPCMock.isPackaged.mockResolvedValue(false);
     process.resourcesPath = '/mock-resources';
     createServerMock.mockImplementation(() => createAvailablePortServer());
@@ -175,6 +178,61 @@ describe('local AI manager lifecycle', () => {
     expect(spawnMock).not.toHaveBeenCalled();
   });
 
+  test('reports a downloaded model as ready for download status checks', async () => {
+    accessMock.mockImplementation(async (filePath: string) => {
+      if (filePath === '/mock-user-data/local-ai/models/gemma-3-4b-it.gguf') {
+        return;
+      }
+      throw new Error('missing');
+    });
+
+    const { LocalAIManager } = await loadManagerModule();
+    const manager = new LocalAIManager();
+
+    await expect(manager.getDownloadStatus()).resolves.toMatchObject({
+      state: 'ready',
+      source: 'downloaded',
+      targetPath: '/mock-user-data/local-ai/models/gemma-3-4b-it.gguf',
+    });
+  });
+
+  test('ignores bundled model when computing download status', async () => {
+    accessMock.mockImplementation(async (filePath: string) => {
+      if (
+        filePath === '/mock-app/resources/local-ai/models/gemma-3-4b-it.gguf'
+      ) {
+        return;
+      }
+      throw new Error('missing');
+    });
+
+    const { LocalAIManager } = await loadManagerModule();
+    const manager = new LocalAIManager();
+
+    await expect(manager.getDownloadStatus()).resolves.toMatchObject({
+      state: 'unavailable',
+      reason: 'model_missing',
+    });
+  });
+
+  test('does not start sidecar from bundled model path alone', async () => {
+    accessMock.mockImplementation(async (filePath: string) => {
+      if (filePath.includes('/mock-user-data/local-ai/models/')) {
+        throw new Error('missing downloaded model');
+      }
+      return;
+    });
+
+    const { LocalAIManager } = await loadManagerModule();
+    const manager = new LocalAIManager();
+
+    await expect(manager.ensureReady()).resolves.toMatchObject({
+      state: 'unsupported',
+      detail: 'model missing',
+    });
+    expect(spawnMock).not.toHaveBeenCalled();
+  });
+
   test('uses the next available port when the default local AI port is already occupied', async () => {
     const child = new MockChildProcess();
     spawnMock.mockReturnValue(child);
@@ -189,6 +247,7 @@ describe('local AI manager lifecycle', () => {
       state: 'ready',
       port: 43112,
       endpoint: 'http://127.0.0.1:43112',
+      modelSource: 'downloaded',
     });
     expect(spawnMock).toHaveBeenCalledTimes(1);
     expect(spawnMock).toHaveBeenCalledWith(
@@ -221,6 +280,7 @@ describe('local AI manager lifecycle', () => {
       state: 'ready',
       port: 47001,
       endpoint: 'http://127.0.0.1:47001',
+      modelSource: 'downloaded',
     });
     expect(spawnMock).toHaveBeenCalledWith(
       expect.any(String),
@@ -240,9 +300,10 @@ describe('local AI manager lifecycle', () => {
     await expect(manager.ensureReady()).resolves.toMatchObject({
       state: 'ready',
       endpoint: 'http://127.0.0.1:43111',
+      modelSource: 'downloaded',
     });
 
-    expect(mainRPCMock.isPackaged).toHaveBeenCalledTimes(1);
+    expect(mainRPCMock.isPackaged).toHaveBeenCalled();
     expect(mainRPCMock.getAppPath).not.toHaveBeenCalled();
   });
 
@@ -255,6 +316,7 @@ describe('local AI manager lifecycle', () => {
 
     await expect(manager.ensureReady()).resolves.toMatchObject({
       state: 'ready',
+      modelSource: 'downloaded',
     });
     expect(spawnMock).toHaveBeenCalledTimes(1);
 

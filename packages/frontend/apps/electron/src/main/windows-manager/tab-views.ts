@@ -54,6 +54,12 @@ async function getAdditionalArguments() {
   ];
 }
 
+const AUTH_RESTORE_PATHNAMES = new Set([
+  '/sign-in',
+  '/desktop-signin',
+  '/oauth/login',
+]);
+
 const TabViewsMetaState = {
   $: globalStateStorage.watch<TabViewsMetaSchema>(TabViewsMetaKey).pipe(
     map(v => tabViewsMetaSchema.parse(v ?? {})),
@@ -551,12 +557,20 @@ export class WebContentViewsManager {
     const workbench = this.tabViewsMeta.workbenches.find(w => w.id === id);
     const viewMeta = workbench?.views[workbench.activeViewIndex];
     if (workbench && viewMeta) {
-      const url = new URL(
-        workbench.basename + (viewMeta.path?.pathname ?? ''),
-        mainWindowOrigin
-      );
-      url.hash = viewMeta.path?.hash ?? '';
-      url.search = viewMeta.path?.search ?? '';
+      const isAuthRestore =
+        workbench.basename === '/' &&
+        AUTH_RESTORE_PATHNAMES.includes(viewMeta.path?.pathname ?? '');
+      if (isAuthRestore) {
+        this.updateWorkbenchViewMeta(id, viewMeta.id, {
+          path: undefined,
+        });
+      }
+      const pathname = isAuthRestore ? '' : (viewMeta.path?.pathname ?? '');
+      const search = isAuthRestore ? '' : (viewMeta.path?.search ?? '');
+      const hash = isAuthRestore ? '' : (viewMeta.path?.hash ?? '');
+      const url = new URL(workbench.basename + pathname, mainWindowOrigin);
+      url.hash = hash;
+      url.search = search;
       logger.info(`loading tab ${id} at ${url.href}`);
       view.webContents.loadURL(url.href).catch(err => logger.error(err));
     }

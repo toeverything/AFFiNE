@@ -161,14 +161,35 @@ export class ChatInputPreference extends SignalWatcher(
     }
 
     try {
-      const status = await apis?.localAI?.getStatus?.();
+      const [runtimeStatus, downloadStatus] = await Promise.all([
+        apis?.localAI?.getStatus?.(),
+        apis?.localAI?.getDownloadStatus?.(),
+      ]);
 
-      if (status?.state === 'ready') {
+      if (downloadStatus?.state === 'downloading') {
+        this.localStatusLabel = `Downloading ${downloadStatus.progress}%`;
+        return;
+      }
+
+      if (downloadStatus?.state === 'error') {
+        this.localStatusLabel = 'Download failed';
+        return;
+      }
+
+      if (
+        downloadStatus?.state === 'unavailable' &&
+        downloadStatus.reason === 'model_missing'
+      ) {
+        this.localStatusLabel = 'Download required';
+        return;
+      }
+
+      if (runtimeStatus?.state === 'ready') {
         this.localStatusLabel = 'Local';
         return;
       }
 
-      if (status?.state === 'starting') {
+      if (runtimeStatus?.state === 'starting') {
         this.localStatusLabel = 'Starting';
         return;
       }

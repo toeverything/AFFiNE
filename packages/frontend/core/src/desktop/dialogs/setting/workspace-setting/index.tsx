@@ -7,6 +7,7 @@ import { ServerDeploymentType } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import {
   AiEmbeddingIcon,
+  ChatWithAiIcon,
   CollaborationIcon,
   IntegrationsIcon,
   PaymentIcon,
@@ -19,6 +20,7 @@ import { useMemo } from 'react';
 
 import type { SettingSidebarItem, SettingState } from '../types';
 import { WorkspaceSettingBilling } from './billing';
+import { WorkspaceByokSetting } from './byok';
 import { IntegrationSetting } from './integration';
 import { WorkspaceSettingLicense } from './license';
 import { MembersPanel } from './members';
@@ -57,6 +59,8 @@ export const WorkspaceSetting = ({
       return <WorkspaceSettingLicense onCloseSetting={onCloseSetting} />;
     case 'workspace:integrations':
       return <IntegrationSetting scrollAnchor={scrollAnchor} />;
+    case 'workspace:byok':
+      return <WorkspaceByokSetting />;
     case 'workspace:embedding':
       return <EmbeddingSettings />;
     default:
@@ -105,6 +109,12 @@ export const useWorkspaceSettingList = (): SettingSidebarItem[] => {
         title: t['com.affine.integration.integrations'](),
         icon: <IntegrationsIcon />,
         testId: 'workspace-setting:integrations',
+      },
+      {
+        key: 'workspace:byok',
+        title: t['com.affine.settings.workspace.byok.title'](),
+        icon: <ChatWithAiIcon />,
+        testId: 'workspace-setting:byok',
       },
       {
         key: 'workspace:storage',
