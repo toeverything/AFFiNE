@@ -27,6 +27,8 @@ describe('server config version guard', () => {
   });
 
   test('reports the required server version', () => {
+    expect.assertions(2);
+
     try {
       assertSupportedServerVersion('0.26.0');
     } catch (error) {
