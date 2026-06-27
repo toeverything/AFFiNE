@@ -2393,6 +2393,7 @@
   "error.INVALID_LICENSE_UPDATE_PARAMS": "无效的许可证更新参数。{{reason}}",
   "error.LICENSE_EXPIRED": "许可证已过期。",
   "error.UNSUPPORTED_CLIENT_VERSION": "不支持的客户端版本 [{{clientVersion}}]，所需版本为 [{{requiredVersion}}]。",
+  "error.UNSUPPORTED_SERVER_VERSION": "此 AFFiNE 服务器版本过旧，当前客户端需要连接 {{requiredVersion}} 的服务器。请升级服务器后重试。",
   "error.NOTIFICATION_NOT_FOUND": "未找到通知。",
   "error.MENTION_USER_DOC_ACCESS_DENIED": "提到的用户无法访问文档 {{docId}}。",
   "error.MENTION_USER_ONESELF_DENIED": "你不能提及你自己。",

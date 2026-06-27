@@ -146,6 +146,7 @@ export function configureCloudModule(framework: Framework) {
       UrlService,
       GlobalDialogService,
       NbstoreService,
+      ServerService,
     ])
     .store(AuthStore, [
       FetchService,

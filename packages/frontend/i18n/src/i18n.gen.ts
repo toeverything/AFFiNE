@@ -9693,6 +9693,12 @@ export function useAFFiNEI18N(): {
         requiredVersion: string;
     }>): string;
     /**
+      * `This AFFiNE server is too old for this client. Please upgrade the server to {{requiredVersion}}.`
+      */
+    ["error.UNSUPPORTED_SERVER_VERSION"](options: {
+        readonly requiredVersion: string;
+    }): string;
+    /**
       * `Notification not found.`
       */
     ["error.NOTIFICATION_NOT_FOUND"](): string;
