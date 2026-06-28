@@ -6,7 +6,6 @@ import ava from 'ava';
 import Sinon from 'sinon';
 import { z } from 'zod';
 
-import { JobExecutor } from '../../base/job/queue/executor';
 import { ServerFeature, ServerService } from '../../core';
 import { AuthService } from '../../core/auth';
 import { QuotaModule } from '../../core/quota';
@@ -69,11 +68,6 @@ test.serial.before(async t => {
     imports: [QuotaModule, CopilotModule],
     tapModule: builder => {
       builder.overrideProvider(PromptService).useClass(TestingPromptService);
-      builder.overrideProvider(JobExecutor).useValue({
-        onConfigInit: async () => {},
-        onConfigChanged: async () => {},
-        onModuleDestroy: async () => {},
-      });
     },
   });
 
