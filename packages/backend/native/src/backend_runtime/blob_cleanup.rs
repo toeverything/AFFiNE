@@ -315,6 +315,7 @@ async fn finish_run(
 
 async fn mark_candidate_status(
   pool: &PgPool,
+  run_id: &str,
   workspace_id: &str,
   blob_key: &str,
   status: &str,
@@ -328,7 +329,7 @@ async fn mark_candidate_status(
         executed_at = CURRENT_TIMESTAMP,
         evidence = evidence || $4,
         error = $5
-    WHERE workspace_id = $1 AND blob_key = $2
+    WHERE workspace_id = $1 AND blob_key = $2 AND run_id = $6::uuid
     "#,
   )
   .bind(workspace_id)
@@ -336,6 +337,7 @@ async fn mark_candidate_status(
   .bind(status)
   .bind(evidence)
   .bind(error)
+  .bind(run_id)
   .execute(pool)
   .await
   .map_err(|err| napi_error(format!("Blob cleanup mark candidate status failed: {err}")))?;
@@ -412,7 +414,7 @@ async fn load_marked_candidates(pool: &PgPool, run_id: &str, limit: i64) -> Resu
     SELECT workspace_id, blob_key
     FROM blob_cleanup_candidates
     WHERE run_id = $1::uuid AND status IN ('marked', 'failed')
-    ORDER BY planned_at ASC
+    ORDER BY CASE WHEN status = 'marked' THEN 0 ELSE 1 END, planned_at ASC
     LIMIT $2
     "#,
   )
@@ -532,6 +534,7 @@ impl BackendRuntime {
         result.skipped_still_referenced += 1;
         mark_candidate_status(
           &pool,
+          &run_id,
           &row.workspace_id,
           &row.blob_key,
           "skipped",
@@ -550,6 +553,7 @@ impl BackendRuntime {
           result.failed += 1;
           mark_candidate_status(
             &pool,
+            &run_id,
             &row.workspace_id,
             &row.blob_key,
             "failed",
@@ -567,6 +571,7 @@ impl BackendRuntime {
           result.skipped_still_referenced += 1;
           mark_candidate_status(
             &pool,
+            &run_id,
             &row.workspace_id,
             &row.blob_key,
             "skipped",
@@ -580,6 +585,7 @@ impl BackendRuntime {
           result.failed += 1;
           mark_candidate_status(
             &pool,
+            &run_id,
             &row.workspace_id,
             &row.blob_key,
             "failed",
@@ -606,6 +612,7 @@ impl BackendRuntime {
             result.failed += 1;
             mark_candidate_status(
               &pool,
+              &run_id,
               &row.workspace_id,
               &row.blob_key,
               "failed",
@@ -621,6 +628,7 @@ impl BackendRuntime {
 
       mark_candidate_status(
         &pool,
+        &run_id,
         &row.workspace_id,
         &row.blob_key,
         "executed",

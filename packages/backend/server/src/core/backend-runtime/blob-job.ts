@@ -107,18 +107,9 @@ export class BackendRuntimeBlobJob {
     });
 
     for (const workspace of workspaces) {
-      const result = await this.rt.backfillMissingBlobMetadata(
-        workspace.id,
-        objectLimit
-      );
-      await Promise.all(
-        result.workspaceIds.map(workspaceId =>
-          this.event.emitAsync('workspace.blobs.updated', { workspaceId })
-        )
-      );
-      this.logger.log(
-        `backfilled blob metadata workspace=${workspace.id} sid=${workspace.sid} upserted=${result.upsertedMetadata} scanned=${result.scannedObjects}`
-      );
+      await this.drainBlobMetadataBackfill(workspace.id, objectLimit, {
+        sid: workspace.sid,
+      });
     }
 
     const nextSid = workspaces.at(-1)?.sid;
@@ -171,17 +162,29 @@ export class BackendRuntimeBlobJob {
 
   @Cron(CronExpression.EVERY_DAY_AT_1AM)
   async dailyBlobMetadataBackfill() {
-    await this.enqueueBackfillMissingBlobMetadataBySid();
+    await this.queue.add(
+      'backendRuntime.backfillMissingBlobMetadataBySid',
+      {},
+      { jobId: 'daily-backend-runtime-blob-metadata-backfill' }
+    );
   }
 
   @Cron(CronExpression.EVERY_DAY_AT_2AM)
   async dailyDocBlobRefsRebuild() {
-    await this.enqueueRebuildWorkspaceDocBlobRefsBySid();
+    await this.queue.add(
+      'backendRuntime.rebuildWorkspaceDocBlobRefsBySid',
+      {},
+      { jobId: 'daily-backend-runtime-doc-blob-refs-rebuild' }
+    );
   }
 
   @Cron(CronExpression.EVERY_DAY_AT_3AM)
   async dailyBlobCleanupPlanning() {
-    await this.enqueuePlanUnreferencedWorkspaceBlobsBySid();
+    await this.queue.add(
+      'backendRuntime.planUnreferencedWorkspaceBlobsBySid',
+      {},
+      { jobId: 'daily-backend-runtime-blob-cleanup-planning' }
+    );
   }
 
   @OnJob('backendRuntime.backfillMissingBlobMetadata')
@@ -189,18 +192,7 @@ export class BackendRuntimeBlobJob {
     workspaceId,
     limit = 1000,
   }: Jobs['backendRuntime.backfillMissingBlobMetadata']) {
-    const result = await this.rt.backfillMissingBlobMetadata(
-      workspaceId,
-      limit
-    );
-    await Promise.all(
-      result.workspaceIds.map(workspaceId =>
-        this.event.emitAsync('workspace.blobs.updated', { workspaceId })
-      )
-    );
-    this.logger.log(
-      `backfilled blob metadata workspace=${workspaceId} upserted=${result.upsertedMetadata} scanned=${result.scannedObjects}`
-    );
+    await this.drainBlobMetadataBackfill(workspaceId, limit);
   }
 
   @OnJob('backendRuntime.rebuildWorkspaceDocBlobRefs')
@@ -208,13 +200,7 @@ export class BackendRuntimeBlobJob {
     workspaceId,
     limit = 1000,
   }: Jobs['backendRuntime.rebuildWorkspaceDocBlobRefs']) {
-    const result = await this.rt.rebuildWorkspaceDocBlobRefs(
-      workspaceId,
-      limit
-    );
-    this.logger.log(
-      `rebuilt doc blob refs workspace=${workspaceId} parsed=${result.parsedDocs} failed=${result.failedDocs}`
-    );
+    await this.drainWorkspaceDocBlobRefs(workspaceId, limit);
   }
 
   @OnJob('backendRuntime.rebuildWorkspaceDocBlobRefsBySid')
@@ -240,13 +226,9 @@ export class BackendRuntimeBlobJob {
     });
 
     for (const workspace of workspaces) {
-      const result = await this.rt.rebuildWorkspaceDocBlobRefs(
-        workspace.id,
-        docLimit
-      );
-      this.logger.log(
-        `rebuilt doc blob refs workspace=${workspace.id} sid=${workspace.sid} parsed=${result.parsedDocs} failed=${result.failedDocs}`
-      );
+      await this.drainWorkspaceDocBlobRefs(workspace.id, docLimit, {
+        sid: workspace.sid,
+      });
     }
 
     const nextSid = workspaces.at(-1)?.sid;
@@ -339,5 +321,48 @@ export class BackendRuntimeBlobJob {
     this.logger.log(
       `executed blob cleanup run=${runId} deleted=${result.deletedObjects} skipped=${result.skippedStillReferenced} failed=${result.failed}`
     );
+  }
+
+  private async drainBlobMetadataBackfill(
+    workspaceId: string,
+    limit: number,
+    context: { sid?: number } = {}
+  ) {
+    for (;;) {
+      const result = await this.rt.backfillMissingBlobMetadata(
+        workspaceId,
+        limit
+      );
+      await Promise.all(
+        result.workspaceIds.map(workspaceId =>
+          this.event.emitAsync('workspace.blobs.updated', { workspaceId })
+        )
+      );
+      this.logger.log(
+        `backfilled blob metadata workspace=${workspaceId}${context.sid === undefined ? '' : ` sid=${context.sid}`} upserted=${result.upsertedMetadata} scanned=${result.scannedObjects}`
+      );
+      if (!result.nextCursor) {
+        break;
+      }
+    }
+  }
+
+  private async drainWorkspaceDocBlobRefs(
+    workspaceId: string,
+    limit: number,
+    context: { sid?: number } = {}
+  ) {
+    for (;;) {
+      const result = await this.rt.rebuildWorkspaceDocBlobRefs(
+        workspaceId,
+        limit
+      );
+      this.logger.log(
+        `rebuilt doc blob refs workspace=${workspaceId}${context.sid === undefined ? '' : ` sid=${context.sid}`} parsed=${result.parsedDocs} failed=${result.failedDocs}`
+      );
+      if (!result.nextCursor) {
+        break;
+      }
+    }
   }
 }

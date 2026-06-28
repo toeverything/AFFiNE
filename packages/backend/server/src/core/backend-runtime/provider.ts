@@ -131,7 +131,7 @@ export class BackendRuntimeProvider
     if (this.migrationsStarted) {
       return;
     }
-    this.migrationsStarted = true;
     await this.runtime.runMigrations();
+    this.migrationsStarted = true;
   }
 }

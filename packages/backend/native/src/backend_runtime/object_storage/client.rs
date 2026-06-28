@@ -360,11 +360,7 @@ impl ObjectStorageClient {
 
 fn is_not_found_error(error: &impl std::fmt::Debug) -> bool {
   let message = format!("{error:?}");
-  message.contains("NotFound")
-    || message.contains("NoSuchKey")
-    || message.contains("NoSuchBucket")
-    || message.contains("status: 404")
-    || message.contains("Code: 404")
+  message.contains("NoSuchKey") || (message.contains("NotFound") && !message.contains("NoSuchBucket"))
 }
 
 fn expires_at_ms(expires_in_seconds: u64) -> Result<i64> {

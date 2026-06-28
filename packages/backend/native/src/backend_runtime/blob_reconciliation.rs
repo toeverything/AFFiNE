@@ -163,6 +163,10 @@ fn push_workspace_once(workspace_ids: &mut Vec<String>, workspace_id: &str) {
   }
 }
 
+fn checked_list_page_limit(limit: i64) -> Result<i32> {
+  i32::try_from(limit).map_err(|_| napi_error("blob metadata backfill limit exceeds i32::MAX"))
+}
+
 #[napi_derive::napi]
 impl BackendRuntime {
   #[napi]
@@ -174,6 +178,7 @@ impl BackendRuntime {
     if limit <= 0 {
       return Err(napi_error("blob metadata backfill limit must be positive"));
     }
+    let page_limit = checked_list_page_limit(limit)?;
 
     let pool = self.pool().await?;
     let prefix = workspace_id.as_ref().map(|id| format!("{id}/"));
@@ -184,7 +189,7 @@ impl BackendRuntime {
         prefix,
         checkpoint.as_ref().and_then(BackfillCheckpoint::continuation_token),
         checkpoint.as_ref().and_then(|checkpoint| checkpoint.last_key.clone()),
-        limit as i32,
+        page_limit,
       )
       .await?;
     let has_more = page.next_continuation_token.is_some();

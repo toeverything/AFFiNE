@@ -44,10 +44,13 @@ test('should clean expired user sessions', async t => {
   runtime.cleanupExpiredUserSessions.resolves(0);
   await job.cleanExpiredUserSessions();
   t.true(runtime.cleanupExpiredUserSessions.calledOnce);
+  t.deepEqual(runtime.cleanupExpiredUserSessions.firstCall.args, [1000]);
 
   runtime.cleanupExpiredUserSessions.reset();
   runtime.cleanupExpiredUserSessions.onCall(0).resolves(1000);
   runtime.cleanupExpiredUserSessions.onCall(1).resolves(2);
   await job.cleanExpiredUserSessions();
   t.is(runtime.cleanupExpiredUserSessions.callCount, 2);
+  t.deepEqual(runtime.cleanupExpiredUserSessions.firstCall.args, [1000]);
+  t.deepEqual(runtime.cleanupExpiredUserSessions.secondCall.args, [1000]);
 });

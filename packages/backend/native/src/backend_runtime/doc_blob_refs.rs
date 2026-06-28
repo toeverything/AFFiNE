@@ -190,6 +190,22 @@ async fn load_projection_cursor(pool: &PgPool, workspace_id: &str) -> Result<Opt
   }))
 }
 
+async fn purge_removed_doc_refs(pool: &PgPool, workspace_id: &str, current_doc_ids: &[String]) -> Result<i64> {
+  let result = sqlx::query(
+    r#"
+    DELETE FROM doc_blob_refs
+    WHERE workspace_id = $1
+      AND NOT (doc_id = ANY($2))
+    "#,
+  )
+  .bind(workspace_id)
+  .bind(current_doc_ids)
+  .execute(pool)
+  .await
+  .map_err(|err| napi_error(format!("Doc blob refs purge removed docs failed: {err}")))?;
+  Ok(result.rows_affected() as i64)
+}
+
 fn extract_refs(snapshot: &SnapshotRow) -> Result<Vec<ExtractedRef>> {
   let parsed = doc_parser::parse_doc_from_binary(snapshot.blob.clone(), snapshot.doc_id.clone())
     .map_err(|err| napi_error(format!("Doc blob refs parse failed: {err}")))?;
@@ -362,6 +378,7 @@ impl BackendRuntime {
       }
     };
     let cursor = load_projection_cursor(&pool, &workspace_id).await?;
+    let current_doc_ids = doc_ids.clone();
     let doc_ids = doc_ids
       .into_iter()
       .filter(|doc_id| cursor.as_ref().is_none_or(|cursor| doc_id > cursor))
@@ -388,6 +405,8 @@ impl BackendRuntime {
     }
     if has_more {
       total.next_cursor = last_doc_id;
+    } else if total.failed_docs == 0 {
+      total.refs_deleted += purge_removed_doc_refs(&pool, &workspace_id, &current_doc_ids).await?;
     }
 
     upsert_projection_checkpoint(&pool, &workspace_id, &total).await?;
