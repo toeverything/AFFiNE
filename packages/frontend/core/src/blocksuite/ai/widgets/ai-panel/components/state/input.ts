@@ -228,7 +228,13 @@ export class AIPanelInput extends SignalWatcher(WithDisposable(LitElement)) {
   };
 
   private get showLocalToggle() {
-    return !!apis?.localAI && hasAIModelService();
+    if (!apis?.localAI || !hasAIModelService()) {
+      return false;
+    }
+
+    const modelService = getAIModelService();
+    return !!modelService.getActiveModel(modelService.modelId.value)
+      ?.localCapable;
   }
 
   private readonly localMode = computed(() => {

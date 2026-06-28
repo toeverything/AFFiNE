@@ -105,6 +105,21 @@ const getLocalGemmaStatusCopy = (status: LocalAIDownloadStatus | null) => {
   }
 };
 
+const createLocalGemmaStatusError = (
+  detail: string
+): LocalAIDownloadStatus => ({
+  state: 'error',
+  canDownload: true,
+  modelId: 'gemma-3-4b-it-local',
+  downloadUrl: '',
+  targetPath: '',
+  progress: 0,
+  source: 'none',
+  downloadedBytes: 0,
+  totalBytes: null,
+  detail,
+});
+
 const getLocalGemmaActionLabel = (status: LocalAIDownloadStatus | null) => {
   if (!status) {
     return 'Checking…';
@@ -131,7 +146,16 @@ export const LocalGemmaSetting = () => {
     apis?.localAI
       ?.getDownloadStatus?.()
       .then(status => setLocalDownloadStatus(status))
-      .catch(console.error);
+      .catch(error => {
+        console.error(error);
+        setLocalDownloadStatus(
+          createLocalGemmaStatusError(
+            error instanceof Error
+              ? error.message
+              : 'Unable to check local Gemma download status.'
+          )
+        );
+      });
 
     return (
       events?.localAI?.onDownloadStatusChanged?.(status => {

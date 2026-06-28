@@ -16,19 +16,19 @@ import {
 
 describe('ai model catalog helpers', () => {
   test('infers GLM and Gemma providers from model identifiers', () => {
-    expect(inferProviderFromModel('glm-4.5')).toBe(ByokProvider.glm);
-    expect(inferProviderFromModel('gemma-3-27b-it')).toBe(ByokProvider.gemma);
+    expect(inferProviderFromModel('glm-4.5')).toBe('glm');
+    expect(inferProviderFromModel('gemma-3-27b-it')).toBe('gemma');
   });
 
   test('exposes shared provider labels and capabilities for new providers', () => {
-    expect(providerLabels[ByokProvider.glm]).toBe('GLM 5.2');
-    expect(providerLabels[ByokProvider.gemma]).toBe('Gemma');
-    expect(capabilitiesFor(ByokProvider.glm, ByokKeyStorage.server)).toEqual([
+    expect(providerLabels.glm).toBe('GLM 5.2');
+    expect(providerLabels.gemma).toBe('Gemma');
+    expect(capabilitiesFor('glm', ByokKeyStorage.server)).toEqual([
       'Text',
       'Image input',
       'Actions',
     ]);
-    expect(capabilitiesFor(ByokProvider.gemma, ByokKeyStorage.server)).toEqual([
+    expect(capabilitiesFor('gemma', ByokKeyStorage.server)).toEqual([
       'Text',
       'Image input',
     ]);
@@ -59,38 +59,42 @@ describe('ai model catalog helpers', () => {
   test('marks configured BYOK providers as cloud private in the snapshot', () => {
     const snapshot = buildAIModelCatalogSnapshot({
       promptModels: {
-        defaultModel: 'glm-4.5',
-        optionalModels: [{ id: 'glm-4.5', name: 'GLM 4.5' }],
+        defaultModel: 'gemini-2.5-flash',
+        optionalModels: [{ id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash' }],
         proModels: [],
       },
       byokSettings: {
-        allowedProviders: [ByokProvider.glm],
-        keys: [{ provider: ByokProvider.glm, configured: true, enabled: true }],
+        allowedProviders: [ByokProvider.gemini],
+        keys: [
+          { provider: ByokProvider.gemini, configured: true, enabled: true },
+        ],
       },
     });
 
     expect(snapshot.selectedModel?.privacyState).toBe('cloud_private');
     expect(
-      snapshot.providers.find(item => item.provider === ByokProvider.glm)
+      snapshot.providers.find(item => item.provider === ByokProvider.gemini)
         ?.privacyState
     ).toBe('cloud_private');
   });
 
   test('builds a shared snapshot from prompt models and BYOK settings', () => {
     const snapshot = buildAIModelCatalogSnapshot({
-      selectedModelId: 'glm-4.5',
+      selectedModelId: 'gemini-2.5-flash',
       promptModels: {
         defaultModel: 'gemma-3-27b-it',
         optionalModels: [
-          { id: 'glm-4.5', name: 'GLM 4.5' },
+          { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash' },
           { id: 'gemma-3-27b-it', name: 'Gemma 3 27B' },
         ],
-        proModels: [{ id: 'glm-4.5', name: 'GLM 4.5' }],
+        proModels: [{ id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash' }],
       },
       byokSettings: {
-        allowedProviders: [ByokProvider.glm, ByokProvider.gemma],
+        allowedProviders: [ByokProvider.gemini],
         customEndpointSupported: true,
-        keys: [{ provider: ByokProvider.glm, configured: true, enabled: true }],
+        keys: [
+          { provider: ByokProvider.gemini, configured: true, enabled: true },
+        ],
         warnings: [
           {
             featureKind: 'workspace_indexing',
@@ -101,11 +105,11 @@ describe('ai model catalog helpers', () => {
       },
     });
 
-    expect(snapshot.selectedModel?.provider).toBe(ByokProvider.glm);
+    expect(snapshot.selectedModel?.provider).toBe(ByokProvider.gemini);
     expect(snapshot.selectedModel?.privacyState).toBe('cloud_private');
-    expect(snapshot.defaultModel?.provider).toBe(ByokProvider.gemma);
+    expect(snapshot.defaultModel?.provider).toBe('gemma');
     expect(
-      snapshot.providers.find(item => item.provider === ByokProvider.glm)
+      snapshot.providers.find(item => item.provider === ByokProvider.gemini)
     ).toMatchObject({
       allowed: true,
       customEndpointSupported: true,

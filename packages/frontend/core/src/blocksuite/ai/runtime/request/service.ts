@@ -583,11 +583,18 @@ export class AIRequestService {
           } as CreateSessionOptions);
           this.lastActionSessionId = fallbackSessionId;
 
+          const fallbackModelId =
+            definition.endpoint === Endpoint.Action &&
+            !supportsServerActionModel(requestedModelId)
+              ? undefined
+              : requestedModelId;
+
           return {
             ...transportOptions,
             sessionId: fallbackSessionId,
             executionLane: 'server' as const,
             localCapable: undefined,
+            modelId: fallbackModelId,
           };
         },
         options.signal,

@@ -1176,10 +1176,11 @@ export class AIChatRuntime {
               ...this.snapshot.tabs.slice(insertIndex),
             ];
           })();
+    const activeTabId = activeTab?.kind === 'draft' ? activeTab.id : draft.id;
     this.commit({
       tabs,
       sessions: this.snapshot.sessions,
-      activeTabId: draft.id,
+      activeTabId,
       activeSessionId: null,
       messages: [],
     });

@@ -43,8 +43,10 @@ export interface ByokSettingsLike {
   keys?: ByokKeyLike[];
 }
 
+export type AIModelProvider = ByokProvider | 'glm' | 'gemma';
+
 export interface AIProviderDescriptor {
-  provider: ByokProvider;
+  provider: AIModelProvider;
   label: string;
   capabilities: AIProviderCapability[];
   executionLane: AIExecutionLane;
@@ -58,7 +60,7 @@ export interface AIModelCatalogItem {
   id: string;
   version: string;
   category: string;
-  provider: ByokProvider | null;
+  provider: AIModelProvider | null;
   providerLabel: string | null;
   deploymentKind: AIModelDeploymentKind;
   executionLane: AIExecutionLane;
@@ -84,7 +86,7 @@ export interface AIModelCatalogSnapshot {
   warnings: Array<Required<ByokWarningLike>>;
 }
 
-const providerCatalog: Record<ByokProvider, AIProviderDescriptor> = {
+const providerCatalog: Record<AIModelProvider, AIProviderDescriptor> = {
   [ByokProvider.openai]: {
     provider: ByokProvider.openai,
     label: 'OpenAI',
@@ -128,8 +130,8 @@ const providerCatalog: Record<ByokProvider, AIProviderDescriptor> = {
     localCapable: false,
     appleLocalInferenceState: 'not_applicable',
   },
-  [ByokProvider.glm]: {
-    provider: ByokProvider.glm,
+  glm: {
+    provider: 'glm',
     label: 'GLM 5.2',
     capabilities: ['Text', 'Image input', 'Actions'],
     executionLane: 'server',
@@ -137,8 +139,8 @@ const providerCatalog: Record<ByokProvider, AIProviderDescriptor> = {
     localCapable: false,
     appleLocalInferenceState: 'not_applicable',
   },
-  [ByokProvider.gemma]: {
-    provider: ByokProvider.gemma,
+  gemma: {
+    provider: 'gemma',
     label: 'Gemma',
     capabilities: ['Text', 'Image input'],
     executionLane: 'server',
@@ -148,15 +150,16 @@ const providerCatalog: Record<ByokProvider, AIProviderDescriptor> = {
   },
 };
 
-export const providerLabels: Record<ByokProvider, string> = Object.fromEntries(
-  Object.values(providerCatalog).map(descriptor => [
-    descriptor.provider,
-    descriptor.label,
-  ])
-) as Record<ByokProvider, string>;
+export const providerLabels: Record<AIModelProvider, string> =
+  Object.fromEntries(
+    Object.values(providerCatalog).map(descriptor => [
+      descriptor.provider,
+      descriptor.label,
+    ])
+  ) as Record<AIModelProvider, string>;
 
 export function getProviderDescriptor(
-  provider: ByokProvider
+  provider: AIModelProvider
 ): AIProviderDescriptor {
   return providerCatalog[provider];
 }
@@ -185,7 +188,7 @@ export function appleLocalInferenceStateTitle(
 }
 
 export function capabilitiesFor(
-  provider: ByokProvider,
+  provider: AIModelProvider,
   storage: ByokKeyStorage
 ): AIProviderCapability[] {
   if (provider === ByokProvider.gemini && storage !== ByokKeyStorage.server) {
@@ -197,14 +200,14 @@ export function capabilitiesFor(
 export function inferProviderFromModel(
   modelId: string,
   modelName?: string
-): ByokProvider | null {
+): AIModelProvider | null {
   const candidate = `${modelId} ${modelName ?? ''}`.trim().toLowerCase();
 
   if (/\b(glm)([-\s]|$)/i.test(candidate)) {
-    return ByokProvider.glm;
+    return 'glm';
   }
   if (/\b(gemma)([-\s]|$)/i.test(candidate)) {
-    return ByokProvider.gemma;
+    return 'gemma';
   }
   if (/\b(gemini)([-\s]|$)/i.test(candidate)) {
     return ByokProvider.gemini;
@@ -287,7 +290,10 @@ export function toAIModelCatalogItem(
     deploymentKind: providerDescriptor?.executionLane ?? 'server',
     executionLane: providerDescriptor?.executionLane ?? 'server',
     privacyState:
-      provider && options.configuredProviders
+      providerDescriptor &&
+      provider !== 'glm' &&
+      provider !== 'gemma' &&
+      options.configuredProviders
         ? privacyStateForProvider(provider, options.configuredProviders)
         : (providerDescriptor?.privacyState ?? 'cloud'),
     localCapable: providerDescriptor?.localCapable ?? false,
@@ -325,16 +331,15 @@ export function buildAIModelCatalogSnapshot(input: {
     requiredProviders: warning.requiredProviders ?? [],
   }));
 
-  const providers = Object.values(providerCatalog).map(descriptor => ({
-    ...descriptor,
-    privacyState: privacyStateForProvider(
-      descriptor.provider,
-      configuredProviders
-    ),
-    allowed:
-      allowedProviders.size === 0 || allowedProviders.has(descriptor.provider),
-    customEndpointSupported,
-  }));
+  const providers = Object.values(ByokProvider).map(provider => {
+    const descriptor = providerCatalog[provider];
+    return {
+      ...descriptor,
+      privacyState: privacyStateForProvider(provider, configuredProviders),
+      allowed: allowedProviders.size === 0 || allowedProviders.has(provider),
+      customEndpointSupported,
+    };
+  });
 
   return {
     selectedModelId,
@@ -351,13 +356,20 @@ export const DESKTOP_OFFLINE_GEMMA_MODEL_ID = 'gemma-3-4b-it';
 
 export function buildDesktopOfflineGemmaModels(): AIModelCatalogItem[] {
   return [
-    toAIModelCatalogItem(
-      {
-        id: DESKTOP_OFFLINE_GEMMA_MODEL_ID,
-        name: 'Gemma 3 4B Instruct',
-      },
-      { defaultModelId: DESKTOP_OFFLINE_GEMMA_MODEL_ID }
-    ),
+    {
+      ...toAIModelCatalogItem(
+        {
+          id: DESKTOP_OFFLINE_GEMMA_MODEL_ID,
+          name: 'Gemma 3 4B Instruct',
+        },
+        { defaultModelId: DESKTOP_OFFLINE_GEMMA_MODEL_ID }
+      ),
+      deploymentKind: 'local',
+      executionLane: 'local',
+      privacyState: 'local_private',
+      localCapable: true,
+      appleLocalInferenceState: 'deferred_candidate',
+    },
   ];
 }
 

@@ -143,6 +143,9 @@ cleanup() {
   if [[ -n "${TEMP_KEYCHAIN_NAME:-}" ]]; then
     security delete-keychain "$TEMP_KEYCHAIN_NAME" >/dev/null 2>&1 || true
   fi
+  if [[ -n "${TEMP_CERT_P12_FILE:-}" ]]; then
+    rm -f "$TEMP_CERT_P12_FILE"
+  fi
 }
 
 trap cleanup EXIT
@@ -208,8 +211,7 @@ import_certificate_if_needed() {
 
   TEMP_KEYCHAIN_NAME="affine-build.keychain-db"
   local keychain_path="$HOME/Library/Keychains/$TEMP_KEYCHAIN_NAME"
-  local p12_file
-  p12_file="$(mktemp /tmp/affine-cert.XXXXXX.p12)"
+  TEMP_CERT_P12_FILE="$(mktemp /tmp/affine-cert.XXXXXX.p12)"
 
   log "Creating temporary keychain"
   security create-keychain -p "$KEYCHAIN_PASSWORD" "$TEMP_KEYCHAIN_NAME"
@@ -223,7 +225,7 @@ import_certificate_if_needed() {
   security default-keychain -d user -s "$keychain_path"
 
   log "Importing Developer ID certificate into temporary keychain"
-  APPLE_CERT_P12_BASE64="$APPLE_CERT_P12_BASE64" python3 - "$p12_file" <<'PY'
+  APPLE_CERT_P12_BASE64="$APPLE_CERT_P12_BASE64" python3 - "$TEMP_CERT_P12_FILE" <<'PY'
 import base64
 import os
 import sys
@@ -231,9 +233,10 @@ import sys
 with open(sys.argv[1], 'wb') as f:
     f.write(base64.b64decode(os.environ['APPLE_CERT_P12_BASE64']))
 PY
-  security import "$p12_file" -k "$keychain_path" -P "$APPLE_CERT_P12_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security >/dev/null
+  security import "$TEMP_CERT_P12_FILE" -k "$keychain_path" -P "$APPLE_CERT_P12_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security >/dev/null
   security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$keychain_path" >/dev/null
-  rm -f "$p12_file"
+  rm -f "$TEMP_CERT_P12_FILE"
+  unset TEMP_CERT_P12_FILE
 }
 
 resolve_codesign_identity() {
@@ -275,7 +278,6 @@ main() {
   export NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=14384}"
   export MACOSX_DEPLOYMENT_TARGET="${MACOSX_DEPLOYMENT_TARGET:-12.0}"
   export RELEASE_VERSION="${RELEASE_VERSION:-$(node -p 'require("./packages/frontend/apps/electron/package.json").version')}"
-  configure_electron_zip_cache "$repo_root"
   unset SKIP_WEB_BUILD
   unset SKIP_GENERATE_ASSETS
 
@@ -301,6 +303,8 @@ main() {
 
   log "Installing dependencies with packaging-compatible Yarn layout"
   yarn install
+
+  configure_electron_zip_cache "$repo_root"
 
   log "Building native module"
   yarn affine @affine/native build

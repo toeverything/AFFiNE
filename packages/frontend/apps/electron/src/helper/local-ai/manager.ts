@@ -173,6 +173,7 @@ const fetchModelDownloadResponse = async (downloadUrl: string) => {
     const response = await fetch(downloadUrl, {
       headers: LOCAL_AI_DOWNLOAD_HEADERS,
       redirect: 'follow',
+      signal: AbortSignal.timeout(DOWNLOAD_REQUEST_TIMEOUT_MS),
     });
 
     if (!response.ok) {
@@ -444,7 +445,7 @@ export class LocalAIManager {
     | ((status: LocalAIRuntimeStatus) => void)
     | null = null;
 
-  private ignoreNextExit = false;
+  private readonly ignoredExits = new WeakSet<ChildProcessWithoutNullStreams>();
 
   subscribe(fn: (status: LocalAIRuntimeStatus) => void) {
     const sub = this.status$.subscribe(fn);
@@ -503,7 +504,10 @@ export class LocalAIManager {
       return;
     }
 
-    this.ignoreNextExit = this.child.kill();
+    const child = this.child;
+    if (child.kill()) {
+      this.ignoredExits.add(child);
+    }
     this.child = null;
   }
 
@@ -926,12 +930,14 @@ export class LocalAIManager {
     let exited = false;
     child.on('exit', code => {
       exited = true;
-      this.child = null;
-      if (this.ignoreNextExit) {
-        this.ignoreNextExit = false;
+      const wasCurrentChild = this.child === child;
+      if (wasCurrentChild) {
+        this.child = null;
+      }
+      if (this.ignoredExits.delete(child)) {
         return;
       }
-      if (this.status$.value.state === 'ready') {
+      if (wasCurrentChild && this.status$.value.state === 'ready') {
         this.scheduleRecovery(code);
       }
     });
@@ -952,7 +958,10 @@ export class LocalAIManager {
 
     const childExitBeforeReady = new Promise<never>((_, reject) => {
       child.once('exit', code => {
-        if (this.status$.value.state === 'ready' || this.ignoreNextExit) {
+        if (
+          this.status$.value.state === 'ready' ||
+          this.ignoredExits.has(child)
+        ) {
           return;
         }
         const error = new Error(`sidecar exited with ${code}`);
@@ -985,7 +994,9 @@ export class LocalAIManager {
       void this.syncDownloadStatus().catch(() => {});
       return status;
     } catch (error) {
-      this.ignoreNextExit = child.kill();
+      if (child.kill()) {
+        this.ignoredExits.add(child);
+      }
       this.child = null;
       const message = error instanceof Error ? error.message : String(error);
       const reason =

@@ -143,11 +143,13 @@ export const Component = ({
                 }
                 return;
               }
+              ensureWorkspaceOnceRef.current = false;
               if (!BUILD_CONFIG.isNative) {
                 setNavigating(false);
               }
             })
             .catch(err => {
+              ensureWorkspaceOnceRef.current = false;
               console.error('Failed to ensure default local workspace', err);
               if (!BUILD_CONFIG.isNative) {
                 setNavigating(false);

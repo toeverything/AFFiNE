@@ -6,7 +6,7 @@ set -euo pipefail
 GITHUB_REPOSITORY="${GITHUB_REPOSITORY:-toeverything/AFFiNE}"
 RUNNER_DIR="${RUNNER_DIR:-$HOME/actions-runner-affine}"
 RUNNER_NAME="${RUNNER_NAME:-$(scutil --get ComputerName 2>/dev/null || hostname)-affine-signing}"
-RUNNER_LABEL="${RUNNER_LABEL:-affine-macos-signing}"
+RUNNER_LABEL="${RUNNER_LABEL:-$(hostname | tr '[:upper:]' '[:lower:]')-affine-signing}"
 RUNNER_WORK_DIR="${RUNNER_WORK_DIR:-_work}"
 RUNNER_GROUP="${RUNNER_GROUP:-}"
 
@@ -374,12 +374,22 @@ ensure_codesign_identity() {
   fi
 
   if [[ -z "$APPLE_CODESIGN_IDENTITY" ]]; then
-    APPLE_CODESIGN_IDENTITY="$(first_codesign_identity)"
-    if [[ -n "$APPLE_CODESIGN_IDENTITY" ]]; then
-      export APPLE_CODESIGN_IDENTITY
-      log "Using existing Developer ID identity from login keychain: $APPLE_CODESIGN_IDENTITY"
-      return 0
-    fi
+    mapfile -t matching_identities < <(
+      list_codesign_identities | grep -F "($APPLE_TEAM_ID)" || true
+    )
+    case "${#matching_identities[@]}" in
+      1)
+        APPLE_CODESIGN_IDENTITY="${matching_identities[0]}"
+        export APPLE_CODESIGN_IDENTITY
+        log "Using Developer ID identity from login keychain: $APPLE_CODESIGN_IDENTITY"
+        return 0
+        ;;
+      0)
+        ;;
+      *)
+        fail "Multiple Developer ID Application identities match team $APPLE_TEAM_ID; set APPLE_CODESIGN_IDENTITY explicitly"
+        ;;
+    esac
   fi
 
   log "No usable Developer ID Application certificate was found in the local login keychain"
@@ -392,8 +402,20 @@ ensure_codesign_identity() {
   import_p12_file
 
   if [[ -z "$APPLE_CODESIGN_IDENTITY" ]] || ! has_codesign_identity "$APPLE_CODESIGN_IDENTITY"; then
-    imported_identity="$(first_codesign_identity)"
-    [[ -n "$imported_identity" ]] || fail "No Developer ID Application certificate found after importing the .p12"
+    mapfile -t matching_identities < <(
+      list_codesign_identities | grep -F "($APPLE_TEAM_ID)" || true
+    )
+    case "${#matching_identities[@]}" in
+      1)
+        imported_identity="${matching_identities[0]}"
+        ;;
+      0)
+        fail "No Developer ID Application certificate found for team $APPLE_TEAM_ID after importing the .p12"
+        ;;
+      *)
+        fail "Multiple Developer ID Application identities match team $APPLE_TEAM_ID after importing the .p12; set APPLE_CODESIGN_IDENTITY explicitly"
+        ;;
+    esac
     APPLE_CODESIGN_IDENTITY="$imported_identity"
     export APPLE_CODESIGN_IDENTITY
   fi

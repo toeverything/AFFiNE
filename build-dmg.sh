@@ -315,8 +315,6 @@ main() {
 
   export RELEASE_VERSION="$(node -p 'require("./packages/frontend/apps/electron/package.json").version')"
 
-  configure_electron_zip_cache "$repo_root"
-
   if [[ -z "${APPLE_CODESIGN_IDENTITY:-}" ]]; then
     export APPLE_CODESIGN_IDENTITY="$(resolve_codesign_identity)"
   fi
@@ -346,6 +344,8 @@ main() {
 
   log "Installing dependencies with packaging-compatible Yarn layout"
   yarn install
+
+  configure_electron_zip_cache "$repo_root"
 
   log "Building native module"
   yarn affine @affine/native build

@@ -170,6 +170,9 @@ export class AIModelService extends Service {
           : cloudModels;
       } else if (this.shouldUseDesktopOfflineCatalog()) {
         this.applyDesktopOfflineCatalog();
+      } else {
+        this.models.value = [];
+        throw new Error(`No AI models returned for prompt "${promptName}"`);
       }
     } catch (error) {
       if (this.shouldUseDesktopOfflineCatalog()) {

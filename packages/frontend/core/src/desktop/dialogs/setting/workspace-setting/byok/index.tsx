@@ -65,6 +65,9 @@ export const WorkspaceByokSetting = () => {
   } | null>(null);
 
   const load = useCallback(async () => {
+    setSettings(null);
+    setUsage([]);
+
     const [localStorageSupported, nextLocalKeys] = await Promise.all([
       localByokStorageSupported(),
       readLocalKeys(workspace.id),
@@ -227,7 +230,15 @@ export const WorkspaceByokSetting = () => {
     }
 
     if (!settings) {
-      return null;
+      return (
+        <div className={styles.notice} data-testid="workspace-byok-local-only">
+          <div className={styles.title}>Cloud BYOK settings unavailable</div>
+          <div className={styles.description}>
+            This workspace does not have a connected server, so cloud BYOK usage
+            and server-managed keys are unavailable in this view.
+          </div>
+        </div>
+      );
     }
 
     if (!settings.entitled) {

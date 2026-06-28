@@ -1429,9 +1429,11 @@ async function* parseOpenAIStream(
 }
 
 export async function streamDesktopLocalChat(options: TextToTextOptions) {
-  const status = (await apis?.localAI.ensureReady()) as LocalStatus | undefined;
+  const status = (await apis?.localAI?.ensureReady?.()) as
+    | LocalStatus
+    | undefined;
 
-  if (!status || status.state !== 'ready') {
+  if (!status || status.state !== 'ready' || !status.canRun) {
     throw new Error(describeLocalStatus(status));
   }
 

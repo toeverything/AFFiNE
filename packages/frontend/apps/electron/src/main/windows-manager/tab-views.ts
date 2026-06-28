@@ -559,7 +559,7 @@ export class WebContentViewsManager {
     if (workbench && viewMeta) {
       const isAuthRestore =
         workbench.basename === '/' &&
-        AUTH_RESTORE_PATHNAMES.includes(viewMeta.path?.pathname ?? '');
+        AUTH_RESTORE_PATHNAMES.has(viewMeta.path?.pathname ?? '');
       if (isAuthRestore) {
         this.updateWorkbenchViewMeta(id, viewMeta.id, {
           path: undefined,
