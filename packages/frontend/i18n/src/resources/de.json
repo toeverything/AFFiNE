@@ -2393,6 +2393,7 @@
   "error.INVALID_LICENSE_UPDATE_PARAMS": "Ungültige Lizenzaktualisierungsparameter. {{reason}}",
   "error.LICENSE_EXPIRED": "Die Lizenz ist abgelaufen.",
   "error.UNSUPPORTED_CLIENT_VERSION": "Nicht unterstützter Client mit Version [{{clientVersion}}], erforderliche Version ist [{{requiredVersion}}].",
+  "error.UNSUPPORTED_SERVER_VERSION": "Dieser AFFiNE-Server ist für diesen Client zu alt. Bitte aktualisiere den Server auf {{requiredVersion}}.",
   "error.NOTIFICATION_NOT_FOUND": "Benachrichtigung nicht gefunden.",
   "error.MENTION_USER_DOC_ACCESS_DENIED": "Der erwähnte Benutzer kann nicht auf die Seite {{docId}} zugreifen.",
   "error.MENTION_USER_ONESELF_DENIED": "Du kannst dich nicht selbst erwähnen.",
