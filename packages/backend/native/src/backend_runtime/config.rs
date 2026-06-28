@@ -20,8 +20,9 @@ pub(super) struct RuntimeConfig {
 
 impl RuntimeConfig {
   pub(super) fn from_config_files() -> Result<Self> {
-    let database_url =
-      database_url_from_config_files()?.unwrap_or_else(|| "postgresql://localhost:5432/affine".to_string());
+    let database_url = database_url_from_env()
+      .or(database_url_from_config_files()?)
+      .unwrap_or_else(|| "postgresql://localhost:5432/affine".to_string());
     let storage = ObjectStorageConfig::from_config_files()?;
     Ok(Self { database_url, storage })
   }
@@ -39,6 +40,14 @@ struct DbConfigFile {
   datasource_url: Option<String>,
 }
 
+fn database_url_from_env() -> Option<String> {
+  env::var("DATABASE_URL").ok().and_then(non_empty_string)
+}
+
+fn non_empty_string(value: String) -> Option<String> {
+  if value.trim().is_empty() { None } else { Some(value) }
+}
+
 fn database_url_from_config_files() -> Result<Option<String>> {
   let mut database_url = None;
   for path in config_json_paths() {
@@ -49,9 +58,7 @@ fn database_url_from_config_files() -> Result<Option<String>> {
       .map_err(|err| napi_error(format!("failed to read config file {}: {err}", path.display())))?;
     let config: AppConfigFile = serde_json::from_str(&raw)
       .map_err(|err| napi_error(format!("failed to parse config file {}: {err}", path.display())))?;
-    if let Some(next) = config.db.and_then(|db| db.datasource_url)
-      && !next.trim().is_empty()
-    {
+    if let Some(next) = config.db.and_then(|db| db.datasource_url).and_then(non_empty_string) {
       database_url = Some(next);
     }
   }
@@ -123,6 +130,16 @@ mod tests {
       paths
         .iter()
         .all(|path| !path.to_string_lossy().contains("packages/backend/server"))
+    );
+  }
+
+  #[test]
+  fn blank_database_urls_are_ignored() {
+    assert_eq!(non_empty_string("".to_string()), None);
+    assert_eq!(non_empty_string("   ".to_string()), None);
+    assert_eq!(
+      non_empty_string("postgresql://affine:affine@localhost:5432/affine".to_string()),
+      Some("postgresql://affine:affine@localhost:5432/affine".to_string())
     );
   }
 }
