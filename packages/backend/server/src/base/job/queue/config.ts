@@ -96,7 +96,7 @@ defineModuleConfig('job', {
   },
 
   'queues.backendRuntime': {
-    desc: 'The config for backend runtime reconciliation job queue',
+    desc: 'The config for backend runtime job queue',
     default: {
       concurrency: 1,
     },
