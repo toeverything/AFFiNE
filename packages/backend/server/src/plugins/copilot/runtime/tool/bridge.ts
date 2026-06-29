@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 import {
   type LlmBackendConfig,
   llmDispatchToolLoopStream,
@@ -103,7 +105,11 @@ async function executeToolCall(
   }
 
   try {
-    const output = await tool.execute(request.args, options);
+    const args =
+      tool.inputSchema instanceof z.ZodType
+        ? tool.inputSchema.parse(request.args)
+        : request.args;
+    const output = await tool.execute(args, options);
     return {
       callId: request.callId,
       name: request.name,
