@@ -514,6 +514,12 @@ export declare function llmValidateJsonSchema(schema: any, value: any): any
  */
 export declare function mergeUpdatesInApplyWay(updates: Array<Buffer>): Buffer
 
+/**
+ * Check whether a Yjs update binary can be decoded without applying it to a
+ * document state.
+ */
+export declare function validateDocUpdate(update: Buffer): Promise<boolean>
+
 export declare function mintChallengeResponse(resource: string, bits?: number | undefined | null): Promise<string>
 
 export interface ModelConditionsContract {

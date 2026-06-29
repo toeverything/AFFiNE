@@ -21,12 +21,11 @@ use super::{
 #[napi_derive::napi]
 impl BackendRuntime {
   fn object_storage_client(&self) -> Result<ObjectStorageClient> {
-    self
-      .config
+    let storage = self
+      .config()?
       .storage
-      .as_ref()
-      .ok_or_else(|| super::error::napi_error("ObjectStorageClient is not configured"))?
-      .build_client()
+      .ok_or_else(|| super::error::napi_error("ObjectStorageClient is not configured"))?;
+    storage.build_client()
   }
 
   pub(super) async fn object_storage_delete_object(&self, key: &str) -> Result<()> {
@@ -55,7 +54,7 @@ impl BackendRuntime {
 
   #[napi]
   pub fn object_storage_health(&self) -> RuntimeObjectStorageHealth {
-    match &self.config.storage {
+    match self.config().ok().and_then(|config| config.storage) {
       Some(storage) => storage.health(),
       None => RuntimeObjectStorageHealth {
         configured: false,

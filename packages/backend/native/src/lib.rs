@@ -18,7 +18,7 @@ pub mod tiktoken;
 
 use affine_common::napi_utils::map_napi_err;
 use napi::{Result, Status, bindgen_prelude::*};
-use y_octo::Doc;
+use y_octo::{Doc, Update};
 
 #[cfg(not(target_arch = "arm"))]
 #[global_allocator]
@@ -41,6 +41,16 @@ pub fn merge_updates_in_apply_way(updates: Vec<Buffer>) -> Result<Buffer> {
   Ok(buf.into())
 }
 
+/// Check whether a Yjs update binary can be decoded without applying it to a
+/// document state.
+#[napi(catch_unwind)]
+pub async fn validate_doc_update(update: Buffer) -> Result<bool> {
+  let update = update.to_vec();
+  tokio::task::spawn_blocking(move || Update::decode_v1(update).is_ok())
+    .await
+    .map_err(|err| napi::Error::from_reason(format!("Doc update validation task failed: {err}")))
+}
+
 #[napi]
 pub const AFFINE_PRO_PUBLIC_KEY: Option<&'static str> = std::option_env!("AFFINE_PRO_PUBLIC_KEY");
 
@@ -58,5 +68,11 @@ mod tests {
       Err(err) => err,
     };
     assert_eq!(err.status, Status::GenericFailure);
+  }
+
+  #[test]
+  fn y_octo_update_decode_accepts_valid_update_and_rejects_invalid_update() {
+    assert!(Update::decode_v1(vec![0, 0]).is_ok());
+    assert!(Update::decode_v1(vec![0]).is_err());
   }
 }
