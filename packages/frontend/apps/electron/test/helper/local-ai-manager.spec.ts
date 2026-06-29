@@ -10,7 +10,9 @@ const {
   fetchMock,
   loggerWarnMock,
   mainRPCMock,
+  openMock,
   spawnMock,
+  statMock,
 } = vi.hoisted(() => ({
   accessMock: vi.fn(),
   createServerMock: vi.fn(),
@@ -21,7 +23,9 @@ const {
     getPath: vi.fn(async () => '/mock-user-data'),
     isPackaged: vi.fn(async () => false),
   },
+  openMock: vi.fn(),
   spawnMock: vi.fn(),
+  statMock: vi.fn(),
 }));
 
 vi.mock('../../src/helper/main-rpc', () => ({
@@ -35,6 +39,8 @@ vi.mock('node:child_process', () => ({
 vi.mock('node:fs/promises', () => ({
   default: {
     access: accessMock,
+    open: openMock,
+    stat: statMock,
   },
 }));
 
@@ -60,6 +66,21 @@ class MockChildProcess extends EventEmitter {
   stderr = new EventEmitter();
   kill = vi.fn(() => true);
 }
+
+const createGGUFHeader = (version = 3) => {
+  const buffer = Buffer.alloc(8);
+  buffer.write('GGUF', 0, 'ascii');
+  buffer.writeUInt32LE(version, 4);
+  return buffer;
+};
+
+const createMockFileHandle = (buffer = createGGUFHeader()) => ({
+  read: vi.fn(async (target: Buffer, offset: number, length: number) => {
+    buffer.copy(target, offset, 0, length);
+    return { bytesRead: Math.min(length, buffer.length), buffer: target };
+  }),
+  close: vi.fn(async () => {}),
+});
 
 const createAvailablePortServer = () => {
   const server = new EventEmitter() as EventEmitter & {
@@ -141,12 +162,16 @@ describe('local AI manager lifecycle', () => {
     createServerMock.mockReset();
     fetchMock.mockReset();
     loggerWarnMock.mockReset();
+    openMock.mockReset();
     spawnMock.mockReset();
+    statMock.mockReset();
 
     accessMock.mockResolvedValue(undefined);
     mainRPCMock.getAppPath.mockResolvedValue('/mock-app');
     mainRPCMock.getPath.mockResolvedValue('/mock-user-data');
     mainRPCMock.isPackaged.mockResolvedValue(false);
+    openMock.mockResolvedValue(createMockFileHandle());
+    statMock.mockResolvedValue({ size: 1024 * 1024 * 1024 });
     process.resourcesPath = '/mock-resources';
     createServerMock.mockImplementation(() => createAvailablePortServer());
     fetchMock.mockResolvedValue({ ok: true });
@@ -192,6 +217,26 @@ describe('local AI manager lifecycle', () => {
     await expect(manager.getDownloadStatus()).resolves.toMatchObject({
       state: 'ready',
       source: 'downloaded',
+      targetPath: '/mock-user-data/local-ai/models/gemma-3-4b-it.gguf',
+    });
+  });
+
+  test('marks an invalid downloaded model as an error instead of ready', async () => {
+    accessMock.mockImplementation(async (filePath: string) => {
+      if (filePath === '/mock-user-data/local-ai/models/gemma-3-4b-it.gguf') {
+        return;
+      }
+      throw new Error('missing');
+    });
+    openMock.mockResolvedValue(createMockFileHandle(Buffer.from('not-gguf')));
+    statMock.mockResolvedValue({ size: 1024 });
+
+    const { LocalAIManager } = await loadManagerModule();
+    const manager = new LocalAIManager();
+
+    await expect(manager.getDownloadStatus()).resolves.toMatchObject({
+      state: 'error',
+      detail: expect.stringContaining('downloaded model verification failed'),
       targetPath: '/mock-user-data/local-ai/models/gemma-3-4b-it.gguf',
     });
   });

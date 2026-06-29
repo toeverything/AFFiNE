@@ -75,8 +75,13 @@ ensure_local_ai_runtime() {
   log "Installing local AI runtime build dependencies"
   brew install libomp openssl@3
 
-  export LOCAL_AI_LIBOMP_ROOT="$(brew --prefix libomp)"
-  export LOCAL_AI_OPENSSL_ROOT="$(brew --prefix openssl@3)"
+  local local_ai_libomp_root
+  local_ai_libomp_root="$(brew --prefix libomp)"
+  local local_ai_openssl_root
+  local_ai_openssl_root="$(brew --prefix openssl@3)"
+
+  export LOCAL_AI_LIBOMP_ROOT="$local_ai_libomp_root"
+  export LOCAL_AI_OPENSSL_ROOT="$local_ai_openssl_root"
   export LOCAL_AI_RUNTIME_SOURCE_ROOT="$repo_root/.cache/local-ai-runtime/darwin-arm64"
   log "Preparing local AI runtime from source"
   node "$repo_root/packages/frontend/apps/electron/scripts/prepare-local-ai-runtime.mjs"

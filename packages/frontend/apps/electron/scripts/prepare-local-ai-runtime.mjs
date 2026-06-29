@@ -109,6 +109,7 @@ const copyRequiredFile = (searchRoots, fileName, destinationPath) => {
     const matchedPath = findFile(searchRoot, fileName);
     if (matchedPath) {
       cpSync(matchedPath, destinationPath);
+      ensureArm64Artifact(destinationPath);
       return;
     }
   }
@@ -120,6 +121,15 @@ const prepareRuntimeRoot = () => {
   ensureDirectory(runtimeRoot);
   rmSync(runtimeRoot, { recursive: true, force: true });
   ensureDirectory(runtimeRoot);
+};
+
+const ensureArm64Artifact = artifactPath => {
+  const archs = getCommandOutput('lipo', ['-archs', artifactPath]);
+  if (!archs.split(/\s+/).includes('arm64')) {
+    throw new Error(
+      `[local-ai] non-arm64 runtime artifact: ${artifactPath} (${archs})`
+    );
+  }
 };
 
 const buildLlamaRuntime = () => {

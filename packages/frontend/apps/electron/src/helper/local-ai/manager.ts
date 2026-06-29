@@ -41,6 +41,9 @@ const SIDECAR_PORT_SCAN_LIMIT = 10;
 const DOWNLOAD_PROGRESS_UPDATE_INTERVAL_MS = 250;
 const DOWNLOAD_REQUEST_TIMEOUT_MS = 30_000;
 const DOWNLOAD_REDIRECT_LIMIT = 10;
+const GGUF_HEADER_LENGTH = 8;
+const GGUF_MAGIC = 'GGUF';
+const SUPPORTED_GGUF_VERSIONS = new Set([1, 2, 3]);
 
 const canAccess = async (filePath: string) => {
   try {
@@ -105,6 +108,61 @@ const emptyBody = {
     // no-op
   },
 } satisfies AsyncIterable<Uint8Array>;
+
+const verifyLocalAIModelFile = async (
+  modelPath: string,
+  {
+    expectedBytes,
+    downloadedBytes,
+  }: {
+    expectedBytes?: number | null;
+    downloadedBytes?: number;
+  } = {}
+) => {
+  const stat = await fs.stat(modelPath);
+  if (stat.size <= 0) {
+    throw new Error('downloaded model file is empty');
+  }
+
+  if (expectedBytes != null && stat.size !== expectedBytes) {
+    throw new Error(
+      `downloaded model size mismatch: expected ${expectedBytes} bytes, got ${stat.size}`
+    );
+  }
+
+  if (downloadedBytes != null && stat.size !== downloadedBytes) {
+    throw new Error(
+      `downloaded model byte count mismatch: wrote ${downloadedBytes} bytes, saved ${stat.size}`
+    );
+  }
+
+  const fileHandle = await fs.open(modelPath, 'r');
+  try {
+    const header = Buffer.alloc(GGUF_HEADER_LENGTH);
+    const { bytesRead } = await fileHandle.read(header, 0, header.length, 0);
+    if (bytesRead < GGUF_HEADER_LENGTH) {
+      throw new Error('downloaded model header is truncated');
+    }
+
+    const magic = header.subarray(0, 4).toString('ascii');
+    if (magic !== GGUF_MAGIC) {
+      throw new Error(
+        `downloaded model magic mismatch: expected ${GGUF_MAGIC}, got ${magic}`
+      );
+    }
+
+    const version = header.readUInt32LE(4);
+    if (!SUPPORTED_GGUF_VERSIONS.has(version)) {
+      throw new Error(
+        `downloaded model GGUF version ${version} is not supported`
+      );
+    }
+  } finally {
+    await fileHandle.close();
+  }
+
+  return stat.size;
+};
 
 const openModelDownloadResponse = async (
   url: string,
@@ -545,17 +603,30 @@ export class LocalAIManager {
       Promise.all(backendPluginPaths.map(filePath => canAccess(filePath))),
     ]);
 
+    let downloadedModelIsValid = false;
+    if (hasDownloadedModel) {
+      try {
+        await verifyLocalAIModelFile(downloadedModelPath);
+        downloadedModelIsValid = true;
+      } catch (error) {
+        logger.warn(
+          '[local-ai] downloaded model verification failed while resolving runtime resources',
+          getErrorMessage(error)
+        );
+      }
+    }
+
     const missingDylibs = dylibPaths.filter((_, index) => !dylibChecks[index]);
     const missingBackendPlugins = backendPluginPaths.filter(
       (_, index) => !backendPluginChecks[index]
     );
 
-    const modelPath = hasDownloadedModel
+    const modelPath = downloadedModelIsValid
       ? downloadedModelPath
       : hasDevModel && devModelPath
         ? devModelPath
         : null;
-    const modelSource = hasDownloadedModel
+    const modelSource = downloadedModelIsValid
       ? 'downloaded'
       : hasDevModel
         ? 'bundled'
@@ -605,11 +676,22 @@ export class LocalAIManager {
     const hasDownloadedModel = await canAccess(downloadedModelPath);
 
     if (hasDownloadedModel) {
-      return downloadReadyStatus({
-        downloadUrl: LOCAL_AI_MODEL_DOWNLOAD_URL,
-        targetPath: downloadedModelPath,
-        source: 'downloaded',
-      });
+      try {
+        const verifiedBytes = await verifyLocalAIModelFile(downloadedModelPath);
+        return downloadReadyStatus({
+          downloadUrl: LOCAL_AI_MODEL_DOWNLOAD_URL,
+          targetPath: downloadedModelPath,
+          source: 'downloaded',
+          downloadedBytes: verifiedBytes,
+          totalBytes: verifiedBytes,
+        });
+      } catch (error) {
+        return downloadErrorStatus({
+          downloadUrl: LOCAL_AI_MODEL_DOWNLOAD_URL,
+          targetPath: downloadedModelPath,
+          detail: `downloaded model verification failed: ${getErrorMessage(error)}`,
+        });
+      }
     }
 
     if (current.state === 'error') {
@@ -818,12 +900,20 @@ export class LocalAIManager {
           await fs.rm(downloadedModelPath, { force: true }).catch(() => {});
           await fs.rename(tempPath, downloadedModelPath);
 
+          const verifiedBytes = await verifyLocalAIModelFile(
+            downloadedModelPath,
+            {
+              expectedBytes: totalBytes,
+              downloadedBytes,
+            }
+          );
+
           const readyDownloadStatus = downloadReadyStatus({
             downloadUrl: activeDownloadUrl,
             targetPath: downloadedModelPath,
             source: 'downloaded',
-            downloadedBytes,
-            totalBytes,
+            downloadedBytes: verifiedBytes,
+            totalBytes: totalBytes ?? verifiedBytes,
           });
           this.downloadStatus$.next(readyDownloadStatus);
 
