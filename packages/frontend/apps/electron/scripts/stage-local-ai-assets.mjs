@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { access, chmod, copyFile, mkdir, rm } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -28,7 +29,21 @@ const scriptDir = path.dirname(scriptPath);
 const repoRoot = path.resolve(scriptDir, '../../../../..');
 const electronAppDir = path.resolve(scriptDir, '..');
 
-const sourceRoot = path.join(repoRoot, 'vendor', 'local-ai', 'darwin-arm64');
+const generatedSourceRoot = path.join(
+  repoRoot,
+  '.cache',
+  'local-ai-runtime',
+  'darwin-arm64'
+);
+const legacySourceRoot = path.join(
+  repoRoot,
+  'vendor',
+  'local-ai',
+  'darwin-arm64'
+);
+const sourceRoot =
+  process.env.LOCAL_AI_RUNTIME_SOURCE_ROOT ??
+  (existsSync(generatedSourceRoot) ? generatedSourceRoot : legacySourceRoot);
 const sourceBinaryPath = path.join(sourceRoot, 'llama-server');
 const stagedRoot = path.join(electronAppDir, 'resources', 'local-ai');
 const stagedBinaryPath = path.join(stagedRoot, 'bin', 'llama-server');
@@ -67,9 +82,19 @@ const adHocSign = targetPath => {
   });
 };
 
-await access(sourceBinaryPath);
-await Promise.all(dylibEntries.map(entry => access(entry.sourcePath)));
-await Promise.all(backendPluginEntries.map(entry => access(entry.sourcePath)));
+try {
+  await access(sourceBinaryPath);
+  await Promise.all(dylibEntries.map(entry => access(entry.sourcePath)));
+  await Promise.all(
+    backendPluginEntries.map(entry => access(entry.sourcePath))
+  );
+} catch {
+  throw new Error(
+    `[local-ai] runtime assets not found in ${sourceRoot}. ` +
+      `Run node packages/frontend/apps/electron/scripts/prepare-local-ai-runtime.mjs ` +
+      `or set LOCAL_AI_RUNTIME_SOURCE_ROOT to a prepared darwin-arm64 runtime directory.`
+  );
+}
 await rm(stagedRoot, { recursive: true, force: true });
 await mkdir(path.dirname(stagedBinaryPath), { recursive: true });
 await mkdir(stagedLibDir, { recursive: true });

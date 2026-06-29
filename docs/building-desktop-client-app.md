@@ -424,11 +424,15 @@ packages/frontend/apps/electron/resources/local-ai/bin/llama-server
 packages/frontend/apps/electron/resources/local-ai/lib/libllama-server-impl.dylib
 ```
 
-### Run the staging script manually
+### Prepare and stage the runtime manually
 
 ```bash
+brew install libomp openssl@3
+node packages/frontend/apps/electron/scripts/prepare-local-ai-runtime.mjs
 node packages/frontend/apps/electron/scripts/stage-local-ai-assets.mjs
 ```
+
+The prepare step builds the `llama.cpp` runtime from source into `/.cache/local-ai-runtime/darwin-arm64`, and the staging script copies those generated artifacts into the Electron packaging resources.
 
 ### Post-build verification commands
 

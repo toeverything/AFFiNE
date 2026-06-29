@@ -64,6 +64,24 @@ ensure_yarn() {
   require_cmd yarn
 }
 
+ensure_local_ai_runtime() {
+  local repo_root="$1"
+
+  if [[ "$ELECTRON_ARCH" != "arm64" ]]; then
+    return 0
+  fi
+
+  require_cmd brew
+  log "Installing local AI runtime build dependencies"
+  brew install libomp openssl@3
+
+  export LOCAL_AI_LIBOMP_ROOT="$(brew --prefix libomp)"
+  export LOCAL_AI_OPENSSL_ROOT="$(brew --prefix openssl@3)"
+  export LOCAL_AI_RUNTIME_SOURCE_ROOT="$repo_root/.cache/local-ai-runtime/darwin-arm64"
+  log "Preparing local AI runtime from source"
+  node "$repo_root/packages/frontend/apps/electron/scripts/prepare-local-ai-runtime.mjs"
+}
+
 configure_electron_zip_cache() {
   local repo_root="$1"
   local cache_dir="$repo_root/.cache/electron-zips"
@@ -308,6 +326,8 @@ main() {
 
   log "Building native module"
   yarn affine @affine/native build
+
+  ensure_local_ai_runtime "$repo_root"
 
   if [[ "${SKIP_DESKTOP_WEB_BUILD:-0}" == "1" ]]; then
     [[ -d "$repo_root/packages/frontend/apps/electron/resources/web-static" ]] || fail "SKIP_DESKTOP_WEB_BUILD=1 requires packages/frontend/apps/electron/resources/web-static to already exist"

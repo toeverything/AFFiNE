@@ -176,6 +176,18 @@ jobs:
           rm -rf packages/frontend/apps/electron/node_modules/@affine/nbstore/node_modules/@blocksuite/affine/node_modules
           rm -rf packages/frontend/apps/electron/node_modules/@affine/native/node_modules
 
+      - name: Prepare local AI runtime assets
+        if: ${{ inputs.platform == 'darwin' && inputs.arch == 'arm64' }}
+        shell: bash
+        run: |
+          brew install libomp openssl@3
+          export LOCAL_AI_LIBOMP_ROOT="$(brew --prefix libomp)"
+          export LOCAL_AI_OPENSSL_ROOT="$(brew --prefix openssl@3)"
+          node packages/frontend/apps/electron/scripts/prepare-local-ai-runtime.mjs
+          echo "LOCAL_AI_LIBOMP_ROOT=$LOCAL_AI_LIBOMP_ROOT" >> "$GITHUB_ENV"
+          echo "LOCAL_AI_OPENSSL_ROOT=$LOCAL_AI_OPENSSL_ROOT" >> "$GITHUB_ENV"
+          echo "LOCAL_AI_RUNTIME_SOURCE_ROOT=$PWD/.cache/local-ai-runtime/darwin-arm64" >> "$GITHUB_ENV"
+
       - name: make
         if: ${{ inputs.platform != 'win32' }}
         run: yarn affine @affine/electron make --platform=${{ inputs.platform }} --arch=${{ inputs.arch }}
@@ -183,6 +195,7 @@ jobs:
           SKIP_WEB_BUILD: 1
           HOIST_NODE_MODULES: 1
           NODE_OPTIONS: --max-old-space-size=14384
+          LOCAL_AI_RUNTIME_SOURCE_ROOT: ${{ env.LOCAL_AI_RUNTIME_SOURCE_ROOT }}
 
       - name: Verify staged local AI runtime assets
         if: ${{ inputs.platform == 'darwin' && inputs.arch == 'arm64' }}
