@@ -1,3 +1,5 @@
+import path from 'node:path';
+
 import { describe, expect, test } from 'vitest';
 
 import {
@@ -8,36 +10,55 @@ import { buildSidecarArgs } from '../../src/helper/local-ai/sidecar';
 
 describe('local AI asset helpers', () => {
   test('resolve packaged and downloaded asset paths plus sidecar args', () => {
-    expect(
-      resolveLocalAIAssets(
-        '/Applications/AFFiNE.app/Contents/Resources',
-        '/Users/demo/Library/Application Support/AFFiNE'
-      )
-    ).toEqual({
-      binaryPath:
-        '/Applications/AFFiNE.app/Contents/Resources/local-ai/bin/llama-server',
-      bundledModelPath: `/Applications/AFFiNE.app/Contents/Resources/local-ai/models/${LOCAL_AI_MODEL_FILENAME}`,
-      downloadedModelPath: `/Users/demo/Library/Application Support/AFFiNE/local-ai/models/${LOCAL_AI_MODEL_FILENAME}`,
-      modelDirectory:
-        '/Users/demo/Library/Application Support/AFFiNE/local-ai/models',
+    const resourcesRoot = path.join(
+      path.sep,
+      'Applications',
+      'AFFiNE.app',
+      'Contents',
+      'Resources'
+    );
+    const userDataPath = path.join(
+      path.sep,
+      'Users',
+      'demo',
+      'Library',
+      'Application Support',
+      'AFFiNE'
+    );
+
+    expect(resolveLocalAIAssets(resourcesRoot, userDataPath)).toEqual({
+      binaryPath: path.join(resourcesRoot, 'local-ai', 'bin', 'llama-server'),
+      bundledModelPath: path.join(
+        resourcesRoot,
+        'local-ai',
+        'models',
+        LOCAL_AI_MODEL_FILENAME
+      ),
+      downloadedModelPath: path.join(
+        userDataPath,
+        'local-ai',
+        'models',
+        LOCAL_AI_MODEL_FILENAME
+      ),
+      modelDirectory: path.join(userDataPath, 'local-ai', 'models'),
       dylibPaths: [
-        '/Applications/AFFiNE.app/Contents/Resources/local-ai/lib/libllama-server-impl.dylib',
-        '/Applications/AFFiNE.app/Contents/Resources/local-ai/lib/libllama-common.0.dylib',
-        '/Applications/AFFiNE.app/Contents/Resources/local-ai/lib/libmtmd.0.dylib',
-        '/Applications/AFFiNE.app/Contents/Resources/local-ai/lib/libllama.0.dylib',
-        '/Applications/AFFiNE.app/Contents/Resources/local-ai/lib/libggml.0.dylib',
-        '/Applications/AFFiNE.app/Contents/Resources/local-ai/lib/libggml-base.0.dylib',
-        '/Applications/AFFiNE.app/Contents/Resources/local-ai/lib/libssl.3.dylib',
-        '/Applications/AFFiNE.app/Contents/Resources/local-ai/lib/libcrypto.3.dylib',
-        '/Applications/AFFiNE.app/Contents/Resources/local-ai/lib/libomp.dylib',
-      ],
+        'libllama-server-impl.dylib',
+        'libllama-common.0.dylib',
+        'libmtmd.0.dylib',
+        'libllama.0.dylib',
+        'libggml.0.dylib',
+        'libggml-base.0.dylib',
+        'libssl.3.dylib',
+        'libcrypto.3.dylib',
+        'libomp.dylib',
+      ].map(fileName => path.join(resourcesRoot, 'local-ai', 'lib', fileName)),
       backendPluginPaths: [
-        '/Applications/AFFiNE.app/Contents/Resources/local-ai/bin/libggml-blas.so',
-        '/Applications/AFFiNE.app/Contents/Resources/local-ai/bin/libggml-cpu-apple_m1.so',
-        '/Applications/AFFiNE.app/Contents/Resources/local-ai/bin/libggml-cpu-apple_m2_m3.so',
-        '/Applications/AFFiNE.app/Contents/Resources/local-ai/bin/libggml-cpu-apple_m4.so',
-        '/Applications/AFFiNE.app/Contents/Resources/local-ai/bin/libggml-metal.so',
-      ],
+        'libggml-blas.so',
+        'libggml-cpu-apple_m1.so',
+        'libggml-cpu-apple_m2_m3.so',
+        'libggml-cpu-apple_m4.so',
+        'libggml-metal.so',
+      ].map(fileName => path.join(resourcesRoot, 'local-ai', 'bin', fileName)),
     });
 
     expect(

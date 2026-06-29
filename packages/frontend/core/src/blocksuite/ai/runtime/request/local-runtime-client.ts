@@ -66,6 +66,7 @@ const MINDMAP_MERGE_GENERATION_OPTIONS = {
 } as const;
 
 type LocalStatus = Awaited<ReturnType<ClientHandler['localAI']['ensureReady']>>;
+type LocalReadyStatus = Extract<LocalStatus, { state: 'ready' }>;
 
 type OpenAIContentPart =
   | { type: 'text'; text: string }
@@ -730,7 +731,7 @@ async function completeQualityBiasedMindmap(
   source: string,
   draft: string,
   options: TextToTextOptions,
-  status: LocalStatus
+  status: LocalReadyStatus
 ) {
   const prompt = buildQualityBiasedMindmapPrompt(source, 3200);
   const request = createLocalRequestController(
@@ -778,7 +779,7 @@ async function completeQualityBiasedMindmap(
 
 async function* streamQualityBiasedLocalMindmap(
   options: TextToTextOptions,
-  status: LocalStatus,
+  status: LocalReadyStatus,
   request: LocalRequestController
 ) {
   const source =
@@ -852,7 +853,7 @@ function isLocalContextOverflowError(error: unknown) {
 }
 
 async function completeLocalMindmap(
-  status: LocalStatus,
+  status: LocalReadyStatus,
   request: LocalRequestController,
   messages: Array<{ role: string; content: unknown }>,
   generationOptions?: Record<string, number>
@@ -1200,7 +1201,7 @@ async function readLocalChatCompletion(
 }
 
 async function postLocalChatCompletion(input: {
-  status: LocalStatus;
+  status: LocalReadyStatus;
   request: LocalRequestController;
   messages: Array<{ role: string; content: unknown }>;
   generationOptions?: Record<string, number>;
@@ -1239,7 +1240,7 @@ async function postLocalChatCompletion(input: {
 
 async function completeLocalMindmapOutline(
   options: TextToTextOptions,
-  status: LocalStatus
+  status: LocalReadyStatus
 ) {
   const source =
     typeof options.content === 'string' ? options.content.trim() : '';
@@ -1269,7 +1270,7 @@ async function completeLocalMindmapOutline(
 
 async function* streamDeepLocalMindmap(
   options: TextToTextOptions,
-  status: LocalStatus,
+  status: LocalReadyStatus,
   request: LocalRequestController
 ) {
   const source =
@@ -1306,7 +1307,7 @@ async function* streamDeepLocalMindmap(
 
 async function* streamFastLocalMindmap(
   options: TextToTextOptions,
-  status: LocalStatus,
+  status: LocalReadyStatus,
   request: LocalRequestController
 ) {
   let response: Response;
@@ -1344,7 +1345,7 @@ async function* streamFastLocalMindmap(
 
 async function* streamSinglePassLocalChat(
   options: TextToTextOptions,
-  status: LocalStatus,
+  status: LocalReadyStatus,
   request: LocalRequestController
 ) {
   const response = await postLocalChatCompletion({

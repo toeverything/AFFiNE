@@ -13,6 +13,7 @@ const readyLocalStatus = {
   port: 43111,
   pid: 321,
   modelId: 'gemma-3-4b-it-local',
+  modelSource: 'downloaded',
 } as const;
 
 describe('resolveDesktopChatLane', () => {

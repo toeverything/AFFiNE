@@ -11,8 +11,10 @@ import {
 const electronApis = vi.hoisted(() => ({
   modelService: {
     modelId: { value: undefined as string | undefined },
-    getActiveModelId: vi.fn((modelId?: string) => modelId ?? 'gemma-3-4b-it'),
-    getExecutionPreference: vi.fn(() => 'local' as const),
+    getActiveModelId: vi.fn(
+      (modelId?: string) => (modelId ?? 'gemma-3-4b-it') as string | undefined
+    ),
+    getExecutionPreference: vi.fn(() => 'local' as 'local' | 'cloud'),
   },
   localAI: {},
 }));

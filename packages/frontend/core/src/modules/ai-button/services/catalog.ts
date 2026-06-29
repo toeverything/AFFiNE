@@ -290,6 +290,7 @@ export function toAIModelCatalogItem(
     deploymentKind: providerDescriptor?.executionLane ?? 'server',
     executionLane: providerDescriptor?.executionLane ?? 'server',
     privacyState:
+      provider &&
       providerDescriptor &&
       provider !== 'glm' &&
       provider !== 'gemma' &&

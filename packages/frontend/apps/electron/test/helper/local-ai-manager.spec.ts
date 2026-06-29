@@ -1,4 +1,5 @@
 import { EventEmitter } from 'node:events';
+import path from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
@@ -28,6 +29,23 @@ const restoreLocalAIPlatform = () => {
     Object.defineProperty(process, 'arch', originalArchDescriptor);
   }
 };
+
+const mockAppPath = path.join(path.sep, 'mock-app');
+const mockUserDataPath = path.join(path.sep, 'mock-user-data');
+const downloadedModelPath = path.join(
+  mockUserDataPath,
+  'local-ai',
+  'models',
+  'gemma-3-4b-it.gguf'
+);
+const bundledModelPath = path.join(
+  mockAppPath,
+  'resources',
+  'local-ai',
+  'models',
+  'gemma-3-4b-it.gguf'
+);
+const downloadedModelsDir = path.dirname(downloadedModelPath);
 
 const {
   accessMock,
@@ -183,9 +201,18 @@ const createEphemeralPortServer = (port: number) => {
   return server;
 };
 
+const trackedManagers: Array<{ dispose: () => Promise<void> }> = [];
+
 async function loadManagerModule() {
   vi.resetModules();
   return await import('../../src/helper/local-ai/manager');
+}
+
+async function createManager() {
+  const { LocalAIManager } = await loadManagerModule();
+  const manager = new LocalAIManager();
+  trackedManagers.push(manager);
+  return manager;
 }
 
 describe('local AI manager lifecycle', () => {
@@ -207,8 +234,8 @@ describe('local AI manager lifecycle', () => {
     statMock.mockReset();
 
     accessMock.mockResolvedValue(undefined);
-    mainRPCMock.getAppPath.mockResolvedValue('/mock-app');
-    mainRPCMock.getPath.mockResolvedValue('/mock-user-data');
+    mainRPCMock.getAppPath.mockResolvedValue(mockAppPath);
+    mainRPCMock.getPath.mockResolvedValue(mockUserDataPath);
     mainRPCMock.isPackaged.mockResolvedValue(false);
     mkdirMock.mockResolvedValue(undefined);
     openMock.mockResolvedValue(createMockFileHandle());
@@ -221,7 +248,10 @@ describe('local AI manager lifecycle', () => {
     vi.stubGlobal('fetch', fetchMock);
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    await Promise.allSettled(
+      trackedManagers.splice(0).map(manager => manager.dispose())
+    );
     vi.useRealTimers();
     vi.unstubAllGlobals();
     process.resourcesPath = originalResourcesPath;
@@ -236,8 +266,7 @@ describe('local AI manager lifecycle', () => {
       }
     });
 
-    const { LocalAIManager } = await loadManagerModule();
-    const manager = new LocalAIManager();
+    const manager = await createManager();
 
     await expect(manager.ensureReady()).resolves.toMatchObject({
       state: 'unsupported',
@@ -249,25 +278,24 @@ describe('local AI manager lifecycle', () => {
 
   test('reports a downloaded model as ready for download status checks', async () => {
     accessMock.mockImplementation(async (filePath: string) => {
-      if (filePath === '/mock-user-data/local-ai/models/gemma-3-4b-it.gguf') {
+      if (filePath === downloadedModelPath) {
         return;
       }
       throw new Error('missing');
     });
 
-    const { LocalAIManager } = await loadManagerModule();
-    const manager = new LocalAIManager();
+    const manager = await createManager();
 
     await expect(manager.getDownloadStatus()).resolves.toMatchObject({
       state: 'ready',
       source: 'downloaded',
-      targetPath: '/mock-user-data/local-ai/models/gemma-3-4b-it.gguf',
+      targetPath: downloadedModelPath,
     });
   });
 
   test('marks an invalid downloaded model as an error instead of ready', async () => {
     accessMock.mockImplementation(async (filePath: string) => {
-      if (filePath === '/mock-user-data/local-ai/models/gemma-3-4b-it.gguf') {
+      if (filePath === downloadedModelPath) {
         return;
       }
       throw new Error('missing');
@@ -275,19 +303,16 @@ describe('local AI manager lifecycle', () => {
     openMock.mockResolvedValue(createMockFileHandle(Buffer.from('not-gguf')));
     statMock.mockResolvedValue({ size: 1024 });
 
-    const { LocalAIManager } = await loadManagerModule();
-    const manager = new LocalAIManager();
+    const manager = await createManager();
 
     await expect(manager.getDownloadStatus()).resolves.toMatchObject({
       state: 'error',
       detail: expect.stringContaining('downloaded model verification failed'),
-      targetPath: '/mock-user-data/local-ai/models/gemma-3-4b-it.gguf',
+      targetPath: downloadedModelPath,
     });
   });
 
   test('verifies the temp download before publishing the final model path', async () => {
-    const downloadedModelPath =
-      '/mock-user-data/local-ai/models/gemma-3-4b-it.gguf';
     const tempPath = `${downloadedModelPath}.download`;
     const fileStore = new Map<string, Buffer>();
     const downloadedModel = Buffer.concat([
@@ -363,8 +388,7 @@ describe('local AI manager lifecycle', () => {
       }),
     });
 
-    const { LocalAIManager } = await loadManagerModule();
-    const manager = new LocalAIManager();
+    const manager = await createManager();
 
     await expect(manager.startDownload()).resolves.toMatchObject({
       state: 'ready',
@@ -383,16 +407,13 @@ describe('local AI manager lifecycle', () => {
 
   test('ignores bundled model when computing download status', async () => {
     accessMock.mockImplementation(async (filePath: string) => {
-      if (
-        filePath === '/mock-app/resources/local-ai/models/gemma-3-4b-it.gguf'
-      ) {
+      if (filePath === bundledModelPath) {
         return;
       }
       throw new Error('missing');
     });
 
-    const { LocalAIManager } = await loadManagerModule();
-    const manager = new LocalAIManager();
+    const manager = await createManager();
 
     await expect(manager.getDownloadStatus()).resolves.toMatchObject({
       state: 'unavailable',
@@ -402,14 +423,13 @@ describe('local AI manager lifecycle', () => {
 
   test('does not start sidecar from bundled model path alone', async () => {
     accessMock.mockImplementation(async (filePath: string) => {
-      if (filePath.includes('/mock-user-data/local-ai/models/')) {
+      if (filePath.startsWith(downloadedModelsDir)) {
         throw new Error('missing downloaded model');
       }
       return;
     });
 
-    const { LocalAIManager } = await loadManagerModule();
-    const manager = new LocalAIManager();
+    const manager = await createManager();
 
     await expect(manager.ensureReady()).resolves.toMatchObject({
       state: 'unsupported',
@@ -425,8 +445,7 @@ describe('local AI manager lifecycle', () => {
       .mockImplementationOnce(() => createInUsePortServer())
       .mockImplementation(() => createAvailablePortServer());
 
-    const { LocalAIManager } = await loadManagerModule();
-    const manager = new LocalAIManager();
+    const manager = await createManager();
 
     await expect(manager.ensureReady()).resolves.toMatchObject({
       state: 'ready',
@@ -458,8 +477,7 @@ describe('local AI manager lifecycle', () => {
       .mockImplementationOnce(() => createInUsePortServer())
       .mockImplementationOnce(() => createEphemeralPortServer(47001));
 
-    const { LocalAIManager } = await loadManagerModule();
-    const manager = new LocalAIManager();
+    const manager = await createManager();
 
     await expect(manager.ensureReady()).resolves.toMatchObject({
       state: 'ready',
@@ -479,8 +497,7 @@ describe('local AI manager lifecycle', () => {
     spawnMock.mockReturnValue(child);
     mainRPCMock.isPackaged.mockResolvedValue(true);
 
-    const { LocalAIManager } = await loadManagerModule();
-    const manager = new LocalAIManager();
+    const manager = await createManager();
 
     await expect(manager.ensureReady()).resolves.toMatchObject({
       state: 'ready',
@@ -496,8 +513,7 @@ describe('local AI manager lifecycle', () => {
     const child = new MockChildProcess();
     spawnMock.mockReturnValue(child);
 
-    const { LocalAIManager } = await loadManagerModule();
-    const manager = new LocalAIManager();
+    const manager = await createManager();
 
     await expect(manager.ensureReady()).resolves.toMatchObject({
       state: 'ready',

@@ -76,12 +76,6 @@ const addRpath = (targetPath, rpath) => {
   });
 };
 
-const adHocSign = targetPath => {
-  execFileSync('codesign', ['--force', '--sign', '-', targetPath], {
-    stdio: 'ignore',
-  });
-};
-
 try {
   await access(sourceBinaryPath);
   await Promise.all(dylibEntries.map(entry => access(entry.sourcePath)));
@@ -109,15 +103,12 @@ await chmod(stagedBinaryPath, 0o755);
 
 for (const entry of dylibEntries) {
   addRpath(entry.stagedPath, '@loader_path');
-  adHocSign(entry.stagedPath);
 }
 
 for (const entry of backendPluginEntries) {
   addRpath(entry.stagedPath, '@loader_path/../lib');
-  adHocSign(entry.stagedPath);
 }
 
 addRpath(stagedBinaryPath, '@loader_path/../lib');
-adHocSign(stagedBinaryPath);
 
 console.log(`[local-ai] staged resources into ${stagedRoot}`);

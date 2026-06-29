@@ -9,7 +9,6 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react';
-import type * as Infra from '@toeverything/infra';
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
@@ -31,6 +30,16 @@ const WorkspaceServerServiceToken = vi.hoisted(
   () => class WorkspaceServerService {}
 );
 const WorkspaceServiceToken = vi.hoisted(() => class WorkspaceService {});
+const serviceState = vi.hoisted(() => ({
+  workspaceService: {
+    workspace: workspaceState,
+  },
+  workspaceServerService: {
+    server: {
+      gql: gqlMock,
+    },
+  },
+}));
 
 const ByokProvider = vi.hoisted(() => ({
   openai: 'openai',
@@ -211,28 +220,17 @@ vi.mock('@blocksuite/icons/rc', () => ({
   TranscriptWithAiIcon: () => <span>transcript</span>,
 }));
 
-vi.mock('@toeverything/infra', async importOriginal => {
-  const actual = await importOriginal<typeof Infra>();
-
-  return {
-    ...actual,
-    useService: (token: unknown) => {
-      if (token === WorkspaceServerServiceToken) {
-        return {
-          server: {
-            gql: gqlMock,
-          },
-        };
-      }
-      if (token === WorkspaceServiceToken) {
-        return {
-          workspace: workspaceState,
-        };
-      }
-      return {};
-    },
-  };
-});
+vi.mock('@toeverything/infra', () => ({
+  useService: (token: unknown) => {
+    if (token === WorkspaceServerServiceToken) {
+      return serviceState.workspaceServerService;
+    }
+    if (token === WorkspaceServiceToken) {
+      return serviceState.workspaceService;
+    }
+    return {};
+  },
+}));
 
 import { WorkspaceByokSetting } from '.';
 import { logByokError } from './errors';

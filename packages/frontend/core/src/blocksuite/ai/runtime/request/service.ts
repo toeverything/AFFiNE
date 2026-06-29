@@ -34,7 +34,11 @@ import {
 } from './copilot-client';
 import { enrichDesktopChatActionOptions } from './desktop-chat-options';
 import { resolveDesktopChatLane } from './desktop-route-policy';
-import { textToText, toImage } from './message-transport';
+import {
+  textToText,
+  type TextToTextOptions,
+  toImage,
+} from './message-transport';
 
 type CreateSessionOptions = BlockSuitePresets.AICreateSessionOptions;
 
@@ -371,6 +375,9 @@ export class AIRequestService {
   ): Promise<
     Pick<Parameters<typeof textToText>[0], 'executionLane' | 'localCapable'>
   > {
+    const requestedModelId =
+      typeof options.modelId === 'string' ? options.modelId : undefined;
+
     if (options.executionLane === 'server') {
       return {};
     }
@@ -380,7 +387,7 @@ export class AIRequestService {
         const localStatus = (await apis?.localAI?.ensureReady?.()) ?? null;
         const decision = await resolveDesktopChatLane({
           requestAction: id,
-          modelId: options.modelId,
+          modelId: requestedModelId,
           retry: options.retry,
           localStatus,
         });
@@ -411,7 +418,7 @@ export class AIRequestService {
 
     const initialDecision = await resolveDesktopChatLane({
       requestAction: id,
-      modelId: options.modelId,
+      modelId: requestedModelId,
       retry: options.retry,
       localStatus: null,
     });
@@ -426,7 +433,7 @@ export class AIRequestService {
       const localStatus = (await apis?.localAI?.getStatus?.()) ?? null;
       const finalDecision = await resolveDesktopChatLane({
         requestAction: id,
-        modelId: options.modelId,
+        modelId: requestedModelId,
         retry: options.retry,
         localStatus,
       });
@@ -521,6 +528,14 @@ export class AIRequestService {
       definition.promptName,
       options
     ) as CreateSessionOptions['promptName'];
+    const requestedModelId =
+      typeof options.modelId === 'string' ? options.modelId : undefined;
+    const requestedSessionId =
+      typeof options.sessionId === 'string' ? options.sessionId : undefined;
+    const requestedExecutionLane =
+      options.executionLane === 'local' || options.executionLane === 'server'
+        ? options.executionLane
+        : undefined;
     const actionId = resolveDefinitionValue(definition.actionId, options);
     const actionVersion = resolveDefinitionValue(
       definition.actionVersion,
@@ -530,13 +545,12 @@ export class AIRequestService {
       definition.responseType === 'text'
         ? await this.resolveChatTransport(id, options)
         : {};
-    const resolvedExecutionLane =
+    const resolvedExecutionLane: TextToTextOptions['executionLane'] =
       chatTransport.executionLane ??
-      (id === 'chat' && options.executionLane === 'local'
+      (id === 'chat' && requestedExecutionLane === 'local'
         ? 'server'
-        : options.executionLane);
+        : requestedExecutionLane);
 
-    const requestedModelId = options.modelId as string | undefined;
     const transportModelId =
       resolvedExecutionLane === 'server' &&
       definition.endpoint === Endpoint.Action &&
@@ -544,7 +558,7 @@ export class AIRequestService {
         ? undefined
         : requestedModelId;
 
-    let sessionId = options.sessionId;
+    let sessionId = requestedSessionId;
     if (resolvedExecutionLane !== 'local') {
       sessionId = await this.createSession({
         promptName,
@@ -553,8 +567,14 @@ export class AIRequestService {
       this.lastActionSessionId = sessionId;
     }
 
-    const transportOptions = {
-      ...options,
+    const {
+      executionLane: _requestedExecutionLane,
+      modelId: _requestedModelId,
+      sessionId: _requestedSessionId,
+      ...baseTransportOptions
+    } = options;
+    const transportOptions: TextToTextOptions = {
+      ...(baseTransportOptions as Partial<TextToTextOptions>),
       modelId: transportModelId,
       client: this.client,
       sessionId,
@@ -598,7 +618,7 @@ export class AIRequestService {
           };
         },
         options.signal,
-        options.executionLane !== 'local'
+        requestedExecutionLane !== 'local'
       );
 
       return this.wrapTextStream(localStream, id, options);

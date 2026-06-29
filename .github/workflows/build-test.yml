@@ -1341,10 +1341,13 @@ jobs:
         shell: bash
         run: |
           brew install libomp openssl@3
-          export LOCAL_AI_LIBOMP_ROOT="$(brew --prefix libomp)"
-          export LOCAL_AI_OPENSSL_ROOT="$(brew --prefix openssl@3)"
+          LOCAL_AI_LIBOMP_ROOT="$(brew --prefix libomp)"
+          export LOCAL_AI_LIBOMP_ROOT
+          LOCAL_AI_OPENSSL_ROOT="$(brew --prefix openssl@3)"
+          export LOCAL_AI_OPENSSL_ROOT
+          LOCAL_AI_RUNTIME_SOURCE_ROOT="$PWD/.cache/local-ai-runtime/darwin-arm64"
           node packages/frontend/apps/electron/scripts/prepare-local-ai-runtime.mjs
-          echo "LOCAL_AI_RUNTIME_SOURCE_ROOT=$PWD/.cache/local-ai-runtime/darwin-arm64" >> "$GITHUB_ENV"
+          echo "LOCAL_AI_RUNTIME_SOURCE_ROOT=$LOCAL_AI_RUNTIME_SOURCE_ROOT" >> "$GITHUB_ENV"
 
       - name: Make bundle (macOS)
         if: ${{ matrix.spec.target == 'aarch64-apple-darwin' }}

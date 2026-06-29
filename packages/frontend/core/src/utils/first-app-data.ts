@@ -128,14 +128,10 @@ export async function ensureDefaultLocalWorkspace(
     return created;
   }
 
-  if (BUILD_CONFIG.isNative) {
-    const { meta, defaultDocId } = await buildShowcaseWorkspace(
-      workspacesService,
-      'local',
-      DEFAULT_WORKSPACE_NAME
-    );
-    return { meta, defaultPageId: defaultDocId };
-  }
-
-  return undefined;
+  const { meta, defaultDocId } = await buildShowcaseWorkspace(
+    workspacesService,
+    'local',
+    DEFAULT_WORKSPACE_NAME
+  );
+  return { meta, defaultPageId: defaultDocId };
 }
