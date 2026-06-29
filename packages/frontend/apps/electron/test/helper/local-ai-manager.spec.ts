@@ -10,7 +10,10 @@ const {
   fetchMock,
   loggerWarnMock,
   mainRPCMock,
+  mkdirMock,
   openMock,
+  renameMock,
+  rmMock,
   spawnMock,
   statMock,
 } = vi.hoisted(() => ({
@@ -23,7 +26,10 @@ const {
     getPath: vi.fn(async () => '/mock-user-data'),
     isPackaged: vi.fn(async () => false),
   },
+  mkdirMock: vi.fn(),
   openMock: vi.fn(),
+  renameMock: vi.fn(),
+  rmMock: vi.fn(),
   spawnMock: vi.fn(),
   statMock: vi.fn(),
 }));
@@ -39,7 +45,10 @@ vi.mock('node:child_process', () => ({
 vi.mock('node:fs/promises', () => ({
   default: {
     access: accessMock,
+    mkdir: mkdirMock,
     open: openMock,
+    rename: renameMock,
+    rm: rmMock,
     stat: statMock,
   },
 }));
@@ -79,6 +88,8 @@ const createMockFileHandle = (buffer = createGGUFHeader()) => ({
     buffer.copy(target, offset, 0, length);
     return { bytesRead: Math.min(length, buffer.length), buffer: target };
   }),
+  write: vi.fn(async () => ({ bytesWritten: buffer.length, buffer })),
+  sync: vi.fn(async () => {}),
   close: vi.fn(async () => {}),
 });
 
@@ -162,7 +173,10 @@ describe('local AI manager lifecycle', () => {
     createServerMock.mockReset();
     fetchMock.mockReset();
     loggerWarnMock.mockReset();
+    mkdirMock.mockReset();
     openMock.mockReset();
+    renameMock.mockReset();
+    rmMock.mockReset();
     spawnMock.mockReset();
     statMock.mockReset();
 
@@ -170,7 +184,10 @@ describe('local AI manager lifecycle', () => {
     mainRPCMock.getAppPath.mockResolvedValue('/mock-app');
     mainRPCMock.getPath.mockResolvedValue('/mock-user-data');
     mainRPCMock.isPackaged.mockResolvedValue(false);
+    mkdirMock.mockResolvedValue(undefined);
     openMock.mockResolvedValue(createMockFileHandle());
+    renameMock.mockResolvedValue(undefined);
+    rmMock.mockResolvedValue(undefined);
     statMock.mockResolvedValue({ size: 1024 * 1024 * 1024 });
     process.resourcesPath = '/mock-resources';
     createServerMock.mockImplementation(() => createAvailablePortServer());
@@ -239,6 +256,102 @@ describe('local AI manager lifecycle', () => {
       detail: expect.stringContaining('downloaded model verification failed'),
       targetPath: '/mock-user-data/local-ai/models/gemma-3-4b-it.gguf',
     });
+  });
+
+  test('verifies the temp download before publishing the final model path', async () => {
+    const downloadedModelPath =
+      '/mock-user-data/local-ai/models/gemma-3-4b-it.gguf';
+    const tempPath = `${downloadedModelPath}.download`;
+    const fileStore = new Map<string, Buffer>();
+    const downloadedModel = Buffer.concat([
+      createGGUFHeader(),
+      Buffer.from('verified-model-payload'),
+    ]);
+    const verifiedTempReadMarker = vi.fn();
+
+    accessMock.mockImplementation(async (filePath: string) => {
+      if (fileStore.has(filePath)) {
+        return;
+      }
+      throw new Error('missing');
+    });
+    mkdirMock.mockResolvedValue(undefined);
+    rmMock.mockImplementation(async (filePath: string) => {
+      fileStore.delete(filePath);
+    });
+    renameMock.mockImplementation(async (fromPath: string, toPath: string) => {
+      const buffer = fileStore.get(fromPath);
+      if (!buffer) {
+        throw new Error(`missing file: ${fromPath}`);
+      }
+      fileStore.set(toPath, buffer);
+      fileStore.delete(fromPath);
+    });
+    statMock.mockImplementation(async (filePath: string) => {
+      const buffer = fileStore.get(filePath);
+      if (!buffer) {
+        throw new Error(`missing file: ${filePath}`);
+      }
+      return { size: buffer.length };
+    });
+    openMock.mockImplementation(async (filePath: string, flags: string) => {
+      if (flags === 'w') {
+        return {
+          write: vi.fn(async (chunk: Uint8Array) => {
+            const nextChunk = Buffer.from(chunk);
+            const current = fileStore.get(filePath) ?? Buffer.alloc(0);
+            const buffer = Buffer.concat([current, nextChunk]);
+            fileStore.set(filePath, buffer);
+            return { bytesWritten: nextChunk.length, buffer: nextChunk };
+          }),
+          sync: vi.fn(async () => {}),
+          close: vi.fn(async () => {}),
+        };
+      }
+
+      if (filePath === tempPath) {
+        verifiedTempReadMarker();
+      }
+
+      return {
+        read: vi.fn(async (target: Buffer, offset: number, length: number) => {
+          const buffer = fileStore.get(filePath) ?? Buffer.alloc(0);
+          buffer.copy(target, offset, 0, length);
+          return { bytesRead: Math.min(length, buffer.length), buffer: target };
+        }),
+        close: vi.fn(async () => {}),
+      };
+    });
+    fetchMock.mockResolvedValue({
+      ok: true,
+      headers: {
+        get: (header: string) =>
+          header === 'content-length' ? String(downloadedModel.length) : null,
+      },
+      body: new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(Uint8Array.from(downloadedModel));
+          controller.close();
+        },
+      }),
+    });
+
+    const { LocalAIManager } = await loadManagerModule();
+    const manager = new LocalAIManager();
+
+    await expect(manager.startDownload()).resolves.toMatchObject({
+      state: 'ready',
+      targetPath: downloadedModelPath,
+      downloadedBytes: downloadedModel.length,
+    });
+
+    expect(verifiedTempReadMarker).toHaveBeenCalledTimes(1);
+    expect(renameMock).toHaveBeenCalledWith(tempPath, downloadedModelPath);
+    expect(verifiedTempReadMarker.mock.invocationCallOrder[0]).toBeLessThan(
+      renameMock.mock.invocationCallOrder[0]
+    );
+    expect(fileStore.get(downloadedModelPath)).toEqual(downloadedModel);
+    expect(fileStore.has(tempPath)).toBe(false);
   });
 
   test('ignores bundled model when computing download status', async () => {

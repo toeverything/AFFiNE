@@ -897,16 +897,13 @@ export class LocalAIManager {
             progress = 100;
           }
 
+          const verifiedBytes = await verifyLocalAIModelFile(tempPath, {
+            expectedBytes: totalBytes,
+            downloadedBytes,
+          });
+
           await fs.rm(downloadedModelPath, { force: true }).catch(() => {});
           await fs.rename(tempPath, downloadedModelPath);
-
-          const verifiedBytes = await verifyLocalAIModelFile(
-            downloadedModelPath,
-            {
-              expectedBytes: totalBytes,
-              downloadedBytes,
-            }
-          );
 
           const readyDownloadStatus = downloadReadyStatus({
             downloadUrl: activeDownloadUrl,
