@@ -13,6 +13,23 @@ import {
   type WorkspacesService,
 } from '../modules/workspace';
 
+async function getDefaultWorkspacePageId(
+  workspacesService: WorkspacesService,
+  meta: Parameters<WorkspacesService['open']>[0]['metadata']
+) {
+  const { workspace, dispose } = workspacesService.open({ metadata: meta });
+
+  await workspace.engine.doc.waitForDocReady(workspace.id);
+
+  const docsService = workspace.scope.get(DocsService);
+  const defaultDoc = docsService.list.docs$.value.find(p =>
+    p.title$.value.startsWith('Getting Started')
+  );
+  dispose();
+
+  return defaultDoc?.id;
+}
+
 export async function buildShowcaseWorkspace(
   workspacesService: WorkspacesService,
   flavour: string,
@@ -93,7 +110,17 @@ export async function ensureDefaultLocalWorkspace(
     list[0];
 
   if (existing) {
-    return { meta: existing, defaultPageId: undefined as string | undefined };
+    const lastPageId =
+      existing.flavour === 'local' && existing.id === lastId
+        ? localStorage.getItem('last_page_id')
+        : null;
+    const defaultPageId =
+      existing.flavour === 'local'
+        ? (lastPageId ??
+          (await getDefaultWorkspacePageId(workspacesService, existing)))
+        : undefined;
+
+    return { meta: existing, defaultPageId };
   }
 
   const created = await createFirstAppData(workspacesService);

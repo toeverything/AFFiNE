@@ -3,7 +3,7 @@ import {
   createRandomAIUser,
   switchDefaultChatModel,
 } from '@affine-test/kit/utils/cloud';
-import { openHomePage, setCoreUrl } from '@affine-test/kit/utils/load-page';
+import { coreUrl, setCoreUrl } from '@affine-test/kit/utils/load-page';
 import {
   clickNewPageButton,
   waitForEditorLoad,
@@ -75,7 +75,7 @@ export class TestUtils {
         );
       }, selectedModel);
     }
-    await openHomePage(page);
+    await page.goto(`${coreUrl}/?initCloud=true`);
     await this.createNewPage(page);
   }
 

@@ -3,6 +3,31 @@ import { EventEmitter } from 'node:events';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 const originalResourcesPath = process.resourcesPath;
+const originalPlatformDescriptor = Object.getOwnPropertyDescriptor(
+  process,
+  'platform'
+);
+const originalArchDescriptor = Object.getOwnPropertyDescriptor(process, 'arch');
+
+const mockLocalAIPlatform = () => {
+  Object.defineProperty(process, 'platform', {
+    configurable: true,
+    value: 'darwin',
+  });
+  Object.defineProperty(process, 'arch', {
+    configurable: true,
+    value: 'arm64',
+  });
+};
+
+const restoreLocalAIPlatform = () => {
+  if (originalPlatformDescriptor) {
+    Object.defineProperty(process, 'platform', originalPlatformDescriptor);
+  }
+  if (originalArchDescriptor) {
+    Object.defineProperty(process, 'arch', originalArchDescriptor);
+  }
+};
 
 const {
   accessMock,
@@ -166,6 +191,7 @@ async function loadManagerModule() {
 describe('local AI manager lifecycle', () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    mockLocalAIPlatform();
     accessMock.mockReset();
     mainRPCMock.getAppPath.mockReset();
     mainRPCMock.getPath.mockReset();
@@ -199,6 +225,7 @@ describe('local AI manager lifecycle', () => {
     vi.useRealTimers();
     vi.unstubAllGlobals();
     process.resourcesPath = originalResourcesPath;
+    restoreLocalAIPlatform();
     vi.resetModules();
   });
 
