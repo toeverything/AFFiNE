@@ -758,7 +758,7 @@ const rateLimiter = rateLimit({
   message: { error: 'Too many requests, please try again later.' },
 });
 
-app.get('/apps', async (_req, res) => {
+app.get('/apps', rateLimiter, async (_req, res) => {
   const apps = await getAllApps();
   listenToAppStateChanges(apps);
   res.json({ apps });
@@ -859,7 +859,7 @@ app.get('/apps/:process_id/icon', (req, res) => {
   }
 });
 
-app.post('/apps/:process_id/record', async (req, res) => {
+app.post('/apps/:process_id/record', rateLimiter, async (req, res) => {
   const processId = parseInt(req.params.process_id);
   try {
     const app = ShareableContent.applicationWithProcessId(processId);
@@ -875,7 +875,7 @@ app.post('/apps/:process_id/record', async (req, res) => {
   }
 });
 
-app.post('/apps/:process_id/stop', async (req, res) => {
+app.post('/apps/:process_id/stop', rateLimiter, async (req, res) => {
   const processId = parseInt(req.params.process_id);
   await stopRecording(processId);
   res.json({ success: true });
@@ -1047,7 +1047,7 @@ async function startGlobalRecording() {
 }
 
 // Add API endpoint for global recording
-app.post('/global/record', async (_req, res) => {
+app.post('/global/record', rateLimiter, async (_req, res) => {
   try {
     await startGlobalRecording();
     res.json({ success: true });
@@ -1057,7 +1057,7 @@ app.post('/global/record', async (_req, res) => {
   }
 });
 
-app.post('/global/stop', async (_req, res) => {
+app.post('/global/stop', rateLimiter, async (_req, res) => {
   const GLOBAL_RECORDING_ID = -1;
   await stopRecording(GLOBAL_RECORDING_ID);
   res.json({ success: true });
