@@ -18,8 +18,7 @@ mod tests;
 mod types;
 mod workspace_stats;
 
-use std::sync::RwLock;
-use std::time::Duration;
+use std::{sync::RwLock, time::Duration};
 
 use napi::Result;
 use sha2::{Digest, Sha256};

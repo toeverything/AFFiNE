@@ -121,7 +121,8 @@ export abstract class DocStorageAdapter extends Connection {
         : 'invalid';
     } catch (err) {
       this.logger.warn('Doc update validation failed', err);
-      return 'error';
+      metrics.doc.counter('doc_update_validation_failed').add(1);
+      return null;
     }
   }
 

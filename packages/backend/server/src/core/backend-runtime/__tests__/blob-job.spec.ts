@@ -57,32 +57,63 @@ test.beforeEach(t => {
   );
 });
 
-test('blob metadata backfill sweep skips when object storage is not configured', async t => {
-  t.context.runtime.health.resolves({
-    databaseConnected: true,
-    objectStorageConfigured: false,
+const objectStorageRequiredCases: {
+  name: string;
+  run: (context: Context) => Promise<unknown>;
+  untouched: (context: Context) => Sinon.SinonStub[];
+}[] = [
+  {
+    name: 'blob metadata backfill sweep',
+    run: context => context.job.backfillMissingBlobMetadataBySid({}),
+    untouched: context => [
+      context.db.workspace.findMany,
+      context.runtime.backfillMissingBlobMetadata,
+      context.queue.add,
+    ],
+  },
+  {
+    name: 'blob cleanup execution',
+    run: context =>
+      context.job.executeBlobCleanupCandidates({ runId: 'run-1' }),
+    untouched: context => [
+      context.runtime.executeBlobCleanupCandidates,
+      context.event.emitAsync,
+    ],
+  },
+  {
+    name: 'blob cleanup planning sweep',
+    run: context => context.job.planUnreferencedWorkspaceBlobsBySid({}),
+    untouched: context => [
+      context.db.workspace.findMany,
+      context.runtime.planUnreferencedWorkspaceBlobs,
+      context.queue.add,
+    ],
+  },
+  {
+    name: 'blob cleanup planning',
+    run: context =>
+      context.job.planUnreferencedWorkspaceBlobs({
+        workspaceId: 'workspace-1',
+      }),
+    untouched: context => [context.runtime.planUnreferencedWorkspaceBlobs],
+  },
+];
+
+for (const scenario of objectStorageRequiredCases) {
+  test(`${scenario.name} skips when object storage is not configured`, async t => {
+    t.context.runtime.health.resolves({
+      databaseConnected: true,
+      objectStorageConfigured: false,
+    });
+
+    await scenario.run(t.context);
+
+    t.true(t.context.runtime.health.calledOnce);
+    for (const stub of scenario.untouched(t.context)) {
+      t.false(stub.called);
+    }
   });
-
-  await t.context.job.backfillMissingBlobMetadataBySid({});
-
-  t.true(t.context.runtime.health.calledOnce);
-  t.false(t.context.db.workspace.findMany.called);
-  t.false(t.context.runtime.backfillMissingBlobMetadata.called);
-  t.false(t.context.queue.add.called);
-});
-
-test('blob cleanup execution skips when object storage is not configured', async t => {
-  t.context.runtime.health.resolves({
-    databaseConnected: true,
-    objectStorageConfigured: false,
-  });
-
-  await t.context.job.executeBlobCleanupCandidates({ runId: 'run-1' });
-
-  t.true(t.context.runtime.health.calledOnce);
-  t.false(t.context.runtime.executeBlobCleanupCandidates.called);
-  t.false(t.context.event.emitAsync.called);
-});
+}
 
 test('doc blob refs sweep continues after one workspace fails', async t => {
   t.context.db.workspace.findMany.resolves([
@@ -123,4 +154,3 @@ test('doc blob refs sweep continues after one workspace fails', async t => {
     )
   );
 });
-

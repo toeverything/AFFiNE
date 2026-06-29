@@ -269,6 +269,10 @@ export class BackendRuntimeBlobJob {
     gracePeriodDays = 30,
     limit = 1000,
   }: Jobs['backendRuntime.planUnreferencedWorkspaceBlobs']) {
+    if (!(await this.hasObjectStorage('blob cleanup planning'))) {
+      return;
+    }
+
     const result = await this.rt.planUnreferencedWorkspaceBlobs(
       workspaceId,
       gracePeriodDays,
@@ -286,6 +290,10 @@ export class BackendRuntimeBlobJob {
     gracePeriodDays = 30,
     limit = 1000,
   }: Jobs['backendRuntime.planUnreferencedWorkspaceBlobsBySid']) {
+    if (!(await this.hasObjectStorage('blob cleanup planning sweep'))) {
+      return;
+    }
+
     const workspaces = await this.db.workspace.findMany({
       where: {
         sid: {
