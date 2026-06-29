@@ -934,7 +934,7 @@ export class LocalAIManager {
       if (wasCurrentChild) {
         this.child = null;
       }
-      if (this.ignoredExits.delete(child)) {
+      if (this.ignoredExits.has(child)) {
         return;
       }
       if (wasCurrentChild && this.status$.value.state === 'ready') {

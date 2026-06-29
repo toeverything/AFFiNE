@@ -232,10 +232,9 @@ export const WorkspaceByokSetting = () => {
     if (!settings) {
       return (
         <div className={styles.notice} data-testid="workspace-byok-local-only">
-          <div className={styles.title}>Cloud BYOK settings unavailable</div>
+          <div className={styles.title}>{byokT(t, 'local-only.title')}</div>
           <div className={styles.description}>
-            This workspace does not have a connected server, so cloud BYOK usage
-            and server-managed keys are unavailable in this view.
+            {byokT(t, 'local-only.description')}
           </div>
         </div>
       );

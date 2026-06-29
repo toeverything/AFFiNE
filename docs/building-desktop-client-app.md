@@ -342,32 +342,13 @@ For the macOS release job, the workflow now:
 5. staples app and DMG
 6. validates the final artifacts before uploading them
 
-## Standalone local scripts
+## Standalone local script
 
-If you do not want to route through the GitHub `Release` workflow at all, two helper scripts exist at repository root:
+If you do not want to route through the GitHub `Release` workflow at all, use the repository-root helper script:
 
-- `build-dmg.sh`: interactive local flow
 - `build-dmg-ci.sh`: non-interactive local/CI flow
 
-Both scripts now clean up stale mounted AFFiNE DMG volumes before they call Electron Forge `make`. This guards against `hdiutil detach` failures caused by leftover mounts such as `/Volumes/AFFiNE`, `/Volumes/AFFiNE 1`, or `/Volumes/AFFiNE-canary` from a previous packaging attempt.
-
-### Interactive local flow
-
-```bash
-./build-dmg.sh
-```
-
-`build-dmg.sh` now supports two macOS signing modes automatically based on the certificate available in your keychain:
-
-1. `Developer ID Application`: signed and notarized DMG flow
-2. `Apple Development`: local-only `.app` packaging flow for the current Mac
-
-This path is useful when:
-
-- you are building on a local Mac
-- your signing certificate already exists in your keychain
-- you prefer prompts over preloaded environment variables
-- you may only have `Apple Development` access and still need a locally signed `.app`
+The script cleans up stale mounted AFFiNE DMG volumes before it calls Electron Forge `make`. This guards against `hdiutil detach` failures caused by leftover mounts such as `/Volumes/AFFiNE`, `/Volumes/AFFiNE 1`, or `/Volumes/AFFiNE-canary` from a previous packaging attempt.
 
 ### Non-interactive local flow
 
@@ -430,15 +411,17 @@ xcrun stapler validate /path/to/AFFiNE.dmg
 spctl -a -t open --context context:primary-signature -vv /path/to/AFFiNE.dmg
 ```
 
-## Bundled local AI resources on Apple Silicon
+## Local AI runtime resources on Apple Silicon
 
-Apple Silicon macOS desktop builds stage the local Gemma sidecar and model into the Electron app resources before packaging. This staging only applies to `darwin arm64` packaging.
+Apple Silicon macOS desktop builds stage the local Gemma sidecar runtime into the Electron app resources before packaging. This staging only applies to `darwin arm64` packaging.
+
+The Gemma model itself is downloaded on demand at runtime and stored under the user data directory, so the packaged app does not need to embed `gemma-3-4b-it.gguf`.
 
 ### Expected staged paths before packaging
 
 ```text
 packages/frontend/apps/electron/resources/local-ai/bin/llama-server
-packages/frontend/apps/electron/resources/local-ai/models/gemma-3-4b-it.gguf
+packages/frontend/apps/electron/resources/local-ai/lib/libllama-server-impl.dylib
 ```
 
 ### Run the staging script manually
@@ -447,21 +430,14 @@ packages/frontend/apps/electron/resources/local-ai/models/gemma-3-4b-it.gguf
 node packages/frontend/apps/electron/scripts/stage-local-ai-assets.mjs
 ```
 
-The script copies from:
-
-```text
-vendor/local-ai/darwin-arm64/llama-server
-vendor/local-ai/darwin-arm64/gemma-3-4b-it.gguf
-```
-
 ### Post-build verification commands
 
-After a successful Apple Silicon build, verify the staged resources inside the generated `.app` bundle:
+After a successful Apple Silicon build, verify the staged runtime resources inside the generated `.app` bundle:
 
 ```bash
 APP_PATH="packages/frontend/apps/electron/out/canary/AFFiNE-canary-darwin-arm64/AFFiNE-canary.app"
 test -f "$APP_PATH/Contents/Resources/local-ai/bin/llama-server"
-test -f "$APP_PATH/Contents/Resources/local-ai/models/gemma-3-4b-it.gguf"
+test -f "$APP_PATH/Contents/Resources/local-ai/lib/libllama-server-impl.dylib"
 ```
 
 If the app was signed with `Developer ID Application`, also verify Gatekeeper acceptance:
