@@ -1,8 +1,11 @@
+mod blob_cleanup;
 mod blob_complete;
 mod blob_reclaimer;
+mod blob_reconciliation;
 mod config;
 mod constants;
 mod coordination_lease;
+mod doc_blob_refs;
 mod doc_compactor;
 mod doc_storage;
 mod error;

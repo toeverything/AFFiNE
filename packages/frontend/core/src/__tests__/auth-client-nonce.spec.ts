@@ -1,10 +1,12 @@
 import { AuthSession } from '@affine/core/modules/cloud/entities/session';
 import { AuthService } from '@affine/core/modules/cloud/services/auth';
 import { FetchService } from '@affine/core/modules/cloud/services/fetch';
+import { ServerService } from '@affine/core/modules/cloud/services/server';
 import { AuthStore } from '@affine/core/modules/cloud/stores/auth';
 import { GlobalDialogService } from '@affine/core/modules/dialogs/services/dialog';
 import { NbstoreService } from '@affine/core/modules/storage';
 import { UrlService } from '@affine/core/modules/url/services/url';
+import { ServerDeploymentType } from '@affine/graphql';
 import { Framework } from '@toeverything/infra';
 import { of } from 'rxjs';
 import { describe, expect, test, vi } from 'vitest';
@@ -41,12 +43,23 @@ describe('AuthService oauthPreflight', () => {
     framework.service(NbstoreService, {
       realtime: { subscribe: () => of() },
     } as any);
+    framework.service(ServerService, {
+      server: {
+        ['config$']: {
+          value: {
+            type: ServerDeploymentType.Selfhosted,
+            version: '0.27.0',
+          },
+        },
+      },
+    } as any);
     framework.service(AuthService, [
       FetchService,
       AuthStore,
       UrlService,
       GlobalDialogService,
       NbstoreService,
+      ServerService,
     ]);
 
     const auth = framework.provider().get(AuthService);

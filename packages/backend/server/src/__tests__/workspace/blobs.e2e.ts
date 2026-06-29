@@ -119,6 +119,50 @@ test('should list blobs', async t => {
   t.deepEqual(ret.map(x => x.key).sort(), [hash1, hash2].sort());
 });
 
+test('should keep partial blob metadata listing on DB path without storage scan', async t => {
+  await app.signupV1('u1@affine.pro');
+
+  const workspace = await createWorkspace(app);
+  const storage = app.get(WorkspaceBlobStorage);
+  const rawProvider = (storage as any).provider;
+  const listSpy = Sinon.spy(rawProvider, 'list');
+  t.teardown(() => listSpy.restore());
+
+  const buffer1 = Buffer.from('with metadata');
+  const buffer2 = Buffer.from('without metadata');
+  const key1 = sha256Base64urlWithPadding(buffer1);
+  const key2 = sha256Base64urlWithPadding(buffer2);
+  const config = app.get(Config);
+  const factory = app.get(StorageProviderFactory);
+  const provider = factory.create(config.storages.blob.storage);
+  await provider.put(`${workspace.id}/${key1}`, buffer1, {
+    contentType: 'text/plain',
+    contentLength: buffer1.length,
+  });
+  await provider.put(`${workspace.id}/${key2}`, buffer2, {
+    contentType: 'text/plain',
+    contentLength: buffer2.length,
+  });
+
+  const blobModel = app.get(BlobModel);
+  await blobModel.upsert({
+    workspaceId: workspace.id,
+    key: key1,
+    mime: 'text/plain',
+    size: buffer1.length,
+    status: 'completed',
+    uploadId: null,
+  });
+
+  const listed = await storage.list(workspace.id);
+
+  t.deepEqual(
+    listed.map(blob => blob.key),
+    [key1]
+  );
+  t.true(listSpy.notCalled);
+});
+
 test('should create pending blob upload with graphql fallback', async t => {
   await app.signupV1('u1@affine.pro');
 
@@ -221,10 +265,13 @@ test('should auto delete blobs when workspace is deleted', async t => {
   const blobs = await listBlobs(app, workspace.id);
   t.is(blobs.length, 2);
 
-  const workspaceBlobStorage = Sinon.spy(app.get(WorkspaceBlobStorage));
+  const storage = app.get(WorkspaceBlobStorage);
+  const rawProvider = (storage as any).provider;
+  const listSpy = Sinon.spy(rawProvider, 'list');
+  t.teardown(() => listSpy.restore());
+
   await deleteWorkspace(app, workspace.id);
-  // should not emit workspace.blob.sync event
-  t.is(workspaceBlobStorage.syncBlobMeta.callCount, 0);
+  t.is(listSpy.callCount, 0);
 });
 
 test('should calc blobs size', async t => {

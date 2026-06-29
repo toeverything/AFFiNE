@@ -9,8 +9,8 @@ use aws_sdk_s3::{
 use napi::Result;
 
 use super::types::{
-  MultipartUploadInitResult, MultipartUploadPart, ObjectGetResult, ObjectListEntry, ObjectMetadata, ObjectPutMetadata,
-  PresignedObjectRequest, completed_multipart_parts, trim_etag,
+  MultipartUploadInitResult, MultipartUploadPart, ObjectGetResult, ObjectListEntry, ObjectListPage, ObjectMetadata,
+  ObjectPutMetadata, PresignedObjectRequest, completed_multipart_parts, trim_etag,
 };
 use crate::backend_runtime::error::napi_error;
 
@@ -233,14 +233,11 @@ impl ObjectStorageClient {
   }
 
   pub(super) async fn head(&self, key: &str) -> Result<Option<ObjectMetadata>> {
-    let result = self
-      .client
-      .head_object()
-      .bucket(&self.bucket)
-      .key(key)
-      .send()
-      .await
-      .map_err(|err| napi_error(format!("ObjectStorage head failed for {key}: {err:?}")))?;
+    let result = match self.client.head_object().bucket(&self.bucket).key(key).send().await {
+      Ok(result) => result,
+      Err(err) if is_not_found_error(&err) => return Ok(None),
+      Err(err) => return Err(napi_error(format!("ObjectStorage head failed for {key}: {err:?}"))),
+    };
 
     Ok(Some(ObjectMetadata {
       content_type: result
@@ -253,14 +250,11 @@ impl ObjectStorageClient {
   }
 
   pub(super) async fn get(&self, key: &str) -> Result<Option<ObjectGetResult>> {
-    let result = self
-      .client
-      .get_object()
-      .bucket(&self.bucket)
-      .key(key)
-      .send()
-      .await
-      .map_err(|err| napi_error(format!("ObjectStorage get failed for {key}: {err:?}")))?;
+    let result = match self.client.get_object().bucket(&self.bucket).key(key).send().await {
+      Ok(result) => result,
+      Err(err) if is_not_found_error(&err) => return Ok(None),
+      Err(err) => return Err(napi_error(format!("ObjectStorage get failed for {key}: {err:?}"))),
+    };
     let metadata = ObjectMetadata {
       content_type: result
         .content_type
@@ -314,6 +308,43 @@ impl ObjectStorageClient {
     Ok(entries)
   }
 
+  pub(super) async fn list_page(
+    &self,
+    prefix: Option<String>,
+    continuation_token: Option<String>,
+    start_after: Option<String>,
+    max_keys: i32,
+  ) -> Result<ObjectListPage> {
+    let mut request = self.client.list_objects_v2().bucket(&self.bucket).max_keys(max_keys);
+    if let Some(prefix) = prefix {
+      request = request.prefix(prefix);
+    }
+    if let Some(continuation_token) = continuation_token {
+      request = request.continuation_token(continuation_token);
+    } else if let Some(start_after) = start_after {
+      request = request.start_after(start_after);
+    }
+    let result = request
+      .send()
+      .await
+      .map_err(|err| napi_error(format!("ObjectStorage list page failed: {err:?}")))?;
+
+    Ok(ObjectListPage {
+      entries: result
+        .contents()
+        .iter()
+        .filter_map(|object| {
+          Some(ObjectListEntry {
+            key: object.key.as_ref()?.clone(),
+            content_length: object.size.unwrap_or(0),
+            last_modified_ms: optional_datetime_ms(object.last_modified),
+          })
+        })
+        .collect(),
+      next_continuation_token: result.next_continuation_token,
+    })
+  }
+
   pub(super) async fn delete(&self, key: &str) -> Result<()> {
     self
       .client
@@ -325,6 +356,11 @@ impl ObjectStorageClient {
       .map_err(|err| napi_error(format!("ObjectStorage delete failed for {key}: {err:?}")))?;
     Ok(())
   }
+}
+
+fn is_not_found_error(error: &impl std::fmt::Debug) -> bool {
+  let message = format!("{error:?}");
+  message.contains("NoSuchKey") || (message.contains("NotFound") && !message.contains("NoSuchBucket"))
 }
 
 fn expires_at_ms(expires_in_seconds: u64) -> Result<i64> {

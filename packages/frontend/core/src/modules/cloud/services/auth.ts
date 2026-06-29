@@ -1,5 +1,5 @@
 import { UserFriendlyError } from '@affine/error';
-import type { OAuthProviderType } from '@affine/graphql';
+import { type OAuthProviderType, ServerDeploymentType } from '@affine/graphql';
 import { track } from '@affine/track';
 import { OnEvent, Service } from '@toeverything/infra';
 import { nanoid } from 'nanoid';
@@ -15,7 +15,9 @@ import { AccountLoggedIn } from '../events/account-logged-in';
 import { AccountLoggedOut } from '../events/account-logged-out';
 import { ServerStarted } from '../events/server-started';
 import type { AuthStore } from '../stores/auth';
+import { assertSupportedServerVersion } from '../stores/server-config';
 import type { FetchService } from './fetch';
+import type { ServerService } from './server';
 
 @OnEvent(ApplicationFocused, e => e.onApplicationFocused)
 @OnEvent(ServerStarted, e => e.onServerStarted)
@@ -28,7 +30,8 @@ export class AuthService extends Service {
     private readonly store: AuthStore,
     private readonly urlService: UrlService,
     private readonly dialogService: GlobalDialogService,
-    private readonly nbstoreService: NbstoreService
+    private readonly nbstoreService: NbstoreService,
+    private readonly serverService: ServerService
   ) {
     super();
 
@@ -97,6 +100,7 @@ export class AuthService extends Service {
     challenge?: string,
     redirectUrl?: string // url to redirect to after signed-in
   ) {
+    this.assertSupportedServerVersion();
     track.$.$.auth.signIn({ method: 'magic-link' });
     // Only native clients use `client_nonce` for magic-link/otp sign-in.
     // Web needs to keep cross-device magic-link compatibility.
@@ -156,6 +160,7 @@ export class AuthService extends Service {
     client: string,
     /** @deprecated*/ redirectUrl?: string
   ): Promise<Record<string, string>> {
+    this.assertSupportedServerVersion();
     // OAuth callback requires `client_nonce` for all clients (including web).
     const clientNonce = this.setClientNonce();
     try {
@@ -233,6 +238,7 @@ export class AuthService extends Service {
     verifyToken?: string;
     challenge?: string;
   }) {
+    this.assertSupportedServerVersion();
     track.$.$.auth.signIn({ method: 'password' });
     try {
       const user = await this.store.signInPassword(credential);
@@ -284,5 +290,11 @@ export class AuthService extends Service {
     const nonce = nanoid();
     this.store.setClientNonce(nonce);
     return nonce;
+  }
+
+  private assertSupportedServerVersion() {
+    const config = this.serverService.server.config$.value;
+    if (config.type !== ServerDeploymentType.Selfhosted) return;
+    assertSupportedServerVersion(config.version);
   }
 }

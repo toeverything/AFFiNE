@@ -7,7 +7,6 @@ import {
   Config,
   EventBus,
   type GetObjectMetadata,
-  ListObjectsMetadata,
   OnEvent,
   PutObjectMetadata,
   type StorageProvider,
@@ -15,13 +14,10 @@ import {
   URLHelper,
 } from '../../../base';
 import { Models } from '../../../models';
+import { BackendRuntimeProvider } from '../../backend-runtime';
 
 declare global {
   interface Events {
-    'workspace.blob.sync': {
-      workspaceId: string;
-      key: string;
-    };
     'workspace.blob.delete': {
       workspaceId: string;
       key: string;
@@ -57,7 +53,8 @@ export class WorkspaceBlobStorage {
     private readonly event: EventBus,
     private readonly storageFactory: StorageProviderFactory,
     private readonly models: Models,
-    private readonly url: URLHelper
+    private readonly url: URLHelper,
+    private readonly rt: BackendRuntimeProvider
   ) {}
 
   @OnEvent('config.init')
@@ -223,34 +220,8 @@ export class WorkspaceBlobStorage {
     return { ok: true, metadata };
   }
 
-  async list(workspaceId: string, syncBlobMeta = true) {
-    const blobsInDb = await this.models.blob.list(workspaceId);
-
-    if (blobsInDb.length > 0) {
-      return blobsInDb;
-    }
-
-    // all blobs are uploading but not completed yet
-    const hasDbBlobs = await this.models.blob.hasAny(workspaceId);
-    if (hasDbBlobs) {
-      return blobsInDb;
-    }
-
-    const blobs = await this.provider.list(workspaceId + '/');
-    blobs.forEach(blob => {
-      blob.key = blob.key.slice(workspaceId.length + 1);
-    });
-
-    if (syncBlobMeta) {
-      this.trySyncBlobsMeta(workspaceId, blobs);
-    }
-
-    return blobs.map(blob => ({
-      key: blob.key,
-      size: blob.contentLength,
-      createdAt: blob.lastModified,
-      mime: 'application/octet-stream',
-    }));
+  async list(workspaceId: string) {
+    return await this.models.blob.list(workspaceId);
   }
 
   async delete(workspaceId: string, key: string, permanently = false) {
@@ -264,17 +235,17 @@ export class WorkspaceBlobStorage {
   }
 
   async release(workspaceId: string) {
-    const deletedBlobs = await this.models.blob.listDeleted(workspaceId);
-
-    deletedBlobs.forEach(blob => {
-      this.event.emit('workspace.blob.delete', {
-        workspaceId: workspaceId,
-        key: blob.key,
-      });
-    });
+    let scanned = 0;
+    let deleted = 0;
+    for (;;) {
+      const result = await this.rt.releaseDeletedBlobs(workspaceId, 1000);
+      scanned += result.scanned;
+      deleted += result.deleted;
+      if (result.scanned < 1000) break;
+    }
 
     this.logger.log(
-      `released ${deletedBlobs.length} blobs for workspace ${workspaceId}`
+      `released ${deleted}/${scanned} blobs for workspace ${workspaceId}`
     );
 
     await this.event.emitAsync('workspace.blobs.updated', { workspaceId });
@@ -289,15 +260,6 @@ export class WorkspaceBlobStorage {
       return undefined;
     }
     return this.url.link(`/api/workspaces/${workspaceId}/blobs/${avatarKey}`);
-  }
-
-  private trySyncBlobsMeta(workspaceId: string, blobs: ListObjectsMetadata[]) {
-    for (const blob of blobs) {
-      this.event.emit('workspace.blob.sync', {
-        workspaceId,
-        key: blob.key,
-      });
-    }
   }
 
   private async upsert(
@@ -315,26 +277,9 @@ export class WorkspaceBlobStorage {
     });
   }
 
-  @OnEvent('workspace.blob.sync')
-  async syncBlobMeta({ workspaceId, key }: Events['workspace.blob.sync']) {
-    try {
-      const meta = await this.provider.head(`${workspaceId}/${key}`);
-
-      if (meta) {
-        await this.upsert(workspaceId, key, meta);
-      } else {
-        await this.models.blob.delete(workspaceId, key, true);
-      }
-    } catch (e) {
-      // never throw
-      this.logger.error('failed to sync blob meta to DB', e);
-    }
-  }
-
   @OnEvent('workspace.deleted')
   async onWorkspaceDeleted({ id }: Events['workspace.deleted']) {
-    // do not sync blob meta to DB
-    const blobs = await this.list(id, false);
+    const blobs = await this.list(id);
 
     // to reduce cpu time holding
     blobs.forEach(blob => {

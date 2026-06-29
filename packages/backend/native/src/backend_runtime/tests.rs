@@ -14,6 +14,10 @@ fn migrations_include_runtime_tables_without_worker_heartbeats() {
   assert!(RUNTIME_MIGRATIONS.contains("runtime_states"));
   assert!(RUNTIME_MIGRATIONS.contains("runtime_gates"));
   assert!(RUNTIME_MIGRATIONS.contains("runtime_leases"));
+  assert!(RUNTIME_MIGRATIONS.contains("blob_reconciliation_runs"));
+  assert!(RUNTIME_MIGRATIONS.contains("blob_reconciliation_checkpoints"));
+  assert!(RUNTIME_MIGRATIONS.contains("doc_blob_refs"));
+  assert!(RUNTIME_MIGRATIONS.contains("blob_cleanup_candidates"));
   assert!(!RUNTIME_MIGRATIONS.contains("runtime_worker_heartbeats"));
 }
 

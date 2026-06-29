@@ -2,6 +2,7 @@ import './config';
 
 import { Module } from '@nestjs/common';
 
+import { BackendRuntimeModule } from '../backend-runtime';
 import { BlobUploadCleanupJob } from './job';
 import { R2UploadController } from './r2-proxy';
 import {
@@ -11,6 +12,7 @@ import {
 } from './wrappers';
 
 @Module({
+  imports: [BackendRuntimeModule],
   controllers: [R2UploadController],
   providers: [
     WorkspaceBlobStorage,

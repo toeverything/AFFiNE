@@ -7,6 +7,7 @@ mod types;
 use client::ObjectStorageClient;
 pub(super) use config::ObjectStorageConfig;
 use napi::{Result, bindgen_prelude::Buffer};
+use types::ObjectListPage;
 pub(super) use types::StorageProviderConfig;
 
 use super::{
@@ -30,6 +31,19 @@ impl BackendRuntime {
 
   pub(super) async fn object_storage_delete_object(&self, key: &str) -> Result<()> {
     self.object_storage_client()?.delete(key).await
+  }
+
+  pub(super) async fn object_storage_list_page(
+    &self,
+    prefix: Option<String>,
+    continuation_token: Option<String>,
+    start_after: Option<String>,
+    max_keys: i32,
+  ) -> Result<ObjectListPage> {
+    self
+      .object_storage_client()?
+      .list_page(prefix, continuation_token, start_after, max_keys)
+      .await
   }
 
   pub(super) async fn object_storage_abort_upload(&self, key: &str, upload_id: &str) -> Result<()> {

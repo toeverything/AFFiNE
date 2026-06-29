@@ -139,6 +139,49 @@ pub struct RuntimeBlobCompleteResult {
 }
 
 #[napi_derive::napi(object)]
+pub struct RuntimeBlobMetadataBackfillResult {
+  pub scanned_objects: i64,
+  pub headed_objects: i64,
+  pub upserted_metadata: i64,
+  pub skipped_existing: i64,
+  pub skipped_workspace_missing: i64,
+  pub failed: i64,
+  pub next_cursor: Option<String>,
+  pub workspace_ids: Vec<String>,
+}
+
+#[napi_derive::napi(object)]
+pub struct RuntimeDocBlobRefsResult {
+  pub scanned_docs: i64,
+  pub parsed_docs: i64,
+  pub refs_written: i64,
+  pub refs_deleted: i64,
+  pub failed_docs: i64,
+  pub next_cursor: Option<String>,
+}
+
+#[napi_derive::napi(object)]
+pub struct RuntimeBlobCleanupPlanResult {
+  pub run_id: Option<String>,
+  pub scanned_blobs: i64,
+  pub candidates_marked: i64,
+  pub protected_by_doc_refs: i64,
+  pub protected_by_metadata: i64,
+  pub protected_by_other_refs: i64,
+  pub next_cursor: Option<String>,
+}
+
+#[napi_derive::napi(object)]
+pub struct RuntimeBlobCleanupExecuteResult {
+  pub scanned_candidates: i64,
+  pub deleted_objects: i64,
+  pub deleted_metadata: i64,
+  pub skipped_still_referenced: i64,
+  pub failed: i64,
+  pub workspace_ids: Vec<String>,
+}
+
+#[napi_derive::napi(object)]
 pub struct RuntimeDocCompactionResult {
   pub lease_acquired: bool,
   pub merged: bool,

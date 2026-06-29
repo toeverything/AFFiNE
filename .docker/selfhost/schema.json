@@ -121,6 +121,18 @@
           "default": {
             "concurrency": 1
           }
+        },
+        "queues.backendRuntime": {
+          "type": "object",
+          "description": "The config for backend runtime job queue\n@default {\"concurrency\":1}",
+          "properties": {
+            "concurrency": {
+              "type": "number"
+            }
+          },
+          "default": {
+            "concurrency": 1
+          }
         }
       }
     },
