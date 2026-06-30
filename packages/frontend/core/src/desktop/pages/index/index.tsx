@@ -118,11 +118,17 @@ export const Component = ({
         return;
       }
     } else {
+      // Once local workspace creation has been kicked off, let its async
+      // completion own navigation. The created workspace lands in `list`
+      // before `ensureDefaultLocalWorkspace` resolves, which re-runs this
+      // effect; without this guard it would navigate to the all-docs page and
+      // race with the intended jump to the default doc, leaving the editor
+      // unmounted.
+      if (ensureWorkspaceOnceRef.current) {
+        return;
+      }
       if (list.length === 0) {
         if (enableLocalWorkspace) {
-          if (ensureWorkspaceOnceRef.current) {
-            return;
-          }
           ensureWorkspaceOnceRef.current = true;
           setCreating(true);
           ensureDefaultLocalWorkspace(workspacesService)
