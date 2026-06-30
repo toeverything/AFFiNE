@@ -1103,4 +1103,10 @@ export declare function updateLicenseSeats(request: LicenseSeatsRequest): Promis
  */
 export declare function updateRootDocMetaTitle(rootDocBin: Buffer, docId: string, title: string): Buffer
 
+/**
+ * Check whether a Yjs update binary can be decoded without applying it to a
+ * document state.
+ */
+export declare function validateDocUpdate(update: Buffer): Promise<boolean>
+
 export declare function verifyChallengeResponse(response: string, bits: number, resource: string): Promise<boolean>

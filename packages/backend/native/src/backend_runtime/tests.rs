@@ -70,10 +70,10 @@ async fn runtime_from_database_url() -> AnyResult<Option<BackendRuntime>> {
     .context("cleanup runtime_leases for backend runtime tests")?;
 
   Ok(Some(BackendRuntime {
-    config: RuntimeConfig {
+    config: std::sync::RwLock::new(RuntimeConfig {
       database_url,
       storage: None,
-    },
+    }),
     pool: Mutex::new(Some(pool)),
   }))
 }
@@ -130,7 +130,7 @@ async fn runtime_gate_sql_semantics_are_atomic_and_ttl_bound() {
   let mut tasks = Vec::new();
   for _ in 0..16 {
     let runtime = BackendRuntime {
-      config: runtime.config.clone(),
+      config: std::sync::RwLock::new(runtime.config().unwrap()),
       pool: Mutex::new(Some(runtime.pool().await.unwrap())),
     };
     tasks.push(tokio::spawn(async move {
@@ -189,7 +189,7 @@ async fn coordination_lease_sql_semantics_are_fenced_and_ttl_bound() {
   let mut tasks = Vec::new();
   for index in 0..16 {
     let runtime = BackendRuntime {
-      config: runtime.config.clone(),
+      config: std::sync::RwLock::new(runtime.config().unwrap()),
       pool: Mutex::new(Some(runtime.pool().await.unwrap())),
     };
     tasks.push(tokio::spawn(async move {
@@ -393,7 +393,7 @@ async fn verification_token_sql_state_machine_handles_keep_verify_and_cleanup() 
   let mut tasks = Vec::new();
   for _ in 0..16 {
     let runtime = BackendRuntime {
-      config: runtime.config.clone(),
+      config: std::sync::RwLock::new(runtime.config().unwrap()),
       pool: Mutex::new(Some(runtime.pool().await.unwrap())),
     };
     let token = concurrent_token.clone();

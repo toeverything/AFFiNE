@@ -99,6 +99,10 @@ export class BackendRuntimeBlobJob {
     workspaceLimit = 100,
     objectLimit = 1000,
   }: Jobs['backendRuntime.backfillMissingBlobMetadataBySid']) {
+    if (!(await this.hasObjectStorage('blob metadata backfill sweep'))) {
+      return;
+    }
+
     const workspaces = await this.db.workspace.findMany({
       where: { sid: { gt: lastSid } },
       orderBy: { sid: 'asc' },
@@ -107,9 +111,16 @@ export class BackendRuntimeBlobJob {
     });
 
     for (const workspace of workspaces) {
-      await this.drainBlobMetadataBackfill(workspace.id, objectLimit, {
-        sid: workspace.sid,
-      });
+      try {
+        await this.drainBlobMetadataBackfill(workspace.id, objectLimit, {
+          sid: workspace.sid,
+        });
+      } catch (err) {
+        this.logger.error(
+          `blob metadata backfill failed workspace=${workspace.id} sid=${workspace.sid}`,
+          err
+        );
+      }
     }
 
     const nextSid = workspaces.at(-1)?.sid;
@@ -192,6 +203,10 @@ export class BackendRuntimeBlobJob {
     workspaceId,
     limit = 1000,
   }: Jobs['backendRuntime.backfillMissingBlobMetadata']) {
+    if (!(await this.hasObjectStorage('blob metadata backfill'))) {
+      return;
+    }
+
     await this.drainBlobMetadataBackfill(workspaceId, limit);
   }
 
@@ -226,9 +241,16 @@ export class BackendRuntimeBlobJob {
     });
 
     for (const workspace of workspaces) {
-      await this.drainWorkspaceDocBlobRefs(workspace.id, docLimit, {
-        sid: workspace.sid,
-      });
+      try {
+        await this.drainWorkspaceDocBlobRefs(workspace.id, docLimit, {
+          sid: workspace.sid,
+        });
+      } catch (err) {
+        this.logger.error(
+          `doc blob refs rebuild failed workspace=${workspace.id} sid=${workspace.sid}`,
+          err
+        );
+      }
     }
 
     const nextSid = workspaces.at(-1)?.sid;
@@ -247,6 +269,10 @@ export class BackendRuntimeBlobJob {
     gracePeriodDays = 30,
     limit = 1000,
   }: Jobs['backendRuntime.planUnreferencedWorkspaceBlobs']) {
+    if (!(await this.hasObjectStorage('blob cleanup planning'))) {
+      return;
+    }
+
     const result = await this.rt.planUnreferencedWorkspaceBlobs(
       workspaceId,
       gracePeriodDays,
@@ -264,6 +290,10 @@ export class BackendRuntimeBlobJob {
     gracePeriodDays = 30,
     limit = 1000,
   }: Jobs['backendRuntime.planUnreferencedWorkspaceBlobsBySid']) {
+    if (!(await this.hasObjectStorage('blob cleanup planning sweep'))) {
+      return;
+    }
+
     const workspaces = await this.db.workspace.findMany({
       where: {
         sid: {
@@ -281,14 +311,21 @@ export class BackendRuntimeBlobJob {
     });
 
     for (const workspace of workspaces) {
-      const result = await this.rt.planUnreferencedWorkspaceBlobs(
-        workspace.id,
-        gracePeriodDays,
-        limit
-      );
-      this.logger.log(
-        `planned blob cleanup workspace=${workspace.id} sid=${workspace.sid} run=${result.runId} candidates=${result.candidatesMarked} scanned=${result.scannedBlobs}`
-      );
+      try {
+        const result = await this.rt.planUnreferencedWorkspaceBlobs(
+          workspace.id,
+          gracePeriodDays,
+          limit
+        );
+        this.logger.log(
+          `planned blob cleanup workspace=${workspace.id} sid=${workspace.sid} run=${result.runId} candidates=${result.candidatesMarked} scanned=${result.scannedBlobs}`
+        );
+      } catch (err) {
+        this.logger.error(
+          `blob cleanup planning failed workspace=${workspace.id} sid=${workspace.sid}`,
+          err
+        );
+      }
     }
 
     const nextSid = workspaces.at(-1)?.sid;
@@ -308,6 +345,10 @@ export class BackendRuntimeBlobJob {
     gracePeriodDays = 30,
     limit = 1000,
   }: Jobs['backendRuntime.executeBlobCleanupCandidates']) {
+    if (!(await this.hasObjectStorage('blob cleanup execution'))) {
+      return;
+    }
+
     const result = await this.rt.executeBlobCleanupCandidates(
       runId,
       gracePeriodDays,
@@ -364,5 +405,17 @@ export class BackendRuntimeBlobJob {
         break;
       }
     }
+  }
+
+  private async hasObjectStorage(operation: string) {
+    const health = await this.rt.health();
+    if (health.objectStorageConfigured) {
+      return true;
+    }
+
+    this.logger.warn(
+      `skip ${operation}: BackendRuntime object storage is not configured`
+    );
+    return false;
   }
 }

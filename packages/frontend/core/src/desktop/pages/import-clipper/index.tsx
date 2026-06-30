@@ -202,7 +202,7 @@ export const Component = () => {
         <AuthHeader
           className={styles.authHeader}
           title={t['com.affine.auth.sign.in']()}
-          subTitle={serverConfig.serverName}
+          subTitle={serverConfig?.serverName ?? ''}
         />
         <Button
           className={styles.mainButton}

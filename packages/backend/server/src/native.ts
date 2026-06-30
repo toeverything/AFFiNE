@@ -162,6 +162,57 @@ import type {
 
 export const mergeUpdatesInApplyWay = serverNativeModule.mergeUpdatesInApplyWay;
 
+export async function validateDocUpdate(
+  update: Buffer,
+  options: { signal?: AbortSignal; timeoutMs?: number } = {}
+): Promise<boolean> {
+  const signals = [];
+  if (options.signal) {
+    signals.push(options.signal);
+  }
+  if (options.timeoutMs !== undefined) {
+    signals.push(AbortSignal.timeout(options.timeoutMs));
+  }
+  const signal =
+    signals.length === 0
+      ? undefined
+      : signals.length === 1
+        ? signals[0]
+        : AbortSignal.any(signals);
+
+  if (signal?.aborted) {
+    throw signal.reason;
+  }
+
+  return await new Promise<boolean>((resolve, reject) => {
+    let settled = false;
+    const settle = (callback: () => void) => {
+      if (settled) return;
+      settled = true;
+      callback();
+    };
+    const onAbort = () => {
+      settle(() =>
+        reject(
+          signal?.reason instanceof Error
+            ? signal.reason
+            : new Error('Doc update validation aborted')
+        )
+      );
+    };
+    signal?.addEventListener('abort', onAbort, { once: true });
+    serverNativeModule
+      .validateDocUpdate(update)
+      .then(
+        result => settle(() => resolve(result)),
+        error => settle(() => reject(error))
+      )
+      .finally(() => {
+        signal?.removeEventListener('abort', onAbort);
+      });
+  });
+}
+
 export const verifyChallengeResponse = async (
   response: any,
   bits: number,

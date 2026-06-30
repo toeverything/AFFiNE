@@ -5,9 +5,7 @@ use napi::Result;
 use serde::Deserialize;
 
 use super::{client::ObjectStorageClient, types::StorageProviderConfig};
-use crate::backend_runtime::{
-  config::blob_storage_config_from_config_files, error::napi_error, types::RuntimeObjectStorageHealth,
-};
+use crate::backend_runtime::{error::napi_error, types::RuntimeObjectStorageHealth};
 
 #[derive(Clone, Debug)]
 pub(in crate::backend_runtime) struct ObjectStorageConfig {
@@ -75,8 +73,10 @@ struct UsePresignedUrlConfigFile {
 }
 
 impl ObjectStorageConfig {
-  pub(in crate::backend_runtime) fn from_config_files() -> Result<Option<Self>> {
-    let Some(storage) = blob_storage_config_from_config_files()? else {
+  pub(in crate::backend_runtime) fn from_provider_config(
+    storage: Option<StorageProviderConfig>,
+  ) -> Result<Option<Self>> {
+    let Some(storage) = storage else {
       return Ok(None);
     };
 
@@ -190,7 +190,7 @@ impl ObjectStorageConfig {
     ))
   }
 
-  pub(super) fn health(&self) -> RuntimeObjectStorageHealth {
+  pub(in crate::backend_runtime) fn health(&self) -> RuntimeObjectStorageHealth {
     let client_buildable = self
       .build_client()
       .map(|client| client.non_destructive_health())

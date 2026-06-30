@@ -76,12 +76,31 @@ const addRpath = (targetPath, rpath) => {
   });
 };
 
-const stripSignature = targetPath => {
+const hasSignature = targetPath => {
   try {
-    execFileSync('codesign', ['--remove-signature', targetPath], {
+    execFileSync('codesign', ['--display', '--verbose=1', targetPath], {
       stdio: 'ignore',
     });
-  } catch {}
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+const stripSignature = targetPath => {
+  if (!hasSignature(targetPath)) {
+    return;
+  }
+
+  execFileSync('codesign', ['--remove-signature', targetPath], {
+    stdio: 'ignore',
+  });
+
+  if (hasSignature(targetPath)) {
+    throw new Error(
+      `[local-ai] failed to strip code signature from ${targetPath}`
+    );
+  }
 };
 
 try {

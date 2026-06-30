@@ -18,7 +18,7 @@ mod tests;
 mod types;
 mod workspace_stats;
 
-use std::time::Duration;
+use std::{sync::RwLock, time::Duration};
 
 use napi::Result;
 use sha2::{Digest, Sha256};
@@ -33,7 +33,7 @@ pub(super) fn token_hash(token: &str) -> String {
 
 #[napi_derive::napi]
 pub struct BackendRuntime {
-  config: RuntimeConfig,
+  config: RwLock<RuntimeConfig>,
   pool: Mutex<Option<PgPool>>,
 }
 
@@ -42,7 +42,7 @@ impl BackendRuntime {
   #[napi(constructor)]
   pub fn new() -> Result<Self> {
     Ok(Self {
-      config: RuntimeConfig::from_config_files()?,
+      config: RwLock::new(RuntimeConfig::from_config_files()?),
       pool: Mutex::new(None),
     })
   }
@@ -54,10 +54,11 @@ impl BackendRuntime {
       return Ok(());
     }
 
+    let database_url = self.config()?.database_url;
     let pool = PgPoolOptions::new()
       .max_connections(5)
       .acquire_timeout(Duration::from_secs(5))
-      .connect(&self.config.database_url)
+      .connect(&database_url)
       .await
       .map_err(|err| napi_error(format!("BackendRuntime failed to connect postgres: {err}")))?;
 
@@ -65,6 +66,9 @@ impl BackendRuntime {
       .execute(&pool)
       .await
       .map_err(|err| napi_error(format!("BackendRuntime postgres health check failed: {err}")))?;
+
+    let config = self.config()?.with_db_overrides(&pool).await?;
+    self.update_config(config)?;
 
     *guard = Some(pool);
     Ok(())
@@ -94,7 +98,7 @@ impl BackendRuntime {
     Ok(BackendRuntimeHealth {
       started: pool.is_some(),
       database_connected,
-      object_storage_configured: self.config.storage.is_some(),
+      object_storage_configured: self.config()?.storage.is_some(),
     })
   }
 
@@ -112,6 +116,22 @@ impl BackendRuntime {
       .as_ref()
       .cloned()
       .ok_or_else(|| napi_error("BackendRuntime must be started before using postgres operations"))
+  }
+
+  pub(in crate::backend_runtime) fn config(&self) -> Result<RuntimeConfig> {
+    self
+      .config
+      .read()
+      .map(|config| config.clone())
+      .map_err(|_| napi_error("BackendRuntime config lock poisoned"))
+  }
+
+  fn update_config(&self, config: RuntimeConfig) -> Result<()> {
+    *self
+      .config
+      .write()
+      .map_err(|_| napi_error("BackendRuntime config lock poisoned"))? = config;
+    Ok(())
   }
 }
 
