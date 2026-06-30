@@ -2,7 +2,8 @@ import './config';
 
 import { Module } from '@nestjs/common';
 
-import { BackendRuntimeModule } from '../backend-runtime';
+import { StorageRuntimeModule } from '../storage-runtime';
+import { StorageBlobJob } from './blob-job';
 import { BlobUploadCleanupJob } from './job';
 import { R2UploadController } from './r2-proxy';
 import {
@@ -12,16 +13,23 @@ import {
 } from './wrappers';
 
 @Module({
-  imports: [BackendRuntimeModule],
+  imports: [StorageRuntimeModule],
   controllers: [R2UploadController],
   providers: [
     WorkspaceBlobStorage,
     AvatarStorage,
     CommentAttachmentStorage,
+    StorageBlobJob,
     BlobUploadCleanupJob,
   ],
-  exports: [WorkspaceBlobStorage, AvatarStorage, CommentAttachmentStorage],
+  exports: [
+    WorkspaceBlobStorage,
+    AvatarStorage,
+    CommentAttachmentStorage,
+    StorageBlobJob,
+  ],
 })
 export class StorageModule {}
 
+export { StorageBlobJob } from './blob-job';
 export { AvatarStorage, CommentAttachmentStorage, WorkspaceBlobStorage };

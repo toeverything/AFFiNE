@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
 import { EventBus, JobQueue, OneDay, OnJob } from '../../base';
-import { BackendRuntimeProvider } from '../backend-runtime';
+import { StorageRuntimeProvider } from '../storage-runtime';
 
 declare global {
   interface Jobs {
@@ -15,7 +15,7 @@ export class BlobUploadCleanupJob {
   private readonly logger = new Logger(BlobUploadCleanupJob.name);
 
   constructor(
-    private readonly rt: BackendRuntimeProvider,
+    private readonly rt: StorageRuntimeProvider,
     private readonly event: EventBus,
     private readonly queue: JobQueue
   ) {}

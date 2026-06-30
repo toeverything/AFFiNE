@@ -4,9 +4,9 @@ import ava, { TestFn } from 'ava';
 import Sinon from 'sinon';
 
 import { OneDay } from '../../base';
-import { BackendRuntimeProvider } from '../../core/backend-runtime';
 import { StorageModule, WorkspaceBlobStorage } from '../../core/storage';
 import { BlobUploadCleanupJob } from '../../core/storage/job';
+import { StorageRuntimeProvider } from '../../core/storage-runtime';
 import { MockUser, MockWorkspace } from '../mocks';
 import { createTestingModule, TestingModule } from '../utils';
 
@@ -28,7 +28,7 @@ test.before(async t => {
     imports: [ScheduleModule.forRoot(), StorageModule],
     tapModule: builder => {
       builder
-        .overrideProvider(BackendRuntimeProvider)
+        .overrideProvider(StorageRuntimeProvider)
         .useValue(t.context.runtime);
     },
   });

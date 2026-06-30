@@ -2,7 +2,6 @@
 
 mod utils;
 
-pub mod backend_runtime;
 pub mod doc;
 pub mod doc_loader;
 pub mod entitlement;
@@ -13,6 +12,7 @@ pub mod image;
 pub mod license;
 pub mod llm;
 pub mod permission;
+pub mod runtime;
 pub mod safe_fetch;
 pub mod tiktoken;
 

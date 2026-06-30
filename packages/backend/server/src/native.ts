@@ -60,7 +60,6 @@ import serverNativeModule, {
   type RuntimeObjectGetResult,
   type RuntimeObjectListEntry,
   type RuntimeObjectMetadata,
-  type RuntimeObjectStorageHealth,
   type RuntimeObjectStoragePutOptions,
   type RuntimePresignedObjectRequest,
   type RuntimeVerificationTokenRecord,
@@ -68,6 +67,8 @@ import serverNativeModule, {
   type RuntimeWorkspaceStatsDailyRecalibrationResult,
   type SafeFetchRequest,
   type SafeFetchResponse,
+  type StorageProviderCapabilities,
+  type StorageRuntimeHealth,
   type Tokenizer,
 } from '@affine/server-native';
 
@@ -109,7 +110,6 @@ export type {
   RuntimeObjectGetResult,
   RuntimeObjectListEntry,
   RuntimeObjectMetadata,
-  RuntimeObjectStorageHealth,
   RuntimeObjectStoragePutOptions,
   RuntimePresignedObjectRequest,
   RuntimeVerificationTokenRecord,
@@ -117,6 +117,8 @@ export type {
   RuntimeWorkspaceStatsDailyRecalibrationResult,
   SafeFetchRequest,
   SafeFetchResponse,
+  StorageProviderCapabilities,
+  StorageRuntimeHealth,
 };
 
 export type ActionEventType =
@@ -274,6 +276,7 @@ export const AFFINE_PRO_PUBLIC_KEY = serverNativeModule.AFFINE_PRO_PUBLIC_KEY;
 export const AFFINE_PRO_LICENSE_AES_KEY =
   serverNativeModule.AFFINE_PRO_LICENSE_AES_KEY;
 export const BackendRuntime = serverNativeModule.BackendRuntime;
+export const StorageRuntime = serverNativeModule.StorageRuntime;
 
 export type PermissionWorkspaceRole = 'external' | 'member' | 'admin' | 'owner';
 export type PermissionDocRole =

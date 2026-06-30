@@ -505,6 +505,7 @@
                     "jurisdiction": {
                       "type": "string",
                       "enum": [
+                        "default",
                         "eu"
                       ],
                       "description": "Optional jurisdiction for the cloudflare r2 endpoint. Set to \"eu\" for EU buckets."
@@ -526,6 +527,28 @@
                           "description": "The presigned key for the cloudflare r2 storage provider."
                         }
                       }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "type": "object",
+              "properties": {
+                "provider": {
+                  "type": "string",
+                  "enum": [
+                    "assetpack"
+                  ]
+                },
+                "bucket": {
+                  "type": "string"
+                },
+                "config": {
+                  "type": "object",
+                  "properties": {
+                    "path": {
+                      "type": "string"
                     }
                   }
                 }
@@ -703,6 +726,7 @@
                     "jurisdiction": {
                       "type": "string",
                       "enum": [
+                        "default",
                         "eu"
                       ],
                       "description": "Optional jurisdiction for the cloudflare r2 endpoint. Set to \"eu\" for EU buckets."
@@ -724,6 +748,28 @@
                           "description": "The presigned key for the cloudflare r2 storage provider."
                         }
                       }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "type": "object",
+              "properties": {
+                "provider": {
+                  "type": "string",
+                  "enum": [
+                    "assetpack"
+                  ]
+                },
+                "bucket": {
+                  "type": "string"
+                },
+                "config": {
+                  "type": "object",
+                  "properties": {
+                    "path": {
+                      "type": "string"
                     }
                   }
                 }
@@ -1344,6 +1390,7 @@
                     "jurisdiction": {
                       "type": "string",
                       "enum": [
+                        "default",
                         "eu"
                       ],
                       "description": "Optional jurisdiction for the cloudflare r2 endpoint. Set to \"eu\" for EU buckets."
@@ -1365,6 +1412,28 @@
                           "description": "The presigned key for the cloudflare r2 storage provider."
                         }
                       }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "type": "object",
+              "properties": {
+                "provider": {
+                  "type": "string",
+                  "enum": [
+                    "assetpack"
+                  ]
+                },
+                "bucket": {
+                  "type": "string"
+                },
+                "config": {
+                  "type": "object",
+                  "properties": {
+                    "path": {
+                      "type": "string"
                     }
                   }
                 }

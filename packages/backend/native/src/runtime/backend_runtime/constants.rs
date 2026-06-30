@@ -1,0 +1,9 @@
+pub(super) const BYOK_LOCAL_LEASE_ACTIVE_PURPOSE: &str = "copilot_byok_local_lease:active";
+pub(super) const BYOK_LOCAL_LEASE_PURPOSE: &str = "copilot_byok_local_lease";
+pub(super) const MAGIC_LINK_OTP_PURPOSE: &str = "magic_link_otp";
+pub(super) const MAX_MAGIC_LINK_OTP_ATTEMPTS: i32 = 10;
+pub(super) const WORKSPACE_INVITE_LINK_ID_PURPOSE: &str = "workspace_invite_link:id";
+pub(super) const WORKSPACE_INVITE_LINK_WORKSPACE_PURPOSE: &str = "workspace_invite_link:workspace";
+pub(super) const WORKSPACE_STATS_LEASE_KEY: &str = "workspace:admin-stats:refresh";
+pub(super) const WORKSPACE_STATS_LOCK_NAMESPACE: i64 = 97_301;
+pub(super) const WORKSPACE_STATS_REFRESH_LOCK_KEY: i64 = 1;
