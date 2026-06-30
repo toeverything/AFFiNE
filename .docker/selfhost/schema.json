@@ -550,9 +550,17 @@
                     "path": {
                       "type": "string"
                     }
-                  }
+                  },
+                  "required": [
+                    "path"
+                  ]
                 }
-              }
+              },
+              "required": [
+                "provider",
+                "bucket",
+                "config"
+              ]
             }
           ],
           "default": {
@@ -771,9 +779,17 @@
                     "path": {
                       "type": "string"
                     }
-                  }
+                  },
+                  "required": [
+                    "path"
+                  ]
                 }
-              }
+              },
+              "required": [
+                "provider",
+                "bucket",
+                "config"
+              ]
             }
           ],
           "default": {
@@ -1435,9 +1451,17 @@
                     "path": {
                       "type": "string"
                     }
-                  }
+                  },
+                  "required": [
+                    "path"
+                  ]
                 }
-              }
+              },
+              "required": [
+                "provider",
+                "bucket",
+                "config"
+              ]
             }
           ],
           "default": {

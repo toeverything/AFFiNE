@@ -1,13 +1,16 @@
 import { randomUUID } from 'node:crypto';
 
+import { Global, Module } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import type { ExecutionContext, TestFn } from 'ava';
 import ava from 'ava';
 import Sinon from 'sinon';
 import { z } from 'zod';
 
+import { AppModuleBuilder, FunctionalityModules } from '../../app.module';
+import { JobModule, JobQueue } from '../../base';
 import { ServerFeature, ServerService } from '../../core';
-import { AuthService } from '../../core/auth';
+import { AuthModule, AuthService } from '../../core/auth';
 import { QuotaModule } from '../../core/quota';
 import { Models } from '../../models';
 import { llmImageDispatchPlan } from '../../native';
@@ -25,6 +28,7 @@ import { ChatSession, ChatSessionService } from '../../plugins/copilot/session';
 import { TranscriptPayloadSchema } from '../../plugins/copilot/transcript/schema';
 import { CopilotTranscriptionService } from '../../plugins/copilot/transcript/service';
 import { TestingPromptService } from '../mocks/prompt-service.mock';
+import { MockJobQueue } from '../mocks/queue.mock';
 import { createTestingModule, TestingModule } from '../utils';
 import { TestAssets } from '../utils/copilot';
 import {
@@ -48,6 +52,13 @@ type Tester = {
 
 const test = ava as TestFn<Tester>;
 
+@Global()
+@Module({
+  providers: [{ provide: JobQueue, useClass: MockJobQueue }],
+  exports: [JobQueue],
+})
+class MockJobModule {}
+
 let isCopilotConfigured = false;
 const runIfCopilotConfigured = test.macro(
   async (
@@ -64,8 +75,20 @@ const runIfCopilotConfigured = test.macro(
 );
 
 test.serial.before(async t => {
+  const appModule = new AppModuleBuilder()
+    .use(
+      ...FunctionalityModules.filter(module => {
+        const moduleType = 'module' in module ? module.module : module;
+        return moduleType !== JobModule;
+      }),
+      MockJobModule,
+      AuthModule,
+      QuotaModule,
+      CopilotModule
+    )
+    .compile();
   const module = await createTestingModule({
-    imports: [QuotaModule, CopilotModule],
+    imports: [appModule],
     tapModule: builder => {
       builder.overrideProvider(PromptService).useClass(TestingPromptService);
     },
