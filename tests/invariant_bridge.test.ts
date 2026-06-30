@@ -1,8 +1,19 @@
+import { z } from 'zod';
+
 import { executeToolCall } from './bridge';
-import type { CopilotToolSet, LlmToolCallbackRequest, CopilotToolExecuteOptions } from './bridge';
+import type {
+  CopilotToolSet,
+  LlmToolCallbackRequest,
+  CopilotToolExecuteOptions,
+} from './bridge';
 
 describe('executeToolCall maintains security boundary under adversarial input', () => {
+  // Give mockTool a real Zod inputSchema so the Zod-parse path is actually exercised.
+  // z.record(z.unknown()) accepts any plain key-value record.
+  const inputSchema = z.record(z.unknown());
+
   const mockTool = {
+    inputSchema,
     execute: jest.fn().mockResolvedValue({ message: 'executed' }),
   };
 
@@ -10,9 +21,12 @@ describe('executeToolCall maintains security boundary under adversarial input', 
     safeTool: mockTool,
   };
 
-  const baseOptions: CopilotToolExecuteOptions = {
-    context: {},
-  };
+  // CopilotToolExecuteOptions only supports { signal?, messages? } — no `context`
+  const baseOptions: CopilotToolExecuteOptions = {};
+
+  beforeEach(() => {
+    mockTool.execute.mockClear();
+  });
 
   const payloads: Array<{ description: string; request: LlmToolCallbackRequest }> = [
     {
@@ -47,17 +61,42 @@ describe('executeToolCall maintains security boundary under adversarial input', 
     },
   ];
 
-  test.each(payloads)('handles $description without corrupting execution context', async ({ request }) => {
-    const originalObjectProto = Object.prototype;
-    
-    const response = await executeToolCall(mockTools, request, baseOptions);
-    
-    expect(response).toBeDefined();
-    expect(Object.prototype).toBe(originalObjectProto);
-    expect((Object.prototype as any).polluted).toBeUndefined();
-    
-    if (request.name in mockTools) {
-      expect(mockTool.execute).toHaveBeenCalledWith(request.args, baseOptions);
+  test.each(payloads)(
+    'handles $description without corrupting execution context',
+    async ({ request }) => {
+      const originalObjectProto = Object.prototype;
+
+      const response = await executeToolCall(mockTools, request, baseOptions);
+
+      expect(response).toBeDefined();
+      expect(Object.prototype).toBe(originalObjectProto);
+      expect((Object.prototype as any).polluted).toBeUndefined();
+
+      // execute receives the Zod-validated (parsed) copy of the args,
+      // not the raw request.args reference — this is the behaviour under test.
+      const parsedArgs = inputSchema.parse(request.args);
+      expect(mockTool.execute).toHaveBeenCalledWith(parsedArgs, baseOptions);
     }
+  );
+
+  test('rejects tool calls whose args fail schema validation', async () => {
+    const strictTool = {
+      inputSchema: z.object({ name: z.string() }),
+      execute: jest.fn().mockResolvedValue({ message: 'executed' }),
+    };
+    const strictTools: CopilotToolSet = { strictTool };
+
+    const request: LlmToolCallbackRequest = {
+      callId: '4',
+      name: 'strictTool',
+      // invalid: `name` must be a string, not a number
+      args: { name: 123 },
+      rawArgumentsText: '{"name":123}',
+      argumentParseError: null,
+    };
+
+    const response = await executeToolCall(strictTools, request, baseOptions);
+    expect(response.isError).toBe(true);
+    expect(strictTool.execute).not.toHaveBeenCalled();
   });
 });

@@ -65,7 +65,7 @@ export function createToolExecutionCallback(
   };
 }
 
-async function executeToolCall(
+export async function executeToolCall(
   tools: CopilotToolSet,
   request: LlmToolCallbackRequest,
   options: CopilotToolExecuteOptions
@@ -179,3 +179,7 @@ export function createToolLoopBridge(
     );
   };
 }
+
+// re-export for test consumers
+export type { LlmToolCallbackRequest } from '../../../../native';
+export type { CopilotToolSet, CopilotToolExecuteOptions } from '../../tools';
