@@ -1,0 +1,13 @@
+{{- if .Values.config }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "affine.fullname" . }}
+  labels:
+    {{- include "affine.labels" . | nindent 4 }}
+data:
+  config.json: |
+    {{- $config := dict "$schema" "https://github.com/toeverything/affine/releases/latest/download/config.schema.json" }}
+    {{- $config = merge $config .Values.config }}
+    {{- $config | toJson | nindent 4 }}
+{{- end }}

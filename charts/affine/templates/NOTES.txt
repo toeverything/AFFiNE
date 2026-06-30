@@ -1,0 +1,13 @@
+1. Set external Postgres and Redis in values.env (or existingSecret):
+
+   DATABASE_URL, REDIS_SERVER_HOST, AFFINE_INDEXER_ENABLED=false
+
+2. Open AFFiNE:
+
+   kubectl port-forward svc/{{ include "affine.fullname" . }} {{ .Values.service.port }}:{{ .Values.service.port }}
+
+   http://127.0.0.1:{{ .Values.service.port }}
+
+3. Create the first admin account in the browser.
+
+Docs: https://docs.affine.pro/self-host-affine

@@ -1,0 +1,70 @@
+name: Release Helm Chart
+
+permissions: {}
+
+on:
+  push:
+    branches:
+      - main
+      - canary
+    paths:
+      - charts/affine/**
+
+jobs:
+  release:
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
+
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.0
+
+      - name: Lint Chart
+        run: helm lint charts/affine
+
+      - name: Package Chart
+        run: |
+          helm package charts/affine
+          ls -la affine-*.tgz
+
+      - name: Get Chart Version
+        id: chart_version
+        run: |
+          VERSION=$(helm show chart charts/affine | awk '/^version:/ {print $2}')
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: affine-${{ steps.chart_version.outputs.version }}
+          name: AFFiNE Helm Chart ${{ steps.chart_version.outputs.version }}
+          files: affine-*.tgz
+          body: |
+            Helm chart for AFFiNE self-hosted server.
+
+            ## Installation
+
+            ```bash
+            helm install affine oci://ghcr.io/${{ github.repository_owner }}/charts/affine --version ${{ steps.chart_version.outputs.version }}
+            ```
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push chart to GHCR
+        run: |
+          helm push affine-${{ steps.chart_version.outputs.version }}.tgz oci://ghcr.io/${{ github.repository_owner }}/charts

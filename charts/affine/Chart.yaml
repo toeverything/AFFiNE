@@ -1,0 +1,6 @@
+apiVersion: v2
+name: affine
+description: AFFiNE self-hosted server
+type: application
+version: 0.1.0
+appVersion: "stable"
