@@ -794,6 +794,17 @@ app.delete('/recordings/:foldername', rateLimiter, (async (
   req: Request,
   res: Response
 ): Promise<void> => {
+  // Restrict destructive operations to localhost connections only
+  const remoteAddress = req.socket.remoteAddress;
+  if (
+    remoteAddress !== '127.0.0.1' &&
+    remoteAddress !== '::1' &&
+    remoteAddress !== '::ffff:127.0.0.1'
+  ) {
+    res.status(403).json({ error: 'Access denied' });
+    return;
+  }
+
   const foldername = validateAndSanitizeFolderName(req.params.foldername);
   if (!foldername) {
     console.error('❌ Invalid folder name format:', req.params.foldername);
