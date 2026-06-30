@@ -128,6 +128,13 @@ export async function ensureDefaultLocalWorkspace(
     return created;
   }
 
+  // On web, an empty workspace list after the first run (e.g. the user deleted
+  // their last workspace) should surface the no-workspace page instead of
+  // silently recreating one. Native always needs a workspace available.
+  if (!BUILD_CONFIG.isNative) {
+    return undefined;
+  }
+
   const { meta, defaultDocId } = await buildShowcaseWorkspace(
     workspacesService,
     'local',

@@ -86,6 +86,9 @@ afterEach(() => {
 test('ensureDefaultLocalWorkspace rebuilds the showcase workspace when no local workspace exists', async () => {
   const localStorage = createLocalStorage({ 'is-first-open': 'false' });
   vi.stubGlobal('localStorage', localStorage);
+  // The unconditional rebuild fallback only applies to native, where an empty
+  // workspace list must never be surfaced to the user.
+  vi.stubGlobal('BUILD_CONFIG', { ...globalThis.BUILD_CONFIG, isNative: true });
 
   const gettingStartedDoc = {
     id: 'getting-started-doc',
@@ -204,4 +207,31 @@ test('ensureDefaultLocalWorkspace rebuilds the showcase workspace when no local 
   );
   expect(dispose).toHaveBeenCalledTimes(1);
   expect(localStorage.setItem).not.toHaveBeenCalled();
+});
+
+test('ensureDefaultLocalWorkspace does not recreate a workspace on web after the last one is deleted', async () => {
+  const localStorage = createLocalStorage({ 'is-first-open': 'false' });
+  vi.stubGlobal('localStorage', localStorage);
+  vi.stubGlobal('BUILD_CONFIG', {
+    ...globalThis.BUILD_CONFIG,
+    isNative: false,
+  });
+
+  const create = vi.fn();
+  const workspacesService = {
+    create,
+    list: {
+      waitForRevalidation: vi.fn(async () => {}),
+      ['workspaces$']: {
+        value: [],
+      },
+    },
+  };
+
+  const { ensureDefaultLocalWorkspace } = await loadModule();
+
+  await expect(
+    ensureDefaultLocalWorkspace(workspacesService as never)
+  ).resolves.toBeUndefined();
+  expect(create).not.toHaveBeenCalled();
 });
