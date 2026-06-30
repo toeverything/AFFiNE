@@ -1552,6 +1552,48 @@ test('should be able to create team subscription', async t => {
   t.is(subInDB?.stripeSubscriptionId, sub.id);
 });
 
+test('should replace old team subscription row when stripe creates a new subscription', async t => {
+  const { service, db } = t.context;
+
+  const old = await db.subscription.create({
+    data: {
+      targetId: 'ws_1',
+      stripeSubscriptionId: 'sub_old_team',
+      plan: SubscriptionPlan.Team,
+      recurring: SubscriptionRecurring.Yearly,
+      status: SubscriptionStatus.Canceled,
+      start: new Date('2026-03-26T08:23:57.000Z'),
+      end: new Date('2027-03-26T08:23:57.000Z'),
+      quantity: 24,
+    },
+  });
+
+  await service.saveStripeSubscription({
+    ...teamSub,
+    id: 'sub_new_team',
+    status: SubscriptionStatus.Active,
+    items: {
+      ...teamSub.items,
+      data: [
+        {
+          ...teamSub.items.data[0],
+          quantity: 11,
+        },
+      ],
+    },
+  });
+
+  const subscriptions = await db.subscription.findMany({
+    where: { targetId: 'ws_1', plan: SubscriptionPlan.Team },
+  });
+
+  t.is(subscriptions.length, 1);
+  t.is(subscriptions[0].id, old.id);
+  t.is(subscriptions[0].stripeSubscriptionId, 'sub_new_team');
+  t.is(subscriptions[0].status, SubscriptionStatus.Active);
+  t.is(subscriptions[0].quantity, 11);
+});
+
 test('should be able to update team subscription', async t => {
   const { service, db, event } = t.context;
 
@@ -1584,6 +1626,77 @@ test('should be able to update team subscription', async t => {
       quantity: 2,
     })
   );
+});
+
+test('should persist mutable team subscription fields on same stripe subscription update', async t => {
+  const { service, db } = t.context;
+
+  await service.saveStripeSubscription(teamSub);
+
+  await service.saveStripeSubscription({
+    ...teamSub,
+    current_period_start: 1780000000,
+    current_period_end: 1811536000,
+    trial_start: 1780000000,
+    trial_end: 1780604800,
+    items: {
+      ...teamSub.items,
+      data: [
+        {
+          ...teamSub.items.data[0],
+          quantity: 9,
+          price: {
+            ...PRICES[TEAM_YEARLY],
+            lookup_key: TEAM_YEARLY,
+          },
+        },
+      ],
+    },
+  });
+
+  const subInDB = await db.subscription.findFirst({
+    where: { targetId: 'ws_1' },
+  });
+  const entitlement = await db.entitlement.findFirst({
+    where: {
+      source: 'cloud_subscription',
+      subjectId: teamSub.id,
+    },
+  });
+  const providerFact = await db.providerSubscription.findUnique({
+    where: {
+      provider_externalSubscriptionId: {
+        provider: 'stripe',
+        externalSubscriptionId: teamSub.id,
+      },
+    },
+  });
+
+  t.like(subInDB, {
+    recurring: SubscriptionRecurring.Yearly,
+    quantity: 9,
+    start: new Date(1780000000 * 1000),
+    end: new Date(1811536000 * 1000),
+    trialStart: new Date(1780000000 * 1000),
+    trialEnd: new Date(1780604800 * 1000),
+  });
+  t.like(entitlement, {
+    plan: 'team',
+    quantity: 9,
+    startsAt: new Date(1780000000 * 1000),
+    expiresAt: new Date(1811536000 * 1000),
+  });
+  t.like(providerFact, {
+    recurring: SubscriptionRecurring.Yearly,
+    externalPriceId: TEAM_YEARLY,
+    currency: 'usd',
+    amount: 14400,
+    quantity: 9,
+    periodStart: new Date(1780000000 * 1000),
+    periodEnd: new Date(1811536000 * 1000),
+    trialStart: new Date(1780000000 * 1000),
+    trialEnd: new Date(1780604800 * 1000),
+  });
 });
 
 test('should suspend on dispute and restore when dispute won', async t => {

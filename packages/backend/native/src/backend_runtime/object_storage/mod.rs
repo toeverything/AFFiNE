@@ -7,6 +7,7 @@ mod types;
 use client::ObjectStorageClient;
 pub(super) use config::ObjectStorageConfig;
 use napi::{Result, bindgen_prelude::Buffer};
+use types::ObjectListPage;
 pub(super) use types::StorageProviderConfig;
 
 use super::{
@@ -20,16 +21,28 @@ use super::{
 #[napi_derive::napi]
 impl BackendRuntime {
   fn object_storage_client(&self) -> Result<ObjectStorageClient> {
-    self
-      .config
+    let storage = self
+      .config()?
       .storage
-      .as_ref()
-      .ok_or_else(|| super::error::napi_error("ObjectStorageClient is not configured"))?
-      .build_client()
+      .ok_or_else(|| super::error::napi_error("ObjectStorageClient is not configured"))?;
+    storage.build_client()
   }
 
   pub(super) async fn object_storage_delete_object(&self, key: &str) -> Result<()> {
     self.object_storage_client()?.delete(key).await
+  }
+
+  pub(super) async fn object_storage_list_page(
+    &self,
+    prefix: Option<String>,
+    continuation_token: Option<String>,
+    start_after: Option<String>,
+    max_keys: i32,
+  ) -> Result<ObjectListPage> {
+    self
+      .object_storage_client()?
+      .list_page(prefix, continuation_token, start_after, max_keys)
+      .await
   }
 
   pub(super) async fn object_storage_abort_upload(&self, key: &str, upload_id: &str) -> Result<()> {
@@ -41,7 +54,7 @@ impl BackendRuntime {
 
   #[napi]
   pub fn object_storage_health(&self) -> RuntimeObjectStorageHealth {
-    match &self.config.storage {
+    match self.config().ok().and_then(|config| config.storage) {
       Some(storage) => storage.health(),
       None => RuntimeObjectStorageHealth {
         configured: false,

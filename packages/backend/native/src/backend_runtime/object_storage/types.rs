@@ -28,10 +28,16 @@ pub(super) struct ObjectMetadata {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub(super) struct ObjectListEntry {
-  pub(super) key: String,
-  pub(super) content_length: i64,
-  pub(super) last_modified_ms: i64,
+pub(in crate::backend_runtime) struct ObjectListEntry {
+  pub(in crate::backend_runtime) key: String,
+  pub(in crate::backend_runtime) content_length: i64,
+  pub(in crate::backend_runtime) last_modified_ms: i64,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub(in crate::backend_runtime) struct ObjectListPage {
+  pub(in crate::backend_runtime) entries: Vec<ObjectListEntry>,
+  pub(in crate::backend_runtime) next_continuation_token: Option<String>,
 }
 
 #[derive(Clone, Debug, PartialEq)]

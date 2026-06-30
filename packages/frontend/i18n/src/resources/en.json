@@ -2393,6 +2393,7 @@
   "error.INVALID_LICENSE_UPDATE_PARAMS": "Invalid license update params. {{reason}}",
   "error.LICENSE_EXPIRED": "License has expired.",
   "error.UNSUPPORTED_CLIENT_VERSION": "Unsupported client with version [{{clientVersion}}], required version is [{{requiredVersion}}].",
+  "error.UNSUPPORTED_SERVER_VERSION": "This AFFiNE server is too old for this client. Please upgrade the server to {{requiredVersion}}.",
   "error.NOTIFICATION_NOT_FOUND": "Notification not found.",
   "error.MENTION_USER_DOC_ACCESS_DENIED": "Mentioned user can not access doc {{docId}}.",
   "error.MENTION_USER_ONESELF_DENIED": "You can not mention yourself.",

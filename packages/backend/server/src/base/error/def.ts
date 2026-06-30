@@ -907,6 +907,14 @@ export const USER_FRIENDLY_ERRORS = {
     message: ({ clientVersion, requiredVersion }) =>
       `Unsupported client with version [${clientVersion}], required version is [${requiredVersion}].`,
   },
+  unsupported_server_version: {
+    type: 'action_forbidden',
+    args: {
+      requiredVersion: 'string',
+    },
+    message: ({ requiredVersion }) =>
+      `This AFFiNE server is too old for this client. Please upgrade the server to ${requiredVersion}.`,
+  },
 
   // Notification Errors
   notification_not_found: {

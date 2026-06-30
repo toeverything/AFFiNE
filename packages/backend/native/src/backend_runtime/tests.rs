@@ -14,6 +14,10 @@ fn migrations_include_runtime_tables_without_worker_heartbeats() {
   assert!(RUNTIME_MIGRATIONS.contains("runtime_states"));
   assert!(RUNTIME_MIGRATIONS.contains("runtime_gates"));
   assert!(RUNTIME_MIGRATIONS.contains("runtime_leases"));
+  assert!(RUNTIME_MIGRATIONS.contains("blob_reconciliation_runs"));
+  assert!(RUNTIME_MIGRATIONS.contains("blob_reconciliation_checkpoints"));
+  assert!(RUNTIME_MIGRATIONS.contains("doc_blob_refs"));
+  assert!(RUNTIME_MIGRATIONS.contains("blob_cleanup_candidates"));
   assert!(!RUNTIME_MIGRATIONS.contains("runtime_worker_heartbeats"));
 }
 
@@ -66,10 +70,10 @@ async fn runtime_from_database_url() -> AnyResult<Option<BackendRuntime>> {
     .context("cleanup runtime_leases for backend runtime tests")?;
 
   Ok(Some(BackendRuntime {
-    config: RuntimeConfig {
+    config: std::sync::RwLock::new(RuntimeConfig {
       database_url,
       storage: None,
-    },
+    }),
     pool: Mutex::new(Some(pool)),
   }))
 }
@@ -126,7 +130,7 @@ async fn runtime_gate_sql_semantics_are_atomic_and_ttl_bound() {
   let mut tasks = Vec::new();
   for _ in 0..16 {
     let runtime = BackendRuntime {
-      config: runtime.config.clone(),
+      config: std::sync::RwLock::new(runtime.config().unwrap()),
       pool: Mutex::new(Some(runtime.pool().await.unwrap())),
     };
     tasks.push(tokio::spawn(async move {
@@ -185,7 +189,7 @@ async fn coordination_lease_sql_semantics_are_fenced_and_ttl_bound() {
   let mut tasks = Vec::new();
   for index in 0..16 {
     let runtime = BackendRuntime {
-      config: runtime.config.clone(),
+      config: std::sync::RwLock::new(runtime.config().unwrap()),
       pool: Mutex::new(Some(runtime.pool().await.unwrap())),
     };
     tasks.push(tokio::spawn(async move {
@@ -389,7 +393,7 @@ async fn verification_token_sql_state_machine_handles_keep_verify_and_cleanup() 
   let mut tasks = Vec::new();
   for _ in 0..16 {
     let runtime = BackendRuntime {
-      config: runtime.config.clone(),
+      config: std::sync::RwLock::new(runtime.config().unwrap()),
       pool: Mutex::new(Some(runtime.pool().await.unwrap())),
     };
     let token = concurrent_token.clone();
