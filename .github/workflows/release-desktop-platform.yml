@@ -104,10 +104,12 @@ jobs:
         if: ${{ inputs.platform == 'darwin' && inputs.apple_codesign && inputs.apple_signing_mode == 'github-secrets' }}
         shell: bash
         run: |
-          echo "APPLE_ID=${{ secrets.APPLE_ID }}" >> "$GITHUB_ENV"
-          echo "APPLE_PASSWORD=${{ secrets.APPLE_PASSWORD }}" >> "$GITHUB_ENV"
-          echo "APPLE_TEAM_ID=${{ secrets.APPLE_TEAM_ID }}" >> "$GITHUB_ENV"
-          echo "APPLE_CODESIGN_IDENTITY=${{ secrets.APPLE_CODESIGN_IDENTITY }}" >> "$GITHUB_ENV"
+          {
+            echo "APPLE_ID=${{ secrets.APPLE_ID }}"
+            echo "APPLE_PASSWORD=${{ secrets.APPLE_PASSWORD }}"
+            echo "APPLE_TEAM_ID=${{ secrets.APPLE_TEAM_ID }}"
+            echo "APPLE_CODESIGN_IDENTITY=${{ secrets.APPLE_CODESIGN_IDENTITY }}"
+          } >> "$GITHUB_ENV"
 
       - name: Signing By Apple Developer ID
         if: ${{ inputs.platform == 'darwin' && inputs.apple_codesign && inputs.apple_signing_mode == 'github-secrets' }}
@@ -187,9 +189,11 @@ jobs:
           export LOCAL_AI_OPENSSL_ROOT
           LOCAL_AI_RUNTIME_SOURCE_ROOT="$PWD/.cache/local-ai-runtime/darwin-arm64"
           node packages/frontend/apps/electron/scripts/prepare-local-ai-runtime.mjs
-          echo "LOCAL_AI_LIBOMP_ROOT=$LOCAL_AI_LIBOMP_ROOT" >> "$GITHUB_ENV"
-          echo "LOCAL_AI_OPENSSL_ROOT=$LOCAL_AI_OPENSSL_ROOT" >> "$GITHUB_ENV"
-          echo "LOCAL_AI_RUNTIME_SOURCE_ROOT=$LOCAL_AI_RUNTIME_SOURCE_ROOT" >> "$GITHUB_ENV"
+          {
+            echo "LOCAL_AI_LIBOMP_ROOT=$LOCAL_AI_LIBOMP_ROOT"
+            echo "LOCAL_AI_OPENSSL_ROOT=$LOCAL_AI_OPENSSL_ROOT"
+            echo "LOCAL_AI_RUNTIME_SOURCE_ROOT=$LOCAL_AI_RUNTIME_SOURCE_ROOT"
+          } >> "$GITHUB_ENV"
 
       - name: make
         if: ${{ inputs.platform != 'win32' }}

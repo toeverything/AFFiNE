@@ -76,6 +76,14 @@ const addRpath = (targetPath, rpath) => {
   });
 };
 
+const stripSignature = targetPath => {
+  try {
+    execFileSync('codesign', ['--remove-signature', targetPath], {
+      stdio: 'ignore',
+    });
+  } catch {}
+};
+
 try {
   await access(sourceBinaryPath);
   await Promise.all(dylibEntries.map(entry => access(entry.sourcePath)));
@@ -110,5 +118,13 @@ for (const entry of backendPluginEntries) {
 }
 
 addRpath(stagedBinaryPath, '@loader_path/../lib');
+
+for (const targetPath of [
+  stagedBinaryPath,
+  ...dylibEntries.map(entry => entry.stagedPath),
+  ...backendPluginEntries.map(entry => entry.stagedPath),
+]) {
+  stripSignature(targetPath);
+}
 
 console.log(`[local-ai] staged resources into ${stagedRoot}`);
