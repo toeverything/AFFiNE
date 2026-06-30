@@ -45,7 +45,8 @@ impl ObjectStorageError {
     match self {
       Self::Operation { source, .. } => source.is_not_found(),
       Self::HttpStatus { status, body, .. } => {
-        *status == StatusCode::NOT_FOUND && (body.contains("NoSuchKey") || body.contains("NotFound"))
+        *status == StatusCode::NOT_FOUND
+          && (body.contains("NoSuchKey") || body.contains("NoSuchUpload") || body.contains("NotFound"))
       }
       _ => false,
     }

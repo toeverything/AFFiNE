@@ -94,6 +94,13 @@ impl BackendRuntime {
     owner: String,
     ttl_ms: i64,
   ) -> RuntimeResult<Option<CoordinationLeaseGrant>> {
+    if ttl_ms <= 0 {
+      return Err(RuntimeError::invalid_input("coordination lease ttl must be positive"));
+    }
+    if owner.is_empty() {
+      return Err(RuntimeError::invalid_input("coordination lease owner is required"));
+    }
+
     CoordinationLeaseStore::new(self.pool().await?)
       .acquire(key, owner, ttl_ms)
       .await
@@ -117,13 +124,6 @@ impl BackendRuntime {
     owner: String,
     ttl_ms: i64,
   ) -> Result<Option<CoordinationLeaseGrant>> {
-    if ttl_ms <= 0 {
-      return Err(napi_error("coordination lease ttl must be positive"));
-    }
-    if owner.is_empty() {
-      return Err(napi_error("coordination lease owner is required"));
-    }
-
     self
       .acquire_coordination_lease_inner(key, owner, ttl_ms)
       .await

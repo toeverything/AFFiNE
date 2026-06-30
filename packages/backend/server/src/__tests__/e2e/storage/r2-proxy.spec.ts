@@ -362,6 +362,7 @@ e2e.serial('should proxy single upload with valid signature', async t => {
   t.is(init.method, 'PRESIGNED');
   t.truthy(init.uploadUrl);
   const uploadUrl = new URL(init.uploadUrl, app.url);
+  t.is(uploadUrl.origin, 'https://cdn.example.com');
   t.is(uploadUrl.pathname, PROXY_UPLOAD_PATH);
 
   const res = await app
@@ -391,6 +392,7 @@ e2e.serial('should proxy multipart upload and return etag', async t => {
 
   const part = await getBlobUploadPartUrl(workspace.id, key, init.uploadId, 1);
   const partUrl = new URL(part.uploadUrl, app.url);
+  t.is(partUrl.origin, 'https://cdn.example.com');
   t.is(partUrl.pathname, PROXY_MULTIPART_PATH);
 
   const payload = Buffer.from('part-body');

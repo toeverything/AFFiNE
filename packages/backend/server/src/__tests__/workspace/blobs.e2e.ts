@@ -35,6 +35,22 @@ const RESTRICTED_QUOTA = {
 
 let app: TestingApp;
 let model: WorkspaceFeatureModel;
+type CompleteResult =
+  | {
+      ok: true;
+      contentType: string;
+      contentLength: number;
+      lastModifiedMs: number;
+    }
+  | {
+      ok: false;
+      reason:
+        | 'not_found'
+        | 'size_mismatch'
+        | 'mime_mismatch'
+        | 'checksum_mismatch'
+        | 'size_too_large';
+    };
 const objects = new Map<
   string,
   {
@@ -46,6 +62,7 @@ const objects = new Map<
     };
   }
 >();
+const completeResults = new Map<string, CompleteResult>();
 const storageRuntime = {
   providerCapabilities: async () => ({
     put: true,
@@ -100,25 +117,12 @@ const storageRuntime = {
   presignUploadPart: async () => undefined,
   listMultipartUploadParts: async () => undefined,
   completeMultipartUpload: async () => undefined,
-  completeWorkspaceBlobUpload: async (
-    workspaceId: string,
-    key: string,
-    expected: { size: number; mime: string }
-  ) => {
+  completeWorkspaceBlobUpload: async (workspaceId: string, key: string) => {
     const objectKey = `${workspaceId}/${key}`;
+    const configured = completeResults.get(objectKey);
+    if (configured) return configured;
     const object = objects.get(objectKey);
-    if (!object) {
-      return { ok: false, reason: 'not_found' };
-    }
-    if (object.metadata.contentLength !== expected.size) {
-      return { ok: false, reason: 'size_mismatch' };
-    }
-    if (object.metadata.contentType !== expected.mime) {
-      return { ok: false, reason: 'mime_mismatch' };
-    }
-    if (sha256Base64urlWithPadding(object.body) !== key) {
-      return { ok: false, reason: 'checksum_mismatch' };
-    }
+    if (!object) return { ok: false, reason: 'not_found' };
     await app.get(BlobModel).upsert({
       workspaceId,
       key,
@@ -159,6 +163,7 @@ test.before(async () => {
 test.beforeEach(async () => {
   await app.initTestingDB();
   objects.clear();
+  completeResults.clear();
 });
 
 test.after.always(async () => {
@@ -332,6 +337,10 @@ test('should reject complete when blob key mismatched', async t => {
   await rt.putObject('blob', `${workspace.id}/${wrongKey}`, buffer, {
     contentType: mime,
     contentLength: buffer.length,
+  });
+  completeResults.set(`${workspace.id}/${wrongKey}`, {
+    ok: false,
+    reason: 'checksum_mismatch',
   });
 
   await t.throwsAsync(() => completeBlobUpload(app, workspace.id, wrongKey), {

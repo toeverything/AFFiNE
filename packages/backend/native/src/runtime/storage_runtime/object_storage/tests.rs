@@ -6,6 +6,14 @@ use super::{
   types::{MultipartUploadPart, ObjectPutMetadata, StorageProviderConfig, completed_multipart_parts, trim_etag},
 };
 
+fn storage_config(provider: &str, config: serde_json::Value) -> StorageProviderConfig {
+  StorageProviderConfig {
+    provider: provider.to_string(),
+    bucket: "test-bucket".to_string(),
+    config,
+  }
+}
+
 #[test]
 fn resolves_r2_config_from_config_json_shape() {
   let storage = StorageProviderConfig {
@@ -39,6 +47,66 @@ fn resolves_r2_config_from_config_json_shape() {
 }
 
 #[test]
+fn resolves_r2_endpoint_cases_from_config_json_shape() {
+  for (case, config, expected_endpoint) in [
+    (
+      "default account endpoint",
+      serde_json::json!({
+        "accountId": "account",
+        "credentials": {
+          "accessKeyId": "key",
+          "secretAccessKey": "secret"
+        }
+      }),
+      Some("https://account.r2.cloudflarestorage.com"),
+    ),
+    (
+      "explicit null jurisdiction",
+      serde_json::json!({
+        "accountId": "account",
+        "jurisdiction": null,
+        "credentials": {
+          "accessKeyId": "key",
+          "secretAccessKey": "secret"
+        }
+      }),
+      Some("https://account.r2.cloudflarestorage.com"),
+    ),
+    (
+      "eu jurisdiction",
+      serde_json::json!({
+        "accountId": "account",
+        "jurisdiction": "eu",
+        "credentials": {
+          "accessKeyId": "key",
+          "secretAccessKey": "secret"
+        }
+      }),
+      Some("https://account.eu.r2.cloudflarestorage.com"),
+    ),
+  ] {
+    let config = ObjectStorageConfig::from_r2_config(storage_config("cloudflare-r2", config))
+      .unwrap()
+      .unwrap();
+    assert_eq!(config.endpoint.as_deref(), expected_endpoint, "{case}");
+    assert!(config.force_path_style, "{case}");
+  }
+
+  assert!(
+    ObjectStorageConfig::from_r2_config(storage_config(
+      "cloudflare-r2",
+      serde_json::json!({
+        "credentials": {
+          "accessKeyId": "key",
+          "secretAccessKey": "secret"
+        }
+      })
+    ))
+    .is_err()
+  );
+}
+
+#[test]
 fn object_storage_not_found_requires_object_error_code() {
   let bucket_or_route_missing = ObjectStorageError::HttpStatus {
     context: "head failed".to_string(),
@@ -50,9 +118,15 @@ fn object_storage_not_found_requires_object_error_code() {
     status: StatusCode::NOT_FOUND,
     body: "<Error><Code>NoSuchKey</Code></Error>".to_string(),
   };
+  let upload_missing = ObjectStorageError::HttpStatus {
+    context: "abort failed".to_string(),
+    status: StatusCode::NOT_FOUND,
+    body: "<Error><Code>NoSuchUpload</Code></Error>".to_string(),
+  };
 
   assert!(!bucket_or_route_missing.is_not_found());
   assert!(object_missing.is_not_found());
+  assert!(upload_missing.is_not_found());
 }
 
 #[test]
@@ -113,6 +187,28 @@ fn resolves_s3_config_from_config_json_shape() {
   assert_eq!(config.presign_sign_content_type_for_put, Some(false));
 }
 
+#[test]
+fn resolves_s3_default_endpoint_cases_from_config_json_shape() {
+  for (region, expected_endpoint) in [
+    ("us-east-1", "https://s3.amazonaws.com"),
+    ("us-west-2", "https://s3.us-west-2.amazonaws.com"),
+  ] {
+    let config = ObjectStorageConfig::from_s3_config(storage_config(
+      "aws-s3",
+      serde_json::json!({
+        "region": region,
+        "credentials": {
+          "accessKeyId": "key",
+          "secretAccessKey": "secret"
+        }
+      }),
+    ))
+    .unwrap()
+    .unwrap();
+    assert_eq!(config.endpoint.as_deref(), Some(expected_endpoint), "{region}");
+  }
+}
+
 #[tokio::test]
 async fn object_storage_presign_put_returns_sigv4_url_and_headers() {
   let storage = StorageProviderConfig {
@@ -156,6 +252,47 @@ async fn object_storage_presign_put_returns_sigv4_url_and_headers() {
 }
 
 #[tokio::test]
+async fn object_storage_presign_put_respects_content_length_and_signed_content_type_flag() {
+  let config = ObjectStorageConfig::from_s3_config(storage_config(
+    "aws-s3",
+    serde_json::json!({
+      "region": "us-east-1",
+      "endpoint": "https://s3.us-east-1.amazonaws.com",
+      "credentials": {
+        "accessKeyId": "key",
+        "secretAccessKey": "secret"
+      },
+      "presign": {
+        "expiresInSeconds": 60,
+        "signContentTypeForPut": false
+      }
+    }),
+  ))
+  .unwrap()
+  .unwrap();
+  let client = config.build_client().unwrap();
+  let result = client
+    .presign_put(
+      "key",
+      ObjectPutMetadata {
+        content_type: Some("text/plain".to_string()),
+        content_length: Some(42),
+        ..Default::default()
+      },
+    )
+    .await
+    .unwrap();
+
+  assert_eq!(
+    result.headers.get("Content-Type").map(String::as_str),
+    Some("text/plain")
+  );
+  assert_eq!(result.headers.get("Content-Length").map(String::as_str), Some("42"));
+  assert!(!result.url.contains("content-type"));
+  assert!(result.url.contains("content-length"));
+}
+
+#[tokio::test]
 async fn object_storage_presign_get_returns_sigv4_url_without_headers() {
   let storage = StorageProviderConfig {
     provider: "cloudflare-r2".to_string(),
@@ -178,6 +315,34 @@ async fn object_storage_presign_get_returns_sigv4_url_without_headers() {
   assert!(result.url.contains("X-Amz-Algorithm=AWS4-HMAC-SHA256"));
   assert!(result.url.contains("X-Amz-SignedHeaders=host"));
   assert!(result.url.contains("/test-bucket/workspace/key?"));
+  assert!(result.headers.is_empty());
+  assert!(result.expires_at_ms > 0);
+}
+
+#[tokio::test]
+async fn object_storage_presign_upload_part_returns_sigv4_url() {
+  let config = ObjectStorageConfig::from_s3_config(storage_config(
+    "aws-s3",
+    serde_json::json!({
+      "region": "us-east-1",
+      "endpoint": "https://s3.us-east-1.amazonaws.com",
+      "credentials": {
+        "accessKeyId": "key",
+        "secretAccessKey": "secret"
+      },
+      "presign": {
+        "expiresInSeconds": 60
+      }
+    }),
+  ))
+  .unwrap()
+  .unwrap();
+  let client = config.build_client().unwrap();
+  let result = client.presign_upload_part("key", "upload-1", 3).await.unwrap();
+
+  assert!(result.url.contains("X-Amz-Algorithm=AWS4-HMAC-SHA256"));
+  assert!(result.url.contains("partNumber=3"));
+  assert!(result.url.contains("uploadId=upload-1"));
   assert!(result.headers.is_empty());
   assert!(result.expires_at_ms > 0);
 }

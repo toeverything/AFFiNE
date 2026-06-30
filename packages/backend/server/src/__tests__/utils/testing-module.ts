@@ -9,7 +9,7 @@ import {
 import { PrismaClient } from '@prisma/client';
 
 import { buildAppModule, FunctionalityModules } from '../../app.module';
-import { AFFiNELogger, JobQueue } from '../../base';
+import { AFFiNELogger, ConfigFactory, JobQueue } from '../../base';
 import { GqlModule } from '../../base/graphql';
 import { ServerConfigModule } from '../../core';
 import { AuthGuard, AuthModule } from '../../core/auth';
@@ -99,6 +99,31 @@ export async function createTestingModule(
   }
 
   const module = await builder.compile();
+  module.get(ConfigFactory).override({
+    storages: {
+      avatar: {
+        storage: {
+          provider: 'assetpack',
+          bucket: 'avatars',
+          config: { path: '/tmp/affine-test-storage' },
+        },
+      },
+      blob: {
+        storage: {
+          provider: 'assetpack',
+          bucket: 'blobs',
+          config: { path: '/tmp/affine-test-storage' },
+        },
+      },
+    },
+    copilot: {
+      storage: {
+        provider: 'assetpack',
+        bucket: 'copilot',
+        config: { path: '/tmp/affine-test-storage' },
+      },
+    },
+  });
 
   const testingModule = module as TestingModule;
 

@@ -50,6 +50,11 @@ type BlobGetResult = {
   metadata?: GetObjectMetadata;
 };
 
+type R2ProxyConfig = {
+  signKey: string;
+  urlPrefix: string;
+};
+
 @Injectable()
 export class WorkspaceBlobStorage {
   private readonly logger = new Logger(WorkspaceBlobStorage.name);
@@ -317,7 +322,10 @@ export class WorkspaceBlobStorage {
     ) {
       return;
     }
-    return { signKey: usePresignedURL.signKey };
+    return {
+      signKey: usePresignedURL.signKey,
+      urlPrefix: usePresignedURL.urlPrefix,
+    };
   }
 
   private signProxy(
@@ -340,7 +348,7 @@ export class WorkspaceBlobStorage {
     workspaceId: string,
     key: string,
     metadata: PutObjectMetadata | undefined,
-    proxy: { signKey: string }
+    proxy: R2ProxyConfig
   ) {
     const contentType = metadata?.contentType ?? 'application/octet-stream';
     const contentLength = metadata?.contentLength;
@@ -353,7 +361,7 @@ export class WorkspaceBlobStorage {
       proxy.signKey
     );
     return {
-      url: this.url.link(PROXY_UPLOAD_PATH, {
+      url: this.linkProxyUrl(proxy.urlPrefix, PROXY_UPLOAD_PATH, {
         workspaceId,
         key,
         contentType,
@@ -371,7 +379,7 @@ export class WorkspaceBlobStorage {
     key: string,
     uploadId: string,
     partNumber: number,
-    proxy: { signKey: string }
+    proxy: R2ProxyConfig
   ) {
     const expiresAt = new Date(Date.now() + SIGNED_URL_EXPIRED * 1000);
     const exp = Math.floor(expiresAt.getTime() / 1000);
@@ -382,7 +390,7 @@ export class WorkspaceBlobStorage {
       proxy.signKey
     );
     return {
-      url: this.url.link(PROXY_MULTIPART_PATH, {
+      url: this.linkProxyUrl(proxy.urlPrefix, PROXY_MULTIPART_PATH, {
         workspaceId,
         key,
         uploadId,
@@ -393,5 +401,21 @@ export class WorkspaceBlobStorage {
       headers: {},
       expiresAt,
     };
+  }
+
+  private linkProxyUrl(
+    urlPrefix: string,
+    path: string,
+    query: Record<string, string | number | undefined>
+  ) {
+    const url = new URL(
+      `${urlPrefix.replace(/\/+$/, '')}${path.startsWith('/') ? path : `/${path}`}`
+    );
+    for (const [key, value] of Object.entries(query)) {
+      if (value !== undefined) {
+        url.searchParams.set(key, value.toString());
+      }
+    }
+    return url.toString();
   }
 }

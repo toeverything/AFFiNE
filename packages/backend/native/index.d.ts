@@ -68,6 +68,7 @@ export declare class StorageRuntime {
   rebuildWorkspaceDocBlobRefs(workspaceId: string, limit: number): Promise<RuntimeDocBlobRefsResult>
   constructor()
   start(): Promise<void>
+  configure(configJson: string): void
   stop(): Promise<void>
   runMigrations(): Promise<void>
   health(): Promise<StorageRuntimeHealth>

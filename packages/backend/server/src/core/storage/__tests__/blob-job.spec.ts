@@ -32,6 +32,7 @@ test.beforeEach(t => {
     health: Sinon.stub().resolves({
       databaseConnected: true,
       providerConfigured: true,
+      provider: 'fs',
     }),
     backfillMissingBlobMetadata: Sinon.stub(),
     rebuildWorkspaceDocBlobRefs: Sinon.stub(),
@@ -103,7 +104,8 @@ for (const scenario of objectStorageRequiredCases) {
   test(`${scenario.name} skips when object storage is not configured`, async t => {
     t.context.runtime.health.resolves({
       databaseConnected: true,
-      providerConfigured: false,
+      providerConfigured: true,
+      provider: undefined,
     });
 
     await scenario.run(t.context);

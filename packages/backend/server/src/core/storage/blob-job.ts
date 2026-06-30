@@ -411,7 +411,7 @@ export class StorageBlobJob {
 
   private async hasObjectStorage(operation: string) {
     const health = await this.rt.health();
-    if (health.providerConfigured) {
+    if (health.provider) {
       return true;
     }
 

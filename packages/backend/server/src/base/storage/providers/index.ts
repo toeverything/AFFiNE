@@ -232,8 +232,10 @@ export const StorageJSONSchema: JSONSchema = {
               type: 'string',
             },
           },
+          required: ['path'],
         },
       },
+      required: ['provider', 'bucket', 'config'],
     },
   ],
 };

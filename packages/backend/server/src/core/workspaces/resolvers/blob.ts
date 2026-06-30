@@ -398,6 +398,9 @@ export class WorkspaceBlobResolver {
       if (result.reason === 'mime_mismatch') {
         throw new BlobInvalid('Blob mime mismatch');
       }
+      if (result.reason === 'size_too_large') {
+        throw new BlobInvalid('Blob size too large');
+      }
       throw new BlobInvalid('Blob key mismatch');
     }
 

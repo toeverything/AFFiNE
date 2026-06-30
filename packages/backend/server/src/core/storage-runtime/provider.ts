@@ -14,7 +14,7 @@ import type {
   PresignedUpload,
   PutObjectMetadata,
 } from '../../base';
-import { OnEvent } from '../../base';
+import { Config, OnEvent } from '../../base';
 import { wrapCallMetric } from '../../base/metrics';
 import {
   type RuntimeObjectGetResult,
@@ -36,6 +36,8 @@ export class StorageRuntimeProvider
   private readonly runtime: RuntimeInstance = new StorageRuntime();
   private migrationsStarted = false;
 
+  constructor(private readonly config: Config) {}
+
   async onApplicationBootstrap() {
     await this.start();
   }
@@ -45,6 +47,7 @@ export class StorageRuntimeProvider
   }
 
   async start() {
+    this.configureRuntime();
     await this.runtime.start();
     await this.runMigrationsOnce();
     const health = await this.runtime.health();
@@ -65,7 +68,11 @@ export class StorageRuntimeProvider
 
   @OnEvent('config.changed')
   async onConfigChanged({ updates }: Events['config.changed']) {
-    if (!('storages' in updates) && !('db' in updates)) {
+    if (
+      !('storages' in updates) &&
+      !('db' in updates) &&
+      !updates.copilot?.storage
+    ) {
       return;
     }
     await this.restart();
@@ -292,6 +299,23 @@ export class StorageRuntimeProvider
     await this.runtime.stop();
     this.migrationsStarted = false;
     await this.start();
+  }
+
+  private configureRuntime() {
+    this.runtime.configure(
+      JSON.stringify({
+        db: {
+          datasourceUrl: this.config.db.datasourceUrl,
+        },
+        storages: {
+          'blob.storage': this.config.storages.blob.storage,
+          'avatar.storage': this.config.storages.avatar.storage,
+        },
+        copilot: {
+          storage: this.config.copilot.storage,
+        },
+      })
+    );
   }
 }
 

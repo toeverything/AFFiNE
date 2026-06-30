@@ -27,6 +27,8 @@ use super::{
   },
 };
 
+const DEFAULT_REQUEST_TIMEOUT_MS: u64 = 30_000;
+const MAX_MULTIPART_PART_NUMBER: i32 = 10_000;
 const MAX_RESPONSE_BODY_BYTES: usize = i32::MAX as usize;
 
 type StorageHttpFuture<'a> = Pin<Box<dyn Future<Output = ObjectStorageResult<StorageHttpResponse>> + Send + 'a>>;
@@ -57,10 +59,9 @@ struct ReqwestStorageHttpClient {
 
 impl ReqwestStorageHttpClient {
   fn new(request_timeout_ms: Option<u64>) -> ObjectStorageResult<Self> {
-    let mut builder = ReqwestClient::builder();
-    if let Some(request_timeout_ms) = request_timeout_ms {
-      builder = builder.timeout(Duration::from_millis(request_timeout_ms));
-    }
+    let builder = ReqwestClient::builder().timeout(Duration::from_millis(
+      request_timeout_ms.unwrap_or(DEFAULT_REQUEST_TIMEOUT_MS),
+    ));
     Ok(Self {
       client: builder.build().map_err(ObjectStorageError::HttpClientBuild)?,
     })
@@ -627,7 +628,12 @@ fn response_header_name(headers: &HeaderMap, name: &str) -> Option<String> {
 }
 
 fn checked_part_number(part_number: i32) -> ObjectStorageResult<u16> {
-  u16::try_from(part_number).map_err(|_| ObjectStorageError::InvalidInput("part number must fit u16".to_string()))
+  if !(1..=MAX_MULTIPART_PART_NUMBER).contains(&part_number) {
+    return Err(ObjectStorageError::InvalidInput(
+      "multipart part number must be between 1 and 10000".to_string(),
+    ));
+  }
+  Ok(part_number as u16)
 }
 
 fn validate_completed_parts(parts: &[MultipartUploadPart]) -> ObjectStorageResult<()> {
@@ -676,4 +682,169 @@ fn parse_rfc3339_ms(value: &str) -> i64 {
   DateTime::parse_from_rfc3339(value)
     .map(|value| value.timestamp_millis())
     .unwrap_or(0)
+}
+
+#[cfg(test)]
+mod tests {
+  use reqwest::header::HeaderValue;
+
+  use super::*;
+
+  #[test]
+  fn metadata_from_headers_uses_s3_defaults_and_checksum() {
+    let mut headers = HeaderMap::new();
+    headers.insert(CONTENT_TYPE, HeaderValue::from_static("text/plain"));
+    headers.insert(CONTENT_LENGTH, HeaderValue::from_static("42"));
+    headers.insert(LAST_MODIFIED, HeaderValue::from_static("Wed, 21 Oct 2015 07:28:00 GMT"));
+    headers.insert("x-amz-checksum-crc32", HeaderValue::from_static("checksum"));
+
+    let metadata = metadata_from_headers(&headers);
+
+    assert_eq!(metadata.content_type, "text/plain");
+    assert_eq!(metadata.content_length, 42);
+    assert_eq!(metadata.last_modified_ms, 1_445_412_480_000);
+    assert_eq!(metadata.checksum_crc32.as_deref(), Some("checksum"));
+
+    let defaults = metadata_from_headers(&HeaderMap::new());
+    assert_eq!(defaults.content_type, "application/octet-stream");
+    assert_eq!(defaults.content_length, 0);
+    assert_eq!(defaults.last_modified_ms, 0);
+    assert!(defaults.checksum_crc32.is_none());
+  }
+
+  #[test]
+  fn not_found_body_accepts_object_missing_codes_only() {
+    for body in [
+      "<Error><Code>NoSuchKey</Code></Error>",
+      "<Error><Code>NotFound</Code></Error>",
+      "<Error><Code>NoSuchUpload</Code></Error>",
+    ] {
+      assert!(is_not_found_body(body.as_bytes()), "{body}");
+    }
+    assert!(!is_not_found_body(b""));
+    assert!(!is_not_found_body(b"<Error><Code>AccessDenied</Code></Error>"));
+  }
+
+  #[test]
+  fn list_parts_xml_handles_array_single_part_and_pagination() {
+    let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
+<ListPartsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+  <Bucket>test</Bucket>
+  <Key>key</Key>
+  <UploadId>upload-id</UploadId>
+  <PartNumberMarker>0</PartNumberMarker>
+  <NextPartNumberMarker>3</NextPartNumberMarker>
+  <MaxParts>2</MaxParts>
+  <IsTruncated>true</IsTruncated>
+  <Part>
+    <PartNumber>1</PartNumber>
+    <LastModified>2010-11-10T20:48:34.000Z</LastModified>
+    <ETag>"etag-1"</ETag>
+    <Size>10485760</Size>
+  </Part>
+  <Part>
+    <PartNumber>2</PartNumber>
+    <LastModified>2010-11-10T20:48:33.000Z</LastModified>
+    <ETag>etag-2</ETag>
+    <Size>10485760</Size>
+  </Part>
+</ListPartsResult>"#;
+    let parsed = ListParts::parse_response(xml).unwrap();
+    let parts = parsed
+      .parts
+      .into_iter()
+      .map(|part| MultipartUploadPart {
+        part_number: i32::from(part.number),
+        etag: trim_etag(&part.etag),
+      })
+      .collect::<Vec<_>>();
+
+    assert_eq!(
+      parts,
+      vec![
+        MultipartUploadPart {
+          part_number: 1,
+          etag: "etag-1".to_string()
+        },
+        MultipartUploadPart {
+          part_number: 2,
+          etag: "etag-2".to_string()
+        }
+      ]
+    );
+    assert_eq!(parsed.next_part_number_marker, Some(3));
+
+    let single = r#"<?xml version="1.0" encoding="UTF-8"?>
+<ListPartsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+  <Bucket>test</Bucket>
+  <Key>key</Key>
+  <UploadId>upload-id</UploadId>
+  <MaxParts>1</MaxParts>
+  <IsTruncated>false</IsTruncated>
+  <Part>
+    <PartNumber>5</PartNumber>
+    <LastModified>2010-11-10T20:48:34.000Z</LastModified>
+    <ETag>"etag-5"</ETag>
+    <Size>10485760</Size>
+  </Part>
+</ListPartsResult>"#;
+    let parsed = ListParts::parse_response(single).unwrap();
+    assert_eq!(parsed.parts.len(), 1);
+    assert_eq!(parsed.parts[0].number, 5);
+    assert_eq!(trim_etag(&parsed.parts[0].etag), "etag-5");
+    assert_eq!(parsed.next_part_number_marker, None);
+  }
+
+  #[test]
+  fn complete_multipart_body_orders_and_escapes_parts() {
+    let mut parts = completed_multipart_parts(vec![
+      MultipartUploadPart {
+        part_number: 2,
+        etag: "b&c".to_string(),
+      },
+      MultipartUploadPart {
+        part_number: 1,
+        etag: "a<tag>".to_string(),
+      },
+    ]);
+    validate_completed_parts(&parts).unwrap();
+
+    let body = complete_multipart_body(&parts);
+
+    assert_eq!(
+      body,
+      "<CompleteMultipartUpload><Part><ETag>a&lt;tag&gt;</ETag><PartNumber>1</PartNumber></Part><Part><ETag>b&amp;c</\
+       ETag><PartNumber>2</PartNumber></Part></CompleteMultipartUpload>"
+    );
+
+    parts[0].etag.clear();
+    assert!(validate_completed_parts(&parts).is_err());
+    assert!(
+      validate_completed_parts(&[MultipartUploadPart {
+        part_number: -1,
+        etag: "etag".to_string(),
+      }])
+      .is_err()
+    );
+    assert!(
+      validate_completed_parts(&[MultipartUploadPart {
+        part_number: 0,
+        etag: "etag".to_string(),
+      }])
+      .is_err()
+    );
+    assert!(
+      validate_completed_parts(&[MultipartUploadPart {
+        part_number: 10_001,
+        etag: "etag".to_string(),
+      }])
+      .is_err()
+    );
+  }
+
+  #[test]
+  fn parse_rfc3339_ms_returns_zero_for_invalid_values() {
+    assert_eq!(parse_rfc3339_ms("2024-01-02T03:04:05Z"), 1_704_164_645_000);
+    assert_eq!(parse_rfc3339_ms("not a date"), 0);
+  }
 }

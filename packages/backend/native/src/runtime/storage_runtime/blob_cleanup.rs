@@ -6,45 +6,6 @@ use super::{
   napi_error,
 };
 
-#[cfg(test)]
-mod tests {
-  use super::*;
-
-  #[test]
-  fn blob_cleanup_plan_result_keeps_run_id_for_execute() {
-    let result = RuntimeBlobCleanupPlanResult {
-      run_id: Some("00000000-0000-0000-0000-000000000000".to_string()),
-      scanned_blobs: 1,
-      candidates_marked: 1,
-      protected_by_doc_refs: 0,
-      protected_by_metadata: 0,
-      protected_by_other_refs: 0,
-      next_cursor: None,
-    };
-
-    assert!(result.run_id.is_some());
-    assert_eq!(result.candidates_marked, 1);
-  }
-
-  #[test]
-  fn blob_cleanup_execute_result_tracks_skipped_and_failed_counts() {
-    let result = RuntimeBlobCleanupExecuteResult {
-      scanned_candidates: 3,
-      deleted_objects: 1,
-      deleted_metadata: 1,
-      skipped_still_referenced: 1,
-      failed: 1,
-      workspace_ids: vec!["workspace".to_string()],
-    };
-
-    assert_eq!(result.scanned_candidates, 3);
-    assert_eq!(
-      result.skipped_still_referenced + result.failed + result.deleted_objects,
-      3
-    );
-  }
-}
-
 #[derive(FromRow)]
 struct BlobCandidateRow {
   workspace_id: String,

@@ -39,7 +39,10 @@ export class CopilotStorage {
   ) {
     const name = `${userId}/${workspaceId}/${key}`;
     const buffer = await toBuffer(blob);
-    await this.rt.putObject('copilot', name, buffer);
+    await this.rt.putObject('copilot', name, buffer, {
+      contentType: mimeType,
+      contentLength: buffer.length,
+    });
     if (!env.prod) {
       // return image base64url for dev environment
       return `data:${mimeType};base64,${buffer.toString('base64')}`;

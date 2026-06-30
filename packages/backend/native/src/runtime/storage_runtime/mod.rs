@@ -111,7 +111,10 @@ struct CopilotConfigFile {
 
 impl StorageRuntimeConfig {
   fn from_config_files() -> RuntimeResult<Self> {
-    let app_config = app_config_from_config_files()?;
+    Self::from_app_config_file(app_config_from_config_files()?)
+  }
+
+  fn from_app_config_file(app_config: AppConfigFile) -> RuntimeResult<Self> {
     let database_url = database_url_from_env()
       .or(app_config.database_url())
       .unwrap_or_else(|| "postgresql://localhost:5432/affine".to_string());
@@ -120,11 +123,12 @@ impl StorageRuntimeConfig {
   }
 
   async fn with_db_overrides(&self, pool: &PgPool) -> RuntimeResult<Self> {
-    let mut app_config = app_config_from_config_files()?;
-    app_config.apply_file_config(load_app_config_overrides_from_db(pool).await?);
+    let app_config = load_app_config_overrides_from_db(pool).await?;
+    let mut backends = self.backends.clone();
+    backends.extend(app_config.storage_backends()?);
     Ok(Self {
       database_url: self.database_url.clone(),
-      backends: app_config.storage_backends()?,
+      backends,
     })
   }
 }
@@ -298,6 +302,14 @@ impl StorageRuntime {
   #[napi]
   pub async fn start(&self) -> napi::Result<()> {
     self.start_inner().await.map_err(to_napi_error)
+  }
+
+  #[napi]
+  pub fn configure(&self, config_json: String) -> napi::Result<()> {
+    let app_config: AppConfigFile = serde_json::from_str(&config_json)
+      .map_err(|err| to_napi_error(RuntimeError::json("invalid storage runtime config", err)))?;
+    let config = StorageRuntimeConfig::from_app_config_file(app_config).map_err(to_napi_error)?;
+    self.update_config(config).map_err(to_napi_error)
   }
 
   async fn start_inner(&self) -> RuntimeResult<()> {
@@ -1295,11 +1307,36 @@ mod tests {
 
   #[test]
   fn fs_key_normalization_rejects_traversal() {
-    for key in ["", "/a", "a//b", "a/./b", "a/../b", "..\\secret"] {
-      assert!(normalize_storage_key(key).is_err(), "{key}");
+    for (key, valid) in [
+      ("", false),
+      ("/a", false),
+      ("a//b", false),
+      ("a/./b", false),
+      ("a/../b", false),
+      ("..\\secret", false),
+      ("workspace/blob", true),
+      ("workspace\\blob", true),
+    ] {
+      assert_eq!(normalize_storage_key(key).is_ok(), valid, "{key}");
     }
     assert_eq!(normalize_storage_key("workspace/blob").unwrap(), ["workspace", "blob"]);
-    assert_eq!(normalize_storage_prefix("workspace/").unwrap(), "workspace/");
+  }
+
+  #[test]
+  fn fs_prefix_normalization_rejects_traversal() {
+    for (prefix, expected) in [
+      ("", Some("")),
+      ("workspace/", Some("workspace/")),
+      ("workspace\\blob", Some("workspace/blob")),
+      ("../escape", None),
+      ("nested/../../escape", None),
+      ("/absolute", None),
+      ("nested//escape", None),
+      ("nested/./escape", None),
+      ("nested/../escape", None),
+    ] {
+      assert_eq!(normalize_storage_prefix(prefix).ok().as_deref(), expected, "{prefix}");
+    }
   }
 
   #[test]
@@ -1469,6 +1506,185 @@ mod tests {
   }
 
   #[test]
+  fn fs_backend_lists_old_node_prefix_semantics() {
+    let temp = tempfile::tempdir().unwrap();
+    let config = FsStorageConfig {
+      provider: "fs".to_string(),
+      root: temp.path().to_string_lossy().to_string(),
+      bucket: "bucket".to_string(),
+    };
+    for key in ["root-a", "a/item", "a/b/item", "a/b/t/item", "a/b/tail", "z/item"] {
+      fs_put(&config, key, key.as_bytes().to_vec(), ObjectPutMetadata::default()).unwrap();
+    }
+
+    for (prefix, expected) in [
+      (
+        None,
+        vec!["a/b/item", "a/b/t/item", "a/b/tail", "a/item", "root-a", "z/item"],
+      ),
+      (Some("a"), vec!["a/b/item", "a/b/t/item", "a/b/tail", "a/item"]),
+      (Some("a/b"), vec!["a/b/item", "a/b/t/item", "a/b/tail"]),
+      (Some("a/b/"), vec!["a/b/item", "a/b/t/item", "a/b/tail"]),
+      (Some("a/b/t"), vec!["a/b/t/item", "a/b/tail"]),
+      (Some("missing"), vec![]),
+    ] {
+      let keys = fs_list(&config, prefix.map(ToString::to_string))
+        .unwrap()
+        .into_iter()
+        .map(|entry| entry.key)
+        .collect::<Vec<_>>();
+      assert_eq!(keys, expected, "{prefix:?}");
+    }
+  }
+
+  #[test]
+  fn fs_backend_delete_removes_object_and_sidecar_idempotently() {
+    let temp = tempfile::tempdir().unwrap();
+    let config = FsStorageConfig {
+      provider: "fs".to_string(),
+      root: temp.path().to_string_lossy().to_string(),
+      bucket: "bucket".to_string(),
+    };
+
+    fs_put(
+      &config,
+      "workspace/blob",
+      b"body".to_vec(),
+      ObjectPutMetadata::default(),
+    )
+    .unwrap();
+    fs_delete(&config, "workspace/blob").unwrap();
+    fs_delete(&config, "workspace/blob").unwrap();
+
+    assert!(fs_head(&config, "workspace/blob").unwrap().is_none());
+    assert!(fs_get(&config, "workspace/blob").unwrap().is_none());
+    assert!(!temp.path().join("bucket/workspace/blob").exists());
+    assert!(!temp.path().join("bucket/workspace/blob.metadata.json").exists());
+  }
+
+  fn test_storage_runtime() -> StorageRuntime {
+    StorageRuntime {
+      config: RwLock::new(StorageRuntimeConfig {
+        database_url: "postgresql://unused".to_string(),
+        backends: HashMap::new(),
+      }),
+      pool: Mutex::new(None),
+    }
+  }
+
+  #[tokio::test]
+  async fn fs_workspace_blob_complete_returns_native_failure_reasons_before_db_upsert() {
+    let temp = tempfile::tempdir().unwrap();
+    let config = FsStorageConfig {
+      provider: "fs".to_string(),
+      root: temp.path().to_string_lossy().to_string(),
+      bucket: "bucket".to_string(),
+    };
+    let runtime = test_storage_runtime();
+
+    let result = runtime
+      .complete_fs_workspace_blob(
+        config.clone(),
+        "workspace".to_string(),
+        "missing".to_string(),
+        1,
+        "text/plain".to_string(),
+      )
+      .await
+      .unwrap();
+    assert!(!result.ok);
+    assert_eq!(result.reason.as_deref(), Some("not_found"));
+
+    fs_put(
+      &config,
+      "workspace/blob",
+      b"body".to_vec(),
+      ObjectPutMetadata {
+        content_type: Some("text/plain".to_string()),
+        content_length: Some(4),
+        checksum_crc32: None,
+      },
+    )
+    .unwrap();
+    let result = runtime
+      .complete_fs_workspace_blob(
+        config.clone(),
+        "workspace".to_string(),
+        "blob".to_string(),
+        5,
+        "text/plain".to_string(),
+      )
+      .await
+      .unwrap();
+    assert!(!result.ok);
+    assert_eq!(result.reason.as_deref(), Some("size_mismatch"));
+
+    let result = runtime
+      .complete_fs_workspace_blob(
+        config.clone(),
+        "workspace".to_string(),
+        "blob".to_string(),
+        4,
+        "image/png".to_string(),
+      )
+      .await
+      .unwrap();
+    assert!(!result.ok);
+    assert_eq!(result.reason.as_deref(), Some("mime_mismatch"));
+
+    let result = runtime
+      .complete_fs_workspace_blob(
+        config.clone(),
+        "workspace".to_string(),
+        "not-the-sha-key".to_string(),
+        4,
+        "text/plain".to_string(),
+      )
+      .await
+      .unwrap();
+    assert!(!result.ok);
+    assert_eq!(result.reason.as_deref(), Some("not_found"));
+
+    fs_put(
+      &config,
+      "workspace/not-the-sha-key",
+      b"body".to_vec(),
+      ObjectPutMetadata {
+        content_type: Some("text/plain".to_string()),
+        content_length: Some(4),
+        checksum_crc32: None,
+      },
+    )
+    .unwrap();
+    let result = runtime
+      .complete_fs_workspace_blob(
+        config.clone(),
+        "workspace".to_string(),
+        "not-the-sha-key".to_string(),
+        4,
+        "text/plain".to_string(),
+      )
+      .await
+      .unwrap();
+    assert!(!result.ok);
+    assert_eq!(result.reason.as_deref(), Some("checksum_mismatch"));
+    assert!(fs_get(&config, "workspace/not-the-sha-key").unwrap().is_none());
+
+    let result = runtime
+      .complete_fs_workspace_blob(
+        config,
+        "workspace".to_string(),
+        "too-large".to_string(),
+        MAX_BLOB_SIZE + 1,
+        "text/plain".to_string(),
+      )
+      .await
+      .unwrap();
+    assert!(!result.ok);
+    assert_eq!(result.reason.as_deref(), Some("size_too_large"));
+  }
+
+  #[test]
   fn fs_backend_rejects_metadata_mismatch() {
     let temp = tempfile::tempdir().unwrap();
     let config = FsStorageConfig {
@@ -1542,6 +1758,26 @@ mod tests {
         .len(),
       1
     );
+
+    let percent_key = "workspace/%literal.txt";
+    let wildcard_collision_key = "workspace/aliteral.txt";
+    for key in [percent_key, wildcard_collision_key] {
+      assetpack::put(
+        &config,
+        &scope,
+        key,
+        b"literal prefix body".to_vec(),
+        ObjectPutMetadata {
+          content_type: None,
+          content_length: None,
+          checksum_crc32: None,
+        },
+      )
+      .await?;
+    }
+    let percent_matches = assetpack::list(&config, &scope, Some("workspace/%".to_string())).await?;
+    assert_eq!(percent_matches.len(), 1);
+    assert_eq!(percent_matches[0].key, percent_key);
 
     assetpack::delete(&config, &scope, key).await?;
     assert!(assetpack::head(&config, &scope, key).await?.is_none());

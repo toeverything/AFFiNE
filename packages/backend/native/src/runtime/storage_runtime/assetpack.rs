@@ -208,21 +208,21 @@ pub(super) async fn list(
   scope: &str,
   prefix: Option<String>,
 ) -> RuntimeResult<Vec<ObjectListEntry>> {
-  let prefix = prefix.unwrap_or_default();
-  if !prefix.is_empty() {
-    super::normalize_storage_prefix(&prefix)?;
-  }
+  let prefix = prefix
+    .map(|prefix| super::normalize_storage_prefix(&prefix))
+    .transpose()?
+    .unwrap_or_default();
   let store = open_store(config).await?;
   let rows = sqlx::query(
     r#"
     SELECT key, content_length, last_modified_ms
     FROM storage_assetpack_blobs
-    WHERE scope = ?1 AND key LIKE ?2
+    WHERE scope = ?1 AND key LIKE ?2 ESCAPE '\'
     ORDER BY key ASC
     "#,
   )
   .bind(scope)
-  .bind(format!("{prefix}%"))
+  .bind(format!("{}%", escape_sqlite_like(&prefix)))
   .fetch_all(store.pool())
   .await
   .map_err(|err| RuntimeError::database("Assetpack manifest list failed", err))?;
@@ -237,6 +237,20 @@ pub(super) async fn list(
       })
     })
     .collect()
+}
+
+fn escape_sqlite_like(value: &str) -> String {
+  let mut escaped = String::with_capacity(value.len());
+  for ch in value.chars() {
+    match ch {
+      '%' | '_' | '\\' => {
+        escaped.push('\\');
+        escaped.push(ch);
+      }
+      _ => escaped.push(ch),
+    }
+  }
+  escaped
 }
 
 pub(super) async fn delete(config: &FsStorageConfig, scope: &str, key: &str) -> RuntimeResult<()> {
