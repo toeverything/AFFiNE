@@ -183,12 +183,17 @@ const ensureMacOSAppSignature = appPath => {
   try {
     verifyMacOSAppSignature(appPath);
   } catch (error) {
-    if (process.env.CI) {
+    // A real Developer ID signing identity is only present for release builds.
+    // In that case a broken signature must fail hard so we never ship it.
+    if (process.env.APPLE_CODESIGN_IDENTITY) {
       throw error;
     }
 
+    // Test/local builds package without a signing identity, so the prebuilt
+    // ad-hoc signature is invalidated once extra resources are added. Re-seal
+    // the bundle with an ad-hoc signature so the app stays verifiable/runnable.
     console.warn(
-      `[forge] codesign verify failed for ${appPath}, applying ad-hoc signature for local execution.`
+      `[forge] codesign verify failed for ${appPath}, applying ad-hoc signature for unsigned build.`
     );
     adHocSignMacOSApp(appPath);
     verifyMacOSAppSignature(appPath);
