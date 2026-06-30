@@ -6,7 +6,7 @@ use std::{
 
 use napi::Result;
 use serde::Deserialize;
-use serde_json::Map;
+use serde_json::{Map, Value};
 use sqlx::{PgPool, Row};
 
 use super::{
@@ -26,7 +26,7 @@ impl RuntimeConfig {
     let database_url = database_url_from_env()
       .or(app_config.database_url())
       .unwrap_or_else(|| "postgresql://localhost:5432/affine".to_string());
-    let storage = ObjectStorageConfig::from_provider_config(app_config.blob_storage_provider_config())?;
+    let storage = ObjectStorageConfig::from_provider_config(app_config.blob_storage_provider_config()?)?;
     Ok(Self { database_url, storage })
   }
 
@@ -37,7 +37,7 @@ impl RuntimeConfig {
       // The DB override is loaded after this connection already exists, so it
       // must not rewrite the active datasource URL.
       database_url: self.database_url.clone(),
-      storage: ObjectStorageConfig::from_provider_config(app_config.blob_storage_provider_config())?,
+      storage: ObjectStorageConfig::from_provider_config(app_config.blob_storage_provider_config()?)?,
     })
   }
 }
@@ -46,7 +46,7 @@ impl RuntimeConfig {
 struct AppConfigFile {
   db: Option<DbConfigFile>,
   #[serde(default)]
-  storages: Option<HashMap<String, StorageProviderConfig>>,
+  storages: Option<HashMap<String, Value>>,
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -64,11 +64,14 @@ impl AppConfigFile {
       .and_then(non_empty_string)
   }
 
-  fn blob_storage_provider_config(&self) -> Option<StorageProviderConfig> {
+  fn blob_storage_provider_config(&self) -> Result<Option<StorageProviderConfig>> {
     self
       .storages
       .as_ref()
       .and_then(|storages| storages.get("blob.storage").cloned())
+      .map(serde_json::from_value)
+      .transpose()
+      .map_err(|err| napi_error(format!("invalid blob storage config: {err}")))
   }
 }
 
@@ -230,9 +233,13 @@ mod tests {
           }
         }),
       ),
+      (
+        "storages.avatar.publicPath",
+        serde_json::json!("https://avatar.affineassets.com/"),
+      ),
     ])
     .unwrap();
-    let storage = app_config.blob_storage_provider_config().unwrap();
+    let storage = app_config.blob_storage_provider_config().unwrap().unwrap();
     let config = ObjectStorageConfig::from_provider_config(Some(storage))
       .unwrap()
       .unwrap();
