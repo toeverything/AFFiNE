@@ -53,7 +53,7 @@ jobs:
             ## Installation
 
             ```bash
-            helm install affine oci://ghcr.io/${{ github.repository_owner }}/charts/affine --version ${{ steps.chart_version.outputs.version }}
+            helm install affine oci://ghcr.io/toeverything/charts/affine --version ${{ steps.chart_version.outputs.version }}
             ```
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -67,4 +67,4 @@ jobs:
 
       - name: Push chart to GHCR
         run: |
-          helm push affine-${{ steps.chart_version.outputs.version }}.tgz oci://ghcr.io/${{ github.repository_owner }}/charts
+          helm push affine-${{ steps.chart_version.outputs.version }}.tgz oci://ghcr.io/toeverything/charts

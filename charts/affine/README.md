@@ -7,7 +7,7 @@ Postgres and Redis are **not** included — provide connection settings via `env
 ## Quick Start
 
 ```bash
-helm install affine oci://ghcr.io/masterbpro/charts/affine \
+helm install affine oci://ghcr.io/toeverything/charts/affine \
   --namespace affine --create-namespace \
   --set env.DATABASE_URL="postgresql://affine:secret@pg.example.com:5432/affine" \
   --set env.REDIS_SERVER_HOST="redis.example.com"
@@ -75,7 +75,7 @@ kubectl port-forward -n affine svc/affine 3010:3010
 Bump `version` in `Chart.yaml` before merging chart changes — CI publishes a new release on push to `main`/`canary`.
 
 ```bash
-helm upgrade affine oci://ghcr.io/masterbpro/charts/affine --version 0.1.1 -f my-values.yaml
+helm upgrade affine oci://ghcr.io/toeverything/charts/affine --version 0.1.1 -f my-values.yaml
 ```
 
 ## Uninstall
