@@ -372,6 +372,43 @@ describe('AIRequestService action definitions', () => {
     consoleWarn.mockRestore();
   });
 
+  test('keeps explicit local text actions on the local transport when the local probe throws', async () => {
+    const client = createClient();
+    const service = new AIRequestService(client);
+    const error = new Error('probe failed');
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    electronApis.localAI = {
+      ensureReady: vi.fn().mockRejectedValue(error),
+    };
+
+    const result = (await service.executeAction('translate', {
+      workspaceId: 'workspace-1',
+      input: 'Bonjour tout le monde',
+      lang: 'English',
+      modelId: 'gemma-3-4b-it',
+      executionLane: 'local',
+      stream: true,
+    })) as AsyncIterable<string>;
+
+    await expect(collectText(result)).resolves.toEqual(['local chunk']);
+    expect(localRuntimeClientMocks.streamDesktopLocalChat).toHaveBeenCalledWith(
+      expect.objectContaining({
+        modelId: 'gemma-3-4b-it',
+        executionLane: 'local',
+        sessionId: undefined,
+        promptName: 'Translate to',
+      })
+    );
+    expect(client.createSession).not.toHaveBeenCalled();
+    expect(client.chatTextStream).not.toHaveBeenCalled();
+    expect(consoleWarn).toHaveBeenCalledWith(
+      'Desktop local AI status probe failed, keeping local execution lane',
+      error
+    );
+    consoleWarn.mockRestore();
+  });
+
   test('routes brainstormMindmap through local Gemma when execution lane is local', async () => {
     const client = createClient();
     const service = new AIRequestService(client);
@@ -439,7 +476,7 @@ describe('AIRequestService action definitions', () => {
     );
   });
 
-  test('falls back brainstormMindmap to server when local Gemma is unavailable', async () => {
+  test('keeps explicit local brainstormMindmap requests on the local transport when Gemma is unavailable', async () => {
     const client = createClient();
     const service = new AIRequestService(client);
     const localStatus = {
@@ -459,33 +496,25 @@ describe('AIRequestService action definitions', () => {
       reason: 'local_runtime_unavailable',
     });
 
-    await drainActionResult(
-      (await service.executeAction('brainstormMindmap', {
-        workspaceId: 'workspace-1',
-        input: 'make a map',
+    const result = (await service.executeAction('brainstormMindmap', {
+      workspaceId: 'workspace-1',
+      input: 'make a map',
+      modelId: 'gemma-3-4b-it',
+      executionLane: 'local',
+      stream: true,
+    })) as AsyncIterable<string>;
+
+    await expect(collectText(result)).resolves.toEqual(['local chunk']);
+    expect(localRuntimeClientMocks.streamDesktopLocalChat).toHaveBeenCalledWith(
+      expect.objectContaining({
         modelId: 'gemma-3-4b-it',
         executionLane: 'local',
-        stream: true,
-      })) as AsyncIterable<string>
-    );
-
-    expect(
-      localRuntimeClientMocks.streamDesktopLocalChat
-    ).not.toHaveBeenCalled();
-    expect(client.createSession).toHaveBeenCalledWith(
-      expect.objectContaining({
-        workspaceId: 'workspace-1',
+        sessionId: undefined,
         promptName: 'mindmap.generate',
       })
     );
-    expect(client.chatTextStream).toHaveBeenCalledWith(
-      expect.objectContaining({
-        sessionId: 'session:mindmap.generate',
-        actionId: 'mindmap.generate',
-        executionLane: 'server',
-      }),
-      Endpoint.Action
-    );
+    expect(client.createSession).not.toHaveBeenCalled();
+    expect(client.chatTextStream).not.toHaveBeenCalled();
   });
 
   test('blocks image generation when local Gemma is selected on desktop', async () => {

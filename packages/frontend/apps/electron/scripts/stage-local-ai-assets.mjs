@@ -103,6 +103,16 @@ const stripSignature = targetPath => {
   }
 };
 
+const adHocSign = targetPath => {
+  execFileSync('codesign', ['--force', '--sign', '-', targetPath], {
+    stdio: 'ignore',
+  });
+
+  if (!hasSignature(targetPath)) {
+    throw new Error(`[local-ai] failed to ad-hoc sign ${targetPath}`);
+  }
+};
+
 try {
   await access(sourceBinaryPath);
   await Promise.all(dylibEntries.map(entry => access(entry.sourcePath)));
@@ -144,6 +154,16 @@ for (const targetPath of [
   ...backendPluginEntries.map(entry => entry.stagedPath),
 ]) {
   stripSignature(targetPath);
+}
+
+if (process.platform === 'darwin' && !process.env.APPLE_CODESIGN_IDENTITY) {
+  for (const targetPath of [
+    ...dylibEntries.map(entry => entry.stagedPath),
+    ...backendPluginEntries.map(entry => entry.stagedPath),
+    stagedBinaryPath,
+  ]) {
+    adHocSign(targetPath);
+  }
 }
 
 console.log(`[local-ai] staged resources into ${stagedRoot}`);

@@ -377,6 +377,9 @@ export class AIRequestService {
   > {
     const requestedModelId =
       typeof options.modelId === 'string' ? options.modelId : undefined;
+    const shouldPreserveExplicitLocalLane =
+      options.executionLane === 'local' &&
+      (id === 'chat' || getActionDefinition(id).responseType === 'text');
 
     if (options.executionLane === 'server') {
       return {};
@@ -396,17 +399,17 @@ export class AIRequestService {
           return { executionLane: 'local', localCapable: true };
         }
 
-        return id === 'chat'
+        return shouldPreserveExplicitLocalLane
           ? { executionLane: 'local' }
           : { executionLane: 'server' };
       } catch (error) {
         console.warn(
-          id === 'chat'
+          shouldPreserveExplicitLocalLane
             ? 'Desktop local AI status probe failed, keeping local execution lane'
             : 'Desktop local AI status probe failed, falling back to server',
           error
         );
-        return id === 'chat'
+        return shouldPreserveExplicitLocalLane
           ? { executionLane: 'local' }
           : { executionLane: 'server' };
       }

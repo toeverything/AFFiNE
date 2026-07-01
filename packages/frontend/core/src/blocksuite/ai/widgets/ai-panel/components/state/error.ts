@@ -218,10 +218,7 @@ export class AIPanelError extends WithDisposable(LitElement) {
       // default error handler
       () => {
         const tip = this.config.error?.message;
-        if (
-          tip?.startsWith(LOCAL_IMAGE_ACTION_UNSUPPORTED_MESSAGE) ||
-          isLocalAIUnavailableMessage(tip)
-        ) {
+        if (tip?.startsWith(LOCAL_IMAGE_ACTION_UNSUPPORTED_MESSAGE)) {
           return html`
             <div class="error-info">${tip}</div>
             <div class="action-button-group">
@@ -236,6 +233,26 @@ export class AIPanelError extends WithDisposable(LitElement) {
                 class="action-button primary"
               >
                 <span>Login & Switch to Cloud</span>
+              </div>
+            </div>
+          `;
+        }
+
+        if (isLocalAIUnavailableMessage(tip)) {
+          return html`
+            <div class="error-info">${tip}</div>
+            <div class="action-button-group">
+              <div @click=${this.config.cancel} class="action-button">
+                <span>Cancel</span>
+              </div>
+              <div
+                @click=${() => {
+                  switchActiveModelToCloud();
+                  this.config.cancel();
+                }}
+                class="action-button primary"
+              >
+                <span>Switch to Cloud</span>
               </div>
             </div>
           `;

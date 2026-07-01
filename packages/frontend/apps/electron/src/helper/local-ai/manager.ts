@@ -475,6 +475,17 @@ type LocalAIResolvedResources = LocalAIPaths & {
   missingBackendPlugins: string[];
 };
 
+const describeSidecarExit = (
+  code: number | null,
+  signal: NodeJS.Signals | null
+) => {
+  if (signal) {
+    return `signal ${signal}`;
+  }
+
+  return `code ${code ?? 'unknown'}`;
+};
+
 export class LocalAIManager {
   private child: ChildProcessWithoutNullStreams | null = null;
 
@@ -735,12 +746,12 @@ export class LocalAIManager {
     });
   }
 
-  private scheduleRecovery(code: number | null) {
+  private scheduleRecovery(code: number | null, signal: NodeJS.Signals | null) {
     if (this.restartAttempts >= RECOVERY_RETRY_LIMIT) {
       this.status$.next(
         errorStatus(
           'crashed',
-          `sidecar exited with ${code} after ${RECOVERY_RETRY_LIMIT} recovery attempts`
+          `sidecar exited with ${describeSidecarExit(code, signal)} after ${RECOVERY_RETRY_LIMIT} recovery attempts`
         )
       );
       return;
@@ -1015,7 +1026,7 @@ export class LocalAIManager {
     this.child = child;
 
     let exited = false;
-    child.on('exit', code => {
+    child.on('exit', (code, signal) => {
       exited = true;
       const wasCurrentChild = this.child === child;
       if (wasCurrentChild) {
@@ -1025,7 +1036,7 @@ export class LocalAIManager {
         return;
       }
       if (wasCurrentChild && this.status$.value.state === 'ready') {
-        this.scheduleRecovery(code);
+        this.scheduleRecovery(code, signal);
       }
     });
 
@@ -1044,14 +1055,16 @@ export class LocalAIManager {
     });
 
     const childExitBeforeReady = new Promise<never>((_, reject) => {
-      child.once('exit', code => {
+      child.once('exit', (code, signal) => {
         if (
           this.status$.value.state === 'ready' ||
           this.ignoredExits.has(child)
         ) {
           return;
         }
-        const error = new Error(`sidecar exited with ${code}`);
+        const error = new Error(
+          `sidecar exited with ${describeSidecarExit(code, signal)}`
+        );
         error.name = 'LocalAIStartupExit';
         reject(error);
       });
@@ -1065,7 +1078,7 @@ export class LocalAIManager {
       ]);
       if (exited || this.child !== child) {
         const error = new Error(
-          `sidecar exited with ${child.exitCode ?? child.signalCode ?? 'unknown'}`
+          `sidecar exited with ${describeSidecarExit(child.exitCode, child.signalCode)}`
         );
         error.name = 'LocalAIStartupExit';
         throw error;

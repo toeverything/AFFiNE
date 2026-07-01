@@ -509,6 +509,34 @@ describe('local AI manager lifecycle', () => {
     expect(mainRPCMock.getAppPath).not.toHaveBeenCalled();
   });
 
+  test('reports startup exits with the terminating signal when the sidecar dies before ready', async () => {
+    const child = new MockChildProcess();
+    spawnMock.mockReturnValue(child);
+    fetchMock.mockImplementation(
+      () => new Promise(() => {}) as Promise<Response>
+    );
+
+    const manager = await createManager();
+    const pending = manager.ensureReady();
+
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      if (child.listenerCount('exit') >= 2) {
+        break;
+      }
+      await Promise.resolve();
+    }
+    expect(child.listenerCount('exit')).toBeGreaterThanOrEqual(2);
+
+    child.signalCode = 'SIGKILL';
+    child.emit('exit', null, 'SIGKILL');
+
+    await expect(pending).resolves.toMatchObject({
+      state: 'error',
+      reason: 'spawn_failed',
+      detail: 'sidecar exited with signal SIGKILL',
+    });
+  });
+
   test('dispose prevents a queued crash recovery restart from spawning again', async () => {
     const child = new MockChildProcess();
     spawnMock.mockReturnValue(child);

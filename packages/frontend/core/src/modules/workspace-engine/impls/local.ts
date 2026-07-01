@@ -146,6 +146,7 @@ class LocalWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
       return;
     }
 
+    this.isRevalidating$.next(true);
     this.migration = (async () => {
       const electronApi = this.framework.get(DesktopApiService);
       await electronApi.sharedStorage.globalState.ready;
@@ -178,6 +179,7 @@ class LocalWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
         logger.error('Failed to migrate local workspace ids', e);
       })
       .finally(() => {
+        this.isRevalidating$.next(false);
         this.notifyChannel.postMessage(null);
       });
   }
@@ -344,7 +346,7 @@ class LocalWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
     }),
     []
   );
-  isRevalidating$ = new LiveData(false);
+  isRevalidating$ = new LiveData(BUILD_CONFIG.isElectron);
   revalidate(): void {
     if (BUILD_CONFIG.isElectron) {
       void this.ensureWorkspaceIdsMigrated();

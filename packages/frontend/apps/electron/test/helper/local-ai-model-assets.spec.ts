@@ -76,9 +76,7 @@ describe('local AI asset helpers', () => {
       '--ctx-size',
       '8192',
       '--n-gpu-layers',
-      '0',
-      '--device',
-      'none',
+      '99',
       '--no-warmup',
     ]);
   });
