@@ -5,6 +5,10 @@ inputs:
     description: 'Script to run'
     default: 'yarn affine @affine-test/affine-cloud-copilot e2e --forbid-only'
     required: false
+  artifact-name:
+    description: 'Artifact name for failed test results'
+    default: 'test-results-e2e-server-copilot'
+    required: false
 
 runs:
   using: 'composite'
@@ -20,6 +24,6 @@ runs:
       if: ${{ failure() }}
       uses: actions/upload-artifact@v4
       with:
-        name: test-results-e2e-server-copilot
+        name: ${{ inputs.artifact-name }}
         path: ./test-results
         if-no-files-found: ignore

@@ -65,9 +65,6 @@ export const WorkspaceByokSetting = () => {
   } | null>(null);
 
   const load = useCallback(async () => {
-    setSettings(null);
-    setUsage([]);
-
     const [localStorageSupported, nextLocalKeys] = await Promise.all([
       localByokStorageSupported(),
       readLocalKeys(workspace.id),
@@ -104,6 +101,8 @@ export const WorkspaceByokSetting = () => {
   }, [workspace.id, workspaceServer.server]);
 
   useEffect(() => {
+    setSettings(null);
+    setUsage([]);
     setServerSettingsLoading(true);
     load().catch(error => {
       setServerSettingsLoading(false);
