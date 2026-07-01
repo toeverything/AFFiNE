@@ -14,8 +14,14 @@ interface OpenFilePickerOptions {
   multiple?: boolean | undefined;
 }
 
+export type NativeImageFilesPicker = () => Promise<File[] | null>;
+
+const NATIVE_IMAGE_FILES_PICKER_KEY =
+  '__AFFINE_NATIVE_IMAGE_FILES_PICKER__' as const;
+
 declare global {
   interface Window {
+    [NATIVE_IMAGE_FILES_PICKER_KEY]?: NativeImageFilesPicker;
     // Window API: showOpenFilePicker
     showOpenFilePicker?: (
       options?: OpenFilePickerOptions
@@ -27,6 +33,17 @@ declare global {
       startIn?: FileSystemHandle | string;
     }) => Promise<FileSystemDirectoryHandle>;
   }
+}
+
+export function registerNativeImageFilesPicker(
+  picker: NativeImageFilesPicker | null
+) {
+  if (picker) {
+    window[NATIVE_IMAGE_FILES_PICKER_KEY] = picker;
+    return;
+  }
+
+  delete window[NATIVE_IMAGE_FILES_PICKER_KEY];
 }
 
 // Minimal polyfill for FileSystemDirectoryHandle to iterate over files
@@ -298,6 +315,11 @@ export async function openSingleFileWith(
 }
 
 export async function getImageFilesFromLocal() {
+  const nativePicker = window[NATIVE_IMAGE_FILES_PICKER_KEY];
+  if (nativePicker) {
+    return (await nativePicker()) ?? [];
+  }
+
   const files = await openFilesWith('Images');
   return files ?? [];
 }

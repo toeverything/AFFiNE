@@ -54,9 +54,11 @@ import {
   MarkdownAdapter,
   titleMiddleware,
 } from '@blocksuite/affine/shared/adapters';
+import { registerNativeImageFilesPicker } from '@blocksuite/affine/shared/utils';
 import { MarkdownTransformer } from '@blocksuite/affine/widgets/linked-doc';
 import { App as CapacitorApp } from '@capacitor/app';
 import { Browser } from '@capacitor/browser';
+import { Capacitor } from '@capacitor/core';
 import { Haptics } from '@capacitor/haptics';
 import { Keyboard, KeyboardStyle } from '@capacitor/keyboard';
 import { Framework, FrameworkRoot, getCurrentStore } from '@toeverything/infra';
@@ -69,8 +71,10 @@ import { RouterProvider } from 'react-router-dom';
 
 import { BlocksuiteMenuConfigProvider } from './bs-menu-config';
 import { ModalConfigProvider } from './modal-config';
+import { AffineTheme } from './plugins/affine-theme';
 import { Auth } from './plugins/auth';
 import { Hashcash } from './plugins/hashcash';
+import { ImagePicker } from './plugins/image-picker';
 import { NbStoreNativeDBApis } from './plugins/nbstore';
 import { PayWall } from './plugins/paywall';
 import { Preview } from './plugins/preview';
@@ -237,6 +241,32 @@ registerNativePreviewHandlers({
   renderMermaidSvg: request => Preview.renderMermaidSvg(request),
   renderTypstSvg: request => Preview.renderTypstSvg(request),
 });
+registerNativeImageFilesPicker(async () => {
+  const result = await ImagePicker.pickImages({ multiple: true });
+  if (result.canceled || result.files.length === 0) {
+    return [];
+  }
+
+  return await Promise.all(
+    result.files.map(async file => {
+      const filePath = file.path.startsWith('file://')
+        ? file.path
+        : `file://${file.path}`;
+      const response = await fetch(Capacitor.convertFileSrc(filePath));
+      if (!response.ok) {
+        throw new Error(
+          `Failed to read image picker file: ${file.name} (status ${response.status})`
+        );
+      }
+
+      const blob = await response.blob();
+      return new File([blob], file.name, {
+        type: file.mimeType || blob.type || 'image/*',
+        lastModified: file.lastModified,
+      });
+    })
+  );
+});
 
 // ------ some apis for native ------
 (window as any).getCurrentServerBaseUrl = () => {
@@ -251,6 +281,9 @@ registerNativePreviewHandlers({
 };
 (window as any).getCurrentI18nLocale = () => {
   return I18n.language;
+};
+(window as any).getCurrentThemeMode = () => {
+  return 'system';
 };
 (window as any).getAiButtonFeatureFlag = () => {
   const featureFlagService = frameworkProvider.get(FeatureFlagService);
@@ -519,6 +552,18 @@ const KeyboardThemeProvider = () => {
             : KeyboardStyle.Default,
     }).catch(e => {
       console.error(`Failed to set keyboard style: ${e}`);
+    });
+  }, [resolvedTheme]);
+
+  useEffect(() => {
+    const themeMode = resolvedTheme === 'dark' ? 'dark' : 'light';
+    (window as any).getCurrentThemeMode = () => {
+      return themeMode;
+    };
+    AffineTheme.onThemeChanged({
+      themeMode,
+    }).catch(e => {
+      console.error(`Failed to sync app theme: ${e}`);
     });
   }, [resolvedTheme]);
 

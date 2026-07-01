@@ -3,8 +3,9 @@ import Intelligents
 import UIKit
 import WebKit
 
-class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate {
+class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate, AffineThemeConfigurable {
   var intelligentsButton: IntelligentsButton?
+  var appThemeUserInterfaceStyle: UIUserInterfaceStyle = .unspecified
 
   override func viewDidLoad() {
     super.viewDidLoad()
@@ -52,9 +53,11 @@ class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate {
 
   override func capacitorDidLoad() {
     let plugins: [CAPPlugin] = [
+      AffineThemePlugin(associatedController: self),
       AuthPlugin(),
       CookiePlugin(),
       HashcashPlugin(),
+      ImagePickerPlugin(associatedController: self),
       NavigationGesturePlugin(),
       NbStorePlugin(),
       PayWallPlugin(associatedController: self),
