@@ -8,6 +8,7 @@ import {
   requiredProperties,
   ShadowlessElement,
 } from '@blocksuite/std';
+import { RANGE_SYNC_EXCLUDE_ATTR } from '@blocksuite/std/inline';
 import { effect, type Signal, signal } from '@preact/signals-core';
 import { html } from 'lit';
 import { property } from 'lit/decorators.js';
@@ -263,6 +264,7 @@ export class AffineKeyboardToolbar extends SignalWatcher(
 
   override connectedCallback() {
     super.connectedCallback();
+    this.setAttribute(RANGE_SYNC_EXCLUDE_ATTR, 'true');
 
     // There are two cases that `_expanded$` will be true:
     // 1. when virtual keyboard is opened, the panel need to be expanded and overlapped by the keyboard,
