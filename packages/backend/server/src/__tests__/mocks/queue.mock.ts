@@ -1,3 +1,4 @@
+import { Global, Module } from '@nestjs/common';
 import { interval, map, take, takeUntil } from 'rxjs';
 import Sinon from 'sinon';
 
@@ -57,3 +58,10 @@ export class MockJobQueue {
     return this.add.getCalls().filter(call => call.args[0] === name).length;
   }
 }
+
+@Global()
+@Module({
+  providers: [{ provide: JobQueue, useClass: MockJobQueue }],
+  exports: [JobQueue],
+})
+export class MockJobModule {}
