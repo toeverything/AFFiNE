@@ -581,10 +581,27 @@ impl ObjectStorageClient {
       )));
     }
 
+    let mut pending_keys = keys;
+    let mut outcomes = Vec::new();
     let mut last_error = None;
     for attempt in 0..DELETE_OBJECTS_MAX_ATTEMPTS {
-      match self.delete_many_once(&keys).await {
-        Ok(outcomes) => return Ok(outcomes),
+      match self.delete_many_once(&pending_keys).await {
+        Ok(batch_outcomes) => {
+          let (retryable, completed) = split_delete_many_outcomes(batch_outcomes);
+          outcomes.extend(completed);
+          if retryable.is_empty() {
+            return Ok(outcomes);
+          }
+          if attempt + 1 >= DELETE_OBJECTS_MAX_ATTEMPTS {
+            outcomes.extend(retryable.into_iter().map(|(key, error)| ObjectDeleteOutcome {
+              key,
+              error: Some(error),
+            }));
+            return Ok(outcomes);
+          }
+          pending_keys = retryable.into_iter().map(|(key, _)| key).collect();
+          sleep(Duration::from_millis(delete_objects_backoff_ms(attempt))).await;
+        }
         Err(err) if err.is_retryable_http_status() && attempt + 1 < DELETE_OBJECTS_MAX_ATTEMPTS => {
           last_error = Some(err);
           sleep(Duration::from_millis(delete_objects_backoff_ms(attempt))).await;
@@ -753,6 +770,31 @@ fn delete_objects_backoff_ms(attempt: usize) -> u64 {
     .min(DELETE_OBJECTS_BACKOFF_MAX_MS)
 }
 
+fn is_retryable_delete_objects_error(error: &str) -> bool {
+  error.starts_with("SlowDown:")
+    || error.starts_with("InternalError:")
+    || error.starts_with("ServiceUnavailable:")
+    || error.starts_with("RequestTimeout:")
+    || error.starts_with("Throttling:")
+    || error.starts_with("ThrottlingException:")
+    || error.starts_with("TooManyRequests:")
+}
+
+fn split_delete_many_outcomes(outcomes: Vec<ObjectDeleteOutcome>) -> (Vec<(String, String)>, Vec<ObjectDeleteOutcome>) {
+  let mut retryable = Vec::new();
+  let mut completed = Vec::new();
+  for outcome in outcomes {
+    if let Some(error) = &outcome.error
+      && is_retryable_delete_objects_error(error)
+    {
+      retryable.push((outcome.key, error.clone()));
+      continue;
+    }
+    completed.push(outcome);
+  }
+  (retryable, completed)
+}
+
 fn xml_escape(value: &str) -> String {
   value.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;")
 }
@@ -827,6 +869,49 @@ mod tests {
     assert_eq!(delete_objects_backoff_ms(0), 1_000);
     assert_eq!(delete_objects_backoff_ms(1), 2_000);
     assert_eq!(delete_objects_backoff_ms(10), 30_000);
+  }
+
+  #[test]
+  fn delete_objects_outcomes_retry_transient_key_errors_only() {
+    let (retryable, completed) = split_delete_many_outcomes(vec![
+      ObjectDeleteOutcome {
+        key: "slow".to_string(),
+        error: Some("SlowDown: reduce your request rate".to_string()),
+      },
+      ObjectDeleteOutcome {
+        key: "internal".to_string(),
+        error: Some("InternalError: try again".to_string()),
+      },
+      ObjectDeleteOutcome {
+        key: "denied".to_string(),
+        error: Some("AccessDenied: forbidden".to_string()),
+      },
+      ObjectDeleteOutcome {
+        key: "ok".to_string(),
+        error: None,
+      },
+    ]);
+
+    assert_eq!(
+      retryable,
+      vec![
+        ("slow".to_string(), "SlowDown: reduce your request rate".to_string()),
+        ("internal".to_string(), "InternalError: try again".to_string())
+      ]
+    );
+    assert_eq!(
+      completed,
+      vec![
+        ObjectDeleteOutcome {
+          key: "denied".to_string(),
+          error: Some("AccessDenied: forbidden".to_string())
+        },
+        ObjectDeleteOutcome {
+          key: "ok".to_string(),
+          error: None
+        }
+      ]
+    );
   }
 
   #[test]

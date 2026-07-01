@@ -327,3 +327,21 @@ test('blob cleanup execution sweep does not continue failed-only backlog', async
   t.is(t.context.runtime.executeBlobCleanupCandidates.callCount, 1);
   t.false(t.context.queue.add.called);
 });
+
+test('blob cleanup execution sweep does not continue after drain errors', async t => {
+  t.context.db.$queryRaw
+    .onFirstCall()
+    .resolves([{ runId: 'run-1' }])
+    .onSecondCall()
+    .resolves([{ exists: true }]);
+  t.context.runtime.executeBlobCleanupCandidates.rejects(
+    new Error('storage outage')
+  );
+
+  await t.context.job.executeBlobCleanupCandidatesByMarkedRuns({
+    runLimit: 1,
+  });
+
+  t.is(t.context.runtime.executeBlobCleanupCandidates.callCount, 1);
+  t.false(t.context.queue.add.called);
+});

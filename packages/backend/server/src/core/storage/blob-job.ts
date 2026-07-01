@@ -399,6 +399,7 @@ export class StorageBlobJob {
     const normalizedRunLimit = Math.max(1, runLimit);
     const normalizedCandidateLimit = Math.max(1, candidateLimit);
     const runIds = await this.loadPendingBlobCleanupRunIds(normalizedRunLimit);
+    let hadDrainError = false;
     for (const runId of runIds) {
       try {
         await this.drainBlobCleanupExecution(
@@ -407,11 +408,13 @@ export class StorageBlobJob {
           normalizedCandidateLimit
         );
       } catch (err) {
+        hadDrainError = true;
         this.logger.error(`blob cleanup execution failed run=${runId}`, err);
       }
     }
 
     if (
+      !hadDrainError &&
       runIds.length === normalizedRunLimit &&
       (await this.hasMarkedBlobCleanupCandidates())
     ) {
