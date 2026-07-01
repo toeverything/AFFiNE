@@ -12,23 +12,29 @@ use rustls::RootCertStore;
 use rusty_s3::{
   Bucket, Credentials,
   actions::{
-    AbortMultipartUpload, CompleteMultipartUpload, CreateMultipartUpload, DeleteObject, GetObject, HeadObject,
-    ListObjectsV2, ListParts, PutObject, S3Action, UploadPart,
+    AbortMultipartUpload, CompleteMultipartUpload, CreateMultipartUpload, DeleteObject, DeleteObjects,
+    DeleteObjectsResponse, GetObject, HeadObject, ListObjectsV2, ListParts, ObjectIdentifier, PutObject, S3Action,
+    UploadPart,
   },
 };
+use tokio::time::sleep;
 use url::Url;
 
 use super::{
   error::{ObjectStorageError, ObjectStorageResult},
   types::{
-    MultipartUploadInitResult, MultipartUploadPart, ObjectGetResult, ObjectListEntry, ObjectListPage, ObjectMetadata,
-    ObjectPutMetadata, PresignedObjectRequest, completed_multipart_parts, trim_etag,
+    MultipartUploadInitResult, MultipartUploadPart, ObjectDeleteOutcome, ObjectGetResult, ObjectListEntry,
+    ObjectListPage, ObjectMetadata, ObjectPutMetadata, PresignedObjectRequest, completed_multipart_parts, trim_etag,
   },
 };
 
 const DEFAULT_REQUEST_TIMEOUT_MS: u64 = 30_000;
 const MAX_MULTIPART_PART_NUMBER: i32 = 10_000;
 const MAX_RESPONSE_BODY_BYTES: usize = i32::MAX as usize;
+const DELETE_OBJECTS_MAX_KEYS: usize = 1000;
+const DELETE_OBJECTS_MAX_ATTEMPTS: usize = 5;
+const DELETE_OBJECTS_BACKOFF_BASE_MS: u64 = 1_000;
+const DELETE_OBJECTS_BACKOFF_MAX_MS: u64 = 30_000;
 
 #[derive(Clone)]
 struct StorageHttpRequest {
@@ -564,6 +570,82 @@ impl ObjectStorageClient {
     ensure_success_status(&response, &format!("ObjectStorage delete failed for {key}"))?;
     Ok(())
   }
+
+  pub(crate) async fn delete_many(&self, keys: Vec<String>) -> ObjectStorageResult<Vec<ObjectDeleteOutcome>> {
+    if keys.is_empty() {
+      return Ok(Vec::new());
+    }
+    if keys.len() > DELETE_OBJECTS_MAX_KEYS {
+      return Err(ObjectStorageError::InvalidInput(format!(
+        "DeleteObjects supports at most {DELETE_OBJECTS_MAX_KEYS} keys"
+      )));
+    }
+
+    let mut last_error = None;
+    for attempt in 0..DELETE_OBJECTS_MAX_ATTEMPTS {
+      match self.delete_many_once(&keys).await {
+        Ok(outcomes) => return Ok(outcomes),
+        Err(err) if err.is_retryable_http_status() && attempt + 1 < DELETE_OBJECTS_MAX_ATTEMPTS => {
+          last_error = Some(err);
+          sleep(Duration::from_millis(delete_objects_backoff_ms(attempt))).await;
+        }
+        Err(err) => return Err(err),
+      }
+    }
+
+    Err(last_error.unwrap_or_else(|| {
+      ObjectStorageError::InvalidInput("DeleteObjects retry exhausted without an error".to_string())
+    }))
+  }
+
+  async fn delete_many_once(&self, keys: &[String]) -> ObjectStorageResult<Vec<ObjectDeleteOutcome>> {
+    let objects = keys
+      .iter()
+      .map(|key| ObjectIdentifier::new(key.clone()))
+      .collect::<Vec<_>>();
+    let mut action = DeleteObjects::new(&self.bucket, Some(&self.credentials), objects.iter());
+    action.set_quiet(false);
+    let (body, content_md5) = action.clone().body_with_md5();
+    action.headers_mut().insert("content-md5", content_md5.clone());
+    action
+      .headers_mut()
+      .insert("content-type", "application/xml".to_string());
+    action.headers_mut().insert("content-length", body.len().to_string());
+
+    let response = self
+      .http
+      .execute(StorageHttpRequest {
+        method: Method::POST,
+        url: action.sign(expires_in(self.presign_expires_in_seconds)),
+        headers: HashMap::from([
+          ("content-md5".to_string(), content_md5),
+          ("content-type".to_string(), "application/xml".to_string()),
+          ("content-length".to_string(), body.len().to_string()),
+        ]),
+        body: Some(body.into_bytes()),
+        max_response_body_bytes: MAX_RESPONSE_BODY_BYTES,
+      })
+      .await
+      .map_err(|source| operation_error("ObjectStorage delete many failed", source))?;
+    let body = ensure_success_text(response, "ObjectStorage delete many failed".to_string())?;
+    let parsed = DeleteObjectsResponse::parse(&body).map_err(|source| ObjectStorageError::InvalidXml {
+      context: "ObjectStorage parse delete many response failed".to_string(),
+      source,
+    })?;
+    let mut outcomes = keys
+      .iter()
+      .map(|key| ObjectDeleteOutcome {
+        key: key.clone(),
+        error: None,
+      })
+      .collect::<Vec<_>>();
+    for error in parsed.errors {
+      if let Some(outcome) = outcomes.iter_mut().find(|outcome| outcome.key == error.key) {
+        outcome.error = Some(format!("{}: {}", error.code, error.message));
+      }
+    }
+    Ok(outcomes)
+  }
 }
 
 fn insert_action_headers<'a, T: S3Action<'a>>(action: &mut T, headers: &HashMap<String, String>) {
@@ -665,6 +747,12 @@ fn complete_multipart_body(parts: &[MultipartUploadPart]) -> String {
   body
 }
 
+fn delete_objects_backoff_ms(attempt: usize) -> u64 {
+  DELETE_OBJECTS_BACKOFF_BASE_MS
+    .saturating_mul(2_u64.saturating_pow(attempt as u32))
+    .min(DELETE_OBJECTS_BACKOFF_MAX_MS)
+}
+
 fn xml_escape(value: &str) -> String {
   value.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;")
 }
@@ -732,6 +820,13 @@ mod tests {
     }
     assert!(!is_not_found_body(b""));
     assert!(!is_not_found_body(b"<Error><Code>AccessDenied</Code></Error>"));
+  }
+
+  #[test]
+  fn delete_objects_backoff_is_capped() {
+    assert_eq!(delete_objects_backoff_ms(0), 1_000);
+    assert_eq!(delete_objects_backoff_ms(1), 2_000);
+    assert_eq!(delete_objects_backoff_ms(10), 30_000);
   }
 
   #[test]

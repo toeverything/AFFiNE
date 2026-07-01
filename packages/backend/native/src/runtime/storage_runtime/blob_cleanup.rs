@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use chrono::{DateTime, Duration, Utc};
 use sqlx::{FromRow, PgPool};
 
@@ -17,6 +19,12 @@ struct BlobCandidateRow {
 struct MarkedCandidateRow {
   workspace_id: String,
   blob_key: String,
+}
+
+struct DeletableCandidate {
+  workspace_id: String,
+  blob_key: String,
+  object_key: String,
 }
 
 fn push_workspace_once(workspace_ids: &mut Vec<String>, workspace_id: &str) {
@@ -488,6 +496,7 @@ impl StorageRuntime {
       failed: 0,
       workspace_ids: Vec::new(),
     };
+    let mut deletable_candidates = Vec::new();
 
     for row in rows {
       if projection_is_stale(&pool, &row.workspace_id).await?
@@ -509,7 +518,6 @@ impl StorageRuntime {
       }
 
       let object_key = format!("{}/{}", row.workspace_id, row.blob_key);
-      let mut object_was_missing = false;
       let metadata = match self.object_storage_head(object_key.clone()).await {
         Ok(metadata) => metadata,
         Err(err) => {
@@ -544,23 +552,12 @@ impl StorageRuntime {
           .await?;
           continue;
         }
-        if let Err(err) = self.object_storage_delete(object_key).await {
-          result.failed += 1;
-          mark_candidate_status(
-            &pool,
-            &run_id,
-            &row.workspace_id,
-            &row.blob_key,
-            "failed",
-            serde_json::json!({ "failure": "object_delete_failed" }),
-            Some(&err.to_string()),
-          )
-          .await?;
-          continue;
-        }
-        result.deleted_objects += 1;
-      } else {
-        object_was_missing = true;
+        deletable_candidates.push(DeletableCandidate {
+          workspace_id: row.workspace_id,
+          blob_key: row.blob_key,
+          object_key,
+        });
+        continue;
       }
 
       let deleted_metadata =
@@ -597,11 +594,95 @@ impl StorageRuntime {
         "executed",
         serde_json::json!({
           "deletedMetadata": deleted_metadata,
-          "objectMissingBeforeDelete": object_was_missing,
+          "objectMissingBeforeDelete": true,
         }),
         None,
       )
       .await?;
+    }
+
+    if !deletable_candidates.is_empty() {
+      let object_keys = deletable_candidates
+        .iter()
+        .map(|candidate| candidate.object_key.clone())
+        .collect::<Vec<_>>();
+      let outcomes = match self.object_storage_delete_many(object_keys.clone()).await {
+        Ok(outcomes) => outcomes,
+        Err(err) => object_keys
+          .into_iter()
+          .map(|key| super::object_storage::types::ObjectDeleteOutcome {
+            key,
+            error: Some(err.to_string()),
+          })
+          .collect(),
+      };
+      let mut outcomes_by_key = outcomes
+        .into_iter()
+        .map(|outcome| (outcome.key, outcome.error))
+        .collect::<HashMap<_, _>>();
+
+      for row in deletable_candidates {
+        let delete_error = match outcomes_by_key.remove(&row.object_key) {
+          Some(Some(error)) => Some(error),
+          Some(None) => None,
+          None => Some("DeleteObjects response did not include this key".to_string()),
+        };
+        if let Some(error) = delete_error {
+          result.failed += 1;
+          mark_candidate_status(
+            &pool,
+            &run_id,
+            &row.workspace_id,
+            &row.blob_key,
+            "failed",
+            serde_json::json!({ "failure": "object_delete_failed" }),
+            Some(&error),
+          )
+          .await?;
+          continue;
+        }
+        result.deleted_objects += 1;
+
+        let deleted_metadata =
+          match sqlx::query("DELETE FROM blobs WHERE workspace_id = $1 AND key = $2 AND deleted_at IS NULL")
+            .bind(&row.workspace_id)
+            .bind(&row.blob_key)
+            .execute(&pool)
+            .await
+          {
+            Ok(result) => result.rows_affected() as i64,
+            Err(err) => {
+              result.failed += 1;
+              mark_candidate_status(
+                &pool,
+                &run_id,
+                &row.workspace_id,
+                &row.blob_key,
+                "failed",
+                serde_json::json!({ "failure": "metadata_delete_failed" }),
+                Some(&err.to_string()),
+              )
+              .await?;
+              continue;
+            }
+          };
+        result.deleted_metadata += deleted_metadata;
+        push_workspace_once(&mut result.workspace_ids, &row.workspace_id);
+
+        mark_candidate_status(
+          &pool,
+          &run_id,
+          &row.workspace_id,
+          &row.blob_key,
+          "executed",
+          serde_json::json!({
+            "deletedMetadata": deleted_metadata,
+            "objectMissingBeforeDelete": false,
+          }),
+          None,
+        )
+        .await?;
+      }
     }
 
     finish_execute_run(&pool, &run_id, &result).await?;

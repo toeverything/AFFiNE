@@ -43,6 +43,11 @@ declare global {
       gracePeriodDays?: number;
       limit?: number;
     };
+    'backendRuntime.executeBlobCleanupCandidatesByMarkedRuns': {
+      runLimit?: number;
+      gracePeriodDays?: number;
+      candidateLimit?: number;
+    };
   }
 }
 
@@ -173,6 +178,21 @@ export class StorageBlobJob {
     });
   }
 
+  async enqueueExecuteBlobCleanupCandidatesByMarkedRuns(
+    runLimit = 10,
+    gracePeriodDays = 30,
+    candidateLimit = 1000
+  ) {
+    await this.queue.add(
+      'backendRuntime.executeBlobCleanupCandidatesByMarkedRuns',
+      {
+        runLimit,
+        gracePeriodDays,
+        candidateLimit,
+      }
+    );
+  }
+
   @Cron(CronExpression.EVERY_DAY_AT_1AM)
   async dailyBlobMetadataBackfill() {
     await this.queue.add(
@@ -197,6 +217,15 @@ export class StorageBlobJob {
       'backendRuntime.planUnreferencedWorkspaceBlobsBySid',
       {},
       { jobId: 'daily-backend-runtime-blob-cleanup-planning' }
+    );
+  }
+
+  @Cron(CronExpression.EVERY_DAY_AT_4AM)
+  async dailyBlobCleanupExecution() {
+    await this.queue.add(
+      'backendRuntime.executeBlobCleanupCandidatesByMarkedRuns',
+      {},
+      { jobId: 'daily-backend-runtime-blob-cleanup-execution' }
     );
   }
 
@@ -357,6 +386,43 @@ export class StorageBlobJob {
     );
   }
 
+  @OnJob('backendRuntime.executeBlobCleanupCandidatesByMarkedRuns')
+  async executeBlobCleanupCandidatesByMarkedRuns({
+    runLimit = 10,
+    gracePeriodDays = 30,
+    candidateLimit = 1000,
+  }: Jobs['backendRuntime.executeBlobCleanupCandidatesByMarkedRuns']) {
+    if (!(await this.hasObjectStorage('blob cleanup execution sweep'))) {
+      return;
+    }
+
+    const normalizedRunLimit = Math.max(1, runLimit);
+    const normalizedCandidateLimit = Math.max(1, candidateLimit);
+    const runIds = await this.loadPendingBlobCleanupRunIds(normalizedRunLimit);
+    for (const runId of runIds) {
+      try {
+        await this.drainBlobCleanupExecution(
+          runId,
+          gracePeriodDays,
+          normalizedCandidateLimit
+        );
+      } catch (err) {
+        this.logger.error(`blob cleanup execution failed run=${runId}`, err);
+      }
+    }
+
+    if (
+      runIds.length === normalizedRunLimit &&
+      (await this.hasMarkedBlobCleanupCandidates())
+    ) {
+      await this.enqueueExecuteBlobCleanupCandidatesByMarkedRuns(
+        normalizedRunLimit,
+        gracePeriodDays,
+        normalizedCandidateLimit
+      );
+    }
+  }
+
   private async drainBlobMetadataBackfill(
     workspaceId: string,
     limit: number,
@@ -419,6 +485,59 @@ export class StorageBlobJob {
         break;
       }
     }
+  }
+
+  private async drainBlobCleanupExecution(
+    runId: string,
+    gracePeriodDays: number,
+    limit: number
+  ) {
+    for (;;) {
+      const result = await this.rt.executeBlobCleanupCandidates(
+        runId,
+        gracePeriodDays,
+        limit
+      );
+      await Promise.all(
+        result.workspaceIds.map((workspaceId: string) =>
+          this.event.emitAsync('workspace.blobs.updated', { workspaceId })
+        )
+      );
+      this.logger.log(
+        `executed blob cleanup run=${runId} deleted=${result.deletedObjects} skipped=${result.skippedStillReferenced} failed=${result.failed}`
+      );
+
+      const progressed =
+        result.deletedMetadata > 0 || result.skippedStillReferenced > 0;
+      if (result.scannedCandidates < limit || !progressed) {
+        break;
+      }
+    }
+  }
+
+  private async loadPendingBlobCleanupRunIds(limit: number) {
+    const rows = await this.db.$queryRaw<{ runId: string }[]>`
+      SELECT run_id::text AS "runId"
+      FROM blob_cleanup_candidates
+      WHERE status IN ('marked', 'failed')
+      GROUP BY run_id
+      ORDER BY
+        CASE WHEN BOOL_OR(status = 'marked') THEN 0 ELSE 1 END ASC,
+        MIN(planned_at) ASC
+      LIMIT ${limit}
+    `;
+    return rows.map(row => row.runId);
+  }
+
+  private async hasMarkedBlobCleanupCandidates() {
+    const rows = await this.db.$queryRaw<{ exists: boolean }[]>`
+      SELECT EXISTS(
+        SELECT 1
+        FROM blob_cleanup_candidates
+        WHERE status = 'marked'
+      ) AS "exists"
+    `;
+    return rows[0]?.exists ?? false;
   }
 
   private async hasObjectStorage(operation: string) {

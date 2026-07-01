@@ -37,6 +37,12 @@ pub(crate) struct ObjectListPage {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+pub(crate) struct ObjectDeleteOutcome {
+  pub(crate) key: String,
+  pub(crate) error: Option<String>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub(crate) struct ObjectGetResult {
   pub(crate) body: Vec<u8>,
   pub(crate) metadata: ObjectMetadata,

@@ -51,6 +51,14 @@ impl ObjectStorageError {
       _ => false,
     }
   }
+
+  pub(crate) fn is_retryable_http_status(&self) -> bool {
+    match self {
+      Self::Operation { source, .. } => source.is_retryable_http_status(),
+      Self::HttpStatus { status, .. } => *status == StatusCode::TOO_MANY_REQUESTS || status.is_server_error(),
+      _ => false,
+    }
+  }
 }
 
 pub(crate) type ObjectStorageResult<T> = std::result::Result<T, ObjectStorageError>;

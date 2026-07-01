@@ -12,7 +12,7 @@ use serde::Deserialize;
 use serde_json::{Map, Value};
 use sha2::{Digest, Sha256};
 use sqlx::{PgPool, Row, postgres::PgPoolOptions};
-use tokio::sync::Mutex;
+use tokio::{sync::Mutex, task::JoinSet};
 
 mod assetpack;
 mod blob_cleanup;
@@ -23,7 +23,9 @@ pub(crate) mod object_storage;
 
 use self::object_storage::{
   ObjectStorageConfig, StorageProviderConfig,
-  types::{ObjectGetResult, ObjectListEntry, ObjectMetadata, ObjectPutMetadata, checksum_crc32_base64},
+  types::{
+    ObjectDeleteOutcome, ObjectGetResult, ObjectListEntry, ObjectMetadata, ObjectPutMetadata, checksum_crc32_base64,
+  },
 };
 pub(super) use super::{
   RuntimeError, RuntimeResult,
@@ -38,6 +40,8 @@ pub(super) use super::{
 };
 
 const MAX_BLOB_SIZE: i64 = i32::MAX as i64;
+const OBJECT_DELETE_MANY_CHUNK_SIZE: usize = 500;
+const OBJECT_DELETE_MANY_CONCURRENCY: usize = 3;
 
 type Result<T> = RuntimeResult<T>;
 
@@ -680,6 +684,15 @@ impl StorageRuntime {
     }
   }
 
+  pub(crate) async fn object_storage_delete_many(&self, keys: Vec<String>) -> Result<Vec<ObjectDeleteOutcome>> {
+    let backend = self.backend_for_scope("blob")?;
+    match backend {
+      StorageBackendConfig::Fs(config) => Ok(delete_many_fs(config, keys)),
+      StorageBackendConfig::Assetpack(config) => delete_many_assetpack(config, keys).await,
+      StorageBackendConfig::S3(config) => delete_many_s3(config, keys).await,
+    }
+  }
+
   pub(crate) async fn object_storage_abort_upload(&self, key: &str, upload_id: &str) -> Result<()> {
     match self.backend_for_scope("blob")? {
       StorageBackendConfig::Fs(_) | StorageBackendConfig::Assetpack(_) => Ok(()),
@@ -750,10 +763,6 @@ impl StorageRuntime {
       StorageBackendConfig::S3(config) => config.build_client()?.head(&key).await?,
     };
     Ok(metadata.map(Into::into))
-  }
-
-  pub(crate) async fn object_storage_delete(&self, key: String) -> Result<()> {
-    self.object_storage_delete_object(&key).await
   }
 
   async fn complete_fs_workspace_blob(
@@ -1203,6 +1212,77 @@ fn fs_delete(config: &FsStorageConfig, key: &str) -> Result<()> {
     Err(err) => return Err(RuntimeError::io("StorageRuntime fs delete metadata failed", err)),
   }
   Ok(())
+}
+
+fn delete_many_fs(config: FsStorageConfig, keys: Vec<String>) -> Vec<ObjectDeleteOutcome> {
+  keys
+    .into_iter()
+    .map(|key| {
+      let error = fs_delete(&config, &key).err().map(|err| err.to_string());
+      ObjectDeleteOutcome { key, error }
+    })
+    .collect()
+}
+
+async fn delete_many_assetpack(config: FsStorageConfig, keys: Vec<String>) -> Result<Vec<ObjectDeleteOutcome>> {
+  let mut outcomes = Vec::with_capacity(keys.len());
+  for key in keys {
+    let error = assetpack::delete(&config, "blob", &key)
+      .await
+      .err()
+      .map(|err| err.to_string());
+    outcomes.push(ObjectDeleteOutcome { key, error });
+  }
+  Ok(outcomes)
+}
+
+async fn delete_many_s3(config: ObjectStorageConfig, keys: Vec<String>) -> Result<Vec<ObjectDeleteOutcome>> {
+  let client = config.build_client()?;
+  let mut chunks = keys
+    .chunks(OBJECT_DELETE_MANY_CHUNK_SIZE)
+    .map(|chunk| chunk.to_vec())
+    .collect::<Vec<_>>()
+    .into_iter();
+  let mut tasks = JoinSet::new();
+  let mut outcomes = Vec::new();
+
+  for _ in 0..OBJECT_DELETE_MANY_CONCURRENCY {
+    let Some(chunk) = chunks.next() else {
+      break;
+    };
+    let client = client.clone();
+    tasks.spawn(async move {
+      let fallback = chunk.clone();
+      let result = client.delete_many(chunk).await.map_err(RuntimeError::from);
+      (fallback, result)
+    });
+  }
+
+  while let Some(result) = tasks.join_next().await {
+    match result {
+      Ok((_chunk, Ok(batch_outcomes))) => outcomes.extend(batch_outcomes),
+      Ok((chunk, Err(err))) => outcomes.extend(chunk.into_iter().map(|key| ObjectDeleteOutcome {
+        key,
+        error: Some(err.to_string()),
+      })),
+      Err(err) => {
+        return Err(RuntimeError::invalid_state(format!(
+          "StorageRuntime delete batch task failed: {err}"
+        )));
+      }
+    }
+
+    if let Some(chunk) = chunks.next() {
+      let client = client.clone();
+      tasks.spawn(async move {
+        let fallback = chunk.clone();
+        let result = client.delete_many(chunk).await.map_err(RuntimeError::from);
+        (fallback, result)
+      });
+    }
+  }
+
+  Ok(outcomes)
 }
 
 fn read_fs_metadata(path: &Path) -> Result<Option<ObjectMetadata>> {

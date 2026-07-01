@@ -64,7 +64,7 @@ sqlx = { workspace = true, default-features = false, features = [
 ] }
 thiserror.workspace = true
 tiktoken-rs = { workspace = true }
-tokio = { workspace = true, features = ["rt-multi-thread", "sync"] }
+tokio = { workspace = true, features = ["rt-multi-thread", "sync", "time"] }
 url = { workspace = true }
 uuid = { workspace = true, features = ["v4"] }
 v_htmlescape = { workspace = true }

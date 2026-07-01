@@ -18,6 +18,7 @@ interface Context {
     add: Sinon.SinonStub;
   };
   db: {
+    $queryRaw: Sinon.SinonStub;
     workspace: {
       findMany: Sinon.SinonStub;
     };
@@ -46,6 +47,7 @@ test.beforeEach(t => {
     add: Sinon.stub().resolves(undefined),
   };
   t.context.db = {
+    $queryRaw: Sinon.stub(),
     workspace: {
       findMany: Sinon.stub(),
     },
@@ -79,6 +81,16 @@ const objectStorageRequiredCases: {
     untouched: context => [
       context.runtime.executeBlobCleanupCandidates,
       context.event.emitAsync,
+    ],
+  },
+  {
+    name: 'blob cleanup execution sweep',
+    run: context => context.job.executeBlobCleanupCandidatesByMarkedRuns({}),
+    untouched: context => [
+      context.db.$queryRaw,
+      context.runtime.executeBlobCleanupCandidates,
+      context.event.emitAsync,
+      context.queue.add,
     ],
   },
   {
@@ -212,4 +224,106 @@ test('blob cleanup planning drains each workspace cursor before continuing', asy
       { lastSid: 2, workspaceLimit: 2, gracePeriodDays: 14, limit: 100 }
     )
   );
+});
+
+test('daily blob cleanup execution uses a fixed job id', async t => {
+  await t.context.job.dailyBlobCleanupExecution();
+
+  t.true(
+    t.context.queue.add.calledWith(
+      'backendRuntime.executeBlobCleanupCandidatesByMarkedRuns',
+      {},
+      { jobId: 'daily-backend-runtime-blob-cleanup-execution' }
+    )
+  );
+});
+
+test('blob cleanup execution sweep drains marked runs and continues by page', async t => {
+  t.context.db.$queryRaw
+    .onFirstCall()
+    .resolves([{ runId: 'run-1' }, { runId: 'run-2' }])
+    .onSecondCall()
+    .resolves([{ exists: true }]);
+  t.context.runtime.executeBlobCleanupCandidates
+    .onFirstCall()
+    .resolves({
+      scannedCandidates: 100,
+      deletedObjects: 100,
+      deletedMetadata: 100,
+      skippedStillReferenced: 0,
+      failed: 0,
+      workspaceIds: ['workspace-1'],
+    })
+    .onSecondCall()
+    .resolves({
+      scannedCandidates: 5,
+      deletedObjects: 5,
+      deletedMetadata: 5,
+      skippedStillReferenced: 0,
+      failed: 0,
+      workspaceIds: ['workspace-1'],
+    })
+    .onThirdCall()
+    .resolves({
+      scannedCandidates: 1,
+      deletedObjects: 0,
+      deletedMetadata: 0,
+      skippedStillReferenced: 0,
+      failed: 1,
+      workspaceIds: [],
+    });
+
+  await t.context.job.executeBlobCleanupCandidatesByMarkedRuns({
+    runLimit: 2,
+    gracePeriodDays: 14,
+    candidateLimit: 100,
+  });
+
+  t.is(t.context.runtime.executeBlobCleanupCandidates.callCount, 3);
+  t.deepEqual(t.context.runtime.executeBlobCleanupCandidates.firstCall.args, [
+    'run-1',
+    14,
+    100,
+  ]);
+  t.deepEqual(t.context.runtime.executeBlobCleanupCandidates.secondCall.args, [
+    'run-1',
+    14,
+    100,
+  ]);
+  t.deepEqual(t.context.runtime.executeBlobCleanupCandidates.thirdCall.args, [
+    'run-2',
+    14,
+    100,
+  ]);
+  t.is(t.context.event.emitAsync.callCount, 2);
+  t.true(
+    t.context.queue.add.calledWith(
+      'backendRuntime.executeBlobCleanupCandidatesByMarkedRuns',
+      { runLimit: 2, gracePeriodDays: 14, candidateLimit: 100 }
+    )
+  );
+});
+
+test('blob cleanup execution sweep does not continue failed-only backlog', async t => {
+  t.context.db.$queryRaw
+    .onFirstCall()
+    .resolves([{ runId: 'run-1' }])
+    .onSecondCall()
+    .resolves([{ exists: false }]);
+  t.context.runtime.executeBlobCleanupCandidates.resolves({
+    scannedCandidates: 100,
+    deletedObjects: 0,
+    deletedMetadata: 0,
+    skippedStillReferenced: 0,
+    failed: 100,
+    workspaceIds: [],
+  });
+
+  await t.context.job.executeBlobCleanupCandidatesByMarkedRuns({
+    runLimit: 1,
+    candidateLimit: 100,
+  });
+
+  t.is(t.context.runtime.executeBlobCleanupCandidates.callCount, 1);
+  t.false(t.context.queue.add.called);
 });
