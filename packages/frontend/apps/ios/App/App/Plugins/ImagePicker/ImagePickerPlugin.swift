@@ -49,6 +49,7 @@ public class ImagePickerPlugin: CAPPlugin, CAPBridgedPlugin {
       }
 
       do {
+        try self.clearStagingDirectory()
         let presenter = try self.resolvePresenter()
         self.pendingCall = call
         self.allowsMultipleSelection = call.getBool("multiple") ?? true
@@ -130,6 +131,8 @@ public class ImagePickerPlugin: CAPPlugin, CAPBridgedPlugin {
     switch themeMode {
     case "dark":
       return .dark
+    case "system":
+      return UITraitCollection.current.userInterfaceStyle == .dark ? .dark : .light
     default:
       return .light
     }
@@ -184,9 +187,21 @@ public class ImagePickerPlugin: CAPPlugin, CAPBridgedPlugin {
     return directory
   }
 
+  private func clearStagingDirectory() throws {
+    let directory = FileManager.default.temporaryDirectory
+      .appendingPathComponent("affine-image-picker", isDirectory: true)
+    guard FileManager.default.fileExists(atPath: directory.path) else { return }
+    try FileManager.default.removeItem(at: directory)
+  }
+
   private func uniqueFileURL(in directory: URL, fileName: String) -> URL {
-    let sanitizedName = fileName.isEmpty ? UUID().uuidString : fileName
-    return directory.appendingPathComponent("\(UUID().uuidString)-\(sanitizedName)")
+    let strippedName = (fileName as NSString).lastPathComponent
+    let sanitizedName = strippedName
+      .components(separatedBy: CharacterSet(charactersIn: "/\\:"))
+      .filter { !$0.isEmpty && $0 != "." && $0 != ".." }
+      .joined(separator: "-")
+    let safeName = sanitizedName.isEmpty ? UUID().uuidString : sanitizedName
+    return directory.appendingPathComponent("\(UUID().uuidString)-\(safeName)")
   }
 
   private func pickedFile(from sourceURL: URL, suggestedName: String? = nil) throws -> PickedImageFile {

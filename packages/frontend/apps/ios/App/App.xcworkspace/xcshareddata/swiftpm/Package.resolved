@@ -32,8 +32,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Lakr233/ListViewKit",
       "state" : {
-        "revision" : "07f7adfa0629f8647991e3c148b7d3e060fe2917",
-        "version" : "1.2.0"
+        "revision" : "a4372d7f90c846d834c1f1575d1af0050d70fa0f",
+        "version" : "1.1.6"
       }
     },
     {
@@ -61,15 +61,6 @@
       "state" : {
         "revision" : "e0cd01cb1fcaf47c2aeb14625065773846f7136a",
         "version" : "3.9.1"
-      }
-    },
-    {
-      "identity" : "msdisplaylink",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/Lakr233/MSDisplayLink",
-      "state" : {
-        "revision" : "ebf5823cb5fc1326639d9a05bc06d16bbe82989f",
-        "version" : "2.0.8"
       }
     },
     {

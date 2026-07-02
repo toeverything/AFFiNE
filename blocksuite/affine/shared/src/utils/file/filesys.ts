@@ -317,7 +317,11 @@ export async function openSingleFileWith(
 export async function getImageFilesFromLocal() {
   const nativePicker = window[NATIVE_IMAGE_FILES_PICKER_KEY];
   if (nativePicker) {
-    return (await nativePicker()) ?? [];
+    try {
+      return (await nativePicker()) ?? [];
+    } catch (err) {
+      console.error(err);
+    }
   }
 
   const files = await openFilesWith('Images');

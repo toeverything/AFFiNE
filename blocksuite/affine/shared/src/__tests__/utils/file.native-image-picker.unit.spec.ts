@@ -56,4 +56,24 @@ describe('getImageFilesFromLocal', () => {
     expect(nativePicker).toHaveBeenCalledTimes(1);
     expect(files).toEqual([file]);
   });
+
+  it('falls back to the standard picker when the native picker rejects', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const nativePicker = vi.fn(async () => {
+      throw new Error('Native picker failed');
+    });
+    registerNativeImageFilesPicker(nativePicker);
+
+    const files = await getImageFilesFromLocal();
+
+    expect(nativePicker).toHaveBeenCalledTimes(1);
+    expect(files).toEqual([]);
+    expect(
+      (
+        HTMLInputElement.prototype as HTMLInputElement & {
+          showPicker?: (this: HTMLInputElement) => void;
+        }
+      ).showPicker
+    ).toHaveBeenCalledTimes(1);
+  });
 });

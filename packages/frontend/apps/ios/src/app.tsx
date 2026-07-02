@@ -247,7 +247,7 @@ registerNativeImageFilesPicker(async () => {
     return [];
   }
 
-  return await Promise.all(
+  const settled = await Promise.allSettled(
     result.files.map(async file => {
       const filePath = file.path.startsWith('file://')
         ? file.path
@@ -266,6 +266,13 @@ registerNativeImageFilesPicker(async () => {
       });
     })
   );
+
+  return settled
+    .filter(
+      (settledResult): settledResult is PromiseFulfilledResult<File> =>
+        settledResult.status === 'fulfilled'
+    )
+    .map(settledResult => settledResult.value);
 });
 
 // ------ some apis for native ------

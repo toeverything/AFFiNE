@@ -1,23 +1,17 @@
-import { Window } from 'happy-dom';
-import { describe, expect, test } from 'vitest';
+/**
+ * @vitest-environment happy-dom
+ */
+import { afterEach, describe, expect, test } from 'vitest';
 
-import * as activeModule from '../../inline/range/active.js';
+import { shouldDeactivateEditorOnFocusOut } from '../../inline/range/active.js';
 import { RANGE_SYNC_EXCLUDE_ATTR } from '../../inline/range/consts.js';
 
-const window = new Window();
-Object.assign(globalThis, {
-  document: window.document,
-  Element: window.Element,
-  Node: window.Node,
+afterEach(() => {
+  document.body.replaceChildren();
 });
 
 describe('editor active helpers', () => {
   test('keeps editor active when focus moves into an excluded widget', () => {
-    const helper = (activeModule as Record<string, unknown>)
-      .shouldDeactivateEditorOnFocusOut;
-
-    expect(typeof helper).toBe('function');
-
     const host = document.createElement('editor-host');
     const paragraph = document.createElement('div');
     host.append(paragraph);
@@ -29,25 +23,19 @@ describe('editor active helpers', () => {
 
     document.body.append(host, widgetRoot);
 
-    expect(
-      (
-        helper as (
-          host: HTMLElement,
-          relatedTarget: EventTarget | null
-        ) => boolean
-      )(host, widgetButton)
-    ).toBe(false);
+    expect(shouldDeactivateEditorOnFocusOut(host, widgetButton)).toBe(false);
+  });
 
-    host.remove();
-    widgetRoot.remove();
+  test('keeps editor active when focus stays inside the editor host', () => {
+    const host = document.createElement('editor-host');
+    const input = document.createElement('input');
+    host.append(input);
+    document.body.append(host);
+
+    expect(shouldDeactivateEditorOnFocusOut(host, input)).toBe(false);
   });
 
   test('deactivates editor when focus moves to a regular external control', () => {
-    const helper = (activeModule as Record<string, unknown>)
-      .shouldDeactivateEditorOnFocusOut;
-
-    expect(typeof helper).toBe('function');
-
     const host = document.createElement('editor-host');
     const paragraph = document.createElement('div');
     host.append(paragraph);
@@ -55,16 +43,22 @@ describe('editor active helpers', () => {
     const externalButton = document.createElement('button');
     document.body.append(host, externalButton);
 
-    expect(
-      (
-        helper as (
-          host: HTMLElement,
-          relatedTarget: EventTarget | null
-        ) => boolean
-      )(host, externalButton)
-    ).toBe(true);
+    expect(shouldDeactivateEditorOnFocusOut(host, externalButton)).toBe(true);
+  });
 
-    host.remove();
-    externalButton.remove();
+  test('deactivates editor when focus leaves the document', () => {
+    const host = document.createElement('editor-host');
+    document.body.append(host);
+
+    expect(shouldDeactivateEditorOnFocusOut(host, null)).toBe(true);
+  });
+
+  test('deactivates editor when the related target is not a DOM node', () => {
+    const host = document.createElement('editor-host');
+    document.body.append(host);
+
+    expect(shouldDeactivateEditorOnFocusOut(host, new EventTarget())).toBe(
+      true
+    );
   });
 });

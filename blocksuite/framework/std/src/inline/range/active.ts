@@ -23,7 +23,7 @@ export function shouldDeactivateEditorOnFocusOut(
   relatedTarget: EventTarget | null
 ) {
   if (!relatedTarget || !(relatedTarget instanceof Node)) {
-    return false;
+    return true;
   }
 
   if (editorHost.contains(relatedTarget)) {

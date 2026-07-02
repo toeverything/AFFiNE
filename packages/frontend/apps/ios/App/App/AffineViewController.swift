@@ -5,7 +5,11 @@ import WebKit
 
 class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate, AffineThemeConfigurable {
   var intelligentsButton: IntelligentsButton?
-  var appThemeUserInterfaceStyle: UIUserInterfaceStyle = .unspecified
+  var appThemeUserInterfaceStyle: UIUserInterfaceStyle = .unspecified {
+    didSet {
+      overrideUserInterfaceStyle = appThemeUserInterfaceStyle
+    }
+  }
 
   override func viewDidLoad() {
     super.viewDidLoad()
