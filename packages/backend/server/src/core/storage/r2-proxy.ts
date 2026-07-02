@@ -7,19 +7,16 @@ import {
   BlobInvalid,
   CallMetric,
   Config,
-  OnEvent,
   PROXY_MULTIPART_PATH,
   PROXY_UPLOAD_PATH,
+  type R2StorageConfig,
   STORAGE_PROXY_ROOT,
-  StorageProviderConfig,
-  StorageProviderFactory,
+  type StorageProviderConfig,
+  toBuffer,
 } from '../../base';
-import {
-  R2StorageConfig,
-  R2StorageProvider,
-} from '../../base/storage/providers/r2';
 import { Models } from '../../models';
 import { Public } from '../auth/guard';
+import { StorageRuntimeProvider } from '../storage-runtime';
 import { MULTIPART_PART_SIZE } from './constants';
 
 type R2BlobStorageConfig = StorageProviderConfig & {
@@ -37,20 +34,12 @@ type R2Config = {
 @Controller(STORAGE_PROXY_ROOT)
 export class R2UploadController {
   private readonly logger = new Logger(R2UploadController.name);
-  private provider: R2StorageProvider | null = null;
 
   constructor(
     private readonly config: Config,
     private readonly models: Models,
-    private readonly storageFactory: StorageProviderFactory
+    private readonly rt: StorageRuntimeProvider
   ) {}
-
-  @OnEvent('config.changed')
-  onConfigChanged(event: Events['config.changed']) {
-    if (event.updates.storages?.blob?.storage) {
-      this.provider = null;
-    }
-  }
 
   private getR2Config(): R2Config {
     const storage = this.config.storages.blob.storage as StorageProviderConfig;
@@ -67,16 +56,6 @@ export class R2UploadController {
       throw new BlobInvalid('Invalid endpoint');
     }
     return { storage: storage as R2BlobStorageConfig, signKey };
-  }
-
-  private getProvider(storage: R2BlobStorageConfig) {
-    if (!this.provider) {
-      const candidate = this.storageFactory.create(storage);
-      if (candidate instanceof R2StorageProvider) {
-        this.provider = candidate;
-      }
-    }
-    return this.provider;
   }
 
   private sign(canonical: string, signKey: string) {
@@ -173,7 +152,7 @@ export class R2UploadController {
   @Put('upload')
   @CallMetric('controllers', 'r2_proxy_upload')
   async upload(@Req() req: Request, @Res() res: Response) {
-    const { storage, signKey } = this.getR2Config();
+    const { signKey } = this.getR2Config();
 
     const workspaceId = this.expectString(req.query.workspaceId, 'workspaceId');
     const key = this.expectString(req.query.key, 'key');
@@ -229,16 +208,16 @@ export class R2UploadController {
       throw new BlobInvalid('Mime type mismatch');
     }
 
-    const provider = this.getProvider(storage);
-    if (!provider) {
-      throw new BlobInvalid('R2 provider is not available');
-    }
-
     try {
-      await provider.proxyPutObject(`${workspaceId}/${key}`, req, {
-        contentType: mime,
-        contentLength,
-      });
+      await this.rt.putObject(
+        'blob',
+        `${workspaceId}/${key}`,
+        await toBuffer(req),
+        {
+          contentType: mime,
+          contentLength,
+        }
+      );
     } catch (error) {
       this.logger.error('Failed to proxy upload', error as Error);
       throw new BlobInvalid('Upload failed');
@@ -251,7 +230,7 @@ export class R2UploadController {
   @Put('multipart')
   @CallMetric('controllers', 'r2_proxy_multipart')
   async uploadPart(@Req() req: Request, @Res() res: Response) {
-    const { storage, signKey } = this.getR2Config();
+    const { signKey } = this.getR2Config();
 
     const workspaceId = this.expectString(req.query.workspaceId, 'workspaceId');
     const key = this.expectString(req.query.key, 'key');
@@ -305,18 +284,14 @@ export class R2UploadController {
       throw new BlobInvalid('Part size exceeds upload metadata');
     }
 
-    const provider = this.getProvider(storage);
-    if (!provider) {
-      throw new BlobInvalid('R2 provider is not available');
-    }
-
     try {
-      const etag = await provider.proxyUploadPart(
+      const etag = await this.rt.proxyUploadPart(
+        'blob',
         `${workspaceId}/${key}`,
         uploadId,
         partNumber,
-        req,
-        { contentLength }
+        await toBuffer(req),
+        contentLength
       );
       if (etag) {
         res.setHeader('etag', etag);

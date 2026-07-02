@@ -7,7 +7,7 @@ version      = "0.1.0"
 
 [features]
 default = []
-hashcash = ["chrono", "sha3", "rand"]
+hashcash = ["chrono", "hex", "sha3", "rand"]
 napi = ["dep:napi"]
 ydoc-loader = [
   "assert-json-diff",
@@ -22,6 +22,7 @@ ydoc-loader = [
 [dependencies]
 assert-json-diff = { workspace = true, optional = true }
 chrono           = { workspace = true, optional = true }
+hex              = { workspace = true, optional = true }
 nanoid           = { workspace = true, optional = true }
 napi             = { workspace = true, optional = true }
 pulldown-cmark   = { workspace = true, optional = true }

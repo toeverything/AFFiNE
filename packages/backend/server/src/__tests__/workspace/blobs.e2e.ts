@@ -1,12 +1,15 @@
 import { createHash } from 'node:crypto';
+import { Readable } from 'node:stream';
 
 import test from 'ava';
 import Sinon from 'sinon';
 
-import { Config, ConfigFactory, StorageProviderFactory } from '../../base';
+import { ConfigFactory } from '../../base';
 import { QuotaStateService } from '../../core/quota/state';
 import { WorkspaceBlobStorage } from '../../core/storage/wrappers/blob';
+import { StorageRuntimeProvider } from '../../core/storage-runtime';
 import { BlobModel, WorkspaceFeatureModel } from '../../models';
+import { getMime } from '../../native';
 import {
   collectAllBlobSizes,
   completeBlobUpload,
@@ -32,9 +35,117 @@ const RESTRICTED_QUOTA = {
 
 let app: TestingApp;
 let model: WorkspaceFeatureModel;
+type CompleteResult =
+  | {
+      ok: true;
+      contentType: string;
+      contentLength: number;
+      lastModifiedMs: number;
+    }
+  | {
+      ok: false;
+      reason:
+        | 'not_found'
+        | 'size_mismatch'
+        | 'mime_mismatch'
+        | 'checksum_mismatch'
+        | 'size_too_large';
+    };
+const objects = new Map<
+  string,
+  {
+    body: Buffer;
+    metadata: {
+      contentType: string;
+      contentLength: number;
+      lastModified: Date;
+    };
+  }
+>();
+const completeResults = new Map<string, CompleteResult>();
+const storageRuntime = {
+  providerCapabilities: async () => ({
+    put: true,
+    get: true,
+    head: true,
+    list: true,
+    delete: true,
+    presignPut: false,
+    presignGet: false,
+    multipartDirect: false,
+    proxyUpload: false,
+    assetpack: false,
+    serverMediatedOnly: true,
+  }),
+  putObject: async (
+    _scope: string,
+    key: string,
+    body: Buffer,
+    metadata?: { contentType?: string; contentLength?: number }
+  ) => {
+    const object = {
+      body,
+      metadata: {
+        contentType: metadata?.contentType ?? getMime(body),
+        contentLength: metadata?.contentLength ?? body.length,
+        lastModified: new Date(),
+      },
+    };
+    objects.set(key, object);
+    return object.metadata;
+  },
+  headObject: async (_scope: string, key: string) => {
+    return objects.get(key)?.metadata;
+  },
+  getObject: async (_scope: string, key: string) => {
+    const object = objects.get(key);
+    return object
+      ? { body: Readable.from(object.body), metadata: object.metadata }
+      : {};
+  },
+  listObjects: async (_scope: string, prefix?: string) => {
+    return Array.from(objects.entries())
+      .filter(([key]) => !prefix || key.startsWith(prefix))
+      .map(([key, object]) => ({ key, ...object.metadata }));
+  },
+  deleteObject: async (_scope: string, key: string) => {
+    objects.delete(key);
+  },
+  presignPut: async () => undefined,
+  presignGet: async () => undefined,
+  createMultipartUpload: async () => undefined,
+  presignUploadPart: async () => undefined,
+  listMultipartUploadParts: async () => undefined,
+  completeMultipartUpload: async () => undefined,
+  completeWorkspaceBlobUpload: async (workspaceId: string, key: string) => {
+    const objectKey = `${workspaceId}/${key}`;
+    const configured = completeResults.get(objectKey);
+    if (configured) return configured;
+    const object = objects.get(objectKey);
+    if (!object) return { ok: false, reason: 'not_found' };
+    await app.get(BlobModel).upsert({
+      workspaceId,
+      key,
+      mime: object.metadata.contentType,
+      size: object.metadata.contentLength,
+      status: 'completed',
+      uploadId: null,
+    });
+    return {
+      ok: true,
+      contentType: object.metadata.contentType,
+      contentLength: object.metadata.contentLength,
+      lastModifiedMs: object.metadata.lastModified.getTime(),
+    };
+  },
+};
 
 test.before(async () => {
-  app = await createTestingApp();
+  app = await createTestingApp({
+    tapModule: builder => {
+      builder.overrideProvider(StorageRuntimeProvider).useValue(storageRuntime);
+    },
+  });
   model = app.get(WorkspaceFeatureModel);
   app.get(ConfigFactory).override({
     storages: {
@@ -47,11 +158,12 @@ test.before(async () => {
       },
     },
   });
-  await app.get(WorkspaceBlobStorage).onConfigInit();
 });
 
 test.beforeEach(async () => {
   await app.initTestingDB();
+  objects.clear();
+  completeResults.clear();
 });
 
 test.after.always(async () => {
@@ -124,22 +236,19 @@ test('should keep partial blob metadata listing on DB path without storage scan'
 
   const workspace = await createWorkspace(app);
   const storage = app.get(WorkspaceBlobStorage);
-  const rawProvider = (storage as any).provider;
-  const listSpy = Sinon.spy(rawProvider, 'list');
+  const rt = app.get(StorageRuntimeProvider);
+  const listSpy = Sinon.spy(rt, 'listObjects');
   t.teardown(() => listSpy.restore());
 
   const buffer1 = Buffer.from('with metadata');
   const buffer2 = Buffer.from('without metadata');
   const key1 = sha256Base64urlWithPadding(buffer1);
   const key2 = sha256Base64urlWithPadding(buffer2);
-  const config = app.get(Config);
-  const factory = app.get(StorageProviderFactory);
-  const provider = factory.create(config.storages.blob.storage);
-  await provider.put(`${workspace.id}/${key1}`, buffer1, {
+  await rt.putObject('blob', `${workspace.id}/${key1}`, buffer1, {
     contentType: 'text/plain',
     contentLength: buffer1.length,
   });
-  await provider.put(`${workspace.id}/${key2}`, buffer2, {
+  await rt.putObject('blob', `${workspace.id}/${key2}`, buffer2, {
     contentType: 'text/plain',
     contentLength: buffer2.length,
   });
@@ -194,11 +303,9 @@ test('should complete pending blob upload', async t => {
 
   await createBlobUpload(app, workspace.id, key, buffer.length, mime);
 
-  const config = app.get(Config);
-  const factory = app.get(StorageProviderFactory);
-  const provider = factory.create(config.storages.blob.storage);
+  const rt = app.get(StorageRuntimeProvider);
 
-  await provider.put(`${workspace.id}/${key}`, buffer, {
+  await rt.putObject('blob', `${workspace.id}/${key}`, buffer, {
     contentType: mime,
     contentLength: buffer.length,
   });
@@ -225,13 +332,15 @@ test('should reject complete when blob key mismatched', async t => {
   const wrongKey = sha256Base64urlWithPadding(Buffer.from('other'));
   await createBlobUpload(app, workspace.id, wrongKey, buffer.length, mime);
 
-  const config = app.get(Config);
-  const factory = app.get(StorageProviderFactory);
-  const provider = factory.create(config.storages.blob.storage);
+  const rt = app.get(StorageRuntimeProvider);
 
-  await provider.put(`${workspace.id}/${wrongKey}`, buffer, {
+  await rt.putObject('blob', `${workspace.id}/${wrongKey}`, buffer, {
     contentType: mime,
     contentLength: buffer.length,
+  });
+  completeResults.set(`${workspace.id}/${wrongKey}`, {
+    ok: false,
+    reason: 'checksum_mismatch',
   });
 
   await t.throwsAsync(() => completeBlobUpload(app, workspace.id, wrongKey), {
@@ -265,9 +374,8 @@ test('should auto delete blobs when workspace is deleted', async t => {
   const blobs = await listBlobs(app, workspace.id);
   t.is(blobs.length, 2);
 
-  const storage = app.get(WorkspaceBlobStorage);
-  const rawProvider = (storage as any).provider;
-  const listSpy = Sinon.spy(rawProvider, 'list');
+  const rt = app.get(StorageRuntimeProvider);
+  const listSpy = Sinon.spy(rt, 'listObjects');
   t.teardown(() => listSpy.restore());
 
   await deleteWorkspace(app, workspace.id);

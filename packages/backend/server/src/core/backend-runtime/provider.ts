@@ -30,9 +30,7 @@ export class BackendRuntimeProvider
     await this.runtime.start();
     await this.runMigrationsOnce();
     const health = await this.runtime.health();
-    this.logger.log(
-      `backend runtime started: db=${health.databaseConnected} objectStorage=${health.objectStorageConfigured}`
-    );
+    this.logger.log(`backend runtime started: db=${health.databaseConnected}`);
   }
 
   async stop() {
@@ -42,18 +40,6 @@ export class BackendRuntimeProvider
 
   async health(): Promise<BackendRuntimeHealth> {
     return await this.runtime.health();
-  }
-
-  async cleanupExpiredPendingBlobs(cutoffMs: number, limit: number) {
-    return await this.measured('cleanupExpiredPendingBlobs', rt =>
-      rt.cleanupExpiredPendingBlobs(cutoffMs, limit)
-    );
-  }
-
-  async releaseDeletedBlobs(workspaceId: string, limit: number) {
-    return await this.measured('releaseDeletedBlobs', rt =>
-      rt.releaseDeletedBlobs(workspaceId, limit)
-    );
   }
 
   async cleanupExpiredSnapshotHistories(limit: number) {
@@ -77,41 +63,6 @@ export class BackendRuntimeProvider
   async cleanupExpiredRuntimeGates(limit: number) {
     return await this.measured('cleanupExpiredRuntimeGates', rt =>
       rt.cleanupExpiredRuntimeGates(limit)
-    );
-  }
-
-  async backfillMissingBlobMetadata(
-    workspaceId: string | null | undefined,
-    limit: number
-  ) {
-    return await this.measured('backfillMissingBlobMetadata', rt =>
-      rt.backfillMissingBlobMetadata(workspaceId, limit)
-    );
-  }
-
-  async rebuildWorkspaceDocBlobRefs(workspaceId: string, limit: number) {
-    return await this.measured('rebuildWorkspaceDocBlobRefs', rt =>
-      rt.rebuildWorkspaceDocBlobRefs(workspaceId, limit)
-    );
-  }
-
-  async planUnreferencedWorkspaceBlobs(
-    workspaceId: string,
-    gracePeriodDays: number,
-    limit: number
-  ) {
-    return await this.measured('planUnreferencedWorkspaceBlobs', rt =>
-      rt.planUnreferencedWorkspaceBlobs(workspaceId, gracePeriodDays, limit)
-    );
-  }
-
-  async executeBlobCleanupCandidates(
-    runId: string,
-    gracePeriodDays: number,
-    limit: number
-  ) {
-    return await this.measured('executeBlobCleanupCandidates', rt =>
-      rt.executeBlobCleanupCandidates(runId, gracePeriodDays, limit)
     );
   }
 

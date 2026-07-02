@@ -5,18 +5,9 @@ declare const _default: typeof import('./index')
 export default _default
 
 export declare class BackendRuntime {
-  planUnreferencedWorkspaceBlobs(workspaceId: string, gracePeriodDays: number, limit: number): Promise<RuntimeBlobCleanupPlanResult>
-  executeBlobCleanupCandidates(runId: string, gracePeriodDays: number, limit: number): Promise<RuntimeBlobCleanupExecuteResult>
-  completeBlobUpload(workspaceId: string, key: string, expectedSize: number, expectedMime: string): Promise<RuntimeBlobCompleteResult>
-  completeFsBlobUpload(root: string, bucket: string, workspaceId: string, key: string, expectedSize: number, expectedMime: string): Promise<RuntimeBlobCompleteResult>
-  cleanupExpiredPendingBlobs(cutoffMs: number, limit: number): Promise<RuntimeBlobCleanupResult>
-  releaseDeletedBlobs(workspaceId: string, limit: number): Promise<RuntimeBlobCleanupResult>
-  backfillMissingBlobMetadata(workspaceId: string | undefined | null, limit: number): Promise<RuntimeBlobMetadataBackfillResult>
   acquireCoordinationLease(key: string, owner: string, ttlMs: number): Promise<CoordinationLeaseGrant | null>
   releaseCoordinationLease(key: string, owner: string, fencingToken: bigint | number): Promise<boolean>
   renewCoordinationLease(key: string, owner: string, fencingToken: bigint | number, ttlMs: number): Promise<boolean>
-  rebuildDocBlobRefs(workspaceId: string, docId: string): Promise<RuntimeDocBlobRefsResult>
-  rebuildWorkspaceDocBlobRefs(workspaceId: string, limit: number): Promise<RuntimeDocBlobRefsResult>
   /**
    * Merge pending doc updates with y-octo and persist the merged snapshot.
    *
@@ -36,18 +27,6 @@ export declare class BackendRuntime {
   cleanupExpiredRuntimeGates(limit: number): Promise<number>
   cleanupExpiredUserSessions(limit: number): Promise<number>
   cleanupExpiredSnapshotHistories(limit: number): Promise<number>
-  objectStorageHealth(): RuntimeObjectStorageHealth
-  objectStoragePut(key: string, body: Buffer, metadata?: RuntimeObjectStoragePutOptions | undefined | null): Promise<void>
-  objectStoragePresignPut(key: string, metadata?: RuntimeObjectStoragePutOptions | undefined | null): Promise<RuntimePresignedObjectRequest>
-  objectStorageCreateMultipartUpload(key: string, metadata?: RuntimeObjectStoragePutOptions | undefined | null): Promise<RuntimeMultipartUploadInit | null>
-  objectStoragePresignUploadPart(key: string, uploadId: string, partNumber: number): Promise<RuntimePresignedObjectRequest>
-  objectStorageListMultipartUploadParts(key: string, uploadId: string): Promise<Array<RuntimeMultipartUploadPart>>
-  objectStorageCompleteMultipartUpload(key: string, uploadId: string, parts: Array<RuntimeMultipartUploadPart>): Promise<void>
-  objectStorageAbortMultipartUpload(key: string, uploadId: string): Promise<void>
-  objectStorageHead(key: string): Promise<RuntimeObjectMetadata | null>
-  objectStorageGet(key: string): Promise<RuntimeObjectGetResult | null>
-  objectStorageList(prefix?: string | undefined | null): Promise<Array<RuntimeObjectListEntry>>
-  objectStorageDelete(key: string): Promise<void>
   createAuthChallenge(purpose: string, token: string, payload: any, ttlMs: number): Promise<boolean>
   getAuthChallenge(purpose: string, token: string): Promise<any | null>
   consumeAuthChallenge(purpose: string, token: string): Promise<any | null>
@@ -77,6 +56,37 @@ export declare class BackendRuntime {
 
 export declare class LlmStreamHandle {
   abort(): void
+}
+
+export declare class StorageRuntime {
+  planUnreferencedWorkspaceBlobs(workspaceId: string, gracePeriodDays: number, limit: number): Promise<RuntimeBlobCleanupPlanResult>
+  executeBlobCleanupCandidates(runId: string, gracePeriodDays: number, limit: number): Promise<RuntimeBlobCleanupExecuteResult>
+  cleanupExpiredPendingBlobs(cutoffMs: number, limit: number): Promise<RuntimeBlobCleanupResult>
+  releaseDeletedBlobs(workspaceId: string, limit: number): Promise<RuntimeBlobCleanupResult>
+  backfillMissingBlobMetadata(workspaceId: string | undefined | null, limit: number): Promise<RuntimeBlobMetadataBackfillResult>
+  rebuildDocBlobRefs(workspaceId: string, docId: string): Promise<RuntimeDocBlobRefsResult>
+  rebuildWorkspaceDocBlobRefs(workspaceId: string, limit: number): Promise<RuntimeDocBlobRefsResult>
+  constructor()
+  start(): Promise<void>
+  configure(configJson: string): void
+  stop(): Promise<void>
+  runMigrations(): Promise<void>
+  health(): Promise<StorageRuntimeHealth>
+  providerCapabilities(scope: string): Promise<StorageProviderCapabilities>
+  putObject(scope: string, key: string, body: Buffer, metadata?: RuntimeObjectStoragePutOptions | undefined | null): Promise<RuntimeObjectMetadata>
+  headObject(scope: string, key: string): Promise<RuntimeObjectMetadata | null>
+  getObject(scope: string, key: string): Promise<RuntimeObjectGetResult | null>
+  listObjects(scope: string, prefix?: string | undefined | null): Promise<Array<RuntimeObjectListEntry>>
+  deleteObject(scope: string, key: string): Promise<void>
+  presignPut(scope: string, key: string, metadata?: RuntimeObjectStoragePutOptions | undefined | null): Promise<RuntimePresignedObjectRequest | null>
+  presignGet(scope: string, key: string): Promise<RuntimePresignedObjectRequest | null>
+  createMultipartUpload(scope: string, key: string, metadata?: RuntimeObjectStoragePutOptions | undefined | null): Promise<RuntimeMultipartUploadInit | null>
+  presignUploadPart(scope: string, key: string, uploadId: string, partNumber: number): Promise<RuntimePresignedObjectRequest | null>
+  proxyUploadPart(scope: string, key: string, uploadId: string, partNumber: number, body: Buffer, contentLength?: number | undefined | null): Promise<string | null>
+  listMultipartUploadParts(scope: string, key: string, uploadId: string): Promise<Array<RuntimeMultipartUploadPart> | null>
+  completeMultipartUpload(scope: string, key: string, uploadId: string, parts: Array<RuntimeMultipartUploadPart>): Promise<boolean>
+  abortMultipartUpload(scope: string, key: string, uploadId: string): Promise<boolean>
+  completeWorkspaceBlobUpload(workspaceId: string, key: string, expectedSize: number, expectedMime: string): Promise<RuntimeBlobCompleteResult>
 }
 
 export declare class Tokenizer {
@@ -152,7 +162,6 @@ export interface AssertSafeUrlRequest {
 export interface BackendRuntimeHealth {
   started: boolean
   databaseConnected: boolean
-  objectStorageConfigured: boolean
 }
 
 export declare function buildPublicRootDoc(rootDocBin: Buffer, docMetas: Array<PublicDocMetaInput>): Buffer
@@ -513,12 +522,6 @@ export declare function llmValidateJsonSchema(schema: any, value: any): any
  * result binary.
  */
 export declare function mergeUpdatesInApplyWay(updates: Array<Buffer>): Buffer
-
-/**
- * Check whether a Yjs update binary can be decoded without applying it to a
- * document state.
- */
-export declare function validateDocUpdate(update: Buffer): Promise<boolean>
 
 export declare function mintChallengeResponse(resource: string, bits?: number | undefined | null): Promise<string>
 
@@ -945,22 +948,6 @@ export interface RuntimeObjectMetadata {
   checksumCrc32?: string
 }
 
-export interface RuntimeObjectStorageHealth {
-  configured: boolean
-  provider?: string
-  bucket?: string
-  endpoint?: string
-  region?: string
-  hasCredentials: boolean
-  forcePathStyle: boolean
-  requestTimeoutMs?: number
-  minPartSize?: number
-  presignExpiresInSeconds?: number
-  presignSignContentTypeForPut?: boolean
-  usePresignedUrl: boolean
-  clientBuildable: boolean
-}
-
 export interface RuntimeObjectStoragePutOptions {
   contentType?: string
   contentLength?: number
@@ -1043,6 +1030,28 @@ export interface SafeFetchResponse {
   body: Buffer
 }
 
+export interface StorageProviderCapabilities {
+  put: boolean
+  get: boolean
+  head: boolean
+  list: boolean
+  delete: boolean
+  presignPut: boolean
+  presignGet: boolean
+  multipartDirect: boolean
+  proxyUpload: boolean
+  assetpack: boolean
+  serverMediatedOnly: boolean
+}
+
+export interface StorageRuntimeHealth {
+  started: boolean
+  databaseConnected: boolean
+  providerConfigured: boolean
+  provider?: string
+  bucket?: string
+}
+
 export interface ToolContract {
   name: string
   description?: string
@@ -1108,5 +1117,11 @@ export declare function updateLicenseSeats(request: LicenseSeatsRequest): Promis
  * A Buffer containing the y-octo update binary to apply to the root doc
  */
 export declare function updateRootDocMetaTitle(rootDocBin: Buffer, docId: string, title: string): Buffer
+
+/**
+ * Check whether a Yjs update binary can be decoded without applying it to a
+ * document state.
+ */
+export declare function validateDocUpdate(update: Buffer): Promise<boolean>
 
 export declare function verifyChallengeResponse(response: string, bits: number, resource: string): Promise<boolean>

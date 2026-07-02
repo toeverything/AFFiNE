@@ -8,6 +8,13 @@ import { Redis as IORedis, RedisOptions } from 'ioredis';
 
 import { Config } from '../config';
 
+function redisOptions(options: RedisOptions) {
+  return {
+    ...(env.testing ? { lazyConnect: true } : {}),
+    ...options,
+  };
+}
+
 class Redis extends IORedis implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(this.constructor.name);
 
@@ -47,41 +54,47 @@ class Redis extends IORedis implements OnModuleInit, OnModuleDestroy {
 @Injectable()
 export class CacheRedis extends Redis {
   constructor(config: Config) {
-    super({ ...config.redis, ...config.redis.ioredis });
+    super(redisOptions({ ...config.redis, ...config.redis.ioredis }));
   }
 }
 
 @Injectable()
 export class SessionRedis extends Redis {
   constructor(config: Config) {
-    super({
-      ...config.redis,
-      ...config.redis.ioredis,
-      db: (config.redis.db ?? 0) + 2,
-    });
+    super(
+      redisOptions({
+        ...config.redis,
+        ...config.redis.ioredis,
+        db: (config.redis.db ?? 0) + 2,
+      })
+    );
   }
 }
 
 @Injectable()
 export class SocketIoRedis extends Redis {
   constructor(config: Config) {
-    super({
-      ...config.redis,
-      ...config.redis.ioredis,
-      db: (config.redis.db ?? 0) + 3,
-    });
+    super(
+      redisOptions({
+        ...config.redis,
+        ...config.redis.ioredis,
+        db: (config.redis.db ?? 0) + 3,
+      })
+    );
   }
 }
 
 @Injectable()
 export class QueueRedis extends Redis {
   constructor(config: Config) {
-    super({
-      ...config.redis,
-      ...config.redis.ioredis,
-      db: (config.redis.db ?? 0) + 4,
-      // required explicitly set to `null` by bullmq
-      maxRetriesPerRequest: null,
-    });
+    super(
+      redisOptions({
+        ...config.redis,
+        ...config.redis.ioredis,
+        db: (config.redis.db ?? 0) + 4,
+        // required explicitly set to `null` by bullmq
+        maxRetriesPerRequest: null,
+      })
+    );
   }
 }
