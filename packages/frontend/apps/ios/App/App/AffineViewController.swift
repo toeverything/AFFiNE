@@ -113,12 +113,6 @@ class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate, Affin
     scrollView.zoomScale = 1.0
   }
 
-  func scrollViewDidScroll(_ scrollView: UIScrollView) {
-    if scrollView.contentOffset != .zero {
-      scrollView.contentOffset = .zero
-    }
-  }
-
   // MARK: - Web Content Process Crash Recovery
 
   // NOTE: Capacitor's CAPBridgeViewController owns the WKWebView
