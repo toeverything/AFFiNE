@@ -89,9 +89,13 @@ jobs:
         id: check
         run: node ./scripts/check-windows-signer.mjs
         env:
+          AFFINE_SIGN_CLIENT_HASH: ${{ secrets.AFFINE_SIGN_CLIENT_HASH }}
+          AFFINE_SIGNER_ADDR: ${{ secrets.AFFINE_SIGNER_ADDR }}
+          AFFINE_SIGNER_TOKEN: ${{ secrets.AFFINE_SIGNER_TOKEN }}
+          AFFINE_SIGNER_TS_AUTH_KEY: ${{ secrets.AFFINE_SIGNER_TS_AUTH_KEY }}
           BUILD_TYPE: ${{ inputs.build-type }}
-          GITHUB_TOKEN: ${{ github.token }}
           REQUIRE_SIGNER: ${{ inputs.require-windows-signing }}
+          WINDOWS_SIGNER_PUBLIC_CERT_BASE64: ${{ secrets.WINDOWS_SIGNER_PUBLIC_CERT_BASE64 }}
 
   make-distribution-macos:
     if: ${{ inputs.desktop_macos }}

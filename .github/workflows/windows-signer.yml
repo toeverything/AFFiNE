@@ -10,26 +10,52 @@ on:
         type: string
 jobs:
   sign:
-    runs-on: [self-hosted, win-signer]
+    runs-on: windows-latest
     env:
       ARCHIVE_DIR: ${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.artifact-name }}
+      AFFINE_SIGNER_ADDR: ${{ secrets.AFFINE_SIGNER_ADDR }}
+      AFFINE_SIGNER_TOKEN: ${{ secrets.AFFINE_SIGNER_TOKEN }}
+      TS_AUTH_KEY: ${{ secrets.AFFINE_SIGNER_TS_AUTH_KEY }}
+      TS_CONTROL_URL: ${{ secrets.AFFINE_SIGNER_TS_CONTROL_URL }}
+      TS_RS_EXPERIMENT: this_is_unstable_software
     steps:
       - uses: actions/download-artifact@v4
         with:
           name: ${{ inputs.artifact-name }}
           path: ${{ env.ARCHIVE_DIR }}
+      - name: Download remote signer client
+        shell: pwsh
+        run: |
+          if (!$env:AFFINE_SIGN_CLIENT_HASH) {
+            throw 'AFFINE_SIGN_CLIENT_HASH is required.'
+          }
+          Invoke-WebRequest -Uri "https://cdn.affine.pro/sign-client/$env:AFFINE_SIGN_CLIENT_HASH" -OutFile affine-sign-client.exe
+        env:
+          AFFINE_SIGN_CLIENT_HASH: ${{ secrets.AFFINE_SIGN_CLIENT_HASH }}
+      - name: Prepare public signing certificate
+        shell: pwsh
+        run: |
+          if (!$env:WINDOWS_SIGNER_PUBLIC_CERT_BASE64) {
+            throw 'WINDOWS_SIGNER_PUBLIC_CERT_BASE64 is required.'
+          }
+          [IO.File]::WriteAllBytes('windows-signer-public.cer', [Convert]::FromBase64String($env:WINDOWS_SIGNER_PUBLIC_CERT_BASE64))
+        env:
+          WINDOWS_SIGNER_PUBLIC_CERT_BASE64: ${{ secrets.WINDOWS_SIGNER_PUBLIC_CERT_BASE64 }}
       - name: unzip file
-        shell: cmd
-        # 7za is pre-installed on the signer machine
+        shell: pwsh
         run: |
-          cd ${{ env.ARCHIVE_DIR }}
-          md out
-          7za x archive.zip -y -oout
+          New-Item -ItemType Directory -Path '${{ env.ARCHIVE_DIR }}/out' -Force | Out-Null
+          Expand-Archive -Path '${{ env.ARCHIVE_DIR }}/archive.zip' -DestinationPath '${{ env.ARCHIVE_DIR }}/out'
       - name: sign
-        shell: cmd
+        shell: pwsh
         run: |
-          cd ${{ env.ARCHIVE_DIR }}/out
-          signtool sign /tr http://timestamp.globalsign.com/tsa/r6advanced1 /td sha256 /fd sha256 /a ${{ inputs.files }}
+          ./affine-sign-client.exe `
+            --server "$env:AFFINE_SIGNER_ADDR" `
+            --token "$env:AFFINE_SIGNER_TOKEN" `
+            --workdir '${{ env.ARCHIVE_DIR }}/out' `
+            --files '${{ inputs.files }}' `
+            --cert windows-signer-public.cer `
+            --allow-file-fallback
       - name: collect signed file diff
         shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File {0}
         run: |
