@@ -16,7 +16,6 @@ jobs:
       AFFINE_SIGNER_ADDR: ${{ secrets.AFFINE_SIGNER_ADDR }}
       AFFINE_SIGNER_TOKEN: ${{ secrets.AFFINE_SIGNER_TOKEN }}
       TS_AUTH_KEY: ${{ secrets.AFFINE_SIGNER_TS_AUTH_KEY }}
-      TS_CONTROL_URL: ${{ secrets.AFFINE_SIGNER_TS_CONTROL_URL }}
       TS_RS_EXPERIMENT: this_is_unstable_software
     steps:
       - uses: actions/download-artifact@v4
@@ -41,6 +40,30 @@ jobs:
           [IO.File]::WriteAllBytes('windows-signer-public.cer', [Convert]::FromBase64String($env:WINDOWS_SIGNER_PUBLIC_CERT_BASE64))
         env:
           WINDOWS_SIGNER_PUBLIC_CERT_BASE64: ${{ secrets.WINDOWS_SIGNER_PUBLIC_CERT_BASE64 }}
+      - name: Resolve signtool
+        shell: pwsh
+        run: |
+          $Command = Get-Command signtool.exe -ErrorAction SilentlyContinue
+          if ($Command) {
+            "SIGNTOOL=$($Command.Source)" >> $env:GITHUB_ENV
+            Write-Host "Using signtool: $($Command.Source)"
+            exit 0
+          }
+
+          $KitsRoot = "${env:ProgramFiles(x86)}\Windows Kits\10\bin"
+          $Candidates = @()
+          if (Test-Path -LiteralPath $KitsRoot) {
+            $Candidates = Get-ChildItem -Path $KitsRoot -Recurse -Filter signtool.exe |
+              Where-Object { $_.FullName -match '\\x64\\signtool\.exe$' } |
+              Sort-Object FullName -Descending
+          }
+
+          if ($Candidates.Count -eq 0) {
+            throw "Unable to find signtool.exe under PATH or $KitsRoot"
+          }
+
+          "SIGNTOOL=$($Candidates[0].FullName)" >> $env:GITHUB_ENV
+          Write-Host "Using signtool: $($Candidates[0].FullName)"
       - name: unzip file
         shell: pwsh
         run: |
@@ -54,8 +77,7 @@ jobs:
             --token "$env:AFFINE_SIGNER_TOKEN" `
             --workdir '${{ env.ARCHIVE_DIR }}/out' `
             --files '${{ inputs.files }}' `
-            --cert windows-signer-public.cer `
-            --allow-file-fallback
+            --cert windows-signer-public.cer
       - name: collect signed file diff
         shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File {0}
         run: |
