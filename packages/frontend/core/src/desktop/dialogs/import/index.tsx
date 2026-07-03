@@ -1,5 +1,6 @@
 import {
   Button,
+  Checkbox,
   IconButton,
   type IconData,
   IconType,
@@ -14,6 +15,7 @@ import {
   type WORKSPACE_DIALOG_SCHEMA,
 } from '@affine/core/modules/dialogs';
 import { ExplorerIconService } from '@affine/core/modules/explorer-icon/services/explorer-icon';
+import { FavoriteService } from '@affine/core/modules/favorite';
 import { OrganizeService } from '@affine/core/modules/organize';
 import { TagService } from '@affine/core/modules/tag';
 import { UrlService } from '@affine/core/modules/url';
@@ -30,6 +32,7 @@ import type { Workspace } from '@blocksuite/affine/store';
 import {
   BearTransformer,
   DocxTransformer,
+  GoogleKeepTransformer,
   HtmlTransformer,
   MarkdownTransformer,
   NotionHtmlTransformer,
@@ -46,10 +49,11 @@ import {
   SaveIcon,
   ZipIcon,
 } from '@blocksuite/icons/rc';
-import { useService } from '@toeverything/infra';
+import { useLiveData, useService } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
 import { cssVarV2 } from '@toeverything/theme/v2';
 import {
+  type ChangeEvent,
   type ReactElement,
   type SVGAttributes,
   useCallback,
@@ -73,6 +77,11 @@ type FolderHierarchy = {
   pageId?: string;
   parentPath?: string;
   icon?: NotionPageIcon;
+};
+
+type FolderOption = {
+  id: string;
+  label: string;
 };
 
 // Helper function to create folder structure using OrganizeService
@@ -190,6 +199,56 @@ function createFolderStructure(
   return { folderId: rootFolderId, docLinks };
 }
 
+function getFolderName(node: unknown): string {
+  const value = (node as Record<string, unknown>)['name$'] as
+    | { value?: string }
+    | undefined;
+  return value?.value || 'Untitled Folder';
+}
+
+function getFolderChildren(node: unknown): unknown[] {
+  const value = (node as Record<string, unknown>)['sortedChildren$'] as
+    | { value?: unknown[] }
+    | undefined;
+  return value?.value ?? [];
+}
+
+function getFolderId(node: unknown): string | null {
+  const value = (node as Record<string, unknown>).id;
+  return typeof value === 'string' ? value : null;
+}
+
+function isFolderNode(node: unknown): boolean {
+  const value = (node as Record<string, unknown>)['type$'] as
+    | { value?: string }
+    | undefined;
+  return value?.value === 'folder';
+}
+
+/**
+ * Builds a flat, depth-indented folder option list from the organize tree.
+ * We explicitly filter non-folder nodes to avoid showing links/trashed nodes
+ * in the Google Keep target-folder selector.
+ */
+function flattenFolderOptions(node: unknown, depth = 0): FolderOption[] {
+  const children = getFolderChildren(node);
+  const result: FolderOption[] = [];
+  for (const child of children) {
+    if (!isFolderNode(child)) {
+      continue;
+    }
+
+    const childName = getFolderName(child);
+    const childId = getFolderId(child);
+    if (childId) {
+      result.push({
+        id: childId,
+        label: `${depth > 0 ? `${'— '.repeat(depth)}` : ''}${childName}`,
+      });
+    }
+    result.push(...flattenFolderOptions(child, depth + 1));
+  }
+  return result;
 /**
  * Creates the folder tree described by {@link folderHierarchy} via
  * {@link OrganizeService} and links every document into its folder.
@@ -231,6 +290,7 @@ type ImportType =
   | 'markdown'
   | 'markdownZip'
   | 'notion'
+  | 'googleKeep'
   | 'obsidian'
   | 'bear'
   | 'snapshot'
@@ -238,7 +298,7 @@ type ImportType =
   | 'docx'
   | 'dotaffinefile';
 type AcceptType = 'Markdown' | 'Zip' | 'Html' | 'Docx' | 'Directory' | 'Skip'; // Skip is used for dotaffinefile
-type Status = 'idle' | 'importing' | 'success' | 'error';
+type Status = 'idle' | 'googleKeepOptions' | 'importing' | 'success' | 'error';
 type ImportResult = {
   docIds: string[];
   entryId?: string;
@@ -251,6 +311,14 @@ type ImportedWorkspacePayload = {
   workspace: WorkspaceMetadata;
 };
 
+type ImportProgress = {
+  type: ImportType;
+  totalDocs: number;
+  importedDocs: number;
+  createdTags: number;
+  reusedExistingTags: number;
+};
+
 type ImportConfig = {
   fileOptions: { acceptType: AcceptType; multiple: boolean };
   importFunction: (
@@ -259,8 +327,18 @@ type ImportConfig = {
     handleImportAffineFile: () => Promise<WorkspaceMetadata | undefined>,
     organizeService?: OrganizeService,
     explorerIconService?: ExplorerIconService,
-    tagService?: TagService
+    favoriteService?: FavoriteService,
+    tagService?: TagService,
+    googleKeepOptions?: GoogleKeepImportOptions,
+    onImportProgress?: (progress: ImportProgress) => void
   ) => Promise<ImportResult>;
+};
+
+type GoogleKeepImportOptions = {
+  importFavorites: boolean;
+  importTags: boolean;
+  importAttachments: boolean;
+  targetFolderId?: string;
 };
 
 const importOptions = [
@@ -317,6 +395,17 @@ const importOptions = [
     suffixTooltip: 'com.affine.import.notion.tooltip',
     testId: 'editor-option-menu-import-notion',
     type: 'notion' as ImportType,
+  },
+  {
+    key: 'googleKeep',
+    label: 'com.affine.import.google-keep',
+    prefixIcon: <FileIcon color={cssVar('black')} width={20} height={20} />,
+    suffixIcon: (
+      <HelpIcon color={cssVarV2('icon/primary')} width={20} height={20} />
+    ),
+    suffixTooltip: 'com.affine.import.google-keep.tooltip',
+    testId: 'editor-option-menu-import-google-keep',
+    type: 'googleKeep' as ImportType,
   },
   {
     key: 'obsidian',
@@ -648,6 +737,137 @@ const importConfigs: Record<ImportType, ImportConfig> = {
       };
     },
   },
+  googleKeep: {
+    fileOptions: { acceptType: 'Zip', multiple: false },
+    importFunction: async (
+      docCollection,
+      files,
+      _handleImportAffineFile,
+      organizeService,
+      _explorerIconService,
+      favoriteService,
+      tagService,
+      googleKeepOptions,
+      onImportProgress
+    ) => {
+      const file = files.length === 1 ? files[0] : null;
+      if (!file) {
+        throw new Error('Expected a single zip file for google keep import');
+      }
+
+      // Resolve dialog options once so the transformer/import hooks can stay stateless.
+      const resolvedOptions: GoogleKeepImportOptions = {
+        importFavorites: googleKeepOptions?.importFavorites ?? true,
+        importTags: googleKeepOptions?.importTags ?? true,
+        importAttachments: googleKeepOptions?.importAttachments ?? true,
+        targetFolderId: googleKeepOptions?.targetFolderId,
+      };
+
+      // We keep baseline tag ids to derive import statistics:
+      // newly created tags vs. existing tags that were reused.
+      const initialExistingTagIds = new Set(
+        (tagService?.tagList.tagMetas$.value ?? []).map(tag => tag.id)
+      );
+      const createdTagIds = new Set<string>();
+      const reusedExistingTagIds = new Set<string>();
+      let totalDocs = 0;
+      let importedDocs = 0;
+      // Single progress sink that keeps UI updates in one place.
+      const pushProgress = () => {
+        onImportProgress?.({
+          type: 'googleKeep',
+          totalDocs,
+          importedDocs,
+          createdTags: createdTagIds.size,
+          reusedExistingTags: reusedExistingTagIds.size,
+        });
+      };
+
+      const { docIds } = await GoogleKeepTransformer.importGoogleKeepZip({
+        collection: docCollection,
+        schema: getAFFiNEWorkspaceSchema(),
+        imported: file,
+        importAttachments: resolvedOptions.importAttachments,
+        extensions: getStoreManager().config.init().value.get('store'),
+        onProgress: stats => {
+          totalDocs = stats.totalDocs;
+          importedDocs = stats.importedDocs;
+          pushProgress();
+        },
+        onFavoriteImported: resolvedOptions.importFavorites
+          ? docId => {
+              if (!favoriteService) return;
+
+              // Keep import may run repeatedly; avoid duplicate favorite inserts.
+              const alreadyFavorite = favoriteService.favoriteList.isFavorite$(
+                'doc',
+                docId
+              ).value;
+              if (!alreadyFavorite) {
+                favoriteService.favoriteList.add('doc', docId);
+              }
+            }
+          : undefined,
+        onResolveTags: resolvedOptions.importTags
+          ? tagNames => {
+              if (!tagService || tagNames.length === 0) return [];
+
+              // Snapshot current tags and resolve by case-insensitive key.
+              const tagNameToId = new Map<string, string>();
+              for (const tag of tagService.tagList.tagMetas$.value) {
+                const key = tag.name.trim().toLowerCase();
+                if (key) {
+                  tagNameToId.set(key, tag.id);
+                }
+              }
+
+              const result: string[] = [];
+              for (const rawName of tagNames) {
+                const name = rawName.trim();
+                if (!name) continue;
+                const key = name.toLowerCase();
+
+                let id = tagNameToId.get(key);
+                if (!id) {
+                  // Create missing tags on-demand so imported docs can be linked immediately.
+                  const created = tagService.tagList.createTag(
+                    name,
+                    tagService.randomTagColor()
+                  );
+                  id = created.id;
+                  tagNameToId.set(key, id);
+                  createdTagIds.add(id);
+                } else if (initialExistingTagIds.has(id)) {
+                  reusedExistingTagIds.add(id);
+                }
+
+                if (!result.includes(id)) {
+                  result.push(id);
+                }
+              }
+
+              // Tag stats can change even when document progress is unchanged.
+              pushProgress();
+              return result;
+            }
+          : undefined,
+      });
+
+      if (resolvedOptions.targetFolderId && organizeService) {
+        // Optional post-step: link all imported docs to the selected folder.
+        const folder = organizeService.folderTree.folderNode$(
+          resolvedOptions.targetFolderId
+        ).value;
+        if (folder) {
+          for (const docId of docIds) {
+            folder.createLink('doc', docId, folder.indexAt('after'));
+          }
+        }
+      }
+
+      return { docIds };
+    },
+  },
   docx: {
     fileOptions: { acceptType: 'Docx', multiple: false },
     importFunction: async (docCollection, file) => {
@@ -795,7 +1015,93 @@ const ImportOptions = ({
   );
 };
 
-const ImportingStatus = () => {
+const GoogleKeepImportOptionsPanel = ({
+  options,
+  folderOptions,
+  onChange,
+  onBack,
+  onContinue,
+}: {
+  options: GoogleKeepImportOptions;
+  folderOptions: FolderOption[];
+  onChange: (patch: Partial<GoogleKeepImportOptions>) => void;
+  onBack: () => void;
+  onContinue: () => void;
+}) => {
+  const t = useI18n();
+
+  const handleFolderChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    onChange({
+      targetFolderId: event.target.value || undefined,
+    });
+  };
+
+  return (
+    <>
+      <div className={style.importModalTitle}>
+        {t['com.affine.import.google-keep.options.title']()}
+      </div>
+      <div className={style.importOptionsPanel}>
+        <div className={style.importOptionRow}>
+          <span>{t['com.affine.import.google-keep.options.favorites']()}</span>
+          <Checkbox
+            checked={options.importFavorites}
+            onChange={(_, checked) => onChange({ importFavorites: checked })}
+          />
+        </div>
+        <div className={style.importOptionRow}>
+          <span>{t['com.affine.import.google-keep.options.tags']()}</span>
+          <Checkbox
+            checked={options.importTags}
+            onChange={(_, checked) => onChange({ importTags: checked })}
+          />
+        </div>
+        <div className={style.importOptionRow}>
+          <span>
+            {t['com.affine.import.google-keep.options.attachments']()}
+          </span>
+          <Checkbox
+            checked={options.importAttachments}
+            onChange={(_, checked) => onChange({ importAttachments: checked })}
+          />
+        </div>
+        <div className={style.importOptionRow}>
+          <span>
+            {t['com.affine.import.google-keep.options.target-folder']()}
+          </span>
+        </div>
+        <select
+          className={style.importFolderSelect}
+          value={options.targetFolderId ?? ''}
+          onChange={handleFolderChange}
+        >
+          <option value="">
+            {t['com.affine.import.google-keep.options.target-folder.none']()}
+          </option>
+          {folderOptions.map(option => (
+            <option key={option.id} value={option.id}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className={style.importModalButtonContainer}>
+        <Button variant="secondary" onClick={onBack}>
+          {t['com.affine.import.google-keep.options.back']()}
+        </Button>
+        <Button
+          variant="primary"
+          onClick={onContinue}
+          data-testid="editor-option-menu-import-google-keep-continue"
+        >
+          {t['com.affine.import.google-keep.options.continue']()}
+        </Button>
+      </div>
+    </>
+  );
+};
+
+const ImportingStatus = ({ progress }: { progress: ImportProgress | null }) => {
   const t = useI18n();
   return (
     <>
@@ -805,6 +1111,18 @@ const ImportingStatus = () => {
       <p className={style.importStatusContent}>
         {t['com.affine.import.status.importing.message']()}
       </p>
+      {progress?.type === 'googleKeep' ? (
+        <p className={style.importStatusContent}>
+          {t['com.affine.import.google-keep.progress.docs']()}:&nbsp;
+          {progress.importedDocs} / {progress.totalDocs}
+          <br />
+          {t['com.affine.import.google-keep.progress.created-tags']()}:&nbsp;
+          {progress.createdTags}
+          <br />
+          {t['com.affine.import.google-keep.progress.existing-tags']()}:&nbsp;
+          {progress.reusedExistingTags}
+        </p>
+      ) : null}
     </>
   );
 };
@@ -876,13 +1194,32 @@ export const ImportDialog = ({
 }: DialogComponentProps<WORKSPACE_DIALOG_SCHEMA['import']>) => {
   const t = useI18n();
   const [status, setStatus] = useState<Status>('idle');
+  const [pendingImportType, setPendingImportType] = useState<ImportType | null>(
+    null
+  );
+  const [googleKeepOptions, setGoogleKeepOptions] =
+    useState<GoogleKeepImportOptions>({
+      importFavorites: true,
+      importTags: true,
+      importAttachments: true,
+      targetFolderId: undefined,
+    });
+  const [importProgress, setImportProgress] = useState<ImportProgress | null>(
+    null
+  );
   const [importError, setImportError] = useState<string | null>(null);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const workspace = useService(WorkspaceService).workspace;
   const docCollection = workspace.docCollection;
   const organizeService = useService(OrganizeService);
   const explorerIconService = useService(ExplorerIconService);
+  const favoriteService = useService(FavoriteService);
   const tagService = useService(TagService);
+  // Keep folder options reactive while user opens/closes folders in parallel.
+  useLiveData(organizeService.folderTree.rootFolder.sortedChildren$);
+  const folderOptions = flattenFolderOptions(
+    organizeService.folderTree.rootFolder
+  );
 
   const globalDialogService = useService(GlobalDialogService);
 
@@ -934,8 +1271,9 @@ export const ImportDialog = ({
   }, [globalDialogService]);
 
   const handleImport = useAsyncCallback(
-    async (type: ImportType) => {
+    async (type: ImportType, options?: GoogleKeepImportOptions) => {
       setImportError(null);
+      setImportProgress(null);
       try {
         const importConfig = importConfigs[type];
         const { acceptType, multiple } = importConfig.fileOptions;
@@ -965,15 +1303,17 @@ export const ImportDialog = ({
           docIds,
           entryId,
           isWorkspaceFile,
-          rootFolderId,
-          importedWorkspace,
+          rootFolderId
         } = await importConfig.importFunction(
           docCollection,
           files,
           handleImportAffineFile,
           organizeService,
           explorerIconService,
-          tagService
+          favoriteService,
+          tagService,
+          options,
+          setImportProgress
         );
 
         setImportResult({
@@ -1010,6 +1350,7 @@ export const ImportDialog = ({
     [
       docCollection,
       explorerIconService,
+      favoriteService,
       handleImportAffineFile,
       organizeService,
       tagService,
@@ -1017,6 +1358,31 @@ export const ImportDialog = ({
     ]
   );
 
+  const handleImportSelect = useCallback(
+    (type: ImportType) => {
+      if (type === 'googleKeep') {
+        // Keep import requires extra options before file selection/import starts.
+        setPendingImportType(type);
+        setStatus('googleKeepOptions');
+        return;
+      }
+      void handleImport(type);
+    },
+    [handleImport]
+  );
+
+  const handleBackToImportOptions = useCallback(() => {
+    setPendingImportType(null);
+    setStatus('idle');
+  }, []);
+
+  const handleGoogleKeepContinue = useCallback(() => {
+    if (pendingImportType !== 'googleKeep') {
+      setStatus('idle');
+      return;
+    }
+    void handleImport('googleKeep', googleKeepOptions);
+  }, [googleKeepOptions, handleImport, pendingImportType]);
   const finishImport = useCallback(() => {
     if (importResult?.importedWorkspace) {
       handleCreatedWorkspace({ metadata: importResult.importedWorkspace });
@@ -1034,12 +1400,28 @@ export const ImportDialog = ({
   }, [finishImport]);
 
   const handleRetry = () => {
+    setPendingImportType(null);
+    setImportProgress(null);
     setStatus('idle');
   };
 
   const statusComponents = {
-    idle: <ImportOptions onImport={handleImport} />,
-    importing: <ImportingStatus />,
+    idle: <ImportOptions onImport={handleImportSelect} />,
+    googleKeepOptions: (
+      <GoogleKeepImportOptionsPanel
+        options={googleKeepOptions}
+        folderOptions={folderOptions}
+        onChange={patch =>
+          setGoogleKeepOptions(prev => ({
+            ...prev,
+            ...patch,
+          }))
+        }
+        onBack={handleBackToImportOptions}
+        onContinue={handleGoogleKeepContinue}
+      />
+    ),
+    importing: <ImportingStatus progress={importProgress} />,
     success: <SuccessStatus onComplete={handleComplete} />,
     error: <ErrorStatus error={importError} onRetry={handleRetry} />,
   };

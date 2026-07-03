@@ -1,30 +1,64 @@
 import DOMPurify from 'dompurify';
 
-export function readImageSize(file: File | Blob) {
-  return new Promise<{ width: number; height: number }>(resolve => {
-    const size = { width: 0, height: 0 };
-    if (!file.type.startsWith('image/')) {
-      resolve(size);
-      return;
+type ImageSize = { width: number; height: number };
+
+function isValidImageSize(size: ImageSize) {
+  return size.width > 0 && size.height > 0;
+}
+
+export async function readImageSize(
+  file: File | Blob,
+  fallback: ImageSize = { width: 0, height: 0 }
+) {
+  if (!file.type.startsWith('image/')) {
+    return fallback;
+  }
+
+  if (typeof createImageBitmap === 'function') {
+    try {
+      const bitmap = await createImageBitmap(file);
+      try {
+        const size = { width: bitmap.width, height: bitmap.height };
+        if (isValidImageSize(size)) {
+          return size;
+        }
+      } finally {
+        bitmap.close();
+      }
+    } catch {
+      // fallback below
     }
+  }
 
-    const img = new Image();
+  if (typeof Image !== 'undefined' && typeof URL !== 'undefined') {
+    let objectUrl = '';
+    try {
+      objectUrl = URL.createObjectURL(file);
+      const sanitizedURL = DOMPurify.sanitize(objectUrl);
+      const size = await new Promise<ImageSize>(resolve => {
+        const img = new Image();
+        img.onload = () => {
+          resolve({
+            width: img.naturalWidth || img.width,
+            height: img.naturalHeight || img.height,
+          });
+        };
+        img.onerror = () => resolve(fallback);
+        img.src = sanitizedURL;
+      });
+      if (isValidImageSize(size)) {
+        return size;
+      }
+    } catch {
+      // fallback below
+    } finally {
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
+    }
+  }
 
-    img.onload = () => {
-      size.width = img.width;
-      size.height = img.height;
-      URL.revokeObjectURL(img.src);
-      resolve(size);
-    };
-
-    img.onerror = () => {
-      URL.revokeObjectURL(img.src);
-      resolve(size);
-    };
-
-    const sanitizedURL = DOMPurify.sanitize(URL.createObjectURL(file));
-    img.src = sanitizedURL;
-  });
+  return fallback;
 }
 
 export function convertToPng(blob: Blob): Promise<Blob | null> {
