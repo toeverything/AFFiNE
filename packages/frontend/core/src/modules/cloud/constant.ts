@@ -16,7 +16,7 @@ export const BUILD_IN_SERVERS: (ServerMetadata & { config: ServerConfig })[] =
           // this is ok for web app, but not for desktop app
           // since we never build desktop app in selfhosted mode, so it's fine
           config: {
-            serverName: 'Affine Selfhost',
+            serverName: 'AFFiNE Self-hosted',
             features: [],
             oauthProviders: [],
             type: ServerDeploymentType.Selfhosted,

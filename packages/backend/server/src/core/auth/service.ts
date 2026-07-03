@@ -372,6 +372,9 @@ export class AuthService implements OnApplicationBootstrap {
       props: {
         url: link,
         otp,
+        serverName:
+          this.config.server.name ??
+          (env.selfhosted ? 'AFFiNE Self-hosted' : 'AFFiNE Cloud'),
       },
     });
   }
