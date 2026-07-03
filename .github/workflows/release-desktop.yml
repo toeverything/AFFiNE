@@ -183,6 +183,7 @@ jobs:
       - windows-signer-gate
       - package-distribution-windows-x64
     uses: ./.github/workflows/windows-signer.yml
+    secrets: inherit
     with:
       files: ${{ needs.package-distribution-windows-x64.outputs.files_to_be_signed }}
       artifact-name: packaged-win32-x64
@@ -193,6 +194,7 @@ jobs:
       - windows-signer-gate
       - package-distribution-windows-arm64
     uses: ./.github/workflows/windows-signer.yml
+    secrets: inherit
     with:
       files: ${{ needs.package-distribution-windows-arm64.outputs.files_to_be_signed }}
       artifact-name: packaged-win32-arm64
@@ -315,6 +317,7 @@ jobs:
       - windows-signer-gate
       - make-windows-installer
     uses: ./.github/workflows/windows-signer.yml
+    secrets: inherit
     with:
       files: ${{ needs.make-windows-installer.outputs.FILES_TO_BE_SIGNED_x64 }}
       artifact-name: installer-win32-x64
@@ -325,6 +328,7 @@ jobs:
       - windows-signer-gate
       - make-windows-installer
     uses: ./.github/workflows/windows-signer.yml
+    secrets: inherit
     with:
       files: ${{ needs.make-windows-installer.outputs.FILES_TO_BE_SIGNED_arm64 }}
       artifact-name: installer-win32-arm64
