@@ -1165,6 +1165,7 @@ export type ErrorDataUnion =
   | SubscriptionPlanNotFoundDataType
   | UnknownOauthProviderDataType
   | UnsupportedClientVersionDataType
+  | UnsupportedServerVersionDataType
   | UnsupportedSubscriptionPlanDataType
   | ValidationErrorDataType
   | VersionRejectedDataType
@@ -1306,6 +1307,7 @@ export enum ErrorNames {
   UNKNOWN_OAUTH_PROVIDER = 'UNKNOWN_OAUTH_PROVIDER',
   UNSPLASH_IS_NOT_CONFIGURED = 'UNSPLASH_IS_NOT_CONFIGURED',
   UNSUPPORTED_CLIENT_VERSION = 'UNSUPPORTED_CLIENT_VERSION',
+  UNSUPPORTED_SERVER_VERSION = 'UNSUPPORTED_SERVER_VERSION',
   UNSUPPORTED_SUBSCRIPTION_PLAN = 'UNSUPPORTED_SUBSCRIPTION_PLAN',
   USER_AVATAR_NOT_FOUND = 'USER_AVATAR_NOT_FOUND',
   USER_NOT_FOUND = 'USER_NOT_FOUND',
@@ -3225,6 +3227,11 @@ export interface UnknownOauthProviderDataType {
 export interface UnsupportedClientVersionDataType {
   __typename?: 'UnsupportedClientVersionDataType';
   clientVersion: Scalars['String']['output'];
+  requiredVersion: Scalars['String']['output'];
+}
+
+export interface UnsupportedServerVersionDataType {
+  __typename?: 'UnsupportedServerVersionDataType';
   requiredVersion: Scalars['String']['output'];
 }
 

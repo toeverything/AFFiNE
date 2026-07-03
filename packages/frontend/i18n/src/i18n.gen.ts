@@ -184,15 +184,15 @@ export function useAFFiNEI18N(): {
       */
     Enable(): string;
     /**
-      * `Enable AFFiNE Cloud`
+      * `Enable AFFiNE Sync`
       */
     ["Enable AFFiNE Cloud"](): string;
     /**
-      * `If enabled, the data in this workspace will be backed up and synchronised via AFFiNE Cloud.`
+      * `Your workspace will be synced and backed up with AFFiNE Sync.`
       */
     ["Enable AFFiNE Cloud Description"](): string;
     /**
-      * `The following functions rely on AFFiNE Cloud. All data is stored on the current device. You can enable AFFiNE Cloud for this workspace to keep data in sync with the cloud.`
+      * `Some features need AFFiNE Sync. Web workspaces are saved in this browser and may be removed automatically when disk space is low. Enable AFFiNE Sync to keep this workspace safer and available across devices.`
       */
     ["Enable cloud hint"](): string;
     /**
@@ -438,7 +438,7 @@ export function useAFFiNEI18N(): {
       */
     Select(): string;
     /**
-      * `Sign in`
+      * `Sign in to AFFiNE`
       */
     ["Sign in"](): string;
     /**
@@ -446,7 +446,7 @@ export function useAFFiNEI18N(): {
       */
     ["Sign in and Enable"](): string;
     /**
-      * `Sign out`
+      * `Sign out of AFFiNE`
       */
     ["Sign out"](): string;
     /**
@@ -481,10 +481,6 @@ export function useAFFiNEI18N(): {
       * `Sync`
       */
     Sync(): string;
-    /**
-      * `Synced with AFFiNE Cloud`
-      */
-    ["Synced with AFFiNE Cloud"](): string;
     /**
       * `Tags`
       */
@@ -1105,7 +1101,7 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.auth.change.email.page.subtitle"](): string;
     /**
-      * `Congratulations! You have successfully updated the email address associated with your AFFiNE Cloud account.`
+      * `Congratulations! You have successfully updated the email address associated with your AFFiNE account.`
       */
     ["com.affine.auth.change.email.page.success.subtitle"](): string;
     /**
@@ -1168,7 +1164,7 @@ export function useAFFiNEI18N(): {
         max: string;
     }>): string;
     /**
-      * `Welcome to AFFiNE Cloud, you are almost there!`
+      * `Welcome to AFFiNE, you're almost there!`
       */
     ["com.affine.auth.page.sent.email.title"](): string;
     /**
@@ -1196,7 +1192,7 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.auth.reset.password.page.success"](): string;
     /**
-      * `Reset your AFFiNE Cloud password`
+      * `Reset your AFFiNE password`
       */
     ["com.affine.auth.reset.password.page.title"](): string;
     /**
@@ -1250,7 +1246,7 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.auth.sent.change.password.hint"](): string;
     /**
-      * `Your password has been updated! You can sign in AFFiNE Cloud with new password!`
+      * `Your password has been updated! You can sign in to AFFiNE with the new password.`
       */
     ["com.affine.auth.sent.reset.password.success.message"](): string;
     /**
@@ -1258,7 +1254,7 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.auth.sent.set.password.hint"](): string;
     /**
-      * `Your password has saved! You can sign in AFFiNE Cloud with email and password!`
+      * `Your password has been saved! You can sign in to AFFiNE with email and password.`
       */
     ["com.affine.auth.sent.set.password.success.message"](): string;
     /**
@@ -1297,7 +1293,7 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.auth.set.password.page.success"](): string;
     /**
-      * `Set your AFFiNE Cloud password`
+      * `Set your AFFiNE password`
       */
     ["com.affine.auth.set.password.page.title"](): string;
     /**
@@ -1323,7 +1319,7 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.auth.sign-out.confirm-modal.confirm"](): string;
     /**
-      * `After signing out, the Cloud Workspaces associated with this account will be removed from the current device, and signing in again will add them back.`
+      * `After signing out, synced workspaces associated with this account will be removed from this device. Signing in again will add them back.`
       */
     ["com.affine.auth.sign-out.confirm-modal.description"](): string;
     /**
@@ -1355,7 +1351,7 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.auth.sign.email.placeholder"](): string;
     /**
-      * `Sign in`
+      * `Sign in to AFFiNE`
       */
     ["com.affine.auth.sign.in"](): string;
     /**
@@ -1363,15 +1359,15 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.auth.sign.in.sent.email.subtitle"](): string;
     /**
-      * `Self-Hosted`
+      * `Self-hosted AFFiNE`
       */
     ["com.affine.auth.sign.add-selfhosted.title"](): string;
     /**
-      * `Connect to a Self-Hosted Instance`
+      * `Connect to your AFFiNE server`
       */
     ["com.affine.auth.sign.add-selfhosted"](): string;
     /**
-      * `Server URL`
+      * `AFFiNE Server URL`
       */
     ["com.affine.auth.sign.add-selfhosted.baseurl"](): string;
     /**
@@ -1415,7 +1411,7 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.auth.toast.message.failed"](): string;
     /**
-      * `You have been signed in, start to sync your data with AFFiNE Cloud!`
+      * `You have signed in to AFFiNE.`
       */
     ["com.affine.auth.toast.message.signed-in"](): string;
     /**
@@ -1437,7 +1433,7 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.backButton"](): string;
     /**
-      * `Your local data is stored in the browser and may be lost. Don't risk it - enable cloud now!`
+      * `Your workspace is saved in this browser. When disk space is low, the browser may remove it automatically. Enable AFFiNE Sync to keep it safer.`
       */
     ["com.affine.banner.local-warning"](): string;
     /**
@@ -2087,17 +2083,17 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.enableAffineCloudModal.button.cancel"](): string;
     /**
-      * `Enable Cloud for {{workspaceName}}`
+      * `Enable AFFiNE Sync for {{workspaceName}}`
       */
     ["com.affine.enableAffineCloudModal.custom-server.title"](options: {
         readonly workspaceName: string;
     }): string;
     /**
-      * `Choose an instance.`
+      * `Choose where this workspace will sync.`
       */
     ["com.affine.enableAffineCloudModal.custom-server.description"](): string;
     /**
-      * `Enable Cloud`
+      * `Enable AFFiNE Sync`
       */
     ["com.affine.enableAffineCloudModal.custom-server.enable"](): string;
     /**
@@ -2349,15 +2345,15 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.history-vision.tips-modal.cancel"](): string;
     /**
-      * `Enable AFFiNE Cloud`
+      * `Enable AFFiNE Sync`
       */
     ["com.affine.history-vision.tips-modal.confirm"](): string;
     /**
-      * `The current workspace is a local workspace, and we do not support version history for it at the moment. You can enable AFFiNE Cloud. This will sync the workspace with the Cloud, allowing you to use this feature.`
+      * `Version history can't work with local workspace. Enable AFFiNE Sync for this workspace to use version history.`
       */
     ["com.affine.history-vision.tips-modal.description"](): string;
     /**
-      * `History vision needs AFFiNE Cloud`
+      * `Version history needs AFFiNE Sync`
       */
     ["com.affine.history-vision.tips-modal.title"](): string;
     /**
@@ -2957,15 +2953,15 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.multi-tab.new-tab"](): string;
     /**
-      * `Enabling AFFiNE Cloud allows you to synchronise and backup data, as well as support multi-user collaboration and content publishing.`
+      * `AFFiNE Sync keeps your workspace backed up, available across devices, and ready for collaboration and publishing.`
       */
     ["com.affine.nameWorkspace.affine-cloud.description"](): string;
     /**
-      * `Sync across devices with AFFiNE Cloud`
+      * `Sync across devices with AFFiNE Sync`
       */
     ["com.affine.nameWorkspace.affine-cloud.title"](): string;
     /**
-      * `If you want the workspace to be stored locally, you can download the desktop client.`
+      * `In the web app, workspaces are saved in this browser. If disk space runs low, the browser may remove them automatically. For fully local storage, use the desktop app.`
       */
     ["com.affine.nameWorkspace.affine-cloud.web-tips"](): string;
     /**
@@ -5050,7 +5046,7 @@ export function useAFFiNEI18N(): {
         readonly server: string;
     }): string;
     /**
-      * `Once deleted, your account will no longer be accessible, and all data in your personal cloud space will be permanently deleted.`
+      * `Once deleted, your account will no longer be accessible, and all data in your personal space on the server will be permanently deleted.`
       */
     ["com.affine.setting.account.delete.message"](): string;
     /**
@@ -5078,7 +5074,7 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.setting.account.delete.success-title"](): string;
     /**
-      * `Your account and cloud data have been deleted.`
+      * `Your account and server-side data have been deleted.`
       */
     ["com.affine.setting.account.delete.success-description-1"](): string;
     /**
@@ -5090,7 +5086,7 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.setting.account.message"](): string;
     /**
-      * `Sync with AFFiNE Cloud`
+      * `Sync with AFFiNE`
       */
     ["com.affine.setting.sign.message"](): string;
     /**
@@ -5698,7 +5694,7 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.email.action.verify"](): string;
     /**
-      * `Enable AFFiNE Cloud to collaborate with others`
+      * `Enable AFFiNE Sync to collaborate with others`
       */
     ["com.affine.settings.member-tooltip"](): string;
     /**
@@ -6815,7 +6811,7 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.workspace.storage.subtitle"](): string;
     /**
-      * `Enable AFFiNE Cloud to publish this workspace`
+      * `Enable AFFiNE Sync to publish this workspace`
       */
     ["com.affine.settings.workspace.publish-tooltip"](): string;
     /**
@@ -6986,7 +6982,7 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.workspace.indexer-embedding.embedding.additional-attachments.remove-attachment.tooltip"](): string;
     /**
-      * `Sharing doc requires AFFiNE Cloud.`
+      * `Sharing docs requires AFFiNE Sync.`
       */
     ["com.affine.share-menu.EnableCloudDescription"](): string;
     /**
@@ -7339,7 +7335,7 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.storage.plan"](): string;
     /**
-      * `AFFiNE Cloud storage`
+      * `AFFiNE Sync storage`
       */
     ["com.affine.storage.title"](): string;
     /**
@@ -7591,7 +7587,7 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.user-info.usage.ai"](): string;
     /**
-      * `Cloud storage`
+      * `Sync storage`
       */
     ["com.affine.user-info.usage.cloud"](): string;
     /**
@@ -7627,7 +7623,7 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.workspace.cannot-delete"](): string;
     /**
-      * `Cloud workspaces`
+      * `Synced workspaces`
       */
     ["com.affine.workspace.cloud"](): string;
     /**
@@ -7663,11 +7659,11 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.workspace.cloud.account.team.tips-2"](): string;
     /**
-      * `Sign up/ Sign in`
+      * `Sign in / Sign up to AFFiNE`
       */
     ["com.affine.workspace.cloud.auth"](): string;
     /**
-      * `Sync with AFFiNE Cloud`
+      * `Sync with AFFiNE`
       */
     ["com.affine.workspace.cloud.description"](): string;
     /**
@@ -7675,11 +7671,11 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.workspace.cloud.join"](): string;
     /**
-      * `Cloud sync`
+      * `AFFiNE Sync`
       */
     ["com.affine.workspace.cloud.sync"](): string;
     /**
-      * `Failed to enable Cloud, please try again.`
+      * `Failed to turn on AFFiNE Sync. Please try again.`
       */
     ["com.affine.workspace.enable-cloud.failed"](): string;
     /**
@@ -7711,7 +7707,7 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.workspaceList.addWorkspace.create"](): string;
     /**
-      * `Create cloud workspace`
+      * `Create synced workspace`
       */
     ["com.affine.workspaceList.addWorkspace.create-cloud"](): string;
     /**
@@ -9804,7 +9800,7 @@ export const TypedTrans: {
         ["1"]: JSX.Element;
     }>>;
     /**
-      * `The Self-Hosted instance is not hosted or deployed by AFFiNE. Your data will be stored on these instances.  <1>Learn more about Self-Host details.</1>`
+      * `This is an AFFiNE server hosted by you or your team. After signing in, workspace data is saved to the AFFiNE server you enter, not to AFFiNE Cloud. <1>Learn more about self-hosting.</1>`
       */
     ["com.affine.auth.sign.add-selfhosted.description"]: ComponentType<TypedTransProps<Readonly<{}>, {
         ["1"]: JSX.Element;
@@ -10074,7 +10070,7 @@ export const TypedTrans: {
         ["1"]: JSX.Element;
     }>>;
     /**
-      * `Your account will be inaccessible, and your personal cloud space will be permanently deleted. You can remove local data by uninstalling the app or clearing your browser storage. <1>This action is irreversible.</1>`
+      * `Your account will be inaccessible, and your personal space on the server will be permanently deleted. You can remove local data by uninstalling the app or clearing your browser storage. <1>This action is irreversible.</1>`
       */
     ["com.affine.setting.account.delete.confirm-delete-description-2"]: ComponentType<TypedTransProps<Readonly<{}>, {
         ["1"]: JSX.Element;
@@ -10220,7 +10216,7 @@ export const TypedTrans: {
         ["1"]: JSX.Element;
     }>>;
     /**
-      * `Deleting <1>{{workspace}}</1> will delete both local and cloud data, this operation cannot be undone, please proceed with caution.`
+      * `Deleting <1>{{workspace}}</1> will delete both local data and synced server data. This cannot be undone, so please proceed with caution.`
       */
     ["com.affine.workspaceDelete.description2"]: ComponentType<TypedTransProps<{
         readonly workspace: string;
