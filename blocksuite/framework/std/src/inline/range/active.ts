@@ -22,8 +22,13 @@ export function shouldDeactivateEditorOnFocusOut(
   editorHost: HTMLElement,
   relatedTarget: EventTarget | null
 ) {
+  // A missing or non-DOM `relatedTarget` means focus is not moving to a
+  // trackable element (e.g. block-level selection or a keyboard action). The
+  // document `focusout` handler must keep the editor active in this case so the
+  // current block selection is preserved; leaving-to-nowhere is handled
+  // explicitly by the host `blur` handler instead.
   if (!relatedTarget || !(relatedTarget instanceof Node)) {
-    return true;
+    return false;
   }
 
   if (editorHost.contains(relatedTarget)) {

@@ -33,7 +33,7 @@ describe('getImageFilesFromLocal', () => {
       ).showPicker = originalShowPicker;
     } else {
       delete (
-        HTMLInputElement.prototype as HTMLInputElement & {
+        HTMLInputElement.prototype as unknown as {
           showPicker?: unknown;
         }
       ).showPicker;

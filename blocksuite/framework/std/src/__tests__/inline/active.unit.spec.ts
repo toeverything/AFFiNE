@@ -46,19 +46,21 @@ describe('editor active helpers', () => {
     expect(shouldDeactivateEditorOnFocusOut(host, externalButton)).toBe(true);
   });
 
-  test('deactivates editor when focus leaves the document', () => {
+  test('keeps editor active on focusout when related target is null', () => {
+    // Focus leaving to nowhere (e.g. block-level selection) must not deactivate
+    // the editor via `focusout`; the host `blur` handler owns that case.
     const host = document.createElement('editor-host');
     document.body.append(host);
 
-    expect(shouldDeactivateEditorOnFocusOut(host, null)).toBe(true);
+    expect(shouldDeactivateEditorOnFocusOut(host, null)).toBe(false);
   });
 
-  test('deactivates editor when the related target is not a DOM node', () => {
+  test('keeps editor active when the related target is not a DOM node', () => {
     const host = document.createElement('editor-host');
     document.body.append(host);
 
     expect(shouldDeactivateEditorOnFocusOut(host, new EventTarget())).toBe(
-      true
+      false
     );
   });
 });

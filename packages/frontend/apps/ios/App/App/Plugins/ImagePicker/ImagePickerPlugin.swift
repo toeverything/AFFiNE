@@ -274,80 +274,40 @@ private enum ImagePickerSheetTheme {
     UITraitCollection(userInterfaceStyle: userInterfaceStyle)
   }
 
+  private func resolvedColor(_ color: AffineColors) -> UIColor {
+    color.uiColor.resolvedColor(with: traitCollection)
+  }
+
   var dimmingColor: UIColor {
     UIColor.black.withAlphaComponent(self == .dark ? 0.44 : 0.18)
   }
 
   var backgroundColor: UIColor {
-    switch self {
-    case .dark:
-      return imagePickerColor(hex: 0x1A1A1A)
-    case .light:
-      return AffineColors.layerBackgroundPrimary.uiColor.resolvedColor(with: traitCollection)
-    }
+    resolvedColor(.layerBackgroundPrimary)
   }
 
   var secondaryBackgroundColor: UIColor {
-    switch self {
-    case .dark:
-      return imagePickerColor(hex: 0x2A2A2A)
-    case .light:
-      return AffineColors.layerBackgroundSecondary.uiColor.resolvedColor(with: traitCollection)
-    }
+    resolvedColor(.layerBackgroundSecondary)
   }
 
   var pressedBackgroundColor: UIColor {
-    switch self {
-    case .dark:
-      return imagePickerColor(hex: 0x232323)
-    case .light:
-      return AffineColors.layerBackgroundSecondary.uiColor.resolvedColor(with: traitCollection)
-    }
+    resolvedColor(.layerBackgroundSecondary)
   }
 
   var borderColor: UIColor {
-    switch self {
-    case .dark:
-      return imagePickerColor(hex: 0x333333)
-    case .light:
-      return AffineColors.layerBorder.uiColor.resolvedColor(with: traitCollection)
-    }
+    resolvedColor(.layerBorder)
   }
 
   var textColor: UIColor {
-    switch self {
-    case .dark:
-      return .white
-    case .light:
-      return AffineColors.textPrimary.uiColor.resolvedColor(with: traitCollection)
-    }
+    resolvedColor(.textPrimary)
   }
 
   var iconColor: UIColor {
-    switch self {
-    case .dark:
-      return .white
-    case .light:
-      return AffineColors.buttonPrimary.uiColor.resolvedColor(with: traitCollection)
-    }
+    resolvedColor(.buttonPrimary)
   }
 
   var disabledTextColor: UIColor {
-    switch self {
-    case .dark:
-      return UIColor.white.withAlphaComponent(0.45)
-    case .light:
-      return AffineColors.textTertiary.uiColor.resolvedColor(with: traitCollection)
-    }
-  }
-
-  private func imagePickerColor(hex: Int) -> UIColor {
-    UIColor(
-      red: CGFloat((hex >> 16) & 0xFF) / 255,
-      green: CGFloat((hex >> 8) & 0xFF) / 255,
-      blue: CGFloat(hex & 0xFF) / 255,
-      alpha: 1
-    )
+    resolvedColor(.textTertiary)
   }
 }
 
