@@ -184,15 +184,15 @@ export function useAFFiNEI18N(): {
       */
     Enable(): string;
     /**
-      * `Turn on AFFiNE Sync`
+      * `Enable AFFiNE Sync`
       */
     ["Enable AFFiNE Cloud"](): string;
     /**
-      * `After turning it on, this workspace will sync to AFFiNE Cloud for backup, device switching, and collaboration.`
+      * `Your workspace will be synced and backed up with AFFiNE Sync.`
       */
     ["Enable AFFiNE Cloud Description"](): string;
     /**
-      * `This workspace is saved only on this device. Turn on AFFiNE Sync to use sync, collaboration, and sharing.`
+      * `Some features need AFFiNE Sync. Web workspaces are saved in this browser and may be removed automatically when disk space is low. Enable AFFiNE Sync to keep this workspace safer and available across devices.`
       */
     ["Enable cloud hint"](): string;
     /**
@@ -1433,7 +1433,7 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.backButton"](): string;
     /**
-      * `This workspace is saved only in this browser. If disk space runs low, the browser may clear it automatically. Turn on AFFiNE Sync to keep another copy.`
+      * `Your workspace is saved in this browser. When disk space is low, the browser may remove it automatically. Enable AFFiNE Sync to keep it safer.`
       */
     ["com.affine.banner.local-warning"](): string;
     /**
@@ -2083,17 +2083,17 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.enableAffineCloudModal.button.cancel"](): string;
     /**
-      * `Turn on AFFiNE Sync for {{workspaceName}}`
+      * `Enable AFFiNE Sync for {{workspaceName}}`
       */
     ["com.affine.enableAffineCloudModal.custom-server.title"](options: {
         readonly workspaceName: string;
     }): string;
     /**
-      * `Choose where to sync this workspace: AFFiNE Cloud or your self-hosted AFFiNE server.`
+      * `Choose where this workspace will sync.`
       */
     ["com.affine.enableAffineCloudModal.custom-server.description"](): string;
     /**
-      * `Turn on AFFiNE Sync`
+      * `Enable AFFiNE Sync`
       */
     ["com.affine.enableAffineCloudModal.custom-server.enable"](): string;
     /**
@@ -2345,11 +2345,11 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.history-vision.tips-modal.cancel"](): string;
     /**
-      * `Turn on AFFiNE Sync`
+      * `Enable AFFiNE Sync`
       */
     ["com.affine.history-vision.tips-modal.confirm"](): string;
     /**
-      * `This local workspace does not support version history yet. Turn on AFFiNE Sync to save it to the AFFiNE service you choose and use this feature.`
+      * `Version history can't work with local workspace. Enable AFFiNE Sync for this workspace to use version history.`
       */
     ["com.affine.history-vision.tips-modal.description"](): string;
     /**
@@ -2953,15 +2953,15 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.multi-tab.new-tab"](): string;
     /**
-      * `Enabling AFFiNE Cloud allows you to synchronise and backup data, as well as support multi-user collaboration and content publishing.`
+      * `AFFiNE Sync keeps your workspace backed up, available across devices, and ready for collaboration and publishing.`
       */
     ["com.affine.nameWorkspace.affine-cloud.description"](): string;
     /**
-      * `Sync across devices with AFFiNE Cloud`
+      * `Sync across devices with AFFiNE Sync`
       */
     ["com.affine.nameWorkspace.affine-cloud.title"](): string;
     /**
-      * `If you want the workspace to be stored locally, you can download the desktop client.`
+      * `In the web app, workspaces are saved in this browser. If disk space runs low, the browser may remove them automatically. For fully local storage, use the desktop app.`
       */
     ["com.affine.nameWorkspace.affine-cloud.web-tips"](): string;
     /**
@@ -5694,7 +5694,7 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.email.action.verify"](): string;
     /**
-      * `Turn on AFFiNE Sync to collaborate with others`
+      * `Enable AFFiNE Sync to collaborate with others`
       */
     ["com.affine.settings.member-tooltip"](): string;
     /**
@@ -6811,7 +6811,7 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.workspace.storage.subtitle"](): string;
     /**
-      * `Turn on AFFiNE Sync to publish this workspace`
+      * `Enable AFFiNE Sync to publish this workspace`
       */
     ["com.affine.settings.workspace.publish-tooltip"](): string;
     /**

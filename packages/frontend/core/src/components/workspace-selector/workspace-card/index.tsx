@@ -3,7 +3,10 @@ import { Loading } from '@affine/component/ui/loading';
 import { useSystemOnline } from '@affine/core/components/hooks/use-system-online';
 import { useWorkspace } from '@affine/core/components/hooks/use-workspace';
 import { useWorkspaceInfo } from '@affine/core/components/hooks/use-workspace-info';
-import { ServersService } from '@affine/core/modules/cloud';
+import {
+  getSelfHostedServerName,
+  ServersService,
+} from '@affine/core/modules/cloud';
 import {
   type WorkspaceMetadata,
   type WorkspaceProfileInfo,
@@ -37,8 +40,6 @@ import { useNavigateHelper } from '../../hooks/use-navigate-helper';
 import { WorkspaceAvatar } from '../../workspace-avatar';
 import * as styles from './styles.css';
 export { PureWorkspaceCard } from './pure-workspace-card';
-
-const DEFAULT_SELF_HOSTED_SERVER_NAME = 'AFFiNE Self-hosted';
 
 const RemoteWorkspaceStatus = ({ selfHosted }: { selfHosted?: boolean }) => {
   const Icon = selfHosted ? SelfhostIcon : CloudWorkspaceIcon;
@@ -96,20 +97,16 @@ const useSyncEngineSyncProgress = (meta: WorkspaceMetadata) => {
   const serversService = useService(ServersService);
   const server = useLiveData(
     useMemo(
-      () =>
-        meta.flavour === 'local' ? null : serversService.server$(meta.flavour),
+      () => serversService.server$(meta.flavour),
       [meta.flavour, serversService]
     )
   );
   const serverConfig = useLiveData(server?.config$);
   const isSelfHostedServer =
     serverConfig?.type === ServerDeploymentType.Selfhosted;
-  const serverName = serverConfig?.serverName;
-  const selfHostedSyncTarget =
-    serverName && serverName !== DEFAULT_SELF_HOSTED_SERVER_NAME
-      ? `${DEFAULT_SELF_HOSTED_SERVER_NAME} (${serverName})`
-      : DEFAULT_SELF_HOSTED_SERVER_NAME;
-  const syncTarget = isSelfHostedServer ? selfHostedSyncTarget : 'AFFiNE Cloud';
+  const syncTarget = isSelfHostedServer
+    ? getSelfHostedServerName(serverConfig.serverName)
+    : 'AFFiNE Cloud';
 
   const engineState = useLiveData(
     useMemo(() => {

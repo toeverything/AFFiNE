@@ -12,6 +12,10 @@ export {
   type RealtimeLiveQueryOptions,
 } from './realtime/live-query';
 export { ServerScope } from './scopes/server';
+export {
+  DEFAULT_SELF_HOSTED_SERVER_NAME,
+  getSelfHostedServerName,
+} from './server-name';
 export { AccessTokenService } from './services/access-token';
 export { AuthService } from './services/auth';
 export { CaptchaService } from './services/captcha';
