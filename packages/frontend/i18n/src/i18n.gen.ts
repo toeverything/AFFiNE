@@ -192,7 +192,7 @@ export function useAFFiNEI18N(): {
       */
     ["Enable AFFiNE Cloud Description"](): string;
     /**
-      * `This workspace is saved only on this device. Turn on AFFiNE Sync to keep another copy and use sync, collaboration, and sharing.`
+      * `This workspace is saved only on this device. Turn on AFFiNE Sync to use sync, collaboration, and sharing.`
       */
     ["Enable cloud hint"](): string;
     /**

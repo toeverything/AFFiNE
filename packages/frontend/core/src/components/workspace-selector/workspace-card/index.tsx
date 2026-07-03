@@ -38,6 +38,8 @@ import { WorkspaceAvatar } from '../../workspace-avatar';
 import * as styles from './styles.css';
 export { PureWorkspaceCard } from './pure-workspace-card';
 
+const DEFAULT_SELF_HOSTED_SERVER_NAME = 'AFFiNE Self-hosted';
+
 const RemoteWorkspaceStatus = ({ selfHosted }: { selfHosted?: boolean }) => {
   const Icon = selfHosted ? SelfhostIcon : CloudWorkspaceIcon;
   return (
@@ -102,11 +104,12 @@ const useSyncEngineSyncProgress = (meta: WorkspaceMetadata) => {
   const serverConfig = useLiveData(server?.config$);
   const isSelfHostedServer =
     serverConfig?.type === ServerDeploymentType.Selfhosted;
-  const syncTarget = isSelfHostedServer
-    ? serverConfig?.serverName
-      ? `AFFiNE Self-hosted(${serverConfig?.serverName})`
-      : 'AFFiNE Self-hosted'
-    : 'AFFiNE Cloud';
+  const serverName = serverConfig?.serverName;
+  const selfHostedSyncTarget =
+    serverName && serverName !== DEFAULT_SELF_HOSTED_SERVER_NAME
+      ? `${DEFAULT_SELF_HOSTED_SERVER_NAME} (${serverName})`
+      : DEFAULT_SELF_HOSTED_SERVER_NAME;
+  const syncTarget = isSelfHostedServer ? selfHostedSyncTarget : 'AFFiNE Cloud';
 
   const engineState = useLiveData(
     useMemo(() => {
