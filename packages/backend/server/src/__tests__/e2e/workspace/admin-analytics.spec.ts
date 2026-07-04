@@ -524,6 +524,33 @@ e2e(
         dashboard.workspaceStorageBytes
       );
       t.is(blobHistory[blobHistory.length - 1], dashboard.blobStorageBytes);
+
+      const baselineResult = await gql(
+        `
+      query AdminDashboard($input: AdminDashboardInput) {
+        adminDashboard(input: $input) {
+          workspaceStorageHistory {
+            value
+          }
+          blobStorageHistory {
+            value
+          }
+        }
+      }
+    `,
+        {
+          input: {
+            storageHistoryDays: 2,
+          },
+        }
+      );
+
+      t.falsy(baselineResult.errors);
+      t.is(
+        baselineResult.data!.adminDashboard.workspaceStorageHistory[0].value,
+        100
+      );
+      t.is(baselineResult.data!.adminDashboard.blobStorageHistory[0].value, 50);
     } finally {
       clock.restore();
     }

@@ -391,32 +391,42 @@ export class WorkspaceAnalyticsModel extends BaseModel {
           blobStorageBytes: bigint | number;
         }[]
       >`
-          WITH days AS (
-            SELECT generate_series(${storageFrom}::date, ${currentDay}::date, interval '1 day')::date AS day
+          WITH baseline_day AS (
+            SELECT max(date) AS date
+            FROM workspace_admin_stats_daily
+            WHERE date < ${storageFrom}::date
           ),
-          grouped AS (
+          baseline AS (
+            SELECT
+              baseline_day.date,
+              COALESCE(SUM(snapshot_size), 0) AS workspace_storage_bytes,
+              COALESCE(SUM(blob_size), 0) AS blob_storage_bytes
+            FROM baseline_day
+            JOIN workspace_admin_stats_daily stats
+              ON stats.date = baseline_day.date
+            WHERE baseline_day.date IS NOT NULL
+            GROUP BY baseline_day.date
+          ),
+          in_window AS (
             SELECT
               date,
               COALESCE(SUM(snapshot_size), 0) AS workspace_storage_bytes,
               COALESCE(SUM(blob_size), 0) AS blob_storage_bytes
             FROM workspace_admin_stats_daily
-            WHERE date <= ${currentDay}::date
+            WHERE date BETWEEN ${storageFrom}::date AND ${currentDay}::date
             GROUP BY date
           )
           SELECT
-            days.day AS date,
-            COALESCE(snapshot.workspace_storage_bytes, 0) AS "workspaceStorageBytes",
-            COALESCE(snapshot.blob_storage_bytes, 0) AS "blobStorageBytes"
-          FROM days
-          LEFT JOIN LATERAL (
-            SELECT
-              workspace_storage_bytes,
-              blob_storage_bytes
-            FROM grouped
-            WHERE date <= days.day
-            ORDER BY date DESC
-            LIMIT 1
-          ) snapshot ON TRUE
+            date,
+            workspace_storage_bytes AS "workspaceStorageBytes",
+            blob_storage_bytes AS "blobStorageBytes"
+          FROM baseline
+          UNION ALL
+          SELECT
+            date,
+            workspace_storage_bytes AS "workspaceStorageBytes",
+            blob_storage_bytes AS "blobStorageBytes"
+          FROM in_window
           ORDER BY date ASC
         `,
       this.db.$queryRaw<{ conversations: bigint | number }[]>`
@@ -435,11 +445,32 @@ export class WorkspaceAnalyticsModel extends BaseModel {
     const currentBlobStorageBytes = Number(
       storageCurrent[0]?.blobStorageBytes ?? 0
     );
-    const storageHistorySeries = storageHistory.map(row => ({
-      date: row.date,
-      workspaceStorageBytes: Number(row.workspaceStorageBytes ?? 0),
-      blobStorageBytes: Number(row.blobStorageBytes ?? 0),
-    }));
+    const storageByDate = new Map(
+      storageHistory.map(row => [
+        asDateOnlyString(row.date),
+        {
+          workspaceStorageBytes: Number(row.workspaceStorageBytes ?? 0),
+          blobStorageBytes: Number(row.blobStorageBytes ?? 0),
+        },
+      ])
+    );
+    const storageHistorySeries: Array<{
+      date: Date;
+      workspaceStorageBytes: number;
+      blobStorageBytes: number;
+    }> = [];
+    let carriedStorage = {
+      workspaceStorageBytes: 0,
+      blobStorageBytes: 0,
+    };
+    for (let day = storageFrom; day <= currentDay; day = addUtcDays(day, 1)) {
+      carriedStorage =
+        storageByDate.get(asDateOnlyString(day)) ?? carriedStorage;
+      storageHistorySeries.push({
+        date: day,
+        ...carriedStorage,
+      });
+    }
     if (storageHistorySeries.length > 0) {
       const lastPoint = storageHistorySeries[storageHistorySeries.length - 1];
       if (asDateOnlyString(lastPoint.date) === asDateOnlyString(currentDay)) {
