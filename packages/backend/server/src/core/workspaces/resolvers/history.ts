@@ -42,6 +42,7 @@ export class DocHistoryResolver {
 
   @ResolveField(() => [DocHistoryType])
   async histories(
+    @CurrentUser() user: CurrentUser,
     @Parent() workspace: WorkspaceType,
     @Args('guid') guid: string,
     @Args({ name: 'before', type: () => GraphQLISODateTime, nullable: true })
@@ -50,6 +51,8 @@ export class DocHistoryResolver {
     take?: number
   ): Promise<DocHistoryType[]> {
     const docId = new DocID(guid, workspace.id);
+
+    await this.ac.user(user.id).doc(docId).assert('Doc.Read');
 
     const histories = await this.workspace.listDocHistories(
       workspace.id,
