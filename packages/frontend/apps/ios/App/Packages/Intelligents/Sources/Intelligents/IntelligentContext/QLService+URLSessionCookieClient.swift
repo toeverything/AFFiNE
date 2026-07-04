@@ -52,9 +52,10 @@ extension QLService {
   /// External hosts (e.g. presigned blob-storage uploads) are left untouched.
   func authorized(_ request: URLRequest) -> URLRequest {
     guard request.value(forHTTPHeaderField: "Authorization") == nil,
-          let requestHost = request.url?.host?.lowercased(),
-          let serverHost = serverBaseURL.host?.lowercased(),
-          requestHost == serverHost,
+          let requestURL = request.url,
+          let requestOrigin = Self.canonicalOrigin(of: requestURL),
+          let serverOrigin = Self.canonicalOrigin(of: serverBaseURL),
+          requestOrigin == serverOrigin,
           let token = currentAuthToken()
     else {
       return request
