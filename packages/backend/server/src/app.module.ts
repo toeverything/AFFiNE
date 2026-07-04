@@ -25,11 +25,11 @@ import { MetricsModule } from './base/metrics';
 import { MutexModule } from './base/mutex';
 import { PrismaModule } from './base/prisma';
 import { RedisModule } from './base/redis';
-import { StorageProviderModule } from './base/storage';
 import { RateLimiterModule } from './base/throttler';
 import { WebSocketModule } from './base/websocket';
 import { AccessTokenModule } from './core/access-token';
 import { AuthModule } from './core/auth';
+import { BackendRuntimeModule } from './core/backend-runtime';
 import { CommentModule } from './core/comment';
 import { ServerConfigModule, ServerConfigResolverModule } from './core/config';
 import { DocStorageModule } from './core/doc';
@@ -46,6 +46,7 @@ import { RealtimeModule } from './core/realtime';
 import { SelfhostModule } from './core/selfhost';
 import { StaticFileModule } from './core/static-files';
 import { StorageModule } from './core/storage';
+import { StorageRuntimeModule } from './core/storage-runtime';
 import { SyncModule } from './core/sync';
 import { TelemetryModule } from './core/telemetry';
 import { UserModule } from './core/user';
@@ -113,13 +114,14 @@ export const FunctionalityModules = [
   MutexModule,
   MetricsModule,
   RateLimiterModule,
-  StorageProviderModule,
   HelpersModule,
   ErrorModule,
   WebSocketModule,
   JobModule.forRoot(),
   RealtimeModule,
   ModelsModule,
+  BackendRuntimeModule,
+  StorageRuntimeModule,
   ScheduleModule.forRoot(),
   MonitorModule,
 ];

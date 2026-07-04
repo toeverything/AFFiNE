@@ -46,9 +46,13 @@ import serverNativeModule, {
   type RequestedModelMatchResponse,
   type ResolvedEntitlement,
   type ResolveEntitlementInput,
+  type RuntimeBlobCleanupExecuteResult,
+  type RuntimeBlobCleanupPlanResult,
   type RuntimeBlobCleanupResult,
   type RuntimeBlobCompleteResult,
+  type RuntimeBlobMetadataBackfillResult,
   type RuntimeByokLocalLeaseRecord,
+  type RuntimeDocBlobRefsResult,
   type RuntimeDocCompactionResult,
   type RuntimeMagicLinkOtpConsumeResult,
   type RuntimeMultipartUploadInit,
@@ -56,7 +60,6 @@ import serverNativeModule, {
   type RuntimeObjectGetResult,
   type RuntimeObjectListEntry,
   type RuntimeObjectMetadata,
-  type RuntimeObjectStorageHealth,
   type RuntimeObjectStoragePutOptions,
   type RuntimePresignedObjectRequest,
   type RuntimeVerificationTokenRecord,
@@ -64,6 +67,8 @@ import serverNativeModule, {
   type RuntimeWorkspaceStatsDailyRecalibrationResult,
   type SafeFetchRequest,
   type SafeFetchResponse,
+  type StorageProviderCapabilities,
+  type StorageRuntimeHealth,
   type Tokenizer,
 } from '@affine/server-native';
 
@@ -91,9 +96,13 @@ export type {
   RemoteMimeTypeRequest,
   ResolvedEntitlement,
   ResolveEntitlementInput,
+  RuntimeBlobCleanupExecuteResult,
+  RuntimeBlobCleanupPlanResult,
   RuntimeBlobCleanupResult,
   RuntimeBlobCompleteResult,
+  RuntimeBlobMetadataBackfillResult,
   RuntimeByokLocalLeaseRecord,
+  RuntimeDocBlobRefsResult,
   RuntimeDocCompactionResult,
   RuntimeMagicLinkOtpConsumeResult,
   RuntimeMultipartUploadInit,
@@ -101,7 +110,6 @@ export type {
   RuntimeObjectGetResult,
   RuntimeObjectListEntry,
   RuntimeObjectMetadata,
-  RuntimeObjectStorageHealth,
   RuntimeObjectStoragePutOptions,
   RuntimePresignedObjectRequest,
   RuntimeVerificationTokenRecord,
@@ -109,6 +117,8 @@ export type {
   RuntimeWorkspaceStatsDailyRecalibrationResult,
   SafeFetchRequest,
   SafeFetchResponse,
+  StorageProviderCapabilities,
+  StorageRuntimeHealth,
 };
 
 export type ActionEventType =
@@ -153,6 +163,57 @@ import type {
 } from './plugins/copilot/runtime/contracts/tool-contract';
 
 export const mergeUpdatesInApplyWay = serverNativeModule.mergeUpdatesInApplyWay;
+
+export async function validateDocUpdate(
+  update: Buffer,
+  options: { signal?: AbortSignal; timeoutMs?: number } = {}
+): Promise<boolean> {
+  const signals = [];
+  if (options.signal) {
+    signals.push(options.signal);
+  }
+  if (options.timeoutMs !== undefined) {
+    signals.push(AbortSignal.timeout(options.timeoutMs));
+  }
+  const signal =
+    signals.length === 0
+      ? undefined
+      : signals.length === 1
+        ? signals[0]
+        : AbortSignal.any(signals);
+
+  if (signal?.aborted) {
+    throw signal.reason;
+  }
+
+  return await new Promise<boolean>((resolve, reject) => {
+    let settled = false;
+    const settle = (callback: () => void) => {
+      if (settled) return;
+      settled = true;
+      callback();
+    };
+    const onAbort = () => {
+      settle(() =>
+        reject(
+          signal?.reason instanceof Error
+            ? signal.reason
+            : new Error('Doc update validation aborted')
+        )
+      );
+    };
+    signal?.addEventListener('abort', onAbort, { once: true });
+    serverNativeModule
+      .validateDocUpdate(update)
+      .then(
+        result => settle(() => resolve(result)),
+        error => settle(() => reject(error))
+      )
+      .finally(() => {
+        signal?.removeEventListener('abort', onAbort);
+      });
+  });
+}
 
 export const verifyChallengeResponse = async (
   response: any,
@@ -215,6 +276,7 @@ export const AFFINE_PRO_PUBLIC_KEY = serverNativeModule.AFFINE_PRO_PUBLIC_KEY;
 export const AFFINE_PRO_LICENSE_AES_KEY =
   serverNativeModule.AFFINE_PRO_LICENSE_AES_KEY;
 export const BackendRuntime = serverNativeModule.BackendRuntime;
+export const StorageRuntime = serverNativeModule.StorageRuntime;
 
 export type PermissionWorkspaceRole = 'external' | 'member' | 'admin' | 'owner';
 export type PermissionDocRole =

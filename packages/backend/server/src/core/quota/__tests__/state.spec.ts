@@ -52,8 +52,19 @@ test.before(async t => {
   t.context.state = module.get(QuotaStateService);
 });
 
+test.beforeEach(async t => {
+  await t.context.module.initTestingDB();
+});
+
+test.after.always(async t => {
+  await t.context.module.close();
+});
+
 test('quota service ignores dirty legacy commercial features', async t => {
   const { owner, workspace } = await createWorkspace(t);
+  await t.context.state.reconcileUserQuotaState(owner.id);
+  await t.context.state.reconcileWorkspaceQuotaState(workspace.id);
+
   await t.context.models.userFeature.add(
     owner.id,
     'pro_plan_v1',
@@ -306,6 +317,8 @@ test('ai entitlement is a capability overlay on free quota', async t => {
 
 test('workspace team status ignores dirty legacy feature', async t => {
   const { workspace } = await createWorkspace(t);
+  await t.context.state.reconcileWorkspaceQuotaState(workspace.id);
+
   await t.context.models.workspaceFeature.add(
     workspace.id,
     'team_plan_v1',
@@ -324,6 +337,7 @@ test('workspace team status ignores dirty legacy feature', async t => {
     status: 'active',
     quantity: 5,
   });
+  await t.context.state.reconcileWorkspaceQuotaState(workspace.id);
 
   t.true(await t.context.models.workspace.isTeamWorkspace(workspace.id));
 });
@@ -355,14 +369,6 @@ test('selfhosted builtin free has cloud pro quota rights', async t => {
     // @ts-expect-error restore mutable test env singleton
     globalThis.env.DEPLOYMENT_TYPE = previousDeploymentType;
   }
-});
-
-test.beforeEach(async t => {
-  await t.context.module.initTestingDB();
-});
-
-test.after.always(async t => {
-  await t.context.module.close();
 });
 
 test('reconciles quota states from entitlements and business tables', async t => {

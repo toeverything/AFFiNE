@@ -156,8 +156,6 @@ test.before(async t => {
       CopilotModule,
     ],
     tapModule: builder => {
-      // use real JobQueue for testing
-      builder.overrideProvider(JobQueue).useClass(JobQueue);
       builder.overrideProvider(RequestMutex).useValue({
         acquire: async () => ({
           async [Symbol.asyncDispose]() {},
@@ -811,7 +809,9 @@ test('should schedule title generation as a background job', async t => {
   const chatSession = await session.get(sessionId);
   t.truthy(chatSession);
 
-  const addJob = Sinon.stub(jobs, 'add').resolves();
+  const addJob = jobs.add as Sinon.SinonStub;
+  addJob.resetHistory();
+  addJob.resolves();
 
   chatSession!.pushTurn(
     buildTurn(sessionId, {
@@ -1835,6 +1835,14 @@ test('should be able to manage workspace embedding', async t => {
       fileId: file.fileId,
       fileName: file.fileName,
     });
+    await jobs.embedPendingFile({
+      userId,
+      workspaceId: ws.id,
+      contextId: undefined,
+      blobId,
+      fileId: file.fileId,
+      fileName: file.fileName,
+    });
 
     let ret = 0;
     while (!ret) {
@@ -2059,7 +2067,9 @@ test('should handle copilot cron jobs correctly', async t => {
     copilotSession,
     'toBeGenerateTitle'
   ).resolves(mockSessions);
-  const jobAddStub = Sinon.stub(cronJobs['jobs'], 'add').resolves();
+  const jobAddStub = cronJobs['jobs'].add as Sinon.SinonStub;
+  jobAddStub.resetHistory();
+  jobAddStub.resolves();
 
   // daily cleanup job scheduling
   {
@@ -2107,7 +2117,7 @@ test('should handle copilot cron jobs correctly', async t => {
 
   cleanupStub.restore();
   toBeGenerateStub.restore();
-  jobAddStub.restore();
+  jobAddStub.resetHistory();
 });
 
 test('model selection policy should resolve requested optional models consistently', async t => {

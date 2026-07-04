@@ -12,7 +12,7 @@ import { MockDocSnapshot } from './doc-snapshot.mock';
 import { MockDocUser } from './doc-user.mock';
 import { MockEventBus } from './eventbus.mock';
 import { MockMailer } from './mailer.mock';
-import { MockJobQueue } from './queue.mock';
+import { MockJobModule, MockJobQueue } from './queue.mock';
 import { MockTeamWorkspace } from './team-workspace.mock';
 import { MockUser } from './user.mock';
 import { MockUserSettings } from './user-settings.mock';
@@ -35,6 +35,7 @@ export {
   installMockCopilotRuntime,
   MockCopilotProvider,
   MockEventBus,
+  MockJobModule,
   MockJobQueue,
   MockMailer,
 };

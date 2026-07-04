@@ -17,17 +17,12 @@ resolver = "3"
   aes-gcm = "0.10"
   affine_common = { path = "./packages/common/native" }
   affine_nbstore = { path = "./packages/frontend/native/nbstore" }
-  ahash = "0.8"
   anyhow = "1"
-  arbitrary = { version = "1.3", features = ["derive"] }
   assert-json-diff = "2.0"
   base64 = "0.22.1"
   base64-simd = "0.8"
-  bitvec = "1.0"
   block2 = "0.6"
-  byteorder = "1.5"
   chrono = "0.4"
-  clap = { version = "4.4", features = ["derive"] }
   core-foundation = "0.10"
   coreaudio-rs = "0.12"
   cpal = "0.15"
@@ -48,14 +43,10 @@ resolver = "3"
     "webp",
   ] }
   infer = { version = "0.19.0" }
-  lasso = { version = "0.7", features = ["multi-threaded"] }
-  lib0 = { version = "0.16", features = ["lib0-serde"] }
   libc = "0.2"
-  libwebp-sys = "0.14.2"
   little_exif = "0.6.23"
   llm_adapter = { version = "0.2", default-features = false }
   llm_runtime = { version = "0.2", default-features = false }
-  log = "0.4"
   lru = "0.16"
   matroska = "0.30"
   memory-indexer = "0.3.1"
@@ -72,33 +63,22 @@ resolver = "3"
   ] }
   napi-build = { version = "2" }
   napi-derive = { version = "3.4" }
-  nom = "8"
-  notify = { version = "8", features = ["serde"] }
   objc2 = "0.6"
   objc2-foundation = "0.3"
   ogg = "0.9"
   once_cell = "1"
-  ordered-float = "5"
   p256 = { version = "0.13", features = ["ecdsa", "pem"] }
-  parking_lot = "0.12"
-  phf = { version = "0.11", features = ["macros"] }
-  proptest = "1.3"
-  proptest-derive = "0.5"
   pulldown-cmark = "0.13"
   rand = "0.9"
-  rand_chacha = "0.9"
-  rand_distr = "0.5"
   rayon = "1.10"
-  regex = "1.10"
   rubato = "0.16"
   safefetch = "0.1.0"
   schemars = "0.8"
   screencapturekit = "0.3"
   serde = "1"
   serde_json = "1"
-  sha2 = "0.10"
-  sha3 = "0.10"
-  smol_str = "0.3"
+  sha2 = "0.11"
+  sha3 = "0.11"
   sqlx = { version = "0.8", default-features = false, features = [
     "chrono",
     "macros",
@@ -136,8 +116,6 @@ resolver = "3"
   ] }
   windows-core = { version = "0.61" }
   y-octo = "0.0.3"
-  y-sync = { version = "0.4" }
-  yrs = "0.23.0"
 
 [profile.dev.package.sqlx-macros]
 opt-level = 3

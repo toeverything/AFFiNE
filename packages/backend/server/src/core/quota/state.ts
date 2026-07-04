@@ -287,17 +287,30 @@ export class QuotaStateService {
   }
 
   private async getWorkspaceStorageUsage(workspaceId: string) {
-    const sum = await this.db.blob.aggregate({
-      where: {
-        workspaceId,
-        deletedAt: null,
-      },
-      _sum: {
-        size: true,
-      },
-    });
+    const [blobSum, commentAttachmentSum] = await Promise.all([
+      this.db.blob.aggregate({
+        where: {
+          workspaceId,
+          deletedAt: null,
+        },
+        _sum: {
+          size: true,
+        },
+      }),
+      this.db.commentAttachment.aggregate({
+        where: {
+          workspaceId,
+        },
+        _sum: {
+          size: true,
+        },
+      }),
+    ]);
 
-    return BigInt(sum._sum.size ?? 0);
+    return (
+      BigInt(blobSum._sum.size ?? 0) +
+      BigInt(commentAttachmentSum._sum.size ?? 0)
+    );
   }
 
   private hasStandaloneWorkspaceQuota(plan: string) {

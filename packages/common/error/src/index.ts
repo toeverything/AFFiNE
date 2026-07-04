@@ -5,7 +5,8 @@ export type ErrorName =
   | keyof typeof ErrorNames
   | 'NETWORK_ERROR'
   | 'CONTENT_TOO_LARGE'
-  | 'REQUEST_ABORTED';
+  | 'REQUEST_ABORTED'
+  | 'UNSUPPORTED_SERVER_VERSION';
 
 export interface UserFriendlyErrorResponse {
   status: number;

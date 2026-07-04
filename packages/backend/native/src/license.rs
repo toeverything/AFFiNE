@@ -1,7 +1,7 @@
 use std::{
   collections::HashMap,
   sync::{Mutex, OnceLock},
-  time::{Duration, SystemTime, UNIX_EPOCH},
+  time::{Duration, SystemTime},
 };
 
 use anyhow::{Context, Result as AnyResult, bail};
@@ -458,10 +458,7 @@ fn parse_future_end_at(value: &serde_json::Value) -> AnyResult<f64> {
 }
 
 fn now_millis() -> f64 {
-  SystemTime::now()
-    .duration_since(UNIX_EPOCH)
-    .unwrap_or_default()
-    .as_millis() as f64
+  crate::utils::system_time_millis(SystemTime::now()).unwrap_or_default() as f64
 }
 
 fn affine_pro_ech_config() -> AnyResult<Vec<u8>> {

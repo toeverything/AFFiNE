@@ -148,17 +148,4 @@ export class SessionModel extends BaseModel {
     }
     return count;
   }
-
-  async cleanExpiredUserSessions() {
-    const { count } = await this.db.userSession.deleteMany({
-      where: {
-        expiresAt: {
-          lte: new Date(),
-        },
-      },
-    });
-    if (count > 0) {
-      this.logger.log(`Cleaned ${count} expired user sessions`);
-    }
-  }
 }
