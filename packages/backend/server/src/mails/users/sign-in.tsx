@@ -39,5 +39,4 @@ export default function SignIn(props: SignInProps) {
 SignIn.PreviewProps = {
   url: 'https://app.affine.pro/magic-link?token=123456&email=test@test.com',
   otp: '123456',
-  serverName: 'AFFiNE Cloud',
 };
