@@ -48,7 +48,7 @@ export class AIModelService extends Service {
     });
   }
 
-  private get shouldBypassSubscriptionGate() {
+  get shouldBypassSubscriptionGate() {
     return BUILD_CONFIG.isIOS;
   }
 
