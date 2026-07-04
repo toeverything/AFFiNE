@@ -459,16 +459,20 @@ export class WorkspaceAnalyticsModel extends BaseModel {
       workspaceStorageBytes: number;
       blobStorageBytes: number;
     }> = [];
-    let carriedStorage = {
-      workspaceStorageBytes: 0,
-      blobStorageBytes: 0,
+    const baselineStorage =
+      storageHistory.find(row => row.date < storageFrom) ?? null;
+    let carriedStorageValue = {
+      workspaceStorageBytes: Number(
+        baselineStorage?.workspaceStorageBytes ?? 0
+      ),
+      blobStorageBytes: Number(baselineStorage?.blobStorageBytes ?? 0),
     };
     for (let day = storageFrom; day <= currentDay; day = addUtcDays(day, 1)) {
-      carriedStorage =
-        storageByDate.get(asDateOnlyString(day)) ?? carriedStorage;
+      carriedStorageValue =
+        storageByDate.get(asDateOnlyString(day)) ?? carriedStorageValue;
       storageHistorySeries.push({
         date: day,
-        ...carriedStorage,
+        ...carriedStorageValue,
       });
     }
     if (storageHistorySeries.length > 0) {
