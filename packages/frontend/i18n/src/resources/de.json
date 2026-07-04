@@ -285,7 +285,7 @@
   "com.affine.auth.password.error": "Ungültiges Passwort",
   "com.affine.auth.password.set-failed": "Passwort festlegen fehlgeschlagen",
   "com.affine.auth.reset.password": "Passwort zurücksetzen",
-  "com.affine.auth.reset.password.message": "Sie erhalten eine E-Mail mit einem Link zum Zurücksetzen Ihres Passworts. Bitte prüfen Sie Ihren Posteingang.",
+  "com.affine.auth.reset.password.message": "Du erhältst eine E-Mail mit einem Link zum Zurücksetzen deines Passworts. Bitte prüfe deinen Posteingang.",
   "com.affine.auth.reset.password.page.success": "Passwort erfolgreich zurückgesetzt",
   "com.affine.auth.reset.password.page.title": "AFFiNE-Passwort zurücksetzen",
   "com.affine.auth.send.reset.password.link": "Link zum Zurücksetzen senden",
