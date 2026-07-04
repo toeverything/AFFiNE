@@ -9,7 +9,6 @@ import {
 } from '../base/graphql/pagination';
 import { CacheRedis } from '../base/redis';
 import { BaseModel } from './base';
-import { WorkspaceRole } from './common';
 
 const DEFAULT_STORAGE_HISTORY_DAYS = 30;
 const DEFAULT_SYNC_HISTORY_HOURS = 48;
@@ -323,10 +322,10 @@ export class WorkspaceAnalyticsModel extends BaseModel {
             ON v.workspace_id = wp.workspace_id AND v.doc_id = wp.page_id
           LEFT JOIN LATERAL (
             SELECT user_id
-            FROM workspace_user_permissions
+            FROM workspace_members
             WHERE workspace_id = wp.workspace_id
-            AND type = ${WorkspaceRole.Owner}
-            AND status = 'Accepted'::"WorkspaceMemberStatus"
+            AND role = 'owner'
+            AND state = 'active'
             ORDER BY created_at ASC
             LIMIT 1
           ) owner ON TRUE
@@ -631,10 +630,10 @@ export class WorkspaceAnalyticsModel extends BaseModel {
           ON v.workspace_id = wp.workspace_id AND v.doc_id = wp.page_id
         LEFT JOIN LATERAL (
           SELECT user_id
-          FROM workspace_user_permissions
+          FROM workspace_members
           WHERE workspace_id = wp.workspace_id
-          AND type = ${WorkspaceRole.Owner}
-          AND status = 'Accepted'::"WorkspaceMemberStatus"
+          AND role = 'owner'
+          AND state = 'active'
           ORDER BY created_at ASC
           LIMIT 1
         ) owner ON TRUE
@@ -896,10 +895,10 @@ export class WorkspaceAnalyticsModel extends BaseModel {
         mla.last_doc_id AS "lastDocId"
       FROM workspace_member_last_access mla
       INNER JOIN users u ON u.id = mla.user_id
-      INNER JOIN workspace_user_permissions wur
-        ON wur.workspace_id = mla.workspace_id
-       AND wur.user_id = mla.user_id
-       AND wur.status = 'Accepted'::"WorkspaceMemberStatus"
+      INNER JOIN workspace_members wm
+        ON wm.workspace_id = mla.workspace_id
+       AND wm.user_id = mla.user_id
+       AND wm.state = 'active'
       WHERE mla.workspace_id = ${input.workspaceId}
       AND mla.last_doc_id = ${input.docId}
       ${windowCondition}
@@ -1110,10 +1109,10 @@ export class WorkspaceAnalyticsModel extends BaseModel {
       SELECT COUNT(*) AS total
       FROM workspace_member_last_access mla
       INNER JOIN users u ON u.id = mla.user_id
-      INNER JOIN workspace_user_permissions wur
-        ON wur.workspace_id = mla.workspace_id
-       AND wur.user_id = mla.user_id
-       AND wur.status = 'Accepted'::"WorkspaceMemberStatus"
+      INNER JOIN workspace_members wm
+        ON wm.workspace_id = mla.workspace_id
+       AND wm.user_id = mla.user_id
+       AND wm.state = 'active'
       WHERE mla.workspace_id = ${workspaceId}
       AND mla.last_doc_id = ${docId}
       ${windowCondition}
