@@ -72,10 +72,19 @@ describe('executeToolCall maintains security boundary under adversarial input', 
       expect(Object.prototype).toBe(originalObjectProto);
       expect((Object.prototype as any).polluted).toBeUndefined();
 
-      // execute receives the Zod-validated (parsed) copy of the args,
-      // not the raw request.args reference — this is the behaviour under test.
+      // Capture the actual arguments passed to mockTool.execute
+      const [[actualArgs, actualOptions]] = mockTool.execute.mock.calls;
+
+      // Identity assertion: args must NOT be the same reference as request.args
+      // This catches regressions where executeToolCall forwards request.args directly
+      expect(actualArgs).not.toBe(request.args);
+
+      // Correctness assertion: args should deeply equal the parsed result
       const parsedArgs = inputSchema.parse(request.args);
-      expect(mockTool.execute).toHaveBeenCalledWith(parsedArgs, baseOptions);
+      expect(actualArgs).toEqual(parsedArgs);
+
+      // Identity assertion: options should be the same reference
+      expect(actualOptions).toBe(baseOptions);
     }
   );
 
