@@ -7,6 +7,7 @@ globalStyle(':root', {
   vars: {
     [globalVars.appTabHeight]: BUILD_CONFIG.isIOS ? '49px' : '62px',
     [globalVars.appTabSafeArea]: `calc(${globalVars.appTabHeight} + env(safe-area-inset-bottom))`,
+    '--affine-edgeless-zoom-toolbar-bottom': `calc(10px + ${globalVars.appTabSafeArea})`,
   },
   userSelect: 'none',
   WebkitUserSelect: 'none',

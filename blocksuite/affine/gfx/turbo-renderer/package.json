@@ -10,6 +10,7 @@
   "author": "toeverything",
   "license": "MIT",
   "dependencies": {
+    "@blocksuite/affine-shared": "workspace:*",
     "@blocksuite/global": "workspace:*",
     "@blocksuite/std": "workspace:*",
     "@blocksuite/store": "workspace:*",
@@ -25,5 +26,5 @@
     "!src/__tests__",
     "!dist/__tests__"
   ],
-  "version": "0.26.3"
+  "version": "0.27.0"
 }

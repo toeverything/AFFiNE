@@ -248,11 +248,12 @@ export class WorkspaceBlobResolver {
     }
 
     const metadata = { contentType: mime, contentLength: size };
+    const capabilities = await this.storage.capabilities();
     let init: BlobUploadInit | null = null;
     let uploadIdForRecord: string | null = null;
 
     // try to resume multipart uploads
-    if (record && record.uploadId) {
+    if (capabilities.multipartDirect && record && record.uploadId) {
       const uploadedParts = await this.storage.listMultipartUploadParts(
         workspaceId,
         key,
@@ -270,7 +271,7 @@ export class WorkspaceBlobResolver {
       }
     }
 
-    if (size >= MULTIPART_THRESHOLD) {
+    if (capabilities.multipartDirect && size >= MULTIPART_THRESHOLD) {
       const multipart = await this.storage.createMultipartUpload(
         workspaceId,
         key,
@@ -289,7 +290,7 @@ export class WorkspaceBlobResolver {
       }
     }
 
-    if (!init) {
+    if (!init && capabilities.presignPut) {
       const presigned = await this.storage.presignPut(
         workspaceId,
         key,
@@ -396,6 +397,9 @@ export class WorkspaceBlobResolver {
       }
       if (result.reason === 'mime_mismatch') {
         throw new BlobInvalid('Blob mime mismatch');
+      }
+      if (result.reason === 'size_too_large') {
+        throw new BlobInvalid('Blob size too large');
       }
       throw new BlobInvalid('Blob key mismatch');
     }

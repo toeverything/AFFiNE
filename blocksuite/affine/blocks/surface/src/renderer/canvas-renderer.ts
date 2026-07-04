@@ -2,6 +2,7 @@ import { type Color, ColorScheme } from '@blocksuite/affine-model';
 import { FeatureFlagService } from '@blocksuite/affine-shared/services';
 import { requestConnectedFrame } from '@blocksuite/affine-shared/utils';
 import { DisposableGroup } from '@blocksuite/global/disposable';
+import { IS_IOS } from '@blocksuite/global/env';
 import {
   Bound,
   getBoundWithRotation,
@@ -18,7 +19,12 @@ import type {
   SurfaceBlockModel,
   Viewport,
 } from '@blocksuite/std/gfx';
-import { GfxControllerIdentifier } from '@blocksuite/std/gfx';
+import {
+  getEffectiveDpr,
+  getPostGestureRecoveryDelay,
+  GfxControllerIdentifier,
+  viewportRuntimeConfig,
+} from '@blocksuite/std/gfx';
 import { effect } from '@preact/signals-core';
 import last from 'lodash-es/last';
 import { Subject } from 'rxjs';
@@ -28,6 +34,7 @@ import { ElementRendererIdentifier } from '../extensions/element-renderer.js';
 import { RoughCanvas } from '../utils/rough/canvas.js';
 import type { ElementRenderer } from './elements/index.js';
 import type { Overlay } from './overlay.js';
+import { resolveSurfacePlaceholderColor } from './placeholder-style.js';
 
 type EnvProvider = {
   generateColorProperty: (color: Color, fallback?: Color) => string;
@@ -116,6 +123,181 @@ type RefreshTarget =
     };
 
 const STACKING_CANVAS_PADDING = 32;
+const IOS_LOW_ZOOM_SURVIVAL_THRESHOLD = 0.5;
+
+export function shouldSyncCanvasBudgetOnViewportUpdate(
+  previousZoom: number,
+  nextZoom: number,
+  rawDpr = window.devicePixelRatio
+) {
+  if (rawDpr <= 1) {
+    return false;
+  }
+
+  return (
+    getEffectiveDpr(previousZoom, rawDpr) !== getEffectiveDpr(nextZoom, rawDpr)
+  );
+}
+
+export function shouldUseLowZoomSurvivalMode(
+  isIOS: boolean,
+  zoom: number,
+  gestureActive: boolean
+) {
+  return isIOS && gestureActive && zoom <= IOS_LOW_ZOOM_SURVIVAL_THRESHOLD;
+}
+
+export function getStackingCanvasBypassState(params: {
+  isIOS: boolean;
+  zoom: number;
+  gestureActive: boolean;
+  recoveryActive: boolean;
+  viewportWidth: number;
+  viewportHeight: number;
+}) {
+  const {
+    isIOS,
+    zoom,
+    gestureActive,
+    recoveryActive,
+    viewportWidth,
+    viewportHeight,
+  } = params;
+
+  return (
+    isIOS &&
+    zoom <= IOS_LOW_ZOOM_SURVIVAL_THRESHOLD &&
+    (gestureActive || recoveryActive) &&
+    viewportWidth > viewportHeight
+  );
+}
+
+export function shouldBypassStackingCanvasesDuringLowZoomGesture(params: {
+  isIOS: boolean;
+  zoom: number;
+  gestureActive: boolean;
+  recoveryActive: boolean;
+  viewportWidth: number;
+  viewportHeight: number;
+}) {
+  return getStackingCanvasBypassState(params);
+}
+
+export function getStackingCanvasAttachmentDiff(params: {
+  canvases: HTMLCanvasElement[];
+  wasAttached: boolean;
+  shouldAttach: boolean;
+}) {
+  const { canvases, wasAttached, shouldAttach } = params;
+
+  if (wasAttached === shouldAttach) {
+    return {
+      added: [],
+      removed: [],
+    };
+  }
+
+  return shouldAttach
+    ? {
+        added: canvases,
+        removed: [],
+      }
+    : {
+        added: [],
+        removed: canvases,
+      };
+}
+
+export function getMainCanvasFallbackBounds(params: {
+  viewportBounds: Bound;
+  overscanViewportBounds: Bound;
+}) {
+  const { overscanViewportBounds } = params;
+
+  return {
+    cullBound: overscanViewportBounds,
+    renderBound: overscanViewportBounds,
+  };
+}
+
+export function getCanvasViewportLayout(params: {
+  bound: Bound;
+  viewportBounds: Bound;
+  zoom: number;
+  viewScale: number;
+  dpr: number;
+}) {
+  const { bound, viewportBounds, zoom, viewScale, dpr } = params;
+  const width = bound.w * zoom;
+  const height = bound.h * zoom;
+  const left = (bound.x - viewportBounds.x) * zoom;
+  const top = (bound.y - viewportBounds.y) * zoom;
+
+  return {
+    actualHeight: Math.max(0, Math.ceil(height * dpr)),
+    actualWidth: Math.max(0, Math.ceil(width * dpr)),
+    height,
+    transform: `translate(${left}px, ${top}px) scale(${1 / viewScale})`,
+    width,
+  };
+}
+
+function applyCanvasViewportLayout(
+  canvas: HTMLCanvasElement,
+  layout: ReturnType<typeof getCanvasViewportLayout>
+) {
+  const width = `${layout.width}px`;
+  const height = `${layout.height}px`;
+
+  if (canvas.style.left !== '0px') {
+    canvas.style.left = '0px';
+  }
+  if (canvas.style.top !== '0px') {
+    canvas.style.top = '0px';
+  }
+  if (canvas.style.width !== width) {
+    canvas.style.width = width;
+  }
+  if (canvas.style.height !== height) {
+    canvas.style.height = height;
+  }
+  if (canvas.style.transform !== layout.transform) {
+    canvas.style.transform = layout.transform;
+  }
+  if (canvas.style.transformOrigin !== 'top left') {
+    canvas.style.transformOrigin = 'top left';
+  }
+  if (canvas.width !== layout.actualWidth) {
+    canvas.width = layout.actualWidth;
+  }
+  if (canvas.height !== layout.actualHeight) {
+    canvas.height = layout.actualHeight;
+  }
+}
+
+export function shouldRenderCanvasPlaceholders(params: {
+  isIOS: boolean;
+  zoom: number;
+  isPanning: boolean;
+  isZooming: boolean;
+  skipRefreshDuringGesture: boolean;
+  turboEnabled: boolean;
+}) {
+  const {
+    isIOS,
+    zoom,
+    isPanning,
+    isZooming,
+    skipRefreshDuringGesture,
+    turboEnabled,
+  } = params;
+
+  if (shouldUseLowZoomSurvivalMode(isIOS, zoom, isZooming)) {
+    return true;
+  }
+
+  return !skipRefreshDuringGesture && turboEnabled && isZooming && !isPanning;
+}
 
 export class CanvasRenderer {
   private _container!: HTMLElement;
@@ -144,6 +326,19 @@ export class CanvasRenderer {
   private _mainCanvasDirty = true;
 
   private _needsFullRender = true;
+
+  private _lastCanvasBudgetZoom = 1;
+
+  private _lastLowZoomSurvivalMode = false;
+
+  private _lastBypassStackingCanvases = false;
+
+  private _stackingCanvasesAttached = true;
+
+  private _stackingCanvasRecoveryUntil = 0;
+
+  private _stackingCanvasRecoveryTimerId: ReturnType<typeof setTimeout> | null =
+    null;
 
   private _debugMetrics: MutableCanvasRendererDebugMetrics = {
     refreshCount: 0,
@@ -189,6 +384,10 @@ export class CanvasRenderer {
     return this._stackingCanvas;
   }
 
+  get stackingCanvasesAttached() {
+    return this._stackingCanvasesAttached;
+  }
+
   constructor(options: RendererOptions) {
     const canvas = document.createElement('canvas');
 
@@ -196,6 +395,7 @@ export class CanvasRenderer {
     this.ctx = this.canvas.getContext('2d') as CanvasRenderingContext2D;
     this.std = options.std;
     this.viewport = options.viewport;
+    this._lastCanvasBudgetZoom = this.viewport.zoom;
     this.layerManager = options.layerManager;
     this.grid = options.gridManager;
     this.provider = options.provider ?? {};
@@ -223,22 +423,28 @@ export class CanvasRenderer {
    *
    * It is not recommended to set width and height to 100%.
    */
-  private _canvasSizeUpdater(dpr = window.devicePixelRatio) {
-    const { width, height, viewScale } = this.viewport;
-    const actualWidth = Math.ceil(width * dpr);
-    const actualHeight = Math.ceil(height * dpr);
+  private _canvasSizeUpdater(
+    bound = this.viewport.overscanViewportBounds,
+    dpr = getEffectiveDpr(this.viewport.zoom)
+  ) {
+    const layout = getCanvasViewportLayout({
+      bound,
+      viewportBounds: this.viewport.viewportBounds,
+      zoom: this.viewport.zoom,
+      viewScale: this.viewport.viewScale,
+      dpr,
+    });
 
     return {
-      filter({ width, height }: HTMLCanvasElement) {
-        return width !== actualWidth || height !== actualHeight;
+      filter(canvas: HTMLCanvasElement) {
+        return (
+          canvas.width !== layout.actualWidth ||
+          canvas.height !== layout.actualHeight ||
+          canvas.style.transform !== layout.transform
+        );
       },
       update(canvas: HTMLCanvasElement) {
-        canvas.style.width = `${width}px`;
-        canvas.style.height = `${height}px`;
-        canvas.style.transform = `scale(${1 / viewScale})`;
-        canvas.style.transformOrigin = `top left`;
-        canvas.width = actualWidth;
-        canvas.height = actualHeight;
+        applyCanvasViewportLayout(canvas, layout);
       },
     };
   }
@@ -246,7 +452,7 @@ export class CanvasRenderer {
   private _applyStackingCanvasLayout(
     canvas: HTMLCanvasElement,
     bound: Bound | null,
-    dpr = window.devicePixelRatio
+    dpr = getEffectiveDpr(this.viewport.zoom)
   ) {
     const state =
       this._stackingCanvasState.get(canvas) ??
@@ -270,44 +476,18 @@ export class CanvasRenderer {
       return;
     }
 
-    const { viewportBounds, zoom, viewScale } = this.viewport;
-    const width = bound.w * zoom;
-    const height = bound.h * zoom;
-    const left = (bound.x - viewportBounds.x) * zoom;
-    const top = (bound.y - viewportBounds.y) * zoom;
-    const actualWidth = Math.max(1, Math.ceil(width * dpr));
-    const actualHeight = Math.max(1, Math.ceil(height * dpr));
-    const transform = `translate(${left}px, ${top}px) scale(${1 / viewScale})`;
+    const layout = getCanvasViewportLayout({
+      bound,
+      viewportBounds: this.viewport.viewportBounds,
+      zoom: this.viewport.zoom,
+      viewScale: this.viewport.viewScale,
+      dpr,
+    });
 
     if (canvas.style.display !== 'block') {
       canvas.style.display = 'block';
     }
-    if (canvas.style.left !== '0px') {
-      canvas.style.left = '0px';
-    }
-    if (canvas.style.top !== '0px') {
-      canvas.style.top = '0px';
-    }
-    if (canvas.style.width !== `${width}px`) {
-      canvas.style.width = `${width}px`;
-    }
-    if (canvas.style.height !== `${height}px`) {
-      canvas.style.height = `${height}px`;
-    }
-    if (canvas.style.transform !== transform) {
-      canvas.style.transform = transform;
-    }
-    if (canvas.style.transformOrigin !== 'top left') {
-      canvas.style.transformOrigin = 'top left';
-    }
-
-    if (canvas.width !== actualWidth) {
-      canvas.width = actualWidth;
-    }
-
-    if (canvas.height !== actualHeight) {
-      canvas.height = actualHeight;
-    }
+    applyCanvasViewportLayout(canvas, layout);
 
     state.bound = bound;
     state.layerId = canvas.dataset.layerId ?? null;
@@ -434,6 +614,125 @@ export class CanvasRenderer {
     this._applyStackingCanvasLayout(canvas, null);
   }
 
+  private _syncStackingCanvasAttachment(shouldAttach: boolean) {
+    const payloadDiff = getStackingCanvasAttachmentDiff({
+      canvases: this._stackingCanvas,
+      wasAttached: this._stackingCanvasesAttached,
+      shouldAttach,
+    });
+
+    this._stackingCanvasesAttached = shouldAttach;
+
+    if (!payloadDiff.added.length && !payloadDiff.removed.length) {
+      return;
+    }
+
+    this.stackingCanvasUpdated.next({
+      canvases: this._stackingCanvas,
+      ...payloadDiff,
+    });
+  }
+
+  private _isStackingCanvasRecoveryActive() {
+    return this._stackingCanvasRecoveryUntil > performance.now();
+  }
+
+  private _clearStackingCanvasRecoveryTimer() {
+    if (this._stackingCanvasRecoveryTimerId !== null) {
+      clearTimeout(this._stackingCanvasRecoveryTimerId);
+      this._stackingCanvasRecoveryTimerId = null;
+    }
+  }
+
+  private _scheduleStackingCanvasRecoveryWindow(
+    delayMs = viewportRuntimeConfig.POST_GESTURE_REFRESH_DELAY
+  ) {
+    this._clearStackingCanvasRecoveryTimer();
+    this._stackingCanvasRecoveryUntil = performance.now() + delayMs;
+    this._stackingCanvasRecoveryTimerId = setTimeout(() => {
+      this._stackingCanvasRecoveryTimerId = null;
+      this._stackingCanvasRecoveryUntil = 0;
+      if (this._container) {
+        this._updatePlaceholderMode();
+      }
+    }, delayMs);
+  }
+
+  private _syncCanvasBudgetForViewportZoom() {
+    const nextZoom = this.viewport.zoom;
+
+    if (
+      !shouldSyncCanvasBudgetOnViewportUpdate(
+        this._lastCanvasBudgetZoom,
+        nextZoom
+      )
+    ) {
+      this._lastCanvasBudgetZoom = nextZoom;
+      return;
+    }
+
+    this._lastCanvasBudgetZoom = nextZoom;
+    this._resetSize();
+    this._render();
+  }
+
+  private _updatePlaceholderMode() {
+    const gestureActive =
+      this.viewport.panning$.value || this.viewport.zooming$.value;
+    const recoveryActive = this._isStackingCanvasRecoveryActive();
+    const lowZoomSurvivalMode = shouldUseLowZoomSurvivalMode(
+      IS_IOS,
+      this.viewport.zoom,
+      gestureActive
+    );
+    const shouldBypassStackingCanvases =
+      shouldBypassStackingCanvasesDuringLowZoomGesture({
+        isIOS: IS_IOS,
+        zoom: this.viewport.zoom,
+        gestureActive,
+        recoveryActive,
+        viewportWidth: this.viewport.width,
+        viewportHeight: this.viewport.height,
+      });
+    const shouldRenderPlaceholders = shouldRenderCanvasPlaceholders({
+      isIOS: IS_IOS,
+      zoom: this.viewport.zoom,
+      isPanning: this.viewport.panning$.value,
+      isZooming: this.viewport.zooming$.value,
+      skipRefreshDuringGesture: this.viewport.SKIP_REFRESH_DURING_GESTURE,
+      turboEnabled: this._turboEnabled(),
+    });
+
+    const bypassModeChanged =
+      this._lastBypassStackingCanvases !== shouldBypassStackingCanvases;
+
+    this._syncStackingCanvasAttachment(!shouldBypassStackingCanvases);
+
+    if (this.usePlaceholder === shouldRenderPlaceholders) {
+      this._lastLowZoomSurvivalMode = lowZoomSurvivalMode;
+      this._lastBypassStackingCanvases = shouldBypassStackingCanvases;
+      if (bypassModeChanged) {
+        this.refresh({ type: 'all' });
+      }
+      return;
+    }
+
+    this.usePlaceholder = shouldRenderPlaceholders;
+    const survivalModeChanged =
+      this._lastLowZoomSurvivalMode !== lowZoomSurvivalMode;
+    this._lastLowZoomSurvivalMode = lowZoomSurvivalMode;
+    this._lastBypassStackingCanvases = shouldBypassStackingCanvases;
+
+    if (
+      survivalModeChanged ||
+      bypassModeChanged ||
+      !this.viewport.SKIP_REFRESH_DURING_GESTURE ||
+      !gestureActive
+    ) {
+      this.refresh({ type: 'all' });
+    }
+  }
+
   private _initStackingCanvas(onCreated?: (canvas: HTMLCanvasElement) => void) {
     const layer = this.layerManager;
     const updateStackingCanvas = () => {
@@ -476,7 +775,9 @@ export class CanvasRenderer {
         };
 
         if (diff > 0) {
-          payload.added = canvases.slice(-diff);
+          if (this._stackingCanvasesAttached) {
+            payload.added = canvases.slice(-diff);
+          }
         } else {
           payload.removed = currentCanvases.slice(diff);
           payload.removed.forEach(canvas => {
@@ -485,7 +786,9 @@ export class CanvasRenderer {
           });
         }
 
-        this.stackingCanvasUpdated.next(payload);
+        if (payload.added.length || payload.removed.length) {
+          this.stackingCanvasUpdated.next(payload);
+        }
       }
 
       this.refresh({ type: 'all' });
@@ -503,33 +806,119 @@ export class CanvasRenderer {
   private _initViewport() {
     let sizeUpdatedRafId: number | null = null;
 
+    this._disposables.add({
+      dispose: () => this._clearStackingCanvasRecoveryTimer(),
+    });
+
+    this._disposables.add(
+      this.viewport.zoomUpdated.subscribe(() => {
+        this._syncCanvasBudgetForViewportZoom();
+      })
+    );
+
     this._disposables.add(
       this.viewport.viewportUpdated.subscribe(() => {
+        this._updatePlaceholderMode();
+        if (
+          this.viewport.SKIP_REFRESH_DURING_GESTURE &&
+          (this.viewport.panning$.value || this.viewport.zooming$.value)
+        ) {
+          return;
+        }
         this.refresh({ type: 'all' });
       })
     );
 
     this._disposables.add(
       this.viewport.sizeUpdated.subscribe(() => {
+        if (
+          IS_IOS &&
+          this.viewport.zoom <= IOS_LOW_ZOOM_SURVIVAL_THRESHOLD &&
+          this.viewport.width > this.viewport.height
+        ) {
+          this._scheduleStackingCanvasRecoveryWindow();
+          if (this._container) {
+            this._updatePlaceholderMode();
+          }
+        }
+
         if (sizeUpdatedRafId) return;
         sizeUpdatedRafId = requestConnectedFrame(() => {
           sizeUpdatedRafId = null;
           this._resetSize();
-          this._render();
+          // When SKIP_REFRESH_DURING_GESTURE is active, schedule the render
+          // after a short delay to let the layout settle on orientation change,
+          // avoiding a white-flash from resizing + rendering in the same frame.
+          if (this.viewport.SKIP_REFRESH_DURING_GESTURE) {
+            setTimeout(() => this._render(), 16);
+          } else {
+            this._render();
+          }
         }, this._container);
       })
     );
 
     this._disposables.add(
-      this.viewport.zooming$.subscribe(isZooming => {
-        const shouldRenderPlaceholders = this._turboEnabled() && isZooming;
-
-        if (this.usePlaceholder !== shouldRenderPlaceholders) {
-          this.usePlaceholder = shouldRenderPlaceholders;
-          this.refresh({ type: 'all' });
-        }
+      this.viewport.zooming$.subscribe(() => {
+        this._updatePlaceholderMode();
       })
     );
+
+    // When SKIP_REFRESH_DURING_GESTURE is enabled, defer heavy canvas work
+    // while the gesture is still in-flight, but start the first recovery frame
+    // immediately once both gesture signals have fully settled.
+    if (this.viewport.SKIP_REFRESH_DURING_GESTURE) {
+      let pendingCanvasTimerId: ReturnType<typeof setTimeout> | null = null;
+
+      const cancelPendingCanvasRefresh = () => {
+        if (pendingCanvasTimerId !== null) {
+          clearTimeout(pendingCanvasTimerId);
+          pendingCanvasTimerId = null;
+        }
+      };
+
+      const scheduleCanvasRefresh = () => {
+        cancelPendingCanvasRefresh();
+        const delayMs = getPostGestureRecoveryDelay({
+          isPanning: this.viewport.panning$.value,
+          isZooming: this.viewport.zooming$.value,
+          fallbackDelayMs: viewportRuntimeConfig.POST_GESTURE_REFRESH_DELAY,
+        });
+        pendingCanvasTimerId = setTimeout(() => {
+          pendingCanvasTimerId = null;
+          // If a gesture is still in-flight when the timer fires, reschedule
+          // instead of dropping. Dropping here left connectors blank until a
+          // tap forced a synchronous refresh.
+          if (this.viewport.panning$.value || this.viewport.zooming$.value) {
+            scheduleCanvasRefresh();
+            return;
+          }
+          this.refresh({ type: 'all' });
+        }, delayMs);
+      };
+
+      this._disposables.add(
+        this.viewport.panning$.subscribe(panning => {
+          this._updatePlaceholderMode();
+          if (panning) {
+            cancelPendingCanvasRefresh();
+          } else {
+            scheduleCanvasRefresh();
+          }
+        })
+      );
+      this._disposables.add(
+        this.viewport.zooming$.subscribe(zooming => {
+          this._updatePlaceholderMode();
+          if (zooming) {
+            cancelPendingCanvasRefresh();
+          } else {
+            scheduleCanvasRefresh();
+          }
+        })
+      );
+      this._disposables.add({ dispose: cancelPendingCanvasRefresh });
+    }
 
     let wasDragging = false;
     this._disposables.add(
@@ -537,7 +926,11 @@ export class CanvasRenderer {
         const isDragging = this._gfx.tool.dragging$.value;
 
         if (wasDragging && !isDragging) {
-          this.refresh({ type: 'all' });
+          if (this.viewport.panning$.value || this.viewport.zooming$.value) {
+            // Deferred refresh will handle it after gesture ends
+          } else {
+            this.refresh({ type: 'all' });
+          }
         }
 
         wasDragging = isDragging;
@@ -572,16 +965,34 @@ export class CanvasRenderer {
 
   private _render() {
     const renderStart = performance.now();
-    const { viewportBounds, zoom } = this.viewport;
+    const { overscanViewportBounds, viewportBounds, zoom } = this.viewport;
+    const {
+      cullBound: mainCanvasCullBound,
+      renderBound: mainCanvasRenderBound,
+    } = getMainCanvasFallbackBounds({
+      viewportBounds,
+      overscanViewportBounds,
+    });
     const { ctx } = this;
-    const dpr = window.devicePixelRatio;
+    const dpr = getEffectiveDpr(zoom);
     const scale = zoom * dpr;
     const matrix = new DOMMatrix().scaleSelf(scale);
     const renderStats = this._createRenderPassStats();
     const fullRender = this._needsFullRender;
-    const stackingIndexesToRender = fullRender
-      ? this._stackingCanvas.map((_, idx) => idx)
-      : [...this._dirtyStackingCanvasIndexes];
+    const bypassStackingCanvases = getStackingCanvasBypassState({
+      isIOS: IS_IOS,
+      zoom: this.viewport.zoom,
+      gestureActive:
+        this.viewport.panning$.value || this.viewport.zooming$.value,
+      recoveryActive: this._isStackingCanvasRecoveryActive(),
+      viewportWidth: this.viewport.width,
+      viewportHeight: this.viewport.height,
+    });
+    const stackingIndexesToRender = bypassStackingCanvases
+      ? []
+      : fullRender
+        ? this._stackingCanvas.map((_, idx) => idx)
+        : [...this._dirtyStackingCanvasIndexes];
     /**
      * if a layer does not have a corresponding canvas
      * its element will be add to this array and drawing on the
@@ -589,7 +1000,15 @@ export class CanvasRenderer {
      */
     let fallbackElement: SurfaceElementModel[] = [];
     const allCanvasLayers = this.layerManager.getCanvasLayers();
-    const viewportBound = Bound.from(viewportBounds);
+    const stackingViewportBound = Bound.from(overscanViewportBounds);
+
+    this._canvasSizeUpdater(mainCanvasRenderBound, dpr).update(this.canvas);
+
+    if (bypassStackingCanvases) {
+      this._stackingCanvas.forEach(canvas => {
+        this._applyStackingCanvasLayout(canvas, null, dpr);
+      });
+    }
 
     for (const idx of stackingIndexesToRender) {
       const layer = allCanvasLayers[idx];
@@ -601,7 +1020,7 @@ export class CanvasRenderer {
 
       const layerRenderBound = this._getLayerRenderBound(
         layer.elements,
-        viewportBound
+        stackingViewportBound
       );
       const resolvedLayerRenderBound = this._getResolvedStackingCanvasBound(
         canvas,
@@ -638,7 +1057,12 @@ export class CanvasRenderer {
 
     if (fullRender || this._mainCanvasDirty) {
       allCanvasLayers.forEach((layer, idx) => {
-        if (!this._stackingCanvas[idx]) {
+        if (
+          bypassStackingCanvases ||
+          !this._stackingCanvas[idx] ||
+          this._stackingCanvas[idx].width === 0 ||
+          this._stackingCanvas[idx].height === 0
+        ) {
           fallbackElement = fallbackElement.concat(layer.elements);
         }
       });
@@ -651,10 +1075,11 @@ export class CanvasRenderer {
         ctx,
         matrix,
         new RoughCanvas(ctx.canvas),
-        viewportBounds,
+        mainCanvasRenderBound,
         fallbackElement,
         true,
-        renderStats
+        renderStats,
+        mainCanvasCullBound
       );
     }
 
@@ -726,7 +1151,8 @@ export class CanvasRenderer {
     bound: IBound,
     surfaceElements?: SurfaceElementModel[],
     overLay: boolean = false,
-    renderStats?: RenderPassStats
+    renderStats?: RenderPassStats,
+    cullBound: IBound = bound
   ) {
     if (!ctx) return;
 
@@ -734,13 +1160,13 @@ export class CanvasRenderer {
 
     const elements =
       surfaceElements ??
-      (this.grid.search(bound, {
+      (this.grid.search(cullBound, {
         filter: ['canvas', 'local'],
       }) as SurfaceElementModel[]);
 
     for (const element of elements) {
       const display = (element.display ?? true) && !element.hidden;
-      if (display && intersects(getBoundWithRotation(element), bound)) {
+      if (display && intersects(getBoundWithRotation(element), cullBound)) {
         renderStats && (renderStats.visibleElementCount += 1);
         if (
           this.usePlaceholder &&
@@ -748,7 +1174,7 @@ export class CanvasRenderer {
         ) {
           renderStats && (renderStats.placeholderElementCount += 1);
           ctx.save();
-          ctx.fillStyle = 'rgba(200, 200, 200, 0.5)';
+          ctx.fillStyle = resolveSurfacePlaceholderColor(this.getColorScheme());
           const drawX = element.x - bound.x;
           const drawY = element.y - bound.y;
           ctx.fillRect(drawX, drawY, element.w, element.h);
@@ -785,9 +1211,12 @@ export class CanvasRenderer {
   }
 
   private _resetSize() {
-    const sizeUpdater = this._canvasSizeUpdater();
+    const sizeUpdater = this._canvasSizeUpdater(
+      this.viewport.overscanViewportBounds
+    );
 
     sizeUpdater.update(this.canvas);
+    this._lastCanvasBudgetZoom = this.viewport.zoom;
     this._invalidate({ type: 'all' });
   }
 
@@ -838,6 +1267,7 @@ export class CanvasRenderer {
     this._container = container;
     container.append(this.canvas);
 
+    this._updatePlaceholderMode();
     this._resetSize();
     this.refresh({ type: 'all' });
   }
@@ -864,8 +1294,11 @@ export class CanvasRenderer {
     canvas = canvas || document.createElement('canvas');
 
     const dpr = window.devicePixelRatio || 1;
-    if (canvas.width !== bound.w * dpr) canvas.width = bound.w * dpr;
-    if (canvas.height !== bound.h * dpr) canvas.height = bound.h * dpr;
+    const actualWidth = Math.ceil(bound.w * dpr);
+    const actualHeight = Math.ceil(bound.h * dpr);
+
+    if (canvas.width !== actualWidth) canvas.width = actualWidth;
+    if (canvas.height !== actualHeight) canvas.height = actualHeight;
 
     canvas.style.width = `${bound.w}px`;
     canvas.style.height = `${bound.h}px`;

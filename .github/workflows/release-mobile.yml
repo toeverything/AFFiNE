@@ -109,12 +109,15 @@ jobs:
       - uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: 26.2
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
       - name: Install Swiftformat
         run: brew install swiftformat
       - name: Cap sync
         run: yarn workspace @affine/ios sync
       - name: Signing By Apple Developer ID
-        uses: apple-actions/import-codesign-certs@v6
+        uses: apple-actions/import-codesign-certs@v7
         id: import-codesign-certs
         with:
           p12-file-base64: ${{ secrets.CERTIFICATES_P12_MOBILE }}
@@ -131,8 +134,10 @@ jobs:
           printf '%s' "$BUILD_PROVISION_PROFILE" | base64 --decode -o "$PP_PATH"
           mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
           cp "$PP_PATH" "$HOME/Library/MobileDevice/Provisioning Profiles"
-          fastlane beta
+          bundle install
+          bundle exec fastlane beta
         env:
+          BUNDLE_PATH: vendor/bundle
           BUILD_TARGET: distribution
           BUILD_PROVISION_PROFILE: ${{ secrets.BUILD_PROVISION_PROFILE }}
           PP_PATH: ${{ runner.temp }}/build_pp.mobileprovision

@@ -629,6 +629,7 @@ export class SubscriptionService {
         `Failed to handle ${reason} for invoice ${invoiceId}`,
         e
       );
+      throw e;
     }
   }
 

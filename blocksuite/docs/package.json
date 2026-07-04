@@ -14,5 +14,5 @@
   "scripts": {
     "build": "typedoc"
   },
-  "version": "0.26.3"
+  "version": "0.27.0"
 }

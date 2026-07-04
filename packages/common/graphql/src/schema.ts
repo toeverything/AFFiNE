@@ -213,8 +213,14 @@ export interface AdminWorkspaceMember {
   email: Scalars['String']['output'];
   id: Scalars['String']['output'];
   name: Scalars['String']['output'];
-  role: Permission;
+  role: AdminWorkspaceMemberRole;
   status: WorkspaceMemberStatus;
+}
+
+export enum AdminWorkspaceMemberRole {
+  Admin = 'Admin',
+  Collaborator = 'Collaborator',
+  Owner = 'Owner',
 }
 
 export interface AdminWorkspaceSharedLink {
@@ -1165,6 +1171,7 @@ export type ErrorDataUnion =
   | SubscriptionPlanNotFoundDataType
   | UnknownOauthProviderDataType
   | UnsupportedClientVersionDataType
+  | UnsupportedServerVersionDataType
   | UnsupportedSubscriptionPlanDataType
   | ValidationErrorDataType
   | VersionRejectedDataType
@@ -1306,6 +1313,7 @@ export enum ErrorNames {
   UNKNOWN_OAUTH_PROVIDER = 'UNKNOWN_OAUTH_PROVIDER',
   UNSPLASH_IS_NOT_CONFIGURED = 'UNSPLASH_IS_NOT_CONFIGURED',
   UNSUPPORTED_CLIENT_VERSION = 'UNSUPPORTED_CLIENT_VERSION',
+  UNSUPPORTED_SERVER_VERSION = 'UNSUPPORTED_SERVER_VERSION',
   UNSUPPORTED_SUBSCRIPTION_PLAN = 'UNSUPPORTED_SUBSCRIPTION_PLAN',
   USER_AVATAR_NOT_FOUND = 'USER_AVATAR_NOT_FOUND',
   USER_NOT_FOUND = 'USER_NOT_FOUND',
@@ -3228,6 +3236,11 @@ export interface UnsupportedClientVersionDataType {
   requiredVersion: Scalars['String']['output'];
 }
 
+export interface UnsupportedServerVersionDataType {
+  __typename?: 'UnsupportedServerVersionDataType';
+  requiredVersion: Scalars['String']['output'];
+}
+
 export interface UnsupportedSubscriptionPlanDataType {
   __typename?: 'UnsupportedSubscriptionPlanDataType';
   plan: Scalars['String']['output'];
@@ -4006,7 +4019,7 @@ export type AdminWorkspaceQuery = {
       name: string;
       email: string;
       avatarUrl: string | null;
-      role: Permission;
+      role: AdminWorkspaceMemberRole;
       status: WorkspaceMemberStatus;
     }>;
   } | null;

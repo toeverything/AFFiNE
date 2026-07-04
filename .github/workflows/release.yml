@@ -72,7 +72,7 @@ jobs:
     steps:
       - name: Decide whether to release
         id: decide
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const buildType = '${{ needs.prepare.outputs.BUILD_TYPE }}'
@@ -195,7 +195,7 @@ jobs:
       desktop_macos: ${{ github.event_name != 'workflow_dispatch' || inputs.desktop_macos }}
       desktop_windows: ${{ github.event_name != 'workflow_dispatch' || inputs.desktop_windows }}
       desktop_linux: ${{ github.event_name != 'workflow_dispatch' || inputs.desktop_linux }}
-      require-windows-signing: ${{ needs.prepare.outputs.BUILD_TYPE == 'beta' || needs.prepare.outputs.BUILD_TYPE == 'stable' || (github.event_name == 'workflow_dispatch' && inputs.desktop_windows) }}
+      require-windows-signing: ${{ needs.prepare.outputs.BUILD_TYPE == 'stable' || (github.event_name == 'workflow_dispatch' && inputs.desktop_windows) }}
 
   mobile:
     name: Release Mobile

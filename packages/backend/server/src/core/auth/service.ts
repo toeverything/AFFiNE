@@ -51,6 +51,13 @@ export class AuthService implements OnApplicationBootstrap {
     };
   }
 
+  private getServerName() {
+    return (
+      this.config.server.name ??
+      (env.selfhosted ? 'AFFiNE Self-hosted' : 'AFFiNE Cloud')
+    );
+  }
+
   async onApplicationBootstrap() {
     if (env.dev) {
       await createDevUsers(this.models);
@@ -372,6 +379,7 @@ export class AuthService implements OnApplicationBootstrap {
       props: {
         url: link,
         otp,
+        serverName: this.getServerName(),
       },
     });
   }

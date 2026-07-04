@@ -13,6 +13,7 @@ import {
   AFFiNELogger,
   CacheInterceptor,
   CloudThrottlerGuard,
+  ConfigFactory,
   EventBus,
   GlobalExceptionFilter,
   JobQueue,
@@ -250,6 +251,31 @@ export async function createApp(
   }
 
   const module = await builder.compile();
+  module.get(ConfigFactory).override({
+    storages: {
+      avatar: {
+        storage: {
+          provider: 'assetpack',
+          bucket: 'avatars',
+          config: { path: '/tmp/affine-test-storage' },
+        },
+      },
+      blob: {
+        storage: {
+          provider: 'assetpack',
+          bucket: 'blobs',
+          config: { path: '/tmp/affine-test-storage' },
+        },
+      },
+    },
+    copilot: {
+      storage: {
+        provider: 'assetpack',
+        bucket: 'copilot',
+        config: { path: '/tmp/affine-test-storage' },
+      },
+    },
+  });
 
   module.useCustomApplicationConstructor(TestingApp);
 

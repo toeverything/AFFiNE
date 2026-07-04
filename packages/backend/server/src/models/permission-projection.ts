@@ -268,6 +268,20 @@ export class PermissionProjectionModel extends BaseModel {
       `;
 
         await tx.$executeRaw`
+        WITH legacy_doc_grants AS (
+          SELECT
+            workspace_id,
+            page_id,
+            user_id,
+            type,
+            created_at,
+            row_number() OVER (
+              PARTITION BY workspace_id, page_id, affine_permission_legacy_doc_role(type)
+              ORDER BY created_at ASC, user_id ASC
+            ) AS role_rank
+          FROM workspace_page_user_permissions
+          WHERE affine_permission_legacy_doc_role(type) IS NOT NULL
+        )
         INSERT INTO doc_grants (
           workspace_id,
           doc_id,
@@ -291,8 +305,12 @@ export class PermissionProjectionModel extends BaseModel {
           user_id,
           created_at,
           now()
-        FROM workspace_page_user_permissions
+        FROM legacy_doc_grants
         WHERE affine_permission_legacy_doc_role(type) IS NOT NULL
+          AND (
+            affine_permission_legacy_doc_role(type) <> 'owner'
+            OR role_rank = 1
+          )
         ON CONFLICT (workspace_id, doc_id, principal_type, principal_id)
         DO UPDATE SET
           role = EXCLUDED.role,

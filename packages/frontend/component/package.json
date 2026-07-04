@@ -62,7 +62,7 @@
     "react": "^19.2.1",
     "react-dom": "19.2.1",
     "react-paginate": "^8.3.0",
-    "react-router-dom": "^6.30.3",
+    "react-router-dom": "^6.30.4",
     "react-transition-state": "^2.2.0",
     "sonner": "^2.0.7",
     "swr": "^2.3.7",
@@ -81,8 +81,8 @@
     "storybook": "^10.2.14",
     "typescript": "^5.9.3",
     "unplugin-swc": "^1.5.9",
-    "vite": "^7.2.7",
+    "vite": "^7.3.5",
     "vitest": "^4.1.8"
   },
-  "version": "0.26.3"
+  "version": "0.27.0"
 }

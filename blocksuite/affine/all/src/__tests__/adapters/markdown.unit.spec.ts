@@ -65,15 +65,19 @@ function markdownFixture(relativePath: string): File {
   );
 }
 
-function zipFixture(entries: Record<string, string>) {
-  const zipped = fflate.zipSync(
+function zipBytes(entries: Record<string, string | Uint8Array>) {
+  return fflate.zipSync(
     Object.fromEntries(
       Object.entries(entries).map(([path, content]) => [
         path,
-        fflate.strToU8(content),
+        typeof content === 'string' ? fflate.strToU8(content) : content,
       ])
     )
   );
+}
+
+function zipFixture(entries: Record<string, string | Uint8Array>) {
+  const zipped = zipBytes(entries);
   const buffer = new ArrayBuffer(zipped.byteLength);
   new Uint8Array(buffer).set(zipped);
 
@@ -312,6 +316,54 @@ Hello world
     expect(meta?.tags).toEqual(['a', 'b']);
   });
 
+  test('preserves list text inside blockquotes without list blocks', async () => {
+    const markdown = `> **Shopping List:**
+> - Apples
+> - Bananas
+> - Oranges
+`;
+    const mdAdapter = new MarkdownAdapter(createJob(), provider);
+    const snapshot = await mdAdapter.toDocSnapshot({
+      file: markdown,
+      assets: new AssetsManager({ blob: new MemoryBlobCRUD() }),
+    });
+
+    expect(simplifyBlockForSnapshot(snapshot.blocks, new Map())).toMatchObject({
+      children: [
+        {
+          flavour: 'affine:note',
+          children: [
+            {
+              flavour: 'affine:paragraph',
+              type: 'quote',
+              delta: [
+                { insert: 'Shopping List:' },
+                { insert: '\n' },
+                { insert: '- ' },
+                { insert: 'Apples' },
+                { insert: '\n' },
+                { insert: '- ' },
+                { insert: 'Bananas' },
+                { insert: '\n' },
+                { insert: '- ' },
+                { insert: 'Oranges' },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    const exported = await mdAdapter.fromDocSnapshot({
+      snapshot,
+      assets: new AssetsManager({ blob: new MemoryBlobCRUD() }),
+    });
+    expect(exported.file).toContain('> **Shopping List:**');
+    expect(exported.file).toContain('> \\- Apples');
+    expect(exported.file).toContain('> \\- Bananas');
+    expect(exported.file).toContain('> \\- Oranges');
+  });
+
   test('imports notion markdown zip titles and folder names', async () => {
     const schema = new Schema().register(AffineSchemas);
     const collection = new TestWorkspace();
@@ -397,6 +449,30 @@ Hello world
       expect.arrayContaining([
         expect.objectContaining({ pageId: expect.any(String) }),
       ])
+    );
+  });
+
+  test('imports notion markdown zip title from frontmatter when heading is absent', async () => {
+    const schema = new Schema().register(AffineSchemas);
+    const collection = new TestWorkspace();
+    collection.storeExtensions = testStoreExtensions;
+    collection.meta.initialize();
+
+    const imported = zipFixture({
+      'Export/Fallback 11111111111111111111111111111111.md':
+        '---\ntitle: Frontmatter Title\n---\nBody',
+    });
+
+    const { docIds } = await MarkdownTransformer.importNotionMarkdownZip({
+      collection,
+      schema,
+      imported,
+      extensions: testStoreExtensions,
+    });
+
+    expect(docIds).toHaveLength(1);
+    expect(collection.meta.getDocMeta(docIds[0])?.title).toBe(
+      'Frontmatter Title'
     );
   });
 
@@ -490,6 +566,71 @@ Hello world
         title: '引用',
       },
     });
+  });
+
+  test('imports nested notion markdown zips with isolated relative links', async () => {
+    const schema = new Schema().register(AffineSchemas);
+    const collection = new TestWorkspace();
+    collection.storeExtensions = testStoreExtensions;
+    collection.meta.initialize();
+
+    const imported = zipFixture({
+      'Export/Part A.zip': zipBytes({
+        'Entry 11111111111111111111111111111111.md':
+          '# Entry A\n[go](./Target%2022222222222222222222222222222222.md)',
+        'Target 22222222222222222222222222222222.md': '# Target A\nA body',
+      }),
+      'Export/Part B.zip': zipBytes({
+        'Entry 11111111111111111111111111111111.md':
+          '# Entry B\n[go](./Target%2022222222222222222222222222222222.md)',
+        'Target 22222222222222222222222222222222.md': '# Target B\nB body',
+      }),
+    });
+
+    const { docIds, folderHierarchy } =
+      await MarkdownTransformer.importNotionMarkdownZip({
+        collection,
+        schema,
+        imported,
+        extensions: testStoreExtensions,
+      });
+    expect(docIds).toHaveLength(4);
+
+    const titleById = new Map(
+      collection.meta.docMetas.map(meta => [
+        meta.id,
+        meta.title ?? '<untitled>',
+      ])
+    );
+    const entryADeltas = collectSimplifiedDeltas(
+      snapshotDocByTitle(collection, 'Entry A', titleById)
+    );
+    const entryBDeltas = collectSimplifiedDeltas(
+      snapshotDocByTitle(collection, 'Entry B', titleById)
+    );
+
+    expect(entryADeltas).toContainEqual({
+      insert: ' ',
+      reference: {
+        type: 'LinkedPage',
+        page: 'Target A',
+        title: 'go',
+      },
+    });
+    expect(entryBDeltas).toContainEqual({
+      insert: ' ',
+      reference: {
+        type: 'LinkedPage',
+        page: 'Target B',
+        title: 'go',
+      },
+    });
+
+    const [rootFolder] = [...(folderHierarchy?.children.values() ?? [])];
+    expect(rootFolder?.name).toBe('Export');
+    expect(
+      [...(rootFolder?.children.values() ?? [])].map(node => node.name)
+    ).toEqual(expect.arrayContaining(['Part A', 'Part B']));
   });
 
   test('imports obsidian vault fixtures', async () => {

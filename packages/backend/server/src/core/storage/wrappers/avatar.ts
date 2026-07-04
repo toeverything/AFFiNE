@@ -1,21 +1,11 @@
 import { Injectable } from '@nestjs/common';
 
-import type {
-  BlobInputType,
-  PutObjectMetadata,
-  StorageProvider,
-} from '../../../base';
-import {
-  Config,
-  OnEvent,
-  StorageProviderFactory,
-  URLHelper,
-} from '../../../base';
+import type { BlobInputType, PutObjectMetadata } from '../../../base';
+import { Config, OnEvent, toBuffer, URLHelper } from '../../../base';
+import { StorageRuntimeProvider } from '../../storage-runtime';
 
 @Injectable()
 export class AvatarStorage {
-  private provider!: StorageProvider;
-
   get config() {
     return this.AFFiNEConfig.storages.avatar;
   }
@@ -23,23 +13,11 @@ export class AvatarStorage {
   constructor(
     private readonly AFFiNEConfig: Config,
     private readonly url: URLHelper,
-    private readonly storageFactory: StorageProviderFactory
+    private readonly rt: StorageRuntimeProvider
   ) {}
 
-  @OnEvent('config.init')
-  async onConfigInit() {
-    this.provider = this.storageFactory.create(this.config.storage);
-  }
-
-  @OnEvent('config.changed')
-  async onConfigChanged(event: Events['config.changed']) {
-    if (event.updates.storages?.avatar?.storage) {
-      this.provider = this.storageFactory.create(this.config.storage);
-    }
-  }
-
   async put(key: string, blob: BlobInputType, metadata?: PutObjectMetadata) {
-    await this.provider.put(key, blob, metadata);
+    await this.rt.putObject('avatar', key, await toBuffer(blob), metadata);
     let link = this.config.publicPath + key;
 
     if (link.startsWith('/')) {
@@ -50,11 +28,11 @@ export class AvatarStorage {
   }
 
   get(key: string) {
-    return this.provider.get(key);
+    return this.rt.getObject('avatar', key);
   }
 
   delete(link: string) {
-    return this.provider.delete(link.split('/').pop() as string);
+    return this.rt.deleteObject('avatar', link.split('/').pop() as string);
   }
 
   @OnEvent('user.deleted')

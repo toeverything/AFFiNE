@@ -524,3 +524,73 @@ test('should filter docs by Doc.Publish', async t => {
 
   t.is(docs3.length, 0);
 });
+
+test('legacy duplicate doc owner grants do not block projection', async t => {
+  const owner = await module.create(Mockers.User);
+  const secondOwner = await module.create(Mockers.User);
+  const workspace = await module.create(Mockers.Workspace, {
+    owner,
+  });
+  const docId = randomUUID();
+
+  await db.$executeRaw`
+    INSERT INTO workspace_pages (
+      workspace_id,
+      page_id,
+      public,
+      "defaultRole"
+    )
+    VALUES (${workspace.id}, ${docId}, false, ${DocRole.Manager})
+  `;
+  await resetProjection(workspace.id);
+
+  await db.$transaction(async tx => {
+    await tx.$executeRaw`
+      SELECT set_config('affine.permission_projection.enabled', 'off', true)
+    `;
+    await tx.$executeRaw`
+      INSERT INTO workspace_page_user_permissions (
+        workspace_id,
+        page_id,
+        user_id,
+        type,
+        created_at
+      )
+      VALUES (
+        ${workspace.id},
+        ${docId},
+        ${owner.id},
+        ${DocRole.Owner},
+        ${new Date('2026-01-02T00:00:00Z')}
+      )
+    `;
+    await tx.$executeRaw`
+      INSERT INTO workspace_page_user_permissions (
+        workspace_id,
+        page_id,
+        user_id,
+        type,
+        created_at
+      )
+      VALUES (
+        ${workspace.id},
+        ${docId},
+        ${secondOwner.id},
+        ${DocRole.Owner},
+        ${new Date('2026-01-01T00:00:00Z')}
+      )
+    `;
+  });
+
+  await models.permissionProjection.backfillLegacyProjection();
+
+  const projectedOwners = await db.$queryRaw<{ principalId: string }[]>`
+    SELECT principal_id AS "principalId"
+    FROM doc_grants
+    WHERE workspace_id = ${workspace.id}
+      AND doc_id = ${docId}
+      AND role = 'owner'
+  `;
+
+  t.deepEqual(projectedOwners, [{ principalId: secondOwner.id }]);
+});

@@ -12,7 +12,8 @@ import {
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
-import { PrismaClient, Provider, type User } from '@prisma/client';
+import type { Entitlement, User } from '@prisma/client';
+import { PrismaClient, Provider } from '@prisma/client';
 import { GraphQLJSONObject } from 'graphql-scalars';
 import { groupBy } from 'lodash-es';
 import Stripe from 'stripe';
@@ -27,15 +28,11 @@ import {
   WorkspaceIdRequiredToUpdateTeamSubscription,
 } from '../../base';
 import { CurrentUser, Public } from '../../core/auth';
+import { EntitlementService } from '../../core/entitlement';
 import { PermissionAccess } from '../../core/permission';
 import { UserType } from '../../core/user';
 import { WorkspaceType } from '../../core/workspaces';
-import {
-  Invoice,
-  Subscription,
-  visibleSubscriptionWhere,
-  WorkspaceSubscriptionManager,
-} from './manager';
+import { Invoice, Subscription, visibleSubscriptionWhere } from './manager';
 import { RevenueCatWebhookHandler } from './revenuecat';
 import { CheckoutParams, SubscriptionService } from './service';
 import {
@@ -463,6 +460,7 @@ export class SubscriptionResolver {
 export class UserSubscriptionResolver {
   constructor(
     private readonly db: PrismaClient,
+    private readonly entitlement: EntitlementService,
     private readonly rcHandler: RevenueCatWebhookHandler
   ) {}
 
@@ -471,6 +469,90 @@ export class UserSubscriptionResolver {
       s.variant = null;
     }
     return s;
+  }
+
+  private async currentUserSubscriptions(userId: string) {
+    const entitlements = (
+      await this.entitlement.getActiveEntitlements('user', userId)
+    ).filter(
+      entitlement =>
+        entitlement.source === 'cloud_subscription' &&
+        ['pro', 'lifetime_pro', 'ai'].includes(entitlement.plan)
+    );
+    const providerFacts = await this.db.providerSubscription.findMany({
+      where: {
+        targetType: 'user',
+        targetId: userId,
+        plan: {
+          in: entitlements.map(entitlement =>
+            this.subscriptionPlan(entitlement.plan)
+          ),
+        },
+        status: {
+          in: [
+            SubscriptionStatus.Active,
+            SubscriptionStatus.Trialing,
+            SubscriptionStatus.PastDue,
+          ],
+        },
+        OR: [{ periodEnd: null }, { periodEnd: { gt: new Date() } }],
+      },
+      orderBy: { updatedAt: 'desc' },
+    });
+
+    return entitlements.map(entitlement => {
+      const plan = this.subscriptionPlan(entitlement.plan);
+      const providerFact = providerFacts.find(
+        fact => fact.targetId === userId && fact.plan === plan
+      );
+      const metadata = entitlement.metadata as {
+        provider?: string | null;
+        recurring?: string | null;
+        variant?: string | null;
+        stripeSubscriptionId?: string | null;
+      };
+
+      return this.normalizeSubscription({
+        stripeSubscriptionId:
+          providerFact?.externalSubscriptionId ??
+          metadata.stripeSubscriptionId ??
+          null,
+        stripeScheduleId: null,
+        status: providerFact?.status ?? this.subscriptionStatus(entitlement),
+        plan,
+        recurring:
+          providerFact?.recurring ??
+          metadata.recurring ??
+          (entitlement.plan === 'lifetime_pro'
+            ? SubscriptionRecurring.Lifetime
+            : SubscriptionRecurring.Monthly),
+        variant:
+          metadata.variant ??
+          (entitlement.plan === 'lifetime_pro'
+            ? SubscriptionVariant.Onetime
+            : null),
+        quantity: entitlement.quantity ?? 1,
+        start: entitlement.startsAt ?? entitlement.createdAt,
+        end: entitlement.expiresAt,
+        trialStart: providerFact?.trialStart ?? null,
+        trialEnd: providerFact?.trialEnd ?? entitlement.graceUntil,
+        nextBillAt: providerFact?.periodEnd ?? entitlement.expiresAt,
+        canceledAt: providerFact?.canceledAt ?? null,
+        provider: providerFact?.provider ?? metadata.provider ?? null,
+        iapStore: providerFact?.iapStore ?? null,
+      });
+    });
+  }
+
+  private subscriptionPlan(plan: string) {
+    return plan === 'lifetime_pro' ? SubscriptionPlan.Pro : plan;
+  }
+
+  private subscriptionStatus(entitlement: Entitlement) {
+    if (entitlement.status === 'grace') {
+      return SubscriptionStatus.PastDue;
+    }
+    return SubscriptionStatus.Active;
   }
 
   @ResolveField(() => [SubscriptionType])
@@ -482,18 +564,7 @@ export class UserSubscriptionResolver {
       throw new AccessDenied();
     }
 
-    const subscriptions = await this.db.subscription.findMany({
-      where: {
-        targetId: user.id,
-        ...visibleSubscriptionWhere(),
-      },
-    });
-
-    subscriptions.forEach(subscription =>
-      this.normalizeSubscription(subscription)
-    );
-
-    return subscriptions;
+    return this.currentUserSubscriptions(user.id);
   }
 
   @ResolveField(() => Int, {
@@ -560,16 +631,9 @@ export class UserSubscriptionResolver {
 
     try {
       await this.rcHandler.syncAppUserWithExternalRef(user.id, transactionId);
-      current = await this.db.subscription.findMany({
-        where: {
-          targetId: user.id,
-          ...visibleSubscriptionWhere(),
-        },
-      });
+      current = await this.currentUserSubscriptions(user.id);
       // ignore errors
     } catch {}
-
-    current.forEach(subscription => this.normalizeSubscription(subscription));
 
     return current;
   }
@@ -612,39 +676,93 @@ export class UserSubscriptionResolver {
     if (shouldSync) {
       try {
         await this.rcHandler.syncAppUser(user.id);
-        current = await this.db.subscription.findMany({
-          where: {
-            targetId: user.id,
-            ...visibleSubscriptionWhere(),
-          },
-        });
         // ignore errors
       } catch {}
     }
 
-    current.forEach(subscription => this.normalizeSubscription(subscription));
-
-    return current;
+    return this.currentUserSubscriptions(user.id);
   }
 }
 
 @Resolver(() => WorkspaceType)
 export class WorkspaceSubscriptionResolver {
   constructor(
-    private readonly service: WorkspaceSubscriptionManager,
     private readonly db: PrismaClient,
+    private readonly entitlement: EntitlementService,
     private readonly ac: PermissionAccess
   ) {}
+
+  private async currentWorkspaceSubscription(workspaceId: string) {
+    const entitlement = await this.entitlement.getBestEntitlement(
+      'workspace',
+      workspaceId
+    );
+    if (
+      !entitlement ||
+      entitlement.source !== 'cloud_subscription' ||
+      entitlement.plan !== 'team'
+    ) {
+      return null;
+    }
+
+    const providerFact = await this.db.providerSubscription.findFirst({
+      where: {
+        targetType: 'workspace',
+        targetId: workspaceId,
+        plan: SubscriptionPlan.Team,
+        status: {
+          in: [
+            SubscriptionStatus.Active,
+            SubscriptionStatus.Trialing,
+            SubscriptionStatus.PastDue,
+          ],
+        },
+        OR: [{ periodEnd: null }, { periodEnd: { gt: new Date() } }],
+      },
+      orderBy: { updatedAt: 'desc' },
+    });
+    const metadata = entitlement.metadata as {
+      provider?: string | null;
+      recurring?: string | null;
+      variant?: string | null;
+      stripeSubscriptionId?: string | null;
+    };
+
+    return {
+      stripeSubscriptionId:
+        providerFact?.externalSubscriptionId ??
+        metadata.stripeSubscriptionId ??
+        null,
+      stripeScheduleId: null,
+      status:
+        providerFact?.status ??
+        (entitlement.status === 'grace'
+          ? SubscriptionStatus.PastDue
+          : SubscriptionStatus.Active),
+      plan: SubscriptionPlan.Team,
+      recurring:
+        providerFact?.recurring ??
+        metadata.recurring ??
+        SubscriptionRecurring.Monthly,
+      variant: metadata.variant ?? null,
+      quantity: entitlement.quantity ?? 1,
+      start: entitlement.startsAt ?? entitlement.createdAt,
+      end: entitlement.expiresAt,
+      trialStart: providerFact?.trialStart ?? null,
+      trialEnd: providerFact?.trialEnd ?? entitlement.graceUntil,
+      nextBillAt: providerFact?.periodEnd ?? entitlement.expiresAt,
+      canceledAt: providerFact?.canceledAt ?? null,
+      provider: providerFact?.provider ?? metadata.provider ?? null,
+      iapStore: providerFact?.iapStore ?? null,
+    };
+  }
 
   @ResolveField(() => SubscriptionType, {
     nullable: true,
     description: 'The team subscription of the workspace, if exists.',
   })
   async subscription(@Parent() workspace: WorkspaceType) {
-    return this.service.getActiveSubscription({
-      plan: SubscriptionPlan.Team,
-      workspaceId: workspace.id,
-    });
+    return this.currentWorkspaceSubscription(workspace.id);
   }
 
   @ResolveField(() => Int, {

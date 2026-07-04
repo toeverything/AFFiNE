@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 
 import { Injectable } from '@nestjs/common';
 import { PrismaClient, Provider, UserStripeCustomer } from '@prisma/client';
-import { omit, pick } from 'lodash-es';
+import { omit } from 'lodash-es';
 import { z } from 'zod';
 
 import { SubscriptionPlanNotFound, URLHelper } from '../../../base';
@@ -15,6 +15,7 @@ import {
   LookupKey,
   SubscriptionPlan,
   SubscriptionRecurring,
+  SubscriptionStatus,
 } from '../types';
 import {
   activeSubscriptionWhere,
@@ -129,8 +130,9 @@ export class SelfhostTeamSubscriptionManager extends SubscriptionManager {
 
     if (!existingSubscription) {
       const key = randomUUID();
-      const [subscription] = await this.db.$transaction([
+      const [saved] = await this.db.$transaction([
         this.db.subscription.create({
+          // TODO(stable-upgrade): remove legacy subscriptions dual-write after stable supports provider facts.
           data: {
             provider: Provider.stripe,
             targetId: key,
@@ -148,26 +150,52 @@ export class SelfhostTeamSubscriptionManager extends SubscriptionManager {
         props: { license: key },
       });
 
-      return subscription;
+      await this.upsertStripeProviderSubscription(
+        key,
+        subscription,
+        subscriptionData
+      );
+
+      return saved;
     } else {
-      return this.db.subscription.update({
+      const saved = await this.db.subscription.update({
+        // TODO(stable-upgrade): remove legacy subscriptions dual-write after stable supports provider facts.
         where: {
           stripeSubscriptionId: stripeSubscription.id,
         },
-        data: pick(subscriptionData, [
-          'status',
-          'stripeScheduleId',
-          'nextBillAt',
-          'canceledAt',
-          'end',
-        ]),
+        data: {
+          ...omit(subscriptionData, ['provider', 'iapStore']),
+          provider: Provider.stripe,
+          iapStore: null,
+          rcEntitlement: null,
+          rcProductId: null,
+          rcExternalRef: null,
+        },
       });
+      await this.upsertStripeProviderSubscription(
+        saved.targetId,
+        subscription,
+        subscriptionData
+      );
+      return saved;
     }
   }
 
   async deleteStripeSubscription({
     stripeSubscription,
   }: KnownStripeSubscription) {
+    await this.db.providerSubscription.updateMany({
+      where: {
+        provider: Provider.stripe,
+        externalSubscriptionId: stripeSubscription.id,
+      },
+      data: {
+        status: SubscriptionStatus.Canceled,
+        canceledAt: new Date(),
+        periodEnd: new Date(),
+      },
+    });
+
     const subscription = await this.db.subscription.findFirst({
       where: { stripeSubscriptionId: stripeSubscription.id },
     });
@@ -247,5 +275,75 @@ export class SelfhostTeamSubscriptionManager extends SubscriptionManager {
     const invoiceData = await this.transformInvoice(knownInvoice);
 
     return invoiceData;
+  }
+
+  private async upsertStripeProviderSubscription(
+    targetId: string,
+    known: KnownStripeSubscription,
+    subscriptionData: Subscription
+  ) {
+    const { lookupKey, stripeSubscription } = known;
+    const price = stripeSubscription.items.data[0]?.price;
+
+    await this.db.providerSubscription.upsert({
+      where: {
+        provider_externalSubscriptionId: {
+          provider: Provider.stripe,
+          externalSubscriptionId: stripeSubscription.id,
+        },
+      },
+      update: {
+        targetType: 'instance',
+        targetId,
+        plan: lookupKey.plan,
+        recurring: lookupKey.recurring,
+        status: stripeSubscription.status,
+        externalCustomerId:
+          typeof stripeSubscription.customer === 'string'
+            ? stripeSubscription.customer
+            : stripeSubscription.customer.id,
+        externalProductId:
+          typeof price?.product === 'string'
+            ? price.product
+            : price?.product?.id,
+        externalPriceId: price?.id,
+        currency: price?.currency,
+        amount: price?.unit_amount ?? null,
+        quantity: known.quantity,
+        periodStart: subscriptionData.start,
+        periodEnd: subscriptionData.end,
+        trialStart: subscriptionData.trialStart,
+        trialEnd: subscriptionData.trialEnd,
+        canceledAt: subscriptionData.canceledAt,
+        metadata: known.metadata,
+      },
+      create: {
+        provider: Provider.stripe,
+        targetType: 'instance',
+        targetId,
+        plan: lookupKey.plan,
+        recurring: lookupKey.recurring,
+        status: stripeSubscription.status,
+        externalCustomerId:
+          typeof stripeSubscription.customer === 'string'
+            ? stripeSubscription.customer
+            : stripeSubscription.customer.id,
+        externalSubscriptionId: stripeSubscription.id,
+        externalProductId:
+          typeof price?.product === 'string'
+            ? price.product
+            : price?.product?.id,
+        externalPriceId: price?.id,
+        currency: price?.currency,
+        amount: price?.unit_amount ?? null,
+        quantity: known.quantity,
+        periodStart: subscriptionData.start,
+        periodEnd: subscriptionData.end,
+        trialStart: subscriptionData.trialStart,
+        trialEnd: subscriptionData.trialEnd,
+        canceledAt: subscriptionData.canceledAt,
+        metadata: known.metadata,
+      },
+    });
   }
 }

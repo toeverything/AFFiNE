@@ -426,14 +426,15 @@ function prepareNotionMarkdownFile({
   const notionTitle = parseNotionMarkdownTitle(markdown);
   const { content, meta } = parseFrontmatter(notionTitle?.content ?? markdown);
   const fallbackTitle = stripNotionHash(getFileNameWithoutExtension(filename));
+  const preferredTitle = notionTitle?.title ?? meta.title ?? fallbackTitle;
 
   return {
     content,
     meta: {
       ...meta,
-      title: notionTitle?.title ?? fallbackTitle,
+      title: preferredTitle,
     },
-    preferredTitle: notionTitle?.title ?? fallbackTitle,
+    preferredTitle,
   };
 }
 
@@ -752,7 +753,7 @@ async function importMarkdownZipInternal({
   const pendingPagePathIdMap = new Map<string, string>();
   const markdownBlobs: Array<ImportedFileEntry & { pageId: string }> = [];
 
-  async function collectZipEntries(zipBlob: Blob) {
+  async function collectZipEntries(zipBlob: Blob, basePath = '') {
     const unzip = new Unzip();
     await unzip.load(zipBlob);
 
@@ -762,22 +763,23 @@ async function importMarkdownZipInternal({
       }
 
       const fileName = path.split('/').pop() ?? '';
+      const fullPath = basePath ? `${basePath}/${path}` : path;
       if (fileName.endsWith('.md')) {
         const pageId = collection.idGenerator();
-        registerMarkdownZipPagePath(pendingPagePathIdMap, path, pageId);
+        registerMarkdownZipPagePath(pendingPagePathIdMap, fullPath, pageId);
         markdownBlobs.push({
           filename: fileName,
           contentBlob: blob,
-          fullPath: path,
+          fullPath,
           pageId,
         });
       } else if (recursiveZip && fileName.endsWith('.zip')) {
-        await collectZipEntries(blob);
+        await collectZipEntries(blob, getFileNameWithoutExtension(fullPath));
       } else {
         await stageImportedAsset({
           pendingAssets,
           pendingPathBlobIdMap,
-          path,
+          path: fullPath,
           content: blob,
           fileName,
         });

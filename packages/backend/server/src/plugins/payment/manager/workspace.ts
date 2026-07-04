@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaClient, Provider, UserStripeCustomer } from '@prisma/client';
-import { omit, pick } from 'lodash-es';
+import { omit } from 'lodash-es';
 import { z } from 'zod';
 
 import {
@@ -72,7 +72,7 @@ export class WorkspaceSubscriptionManager extends SubscriptionManager {
     params: z.infer<typeof CheckoutParams>,
     args: z.infer<typeof WorkspaceSubscriptionCheckoutArgs>
   ) {
-    const subscription = await this.getSubscription({
+    const subscription = await this.getActiveSubscription({
       plan: SubscriptionPlan.Team,
       workspaceId: args.workspaceId,
     });
@@ -139,6 +139,11 @@ export class WorkspaceSubscriptionManager extends SubscriptionManager {
     }
 
     const subscriptionData = this.transformSubscription(subscription);
+    await this.upsertStripeProviderSubscription(
+      workspaceId,
+      subscription,
+      subscriptionData
+    );
 
     if (
       stripeSubscription.status === SubscriptionStatus.Active ||
@@ -158,26 +163,44 @@ export class WorkspaceSubscriptionManager extends SubscriptionManager {
       });
     }
 
-    const saved = await this.db.subscription.upsert({
-      where: {
-        provider: Provider.stripe,
-        stripeSubscriptionId: stripeSubscription.id,
-      },
-      update: {
-        ...pick(subscriptionData, [
-          'status',
-          'stripeScheduleId',
-          'nextBillAt',
-          'canceledAt',
-          'quantity',
-          'end',
-        ]),
-      },
-      create: {
-        targetId: workspaceId,
-        ...omit(subscriptionData, 'provider', 'iapStore'),
-      },
+    const existingByStripeId = await this.db.subscription.findUnique({
+      where: { stripeSubscriptionId: stripeSubscription.id },
     });
+
+    const saved = existingByStripeId
+      ? await this.db.subscription.update({
+          where: { id: existingByStripeId.id },
+          data: {
+            ...omit(subscriptionData, ['provider', 'iapStore']),
+            provider: Provider.stripe,
+            iapStore: null,
+            rcEntitlement: null,
+            rcProductId: null,
+            rcExternalRef: null,
+          },
+        })
+      : await this.db.subscription.upsert({
+          // TODO(stable-upgrade): remove legacy subscriptions dual-write after stable supports provider facts.
+          // TODO(stable-upgrade): remove reliance on target_id_plan unique slot after contract cleanup.
+          where: {
+            targetId_plan: {
+              targetId: workspaceId,
+              plan: lookupKey.plan,
+            },
+          },
+          update: {
+            ...omit(subscriptionData, ['provider', 'iapStore']),
+            provider: Provider.stripe,
+            iapStore: null,
+            rcEntitlement: null,
+            rcProductId: null,
+            rcExternalRef: null,
+          },
+          create: {
+            targetId: workspaceId,
+            ...omit(subscriptionData, 'provider', 'iapStore'),
+          },
+        });
     await this.entitlement.upsertFromCloudSubscription(saved);
     return saved;
   }
@@ -194,6 +217,17 @@ export class WorkspaceSubscriptionManager extends SubscriptionManager {
       );
     }
 
+    await this.db.providerSubscription.updateMany({
+      where: {
+        provider: Provider.stripe,
+        externalSubscriptionId: stripeSubscription.id,
+      },
+      data: {
+        status: SubscriptionStatus.Canceled,
+        canceledAt: new Date(),
+        periodEnd: new Date(),
+      },
+    });
     const result = await this.db.subscription.deleteMany({
       where: { stripeSubscriptionId: stripeSubscription.id },
     });
@@ -336,5 +370,75 @@ export class WorkspaceSubscriptionManager extends SubscriptionManager {
       );
       await schedule.updateQuantity(count);
     }
+  }
+
+  private async upsertStripeProviderSubscription(
+    workspaceId: string,
+    known: KnownStripeSubscription,
+    subscriptionData: Subscription
+  ) {
+    const { lookupKey, stripeSubscription } = known;
+    const price = stripeSubscription.items.data[0]?.price;
+
+    await this.db.providerSubscription.upsert({
+      where: {
+        provider_externalSubscriptionId: {
+          provider: Provider.stripe,
+          externalSubscriptionId: stripeSubscription.id,
+        },
+      },
+      update: {
+        targetType: 'workspace',
+        targetId: workspaceId,
+        plan: lookupKey.plan,
+        recurring: lookupKey.recurring,
+        status: stripeSubscription.status,
+        externalCustomerId:
+          typeof stripeSubscription.customer === 'string'
+            ? stripeSubscription.customer
+            : stripeSubscription.customer.id,
+        externalProductId:
+          typeof price?.product === 'string'
+            ? price.product
+            : price?.product?.id,
+        externalPriceId: price?.id,
+        currency: price?.currency,
+        amount: price?.unit_amount ?? null,
+        quantity: known.quantity,
+        periodStart: subscriptionData.start,
+        periodEnd: subscriptionData.end,
+        trialStart: subscriptionData.trialStart,
+        trialEnd: subscriptionData.trialEnd,
+        canceledAt: subscriptionData.canceledAt,
+        metadata: known.metadata,
+      },
+      create: {
+        provider: Provider.stripe,
+        targetType: 'workspace',
+        targetId: workspaceId,
+        plan: lookupKey.plan,
+        recurring: lookupKey.recurring,
+        status: stripeSubscription.status,
+        externalCustomerId:
+          typeof stripeSubscription.customer === 'string'
+            ? stripeSubscription.customer
+            : stripeSubscription.customer.id,
+        externalSubscriptionId: stripeSubscription.id,
+        externalProductId:
+          typeof price?.product === 'string'
+            ? price.product
+            : price?.product?.id,
+        externalPriceId: price?.id,
+        currency: price?.currency,
+        amount: price?.unit_amount ?? null,
+        quantity: known.quantity,
+        periodStart: subscriptionData.start,
+        periodEnd: subscriptionData.end,
+        trialStart: subscriptionData.trialStart,
+        trialEnd: subscriptionData.trialEnd,
+        canceledAt: subscriptionData.canceledAt,
+        metadata: known.metadata,
+      },
+    });
   }
 }
