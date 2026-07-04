@@ -531,7 +531,7 @@ export class WorkspaceUserModel extends BaseModel {
         WHERE wi.workspace_id = ${workspaceId}
           ${keywordCondition}
       ) members
-      ORDER BY created_at ASC
+      ORDER BY created_at ASC, id ASC
       OFFSET ${options.offset}
       LIMIT ${options.first}
     `;

@@ -326,7 +326,7 @@ export class WorkspaceAnalyticsModel extends BaseModel {
             WHERE workspace_id = wp.workspace_id
             AND role = 'owner'
             AND state = 'active'
-            ORDER BY created_at ASC
+            ORDER BY created_at ASC, id ASC
             LIMIT 1
           ) owner ON TRUE
           WHERE wp.public = TRUE
@@ -634,7 +634,7 @@ export class WorkspaceAnalyticsModel extends BaseModel {
           WHERE workspace_id = wp.workspace_id
           AND role = 'owner'
           AND state = 'active'
-          ORDER BY created_at ASC
+          ORDER BY created_at ASC, id ASC
           LIMIT 1
         ) owner ON TRUE
         WHERE wp.public = TRUE

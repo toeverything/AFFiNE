@@ -359,7 +359,7 @@ export class WorkspaceModel extends BaseModel {
           WHERE wm.workspace_id = p.id
           AND wm.role = 'owner'
           AND wm.state = 'active'
-          ORDER BY u.created_at ASC
+          ORDER BY u.created_at ASC, wm.id ASC
           LIMIT 1
         ) o ON TRUE
         ORDER BY ${Prisma.raw(this.buildAdminOrder(options.order))}
@@ -394,7 +394,7 @@ export class WorkspaceModel extends BaseModel {
           WHERE wm.workspace_id = w.id
           AND wm.role = 'owner'
           AND wm.state = 'active'
-          ORDER BY u.created_at ASC
+          ORDER BY u.created_at ASC, wm.id ASC
           LIMIT 1
         ) o ON TRUE
         ${featureJoin}
@@ -499,7 +499,7 @@ export class WorkspaceModel extends BaseModel {
         WHERE wm.workspace_id = w.id
         AND wm.role = 'owner'
         AND wm.state = 'active'
-        ORDER BY u.created_at ASC
+        ORDER BY u.created_at ASC, wm.id ASC
         LIMIT 1
       ) o ON TRUE
       LEFT JOIN workspace_admin_stats s ON s.workspace_id = w.id
@@ -600,7 +600,7 @@ export class WorkspaceModel extends BaseModel {
           WHERE wm.workspace_id = w.id
           AND wm.role = 'owner'
           AND wm.state = 'active'
-          ORDER BY u.created_at ASC
+          ORDER BY u.created_at ASC, wm.id ASC
           LIMIT 1
         ) o ON TRUE
         ${featureJoin}
@@ -673,20 +673,20 @@ export class WorkspaceModel extends BaseModel {
   ) {
     switch (order) {
       case 'snapshotSize':
-        return `"snapshotSize" DESC NULLS LAST, "createdAt" DESC`;
+        return `"snapshotSize" DESC NULLS LAST, "createdAt" DESC, "id" ASC`;
       case 'blobCount':
-        return `"blobCount" DESC NULLS LAST, "createdAt" DESC`;
+        return `"blobCount" DESC NULLS LAST, "createdAt" DESC, "id" ASC`;
       case 'blobSize':
-        return `"blobSize" DESC NULLS LAST, "createdAt" DESC`;
+        return `"blobSize" DESC NULLS LAST, "createdAt" DESC, "id" ASC`;
       case 'snapshotCount':
-        return `"snapshotCount" DESC NULLS LAST, "createdAt" DESC`;
+        return `"snapshotCount" DESC NULLS LAST, "createdAt" DESC, "id" ASC`;
       case 'memberCount':
-        return `"memberCount" DESC NULLS LAST, "createdAt" DESC`;
+        return `"memberCount" DESC NULLS LAST, "createdAt" DESC, "id" ASC`;
       case 'publicPageCount':
-        return `"publicPageCount" DESC NULLS LAST, "createdAt" DESC`;
+        return `"publicPageCount" DESC NULLS LAST, "createdAt" DESC, "id" ASC`;
       case 'createdAt':
       default:
-        return `"createdAt" DESC`;
+        return `"createdAt" DESC, "id" ASC`;
     }
   }
   // #endregion
