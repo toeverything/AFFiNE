@@ -111,6 +111,19 @@ export const importItem = style({
   },
 });
 
+export const importItemDisabled = style([
+  importItem,
+  {
+    opacity: 0.5,
+    selectors: {
+      '&:hover': {
+        background: cssVarV2('button/secondary'),
+        cursor: 'not-allowed',
+      },
+    },
+  },
+]);
+
 export const importItemLabel = style({
   display: 'flex',
   alignItems: 'center',

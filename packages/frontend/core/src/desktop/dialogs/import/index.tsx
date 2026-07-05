@@ -57,7 +57,7 @@ const logger = new DebugLogger('import');
 
 function shouldSnapshotPickedFiles(type: ImportType, acceptType: AcceptType) {
   if (acceptType === 'Directory' || acceptType === 'Skip') return false;
-  return !['markdownZip', 'notion', 'bear'].includes(type);
+  return !['markdownZip', 'notion', 'bear', 'oneNote'].includes(type);
 }
 
 type ImportType =
@@ -66,11 +66,19 @@ type ImportType =
   | 'notion'
   | 'obsidian'
   | 'bear'
+  | 'oneNote'
   | 'snapshot'
   | 'html'
   | 'docx'
   | 'dotaffinefile';
-type AcceptType = 'Markdown' | 'Zip' | 'Html' | 'Docx' | 'Directory' | 'Skip'; // Skip is used for dotaffinefile
+type AcceptType =
+  | 'Markdown'
+  | 'Zip'
+  | 'Html'
+  | 'Docx'
+  | 'OneNote'
+  | 'Directory'
+  | 'Skip'; // Skip is used for dotaffinefile
 type Status = 'idle' | 'importing' | 'success' | 'error';
 type ImportErrorState = {
   code: string;
@@ -136,6 +144,7 @@ function requireImportService(importService?: ImportService) {
 
 type ImportConfig = {
   fileOptions: { acceptType: AcceptType; multiple: boolean };
+  nativeOnly?: boolean;
   importFunction: (args: ImportFunctionArgs) => Promise<ImportResult>;
 };
 
@@ -219,6 +228,19 @@ const importOptions = [
     suffixTooltip: 'com.affine.import.bear.tooltip',
     testId: 'editor-option-menu-import-bear',
     type: 'bear' as ImportType,
+  },
+  {
+    key: 'oneNote',
+    label: 'com.affine.import.onenote',
+    prefixIcon: (
+      <FileIcon color={cssVarV2('icon/primary')} width={20} height={20} />
+    ),
+    suffixIcon: (
+      <HelpIcon color={cssVarV2('icon/primary')} width={20} height={20} />
+    ),
+    suffixTooltip: 'com.affine.import.onenote.tooltip',
+    testId: 'editor-option-menu-import-onenote',
+    type: 'oneNote' as ImportType,
   },
   {
     key: 'docx',
@@ -349,6 +371,17 @@ const importConfigs: Record<ImportType, ImportConfig> = {
       );
     },
   },
+  oneNote: {
+    fileOptions: { acceptType: 'OneNote', multiple: false },
+    nativeOnly: true,
+    importFunction: async ({ files, importService, context }) => {
+      const file = files.length === 1 ? files[0] : null;
+      if (!file) {
+        throw new Error('Expected a single OneNote file');
+      }
+      return requireImportService(importService).importOneNote(file, context);
+    },
+  },
   docx: {
     fileOptions: { acceptType: 'Docx', multiple: false },
     importFunction: async ({ docCollection, files }) => {
@@ -408,6 +441,7 @@ const ImportOptionItem = ({
   suffixTooltip,
   type,
   onImport,
+  disabled,
   ...props
 }: {
   label: string;
@@ -416,10 +450,16 @@ const ImportOptionItem = ({
   suffixTooltip?: string;
   type: ImportType;
   onImport: (type: ImportType) => void;
+  disabled?: boolean;
 }) => {
   const t = useI18n();
   return (
-    <div className={style.importItem} onClick={() => onImport(type)} {...props}>
+    <div
+      className={disabled ? style.importItemDisabled : style.importItem}
+      onClick={() => onImport(type)}
+      aria-disabled={disabled}
+      {...props}
+    >
       {prefixIcon}
       <div className={style.importItemLabel}>{t[label]()}</div>
       {suffixIcon && (
@@ -453,18 +493,24 @@ const ImportOptions = ({
             suffixTooltip,
             testId,
             type,
-          }) => (
-            <ImportOptionItem
-              key={key}
-              prefixIcon={prefixIcon}
-              suffixIcon={suffixIcon}
-              suffixTooltip={suffixTooltip}
-              label={label}
-              type={type}
-              onImport={onImport}
-              data-testid={testId}
-            />
-          )
+          }) => {
+            const disabled = Boolean(
+              importConfigs[type].nativeOnly && !BUILD_CONFIG.isElectron
+            );
+            return (
+              <ImportOptionItem
+                key={key}
+                prefixIcon={prefixIcon}
+                suffixIcon={suffixIcon}
+                suffixTooltip={suffixTooltip}
+                label={label}
+                type={type}
+                onImport={onImport}
+                disabled={disabled}
+                data-testid={testId}
+              />
+            );
+          }
         )}
       </div>
       <div className={style.importModalTip}>
@@ -664,6 +710,9 @@ export const ImportDialog = ({
       setImportProgress(null);
       try {
         const importConfig = importConfigs[type];
+        if (importConfig.nativeOnly && !BUILD_CONFIG.isElectron) {
+          throw new Error(t['com.affine.import.onenote.desktop-only']());
+        }
         const { acceptType, multiple } = importConfig.fileOptions;
 
         const files =

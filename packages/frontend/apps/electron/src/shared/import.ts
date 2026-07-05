@@ -2,7 +2,8 @@ export type NativeImportFormat =
   | 'markdownZip'
   | 'notionZip'
   | 'obsidian'
-  | 'bearZip';
+  | 'bearZip'
+  | 'oneNote';
 
 export type NativeImportBrowserSource =
   | { kind: 'file'; file: File }

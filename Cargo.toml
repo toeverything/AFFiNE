@@ -16,8 +16,8 @@ resolver = "3"
   [workspace.dependencies]
   aes-gcm = "0.10"
   affine_common = { path = "./packages/common/native" }
-  affine_doc_loader = "0.1.0"
-  affine_importer = "0.1.0"
+  affine_doc_loader = "0.1.2"
+  affine_importer = "0.1.1"
   affine_nbstore = { path = "./packages/frontend/native/nbstore" }
   anyhow = "1"
   assert-json-diff = "2.0"
@@ -32,7 +32,7 @@ resolver = "3"
   criterion2 = { version = "3", default-features = false }
   crossbeam-channel = "0.5"
   dispatch2 = "0.3"
-  doc_extractor = "0.1.0"
+  doc_extractor = "0.1.1"
   dotenvy = "0.15"
   file-format = { version = "0.28", features = ["reader"] }
   hex = "0.4"
@@ -69,6 +69,9 @@ resolver = "3"
   objc2-foundation = "0.3"
   ogg = "0.9"
   once_cell = "1"
+  onenote_parser = { git = "https://github.com/msiemens/onenote.rs", rev = "5138a39a3f4e72b840932f9872fecde52fa9da60", package = "onenote_parser", features = [
+    "onepkg",
+  ] }
   p256 = { version = "0.13", features = ["ecdsa", "pem"] }
   pulldown-cmark = "0.13"
   rand = "0.9"
@@ -92,6 +95,7 @@ resolver = "3"
   thiserror = "2"
   tiktoken-rs = "0.7"
   tokio = "1.45"
+  typed-path = "0.12.3"
   typst = "0.14.2"
   typst-as-lib = { version = "0.15.4", default-features = false, features = [
     "packages",

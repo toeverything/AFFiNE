@@ -2,13 +2,13 @@ use std::{
   collections::HashMap,
   path::PathBuf,
   sync::{
-    Mutex,
+    Arc, Mutex,
     atomic::{AtomicU64, Ordering},
   },
 };
 
 use affine_importer::{
-  ImportBatchLimits, ImportFormat, ImportOptions, ImportSession, ImportSessionOptions, ImportSessionSource,
+  ImportBatchLimits, ImportOptions, ImportRegistry, ImportSession, ImportSessionOptions, ImportSource,
 };
 use napi::{Status, bindgen_prelude::*};
 use napi_derive::napi;
@@ -16,6 +16,11 @@ use once_cell::sync::Lazy;
 
 static IMPORT_SESSIONS: Lazy<Mutex<HashMap<String, ImportSession>>> = Lazy::new(|| Mutex::new(HashMap::new()));
 static NEXT_SESSION_ID: AtomicU64 = AtomicU64::new(1);
+static IMPORT_REGISTRY: Lazy<Arc<ImportRegistry>> = Lazy::new(|| {
+  let mut registry = ImportRegistry::with_builtin();
+  registry.register(super::OneNoteImportProvider::new());
+  Arc::new(registry)
+});
 
 #[napi(object)]
 pub struct CreateImportSessionOptions {
@@ -37,25 +42,10 @@ pub struct CreateImportBatchLimits {
   pub max_blob_bytes: Option<i64>,
 }
 
-fn parse_format(format: &str) -> Result<ImportFormat> {
-  match format {
-    "markdownZip" => Ok(ImportFormat::MarkdownZip),
-    "notionZip" => Ok(ImportFormat::NotionZip),
-    "notionMarkdownZip" => Ok(ImportFormat::NotionMarkdownZip),
-    "notionHtmlZip" => Ok(ImportFormat::NotionHtmlZip),
-    "obsidian" => Ok(ImportFormat::Obsidian),
-    "bearZip" => Ok(ImportFormat::BearZip),
-    _ => Err(Error::new(
-      Status::InvalidArg,
-      format!("unsupported import format: {format}"),
-    )),
-  }
-}
-
 fn map_import_error(error: affine_importer::ImportError) -> Error {
   let status = match error {
     affine_importer::ImportError::Cancelled => Status::Cancelled,
-    affine_importer::ImportError::UnsupportedFormat | affine_importer::ImportError::InvalidSource(_) => {
+    affine_importer::ImportError::UnsupportedFormat(_) | affine_importer::ImportError::InvalidSource(_) => {
       Status::InvalidArg
     }
     affine_importer::ImportError::Zip(_)
@@ -67,10 +57,9 @@ fn map_import_error(error: affine_importer::ImportError) -> Error {
 
 #[napi]
 pub fn create_import_session(options: CreateImportSessionOptions) -> Result<String> {
-  let format = parse_format(&options.format)?;
   let source = match options.source.kind.as_str() {
-    "filePath" => ImportSessionSource::FilePath(PathBuf::from(options.source.path)),
-    "directoryPath" => ImportSessionSource::DirectoryPath(PathBuf::from(options.source.path)),
+    "filePath" => ImportSource::FilePath(PathBuf::from(options.source.path)),
+    "directoryPath" => ImportSource::DirectoryPath(PathBuf::from(options.source.path)),
     kind => {
       return Err(Error::new(
         Status::InvalidArg,
@@ -93,12 +82,15 @@ pub fn create_import_session(options: CreateImportSessionOptions) -> Result<Stri
       batch_limits.max_blob_bytes = max_blob_bytes as u64;
     }
   }
-  let session = ImportSession::create(ImportSessionOptions {
-    format,
-    source,
-    import_options: ImportOptions::default(),
-    batch_limits,
-  })
+  let session = ImportSession::create(
+    ImportSessionOptions {
+      format: options.format,
+      source,
+      import_options: ImportOptions::default(),
+      batch_limits,
+    },
+    IMPORT_REGISTRY.clone(),
+  )
   .map_err(map_import_error)?;
   let id = format!("import-session-{}", NEXT_SESSION_ID.fetch_add(1, Ordering::Relaxed));
   IMPORT_SESSIONS
@@ -265,6 +257,23 @@ mod tests {
     });
 
     assert!(result.is_err());
+    let _ = std::fs::remove_file(path);
+  }
+
+  #[test]
+  fn import_session_routes_onenote_format_to_provider() {
+    let path = archive_path(&[("entry.md", b"entry")]);
+    let result = create_import_session(CreateImportSessionOptions {
+      format: "oneNote".to_string(),
+      source: CreateImportSessionSource {
+        kind: "filePath".to_string(),
+        path: path.to_string_lossy().to_string(),
+      },
+      batch_limits: None,
+    });
+
+    let error = result.unwrap_err().to_string();
+    assert!(error.contains("unsupported OneNote source"));
     let _ = std::fs::remove_file(path);
   }
 }

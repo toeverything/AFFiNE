@@ -136,6 +136,16 @@ export class ImportService extends Service {
     return commitService.commitBatch(batch);
   }
 
+  async importOneNote(file: File, context?: ImportRunContext) {
+    if (!BUILD_CONFIG.isElectron) {
+      throw new Error('OneNote import is only available in the desktop app.');
+    }
+    const commitService = this.createCommitService({
+      organize: true,
+    });
+    return commitNativeImport('oneNote', file, commitService, context);
+  }
+
   private createCommitService(options: {
     organize?: boolean;
     explorerIcon?: boolean;

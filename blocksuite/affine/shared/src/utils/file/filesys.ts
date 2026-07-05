@@ -121,6 +121,12 @@ const FileTypes: NonNullable<OpenFilePickerOptions['types']> = [
     },
   },
   {
+    description: 'OneNote',
+    accept: {
+      'application/onenote': ['.one', '.onetoc2', '.onepkg'],
+    },
+  },
+  {
     description: 'MindMap',
     accept: {
       'text/xml': ['.mm', '.opml', '.xml'],
@@ -140,6 +146,7 @@ type AcceptTypes =
   | 'Html'
   | 'Zip'
   | 'Docx'
+  | 'OneNote'
   | 'MindMap';
 
 type OpenFileOptions = {
