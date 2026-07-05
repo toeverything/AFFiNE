@@ -38,6 +38,7 @@ test('should clear pending mail records when user is deleted', async t => {
   const userKey = `${sendMailKey}:SignIn:${user.email}`;
   const userRetryKey = `${sendMailKey}:VerifyEmail:${user.email}`;
   const anotherKey = `${sendMailKey}:SignIn:${another.email}`;
+  const senderRetryKey = `${retryMailKey}:MemberInvitation:invited@affine.pro`;
 
   await cache.mapSet(sendMailKey, userKey, 1);
   await cache.mapSet(sendMailKey, anotherKey, 1);
@@ -51,6 +52,20 @@ test('should clear pending mail records when user is deleted', async t => {
       props: { url: 'https://affine.pro/verify' },
     })
   );
+  await cache.mapSet(
+    retryMailKey,
+    senderRetryKey,
+    JSON.stringify({
+      startTime: Date.now(),
+      name: 'MemberInvitation',
+      to: 'invited@affine.pro',
+      props: {
+        user: { $$userId: user.id },
+        workspace: { $$workspaceId: 'workspace-id' },
+        url: 'https://affine.pro/invite',
+      },
+    })
+  );
 
   await mailJob.onUserDeleted({ ...user, ownedWorkspaces: [] });
 
@@ -62,6 +77,17 @@ test('should clear pending mail records when user is deleted', async t => {
       to: user.email,
     } as Jobs['notification.sendMail'])
   );
+  t.true(
+    await shouldRemove({
+      name: 'MemberInvitation',
+      to: 'invited@affine.pro',
+      props: {
+        user: { $$userId: user.id },
+        workspace: { $$workspaceId: 'workspace-id' },
+        url: 'https://affine.pro/invite',
+      },
+    } as Jobs['notification.sendMail'])
+  );
   t.false(
     await shouldRemove({
       to: another.email,
@@ -69,6 +95,7 @@ test('should clear pending mail records when user is deleted', async t => {
   );
   t.is(await cache.mapGet(sendMailKey, userKey), undefined);
   t.is(await cache.mapGet(retryMailKey, userRetryKey), undefined);
+  t.is(await cache.mapGet(retryMailKey, senderRetryKey), undefined);
   t.is(await cache.mapGet(sendMailKey, anotherKey), 1);
 });
 

@@ -284,6 +284,10 @@ export class UserModel extends BaseModel {
       }
     }
 
+    await this.db.workspaceInvitation.deleteMany({
+      where: { inviteeUserId: id },
+    });
+
     const user = await this.db.user.delete({ where: { id } });
 
     this.event.emit('user.deleted', {

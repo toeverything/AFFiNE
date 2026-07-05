@@ -490,8 +490,9 @@ fn push_warning(warnings: &mut Vec<ImportWarning>, source_path: &str, code: &str
 
 #[cfg(test)]
 mod tests {
-  use super::*;
   use serde_json::json;
+
+  use super::*;
 
   #[test]
   fn markdown_table_cell_collapses_multiline_content() {
