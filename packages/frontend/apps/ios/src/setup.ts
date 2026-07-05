@@ -4,6 +4,11 @@ import './proxy';
 
 import { viewportRuntimeConfig } from '@blocksuite/affine/std/gfx';
 
+import { setupPencilInputDebug } from './plugins/pencil-input/debug';
+
+// Opt-in native touch-classification logger (no-op unless explicitly enabled).
+setupPencilInputDebug();
+
 // iOS WKWebView terminates the web content process when edgeless compositing
 // memory (GPU-side IOSurface tiles) spikes. These overrides are applied once at
 // module load, before any editor or readonly preview mounts, so every Viewport

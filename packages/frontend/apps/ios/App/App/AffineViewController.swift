@@ -68,6 +68,7 @@ class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate {
       NavigationGesturePlugin(),
       NbStorePlugin(),
       PayWallPlugin(associatedController: self),
+      PencilInputPlugin(),
       PreviewPlugin(),
     ]
     plugins.forEach { bridge?.registerPluginInstance($0) }
