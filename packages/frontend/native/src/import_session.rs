@@ -87,7 +87,7 @@ pub fn create_import_session(options: CreateImportSessionOptions) -> Result<Stri
       batch_limits.max_blobs = max_blobs as usize;
     }
     if let Some(max_blob_bytes) = limits.max_blob_bytes {
-      if max_blob_bytes < 0 || max_blob_bytes > 100 * 1024 * 1024 {
+      if !(0..=100 * 1024 * 1024).contains(&max_blob_bytes) {
         return Err(Error::new(Status::InvalidArg, "maxBlobBytes not valid"));
       }
       batch_limits.max_blob_bytes = max_blob_bytes as u64;
