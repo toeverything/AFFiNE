@@ -99,21 +99,31 @@ type ImportFunctionArgs = {
 };
 
 function toImportErrorState(error: unknown): ImportErrorState {
+  const sourcePath =
+    typeof error === 'object' &&
+    error !== null &&
+    'sourcePath' in error &&
+    typeof error.sourcePath === 'string'
+      ? error.sourcePath
+      : undefined;
   if (error instanceof DOMException && error.name === 'AbortError') {
     return {
       code: 'cancelled',
       message: 'Import cancelled',
+      sourcePath,
     };
   }
   if (error instanceof Error) {
     return {
       code: error.name || 'import-error',
       message: error.message || 'Unknown error occurred',
+      sourcePath,
     };
   }
   return {
     code: 'unknown',
     message: 'Unknown error occurred',
+    sourcePath,
   };
 }
 

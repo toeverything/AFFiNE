@@ -183,6 +183,91 @@ describe('ImportCommitService', () => {
     });
   });
 
+  test('records doc commit failures as warnings and continues remaining docs', async () => {
+    const collection = new TestWorkspace({ id: 'test' });
+    collection.meta.initialize();
+    const service = createCommitService(collection);
+    const result = await service.commitBatch({
+      blobs: [],
+      docs: [
+        {
+          id: 'doc-skip',
+          sourcePath: 'docs/skip.md',
+          snapshot: { ...docSnapshot('doc-skip', 'Skip'), blocks: null },
+        } as never,
+        {
+          id: 'doc-ok',
+          sourcePath: 'docs/ok.md',
+          snapshot: docSnapshot('doc-ok', 'Ok'),
+          meta: { title: 'Ok' },
+        },
+      ],
+      done: true,
+    });
+
+    expect(result.docIds).toEqual(['doc-ok']);
+    expect(result.warnings).toEqual([
+      {
+        code: 'skipped_doc',
+        sourcePath: 'docs/skip.md',
+        message:
+          'Skipped docs/skip.md: document snapshot could not be committed',
+      },
+    ]);
+    expect(collection.getDoc('doc-ok')).not.toBeNull();
+  });
+
+  test('records doc meta failures as warnings without dropping committed docs', async () => {
+    const collection = new TestWorkspace({ id: 'test' });
+    collection.meta.initialize();
+    const service = createCommitService(collection);
+    const originalSetDocMeta = collection.meta.setDocMeta.bind(collection.meta);
+    const setDocMeta = vi.spyOn(collection.meta, 'setDocMeta');
+    setDocMeta.mockImplementation((id, meta) => {
+      if (id === 'doc-meta') {
+        throw new Error('meta failed');
+      }
+      return originalSetDocMeta(id, meta);
+    });
+
+    try {
+      const result = await service.commitBatch({
+        blobs: [],
+        docs: [
+          {
+            id: 'doc-meta',
+            sourcePath: 'docs/meta.md',
+            snapshot: docSnapshot('doc-meta', 'Meta'),
+            meta: { title: 'Meta' },
+          },
+          {
+            id: 'doc-ok',
+            sourcePath: 'docs/ok.md',
+            snapshot: docSnapshot('doc-ok', 'Ok'),
+            meta: { title: 'Ok' },
+          },
+        ],
+        done: true,
+      });
+
+      expect(result.docIds).toEqual(['doc-meta', 'doc-ok']);
+      expect(result.warnings).toEqual([
+        {
+          code: 'doc_meta_failed',
+          sourcePath: 'docs/meta.md',
+          message: 'Failed to apply metadata for docs/meta.md: meta failed',
+        },
+      ]);
+      expect(collection.getDoc('doc-meta')).not.toBeNull();
+      expect(collection.getDoc('doc-ok')).not.toBeNull();
+      expect(collection.meta.getDocMeta('doc-ok')).toMatchObject({
+        title: 'Ok',
+      });
+    } finally {
+      setDocMeta.mockRestore();
+    }
+  });
+
   test('commits native tag names as workspace tags', async () => {
     const collection = new TestWorkspace({ id: 'test' });
     collection.meta.initialize();
@@ -343,7 +428,7 @@ describe('ImportCommitService', () => {
           pageId: 'doc-1',
         },
       ],
-      done: true,
+      done: false,
     });
     await service.commitBatch({
       docs: [],
@@ -355,6 +440,72 @@ describe('ImportCommitService', () => {
     expect(folderTree.links).toEqual([
       { parentId: 'folder-1', docId: 'doc-1' },
     ]);
+  });
+
+  test('warns and clears unresolved folders on final batch', async () => {
+    const collection = new TestWorkspace({ id: 'test' });
+    collection.meta.initialize();
+    collection.createDoc('doc-1');
+    const folderTree = createFolderTree();
+    const service = createCommitService(collection, {
+      organizeService: folderTree.service,
+    });
+
+    const result = await service.commitBatch({
+      docs: [],
+      blobs: [],
+      folders: [
+        {
+          path: 'Missing/Doc',
+          name: 'Doc',
+          parentPath: 'Missing',
+          pageId: 'doc-1',
+        },
+      ],
+      done: true,
+    });
+
+    expect(folderTree.links).toEqual([]);
+    expect(result.warnings).toEqual([
+      {
+        code: 'unresolved_folder',
+        sourcePath: 'Missing/Doc',
+        message:
+          'Skipped folder placement for Missing/Doc: parent folder was not found',
+      },
+    ]);
+  });
+
+  test('applies icons for root-level imported pages', async () => {
+    const collection = new TestWorkspace({ id: 'test' });
+    collection.meta.initialize();
+    collection.createDoc('doc-1');
+    const folderTree = createFolderTree();
+    const setIcon = vi.fn();
+    const service = createCommitService(collection, {
+      organizeService: folderTree.service,
+      explorerIconService: { setIcon },
+    });
+
+    await service.commitBatch({
+      docs: [],
+      blobs: [],
+      folders: [
+        {
+          path: 'Doc',
+          name: 'Doc',
+          pageId: 'doc-1',
+          icon: { type: 'emoji', unicode: '📌' },
+        },
+      ],
+      done: true,
+    });
+
+    expect(setIcon).toHaveBeenCalledWith({
+      where: 'doc',
+      id: 'doc-1',
+      icon: { type: 'emoji', unicode: '📌' },
+    });
   });
 
   test('keeps Notion page nodes usable as child containers', async () => {

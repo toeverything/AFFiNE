@@ -9,7 +9,7 @@ export type NativeImportBrowserSource =
   | { kind: 'directory'; files: File[] };
 
 export type CreateImportSessionFromSourceOptions = {
-  format: string;
+  format: NativeImportFormat;
   source: NativeImportBrowserSource;
   batchLimits?: {
     maxDocs?: number;

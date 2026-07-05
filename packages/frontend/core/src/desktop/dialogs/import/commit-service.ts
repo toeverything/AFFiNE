@@ -38,6 +38,12 @@ function copyToArrayBuffer(bytes: Uint8Array) {
   return copy.buffer;
 }
 
+function errorMessage(error: unknown) {
+  return error instanceof Error
+    ? error.message || error.name
+    : 'Unknown error occurred';
+}
+
 export class ImportCommitService {
   private readonly folderIdByPath = new Map<string, string>();
   private readonly linkedDocsByFolder = new Set<string>();
@@ -46,6 +52,7 @@ export class ImportCommitService {
   constructor(private readonly options: CommitServiceOptions) {}
 
   async commitBatch(batch: ImportBatch): Promise<ImportCommitResult> {
+    const warnings = [...(batch.warnings ?? [])];
     for (const blob of batch.blobs) {
       const bytes = new Uint8Array(blob.bytes);
       await this.options.collection.blobSync.set(
@@ -72,18 +79,43 @@ export class ImportCommitService {
     const docIds: string[] = [];
     const tags = new Map<string, string[]>();
     for (const doc of batch.docs) {
-      const store = await transformer.snapshotToDoc(doc.snapshot);
-      if (!store) continue;
+      let store: Awaited<ReturnType<Transformer['snapshotToDoc']>>;
+      try {
+        store = await transformer.snapshotToDoc(doc.snapshot);
+      } catch (error) {
+        warnings.push({
+          code: 'skipped_doc',
+          sourcePath: doc.sourcePath,
+          message: `Skipped ${doc.sourcePath ?? doc.id}: ${errorMessage(error)}`,
+        });
+        continue;
+      }
+      if (!store) {
+        warnings.push({
+          code: 'skipped_doc',
+          sourcePath: doc.sourcePath,
+          message: `Skipped ${doc.sourcePath ?? doc.id}: document snapshot could not be committed`,
+        });
+        continue;
+      }
       docIds.push(store.id);
       if (doc.meta && Object.keys(doc.meta).length) {
-        const { tags: docTags, ...meta } = doc.meta;
-        if (Object.keys(meta).length) {
-          this.options.collection.meta.setDocMeta(store.id, meta);
-        }
-        for (const tag of docTags ?? []) {
-          const docIds = tags.get(tag) ?? [];
-          docIds.push(store.id);
-          tags.set(tag, docIds);
+        try {
+          const { tags: docTags, ...meta } = doc.meta;
+          if (Object.keys(meta).length) {
+            this.options.collection.meta.setDocMeta(store.id, meta);
+          }
+          for (const tag of docTags ?? []) {
+            const docIds = tags.get(tag) ?? [];
+            docIds.push(store.id);
+            tags.set(tag, docIds);
+          }
+        } catch (error) {
+          warnings.push({
+            code: 'doc_meta_failed',
+            sourcePath: doc.sourcePath,
+            message: `Failed to apply metadata for ${doc.sourcePath ?? doc.id}: ${errorMessage(error)}`,
+          });
         }
       }
     }
@@ -93,7 +125,11 @@ export class ImportCommitService {
       tags.set(tag.name, docIds);
     }
 
-    const rootFolderId = this.applyNativeFolders(batch.folders ?? []);
+    const rootFolderId = this.applyNativeFolders(
+      batch.folders ?? [],
+      warnings,
+      batch.done
+    );
     this.applyNativeTags(tags);
     this.applyNativeIcons(batch.icons);
     return {
@@ -101,13 +137,25 @@ export class ImportCommitService {
       entryId: batch.entryId,
       isWorkspaceFile: batch.isWorkspaceFile,
       rootFolderId,
-      warnings: batch.warnings ?? [],
+      warnings,
     };
   }
 
-  private applyNativeFolders(folders: ImportFolder[]): string | undefined {
+  private applyNativeFolders(
+    folders: ImportFolder[],
+    warnings: ImportCommitResult['warnings'],
+    batchDone: boolean
+  ): string | undefined {
     const { organizeService } = this.options;
-    if (!organizeService || folders.length === 0) return undefined;
+    if (folders.length === 0) return undefined;
+    if (!organizeService) {
+      for (const folder of folders) {
+        if (folder.pageId && !folder.parentPath) {
+          this.applyIcon(folder.pageId, folder.icon);
+        }
+      }
+      return undefined;
+    }
 
     try {
       let rootFolderId: string | undefined;
@@ -159,6 +207,15 @@ export class ImportCommitService {
         }
         if (progressed && nextPending.length) {
           this.pendingFolders.push(...nextPending);
+        } else if (batchDone) {
+          for (const folder of nextPending) {
+            warnings.push({
+              code: 'unresolved_folder',
+              sourcePath: folder.path,
+              message: `Skipped folder placement for ${folder.path}: parent folder was not found`,
+            });
+          }
+          break;
         } else {
           this.pendingFolders.push(...nextPending);
           break;
@@ -174,7 +231,12 @@ export class ImportCommitService {
 
   private applyFolderDocLink(folder: ImportFolder): boolean {
     const { organizeService } = this.options;
-    if (!organizeService || !folder.pageId || !folder.parentPath) return true;
+    if (!folder.pageId) return true;
+    if (!folder.parentPath) {
+      this.applyIcon(folder.pageId, folder.icon);
+      return true;
+    }
+    if (!organizeService) return true;
     const parentFolderId = this.folderIdByPath.get(folder.parentPath);
     if (!parentFolderId) return false;
     const linkKey = `${parentFolderId}:${folder.pageId}`;

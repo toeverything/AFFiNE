@@ -34,6 +34,7 @@ export type ImportFolder = {
 
 export type ImportDoc = {
   id: string;
+  sourcePath?: string;
   snapshot: DocSnapshot;
   meta?: Partial<
     Pick<

@@ -43,11 +43,17 @@ export async function commitNativeImport(
   let entryId: string | undefined;
   let isWorkspaceFile = false;
   let rootFolderId: string | undefined;
+  let cancelled = false;
 
   try {
     for (;;) {
       if (options.signal?.aborted) {
-        await native.cancelImportSession(sessionId);
+        cancelled = true;
+        try {
+          await native.cancelImportSession(sessionId);
+        } catch {
+          // Preserve the AbortError reported to callers.
+        }
         throw new DOMException('Import cancelled', 'AbortError');
       }
       const payload = await native.nextImportBatch(sessionId);
@@ -62,7 +68,13 @@ export async function commitNativeImport(
       rootFolderId ??= result.rootFolderId;
     }
   } catch (error) {
-    await native.cancelImportSession(sessionId);
+    if (!cancelled) {
+      try {
+        await native.cancelImportSession(sessionId);
+      } catch {
+        // Preserve the original import error.
+      }
+    }
     throw error;
   } finally {
     await native.disposeImportSession(sessionId);

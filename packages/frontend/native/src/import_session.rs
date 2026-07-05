@@ -87,6 +87,9 @@ pub fn create_import_session(options: CreateImportSessionOptions) -> Result<Stri
       batch_limits.max_blobs = max_blobs as usize;
     }
     if let Some(max_blob_bytes) = limits.max_blob_bytes {
+      if max_blob_bytes < 0 || max_blob_bytes > 100 * 1024 * 1024 {
+        return Err(Error::new(Status::InvalidArg, "maxBlobBytes not valid"));
+      }
       batch_limits.max_blob_bytes = max_blob_bytes as u64;
     }
   }
@@ -243,5 +246,25 @@ mod tests {
     assert!(next_import_batch(id.clone()).unwrap().is_none());
     dispose_import_session(id).unwrap();
     let _ = fs::remove_dir_all(path);
+  }
+
+  #[test]
+  fn import_session_rejects_negative_blob_byte_limit() {
+    let path = archive_path(&[("entry.md", b"entry")]);
+    let result = create_import_session(CreateImportSessionOptions {
+      format: "markdownZip".to_string(),
+      source: CreateImportSessionSource {
+        kind: "filePath".to_string(),
+        path: path.to_string_lossy().to_string(),
+      },
+      batch_limits: Some(CreateImportBatchLimits {
+        max_docs: None,
+        max_blobs: None,
+        max_blob_bytes: Some(-1),
+      }),
+    });
+
+    assert!(result.is_err());
+    let _ = std::fs::remove_file(path);
   }
 }
