@@ -1,4 +1,4 @@
-use std::io::Read;
+use std::{collections::HashSet, io::Read};
 
 mod rich_text;
 
@@ -80,6 +80,40 @@ pub(super) fn rewrite_non_image_assets_to_attachments(value: &mut JsonValue, ass
     }
     _ => {}
   }
+}
+
+pub(super) fn remove_blocks_with_source_ids(value: &mut JsonValue, source_ids: &HashSet<String>) {
+  if source_ids.is_empty() {
+    return;
+  }
+
+  match value {
+    JsonValue::Object(map) => {
+      for value in map.values_mut() {
+        remove_blocks_with_source_ids(value, source_ids);
+      }
+    }
+    JsonValue::Array(values) => {
+      for value in values.iter_mut() {
+        remove_blocks_with_source_ids(value, source_ids);
+      }
+      values.retain(|value| {
+        block_source_id(value)
+          .map(|source_id| !source_ids.contains(source_id))
+          .unwrap_or(true)
+      });
+    }
+    _ => {}
+  }
+}
+
+fn block_source_id(value: &JsonValue) -> Option<&str> {
+  value
+    .as_object()
+    .and_then(|map| map.get("props"))
+    .and_then(JsonValue::as_object)
+    .and_then(|props| props.get("sourceId"))
+    .and_then(JsonValue::as_str)
 }
 
 fn outline_markdown(
@@ -195,13 +229,13 @@ fn table_markdown(
         .contents()
         .iter()
         .map(|cell| {
-          cell
+          let markdown = cell
             .contents()
             .iter()
             .map(|element| outline_element_markdown(element, 0, assets, warnings, source_path))
             .collect::<Vec<_>>()
-            .join(" ")
-            .replace('|', "\\|")
+            .join("\n");
+          markdown_table_cell(&markdown)
         })
         .collect::<Vec<_>>()
     })
@@ -226,6 +260,16 @@ fn markdown_row(row: &[String], cols: usize) -> String {
   let mut cells = row.to_vec();
   cells.resize(cols, String::new());
   format!("| {} |", cells.join(" | "))
+}
+
+fn markdown_table_cell(value: &str) -> String {
+  value
+    .lines()
+    .map(str::trim)
+    .filter(|line| !line.is_empty())
+    .collect::<Vec<_>>()
+    .join("<br />")
+    .replace('|', "\\|")
 }
 
 fn escape_markdown_label(value: &str) -> String {
@@ -442,4 +486,48 @@ fn push_warning(warnings: &mut Vec<ImportWarning>, source_path: &str, code: &str
     source_path: Some(source_path.to_string()),
     message: message.to_string(),
   });
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use serde_json::json;
+
+  #[test]
+  fn markdown_table_cell_collapses_multiline_content() {
+    assert_eq!(
+      markdown_table_cell("first line\nsecond | line\n\n third line "),
+      "first line<br />second \\| line<br />third line"
+    );
+  }
+
+  #[test]
+  fn remove_blocks_with_source_ids_removes_matching_nested_blocks() {
+    let mut snapshot = json!({
+      "children": [
+        {
+          "flavour": "affine:paragraph",
+          "props": {},
+          "children": [
+            {
+              "flavour": "affine:image",
+              "props": { "sourceId": "skipped" },
+              "children": []
+            },
+            {
+              "flavour": "affine:image",
+              "props": { "sourceId": "kept" },
+              "children": []
+            }
+          ]
+        }
+      ]
+    });
+    let source_ids = HashSet::from(["skipped".to_string()]);
+
+    remove_blocks_with_source_ids(&mut snapshot, &source_ids);
+
+    assert_eq!(snapshot["children"][0]["children"].as_array().unwrap().len(), 1);
+    assert_eq!(snapshot["children"][0]["children"][0]["props"]["sourceId"], "kept");
+  }
 }

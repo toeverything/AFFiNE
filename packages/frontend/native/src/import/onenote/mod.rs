@@ -1,5 +1,5 @@
 use std::{
-  collections::hash_map::DefaultHasher,
+  collections::{HashSet, hash_map::DefaultHasher},
   fs,
   hash::{Hash, Hasher},
   path::{Path, PathBuf},
@@ -11,7 +11,7 @@ use affine_importer::{
   FolderHierarchyDelta, ImportBatch, ImportBatchLimits, ImportCursor, ImportError, ImportOptions, ImportProgress,
   ImportProvider, ImportResult, ImportSource, ImportWarning, ImportedAsset, ImportedDocMeta, ImportedDocSnapshot,
 };
-use content::{page_markdown, rewrite_non_image_assets_to_attachments};
+use content::{page_markdown, remove_blocks_with_source_ids, rewrite_non_image_assets_to_attachments};
 use onenote_parser::{
   Parser,
   notebook::Notebook,
@@ -53,6 +53,7 @@ impl ImportProvider for OneNoteImportProvider {
       next_asset_index: 0,
       next_doc: 0,
       emitted_final: false,
+      skipped_blob_ids: HashSet::new(),
       limits,
     }))
   }
@@ -189,7 +190,7 @@ impl OneNotePlanner {
       .filter(|title| !title.is_empty())
       .unwrap_or("Untitled")
       .to_string();
-    let source_path = format!("{parent_path}/{title}");
+    let source_path = join_import_path(Some(parent_path), &title);
     let id = doc_id(page.link_target_id(), &title, parent_path, page_index);
     let mut assets = Vec::new();
     let markdown = page_markdown(page, &mut assets, &mut self.warnings, &source_path);
@@ -217,6 +218,7 @@ struct OneNoteImportCursor {
   next_asset_index: usize,
   next_doc: usize,
   emitted_final: bool,
+  skipped_blob_ids: HashSet<String>,
   limits: ImportBatchLimits,
 }
 
@@ -239,6 +241,7 @@ impl ImportCursor for OneNoteImportCursor {
     for doc in &self.docs[self.next_doc..end] {
       let mut snapshot = affine_doc_loader::build_doc_snapshot(&doc.title, &doc.markdown, &doc.id)?;
       rewrite_non_image_assets_to_attachments(&mut snapshot, &doc.assets);
+      remove_blocks_with_source_ids(&mut snapshot, &self.skipped_blob_ids);
       batch.docs.push(ImportedDocSnapshot {
         id: doc.id.clone(),
         snapshot,
@@ -286,6 +289,7 @@ impl OneNoteImportCursor {
       self.next_asset_index += 1;
       let asset_size = asset.bytes.len() as u64;
       if asset_size > max_blob_bytes {
+        self.skipped_blob_ids.insert(asset.blob_id.clone());
         batch.warnings.push(ImportWarning {
           code: "blob_too_large".to_string(),
           source_path: Some(asset.source_path.clone()),
@@ -411,6 +415,14 @@ mod tests {
   fn sanitize_path_part_removes_path_separators() {
     assert_eq!(sanitize_path_part("Group/Section\\Page"), "Group Section Page");
     assert_eq!(sanitize_path_part("///"), "Untitled");
+  }
+
+  #[test]
+  fn join_import_path_sanitizes_path_parts() {
+    assert_eq!(
+      join_import_path(Some("Notebook/Section"), "Page/Subpage\\Draft"),
+      "Notebook/Section/Page Subpage Draft"
+    );
   }
 
   #[test]
