@@ -16,6 +16,8 @@ resolver = "3"
   [workspace.dependencies]
   aes-gcm = "0.10"
   affine_common = { path = "./packages/common/native" }
+  affine_doc_loader = "0.1.0"
+  affine_importer = "0.1.0"
   affine_nbstore = { path = "./packages/frontend/native/nbstore" }
   anyhow = "1"
   assert-json-diff = "2.0"
@@ -116,6 +118,7 @@ resolver = "3"
   ] }
   windows-core = { version = "0.61" }
   y-octo = "0.0.3"
+  zip = "8.6"
 
 [profile.dev.package.sqlx-macros]
 opt-level = 3

@@ -2,7 +2,7 @@ import { fileURLToPath } from 'node:url';
 
 import test from 'ava';
 
-import { SqliteConnection, ValidationResult } from '../index';
+import { SqliteConnection, ValidationResult } from '../index.js';
 
 test('db validate', async t => {
   const path = fileURLToPath(

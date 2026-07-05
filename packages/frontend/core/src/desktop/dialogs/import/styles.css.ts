@@ -57,6 +57,30 @@ export const importStatusContent = style({
   color: cssVar('textPrimaryColor'),
 });
 
+export const importProgress = style({
+  width: '100%',
+  fontSize: cssVar('fontSm'),
+  lineHeight: cssVar('lineHeight'),
+  color: cssVar('textSecondaryColor'),
+});
+
+export const importWarnings = style({
+  width: '100%',
+  maxHeight: '120px',
+  overflow: 'auto',
+  fontSize: cssVar('fontSm'),
+  lineHeight: cssVar('lineHeight'),
+  color: cssVar('textSecondaryColor'),
+});
+
+export const importErrorDetail = style({
+  width: '100%',
+  fontSize: cssVar('fontXs'),
+  lineHeight: cssVar('lineHeight'),
+  color: cssVar('textSecondaryColor'),
+  overflowWrap: 'anywhere',
+});
+
 export const importModalButtonContainer = style({
   width: '100%',
   display: 'flex',

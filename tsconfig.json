@@ -146,7 +146,6 @@
     { "path": "./packages/frontend/core" },
     { "path": "./packages/frontend/electron-api" },
     { "path": "./packages/frontend/i18n" },
-    { "path": "./packages/frontend/media-capture-playground" },
     { "path": "./packages/frontend/native" },
     { "path": "./packages/frontend/routes" },
     { "path": "./packages/frontend/track" },

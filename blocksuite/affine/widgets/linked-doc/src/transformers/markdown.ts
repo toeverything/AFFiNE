@@ -16,6 +16,7 @@ import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
 import { sha } from '@blocksuite/global/utils';
 import type {
   DocMeta,
+  DocSnapshot,
   ExtensionType,
   Schema,
   Store,
@@ -23,6 +24,12 @@ import type {
 } from '@blocksuite/store';
 import { extMimeMap, Transformer } from '@blocksuite/store';
 
+import {
+  blobsFromAssets,
+  type ImportBatch,
+  type ImportDoc,
+  type ImportFolder,
+} from './import-batch.js';
 import type { AssetMap, ImportedFileEntry, PathBlobIdMap } from './type.js';
 import { createAssetsArchive, download, parseMatter, Unzip } from './utils.js';
 
@@ -438,6 +445,14 @@ function prepareNotionMarkdownFile({
   };
 }
 
+function applySnapshotTitle(snapshot: DocSnapshot, title: string) {
+  snapshot.meta.title = title;
+  snapshot.blocks.props.title = {
+    '$blocksuite:internal:text$': true,
+    delta: [{ insert: title }],
+  };
+}
+
 /**
  * Filters hidden/system entries that should never participate in imports.
  */
@@ -685,7 +700,7 @@ async function importMarkdownToDoc({
  * @param options.imported The zip file as a Blob
  * @returns A Promise that resolves to an array of IDs of the newly created docs
  */
-type FolderHierarchy = {
+export type FolderHierarchy = {
   name: string;
   path: string;
   children: Map<string, FolderHierarchy>;
@@ -693,18 +708,19 @@ type FolderHierarchy = {
   parentPath?: string;
 };
 
-export type ImportMarkdownZipResult = {
+export type PlanMarkdownZipResult = {
   docIds: string[];
   folderHierarchy?: FolderHierarchy;
+  batch: ImportBatch;
 };
 
-async function importMarkdownZip({
+async function planMarkdownZip({
   collection,
   schema,
   imported,
   extensions,
-}: ImportMarkdownZipOptions): Promise<ImportMarkdownZipResult> {
-  return importMarkdownZipInternal({
+}: ImportMarkdownZipOptions): Promise<PlanMarkdownZipResult> {
+  return planMarkdownZipInternal({
     collection,
     schema,
     imported,
@@ -712,13 +728,13 @@ async function importMarkdownZip({
   });
 }
 
-async function importNotionMarkdownZip({
+async function planNotionMarkdownZip({
   collection,
   schema,
   imported,
   extensions,
-}: ImportMarkdownZipOptions): Promise<ImportMarkdownZipResult> {
-  return importMarkdownZipInternal({
+}: ImportMarkdownZipOptions): Promise<PlanMarkdownZipResult> {
+  return planMarkdownZipInternal({
     collection,
     schema,
     imported,
@@ -731,7 +747,7 @@ async function importNotionMarkdownZip({
   });
 }
 
-async function importMarkdownZipInternal({
+async function planMarkdownZipInternal({
   collection,
   schema,
   imported,
@@ -741,12 +757,13 @@ async function importMarkdownZipInternal({
   prepareMarkdownFile = prepareDefaultMarkdownFile,
   preserveCommonRoot = false,
   recursiveZip = false,
-}: ImportMarkdownZipInternalOptions): Promise<ImportMarkdownZipResult> {
+}: ImportMarkdownZipInternalOptions): Promise<PlanMarkdownZipResult> {
   const provider = getProvider([
     markdownZipDocLinkToDeltaMatcher,
     ...extensions,
   ]);
   const docIds: string[] = [];
+  const docs: ImportDoc[] = [];
   const pendingAssets: AssetMap = new Map();
   const pendingPathBlobIdMap: PathBlobIdMap = new Map();
   const docPathMap: Array<{ fullPath: string; docId: string }> = [];
@@ -812,16 +829,20 @@ async function importMarkdownZipInternal({
         assets: job.assetsManager,
       });
       snapshot.meta.id = pageId;
-      const doc = await job.snapshotToDoc(snapshot);
-      if (doc) {
-        applyMetaPatch(collection, doc.id, meta);
-        docIds.push(doc.id);
-        docPathMap.push({ fullPath, docId: doc.id });
-      }
+      applySnapshotTitle(snapshot, preferredTitle);
+      docs.push({
+        id: pageId,
+        snapshot,
+        meta: {
+          ...meta,
+          title: preferredTitle,
+        },
+      });
+      docIds.push(pageId);
+      docPathMap.push({ fullPath, docId: pageId });
     })
   );
 
-  // Build folder hierarchy from zip paths
   const folderHierarchy = buildMarkdownZipFolderHierarchy(
     docPathMap,
     normalizeFolderName,
@@ -829,7 +850,18 @@ async function importMarkdownZipInternal({
     createRootFolderForTopLevelDocs
   );
 
-  return { docIds, folderHierarchy };
+  return {
+    docIds,
+    folderHierarchy,
+    batch: {
+      docs,
+      blobs: await blobsFromAssets(pendingAssets, pendingPathBlobIdMap),
+      folders: folderHierarchy
+        ? flattenFolderHierarchy(folderHierarchy)
+        : undefined,
+      done: true,
+    },
+  };
 }
 
 /**
@@ -921,10 +953,34 @@ function buildMarkdownZipFolderHierarchy(
   return root.children.size > 0 ? root : undefined;
 }
 
+function flattenFolderHierarchy(root: FolderHierarchy): ImportFolder[] {
+  const folders: ImportFolder[] = [];
+
+  const visit = (node: FolderHierarchy) => {
+    if (node.name) {
+      folders.push({
+        path: node.path,
+        name: node.name,
+        parentPath: node.parentPath,
+        pageId: node.pageId,
+      });
+    }
+    for (const child of node.children.values()) {
+      visit(child);
+    }
+  };
+
+  for (const child of root.children.values()) {
+    visit(child);
+  }
+
+  return folders;
+}
+
 export const MarkdownTransformer = {
   exportDoc,
   importMarkdownToBlock,
   importMarkdownToDoc,
-  importMarkdownZip,
-  importNotionMarkdownZip,
+  planMarkdownZip,
+  planNotionMarkdownZip,
 };

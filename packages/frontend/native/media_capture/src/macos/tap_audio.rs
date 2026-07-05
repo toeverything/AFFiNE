@@ -21,7 +21,6 @@ use coreaudio::sys::{
   kAudioSubTapUIDKey,
 };
 use napi::bindgen_prelude::Result;
-use napi_derive::napi;
 use objc2::runtime::AnyObject;
 
 use crate::{
@@ -887,8 +886,6 @@ impl Drop for AggregateDeviceManager {
   }
 }
 
-// NEW NAPI Struct: AudioCaptureSession
-#[napi]
 pub struct AudioCaptureSession {
   // Use Option<Box<...>> to allow taking ownership in stop()
   manager: Option<Box<AggregateDeviceManager>>,
@@ -896,9 +893,7 @@ pub struct AudioCaptureSession {
   channels: Option<u32>,
 }
 
-#[napi]
 impl AudioCaptureSession {
-  // Constructor called internally, not directly via NAPI
   pub(crate) fn new(manager: Box<AggregateDeviceManager>) -> Self {
     Self {
       manager: Some(manager),
@@ -907,7 +902,6 @@ impl AudioCaptureSession {
     }
   }
 
-  #[napi]
   pub fn stop(&mut self) -> Result<()> {
     if let Some(manager) = self.manager.take() {
       // Cache the stats before dropping
@@ -926,7 +920,6 @@ impl AudioCaptureSession {
     }
   }
 
-  #[napi(getter)]
   pub fn get_sample_rate(&self) -> Result<f64> {
     if let Some(manager) = &self.manager {
       manager
@@ -943,7 +936,6 @@ impl AudioCaptureSession {
     }
   }
 
-  #[napi(getter)]
   pub fn get_channels(&self) -> Result<u32> {
     if let Some(manager) = &self.manager {
       manager
@@ -960,7 +952,6 @@ impl AudioCaptureSession {
     }
   }
 
-  #[napi(getter)]
   pub fn get_actual_sample_rate(&self) -> Result<f64> {
     if let Some(manager) = &self.manager {
       manager
