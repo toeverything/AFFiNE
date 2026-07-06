@@ -118,7 +118,7 @@ describe('byok storage handlers', () => {
         byokStorageHandlers.listWorkspaceKeys(ipcEvent, 'workspace-1')
       ).resolves.toEqual([]);
     },
-    120000
+    120000,
   );
 
   test('does not write local keys when secure storage is unavailable', async () => {
