@@ -358,7 +358,9 @@ export class WorkspaceInvitationModel extends BaseModel {
     });
   }
 
+  @Transactional()
   async cancelPendingByActor(actorUserId: string) {
+    await this.models.permissionProjection.markNewWriteOrigin();
     return await this.db.workspaceInvitation.deleteMany({
       where: {
         inviterUserId: actorUserId,
@@ -369,7 +371,9 @@ export class WorkspaceInvitationModel extends BaseModel {
     });
   }
 
+  @Transactional()
   async cancelPendingByWorkspace(workspaceId: string) {
+    await this.models.permissionProjection.markNewWriteOrigin();
     return await this.db.workspaceInvitation.deleteMany({
       where: {
         workspaceId,

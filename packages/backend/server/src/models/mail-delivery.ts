@@ -1,7 +1,9 @@
-import { createHash } from 'node:crypto';
+import { createHmac } from 'node:crypto';
 
+import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
+import { CryptoHelper } from '../base';
 import { BaseModel } from './base';
 
 export type MailDeliveryStatus =
@@ -98,10 +100,6 @@ const TERMINAL_STATUSES = new Set<MailDeliveryStatus>([
   'failed',
   'canceled',
 ]);
-
-function recipientHash(email: string) {
-  return createHash('sha256').update(email.trim().toLowerCase()).digest('hex');
-}
 
 function recipientDomain(email: string) {
   const parts = email.trim().toLowerCase().split('@');
@@ -201,7 +199,18 @@ const SELECT_FIELDS = Prisma.sql`
   updated_at AS "updatedAt"
 `;
 
+@Injectable()
 export class MailDeliveryModel extends BaseModel {
+  constructor(private readonly crypto: CryptoHelper) {
+    super();
+  }
+
+  private recipientHash(email: string) {
+    return createHmac('sha256', this.crypto.keyPair.sha256.privateKey)
+      .update(email.trim().toLowerCase())
+      .digest('hex');
+  }
+
   async create(input: MailDeliveryCreateInput): Promise<MailDeliveryRow> {
     const now = new Date();
     const sendAfter = input.sendAfter ?? now;
@@ -250,7 +259,7 @@ export class MailDeliveryModel extends BaseModel {
         ${finalStatus},
         ${input.dedupeKey ?? null},
         ${terminal ? null : input.recipientEmail},
-        ${recipientHash(input.recipientEmail)},
+        ${this.recipientHash(input.recipientEmail)},
         ${recipientDomain(input.recipientEmail)},
         ${input.recipientUserId ?? null},
         ${input.actorUserId ?? null},
@@ -431,9 +440,13 @@ export class MailDeliveryModel extends BaseModel {
     reason = 'recipient_deleted'
   ) {
     return await this.cancelWhere(
-      Prisma.sql`recipient_hash = ${recipientHash(recipientEmail)}`,
+      Prisma.sql`recipient_hash = ${this.recipientHash(recipientEmail)}`,
       reason
     );
+  }
+
+  async cancelById(id: string, reason = 'canceled') {
+    return await this.cancelWhere(Prisma.sql`id = ${id}::uuid`, reason);
   }
 
   async cancelMemberInvitationByActor(

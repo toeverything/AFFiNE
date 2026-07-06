@@ -51,7 +51,9 @@ function parseAsn(value: string | undefined) {
     return;
   }
   const asn = Number(value);
-  return Number.isSafeInteger(asn) && asn > 0 ? asn : undefined;
+  return Number.isSafeInteger(asn) && asn > 0 && asn <= 0xffffffff
+    ? asn
+    : undefined;
 }
 
 export function getAbuseRequestSource(
@@ -307,11 +309,22 @@ export class InviteQuotaAssertService {
         return { decision };
       }
 
-      await this.disposition.execute({
-        actionRequired: decision.actionRequired,
-        actorUserId: input.actorUserId,
-        workspaceId: input.workspaceId,
-      });
+      try {
+        await this.disposition.execute({
+          actionRequired: decision.actionRequired,
+          actorUserId: input.actorUserId,
+          workspaceId: input.workspaceId,
+        });
+      } catch (error) {
+        this.logger.error('Workspace invite quota disposition failed', {
+          userId: input.actorUserId,
+          workspaceId: input.workspaceId,
+          action: decision.actionRequired?.action,
+          actionId: decision.actionRequired?.actionId,
+          reason: decision.reason,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
       this.logger.warn('Workspace invite quota rejected', {
         userId: input.actorUserId,
         workspaceId: input.workspaceId,

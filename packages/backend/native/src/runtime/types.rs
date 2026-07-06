@@ -25,7 +25,7 @@ pub struct RuntimeQuotaSourceInput {
   pub trusted: bool,
   pub ip: Option<String>,
   pub country: Option<String>,
-  pub asn: Option<i32>,
+  pub asn: Option<u32>,
   pub ray_id: Option<String>,
 }
 

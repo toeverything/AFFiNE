@@ -172,7 +172,7 @@ CREATE TABLE IF NOT EXISTS runtime_invite_abuse_evidence (
   user_id TEXT,
   actor_email_hash TEXT,
   source_prefix_hash TEXT,
-  source_asn INTEGER,
+  source_asn BIGINT,
   target_domains JSONB NOT NULL DEFAULT '[]'::jsonb,
   counters JSONB NOT NULL DEFAULT '{}'::jsonb,
   decision TEXT NOT NULL,

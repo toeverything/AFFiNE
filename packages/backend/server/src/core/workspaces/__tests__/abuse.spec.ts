@@ -13,7 +13,7 @@ import Sinon from 'sinon';
 import { createApp, type TestingApp } from '../../../__tests__/e2e/test';
 import { Mockers } from '../../../__tests__/mocks';
 import { Config } from '../../../base';
-import { TooManyRequest } from '../../../base/error';
+import { ActionForbidden, TooManyRequest } from '../../../base/error';
 import { Models, WorkspaceRole } from '../../../models';
 import {
   getAbuseRequestSource,
@@ -80,32 +80,74 @@ test('invite quota rejection has no invite side effects', async t => {
 
 test('abuse request source trusts Cloudflare facts only when configured', t => {
   const config = app.get(Config);
+  const previousTrusted = config.auth.trustedCloudflareHeaders;
   const req = {
     ip: '10.0.0.1',
     get(name: string) {
       return (
         {
-          'CF-Connecting-IP': '203.0.113.10',
-          'CF-IPCountry': 'US',
+          'CF-Connecting-IP': '114.51.41.91',
+          'CF-IPCountry': 'JP',
           'CF-Ray': 'ray-id',
-          'x-affine-cf-asn': '13335',
+          'x-affine-cf-asn': '4294967295',
           'X-Forwarded-For': '198.51.100.9',
         } satisfies Record<string, string>
       )[name];
     },
   } as Request;
 
-  config.auth.trustedCloudflareHeaders = false;
-  t.deepEqual(getAbuseRequestSource(req, config), { trusted: false });
+  try {
+    config.auth.trustedCloudflareHeaders = false;
+    t.deepEqual(getAbuseRequestSource(req, config), { trusted: false });
 
-  config.auth.trustedCloudflareHeaders = true;
-  t.deepEqual(getAbuseRequestSource(req, config), {
-    trusted: true,
-    ip: '203.0.113.10',
-    country: 'US',
-    asn: 13335,
-    rayId: 'ray-id',
-  });
+    config.auth.trustedCloudflareHeaders = true;
+    t.deepEqual(getAbuseRequestSource(req, config), {
+      trusted: true,
+      ip: '114.51.41.91',
+      country: 'JP',
+      asn: 4294967295,
+      rayId: 'ray-id',
+    });
+  } finally {
+    config.auth.trustedCloudflareHeaders = previousTrusted;
+  }
+});
+
+test('invite quota rejection keeps mapped response when disposition fails', async t => {
+  const service = new InviteQuotaAssertService(
+    app.get(Config),
+    {
+      getWorkspaceSeatQuota: Sinon.stub().resolves({
+        memberLimit: 10,
+        memberCount: 1,
+      }),
+    } as any,
+    {
+      assertWorkspaceInviteQuotaV1: Sinon.stub().resolves({
+        allowed: false,
+        reason: 'abuse_subject',
+        actionRequired: {
+          action: 'quarantine_actor',
+          actionId: '1',
+          subjectKey: 'subject',
+          evidenceId: '1',
+        },
+      }),
+    } as any,
+    {
+      execute: Sinon.stub().rejects(new Error('disposition failed')),
+    } as any
+  );
+
+  await t.throwsAsync(
+    service.assertWorkspaceInviteQuota({
+      actorUserId: 'actor',
+      workspaceId: 'workspace',
+      targetCount: 1,
+      targetDomains: [{ domain: 'example.com', count: 1 }],
+    }),
+    { instanceOf: ActionForbidden }
+  );
 });
 
 test('abuse disposition applies action scope to invitation artifacts', async t => {

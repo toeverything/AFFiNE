@@ -403,6 +403,7 @@ model MailDelivery {
   @@index([mailName, status, createdAt])
   @@index([mailClass, status, createdAt])
   @@index([status, createdAt])
+  @@index([status, sendAfter, lockedUntil], map: "mail_deliveries_ready_idx")
   @@index([settledAt])
   @@index([recipientDomain, createdAt])
   @@index([workspaceId, createdAt])

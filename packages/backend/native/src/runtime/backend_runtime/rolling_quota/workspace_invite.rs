@@ -149,7 +149,7 @@ async fn record_invite_abuse_action(
   });
   let actor_email_hash = subject_hash(&actor.email, config);
   let actor_domain = actor.email.split('@').next_back().map(normalize_domain);
-  let source_asn = input.source.as_ref().and_then(|source| source.asn);
+  let source_asn = input.source.as_ref().and_then(|source| source.asn).map(i64::from);
   let subject_user_id = if decision.subject_kind == "actor_email" {
     Some(input.actor_user_id.as_str())
   } else {

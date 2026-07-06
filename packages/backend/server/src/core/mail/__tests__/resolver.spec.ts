@@ -21,6 +21,10 @@ test.before(async () => {
   app = await createApp();
 });
 
+test.beforeEach(async () => {
+  await app.get(PrismaClient).mailDelivery.deleteMany();
+});
+
 test.after.always(async () => {
   await app.close();
 });
@@ -219,4 +223,35 @@ test('adminMailDeliveries uses day buckets for seven day window', async t => {
     bucket: 'Day',
     effectiveSize: 7,
   });
+});
+
+test('adminMailDeliveries rejects unsupported window sizes', async t => {
+  const admin = await app.create(Mockers.User, {
+    feature: 'administrator',
+  });
+
+  await app.login(admin);
+  const response = await app.request('post', '/graphql').send({
+    query: /* GraphQL */ `
+      query AdminMailDeliveries($input: AdminMailDeliveriesInput) {
+        adminMailDeliveries(input: $input) {
+          window {
+            requestedSize
+          }
+        }
+      }
+    `,
+    variables: {
+      input: {
+        hours: 48,
+      },
+    },
+  });
+
+  t.is(response.status, 200);
+  t.truthy(response.body.errors);
+  t.regex(
+    response.body.errors[0].message,
+    /Mail delivery analytics window must be 24 or 168 hours/
+  );
 });

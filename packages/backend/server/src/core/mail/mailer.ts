@@ -97,6 +97,7 @@ export class Mailer {
     }
 
     let reservationId: string | undefined;
+    let deliveryId: string | undefined;
     try {
       const metadata = command.metadata ?? {};
       const deduped = metadata.dedupeKey
@@ -162,6 +163,7 @@ export class Mailer {
         expiresAt: metadata.expiresAt,
         maxAttempts: metadata.maxAttempts,
       });
+      deliveryId = delivery.id;
       if (decision.reservationId) {
         if (delivery.quotaReservationId === decision.reservationId) {
           await this.runtime.commitMailDeliveryQuotaV1(decision.reservationId);
@@ -171,6 +173,12 @@ export class Mailer {
       }
       return true;
     } catch (error) {
+      if (deliveryId) {
+        await this.models.mailDelivery.cancelById(
+          deliveryId,
+          'quota_commit_failed'
+        );
+      }
       if (reservationId) {
         await this.runtime.releaseMailDeliveryQuotaV1(reservationId);
       }

@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+
 import { PrismaClient } from '@prisma/client';
 import ava, { TestFn } from 'ava';
 import Sinon from 'sinon';
@@ -92,11 +94,40 @@ test('trySend creates a delivery row and commits quota reservation', async t => 
   t.is(row.status, 'queued');
   t.is(row.recipientUserId, 'user-1');
   t.is(row.mailClass, 'auth');
+  t.not(
+    row.recipientHash,
+    createHash('sha256').update('auth-user@example.com').digest('hex')
+  );
   t.true(
     t.context.runtime.commitMailDeliveryQuotaV1.calledOnceWithExactly(
       '00000000-0000-0000-0000-000000000001'
     )
   );
+});
+
+test('cancelByRecipient matches the keyed recipient hash', async t => {
+  await t.context.mailer.trySend({
+    name: 'SignIn',
+    to: 'delete-me@example.com',
+    props: {
+      url: 'https://affine.pro/sign-in',
+      otp: '123456',
+    },
+    metadata: {
+      dedupeKey: 'signin:delete-me@example.com:1',
+      source: { trusted: false },
+    },
+  });
+
+  await t.context.models.mailDelivery.cancelByRecipient(
+    'delete-me@example.com'
+  );
+
+  const row = await t.context.db.mailDelivery.findFirstOrThrow({
+    where: { dedupeKey: 'signin:delete-me@example.com:1' },
+  });
+  t.is(row.status, 'canceled');
+  t.is(row.lastErrorCode, 'recipient_deleted');
 });
 
 test('dedupe replay does not consume another mail quota reservation', async t => {
@@ -229,6 +260,39 @@ test('send releases quota reservation and rethrows when ledger write fails', asy
     { message: 'ledger failed' }
   );
 
+  t.true(
+    t.context.runtime.releaseMailDeliveryQuotaV1.calledOnceWithExactly(
+      '00000000-0000-0000-0000-000000000001'
+    )
+  );
+});
+
+test('send cancels queued delivery when quota commit fails', async t => {
+  t.context.runtime.commitMailDeliveryQuotaV1.rejects(
+    new Error('commit failed')
+  );
+
+  await t.throwsAsync(
+    t.context.mailer.send({
+      name: 'SignIn',
+      to: 'commit-failed@example.com',
+      props: {
+        url: 'https://affine.pro/sign-in',
+        otp: '123456',
+      },
+      metadata: {
+        dedupeKey: 'signin:commit-failed@example.com:1',
+        source: { trusted: false },
+      },
+    }),
+    { message: 'commit failed' }
+  );
+
+  const row = await t.context.db.mailDelivery.findFirstOrThrow({
+    where: { dedupeKey: 'signin:commit-failed@example.com:1' },
+  });
+  t.is(row.status, 'canceled');
+  t.is(row.lastErrorCode, 'quota_commit_failed');
   t.true(
     t.context.runtime.releaseMailDeliveryQuotaV1.calledOnceWithExactly(
       '00000000-0000-0000-0000-000000000001'

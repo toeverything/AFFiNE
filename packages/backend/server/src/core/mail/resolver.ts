@@ -146,7 +146,12 @@ function addUtcDays(value: Date, days: number) {
 }
 
 function normalizeMailWindow(hours: number | undefined) {
-  const requestedHours = hours === 24 ? 24 : hours === 24 * 7 ? 24 * 7 : 24;
+  if (hours !== undefined && hours !== 24 && hours !== 24 * 7) {
+    throw new BadRequest(
+      'Mail delivery analytics window must be 24 or 168 hours.'
+    );
+  }
+  const requestedHours = hours ?? 24;
   const bucket = requestedHours > 24 ? ('day' as const) : ('hour' as const);
   const now = new Date();
   const to =

@@ -315,6 +315,21 @@ export class WorkspaceMemberResolver {
       for (const candidate of candidates) {
         try {
           let target = candidate.target;
+          if (!target) {
+            target = await this.models.user.create({
+              email: candidate.normalizedEmail,
+              registered: false,
+            });
+          }
+
+          const existingMember = await this.models.workspaceUser.get(
+            workspaceId,
+            target.id
+          );
+          if (existingMember) {
+            throw new AlreadyInSpace({ spaceId: workspaceId });
+          }
+
           if (!isTeam) {
             const needMoreSeat =
               quota.memberCount + successfulCandidates.length + 1 >
@@ -322,13 +337,6 @@ export class WorkspaceMemberResolver {
             if (needMoreSeat) {
               throw new NoMoreSeat({ spaceId: workspaceId });
             }
-          }
-
-          if (!target) {
-            target = await this.models.user.create({
-              email: candidate.normalizedEmail,
-              registered: false,
-            });
           }
 
           // no need to check quota, directly go allocating seat path
