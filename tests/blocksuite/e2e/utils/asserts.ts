@@ -450,6 +450,27 @@ export async function assertBlockChildrenFlavours(
     .toEqual(flavours);
 }
 
+export async function assertBlockChildrenTypes(
+  page: Page,
+  blockId: string,
+  types: string[]
+) {
+  await expect
+    .poll(async () => {
+      return page.evaluate(
+        ({ blockId }) => {
+          const element = document.querySelector<BlockComponent>(
+            `[data-block-id="${blockId}"]`
+          );
+          // @ts-ignore
+          return element?.model.children.map(child => child.props.type);
+        },
+        { blockId }
+      );
+    })
+    .toEqual(types);
+}
+
 export async function assertParentBlockId(
   page: Page,
   blockId: string,
