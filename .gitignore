@@ -95,3 +95,13 @@ af.cmd
 # playwright
 storageState.json
 /.understand-anything
+.playwright-browsers/
+
+# Local tool caches
+.corepack-bin/
+packages/frontend/apps/ios/App/.spm-cache/
+
+# Test runtime artifacts
+blocksuite/framework/std/.vitest-attachments/
+blocksuite/framework/std/src/__tests__/gfx/__screenshots__/view.unit.spec.ts/gfx-element-view-basic-parks-non-active-low-zoom-gesture-blocks-outside-viewport-DOM-while-gesture-is-running-1.png
+blocksuite/framework/std/src/__tests__/gfx/__screenshots__/view.unit.spec.ts/gfx-element-view-basic-resize-completion-clears-low-zoom-gesture-recovery-before-sizeUpdated-subscribers-run-1.png
