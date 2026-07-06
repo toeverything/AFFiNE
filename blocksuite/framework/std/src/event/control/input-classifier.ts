@@ -25,6 +25,14 @@ export interface PointerInputClassifier {
    * to their default `pointerType`-based behavior.
    */
   classify: (event: PointerEvent) => InputTouchKind | undefined;
+
+  /**
+   * Whether an Apple Pencil is currently in use (down now, or lifted within a
+   * short grace window). Lets input routing apply pencil-priority behavior —
+   * e.g. finger drags pan the canvas instead of drawing while the Pencil is the
+   * active drawing instrument.
+   */
+  isPencilActive: () => boolean;
 }
 
 export const pointerInputClassifierRuntime: {
@@ -38,4 +46,9 @@ export function classifyPointerInput(
   event: PointerEvent
 ): InputTouchKind | undefined {
   return pointerInputClassifierRuntime.classifier?.classify(event);
+}
+
+/** Whether an Apple Pencil is currently the active instrument. */
+export function isPencilInputActive(): boolean {
+  return pointerInputClassifierRuntime.classifier?.isPencilActive() ?? false;
 }

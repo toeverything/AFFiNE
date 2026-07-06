@@ -75,7 +75,7 @@ class NativePointerClassifier implements PointerInputClassifier {
       return undefined;
     }
     // Any finger/palm contact during Pencil use is incidental -> reject it.
-    if (this._isPencilActive()) {
+    if (this.isPencilActive()) {
       return 'palm';
     }
     if (match) {
@@ -84,7 +84,7 @@ class NativePointerClassifier implements PointerInputClassifier {
     return undefined;
   }
 
-  private _isPencilActive(): boolean {
+  isPencilActive(): boolean {
     if (this._activePencilIds.size > 0) return true;
     return performance.now() - this._lastPencilAt < PENCIL_ACTIVE_GRACE_MS;
   }
