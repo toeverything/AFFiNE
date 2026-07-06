@@ -133,6 +133,18 @@
           "default": {
             "concurrency": 1
           }
+        },
+        "queues.inviteAbuse": {
+          "type": "object",
+          "description": "The config for invite abuse disposition job queue\n@default {\"concurrency\":1}",
+          "properties": {
+            "concurrency": {
+              "type": "number"
+            }
+          },
+          "default": {
+            "concurrency": 1
+          }
         }
       }
     },
@@ -191,6 +203,21 @@
           "type": "number",
           "description": "Minimum account age in seconds before new accounts can invite members or create share links.\n@default 86400",
           "default": 86400
+        },
+        "trustedCloudflareHeaders": {
+          "type": "boolean",
+          "description": "Whether request abuse source facts should trust Cloudflare headers from the origin edge.\n@default false",
+          "default": false
+        },
+        "inviteQuotaShadowMode": {
+          "type": "boolean",
+          "description": "Whether workspace invite quota should record would-block decisions without rejecting requests or executing abuse actions.\n@default false",
+          "default": false
+        },
+        "inviteQuotaFailOpenOnRuntimeError": {
+          "type": "boolean",
+          "description": "Whether workspace invite quota should fail open when native runtime admission is unavailable. Keep disabled for production.\n@default false",
+          "default": false
         },
         "passwordRequirements": {
           "type": "object",
@@ -263,6 +290,21 @@
           "type": "array",
           "description": "The emails from these domains are always sent using the fallback SMTP server.\n@default []",
           "default": []
+        },
+        "deliveryWorker.batchSize": {
+          "type": "number",
+          "description": "Number of mail delivery rows claimed by each worker tick.\n@default 50",
+          "default": 50
+        },
+        "deliveryWorker.leaseMs": {
+          "type": "number",
+          "description": "Mail delivery worker lease duration in milliseconds.\n@default 120000",
+          "default": 120000
+        },
+        "deliveryWorker.retentionDays": {
+          "type": "number",
+          "description": "Days to retain anonymized terminal mail delivery ledger rows.\n@default 30",
+          "default": 30
         },
         "fallbackSMTP.name": {
           "type": "string",

@@ -11,6 +11,8 @@ import serverNativeModule, {
   type CapabilityAttachmentContract,
   type CapabilityModelCapability,
   type CommandResponse,
+  type ContentPolicyScanInput,
+  type ContentPolicyScanResult,
   type ImageInspection,
   type ImageInspectionOptions,
   type LicenseError,
@@ -78,6 +80,8 @@ export type {
   CapabilityAttachmentContract,
   CapabilityModelCapability,
   CommandResponse,
+  ContentPolicyScanInput,
+  ContentPolicyScanResult,
   ImageInspection,
   ImageInspectionOptions,
   LicenseError,
@@ -255,6 +259,7 @@ export const inspectImageForProxy = serverNativeModule.inspectImageForProxy;
 export const fetchRemoteAttachment = serverNativeModule.fetchRemoteAttachment;
 export const inferRemoteMimeType = serverNativeModule.inferRemoteMimeType;
 export const assertSafeUrl = serverNativeModule.assertSafeUrl;
+export const scanContentPolicyV1 = serverNativeModule.scanContentPolicyV1;
 export const safeFetch = serverNativeModule.safeFetch;
 export const activateLicense = serverNativeModule.activateLicense;
 export const checkLicenseHealth = serverNativeModule.checkLicenseHealth;

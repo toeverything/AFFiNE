@@ -147,6 +147,46 @@ export interface AdminLicensePreview {
   workspaceId: Scalars['String']['output'];
 }
 
+export interface AdminMailDeliveriesInput {
+  hours?: Scalars['Int']['input'];
+}
+
+export interface AdminMailDeliveryAnalytics {
+  __typename?: 'AdminMailDeliveryAnalytics';
+  byOutcome: Array<AdminMailDeliverySeries>;
+  byStatus: Array<AdminMailDeliverySeries>;
+  byType: Array<AdminMailDeliverySeries>;
+  summary: AdminMailDeliverySummary;
+  window: TimeWindow;
+}
+
+export interface AdminMailDeliveryPoint {
+  __typename?: 'AdminMailDeliveryPoint';
+  bucket: Scalars['DateTime']['output'];
+  count: Scalars['Int']['output'];
+}
+
+export interface AdminMailDeliverySeries {
+  __typename?: 'AdminMailDeliverySeries';
+  key: Scalars['String']['output'];
+  label: Scalars['String']['output'];
+  points: Array<AdminMailDeliveryPoint>;
+  total: Scalars['Int']['output'];
+}
+
+export interface AdminMailDeliverySummary {
+  __typename?: 'AdminMailDeliverySummary';
+  canceled: Scalars['Int']['output'];
+  failed: Scalars['Int']['output'];
+  queued: Scalars['Int']['output'];
+  retryWait: Scalars['Int']['output'];
+  sending: Scalars['Int']['output'];
+  sent: Scalars['Int']['output'];
+  skipped: Scalars['Int']['output'];
+  successRate: Scalars['Float']['output'];
+  total: Scalars['Int']['output'];
+}
+
 export interface AdminSharedLinkTopItem {
   __typename?: 'AdminSharedLinkTopItem';
   docId: Scalars['String']['output'];
@@ -2620,6 +2660,8 @@ export interface Query {
   adminAllSharedLinks: PaginatedAdminAllSharedLink;
   /** Get aggregated dashboard metrics for admin panel */
   adminDashboard: AdminDashboard;
+  /** Aggregate mail delivery timeline facts for admin panel */
+  adminMailDeliveries: AdminMailDeliveryAnalytics;
   /** Get workspace detail for admin */
   adminWorkspace: Maybe<AdminWorkspace>;
   /** List workspaces for admin */
@@ -2675,6 +2717,10 @@ export interface QueryAdminAllSharedLinksArgs {
 
 export interface QueryAdminDashboardArgs {
   input?: InputMaybe<AdminDashboardInput>;
+}
+
+export interface QueryAdminMailDeliveriesArgs {
+  input?: InputMaybe<AdminMailDeliveriesInput>;
 }
 
 export interface QueryAdminWorkspaceArgs {
@@ -3143,6 +3189,7 @@ export interface TestWorkspaceByokConfigResultType {
 
 export enum TimeBucket {
   Day = 'Day',
+  Hour = 'Hour',
   Minute = 'Minute',
 }
 
@@ -3904,6 +3951,71 @@ export type AdminDashboardQuery = {
       requestedSize: number;
       effectiveSize: number;
     };
+  };
+};
+
+export type AdminMailDeliveriesQueryVariables = Exact<{
+  input?: InputMaybe<AdminMailDeliveriesInput>;
+}>;
+
+export type AdminMailDeliveriesQuery = {
+  __typename?: 'Query';
+  adminMailDeliveries: {
+    __typename?: 'AdminMailDeliveryAnalytics';
+    window: {
+      __typename?: 'TimeWindow';
+      from: string;
+      to: string;
+      timezone: string;
+      bucket: TimeBucket;
+      requestedSize: number;
+      effectiveSize: number;
+    };
+    summary: {
+      __typename?: 'AdminMailDeliverySummary';
+      total: number;
+      sent: number;
+      failed: number;
+      skipped: number;
+      canceled: number;
+      queued: number;
+      sending: number;
+      retryWait: number;
+      successRate: number;
+    };
+    byStatus: Array<{
+      __typename?: 'AdminMailDeliverySeries';
+      key: string;
+      label: string;
+      total: number;
+      points: Array<{
+        __typename?: 'AdminMailDeliveryPoint';
+        bucket: string;
+        count: number;
+      }>;
+    }>;
+    byType: Array<{
+      __typename?: 'AdminMailDeliverySeries';
+      key: string;
+      label: string;
+      total: number;
+      points: Array<{
+        __typename?: 'AdminMailDeliveryPoint';
+        bucket: string;
+        count: number;
+      }>;
+    }>;
+    byOutcome: Array<{
+      __typename?: 'AdminMailDeliverySeries';
+      key: string;
+      label: string;
+      total: number;
+      points: Array<{
+        __typename?: 'AdminMailDeliveryPoint';
+        bucket: string;
+        count: number;
+      }>;
+    }>;
   };
 };
 
@@ -7717,6 +7829,11 @@ export type Queries =
       name: 'adminDashboardQuery';
       variables: AdminDashboardQueryVariables;
       response: AdminDashboardQuery;
+    }
+  | {
+      name: 'adminMailDeliveriesQuery';
+      variables: AdminMailDeliveriesQueryVariables;
+      response: AdminMailDeliveriesQuery;
     }
   | {
       name: 'adminServerConfigQuery';

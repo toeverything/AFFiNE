@@ -15,6 +15,7 @@ interface Context {
   runtime: {
     cleanupExpiredRuntimeStates: Sinon.SinonStub;
     cleanupExpiredRuntimeGates: Sinon.SinonStub;
+    cleanupExpiredRollingQuota: Sinon.SinonStub;
   };
 }
 
@@ -24,6 +25,7 @@ test.before(async t => {
   t.context.runtime = {
     cleanupExpiredRuntimeStates: Sinon.stub(),
     cleanupExpiredRuntimeGates: Sinon.stub(),
+    cleanupExpiredRollingQuota: Sinon.stub(),
   };
   t.context.module = await createTestingModule({
     imports: [ScheduleModule.forRoot(), BackendRuntimeModule],
@@ -39,6 +41,7 @@ test.before(async t => {
 test.beforeEach(t => {
   t.context.runtime.cleanupExpiredRuntimeStates.reset();
   t.context.runtime.cleanupExpiredRuntimeGates.reset();
+  t.context.runtime.cleanupExpiredRollingQuota.reset();
 });
 
 test.after.always(async t => {
@@ -49,9 +52,11 @@ test('backend-runtime housekeeping cleans runtime state and gate batches', async
   t.context.runtime.cleanupExpiredRuntimeStates.onCall(0).resolves(1000);
   t.context.runtime.cleanupExpiredRuntimeStates.onCall(1).resolves(2);
   t.context.runtime.cleanupExpiredRuntimeGates.resolves(1);
+  t.context.runtime.cleanupExpiredRollingQuota.resolves(1);
 
   await t.context.job.cleanExpiredRuntimeHousekeeping();
 
   t.is(t.context.runtime.cleanupExpiredRuntimeStates.callCount, 2);
   t.is(t.context.runtime.cleanupExpiredRuntimeGates.callCount, 1);
+  t.is(t.context.runtime.cleanupExpiredRollingQuota.callCount, 1);
 });

@@ -110,7 +110,7 @@ test('set and change password', async t => {
   const u1 = await app.signupV1(u1Email);
   await sendSetPasswordEmail(app, u1Email, '/password-change');
 
-  const setPasswordMail = app.mails.last('ChangePassword');
+  const setPasswordMail = app.mails.last('SetPassword');
   const link = new URL(setPasswordMail.props.url);
   const setPasswordToken = link.searchParams.get('token');
 

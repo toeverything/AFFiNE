@@ -7,6 +7,7 @@ import { assign, pick } from 'lodash-es';
 import { Config, SignUpForbidden } from '../../base';
 import { Models, type User, type UserSession } from '../../models';
 import { Mailer } from '../mail/mailer';
+import type { MailDeliveryMetadata } from '../mail/types';
 import { createDevUsers } from './dev';
 import type { VerifiedIdentity } from './identity';
 import {
@@ -312,49 +313,74 @@ export class AuthService implements OnApplicationBootstrap {
     });
   }
 
-  async sendChangePasswordEmail(email: string, callbackUrl: string) {
+  async sendChangePasswordEmail(
+    email: string,
+    callbackUrl: string,
+    metadata?: MailDeliveryMetadata
+  ) {
     return await this.mailer.send({
       name: 'ChangePassword',
       to: email,
       props: {
         url: callbackUrl,
       },
+      metadata,
     });
   }
-  async sendSetPasswordEmail(email: string, callbackUrl: string) {
+  async sendSetPasswordEmail(
+    email: string,
+    callbackUrl: string,
+    metadata?: MailDeliveryMetadata
+  ) {
     return await this.mailer.send({
       name: 'SetPassword',
       to: email,
       props: {
         url: callbackUrl,
       },
+      metadata,
     });
   }
-  async sendChangeEmail(email: string, callbackUrl: string) {
+  async sendChangeEmail(
+    email: string,
+    callbackUrl: string,
+    metadata?: MailDeliveryMetadata
+  ) {
     return await this.mailer.send({
       name: 'ChangeEmail',
       to: email,
       props: {
         url: callbackUrl,
       },
+      metadata,
     });
   }
-  async sendVerifyChangeEmail(email: string, callbackUrl: string) {
+  async sendVerifyChangeEmail(
+    email: string,
+    callbackUrl: string,
+    metadata?: MailDeliveryMetadata
+  ) {
     return await this.mailer.send({
       name: 'VerifyChangeEmail',
       to: email,
       props: {
         url: callbackUrl,
       },
+      metadata,
     });
   }
-  async sendVerifyEmail(email: string, callbackUrl: string) {
+  async sendVerifyEmail(
+    email: string,
+    callbackUrl: string,
+    metadata?: MailDeliveryMetadata
+  ) {
     return await this.mailer.send({
       name: 'VerifyEmail',
       to: email,
       props: {
         url: callbackUrl,
       },
+      metadata,
     });
   }
   async sendNotificationChangeEmail(email: string) {
@@ -371,7 +397,8 @@ export class AuthService implements OnApplicationBootstrap {
     email: string,
     link: string,
     otp: string,
-    signUp: boolean
+    signUp: boolean,
+    metadata?: MailDeliveryMetadata
   ) {
     return await this.mailer.send({
       name: signUp ? 'SignUp' : 'SignIn',
@@ -381,6 +408,7 @@ export class AuthService implements OnApplicationBootstrap {
         otp,
         serverName: this.getServerName(),
       },
+      metadata,
     });
   }
 }

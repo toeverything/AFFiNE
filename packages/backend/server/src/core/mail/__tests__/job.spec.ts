@@ -1,62 +1,70 @@
+import { Prisma, PrismaClient } from '@prisma/client';
 import test from 'ava';
 import Sinon from 'sinon';
 
 import { Mockers } from '../../../__tests__/mocks';
 import { createTestingModule } from '../../../__tests__/utils';
-import { Cache } from '../../../base';
 import { Models } from '../../../models';
 import { MailJob } from '../job';
 import { MailSender } from '../sender';
 
 let module: Awaited<ReturnType<typeof createTestingModule>>;
-let cache: Cache;
 let mailJob: MailJob;
 let sender: MailSender;
 let models: Models;
+let db: PrismaClient;
 
 test.before(async () => {
   module = await createTestingModule();
-  cache = module.get(Cache);
   mailJob = module.get(MailJob);
   sender = module.get(MailSender);
   models = module.get(Models);
+  db = module.get(PrismaClient);
 });
 
 test.after.always(async () => {
   await module.close();
 });
 
-test.afterEach(() => {
+test.afterEach.always(async () => {
   Sinon.restore();
+  await db.mailDelivery.deleteMany();
 });
 
-test('should clear pending mail records when user is deleted', async t => {
+async function createDelivery(
+  input: {
+    name: 'SignIn' | 'VerifyEmail' | 'MemberInvitation';
+    to: string;
+    props: Record<string, unknown>;
+  },
+  overrides: Partial<Parameters<Models['mailDelivery']['create']>[0]> = {}
+) {
+  const mailClass =
+    input.name === 'MemberInvitation' ? 'workspace_invitation' : 'auth';
+  return await models.mailDelivery.create({
+    mailName: input.name,
+    mailClass,
+    priority: mailClass === 'auth' ? 'critical' : 'normal',
+    recipientEmail: input.to,
+    payload: input as Prisma.JsonObject,
+    ...overrides,
+  });
+}
+
+async function delivery(id: string) {
+  return await db.mailDelivery.findUniqueOrThrow({ where: { id } });
+}
+
+test('should cancel pending mail deliveries when user is deleted', async t => {
   const user = await module.create(Mockers.User);
   const another = await module.create(Mockers.User);
-  const sendMailKey = 'mailjob:sendMail';
-  const retryMailKey = 'mailjob:sendMail:retry';
-  const userKey = `${sendMailKey}:SignIn:${user.email}`;
-  const userRetryKey = `${sendMailKey}:VerifyEmail:${user.email}`;
-  const anotherKey = `${sendMailKey}:SignIn:${another.email}`;
-  const senderRetryKey = `${retryMailKey}:MemberInvitation:invited@affine.pro`;
-
-  await cache.mapSet(sendMailKey, userKey, 1);
-  await cache.mapSet(sendMailKey, anotherKey, 1);
-  await cache.mapSet(
-    retryMailKey,
-    userRetryKey,
-    JSON.stringify({
-      startTime: Date.now(),
-      name: 'VerifyEmail',
-      to: user.email,
-      props: { url: 'https://affine.pro/verify' },
-    })
-  );
-  await cache.mapSet(
-    retryMailKey,
-    senderRetryKey,
-    JSON.stringify({
-      startTime: Date.now(),
+  const recipientDelivery = await createDelivery({
+    name: 'SignIn',
+    to: user.email,
+    props: { url: 'https://affine.pro/sign-in', otp: '123456' },
+  });
+  const senderDelivery = await createDelivery(
+    {
       name: 'MemberInvitation',
       to: 'invited@affine.pro',
       props: {
@@ -64,153 +72,126 @@ test('should clear pending mail records when user is deleted', async t => {
         workspace: { $$workspaceId: 'workspace-id' },
         url: 'https://affine.pro/invite',
       },
-    })
+    },
+    { actorUserId: user.id }
   );
+  const anotherDelivery = await createDelivery({
+    name: 'SignIn',
+    to: another.email,
+    props: { url: 'https://affine.pro/sign-in', otp: '123456' },
+  });
 
   await mailJob.onUserDeleted({ ...user, ownedWorkspaces: [] });
 
-  t.true(module.queue.removeWhere.calledOnce);
-  t.is(module.queue.removeWhere.firstCall.args[0], 'notification.sendMail');
-  const shouldRemove = module.queue.removeWhere.firstCall.args[1];
-  t.true(
-    await shouldRemove({
-      to: user.email,
-    } as Jobs['notification.sendMail'])
-  );
-  t.true(
-    await shouldRemove({
-      name: 'MemberInvitation',
-      to: 'invited@affine.pro',
-      props: {
-        user: { $$userId: user.id },
-        workspace: { $$workspaceId: 'workspace-id' },
-        url: 'https://affine.pro/invite',
-      },
-    } as Jobs['notification.sendMail'])
-  );
-  t.false(
-    await shouldRemove({
-      to: another.email,
-    } as Jobs['notification.sendMail'])
-  );
-  t.is(await cache.mapGet(sendMailKey, userKey), undefined);
-  t.is(await cache.mapGet(retryMailKey, userRetryKey), undefined);
-  t.is(await cache.mapGet(retryMailKey, senderRetryKey), undefined);
-  t.is(await cache.mapGet(sendMailKey, anotherKey), 1);
+  t.is((await delivery(recipientDelivery.id)).status, 'canceled');
+  t.is((await delivery(senderDelivery.id)).status, 'canceled');
+  t.is((await delivery(anotherDelivery.id)).status, 'queued');
+  t.is((await delivery(recipientDelivery.id)).recipientEmail, null);
+  t.is((await delivery(senderDelivery.id)).payload, null);
 });
 
 test('should skip queued mail for disabled recipient', async t => {
   const user = await module.create(Mockers.User, { disabled: true });
-  const send = Sinon.stub(sender, 'send').resolves(true);
-
-  await mailJob.sendMail({
-    startTime: Date.now(),
+  const send = Sinon.stub(sender, 'send').resolves({
+    status: 'accepted',
+    retryable: false,
+  });
+  const row = await createDelivery({
     name: 'SignIn',
     to: user.email,
-    props: {
-      url: 'https://affine.pro/sign-in',
-      otp: '123456',
-    },
+    props: { url: 'https://affine.pro/sign-in', otp: '123456' },
   });
 
+  await mailJob.processReadyDeliveries();
+
+  const updated = await delivery(row.id);
   t.false(send.called);
-  t.truthy(await models.user.get(user.id, { withDisabled: true }));
+  t.is(updated.status, 'skipped');
+  t.is(updated.lastErrorCode, 'disabled_recipient');
+  t.is(updated.recipientEmail, null);
+  t.is(updated.payload, null);
 });
 
-test('should drop expired mail retry', async t => {
-  const send = Sinon.stub(sender, 'send').resolves(true);
-
-  await mailJob.sendMail({
-    startTime: Date.now() - 25 * 60 * 60 * 1000,
-    name: 'SignIn',
-    to: 'expired-retry@example.com',
-    props: {
-      url: 'https://affine.pro/sign-in',
-      otp: '123456',
-    },
+test('should not create sendable row for expired mail', async t => {
+  const send = Sinon.stub(sender, 'send').resolves({
+    status: 'accepted',
+    retryable: false,
   });
-
-  t.false(send.called);
-});
-
-test('should drop time-sensitive mail after its business expiration', async t => {
-  const send = Sinon.stub(sender, 'send').resolves(true);
-
-  await mailJob.sendMail({
-    startTime: Date.now() - 31 * 60 * 1000,
-    name: 'SignIn',
-    to: 'expired-sign-in@example.com',
-    props: {
-      url: 'https://affine.pro/sign-in',
-      otp: '123456',
+  const row = await createDelivery(
+    {
+      name: 'SignIn',
+      to: 'expired-retry@example.com',
+      props: { url: 'https://affine.pro/sign-in', otp: '123456' },
     },
-  });
+    { expiresAt: new Date(Date.now() - 1) }
+  );
 
+  await mailJob.processReadyDeliveries();
+
+  const updated = await delivery(row.id);
   t.false(send.called);
+  t.is(updated.status, 'failed');
+  t.is(updated.lastErrorCode, 'expired');
+  t.is(updated.retentionState, 'anonymized');
 });
 
-test('should use explicit mail expiration when provided', async t => {
-  const send = Sinon.stub(sender, 'send').resolves(true);
+test('should not claim delivery when max attempts is zero', async t => {
+  const send = Sinon.stub(sender, 'send').resolves({
+    status: 'accepted',
+    retryable: false,
+  });
+  const row = await createDelivery(
+    {
+      name: 'SignIn',
+      to: 'max-attempts@example.com',
+      props: { url: 'https://affine.pro/sign-in', otp: '123456' },
+    },
+    { maxAttempts: 0 }
+  );
 
-  await mailJob.sendMail({
-    startTime: Date.now(),
-    expiresAt: Date.now() - 1,
-    name: 'MemberInvitation',
-    to: 'expired-invitation@example.com',
-    props: {
-      user: {
-        $$userId: 'owner-id',
+  await mailJob.processReadyDeliveries();
+
+  t.false(send.called);
+  t.is((await delivery(row.id)).status, 'queued');
+});
+
+test('should retry retryable send failures without mutating stored dynamic props', async t => {
+  const owner = await module.create(Mockers.User);
+  const member = await module.create(Mockers.User);
+  const workspace = await module.create(Mockers.Workspace, {
+    owner: { id: owner.id },
+    name: 'Safe Workspace',
+  });
+  Sinon.stub(sender, 'send').resolves({
+    status: 'failed',
+    retryable: true,
+    errorCode: 'transport_failed',
+    error: 'temporary failure',
+  });
+  const row = await createDelivery(
+    {
+      name: 'MemberInvitation',
+      to: member.email,
+      props: {
+        user: { $$userId: owner.id },
+        workspace: { $$workspaceId: workspace.id },
+        url: 'https://affine.pro/invite/test',
       },
-      workspace: {
-        $$workspaceId: 'workspace-id',
-      },
-      url: 'https://affine.pro/invite/test',
+    },
+    { actorUserId: owner.id, workspaceId: workspace.id }
+  );
+
+  await mailJob.processReadyDeliveries();
+
+  const updated = await delivery(row.id);
+  t.is(updated.status, 'retry_wait');
+  t.is(updated.attemptCount, 1);
+  t.like(updated.payload as object, {
+    props: {
+      user: { $$userId: owner.id },
+      workspace: { $$workspaceId: workspace.id },
     },
   });
-
-  t.false(send.called);
-});
-
-test('should drop mail retry after max attempts', async t => {
-  const send = Sinon.stub(sender, 'send').resolves(true);
-
-  await mailJob.sendMail({
-    startTime: Date.now(),
-    retryCount: 12,
-    name: 'SignIn',
-    to: 'max-retry@example.com',
-    props: {
-      url: 'https://affine.pro/sign-in',
-      otp: '123456',
-    },
-  });
-
-  t.false(send.called);
-});
-
-test('should requeue legacy stringified retry mail', async t => {
-  const retryMailKey = 'mailjob:sendMail:retry';
-  const job: Jobs['notification.sendMail'] = {
-    startTime: Date.now(),
-    name: 'SignIn',
-    to: 'legacy-retry@example.com',
-    props: {
-      url: 'https://affine.pro/sign-in',
-      otp: '123456',
-    },
-  };
-  const cacheKey = `${retryMailKey}:SignIn:${job.to}`;
-
-  Sinon.stub(cache, 'mapRandomKey')
-    .onFirstCall()
-    .resolves(cacheKey)
-    .onSecondCall()
-    .resolves(undefined);
-  await cache.mapSet(retryMailKey, cacheKey, JSON.stringify(job));
-  await mailJob.sendRetryMails();
-
-  t.true(module.queue.add.calledWith('notification.sendMail', job));
-  t.is(await cache.mapGet(retryMailKey, cacheKey), undefined);
 });
 
 test('should skip member invitation mail when rendered workspace name contains domain', async t => {
@@ -218,53 +199,123 @@ test('should skip member invitation mail when rendered workspace name contains d
   const member = await module.create(Mockers.User);
   const workspace = await module.create(Mockers.Workspace, {
     owner: { id: owner.id },
-    name: 'BTC https://spam.example',
+    name: 'BTC example.com',
   });
-  const send = Sinon.stub(sender, 'send').resolves(true);
-
-  await mailJob.sendMail({
-    startTime: Date.now(),
-    name: 'MemberInvitation',
-    to: member.email,
-    props: {
-      user: {
-        $$userId: owner.id,
+  const send = Sinon.stub(sender, 'send').resolves({
+    status: 'accepted',
+    retryable: false,
+  });
+  const row = await createDelivery(
+    {
+      name: 'MemberInvitation',
+      to: member.email,
+      props: {
+        user: { $$userId: owner.id },
+        workspace: { $$workspaceId: workspace.id },
+        url: 'https://affine.pro/invite/test',
       },
-      workspace: {
-        $$workspaceId: workspace.id,
-      },
-      url: 'https://affine.pro/invite/test',
     },
-  });
+    { actorUserId: owner.id, workspaceId: workspace.id }
+  );
 
+  await mailJob.processReadyDeliveries();
+
+  const updated = await delivery(row.id);
   t.false(send.called);
+  t.is(updated.status, 'skipped');
+  t.is(updated.lastErrorCode, 'dynamic_props_missing');
 });
 
-test('should keep dynamic mail props untouched for retry', async t => {
-  const owner = await module.create(Mockers.User);
-  const member = await module.create(Mockers.User);
-  const workspace = await module.create(Mockers.Workspace, {
-    owner: { id: owner.id },
-    name: 'Safe Workspace',
+test('should mark accepted mail as sent and anonymize sendable payload', async t => {
+  const user = await module.create(Mockers.User);
+  Sinon.stub(sender, 'send').resolves({
+    status: 'accepted',
+    retryable: false,
+    providerMessageId: 'message-id',
+    providerResponse: '250 ok',
   });
-  Sinon.stub(sender, 'send').resolves(false);
-  const job: Jobs['notification.sendMail'] = {
-    startTime: Date.now(),
-    name: 'MemberInvitation',
-    to: member.email,
-    props: {
-      user: {
-        $$userId: owner.id,
-      },
-      workspace: {
-        $$workspaceId: workspace.id,
-      },
-      url: 'https://affine.pro/invite/test',
+  const row = await createDelivery({
+    name: 'SignIn',
+    to: user.email,
+    props: { url: 'https://affine.pro/sign-in', otp: '123456' },
+  });
+
+  await mailJob.processReadyDeliveries();
+
+  const updated = await delivery(row.id);
+  t.is(updated.status, 'sent');
+  t.is(updated.providerMessageId, 'message-id');
+  t.is(updated.recipientEmail, null);
+  t.is(updated.payload, null);
+  t.is(updated.retentionState, 'anonymized');
+});
+
+test('should claim critical priority before lower priority rows', async t => {
+  Sinon.stub(sender, 'send').resolves({
+    status: 'accepted',
+    retryable: false,
+  });
+  const low = await createDelivery(
+    {
+      name: 'SignIn',
+      to: 'low-priority@example.com',
+      props: { url: 'https://affine.pro/sign-in', otp: '123456' },
     },
-  };
+    { priority: 'low' }
+  );
+  const critical = await createDelivery({
+    name: 'SignIn',
+    to: 'critical-priority@example.com',
+    props: { url: 'https://affine.pro/sign-in', otp: '123456' },
+  });
 
-  await mailJob.sendMail(job);
+  await mailJob.processReadyDeliveries(1);
 
-  t.deepEqual(job.props.user, { $$userId: owner.id });
-  t.deepEqual(job.props.workspace, { $$workspaceId: workspace.id });
+  t.is((await delivery(critical.id)).status, 'sent');
+  t.is((await delivery(low.id)).status, 'queued');
+});
+
+test('should reclaim expired sending lease', async t => {
+  Sinon.stub(sender, 'send').resolves({
+    status: 'accepted',
+    retryable: false,
+  });
+  const row = await createDelivery({
+    name: 'SignIn',
+    to: 'reclaim@example.com',
+    props: { url: 'https://affine.pro/sign-in', otp: '123456' },
+  });
+  await db.mailDelivery.update({
+    where: { id: row.id },
+    data: {
+      status: 'sending',
+      lockedBy: 'dead-worker',
+      lockedUntil: new Date(Date.now() - 1000),
+    },
+  });
+
+  await mailJob.processReadyDeliveries();
+
+  t.is((await delivery(row.id)).status, 'sent');
+});
+
+test('should delete retained anonymized terminal rows on worker tick', async t => {
+  const row = await createDelivery(
+    {
+      name: 'SignIn',
+      to: 'retention@example.com',
+      props: { url: 'https://affine.pro/sign-in', otp: '123456' },
+    },
+    { status: 'skipped' }
+  );
+  await db.mailDelivery.update({
+    where: { id: row.id },
+    data: {
+      settledAt: new Date(Date.now() - 31 * 24 * 60 * 60 * 1000),
+    },
+  });
+
+  await mailJob.sendPendingMails();
+
+  t.is(await db.mailDelivery.count({ where: { id: row.id } }), 0);
 });

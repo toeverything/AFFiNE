@@ -102,4 +102,12 @@ defineModuleConfig('job', {
     },
     schema,
   },
+
+  'queues.inviteAbuse': {
+    desc: 'The config for invite abuse disposition job queue',
+    default: {
+      concurrency: 1,
+    },
+    schema,
+  },
 });

@@ -79,6 +79,11 @@ export class WorkspaceEvents {
           $$workspaceId: workspaceId,
         },
       },
+      metadata: {
+        workspaceId,
+        recipientUserId: userId,
+        source: { trusted: false },
+      },
     });
   }
 

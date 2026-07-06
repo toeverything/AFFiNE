@@ -10,4 +10,15 @@ import { BackendRuntimeProvider } from './provider';
 })
 export class BackendRuntimeModule {}
 
-export { BackendRuntimeProvider } from './provider';
+export {
+  BackendRuntimeProvider,
+  type RuntimeInviteAbuseAction,
+  type RuntimeInviteAbuseClaimedAction,
+  type RuntimeMailDeliveryQuotaDecision,
+  type RuntimeMailDeliveryQuotaInput,
+  type RuntimeQuotaSourceInput,
+  type RuntimeQuotaTargetDomainInput,
+  type RuntimeWorkspaceInviteQuotaDecision,
+  type RuntimeWorkspaceInviteQuotaInput,
+  type RuntimeWorkspaceInviteQuotaUsage,
+} from './provider';

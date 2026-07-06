@@ -148,6 +148,10 @@ export class SelfhostTeamSubscriptionManager extends SubscriptionManager {
         name: 'TeamLicense',
         to: userEmail,
         props: { license: key },
+        metadata: {
+          dedupeKey: `selfhost-license:${key}`,
+          source: { trusted: false },
+        },
       });
 
       await this.upsertStripeProviderSubscription(

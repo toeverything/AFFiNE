@@ -12,6 +12,7 @@ import {
   WrongSignInCredentials,
 } from '../../base';
 import { Models, TokenType } from '../../models';
+import type { MailDeliveryMetadata } from '../mail/types';
 import { validators } from '../utils/validators';
 import { verifyEmailDomainRecords } from './email-domain';
 import type { VerifiedIdentity } from './identity';
@@ -29,7 +30,12 @@ export class MagicLinkAuthService {
     private readonly crypto: CryptoHelper
   ) {}
 
-  async send(email: string, callbackUrl = '/magic-link', clientNonce?: string) {
+  async send(
+    email: string,
+    callbackUrl = '/magic-link',
+    clientNonce?: string,
+    metadata?: Pick<MailDeliveryMetadata, 'source'>
+  ) {
     validators.assertValidEmail(email);
 
     if (!this.url.isAllowedCallbackUrl(callbackUrl)) {
@@ -57,21 +63,33 @@ export class MagicLinkAuthService {
     }
 
     const ttlInSec = 30 * 60;
-    const token = await this.models.verificationToken.create(
-      TokenType.SignIn,
-      email,
-      ttlInSec
-    );
+    const { token, expiresAt: tokenExpiresAt } =
+      await this.models.verificationToken.createWithExpiresAt(
+        TokenType.SignIn,
+        email,
+        ttlInSec
+      );
 
     const otp = this.crypto.otp();
-    await this.models.magicLinkOtp.upsert(email, otp, token, clientNonce);
+    const { expiresAt: otpExpiresAt } = await this.models.magicLinkOtp.upsert(
+      email,
+      otp,
+      token,
+      clientNonce
+    );
 
     const magicLink = this.url.link(callbackUrl, { token: otp, email });
     if (env.dev) {
       this.logger.debug(`Magic link: ${magicLink}`);
     }
 
-    await this.auth.sendSignInEmail(email, magicLink, otp, !user);
+    await this.auth.sendSignInEmail(email, magicLink, otp, !user, {
+      ...metadata,
+      expiresAt:
+        tokenExpiresAt.getTime() < otpExpiresAt.getTime()
+          ? tokenExpiresAt
+          : otpExpiresAt,
+    });
 
     return { email };
   }

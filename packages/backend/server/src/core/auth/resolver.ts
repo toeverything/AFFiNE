@@ -1,5 +1,6 @@
 import {
   Args,
+  Context,
   Field,
   Mutation,
   ObjectType,
@@ -11,6 +12,7 @@ import {
 
 import {
   ActionForbidden,
+  Config,
   EmailAlreadyUsed,
   EmailTokenNotFound,
   EmailVerificationRequired,
@@ -21,10 +23,13 @@ import {
   Throttle,
   URLHelper,
 } from '../../base';
+import type { GraphqlContext } from '../../base/graphql';
 import { Models, TokenType } from '../../models';
 import { Admin } from '../common';
+import type { MailDeliveryMetadata } from '../mail/types';
 import { UserType } from '../user/types';
 import { validators } from '../utils/validators';
+import { getAbuseRequestSource } from '../workspaces/abuse';
 import { Public } from './guard';
 import { AuthService } from './service';
 import { CurrentUser } from './session';
@@ -47,8 +52,19 @@ export class AuthResolver {
   constructor(
     private readonly url: URLHelper,
     private readonly auth: AuthService,
-    private readonly models: Models
+    private readonly models: Models,
+    private readonly config: Config
   ) {}
+
+  private mailMetadata(
+    context: GraphqlContext,
+    expiresAt?: Date
+  ): MailDeliveryMetadata {
+    return {
+      source: getAbuseRequestSource(context.req, this.config),
+      expiresAt,
+    };
+  }
 
   @SkipThrottle()
   @Public()
@@ -145,23 +161,30 @@ export class AuthResolver {
     @CurrentUser() user: CurrentUser,
     @Args('callbackUrl') callbackUrl: string,
     @Args('email', {
+      type: () => String,
       nullable: true,
       deprecationReason: 'fetched from signed in user',
     })
-    _email?: string
+    _email: string | undefined,
+    @Context() context: GraphqlContext
   ) {
     if (!user.emailVerified) {
       throw new EmailVerificationRequired();
     }
 
-    const token = await this.models.verificationToken.create(
-      TokenType.ChangePassword,
-      user.id
-    );
+    const { token, expiresAt } =
+      await this.models.verificationToken.createWithExpiresAt(
+        TokenType.ChangePassword,
+        user.id
+      );
 
     const url = this.url.safeLink(callbackUrl, { userId: user.id, token });
 
-    return await this.auth.sendChangePasswordEmail(user.email, url);
+    return await this.auth.sendChangePasswordEmail(
+      user.email,
+      url,
+      this.mailMetadata(context, expiresAt)
+    );
   }
 
   @Mutation(() => Boolean)
@@ -169,12 +192,26 @@ export class AuthResolver {
     @CurrentUser() user: CurrentUser,
     @Args('callbackUrl') callbackUrl: string,
     @Args('email', {
+      type: () => String,
       nullable: true,
       deprecationReason: 'fetched from signed in user',
     })
-    _email?: string
+    _email: string | undefined,
+    @Context() context: GraphqlContext
   ) {
-    return this.sendChangePasswordEmail(user, callbackUrl);
+    const { token, expiresAt } =
+      await this.models.verificationToken.createWithExpiresAt(
+        TokenType.ChangePassword,
+        user.id
+      );
+
+    const url = this.url.safeLink(callbackUrl, { userId: user.id, token });
+
+    return await this.auth.sendSetPasswordEmail(
+      user.email,
+      url,
+      this.mailMetadata(context, expiresAt)
+    );
   }
 
   // The change email step is:
@@ -187,20 +224,26 @@ export class AuthResolver {
   @Mutation(() => Boolean)
   async sendChangeEmail(
     @CurrentUser() user: CurrentUser,
-    @Args('callbackUrl') callbackUrl: string
+    @Args('callbackUrl') callbackUrl: string,
+    @Context() context: GraphqlContext
   ) {
     if (!user.emailVerified) {
       throw new EmailVerificationRequired();
     }
 
-    const token = await this.models.verificationToken.create(
-      TokenType.ChangeEmail,
-      user.id
-    );
+    const { token, expiresAt } =
+      await this.models.verificationToken.createWithExpiresAt(
+        TokenType.ChangeEmail,
+        user.id
+      );
 
     const url = this.url.safeLink(callbackUrl, { token });
 
-    return await this.auth.sendChangeEmail(user.email, url);
+    return await this.auth.sendChangeEmail(
+      user.email,
+      url,
+      this.mailMetadata(context, expiresAt)
+    );
   }
 
   @Mutation(() => Boolean)
@@ -208,7 +251,8 @@ export class AuthResolver {
     @CurrentUser() user: CurrentUser,
     @Args('token') token: string,
     @Args('email') email: string,
-    @Args('callbackUrl') callbackUrl: string
+    @Args('callbackUrl') callbackUrl: string,
+    @Context() context: GraphqlContext
   ) {
     if (!token) {
       throw new EmailTokenNotFound();
@@ -237,31 +281,42 @@ export class AuthResolver {
       }
     }
 
-    const verifyEmailToken = await this.models.verificationToken.create(
-      TokenType.VerifyEmail,
-      user.id
-    );
+    const { token: verifyEmailToken, expiresAt } =
+      await this.models.verificationToken.createWithExpiresAt(
+        TokenType.VerifyEmail,
+        user.id
+      );
 
     const url = this.url.safeLink(callbackUrl, {
       token: verifyEmailToken,
       email,
     });
-    return await this.auth.sendVerifyChangeEmail(email, url);
+    return await this.auth.sendVerifyChangeEmail(
+      email,
+      url,
+      this.mailMetadata(context, expiresAt)
+    );
   }
 
   @Mutation(() => Boolean)
   async sendVerifyEmail(
     @CurrentUser() user: CurrentUser,
-    @Args('callbackUrl') callbackUrl: string
+    @Args('callbackUrl') callbackUrl: string,
+    @Context() context: GraphqlContext
   ) {
-    const token = await this.models.verificationToken.create(
-      TokenType.VerifyEmail,
-      user.id
-    );
+    const { token, expiresAt } =
+      await this.models.verificationToken.createWithExpiresAt(
+        TokenType.VerifyEmail,
+        user.id
+      );
 
     const url = this.url.safeLink(callbackUrl, { token });
 
-    return await this.auth.sendVerifyEmail(user.email, url);
+    return await this.auth.sendVerifyEmail(
+      user.email,
+      url,
+      this.mailMetadata(context, expiresAt)
+    );
   }
 
   @Mutation(() => Boolean)

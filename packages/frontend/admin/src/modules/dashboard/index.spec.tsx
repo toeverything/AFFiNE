@@ -87,16 +87,91 @@ const dashboardData = {
   },
 };
 
+const mailDeliveryData = {
+  adminMailDeliveries: {
+    window: {
+      from: '2026-02-15T20:00:00.000Z',
+      to: '2026-02-16T20:00:00.000Z',
+      timezone: 'UTC',
+      bucket: 'Hour',
+      requestedSize: 24,
+      effectiveSize: 24,
+    },
+    summary: {
+      total: 4,
+      sent: 2,
+      failed: 1,
+      skipped: 0,
+      canceled: 0,
+      queued: 1,
+      sending: 0,
+      retryWait: 0,
+      successRate: 2 / 3,
+    },
+    byStatus: [
+      {
+        key: 'sent',
+        label: 'Sent',
+        total: 2,
+        points: [{ bucket: '2026-02-16T19:00:00.000Z', count: 2 }],
+      },
+      {
+        key: 'failed',
+        label: 'Failed',
+        total: 1,
+        points: [{ bucket: '2026-02-16T19:00:00.000Z', count: 1 }],
+      },
+      {
+        key: 'queued',
+        label: 'Queued',
+        total: 1,
+        points: [{ bucket: '2026-02-16T19:00:00.000Z', count: 1 }],
+      },
+    ],
+    byType: [
+      {
+        key: 'auth',
+        label: 'auth',
+        total: 2,
+        points: [{ bucket: '2026-02-16T19:00:00.000Z', count: 2 }],
+      },
+    ],
+    byOutcome: [
+      {
+        key: 'successful',
+        label: 'Successful',
+        total: 2,
+        points: [{ bucket: '2026-02-16T19:00:00.000Z', count: 2 }],
+      },
+      {
+        key: 'unsuccessful',
+        label: 'Unsuccessful',
+        total: 1,
+        points: [{ bucket: '2026-02-16T19:00:00.000Z', count: 1 }],
+      },
+      {
+        key: 'pending',
+        label: 'Pending',
+        total: 1,
+        points: [{ bucket: '2026-02-16T19:00:00.000Z', count: 1 }],
+      },
+    ],
+  },
+};
+
 describe('DashboardPage', () => {
   beforeEach(() => {
     (globalThis as any).environment = {
       isSelfHosted: true,
     };
     useQueryMock.mockReset();
-    useQueryMock.mockReturnValue({
-      data: dashboardData,
+    useQueryMock.mockImplementation(({ query }: { query: { id: string } }) => ({
+      data:
+        query.id === 'adminMailDeliveriesQuery'
+          ? mailDeliveryData
+          : dashboardData,
       isValidating: false,
-    });
+    }));
     mutateQueryResourceMock.mockReset();
   });
 
@@ -124,5 +199,15 @@ describe('DashboardPage', () => {
     expect(styles).toContain('--color-primary: var(--primary);');
     expect(styles).toContain('--color-secondary: var(--muted-foreground);');
     expect(styles).not.toContain('hsl(var(--primary))');
+  });
+
+  test('renders mail delivery analytics controls and summary', () => {
+    const { getByText } = render(<DashboardPage />);
+
+    expect(getByText('Email Delivery Trend')).toBeTruthy();
+    expect(getByText('Mail Delivery')).toBeTruthy();
+    expect(getByText('24 hours')).toBeTruthy();
+    expect(getByText('Success rate')).toBeTruthy();
+    expect(getByText('66.7%')).toBeTruthy();
   });
 });

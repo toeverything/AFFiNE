@@ -4,6 +4,7 @@ mod doc_compactor;
 mod doc_storage;
 mod gate;
 mod housekeeping;
+mod rolling_quota;
 mod runtime_state;
 #[cfg(test)]
 mod tests;
@@ -17,8 +18,9 @@ use tokio::sync::Mutex;
 
 use self::types::BackendRuntimeHealth;
 pub(crate) use super::types;
-use super::{
-  BackendRuntimeConfig, RuntimeError, RuntimeResult, migrations::migrate_runtime_tables, napi_error, to_napi_error,
+pub(super) use super::{
+  BackendRuntimeConfig, InviteQuotaConfig, RuntimeError, RuntimeResult, migrations::migrate_runtime_tables, napi_error,
+  to_napi_error,
 };
 
 pub(super) fn token_hash(token: &str) -> String {

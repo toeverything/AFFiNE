@@ -105,6 +105,42 @@ type AdminLicensePreview {
   workspaceId: String!
 }
 
+input AdminMailDeliveriesInput {
+  hours: Int! = 24
+}
+
+type AdminMailDeliveryAnalytics {
+  byOutcome: [AdminMailDeliverySeries!]!
+  byStatus: [AdminMailDeliverySeries!]!
+  byType: [AdminMailDeliverySeries!]!
+  summary: AdminMailDeliverySummary!
+  window: TimeWindow!
+}
+
+type AdminMailDeliveryPoint {
+  bucket: DateTime!
+  count: Int!
+}
+
+type AdminMailDeliverySeries {
+  key: String!
+  label: String!
+  points: [AdminMailDeliveryPoint!]!
+  total: Int!
+}
+
+type AdminMailDeliverySummary {
+  canceled: Int!
+  failed: Int!
+  queued: Int!
+  retryWait: Int!
+  sending: Int!
+  sent: Int!
+  skipped: Int!
+  successRate: Float!
+  total: Int!
+}
+
 type AdminSharedLinkTopItem {
   docId: String!
   guestViews: SafeInt!
@@ -1952,6 +1988,9 @@ type Query {
   """Get aggregated dashboard metrics for admin panel"""
   adminDashboard(input: AdminDashboardInput): AdminDashboard!
 
+  """Aggregate mail delivery timeline facts for admin panel"""
+  adminMailDeliveries(input: AdminMailDeliveriesInput): AdminMailDeliveryAnalytics!
+
   """Get workspace detail for admin"""
   adminWorkspace(id: String!): AdminWorkspace
 
@@ -2420,6 +2459,7 @@ type TestWorkspaceByokConfigResultType {
 
 enum TimeBucket {
   Day
+  Hour
   Minute
 }
 

@@ -110,3 +110,90 @@ CREATE TABLE IF NOT EXISTS blob_cleanup_candidates (
 
 CREATE INDEX IF NOT EXISTS blob_cleanup_candidates_run_idx
   ON blob_cleanup_candidates (run_id, status);
+
+CREATE TABLE IF NOT EXISTS runtime_rolling_quota_counters (
+  scope_key TEXT NOT NULL,
+  window_seconds INTEGER NOT NULL,
+  bucket_start TIMESTAMPTZ(3) NOT NULL,
+  count INTEGER NOT NULL CHECK (count >= 0),
+  expires_at TIMESTAMPTZ(3) NOT NULL,
+  updated_at TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (scope_key, window_seconds, bucket_start)
+);
+
+CREATE INDEX IF NOT EXISTS runtime_rolling_quota_counters_expires_at_idx
+  ON runtime_rolling_quota_counters (expires_at);
+
+CREATE TABLE IF NOT EXISTS runtime_rolling_quota_reservations (
+  id UUID NOT NULL DEFAULT gen_random_uuid(),
+  scope_key TEXT NOT NULL,
+  window_seconds INTEGER NOT NULL,
+  bucket_start TIMESTAMPTZ(3) NOT NULL,
+  count INTEGER NOT NULL CHECK (count >= 0),
+  status TEXT NOT NULL CHECK (status IN ('reserved', 'committed', 'released', 'expired')),
+  purpose TEXT NOT NULL,
+  request_id TEXT,
+  expires_at TIMESTAMPTZ(3) NOT NULL,
+  committed_at TIMESTAMPTZ(3),
+  released_at TIMESTAMPTZ(3),
+  created_at TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id, scope_key, window_seconds, bucket_start)
+);
+
+CREATE INDEX IF NOT EXISTS runtime_rolling_quota_reservations_status_expires_at_idx
+  ON runtime_rolling_quota_reservations (status, expires_at);
+
+CREATE INDEX IF NOT EXISTS runtime_rolling_quota_reservations_scope_idx
+  ON runtime_rolling_quota_reservations (scope_key, window_seconds, bucket_start)
+  WHERE status = 'reserved';
+
+CREATE TABLE IF NOT EXISTS runtime_invite_abuse_subjects (
+  subject_key TEXT PRIMARY KEY,
+  kind TEXT NOT NULL,
+  user_id TEXT,
+  actor_email_hash TEXT,
+  email_domain TEXT,
+  first_seen_at TIMESTAMPTZ(3) NOT NULL,
+  last_seen_at TIMESTAMPTZ(3) NOT NULL,
+  status TEXT NOT NULL DEFAULT 'active',
+  action TEXT,
+  action_reason TEXT,
+  action_at TIMESTAMPTZ(3),
+  created_at TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS runtime_invite_abuse_evidence (
+  id BIGSERIAL PRIMARY KEY,
+  subject_key TEXT NOT NULL REFERENCES runtime_invite_abuse_subjects(subject_key),
+  request_id TEXT,
+  workspace_id TEXT,
+  user_id TEXT,
+  actor_email_hash TEXT,
+  source_prefix_hash TEXT,
+  source_asn INTEGER,
+  target_domains JSONB NOT NULL DEFAULT '[]'::jsonb,
+  counters JSONB NOT NULL DEFAULT '{}'::jsonb,
+  decision TEXT NOT NULL,
+  reason TEXT NOT NULL,
+  created_at TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS runtime_invite_abuse_actions (
+  id BIGSERIAL PRIMARY KEY,
+  subject_key TEXT NOT NULL REFERENCES runtime_invite_abuse_subjects(subject_key),
+  evidence_id BIGINT NOT NULL REFERENCES runtime_invite_abuse_evidence(id),
+  action TEXT NOT NULL CHECK (action IN ('ban_actor', 'quarantine_actor', 'quarantine_workspace', 'quarantine_source_cohort')),
+  status TEXT NOT NULL CHECK (status IN ('pending', 'running', 'succeeded', 'retry_wait', 'failed')),
+  attempts INTEGER NOT NULL DEFAULT 0 CHECK (attempts >= 0),
+  next_attempt_at TIMESTAMPTZ(3),
+  locked_by TEXT,
+  locked_until TIMESTAMPTZ(3),
+  last_error TEXT,
+  created_at TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS runtime_invite_abuse_actions_status_next_attempt_idx
+  ON runtime_invite_abuse_actions (status, next_attempt_at);
