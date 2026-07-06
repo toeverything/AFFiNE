@@ -274,6 +274,35 @@ registerNativePreviewHandlers({
     defaultServerService.server;
   return currentServer.account$.value?.id;
 };
+(window as any).requestSignIn = async () => {
+  const globalContextService = frameworkProvider.get(GlobalContextService);
+  const currentServerId = globalContextService.globalContext.serverId.get();
+  const serversService = frameworkProvider.get(ServersService);
+  const defaultServerService = frameworkProvider.get(DefaultServerService);
+  const currentServer =
+    (currentServerId ? serversService.server$(currentServerId).value : null) ??
+    defaultServerService.server;
+  const authService = currentServer.scope.get(AuthService);
+  const account = authService.session.account$.value;
+  if (account?.id) {
+    return account.id;
+  }
+
+  const abortController = new AbortController();
+  const timeout = window.setTimeout(
+    () => abortController.abort(),
+    5 * 60 * 1000
+  );
+  try {
+    await router.navigate('/sign-in');
+    const session = await authService.session.waitForAuthenticated(
+      abortController.signal
+    );
+    return session.session.account.id;
+  } finally {
+    window.clearTimeout(timeout);
+  }
+};
 (window as any).getCurrentDocContentInMarkdown = async () => {
   const globalContextService = frameworkProvider.get(GlobalContextService);
   const currentWorkspaceId =
