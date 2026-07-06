@@ -32,10 +32,12 @@ public enum Paywall {
   public static func presentWall(
     toController controller: UIViewController,
     bindWebContext context: WKWebView?,
-    type: String
+    type: String,
+    onDismiss: (@MainActor (Bool) -> Void)? = nil
   ) {
     let viewModel = ViewModel()
     if let context { viewModel.bind(context: context) }
+    if let onDismiss { viewModel.bind(onDismiss: onDismiss) }
     switch type.lowercased() {
     case "pro":
       viewModel.select(category: .pro)

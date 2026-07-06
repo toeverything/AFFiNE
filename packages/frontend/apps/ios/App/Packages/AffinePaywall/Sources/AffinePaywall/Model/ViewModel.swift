@@ -28,6 +28,9 @@ class ViewModel: ObservableObject {
   @Published var externalPurchasedItems: Set<String> = []
   @Published var packageOptions: [SKUnitPackageOption] = SKUnit.allUnits.flatMap(\.package)
 
+  private var completedPurchase = false
+  private var onDismiss: (@MainActor (Bool) -> Void)?
+
   var purchasedItems: Set<String> {
     Set<String>()
       .union(storePurchasedItems)
@@ -53,6 +56,19 @@ class ViewModel: ObservableObject {
 
   func bind(context: WKWebView) {
     associatedWebContext = context
+  }
+
+  func bind(onDismiss: @escaping @MainActor (Bool) -> Void) {
+    self.onDismiss = onDismiss
+  }
+
+  func markPurchaseCompleted() {
+    completedPurchase = true
+  }
+
+  func notifyDismiss() {
+    onDismiss?(completedPurchase)
+    onDismiss = nil
   }
 
   func select(category: SKUnitCategory) {

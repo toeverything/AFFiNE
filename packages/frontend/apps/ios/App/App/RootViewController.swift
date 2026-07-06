@@ -98,9 +98,8 @@ class RootViewController: UINavigationController {
       return
     }
 
-    OnboardingFlag.markCompleted()
     let presentPaywall = { [weak self] in
-      self?.presentPaywall(type: type)
+      self?.presentPaywallForOnboarding(type: type)
     }
 
     if let onboardingController, onboardingController.presentingViewController != nil {
@@ -190,7 +189,7 @@ class RootViewController: UINavigationController {
   }
 
   @MainActor
-  private func presentPaywall(type: OnboardingPurchaseType) {
+  private func presentPaywallForOnboarding(type: OnboardingPurchaseType) {
     guard let affineViewController, let webView = affineViewController.webView else {
       showOnboardingAlert(message: "AFFiNE is still loading. Please try again in a moment.")
       return
@@ -199,7 +198,22 @@ class RootViewController: UINavigationController {
       toController: self,
       bindWebContext: webView,
       type: type.rawValue
-    )
+    ) { [weak self] completedPurchase in
+      self?.handleOnboardingPaywallDismiss(completedPurchase: completedPurchase)
+    }
+  }
+
+  @MainActor
+  private func handleOnboardingPaywallDismiss(completedPurchase: Bool) {
+    if completedPurchase {
+      OnboardingFlag.markCompleted()
+      affineViewController?.webView?.evaluateJavaScript("window.location.assign('/');")
+      didScheduleOnboardingPresentation = true
+      return
+    }
+
+    didScheduleOnboardingPresentation = false
+    presentOnboardingIfNeeded(force: true)
   }
 
   @MainActor

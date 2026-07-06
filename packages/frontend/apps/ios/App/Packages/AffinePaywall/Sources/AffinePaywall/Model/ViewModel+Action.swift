@@ -36,6 +36,9 @@ extension ViewModel {
           case .verified(let transaction):
             print("purchase success", transaction)
             try await self.applySubscription(transactionID: .init(transaction.id))
+            await MainActor.run {
+              self.markPurchaseCompleted()
+            }
           case .unverified:
             #if DEBUG
             break
@@ -101,7 +104,14 @@ extension ViewModel {
       }
     }
 
-    associatedController?.dismiss(animated: true)
+    guard let associatedController else {
+      notifyDismiss()
+      return
+    }
+
+    associatedController.dismiss(animated: true) { [weak self] in
+      self?.notifyDismiss()
+    }
   }
 
   func applySubscription(transactionID: String) async throws {
