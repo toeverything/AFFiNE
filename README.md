@@ -1,225 +1,187 @@
 <div align="center">
 
-<h1 style="border-bottom: none">
-    <b><a href="https://affine.pro">AFFiNE.Pro</a></b><br />
-    Write, Draw and Plan All at Once
-    <br>
+<h1>
+    <b><a href="https://affine.pro">AFFiNE</a></b>
 </h1>
-<a href="https://affine.pro/download">
-    <img alt="affine logo" src="https://cdn.affine.pro/Github_hero_image2.png" style="width: 100%">
-</a>
-<br/>
-<p align="center">
-  A privacy-focused, local-first, open-source, and ready-to-use alternative for Notion & Miro. <br />
-  One hyper-fused platform for wildly creative minds.
-</p>
 
-<br/>
+**Write, draw and plan — all at once.**
 
-<br/>
-<a href="https://www.producthunt.com/posts/affine-3?utm_source=badge-featured&utm_medium=badge&utm_souce=badge-affine&#0045;3" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=440671&theme=light" alt="AFFiNE - One&#0032;app&#0032;for&#0032;all&#0032;&#0045;&#0032;Where&#0032;Notion&#0032;meets&#0032;Miro | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
-<br/>
-<br/>
+A privacy-focused, local-first, open-source workspace. <br />
+One hyper-fused platform for docs, whiteboards and databases — a ready-to-use alternative to Notion & Miro.
 
-<div align="center">
-    <a href="https://affine.pro">Home Page</a> |
-    <a href="https://affine.pro/redirect/discord">Discord</a> |
-    <a href="https://app.affine.pro">Live Demo</a> |
-    <a href="https://affine.pro/blog/">Blog</a> |
-    <a href="https://docs.affine.pro/">Documentation</a>
-</div>
-<br/>
+<br />
 
-[![Releases](https://img.shields.io/github/downloads/toeverything/AFFiNE/total)](https://github.com/toeverything/AFFiNE/releases/latest)
+[![Stars][stars-icon]](https://github.com/toeverything/AFFiNE/stargazers)
+[![Downloads](https://img.shields.io/github/downloads/toeverything/AFFiNE/total)](https://github.com/toeverything/AFFiNE/releases/latest)
 [![All Contributors][all-contributors-badge]](#contributors)
-[![TypeScript-version-icon]](https://www.typescriptlang.org/)
+[![TypeScript][typescript-version-icon]](https://www.typescriptlang.org/)
+[![BlockSuite][blocksuite-icon]](https://github.com/toeverything/blocksuite)
+[![License: MIT + AFFiNE EE](https://img.shields.io/badge/license-MIT%20%2B%20AFFiNE%20EE-blue)](./LICENSE)
+
+[Website](https://affine.pro) · [Live Demo](https://app.affine.pro) · [Download](https://affine.pro/download) · [Documentation](https://docs.affine.pro) · [Blog](https://affine.pro/blog) · [Discord](https://affine.pro/redirect/discord)
+
+English · [简体中文](README.zh-Hans.md) · [繁體中文](README.zh-Hant.md) · [日本語](README.ja.md) · [한국어](README.ko.md) · [Français](README.fr.md) · [Deutsch](README.de.md) · [Español](README.es.md) · [Português (BR)](README.pt-BR.md) · [Русский](README.ru.md)
+
+<br />
+
+<a href="https://affine.pro/download">
+    <img alt="AFFiNE — write, draw and plan all at once" src="https://cdn.affine.pro/Github_hero_image2.png" style="width: 100%" />
+</a>
+
+<br />
+<br />
+
+<em>Docs, canvas and tables are hyper-merged with AFFiNE — just like the word affine (əˈfʌɪn | a-fine).</em>
 
 </div>
 
 <br />
-<div align="center">
-<em>Docs, canvas and tables are hyper-merged with AFFiNE - just like the word affine (əˈfʌɪn | a-fine).</em>
-</div>
-<br />
-
-<div align="center">
-<img src="https://github.com/toeverything/AFFiNE/assets/79301703/49a426bb-8d2b-4216-891a-fa5993642253" style="width: 100%"/>
-</div>
-
-## Getting started & staying tuned with us.
-
-Star us, and you will receive all release notifications from GitHub without any delay!
-
-<img src="https://user-images.githubusercontent.com/79301703/230891830-0110681e-8c7e-483b-b6d9-9e42b291b9ef.gif" style="width: 100%"/>
 
 ## What is AFFiNE
 
-[AFFiNE](https://affine.pro) is an open-source, all-in-one workspace and an operating system for all the building blocks that assemble your knowledge base and much more -- wiki, knowledge management, presentation and digital assets. It's a better alternative to Notion and Miro.
+[AFFiNE](https://affine.pro) is an open-source, all-in-one workspace — an operating system for all the building blocks of your knowledge base: wiki, knowledge management, presentations and digital assets. Docs and whiteboards are truly merged on one edgeless canvas, making AFFiNE a better alternative to Notion and Miro.
 
-## Features
+<div align="center">
+<img alt="AFFiNE edgeless canvas with docs, notes and databases" src="https://github.com/toeverything/AFFiNE/assets/79301703/49a426bb-8d2b-4216-891a-fa5993642253" style="width: 100%"/>
+</div>
 
-**A true canvas for blocks in any form. Docs and whiteboard are now fully merged.**
+## Key Features
 
-- Many editor apps claim to be a canvas for productivity, but AFFiNE is one of the very few which allows you to put any building block on an edgeless canvas -- rich text, sticky notes, any embedded web pages, multi-view databases, linked pages, shapes and even slides. We have it all.
+**🎨 A true canvas for blocks in any form — docs and whiteboard fully merged**
 
-**Multimodal AI partner ready to kick in any work**
+Many editors claim to be a canvas for productivity, but AFFiNE is one of the very few that lets you place any building block on an edgeless canvas: rich text, sticky notes, embedded web pages, multi-view databases, linked pages, shapes — even slides.
 
-- Write up professional work report? Turn an outline into expressive and presentable slides? Summary an article into a well-structured mindmap? Sorting your job plan and backlog for tasks? Or... draw and code prototype apps and web pages directly all with one prompt? With you, [AFFiNE AI](https://affine.pro/ai) pushes your creativity to the edge of your imagination, just like [Canvas AI](https://affine.pro/blog/best-canvas-ai) to generate mind map for brainstorming.
+**🤖 A multimodal AI partner, ready for any work**
 
-**Local-first & Real-time collaborative**
+Draft a professional report, turn an outline into expressive slides, summarize an article into a well-structured mind map, or draw and code prototype apps from a single prompt — [AFFiNE AI](https://affine.pro/ai) pushes your creativity to the edge of your imagination.
 
-- We love the idea of local-first that you always own your data on your disk, in spite of the cloud. Furthermore, AFFiNE supports real-time sync and collaborations on web and cross-platform clients.
+**🔒 Local-first, with real-time collaboration**
 
-**Self-host & Shape your own AFFiNE**
+Your data lives on your own disk first, while AFFiNE still supports real-time sync and collaboration across web and cross-platform clients.
 
-- You have the freedom to manage, self-host, fork and build your own AFFiNE. Plugin community and third-party blocks are coming soon. More tractions on [Blocksuite](https://blocksuite.io). Check there to learn how to [self-host AFFiNE](https://docs.affine.pro/self-host-affine).
+**🛠️ Open-source, self-hostable, and yours to shape**
 
-## Acknowledgement
+You have the freedom to manage, self-host, fork and build your own AFFiNE. The editor is built on [BlockSuite](https://blocksuite.io), our open-source block-based editing framework.
 
-“We shape our tools and thereafter our tools shape us”. A lot of pioneers have inspired us along the way, e.g.:
+## Getting Started
 
-- Quip & Notion with their great concept of “everything is a block”
-- Trello with their Kanban
-- Airtable & Miro with their no-code programmable datasheets
-- Miro & Whimiscal with their edgeless visual whiteboard
-- Remote & Capacities with their object-based tag system
+There are three ways to start using AFFiNE:
 
-There is a large overlap of their atomic “building blocks” between these apps. They are not open source, nor do they have a plugin system like Vscode for contributors to customize. We want to have something that contains all the features we love and also goes one step even further.
+| Option | Best for | Start here |
+| --- | --- | --- |
+| ☁️ **AFFiNE Cloud** | Zero setup — sign up and create your first workspace in the browser. | [Open app.affine.pro](https://app.affine.pro) |
+| 💻 **Desktop & Mobile** | Native apps for macOS, Windows, Linux, iOS and Android, with local-first storage. | [Download AFFiNE](https://affine.pro/download) · [GitHub Releases](https://github.com/toeverything/AFFiNE/releases/latest) |
+| 🐳 **Self-Hosted** | Run the full experience on your own infrastructure with Docker Compose. | [Jump to Self-Host](#self-host-affine) |
 
-Thanks for checking us out, we appreciate your interest and sincerely hope that AFFiNE resonates with you! 🎵 Checking https://affine.pro/ for more details ions.
+> ⭐ **Star us on GitHub** — you'll receive all release notifications instantly, and it genuinely helps the project grow.
+
+<img alt="Star AFFiNE on GitHub" src="https://user-images.githubusercontent.com/79301703/230891830-0110681e-8c7e-483b-b6d9-9e42b291b9ef.gif" style="width: 100%"/>
+
+## Self-Host AFFiNE
+
+Deploy your own feature-rich AFFiNE — your data, your rules. You can run the published self-hosted stack for free; the editor, desktop app, and most of the codebase are MIT-licensed, while the backend is covered by the AFFiNE Enterprise Edition license.
+
+```sh
+mkdir affine && cd affine
+
+wget -O docker-compose.yml https://github.com/toeverything/affine/releases/latest/download/docker-compose.yml
+wget -O .env https://github.com/toeverything/affine/releases/latest/download/default.env.example
+
+# Edit .env to set your credentials and storage paths, then:
+docker compose up -d
+```
+
+Your workspace is now running at `http://localhost:3010`.
+
+For configuration, upgrades and troubleshooting, read the [self-hosting documentation](https://docs.affine.pro/self-host-affine).
+<!-- WHEN affine.pro/self-host SHIPS, append this sentence:
+Or learn why teams choose an [open-source, self-hosted knowledge base](https://affine.pro/self-host) in the first place.
+-->
+
+**One-click deploy:**
+
+[![Run on Sealos](https://sealos.io/Deploy-on-Sealos.svg)](https://sealos.io/products/app-store/affine)
+[![Run on ClawCloud](https://raw.githubusercontent.com/ClawCloud/Run-Template/refs/heads/main/Run-on-ClawCloud.svg)](https://template.run.claw.cloud/?openapp=system-fastdeploy%3FtemplateName%3Daffine)
+
+Need SSO, advanced admin, audit, or supported commercial self-hosting? See the [AFFiNE pricing plans](https://affine.pro/pricing).
 
 ## Contributing
 
-| Bug Reports                                                                                                                                         | Feature Requests                                                                                                                                               | Questions/Discussions                                                         | AFFiNE Community                                                  |
-| --------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| [Create a bug report](https://github.com/toeverything/AFFiNE/issues/new?assignees=&labels=bug%2Cproduct-review&template=BUG-REPORT.yml&title=TITLE) | [Submit a feature request](https://github.com/toeverything/AFFiNE/issues/new?assignees=&labels=feat%2Cproduct-review&template=FEATURE-REQUEST.yml&title=TITLE) | [Check GitHub Discussion](https://github.com/toeverything/AFFiNE/discussions) | [Visit the AFFiNE's Discord](https://affine.pro/redirect/discord) |
-| Something isn't working as expected                                                                                                                 | An idea for a new feature, or improvements                                                                                                                     | Discuss and ask questions                                                     | A place to ask, learn and engage with others                      |
+Calling all developers, testers, tech writers and more — contributions of all types are welcome.
 
-Calling all developers, testers, tech writers and more! Contributions of all types are more than welcome, you can read more in [docs/types-of-contributions.md](docs/types-of-contributions.md). If you are interested in contributing code, read our [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) and feel free to check out our GitHub issues to get stuck in to show us what you’re made of.
+| Bug Reports | Feature Requests | Questions & Discussions | Community |
+| --- | --- | --- | --- |
+| [Create a bug report](https://github.com/toeverything/AFFiNE/issues/new?assignees=&labels=bug%2Cproduct-review&template=BUG-REPORT.yml&title=TITLE) | [Submit a feature request](https://github.com/toeverything/AFFiNE/issues/new?assignees=&labels=feat%2Cproduct-review&template=FEATURE-REQUEST.yml&title=TITLE) | [GitHub Discussions](https://github.com/toeverything/AFFiNE/discussions) | [AFFiNE Discord](https://affine.pro/redirect/discord) |
+| Something isn't working as expected | Ideas for new features or improvements | Ask questions and share ideas | Ask, learn, and engage with others |
 
-**Before you start contributing, please make sure you have read and accepted our [Contributor License Agreement]. To indicate your agreement, simply edit this file and submit a pull request.**
+- Read [docs/types-of-contributions.md](docs/types-of-contributions.md) to find the contribution that fits you.
+- Interested in code? Start with [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) and the [contributor tutorial](./docs/contributing/tutorial.md), then pick an issue.
+- For **translation** and **language support**, join our [Discord](https://affine.pro/redirect/discord).
+- For vulnerability reports, see [SECURITY.md](SECURITY.md).
 
-For **bug reports**, **feature requests** and other **suggestions** you can also [create a new issue](https://github.com/toeverything/AFFiNE/issues/new/choose) and choose the most appropriate template for your feedback.
+**Before contributing, please make sure you have read and accepted our [Contributor License Agreement].** To indicate your agreement, simply edit this file and submit a pull request.
 
-For **translation** and **language support** you can visit our [Discord](https://affine.pro/redirect/discord).
+### Building from source
 
-If you have questions, you are welcome to contact us. One of the best places to get more info and learn more is in the [Discord](https://affine.pro/redirect/discord) where you can engage with other like-minded individuals.
-
-## Templates
-
-AFFiNE now provides pre-built [templates](https://affine.pro/templates) from our team. Following are the Top 10 most popular templates among AFFiNE users,if you want to contribute, you can contribute your own template so other people can use it too.
-
-- [vision board template](https://affine.pro/templates/category-vision-board-template)
-- [one pager template](https://affine.pro/templates/category-one-pager-template-free)
-- [sample lesson plan math template](https://affine.pro/templates/sample-lesson-plan-math-template)
-- [grr lesson plan template free](https://affine.pro/templates/grr-lesson-plan-template-free)
-- [free editable lesson plan template for pre k](https://affine.pro/templates/free-editable-lesson-plan-template-for-pre-k)
-- [high note collection planners](https://affine.pro/templates/high-note-collection-planners)
-- [digital planner](https://affine.pro/templates/category-digital-planner)
-- [ADHD Planner](https://affine.pro/templates/adhd-planner)
-- [Reading Log](https://affine.pro/templates/reading-log)
-- [Cornell Notes Template](https://affine.pro/templates/category-cornell-notes-template)
-
-## Blog
-
-Welcome to the AFFiNE blog section! Here, you’ll find the latest insights, tips, and guides on how to maximize your experience with AFFiNE and AFFiNE AI, the leading Canvas AI tool for flexible note-taking and creative organization.
-
-- [vision board template](https://affine.pro/blog/8-free-printable-vision-board-templates-examples-2023)
-- [ai homework helper](https://affine.pro/blog/ai-homework-helper)
-- [vision board maker](https://affine.pro/blog/vision-board-maker)
-- [itinerary template](https://affine.pro/blog/free-customized-travel-itinerary-planner-templates)
-- [one pager template](https://affine.pro/blog/top-12-one-pager-examples-how-to-create-your-own)
-- [cornell notes template](https://affine.pro/blog/the-cornell-notes-template-and-system-learning-tips)
-- [swot chart template](https://affine.pro/blog/top-10-free-editable-swot-analysis-template-examples)
-- [apps like luna task](https://affine.pro/blog/apps-like-luna-task)
-- [note taking ai from rough notes to mind map](https://affine.pro/blog/dynamic-AI-notes)
-- [canvas ai](https://affine.pro/blog/best-canvas-ai)
-- [one pager](https://affine.pro/blog/top-12-one-pager-examples-how-to-create-your-own)
-- [SOP Template](https://affine.pro/blog/how-to-write-sop-step-by-step-guide-5-best-free-tools-templates)
-- [Chore Chart](https://affine.pro/blog/10-best-free-chore-chart-templates-kids-adults)
+- **Codespaces**: from the repo main page, click the green "Code" button and select "Create codespace on canary" — the forked repo is cloned, built, and ready to go.
+- **Local**: see [BUILDING.md] for full instructions.
 
 ## Ecosystem
 
-| Name                                             |                            |                                                                                                                                         |
-| ------------------------------------------------ | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| [@affine/component](packages/frontend/component) | AFFiNE Component Resources | ![](https://img.shields.io/codecov/c/github/toeverything/affine?style=flat-square)                                                      |
-| [@toeverything/theme](packages/common/theme)     | AFFiNE theme               | [![](https://img.shields.io/npm/dm/@toeverything/theme?style=flat-square&color=eee)](https://www.npmjs.com/package/@toeverything/theme) |
+| Package | Description | Status |
+| --- | --- | --- |
+| [@affine/component](packages/frontend/component) | AFFiNE component resources | ![Codecov coverage](https://img.shields.io/codecov/c/github/toeverything/affine?style=flat-square) |
+| [@toeverything/theme](packages/common/theme) | AFFiNE theme | [![npm downloads for @toeverything/theme](https://img.shields.io/npm/dm/@toeverything/theme?style=flat-square&color=eee)](https://www.npmjs.com/package/@toeverything/theme) |
 
-## Upstreams
+AFFiNE is made possible by these open-source upstreams — thank you:
 
-We would also like to give thanks to open-source projects that make AFFiNE possible:
+- [BlockSuite](https://github.com/toeverything/BlockSuite) — 💠 the open-source collaborative editor project behind AFFiNE.
+- [y-octo](https://github.com/y-crdt/y-octo) — 🐙 a native, high-performance, thread-safe yjs CRDT implementation powering AFFiNE's local-first sync engine.
+- [OctoBase](https://github.com/toeverything/OctoBase) — 🐙 the local-first, collaborative database behind AFFiNE, written in Rust.
+- [yjs](https://github.com/yjs/yjs) — fundamental CRDT support for state management and data sync.
+- …and many more excellent [dependencies](https://github.com/toeverything/AFFiNE/network/dependencies).
 
-- [Blocksuite](https://github.com/toeverything/BlockSuite) - 💠 BlockSuite is the open-source collaborative editor project behind AFFiNE.
-- [y-octo](https://github.com/y-crdt/y-octo) - 🐙 y-octo is a native, high-performance, thread-safe YJS CRDT implementation, serving as the core engine enabling the AFFiNE Client/Server to achieve "local-first" functionality.
-- [OctoBase](https://github.com/toeverything/OctoBase) - 🐙 OctoBase is the open-source database behind AFFiNE, local-first, yet collaborative. A light-weight, scalable, data engine written in Rust.
+## Acknowledgements
 
-- [yjs](https://github.com/yjs/yjs) - Fundamental support of CRDTs for our implementation on state management and data sync on web.
-- [electron](https://github.com/electron/electron) - Build cross-platform desktop apps with JavaScript, HTML, and CSS.
-- [React](https://github.com/facebook/react) - The library for web and native user interfaces.
-- [napi-rs](https://github.com/napi-rs/napi-rs) - A framework for building compiled Node.js add-ons in Rust via Node-API.
-- [Jotai](https://github.com/pmndrs/jotai) - Primitive and flexible state management for React.
-- [async-call-rpc](https://github.com/Jack-Works/async-call-rpc) - A lightweight JSON RPC client & server.
-- [Vite](https://github.com/vitejs/vite) - Next generation frontend tooling.
-- Other upstream [dependencies](https://github.com/toeverything/AFFiNE/network/dependencies).
+"We shape our tools and thereafter our tools shape us." Many pioneers have inspired us along the way:
 
-Thanks a lot to the community for providing such powerful and simple libraries, so that we can focus more on the implementation of the product logic, and we hope that in the future our projects will also provide a more easy-to-use knowledge base for everyone.
+- Quip & Notion, with their great concept of "everything is a block"
+- Trello, with their Kanban
+- Airtable & Miro, with their no-code programmable datasheets
+- Miro & Whimsical, with their edgeless visual whiteboards
+- RemNote & Capacities, with their object-based tag systems
 
-## Contributors
-
-We would like to express our gratitude to all the individuals who have already contributed to AFFiNE! If you have any AFFiNE-related project, documentation, tool or template, please feel free to contribute it by submitting a pull request to our curated list on GitHub: [awesome-affine](https://github.com/toeverything/awesome-affine).
-
-<a href="https://github.com/toeverything/affine/graphs/contributors">
-  <img alt="contributors" src="https://opencollective.com/affine/contributors.svg?width=890&button=false" />
-</a>
-
-## Self-Host
-
-Begin with Docker to deploy your own feature-rich, unrestricted version of AFFiNE. Our team is diligently updating to the latest version. For more information on how to self-host AFFiNE, please refer to our [documentation](https://docs.affine.pro/self-host-affine).
-
-[![Run on Sealos](https://sealos.io/Deploy-on-Sealos.svg)](https://sealos.io/products/app-store/affine)
-
-[![Run on ClawCloud](https://raw.githubusercontent.com/ClawCloud/Run-Template/refs/heads/main/Run-on-ClawCloud.svg)](https://template.run.claw.cloud/?openapp=system-fastdeploy%3FtemplateName%3Daffine)
-
-## Feature Request
-
-For feature requests, please see [discussions](https://github.com/toeverything/AFFiNE/discussions/categories/ideas).
-
-## Building
-
-### Codespaces
-
-From the GitHub repo main page, click the green "Code" button and select "Create codespace on master". This will open a new Codespace with the (supposedly auto-forked
-AFFiNE repo cloned, built, and ready to go).
-
-### Local
-
-See [BUILDING.md] for instructions on how to build AFFiNE from source code.
-
-## Contributing
-
-We welcome contributions from everyone.
-See [docs/contributing/tutorial.md](./docs/contributing/tutorial.md) for details.
+These apps share a large overlap of atomic "building blocks", but none are open source, nor do they offer a VS Code-like plugin system for contributors. We want something that contains all the features we love — and then goes one step further.
 
 ## License
 
-### Editions
-
-- AFFiNE Community Edition (CE) is the current available version, it's free for self-host under the MIT license.
-
-- AFFiNE Enterprise Edition (EE) is yet to be published, it will have more advanced features and enterprise-oriented offerings, including but not exclusive to rebranding and SSO, advanced admin and audit, etc., you may refer to https://affine.pro/pricing for more information
+- **AFFiNE open-source codebase** — the editor, desktop app, and most of the codebase are MIT-licensed; backend/server components are covered by the AFFiNE Enterprise Edition license.
+- **AFFiNE Enterprise / commercial licensing** — available by commercial agreement for enterprise-oriented needs such as SSO, advanced admin, audit, rebranding, and supported self-hosting. See [affine.pro/pricing](https://affine.pro/pricing) for more information.
 
 See [LICENSE] for details.
+
+## Contributors
+
+We would like to express our gratitude to everyone who has contributed to AFFiNE! If you have built an AFFiNE-related project, documentation, tool or template, feel free to add it to our curated list: [awesome-affine](https://github.com/toeverything/awesome-affine).
+
+<a href="https://github.com/toeverything/affine/graphs/contributors">
+  <img alt="AFFiNE contributors" src="https://contrib.rocks/image?repo=toeverything/AFFiNE" />
+</a>
+
+<div align="center">
+
+<br />
+
+**Thanks for checking us out — we sincerely hope AFFiNE resonates with you! 🎵**
+
+[affine.pro](https://affine.pro) · [Documentation](https://docs.affine.pro) · [Discord](https://affine.pro/redirect/discord)
+
+</div>
 
 [all-contributors-badge]: https://img.shields.io/github/contributors/toeverything/AFFiNE
 [license]: ./LICENSE
 [building.md]: ./docs/BUILDING.md
-[update page]: https://affine.pro/blog?tag=Release%20Note
-[jobs available]: ./docs/jobs.md
-[latest packages]: https://github.com/toeverything/AFFiNE/pkgs/container/affine-self-hosted
 [contributor license agreement]: https://github.com/toeverything/affine/edit/canary/.github/CLA.md
 [stars-icon]: https://img.shields.io/github/stars/toeverything/AFFiNE.svg?style=flat&logo=github&colorB=red&label=stars
-[codecov]: https://codecov.io/gh/toeverything/affine/branch/canary/graphs/badge.svg?branch=canary
-[node-version-icon]: https://img.shields.io/badge/node-%3E=18.16.1-success
 [typescript-version-icon]: https://img.shields.io/github/package-json/dependency-version/toeverything/affine/dev/typescript
-[react-version-icon]: https://img.shields.io/github/package-json/dependency-version/toeverything/AFFiNE/react?filename=packages%2Ffrontend%2Fcore%2Fpackage.json&color=rgb(97%2C228%2C251)
 [blocksuite-icon]: https://img.shields.io/github/package-json/dependency-version/toeverything/AFFiNE/@blocksuite/store?color=6880ff&filename=packages%2Ffrontend%2Fcore%2Fpackage.json&label=blocksuite

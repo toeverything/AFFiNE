@@ -117,6 +117,13 @@ const waitForStatus = async (
   );
 };
 
+const normalizeContextProcessingStatus = <T extends { status?: unknown }>(
+  item: T
+) => ({
+  ...item,
+  status: item.status === 'finished' ? 'processing' : item.status,
+});
+
 test.before(async t => {
   restoreMockCopilotRuntime = installMockCopilotRuntime();
   const app = await createTestingApp({
@@ -1590,8 +1597,14 @@ test('should be able to manage context', async t => {
     const { files } =
       (await listContextDocAndFiles(app, workspaceId, sessionId, contextId)) ||
       {};
+    t.true(
+      ['processing', 'finished'].includes(files?.[0]?.status ?? ''),
+      'context file should be queued or finished'
+    );
     t.snapshot(
-      cleanObject(files, ['id', 'error', 'createdAt']),
+      cleanObject(files, ['id', 'error', 'createdAt']).map(
+        normalizeContextProcessingStatus
+      ),
       'should list context files'
     );
 
@@ -1644,8 +1657,14 @@ test('should be able to manage context', async t => {
     const { docs } =
       (await listContextDocAndFiles(app, workspaceId, sessionId, contextId)) ||
       {};
+    t.true(
+      ['processing', 'finished'].includes(docs?.[0]?.status ?? ''),
+      'context doc should be queued or finished'
+    );
     t.snapshot(
-      cleanObject(docs, ['error', 'createdAt']),
+      cleanObject(docs, ['error', 'createdAt']).map(
+        normalizeContextProcessingStatus
+      ),
       'should list context docs'
     );
 

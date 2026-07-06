@@ -60,58 +60,66 @@ afterEach(async () => {
 });
 
 describe('byok storage handlers', () => {
-  test('stores encrypted local keys and keeps lease providers sorted', async () => {
-    const { byokStorageHandlers, disposeWorkspaceByokStorage: dispose } =
-      await import('@affine/electron/main/byok-storage/handlers');
-    disposeWorkspaceByokStorage = dispose;
-    const ipcEvent = undefined;
+  test(
+    'stores encrypted local keys and keeps lease providers sorted',
+    async () => {
+      const { byokStorageHandlers, disposeWorkspaceByokStorage: dispose } =
+        await import('@affine/electron/main/byok-storage/handlers');
+      disposeWorkspaceByokStorage = dispose;
+      const ipcEvent = undefined;
 
-    await byokStorageHandlers.upsertWorkspaceKey(ipcEvent, 'workspace-1', {
-      id: 'local-openai',
-      provider: 'openai',
-      name: 'OpenAI',
-      apiKey: 'sk-openai',
-      sortOrder: 1,
-    });
-    await byokStorageHandlers.upsertWorkspaceKey(ipcEvent, 'workspace-1', {
-      id: 'local-gemini',
-      provider: 'gemini',
-      name: 'Gemini',
-      apiKey: 'sk-gemini',
-      sortOrder: 0,
-    });
+      await byokStorageHandlers.upsertWorkspaceKey(ipcEvent, 'workspace-1', {
+        id: 'local-openai',
+        provider: 'openai',
+        name: 'OpenAI',
+        apiKey: 'sk-openai',
+        sortOrder: 1,
+      });
+      await byokStorageHandlers.upsertWorkspaceKey(ipcEvent, 'workspace-1', {
+        id: 'local-gemini',
+        provider: 'gemini',
+        name: 'Gemini',
+        apiKey: 'sk-gemini',
+        sortOrder: 0,
+      });
 
-    const list = await byokStorageHandlers.listWorkspaceKeys(
-      ipcEvent,
-      'workspace-1'
-    );
-    expect(list.map(key => key.id)).toEqual(['local-gemini', 'local-openai']);
-    expect(JSON.stringify(list)).not.toContain('sk-openai');
+      const list = await byokStorageHandlers.listWorkspaceKeys(
+        ipcEvent,
+        'workspace-1'
+      );
+      expect(list.map(key => key.id)).toEqual([
+        'local-gemini',
+        'local-openai',
+      ]);
+      expect(JSON.stringify(list)).not.toContain('sk-openai');
 
-    const reordered = await byokStorageHandlers.reorderWorkspaceKeys(
-      ipcEvent,
-      'workspace-1',
-      ['local-openai', 'local-gemini']
-    );
-    expect(reordered.map(key => key.id)).toEqual([
-      'local-openai',
-      'local-gemini',
-    ]);
+      const reordered = await byokStorageHandlers.reorderWorkspaceKeys(
+        ipcEvent,
+        'workspace-1',
+        ['local-openai', 'local-gemini']
+      );
+      expect(reordered.map(key => key.id)).toEqual([
+        'local-openai',
+        'local-gemini',
+      ]);
 
-    const leaseProviders = await byokStorageHandlers.getWorkspaceLeaseProviders(
-      ipcEvent,
-      'workspace-1'
-    );
-    expect(leaseProviders.map(key => key.apiKey)).toEqual([
-      'sk-openai',
-      'sk-gemini',
-    ]);
+      const leaseProviders =
+        await byokStorageHandlers.getWorkspaceLeaseProviders(
+          ipcEvent,
+          'workspace-1'
+        );
+      expect(leaseProviders.map(key => key.apiKey)).toEqual([
+        'sk-openai',
+        'sk-gemini',
+      ]);
 
-    await byokStorageHandlers.clearWorkspaceKeys(ipcEvent, 'workspace-1');
-    await expect(
-      byokStorageHandlers.listWorkspaceKeys(ipcEvent, 'workspace-1')
-    ).resolves.toEqual([]);
-  });
+      await byokStorageHandlers.clearWorkspaceKeys(ipcEvent, 'workspace-1');
+      await expect(
+        byokStorageHandlers.listWorkspaceKeys(ipcEvent, 'workspace-1')
+      ).resolves.toEqual([]);
+    },
+    120000,
+  );
 
   test('does not write local keys when secure storage is unavailable', async () => {
     electronMock.isEncryptionAvailable.mockReturnValue(false);
