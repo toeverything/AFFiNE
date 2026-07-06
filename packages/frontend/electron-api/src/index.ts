@@ -8,12 +8,18 @@ import type {
 } from '@affine/electron/main/exposed';
 import type { AppInfo } from '@affine/electron/preload/electron-api';
 import type { SharedStorage } from '@affine/electron/preload/shared-storage';
+import type { CreateImportSessionFromSourceOptions } from '@affine/electron/shared/import';
 
 type MainHandlers = typeof mainHandlers;
 type HelperHandlers = typeof helperHandlers;
 type HelperEvents = typeof helperEvents;
 type MainEvents = typeof mainEvents;
-export type ClientHandler = {
+type ImportPreloadHandlers = {
+  createImportSessionFromSource(
+    options: CreateImportSessionFromSourceOptions
+  ): Promise<string>;
+};
+type MainClientHandlers = {
   [namespace in keyof MainHandlers]: {
     [method in keyof MainHandlers[namespace]]: MainHandlers[namespace][method] extends (
       arg0: any,
@@ -26,7 +32,12 @@ export type ClientHandler = {
           : Promise<ReturnType<MainHandlers[namespace][method]>>
       : never;
   };
-} & HelperHandlers;
+};
+
+export type ClientHandler = Omit<MainClientHandlers, 'import'> &
+  HelperHandlers & {
+    import: MainClientHandlers['import'] & ImportPreloadHandlers;
+  };
 export type ClientEvents = MainEvents & HelperEvents;
 
 export const appInfo = (globalThis as any).__appInfo as AppInfo | null;
@@ -38,7 +49,6 @@ export const sharedStorage = (globalThis as any).__sharedStorage as
   | undefined;
 
 export type { AppInfo, SharedStorage };
-
 export {
   type SpellCheckStateSchema,
   type TabViewsMetaSchema,
@@ -51,3 +61,9 @@ export type {
   AddTabOption,
   TabAction,
 } from '@affine/electron/main/windows-manager';
+export type {
+  CreateImportSessionFromSourceOptions,
+  NativeImportBrowserSource,
+  NativeImportFormat,
+  NativeImportSessionHandlers,
+} from '@affine/electron/shared/import';

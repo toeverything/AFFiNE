@@ -390,6 +390,43 @@ e2e(
   }
 );
 
+e2e('adminWorkspace should serialize member roles as enum names', async t => {
+  const admin = await app.create(Mockers.User, {
+    feature: 'administrator',
+  });
+  await app.login(admin);
+
+  const owner = await app.create(Mockers.User);
+  const workspace = await app.create(Mockers.Workspace, {
+    owner: { id: owner.id },
+  });
+
+  const result = await gql(
+    `
+      query AdminWorkspace($id: String!) {
+        adminWorkspace(id: $id) {
+          id
+          members(skip: 0, take: 20) {
+            id
+            role
+            status
+          }
+        }
+      }
+    `,
+    { id: workspace.id }
+  );
+
+  t.falsy(result.errors);
+  t.is(result.data!.adminWorkspace.id, workspace.id);
+  t.true(
+    result.data!.adminWorkspace.members.some(
+      (member: { id: string; role: string }) =>
+        member.id === owner.id && member.role === 'Owner'
+    )
+  );
+});
+
 e2e(
   'adminDashboard should carry forward missing sync and storage samples',
   async t => {
@@ -524,6 +561,36 @@ e2e(
         dashboard.workspaceStorageBytes
       );
       t.is(blobHistory[blobHistory.length - 1], dashboard.blobStorageBytes);
+
+      const baselineResult = await gql(
+        `
+      query AdminDashboard($input: AdminDashboardInput) {
+        adminDashboard(input: $input) {
+          workspaceStorageHistory {
+            value
+          }
+          blobStorageHistory {
+            value
+          }
+        }
+      }
+    `,
+        {
+          input: {
+            storageHistoryDays: 2,
+          },
+        }
+      );
+
+      t.falsy(baselineResult.errors);
+      t.is(
+        baselineResult.data!.adminDashboard.workspaceStorageHistory[0].value,
+        workspaceHistory[1]
+      );
+      t.is(
+        baselineResult.data!.adminDashboard.blobStorageHistory[0].value,
+        blobHistory[1]
+      );
     } finally {
       clock.restore();
     }

@@ -2507,6 +2507,26 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.import.notion.tooltip"](): string;
     /**
+      * `Notion (Markdown, .zip)`
+      */
+    ["com.affine.import.notion-markdown"](): string;
+    /**
+      * `Import a Notion Markdown export zip with subpages and attachments.`
+      */
+    ["com.affine.import.notion-markdown.tooltip"](): string;
+    /**
+      * `OneNote (Experimental)`
+      */
+    ["com.affine.import.onenote"](): string;
+    /**
+      * `Import a OneNote .one, .onetoc2, or .onepkg file. Available in the desktop app.`
+      */
+    ["com.affine.import.onenote.tooltip"](): string;
+    /**
+      * `This format importer is available in the AFFiNE desktop app.`
+      */
+    ["com.affine.import.onenote.desktop-only"](): string;
+    /**
       * `Obsidian Vault (Experimental)`
       */
     ["com.affine.import.obsidian"](): string;

@@ -163,8 +163,14 @@ type AdminWorkspaceMember {
   email: String!
   id: String!
   name: String!
-  role: Permission!
+  role: AdminWorkspaceMemberRole!
   status: WorkspaceMemberStatus!
+}
+
+enum AdminWorkspaceMemberRole {
+  Admin
+  Collaborator
+  Owner
 }
 
 type AdminWorkspaceSharedLink {

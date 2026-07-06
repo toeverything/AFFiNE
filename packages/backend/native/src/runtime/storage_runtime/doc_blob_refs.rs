@@ -1,4 +1,4 @@
-use affine_common::doc_parser;
+use affine_doc_loader as doc_loader;
 use chrono::{DateTime, Utc};
 use sqlx::{FromRow, PgPool};
 use y_octo::Doc;
@@ -102,7 +102,7 @@ async fn load_workspace_doc_ids(pool: &PgPool, workspace_id: &str) -> RuntimeRes
   let Some(root) = load_current_doc(pool, workspace_id, workspace_id).await? else {
     return Ok(Vec::new());
   };
-  let ids = doc_parser::get_doc_ids_from_binary(root.blob, false)
+  let ids = doc_loader::get_doc_ids_from_binary(root.blob, false)
     .map_err(|err| RuntimeError::invalid_state(format!("Doc blob refs root doc parse failed: {err}")))?;
   let mut ids = ids;
   ids.sort();
@@ -206,7 +206,7 @@ async fn purge_removed_doc_refs(pool: &PgPool, workspace_id: &str, current_doc_i
 }
 
 fn extract_refs(snapshot: &SnapshotRow) -> RuntimeResult<Vec<ExtractedRef>> {
-  let parsed = doc_parser::parse_doc_from_binary(snapshot.blob.clone(), snapshot.doc_id.clone())
+  let parsed = doc_loader::parse_doc_from_binary(snapshot.blob.clone(), snapshot.doc_id.clone())
     .map_err(|err| RuntimeError::invalid_state(format!("Doc blob refs parse failed: {err}")))?;
   let mut refs = Vec::new();
   for block in parsed.blocks {
@@ -232,7 +232,7 @@ mod tests {
   fn doc_blob_refs_extracts_image_refs() {
     let doc_id = "doc-blob-ref-test".to_string();
     let blob =
-      doc_parser::build_full_doc("Doc", "![Alt](blob://image-blob-key)", &doc_id).expect("doc fixture should build");
+      doc_loader::build_full_doc("Doc", "![Alt](blob://image-blob-key)", &doc_id).expect("doc fixture should build");
     let snapshot = SnapshotRow {
       workspace_id: "workspace".to_string(),
       doc_id,

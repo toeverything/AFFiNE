@@ -10,11 +10,8 @@ crate-type = ["cdylib"]
 
 [dependencies]
 aes-gcm = { workspace = true }
-affine_common = { workspace = true, features = [
-  "hashcash",
-  "napi",
-  "ydoc-loader",
-] }
+affine_common = { workspace = true, features = ["hashcash", "napi"] }
+affine_doc_loader = { workspace = true }
 anyhow = { workspace = true }
 assetpack-core = "0.1.0"
 assetpack-transform-precomp2 = "0.1.0"

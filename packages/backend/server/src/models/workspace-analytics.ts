@@ -9,7 +9,6 @@ import {
 } from '../base/graphql/pagination';
 import { CacheRedis } from '../base/redis';
 import { BaseModel } from './base';
-import { WorkspaceRole } from './common';
 
 const DEFAULT_STORAGE_HISTORY_DAYS = 30;
 const DEFAULT_SYNC_HISTORY_HOURS = 48;
@@ -323,11 +322,11 @@ export class WorkspaceAnalyticsModel extends BaseModel {
             ON v.workspace_id = wp.workspace_id AND v.doc_id = wp.page_id
           LEFT JOIN LATERAL (
             SELECT user_id
-            FROM workspace_user_permissions
+            FROM workspace_members
             WHERE workspace_id = wp.workspace_id
-            AND type = ${WorkspaceRole.Owner}
-            AND status = 'Accepted'::"WorkspaceMemberStatus"
-            ORDER BY created_at ASC
+            AND role = 'owner'
+            AND state = 'active'
+            ORDER BY created_at ASC, id ASC
             LIMIT 1
           ) owner ON TRUE
           WHERE wp.public = TRUE
@@ -391,32 +390,42 @@ export class WorkspaceAnalyticsModel extends BaseModel {
           blobStorageBytes: bigint | number;
         }[]
       >`
-          WITH days AS (
-            SELECT generate_series(${storageFrom}::date, ${currentDay}::date, interval '1 day')::date AS day
+          WITH baseline_day AS (
+            SELECT max(date) AS date
+            FROM workspace_admin_stats_daily
+            WHERE date < ${storageFrom}::date
           ),
-          grouped AS (
+          baseline AS (
+            SELECT
+              baseline_day.date,
+              COALESCE(SUM(snapshot_size), 0) AS workspace_storage_bytes,
+              COALESCE(SUM(blob_size), 0) AS blob_storage_bytes
+            FROM baseline_day
+            JOIN workspace_admin_stats_daily stats
+              ON stats.date = baseline_day.date
+            WHERE baseline_day.date IS NOT NULL
+            GROUP BY baseline_day.date
+          ),
+          in_window AS (
             SELECT
               date,
               COALESCE(SUM(snapshot_size), 0) AS workspace_storage_bytes,
               COALESCE(SUM(blob_size), 0) AS blob_storage_bytes
             FROM workspace_admin_stats_daily
-            WHERE date <= ${currentDay}::date
+            WHERE date BETWEEN ${storageFrom}::date AND ${currentDay}::date
             GROUP BY date
           )
           SELECT
-            days.day AS date,
-            COALESCE(snapshot.workspace_storage_bytes, 0) AS "workspaceStorageBytes",
-            COALESCE(snapshot.blob_storage_bytes, 0) AS "blobStorageBytes"
-          FROM days
-          LEFT JOIN LATERAL (
-            SELECT
-              workspace_storage_bytes,
-              blob_storage_bytes
-            FROM grouped
-            WHERE date <= days.day
-            ORDER BY date DESC
-            LIMIT 1
-          ) snapshot ON TRUE
+            date,
+            workspace_storage_bytes AS "workspaceStorageBytes",
+            blob_storage_bytes AS "blobStorageBytes"
+          FROM baseline
+          UNION ALL
+          SELECT
+            date,
+            workspace_storage_bytes AS "workspaceStorageBytes",
+            blob_storage_bytes AS "blobStorageBytes"
+          FROM in_window
           ORDER BY date ASC
         `,
       this.db.$queryRaw<{ conversations: bigint | number }[]>`
@@ -435,11 +444,36 @@ export class WorkspaceAnalyticsModel extends BaseModel {
     const currentBlobStorageBytes = Number(
       storageCurrent[0]?.blobStorageBytes ?? 0
     );
-    const storageHistorySeries = storageHistory.map(row => ({
-      date: row.date,
-      workspaceStorageBytes: Number(row.workspaceStorageBytes ?? 0),
-      blobStorageBytes: Number(row.blobStorageBytes ?? 0),
-    }));
+    const storageByDate = new Map(
+      storageHistory.map(row => [
+        asDateOnlyString(row.date),
+        {
+          workspaceStorageBytes: Number(row.workspaceStorageBytes ?? 0),
+          blobStorageBytes: Number(row.blobStorageBytes ?? 0),
+        },
+      ])
+    );
+    const storageHistorySeries: Array<{
+      date: Date;
+      workspaceStorageBytes: number;
+      blobStorageBytes: number;
+    }> = [];
+    const baselineStorage =
+      storageHistory.find(row => row.date < storageFrom) ?? null;
+    let carriedStorageValue = {
+      workspaceStorageBytes: Number(
+        baselineStorage?.workspaceStorageBytes ?? 0
+      ),
+      blobStorageBytes: Number(baselineStorage?.blobStorageBytes ?? 0),
+    };
+    for (let day = storageFrom; day <= currentDay; day = addUtcDays(day, 1)) {
+      carriedStorageValue =
+        storageByDate.get(asDateOnlyString(day)) ?? carriedStorageValue;
+      storageHistorySeries.push({
+        date: day,
+        ...carriedStorageValue,
+      });
+    }
     if (storageHistorySeries.length > 0) {
       const lastPoint = storageHistorySeries[storageHistorySeries.length - 1];
       if (asDateOnlyString(lastPoint.date) === asDateOnlyString(currentDay)) {
@@ -596,11 +630,11 @@ export class WorkspaceAnalyticsModel extends BaseModel {
           ON v.workspace_id = wp.workspace_id AND v.doc_id = wp.page_id
         LEFT JOIN LATERAL (
           SELECT user_id
-          FROM workspace_user_permissions
+          FROM workspace_members
           WHERE workspace_id = wp.workspace_id
-          AND type = ${WorkspaceRole.Owner}
-          AND status = 'Accepted'::"WorkspaceMemberStatus"
-          ORDER BY created_at ASC
+          AND role = 'owner'
+          AND state = 'active'
+          ORDER BY created_at ASC, id ASC
           LIMIT 1
         ) owner ON TRUE
         WHERE wp.public = TRUE
@@ -861,10 +895,10 @@ export class WorkspaceAnalyticsModel extends BaseModel {
         mla.last_doc_id AS "lastDocId"
       FROM workspace_member_last_access mla
       INNER JOIN users u ON u.id = mla.user_id
-      INNER JOIN workspace_user_permissions wur
-        ON wur.workspace_id = mla.workspace_id
-       AND wur.user_id = mla.user_id
-       AND wur.status = 'Accepted'::"WorkspaceMemberStatus"
+      INNER JOIN workspace_members wm
+        ON wm.workspace_id = mla.workspace_id
+       AND wm.user_id = mla.user_id
+       AND wm.state = 'active'
       WHERE mla.workspace_id = ${input.workspaceId}
       AND mla.last_doc_id = ${input.docId}
       ${windowCondition}
@@ -1075,10 +1109,10 @@ export class WorkspaceAnalyticsModel extends BaseModel {
       SELECT COUNT(*) AS total
       FROM workspace_member_last_access mla
       INNER JOIN users u ON u.id = mla.user_id
-      INNER JOIN workspace_user_permissions wur
-        ON wur.workspace_id = mla.workspace_id
-       AND wur.user_id = mla.user_id
-       AND wur.status = 'Accepted'::"WorkspaceMemberStatus"
+      INNER JOIN workspace_members wm
+        ON wm.workspace_id = mla.workspace_id
+       AND wm.user_id = mla.user_id
+       AND wm.state = 'active'
       WHERE mla.workspace_id = ${workspaceId}
       AND mla.last_doc_id = ${docId}
       ${windowCondition}

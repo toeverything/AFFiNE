@@ -7,17 +7,30 @@ import {
 } from '@blocksuite/affine-shared/adapters';
 import { Container } from '@blocksuite/global/di';
 import { sha } from '@blocksuite/global/utils';
-import type { ExtensionType, Schema, Workspace } from '@blocksuite/store';
+import type {
+  DocSnapshot,
+  ExtensionType,
+  Schema,
+  Workspace,
+} from '@blocksuite/store';
 import { extMimeMap, Transformer } from '@blocksuite/store';
 import JSZip from 'jszip';
 
+import {
+  blobsFromAssets,
+  type ImportBatch,
+  type ImportDoc,
+  type ImportFolder,
+  type ImportTag,
+  type ImportWarning,
+} from './import-batch.js';
 import { createCollectionDocCRUD } from './markdown.js';
 
 /** Recursive tree node representing a tag-based folder hierarchy. */
-type FolderHierarchy = {
+export type BearFolderHierarchy = {
   name: string;
   path: string;
-  children: Map<string, FolderHierarchy>;
+  children: Map<string, BearFolderHierarchy>;
   pageId?: string;
   parentPath?: string;
 };
@@ -29,10 +42,11 @@ type BearImportOptions = {
   extensions: ExtensionType[];
 };
 
-type BearImportResult = {
+export type PlanBearBackupResult = {
   docIds: string[];
   tags: Map<string, string[]>;
-  folderHierarchy: FolderHierarchy;
+  folderHierarchy: BearFolderHierarchy;
+  batch: ImportBatch;
 };
 
 type BundleEntry = {
@@ -182,8 +196,8 @@ function deduplicateTags(tags: string[]): string[] {
  */
 function buildFolderHierarchyFromTags(
   tagDocMap: Map<string, string[]>
-): FolderHierarchy {
-  const root: FolderHierarchy = {
+): BearFolderHierarchy {
+  const root: BearFolderHierarchy = {
     name: '',
     path: '',
     children: new Map(),
@@ -226,6 +240,34 @@ function buildFolderHierarchyFromTags(
   return root;
 }
 
+function flattenFolderHierarchy(root: BearFolderHierarchy): ImportFolder[] {
+  const folders: ImportFolder[] = [];
+
+  const visit = (node: BearFolderHierarchy) => {
+    if (node.name) {
+      folders.push({
+        path: node.path,
+        name: node.name,
+        parentPath: node.parentPath,
+        pageId: node.pageId,
+      });
+    }
+    for (const child of node.children.values()) {
+      visit(child);
+    }
+  };
+
+  for (const child of root.children.values()) {
+    visit(child);
+  }
+
+  return folders;
+}
+
+function tagsToBatchTags(tags: Map<string, string[]>): ImportTag[] {
+  return Array.from(tags, ([name, docIds]) => ({ name, docIds }));
+}
+
 const GFM_CALLOUT_MAP: Record<string, string> = {
   IMPORTANT: '\u26A0',
   NOTE: '\uD83D\uDCDD',
@@ -250,9 +292,9 @@ function convertGfmCallouts(markdown: string): string {
     if (!inCodeBlock) {
       lines[i] = lines[i].replace(
         /^(>\s*)\[!(\w+)\]/,
-        (_match, prefix: string, type: string) => {
+        (match, prefix: string, type: string) => {
           const emoji = GFM_CALLOUT_MAP[type.toUpperCase()];
-          return emoji ? `${prefix}[!${emoji}]` : _match;
+          return emoji ? `${prefix}[!${emoji}]` : match;
         }
       );
     }
@@ -306,7 +348,7 @@ function convertHighlights(markdown: string): string {
     if (!inCodeBlock) {
       lines[i] = lines[i].replace(
         /==(\S(?:[^=]|=[^=])*?)==/g,
-        (_match, content: string) => {
+        (...[, content]) => {
           const firstChar = String.fromCodePoint(content.codePointAt(0)!);
           const color = HIGHLIGHT_COLOR_MAP[firstChar];
           if (color) {
@@ -340,16 +382,24 @@ function extractTitle(markdown: string, bundleName: string): string {
   return bundleName.replace(/\.textbundle$/i, '') || 'Untitled';
 }
 
+function applySnapshotTitle(snapshot: DocSnapshot, title: string) {
+  snapshot.meta.title = title;
+  snapshot.blocks.props.title = {
+    '$blocksuite:internal:text$': true,
+    delta: [{ insert: title }],
+  };
+}
+
 /**
  * Import a Bear .bear2bk backup file.
  * Uses JSZip for lazy/streaming decompression to handle large backups.
  */
-async function importBearBackup({
+async function planBearBackup({
   collection,
   schema,
   imported,
   extensions,
-}: BearImportOptions): Promise<BearImportResult> {
+}: BearImportOptions): Promise<PlanBearBackupResult> {
   const provider = getProvider(extensions);
 
   // JSZip reads the zip directory without decompressing all entries
@@ -358,7 +408,7 @@ async function importBearBackup({
   // Scan entries and group by textbundle
   const bundleMap = new Map<string, BundleEntry>();
 
-  zip.forEach((path, _entry) => {
+  zip.forEach(path => {
     if (path.includes('__MACOSX') || path.includes('.DS_Store')) return;
 
     const tbMatch = path.match(/^(.+?\.textbundle)\/(.*)/i);
@@ -421,6 +471,12 @@ async function importBearBackup({
   }
 
   const docIds: string[] = [];
+  const docs: ImportDoc[] = [];
+  const importBlobs = new Map<
+    string,
+    Awaited<ReturnType<typeof blobsFromAssets>>[0]
+  >();
+  const warnings: ImportWarning[] = [];
   const tagDocMap = new Map<string, string[]>();
 
   // Process bundles sequentially to limit memory.
@@ -497,44 +553,70 @@ async function importBearBackup({
       }
 
       const mdAdapter = new MarkdownAdapter(job, provider);
-      const doc = await mdAdapter.toDoc({
+      const snapshot = await mdAdapter.toDocSnapshot({
         file: markdown,
         assets: job.assetsManager,
       });
 
-      if (doc) {
-        docIds.push(doc.id);
-
-        const metaPatch: Record<string, unknown> = {};
-        if (bearMeta?.creationDate) {
-          const ts = Date.parse(String(bearMeta.creationDate));
-          if (!isNaN(ts)) metaPatch.createDate = ts;
-        }
-        if (bearMeta?.modificationDate) {
-          const ts = Date.parse(String(bearMeta.modificationDate));
-          if (!isNaN(ts)) metaPatch.updatedDate = ts;
-        }
-        if (Object.keys(metaPatch).length) {
-          collection.meta.setDocMeta(doc.id, metaPatch);
-        }
-
-        for (const tag of tags) {
-          if (!tagDocMap.has(tag)) {
-            tagDocMap.set(tag, []);
-          }
-          tagDocMap.get(tag)!.push(doc.id);
-        }
+      const docId = collection.idGenerator();
+      snapshot.meta.id = docId;
+      applySnapshotTitle(snapshot, title);
+      const meta: ImportDoc['meta'] = { title };
+      if (bearMeta?.creationDate) {
+        const ts = Date.parse(String(bearMeta.creationDate));
+        if (!isNaN(ts)) meta.createDate = ts;
       }
-    } catch (err) {
-      console.warn(`Failed to import bundle: ${entry.bundlePath}`, err);
+      if (bearMeta?.modificationDate) {
+        const ts = Date.parse(String(bearMeta.modificationDate));
+        if (!isNaN(ts)) meta.updatedDate = ts;
+      }
+
+      docs.push({
+        id: docId,
+        snapshot,
+        meta,
+      });
+      docIds.push(docId);
+
+      for (const tag of tags) {
+        if (!tagDocMap.has(tag)) {
+          tagDocMap.set(tag, []);
+        }
+        tagDocMap.get(tag)!.push(docId);
+      }
+
+      for (const blob of await blobsFromAssets(
+        pendingAssets,
+        pendingPathBlobIdMap
+      )) {
+        importBlobs.set(blob.blobId, blob);
+      }
+    } catch {
+      warnings.push({
+        code: 'bear-bundle-import-failed',
+        message: `Failed to import bundle: ${entry.bundlePath}`,
+        sourcePath: entry.bundlePath,
+      });
     }
   }
 
   const folderHierarchy = buildFolderHierarchyFromTags(tagDocMap);
-  return { docIds, tags: tagDocMap, folderHierarchy };
+  return {
+    docIds,
+    tags: tagDocMap,
+    folderHierarchy,
+    batch: {
+      docs,
+      blobs: Array.from(importBlobs.values()),
+      folders: flattenFolderHierarchy(folderHierarchy),
+      tags: tagsToBatchTags(tagDocMap),
+      warnings,
+      done: true,
+    },
+  };
 }
 
 /** Public API for importing Bear .bear2bk backup archives. */
 export const BearTransformer = {
-  importBearBackup,
+  planBearBackup,
 };
