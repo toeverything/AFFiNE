@@ -625,8 +625,6 @@
   "com.affine.import.modal.tip": "If you'd like to request support for additional file types, feel free to let us know on",
   "com.affine.import.notion": "Notion (Experimental)",
   "com.affine.import.notion.tooltip": "Import your Notion data. Supported import formats: HTML with subpages.",
-  "com.affine.import.notion-markdown": "Notion (Markdown, .zip)",
-  "com.affine.import.notion-markdown.tooltip": "Import a Notion Markdown export zip with subpages and attachments.",
   "com.affine.import.onenote": "OneNote (Experimental)",
   "com.affine.import.onenote.tooltip": "Import a OneNote .one, .onetoc2, or .onepkg file. Available in the desktop app.",
   "com.affine.import.onenote.desktop-only": "This format importer is available in the AFFiNE desktop app.",

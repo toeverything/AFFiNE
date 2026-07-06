@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, createHmac } from 'node:crypto';
 
 import { PrismaClient } from '@prisma/client';
 import ava, { TestFn } from 'ava';
@@ -8,6 +8,7 @@ import {
   createTestingModule,
   type TestingModule,
 } from '../../../__tests__/utils';
+import { CryptoHelper } from '../../../base';
 import { Models } from '../../../models';
 import { BackendRuntimeProvider } from '../../backend-runtime';
 import { Mailer } from '../mailer';
@@ -18,6 +19,7 @@ interface Context {
   mailer: Mailer;
   models: Models;
   db: PrismaClient;
+  crypto: CryptoHelper;
   runtime: {
     assertMailDeliveryQuotaV1: Sinon.SinonStub;
     commitMailDeliveryQuotaV1: Sinon.SinonStub;
@@ -47,6 +49,7 @@ test.before(async t => {
   t.context.mailer = t.context.module.get(Mailer);
   t.context.models = t.context.module.get(Models);
   t.context.db = t.context.module.get(PrismaClient);
+  t.context.crypto = t.context.module.get(CryptoHelper);
 });
 
 test.beforeEach(t => {
@@ -94,6 +97,12 @@ test('trySend creates a delivery row and commits quota reservation', async t => 
   t.is(row.status, 'queued');
   t.is(row.recipientUserId, 'user-1');
   t.is(row.mailClass, 'auth');
+  t.is(
+    row.recipientHash,
+    createHmac('sha256', t.context.crypto.keyPair.sha256.privateKey)
+      .update('auth-user@example.com')
+      .digest('hex')
+  );
   t.not(
     row.recipientHash,
     createHash('sha256').update('auth-user@example.com').digest('hex')
@@ -108,7 +117,7 @@ test('trySend creates a delivery row and commits quota reservation', async t => 
 test('cancelByRecipient matches the keyed recipient hash', async t => {
   await t.context.mailer.trySend({
     name: 'SignIn',
-    to: 'delete-me@example.com',
+    to: '  Delete-Me@Example.COM  ',
     props: {
       url: 'https://affine.pro/sign-in',
       otp: '123456',
@@ -126,6 +135,12 @@ test('cancelByRecipient matches the keyed recipient hash', async t => {
   const row = await t.context.db.mailDelivery.findFirstOrThrow({
     where: { dedupeKey: 'signin:delete-me@example.com:1' },
   });
+  t.is(
+    row.recipientHash,
+    createHmac('sha256', t.context.crypto.keyPair.sha256.privateKey)
+      .update('delete-me@example.com')
+      .digest('hex')
+  );
   t.is(row.status, 'canceled');
   t.is(row.lastErrorCode, 'recipient_deleted');
 });
