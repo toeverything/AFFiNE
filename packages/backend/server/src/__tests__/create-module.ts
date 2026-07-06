@@ -7,8 +7,13 @@ import {
 import { PrismaClient } from '@prisma/client';
 
 import { FunctionalityModules } from '../app.module';
-import { AFFiNELogger, EventBus, JobQueue } from '../base';
-import { createFactory, MockEventBus, MockJobQueue } from './mocks';
+import { AFFiNELogger, EventBus, JobModule, JobQueue } from '../base';
+import {
+  createFactory,
+  MockEventBus,
+  MockJobModule,
+  MockJobQueue,
+} from './mocks';
 import { TEST_LOG_LEVEL } from './utils';
 
 interface TestingModuleMetadata extends ModuleMetadata {
@@ -26,10 +31,17 @@ export async function createModule(
   metadata: TestingModuleMetadata = {}
 ): Promise<TestingModule> {
   const { tapModule, ...meta } = metadata;
+  const functionalityModules = [
+    ...FunctionalityModules.filter(module => {
+      const moduleType = 'module' in module ? module.module : module;
+      return moduleType !== JobModule;
+    }),
+    MockJobModule,
+  ];
 
   const builder = Test.createTestingModule({
     ...meta,
-    imports: [...FunctionalityModules, ...(meta.imports ?? [])],
+    imports: [...functionalityModules, ...(meta.imports ?? [])],
   });
 
   builder

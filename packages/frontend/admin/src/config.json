@@ -46,6 +46,10 @@
     "queues.nightly": {
       "type": "Object",
       "desc": "The config for nightly job queue"
+    },
+    "queues.backendRuntime": {
+      "type": "Object",
+      "desc": "The config for backend runtime job queue"
     }
   },
   "throttle": {

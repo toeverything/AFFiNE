@@ -30,7 +30,6 @@ import {
   Models,
   WorkspaceFeatureName,
   WorkspaceMemberStatus,
-  WorkspaceRole,
 } from '../../../models';
 import { Admin } from '../../common';
 import { WorkspaceUserType } from '../../user';
@@ -58,6 +57,16 @@ enum AdminSharedLinksOrder {
 
 registerEnumType(AdminSharedLinksOrder, {
   name: 'AdminSharedLinksOrder',
+});
+
+enum AdminWorkspaceMemberRole {
+  Owner = 'Owner',
+  Admin = 'Admin',
+  Collaborator = 'Collaborator',
+}
+
+registerEnumType(AdminWorkspaceMemberRole, {
+  name: 'AdminWorkspaceMemberRole',
 });
 
 function hasSelectedField(
@@ -145,8 +154,8 @@ class AdminWorkspaceMember {
   @Field(() => String, { nullable: true })
   avatarUrl?: string | null;
 
-  @Field(() => WorkspaceRole)
-  role!: WorkspaceRole;
+  @Field(() => AdminWorkspaceMemberRole)
+  role!: `${AdminWorkspaceMemberRole}`;
 
   @Field(() => WorkspaceMemberStatus)
   status!: WorkspaceMemberStatus;
@@ -494,18 +503,7 @@ export class AdminWorkspaceResolver {
   })
   async adminWorkspace(@Args('id') id: string) {
     this.assertCloudOnly();
-    const { rows } = await this.models.workspace.adminListWorkspaces({
-      first: 1,
-      skip: 0,
-      keyword: id,
-      order: 'createdAt',
-      includeTotal: false,
-    });
-    const row = rows.find(r => r.id === id);
-    if (!row) {
-      return null;
-    }
-    return row;
+    return await this.models.workspace.adminGetWorkspace(id);
   }
 
   @Query(() => AdminDashboard, {
@@ -608,46 +606,11 @@ export class AdminWorkspaceResolver {
       after: undefined,
     };
 
-    if (query) {
-      const list = await this.models.workspaceUser.search(
-        workspaceId,
-        query,
-        pagination
-      );
-      return list.flatMap(({ user, status, type }) =>
-        user
-          ? [
-              {
-                id: user.id,
-                name: user.name,
-                email: user.email,
-                avatarUrl: user.avatarUrl,
-                role: type,
-                status,
-              },
-            ]
-          : []
-      );
-    }
-
-    const [list] = await this.models.workspaceUser.paginate(
-      workspaceId,
-      pagination
-    );
-    return list.flatMap(({ user, status, type }) =>
-      user
-        ? [
-            {
-              id: user.id,
-              name: user.name,
-              email: user.email,
-              avatarUrl: user.avatarUrl,
-              role: type,
-              status,
-            },
-          ]
-        : []
-    );
+    return await this.models.workspaceUser.adminListMembers(workspaceId, {
+      first: pagination.first,
+      offset: pagination.offset,
+      query,
+    });
   }
 
   @ResolveField(() => [AdminWorkspaceSharedLink], {
@@ -677,18 +640,7 @@ export class AdminWorkspaceResolver {
       await this.models.workspace.update(id, updates);
     }
 
-    const { rows } = await this.models.workspace.adminListWorkspaces({
-      first: 1,
-      skip: 0,
-      keyword: id,
-      order: 'createdAt',
-      includeTotal: false,
-    });
-    const row = rows.find(r => r.id === id);
-    if (!row) {
-      return null;
-    }
-    return row;
+    return await this.models.workspace.adminGetWorkspace(id);
   }
 
   private mapSort(orderBy?: AdminWorkspaceSort) {

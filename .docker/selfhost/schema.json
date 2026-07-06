@@ -121,6 +121,18 @@
           "default": {
             "concurrency": 1
           }
+        },
+        "queues.backendRuntime": {
+          "type": "object",
+          "description": "The config for backend runtime job queue\n@default {\"concurrency\":1}",
+          "properties": {
+            "concurrency": {
+              "type": "number"
+            }
+          },
+          "default": {
+            "concurrency": 1
+          }
         }
       }
     },
@@ -493,6 +505,7 @@
                     "jurisdiction": {
                       "type": "string",
                       "enum": [
+                        "default",
                         "eu"
                       ],
                       "description": "Optional jurisdiction for the cloudflare r2 endpoint. Set to \"eu\" for EU buckets."
@@ -518,6 +531,36 @@
                   }
                 }
               }
+            },
+            {
+              "type": "object",
+              "properties": {
+                "provider": {
+                  "type": "string",
+                  "enum": [
+                    "assetpack"
+                  ]
+                },
+                "bucket": {
+                  "type": "string"
+                },
+                "config": {
+                  "type": "object",
+                  "properties": {
+                    "path": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "path"
+                  ]
+                }
+              },
+              "required": [
+                "provider",
+                "bucket",
+                "config"
+              ]
             }
           ],
           "default": {
@@ -691,6 +734,7 @@
                     "jurisdiction": {
                       "type": "string",
                       "enum": [
+                        "default",
                         "eu"
                       ],
                       "description": "Optional jurisdiction for the cloudflare r2 endpoint. Set to \"eu\" for EU buckets."
@@ -716,6 +760,36 @@
                   }
                 }
               }
+            },
+            {
+              "type": "object",
+              "properties": {
+                "provider": {
+                  "type": "string",
+                  "enum": [
+                    "assetpack"
+                  ]
+                },
+                "bucket": {
+                  "type": "string"
+                },
+                "config": {
+                  "type": "object",
+                  "properties": {
+                    "path": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "path"
+                  ]
+                }
+              },
+              "required": [
+                "provider",
+                "bucket",
+                "config"
+              ]
             }
           ],
           "default": {
@@ -1332,6 +1406,7 @@
                     "jurisdiction": {
                       "type": "string",
                       "enum": [
+                        "default",
                         "eu"
                       ],
                       "description": "Optional jurisdiction for the cloudflare r2 endpoint. Set to \"eu\" for EU buckets."
@@ -1357,6 +1432,36 @@
                   }
                 }
               }
+            },
+            {
+              "type": "object",
+              "properties": {
+                "provider": {
+                  "type": "string",
+                  "enum": [
+                    "assetpack"
+                  ]
+                },
+                "bucket": {
+                  "type": "string"
+                },
+                "config": {
+                  "type": "object",
+                  "properties": {
+                    "path": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "path"
+                  ]
+                }
+              },
+              "required": [
+                "provider",
+                "bucket",
+                "config"
+              ]
             }
           ],
           "default": {

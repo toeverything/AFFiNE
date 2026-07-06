@@ -66,8 +66,9 @@ export class WorkspaceMembers extends Entity {
   }
 
   private async requestMembers(signal: AbortSignal) {
-    this.pageMembers$.setValue(undefined);
     this.isLoading$.setValue(true);
+    this.error$.setValue(null);
+    this.pageMembers$.setValue(undefined);
     try {
       const pageNum = this.pageNum$.value;
       return await this.store.fetchMembers(

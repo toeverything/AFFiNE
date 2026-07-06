@@ -34,10 +34,10 @@
     "@types/micromatch": "^4.0.9",
     "@vanilla-extract/vite-plugin": "^5.0.0",
     "magic-string": "^0.30.21",
-    "vite": "^7.2.7",
+    "vite": "^7.3.5",
     "vite-plugin-istanbul": "^7.2.1",
     "vite-plugin-wasm": "^3.5.0",
     "vite-plugin-web-components-hmr": "^0.1.3"
   },
-  "version": "0.26.3"
+  "version": "0.27.0"
 }

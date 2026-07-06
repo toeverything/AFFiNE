@@ -29,6 +29,7 @@ export enum Queue {
   COPILOT = 'copilot',
   INDEXER = 'indexer',
   CALENDAR = 'calendar',
+  BACKENDRUNTIME = 'backendRuntime',
 }
 
 export const QUEUES = Object.values(Queue);

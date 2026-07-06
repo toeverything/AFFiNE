@@ -1,11 +1,12 @@
 import type { Server } from '@affine/core/modules/cloud';
+import { MIN_SUPPORTED_SERVER_VERSION } from '@affine/core/modules/cloud/stores/server-config';
 import { useLiveData } from '@toeverything/infra';
 import { cssVarV2 } from '@toeverything/theme/v2';
 import semver from 'semver';
 
 const rules = [
   {
-    min: '0.23.0',
+    min: MIN_SUPPORTED_SERVER_VERSION,
     tip: (receivedVersion: string, requiredVersion: string) => (
       <div>
         <p

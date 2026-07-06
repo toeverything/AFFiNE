@@ -51,15 +51,6 @@ class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate {
     dismissIntelligentsButton()
   }
 
-  override func webViewConfiguration(for instanceConfiguration: InstanceConfiguration) -> WKWebViewConfiguration {
-    let configuration = super.webViewConfiguration(for: instanceConfiguration)
-    return configuration
-  }
-
-  override func webView(with frame: CGRect, configuration: WKWebViewConfiguration) -> WKWebView {
-    super.webView(with: frame, configuration: configuration)
-  }
-
   override func capacitorDidLoad() {
     let plugins: [CAPPlugin] = [
       AuthPlugin(),
@@ -129,6 +120,11 @@ class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate {
 
   // MARK: - Web Content Process Crash Recovery
 
+  // NOTE: Capacitor's CAPBridgeViewController owns the WKWebView
+  // navigationDelegate (it assigns its own WebViewDelegationHandler), so this
+  // override is NOT called in practice — Capacitor's handler logs
+  // "⚡️ WebView process terminated" and reloads instead. Kept as defensive
+  // fallback, matching the prior baseline behavior.
   func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
     isWebContentProcessTerminated = true
     webView.reload()

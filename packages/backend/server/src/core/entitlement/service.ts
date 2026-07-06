@@ -175,7 +175,7 @@ export class EntitlementService {
       quantity:
         targetType === 'workspace'
           ? this.normalizedQuantity(input.quantity)
-          : undefined,
+          : null,
       metadata: {
         provider: input.provider ?? 'stripe',
         recurring: input.recurring,
@@ -184,8 +184,8 @@ export class EntitlementService {
         stripeSubscriptionId: input.stripeSubscriptionId ?? null,
         legacySync: options.legacySync ?? false,
       },
-      startsAt: input.start ?? undefined,
-      expiresAt: input.end ?? undefined,
+      startsAt: input.start ?? null,
+      expiresAt: input.end ?? null,
       graceUntil:
         status === 'grace' ? (input.trialEnd ?? input.end ?? new Date()) : null,
       validatedAt: new Date(),

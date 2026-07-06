@@ -1,27 +1,27 @@
-import { createHash } from 'node:crypto';
+import { createHmac } from 'node:crypto';
 
 import { Injectable, Logger } from '@nestjs/common';
 
 import {
-  autoMetadata,
+  type BlobOutputType,
   Config,
   EventBus,
   type GetObjectMetadata,
-  ListObjectsMetadata,
   OnEvent,
-  PutObjectMetadata,
-  type StorageProvider,
-  StorageProviderFactory,
+  PROXY_MULTIPART_PATH,
+  PROXY_UPLOAD_PATH,
+  type PutObjectMetadata,
+  type R2StorageConfig,
+  SIGNED_URL_EXPIRED,
+  type StorageProviderConfig,
   URLHelper,
 } from '../../../base';
 import { Models } from '../../../models';
+import type { StorageProviderCapabilities } from '../../../native';
+import { StorageRuntimeProvider } from '../../storage-runtime';
 
 declare global {
   interface Events {
-    'workspace.blob.sync': {
-      workspaceId: string;
-      key: string;
-    };
     'workspace.blob.delete': {
       workspaceId: string;
       key: string;
@@ -40,51 +40,75 @@ type BlobCompleteResult =
         | 'not_found'
         | 'size_mismatch'
         | 'mime_mismatch'
-        | 'checksum_mismatch';
+        | 'checksum_mismatch'
+        | 'size_too_large';
     };
+
+type BlobGetResult = {
+  redirectUrl?: string;
+  body?: BlobOutputType;
+  metadata?: GetObjectMetadata;
+};
+
+type R2ProxyConfig = {
+  signKey: string;
+  urlPrefix: string;
+};
 
 @Injectable()
 export class WorkspaceBlobStorage {
   private readonly logger = new Logger(WorkspaceBlobStorage.name);
-  private provider!: StorageProvider;
-
-  get config() {
-    return this.AFFiNEConfig.storages.blob;
-  }
 
   constructor(
-    private readonly AFFiNEConfig: Config,
     private readonly event: EventBus,
-    private readonly storageFactory: StorageProviderFactory,
     private readonly models: Models,
-    private readonly url: URLHelper
+    private readonly url: URLHelper,
+    private readonly rt: StorageRuntimeProvider,
+    private readonly config: Config
   ) {}
 
-  @OnEvent('config.init')
-  async onConfigInit() {
-    this.provider = this.storageFactory.create(this.config.storage);
-  }
-
-  @OnEvent('config.changed')
-  async onConfigChanged(event: Events['config.changed']) {
-    if (event.updates.storages?.blob?.storage) {
-      this.provider = this.storageFactory.create(this.config.storage);
-    }
-  }
-
   async put(workspaceId: string, key: string, blob: Buffer) {
-    const meta: PutObjectMetadata = autoMetadata(blob);
-
-    await this.provider.put(`${workspaceId}/${key}`, blob, meta);
+    const metadata = await this.rt.putObject(
+      'blob',
+      `${workspaceId}/${key}`,
+      blob
+    );
     await this.upsert(workspaceId, key, {
-      contentType: meta.contentType ?? 'application/octet-stream',
-      contentLength: blob.length,
-      lastModified: new Date(),
+      contentType: metadata.contentType,
+      contentLength: metadata.contentLength,
+      lastModified: metadata.lastModified,
     });
   }
 
-  async get(workspaceId: string, key: string, signedUrl?: boolean) {
-    return this.provider.get(`${workspaceId}/${key}`, signedUrl);
+  async capabilities(): Promise<StorageProviderCapabilities> {
+    const capabilities = await this.rt.providerCapabilities('blob');
+    if (!this.r2ProxyConfig()) {
+      return capabilities;
+    }
+    return {
+      ...capabilities,
+      presignPut: true,
+      multipartDirect: true,
+      proxyUpload: true,
+      serverMediatedOnly: false,
+    };
+  }
+
+  async get(
+    workspaceId: string,
+    key: string,
+    signedUrl?: boolean
+  ): Promise<BlobGetResult> {
+    if (signedUrl) {
+      const presigned = await this.rt.presignGet(
+        'blob',
+        `${workspaceId}/${key}`
+      );
+      if (presigned) {
+        return { redirectUrl: presigned.url };
+      }
+    }
+    return this.rt.getObject('blob', `${workspaceId}/${key}`);
   }
 
   async presignPut(
@@ -92,7 +116,11 @@ export class WorkspaceBlobStorage {
     key: string,
     metadata?: PutObjectMetadata
   ) {
-    return this.provider.presignPut?.(`${workspaceId}/${key}`, metadata);
+    const proxy = this.r2ProxyConfig();
+    if (proxy) {
+      return this.createProxyUploadUrl(workspaceId, key, metadata, proxy);
+    }
+    return this.rt.presignPut('blob', `${workspaceId}/${key}`, metadata);
   }
 
   async createMultipartUpload(
@@ -100,7 +128,8 @@ export class WorkspaceBlobStorage {
     key: string,
     metadata?: PutObjectMetadata
   ) {
-    return this.provider.createMultipartUpload?.(
+    return this.rt.createMultipartUpload(
+      'blob',
       `${workspaceId}/${key}`,
       metadata
     );
@@ -112,7 +141,18 @@ export class WorkspaceBlobStorage {
     uploadId: string,
     partNumber: number
   ) {
-    return this.provider.presignUploadPart?.(
+    const proxy = this.r2ProxyConfig();
+    if (proxy) {
+      return this.createProxyMultipartUrl(
+        workspaceId,
+        key,
+        uploadId,
+        partNumber,
+        proxy
+      );
+    }
+    return this.rt.presignUploadPart(
+      'blob',
       `${workspaceId}/${key}`,
       uploadId,
       partNumber
@@ -124,7 +164,8 @@ export class WorkspaceBlobStorage {
     key: string,
     uploadId: string
   ) {
-    return this.provider.listMultipartUploadParts?.(
+    return this.rt.listMultipartUploadParts(
+      'blob',
       `${workspaceId}/${key}`,
       uploadId
     );
@@ -136,16 +177,12 @@ export class WorkspaceBlobStorage {
     uploadId: string,
     parts: { partNumber: number; etag: string }[]
   ) {
-    if (!this.provider.completeMultipartUpload) {
-      return false;
-    }
-
-    await this.provider.completeMultipartUpload(
+    return await this.rt.completeMultipartUpload(
+      'blob',
       `${workspaceId}/${key}`,
       uploadId,
       parts
     );
-    return true;
   }
 
   async abortMultipartUpload(
@@ -153,16 +190,15 @@ export class WorkspaceBlobStorage {
     key: string,
     uploadId: string
   ) {
-    if (!this.provider.abortMultipartUpload) {
-      return false;
-    }
-
-    await this.provider.abortMultipartUpload(`${workspaceId}/${key}`, uploadId);
-    return true;
+    return await this.rt.abortMultipartUpload(
+      'blob',
+      `${workspaceId}/${key}`,
+      uploadId
+    );
   }
 
   async head(workspaceId: string, key: string) {
-    return this.provider.head(`${workspaceId}/${key}`);
+    return this.rt.headObject('blob', `${workspaceId}/${key}`);
   }
 
   async complete(
@@ -170,92 +206,37 @@ export class WorkspaceBlobStorage {
     key: string,
     expected: { size: number; mime: string }
   ): Promise<BlobCompleteResult> {
-    const metadata = await this.head(workspaceId, key);
-    if (!metadata) {
-      return { ok: false, reason: 'not_found' };
-    }
-
-    if (metadata.contentLength !== expected.size) {
-      return { ok: false, reason: 'size_mismatch' };
-    }
-
-    if (expected.mime && metadata.contentType !== expected.mime) {
-      return { ok: false, reason: 'mime_mismatch' };
-    }
-
-    const object = await this.provider.get(`${workspaceId}/${key}`);
-    if (!object.body) {
-      return { ok: false, reason: 'not_found' };
-    }
-
-    const checksum = createHash('sha256');
-    try {
-      for await (const chunk of object.body) {
-        checksum.update(chunk as Buffer);
-      }
-    } catch (e) {
-      this.logger.error('failed to read blob for checksum verification', e);
-      return { ok: false, reason: 'checksum_mismatch' };
-    }
-
-    const base64 = checksum.digest('base64');
-    const base64urlWithPadding = base64.replace(/\+/g, '-').replace(/\//g, '_');
-
-    if (base64urlWithPadding !== key) {
-      try {
-        await this.provider.delete(`${workspaceId}/${key}`);
-      } catch (e) {
-        // never throw
-        this.logger.error('failed to delete invalid blob', e);
-      }
-      return { ok: false, reason: 'checksum_mismatch' };
-    }
-
-    await this.models.blob.upsert({
+    const result = await this.rt.completeWorkspaceBlobUpload(
       workspaceId,
       key,
-      mime: metadata.contentType,
-      size: metadata.contentLength,
-      status: 'completed',
-      uploadId: null,
-    });
-
-    return { ok: true, metadata };
+      expected
+    );
+    if (!result.ok) {
+      return {
+        ok: false,
+        reason: (result.reason ?? 'checksum_mismatch') as Exclude<
+          BlobCompleteResult,
+          { ok: true }
+        >['reason'],
+      };
+    }
+    return {
+      ok: true,
+      metadata: {
+        contentType: result.contentType ?? 'application/octet-stream',
+        contentLength: result.contentLength ?? expected.size,
+        lastModified: new Date(result.lastModifiedMs ?? Date.now()),
+      },
+    };
   }
 
-  async list(workspaceId: string, syncBlobMeta = true) {
-    const blobsInDb = await this.models.blob.list(workspaceId);
-
-    if (blobsInDb.length > 0) {
-      return blobsInDb;
-    }
-
-    // all blobs are uploading but not completed yet
-    const hasDbBlobs = await this.models.blob.hasAny(workspaceId);
-    if (hasDbBlobs) {
-      return blobsInDb;
-    }
-
-    const blobs = await this.provider.list(workspaceId + '/');
-    blobs.forEach(blob => {
-      blob.key = blob.key.slice(workspaceId.length + 1);
-    });
-
-    if (syncBlobMeta) {
-      this.trySyncBlobsMeta(workspaceId, blobs);
-    }
-
-    return blobs.map(blob => ({
-      key: blob.key,
-      size: blob.contentLength,
-      createdAt: blob.lastModified,
-      mime: 'application/octet-stream',
-    }));
+  async list(workspaceId: string) {
+    return await this.models.blob.list(workspaceId);
   }
 
   async delete(workspaceId: string, key: string, permanently = false) {
     if (permanently) {
-      await this.provider.delete(`${workspaceId}/${key}`);
+      await this.rt.deleteObject('blob', `${workspaceId}/${key}`);
     }
     await this.models.blob.delete(workspaceId, key, permanently);
     if (!permanently) {
@@ -264,17 +245,17 @@ export class WorkspaceBlobStorage {
   }
 
   async release(workspaceId: string) {
-    const deletedBlobs = await this.models.blob.listDeleted(workspaceId);
-
-    deletedBlobs.forEach(blob => {
-      this.event.emit('workspace.blob.delete', {
-        workspaceId: workspaceId,
-        key: blob.key,
-      });
-    });
+    let scanned = 0;
+    let deleted = 0;
+    for (;;) {
+      const result = await this.rt.releaseDeletedBlobs(workspaceId, 1000);
+      scanned += result.scanned;
+      deleted += result.deleted;
+      if (result.scanned < 1000) break;
+    }
 
     this.logger.log(
-      `released ${deletedBlobs.length} blobs for workspace ${workspaceId}`
+      `released ${deleted}/${scanned} blobs for workspace ${workspaceId}`
     );
 
     await this.event.emitAsync('workspace.blobs.updated', { workspaceId });
@@ -289,15 +270,6 @@ export class WorkspaceBlobStorage {
       return undefined;
     }
     return this.url.link(`/api/workspaces/${workspaceId}/blobs/${avatarKey}`);
-  }
-
-  private trySyncBlobsMeta(workspaceId: string, blobs: ListObjectsMetadata[]) {
-    for (const blob of blobs) {
-      this.event.emit('workspace.blob.sync', {
-        workspaceId,
-        key: blob.key,
-      });
-    }
   }
 
   private async upsert(
@@ -315,26 +287,9 @@ export class WorkspaceBlobStorage {
     });
   }
 
-  @OnEvent('workspace.blob.sync')
-  async syncBlobMeta({ workspaceId, key }: Events['workspace.blob.sync']) {
-    try {
-      const meta = await this.provider.head(`${workspaceId}/${key}`);
-
-      if (meta) {
-        await this.upsert(workspaceId, key, meta);
-      } else {
-        await this.models.blob.delete(workspaceId, key, true);
-      }
-    } catch (e) {
-      // never throw
-      this.logger.error('failed to sync blob meta to DB', e);
-    }
-  }
-
   @OnEvent('workspace.deleted')
   async onWorkspaceDeleted({ id }: Events['workspace.deleted']) {
-    // do not sync blob meta to DB
-    const blobs = await this.list(id, false);
+    const blobs = await this.list(id);
 
     // to reduce cpu time holding
     blobs.forEach(blob => {
@@ -351,5 +306,116 @@ export class WorkspaceBlobStorage {
     key,
   }: Events['workspace.blob.delete']) {
     await this.delete(workspaceId, key, true);
+  }
+
+  private r2ProxyConfig() {
+    const storage = this.config.storages.blob.storage as StorageProviderConfig;
+    if (storage.provider !== 'cloudflare-r2') {
+      return;
+    }
+    const r2 = storage.config as R2StorageConfig;
+    const usePresignedURL = r2.usePresignedURL;
+    if (
+      !usePresignedURL?.enabled ||
+      !usePresignedURL.urlPrefix ||
+      !usePresignedURL.signKey
+    ) {
+      return;
+    }
+    return {
+      signKey: usePresignedURL.signKey,
+      urlPrefix: usePresignedURL.urlPrefix,
+    };
+  }
+
+  private signProxy(
+    path: string,
+    canonicalFields: (string | number | undefined)[],
+    exp: number,
+    signKey: string
+  ) {
+    const canonical = [
+      path,
+      ...canonicalFields.map(field =>
+        field === undefined ? '' : field.toString()
+      ),
+      exp.toString(),
+    ].join('\n');
+    return `${exp}-${createHmac('sha256', signKey).update(canonical).digest('base64')}`;
+  }
+
+  private createProxyUploadUrl(
+    workspaceId: string,
+    key: string,
+    metadata: PutObjectMetadata | undefined,
+    proxy: R2ProxyConfig
+  ) {
+    const contentType = metadata?.contentType ?? 'application/octet-stream';
+    const contentLength = metadata?.contentLength;
+    const expiresAt = new Date(Date.now() + SIGNED_URL_EXPIRED * 1000);
+    const exp = Math.floor(expiresAt.getTime() / 1000);
+    const token = this.signProxy(
+      PROXY_UPLOAD_PATH,
+      [workspaceId, key, contentType, contentLength],
+      exp,
+      proxy.signKey
+    );
+    return {
+      url: this.linkProxyUrl(proxy.urlPrefix, PROXY_UPLOAD_PATH, {
+        workspaceId,
+        key,
+        contentType,
+        contentLength,
+        exp,
+        token,
+      }),
+      headers: {},
+      expiresAt,
+    };
+  }
+
+  private createProxyMultipartUrl(
+    workspaceId: string,
+    key: string,
+    uploadId: string,
+    partNumber: number,
+    proxy: R2ProxyConfig
+  ) {
+    const expiresAt = new Date(Date.now() + SIGNED_URL_EXPIRED * 1000);
+    const exp = Math.floor(expiresAt.getTime() / 1000);
+    const token = this.signProxy(
+      PROXY_MULTIPART_PATH,
+      [workspaceId, key, uploadId, partNumber],
+      exp,
+      proxy.signKey
+    );
+    return {
+      url: this.linkProxyUrl(proxy.urlPrefix, PROXY_MULTIPART_PATH, {
+        workspaceId,
+        key,
+        uploadId,
+        partNumber,
+        exp,
+        token,
+      }),
+      headers: {},
+      expiresAt,
+    };
+  }
+
+  private linkProxyUrl(
+    urlPrefix: string,
+    path: string,
+    query: Record<string, string | number | undefined>
+  ) {
+    const url = new URL(
+      `${urlPrefix.replace(/\/+$/, '')}${path.startsWith('/') ? path : `/${path}`}`
+    );
+    for (const [key, value] of Object.entries(query)) {
+      if (value !== undefined) {
+        url.searchParams.set(key, value.toString());
+      }
+    }
+    return url.toString();
   }
 }

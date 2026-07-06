@@ -10,56 +10,10 @@ import type {
   TypstRenderRequest,
   TypstRenderResult,
 } from '@affine/core/modules/typst/renderer';
-import type { Config } from 'dompurify';
-import DOMPurify from 'dompurify';
-
-/** Mermaid SVG uses `<use>`, `<style>`, and sometimes `<foreignObject>` for labels. */
-const MERMAID_SVG_SANITIZE_CONFIG: Config = {
-  USE_PROFILES: { svg: true },
-  ADD_TAGS: ['use'],
-  ADD_ATTR: ['href', 'xlink:href', 'class', 'style', 'id'],
-};
-
-const FOREIGN_OBJECT_HTML_SANITIZE_CONFIG: Config = {
-  USE_PROFILES: { html: true },
-};
-
-function sanitizeForeignObjects(root: ParentNode) {
-  root.querySelectorAll('foreignObject, foreignobject').forEach(element => {
-    element.innerHTML = DOMPurify.sanitize(
-      element.innerHTML,
-      FOREIGN_OBJECT_HTML_SANITIZE_CONFIG
-    );
-  });
-}
+import { sanitizeSvg as sanitizeSvgDocument } from '@blocksuite/affine-shared/utils';
 
 export function sanitizeSvg(svg: string): string {
-  if (
-    typeof DOMParser === 'undefined' ||
-    typeof XMLSerializer === 'undefined'
-  ) {
-    const sanitized = DOMPurify.sanitize(svg, MERMAID_SVG_SANITIZE_CONFIG);
-    if (typeof sanitized !== 'string' || !/^\s*<svg[\s>]/i.test(sanitized)) {
-      return '';
-    }
-    return sanitized.trim();
-  }
-
-  const parser = new DOMParser();
-  const parsed = parser.parseFromString(svg, 'image/svg+xml');
-  const root = parsed.documentElement;
-  if (!root || root.tagName.toLowerCase() !== 'svg') return '';
-
-  const sanitized = DOMPurify.sanitize(root, MERMAID_SVG_SANITIZE_CONFIG);
-  if (typeof sanitized !== 'string') return '';
-
-  const sanitizedDoc = parser.parseFromString(sanitized, 'image/svg+xml');
-  const sanitizedRoot = sanitizedDoc.documentElement;
-  if (!sanitizedRoot || sanitizedRoot.tagName.toLowerCase() !== 'svg')
-    return '';
-
-  sanitizeForeignObjects(sanitizedRoot);
-  return new XMLSerializer().serializeToString(sanitizedRoot).trim();
+  return sanitizeSvgDocument(svg);
 }
 
 export async function renderMermaidSvg(
@@ -79,5 +33,9 @@ export async function renderTypstSvg(
 ): Promise<TypstRenderResult> {
   const rendered = await renderTypstSvgBackend(request);
 
-  return { svg: rendered.svg };
+  const sanitizedSvg = sanitizeSvgDocument(rendered.svg);
+  if (!sanitizedSvg) {
+    throw new Error('Preview renderer returned invalid SVG.');
+  }
+  return { svg: sanitizedSvg };
 }

@@ -27,6 +27,7 @@ android {
         versionCode 1
         versionName System.getenv('VERSION_NAME') ?: 'v1.0.0-local'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        manifestPlaceholders = [usesCleartextTraffic: "false"]
         aaptOptions {
             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
             // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
@@ -49,6 +50,7 @@ android {
         debug {
             minifyEnabled false
             debuggable true
+            manifestPlaceholders = [usesCleartextTraffic: "true"]
         }
     }
     flavorDimensions = ['chanel']

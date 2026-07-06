@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Transactional } from '@nestjs-cls/transactional';
 import {
+  Prisma,
   WorkspaceMemberSource,
   WorkspaceMemberStatus,
   WorkspaceUserRole,
@@ -22,6 +23,15 @@ import {
 } from './workspace-user-compat';
 
 export { WorkspaceMemberStatus };
+
+export type AdminWorkspaceMember = {
+  id: string;
+  name: string;
+  email: string;
+  avatarUrl: string | null;
+  role: 'Owner' | 'Admin' | 'Collaborator';
+  status: WorkspaceMemberStatus;
+};
 
 declare global {
   interface Events {
@@ -465,6 +475,66 @@ export class WorkspaceUserModel extends BaseModel {
       offset: pagination.offset + (pagination.after ? 1 : 0),
       after: pagination.after ?? undefined,
     });
+  }
+
+  async adminListMembers(
+    workspaceId: string,
+    options: {
+      first: number;
+      offset: number;
+      query?: string | null;
+    }
+  ): Promise<AdminWorkspaceMember[]> {
+    const keyword = options.query?.trim();
+    const keywordCondition = keyword
+      ? Prisma.sql`AND (u.name ILIKE ${`%${keyword}%`} OR u.email ILIKE ${`%${keyword}%`})`
+      : Prisma.empty;
+
+    return await this.db.$queryRaw<AdminWorkspaceMember[]>`
+      SELECT *
+      FROM (
+        SELECT
+          u.id,
+          u.name,
+          u.email,
+          u.avatar_url AS "avatarUrl",
+          CASE wm.role
+            WHEN 'owner' THEN 'Owner'
+            WHEN 'admin' THEN 'Admin'
+            ELSE 'Collaborator'
+          END AS role,
+          'Accepted'::"WorkspaceMemberStatus" AS status,
+          wm.created_at AS created_at
+        FROM workspace_members wm
+        INNER JOIN users u ON u.id = wm.user_id
+        WHERE wm.workspace_id = ${workspaceId}
+          AND wm.state = 'active'
+          ${keywordCondition}
+        UNION ALL
+        SELECT
+          u.id,
+          u.name,
+          u.email,
+          u.avatar_url AS "avatarUrl",
+          CASE wi.requested_role
+            WHEN 'admin' THEN 'Admin'
+            ELSE 'Collaborator'
+          END AS role,
+          CASE wi.status
+            WHEN 'waiting_review' THEN 'UnderReview'::"WorkspaceMemberStatus"
+            WHEN 'waiting_seat' THEN 'NeedMoreSeat'::"WorkspaceMemberStatus"
+            ELSE 'Pending'::"WorkspaceMemberStatus"
+          END AS status,
+          wi.created_at AS created_at
+        FROM workspace_invitations wi
+        INNER JOIN users u ON u.id = wi.invitee_user_id
+        WHERE wi.workspace_id = ${workspaceId}
+          ${keywordCondition}
+      ) members
+      ORDER BY created_at ASC, id ASC
+      OFFSET ${options.offset}
+      LIMIT ${options.first}
+    `;
   }
 
   @Transactional()

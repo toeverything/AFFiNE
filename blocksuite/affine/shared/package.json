@@ -23,7 +23,7 @@
     "@types/lodash-es": "^4.17.12",
     "@types/mdast": "^4.0.4",
     "bytes": "^3.1.2",
-    "dompurify": "^3.3.0",
+    "dompurify": "^3.4.11",
     "fractional-indexing": "^3.2.0",
     "lit": "^3.2.0",
     "lodash-es": "^4.17.23",
@@ -46,6 +46,7 @@
     "remark-parse": "^11.0.0",
     "remark-stringify": "^11.0.0",
     "rxjs": "^7.8.2",
+    "tldts": "^7.0.19",
     "ts-pattern": "^5.1.0",
     "unified": "^11.0.5",
     "unist-util-visit": "^5.0.0",
@@ -75,5 +76,5 @@
     "@types/pdfmake": "^0.2.12",
     "vitest": "^4.1.8"
   },
-  "version": "0.26.3"
+  "version": "0.27.0"
 }

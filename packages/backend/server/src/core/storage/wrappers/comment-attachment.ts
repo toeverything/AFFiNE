@@ -1,16 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import {
-  autoMetadata,
-  Config,
-  EventBus,
-  metrics,
-  OnEvent,
-  type StorageProvider,
-  StorageProviderFactory,
-  URLHelper,
-} from '../../../base';
+import { EventBus, metrics, OnEvent, URLHelper } from '../../../base';
 import { Models } from '../../../models';
+import {
+  type StorageRuntimeGetObjectResult,
+  StorageRuntimeProvider,
+} from '../../storage-runtime';
 
 declare global {
   interface Events {
@@ -25,31 +20,13 @@ declare global {
 @Injectable()
 export class CommentAttachmentStorage {
   private readonly logger = new Logger(CommentAttachmentStorage.name);
-  private provider!: StorageProvider;
-
-  get config() {
-    return this.AFFiNEConfig.storages.blob;
-  }
 
   constructor(
-    private readonly AFFiNEConfig: Config,
     private readonly event: EventBus,
-    private readonly storageFactory: StorageProviderFactory,
     private readonly models: Models,
-    private readonly url: URLHelper
+    private readonly url: URLHelper,
+    private readonly rt: StorageRuntimeProvider
   ) {}
-
-  @OnEvent('config.init')
-  async onConfigInit() {
-    this.provider = this.storageFactory.create(this.config.storage);
-  }
-
-  @OnEvent('config.changed')
-  async onConfigChanged(event: Events['config.changed']) {
-    if (event.updates.storages?.blob?.storage) {
-      this.provider = this.storageFactory.create(this.config.storage);
-    }
-  }
 
   private storageKey(workspaceId: string, docId: string, key: string) {
     return `comment-attachments/${workspaceId}/${docId}/${key}`;
@@ -63,15 +40,13 @@ export class CommentAttachmentStorage {
     blob: Buffer,
     userId: string
   ) {
-    const meta = autoMetadata(blob);
-
-    await this.provider.put(
+    const metadata = await this.rt.putObject(
+      'blob',
       this.storageKey(workspaceId, docId, key),
-      blob,
-      meta
+      blob
     );
-    const mime = meta.contentType ?? 'application/octet-stream';
-    const size = blob.length;
+    const mime = metadata.contentType;
+    const size = metadata.contentLength;
     await this.models.commentAttachment.upsert({
       workspaceId,
       docId,
@@ -94,15 +69,22 @@ export class CommentAttachmentStorage {
     docId: string,
     key: string,
     signedUrl?: boolean
-  ) {
-    return await this.provider.get(
-      this.storageKey(workspaceId, docId, key),
-      signedUrl
-    );
+  ): Promise<StorageRuntimeGetObjectResult> {
+    const storageKey = this.storageKey(workspaceId, docId, key);
+    if (signedUrl) {
+      const presigned = await this.rt.presignGet('blob', storageKey);
+      if (presigned) {
+        return { redirectUrl: presigned.url };
+      }
+    }
+    return await this.rt.getObject('blob', storageKey);
   }
 
   async delete(workspaceId: string, docId: string, key: string) {
-    await this.provider.delete(this.storageKey(workspaceId, docId, key));
+    await this.rt.deleteObject(
+      'blob',
+      this.storageKey(workspaceId, docId, key)
+    );
     await this.models.commentAttachment.delete(workspaceId, docId, key);
     this.logger.log(
       `deleted comment attachment ${workspaceId}/${docId}/${key}`

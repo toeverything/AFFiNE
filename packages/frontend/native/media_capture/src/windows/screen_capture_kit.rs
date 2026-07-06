@@ -225,16 +225,6 @@ impl ShareableContent {
     crate::windows::audio_capture::start_recording(audio_stream_callback, target)
   }
 
-  #[napi]
-  pub fn tap_audio(
-    _process_id: u32, // Currently unused - Windows captures global audio
-    audio_stream_callback: ThreadsafeFunction<napi::bindgen_prelude::Float32Array, ()>,
-  ) -> Result<AudioCaptureSession> {
-    // On Windows with CPAL, we capture global audio (mic + loopback)
-    // since per-application audio tapping isn't supported the same way as macOS
-    ShareableContent::tap_audio_with_callback(_process_id, AudioCallback::Js(Arc::new(audio_stream_callback)), None)
-  }
-
   pub(crate) fn tap_global_audio_with_callback(
     _excluded_processes: Option<Vec<&ApplicationInfo>>,
     audio_stream_callback: AudioCallback,
@@ -244,18 +234,6 @@ impl ShareableContent {
     // Delegate to audio_capture::start_recording which handles mixing mic +
     // loopback
     crate::windows::audio_capture::start_recording(audio_stream_callback, target)
-  }
-
-  #[napi]
-  pub fn tap_global_audio(
-    _excluded_processes: Option<Vec<&ApplicationInfo>>,
-    audio_stream_callback: ThreadsafeFunction<napi::bindgen_prelude::Float32Array, ()>,
-  ) -> Result<AudioCaptureSession> {
-    ShareableContent::tap_global_audio_with_callback(
-      _excluded_processes,
-      AudioCallback::Js(Arc::new(audio_stream_callback)),
-      None,
-    )
   }
 
   #[napi]

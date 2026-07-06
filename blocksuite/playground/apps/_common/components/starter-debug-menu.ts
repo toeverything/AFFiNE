@@ -54,6 +54,7 @@ import {
   type Workspace,
 } from '@blocksuite/affine/store';
 import {
+  commitImportBatchToWorkspace,
   createAssetsArchive,
   download,
   HtmlTransformer,
@@ -436,12 +437,17 @@ export class StarterDebugMenu extends ShadowlessElement {
     try {
       const file = await openSingleFileWith('Zip');
       if (!file) return;
-      const { docIds } = await MarkdownTransformer.importMarkdownZip({
+      const { batch } = await MarkdownTransformer.planMarkdownZip({
         collection: this.collection,
         schema: this.editor.doc.schema,
         imported: file,
         extensions: this._getStoreManager().get('store'),
       });
+      const { docIds } = await commitImportBatchToWorkspace(
+        this.collection,
+        this.editor.doc.schema,
+        batch
+      );
       if (!this.editor.host) return;
       toast(
         this.editor.host,
@@ -473,16 +479,21 @@ export class StarterDebugMenu extends ShadowlessElement {
     try {
       const file = await openSingleFileWith('Zip');
       if (!file) return;
-      const result = await NotionHtmlTransformer.importNotionZip({
+      const { batch } = await NotionHtmlTransformer.planNotionHtmlZip({
         collection: this.collection,
         schema: this.editor.doc.schema,
         imported: file,
         extensions: this._getStoreManager().get('store'),
       });
+      const result = await commitImportBatchToWorkspace(
+        this.collection,
+        this.editor.doc.schema,
+        batch
+      );
       if (!this.editor.host) return;
       toast(
         this.editor.host,
-        `Successfully imported ${result.pageIds.length} Notion HTML pages.`
+        `Successfully imported ${result.docIds.length} Notion HTML pages.`
       );
     } catch (error) {
       console.error('Failed to import Notion HTML Zip:', error);

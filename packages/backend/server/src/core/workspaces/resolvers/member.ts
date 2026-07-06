@@ -156,11 +156,11 @@ export class WorkspaceMemberResolver {
         first: take ?? 8,
       });
 
-      return list.map(({ id, status, type, user }) => ({
+      return list.map(({ status, type, user }) => ({
         ...user,
         permission: Number(type),
         role: Number(type),
-        inviteId: id,
+        inviteId: user?.id ?? '',
         status,
       }));
     } else {
@@ -169,11 +169,11 @@ export class WorkspaceMemberResolver {
         first: take ?? 8,
       });
 
-      return list.map(({ id, status, type, user }) => ({
+      return list.map(({ status, type, user }) => ({
         ...user,
         permission: Number(type),
         role: Number(type),
-        inviteId: id,
+        inviteId: user?.id ?? '',
         status,
       }));
     }
@@ -243,10 +243,8 @@ export class WorkspaceMemberResolver {
               inviterId: me.id,
             }
           );
-          results.push({
-            email,
-            inviteId: role.id,
-          });
+          await this.allocateAvailableTeamSeats(workspaceId, quota.memberLimit);
+          results.push({ email, inviteId: role.id });
         } else {
           const needMoreSeat = quota.memberCount + idx + 1 > quota.memberLimit;
           if (needMoreSeat) {
@@ -404,6 +402,7 @@ export class WorkspaceMemberResolver {
               inviterId: me.id,
             }
           );
+          await this.allocateAvailableTeamSeats(workspaceId, quota.memberLimit);
         } else {
           if (quota.memberCount >= quota.memberLimit) {
             throw new NoMoreSeat({ spaceId: workspaceId });
@@ -716,5 +715,10 @@ export class WorkspaceMemberResolver {
     if (state.isReadonly) {
       throw new SpaceAccessDenied({ spaceId: workspaceId });
     }
+  }
+
+  private async allocateAvailableTeamSeats(workspaceId: string, limit: number) {
+    if (limit <= 0) return;
+    await this.workspaceService.allocateSeats(workspaceId, limit);
   }
 }

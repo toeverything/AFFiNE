@@ -10,17 +10,8 @@ import { QuotaModule } from '../quota';
 import { StorageModule } from '../storage';
 import { UserModule } from '../user';
 import { WorkspacesController } from './controller';
-import { DocGrantsService } from './doc-grants';
-import {
-  DocGrantsRealtimeProvider,
-  DocShareRealtimeProvider,
-} from './doc-realtime';
 import { WorkspaceEvents } from './event';
-import {
-  WorkspaceAccessRealtimeProvider,
-  WorkspaceConfigRealtimeProvider,
-  WorkspaceMembersRealtimeProvider,
-} from './realtime';
+import { WorkspaceRealtimeModule } from './realtime.module';
 import {
   DocHistoryResolver,
   DocResolver,
@@ -44,6 +35,7 @@ import { WorkspaceStatsJob } from './stats.job';
     PermissionModule,
     NotificationModule,
     MailModule,
+    WorkspaceRealtimeModule,
   ],
   controllers: [WorkspacesController],
   providers: [
@@ -54,13 +46,7 @@ import { WorkspaceStatsJob } from './stats.job';
     DocHistoryResolver,
     WorkspaceBlobResolver,
     WorkspaceService,
-    DocGrantsService,
     WorkspaceEvents,
-    WorkspaceAccessRealtimeProvider,
-    WorkspaceConfigRealtimeProvider,
-    WorkspaceMembersRealtimeProvider,
-    DocShareRealtimeProvider,
-    DocGrantsRealtimeProvider,
     AdminWorkspaceResolver,
     WorkspaceStatsJob,
   ],
@@ -68,5 +54,6 @@ import { WorkspaceStatsJob } from './stats.job';
 })
 export class WorkspaceModule {}
 
+export { WorkspaceRealtimeModule } from './realtime.module';
 export { WorkspaceService } from './service';
 export { InvitationType, WorkspaceType } from './types';

@@ -25,6 +25,8 @@ boxedObject.setValue({ foo: 'bar' });
 
 ## Type Param
 
+**T**
+
 The type of the value stored in the Boxed.
 
 ## Type Parameters

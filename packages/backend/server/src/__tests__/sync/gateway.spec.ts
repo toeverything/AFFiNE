@@ -176,6 +176,31 @@ function createYjsUpdateBase64() {
   return Buffer.from(update).toString('base64');
 }
 
+async function createSnapshot(
+  db: PrismaClient,
+  input: {
+    workspaceId: string;
+    docId: string;
+    userId: string;
+    blob?: Buffer;
+    state?: Buffer;
+    updatedAt?: Date;
+  }
+) {
+  await db.snapshot.create({
+    data: {
+      id: input.docId,
+      workspaceId: input.workspaceId,
+      blob: input.blob ?? Buffer.from([1, 1]),
+      state: input.state ?? Buffer.from([1, 1]),
+      createdAt: input.updatedAt ?? new Date(),
+      updatedAt: input.updatedAt ?? new Date(),
+      createdBy: input.userId,
+      updatedBy: input.userId,
+    },
+  });
+}
+
 async function ensureSyncActiveUsersTable(db: PrismaClient) {
   await db.$executeRawUnsafe(`
     CREATE TABLE IF NOT EXISTS sync_active_users_minutely (
@@ -612,17 +637,10 @@ test('workspace sync delete-doc should enforce doc permissions', async t => {
     }
   );
   await models.doc.setDefaultRole(workspace.id, docId, DocRole.None);
-  await db.snapshot.create({
-    data: {
-      id: docId,
-      workspaceId: workspace.id,
-      blob: Buffer.from([1, 1]),
-      state: Buffer.from([1, 1]),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      createdBy: owner.id,
-      updatedBy: owner.id,
-    },
+  await createSnapshot(db, {
+    workspaceId: workspace.id,
+    docId,
+    userId: owner.id,
   });
 
   const socket = createClient(url, cookieHeader);
@@ -653,6 +671,209 @@ test('workspace sync delete-doc should enforce doc permissions', async t => {
       })
     );
     t.true(error.message.includes('Doc.Delete'));
+  } finally {
+    socket.disconnect();
+  }
+});
+
+test('workspace sync load-doc should enforce doc read permissions', async t => {
+  const db = app.get(PrismaClient);
+  const models = app.get(Models);
+  const { user: owner } = await login(app);
+  const { user: collaborator, cookieHeader } = await login(app);
+  const workspace = await models.workspace.create(owner.id);
+  const docId = 'private-load-doc';
+
+  await models.workspaceUser.set(
+    workspace.id,
+    collaborator.id,
+    WorkspaceRole.Collaborator,
+    {
+      status: WorkspaceMemberStatus.Accepted,
+    }
+  );
+  await models.doc.setDefaultRole(workspace.id, docId, DocRole.None);
+  await createSnapshot(db, {
+    workspaceId: workspace.id,
+    docId,
+    userId: owner.id,
+  });
+
+  const socket = createClient(url, cookieHeader);
+
+  try {
+    await waitForConnect(socket);
+
+    const join = unwrapResponse(
+      t,
+      await emitWithAck<{ clientId: string; success: boolean }>(
+        socket,
+        'space:join',
+        {
+          spaceType: 'workspace',
+          spaceId: workspace.id,
+          clientVersion: '0.26.0',
+        }
+      )
+    );
+    t.true(join.success);
+
+    const error = getErrorResponse(
+      t,
+      await emitWithAck(socket, 'space:load-doc', {
+        spaceType: 'workspace',
+        spaceId: workspace.id,
+        docId,
+      })
+    );
+    t.true(error.message.includes('Doc.Read'));
+  } finally {
+    socket.disconnect();
+  }
+});
+
+test('workspace sync push-doc-update should enforce doc update permissions', async t => {
+  const db = app.get(PrismaClient);
+  const models = app.get(Models);
+  const { user: owner } = await login(app);
+  const { user: collaborator, cookieHeader } = await login(app);
+  const workspace = await models.workspace.create(owner.id);
+  const docId = 'readonly-push-doc';
+
+  await models.workspaceUser.set(
+    workspace.id,
+    collaborator.id,
+    WorkspaceRole.Collaborator,
+    {
+      status: WorkspaceMemberStatus.Accepted,
+    }
+  );
+  await models.doc.setDefaultRole(workspace.id, docId, DocRole.None);
+  await models.docUser.set(
+    workspace.id,
+    docId,
+    collaborator.id,
+    DocRole.Reader
+  );
+  await createSnapshot(db, {
+    workspaceId: workspace.id,
+    docId,
+    userId: owner.id,
+  });
+
+  const socket = createClient(url, cookieHeader);
+
+  try {
+    await waitForConnect(socket);
+
+    const join = unwrapResponse(
+      t,
+      await emitWithAck<{ clientId: string; success: boolean }>(
+        socket,
+        'space:join',
+        {
+          spaceType: 'workspace',
+          spaceId: workspace.id,
+          clientVersion: '0.26.0',
+        }
+      )
+    );
+    t.true(join.success);
+
+    const error = getErrorResponse(
+      t,
+      await emitWithAck(socket, 'space:push-doc-update', {
+        spaceType: 'workspace',
+        spaceId: workspace.id,
+        docId,
+        update: createYjsUpdateBase64(),
+      })
+    );
+    t.true(error.message.includes('Doc.Update'));
+
+    const updates = await db.update.count({
+      where: {
+        workspaceId: workspace.id,
+        id: docId,
+      },
+    });
+    t.is(updates, 0);
+  } finally {
+    socket.disconnect();
+  }
+});
+
+test('workspace sync load-doc-timestamps should filter unreadable docs', async t => {
+  const db = app.get(PrismaClient);
+  const models = app.get(Models);
+  const { user: owner } = await login(app);
+  const { user: collaborator, cookieHeader } = await login(app);
+  const workspace = await models.workspace.create(owner.id);
+  const privateDocId = 'private-timestamp-doc';
+  const readableDocId = 'readable-timestamp-doc';
+
+  await models.workspaceUser.set(
+    workspace.id,
+    collaborator.id,
+    WorkspaceRole.Collaborator,
+    {
+      status: WorkspaceMemberStatus.Accepted,
+    }
+  );
+  await models.doc.setDefaultRole(workspace.id, privateDocId, DocRole.None);
+  await models.doc.setDefaultRole(workspace.id, readableDocId, DocRole.None);
+  await models.docUser.set(
+    workspace.id,
+    readableDocId,
+    collaborator.id,
+    DocRole.Reader
+  );
+  await createSnapshot(db, {
+    workspaceId: workspace.id,
+    docId: privateDocId,
+    userId: owner.id,
+    updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+  });
+  await createSnapshot(db, {
+    workspaceId: workspace.id,
+    docId: readableDocId,
+    userId: owner.id,
+    updatedAt: new Date('2026-01-02T00:00:00.000Z'),
+  });
+
+  const socket = createClient(url, cookieHeader);
+
+  try {
+    await waitForConnect(socket);
+
+    const join = unwrapResponse(
+      t,
+      await emitWithAck<{ clientId: string; success: boolean }>(
+        socket,
+        'space:join',
+        {
+          spaceType: 'workspace',
+          spaceId: workspace.id,
+          clientVersion: '0.26.0',
+        }
+      )
+    );
+    t.true(join.success);
+
+    const timestamps = unwrapResponse(
+      t,
+      await emitWithAck<Record<string, number>>(
+        socket,
+        'space:load-doc-timestamps',
+        {
+          spaceType: 'workspace',
+          spaceId: workspace.id,
+        }
+      )
+    );
+
+    t.false(privateDocId in timestamps);
+    t.true(readableDocId in timestamps);
   } finally {
     socket.disconnect();
   }

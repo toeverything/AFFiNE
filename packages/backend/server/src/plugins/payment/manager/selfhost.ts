@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 
 import { Injectable } from '@nestjs/common';
 import { PrismaClient, Provider, UserStripeCustomer } from '@prisma/client';
-import { omit, pick } from 'lodash-es';
+import { omit } from 'lodash-es';
 import { z } from 'zod';
 
 import { SubscriptionPlanNotFound, URLHelper } from '../../../base';
@@ -163,13 +163,14 @@ export class SelfhostTeamSubscriptionManager extends SubscriptionManager {
         where: {
           stripeSubscriptionId: stripeSubscription.id,
         },
-        data: pick(subscriptionData, [
-          'status',
-          'stripeScheduleId',
-          'nextBillAt',
-          'canceledAt',
-          'end',
-        ]),
+        data: {
+          ...omit(subscriptionData, ['provider', 'iapStore']),
+          provider: Provider.stripe,
+          iapStore: null,
+          rcEntitlement: null,
+          rcProductId: null,
+          rcExternalRef: null,
+        },
       });
       await this.upsertStripeProviderSubscription(
         saved.targetId,

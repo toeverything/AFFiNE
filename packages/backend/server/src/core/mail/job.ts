@@ -126,6 +126,38 @@ export class MailJob {
     );
   }
 
+  private isInvitationMailSentByUser(
+    job: Jobs['notification.sendMail'],
+    userId: string
+  ) {
+    return (
+      job.name === 'MemberInvitation' &&
+      'user' in job.props &&
+      typeof job.props.user === 'object' &&
+      job.props.user !== null &&
+      '$$userId' in job.props.user &&
+      job.props.user.$$userId === userId
+    );
+  }
+
+  private async deleteInvitationMailCacheBySender(userId: string) {
+    const keys = await this.cache.mapKeys(retryMailKey);
+    await Promise.all(
+      keys.map(async key => {
+        const job = await this.cache.mapGet<
+          Jobs['notification.sendMail'] | string
+        >(retryMailKey, key);
+        const jobData =
+          typeof job === 'string'
+            ? (JSON.parse(job) as Jobs['notification.sendMail'])
+            : job;
+        if (jobData && this.isInvitationMailSentByUser(jobData, userId)) {
+          await this.cache.mapDelete(retryMailKey, key);
+        }
+      })
+    );
+  }
+
   private async sendMailInternal({
     startTime,
     name,
@@ -294,9 +326,11 @@ export class MailJob {
   async onUserDeleted(user: Events['user.deleted']) {
     await Promise.all([
       this.deleteRecipientMailCache(user.email),
+      this.deleteInvitationMailCacheBySender(user.id),
       this.queue.removeWhere(
         'notification.sendMail',
-        job => job.to === user.email
+        job =>
+          job.to === user.email || this.isInvitationMailSentByUser(job, user.id)
       ),
     ]);
   }

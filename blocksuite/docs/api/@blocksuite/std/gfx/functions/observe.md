@@ -36,18 +36,4 @@ re-observe the property automatically when the value is altered.
 
 ## Returns
 
-> (`_`, `context`): `ClassAccessorDecoratorResult`\<`GfxPrimitiveElementModel`\<`BaseElementProps`\>, `V`\>
-
-### Parameters
-
-#### \_
-
-`unknown`
-
-#### context
-
-`ClassAccessorDecoratorContext`
-
-### Returns
-
-`ClassAccessorDecoratorResult`\<`GfxPrimitiveElementModel`\<`BaseElementProps`\>, `V`\>
+(`_`, `context`) => `ClassAccessorDecoratorResult`\<`GfxPrimitiveElementModel`\<`BaseElementProps`\>, `V`\>
