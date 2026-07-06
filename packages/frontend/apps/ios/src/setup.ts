@@ -2,12 +2,23 @@ import '@affine/core/bootstrap/browser';
 import '@affine/core/bootstrap/cleanup';
 import './proxy';
 
+import { IS_IPAD } from '@blocksuite/affine/global/env';
 import { viewportRuntimeConfig } from '@blocksuite/affine/std/gfx';
 
+import { setupPencilInputClassifier } from './plugins/pencil-input/classifier';
 import { setupPencilInputDebug } from './plugins/pencil-input/debug';
 
 // Opt-in native touch-classification logger (no-op unless explicitly enabled).
 setupPencilInputDebug();
+
+// On iPad, feed the native UITouch classification into the edgeless pointer
+// routing so a resting palm can't hijack or terminate an Apple Pencil stroke.
+// No-op elsewhere; falls back to default pointerType handling if it can't start.
+if (IS_IPAD) {
+  setupPencilInputClassifier().catch(() => {
+    // startup is best-effort; failures are already logged inside.
+  });
+}
 
 // iOS WKWebView terminates the web content process when edgeless compositing
 // memory (GPU-side IOSurface tiles) spikes. These overrides are applied once at

@@ -11,6 +11,7 @@ import {
 } from '../state/index.js';
 import { EventScopeSourceType, EventSourceState } from '../state/source.js';
 import { isFarEnough } from '../utils.js';
+import { classifyPointerInput } from './input-classifier.js';
 
 type PointerId = typeof PointerEvent.prototype.pointerId;
 
@@ -181,6 +182,14 @@ class DragController extends PointerControllerBase {
   private readonly _down = (event: PointerEvent) => {
     if (this._nativeDragging) return;
 
+    // iPad Apple Pencil routing: a palm contact must never start or terminate a
+    // stroke, and an incidental second contact must not interrupt an active pen
+    // stroke. Host-native classification (UITouch.TouchType) is consulted when
+    // injected; on other platforms this is a no-op and behavior is unchanged.
+    if (IS_IPAD && this._shouldDiscardForPencilRouting(event)) {
+      return;
+    }
+
     if (!event.isPrimary) {
       if (this._dragging && this._lastPointerState) {
         this._up(this._lastPointerState.raw);
@@ -336,6 +345,29 @@ class DragController extends PointerControllerBase {
 
     this._reset();
   };
+
+  /**
+   * Decide whether a `pointerdown` should be discarded under iPad Apple Pencil
+   * routing. Returns `true` only for palm contact or an incidental second touch
+   * during an active pen stroke; otherwise falls through to normal handling.
+   */
+  private _shouldDiscardForPencilRouting(event: PointerEvent): boolean {
+    // A palm is always discarded, whether it lands first (primary) or mid-stroke.
+    if (classifyPointerInput(event) === 'palm') {
+      return true;
+    }
+    // While an Apple Pencil stroke is active, a second incidental contact
+    // (resting palm/finger) must not end it. WebKit reports the Pencil as
+    // pointerType 'pen', so this holds even without native classification.
+    if (
+      !event.isPrimary &&
+      this._dragging &&
+      this._startPointerState?.raw.pointerType === 'pen'
+    ) {
+      return true;
+    }
+    return false;
+  }
 
   // https://mikepk.com/2020/10/iOS-safari-scribble-bug/
   private _applyScribblePatch() {
