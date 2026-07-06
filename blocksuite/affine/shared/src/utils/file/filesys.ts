@@ -212,7 +212,18 @@ export async function snapshotFile(file: File, relativePath?: string) {
 }
 
 export async function snapshotFiles(files: File[]) {
-  return Promise.all(files.map(file => snapshotFile(file)));
+  const results = await Promise.allSettled(
+    files.map(file => snapshotFile(file))
+  );
+  const snapshots: File[] = [];
+  for (const result of results) {
+    if (result.status === 'fulfilled') {
+      snapshots.push(result.value);
+    } else {
+      console.error('Failed to snapshot file', result.reason);
+    }
+  }
+  return snapshots;
 }
 
 function canUseFileSystemAccessAPI(
@@ -349,7 +360,11 @@ export async function openDirectory(
             if (fileHandle.getFile) {
               const file = await fileHandle.getFile();
               if (options?.snapshot) {
-                files.push(await snapshotFile(file, relativePath));
+                try {
+                  files.push(await snapshotFile(file, relativePath));
+                } catch (error) {
+                  console.error('Failed to snapshot file', relativePath, error);
+                }
               } else {
                 Object.defineProperty(file, 'webkitRelativePath', {
                   value: relativePath,
