@@ -50,6 +50,7 @@ testem.log
 tsconfig.tsbuildinfo
 .context
 /*.md
+!/README.*.md
 .codex
 .cursor
 
