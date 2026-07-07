@@ -73,11 +73,15 @@ const releaseChildProcessHandles = (child: ChildProcess) => {
   }
 };
 
-const withTimeoutFallback = async <T>(promise: Promise<T>, fallback: T) => {
+const withTimeoutFallback = async <T>(
+  promise: Promise<T>,
+  fallback: T,
+  timeoutMs = 1_000
+) => {
   try {
     return await Promise.race([
       promise,
-      setTimeout(1_000).then(() => fallback),
+      setTimeout(timeoutMs).then(() => fallback),
     ]);
   } catch {
     return fallback;
@@ -89,7 +93,8 @@ const getPageId = async (page: Page) => {
     page.evaluate(() => {
       return (window.__appInfo as any)?.viewId as string | undefined;
     }),
-    undefined
+    undefined,
+    500
   );
 };
 
@@ -98,7 +103,8 @@ const isActivePage = async (page: Page) => {
     page.evaluate(async () => {
       return (await (window as any).__apis?.ui.isActiveTab()) === true;
     }),
-    false
+    false,
+    500
   );
 };
 
@@ -113,22 +119,27 @@ const isEditorPage = async (page: Page) => {
 };
 
 const getActivePage = async (pages: Page[]) => {
-  for (const page of pages) {
-    if (await isActivePage(page)) {
-      return page;
-    }
+  const activeChecks = await Promise.all(
+    pages.map(async page => ((await isActivePage(page)) ? page : null))
+  );
+  for (const page of activeChecks) {
+    if (page) return page;
   }
 
-  const contentPages: Page[] = [];
-  for (const page of pages) {
-    const pageId = await getPageId(page);
-    if (pageId === 'shell') {
-      continue;
-    }
-    if (pageId || (await isEditorPage(page))) {
-      contentPages.push(page);
-    }
-  }
+  const contentPages = (
+    await Promise.all(
+      pages.map(async page => {
+        const pageId = await getPageId(page);
+        if (pageId === 'shell') {
+          return null;
+        }
+        if (pageId || (await isEditorPage(page))) {
+          return page;
+        }
+        return null;
+      })
+    )
+  ).filter((page): page is Page => !!page);
 
   if (contentPages.length > 0) {
     return contentPages.at(-1) ?? null;
@@ -153,7 +164,7 @@ const waitForElectronPage = async (
 ) => {
   const deadline =
     Date.now() +
-    (process.env.CI && process.platform === 'darwin' ? 20_000 : 10_000);
+    (process.env.CI && process.platform === 'darwin' ? 25_000 : 20_000);
 
   while (Date.now() < deadline) {
     const page = await getPage(electronApp.windows());

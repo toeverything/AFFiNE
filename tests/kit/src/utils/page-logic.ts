@@ -177,30 +177,23 @@ export const dragTo = async (
   location: DragLocation = 'center',
   willMoveOnDrag = false
 ) => {
-  await locator.hover();
   const locatorElement = await locator.boundingBox();
   if (!locatorElement) {
     throw new Error('locator element not found');
   }
   const locatorCenter = toPosition(locatorElement, 'center');
-  await page.mouse.move(
-    locatorElement.x + locatorCenter.x,
-    locatorElement.y + locatorCenter.y
-  );
+  const start = {
+    x: locatorElement.x + locatorCenter.x,
+    y: locatorElement.y + locatorCenter.y,
+  };
+  await page.mouse.move(start.x, start.y);
   await page.mouse.down();
   await page.waitForTimeout(100);
-  await page.mouse.move(
-    locatorElement.x + locatorCenter.x + 1,
-    locatorElement.y + locatorCenter.y + 1
-  );
+  await page.mouse.move(start.x + 8, start.y + 8, { steps: 4 });
 
-  await page.mouse.move(1, 1, {
-    steps: 10,
-  });
-
-  await target.hover();
-
-  if (!willMoveOnDrag) {
+  if (willMoveOnDrag) {
+    await target.hover();
+  } else {
     const targetElement = await target.boundingBox();
     if (!targetElement) {
       throw new Error('target element not found');
@@ -210,11 +203,11 @@ export const dragTo = async (
       targetElement.x + targetPosition.x,
       targetElement.y + targetPosition.y,
       {
-        steps: 10,
+        steps: 24,
       }
     );
   }
-  await page.waitForTimeout(100);
+  await page.waitForTimeout(200);
   await page.mouse.up();
 };
 
