@@ -123,7 +123,7 @@ struct OnboardingRootView: View {
         }
       }
       .tabViewStyle(.page(indexDisplayMode: .never))
-      .animation(.spring(response: 0.45, dampingFraction: 0.88), value: pageIndex)
+      .animation(.spring(response: 0.30, dampingFraction: 0.88), value: pageIndex)
     }
   }
 
@@ -401,31 +401,10 @@ private struct OnboardingBackground: View {
 
   var body: some View {
     Group {
-      if isIntroPage || isPaywallPage {
-        AffineColors.layerPureWhite.color
+      if isIntroPage {
+        Color("OnboardingIntroBackground")
       } else {
-        LinearGradient(
-          colors: [
-            AffineColors.layerBackgroundPrimary.color,
-            AffineColors.layerBackgroundSecondary.color,
-          ],
-          startPoint: .topLeading,
-          endPoint: .bottomTrailing
-        )
-        .overlay(alignment: .topTrailing) {
-          Circle()
-            .fill(AffineColors.buttonPrimary.color.opacity(0.1))
-            .frame(width: 220, height: 220)
-            .blur(radius: 24)
-            .offset(x: 80, y: -80)
-        }
-        .overlay(alignment: .bottomLeading) {
-          Circle()
-            .fill(AffineColors.textLink.color.opacity(0.08))
-            .frame(width: 260, height: 260)
-            .blur(radius: 30)
-            .offset(x: -110, y: 90)
-        }
+        Color("OnboardingBackground")
       }
     }
     .ignoresSafeArea()
@@ -440,7 +419,7 @@ private struct IntroPage: View {
         VStack(spacing: 6) {
           titleView
           Text("Write, organize, and connect ideas with docs, whiteboards, and AI.")
-            .font(.system(size: 15, weight: .medium))
+            .font(.system(size: 17, weight: .medium))
             .foregroundStyle(AffineColors.textSecondary.color)
             .multilineTextAlignment(.center)
             .lineSpacing(4)
@@ -463,7 +442,7 @@ private struct IntroPage: View {
       + Text(" in One\nWorkspace")
         .foregroundColor(AffineColors.textPrimary.color)
     )
-    .font(.system(size: 29, weight: .bold))
+    .font(.system(size: 31, weight: .bold))
     .multilineTextAlignment(.center)
   }
 }
@@ -476,7 +455,7 @@ private struct IntroFooter: View {
       Button(action: onGetStarted) {
         HStack(spacing: 10) {
           Text("Get Started")
-            .font(.system(size: 18, weight: .bold))
+            .font(.system(size: 20, weight: .bold))
           Image(systemName: "arrow.right")
             .font(.system(size: 18, weight: .bold))
         }
@@ -487,15 +466,6 @@ private struct IntroFooter: View {
         .clipShape(Capsule())
       }
       .buttonStyle(.plain)
-
-      HStack(spacing: 8) {
-        Text("🎁")
-          .font(.system(size: 18))
-        Text("Have an invite?")
-          .font(.system(size: 16, weight: .medium))
-          .foregroundStyle(AffineColors.textPrimary.color)
-      }
-      .padding(.bottom, 6)
     }
   }
 }
@@ -789,10 +759,10 @@ private struct RolePage: View {
       Spacer(minLength: 8)
       VStack(spacing: 18) {
         Text("Which best describes you?")
-          .font(.system(size: 24, weight: .bold, design: .rounded))
+          .font(.system(size: 26, weight: .bold, design: .rounded))
           .multilineTextAlignment(.center)
         Text("We'll use this to improve your experience and prioritize relevant features.")
-          .font(.system(size: 15, weight: .medium))
+          .font(.system(size: 17, weight: .medium))
           .foregroundStyle(AffineColors.textSecondary.color)
           .multilineTextAlignment(.center)
       }
@@ -820,7 +790,7 @@ private struct FeaturePage: View {
       VStack(spacing: 12) {
         featureTitle
         Text(LocalizedStringKey(feature.subtitle))
-          .font(.system(size: 14, weight: .medium))
+          .font(.system(size: 16, weight: .medium))
           .foregroundStyle(AffineColors.textSecondary.color)
           .multilineTextAlignment(.center)
           .lineSpacing(3)
@@ -843,7 +813,7 @@ private struct FeaturePage: View {
         + Text(LocalizedStringKey(segment.text))
         .foregroundColor(segment.isHighlighted ? AffineColors.buttonPrimary.color : AffineColors.textPrimary.color)
     }
-    .font(.system(size: 28, weight: .bold))
+    .font(.system(size: 30, weight: .bold))
     .multilineTextAlignment(.center)
     .fixedSize(horizontal: false, vertical: true)
     .padding(.horizontal, 8)
@@ -883,7 +853,7 @@ private struct PaywallCarouselPage: View {
       Spacer(minLength: 18)
 
       Text("Individual Plans")
-        .font(.system(size: 28, weight: .black))
+        .font(.system(size: 30, weight: .black))
         .foregroundStyle(AffineColors.textPrimary.color)
 
       Spacer(minLength: 10)
@@ -1061,21 +1031,21 @@ private struct PaywallCard: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
       Text(LocalizedStringKey(plan.headerName))
-        .font(.system(size: 26, weight: .black))
+        .font(.system(size: 28, weight: .black))
         .foregroundStyle(AffineColors.textPrimary.color)
         .padding(.bottom, 16)
 
       HStack(alignment: .lastTextBaseline, spacing: 5) {
         Text(LocalizedStringKey(plan.priceValue))
-          .font(.system(size: 28, weight: .black))
+          .font(.system(size: 30, weight: .black))
           .foregroundStyle(AffineColors.textPrimary.color)
         Text(LocalizedStringKey(plan.priceSuffix))
-          .font(.system(size: 14, weight: .bold))
+          .font(.system(size: 16, weight: .bold))
           .foregroundStyle(AffineColors.textPrimary.color)
       }
 
       Text(LocalizedStringKey(plan.description))
-        .font(.system(size: 13.5, weight: .medium))
+        .font(.system(size: 15.5, weight: .medium))
         .foregroundStyle(AffineColors.textSecondary.color)
         .lineSpacing(3)
         .fixedSize(horizontal: false, vertical: true)
@@ -1133,7 +1103,7 @@ private struct PaywallFeatureRow: View {
         .padding(.top, 2)
 
       Text(LocalizedStringKey(text))
-        .font(.system(size: 13.5, weight: .medium))
+        .font(.system(size: 15.5, weight: .medium))
         .foregroundStyle(AffineColors.textPrimary.color)
         .lineSpacing(3)
         .fixedSize(horizontal: false, vertical: true)
@@ -1147,7 +1117,7 @@ private struct PaywallFooterLinks: View {
   var body: some View {
     Button(action: onSkip) {
       Text("Cancel Anytime")
-        .font(.system(size: 14.5, weight: .medium))
+        .font(.system(size: 16.5, weight: .medium))
         .foregroundStyle(AffineColors.textPrimary.color)
     }
     .buttonStyle(.plain)
@@ -1186,7 +1156,7 @@ private struct PaywallLegalLinks: View {
         }
       }
     }
-    .font(.system(size: 10.5, weight: .medium))
+    .font(.system(size: 12.5, weight: .medium))
     .foregroundStyle(AffineColors.textSecondary.color)
   }
 
@@ -1219,7 +1189,7 @@ private struct RoleOption: View {
           .frame(width: 38, height: 38)
           .foregroundStyle(AffineColors.textPrimary.color)
         Text(role.title)
-          .font(.system(size: 16, weight: .semibold))
+          .font(.system(size: 18, weight: .semibold))
           .foregroundStyle(AffineColors.textPrimary.color)
         Spacer()
       }

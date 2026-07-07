@@ -22,7 +22,7 @@ final class OnboardingViewController: UIViewController {
 
   override func viewDidLoad() {
     super.viewDidLoad()
-    view.backgroundColor = .systemBackground
+    view.backgroundColor = UIColor(named: "OnboardingIntroBackground") ?? .systemBackground
 
     let rootView = OnboardingRootView(
       state: flowState,
