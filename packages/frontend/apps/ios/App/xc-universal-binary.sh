@@ -41,15 +41,24 @@ fi
 FFI_TARGET=${1}
 # path to source code root
 SRC_ROOT=${2}
+REPO_ROOT=$(cd "$SRC_ROOT/../../.." && pwd)
+export CARGO_TARGET_DIR="$REPO_ROOT/target"
+cd "$REPO_ROOT"
 # buildvariant from our xcconfigs
-BUILDVARIANT=$(echo "${3}" | tr '[:upper:]' '[:lower:]')
+BUILDVARIANT=$(printf '%s' "${3}" | tr '[:upper:]' '[:lower:]')
 
 RELFLAG=
-if [[ "${BUILDVARIANT}" != "debug" ]]; then
-    RELFLAG=release
-else
+CARGO_PROFILE_FLAG=
+case "${BUILDVARIANT}" in
+  debug*)
     RELFLAG=debug
-fi
+    CARGO_PROFILE_FLAG=
+    ;;
+  *)
+    RELFLAG=release
+    CARGO_PROFILE_FLAG=--release
+    ;;
+esac
 
 IS_SIMULATOR=0
 if [ "${LLVM_TARGET_TRIPLE_SUFFIX-}" = "-simulator" ]; then
@@ -66,18 +75,18 @@ for arch in $ARCHS; do
 
       # Intel iOS simulator
       export CFLAGS_x86_64_apple_ios="-target x86_64-apple-ios"
-      $CARGO rustc -p "${FFI_TARGET}" --lib --crate-type staticlib --$RELFLAG --target x86_64-apple-ios --features use-as-lib
+      $CARGO rustc -p "${FFI_TARGET}" --lib --crate-type staticlib ${CARGO_PROFILE_FLAG} --target x86_64-apple-ios --features use-as-lib
       ;;
 
     arm64)
       if [ $IS_SIMULATOR -eq 0 ]; then
         # Hardware iOS targets
-        $CARGO rustc -p "${FFI_TARGET}" --lib --crate-type staticlib --$RELFLAG --target aarch64-apple-ios --features use-as-lib
-        cp $SRC_ROOT/../../../target/aarch64-apple-ios/${RELFLAG}/lib${FFI_TARGET}.a $SRCROOT/lib${FFI_TARGET}.a
+        $CARGO rustc -p "${FFI_TARGET}" --lib --crate-type staticlib ${CARGO_PROFILE_FLAG} --target aarch64-apple-ios --features use-as-lib
+        cp "$CARGO_TARGET_DIR/aarch64-apple-ios/${RELFLAG}/lib${FFI_TARGET}.a" "$SRCROOT/lib${FFI_TARGET}.a"
       else
         # M1 iOS simulator
-        $CARGO rustc -p "${FFI_TARGET}" --lib --crate-type staticlib --$RELFLAG --target aarch64-apple-ios-sim --features use-as-lib
-        cp $SRC_ROOT/../../../target/aarch64-apple-ios-sim/${RELFLAG}/lib${FFI_TARGET}.a $SRCROOT/lib${FFI_TARGET}.a
+        $CARGO rustc -p "${FFI_TARGET}" --lib --crate-type staticlib ${CARGO_PROFILE_FLAG} --target aarch64-apple-ios-sim --features use-as-lib
+        cp "$CARGO_TARGET_DIR/aarch64-apple-ios-sim/${RELFLAG}/lib${FFI_TARGET}.a" "$SRCROOT/lib${FFI_TARGET}.a"
       fi
   esac
 done

@@ -350,7 +350,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\nbash $SRCROOT/xc-universal-binary.sh affine_mobile_native $SRCROOT/../../../mobile-native $CONFIGURATION\\n\n";
+			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\nbash $SRCROOT/xc-universal-binary.sh affine_mobile_native $SRCROOT/../../../mobile-native \"$CONFIGURATION\"\n\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
