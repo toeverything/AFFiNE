@@ -13,6 +13,7 @@ import { BaseModel } from './base';
 const DEFAULT_STORAGE_HISTORY_DAYS = 30;
 const DEFAULT_SYNC_HISTORY_HOURS = 48;
 const DEFAULT_SHARED_LINK_WINDOW_DAYS = 28;
+const DEFAULT_COPILOT_WINDOW_DAYS = 7;
 const DEFAULT_ANALYTICS_WINDOW_DAYS = 28;
 const NON_TEAM_ANALYTICS_WINDOW_DAYS = 7;
 const DEFAULT_TIMEZONE = 'UTC';
@@ -50,6 +51,7 @@ export type AdminDashboardOptions = {
   storageHistoryDays?: number;
   syncHistoryHours?: number;
   sharedLinkWindowDays?: number;
+  copilotWindowDays?: number;
   includeTopSharedLinks?: boolean;
 };
 
@@ -99,6 +101,7 @@ export type AdminDashboardDto = {
   }>;
   syncWindow: TimeWindowDto;
   copilotConversations: number;
+  copilotWindow: TimeWindowDto;
   workspaceStorageBytes: number;
   blobStorageBytes: number;
   workspaceStorageHistory: Array<{
@@ -262,6 +265,12 @@ export class WorkspaceAnalyticsModel extends BaseModel {
       90,
       DEFAULT_SHARED_LINK_WINDOW_DAYS
     );
+    const copilotWindowDays = clampInt(
+      options.copilotWindowDays,
+      1,
+      90,
+      DEFAULT_COPILOT_WINDOW_DAYS
+    );
     const includeTopSharedLinks = options.includeTopSharedLinks ?? true;
 
     const now = new Date();
@@ -274,6 +283,7 @@ export class WorkspaceAnalyticsModel extends BaseModel {
     const currentDay = startOfUtcDay(now);
     const storageFrom = addUtcDays(currentDay, -(storageHistoryDays - 1));
     const sharedFrom = addUtcDays(currentDay, -(sharedLinkWindowDays - 1));
+    const copilotFrom = addUtcDays(currentDay, -(copilotWindowDays - 1));
 
     const topSharedLinksPromise = includeTopSharedLinks
       ? this.db.$queryRaw<
@@ -432,7 +442,7 @@ export class WorkspaceAnalyticsModel extends BaseModel {
           SELECT COUNT(*) AS conversations
           FROM ai_sessions_messages
           WHERE role = 'user'
-          AND created_at >= ${sharedFrom}
+          AND created_at >= ${copilotFrom}
           AND created_at <= ${now}
         `,
       topSharedLinksPromise,
@@ -497,6 +507,14 @@ export class WorkspaceAnalyticsModel extends BaseModel {
         effectiveSize: syncHistoryHours,
       },
       copilotConversations: Number(copilotCount[0]?.conversations ?? 0),
+      copilotWindow: {
+        from: copilotFrom,
+        to: currentDay,
+        timezone,
+        bucket: 'Day',
+        requestedSize: options.copilotWindowDays ?? DEFAULT_COPILOT_WINDOW_DAYS,
+        effectiveSize: copilotWindowDays,
+      },
       workspaceStorageBytes: currentWorkspaceStorageBytes,
       blobStorageBytes: currentBlobStorageBytes,
       workspaceStorageHistory: storageHistorySeries.map(row => ({

@@ -186,6 +186,9 @@ class AdminDashboardInput {
 
   @Field(() => Int, { nullable: true, defaultValue: 28 })
   sharedLinkWindowDays?: number;
+
+  @Field(() => Int, { nullable: true, defaultValue: 7 })
+  copilotWindowDays?: number;
 }
 
 @ObjectType()
@@ -249,6 +252,9 @@ class AdminDashboard {
 
   @Field(() => SafeIntResolver)
   copilotConversations!: number;
+
+  @Field(() => TimeWindow)
+  copilotWindow!: TimeWindow;
 
   @Field(() => SafeIntResolver)
   workspaceStorageBytes!: number;
@@ -532,6 +538,7 @@ export class AdminWorkspaceResolver {
       storageHistoryDays: input?.storageHistoryDays,
       syncHistoryHours: input?.syncHistoryHours,
       sharedLinkWindowDays: input?.sharedLinkWindowDays,
+      copilotWindowDays: input?.copilotWindowDays,
       includeTopSharedLinks,
     });
 

@@ -102,6 +102,7 @@ export interface AdminDashboard {
   blobStorageBytes: Scalars['SafeInt']['output'];
   blobStorageHistory: Array<AdminDashboardValueDayPoint>;
   copilotConversations: Scalars['SafeInt']['output'];
+  copilotWindow: TimeWindow;
   generatedAt: Scalars['DateTime']['output'];
   storageWindow: TimeWindow;
   syncActiveUsers: Scalars['Int']['output'];
@@ -114,6 +115,7 @@ export interface AdminDashboard {
 }
 
 export interface AdminDashboardInput {
+  copilotWindowDays?: InputMaybe<Scalars['Int']['input']>;
   sharedLinkWindowDays?: InputMaybe<Scalars['Int']['input']>;
   storageHistoryDays?: InputMaybe<Scalars['Int']['input']>;
   syncHistoryHours?: InputMaybe<Scalars['Int']['input']>;
@@ -3903,6 +3905,15 @@ export type AdminDashboardQuery = {
       activeUsers: number;
     }>;
     syncWindow: {
+      __typename?: 'TimeWindow';
+      from: string;
+      to: string;
+      timezone: string;
+      bucket: TimeBucket;
+      requestedSize: number;
+      effectiveSize: number;
+    };
+    copilotWindow: {
       __typename?: 'TimeWindow';
       from: string;
       to: string;

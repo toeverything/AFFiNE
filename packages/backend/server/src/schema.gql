@@ -63,6 +63,7 @@ type AdminDashboard {
   blobStorageBytes: SafeInt!
   blobStorageHistory: [AdminDashboardValueDayPoint!]!
   copilotConversations: SafeInt!
+  copilotWindow: TimeWindow!
   generatedAt: DateTime!
   storageWindow: TimeWindow!
   syncActiveUsers: Int!
@@ -75,6 +76,7 @@ type AdminDashboard {
 }
 
 input AdminDashboardInput {
+  copilotWindowDays: Int = 7
   sharedLinkWindowDays: Int = 28
   storageHistoryDays: Int = 30
   syncHistoryHours: Int = 48

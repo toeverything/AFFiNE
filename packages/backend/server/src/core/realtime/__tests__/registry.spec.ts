@@ -5,6 +5,7 @@ import {
 import test from 'ava';
 import { z } from 'zod';
 
+import { CANARY_CLIENT_VERSION_MAX_AGE_DAYS } from '../../../base';
 import { Flavor } from '../../../env';
 import { PublicDocMode } from '../../../models';
 import { CopilotEmbeddingRealtimeProvider } from '../../../plugins/copilot/context';
@@ -62,6 +63,10 @@ const user: CurrentUser = {
   hasPassword: true,
   emailVerified: true,
 };
+
+function makeCanaryDateVersion(date: Date, build = '015') {
+  return `${date.getUTCFullYear()}.${date.getUTCMonth() + 1}.${date.getUTCDate()}-canary.${build}`;
+}
 
 function createGateway(registry: RealtimeRegistry) {
   return new RealtimeGateway(registry, {
@@ -140,6 +145,46 @@ test('gateway handles registered request with version gate', async t => {
     }),
     { error: { code: 'UNSUPPORTED_CLIENT_VERSION' } }
   );
+});
+
+test('gateway accepts canary date client version in canary namespace', async t => {
+  const originalNamespace = env.NAMESPACE;
+  // @ts-expect-error test
+  env.NAMESPACE = 'dev';
+  try {
+    const registry = new RealtimeRegistry();
+    registry.registerRequest({
+      name: 'notification.count.get',
+      input: z.object({}).strict(),
+      handle: async () => ({ count: 1 }),
+    });
+    const gateway = createGateway(registry);
+
+    t.deepEqual(
+      await gateway.onRequest(user, {
+        op: 'notification.count.get',
+        input: {},
+        clientVersion: makeCanaryDateVersion(new Date(), '040'),
+      }),
+      { data: { count: 1 } }
+    );
+
+    const old = new Date(
+      Date.now() -
+        (CANARY_CLIENT_VERSION_MAX_AGE_DAYS + 1) * 24 * 60 * 60 * 1000
+    );
+    t.like(
+      await gateway.onRequest(user, {
+        op: 'notification.count.get',
+        input: {},
+        clientVersion: makeCanaryDateVersion(old, '040'),
+      }),
+      { error: { code: 'UNSUPPORTED_CLIENT_VERSION' } }
+    );
+  } finally {
+    // @ts-expect-error test
+    env.NAMESPACE = originalNamespace;
+  }
 });
 
 test('gateway authorizes subscription and joins room', async t => {

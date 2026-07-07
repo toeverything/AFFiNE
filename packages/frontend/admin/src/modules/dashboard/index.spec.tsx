@@ -71,6 +71,14 @@ const dashboardData = {
       effectiveSize: 48,
     },
     copilotConversations: 0,
+    copilotWindow: {
+      from: '2026-02-10T00:00:00.000Z',
+      to: '2026-02-16T00:00:00.000Z',
+      timezone: 'UTC',
+      bucket: 'Day',
+      requestedSize: 7,
+      effectiveSize: 7,
+    },
     workspaceStorageBytes: 375,
     blobStorageBytes: 0,
     workspaceStorageHistory: [{ date: '2026-02-16', value: 375 }],
@@ -159,19 +167,49 @@ const mailDeliveryData = {
   },
 };
 
+const topSharedLinksData = {
+  adminDashboard: {
+    topSharedLinks: [
+      {
+        workspaceId: 'workspace-1',
+        docId: 'doc-1',
+        title: 'Public doc',
+        shareUrl: 'https://app.affine.pro/workspace/workspace-1/doc-1',
+        publishedAt: '2026-02-16T10:00:00.000Z',
+        views: 12,
+        uniqueViews: 8,
+        guestViews: 6,
+        lastAccessedAt: '2026-02-16T19:00:00.000Z',
+      },
+    ],
+    topSharedLinksWindow: {
+      from: '2026-01-20T00:00:00.000Z',
+      to: '2026-02-16T00:00:00.000Z',
+      timezone: 'UTC',
+      bucket: 'Day',
+      requestedSize: 28,
+      effectiveSize: 28,
+    },
+  },
+};
+
 describe('DashboardPage', () => {
   beforeEach(() => {
     (globalThis as any).environment = {
       isSelfHosted: true,
     };
     useQueryMock.mockReset();
-    useQueryMock.mockImplementation(({ query }: { query: { id: string } }) => ({
-      data:
-        query.id === 'adminMailDeliveriesQuery'
-          ? mailDeliveryData
-          : dashboardData,
-      isValidating: false,
-    }));
+    useQueryMock.mockImplementation(
+      ({ query }: { query: { id: string; query: string } }) => ({
+        data:
+          query.id === 'adminMailDeliveriesQuery'
+            ? mailDeliveryData
+            : query.query.includes('topSharedLinks')
+              ? topSharedLinksData
+              : dashboardData,
+        isValidating: false,
+      })
+    );
     mutateQueryResourceMock.mockReset();
   });
 
@@ -202,12 +240,47 @@ describe('DashboardPage', () => {
   });
 
   test('renders mail delivery analytics controls and summary', () => {
-    const { getByText } = render(<DashboardPage />);
+    const { getAllByText, getByText, queryByText } = render(<DashboardPage />);
 
     expect(getByText('Email Delivery Trend')).toBeTruthy();
-    expect(getByText('Mail Delivery')).toBeTruthy();
-    expect(getByText('24 hours')).toBeTruthy();
+    expect(queryByText('Window Controls')).toBeNull();
+    expect(getByText('Status')).toBeTruthy();
+    expect(getAllByText('24h').length).toBeGreaterThan(0);
     expect(getByText('Success rate')).toBeTruthy();
     expect(getByText('66.7%')).toBeTruthy();
+  });
+
+  test('sends independent dashboard windows to the overview query', () => {
+    render(<DashboardPage />);
+
+    const overviewCall = useQueryMock.mock.calls.find(([arg]) => {
+      const query = (arg as { query: { query: string } }).query.query;
+      return query.includes('syncActiveUsersTimeline');
+    });
+
+    expect(overviewCall).toBeTruthy();
+    expect(overviewCall![0]).toMatchObject({
+      variables: {
+        input: {
+          storageHistoryDays: 30,
+          syncHistoryHours: 48,
+          copilotWindowDays: 7,
+          sharedLinkWindowDays: 28,
+          timezone: 'UTC',
+        },
+      },
+    });
+  });
+
+  test('renders top shared links range control in cloud mode', () => {
+    (globalThis as any).environment = {
+      isSelfHosted: false,
+    };
+
+    const { getByLabelText, getByText } = render(<DashboardPage />);
+
+    expect(getByText('Top Shared Links')).toBeTruthy();
+    expect(getByLabelText('Top shared links range')).toBeTruthy();
+    expect(getByText('28d')).toBeTruthy();
   });
 });

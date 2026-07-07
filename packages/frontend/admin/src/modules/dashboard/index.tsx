@@ -26,7 +26,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@affine/admin/components/ui/dropdown-menu';
-import { Label } from '@affine/admin/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -96,6 +95,14 @@ const adminDashboardOverviewQuery: typeof adminDashboardQuery = {
       effectiveSize
     }
     copilotConversations
+    copilotWindow {
+      from
+      to
+      timezone
+      bucket
+      requestedSize
+      effectiveSize
+    }
     workspaceStorageBytes
     blobStorageBytes
     workspaceStorageHistory {
@@ -171,6 +178,8 @@ const utcDateFormatter = new Intl.DateTimeFormat('en-US', {
 const STORAGE_DAY_OPTIONS = [7, 14, 30, 60, 90] as const;
 const SYNC_HOUR_OPTIONS = [1, 6, 12, 24, 48, 72] as const;
 const SHARED_DAY_OPTIONS = [7, 14, 28, 60, 90] as const;
+const COPILOT_DAY_OPTIONS = [1, 7, 14, 28, 60, 90] as const;
+const MAIL_HOUR_OPTIONS = [24, 168] as const;
 type MailChartMode = 'status' | 'type' | 'outcome';
 
 type DualNumberPoint = {
@@ -514,19 +523,24 @@ function SecondaryMetricCard({
   value,
   description,
   icon,
+  action,
 }: {
   title: string;
   value: string;
   description: string;
   icon: ReactNode;
+  action?: ReactNode;
 }) {
   return (
     <Card className="h-full border-border/60 bg-card shadow-1">
-      <CardHeader className="pb-2">
-        <CardDescription className="flex items-center gap-2 text-sm">
-          <span aria-hidden="true">{icon}</span>
-          {title}
+      <CardHeader className="flex flex-row items-start justify-between gap-3 pb-2">
+        <CardDescription className="flex min-w-0 items-center gap-2 pt-2 text-sm">
+          <span className="shrink-0" aria-hidden="true">
+            {icon}
+          </span>
+          <span className="min-w-0 truncate">{title}</span>
         </CardDescription>
+        {action ? <div className="shrink-0">{action}</div> : null}
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-semibold tracking-tight tabular-nums">
@@ -538,76 +552,42 @@ function SecondaryMetricCard({
   );
 }
 
-function WindowSelect({
-  id,
-  label,
+function rangeOptionLabel(option: number, unit: 'hours' | 'days') {
+  if (unit === 'hours') {
+    return option === 168 ? '7d' : `${option}h`;
+  }
+  return `${option}d`;
+}
+
+function PanelRangeSelect({
+  ariaLabel,
   value,
   options,
   unit,
   onChange,
 }: {
-  id: string;
-  label: string;
+  ariaLabel: string;
   value: number;
   options: readonly number[];
-  unit: string;
+  unit: 'hours' | 'days';
   onChange: (value: number) => void;
 }) {
   return (
-    <div className="flex min-w-0 flex-col gap-2">
-      <Label
-        htmlFor={id}
-        className="text-xs uppercase tracking-wide text-muted-foreground"
-      >
-        {label}
-      </Label>
-      <Select
-        value={String(value)}
-        onValueChange={next => onChange(Number(next))}
-      >
-        <SelectTrigger id={id}>
-          <SelectValue placeholder={`Select ${label.toLowerCase()}…`} />
-        </SelectTrigger>
-        <SelectContent>
-          {options.map(option => (
-            <SelectItem key={option} value={String(option)}>
-              {option} {unit}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
-  );
-}
-
-function MailWindowSelect({
-  value,
-  onChange,
-}: {
-  value: number;
-  onChange: (value: number) => void;
-}) {
-  return (
-    <div className="flex min-w-0 flex-col gap-2">
-      <Label
-        htmlFor="mail-delivery-window"
-        className="text-xs uppercase tracking-wide text-muted-foreground"
-      >
-        Mail Delivery
-      </Label>
-      <Select
-        value={String(value)}
-        onValueChange={next => onChange(Number(next))}
-      >
-        <SelectTrigger id="mail-delivery-window">
-          <SelectValue placeholder="Select mail window…" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="24">24 hours</SelectItem>
-          <SelectItem value="168">7 days</SelectItem>
-        </SelectContent>
-      </Select>
-    </div>
+    <Select
+      value={String(value)}
+      onValueChange={next => onChange(Number(next))}
+    >
+      <SelectTrigger className="w-full md:w-28" aria-label={ariaLabel}>
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {options.map(option => (
+          <SelectItem key={option} value={String(option)}>
+            {rangeOptionLabel(option, unit)}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
 
@@ -870,8 +850,10 @@ function TopSharedLinksCardSkeleton() {
 
 function TopSharedLinksSection({
   sharedLinkWindowDays,
+  onWindowChange,
 }: {
   sharedLinkWindowDays: number;
+  onWindowChange: (value: number) => void;
 }) {
   const variables = useMemo(
     () => ({
@@ -901,12 +883,21 @@ function TopSharedLinksSection({
 
   return (
     <Card className="border-border/60 bg-card shadow-1">
-      <CardHeader>
-        <CardTitle className="text-base">Top Shared Links</CardTitle>
-        <CardDescription>
-          Top {topSharedLinks.length} links in the last{' '}
-          {topSharedLinksWindow.effectiveSize} days
-        </CardDescription>
+      <CardHeader className="flex flex-col gap-3 pb-4 md:flex-row md:items-start md:justify-between">
+        <div className="space-y-1.5">
+          <CardTitle className="text-base">Top Shared Links</CardTitle>
+          <CardDescription>
+            Top {topSharedLinks.length} links in the last{' '}
+            {topSharedLinksWindow.effectiveSize} days
+          </CardDescription>
+        </div>
+        <PanelRangeSelect
+          ariaLabel="Top shared links range"
+          value={sharedLinkWindowDays}
+          options={SHARED_DAY_OPTIONS}
+          unit="days"
+          onChange={onWindowChange}
+        />
       </CardHeader>
       <CardContent className="space-y-4">
         {topSharedLinks.length === 0 ? (
@@ -1058,7 +1049,13 @@ function combineMailSeries(
   };
 }
 
-function MailDeliverySection({ hours }: { hours: number }) {
+function MailDeliverySection({
+  hours,
+  onHoursChange,
+}: {
+  hours: number;
+  onHoursChange: (value: number) => void;
+}) {
   const [mode, setMode] = useState<MailChartMode>('status');
   const { data } = useQuery(
     {
@@ -1122,19 +1119,28 @@ function MailDeliverySection({ hours }: { hours: number }) {
             {analytics.window.bucket === 'Hour' ? 'hour' : 'day'} bucket in UTC
           </CardDescription>
         </div>
-        <Select
-          value={mode}
-          onValueChange={value => setMode(value as MailChartMode)}
-        >
-          <SelectTrigger className="w-full md:w-44">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="status">Status</SelectItem>
-            <SelectItem value="type">Mail type</SelectItem>
-            <SelectItem value="outcome">Success / failure</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row">
+          <PanelRangeSelect
+            ariaLabel="Email delivery range"
+            value={hours}
+            options={MAIL_HOUR_OPTIONS}
+            unit="hours"
+            onChange={onHoursChange}
+          />
+          <Select
+            value={mode}
+            onValueChange={value => setMode(value as MailChartMode)}
+          >
+            <SelectTrigger className="w-full md:w-44">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="status">Status</SelectItem>
+              <SelectItem value="type">Mail type</SelectItem>
+              <SelectItem value="outcome">Success / failure</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -1219,6 +1225,7 @@ function MailDeliveryCardSkeleton() {
 function DashboardPageContent() {
   const [storageHistoryDays, setStorageHistoryDays] = useState<number>(30);
   const [syncHistoryHours, setSyncHistoryHours] = useState<number>(48);
+  const [copilotWindowDays, setCopilotWindowDays] = useState<number>(7);
   const [sharedLinkWindowDays, setSharedLinkWindowDays] = useState<number>(28);
   const [mailDeliveryHours, setMailDeliveryHours] = useState<number>(24);
   const shouldShowTopSharedLinks = !environment.isSelfHosted;
@@ -1229,11 +1236,17 @@ function DashboardPageContent() {
       input: {
         storageHistoryDays,
         syncHistoryHours,
+        copilotWindowDays,
         sharedLinkWindowDays,
         timezone: 'UTC',
       },
     }),
-    [sharedLinkWindowDays, storageHistoryDays, syncHistoryHours]
+    [
+      copilotWindowDays,
+      sharedLinkWindowDays,
+      storageHistoryDays,
+      syncHistoryHours,
+    ]
   );
 
   const { data, isValidating } = useQuery(
@@ -1296,46 +1309,6 @@ function DashboardPageContent() {
       />
 
       <div className="flex-1 overflow-auto p-6 space-y-6">
-        <Card className="border-border/60 bg-card shadow-1">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Window Controls</CardTitle>
-            <CardDescription>
-              Tune dashboard windows. Data is sampled in UTC and refreshes
-              automatically.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid grid-cols-1 items-end gap-3 md:grid-cols-2 lg:grid-cols-4">
-            <WindowSelect
-              id="storage-history-window"
-              label="Storage History"
-              value={storageHistoryDays}
-              options={STORAGE_DAY_OPTIONS}
-              unit="days"
-              onChange={setStorageHistoryDays}
-            />
-            <WindowSelect
-              id="sync-history-window"
-              label="Sync History"
-              value={syncHistoryHours}
-              options={SYNC_HOUR_OPTIONS}
-              unit="hours"
-              onChange={setSyncHistoryHours}
-            />
-            <WindowSelect
-              id="shared-link-window"
-              label="Shared Link Window"
-              value={sharedLinkWindowDays}
-              options={SHARED_DAY_OPTIONS}
-              unit="days"
-              onChange={setSharedLinkWindowDays}
-            />
-            <MailWindowSelect
-              value={mailDeliveryHours}
-              onChange={setMailDeliveryHours}
-            />
-          </CardContent>
-        </Card>
-
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
           <div className="h-full min-w-0 lg:col-span-5">
             <PrimaryMetricCard
@@ -1347,9 +1320,18 @@ function DashboardPageContent() {
             <SecondaryMetricCard
               title="Copilot Conversations"
               value={intFormatter.format(dashboard.copilotConversations)}
-              description={`${sharedLinkWindowDays}d aggregation`}
+              description={`${dashboard.copilotWindow.effectiveSize}d aggregation`}
               icon={
                 <MessageSquareTextIcon className="h-4 w-4" aria-hidden="true" />
+              }
+              action={
+                <PanelRangeSelect
+                  ariaLabel="Copilot conversations range"
+                  value={copilotWindowDays}
+                  options={COPILOT_DAY_OPTIONS}
+                  unit="days"
+                  onChange={setCopilotWindowDays}
+                />
               }
             />
           </div>
@@ -1376,13 +1358,22 @@ function DashboardPageContent() {
 
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
           <Card className="border-border/60 bg-card shadow-1 lg:col-span-1">
-            <CardHeader>
-              <CardTitle className="text-base">
-                Sync Active Users Trend
-              </CardTitle>
-              <CardDescription>
-                {dashboard.syncWindow.effectiveSize}h at minute bucket
-              </CardDescription>
+            <CardHeader className="flex flex-col gap-3 pb-4 md:flex-row md:items-start md:justify-between">
+              <div className="space-y-1.5">
+                <CardTitle className="text-base">
+                  Sync Active Users Trend
+                </CardTitle>
+                <CardDescription>
+                  {dashboard.syncWindow.effectiveSize}h at minute bucket
+                </CardDescription>
+              </div>
+              <PanelRangeSelect
+                ariaLabel="Sync active users range"
+                value={syncHistoryHours}
+                options={SYNC_HOUR_OPTIONS}
+                unit="hours"
+                onChange={setSyncHistoryHours}
+              />
             </CardHeader>
             <CardContent className="space-y-3">
               <TrendChart
@@ -1395,13 +1386,22 @@ function DashboardPageContent() {
           </Card>
 
           <Card className="border-border/60 bg-card shadow-1 lg:col-span-2">
-            <CardHeader>
-              <CardTitle className="text-base">
-                Storage Trend (Workspace + Blob)
-              </CardTitle>
-              <CardDescription>
-                {dashboard.storageWindow.effectiveSize}d at day bucket
-              </CardDescription>
+            <CardHeader className="flex flex-col gap-3 pb-4 md:flex-row md:items-start md:justify-between">
+              <div className="space-y-1.5">
+                <CardTitle className="text-base">
+                  Storage Trend (Workspace + Blob)
+                </CardTitle>
+                <CardDescription>
+                  {dashboard.storageWindow.effectiveSize}d at day bucket
+                </CardDescription>
+              </div>
+              <PanelRangeSelect
+                ariaLabel="Storage trend range"
+                value={storageHistoryDays}
+                options={STORAGE_DAY_OPTIONS}
+                unit="days"
+                onChange={setStorageHistoryDays}
+              />
             </CardHeader>
             <CardContent className="space-y-4">
               <TrendChart
@@ -1428,13 +1428,17 @@ function DashboardPageContent() {
         </div>
 
         <Suspense fallback={<MailDeliveryCardSkeleton />}>
-          <MailDeliverySection hours={mailDeliveryHours} />
+          <MailDeliverySection
+            hours={mailDeliveryHours}
+            onHoursChange={setMailDeliveryHours}
+          />
         </Suspense>
 
         {shouldShowTopSharedLinks ? (
           <Suspense fallback={<TopSharedLinksCardSkeleton />}>
             <TopSharedLinksSection
               sharedLinkWindowDays={sharedLinkWindowDays}
+              onWindowChange={setSharedLinkWindowDays}
             />
           </Suspense>
         ) : null}

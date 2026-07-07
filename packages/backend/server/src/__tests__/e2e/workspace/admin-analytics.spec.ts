@@ -358,6 +358,11 @@ e2e(
           requestedSize
           effectiveSize
         }
+        copilotWindow {
+          bucket
+          requestedSize
+          effectiveSize
+        }
         syncActiveUsersTimeline {
           minute
           activeUsers
@@ -375,6 +380,7 @@ e2e(
         storageHistoryDays: -10,
         syncHistoryHours: -10,
         sharedLinkWindowDays: -10,
+        copilotWindowDays: 500,
       },
     });
 
@@ -385,6 +391,8 @@ e2e(
     t.is(dashboard.storageWindow.bucket, 'Day');
     t.is(dashboard.storageWindow.effectiveSize, 1);
     t.is(dashboard.topSharedLinksWindow.effectiveSize, 1);
+    t.is(dashboard.copilotWindow.bucket, 'Day');
+    t.is(dashboard.copilotWindow.effectiveSize, 90);
     t.is(dashboard.syncActiveUsersTimeline.length, 1);
     t.is(dashboard.workspaceStorageHistory.length, 1);
   }
