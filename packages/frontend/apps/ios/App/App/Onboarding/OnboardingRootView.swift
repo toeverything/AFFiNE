@@ -11,27 +11,47 @@ struct OnboardingRootView: View {
 
   private let pages = OnboardingPage.all
 
+  private var isIntroPage: Bool {
+    pageIndex == 0
+  }
+
   var body: some View {
     ZStack {
-      OnboardingBackground()
+      Color.clear
+        .ignoresSafeArea()
+
+      OnboardingBackground(isIntroPage: isIntroPage)
+
       VStack(spacing: 0) {
-        header
+        if !isIntroPage {
+          header
+        }
         TabView(selection: $pageIndex) {
           ForEach(Array(pages.enumerated()), id: \.offset) { index, page in
             pageView(for: page)
               .tag(index)
-              .padding(.horizontal, 20)
+              .padding(.horizontal, index == 0 ? 0 : 20)
           }
         }
         .tabViewStyle(.page(indexDisplayMode: .never))
         .animation(.spring(response: 0.45, dampingFraction: 0.88), value: pageIndex)
 
-        PageDots(count: pages.count, selectedIndex: pageIndex)
-          .padding(.bottom, 10)
+        if !isIntroPage {
+          PageDots(count: pages.count, selectedIndex: pageIndex)
+            .padding(.bottom, 10)
+        }
 
         footer
       }
+
+      if isIntroPage {
+        IntroGridOverlay()
+          .ignoresSafeArea()
+          .allowsHitTesting(false)
+          .zIndex(999)
+      }
     }
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     .foregroundStyle(AffineColors.textPrimary.color)
   }
 
@@ -80,7 +100,11 @@ struct OnboardingRootView: View {
 
   private var footer: some View {
     VStack(spacing: 10) {
-      if let plan = pages[pageIndex].plan {
+      if isIntroPage {
+        IntroFooter {
+          goNext()
+        }
+      } else if let plan = pages[pageIndex].plan {
         PrimaryButton(
           title: plan.buttonTitle,
           isLoading: state.isProcessingPurchase
@@ -98,13 +122,13 @@ struct OnboardingRootView: View {
         }
         .disabled(state.isProcessingPurchase)
       } else {
-        PrimaryButton(title: pageIndex == 0 ? "Get Started" : "Next") {
+        PrimaryButton(title: "Next") {
           goNext()
         }
       }
     }
     .padding(.horizontal, 20)
-    .padding(.bottom, 18)
+    .padding(.bottom, isIntroPage ? 22 : 18)
   }
 
   private func goNext() {
@@ -274,28 +298,36 @@ private enum OnboardingPlan {
 }
 
 private struct OnboardingBackground: View {
+  let isIntroPage: Bool
+
   var body: some View {
-    LinearGradient(
-      colors: [
-        AffineColors.layerBackgroundPrimary.color,
-        AffineColors.layerBackgroundSecondary.color,
-      ],
-      startPoint: .topLeading,
-      endPoint: .bottomTrailing
-    )
-    .overlay(alignment: .topTrailing) {
-      Circle()
-        .fill(AffineColors.buttonPrimary.color.opacity(0.1))
-        .frame(width: 220, height: 220)
-        .blur(radius: 24)
-        .offset(x: 80, y: -80)
-    }
-    .overlay(alignment: .bottomLeading) {
-      Circle()
-        .fill(AffineColors.textLink.color.opacity(0.08))
-        .frame(width: 260, height: 260)
-        .blur(radius: 30)
-        .offset(x: -110, y: 90)
+    Group {
+      if isIntroPage {
+        AffineColors.layerPureWhite.color
+      } else {
+        LinearGradient(
+          colors: [
+            AffineColors.layerBackgroundPrimary.color,
+            AffineColors.layerBackgroundSecondary.color,
+          ],
+          startPoint: .topLeading,
+          endPoint: .bottomTrailing
+        )
+        .overlay(alignment: .topTrailing) {
+          Circle()
+            .fill(AffineColors.buttonPrimary.color.opacity(0.1))
+            .frame(width: 220, height: 220)
+            .blur(radius: 24)
+            .offset(x: 80, y: -80)
+        }
+        .overlay(alignment: .bottomLeading) {
+          Circle()
+            .fill(AffineColors.textLink.color.opacity(0.08))
+            .frame(width: 260, height: 260)
+            .blur(radius: 30)
+            .offset(x: -110, y: 90)
+        }
+      }
     }
     .ignoresSafeArea()
   }
@@ -303,22 +335,348 @@ private struct OnboardingBackground: View {
 
 private struct IntroPage: View {
   var body: some View {
-    VStack(spacing: 24) {
-      Spacer(minLength: 12)
-      WorkspaceGalaxy()
-        .frame(height: 310)
-      VStack(spacing: 12) {
-        Text("Everything, in One Workspace")
-          .font(.system(size: 30, weight: .bold, design: .rounded))
-          .multilineTextAlignment(.center)
-        Text("Write, plan, whiteboard, and organize your ideas with AFFiNE.")
-          .font(.system(size: 16, weight: .medium))
-          .foregroundStyle(AffineColors.textSecondary.color)
-          .multilineTextAlignment(.center)
-          .lineSpacing(3)
+    VStack(spacing: 0) {
+      Spacer(minLength: 18)
+      VStack(spacing: 16) {
+        VStack(spacing: 6) {
+          titleView
+          Text("Write, organize, and connect ideas with docs, whiteboards, and AI.")
+            .font(.system(size: 15, weight: .medium))
+            .foregroundStyle(AffineColors.textSecondary.color)
+            .multilineTextAlignment(.center)
+            .lineSpacing(4)
+            .padding(.horizontal, 22)
+        }
+
+        IntroHeroArtwork()
+          .frame(height: 420)
+          .padding(.horizontal, 10)
       }
-      Spacer(minLength: 4)
+      Spacer(minLength: 0)
     }
+  }
+
+  private var titleView: some View {
+    (
+      Text("Everything,")
+        .foregroundColor(AffineColors.buttonPrimary.color)
+        .italic()
+      + Text(" in One\nWorkspace")
+        .foregroundColor(AffineColors.textPrimary.color)
+    )
+    .font(.system(size: 29, weight: .bold))
+    .multilineTextAlignment(.center)
+  }
+}
+
+private struct IntroFooter: View {
+  let onGetStarted: () -> Void
+
+  var body: some View {
+    VStack(spacing: 16) {
+      Button(action: onGetStarted) {
+        HStack(spacing: 10) {
+          Text("Get Started")
+            .font(.system(size: 18, weight: .bold))
+          Image(systemName: "arrow.right")
+            .font(.system(size: 18, weight: .bold))
+        }
+        .foregroundStyle(AffineColors.layerPureWhite.color)
+        .frame(maxWidth: .infinity)
+        .frame(height: 66)
+        .background(AffineColors.buttonPrimary.color)
+        .clipShape(Capsule())
+      }
+      .buttonStyle(.plain)
+
+      HStack(spacing: 8) {
+        Text("🎁")
+          .font(.system(size: 18))
+        Text("Have an invite?")
+          .font(.system(size: 16, weight: .medium))
+          .foregroundStyle(AffineColors.textPrimary.color)
+      }
+      .padding(.bottom, 6)
+    }
+  }
+}
+
+private struct IntroHeroArtwork: View {
+  var body: some View {
+    Image("OnboardingIntroReference")
+      .resizable()
+      .scaledToFit()
+      .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+      .padding(.horizontal, 4)
+      .accessibilityHidden(true)
+  }
+}
+
+private struct IntroGridOverlay: View {
+  private let spacing: CGFloat = 12
+
+  var body: some View {
+    GeometryReader { geometry in
+      let drawWidth = geometry.size.width
+      let drawHeight = geometry.size.height
+
+      Path { path in
+        stride(from: 0, through: drawWidth, by: spacing).forEach { x in
+          path.move(to: CGPoint(x: x, y: 0))
+          path.addLine(to: CGPoint(x: x, y: drawHeight))
+        }
+
+        stride(from: 0, through: drawHeight, by: spacing).forEach { y in
+          path.move(to: CGPoint(x: 0, y: y))
+          path.addLine(to: CGPoint(x: drawWidth, y: y))
+        }
+      }
+      .stroke(Color.red.opacity(0.4), lineWidth: 0.4)
+      .frame(width: drawWidth, height: drawHeight, alignment: .topLeading)
+    }
+    .ignoresSafeArea()
+  }
+}
+
+private struct IntroTag: View {
+  let label: String
+  let tint: Color
+
+  var body: some View {
+    Text(label)
+      .font(.system(size: 11, weight: .semibold))
+      .foregroundStyle(AffineColors.textSecondary.color)
+      .padding(.horizontal, 8)
+      .padding(.vertical, 4)
+      .background(tint)
+      .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+  }
+}
+
+private struct IntroDocumentCard: View {
+  var body: some View {
+    VStack(alignment: .leading, spacing: 10) {
+      Text("Project Brief")
+        .font(.system(size: 15, weight: .bold))
+      Text("Overview")
+        .font(.system(size: 10, weight: .semibold))
+        .foregroundStyle(AffineColors.textSecondary.color)
+      introLines(widths: [96, 74, 88])
+      Text("Goals")
+        .font(.system(size: 10, weight: .semibold))
+        .foregroundStyle(AffineColors.textSecondary.color)
+      introBulletLines(widths: [102, 92, 84])
+    }
+    .padding(.horizontal, 14)
+    .padding(.vertical, 16)
+    .frame(width: 168, height: 174, alignment: .topLeading)
+    .background(AffineColors.layerPureWhite.color)
+    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    .shadow(color: .black.opacity(0.06), radius: 18, x: 0, y: 10)
+    .overlay {
+      RoundedRectangle(cornerRadius: 16, style: .continuous)
+        .stroke(AffineColors.layerBorder.color.opacity(0.6), lineWidth: 1)
+    }
+  }
+
+  private func introLines(widths: [CGFloat]) -> some View {
+    VStack(alignment: .leading, spacing: 6) {
+      ForEach(Array(widths.enumerated()), id: \.offset) { _, width in
+        RoundedRectangle(cornerRadius: 3, style: .continuous)
+          .fill(AffineColors.layerBorder.color.opacity(0.7))
+          .frame(width: width, height: 5)
+      }
+    }
+  }
+
+  private func introBulletLines(widths: [CGFloat]) -> some View {
+    VStack(alignment: .leading, spacing: 7) {
+      ForEach(Array(widths.enumerated()), id: \.offset) { _, width in
+        HStack(spacing: 6) {
+          Circle()
+            .fill(AffineColors.textSecondary.color.opacity(0.55))
+            .frame(width: 4, height: 4)
+          RoundedRectangle(cornerRadius: 3, style: .continuous)
+            .fill(AffineColors.layerBorder.color.opacity(0.7))
+            .frame(width: width, height: 5)
+        }
+      }
+    }
+  }
+}
+
+private struct IntroSummaryCard: View {
+  var body: some View {
+    VStack(alignment: .leading, spacing: 8) {
+      HStack(spacing: 6) {
+        Image(systemName: "sparkles")
+          .font(.system(size: 11, weight: .bold))
+          .foregroundStyle(AffineColors.buttonPrimary.color)
+        Text("AI Summary")
+          .font(.system(size: 10, weight: .bold))
+          .foregroundStyle(AffineColors.buttonPrimary.color)
+      }
+      Text("A smart, local-first workspace\nthat helps teams write, plan,\nand communicate better.")
+        .font(.system(size: 11, weight: .medium))
+        .foregroundStyle(AffineColors.textPrimary.color)
+        .lineSpacing(2)
+    }
+    .padding(.horizontal, 14)
+    .padding(.vertical, 12)
+    .frame(width: 170, alignment: .leading)
+    .background(AffineColors.buttonPrimary.color.opacity(0.08))
+    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+    .overlay {
+      RoundedRectangle(cornerRadius: 14, style: .continuous)
+        .stroke(AffineColors.buttonPrimary.color.opacity(0.12), lineWidth: 1)
+    }
+    .shadow(color: .black.opacity(0.04), radius: 10, x: 0, y: 6)
+  }
+}
+
+private struct IntroMindMapCluster: View {
+  var body: some View {
+    ZStack {
+      IntroConnector(start: CGPoint(x: 45, y: 34), end: CGPoint(x: 104, y: 34))
+      IntroConnector(start: CGPoint(x: 104, y: 34), end: CGPoint(x: 154, y: 12))
+      IntroConnector(start: CGPoint(x: 104, y: 34), end: CGPoint(x: 154, y: 58))
+      IntroConnector(start: CGPoint(x: 104, y: 34), end: CGPoint(x: 154, y: 96))
+      IntroConnector(start: CGPoint(x: 12, y: 34), end: CGPoint(x: 45, y: 34))
+      IntroConnector(start: CGPoint(x: 12, y: 72), end: CGPoint(x: 45, y: 34))
+
+      IntroPill(text: "Product", tint: AffineColors.textLink.color.opacity(0.18))
+        .position(x: 74, y: 34)
+      IntroPill(text: "Vision", tint: AffineColors.buttonPrimary.color.opacity(0.12))
+        .position(x: 18, y: 18)
+      IntroPill(text: "Strategy", tint: AffineColors.textPlaceholder.color.opacity(0.22))
+        .position(x: 22, y: 72)
+      IntroPill(text: "User Value", tint: AffineColors.layerBorder.color.opacity(0.55))
+        .position(x: 172, y: 12)
+      IntroPill(text: "Growth", tint: AffineColors.textPlaceholder.color.opacity(0.18))
+        .position(x: 166, y: 58)
+      IntroPill(text: "Features", tint: AffineColors.buttonPrimary.color.opacity(0.12))
+        .position(x: 170, y: 96)
+    }
+    .frame(width: 200, height: 110)
+  }
+}
+
+private struct IntroChecklistCard: View {
+  var body: some View {
+    VStack(alignment: .leading, spacing: 8) {
+      IntroChecklistRow(text: "Landing Page")
+      IntroChecklistRow(text: "Onboarding Flow")
+      IntroChecklistRow(text: "Beta Launch")
+    }
+    .padding(.horizontal, 12)
+    .padding(.vertical, 12)
+    .frame(width: 116, alignment: .leading)
+    .background(AffineColors.layerPureWhite.color)
+    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+    .shadow(color: .black.opacity(0.05), radius: 12, x: 0, y: 8)
+    .overlay {
+      RoundedRectangle(cornerRadius: 14, style: .continuous)
+        .stroke(AffineColors.layerBorder.color.opacity(0.65), lineWidth: 1)
+    }
+  }
+}
+
+private struct IntroChecklistRow: View {
+  let text: String
+
+  var body: some View {
+    HStack(spacing: 7) {
+      RoundedRectangle(cornerRadius: 3, style: .continuous)
+        .stroke(AffineColors.layerBorder.color, lineWidth: 1)
+        .frame(width: 12, height: 12)
+        .overlay {
+          Image(systemName: "checkmark")
+            .font(.system(size: 7, weight: .bold))
+            .foregroundStyle(AffineColors.buttonPrimary.color)
+        }
+      Text(text)
+        .font(.system(size: 10, weight: .medium))
+        .foregroundStyle(AffineColors.textPrimary.color)
+    }
+  }
+}
+
+private struct IntroToolbar: View {
+  var body: some View {
+    HStack(spacing: 14) {
+      ForEach(toolbarSymbols, id: \.self) { symbol in
+        Image(systemName: symbol)
+          .font(.system(size: 13, weight: .semibold))
+          .foregroundStyle(AffineColors.textSecondary.color)
+      }
+      Circle()
+        .fill(AffineColors.layerBorder.color.opacity(0.8))
+        .frame(width: 1, height: 18)
+      Image(systemName: "plus")
+        .font(.system(size: 13, weight: .bold))
+        .foregroundStyle(AffineColors.textSecondary.color)
+    }
+    .padding(.horizontal, 16)
+    .frame(height: 34)
+    .background(AffineColors.layerPureWhite.color)
+    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+    .shadow(color: .black.opacity(0.05), radius: 12, x: 0, y: 8)
+    .overlay {
+      RoundedRectangle(cornerRadius: 10, style: .continuous)
+        .stroke(AffineColors.layerBorder.color.opacity(0.65), lineWidth: 1)
+    }
+  }
+
+  private var toolbarSymbols: [String] {
+    ["cursorarrow", "textformat", "square.on.square", "scribble.variable", "link", "photo"]
+  }
+}
+
+private struct IntroNodeBadge: View {
+  let title: String
+  let tint: Color
+  let width: CGFloat
+
+  var body: some View {
+    Text(title)
+      .font(.system(size: 12, weight: .semibold))
+      .multilineTextAlignment(.center)
+      .foregroundStyle(AffineColors.textPrimary.color)
+      .frame(width: width, height: width)
+      .background(tint)
+      .clipShape(Circle())
+  }
+}
+
+private struct IntroPill: View {
+  let text: String
+  let tint: Color
+
+  var body: some View {
+    Text(text)
+      .font(.system(size: 9, weight: .medium))
+      .foregroundStyle(AffineColors.textPrimary.color)
+      .padding(.horizontal, 8)
+      .padding(.vertical, 5)
+      .background(tint)
+      .clipShape(Capsule())
+  }
+}
+
+private struct IntroConnector: View {
+  let start: CGPoint
+  let end: CGPoint
+
+  var body: some View {
+    Path { path in
+      path.move(to: start)
+      path.addCurve(
+        to: end,
+        control1: CGPoint(x: (start.x + end.x) / 2, y: start.y),
+        control2: CGPoint(x: (start.x + end.x) / 2, y: end.y)
+      )
+    }
+    .stroke(AffineColors.layerBorder.color.opacity(0.9), lineWidth: 1.2)
   }
 }
 

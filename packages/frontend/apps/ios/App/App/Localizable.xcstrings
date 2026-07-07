@@ -1,7 +1,57 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    " in One\nWorkspace" : {
 
+    },
+    "🎁" : {
+
+    },
+    "A smart, local-first workspace\nthat helps teams write, plan,\nand communicate better." : {
+
+    },
+    "AI Summary" : {
+
+    },
+    "Everything," : {
+
+    },
+    "Get Started" : {
+
+    },
+    "Goals" : {
+
+    },
+    "Have an invite?" : {
+
+    },
+    "Individual Plans" : {
+
+    },
+    "Not now" : {
+
+    },
+    "Overview" : {
+
+    },
+    "Project Brief" : {
+
+    },
+    "Skip" : {
+
+    },
+    "Tap the trial button to sign in first when needed, then continue with secure App Store purchase." : {
+
+    },
+    "This helps AFFiNE shape your first workspace experience." : {
+
+    },
+    "Which best describes you?" : {
+
+    },
+    "Write, organize, and connect ideas with docs, whiteboards, and AI." : {
+
+    }
   },
   "version" : "1.0"
 }

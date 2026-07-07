@@ -33,6 +33,9 @@ class RootViewController: UINavigationController {
 
   func commitInit() {
     assert(viewControllers.isEmpty)
+    #if DEBUG
+      OnboardingFlag.reset()
+    #endif
     let affineViewController = AFFiNEViewController()
     self.affineViewController = affineViewController
     viewControllers = [affineViewController]
