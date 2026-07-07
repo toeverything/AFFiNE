@@ -7,12 +7,39 @@ struct OnboardingRootView: View {
   let onPurchase: (OnboardingPurchaseType) -> Void
 
   @State private var pageIndex = 0
-  @State private var selectedRole = "Professional"
+  @State private var selectedRole: OnboardingRole?
 
   private let pages = OnboardingPage.all
 
   private var isIntroPage: Bool {
     pageIndex == 0
+  }
+
+  private var isRolePage: Bool {
+    if case .role = pages[pageIndex] { return true }
+    return false
+  }
+
+  private var isNextEnabled: Bool {
+    !isRolePage || selectedRole != nil
+  }
+
+  private var progressPageCount: Int {
+    max(pages.count - 1, 0)
+  }
+
+  private var progressIndex: Int {
+    max(pageIndex - 1, 0)
+  }
+
+  private var pageSelection: Binding<Int> {
+    Binding(
+      get: { pageIndex },
+      set: { newValue in
+        guard shouldAllowPageChange(from: pageIndex, to: newValue) else { return }
+        pageIndex = newValue
+      }
+    )
   }
 
   var body: some View {
@@ -26,7 +53,7 @@ struct OnboardingRootView: View {
         if !isIntroPage {
           header
         }
-        TabView(selection: $pageIndex) {
+        TabView(selection: pageSelection) {
           ForEach(Array(pages.enumerated()), id: \.offset) { index, page in
             pageView(for: page)
               .tag(index)
@@ -35,11 +62,6 @@ struct OnboardingRootView: View {
         }
         .tabViewStyle(.page(indexDisplayMode: .never))
         .animation(.spring(response: 0.45, dampingFraction: 0.88), value: pageIndex)
-
-        if !isIntroPage {
-          PageDots(count: pages.count, selectedIndex: pageIndex)
-            .padding(.bottom, 10)
-        }
 
         footer
       }
@@ -56,31 +78,28 @@ struct OnboardingRootView: View {
   }
 
   private var header: some View {
-    HStack {
+    let sideInset: CGFloat = 12
+    let backButtonSize: CGFloat = 40
+    let pageDotsHorizontalInset = sideInset + backButtonSize
+
+    return ZStack(alignment: .leading) {
+      PageDots(count: progressPageCount, selectedIndex: progressIndex)
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, pageDotsHorizontalInset)
+
       Button {
         goBack()
       } label: {
         Image(systemName: "chevron.left")
           .font(.system(size: 16, weight: .semibold))
-          .frame(width: 40, height: 40)
+          .frame(width: backButtonSize, height: backButtonSize)
           .foregroundStyle(AffineColors.textSecondary.color)
       }
+      .padding(.leading, sideInset)
       .opacity(pageIndex > 0 ? 1 : 0)
       .disabled(pageIndex == 0)
-
-      Spacer()
-
-      Button {
-        onFinish()
-      } label: {
-        Text("Skip")
-          .font(.system(size: 15, weight: .semibold))
-          .foregroundStyle(AffineColors.textSecondary.color)
-          .padding(.horizontal, 12)
-          .padding(.vertical, 8)
-      }
     }
-    .padding(.horizontal, 12)
+    .frame(height: backButtonSize)
     .padding(.top, 8)
   }
 
@@ -122,7 +141,7 @@ struct OnboardingRootView: View {
         }
         .disabled(state.isProcessingPurchase)
       } else {
-        PrimaryButton(title: "Next") {
+        PrimaryButton(title: "Next", isEnabled: isNextEnabled) {
           goNext()
         }
       }
@@ -132,6 +151,7 @@ struct OnboardingRootView: View {
   }
 
   private func goNext() {
+    guard isNextEnabled else { return }
     guard pageIndex < pages.count - 1 else {
       onFinish()
       return
@@ -142,6 +162,20 @@ struct OnboardingRootView: View {
   private func goBack() {
     guard pageIndex > 0 else { return }
     pageIndex -= 1
+  }
+
+  private func shouldAllowPageChange(from currentIndex: Int, to newIndex: Int) -> Bool {
+    guard newIndex != currentIndex else { return true }
+    guard newIndex > currentIndex else { return true }
+    return canAdvance(from: currentIndex)
+  }
+
+  private func canAdvance(from index: Int) -> Bool {
+    guard pages.indices.contains(index) else { return false }
+    if case .role = pages[index] {
+      return selectedRole != nil
+    }
+    return true
   }
 }
 
@@ -167,6 +201,26 @@ private enum OnboardingPage {
   var plan: OnboardingPlan? {
     if case let .paywall(plan) = self { return plan }
     return nil
+  }
+}
+
+private enum OnboardingRole: String, CaseIterable {
+  case student = "Student"
+  case educator = "Educator"
+  case professional = "Professional"
+  case other = "Other"
+
+  var title: String {
+    rawValue
+  }
+
+  var assetName: String {
+    switch self {
+    case .student: "OnboardingRoleStudent"
+    case .educator: "OnboardingRoleEducator"
+    case .professional: "OnboardingRoleProfessional"
+    case .other: "OnboardingRoleOther"
+    }
   }
 }
 
@@ -681,18 +735,18 @@ private struct IntroConnector: View {
 }
 
 private struct RolePage: View {
-  @Binding var selectedRole: String
+  @Binding var selectedRole: OnboardingRole?
 
-  private let roles = ["Student", "Educator", "Professional", "Other"]
+  private let roles = OnboardingRole.allCases
 
   var body: some View {
     VStack(spacing: 24) {
-      Spacer(minLength: 20)
-      VStack(spacing: 10) {
+      Spacer(minLength: 8)
+      VStack(spacing: 18) {
         Text("Which best describes you?")
           .font(.system(size: 24, weight: .bold, design: .rounded))
           .multilineTextAlignment(.center)
-        Text("This helps AFFiNE shape your first workspace experience.")
+        Text("We'll use this to improve your experience and prioritize relevant features.")
           .font(.system(size: 15, weight: .medium))
           .foregroundStyle(AffineColors.textSecondary.color)
           .multilineTextAlignment(.center)
@@ -700,7 +754,7 @@ private struct RolePage: View {
       VStack(spacing: 12) {
         ForEach(roles, id: \.self) { role in
           RoleOption(
-            title: role,
+            role: role,
             isSelected: selectedRole == role
           ) {
             selectedRole = role
@@ -806,43 +860,38 @@ private struct PlanPage: View {
 }
 
 private struct RoleOption: View {
-  let title: String
+  let role: OnboardingRole
   let isSelected: Bool
   let action: () -> Void
 
   var body: some View {
     Button(action: action) {
-      HStack(spacing: 12) {
-        Image(systemName: iconName)
-          .font(.system(size: 18, weight: .semibold))
-          .frame(width: 30, height: 30)
-          .foregroundStyle(isSelected ? AffineColors.buttonPrimary.color : AffineColors.textSecondary.color)
-        Text(title)
+      HStack(spacing: 16) {
+        Image(role.assetName)
+          .renderingMode(.template)
+          .resizable()
+          .scaledToFit()
+          .frame(width: 38, height: 38)
+          .foregroundStyle(AffineColors.textPrimary.color)
+        Text(role.title)
           .font(.system(size: 16, weight: .semibold))
           .foregroundStyle(AffineColors.textPrimary.color)
         Spacer()
-        Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-          .foregroundStyle(isSelected ? AffineColors.buttonPrimary.color : AffineColors.textPlaceholder.color)
       }
-      .padding(.horizontal, 16)
-      .frame(height: 62)
-      .background(isSelected ? AffineColors.buttonPrimary.color.opacity(0.12) : AffineColors.layerBackgroundPrimary.color)
-      .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+      .padding(.horizontal, 20)
+      .frame(height: 84)
+      .background(isSelected ? AffineColors.buttonPrimary.color.opacity(0.12) : AffineColors.layerPureWhite.color)
+      .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
       .overlay {
-        RoundedRectangle(cornerRadius: 16, style: .continuous)
-          .stroke(isSelected ? AffineColors.buttonPrimary.color : AffineColors.layerBorder.color, lineWidth: 1)
+        RoundedRectangle(cornerRadius: 22, style: .continuous)
+          .stroke(
+            isSelected ? AffineColors.buttonPrimary.color : AffineColors.layerBorder.color.opacity(0.7),
+            lineWidth: isSelected ? 2 : 1
+          )
       }
+      .shadow(color: .black.opacity(isSelected ? 0.05 : 0.04), radius: 12, x: 0, y: 6)
     }
     .buttonStyle(.plain)
-  }
-
-  private var iconName: String {
-    switch title {
-    case "Student": "graduationcap"
-    case "Educator": "person.2"
-    case "Professional": "briefcase"
-    default: "person"
-    }
   }
 }
 
@@ -991,6 +1040,7 @@ private struct MockDocumentCard: View {
 private struct PrimaryButton: View {
   let title: String
   var isLoading = false
+  var isEnabled = true
   let action: () -> Void
 
   var body: some View {
@@ -1006,12 +1056,12 @@ private struct PrimaryButton: View {
       .foregroundStyle(AffineColors.layerPureWhite.color)
       .frame(maxWidth: .infinity)
       .frame(height: 54)
-      .background(AffineColors.buttonPrimary.color)
+      .background(isEnabled ? AffineColors.buttonPrimary.color : AffineColors.textPlaceholder.color)
       .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
     }
     .buttonStyle(.plain)
-    .disabled(isLoading)
-    .opacity(isLoading ? 0.8 : 1)
+    .disabled(isLoading || !isEnabled)
+    .opacity(isLoading ? 0.8 : (isEnabled ? 1 : 0.72))
   }
 }
 
@@ -1019,12 +1069,16 @@ private struct PageDots: View {
   let count: Int
   let selectedIndex: Int
 
+  private let dotWidth: CGFloat = 20
+  private let dotHeight: CGFloat = 6
+  private let dotSpacing: CGFloat = 8
+
   var body: some View {
-    HStack(spacing: 6) {
+    HStack(spacing: dotSpacing) {
       ForEach(0..<count, id: \.self) { index in
         Capsule()
-          .fill(index == selectedIndex ? AffineColors.buttonPrimary.color : AffineColors.layerBorder.color)
-          .frame(width: index == selectedIndex ? 18 : 6, height: 6)
+          .fill(index == selectedIndex ? AffineColors.buttonPrimary.color : AffineColors.buttonPrimary.color.opacity(0.18))
+          .frame(width: dotWidth, height: dotHeight)
       }
     }
     .animation(.spring(response: 0.35, dampingFraction: 0.8), value: selectedIndex)
