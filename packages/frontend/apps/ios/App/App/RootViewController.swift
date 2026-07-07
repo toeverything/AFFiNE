@@ -66,6 +66,9 @@ class RootViewController: UINavigationController {
       guard let onboardingController else { return }
       self?.handleOnboardingPurchase(type, from: onboardingController)
     }
+    onboardingController.onRestorePurchases = { [weak self] in
+      self?.restorePurchasesForOnboarding()
+    }
     present(onboardingController, animated: false)
   }
 
@@ -204,6 +207,19 @@ class RootViewController: UINavigationController {
     ) { [weak self] completedPurchase in
       self?.handleOnboardingPaywallDismiss(completedPurchase: completedPurchase)
     }
+  }
+
+  @MainActor
+  private func restorePurchasesForOnboarding() {
+    guard let affineViewController, let webView = affineViewController.webView else {
+      showOnboardingAlert(message: "AFFiNE is still loading. Please try again in a moment.")
+      return
+    }
+
+    Paywall.restorePurchases(
+      fromController: self,
+      bindWebContext: webView
+    )
   }
 
   @MainActor

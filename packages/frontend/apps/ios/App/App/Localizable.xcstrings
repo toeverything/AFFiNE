@@ -1,6 +1,12 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "" : {
+
+    },
+    " | " : {
+
+    },
     " in One\nWorkspace" : {
 
     },
@@ -11,6 +17,9 @@
 
     },
     "AI Summary" : {
+
+    },
+    "Cancel Anytime" : {
 
     },
     "Everything," : {
@@ -28,16 +37,10 @@
     "Individual Plans" : {
 
     },
-    "Not now" : {
-
-    },
     "Overview" : {
 
     },
     "Project Brief" : {
-
-    },
-    "Tap the trial button to sign in first when needed, then continue with secure App Store purchase." : {
 
     },
     "We'll use this to improve your experience and prioritize relevant features." : {

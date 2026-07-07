@@ -15,6 +15,7 @@ final class OnboardingFlowState: ObservableObject {
 final class OnboardingViewController: UIViewController {
   var onFinish: (() -> Void)?
   var onPurchase: ((OnboardingPurchaseType) -> Void)?
+  var onRestorePurchases: (() -> Void)?
 
   private let flowState = OnboardingFlowState()
   private var hostingController: UIHostingController<OnboardingRootView>?
@@ -26,7 +27,8 @@ final class OnboardingViewController: UIViewController {
     let rootView = OnboardingRootView(
       state: flowState,
       onFinish: { [weak self] in self?.onFinish?() },
-      onPurchase: { [weak self] type in self?.onPurchase?(type) }
+      onPurchase: { [weak self] type in self?.onPurchase?(type) },
+      onRestorePurchases: { [weak self] in self?.onRestorePurchases?() }
     )
     let hostingController = UIHostingController(rootView: rootView)
     self.hostingController = hostingController

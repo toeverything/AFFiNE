@@ -35,6 +35,7 @@ public enum Paywall {
     type: String,
     onDismiss: (@MainActor (Bool) -> Void)? = nil
   ) {
+    setup()
     let viewModel = ViewModel()
     if let context { viewModel.bind(context: context) }
     if let onDismiss { viewModel.bind(onDismiss: onDismiss) }
@@ -55,5 +56,17 @@ public enum Paywall {
     hostingController.modalTransitionStyle = .coverVertical
     hostingController.preferredContentSize = CGSize(width: 555, height: 555) // for iPads
     controller.present(hostingController, animated: true)
+  }
+
+  @MainActor
+  public static func restorePurchases(
+    fromController controller: UIViewController,
+    bindWebContext context: WKWebView?
+  ) {
+    setup()
+    let viewModel = ViewModel()
+    if let context { viewModel.bind(context: context) }
+    viewModel.bind(controller: controller)
+    viewModel.restore()
   }
 }

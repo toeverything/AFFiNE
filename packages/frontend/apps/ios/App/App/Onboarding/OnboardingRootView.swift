@@ -5,14 +5,17 @@ struct OnboardingRootView: View {
   @ObservedObject var state: OnboardingFlowState
   let onFinish: () -> Void
   let onPurchase: (OnboardingPurchaseType) -> Void
+  let onRestorePurchases: () -> Void
 
   @State private var pageIndex = 0
   @State private var selectedRole: OnboardingRole?
+  @State private var selectedPaywallPlan: OnboardingPlan = .pro
+  @State private var hasInitializedPaywallSelection = false
 
   private let pages = OnboardingPage.all
 
   private var isIntroPage: Bool {
-    pageIndex == 0
+    pages[pageIndex].isIntro
   }
 
   private var isRolePage: Bool {
@@ -20,16 +23,25 @@ struct OnboardingRootView: View {
     return false
   }
 
+  private var isPaywallPage: Bool {
+    pages[pageIndex].isPaywall
+  }
+
+  private var shouldShowHeader: Bool {
+    !isIntroPage && !isPaywallPage
+  }
+
   private var isNextEnabled: Bool {
     !isRolePage || selectedRole != nil
   }
 
   private var progressPageCount: Int {
-    max(pages.count - 1, 0)
+    pages.filter(\.showsProgress).count
   }
 
   private var progressIndex: Int {
-    max(pageIndex - 1, 0)
+    let visibleProgressCount = pages.prefix(pageIndex + 1).filter(\.showsProgress).count
+    return max(visibleProgressCount - 1, 0)
   }
 
   private var pageSelection: Binding<Int> {
@@ -47,26 +59,19 @@ struct OnboardingRootView: View {
       Color.clear
         .ignoresSafeArea()
 
-      OnboardingBackground(isIntroPage: isIntroPage)
+      OnboardingBackground(isIntroPage: isIntroPage, isPaywallPage: isPaywallPage)
 
       VStack(spacing: 0) {
-        if !isIntroPage {
+        if shouldShowHeader {
           header
         }
-        TabView(selection: pageSelection) {
-          ForEach(Array(pages.enumerated()), id: \.offset) { index, page in
-            pageView(for: page)
-              .tag(index)
-              .padding(.horizontal, index == 0 ? 0 : 20)
-          }
-        }
-        .tabViewStyle(.page(indexDisplayMode: .never))
-        .animation(.spring(response: 0.45, dampingFraction: 0.88), value: pageIndex)
+
+        pageContainer
 
         footer
       }
 
-      if isIntroPage {
+      if isIntroPage || isPaywallPage {
         IntroGridOverlay()
           .ignoresSafeArea()
           .allowsHitTesting(false)
@@ -104,6 +109,25 @@ struct OnboardingRootView: View {
   }
 
   @ViewBuilder
+  private var pageContainer: some View {
+    if isPaywallPage {
+      pageView(for: pages[pageIndex])
+        .padding(.horizontal, horizontalPadding(for: pages[pageIndex]))
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    } else {
+      TabView(selection: pageSelection) {
+        ForEach(Array(pages.enumerated()), id: \.offset) { index, page in
+          pageView(for: page)
+            .tag(index)
+            .padding(.horizontal, horizontalPadding(for: page))
+        }
+      }
+      .tabViewStyle(.page(indexDisplayMode: .never))
+      .animation(.spring(response: 0.45, dampingFraction: 0.88), value: pageIndex)
+    }
+  }
+
+  @ViewBuilder
   private func pageView(for page: OnboardingPage) -> some View {
     switch page {
     case .intro:
@@ -112,8 +136,21 @@ struct OnboardingRootView: View {
       RolePage(selectedRole: $selectedRole)
     case let .feature(feature):
       FeaturePage(feature: feature)
-    case let .paywall(plan):
-      PlanPage(plan: plan)
+    case .paywall:
+      PaywallCarouselPage(
+        selectedPlan: $selectedPaywallPlan,
+        isProcessingPurchase: state.isProcessingPurchase,
+        onPurchase: { plan in
+          onPurchase(plan.purchaseType)
+        },
+        onRestorePurchases: onRestorePurchases,
+        onSkip: onFinish,
+        onInitialized: {
+          guard !hasInitializedPaywallSelection else { return }
+          hasInitializedPaywallSelection = true
+          selectedPaywallPlan = .pro
+        }
+      )
     }
   }
 
@@ -123,31 +160,14 @@ struct OnboardingRootView: View {
         IntroFooter {
           goNext()
         }
-      } else if let plan = pages[pageIndex].plan {
-        PrimaryButton(
-          title: plan.buttonTitle,
-          isLoading: state.isProcessingPurchase
-        ) {
-          onPurchase(plan.purchaseType)
-        }
-        Button {
-          onFinish()
-        } label: {
-          Text("Not now")
-            .font(.system(size: 14, weight: .semibold))
-            .foregroundStyle(AffineColors.textSecondary.color)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 6)
-        }
-        .disabled(state.isProcessingPurchase)
-      } else {
+      } else if !isPaywallPage {
         PrimaryButton(title: "Next", isEnabled: isNextEnabled) {
           goNext()
         }
       }
     }
     .padding(.horizontal, 20)
-    .padding(.bottom, isIntroPage ? 22 : 18)
+    .padding(.bottom, isIntroPage ? 22 : (isPaywallPage ? 0 : 18))
   }
 
   private func goNext() {
@@ -166,6 +186,8 @@ struct OnboardingRootView: View {
 
   private func shouldAllowPageChange(from currentIndex: Int, to newIndex: Int) -> Bool {
     guard newIndex != currentIndex else { return true }
+    guard pages.indices.contains(currentIndex) else { return false }
+    guard !pages[currentIndex].isPaywall else { return false }
     guard newIndex > currentIndex else { return true }
     return canAdvance(from: currentIndex)
   }
@@ -177,13 +199,20 @@ struct OnboardingRootView: View {
     }
     return true
   }
+
+  private func horizontalPadding(for page: OnboardingPage) -> CGFloat {
+    if page.isIntro || page.isPaywall {
+      return 0
+    }
+    return 20
+  }
 }
 
 private enum OnboardingPage {
   case intro
   case role
   case feature(OnboardingFeature)
-  case paywall(OnboardingPlan)
+  case paywall
 
   static let all: [OnboardingPage] = [
     .intro,
@@ -193,14 +222,26 @@ private enum OnboardingPage {
     .feature(.multipleViews),
     .feature(.everyDevice),
     .feature(.ai),
-    .paywall(.pro),
-    .paywall(.lite),
-    .paywall(.ai),
+    .paywall,
   ]
 
-  var plan: OnboardingPlan? {
-    if case let .paywall(plan) = self { return plan }
-    return nil
+  var isIntro: Bool {
+    if case .intro = self { return true }
+    return false
+  }
+
+  var isPaywall: Bool {
+    if case .paywall = self { return true }
+    return false
+  }
+
+  var showsProgress: Bool {
+    switch self {
+    case .role, .feature:
+      return true
+    case .intro, .paywall:
+      return false
+    }
   }
 }
 
@@ -231,86 +272,89 @@ private enum OnboardingFeature: CaseIterable {
   case everyDevice
   case ai
 
-  var title: String {
+  var titleSegments: [(text: String, isHighlighted: Bool)] {
     switch self {
-    case .clearDocs: "Turn ideas into Clear Docs"
-    case .biggerPicture: "See the Bigger Picture"
-    case .multipleViews: "One idea, Multiple Views"
-    case .everyDevice: "Your Work, Every Device"
-    case .ai: "Get More Done with AI"
+    case .clearDocs:
+      [("Turn Ideas into ", false), ("Clear Docs", true)]
+    case .biggerPicture:
+      [("See the ", false), ("Bigger Picture", true)]
+    case .multipleViews:
+      [("One Idea, ", false), ("Multiple Views", true)]
+    case .everyDevice:
+      [("Your Work, ", false), ("Every Device", true)]
+    case .ai:
+      [("Get More Done with ", false), ("AI", true)]
     }
   }
 
   var subtitle: String {
     switch self {
-    case .clearDocs: "Tasks, notes, mindmaps, and docs in one flexible workspace."
-    case .biggerPicture: "Connect ideas, docs, and projects with a visual knowledge graph."
-    case .multipleViews: "Bring structure to your work with docs, tables, boards, and canvases."
-    case .everyDevice: "Keep writing, planning, and thinking across iPhone and desktop."
-    case .ai: "Draft, summarize, translate, and brainstorm faster with AFFiNE AI."
+    case .clearDocs: "Capture notes, meetings, and plans in one focused workspace."
+    case .biggerPicture: "Connect ideas, plans, and knowledge visually."
+    case .multipleViews: "Bring notes, whiteboards, and projects together in one workspace."
+    case .everyDevice: "Stay synced across desktop, web, and mobile devices."
+    case .ai: "Write, summarize, and structure ideas in seconds."
     }
   }
 
-  var symbol: String {
+  var assetName: String {
     switch self {
-    case .clearDocs: "doc.text"
-    case .biggerPicture: "point.3.connected.trianglepath.dotted"
-    case .multipleViews: "square.grid.2x2"
-    case .everyDevice: "iphone.and.arrow.forward"
-    case .ai: "sparkles"
+    case .clearDocs: "OnboardingFeatureClearDocs"
+    case .biggerPicture: "OnboardingFeatureBiggerPicture"
+    case .multipleViews: "OnboardingFeatureMultipleViews"
+    case .everyDevice: "OnboardingFeatureEveryDevice"
+    case .ai: "OnboardingFeatureAI"
     }
   }
 }
 
-private enum OnboardingPlan {
+private enum OnboardingPlan: String, CaseIterable {
   case pro
   case lite
   case ai
 
-  var name: String {
+  var headerName: String {
     switch self {
-    case .pro: "PRO"
+    case .pro: "Pro"
     case .lite: "LITE"
-    case .ai: "AFFiNE AI"
-    }
-  }
-
-  var title: String {
-    switch self {
-    case .pro: "Best for serious creators"
-    case .lite: "Start light, grow later"
-    case .ai: "Your thinking partner"
-    }
-  }
-
-  var price: String {
-    switch self {
-    case .pro: "$8.75 / mo"
-    case .lite: "$6.75 / mo"
-    case .ai: "$8.9 / mo"
-    }
-  }
-
-  var footnote: String {
-    switch self {
-    case .pro, .lite: "billed annually"
-    case .ai: "AI plan billed annually"
+    case .ai: "AFFINE AI"
     }
   }
 
   var badge: String? {
     switch self {
-    case .pro: "BEST VALUE"
+    case .pro: "BEST FOR YOU"
     case .lite: nil
-    case .ai: "AI BOOST"
+    case .ai: nil
+    }
+  }
+
+  var priceValue: String {
+    switch self {
+    case .pro: "$81"
+    case .lite: "$6.75"
+    case .ai: "$8.9"
+    }
+  }
+
+  var priceSuffix: String {
+    switch self {
+    case .pro: "/year"
+    case .lite, .ai: "/mo, billed annually"
+    }
+  }
+
+  var description: String {
+    switch self {
+    case .pro: "Keep your knowledge available everywhere."
+    case .lite: "For people who want their workspace available everywhere."
+    case .ai: "For people who want to create, organize faster with AI."
     }
   }
 
   var buttonTitle: String {
     switch self {
-    case .pro: "Start Pro Free Trial"
-    case .lite: "Start Lite Free Trial"
-    case .ai: "Start AI Free Trial"
+    case .pro, .lite, .ai: "Start Your Pro Free Trial"
     }
   }
 
@@ -325,27 +369,27 @@ private enum OnboardingPlan {
     switch self {
     case .pro:
       [
-        "Unlimited workspace history",
-        "Larger cloud storage quota",
-        "Advanced collaboration controls",
-        "Priority AFFiNE Cloud features",
-        "Best for full-time personal systems",
+        "Upload files larger than 10 MB",
+        "Sync docs and boards across all devices",
+        "Access your workspace on Mac, Windows, Linux, Web, iPhone, and Android",
+        "Secure cloud backup for your content",
+        "Everything stays up to date, wherever you work",
       ]
     case .lite:
       [
-        "Essential cloud sync",
-        "Reliable backup across devices",
-        "Core collaboration features",
-        "Flexible upgrade path",
-        "Great for focused personal work",
+        "Sync docs and boards across all devices",
+        "Access AFFiNE on Mac, Windows, Linux, Web, iPhone, and Android",
+        "Upload files larger than 10 MB",
+        "Secure cloud backup for your content",
+        "Pick up where you left off, anytime",
       ]
     case .ai:
       [
-        "AI writing and summarization",
-        "Smart translation and polishing",
-        "Brainstorming inside your docs",
-        "Faster research from context",
-        "Designed for creative momentum",
+        "Generate articles, notes, and content in seconds",
+        "Rewrite, improve, and translate your writing",
+        "Turn ideas into visuals, mind maps, and presentations",
+        "Chat with your documents and knowledge",
+        "AI-powered organization and insights",
       ]
     }
   }
@@ -353,10 +397,11 @@ private enum OnboardingPlan {
 
 private struct OnboardingBackground: View {
   let isIntroPage: Bool
+  let isPaywallPage: Bool
 
   var body: some View {
     Group {
-      if isIntroPage {
+      if isIntroPage || isPaywallPage {
         AffineColors.layerPureWhite.color
       } else {
         LinearGradient(
@@ -770,92 +815,392 @@ private struct FeaturePage: View {
   let feature: OnboardingFeature
 
   var body: some View {
-    VStack(spacing: 26) {
-      Spacer(minLength: 16)
-      DeviceShowcase(symbol: feature.symbol)
-        .frame(height: 330)
-      VStack(spacing: 10) {
-        Text(feature.title)
-          .font(.system(size: 27, weight: .bold, design: .rounded))
-          .multilineTextAlignment(.center)
-        Text(feature.subtitle)
-          .font(.system(size: 16, weight: .medium))
+    VStack(spacing: 0) {
+      Spacer(minLength: 10)
+      VStack(spacing: 12) {
+        featureTitle
+        Text(LocalizedStringKey(feature.subtitle))
+          .font(.system(size: 14, weight: .medium))
           .foregroundStyle(AffineColors.textSecondary.color)
           .multilineTextAlignment(.center)
-          .lineSpacing(4)
+          .lineSpacing(3)
+          .padding(.horizontal, 12)
       }
-      Spacer(minLength: 4)
+
+      Spacer(minLength: 18)
+
+      FeatureArtwork(feature: feature)
+        .frame(maxWidth: .infinity)
+        .frame(height: 360)
+
+      Spacer(minLength: 10)
+    }
+  }
+
+  private var featureTitle: some View {
+    feature.titleSegments.reduce(Text("")) { partial, segment in
+      partial
+        + Text(LocalizedStringKey(segment.text))
+        .foregroundColor(segment.isHighlighted ? AffineColors.buttonPrimary.color : AffineColors.textPrimary.color)
+    }
+    .font(.system(size: 28, weight: .bold))
+    .multilineTextAlignment(.center)
+    .fixedSize(horizontal: false, vertical: true)
+    .padding(.horizontal, 8)
+  }
+}
+
+private struct PaywallCarouselPage: View {
+  @Environment(\.openURL) private var openURL
+
+  @Binding var selectedPlan: OnboardingPlan
+  let isProcessingPurchase: Bool
+  let onPurchase: (OnboardingPlan) -> Void
+  let onRestorePurchases: () -> Void
+  let onSkip: () -> Void
+  let onInitialized: () -> Void
+
+  private let plans: [OnboardingPlan] = [.lite, .pro, .ai]
+  private let visibleSlots = [-2, -1, 0, 1, 2]
+  private let settleAnimation = Animation.spring(response: 0.32, dampingFraction: 0.9)
+  private let settleDuration = 0.24
+
+  @State private var currentPlanIndex = 1
+  @State private var settlingOffset: CGFloat = 0
+  @State private var isSettling = false
+  @GestureState private var dragTranslation: CGFloat = 0
+
+  private var activePlanIndex: Int {
+    currentPlanIndex
+  }
+
+  var body: some View {
+    VStack(spacing: 0) {
+      paywallHeader
+        .padding(.top, 14)
+        .padding(.horizontal, 18)
+
+      Spacer(minLength: 18)
+
+      Text("Individual Plans")
+        .font(.system(size: 28, weight: .black))
+        .foregroundStyle(AffineColors.textPrimary.color)
+
+      Spacer(minLength: 10)
+
+      GeometryReader { geometry in
+        let cardWidth = min(max(geometry.size.width - 116, 244), 288)
+        let cardSpacing: CGFloat = 8
+        let step = cardWidth + cardSpacing
+        let totalOffset = settlingOffset + dragTranslation
+        let normalizedOffset = totalOffset / step
+
+        ZStack {
+          ForEach(visibleSlots, id: \.self) { relativeSlot in
+            let position = CGFloat(relativeSlot) + normalizedOffset
+            let distance = abs(position)
+            let clampedDistance = min(distance, 2)
+            let horizontalDirection: CGFloat = position > 0 ? 1 : (position < 0 ? -1 : 0)
+            let scale = max(0.94, 1 - clampedDistance * 0.038)
+            let opacity = max(0.8, 1 - clampedDistance * 0.11)
+            let sideSpread = clampedDistance * 2
+            let verticalOffset = clampedDistance * 16
+            let rotation = Double(position * 6)
+            let shadowOpacity = Double(max(0.09, 0.2 - clampedDistance * 0.05))
+            let shadowRadius = max(20, 30 - clampedDistance * 5)
+            let shadowYOffset = max(12, 18 - clampedDistance * 2.5)
+
+            PaywallCard(plan: plan(for: relativeSlot))
+              .frame(width: cardWidth, height: geometry.size.height)
+              .scaleEffect(scale)
+              .rotation3DEffect(
+                .degrees(rotation),
+                axis: (x: 0, y: 1, z: 0),
+                perspective: 0.82
+              )
+              .opacity(opacity)
+              .offset(
+                x: position * step + horizontalDirection * sideSpread,
+                y: verticalOffset
+              )
+              .shadow(color: .black.opacity(shadowOpacity), radius: shadowRadius, x: 0, y: shadowYOffset)
+              .zIndex(10 - distance)
+          }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .contentShape(Rectangle())
+        .allowsHitTesting(!isSettling)
+        .highPriorityGesture(carouselDragGesture(step: step))
+      }
+      .frame(height: 494)
+
+      HStack(spacing: 9) {
+        ForEach(0..<plans.count, id: \.self) { index in
+          Circle()
+            .fill(index == activePlanIndex ? AffineColors.buttonPrimary.color : AffineColors.buttonPrimary.color.opacity(0.18))
+            .frame(width: 9, height: 9)
+        }
+      }
+      .padding(.top, 10)
+
+      PaywallFooterLinks(onSkip: onSkip)
+        .padding(.top, 8)
+        .padding(.horizontal, 28)
+
+      PrimaryButton(
+        title: selectedPlan.buttonTitle,
+        isLoading: isProcessingPurchase,
+        fontSize: 18,
+        height: 58
+      ) {
+        onPurchase(selectedPlan)
+      }
+      .padding(.horizontal, 28)
+      .padding(.top, 10)
+
+      PaywallLegalLinks(
+        onOpenTerms: { openLegalURL("https://affine.pro/terms") },
+        onOpenPrivacy: { openLegalURL("https://affine.pro/privacy") },
+        onOpenSubscriptionTerms: { openLegalURL("https://affine.pro/terms/#subscription") },
+        onRestore: onRestorePurchases
+      )
+        .padding(.top, 10)
+        .padding(.bottom, 8)
+        .padding(.horizontal, 28)
+    }
+    .onAppear {
+      onInitialized()
+      currentPlanIndex = selectedIndex(for: selectedPlan)
+      selectedPlan = plans[currentPlanIndex]
+      settlingOffset = 0
+    }
+  }
+
+  private var paywallHeader: some View {
+    HStack {
+      Spacer()
+      Button(action: onSkip) {
+        Image(systemName: "xmark")
+          .font(.system(size: 15, weight: .medium))
+          .foregroundStyle(AffineColors.textSecondary.color)
+          .frame(width: 32, height: 32)
+      }
+      .buttonStyle(.plain)
+    }
+  }
+
+  private func carouselDragGesture(step: CGFloat) -> some Gesture {
+    DragGesture(minimumDistance: 12)
+      .updating($dragTranslation) { value, state, _ in
+        state = value.translation.width
+      }
+      .onEnded { value in
+        guard !isSettling else { return }
+
+        settlingOffset = value.translation.width
+        let threshold = step * 0.18
+        let projectedOffset = value.predictedEndTranslation.width
+
+        if projectedOffset < -threshold {
+          settleCarousel(step: step, direction: 1)
+        } else if projectedOffset > threshold {
+          settleCarousel(step: step, direction: -1)
+        } else {
+          withAnimation(settleAnimation) {
+            settlingOffset = 0
+          }
+        }
+      }
+  }
+
+  private func settleCarousel(step: CGFloat, direction: Int) {
+    isSettling = true
+
+    withAnimation(settleAnimation) {
+      settlingOffset = direction > 0 ? -step : step
+    }
+
+    DispatchQueue.main.asyncAfter(deadline: .now() + settleDuration) {
+      let nextIndex = wrappedIndex(currentPlanIndex + direction)
+      var transaction = Transaction()
+      transaction.disablesAnimations = true
+
+      withTransaction(transaction) {
+        currentPlanIndex = nextIndex
+        selectedPlan = plans[nextIndex]
+        settlingOffset = 0
+      }
+
+      isSettling = false
+    }
+  }
+
+  private func selectedIndex(for plan: OnboardingPlan) -> Int {
+    plans.firstIndex(of: plan) ?? 1
+  }
+
+  private func wrappedIndex(_ index: Int) -> Int {
+    let count = plans.count
+    let remainder = index % count
+    return remainder >= 0 ? remainder : remainder + count
+  }
+
+  private func plan(for relativeSlot: Int) -> OnboardingPlan {
+    plans[wrappedIndex(currentPlanIndex + relativeSlot)]
+  }
+
+  private func openLegalURL(_ string: String) {
+    guard let url = URL(string: string) else { return }
+    openURL(url)
+  }
+}
+
+private struct PaywallCard: View {
+  let plan: OnboardingPlan
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 0) {
+      Text(LocalizedStringKey(plan.headerName))
+        .font(.system(size: 26, weight: .black))
+        .foregroundStyle(AffineColors.textPrimary.color)
+        .padding(.bottom, 16)
+
+      HStack(alignment: .lastTextBaseline, spacing: 5) {
+        Text(LocalizedStringKey(plan.priceValue))
+          .font(.system(size: 28, weight: .black))
+          .foregroundStyle(AffineColors.textPrimary.color)
+        Text(LocalizedStringKey(plan.priceSuffix))
+          .font(.system(size: 14, weight: .bold))
+          .foregroundStyle(AffineColors.textPrimary.color)
+      }
+
+      Text(LocalizedStringKey(plan.description))
+        .font(.system(size: 13.5, weight: .medium))
+        .foregroundStyle(AffineColors.textSecondary.color)
+        .lineSpacing(3)
+        .fixedSize(horizontal: false, vertical: true)
+        .padding(.top, 7)
+        .padding(.bottom, 20)
+
+      Divider()
+        .overlay(AffineColors.layerBorder.color.opacity(0.55))
+        .padding(.bottom, 20)
+
+      VStack(alignment: .leading, spacing: 17) {
+        ForEach(plan.features, id: \.self) { feature in
+          PaywallFeatureRow(text: feature)
+        }
+      }
+
+      Spacer(minLength: 0)
+    }
+    .padding(.horizontal, 23)
+    .padding(.top, 22)
+    .padding(.bottom, 20)
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    .background(AffineColors.layerPureWhite.color)
+    .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+    .shadow(color: AffineColors.buttonPrimary.color.opacity(0.12), radius: 22, x: 0, y: 10)
+    .shadow(color: .black.opacity(0.06), radius: 16, x: 0, y: 5)
+    .overlay {
+      RoundedRectangle(cornerRadius: 22, style: .continuous)
+        .stroke(AffineColors.buttonPrimary.color.opacity(0.98), lineWidth: 1.45)
+    }
+    .overlay(alignment: .topTrailing) {
+      if let badge = plan.badge {
+        Text(LocalizedStringKey(badge))
+          .font(.system(size: 11, weight: .bold))
+          .foregroundStyle(AffineColors.layerPureWhite.color)
+          .padding(.horizontal, 16)
+          .padding(.vertical, 7)
+          .background(AffineColors.buttonPrimary.color)
+          .clipShape(Capsule())
+          .shadow(color: AffineColors.buttonPrimary.color.opacity(0.22), radius: 12, x: 0, y: 5)
+          .offset(x: -8, y: -15)
+      }
     }
   }
 }
 
-private struct PlanPage: View {
-  let plan: OnboardingPlan
+private struct PaywallFeatureRow: View {
+  let text: String
 
   var body: some View {
-    VStack(spacing: 18) {
-      Spacer(minLength: 6)
-      Text("Individual Plans")
-        .font(.system(size: 28, weight: .bold, design: .rounded))
-      VStack(alignment: .leading, spacing: 18) {
-        HStack(alignment: .top) {
-          VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 8) {
-              Text(plan.name)
-                .font(.system(size: 22, weight: .black, design: .rounded))
-              if let badge = plan.badge {
-                Text(badge)
-                  .font(.system(size: 10, weight: .bold))
-                  .foregroundStyle(AffineColors.layerPureWhite.color)
-                  .padding(.horizontal, 8)
-                  .padding(.vertical, 4)
-                  .background(AffineColors.buttonPrimary.color)
-                  .clipShape(Capsule())
-              }
-            }
-            Text(plan.title)
-              .font(.system(size: 14, weight: .semibold))
-              .foregroundStyle(AffineColors.textSecondary.color)
-          }
-          Spacer()
-        }
-        VStack(alignment: .leading, spacing: 2) {
-          Text(plan.price)
-            .font(.system(size: 31, weight: .black, design: .rounded))
-          Text(plan.footnote)
-            .font(.system(size: 12, weight: .semibold))
-            .foregroundStyle(AffineColors.textSecondary.color)
-        }
-        Divider()
-          .overlay(AffineColors.layerBorder.color)
-        VStack(alignment: .leading, spacing: 13) {
-          ForEach(plan.features, id: \.self) { feature in
-            HStack(alignment: .top, spacing: 10) {
-              Image(systemName: "checkmark.circle.fill")
-                .foregroundStyle(AffineColors.buttonPrimary.color)
-              Text(feature)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(AffineColors.textPrimary.color)
-                .fixedSize(horizontal: false, vertical: true)
-            }
-          }
-        }
-      }
-      .padding(22)
-      .frame(maxWidth: .infinity, alignment: .leading)
-      .background(AffineColors.layerBackgroundPrimary.color)
-      .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
-      .overlay {
-        RoundedRectangle(cornerRadius: 28, style: .continuous)
-          .stroke(AffineColors.layerBorder.color, lineWidth: 1)
-      }
-      .shadow(color: .black.opacity(0.08), radius: 24, x: 0, y: 12)
-      Text("Tap the trial button to sign in first when needed, then continue with secure App Store purchase.")
-        .font(.system(size: 12, weight: .medium))
-        .foregroundStyle(AffineColors.textSecondary.color)
-        .multilineTextAlignment(.center)
-      Spacer(minLength: 4)
+    HStack(alignment: .top, spacing: 11) {
+      Image(systemName: "checkmark.circle.fill")
+        .font(.system(size: 15, weight: .bold))
+        .foregroundStyle(AffineColors.buttonPrimary.color)
+        .padding(.top, 2)
+
+      Text(LocalizedStringKey(text))
+        .font(.system(size: 13.5, weight: .medium))
+        .foregroundStyle(AffineColors.textPrimary.color)
+        .lineSpacing(3)
+        .fixedSize(horizontal: false, vertical: true)
     }
+  }
+}
+
+private struct PaywallFooterLinks: View {
+  let onSkip: () -> Void
+
+  var body: some View {
+    Button(action: onSkip) {
+      Text("Cancel Anytime")
+        .font(.system(size: 14.5, weight: .medium))
+        .foregroundStyle(AffineColors.textPrimary.color)
+    }
+    .buttonStyle(.plain)
+  }
+}
+
+private struct PaywallLegalLinks: View {
+  let onOpenTerms: () -> Void
+  let onOpenPrivacy: () -> Void
+  let onOpenSubscriptionTerms: () -> Void
+  let onRestore: () -> Void
+
+  var body: some View {
+    ViewThatFits {
+      HStack(spacing: 0) {
+        legalButton(title: "Terms of Use", action: onOpenTerms)
+        separator
+        legalButton(title: "Privacy Policy", action: onOpenPrivacy)
+        separator
+        legalButton(title: "Subscription Terms", action: onOpenSubscriptionTerms)
+        separator
+        legalButton(title: "Restore", action: onRestore)
+      }
+
+      VStack(spacing: 6) {
+        HStack(spacing: 0) {
+          legalButton(title: "Terms of Use", action: onOpenTerms)
+          separator
+          legalButton(title: "Privacy Policy", action: onOpenPrivacy)
+        }
+
+        HStack(spacing: 0) {
+          legalButton(title: "Subscription Terms", action: onOpenSubscriptionTerms)
+          separator
+          legalButton(title: "Restore", action: onRestore)
+        }
+      }
+    }
+    .font(.system(size: 10.5, weight: .medium))
+    .foregroundStyle(AffineColors.textSecondary.color)
+  }
+
+  private var separator: some View {
+    Text(" | ")
+      .foregroundStyle(AffineColors.textSecondary.color)
+  }
+
+  private func legalButton(title: String, action: @escaping () -> Void) -> some View {
+    Button(action: action) {
+      Text(title)
+        .foregroundStyle(AffineColors.textSecondary.color)
+    }
+    .buttonStyle(.plain)
   }
 }
 
@@ -957,83 +1302,16 @@ private struct FloatingTile: View {
   }
 }
 
-private struct DeviceShowcase: View {
-  let symbol: String
+private struct FeatureArtwork: View {
+  let feature: OnboardingFeature
 
   var body: some View {
-    ZStack {
-      RoundedRectangle(cornerRadius: 34, style: .continuous)
-        .fill(AffineColors.layerBackgroundPrimary.color.opacity(0.88))
-        .shadow(color: .black.opacity(0.08), radius: 24, x: 0, y: 12)
-      HStack(spacing: 12) {
-        MockDocumentCard(title: "Idea", rows: 4)
-          .rotationEffect(.degrees(-5))
-          .offset(y: 18)
-        PhoneMock(symbol: symbol)
-        MockDocumentCard(title: "Plan", rows: 5)
-          .rotationEffect(.degrees(5))
-          .offset(y: -18)
-      }
-    }
-  }
-}
-
-private struct PhoneMock: View {
-  let symbol: String
-
-  var body: some View {
-    VStack(spacing: 12) {
-      RoundedRectangle(cornerRadius: 3)
-        .fill(AffineColors.textPlaceholder.color.opacity(0.35))
-        .frame(width: 38, height: 5)
-      Spacer()
-      Image(systemName: symbol)
-        .font(.system(size: 42, weight: .bold))
-        .foregroundStyle(AffineColors.buttonPrimary.color)
-      VStack(spacing: 8) {
-        ForEach(0..<4, id: \.self) { index in
-          RoundedRectangle(cornerRadius: 4)
-            .fill(AffineColors.layerBorder.color.opacity(index == 0 ? 0.9 : 0.55))
-            .frame(height: index == 0 ? 12 : 8)
-        }
-      }
-      Spacer()
-    }
-    .padding(16)
-    .frame(width: 128, height: 246)
-    .background(AffineColors.layerBackgroundSecondary.color)
-    .clipShape(RoundedRectangle(cornerRadius: 30, style: .continuous))
-    .overlay {
-      RoundedRectangle(cornerRadius: 30, style: .continuous)
-        .stroke(AffineColors.textPrimary.color.opacity(0.16), lineWidth: 6)
-    }
-  }
-}
-
-private struct MockDocumentCard: View {
-  let title: String
-  let rows: Int
-
-  var body: some View {
-    VStack(alignment: .leading, spacing: 8) {
-      Text(title)
-        .font(.system(size: 12, weight: .bold))
-        .foregroundStyle(AffineColors.textSecondary.color)
-      ForEach(0..<rows, id: \.self) { index in
-        RoundedRectangle(cornerRadius: 4)
-          .fill(index == 0 ? AffineColors.buttonPrimary.color.opacity(0.35) : AffineColors.layerBorder.color.opacity(0.7))
-          .frame(width: index.isMultiple(of: 2) ? 78 : 58, height: 8)
-      }
-      Spacer(minLength: 0)
-    }
-    .padding(14)
-    .frame(width: 104, height: 154)
-    .background(AffineColors.layerBackgroundSecondary.color)
-    .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-    .overlay {
-      RoundedRectangle(cornerRadius: 20, style: .continuous)
-        .stroke(AffineColors.layerBorder.color, lineWidth: 1)
-    }
+    Image(feature.assetName)
+      .resizable()
+      .scaledToFit()
+      .frame(maxWidth: .infinity, maxHeight: .infinity)
+      .padding(.horizontal, 4)
+      .accessibilityHidden(true)
   }
 }
 
@@ -1041,6 +1319,8 @@ private struct PrimaryButton: View {
   let title: String
   var isLoading = false
   var isEnabled = true
+  var fontSize: CGFloat = 16
+  var height: CGFloat = 54
   let action: () -> Void
 
   var body: some View {
@@ -1051,11 +1331,11 @@ private struct PrimaryButton: View {
             .tint(AffineColors.layerPureWhite.color)
         }
         Text(title)
-          .font(.system(size: 16, weight: .bold))
+          .font(.system(size: fontSize, weight: .bold))
       }
       .foregroundStyle(AffineColors.layerPureWhite.color)
       .frame(maxWidth: .infinity)
-      .frame(height: 54)
+      .frame(height: height)
       .background(isEnabled ? AffineColors.buttonPrimary.color : AffineColors.textPlaceholder.color)
       .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
     }
@@ -1089,6 +1369,7 @@ private struct PageDots: View {
   OnboardingRootView(
     state: OnboardingFlowState(),
     onFinish: {},
-    onPurchase: { _ in }
+    onPurchase: { _ in },
+    onRestorePurchases: {}
   )
 }
