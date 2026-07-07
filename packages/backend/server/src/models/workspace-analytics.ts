@@ -509,7 +509,7 @@ export class WorkspaceAnalyticsModel extends BaseModel {
       copilotConversations: Number(copilotCount[0]?.conversations ?? 0),
       copilotWindow: {
         from: copilotFrom,
-        to: currentDay,
+        to: now,
         timezone,
         bucket: 'Day',
         requestedSize: options.copilotWindowDays ?? DEFAULT_COPILOT_WINDOW_DAYS,

@@ -85,14 +85,16 @@ type SyncProtocolRoomType = Extract<RoomType, 'sync-025' | 'sync-026'>;
 const SOCKET_PRESENCE_USER_ID_KEY = 'affinePresenceUserId';
 
 function normalizeWsClientVersion(clientVersion: string): string | null {
-  if (env.namespaces.canary) {
-    const canaryCheck = checkCanaryDateClientVersion(clientVersion);
-    if (canaryCheck.matched) {
-      return canaryCheck.allowed ? canaryCheck.normalized : null;
-    }
+  const canaryCheck = checkCanaryDateClientVersion(clientVersion);
+  if (!canaryCheck.matched) {
+    return clientVersion;
   }
 
-  return clientVersion;
+  if (!env.namespaces.canary) {
+    return null;
+  }
+
+  return canaryCheck.allowed ? canaryCheck.normalized : null;
 }
 
 function isSupportedWsClientVersion(clientVersion: string): boolean {

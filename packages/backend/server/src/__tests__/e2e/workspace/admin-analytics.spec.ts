@@ -359,6 +359,7 @@ e2e(
           effectiveSize
         }
         copilotWindow {
+          to
           bucket
           requestedSize
           effectiveSize
@@ -371,6 +372,7 @@ e2e(
           date
           value
         }
+        generatedAt
       }
     }
   `;
@@ -393,6 +395,10 @@ e2e(
     t.is(dashboard.topSharedLinksWindow.effectiveSize, 1);
     t.is(dashboard.copilotWindow.bucket, 'Day');
     t.is(dashboard.copilotWindow.effectiveSize, 90);
+    t.is(
+      new Date(dashboard.copilotWindow.to).getTime(),
+      new Date(dashboard.generatedAt).getTime()
+    );
     t.is(dashboard.syncActiveUsersTimeline.length, 1);
     t.is(dashboard.workspaceStorageHistory.length, 1);
   }

@@ -37,14 +37,16 @@ const MIN_REALTIME_CLIENT_VERSION = new semver.Range('>=0.26.0-0', {
 });
 
 function normalizeRealtimeClientVersion(clientVersion: string): string | null {
-  if (env.namespaces.canary) {
-    const canaryCheck = checkCanaryDateClientVersion(clientVersion);
-    if (canaryCheck.matched) {
-      return canaryCheck.allowed ? canaryCheck.normalized : null;
-    }
+  const canaryCheck = checkCanaryDateClientVersion(clientVersion);
+  if (!canaryCheck.matched) {
+    return clientVersion;
   }
 
-  return clientVersion;
+  if (!env.namespaces.canary) {
+    return null;
+  }
+
+  return canaryCheck.allowed ? canaryCheck.normalized : null;
 }
 
 @WebSocketGateway()

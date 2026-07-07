@@ -572,6 +572,43 @@ test('old canary date clientVersion should be rejected and disconnected in canar
   }
 });
 
+test('canary date clientVersion should be rejected outside canary namespace', async t => {
+  const prevNamespace = env.NAMESPACE;
+  // @ts-expect-error test
+  env.NAMESPACE = 'production';
+
+  try {
+    const { user, cookieHeader } = await login(app);
+    const spaceId = user.id;
+
+    const socket = createClient(url, cookieHeader);
+    try {
+      await waitForConnect(socket);
+
+      const res = unwrapResponse(
+        t,
+        await emitWithAck<{ clientId: string; success: boolean }>(
+          socket,
+          'space:join',
+          {
+            spaceType: 'userspace',
+            spaceId,
+            clientVersion: makeCanaryDateVersion(new Date(), '15'),
+          }
+        )
+      );
+      t.false(res.success);
+
+      await waitForDisconnect(socket);
+    } finally {
+      socket.disconnect();
+    }
+  } finally {
+    // @ts-expect-error test
+    env.NAMESPACE = prevNamespace;
+  }
+});
+
 test('space:join-awareness should reject clientVersion<0.25.0', async t => {
   const { user, cookieHeader } = await login(app);
   const spaceId = user.id;

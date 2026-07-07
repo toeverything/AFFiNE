@@ -187,6 +187,33 @@ test('gateway accepts canary date client version in canary namespace', async t =
   }
 });
 
+test('gateway rejects canary date client version outside canary namespace', async t => {
+  const originalNamespace = env.NAMESPACE;
+  // @ts-expect-error test
+  env.NAMESPACE = 'production';
+  try {
+    const registry = new RealtimeRegistry();
+    registry.registerRequest({
+      name: 'notification.count.get',
+      input: z.object({}).strict(),
+      handle: async () => ({ count: 1 }),
+    });
+    const gateway = createGateway(registry);
+
+    t.like(
+      await gateway.onRequest(user, {
+        op: 'notification.count.get',
+        input: {},
+        clientVersion: makeCanaryDateVersion(new Date(), '40'),
+      }),
+      { error: { code: 'UNSUPPORTED_CLIENT_VERSION' } }
+    );
+  } finally {
+    // @ts-expect-error test
+    env.NAMESPACE = originalNamespace;
+  }
+});
+
 test('gateway authorizes subscription and joins room', async t => {
   const registry = new RealtimeRegistry();
   registry.registerTopic({
