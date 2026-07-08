@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import ava, { TestFn } from 'ava';
+import ava, { ExecutionContext, TestFn } from 'ava';
 import jwt from 'jsonwebtoken';
 
 import { ConfigFactory } from '../../base';
@@ -54,7 +54,6 @@ test.after.always(async t => {
 
 const DEFAULT_SESSION_TTL = 60 * 60 * 24 * 15;
 const DEFAULT_SESSION_TTR = 60 * 60 * 24 * 7;
-const LEGACY_JWT_SESSION_TTL = 15 * 60;
 
 function resetAuthSessionConfig(config: ConfigFactory) {
   config.override({
@@ -74,24 +73,25 @@ function currentJwtKey(crypto: CryptoHelper) {
   ]);
 }
 
-function signJwtSessionWithIssuedAt(
-  crypto: CryptoHelper,
-  userId: string,
-  sessionId: string,
-  issuedAt: number,
-  expiresIn: number
+function assertSignedTtl(
+  t: ExecutionContext,
+  signed: { token: string; expiresAt: Date },
+  expectedTtl: number
 ) {
-  return jwt.sign(
-    { sid: sessionId, typ: 'user_session', iat: issuedAt },
-    currentJwtKey(crypto),
-    {
-      algorithm: 'HS256',
-      audience: 'affine-client',
-      expiresIn,
-      issuer: 'affine',
-      subject: userId,
-    }
-  );
+  const ttlMs = signed.expiresAt.getTime() - Date.now();
+  t.true(ttlMs > (expectedTtl - 5) * 1000);
+  t.true(ttlMs <= (expectedTtl + 1) * 1000);
+
+  const payload = jwt.decode(signed.token);
+  t.truthy(payload);
+  t.true(typeof payload !== 'string');
+  if (!payload || typeof payload === 'string') return;
+  t.is(typeof payload.iat, 'number');
+  t.is(typeof payload.exp, 'number');
+  if (typeof payload.iat !== 'number' || typeof payload.exp !== 'number') {
+    return;
+  }
+  t.is(payload.exp - payload.iat, expectedTtl);
 }
 
 test.serial('should sign and verify a user session jwt', async t => {
@@ -107,21 +107,13 @@ test.serial('should sign and verify a user session jwt', async t => {
   t.true(signed.expiresAt.getTime() > Date.now());
 });
 
-test.serial(
-  'should default jwt session ttl to application session ttl',
-  async t => {
-    const signed = t.context.jwtSession.sign(
-      t.context.user.id,
-      t.context.sessionId
-    );
+test.serial('should use application session ttl for jwt expiration', async t => {
+  const defaultSigned = t.context.jwtSession.sign(
+    t.context.user.id,
+    t.context.sessionId
+  );
+  assertSignedTtl(t, defaultSigned, DEFAULT_SESSION_TTL);
 
-    const ttlMs = signed.expiresAt.getTime() - Date.now();
-    t.true(ttlMs > (DEFAULT_SESSION_TTL - 5) * 1000);
-    t.true(ttlMs <= (DEFAULT_SESSION_TTL + 1) * 1000);
-  }
-);
-
-test.serial('should use configured application session ttl', async t => {
   const ttl = 120;
   t.context.config.override({
     auth: {
@@ -131,37 +123,29 @@ test.serial('should use configured application session ttl', async t => {
     },
   });
 
-  const signed = t.context.jwtSession.sign(
+  const configuredSigned = t.context.jwtSession.sign(
     t.context.user.id,
     t.context.sessionId
   );
-
-  const ttlMs = signed.expiresAt.getTime() - Date.now();
-  t.true(ttlMs > (ttl - 5) * 1000);
-  t.true(ttlMs <= (ttl + 1) * 1000);
+  assertSignedTtl(t, configuredSigned, ttl);
 });
-
-test.serial(
-  'should reject legacy jwt when embedded expiration has elapsed',
-  async t => {
-    const issuedAt =
-      Math.floor(Date.now() / 1000) - LEGACY_JWT_SESSION_TTL - 60;
-    const token = signJwtSessionWithIssuedAt(
-      t.context.crypto,
-      t.context.user.id,
-      t.context.sessionId,
-      issuedAt,
-      LEGACY_JWT_SESSION_TTL
-    );
-
-    await t.throwsAsync(() => t.context.jwtSession.verify(token), {
-      message: 'You must sign in first to access this resource.',
-    });
-  }
-);
 
 test.serial('should reject invalid jwt cases', async t => {
   const cases: Array<{ name: string; token: string }> = [
+    {
+      name: 'expired token',
+      token: jwt.sign(
+        { sid: t.context.sessionId, typ: 'user_session' },
+        currentJwtKey(t.context.crypto),
+        {
+          algorithm: 'HS256',
+          audience: 'affine-client',
+          expiresIn: -1,
+          issuer: 'affine',
+          subject: t.context.user.id,
+        }
+      ),
+    },
     {
       name: 'wrong signature',
       token: jwt.sign(
