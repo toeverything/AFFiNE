@@ -9,6 +9,7 @@ import type { CurrentUser, Session } from './session';
 const JWT_SESSION_TYPE = 'user_session';
 const JWT_SESSION_ISSUER = 'affine';
 const JWT_SESSION_AUDIENCE = 'affine-client';
+const JWT_SESSION_CLOCK_SKEW_SECONDS = 30;
 
 export interface SignedJwtSession {
   token: string;
@@ -73,7 +74,19 @@ export class JwtSessionService {
   }
 
   private assertWithinConfiguredTtl(payload: UserSessionJwtPayload) {
-    if (typeof payload.iat !== 'number') throw new AuthenticationRequired();
+    if (
+      typeof payload.iat !== 'number' ||
+      !Number.isFinite(payload.iat) ||
+      !Number.isSafeInteger(payload.iat)
+    ) {
+      throw new AuthenticationRequired();
+    }
+
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    if (payload.iat > nowSeconds + JWT_SESSION_CLOCK_SKEW_SECONDS) {
+      throw new AuthenticationRequired();
+    }
+
     if (payload.iat * 1000 + this.ttl * 1000 <= Date.now()) {
       throw new AuthenticationRequired();
     }
