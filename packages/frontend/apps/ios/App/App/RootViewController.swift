@@ -59,53 +59,15 @@ class RootViewController: UINavigationController {
     didScheduleOnboardingPresentation = true
     let onboardingController = OnboardingViewController()
     onboardingController.modalPresentationStyle = .fullScreen
-    onboardingController.onFinish = { [weak self, weak onboardingController] in
-      self?.finishOnboarding(from: onboardingController)
-    }
-    onboardingController.onPurchase = { [weak self, weak onboardingController] type in
-      guard let onboardingController else { return }
-      self?.handleOnboardingPurchase(type, from: onboardingController)
-    }
-    onboardingController.onRestorePurchases = { [weak self] in
-      self?.restorePurchasesForOnboarding()
+    onboardingController.onShowPaywall = { [weak self, weak onboardingController] in
+      self?.showOnboardingPaywall(from: onboardingController)
     }
     present(onboardingController, animated: false)
   }
 
-  private func finishOnboarding(from onboardingController: OnboardingViewController?) {
-    OnboardingFlag.markCompleted()
-    affineViewController?.webView?.evaluateJavaScript("window.location.assign('/');")
-    onboardingController?.dismiss(animated: true) { [weak self] in
-      self?.didScheduleOnboardingPresentation = true
-    }
-  }
-
-  private func handleOnboardingPurchase(
-    _ type: OnboardingPurchaseType,
-    from onboardingController: OnboardingViewController
-  ) {
-    onboardingController.setPurchaseProcessing(true)
-    Task { [weak self, weak onboardingController] in
-      await self?.processOnboardingPurchase(type, onboardingController: onboardingController)
-    }
-  }
-
-  @MainActor
-  private func processOnboardingPurchase(
-    _ type: OnboardingPurchaseType,
-    onboardingController: OnboardingViewController?
-  ) async {
-    let isSignedIn = await ensureUserSignedIn(from: onboardingController)
-    onboardingController?.setPurchaseProcessing(false)
-
-    guard isSignedIn else {
-      didScheduleOnboardingPresentation = false
-      presentOnboardingIfNeeded(force: true)
-      return
-    }
-
+  private func showOnboardingPaywall(from onboardingController: OnboardingViewController?) {
     let presentPaywall = { [weak self] in
-      self?.presentPaywallForOnboarding(type: type)
+      self?.presentCustomOnboardingPaywall(initialPurchaseType: .pro)
     }
 
     if let onboardingController, onboardingController.presentingViewController != nil {
@@ -117,8 +79,82 @@ class RootViewController: UINavigationController {
     }
   }
 
+  private func presentCustomOnboardingPaywall(initialPurchaseType: OnboardingPurchaseType) {
+    guard presentedViewController == nil else { return }
+
+    let paywallController = OnboardingPaywallViewController()
+    paywallController.initialPurchaseType = initialPurchaseType
+    paywallController.modalPresentationStyle = .fullScreen
+    paywallController.modalTransitionStyle = .coverVertical
+    paywallController.onClose = { [weak self, weak paywallController] in
+      self?.finishOnboarding(from: paywallController)
+    }
+    paywallController.onPurchase = { [weak self, weak paywallController] type in
+      guard let paywallController else { return }
+      self?.handleCustomPaywallPurchase(type, from: paywallController)
+    }
+    paywallController.onRestorePurchases = { [weak self, weak paywallController] in
+      self?.restorePurchasesForOnboarding(from: paywallController)
+    }
+    present(paywallController, animated: true)
+  }
+
+  private func finishOnboarding(from controller: UIViewController?) {
+    OnboardingFlag.markCompleted()
+    affineViewController?.webView?.evaluateJavaScript("window.location.assign('/');")
+
+    guard let controller, controller.presentingViewController != nil else {
+      didScheduleOnboardingPresentation = true
+      return
+    }
+
+    controller.dismiss(animated: true) { [weak self] in
+      self?.didScheduleOnboardingPresentation = true
+    }
+  }
+
+  private func handleCustomPaywallPurchase(
+    _ type: OnboardingPurchaseType,
+    from paywallController: OnboardingPaywallViewController
+  ) {
+    paywallController.setPurchaseProcessing(true)
+    Task { [weak self, weak paywallController] in
+      await self?.processCustomPaywallPurchase(type, paywallController: paywallController)
+    }
+  }
+
   @MainActor
-  private func ensureUserSignedIn(from onboardingController: OnboardingViewController?) async -> Bool {
+  private func processCustomPaywallPurchase(
+    _ type: OnboardingPurchaseType,
+    paywallController: OnboardingPaywallViewController?
+  ) async {
+    let wasPresentingCustomPaywall = paywallController?.presentingViewController != nil
+    let isSignedIn = await ensureUserSignedIn(from: paywallController)
+    paywallController?.setPurchaseProcessing(false)
+
+    guard isSignedIn else {
+      if wasPresentingCustomPaywall {
+        presentCustomOnboardingPaywall(initialPurchaseType: type)
+      }
+      return
+    }
+
+    let presentingController: UIViewController
+    if let paywallController, paywallController.presentingViewController != nil {
+      presentingController = paywallController
+    } else {
+      presentingController = self
+    }
+
+    presentPaywallForOnboarding(
+      type: type,
+      from: presentingController,
+      customPaywallController: paywallController
+    )
+  }
+
+  @MainActor
+  private func ensureUserSignedIn(from controller: UIViewController?) async -> Bool {
     guard let webView = affineViewController?.webView else {
       showOnboardingAlert(message: "AFFiNE is still loading. Please try again in a moment.")
       return false
@@ -128,7 +164,7 @@ class RootViewController: UINavigationController {
       return true
     }
 
-    await dismissOnboarding(onboardingController)
+    await dismissPresentedFlow(controller)
 
     do {
       let result = try await webView.callAsyncJavaScript(
@@ -154,10 +190,10 @@ class RootViewController: UINavigationController {
   }
 
   @MainActor
-  private func dismissOnboarding(_ onboardingController: OnboardingViewController?) async {
-    guard let onboardingController, onboardingController.presentingViewController != nil else { return }
+  private func dismissPresentedFlow(_ controller: UIViewController?) async {
+    guard let controller, controller.presentingViewController != nil else { return }
     await withCheckedContinuation { continuation in
-      onboardingController.dismiss(animated: true) {
+      controller.dismiss(animated: true) {
         continuation.resume()
       }
     }
@@ -195,44 +231,58 @@ class RootViewController: UINavigationController {
   }
 
   @MainActor
-  private func presentPaywallForOnboarding(type: OnboardingPurchaseType) {
+  private func presentPaywallForOnboarding(
+    type: OnboardingPurchaseType,
+    from controller: UIViewController,
+    customPaywallController: OnboardingPaywallViewController?
+  ) {
     guard let affineViewController, let webView = affineViewController.webView else {
       showOnboardingAlert(message: "AFFiNE is still loading. Please try again in a moment.")
       return
     }
+
     Paywall.presentWall(
-      toController: self,
+      toController: controller,
       bindWebContext: webView,
       type: type.rawValue
-    ) { [weak self] completedPurchase in
-      self?.handleOnboardingPaywallDismiss(completedPurchase: completedPurchase)
+    ) { [weak self, weak customPaywallController] completedPurchase in
+      self?.handleNativeOnboardingPaywallDismiss(
+        completedPurchase: completedPurchase,
+        retryType: type,
+        customPaywallController: customPaywallController
+      )
     }
   }
 
   @MainActor
-  private func restorePurchasesForOnboarding() {
+  private func restorePurchasesForOnboarding(from controller: UIViewController?) {
     guard let affineViewController, let webView = affineViewController.webView else {
       showOnboardingAlert(message: "AFFiNE is still loading. Please try again in a moment.")
       return
     }
 
     Paywall.restorePurchases(
-      fromController: self,
+      fromController: controller ?? self,
       bindWebContext: webView
     )
   }
 
   @MainActor
-  private func handleOnboardingPaywallDismiss(completedPurchase: Bool) {
+  private func handleNativeOnboardingPaywallDismiss(
+    completedPurchase: Bool,
+    retryType: OnboardingPurchaseType,
+    customPaywallController: OnboardingPaywallViewController?
+  ) {
     if completedPurchase {
-      OnboardingFlag.markCompleted()
-      affineViewController?.webView?.evaluateJavaScript("window.location.assign('/');")
-      didScheduleOnboardingPresentation = true
+      finishOnboarding(from: customPaywallController)
       return
     }
 
-    didScheduleOnboardingPresentation = false
-    presentOnboardingIfNeeded(force: true)
+    guard customPaywallController?.presentingViewController == nil else {
+      return
+    }
+
+    presentCustomOnboardingPaywall(initialPurchaseType: retryType)
   }
 
   @MainActor

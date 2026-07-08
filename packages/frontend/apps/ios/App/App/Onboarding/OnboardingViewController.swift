@@ -1,4 +1,3 @@
-import Combine
 import SwiftUI
 import UIKit
 
@@ -7,29 +6,18 @@ enum OnboardingPurchaseType: String {
   case ai
 }
 
-@MainActor
-final class OnboardingFlowState: ObservableObject {
-  @Published var isProcessingPurchase = false
-}
-
 final class OnboardingViewController: UIViewController {
-  var onFinish: (() -> Void)?
-  var onPurchase: ((OnboardingPurchaseType) -> Void)?
-  var onRestorePurchases: (() -> Void)?
+  var onShowPaywall: (() -> Void)?
 
-  private let flowState = OnboardingFlowState()
   private var hostingController: UIHostingController<OnboardingRootView>?
 
   override func viewDidLoad() {
     super.viewDidLoad()
     view.backgroundColor = UIColor(named: "OnboardingIntroBackground") ?? .systemBackground
 
-    let rootView = OnboardingRootView(
-      state: flowState,
-      onFinish: { [weak self] in self?.onFinish?() },
-      onPurchase: { [weak self] type in self?.onPurchase?(type) },
-      onRestorePurchases: { [weak self] in self?.onRestorePurchases?() }
-    )
+    let rootView = OnboardingRootView(onShowPaywall: { [weak self] in
+      self?.onShowPaywall?()
+    })
     let hostingController = UIHostingController(rootView: rootView)
     self.hostingController = hostingController
 
@@ -43,9 +31,5 @@ final class OnboardingViewController: UIViewController {
       hostingController.view.bottomAnchor.constraint(equalTo: view.bottomAnchor),
     ])
     hostingController.didMove(toParent: self)
-  }
-
-  func setPurchaseProcessing(_ processing: Bool) {
-    flowState.isProcessingPurchase = processing
   }
 }

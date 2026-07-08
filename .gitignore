@@ -105,3 +105,4 @@ storageState.json
 # Local tool caches
 .corepack-bin/
 packages/frontend/apps/ios/App/.spm-cache/
+/.xcode-derived-data
