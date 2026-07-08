@@ -2,7 +2,7 @@ import SwiftUI
 import UIKit
 
 final class OnboardingViewController: UIViewController {
-  var onShowPaywall: (() -> Void)?
+  var onCompleteOnboarding: (() -> Void)?
 
   private var hostingController: UIHostingController<OnboardingRootView>?
 
@@ -10,8 +10,8 @@ final class OnboardingViewController: UIViewController {
     super.viewDidLoad()
     view.backgroundColor = UIColor(named: "OnboardingIntroBackground") ?? .systemBackground
 
-    let rootView = OnboardingRootView(onShowPaywall: { [weak self] in
-      self?.onShowPaywall?()
+    let rootView = OnboardingRootView(onCompleteOnboarding: { [weak self] in
+      self?.onCompleteOnboarding?()
     })
     let hostingController = UIHostingController(rootView: rootView)
     self.hostingController = hostingController

@@ -36,18 +36,17 @@ enum PaywallAuthGuard {
         "return await window.requestSignIn();",
         contentWorld: .page
       )
+      if result == nil || result is NSNull {
+        return false
+      }
       if userIdentifier(from: result) != nil {
         return true
       }
     } catch {
-      do {
-        try await webView.evaluateJavaScript("window.location.assign('/sign-in');")
-      } catch {
-        return false
-      }
+      return false
     }
 
-    return await waitForCurrentUserIdentifier(in: webView, timeout: 300)
+    return await currentUserIdentifier(in: webView) != nil
   }
 
   static func currentUserIdentifier(in webView: WKWebView) async -> String? {
@@ -62,6 +61,23 @@ enum PaywallAuthGuard {
     }
   }
 
+  static func hasProSubscription(in webView: WKWebView) async throws -> Bool {
+    let result = try await webView.callAsyncJavaScript(
+      "return await window.getSubscriptionState();",
+      contentWorld: .page
+    )
+
+    guard let subscriptionState = result as? [String: Any] else {
+      throw NSError(
+        domain: "PaywallAuthGuard",
+        code: -1,
+        userInfo: [NSLocalizedDescriptionKey: "Unable to determine subscription status."]
+      )
+    }
+
+    return subscriptionState["pro"] as? [String: Any] != nil
+  }
+
   private static func dismissIfNeeded(_ controller: UIViewController?) async {
     guard let controller, controller.presentingViewController != nil else { return }
     await withCheckedContinuation { continuation in
@@ -71,16 +87,6 @@ enum PaywallAuthGuard {
     }
   }
 
-  private static func waitForCurrentUserIdentifier(in webView: WKWebView, timeout: TimeInterval) async -> Bool {
-    let deadline = Date().addingTimeInterval(timeout)
-    while Date() < deadline {
-      if await currentUserIdentifier(in: webView) != nil {
-        return true
-      }
-      try? await Task.sleep(nanoseconds: 750_000_000)
-    }
-    return false
-  }
 
   private static func userIdentifier(from result: Any?) -> String? {
     guard let rawIdentifier = result as? String else { return nil }

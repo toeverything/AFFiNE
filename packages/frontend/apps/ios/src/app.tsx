@@ -19,6 +19,7 @@ import {
   ValidatorProvider,
 } from '@affine/core/modules/cloud';
 import { registerNativePreviewHandlers } from '@affine/core/modules/code-block-preview-renderer';
+import { GlobalDialogService } from '@affine/core/modules/dialogs';
 import { DocsService } from '@affine/core/modules/doc';
 import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { GlobalContextService } from '@affine/core/modules/global-context';
@@ -301,17 +302,88 @@ registerNativePreviewHandlers({
     return account.id;
   }
 
+  const globalDialogService = frameworkProvider.get(GlobalDialogService);
   const abortController = new AbortController();
+  let dialogId = '';
+  let dialogClosed = false;
+  let didAuthenticate = false;
+  let closeError: Error | null = null;
+
+  const closeDialog = () => {
+    if (dialogClosed || !dialogId) {
+      return;
+    }
+    dialogClosed = true;
+    globalDialogService.close(dialogId);
+  };
+
   const timeout = window.setTimeout(
-    () => abortController.abort(),
+    () => {
+      closeError = new Error('Sign-in timed out.');
+      abortController.abort(closeError);
+      closeDialog();
+    },
     5 * 60 * 1000
   );
+
   try {
-    await router.navigate('/sign-in');
-    const session = await authService.session.waitForAuthenticated(
-      abortController.signal
-    );
-    return session.session.account.id;
+    return await new Promise<string | null>((resolve, reject) => {
+      let didSettle = false;
+      const resolveOnce = (value: string | null) => {
+        if (didSettle) {
+          return;
+        }
+        didSettle = true;
+        resolve(value);
+      };
+      const rejectOnce = (error: unknown) => {
+        if (didSettle) {
+          return;
+        }
+        didSettle = true;
+        reject(error);
+      };
+
+      dialogId = globalDialogService.open(
+        'sign-in',
+        {
+          server: currentServer.baseUrl,
+        },
+        () => {
+          if (didAuthenticate) {
+            return;
+          }
+          if (closeError) {
+            rejectOnce(closeError);
+            return;
+          }
+          abortController.abort();
+          resolveOnce(null);
+        }
+      );
+
+      authService.session
+        .waitForAuthenticated(abortController.signal)
+        .then(session => {
+          didAuthenticate = true;
+          closeDialog();
+          resolveOnce(session.session.account.id);
+        })
+        .catch(error => {
+          if (abortController.signal.aborted) {
+            if (closeError) {
+              rejectOnce(closeError);
+            }
+            return;
+          }
+          closeError =
+            error instanceof Error
+              ? error
+              : new Error('Unable to complete sign-in.');
+          closeDialog();
+          rejectOnce(closeError);
+        });
+    });
   } finally {
     window.clearTimeout(timeout);
   }

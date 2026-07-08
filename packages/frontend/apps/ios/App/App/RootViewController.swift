@@ -58,13 +58,13 @@ class RootViewController: UINavigationController {
     didScheduleOnboardingPresentation = true
     let onboardingController = OnboardingViewController()
     onboardingController.modalPresentationStyle = .fullScreen
-    onboardingController.onShowPaywall = { [weak self, weak onboardingController] in
-      self?.showOnboardingPaywall(from: onboardingController)
+    onboardingController.onCompleteOnboarding = { [weak self, weak onboardingController] in
+      self?.handleOnboardingCompletion(from: onboardingController)
     }
     present(onboardingController, animated: false)
   }
 
-  private func showOnboardingPaywall(from onboardingController: OnboardingViewController?) {
+  private func handleOnboardingCompletion(from onboardingController: OnboardingViewController?) {
     Task { @MainActor [weak self, weak onboardingController] in
       guard let self else { return }
       guard let webView = affineViewController?.webView else {
@@ -73,7 +73,21 @@ class RootViewController: UINavigationController {
       }
 
       let isSignedIn = await PaywallAuthGuard.ensureSignedIn(using: webView, dismissing: onboardingController)
-      guard isSignedIn else { return }
+      guard isSignedIn else {
+        finishOnboarding(from: nil)
+        return
+      }
+
+      do {
+        if try await PaywallAuthGuard.hasProSubscription(in: webView) {
+          finishOnboarding(from: nil)
+          return
+        }
+      } catch {
+        showOnboardingAlert(message: error.localizedDescription)
+        finishOnboarding(from: nil)
+        return
+      }
 
       presentSharedPaywall(
         initialPlan: .pro,

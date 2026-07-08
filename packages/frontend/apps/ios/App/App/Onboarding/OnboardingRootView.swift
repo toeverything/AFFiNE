@@ -3,7 +3,7 @@ import SwiftUI
 import UIKit
 
 struct OnboardingRootView: View {
-  let onShowPaywall: () -> Void
+  let onCompleteOnboarding: () -> Void
 
   @State private var pageIndex = 0
   @State private var selectedRole: OnboardingRole?
@@ -153,7 +153,7 @@ struct OnboardingRootView: View {
   private func goNext() {
     guard isNextEnabled else { return }
     guard pageIndex < pages.count - 1 else {
-      onShowPaywall()
+      onCompleteOnboarding()
       return
     }
     pageIndex += 1
@@ -872,5 +872,5 @@ private struct PageDots: View {
 }
 
 #Preview {
-  OnboardingRootView(onShowPaywall: {})
+  OnboardingRootView(onCompleteOnboarding: {})
 }
