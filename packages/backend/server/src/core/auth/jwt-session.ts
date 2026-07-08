@@ -40,13 +40,6 @@ export class JwtSessionService {
     private readonly config: Config
   ) {}
 
-  private get effectiveJwtTtl() {
-    const sessionTtl = this.config.auth.session.ttl;
-    const jwtTtl = this.config.auth.session.jwtTtl ?? sessionTtl;
-
-    return Math.min(jwtTtl, sessionTtl);
-  }
-
   private get currentKey() {
     return Buffer.concat([
       Buffer.from('affine:user-session-jwt:v1:'),
@@ -55,7 +48,7 @@ export class JwtSessionService {
   }
 
   sign(userId: string, sessionId: string): SignedJwtSession {
-    const ttl = this.effectiveJwtTtl;
+    const ttl = this.config.auth.session.ttl;
     const expiresAt = new Date(Date.now() + ttl * 1000);
     const token = jwt.sign(
       { sid: sessionId, typ: JWT_SESSION_TYPE },

@@ -62,7 +62,6 @@ function resetAuthSessionConfig(config: ConfigFactory) {
       session: {
         ttl: DEFAULT_SESSION_TTL,
         ttr: DEFAULT_SESSION_TTR,
-        jwtTtl: undefined,
       },
     },
   });
@@ -122,49 +121,25 @@ test.serial(
   }
 );
 
-test.serial(
-  'should use configured jwt session ttl when it is shorter than session ttl',
-  async t => {
-    t.context.config.override({
-      auth: {
-        session: {
-          jwtTtl: 120,
-        },
+test.serial('should use configured application session ttl', async t => {
+  const ttl = 120;
+  t.context.config.override({
+    auth: {
+      session: {
+        ttl,
       },
-    });
+    },
+  });
 
-    const signed = t.context.jwtSession.sign(
-      t.context.user.id,
-      t.context.sessionId
-    );
+  const signed = t.context.jwtSession.sign(
+    t.context.user.id,
+    t.context.sessionId
+  );
 
-    const ttlMs = signed.expiresAt.getTime() - Date.now();
-    t.true(ttlMs > 115 * 1000);
-    t.true(ttlMs <= 121 * 1000);
-  }
-);
-
-test.serial(
-  'should cap configured jwt session ttl to application session ttl',
-  async t => {
-    t.context.config.override({
-      auth: {
-        session: {
-          jwtTtl: DEFAULT_SESSION_TTL * 2,
-        },
-      },
-    });
-
-    const signed = t.context.jwtSession.sign(
-      t.context.user.id,
-      t.context.sessionId
-    );
-
-    const ttlMs = signed.expiresAt.getTime() - Date.now();
-    t.true(ttlMs > (DEFAULT_SESSION_TTL - 5) * 1000);
-    t.true(ttlMs <= (DEFAULT_SESSION_TTL + 1) * 1000);
-  }
-);
+  const ttlMs = signed.expiresAt.getTime() - Date.now();
+  t.true(ttlMs > (ttl - 5) * 1000);
+  t.true(ttlMs <= (ttl + 1) * 1000);
+});
 
 test.serial(
   'should reject legacy jwt when embedded expiration has elapsed',

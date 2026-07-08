@@ -6,7 +6,6 @@ export interface AuthConfig {
   session: {
     ttl: number;
     ttr: number;
-    jwtTtl?: number;
   };
   allowSignup: boolean;
   allowSignupForOauth: boolean;
@@ -91,11 +90,6 @@ defineModuleConfig('auth', {
   'session.ttl': {
     desc: 'Application auth expiration time in seconds.',
     default: 60 * 60 * 24 * 15, // 15 days
-  },
-  'session.jwtTtl': {
-    desc: 'JWT-backed native session expiration time in seconds. Defaults to auth.session.ttl.',
-    default: undefined,
-    shape: z.number().int().positive().optional(),
   },
   'session.ttr': {
     desc: 'Application auth time to refresh in seconds.',
