@@ -683,6 +683,7 @@ export const PackageList = [
     location: 'blocksuite/affine/gfx/turbo-renderer',
     name: '@blocksuite/affine-gfx-turbo-renderer',
     workspaceDependencies: [
+      'blocksuite/affine/shared',
       'blocksuite/framework/global',
       'blocksuite/framework/std',
       'blocksuite/framework/store',
@@ -1325,11 +1326,6 @@ export const PackageList = [
     ],
   },
   {
-    location: 'packages/frontend/media-capture-playground',
-    name: '@affine/media-capture-playground',
-    workspaceDependencies: ['packages/frontend/native'],
-  },
-  {
     location: 'packages/frontend/native',
     name: '@affine/native',
     workspaceDependencies: [],
@@ -1548,7 +1544,6 @@ export type PackageName =
   | '@affine/core'
   | '@affine/electron-api'
   | '@affine/i18n'
-  | '@affine/media-capture-playground'
   | '@affine/native'
   | '@affine/routes'
   | '@affine/templates'

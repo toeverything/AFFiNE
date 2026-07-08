@@ -13,7 +13,8 @@ napi       = ["affine_common/napi"]
 use-as-lib = ["napi-derive/noop", "napi/noop"]
 
 [dependencies]
-affine_common = { workspace = true, features = ["ydoc-loader"] }
+affine_common = { workspace = true, features = ["napi"] }
+affine_doc_loader = { workspace = true }
 affine_schema = { path = "../schema" }
 anyhow = { workspace = true }
 bincode = { version = "2.0.1", features = ["serde"] }

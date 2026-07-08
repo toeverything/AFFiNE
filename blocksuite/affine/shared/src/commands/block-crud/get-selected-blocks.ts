@@ -129,32 +129,35 @@ export const getSelectedBlocksCommand: Command<
     dirtyResult = dirtyResult.filter(ctx.filter);
   }
 
+  const getModelPath = (el: BlockComponent) => {
+    const path: number[] = [];
+    let model = el.model;
+    while (model) {
+      const parent = ctx.std.store.getParent(model.id);
+      if (!parent) break;
+      path.unshift(parent.children.findIndex(child => child.id === model.id));
+      model = parent;
+    }
+    return path;
+  };
+
+  const compareByModelPath = (a: BlockComponent, b: BlockComponent) => {
+    if (a === b) return 0;
+    const aPath = getModelPath(a);
+    const bPath = getModelPath(b);
+    const length = Math.min(aPath.length, bPath.length);
+    for (let i = 0; i < length; i++) {
+      const diff = aPath[i] - bPath[i];
+      if (diff !== 0) return diff;
+    }
+    return aPath.length - bPath.length;
+  };
+
   // remove duplicate elements
   const result: BlockComponent[] = dirtyResult
     .filter((el, index) => dirtyResult.indexOf(el) === index)
-    // sort by document position
-    .sort((a, b) => {
-      if (a === b) {
-        return 0;
-      }
-
-      const position = a.compareDocumentPosition(b);
-      if (
-        position & Node.DOCUMENT_POSITION_FOLLOWING ||
-        position & Node.DOCUMENT_POSITION_CONTAINED_BY
-      ) {
-        return -1;
-      }
-
-      if (
-        position & Node.DOCUMENT_POSITION_PRECEDING ||
-        position & Node.DOCUMENT_POSITION_CONTAINS
-      ) {
-        return 1;
-      }
-
-      return 0;
-    });
+    // sort by model tree position, which is the order used for paste/export
+    .sort(compareByModelPath);
 
   if (result.length === 0) return;
 

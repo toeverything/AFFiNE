@@ -11,10 +11,14 @@ import {
   UndoManager,
 } from 'yjs';
 
-import { CallMetric } from '../../../base';
+import { CallMetric, metrics } from '../../../base';
+import { validateDocUpdate } from '../../../native';
 import { applyUpdatesWithNative, mergeUpdatesWithYjs } from '../merge-updates';
 import { Connection } from './connection';
 import { SingletonLocker } from './lock';
+
+const DOC_UPDATE_VALIDATE_TIMEOUT_MS = 1000;
+const DOC_UPDATE_VALIDATE_MAX_BYTES = 32 * 1024 * 1024;
 
 async function nativeApplyUpdates(updates: Uint8Array[]): Promise<Uint8Array> {
   return applyUpdatesWithNative(updates, 'doc.storage.squash.native');
@@ -79,6 +83,47 @@ export abstract class DocStorageAdapter extends Connection {
       // 0x00 for update
       (bin.length === 2 && bin[0] === 0 && bin[1] === 0)
     );
+  }
+
+  protected async filterValidDocUpdates(
+    spaceId: string,
+    docId: string,
+    updates: Uint8Array[]
+  ) {
+    const valid: Uint8Array[] = [];
+    for (const update of updates) {
+      const reason = await this.invalidDocUpdateReason(update);
+      if (reason) {
+        metrics.doc.counter('doc_update_rejected').add(1, { reason });
+        this.logger.warn(
+          `Dropped invalid doc update, spaceId: ${spaceId}, docId: ${docId}, reason: ${reason}, size: ${update.length}`
+        );
+        continue;
+      }
+      valid.push(update);
+    }
+    return valid;
+  }
+
+  private async invalidDocUpdateReason(update: Uint8Array) {
+    if (update.length === 2 && update[0] === 0 && update[1] === 0) {
+      return null;
+    }
+    if (update.length > DOC_UPDATE_VALIDATE_MAX_BYTES) {
+      return 'oversized';
+    }
+
+    try {
+      return (await validateDocUpdate(Buffer.from(update), {
+        timeoutMs: DOC_UPDATE_VALIDATE_TIMEOUT_MS,
+      }))
+        ? null
+        : 'invalid';
+    } catch (err) {
+      this.logger.warn('Doc update validation failed', err);
+      metrics.doc.counter('doc_update_validation_failed').add(1);
+      return null;
+    }
   }
 
   async getDoc(spaceId: string, docId: string): Promise<DocRecord | null> {

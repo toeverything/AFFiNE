@@ -9,7 +9,6 @@ export const RSPACK_SUPPORTED_PACKAGES = [
   '@affine/electron-renderer',
   '@affine/server',
   '@affine/reader',
-  '@affine/media-capture-playground',
 ] as const;
 
 const rspackSupportedPackageSet = new Set<string>(RSPACK_SUPPORTED_PACKAGES);

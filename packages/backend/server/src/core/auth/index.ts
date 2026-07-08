@@ -2,6 +2,7 @@ import './config';
 
 import { Module } from '@nestjs/common';
 
+import { BackendRuntimeModule } from '../backend-runtime';
 import { FeatureModule } from '../features';
 import { MailModule } from '../mail';
 import { QuotaModule } from '../quota';
@@ -20,7 +21,13 @@ import { AuthService } from './service';
 import { SessionIssuer } from './session-issuer';
 
 @Module({
-  imports: [FeatureModule, UserModule, QuotaModule, MailModule],
+  imports: [
+    BackendRuntimeModule,
+    FeatureModule,
+    UserModule,
+    QuotaModule,
+    MailModule,
+  ],
   providers: [
     AuthService,
     AuthResolver,

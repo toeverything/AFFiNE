@@ -1,6 +1,6 @@
 import test from 'ava';
 
-import { DocStoragePool } from '../index';
+import { DocStoragePool } from '../index.js';
 
 test('can batch read/write pool', async t => {
   const pool = new DocStoragePool();

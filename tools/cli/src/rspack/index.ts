@@ -78,9 +78,7 @@ export function createHTMLTargetConfig(
 ): RspackConfiguration {
   entry = typeof entry === 'string' ? { index: entry } : entry;
   const tailwindConfigPath = pkg.join('tailwind.config.js');
-  const hasTailwind =
-    tailwindConfigPath.exists() ||
-    pkg.name === '@affine/media-capture-playground';
+  const hasTailwind = tailwindConfigPath.exists();
   const tailwindPlugin = tailwindConfigPath.exists()
     ? ['@tailwindcss/postcss', require(tailwindConfigPath.value)]
     : ['@tailwindcss/postcss'];

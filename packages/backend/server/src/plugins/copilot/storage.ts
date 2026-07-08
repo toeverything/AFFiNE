@@ -6,42 +6,28 @@ import {
   type BlobInputType,
   BlobQuotaExceeded,
   CallMetric,
-  Config,
   type FileUpload,
   OneMB,
-  OnEvent,
   readBuffer,
-  type StorageProvider,
-  StorageProviderFactory,
+  toBuffer,
   URLHelper,
 } from '../../base';
 import { QuotaService } from '../../core/quota';
+import {
+  type StorageRuntimeGetObjectResult,
+  StorageRuntimeProvider,
+} from '../../core/storage-runtime';
 import { fetchRemoteAttachment } from '../../native';
 
 const REMOTE_BLOB_MAX_BYTES = 20 * OneMB;
 
 @Injectable()
 export class CopilotStorage {
-  public provider!: StorageProvider;
-
   constructor(
-    private readonly config: Config,
     private readonly url: URLHelper,
-    private readonly storageFactory: StorageProviderFactory,
+    private readonly rt: StorageRuntimeProvider,
     private readonly quota: QuotaService
   ) {}
-
-  @OnEvent('config.init')
-  async onConfigInit() {
-    this.provider = this.storageFactory.create(this.config.copilot.storage);
-  }
-
-  @OnEvent('config.changed')
-  async onConfigChanged(event: Events['config.changed']) {
-    if (event.updates?.copilot?.storage) {
-      this.provider = this.storageFactory.create(this.config.copilot.storage);
-    }
-  }
 
   @CallMetric('ai', 'blob_put')
   async put(
@@ -52,10 +38,14 @@ export class CopilotStorage {
     mimeType = 'image/png'
   ) {
     const name = `${userId}/${workspaceId}/${key}`;
-    await this.provider.put(name, blob);
+    const buffer = await toBuffer(blob);
+    await this.rt.putObject('copilot', name, buffer, {
+      contentType: mimeType,
+      contentLength: buffer.length,
+    });
     if (!env.prod) {
       // return image base64url for dev environment
-      return `data:${mimeType};base64,${blob.toString('base64')}`;
+      return `data:${mimeType};base64,${buffer.toString('base64')}`;
     }
     return this.url.link(`/api/copilot/blob/${name}`);
   }
@@ -66,13 +56,20 @@ export class CopilotStorage {
     workspaceId: string,
     key: string,
     signedUrl?: boolean
-  ) {
-    return this.provider.get(`${userId}/${workspaceId}/${key}`, signedUrl);
+  ): Promise<StorageRuntimeGetObjectResult> {
+    const name = `${userId}/${workspaceId}/${key}`;
+    if (signedUrl) {
+      const presigned = await this.rt.presignGet('copilot', name);
+      if (presigned) {
+        return { redirectUrl: presigned.url };
+      }
+    }
+    return this.rt.getObject('copilot', name);
   }
 
   @CallMetric('ai', 'blob_delete')
   async delete(userId: string, workspaceId: string, key: string) {
-    await this.provider.delete(`${userId}/${workspaceId}/${key}`);
+    await this.rt.deleteObject('copilot', `${userId}/${workspaceId}/${key}`);
   }
 
   @CallMetric('ai', 'blob_upload')

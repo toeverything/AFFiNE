@@ -1,4 +1,4 @@
-use affine_common::doc_parser::ParseError;
+use affine_doc_loader::ParseError;
 
 pub type Result<T> = std::result::Result<T, Error>;
 

@@ -29,6 +29,12 @@ export class QuotaStateService {
     private readonly event: EventBus
   ) {}
 
+  async getWorkspaceQuotaState(workspaceId: string) {
+    return await this.db.effectiveWorkspaceQuotaState.findUnique({
+      where: { workspaceId },
+    });
+  }
+
   async reconcileUserQuotaState(
     userId: string,
     options: { emit?: boolean } = {}
@@ -49,31 +55,21 @@ export class QuotaStateService {
     };
     const now = new Date();
 
+    const update = {
+      plan: resolved.plan,
+      sourceEntitlementId: entitlement?.id ?? null,
+      ...this.quotaData(resolved.quota),
+      usedStorageQuota,
+      flags,
+      known: true,
+      stale: false,
+      lastReconciledAt: now,
+      staleAfter: this.staleAfter(now),
+    };
     const state = await this.db.effectiveUserQuotaState.upsert({
       where: { userId },
-      update: {
-        plan: resolved.plan,
-        sourceEntitlementId: entitlement?.id ?? null,
-        ...this.quotaData(resolved.quota),
-        usedStorageQuota,
-        flags,
-        known: true,
-        stale: false,
-        lastReconciledAt: now,
-        staleAfter: this.staleAfter(now),
-      },
-      create: {
-        userId,
-        plan: resolved.plan,
-        sourceEntitlementId: entitlement?.id ?? null,
-        ...this.quotaData(resolved.quota),
-        usedStorageQuota,
-        flags,
-        known: true,
-        stale: false,
-        lastReconciledAt: now,
-        staleAfter: this.staleAfter(now),
-      },
+      update,
+      create: { userId, ...update },
     });
     if ((options.emit ?? true) && this.userQuotaStateChanged(previous, state)) {
       await this.event.emitAsync('user.quota_state.changed', { userId });
@@ -122,45 +118,28 @@ export class QuotaStateService {
     ].filter((reason): reason is string => !!reason);
     const now = new Date();
 
+    const update = {
+      plan,
+      sourceEntitlementId: entitlement?.id ?? null,
+      ownerUserId: owner.id,
+      usesOwnerQuota,
+      seatLimit,
+      memberCount,
+      overcapacityMemberCount,
+      ...this.workspaceQuotaData(quota),
+      usedStorageQuota,
+      readonly: readonlyReasons.length > 0,
+      readonlyReasons,
+      flags: resolved.flags,
+      known: true,
+      stale: false,
+      lastReconciledAt: now,
+      staleAfter: this.staleAfter(now),
+    };
     const state = await this.db.effectiveWorkspaceQuotaState.upsert({
       where: { workspaceId },
-      update: {
-        plan,
-        sourceEntitlementId: entitlement?.id ?? null,
-        ownerUserId: owner.id,
-        usesOwnerQuota,
-        seatLimit,
-        memberCount,
-        overcapacityMemberCount,
-        ...this.workspaceQuotaData(quota),
-        usedStorageQuota,
-        readonly: readonlyReasons.length > 0,
-        readonlyReasons,
-        flags: resolved.flags,
-        known: true,
-        stale: false,
-        lastReconciledAt: now,
-        staleAfter: this.staleAfter(now),
-      },
-      create: {
-        workspaceId,
-        plan,
-        sourceEntitlementId: entitlement?.id ?? null,
-        ownerUserId: owner.id,
-        usesOwnerQuota,
-        seatLimit,
-        memberCount,
-        overcapacityMemberCount,
-        ...this.workspaceQuotaData(quota),
-        usedStorageQuota,
-        readonly: readonlyReasons.length > 0,
-        readonlyReasons,
-        flags: resolved.flags,
-        known: true,
-        stale: false,
-        lastReconciledAt: now,
-        staleAfter: this.staleAfter(now),
-      },
+      update,
+      create: { workspaceId, ...update },
     });
     if (
       (options.emit ?? true) &&
@@ -308,17 +287,30 @@ export class QuotaStateService {
   }
 
   private async getWorkspaceStorageUsage(workspaceId: string) {
-    const sum = await this.db.blob.aggregate({
-      where: {
-        workspaceId,
-        deletedAt: null,
-      },
-      _sum: {
-        size: true,
-      },
-    });
+    const [blobSum, commentAttachmentSum] = await Promise.all([
+      this.db.blob.aggregate({
+        where: {
+          workspaceId,
+          deletedAt: null,
+        },
+        _sum: {
+          size: true,
+        },
+      }),
+      this.db.commentAttachment.aggregate({
+        where: {
+          workspaceId,
+        },
+        _sum: {
+          size: true,
+        },
+      }),
+    ]);
 
-    return BigInt(sum._sum.size ?? 0);
+    return (
+      BigInt(blobSum._sum.size ?? 0) +
+      BigInt(commentAttachmentSum._sum.size ?? 0)
+    );
   }
 
   private hasStandaloneWorkspaceQuota(plan: string) {

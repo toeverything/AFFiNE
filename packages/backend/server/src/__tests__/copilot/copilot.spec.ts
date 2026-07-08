@@ -7,6 +7,7 @@ import type { TestFn } from 'ava';
 import ava from 'ava';
 import { nanoid } from 'nanoid';
 import Sinon from 'sinon';
+import { z } from 'zod';
 
 import {
   EventBus,
@@ -27,6 +28,7 @@ import {
   WorkspaceModel,
   WorkspaceRole,
 } from '../../models';
+import type { LlmToolCallbackRequest } from '../../native';
 import { CopilotModule } from '../../plugins/copilot';
 import { CopilotContextService } from '../../plugins/copilot/context';
 import { CopilotContextResolver } from '../../plugins/copilot/context/resolver';
@@ -63,9 +65,14 @@ import { ImageResultHost } from '../../plugins/copilot/runtime/hosts/image-resul
 import { ModelSelectionPolicy } from '../../plugins/copilot/runtime/model-selection-policy';
 import { PromptRuntime } from '../../plugins/copilot/runtime/prompt-runtime';
 import { getProviderRuntimeHost } from '../../plugins/copilot/runtime/provider-runtime-context';
+import { executeToolCall } from '../../plugins/copilot/runtime/tool/bridge';
 import { TurnOrchestrator } from '../../plugins/copilot/runtime/turn-orchestrator';
 import { ChatSessionService } from '../../plugins/copilot/session';
 import { CopilotStorage } from '../../plugins/copilot/storage';
+import type {
+  CopilotToolExecuteOptions,
+  CopilotToolSet,
+} from '../../plugins/copilot/tools';
 import { CopilotTranscriptionService } from '../../plugins/copilot/transcript';
 import { CopilotWorkspaceService } from '../../plugins/copilot/workspace';
 import { PaymentModule } from '../../plugins/payment';
@@ -156,8 +163,6 @@ test.before(async t => {
       CopilotModule,
     ],
     tapModule: builder => {
-      // use real JobQueue for testing
-      builder.overrideProvider(JobQueue).useClass(JobQueue);
       builder.overrideProvider(RequestMutex).useValue({
         acquire: async () => ({
           async [Symbol.asyncDispose]() {},
@@ -811,7 +816,9 @@ test('should schedule title generation as a background job', async t => {
   const chatSession = await session.get(sessionId);
   t.truthy(chatSession);
 
-  const addJob = Sinon.stub(jobs, 'add').resolves();
+  const addJob = jobs.add as Sinon.SinonStub;
+  addJob.resetHistory();
+  addJob.resolves();
 
   chatSession!.pushTurn(
     buildTurn(sessionId, {
@@ -1271,6 +1278,143 @@ const wrapAsyncIter = async <T>(iter: AsyncIterable<T>) => {
   }
   return result;
 };
+
+test('tool bridge should validate zod tool args before execution', async t => {
+  const execute = Sinon.stub().resolves({ message: 'executed' });
+  const tools: CopilotToolSet = {
+    safeTool: {
+      inputSchema: z.object({
+        name: z.string(),
+      }),
+      execute,
+    },
+  };
+  const options: CopilotToolExecuteOptions = {};
+  const request: LlmToolCallbackRequest = {
+    callId: 'call-1',
+    name: 'safeTool',
+    args: { name: 123 },
+    rawArgumentsText: '{"name":123}',
+  };
+
+  const response = await executeToolCall(tools, request, options);
+
+  t.true(response.isError);
+  t.true(response.output instanceof Object);
+  t.regex((response.output as { message: string }).message, /Expected string/);
+  t.false(execute.called);
+});
+
+test('tool bridge should execute with parsed zod args and preserve callback response metadata', async t => {
+  const execute = Sinon.stub().resolves({ message: 'executed' });
+  const tools: CopilotToolSet = {
+    safeTool: {
+      inputSchema: z.object({
+        name: z.string().trim(),
+      }),
+      execute,
+    },
+  };
+  const options: CopilotToolExecuteOptions = {};
+  const request: LlmToolCallbackRequest = {
+    callId: 'call-2',
+    name: 'safeTool',
+    args: { name: ' AFFiNE ' },
+    rawArgumentsText: '{"name":" AFFiNE "}',
+  };
+
+  const response = await executeToolCall(tools, request, options);
+
+  t.false(response.isError ?? false);
+  t.deepEqual(response, {
+    callId: 'call-2',
+    name: 'safeTool',
+    args: { name: ' AFFiNE ' },
+    rawArgumentsText: '{"name":" AFFiNE "}',
+    argumentParseError: undefined,
+    output: { message: 'executed' },
+  });
+  t.deepEqual(execute.firstCall.args, [{ name: 'AFFiNE' }, options]);
+});
+
+test('tool bridge should reject malformed or unknown tool calls without executing tools', async t => {
+  const execute = Sinon.stub().resolves({ message: 'executed' });
+  const tools: CopilotToolSet = {
+    safeTool: {
+      inputSchema: z.record(z.unknown()),
+      execute,
+    },
+  };
+
+  const invalidJsonResponse = await executeToolCall(
+    tools,
+    {
+      callId: 'call-3',
+      name: 'safeTool',
+      args: {},
+      rawArgumentsText: '{"unterminated"',
+      argumentParseError: 'Unexpected end of JSON input',
+    },
+    {}
+  );
+  const missingToolResponse = await executeToolCall(
+    tools,
+    {
+      callId: 'call-4',
+      name: 'missingTool',
+      args: {},
+      rawArgumentsText: '{}',
+    },
+    {}
+  );
+
+  t.deepEqual(invalidJsonResponse, {
+    callId: 'call-3',
+    name: 'safeTool',
+    args: {},
+    rawArgumentsText: '{"unterminated"',
+    argumentParseError: 'Unexpected end of JSON input',
+    isError: true,
+    output: {
+      message: 'Invalid tool arguments JSON',
+      rawArguments: '{"unterminated"',
+      error: 'Unexpected end of JSON input',
+    },
+  });
+  t.deepEqual(missingToolResponse, {
+    callId: 'call-4',
+    name: 'missingTool',
+    args: {},
+    rawArgumentsText: '{}',
+    argumentParseError: undefined,
+    isError: true,
+    output: { message: 'Tool not found: missingTool' },
+  });
+  t.false(execute.called);
+});
+
+test('tool bridge should not mutate global object prototype for adversarial args', async t => {
+  const execute = Sinon.stub().resolves({ message: 'executed' });
+  const tools: CopilotToolSet = {
+    safeTool: {
+      inputSchema: z.record(z.unknown()),
+      execute,
+    },
+  };
+  const request: LlmToolCallbackRequest = {
+    callId: 'call-5',
+    name: 'safeTool',
+    args: JSON.parse('{"__proto__":{"polluted":"yes"}}'),
+    rawArgumentsText: '{"__proto__":{"polluted":"yes"}}',
+  };
+
+  const response = await executeToolCall(tools, request, {});
+
+  t.true(Object.prototype.hasOwnProperty.call(request.args, '__proto__'));
+  t.false(response.isError ?? false);
+  t.is((Object.prototype as Record<string, unknown>).polluted, undefined);
+  t.deepEqual(execute.firstCall.args[0], {});
+});
 
 test('action stream should expose successful text action result as message', t => {
   t.deepEqual(
@@ -1835,6 +1979,14 @@ test('should be able to manage workspace embedding', async t => {
       fileId: file.fileId,
       fileName: file.fileName,
     });
+    await jobs.embedPendingFile({
+      userId,
+      workspaceId: ws.id,
+      contextId: undefined,
+      blobId,
+      fileId: file.fileId,
+      fileName: file.fileName,
+    });
 
     let ret = 0;
     while (!ret) {
@@ -2059,7 +2211,9 @@ test('should handle copilot cron jobs correctly', async t => {
     copilotSession,
     'toBeGenerateTitle'
   ).resolves(mockSessions);
-  const jobAddStub = Sinon.stub(cronJobs['jobs'], 'add').resolves();
+  const jobAddStub = cronJobs['jobs'].add as Sinon.SinonStub;
+  jobAddStub.resetHistory();
+  jobAddStub.resolves();
 
   // daily cleanup job scheduling
   {
@@ -2107,7 +2261,7 @@ test('should handle copilot cron jobs correctly', async t => {
 
   cleanupStub.restore();
   toBeGenerateStub.restore();
-  jobAddStub.restore();
+  jobAddStub.resetHistory();
 });
 
 test('model selection policy should resolve requested optional models consistently', async t => {

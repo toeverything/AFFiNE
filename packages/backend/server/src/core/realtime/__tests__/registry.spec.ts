@@ -5,7 +5,10 @@ import {
 import test from 'ava';
 import { z } from 'zod';
 
+import { CANARY_CLIENT_VERSION_MAX_AGE_DAYS } from '../../../base';
+import { Flavor } from '../../../env';
 import { PublicDocMode } from '../../../models';
+import { CopilotEmbeddingRealtimeProvider } from '../../../plugins/copilot/context';
 import type { CopilotTranscriptionReader } from '../../../plugins/copilot/transcript';
 import { CopilotTranscriptRealtimeProvider } from '../../../plugins/copilot/transcript';
 import type { CurrentUser } from '../../auth';
@@ -27,8 +30,11 @@ import {
   WorkspaceConfigRealtimeProvider,
   WorkspaceMembersRealtimeProvider,
 } from '../../workspaces/realtime';
+import { RealtimeRegistryCompletenessChecker } from '../completeness';
 import { RealtimeGateway } from '../gateway';
 import {
+  REALTIME_GATEWAY_REQUIRED_REQUESTS,
+  REALTIME_GATEWAY_REQUIRED_TOPICS,
   realtimeCommentRoom,
   realtimeDocGrantsRoom,
   realtimeDocShareStateRoom,
@@ -57,6 +63,10 @@ const user: CurrentUser = {
   hasPassword: true,
   emailVerified: true,
 };
+
+function makeCanaryDateVersion(date: Date, build = '015') {
+  return `${date.getUTCFullYear()}.${date.getUTCMonth() + 1}.${date.getUTCDate()}-canary.${build}`;
+}
 
 function createGateway(registry: RealtimeRegistry) {
   return new RealtimeGateway(registry, {
@@ -90,6 +100,26 @@ test('registry rejects duplicate request and topic handlers', t => {
   });
 });
 
+test('realtime registry completeness check only runs for explicit gateway flavors', t => {
+  const env = globalThis.env as unknown as { FLAVOR: Flavor };
+  const originalFlavor = globalThis.env.FLAVOR;
+  try {
+    const checker = new RealtimeRegistryCompletenessChecker(
+      new RealtimeRegistry()
+    );
+
+    env.FLAVOR = Flavor.AllInOne;
+    t.notThrows(() => checker.onApplicationBootstrap());
+
+    env.FLAVOR = Flavor.Front;
+    t.throws(() => checker.onApplicationBootstrap(), {
+      message: /Realtime gateway missing handlers/,
+    });
+  } finally {
+    env.FLAVOR = originalFlavor;
+  }
+});
+
 test('gateway handles registered request with version gate', async t => {
   const registry = new RealtimeRegistry();
   registry.registerRequest({
@@ -115,6 +145,73 @@ test('gateway handles registered request with version gate', async t => {
     }),
     { error: { code: 'UNSUPPORTED_CLIENT_VERSION' } }
   );
+});
+
+test('gateway accepts canary date client version in canary namespace', async t => {
+  const originalNamespace = env.NAMESPACE;
+  // @ts-expect-error test
+  env.NAMESPACE = 'dev';
+  try {
+    const registry = new RealtimeRegistry();
+    registry.registerRequest({
+      name: 'notification.count.get',
+      input: z.object({}).strict(),
+      handle: async () => ({ count: 1 }),
+    });
+    const gateway = createGateway(registry);
+
+    t.deepEqual(
+      await gateway.onRequest(user, {
+        op: 'notification.count.get',
+        input: {},
+        clientVersion: makeCanaryDateVersion(new Date(), '040'),
+      }),
+      { data: { count: 1 } }
+    );
+
+    const old = new Date(
+      Date.now() -
+        (CANARY_CLIENT_VERSION_MAX_AGE_DAYS + 1) * 24 * 60 * 60 * 1000
+    );
+    t.like(
+      await gateway.onRequest(user, {
+        op: 'notification.count.get',
+        input: {},
+        clientVersion: makeCanaryDateVersion(old, '040'),
+      }),
+      { error: { code: 'UNSUPPORTED_CLIENT_VERSION' } }
+    );
+  } finally {
+    // @ts-expect-error test
+    env.NAMESPACE = originalNamespace;
+  }
+});
+
+test('gateway rejects canary date client version outside canary namespace', async t => {
+  const originalNamespace = env.NAMESPACE;
+  // @ts-expect-error test
+  env.NAMESPACE = 'production';
+  try {
+    const registry = new RealtimeRegistry();
+    registry.registerRequest({
+      name: 'notification.count.get',
+      input: z.object({}).strict(),
+      handle: async () => ({ count: 1 }),
+    });
+    const gateway = createGateway(registry);
+
+    t.like(
+      await gateway.onRequest(user, {
+        op: 'notification.count.get',
+        input: {},
+        clientVersion: makeCanaryDateVersion(new Date(), '40'),
+      }),
+      { error: { code: 'UNSUPPORTED_CLIENT_VERSION' } }
+    );
+  } finally {
+    // @ts-expect-error test
+    env.NAMESPACE = originalNamespace;
+  }
 });
 
 test('gateway authorizes subscription and joins room', async t => {
@@ -258,6 +355,12 @@ test('realtime providers expose runtime injection metadata for registry dependen
   t.true(
     Reflect.getMetadata(
       'design:paramtypes',
+      CopilotEmbeddingRealtimeProvider
+    ).includes(RealtimeRegistry)
+  );
+  t.true(
+    Reflect.getMetadata(
+      'design:paramtypes',
       QuotaStateRealtimeProvider
     ).includes(RealtimeRegistry)
   );
@@ -294,6 +397,73 @@ test('realtime providers expose runtime injection metadata for registry dependen
     Reflect.getMetadata('design:paramtypes', UserRealtimeProvider).includes(
       RealtimeRegistry
     )
+  );
+});
+
+test('front and sync realtime gateway required handlers are registered by lightweight providers', t => {
+  const registry = new RealtimeRegistry();
+
+  new WorkspaceAccessRealtimeProvider(
+    {} as never,
+    {} as never,
+    registry
+  ).onModuleInit();
+  new WorkspaceConfigRealtimeProvider(
+    {} as never,
+    {} as never,
+    registry
+  ).onModuleInit();
+  new WorkspaceMembersRealtimeProvider(
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    registry
+  ).onModuleInit();
+  new DocShareRealtimeProvider(
+    {} as never,
+    {} as never,
+    registry
+  ).onModuleInit();
+  new DocGrantsRealtimeProvider(
+    {} as never,
+    {} as never,
+    {} as never,
+    registry
+  ).onModuleInit();
+  new UserRealtimeProvider({} as never, registry).onModuleInit();
+  new NotificationRealtimeProvider({} as never, registry).onModuleInit();
+  new CommentRealtimeProvider(
+    {} as never,
+    {} as never,
+    registry
+  ).onModuleInit();
+  new CopilotEmbeddingRealtimeProvider(
+    {} as never,
+    {} as never,
+    registry,
+    {} as never
+  ).onModuleInit();
+  new CopilotTranscriptRealtimeProvider(
+    {} as never,
+    {} as never,
+    registry
+  ).onModuleInit();
+  new QuotaStateRealtimeProvider(
+    {} as never,
+    {} as never,
+    registry
+  ).onModuleInit();
+
+  t.deepEqual(
+    REALTIME_GATEWAY_REQUIRED_REQUESTS.filter(
+      name => !registry.hasRequest(name)
+    ),
+    []
+  );
+  t.deepEqual(
+    REALTIME_GATEWAY_REQUIRED_TOPICS.filter(name => !registry.hasTopic(name)),
+    []
   );
 });
 
@@ -349,8 +519,11 @@ test('workspace realtime providers register access, config, members and invite l
       count: async () => 1,
     },
   };
-  const workspaceService = {
-    isTeamWorkspace: async () => true,
+  const quotaState = {
+    getWorkspaceQuotaState: async () => ({ known: true, plan: 'team' }),
+    reconcileWorkspaceQuotaState: async () => {
+      throw new Error('workspace.access.get should not reconcile quota state');
+    },
   };
   const cache = {
     get: async () => ({ inviteId: 'invite-link' }),
@@ -362,7 +535,7 @@ test('workspace realtime providers register access, config, members and invite l
 
   new WorkspaceAccessRealtimeProvider(
     ac,
-    workspaceService as never,
+    quotaState as never,
     registry
   ).onModuleInit();
   new WorkspaceConfigRealtimeProvider(
@@ -830,6 +1003,76 @@ test('quota realtime provider exposes effective quota state snapshots', async t 
       .room(user, { workspaceId: 'space' }),
     realtimeWorkspaceQuotaStateRoom('space')
   );
+});
+
+test('copilot embedding realtime provider uses lightweight model reads', async t => {
+  const registry = new RealtimeRegistry();
+  const published: unknown[][] = [];
+  const assertions: unknown[] = [];
+  const ac = {
+    user(userId: string) {
+      return {
+        workspace(workspaceId: string) {
+          return {
+            allowLocal() {
+              return this;
+            },
+            async assert(action: string) {
+              assertions.push({ userId, workspaceId, action });
+            },
+          };
+        },
+      };
+    },
+  } as unknown as PermissionAccess;
+  const models = {
+    copilotWorkspace: {
+      checkEmbeddingAvailable: async () => true,
+      getEmbeddingStatus: async () => ({ total: 5, embedded: 3 }),
+    },
+    copilotContext: {
+      getConfig: async () => ({ workspaceId: 'space' }),
+    },
+  };
+  const publisher = {
+    publish: (...args: unknown[]) => published.push(args),
+  } as unknown as RealtimePublisher;
+
+  const provider = new CopilotEmbeddingRealtimeProvider(
+    ac,
+    models as never,
+    registry,
+    publisher
+  );
+  provider.onModuleInit();
+
+  t.deepEqual(
+    await registry
+      .getRequest('workspace.embedding.progress.get')
+      .handle(user, { workspaceId: 'space' }),
+    {
+      total: 5,
+      embedded: 3,
+    }
+  );
+  t.is(
+    registry
+      .getTopic('workspace.embedding.progress.changed')
+      .room(user, { workspaceId: 'space' }),
+    realtimeWorkspaceEmbeddingProgressRoom('space')
+  );
+
+  await provider.onDocEmbedFinished({ contextId: 'context', docId: 'doc' });
+
+  t.deepEqual(assertions, [
+    { userId: 'u1', workspaceId: 'space', action: 'Workspace.Copilot' },
+  ]);
+  t.deepEqual(published[0], [
+    'workspace.embedding.progress.changed',
+    { workspaceId: 'space' },
+    { reason: 'finished' },
+    { room: realtimeWorkspaceEmbeddingProgressRoom('space') },
+  ]);
 });
 
 test('copilot transcript realtime provider registers task live query handlers', async t => {

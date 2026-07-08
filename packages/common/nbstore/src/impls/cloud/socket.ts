@@ -121,7 +121,10 @@ interface ClientEvents {
       timestamp: number;
     },
   ];
-  'space:delete-doc': { spaceType: string; spaceId: string; docId: string };
+  'space:delete-doc': [
+    { spaceType: string; spaceId: string; docId: string },
+    { success?: true },
+  ];
 
   'telemetry:batch': [TelemetryBatch, TelemetryAck];
 

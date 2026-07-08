@@ -94,4 +94,20 @@ defineModuleConfig('job', {
     },
     schema,
   },
+
+  'queues.backendRuntime': {
+    desc: 'The config for backend runtime job queue',
+    default: {
+      concurrency: 1,
+    },
+    schema,
+  },
+
+  'queues.inviteAbuse': {
+    desc: 'The config for invite abuse disposition job queue',
+    default: {
+      concurrency: 1,
+    },
+    schema,
+  },
 });

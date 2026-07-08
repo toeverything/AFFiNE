@@ -5,6 +5,7 @@ import {
   updateUserProfileMutation,
   uploadAvatarMutation,
 } from '@affine/graphql';
+import type { CurrentUserProfileSnapshot } from '@affine/realtime';
 import { Store } from '@toeverything/infra';
 
 import type { GlobalState, NbstoreService } from '../../storage';
@@ -14,19 +15,12 @@ import type { FetchService } from '../services/fetch';
 import type { GraphQLService } from '../services/graphql';
 import type { ServerService } from '../services/server';
 
-export interface AccountProfile {
-  id: string;
-  email: string;
-  name: string;
-  hasPassword: boolean;
+export interface AccountProfile extends CurrentUserProfileSnapshot {
   authMethods?: {
     password: { bound: boolean };
     oauth: { bound: boolean; providers: string[] };
     passkey: { bound: boolean; count: number };
   };
-  avatarUrl: string | null;
-  emailVerified: string | null;
-  features?: string[];
 }
 
 export class AuthStore extends Store {
@@ -68,9 +62,10 @@ export class AuthStore extends Store {
           id: user.id,
           email: user.email,
           name: user.name,
-          hasPassword: Boolean(user.hasPassword),
+          hasPassword: user.hasPassword,
           avatarUrl: user.avatarUrl,
-          emailVerified: user.emailVerified ? 'true' : null,
+          emailVerified: user.emailVerified,
+          features: [],
         },
       },
     });
@@ -85,24 +80,30 @@ export class AuthStore extends Store {
   }
 
   async fetchSession() {
-    const { user } = await this.fetchService
+    const session = await this.fetchAuthSession();
+    if (!session.user) return { user: null };
+
+    const { user } = await this.nbstoreService.realtime.request(
+      'user.profile.get',
+      {}
+    );
+    if (!user || user.id !== session.user.id) {
+      throw new Error('Realtime user profile does not match auth session');
+    }
+    const authMethods = await this.fetchAuthMethods();
+    return { user: { ...user, authMethods } };
+  }
+
+  private async fetchAuthSession(): Promise<{ user: { id: string } | null }> {
+    return await this.fetchService
       .fetch('/api/auth/session', { cache: 'no-store' })
       .then(res => res.json());
-    const authMethods = user
-      ? await this.fetchService
-          .fetch('/api/auth/methods')
-          .then(res => (res.ok ? res.json() : undefined))
-      : undefined;
-    return {
-      user: user
-        ? {
-            ...user,
-            hasPassword: Boolean(user.hasPassword),
-            authMethods,
-            emailVerified: user.emailVerified ? 'true' : null,
-          }
-        : null,
-    };
+  }
+
+  private async fetchAuthMethods() {
+    return await this.fetchService
+      .fetch('/api/auth/methods')
+      .then(res => (res.ok ? res.json() : undefined));
   }
 
   async signInMagicLink(email: string, token: string) {

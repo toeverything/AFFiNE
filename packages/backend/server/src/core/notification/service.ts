@@ -15,15 +15,17 @@ import {
   UnionNotificationBody,
   Workspace,
 } from '../../models';
+import { BackendRuntimeProvider } from '../backend-runtime';
+import { containsUrlOrDomain } from '../content-policy';
 import { DocReader } from '../doc';
 import { Mailer } from '../mail';
+import type { SendMailCommand } from '../mail/types';
 import { realtimeNotificationRoom, RealtimePublisher } from '../realtime';
 import { generateDocPath } from '../utils/doc';
 import {
   generateWorkspaceSettingsPath,
   WorkspaceSettingsTab,
 } from '../utils/workspace';
-import { containsUrlOrDomain } from '../workspaces/abuse';
 
 @Injectable()
 export class NotificationService {
@@ -34,7 +36,8 @@ export class NotificationService {
     private readonly docReader: DocReader,
     private readonly mailer: Mailer,
     private readonly url: URLHelper,
-    private readonly realtime: RealtimePublisher
+    private readonly realtime: RealtimePublisher,
+    private readonly runtime: BackendRuntimeProvider
   ) {}
 
   async cleanExpiredNotifications() {
@@ -55,23 +58,21 @@ export class NotificationService {
     const notification = isMention
       ? await this.models.notification.createCommentMention(input)
       : await this.models.notification.createComment(input);
-    await this.sendCommentEmail(input, isMention);
+    await this.sendCommentEmail(input, isMention, notification.id);
     await this.publishCountChanged(input.userId, 'created');
     return notification;
   }
 
   private async sendCommentEmail(
     input: CommentNotificationCreate,
-    isMention?: boolean
+    isMention?: boolean,
+    notificationId?: string
   ) {
-    const userSetting = await this.models.userSettings.get(input.userId);
-    if (!userSetting.receiveCommentEmail) {
-      return;
-    }
     const receiver = await this.models.user.getWorkspaceUser(input.userId);
     if (!receiver) {
       return;
     }
+    const userSetting = await this.models.userSettings.get(input.userId);
     const doc = await this.models.doc.getMeta(
       input.body.workspaceId,
       input.body.doc.id
@@ -88,7 +89,7 @@ export class NotificationService {
         replyId: input.body.replyId,
       })
     );
-    await this.mailer.trySend({
+    const command: SendMailCommand = {
       name: isMention ? 'CommentMention' : 'Comment',
       to: receiver.email,
       props: {
@@ -100,26 +101,44 @@ export class NotificationService {
           url,
         },
       },
-    });
+      metadata: {
+        dedupeKey: notificationId
+          ? `notification:${notificationId}:mail:${isMention ? 'CommentMention' : 'Comment'}`
+          : undefined,
+        recipientUserId: receiver.id,
+        actorUserId: input.body.createdByUserId,
+        workspaceId: input.body.workspaceId,
+        notificationId,
+        source: { trusted: false },
+      },
+    };
+    if (!userSetting.receiveCommentEmail) {
+      await this.mailer.skip(command, {
+        mailClass: 'collaboration_notice',
+        reason: 'recipient_notification_disabled',
+      });
+      return;
+    }
+    await this.trySendMail(command, 'collaboration_notice');
     this.logger.debug(`Comment email sent to user ${receiver.id}`);
   }
 
   async createMention(input: MentionNotificationCreate) {
     const notification = await this.models.notification.createMention(input);
-    await this.sendMentionEmail(input);
+    await this.sendMentionEmail(input, notification.id);
     await this.publishCountChanged(input.userId, 'created');
     return notification;
   }
 
-  private async sendMentionEmail(input: MentionNotificationCreate) {
-    const userSetting = await this.models.userSettings.get(input.userId);
-    if (!userSetting.receiveMentionEmail) {
-      return;
-    }
+  private async sendMentionEmail(
+    input: MentionNotificationCreate,
+    notificationId?: string
+  ) {
     const receiver = await this.models.user.getWorkspaceUser(input.userId);
     if (!receiver) {
       return;
     }
+    const userSetting = await this.models.userSettings.get(input.userId);
     const doc = await this.models.doc.getMeta(
       input.body.workspaceId,
       input.body.doc.id
@@ -134,7 +153,7 @@ export class NotificationService {
         elementId: input.body.doc.elementId,
       })
     );
-    await this.mailer.trySend({
+    const command: SendMailCommand = {
       name: 'Mention',
       to: receiver.email,
       props: {
@@ -146,7 +165,25 @@ export class NotificationService {
           url,
         },
       },
-    });
+      metadata: {
+        dedupeKey: notificationId
+          ? `notification:${notificationId}:mail:Mention`
+          : undefined,
+        recipientUserId: receiver.id,
+        actorUserId: input.body.createdByUserId,
+        workspaceId: input.body.workspaceId,
+        notificationId,
+        source: { trusted: false },
+      },
+    };
+    if (!userSetting.receiveMentionEmail) {
+      await this.mailer.skip(command, {
+        mailClass: 'collaboration_notice',
+        reason: 'recipient_notification_disabled',
+      });
+      return;
+    }
+    await this.trySendMail(command, 'collaboration_notice');
     this.logger.debug(`Mention email sent to user ${receiver.id}`);
   }
 
@@ -161,36 +198,25 @@ export class NotificationService {
       input,
       NotificationType.Invitation
     );
-    await this.sendInvitationEmail(input);
+    await this.sendInvitationEmail(input, notification.id);
     await this.publishCountChanged(input.userId, 'created');
     return notification;
   }
 
-  private async sendInvitationEmail(input: InvitationNotificationCreate) {
-    const workspace = await this.docReader.getWorkspaceContent(
-      input.body.workspaceId
-    );
-    if (containsUrlOrDomain(workspace?.name)) {
-      this.logger.warn(
-        `Skip invitation email for workspace ${input.body.workspaceId}, reason=workspace name contains url or domain`
-      );
-      return;
-    }
-
+  private async sendInvitationEmail(
+    input: InvitationNotificationCreate,
+    notificationId?: string
+  ) {
     const inviteUrl = this.url.link(`/invite/${input.body.inviteId}`);
     if (env.dev) {
       // make it easier to test in dev mode
       this.logger.debug(`Invite link: ${inviteUrl}`);
     }
-    const userSetting = await this.models.userSettings.get(input.userId);
-    if (!userSetting.receiveInvitationEmail) {
-      return;
-    }
     const receiver = await this.models.user.getWorkspaceUser(input.userId);
     if (!receiver) {
       return;
     }
-    await this.mailer.trySend({
+    const command: SendMailCommand = {
       name: 'MemberInvitation',
       to: receiver.email,
       props: {
@@ -202,7 +228,40 @@ export class NotificationService {
         },
         url: inviteUrl,
       },
-    });
+      metadata: {
+        dedupeKey: notificationId
+          ? `notification:${notificationId}:mail:MemberInvitation`
+          : `invite:${input.body.inviteId}:mail:MemberInvitation`,
+        recipientUserId: receiver.id,
+        actorUserId: input.body.createdByUserId,
+        workspaceId: input.body.workspaceId,
+        notificationId,
+        source: { trusted: false },
+      },
+    };
+    const workspace = await this.docReader.getWorkspaceContent(
+      input.body.workspaceId
+    );
+    if (containsUrlOrDomain(workspace?.name)) {
+      this.logger.warn(
+        `Skip invitation email for workspace ${input.body.workspaceId}, reason=workspace name contains url or domain`
+      );
+      await this.mailer.skip(command, {
+        mailClass: 'workspace_invitation',
+        reason: 'workspace_name_contains_domain',
+      });
+      return;
+    }
+
+    const userSetting = await this.models.userSettings.get(input.userId);
+    if (!userSetting.receiveInvitationEmail) {
+      await this.mailer.skip(command, {
+        mailClass: 'workspace_invitation',
+        reason: 'recipient_notification_disabled',
+      });
+      return;
+    }
+    await this.trySendMail(command, 'workspace_invitation');
     this.logger.debug(
       `Invitation email sent to user ${receiver.id} for workspace ${input.body.workspaceId}`
     );
@@ -223,26 +282,23 @@ export class NotificationService {
       input,
       NotificationType.InvitationAccepted
     );
-    await this.sendInvitationAcceptedEmail(input);
+    await this.sendInvitationAcceptedEmail(input, notification.id);
     await this.publishCountChanged(input.userId, 'created');
     return notification;
   }
 
   private async sendInvitationAcceptedEmail(
-    input: InvitationNotificationCreate
+    input: InvitationNotificationCreate,
+    notificationId?: string
   ) {
     const inviterUserId = input.userId;
     const inviteeUserId = input.body.createdByUserId;
     const workspaceId = input.body.workspaceId;
-    const userSetting = await this.models.userSettings.get(inviterUserId);
-    if (!userSetting.receiveInvitationEmail) {
-      return;
-    }
     const inviter = await this.models.user.getWorkspaceUser(inviterUserId);
     if (!inviter) {
       return;
     }
-    await this.mailer.trySend({
+    const command: SendMailCommand = {
       name: 'MemberAccepted',
       to: inviter.email,
       props: {
@@ -259,7 +315,26 @@ export class NotificationService {
           })
         ),
       },
-    });
+      metadata: {
+        dedupeKey: notificationId
+          ? `notification:${notificationId}:mail:MemberAccepted`
+          : undefined,
+        recipientUserId: inviter.id,
+        actorUserId: inviteeUserId,
+        workspaceId,
+        notificationId,
+        source: { trusted: false },
+      },
+    };
+    const userSetting = await this.models.userSettings.get(inviterUserId);
+    if (!userSetting.receiveInvitationEmail) {
+      await this.mailer.skip(command, {
+        mailClass: 'workspace_lifecycle',
+        reason: 'recipient_notification_disabled',
+      });
+      return;
+    }
+    await this.trySendMail(command, 'workspace_lifecycle');
     this.logger.debug(
       `Invitation accepted email sent to user ${inviter.id} for workspace ${workspaceId}`
     );
@@ -297,13 +372,14 @@ export class NotificationService {
       input,
       NotificationType.InvitationReviewRequest
     );
-    await this.sendInvitationReviewRequestEmail(input);
+    await this.sendInvitationReviewRequestEmail(input, notification.id);
     await this.publishCountChanged(input.userId, 'created');
     return notification;
   }
 
   private async sendInvitationReviewRequestEmail(
-    input: InvitationNotificationCreate
+    input: InvitationNotificationCreate,
+    notificationId?: string
   ) {
     const inviteeUserId = input.body.createdByUserId;
     const reviewerUserId = input.userId;
@@ -312,24 +388,37 @@ export class NotificationService {
     if (!reviewer) {
       return;
     }
-    await this.mailer.trySend({
-      name: 'LinkInvitationReviewRequest',
-      to: reviewer.email,
-      props: {
-        user: {
-          $$userId: inviteeUserId,
+    await this.trySendMail(
+      {
+        name: 'LinkInvitationReviewRequest',
+        to: reviewer.email,
+        props: {
+          user: {
+            $$userId: inviteeUserId,
+          },
+          workspace: {
+            $$workspaceId: workspaceId,
+          },
+          url: this.url.link(
+            generateWorkspaceSettingsPath({
+              workspaceId,
+              tab: WorkspaceSettingsTab.members,
+            })
+          ),
         },
-        workspace: {
-          $$workspaceId: workspaceId,
+        metadata: {
+          dedupeKey: notificationId
+            ? `notification:${notificationId}:mail:LinkInvitationReviewRequest`
+            : undefined,
+          recipientUserId: reviewer.id,
+          actorUserId: inviteeUserId,
+          workspaceId,
+          notificationId,
+          source: { trusted: false },
         },
-        url: this.url.link(
-          generateWorkspaceSettingsPath({
-            workspaceId,
-            tab: WorkspaceSettingsTab.members,
-          })
-        ),
       },
-    });
+      'workspace_invitation'
+    );
     this.logger.debug(
       `Invitation review request email sent to user ${reviewer.id} for workspace ${workspaceId}`
     );
@@ -346,13 +435,14 @@ export class NotificationService {
       input,
       NotificationType.InvitationReviewApproved
     );
-    await this.sendInvitationReviewApprovedEmail(input);
+    await this.sendInvitationReviewApprovedEmail(input, notification.id);
     await this.publishCountChanged(input.userId, 'created');
     return notification;
   }
 
   private async sendInvitationReviewApprovedEmail(
-    input: InvitationNotificationCreate
+    input: InvitationNotificationCreate,
+    notificationId?: string
   ) {
     const workspaceId = input.body.workspaceId;
     const receiverUserId = input.userId;
@@ -360,16 +450,29 @@ export class NotificationService {
     if (!receiver) {
       return;
     }
-    await this.mailer.trySend({
-      name: 'LinkInvitationApprove',
-      to: receiver.email,
-      props: {
-        workspace: {
-          $$workspaceId: workspaceId,
+    await this.trySendMail(
+      {
+        name: 'LinkInvitationApprove',
+        to: receiver.email,
+        props: {
+          workspace: {
+            $$workspaceId: workspaceId,
+          },
+          url: this.url.link(`/workspace/${workspaceId}`),
         },
-        url: this.url.link(`/workspace/${workspaceId}`),
+        metadata: {
+          dedupeKey: notificationId
+            ? `notification:${notificationId}:mail:LinkInvitationApprove`
+            : undefined,
+          recipientUserId: receiver.id,
+          actorUserId: input.body.createdByUserId,
+          workspaceId,
+          notificationId,
+          source: { trusted: false },
+        },
       },
-    });
+      'workspace_invitation'
+    );
     this.logger.debug(
       `Invitation review approved email sent to user ${receiver.id} for workspace ${workspaceId}`
     );
@@ -386,13 +489,14 @@ export class NotificationService {
     await this.ensureWorkspaceContentExists(workspaceId);
     const notification =
       await this.models.notification.createInvitationReviewDeclined(input);
-    await this.sendInvitationReviewDeclinedEmail(input);
+    await this.sendInvitationReviewDeclinedEmail(input, notification.id);
     await this.publishCountChanged(input.userId, 'created');
     return notification;
   }
 
   private async sendInvitationReviewDeclinedEmail(
-    input: InvitationReviewDeclinedNotificationCreate
+    input: InvitationReviewDeclinedNotificationCreate,
+    notificationId?: string
   ) {
     const workspaceId = input.body.workspaceId;
     const receiverUserId = input.userId;
@@ -400,15 +504,28 @@ export class NotificationService {
     if (!receiver) {
       return;
     }
-    await this.mailer.trySend({
-      name: 'LinkInvitationDecline',
-      to: receiver.email,
-      props: {
-        workspace: {
-          $$workspaceId: workspaceId,
+    await this.trySendMail(
+      {
+        name: 'LinkInvitationDecline',
+        to: receiver.email,
+        props: {
+          workspace: {
+            $$workspaceId: workspaceId,
+          },
+        },
+        metadata: {
+          dedupeKey: notificationId
+            ? `notification:${notificationId}:mail:LinkInvitationDecline`
+            : undefined,
+          recipientUserId: receiver.id,
+          actorUserId: input.body.createdByUserId,
+          workspaceId,
+          notificationId,
+          source: { trusted: false },
         },
       },
-    });
+      'workspace_invitation'
+    );
     this.logger.debug(
       `Invitation review declined email sent to user ${receiver.id} for workspace ${workspaceId}`
     );
@@ -538,5 +655,33 @@ export class NotificationService {
       userId
     );
     return !!isActive;
+  }
+
+  private async trySendMail(command: SendMailCommand, mailClass: string) {
+    const actorUserId = command.metadata?.actorUserId;
+    if (
+      actorUserId &&
+      (await this.runtime.isInviteAbuseUserQuarantinedOrBanned(actorUserId))
+    ) {
+      await this.mailer.skip(command, {
+        mailClass,
+        reason: 'actor_quarantined',
+      });
+      return false;
+    }
+
+    const workspaceId = command.metadata?.workspaceId;
+    if (
+      workspaceId &&
+      (await this.runtime.isInviteAbuseWorkspaceQuarantined(workspaceId))
+    ) {
+      await this.mailer.skip(command, {
+        mailClass,
+        reason: 'workspace_quarantined',
+      });
+      return false;
+    }
+
+    return await this.mailer.trySend(command);
   }
 }

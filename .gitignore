@@ -6,6 +6,7 @@
 !.yarn/releases
 !.yarn/sdks
 .yarn/versions
+.corepack-bin
 
 # compiled output
 *dist
@@ -50,6 +51,7 @@ tsconfig.tsbuildinfo
 .context
 /*.md
 .codex
+.cursor
 
 # System Files
 .DS_Store
@@ -95,13 +97,11 @@ af.cmd
 # playwright
 storageState.json
 /.understand-anything
-.playwright-browsers/
+# local test/browser artifacts
+/.playwright-browsers/
+**/.vitest-attachments/
+/blocksuite/framework/std/src/__tests__/gfx/__screenshots__/
 
 # Local tool caches
 .corepack-bin/
 packages/frontend/apps/ios/App/.spm-cache/
-
-# Test runtime artifacts
-blocksuite/framework/std/.vitest-attachments/
-blocksuite/framework/std/src/__tests__/gfx/__screenshots__/view.unit.spec.ts/gfx-element-view-basic-parks-non-active-low-zoom-gesture-blocks-outside-viewport-DOM-while-gesture-is-running-1.png
-blocksuite/framework/std/src/__tests__/gfx/__screenshots__/view.unit.spec.ts/gfx-element-view-basic-resize-completion-clears-low-zoom-gesture-recovery-before-sizeUpdated-subscribers-run-1.png

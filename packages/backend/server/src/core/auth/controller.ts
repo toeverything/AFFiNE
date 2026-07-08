@@ -15,6 +15,7 @@ import type { Request, Response } from 'express';
 
 import {
   ActionForbidden,
+  Config,
   EmailTokenNotFound,
   getRequestCookie,
   InvalidAuthState,
@@ -25,6 +26,7 @@ import {
 } from '../../base';
 import { Models } from '../../models';
 import { validators } from '../utils/validators';
+import { getAbuseRequestSource } from '../workspaces/abuse';
 import { Public } from './guard';
 import { MagicLinkAuthService } from './magic-link';
 import { AuthMethodsService } from './methods';
@@ -79,7 +81,8 @@ export class AuthController {
     private readonly openApp: OpenAppAuthService,
     private readonly authMethods: AuthMethodsService,
     private readonly sessionExchange: SessionExchangeService,
-    private readonly models: Models
+    private readonly models: Models,
+    private readonly config: Config
   ) {
     if (env.dev) {
       // set DNS servers in dev mode
@@ -135,6 +138,7 @@ export class AuthController {
       );
     } else {
       await this.sendMagicLink(
+        req,
         res,
         credential.email,
         credential.callbackUrl,
@@ -163,12 +167,15 @@ export class AuthController {
   }
 
   async sendMagicLink(
+    req: Request,
     res: Response,
     email: string,
     callbackUrl = '/magic-link',
     clientNonce?: string
   ) {
-    const payload = await this.magicLink.send(email, callbackUrl, clientNonce);
+    const payload = await this.magicLink.send(email, callbackUrl, clientNonce, {
+      source: getAbuseRequestSource(req, this.config),
+    });
     res.status(HttpStatus.OK).send(payload);
   }
 

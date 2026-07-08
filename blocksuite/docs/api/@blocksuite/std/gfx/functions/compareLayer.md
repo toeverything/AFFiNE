@@ -15,11 +15,11 @@ SortOrder.AFTER means a should be rendered after b and so on.
 
 ### a
 
-`GfxModel` | `GfxLocalElementModel`
+`GfxModel` \| `GfxLocalElementModel`
 
 ### b
 
-`GfxModel` | `GfxLocalElementModel`
+`GfxModel` \| `GfxLocalElementModel`
 
 ## Returns
 

@@ -29,6 +29,7 @@ import { DocUserModel } from './doc-user';
 import { FeatureModel } from './feature';
 import { HistoryModel } from './history';
 import { MagicLinkOtpModel } from './magic-link-otp';
+import { MailDeliveryModel } from './mail-delivery';
 import { NotificationModel } from './notification';
 import { PermissionProjectionModel } from './permission-projection';
 import {
@@ -57,6 +58,7 @@ const MODELS = {
   session: SessionModel,
   verificationToken: VerificationTokenModel,
   magicLinkOtp: MagicLinkOtpModel,
+  mailDelivery: MailDeliveryModel,
   feature: FeatureModel,
   workspace: WorkspaceModel,
   userFeature: UserFeatureModel,
@@ -165,6 +167,7 @@ export * from './doc-user';
 export * from './feature';
 export * from './history';
 export * from './magic-link-otp';
+export * from './mail-delivery';
 export * from './notification';
 export * from './permission-projection';
 export * from './permission-write';

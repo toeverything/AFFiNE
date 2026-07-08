@@ -26,7 +26,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@affine/admin/components/ui/dropdown-menu';
-import { Label } from '@affine/admin/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -46,12 +45,17 @@ import {
 } from '@affine/admin/components/ui/table';
 import { useMutation } from '@affine/admin/use-mutation';
 import { useQuery } from '@affine/admin/use-query';
-import { adminDashboardQuery, previewLicenseMutation } from '@affine/graphql';
+import {
+  adminDashboardQuery,
+  adminMailDeliveriesQuery,
+  previewLicenseMutation,
+} from '@affine/graphql';
 import { ROUTES } from '@affine/routes';
 import {
   ChevronDownIcon,
   DatabaseIcon,
   FileSearchIcon,
+  MailIcon,
   MessageSquareTextIcon,
   RefreshCwIcon,
   UsersIcon,
@@ -91,6 +95,14 @@ const adminDashboardOverviewQuery: typeof adminDashboardQuery = {
       effectiveSize
     }
     copilotConversations
+    copilotWindow {
+      from
+      to
+      timezone
+      bucket
+      requestedSize
+      effectiveSize
+    }
     workspaceStorageBytes
     blobStorageBytes
     workspaceStorageHistory {
@@ -166,6 +178,9 @@ const utcDateFormatter = new Intl.DateTimeFormat('en-US', {
 const STORAGE_DAY_OPTIONS = [7, 14, 30, 60, 90] as const;
 const SYNC_HOUR_OPTIONS = [1, 6, 12, 24, 48, 72] as const;
 const SHARED_DAY_OPTIONS = [7, 14, 28, 60, 90] as const;
+const COPILOT_DAY_OPTIONS = [1, 7, 14, 28, 60, 90] as const;
+const MAIL_HOUR_OPTIONS = [24, 168] as const;
+type MailChartMode = 'status' | 'type' | 'outcome';
 
 type DualNumberPoint = {
   label: string;
@@ -178,6 +193,18 @@ type TrendPoint = {
   label: string;
   primary: number;
   secondary?: number;
+};
+
+type MultiTrendPoint = {
+  x: number;
+  label: string;
+} & Record<string, number | string>;
+
+type MultiTrendSeries = {
+  key: string;
+  label: string;
+  color: string;
+  total: number;
 };
 
 type LicensePreview = {
@@ -362,6 +389,110 @@ function TrendChart({
   );
 }
 
+function MultiTrendChart({
+  ariaLabel,
+  points,
+  series,
+  valueFormatter,
+}: {
+  ariaLabel: string;
+  points: MultiTrendPoint[];
+  series: MultiTrendSeries[];
+  valueFormatter: (value: number) => string;
+}) {
+  const visibleSeries = series.filter(item => item.total > 0).slice(0, 4);
+
+  if (points.length === 0 || visibleSeries.length === 0) {
+    return (
+      <div className="flex h-44 items-center justify-center rounded-lg border border-dashed border-border/60 bg-muted/15 text-sm text-muted-foreground">
+        No mail deliveries in this window
+      </div>
+    );
+  }
+
+  const chartPoints =
+    points.length === 1
+      ? [points[0], { ...points[0], x: Number(points[0].x) + 1 }]
+      : points;
+  const config: ChartConfig = Object.fromEntries(
+    visibleSeries.map(item => [
+      item.key,
+      {
+        label: item.label,
+        color: item.color,
+      },
+    ])
+  );
+
+  return (
+    <ChartContainer
+      config={config}
+      className="h-44 w-full"
+      aria-label={ariaLabel}
+      role="img"
+    >
+      <LineChart
+        data={chartPoints}
+        margin={{ top: 8, right: 0, bottom: 0, left: 0 }}
+      >
+        <CartesianGrid
+          vertical={false}
+          stroke="var(--border)"
+          strokeDasharray="3 4"
+        />
+        <XAxis
+          dataKey="x"
+          type="number"
+          hide
+          allowDecimals={false}
+          domain={['dataMin', 'dataMax']}
+        />
+        <YAxis
+          hide
+          domain={[
+            0,
+            (max: number) => {
+              if (max <= 0) {
+                return 1;
+              }
+              return Math.ceil(max * 1.1);
+            },
+          ]}
+        />
+        <ChartTooltip
+          cursor={{
+            stroke: 'var(--border)',
+            strokeDasharray: '4 4',
+            strokeWidth: 1,
+          }}
+          content={
+            <ChartTooltipContent
+              labelFormatter={(_, payload) => {
+                const item = payload?.[0];
+                return item?.payload?.label ?? '';
+              }}
+              valueFormatter={value => valueFormatter(value)}
+            />
+          }
+        />
+        {visibleSeries.map(item => (
+          <Line
+            key={item.key}
+            dataKey={item.key}
+            type="monotone"
+            stroke={`var(--color-${item.key})`}
+            strokeWidth={item.key === visibleSeries[0]?.key ? 3 : 2}
+            dot={false}
+            activeDot={{ r: 3 }}
+            connectNulls
+            isAnimationActive={false}
+          />
+        ))}
+      </LineChart>
+    </ChartContainer>
+  );
+}
+
 function PrimaryMetricCard({
   value,
   description,
@@ -392,19 +523,24 @@ function SecondaryMetricCard({
   value,
   description,
   icon,
+  action,
 }: {
   title: string;
   value: string;
   description: string;
   icon: ReactNode;
+  action?: ReactNode;
 }) {
   return (
     <Card className="h-full border-border/60 bg-card shadow-1">
-      <CardHeader className="pb-2">
-        <CardDescription className="flex items-center gap-2 text-sm">
-          <span aria-hidden="true">{icon}</span>
-          {title}
+      <CardHeader className="flex flex-row items-start justify-between gap-3 pb-2">
+        <CardDescription className="flex min-w-0 items-center gap-2 pt-2 text-sm">
+          <span className="shrink-0" aria-hidden="true">
+            {icon}
+          </span>
+          <span className="min-w-0 truncate">{title}</span>
         </CardDescription>
+        {action ? <div className="shrink-0">{action}</div> : null}
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-semibold tracking-tight tabular-nums">
@@ -416,45 +552,42 @@ function SecondaryMetricCard({
   );
 }
 
-function WindowSelect({
-  id,
-  label,
+function rangeOptionLabel(option: number, unit: 'hours' | 'days') {
+  if (unit === 'hours') {
+    return option === 168 ? '7d' : `${option}h`;
+  }
+  return `${option}d`;
+}
+
+function PanelRangeSelect({
+  ariaLabel,
   value,
   options,
   unit,
   onChange,
 }: {
-  id: string;
-  label: string;
+  ariaLabel: string;
   value: number;
   options: readonly number[];
-  unit: string;
+  unit: 'hours' | 'days';
   onChange: (value: number) => void;
 }) {
   return (
-    <div className="flex min-w-0 flex-col gap-2">
-      <Label
-        htmlFor={id}
-        className="text-xs uppercase tracking-wide text-muted-foreground"
-      >
-        {label}
-      </Label>
-      <Select
-        value={String(value)}
-        onValueChange={next => onChange(Number(next))}
-      >
-        <SelectTrigger id={id}>
-          <SelectValue placeholder={`Select ${label.toLowerCase()}…`} />
-        </SelectTrigger>
-        <SelectContent>
-          {options.map(option => (
-            <SelectItem key={option} value={String(option)}>
-              {option} {unit}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
+    <Select
+      value={String(value)}
+      onValueChange={next => onChange(Number(next))}
+    >
+      <SelectTrigger className="w-full md:w-28" aria-label={ariaLabel}>
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {options.map(option => (
+          <SelectItem key={option} value={String(option)}>
+            {rangeOptionLabel(option, unit)}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
 
@@ -717,8 +850,10 @@ function TopSharedLinksCardSkeleton() {
 
 function TopSharedLinksSection({
   sharedLinkWindowDays,
+  onWindowChange,
 }: {
   sharedLinkWindowDays: number;
+  onWindowChange: (value: number) => void;
 }) {
   const variables = useMemo(
     () => ({
@@ -748,12 +883,21 @@ function TopSharedLinksSection({
 
   return (
     <Card className="border-border/60 bg-card shadow-1">
-      <CardHeader>
-        <CardTitle className="text-base">Top Shared Links</CardTitle>
-        <CardDescription>
-          Top {topSharedLinks.length} links in the last{' '}
-          {topSharedLinksWindow.effectiveSize} days
-        </CardDescription>
+      <CardHeader className="flex flex-col gap-3 pb-4 md:flex-row md:items-start md:justify-between">
+        <div className="space-y-1.5">
+          <CardTitle className="text-base">Top Shared Links</CardTitle>
+          <CardDescription>
+            Top {topSharedLinks.length} links in the last{' '}
+            {topSharedLinksWindow.effectiveSize} days
+          </CardDescription>
+        </div>
+        <PanelRangeSelect
+          ariaLabel="Top shared links range"
+          value={sharedLinkWindowDays}
+          options={SHARED_DAY_OPTIONS}
+          unit="days"
+          onChange={onWindowChange}
+        />
       </CardHeader>
       <CardContent className="space-y-4">
         {topSharedLinks.length === 0 ? (
@@ -830,10 +974,260 @@ function TopSharedLinksSection({
   );
 }
 
+function mailWindowLabel(hours: number) {
+  return hours === 24 ? '24h' : '7d';
+}
+
+function mailBucketLabel(value: string, hours: number) {
+  return hours === 24 ? formatDateTime(value) : formatDate(value);
+}
+
+function toMailChartPoints(
+  series: {
+    key: string;
+    points: { bucket: string; count: number }[];
+  }[],
+  hours: number
+) {
+  const first = series[0]?.points ?? [];
+  return first.map((point, index) => {
+    const row: MultiTrendPoint = {
+      x: index,
+      label: mailBucketLabel(point.bucket, hours),
+    };
+    for (const item of series) {
+      row[item.key] = item.points[index]?.count ?? 0;
+    }
+    return row;
+  });
+}
+
+function seriesColor(key: string, index: number) {
+  const colors: Record<string, string> = {
+    sent: 'var(--primary)',
+    failed: 'var(--destructive)',
+    retry_wait: 'var(--muted-foreground)',
+    queued: 'var(--foreground)',
+    pending_status: 'var(--muted-foreground)',
+    successful: 'var(--primary)',
+    unsuccessful: 'var(--destructive)',
+    pending: 'var(--muted-foreground)',
+    auth: 'var(--primary)',
+    notification: 'var(--muted-foreground)',
+    workspace_invitation: 'var(--foreground)',
+  };
+  return (
+    colors[key] ??
+    ['var(--primary)', 'var(--muted-foreground)', 'var(--foreground)'][
+      index % 3
+    ]
+  );
+}
+
+function combineMailSeries(
+  key: string,
+  label: string,
+  series: { points: { bucket: string; count: number }[] }[]
+) {
+  const first = series[0];
+  return {
+    key,
+    label,
+    total: series.reduce(
+      (total, item) =>
+        total + item.points.reduce((sum, point) => sum + point.count, 0),
+      0
+    ),
+    points:
+      first?.points.map((point, index) => ({
+        bucket: point.bucket,
+        count: series.reduce(
+          (total, item) => total + (item.points[index]?.count ?? 0),
+          0
+        ),
+      })) ?? [],
+  };
+}
+
+function MailDeliverySection({
+  hours,
+  onHoursChange,
+}: {
+  hours: number;
+  onHoursChange: (value: number) => void;
+}) {
+  const [mode, setMode] = useState<MailChartMode>('status');
+  const { data } = useQuery(
+    {
+      query: adminMailDeliveriesQuery,
+      variables: {
+        input: { hours },
+      },
+    },
+    {
+      keepPreviousData: true,
+      revalidateOnFocus: false,
+      revalidateIfStale: true,
+      revalidateOnReconnect: true,
+    }
+  );
+
+  const analytics = data.adminMailDeliveries;
+  const sourceSeries =
+    mode === 'type'
+      ? analytics.byType
+      : mode === 'outcome'
+        ? analytics.byOutcome
+        : [
+            analytics.byStatus.find(series => series.key === 'sent'),
+            analytics.byStatus.find(series => series.key === 'failed'),
+            combineMailSeries(
+              'pending_status',
+              'Pending',
+              analytics.byStatus.filter(series =>
+                ['queued', 'sending'].includes(series.key)
+              )
+            ),
+            analytics.byStatus.find(series => series.key === 'retry_wait'),
+          ].filter(series => series !== undefined);
+  const chartSeries = sourceSeries.map((series, index) => ({
+    key: series.key,
+    label: series.label,
+    total: series.total,
+    color: seriesColor(series.key, index),
+  }));
+  const chartPoints = toMailChartPoints(sourceSeries, hours);
+  const failedLike =
+    analytics.summary.failed +
+    analytics.summary.skipped +
+    analytics.summary.canceled;
+  const pending =
+    analytics.summary.queued +
+    analytics.summary.sending +
+    analytics.summary.retryWait;
+
+  return (
+    <Card className="border-border/60 bg-card shadow-1">
+      <CardHeader className="flex flex-col gap-3 pb-4 md:flex-row md:items-start md:justify-between">
+        <div className="space-y-1.5">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <MailIcon className="h-4 w-4" aria-hidden="true" />
+            Email Delivery Trend
+          </CardTitle>
+          <CardDescription>
+            {mailWindowLabel(hours)} at{' '}
+            {analytics.window.bucket === 'Hour' ? 'hour' : 'day'} bucket in UTC
+          </CardDescription>
+        </div>
+        <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row">
+          <PanelRangeSelect
+            ariaLabel="Email delivery range"
+            value={hours}
+            options={MAIL_HOUR_OPTIONS}
+            unit="hours"
+            onChange={onHoursChange}
+          />
+          <Select
+            value={mode}
+            onValueChange={value => setMode(value as MailChartMode)}
+          >
+            <SelectTrigger className="w-full md:w-44">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="status">Status</SelectItem>
+              <SelectItem value="type">Mail type</SelectItem>
+              <SelectItem value="outcome">Success / failure</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <div className="rounded-md border border-border/60 bg-muted/15 px-3 py-2">
+            <div className="text-xs text-muted-foreground">Sent</div>
+            <div className="mt-1 text-xl font-semibold tabular-nums">
+              {compactFormatter.format(analytics.summary.sent)}
+            </div>
+          </div>
+          <div className="rounded-md border border-border/60 bg-muted/15 px-3 py-2">
+            <div className="text-xs text-muted-foreground">Not delivered</div>
+            <div className="mt-1 text-xl font-semibold tabular-nums">
+              {compactFormatter.format(failedLike)}
+            </div>
+          </div>
+          <div className="rounded-md border border-border/60 bg-muted/15 px-3 py-2">
+            <div className="text-xs text-muted-foreground">Pending</div>
+            <div className="mt-1 text-xl font-semibold tabular-nums">
+              {compactFormatter.format(pending)}
+            </div>
+          </div>
+          <div className="rounded-md border border-border/60 bg-muted/15 px-3 py-2">
+            <div className="text-xs text-muted-foreground">Success rate</div>
+            <div className="mt-1 text-xl font-semibold tabular-nums">
+              {(analytics.summary.successRate * 100).toFixed(1)}%
+            </div>
+          </div>
+        </div>
+
+        <MultiTrendChart
+          ariaLabel="Email delivery trend"
+          points={chartPoints}
+          series={chartSeries}
+          valueFormatter={value => intFormatter.format(value)}
+        />
+
+        <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+          {chartSeries
+            .filter(series => series.total > 0)
+            .slice(0, 4)
+            .map(series => (
+              <div key={series.key} className="flex items-center gap-2">
+                <span
+                  className="h-2 w-2 rounded-full"
+                  style={{ backgroundColor: series.color }}
+                  aria-hidden="true"
+                />
+                {series.label}: {compactFormatter.format(series.total)}
+              </div>
+            ))}
+        </div>
+
+        <div className="flex justify-between text-xs text-muted-foreground tabular-nums">
+          <span>{mailBucketLabel(analytics.window.from, hours)}</span>
+          <span>{mailBucketLabel(analytics.window.to, hours)}</span>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function MailDeliveryCardSkeleton() {
+  return (
+    <Card className="border-border/60 bg-card shadow-1">
+      <CardHeader>
+        <Skeleton className="h-5 w-44" />
+        <Skeleton className="h-4 w-64" />
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-16 w-full" />
+        </div>
+        <Skeleton className="h-44 w-full" />
+      </CardContent>
+    </Card>
+  );
+}
+
 function DashboardPageContent() {
   const [storageHistoryDays, setStorageHistoryDays] = useState<number>(30);
   const [syncHistoryHours, setSyncHistoryHours] = useState<number>(48);
+  const [copilotWindowDays, setCopilotWindowDays] = useState<number>(7);
   const [sharedLinkWindowDays, setSharedLinkWindowDays] = useState<number>(28);
+  const [mailDeliveryHours, setMailDeliveryHours] = useState<number>(24);
   const shouldShowTopSharedLinks = !environment.isSelfHosted;
   const revalidateQueryResource = useMutateQueryResource();
 
@@ -842,11 +1236,17 @@ function DashboardPageContent() {
       input: {
         storageHistoryDays,
         syncHistoryHours,
+        copilotWindowDays,
         sharedLinkWindowDays,
         timezone: 'UTC',
       },
     }),
-    [sharedLinkWindowDays, storageHistoryDays, syncHistoryHours]
+    [
+      copilotWindowDays,
+      sharedLinkWindowDays,
+      storageHistoryDays,
+      syncHistoryHours,
+    ]
   );
 
   const { data, isValidating } = useQuery(
@@ -902,48 +1302,13 @@ function DashboardPageContent() {
             isValidating={isValidating}
             onRefresh={() => {
               revalidateQueryResource(adminDashboardQuery).catch(() => {});
+              revalidateQueryResource(adminMailDeliveriesQuery).catch(() => {});
             }}
           />
         }
       />
 
       <div className="flex-1 overflow-auto p-6 space-y-6">
-        <Card className="border-border/60 bg-card shadow-1">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Window Controls</CardTitle>
-            <CardDescription>
-              Tune dashboard windows. Data is sampled in UTC and refreshes
-              automatically.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid grid-cols-1 items-end gap-3 md:grid-cols-2 lg:grid-cols-3">
-            <WindowSelect
-              id="storage-history-window"
-              label="Storage History"
-              value={storageHistoryDays}
-              options={STORAGE_DAY_OPTIONS}
-              unit="days"
-              onChange={setStorageHistoryDays}
-            />
-            <WindowSelect
-              id="sync-history-window"
-              label="Sync History"
-              value={syncHistoryHours}
-              options={SYNC_HOUR_OPTIONS}
-              unit="hours"
-              onChange={setSyncHistoryHours}
-            />
-            <WindowSelect
-              id="shared-link-window"
-              label="Shared Link Window"
-              value={sharedLinkWindowDays}
-              options={SHARED_DAY_OPTIONS}
-              unit="days"
-              onChange={setSharedLinkWindowDays}
-            />
-          </CardContent>
-        </Card>
-
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
           <div className="h-full min-w-0 lg:col-span-5">
             <PrimaryMetricCard
@@ -955,9 +1320,18 @@ function DashboardPageContent() {
             <SecondaryMetricCard
               title="Copilot Conversations"
               value={intFormatter.format(dashboard.copilotConversations)}
-              description={`${sharedLinkWindowDays}d aggregation`}
+              description={`${dashboard.copilotWindow.effectiveSize}d aggregation`}
               icon={
                 <MessageSquareTextIcon className="h-4 w-4" aria-hidden="true" />
+              }
+              action={
+                <PanelRangeSelect
+                  ariaLabel="Copilot conversations range"
+                  value={copilotWindowDays}
+                  options={COPILOT_DAY_OPTIONS}
+                  unit="days"
+                  onChange={setCopilotWindowDays}
+                />
               }
             />
           </div>
@@ -984,13 +1358,22 @@ function DashboardPageContent() {
 
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
           <Card className="border-border/60 bg-card shadow-1 lg:col-span-1">
-            <CardHeader>
-              <CardTitle className="text-base">
-                Sync Active Users Trend
-              </CardTitle>
-              <CardDescription>
-                {dashboard.syncWindow.effectiveSize}h at minute bucket
-              </CardDescription>
+            <CardHeader className="flex flex-col gap-3 pb-4 md:flex-row md:items-start md:justify-between">
+              <div className="space-y-1.5">
+                <CardTitle className="text-base">
+                  Sync Active Users Trend
+                </CardTitle>
+                <CardDescription>
+                  {dashboard.syncWindow.effectiveSize}h at minute bucket
+                </CardDescription>
+              </div>
+              <PanelRangeSelect
+                ariaLabel="Sync active users range"
+                value={syncHistoryHours}
+                options={SYNC_HOUR_OPTIONS}
+                unit="hours"
+                onChange={setSyncHistoryHours}
+              />
             </CardHeader>
             <CardContent className="space-y-3">
               <TrendChart
@@ -1003,13 +1386,22 @@ function DashboardPageContent() {
           </Card>
 
           <Card className="border-border/60 bg-card shadow-1 lg:col-span-2">
-            <CardHeader>
-              <CardTitle className="text-base">
-                Storage Trend (Workspace + Blob)
-              </CardTitle>
-              <CardDescription>
-                {dashboard.storageWindow.effectiveSize}d at day bucket
-              </CardDescription>
+            <CardHeader className="flex flex-col gap-3 pb-4 md:flex-row md:items-start md:justify-between">
+              <div className="space-y-1.5">
+                <CardTitle className="text-base">
+                  Storage Trend (Workspace + Blob)
+                </CardTitle>
+                <CardDescription>
+                  {dashboard.storageWindow.effectiveSize}d at day bucket
+                </CardDescription>
+              </div>
+              <PanelRangeSelect
+                ariaLabel="Storage trend range"
+                value={storageHistoryDays}
+                options={STORAGE_DAY_OPTIONS}
+                unit="days"
+                onChange={setStorageHistoryDays}
+              />
             </CardHeader>
             <CardContent className="space-y-4">
               <TrendChart
@@ -1035,10 +1427,18 @@ function DashboardPageContent() {
           </Card>
         </div>
 
+        <Suspense fallback={<MailDeliveryCardSkeleton />}>
+          <MailDeliverySection
+            hours={mailDeliveryHours}
+            onHoursChange={setMailDeliveryHours}
+          />
+        </Suspense>
+
         {shouldShowTopSharedLinks ? (
           <Suspense fallback={<TopSharedLinksCardSkeleton />}>
             <TopSharedLinksSection
               sharedLinkWindowDays={sharedLinkWindowDays}
+              onWindowChange={setSharedLinkWindowDays}
             />
           </Suspense>
         ) : null}

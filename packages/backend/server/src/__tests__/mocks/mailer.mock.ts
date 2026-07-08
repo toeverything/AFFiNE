@@ -2,17 +2,17 @@ import { interval, map, take, takeUntil } from 'rxjs';
 import Sinon from 'sinon';
 
 import { Mailer } from '../../core/mail';
+import type { SendMailCommand } from '../../core/mail/types';
 import { MailName } from '../../mails';
 
 export class MockMailer {
   send = Sinon.createStubInstance(Mailer).send.resolves(true);
-  trySend(command: Jobs['notification.sendMail']) {
+  skip = Sinon.createStubInstance(Mailer).skip.resolves(false);
+  trySend(command: SendMailCommand) {
     return this.send(command, true);
   }
 
-  last<Mail extends MailName>(
-    name: Mail
-  ): Extract<Jobs['notification.sendMail'], { name: Mail }> {
+  last<Mail extends MailName>(name: Mail): SendMailCommand & { name: Mail } {
     const last = this.send.lastCall.args[0];
 
     if (!last) {
@@ -23,22 +23,26 @@ export class MockMailer {
       throw new Error(`Mail name mismatch: ${last.name} !== ${name}`);
     }
 
-    return last as any;
+    return last as SendMailCommand & { name: Mail };
   }
 
   waitFor<Mail extends MailName>(
     name: Mail,
     timeout: number = 1000
-  ): Promise<Extract<Jobs['notification.sendMail'], { name: Mail }>> {
-    const { promise, reject, resolve } = Promise.withResolvers<any>();
+  ): Promise<SendMailCommand & { name: Mail }> {
+    const { promise, reject, resolve } = Promise.withResolvers<
+      SendMailCommand & { name: Mail }
+    >();
 
     interval(10)
       .pipe(
         take(Math.floor(timeout / 10)),
         takeUntil(promise),
         map(() => {
-          const last = this.send.lastCall.args[0];
-          return last.name === name ? last : undefined;
+          const last = this.send.lastCall?.args[0];
+          return last?.name === name
+            ? (last as SendMailCommand & { name: Mail })
+            : undefined;
         })
       )
       .subscribe({

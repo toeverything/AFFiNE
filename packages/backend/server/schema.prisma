@@ -360,6 +360,58 @@ model DocAccessPolicy {
   @@map("doc_access_policies")
 }
 
+model MailDelivery {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  mailName           String    @map("mail_name") @db.Text
+  mailClass          String    @map("mail_class") @db.Text
+  priority           String    @default("normal") @db.Text
+  status             String    @db.Text
+  dedupeKey          String?   @map("dedupe_key") @db.Text
+  recipientEmail     String?   @map("recipient_email") @db.Text
+  recipientHash      String    @map("recipient_hash") @db.Text
+  recipientDomain    String    @map("recipient_domain") @db.Text
+  recipientUserId    String?   @map("recipient_user_id") @db.VarChar
+  actorUserId        String?   @map("actor_user_id") @db.VarChar
+  workspaceId        String?   @map("workspace_id") @db.VarChar
+  notificationId     String?   @map("notification_id") @db.VarChar
+  abuseSubjectKey    String?   @map("abuse_subject_key") @db.Text
+  quotaReservationId String?   @map("quota_reservation_id") @db.Uuid
+  quotaDecision      Json?     @map("quota_decision") @db.JsonB
+  payload            Json?     @db.JsonB
+  sendAfter          DateTime  @default(now()) @map("send_after") @db.Timestamptz(3)
+  expiresAt          DateTime? @map("expires_at") @db.Timestamptz(3)
+  attemptCount       Int       @default(0) @map("attempt_count") @db.Integer
+  maxAttempts        Int       @default(3) @map("max_attempts") @db.Integer
+  lockedBy           String?   @map("locked_by") @db.Text
+  lockedUntil        DateTime? @map("locked_until") @db.Timestamptz(3)
+  firstAttemptAt     DateTime? @map("first_attempt_at") @db.Timestamptz(3)
+  lastAttemptAt      DateTime? @map("last_attempt_at") @db.Timestamptz(3)
+  sentAt             DateTime? @map("sent_at") @db.Timestamptz(3)
+  settledAt          DateTime? @map("settled_at") @db.Timestamptz(3)
+  canceledAt         DateTime? @map("canceled_at") @db.Timestamptz(3)
+  failedAt           DateTime? @map("failed_at") @db.Timestamptz(3)
+  providerMessageId  String?   @map("provider_message_id") @db.Text
+  providerResponse   String?   @map("provider_response") @db.Text
+  lastErrorCode      String?   @map("last_error_code") @db.Text
+  lastError          String?   @map("last_error") @db.Text
+  retentionState     String    @default("full") @map("retention_state") @db.Text
+  anonymizedAt       DateTime? @map("anonymized_at") @db.Timestamptz(3)
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([createdAt])
+  @@index([mailName, status, createdAt])
+  @@index([mailClass, status, createdAt])
+  @@index([status, createdAt])
+  @@index([status, sendAfter, lockedUntil], map: "mail_deliveries_ready_idx")
+  @@index([settledAt])
+  @@index([recipientDomain, createdAt])
+  @@index([workspaceId, createdAt])
+  @@index([actorUserId, createdAt])
+  @@index([abuseSubjectKey, createdAt])
+  @@map("mail_deliveries")
+}
+
 model DocGrant {
   workspaceId       String   @map("workspace_id") @db.VarChar
   docId             String   @map("doc_id") @db.VarChar

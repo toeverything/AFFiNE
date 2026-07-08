@@ -13,6 +13,7 @@ import { test as base } from './playwright';
 import { removeWithRetry } from './utils/utils';
 
 const electronRoot = new Package('@affine/electron').path;
+const initialActivePages = new WeakMap<ElectronApplication, Page>();
 
 const treeKillAsync = (pid: number, signal: NodeJS.Signals) =>
   new Promise<void>((resolve, reject) => {
@@ -73,11 +74,24 @@ const releaseChildProcessHandles = (child: ChildProcess) => {
   }
 };
 
-const withTimeoutFallback = async <T>(promise: Promise<T>, fallback: T) => {
+const waitForChildProcessExit = (child: ChildProcess) =>
+  new Promise<void>(resolve => {
+    if (child.exitCode !== null || child.signalCode !== null) {
+      resolve();
+      return;
+    }
+    child.once('exit', () => resolve());
+  });
+
+const withTimeoutFallback = async <T>(
+  promise: Promise<T>,
+  fallback: T,
+  timeoutMs = 1_000
+) => {
   try {
     return await Promise.race([
       promise,
-      setTimeout(1_000).then(() => fallback),
+      setTimeout(timeoutMs).then(() => fallback),
     ]);
   } catch {
     return fallback;
@@ -89,7 +103,8 @@ const getPageId = async (page: Page) => {
     page.evaluate(() => {
       return (window.__appInfo as any)?.viewId as string | undefined;
     }),
-    undefined
+    undefined,
+    500
   );
 };
 
@@ -98,7 +113,8 @@ const isActivePage = async (page: Page) => {
     page.evaluate(async () => {
       return (await (window as any).__apis?.ui.isActiveTab()) === true;
     }),
-    false
+    false,
+    500
   );
 };
 
@@ -113,22 +129,27 @@ const isEditorPage = async (page: Page) => {
 };
 
 const getActivePage = async (pages: Page[]) => {
-  for (const page of pages) {
-    if (await isActivePage(page)) {
-      return page;
-    }
+  const activeChecks = await Promise.all(
+    pages.map(async page => ((await isActivePage(page)) ? page : null))
+  );
+  for (const page of activeChecks) {
+    if (page) return page;
   }
 
-  const contentPages: Page[] = [];
-  for (const page of pages) {
-    const pageId = await getPageId(page);
-    if (pageId === 'shell') {
-      continue;
-    }
-    if (pageId || (await isEditorPage(page))) {
-      contentPages.push(page);
-    }
-  }
+  const contentPages = (
+    await Promise.all(
+      pages.map(async page => {
+        const pageId = await getPageId(page);
+        if (pageId === 'shell') {
+          return null;
+        }
+        if (pageId || (await isEditorPage(page))) {
+          return page;
+        }
+        return null;
+      })
+    )
+  ).filter((page): page is Page => !!page);
 
   if (contentPages.length > 0) {
     return contentPages.at(-1) ?? null;
@@ -146,6 +167,21 @@ const getShellPage = async (pages: Page[]) => {
   return null;
 };
 
+const getElectronPages = (electronApp: ElectronApplication) => {
+  const pages = new Set<Page>();
+  for (const page of electronApp.windows()) {
+    if (!page.isClosed()) {
+      pages.add(page);
+    }
+  }
+  for (const page of electronApp.context().pages()) {
+    if (!page.isClosed()) {
+      pages.add(page);
+    }
+  }
+  return [...pages];
+};
+
 const waitForElectronPage = async (
   electronApp: ElectronApplication,
   label: string,
@@ -153,10 +189,10 @@ const waitForElectronPage = async (
 ) => {
   const deadline =
     Date.now() +
-    (process.env.CI && process.platform === 'darwin' ? 20_000 : 10_000);
+    (process.env.CI && process.platform === 'darwin' ? 25_000 : 20_000);
 
   while (Date.now() < deadline) {
-    const page = await getPage(electronApp.windows());
+    const page = await getPage(getElectronPages(electronApp));
     if (page) {
       return page;
     }
@@ -177,14 +213,6 @@ const cleanupElectronApp = async (electronApp: ElectronApplication) => {
       }
       electronApp.once('close', () => resolve());
     });
-  const waitForProcessExit = () =>
-    new Promise<void>(resolve => {
-      if (child.exitCode !== null || child.signalCode !== null) {
-        resolve();
-        return;
-      }
-      child.once('exit', () => resolve());
-    });
 
   const killProcess = () => {
     try {
@@ -194,7 +222,7 @@ const cleanupElectronApp = async (electronApp: ElectronApplication) => {
 
   const closeWithTimeout = async () => {
     const closeEvent = waitForAppClose();
-    const processExit = waitForProcessExit();
+    const processExit = waitForChildProcessExit(child);
     const pid = child.pid;
     void electronApp.close().catch(() => {});
     const controller = new AbortController();
@@ -232,7 +260,7 @@ const cleanupElectronApp = async (electronApp: ElectronApplication) => {
   if (process.env.CI && process.platform === 'linux') {
     const pid = child.pid;
     const closeEvent = waitForAppClose();
-    const processExit = waitForProcessExit();
+    const processExit = waitForChildProcessExit(child);
 
     await Promise.race([
       Promise.all([
@@ -262,6 +290,21 @@ const cleanupElectronApp = async (electronApp: ElectronApplication) => {
   await closeWithTimeout();
 };
 
+const forceKillElectronApp = async (electronApp: ElectronApplication) => {
+  const child = electronApp.process();
+
+  const pid = child.pid;
+  if (pid !== undefined) {
+    await treeKillAsync(pid, 'SIGKILL').catch(() => child.kill());
+  } else {
+    child.kill();
+  }
+  await Promise.race([waitForChildProcessExit(child), setTimeout(5_000)]).catch(
+    () => {}
+  );
+  releaseChildProcessHandles(child);
+};
+
 export const test = base.extend<{
   electronApp: ElectronApplication;
   shell: Page;
@@ -287,11 +330,11 @@ export const test = base.extend<{
     await use(shell);
   },
   page: async ({ electronApp }, use) => {
-    const page = await waitForElectronPage(
-      electronApp,
-      'active page',
-      getActivePage
-    );
+    const cached = initialActivePages.get(electronApp);
+    const page =
+      cached && !cached.isClosed()
+        ? cached
+        : await waitForElectronPage(electronApp, 'active page', getActivePage);
 
     await page.waitForSelector('v-line');
 
@@ -301,7 +344,7 @@ export const test = base.extend<{
     void page;
     await use({
       getActive: async () => {
-        const view = await getActivePage(electronApp.windows());
+        const view = await getActivePage(getElectronPages(electronApp));
         return view || page;
       },
     });
@@ -319,6 +362,7 @@ export const test = base.extend<{
         electronRoot.join('package.json').value
       );
       packageJson.name = '@affine/electron-test-' + id;
+      packageJson.productName = 'AFFiNE Test ' + id;
       packageJson.main = './main.js';
       await fs.writeJSON(clonedDist + '/package.json', packageJson);
 
@@ -331,12 +375,35 @@ export const test = base.extend<{
       env.DEBUG = 'pw:browser';
       env.SKIP_ONBOARDING = '1';
 
-      electronApp = await electron.launch({
-        args: [clonedDist],
-        env,
-        cwd: clonedDist,
-        colorScheme: 'light',
-      });
+      const launch = () =>
+        electron.launch({
+          args: [clonedDist],
+          env,
+          cwd: clonedDist,
+          colorScheme: 'light',
+        });
+
+      for (let attempt = 0; attempt < 2; attempt++) {
+        electronApp = await launch();
+        try {
+          const page = await waitForElectronPage(
+            electronApp,
+            'active page',
+            getActivePage
+          );
+          initialActivePages.set(electronApp, page);
+          break;
+        } catch (error) {
+          if (attempt > 0) {
+            throw error;
+          }
+          await forceKillElectronApp(electronApp);
+          electronApp = undefined;
+        }
+      }
+      if (!electronApp) {
+        throw new Error('Failed to launch electron app');
+      }
 
       await use(electronApp);
     } finally {

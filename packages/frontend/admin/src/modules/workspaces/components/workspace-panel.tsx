@@ -235,7 +235,10 @@ function WorkspacePanelContent({
             value={formatBytes(workspace.blobSize)}
           />
           <MetricCard label="Blob Count" value={`${workspace.blobCount}`} />
-          <MetricCard label="Members" value={`${workspace.memberCount}`} />
+          <MetricCard
+            label="Active Members"
+            value={`${workspace.memberCount}`}
+          />
           <MetricCard
             label="Shared Pages"
             value={`${workspace.publicPageCount}`}
@@ -243,12 +246,14 @@ function WorkspacePanelContent({
         </div>
 
         <div className="rounded-xl border border-border/60 bg-card shadow-sm">
-          <div className="px-3 py-2 text-sm font-medium">Members</div>
+          <div className="px-3 py-2 text-sm font-medium">
+            Members and Invitations
+          </div>
           <Separator />
           <div className="flex flex-col divide-y">
             {memberList.length === 0 ? (
               <div className="px-3 py-3 text-xs text-muted-foreground">
-                No members.
+                No members or invitations.
               </div>
             ) : (
               memberList.map(member => (
@@ -270,8 +275,15 @@ function WorkspacePanelContent({
                       {member.email}
                     </div>
                   </div>
-                  <div className="ml-auto text-xs px-2 py-1 rounded border">
-                    {member.role}
+                  <div className="ml-auto flex flex-col items-end gap-1 text-xs">
+                    <div className="rounded border px-2 py-1">
+                      {member.role}
+                    </div>
+                    {member.status !== 'Accepted' ? (
+                      <div className="text-muted-foreground">
+                        {member.status}
+                      </div>
+                    ) : null}
                   </div>
                 </div>
               ))

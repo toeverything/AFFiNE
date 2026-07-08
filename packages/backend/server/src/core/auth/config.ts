@@ -12,6 +12,9 @@ export interface AuthConfig {
   requireEmailDomainVerification: boolean;
   requireEmailVerification: boolean;
   newAccountShareActionDelay: number;
+  trustedCloudflareHeaders: boolean;
+  inviteQuotaShadowMode: boolean;
+  inviteQuotaFailOpenOnRuntimeError: boolean;
   passwordRequirements: ConfigItem<{
     min: number;
     max: number;
@@ -45,6 +48,21 @@ defineModuleConfig('auth', {
     desc: 'Minimum account age in seconds before new accounts can invite members or create share links.',
     default: 24 * 60 * 60,
     shape: z.number().int().min(0),
+  },
+  trustedCloudflareHeaders: {
+    desc: 'Whether request abuse source facts should trust Cloudflare headers from the origin edge.',
+    default: false,
+    shape: z.boolean(),
+  },
+  inviteQuotaShadowMode: {
+    desc: 'Whether workspace invite quota should record would-block decisions without rejecting requests or executing abuse actions.',
+    default: false,
+    shape: z.boolean(),
+  },
+  inviteQuotaFailOpenOnRuntimeError: {
+    desc: 'Whether workspace invite quota should fail open when native runtime admission is unavailable. Keep disabled for production.',
+    default: false,
+    shape: z.boolean(),
   },
   passwordRequirements: {
     desc: 'The password strength requirements when set new password.',

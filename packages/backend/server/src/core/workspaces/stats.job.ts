@@ -276,8 +276,9 @@ export class WorkspaceStatsJob {
       ),
       member_stats AS (
         SELECT workspace_id, COUNT(*) AS member_count
-        FROM workspace_user_permissions
+        FROM workspace_members
         WHERE workspace_id IN (SELECT workspace_id FROM targets)
+          AND state = 'active'
         GROUP BY workspace_id
       ),
       public_page_stats AS (

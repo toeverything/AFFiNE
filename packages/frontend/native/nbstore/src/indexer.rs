@@ -1,4 +1,4 @@
-use affine_common::doc_parser::{BlockInfo, CrawlResult, ParseError, parse_doc_from_binary};
+use affine_doc_loader::{BlockInfo, CrawlResult, ParseError, parse_doc_from_binary};
 use memory_indexer::{SearchHit, SnapshotData};
 use napi_derive::napi;
 use serde::Serialize;
@@ -276,7 +276,7 @@ fn merge_updates(mut segments: Vec<Vec<u8>>, guid: &str) -> Result<Vec<u8>> {
 mod tests {
   use std::path::{Path, PathBuf};
 
-  use affine_common::doc_parser::ParseError;
+  use affine_doc_loader::ParseError;
   use chrono::Utc;
   use serde_json::Value;
   use tokio::fs;

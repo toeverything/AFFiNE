@@ -1,11 +1,14 @@
 import type { Container } from '@blocksuite/global/di';
 import { DisposableGroup } from '@blocksuite/global/disposable';
+import { IS_IOS } from '@blocksuite/global/env';
 import { ConfigExtensionFactory } from '@blocksuite/std';
 import {
+  getEffectiveDpr,
   type GfxController,
   GfxExtension,
   GfxExtensionIdentifier,
   type GfxViewportElement,
+  viewportRuntimeConfig,
 } from '@blocksuite/std/gfx';
 import {
   BehaviorSubject,
@@ -34,6 +37,26 @@ import type {
 } from './types';
 
 const debug = false; // Toggle for debug logs
+const IOS_LOW_ZOOM_SURVIVAL_THRESHOLD = 0.5;
+
+export function shouldPreferBitmapCacheDuringLowZoomGesture(params: {
+  isIOS: boolean;
+  zoom: number;
+  hasBitmap: boolean;
+}) {
+  return (
+    params.isIOS &&
+    params.zoom <= IOS_LOW_ZOOM_SURVIVAL_THRESHOLD &&
+    params.hasBitmap
+  );
+}
+
+export function shouldIdleTurboBlocksDuringZooming(params: {
+  isIOS: boolean;
+  zoom: number;
+}) {
+  return !(params.isIOS && params.zoom <= IOS_LOW_ZOOM_SURVIVAL_THRESHOLD);
+}
 
 const defaultOptions = {
   zoomThreshold: 1, // With high enough zoom, fallback to DOM rendering
@@ -147,7 +170,7 @@ export class ViewportTurboRendererExtension extends GfxExtension {
 
     this.viewport.elementReady.pipe(take(1)).subscribe(element => {
       this.viewportElement = element;
-      syncCanvasSize(this.canvas, this.std.host);
+      syncCanvasSize(this.canvas, this.std.host, this.viewport.zoom);
       this.state$.next('pending');
 
       this.disposables.add(
@@ -213,7 +236,7 @@ export class ViewportTurboRendererExtension extends GfxExtension {
             ) {
               this.refresh().catch(console.error);
             }
-          }, 650);
+          }, viewportRuntimeConfig.POST_GESTURE_REFRESH_DELAY);
         };
 
         this.disposables.add(
@@ -282,10 +305,22 @@ export class ViewportTurboRendererExtension extends GfxExtension {
       nextState = 'pending';
       this.clearOptimizedBlocks();
     } else if (this.isZooming()) {
-      this.debugLog('Currently zooming, using placeholder rendering');
       nextState = 'zooming';
-      this.paintPlaceholder();
-      this.updateOptimizedBlocks();
+      if (
+        shouldPreferBitmapCacheDuringLowZoomGesture({
+          isIOS: IS_IOS,
+          zoom: this.viewport.zoom,
+          hasBitmap: !!this.bitmap,
+        })
+      ) {
+        this.debugLog('Currently zooming, reusing cached bitmap');
+        this.clearOptimizedBlocks();
+        this.drawCachedBitmap();
+      } else {
+        this.debugLog('Currently zooming, using placeholder rendering');
+        this.paintPlaceholder();
+        this.updateOptimizedBlocks();
+      }
     } else if (this.canUseBitmapCache()) {
       this.debugLog('Using cached bitmap');
       nextState = 'ready';
@@ -333,7 +368,7 @@ export class ViewportTurboRendererExtension extends GfxExtension {
       }
 
       const layout = this.layoutCache;
-      const dpr = window.devicePixelRatio;
+      const dpr = getEffectiveDpr(this.viewport.zoom);
       const currentVersion = this.layoutVersion;
 
       this.debugLog(`Requesting bitmap painting (version=${currentVersion})`);
@@ -415,12 +450,14 @@ export class ViewportTurboRendererExtension extends GfxExtension {
       layout.overallRect.y
     );
 
+    const dpr = getEffectiveDpr(this.viewport.zoom);
+
     ctx.drawImage(
       bitmap,
-      layoutViewCoord[0] * window.devicePixelRatio,
-      layoutViewCoord[1] * window.devicePixelRatio,
-      layout.overallRect.w * window.devicePixelRatio * this.viewport.zoom,
-      layout.overallRect.h * window.devicePixelRatio * this.viewport.zoom
+      layoutViewCoord[0] * dpr,
+      layoutViewCoord[1] * dpr,
+      layout.overallRect.w * dpr * this.viewport.zoom,
+      layout.overallRect.h * dpr * this.viewport.zoom
     );
 
     this.debugLog('Bitmap drawn to canvas');
@@ -436,6 +473,16 @@ export class ViewportTurboRendererExtension extends GfxExtension {
 
   private updateOptimizedBlocks() {
     if (!this.canOptimize()) return;
+    if (
+      !shouldIdleTurboBlocksDuringZooming({
+        isIOS: IS_IOS,
+        zoom: this.viewport.zoom,
+      })
+    ) {
+      this.clearOptimizedBlocks();
+      return;
+    }
+
     requestAnimationFrame(() => {
       if (!this.viewportElement || !this.layoutCache) return;
       const blockElements = this.viewportElement.getModelsInViewport();
@@ -463,7 +510,7 @@ export class ViewportTurboRendererExtension extends GfxExtension {
 
   private handleResize() {
     this.debugLog('Container resized, syncing canvas size');
-    syncCanvasSize(this.canvas, this.std.host);
+    syncCanvasSize(this.canvas, this.std.host, this.viewport.zoom);
     this.invalidate();
     this.refresh$.next();
   }

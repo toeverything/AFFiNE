@@ -102,6 +102,7 @@ export interface AdminDashboard {
   blobStorageBytes: Scalars['SafeInt']['output'];
   blobStorageHistory: Array<AdminDashboardValueDayPoint>;
   copilotConversations: Scalars['SafeInt']['output'];
+  copilotWindow: TimeWindow;
   generatedAt: Scalars['DateTime']['output'];
   storageWindow: TimeWindow;
   syncActiveUsers: Scalars['Int']['output'];
@@ -114,6 +115,7 @@ export interface AdminDashboard {
 }
 
 export interface AdminDashboardInput {
+  copilotWindowDays?: InputMaybe<Scalars['Int']['input']>;
   sharedLinkWindowDays?: InputMaybe<Scalars['Int']['input']>;
   storageHistoryDays?: InputMaybe<Scalars['Int']['input']>;
   syncHistoryHours?: InputMaybe<Scalars['Int']['input']>;
@@ -145,6 +147,46 @@ export interface AdminLicensePreview {
   recurring: SubscriptionRecurring;
   valid: Scalars['Boolean']['output'];
   workspaceId: Scalars['String']['output'];
+}
+
+export interface AdminMailDeliveriesInput {
+  hours?: Scalars['Int']['input'];
+}
+
+export interface AdminMailDeliveryAnalytics {
+  __typename?: 'AdminMailDeliveryAnalytics';
+  byOutcome: Array<AdminMailDeliverySeries>;
+  byStatus: Array<AdminMailDeliverySeries>;
+  byType: Array<AdminMailDeliverySeries>;
+  summary: AdminMailDeliverySummary;
+  window: TimeWindow;
+}
+
+export interface AdminMailDeliveryPoint {
+  __typename?: 'AdminMailDeliveryPoint';
+  bucket: Scalars['DateTime']['output'];
+  count: Scalars['Int']['output'];
+}
+
+export interface AdminMailDeliverySeries {
+  __typename?: 'AdminMailDeliverySeries';
+  key: Scalars['String']['output'];
+  label: Scalars['String']['output'];
+  points: Array<AdminMailDeliveryPoint>;
+  total: Scalars['Int']['output'];
+}
+
+export interface AdminMailDeliverySummary {
+  __typename?: 'AdminMailDeliverySummary';
+  canceled: Scalars['Int']['output'];
+  failed: Scalars['Int']['output'];
+  queued: Scalars['Int']['output'];
+  retryWait: Scalars['Int']['output'];
+  sending: Scalars['Int']['output'];
+  sent: Scalars['Int']['output'];
+  skipped: Scalars['Int']['output'];
+  successRate: Scalars['Float']['output'];
+  total: Scalars['Int']['output'];
 }
 
 export interface AdminSharedLinkTopItem {
@@ -213,8 +255,14 @@ export interface AdminWorkspaceMember {
   email: Scalars['String']['output'];
   id: Scalars['String']['output'];
   name: Scalars['String']['output'];
-  role: Permission;
+  role: AdminWorkspaceMemberRole;
   status: WorkspaceMemberStatus;
+}
+
+export enum AdminWorkspaceMemberRole {
+  Admin = 'Admin',
+  Collaborator = 'Collaborator',
+  Owner = 'Owner',
 }
 
 export interface AdminWorkspaceSharedLink {
@@ -1165,6 +1213,7 @@ export type ErrorDataUnion =
   | SubscriptionPlanNotFoundDataType
   | UnknownOauthProviderDataType
   | UnsupportedClientVersionDataType
+  | UnsupportedServerVersionDataType
   | UnsupportedSubscriptionPlanDataType
   | ValidationErrorDataType
   | VersionRejectedDataType
@@ -1306,6 +1355,7 @@ export enum ErrorNames {
   UNKNOWN_OAUTH_PROVIDER = 'UNKNOWN_OAUTH_PROVIDER',
   UNSPLASH_IS_NOT_CONFIGURED = 'UNSPLASH_IS_NOT_CONFIGURED',
   UNSUPPORTED_CLIENT_VERSION = 'UNSUPPORTED_CLIENT_VERSION',
+  UNSUPPORTED_SERVER_VERSION = 'UNSUPPORTED_SERVER_VERSION',
   UNSUPPORTED_SUBSCRIPTION_PLAN = 'UNSUPPORTED_SUBSCRIPTION_PLAN',
   USER_AVATAR_NOT_FOUND = 'USER_AVATAR_NOT_FOUND',
   USER_NOT_FOUND = 'USER_NOT_FOUND',
@@ -2612,6 +2662,8 @@ export interface Query {
   adminAllSharedLinks: PaginatedAdminAllSharedLink;
   /** Get aggregated dashboard metrics for admin panel */
   adminDashboard: AdminDashboard;
+  /** Aggregate mail delivery timeline facts for admin panel */
+  adminMailDeliveries: AdminMailDeliveryAnalytics;
   /** Get workspace detail for admin */
   adminWorkspace: Maybe<AdminWorkspace>;
   /** List workspaces for admin */
@@ -2667,6 +2719,10 @@ export interface QueryAdminAllSharedLinksArgs {
 
 export interface QueryAdminDashboardArgs {
   input?: InputMaybe<AdminDashboardInput>;
+}
+
+export interface QueryAdminMailDeliveriesArgs {
+  input?: InputMaybe<AdminMailDeliveriesInput>;
 }
 
 export interface QueryAdminWorkspaceArgs {
@@ -3135,6 +3191,7 @@ export interface TestWorkspaceByokConfigResultType {
 
 export enum TimeBucket {
   Day = 'Day',
+  Hour = 'Hour',
   Minute = 'Minute',
 }
 
@@ -3225,6 +3282,11 @@ export interface UnknownOauthProviderDataType {
 export interface UnsupportedClientVersionDataType {
   __typename?: 'UnsupportedClientVersionDataType';
   clientVersion: Scalars['String']['output'];
+  requiredVersion: Scalars['String']['output'];
+}
+
+export interface UnsupportedServerVersionDataType {
+  __typename?: 'UnsupportedServerVersionDataType';
   requiredVersion: Scalars['String']['output'];
 }
 
@@ -3851,6 +3913,15 @@ export type AdminDashboardQuery = {
       requestedSize: number;
       effectiveSize: number;
     };
+    copilotWindow: {
+      __typename?: 'TimeWindow';
+      from: string;
+      to: string;
+      timezone: string;
+      bucket: TimeBucket;
+      requestedSize: number;
+      effectiveSize: number;
+    };
     workspaceStorageHistory: Array<{
       __typename?: 'AdminDashboardValueDayPoint';
       date: string;
@@ -3891,6 +3962,71 @@ export type AdminDashboardQuery = {
       requestedSize: number;
       effectiveSize: number;
     };
+  };
+};
+
+export type AdminMailDeliveriesQueryVariables = Exact<{
+  input?: InputMaybe<AdminMailDeliveriesInput>;
+}>;
+
+export type AdminMailDeliveriesQuery = {
+  __typename?: 'Query';
+  adminMailDeliveries: {
+    __typename?: 'AdminMailDeliveryAnalytics';
+    window: {
+      __typename?: 'TimeWindow';
+      from: string;
+      to: string;
+      timezone: string;
+      bucket: TimeBucket;
+      requestedSize: number;
+      effectiveSize: number;
+    };
+    summary: {
+      __typename?: 'AdminMailDeliverySummary';
+      total: number;
+      sent: number;
+      failed: number;
+      skipped: number;
+      canceled: number;
+      queued: number;
+      sending: number;
+      retryWait: number;
+      successRate: number;
+    };
+    byStatus: Array<{
+      __typename?: 'AdminMailDeliverySeries';
+      key: string;
+      label: string;
+      total: number;
+      points: Array<{
+        __typename?: 'AdminMailDeliveryPoint';
+        bucket: string;
+        count: number;
+      }>;
+    }>;
+    byType: Array<{
+      __typename?: 'AdminMailDeliverySeries';
+      key: string;
+      label: string;
+      total: number;
+      points: Array<{
+        __typename?: 'AdminMailDeliveryPoint';
+        bucket: string;
+        count: number;
+      }>;
+    }>;
+    byOutcome: Array<{
+      __typename?: 'AdminMailDeliverySeries';
+      key: string;
+      label: string;
+      total: number;
+      points: Array<{
+        __typename?: 'AdminMailDeliveryPoint';
+        bucket: string;
+        count: number;
+      }>;
+    }>;
   };
 };
 
@@ -4006,7 +4142,7 @@ export type AdminWorkspaceQuery = {
       name: string;
       email: string;
       avatarUrl: string | null;
-      role: Permission;
+      role: AdminWorkspaceMemberRole;
       status: WorkspaceMemberStatus;
     }>;
   } | null;
@@ -7704,6 +7840,11 @@ export type Queries =
       name: 'adminDashboardQuery';
       variables: AdminDashboardQueryVariables;
       response: AdminDashboardQuery;
+    }
+  | {
+      name: 'adminMailDeliveriesQuery';
+      variables: AdminMailDeliveriesQueryVariables;
+      response: AdminMailDeliveriesQuery;
     }
   | {
       name: 'adminServerConfigQuery';
