@@ -246,6 +246,7 @@ framework.impl(NativePaywallProvider, {
 });
 
 const frameworkProvider = framework.provider();
+let cancelActiveRequestSignIn: (() => void) | null = null;
 
 registerNativePreviewHandlers({
   renderMermaidSvg: request => Preview.renderMermaidSvg(request),
@@ -288,6 +289,13 @@ registerNativePreviewHandlers({
     defaultServerService.server;
   return currentServer.account$.value?.id;
 };
+(window as any).cancelRequestSignIn = () => {
+  if (!cancelActiveRequestSignIn) {
+    return false;
+  }
+  cancelActiveRequestSignIn();
+  return true;
+};
 (window as any).requestSignIn = async () => {
   const globalContextService = frameworkProvider.get(GlobalContextService);
   const currentServerId = globalContextService.globalContext.serverId.get();
@@ -308,6 +316,7 @@ registerNativePreviewHandlers({
   let dialogClosed = false;
   let didAuthenticate = false;
   let closeError: Error | null = null;
+  let cancelCurrentRequest: (() => void) | null = null;
 
   const closeDialog = () => {
     if (dialogClosed || !dialogId) {
@@ -344,10 +353,18 @@ registerNativePreviewHandlers({
         reject(error);
       };
 
+      cancelCurrentRequest = () => {
+        if (didAuthenticate || didSettle) {
+          return;
+        }
+        closeDialog();
+      };
+      cancelActiveRequestSignIn = cancelCurrentRequest;
+
       dialogId = globalDialogService.open(
         'sign-in',
         {
-          server: currentServer.baseUrl,
+          step: 'signIn',
         },
         () => {
           if (didAuthenticate) {
@@ -385,6 +402,9 @@ registerNativePreviewHandlers({
         });
     });
   } finally {
+    if (cancelActiveRequestSignIn === cancelCurrentRequest) {
+      cancelActiveRequestSignIn = null;
+    }
     window.clearTimeout(timeout);
   }
 };

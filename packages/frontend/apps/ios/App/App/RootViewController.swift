@@ -8,10 +8,61 @@
 import UIKit
 import WebKit
 
+private final class OnboardingSignInOverlayView: UIView {
+  var onClose: (() -> Void)?
+
+  private lazy var closeButton: UIButton = {
+    var configuration = UIButton.Configuration.plain()
+    configuration.contentInsets = NSDirectionalEdgeInsets(top: 10, leading: 10, bottom: 10, trailing: 10)
+
+    let button = UIButton(configuration: configuration)
+    button.translatesAutoresizingMaskIntoConstraints = false
+    button.tintColor = .label
+    button.backgroundColor = UIColor.secondarySystemBackground.withAlphaComponent(0.96)
+    button.layer.cornerRadius = 12
+    button.layer.shadowColor = UIColor.black.withAlphaComponent(0.18).cgColor
+    button.layer.shadowOpacity = 1
+    button.layer.shadowRadius = 12
+    button.layer.shadowOffset = CGSize(width: 0, height: 4)
+    button.setImage(UIImage(systemName: "xmark"), for: .normal)
+    button.addTarget(self, action: #selector(handleCloseTapped), for: .touchUpInside)
+    return button
+  }()
+
+  override init(frame: CGRect) {
+    super.init(frame: frame)
+    backgroundColor = .clear
+    translatesAutoresizingMaskIntoConstraints = false
+
+    addSubview(closeButton)
+    NSLayoutConstraint.activate([
+      closeButton.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor, constant: 8),
+      closeButton.trailingAnchor.constraint(equalTo: safeAreaLayoutGuide.trailingAnchor, constant: -16),
+      closeButton.widthAnchor.constraint(equalToConstant: 44),
+      closeButton.heightAnchor.constraint(equalToConstant: 44),
+    ])
+  }
+
+  required init?(coder: NSCoder) {
+    fatalError("init(coder:) has not been implemented")
+  }
+
+  override func point(inside point: CGPoint, with event: UIEvent?) -> Bool {
+    let pointInButton = convert(point, to: closeButton)
+    return closeButton.point(inside: pointInButton, with: event)
+  }
+
+  @objc
+  private func handleCloseTapped() {
+    onClose?()
+  }
+}
+
 @objc
 class RootViewController: UINavigationController {
   private var affineViewController: AFFiNEViewController?
   private var didScheduleOnboardingPresentation = false
+  private weak var onboardingSignInOverlay: OnboardingSignInOverlayView?
 
   override init(rootViewController _: UIViewController) {
     fatalError() // "you are not allowed to call this"
@@ -72,7 +123,22 @@ class RootViewController: UINavigationController {
         return
       }
 
-      let isSignedIn = await PaywallAuthGuard.ensureSignedIn(using: webView, dismissing: onboardingController)
+      defer { hideOnboardingSignInOverlay() }
+
+      let isSignedIn: Bool
+      do {
+        isSignedIn = try await PaywallAuthGuard.ensureSignedIn(
+          using: webView,
+          dismissing: onboardingController,
+          onSignInFlowPresented: { [weak self, weak webView] in
+            guard let self, let webView else { return }
+            self.showOnboardingSignInOverlay(bindWebView: webView)
+          }
+        )
+      } catch {
+        showOnboardingAlert(message: error.localizedDescription)
+        return
+      }
       guard isSignedIn else {
         finishOnboarding(from: nil)
         return
@@ -119,6 +185,40 @@ class RootViewController: UINavigationController {
     paywallController.onClose = onClose
     paywallController.onPurchaseCompleted = onPurchaseCompleted
     present(paywallController, animated: true)
+  }
+
+  @MainActor
+  private func showOnboardingSignInOverlay(bindWebView webView: WKWebView) {
+    guard onboardingSignInOverlay == nil else { return }
+
+    let overlay = OnboardingSignInOverlayView()
+    overlay.onClose = { [weak self, weak webView] in
+      guard let self, let webView else { return }
+      self.hideOnboardingSignInOverlay()
+
+      Task { @MainActor in
+        _ = try? await webView.callAsyncJavaScript(
+          "return window.cancelRequestSignIn?.() ?? false;",
+          contentWorld: .page
+        )
+      }
+    }
+
+    view.addSubview(overlay)
+    NSLayoutConstraint.activate([
+      overlay.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+      overlay.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+      overlay.topAnchor.constraint(equalTo: view.topAnchor),
+      overlay.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+    ])
+    view.bringSubviewToFront(overlay)
+    onboardingSignInOverlay = overlay
+  }
+
+  @MainActor
+  private func hideOnboardingSignInOverlay() {
+    onboardingSignInOverlay?.removeFromSuperview()
+    onboardingSignInOverlay = nil
   }
 
   private func finishOnboarding(from controller: UIViewController?) {

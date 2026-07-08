@@ -32,7 +32,7 @@ public class PayWallPlugin: CAPPlugin, CAPBridgedPlugin {
         let webView = try self.webView.get("AFFiNE is still loading. Please try again in a moment.")
         let initialPlan = paywallPlan(for: type)
 
-        let isSignedIn = await PaywallAuthGuard.ensureSignedIn(using: webView)
+        let isSignedIn = try await PaywallAuthGuard.ensureSignedIn(using: webView)
         guard isSignedIn else {
           call.resolve(["success": false, "type": type])
           return

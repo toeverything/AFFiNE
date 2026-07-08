@@ -24,26 +24,32 @@ extension Optional {
 
 @MainActor
 enum PaywallAuthGuard {
-  static func ensureSignedIn(using webView: WKWebView, dismissing controller: UIViewController? = nil) async -> Bool {
+  private static let bridgeReadyTimeout: TimeInterval = 10
+  private static let bridgePollIntervalNanoseconds: UInt64 = 200_000_000
+
+  static func ensureSignedIn(
+    using webView: WKWebView,
+    dismissing controller: UIViewController? = nil,
+    onSignInFlowPresented: (() -> Void)? = nil
+  ) async throws -> Bool {
+    try await waitForBridgeFunctions(["getCurrentUserIdentifier", "requestSignIn"], in: webView)
+
     if await currentUserIdentifier(in: webView) != nil {
       return true
     }
 
     await dismissIfNeeded(controller)
+    onSignInFlowPresented?()
 
-    do {
-      let result = try await webView.callAsyncJavaScript(
-        "return await window.requestSignIn();",
-        contentWorld: .page
-      )
-      if result == nil || result is NSNull {
-        return false
-      }
-      if userIdentifier(from: result) != nil {
-        return true
-      }
-    } catch {
+    let result = try await webView.callAsyncJavaScript(
+      "return await window.requestSignIn();",
+      contentWorld: .page
+    )
+    if result == nil || result is NSNull {
       return false
+    }
+    if userIdentifier(from: result) != nil {
+      return true
     }
 
     return await currentUserIdentifier(in: webView) != nil
@@ -62,6 +68,8 @@ enum PaywallAuthGuard {
   }
 
   static func hasProSubscription(in webView: WKWebView) async throws -> Bool {
+    try await waitForBridgeFunctions(["getSubscriptionState"], in: webView)
+
     let result = try await webView.callAsyncJavaScript(
       "return await window.getSubscriptionState();",
       contentWorld: .page
@@ -78,15 +86,47 @@ enum PaywallAuthGuard {
     return subscriptionState["pro"] as? [String: Any] != nil
   }
 
+  private static func waitForBridgeFunctions(_ functionNames: [String], in webView: WKWebView) async throws {
+    let deadline = Date().addingTimeInterval(bridgeReadyTimeout)
+
+    while Date() < deadline {
+      if await areBridgeFunctionsAvailable(functionNames, in: webView) {
+        return
+      }
+      try await Task.sleep(nanoseconds: bridgePollIntervalNanoseconds)
+    }
+
+    throw NSError(
+      domain: "PaywallAuthGuard",
+      code: -1,
+      userInfo: [NSLocalizedDescriptionKey: "AFFiNE is still loading. Please wait a moment and try again."]
+    )
+  }
+
+  private static func areBridgeFunctionsAvailable(_ functionNames: [String], in webView: WKWebView) async -> Bool {
+    let expression = functionNames
+      .map { "typeof window.\($0) === 'function'" }
+      .joined(separator: " && ")
+
+    do {
+      let result = try await webView.callAsyncJavaScript(
+        "return \(expression);",
+        contentWorld: .page
+      )
+      return result as? Bool == true
+    } catch {
+      return false
+    }
+  }
+
   private static func dismissIfNeeded(_ controller: UIViewController?) async {
     guard let controller, controller.presentingViewController != nil else { return }
     await withCheckedContinuation { continuation in
-      controller.dismiss(animated: true) {
+      controller.dismiss(animated: false) {
         continuation.resume()
       }
     }
   }
-
 
   private static func userIdentifier(from result: Any?) -> String? {
     guard let rawIdentifier = result as? String else { return nil }
