@@ -108,99 +108,114 @@ test.serial('should sign and verify a user session jwt', async t => {
   t.true(signed.expiresAt.getTime() > Date.now());
 });
 
-test.serial('should default jwt session ttl to application session ttl', async t => {
-  const signed = t.context.jwtSession.sign(
-    t.context.user.id,
-    t.context.sessionId
-  );
+test.serial(
+  'should default jwt session ttl to application session ttl',
+  async t => {
+    const signed = t.context.jwtSession.sign(
+      t.context.user.id,
+      t.context.sessionId
+    );
 
-  const ttlMs = signed.expiresAt.getTime() - Date.now();
-  t.true(ttlMs > (DEFAULT_SESSION_TTL - 5) * 1000);
-  t.true(ttlMs <= (DEFAULT_SESSION_TTL + 1) * 1000);
-});
+    const ttlMs = signed.expiresAt.getTime() - Date.now();
+    t.true(ttlMs > (DEFAULT_SESSION_TTL - 5) * 1000);
+    t.true(ttlMs <= (DEFAULT_SESSION_TTL + 1) * 1000);
+  }
+);
 
-test.serial('should use configured jwt session ttl when it is shorter than session ttl', async t => {
-  t.context.config.override({
-    auth: {
-      session: {
-        jwtTtl: 120,
+test.serial(
+  'should use configured jwt session ttl when it is shorter than session ttl',
+  async t => {
+    t.context.config.override({
+      auth: {
+        session: {
+          jwtTtl: 120,
+        },
       },
-    },
-  });
+    });
 
-  const signed = t.context.jwtSession.sign(
-    t.context.user.id,
-    t.context.sessionId
-  );
+    const signed = t.context.jwtSession.sign(
+      t.context.user.id,
+      t.context.sessionId
+    );
 
-  const ttlMs = signed.expiresAt.getTime() - Date.now();
-  t.true(ttlMs > 115 * 1000);
-  t.true(ttlMs <= 121 * 1000);
-});
+    const ttlMs = signed.expiresAt.getTime() - Date.now();
+    t.true(ttlMs > 115 * 1000);
+    t.true(ttlMs <= 121 * 1000);
+  }
+);
 
-test.serial('should cap configured jwt session ttl to application session ttl', async t => {
-  t.context.config.override({
-    auth: {
-      session: {
-        jwtTtl: DEFAULT_SESSION_TTL * 2,
+test.serial(
+  'should cap configured jwt session ttl to application session ttl',
+  async t => {
+    t.context.config.override({
+      auth: {
+        session: {
+          jwtTtl: DEFAULT_SESSION_TTL * 2,
+        },
       },
-    },
-  });
+    });
 
-  const signed = t.context.jwtSession.sign(
-    t.context.user.id,
-    t.context.sessionId
-  );
+    const signed = t.context.jwtSession.sign(
+      t.context.user.id,
+      t.context.sessionId
+    );
 
-  const ttlMs = signed.expiresAt.getTime() - Date.now();
-  t.true(ttlMs > (DEFAULT_SESSION_TTL - 5) * 1000);
-  t.true(ttlMs <= (DEFAULT_SESSION_TTL + 1) * 1000);
-});
+    const ttlMs = signed.expiresAt.getTime() - Date.now();
+    t.true(ttlMs > (DEFAULT_SESSION_TTL - 5) * 1000);
+    t.true(ttlMs <= (DEFAULT_SESSION_TTL + 1) * 1000);
+  }
+);
 
-test.serial('should accept legacy expired jwt when token iat is inside configured ttl', async t => {
-  const issuedAt =
-    Math.floor(Date.now() / 1000) - LEGACY_JWT_SESSION_TTL - 60;
-  const token = signJwtSessionWithIssuedAt(
-    t.context.crypto,
-    t.context.user.id,
-    t.context.sessionId,
-    issuedAt,
-    LEGACY_JWT_SESSION_TTL
-  );
+test.serial(
+  'should accept legacy expired jwt when token iat is inside configured ttl',
+  async t => {
+    const issuedAt =
+      Math.floor(Date.now() / 1000) - LEGACY_JWT_SESSION_TTL - 60;
+    const token = signJwtSessionWithIssuedAt(
+      t.context.crypto,
+      t.context.user.id,
+      t.context.sessionId,
+      issuedAt,
+      LEGACY_JWT_SESSION_TTL
+    );
 
-  const session = await t.context.jwtSession.verify(token);
+    const session = await t.context.jwtSession.verify(token);
 
-  t.is(session.user.id, t.context.user.id);
-  t.is(session.sessionId, t.context.sessionId);
-});
+    t.is(session.user.id, t.context.user.id);
+    t.is(session.sessionId, t.context.sessionId);
+  }
+);
 
-test.serial('should reject jwt when configured ttl has elapsed even if embedded exp is later', async t => {
-  const issuedAt = Math.floor(Date.now() / 1000) - DEFAULT_SESSION_TTL - 60;
-  const token = signJwtSessionWithIssuedAt(
-    t.context.crypto,
-    t.context.user.id,
-    t.context.sessionId,
-    issuedAt,
-    DEFAULT_SESSION_TTL + 120
-  );
+test.serial(
+  'should reject jwt when configured ttl has elapsed even if embedded exp is later',
+  async t => {
+    const issuedAt = Math.floor(Date.now() / 1000) - DEFAULT_SESSION_TTL - 60;
+    const token = signJwtSessionWithIssuedAt(
+      t.context.crypto,
+      t.context.user.id,
+      t.context.sessionId,
+      issuedAt,
+      DEFAULT_SESSION_TTL + 120
+    );
 
-  await t.throwsAsync(() => t.context.jwtSession.verify(token), {
-    message: 'You must sign in first to access this resource.',
-  });
-});
+    await t.throwsAsync(() => t.context.jwtSession.verify(token), {
+      message: 'You must sign in first to access this resource.',
+    });
+  }
+);
 
 test.serial('should reject invalid jwt cases', async t => {
   const cases: Array<{ name: string; token: string }> = [
     {
-      name: 'expired token',
+      name: 'missing issued-at token',
       token: jwt.sign(
         { sid: t.context.sessionId, typ: 'user_session' },
         currentJwtKey(t.context.crypto),
         {
           algorithm: 'HS256',
           audience: 'affine-client',
-          expiresIn: -1,
           issuer: 'affine',
+          noTimestamp: true,
           subject: t.context.user.id,
         }
       ),
@@ -270,34 +285,37 @@ test.serial('should reject invalid jwt cases', async t => {
   }
 });
 
-test.serial('should reject jwt when its user session is missing or expired', async t => {
-  const signed = t.context.jwtSession.sign(
-    t.context.user.id,
-    t.context.sessionId
-  );
+test.serial(
+  'should reject jwt when its user session is missing or expired',
+  async t => {
+    const signed = t.context.jwtSession.sign(
+      t.context.user.id,
+      t.context.sessionId
+    );
 
-  await t.context.auth.signOut(t.context.sessionId, t.context.user.id);
+    await t.context.auth.signOut(t.context.sessionId, t.context.user.id);
 
-  await t.throwsAsync(() => t.context.jwtSession.verify(signed.token), {
-    message: 'You must sign in first to access this resource.',
-  });
+    await t.throwsAsync(() => t.context.jwtSession.verify(signed.token), {
+      message: 'You must sign in first to access this resource.',
+    });
 
-  const refreshed = await t.context.auth.createUserSession(t.context.user.id);
-  const expired = t.context.jwtSession.sign(
-    t.context.user.id,
-    refreshed.sessionId
-  );
-  await t.context.db.userSession.updateMany({
-    where: {
-      userId: t.context.user.id,
-      sessionId: refreshed.sessionId,
-    },
-    data: {
-      expiresAt: new Date(Date.now() - 1000),
-    },
-  });
+    const refreshed = await t.context.auth.createUserSession(t.context.user.id);
+    const expired = t.context.jwtSession.sign(
+      t.context.user.id,
+      refreshed.sessionId
+    );
+    await t.context.db.userSession.updateMany({
+      where: {
+        userId: t.context.user.id,
+        sessionId: refreshed.sessionId,
+      },
+      data: {
+        expiresAt: new Date(Date.now() - 1000),
+      },
+    });
 
-  await t.throwsAsync(() => t.context.jwtSession.verify(expired.token), {
-    message: 'You must sign in first to access this resource.',
-  });
-});
+    await t.throwsAsync(() => t.context.jwtSession.verify(expired.token), {
+      message: 'You must sign in first to access this resource.',
+    });
+  }
+);
