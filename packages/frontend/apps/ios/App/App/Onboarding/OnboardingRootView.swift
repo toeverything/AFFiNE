@@ -161,7 +161,7 @@ struct OnboardingRootView: View {
           goNext()
         }
       } else if !isPaywallPage {
-        PrimaryButton(title: "Next", isEnabled: isNextEnabled) {
+        PrimaryButton(title: "Next", isEnabled: isNextEnabled, fontSize: 18) {
           goNext()
         }
       }
