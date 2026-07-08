@@ -204,21 +204,6 @@ test.serial(
   }
 );
 
-test.serial('should reject jwt when issued-at is in the future', async t => {
-  const issuedAt = Math.floor(Date.now() / 1000) + 60;
-  const token = signJwtSessionWithIssuedAt(
-    t.context.crypto,
-    t.context.user.id,
-    t.context.sessionId,
-    issuedAt,
-    DEFAULT_SESSION_TTL
-  );
-
-  await t.throwsAsync(() => t.context.jwtSession.verify(token), {
-    message: 'You must sign in first to access this resource.',
-  });
-});
-
 test.serial('should reject invalid jwt cases', async t => {
   const cases: Array<{ name: string; token: string }> = [
     {

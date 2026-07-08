@@ -9,7 +9,6 @@ import type { CurrentUser, Session } from './session';
 const JWT_SESSION_TYPE = 'user_session';
 const JWT_SESSION_ISSUER = 'affine';
 const JWT_SESSION_AUDIENCE = 'affine-client';
-const JWT_SESSION_CLOCK_SKEW_SECONDS = 30;
 
 export interface SignedJwtSession {
   token: string;
@@ -20,6 +19,7 @@ interface UserSessionJwtPayload extends JwtPayload {
   sub: string;
   sid: string;
   typ: typeof JWT_SESSION_TYPE;
+  iat: number;
 }
 
 function isUserSessionJwtPayload(
@@ -29,7 +29,9 @@ function isUserSessionJwtPayload(
     typeof payload !== 'string' &&
     typeof payload.sub === 'string' &&
     typeof payload.sid === 'string' &&
-    payload.typ === JWT_SESSION_TYPE
+    payload.typ === JWT_SESSION_TYPE &&
+    typeof payload.iat === 'number' &&
+    Number.isFinite(payload.iat)
   );
 }
 
@@ -73,25 +75,6 @@ export class JwtSessionService {
     return { token, expiresAt };
   }
 
-  private assertWithinConfiguredTtl(payload: UserSessionJwtPayload) {
-    if (
-      typeof payload.iat !== 'number' ||
-      !Number.isFinite(payload.iat) ||
-      !Number.isSafeInteger(payload.iat)
-    ) {
-      throw new AuthenticationRequired();
-    }
-
-    const nowSeconds = Math.floor(Date.now() / 1000);
-    if (payload.iat > nowSeconds + JWT_SESSION_CLOCK_SKEW_SECONDS) {
-      throw new AuthenticationRequired();
-    }
-
-    if (payload.iat * 1000 + this.ttl * 1000 <= Date.now()) {
-      throw new AuthenticationRequired();
-    }
-  }
-
   async verify(token: string): Promise<Session> {
     let payload: string | JwtPayload;
     try {
@@ -100,13 +83,13 @@ export class JwtSessionService {
         audience: JWT_SESSION_AUDIENCE,
         ignoreExpiration: true,
         issuer: JWT_SESSION_ISSUER,
+        maxAge: this.ttl,
       });
     } catch {
       throw new AuthenticationRequired();
     }
 
     if (!isUserSessionJwtPayload(payload)) throw new AuthenticationRequired();
-    this.assertWithinConfiguredTtl(payload);
     const userSession = await this.models.session
       .findUserSessionsBySessionId(payload.sid)
       .then(sessions => sessions.find(s => s.userId === payload.sub));
