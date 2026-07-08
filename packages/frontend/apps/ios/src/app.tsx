@@ -87,6 +87,19 @@ window.addEventListener('beforeunload', () => {
   storeManagerClient.dispose();
 });
 
+const waitForSubscriptionRevalidation = async (
+  subscriptionService: SubscriptionService,
+  fallbackMessage: string
+) => {
+  await subscriptionService.subscription.waitForRevalidation();
+  const error = subscriptionService.subscription.error$.value;
+  if (error) {
+    throw error instanceof Error
+      ? error
+      : new Error(getErrorMessage(error, fallbackMessage));
+  }
+};
+
 const future = {
   v7_startTransition: true,
 } as const;
@@ -407,7 +420,10 @@ registerNativePreviewHandlers({
     (currentServerId ? serversService.server$(currentServerId).value : null) ??
     defaultServerService.server;
   const subscriptionService = currentServer.scope.get(SubscriptionService);
-  await subscriptionService.subscription.waitForRevalidation();
+  await waitForSubscriptionRevalidation(
+    subscriptionService,
+    'Unable to refresh subscription state.'
+  );
   return {
     pro: subscriptionService.subscription.pro$.value,
     ai: subscriptionService.subscription.ai$.value,
@@ -421,13 +437,14 @@ registerNativePreviewHandlers({
   const currentServer =
     (currentServerId ? serversService.server$(currentServerId).value : null) ??
     defaultServerService.server;
-  await currentServer
-    .gql({
-      query: refreshSubscriptionMutation,
-    })
-    .catch(console.error);
+  await currentServer.gql({
+    query: refreshSubscriptionMutation,
+  });
   const subscriptionService = currentServer.scope.get(SubscriptionService);
-  subscriptionService.subscription.revalidate();
+  await waitForSubscriptionRevalidation(
+    subscriptionService,
+    'Unable to refresh subscription state.'
+  );
 };
 (window as any).requestApplySubscription = async (transactionId: string) => {
   const globalContextService = frameworkProvider.get(GlobalContextService);
@@ -437,14 +454,15 @@ registerNativePreviewHandlers({
   const currentServer =
     (currentServerId ? serversService.server$(currentServerId).value : null) ??
     defaultServerService.server;
-  await currentServer
-    .gql({
-      query: requestApplySubscriptionMutation,
-      variables: { transactionId },
-    })
-    .catch(console.error);
+  await currentServer.gql({
+    query: requestApplySubscriptionMutation,
+    variables: { transactionId },
+  });
   const subscriptionService = currentServer.scope.get(SubscriptionService);
-  subscriptionService.subscription.revalidate();
+  await waitForSubscriptionRevalidation(
+    subscriptionService,
+    'Unable to refresh subscription state after purchase.'
+  );
 };
 
 // setup application lifecycle events, and emit application start event
