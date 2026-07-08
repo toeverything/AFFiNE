@@ -1,36 +1,35 @@
+import AffinePaywall
 import AffineResources
 import SwiftUI
 import UIKit
+import WebKit
 
-@MainActor
-final class OnboardingPaywallFlowState: ObservableObject {
-  @Published var isProcessingPurchase = false
-}
-
-final class OnboardingPaywallViewController: UIViewController {
-  var initialPurchaseType: OnboardingPurchaseType = .pro
+final class AppPaywallViewController: UIViewController {
+  var initialPlan: AppPaywallPlan = .pro
+  weak var bindWebView: WKWebView?
   var onClose: (() -> Void)?
-  var onPurchase: ((OnboardingPurchaseType) -> Void)?
-  var onRestorePurchases: (() -> Void)?
+  var onPurchaseCompleted: (() -> Void)?
 
-  private let flowState = OnboardingPaywallFlowState()
-  private var hostingController: UIHostingController<OnboardingPaywallRootView>?
+  private lazy var bridge = NativePaywallBridge(initialPlan: initialPlan.planKind)
+  private var hostingController: UIHostingController<AppPaywallRootView>?
 
   override func viewDidLoad() {
     super.viewDidLoad()
     view.backgroundColor = UIColor(named: "OnboardingBackground") ?? .systemBackground
 
-    let rootView = OnboardingPaywallRootView(
-      state: flowState,
-      initialPlan: initialPlan(for: initialPurchaseType),
+    bridge.bind(webView: bindWebView)
+
+    let rootView = AppPaywallRootView(
+      bridge: bridge,
+      initialPlan: initialPlan,
       onPurchase: { [weak self] plan in
-        self?.onPurchase?(plan.purchaseType)
+        self?.purchase(plan: plan)
       },
       onRestorePurchases: { [weak self] in
-        self?.onRestorePurchases?()
+        self?.restorePurchases()
       },
       onClose: { [weak self] in
-        self?.onClose?()
+        self?.closePaywall()
       }
     )
 
@@ -47,26 +46,72 @@ final class OnboardingPaywallViewController: UIViewController {
       hostingController.view.bottomAnchor.constraint(equalTo: view.bottomAnchor),
     ])
     hostingController.didMove(toParent: self)
+
+    Task { @MainActor [weak self] in
+      await self?.prepareBridge()
+    }
   }
 
-  func setPurchaseProcessing(_ processing: Bool) {
-    flowState.isProcessingPurchase = processing
+  @MainActor
+  private func prepareBridge() async {
+    do {
+      try await bridge.prepare()
+    } catch {
+      bridge.errorMessage = error.localizedDescription
+    }
   }
 
-  private func initialPlan(for purchaseType: OnboardingPurchaseType) -> OnboardingPlan {
-    switch purchaseType {
-    case .pro:
-      return .pro
-    case .ai:
-      return .ai
+  private func purchase(plan: AppPaywallPlan) {
+    Task { @MainActor [weak self] in
+      guard let self else { return }
+      bridge.selectPlan(plan.planKind)
+
+      do {
+        let completed = try await bridge.purchaseSelectedPlan()
+        guard completed else { return }
+
+        dismiss(animated: true) { [weak self] in
+          self?.onPurchaseCompleted?()
+        }
+      } catch {
+        bridge.errorMessage = error.localizedDescription
+      }
+    }
+  }
+
+  private func restorePurchases() {
+    Task { @MainActor [weak self] in
+      guard let self else { return }
+      do {
+        try await bridge.restorePurchases()
+      } catch {
+        bridge.errorMessage = error.localizedDescription
+      }
+    }
+  }
+
+  private func closePaywall() {
+    dismiss(animated: true) { [weak self] in
+      self?.onClose?()
     }
   }
 }
 
-private enum OnboardingPlan: String, CaseIterable {
+enum AppPaywallPlan: String, CaseIterable {
   case pro
   case lite
   case ai
+
+  var planKind: NativePaywallPlanKind {
+    switch self {
+    case .pro:
+      .pro
+    case .lite:
+      .lite
+    case .ai:
+      .ai
+    }
+  }
 
   var headerName: String {
     switch self {
@@ -79,12 +124,11 @@ private enum OnboardingPlan: String, CaseIterable {
   var badge: String? {
     switch self {
     case .pro: "BEST FOR YOU"
-    case .lite: nil
-    case .ai: nil
+    case .lite, .ai: nil
     }
   }
 
-  var priceValue: String {
+  var fallbackPriceValue: String {
     switch self {
     case .pro: "$81"
     case .lite: "$6.75"
@@ -92,10 +136,11 @@ private enum OnboardingPlan: String, CaseIterable {
     }
   }
 
-  var priceSuffix: String {
+  var fallbackPriceSuffix: String {
     switch self {
     case .pro: "/year"
-    case .lite, .ai: "/mo, billed annually"
+    case .lite: "/month"
+    case .ai: "/mo, billed annually"
     }
   }
 
@@ -108,16 +153,7 @@ private enum OnboardingPlan: String, CaseIterable {
   }
 
   var buttonTitle: String {
-    switch self {
-    case .pro, .lite, .ai: "Continue"
-    }
-  }
-
-  var purchaseType: OnboardingPurchaseType {
-    switch self {
-    case .pro, .lite: .pro
-    case .ai: .ai
-    }
+    "Continue"
   }
 
   var features: [String] {
@@ -150,14 +186,12 @@ private enum OnboardingPlan: String, CaseIterable {
   }
 }
 
-private struct OnboardingPaywallRootView: View {
-  @ObservedObject var state: OnboardingPaywallFlowState
-  let initialPlan: OnboardingPlan
-  let onPurchase: (OnboardingPlan) -> Void
+private struct AppPaywallRootView: View {
+  @ObservedObject var bridge: NativePaywallBridge
+  let initialPlan: AppPaywallPlan
+  let onPurchase: (AppPaywallPlan) -> Void
   let onRestorePurchases: () -> Void
   let onClose: () -> Void
-
-  @State private var selectedPlan: OnboardingPlan = .pro
 
   var body: some View {
     ZStack {
@@ -167,15 +201,12 @@ private struct OnboardingPaywallRootView: View {
       OnboardingBackground(isIntroPage: false)
 
       VStack(spacing: 0) {
-        OnboardingPaywallCarouselPage(
-          selectedPlan: $selectedPlan,
-          isProcessingPurchase: state.isProcessingPurchase,
+        AppPaywallCarouselPage(
+          bridge: bridge,
+          initialPlan: initialPlan,
           onPurchase: onPurchase,
           onRestorePurchases: onRestorePurchases,
-          onClose: onClose,
-          onInitialized: {
-            selectedPlan = initialPlan
-          }
+          onClose: onClose
         )
       }
 
@@ -186,24 +217,39 @@ private struct OnboardingPaywallRootView: View {
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     .foregroundStyle(AffineColors.textPrimary.color)
+    .alert(
+      "Paywall",
+      isPresented: Binding(
+        get: { bridge.errorMessage != nil },
+        set: { isPresented in
+          if !isPresented {
+            bridge.errorMessage = nil
+          }
+        }
+      )
+    ) {
+      Button("OK", role: .cancel) {}
+    } message: {
+      Text(bridge.errorMessage ?? "")
+    }
   }
 }
 
-private struct OnboardingPaywallCarouselPage: View {
+private struct AppPaywallCarouselPage: View {
   @Environment(\.openURL) private var openURL
 
-  @Binding var selectedPlan: OnboardingPlan
-  let isProcessingPurchase: Bool
-  let onPurchase: (OnboardingPlan) -> Void
+  @ObservedObject var bridge: NativePaywallBridge
+  let initialPlan: AppPaywallPlan
+  let onPurchase: (AppPaywallPlan) -> Void
   let onRestorePurchases: () -> Void
   let onClose: () -> Void
-  let onInitialized: () -> Void
 
-  private let plans: [OnboardingPlan] = [.lite, .pro, .ai]
+  private let plans: [AppPaywallPlan] = [.lite, .pro, .ai]
   private let visibleSlots = [-2, -1, 0, 1, 2]
   private let settleAnimation = Animation.spring(response: 0.32, dampingFraction: 0.9)
   private let settleDuration = 0.24
 
+  @State private var selectedPlan: AppPaywallPlan = .pro
   @State private var currentPlanIndex = 1
   @State private var settlingOffset: CGFloat = 0
   @State private var isSettling = false
@@ -249,26 +295,29 @@ private struct OnboardingPaywallCarouselPage: View {
             let shadowRadius = max(20, 30 - clampedDistance * 5)
             let shadowYOffset = max(12, 18 - clampedDistance * 2.5)
 
-            OnboardingPaywallCard(plan: plan(for: relativeSlot))
-              .frame(width: cardWidth, height: geometry.size.height)
-              .scaleEffect(scale)
-              .rotation3DEffect(
-                .degrees(rotation),
-                axis: (x: 0, y: 1, z: 0),
-                perspective: 0.82
-              )
-              .opacity(opacity)
-              .offset(
-                x: position * step + horizontalDirection * sideSpread,
-                y: verticalOffset
-              )
-              .shadow(color: .black.opacity(shadowOpacity), radius: shadowRadius, x: 0, y: shadowYOffset)
-              .zIndex(10 - distance)
+            AppPaywallCard(
+              plan: plan(for: relativeSlot),
+              priceInfo: bridge.priceInfo(for: plan(for: relativeSlot).planKind)
+            )
+            .frame(width: cardWidth, height: geometry.size.height)
+            .scaleEffect(scale)
+            .rotation3DEffect(
+              .degrees(rotation),
+              axis: (x: 0, y: 1, z: 0),
+              perspective: 0.82
+            )
+            .opacity(opacity)
+            .offset(
+              x: position * step + horizontalDirection * sideSpread,
+              y: verticalOffset
+            )
+            .shadow(color: .black.opacity(shadowOpacity), radius: shadowRadius, x: 0, y: shadowYOffset)
+            .zIndex(10 - distance)
           }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .contentShape(Rectangle())
-        .allowsHitTesting(!isSettling)
+        .allowsHitTesting(!isSettling && !bridge.isProcessing)
         .highPriorityGesture(carouselDragGesture(step: step))
       }
       .frame(height: 494)
@@ -282,13 +331,13 @@ private struct OnboardingPaywallCarouselPage: View {
       }
       .padding(.top, 10)
 
-      OnboardingPaywallFooterLinks(onClose: onClose)
+      AppPaywallFooterLinks(onClose: onClose)
         .padding(.top, 8)
         .padding(.horizontal, 28)
 
       PrimaryButton(
         title: selectedPlan.buttonTitle,
-        isLoading: isProcessingPurchase,
+        isLoading: bridge.isLoading || bridge.isProcessing,
         fontSize: 18,
         height: 58
       ) {
@@ -298,7 +347,7 @@ private struct OnboardingPaywallCarouselPage: View {
       .padding(.horizontal, 28)
       .padding(.top, 10)
 
-      OnboardingPaywallLegalLinks(
+      AppPaywallLegalLinks(
         onOpenTerms: { openLegalURL("https://affine.pro/terms") },
         onOpenPrivacy: { openLegalURL("https://affine.pro/privacy") },
         onOpenSubscriptionTerms: { openLegalURL("https://affine.pro/terms/#subscription") },
@@ -309,10 +358,13 @@ private struct OnboardingPaywallCarouselPage: View {
       .padding(.horizontal, 28)
     }
     .onAppear {
-      onInitialized()
-      currentPlanIndex = selectedIndex(for: selectedPlan)
+      currentPlanIndex = selectedIndex(for: initialPlan)
       selectedPlan = plans[currentPlanIndex]
+      bridge.selectPlan(selectedPlan.planKind)
       settlingOffset = 0
+    }
+    .onChange(of: selectedPlan) { plan in
+      bridge.selectPlan(plan.planKind)
     }
   }
 
@@ -375,7 +427,7 @@ private struct OnboardingPaywallCarouselPage: View {
     }
   }
 
-  private func selectedIndex(for plan: OnboardingPlan) -> Int {
+  private func selectedIndex(for plan: AppPaywallPlan) -> Int {
     plans.firstIndex(of: plan) ?? 1
   }
 
@@ -385,7 +437,7 @@ private struct OnboardingPaywallCarouselPage: View {
     return remainder >= 0 ? remainder : remainder + count
   }
 
-  private func plan(for relativeSlot: Int) -> OnboardingPlan {
+  private func plan(for relativeSlot: Int) -> AppPaywallPlan {
     plans[wrappedIndex(currentPlanIndex + relativeSlot)]
   }
 
@@ -401,8 +453,9 @@ private struct OnboardingPaywallCarouselPage: View {
   }
 }
 
-private struct OnboardingPaywallCard: View {
-  let plan: OnboardingPlan
+private struct AppPaywallCard: View {
+  let plan: AppPaywallPlan
+  let priceInfo: NativePaywallPriceInfo
 
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
@@ -412,10 +465,10 @@ private struct OnboardingPaywallCard: View {
         .padding(.bottom, 16)
 
       HStack(alignment: .lastTextBaseline, spacing: 5) {
-        Text(LocalizedStringKey(plan.priceValue))
+        Text(priceInfo.value)
           .font(.system(size: 30, weight: .black))
           .foregroundStyle(AffineColors.textPrimary.color)
-        Text(LocalizedStringKey(plan.priceSuffix))
+        Text(priceInfo.suffix)
           .font(.system(size: 16, weight: .bold))
           .foregroundStyle(AffineColors.textPrimary.color)
       }
@@ -434,7 +487,7 @@ private struct OnboardingPaywallCard: View {
 
       VStack(alignment: .leading, spacing: 17) {
         ForEach(plan.features, id: \.self) { feature in
-          OnboardingPaywallFeatureRow(text: feature)
+          AppPaywallFeatureRow(text: feature)
         }
       }
 
@@ -468,7 +521,7 @@ private struct OnboardingPaywallCard: View {
   }
 }
 
-private struct OnboardingPaywallFeatureRow: View {
+private struct AppPaywallFeatureRow: View {
   let text: String
 
   var body: some View {
@@ -487,7 +540,7 @@ private struct OnboardingPaywallFeatureRow: View {
   }
 }
 
-private struct OnboardingPaywallFooterLinks: View {
+private struct AppPaywallFooterLinks: View {
   let onClose: () -> Void
 
   var body: some View {
@@ -500,7 +553,7 @@ private struct OnboardingPaywallFooterLinks: View {
   }
 }
 
-private struct OnboardingPaywallLegalLinks: View {
+private struct AppPaywallLegalLinks: View {
   let onOpenTerms: () -> Void
   let onOpenPrivacy: () -> Void
   let onOpenSubscriptionTerms: () -> Void
@@ -551,8 +604,8 @@ private struct OnboardingPaywallLegalLinks: View {
 }
 
 #Preview {
-  OnboardingPaywallRootView(
-    state: OnboardingPaywallFlowState(),
+  AppPaywallRootView(
+    bridge: NativePaywallBridge(initialPlan: .pro),
     initialPlan: .pro,
     onPurchase: { _ in },
     onRestorePurchases: {},

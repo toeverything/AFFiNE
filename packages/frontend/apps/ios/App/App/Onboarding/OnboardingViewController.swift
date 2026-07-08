@@ -1,11 +1,6 @@
 import SwiftUI
 import UIKit
 
-enum OnboardingPurchaseType: String {
-  case pro
-  case ai
-}
-
 final class OnboardingViewController: UIViewController {
   var onShowPaywall: (() -> Void)?
 

@@ -23,23 +23,43 @@ public class PayWallPlugin: CAPPlugin, CAPBridgedPlugin {
   ]
 
   @objc func showPayWall(_ call: CAPPluginCall) {
-    do {
-      let type = try call.getStringEnsure("type")
-      let controller = try controller.get()
+    Task { @MainActor [weak self] in
+      guard let self else { return }
 
-      // TODO: GET TO KNOW THE PAYWALL TYPE
-      print("[*] showing paywall of type: \(type)")
-      DispatchQueue.main.async {
-        Paywall.presentWall(
-          toController: controller,
-          bindWebContext: self.webView,
-          type: type
-        )
+      do {
+        let type = try call.getStringEnsure("type")
+        let presentingController = try controller.get()
+        let webView = try self.webView.get("AFFiNE is still loading. Please try again in a moment.")
+        let initialPlan = paywallPlan(for: type)
+
+        let isSignedIn = await PaywallAuthGuard.ensureSignedIn(using: webView)
+        guard isSignedIn else {
+          call.resolve(["success": false, "type": type])
+          return
+        }
+
+        let paywallController = AppPaywallViewController()
+        paywallController.initialPlan = initialPlan
+        paywallController.bindWebView = webView
+        paywallController.modalPresentationStyle = .fullScreen
+        paywallController.modalTransitionStyle = .coverVertical
+        presentingController.present(paywallController, animated: true)
+
+        call.resolve(["success": true, "type": type])
+      } catch {
+        call.reject("failed to show paywall", nil, error)
       }
+    }
+  }
 
-      call.resolve(["success": true, "type": type])
-    } catch {
-      call.reject("failed to show paywall", nil, error)
+  private func paywallPlan(for type: String) -> AppPaywallPlan {
+    switch type.lowercased() {
+    case "lite":
+      .lite
+    case "ai":
+      .ai
+    default:
+      .pro
     }
   }
 }
