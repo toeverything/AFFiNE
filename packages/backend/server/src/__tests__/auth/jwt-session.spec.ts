@@ -167,7 +167,7 @@ test.serial(
 );
 
 test.serial(
-  'should accept legacy expired jwt when token iat is inside configured ttl',
+  'should reject legacy jwt when embedded expiration has elapsed',
   async t => {
     const issuedAt =
       Math.floor(Date.now() / 1000) - LEGACY_JWT_SESSION_TTL - 60;
@@ -179,25 +179,6 @@ test.serial(
       LEGACY_JWT_SESSION_TTL
     );
 
-    const session = await t.context.jwtSession.verify(token);
-
-    t.is(session.user.id, t.context.user.id);
-    t.is(session.sessionId, t.context.sessionId);
-  }
-);
-
-test.serial(
-  'should reject jwt when configured ttl has elapsed even if embedded exp is later',
-  async t => {
-    const issuedAt = Math.floor(Date.now() / 1000) - DEFAULT_SESSION_TTL - 60;
-    const token = signJwtSessionWithIssuedAt(
-      t.context.crypto,
-      t.context.user.id,
-      t.context.sessionId,
-      issuedAt,
-      DEFAULT_SESSION_TTL + 120
-    );
-
     await t.throwsAsync(() => t.context.jwtSession.verify(token), {
       message: 'You must sign in first to access this resource.',
     });
@@ -206,20 +187,6 @@ test.serial(
 
 test.serial('should reject invalid jwt cases', async t => {
   const cases: Array<{ name: string; token: string }> = [
-    {
-      name: 'missing issued-at token',
-      token: jwt.sign(
-        { sid: t.context.sessionId, typ: 'user_session' },
-        currentJwtKey(t.context.crypto),
-        {
-          algorithm: 'HS256',
-          audience: 'affine-client',
-          issuer: 'affine',
-          noTimestamp: true,
-          subject: t.context.user.id,
-        }
-      ),
-    },
     {
       name: 'wrong signature',
       token: jwt.sign(

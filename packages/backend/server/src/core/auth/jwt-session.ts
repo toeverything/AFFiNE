@@ -19,7 +19,6 @@ interface UserSessionJwtPayload extends JwtPayload {
   sub: string;
   sid: string;
   typ: typeof JWT_SESSION_TYPE;
-  iat: number;
 }
 
 function isUserSessionJwtPayload(
@@ -29,9 +28,7 @@ function isUserSessionJwtPayload(
     typeof payload !== 'string' &&
     typeof payload.sub === 'string' &&
     typeof payload.sid === 'string' &&
-    payload.typ === JWT_SESSION_TYPE &&
-    typeof payload.iat === 'number' &&
-    Number.isFinite(payload.iat)
+    payload.typ === JWT_SESSION_TYPE
   );
 }
 
@@ -43,11 +40,11 @@ export class JwtSessionService {
     private readonly config: Config
   ) {}
 
-  private get ttl() {
-    return Math.min(
-      this.config.auth.session.jwtTtl ?? this.config.auth.session.ttl,
-      this.config.auth.session.ttl
-    );
+  private get effectiveJwtTtl() {
+    const sessionTtl = this.config.auth.session.ttl;
+    const jwtTtl = this.config.auth.session.jwtTtl ?? sessionTtl;
+
+    return Math.min(jwtTtl, sessionTtl);
   }
 
   private get currentKey() {
@@ -58,7 +55,7 @@ export class JwtSessionService {
   }
 
   sign(userId: string, sessionId: string): SignedJwtSession {
-    const ttl = this.ttl;
+    const ttl = this.effectiveJwtTtl;
     const expiresAt = new Date(Date.now() + ttl * 1000);
     const token = jwt.sign(
       { sid: sessionId, typ: JWT_SESSION_TYPE },
@@ -81,9 +78,7 @@ export class JwtSessionService {
       payload = jwt.verify(token, this.currentKey, {
         algorithms: ['HS256'],
         audience: JWT_SESSION_AUDIENCE,
-        ignoreExpiration: true,
         issuer: JWT_SESSION_ISSUER,
-        maxAge: this.ttl,
       });
     } catch {
       throw new AuthenticationRequired();
