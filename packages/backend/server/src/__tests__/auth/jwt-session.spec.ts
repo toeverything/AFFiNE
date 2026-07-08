@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import ava, { TestFn } from 'ava';
 import jwt from 'jsonwebtoken';
 
+import { ConfigFactory } from '../../base';
 import { CryptoHelper } from '../../base/helpers';
 import {
   AuthModule,
@@ -17,6 +18,7 @@ const test = ava as TestFn<{
   auth: AuthService;
   jwtSession: JwtSessionService;
   crypto: CryptoHelper;
+  config: ConfigFactory;
   models: Models;
   db: PrismaClient;
   user: CurrentUser;
@@ -32,12 +34,14 @@ test.before(async t => {
   t.context.auth = app.get(AuthService);
   t.context.jwtSession = app.get(JwtSessionService);
   t.context.crypto = app.get(CryptoHelper);
+  t.context.config = app.get(ConfigFactory);
   t.context.models = app.get(Models);
   t.context.db = app.get(PrismaClient);
 });
 
 test.beforeEach(async t => {
   await t.context.app.initTestingDB();
+  resetAuthSessionConfig(t.context.config);
 
   t.context.user = await t.context.auth.signUp('u1@affine.pro', '1');
   const session = await t.context.auth.createUserSession(t.context.user.id);
@@ -48,6 +52,22 @@ test.after.always(async t => {
   await t.context.app.close();
 });
 
+const DEFAULT_SESSION_TTL = 60 * 60 * 24 * 15;
+const DEFAULT_SESSION_TTR = 60 * 60 * 24 * 7;
+const LEGACY_JWT_SESSION_TTL = 15 * 60;
+
+function resetAuthSessionConfig(config: ConfigFactory) {
+  config.override({
+    auth: {
+      session: {
+        ttl: DEFAULT_SESSION_TTL,
+        ttr: DEFAULT_SESSION_TTR,
+        jwtTtl: undefined,
+      },
+    },
+  });
+}
+
 function currentJwtKey(crypto: CryptoHelper) {
   return Buffer.concat([
     Buffer.from('affine:user-session-jwt:v1:'),
@@ -55,7 +75,27 @@ function currentJwtKey(crypto: CryptoHelper) {
   ]);
 }
 
-test('should sign and verify a user session jwt', async t => {
+function signJwtSessionWithIssuedAt(
+  crypto: CryptoHelper,
+  userId: string,
+  sessionId: string,
+  issuedAt: number,
+  expiresIn: number
+) {
+  return jwt.sign(
+    { sid: sessionId, typ: 'user_session', iat: issuedAt },
+    currentJwtKey(crypto),
+    {
+      algorithm: 'HS256',
+      audience: 'affine-client',
+      expiresIn,
+      issuer: 'affine',
+      subject: userId,
+    }
+  );
+}
+
+test.serial('should sign and verify a user session jwt', async t => {
   const signed = t.context.jwtSession.sign(
     t.context.user.id,
     t.context.sessionId
@@ -68,7 +108,88 @@ test('should sign and verify a user session jwt', async t => {
   t.true(signed.expiresAt.getTime() > Date.now());
 });
 
-test('should reject invalid jwt cases', async t => {
+test.serial('should default jwt session ttl to application session ttl', async t => {
+  const signed = t.context.jwtSession.sign(
+    t.context.user.id,
+    t.context.sessionId
+  );
+
+  const ttlMs = signed.expiresAt.getTime() - Date.now();
+  t.true(ttlMs > (DEFAULT_SESSION_TTL - 5) * 1000);
+  t.true(ttlMs <= (DEFAULT_SESSION_TTL + 1) * 1000);
+});
+
+test.serial('should use configured jwt session ttl when it is shorter than session ttl', async t => {
+  t.context.config.override({
+    auth: {
+      session: {
+        jwtTtl: 120,
+      },
+    },
+  });
+
+  const signed = t.context.jwtSession.sign(
+    t.context.user.id,
+    t.context.sessionId
+  );
+
+  const ttlMs = signed.expiresAt.getTime() - Date.now();
+  t.true(ttlMs > 115 * 1000);
+  t.true(ttlMs <= 121 * 1000);
+});
+
+test.serial('should cap configured jwt session ttl to application session ttl', async t => {
+  t.context.config.override({
+    auth: {
+      session: {
+        jwtTtl: DEFAULT_SESSION_TTL * 2,
+      },
+    },
+  });
+
+  const signed = t.context.jwtSession.sign(
+    t.context.user.id,
+    t.context.sessionId
+  );
+
+  const ttlMs = signed.expiresAt.getTime() - Date.now();
+  t.true(ttlMs > (DEFAULT_SESSION_TTL - 5) * 1000);
+  t.true(ttlMs <= (DEFAULT_SESSION_TTL + 1) * 1000);
+});
+
+test.serial('should accept legacy expired jwt when token iat is inside configured ttl', async t => {
+  const issuedAt =
+    Math.floor(Date.now() / 1000) - LEGACY_JWT_SESSION_TTL - 60;
+  const token = signJwtSessionWithIssuedAt(
+    t.context.crypto,
+    t.context.user.id,
+    t.context.sessionId,
+    issuedAt,
+    LEGACY_JWT_SESSION_TTL
+  );
+
+  const session = await t.context.jwtSession.verify(token);
+
+  t.is(session.user.id, t.context.user.id);
+  t.is(session.sessionId, t.context.sessionId);
+});
+
+test.serial('should reject jwt when configured ttl has elapsed even if embedded exp is later', async t => {
+  const issuedAt = Math.floor(Date.now() / 1000) - DEFAULT_SESSION_TTL - 60;
+  const token = signJwtSessionWithIssuedAt(
+    t.context.crypto,
+    t.context.user.id,
+    t.context.sessionId,
+    issuedAt,
+    DEFAULT_SESSION_TTL + 120
+  );
+
+  await t.throwsAsync(() => t.context.jwtSession.verify(token), {
+    message: 'You must sign in first to access this resource.',
+  });
+});
+
+test.serial('should reject invalid jwt cases', async t => {
   const cases: Array<{ name: string; token: string }> = [
     {
       name: 'expired token',
@@ -149,7 +270,7 @@ test('should reject invalid jwt cases', async t => {
   }
 });
 
-test('should reject jwt when its user session is missing or expired', async t => {
+test.serial('should reject jwt when its user session is missing or expired', async t => {
   const signed = t.context.jwtSession.sign(
     t.context.user.id,
     t.context.sessionId
