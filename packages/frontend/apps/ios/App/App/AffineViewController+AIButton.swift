@@ -35,9 +35,16 @@ extension AFFiNEViewController: IntelligentsButtonDelegate {
     }
 
     do {
+      guard await PaywallAuthGuard.currentUserIdentifier(in: webView) != nil else {
+        tappedButton?.stopProgress()
+        dismissIntelligentsButton()
+        return
+      }
+
       let isSignedIn = try await PaywallAuthGuard.ensureSignedIn(using: webView)
       guard isSignedIn else {
         tappedButton?.stopProgress()
+        dismissIntelligentsButton()
         return
       }
 
