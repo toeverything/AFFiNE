@@ -160,6 +160,8 @@ export class ChatInputPreference extends SignalWatcher(
             const status =
               this.subscriptionService.subscription.ai$.value?.status;
             const isSubscribed = status === SubscriptionStatus.Active;
+            const shouldBypassSubscriptionGate =
+              this.aiModelService.shouldBypassSubscriptionGate;
             return menu.action({
               name: model.category,
               info: html`
@@ -172,11 +174,20 @@ export class ChatInputPreference extends SignalWatcher(
               `,
               postfix: html`
                 <div class="ai-model-postfix" @click=${this.onAISubscribe}>
-                  ${model.isPro && !isSubscribed ? LockIcon() : undefined}
+                  ${model.isPro &&
+                  !isSubscribed &&
+                  !shouldBypassSubscriptionGate
+                    ? LockIcon()
+                    : undefined}
                 </div>
               `,
               select: () => {
-                if (model.isPro && !isSelfHosted && !isSubscribed) {
+                if (
+                  model.isPro &&
+                  !isSelfHosted &&
+                  !isSubscribed &&
+                  !shouldBypassSubscriptionGate
+                ) {
                   this.notificationService.toast(
                     `Pro models require an AFFiNE AI subscription.`
                   );

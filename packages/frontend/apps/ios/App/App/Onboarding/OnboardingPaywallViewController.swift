@@ -255,6 +255,25 @@ private struct AppPaywallCarouselPage: View {
   @State private var isSettling = false
   @GestureState private var dragTranslation: CGFloat = 0
 
+  init(
+    bridge: NativePaywallBridge,
+    initialPlan: AppPaywallPlan,
+    onPurchase: @escaping (AppPaywallPlan) -> Void,
+    onRestorePurchases: @escaping () -> Void,
+    onClose: @escaping () -> Void
+  ) {
+    self.bridge = bridge
+    self.initialPlan = initialPlan
+    self.onPurchase = onPurchase
+    self.onRestorePurchases = onRestorePurchases
+    self.onClose = onClose
+
+    let planOrder: [AppPaywallPlan] = [.lite, .pro, .ai]
+    let initialIndex = planOrder.firstIndex(of: initialPlan) ?? 1
+    _selectedPlan = State(initialValue: planOrder[initialIndex])
+    _currentPlanIndex = State(initialValue: initialIndex)
+  }
+
   private var activePlanIndex: Int {
     currentPlanIndex
   }

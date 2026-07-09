@@ -93,6 +93,22 @@ enum PaywallAuthGuard {
   }
 
   static func hasProSubscription(in webView: WKWebView) async throws -> Bool {
+    let subscriptionState = try await fetchSubscriptionState(in: webView)
+    return subscriptionState["pro"] as? [String: Any] != nil
+  }
+
+  static func hasAISubscription(in webView: WKWebView) async throws -> Bool {
+    let subscriptionState = try await fetchSubscriptionState(in: webView)
+    return hasActiveSubscription(subscriptionState["ai"])
+  }
+
+  private static func hasActiveSubscription(_ value: Any?) -> Bool {
+    guard let subscription = value as? [String: Any] else { return false }
+    let status = (subscription["status"] as? String)?.lowercased()
+    return status == "active" || status == "trialing"
+  }
+
+  private static func fetchSubscriptionState(in webView: WKWebView) async throws -> [String: Any] {
     try await waitForBridgeFunctions(["getSubscriptionState"], in: webView)
 
     let result = try await webView.callAsyncJavaScript(
@@ -108,7 +124,7 @@ enum PaywallAuthGuard {
       )
     }
 
-    return subscriptionState["pro"] as? [String: Any] != nil
+    return subscriptionState
   }
 
   private static func waitForBridgeFunctions(_ functionNames: [String], in webView: WKWebView) async throws {

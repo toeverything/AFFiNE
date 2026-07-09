@@ -90,7 +90,7 @@ class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate, Affin
     guard intelligentsButton?.isHidden ?? false else { return }
     isCheckingIntelligentEligibility = true
     IntelligentContext.shared.webView = webView
-    IntelligentContext.shared.preparePresent { [self] result in
+    IntelligentContext.shared.preparePresent(createSession: false) { [self] result in
       DispatchQueue.main.async {
         defer { self.isCheckingIntelligentEligibility = false }
         switch result {
