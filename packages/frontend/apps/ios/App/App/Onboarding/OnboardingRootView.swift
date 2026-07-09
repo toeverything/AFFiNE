@@ -113,6 +113,7 @@ struct OnboardingRootView: View {
       }
     }
     .tabViewStyle(.page(indexDisplayMode: .never))
+    .background(PageSwipeLockView(isLocked: isRolePage))
     .animation(.spring(response: 0.30, dampingFraction: 0.88), value: pageIndex)
   }
 
@@ -167,6 +168,7 @@ struct OnboardingRootView: View {
   private func shouldAllowPageChange(from currentIndex: Int, to newIndex: Int) -> Bool {
     guard newIndex != currentIndex else { return true }
     guard pages.indices.contains(currentIndex) else { return false }
+    if case .role = pages[currentIndex] { return false }
     guard newIndex > currentIndex else { return true }
     return canAdvance(from: currentIndex)
   }
@@ -190,6 +192,53 @@ struct OnboardingRootView: View {
     let generator = UIImpactFeedbackGenerator(style: .light)
     generator.prepare()
     generator.impactOccurred()
+  }
+}
+
+private struct PageSwipeLockView: UIViewRepresentable {
+  let isLocked: Bool
+
+  func makeUIView(context: Context) -> UIView {
+    let view = UIView(frame: .zero)
+    view.isUserInteractionEnabled = false
+    return view
+  }
+
+  func updateUIView(_ uiView: UIView, context: Context) {
+    DispatchQueue.main.async {
+      guard let scrollView = findPagingScrollView(from: uiView) else { return }
+      scrollView.isScrollEnabled = !isLocked
+    }
+  }
+
+  private func findPagingScrollView(from view: UIView) -> UIScrollView? {
+    if let scrollView = view.superview as? UIScrollView {
+      return scrollView
+    }
+
+    var currentView = view.superview
+    while let view = currentView {
+      if let scrollView = findPagingScrollView(in: view) {
+        return scrollView
+      }
+      currentView = view.superview
+    }
+
+    return nil
+  }
+
+  private func findPagingScrollView(in view: UIView) -> UIScrollView? {
+    if let scrollView = view as? UIScrollView {
+      return scrollView
+    }
+
+    for subview in view.subviews {
+      if let scrollView = findPagingScrollView(in: subview) {
+        return scrollView
+      }
+    }
+
+    return nil
   }
 }
 
