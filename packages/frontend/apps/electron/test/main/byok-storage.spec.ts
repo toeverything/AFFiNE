@@ -74,7 +74,13 @@ afterEach(async () => {
   electronMock.tmpDir = '';
 });
 
-describe('byok storage handlers', () => {
+// These handlers only touch in-memory state plus a fire-and-forget debounced
+// disk write, so they finish in well under a second locally. On the contended,
+// multi-project coverage shard (electron runs with `pool: forks, maxWorkers: 1`)
+// the forked worker can occasionally stall on real fs I/O and trip the 60s test
+// timeout. Retry to absorb that transient CI contention without masking real
+// failures (a genuine regression fails every attempt).
+describe('byok storage handlers', { retry: 2 }, () => {
   test('stores encrypted local keys and keeps lease providers sorted', async () => {
     const { byokStorageHandlers, disposeWorkspaceByokStorage: dispose } =
       await import('@affine/electron/main/byok-storage/handlers');

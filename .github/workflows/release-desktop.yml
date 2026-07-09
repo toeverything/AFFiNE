@@ -27,6 +27,16 @@ on:
         required: false
         default: true
         type: boolean
+      desktop-macos-runner:
+        description: 'Runner label for macOS desktop build (for example: macos-latest or affine-macos-signing)'
+        required: false
+        default: macos-latest
+        type: string
+      desktop-macos-signing-mode:
+        description: 'How macOS signing data is sourced'
+        required: false
+        default: github-secrets
+        type: string
       require-windows-signing:
         description: 'Require all Windows signing steps to succeed before release'
         required: false
@@ -103,12 +113,10 @@ jobs:
       fail-fast: false
       matrix:
         spec:
-          - runner: macos-latest
-            platform: darwin
+          - platform: darwin
             arch: x64
             target: x86_64-apple-darwin
-          - runner: macos-latest
-            platform: darwin
+          - platform: darwin
             arch: arm64
             target: aarch64-apple-darwin
     needs: before-make
@@ -118,11 +126,12 @@ jobs:
       build_type: ${{ inputs.build-type }}
       app_version: ${{ inputs.app-version }}
       git_short_hash: ${{ inputs.git-short-hash }}
-      runner: ${{ matrix.spec.runner }}
+      runner: ${{ inputs.desktop-macos-runner }}
       platform: ${{ matrix.spec.platform }}
       arch: ${{ matrix.spec.arch }}
       target: ${{ matrix.spec.target }}
       apple_codesign: true
+      apple_signing_mode: ${{ inputs.desktop-macos-signing-mode }}
 
   make-distribution-linux:
     if: ${{ inputs.desktop_linux }}

@@ -263,9 +263,7 @@ export class AIChatRuntime {
 
   private markActiveTabHasMessages(tabs: AIChatTab[]) {
     return tabs.map(tab =>
-      tab.kind === 'session' && tab.id === this.snapshot.activeTabId
-        ? { ...tab, hasMessages: true }
-        : tab
+      tab.id === this.snapshot.activeTabId ? { ...tab, hasMessages: true } : tab
     );
   }
 
@@ -344,15 +342,52 @@ export class AIChatRuntime {
     return this.snapshot.messages.findLast(message => message.role === 'user');
   }
 
+  private getDraftHistoryMessages() {
+    const history = [...this.snapshot.messages];
+
+    if (history.at(-1)?.role === 'assistant') {
+      history.pop();
+    }
+
+    if (history.at(-1)?.role === 'user') {
+      history.pop();
+    }
+
+    return history
+      .filter(
+        message =>
+          (message.role === 'user' || message.role === 'assistant') &&
+          message.content.trim().length > 0
+      )
+      .map(message => ({
+        role: message.role,
+        content: message.content,
+      }));
+  }
+
   private async send(options: AIChatSendOptions, retryExisting = false) {
     const content = options.input || this.snapshot.composer.text;
     if (!content.trim() || !this.snapshot.uiPolicy.canSend) return;
     const seq = ++this.requestSeq;
     this.streamAbortController?.abort();
     this.streamAbortController = new AbortController();
+
+    const reasoning = options.reasoning ?? this.snapshot.composer.reasoning;
+    const toolsConfig =
+      options.toolsConfig ?? this.snapshot.composer.toolsConfig;
+    const modelId = options.modelId ?? this.snapshot.composer.modelId;
+    const shouldBypassSession =
+      options.executionLane === 'local' && !this.snapshot.activeSessionId;
+
     this.commit({
       status: 'loading',
       error: null,
+      composer: {
+        ...this.snapshot.composer,
+        modelId,
+        reasoning,
+        toolsConfig,
+      },
       messages: retryExisting
         ? this.resetLastAssistantMessage(this.snapshot.messages)
         : [
@@ -365,15 +400,22 @@ export class AIChatRuntime {
           ],
     });
     try {
-      const session = await this.ensureSession();
+      const session = shouldBypassSession ? null : await this.ensureSession();
       if (seq !== this.requestSeq) return;
-      if (!session) {
+      if (!session && !shouldBypassSession) {
         this.commit({ status: 'error', error: new Error('Session not found') });
         return;
       }
-      if (!this.snapshot.activeSessionId) {
+      if (session && !this.snapshot.activeSessionId) {
         this.openSessionObject(session, true);
       }
+
+      const sessionId =
+        session?.sessionId ?? this.snapshot.activeSessionId ?? undefined;
+      const historyMessages =
+        options.executionLane === 'local'
+          ? this.getDraftHistoryMessages()
+          : undefined;
 
       const stream = (await this.options.request.executeAction('chat', {
         workspaceId: this.snapshot.scope.workspaceId,
@@ -381,14 +423,16 @@ export class AIChatRuntime {
           'docId' in this.snapshot.scope
             ? this.snapshot.scope.docId
             : undefined,
-        sessionId: session.sessionId,
+        sessionId,
         input: content,
         contexts: options.contexts,
         attachments: options.attachments ?? this.snapshot.composer.attachments,
         contextId: this.snapshot.composer.context.contextId,
-        reasoning: options.reasoning ?? this.snapshot.composer.reasoning,
-        toolsConfig: options.toolsConfig ?? this.snapshot.composer.toolsConfig,
-        modelId: options.modelId ?? this.snapshot.composer.modelId,
+        reasoning,
+        toolsConfig,
+        modelId,
+        executionLane: options.executionLane,
+        historyMessages,
         isRootSession: options.isRootSession,
         where: options.where,
         control: options.control,
@@ -411,7 +455,7 @@ export class AIChatRuntime {
           attachments: [],
         },
       });
-      await this.refreshLastMessageId(session.sessionId).catch(console.error);
+      await this.refreshLastMessageId(sessionId ?? null).catch(console.error);
       await this.bindActiveSessionToDoc().catch(console.error);
     } catch (error) {
       if (seq !== this.requestSeq) return;
@@ -426,7 +470,20 @@ export class AIChatRuntime {
     if (!this.snapshot.activeSessionId) {
       const lastUserMessage = this.getLastUserMessage();
       if (lastUserMessage) {
-        await this.send({ input: lastUserMessage.content }, true);
+        await this.send(
+          {
+            input: lastUserMessage.content,
+            modelId: this.snapshot.composer.modelId,
+            reasoning: this.snapshot.composer.reasoning,
+            toolsConfig: this.snapshot.composer.toolsConfig,
+            executionLane: this.snapshot.composer.modelId
+              ?.toLowerCase()
+              .includes('gemma')
+              ? 'local'
+              : undefined,
+          },
+          true
+        );
       }
       return;
     }
@@ -1097,20 +1154,33 @@ export class AIChatRuntime {
     if (!this.snapshot.uiPolicy.canCreateNewSession) return;
     const seq = ++this.requestSeq;
     const draft = this.options.strategy.createDraftSession(this.snapshot.scope);
-    const activeTabIndex = this.snapshot.tabs.findIndex(
+    const activeTab = this.snapshot.tabs.find(
       tab => tab.id === this.snapshot.activeTabId
     );
-    const insertIndex =
-      activeTabIndex === -1 ? this.snapshot.tabs.length : activeTabIndex + 1;
-    const tabs = [
-      ...this.snapshot.tabs.slice(0, insertIndex),
-      draft,
-      ...this.snapshot.tabs.slice(insertIndex),
-    ];
+    const tabs =
+      activeTab?.kind === 'draft'
+        ? this.snapshot.tabs.map(tab =>
+            tab.id === activeTab.id ? { ...draft, id: activeTab.id } : tab
+          )
+        : (() => {
+            const activeTabIndex = this.snapshot.tabs.findIndex(
+              tab => tab.id === this.snapshot.activeTabId
+            );
+            const insertIndex =
+              activeTabIndex === -1
+                ? this.snapshot.tabs.length
+                : activeTabIndex + 1;
+            return [
+              ...this.snapshot.tabs.slice(0, insertIndex),
+              draft,
+              ...this.snapshot.tabs.slice(insertIndex),
+            ];
+          })();
+    const activeTabId = activeTab?.kind === 'draft' ? activeTab.id : draft.id;
     this.commit({
       tabs,
       sessions: this.snapshot.sessions,
-      activeTabId: draft.id,
+      activeTabId,
       activeSessionId: null,
       messages: [],
     });

@@ -1447,6 +1447,8 @@
   "com.affine.settings.workspace.byok.locked.description": "Sağlayıcı anahtarları eklemek ve AFFiNE AI'yi kendi OpenAI, Anthropic, Gemini veya FAL hesabınız üzerinden yönlendirmek için bu çalışma alanını yükseltin.",
   "com.affine.settings.workspace.byok.notice.title": "Yapay zeka planı kullanılabilir durumda kalacak",
   "com.affine.settings.workspace.byok.notice.description": "Önce bu cihazdaki yerel anahtarlar denenir. Çalışma alanı sunucusu anahtarları takip eder ve ardından kota mevcut olduğunda AFFiNE AI rotaları planlar.",
+  "com.affine.settings.workspace.byok.local-only.title": "Bulut BYOK ayarları kullanılamıyor",
+  "com.affine.settings.workspace.byok.local-only.description": "Bu çalışma alanının bağlı bir sunucusu yok, bu nedenle bu görünümde bulut BYOK kullanımı ve sunucu tarafından yönetilen anahtarlar kullanılamaz.",
   "com.affine.settings.workspace.byok.keys.title": "Sağlayıcı anahtarları",
   "com.affine.settings.workspace.byok.keys.description": "Her depolama grubunda yedek (fallback) sırasını liste sırası belirler.",
   "com.affine.settings.workspace.byok.empty.title": "Sağlayıcı anahtarı yok",

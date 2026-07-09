@@ -249,3 +249,28 @@ export const bar = style({
   borderRadius: '4px 4px 0 0',
   background: '#5b8def',
 });
+
+export const localModelBody = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 12,
+  padding: 16,
+});
+
+export const localModelStatusRow = style({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: 12,
+});
+
+export const localModelProgress = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 8,
+});
+
+export const localModelMeta = style({
+  fontSize: cssVar('fontXs'),
+  color: cssVarV2('text/secondary'),
+});

@@ -120,12 +120,13 @@ class HelperProcessManager {
       openExternal: openExternalSafely as typeof shell.openExternal,
       showItemInFolder: shell.showItemInFolder.bind(shell),
     };
-    const appMethods = pickAndBind(app, ['getPath']);
+    const appMethods = pickAndBind(app, ['getPath', 'getAppPath']);
 
     const mainToHelperServer: MainToHelper = {
       ...dialogMethods,
       ...shellMethods,
       ...appMethods,
+      isPackaged: () => app.isPackaged,
     };
 
     this.rpc = AsyncCall<HelperToMain>(mainToHelperServer, {

@@ -11,6 +11,7 @@ import {
 import { useRegisterFindInPageCommands } from '@affine/core/components/hooks/affine/use-register-find-in-page-commands';
 import { useRegisterWorkspaceCommands } from '@affine/core/components/hooks/use-register-workspace-commands';
 import { OverCapacityNotification } from '@affine/core/components/over-capacity';
+import { AIModelService } from '@affine/core/modules/ai-button/services/models';
 import {
   AuthService,
   EventSourceService,
@@ -141,6 +142,7 @@ export const WorkspaceSideEffects = () => {
   const graphqlService = useService(GraphQLService);
   const eventSourceService = useService(EventSourceService);
   const authService = useService(AuthService);
+  const aiModelService = useService(AIModelService);
   const nbstoreService = useService(NbstoreService);
 
   useEffect(() => {
@@ -151,12 +153,14 @@ export const WorkspaceSideEffects = () => {
         nbstoreService.realtime
       ),
       globalDialogService,
-      authService
+      authService,
+      aiModelService
     );
     return () => {
       dispose();
     };
   }, [
+    aiModelService,
     eventSourceService,
     nbstoreService,
     workspaceDialogService,

@@ -1,4 +1,4 @@
-import cp from 'node:child_process';
+import cp, { execFileSync } from 'node:child_process';
 import { readdir, rm, symlink } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -18,7 +18,7 @@ import {
   icoPath,
   platform,
   productName,
-} from './scripts/make-env.js';
+} from './scripts/make-env.ts';
 
 const fromBuildIdentifier = utils.fromBuildIdentifier;
 
@@ -163,6 +163,58 @@ const trimElectronPakLocales = async (resourcesAppDir, targetPlatform) => {
   );
 };
 
+const verifyMacOSAppSignature = appPath => {
+  execFileSync(
+    'codesign',
+    ['--verify', '--deep', '--strict', '--verbose=4', appPath],
+    {
+      stdio: 'pipe',
+    }
+  );
+};
+
+const adHocSignMacOSApp = appPath => {
+  execFileSync('codesign', ['--force', '--deep', '--sign', '-', appPath], {
+    stdio: 'inherit',
+  });
+};
+
+const ensureMacOSAppSignature = appPath => {
+  try {
+    verifyMacOSAppSignature(appPath);
+  } catch (error) {
+    // A real Developer ID signing identity is only present for release builds.
+    // In that case a broken signature must fail hard so we never ship it.
+    if (process.env.APPLE_CODESIGN_IDENTITY) {
+      throw error;
+    }
+
+    // Test/local builds package without a signing identity, so the prebuilt
+    // ad-hoc signature is invalidated once extra resources are added. Re-seal
+    // the bundle with an ad-hoc signature so the app stays verifiable/runnable.
+    console.warn(
+      `[forge] codesign verify failed for ${appPath}, applying ad-hoc signature for unsigned build.`
+    );
+    adHocSignMacOSApp(appPath);
+    verifyMacOSAppSignature(appPath);
+  }
+};
+
+const resolvePackagedMacOSApps = async outputPath => {
+  if (outputPath.endsWith('.app')) {
+    return [outputPath];
+  }
+
+  try {
+    const entries = await readdir(outputPath, { withFileTypes: true });
+    return entries
+      .filter(entry => entry.isDirectory() && entry.name.endsWith('.app'))
+      .map(entry => path.join(outputPath, entry.name));
+  } catch {
+    return [];
+  }
+};
+
 const makers = [
   !process.env.SKIP_BUNDLE &&
     platform === 'darwin' && {
@@ -171,6 +223,7 @@ const makers = [
         format: 'ULMO',
         icon: icnsPath,
         name: 'AFFiNE',
+        title: productName,
         'icon-size': 128,
         background: path.join(
           __dirname,
@@ -329,7 +382,9 @@ export default {
     appBundleId: fromBuildIdentifier(appIdMap),
     icon: icnsPath,
     osxSign: {
-      identity: 'Developer ID Application: TOEVERYTHING PTE. LTD.',
+      identity:
+        process.env.APPLE_CODESIGN_IDENTITY ||
+        'Developer ID Application: TOEVERYTHING PTE. LTD.',
       'hardened-runtime': true,
     },
     electronZipDir: process.env.ELECTRON_FORGE_ELECTRON_ZIP_DIR,
@@ -345,6 +400,9 @@ export default {
     extraResource: [
       './resources/app-update.yml',
       ...(platform === 'linux' ? ['./resources/affine.metainfo.xml'] : []),
+      ...(platform === 'darwin' && arch === 'arm64'
+        ? ['./resources/local-ai']
+        : []),
     ],
     protocols: [
       {
@@ -407,9 +465,28 @@ export default {
         });
 
         await symlink(
-          path.join(__dirname, '..', '..', '..', 'node_modules'),
+          path.join(__dirname, '..', '..', '..', '..', 'node_modules'),
           path.join(__dirname, 'node_modules')
         );
+      }
+
+      if (platform === 'darwin' && arch === 'arm64') {
+        execFileSync('node', ['./scripts/stage-local-ai-assets.mjs'], {
+          cwd: __dirname,
+          stdio: 'inherit',
+        });
+      }
+    },
+    postPackage: async (_, packageResult) => {
+      if (packageResult.platform !== 'darwin') {
+        return;
+      }
+
+      for (const outputPath of packageResult.outputPaths) {
+        const appPaths = await resolvePackagedMacOSApps(outputPath);
+        for (const appPath of appPaths) {
+          ensureMacOSAppSignature(appPath);
+        }
       }
     },
     generateAssets: async (_, platform, arch) => {

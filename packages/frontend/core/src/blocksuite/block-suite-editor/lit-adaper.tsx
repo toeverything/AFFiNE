@@ -88,7 +88,9 @@ const usePatchSpecs = (mode: DocMode, shared?: boolean) => {
 
   // comment may not be supported by the server
   const enableComment =
-    isCloud && serverConfig.features.includes(ServerFeature.Comment) && !shared;
+    isCloud &&
+    (serverConfig?.features.includes(ServerFeature.Comment) ?? false) &&
+    !shared;
 
   const patchedSpecs = useMemo(() => {
     const manager = getViewManager()

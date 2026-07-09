@@ -102,3 +102,4 @@ storageState.json
 /.playwright-browsers/
 **/.vitest-attachments/
 /blocksuite/framework/std/src/__tests__/gfx/__screenshots__/
+/.cache

@@ -1773,6 +1773,8 @@
   "com.affine.settings.workspace.byok.modal.edit-title": "فراہم کنندہ کلید میں ترمیم کریں۔",
   "com.affine.settings.workspace.byok.notice.description": "اس آلہ پر مقامی کلیدیں پہلے آزمائی جاتی ہیں۔ ورک اسپیس سرور کیز فالو کرتی ہیں، پھر کوٹہ دستیاب ہونے پر AFFiNE AI پلان روٹس۔",
   "com.affine.settings.workspace.byok.notice.title": "AI پلان دستیاب رہتا ہے۔",
+  "com.affine.settings.workspace.byok.local-only.title": "کلاؤڈ BYOK سیٹنگز دستیاب نہیں",
+  "com.affine.settings.workspace.byok.local-only.description": "یہ ورک اسپیس کسی سرور سے منسلک نہیں ہے، اس لیے اس ویو میں کلاؤڈ BYOK استعمال اور سرور کے زیرِ انتظام کیز دستیاب نہیں ہیں۔",
   "com.affine.settings.workspace.byok.notify.clear-failed.title": "BYOK کیز صاف نہیں ہوئیں",
   "com.affine.settings.workspace.byok.notify.cross-storage-reorder.message": "لوکل کیز اور سرور کیز الگ الگ فال بیک آرڈر رکھتی ہیں۔",
   "com.affine.settings.workspace.byok.notify.cross-storage-reorder.title": "پورے اسٹوریج میں دوبارہ ترتیب نہیں دی جا سکتی",

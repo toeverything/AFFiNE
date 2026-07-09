@@ -7,6 +7,14 @@ import { getAIPanelWidget } from '../utils/ai-widgets';
 import type { AIContext } from '../utils/context';
 import type { AffineAIPanelWidgetConfig } from '../widgets/ai-panel/type';
 
+function safeMarkdownToMindmap(host: EditorHost, answer: string) {
+  try {
+    return markdownToMindmap(answer, host.store, host.std.store.provider);
+  } catch {
+    return null;
+  }
+}
+
 export const createMindmapRenderer: (
   host: EditorHost,
   /**
@@ -56,7 +64,7 @@ export const createMindmapExecuteRenderer: (
     }
 
     ctx.set({
-      node: markdownToMindmap(answer, host.store, host.std.store.provider),
+      node: safeMarkdownToMindmap(host, answer),
     });
 
     handler(host, ctx);

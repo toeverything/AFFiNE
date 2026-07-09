@@ -4,6 +4,7 @@ import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { MeetingSettingsService } from '@affine/core/modules/media/services/meeting-settings';
 import { useI18n } from '@affine/i18n';
 import {
+  AiIcon,
   AppearanceIcon,
   ExperimentIcon,
   FolderIcon,
@@ -25,6 +26,7 @@ import { BillingSettings } from './billing';
 import { EditorSettings } from './editor';
 import { ExperimentalFeatures } from './experimental-features';
 import { PaymentIcon, UpgradeIcon } from './icons';
+import { LocalGemmaSetting } from './local-gemma';
 import { MeetingsSettings } from './meetings';
 import { NotificationSettings } from './notifications';
 import { AFFiNEPricingPlans } from './plans';
@@ -134,6 +136,16 @@ export const useGeneralSettingList = (): GeneralSettingList => {
       });
     }
 
+    if (BUILD_CONFIG.isElectron && environment.isMacOs) {
+      settings.push({
+        key: 'local-gemma',
+        title: 'Local Gemma',
+        icon: <AiIcon />,
+        testId: 'local-gemma-panel-trigger',
+        beta: true,
+      });
+    }
+
     settings.push(
       {
         key: 'experimental-features',
@@ -188,6 +200,8 @@ export const GeneralSetting = ({
       return <ExperimentalFeatures />;
     case 'backup':
       return <BackupSettingPanel />;
+    case 'local-gemma':
+      return <LocalGemmaSetting />;
     default:
       return null;
   }

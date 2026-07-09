@@ -1447,6 +1447,8 @@
   "com.affine.settings.workspace.byok.locked.description": "Провайдер кілттерін қосу және AFFiNE AI-ды өзіңнің OpenAI, Anthropic, Gemini немесе FAL аккаунтың арқылы бағыттау үшін осы жұмыс кеңістігін жаңарт.",
   "com.affine.settings.workspace.byok.notice.title": "AI жоспары қолжетімді болып қалады",
   "com.affine.settings.workspace.byok.notice.description": "Алдымен осы құрылғыдағы жергілікті кілттер сыналады. Одан кейін жұмыс кеңістігінің сервер кілттері, сосын квота болған кезде AFFiNE AI жоспар бағыттары пайдаланылады.",
+  "com.affine.settings.workspace.byok.local-only.title": "Бұлттық BYOK баптаулары қолжетімсіз",
+  "com.affine.settings.workspace.byok.local-only.description": "Бұл жұмыс кеңістігі серверге қосылмаған, сондықтан осы көріністе бұлттық BYOK пайдалану және сервер басқаратын кілттер қолжетімсіз.",
   "com.affine.settings.workspace.byok.keys.title": "Провайдер кілттері",
   "com.affine.settings.workspace.byok.keys.description": "Тізім реті әр сақтау тобы ішінде резервтік ретті басқарады.",
   "com.affine.settings.workspace.byok.empty.title": "Провайдер кілттері жоқ",

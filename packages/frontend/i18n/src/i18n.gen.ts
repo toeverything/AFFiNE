@@ -5951,6 +5951,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.workspace.byok.notice.description"](): string;
     /**
+      * `Cloud BYOK settings unavailable`
+      */
+    ["com.affine.settings.workspace.byok.local-only.title"](): string;
+    /**
+      * `This workspace does not have a connected server, so cloud BYOK usage and server-managed keys are unavailable in this view.`
+      */
+    ["com.affine.settings.workspace.byok.local-only.description"](): string;
+    /**
       * `Provider keys`
       */
     ["com.affine.settings.workspace.byok.keys.title"](): string;

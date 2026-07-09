@@ -7,8 +7,7 @@ export const useEnableAI = () => {
   const aiFeature = useLiveData(featureFlagService.flags.enable_ai.$);
 
   const serverService = useService(ServerService);
-  const serverConfig = useLiveData(serverService.server.features$);
-  const aiConfig = serverConfig.copilot;
+  const serverFeatures = useLiveData(serverService.server.features$);
 
-  return aiFeature && aiConfig;
+  return Boolean(aiFeature && serverFeatures?.copilot);
 };

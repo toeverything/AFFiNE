@@ -27,6 +27,7 @@ import {
   launchStage,
   moveTab,
   pingAppLayoutReady,
+  reloadView,
   showDevTools,
   showTab,
   updateActiveViewMeta,
@@ -288,6 +289,9 @@ export const uiHandlers = {
   restartApp: async () => {
     app.relaunch();
     app.quit();
+  },
+  reloadCurrentView: async () => {
+    await reloadView();
   },
   onLanguageChange: async (e, language: string) => {
     // only works for win/linux

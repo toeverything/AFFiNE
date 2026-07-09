@@ -180,6 +180,7 @@ export class AIChatComposer extends SignalWatcher(
         .docDisplayConfig=${this.docDisplayConfig}
         .searchMenuConfig=${this.searchMenuConfig}
         .serverService=${this.serverService}
+        .affineWorkspaceDialogService=${this.affineWorkspaceDialogService}
         .affineFeatureFlagService=${this.affineFeatureFlagService}
         .aiDraftService=${this.aiDraftService}
         .aiToolsConfigService=${this.aiToolsConfigService}

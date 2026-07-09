@@ -26,6 +26,19 @@ on:
         required: true
         type: boolean
         default: false
+      desktop_macos_runner:
+        description: 'Runner label for macOS desktop build (for example: macos-latest or affine-macos-signing)'
+        required: false
+        type: string
+        default: macos-latest
+      desktop_macos_signing_mode:
+        description: 'How macOS signing data is sourced'
+        required: false
+        type: choice
+        default: github-secrets
+        options:
+          - github-secrets
+          - local-runner-env
       mobile:
         description: 'Release Mobile?'
         required: true
@@ -195,7 +208,9 @@ jobs:
       desktop_macos: ${{ github.event_name != 'workflow_dispatch' || inputs.desktop_macos }}
       desktop_windows: ${{ github.event_name != 'workflow_dispatch' || inputs.desktop_windows }}
       desktop_linux: ${{ github.event_name != 'workflow_dispatch' || inputs.desktop_linux }}
-      require-windows-signing: ${{ needs.prepare.outputs.BUILD_TYPE == 'stable' || (github.event_name == 'workflow_dispatch' && inputs.desktop_windows) }}
+      desktop-macos-runner: ${{ github.event_name == 'workflow_dispatch' && inputs.desktop_macos_runner || 'macos-latest' }}
+      desktop-macos-signing-mode: ${{ github.event_name == 'workflow_dispatch' && inputs.desktop_macos_signing_mode || 'github-secrets' }}
+      require-windows-signing: ${{ needs.prepare.outputs.BUILD_TYPE == 'beta' || needs.prepare.outputs.BUILD_TYPE == 'stable' || (github.event_name == 'workflow_dispatch' && inputs.desktop_windows) }}
 
   mobile:
     name: Release Mobile

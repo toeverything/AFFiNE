@@ -10,6 +10,7 @@ export type SettingTab =
   | 'plans'
   | 'billing'
   | 'backup' // electron only
+  | 'local-gemma' // electron only
   | 'experimental-features'
   | 'editor'
   | 'account'

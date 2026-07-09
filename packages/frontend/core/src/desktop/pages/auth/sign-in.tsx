@@ -42,6 +42,12 @@ export const SignIn = ({
     });
   }, [jumpToIndex, searchParams]);
 
+  useEffect(() => {
+    if (BUILD_CONFIG.isElectron && !redirectUrl && !server) {
+      handleClose();
+    }
+  }, [handleClose, redirectUrl, server]);
+
   const handleAuthenticated = useCallback(
     (status: AuthSessionStatus) => {
       if (status === 'authenticated') {

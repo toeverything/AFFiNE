@@ -19,6 +19,7 @@ export type AIChatSendOptions = {
   reasoning?: boolean;
   toolsConfig?: unknown;
   modelId?: string;
+  executionLane?: 'local' | 'server';
   userInfo?: {
     userId?: string;
     userName?: string;

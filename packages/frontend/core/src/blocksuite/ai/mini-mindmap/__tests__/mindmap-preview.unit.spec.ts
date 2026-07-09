@@ -164,4 +164,71 @@ describe('markdownToMindmap: convert markdown list to a mind map tree', () => {
       ],
     });
   });
+
+  test('deduplicates repeated sibling branches and merges their children', () => {
+    const markdown = `
+- Root
+  - Risks
+    - Technical
+  - Risks
+    - Schedule
+`;
+    const collection = new TestWorkspace();
+    collection.meta.initialize();
+    const doc = collection.createDoc().getStore();
+    const nodes = markdownToMindmap(markdown, doc, provider);
+
+    expect(nodes).toEqual({
+      text: 'Root',
+      children: [
+        {
+          text: 'Risks',
+          children: [
+            {
+              text: 'Technical',
+              children: [],
+            },
+            {
+              text: 'Schedule',
+              children: [],
+            },
+          ],
+        },
+      ],
+    });
+  });
+
+  test('collapses deep single-child chains into denser labels', () => {
+    const markdown = `
+- Root
+  - Planning
+    - Timeline
+      - Milestones
+        - Beta
+`;
+    const collection = new TestWorkspace();
+    collection.meta.initialize();
+    const doc = collection.createDoc().getStore();
+    const nodes = markdownToMindmap(markdown, doc, provider);
+
+    expect(nodes).toEqual({
+      text: 'Root',
+      children: [
+        {
+          text: 'Planning',
+          children: [
+            {
+              text: 'Timeline · Milestones',
+              children: [
+                {
+                  text: 'Beta',
+                  children: [],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+  });
 });

@@ -30,11 +30,13 @@ git push origin canary
 
 ### 3. Create a Release Action
 
-Trigger a release action in the [Release Desktop App](https://github.com/toeverything/AFFiNE/actions/workflows/release-desktop-app.yml).
+Trigger a release action in the [Release](https://github.com/toeverything/AFFiNE/actions/workflows/release.yml) workflow, then enable the desktop targets you want.
 
 ![img.png](assets/release-action.png)
 
 Select the appropriate branch, complete the form, and click `Run workflow`.
+
+If you want macOS signing data to stay on a local self-hosted runner instead of GitHub secrets, set the macOS runner label and choose the local signing mode in the workflow form.
 
 ### 4. Publish the Release
 

@@ -2,12 +2,17 @@ import type {
   AIDraftService,
   AIToolsConfigService,
 } from '@affine/core/modules/ai-button';
-import type { AIModelService } from '@affine/core/modules/ai-button/services/models';
+import {
+  type AIModelService,
+  DESKTOP_OFFLINE_GEMMA_MODEL_ID,
+} from '@affine/core/modules/ai-button/services/models';
 import type {
   ServerService,
   SubscriptionService,
 } from '@affine/core/modules/cloud';
+import type { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
+import { apis, type ClientHandler, events } from '@affine/electron-api';
 import type { CopilotChatHistoryFragment } from '@affine/graphql';
 import track, { type EventArgs } from '@affine/track';
 import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine';
@@ -38,6 +43,10 @@ function getFirstTwoLines(text: string) {
   const lines = text.split('\n');
   return lines.slice(0, 2);
 }
+
+type LocalAIDownloadStatus = Awaited<
+  ReturnType<ClientHandler['localAI']['getDownloadStatus']>
+>;
 
 export class AIChatInput extends SignalWatcher(
   WithDisposable(ShadowlessElement)
@@ -318,6 +327,23 @@ export class AIChatInput extends SignalWatcher(
     .chat-input-footer-spacer {
       flex: 1;
     }
+
+    .chat-local-download-button {
+      border: none;
+      background: transparent;
+      color: var(--affine-v2-icon-activated);
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 20px;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 999px;
+      transition: background-color 0.2s ease;
+    }
+
+    .chat-local-download-button:hover {
+      background: ${unsafeCSSVarV2('layer/background/hoverOverlay')};
+    }
   `;
 
   @property({ attribute: false })
@@ -358,6 +384,9 @@ export class AIChatInput extends SignalWatcher(
 
   @state()
   accessor isDragOver = false;
+
+  @state()
+  accessor localDownloadStatus: LocalAIDownloadStatus | null = null;
 
   @query('.chat-panel-input')
   accessor chatPanelInput!: HTMLDivElement;
@@ -410,6 +439,9 @@ export class AIChatInput extends SignalWatcher(
 
   @property({ attribute: false })
   accessor aiModelService!: AIModelService;
+
+  @property({ attribute: false })
+  accessor affineWorkspaceDialogService!: WorkspaceDialogService;
 
   @property({ attribute: false })
   accessor onAISubscribe!: () => Promise<void>;
@@ -481,6 +513,16 @@ export class AIChatInput extends SignalWatcher(
     window.addEventListener('dragleave', this._handleWindowDragLeave);
     window.addEventListener('drop', this._resetDragState);
     window.addEventListener('dragend', this._resetDragState);
+
+    this.refreshLocalDownloadStatus().catch(console.error);
+    const disposeDownloadStatus = events?.localAI?.onDownloadStatusChanged?.(
+      status => {
+        this.localDownloadStatus = status;
+      }
+    );
+    if (disposeDownloadStatus) {
+      this._disposables.add(() => disposeDownloadStatus());
+    }
   }
 
   protected override firstUpdated(changedProperties: PropertyValues): void {
@@ -546,6 +588,57 @@ export class AIChatInput extends SignalWatcher(
     });
     this._internalDropCleanup = combine(dropTargetCleanup);
   }
+
+  private async refreshLocalDownloadStatus() {
+    try {
+      this.localDownloadStatus =
+        (await apis?.localAI?.getDownloadStatus?.()) ??
+        this.localDownloadStatus;
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  private get localDownloadCtaLabel() {
+    if (!this.localDownloadStatus) {
+      return 'Open Gemma Download';
+    }
+
+    switch (this.localDownloadStatus.state) {
+      case 'downloading':
+        return `Downloading ${this.localDownloadStatus.progress}%`;
+      case 'error':
+        return 'Retry Gemma Download';
+      case 'unavailable':
+        return this.localDownloadStatus.canDownload
+          ? 'Download Gemma'
+          : 'Open Gemma Download';
+      case 'ready':
+        return 'Gemma Ready';
+    }
+  }
+
+  private get shouldShowLocalDownloadCta() {
+    const model = this.aiModelService.getActiveModel(
+      this.aiModelService.modelId.value
+    );
+    if (!model?.localCapable) {
+      return false;
+    }
+
+    if (this.aiModelService.getExecutionPreference(model.id) !== 'local') {
+      return false;
+    }
+
+    return this.localDownloadStatus?.state !== 'ready';
+  }
+
+  private readonly _openLocalGemmaDownload = () => {
+    this.affineWorkspaceDialogService.open('setting', {
+      activeTab: 'local-gemma',
+      scrollAnchor: 'local-gemma-download',
+    });
+  };
 
   protected override render() {
     const { images } = this.chatContextValue;
@@ -625,6 +718,15 @@ export class AIChatInput extends SignalWatcher(
           ></ai-chat-add-context>
         </div>
         <div class="chat-input-footer-spacer"></div>
+        ${this.shouldShowLocalDownloadCta
+          ? html`<button
+              class="chat-local-download-button"
+              @click=${this._openLocalGemmaDownload}
+              data-testid="chat-local-gemma-download"
+            >
+              ${this.localDownloadCtaLabel}
+            </button>`
+          : nothing}
         <chat-input-preference
           .session=${this.session}
           .extendedThinking=${this._isReasoningActive}
@@ -832,6 +934,14 @@ export class AIChatInput extends SignalWatcher(
       this.affineFeatureFlagService.flags.enable_send_detailed_object_to_ai
         .value;
     const userInfo = AIAppEvents.userInfo.value;
+    const activeModelId = this.aiModelService.getActiveModelId(
+      this.aiModelService.modelId.value
+    );
+    const resolvedModelId = activeModelId ?? DESKTOP_OFFLINE_GEMMA_MODEL_ID;
+    const resolvedExecutionLane =
+      this.aiModelService.getExecutionPreference(resolvedModelId) === 'local'
+        ? 'local'
+        : 'server';
 
     this.updateContext({
       images: [],
@@ -858,7 +968,8 @@ export class AIChatInput extends SignalWatcher(
       control: this.trackOptions?.control,
       reasoning: this._isReasoningActive,
       toolsConfig: this.aiToolsConfigService.config.value,
-      modelId: this.aiModelService.modelId.value,
+      modelId: resolvedModelId,
+      executionLane: resolvedExecutionLane,
       userInfo: {
         userId: userInfo?.id,
         userName: userInfo?.name,

@@ -3,7 +3,7 @@ import { DesktopApiService } from '@affine/core/modules/desktop-api';
 import { WorkspacesService } from '@affine/core/modules/workspace';
 import {
   buildShowcaseWorkspace,
-  createFirstAppData,
+  ensureDefaultLocalWorkspace,
 } from '@affine/core/utils/first-app-data';
 import { ServerFeature } from '@affine/graphql';
 import {
@@ -70,6 +70,7 @@ export const Component = ({
   const [searchParams] = useSearchParams();
 
   const createOnceRef = useRef(false);
+  const ensureWorkspaceOnceRef = useRef(false);
 
   const createCloudWorkspace = useCallback(() => {
     if (createOnceRef.current) return;
@@ -117,7 +118,54 @@ export const Component = ({
         return;
       }
     } else {
+      // Once local workspace creation has been kicked off, let its async
+      // completion own navigation. The created workspace lands in `list`
+      // before `ensureDefaultLocalWorkspace` resolves, which re-runs this
+      // effect; without this guard it would navigate to the all-docs page and
+      // race with the intended jump to the default doc, leaving the editor
+      // unmounted.
+      if (ensureWorkspaceOnceRef.current) {
+        return;
+      }
       if (list.length === 0) {
+        if (enableLocalWorkspace) {
+          ensureWorkspaceOnceRef.current = true;
+          setCreating(true);
+          ensureDefaultLocalWorkspace(workspacesService)
+            .then(createdWorkspace => {
+              if (createdWorkspace) {
+                if (createdWorkspace.defaultPageId) {
+                  jumpToPage(
+                    createdWorkspace.meta.id,
+                    createdWorkspace.defaultPageId,
+                    RouteLogic.REPLACE
+                  );
+                } else {
+                  openPage(
+                    createdWorkspace.meta.id,
+                    defaultIndexRoute,
+                    RouteLogic.REPLACE
+                  );
+                }
+                return;
+              }
+              ensureWorkspaceOnceRef.current = false;
+              if (!BUILD_CONFIG.isNative) {
+                setNavigating(false);
+              }
+            })
+            .catch(err => {
+              ensureWorkspaceOnceRef.current = false;
+              console.error('Failed to ensure default local workspace', err);
+              if (!BUILD_CONFIG.isNative) {
+                setNavigating(false);
+              }
+            })
+            .finally(() => {
+              setCreating(false);
+            });
+          return;
+        }
         setNavigating(false);
         return;
       }
@@ -133,11 +181,13 @@ export const Component = ({
     list,
     openPage,
     searchParams,
+    jumpToPage,
     jumpToSignIn,
     listIsLoading,
     loggedIn,
     navigating,
     defaultIndexRoute,
+    workspacesService,
   ]);
 
   const desktopApi = useServiceOptional(DesktopApiService);
@@ -146,42 +196,11 @@ export const Component = ({
     desktopApi?.handler.ui.pingAppLayoutReady().catch(console.error);
   }, [desktopApi]);
 
-  useEffect(() => {
-    if (listIsLoading || list.length > 0 || !enableLocalWorkspace) {
-      return;
-    }
-
-    createFirstAppData(workspacesService)
-      .then(createdWorkspace => {
-        if (createdWorkspace) {
-          if (createdWorkspace.defaultPageId) {
-            jumpToPage(
-              createdWorkspace.meta.id,
-              createdWorkspace.defaultPageId
-            );
-          } else {
-            openPage(createdWorkspace.meta.id, 'all');
-          }
-        }
-      })
-      .catch(err => {
-        console.error('Failed to create first app data', err);
-      })
-      .finally(() => {
-        setCreating(false);
-      });
-  }, [
-    jumpToPage,
-    jumpToSignIn,
-    openPage,
-    workspacesService,
-    loggedIn,
-    listIsLoading,
-    list,
-    enableLocalWorkspace,
-  ]);
-
   if (navigating || creating) {
+    return fallback ?? <AppContainer fallback />;
+  }
+
+  if (BUILD_CONFIG.isNative) {
     return fallback ?? <AppContainer fallback />;
   }
 

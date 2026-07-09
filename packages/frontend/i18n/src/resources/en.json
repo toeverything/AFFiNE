@@ -1486,6 +1486,8 @@
   "com.affine.settings.workspace.byok.locked.description": "Upgrade this workspace to add provider keys and route AFFiNE AI through your own OpenAI, Anthropic, Gemini, or FAL account.",
   "com.affine.settings.workspace.byok.notice.title": "AI plan stays available",
   "com.affine.settings.workspace.byok.notice.description": "Local keys on this device are tried first. Workspace server keys follow, then AFFiNE AI plan routes when quota is available.",
+  "com.affine.settings.workspace.byok.local-only.title": "Cloud BYOK settings unavailable",
+  "com.affine.settings.workspace.byok.local-only.description": "This workspace does not have a connected server, so cloud BYOK usage and server-managed keys are unavailable in this view.",
   "com.affine.settings.workspace.byok.keys.title": "Provider keys",
   "com.affine.settings.workspace.byok.keys.description": "List order controls fallback within each storage group.",
   "com.affine.settings.workspace.byok.empty.title": "No provider keys",

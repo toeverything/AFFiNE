@@ -20,6 +20,7 @@ import {
 } from '../rspack-shared/html-plugin.js';
 
 const require = createRequire(import.meta.url);
+const swcLoader = require.resolve('swc-loader');
 
 const IN_CI = !!process.env.CI;
 const hasSentryBuildEnvs = () =>
@@ -197,7 +198,7 @@ export function createHTMLTargetConfig(
             {
               test: /\.ts$/,
               exclude: /node_modules/,
-              loader: 'swc-loader',
+              loader: swcLoader,
               options: {
                 // https://swc.rs/docs/configuring-swc/
                 jsc: {
@@ -223,7 +224,7 @@ export function createHTMLTargetConfig(
             {
               test: /\.tsx$/,
               exclude: /node_modules/,
-              loader: 'swc-loader',
+              loader: swcLoader,
               options: {
                 // https://swc.rs/docs/configuring-swc/
                 jsc: {
@@ -472,7 +473,7 @@ export function createWorkerTargetConfig(
             {
               test: /\.ts$/,
               exclude: /node_modules/,
-              loader: 'swc-loader',
+              loader: swcLoader,
               options: {
                 // https://swc.rs/docs/configuring-swc/
                 jsc: {
@@ -619,7 +620,7 @@ export function createNodeTargetConfig(
         {
           test: /\.tsx?$/,
           exclude: /node_modules/,
-          loader: 'swc-loader',
+          loader: swcLoader,
           options: {
             // https://swc.rs/docs/configuring-swc/
             jsc: {

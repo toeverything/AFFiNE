@@ -48,8 +48,12 @@ import {
   textTones,
   translateLangs,
 } from '../../actions/types';
-import type { AIItemGroupConfig } from '../../components/ai-item/types';
+import type {
+  AIItemConfig,
+  AIItemGroupConfig,
+} from '../../components/ai-item/types';
 import { AIAppEvents } from '../../provider';
+import { shouldShowDesktopAction } from '../../runtime/request/desktop-chat-options';
 import { getAIPanelWidget } from '../../utils/ai-widgets';
 import {
   getEdgelessCopilotWidget,
@@ -77,6 +81,15 @@ const toneSubItem = textTones.map(tone => {
     handler: actionToHandler('changeTone', AIStarIconWithAnimation, { tone }),
   };
 });
+
+const withDesktopActionVisibility = (
+  actionId: string,
+  showWhen?: AIItemConfig['showWhen']
+): AIItemConfig['showWhen'] => {
+  return (chain, editorMode, host) =>
+    shouldShowDesktopAction(actionId) &&
+    (showWhen ? showWhen(chain, editorMode, host) : true);
+};
 
 export const imageFilterSubItem = imageFilterStyles.map(style => {
   return {
@@ -233,7 +246,7 @@ const reviewImageGroup: AIItemGroupConfig = {
       name: 'Explain this image',
       icon: PenIcon(),
       testId: 'action-explain-image',
-      showWhen: imageOnlyShowWhen,
+      showWhen: withDesktopActionVisibility('explainImage', imageOnlyShowWhen),
       handler: actionToHandler(
         'explainImage',
         AIStarIconWithAnimation,
@@ -321,7 +334,10 @@ const generateFromTextGroup: AIItemGroupConfig = {
       name: 'Generate an image',
       icon: ImageIcon(),
       testId: 'action-generate-image',
-      showWhen: notAllAIChatBlockShowWhen,
+      showWhen: withDesktopActionVisibility(
+        'createImage',
+        notAllAIChatBlockShowWhen
+      ),
       handler: actionToHandler(
         'createImage',
         AIImageIconWithAnimation,
@@ -532,7 +548,7 @@ const generateFromTextGroup: AIItemGroupConfig = {
       name: 'AI image filter',
       icon: PenIcon(),
       testId: 'action-ai-image-filter',
-      showWhen: imageOnlyShowWhen,
+      showWhen: withDesktopActionVisibility('filterImage', imageOnlyShowWhen),
       subItem: imageFilterSubItem,
       subItemOffset: [12, -4],
       beta: true,
@@ -541,7 +557,7 @@ const generateFromTextGroup: AIItemGroupConfig = {
       name: 'Image processing',
       icon: ImageIcon(),
       testId: 'action-image-processing',
-      showWhen: imageOnlyShowWhen,
+      showWhen: withDesktopActionVisibility('processImage', imageOnlyShowWhen),
       subItem: imageProcessingSubItem,
       subItemOffset: [12, -6],
       beta: true,
@@ -550,7 +566,10 @@ const generateFromTextGroup: AIItemGroupConfig = {
       name: 'Generate a caption',
       icon: PenIcon(),
       testId: 'action-generate-caption',
-      showWhen: imageOnlyShowWhen,
+      showWhen: withDesktopActionVisibility(
+        'generateCaption',
+        imageOnlyShowWhen
+      ),
       beta: true,
       handler: actionToHandler(
         'generateCaption',

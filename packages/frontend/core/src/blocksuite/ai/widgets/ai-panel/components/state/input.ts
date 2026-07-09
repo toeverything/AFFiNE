@@ -1,15 +1,27 @@
+import { DESKTOP_OFFLINE_GEMMA_MODEL_ID } from '@affine/core/modules/ai-button/services/models';
+import { apis } from '@affine/electron-api';
 import { AIStarIcon } from '@blocksuite/affine/components/icons';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import { ColorScheme } from '@blocksuite/affine/model';
 import { unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import { stopPropagation } from '@blocksuite/affine/shared/utils';
-import { SendIcon } from '@blocksuite/icons/lit';
+import {
+  AiOutlineIcon,
+  CloudWorkspaceIcon,
+  SendIcon,
+} from '@blocksuite/icons/lit';
+import { computed } from '@preact/signals-core';
 import {
   darkCssVariablesV2,
   lightCssVariablesV2,
 } from '@toeverything/theme/v2';
 import { css, html, LitElement, nothing, unsafeCSS } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
+
+import {
+  getAIModelService,
+  hasAIModelService,
+} from '../../../../runtime/request/ai-model-provider';
 
 export class AIPanelInput extends SignalWatcher(WithDisposable(LitElement)) {
   static override styles = css`
@@ -215,6 +227,48 @@ export class AIPanelInput extends SignalWatcher(WithDisposable(LitElement)) {
     this.remove();
   };
 
+  private get showLocalToggle() {
+    if (!apis?.localAI || !hasAIModelService()) {
+      return false;
+    }
+
+    const modelService = getAIModelService();
+    return !!modelService.getActiveModel(modelService.modelId.value)
+      ?.localCapable;
+  }
+
+  private readonly localMode = computed(() => {
+    if (!this.showLocalToggle) {
+      return false;
+    }
+
+    const modelService = getAIModelService();
+    const modelId =
+      modelService.getActiveModelId(modelService.modelId.value) ??
+      DESKTOP_OFFLINE_GEMMA_MODEL_ID;
+    return modelService.getExecutionPreference(modelId) === 'local';
+  });
+
+  private readonly toggleLocalMode = (event: Event) => {
+    event.stopPropagation();
+    if (!hasAIModelService()) {
+      return;
+    }
+
+    const modelService = getAIModelService();
+    const modelId =
+      modelService.getActiveModelId(modelService.modelId.value) ??
+      DESKTOP_OFFLINE_GEMMA_MODEL_ID;
+    const nextPreference =
+      modelService.getExecutionPreference(modelId) === 'local'
+        ? 'cloud'
+        : 'local';
+    modelService.setExecutionPreference(modelId, nextPreference);
+    if (nextPreference === 'local') {
+      void apis?.localAI?.ensureReady?.().catch(() => {});
+    }
+  };
+
   override render() {
     return html`<div class="root">
       <div class="star">${AIStarIcon}</div>
@@ -232,6 +286,22 @@ export class AIPanelInput extends SignalWatcher(WithDisposable(LitElement)) {
           @paste=${stopPropagation}
           @keyup=${stopPropagation}
         ></textarea>
+        ${this.showLocalToggle
+          ? html`<div
+              class="network"
+              data-active=${String(this.localMode.value)}
+              data-testid="ai-panel-local-toggle"
+              @click=${this.toggleLocalMode}
+              @pointerdown=${stopPropagation}
+            >
+              ${this.localMode.value ? AiOutlineIcon() : CloudWorkspaceIcon()}
+              <affine-tooltip .offsetY=${12}
+                >${this.localMode.value
+                  ? 'Using Local Gemma'
+                  : 'Using Cloud AI'}</affine-tooltip
+              >
+            </div>`
+          : nothing}
         <div
           class="arrow"
           data-testid="ai-panel-input-send"

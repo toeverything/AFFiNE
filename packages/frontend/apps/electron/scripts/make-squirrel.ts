@@ -13,7 +13,7 @@ import {
   platform,
   productName,
   ROOT,
-} from './make-env.js';
+} from './make-env.ts';
 
 const log = debug('affine:make-squirrel');
 

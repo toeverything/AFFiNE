@@ -87,7 +87,7 @@ export const config = (): BuildOptions => {
     bundle: true,
     target: `node${NODE_MAJOR_VERSION}`,
     platform: 'node',
-    external: ['electron', 'electron-updater', 'yjs', 'semver'],
+    external: ['electron'],
     format: 'cjs',
     loader: {
       '.node': 'copy',

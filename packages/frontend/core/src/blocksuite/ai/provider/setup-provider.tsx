@@ -1,9 +1,11 @@
 import { toggleGeneralAIOnboarding } from '@affine/core/components/affine/ai-onboarding/apis';
+import type { AIModelService } from '@affine/core/modules/ai-button/services/models';
 import type { AuthAccountInfo, AuthService } from '@affine/core/modules/cloud';
 import type { GlobalDialogService } from '@affine/core/modules/dialogs';
 
 import type { AIRequestService } from '../runtime/request';
 import { setAIRequestService } from '../runtime/request';
+import { setAIModelService } from '../runtime/request/ai-model-provider';
 import { AIAppEvents } from './ai-app-events';
 import { AIProvider } from './ai-provider';
 import { setupTracker } from './tracker';
@@ -21,9 +23,11 @@ function toAIUserInfo(account: AuthAccountInfo | null) {
 export function setupAIProvider(
   requestService: AIRequestService,
   globalDialogService: GlobalDialogService,
-  authService: AuthService
+  authService: AuthService,
+  aiModelService?: AIModelService | null
 ) {
   setAIRequestService(requestService);
+  setAIModelService(aiModelService ?? null);
 
   AIProvider.provide('userInfo', () => {
     return toAIUserInfo(authService.session.account$.value);
@@ -71,6 +75,7 @@ export function setupAIProvider(
 
   return () => {
     setAIRequestService(null);
+    setAIModelService(null);
     trackerDisposer();
     disposeRequestLoginHandler.unsubscribe();
     accountSubscription.unsubscribe();

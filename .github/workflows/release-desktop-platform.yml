@@ -28,6 +28,10 @@ on:
         required: false
         default: false
         type: boolean
+      apple_signing_mode:
+        required: false
+        default: github-secrets
+        type: string
       install_linux_deps:
         required: false
         default: false
@@ -60,9 +64,6 @@ jobs:
       APP_NAME: affine
       MACOSX_DEPLOYMENT_TARGET: '12.0'
       SKIP_GENERATE_ASSETS: 1
-      APPLE_ID: ${{ secrets.APPLE_ID }}
-      APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
       SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
       SENTRY_PROJECT: 'affine'
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
@@ -99,12 +100,49 @@ jobs:
       - name: Build Desktop Layers
         run: yarn affine @affine/electron build
 
+      - name: Load Apple signing environment from GitHub secrets
+        if: ${{ inputs.platform == 'darwin' && inputs.apple_codesign && inputs.apple_signing_mode == 'github-secrets' }}
+        shell: bash
+        run: |
+          {
+            echo "APPLE_ID=${{ secrets.APPLE_ID }}"
+            echo "APPLE_PASSWORD=${{ secrets.APPLE_PASSWORD }}"
+            echo "APPLE_TEAM_ID=${{ secrets.APPLE_TEAM_ID }}"
+            echo "APPLE_CODESIGN_IDENTITY=${{ secrets.APPLE_CODESIGN_IDENTITY }}"
+          } >> "$GITHUB_ENV"
+
       - name: Signing By Apple Developer ID
-        if: ${{ inputs.platform == 'darwin' && inputs.apple_codesign }}
+        if: ${{ inputs.platform == 'darwin' && inputs.apple_codesign && inputs.apple_signing_mode == 'github-secrets' }}
         uses: apple-actions/import-codesign-certs@v7
         with:
           p12-file-base64: ${{ secrets.CERTIFICATES_P12 }}
           p12-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
+
+      - name: Resolve Apple codesign identity
+        if: ${{ inputs.platform == 'darwin' && inputs.apple_codesign }}
+        shell: bash
+        run: |
+          if [[ -n "${APPLE_CODESIGN_IDENTITY:-}" ]]; then
+            echo "APPLE_CODESIGN_IDENTITY=$APPLE_CODESIGN_IDENTITY" >> "$GITHUB_ENV"
+            exit 0
+          fi
+
+          IDENTITY="$(security find-identity -v -p codesigning 2>/dev/null | sed -n 's/.*"\(Developer ID Application:.*\)"/\1/p' | head -n 1)"
+          if [[ -z "$IDENTITY" ]]; then
+            echo "No Developer ID Application identity found in keychain" >&2
+            exit 1
+          fi
+
+          echo "APPLE_CODESIGN_IDENTITY=$IDENTITY" >> "$GITHUB_ENV"
+
+      - name: Check Apple signing environment
+        if: ${{ inputs.platform == 'darwin' && inputs.apple_codesign }}
+        shell: bash
+        run: |
+          [[ -n "${APPLE_ID:-}" ]] || { echo "APPLE_ID is required" >&2; exit 1; }
+          [[ -n "${APPLE_PASSWORD:-}" ]] || { echo "APPLE_PASSWORD is required" >&2; exit 1; }
+          [[ -n "${APPLE_TEAM_ID:-}" ]] || { echo "APPLE_TEAM_ID is required" >&2; exit 1; }
+          [[ -n "${APPLE_CODESIGN_IDENTITY:-}" ]] || { echo "APPLE_CODESIGN_IDENTITY is required" >&2; exit 1; }
 
       - name: Install additional dependencies on Linux
         if: ${{ inputs.platform == 'linux' && inputs.install_linux_deps }}
@@ -140,43 +178,123 @@ jobs:
           rm -rf packages/frontend/apps/electron/node_modules/@affine/nbstore/node_modules/@blocksuite/affine/node_modules
           rm -rf packages/frontend/apps/electron/node_modules/@affine/native/node_modules
 
+      - name: Prepare local AI runtime assets
+        if: ${{ inputs.platform == 'darwin' && inputs.arch == 'arm64' }}
+        shell: bash
+        run: |
+          brew install libomp openssl@3
+          LOCAL_AI_LIBOMP_ROOT="$(brew --prefix libomp)"
+          export LOCAL_AI_LIBOMP_ROOT
+          LOCAL_AI_OPENSSL_ROOT="$(brew --prefix openssl@3)"
+          export LOCAL_AI_OPENSSL_ROOT
+          LOCAL_AI_RUNTIME_SOURCE_ROOT="$PWD/.cache/local-ai-runtime/darwin-arm64"
+          node packages/frontend/apps/electron/scripts/prepare-local-ai-runtime.mjs
+          {
+            echo "LOCAL_AI_LIBOMP_ROOT=$LOCAL_AI_LIBOMP_ROOT"
+            echo "LOCAL_AI_OPENSSL_ROOT=$LOCAL_AI_OPENSSL_ROOT"
+            echo "LOCAL_AI_RUNTIME_SOURCE_ROOT=$LOCAL_AI_RUNTIME_SOURCE_ROOT"
+          } >> "$GITHUB_ENV"
+
       - name: make
         if: ${{ inputs.platform != 'win32' }}
-        run: yarn affine @affine/electron make --platform=${{ inputs.platform }} --arch=${{ inputs.arch }}
+        run: yarn affine @affine/electron make --platform="$TARGET_PLATFORM" --arch="$TARGET_ARCH"
         env:
+          TARGET_PLATFORM: ${{ inputs.platform }}
+          TARGET_ARCH: ${{ inputs.arch }}
           SKIP_WEB_BUILD: 1
           HOIST_NODE_MODULES: 1
           NODE_OPTIONS: --max-old-space-size=14384
+          LOCAL_AI_RUNTIME_SOURCE_ROOT: ${{ env.LOCAL_AI_RUNTIME_SOURCE_ROOT }}
+
+      - name: Verify staged local AI runtime assets
+        if: ${{ inputs.platform == 'darwin' && inputs.arch == 'arm64' }}
+        shell: bash
+        run: |
+          test -f packages/frontend/apps/electron/resources/local-ai/bin/llama-server
+          test -f packages/frontend/apps/electron/resources/local-ai/lib/libllama-server-impl.dylib
+          test ! -f packages/frontend/apps/electron/resources/local-ai/models/gemma-3-4b-it.gguf
+
+      - name: Verify packaged local AI app assets
+        if: ${{ inputs.platform == 'darwin' && inputs.arch == 'arm64' }}
+        shell: bash
+        env:
+          TARGET_ARCH: ${{ inputs.arch }}
+        run: |
+          if [[ "$BUILD_TYPE" == "stable" ]]; then
+            PRODUCT_NAME="AFFiNE"
+          else
+            PRODUCT_NAME="AFFiNE-$BUILD_TYPE"
+          fi
+
+          APP_PATH="packages/frontend/apps/electron/out/$BUILD_TYPE/${PRODUCT_NAME}-darwin-$TARGET_ARCH/${PRODUCT_NAME}.app"
+          RESOURCES_PATH="$APP_PATH/Contents/Resources"
+
+          test -d "$APP_PATH"
+          test -f "$RESOURCES_PATH/local-ai/bin/llama-server"
+          test -f "$RESOURCES_PATH/local-ai/lib/libllama-server-impl.dylib"
+          test ! -f "$RESOURCES_PATH/local-ai/models/gemma-3-4b-it.gguf"
 
       - name: package
         if: ${{ inputs.platform == 'win32' }}
         run: |
-          yarn affine @affine/electron package --platform=${{ inputs.platform }} --arch=${{ inputs.arch }}
+          yarn affine @affine/electron package --platform="$TARGET_PLATFORM" --arch="$TARGET_ARCH"
         env:
+          TARGET_PLATFORM: ${{ inputs.platform }}
+          TARGET_ARCH: ${{ inputs.arch }}
           SKIP_WEB_BUILD: 1
           HOIST_NODE_MODULES: 1
           NODE_OPTIONS: --max-old-space-size=14384
 
-      - name: signing DMG
+      - name: Sign and validate DMG
         if: ${{ inputs.platform == 'darwin' && inputs.apple_codesign }}
+        shell: bash
+        env:
+          TARGET_ARCH: ${{ inputs.arch }}
         run: |
-          codesign --force --sign "Developer ID Application: TOEVERYTHING PTE. LTD." packages/frontend/apps/electron/out/${{ env.BUILD_TYPE }}/make/AFFiNE.dmg
+          if [[ "$BUILD_TYPE" == "stable" ]]; then
+            PRODUCT_NAME="AFFiNE"
+          else
+            PRODUCT_NAME="AFFiNE-$BUILD_TYPE"
+          fi
+
+          APP_PATH="packages/frontend/apps/electron/out/$BUILD_TYPE/${PRODUCT_NAME}-darwin-$TARGET_ARCH/${PRODUCT_NAME}.app"
+          DMG_PATH="packages/frontend/apps/electron/out/$BUILD_TYPE/make/AFFiNE.dmg"
+
+          [[ -d "$APP_PATH" ]] || {
+            echo "Signed app not found: $APP_PATH" >&2
+            exit 1
+          }
+          [[ -f "$DMG_PATH" ]] || {
+            echo "DMG not found: $DMG_PATH" >&2
+            exit 1
+          }
+
+          codesign --force --sign "$APPLE_CODESIGN_IDENTITY" "$DMG_PATH"
+          xcrun stapler staple "$APP_PATH"
+          xcrun stapler staple "$DMG_PATH"
+          spctl -a -t exec -vv "$APP_PATH"
+          xcrun stapler validate "$APP_PATH"
+          xcrun stapler validate "$DMG_PATH"
 
       - name: Save artifacts (mac)
         if: ${{ inputs.platform == 'darwin' }}
+        env:
+          TARGET_ARCH: ${{ inputs.arch }}
         run: |
           mkdir -p builds
-          mv packages/frontend/apps/electron/out/*/make/*.dmg ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-macos-${{ inputs.arch }}.dmg
-          mv packages/frontend/apps/electron/out/*/make/zip/darwin/${{ inputs.arch }}/*.zip ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-macos-${{ inputs.arch }}.zip
+          mv packages/frontend/apps/electron/out/*/make/*.dmg "./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-macos-$TARGET_ARCH.dmg"
+          mv packages/frontend/apps/electron/out/*/make/zip/darwin/"$TARGET_ARCH"/*.zip "./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-macos-$TARGET_ARCH.zip"
 
       - name: Save artifacts (linux)
         if: ${{ inputs.platform == 'linux' }}
+        env:
+          TARGET_ARCH: ${{ inputs.arch }}
         run: |
           mkdir -p builds
-          mv packages/frontend/apps/electron/out/*/make/zip/linux/${{ inputs.arch }}/*.zip ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-${{ inputs.arch }}.zip
-          mv packages/frontend/apps/electron/out/*/make/AppImage/${{ inputs.arch }}/*.AppImage ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-${{ inputs.arch }}.appimage
-          mv packages/frontend/apps/electron/out/*/make/deb/${{ inputs.arch }}/*.deb ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-${{ inputs.arch }}.deb
-          mv packages/frontend/apps/electron/out/*/make/flatpak/*/*.flatpak ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-${{ inputs.arch }}.flatpak
+          mv packages/frontend/apps/electron/out/*/make/zip/linux/"$TARGET_ARCH"/*.zip "./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-$TARGET_ARCH.zip"
+          mv packages/frontend/apps/electron/out/*/make/AppImage/"$TARGET_ARCH"/*.AppImage "./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-$TARGET_ARCH.appimage"
+          mv packages/frontend/apps/electron/out/*/make/deb/"$TARGET_ARCH"/*.deb "./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-$TARGET_ARCH.deb"
+          mv packages/frontend/apps/electron/out/*/make/flatpak/*/*.flatpak "./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-$TARGET_ARCH.flatpak"
 
       - uses: actions/attest-build-provenance@v4
         if: ${{ inputs.platform == 'darwin' }}

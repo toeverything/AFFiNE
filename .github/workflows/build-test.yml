@@ -398,7 +398,7 @@ jobs:
         run: yarn workspace @blocksuite/playground build
 
       - name: Run playwright tests
-        run: yarn workspace @affine-test/blocksuite test --forbid-only --shard=${{ matrix.shard }}/${{ strategy.job-total }}
+        run: yarn workspace @affine-test/blocksuite test --forbid-only --workers=1 --shard=${{ matrix.shard }}/${{ strategy.job-total }}
 
       - name: Upload test results
         if: always()
@@ -998,14 +998,21 @@ jobs:
 
       - name: Decide test scope
         id: decision
+        env:
+          TEST_SERVER_CONFIG: ${{ secrets.TEST_SERVER_CONFIG }}
         run: |
-          if [[ "${{ steps.copilot-filter.outputs.api }}" == "true" ]]; then
+          has_copilot_config=false
+          if [[ -n "${TEST_SERVER_CONFIG:-}" ]]; then
+            has_copilot_config=true
+          fi
+
+          if [[ "${{ steps.copilot-filter.outputs.api }}" == "true" && "$has_copilot_config" == "true" ]]; then
             echo "run_api=true" >> "$GITHUB_OUTPUT"
           else
             echo "run_api=false" >> "$GITHUB_OUTPUT"
           fi
 
-          if [[ "${{ steps.copilot-filter.outputs.e2e }}" == "true" ]]; then
+          if [[ "${{ steps.copilot-filter.outputs.e2e }}" == "true" && "$has_copilot_config" == "true" ]]; then
             echo "run_e2e=true" >> "$GITHUB_OUTPUT"
           else
             echo "run_e2e=false" >> "$GITHUB_OUTPUT"
@@ -1148,6 +1155,7 @@ jobs:
         uses: ./.github/actions/copilot-test
         with:
           script: yarn affine @affine-test/affine-cloud-copilot e2e --forbid-only --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+          artifact-name: test-results-e2e-server-copilot-${{ matrix.shardIndex }}
 
   cloud-e2e-test:
     name: ${{ matrix.tests.name }}
@@ -1335,6 +1343,19 @@ jobs:
       - name: Run desktop tests
         if: ${{ matrix.spec.test && matrix.spec.os != 'ubuntu-latest' }}
         run: yarn affine @affine-test/affine-desktop e2e
+
+      - name: Prepare local AI runtime assets
+        if: ${{ matrix.spec.target == 'aarch64-apple-darwin' }}
+        shell: bash
+        run: |
+          brew install libomp openssl@3
+          LOCAL_AI_LIBOMP_ROOT="$(brew --prefix libomp)"
+          export LOCAL_AI_LIBOMP_ROOT
+          LOCAL_AI_OPENSSL_ROOT="$(brew --prefix openssl@3)"
+          export LOCAL_AI_OPENSSL_ROOT
+          LOCAL_AI_RUNTIME_SOURCE_ROOT="$PWD/.cache/local-ai-runtime/darwin-arm64"
+          node packages/frontend/apps/electron/scripts/prepare-local-ai-runtime.mjs
+          echo "LOCAL_AI_RUNTIME_SOURCE_ROOT=$LOCAL_AI_RUNTIME_SOURCE_ROOT" >> "$GITHUB_ENV"
 
       - name: Make bundle (macOS)
         if: ${{ matrix.spec.target == 'aarch64-apple-darwin' }}

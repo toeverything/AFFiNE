@@ -1486,6 +1486,8 @@
   "com.affine.settings.workspace.byok.locked.description": "Upgrade diesen Workspace, um Provider-Schlüssel hinzuzufügen und AFFiNE AI über dein eigenes OpenAI-, Anthropic-, Gemini- oder FAL-Konto zu routen.",
   "com.affine.settings.workspace.byok.notice.title": "Der AI-Plan bleibt verfügbar",
   "com.affine.settings.workspace.byok.notice.description": "Zunächst werden lokale Schlüssel auf diesem Gerät geprüft. Anschließend folgen die Schlüssel des Workspace-Servers und schließlich die Routen des AFFiNE AI-Plans, sofern Kontingent verfügbar ist.",
+  "com.affine.settings.workspace.byok.local-only.title": "Cloud-BYOK-Einstellungen nicht verfügbar",
+  "com.affine.settings.workspace.byok.local-only.description": "Dieser Workspace ist mit keinem Server verbunden. Daher sind Cloud-BYOK-Nutzung und serververwaltete Schlüssel in dieser Ansicht nicht verfügbar.",
   "com.affine.settings.workspace.byok.keys.title": "Provider-Schlüssel",
   "com.affine.settings.workspace.byok.keys.description": "Die Reihenfolge in der Liste bestimmt die Fallback-Reihenfolge innerhalb jeder Speichergruppe.",
   "com.affine.settings.workspace.byok.empty.title": "Keine Provider-Schlüssel",

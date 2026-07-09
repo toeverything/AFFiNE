@@ -127,7 +127,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   // comment may not be supported by the server
   const enableComment =
     workspace.flavour !== 'local' &&
-    serverConfig.features.includes(ServerFeature.Comment);
+    (serverConfig?.features.includes(ServerFeature.Comment) ?? false);
 
   useEffect(() => {
     if (isActiveView) {
