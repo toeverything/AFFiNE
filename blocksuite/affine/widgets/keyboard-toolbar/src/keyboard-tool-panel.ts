@@ -57,7 +57,14 @@ export class AffineKeyboardToolPanel extends SignalWatcher(
 
   private _renderItem(item: KeyboardToolbarActionItem) {
     return html`<div class="keyboard-tool-panel-item">
-      <button @click=${() => this._handleItemClick(item)}>
+      <button
+        type="button"
+        @pointerdown=${(event: PointerEvent) => {
+          event.preventDefault();
+          this._handleItemClick(item);
+        }}
+        @click=${(event: MouseEvent) => event.preventDefault()}
+      >
         ${this._renderIcon(item.icon)}
       </button>
       <span>${item.name}</span>

@@ -213,9 +213,12 @@ export class AffineKeyboardToolbar extends SignalWatcher(
       size="36px"
       style=${style}
       ?disabled=${disabled}
-      @click=${() => {
+      @pointerdown=${(event: PointerEvent) => {
+        event.preventDefault();
+        if (disabled) return;
         this._handleItemClick(item, index);
       }}
+      @click=${(event: MouseEvent) => event.preventDefault()}
     >
       ${this._renderIcon(icon)}
     </icon-button>`;
@@ -228,7 +231,14 @@ export class AffineKeyboardToolbar extends SignalWatcher(
     const goPrevToolbarAction = when(
       this._isSubToolbarOpened,
       () =>
-        html`<icon-button size="36px" @click=${this._goPrevToolbar}>
+        html`<icon-button
+          size="36px"
+          @pointerdown=${(event: PointerEvent) => {
+            event.preventDefault();
+            this._goPrevToolbar();
+          }}
+          @click=${(event: MouseEvent) => event.preventDefault()}
+        >
           ${ArrowLeftBigIcon()}
         </icon-button>`
     );
@@ -245,7 +255,8 @@ export class AffineKeyboardToolbar extends SignalWatcher(
     return html`<div class="keyboard-container">
       <icon-button
         size="36px"
-        @click=${() => {
+        @pointerdown=${(event: PointerEvent) => {
+          event.preventDefault();
           if (this.keyboard.staticHeight$.value === 0) {
             this._closeToolPanel();
             return;
@@ -256,6 +267,7 @@ export class AffineKeyboardToolbar extends SignalWatcher(
             this.keyboard.show();
           }
         }}
+        @click=${(event: MouseEvent) => event.preventDefault()}
       >
         ${KeyboardIcon()}
       </icon-button>
