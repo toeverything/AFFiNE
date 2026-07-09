@@ -18,26 +18,20 @@ export const MobileSignInLayout = ({
   return (
     <div className={styles.root}>
       <SignInBackground />
-      <div
-        className={styles.content}
-        style={{ gap: shouldShowDismissAffordance ? 16 : undefined }}
-      >
-        {shouldShowDismissAffordance ? (
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <IconButton
-              size="24"
-              variant="solid"
-              icon={<CloseIcon />}
-              style={{ borderRadius: 8, padding: 4 }}
-              onClick={e => {
-                e.stopPropagation();
-                onClose?.();
-              }}
-            />
-          </div>
-        ) : null}
-        {children}
-      </div>
+      {shouldShowDismissAffordance ? (
+        <IconButton
+          className={styles.closeButton}
+          size="24"
+          variant="solid"
+          icon={<CloseIcon />}
+          style={{ borderRadius: 12, padding: 4 }}
+          onClick={e => {
+            e.stopPropagation();
+            onClose?.();
+          }}
+        />
+      ) : null}
+      <div className={styles.content}>{children}</div>
     </div>
   );
 };
