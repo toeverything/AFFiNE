@@ -4,6 +4,7 @@ import { signal } from '@preact/signals-core';
 
 import { LifeCycleWatcher } from '../extension/index.js';
 import { KeymapIdentifier } from '../identifier.js';
+import { shouldDeactivateEditorOnFocusOut } from '../inline/range/active.js';
 import type { BlockStdScope } from '../scope/index.js';
 import { type BlockComponent, EditorHost } from '../view/index.js';
 import {
@@ -174,16 +175,21 @@ export class UIEventDispatcher extends LifeCycleWatcher {
       this._setActive(true);
     });
     this.disposables.addFromEvent(document, 'focusout', e => {
-      if (e.relatedTarget && !this.host.contains(e.relatedTarget as Node)) {
+      if (shouldDeactivateEditorOnFocusOut(this.host, e.relatedTarget)) {
         this._setActive(false);
       }
     });
-    this.disposables.addFromEvent(this.host, 'blur', () => {
+    this.disposables.addFromEvent(this.host, 'blur', e => {
       if (_dragging) {
         return;
       }
 
-      this._setActive(false);
+      if (
+        !e.relatedTarget ||
+        shouldDeactivateEditorOnFocusOut(this.host, e.relatedTarget)
+      ) {
+        this._setActive(false);
+      }
     });
     this.disposables.addFromEvent(this.host, 'dragover', () => {
       _dragging = true;

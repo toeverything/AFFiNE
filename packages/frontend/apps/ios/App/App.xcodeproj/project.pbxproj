@@ -96,8 +96,6 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		9DAE85B72E7BAC3B00DB9F1D /* Plugins */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = Plugins;
 			sourceTree = "<group>";
 		};
@@ -247,13 +245,13 @@
 			fileSystemSynchronizedGroups = (
 				9DAE85B72E7BAC3B00DB9F1D /* Plugins */,
 			);
+			name = AFFiNE;
 			packageProductDependencies = (
 				500D72F62E825064006E553F /* Intelligents */,
 				5027D4772E7C5FBD00ADD25A /* AffinePaywall */,
 				5027D4792E7C5FC100ADD25A /* AffineResources */,
 				5027D47B2E7C5FC400ADD25A /* AffineGraphQL */,
 			);
-			name = AFFiNE;
 			productName = App;
 			productReference = 504EC3041FED79650016851F /* AFFiNE.app */;
 			productType = "com.apple.product-type.application";
@@ -341,8 +339,12 @@
 			);
 			inputFileListPaths = (
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
