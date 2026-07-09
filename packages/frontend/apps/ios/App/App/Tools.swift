@@ -65,6 +65,7 @@ enum PaywallAuthGuard {
     try await waitForBridgeFunctions(["getCurrentUserIdentifier"], in: webView)
 
     if await currentUserIdentifier(in: webView) != nil {
+      await dismissIfNeeded(controller)
       return true
     }
 

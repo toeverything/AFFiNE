@@ -62,6 +62,8 @@ private final class OnboardingSignInOverlayView: UIView {
 class RootViewController: UINavigationController {
   private var affineViewController: AFFiNEViewController?
   private var didScheduleOnboardingPresentation = false
+  private var didRunColdStartPaywallFlow = false
+  private var coldStartPaywallRetryCount = 0
   private weak var onboardingSignInOverlay: OnboardingSignInOverlayView?
   private var didCancelOnboardingSignIn = false
 
@@ -84,9 +86,6 @@ class RootViewController: UINavigationController {
 
   func commitInit() {
     assert(viewControllers.isEmpty)
-    #if DEBUG
-      OnboardingFlag.reset()
-    #endif
     let affineViewController = AFFiNEViewController()
     self.affineViewController = affineViewController
     viewControllers = [affineViewController]
@@ -99,13 +98,16 @@ class RootViewController: UINavigationController {
 
   override func viewDidAppear(_ animated: Bool) {
     super.viewDidAppear(animated)
-    presentOnboardingIfNeeded()
+    if !presentOnboardingIfNeeded() {
+      runColdStartPaywallFlowIfNeeded()
+    }
   }
 
-  private func presentOnboardingIfNeeded(force: Bool = false) {
-    guard force || !didScheduleOnboardingPresentation else { return }
-    guard force || !OnboardingFlag.isCompleted else { return }
-    guard presentedViewController == nil else { return }
+  @discardableResult
+  private func presentOnboardingIfNeeded(force: Bool = false) -> Bool {
+    guard force || !didScheduleOnboardingPresentation else { return false }
+    guard force || !OnboardingFlag.isCompleted else { return false }
+    guard presentedViewController == nil else { return false }
 
     didScheduleOnboardingPresentation = true
     let onboardingController = OnboardingViewController()
@@ -114,18 +116,84 @@ class RootViewController: UINavigationController {
       self?.handleOnboardingCompletion(from: onboardingController)
     }
     present(onboardingController, animated: false)
+    return true
+  }
+
+  private func runColdStartPaywallFlowIfNeeded() {
+    guard OnboardingFlag.isCompleted else { return }
+    guard !didRunColdStartPaywallFlow else { return }
+    guard presentedViewController == nil else {
+      scheduleColdStartPaywallFlowRetry()
+      return
+    }
+    guard let webView = affineViewController?.webView else {
+      scheduleColdStartPaywallFlowRetry()
+      return
+    }
+
+    didRunColdStartPaywallFlow = true
+    Task { @MainActor [weak self, weak webView] in
+      guard let self, let webView else { return }
+
+      do {
+        defer { hideOnboardingSignInOverlay() }
+        didCancelOnboardingSignIn = false
+
+        let isSignedIn = try await PaywallAuthGuard.ensureSignedInWithRoute(
+          using: webView,
+          onSignInFlowPresented: { [weak self, weak webView] in
+            guard let self, let webView else { return }
+            self.showOnboardingSignInOverlay(bindWebView: webView)
+          },
+          isCancelled: { [weak self] in
+            self?.didCancelOnboardingSignIn == true
+          }
+        )
+        guard isSignedIn else {
+          didCancelOnboardingSignIn = false
+          return
+        }
+        didCancelOnboardingSignIn = false
+
+        if try await PaywallAuthGuard.hasProSubscription(in: webView) {
+          return
+        }
+
+        presentSharedPaywall(initialPlan: .pro, bindWebView: webView)
+      } catch {
+        if didCancelOnboardingSignIn {
+          didCancelOnboardingSignIn = false
+          return
+        }
+        didRunColdStartPaywallFlow = false
+        scheduleColdStartPaywallFlowRetry()
+      }
+    }
+  }
+
+  private func scheduleColdStartPaywallFlowRetry() {
+    guard coldStartPaywallRetryCount < 3 else { return }
+    coldStartPaywallRetryCount += 1
+
+    Task { @MainActor [weak self] in
+      try? await Task.sleep(nanoseconds: 1_000_000_000)
+      self?.runColdStartPaywallFlowIfNeeded()
+    }
   }
 
   private func handleOnboardingCompletion(from onboardingController: OnboardingViewController?) {
     Task { @MainActor [weak self, weak onboardingController] in
       guard let self else { return }
+      didRunColdStartPaywallFlow = true
+      didCancelOnboardingSignIn = false
+      OnboardingFlag.markCompleted()
+
       guard let webView = affineViewController?.webView else {
         showOnboardingAlert(message: "AFFiNE is still loading. Please try again in a moment.")
         return
       }
 
       defer { hideOnboardingSignInOverlay() }
-      didCancelOnboardingSignIn = false
 
       let isSignedIn: Bool
       do {
