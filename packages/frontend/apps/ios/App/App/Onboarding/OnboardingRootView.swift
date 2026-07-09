@@ -51,31 +51,56 @@ struct OnboardingRootView: View {
   }
 
   var body: some View {
-    ZStack {
-      Color.clear
-        .ignoresSafeArea()
+    GeometryReader { geometry in
+      let layout = OnboardingLayout(size: geometry.size, safeAreaInsets: geometry.safeAreaInsets)
 
-      OnboardingBackground(isIntroPage: isIntroPage)
-
-      VStack(spacing: 0) {
-        if shouldShowHeader {
-          header
-        }
-
-        pageContainer
-
-        footer
-      }
-
-      if isIntroPage {
-        IntroGridOverlay()
+      ZStack {
+        Color.clear
           .ignoresSafeArea()
-          .allowsHitTesting(false)
-          .zIndex(999)
+
+        OnboardingBackground(isIntroPage: isIntroPage)
+
+        onboardingContent(layout: layout)
+
+        if isIntroPage {
+          IntroGridOverlay()
+            .ignoresSafeArea()
+            .allowsHitTesting(false)
+            .zIndex(999)
+        }
       }
+      .frame(width: geometry.size.width, height: geometry.size.height, alignment: .top)
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     .foregroundStyle(AffineColors.textPrimary.color)
+  }
+
+  @ViewBuilder
+  private func onboardingContent(layout: OnboardingLayout) -> some View {
+    if layout.usesScrollableContainer {
+      ScrollView(.vertical, showsIndicators: false) {
+        onboardingStack(layout: layout)
+          .frame(maxWidth: layout.maxContentWidth)
+          .frame(maxWidth: .infinity)
+      }
+    } else {
+      onboardingStack(layout: layout)
+        .frame(maxWidth: layout.maxContentWidth)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+  }
+
+  private func onboardingStack(layout: OnboardingLayout) -> some View {
+    VStack(spacing: 0) {
+      if shouldShowHeader {
+        header
+      }
+
+      pageContainer
+        .frame(height: layout.pageContainerHeight(for: pages[pageIndex]))
+
+      footer
+    }
   }
 
   private var header: some View {
@@ -195,6 +220,63 @@ struct OnboardingRootView: View {
   }
 }
 
+private struct OnboardingLayout {
+  let size: CGSize
+  let safeAreaInsets: EdgeInsets
+
+  private var isLandscape: Bool {
+    size.width > size.height
+  }
+
+  private var isPadLike: Bool {
+    min(size.width, size.height) >= 700
+  }
+
+  private var isCompactHeight: Bool {
+    size.height < 560
+  }
+
+  private var horizontalSafeArea: CGFloat {
+    safeAreaInsets.leading + safeAreaInsets.trailing
+  }
+
+  var usesScrollableContainer: Bool {
+    isLandscape && !isPadLike && isCompactHeight
+  }
+
+  var maxContentWidth: CGFloat {
+    let availableWidth = max(size.width - horizontalSafeArea, 320)
+    if isPadLike {
+      return min(availableWidth, 620)
+    }
+    if usesScrollableContainer {
+      return min(availableWidth, 520)
+    }
+    return min(availableWidth, 430)
+  }
+
+  func pageContainerHeight(for page: OnboardingPage) -> CGFloat {
+    if usesScrollableContainer {
+      return compactPageHeight(for: page)
+    }
+
+    let reservedHeight: CGFloat = page.isIntro ? 104 : 116
+    let availableHeight = size.height - safeAreaInsets.top - safeAreaInsets.bottom - reservedHeight
+    return max(360, availableHeight)
+  }
+
+  private func compactPageHeight(for page: OnboardingPage) -> CGFloat {
+    switch page {
+    case .intro:
+      return 620
+    case .role:
+      return 560
+    case .feature:
+      return 540
+    }
+  }
+}
+
 private struct PageSwipeLockView: UIViewRepresentable {
   let isLocked: Bool
 
@@ -212,7 +294,7 @@ private struct PageSwipeLockView: UIViewRepresentable {
   }
 
   private func findPagingScrollView(from view: UIView) -> UIScrollView? {
-    if let scrollView = view.superview as? UIScrollView {
+    if let scrollView = view.superview as? UIScrollView, scrollView.isPagingEnabled {
       return scrollView
     }
 
@@ -228,7 +310,7 @@ private struct PageSwipeLockView: UIViewRepresentable {
   }
 
   private func findPagingScrollView(in view: UIView) -> UIScrollView? {
-    if let scrollView = view as? UIScrollView {
+    if let scrollView = view as? UIScrollView, scrollView.isPagingEnabled {
       return scrollView
     }
 
