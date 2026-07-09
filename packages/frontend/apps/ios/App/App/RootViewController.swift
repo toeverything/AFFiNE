@@ -63,6 +63,7 @@ class RootViewController: UINavigationController {
   private var affineViewController: AFFiNEViewController?
   private var didScheduleOnboardingPresentation = false
   private weak var onboardingSignInOverlay: OnboardingSignInOverlayView?
+  private var didCancelOnboardingSignIn = false
 
   override init(rootViewController _: UIViewController) {
     fatalError() // "you are not allowed to call this"
@@ -124,25 +125,36 @@ class RootViewController: UINavigationController {
       }
 
       defer { hideOnboardingSignInOverlay() }
+      didCancelOnboardingSignIn = false
 
       let isSignedIn: Bool
       do {
-        isSignedIn = try await PaywallAuthGuard.ensureSignedIn(
+        isSignedIn = try await PaywallAuthGuard.ensureSignedInWithRoute(
           using: webView,
           dismissing: onboardingController,
           onSignInFlowPresented: { [weak self, weak webView] in
             guard let self, let webView else { return }
             self.showOnboardingSignInOverlay(bindWebView: webView)
+          },
+          isCancelled: { [weak self] in
+            self?.didCancelOnboardingSignIn == true
           }
         )
       } catch {
+        if didCancelOnboardingSignIn {
+          didCancelOnboardingSignIn = false
+          finishOnboarding(from: nil)
+          return
+        }
         showOnboardingAlert(message: error.localizedDescription)
         return
       }
       guard isSignedIn else {
+        didCancelOnboardingSignIn = false
         finishOnboarding(from: nil)
         return
       }
+      didCancelOnboardingSignIn = false
 
       do {
         if try await PaywallAuthGuard.hasProSubscription(in: webView) {
@@ -194,14 +206,7 @@ class RootViewController: UINavigationController {
     let overlay = OnboardingSignInOverlayView()
     overlay.onClose = { [weak self, weak webView] in
       guard let self, let webView else { return }
-      self.hideOnboardingSignInOverlay()
-
-      Task { @MainActor in
-        _ = try? await webView.callAsyncJavaScript(
-          "return window.cancelRequestSignIn?.() ?? false;",
-          contentWorld: .page
-        )
-      }
+      self.cancelOnboardingSignIn(using: webView)
     }
 
     view.addSubview(overlay)
@@ -219,6 +224,33 @@ class RootViewController: UINavigationController {
   private func hideOnboardingSignInOverlay() {
     onboardingSignInOverlay?.removeFromSuperview()
     onboardingSignInOverlay = nil
+  }
+
+  @MainActor
+  private func cancelOnboardingSignIn(using webView: WKWebView) {
+    guard !didCancelOnboardingSignIn else { return }
+    didCancelOnboardingSignIn = true
+    hideOnboardingSignInOverlay()
+    navigateWebViewToHome(webView)
+  }
+
+  @MainActor
+  private func navigateWebViewToHome(_ webView: WKWebView) {
+    if
+      let currentURL = webView.url,
+      var components = URLComponents(url: currentURL, resolvingAgainstBaseURL: false)
+    {
+      components.path = "/"
+      components.query = nil
+      components.fragment = nil
+
+      if let homeURL = components.url {
+        webView.load(URLRequest(url: homeURL))
+        return
+      }
+    }
+
+    webView.evaluateJavaScript("window.location.assign('/');")
   }
 
   private func finishOnboarding(from controller: UIViewController?) {
