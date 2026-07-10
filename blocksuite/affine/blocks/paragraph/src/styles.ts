@@ -110,7 +110,7 @@ export const paragraphBlockStyles = css`
 
   .quote {
     line-height: 26px;
-    padding-left: 17px;
+    padding-inline-start: 17px;
     margin-top: var(--affine-paragraph-space);
     padding-top: 10px;
     padding-bottom: 10px;
@@ -123,7 +123,7 @@ export const paragraphBlockStyles = css`
     margin-top: 10px;
     margin-bottom: 10px;
     position: absolute;
-    left: 0;
+    inset-inline-start: 0;
     top: 0;
     background: var(--affine-quote-color);
     border-radius: 18px;
@@ -136,7 +136,7 @@ export const paragraphBlockStyles = css`
     overflow-x: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
-    left: 0;
+    inset-inline-start: 0;
     bottom: 0;
     pointer-events: none;
     color: var(--affine-black-30);
