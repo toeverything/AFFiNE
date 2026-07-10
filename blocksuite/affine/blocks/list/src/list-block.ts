@@ -157,7 +157,7 @@ export class ListBlockComponent extends CaptionedBlockComponent<ListBlockModel> 
     const children = html`<div
       class="affine-block-children-container"
       style=${styleMap({
-        paddingLeft: `${BLOCK_CHILDREN_CONTAINER_PADDING_LEFT}px`,
+        paddingInlineStart: `${BLOCK_CHILDREN_CONTAINER_PADDING_LEFT}px`,
         display: collapsed ? 'none' : undefined,
       })}
     >
@@ -165,7 +165,11 @@ export class ListBlockComponent extends CaptionedBlockComponent<ListBlockModel> 
     </div>`;
 
     return html`
-      <div class=${'affine-list-block-container'} style="${textAlignStyle}">
+      <div
+        class=${'affine-list-block-container'}
+        dir="auto"
+        style="${textAlignStyle}"
+      >
         <div
           class=${classMap({
             'affine-list-rich-text-wrapper': true,
