@@ -138,6 +138,7 @@ class RootViewController: UINavigationController {
       do {
         defer { hideOnboardingSignInOverlay() }
         didCancelOnboardingSignIn = false
+        try await waitForColdStartHomeDocReady(in: webView)
 
         let isSignedIn = try await PaywallAuthGuard.ensureSignedInWithRoute(
           using: webView,
@@ -178,6 +179,39 @@ class RootViewController: UINavigationController {
     Task { @MainActor [weak self] in
       try? await Task.sleep(nanoseconds: 1_000_000_000)
       self?.runColdStartPaywallFlowIfNeeded()
+    }
+  }
+
+  private func waitForColdStartHomeDocReady(in webView: WKWebView) async throws {
+    let deadline = Date().addingTimeInterval(20)
+
+    while Date() < deadline {
+      if await isHomeDocReady(in: webView) {
+        return
+      }
+      try await Task.sleep(nanoseconds: 250_000_000)
+    }
+
+    throw NSError(
+      domain: "RootViewController",
+      code: -1,
+      userInfo: [NSLocalizedDescriptionKey: "AFFiNE home is still loading."]
+    )
+  }
+
+  private func isHomeDocReady(in webView: WKWebView) async -> Bool {
+    do {
+      let result = try await webView.callAsyncJavaScript(
+        """
+        const docId = window.getCurrentDocId?.();
+        const workspaceId = window.getCurrentWorkspaceId?.();
+        return document.readyState === 'complete' && Boolean(docId) && Boolean(workspaceId);
+        """,
+        contentWorld: .page
+      )
+      return (result as? Bool) == true
+    } catch {
+      return false
     }
   }
 

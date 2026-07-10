@@ -6,6 +6,22 @@ final class NativeSignInViewController: UIViewController {
   var onComplete: ((Bool) -> Void)?
 
   private let viewModel: NativeSignInViewModel
+  private let backgroundImageView: UIImageView = {
+    let imageView = UIImageView(image: UIImage(named: "NativeLoginBackground"))
+    imageView.translatesAutoresizingMaskIntoConstraints = false
+    imageView.contentMode = .scaleAspectFill
+    imageView.clipsToBounds = true
+    imageView.isUserInteractionEnabled = false
+    return imageView
+  }()
+
+  private let backgroundOverlayView: UIView = {
+    let view = UIView()
+    view.translatesAutoresizingMaskIntoConstraints = false
+    view.isUserInteractionEnabled = false
+    return view
+  }()
+
   private var didComplete = false
 
   init(webView: WKWebView) {
@@ -21,11 +37,14 @@ final class NativeSignInViewController: UIViewController {
 
   override func viewDidLoad() {
     super.viewDidLoad()
-    view.backgroundColor = viewModel.appearance.resolvedScheme == .dark
-      ? UIColor(red: 0.30, green: 0.30, blue: 0.30, alpha: 1)
-      : UIColor(red: 0.95, green: 0.95, blue: 0.95, alpha: 1)
+    installBackgroundViews()
+    updateBackground(for: viewModel.appearance)
+
     viewModel.onFinished = { [weak self] isSignedIn in
       self?.finish(isSignedIn: isSignedIn)
+    }
+    viewModel.onAppearanceChanged = { [weak self] appearance in
+      self?.updateBackground(for: appearance)
     }
     viewModel.loadAppearance()
 
@@ -41,6 +60,42 @@ final class NativeSignInViewController: UIViewController {
       hostingController.view.bottomAnchor.constraint(equalTo: view.bottomAnchor),
     ])
     hostingController.didMove(toParent: self)
+  }
+
+  override func viewDidLayoutSubviews() {
+    super.viewDidLayoutSubviews()
+    updateBackgroundImageOffset()
+  }
+
+  private func installBackgroundViews() {
+    view.addSubview(backgroundImageView)
+    view.addSubview(backgroundOverlayView)
+    NSLayoutConstraint.activate([
+      backgroundImageView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+      backgroundImageView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+      backgroundImageView.topAnchor.constraint(equalTo: view.topAnchor),
+      backgroundImageView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+      backgroundOverlayView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+      backgroundOverlayView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+      backgroundOverlayView.topAnchor.constraint(equalTo: view.topAnchor),
+      backgroundOverlayView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+    ])
+  }
+
+  private func updateBackgroundImageOffset() {
+    let isLandscape = view.bounds.width > view.bounds.height
+    backgroundImageView.transform = CGAffineTransform(translationX: 0, y: isLandscape ? 14 : 34)
+  }
+
+  private func updateBackground(for appearance: NativeSignInAppearanceSnapshot) {
+    let isDark = appearance.resolvedScheme == .dark
+    view.backgroundColor = isDark
+      ? UIColor(red: 0.30, green: 0.30, blue: 0.30, alpha: 1)
+      : UIColor(red: 0.95, green: 0.95, blue: 0.95, alpha: 1)
+    backgroundImageView.alpha = isDark ? 0.68 : 1
+    backgroundOverlayView.backgroundColor = isDark
+      ? UIColor.black.withAlphaComponent(0.34)
+      : UIColor.white.withAlphaComponent(0.02)
   }
 
   private func finish(isSignedIn: Bool) {
@@ -67,9 +122,14 @@ private final class NativeSignInViewModel: ObservableObject {
   @Published var isLoading = false
   @Published var statusMessage: String?
   @Published var errorMessage: String?
-  @Published var appearance: NativeSignInAppearanceSnapshot
+  @Published var appearance: NativeSignInAppearanceSnapshot {
+    didSet {
+      onAppearanceChanged?(appearance)
+    }
+  }
 
   var onFinished: ((Bool) -> Void)?
+  var onAppearanceChanged: ((NativeSignInAppearanceSnapshot) -> Void)?
 
   private let bridge: NativeSignInWebBridge
 
@@ -655,14 +715,6 @@ private struct NativeSignInView: View {
         .zIndex(11)
       }
       .frame(width: geometry.size.width, height: geometry.size.height)
-      .background {
-        NativeSignInBackgroundLayer(
-          palette: palette,
-          layout: layout,
-          size: geometry.size,
-          safeAreaInsets: geometry.safeAreaInsets
-        )
-      }
     }
     .preferredColorScheme(viewModel.appearance.preferredColorScheme)
   }
@@ -908,46 +960,6 @@ private struct NativeSignInView: View {
   private func openLegalURL(_ urlString: String) {
     guard let url = URL(string: urlString) else { return }
     openURL(url)
-  }
-}
-
-private struct NativeSignInBackgroundLayer: View {
-  let palette: NativeSignInPalette
-  let layout: NativeSignInLayout
-  let size: CGSize
-  let safeAreaInsets: EdgeInsets
-
-  private var backgroundWidth: CGFloat {
-    size.width + safeAreaInsets.leading + safeAreaInsets.trailing
-  }
-
-  private var backgroundHeight: CGFloat {
-    size.height + safeAreaInsets.top + safeAreaInsets.bottom + abs(layout.backgroundVerticalOffset)
-  }
-
-  private var backgroundOffsetX: CGFloat {
-    (safeAreaInsets.trailing - safeAreaInsets.leading) / 2
-  }
-
-  var body: some View {
-    ZStack(alignment: .top) {
-      palette.background
-        .frame(width: backgroundWidth, height: backgroundHeight)
-        .offset(x: backgroundOffsetX, y: -safeAreaInsets.top)
-
-      Image("NativeLoginBackground")
-        .resizable()
-        .scaledToFill()
-        .frame(width: backgroundWidth, height: backgroundHeight)
-        .offset(x: backgroundOffsetX, y: -safeAreaInsets.top + layout.backgroundVerticalOffset)
-        .clipped()
-        .opacity(palette.backgroundImageOpacity)
-
-      palette.backgroundOverlay
-        .frame(width: backgroundWidth, height: backgroundHeight)
-        .offset(x: backgroundOffsetX, y: -safeAreaInsets.top)
-    }
-    .ignoresSafeArea()
   }
 }
 
