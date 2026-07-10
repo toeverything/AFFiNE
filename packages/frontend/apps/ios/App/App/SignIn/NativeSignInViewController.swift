@@ -1,3 +1,4 @@
+import AuthenticationServices
 import SwiftUI
 import UIKit
 import WebKit
@@ -71,10 +72,10 @@ final class NativeSignInViewController: UIViewController {
     view.addSubview(backgroundImageView)
     view.addSubview(backgroundOverlayView)
     NSLayoutConstraint.activate([
-      backgroundImageView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-      backgroundImageView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-      backgroundImageView.topAnchor.constraint(equalTo: view.topAnchor),
-      backgroundImageView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+      backgroundImageView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: -24),
+      backgroundImageView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: 24),
+      backgroundImageView.topAnchor.constraint(equalTo: view.topAnchor, constant: -80),
+      backgroundImageView.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: 80),
       backgroundOverlayView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
       backgroundOverlayView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
       backgroundOverlayView.topAnchor.constraint(equalTo: view.topAnchor),
@@ -101,8 +102,13 @@ final class NativeSignInViewController: UIViewController {
   private func finish(isSignedIn: Bool) {
     guard !didComplete else { return }
     didComplete = true
-    dismiss(animated: true) { [onComplete] in
-      onComplete?(isSignedIn)
+    view.isUserInteractionEnabled = false
+    UIView.animate(withDuration: 0.12, delay: 0, options: [.beginFromCurrentState, .curveEaseOut]) {
+      self.view.alpha = 0
+    } completion: { [weak self, onComplete] _ in
+      self?.dismiss(animated: false) {
+        onComplete?(isSignedIn)
+      }
     }
   }
 }
@@ -167,12 +173,14 @@ private final class NativeSignInViewModel: ObservableObject {
   func startOAuth(provider: NativeOAuthProvider) {
     guard !isLoading else { return }
     isLoading = true
-    statusMessage = "Complete sign-in in the browser."
+    statusMessage = "Opening sign-in in the browser."
     errorMessage = nil
 
     Task { @MainActor in
       do {
         try await bridge.startOAuth(provider: provider)
+        isLoading = false
+        statusMessage = "Complete sign-in in the browser."
         if try await bridge.waitForAuthenticated() != nil {
           onFinished?(true)
           return
@@ -181,21 +189,23 @@ private final class NativeSignInViewModel: ObservableObject {
       } catch {
         errorMessage = error.localizedDescription
         statusMessage = nil
+        isLoading = false
       }
-      isLoading = false
     }
   }
 
   func continueWithEmail() {
     guard !isLoading else { return }
+    email = email.trimmingCharacters(in: .whitespacesAndNewlines)
     guard canContinueWithEmail else {
       errorMessage = "Enter a valid email address."
+      statusMessage = nil
       return
     }
 
     isLoading = true
     errorMessage = nil
-    statusMessage = nil
+    statusMessage = "Checking sign-in method..."
 
     Task { @MainActor in
       do {
@@ -496,6 +506,15 @@ private enum NativeOAuthProvider: String {
   case apple = "Apple"
 }
 
+private final class NativeSignInPresentationContextProvider: NSObject, ASWebAuthenticationPresentationContextProviding {
+  func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+    UIApplication.shared.connectedScenes
+      .compactMap { $0 as? UIWindowScene }
+      .flatMap(\.windows)
+      .first { $0.isKeyWindow } ?? ASPresentationAnchor()
+  }
+}
+
 @MainActor
 private final class NativeSignInWebBridge {
   struct EmailMethods {
@@ -504,7 +523,9 @@ private final class NativeSignInWebBridge {
   }
 
   private weak var webView: WKWebView?
+  private let presentationContextProvider = NativeSignInPresentationContextProvider()
   private let pollIntervalNanoseconds: UInt64 = 200_000_000
+  private var authenticationSession: ASWebAuthenticationSession?
 
   init(webView: WKWebView) {
     self.webView = webView
@@ -541,9 +562,61 @@ private final class NativeSignInWebBridge {
   }
 
   func startOAuth(provider: NativeOAuthProvider) async throws {
-    _ = try await call(
+    let result = try await call(
       "return await window.nativeStartOAuthSignIn(provider);",
       arguments: ["provider": provider.rawValue]
+    )
+
+    guard
+      let urlString = result as? String,
+      let url = URL(string: urlString)
+    else {
+      throw signInError("Unable to start OAuth sign-in.")
+    }
+
+    let callbackURL = try await openAuthenticationSession(url: url)
+    try await handleAuthenticationCallback(url: callbackURL)
+  }
+
+  private func openAuthenticationSession(url: URL) async throws -> URL {
+    try await withCheckedThrowingContinuation { continuation in
+      let session = ASWebAuthenticationSession(url: url, callbackURLScheme: "affine") { [weak self] callbackURL, error in
+        Task { @MainActor in
+          self?.authenticationSession = nil
+
+          if let callbackURL {
+            continuation.resume(returning: callbackURL)
+            return
+          }
+
+          if let authError = error as? ASWebAuthenticationSessionError, authError.code == .canceledLogin {
+            continuation.resume(throwing: self?.signInError("Sign-in was cancelled.") ?? NSError())
+            return
+          }
+
+          if let error {
+            continuation.resume(throwing: error)
+            return
+          }
+
+          continuation.resume(throwing: self?.signInError("Unable to complete OAuth sign-in.") ?? NSError())
+        }
+      }
+      session.presentationContextProvider = presentationContextProvider
+      session.prefersEphemeralWebBrowserSession = false
+      authenticationSession = session
+
+      if !session.start() {
+        authenticationSession = nil
+        continuation.resume(throwing: signInError("Unable to open OAuth sign-in."))
+      }
+    }
+  }
+
+  private func handleAuthenticationCallback(url: URL) async throws {
+    _ = try await call(
+      "return await window.nativeHandleAuthenticationCallback(url);",
+      arguments: ["url": url.absoluteString]
     )
   }
 
@@ -794,6 +867,8 @@ private struct NativeSignInView: View {
         viewModel.continueWithEmail()
       }
 
+      feedbackText
+
       legalText
         .padding(.top, 8)
 
@@ -806,8 +881,6 @@ private struct NativeSignInView: View {
       FooterLinkButton(systemName: "person.crop.square", title: "Start AFFiNE without an account", palette: palette) {
         viewModel.close()
       }
-
-      feedbackText
     }
   }
 

@@ -361,8 +361,7 @@ const getCurrentNativeSignInContext = () => {
     oauthProvider,
     scheme ?? 'web'
   );
-  urlService.openPopupWindow(options.url);
-  return true;
+  return options.url;
 };
 
 (window as any).nativeCheckEmailSignInMethods = async (email: string) => {
@@ -605,62 +604,58 @@ const notifyAuthenticationError = (error: unknown, fallback: string) => {
   });
 };
 
+const handleAuthenticationCallback = async (url: string) => {
+  const urlObj = new URL(url);
+
+  if (urlObj.hostname !== 'authentication') {
+    return;
+  }
+
+  const method = urlObj.searchParams.get('method');
+  const payload = JSON.parse(urlObj.searchParams.get('payload') ?? 'false');
+  const serverBaseUrl = urlObj.searchParams.get('server');
+
+  if (!method || (method !== 'magic-link' && method !== 'oauth') || !payload) {
+    throw new Error('Invalid authentication url');
+  }
+
+  let authService = frameworkProvider
+    .get(DefaultServerService)
+    .server.scope.get(AuthService);
+
+  if (serverBaseUrl) {
+    const serversService = frameworkProvider.get(ServersService);
+    const server = serversService.getServerByBaseUrl(serverBaseUrl);
+    if (!server) {
+      throw new Error(
+        `Authentication callback server not found: ${serverBaseUrl}`
+      );
+    }
+    authService = server.scope.get(AuthService);
+  }
+
+  if (method === 'oauth') {
+    await authService.signInOauth(
+      payload.code,
+      payload.state,
+      payload.provider
+    );
+  } else if (method === 'magic-link') {
+    await authService.signInMagicLink(payload.email, payload.token);
+  }
+};
+
+(window as any).nativeHandleAuthenticationCallback = async (url: string) => {
+  await handleAuthenticationCallback(url);
+  return true;
+};
+
 CapacitorApp.addListener('appUrlOpen', ({ url }) => {
   // try to close browser if it's open
   Browser.close().catch(e => console.error('Failed to close browser', e));
-
-  const urlObj = new URL(url);
-
-  if (urlObj.hostname === 'authentication') {
-    const method = urlObj.searchParams.get('method');
-    const payload = JSON.parse(urlObj.searchParams.get('payload') ?? 'false');
-    const serverBaseUrl = urlObj.searchParams.get('server');
-
-    if (
-      !method ||
-      (method !== 'magic-link' && method !== 'oauth') ||
-      !payload
-    ) {
-      notifyAuthenticationError(
-        new Error('Invalid authentication url'),
-        'Invalid authentication url'
-      );
-      return;
-    }
-
-    let authService = frameworkProvider
-      .get(DefaultServerService)
-      .server.scope.get(AuthService);
-
-    if (serverBaseUrl) {
-      const serversService = frameworkProvider.get(ServersService);
-      const server = serversService.getServerByBaseUrl(serverBaseUrl);
-      if (!server) {
-        notifyAuthenticationError(
-          new Error(
-            `Authentication callback server not found: ${serverBaseUrl}`
-          ),
-          'Authentication callback server not found'
-        );
-        return;
-      }
-      authService = server.scope.get(AuthService);
-    }
-
-    if (method === 'oauth') {
-      authService
-        .signInOauth(payload.code, payload.state, payload.provider)
-        .catch(error =>
-          notifyAuthenticationError(error, 'Failed to sign in with OAuth')
-        );
-    } else if (method === 'magic-link') {
-      authService
-        .signInMagicLink(payload.email, payload.token)
-        .catch(error =>
-          notifyAuthenticationError(error, 'Failed to sign in with magic link')
-        );
-    }
-  }
+  handleAuthenticationCallback(url).catch(error =>
+    notifyAuthenticationError(error, 'Failed to handle authentication callback')
+  );
 }).catch(e => {
   notifyAuthenticationError(e, 'Failed to handle authentication callback');
 });

@@ -203,9 +203,10 @@ class RootViewController: UINavigationController {
     do {
       let result = try await webView.callAsyncJavaScript(
         """
-        const docId = window.getCurrentDocId?.();
-        const workspaceId = window.getCurrentWorkspaceId?.();
-        return document.readyState === 'complete' && Boolean(docId) && Boolean(workspaceId);
+        const bridgeReady = typeof window.getCurrentUserIdentifier === 'function'
+          && typeof window.showNativeSignIn === 'function';
+        const bodyReady = Boolean(document.body && document.body.children.length > 0);
+        return document.readyState === 'complete' && bridgeReady && bodyReady;
         """,
         contentWorld: .page
       )
