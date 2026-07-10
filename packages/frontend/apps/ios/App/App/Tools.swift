@@ -31,53 +31,37 @@ enum PaywallAuthGuard {
   static func ensureSignedIn(
     using webView: WKWebView,
     dismissing controller: UIViewController? = nil,
-    onSignInFlowPresented: (() -> Void)? = nil
+    onSignInFlowPresented _: (() -> Void)? = nil
   ) async throws -> Bool {
-    try await waitForBridgeFunctions(["getCurrentUserIdentifier", "requestSignIn"], in: webView)
+    try await waitForNativeSignInBridge(in: webView)
 
     if await currentUserIdentifier(in: webView) != nil {
       return true
     }
 
     await dismissIfNeeded(controller)
-    onSignInFlowPresented?()
-
-    let result = try await webView.callAsyncJavaScript(
-      "return await window.requestSignIn();",
-      contentWorld: .page
-    )
-    if result == nil || result is NSNull {
-      return false
-    }
-    if userIdentifier(from: result) != nil {
-      return true
-    }
-
-    return await currentUserIdentifier(in: webView) != nil
+    return try await presentNativeSignIn(using: webView)
   }
 
   static func ensureSignedInWithRoute(
     using webView: WKWebView,
     dismissing controller: UIViewController? = nil,
-    onSignInFlowPresented: (() -> Void)? = nil,
+    onSignInFlowPresented _: (() -> Void)? = nil,
     isCancelled: @escaping () -> Bool = { false }
   ) async throws -> Bool {
-    try await waitForBridgeFunctions(["getCurrentUserIdentifier"], in: webView)
+    try await waitForNativeSignInBridge(in: webView)
 
     if await currentUserIdentifier(in: webView) != nil {
       await dismissIfNeeded(controller)
       return true
     }
 
+    if isCancelled() {
+      return false
+    }
+
     await dismissIfNeeded(controller)
-
-    _ = try await webView.callAsyncJavaScript(
-      "window.location.assign('/sign-in'); return true;",
-      contentWorld: .page
-    )
-    onSignInFlowPresented?()
-
-    return try await waitForRouteSignInResolution(in: webView, isCancelled: isCancelled)
+    return try await presentNativeSignIn(using: webView)
   }
 
   static func currentUserIdentifier(in webView: WKWebView) async -> String? {
@@ -125,6 +109,50 @@ enum PaywallAuthGuard {
     }
 
     return subscriptionState
+  }
+
+  private static func waitForNativeSignInBridge(in webView: WKWebView) async throws {
+    try await waitForBridgeFunctions([
+      "getCurrentUserIdentifier",
+      "nativeStartOAuthSignIn",
+      "nativeCheckEmailSignInMethods",
+      "nativeSendEmailMagicLink",
+      "nativeSignInWithMagicLink",
+      "nativeSignInWithPassword",
+      "nativeOpenSelfHostedSignIn",
+    ], in: webView)
+  }
+
+  private static func presentNativeSignIn(using webView: WKWebView) async throws -> Bool {
+    guard let presenter = topMostPresenter(from: webView) else {
+      throw NSError(
+        domain: "PaywallAuthGuard",
+        code: -1,
+        userInfo: [NSLocalizedDescriptionKey: "Unable to present sign-in."]
+      )
+    }
+
+    return await withCheckedContinuation { continuation in
+      let controller = NativeSignInViewController(webView: webView)
+      controller.onComplete = { isSignedIn in
+        continuation.resume(returning: isSignedIn)
+      }
+      presenter.present(controller, animated: true)
+    }
+  }
+
+  private static func topMostPresenter(from webView: WKWebView) -> UIViewController? {
+    let rootController = webView.window?.rootViewController ?? UIApplication.shared.connectedScenes
+      .compactMap { $0 as? UIWindowScene }
+      .flatMap(\.windows)
+      .first { $0.isKeyWindow }?
+      .rootViewController
+
+    var presenter = rootController
+    while let presented = presenter?.presentedViewController {
+      presenter = presented
+    }
+    return presenter
   }
 
   private static func waitForBridgeFunctions(_ functionNames: [String], in webView: WKWebView) async throws {

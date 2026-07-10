@@ -21,6 +21,7 @@
 		50B000062F01000000000000 /* OnboardingViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50B000032F01000000000000 /* OnboardingViewController.swift */; };
 		50B000072F01000000000000 /* OnboardingRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50B000042F01000000000000 /* OnboardingRootView.swift */; };
 		50B000082F01000000000000 /* OnboardingPaywallViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50B000092F01000000000000 /* OnboardingPaywallViewController.swift */; };
+		50C000032F02000000000000 /* NativeSignInViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50C000022F02000000000000 /* NativeSignInViewController.swift */; };
 		50FF428A2D2E757E0050AA83 /* ApplicationBridgedWindowScript.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50FF42892D2E757E0050AA83 /* ApplicationBridgedWindowScript.swift */; };
 		50FF428C2D2E77CC0050AA83 /* AffineViewController+AIButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50FF428B2D2E77CC0050AA83 /* AffineViewController+AIButton.swift */; };
 		9D52FC432D26CDBF00105D0A /* JSValueContainerExt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D52FC422D26CDB600105D0A /* JSValueContainerExt.swift */; };
@@ -68,6 +69,7 @@
 		50B000042F01000000000000 /* OnboardingRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingRootView.swift; sourceTree = "<group>"; };
 		50B000092F01000000000000 /* OnboardingPaywallViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingPaywallViewController.swift; sourceTree = "<group>"; };
 		50BBC54E2E840DBC0067C5E2 /* Products.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = Products.storekit; sourceTree = "<group>"; };
+		50C000022F02000000000000 /* NativeSignInViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeSignInViewController.swift; sourceTree = "<group>"; };
 		50CECF1E2E7C1084004487AA /* AffineResources */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = AffineResources; sourceTree = "<group>"; };
 		50FF42892D2E757E0050AA83 /* ApplicationBridgedWindowScript.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationBridgedWindowScript.swift; sourceTree = "<group>"; };
 		50FF428B2D2E77CC0050AA83 /* AffineViewController+AIButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AffineViewController+AIButton.swift"; sourceTree = "<group>"; };
@@ -96,6 +98,8 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		9DAE85B72E7BAC3B00DB9F1D /* Plugins */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = Plugins;
 			sourceTree = "<group>";
 		};
@@ -174,6 +178,14 @@
 			path = Onboarding;
 			sourceTree = "<group>";
 		};
+		50C000012F02000000000000 /* SignIn */ = {
+			isa = PBXGroup;
+			children = (
+				50C000022F02000000000000 /* NativeSignInViewController.swift */,
+			);
+			path = SignIn;
+			sourceTree = "<group>";
+		};
 		7F8756D8B27F46E3366F6CEA /* Pods */ = {
 			isa = PBXGroup;
 			children = (
@@ -192,6 +204,7 @@
 				9DEC59422D323EE00027CEBD /* Mutex.swift */,
 				9D52FC422D26CDB600105D0A /* JSValueContainerExt.swift */,
 				50B000012F01000000000000 /* Onboarding */,
+				50C000012F02000000000000 /* SignIn */,
 				9DAE85B72E7BAC3B00DB9F1D /* Plugins */,
 				9D90BE1C2CCB9876006677DB /* AppDelegate.swift */,
 				507513692D1924C600AD60C0 /* RootViewController.swift */,
@@ -281,10 +294,10 @@
 			);
 			mainGroup = 504EC2FB1FED79650016851F;
 			packageReferences = (
-				50B0000A2F01000000000000 /* XCLocalSwiftPackageReference "Packages/Intelligents" */,
-				50B0000B2F01000000000000 /* XCLocalSwiftPackageReference "Packages/AffinePaywall" */,
-				50B0000C2F01000000000000 /* XCLocalSwiftPackageReference "Packages/AffineResources" */,
-				50B0000D2F01000000000000 /* XCLocalSwiftPackageReference "Packages/AffineGraphQL" */,
+				50B0000A2F01000000000000 /* XCLocalSwiftPackageReference "Intelligents" */,
+				50B0000B2F01000000000000 /* XCLocalSwiftPackageReference "AffinePaywall" */,
+				50B0000C2F01000000000000 /* XCLocalSwiftPackageReference "AffineResources" */,
+				50B0000D2F01000000000000 /* XCLocalSwiftPackageReference "AffineGraphQL" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 504EC3051FED79650016851F /* Products */;
@@ -339,12 +352,8 @@
 			);
 			inputFileListPaths = (
 			);
-			inputPaths = (
-			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
-			);
-			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -380,6 +389,7 @@
 				50B000062F01000000000000 /* OnboardingViewController.swift in Sources */,
 				50B000072F01000000000000 /* OnboardingRootView.swift in Sources */,
 				50B000082F01000000000000 /* OnboardingPaywallViewController.swift in Sources */,
+				50C000032F02000000000000 /* NativeSignInViewController.swift in Sources */,
 				9D52FC432D26CDBF00105D0A /* JSValueContainerExt.swift in Sources */,
 				5075136A2D1924C600AD60C0 /* RootViewController.swift in Sources */,
 				C4C97C7C2D030BE000BC2AD1 /* affine_mobile_native.swift in Sources */,
@@ -542,7 +552,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 17;
+				CURRENT_PROJECT_VERSION = 20;
 				DEVELOPMENT_TEAM = 73YMMDVT2M;
 				INFOPLIST_FILE = App/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
@@ -555,7 +565,7 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)",
 				);
-				MARKETING_VERSION = 2026.6.24;
+				MARKETING_VERSION = 2026.6.25;
 				OTHER_SWIFT_FLAGS = "$(inherited) \"-D\" \"COCOAPODS\" \"-DDEBUG\"";
 				PRODUCT_BUNDLE_IDENTIFIER = app.affine.pro;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -578,7 +588,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 17;
+				CURRENT_PROJECT_VERSION = 20;
 				DEVELOPMENT_TEAM = 73YMMDVT2M;
 				INFOPLIST_FILE = App/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
@@ -591,7 +601,7 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)",
 				);
-				MARKETING_VERSION = 2026.6.24;
+				MARKETING_VERSION = 2026.6.25;
 				ONLY_ACTIVE_ARCH = NO;
 				PRODUCT_BUNDLE_IDENTIFIER = app.affine.pro;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -631,19 +641,19 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		50B0000A2F01000000000000 /* XCLocalSwiftPackageReference "Packages/Intelligents" */ = {
+		50B0000A2F01000000000000 /* XCLocalSwiftPackageReference "Intelligents" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/Intelligents;
 		};
-		50B0000B2F01000000000000 /* XCLocalSwiftPackageReference "Packages/AffinePaywall" */ = {
+		50B0000B2F01000000000000 /* XCLocalSwiftPackageReference "AffinePaywall" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/AffinePaywall;
 		};
-		50B0000C2F01000000000000 /* XCLocalSwiftPackageReference "Packages/AffineResources" */ = {
+		50B0000C2F01000000000000 /* XCLocalSwiftPackageReference "AffineResources" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/AffineResources;
 		};
-		50B0000D2F01000000000000 /* XCLocalSwiftPackageReference "Packages/AffineGraphQL" */ = {
+		50B0000D2F01000000000000 /* XCLocalSwiftPackageReference "AffineGraphQL" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/AffineGraphQL;
 		};
@@ -652,22 +662,22 @@
 /* Begin XCSwiftPackageProductDependency section */
 		500D72F62E825064006E553F /* Intelligents */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 50B0000A2F01000000000000 /* XCLocalSwiftPackageReference "Packages/Intelligents" */;
+			package = 50B0000A2F01000000000000 /* XCLocalSwiftPackageReference "Intelligents" */;
 			productName = Intelligents;
 		};
 		5027D4772E7C5FBD00ADD25A /* AffinePaywall */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 50B0000B2F01000000000000 /* XCLocalSwiftPackageReference "Packages/AffinePaywall" */;
+			package = 50B0000B2F01000000000000 /* XCLocalSwiftPackageReference "AffinePaywall" */;
 			productName = AffinePaywall;
 		};
 		5027D4792E7C5FC100ADD25A /* AffineResources */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 50B0000C2F01000000000000 /* XCLocalSwiftPackageReference "Packages/AffineResources" */;
+			package = 50B0000C2F01000000000000 /* XCLocalSwiftPackageReference "AffineResources" */;
 			productName = AffineResources;
 		};
 		5027D47B2E7C5FC400ADD25A /* AffineGraphQL */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 50B0000D2F01000000000000 /* XCLocalSwiftPackageReference "Packages/AffineGraphQL" */;
+			package = 50B0000D2F01000000000000 /* XCLocalSwiftPackageReference "AffineGraphQL" */;
 			productName = AffineGraphQL;
 		};
 /* End XCSwiftPackageProductDependency section */

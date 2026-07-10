@@ -30,7 +30,7 @@ import {
   configureLocalStorageStateStorageImpls,
   NbstoreProvider,
 } from '@affine/core/modules/storage';
-import { PopupWindowProvider } from '@affine/core/modules/url';
+import { PopupWindowProvider, UrlService } from '@affine/core/modules/url';
 import { ClientSchemeProvider } from '@affine/core/modules/url/providers/client-schema';
 import {
   configureBrowserWorkbenchModule,
@@ -43,6 +43,7 @@ import {
 import { configureBrowserWorkspaceFlavours } from '@affine/core/modules/workspace-engine';
 import { getWorkerUrl } from '@affine/env/worker';
 import {
+  OAuthProviderType,
   refreshSubscriptionMutation,
   requestApplySubscriptionMutation,
 } from '@affine/graphql';
@@ -336,7 +337,7 @@ registerNativeImageFilesPicker(async () => {
   cancelActiveRequestSignIn();
   return true;
 };
-(window as any).requestSignIn = async () => {
+const getCurrentNativeSignInContext = () => {
   const globalContextService = frameworkProvider.get(GlobalContextService);
   const currentServerId = globalContextService.globalContext.serverId.get();
   const serversService = frameworkProvider.get(ServersService);
@@ -345,108 +346,91 @@ registerNativeImageFilesPicker(async () => {
     (currentServerId ? serversService.server$(currentServerId).value : null) ??
     defaultServerService.server;
   const authService = currentServer.scope.get(AuthService);
+  return { authService, currentServer };
+};
+
+(window as any).nativeStartOAuthSignIn = async (
+  provider: 'Google' | 'Apple'
+) => {
+  const { authService } = getCurrentNativeSignInContext();
+  const urlService = frameworkProvider.get(UrlService);
+  const scheme = urlService.getClientScheme();
+  const oauthProvider =
+    provider === 'Apple' ? OAuthProviderType.Apple : OAuthProviderType.Google;
+  const options = await authService.oauthPreflight(
+    oauthProvider,
+    scheme ?? 'web'
+  );
+  urlService.openPopupWindow(options.url);
+  return true;
+};
+
+(window as any).nativeCheckEmailSignInMethods = async (email: string) => {
+  const { authService } = getCurrentNativeSignInContext();
+  const { methods } = await authService.checkUserByEmail(email);
+  return {
+    hasPassword: !!methods.password.available,
+    canUseMagicLink: !!methods.magicLink.available,
+  };
+};
+
+(window as any).nativeSendEmailMagicLink = async (email: string) => {
+  const { authService } = getCurrentNativeSignInContext();
+  await authService.sendEmailMagicLink(email);
+  return true;
+};
+
+(window as any).nativeSignInWithMagicLink = async (
+  email: string,
+  token: string
+) => {
+  const { authService } = getCurrentNativeSignInContext();
+  await authService.signInMagicLink(email, token, false);
+  const session = await authService.session.waitForAuthenticated();
+  return session.session.account.id;
+};
+
+(window as any).nativeSignInWithPassword = async (
+  email: string,
+  password: string
+) => {
+  const { authService } = getCurrentNativeSignInContext();
+  await authService.signInPassword({ email, password });
+  const session = await authService.session.waitForAuthenticated();
+  return session.session.account.id;
+};
+
+(window as any).nativeOpenSelfHostedSignIn = async () => {
+  const globalDialogService = frameworkProvider.get(GlobalDialogService);
+  globalDialogService.open('sign-in', { step: 'addSelfhosted' });
+  return true;
+};
+
+const showNativeSignIn = async () => {
+  const { authService } = getCurrentNativeSignInContext();
   const account = authService.session.account$.value;
   if (account?.id) {
     return account.id;
   }
 
-  const globalDialogService = frameworkProvider.get(GlobalDialogService);
-  const abortController = new AbortController();
-  let dialogId = '';
-  let dialogClosed = false;
-  let didAuthenticate = false;
-  let closeError: Error | null = null;
-  let cancelCurrentRequest: (() => void) | null = null;
-
-  const closeDialog = () => {
-    if (dialogClosed || !dialogId) {
-      return;
-    }
-    dialogClosed = true;
-    globalDialogService.close(dialogId);
-  };
-
-  const timeout = window.setTimeout(
-    () => {
-      closeError = new Error('Sign-in timed out.');
-      abortController.abort(closeError);
-      closeDialog();
-    },
-    5 * 60 * 1000
-  );
-
-  try {
-    return await new Promise<string | null>((resolve, reject) => {
-      let didSettle = false;
-      const resolveOnce = (value: string | null) => {
-        if (didSettle) {
-          return;
-        }
-        didSettle = true;
-        resolve(value);
-      };
-      const rejectOnce = (error: unknown) => {
-        if (didSettle) {
-          return;
-        }
-        didSettle = true;
-        reject(error);
-      };
-
-      cancelCurrentRequest = () => {
-        if (didAuthenticate || didSettle) {
-          return;
-        }
-        closeDialog();
-      };
-      cancelActiveRequestSignIn = cancelCurrentRequest;
-
-      dialogId = globalDialogService.open(
-        'sign-in',
-        {
-          step: 'signIn',
-        },
-        () => {
-          if (didAuthenticate) {
-            return;
-          }
-          if (closeError) {
-            rejectOnce(closeError);
-            return;
-          }
-          abortController.abort();
-          resolveOnce(null);
-        }
-      );
-
-      authService.session
-        .waitForAuthenticated(abortController.signal)
-        .then(session => {
-          didAuthenticate = true;
-          closeDialog();
-          resolveOnce(session.session.account.id);
-        })
-        .catch(error => {
-          if (abortController.signal.aborted) {
-            if (closeError) {
-              rejectOnce(closeError);
-            }
-            return;
-          }
-          closeError =
-            error instanceof Error
-              ? error
-              : new Error('Unable to complete sign-in.');
-          closeDialog();
-          rejectOnce(closeError);
-        });
-    });
-  } finally {
-    if (cancelActiveRequestSignIn === cancelCurrentRequest) {
-      cancelActiveRequestSignIn = null;
-    }
-    window.clearTimeout(timeout);
+  const result = await Auth.showNativeSignIn();
+  if (!result.success) {
+    return null;
   }
+
+  const authenticatedAccount = authService.session.account$.value;
+  if (authenticatedAccount?.id) {
+    return authenticatedAccount.id;
+  }
+
+  const session = await authService.session.waitForAuthenticated();
+  return session.session.account.id;
+};
+
+(window as any).showNativeSignIn = showNativeSignIn;
+
+(window as any).requestSignIn = async () => {
+  return await showNativeSignIn();
 };
 (window as any).getCurrentDocContentInMarkdown = async () => {
   const globalContextService = frameworkProvider.get(GlobalContextService);
@@ -686,7 +670,7 @@ AppTrackingTransparency.requestPermission().catch(e => {
 });
 
 const KeyboardThemeProvider = () => {
-  const { resolvedTheme } = useTheme();
+  const { resolvedTheme, theme } = useTheme();
 
   useEffect(() => {
     Keyboard.setStyle({
@@ -702,7 +686,18 @@ const KeyboardThemeProvider = () => {
   }, [resolvedTheme]);
 
   useEffect(() => {
-    const themeMode = resolvedTheme === 'dark' ? 'dark' : 'light';
+    if (!theme && !resolvedTheme) {
+      return;
+    }
+
+    const themeMode: 'dark' | 'light' | 'system' =
+      theme === 'dark' || theme === 'light' || theme === 'system'
+        ? theme
+        : resolvedTheme === 'dark'
+          ? 'dark'
+          : resolvedTheme === 'light'
+            ? 'light'
+            : 'system';
     (window as any).getCurrentThemeMode = () => {
       return themeMode;
     };
@@ -711,7 +706,7 @@ const KeyboardThemeProvider = () => {
     }).catch(e => {
       console.error(`Failed to sync app theme: ${e}`);
     });
-  }, [resolvedTheme]);
+  }, [resolvedTheme, theme]);
 
   return null;
 };

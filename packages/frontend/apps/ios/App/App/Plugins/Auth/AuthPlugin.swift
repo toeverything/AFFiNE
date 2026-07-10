@@ -6,6 +6,7 @@ public class AuthPlugin: CAPPlugin, CAPBridgedPlugin {
   public let identifier = "AuthPlugin"
   public let jsName = "Auth"
   public let pluginMethods: [CAPPluginMethod] = [
+    CAPPluginMethod(name: "showNativeSignIn", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "signInMagicLink", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "signInOauth", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "signInOpenApp", returnType: CAPPluginReturnPromise),
@@ -18,6 +19,32 @@ public class AuthPlugin: CAPPlugin, CAPBridgedPlugin {
 
   private let tokenService = "app.affine.pro.auth-token"
   private let authCookieNames = Set(["affine_session", "affine_user_id", "affine_csrf_token"])
+  private var isNativeSignInPresented = false
+
+  @objc public func showNativeSignIn(_ call: CAPPluginCall) {
+    Task { @MainActor [weak self] in
+      guard let self else {
+        call.reject("Failed to show native sign-in")
+        return
+      }
+
+      do {
+        let webView = try self.webView.get("AFFiNE is still loading. Please try again in a moment.")
+        if self.isNativeSignInPresented {
+          call.resolve(["success": false])
+          return
+        }
+
+        self.isNativeSignInPresented = true
+        defer { self.isNativeSignInPresented = false }
+
+        let isSignedIn = try await PaywallAuthGuard.ensureSignedIn(using: webView)
+        call.resolve(["success": isSignedIn])
+      } catch {
+        call.reject("Failed to show native sign-in", nil, error)
+      }
+    }
+  }
 
   private func canonicalEndpoint(_ endpoint: String) -> String {
     guard let url = URL(string: endpoint), let scheme = url.scheme, let host = url.host else {
