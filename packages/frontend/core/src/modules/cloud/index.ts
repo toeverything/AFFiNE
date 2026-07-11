@@ -17,7 +17,7 @@ export {
   getSelfHostedServerName,
 } from './server-name';
 export { AccessTokenService } from './services/access-token';
-export { AuthService } from './services/auth';
+export { AuthService, type DeviceAuthSession } from './services/auth';
 export { CaptchaService } from './services/captcha';
 export { DefaultServerService } from './services/default-server';
 export { DocCreatedByUpdatedBySyncService } from './services/doc-created-by-updated-by-sync';

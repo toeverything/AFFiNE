@@ -36,7 +36,6 @@ declare interface BUILD_CONFIG_TYPE {
   linkPreviewUrl: string;
 
   SENTRY_DSN: string;
-  CAPTCHA_SITE_KEY: string;
 }
 
 declare var BUILD_CONFIG: BUILD_CONFIG_TYPE;

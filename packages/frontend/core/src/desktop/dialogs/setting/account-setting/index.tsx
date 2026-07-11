@@ -18,7 +18,11 @@ import { ArrowRightSmallIcon, CameraIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService, useServices } from '@toeverything/infra';
 import { useCallback, useEffect, useState } from 'react';
 
-import { AuthService, ServerService } from '../../../../modules/cloud';
+import {
+  AuthService,
+  type DeviceAuthSession,
+  ServerService,
+} from '../../../../modules/cloud';
 import type { SettingState } from '../types';
 import { AIUsagePanel } from './ai-usage-panel';
 import { DeleteAccount } from './delete-account';
@@ -170,6 +174,95 @@ const StoragePanel = ({
   );
 };
 
+const DevicesPanel = () => {
+  const auth = useService(AuthService);
+  const [sessions, setSessions] = useState<DeviceAuthSession[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const reload = useCallback(async () => {
+    setLoading(true);
+    try {
+      setSessions(await auth.listDeviceSessions());
+    } catch (error) {
+      notify.error({ title: 'Failed to load devices', message: String(error) });
+    } finally {
+      setLoading(false);
+    }
+  }, [auth]);
+
+  useEffect(() => {
+    reload().catch(error => {
+      notify.error({ title: 'Failed to load devices', message: String(error) });
+    });
+  }, [reload]);
+
+  const revoke = useCallback(
+    async (session: DeviceAuthSession) => {
+      if (
+        !window.confirm(`Sign out ${session.deviceName ?? session.platform}?`)
+      ) {
+        return;
+      }
+      try {
+        await auth.revokeDeviceSession(session.id, session.current);
+        if (!session.current) await reload();
+      } catch (error) {
+        notify.error({
+          title: 'Failed to sign out device',
+          message: String(error),
+        });
+      }
+    },
+    [auth, reload]
+  );
+
+  const revokeAll = useCallback(async () => {
+    if (!window.confirm('Sign out every device?')) return;
+    try {
+      await auth.revokeAllDeviceSessions();
+    } catch (error) {
+      notify.error({
+        title: 'Failed to sign out devices',
+        message: String(error),
+      });
+    }
+  }, [auth]);
+
+  return (
+    <SettingRow
+      name="Devices"
+      desc="Devices with an active sign-in session"
+      spreadCol={false}
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {loading ? <span>Loading…</span> : null}
+        {sessions.map(session => (
+          <div
+            key={session.id}
+            style={{ display: 'flex', alignItems: 'center', gap: 12 }}
+          >
+            <div style={{ flex: 1 }}>
+              <div>
+                {session.deviceName ?? session.platform}
+                {session.current ? ' (current)' : ''}
+              </div>
+              <div>
+                {session.platform}
+                {session.appVersion ? ` · ${session.appVersion}` : ''}
+                {` · Last used ${new Date(session.lastSeenAt).toLocaleString()}`}
+              </div>
+            </div>
+            <Button onClick={() => void revoke(session)}>Sign out</Button>
+          </div>
+        ))}
+        {sessions.length > 1 ? (
+          <Button onClick={() => void revokeAll()}>Sign out all devices</Button>
+        ) : null}
+      </div>
+    </SettingRow>
+  );
+};
+
 export const AccountSetting = ({
   onChangeSettingState,
 }: {
@@ -244,6 +337,7 @@ export const AccountSetting = ({
               : t['com.affine.settings.password.action.set']()}
           </Button>
         </SettingRow>
+        <DevicesPanel />
         <StoragePanel onChangeSettingState={onChangeSettingState} />
         {serverFeatures?.copilot && (
           <AIUsagePanel onChangeSettingState={onChangeSettingState} />

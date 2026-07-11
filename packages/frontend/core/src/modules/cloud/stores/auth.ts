@@ -147,6 +147,17 @@ export class AuthStore extends Store {
     });
   }
 
+  async clearSession() {
+    await this.authProvider.clearSession();
+    await this.nbstoreService.realtime.configure({
+      endpoint: this.serverService.server.baseUrl,
+      authenticated: false,
+      isSelfHosted:
+        this.serverService.server.config$.value.type ===
+        ServerDeploymentType.Selfhosted,
+    });
+  }
+
   async uploadAvatar(file: File) {
     await this.gqlService.gql({
       query: uploadAvatarMutation,

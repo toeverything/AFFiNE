@@ -136,6 +136,8 @@ dependencies {
     testImplementation libs.junit
     androidTestImplementation libs.androidx.junit
     androidTestImplementation libs.androidx.espresso.core
+    androidTestImplementation platform(libs.okhttp.bom)
+    androidTestImplementation "com.squareup.okhttp3:mockwebserver"
 }
 
 cargo {

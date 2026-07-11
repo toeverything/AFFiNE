@@ -1,12 +1,17 @@
+import os from 'node:os';
+
+import type { AuthTokenResponse } from '@affine/auth';
 import { net, session } from 'electron';
 
 import { logger } from '../logger';
 import type { NamespaceHandlers } from '../type';
 import {
-  deleteNativeAuthToken,
-  getNativeAuthToken,
-  setNativeAuthToken,
-} from './native-token';
+  clearAuthSession,
+  getInstallationId,
+  getValidAccessToken,
+  revokeAuthSession,
+  setAuthSession,
+} from './auth-session';
 
 export interface SignInResponse {
   id?: string;
@@ -27,10 +32,6 @@ export interface PasswordSignInResponse extends SignInResponse {
   avatarUrl: string | null;
   emailVerified: boolean;
   sessionOnly?: boolean;
-}
-
-interface ExchangeResponse {
-  token?: string;
 }
 
 const authCookieNames = [
@@ -88,15 +89,16 @@ async function exchangeSession(endpoint: string, response: SignInResponse) {
 
   const exchangeResponse = await fetchAuth(
     endpoint,
-    '/api/auth/native/exchange',
-    { code: response.exchangeCode }
+    '/api/auth/session/exchange',
+    {
+      code: response.exchangeCode,
+      installationId: await getInstallationId(),
+      platform: 'electron',
+      deviceName: os.hostname(),
+    }
   );
-  const body = await readJson<ExchangeResponse>(exchangeResponse);
-  if (!body.token) {
-    throw new Error('Missing native auth token.');
-  }
-
-  const persistent = setNativeAuthToken(endpoint, body.token);
+  const body = await readJson<AuthTokenResponse>(exchangeResponse);
+  const { persistent } = await setAuthSession(endpoint, body);
   await clearAuthCookies(endpoint);
   return { persistent };
 }
@@ -155,6 +157,13 @@ export const authHandlers = {
         ...(credential.verifyToken
           ? { 'x-captcha-token': credential.verifyToken }
           : {}),
+        ...(credential.verifyToken
+          ? {
+              'x-captcha-provider': credential.challenge
+                ? 'hashcash'
+                : 'turnstile',
+            }
+          : {}),
         ...(credential.challenge
           ? { 'x-captcha-challenge': credential.challenge }
           : {}),
@@ -181,22 +190,18 @@ export const authHandlers = {
   },
 
   signOut: async (_e, endpoint: string) => {
-    const token = getNativeAuthToken(endpoint);
-    if (token) {
-      await net.fetch(authUrl(endpoint, '/api/auth/sign-out'), {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'x-affine-version': BUILD_CONFIG.appVersion,
-        },
-      });
+    try {
+      await revokeAuthSession(endpoint);
+    } finally {
+      await clearAuthCookies(endpoint);
     }
-
-    deleteNativeAuthToken(endpoint);
-    await clearAuthCookies(endpoint);
   },
 
-  readEndpointToken: async (_e, endpoint: string) => {
-    return { token: getNativeAuthToken(endpoint) };
+  clearSession: async (_e, endpoint: string) => {
+    await clearAuthSession(endpoint, 'local-clear');
+  },
+
+  getValidAccessToken: async (_e, endpoint: string) => {
+    return { token: await getValidAccessToken(endpoint, 120_000) };
   },
 } satisfies NamespaceHandlers;

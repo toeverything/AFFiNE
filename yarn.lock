@@ -262,7 +262,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/auth@workspace:packages/common/auth":
+"@affine/auth@workspace:*, @affine/auth@workspace:packages/common/auth":
   version: 0.0.0-use.local
   resolution: "@affine/auth@workspace:packages/common/auth"
   dependencies:
@@ -555,6 +555,7 @@ __metadata:
   resolution: "@affine/electron@workspace:packages/frontend/apps/electron"
   dependencies:
     "@affine-tools/utils": "workspace:*"
+    "@affine/auth": "workspace:*"
     "@affine/i18n": "workspace:*"
     "@affine/native": "workspace:*"
     "@affine/nbstore": "workspace:*"
