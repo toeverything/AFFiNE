@@ -19,6 +19,15 @@ import { type MessageCommunicapable, OpConsumer } from '@toeverything/infra/op';
 import { AsyncCall } from 'async-call-rpc';
 
 let authTokenPort: MessagePort | undefined;
+const terminalAuthErrors = new Set([
+  'ACCESS_TOKEN_INVALID',
+  'AUTH_SESSION_EXPIRED',
+  'AUTH_SESSION_REVOKED',
+  'REFRESH_TOKEN_INVALID',
+  'REFRESH_TOKEN_REUSED',
+  'UNSUPPORTED_CLIENT_VERSION',
+  'AUTH_SESSION_EMPTY',
+]);
 const pendingTokenRequests = new Map<
   string,
   {
@@ -45,7 +54,11 @@ globalThis.addEventListener('message', e => {
       if (!id) return;
       const pending = pendingTokenRequests.get(id);
       if (error) {
-        pending?.reject(new Error(error));
+        if (terminalAuthErrors.has(error)) {
+          pending?.resolve(null);
+        } else {
+          pending?.reject(new Error(error));
+        }
       } else {
         pending?.resolve(token ?? null);
       }

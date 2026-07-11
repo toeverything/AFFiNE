@@ -252,15 +252,16 @@ export function registerProtocol() {
 
   session.defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {
     const url = new URL(details.url);
+    const managedAuthRequest =
+      (url.protocol === 'http:' ||
+        url.protocol === 'https:' ||
+        url.protocol === 'ws:' ||
+        url.protocol === 'wss:') &&
+      isManagedAuthEndpoint(details.url);
+    let cancel = false;
 
     (async () => {
-      if (
-        (url.protocol === 'http:' ||
-          url.protocol === 'https:' ||
-          url.protocol === 'ws:' ||
-          url.protocol === 'wss:') &&
-        isManagedAuthEndpoint(details.url)
-      ) {
+      if (managedAuthRequest) {
         delete details.requestHeaders.authorization;
         delete details.requestHeaders.Authorization;
         const token = await getAccessTokenForUrl(details.url, 120_000);
@@ -278,11 +279,12 @@ export function registerProtocol() {
       }
     })()
       .catch(err => {
+        cancel = managedAuthRequest;
         logger.error('error handling before send headers', err);
       })
       .finally(() => {
         callback({
-          cancel: false,
+          cancel,
           requestHeaders: details.requestHeaders,
         });
       });

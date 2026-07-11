@@ -137,18 +137,22 @@ export class AuthStore extends Store {
   }
 
   async signOut() {
-    await this.authProvider.signOut();
-    await this.nbstoreService.realtime.configure({
-      endpoint: this.serverService.server.baseUrl,
-      authenticated: false,
-      isSelfHosted:
-        this.serverService.server.config$.value.type ===
-        ServerDeploymentType.Selfhosted,
-    });
+    try {
+      await this.authProvider.signOut();
+    } finally {
+      await this.deauthenticateRealtime();
+    }
   }
 
   async clearSession() {
-    await this.authProvider.clearSession();
+    try {
+      await this.authProvider.clearSession();
+    } finally {
+      await this.deauthenticateRealtime();
+    }
+  }
+
+  private async deauthenticateRealtime() {
     await this.nbstoreService.realtime.configure({
       endpoint: this.serverService.server.baseUrl,
       authenticated: false,

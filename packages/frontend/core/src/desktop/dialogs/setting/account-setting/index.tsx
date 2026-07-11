@@ -175,6 +175,7 @@ const StoragePanel = ({
 };
 
 const DevicesPanel = () => {
+  const t = useI18n();
   const auth = useService(AuthService);
   const [sessions, setSessions] = useState<DeviceAuthSession[]>([]);
   const [loading, setLoading] = useState(true);
@@ -184,22 +185,32 @@ const DevicesPanel = () => {
     try {
       setSessions(await auth.listDeviceSessions());
     } catch (error) {
-      notify.error({ title: 'Failed to load devices', message: String(error) });
+      notify.error({
+        title: t['com.affine.settings.devices.load-failed'](),
+        message: String(error),
+      });
     } finally {
       setLoading(false);
     }
-  }, [auth]);
+  }, [auth, t]);
 
   useEffect(() => {
     reload().catch(error => {
-      notify.error({ title: 'Failed to load devices', message: String(error) });
+      notify.error({
+        title: t['com.affine.settings.devices.load-failed'](),
+        message: String(error),
+      });
     });
-  }, [reload]);
+  }, [reload, t]);
 
   const revoke = useCallback(
     async (session: DeviceAuthSession) => {
       if (
-        !window.confirm(`Sign out ${session.deviceName ?? session.platform}?`)
+        !window.confirm(
+          t['com.affine.settings.devices.confirm']({
+            device: session.deviceName ?? session.platform,
+          })
+        )
       ) {
         return;
       }
@@ -208,34 +219,36 @@ const DevicesPanel = () => {
         if (!session.current) await reload();
       } catch (error) {
         notify.error({
-          title: 'Failed to sign out device',
+          title: t['com.affine.settings.devices.sign-out-failed'](),
           message: String(error),
         });
       }
     },
-    [auth, reload]
+    [auth, reload, t]
   );
 
   const revokeAll = useCallback(async () => {
-    if (!window.confirm('Sign out every device?')) return;
+    if (!window.confirm(t['com.affine.settings.devices.confirm-all']())) return;
     try {
       await auth.revokeAllDeviceSessions();
     } catch (error) {
       notify.error({
-        title: 'Failed to sign out devices',
+        title: t['com.affine.settings.devices.sign-out-all-failed'](),
         message: String(error),
       });
     }
-  }, [auth]);
+  }, [auth, t]);
 
   return (
     <SettingRow
-      name="Devices"
-      desc="Devices with an active sign-in session"
+      name={t['com.affine.settings.devices.title']()}
+      desc={t['com.affine.settings.devices.description']()}
       spreadCol={false}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {loading ? <span>Loading…</span> : null}
+        {loading ? (
+          <span>{t['com.affine.settings.devices.loading']()}</span>
+        ) : null}
         {sessions.map(session => (
           <div
             key={session.id}
@@ -244,19 +257,25 @@ const DevicesPanel = () => {
             <div style={{ flex: 1 }}>
               <div>
                 {session.deviceName ?? session.platform}
-                {session.current ? ' (current)' : ''}
+                {session.current
+                  ? ` (${t['com.affine.settings.devices.current']()})`
+                  : ''}
               </div>
               <div>
                 {session.platform}
                 {session.appVersion ? ` · ${session.appVersion}` : ''}
-                {` · Last used ${new Date(session.lastSeenAt).toLocaleString()}`}
+                {` · ${t['com.affine.settings.devices.last-used']({ time: new Date(session.lastSeenAt).toLocaleString() })}`}
               </div>
             </div>
-            <Button onClick={() => void revoke(session)}>Sign out</Button>
+            <Button onClick={() => void revoke(session)}>
+              {t['com.affine.settings.devices.sign-out']()}
+            </Button>
           </div>
         ))}
         {sessions.length > 1 ? (
-          <Button onClick={() => void revokeAll()}>Sign out all devices</Button>
+          <Button onClick={() => void revokeAll()}>
+            {t['com.affine.settings.devices.sign-out-all']()}
+          </Button>
         ) : null}
       </div>
     </SettingRow>

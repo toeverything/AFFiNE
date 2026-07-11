@@ -313,7 +313,7 @@ export class AuthService extends Service {
       headers: csrfHeader(),
     });
     try {
-      if (BUILD_CONFIG.isNative) await this.store.clearSession();
+      await this.store.clearSession();
     } finally {
       this.store.setCachedAuthSession(null);
       this.session.revalidate();

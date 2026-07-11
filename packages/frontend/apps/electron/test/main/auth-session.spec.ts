@@ -246,8 +246,12 @@ test('main replaces renderer bearer and strips it after local clear', async () =
 });
 
 test.each([
-  { code: 'ACCESS_TOKEN_EXPIRED', expectedRequests: 2 },
-  { code: 'FORBIDDEN', expectedRequests: 1 },
+  {
+    code: 'ACCESS_TOKEN_EXPIRED',
+    expectedRequests: 2,
+    method: 'POST',
+  },
+  { code: 'FORBIDDEN', expectedRequests: 1, method: 'PUT' },
 ])('replays a protocol request once for $code only', async item => {
   const endpoint = `https://${item.code.toLowerCase()}.example`;
   await setAuthSession(endpoint, tokenResponse('initial', 'i', 900));
@@ -262,7 +266,11 @@ test.each([
     .mockResolvedValueOnce(new Response('{}'));
 
   await executeAuthSessionRequest(
-    new Request(`${endpoint}/api/test`),
+    new Request(`${endpoint}/api/test`, {
+      method: item.method,
+      body: JSON.stringify({ value: item.code }),
+      duplex: 'half',
+    }),
     `${endpoint}/api/test`,
     execute
   );
@@ -271,6 +279,11 @@ test.each([
   expect(runtime.fetch).toHaveBeenCalledTimes(
     item.code === 'ACCESS_TOKEN_EXPIRED' ? 1 : 0
   );
+  for (const [request] of execute.mock.calls) {
+    await expect(request.text()).resolves.toBe(
+      JSON.stringify({ value: item.code })
+    );
+  }
 });
 
 test('clears locally before revoking without exposing refresh token over IPC', async () => {

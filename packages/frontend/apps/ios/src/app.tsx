@@ -631,10 +631,13 @@ function createStoreManagerClient() {
     if (!id || !endpoint) return;
     getValidAccessToken(endpoint)
       .then(token => authTokenChannelServer.postMessage({ id, token }))
-      .catch(() =>
+      .catch(error =>
         authTokenChannelServer.postMessage({
           id,
-          error: 'AUTH_SESSION_TEMPORARILY_UNAVAILABLE',
+          error:
+            typeof error === 'object' && error && 'code' in error
+              ? error.code
+              : 'AUTH_SESSION_TEMPORARILY_UNAVAILABLE',
         })
       );
   });

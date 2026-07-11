@@ -81,7 +81,10 @@ globalThis.XMLHttpRequest = class extends rawXMLHttpRequest {
         }
         let code: unknown;
         try {
-          code = JSON.parse(this.responseText)?.code;
+          code =
+            this.responseType === 'json'
+              ? this.response?.code
+              : JSON.parse(this.responseText)?.code;
         } catch {
           return;
         }
@@ -142,9 +145,9 @@ globalThis.XMLHttpRequest = class extends rawXMLHttpRequest {
 
   private async replayWithFreshToken() {
     const request = this.request;
-    if (!request) return;
+    if (!request) return this.failReplay();
     const origin = authEndpointForUrl(request.url);
-    if (!origin) return;
+    if (!origin) return this.failReplay();
     try {
       const { token } = await Auth.refreshAccessToken({ endpoint: origin });
       const responseType = this.responseType;
@@ -169,10 +172,15 @@ globalThis.XMLHttpRequest = class extends rawXMLHttpRequest {
       this.withCredentials = withCredentials;
       super.send(this.requestBody);
     } catch {
-      this.replaying = false;
-      this.dispatchEvent(new Event('error'));
-      this.dispatchEvent(new Event('loadend'));
+      this.failReplay();
     }
+  }
+
+  private failReplay() {
+    this.replaying = false;
+    this.dispatchEvent(new Event('readystatechange'));
+    this.dispatchEvent(new Event('error'));
+    this.dispatchEvent(new Event('loadend'));
   }
 };
 

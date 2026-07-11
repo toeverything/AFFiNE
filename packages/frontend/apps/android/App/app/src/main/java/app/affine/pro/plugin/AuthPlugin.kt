@@ -155,7 +155,7 @@ internal class AuthSessionBroker(
                     }
                     pair
                 } catch (error: AuthServerException) {
-                    if (error.code in permanentAuthErrors || error.isUnknownPermanentError()) {
+                    if (error.code in permanentAuthErrors) {
                         lock(endpoint).withLock {
                             if ((epochs[canonical] ?: 0) == epoch) {
                                 storage.delete(endpoint)
@@ -377,7 +377,6 @@ class AuthPlugin : Plugin() {
                     is AuthServerException -> when {
                         error.code in publicAuthErrors -> error.code!!
                         error.status == 429 -> "TOO_MANY_REQUESTS"
-                        error.isUnknownPermanentError() -> "REFRESH_TOKEN_INVALID"
                         else -> "AUTH_SESSION_TEMPORARILY_UNAVAILABLE"
                     }
                     is CancellationException -> "AUTH_OPERATION_CANCELLED"
@@ -391,9 +390,6 @@ class AuthPlugin : Plugin() {
         }
     }
 }
-
-private fun AuthServerException.isUnknownPermanentError() =
-    status in 400..499 && status != 408 && status != 429
 
 internal interface AuthCredentialStorage {
     suspend fun read(endpoint: String): String?

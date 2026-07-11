@@ -22,6 +22,7 @@ const brokers = new Map<string, AuthTokenBroker>();
 const memoryStore = new Map<string, AuthTokenPair>();
 let fileMutation = Promise.resolve();
 let installationId: Promise<string> | undefined;
+const AUTH_REQUEST_TIMEOUT = 10_000;
 
 function secureStorageAvailable() {
   return (
@@ -114,6 +115,7 @@ async function refresh(endpoint: string, refreshToken: string) {
         'x-affine-version': BUILD_CONFIG.appVersion,
       },
       body: JSON.stringify({ refreshToken }),
+      signal: AbortSignal.timeout(AUTH_REQUEST_TIMEOUT),
     }
   );
   const body = await response.json().catch(() => ({}));
@@ -160,7 +162,8 @@ export async function setAuthSession(
 }
 
 export function getInstallationId() {
-  installationId ??= fs
+  if (installationId) return installationId;
+  const pending = fs
     .readFile(INSTALLATION_FILEPATH, 'utf8')
     .then(value => {
       if (
@@ -177,7 +180,11 @@ export function getInstallationId() {
       await fs.writeFile(INSTALLATION_FILEPATH, value, { mode: 0o600 });
       return value;
     });
-  return installationId;
+  installationId = pending;
+  void pending.catch(() => {
+    if (installationId === pending) installationId = undefined;
+  });
+  return pending;
 }
 
 export async function revokeAuthSession(endpoint: string) {
@@ -195,6 +202,7 @@ export async function revokeAuthSession(endpoint: string) {
             'x-affine-version': BUILD_CONFIG.appVersion,
           },
           body: JSON.stringify({ refreshToken }),
+          signal: AbortSignal.timeout(AUTH_REQUEST_TIMEOUT),
         }
       );
       if (!response.ok) throw new Error('Failed to revoke auth session');
@@ -263,6 +271,7 @@ async function authorizedRequest(
     method: cloned.method,
     redirect: cloned.redirect,
     signal: cloned.signal,
+    duplex: 'half',
   });
 }
 

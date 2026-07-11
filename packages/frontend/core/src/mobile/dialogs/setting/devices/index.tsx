@@ -3,6 +3,7 @@ import {
   AuthService,
   type DeviceAuthSession,
 } from '@affine/core/modules/cloud';
+import { useI18n } from '@affine/i18n';
 import { useService } from '@toeverything/infra';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -10,6 +11,7 @@ import { SettingGroup } from '../group';
 import { RowLayout } from '../row.layout';
 
 export const DevicesGroup = () => {
+  const t = useI18n();
   const auth = useService(AuthService);
   const [sessions, setSessions] = useState<DeviceAuthSession[]>([]);
 
@@ -19,18 +21,22 @@ export const DevicesGroup = () => {
       .then(setSessions)
       .catch(error => {
         notify.error({
-          title: 'Failed to load devices',
+          title: t['com.affine.settings.devices.load-failed'](),
           message: String(error),
         });
       });
-  }, [auth]);
+  }, [auth, t]);
 
   useEffect(reload, [reload]);
 
   const revoke = useCallback(
     async (session: DeviceAuthSession) => {
       if (
-        !window.confirm(`Sign out ${session.deviceName ?? session.platform}?`)
+        !window.confirm(
+          t['com.affine.settings.devices.confirm']({
+            device: session.deviceName ?? session.platform,
+          })
+        )
       ) {
         return;
       }
@@ -39,38 +45,44 @@ export const DevicesGroup = () => {
         if (!session.current) reload();
       } catch (error) {
         notify.error({
-          title: 'Failed to sign out device',
+          title: t['com.affine.settings.devices.sign-out-failed'](),
           message: String(error),
         });
       }
     },
-    [auth, reload]
+    [auth, reload, t]
   );
 
   return (
-    <SettingGroup title="Devices">
+    <SettingGroup title={t['com.affine.settings.devices.title']()}>
       {sessions.map(session => (
         <RowLayout
           key={session.id}
           label={
             <div>
-              <div>{`${session.deviceName ?? session.platform}${session.current ? ' (current)' : ''}`}</div>
-              <div>{`Last used ${new Date(session.lastSeenAt).toLocaleString()}`}</div>
+              <div>{`${session.deviceName ?? session.platform}${session.current ? ` (${t['com.affine.settings.devices.current']()})` : ''}`}</div>
+              <div>
+                {t['com.affine.settings.devices.last-used']({
+                  time: new Date(session.lastSeenAt).toLocaleString(),
+                })}
+              </div>
             </div>
           }
           onClick={() => void revoke(session)}
         >
-          Sign out
+          {t['com.affine.settings.devices.sign-out']()}
         </RowLayout>
       ))}
       {sessions.length > 1 ? (
         <RowLayout
-          label="Sign out all devices"
+          label={t['com.affine.settings.devices.sign-out-all']()}
           onClick={() => {
-            if (window.confirm('Sign out every device?')) {
+            if (
+              window.confirm(t['com.affine.settings.devices.confirm-all']())
+            ) {
               void auth.revokeAllDeviceSessions().catch(error => {
                 notify.error({
-                  title: 'Failed to sign out devices',
+                  title: t['com.affine.settings.devices.sign-out-all-failed'](),
                   message: String(error),
                 });
               });
