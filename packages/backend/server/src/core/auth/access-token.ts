@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-import { Config } from '../../base';
+import { AuthSessionTemporarilyUnavailable, Config } from '../../base';
 import { Models } from '../../models';
 import {
   authSessionAccessTokenKeyId,
@@ -28,6 +28,8 @@ export interface SignedAccessToken {
   expiresAt: Date;
 }
 
+const SIGNING_KEY_RETRY_LIMIT = 3;
+
 @Injectable()
 export class AccessTokenService {
   constructor(
@@ -41,7 +43,7 @@ export class AccessTokenService {
     authSessionId: string
   ): Promise<SignedAccessToken> {
     const ttl = this.config.auth.token.accessTokenTtl;
-    for (;;) {
+    for (let attempt = 0; attempt < SIGNING_KEY_RETRY_LIMIT; attempt++) {
       const issuedAt = Math.floor(Date.now() / 1000);
       const expiresAtSeconds = issuedAt + ttl;
       const expiresAt = new Date(expiresAtSeconds * 1000);
@@ -58,6 +60,7 @@ export class AccessTokenService {
         return { token, expiresAt };
       }
     }
+    throw new AuthSessionTemporarilyUnavailable();
   }
 
   async verify(token: string): Promise<AuthSessionPrincipal> {

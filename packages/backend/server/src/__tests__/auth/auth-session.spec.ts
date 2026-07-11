@@ -53,7 +53,6 @@ test.beforeEach(async t => {
       },
     },
   });
-  await t.context.signingKeys.onConfigInit();
   const user = await t.context.auth.signUp('auth-session@affine.pro', '1');
   const userSession = await t.context.auth.createUserSession(user.id);
   t.context.userId = user.id;

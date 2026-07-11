@@ -112,8 +112,7 @@ export class SessionExchangeService {
     const selector = refreshToken.split('.')[1];
     if (selector) {
       const rateKey = `auth:session-refresh-rate:${selector}`;
-      const attempts = await this.cache.increase(rateKey);
-      if (attempts === 1) await this.cache.expire(rateKey, 60_000);
+      const attempts = await this.cache.increaseWithTtl(rateKey, 60_000);
       if (attempts > 30) throw new TooManyRequest();
     }
     const refreshed = await this.authSessions.refresh(refreshToken, appVersion);

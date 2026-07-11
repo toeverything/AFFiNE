@@ -47,7 +47,6 @@ test.before(async t => {
 test.beforeEach(async t => {
   await t.context.app.initTestingDB();
   resetAuthSessionConfig(t.context.config);
-  await t.context.keys.onConfigInit();
 
   t.context.user = await t.context.auth.signUp('u1@affine.pro', '1');
   const session = await t.context.auth.createUserSession(t.context.user.id);
