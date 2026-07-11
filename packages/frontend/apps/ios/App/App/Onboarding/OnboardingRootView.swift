@@ -92,21 +92,25 @@ struct OnboardingRootView: View {
 
   private func onboardingStack(layout: OnboardingLayout) -> some View {
     VStack(spacing: 0) {
-      if shouldShowHeader {
-        header
-      }
+      VStack(spacing: 0) {
+        if shouldShowHeader {
+          header
+        }
 
-      pageContainer
-        .frame(height: layout.pageContainerHeight(for: pages[pageIndex]))
+        pageContainer
+          .frame(height: layout.pageContainerHeight(for: pages[pageIndex]))
+      }
+      .offset(y: isIntroPage ? 0 : -30)
 
       footer
+        .offset(y: isIntroPage ? 0 : 30)
     }
   }
 
   private var header: some View {
     let sideInset: CGFloat = 12
     let backButtonSize: CGFloat = 40
-    let pageDotsHorizontalInset = sideInset + backButtonSize
+    let pageDotsHorizontalInset: CGFloat = 65
 
     return ZStack(alignment: .leading) {
       PageDots(count: progressPageCount, selectedIndex: progressIndex)
@@ -125,8 +129,7 @@ struct OnboardingRootView: View {
       .opacity(pageIndex > 0 ? 1 : 0)
       .disabled(pageIndex == 0)
     }
-    .frame(height: backButtonSize)
-    .padding(.top, 8)
+    .frame(height: 44)
   }
 
   private var pageContainer: some View {
@@ -173,7 +176,7 @@ struct OnboardingRootView: View {
       }
     }
     .padding(.horizontal, 20)
-    .padding(.bottom, isIntroPage ? 22 : 18)
+    .padding(.bottom, isIntroPage ? 22 : 10)
   }
 
   private func goNext() {
@@ -408,9 +411,9 @@ private enum OnboardingFeature: CaseIterable {
 
   var assetName: String {
     switch self {
-    case .clearDocs: "OnboardingFeatureClearDocs"
-    case .biggerPicture: "OnboardingFeatureBiggerPicture"
-    case .multipleViews: "OnboardingFeatureMultipleViews"
+    case .clearDocs: "OnboardingFeatureBiggerPicture"
+    case .biggerPicture: "OnboardingFeatureMultipleViews"
+    case .multipleViews: "OnboardingFeatureClearDocs"
     case .everyDevice: "OnboardingFeatureEveryDevice"
     case .ai: "OnboardingFeatureAI"
     }
@@ -777,7 +780,8 @@ private struct RolePage: View {
 
   var body: some View {
     VStack(spacing: 24) {
-      Spacer(minLength: 8)
+      Color.clear
+        .frame(height: 18)
       VStack(spacing: 18) {
         Text("Which best describes you?")
           .font(.system(size: 26, weight: .bold, design: .rounded))
@@ -986,18 +990,19 @@ private struct PageDots: View {
   let count: Int
   let selectedIndex: Int
 
-  private let dotWidth: CGFloat = 20
   private let dotHeight: CGFloat = 6
-  private let dotSpacing: CGFloat = 8
+  private let dotSpacing: CGFloat = 12
 
   var body: some View {
     HStack(spacing: dotSpacing) {
       ForEach(0..<count, id: \.self) { index in
         Capsule()
           .fill(index == selectedIndex ? AffineColors.buttonPrimary.color : AffineColors.buttonPrimary.color.opacity(0.18))
-          .frame(width: dotWidth, height: dotHeight)
+          .frame(height: dotHeight)
+          .frame(maxWidth: .infinity)
       }
     }
+    .frame(height: dotHeight)
     .animation(.spring(response: 0.35, dampingFraction: 0.8), value: selectedIndex)
   }
 }

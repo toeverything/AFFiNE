@@ -103,12 +103,8 @@ final class NativeSignInViewController: UIViewController {
     guard !didComplete else { return }
     didComplete = true
     view.isUserInteractionEnabled = false
-    UIView.animate(withDuration: 0.12, delay: 0, options: [.beginFromCurrentState, .curveEaseOut]) {
-      self.view.alpha = 0
-    } completion: { [weak self, onComplete] _ in
-      self?.dismiss(animated: false) {
-        onComplete?(isSignedIn)
-      }
+    dismiss(animated: false) { [onComplete] in
+      onComplete?(isSignedIn)
     }
   }
 }
@@ -121,13 +117,25 @@ private final class NativeSignInViewModel: ObservableObject {
     case magicCode
   }
 
+  enum LoadingAction: Equatable {
+    case googleOAuth
+    case appleOAuth
+    case email
+    case password
+    case magicCode
+    case resendCode
+    case selfHosted
+  }
+
   @Published var step: Step = .signIn
   @Published var email = ""
   @Published var password = ""
   @Published var magicCode = ""
   @Published var isLoading = false
+  @Published var loadingAction: LoadingAction?
   @Published var statusMessage: String?
   @Published var errorMessage: String?
+  @Published var isSuccessFeedback = false
   @Published var appearance: NativeSignInAppearanceSnapshot {
     didSet {
       onAppearanceChanged?(appearance)
@@ -170,27 +178,31 @@ private final class NativeSignInViewModel: ObservableObject {
     onFinished?(false)
   }
 
+  func isProviderLoading(_ provider: NativeOAuthProvider) -> Bool {
+    loadingAction == loadingAction(for: provider)
+  }
+
+  func isActionLoading(_ action: LoadingAction) -> Bool {
+    loadingAction == action
+  }
+
   func startOAuth(provider: NativeOAuthProvider) {
     guard !isLoading else { return }
-    isLoading = true
-    statusMessage = "Opening sign-in in the browser."
-    errorMessage = nil
+    beginLoading(loadingAction(for: provider), status: "Waiting for \(provider.rawValue) sign-in...")
 
     Task { @MainActor in
       do {
         try await bridge.startOAuth(provider: provider)
-        isLoading = false
-        statusMessage = "Complete sign-in in the browser."
+        statusMessage = "Finishing sign-in..."
         if try await bridge.waitForAuthenticated() != nil {
-          onFinished?(true)
+          await showSuccessAndFinish()
           return
         }
-        statusMessage = nil
+        showError("Unable to sign in. Please try again.")
       } catch {
-        errorMessage = error.localizedDescription
-        statusMessage = nil
-        isLoading = false
+        showError(error)
       }
+      finishLoading()
     }
   }
 
@@ -198,108 +210,145 @@ private final class NativeSignInViewModel: ObservableObject {
     guard !isLoading else { return }
     email = email.trimmingCharacters(in: .whitespacesAndNewlines)
     guard canContinueWithEmail else {
-      errorMessage = "Enter a valid email address."
-      statusMessage = nil
+      showError("Enter a valid email address.")
       return
     }
 
-    isLoading = true
-    errorMessage = nil
-    statusMessage = "Checking sign-in method..."
+    beginLoading(.email, status: "Checking sign-in method...")
 
     Task { @MainActor in
       do {
         let methods = try await bridge.checkEmailMethods(email: email)
         if methods.hasPassword {
           step = .password
+          statusMessage = nil
         } else if methods.canUseMagicLink {
           try await bridge.sendMagicLink(email: email)
           magicCode = ""
           step = .magicCode
           statusMessage = "We sent a sign-in code to \(email)."
         } else {
-          errorMessage = "This email is not available for sign-in."
+          showError("This email is not available for sign-in.")
         }
       } catch {
-        errorMessage = error.localizedDescription
+        showError(error)
       }
-      isLoading = false
+      finishLoading()
     }
   }
 
   func signInWithPassword() {
     guard !isLoading else { return }
     guard canContinueWithPassword else {
-      errorMessage = "Enter your password."
+      showError("Enter your password.")
       return
     }
 
-    isLoading = true
-    errorMessage = nil
-    statusMessage = nil
+    beginLoading(.password, status: "Signing in...")
 
     Task { @MainActor in
       do {
         _ = try await bridge.signInWithPassword(email: email, password: password)
-        onFinished?(true)
+        await showSuccessAndFinish()
+        return
       } catch {
-        errorMessage = error.localizedDescription
+        showError(error)
       }
-      isLoading = false
+      finishLoading()
     }
   }
 
   func signInWithMagicCode() {
     guard !isLoading else { return }
     guard canContinueWithCode else {
-      errorMessage = "Enter the 6-digit sign-in code."
+      showError("Enter the 6-digit sign-in code.")
       return
     }
 
-    isLoading = true
-    errorMessage = nil
+    beginLoading(.magicCode, status: "Verifying sign-in code...")
 
     Task { @MainActor in
       do {
         _ = try await bridge.signInWithMagicLink(email: email, token: magicCode)
-        onFinished?(true)
+        await showSuccessAndFinish()
+        return
       } catch {
-        errorMessage = error.localizedDescription
+        showError(error)
       }
-      isLoading = false
+      finishLoading()
     }
   }
 
   func resendMagicCode() {
     guard !isLoading else { return }
-    isLoading = true
-    errorMessage = nil
+    beginLoading(.resendCode, status: "Sending a new code...")
 
     Task { @MainActor in
       do {
         try await bridge.sendMagicLink(email: email)
         statusMessage = "We sent a new sign-in code to \(email)."
       } catch {
-        errorMessage = error.localizedDescription
+        showError(error)
       }
-      isLoading = false
+      finishLoading()
     }
   }
 
   func openSelfHosted() {
     guard !isLoading else { return }
-    isLoading = true
-    errorMessage = nil
+    beginLoading(.selfHosted, status: "Opening self-hosted sign-in...")
 
     Task { @MainActor in
       do {
         try await bridge.openSelfHostedSignIn()
         onFinished?(false)
+        return
       } catch {
-        errorMessage = error.localizedDescription
-        isLoading = false
+        showError(error)
       }
+      finishLoading()
     }
+  }
+
+  private func loadingAction(for provider: NativeOAuthProvider) -> LoadingAction {
+    switch provider {
+    case .google:
+      return .googleOAuth
+    case .apple:
+      return .appleOAuth
+    }
+  }
+
+  private func beginLoading(_ action: LoadingAction, status: String? = nil) {
+    isLoading = true
+    loadingAction = action
+    statusMessage = status
+    errorMessage = nil
+    isSuccessFeedback = false
+  }
+
+  private func finishLoading() {
+    isLoading = false
+    loadingAction = nil
+  }
+
+  private func showError(_ error: Error) {
+    showError(error.localizedDescription)
+  }
+
+  private func showError(_ message: String) {
+    errorMessage = message
+    statusMessage = nil
+    isSuccessFeedback = false
+  }
+
+  private func showSuccessAndFinish() async {
+    finishLoading()
+    errorMessage = nil
+    isSuccessFeedback = true
+    statusMessage = "Sign in Success"
+    try? await Task.sleep(nanoseconds: 1_150_000_000)
+    onFinished?(true)
   }
 
   private func isValidEmail(_ value: String) -> Bool {
@@ -418,6 +467,34 @@ private struct NativeSignInPalette {
 
   var accent: Color {
     isDark ? Color(red: 0.43, green: 0.78, blue: 1.0) : Color(red: 0.0, green: 0.43, blue: 1.0)
+  }
+
+  var successText: Color {
+    isDark ? Color(red: 0.44, green: 0.86, blue: 0.57) : Color(red: 0.10, green: 0.58, blue: 0.25)
+  }
+
+  var hudBackground: Color {
+    isDark ? Color.white.opacity(0.10) : Color.white.opacity(0.72)
+  }
+
+  var hudBorder: Color {
+    isDark ? Color.white.opacity(0.16) : Color.white.opacity(0.86)
+  }
+
+  var hudIconBackground: Color {
+    isDark ? Color.white.opacity(0.08) : Color.black.opacity(0.05)
+  }
+
+  var hudLoadingTrack: Color {
+    isDark ? Color.white.opacity(0.13) : Color.black.opacity(0.07)
+  }
+
+  var hudGradientEnd: Color {
+    isDark ? Color(red: 0.68, green: 0.45, blue: 1.0) : Color(red: 0.62, green: 0.30, blue: 0.96)
+  }
+
+  var hudShadow: Color {
+    isDark ? Color.black.opacity(0.32) : Color.black.opacity(0.14)
   }
 
   var closeIcon: Color {
@@ -786,7 +863,20 @@ private struct NativeSignInView: View {
         .padding(.trailing, layout.closeButtonTrailingPadding)
         .frame(maxWidth: .infinity, alignment: .topTrailing)
         .zIndex(11)
+
+        if viewModel.isLoading || viewModel.isSuccessFeedback {
+          NativeSignInHUDView(
+            message: viewModel.isSuccessFeedback ? "Sign in Success" : "Logging in...",
+            isSuccess: viewModel.isSuccessFeedback,
+            palette: palette
+          )
+          .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+          .transition(.opacity.combined(with: .scale(scale: 0.96)))
+          .zIndex(12)
+        }
       }
+      .animation(.easeInOut(duration: 0.16), value: viewModel.isLoading)
+      .animation(.easeInOut(duration: 0.16), value: viewModel.isSuccessFeedback)
       .frame(width: geometry.size.width, height: geometry.size.height)
     }
     .preferredColorScheme(viewModel.appearance.preferredColorScheme)
@@ -831,10 +921,20 @@ private struct NativeSignInView: View {
 
   private var signInStep: some View {
     VStack(alignment: .leading, spacing: 13) {
-      OAuthButton(provider: .google, palette: palette, isLoading: viewModel.isLoading) {
+      OAuthButton(
+        provider: .google,
+        palette: palette,
+        isLoading: viewModel.isProviderLoading(.google),
+        isDisabled: viewModel.isLoading
+      ) {
         viewModel.startOAuth(provider: .google)
       }
-      OAuthButton(provider: .apple, palette: palette, isLoading: viewModel.isLoading) {
+      OAuthButton(
+        provider: .apple,
+        palette: palette,
+        isLoading: viewModel.isProviderLoading(.apple),
+        isDisabled: viewModel.isLoading
+      ) {
         viewModel.startOAuth(provider: .apple)
       }
 
@@ -863,7 +963,11 @@ private struct NativeSignInView: View {
       }
       .padding(.top, 8)
 
-      EmailContinueButton(palette: palette, isLoading: viewModel.isLoading) {
+      EmailContinueButton(
+        palette: palette,
+        isLoading: viewModel.isActionLoading(.email),
+        isDisabled: viewModel.isLoading
+      ) {
         viewModel.continueWithEmail()
       }
 
@@ -917,8 +1021,9 @@ private struct NativeSignInView: View {
       PrimaryNativeSignInButton(
         title: "Continue",
         palette: palette,
-        isLoading: viewModel.isLoading,
+        isLoading: viewModel.isActionLoading(.password),
         isEnabled: viewModel.canContinueWithPassword,
+        isDisabled: viewModel.isLoading,
         action: viewModel.signInWithPassword
       )
 
@@ -964,8 +1069,9 @@ private struct NativeSignInView: View {
       PrimaryNativeSignInButton(
         title: "Continue",
         palette: palette,
-        isLoading: viewModel.isLoading,
+        isLoading: viewModel.isActionLoading(.magicCode),
         isEnabled: viewModel.canContinueWithCode,
+        isDisabled: viewModel.isLoading,
         action: viewModel.signInWithMagicCode
       )
 
@@ -1023,10 +1129,16 @@ private struct NativeSignInView: View {
         .foregroundStyle(.red)
         .frame(maxWidth: .infinity, alignment: .leading)
     } else if let statusMessage = viewModel.statusMessage {
-      Text(statusMessage)
-        .font(.system(size: 13, weight: .medium))
-        .foregroundStyle(palette.tertiaryText)
-        .frame(maxWidth: .infinity, alignment: .leading)
+      HStack(spacing: 8) {
+        if viewModel.isLoading {
+          ProgressView()
+            .tint(palette.accent)
+        }
+        Text(statusMessage)
+          .font(.system(size: 13, weight: .medium))
+      }
+      .foregroundStyle(viewModel.isSuccessFeedback ? palette.successText : palette.tertiaryText)
+      .frame(maxWidth: .infinity, alignment: .leading)
     }
   }
 
@@ -1091,6 +1203,245 @@ private struct NativeSignInLayout {
   }
 }
 
+private struct NativeSignInHUDView: View {
+  let message: String
+  let isSuccess: Bool
+  let palette: NativeSignInPalette
+
+  @State private var successProgress: CGFloat = 0
+  @State private var successCheckScale: CGFloat = 0.56
+  @State private var successCheckOpacity: Double = 0
+  @State private var isSuccessAnimationSettled = false
+
+  private var usesCompactSuccessLayout: Bool {
+    isSuccess && isSuccessAnimationSettled
+  }
+
+  var body: some View {
+    content
+      .padding(.horizontal, usesCompactSuccessLayout ? 10 : 24)
+      .padding(.vertical, usesCompactSuccessLayout ? 10 : 22)
+      .background {
+        RoundedRectangle(cornerRadius: usesCompactSuccessLayout ? 22 : 30, style: .continuous)
+          .fill(.ultraThinMaterial)
+          .overlay {
+            RoundedRectangle(cornerRadius: usesCompactSuccessLayout ? 22 : 30, style: .continuous)
+              .fill(palette.hudBackground)
+          }
+      }
+      .overlay {
+        RoundedRectangle(cornerRadius: usesCompactSuccessLayout ? 22 : 30, style: .continuous)
+          .stroke(palette.hudBorder, lineWidth: 1)
+      }
+      .shadow(color: palette.hudShadow, radius: 24, x: 0, y: 14)
+      .shadow(color: palette.controlShadow, radius: 6, x: 0, y: 2)
+      .allowsHitTesting(false)
+      .onAppear {
+        guard isSuccess else { return }
+        startSuccessAnimation()
+      }
+      .onChange(of: isSuccess) { value in
+        if value {
+          startSuccessAnimation()
+        } else {
+          resetSuccessAnimation()
+        }
+      }
+  }
+
+  @ViewBuilder
+  private var content: some View {
+    if isSuccess {
+      if isSuccessAnimationSettled {
+        successContent
+      } else {
+        animatedSuccessContent
+      }
+    } else {
+      loadingContent
+    }
+  }
+
+  private var loadingContent: some View {
+    VStack(spacing: 14) {
+      NativeSignInLoadingRing(palette: palette)
+
+      Text(message)
+        .font(.system(size: 16, weight: .semibold))
+        .foregroundStyle(palette.primaryText)
+        .lineLimit(1)
+    }
+  }
+
+  private var animatedSuccessContent: some View {
+    VStack(spacing: 14) {
+      NativeSignInSuccessRing(
+        palette: palette,
+        progress: successProgress,
+        checkScale: successCheckScale,
+        checkOpacity: successCheckOpacity
+      )
+
+      Text(message)
+        .font(.system(size: 16, weight: .semibold))
+        .foregroundStyle(palette.primaryText)
+        .lineLimit(1)
+    }
+  }
+
+  private var successContent: some View {
+    HStack(spacing: 12) {
+      ZStack {
+        Circle()
+          .fill(palette.successText.opacity(0.14))
+          .frame(width: 34, height: 34)
+
+        Image(systemName: "checkmark")
+          .font(.system(size: 15, weight: .bold))
+          .foregroundStyle(palette.successText)
+      }
+
+      Text(message)
+        .font(.system(size: 15, weight: .semibold))
+        .foregroundStyle(palette.primaryText)
+        .lineLimit(1)
+    }
+  }
+
+  private func startSuccessAnimation() {
+    resetSuccessAnimation()
+    withAnimation(.easeOut(duration: 0.28)) {
+      successProgress = 1
+    }
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
+      withAnimation(.spring(response: 0.42, dampingFraction: 0.62)) {
+        successCheckScale = 1
+        successCheckOpacity = 1
+      }
+    }
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.76) {
+      withAnimation(.easeInOut(duration: 0.18)) {
+        isSuccessAnimationSettled = true
+      }
+    }
+  }
+
+  private func resetSuccessAnimation() {
+    successProgress = 0
+    successCheckScale = 0.56
+    successCheckOpacity = 0
+    isSuccessAnimationSettled = false
+  }
+}
+
+private struct NativeSignInSuccessRing: View {
+  let palette: NativeSignInPalette
+  let progress: CGFloat
+  let checkScale: CGFloat
+  let checkOpacity: Double
+
+  var body: some View {
+    ZStack {
+      Circle()
+        .stroke(palette.hudLoadingTrack, lineWidth: 7)
+        .frame(width: 76, height: 76)
+
+      Circle()
+        .trim(from: 0, to: progress)
+        .stroke(
+          LinearGradient(
+            colors: [palette.accent, palette.hudGradientEnd],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+          ),
+          style: StrokeStyle(lineWidth: 7, lineCap: .round)
+        )
+        .frame(width: 76, height: 76)
+        .rotationEffect(.degrees(-90))
+
+      Image(systemName: "checkmark")
+        .font(.system(size: 32, weight: .bold))
+        .foregroundStyle(palette.successText)
+        .scaleEffect(checkScale)
+        .opacity(checkOpacity)
+    }
+  }
+}
+
+private struct NativeSignInLoadingRing: View {
+  let palette: NativeSignInPalette
+
+  @State private var rotation: Double = -90
+  @State private var pulseScale: CGFloat = 0.94
+  @State private var pulseOpacity: Double = 0.44
+
+  var body: some View {
+    ZStack {
+      Circle()
+        .stroke(palette.hudLoadingTrack, lineWidth: 6.5)
+        .frame(width: 76, height: 76)
+
+      Circle()
+        .trim(from: 0.06, to: 0.36)
+        .stroke(
+          LinearGradient(
+            colors: [palette.accent, palette.hudGradientEnd],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+          ),
+          style: StrokeStyle(lineWidth: 7, lineCap: .round)
+        )
+        .frame(width: 76, height: 76)
+        .rotationEffect(.degrees(rotation))
+        .shadow(color: palette.accent.opacity(0.26), radius: 7, x: 0, y: 0)
+
+      Circle()
+        .trim(from: 0.58, to: 0.72)
+        .stroke(
+          LinearGradient(
+            colors: [palette.hudGradientEnd.opacity(0.72), palette.accent.opacity(0.22)],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+          ),
+          style: StrokeStyle(lineWidth: 4.5, lineCap: .round)
+        )
+        .frame(width: 76, height: 76)
+        .rotationEffect(.degrees(rotation + 12))
+
+      Circle()
+        .fill(
+          RadialGradient(
+            colors: [palette.accent.opacity(0.20), Color.clear],
+            center: .center,
+            startRadius: 0,
+            endRadius: 26
+          )
+        )
+        .frame(width: 52, height: 52)
+        .scaleEffect(pulseScale)
+        .opacity(pulseOpacity)
+
+      Circle()
+        .fill(palette.accent.opacity(0.82))
+        .frame(width: 5.5, height: 5.5)
+        .scaleEffect(pulseScale)
+        .opacity(0.86)
+    }
+    .onAppear {
+      rotation = -90
+      pulseScale = 0.94
+      pulseOpacity = 0.44
+      withAnimation(.linear(duration: 1.08).repeatForever(autoreverses: false)) {
+        rotation = 270
+      }
+      withAnimation(.easeInOut(duration: 0.92).repeatForever(autoreverses: true)) {
+        pulseScale = 1.12
+        pulseOpacity = 0.72
+      }
+    }
+  }
+}
+
 private struct LoginDotOverlay: View {
   let dotColor: Color
   private let spacing: CGFloat = 13
@@ -1140,6 +1491,7 @@ private struct OAuthButton: View {
   let provider: NativeOAuthProvider
   let palette: NativeSignInPalette
   let isLoading: Bool
+  let isDisabled: Bool
   let action: () -> Void
 
   private var foreground: Color {
@@ -1149,8 +1501,14 @@ private struct OAuthButton: View {
   var body: some View {
     Button(action: action) {
       HStack(spacing: 13) {
-        providerIcon
-          .frame(width: 28, height: 28)
+        if isLoading {
+          ProgressView()
+            .tint(foreground)
+            .frame(width: 28, height: 28)
+        } else {
+          providerIcon
+            .frame(width: 28, height: 28)
+        }
         Text(provider == .google ? "Continue with Google" : "Continue with Apple")
           .font(.system(size: 18, weight: .medium))
       }
@@ -1166,8 +1524,8 @@ private struct OAuthButton: View {
       .shadow(color: palette.controlShadow.opacity(0.7), radius: 8, x: 0, y: 3)
     }
     .buttonStyle(.plain)
-    .disabled(isLoading)
-    .opacity(isLoading ? 0.72 : 1)
+    .disabled(isDisabled)
+    .opacity(isDisabled && !isLoading ? 0.62 : 1)
   }
 
   @ViewBuilder
@@ -1187,6 +1545,7 @@ private struct OAuthButton: View {
 private struct EmailContinueButton: View {
   let palette: NativeSignInPalette
   let isLoading: Bool
+  let isDisabled: Bool
   let action: () -> Void
 
   var body: some View {
@@ -1210,7 +1569,8 @@ private struct EmailContinueButton: View {
       .shadow(color: palette.controlShadow.opacity(0.65), radius: 10, x: 0, y: 4)
     }
     .buttonStyle(.plain)
-    .disabled(isLoading)
+    .disabled(isDisabled)
+    .opacity(isDisabled && !isLoading ? 0.62 : 1)
   }
 }
 
@@ -1235,6 +1595,7 @@ private struct PrimaryNativeSignInButton: View {
   let palette: NativeSignInPalette
   let isLoading: Bool
   let isEnabled: Bool
+  let isDisabled: Bool
   let action: () -> Void
 
   var body: some View {
@@ -1250,11 +1611,11 @@ private struct PrimaryNativeSignInButton: View {
       .foregroundStyle(.white)
       .frame(maxWidth: .infinity)
       .frame(height: palette.emailButtonHeight)
-      .background(isEnabled ? palette.accent : palette.primaryDisabledBackground)
+      .background(isEnabled && (!isDisabled || isLoading) ? palette.accent : palette.primaryDisabledBackground)
       .clipShape(RoundedRectangle(cornerRadius: palette.emailButtonCornerRadius, style: .continuous))
     }
     .buttonStyle(.plain)
-    .disabled(!isEnabled || isLoading)
+    .disabled(!isEnabled || isDisabled)
   }
 }
 
