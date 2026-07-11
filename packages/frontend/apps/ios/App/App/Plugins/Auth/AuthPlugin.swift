@@ -48,12 +48,6 @@ private struct AuthServerError: Error {
 
 private struct AuthOperationCancelled: Error {}
 
-private func parseISO8601Date(_ value: String) -> Date? {
-  let fractional = ISO8601DateFormatter()
-  fractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-  return fractional.date(from: value) ?? ISO8601DateFormatter().date(from: value)
-}
-
 private struct AuthRefreshOperation {
   let id: UUID
   let task: Task<StoredAuthTokenPair, Error>
@@ -140,8 +134,8 @@ private actor AuthSessionBroker {
   private func tokenPair(_ response: AuthTokenResponse) throws -> StoredAuthTokenPair {
     guard response.tokenType == "Bearer", !response.accessToken.isEmpty,
       !response.refreshToken.isEmpty, (1...86_400).contains(response.expiresIn),
-      parseISO8601Date(response.refreshExpiresAt) != nil,
-      parseISO8601Date(response.session.absoluteExpiresAt) != nil
+      parseAuthISO8601Date(response.refreshExpiresAt) != nil,
+      parseAuthISO8601Date(response.session.absoluteExpiresAt) != nil
     else {
       throw AuthError.invalidTokenResponse
     }
@@ -224,8 +218,8 @@ private actor AuthSessionBroker {
     guard let pair = try? JSONDecoder().decode(StoredAuthTokenPair.self, from: data),
       pair.version == 1, pair.tokenType == "Bearer", !pair.accessToken.isEmpty,
       !pair.refreshToken.isEmpty, pair.accessExpiresAt.timeIntervalSince1970.isFinite,
-      parseISO8601Date(pair.refreshExpiresAt) != nil,
-      parseISO8601Date(pair.session.absoluteExpiresAt) != nil
+      parseAuthISO8601Date(pair.refreshExpiresAt) != nil,
+      parseAuthISO8601Date(pair.session.absoluteExpiresAt) != nil
     else {
       try delete(endpoint)
       return nil

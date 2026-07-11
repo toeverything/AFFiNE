@@ -14,6 +14,9 @@ plugins {
     alias libs.plugins.hilt
 }
 
+def nativeTarget = System.getenv('AFFINE_ANDROID_NATIVE_TARGET') ?: 'arm64'
+def nativeAbi = nativeTarget == 'x86_64' ? 'x86_64' : 'arm64-v8a'
+
 apply from: 'capacitor.build.gradle'
 
 android {
@@ -34,7 +37,7 @@ android {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
         ndk {
-            abiFilters 'arm64-v8a'
+            abiFilters nativeAbi
         }
     }
     buildFeatures {
@@ -146,7 +149,7 @@ cargo {
     features {
         defaultAnd("use-as-lib")
     }
-    targets = ["arm64"]
+    targets = [nativeTarget]
     pythonCommand = "python3"
     targetDirectory = "../../../../../../target"
     apiLevel = 28

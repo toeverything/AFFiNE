@@ -1,4 +1,9 @@
+import path from 'node:path';
+
 import { beforeEach, expect, test, vi } from 'vitest';
+
+const sessionFile = path.join('/test-user-data', 'auth-sessions.json');
+const temporarySessionFile = `${sessionFile}.tmp`;
 
 const runtime = vi.hoisted(() => ({
   encryptionAvailable: true,
@@ -84,10 +89,10 @@ test('atomically persists one encrypted token-pair record', async () => {
   });
   expect(await getValidAccessToken(endpoint)).toBe('access-persistent');
   expect(runtime.rename).toHaveBeenCalledWith(
-    '/test-user-data/auth-sessions.json.tmp',
-    '/test-user-data/auth-sessions.json'
+    temporarySessionFile,
+    sessionFile
   );
-  const file = runtime.files.get('/test-user-data/auth-sessions.json') ?? '';
+  const file = runtime.files.get(sessionFile) ?? '';
   expect(file).not.toContain(pair.refreshToken);
 });
 
@@ -100,9 +105,7 @@ test('keeps a session in main-process memory when safeStorage is unavailable', a
     setAuthSession(endpoint, tokenResponse('session-access', 's', 900))
   ).resolves.toEqual({ persistent: false });
   expect(await getValidAccessToken(endpoint)).toBe('session-access');
-  expect(runtime.files.get('/test-user-data/auth-sessions.json')).not.toContain(
-    endpoint
-  );
+  expect(runtime.files.get(sessionFile)).not.toContain(endpoint);
   runtime.encryptionAvailable = true;
 });
 
@@ -118,9 +121,7 @@ test('rejects Linux basic_text persistence and removes an older disk session', a
     setAuthSession(endpoint, tokenResponse('memory', 'm', 900))
   ).resolves.toEqual({ persistent: false });
   expect(await getValidAccessToken(endpoint)).toBe('memory');
-  expect(runtime.files.get('/test-user-data/auth-sessions.json')).not.toContain(
-    endpoint
-  );
+  expect(runtime.files.get(sessionFile)).not.toContain(endpoint);
   platform.mockRestore();
 });
 
@@ -167,15 +168,13 @@ test('clears credentials only for an allowlisted permanent refresh error', async
 
   await expect(getValidAccessToken(endpoint, 120_000)).resolves.toBeNull();
   await expect(getValidAccessToken(endpoint, 0)).resolves.toBeNull();
-  expect(runtime.files.get('/test-user-data/auth-sessions.json')).not.toContain(
-    endpoint
-  );
+  expect(runtime.files.get(sessionFile)).not.toContain(endpoint);
 });
 
 test('cleans a decrypted record that does not match the token-pair schema', async () => {
   const endpoint = 'https://corrupt.example';
   runtime.files.set(
-    '/test-user-data/auth-sessions.json',
+    sessionFile,
     JSON.stringify({
       [endpoint]: Buffer.from(JSON.stringify({ token: 'legacy' })).toString(
         'base64'
@@ -184,21 +183,17 @@ test('cleans a decrypted record that does not match the token-pair schema', asyn
   );
 
   await expect(getValidAccessToken(endpoint)).resolves.toBeNull();
-  expect(runtime.files.get('/test-user-data/auth-sessions.json')).not.toContain(
-    endpoint
-  );
+  expect(runtime.files.get(sessionFile)).not.toContain(endpoint);
 });
 
 test('recovers an unreadable session file on the next atomic write', async () => {
-  runtime.files.set('/test-user-data/auth-sessions.json', '{not-json');
+  runtime.files.set(sessionFile, '{not-json');
   const endpoint = 'https://file-corruption.example';
 
   await expect(getValidAccessToken(endpoint)).resolves.toBeNull();
   await setAuthSession(endpoint, tokenResponse('recovered', 'c', 900));
 
-  expect(
-    JSON.parse(runtime.files.get('/test-user-data/auth-sessions.json')!)
-  ).toHaveProperty(endpoint);
+  expect(JSON.parse(runtime.files.get(sessionFile)!)).toHaveProperty(endpoint);
   await expect(getValidAccessToken(endpoint)).resolves.toBe('recovered');
 });
 
