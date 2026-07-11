@@ -171,6 +171,20 @@ export interface AssertSafeUrlRequest {
   url: string
 }
 
+export declare function authSessionAccessTokenKeyId(token: string): string | null
+
+export interface AuthSessionAccessTokenVerification {
+  status: string
+  userId?: string
+  authSessionId?: string
+}
+
+export interface AuthSessionRefreshToken {
+  token: string
+  id: string
+  secretHash: string
+}
+
 export interface BackendRuntimeHealth {
   started: boolean
   databaseConnected: boolean
@@ -298,6 +312,8 @@ export interface CoordinationLeaseGrant {
   owner: string
   fencingToken: bigint | number
 }
+
+export declare function createAuthSessionRefreshToken(): AuthSessionRefreshToken
 
 /**
  * Converts markdown content to AFFiNE-compatible y-octo document binary.
@@ -644,6 +660,13 @@ export interface NativePageDocContent {
 export interface NativeWorkspaceDocContent {
   name: string
   avatarKey: string
+}
+
+export declare function parseAuthSessionRefreshToken(token: string): ParsedAuthSessionRefreshToken | null
+
+export interface ParsedAuthSessionRefreshToken {
+  id: string
+  secretHash: string
 }
 
 export interface ParsedDoc {
@@ -1161,6 +1184,8 @@ export interface SafeFetchResponse {
 
 export declare function scanContentPolicyV1(input: ContentPolicyScanInput): ContentPolicyScanResult
 
+export declare function signAuthSessionAccessToken(userId: string, authSessionId: string, keyId: string, secret: Buffer, issuedAt: number, expiresAt: number): string
+
 export interface StorageProviderCapabilities {
   put: boolean
   get: boolean
@@ -1254,5 +1279,7 @@ export declare function updateRootDocMetaTitle(rootDocBin: Buffer, docId: string
  * document state.
  */
 export declare function validateDocUpdate(update: Buffer): Promise<boolean>
+
+export declare function verifyAuthSessionAccessToken(token: string, expectedKeyId: string, secret: Buffer, now: number): AuthSessionAccessTokenVerification
 
 export declare function verifyChallengeResponse(response: string, bits: number, resource: string): Promise<boolean>

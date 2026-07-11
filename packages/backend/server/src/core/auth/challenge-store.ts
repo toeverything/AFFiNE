@@ -8,7 +8,7 @@ import { isValidCacheTtl } from '../../base/cache/provider';
 export type AuthChallengePurpose =
   | 'oauth_state'
   | 'open_app_sign_in'
-  | 'native_session_exchange'
+  | 'auth_session_exchange'
   | 'captcha'
   | 'passkey_registration'
   | 'passkey_authentication';

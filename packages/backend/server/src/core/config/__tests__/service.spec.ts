@@ -72,6 +72,17 @@ test('should validate config before update', async t => {
     service.getConfig().auth['unknown-key'],
     undefined
   );
+
+  await t.throwsAsync(
+    service.updateConfig(user.id, [
+      {
+        module: 'auth',
+        key: 'token.signingKeys',
+        value: [{ secret: 'must-not-enter-app-config' }],
+      },
+    ]),
+    { instanceOf: InvalidAppConfigInput }
+  );
 });
 
 test('should emit config.init event', async t => {

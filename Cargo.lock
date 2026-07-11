@@ -238,6 +238,7 @@ dependencies = [
  "doc_extractor",
  "file-format",
  "hex",
+ "hmac 0.13.0",
  "homedir",
  "image",
  "infer",

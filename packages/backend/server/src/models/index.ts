@@ -8,6 +8,7 @@ import { ModuleRef } from '@nestjs/core';
 
 import { ApplyType } from '../base';
 import { AccessTokenModel } from './access-token';
+import { AuthSessionModel } from './auth-session';
 import { BlobModel } from './blob';
 import { CalendarAccountModel } from './calendar-account';
 import { CalendarEventModel } from './calendar-event';
@@ -59,6 +60,7 @@ const MODELS = {
   verificationToken: VerificationTokenModel,
   magicLinkOtp: MagicLinkOtpModel,
   mailDelivery: MailDeliveryModel,
+  authSession: AuthSessionModel,
   feature: FeatureModel,
   workspace: WorkspaceModel,
   userFeature: UserFeatureModel,
@@ -147,6 +149,7 @@ const ModelsSymbolProvider: ExistingProvider = {
 })
 export class ModelsModule {}
 
+export * from './auth-session';
 export * from './blob';
 export * from './calendar-account';
 export * from './calendar-event';

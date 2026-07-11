@@ -79,7 +79,7 @@ export class AuthResolver {
 
   @ResolveField(() => ClientTokenType, {
     name: 'token',
-    deprecationReason: 'use native session exchange instead',
+    deprecationReason: 'use auth session exchange instead',
   })
   async clientToken(
     @CurrentUser() currentUser: CurrentUser,
@@ -122,8 +122,7 @@ export class AuthResolver {
       throw new InvalidEmailToken();
     }
 
-    await this.auth.changePassword(userId, newPassword);
-    await this.auth.revokeUserSessions(userId);
+    await this.auth.changePasswordAndRevokeSessions(userId, newPassword);
 
     return true;
   }
@@ -149,8 +148,7 @@ export class AuthResolver {
 
     email = decodeURIComponent(email);
 
-    await this.auth.changeEmail(user.id, email);
-    await this.auth.revokeUserSessions(user.id);
+    await this.auth.changeEmailAndRevokeSessions(user.id, email);
     await this.auth.sendNotificationChangeEmail(email);
 
     return user;

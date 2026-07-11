@@ -24,13 +24,15 @@ import {
 } from '../../base';
 import { WEBSOCKET_OPTIONS } from '../../base/websocket';
 import {
-  extractTokenFromHeader,
-  getSessionOptionsFromRequest,
-  SessionIdSchema,
-} from './input';
-import { isLikelyJwt, JwtSessionService } from './jwt-session';
+  AccessTokenService,
+  isLikelyJwt,
+  SessionAccessTokenError,
+} from './access-token';
+import { AuthSessionService } from './auth-session';
+import { extractTokenFromHeader } from './input';
 import { AuthService } from './service';
-import { Session, TokenSession } from './session';
+import { AuthSessionPrincipal, Session, TokenSession } from './session';
+import { AuthSessionHttpError } from './session-exchange';
 
 const PUBLIC_ENTRYPOINT_SYMBOL = Symbol('public');
 const INTERNAL_ENTRYPOINT_SYMBOL = Symbol('internal');
@@ -40,13 +42,13 @@ const INTERNAL_ACCESS_TOKEN_CLOCK_SKEW_MS = 30 * 1000;
 type AuthenticatedRequestSession =
   | { type: 'jwt'; session: Session }
   | { type: 'cookie_session'; session: Session }
-  | { type: 'legacy_bearer_session'; session: Session }
   | { type: 'access_token'; token: TokenSession };
 
 @Injectable()
 export class AuthGuard implements CanActivate, OnModuleInit {
   private auth!: AuthService;
-  private jwtSession!: JwtSessionService;
+  private accessTokens!: AccessTokenService;
+  private authSessions!: AuthSessionService;
   private readonly cachedVersionRange = new Map<string, semver.Range | null>();
   private static readonly HARD_REQUIRED_VERSION = '>=0.25.0';
   private static readonly CANARY_REQUIRED_VERSION = 'canary (within 2 months)';
@@ -61,7 +63,8 @@ export class AuthGuard implements CanActivate, OnModuleInit {
 
   onModuleInit() {
     this.auth = this.ref.get(AuthService, { strict: false });
-    this.jwtSession = this.ref.get(JwtSessionService, { strict: false });
+    this.accessTokens = this.ref.get(AccessTokenService, { strict: false });
+    this.authSessions = this.ref.get(AuthSessionService, { strict: false });
   }
 
   async canActivate(context: ExecutionContext) {
@@ -138,29 +141,19 @@ export class AuthGuard implements CanActivate, OnModuleInit {
     const bearer = req.headers.authorization
       ? extractTokenFromHeader(req.headers.authorization)
       : undefined;
-    let ignoredInvalidPublicJwt = false;
-
     if (bearer && isLikelyJwt(bearer)) {
       try {
         const session = await this.signInWithJwt(req, bearer, res, isPublic);
         return session ? { type: 'jwt', session } : null;
       } catch (err) {
-        if (!isPublic) throw err;
-        ignoredInvalidPublicJwt = true;
+        if (err instanceof SessionAccessTokenError) {
+          throw new AuthSessionHttpError(err.code);
+        }
+        throw err;
       }
     }
 
-    if (bearer && !ignoredInvalidPublicJwt) {
-      // Legacy auth compatibility: old clients may still send opaque session ids as bearer tokens.
-      const legacyBearerSession = await this.signInWithSessionId(
-        req,
-        bearer,
-        res,
-        isPublic
-      );
-      if (legacyBearerSession) {
-        return { type: 'legacy_bearer_session', session: legacyBearerSession };
-      }
+    if (bearer) {
       const token = await this.signInWithAccessToken(req);
       return token ? { type: 'access_token', token } : null;
     }
@@ -176,7 +169,7 @@ export class AuthGuard implements CanActivate, OnModuleInit {
     isPublic = false
   ): Promise<Session | null> {
     if (req.session && req.authType === 'jwt') return req.session;
-    const session = await this.jwtSession.verify(token);
+    const session = await this.accessTokens.verify(token);
     const versionAllowed = await this.checkUserSessionClientVersion(
       req,
       session,
@@ -186,39 +179,6 @@ export class AuthGuard implements CanActivate, OnModuleInit {
     if (!versionAllowed) return null;
     req.session = session;
     req.authType = 'jwt';
-    return req.session;
-  }
-
-  async signInWithSessionId(
-    req: Request,
-    sessionId: string,
-    res?: Response,
-    isPublic = false
-  ): Promise<Session | null> {
-    if (req.session && req.session.sessionId === sessionId) return req.session;
-    const parsedSessionId = SessionIdSchema.safeParse(sessionId);
-    if (!parsedSessionId.success) return null;
-
-    const { userId } = getSessionOptionsFromRequest(req);
-    const userSession = await this.auth.getUserSession(
-      parsedSessionId.data,
-      userId
-    );
-
-    if (!userSession) return null;
-    req.session = { ...userSession.session, user: userSession.user };
-    const versionAllowed = await this.checkUserSessionClientVersion(
-      req,
-      req.session,
-      res,
-      isPublic
-    );
-    if (!versionAllowed) {
-      req.session = undefined;
-      return null;
-    }
-    req.authType = 'session';
-
     return req.session;
   }
 
@@ -285,12 +245,22 @@ export class AuthGuard implements CanActivate, OnModuleInit {
       return true;
     }
 
-    await this.auth.signOut(session.sessionId);
-    if (res) {
+    const authSessionId = (session as Partial<AuthSessionPrincipal>)
+      .authSessionId;
+    if (authSessionId) {
+      await this.authSessions.revoke(
+        authSessionId,
+        'unsupported_client_version',
+        session.user.id
+      );
+    } else {
+      await this.auth.signOut(session.sessionId);
+    }
+    if (res && !authSessionId) {
       await this.auth.refreshCookies(res, session.sessionId);
     }
 
-    if (isPublic) {
+    if (isPublic && !authSessionId) {
       return false;
     }
 

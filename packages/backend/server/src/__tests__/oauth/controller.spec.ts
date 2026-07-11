@@ -93,7 +93,7 @@ test("should be able to redirect to oauth provider's login page", async t => {
 
   const res = await app
     .POST('/api/oauth/preflight')
-    .send({ provider: 'Google', client_nonce: 'test-nonce' })
+    .send({ provider: 'Google', client: 'web', client_nonce: 'test-nonce' })
     .expect(HttpStatus.OK);
 
   const { url } = res.body;
@@ -125,7 +125,7 @@ test('should be able to redirect to oauth provider with multiple hosts', async t
   const res = await app
     .POST('/api/oauth/preflight')
     .set('host', 'test.affine.dev')
-    .send({ provider: 'Google', client_nonce: 'test-nonce' })
+    .send({ provider: 'Google', client: 'web', client_nonce: 'test-nonce' })
     .expect(HttpStatus.OK);
 
   const { url } = res.body;
@@ -181,6 +181,17 @@ test('should be able to redirect to oauth provider with client_nonce', async t =
   t.truthy(state.state);
 });
 
+test('should reject unsupported oauth client identifiers', async t => {
+  const { app } = t.context;
+  const res = await app.POST('/api/oauth/preflight').send({
+    provider: 'Google',
+    client: 'untrusted-client',
+    client_nonce: 'test-nonce',
+  });
+
+  t.is(res.status, 403);
+});
+
 test('should record sign in client version from oauth preflight state', async t => {
   const { app, db } = t.context;
 
@@ -197,7 +208,7 @@ test('should record sign in client version from oauth preflight state', async t 
   const preflightRes = await app
     .POST('/api/oauth/preflight')
     .set('x-affine-version', '0.25.3')
-    .send({ provider: 'Google', client_nonce: 'test-nonce' })
+    .send({ provider: 'Google', client: 'web', client_nonce: 'test-nonce' })
     .expect(HttpStatus.OK);
 
   const redirect = new URL(preflightRes.body.url as string);
@@ -238,6 +249,7 @@ test('should forbid preflight with untrusted redirect_uri', async t => {
     .POST('/api/oauth/preflight')
     .send({
       provider: 'Google',
+      client: 'web',
       redirect_uri: 'https://evil.example',
       client_nonce: 'test-nonce',
     })
@@ -251,7 +263,7 @@ test('should throw if client_nonce is missing in preflight', async t => {
 
   await app
     .POST('/api/oauth/preflight')
-    .send({ provider: 'Google' })
+    .send({ provider: 'Google', client: 'web' })
     .expect(HttpStatus.BAD_REQUEST)
     .expect({
       status: 400,
@@ -270,7 +282,7 @@ test('should throw if provider is invalid', async t => {
 
   await app
     .POST('/api/oauth/preflight')
-    .send({ provider: 'Invalid', client_nonce: 'test-nonce' })
+    .send({ provider: 'Invalid', client: 'web', client_nonce: 'test-nonce' })
     .expect(HttpStatus.BAD_REQUEST)
     .expect({
       status: 400,
@@ -575,12 +587,17 @@ test('should be able to sign up with oauth', async t => {
 
   t.truthy(res.body.exchangeCode);
   const tokenRes = await app
-    .POST('/api/auth/native/exchange')
+    .POST('/api/auth/session/exchange')
     .set('x-affine-client-kind', 'native')
-    .send({ code: res.body.exchangeCode })
+    .send({
+      code: res.body.exchangeCode,
+      installationId: '00000000-0000-4000-8000-000000000005',
+      platform: 'electron',
+    })
     .expect(201);
-  t.truthy(tokenRes.body.token);
-  t.truthy(tokenRes.body.expiresAt);
+  t.truthy(tokenRes.body.accessToken);
+  t.is(tokenRes.body.expiresIn, 15 * 60);
+  t.truthy(tokenRes.body.refreshToken);
   const setCookies = res.get('Set-Cookie') ?? [];
   for (const name of [
     AuthService.sessionCookieName,
@@ -598,7 +615,7 @@ test('should be able to sign up with oauth', async t => {
 
   const sessionUserRes = await app
     .GET('/api/auth/session')
-    .set('Authorization', `Bearer ${tokenRes.body.token}`)
+    .set('Authorization', `Bearer ${tokenRes.body.accessToken}`)
     .expect(200);
   const sessionUser = sessionUserRes.body.user;
 

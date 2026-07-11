@@ -9207,6 +9207,34 @@ export function useAFFiNEI18N(): {
       */
     ["error.AUTHENTICATION_REQUIRED"](): string;
     /**
+      * `The access token has expired.`
+      */
+    ["error.ACCESS_TOKEN_EXPIRED"](): string;
+    /**
+      * `The access token is invalid.`
+      */
+    ["error.ACCESS_TOKEN_INVALID"](): string;
+    /**
+      * `The auth session has expired.`
+      */
+    ["error.AUTH_SESSION_EXPIRED"](): string;
+    /**
+      * `The auth session has been revoked.`
+      */
+    ["error.AUTH_SESSION_REVOKED"](): string;
+    /**
+      * `The refresh token is invalid.`
+      */
+    ["error.REFRESH_TOKEN_INVALID"](): string;
+    /**
+      * `The refresh token has already been used.`
+      */
+    ["error.REFRESH_TOKEN_REUSED"](): string;
+    /**
+      * `Auth session service is temporarily unavailable.`
+      */
+    ["error.AUTH_SESSION_TEMPORARILY_UNAVAILABLE"](): string;
+    /**
       * `You are not allowed to perform this action.`
       */
     ["error.ACTION_FORBIDDEN"](): string;

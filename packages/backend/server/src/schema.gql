@@ -305,6 +305,16 @@ type AudioSliceManifestItemType {
   startSec: Float!
 }
 
+type AuthSigningKeyType {
+  canDelete: Boolean!
+  createdAt: DateTime
+  id: String!
+  retiredAt: DateTime
+  source: String!
+  status: String!
+  verifyUntil: DateTime
+}
+
 type BlobNotFoundDataType {
   blobId: String!
   spaceId: String!
@@ -995,10 +1005,15 @@ union ErrorDataUnion = AlreadyInSpaceDataType | BlobNotFoundDataType | CalendarP
 
 enum ErrorNames {
   ACCESS_DENIED
+  ACCESS_TOKEN_EXPIRED
+  ACCESS_TOKEN_INVALID
   ACTION_FORBIDDEN
   ACTION_FORBIDDEN_ON_NON_TEAM_WORKSPACE
   ALREADY_IN_SPACE
   AUTHENTICATION_REQUIRED
+  AUTH_SESSION_EXPIRED
+  AUTH_SESSION_REVOKED
+  AUTH_SESSION_TEMPORARILY_UNAVAILABLE
   BAD_REQUEST
   BLOB_INVALID
   BLOB_NOT_FOUND
@@ -1105,6 +1120,8 @@ enum ErrorNames {
   OWNER_CAN_NOT_LEAVE_WORKSPACE
   PASSWORD_REQUIRED
   QUERY_TOO_LONG
+  REFRESH_TOKEN_INVALID
+  REFRESH_TOKEN_REUSED
   REPLY_NOT_FOUND
   RESPONSE_TOO_LARGE_ERROR
   RUNTIME_CONFIG_NOT_FOUND
@@ -1651,6 +1668,7 @@ type Mutation {
   createWorkspaceByokLocalLease(input: CreateWorkspaceByokLocalLeaseInput!): CreateWorkspaceByokLocalLeaseResultType!
   deactivateLicense(workspaceId: String!): Boolean!
   deleteAccount: DeleteAccount!
+  deleteAuthSigningKey(id: String!): [AuthSigningKeyType!]!
   deleteBlob(hash: String @deprecated(reason: "use parameter [key]"), key: String, permanently: Boolean! = false, workspaceId: String!): Boolean!
 
   """Delete a comment"""
@@ -1734,6 +1752,7 @@ type Mutation {
   revokeMember(userId: String!, workspaceId: String!): Boolean!
   revokePublicDoc(docId: String!, workspaceId: String!): DocType!
   revokeUserAccessToken(id: String!): Boolean!
+  rotateAuthSigningKey(expectedActiveKeyId: String!): [AuthSigningKeyType!]!
   sendChangeEmail(callbackUrl: String!): Boolean!
   sendChangePasswordEmail(callbackUrl: String!, email: String @deprecated(reason: "fetched from signed in user")): Boolean!
   sendSetPasswordEmail(callbackUrl: String!, email: String @deprecated(reason: "fetched from signed in user")): Boolean!
@@ -2004,6 +2023,7 @@ type Query {
 
   """get the whole app configuration"""
   appConfig: JSONObject!
+  authSigningKeys: [AuthSigningKeyType!]!
 
   """Get current user"""
   currentUser: UserType
@@ -2722,7 +2742,7 @@ type UserType {
   """Get user settings"""
   settings: UserSettingsType!
   subscriptions: [SubscriptionType!]!
-  token: tokenType! @deprecated(reason: "use native session exchange instead")
+  token: tokenType! @deprecated(reason: "use auth session exchange instead")
 }
 
 type ValidationErrorDataType {

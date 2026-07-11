@@ -97,11 +97,59 @@ model UserSession {
   refreshClientVersion String?   @map("refresh_client_version") @db.VarChar
   createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
 
-  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session     Session      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  authSession AuthSession?
 
   @@unique([sessionId, userId])
   @@map("user_sessions")
+}
+
+model AuthSession {
+  id                String    @id @default(uuid()) @db.VarChar
+  userSessionId     String    @unique @map("user_session_id") @db.VarChar
+  installationId    String    @map("installation_id") @db.VarChar
+  platform          String    @db.VarChar
+  deviceName        String?   @map("device_name") @db.VarChar
+  appVersion        String?   @map("app_version") @db.VarChar
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  lastSeenAt        DateTime  @default(now()) @map("last_seen_at") @db.Timestamptz(3)
+  idleExpiresAt     DateTime  @map("idle_expires_at") @db.Timestamptz(3)
+  absoluteExpiresAt DateTime  @map("absolute_expires_at") @db.Timestamptz(3)
+  revokedAt         DateTime? @map("revoked_at") @db.Timestamptz(3)
+  revokeReason      String?   @map("revoke_reason") @db.VarChar
+  lastIpHash        String?   @map("last_ip_hash") @db.VarChar
+  lastUserAgent     String?   @map("last_user_agent") @db.VarChar
+
+  userSession   UserSession        @relation(fields: [userSessionId], references: [id], onDelete: Cascade)
+  refreshTokens AuthRefreshToken[]
+
+  @@index([installationId])
+  @@index([idleExpiresAt])
+  @@index([absoluteExpiresAt])
+  @@map("auth_sessions")
+}
+
+model AuthRefreshToken {
+  id            String    @id @db.VarChar
+  authSessionId String    @map("auth_session_id") @db.VarChar
+  generation    Int
+  secretHash    String    @map("secret_hash") @db.VarChar
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt     DateTime  @map("expires_at") @db.Timestamptz(3)
+  usedAt        DateTime? @map("used_at") @db.Timestamptz(3)
+  replacedById  String?   @unique @map("replaced_by_id") @db.VarChar
+  graceUsedAt   DateTime? @map("grace_used_at") @db.Timestamptz(3)
+  revokedAt     DateTime? @map("revoked_at") @db.Timestamptz(3)
+
+  authSession AuthSession       @relation(fields: [authSessionId], references: [id], onDelete: Cascade)
+  replacedBy  AuthRefreshToken? @relation("AuthRefreshRotation", fields: [replacedById], references: [id], onDelete: SetNull)
+  replaces    AuthRefreshToken? @relation("AuthRefreshRotation")
+
+  @@unique([authSessionId, generation])
+  @@index([authSessionId, usedAt])
+  @@index([expiresAt])
+  @@map("auth_refresh_tokens")
 }
 
 model VerificationToken {

@@ -2,6 +2,7 @@
 
 mod utils;
 
+pub mod auth_session;
 pub mod content_policy;
 pub mod doc;
 pub mod doc_loader;

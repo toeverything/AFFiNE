@@ -1,9 +1,11 @@
 import { randomBytes } from 'node:crypto';
 
+import { PrismaClient } from '@prisma/client';
 import type { TestFn } from 'ava';
 import ava from 'ava';
 import supertest from 'supertest';
 
+import { AuthService, AuthSessionService } from '../../core/auth';
 import {
   changeEmail,
   changePassword,
@@ -108,6 +110,12 @@ test('set and change password', async t => {
   const u1Email = 'u1@affine.pro';
 
   const u1 = await app.signupV1(u1Email);
+  const parent = await app.get(AuthService).createUserSession(u1.id);
+  const authSession = await app.get(AuthSessionService).create({
+    userSessionId: parent.id,
+    installationId: 'password-change-device',
+    platform: 'ios',
+  });
   await sendSetPasswordEmail(app, u1Email, '/password-change');
 
   const setPasswordMail = app.mails.last('SetPassword');
@@ -130,6 +138,12 @@ test('set and change password', async t => {
   );
 
   t.true(success, 'failed to change password');
+  t.is(
+    await app.get(PrismaClient).authSession.count({
+      where: { id: authSession.session.id },
+    }),
+    0
+  );
 
   let user = await currentUser(app);
 

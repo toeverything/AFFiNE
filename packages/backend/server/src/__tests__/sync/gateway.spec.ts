@@ -148,25 +148,36 @@ function expectNoEvent(
 }
 
 async function login(app: TestingApp) {
-  const user = await app.createUser();
-  const cookieRes = await app
-    .POST('/api/auth/sign-in')
-    .send({ email: user.email, password: user.password })
-    .expect(200);
+  const { user, cookieHeader } = await loginWithCookie(app);
   const nativeRes = await app
     .POST('/api/auth/sign-in')
     .set('x-affine-client-kind', 'native')
     .send({ email: user.email, password: user.password })
     .expect(200);
   const tokenRes = await app
-    .POST('/api/auth/native/exchange')
+    .POST('/api/auth/session/exchange')
     .set('x-affine-client-kind', 'native')
-    .send({ code: nativeRes.body.exchangeCode })
+    .send({
+      code: nativeRes.body.exchangeCode,
+      installationId: '00000000-0000-4000-8000-000000000005',
+      platform: 'electron',
+    })
     .expect(201);
+
+  return { user, cookieHeader, token: tokenRes.body.accessToken as string };
+}
+
+async function loginWithCookie(app: TestingApp) {
+  const user = await app.createUser();
+  const cookieRes = await app
+    .POST('/api/auth/sign-in')
+    .set('x-affine-version', '0.26.7')
+    .send({ email: user.email, password: user.password })
+    .expect(200);
 
   const cookies = cookieRes.get('Set-Cookie') ?? [];
   const cookieHeader = cookies.map(c => c.split(';')[0]).join('; ');
-  return { user, cookieHeader, token: tokenRes.body.token as string };
+  return { user, cookieHeader };
 }
 
 function createYjsUpdateBase64() {
@@ -366,7 +377,7 @@ test('clientVersion=0.25.0 should only receive space:broadcast-doc-update', asyn
 });
 
 test('clientVersion>=0.26.0 should only receive space:broadcast-doc-updates', async t => {
-  const { user, cookieHeader } = await login(app);
+  const { user, cookieHeader } = await loginWithCookie(app);
   const spaceId = user.id;
   const update = createYjsUpdateBase64();
 
@@ -381,7 +392,7 @@ test('clientVersion>=0.26.0 should only receive space:broadcast-doc-updates', as
       await emitWithAck<{ clientId: string; success: boolean }>(
         receiver,
         'space:join',
-        { spaceType: 'userspace', spaceId, clientVersion: '0.26.0' }
+        { spaceType: 'userspace', spaceId, clientVersion: '0.26.7' }
       )
     );
     t.true(receiverJoin.success);

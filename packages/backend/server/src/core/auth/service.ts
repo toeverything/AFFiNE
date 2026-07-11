@@ -1,13 +1,15 @@
 import { randomUUID } from 'node:crypto';
 
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
+import { Transactional } from '@nestjs-cls/transactional';
 import type { CookieOptions, Request, Response } from 'express';
 import { assign, pick } from 'lodash-es';
 
-import { Config, SignUpForbidden } from '../../base';
+import { Config, OnEvent, SignUpForbidden } from '../../base';
 import { Models, type User, type UserSession } from '../../models';
 import { Mailer } from '../mail/mailer';
 import type { MailDeliveryMetadata } from '../mail/types';
+import { AuthSessionService } from './auth-session';
 import { createDevUsers } from './dev';
 import type { VerifiedIdentity } from './identity';
 import {
@@ -42,7 +44,8 @@ export class AuthService implements OnApplicationBootstrap {
   constructor(
     private readonly config: Config,
     private readonly models: Models,
-    private readonly mailer: Mailer
+    private readonly mailer: Mailer,
+    private readonly authSessions: AuthSessionService
   ) {
     this.cookieOptions = {
       sameSite: 'lax',
@@ -206,8 +209,22 @@ export class AuthService implements OnApplicationBootstrap {
     return true;
   }
 
-  async revokeUserSessions(userId: string) {
-    return await this.models.session.deleteUserSessions(userId);
+  @Transactional()
+  async revokeUserSessions(userId: string, reason = 'security_action') {
+    const authSessions = await this.authSessions.revokeUserSessions(
+      userId,
+      reason
+    );
+    const cookieSessions = await this.models.session.deleteUserSessions(userId);
+    return cookieSessions + authSessions;
+  }
+
+  @OnEvent('auth.sessions.revoke_requested')
+  async onRevokeRequested({
+    userId,
+    reason,
+  }: Events['auth.sessions.revoke_requested']) {
+    await this.revokeUserSessions(userId, reason);
   }
 
   async refreshCookies(res: Response, sessionId?: string) {
@@ -297,6 +314,13 @@ export class AuthService implements OnApplicationBootstrap {
     return this.models.user.update(id, { password: newPassword });
   }
 
+  @Transactional()
+  async changePasswordAndRevokeSessions(id: string, newPassword: string) {
+    const user = await this.changePassword(id, newPassword);
+    await this.revokeUserSessions(id);
+    return user;
+  }
+
   async changeEmail(
     id: string,
     newEmail: string
@@ -305,6 +329,13 @@ export class AuthService implements OnApplicationBootstrap {
       email: newEmail,
       emailVerifiedAt: new Date(),
     });
+  }
+
+  @Transactional()
+  async changeEmailAndRevokeSessions(id: string, newEmail: string) {
+    const user = await this.changeEmail(id, newEmail);
+    await this.revokeUserSessions(id);
+    return user;
   }
 
   async setEmailVerified(id: string) {

@@ -66,6 +66,11 @@ export type Session = UserSession & {
   user: CurrentUser;
 };
 
+export type AuthSessionPrincipal = Session & {
+  authSessionId: string;
+  authenticatedAt: Date;
+};
+
 export type TokenSession = AccessToken & {
   user: CurrentUser;
 };

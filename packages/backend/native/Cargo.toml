@@ -21,6 +21,7 @@ crc32fast = "1.5.0"
 doc_extractor = { workspace = true }
 file-format = { workspace = true }
 hex = { workspace = true }
+hmac = "0.13"
 homedir = { workspace = true }
 image = { workspace = true }
 infer = { workspace = true }

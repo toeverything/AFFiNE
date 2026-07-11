@@ -365,6 +365,17 @@ export interface AudioSliceManifestItemType {
   startSec: Scalars['Float']['output'];
 }
 
+export interface AuthSigningKeyType {
+  __typename?: 'AuthSigningKeyType';
+  canDelete: Scalars['Boolean']['output'];
+  createdAt: Maybe<Scalars['DateTime']['output']>;
+  id: Scalars['String']['output'];
+  retiredAt: Maybe<Scalars['DateTime']['output']>;
+  source: Scalars['String']['output'];
+  status: Scalars['String']['output'];
+  verifyUntil: Maybe<Scalars['DateTime']['output']>;
+}
+
 export interface BlobNotFoundDataType {
   __typename?: 'BlobNotFoundDataType';
   blobId: Scalars['String']['output'];
@@ -1222,10 +1233,15 @@ export type ErrorDataUnion =
 
 export enum ErrorNames {
   ACCESS_DENIED = 'ACCESS_DENIED',
+  ACCESS_TOKEN_EXPIRED = 'ACCESS_TOKEN_EXPIRED',
+  ACCESS_TOKEN_INVALID = 'ACCESS_TOKEN_INVALID',
   ACTION_FORBIDDEN = 'ACTION_FORBIDDEN',
   ACTION_FORBIDDEN_ON_NON_TEAM_WORKSPACE = 'ACTION_FORBIDDEN_ON_NON_TEAM_WORKSPACE',
   ALREADY_IN_SPACE = 'ALREADY_IN_SPACE',
   AUTHENTICATION_REQUIRED = 'AUTHENTICATION_REQUIRED',
+  AUTH_SESSION_EXPIRED = 'AUTH_SESSION_EXPIRED',
+  AUTH_SESSION_REVOKED = 'AUTH_SESSION_REVOKED',
+  AUTH_SESSION_TEMPORARILY_UNAVAILABLE = 'AUTH_SESSION_TEMPORARILY_UNAVAILABLE',
   BAD_REQUEST = 'BAD_REQUEST',
   BLOB_INVALID = 'BLOB_INVALID',
   BLOB_NOT_FOUND = 'BLOB_NOT_FOUND',
@@ -1332,6 +1348,8 @@ export enum ErrorNames {
   OWNER_CAN_NOT_LEAVE_WORKSPACE = 'OWNER_CAN_NOT_LEAVE_WORKSPACE',
   PASSWORD_REQUIRED = 'PASSWORD_REQUIRED',
   QUERY_TOO_LONG = 'QUERY_TOO_LONG',
+  REFRESH_TOKEN_INVALID = 'REFRESH_TOKEN_INVALID',
+  REFRESH_TOKEN_REUSED = 'REFRESH_TOKEN_REUSED',
   REPLY_NOT_FOUND = 'REPLY_NOT_FOUND',
   RESPONSE_TOO_LARGE_ERROR = 'RESPONSE_TOO_LARGE_ERROR',
   RUNTIME_CONFIG_NOT_FOUND = 'RUNTIME_CONFIG_NOT_FOUND',
@@ -1861,6 +1879,7 @@ export interface Mutation {
   createWorkspaceByokLocalLease: CreateWorkspaceByokLocalLeaseResultType;
   deactivateLicense: Scalars['Boolean']['output'];
   deleteAccount: DeleteAccount;
+  deleteAuthSigningKey: Array<AuthSigningKeyType>;
   deleteBlob: Scalars['Boolean']['output'];
   /** Delete a comment */
   deleteComment: Scalars['Boolean']['output'];
@@ -1925,6 +1944,7 @@ export interface Mutation {
   revokeMember: Scalars['Boolean']['output'];
   revokePublicDoc: DocType;
   revokeUserAccessToken: Scalars['Boolean']['output'];
+  rotateAuthSigningKey: Array<AuthSigningKeyType>;
   sendChangeEmail: Scalars['Boolean']['output'];
   sendChangePasswordEmail: Scalars['Boolean']['output'];
   sendSetPasswordEmail: Scalars['Boolean']['output'];
@@ -2119,6 +2139,10 @@ export interface MutationDeactivateLicenseArgs {
   workspaceId: Scalars['String']['input'];
 }
 
+export interface MutationDeleteAuthSigningKeyArgs {
+  id: Scalars['String']['input'];
+}
+
 export interface MutationDeleteBlobArgs {
   hash?: InputMaybe<Scalars['String']['input']>;
   key?: InputMaybe<Scalars['String']['input']>;
@@ -2310,6 +2334,10 @@ export interface MutationRevokePublicDocArgs {
 
 export interface MutationRevokeUserAccessTokenArgs {
   id: Scalars['String']['input'];
+}
+
+export interface MutationRotateAuthSigningKeyArgs {
+  expectedActiveKeyId: Scalars['String']['input'];
 }
 
 export interface MutationSendChangeEmailArgs {
@@ -2672,6 +2700,7 @@ export interface Query {
   adminWorkspacesCount: Scalars['Int']['output'];
   /** get the whole app configuration */
   appConfig: Scalars['JSONObject']['output'];
+  authSigningKeys: Array<AuthSigningKeyType>;
   /** Get current user */
   currentUser: Maybe<UserType>;
   error: ErrorDataUnion;
@@ -3455,7 +3484,7 @@ export interface UserType {
   /** Get user settings */
   settings: UserSettingsType;
   subscriptions: Array<SubscriptionType>;
-  /** @deprecated use native session exchange instead */
+  /** @deprecated use auth session exchange instead */
   token: TokenType;
 }
 
@@ -4191,6 +4220,22 @@ export type AdminWorkspacesCountQuery = {
   adminWorkspacesCount: number;
 };
 
+export type AuthSigningKeysQueryVariables = Exact<{ [key: string]: never }>;
+
+export type AuthSigningKeysQuery = {
+  __typename?: 'Query';
+  authSigningKeys: Array<{
+    __typename?: 'AuthSigningKeyType';
+    id: string;
+    status: string;
+    source: string;
+    createdAt: string | null;
+    retiredAt: string | null;
+    verifyUntil: string | null;
+    canDelete: boolean;
+  }>;
+};
+
 export type CreateChangePasswordUrlMutationVariables = Exact<{
   callbackUrl: Scalars['String']['input'];
   userId: Scalars['String']['input'];
@@ -4212,6 +4257,24 @@ export type CreateUserMutationVariables = Exact<{
 export type CreateUserMutation = {
   __typename?: 'Mutation';
   createUser: { __typename?: 'UserType'; id: string };
+};
+
+export type DeleteAuthSigningKeyMutationVariables = Exact<{
+  id: Scalars['String']['input'];
+}>;
+
+export type DeleteAuthSigningKeyMutation = {
+  __typename?: 'Mutation';
+  deleteAuthSigningKey: Array<{
+    __typename?: 'AuthSigningKeyType';
+    id: string;
+    status: string;
+    source: string;
+    createdAt: string | null;
+    retiredAt: string | null;
+    verifyUntil: string | null;
+    canDelete: boolean;
+  }>;
 };
 
 export type DeleteUserMutationVariables = Exact<{
@@ -4289,6 +4352,24 @@ export type ListUsersQuery = {
     hasPassword: boolean | null;
     emailVerified: boolean;
     avatarUrl: string | null;
+  }>;
+};
+
+export type RotateAuthSigningKeyMutationVariables = Exact<{
+  expectedActiveKeyId: Scalars['String']['input'];
+}>;
+
+export type RotateAuthSigningKeyMutation = {
+  __typename?: 'Mutation';
+  rotateAuthSigningKey: Array<{
+    __typename?: 'AuthSigningKeyType';
+    id: string;
+    status: string;
+    source: string;
+    createdAt: string | null;
+    retiredAt: string | null;
+    verifyUntil: string | null;
+    canDelete: boolean;
   }>;
 };
 
@@ -7867,6 +7948,11 @@ export type Queries =
       response: AdminWorkspacesCountQuery;
     }
   | {
+      name: 'authSigningKeysQuery';
+      variables: AuthSigningKeysQueryVariables;
+      response: AuthSigningKeysQuery;
+    }
+  | {
       name: 'appConfigQuery';
       variables: AppConfigQueryVariables;
       response: AppConfigQuery;
@@ -8244,6 +8330,11 @@ export type Mutations =
       response: CreateUserMutation;
     }
   | {
+      name: 'deleteAuthSigningKeyMutation';
+      variables: DeleteAuthSigningKeyMutationVariables;
+      response: DeleteAuthSigningKeyMutation;
+    }
+  | {
       name: 'deleteUserMutation';
       variables: DeleteUserMutationVariables;
       response: DeleteUserMutation;
@@ -8262,6 +8353,11 @@ export type Mutations =
       name: 'importUsersMutation';
       variables: ImportUsersMutationVariables;
       response: ImportUsersMutation;
+    }
+  | {
+      name: 'rotateAuthSigningKeyMutation';
+      variables: RotateAuthSigningKeyMutationVariables;
+      response: RotateAuthSigningKeyMutation;
     }
   | {
       name: 'sendTestEmailMutation';

@@ -3,6 +3,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 
 import { JobQueue, OnJob } from '../../base';
 import { BackendRuntimeProvider } from '../backend-runtime';
+import { AuthSessionService } from './auth-session';
 
 declare global {
   interface Jobs {
@@ -14,6 +15,7 @@ declare global {
 export class AuthCronJob {
   constructor(
     private readonly rt: BackendRuntimeProvider,
+    private readonly authSessions: AuthSessionService,
     private readonly queue: JobQueue
   ) {}
 
@@ -35,5 +37,6 @@ export class AuthCronJob {
       const count = await this.rt.cleanupExpiredUserSessions(1000);
       if (count < 1000) break;
     }
+    await this.authSessions.cleanup();
   }
 }

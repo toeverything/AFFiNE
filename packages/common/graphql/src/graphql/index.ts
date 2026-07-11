@@ -396,6 +396,22 @@ export const adminWorkspacesCountQuery = {
 }`,
 };
 
+export const authSigningKeysQuery = {
+  id: 'authSigningKeysQuery' as const,
+  op: 'authSigningKeys',
+  query: `query authSigningKeys {
+  authSigningKeys {
+    id
+    status
+    source
+    createdAt
+    retiredAt
+    verifyUntil
+    canDelete
+  }
+}`,
+};
+
 export const createChangePasswordUrlMutation = {
   id: 'createChangePasswordUrlMutation' as const,
   op: 'createChangePasswordUrl',
@@ -418,6 +434,22 @@ export const createUserMutation = {
   query: `mutation createUser($input: CreateUserInput!) {
   createUser(input: $input) {
     id
+  }
+}`,
+};
+
+export const deleteAuthSigningKeyMutation = {
+  id: 'deleteAuthSigningKeyMutation' as const,
+  op: 'deleteAuthSigningKey',
+  query: `mutation deleteAuthSigningKey($id: String!) {
+  deleteAuthSigningKey(id: $id) {
+    id
+    status
+    source
+    createdAt
+    retiredAt
+    verifyUntil
+    canDelete
   }
 }`,
 };
@@ -505,6 +537,22 @@ export const listUsersQuery = {
     avatarUrl
   }
   usersCount(filter: $filter)
+}`,
+};
+
+export const rotateAuthSigningKeyMutation = {
+  id: 'rotateAuthSigningKeyMutation' as const,
+  op: 'rotateAuthSigningKey',
+  query: `mutation rotateAuthSigningKey($expectedActiveKeyId: String!) {
+  rotateAuthSigningKey(expectedActiveKeyId: $expectedActiveKeyId) {
+    id
+    status
+    source
+    createdAt
+    retiredAt
+    verifyUntil
+    canDelete
+  }
 }`,
 };
 
@@ -1950,7 +1998,7 @@ export const getCurrentUserQuery = {
     }
   }
 }`,
-  deprecations: ["'token' is deprecated: use native session exchange instead"],
+  deprecations: ["'token' is deprecated: use auth session exchange instead"],
 };
 
 export const getDocCreatedByUpdatedByListQuery = {

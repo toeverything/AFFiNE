@@ -274,6 +274,48 @@ export class AuthenticationRequired extends UserFriendlyError {
   }
 }
 
+export class AccessTokenExpired extends UserFriendlyError {
+  constructor(message?: string) {
+    super('authentication_required', 'access_token_expired', message);
+  }
+}
+
+export class AccessTokenInvalid extends UserFriendlyError {
+  constructor(message?: string) {
+    super('authentication_required', 'access_token_invalid', message);
+  }
+}
+
+export class AuthSessionExpired extends UserFriendlyError {
+  constructor(message?: string) {
+    super('authentication_required', 'auth_session_expired', message);
+  }
+}
+
+export class AuthSessionRevoked extends UserFriendlyError {
+  constructor(message?: string) {
+    super('authentication_required', 'auth_session_revoked', message);
+  }
+}
+
+export class RefreshTokenInvalid extends UserFriendlyError {
+  constructor(message?: string) {
+    super('authentication_required', 'refresh_token_invalid', message);
+  }
+}
+
+export class RefreshTokenReused extends UserFriendlyError {
+  constructor(message?: string) {
+    super('authentication_required', 'refresh_token_reused', message);
+  }
+}
+
+export class AuthSessionTemporarilyUnavailable extends UserFriendlyError {
+  constructor(message?: string) {
+    super('network_error', 'auth_session_temporarily_unavailable', message);
+  }
+}
+
 export class ActionForbidden extends UserFriendlyError {
   constructor(message?: string) {
     super('action_forbidden', 'action_forbidden', message);
@@ -1200,6 +1242,13 @@ export enum ErrorNames {
   INVALID_EMAIL_TOKEN,
   LINK_EXPIRED,
   AUTHENTICATION_REQUIRED,
+  ACCESS_TOKEN_EXPIRED,
+  ACCESS_TOKEN_INVALID,
+  AUTH_SESSION_EXPIRED,
+  AUTH_SESSION_REVOKED,
+  REFRESH_TOKEN_INVALID,
+  REFRESH_TOKEN_REUSED,
+  AUTH_SESSION_TEMPORARILY_UNAVAILABLE,
   ACTION_FORBIDDEN,
   ACCESS_DENIED,
   EMAIL_VERIFICATION_REQUIRED,
