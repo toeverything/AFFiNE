@@ -7,6 +7,7 @@ import {
 } from '@affine/graphql';
 import type { CurrentUserProfileSnapshot } from '@affine/realtime';
 import { Store } from '@toeverything/infra';
+import { z } from 'zod';
 
 import type { GlobalState, NbstoreService } from '../../storage';
 import type { AuthSessionInfo } from '../entities/session';
@@ -14,6 +15,23 @@ import type { AuthProvider, SignInUserInfo } from '../provider/auth';
 import type { FetchService } from '../services/fetch';
 import type { GraphQLService } from '../services/graphql';
 import type { ServerService } from '../services/server';
+import { createUnsupportedServerVersionError } from './server-config';
+
+const AuthPreflightResponseSchema = z.object({
+  registered: z.boolean(),
+  methods: z.object({
+    password: z.object({ available: z.boolean() }),
+    magicLink: z.object({ available: z.boolean() }),
+    oauth: z.object({
+      available: z.boolean(),
+      providers: z.array(z.string()),
+    }),
+    passkey: z.object({
+      available: z.boolean(),
+      discoverable: z.boolean(),
+    }),
+  }),
+});
 
 export interface AccountProfile extends CurrentUserProfileSnapshot {
   authMethods?: {
@@ -201,17 +219,12 @@ export class AuthStore extends Store {
       throw new Error(`Failed to check user by email: ${email}`);
     }
 
-    const data = (await res.json()) as {
-      registered: boolean;
-      methods: {
-        password: { available: boolean };
-        magicLink: { available: boolean };
-        oauth: { available: boolean; providers: string[] };
-        passkey: { available: boolean; discoverable: boolean };
-      };
-    };
+    const data = AuthPreflightResponseSchema.safeParse(await res.json());
+    if (!data.success) {
+      throw createUnsupportedServerVersionError();
+    }
 
-    return data;
+    return data.data;
   }
 
   async deleteAccount() {
