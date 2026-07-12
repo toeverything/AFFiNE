@@ -221,7 +221,9 @@ export class AuthStore extends Store {
 
     const data = AuthPreflightResponseSchema.safeParse(await res.json());
     if (!data.success) {
-      throw createUnsupportedServerVersionError();
+      throw createUnsupportedServerVersionError(
+        this.serverService.server.config$.value.version
+      );
     }
 
     return data.data;

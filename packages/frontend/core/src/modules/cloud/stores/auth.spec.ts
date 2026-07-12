@@ -19,7 +19,10 @@ function createStore({
   framework.service(GraphQLService, {} as any);
   framework.impl(GlobalState, {} as any);
   framework.service(ServerService, {
-    server: { id: 'test-server' },
+    server: {
+      id: 'test-server',
+      ['config$']: { value: { version: '0.27.0' } },
+    },
   } as any);
   framework.impl(AuthProvider, {} as any);
   framework.service(NbstoreService, {
@@ -63,6 +66,7 @@ describe('AuthStore', () => {
       store.checkUserByEmail('user@affine.pro')
     ).rejects.toMatchObject({
       name: 'UNSUPPORTED_SERVER_VERSION',
+      data: { serverVersion: '0.27.0' },
     });
   });
 
