@@ -274,6 +274,48 @@ export class AuthenticationRequired extends UserFriendlyError {
   }
 }
 
+export class AccessTokenExpired extends UserFriendlyError {
+  constructor(message?: string) {
+    super('authentication_required', 'access_token_expired', message);
+  }
+}
+
+export class AccessTokenInvalid extends UserFriendlyError {
+  constructor(message?: string) {
+    super('authentication_required', 'access_token_invalid', message);
+  }
+}
+
+export class AuthSessionExpired extends UserFriendlyError {
+  constructor(message?: string) {
+    super('authentication_required', 'auth_session_expired', message);
+  }
+}
+
+export class AuthSessionRevoked extends UserFriendlyError {
+  constructor(message?: string) {
+    super('authentication_required', 'auth_session_revoked', message);
+  }
+}
+
+export class RefreshTokenInvalid extends UserFriendlyError {
+  constructor(message?: string) {
+    super('authentication_required', 'refresh_token_invalid', message);
+  }
+}
+
+export class RefreshTokenReused extends UserFriendlyError {
+  constructor(message?: string) {
+    super('authentication_required', 'refresh_token_reused', message);
+  }
+}
+
+export class AuthSessionTemporarilyUnavailable extends UserFriendlyError {
+  constructor(message?: string) {
+    super('network_error', 'auth_session_temporarily_unavailable', message);
+  }
+}
+
 export class ActionForbidden extends UserFriendlyError {
   constructor(message?: string) {
     super('action_forbidden', 'action_forbidden', message);
@@ -1059,6 +1101,16 @@ export class UnsupportedClientVersion extends UserFriendlyError {
     super('action_forbidden', 'unsupported_client_version', message, args);
   }
 }
+@ObjectType()
+class UnsupportedServerVersionDataType {
+  @Field() requiredVersion!: string
+}
+
+export class UnsupportedServerVersion extends UserFriendlyError {
+  constructor(args: UnsupportedServerVersionDataType, message?: string | ((args: UnsupportedServerVersionDataType) => string)) {
+    super('action_forbidden', 'unsupported_server_version', message, args);
+  }
+}
 
 export class NotificationNotFound extends UserFriendlyError {
   constructor(message?: string) {
@@ -1190,6 +1242,13 @@ export enum ErrorNames {
   INVALID_EMAIL_TOKEN,
   LINK_EXPIRED,
   AUTHENTICATION_REQUIRED,
+  ACCESS_TOKEN_EXPIRED,
+  ACCESS_TOKEN_INVALID,
+  AUTH_SESSION_EXPIRED,
+  AUTH_SESSION_REVOKED,
+  REFRESH_TOKEN_INVALID,
+  REFRESH_TOKEN_REUSED,
+  AUTH_SESSION_TEMPORARILY_UNAVAILABLE,
   ACTION_FORBIDDEN,
   ACCESS_DENIED,
   EMAIL_VERIFICATION_REQUIRED,
@@ -1288,6 +1347,7 @@ export enum ErrorNames {
   INVALID_LICENSE_UPDATE_PARAMS,
   LICENSE_EXPIRED,
   UNSUPPORTED_CLIENT_VERSION,
+  UNSUPPORTED_SERVER_VERSION,
   NOTIFICATION_NOT_FOUND,
   MENTION_USER_DOC_ACCESS_DENIED,
   MENTION_USER_ONESELF_DENIED,
@@ -1308,5 +1368,5 @@ registerEnumType(ErrorNames, {
 export const ErrorDataUnionType = createUnionType({
   name: 'ErrorDataUnion',
   types: () =>
-    [GraphqlBadRequestDataType, HttpRequestErrorDataType, SsrfBlockedErrorDataType, ResponseTooLargeErrorDataType, ImageFormatNotSupportedDataType, QueryTooLongDataType, ValidationErrorDataType, WrongSignInCredentialsDataType, UnknownOauthProviderDataType, InvalidOauthCallbackCodeDataType, MissingOauthQueryParameterDataType, InvalidOauthResponseDataType, InvalidEmailDataType, InvalidPasswordLengthDataType, WorkspacePermissionNotFoundDataType, SpaceNotFoundDataType, MemberNotFoundInSpaceDataType, NotInSpaceDataType, AlreadyInSpaceDataType, SpaceAccessDeniedDataType, SpaceOwnerNotFoundDataType, SpaceShouldHaveOnlyOneOwnerDataType, DocNotFoundDataType, DocActionDeniedDataType, DocUpdateBlockedDataType, VersionRejectedDataType, InvalidHistoryTimestampDataType, DocHistoryNotFoundDataType, BlobNotFoundDataType, ExpectToGrantDocUserRolesDataType, ExpectToRevokeDocUserRolesDataType, ExpectToUpdateDocUserRoleDataType, NoMoreSeatDataType, UnsupportedSubscriptionPlanDataType, SubscriptionAlreadyExistsDataType, SubscriptionNotExistsDataType, SameSubscriptionRecurringDataType, SubscriptionPlanNotFoundDataType, CalendarProviderRequestErrorDataType, NoCopilotProviderAvailableDataType, CopilotFailedToGenerateEmbeddingDataType, CopilotDocNotFoundDataType, CopilotMessageNotFoundDataType, CopilotPromptNotFoundDataType, CopilotProviderNotSupportedDataType, CopilotProviderSideErrorDataType, CopilotInvalidContextDataType, CopilotContextFileNotSupportedDataType, CopilotFailedToModifyContextDataType, CopilotFailedToMatchContextDataType, CopilotFailedToMatchGlobalContextDataType, CopilotFailedToAddWorkspaceFileEmbeddingDataType, RuntimeConfigNotFoundDataType, InvalidRuntimeConfigTypeDataType, InvalidLicenseToActivateDataType, InvalidLicenseUpdateParamsDataType, UnsupportedClientVersionDataType, MentionUserDocAccessDeniedDataType, InvalidAppConfigDataType, InvalidAppConfigInputDataType, InvalidSearchProviderRequestDataType, InvalidIndexerInputDataType] as const,
+    [GraphqlBadRequestDataType, HttpRequestErrorDataType, SsrfBlockedErrorDataType, ResponseTooLargeErrorDataType, ImageFormatNotSupportedDataType, QueryTooLongDataType, ValidationErrorDataType, WrongSignInCredentialsDataType, UnknownOauthProviderDataType, InvalidOauthCallbackCodeDataType, MissingOauthQueryParameterDataType, InvalidOauthResponseDataType, InvalidEmailDataType, InvalidPasswordLengthDataType, WorkspacePermissionNotFoundDataType, SpaceNotFoundDataType, MemberNotFoundInSpaceDataType, NotInSpaceDataType, AlreadyInSpaceDataType, SpaceAccessDeniedDataType, SpaceOwnerNotFoundDataType, SpaceShouldHaveOnlyOneOwnerDataType, DocNotFoundDataType, DocActionDeniedDataType, DocUpdateBlockedDataType, VersionRejectedDataType, InvalidHistoryTimestampDataType, DocHistoryNotFoundDataType, BlobNotFoundDataType, ExpectToGrantDocUserRolesDataType, ExpectToRevokeDocUserRolesDataType, ExpectToUpdateDocUserRoleDataType, NoMoreSeatDataType, UnsupportedSubscriptionPlanDataType, SubscriptionAlreadyExistsDataType, SubscriptionNotExistsDataType, SameSubscriptionRecurringDataType, SubscriptionPlanNotFoundDataType, CalendarProviderRequestErrorDataType, NoCopilotProviderAvailableDataType, CopilotFailedToGenerateEmbeddingDataType, CopilotDocNotFoundDataType, CopilotMessageNotFoundDataType, CopilotPromptNotFoundDataType, CopilotProviderNotSupportedDataType, CopilotProviderSideErrorDataType, CopilotInvalidContextDataType, CopilotContextFileNotSupportedDataType, CopilotFailedToModifyContextDataType, CopilotFailedToMatchContextDataType, CopilotFailedToMatchGlobalContextDataType, CopilotFailedToAddWorkspaceFileEmbeddingDataType, RuntimeConfigNotFoundDataType, InvalidRuntimeConfigTypeDataType, InvalidLicenseToActivateDataType, InvalidLicenseUpdateParamsDataType, UnsupportedClientVersionDataType, UnsupportedServerVersionDataType, MentionUserDocAccessDeniedDataType, InvalidAppConfigDataType, InvalidAppConfigInputDataType, InvalidSearchProviderRequestDataType, InvalidIndexerInputDataType] as const,
 });

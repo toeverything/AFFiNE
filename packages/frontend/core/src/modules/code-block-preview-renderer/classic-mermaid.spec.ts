@@ -90,4 +90,14 @@ describe('renderClassicMermaidSvg', () => {
       })
     );
   });
+
+  test('keeps mermaid classic renderer in strict security mode', async () => {
+    render.mockResolvedValue({ svg: '<svg>ok</svg>' });
+
+    await renderClassicMermaidSvg({ code: 'flowchart TD;A-->B' });
+
+    expect(initialize).toHaveBeenCalledWith(
+      expect.objectContaining({ securityLevel: 'strict' })
+    );
+  });
 });

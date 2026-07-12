@@ -121,6 +121,30 @@
           "default": {
             "concurrency": 1
           }
+        },
+        "queues.backendRuntime": {
+          "type": "object",
+          "description": "The config for backend runtime job queue\n@default {\"concurrency\":1}",
+          "properties": {
+            "concurrency": {
+              "type": "number"
+            }
+          },
+          "default": {
+            "concurrency": 1
+          }
+        },
+        "queues.inviteAbuse": {
+          "type": "object",
+          "description": "The config for invite abuse disposition job queue\n@default {\"concurrency\":1}",
+          "properties": {
+            "concurrency": {
+              "type": "number"
+            }
+          },
+          "default": {
+            "concurrency": 1
+          }
         }
       }
     },
@@ -180,6 +204,21 @@
           "description": "Minimum account age in seconds before new accounts can invite members or create share links.\n@default 86400",
           "default": 86400
         },
+        "trustedCloudflareHeaders": {
+          "type": "boolean",
+          "description": "Whether request abuse source facts should trust Cloudflare headers from the origin edge.\n@default false",
+          "default": false
+        },
+        "inviteQuotaShadowMode": {
+          "type": "boolean",
+          "description": "Whether workspace invite quota should record would-block decisions without rejecting requests or executing abuse actions.\n@default false",
+          "default": false
+        },
+        "inviteQuotaFailOpenOnRuntimeError": {
+          "type": "boolean",
+          "description": "Whether workspace invite quota should fail open when native runtime admission is unavailable. Keep disabled for production.\n@default false",
+          "default": false
+        },
         "passwordRequirements": {
           "type": "object",
           "description": "The password strength requirements when set new password.\n@default {\"min\":8,\"max\":32}",
@@ -205,6 +244,31 @@
           "type": "number",
           "description": "Application auth time to refresh in seconds.\n@default 604800",
           "default": 604800
+        },
+        "token.accessTokenTtl": {
+          "type": "number",
+          "description": "Access JWT expiration time in seconds.\n@default 900",
+          "default": 900
+        },
+        "token.refreshIdleTtl": {
+          "type": "number",
+          "description": "Auth refresh session inactivity expiration in seconds.\n@default 2592000",
+          "default": 2592000
+        },
+        "token.refreshAbsoluteTtl": {
+          "type": "number",
+          "description": "Auth refresh session absolute expiration in seconds.\n@default 15552000",
+          "default": 15552000
+        },
+        "token.refreshGracePeriod": {
+          "type": "number",
+          "description": "One-use refresh rotation concurrency grace period in seconds.\n@default 30",
+          "default": 30
+        },
+        "token.refreshRetention": {
+          "type": "number",
+          "description": "Retention for expired auth refresh generations in seconds.\n@default 2592000",
+          "default": 2592000
         }
       }
     },
@@ -251,6 +315,21 @@
           "type": "array",
           "description": "The emails from these domains are always sent using the fallback SMTP server.\n@default []",
           "default": []
+        },
+        "deliveryWorker.batchSize": {
+          "type": "number",
+          "description": "Number of mail delivery rows claimed by each worker tick.\n@default 50",
+          "default": 50
+        },
+        "deliveryWorker.leaseMs": {
+          "type": "number",
+          "description": "Mail delivery worker lease duration in milliseconds.\n@default 120000",
+          "default": 120000
+        },
+        "deliveryWorker.retentionDays": {
+          "type": "number",
+          "description": "Days to retain anonymized terminal mail delivery ledger rows.\n@default 30",
+          "default": 30
         },
         "fallbackSMTP.name": {
           "type": "string",
@@ -493,6 +572,7 @@
                     "jurisdiction": {
                       "type": "string",
                       "enum": [
+                        "default",
                         "eu"
                       ],
                       "description": "Optional jurisdiction for the cloudflare r2 endpoint. Set to \"eu\" for EU buckets."
@@ -518,6 +598,36 @@
                   }
                 }
               }
+            },
+            {
+              "type": "object",
+              "properties": {
+                "provider": {
+                  "type": "string",
+                  "enum": [
+                    "assetpack"
+                  ]
+                },
+                "bucket": {
+                  "type": "string"
+                },
+                "config": {
+                  "type": "object",
+                  "properties": {
+                    "path": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "path"
+                  ]
+                }
+              },
+              "required": [
+                "provider",
+                "bucket",
+                "config"
+              ]
             }
           ],
           "default": {
@@ -691,6 +801,7 @@
                     "jurisdiction": {
                       "type": "string",
                       "enum": [
+                        "default",
                         "eu"
                       ],
                       "description": "Optional jurisdiction for the cloudflare r2 endpoint. Set to \"eu\" for EU buckets."
@@ -716,6 +827,36 @@
                   }
                 }
               }
+            },
+            {
+              "type": "object",
+              "properties": {
+                "provider": {
+                  "type": "string",
+                  "enum": [
+                    "assetpack"
+                  ]
+                },
+                "bucket": {
+                  "type": "string"
+                },
+                "config": {
+                  "type": "object",
+                  "properties": {
+                    "path": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "path"
+                  ]
+                }
+              },
+              "required": [
+                "provider",
+                "bucket",
+                "config"
+              ]
             }
           ],
           "default": {
@@ -995,10 +1136,12 @@
         },
         "config": {
           "type": "object",
-          "description": "The config for the captcha plugin.\n@default {\"turnstile\":{\"secret\":\"\"},\"challenge\":{\"bits\":20}}",
+          "description": "The config for the captcha plugin.\n@default {\"turnstile\":{\"secret\":\"\",\"siteKey\":\"\",\"action\":\"auth-sign-in\"},\"challenge\":{\"bits\":20}}",
           "default": {
             "turnstile": {
-              "secret": ""
+              "secret": "",
+              "siteKey": "",
+              "action": "auth-sign-in"
             },
             "challenge": {
               "bits": 20
@@ -1332,6 +1475,7 @@
                     "jurisdiction": {
                       "type": "string",
                       "enum": [
+                        "default",
                         "eu"
                       ],
                       "description": "Optional jurisdiction for the cloudflare r2 endpoint. Set to \"eu\" for EU buckets."
@@ -1357,6 +1501,36 @@
                   }
                 }
               }
+            },
+            {
+              "type": "object",
+              "properties": {
+                "provider": {
+                  "type": "string",
+                  "enum": [
+                    "assetpack"
+                  ]
+                },
+                "bucket": {
+                  "type": "string"
+                },
+                "config": {
+                  "type": "object",
+                  "properties": {
+                    "path": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "path"
+                  ]
+                }
+              },
+              "required": [
+                "provider",
+                "bucket",
+                "config"
+              ]
             }
           ],
           "default": {

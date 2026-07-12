@@ -48,18 +48,24 @@ test('projects user entitlement to legacy user features and subscriptions', asyn
     email: `${randomUUID()}@affine.pro`,
   });
 
-  await t.context.entitlement.upsertFromCloudSubscription({
-    targetId: user.id,
-    plan: SubscriptionPlan.Pro,
-    recurring: SubscriptionRecurring.Yearly,
-    status: 'active',
-  });
-  await t.context.entitlement.upsertFromCloudSubscription({
-    targetId: user.id,
-    plan: SubscriptionPlan.AI,
-    recurring: SubscriptionRecurring.Monthly,
-    status: 'active',
-  });
+  await t.context.entitlement.upsertFromCloudSubscription(
+    {
+      targetId: user.id,
+      plan: SubscriptionPlan.Pro,
+      recurring: SubscriptionRecurring.Yearly,
+      status: 'active',
+    },
+    { emit: false }
+  );
+  await t.context.entitlement.upsertFromCloudSubscription(
+    {
+      targetId: user.id,
+      plan: SubscriptionPlan.AI,
+      recurring: SubscriptionRecurring.Monthly,
+      status: 'active',
+    },
+    { emit: false }
+  );
   await t.context.projection.onEntitlementChanged({
     targetType: 'user',
     targetId: user.id,

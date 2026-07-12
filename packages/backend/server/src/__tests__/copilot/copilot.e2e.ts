@@ -1587,15 +1587,6 @@ test('should be able to manage context', async t => {
       buffer
     );
 
-    const { files } =
-      (await listContextDocAndFiles(app, workspaceId, sessionId, contextId)) ||
-      {};
-    t.snapshot(
-      cleanObject(files, ['id', 'error', 'createdAt']),
-      'should list context files'
-    );
-
-    // wait for processing
     await waitForStatus(
       async () =>
         (await listContextDocAndFiles(app, workspaceId, sessionId, contextId))
@@ -1604,6 +1595,18 @@ test('should be able to manage context', async t => {
       'context file embedding',
       60
     );
+
+    const { files } =
+      (await listContextDocAndFiles(app, workspaceId, sessionId, contextId)) ||
+      {};
+    t.deepEqual(cleanObject(files, ['id', 'error', 'createdAt']), [
+      {
+        blobId: 'Ip3vuwzubwJnOlzeKQ0Gc-daDcMc7EOYnIqypOyn4bs',
+        chunkSize: 1,
+        name: 'sample.pdf',
+        status: 'finished',
+      },
+    ]);
 
     const result = await waitForMatches(
       () => matchFiles(app, contextId, 'test', 1),
@@ -1641,15 +1644,6 @@ test('should be able to manage context', async t => {
 
     await addContextDoc(app, contextId, docId);
 
-    const { docs } =
-      (await listContextDocAndFiles(app, workspaceId, sessionId, contextId)) ||
-      {};
-    t.snapshot(
-      cleanObject(docs, ['error', 'createdAt']),
-      'should list context docs'
-    );
-
-    // wait for processing
     await waitForStatus(
       async () =>
         (await listContextDocAndFiles(app, workspaceId, sessionId, contextId))
@@ -1658,6 +1652,16 @@ test('should be able to manage context', async t => {
       'context doc embedding',
       60
     );
+
+    const { docs } =
+      (await listContextDocAndFiles(app, workspaceId, sessionId, contextId)) ||
+      {};
+    t.deepEqual(cleanObject(docs, ['error', 'createdAt']), [
+      {
+        id: docId,
+        status: 'finished',
+      },
+    ]);
 
     const result = await waitForMatches(
       () => matchWorkspaceDocs(app, contextId, 'test', 1),

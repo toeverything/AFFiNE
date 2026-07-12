@@ -96,32 +96,6 @@ export class BlobModel extends BaseModel {
     return count > 0;
   }
 
-  async listPendingExpired(before: Date) {
-    return await this.db.blob.findMany({
-      where: {
-        status: 'pending',
-        deletedAt: null,
-        createdAt: {
-          lt: before,
-        },
-      },
-      select: {
-        workspaceId: true,
-        key: true,
-        uploadId: true,
-      },
-    });
-  }
-
-  async listDeleted(workspaceId: string) {
-    return await this.db.blob.findMany({
-      where: {
-        workspaceId,
-        deletedAt: { not: null },
-      },
-    });
-  }
-
   async totalSize(workspaceId: string) {
     const sum = await this.db.blob.aggregate({
       where: {

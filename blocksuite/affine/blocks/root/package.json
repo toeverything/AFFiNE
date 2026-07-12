@@ -43,7 +43,7 @@
     "@blocksuite/store": "workspace:*",
     "@preact/signals-core": "^1.8.0",
     "@types/lodash-es": "^4.17.12",
-    "dompurify": "^3.3.0",
+    "dompurify": "^3.4.11",
     "html2canvas": "^1.4.1",
     "lit": "^3.2.0",
     "lodash-es": "^4.17.23",
@@ -61,5 +61,5 @@
     "!src/__tests__",
     "!dist/__tests__"
   ],
-  "version": "0.26.3"
+  "version": "0.27.0"
 }

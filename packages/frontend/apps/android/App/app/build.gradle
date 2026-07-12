@@ -14,6 +14,9 @@ plugins {
     alias libs.plugins.hilt
 }
 
+def nativeTarget = System.getenv('AFFINE_ANDROID_NATIVE_TARGET') ?: 'arm64'
+def nativeAbi = nativeTarget == 'x86_64' ? 'x86_64' : 'arm64-v8a'
+
 apply from: 'capacitor.build.gradle'
 
 android {
@@ -27,13 +30,14 @@ android {
         versionCode 1
         versionName System.getenv('VERSION_NAME') ?: 'v1.0.0-local'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        manifestPlaceholders = [usesCleartextTraffic: "false"]
         aaptOptions {
             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
             // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
         ndk {
-            abiFilters 'arm64-v8a'
+            abiFilters nativeAbi
         }
     }
     buildFeatures {
@@ -49,6 +53,7 @@ android {
         debug {
             minifyEnabled false
             debuggable true
+            manifestPlaceholders = [usesCleartextTraffic: "true"]
         }
     }
     flavorDimensions = ['chanel']
@@ -134,6 +139,8 @@ dependencies {
     testImplementation libs.junit
     androidTestImplementation libs.androidx.junit
     androidTestImplementation libs.androidx.espresso.core
+    androidTestImplementation platform(libs.okhttp.bom)
+    androidTestImplementation "com.squareup.okhttp3:mockwebserver"
 }
 
 cargo {
@@ -142,7 +149,7 @@ cargo {
     features {
         defaultAnd("use-as-lib")
     }
-    targets = ["arm64"]
+    targets = [nativeTarget]
     pythonCommand = "python3"
     targetDirectory = "../../../../../../target"
     apiLevel = 28
@@ -186,7 +193,7 @@ android.applicationVariants.configureEach { variant ->
     def t = tasks.register("generate${variantName}UniFFIBindings", Exec) {
         workingDir "${project.projectDir}"
         // Runs the bindings generation, note that you must have uniffi-bindgen installed and in your PATH environment variable
-        commandLine "${cargoPath}", 'run', '--bin', 'uniffi-bindgen', 'generate', '--library', "${buildDir}/rustJniLibs/android/arm64-v8a/libaffine_mobile_native.so", '--language', 'kotlin', '--out-dir', "${project.projectDir}/src/main/java"
+        commandLine "${cargoPath}", 'run', '--bin', 'uniffi-bindgen', 'generate', '--library', "${buildDir}/rustJniLibs/android/${nativeAbi}/libaffine_mobile_native.so", '--language', 'kotlin', '--out-dir', "${project.projectDir}/src/main/java"
         dependsOn("cargoBuild")
     }
     variant.javaCompileProvider.get().dependsOn(t)

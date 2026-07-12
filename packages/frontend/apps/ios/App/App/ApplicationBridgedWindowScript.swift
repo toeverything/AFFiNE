@@ -18,6 +18,7 @@ enum ApplicationBridgedWindowScript: String {
   case getCurrentWorkspaceId = "window.getCurrentWorkspaceId();"
   case getCurrentDocId = "window.getCurrentDocId();"
   case getCurrentI18nLocale = "window.getCurrentI18nLocale();"
+  case getCurrentThemeMode = "window.getCurrentThemeMode();"
   case createNewDocByMarkdownInCurrentWorkspace = "return await window.createNewDocByMarkdownInCurrentWorkspace(markdown, title);"
 
   var requiresAsyncContext: Bool {

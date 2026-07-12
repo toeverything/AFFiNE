@@ -358,6 +358,12 @@ e2e(
           requestedSize
           effectiveSize
         }
+        copilotWindow {
+          to
+          bucket
+          requestedSize
+          effectiveSize
+        }
         syncActiveUsersTimeline {
           minute
           activeUsers
@@ -366,6 +372,7 @@ e2e(
           date
           value
         }
+        generatedAt
       }
     }
   `;
@@ -375,6 +382,7 @@ e2e(
         storageHistoryDays: -10,
         syncHistoryHours: -10,
         sharedLinkWindowDays: -10,
+        copilotWindowDays: 500,
       },
     });
 
@@ -385,10 +393,53 @@ e2e(
     t.is(dashboard.storageWindow.bucket, 'Day');
     t.is(dashboard.storageWindow.effectiveSize, 1);
     t.is(dashboard.topSharedLinksWindow.effectiveSize, 1);
+    t.is(dashboard.copilotWindow.bucket, 'Day');
+    t.is(dashboard.copilotWindow.effectiveSize, 90);
+    t.is(
+      new Date(dashboard.copilotWindow.to).getTime(),
+      new Date(dashboard.generatedAt).getTime()
+    );
     t.is(dashboard.syncActiveUsersTimeline.length, 1);
     t.is(dashboard.workspaceStorageHistory.length, 1);
   }
 );
+
+e2e('adminWorkspace should serialize member roles as enum names', async t => {
+  const admin = await app.create(Mockers.User, {
+    feature: 'administrator',
+  });
+  await app.login(admin);
+
+  const owner = await app.create(Mockers.User);
+  const workspace = await app.create(Mockers.Workspace, {
+    owner: { id: owner.id },
+  });
+
+  const result = await gql(
+    `
+      query AdminWorkspace($id: String!) {
+        adminWorkspace(id: $id) {
+          id
+          members(skip: 0, take: 20) {
+            id
+            role
+            status
+          }
+        }
+      }
+    `,
+    { id: workspace.id }
+  );
+
+  t.falsy(result.errors);
+  t.is(result.data!.adminWorkspace.id, workspace.id);
+  t.true(
+    result.data!.adminWorkspace.members.some(
+      (member: { id: string; role: string }) =>
+        member.id === owner.id && member.role === 'Owner'
+    )
+  );
+});
 
 e2e(
   'adminDashboard should carry forward missing sync and storage samples',
@@ -524,6 +575,36 @@ e2e(
         dashboard.workspaceStorageBytes
       );
       t.is(blobHistory[blobHistory.length - 1], dashboard.blobStorageBytes);
+
+      const baselineResult = await gql(
+        `
+      query AdminDashboard($input: AdminDashboardInput) {
+        adminDashboard(input: $input) {
+          workspaceStorageHistory {
+            value
+          }
+          blobStorageHistory {
+            value
+          }
+        }
+      }
+    `,
+        {
+          input: {
+            storageHistoryDays: 2,
+          },
+        }
+      );
+
+      t.falsy(baselineResult.errors);
+      t.is(
+        baselineResult.data!.adminDashboard.workspaceStorageHistory[0].value,
+        workspaceHistory[1]
+      );
+      t.is(
+        baselineResult.data!.adminDashboard.blobStorageHistory[0].value,
+        blobHistory[1]
+      );
     } finally {
       clock.restore();
     }

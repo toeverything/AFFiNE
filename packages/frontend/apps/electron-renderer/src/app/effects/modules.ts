@@ -122,6 +122,9 @@ export function setupModules() {
       async signOut() {
         await apis.handler.auth.signOut(endpoint);
       },
+      async clearSession() {
+        await apis.handler.auth.clearSession(endpoint);
+      },
     };
   });
 

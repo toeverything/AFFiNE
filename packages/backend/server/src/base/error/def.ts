@@ -422,6 +422,34 @@ export const USER_FRIENDLY_ERRORS = {
     type: 'authentication_required',
     message: 'You must sign in first to access this resource.',
   },
+  access_token_expired: {
+    type: 'authentication_required',
+    message: 'The access token has expired.',
+  },
+  access_token_invalid: {
+    type: 'authentication_required',
+    message: 'The access token is invalid.',
+  },
+  auth_session_expired: {
+    type: 'authentication_required',
+    message: 'The auth session has expired.',
+  },
+  auth_session_revoked: {
+    type: 'authentication_required',
+    message: 'The auth session has been revoked.',
+  },
+  refresh_token_invalid: {
+    type: 'authentication_required',
+    message: 'The refresh token is invalid.',
+  },
+  refresh_token_reused: {
+    type: 'authentication_required',
+    message: 'The refresh token has already been used.',
+  },
+  auth_session_temporarily_unavailable: {
+    type: 'network_error',
+    message: 'Auth session service is temporarily unavailable.',
+  },
   action_forbidden: {
     type: 'action_forbidden',
     message: 'You are not allowed to perform this action.',
@@ -906,6 +934,14 @@ export const USER_FRIENDLY_ERRORS = {
     },
     message: ({ clientVersion, requiredVersion }) =>
       `Unsupported client with version [${clientVersion}], required version is [${requiredVersion}].`,
+  },
+  unsupported_server_version: {
+    type: 'action_forbidden',
+    args: {
+      requiredVersion: 'string',
+    },
+    message: ({ requiredVersion }) =>
+      `This AFFiNE server is too old for this client. Please upgrade the server to ${requiredVersion}.`,
   },
 
   // Notification Errors

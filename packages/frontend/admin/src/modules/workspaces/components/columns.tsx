@@ -102,14 +102,14 @@ export const useColumns = () => {
       },
       {
         accessorKey: 'members',
-        header: () => <div className="text-xs font-medium">Members</div>,
+        header: () => <div className="text-xs font-medium">Active Members</div>,
         cell: ({ row }) => {
           const ws = row.original;
           return (
             <div className="flex flex-col text-xs gap-1">
               <div className="flex gap-2">
                 <span className="font-medium">{ws.memberCount}</span>
-                <span className="text-muted-foreground">members</span>
+                <span className="text-muted-foreground">active members</span>
               </div>
               <div className="flex gap-2">
                 <span className="font-medium">{ws.publicPageCount}</span>

@@ -20,6 +20,8 @@ type Metadata = {
   legacyProjected?: boolean;
 };
 
+const BACKFILL_BATCH_SIZE = 1000;
+
 @Injectable()
 export class LegacyEntitlementProjectionService {
   constructor(
@@ -111,11 +113,23 @@ export class LegacyEntitlementProjectionService {
   }: {
     cleanupLegacy: boolean;
   }) {
-    const [subscriptions, users, workspaces] = await Promise.all([
-      this.db.subscription.findMany(),
-      this.db.user.findMany({ select: { id: true } }),
-      this.db.workspace.findMany({ select: { id: true } }),
-    ]);
+    const [subscriptionCount, invoiceCount, installedLicenseCount] =
+      await Promise.all([
+        this.db.subscription.count(),
+        this.db.invoice.count(),
+        this.db.installedLicense.count(),
+      ]);
+
+    if (
+      subscriptionCount === 0 &&
+      invoiceCount === 0 &&
+      installedLicenseCount === 0
+    ) {
+      await this.#backfillQuotaStateStaleFlags();
+      return;
+    }
+
+    const subscriptions = await this.db.subscription.findMany();
 
     for (const subscription of subscriptions) {
       if (!(await this.#subscriptionTargetExists(subscription))) {
@@ -148,44 +162,89 @@ export class LegacyEntitlementProjectionService {
     await this.#backfillPaymentEvents();
     await this.scanInstalledLicenses({ emit: cleanupLegacy });
 
+    await this.#backfillQuotaStateStaleFlags();
+  }
+
+  async #backfillQuotaStateStaleFlags() {
     await Promise.all([
-      ...users.map(user =>
-        this.db.effectiveUserQuotaState.upsert({
-          where: { userId: user.id },
-          update: { stale: true },
-          create: {
-            userId: user.id,
-            plan: 'free',
-            blobLimit: BigInt(0),
-            storageQuota: BigInt(0),
-            usedStorageQuota: BigInt(0),
-            historyPeriodSeconds: 0,
-            known: false,
-            stale: true,
-          },
-        })
-      ),
-      ...workspaces.map(workspace =>
-        this.db.effectiveWorkspaceQuotaState.upsert({
-          where: { workspaceId: workspace.id },
-          update: { stale: true },
-          create: {
-            workspaceId: workspace.id,
-            plan: 'free',
-            usesOwnerQuota: true,
-            seatLimit: 0,
-            memberCount: 0,
-            overcapacityMemberCount: 0,
-            blobLimit: BigInt(0),
-            storageQuota: BigInt(0),
-            usedStorageQuota: BigInt(0),
-            historyPeriodSeconds: 0,
-            known: false,
-            stale: true,
-          },
-        })
-      ),
+      this.db.effectiveUserQuotaState.updateMany({
+        data: { stale: true },
+      }),
+      this.db.effectiveWorkspaceQuotaState.updateMany({
+        data: { stale: true },
+      }),
     ]);
+
+    await Promise.all([
+      this.#createMissingUserQuotaStates(),
+      this.#createMissingWorkspaceQuotaStates(),
+    ]);
+  }
+
+  async #createMissingUserQuotaStates() {
+    let lastId: string | undefined;
+    while (true) {
+      const users = await this.db.user.findMany({
+        select: { id: true },
+        where: lastId ? { id: { gt: lastId } } : undefined,
+        orderBy: { id: 'asc' },
+        take: BACKFILL_BATCH_SIZE,
+      });
+      if (!users.length) {
+        break;
+      }
+
+      await this.db.effectiveUserQuotaState.createMany({
+        data: users.map(user => ({
+          userId: user.id,
+          plan: 'free',
+          blobLimit: BigInt(0),
+          storageQuota: BigInt(0),
+          usedStorageQuota: BigInt(0),
+          historyPeriodSeconds: 0,
+          known: false,
+          stale: true,
+        })),
+        skipDuplicates: true,
+      });
+
+      lastId = users.at(-1)?.id;
+    }
+  }
+
+  async #createMissingWorkspaceQuotaStates() {
+    let lastId: string | undefined;
+    while (true) {
+      const workspaces = await this.db.workspace.findMany({
+        select: { id: true },
+        where: lastId ? { id: { gt: lastId } } : undefined,
+        orderBy: { id: 'asc' },
+        take: BACKFILL_BATCH_SIZE,
+      });
+      if (!workspaces.length) {
+        break;
+      }
+
+      await this.db.effectiveWorkspaceQuotaState.createMany({
+        data: workspaces.map(workspace => ({
+          workspaceId: workspace.id,
+          plan: 'free',
+          usesOwnerQuota: true,
+          seatLimit: 0,
+          memberCount: 0,
+          overcapacityMemberCount: 0,
+          blobLimit: BigInt(0),
+          storageQuota: BigInt(0),
+          usedStorageQuota: BigInt(0),
+          historyPeriodSeconds: 0,
+          known: false,
+          stale: true,
+        })),
+        skipDuplicates: true,
+      });
+
+      lastId = workspaces.at(-1)?.id;
+    }
   }
 
   async #backfillProviderSubscription(subscription: {

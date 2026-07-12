@@ -162,21 +162,4 @@ export class HistoryModel extends BaseModel {
       editor: row.createdByUser,
     };
   }
-
-  /**
-   * Clean expired histories.
-   */
-  async cleanExpired() {
-    const { count } = await this.db.snapshotHistory.deleteMany({
-      where: {
-        expiredAt: {
-          lte: new Date(),
-        },
-      },
-    });
-    if (count > 0) {
-      this.logger.log(`Deleted ${count} expired histories`);
-    }
-    return count;
-  }
 }

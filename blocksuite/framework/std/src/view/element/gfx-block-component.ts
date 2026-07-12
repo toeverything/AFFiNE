@@ -42,12 +42,17 @@ function updateBlockVisibility(view: GfxBlockComponent) {
   if (view.transformState$.value === 'active') {
     view.style.visibility = 'visible';
     view.style.pointerEvents = 'auto';
-    view.classList.remove('block-idle');
+    view.classList.remove('block-idle', 'block-survival');
     view.classList.add('block-active');
+  } else if (view.transformState$.value === 'survival') {
+    view.style.visibility = 'visible';
+    view.style.pointerEvents = 'none';
+    view.classList.remove('block-active', 'block-idle');
+    view.classList.add('block-survival');
   } else {
     view.style.visibility = 'hidden';
     view.style.pointerEvents = 'none';
-    view.classList.remove('block-active');
+    view.classList.remove('block-active', 'block-survival');
     view.classList.add('block-idle');
   }
 }
@@ -55,8 +60,19 @@ function updateBlockVisibility(view: GfxBlockComponent) {
 function handleGfxConnection(instance: GfxBlockComponent) {
   instance.style.position = 'absolute';
 
+  const viewport = instance.gfx.viewport;
+
   instance.disposables.add(
-    instance.gfx.viewport.viewportUpdated.subscribe(() => {
+    viewport.viewportUpdated.subscribe(() => {
+      // When SKIP_REFRESH_DURING_GESTURE is enabled and a gesture is active,
+      // skip per-block transform updates. The viewport-element applies a
+      // container-level CSS transform to keep visuals in sync instead.
+      if (
+        viewport.SKIP_REFRESH_DURING_GESTURE &&
+        (viewport.panning$.value || viewport.zooming$.value)
+      ) {
+        return;
+      }
       updateTransform(instance);
     })
   );
@@ -95,7 +111,7 @@ export abstract class GfxBlockComponent<
 {
   [GfxElementSymbol] = true;
 
-  readonly transformState$ = signal<'idle' | 'active'>('active');
+  readonly transformState$ = signal<'idle' | 'survival' | 'active'>('active');
 
   get gfx() {
     return this.std.get(GfxControllerIdentifier);
@@ -207,7 +223,7 @@ export function toGfxBlockComponent<
   return class extends CustomBlock {
     [GfxElementSymbol] = true;
 
-    readonly transformState$ = signal<'idle' | 'active'>('active');
+    readonly transformState$ = signal<'idle' | 'survival' | 'active'>('active');
 
     override selected$ = computed(() => {
       const selection = this.std.selection.value.find(

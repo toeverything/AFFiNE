@@ -36,6 +36,7 @@ model User {
   docPermissions              WorkspaceDocUserRole[]
   connectedAccounts           ConnectedAccount[]
   calendarAccounts            CalendarAccount[]
+  mcpCredentials              McpCredential[]
   sessions                    UserSession[]
   aiSessions                  AiSession[]
   appConfigs                  AppConfig[]
@@ -51,7 +52,6 @@ model User {
   comments                    Comment[]
   replies                     Reply[]
   commentAttachments          CommentAttachment[]            @relation("createdCommentAttachments")
-  AccessToken                 AccessToken[]
   workspaceCalendars          WorkspaceCalendar[]
   workspaceMemberLastAccesses WorkspaceMemberLastAccess[]
   quotaState                  EffectiveUserQuotaState?
@@ -97,11 +97,59 @@ model UserSession {
   refreshClientVersion String?   @map("refresh_client_version") @db.VarChar
   createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
 
-  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session     Session      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  authSession AuthSession?
 
   @@unique([sessionId, userId])
   @@map("user_sessions")
+}
+
+model AuthSession {
+  id                String    @id @default(uuid()) @db.VarChar
+  userSessionId     String    @unique @map("user_session_id") @db.VarChar
+  installationId    String    @map("installation_id") @db.VarChar
+  platform          String    @db.VarChar
+  deviceName        String?   @map("device_name") @db.VarChar
+  appVersion        String?   @map("app_version") @db.VarChar
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  lastSeenAt        DateTime  @default(now()) @map("last_seen_at") @db.Timestamptz(3)
+  idleExpiresAt     DateTime  @map("idle_expires_at") @db.Timestamptz(3)
+  absoluteExpiresAt DateTime  @map("absolute_expires_at") @db.Timestamptz(3)
+  revokedAt         DateTime? @map("revoked_at") @db.Timestamptz(3)
+  revokeReason      String?   @map("revoke_reason") @db.VarChar
+  lastIpHash        String?   @map("last_ip_hash") @db.VarChar
+  lastUserAgent     String?   @map("last_user_agent") @db.VarChar
+
+  userSession   UserSession        @relation(fields: [userSessionId], references: [id], onDelete: Cascade)
+  refreshTokens AuthRefreshToken[]
+
+  @@index([installationId])
+  @@index([idleExpiresAt])
+  @@index([absoluteExpiresAt])
+  @@map("auth_sessions")
+}
+
+model AuthRefreshToken {
+  id            String    @id @db.VarChar
+  authSessionId String    @map("auth_session_id") @db.VarChar
+  generation    Int
+  secretHash    String    @map("secret_hash") @db.VarChar
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt     DateTime  @map("expires_at") @db.Timestamptz(3)
+  usedAt        DateTime? @map("used_at") @db.Timestamptz(3)
+  replacedById  String?   @unique @map("replaced_by_id") @db.VarChar
+  graceUsedAt   DateTime? @map("grace_used_at") @db.Timestamptz(3)
+  revokedAt     DateTime? @map("revoked_at") @db.Timestamptz(3)
+
+  authSession AuthSession       @relation(fields: [authSessionId], references: [id], onDelete: Cascade)
+  replacedBy  AuthRefreshToken? @relation("AuthRefreshRotation", fields: [replacedById], references: [id], onDelete: SetNull)
+  replaces    AuthRefreshToken? @relation("AuthRefreshRotation")
+
+  @@unique([authSessionId, generation])
+  @@index([authSessionId, usedAt])
+  @@index([expiresAt])
+  @@map("auth_refresh_tokens")
 }
 
 model VerificationToken {
@@ -169,6 +217,7 @@ model Workspace {
   projectedInvitations       WorkspaceInvitation[]
   docAccessPolicies          DocAccessPolicy[]
   docGrants                  DocGrant[]
+  mcpCredentials             McpCredential[]
 
   @@index([lastCheckEmbeddings])
   @@index([createdAt])
@@ -358,6 +407,58 @@ model DocAccessPolicy {
   @@id([workspaceId, docId])
   @@index([workspaceId, docId])
   @@map("doc_access_policies")
+}
+
+model MailDelivery {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  mailName           String    @map("mail_name") @db.Text
+  mailClass          String    @map("mail_class") @db.Text
+  priority           String    @default("normal") @db.Text
+  status             String    @db.Text
+  dedupeKey          String?   @map("dedupe_key") @db.Text
+  recipientEmail     String?   @map("recipient_email") @db.Text
+  recipientHash      String    @map("recipient_hash") @db.Text
+  recipientDomain    String    @map("recipient_domain") @db.Text
+  recipientUserId    String?   @map("recipient_user_id") @db.VarChar
+  actorUserId        String?   @map("actor_user_id") @db.VarChar
+  workspaceId        String?   @map("workspace_id") @db.VarChar
+  notificationId     String?   @map("notification_id") @db.VarChar
+  abuseSubjectKey    String?   @map("abuse_subject_key") @db.Text
+  quotaReservationId String?   @map("quota_reservation_id") @db.Uuid
+  quotaDecision      Json?     @map("quota_decision") @db.JsonB
+  payload            Json?     @db.JsonB
+  sendAfter          DateTime  @default(now()) @map("send_after") @db.Timestamptz(3)
+  expiresAt          DateTime? @map("expires_at") @db.Timestamptz(3)
+  attemptCount       Int       @default(0) @map("attempt_count") @db.Integer
+  maxAttempts        Int       @default(3) @map("max_attempts") @db.Integer
+  lockedBy           String?   @map("locked_by") @db.Text
+  lockedUntil        DateTime? @map("locked_until") @db.Timestamptz(3)
+  firstAttemptAt     DateTime? @map("first_attempt_at") @db.Timestamptz(3)
+  lastAttemptAt      DateTime? @map("last_attempt_at") @db.Timestamptz(3)
+  sentAt             DateTime? @map("sent_at") @db.Timestamptz(3)
+  settledAt          DateTime? @map("settled_at") @db.Timestamptz(3)
+  canceledAt         DateTime? @map("canceled_at") @db.Timestamptz(3)
+  failedAt           DateTime? @map("failed_at") @db.Timestamptz(3)
+  providerMessageId  String?   @map("provider_message_id") @db.Text
+  providerResponse   String?   @map("provider_response") @db.Text
+  lastErrorCode      String?   @map("last_error_code") @db.Text
+  lastError          String?   @map("last_error") @db.Text
+  retentionState     String    @default("full") @map("retention_state") @db.Text
+  anonymizedAt       DateTime? @map("anonymized_at") @db.Timestamptz(3)
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([createdAt])
+  @@index([mailName, status, createdAt])
+  @@index([mailClass, status, createdAt])
+  @@index([status, createdAt])
+  @@index([status, sendAfter, lockedUntil], map: "mail_deliveries_ready_idx")
+  @@index([settledAt])
+  @@index([recipientDomain, createdAt])
+  @@index([workspaceId, createdAt])
+  @@index([actorUserId, createdAt])
+  @@index([abuseSubjectKey, createdAt])
+  @@map("mail_deliveries")
 }
 
 model DocGrant {
@@ -1395,18 +1496,35 @@ model CommentAttachment {
   @@map("comment_attachments")
 }
 
-model AccessToken {
-  id        String    @id @default(uuid()) @db.VarChar
-  name      String    @db.VarChar
-  token     String    @unique @db.VarChar
-  userId    String    @map("user_id") @db.VarChar
-  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  expiresAt DateTime? @map("expires_at") @db.Timestamptz(3)
+enum McpAccessMode {
+  READ_ONLY
+  READ_WRITE
+}
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+model McpCredential {
+  id           String        @id @default(uuid()) @db.VarChar
+  familyId     String        @map("family_id") @db.VarChar
+  generation   Int           @default(0)
+  name         String        @db.VarChar
+  secretHash   String        @unique @map("secret_hash") @db.VarChar
+  fingerprint  String        @db.VarChar
+  userId       String        @map("user_id") @db.VarChar
+  workspaceId  String        @map("workspace_id") @db.VarChar
+  accessMode   McpAccessMode @default(READ_ONLY) @map("access_mode")
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt    DateTime      @map("expires_at") @db.Timestamptz(3)
+  lastUsedAt   DateTime?     @map("last_used_at") @db.Timestamptz(3)
+  revokedAt    DateTime?     @map("revoked_at") @db.Timestamptz(3)
+  replacedById String?       @map("replaced_by_id") @db.VarChar
+  graceEndsAt  DateTime?     @map("grace_ends_at") @db.Timestamptz(3)
 
-  @@index([userId])
-  @@map("access_tokens")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([familyId, generation])
+  @@index([userId, workspaceId])
+  @@index([expiresAt])
+  @@map("mcp_credentials")
 }
 
 model CalendarAccount {

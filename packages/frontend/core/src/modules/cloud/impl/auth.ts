@@ -65,6 +65,9 @@ export function configureDefaultAuthProvider(framework: Framework) {
 
         if (credential.verifyToken) {
           headers['x-captcha-token'] = credential.verifyToken;
+          headers['x-captcha-provider'] = credential.challenge
+            ? 'hashcash'
+            : 'turnstile';
         }
         if (credential.challenge) {
           headers['x-captcha-challenge'] = credential.challenge;
@@ -72,7 +75,10 @@ export function configureDefaultAuthProvider(framework: Framework) {
 
         const res = await fetchService.fetch('/api/auth/sign-in', {
           method: 'POST',
-          body: JSON.stringify(credential),
+          body: JSON.stringify({
+            email: credential.email,
+            password: credential.password,
+          }),
           headers: {
             'content-type': 'application/json',
             ...headers,
@@ -94,6 +100,7 @@ export function configureDefaultAuthProvider(framework: Framework) {
           headers: csrfToken ? { 'x-affine-csrf-token': csrfToken } : undefined,
         });
       },
+      async clearSession() {},
     };
   });
 }

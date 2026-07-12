@@ -29,16 +29,30 @@ export class VerificationTokenModel extends BaseModel {
     credential?: string,
     ttlInSec: number = 30 * 60
   ) {
+    const { token } = await this.createWithExpiresAt(
+      type,
+      credential,
+      ttlInSec
+    );
+    return token;
+  }
+
+  async createWithExpiresAt(
+    type: TokenType,
+    credential?: string,
+    ttlInSec: number = 30 * 60
+  ) {
     const plaintextToken = randomUUID();
+    const expiresAt = new Date(Date.now() + ttlInSec * 1000);
     const { token } = await this.db.verificationToken.create({
       data: {
         type,
         token: plaintextToken,
         credential,
-        expiresAt: new Date(Date.now() + ttlInSec * 1000),
+        expiresAt,
       },
     });
-    return this.crypto.encrypt(token);
+    return { token: this.crypto.encrypt(token), expiresAt };
   }
 
   /**

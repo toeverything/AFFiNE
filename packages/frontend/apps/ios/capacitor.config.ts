@@ -21,6 +21,8 @@ const config: CapacitorConfig & AppConfig = {
     scheme: 'AFFiNE',
     path: '.',
     webContentsDebuggingEnabled: true,
+    // Silence Capacitor's bridge logging (⚡️ TO JS / ⚡️ To Native -> / ⚡️ [log]).
+    loggingBehavior: 'none',
   },
   server: {
     // url: 'http://localhost:8080',

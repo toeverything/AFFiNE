@@ -78,7 +78,11 @@ export const AddSelfhostedStep = ({
       console.error(err);
       const userFriendlyError = UserFriendlyError.fromAny(err);
       setError(true);
-      if (userFriendlyError.is('TOO_MANY_REQUEST')) {
+      if (userFriendlyError.is('UNSUPPORTED_SERVER_VERSION')) {
+        setErrorHint(
+          t[`error.${userFriendlyError.name}`](userFriendlyError.data)
+        );
+      } else if (userFriendlyError.is('TOO_MANY_REQUEST')) {
         setErrorHint(t['error.TOO_MANY_REQUEST']());
       } else if (
         userFriendlyError.is('NETWORK_ERROR') ||

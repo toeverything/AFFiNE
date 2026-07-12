@@ -1,9 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
-import { JobQueue, OneDay, OnJob } from '../../base';
-import { Models } from '../../models';
-import { WorkspaceBlobStorage } from './wrappers/blob';
+import { EventBus, JobQueue, OneDay, OnJob } from '../../base';
+import { StorageRuntimeProvider } from '../storage-runtime';
 
 declare global {
   interface Jobs {
@@ -16,8 +15,8 @@ export class BlobUploadCleanupJob {
   private readonly logger = new Logger(BlobUploadCleanupJob.name);
 
   constructor(
-    private readonly models: Models,
-    private readonly storage: WorkspaceBlobStorage,
+    private readonly rt: StorageRuntimeProvider,
+    private readonly event: EventBus,
     private readonly queue: JobQueue
   ) {}
 
@@ -34,21 +33,25 @@ export class BlobUploadCleanupJob {
 
   @OnJob('nightly.cleanExpiredPendingBlobs')
   async cleanExpiredPendingBlobs() {
-    const cutoff = new Date(Date.now() - OneDay);
-    const pending = await this.models.blob.listPendingExpired(cutoff);
-
-    for (const blob of pending) {
-      if (blob.uploadId) {
-        await this.storage.abortMultipartUpload(
-          blob.workspaceId,
-          blob.key,
-          blob.uploadId
-        );
+    const cutoff = Date.now() - OneDay;
+    let scanned = 0;
+    let deleted = 0;
+    for (;;) {
+      const result = await this.rt.cleanupExpiredPendingBlobs(cutoff, 1000);
+      scanned += result.scanned;
+      deleted += result.deleted;
+      await Promise.all(
+        result.workspaceIds.map(workspaceId =>
+          this.event.emitAsync('workspace.blobs.updated', { workspaceId })
+        )
+      );
+      if (result.scanned < 1000) {
+        break;
       }
-
-      await this.storage.delete(blob.workspaceId, blob.key, true);
     }
 
-    this.logger.log(`cleaned ${pending.length} expired pending blobs`);
+    this.logger.log(
+      `cleaned ${deleted} expired pending blobs, scanned ${scanned}`
+    );
   }
 }

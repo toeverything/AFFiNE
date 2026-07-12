@@ -1,6 +1,6 @@
-use affine_common::{
-  doc_parser::{self, BlockInfo, CrawlResult, MarkdownResult, PageDocContent, WorkspaceDocContent},
-  napi_utils::map_napi_err,
+use affine_common::napi_utils::map_napi_err;
+use affine_doc_loader::{
+  self as doc_loader, BlockInfo, CrawlResult, MarkdownResult, PageDocContent, WorkspaceDocContent,
 };
 use napi::bindgen_prelude::*;
 use napi_derive::napi;
@@ -109,7 +109,7 @@ impl From<CrawlResult> for NativeCrawlResult {
 #[napi]
 pub fn parse_doc_from_binary(doc_bin: Buffer, doc_id: String) -> Result<NativeCrawlResult> {
   let result = map_napi_err(
-    doc_parser::parse_doc_from_binary(doc_bin.into(), doc_id),
+    doc_loader::parse_doc_from_binary(doc_bin.into(), doc_id),
     Status::GenericFailure,
   )?;
   Ok(result.into())
@@ -118,7 +118,7 @@ pub fn parse_doc_from_binary(doc_bin: Buffer, doc_id: String) -> Result<NativeCr
 #[napi]
 pub fn parse_page_doc(doc_bin: Buffer, max_summary_length: Option<i32>) -> Result<Option<NativePageDocContent>> {
   let result = map_napi_err(
-    doc_parser::parse_page_doc(doc_bin.into(), max_summary_length.map(|v| v as isize)),
+    doc_loader::parse_page_doc(doc_bin.into(), max_summary_length.map(|v| v as isize)),
     Status::GenericFailure,
   )?;
   Ok(result.map(Into::into))
@@ -126,7 +126,7 @@ pub fn parse_page_doc(doc_bin: Buffer, max_summary_length: Option<i32>) -> Resul
 
 #[napi]
 pub fn parse_workspace_doc(doc_bin: Buffer) -> Result<Option<NativeWorkspaceDocContent>> {
-  let result = map_napi_err(doc_parser::parse_workspace_doc(doc_bin.into()), Status::GenericFailure)?;
+  let result = map_napi_err(doc_loader::parse_workspace_doc(doc_bin.into()), Status::GenericFailure)?;
   Ok(result.map(Into::into))
 }
 
@@ -138,7 +138,7 @@ pub fn parse_doc_to_markdown(
   doc_url_prefix: Option<String>,
 ) -> Result<NativeMarkdownResult> {
   let result = map_napi_err(
-    doc_parser::parse_doc_to_markdown(doc_bin.into(), doc_id, ai_editable.unwrap_or(false), doc_url_prefix),
+    doc_loader::parse_doc_to_markdown(doc_bin.into(), doc_id, ai_editable.unwrap_or(false), doc_url_prefix),
     Status::GenericFailure,
   )?;
   Ok(result.into())
@@ -147,7 +147,7 @@ pub fn parse_doc_to_markdown(
 #[napi]
 pub fn read_all_doc_ids_from_root_doc(doc_bin: Buffer, include_trash: Option<bool>) -> Result<Vec<String>> {
   let result = map_napi_err(
-    doc_parser::get_doc_ids_from_binary(doc_bin.into(), include_trash.unwrap_or(false)),
+    doc_loader::get_doc_ids_from_binary(doc_bin.into(), include_trash.unwrap_or(false)),
     Status::GenericFailure,
   )?;
   Ok(result)
@@ -165,7 +165,7 @@ pub fn read_all_doc_ids_from_root_doc(doc_bin: Buffer, include_trash: Option<boo
 #[napi]
 pub fn create_doc_with_markdown(title: String, markdown: String, doc_id: String) -> Result<Buffer> {
   let result = map_napi_err(
-    doc_parser::build_full_doc(&title, &markdown, &doc_id),
+    doc_loader::build_full_doc(&title, &markdown, &doc_id),
     Status::GenericFailure,
   )?;
   Ok(Buffer::from(result))
@@ -184,7 +184,7 @@ pub fn create_doc_with_markdown(title: String, markdown: String, doc_id: String)
 #[napi]
 pub fn update_doc_with_markdown(existing_binary: Buffer, new_markdown: String, doc_id: String) -> Result<Buffer> {
   let result = map_napi_err(
-    doc_parser::update_doc(&existing_binary, &new_markdown, &doc_id),
+    doc_loader::update_doc(&existing_binary, &new_markdown, &doc_id),
     Status::GenericFailure,
   )?;
   Ok(Buffer::from(result))
@@ -202,7 +202,7 @@ pub fn update_doc_with_markdown(existing_binary: Buffer, new_markdown: String, d
 #[napi]
 pub fn update_doc_title(existing_binary: Buffer, title: String, doc_id: String) -> Result<Buffer> {
   let result = map_napi_err(
-    doc_parser::update_doc_title(&existing_binary, &doc_id, &title),
+    doc_loader::update_doc_title(&existing_binary, &doc_id, &title),
     Status::GenericFailure,
   )?;
   Ok(Buffer::from(result))
@@ -229,7 +229,7 @@ pub fn update_doc_properties(
   updated_by: Option<String>,
 ) -> Result<Buffer> {
   let result = map_napi_err(
-    doc_parser::update_doc_properties(
+    doc_loader::update_doc_properties(
       &existing_binary,
       &properties_doc_id,
       &target_doc_id,
@@ -254,7 +254,7 @@ pub fn update_doc_properties(
 #[napi]
 pub fn add_doc_to_root_doc(root_doc_bin: Buffer, doc_id: String, title: Option<String>) -> Result<Buffer> {
   let result = map_napi_err(
-    doc_parser::add_doc_to_root_doc(root_doc_bin.into(), &doc_id, title.as_deref()),
+    doc_loader::add_doc_to_root_doc(root_doc_bin.into(), &doc_id, title.as_deref()),
     Status::GenericFailure,
   )?;
   Ok(Buffer::from(result))
@@ -267,7 +267,7 @@ pub fn build_public_root_doc(root_doc_bin: Buffer, doc_metas: Vec<PublicDocMetaI
     .map(|meta| (meta.id.as_str(), meta.title.as_deref()))
     .collect::<Vec<_>>();
   let result = map_napi_err(
-    doc_parser::build_public_root_doc(&root_doc_bin, &metas),
+    doc_loader::build_public_root_doc(&root_doc_bin, &metas),
     Status::GenericFailure,
   )?;
   Ok(Buffer::from(result))
@@ -285,7 +285,7 @@ pub fn build_public_root_doc(root_doc_bin: Buffer, doc_metas: Vec<PublicDocMetaI
 #[napi]
 pub fn update_root_doc_meta_title(root_doc_bin: Buffer, doc_id: String, title: String) -> Result<Buffer> {
   let result = map_napi_err(
-    doc_parser::update_root_doc_meta_title(&root_doc_bin, &doc_id, &title),
+    doc_loader::update_root_doc_meta_title(&root_doc_bin, &doc_id, &title),
     Status::GenericFailure,
   )?;
   Ok(Buffer::from(result))

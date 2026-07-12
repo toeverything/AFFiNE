@@ -35,6 +35,7 @@ import {
 import { PageInfo } from '../../../base/graphql/pagination';
 import { Models, PublicDocMode } from '../../../models';
 import { CurrentUser } from '../../auth';
+import { BackendRuntimeProvider } from '../../backend-runtime';
 import { Editor } from '../../doc';
 import {
   DOC_ACTIONS,
@@ -303,13 +304,34 @@ export class WorkspaceDocResolver {
     private readonly models: Models,
     private readonly cache: Cache,
     private readonly event: EventBus,
-    private readonly config: Config
+    private readonly config: Config,
+    private readonly runtime: BackendRuntimeProvider
   ) {}
 
   private async assertCanShare(
     userId: string,
     context: { workspaceId: string; docId: string; action: 'publishDoc' }
   ) {
+    if (await this.runtime.isInviteAbuseUserQuarantinedOrBanned(userId)) {
+      this.logger.warn('Share action blocked for quarantined actor', {
+        userId,
+        ...context,
+      });
+      throw new ActionForbidden(
+        'This feature is temporarily unavailable for you.'
+      );
+    }
+    if (
+      await this.runtime.isInviteAbuseWorkspaceQuarantined(context.workspaceId)
+    ) {
+      this.logger.warn('Share action blocked for quarantined workspace', {
+        userId,
+        ...context,
+      });
+      throw new ActionForbidden(
+        'This feature is temporarily unavailable for you.'
+      );
+    }
     const user = await this.models.user.get(userId);
     const newAccountAgeMs = this.config.auth.newAccountShareActionDelay * 1000;
     if (!user || !canUserExecuteLimitedActions(user, newAccountAgeMs)) {

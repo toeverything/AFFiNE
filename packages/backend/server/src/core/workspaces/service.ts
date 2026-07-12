@@ -7,8 +7,10 @@ import {
   DEFAULT_WORKSPACE_NAME,
   Models,
 } from '../../models';
+import { BackendRuntimeProvider } from '../backend-runtime';
 import { DocReader } from '../doc';
 import { Mailer } from '../mail';
+import type { SendMailCommand } from '../mail/types';
 import { WorkspaceRole } from '../permission';
 import { QuotaStateService } from '../quota/state';
 import { WorkspaceBlobStorage } from '../storage';
@@ -32,7 +34,8 @@ export class WorkspaceService {
     private readonly blobStorage: WorkspaceBlobStorage,
     private readonly mailer: Mailer,
     private readonly queue: JobQueue,
-    private readonly quotaState: QuotaStateService
+    private readonly quotaState: QuotaStateService,
+    private readonly runtime: BackendRuntimeProvider
   ) {}
 
   async getInviteInfo(inviteId: string): Promise<InviteInfo> {
@@ -111,7 +114,7 @@ export class WorkspaceService {
     const admins = await this.models.workspaceUser.getAdmins(workspaceId);
 
     const link = this.url.link(`/workspace/${workspaceId}`);
-    await this.mailer.trySend({
+    await this.trySendWorkspaceMail({
       name: 'TeamWorkspaceUpgraded',
       to: owner.email,
       props: {
@@ -121,11 +124,16 @@ export class WorkspaceService {
         isOwner: true,
         url: link,
       },
+      metadata: {
+        workspaceId,
+        recipientUserId: owner.id,
+        source: { trusted: false },
+      },
     });
 
     await Promise.allSettled(
       admins.map(async user => {
-        await this.mailer.trySend({
+        await this.trySendWorkspaceMail({
           name: 'TeamWorkspaceUpgraded',
           to: user.email,
           props: {
@@ -134,6 +142,11 @@ export class WorkspaceService {
             },
             isOwner: false,
             url: link,
+          },
+          metadata: {
+            workspaceId,
+            recipientUserId: user.id,
+            source: { trusted: false },
           },
         });
       })
@@ -192,7 +205,7 @@ export class WorkspaceService {
     }
 
     if (ws.role === WorkspaceRole.Admin) {
-      await this.mailer.trySend({
+      await this.trySendWorkspaceMail({
         name: 'TeamBecomeAdmin',
         to: user.email,
         props: {
@@ -201,9 +214,14 @@ export class WorkspaceService {
           },
           url: this.url.link(`/workspace/${ws.id}`),
         },
+        metadata: {
+          workspaceId: ws.id,
+          recipientUserId: user.id,
+          source: { trusted: false },
+        },
       });
     } else {
-      await this.mailer.trySend({
+      await this.trySendWorkspaceMail({
         name: 'TeamBecomeCollaborator',
         to: user.email,
         props: {
@@ -212,12 +230,17 @@ export class WorkspaceService {
           },
           url: this.url.link(`/workspace/${ws.id}`),
         },
+        metadata: {
+          workspaceId: ws.id,
+          recipientUserId: user.id,
+          source: { trusted: false },
+        },
       });
     }
   }
 
   async sendOwnershipTransferredEmail(email: string, ws: { id: string }) {
-    await this.mailer.trySend({
+    await this.trySendWorkspaceMail({
       name: 'OwnershipTransferred',
       to: email,
       props: {
@@ -225,11 +248,15 @@ export class WorkspaceService {
           $$workspaceId: ws.id,
         },
       },
+      metadata: {
+        workspaceId: ws.id,
+        source: { trusted: false },
+      },
     });
   }
 
   async sendOwnershipReceivedEmail(email: string, ws: { id: string }) {
-    await this.mailer.trySend({
+    await this.trySendWorkspaceMail({
       name: 'OwnershipReceived',
       to: email,
       props: {
@@ -237,12 +264,16 @@ export class WorkspaceService {
           $$workspaceId: ws.id,
         },
       },
+      metadata: {
+        workspaceId: ws.id,
+        source: { trusted: false },
+      },
     });
   }
 
   async sendLeaveEmail(workspaceId: string, userId: string) {
     const owner = await this.models.workspaceUser.getOwner(workspaceId);
-    await this.mailer.trySend({
+    await this.trySendWorkspaceMail({
       name: 'MemberLeave',
       to: owner.email,
       props: {
@@ -253,7 +284,39 @@ export class WorkspaceService {
           $$userId: userId,
         },
       },
+      metadata: {
+        workspaceId,
+        recipientUserId: owner.id,
+        actorUserId: userId,
+        source: { trusted: false },
+      },
     });
+  }
+
+  private async trySendWorkspaceMail(command: SendMailCommand) {
+    const actorUserId = command.metadata?.actorUserId;
+    if (
+      actorUserId &&
+      (await this.runtime.isInviteAbuseUserQuarantinedOrBanned(actorUserId))
+    ) {
+      await this.mailer.skip(command, {
+        mailClass: 'workspace_lifecycle',
+        reason: 'actor_quarantined',
+      });
+      return false;
+    }
+    const workspaceId = command.metadata?.workspaceId;
+    if (
+      workspaceId &&
+      (await this.runtime.isInviteAbuseWorkspaceQuarantined(workspaceId))
+    ) {
+      await this.mailer.skip(command, {
+        mailClass: 'workspace_lifecycle',
+        reason: 'workspace_quarantined',
+      });
+      return false;
+    }
+    return await this.mailer.trySend(command);
   }
 
   async allocateSeats(workspaceId: string, quantity: number) {

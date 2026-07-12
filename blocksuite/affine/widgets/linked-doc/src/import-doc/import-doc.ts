@@ -2,15 +2,9 @@ import {
   CloseIcon,
   ExportToHTMLIcon,
   ExportToMarkdownIcon,
-  HelpIcon,
   NewIcon,
-  NotionIcon,
 } from '@blocksuite/affine-components/icons';
-import {
-  openDirectory,
-  openFilesWith,
-  openSingleFileWith,
-} from '@blocksuite/affine-shared/utils';
+import { openFilesWith } from '@blocksuite/affine-shared/utils';
 import { WithDisposable } from '@blocksuite/global/lit';
 import type { ExtensionType, Schema, Workspace } from '@blocksuite/store';
 import { html, LitElement, type PropertyValues } from 'lit';
@@ -18,8 +12,6 @@ import { query, state } from 'lit/decorators.js';
 
 import { HtmlTransformer } from '../transformers/html.js';
 import { MarkdownTransformer } from '../transformers/markdown.js';
-import { NotionHtmlTransformer } from '../transformers/notion-html.js';
-import { ObsidianTransformer } from '../transformers/obsidian.js';
 import { styles } from './styles.js';
 
 export type OnSuccessHandler = (
@@ -59,114 +51,69 @@ export class ImportDoc extends WithDisposable(LitElement) {
   }
 
   private async _importHtml() {
-    const files = await openFilesWith('Html');
-    if (!files) return;
-    const pageIds: string[] = [];
-    for (const file of files) {
-      const text = await file.text();
-      const needLoading = file.size > SHOW_LOADING_SIZE;
-      const fileName = file.name.split('.').slice(0, -1).join('.');
-      if (needLoading) {
-        this.hidden = false;
-        this._loading = true;
-      } else {
-        this.abortController.abort();
+    try {
+      const files = await openFilesWith('Html');
+      if (!files) return;
+      const pageIds: string[] = [];
+      for (const file of files) {
+        const text = await file.text();
+        const needLoading = file.size > SHOW_LOADING_SIZE;
+        const fileName = file.name.split('.').slice(0, -1).join('.');
+        if (needLoading) {
+          this.hidden = false;
+          this._loading = true;
+        } else {
+          this.abortController.abort();
+        }
+        const pageId = await HtmlTransformer.importHTMLToDoc({
+          collection: this.collection,
+          schema: this.schema,
+          extensions: this.extensions,
+          html: text,
+          fileName,
+        });
+        needLoading && this.abortController.abort();
+        if (pageId) {
+          pageIds.push(pageId);
+        }
       }
-      const pageId = await HtmlTransformer.importHTMLToDoc({
-        collection: this.collection,
-        schema: this.schema,
-        extensions: this.extensions,
-        html: text,
-        fileName,
-      });
-      needLoading && this.abortController.abort();
-      if (pageId) {
-        pageIds.push(pageId);
-      }
+      this._onImportSuccess(pageIds);
+    } catch (error) {
+      this._onFail(error);
     }
-    this._onImportSuccess(pageIds);
   }
 
   private async _importMarkDown() {
-    const files = await openFilesWith('Markdown');
-    if (!files) return;
-    const pageIds: string[] = [];
-    for (const file of files) {
-      const text = await file.text();
-      const fileName = file.name.split('.').slice(0, -1).join('.');
-      const needLoading = file.size > SHOW_LOADING_SIZE;
-      if (needLoading) {
-        this.hidden = false;
-        this._loading = true;
-      } else {
-        this.abortController.abort();
+    try {
+      const files = await openFilesWith('Markdown');
+      if (!files) return;
+      const pageIds: string[] = [];
+      for (const file of files) {
+        const text = await file.text();
+        const fileName = file.name.split('.').slice(0, -1).join('.');
+        const needLoading = file.size > SHOW_LOADING_SIZE;
+        if (needLoading) {
+          this.hidden = false;
+          this._loading = true;
+        } else {
+          this.abortController.abort();
+        }
+        const pageId = await MarkdownTransformer.importMarkdownToDoc({
+          collection: this.collection,
+          schema: this.schema,
+          markdown: text,
+          fileName,
+          extensions: this.extensions,
+        });
+        needLoading && this.abortController.abort();
+        if (pageId) {
+          pageIds.push(pageId);
+        }
       }
-      const pageId = await MarkdownTransformer.importMarkdownToDoc({
-        collection: this.collection,
-        schema: this.schema,
-        markdown: text,
-        fileName,
-        extensions: this.extensions,
-      });
-      needLoading && this.abortController.abort();
-      if (pageId) {
-        pageIds.push(pageId);
-      }
+      this._onImportSuccess(pageIds);
+    } catch (error) {
+      this._onFail(error);
     }
-    this._onImportSuccess(pageIds);
-  }
-
-  private async _importNotion() {
-    const file = await openSingleFileWith('Zip');
-    if (!file) return;
-    const needLoading = file.size > SHOW_LOADING_SIZE;
-    if (needLoading) {
-      this.hidden = false;
-      this._loading = true;
-    } else {
-      this.abortController.abort();
-    }
-    const { entryId, pageIds, isWorkspaceFile, hasMarkdown } =
-      await NotionHtmlTransformer.importNotionZip({
-        collection: this.collection,
-        schema: this.schema,
-        imported: file,
-        extensions: this.extensions,
-      });
-    needLoading && this.abortController.abort();
-    if (hasMarkdown) {
-      this._onFail(
-        'Importing markdown files from Notion is deprecated. Please export your Notion pages as HTML.'
-      );
-      return;
-    }
-    this._onImportSuccess(entryId ? [entryId] : [], {
-      isWorkspaceFile,
-      importedCount: pageIds.length,
-    });
-  }
-
-  private async _importObsidian() {
-    const files = await openDirectory();
-    if (!files || files.length === 0) return;
-    const needLoading =
-      files.reduce((acc, f) => acc + f.size, 0) > SHOW_LOADING_SIZE;
-    if (needLoading) {
-      this.hidden = false;
-      this._loading = true;
-    } else {
-      this.abortController.abort();
-    }
-    const { docIds, docEmojis } = await ObsidianTransformer.importObsidianVault(
-      {
-        collection: this.collection,
-        schema: this.schema,
-        importedFiles: files,
-        extensions: this.extensions,
-      }
-    );
-    needLoading && this.abortController.abort();
-    this._onImportSuccess(docIds, { docEmojis });
   }
 
   private _onCloseClick(event: MouseEvent) {
@@ -174,8 +121,8 @@ export class ImportDoc extends WithDisposable(LitElement) {
     this.abortController.abort();
   }
 
-  private _onFail(message: string) {
-    this.onFail?.(message);
+  private _onFail(error: unknown) {
+    this.onFail?.(error instanceof Error ? error.message : String(error));
   }
 
   private _onImportSuccess(
@@ -211,14 +158,6 @@ export class ImportDoc extends WithDisposable(LitElement) {
 
   private _onMouseUp() {
     window.removeEventListener('mousemove', this._onMouseMove);
-  }
-
-  private _openLearnImportLink(event: MouseEvent) {
-    event.stopPropagation();
-    window.open(
-      'https://affine.pro/blog/import-your-data-from-notion-into-affine',
-      '_blank'
-    );
   }
 
   override render() {
@@ -276,30 +215,6 @@ export class ImportDoc extends WithDisposable(LitElement) {
           </icon-button>
         </div>
         <div class="button-container">
-          <icon-button
-            class="button-item"
-            text="Notion"
-            @click="${this._importNotion}"
-          >
-            ${NotionIcon}
-            <div
-              slot="suffix"
-              class="button-suffix"
-              @click="${this._openLearnImportLink}"
-            >
-              ${HelpIcon}
-              <affine-tooltip>
-                Learn how to Import your Notion pages into AFFiNE.
-              </affine-tooltip>
-            </div>
-          </icon-button>
-          <icon-button
-            class="button-item"
-            text="Obsidian"
-            @click="${this._importObsidian}"
-          >
-            ${ExportToMarkdownIcon}
-          </icon-button>
           <icon-button class="button-item" text="Coming soon..." disabled>
             ${NewIcon}
           </icon-button>

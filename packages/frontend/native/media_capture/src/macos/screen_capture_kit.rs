@@ -682,14 +682,6 @@ impl ShareableContent {
     }
   }
 
-  #[napi]
-  pub fn tap_audio(
-    process_id: u32,
-    audio_stream_callback: ThreadsafeFunction<napi::bindgen_prelude::Float32Array, ()>,
-  ) -> Result<AudioCaptureSession> {
-    ShareableContent::tap_audio_with_callback(process_id, AudioCallback::Js(Arc::new(audio_stream_callback)))
-  }
-
   pub(crate) fn tap_global_audio_with_callback(
     excluded_processes: Option<Vec<&ApplicationInfo>>,
     audio_stream_callback: AudioCallback,
@@ -705,16 +697,5 @@ impl ShareableContent {
     device_manager.start_capture(audio_stream_callback)?;
     let boxed_manager = Box::new(device_manager);
     Ok(AudioCaptureSession::new(boxed_manager))
-  }
-
-  #[napi]
-  pub fn tap_global_audio(
-    excluded_processes: Option<Vec<&ApplicationInfo>>,
-    audio_stream_callback: ThreadsafeFunction<napi::bindgen_prelude::Float32Array, ()>,
-  ) -> Result<AudioCaptureSession> {
-    ShareableContent::tap_global_audio_with_callback(
-      excluded_processes,
-      AudioCallback::Js(Arc::new(audio_stream_callback)),
-    )
   }
 }

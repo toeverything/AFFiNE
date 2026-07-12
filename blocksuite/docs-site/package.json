@@ -17,17 +17,17 @@
   },
   "dependencies": {
     "@blocksuite/affine": "workspace:*",
-    "date-fns": "^4.0.0",
+    "date-fns": "^4.4.0",
     "markdown-it-container": "^4.0.0",
     "vitepress-plugin-sandpack": "^1.1.4"
   },
   "devDependencies": {
     "@types/markdown-it-container": "^4.0.0",
-    "typedoc": "^0.28.0",
-    "typedoc-plugin-markdown": "^4.5.0",
-    "vite-plugin-wasm": "^3.3.0",
-    "vitepress": "^1.6.3",
+    "typedoc": "^0.28.19",
+    "typedoc-plugin-markdown": "^4.12.0",
+    "vite-plugin-wasm": "^3.6.0",
+    "vitepress": "^1.6.4",
     "vue": "^3.4.38"
   },
-  "version": "0.26.3"
+  "version": "0.27.0"
 }

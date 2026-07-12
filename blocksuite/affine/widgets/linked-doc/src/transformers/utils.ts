@@ -68,8 +68,15 @@ export class Unzip {
 
   private fixFileNameEncoding(fileName: string): string {
     try {
-      // check if contains non-ASCII characters
-      if (fileName.split('').some(char => char.charCodeAt(0) > 127)) {
+      // `fflate` already returns valid Unicode filenames for UTF-8 zip entries.
+      // Only retry decoding for legacy byte-like mojibake strings, otherwise
+      // normal CJK characters can be corrupted by truncating their code points.
+      if (
+        fileName.split('').some(char => {
+          const code = char.charCodeAt(0);
+          return code >= 0x80 && code <= 0xff;
+        })
+      ) {
         // try different encodings
         const fixedName = this.tryDifferentEncodings(fileName);
         if (fixedName && fixedName !== fileName) {

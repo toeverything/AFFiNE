@@ -46,6 +46,14 @@
     "queues.nightly": {
       "type": "Object",
       "desc": "The config for nightly job queue"
+    },
+    "queues.backendRuntime": {
+      "type": "Object",
+      "desc": "The config for backend runtime job queue"
+    },
+    "queues.inviteAbuse": {
+      "type": "Object",
+      "desc": "The config for invite abuse disposition job queue"
     }
   },
   "throttle": {
@@ -83,6 +91,18 @@
       "type": "Number",
       "desc": "Minimum account age in seconds before new accounts can invite members or create share links."
     },
+    "trustedCloudflareHeaders": {
+      "type": "Boolean",
+      "desc": "Whether request abuse source facts should trust Cloudflare headers from the origin edge."
+    },
+    "inviteQuotaShadowMode": {
+      "type": "Boolean",
+      "desc": "Whether workspace invite quota should record would-block decisions without rejecting requests or executing abuse actions."
+    },
+    "inviteQuotaFailOpenOnRuntimeError": {
+      "type": "Boolean",
+      "desc": "Whether workspace invite quota should fail open when native runtime admission is unavailable. Keep disabled for production."
+    },
     "passwordRequirements": {
       "type": "Object",
       "desc": "The password strength requirements when set new password."
@@ -94,6 +114,26 @@
     "session.ttr": {
       "type": "Number",
       "desc": "Application auth time to refresh in seconds."
+    },
+    "token.accessTokenTtl": {
+      "type": "Number",
+      "desc": "Access JWT expiration time in seconds."
+    },
+    "token.refreshIdleTtl": {
+      "type": "Number",
+      "desc": "Auth refresh session inactivity expiration in seconds."
+    },
+    "token.refreshAbsoluteTtl": {
+      "type": "Number",
+      "desc": "Auth refresh session absolute expiration in seconds."
+    },
+    "token.refreshGracePeriod": {
+      "type": "Number",
+      "desc": "One-use refresh rotation concurrency grace period in seconds."
+    },
+    "token.refreshRetention": {
+      "type": "Number",
+      "desc": "Retention for expired auth refresh generations in seconds."
     }
   },
   "mailer": {
@@ -135,6 +175,18 @@
     "fallbackDomains": {
       "type": "Array",
       "desc": "The emails from these domains are always sent using the fallback SMTP server."
+    },
+    "deliveryWorker.batchSize": {
+      "type": "Number",
+      "desc": "Number of mail delivery rows claimed by each worker tick."
+    },
+    "deliveryWorker.leaseMs": {
+      "type": "Number",
+      "desc": "Mail delivery worker lease duration in milliseconds."
+    },
+    "deliveryWorker.retentionDays": {
+      "type": "Number",
+      "desc": "Days to retain anonymized terminal mail delivery ledger rows."
     },
     "fallbackSMTP.name": {
       "type": "String",

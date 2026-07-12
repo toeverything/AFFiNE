@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
 import { JobQueue, OnJob } from '../../base';
-import { Models } from '../../models';
+import { BackendRuntimeProvider } from '../backend-runtime';
 
 declare global {
   interface Jobs {
@@ -13,7 +13,7 @@ declare global {
 @Injectable()
 export class DocStorageCronJob {
   constructor(
-    private readonly models: Models,
+    private readonly rt: BackendRuntimeProvider,
     private readonly queue: JobQueue
   ) {}
 
@@ -30,6 +30,9 @@ export class DocStorageCronJob {
 
   @OnJob('nightly.cleanExpiredHistories')
   async cleanExpiredHistories() {
-    await this.models.history.cleanExpired();
+    for (;;) {
+      const count = await this.rt.cleanupExpiredSnapshotHistories(1000);
+      if (count < 1000) break;
+    }
   }
 }

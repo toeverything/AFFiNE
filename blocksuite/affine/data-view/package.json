@@ -23,7 +23,7 @@
     "@toeverything/theme": "^1.1.23",
     "@types/lodash-es": "^4.17.12",
     "clsx": "^2.1.1",
-    "date-fns": "^4.0.0",
+    "date-fns": "^4.4.0",
     "lit": "^3.2.0",
     "lodash-es": "^4.17.23",
     "yjs": "^13.6.27",
@@ -46,5 +46,5 @@
     "!src/__tests__",
     "!dist/__tests__"
   ],
-  "version": "0.26.3"
+  "version": "0.27.0"
 }

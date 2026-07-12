@@ -145,6 +145,28 @@ e2e('should set new invited users to waiting-seat status', async t => {
   t.is(invitationInfo.status, WorkspaceMemberStatus.NeedMoreSeat);
 });
 
+e2e('should allocate existing team seats for new invited users', async t => {
+  const { owner, workspace } = await createTeamWorkspace(4);
+  await app.login(owner);
+
+  const u1 = await app.createUser();
+
+  const result = await app.gql({
+    query: inviteByEmailsMutation,
+    variables: {
+      workspaceId: workspace.id,
+      emails: [u1.email],
+    },
+  });
+
+  t.not(result.inviteMembers[0].inviteId, null);
+
+  const invitationInfo = await getInvitationInfo(
+    result.inviteMembers[0].inviteId!
+  );
+  t.is(invitationInfo.status, WorkspaceMemberStatus.Pending);
+});
+
 e2e('should allocate seats', async t => {
   const { owner, workspace } = await createTeamWorkspace();
   await app.login(owner);
@@ -165,6 +187,7 @@ e2e('should allocate seats', async t => {
     source: 'Link',
   });
 
+  const invitationCount = app.queue.count('notification.sendInvitation');
   await app.eventBus.emitAsync('workspace.members.allocateSeats', {
     workspaceId: workspace.id,
     quantity: 5,
@@ -184,7 +207,7 @@ e2e('should allocate seats', async t => {
     WorkspaceMemberStatus.Accepted
   );
 
-  t.is(app.queue.count('notification.sendInvitation'), 1);
+  t.is(app.queue.count('notification.sendInvitation') - invitationCount, 1);
 });
 
 e2e('should set all rests to NeedMoreSeat', async t => {

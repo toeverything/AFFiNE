@@ -8,7 +8,9 @@ jobs:
     name: Build Server native
     runs-on: ubuntu-latest
     env:
+      CARGO_PROFILE_RELEASE_CODEGEN_UNITS: '16'
       CARGO_PROFILE_RELEASE_DEBUG: '1'
+      CARGO_PROFILE_RELEASE_LTO: 'thin'
     steps:
       - uses: actions/checkout@v6
       - name: Setup Node.js

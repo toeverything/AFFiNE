@@ -1,4 +1,4 @@
-import { Button, Loading, notify, useConfirmModal } from '@affine/component';
+import { Button, notify, useConfirmModal } from '@affine/component';
 import {
   InviteTeamMemberModal,
   type InviteTeamMemberModalProps,
@@ -31,7 +31,7 @@ import { nanoid } from 'nanoid';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import type { SettingState } from '../../types';
-import { MemberList } from './member-list';
+import { MemberList, MemberListError, MemberListFallback } from './member-list';
 import * as styles from './styles.css';
 
 const parseCSV = async (blob: Blob): Promise<string[]> => {
@@ -290,13 +290,7 @@ export const CloudWorkspaceMembersPanel = ({
     if (isLoading) {
       return <MembersPanelFallback />;
     } else {
-      return (
-        <span className={styles.errorStyle}>
-          {error
-            ? UserFriendlyError.fromAny(error).message
-            : 'Failed to load members'}
-        </span>
-      );
+      return <MemberListError error={error} memberCount={1} />;
     }
   }
 
@@ -355,30 +349,6 @@ export const MembersPanelFallback = () => {
         <MemberListFallback memberCount={1} />
       </div>
     </>
-  );
-};
-
-const MemberListFallback = ({ memberCount }: { memberCount?: number }) => {
-  // prevent page jitter
-  const height = useMemo(() => {
-    if (memberCount) {
-      // height and margin-bottom
-      return memberCount * 58 + (memberCount - 1) * 6;
-    }
-    return 'auto';
-  }, [memberCount]);
-  const t = useI18n();
-
-  return (
-    <div
-      style={{
-        height,
-      }}
-      className={styles.membersFallback}
-    >
-      <Loading size={20} />
-      <span>{t['com.affine.settings.member.loading']()}</span>
-    </div>
   );
 };
 

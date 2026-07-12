@@ -37,6 +37,7 @@ export const RustRequestMiddlewareValues = [
   'clamp_max_tokens',
   'tool_schema_rewrite',
   'openai_request_compat',
+  'omit_tool_choice',
 ] as const;
 export type RustRequestMiddleware =
   (typeof RustRequestMiddlewareValues)[number];

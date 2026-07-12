@@ -20,7 +20,11 @@ import { extMimeMap, nanoid } from '@blocksuite/store';
 import type { Html, Text } from 'mdast';
 
 import {
-  applyMetaPatch,
+  blobsFromAssets,
+  type ImportBatch,
+  type ImportDoc,
+} from './import-batch.js';
+import {
   bindImportedAssetsToJob,
   createMarkdownImportJob,
   getProvider,
@@ -129,8 +133,8 @@ function preprocessTitleHeader(markdown: string): string {
 
 function preprocessObsidianCallouts(markdown: string): string {
   return markdown.replace(
-    /^(> *)\[!([^\]\n]+)\]([+-]?)([^\n]*)/gm,
-    (_, prefix, type, _fold, rest) => {
+    /^(> *)\[!([^\]\n]+)\](?:[+-]?)([^\n]*)/gm,
+    (_, prefix, type, rest) => {
       const calloutToken =
         CALLOUT_TYPE_MAP[type.trim().toLowerCase()] ?? DEFAULT_CALLOUT_EMOJI;
       const title = rest.trim();
@@ -688,12 +692,16 @@ export type ImportObsidianVaultResult = {
   docEmojis: Map<string, string>;
 };
 
-export async function importObsidianVault({
+export type PlanObsidianVaultResult = ImportObsidianVaultResult & {
+  batch: ImportBatch;
+};
+
+export async function planObsidianVault({
   collection,
   schema,
   importedFiles,
   extensions,
-}: ImportObsidianVaultOptions): Promise<ImportObsidianVaultResult> {
+}: ImportObsidianVaultOptions): Promise<PlanObsidianVaultResult> {
   const provider = getProvider([
     obsidianWikilinkToDeltaMatcher,
     obsidianAttachmentEmbedMarkdownAdapterMatcher,
@@ -701,6 +709,7 @@ export async function importObsidianVault({
   ]);
 
   const docIds: string[] = [];
+  const docs: ImportDoc[] = [];
   const docEmojis = new Map<string, string>();
   const pendingAssets: AssetMap = new Map();
   const pendingPathBlobIdMap: PathBlobIdMap = new Map();
@@ -813,22 +822,31 @@ export async function importObsidianVault({
 
       if (snapshot) {
         snapshot.meta.id = predefinedId;
-        const doc = await job.snapshotToDoc(snapshot);
-        if (doc) {
-          applyMetaPatch(collection, doc.id, {
-            ...meta,
-            title: preferredTitle,
-            trash: false,
-          });
-          docIds.push(doc.id);
-        }
+        docs.push({
+          id: predefinedId,
+          snapshot,
+          meta: { ...meta, title: preferredTitle, trash: false },
+        });
+        docIds.push(predefinedId);
       }
     })
   );
 
-  return { docIds, docEmojis };
+  return {
+    docIds,
+    docEmojis,
+    batch: {
+      docs,
+      blobs: await blobsFromAssets(pendingAssets, pendingPathBlobIdMap),
+      icons: Array.from(docEmojis, ([docId, emoji]) => ({
+        docId,
+        icon: { type: 'emoji', unicode: emoji },
+      })),
+      done: true,
+    },
+  };
 }
 
 export const ObsidianTransformer = {
-  importObsidianVault,
+  planObsidianVault,
 };

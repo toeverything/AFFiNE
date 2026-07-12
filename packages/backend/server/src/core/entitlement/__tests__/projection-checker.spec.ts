@@ -76,15 +76,15 @@ test('checker reports missing legacy projection and stale state', async t => {
   const user = await t.context.models.user.create({
     email: `${randomUUID()}@affine.pro`,
   });
-  await t.context.entitlement.upsertFromCloudSubscription({
-    targetId: user.id,
-    plan: 'pro',
-    recurring: SubscriptionRecurring.Monthly,
-    status: 'active',
-  });
-  await t.context.db.subscription.delete({
-    where: { targetId_plan: { targetId: user.id, plan: 'pro' } },
-  });
+  await t.context.entitlement.upsertFromCloudSubscription(
+    {
+      targetId: user.id,
+      plan: 'pro',
+      recurring: SubscriptionRecurring.Monthly,
+      status: 'active',
+    },
+    { emit: false }
+  );
   await t.context.db.effectiveUserQuotaState.update({
     where: { userId: user.id },
     data: {

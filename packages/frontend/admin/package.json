@@ -1,6 +1,6 @@
 {
   "name": "@affine/admin",
-  "version": "0.26.3",
+  "version": "0.27.0",
   "private": true,
   "dependencies": {
     "@affine/component": "workspace:*",
@@ -51,7 +51,7 @@
     "react-dom": "^19.2.1",
     "react-hook-form": "^7.54.1",
     "react-resizable-panels": "^3.0.6",
-    "react-router-dom": "^7.12.0",
+    "react-router-dom": "^7.18.0",
     "recharts": "^2.15.4",
     "sonner": "^2.0.7",
     "swr": "^2.3.7",

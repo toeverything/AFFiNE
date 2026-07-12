@@ -212,8 +212,7 @@ test('should be able to get permission granted workspace', async t => {
 test('should return 404 if blob not found', async t => {
   const { app, storage } = t.context;
 
-  // @ts-expect-error mock
-  storage.get.resolves({ body: null });
+  storage.get.resolves({ body: undefined });
   const res = await app.GET('/api/workspaces/public/blobs/test');
 
   t.is(res.status, HttpStatus.NOT_FOUND);

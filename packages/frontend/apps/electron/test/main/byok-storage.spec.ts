@@ -1,33 +1,77 @@
+import os from 'node:os';
 import path from 'node:path';
 
 import fs from 'fs-extra';
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  test,
+  vi,
+} from 'vitest';
 
-const tmpDir = path.join(__dirname, 'tmp-byok-storage');
+const electronMock = vi.hoisted(() => ({
+  tmpDir: '',
+  appOn: vi.fn(),
+  isEncryptionAvailable: vi.fn(() => true),
+  encryptString: vi.fn((value: string) => Buffer.from(value, 'utf-8')),
+  decryptString: vi.fn((value: Buffer) => value.toString('utf-8')),
+}));
+
 let disposeWorkspaceByokStorage: (() => void) | undefined;
 
 vi.mock('electron', () => ({
   app: {
-    getPath: () => tmpDir,
-    on: vi.fn(),
+    getPath: () => electronMock.tmpDir,
+    on: electronMock.appOn,
   },
   safeStorage: {
-    isEncryptionAvailable: () => true,
-    encryptString: (value: string) => Buffer.from(value, 'utf-8'),
-    decryptString: (value: Buffer) => value.toString('utf-8'),
+    isEncryptionAvailable: electronMock.isEncryptionAvailable,
+    encryptString: electronMock.encryptString,
+    decryptString: electronMock.decryptString,
   },
 }));
 
+vi.mock('../../src/main/logger', () => ({
+  logger: {
+    error: vi.fn(),
+  },
+}));
+
+// Warm the handler module's transform once so the first per-test dynamic
+// import doesn't race the default 60s test timeout on loaded CI shards, where
+// cold-transforming the heavy `@toeverything/infra` graph can starve.
+beforeAll(async () => {
+  await import('@affine/electron/main/byok-storage/handlers');
+}, 120_000);
+
 beforeEach(async () => {
+  vi.useRealTimers();
   vi.resetModules();
+  electronMock.appOn.mockReset();
+  electronMock.isEncryptionAvailable.mockReset().mockReturnValue(true);
+  electronMock.encryptString
+    .mockReset()
+    .mockImplementation((value: string) => Buffer.from(value, 'utf-8'));
+  electronMock.decryptString
+    .mockReset()
+    .mockImplementation((value: Buffer) => value.toString('utf-8'));
   disposeWorkspaceByokStorage = undefined;
-  await fs.remove(tmpDir);
+  electronMock.tmpDir = await fs.mkdtemp(
+    path.join(os.tmpdir(), 'affine-byok-storage-')
+  );
 });
 
 afterEach(async () => {
   disposeWorkspaceByokStorage?.();
+  disposeWorkspaceByokStorage = undefined;
   vi.resetModules();
-  await fs.remove(tmpDir);
+  if (electronMock.tmpDir) {
+    await fs.remove(electronMock.tmpDir);
+  }
+  electronMock.tmpDir = '';
 });
 
 describe('byok storage handlers', () => {
@@ -82,6 +126,26 @@ describe('byok storage handlers', () => {
     await expect(
       byokStorageHandlers.listWorkspaceKeys(ipcEvent, 'workspace-1')
     ).resolves.toEqual([]);
+  });
+
+  test('does not write local keys when secure storage is unavailable', async () => {
+    electronMock.isEncryptionAvailable.mockReturnValue(false);
+
+    const { byokStorageHandlers, disposeWorkspaceByokStorage: dispose } =
+      await import('@affine/electron/main/byok-storage/handlers');
+    disposeWorkspaceByokStorage = dispose;
+    const ipcEvent = undefined;
+
+    await expect(byokStorageHandlers.isSupported()).resolves.toBe(false);
+    await expect(
+      byokStorageHandlers.upsertWorkspaceKey(ipcEvent, 'workspace-1', {
+        id: 'local-openai',
+        provider: 'openai',
+        name: 'OpenAI',
+        apiKey: 'sk-openai',
+      })
+    ).rejects.toThrow('Secure BYOK key storage is not available.');
+    expect(electronMock.encryptString).not.toHaveBeenCalled();
   });
 
   test('preserves existing local key fields during partial updates', async () => {

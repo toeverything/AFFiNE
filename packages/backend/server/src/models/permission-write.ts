@@ -358,6 +358,32 @@ export class WorkspaceInvitationModel extends BaseModel {
     });
   }
 
+  @Transactional()
+  async cancelPendingByActor(actorUserId: string) {
+    await this.models.permissionProjection.markNewWriteOrigin();
+    return await this.db.workspaceInvitation.deleteMany({
+      where: {
+        inviterUserId: actorUserId,
+        status: {
+          in: ['pending', 'waiting_review', 'waiting_seat'],
+        },
+      },
+    });
+  }
+
+  @Transactional()
+  async cancelPendingByWorkspace(workspaceId: string) {
+    await this.models.permissionProjection.markNewWriteOrigin();
+    return await this.db.workspaceInvitation.deleteMany({
+      where: {
+        workspaceId,
+        status: {
+          in: ['pending', 'waiting_review', 'waiting_seat'],
+        },
+      },
+    });
+  }
+
   private async supportsCurrentInvitationColumns() {
     this.hasCurrentColumns ??= this.db.$queryRaw<Array<{ exists: boolean }>>`
         SELECT EXISTS (

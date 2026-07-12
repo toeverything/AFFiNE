@@ -1,7 +1,7 @@
 {
   "name": "@affine/electron",
   "private": true,
-  "version": "0.26.3",
+  "version": "0.27.0",
   "main": "./dist/main.js",
   "author": "toeverything",
   "repository": {
@@ -15,6 +15,7 @@
     "./main/exposed": "./src/main/exposed.ts",
     "./preload/electron-api": "./src/preload/electron-api.ts",
     "./preload/shared-storage": "./src/preload/shared-storage.ts",
+    "./shared/import": "./src/shared/import.ts",
     "./main/shared-state-schema": "./src/main/shared-state-schema.ts",
     "./main/updater/event": "./src/main/updater/event.ts",
     "./main/windows-manager": "./src/main/windows-manager/index.ts"
@@ -33,6 +34,7 @@
   },
   "devDependencies": {
     "@affine-tools/utils": "workspace:*",
+    "@affine/auth": "workspace:*",
     "@affine/i18n": "workspace:*",
     "@affine/native": "workspace:*",
     "@affine/nbstore": "workspace:*",
@@ -59,7 +61,7 @@
     "electron-log": "^5.4.3",
     "electron-squirrel-startup": "1.0.1",
     "electron-window-state": "^5.0.3",
-    "esbuild": "^0.25.0",
+    "esbuild": "^0.28.0",
     "fs-extra": "^11.2.0",
     "glob": "^11.0.0",
     "lodash-es": "^4.17.23",

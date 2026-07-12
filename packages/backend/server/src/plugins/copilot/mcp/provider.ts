@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { McpAccessMode } from '@prisma/client';
 import { pick } from 'lodash-es';
 import z from 'zod/v3';
 
@@ -106,7 +107,11 @@ export class WorkspaceMcpProvider {
     private readonly indexer: IndexerService
   ) {}
 
-  async for(userId: string, workspaceId: string): Promise<WorkspaceMcpServer> {
+  async for(
+    userId: string,
+    workspaceId: string,
+    accessMode: McpAccessMode = McpAccessMode.READ_ONLY
+  ): Promise<WorkspaceMcpServer> {
     await this.ac.user(userId).workspace(workspaceId).assert('Workspace.Read');
 
     const readDocument = defineTool({
@@ -249,7 +254,10 @@ export class WorkspaceMcpProvider {
 
     const tools = [readDocument, semanticSearch, keywordSearch];
 
-    if (env.dev || env.namespaces.canary) {
+    if (
+      accessMode === McpAccessMode.READ_WRITE &&
+      (env.dev || env.namespaces.canary)
+    ) {
       const createDocument = defineTool({
         name: 'create_document',
         title: 'Create Document',
