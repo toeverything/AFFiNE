@@ -5,15 +5,19 @@ import androidx.datastore.preferences.preferencesDataStore
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import app.affine.pro.utils.authDataStoreCorruptionHandler
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.json.JSONObject
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
@@ -103,7 +107,10 @@ class AuthSessionBrokerTest {
         file.parentFile?.mkdirs()
         file.writeBytes(byteArrayOf(0x7f, 0x01, 0x02, 0x03))
 
-        assertTrue(context.corruptionTestDataStore.data.first().asMap().isEmpty())
+        val preferences = withTimeout(5_000) {
+            context.corruptionTestDataStore.data.first()
+        }
+        assertTrue(preferences.asMap().isEmpty())
     }
 
     @Test
@@ -131,7 +138,7 @@ class AuthSessionBrokerTest {
         )
 
         val refresh = async { broker.refreshAccessToken(endpoint) }
-        server.takeRequest()
+        assertNotNull(withContext(Dispatchers.IO) { server.takeRequest(5, TimeUnit.SECONDS) })
         broker.clear(endpoint)
 
         assertThrows(Exception::class.java) { runBlocking { refresh.await() } }
@@ -149,7 +156,7 @@ class AuthSessionBrokerTest {
         )
 
         val refresh = async { broker.refreshAccessToken(endpoint) }
-        server.takeRequest()
+        assertNotNull(withContext(Dispatchers.IO) { server.takeRequest(5, TimeUnit.SECONDS) })
         broker.store(endpoint, tokenResponse("new-login", refreshToken('c'), 900))
 
         assertThrows(Exception::class.java) { runBlocking { refresh.await() } }
@@ -168,7 +175,7 @@ class AuthSessionBrokerTest {
         server.enqueue(MockResponse().setBody("{}"))
 
         val refresh = async { broker.refreshAccessToken(endpoint) }
-        server.takeRequest()
+        assertNotNull(withContext(Dispatchers.IO) { server.takeRequest(5, TimeUnit.SECONDS) })
         broker.signOut(endpoint)
 
         assertThrows(Exception::class.java) { runBlocking { refresh.await() } }

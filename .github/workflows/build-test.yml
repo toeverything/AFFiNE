@@ -243,6 +243,7 @@ jobs:
     name: Test Android app
     if: ${{ needs.mobile-native-build-filter.outputs.run-android == 'true' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 40
     needs:
       - mobile-native-build-filter
     env:
