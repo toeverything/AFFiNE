@@ -2736,6 +2736,7 @@ export interface Query {
   error: ErrorDataUnion;
   /** get workspace invitation info */
   getInviteInfo: InvitationType;
+  mcpCredentialReadWriteAvailable: Scalars['Boolean']['output'];
   mcpCredentials: Array<McpCredentialType>;
   prices: Array<SubscriptionPrice>;
   /** Get public user by id */
@@ -7262,6 +7263,7 @@ export type McpCredentialsQueryVariables = Exact<{
 
 export type McpCredentialsQuery = {
   __typename?: 'Query';
+  mcpCredentialReadWriteAvailable: boolean;
   mcpCredentials: Array<{
     __typename?: 'McpCredentialType';
     id: string;

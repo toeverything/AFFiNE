@@ -20,7 +20,7 @@ export class McpCredentialStore extends Store {
       variables: { workspaceId },
       context: { signal },
     });
-    return data.mcpCredentials;
+    return data;
   }
 
   async create(input: CreateMcpCredentialMutationVariables['input']) {

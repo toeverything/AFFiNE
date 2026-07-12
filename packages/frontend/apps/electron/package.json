@@ -34,6 +34,7 @@
   },
   "devDependencies": {
     "@affine-tools/utils": "workspace:*",
+    "@affine/auth": "workspace:*",
     "@affine/i18n": "workspace:*",
     "@affine/native": "workspace:*",
     "@affine/nbstore": "workspace:*",
@@ -75,7 +76,6 @@
     "zod": "^3.25.76"
   },
   "dependencies": {
-    "@affine/auth": "workspace:*",
     "async-call-rpc": "^6.4.2",
     "electron-updater": "^6.8.3",
     "link-preview-js": "^4.0.0",

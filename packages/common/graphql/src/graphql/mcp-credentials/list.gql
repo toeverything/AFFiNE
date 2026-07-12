@@ -1,4 +1,5 @@
 query mcpCredentials($workspaceId: String!) {
+  mcpCredentialReadWriteAvailable
   mcpCredentials(workspaceId: $workspaceId) {
     id
     name

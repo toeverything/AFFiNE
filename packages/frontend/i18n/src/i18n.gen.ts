@@ -8935,6 +8935,10 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.integration.mcp-server.access.read-only-desc"](): string;
     /**
+      * `Read and write`
+      */
+    ["com.affine.integration.mcp-server.access.read-write"](): string;
+    /**
       * `Expires {{date}}`
       */
     ["com.affine.integration.mcp-server.meta.expires"](options: {
@@ -9064,6 +9068,10 @@ export function useAFFiNEI18N(): {
       * `Semantic search`
       */
     ["com.affine.integration.mcp-server.capabilities.semantic-search"](): string;
+    /**
+      * `Create and update documents`
+      */
+    ["com.affine.integration.mcp-server.capabilities.write"](): string;
     /**
       * `Notes`
       */

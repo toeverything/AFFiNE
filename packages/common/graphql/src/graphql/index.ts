@@ -2579,6 +2579,7 @@ export const mcpCredentialsQuery = {
   id: 'mcpCredentialsQuery' as const,
   op: 'mcpCredentials',
   query: `query mcpCredentials($workspaceId: String!) {
+  mcpCredentialReadWriteAvailable
   mcpCredentials(workspaceId: $workspaceId) {
     id
     name

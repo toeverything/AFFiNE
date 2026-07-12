@@ -1,6 +1,7 @@
 import { Button, Input, Modal, notify } from '@affine/component';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import type { McpCredential } from '@affine/core/modules/cloud/services/mcp-credential';
+import { McpAccessMode } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import { useEffect, useState } from 'react';
 
@@ -16,6 +17,7 @@ export const McpCredentialModal = ({
   revealed,
   config,
   workspaceName,
+  readWriteAvailable,
   onCreate,
   onClose,
 }: {
@@ -23,18 +25,25 @@ export const McpCredentialModal = ({
   revealed: RevealedCredential | null;
   config: string;
   workspaceName?: string;
-  onCreate: (name: string, expirationDays: number) => void | Promise<void>;
+  readWriteAvailable: boolean;
+  onCreate: (
+    name: string,
+    accessMode: McpAccessMode,
+    expirationDays: number
+  ) => void | Promise<void>;
   onClose: () => void;
 }) => {
   const t = useI18n();
   const [name, setName] = useState('');
   const [expirationDays, setExpirationDays] = useState(90);
+  const [accessMode, setAccessMode] = useState(McpAccessMode.READ_ONLY);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (!mode) {
       setName('');
       setExpirationDays(90);
+      setAccessMode(McpAccessMode.READ_ONLY);
       setSubmitting(false);
     }
   }, [mode]);
@@ -50,11 +59,11 @@ export const McpCredentialModal = ({
   const submit = useAsyncCallback(async () => {
     setSubmitting(true);
     try {
-      await onCreate(name.trim(), expirationDays);
+      await onCreate(name.trim(), accessMode, expirationDays);
     } finally {
       setSubmitting(false);
     }
-  }, [expirationDays, name, onCreate]);
+  }, [accessMode, expirationDays, name, onCreate]);
 
   return (
     <Modal
@@ -89,14 +98,31 @@ export const McpCredentialModal = ({
               <span>
                 {t['com.affine.integration.mcp-server.field.access']()}
               </span>
-              <div className={styles.fixedValue}>
-                {t['com.affine.integration.mcp-server.access.read-only']()}
-                <span className={styles.description}>
-                  {t[
-                    'com.affine.integration.mcp-server.access.read-only-desc'
-                  ]()}
-                </span>
-              </div>
+              {readWriteAvailable ? (
+                <select
+                  className={styles.select}
+                  value={accessMode}
+                  onChange={event =>
+                    setAccessMode(event.currentTarget.value as McpAccessMode)
+                  }
+                >
+                  <option value={McpAccessMode.READ_ONLY}>
+                    {t['com.affine.integration.mcp-server.access.read-only']()}
+                  </option>
+                  <option value={McpAccessMode.READ_WRITE}>
+                    {t['com.affine.integration.mcp-server.access.read-write']()}
+                  </option>
+                </select>
+              ) : (
+                <div className={styles.fixedValue}>
+                  {t['com.affine.integration.mcp-server.access.read-only']()}
+                  <span className={styles.description}>
+                    {t[
+                      'com.affine.integration.mcp-server.access.read-only-desc'
+                    ]()}
+                  </span>
+                </div>
+              )}
             </label>
             <label className={styles.field}>
               <span>
@@ -141,8 +167,10 @@ export const McpCredentialModal = ({
           </div>
           <div className={styles.summary}>
             {revealed.credential.name} · {workspaceName} ·{' '}
-            {t['com.affine.integration.mcp-server.access.read-only']()} ·{' '}
-            {new Date(revealed.credential.expiresAt).toLocaleString()}
+            {revealed.credential.accessMode === McpAccessMode.READ_WRITE
+              ? t['com.affine.integration.mcp-server.access.read-write']()
+              : t['com.affine.integration.mcp-server.access.read-only']()}{' '}
+            · {new Date(revealed.credential.expiresAt).toLocaleString()}
           </div>
           {revealed.credential.graceEndsAt ? (
             <div className={styles.warning}>

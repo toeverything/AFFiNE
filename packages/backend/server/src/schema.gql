@@ -2054,6 +2054,7 @@ type Query {
 
   """get workspace invitation info"""
   getInviteInfo(inviteId: String!): InvitationType!
+  mcpCredentialReadWriteAvailable: Boolean!
   mcpCredentials(workspaceId: String!): [McpCredentialType!]!
   prices: [SubscriptionPrice!]!
 

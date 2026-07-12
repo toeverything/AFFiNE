@@ -14,13 +14,16 @@ export class McpCredentialService extends Service {
   }
 
   credentials$ = new LiveData<McpCredential[] | null>(null);
+  readWriteAvailable$ = new LiveData(false);
   loading$ = new LiveData(false);
   error$ = new LiveData<unknown>(null);
 
   async revalidate(workspaceId: string) {
     this.loading$.value = true;
     try {
-      this.credentials$.value = await this.store.list(workspaceId);
+      const result = await this.store.list(workspaceId);
+      this.credentials$.value = result.mcpCredentials;
+      this.readWriteAvailable$.value = result.mcpCredentialReadWriteAvailable;
       this.error$.value = null;
     } catch (error) {
       this.error$.value = error;

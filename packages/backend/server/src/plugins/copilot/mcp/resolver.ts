@@ -105,6 +105,11 @@ export class McpCredentialResolver {
     return await this.credentials.list(user.id, workspaceId);
   }
 
+  @Query(() => Boolean)
+  mcpCredentialReadWriteAvailable() {
+    return env.dev || env.namespaces.canary;
+  }
+
   @Mutation(() => RevealedMcpCredentialType)
   async createMcpCredential(
     @CurrentUser() user: CurrentUser,
