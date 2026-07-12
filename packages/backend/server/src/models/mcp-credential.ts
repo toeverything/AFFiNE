@@ -49,7 +49,13 @@ export class McpCredentialModel extends BaseModel {
     expiresAt: Date
   ) {
     return await this.db.mcpCredential.updateMany({
-      where: { id, userId, workspaceId, revokedAt: null },
+      where: {
+        id,
+        userId,
+        workspaceId,
+        revokedAt: null,
+        replacedById: null,
+      },
       data: { replacedById, expiresAt },
     });
   }

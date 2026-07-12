@@ -118,13 +118,16 @@ export class McpCredentialService {
       generation: current.generation + 1,
       graceEndsAt: graceEnd,
     });
-    await this.models.mcpCredential.replace(
+    const replaced = await this.models.mcpCredential.replace(
       current.id,
       userId,
       workspaceId,
       issued.credential.id,
       graceEnd
     );
+    if (replaced.count !== 1) {
+      throw new BadRequestException('MCP credential not found');
+    }
     this.event.emit('mcp.credential.rotated', {
       credentialId: current.id,
       replacedById: issued.credential.id,

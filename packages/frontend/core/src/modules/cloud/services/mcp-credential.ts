@@ -9,6 +9,8 @@ import type { McpCredentialStore } from '../stores/mcp-credential';
 export type McpCredential = McpCredentialsQuery['mcpCredentials'][number];
 
 export class McpCredentialService extends Service {
+  private revalidationId = 0;
+
   constructor(private readonly store: McpCredentialStore) {
     super();
   }
@@ -19,16 +21,21 @@ export class McpCredentialService extends Service {
   error$ = new LiveData<unknown>(null);
 
   async revalidate(workspaceId: string) {
+    const revalidationId = ++this.revalidationId;
     this.loading$.value = true;
     try {
       const result = await this.store.list(workspaceId);
+      if (revalidationId !== this.revalidationId) return;
       this.credentials$.value = result.mcpCredentials;
       this.readWriteAvailable$.value = result.mcpCredentialReadWriteAvailable;
       this.error$.value = null;
     } catch (error) {
+      if (revalidationId !== this.revalidationId) return;
       this.error$.value = error;
     } finally {
-      this.loading$.value = false;
+      if (revalidationId === this.revalidationId) {
+        this.loading$.value = false;
+      }
     }
   }
 
