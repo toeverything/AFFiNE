@@ -31,7 +31,7 @@ import {
 import { AuthSessionService } from './auth-session';
 import { extractTokenFromHeader } from './input';
 import { AuthService } from './service';
-import { AuthSessionPrincipal, Session, TokenSession } from './session';
+import { AuthSessionPrincipal, Session } from './session';
 import { AuthSessionHttpError } from './session-exchange';
 
 const PUBLIC_ENTRYPOINT_SYMBOL = Symbol('public');
@@ -41,8 +41,7 @@ const INTERNAL_ACCESS_TOKEN_CLOCK_SKEW_MS = 30 * 1000;
 
 type AuthenticatedRequestSession =
   | { type: 'jwt'; session: Session }
-  | { type: 'cookie_session'; session: Session }
-  | { type: 'access_token'; token: TokenSession };
+  | { type: 'cookie_session'; session: Session };
 
 @Injectable()
 export class AuthGuard implements CanActivate, OnModuleInit {
@@ -126,11 +125,9 @@ export class AuthGuard implements CanActivate, OnModuleInit {
     req: Request,
     res?: Response,
     isPublic = false
-  ): Promise<Session | TokenSession | null> {
+  ): Promise<Session | null> {
     const result = await this.resolveRequestSession(req, res, isPublic);
-    return result?.type === 'access_token'
-      ? result.token
-      : (result?.session ?? null);
+    return result?.session ?? null;
   }
 
   private async resolveRequestSession(
@@ -151,11 +148,6 @@ export class AuthGuard implements CanActivate, OnModuleInit {
         }
         throw err;
       }
-    }
-
-    if (bearer) {
-      const token = await this.signInWithAccessToken(req);
-      return token ? { type: 'access_token', token } : null;
     }
 
     const session = await this.signInWithCookie(req, res, isPublic);
@@ -268,23 +260,6 @@ export class AuthGuard implements CanActivate, OnModuleInit {
       clientVersion: clientVersion ?? 'unset_or_invalid',
       requiredVersion: versionCheckResult.requiredVersion,
     });
-  }
-
-  async signInWithAccessToken(req: Request): Promise<TokenSession | null> {
-    if (req.token) {
-      return req.token;
-    }
-
-    const tokenSession = await this.auth.getTokenSessionFromRequest(req);
-
-    if (tokenSession) {
-      req.token = { ...tokenSession.token, user: tokenSession.user };
-      req.authType = 'access_token';
-
-      return req.token;
-    }
-
-    return null;
   }
 
   private getVersionRange(versionRange: string): semver.Range | null {

@@ -41,10 +41,6 @@ export interface RealtimeRequestMap {
     input: Record<string, never>;
     output: { settings: UserSettingsSnapshot };
   };
-  'user.access-tokens.get': {
-    input: Record<string, never>;
-    output: { tokens: AccessTokenSnapshot[] };
-  };
   'notification.count.get': {
     input: Record<string, never>;
     output: { count: number };
@@ -180,13 +176,6 @@ export interface UserSettingsSnapshot {
   receiveCommentEmail: boolean;
 }
 
-export interface AccessTokenSnapshot {
-  id: string;
-  name: string;
-  createdAt: string;
-  expiresAt: string | null;
-}
-
 export type CommentChangeActionSnapshot = 'update' | 'delete';
 
 export interface CommentChangeSnapshot {
@@ -282,10 +271,6 @@ export interface RealtimeTopicMap {
     event: { changed: true; reason: string };
   };
   'user.settings.changed': {
-    input: Record<string, never>;
-    event: { changed: true; reason: string };
-  };
-  'user.access-tokens.changed': {
     input: Record<string, never>;
     event: { changed: true; reason: string };
   };

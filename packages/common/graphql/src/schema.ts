@@ -37,14 +37,6 @@ export interface Scalars {
   Upload: { input: File; output: File };
 }
 
-export interface AccessToken {
-  __typename?: 'AccessToken';
-  createdAt: Scalars['DateTime']['output'];
-  expiresAt: Maybe<Scalars['DateTime']['output']>;
-  id: Scalars['String']['output'];
-  name: Scalars['String']['output'];
-}
-
 export interface AddContextBlobInput {
   blobId: Scalars['String']['input'];
   contextId: Scalars['String']['input'];
@@ -954,6 +946,13 @@ export interface CreateCheckoutSessionInput {
   variant?: InputMaybe<SubscriptionVariant>;
 }
 
+export interface CreateMcpCredentialInput {
+  accessMode?: McpAccessMode;
+  expirationDays?: Scalars['Int']['input'];
+  name: Scalars['String']['input'];
+  workspaceId: Scalars['String']['input'];
+}
+
 export interface CreateUserInput {
   email: Scalars['String']['input'];
   name?: InputMaybe<Scalars['String']['input']>;
@@ -1424,11 +1423,6 @@ export interface ForkChatSessionInput {
   workspaceId: Scalars['String']['input'];
 }
 
-export interface GenerateAccessTokenInput {
-  expiresAt?: InputMaybe<Scalars['DateTime']['input']>;
-  name: Scalars['String']['input'];
-}
-
 export interface GrantDocUserRolesInput {
   docId: Scalars['String']['input'];
   role: DocRole;
@@ -1754,6 +1748,34 @@ export interface ManageUserInput {
   name?: InputMaybe<Scalars['String']['input']>;
 }
 
+export enum McpAccessMode {
+  READ_ONLY = 'READ_ONLY',
+  READ_WRITE = 'READ_WRITE',
+}
+
+export enum McpCredentialStatus {
+  ACTIVE = 'ACTIVE',
+  EXPIRED = 'EXPIRED',
+  EXPIRING = 'EXPIRING',
+  REVOKED = 'REVOKED',
+  ROTATING = 'ROTATING',
+}
+
+export interface McpCredentialType {
+  __typename?: 'McpCredentialType';
+  accessMode: McpAccessMode;
+  createdAt: Scalars['DateTime']['output'];
+  expiresAt: Scalars['DateTime']['output'];
+  fingerprint: Scalars['String']['output'];
+  graceEndsAt: Maybe<Scalars['DateTime']['output']>;
+  id: Scalars['ID']['output'];
+  lastUsedAt: Maybe<Scalars['DateTime']['output']>;
+  name: Scalars['String']['output'];
+  revokedAt: Maybe<Scalars['DateTime']['output']>;
+  status: McpCredentialStatus;
+  workspaceId: Scalars['String']['output'];
+}
+
 export interface MeetingActionItemType {
   __typename?: 'MeetingActionItemType';
   deadline: Maybe<Scalars['String']['output']>;
@@ -1870,6 +1892,7 @@ export interface Mutation {
   /** Create a stripe customer portal to manage payment methods */
   createCustomerPortal: Scalars['String']['output'];
   createInviteLink: InviteLink;
+  createMcpCredential: RevealedMcpCredentialType;
   createReply: ReplyObjectType;
   createSelfhostWorkspaceCustomerPortal: Scalars['String']['output'];
   /** Create a new user */
@@ -1894,7 +1917,6 @@ export interface Mutation {
   /** Create a chat session */
   forkCopilotSession: Scalars['String']['output'];
   generateLicenseKey: Scalars['String']['output'];
-  generateUserAccessToken: RevealedAccessToken;
   grantCommercialEntitlement: Scalars['Boolean']['output'];
   grantDocUserRoles: Scalars['Boolean']['output'];
   grantMember: Scalars['Boolean']['output'];
@@ -1941,10 +1963,11 @@ export interface Mutation {
   revokeCommercialEntitlement: Scalars['Boolean']['output'];
   revokeDocUserRoles: Scalars['Boolean']['output'];
   revokeInviteLink: Scalars['Boolean']['output'];
+  revokeMcpCredential: Scalars['Boolean']['output'];
   revokeMember: Scalars['Boolean']['output'];
   revokePublicDoc: DocType;
-  revokeUserAccessToken: Scalars['Boolean']['output'];
   rotateAuthSigningKey: Array<AuthSigningKeyType>;
+  rotateMcpCredential: RevealedMcpCredentialType;
   sendChangeEmail: Scalars['Boolean']['output'];
   sendChangePasswordEmail: Scalars['Boolean']['output'];
   sendSetPasswordEmail: Scalars['Boolean']['output'];
@@ -2115,6 +2138,10 @@ export interface MutationCreateInviteLinkArgs {
   workspaceId: Scalars['String']['input'];
 }
 
+export interface MutationCreateMcpCredentialArgs {
+  input: CreateMcpCredentialInput;
+}
+
 export interface MutationCreateReplyArgs {
   input: ReplyCreateInput;
 }
@@ -2181,10 +2208,6 @@ export interface MutationForkCopilotSessionArgs {
 
 export interface MutationGenerateLicenseKeyArgs {
   sessionId: Scalars['String']['input'];
-}
-
-export interface MutationGenerateUserAccessTokenArgs {
-  input: GenerateAccessTokenInput;
 }
 
 export interface MutationGrantCommercialEntitlementArgs {
@@ -2322,6 +2345,11 @@ export interface MutationRevokeInviteLinkArgs {
   workspaceId: Scalars['String']['input'];
 }
 
+export interface MutationRevokeMcpCredentialArgs {
+  id: Scalars['ID']['input'];
+  workspaceId: Scalars['String']['input'];
+}
+
 export interface MutationRevokeMemberArgs {
   userId: Scalars['String']['input'];
   workspaceId: Scalars['String']['input'];
@@ -2332,12 +2360,14 @@ export interface MutationRevokePublicDocArgs {
   workspaceId: Scalars['String']['input'];
 }
 
-export interface MutationRevokeUserAccessTokenArgs {
-  id: Scalars['String']['input'];
-}
-
 export interface MutationRotateAuthSigningKeyArgs {
   expectedActiveKeyId: Scalars['String']['input'];
+}
+
+export interface MutationRotateMcpCredentialArgs {
+  expirationDays?: Scalars['Int']['input'];
+  id: Scalars['ID']['input'];
+  workspaceId: Scalars['String']['input'];
 }
 
 export interface MutationSendChangeEmailArgs {
@@ -2706,6 +2736,7 @@ export interface Query {
   error: ErrorDataUnion;
   /** get workspace invitation info */
   getInviteInfo: InvitationType;
+  mcpCredentials: Array<McpCredentialType>;
   prices: Array<SubscriptionPrice>;
   /** Get public user by id */
   publicUserById: Maybe<PublicUserType>;
@@ -2714,8 +2745,6 @@ export interface Query {
    * @deprecated Use realtime subscription "workspace.embedding.progress.changed" instead.
    */
   queryWorkspaceEmbeddingStatus: ContextWorkspaceEmbeddingStatus;
-  /** @deprecated use currentUser.revealedAccessTokens */
-  revealedAccessTokens: Array<RevealedAccessToken>;
   /** server config */
   serverConfig: ServerConfigType;
   /** Get user by email */
@@ -2772,6 +2801,10 @@ export interface QueryErrorArgs {
 
 export interface QueryGetInviteInfoArgs {
   inviteId: Scalars['String']['input'];
+}
+
+export interface QueryMcpCredentialsArgs {
+  workspaceId: Scalars['String']['input'];
 }
 
 export interface QueryPublicUserByIdArgs {
@@ -2914,12 +2947,9 @@ export interface ResponseTooLargeErrorDataType {
   receivedBytes: Scalars['Int']['output'];
 }
 
-export interface RevealedAccessToken {
-  __typename?: 'RevealedAccessToken';
-  createdAt: Scalars['DateTime']['output'];
-  expiresAt: Maybe<Scalars['DateTime']['output']>;
-  id: Scalars['String']['output'];
-  name: Scalars['String']['output'];
+export interface RevealedMcpCredentialType {
+  __typename?: 'RevealedMcpCredentialType';
+  credential: McpCredentialType;
   token: Scalars['String']['output'];
 }
 
@@ -3450,7 +3480,6 @@ export interface UserSettingsType {
 
 export interface UserType {
   __typename?: 'UserType';
-  accessTokens: Array<AccessToken>;
   /** User avatar url */
   avatarUrl: Maybe<Scalars['String']['output']>;
   calendarAccounts: Array<CalendarAccountObjectType>;
@@ -3480,7 +3509,6 @@ export interface UserType {
   notifications: PaginatedNotificationObjectType;
   quota: UserQuotaType;
   quotaUsage: UserQuotaUsageType;
-  revealedAccessTokens: Array<RevealedAccessToken>;
   /** Get user settings */
   settings: UserSettingsType;
   subscriptions: Array<SubscriptionType>;
@@ -3841,31 +3869,6 @@ export interface TokenType {
   sessionToken: Maybe<Scalars['String']['output']>;
   token: Scalars['String']['output'];
 }
-
-export type GenerateUserAccessTokenMutationVariables = Exact<{
-  input: GenerateAccessTokenInput;
-}>;
-
-export type GenerateUserAccessTokenMutation = {
-  __typename?: 'Mutation';
-  generateUserAccessToken: {
-    __typename?: 'RevealedAccessToken';
-    id: string;
-    name: string;
-    token: string;
-    createdAt: string;
-    expiresAt: string | null;
-  };
-};
-
-export type RevokeUserAccessTokenMutationVariables = Exact<{
-  id: Scalars['String']['input'];
-}>;
-
-export type RevokeUserAccessTokenMutation = {
-  __typename?: 'Mutation';
-  revokeUserAccessToken: boolean;
-};
 
 export type AdminAllSharedLinksQueryVariables = Exact<{
   pagination: PaginationInput;
@@ -7227,6 +7230,92 @@ export type ListNotificationsQuery = {
   } | null;
 };
 
+export type CreateMcpCredentialMutationVariables = Exact<{
+  input: CreateMcpCredentialInput;
+}>;
+
+export type CreateMcpCredentialMutation = {
+  __typename?: 'Mutation';
+  createMcpCredential: {
+    __typename?: 'RevealedMcpCredentialType';
+    token: string;
+    credential: {
+      __typename?: 'McpCredentialType';
+      id: string;
+      name: string;
+      workspaceId: string;
+      accessMode: McpAccessMode;
+      fingerprint: string;
+      createdAt: string;
+      expiresAt: string;
+      lastUsedAt: string | null;
+      revokedAt: string | null;
+      graceEndsAt: string | null;
+      status: McpCredentialStatus;
+    };
+  };
+};
+
+export type McpCredentialsQueryVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+}>;
+
+export type McpCredentialsQuery = {
+  __typename?: 'Query';
+  mcpCredentials: Array<{
+    __typename?: 'McpCredentialType';
+    id: string;
+    name: string;
+    workspaceId: string;
+    accessMode: McpAccessMode;
+    fingerprint: string;
+    createdAt: string;
+    expiresAt: string;
+    lastUsedAt: string | null;
+    revokedAt: string | null;
+    graceEndsAt: string | null;
+    status: McpCredentialStatus;
+  }>;
+};
+
+export type RevokeMcpCredentialMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  workspaceId: Scalars['String']['input'];
+}>;
+
+export type RevokeMcpCredentialMutation = {
+  __typename?: 'Mutation';
+  revokeMcpCredential: boolean;
+};
+
+export type RotateMcpCredentialMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  workspaceId: Scalars['String']['input'];
+  expirationDays: Scalars['Int']['input'];
+}>;
+
+export type RotateMcpCredentialMutation = {
+  __typename?: 'Mutation';
+  rotateMcpCredential: {
+    __typename?: 'RevealedMcpCredentialType';
+    token: string;
+    credential: {
+      __typename?: 'McpCredentialType';
+      id: string;
+      name: string;
+      workspaceId: string;
+      accessMode: McpAccessMode;
+      fingerprint: string;
+      createdAt: string;
+      expiresAt: string;
+      lastUsedAt: string | null;
+      revokedAt: string | null;
+      graceEndsAt: string | null;
+      status: McpCredentialStatus;
+    };
+  };
+};
+
 export type MentionUserMutationVariables = Exact<{
   input: MentionInput;
 }>;
@@ -8263,6 +8352,11 @@ export type Queries =
       response: ListNotificationsQuery;
     }
   | {
+      name: 'mcpCredentialsQuery';
+      variables: McpCredentialsQueryVariables;
+      response: McpCredentialsQuery;
+    }
+  | {
       name: 'pricesQuery';
       variables: PricesQueryVariables;
       response: PricesQuery;
@@ -8304,16 +8398,6 @@ export type Queries =
     };
 
 export type Mutations =
-  | {
-      name: 'generateUserAccessTokenMutation';
-      variables: GenerateUserAccessTokenMutationVariables;
-      response: GenerateUserAccessTokenMutation;
-    }
-  | {
-      name: 'revokeUserAccessTokenMutation';
-      variables: RevokeUserAccessTokenMutationVariables;
-      response: RevokeUserAccessTokenMutation;
-    }
   | {
       name: 'adminUpdateWorkspaceMutation';
       variables: AdminUpdateWorkspaceMutationVariables;
@@ -8668,6 +8752,21 @@ export type Mutations =
       name: 'previewLicenseMutation';
       variables: PreviewLicenseMutationVariables;
       response: PreviewLicenseMutation;
+    }
+  | {
+      name: 'createMcpCredentialMutation';
+      variables: CreateMcpCredentialMutationVariables;
+      response: CreateMcpCredentialMutation;
+    }
+  | {
+      name: 'revokeMcpCredentialMutation';
+      variables: RevokeMcpCredentialMutationVariables;
+      response: RevokeMcpCredentialMutation;
+    }
+  | {
+      name: 'rotateMcpCredentialMutation';
+      variables: RotateMcpCredentialMutationVariables;
+      response: RotateMcpCredentialMutation;
     }
   | {
       name: 'mentionUserMutation';

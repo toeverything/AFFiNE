@@ -7,7 +7,6 @@ import {
 import { ModuleRef } from '@nestjs/core';
 
 import { ApplyType } from '../base';
-import { AccessTokenModel } from './access-token';
 import { AuthSessionModel } from './auth-session';
 import { BlobModel } from './blob';
 import { CalendarAccountModel } from './calendar-account';
@@ -31,6 +30,7 @@ import { FeatureModel } from './feature';
 import { HistoryModel } from './history';
 import { MagicLinkOtpModel } from './magic-link-otp';
 import { MailDeliveryModel } from './mail-delivery';
+import { McpCredentialModel } from './mcp-credential';
 import { NotificationModel } from './notification';
 import { PermissionProjectionModel } from './permission-projection';
 import {
@@ -91,7 +91,7 @@ const MODELS = {
   comment: CommentModel,
   commentAttachment: CommentAttachmentModel,
   blob: BlobModel,
-  accessToken: AccessTokenModel,
+  mcpCredential: McpCredentialModel,
   calendarAccount: CalendarAccountModel,
   calendarSubscription: CalendarSubscriptionModel,
   calendarEvent: CalendarEventModel,

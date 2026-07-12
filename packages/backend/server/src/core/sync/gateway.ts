@@ -353,7 +353,7 @@ export class SpaceSyncGateway
 
   private attachPresenceUserId(client: Socket): string | null {
     const request = client.request as Request;
-    const userId = request.session?.user.id ?? request.token?.user.id;
+    const userId = request.session?.user.id;
     if (typeof userId !== 'string' || !userId) {
       this.logger.warn(
         `Unable to resolve authenticated user id for socket ${client.id}`

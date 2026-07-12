@@ -36,6 +36,7 @@ model User {
   docPermissions              WorkspaceDocUserRole[]
   connectedAccounts           ConnectedAccount[]
   calendarAccounts            CalendarAccount[]
+  mcpCredentials              McpCredential[]
   sessions                    UserSession[]
   aiSessions                  AiSession[]
   appConfigs                  AppConfig[]
@@ -51,7 +52,6 @@ model User {
   comments                    Comment[]
   replies                     Reply[]
   commentAttachments          CommentAttachment[]            @relation("createdCommentAttachments")
-  AccessToken                 AccessToken[]
   workspaceCalendars          WorkspaceCalendar[]
   workspaceMemberLastAccesses WorkspaceMemberLastAccess[]
   quotaState                  EffectiveUserQuotaState?
@@ -217,6 +217,7 @@ model Workspace {
   projectedInvitations       WorkspaceInvitation[]
   docAccessPolicies          DocAccessPolicy[]
   docGrants                  DocGrant[]
+  mcpCredentials             McpCredential[]
 
   @@index([lastCheckEmbeddings])
   @@index([createdAt])
@@ -1495,18 +1496,35 @@ model CommentAttachment {
   @@map("comment_attachments")
 }
 
-model AccessToken {
-  id        String    @id @default(uuid()) @db.VarChar
-  name      String    @db.VarChar
-  token     String    @unique @db.VarChar
-  userId    String    @map("user_id") @db.VarChar
-  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  expiresAt DateTime? @map("expires_at") @db.Timestamptz(3)
+enum McpAccessMode {
+  READ_ONLY
+  READ_WRITE
+}
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+model McpCredential {
+  id           String        @id @default(uuid()) @db.VarChar
+  familyId     String        @map("family_id") @db.VarChar
+  generation   Int           @default(0)
+  name         String        @db.VarChar
+  secretHash   String        @unique @map("secret_hash") @db.VarChar
+  fingerprint  String        @db.VarChar
+  userId       String        @map("user_id") @db.VarChar
+  workspaceId  String        @map("workspace_id") @db.VarChar
+  accessMode   McpAccessMode @default(READ_ONLY) @map("access_mode")
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt    DateTime      @map("expires_at") @db.Timestamptz(3)
+  lastUsedAt   DateTime?     @map("last_used_at") @db.Timestamptz(3)
+  revokedAt    DateTime?     @map("revoked_at") @db.Timestamptz(3)
+  replacedById String?       @map("replaced_by_id") @db.VarChar
+  graceEndsAt  DateTime?     @map("grace_ends_at") @db.Timestamptz(3)
 
-  @@index([userId])
-  @@map("access_tokens")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([familyId, generation])
+  @@index([userId, workspaceId])
+  @@index([expiresAt])
+  @@map("mcp_credentials")
 }
 
 model CalendarAccount {

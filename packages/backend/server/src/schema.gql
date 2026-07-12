@@ -2,13 +2,6 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
-type AccessToken {
-  createdAt: DateTime!
-  expiresAt: DateTime
-  id: String!
-  name: String!
-}
-
 input AddContextBlobInput {
   blobId: String!
   contextId: String!
@@ -810,6 +803,13 @@ input CreateCheckoutSessionInput {
   variant: SubscriptionVariant
 }
 
+input CreateMcpCredentialInput {
+  accessMode: McpAccessMode! = READ_ONLY
+  expirationDays: Int! = 90
+  name: String!
+  workspaceId: String!
+}
+
 input CreateUserInput {
   email: String!
   name: String
@@ -1196,11 +1196,6 @@ input ForkChatSessionInput {
   workspaceId: String!
 }
 
-input GenerateAccessTokenInput {
-  expiresAt: DateTime
-  name: String!
-}
-
 input GrantDocUserRolesInput {
   docId: String!
   role: DocRole!
@@ -1533,6 +1528,33 @@ input ManageUserInput {
   name: String
 }
 
+enum McpAccessMode {
+  READ_ONLY
+  READ_WRITE
+}
+
+enum McpCredentialStatus {
+  ACTIVE
+  EXPIRED
+  EXPIRING
+  REVOKED
+  ROTATING
+}
+
+type McpCredentialType {
+  accessMode: McpAccessMode!
+  createdAt: DateTime!
+  expiresAt: DateTime!
+  fingerprint: String!
+  graceEndsAt: DateTime
+  id: ID!
+  lastUsedAt: DateTime
+  name: String!
+  revokedAt: DateTime
+  status: McpCredentialStatus!
+  workspaceId: String!
+}
+
 type MeetingActionItemType {
   deadline: String
   description: String!
@@ -1657,6 +1679,7 @@ type Mutation {
   """Create a stripe customer portal to manage payment methods"""
   createCustomerPortal: String!
   createInviteLink(expireTime: WorkspaceInviteLinkExpireTime!, workspaceId: String!): InviteLink!
+  createMcpCredential(input: CreateMcpCredentialInput!): RevealedMcpCredentialType!
   createReply(input: ReplyCreateInput!): ReplyObjectType!
   createSelfhostWorkspaceCustomerPortal(workspaceId: String!): String!
 
@@ -1688,7 +1711,6 @@ type Mutation {
   """Create a chat session"""
   forkCopilotSession(options: ForkChatSessionInput!): String!
   generateLicenseKey(sessionId: String!): String!
-  generateUserAccessToken(input: GenerateAccessTokenInput!): RevealedAccessToken!
   grantCommercialEntitlement(plan: String!, quantity: Int, targetId: String!, targetType: String!): Boolean!
   grantDocUserRoles(input: GrantDocUserRolesInput!): Boolean!
   grantMember(permission: Permission!, userId: String!, workspaceId: String!): Boolean!
@@ -1749,10 +1771,11 @@ type Mutation {
   revokeCommercialEntitlement(targetId: String!, targetType: String!): Boolean!
   revokeDocUserRoles(input: RevokeDocUserRoleInput!): Boolean!
   revokeInviteLink(workspaceId: String!): Boolean!
+  revokeMcpCredential(id: ID!, workspaceId: String!): Boolean!
   revokeMember(userId: String!, workspaceId: String!): Boolean!
   revokePublicDoc(docId: String!, workspaceId: String!): DocType!
-  revokeUserAccessToken(id: String!): Boolean!
   rotateAuthSigningKey(expectedActiveKeyId: String!): [AuthSigningKeyType!]!
+  rotateMcpCredential(expirationDays: Int! = 90, id: ID!, workspaceId: String!): RevealedMcpCredentialType!
   sendChangeEmail(callbackUrl: String!): Boolean!
   sendChangePasswordEmail(callbackUrl: String!, email: String @deprecated(reason: "fetched from signed in user")): Boolean!
   sendSetPasswordEmail(callbackUrl: String!, email: String @deprecated(reason: "fetched from signed in user")): Boolean!
@@ -2031,6 +2054,7 @@ type Query {
 
   """get workspace invitation info"""
   getInviteInfo(inviteId: String!): InvitationType!
+  mcpCredentials(workspaceId: String!): [McpCredentialType!]!
   prices: [SubscriptionPrice!]!
 
   """Get public user by id"""
@@ -2038,7 +2062,6 @@ type Query {
 
   """query workspace embedding status"""
   queryWorkspaceEmbeddingStatus(workspaceId: String!): ContextWorkspaceEmbeddingStatus! @deprecated(reason: "Use realtime subscription \"workspace.embedding.progress.changed\" instead.")
-  revealedAccessTokens: [RevealedAccessToken!]! @deprecated(reason: "use currentUser.revealedAccessTokens")
 
   """server config"""
   serverConfig: ServerConfigType!
@@ -2173,11 +2196,8 @@ type ResponseTooLargeErrorDataType {
   receivedBytes: Int!
 }
 
-type RevealedAccessToken {
-  createdAt: DateTime!
-  expiresAt: DateTime
-  id: String!
-  name: String!
+type RevealedMcpCredentialType {
+  credential: McpCredentialType!
   token: String!
 }
 
@@ -2700,8 +2720,6 @@ type UserSettingsType {
 }
 
 type UserType {
-  accessTokens: [AccessToken!]!
-
   """User avatar url"""
   avatarUrl: String
   calendarAccounts: [CalendarAccountObjectType!]!
@@ -2737,7 +2755,6 @@ type UserType {
   notifications(pagination: PaginationInput!): PaginatedNotificationObjectType!
   quota: UserQuotaType!
   quotaUsage: UserQuotaUsageType!
-  revealedAccessTokens: [RevealedAccessToken!]!
 
   """Get user settings"""
   settings: UserSettingsType!

@@ -5,7 +5,6 @@ export * from './user.mock';
 export * from './workspace.mock';
 export * from './workspace-user.mock';
 
-import { MockAccessToken } from './access-token.mock';
 import { installMockCopilotRuntime, MockCopilotProvider } from './copilot.mock';
 import { MockDocMeta } from './doc-meta.mock';
 import { MockDocSnapshot } from './doc-snapshot.mock';
@@ -28,7 +27,6 @@ export const Mockers = {
   DocMeta: MockDocMeta,
   DocSnapshot: MockDocSnapshot,
   DocUser: MockDocUser,
-  AccessToken: MockAccessToken,
 };
 
 export {

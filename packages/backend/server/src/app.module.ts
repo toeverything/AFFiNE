@@ -27,7 +27,6 @@ import { PrismaModule } from './base/prisma';
 import { RedisModule } from './base/redis';
 import { RateLimiterModule } from './base/throttler';
 import { WebSocketModule } from './base/websocket';
-import { AccessTokenModule } from './core/access-token';
 import { AuthModule } from './core/auth';
 import { BackendRuntimeModule } from './core/backend-runtime';
 import { CommentModule } from './core/comment';
@@ -209,7 +208,6 @@ export function buildAppModule(env: Env) {
       CalendarModule,
       TelemetryModule,
       CommentModule,
-      AccessTokenModule,
       QueueDashboardModule
     )
     // doc service and front service

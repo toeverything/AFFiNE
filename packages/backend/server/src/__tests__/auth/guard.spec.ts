@@ -146,21 +146,11 @@ test('should reject a legacy bearer session id', async t => {
     .get('/private')
     .set('Authorization', `Bearer ${t.context.sessionId}`)
     .expect(HttpStatus.UNAUTHORIZED);
-  t.pass();
-});
-
-test('should be able to visit private api with personal access token', async t => {
-  const accessToken = await t.context.models.accessToken.create({
-    userId: t.context.u1.id,
-    name: 'test',
-  });
-
-  const res = await request(t.context.server)
+  await request(t.context.server)
     .get('/private')
-    .set('Authorization', `Bearer ${accessToken.token}`)
-    .expect(HttpStatus.OK);
-
-  t.is(res.body.user.id, t.context.u1.id);
+    .set('Authorization', 'Bearer aff_mcp_v1.selector.secret')
+    .expect(HttpStatus.UNAUTHORIZED);
+  t.pass();
 });
 
 test('should be able to visit private api with auth-session access jwt', async t => {
