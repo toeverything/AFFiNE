@@ -22,6 +22,10 @@ export const useAISpecs = () => {
     featureFlagService.flags.enable_pdf_embed_preview.$
   );
 
+  const enableOnlyoffice = useLiveData(
+    featureFlagService.flags.enable_onlyoffice.$
+  );
+
   const isCloud = workspaceService.workspace.flavour !== 'local';
 
   const specs = useMemo(() => {
@@ -38,6 +42,7 @@ export const useAISpecs = () => {
       })
       .cloud(framework, isCloud)
       .pdf(enablePDFEmbedPreview, reactToLit)
+      .onlyoffice(enableOnlyoffice)
       .database(framework)
       .linkedDoc(framework)
       .paragraph(enableAI)
@@ -53,6 +58,7 @@ export const useAISpecs = () => {
     reactToLit,
     enableAI,
     enablePDFEmbedPreview,
+    enableOnlyoffice,
     isCloud,
     confirmModal,
   ]);
