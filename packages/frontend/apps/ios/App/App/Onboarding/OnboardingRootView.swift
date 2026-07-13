@@ -141,7 +141,7 @@ struct OnboardingRootView: View {
       }
     }
     .tabViewStyle(.page(indexDisplayMode: .never))
-    .background(PageSwipeLockView(isLocked: isRolePage))
+    .background(PageSwipeLockView(isLocked: true))
     .animation(.spring(response: 0.30, dampingFraction: 0.88), value: pageIndex)
   }
 

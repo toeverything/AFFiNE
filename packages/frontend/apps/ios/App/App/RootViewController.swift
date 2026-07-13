@@ -106,6 +106,7 @@ private final class ColdStartSignInSheetViewController: UIViewController {
   private var sheetBottomConstraint: NSLayoutConstraint?
   private var sheetHeightConstraint: NSLayoutConstraint?
   private var stackTopConstraint: NSLayoutConstraint?
+  private var stackCenterYConstraint: NSLayoutConstraint?
   private var logoWidthConstraint: NSLayoutConstraint?
   private var logoHeightConstraint: NSLayoutConstraint?
   private var buttonHeightConstraint: NSLayoutConstraint?
@@ -132,7 +133,7 @@ private final class ColdStartSignInSheetViewController: UIViewController {
     let label = UILabel()
     label.translatesAutoresizingMaskIntoConstraints = false
     label.text = "Create here"
-    label.textAlignment = .center
+    label.textAlignment = .left
     label.textColor = .label
     label.font = .systemFont(ofSize: 26, weight: .bold)
     return label
@@ -216,9 +217,14 @@ private final class ColdStartSignInSheetViewController: UIViewController {
   }
 
   private func installContent() {
+    let headerStackView = UIStackView(arrangedSubviews: [logoImageView, titleLabel])
+    headerStackView.translatesAutoresizingMaskIntoConstraints = false
+    headerStackView.axis = .horizontal
+    headerStackView.alignment = .center
+    headerStackView.spacing = 12
+
     let stackView = UIStackView(arrangedSubviews: [
-      logoImageView,
-      titleLabel,
+      headerStackView,
       subtitleLabel,
       proBenefitsButton,
       continueFreeButton,
@@ -226,11 +232,10 @@ private final class ColdStartSignInSheetViewController: UIViewController {
     stackView.translatesAutoresizingMaskIntoConstraints = false
     stackView.axis = .vertical
     stackView.alignment = .center
-    stackView.spacing = 10
-    stackView.setCustomSpacing(12, after: logoImageView)
-    stackView.setCustomSpacing(8, after: titleLabel)
-    stackView.setCustomSpacing(20, after: subtitleLabel)
-    stackView.setCustomSpacing(6, after: proBenefitsButton)
+    stackView.spacing = 12
+    stackView.setCustomSpacing(18, after: headerStackView)
+    stackView.setCustomSpacing(30, after: subtitleLabel)
+    stackView.setCustomSpacing(14, after: proBenefitsButton)
 
     dimmingView.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(handleContinueFreeTapped)))
 
@@ -240,7 +245,8 @@ private final class ColdStartSignInSheetViewController: UIViewController {
 
     sheetBottomConstraint = sheetView.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: currentSheetHeight)
     sheetHeightConstraint = sheetView.heightAnchor.constraint(equalToConstant: currentSheetHeight)
-    stackTopConstraint = stackView.topAnchor.constraint(equalTo: sheetView.topAnchor, constant: isLandscapeLayout ? 14 : 24)
+    stackTopConstraint = stackView.topAnchor.constraint(greaterThanOrEqualTo: sheetView.topAnchor, constant: isLandscapeLayout ? 16 : 26)
+    stackCenterYConstraint = stackView.centerYAnchor.constraint(equalTo: sheetView.centerYAnchor, constant: isLandscapeLayout ? -8 : -10)
     logoWidthConstraint = logoImageView.widthAnchor.constraint(equalToConstant: isLandscapeLayout ? 34 : 44)
     logoHeightConstraint = logoImageView.heightAnchor.constraint(equalToConstant: isLandscapeLayout ? 34 : 44)
     buttonHeightConstraint = proBenefitsButton.heightAnchor.constraint(equalToConstant: isLandscapeLayout ? 48 : 58)
@@ -258,6 +264,7 @@ private final class ColdStartSignInSheetViewController: UIViewController {
       sheetHeightConstraint!,
 
       stackTopConstraint!,
+      stackCenterYConstraint!,
       stackView.centerXAnchor.constraint(equalTo: sheetView.centerXAnchor),
       stackView.leadingAnchor.constraint(greaterThanOrEqualTo: sheetView.leadingAnchor, constant: 31),
       stackView.trailingAnchor.constraint(lessThanOrEqualTo: sheetView.trailingAnchor, constant: -31),
@@ -292,7 +299,8 @@ private final class ColdStartSignInSheetViewController: UIViewController {
     let isLandscape = isLandscapeLayout
     sheetHeightConstraint?.constant = currentSheetHeight
     sheetBottomConstraint?.constant = didShowSheet ? 0 : currentSheetHeight
-    stackTopConstraint?.constant = isLandscape ? 14 : 24
+    stackTopConstraint?.constant = isLandscape ? 16 : 26
+    stackCenterYConstraint?.constant = isLandscape ? -8 : -10
     logoWidthConstraint?.constant = isLandscape ? 34 : 44
     logoHeightConstraint?.constant = isLandscape ? 34 : 44
     buttonHeightConstraint?.constant = isLandscape ? 48 : 58
