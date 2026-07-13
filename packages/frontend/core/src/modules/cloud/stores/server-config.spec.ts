@@ -9,13 +9,17 @@ import {
 describe('server config version guard', () => {
   test('accepts supported server versions', () => {
     expect(() => assertSupportedServerVersion('0.27.0')).not.toThrow();
+    expect(() => assertSupportedServerVersion('0.27.0-beta.5')).not.toThrow();
+    expect(() => assertSupportedServerVersion('0.27.0-rc.1')).not.toThrow();
     expect(() => assertSupportedServerVersion('0.28.0')).not.toThrow();
   });
 
   test('rejects old server versions', () => {
-    expect(() => assertSupportedServerVersion('0.26.9')).toThrow(
-      UserFriendlyError
-    );
+    for (const version of ['0.26.9', '0.26.9-beta.5']) {
+      expect(() => assertSupportedServerVersion(version)).toThrow(
+        UserFriendlyError
+      );
+    }
   });
 
   test('rejects missing or invalid server versions', () => {

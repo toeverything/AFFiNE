@@ -1,9 +1,11 @@
 import type { Server } from '@affine/core/modules/cloud';
-import { MIN_SUPPORTED_SERVER_VERSION } from '@affine/core/modules/cloud/stores/server-config';
+import {
+  isSupportedServerVersion,
+  MIN_SUPPORTED_SERVER_VERSION,
+} from '@affine/core/modules/cloud/stores/server-config';
 import { useI18n } from '@affine/i18n';
 import { useLiveData } from '@toeverything/infra';
 import { cssVarV2 } from '@toeverything/theme/v2';
-import semver from 'semver';
 
 const rules = [
   {
@@ -46,7 +48,7 @@ export const useSelfhostLoginVersionGuard = (server: Server) => {
     useLiveData(server.config$.selector(c => c.version)) ?? '0.0.0';
 
   for (const rule of rules) {
-    if (semver.lt(serverVersion, rule.min)) {
+    if (!isSupportedServerVersion(serverVersion)) {
       return rule.tip(
         t['error.UNSUPPORTED_SERVER_VERSION']({
           requiredVersion: `>=${rule.min}`,
