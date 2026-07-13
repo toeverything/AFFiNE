@@ -973,7 +973,7 @@ jobs:
           sudo sysctl -w vm.max_map_count=262144
 
       - name: Runs Elasticsearch
-        uses: elastic/elastic-github-actions/elasticsearch@master
+        uses: elastic/elastic-github-actions/elasticsearch@98431b45a60cbb6ace481778827bc8e11f12fd65 # master
         with:
           stack-version: 9.0.1
           security-enabled: false
