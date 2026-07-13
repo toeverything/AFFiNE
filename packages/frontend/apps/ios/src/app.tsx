@@ -155,19 +155,57 @@ framework.impl(VirtualKeyboardProvider, {
     let disposeRef = {
       dispose: () => {},
     };
+    let viewportDispose = () => {};
+    let pluginKeyboardHeight = 0;
+    let pluginKeyboardVisible = false;
+
+    const getViewportKeyboardHeight = () => {
+      const viewport = window.visualViewport;
+      if (!viewport) {
+        return 0;
+      }
+      return Math.max(
+        0,
+        window.innerHeight - viewport.height - viewport.offsetTop
+      );
+    };
+
+    const emitKeyboardState = () => {
+      const viewportKeyboardHeight = getViewportKeyboardHeight();
+      const effectiveKeyboardHeight = Math.max(
+        pluginKeyboardHeight,
+        viewportKeyboardHeight
+      );
+
+      callback({
+        visible: pluginKeyboardVisible || effectiveKeyboardHeight > 0,
+        height: effectiveKeyboardHeight,
+      });
+    };
+
+    const viewport = window.visualViewport;
+    if (viewport) {
+      const handleViewportChange = () => {
+        emitKeyboardState();
+      };
+      viewport.addEventListener('resize', handleViewportChange);
+      viewport.addEventListener('scroll', handleViewportChange);
+      viewportDispose = () => {
+        viewport.removeEventListener('resize', handleViewportChange);
+        viewport.removeEventListener('scroll', handleViewportChange);
+      };
+    }
 
     Promise.all([
       Keyboard.addListener('keyboardWillShow', info => {
-        callback({
-          visible: info.keyboardHeight !== 0,
-          height: info.keyboardHeight,
-        });
+        pluginKeyboardVisible = info.keyboardHeight !== 0;
+        pluginKeyboardHeight = info.keyboardHeight;
+        emitKeyboardState();
       }),
       Keyboard.addListener('keyboardWillHide', () => {
-        callback({
-          visible: false,
-          height: 0,
-        });
+        pluginKeyboardVisible = false;
+        pluginKeyboardHeight = 0;
+        emitKeyboardState();
       }),
     ])
       .then(handlers => {
@@ -179,8 +217,11 @@ framework.impl(VirtualKeyboardProvider, {
       })
       .catch(console.error);
 
+    emitKeyboardState();
+
     return () => {
       disposeRef.dispose();
+      viewportDispose();
     };
   },
 });

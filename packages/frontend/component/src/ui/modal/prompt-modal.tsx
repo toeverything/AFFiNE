@@ -12,6 +12,7 @@ import {
 import type { ButtonProps } from '../button';
 import { Button } from '../button';
 import Input, { type InputProps } from '../input';
+import { ModalConfigContext } from './context';
 import type { ModalProps } from './modal';
 import { Modal } from './modal';
 import { desktopStyles, mobileStyles } from './prompt-modal.css';
@@ -57,8 +58,10 @@ export const PromptModal = ({
   autoFocusConfirm = true,
   headerClassName,
   descriptionClassName,
+  contentOptions,
   ...props
 }: PromptModalProps) => {
+  const { dynamicKeyboardHeight } = useContext(ModalConfigContext);
   const [value, setValue] = useState(defaultValue ?? '');
   const onConfirmClick = useCallback(() => {
     Promise.resolve(onConfirm?.(value))
@@ -87,8 +90,21 @@ export const PromptModal = ({
   return (
     <Modal
       contentOptions={{
-        className: styles.container,
+        ...contentOptions,
+        className: clsx(styles.container, contentOptions?.className),
+        style: {
+          ...contentOptions?.style,
+          ...(BUILD_CONFIG.isMobileEdition
+            ? {
+                maxHeight: dynamicKeyboardHeight
+                  ? `calc(100dvh - ${dynamicKeyboardHeight} - 32px)`
+                  : 'calc(100dvh - 32px)',
+                overflowY: 'auto',
+              }
+            : null),
+        },
         onPointerDownOutside: e => {
+          contentOptions?.onPointerDownOutside?.(e);
           e.stopPropagation();
           onCancel?.();
         },
