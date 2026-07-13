@@ -103,7 +103,7 @@ struct OnboardingRootView: View {
       .offset(y: isIntroPage ? 0 : -30)
 
       footer
-        .offset(y: isIntroPage ? 0 : 30)
+        .offset(y: 30)
     }
   }
 
@@ -263,7 +263,7 @@ private struct OnboardingLayout {
       return compactPageHeight(for: page)
     }
 
-    let reservedHeight: CGFloat = page.isIntro ? 104 : 116
+    let reservedHeight: CGFloat = page.isIntro ? 72 : 116
     let availableHeight = size.height - safeAreaInsets.top - safeAreaInsets.bottom - reservedHeight
     return max(360, availableHeight)
   }
@@ -479,15 +479,15 @@ private struct IntroFooter: View {
       Button(action: onGetStarted) {
         HStack(spacing: 10) {
           Text("Get Started")
-            .font(.system(size: 20, weight: .bold))
-          Image(systemName: "arrow.right")
             .font(.system(size: 18, weight: .bold))
+          Image(systemName: "arrow.right")
+            .font(.system(size: 16, weight: .bold))
         }
         .foregroundStyle(AffineColors.layerPureWhite.color)
         .frame(maxWidth: .infinity)
-        .frame(height: 66)
+        .frame(height: 54)
         .background(AffineColors.buttonPrimary.color)
-        .clipShape(Capsule())
+        .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
       }
       .buttonStyle(.plain)
     }
