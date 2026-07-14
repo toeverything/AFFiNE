@@ -10,7 +10,9 @@ import { EventBus } from '../../base';
 import { ConfigFactory, ConfigModule } from '../../base/config';
 import { CurrentUser } from '../../core/auth';
 import { AuthService } from '../../core/auth/service';
+import { EntitlementService } from '../../core/entitlement';
 import { SubscriptionCronJobs } from '../../plugins/payment/cron';
+import { SelfhostTeamSubscriptionManager } from '../../plugins/payment/manager';
 import { RevenueCatService } from '../../plugins/payment/revenuecat';
 import { SubscriptionService } from '../../plugins/payment/service';
 import { StripeFactory } from '../../plugins/payment/stripe';
@@ -869,6 +871,7 @@ test('should be able to cancel subscription', async t => {
       status: SubscriptionStatus.Active,
       periodStart: new Date(),
       periodEnd: new Date(Date.now() + 100000),
+      metadata: { preserved: true },
     },
   });
 
@@ -890,6 +893,15 @@ test('should be able to cancel subscription', async t => {
   );
   t.is(subInDB.status, SubscriptionStatus.Active);
   t.truthy(subInDB.canceledAt);
+  const saved = await db.providerSubscription.findUniqueOrThrow({
+    where: {
+      provider_externalSubscriptionId: {
+        provider: 'stripe',
+        externalSubscriptionId: 'sub_1',
+      },
+    },
+  });
+  t.like(saved.metadata, { preserved: true, nextBillAt: null });
 });
 
 test('should reconcile canceled stripe subscriptions and revoke local entitlement', async t => {
@@ -1361,9 +1373,9 @@ test('should be able to subscribe to lifetime recurring', async t => {
 });
 
 test('should be able to subscribe to lifetime recurring with old subscription', async t => {
-  const { service, stripe, db, u1, event } = t.context;
+  const { app, service, stripe, db, u1, event } = t.context;
 
-  await db.providerSubscription.create({
+  const previous = await db.providerSubscription.create({
     data: {
       provider: 'stripe',
       targetType: 'user',
@@ -1376,6 +1388,47 @@ test('should be able to subscribe to lifetime recurring with old subscription', 
       periodEnd: new Date(Date.now() + 100000),
     },
   });
+  await app.get(EntitlementService).upsertFromCloudSubscription({
+    targetId: u1.id,
+    plan: SubscriptionPlan.Pro,
+    recurring: SubscriptionRecurring.Monthly,
+    status: SubscriptionStatus.Active,
+    subscriptionId: previous.id,
+    stripeSubscriptionId: previous.externalSubscriptionId,
+    end: previous.periodEnd,
+  });
+  event.emit.resetHistory();
+
+  stripe.subscriptions.cancel.rejects(new Error('remote cancellation failed'));
+  await t.throwsAsync(() => service.saveStripeInvoice(lifetimeInvoice), {
+    message: 'remote cancellation failed',
+  });
+  const current = await db.providerSubscription.findUniqueOrThrow({
+    where: {
+      provider_externalSubscriptionId: {
+        provider: 'stripe',
+        externalSubscriptionId: 'sub_1',
+      },
+    },
+  });
+  t.is(current.status, SubscriptionStatus.Active);
+  t.is(
+    (
+      await db.entitlement.findFirstOrThrow({
+        where: { source: 'cloud_subscription', subjectId: 'sub_1' },
+      })
+    ).status,
+    'active'
+  );
+  t.is(
+    await db.providerSubscription.count({
+      where: {
+        targetId: u1.id,
+        recurring: SubscriptionRecurring.Lifetime,
+      },
+    }),
+    0
+  );
 
   stripe.subscriptions.cancel.resolves(sub as any);
   await service.saveStripeInvoice(lifetimeInvoice);
@@ -1400,6 +1453,19 @@ test('should be able to subscribe to lifetime recurring with old subscription', 
   t.is(subInDB?.recurring, SubscriptionRecurring.Lifetime);
   t.is(subInDB?.status, SubscriptionStatus.Active);
   t.is(subInDB?.externalSubscriptionId, `stripe_invoice:${lifetimeInvoice.id}`);
+  t.is(
+    (
+      await db.entitlement.findFirstOrThrow({
+        where: { source: 'cloud_subscription', subjectId: 'sub_1' },
+      })
+    ).status,
+    'revoked'
+  );
+  t.is(stripe.subscriptions.cancel.callCount, 2);
+  t.deepEqual(
+    stripe.subscriptions.cancel.firstCall.lastArg,
+    stripe.subscriptions.cancel.secondCall.lastArg
+  );
 });
 
 test('should not be able to cancel lifetime subscription', async t => {
@@ -1887,6 +1953,27 @@ test('should keep selfhost provider identity and license source on replay and ca
       },
     },
   });
+  await db.providerSubscription.create({
+    data: {
+      provider: 'revenuecat',
+      targetType: 'instance',
+      targetId: first.targetId,
+      plan: SubscriptionPlan.SelfHostedTeam,
+      recurring: SubscriptionRecurring.Yearly,
+      status: SubscriptionStatus.Active,
+      iapStore: 'app_store',
+      externalCustomerId: 'selfhost-customer',
+      externalProductId: 'selfhost-product',
+      externalRef: 'selfhost-ref',
+    },
+  });
+  const selected = await app
+    .get(SelfhostTeamSubscriptionManager)
+    .getSubscription({
+      key: first.targetId,
+      plan: SubscriptionPlan.SelfHostedTeam,
+    });
+  t.is(selected?.provider, 'stripe');
 
   await service.saveStripeSubscription({
     ...selfhostSubscription,

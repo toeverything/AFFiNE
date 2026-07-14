@@ -83,7 +83,12 @@ test.before(async t => {
   await db.docAccessPolicy.createMany({
     data: [
       { workspaceId: 'public', docId: 'private', visibility: 'private' },
-      { workspaceId: 'private', docId: 'public', visibility: 'public' },
+      {
+        workspaceId: 'private',
+        docId: 'public',
+        visibility: 'public',
+        publicRole: 'external',
+      },
       {
         workspaceId: 'totally-private',
         docId: 'private',

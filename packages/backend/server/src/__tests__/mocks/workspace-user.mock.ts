@@ -3,6 +3,7 @@ import {
   WorkspaceRole,
   type WorkspaceUserCompat,
 } from '../../models';
+import { workspaceInvitationToCompat } from '../../models/workspace-user-compat';
 import { Mocker } from './factory';
 
 export type MockWorkspaceUserInput = {
@@ -62,13 +63,6 @@ export class MockWorkspaceUser extends Mocker<
         kind: input.kind ?? 'email',
       },
     });
-    return {
-      ...invitation,
-      userId: input.userId,
-      type,
-      status,
-      source: 'Email' as const,
-      inviterId: input.inviterId ?? null,
-    };
+    return workspaceInvitationToCompat(invitation);
   }
 }

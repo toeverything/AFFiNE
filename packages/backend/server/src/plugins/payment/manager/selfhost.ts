@@ -184,6 +184,7 @@ export class SelfhostTeamSubscriptionManager extends SubscriptionManager {
   ) {
     const subscription = await this.db.providerSubscription.findFirst({
       where: {
+        provider: Provider.stripe,
         targetType: 'instance',
         targetId: identity.key,
         plan: identity.plan,
@@ -201,6 +202,7 @@ export class SelfhostTeamSubscriptionManager extends SubscriptionManager {
     return this.db.providerSubscription
       .findFirst({
         where: {
+          provider: Provider.stripe,
           targetType: 'instance',
           targetId: identity.key,
           plan: identity.plan,
@@ -224,17 +226,16 @@ export class SelfhostTeamSubscriptionManager extends SubscriptionManager {
         },
       },
     });
-    const saved = await this.db.providerSubscription.update({
+    await this.db.providerSubscription.update({
       where: { id: current.id },
       data: {
         canceledAt: new Date(),
-        metadata: {
-          ...(current.metadata as Prisma.JsonObject),
-          variant: subscription.variant,
-          stripeScheduleId: subscription.stripeScheduleId,
-          nextBillAt: null,
-        },
       },
+    });
+    const saved = await this.patchProviderSubscriptionMetadata(current.id, {
+      variant: subscription.variant,
+      stripeScheduleId: subscription.stripeScheduleId,
+      nextBillAt: null,
     });
     return this.transformProviderSubscription(saved);
   }
@@ -250,17 +251,16 @@ export class SelfhostTeamSubscriptionManager extends SubscriptionManager {
         },
       },
     });
-    const saved = await this.db.providerSubscription.update({
+    await this.db.providerSubscription.update({
       where: { id: current.id },
       data: {
         canceledAt: null,
-        metadata: {
-          ...(current.metadata as Prisma.JsonObject),
-          variant: subscription.variant,
-          stripeScheduleId: subscription.stripeScheduleId,
-          nextBillAt: subscription.end?.toISOString() ?? null,
-        },
       },
+    });
+    const saved = await this.patchProviderSubscriptionMetadata(current.id, {
+      variant: subscription.variant,
+      stripeScheduleId: subscription.stripeScheduleId,
+      nextBillAt: subscription.end?.toISOString() ?? null,
     });
     return this.transformProviderSubscription(saved);
   }

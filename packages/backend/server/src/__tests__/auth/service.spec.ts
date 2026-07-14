@@ -4,6 +4,7 @@ import Sinon from 'sinon';
 
 import { AuthSessionService, CurrentUser } from '../../core/auth';
 import { AuthService } from '../../core/auth/service';
+import { EntitlementModule } from '../../core/entitlement';
 import { FeatureModule } from '../../core/features';
 import { QuotaModule } from '../../core/quota';
 import { UserModule } from '../../core/user';
@@ -21,7 +22,7 @@ const test = ava as TestFn<{
 
 test.before(async t => {
   const m = await createTestingModule({
-    imports: [QuotaModule, FeatureModule, UserModule],
+    imports: [EntitlementModule, QuotaModule, FeatureModule, UserModule],
     providers: [AuthService],
   });
 

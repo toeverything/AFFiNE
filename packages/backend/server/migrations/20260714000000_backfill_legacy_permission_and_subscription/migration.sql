@@ -198,12 +198,9 @@ WHERE ps."target_type" <> 'instance'
   SELECT 1
   FROM "entitlements" e
   WHERE e."source" = 'cloud_subscription'
-    AND e."target_type" = ps."target_type"
-    AND e."target_id" = ps."target_id"
-    AND e."plan" = CASE
-      WHEN ps."plan" = 'pro' AND ps."recurring" = 'lifetime' THEN 'lifetime_pro'
-      WHEN ps."plan" = 'selfhostedteam' THEN 'selfhost_team'
-      ELSE ps."plan"
+    AND e."subject_id" = CASE
+      WHEN ps."provider" = 'stripe'::"Provider" THEN ps."external_subscription_id"
+      ELSE ps."id"
     END
 )
 ON CONFLICT DO NOTHING;
@@ -286,6 +283,14 @@ DECLARE
   doc_grant_conflicts BIGINT;
   runtime_conflicts BIGINT;
   subscription_conflicts BIGINT;
+  missing_members BIGINT;
+  missing_invitations BIGINT;
+  missing_workspace_policies BIGINT;
+  missing_doc_policies BIGINT;
+  missing_doc_grants BIGINT;
+  missing_runtime_states BIGINT;
+  missing_provider_subscriptions BIGINT;
+  missing_cloud_entitlements BIGINT;
 BEGIN
   SELECT COUNT(*) INTO member_conflicts
   FROM "workspace_user_permissions" p
@@ -342,8 +347,126 @@ BEGIN
   SELECT COUNT(*) INTO subscription_conflicts
   FROM "subscriptions" s
   JOIN "provider_subscriptions" ps
-    ON ps."target_id" = s."target_id" AND ps."plan" = s."plan"
+    ON ps."provider" = s."provider"
+   AND (
+     (
+       s."provider" = 'stripe'::"Provider"
+       AND ps."external_subscription_id" = COALESCE(
+         s."stripe_subscription_id",
+         'legacy_subscription:' || s."id"::text
+       )
+     )
+     OR (
+       s."provider" = 'revenuecat'::"Provider"
+       AND ps."iap_store" = COALESCE(s."iap_store", 'app_store'::"IapStore")
+       AND ps."external_ref" = COALESCE(
+         s."rc_external_ref",
+         'legacy_subscription:' || s."id"::text
+       )
+       AND ps."external_product_id" = COALESCE(
+         s."rc_product_id",
+         'legacy_product:' || s."id"::text
+       )
+       AND ps."external_customer_id" = s."target_id"
+     )
+   )
   WHERE ps."status" IS DISTINCT FROM s."status";
+
+  SELECT COUNT(*) INTO missing_members
+  FROM "workspace_user_permissions" p
+  WHERE p."status" = 'Accepted'::"WorkspaceMemberStatus"
+    AND affine_permission_legacy_workspace_role(p."type") IS NOT NULL
+    AND NOT EXISTS (
+      SELECT 1 FROM "workspace_members" m
+      WHERE m."workspace_id" = p."workspace_id"
+        AND m."user_id" = p."user_id"
+        AND m."state" = 'active'
+    );
+
+  SELECT COUNT(*) INTO missing_invitations
+  FROM "workspace_user_permissions" p
+  WHERE p."status" <> 'Accepted'::"WorkspaceMemberStatus"
+    AND affine_permission_legacy_workspace_role(p."type") IS NOT NULL
+    AND affine_permission_workspace_invitation_state(p."status") IS NOT NULL
+    AND NOT EXISTS (
+      SELECT 1 FROM "workspace_invitations" i
+      WHERE i."workspace_id" = p."workspace_id"
+        AND i."invitee_user_id" = p."user_id"
+    );
+
+  SELECT COUNT(*) INTO missing_workspace_policies
+  FROM "workspaces" w
+  WHERE NOT EXISTS (
+    SELECT 1 FROM "workspace_access_policies" p
+    WHERE p."workspace_id" = w."id"
+  );
+
+  SELECT COUNT(*) INTO missing_doc_policies
+  FROM "workspace_pages" d
+  WHERE NOT EXISTS (
+    SELECT 1 FROM "doc_access_policies" p
+    WHERE p."workspace_id" = d."workspace_id"
+      AND p."doc_id" = d."page_id"
+  );
+
+  SELECT COUNT(*) INTO missing_doc_grants
+  FROM "workspace_page_user_permissions" d
+  WHERE affine_permission_legacy_doc_role(d."type") IS NOT NULL
+    AND NOT EXISTS (
+      SELECT 1 FROM "doc_grants" g
+      WHERE g."workspace_id" = d."workspace_id"
+        AND g."doc_id" = d."page_id"
+        AND g."principal_type" = 'user'
+        AND g."principal_id" = d."user_id"
+    );
+
+  SELECT COUNT(*) INTO missing_runtime_states
+  FROM "workspace_runtime_states" r
+  WHERE NOT EXISTS (
+    SELECT 1 FROM "effective_workspace_quota_states" q
+    WHERE q."workspace_id" = r."workspace_id"
+  );
+
+  SELECT COUNT(*) INTO missing_provider_subscriptions
+  FROM "subscriptions" s
+  WHERE NOT EXISTS (
+    SELECT 1 FROM "provider_subscriptions" ps
+    WHERE ps."provider" = s."provider"
+      AND (
+        (
+          s."provider" = 'stripe'::"Provider"
+          AND ps."external_subscription_id" = COALESCE(
+            s."stripe_subscription_id",
+            'legacy_subscription:' || s."id"::text
+          )
+        )
+        OR (
+          s."provider" = 'revenuecat'::"Provider"
+          AND ps."iap_store" = COALESCE(s."iap_store", 'app_store'::"IapStore")
+          AND ps."external_ref" = COALESCE(
+            s."rc_external_ref",
+            'legacy_subscription:' || s."id"::text
+          )
+          AND ps."external_product_id" = COALESCE(
+            s."rc_product_id",
+            'legacy_product:' || s."id"::text
+          )
+          AND ps."external_customer_id" = s."target_id"
+        )
+      )
+  );
+
+  SELECT COUNT(*) INTO missing_cloud_entitlements
+  FROM "provider_subscriptions" ps
+  WHERE ps."target_type" <> 'instance'
+    AND NOT EXISTS (
+      SELECT 1 FROM "entitlements" e
+      WHERE e."source" = 'cloud_subscription'
+        AND e."subject_id" = CASE
+          WHEN ps."provider" = 'stripe'::"Provider" THEN ps."external_subscription_id"
+          ELSE ps."id"
+        END
+    );
 
   RAISE NOTICE 'final legacy backfill retained new-table values for member=% invitation=% workspace_policy=% doc_policy=% doc_grant=% runtime=% subscription=% conflicts',
     member_conflicts,
@@ -353,77 +476,19 @@ BEGIN
     doc_grant_conflicts,
     runtime_conflicts,
     subscription_conflicts;
+
+  IF missing_members + missing_invitations + missing_workspace_policies
+    + missing_doc_policies + missing_doc_grants + missing_runtime_states
+    + missing_provider_subscriptions + missing_cloud_entitlements > 0 THEN
+    RAISE EXCEPTION 'legacy backfill incomplete: member=% invitation=% workspace_policy=% doc_policy=% doc_grant=% runtime=% provider_subscription=% cloud_entitlement=% missing facts',
+      missing_members,
+      missing_invitations,
+      missing_workspace_policies,
+      missing_doc_policies,
+      missing_doc_grants,
+      missing_runtime_states,
+      missing_provider_subscriptions,
+      missing_cloud_entitlements;
+  END IF;
 END
 $$;
-
-DROP TRIGGER IF EXISTS "affine_permission_project_workspace_user_permission" ON "workspace_user_permissions";
-DROP TRIGGER IF EXISTS "affine_permission_project_workspace_page" ON "workspace_pages";
-DROP TRIGGER IF EXISTS "affine_permission_project_workspace_page_user_permission" ON "workspace_page_user_permissions";
-DROP TRIGGER IF EXISTS "affine_permission_project_workspace_policy" ON "workspaces";
-DROP TRIGGER IF EXISTS "affine_permission_project_new_workspace_member" ON "workspace_members";
-DROP TRIGGER IF EXISTS "affine_permission_project_new_workspace_invitation" ON "workspace_invitations";
-DROP TRIGGER IF EXISTS "affine_permission_project_new_workspace_access_policy" ON "workspace_access_policies";
-DROP TRIGGER IF EXISTS "affine_permission_project_new_doc_access_policy" ON "doc_access_policies";
-DROP TRIGGER IF EXISTS "affine_permission_project_new_doc_grant" ON "doc_grants";
-DROP TRIGGER IF EXISTS "project_legacy_workspace_readonly_feature_trigger" ON "effective_workspace_quota_states";
-
-DROP FUNCTION IF EXISTS affine_permission_project_workspace_user_permission() CASCADE;
-DROP FUNCTION IF EXISTS affine_permission_project_workspace_page() CASCADE;
-DROP FUNCTION IF EXISTS affine_permission_project_workspace_page_user_permission() CASCADE;
-DROP FUNCTION IF EXISTS affine_permission_project_workspace_policy() CASCADE;
-DROP FUNCTION IF EXISTS affine_permission_project_new_workspace_member() CASCADE;
-DROP FUNCTION IF EXISTS affine_permission_project_new_workspace_invitation() CASCADE;
-DROP FUNCTION IF EXISTS affine_permission_project_new_workspace_access_policy() CASCADE;
-DROP FUNCTION IF EXISTS affine_permission_project_new_doc_access_policy() CASCADE;
-DROP FUNCTION IF EXISTS affine_permission_project_new_doc_grant() CASCADE;
-DROP FUNCTION IF EXISTS affine_permission_projection_error_category(TEXT, TEXT) CASCADE;
-DROP FUNCTION IF EXISTS affine_permission_lock_workspace(VARCHAR) CASCADE;
-DROP FUNCTION IF EXISTS affine_permission_lock_doc(VARCHAR, VARCHAR) CASCADE;
-DROP FUNCTION IF EXISTS affine_permission_should_project_from_legacy() CASCADE;
-DROP FUNCTION IF EXISTS affine_permission_should_project_from_new() CASCADE;
-DROP FUNCTION IF EXISTS affine_permission_projection_enabled() CASCADE;
-DROP FUNCTION IF EXISTS affine_permission_sync_origin() CASCADE;
-DROP FUNCTION IF EXISTS affine_permission_new_workspace_role(TEXT) CASCADE;
-DROP FUNCTION IF EXISTS affine_permission_new_workspace_source(TEXT) CASCADE;
-DROP FUNCTION IF EXISTS affine_permission_new_invitation_status(TEXT) CASCADE;
-DROP FUNCTION IF EXISTS affine_permission_new_doc_role(TEXT) CASCADE;
-DROP FUNCTION IF EXISTS affine_permission_legacy_workspace_role(INTEGER) CASCADE;
-DROP FUNCTION IF EXISTS affine_permission_legacy_doc_role(INTEGER) CASCADE;
-DROP FUNCTION IF EXISTS affine_permission_legacy_default_doc_role(INTEGER) CASCADE;
-DROP FUNCTION IF EXISTS affine_permission_workspace_invitation_state("WorkspaceMemberStatus") CASCADE;
-DROP FUNCTION IF EXISTS project_legacy_workspace_readonly_feature() CASCADE;
-
-DELETE FROM "user_features"
-WHERE "name" IN ('free_plan_v1', 'pro_plan_v1', 'lifetime_pro_plan_v1', 'unlimited_copilot');
-
-DELETE FROM "workspace_features"
-WHERE "name" IN ('team_plan_v1', 'quota_exceeded_readonly_workspace_v1', 'unlimited_workspace');
-
-DROP TABLE "workspace_user_permissions";
-DROP TABLE "workspace_page_user_permissions";
-DROP TABLE "workspace_runtime_states";
-DROP TABLE "subscriptions";
-
-DROP INDEX IF EXISTS "workspace_pages_workspace_id_public_idx";
-DROP INDEX IF EXISTS "workspace_pages_public_published_at_idx";
-DROP INDEX IF EXISTS "workspace_members_legacy_permission_id_key";
-DROP INDEX IF EXISTS "workspace_invitations_legacy_permission_id_key";
-DROP INDEX IF EXISTS "doc_grants_legacy_key";
-
-ALTER TABLE "workspaces"
-  DROP COLUMN "public",
-  DROP COLUMN "enable_sharing",
-  DROP COLUMN "enable_url_preview";
-
-ALTER TABLE "workspace_pages"
-  DROP COLUMN "public",
-  DROP COLUMN "defaultRole";
-
-ALTER TABLE "workspace_members" DROP COLUMN "legacy_permission_id";
-ALTER TABLE "workspace_invitations" DROP COLUMN "legacy_permission_id";
-ALTER TABLE "doc_grants"
-  DROP COLUMN "legacy_workspace_id",
-  DROP COLUMN "legacy_doc_id",
-  DROP COLUMN "legacy_user_id";
-
-ALTER TABLE "workspace_admin_stats" DROP COLUMN "features";

@@ -88,12 +88,14 @@ export async function addUserToWorkspace(
     if (workspace == null) {
       throw new Error(`workspace ${workspaceId} not found`);
     }
-    await client.workspaceUserRole.create({
+    await client.workspaceMember.create({
       data: {
         workspaceId: workspace.id,
         userId,
-        status: 'Accepted',
-        type: permission,
+        role:
+          permission === 99 ? 'owner' : permission === 10 ? 'admin' : 'member',
+        state: 'active',
+        source: 'legacy',
       },
     });
   });

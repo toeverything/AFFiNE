@@ -823,8 +823,7 @@ test('should block read-write ops on revenuecat-managed record (cancel/resume/up
     },
   });
 
-  // local helper used multiple times within this test
-  const expectManaged = async (fn: () => Promise<any>) =>
+  const expectManaged = async (fn: () => Promise<unknown>) =>
     t.throwsAsync(() => fn(), { instanceOf: ManagedByAppStoreOrPlay });
 
   await expectManaged(() =>
@@ -901,6 +900,7 @@ test('should reconcile and fix missing or out-of-order states for revenuecat Act
     where: { targetId: user.id, plan: 'pro', provider: 'revenuecat' },
     select: { id: true, externalRef: true, metadata: true },
   });
+  const normalizedRecords = records.map(({ id: _, ...record }) => record);
   const activeEntitlement = await db.entitlement.findFirst({
     where: {
       targetType: 'user',
@@ -916,7 +916,7 @@ test('should reconcile and fix missing or out-of-order states for revenuecat Act
       subscriberCount,
       activatedCount,
       canceledCount,
-      records,
+      records: normalizedRecords,
       reusedPlaceholder: records[0]?.id === placeholder.id,
       hasActiveEntitlement: !!activeEntitlement,
     },

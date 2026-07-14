@@ -621,7 +621,7 @@ export class DocModel extends BaseModel {
         docId: string;
         mode: PublicDocMode;
         public: boolean;
-        defaultRole: DocRole;
+        defaultRolePolicy: string;
         title: string | null;
         summary: string | null;
         createdAt: Date;
@@ -635,14 +635,7 @@ export class DocModel extends BaseModel {
      "workspace_pages"."page_id" as "docId",
      "workspace_pages"."mode" as "mode",
      (dap.visibility = 'public' AND dap.public_role = 'external') as "public",
-     CASE COALESCE(dap.member_default_role, 'manager')
-       WHEN 'none' THEN ${DocRole.None}
-       WHEN 'reader' THEN ${DocRole.Reader}
-       WHEN 'commenter' THEN ${DocRole.Commenter}
-       WHEN 'editor' THEN ${DocRole.Editor}
-       WHEN 'owner' THEN ${DocRole.Owner}
-       ELSE ${DocRole.Manager}
-     END as "defaultRole",
+     COALESCE(dap.member_default_role, 'manager') as "defaultRolePolicy",
      "workspace_pages"."title" as "title",
      "workspace_pages"."summary" as "summary",
      "snapshots"."created_at" as "createdAt",
@@ -662,7 +655,15 @@ export class DocModel extends BaseModel {
     LIMIT 1;
   `;
 
-    return rows.at(0) ?? null;
+    const row = rows.at(0);
+    if (!row) {
+      return null;
+    }
+    const { defaultRolePolicy, ...doc } = row;
+    return {
+      ...doc,
+      defaultRole: this.docRoleFromPolicy(defaultRolePolicy),
+    };
   }
 
   async paginateDocInfo(workspaceId: string, pagination: PaginationInput) {
@@ -682,7 +683,7 @@ export class DocModel extends BaseModel {
         docId: string;
         mode: PublicDocMode;
         public: boolean;
-        defaultRole: DocRole;
+        defaultRolePolicy: string;
         createdAt: Date;
         updatedAt: Date;
         creatorId?: string;
@@ -694,14 +695,7 @@ export class DocModel extends BaseModel {
        "workspace_pages"."page_id" as "docId",
        "workspace_pages"."mode" as "mode",
        (dap.visibility = 'public' AND dap.public_role = 'external') as "public",
-       CASE COALESCE(dap.member_default_role, 'manager')
-         WHEN 'none' THEN ${DocRole.None}
-         WHEN 'reader' THEN ${DocRole.Reader}
-         WHEN 'commenter' THEN ${DocRole.Commenter}
-         WHEN 'editor' THEN ${DocRole.Editor}
-         WHEN 'owner' THEN ${DocRole.Owner}
-         ELSE ${DocRole.Manager}
-       END as "defaultRole",
+       COALESCE(dap.member_default_role, 'manager') as "defaultRolePolicy",
        "snapshots"."created_at" as "createdAt",
        "snapshots"."updated_at" as "updatedAt",
        "snapshots"."created_by" as "creatorId",
@@ -722,7 +716,13 @@ export class DocModel extends BaseModel {
       OFFSET ${pagination.offset}
     `;
 
-    return [count, rows] as const;
+    return [
+      count,
+      rows.map(({ defaultRolePolicy, ...doc }) => ({
+        ...doc,
+        defaultRole: this.docRoleFromPolicy(defaultRolePolicy),
+      })),
+    ] as const;
   }
 
   async paginateDocInfoByUpdatedAt(
@@ -749,7 +749,7 @@ export class DocModel extends BaseModel {
         docId: string;
         mode: PublicDocMode;
         public: boolean;
-        defaultRole: DocRole;
+        defaultRolePolicy: string;
         title: string | null;
         createdAt: Date;
         updatedAt: Date;
@@ -762,14 +762,7 @@ export class DocModel extends BaseModel {
        "workspace_pages"."page_id" as "docId",
        "workspace_pages"."mode" as "mode",
        (dap.visibility = 'public' AND dap.public_role = 'external') as "public",
-       CASE COALESCE(dap.member_default_role, 'manager')
-         WHEN 'none' THEN ${DocRole.None}
-         WHEN 'reader' THEN ${DocRole.Reader}
-         WHEN 'commenter' THEN ${DocRole.Commenter}
-         WHEN 'editor' THEN ${DocRole.Editor}
-         WHEN 'owner' THEN ${DocRole.Owner}
-         ELSE ${DocRole.Manager}
-       END as "defaultRole",
+       COALESCE(dap.member_default_role, 'manager') as "defaultRolePolicy",
        "workspace_pages"."title" as "title",
        "snapshots"."created_at" as "createdAt",
        "snapshots"."updated_at" as "updatedAt",
@@ -792,7 +785,13 @@ export class DocModel extends BaseModel {
       OFFSET ${pagination.offset}
     `;
 
-    return [count, rows] as const;
+    return [
+      count,
+      rows.map(({ defaultRolePolicy, ...doc }) => ({
+        ...doc,
+        defaultRole: this.docRoleFromPolicy(defaultRolePolicy),
+      })),
+    ] as const;
   }
 
   async findEmptySummaryDocIds(workspaceId: string) {

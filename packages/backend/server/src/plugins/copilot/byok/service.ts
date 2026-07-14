@@ -5,6 +5,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import {
   BadRequest,
   Cache,
+  Config,
   CryptoHelper,
   metrics,
   safeFetch,
@@ -115,11 +116,12 @@ export class ByokService {
     private readonly models: Models,
     private readonly crypto: CryptoHelper,
     private readonly cache: Cache,
-    private readonly entitlement: ByokEntitlementPolicy
+    private readonly entitlement: ByokEntitlementPolicy,
+    private readonly config: Config
   ) {}
 
   get customEndpointSupported() {
-    return env.selfhosted;
+    return env.selfhosted && this.config.copilot.byok.allowCustomEndpoint;
   }
 
   async getSettings(

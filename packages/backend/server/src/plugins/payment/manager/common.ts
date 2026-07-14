@@ -103,6 +103,19 @@ export abstract class SubscriptionManager {
     this.scheduleManager = new ScheduleManager(this.stripeProvider);
   }
 
+  protected async patchProviderSubscriptionMetadata(
+    id: string,
+    patch: Prisma.InputJsonObject
+  ) {
+    await this.db.$executeRaw`
+      UPDATE provider_subscriptions
+      SET metadata = metadata || ${JSON.stringify(patch)}::jsonb,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = ${id}
+    `;
+    return this.db.providerSubscription.findUniqueOrThrow({ where: { id } });
+  }
+
   get stripe() {
     return this.stripeProvider.stripe;
   }

@@ -335,7 +335,7 @@ export class UserSubscriptionManager extends SubscriptionManager {
         },
       },
     });
-    const saved = await this.db.providerSubscription.update({
+    await this.db.providerSubscription.update({
       where: {
         provider_externalSubscriptionId: {
           provider: Provider.stripe,
@@ -346,13 +346,12 @@ export class UserSubscriptionManager extends SubscriptionManager {
       },
       data: {
         canceledAt: new Date(),
-        metadata: {
-          ...(current.metadata as Prisma.JsonObject),
-          variant: subscription.variant,
-          stripeScheduleId: subscription.stripeScheduleId,
-          nextBillAt: null,
-        },
       },
+    });
+    const saved = await this.patchProviderSubscriptionMetadata(current.id, {
+      variant: subscription.variant,
+      stripeScheduleId: subscription.stripeScheduleId,
+      nextBillAt: null,
     });
     return this.transformProviderSubscription(saved);
   }
@@ -368,7 +367,7 @@ export class UserSubscriptionManager extends SubscriptionManager {
         },
       },
     });
-    const saved = await this.db.providerSubscription.update({
+    await this.db.providerSubscription.update({
       where: {
         provider_externalSubscriptionId: {
           provider: Provider.stripe,
@@ -379,13 +378,12 @@ export class UserSubscriptionManager extends SubscriptionManager {
       },
       data: {
         canceledAt: null,
-        metadata: {
-          ...(current.metadata as Prisma.JsonObject),
-          variant: subscription.variant,
-          stripeScheduleId: subscription.stripeScheduleId,
-          nextBillAt: subscription.end?.toISOString() ?? null,
-        },
       },
+    });
+    const saved = await this.patchProviderSubscriptionMetadata(current.id, {
+      variant: subscription.variant,
+      stripeScheduleId: subscription.stripeScheduleId,
+      nextBillAt: subscription.end?.toISOString() ?? null,
     });
     return this.transformProviderSubscription(saved);
   }
@@ -461,6 +459,13 @@ export class UserSubscriptionManager extends SubscriptionManager {
     });
 
     if (prevSubscription?.externalSubscriptionId) {
+      await this.stripe.subscriptions.cancel(
+        prevSubscription.externalSubscriptionId,
+        { prorate: true },
+        {
+          idempotencyKey: `lifetime:${knownInvoice.stripeInvoice.id}:cancel:${prevSubscription.id}`,
+        }
+      );
       const now = new Date();
       await this.db.providerSubscription.update({
         where: { id: prevSubscription.id },
@@ -468,11 +473,10 @@ export class UserSubscriptionManager extends SubscriptionManager {
           status: SubscriptionStatus.Canceled,
           canceledAt: now,
           periodEnd: now,
-          metadata: {
-            ...(prevSubscription.metadata as Prisma.JsonObject),
-            nextBillAt: null,
-          },
         },
+      });
+      await this.patchProviderSubscriptionMetadata(prevSubscription.id, {
+        nextBillAt: null,
       });
       await this.entitlement.revokeCloudSubscription({
         targetId: knownInvoice.userId,
@@ -480,10 +484,6 @@ export class UserSubscriptionManager extends SubscriptionManager {
         subscriptionId: prevSubscription.id,
         stripeSubscriptionId: prevSubscription.externalSubscriptionId,
       });
-      await this.stripe.subscriptions.cancel(
-        prevSubscription.externalSubscriptionId,
-        { prorate: true }
-      );
     }
 
     const saved = await this.upsertLifetimeProviderSubscription(knownInvoice);
@@ -518,19 +518,19 @@ export class UserSubscriptionManager extends SubscriptionManager {
       return;
     }
 
-    const saved = await this.db.providerSubscription.update({
+    await this.db.providerSubscription.update({
       where: {
         id: subscription.id,
       },
       data: {
         status: SubscriptionStatus.Canceled,
         canceledAt: new Date(),
-        metadata: {
-          ...(subscription.metadata as Prisma.JsonObject),
-          nextBillAt: null,
-        },
       },
     });
+    const saved = await this.patchProviderSubscriptionMetadata(
+      subscription.id,
+      { nextBillAt: null }
+    );
     await this.entitlement.revokeCloudSubscription({
       targetId: userId,
       plan: lookupKey.plan,

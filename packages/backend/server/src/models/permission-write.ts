@@ -188,6 +188,14 @@ export class WorkspaceMemberModel extends BaseModel {
       throw new Error('Cannot grant Owner role of a workspace to a user.');
     }
 
+    const invitation = await this.db.workspaceInvitation.findUnique({
+      where: {
+        workspaceId_inviteeUserId: {
+          workspaceId,
+          inviteeUserId: userId,
+        },
+      },
+    });
     await this.db.workspaceInvitation.deleteMany({
       where: { workspaceId, inviteeUserId: userId },
     });
@@ -205,11 +213,12 @@ export class WorkspaceMemberModel extends BaseModel {
         source: data.source,
       },
       create: {
+        id: invitation?.id,
         workspaceId,
         userId,
         role: workspaceRoleToNew(role),
         state: 'active',
-        source: data.source ?? 'legacy',
+        source: data.source ?? invitation?.kind ?? 'legacy',
       },
     });
   }

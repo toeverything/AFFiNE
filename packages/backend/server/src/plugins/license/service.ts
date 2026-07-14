@@ -507,18 +507,33 @@ export class LicenseService {
         if (!resolved.valid) {
           valid = false;
         } else {
+          const recurring = this.licenseRecurring(resolved);
+          const quantity = this.licenseQuantity(resolved);
+          const expiresAt = this.licenseExpiresAt(resolved);
+          const validatedAt = new Date();
+
+          await this.db.installedLicense.update({
+            where: { key: license.key },
+            data: {
+              recurring,
+              quantity,
+              expiredAt: expiresAt,
+              validatedAt,
+            },
+          });
           this.event.emit('workspace.subscription.activated', {
             workspaceId: license.workspaceId,
             plan: SubscriptionPlan.SelfHostedTeam,
-            recurring: this.licenseRecurring(resolved),
-            quantity: this.licenseQuantity(resolved),
+            recurring,
+            quantity,
           });
           await this.entitlement.upsertFromSelfhostLicense({
             workspaceId: license.workspaceId,
-            recurring: this.licenseRecurring(resolved),
-            quantity: this.licenseQuantity(resolved),
-            expiresAt: this.licenseExpiresAt(resolved),
-            validatedAt: new Date(),
+            recurring,
+            quantity,
+            expiresAt,
+            validatedAt,
+            variant: SubscriptionVariant.Onetime,
             license: Buffer.from(buf),
           });
         }

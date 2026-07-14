@@ -370,12 +370,12 @@ export class RevenueCatWebhookHandler {
 
     if (toBeCleanup.length) {
       for (const sub of toBeCleanup) {
-        await this.db.providerSubscription.delete({ where: { id: sub.id } });
         await this.entitlement.revokeCloudSubscription({
           targetId: appUserId,
           plan: sub.plan as SubscriptionPlan,
           subscriptionId: sub.id,
         });
+        await this.db.providerSubscription.delete({ where: { id: sub.id } });
         if (!isLegacyIdentityPlaceholder(sub.metadata)) {
           this.event.emit('user.subscription.canceled', {
             userId: appUserId,

@@ -227,18 +227,6 @@
       "desc": "The minimum time interval in milliseconds of creating a new history snapshot when doc get updated."
     }
   },
-  "permission": {
-    "readModel": {
-      "type": "String",
-      "desc": "Permission data source for Rust evaluation",
-      "env": "AFFINE_PERMISSION_READ_MODEL"
-    },
-    "fallbackLegacyLoader": {
-      "type": "Boolean",
-      "desc": "Fallback from projection loader to legacy loader when projection input loading fails",
-      "env": "AFFINE_PERMISSION_FALLBACK_LEGACY_LOADER"
-    }
-  },
   "storages": {
     "avatar.publicPath": {
       "type": "String",

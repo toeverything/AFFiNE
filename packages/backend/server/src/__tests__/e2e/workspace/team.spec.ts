@@ -6,7 +6,7 @@ import {
   revokePublicPageMutation,
   WorkspaceMemberStatus,
 } from '@affine/graphql';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, WorkspaceMemberSource } from '@prisma/client';
 
 import { WorkspacePolicyService } from '../../../core/permission';
 import { QuotaService } from '../../../core/quota/service';
@@ -181,12 +181,13 @@ e2e('should allocate seats', async t => {
   });
 
   const u2 = await app.createUser();
-  await app.create(Mockers.WorkspaceUser, {
+  const linkInvitation = await app.create(Mockers.WorkspaceUser, {
     userId: u2.id,
     workspaceId: workspace.id,
     status: WorkspaceMemberStatus.AllocatingSeat,
     kind: 'link',
   });
+  t.is(linkInvitation.source, WorkspaceMemberSource.Link);
 
   const invitationCount = app.queue.count('notification.sendInvitation');
   await app.eventBus.emitAsync('workspace.members.allocateSeats', {
