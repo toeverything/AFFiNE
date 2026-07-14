@@ -8,6 +8,7 @@ import {
 } from '@affine/graphql';
 import { PrismaClient } from '@prisma/client';
 
+import { WorkspacePolicyService } from '../../../core/permission';
 import { QuotaService } from '../../../core/quota/service';
 import { WorkspaceRole } from '../../../models';
 import {
@@ -109,8 +110,9 @@ const cancelTeamWorkspace = async (workspaceId: string) => {
     },
     data: { status: 'revoked' },
   });
-  await db.subscription.updateMany({
+  await db.providerSubscription.updateMany({
     where: {
+      targetType: 'workspace',
       targetId: workspaceId,
       plan: SubscriptionPlan.Team,
     },
@@ -176,7 +178,6 @@ e2e('should allocate seats', async t => {
     userId: u1.id,
     workspaceId: workspace.id,
     status: WorkspaceMemberStatus.AllocatingSeat,
-    source: 'Email',
   });
 
   const u2 = await app.createUser();
@@ -184,7 +185,7 @@ e2e('should allocate seats', async t => {
     userId: u2.id,
     workspaceId: workspace.id,
     status: WorkspaceMemberStatus.AllocatingSeat,
-    source: 'Link',
+    kind: 'link',
   });
 
   const invitationCount = app.queue.count('notification.sendInvitation');
@@ -219,7 +220,6 @@ e2e('should set all rests to NeedMoreSeat', async t => {
     userId: u1.id,
     workspaceId: workspace.id,
     status: WorkspaceMemberStatus.AllocatingSeat,
-    source: 'Email',
   });
 
   const u2 = await app.createUser();
@@ -227,7 +227,6 @@ e2e('should set all rests to NeedMoreSeat', async t => {
     userId: u2.id,
     workspaceId: workspace.id,
     status: WorkspaceMemberStatus.AllocatingSeat,
-    source: 'Email',
   });
 
   const u3 = await app.createUser();
@@ -235,7 +234,6 @@ e2e('should set all rests to NeedMoreSeat', async t => {
     userId: u3.id,
     workspaceId: workspace.id,
     status: WorkspaceMemberStatus.AllocatingSeat,
-    source: 'Link',
   });
 
   await app.eventBus.emitAsync('workspace.members.allocateSeats', {
@@ -275,7 +273,6 @@ e2e(
       userId: allocating.id,
       workspaceId: workspace.id,
       status: WorkspaceMemberStatus.AllocatingSeat,
-      source: 'Email',
     });
 
     const underReview = await app.create(Mockers.User);
@@ -313,10 +310,8 @@ e2e(
 
     t.false(await app.models.workspace.isTeamWorkspace(workspace.id));
     t.false(
-      await app.models.workspaceFeature.has(
-        workspace.id,
-        'quota_exceeded_readonly_workspace_v1'
-      )
+      (await app.get(WorkspacePolicyService).getWorkspaceState(workspace.id))
+        .isReadonly
     );
     t.is(
       (await app.models.workspaceUser.get(workspace.id, admin.id))?.type,
@@ -350,10 +345,8 @@ e2e(
 
     t.false(await app.models.workspace.isTeamWorkspace(workspace.id));
     t.true(
-      await app.models.workspaceFeature.has(
-        workspace.id,
-        'quota_exceeded_readonly_workspace_v1'
-      )
+      (await app.get(WorkspacePolicyService).getWorkspaceState(workspace.id))
+        .isReadonly
     );
     t.is(
       (await app.models.workspaceUser.get(workspace.id, admin.id))?.type,
@@ -371,10 +364,8 @@ e2e(
     }
 
     t.false(
-      await app.models.workspaceFeature.has(
-        workspace.id,
-        'quota_exceeded_readonly_workspace_v1'
-      )
+      (await app.get(WorkspacePolicyService).getWorkspaceState(workspace.id))
+        .isReadonly
     );
   }
 );

@@ -253,7 +253,6 @@ export const adminServerConfigQuery = {
       url
     }
     availableUserFeatures
-    availableWorkspaceFeatures
   }
 }
 ${passwordLimitsFragment}
@@ -274,7 +273,6 @@ export const adminUpdateWorkspaceMutation = {
     enableSharing
     enableUrlPreview
     enableDocEmbedding
-    features
     owner {
       id
       name
@@ -305,7 +303,6 @@ export const adminWorkspaceQuery = {
     enableSharing
     enableUrlPreview
     enableDocEmbedding
-    features
     owner {
       id
       name
@@ -349,7 +346,6 @@ export const adminWorkspacesQuery = {
     enableSharing
     enableUrlPreview
     enableDocEmbedding
-    features
     owner {
       id
       name

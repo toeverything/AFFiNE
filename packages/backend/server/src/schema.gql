@@ -174,7 +174,6 @@ type AdminWorkspace {
   enableDocEmbedding: Boolean!
   enableSharing: Boolean!
   enableUrlPreview: Boolean!
-  features: [FeatureType!]!
   id: String!
   memberCount: Int!
 
@@ -1176,13 +1175,6 @@ type ExpectToUpdateDocUserRoleDataType {
 
 enum FeatureType {
   Admin
-  FreePlan
-  LifetimeProPlan
-  ProPlan
-  QuotaExceededReadonlyWorkspace
-  TeamPlan
-  UnlimitedCopilot
-  UnlimitedWorkspace
 }
 
 input ForkChatSessionInput {
@@ -1505,7 +1497,6 @@ input ListWorkspaceInput {
   enableDocEmbedding: Boolean
   enableSharing: Boolean
   enableUrlPreview: Boolean
-  features: [FeatureType!]
   first: Int! = 20
   keyword: String
   orderBy: AdminWorkspaceSort
@@ -2320,9 +2311,6 @@ type ServerConfigType {
 
   """Features for user that can be configured"""
   availableUserFeatures: [FeatureType!]!
-
-  """Workspace features available for admin configuration"""
-  availableWorkspaceFeatures: [FeatureType!]!
 
   """server base url"""
   baseUrl: String!

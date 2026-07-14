@@ -415,24 +415,11 @@ export class WorkspaceDocResolver {
       action: 'Doc.Read',
       docIdColumn: Prisma.raw('"workspace_pages"."page_id"'),
     });
-    const fallbackPredicate = this.permission.fallbackDocReadableSqlPredicate({
-      userId: me.id,
-      workspaceId: workspace.id,
-      action: 'Doc.Read',
-      docIdColumn: Prisma.raw('"workspace_pages"."page_id"'),
-    });
-    const [count, rows] = await this.models.doc
-      .paginateDocInfoByUpdatedAt(workspace.id, pagination, predicate)
-      .catch(error => {
-        if (!fallbackPredicate) {
-          throw error;
-        }
-        return this.models.doc.paginateDocInfoByUpdatedAt(
-          workspace.id,
-          pagination,
-          fallbackPredicate
-        );
-      });
+    const [count, rows] = await this.models.doc.paginateDocInfoByUpdatedAt(
+      workspace.id,
+      pagination,
+      predicate
+    );
 
     return paginate(rows, 'updatedAt', pagination, count);
   }

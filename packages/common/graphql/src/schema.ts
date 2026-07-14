@@ -221,7 +221,6 @@ export interface AdminWorkspace {
   enableDocEmbedding: Scalars['Boolean']['output'];
   enableSharing: Scalars['Boolean']['output'];
   enableUrlPreview: Scalars['Boolean']['output'];
-  features: Array<FeatureType>;
   id: Scalars['String']['output'];
   memberCount: Scalars['Int']['output'];
   /** Members of workspace */
@@ -1406,13 +1405,6 @@ export interface ExpectToUpdateDocUserRoleDataType {
 
 export enum FeatureType {
   Admin = 'Admin',
-  FreePlan = 'FreePlan',
-  LifetimeProPlan = 'LifetimeProPlan',
-  ProPlan = 'ProPlan',
-  QuotaExceededReadonlyWorkspace = 'QuotaExceededReadonlyWorkspace',
-  TeamPlan = 'TeamPlan',
-  UnlimitedCopilot = 'UnlimitedCopilot',
-  UnlimitedWorkspace = 'UnlimitedWorkspace',
 }
 
 export interface ForkChatSessionInput {
@@ -1725,7 +1717,6 @@ export interface ListWorkspaceInput {
   enableDocEmbedding?: InputMaybe<Scalars['Boolean']['input']>;
   enableSharing?: InputMaybe<Scalars['Boolean']['input']>;
   enableUrlPreview?: InputMaybe<Scalars['Boolean']['input']>;
-  features?: InputMaybe<Array<FeatureType>>;
   first?: Scalars['Int']['input'];
   keyword?: InputMaybe<Scalars['String']['input']>;
   orderBy?: InputMaybe<AdminWorkspaceSort>;
@@ -3071,8 +3062,6 @@ export interface ServerConfigType {
   availableUpgrade: Maybe<ReleaseVersionType>;
   /** Features for user that can be configured */
   availableUserFeatures: Array<FeatureType>;
-  /** Workspace features available for admin configuration */
-  availableWorkspaceFeatures: Array<FeatureType>;
   /** server base url */
   baseUrl: Scalars['String']['output'];
   calendarCalDAVProviders: Array<CalendarCalDavProviderPresetObjectType>;
@@ -4076,7 +4065,6 @@ export type AdminServerConfigQuery = {
     type: ServerDeploymentType;
     initialized: boolean;
     availableUserFeatures: Array<FeatureType>;
-    availableWorkspaceFeatures: Array<FeatureType>;
     credentialsRequirement: {
       __typename?: 'CredentialsRequirementType';
       password: {
@@ -4112,7 +4100,6 @@ export type AdminUpdateWorkspaceMutation = {
     enableSharing: boolean;
     enableUrlPreview: boolean;
     enableDocEmbedding: boolean;
-    features: Array<FeatureType>;
     memberCount: number;
     publicPageCount: number;
     snapshotCount: number;
@@ -4149,7 +4136,6 @@ export type AdminWorkspaceQuery = {
     enableSharing: boolean;
     enableUrlPreview: boolean;
     enableDocEmbedding: boolean;
-    features: Array<FeatureType>;
     memberCount: number;
     publicPageCount: number;
     snapshotCount: number;
@@ -4198,7 +4184,6 @@ export type AdminWorkspacesQuery = {
     enableSharing: boolean;
     enableUrlPreview: boolean;
     enableDocEmbedding: boolean;
-    features: Array<FeatureType>;
     memberCount: number;
     publicPageCount: number;
     snapshotCount: number;

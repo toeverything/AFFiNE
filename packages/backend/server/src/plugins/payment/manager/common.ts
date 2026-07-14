@@ -1,4 +1,9 @@
-import { type Prisma, PrismaClient, UserStripeCustomer } from '@prisma/client';
+import {
+  type Prisma,
+  PrismaClient,
+  type ProviderSubscription,
+  UserStripeCustomer,
+} from '@prisma/client';
 import Stripe from 'stripe';
 import { z } from 'zod';
 
@@ -19,13 +24,13 @@ import {
 
 export function validSubscriptionPeriodWhere(
   now = new Date()
-): Prisma.SubscriptionWhereInput {
-  return { OR: [{ end: null }, { end: { gt: now } }] };
+): Prisma.ProviderSubscriptionWhereInput {
+  return { OR: [{ periodEnd: null }, { periodEnd: { gt: now } }] };
 }
 
 export function activeSubscriptionWhere(
   now = new Date()
-): Prisma.SubscriptionWhereInput {
+): Prisma.ProviderSubscriptionWhereInput {
   return {
     status: { in: [SubscriptionStatus.Active, SubscriptionStatus.Trialing] },
     ...validSubscriptionPeriodWhere(now),
@@ -34,7 +39,7 @@ export function activeSubscriptionWhere(
 
 export function visibleSubscriptionWhere(
   now = new Date()
-): Prisma.SubscriptionWhereInput {
+): Prisma.ProviderSubscriptionWhereInput {
   return {
     status: {
       in: [
@@ -100,6 +105,13 @@ export abstract class SubscriptionManager {
 
   get stripe() {
     return this.stripeProvider.stripe;
+  }
+
+  protected requireStripeSubscriptionId(id: string | null) {
+    if (!id) {
+      throw new Error('Stripe subscription identity is missing.');
+    }
+    return id;
   }
 
   abstract filterPrices(
@@ -168,6 +180,42 @@ export abstract class SubscriptionManager {
       canceledAt: subscription.canceled_at
         ? new Date(subscription.canceled_at * 1000)
         : null,
+    };
+  }
+
+  transformProviderSubscription(
+    subscription: ProviderSubscription
+  ): Subscription {
+    const metadata = subscription.metadata as Record<string, unknown>;
+    const nextBillAt = metadata.nextBillAt;
+
+    return {
+      stripeSubscriptionId:
+        subscription.provider === 'stripe' &&
+        subscription.recurring !== SubscriptionRecurring.Lifetime
+          ? subscription.externalSubscriptionId
+          : null,
+      stripeScheduleId:
+        typeof metadata.stripeScheduleId === 'string'
+          ? metadata.stripeScheduleId
+          : null,
+      status: subscription.status,
+      plan: subscription.plan,
+      recurring: subscription.recurring ?? SubscriptionRecurring.Monthly,
+      variant: typeof metadata.variant === 'string' ? metadata.variant : null,
+      quantity: subscription.quantity ?? 1,
+      start: subscription.periodStart ?? subscription.createdAt,
+      end: subscription.periodEnd,
+      trialStart: subscription.trialStart,
+      trialEnd: subscription.trialEnd,
+      nextBillAt: subscription.canceledAt
+        ? null
+        : typeof nextBillAt === 'string'
+          ? new Date(nextBillAt)
+          : subscription.periodEnd,
+      canceledAt: subscription.canceledAt,
+      provider: subscription.provider,
+      iapStore: subscription.iapStore,
     };
   }
 

@@ -60,57 +60,7 @@ test.after.always(async t => {
   await t.context.module.close();
 });
 
-test('quota service ignores dirty legacy commercial features', async t => {
-  const { owner, workspace } = await createWorkspace(t);
-  await t.context.state.reconcileUserQuotaState(owner.id);
-  await t.context.state.reconcileWorkspaceQuotaState(workspace.id);
-
-  await t.context.models.userFeature.add(
-    owner.id,
-    'pro_plan_v1',
-    'dirty legacy feature'
-  );
-  await t.context.models.userFeature.add(
-    owner.id,
-    'unlimited_copilot',
-    'dirty legacy feature'
-  );
-  await t.context.models.workspaceFeature.add(
-    workspace.id,
-    'team_plan_v1',
-    'dirty legacy feature',
-    {
-      memberLimit: 100,
-    }
-  );
-
-  const userQuota = await t.context.quota.getUserQuota(owner.id);
-  const workspaceSeats = await t.context.quota.getWorkspaceSeatQuota(
-    workspace.id
-  );
-
-  t.is(userQuota.name, 'Free');
-  t.is(userQuota.copilotActionLimit, 10);
-  t.is(workspaceSeats.memberLimit, 3);
-});
-
-test('workspace quota state ignores dirty legacy readonly feature', async t => {
-  const { workspace } = await createWorkspace(t);
-  await t.context.models.workspaceFeature.add(
-    workspace.id,
-    'quota_exceeded_readonly_workspace_v1',
-    'dirty legacy feature'
-  );
-
-  const state = await t.context.state.reconcileWorkspaceQuotaState(
-    workspace.id
-  );
-
-  t.false(state.readonly);
-  t.deepEqual(state.readonlyReasons, []);
-});
-
-test('workspace quota state ignores dirty legacy permission rows', async t => {
+test('workspace quota state uses current member rows', async t => {
   const { workspace } = await createWorkspace(t);
   const member = await t.context.models.user.create({
     email: `${randomUUID()}@affine.pro`,
@@ -123,16 +73,11 @@ test('workspace quota state ignores dirty legacy permission rows', async t => {
       status: WorkspaceMemberStatus.Accepted,
     }
   );
-  await t.context.db.$transaction(async tx => {
-    await tx.$executeRaw`
-      SELECT set_config('affine.permission_projection.enabled', 'off', true)
-    `;
-    await tx.workspaceMember.deleteMany({
-      where: {
-        workspaceId: workspace.id,
-        userId: member.id,
-      },
-    });
+  await t.context.db.workspaceMember.deleteMany({
+    where: {
+      workspaceId: workspace.id,
+      userId: member.id,
+    },
   });
 
   const state = await t.context.state.reconcileWorkspaceQuotaState(
@@ -194,16 +139,11 @@ test('quota state reconcile does not publish unchanged snapshots', async t => {
 
 test('workspace quota state requires owner from new permission table', async t => {
   const { owner, workspace } = await createWorkspace(t);
-  await t.context.db.$transaction(async tx => {
-    await tx.$executeRaw`
-      SELECT set_config('affine.permission_projection.enabled', 'off', true)
-    `;
-    await tx.workspaceMember.deleteMany({
-      where: {
-        workspaceId: workspace.id,
-        userId: owner.id,
-      },
-    });
+  await t.context.db.workspaceMember.deleteMany({
+    where: {
+      workspaceId: workspace.id,
+      userId: owner.id,
+    },
   });
 
   await t.throwsAsync(
@@ -217,16 +157,11 @@ test('user quota state aggregates owned storage from new permission table only',
   await addBlob(t, workspace, 'blob', ONE_GB);
 
   const first = await t.context.state.reconcileUserQuotaState(owner.id);
-  await t.context.db.$transaction(async tx => {
-    await tx.$executeRaw`
-      SELECT set_config('affine.permission_projection.enabled', 'off', true)
-    `;
-    await tx.workspaceMember.deleteMany({
-      where: {
-        workspaceId: workspace.id,
-        userId: owner.id,
-      },
-    });
+  await t.context.db.workspaceMember.deleteMany({
+    where: {
+      workspaceId: workspace.id,
+      userId: owner.id,
+    },
   });
   const second = await t.context.state.reconcileUserQuotaState(owner.id);
 
@@ -315,18 +250,9 @@ test('ai entitlement is a capability overlay on free quota', async t => {
   t.is(quota.copilotActionLimit, undefined);
 });
 
-test('workspace team status ignores dirty legacy feature', async t => {
+test('workspace team status follows entitlement', async t => {
   const { workspace } = await createWorkspace(t);
   await t.context.state.reconcileWorkspaceQuotaState(workspace.id);
-
-  await t.context.models.workspaceFeature.add(
-    workspace.id,
-    'team_plan_v1',
-    'dirty legacy feature',
-    {
-      memberLimit: 100,
-    }
-  );
 
   t.false(await t.context.models.workspace.isTeamWorkspace(workspace.id));
 

@@ -2,10 +2,8 @@ import { Inject, Injectable, Optional } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
 import {
-  Config,
   DocActionDenied,
   InternalServerError,
-  metrics,
   SpaceAccessDenied,
 } from '../../base';
 import {
@@ -13,7 +11,6 @@ import {
   type PermissionEvaluationInputV1,
   type PermissionEvaluationOutputV1,
 } from '../../native';
-import { PermissionReadModel } from './config';
 import { docLegacyBoundary, workspaceLegacyBoundary } from './context';
 import {
   PermissionContextLoader,
@@ -65,14 +62,8 @@ export class PermissionService {
     @Inject(PermissionSqlPredicateBuilder)
     private readonly sqlPredicate = new PermissionSqlPredicateBuilder(),
     @Optional()
-    private readonly workspacePolicy?: WorkspacePolicyService,
-    @Optional()
-    private readonly config?: Config
+    private readonly workspacePolicy?: WorkspacePolicyService
   ) {}
-
-  readModel() {
-    return this.config?.permission.readModel ?? PermissionReadModel.Projection;
-  }
 
   docReadableSqlPredicate(input: {
     userId: string;
@@ -80,27 +71,7 @@ export class PermissionService {
     action: DocAction;
     docIdColumn?: Prisma.Sql;
   }) {
-    if (this.readModel() === PermissionReadModel.Projection) {
-      return this.sqlPredicate.docReadableByNewTablesSql(input);
-    }
-
-    return this.sqlPredicate.docReadableByLegacyTablesSql(input);
-  }
-
-  fallbackDocReadableSqlPredicate(input: {
-    userId: string;
-    workspaceId: string;
-    action: DocAction;
-    docIdColumn?: Prisma.Sql;
-  }) {
-    if (
-      this.readModel() === PermissionReadModel.Projection &&
-      (this.config?.permission.fallbackLegacyLoader ?? false)
-    ) {
-      return this.sqlPredicate.docReadableByLegacyTablesSql(input);
-    }
-
-    return null;
+    return this.sqlPredicate.docReadableSql(input);
   }
 
   evaluate(input: PermissionEvaluationInputV1) {
@@ -264,39 +235,28 @@ export class PermissionService {
   private async evaluateLoaded(
     input: Parameters<PermissionContextLoader['load']>[0]
   ) {
-    if (this.readModel() === PermissionReadModel.Projection) {
-      try {
-        if (
-          this.needsFreshRuntimeState(input) &&
-          (await this.loader.workspaceExists(input.workspaceId))
-        ) {
-          await this.workspacePolicy?.getWorkspaceState(input.workspaceId);
-          this.loader.invalidateWorkspaceQuotaRuntime(input.workspaceId);
-        }
-        return this.evaluate(await this.loader.loadFromNewTables(input));
-      } catch (error) {
-        if (
-          input.allowLocal &&
-          error instanceof Error &&
-          error.message === 'Workspace owner not found'
-        ) {
-          const loaded = await this.loader.loadFromNewTables(input);
-          if (loaded.workspace?.local) {
-            return this.evaluate(loaded);
-          }
-        }
-        if (!(this.config?.permission.fallbackLegacyLoader ?? false)) {
-          throw error;
-        }
-        metrics.permission
-          .counter('projection_loader_fallbacks', {
-            description: 'Permission projection loader fallback count',
-          })
-          .add(1);
+    try {
+      if (
+        this.needsFreshRuntimeState(input) &&
+        (await this.loader.workspaceExists(input.workspaceId))
+      ) {
+        await this.workspacePolicy?.getWorkspaceState(input.workspaceId);
+        this.loader.invalidateWorkspaceQuotaRuntime(input.workspaceId);
       }
+      return this.evaluate(await this.loader.load(input));
+    } catch (error) {
+      if (
+        input.allowLocal &&
+        error instanceof Error &&
+        error.message === 'Workspace owner not found'
+      ) {
+        const loaded = await this.loader.load(input);
+        if (loaded.workspace?.local) {
+          return this.evaluate(loaded);
+        }
+      }
+      throw error;
     }
-
-    return this.evaluate(await this.loader.load(input));
   }
 
   private needsFreshRuntimeState(

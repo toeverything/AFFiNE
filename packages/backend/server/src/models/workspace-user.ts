@@ -4,7 +4,6 @@ import {
   Prisma,
   WorkspaceMemberSource,
   WorkspaceMemberStatus,
-  WorkspaceUserRole,
 } from '@prisma/client';
 
 import { EventBus, NewOwnerIsNotActiveMember, PaginationInput } from '../base';
@@ -20,6 +19,7 @@ import {
   searchCompatRows,
   workspaceInvitationToCompat,
   workspaceMemberToCompat,
+  type WorkspaceUserCompat,
 } from './workspace-user-compat';
 
 export { WorkspaceMemberStatus };
@@ -190,39 +190,22 @@ export class WorkspaceUserModel extends BaseModel {
   private async setExternal(
     workspaceId: string,
     userId: string,
-    oldRole: WorkspaceUserRole | null
+    oldRole: WorkspaceUserCompat | null
   ) {
-    await this.models.permissionProjection.markLegacyWriteOrigin();
+    if (!oldRole) {
+      throw new Error(`Workspace member ${workspaceId}/${userId} not found.`);
+    }
     await this.db.workspaceMember.deleteMany({
       where: { workspaceId, userId, state: 'active' },
     });
     await this.db.workspaceInvitation.deleteMany({
       where: { workspaceId, inviteeUserId: userId },
     });
-
-    await this.models.permissionProjection.markNewWriteOrigin();
-    if (oldRole) {
-      return await this.withPermissionProjectionMetric(
-        this.db.workspaceUserRole.update({
-          where: { id: oldRole.id },
-          data: {
-            type: WorkspaceRole.External,
-            status: WorkspaceMemberStatus.Accepted,
-          },
-        })
-      );
-    }
-
-    return await this.withPermissionProjectionMetric(
-      this.db.workspaceUserRole.create({
-        data: {
-          workspaceId,
-          userId,
-          type: WorkspaceRole.External,
-          status: WorkspaceMemberStatus.Accepted,
-        },
-      })
-    );
+    return {
+      ...oldRole,
+      type: WorkspaceRole.External,
+      status: WorkspaceMemberStatus.Accepted,
+    };
   }
 
   async setStatus(
@@ -261,32 +244,16 @@ export class WorkspaceUserModel extends BaseModel {
     await this.db.workspaceInvitation.deleteMany({
       where: { workspaceId, inviteeUserId: userId },
     });
-    await this.withPermissionProjectionMetric(
-      this.db.workspaceUserRole.deleteMany({
-        where: {
-          workspaceId,
-          userId,
-        },
-      })
-    );
   }
 
   @Transactional()
   async deleteByUserId(userId: string) {
-    await this.models.permissionProjection.markNewWriteOrigin();
     await this.db.workspaceMember.deleteMany({
       where: { userId },
     });
     await this.db.workspaceInvitation.deleteMany({
       where: { inviteeUserId: userId },
     });
-    await this.withPermissionProjectionMetric(
-      this.db.workspaceUserRole.deleteMany({
-        where: {
-          userId,
-        },
-      })
-    );
   }
 
   async deleteNonAccepted(workspaceId: string) {
@@ -295,7 +262,6 @@ export class WorkspaceUserModel extends BaseModel {
 
   @Transactional()
   async demoteAcceptedAdmins(workspaceId: string) {
-    await this.models.permissionProjection.markNewWriteOrigin();
     return await this.db.workspaceMember.updateMany({
       where: { workspaceId, role: 'admin', state: 'active' },
       data: { role: 'member' },
@@ -326,20 +292,12 @@ export class WorkspaceUserModel extends BaseModel {
       return workspaceInvitationToCompat(invitation);
     }
 
-    return await this.db.workspaceUserRole.findFirst({
-      where: {
-        workspaceId,
-        userId,
-        type: WorkspaceRole.External,
-      },
-    });
+    return null;
   }
 
   async getById(id: string) {
     const member = await this.db.workspaceMember.findFirst({
-      where: {
-        OR: [{ id }, { legacyPermissionId: id }],
-      },
+      where: { id },
     });
     if (member) {
       return workspaceMemberToCompat(member);
@@ -347,7 +305,7 @@ export class WorkspaceUserModel extends BaseModel {
 
     const invitation = await this.db.workspaceInvitation.findFirst({
       where: {
-        OR: [{ id }, { legacyPermissionId: id }],
+        id,
         inviteeUserId: {
           not: null,
         },
@@ -357,9 +315,7 @@ export class WorkspaceUserModel extends BaseModel {
       return workspaceInvitationToCompat(invitation);
     }
 
-    return await this.db.workspaceUserRole.findUnique({
-      where: { id },
-    });
+    return null;
   }
 
   /**

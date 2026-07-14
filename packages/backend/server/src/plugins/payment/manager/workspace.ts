@@ -1,5 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaClient, Provider, UserStripeCustomer } from '@prisma/client';
+import {
+  Prisma,
+  PrismaClient,
+  Provider,
+  UserStripeCustomer,
+} from '@prisma/client';
 import { omit } from 'lodash-es';
 import { z } from 'zod';
 
@@ -139,7 +144,7 @@ export class WorkspaceSubscriptionManager extends SubscriptionManager {
     }
 
     const subscriptionData = this.transformSubscription(subscription);
-    await this.upsertStripeProviderSubscription(
+    const saved = await this.upsertStripeProviderSubscription(
       workspaceId,
       subscription,
       subscriptionData
@@ -163,46 +168,13 @@ export class WorkspaceSubscriptionManager extends SubscriptionManager {
       });
     }
 
-    const existingByStripeId = await this.db.subscription.findUnique({
-      where: { stripeSubscriptionId: stripeSubscription.id },
+    const result = this.transformProviderSubscription(saved);
+    await this.entitlement.upsertFromCloudSubscription({
+      ...result,
+      targetId: saved.targetId,
+      subscriptionId: saved.id,
     });
-
-    const saved = existingByStripeId
-      ? await this.db.subscription.update({
-          where: { id: existingByStripeId.id },
-          data: {
-            ...omit(subscriptionData, ['provider', 'iapStore']),
-            provider: Provider.stripe,
-            iapStore: null,
-            rcEntitlement: null,
-            rcProductId: null,
-            rcExternalRef: null,
-          },
-        })
-      : await this.db.subscription.upsert({
-          // TODO(stable-upgrade): remove legacy subscriptions dual-write after stable supports provider facts.
-          // TODO(stable-upgrade): remove reliance on target_id_plan unique slot after contract cleanup.
-          where: {
-            targetId_plan: {
-              targetId: workspaceId,
-              plan: lookupKey.plan,
-            },
-          },
-          update: {
-            ...omit(subscriptionData, ['provider', 'iapStore']),
-            provider: Provider.stripe,
-            iapStore: null,
-            rcEntitlement: null,
-            rcProductId: null,
-            rcExternalRef: null,
-          },
-          create: {
-            targetId: workspaceId,
-            ...omit(subscriptionData, 'provider', 'iapStore'),
-          },
-        });
-    await this.entitlement.upsertFromCloudSubscription(saved);
-    return saved;
+    return result;
   }
 
   async deleteStripeSubscription({
@@ -217,7 +189,7 @@ export class WorkspaceSubscriptionManager extends SubscriptionManager {
       );
     }
 
-    await this.db.providerSubscription.updateMany({
+    const result = await this.db.providerSubscription.updateMany({
       where: {
         provider: Provider.stripe,
         externalSubscriptionId: stripeSubscription.id,
@@ -228,10 +200,6 @@ export class WorkspaceSubscriptionManager extends SubscriptionManager {
         periodEnd: new Date(),
       },
     });
-    const result = await this.db.subscription.deleteMany({
-      where: { stripeSubscriptionId: stripeSubscription.id },
-    });
-
     if (result.count > 0) {
       await this.entitlement.revokeCloudSubscription({
         targetId: workspaceId,
@@ -247,61 +215,106 @@ export class WorkspaceSubscriptionManager extends SubscriptionManager {
   }
 
   getSubscription(identity: z.infer<typeof WorkspaceSubscriptionIdentity>) {
-    return this.db.subscription.findFirst({
-      where: {
-        targetId: identity.workspaceId,
-      },
-    });
+    return this.db.providerSubscription
+      .findFirst({
+        where: {
+          targetType: 'workspace',
+          targetId: identity.workspaceId,
+          plan: identity.plan,
+        },
+        orderBy: { updatedAt: 'desc' },
+      })
+      .then(subscription =>
+        subscription ? this.transformProviderSubscription(subscription) : null
+      );
   }
 
   getActiveSubscription(
     identity: z.infer<typeof WorkspaceSubscriptionIdentity>
   ) {
-    return this.db.subscription.findFirst({
-      where: {
-        targetId: identity.workspaceId,
-        ...activeSubscriptionWhere(),
-      },
-    });
+    return this.db.providerSubscription
+      .findFirst({
+        where: {
+          targetType: 'workspace',
+          targetId: identity.workspaceId,
+          plan: identity.plan,
+          ...activeSubscriptionWhere(),
+        },
+        orderBy: { updatedAt: 'desc' },
+      })
+      .then(subscription =>
+        subscription ? this.transformProviderSubscription(subscription) : null
+      );
   }
 
   async cancelSubscription(subscription: Subscription) {
-    return await this.db.subscription.update({
+    const current = await this.db.providerSubscription.findUniqueOrThrow({
       where: {
-        // @ts-expect-error checked outside
-        stripeSubscriptionId: subscription.stripeSubscriptionId,
+        provider_externalSubscriptionId: {
+          provider: Provider.stripe,
+          externalSubscriptionId: this.requireStripeSubscriptionId(
+            subscription.stripeSubscriptionId
+          ),
+        },
       },
+    });
+    const saved = await this.db.providerSubscription.update({
+      where: { id: current.id },
       data: {
         canceledAt: new Date(),
-        nextBillAt: null,
+        metadata: {
+          ...(current.metadata as Prisma.JsonObject),
+          variant: subscription.variant,
+          stripeScheduleId: subscription.stripeScheduleId,
+          nextBillAt: null,
+        },
       },
     });
+    return this.transformProviderSubscription(saved);
   }
 
-  resumeSubscription(subscription: Subscription): Promise<Subscription> {
-    return this.db.subscription.update({
+  async resumeSubscription(subscription: Subscription) {
+    const current = await this.db.providerSubscription.findUniqueOrThrow({
       where: {
-        // @ts-expect-error checked outside
-        stripeSubscriptionId: subscription.stripeSubscriptionId,
+        provider_externalSubscriptionId: {
+          provider: Provider.stripe,
+          externalSubscriptionId: this.requireStripeSubscriptionId(
+            subscription.stripeSubscriptionId
+          ),
+        },
       },
+    });
+    const saved = await this.db.providerSubscription.update({
+      where: { id: current.id },
       data: {
         canceledAt: null,
-        nextBillAt: subscription.end,
+        metadata: {
+          ...(current.metadata as Prisma.JsonObject),
+          variant: subscription.variant,
+          stripeScheduleId: subscription.stripeScheduleId,
+          nextBillAt: subscription.end?.toISOString() ?? null,
+        },
       },
     });
+    return this.transformProviderSubscription(saved);
   }
 
-  updateSubscriptionRecurring(
+  async updateSubscriptionRecurring(
     subscription: Subscription,
     recurring: SubscriptionRecurring
-  ): Promise<Subscription> {
-    return this.db.subscription.update({
+  ) {
+    const saved = await this.db.providerSubscription.update({
       where: {
-        // @ts-expect-error checked outside
-        stripeSubscriptionId: subscription.stripeSubscriptionId,
+        provider_externalSubscriptionId: {
+          provider: Provider.stripe,
+          externalSubscriptionId: this.requireStripeSubscriptionId(
+            subscription.stripeSubscriptionId
+          ),
+        },
       },
       data: { recurring },
     });
+    return this.transformProviderSubscription(saved);
   }
 
   async saveInvoice(knownInvoice: KnownStripeInvoice): Promise<Invoice> {
@@ -379,8 +392,14 @@ export class WorkspaceSubscriptionManager extends SubscriptionManager {
   ) {
     const { lookupKey, stripeSubscription } = known;
     const price = stripeSubscription.items.data[0]?.price;
+    const metadata = {
+      ...known.metadata,
+      variant: lookupKey.variant,
+      stripeScheduleId: subscriptionData.stripeScheduleId,
+      nextBillAt: subscriptionData.nextBillAt?.toISOString() ?? null,
+    };
 
-    await this.db.providerSubscription.upsert({
+    return this.db.providerSubscription.upsert({
       where: {
         provider_externalSubscriptionId: {
           provider: Provider.stripe,
@@ -410,7 +429,7 @@ export class WorkspaceSubscriptionManager extends SubscriptionManager {
         trialStart: subscriptionData.trialStart,
         trialEnd: subscriptionData.trialEnd,
         canceledAt: subscriptionData.canceledAt,
-        metadata: known.metadata,
+        metadata,
       },
       create: {
         provider: Provider.stripe,
@@ -437,7 +456,7 @@ export class WorkspaceSubscriptionManager extends SubscriptionManager {
         trialStart: subscriptionData.trialStart,
         trialEnd: subscriptionData.trialEnd,
         canceledAt: subscriptionData.canceledAt,
-        metadata: known.metadata,
+        metadata,
       },
     });
   }

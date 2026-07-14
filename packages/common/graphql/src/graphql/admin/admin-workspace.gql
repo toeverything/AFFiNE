@@ -14,7 +14,6 @@ query adminWorkspace(
     enableSharing
     enableUrlPreview
     enableDocEmbedding
-    features
     owner {
       id
       name

@@ -79,7 +79,6 @@ export class WorkspacePolicyService {
   private async cleanupTeamPlanCanceled(workspaceId: string) {
     await this.models.workspaceUser.deleteNonAccepted(workspaceId);
     await this.models.workspaceUser.demoteAcceptedAdmins(workspaceId);
-    await this.models.workspaceFeature.remove(workspaceId, 'team_plan_v1');
   }
 
   @OnEvent('workspace.members.updated')

@@ -1,4 +1,3 @@
-import type { FeatureType } from '@affine/graphql';
 import { AdminWorkspaceSort } from '@affine/graphql';
 import { useState } from 'react';
 
@@ -10,7 +9,6 @@ import { useWorkspaceList } from './use-workspace-list';
 
 export function WorkspacePage() {
   const [keyword, setKeyword] = useState('');
-  const [featureFilters, setFeatureFilters] = useState<FeatureType[]>([]);
   const [flagFilters, setFlagFilters] = useState<WorkspaceFlagFilter>({});
   const [sort, setSort] = useState<AdminWorkspaceSort | undefined>(
     AdminWorkspaceSort.CreatedAt
@@ -19,7 +17,6 @@ export function WorkspacePage() {
   const { workspaces, pagination, setPagination, workspacesCount, loading } =
     useWorkspaceList({
       keyword,
-      features: featureFilters,
       orderBy: sort,
       flags: flagFilters,
     });
@@ -38,8 +35,6 @@ export function WorkspacePage() {
         onPaginationChange={setPagination}
         keyword={keyword}
         onKeywordChange={setKeyword}
-        selectedFeatures={featureFilters}
-        onFeaturesChange={setFeatureFilters}
         flags={flagFilters}
         onFlagsChange={setFlagFilters}
         sort={sort}
