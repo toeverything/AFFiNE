@@ -30,16 +30,16 @@ export const copy = style({
 
 export const title = style({
   margin: 0,
-  fontSize: 19,
-  lineHeight: '26px',
+  fontSize: 21,
+  lineHeight: '28px',
   fontWeight: 700,
   color: cssVarV2('text/primary'),
 });
 
 export const description = style({
   margin: '10px 0 0',
-  fontSize: 16,
-  lineHeight: '22px',
+  fontSize: 18,
+  lineHeight: '24px',
   fontWeight: 400,
   color: cssVarV2('text/secondary'),
 });
@@ -47,7 +47,7 @@ export const description = style({
 export const actionButton = style({
   minWidth: 164,
   borderRadius: 10,
-  fontSize: 18,
+  fontSize: 20,
   fontWeight: 600,
   boxShadow: `0 8px 18px ${cssVarV2('layer/insideBorder/border')}`,
 });
