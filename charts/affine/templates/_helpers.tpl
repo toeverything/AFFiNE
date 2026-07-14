@@ -45,13 +45,17 @@ env:
 {{- end }}
 {{- end }}
 
+{{- define "affine.hasConfig" -}}
+{{- if and .Values.config (gt (len .Values.config) 0) -}}true{{- end -}}
+{{- end }}
+
 {{- define "affine.volumes" -}}
 {{- if .Values.persistence.enabled }}
 - name: storage
   persistentVolumeClaim:
     claimName: {{ include "affine.fullname" . }}
 {{- end }}
-{{- if .Values.config }}
+{{- if include "affine.hasConfig" . }}
 - name: config
   configMap:
     name: {{ include "affine.fullname" . }}
@@ -63,9 +67,33 @@ env:
 - name: storage
   mountPath: /root/.affine/storage
 {{- end }}
-{{- if .Values.config }}
+{{- if include "affine.hasConfig" . }}
 - name: config
   mountPath: /root/.affine/config
   readOnly: true
 {{- end }}
+{{- end }}
+
+{{- define "affine.migrationVolumes" -}}
+{{- if include "affine.hasConfig" . }}
+- name: config
+  configMap:
+    name: {{ include "affine.fullname" . }}
+{{- end }}
+{{- end }}
+
+{{- define "affine.migrationVolumeMounts" -}}
+{{- if include "affine.hasConfig" . }}
+- name: config
+  mountPath: /root/.affine/config
+  readOnly: true
+{{- end }}
+{{- end }}
+
+{{- define "affine.hasVolumes" -}}
+{{- if or .Values.persistence.enabled (include "affine.hasConfig" .) -}}true{{- end -}}
+{{- end }}
+
+{{- define "affine.hasMigrationVolumes" -}}
+{{- include "affine.hasConfig" . -}}
 {{- end }}

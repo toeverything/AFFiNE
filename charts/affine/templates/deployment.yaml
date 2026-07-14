@@ -54,10 +54,14 @@ spec:
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+          {{- if include "affine.hasVolumes" . }}
           volumeMounts:
             {{- include "affine.volumeMounts" . | nindent 12 }}
+          {{- end }}
+      {{- if include "affine.hasVolumes" . }}
       volumes:
         {{- include "affine.volumes" . | nindent 8 }}
+      {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

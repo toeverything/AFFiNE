@@ -72,7 +72,9 @@ kubectl port-forward -n affine svc/affine 3010:3010
 
 ## Upgrade
 
-Bump `version` in `Chart.yaml` before merging chart changes — CI publishes a new release on push to `main`/`canary`.
+Bump `version` in `Chart.yaml` before merging chart changes — CI publishes a new release on push to `main` or `canary`.
+
+Pushes to `canary` publish prerelease chart versions (`0.1.0-canary.<run>`) so they do not collide with stable releases from `main`.
 
 ```bash
 helm upgrade affine oci://ghcr.io/toeverything/charts/affine --version 0.1.1 -f my-values.yaml

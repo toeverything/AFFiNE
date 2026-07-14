@@ -28,8 +28,12 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command: ["sh", "-c", "node ./scripts/self-host-predeploy.js"]
           {{- include "affine.env" . | nindent 10 }}
+          {{- if include "affine.hasMigrationVolumes" . }}
           volumeMounts:
-            {{- include "affine.volumeMounts" . | nindent 12 }}
+            {{- include "affine.migrationVolumeMounts" . | nindent 12 }}
+          {{- end }}
+      {{- if include "affine.hasMigrationVolumes" . }}
       volumes:
-        {{- include "affine.volumes" . | nindent 8 }}
+        {{- include "affine.migrationVolumes" . | nindent 8 }}
+      {{- end }}
 {{- end }}

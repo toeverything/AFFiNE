@@ -1,4 +1,4 @@
-{{- if .Values.config }}
+{{- if include "affine.hasConfig" . }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
