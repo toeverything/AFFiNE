@@ -19,6 +19,7 @@ import {
   getScrollContainer,
   matchModels,
 } from '@blocksuite/affine-shared/utils';
+import { IS_MOBILE } from '@blocksuite/global/env';
 import { Point } from '@blocksuite/global/gfx';
 import type { PointerEventState } from '@blocksuite/std';
 import { BlockComponent, BlockSelection, TextSelection } from '@blocksuite/std';
@@ -413,7 +414,13 @@ export class PageRootBlockComponent extends BlockComponent<RootBlockModel> {
       return !(isNote && displayOnEdgeless);
     });
 
-    this.contentEditable = String(!this.store.readonly$.value);
+    // On mobile the page root being contenteditable competes with each block's
+    // own inline editor: keyboards like the Samsung one focus the outer page
+    // root and their selection lands between blocks (whitespace / <style>
+    // text), so IME input never reaches the block and autocorrect on space or
+    // enter corrupts the text. Keep only the inner block editors editable on
+    // mobile. See https://github.com/toeverything/AFFiNE/issues/14021
+    this.contentEditable = String(!this.store.readonly$.value && !IS_MOBILE);
 
     return html`
       <div class="affine-page-root-block-container">${children} ${widgets}</div>

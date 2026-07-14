@@ -45,6 +45,19 @@ export class EventService<TextAttributes extends BaseTextAttributes> {
     const rootElement = this.editor.rootElement;
     if (!rootElement) return;
 
+    // On Android, Enter is delivered as an `insertParagraph` beforeinput
+    // instead of a keydown. Prevent the inline editor from inserting a soft
+    // line break and let the block-level keymap turn it into a real paragraph
+    // split (see `androidBindKeymapPatch`); otherwise the inline newline
+    // corrupts the following IME composition. This runs before the stale-range
+    // and composing branches below so those cannot turn it into a soft line
+    // break or swallow it. `insertLineBreak` (Shift+Enter) is left untouched so
+    // soft breaks keep working.
+    if (IS_ANDROID && event.inputType === 'insertParagraph') {
+      event.preventDefault();
+      return;
+    }
+
     const startInRoot =
       range.startContainer === rootElement ||
       rootElement.contains(range.startContainer);
@@ -52,8 +65,47 @@ export class EventService<TextAttributes extends BaseTextAttributes> {
       range.endContainer === rootElement ||
       rootElement.contains(range.endContainer);
 
-    // Not this inline editor.
-    if (!startInRoot && !endInRoot) return;
+    if (!startInRoot && !endInRoot) {
+      // The native range is not inside this editor. Usually that means the
+      // event is not for us. But the range can also be stale: some IMEs
+      // (notably the Samsung keyboard) fire the input that follows a
+      // composition before the browser re-syncs its selection to the DOM we
+      // just rebuilt on compositionend, so the range still points at the
+      // detached composition nodes. If this editor is the real event target,
+      // prevent the browser from mutating the DOM natively (which would leave
+      // the DOM out of sync with the model) and apply the input at the
+      // editor's current inline range instead of bailing out.
+      const target = event.target;
+      const isOurTarget =
+        target instanceof Node &&
+        (target === rootElement || rootElement.contains(target));
+      if (!isOurTarget || this._isComposing) return;
+
+      const currentInlineRange = this.editor.getInlineRange();
+      if (!currentInlineRange) return;
+
+      event.preventDefault();
+
+      const staleCtx: BeforeinputHookCtx<TextAttributes> = {
+        inlineEditor: this.editor,
+        raw: event,
+        inlineRange: currentInlineRange,
+        data: event.data ?? event.dataTransfer?.getData('text/plain') ?? null,
+        attributes: {} as TextAttributes,
+      };
+      this.editor.hooks.beforeinput?.(staleCtx);
+
+      transformInput<TextAttributes>(
+        staleCtx.raw.inputType,
+        staleCtx.data,
+        staleCtx.attributes,
+        staleCtx.inlineRange,
+        this.editor as never
+      );
+
+      this.editor.slots.inputting.next(event.data ?? '');
+      return;
+    }
 
     // If selection spans into another inline editor, let the range binding handle it.
     if (startInRoot !== endInRoot) {
@@ -64,9 +116,40 @@ export class EventService<TextAttributes extends BaseTextAttributes> {
 
     if (this._isComposing) {
       if (IS_ANDROID && event.inputType === 'insertCompositionText') {
-        const compositionInlineRange = this.editor.toInlineRange(range);
+        // The in-progress composition text lives in the DOM but not in the
+        // model, so a collapsed caret maps to a model index that is
+        // over-counted by the length of the composed text. Prefer the start of
+        // the composition target range, which sits before the composed
+        // characters and therefore maps to the true model index.
+        let compositionInlineRange: InlineRange | null = null;
+        const targetRanges = event.getTargetRanges();
+        if (targetRanges.length > 0) {
+          const staticRange = targetRanges[0];
+          const startRange = document.createRange();
+          startRange.setStart(
+            staticRange.startContainer,
+            staticRange.startOffset
+          );
+          startRange.setEnd(
+            staticRange.startContainer,
+            staticRange.startOffset
+          );
+          compositionInlineRange = this.editor.toInlineRange(startRange);
+        }
+        if (!compositionInlineRange) {
+          compositionInlineRange = this.editor.toInlineRange(range);
+        }
         if (compositionInlineRange) {
-          this._compositionInlineRange = compositionInlineRange;
+          // The empty-line zero-width placeholder is counted as a character
+          // once real composition text shares its text node, which pushes the
+          // index one past the model. Clamp to the model bounds so the composed
+          // text is never committed out of range, which would otherwise drop
+          // the first word typed in an empty field.
+          const index = Math.min(
+            Math.max(compositionInlineRange.index, 0),
+            this.editor.yTextLength
+          );
+          this._compositionInlineRange = { index, length: 0 };
         }
       }
       return;
@@ -257,9 +340,25 @@ export class EventService<TextAttributes extends BaseTextAttributes> {
 
     const { inlineRange: newInlineRange, data: newData } = ctx;
     if (newData && newData.length > 0) {
-      this.editor.insertText(newInlineRange, newData, ctx.attributes);
+      let targetInlineRange = newInlineRange;
+      if (!this.editor.isValidInlineRange(targetInlineRange)) {
+        // The composition range is clamped at capture time, so this should not
+        // happen. If the model changed under us and the range is out of bounds,
+        // clamp it instead of silently dropping the composed text (which would
+        // look like the very "text deleted" bug this path guards against).
+        const index = Math.min(
+          Math.max(newInlineRange.index, 0),
+          this.editor.yTextLength
+        );
+        targetInlineRange = { index, length: 0 };
+        console.warn(
+          'InlineEditor: composition inline range out of bounds, clamped to keep the composed text',
+          { inlineRange: newInlineRange, yTextLength: this.editor.yTextLength }
+        );
+      }
+      this.editor.insertText(targetInlineRange, newData, ctx.attributes);
       this.editor.setInlineRange({
-        index: newInlineRange.index + newData.length,
+        index: targetInlineRange.index + newData.length,
         length: 0,
       });
     }

@@ -3,6 +3,7 @@ import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
 import { base, keyName } from 'w3c-keyname';
 
 import type { UIEventHandler } from './base.js';
+import { KeyboardEventState } from './state/index.js';
 
 function normalizeKeyName(name: string) {
   const parts = name.split(/-(?!$)/);
@@ -132,6 +133,22 @@ export function androidBindKeymapPatch(
       'Backspace' in bindings
     ) {
       return bindings['Backspace'](ctx);
+    }
+
+    // Enter is delivered as an `insertParagraph` beforeinput instead of a
+    // keydown, so route it to the `Enter` binding. The binding reads a
+    // `keyboardState`, so provide one that wraps the InputEvent. It only uses
+    // `preventDefault`/`stopPropagation`/`isComposing`, which InputEvent has.
+    if (event.inputType === 'insertParagraph' && 'Enter' in bindings) {
+      if (!ctx.has('keyboardState')) {
+        ctx.add(
+          new KeyboardEventState({
+            event: event as unknown as KeyboardEvent,
+            composing: event.isComposing,
+          })
+        );
+      }
+      return bindings['Enter'](ctx);
     }
 
     return false;
