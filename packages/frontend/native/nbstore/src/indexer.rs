@@ -277,6 +277,7 @@ mod tests {
   use std::path::{Path, PathBuf};
 
   use affine_doc_loader::ParseError;
+  use assert_json_diff::assert_json_eq;
   use chrono::Utc;
   use serde_json::Value;
   use tokio::fs;
@@ -319,9 +320,16 @@ mod tests {
 
     let result = storage.crawl_doc_data("demo-doc").await.unwrap();
 
-    let expected: Value = serde_json::from_slice(DEMO_JSON).unwrap();
-    let actual = serde_json::to_value(&result).unwrap();
-    assert_eq!(expected, actual);
+    let mut expected: Value = serde_json::from_slice(DEMO_JSON).unwrap();
+    let mut actual = serde_json::to_value(&result).unwrap();
+    for document in [&mut expected, &mut actual] {
+      for block in document["blocks"].as_array_mut().unwrap() {
+        if let Some(additional) = block["additional"].as_str() {
+          block["additional"] = serde_json::from_str(additional).unwrap();
+        }
+      }
+    }
+    assert_json_eq!(expected, actual);
 
     storage.close().await;
     cleanup(&db_path).await;

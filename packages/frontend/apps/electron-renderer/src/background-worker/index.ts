@@ -24,11 +24,11 @@ bindNativeDBV1Apis(apis!.db);
 configureSocketAuthMethod((endpoint, cb) => {
   // oxlint-disable-next-line no-non-null-assertion
   apis!.auth
-    .readEndpointToken(endpoint)
+    .getValidAccessToken(endpoint)
     .then(({ token }: { token?: string | null }) => {
       cb(token ? { token, tokenType: 'jwt' } : {});
     })
-    .catch(() => cb({}));
+    .catch(() => cb({ error: 'AUTH_SESSION_TEMPORARILY_UNAVAILABLE' }));
 });
 
 const storeManager = new StoreManagerConsumer([

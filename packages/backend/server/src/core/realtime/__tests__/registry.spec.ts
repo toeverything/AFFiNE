@@ -40,7 +40,6 @@ import {
   realtimeDocShareStateRoom,
   realtimeNotificationRoom,
   realtimeTranscriptTaskRoom,
-  realtimeUserAccessTokensRoom,
   realtimeUserProfileRoom,
   realtimeUserSettingsRoom,
   realtimeWorkspaceAccessRoom,
@@ -298,7 +297,6 @@ test('room helpers produce stable realtime room names', t => {
   t.is(realtimeDocGrantsRoom('space', 'doc'), 'workspace:space:doc:doc:grants');
   t.is(realtimeUserProfileRoom('u1'), 'user:u1:profile');
   t.is(realtimeUserSettingsRoom('u1'), 'user:u1:settings');
-  t.is(realtimeUserAccessTokensRoom('u1'), 'user:u1:access-tokens');
   t.is(
     realtimeTranscriptTaskRoom('space', 'task'),
     'copilot:transcript:space:task'
@@ -775,16 +773,6 @@ test('user realtime provider snapshots private profile settings and access token
     userFeature: {
       list: async () => ['administrator'],
     },
-    accessToken: {
-      list: async () => [
-        {
-          id: 'token',
-          name: 'Token',
-          createdAt: new Date('2026-01-01T00:00:00.000Z'),
-          expiresAt: null,
-        },
-      ],
-    },
   };
 
   new UserRealtimeProvider(models as never, registry).onModuleInit();
@@ -814,10 +802,6 @@ test('user realtime provider snapshots private profile settings and access token
     registry.getTopic('user.settings.changed').room(user, {}),
     realtimeUserSettingsRoom('u1')
   );
-  t.is(
-    registry.getTopic('user.access-tokens.changed').room(user, {}),
-    realtimeUserAccessTokensRoom('u1')
-  );
   t.deepEqual(await registry.getRequest('user.settings.get').handle(user, {}), {
     settings: {
       receiveInvitationEmail: true,
@@ -825,19 +809,6 @@ test('user realtime provider snapshots private profile settings and access token
       receiveCommentEmail: true,
     },
   });
-  t.deepEqual(
-    await registry.getRequest('user.access-tokens.get').handle(user, {}),
-    {
-      tokens: [
-        {
-          id: 'token',
-          name: 'Token',
-          createdAt: '2026-01-01T00:00:00.000Z',
-          expiresAt: null,
-        },
-      ],
-    }
-  );
 });
 
 test('new realtime providers publish changed events from domain events', t => {
@@ -894,13 +865,6 @@ test('new realtime providers publish changed events from domain events', t => {
     userId: 'u2',
   });
 
-  const userProvider = new UserRealtimeProvider(
-    {} as never,
-    undefined,
-    publisher
-  );
-  userProvider.onUserAccessTokenCreated({ userId: 'u1' });
-
   t.deepEqual(
     published.map(args => args[0]),
     [
@@ -909,7 +873,6 @@ test('new realtime providers publish changed events from domain events', t => {
       'workspace.invite-link.changed',
       'doc.share-state.changed',
       'doc.grants.changed',
-      'user.access-tokens.changed',
     ]
   );
 });

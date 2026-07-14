@@ -34,35 +34,53 @@ export const UserIdSchema = z.union([
   z.string().regex(/^[A-Za-z0-9_-]{1,128}$/),
 ]);
 
-export const OAuthCallbackBodySchema = z.object({
-  code: z.string().min(1),
-  state: z.string().min(1),
-  client_nonce: z
-    .string()
-    .min(1)
-    .nullish()
-    .transform(value => value ?? undefined),
-});
+const EmailSchema = z.string().max(320);
+const ClientNonceSchema = z.string().min(1).max(512);
+const ChallengeTokenSchema = z.string().min(1).max(512);
 
-export const OAuthPreflightBodySchema = z.object({
-  provider: z.string().min(1),
-  redirect_uri: z
-    .string()
-    .min(1)
-    .nullish()
-    .transform(value => value ?? undefined),
-  client: z
-    .string()
-    .min(1)
-    .nullish()
-    .transform(value => value ?? undefined),
-  client_nonce: z.string().min(1),
-});
+export const AuthPreflightBodySchema = z
+  .object({ email: EmailSchema })
+  .strict();
 
-export const OAuthStateEnvelopeSchema = z.object({
-  state: z.string().min(1),
-  provider: z.string().min(1).optional(),
-});
+export const SignInBodySchema = z
+  .object({
+    email: EmailSchema,
+    password: z.string().min(1).max(1024).optional(),
+    callbackUrl: z.string().min(1).max(2048).optional(),
+    client_nonce: ClientNonceSchema.optional(),
+    // TODO(auth-session): remove these ignored body fields after Electron 0.26.x
+    // compatibility is dropped; captcha credentials belong in request headers.
+    verifyToken: z.string().max(4096).optional(),
+    challenge: z.string().max(4096).optional(),
+  })
+  .strict();
+
+export const MagicLinkBodySchema = z
+  .object({
+    email: EmailSchema,
+    token: ChallengeTokenSchema,
+    client_nonce: ClientNonceSchema.optional(),
+  })
+  .strict();
+
+export const OpenAppSignInBodySchema = z
+  .object({ code: ChallengeTokenSchema })
+  .strict();
+
+export const AuthSessionExchangeBodySchema = z
+  .object({
+    code: ChallengeTokenSchema,
+    installationId: z.string().uuid(),
+    platform: z.enum(['ios', 'android', 'electron']),
+    deviceName: z.string().trim().min(1).max(200).optional(),
+  })
+  .strict();
+
+export const AuthSessionRefreshBodySchema = z
+  .object({
+    refreshToken: z.string().min(1).max(512),
+  })
+  .strict();
 
 export function getSessionOptionsFromRequest(req: Request) {
   const sessionId = SessionIdSchema.safeParse(

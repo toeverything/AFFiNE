@@ -2,9 +2,10 @@ import { createHash, randomUUID } from 'node:crypto';
 import { Readable } from 'node:stream';
 
 import { ProjectRoot } from '@affine-tools/utils/path';
-import { PrismaClient } from '@prisma/client';
+import { McpAccessMode, PrismaClient } from '@prisma/client';
 import type { TestFn } from 'ava';
 import ava from 'ava';
+import type { Request, Response } from 'express';
 import { nanoid } from 'nanoid';
 import Sinon from 'sinon';
 import { z } from 'zod';
@@ -42,6 +43,9 @@ import {
   CopilotEmbeddingJob,
   MockEmbeddingClient,
 } from '../../plugins/copilot/embedding';
+import { WorkspaceMcpController } from '../../plugins/copilot/mcp/controller';
+import { McpCredentialService } from '../../plugins/copilot/mcp/credential';
+import { WorkspaceMcpProvider } from '../../plugins/copilot/mcp/provider';
 import { PromptService } from '../../plugins/copilot/prompt';
 import {
   CopilotProviderFactory,
@@ -110,6 +114,8 @@ type Context = {
   cronJobs: CopilotCronJobs;
   subscription: SubscriptionService;
   quotaState: QuotaStateService;
+  mcpCredentials: McpCredentialService;
+  mcpProvider: WorkspaceMcpProvider;
 };
 
 const buildTurn = (
@@ -234,6 +240,8 @@ test.before(async t => {
   t.context.cronJobs = cronJobs;
   t.context.subscription = subscription;
   t.context.quotaState = quotaState;
+  t.context.mcpCredentials = module.get(McpCredentialService);
+  t.context.mcpProvider = module.get(WorkspaceMcpProvider);
 
   await module.initTestingDB();
 });
@@ -252,6 +260,86 @@ test.beforeEach(async t => {
 test.after.always(async t => {
   restoreMockCopilotNativeRuntime?.();
   await t.context.module?.close();
+});
+
+test('MCP credentials stay bound to their endpoint, workspace, and profile', async t => {
+  const { db, mcpCredentials, mcpProvider, models, workspace } = t.context;
+  const ws = await workspace.create(userId);
+  const other = await workspace.create(userId);
+  const issued = await mcpCredentials.create({
+    userId,
+    workspaceId: ws.id,
+    name: 'Claude Desktop',
+    accessMode: McpAccessMode.READ_ONLY,
+    expirationDays: 90,
+  });
+
+  const authenticated = await mcpCredentials.authenticate(issued.token, ws.id);
+  t.is(authenticated.userId, userId);
+  await t.throwsAsync(mcpCredentials.authenticate(issued.token, other.id));
+
+  let responseStatus: number | undefined;
+  let responseBody: unknown;
+  const request = {
+    body: { jsonrpc: '2.0', id: 1, method: 'initialize', params: {} },
+    get: () => `Bearer ${issued.token}`,
+    on: () => request,
+  } as unknown as Request;
+  const response = {
+    status: (status: number) => {
+      responseStatus = status;
+      return response;
+    },
+    json: (body: unknown) => {
+      responseBody = body;
+      return response;
+    },
+  } as unknown as Response;
+  await t.context.module
+    .get(WorkspaceMcpController)
+    .mcp(request, response, ws.id);
+  t.is(responseStatus, 200);
+  t.like(responseBody as object, {
+    jsonrpc: '2.0',
+    id: 1,
+  });
+
+  const server = await mcpProvider.for(userId, ws.id, McpAccessMode.READ_ONLY);
+  t.deepEqual(
+    server.tools.map(tool => tool.name),
+    ['read_document', 'semantic_search', 'keyword_search']
+  );
+
+  const rotated = await mcpCredentials.rotate(
+    issued.credential.id,
+    userId,
+    ws.id,
+    30
+  );
+  const listed = await mcpCredentials.list(userId, ws.id);
+  t.is(listed.length, 1);
+  t.is(listed[0].status, 'ROTATING');
+  await mcpCredentials.authenticate(issued.token, ws.id);
+  await mcpCredentials.revoke(rotated.credential.id, userId, ws.id);
+  await t.throwsAsync(mcpCredentials.authenticate(issued.token, ws.id));
+  await t.throwsAsync(mcpCredentials.authenticate(rotated.token, ws.id));
+
+  const disabled = await mcpCredentials.create({
+    userId,
+    workspaceId: ws.id,
+    name: 'Disabled user',
+    accessMode: McpAccessMode.READ_ONLY,
+    expirationDays: 30,
+  });
+  await models.user.update(userId, { disabled: true });
+  await t.throwsAsync(mcpCredentials.authenticate(disabled.token, ws.id));
+
+  await models.user.update(userId, { disabled: false });
+  await db.mcpCredential.update({
+    where: { id: disabled.credential.id },
+    data: { expiresAt: new Date(0) },
+  });
+  await t.throwsAsync(mcpCredentials.authenticate(disabled.token, ws.id));
 });
 
 test('should reject context file uploads after workspace write access is revoked', async t => {

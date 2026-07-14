@@ -6,6 +6,7 @@
   "sideEffects": false,
   "exports": {
     ".": "./src/index.ts",
+    "./auth/endpoint": "./src/auth/endpoint.ts",
     "./nbstore/payload": "./src/nbstore/payload.ts"
   },
   "dependencies": {

@@ -31,7 +31,6 @@ export {
   realtimeDocShareStateRoom,
   realtimeNotificationRoom,
   realtimeTranscriptTaskRoom,
-  realtimeUserAccessTokensRoom,
   realtimeUserProfileRoom,
   realtimeUserQuotaStateRoom,
   realtimeUserRoom,

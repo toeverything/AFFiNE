@@ -1,5 +1,4 @@
 import type {
-  AccessTokenSnapshot,
   CurrentUserProfileSnapshot,
   UserSettingsSnapshot,
 } from '@affine/realtime';
@@ -14,7 +13,6 @@ import { registerRealtimeLiveQuery } from '../realtime/provider';
 import { RealtimePublisher } from '../realtime/publisher';
 import { RealtimeRegistry } from '../realtime/registry';
 import {
-  realtimeUserAccessTokensRoom,
   realtimeUserProfileRoom,
   realtimeUserSettingsRoom,
 } from '../realtime/rooms';
@@ -85,27 +83,6 @@ export class UserRealtimeProvider
         },
       },
     });
-
-    registerRealtimeLiveQuery(this.registry, {
-      request: {
-        name: 'user.access-tokens.get',
-        input: emptyInput,
-        handle: async user => ({
-          tokens: await this.getAccessTokens(assertAuthenticated(user).id),
-        }),
-      },
-      topic: {
-        name: 'user.access-tokens.changed',
-        input: emptyInput,
-        authorize: async () => {},
-        room: user => {
-          if (!user) {
-            throw new Error('Authenticated user is required');
-          }
-          return realtimeUserAccessTokensRoom(user.id);
-        },
-      },
-    });
   }
 
   @OnEvent('user.updated', { suppressError: true })
@@ -123,16 +100,6 @@ export class UserRealtimeProvider
       'settings-updated',
       { room: realtimeUserSettingsRoom(userId) }
     );
-  }
-
-  @OnEvent('user.access_token.created', { suppressError: true })
-  onUserAccessTokenCreated({ userId }: Events['user.access_token.created']) {
-    this.publishAccessTokens(userId, 'access-token-created');
-  }
-
-  @OnEvent('user.access_token.revoked', { suppressError: true })
-  onUserAccessTokenRevoked({ userId }: Events['user.access_token.revoked']) {
-    this.publishAccessTokens(userId, 'access-token-revoked');
   }
 
   private async getProfile(
@@ -165,23 +132,5 @@ export class UserRealtimeProvider
 
   private async getSettings(userId: string): Promise<UserSettingsSnapshot> {
     return await this.models.userSettings.get(userId);
-  }
-
-  private async getAccessTokens(
-    userId: string
-  ): Promise<AccessTokenSnapshot[]> {
-    const tokens = await this.models.accessToken.list(userId);
-    return tokens.map(token => ({
-      id: token.id,
-      name: token.name,
-      createdAt: token.createdAt.toISOString(),
-      expiresAt: token.expiresAt?.toISOString() ?? null,
-    }));
-  }
-
-  private publishAccessTokens(userId: string, reason: string) {
-    this.publisher?.publishChanged('user.access-tokens.changed', {}, reason, {
-      room: realtimeUserAccessTokensRoom(userId),
-    });
   }
 }

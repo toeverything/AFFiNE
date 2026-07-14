@@ -19,7 +19,10 @@ function createStore({
   framework.service(GraphQLService, {} as any);
   framework.impl(GlobalState, {} as any);
   framework.service(ServerService, {
-    server: { id: 'test-server' },
+    server: {
+      id: 'test-server',
+      ['config$']: { value: { version: '0.27.0' } },
+    },
   } as any);
   framework.impl(AuthProvider, {} as any);
   framework.service(NbstoreService, {
@@ -37,6 +40,36 @@ function createStore({
 }
 
 describe('AuthStore', () => {
+  test('validates login preflight responses', async () => {
+    const validResponse = {
+      registered: true,
+      methods: {
+        password: { available: true },
+        magicLink: { available: true },
+        oauth: { available: false, providers: [] },
+        passkey: { available: false, discoverable: false },
+      },
+    };
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => validResponse })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ registered: true, methods: {} }),
+      });
+    const store = createStore({ fetch, request: vi.fn() });
+
+    await expect(store.checkUserByEmail('user@affine.pro')).resolves.toEqual(
+      validResponse
+    );
+    await expect(
+      store.checkUserByEmail('user@affine.pro')
+    ).rejects.toMatchObject({
+      name: 'UNSUPPORTED_SERVER_VERSION',
+      data: { serverVersion: '0.27.0' },
+    });
+  });
+
   test('loads account profile from realtime after auth session bootstrap', async () => {
     const authMethods = {
       password: { bound: true },

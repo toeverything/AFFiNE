@@ -11,7 +11,11 @@ import {
   resolvePathInBase,
   resourcesPath,
 } from '../shared/utils';
-import { getAuthTokenForUrl } from './auth/native-token';
+import {
+  executeAuthSessionRequest,
+  getAccessTokenForUrl,
+  isManagedAuthEndpoint,
+} from './auth/auth-session';
 import { buildType, isDev } from './config';
 import { logger } from './logger';
 
@@ -64,26 +68,6 @@ function buildTargetUrl(base: string, urlObject: URL) {
   return new URL(`${urlObject.pathname}${urlObject.search}`, base).toString();
 }
 
-async function buildAuthorizedRequest(request: Request, targetUrl: string) {
-  const clonedRequest = request.clone();
-  const headers = new Headers(clonedRequest.headers);
-  const token = getAuthTokenForUrl(targetUrl);
-  if (token) {
-    headers.set('Authorization', `Bearer ${token}`);
-  }
-
-  return new Request(targetUrl, {
-    body:
-      clonedRequest.method === 'GET' || clonedRequest.method === 'HEAD'
-        ? undefined
-        : clonedRequest.body,
-    headers,
-    method: clonedRequest.method,
-    redirect: clonedRequest.redirect,
-    signal: clonedRequest.signal,
-  });
-}
-
 async function proxyRequest(
   request: Request,
   urlObject: URL,
@@ -92,13 +76,13 @@ async function proxyRequest(
 ) {
   const { bypassCustomProtocolHandlers = true } = options;
   const targetUrl = buildTargetUrl(base, urlObject);
-  const authorizedRequest = await buildAuthorizedRequest(request, targetUrl);
-  const proxiedRequest = bypassCustomProtocolHandlers
-    ? Object.assign(authorizedRequest, {
-        bypassCustomProtocolHandlers: true,
-      })
-    : authorizedRequest;
-  return net.fetch(proxiedRequest);
+  return await executeAuthSessionRequest(request, targetUrl, request =>
+    net.fetch(
+      bypassCustomProtocolHandlers
+        ? Object.assign(request, { bypassCustomProtocolHandlers: true })
+        : request
+    )
+  );
 }
 
 async function handleFileRequest(request: Request) {
@@ -268,17 +252,20 @@ export function registerProtocol() {
 
   session.defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {
     const url = new URL(details.url);
-
-    (async () => {
-      if (
-        url.protocol === 'http:' ||
+    const managedAuthRequest =
+      (url.protocol === 'http:' ||
         url.protocol === 'https:' ||
         url.protocol === 'ws:' ||
-        url.protocol === 'wss:'
-      ) {
-        const token = getAuthTokenForUrl(details.url);
+        url.protocol === 'wss:') &&
+      isManagedAuthEndpoint(details.url);
+    let cancel = false;
+
+    (async () => {
+      if (managedAuthRequest) {
+        delete details.requestHeaders.authorization;
+        delete details.requestHeaders.Authorization;
+        const token = await getAccessTokenForUrl(details.url, 120_000);
         if (token) {
-          delete details.requestHeaders.authorization;
           details.requestHeaders.Authorization = `Bearer ${token}`;
         }
       }
@@ -292,11 +279,12 @@ export function registerProtocol() {
       }
     })()
       .catch(err => {
+        cancel = managedAuthRequest;
         logger.error('error handling before send headers', err);
       })
       .finally(() => {
         callback({
-          cancel: false,
+          cancel,
           requestHeaders: details.requestHeaders,
         });
       });

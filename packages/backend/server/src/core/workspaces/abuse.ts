@@ -7,6 +7,7 @@ import type { Request } from 'express';
 import {
   ActionForbidden,
   Config,
+  EventBus,
   getRequestClientIp,
   JobQueue,
   metrics,
@@ -89,7 +90,8 @@ export class InviteAbuseDispositionService {
   constructor(
     private readonly models: Models,
     private readonly runtime: BackendRuntimeProvider,
-    private readonly queue: JobQueue
+    private readonly queue: JobQueue,
+    private readonly event: EventBus
   ) {}
 
   async execute(input: {
@@ -119,12 +121,14 @@ export class InviteAbuseDispositionService {
       switch (actionRequired.action) {
         case 'ban_actor':
           await this.cancelPendingActorArtifacts(input, actionRequired);
-          await this.models.session.deleteUserSessions(input.actorUserId);
           await this.models.user.ban(input.actorUserId);
           break;
         case 'quarantine_actor':
           await this.cancelPendingActorArtifacts(input, actionRequired);
-          await this.models.session.deleteUserSessions(input.actorUserId);
+          await this.event.emitAsync('auth.sessions.revoke_requested', {
+            userId: input.actorUserId,
+            reason: 'abuse_quarantine',
+          });
           break;
         case 'quarantine_workspace':
           await this.cancelPendingWorkspaceArtifacts(input.workspaceId);

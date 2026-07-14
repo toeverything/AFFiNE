@@ -34,10 +34,7 @@ tokio = { workspace = true, features = ["full"] }
 typed-path = { workspace = true }
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
-mermaid-rs-renderer = { workspace = true }
-typst               = { workspace = true }
-typst-as-lib        = { workspace = true }
-typst-svg           = { workspace = true }
+affine_preview = { workspace = true, features = ["mermaid", "typst"] }
 
 [target.'cfg(not(target_os = "linux"))'.dependencies]
 mimalloc = { workspace = true }

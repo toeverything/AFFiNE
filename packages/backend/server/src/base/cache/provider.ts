@@ -15,6 +15,14 @@ end
 return value
 `;
 
+const INCREASE_WITH_TTL_LUA = `
+local value = redis.call("INCRBY", KEYS[1], ARGV[1])
+if value == tonumber(ARGV[1]) or redis.call("PTTL", KEYS[1]) == -1 then
+  redis.call("PEXPIRE", KEYS[1], ARGV[2])
+end
+return value
+`;
+
 export function isValidCacheTtl(ttl: unknown): ttl is number {
   return typeof ttl === 'number' && Number.isSafeInteger(ttl) && ttl > 0;
 }
@@ -58,6 +66,18 @@ export class CacheProvider {
 
   async increase(key: string, count: number = 1): Promise<number> {
     return this.redis.incrby(key, count).catch(() => 0);
+  }
+
+  async increaseWithTtl(
+    key: string,
+    ttl: number,
+    count: number = 1
+  ): Promise<number> {
+    if (!isValidCacheTtl(ttl)) return 0;
+    return this.redis
+      .eval(INCREASE_WITH_TTL_LUA, 1, key, count, ttl)
+      .then(value => Number(value))
+      .catch(() => 0);
   }
 
   async decrease(key: string, count: number = 1): Promise<number> {

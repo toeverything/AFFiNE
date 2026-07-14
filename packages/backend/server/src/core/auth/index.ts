@@ -7,18 +7,21 @@ import { FeatureModule } from '../features';
 import { MailModule } from '../mail';
 import { QuotaModule } from '../quota';
 import { UserModule } from '../user';
+import { AccessTokenService } from './access-token';
+import { AuthSessionService } from './auth-session';
 import { AuthChallengeStore } from './challenge-store';
 import { AuthController } from './controller';
 import { AuthGuard, AuthWebsocketOptionsProvider } from './guard';
 import { AuthCronJob } from './job';
-import { JwtSessionService } from './jwt-session';
 import { MagicLinkAuthService } from './magic-link';
 import { AuthMethodsService } from './methods';
-import { SessionExchangeService } from './native-exchange';
 import { OpenAppAuthService } from './open-app';
 import { AuthResolver } from './resolver';
 import { AuthService } from './service';
+import { SessionExchangeService } from './session-exchange';
 import { SessionIssuer } from './session-issuer';
+import { AuthSigningKeyRing } from './signing-key';
+import { AuthSigningKeyResolver } from './signing-key-resolver';
 
 @Module({
   imports: [
@@ -32,26 +35,31 @@ import { SessionIssuer } from './session-issuer';
     AuthService,
     AuthResolver,
     AuthGuard,
-    JwtSessionService,
+    AccessTokenService,
     SessionIssuer,
     AuthChallengeStore,
     MagicLinkAuthService,
     OpenAppAuthService,
     AuthMethodsService,
     SessionExchangeService,
+    AuthSessionService,
+    AuthSigningKeyRing,
+    AuthSigningKeyResolver,
     AuthCronJob,
     AuthWebsocketOptionsProvider,
   ],
   exports: [
     AuthService,
     AuthGuard,
-    JwtSessionService,
+    AccessTokenService,
     SessionIssuer,
     AuthChallengeStore,
     MagicLinkAuthService,
     OpenAppAuthService,
     AuthMethodsService,
     SessionExchangeService,
+    AuthSessionService,
+    AuthSigningKeyRing,
     AuthWebsocketOptionsProvider,
   ],
   controllers: [AuthController],
@@ -65,7 +73,9 @@ export * from './input';
 export { MagicLinkAuthService } from './magic-link';
 export * from './methods';
 export { SessionExchangeService };
+export { AuthSessionService } from './auth-session';
 export { OpenAppAuthService } from './open-app';
 export { ClientTokenType } from './resolver';
-export { AuthService, JwtSessionService, SessionIssuer };
+export { AccessTokenService, AuthService, SessionIssuer };
 export * from './session';
+export { AuthSigningKeyRing } from './signing-key';

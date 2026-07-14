@@ -15,12 +15,12 @@ import {
 import {
   AuthChallengeStore,
   AuthService,
-  OAuthStateEnvelopeSchema,
   type VerifiedIdentity,
 } from '../../core/auth';
 import { Models } from '../../models';
 import { OAuthProviderName } from './config';
 import { OAuthProviderFactory } from './factory';
+import { OAuthStateEnvelopeSchema } from './input';
 import { OAuthAccount, Tokens } from './providers/def';
 import { OAuthPkceChallenge, OAuthState } from './types';
 

@@ -8883,6 +8883,196 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.integration.mcp-server.copy-json.disabled-hint"](): string;
     /**
+      * `Credentials`
+      */
+    ["com.affine.integration.mcp-server.credentials.title"](): string;
+    /**
+      * `Use a separate credential for each MCP client so it can be revoked independently.`
+      */
+    ["com.affine.integration.mcp-server.credentials.description"](): string;
+    /**
+      * `Create credential`
+      */
+    ["com.affine.integration.mcp-server.action.create"](): string;
+    /**
+      * `Rotate`
+      */
+    ["com.affine.integration.mcp-server.action.rotate"](): string;
+    /**
+      * `Revoke credential`
+      */
+    ["com.affine.integration.mcp-server.action.revoke"](): string;
+    /**
+      * `Copy token`
+      */
+    ["com.affine.integration.mcp-server.action.copy-token"](): string;
+    /**
+      * `Copy JSON`
+      */
+    ["com.affine.integration.mcp-server.action.copy-json"](): string;
+    /**
+      * `Done`
+      */
+    ["com.affine.integration.mcp-server.action.done"](): string;
+    /**
+      * `Failed to load MCP credentials.`
+      */
+    ["com.affine.integration.mcp-server.load-error"](): string;
+    /**
+      * `No MCP credentials`
+      */
+    ["com.affine.integration.mcp-server.empty.title"](): string;
+    /**
+      * `Create a workspace-bound credential to connect an MCP client.`
+      */
+    ["com.affine.integration.mcp-server.empty.description"](): string;
+    /**
+      * `Read only`
+      */
+    ["com.affine.integration.mcp-server.access.read-only"](): string;
+    /**
+      * `Can read and search documents in this workspace using your current permissions.`
+      */
+    ["com.affine.integration.mcp-server.access.read-only-desc"](): string;
+    /**
+      * `Read and write`
+      */
+    ["com.affine.integration.mcp-server.access.read-write"](): string;
+    /**
+      * `Expires {{date}}`
+      */
+    ["com.affine.integration.mcp-server.meta.expires"](options: {
+        readonly date: string;
+    }): string;
+    /**
+      * `Created {{date}}`
+      */
+    ["com.affine.integration.mcp-server.meta.created"](options: {
+        readonly date: string;
+    }): string;
+    /**
+      * `Last used {{date}}`
+      */
+    ["com.affine.integration.mcp-server.meta.last-used"](options: {
+        readonly date: string;
+    }): string;
+    /**
+      * `Never used`
+      */
+    ["com.affine.integration.mcp-server.meta.never-used"](): string;
+    /**
+      * `Old token valid until {{date}}`
+      */
+    ["com.affine.integration.mcp-server.meta.grace-until"](options: {
+        readonly date: string;
+    }): string;
+    /**
+      * `Active`
+      */
+    ["com.affine.integration.mcp-server.status.active"](): string;
+    /**
+      * `Rotating`
+      */
+    ["com.affine.integration.mcp-server.status.rotating"](): string;
+    /**
+      * `Expiring`
+      */
+    ["com.affine.integration.mcp-server.status.expiring"](): string;
+    /**
+      * `Expired`
+      */
+    ["com.affine.integration.mcp-server.status.expired"](): string;
+    /**
+      * `Revoked`
+      */
+    ["com.affine.integration.mcp-server.status.revoked"](): string;
+    /**
+      * `Create MCP credential`
+      */
+    ["com.affine.integration.mcp-server.create.title"](): string;
+    /**
+      * `This credential will only work with this workspace's MCP endpoint.`
+      */
+    ["com.affine.integration.mcp-server.create.description"](): string;
+    /**
+      * `Label`
+      */
+    ["com.affine.integration.mcp-server.field.label"](): string;
+    /**
+      * `Access`
+      */
+    ["com.affine.integration.mcp-server.field.access"](): string;
+    /**
+      * `Expires in`
+      */
+    ["com.affine.integration.mcp-server.field.expiry"](): string;
+    /**
+      * `{{days}} days`
+      */
+    ["com.affine.integration.mcp-server.expiry.days"](options: {
+        readonly days: string;
+    }): string;
+    /**
+      * `MCP credential created`
+      */
+    ["com.affine.integration.mcp-server.reveal.title"](): string;
+    /**
+      * `Copy this credential now. You won’t be able to see it again.`
+      */
+    ["com.affine.integration.mcp-server.reveal.warning"](): string;
+    /**
+      * `The old token remains valid until {{date}}.`
+      */
+    ["com.affine.integration.mcp-server.reveal.old-valid-until"](options: {
+        readonly date: string;
+    }): string;
+    /**
+      * `Credential`
+      */
+    ["com.affine.integration.mcp-server.reveal.token"](): string;
+    /**
+      * `MCP configuration`
+      */
+    ["com.affine.integration.mcp-server.reveal.config"](): string;
+    /**
+      * `Rotate this credential?`
+      */
+    ["com.affine.integration.mcp-server.rotate.title"](): string;
+    /**
+      * `A new token will be created immediately. The old token remains valid for up to 24 hours so you can update the MCP client.`
+      */
+    ["com.affine.integration.mcp-server.rotate.description"](): string;
+    /**
+      * `Revoke “{{name}}”?`
+      */
+    ["com.affine.integration.mcp-server.revoke.title"](options: {
+        readonly name: string;
+    }): string;
+    /**
+      * `All generations of this credential will stop working immediately. This cannot be undone.`
+      */
+    ["com.affine.integration.mcp-server.revoke.description"](): string;
+    /**
+      * `Supported capabilities`
+      */
+    ["com.affine.integration.mcp-server.capabilities.title"](): string;
+    /**
+      * `Read documents`
+      */
+    ["com.affine.integration.mcp-server.capabilities.read"](): string;
+    /**
+      * `Keyword search`
+      */
+    ["com.affine.integration.mcp-server.capabilities.keyword-search"](): string;
+    /**
+      * `Semantic search`
+      */
+    ["com.affine.integration.mcp-server.capabilities.semantic-search"](): string;
+    /**
+      * `Create and update documents`
+      */
+    ["com.affine.integration.mcp-server.capabilities.write"](): string;
+    /**
       * `Notes`
       */
     ["com.affine.audio.notes"](): string;
@@ -9036,6 +9226,58 @@ export function useAFFiNEI18N(): {
       * `Add icon`
       */
     ["com.affine.docIconPicker.placeholder"](): string;
+    /**
+      * `Devices`
+      */
+    ["com.affine.settings.devices.title"](): string;
+    /**
+      * `Devices with an active sign-in session`
+      */
+    ["com.affine.settings.devices.description"](): string;
+    /**
+      * `current`
+      */
+    ["com.affine.settings.devices.current"](): string;
+    /**
+      * `Last used {{time}}`
+      */
+    ["com.affine.settings.devices.last-used"](options: {
+        readonly time: string;
+    }): string;
+    /**
+      * `Loading…`
+      */
+    ["com.affine.settings.devices.loading"](): string;
+    /**
+      * `Sign out`
+      */
+    ["com.affine.settings.devices.sign-out"](): string;
+    /**
+      * `Sign out all devices`
+      */
+    ["com.affine.settings.devices.sign-out-all"](): string;
+    /**
+      * `Sign out {{device}}?`
+      */
+    ["com.affine.settings.devices.confirm"](options: {
+        readonly device: string;
+    }): string;
+    /**
+      * `Sign out every device?`
+      */
+    ["com.affine.settings.devices.confirm-all"](): string;
+    /**
+      * `Failed to load devices`
+      */
+    ["com.affine.settings.devices.load-failed"](): string;
+    /**
+      * `Failed to sign out device`
+      */
+    ["com.affine.settings.devices.sign-out-failed"](): string;
+    /**
+      * `Failed to sign out devices`
+      */
+    ["com.affine.settings.devices.sign-out-all-failed"](): string;
     /**
       * `An internal error occurred.`
       */
@@ -9206,6 +9448,34 @@ export function useAFFiNEI18N(): {
       * `You must sign in first to access this resource.`
       */
     ["error.AUTHENTICATION_REQUIRED"](): string;
+    /**
+      * `The access token has expired.`
+      */
+    ["error.ACCESS_TOKEN_EXPIRED"](): string;
+    /**
+      * `The access token is invalid.`
+      */
+    ["error.ACCESS_TOKEN_INVALID"](): string;
+    /**
+      * `The auth session has expired.`
+      */
+    ["error.AUTH_SESSION_EXPIRED"](): string;
+    /**
+      * `The auth session has been revoked.`
+      */
+    ["error.AUTH_SESSION_REVOKED"](): string;
+    /**
+      * `The refresh token is invalid.`
+      */
+    ["error.REFRESH_TOKEN_INVALID"](): string;
+    /**
+      * `The refresh token has already been used.`
+      */
+    ["error.REFRESH_TOKEN_REUSED"](): string;
+    /**
+      * `Auth session service is temporarily unavailable.`
+      */
+    ["error.AUTH_SESSION_TEMPORARILY_UNAVAILABLE"](): string;
     /**
       * `You are not allowed to perform this action.`
       */

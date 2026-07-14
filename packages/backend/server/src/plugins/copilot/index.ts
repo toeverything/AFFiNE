@@ -12,6 +12,8 @@ import { WorkspaceModule } from '../../core/workspaces';
 import { IndexerModule } from '../indexer';
 import { CopilotController } from './controller';
 import { WorkspaceMcpController } from './mcp/controller';
+import { McpCredentialService } from './mcp/credential';
+import { McpCredentialResolver } from './mcp/resolver';
 import {
   COPILOT_API_PROVIDERS,
   COPILOT_CONTEXT_REALTIME_PROVIDERS,
@@ -69,7 +71,13 @@ export class CopilotFeatureModule {}
 export class CopilotApiModule {}
 
 @Module({
-  imports: [CopilotKernelModule, CopilotFeatureModule, CopilotApiModule],
+  imports: [
+    PermissionModule,
+    CopilotKernelModule,
+    CopilotFeatureModule,
+    CopilotApiModule,
+  ],
+  providers: [McpCredentialService, McpCredentialResolver],
   controllers: [CopilotController, WorkspaceMcpController],
 })
 export class CopilotModule {}

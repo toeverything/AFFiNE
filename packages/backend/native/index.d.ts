@@ -171,6 +171,20 @@ export interface AssertSafeUrlRequest {
   url: string
 }
 
+export declare function authSessionAccessTokenKeyId(token: string): string | null
+
+export interface AuthSessionAccessTokenVerification {
+  status: string
+  userId?: string
+  authSessionId?: string
+}
+
+export interface AuthSessionRefreshToken {
+  token: string
+  id: string
+  secretHash: string
+}
+
 export interface BackendRuntimeHealth {
   started: boolean
   databaseConnected: boolean
@@ -298,6 +312,8 @@ export interface CoordinationLeaseGrant {
   owner: string
   fencingToken: bigint | number
 }
+
+export declare function createAuthSessionRefreshToken(): AuthSessionRefreshToken
 
 /**
  * Converts markdown content to AFFiNE-compatible y-octo document binary.
@@ -574,7 +590,7 @@ export interface ModelConditionsContract {
 }
 
 export interface ModelRegistryMatchRequest {
-  backendKind: 'openai_chat' | 'openai_responses' | 'anthropic' | 'cloudflare_workers_ai' | 'gemini_api' | 'gemini_vertex' | 'fal' | 'anthropic_vertex'
+  backendKind: 'openai_chat' | 'openai_responses' | 'anthropic' | 'cloudflare_workers_ai' | 'gemini_api' | 'gemini_vertex' | 'fal' | 'anthropic_vertex' | 'deepseek' | 'kimi' | 'opencode_go' | 'opencode_zen'
   cond: ModelConditionsContract
 }
 
@@ -583,7 +599,7 @@ export interface ModelRegistryMatchResponse {
 }
 
 export interface ModelRegistryResolveRequest {
-  backendKind?: 'openai_chat' | 'openai_responses' | 'anthropic' | 'cloudflare_workers_ai' | 'gemini_api' | 'gemini_vertex' | 'fal' | 'anthropic_vertex'
+  backendKind?: 'openai_chat' | 'openai_responses' | 'anthropic' | 'cloudflare_workers_ai' | 'gemini_api' | 'gemini_vertex' | 'fal' | 'anthropic_vertex' | 'deepseek' | 'kimi' | 'opencode_go' | 'opencode_zen'
   modelId: string
 }
 
@@ -594,11 +610,11 @@ export interface ModelRegistryResolveResponse {
 
 export interface ModelRegistryRouteContract {
   protocol?: 'openai_chat' | 'openai_responses' | 'openai_images' | 'anthropic' | 'gemini' | 'fal_image'
-  requestLayer?: 'anthropic' | 'chat_completions' | 'cloudflare_workers_ai' | 'responses' | 'openai_images' | 'fal' | 'vertex' | 'vertex_anthropic' | 'gemini_api' | 'gemini_vertex'
+  requestLayer?: 'anthropic' | 'chat_completions' | 'chat_completions_no_v1' | 'cloudflare_workers_ai' | 'responses' | 'openai_images' | 'fal' | 'vertex' | 'vertex_anthropic' | 'gemini_api' | 'gemini_vertex'
 }
 
 export interface ModelRegistryVariantContract {
-  backendKind: 'openai_chat' | 'openai_responses' | 'anthropic' | 'cloudflare_workers_ai' | 'gemini_api' | 'gemini_vertex' | 'fal' | 'anthropic_vertex'
+  backendKind: 'openai_chat' | 'openai_responses' | 'anthropic' | 'cloudflare_workers_ai' | 'gemini_api' | 'gemini_vertex' | 'fal' | 'anthropic_vertex' | 'deepseek' | 'kimi' | 'opencode_go' | 'opencode_zen'
   canonicalKey: string
   rawModelId: string
   displayName?: string
@@ -606,7 +622,7 @@ export interface ModelRegistryVariantContract {
   legacyAliases?: Array<string>
   capabilities: Array<CapabilityModelCapability>
   protocol?: 'openai_chat' | 'openai_responses' | 'openai_images' | 'anthropic' | 'gemini' | 'fal_image'
-  requestLayer?: 'anthropic' | 'chat_completions' | 'cloudflare_workers_ai' | 'responses' | 'openai_images' | 'fal' | 'vertex' | 'vertex_anthropic' | 'gemini_api' | 'gemini_vertex'
+  requestLayer?: 'anthropic' | 'chat_completions' | 'chat_completions_no_v1' | 'cloudflare_workers_ai' | 'responses' | 'openai_images' | 'fal' | 'vertex' | 'vertex_anthropic' | 'gemini_api' | 'gemini_vertex'
   routeOverrides?: Record<string, ModelRegistryRouteContract>
   behaviorFlags?: Array<string>
 }
@@ -644,6 +660,13 @@ export interface NativePageDocContent {
 export interface NativeWorkspaceDocContent {
   name: string
   avatarKey: string
+}
+
+export declare function parseAuthSessionRefreshToken(token: string): ParsedAuthSessionRefreshToken | null
+
+export interface ParsedAuthSessionRefreshToken {
+  id: string
+  secretHash: string
 }
 
 export interface ParsedDoc {
@@ -1161,6 +1184,8 @@ export interface SafeFetchResponse {
 
 export declare function scanContentPolicyV1(input: ContentPolicyScanInput): ContentPolicyScanResult
 
+export declare function signAuthSessionAccessToken(userId: string, authSessionId: string, keyId: string, secret: Buffer, issuedAt: number, expiresAt: number): string
+
 export interface StorageProviderCapabilities {
   put: boolean
   get: boolean
@@ -1254,5 +1279,7 @@ export declare function updateRootDocMetaTitle(rootDocBin: Buffer, docId: string
  * document state.
  */
 export declare function validateDocUpdate(update: Buffer): Promise<boolean>
+
+export declare function verifyAuthSessionAccessToken(token: string, expectedKeyId: string, secret: Buffer, now: number): AuthSessionAccessTokenVerification
 
 export declare function verifyChallengeResponse(response: string, bits: number, resource: string): Promise<boolean>

@@ -35,6 +35,7 @@ type UpdateConnectedAccountInput = Omit<
 
 declare global {
   interface Events {
+    'user.preDelete': { id: string };
     'user.created': User;
     'user.updated': User;
     'user.deleted': User & {
@@ -60,6 +61,16 @@ export type { ConnectedAccount, User };
 
 @Injectable()
 export class UserModel extends BaseModel {
+  async lockForAuthIssuance(id: string) {
+    const users = await this.db.$queryRaw<Array<Pick<User, 'id' | 'disabled'>>>`
+      SELECT id, disabled
+      FROM users
+      WHERE id = ${id}
+      FOR UPDATE
+    `;
+    return users[0];
+  }
+
   constructor(
     private readonly crypto: CryptoHelper,
     private readonly event: EventBus
@@ -283,6 +294,8 @@ export class UserModel extends BaseModel {
         throw new CannotDeleteAccountWithOwnedTeamWorkspace();
       }
     }
+
+    await this.event.emitAsync('user.preDelete', { id });
 
     await this.db.workspaceInvitation.deleteMany({
       where: { inviteeUserId: id },

@@ -167,6 +167,16 @@ import type {
 } from './plugins/copilot/runtime/contracts/tool-contract';
 
 export const mergeUpdatesInApplyWay = serverNativeModule.mergeUpdatesInApplyWay;
+export const authSessionAccessTokenKeyId =
+  serverNativeModule.authSessionAccessTokenKeyId;
+export const createAuthSessionRefreshToken =
+  serverNativeModule.createAuthSessionRefreshToken;
+export const parseAuthSessionRefreshToken =
+  serverNativeModule.parseAuthSessionRefreshToken;
+export const signAuthSessionAccessToken =
+  serverNativeModule.signAuthSessionAccessToken;
+export const verifyAuthSessionAccessToken =
+  serverNativeModule.verifyAuthSessionAccessToken;
 
 export async function validateDocUpdate(
   update: Buffer,
@@ -507,6 +517,7 @@ export type LlmBackendConfig = {
   request_layer?:
     | 'anthropic'
     | 'chat_completions'
+    | 'chat_completions_no_v1'
     | 'cloudflare_workers_ai'
     | 'responses'
     | 'openai_images'

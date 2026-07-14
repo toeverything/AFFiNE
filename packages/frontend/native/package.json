@@ -37,7 +37,7 @@
   },
   "scripts": {
     "artifacts": "napi artifacts",
-    "build": "napi build -p affine_native --platform --release",
+    "build": "napi build -p affine_native --platform --release --strip",
     "build:debug": "napi build -p affine_native --platform",
     "universal": "napi universal",
     "test": "ava --no-worker-threads --concurrency=2",

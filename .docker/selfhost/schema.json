@@ -244,6 +244,31 @@
           "type": "number",
           "description": "Application auth time to refresh in seconds.\n@default 604800",
           "default": 604800
+        },
+        "token.accessTokenTtl": {
+          "type": "number",
+          "description": "Access JWT expiration time in seconds.\n@default 900",
+          "default": 900
+        },
+        "token.refreshIdleTtl": {
+          "type": "number",
+          "description": "Auth refresh session inactivity expiration in seconds.\n@default 2592000",
+          "default": 2592000
+        },
+        "token.refreshAbsoluteTtl": {
+          "type": "number",
+          "description": "Auth refresh session absolute expiration in seconds.\n@default 15552000",
+          "default": 15552000
+        },
+        "token.refreshGracePeriod": {
+          "type": "number",
+          "description": "One-use refresh rotation concurrency grace period in seconds.\n@default 30",
+          "default": 30
+        },
+        "token.refreshRetention": {
+          "type": "number",
+          "description": "Retention for expired auth refresh generations in seconds.\n@default 2592000",
+          "default": 2592000
         }
       }
     },
@@ -1111,10 +1136,12 @@
         },
         "config": {
           "type": "object",
-          "description": "The config for the captcha plugin.\n@default {\"turnstile\":{\"secret\":\"\"},\"challenge\":{\"bits\":20}}",
+          "description": "The config for the captcha plugin.\n@default {\"turnstile\":{\"secret\":\"\",\"siteKey\":\"\",\"action\":\"auth-sign-in\"},\"challenge\":{\"bits\":20}}",
           "default": {
             "turnstile": {
-              "secret": ""
+              "secret": "",
+              "siteKey": "",
+              "action": "auth-sign-in"
             },
             "challenge": {
               "bits": 20

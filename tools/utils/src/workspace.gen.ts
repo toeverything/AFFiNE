@@ -1118,6 +1118,11 @@ export const PackageList = [
     ],
   },
   {
+    location: 'packages/common/auth',
+    name: '@affine/auth',
+    workspaceDependencies: [],
+  },
+  {
     location: 'packages/common/debug',
     name: '@affine/debug',
     workspaceDependencies: [],
@@ -1205,6 +1210,7 @@ export const PackageList = [
     name: '@affine/electron',
     workspaceDependencies: [
       'tools/utils',
+      'packages/common/auth',
       'packages/frontend/i18n',
       'packages/frontend/native',
       'packages/common/nbstore',
@@ -1523,6 +1529,7 @@ export type PackageName =
   | '@affine/docs'
   | '@affine/server-native'
   | '@affine/server'
+  | '@affine/auth'
   | '@affine/debug'
   | '@affine/env'
   | '@affine/error'

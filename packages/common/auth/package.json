@@ -1,0 +1,12 @@
+{
+  "name": "@affine/auth",
+  "private": true,
+  "type": "module",
+  "version": "0.27.0",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.8"
+  }
+}

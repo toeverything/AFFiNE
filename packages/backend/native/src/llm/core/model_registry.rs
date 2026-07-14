@@ -112,6 +112,80 @@ mod tests {
   }
 
   #[test]
+  fn should_resolve_deepseek_provider_variants() {
+    let response = llm_resolve_model_registry_variant(ModelRegistryResolveRequest {
+      backend_kind: Some("deepseek".to_string()),
+      model_id: "deepseek-v4-pro".to_string(),
+    })
+    .unwrap();
+    let variant = response.variant.unwrap();
+
+    assert_eq!(variant.raw_model_id, "deepseek-v4-pro");
+    assert_eq!(variant.request_layer.as_deref(), Some("chat_completions_no_v1"));
+
+    let legacy = llm_resolve_model_registry_variant(ModelRegistryResolveRequest {
+      backend_kind: Some("deepseek".to_string()),
+      model_id: "deepseek-chat".to_string(),
+    })
+    .unwrap();
+
+    assert_eq!(legacy.matched_by.as_deref(), Some("legacy_alias"));
+    assert_eq!(legacy.variant.unwrap().raw_model_id, "deepseek-v4-flash");
+  }
+
+  #[test]
+  fn should_resolve_kimi_provider_default_model() {
+    let response = llm_resolve_model_registry_variant(ModelRegistryResolveRequest {
+      backend_kind: Some("kimi".to_string()),
+      model_id: "kimi-k2.7-code-highspeed".to_string(),
+    })
+    .unwrap();
+    let variant = response.variant.unwrap();
+
+    assert_eq!(variant.raw_model_id, "kimi-k2.7-code-highspeed");
+    assert_eq!(variant.protocol.as_deref(), Some("openai_chat"));
+    assert_eq!(variant.request_layer.as_deref(), Some("chat_completions"));
+    assert_eq!(
+      variant.behavior_flags.as_deref(),
+      Some(&["omit_tool_choice".to_string(), "reasoning_supported".to_string()][..])
+    );
+  }
+
+  #[test]
+  fn should_resolve_opencode_go_prefixed_alias() {
+    let response = llm_resolve_model_registry_variant(ModelRegistryResolveRequest {
+      backend_kind: Some("opencode_go".to_string()),
+      model_id: "opencode-go/kimi-k2.7-code".to_string(),
+    })
+    .unwrap();
+    let variant = response.variant.unwrap();
+
+    assert_eq!(response.matched_by.as_deref(), Some("alias"));
+    assert_eq!(variant.backend_kind, "opencode_go");
+    assert_eq!(variant.raw_model_id, "kimi-k2.7-code");
+  }
+
+  #[test]
+  fn should_match_opencode_zen_default_variant() {
+    let response = llm_match_model_registry(ModelRegistryMatchRequest {
+      backend_kind: "opencode_zen".to_string(),
+      cond: ModelConditionsContract {
+        input_types: Some(vec!["text".to_string()]),
+        attachment_kinds: None,
+        attachment_source_kinds: None,
+        has_remote_attachments: None,
+        model_id: None,
+        output_type: Some("text".to_string()),
+      },
+    })
+    .unwrap();
+    let variant = response.variant.unwrap();
+
+    assert_eq!(variant.raw_model_id, "kimi-k2.7-code");
+    assert_eq!(variant.backend_kind, "opencode_zen");
+  }
+
+  #[test]
   fn should_resolve_gemini_embedding_2() {
     let response = llm_resolve_model_registry_variant(ModelRegistryResolveRequest {
       backend_kind: Some("gemini_api".to_string()),

@@ -19,6 +19,28 @@ import { assertSupportedServerVersion } from '../stores/server-config';
 import type { FetchService } from './fetch';
 import type { ServerService } from './server';
 
+export interface DeviceAuthSession {
+  id: string;
+  installationId: string;
+  platform: 'ios' | 'android' | 'electron';
+  deviceName?: string | null;
+  appVersion?: string | null;
+  createdAt: string;
+  lastSeenAt: string;
+  idleExpiresAt: string;
+  absoluteExpiresAt: string;
+  current: boolean;
+}
+
+function csrfHeader(): Record<string, string> {
+  if (typeof document === 'undefined') return {};
+  const prefix = 'affine_csrf_token=';
+  const cookie = document.cookie
+    .split('; ')
+    .find(value => value.startsWith(prefix));
+  return cookie ? { 'x-affine-csrf-token': cookie.slice(prefix.length) } : {};
+}
+
 @OnEvent(ApplicationFocused, e => e.onApplicationFocused)
 @OnEvent(ServerStarted, e => e.onServerStarted)
 export class AuthService extends Service {
@@ -262,6 +284,42 @@ export class AuthService extends Service {
     this.session.revalidate();
   }
 
+  async listDeviceSessions() {
+    const response = await this.fetchService.fetch('/api/auth/sessions');
+    return (await response.json()) as DeviceAuthSession[];
+  }
+
+  async revokeDeviceSession(id: string, current: boolean) {
+    await this.fetchService.fetch(
+      `/api/auth/sessions/${encodeURIComponent(id)}`,
+      {
+        method: 'DELETE',
+        headers: csrfHeader(),
+      }
+    );
+    if (current) {
+      try {
+        await this.store.clearSession();
+      } finally {
+        this.store.setCachedAuthSession(null);
+        this.session.revalidate();
+      }
+    }
+  }
+
+  async revokeAllDeviceSessions() {
+    await this.fetchService.fetch('/api/auth/sessions/revoke-all', {
+      method: 'POST',
+      headers: csrfHeader(),
+    });
+    try {
+      await this.store.clearSession();
+    } finally {
+      this.store.setCachedAuthSession(null);
+      this.session.revalidate();
+    }
+  }
+
   async deleteAccount() {
     const res = await this.store.deleteAccount();
     this.store.setCachedAuthSession(null);
@@ -277,6 +335,7 @@ export class AuthService extends Service {
   captchaHeaders(token: string, challenge?: string) {
     const headers: Record<string, string> = {
       'x-captcha-token': token,
+      'x-captcha-provider': challenge ? 'hashcash' : 'turnstile',
     };
 
     if (challenge) {

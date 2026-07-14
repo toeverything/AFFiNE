@@ -1,18 +1,19 @@
 import { randomUUID } from 'node:crypto';
 
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
+import { Transactional } from '@nestjs-cls/transactional';
 import type { CookieOptions, Request, Response } from 'express';
 import { assign, pick } from 'lodash-es';
 
-import { Config, SignUpForbidden } from '../../base';
+import { Config, OnEvent, SignUpForbidden } from '../../base';
 import { Models, type User, type UserSession } from '../../models';
 import { Mailer } from '../mail/mailer';
 import type { MailDeliveryMetadata } from '../mail/types';
+import { AuthSessionService } from './auth-session';
 import { createDevUsers } from './dev';
 import type { VerifiedIdentity } from './identity';
 import {
   CSRF_COOKIE_NAME,
-  extractTokenFromHeader,
   getSessionOptionsFromRequest,
   SESSION_COOKIE_NAME,
   USER_COOKIE_NAME,
@@ -42,7 +43,8 @@ export class AuthService implements OnApplicationBootstrap {
   constructor(
     private readonly config: Config,
     private readonly models: Models,
-    private readonly mailer: Mailer
+    private readonly mailer: Mailer,
+    private readonly authSessions: AuthSessionService
   ) {
     this.cookieOptions = {
       sameSite: 'lax',
@@ -206,8 +208,22 @@ export class AuthService implements OnApplicationBootstrap {
     return true;
   }
 
-  async revokeUserSessions(userId: string) {
-    return await this.models.session.deleteUserSessions(userId);
+  @Transactional()
+  async revokeUserSessions(userId: string, reason = 'security_action') {
+    const authSessions = await this.authSessions.revokeUserSessions(
+      userId,
+      reason
+    );
+    const cookieSessions = await this.models.session.deleteUserSessions(userId);
+    return cookieSessions + authSessions;
+  }
+
+  @OnEvent('auth.sessions.revoke_requested')
+  async onRevokeRequested({
+    userId,
+    reason,
+  }: Events['auth.sessions.revoke_requested']) {
+    await this.revokeUserSessions(userId, reason);
   }
 
   async refreshCookies(res: Response, sessionId?: string) {
@@ -260,41 +276,18 @@ export class AuthService implements OnApplicationBootstrap {
     return session;
   }
 
-  async getTokenSessionFromRequest(req: Request) {
-    const tokenHeader = req.headers.authorization;
-    if (!tokenHeader) {
-      return null;
-    }
-
-    const tokenValue = extractTokenFromHeader(tokenHeader);
-
-    if (!tokenValue) {
-      return null;
-    }
-
-    const token = await this.models.accessToken.getByToken(tokenValue);
-
-    if (token) {
-      const user = await this.models.user.get(token.userId);
-
-      if (!user) {
-        return null;
-      }
-
-      return {
-        token,
-        user: sessionUser(user),
-      };
-    }
-
-    return null;
-  }
-
   async changePassword(
     id: string,
     newPassword: string
   ): Promise<Omit<User, 'password'>> {
     return this.models.user.update(id, { password: newPassword });
+  }
+
+  @Transactional()
+  async changePasswordAndRevokeSessions(id: string, newPassword: string) {
+    const user = await this.changePassword(id, newPassword);
+    await this.revokeUserSessions(id);
+    return user;
   }
 
   async changeEmail(
@@ -305,6 +298,13 @@ export class AuthService implements OnApplicationBootstrap {
       email: newEmail,
       emailVerifiedAt: new Date(),
     });
+  }
+
+  @Transactional()
+  async changeEmailAndRevokeSessions(id: string, newEmail: string) {
+    const user = await this.changeEmail(id, newEmail);
+    await this.revokeUserSessions(id);
+    return user;
   }
 
   async setEmailVerified(id: string) {

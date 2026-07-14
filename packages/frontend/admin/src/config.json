@@ -114,6 +114,26 @@
     "session.ttr": {
       "type": "Number",
       "desc": "Application auth time to refresh in seconds."
+    },
+    "token.accessTokenTtl": {
+      "type": "Number",
+      "desc": "Access JWT expiration time in seconds."
+    },
+    "token.refreshIdleTtl": {
+      "type": "Number",
+      "desc": "Auth refresh session inactivity expiration in seconds."
+    },
+    "token.refreshAbsoluteTtl": {
+      "type": "Number",
+      "desc": "Auth refresh session absolute expiration in seconds."
+    },
+    "token.refreshGracePeriod": {
+      "type": "Number",
+      "desc": "One-use refresh rotation concurrency grace period in seconds."
+    },
+    "token.refreshRetention": {
+      "type": "Number",
+      "desc": "Retention for expired auth refresh generations in seconds."
     }
   },
   "mailer": {
