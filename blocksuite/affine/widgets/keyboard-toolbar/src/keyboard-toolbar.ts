@@ -114,6 +114,14 @@ export class AffineKeyboardToolbar extends SignalWatcher(
     this._lastActiveItem$.value = item;
   };
 
+  private readonly _isKeyboardActivation = (event: KeyboardEvent) => {
+    return event.key === 'Enter' || event.key === ' ';
+  };
+
+  private readonly _isPrimaryPointerEvent = (event: PointerEvent) => {
+    return event.button === 0;
+  };
+
   private readonly _lastActiveItem$ = signal<KeyboardToolbarItem | null>(null);
 
   private readonly _path$ = signal<number[]>([]);
@@ -215,7 +223,12 @@ export class AffineKeyboardToolbar extends SignalWatcher(
       ?disabled=${disabled}
       @pointerdown=${(event: PointerEvent) => {
         event.preventDefault();
-        if (disabled) return;
+        if (!this._isPrimaryPointerEvent(event) || disabled) return;
+        this._handleItemClick(item, index);
+      }}
+      @keydown=${(event: KeyboardEvent) => {
+        if (!this._isKeyboardActivation(event) || disabled) return;
+        event.preventDefault();
         this._handleItemClick(item, index);
       }}
       @click=${(event: MouseEvent) => event.preventDefault()}
@@ -234,6 +247,12 @@ export class AffineKeyboardToolbar extends SignalWatcher(
         html`<icon-button
           size="36px"
           @pointerdown=${(event: PointerEvent) => {
+            event.preventDefault();
+            if (!this._isPrimaryPointerEvent(event)) return;
+            this._goPrevToolbar();
+          }}
+          @keydown=${(event: KeyboardEvent) => {
+            if (!this._isKeyboardActivation(event)) return;
             event.preventDefault();
             this._goPrevToolbar();
           }}
@@ -256,6 +275,20 @@ export class AffineKeyboardToolbar extends SignalWatcher(
       <icon-button
         size="36px"
         @pointerdown=${(event: PointerEvent) => {
+          event.preventDefault();
+          if (!this._isPrimaryPointerEvent(event)) return;
+          if (this.keyboard.staticHeight$.value === 0) {
+            this._closeToolPanel();
+            return;
+          }
+          if (this.keyboard.visible$.peek()) {
+            this.keyboard.hide();
+          } else {
+            this.keyboard.show();
+          }
+        }}
+        @keydown=${(event: KeyboardEvent) => {
+          if (!this._isKeyboardActivation(event)) return;
           event.preventDefault();
           if (this.keyboard.staticHeight$.value === 0) {
             this._closeToolPanel();

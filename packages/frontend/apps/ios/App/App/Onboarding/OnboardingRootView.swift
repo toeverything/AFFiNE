@@ -52,12 +52,14 @@ struct OnboardingRootView: View {
 
         onboardingContent(layout: layout)
 
-        if isIntroPage {
-          IntroGridOverlay()
-            .ignoresSafeArea()
-            .allowsHitTesting(false)
-            .zIndex(999)
-        }
+        #if DEBUG
+          if isIntroPage {
+            IntroGridOverlay()
+              .ignoresSafeArea()
+              .allowsHitTesting(false)
+              .zIndex(999)
+          }
+        #endif
       }
       .frame(width: geometry.size.width, height: geometry.size.height, alignment: .top)
     }
@@ -334,9 +336,9 @@ private enum OnboardingFeature: CaseIterable {
 
   var assetName: String {
     switch self {
-    case .clearDocs: "OnboardingFeatureBiggerPicture"
-    case .biggerPicture: "OnboardingFeatureMultipleViews"
-    case .multipleViews: "OnboardingFeatureClearDocs"
+    case .clearDocs: "OnboardingFeatureClearDocs"
+    case .biggerPicture: "OnboardingFeatureBiggerPicture"
+    case .multipleViews: "OnboardingFeatureMultipleViews"
     case .everyDevice: "OnboardingFeatureEveryDevice"
     case .ai: "OnboardingFeatureAI"
     }

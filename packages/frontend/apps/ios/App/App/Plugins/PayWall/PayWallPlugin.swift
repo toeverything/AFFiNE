@@ -24,7 +24,10 @@ public class PayWallPlugin: CAPPlugin, CAPBridgedPlugin {
 
   @objc func showPayWall(_ call: CAPPluginCall) {
     Task { @MainActor [weak self] in
-      guard let self else { return }
+      guard let self else {
+        call.resolve(["success": false])
+        return
+      }
 
       do {
         let type = try call.getStringEnsure("type")

@@ -25,39 +25,16 @@ extension Optional {
 @MainActor
 enum PaywallAuthGuard {
   private static let bridgeReadyTimeout: TimeInterval = 10
-  private static let signInFlowTimeout: TimeInterval = 5 * 60 + 5
   private static let bridgePollIntervalNanoseconds: UInt64 = 200_000_000
 
   static func ensureSignedIn(
     using webView: WKWebView,
-    dismissing controller: UIViewController? = nil,
-    onSignInFlowPresented _: (() -> Void)? = nil
+    dismissing controller: UIViewController? = nil
   ) async throws -> Bool {
     try await waitForNativeSignInBridge(in: webView)
 
     if await currentUserIdentifier(in: webView) != nil {
       return true
-    }
-
-    await dismissIfNeeded(controller)
-    return try await presentNativeSignIn(using: webView)
-  }
-
-  static func ensureSignedInWithRoute(
-    using webView: WKWebView,
-    dismissing controller: UIViewController? = nil,
-    onSignInFlowPresented _: (() -> Void)? = nil,
-    isCancelled: @escaping () -> Bool = { false }
-  ) async throws -> Bool {
-    try await waitForNativeSignInBridge(in: webView)
-
-    if await currentUserIdentifier(in: webView) != nil {
-      await dismissIfNeeded(controller)
-      return true
-    }
-
-    if isCancelled() {
-      return false
     }
 
     await dismissIfNeeded(controller)
@@ -78,7 +55,7 @@ enum PaywallAuthGuard {
 
   static func hasProSubscription(in webView: WKWebView) async throws -> Bool {
     let subscriptionState = try await fetchSubscriptionState(in: webView)
-    return subscriptionState["pro"] as? [String: Any] != nil
+    return hasActiveSubscription(subscriptionState["pro"])
   }
 
   static func hasAISubscription(in webView: WKWebView) async throws -> Bool {
@@ -170,52 +147,6 @@ enum PaywallAuthGuard {
       code: -1,
       userInfo: [NSLocalizedDescriptionKey: "AFFiNE is still loading. Please wait a moment and try again."]
     )
-  }
-
-  private static func waitForRouteSignInResolution(
-    in webView: WKWebView,
-    isCancelled: () -> Bool
-  ) async throws -> Bool {
-    let deadline = Date().addingTimeInterval(signInFlowTimeout)
-    var didEnterSignInRoute = false
-
-    while Date() < deadline {
-      if isCancelled() {
-        return false
-      }
-
-      if await currentUserIdentifier(in: webView) != nil {
-        return true
-      }
-
-      if let pathname = await currentPathname(in: webView) {
-        if pathname == "/sign-in" {
-          didEnterSignInRoute = true
-        } else if didEnterSignInRoute {
-          return false
-        }
-      }
-
-      try await Task.sleep(nanoseconds: bridgePollIntervalNanoseconds)
-    }
-
-    throw NSError(
-      domain: "PaywallAuthGuard",
-      code: -1,
-      userInfo: [NSLocalizedDescriptionKey: "Sign-in timed out."]
-    )
-  }
-
-  private static func currentPathname(in webView: WKWebView) async -> String? {
-    do {
-      let result = try await webView.callAsyncJavaScript(
-        "return window.location.pathname;",
-        contentWorld: .page
-      )
-      return result as? String
-    } catch {
-      return nil
-    }
   }
 
   private static func areBridgeFunctionsAvailable(_ functionNames: [String], in webView: WKWebView) async -> Bool {

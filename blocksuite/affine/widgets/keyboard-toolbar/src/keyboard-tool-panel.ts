@@ -34,6 +34,14 @@ export class AffineKeyboardToolPanel extends SignalWatcher(
     }
   };
 
+  private readonly _isKeyboardActivation = (event: KeyboardEvent) => {
+    return event.key === 'Enter' || event.key === ' ';
+  };
+
+  private readonly _isPrimaryPointerEvent = (event: PointerEvent) => {
+    return event.button === 0;
+  };
+
   private _renderGroup(group: KeyboardToolPanelGroup) {
     const items = group.items.filter(
       item => item.showWhen?.(this.context) ?? true
@@ -60,6 +68,12 @@ export class AffineKeyboardToolPanel extends SignalWatcher(
       <button
         type="button"
         @pointerdown=${(event: PointerEvent) => {
+          event.preventDefault();
+          if (!this._isPrimaryPointerEvent(event)) return;
+          this._handleItemClick(item);
+        }}
+        @keydown=${(event: KeyboardEvent) => {
+          if (!this._isKeyboardActivation(event)) return;
           event.preventDefault();
           this._handleItemClick(item);
         }}

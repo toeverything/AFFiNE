@@ -107,9 +107,35 @@ final class AppPaywallViewController: UIViewController {
       guard let self else { return }
       do {
         try await bridge.restorePurchases()
+
+        guard try await hasActiveSubscriptionForCurrentPlan() else {
+          bridge.errorMessage = "No active purchases were found to restore."
+          return
+        }
+
+        dismiss(animated: true) { [weak self] in
+          self?.onPurchaseCompleted?()
+        }
       } catch {
         bridge.errorMessage = error.localizedDescription
       }
+    }
+  }
+
+  private func hasActiveSubscriptionForCurrentPlan() async throws -> Bool {
+    guard let webView = bindWebView else {
+      throw NSError(
+        domain: "AppPaywallViewController",
+        code: -1,
+        userInfo: [NSLocalizedDescriptionKey: "Missing required information"]
+      )
+    }
+
+    switch initialPlan {
+    case .ai:
+      return try await PaywallAuthGuard.hasAISubscription(in: webView)
+    case .pro, .lite:
+      return try await PaywallAuthGuard.hasProSubscription(in: webView)
     }
   }
 

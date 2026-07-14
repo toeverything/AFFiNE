@@ -9,56 +9,6 @@ import AffineResources
 import UIKit
 import WebKit
 
-private final class OnboardingSignInOverlayView: UIView {
-  var onClose: (() -> Void)?
-
-  private lazy var closeButton: UIButton = {
-    var configuration = UIButton.Configuration.plain()
-    configuration.contentInsets = NSDirectionalEdgeInsets(top: 10, leading: 10, bottom: 10, trailing: 10)
-
-    let button = UIButton(configuration: configuration)
-    button.translatesAutoresizingMaskIntoConstraints = false
-    button.tintColor = .label
-    button.backgroundColor = UIColor.secondarySystemBackground.withAlphaComponent(0.96)
-    button.layer.cornerRadius = 12
-    button.layer.shadowColor = UIColor.black.withAlphaComponent(0.18).cgColor
-    button.layer.shadowOpacity = 1
-    button.layer.shadowRadius = 12
-    button.layer.shadowOffset = CGSize(width: 0, height: 4)
-    button.setImage(UIImage(systemName: "xmark"), for: .normal)
-    button.addTarget(self, action: #selector(handleCloseTapped), for: .touchUpInside)
-    return button
-  }()
-
-  override init(frame: CGRect) {
-    super.init(frame: frame)
-    backgroundColor = .clear
-    translatesAutoresizingMaskIntoConstraints = false
-
-    addSubview(closeButton)
-    NSLayoutConstraint.activate([
-      closeButton.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor, constant: 8),
-      closeButton.trailingAnchor.constraint(equalTo: safeAreaLayoutGuide.trailingAnchor, constant: -16),
-      closeButton.widthAnchor.constraint(equalToConstant: 44),
-      closeButton.heightAnchor.constraint(equalToConstant: 44),
-    ])
-  }
-
-  required init?(coder: NSCoder) {
-    fatalError("init(coder:) has not been implemented")
-  }
-
-  override func point(inside point: CGPoint, with event: UIEvent?) -> Bool {
-    let pointInButton = convert(point, to: closeButton)
-    return closeButton.point(inside: pointInButton, with: event)
-  }
-
-  @objc
-  private func handleCloseTapped() {
-    onClose?()
-  }
-}
-
 private final class ColdStartSignInSheetViewController: UIViewController {
   private static let portraitSheetHeight: CGFloat = 336
   private static let landscapeSheetHeight: CGFloat = 284
@@ -394,8 +344,6 @@ class RootViewController: UINavigationController {
   private var didScheduleOnboardingPresentation = false
   private var didRunColdStartPaywallFlow = false
   private var coldStartPaywallRetryCount = 0
-  private weak var onboardingSignInOverlay: OnboardingSignInOverlayView?
-  private var didCancelOnboardingSignIn = false
 
   override init(rootViewController _: UIViewController) {
     fatalError() // "you are not allowed to call this"
@@ -474,7 +422,7 @@ class RootViewController: UINavigationController {
           guard action == .seeProBenefits else { return }
         }
 
-        let isSignedIn = try await PaywallAuthGuard.ensureSignedInWithRoute(using: webView)
+        let isSignedIn = try await PaywallAuthGuard.ensureSignedIn(using: webView)
         guard isSignedIn else { return }
 
         if try await PaywallAuthGuard.hasProSubscription(in: webView) {
@@ -550,7 +498,6 @@ class RootViewController: UINavigationController {
     Task { @MainActor [weak self, weak onboardingController] in
       guard let self else { return }
       didRunColdStartPaywallFlow = true
-      didCancelOnboardingSignIn = false
       OnboardingFlag.markCompleted()
 
       guard let webView = affineViewController?.webView else {
@@ -558,36 +505,20 @@ class RootViewController: UINavigationController {
         return
       }
 
-      defer { hideOnboardingSignInOverlay() }
-
       let isSignedIn: Bool
       do {
-        isSignedIn = try await PaywallAuthGuard.ensureSignedInWithRoute(
+        isSignedIn = try await PaywallAuthGuard.ensureSignedIn(
           using: webView,
-          dismissing: onboardingController,
-          onSignInFlowPresented: { [weak self, weak webView] in
-            guard let self, let webView else { return }
-            self.showOnboardingSignInOverlay(bindWebView: webView)
-          },
-          isCancelled: { [weak self] in
-            self?.didCancelOnboardingSignIn == true
-          }
+          dismissing: onboardingController
         )
       } catch {
-        if didCancelOnboardingSignIn {
-          didCancelOnboardingSignIn = false
-          finishOnboarding(from: nil)
-          return
-        }
         showOnboardingAlert(message: error.localizedDescription)
         return
       }
       guard isSignedIn else {
-        didCancelOnboardingSignIn = false
         finishOnboarding(from: nil)
         return
       }
-      didCancelOnboardingSignIn = false
 
       do {
         if try await PaywallAuthGuard.hasProSubscription(in: webView) {
@@ -630,60 +561,6 @@ class RootViewController: UINavigationController {
     paywallController.onClose = onClose
     paywallController.onPurchaseCompleted = onPurchaseCompleted
     present(paywallController, animated: true)
-  }
-
-  @MainActor
-  private func showOnboardingSignInOverlay(bindWebView webView: WKWebView) {
-    guard onboardingSignInOverlay == nil else { return }
-
-    let overlay = OnboardingSignInOverlayView()
-    overlay.onClose = { [weak self, weak webView] in
-      guard let self, let webView else { return }
-      self.cancelOnboardingSignIn(using: webView)
-    }
-
-    view.addSubview(overlay)
-    NSLayoutConstraint.activate([
-      overlay.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-      overlay.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-      overlay.topAnchor.constraint(equalTo: view.topAnchor),
-      overlay.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-    ])
-    view.bringSubviewToFront(overlay)
-    onboardingSignInOverlay = overlay
-  }
-
-  @MainActor
-  private func hideOnboardingSignInOverlay() {
-    onboardingSignInOverlay?.removeFromSuperview()
-    onboardingSignInOverlay = nil
-  }
-
-  @MainActor
-  private func cancelOnboardingSignIn(using webView: WKWebView) {
-    guard !didCancelOnboardingSignIn else { return }
-    didCancelOnboardingSignIn = true
-    hideOnboardingSignInOverlay()
-    navigateWebViewToHome(webView)
-  }
-
-  @MainActor
-  private func navigateWebViewToHome(_ webView: WKWebView) {
-    if
-      let currentURL = webView.url,
-      var components = URLComponents(url: currentURL, resolvingAgainstBaseURL: false)
-    {
-      components.path = "/"
-      components.query = nil
-      components.fragment = nil
-
-      if let homeURL = components.url {
-        webView.load(URLRequest(url: homeURL))
-        return
-      }
-    }
-
-    webView.evaluateJavaScript("window.location.assign('/');")
   }
 
   private func finishOnboarding(from controller: UIViewController?) {
