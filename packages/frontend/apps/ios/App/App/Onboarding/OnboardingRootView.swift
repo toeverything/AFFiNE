@@ -40,16 +40,6 @@ struct OnboardingRootView: View {
     return max(visibleProgressCount - 1, 0)
   }
 
-  private var pageSelection: Binding<Int> {
-    Binding(
-      get: { pageIndex },
-      set: { newValue in
-        guard shouldAllowPageChange(from: pageIndex, to: newValue) else { return }
-        pageIndex = newValue
-      }
-    )
-  }
-
   var body: some View {
     GeometryReader { geometry in
       let layout = OnboardingLayout(size: geometry.size, safeAreaInsets: geometry.safeAreaInsets)
@@ -133,16 +123,12 @@ struct OnboardingRootView: View {
   }
 
   private var pageContainer: some View {
-    TabView(selection: pageSelection) {
-      ForEach(Array(pages.enumerated()), id: \.offset) { index, page in
-        pageView(for: page)
-          .tag(index)
-          .padding(.horizontal, horizontalPadding(for: page))
-      }
-    }
-    .tabViewStyle(.page(indexDisplayMode: .never))
-    .background(PageSwipeLockView(isLocked: true))
-    .animation(.spring(response: 0.30, dampingFraction: 0.88), value: pageIndex)
+    pageView(for: pages[pageIndex])
+      .padding(.horizontal, horizontalPadding(for: pages[pageIndex]))
+      .frame(maxWidth: .infinity, maxHeight: .infinity)
+      .id(pageIndex)
+      .transition(.opacity)
+      .animation(.spring(response: 0.30, dampingFraction: 0.88), value: pageIndex)
   }
 
   @ViewBuilder
@@ -191,22 +177,6 @@ struct OnboardingRootView: View {
   private func goBack() {
     guard pageIndex > 0 else { return }
     pageIndex -= 1
-  }
-
-  private func shouldAllowPageChange(from currentIndex: Int, to newIndex: Int) -> Bool {
-    guard newIndex != currentIndex else { return true }
-    guard pages.indices.contains(currentIndex) else { return false }
-    if case .role = pages[currentIndex] { return false }
-    guard newIndex > currentIndex else { return true }
-    return canAdvance(from: currentIndex)
-  }
-
-  private func canAdvance(from index: Int) -> Bool {
-    guard pages.indices.contains(index) else { return false }
-    if case .role = pages[index] {
-      return selectedRole != nil
-    }
-    return true
   }
 
   private func horizontalPadding(for page: OnboardingPage) -> CGFloat {
@@ -277,53 +247,6 @@ private struct OnboardingLayout {
     case .feature:
       return 540
     }
-  }
-}
-
-private struct PageSwipeLockView: UIViewRepresentable {
-  let isLocked: Bool
-
-  func makeUIView(context: Context) -> UIView {
-    let view = UIView(frame: .zero)
-    view.isUserInteractionEnabled = false
-    return view
-  }
-
-  func updateUIView(_ uiView: UIView, context: Context) {
-    DispatchQueue.main.async {
-      guard let scrollView = findPagingScrollView(from: uiView) else { return }
-      scrollView.isScrollEnabled = !isLocked
-    }
-  }
-
-  private func findPagingScrollView(from view: UIView) -> UIScrollView? {
-    if let scrollView = view.superview as? UIScrollView, scrollView.isPagingEnabled {
-      return scrollView
-    }
-
-    var currentView = view.superview
-    while let view = currentView {
-      if let scrollView = findPagingScrollView(in: view) {
-        return scrollView
-      }
-      currentView = view.superview
-    }
-
-    return nil
-  }
-
-  private func findPagingScrollView(in view: UIView) -> UIScrollView? {
-    if let scrollView = view as? UIScrollView, scrollView.isPagingEnabled {
-      return scrollView
-    }
-
-    for subview in view.subviews {
-      if let scrollView = findPagingScrollView(in: subview) {
-        return scrollView
-      }
-    }
-
-    return nil
   }
 }
 
