@@ -1836,7 +1836,7 @@
   "com.affine.settings.workspace.license.deactivate-modal.title": "هل تؤكد التعطيل؟",
   "com.affine.settings.workspace.license.deactivate-success": "تم إلغاء تفعيل الترخيص بنجاح.",
   "com.affine.settings.workspace.license.description": "إدارة معلومات الترخيص والفواتير لمساحة العمل الفريقية ذاتية الاستضافة.",
-  "com.affine.settings.workspace.license.lean-more": "تعرّف على المزيد",
+  "com.affine.settings.workspace.license.learn-more": "تعرّف على المزيد",
   "com.affine.settings.workspace.license.self-host": "مساحة العمل ذات الاستضافة الذاتية",
   "com.affine.settings.workspace.license.self-host-team": "مساحة الفريق ذات الاستضافة الذاتية",
   "com.affine.settings.workspace.license.self-host-team.deactivate-license": "إلغاء التفعيل",

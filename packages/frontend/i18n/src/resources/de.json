@@ -1651,7 +1651,7 @@
   "com.affine.settings.workspace.license.benefit.team.g4": "Unbegrenzte Teammitglieder (10+ Plätze)",
   "com.affine.settings.workspace.license.benefit.team.g5": "Mehrere Admin-Rollen",
   "com.affine.settings.workspace.license.benefit.team.g6": "Vorrangiger Kundensupport",
-  "com.affine.settings.workspace.license.lean-more": "Mehr erfahren",
+  "com.affine.settings.workspace.license.learn-more": "Mehr erfahren",
   "com.affine.settings.workspace.license.self-host": "Selbst gehosteter Workspace",
   "com.affine.settings.workspace.license.self-host-team": "Selbst gehosteter Team-Workspace",
   "com.affine.settings.workspace.license.self-host-team.team.description": "Diese Lizenz läuft am {{expirationDate}} ab, mit {{leftDays}} verbleibenden Tagen.",

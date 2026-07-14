@@ -1472,7 +1472,7 @@
   "com.affine.settings.workspace.license.benefit.team.g4": "Membros de equipe ilimitados (10+ assentos)",
   "com.affine.settings.workspace.license.benefit.team.g5": "Vários papéis de administrador",
   "com.affine.settings.workspace.license.benefit.team.g6": "Suporte prioritário ao cliente",
-  "com.affine.settings.workspace.license.lean-more": "Saiba mais",
+  "com.affine.settings.workspace.license.learn-more": "Saiba mais",
   "com.affine.settings.workspace.license.self-host": "Espaço de Trabalho Auto-Hospedado",
   "com.affine.settings.workspace.license.self-host-team": "Espaço de Trabalho de Equipe Auto-Hospedado",
   "com.affine.settings.workspace.license.self-host-team.team.description": "Esta licença expirará em {{expirationDate}}, com {{leftDays}} dias restantes.",

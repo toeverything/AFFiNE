@@ -1651,7 +1651,7 @@
   "com.affine.settings.workspace.license.benefit.team.g4": "Unlimited team members (10+ seats)",
   "com.affine.settings.workspace.license.benefit.team.g5": "Multiple admin roles",
   "com.affine.settings.workspace.license.benefit.team.g6": "Priority customer support",
-  "com.affine.settings.workspace.license.lean-more": "Lean more",
+  "com.affine.settings.workspace.license.learn-more": "Learn more",
   "com.affine.settings.workspace.license.self-host": "Selfhosted workspace",
   "com.affine.settings.workspace.license.self-host-team": "Self-host Team Workspace",
   "com.affine.settings.workspace.license.self-host-team.team.description": "This license will expire on {{expirationDate}}, with {{leftDays}} days remaining.",

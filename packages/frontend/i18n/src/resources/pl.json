@@ -1495,7 +1495,7 @@
   "com.affine.settings.workspace.license.benefit.team.g4": "Nieograniczona liczba członków zespołu (10+ miejsc)",
   "com.affine.settings.workspace.license.benefit.team.g5": "Wiele ról administracyjnych",
   "com.affine.settings.workspace.license.benefit.team.g6": "Priorytetowa obsługa klienta",
-  "com.affine.settings.workspace.license.lean-more": "Dowiedz się więcej",
+  "com.affine.settings.workspace.license.learn-more": "Dowiedz się więcej",
   "com.affine.settings.workspace.license.self-host": "Środowisko pracy na własnym serwerze",
   "com.affine.settings.workspace.license.self-host-team": "Zespół na własnym serwerze",
   "com.affine.settings.workspace.license.self-host-team.team.description": "Ta licencja wygaśnie {{expirationDate}}, pozostało {{leftDays}} dni.",

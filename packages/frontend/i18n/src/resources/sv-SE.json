@@ -1476,7 +1476,7 @@
   "com.affine.settings.workspace.license.benefit.team.g4": "Obegränsat antal teammedlemmar (10+ platser)",
   "com.affine.settings.workspace.license.benefit.team.g5": "Flera administratörsroller",
   "com.affine.settings.workspace.license.benefit.team.g6": "Prioriterad kundsupport",
-  "com.affine.settings.workspace.license.lean-more": "Läs mer",
+  "com.affine.settings.workspace.license.learn-more": "Läs mer",
   "com.affine.settings.workspace.license.self-host": "Självhostad arbetsyta",
   "com.affine.settings.workspace.license.self-host-team": "Självhostad teamarbetsyta",
   "com.affine.settings.workspace.license.self-host-team.team.description": "Denna licens går ut den {{expirationDate}}, med {{leftDays}} dagar kvar.",

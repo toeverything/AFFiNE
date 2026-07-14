@@ -1927,7 +1927,7 @@
   "com.affine.settings.workspace.license.deactivate-modal.title": "غیر فعال ہونے کی تصدیق کریں؟",
   "com.affine.settings.workspace.license.deactivate-success": "لائسنس کامیابی سے غیر فعال ہو گیا۔",
   "com.affine.settings.workspace.license.description": "خود میزبان ٹیم ورک اسپیس کے لیے لائسنس کی معلومات اور رسیدوں کا نظم کریں۔",
-  "com.affine.settings.workspace.license.lean-more": "مزید جھکاؤ",
+  "com.affine.settings.workspace.license.learn-more": "مزید جھکاؤ",
   "com.affine.settings.workspace.license.self-host": "سیلف ہوسٹڈ ورک اسپیس",
   "com.affine.settings.workspace.license.self-host-team": "خود میزبان ٹیم ورک اسپیس",
   "com.affine.settings.workspace.license.self-host-team.deactivate-license": "غیر فعال کریں۔",

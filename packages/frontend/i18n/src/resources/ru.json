@@ -1511,7 +1511,7 @@
   "com.affine.settings.workspace.license.benefit.team.g4": "Неограниченное количество участников команды (10+ мест)",
   "com.affine.settings.workspace.license.benefit.team.g5": "Несколько администраторов",
   "com.affine.settings.workspace.license.benefit.team.g6": "Приоритетная поддержка клиентов",
-  "com.affine.settings.workspace.license.lean-more": "Узнать больше",
+  "com.affine.settings.workspace.license.learn-more": "Узнать больше",
   "com.affine.settings.workspace.license.self-host": "Рабочее пространство self-host",
   "com.affine.settings.workspace.license.self-host-team": "Рабочее пространство для self-host размещения",
   "com.affine.settings.workspace.license.self-host-team.team.description": "Эта лицензия истекает {{expirationDate}}, осталось {{leftDays}} дней.",

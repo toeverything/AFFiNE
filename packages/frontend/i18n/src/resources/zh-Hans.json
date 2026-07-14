@@ -1651,7 +1651,7 @@
   "com.affine.settings.workspace.license.benefit.team.g4": "无限团队成员（10+席位）",
   "com.affine.settings.workspace.license.benefit.team.g5": "多个管理员",
   "com.affine.settings.workspace.license.benefit.team.g6": "优先客户支持",
-  "com.affine.settings.workspace.license.lean-more": "了解更多",
+  "com.affine.settings.workspace.license.learn-more": "了解更多",
   "com.affine.settings.workspace.license.self-host": "自托管工作区",
   "com.affine.settings.workspace.license.self-host-team": "自托管团队工作区",
   "com.affine.settings.workspace.license.self-host-team.team.description": "该许可证将于 {{expirationDate}} 到期，剩余 {{leftDays}} 天。",

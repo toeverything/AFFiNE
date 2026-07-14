@@ -1612,7 +1612,7 @@
   "com.affine.settings.workspace.license.benefit.team.g4": "Шексіз команда мүшелері (10+ орын)",
   "com.affine.settings.workspace.license.benefit.team.g5": "Бірнеше әкімші",
   "com.affine.settings.workspace.license.benefit.team.g6": "Басымдылықпен тұтынушыларды қолдау",
-  "com.affine.settings.workspace.license.lean-more": "Толығырақ біл",
+  "com.affine.settings.workspace.license.learn-more": "Толығырақ біл",
   "com.affine.settings.workspace.license.self-host": "Self-hosted жұмыс кеңістігі",
   "com.affine.settings.workspace.license.self-host-team": "Self-host командалық жұмыс кеңістігі",
   "com.affine.settings.workspace.license.self-host-team.team.description": "Бұл лицензияның мерзімі {{expirationDate}} күні аяқталады, {{leftDays}} күн қалды.",

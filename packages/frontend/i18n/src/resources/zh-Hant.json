@@ -1512,7 +1512,7 @@
   "com.affine.settings.workspace.license.benefit.team.g4": "無限團隊成員（10+席位）",
   "com.affine.settings.workspace.license.benefit.team.g5": "多個管理員",
   "com.affine.settings.workspace.license.benefit.team.g6": "優先客戶支持",
-  "com.affine.settings.workspace.license.lean-more": "了解更多",
+  "com.affine.settings.workspace.license.learn-more": "了解更多",
   "com.affine.settings.workspace.license.self-host": "自托管工作區",
   "com.affine.settings.workspace.license.self-host-team": "自托管團隊工作區",
   "com.affine.settings.workspace.license.self-host-team.team.description": "該許可證將於 {{expirationDate}} 到期，剩餘 {{leftDays}} 天。",

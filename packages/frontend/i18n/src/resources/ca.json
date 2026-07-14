@@ -1658,7 +1658,7 @@
   "com.affine.settings.workspace.license.deactivate-modal.title": "Confirmar desactivació?",
   "com.affine.settings.workspace.license.deactivate-success": "Llicència desactivada exitosament.",
   "com.affine.settings.workspace.license.description": "Administrar la informació de la llicència i les factures per a l'espai de treball de l'equip autoallotjat.",
-  "com.affine.settings.workspace.license.lean-more": "Més informació",
+  "com.affine.settings.workspace.license.learn-more": "Més informació",
   "com.affine.settings.workspace.license.self-host": "Espai de treball autoallotjat",
   "com.affine.settings.workspace.license.self-host-team": "Espai de treball d'equip autoallotjat",
   "com.affine.settings.workspace.license.self-host-team.deactivate-license": "Desactivar",

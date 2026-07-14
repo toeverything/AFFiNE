@@ -1472,7 +1472,7 @@
   "com.affine.settings.workspace.license.benefit.team.g4": "Необмежена кількість учасників команди (10+ місць)",
   "com.affine.settings.workspace.license.benefit.team.g5": "Кілька ролей адміністратора",
   "com.affine.settings.workspace.license.benefit.team.g6": "Пріоритетна підтримка клієнтів",
-  "com.affine.settings.workspace.license.lean-more": "Дізнатися більше",
+  "com.affine.settings.workspace.license.learn-more": "Дізнатися більше",
   "com.affine.settings.workspace.license.self-host": "Самостійне робоче середовище",
   "com.affine.settings.workspace.license.self-host-team": "Командний робочий простір з самостійним хостингом",
   "com.affine.settings.workspace.license.self-host-team.team.description": "Ця ліцензія закінчиться {{expirationDate}}, залишилось {{leftDays}} днів.",

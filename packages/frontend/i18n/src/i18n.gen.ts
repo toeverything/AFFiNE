@@ -6626,9 +6626,9 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.workspace.license.benefit.team.g6"](): string;
     /**
-      * `Lean more`
+      * `Learn more`
       */
-    ["com.affine.settings.workspace.license.lean-more"](): string;
+    ["com.affine.settings.workspace.license.learn-more"](): string;
     /**
       * `Selfhosted workspace`
       */
