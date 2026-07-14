@@ -4,7 +4,7 @@ import {
   type DeviceAuthSession,
 } from '@affine/core/modules/cloud';
 import { useI18n } from '@affine/i18n';
-import { useService } from '@toeverything/infra';
+import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback, useEffect, useState } from 'react';
 
 import { SettingGroup } from '../group';
@@ -13,9 +13,15 @@ import { RowLayout } from '../row.layout';
 export const DevicesGroup = () => {
   const t = useI18n();
   const auth = useService(AuthService);
+  const loginStatus = useLiveData(auth.session.status$);
   const [sessions, setSessions] = useState<DeviceAuthSession[]>([]);
 
   const reload = useCallback(() => {
+    if (loginStatus !== 'authenticated') {
+      setSessions([]);
+      return;
+    }
+
     void auth
       .listDeviceSessions()
       .then(setSessions)
@@ -25,7 +31,7 @@ export const DevicesGroup = () => {
           message: String(error),
         });
       });
-  }, [auth, t]);
+  }, [auth, loginStatus, t]);
 
   useEffect(reload, [reload]);
 
@@ -52,6 +58,10 @@ export const DevicesGroup = () => {
     },
     [auth, reload, t]
   );
+
+  if (loginStatus !== 'authenticated' || sessions.length === 0) {
+    return null;
+  }
 
   return (
     <SettingGroup title={t['com.affine.settings.devices.title']()}>

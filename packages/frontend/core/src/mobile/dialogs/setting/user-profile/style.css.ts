@@ -41,8 +41,8 @@ export const caption = style([
 ]);
 
 export const suffixIcon = style({
-  fontSize: 30,
-  color: cssVarV2('icon/primary'),
+  fontSize: 20,
+  color: cssVarV2('icon/secondary'),
 });
 
 export const emailInfo = style([ellipsis, { width: '100%' }]);

@@ -1,6 +1,8 @@
 import { ConfigModal } from '@affine/core/components/mobile';
-import { DualLinkIcon } from '@blocksuite/icons/rc';
-import type { PropsWithChildren, ReactNode } from 'react';
+import { ArrowRightSmallIcon } from '@blocksuite/icons/rc';
+import clsx from 'clsx';
+import type { KeyboardEvent, PropsWithChildren, ReactNode } from 'react';
+import { useCallback } from 'react';
 
 import * as styles from './style.css';
 
@@ -14,25 +16,53 @@ export const RowLayout = ({
   href?: string;
   onClick?: () => void;
 }>) => {
-  const content = (
+  const isInteractive = !!href || !!onClick;
+
+  const handleTrigger = useCallback(() => {
+    if (onClick) {
+      onClick();
+      return;
+    }
+
+    if (href) {
+      window.open(href, '_blank', 'noopener,noreferrer');
+    }
+  }, [href, onClick]);
+
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent<HTMLDivElement>) => {
+      if (!isInteractive) {
+        return;
+      }
+
+      if (event.key !== 'Enter' && event.key !== ' ') {
+        return;
+      }
+
+      event.preventDefault();
+      handleTrigger();
+    },
+    [handleTrigger, isInteractive]
+  );
+
+  return (
     <ConfigModal.Row
       data-testid="setting-row"
-      className={styles.baseSettingItem}
-      onClick={onClick}
+      className={clsx(styles.baseSettingItem, {
+        [styles.interactiveRow]: isInteractive,
+      })}
+      onClick={isInteractive ? handleTrigger : undefined}
+      onKeyDown={isInteractive ? handleKeyDown : undefined}
+      role={isInteractive ? 'button' : undefined}
+      tabIndex={isInteractive ? 0 : undefined}
     >
       <div className={styles.baseSettingItemName}>{label}</div>
       <div className={styles.baseSettingItemAction}>
-        {children ||
-          (href ? <DualLinkIcon className={styles.linkIcon} /> : null)}
+        {children ??
+          (isInteractive ? (
+            <ArrowRightSmallIcon className={styles.linkIcon} />
+          ) : null)}
       </div>
     </ConfigModal.Row>
-  );
-
-  return href ? (
-    <a target="_blank" href={href} rel="noreferrer">
-      {content}
-    </a>
-  ) : (
-    content
   );
 };

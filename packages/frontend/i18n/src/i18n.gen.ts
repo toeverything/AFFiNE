@@ -2867,6 +2867,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.mobile.setting.about.title"](): string;
     /**
+      * `Log In / Sign Up`
+      */
+    ["com.affine.mobile.setting.account.sign-in"](): string;
+    /**
+      * `Account & Data`
+      */
+    ["com.affine.mobile.setting.account.title"](): string;
+    /**
       * `Font style`
       */
     ["com.affine.mobile.setting.appearance.font"](): string;
@@ -2883,6 +2891,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.mobile.setting.appearance.title"](): string;
     /**
+      * `Experimental features`
+      */
+    ["com.affine.mobile.setting.experimental.features"](): string;
+    /**
+      * `Experimental`
+      */
+    ["com.affine.mobile.setting.experimental.title"](): string;
+    /**
       * `Settings`
       */
     ["com.affine.mobile.setting.header-title"](): string;
@@ -2891,7 +2907,7 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.mobile.setting.others.github"](): string;
     /**
-      * `Discord Group`
+      * `Discord group`
       */
     ["com.affine.mobile.setting.others.discord"](): string;
     /**
@@ -2914,6 +2930,46 @@ export function useAFFiNEI18N(): {
       * `Delete my account`
       */
     ["com.affine.mobile.setting.others.delete-account"](): string;
+    /**
+      * `Collaborate seamlessly with AFFiNE team, available in Cloud and Self-Hosted versions.`
+      */
+    ["com.affine.mobile.setting.promo.description"](): string;
+    /**
+      * `AFFiNE Cloud & Self-Hosted`
+      */
+    ["com.affine.mobile.setting.promo.eyebrow"](): string;
+    /**
+      * `AFFiNE for team and more`
+      */
+    ["com.affine.mobile.setting.promo.title"](): string;
+    /**
+      * `Go Pro`
+      */
+    ["com.affine.mobile.setting.subscription.button"](): string;
+    /**
+      * `Unlimited space for your notes and boards.`
+      */
+    ["com.affine.mobile.setting.subscription.description"](): string;
+    /**
+      * `Unlock Pro Features`
+      */
+    ["com.affine.mobile.setting.subscription.title"](): string;
+    /**
+      * `Invite a friend`
+      */
+    ["com.affine.mobile.setting.support.invite"](): string;
+    /**
+      * `Check out AFFiNE for notes, whiteboards, docs, and AI.`
+      */
+    ["com.affine.mobile.setting.support.invite-message"](): string;
+    /**
+      * `Rate AFFiNE`
+      */
+    ["com.affine.mobile.setting.support.rate"](): string;
+    /**
+      * `Support us`
+      */
+    ["com.affine.mobile.setting.support.title"](): string;
     /**
       * `Want to keep data local?`
       */

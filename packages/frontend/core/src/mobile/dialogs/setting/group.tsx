@@ -29,7 +29,7 @@ export const SettingGroup = forwardRef<HTMLDivElement, SettingGroupProps>(
         ref={ref}
         title={title}
         className={clsx(styles.group, className)}
-        contentClassName={contentClassName}
+        contentClassName={clsx(styles.groupContent, contentClassName)}
         contentStyle={contentStyle}
       >
         {children}

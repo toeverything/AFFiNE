@@ -6,3 +6,9 @@ export const group = style({
   gap: 4,
   width: '100%',
 });
+
+export const groupContent = style({
+  gap: 0,
+  padding: 0,
+  overflow: 'hidden',
+});

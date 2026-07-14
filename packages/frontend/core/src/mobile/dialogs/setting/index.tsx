@@ -1,37 +1,118 @@
+import { notify } from '@affine/component';
 import { AuthService } from '@affine/core/modules/cloud';
 import type {
   DialogComponentProps,
   WORKSPACE_DIALOG_SCHEMA,
 } from '@affine/core/modules/dialogs';
+import { copyTextToClipboard } from '@affine/core/utils/clipboard';
 import { useI18n } from '@affine/i18n';
 import { useService } from '@toeverything/infra';
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 
 import { AboutGroup } from './about';
 import { AppearanceGroup } from './appearance';
 import { DevicesGroup } from './devices';
 import { ExperimentalFeatureSetting } from './experimental';
+import { SettingGroup } from './group';
 import { OthersGroup } from './others';
+import { RowLayout } from './row.layout';
 import * as styles from './style.css';
 import { UserSubscription } from './subscription';
 import { SwipeDialog } from './swipe-dialog';
 import { UserProfile } from './user-profile';
 import { UserUsage } from './user-usage';
 
+const AFFINE_APP_STORE_URL =
+  'https://apps.apple.com/app/notes-whiteboard-ai-affine/id6736937980';
+const AFFINE_DOWNLOAD_URL = 'https://affine.pro/download';
+const AFFINE_TEAM_URL = 'https://affine.pro/pricing';
+
+const openExternal = (url: string) => {
+  window.open(url, '_blank', 'noopener,noreferrer');
+};
+
+const SupportGroup = () => {
+  const t = useI18n();
+
+  const shareApp = useCallback(async () => {
+    const shareData = {
+      title: 'AFFiNE',
+      text: t['com.affine.mobile.setting.support.invite-message'](),
+      url: AFFINE_DOWNLOAD_URL,
+    };
+
+    if ('share' in navigator && typeof navigator.share === 'function') {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') {
+          return;
+        }
+      }
+    }
+
+    const copied = await copyTextToClipboard(AFFINE_DOWNLOAD_URL);
+    if (copied) {
+      notify.success({ title: t['Copied link to clipboard']() });
+      return;
+    }
+
+    openExternal(AFFINE_DOWNLOAD_URL);
+  }, [t]);
+
+  return (
+    <SettingGroup title={t['com.affine.mobile.setting.support.title']()}>
+      <RowLayout
+        label={t['com.affine.mobile.setting.support.rate']()}
+        onClick={() => openExternal(AFFINE_APP_STORE_URL)}
+      />
+      <RowLayout
+        label={t['com.affine.mobile.setting.support.invite']()}
+        onClick={() => void shareApp()}
+      />
+    </SettingGroup>
+  );
+};
+
+const TeamPromotionCard = () => {
+  const t = useI18n();
+
+  return (
+    <button
+      type="button"
+      className={styles.promoCard}
+      onClick={() => openExternal(AFFINE_TEAM_URL)}
+    >
+      <span className={styles.promoCardTitle}>
+        {t['com.affine.mobile.setting.promo.title']()}
+      </span>
+      <span className={styles.promoCardDescription}>
+        {t['com.affine.mobile.setting.promo.description']()}
+      </span>
+      <span className={styles.promoCardDecoration} />
+      <span className={styles.promoCardDecorationSecondary} />
+    </button>
+  );
+};
+
 const MobileSetting = () => {
   const session = useService(AuthService).session;
+
   useEffect(() => session.revalidate(), [session]);
 
   return (
     <div className={styles.root}>
-      <UserProfile />
       <UserSubscription />
-      <UserUsage />
-      <DevicesGroup />
+      <UserProfile />
       <AppearanceGroup />
       <AboutGroup />
       <ExperimentalFeatureSetting />
+      <TeamPromotionCard />
+      <SupportGroup />
       <OthersGroup />
+      <UserUsage />
+      <DevicesGroup />
     </div>
   );
 };
@@ -50,15 +131,4 @@ export const SettingDialog = ({
       <MobileSetting />
     </SwipeDialog>
   );
-
-  // return (
-  //   <ConfigModal
-  //     title={t['com.affine.mobile.setting.header-title']()}
-  //     open
-  //     onOpenChange={() => close()}
-  //     onBack={close}
-  //   >
-  //     <MobileSetting />
-  //   </ConfigModal>
-  // );
 };
