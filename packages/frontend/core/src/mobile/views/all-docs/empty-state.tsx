@@ -1,4 +1,5 @@
 import { Button, ThemedImg } from '@affine/component';
+import { useI18n } from '@affine/i18n';
 import { PlusIcon } from '@blocksuite/icons/rc';
 import type { MouseEventHandler } from 'react';
 
@@ -12,41 +13,44 @@ import * as styles from './empty-state.css';
 
 type EmptyStateType = 'docs' | 'collections' | 'tags';
 
-const emptyStateCopy = {
+const emptyStateAssets = {
   docs: {
     illustrationLight: docsIllustrationLight,
     illustrationDark: docsIllustrationDark,
-    title: 'No documents yet',
-    description:
-      'Create your first document to start capturing ideas and organizing knowledge.',
-    actionLabel: 'New Document',
   },
   collections: {
     illustrationLight: collectionIllustrationLight,
     illustrationDark: collectionIllustrationDark,
-    title: 'No collections yet',
-    description:
-      'Create a collection to organize related content in one place.',
-    actionLabel: 'New Collection',
   },
   tags: {
     illustrationLight: tagsIllustrationLight,
     illustrationDark: tagsIllustrationDark,
-    title: 'No tags yet',
-    description:
-      'Add tags to your documents for easier organization and discovery.',
-    actionLabel: 'New Tag',
   },
 } satisfies Record<
   EmptyStateType,
   {
     illustrationLight: string;
     illustrationDark: string;
-    title: string;
-    description: string;
-    actionLabel: string;
   }
 >;
+
+const emptyStateI18nKeys = {
+  docs: {
+    title: 'com.affine.m.explorer.empty.docs.title',
+    description: 'com.affine.m.explorer.empty.docs.description',
+    actionLabel: 'com.affine.m.explorer.empty.docs.action',
+  },
+  collections: {
+    title: 'com.affine.m.explorer.empty.collections.title',
+    description: 'com.affine.m.explorer.empty.collections.description',
+    actionLabel: 'com.affine.m.explorer.empty.collections.action',
+  },
+  tags: {
+    title: 'com.affine.m.explorer.empty.tags.title',
+    description: 'com.affine.m.explorer.empty.tags.description',
+    actionLabel: 'com.affine.m.explorer.empty.tags.action',
+  },
+} as const;
 
 export const MobileAllDocsEmptyState = ({
   type,
@@ -55,19 +59,24 @@ export const MobileAllDocsEmptyState = ({
   type: EmptyStateType;
   onAction: MouseEventHandler<HTMLButtonElement>;
 }) => {
-  const copy = emptyStateCopy[type];
+  const t = useI18n();
+  const assets = emptyStateAssets[type];
+  const copyKeys = emptyStateI18nKeys[type];
+  const title = t[copyKeys.title]();
+  const description = t[copyKeys.description]();
+  const actionLabel = t[copyKeys.actionLabel]();
 
   return (
-    <section className={styles.emptyState} aria-label={copy.title}>
+    <section className={styles.emptyState} aria-label={title}>
       <ThemedImg
         draggable={false}
         className={styles.illustration}
-        lightSrc={copy.illustrationLight}
-        darkSrc={copy.illustrationDark}
+        lightSrc={assets.illustrationLight}
+        darkSrc={assets.illustrationDark}
       />
       <div className={styles.copy}>
-        <p className={styles.title}>{copy.title}</p>
-        <p className={styles.description}>{copy.description}</p>
+        <p className={styles.title}>{title}</p>
+        <p className={styles.description}>{description}</p>
       </div>
       <Button
         variant="primary"
@@ -77,7 +86,7 @@ export const MobileAllDocsEmptyState = ({
         prefixClassName={styles.actionIcon}
         onClick={onAction}
       >
-        {copy.actionLabel}
+        {actionLabel}
       </Button>
     </section>
   );

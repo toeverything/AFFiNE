@@ -48,10 +48,6 @@ export class AIModelService extends Service {
     });
   }
 
-  get shouldBypassSubscriptionGate() {
-    return BUILD_CONFIG.isIOS;
-  }
-
   resetModel = () => {
     this.globalStateService.globalState.set(AI_MODEL_ID_KEY, undefined);
   };
@@ -61,7 +57,7 @@ export class AIModelService extends Service {
       this.subscriptionService.subscription.ai$.value?.status ===
       SubscriptionStatus.Active;
     const model = this.models.value.find(model => model.id === modelId);
-    if (!this.shouldBypassSubscriptionGate && !isSubscribed && model?.isPro) {
+    if (!isSubscribed && model?.isPro) {
       return;
     }
     this.globalStateService.globalState.set(AI_MODEL_ID_KEY, modelId);
@@ -77,11 +73,7 @@ export class AIModelService extends Service {
         const model = this.models.value.find(
           model => model.id === this.modelId.value
         );
-        if (
-          !this.shouldBypassSubscriptionGate &&
-          !isSubscribed &&
-          model?.isPro
-        ) {
+        if (!isSubscribed && model?.isPro) {
           this.resetModel();
         }
       }
