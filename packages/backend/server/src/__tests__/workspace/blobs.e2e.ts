@@ -5,6 +5,7 @@ import test from 'ava';
 import Sinon from 'sinon';
 
 import { ConfigFactory } from '../../base';
+import { EntitlementService } from '../../core/entitlement';
 import { QuotaStateService } from '../../core/quota/state';
 import { WorkspaceBlobStorage } from '../../core/storage/wrappers/blob';
 import { StorageRuntimeProvider } from '../../core/storage-runtime';
@@ -170,22 +171,20 @@ test.after.always(async () => {
 
 async function withRestrictedWorkspaceQuota(workspaceId: string) {
   const quotaState = app.get(QuotaStateService);
-  const blobModel = app.get(BlobModel);
-  const base = await quotaState.reconcileWorkspaceQuotaState(workspaceId);
-  return Sinon.stub(quotaState, 'reconcileWorkspaceQuotaState').callsFake(
-    async id => {
-      if (id !== workspaceId) {
-        return base;
-      }
-
+  const entitlement = app.get(EntitlementService);
+  const resolveUserEntitlement =
+    entitlement.resolveUserEntitlement.bind(entitlement);
+  const stub = Sinon.stub(entitlement, 'resolveUserEntitlement').callsFake(
+    async userId => {
+      const resolved = await resolveUserEntitlement(userId);
       return {
-        ...base,
-        blobLimit: BigInt(RESTRICTED_QUOTA.blobLimit),
-        storageQuota: BigInt(RESTRICTED_QUOTA.storageQuota),
-        usedStorageQuota: BigInt(await blobModel.totalSize(workspaceId)),
+        ...resolved,
+        quota: { ...resolved.quota, ...RESTRICTED_QUOTA },
       };
     }
   );
+  await quotaState.reconcileWorkspaceQuotaState(workspaceId);
+  return stub;
 }
 
 test('should set blobs', async t => {
