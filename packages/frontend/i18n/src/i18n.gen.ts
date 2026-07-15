@@ -6393,6 +6393,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.workspace.experimental-features.enable-emoji-folder-icon.description"](): string;
     /**
+      * `Local workspace mirror`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-local-workspace-mirror.name"](): string;
+    /**
+      * `Mirror this device's AFFiNE workspaces to local, agent-readable files. Configure each workspace in Storage settings.`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-local-workspace-mirror.description"](): string;
+    /**
       * `Emoji Doc Icon`
       */
     ["com.affine.settings.workspace.experimental-features.enable-emoji-doc-icon.name"](): string;

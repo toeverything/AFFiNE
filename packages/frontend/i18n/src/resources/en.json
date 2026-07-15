@@ -1595,6 +1595,8 @@
   "com.affine.settings.workspace.experimental-features.enable-embed-iframe-block.description": "Enables Embed Iframe Block.",
   "com.affine.settings.workspace.experimental-features.enable-emoji-folder-icon.name": "Emoji Folder Icon",
   "com.affine.settings.workspace.experimental-features.enable-emoji-folder-icon.description": "Once enabled, you can use an emoji as the folder icon. When the first character of the folder name is an emoji, it will be extracted and used as its icon.",
+  "com.affine.settings.workspace.experimental-features.enable-local-workspace-mirror.name": "Local workspace mirror",
+  "com.affine.settings.workspace.experimental-features.enable-local-workspace-mirror.description": "Mirror this device's AFFiNE workspaces to local, agent-readable files. Configure each workspace in Storage settings.",
   "com.affine.settings.workspace.experimental-features.enable-emoji-doc-icon.name": "Emoji Doc Icon",
   "com.affine.settings.workspace.experimental-features.enable-emoji-doc-icon.description": "Once enabled, you can use an emoji as the doc icon. When the first character of the doc name is an emoji, it will be extracted and used as its icon.",
   "com.affine.settings.workspace.experimental-features.enable-editor-settings.name": "Editor Settings",

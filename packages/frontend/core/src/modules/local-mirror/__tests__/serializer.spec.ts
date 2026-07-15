@@ -3,6 +3,7 @@ import 'fake-indexeddb/auto';
 import { getStoreManager } from '@affine/core/blocksuite/manager/store';
 import { Text } from '@blocksuite/affine/store';
 import { TestWorkspace } from '@blocksuite/affine/store/test';
+import { Framework } from '@toeverything/infra';
 import { describe, expect, test } from 'vitest';
 
 import { LocalMirrorSerializer } from '../serializer';
@@ -25,7 +26,9 @@ describe('LocalMirrorSerializer', () => {
       noteId
     );
 
-    const serializer = new LocalMirrorSerializer();
+    const framework = new Framework();
+    framework.service(LocalMirrorSerializer);
+    const serializer = framework.provider().get(LocalMirrorSerializer);
     const metadata = {
       id: 'page0',
       title: 'Agent notes',

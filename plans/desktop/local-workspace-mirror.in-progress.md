@@ -414,7 +414,7 @@ Implementation started on branch `feat/local-workspace-mirror`.
 
 ### Phase 2: Experimental feature and workspace UI shell
 
-Status: in_progress
+Status: completed
 
 Goal: Establish the default-off experimental consent gate and per-workspace configuration UI before background writes are possible.
 
@@ -447,11 +447,18 @@ Verification:
 
 Completion signal: an Electron user must explicitly accept Experimental Features, enable Local workspace mirror, and then configure a workspace; other platforms expose no control.
 
+Implementation evidence (2026-07-15):
+
+- Added the default-off, Electron-only `enable_local_workspace_mirror` flag and generated typed English i18n resources.
+- Added a Storage settings panel with destination preview, first-enable Git/privacy warning, enable/disable, Sync now, Open folder, status/conflict output, and confirmed Replace local changes.
+- The panel uses the same fail-closed local/non-team/team-owner permission rule as the runtime service and is absent while the experiment is off.
+- Verification: i18n build, core/Electron/renderer TypeScript project build, focused formatting/lint, and permission/runtime-gate tests passed.
+
 Plan update required after this phase: yes. Record final copy and any UX review decisions.
 
 ### Phase 3: Constrained Electron filesystem helper
 
-Status: new
+Status: completed
 
 Goal: Provide a safe, atomic, mirror-specific filesystem capability across the renderer/helper boundary.
 
@@ -482,11 +489,18 @@ Verification:
 
 Completion signal: all filesystem mutations are scoped to a validated, owned mirror and failure cannot convert into broad deletion or partial-file corruption.
 
+Implementation evidence (2026-07-15):
+
+- Added a typed `mirror` helper namespace for selection, inspection, bounded batch writes, manifest-last finalization, and reveal.
+- Canonical project/mirror validation rejects filesystem roots, app-data locations, traversal, foreign ownership, and symlinked mirror paths; child paths are constrained to the v1 contract.
+- Atomic sibling writes, SHA-256 baselines, generation journals, unchanged-file skipping, managed stale deletion, and explicit conflict replacement preserve unknown and locally modified files.
+- Verification: five real-temporary-directory Electron helper tests cover writes/finalization, conflicts, traversal, foreign ownership, symlink rejection, and reveal; Electron/API TypeScript builds passed.
+
 Plan update required after this phase: yes. Record platform-specific path behavior.
 
 ### Phase 4: Gated full reconciliation service
 
-Status: new
+Status: completed
 
 Goal: Generate a complete initial mirror through a workspace-scoped service that cannot run when the experiment or permission gate is off.
 
@@ -519,11 +533,18 @@ Verification:
 
 Completion signal: a user can intentionally create a complete, safe one-way mirror and the runtime gate is proven independently of UI visibility.
 
+Implementation evidence (2026-07-15):
+
+- Registered the workspace-scoped module only in Electron renderer setup and made `LocalMirrorSerializer` a framework service.
+- Added an authoritative reactive gate over experiment, permission, per-workspace enablement, destination, and workspace lifecycle; gate loss invalidates generations, clears queues, and unsubscribes before any later manifest commit.
+- Full reconciliation loads and releases one document at a time, writes bounded single-file IPC batches, projects folders/metadata, records synced versus cached-offline state, and finalizes the manifest last.
+- Verification includes stored-enabled/flag-off zero-inspection coverage and a blocked-write test proving mid-generation flag disable prevents finalization.
+
 Plan update required after this phase: yes. Record lifecycle/sync-state edge cases.
 
 ### Phase 5: Incremental updates and conflict workflow
 
-Status: new
+Status: completed
 
 Goal: Keep the mirror current while AFFiNE runs without excessive writes or silent local data loss.
 
@@ -552,11 +573,18 @@ Verification:
 
 Completion signal: normal cloud/in-app changes converge automatically, and every divergent local file is preserved until explicit user action.
 
+Implementation evidence (2026-07-15):
+
+- Added a single serialized queue with 750 ms coalescing, full reconciliation for root/database/reconnect/manual events, and targeted document reconciliation for ordinary document updates.
+- Targeted updates preserve unaffected manifest entries, update the workspace projection, use stable document paths, and remove only unchanged obsolete managed page/snapshot files; a later full reconciliation reclaims conservatively retained historical assets.
+- Destination changes and gate loss invalidate active generations. New updates arriving during a run schedule one trailing pass.
+- Locally divergent files surface as conflicts and require the explicit Replace local changes confirmation before overwrite or deletion.
+
 Plan update required after this phase: yes. Record event-classification gaps and measured debounce behavior.
 
 ### Phase 6: Hardening, review, documentation, and rollout
 
-Status: new
+Status: in_progress
 
 Goal: Prove the experimental feature is safe and understandable across supported desktop platforms before it is proposed upstream.
 

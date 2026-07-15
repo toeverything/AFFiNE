@@ -6,6 +6,7 @@ import {
   type Store,
 } from '@blocksuite/affine/store';
 import { MarkdownTransformer } from '@blocksuite/affine/widgets/linked-doc';
+import { Service } from '@toeverything/infra';
 
 import {
   createMirrorFrontmatter,
@@ -72,7 +73,7 @@ function rewriteDocumentLinks(markdown: string, docIds: readonly string[]) {
   return output;
 }
 
-export class LocalMirrorSerializer {
+export class LocalMirrorSerializer extends Service {
   async serialize(
     doc: Store,
     metadata: LocalMirrorDocMetadata,

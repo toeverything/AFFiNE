@@ -140,6 +140,15 @@ export const AFFINE_FLAGS = {
     configurable: isCanaryBuild && !isMobile,
     defaultState: isCanaryBuild,
   },
+  enable_local_workspace_mirror: {
+    category: 'affine',
+    displayName:
+      'com.affine.settings.workspace.experimental-features.enable-local-workspace-mirror.name',
+    description:
+      'com.affine.settings.workspace.experimental-features.enable-local-workspace-mirror.description',
+    configurable: BUILD_CONFIG.isElectron,
+    defaultState: false,
+  },
   enable_advanced_block_visibility: {
     category: 'blocksuite',
     bsFlag: 'enable_advanced_block_visibility',
