@@ -1,11 +1,12 @@
 import { ConfirmModal, Input, notify } from '@affine/component';
 import { AuthService, ServerService } from '@affine/core/modules/cloud';
-import { GlobalDialogService } from '@affine/core/modules/dialogs';
 import { WorkspacesService } from '@affine/core/modules/workspace';
 import { UserFriendlyError } from '@affine/error';
 import { Trans, useI18n } from '@affine/i18n';
-import { useLiveData, useService } from '@toeverything/infra';
-import { useCallback, useEffect, useState } from 'react';
+import { track } from '@affine/track';
+import { LiveData, useLiveData, useService } from '@toeverything/infra';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { combineLatest, map, of, switchMap } from 'rxjs';
 
 import { RowLayout } from '../row.layout';
 import * as styles from './delete-account.css';
@@ -19,10 +20,31 @@ export const DeleteAccount = ({
   const authService = useService(AuthService);
   const workspacesService = useService(WorkspacesService);
   const account = useLiveData(authService.session.account$);
-  const workspaceProfiles = workspacesService.getAllWorkspaceProfile();
-  const isTeamWorkspaceOwner = workspaceProfiles.some(
-    profile => profile.profile$.value?.isTeam && profile.profile$.value.isOwner
+  const isTeamWorkspaceOwner$ = useMemo(
+    () =>
+      LiveData.from(
+        workspacesService.list.workspaces$.pipe(
+          switchMap(workspaces => {
+            if (!workspaces.length) {
+              return of(false);
+            }
+
+            return combineLatest(
+              workspaces.map(meta =>
+                workspacesService
+                  .getProfile(meta)
+                  .profile$.pipe(
+                    map(profile => !!profile?.isTeam && !!profile.isOwner)
+                  )
+              )
+            ).pipe(map(isOwnerFlags => isOwnerFlags.some(Boolean)));
+          })
+        ),
+        false
+      ),
+    [workspacesService]
   );
+  const isTeamWorkspaceOwner = useLiveData(isTeamWorkspaceOwner$) ?? false;
   const [open, setOpen] = useState(false);
 
   const handleOpen = useCallback(() => {
@@ -102,7 +124,6 @@ const DeleteAccountModal = ({
   const t = useI18n();
   const authService = useService(AuthService);
   const serverService = useService(ServerService);
-  const globalDialogService = useService(GlobalDialogService);
   const account = useLiveData(authService.session.account$);
   const [phase, setPhase] = useState<'warning' | 'confirm'>('warning');
   const [email, setEmail] = useState('');
@@ -119,17 +140,16 @@ const DeleteAccountModal = ({
   const handleDeleteAccount = useCallback(async () => {
     try {
       setIsLoading(true);
-      await new Promise(resolve => window.setTimeout(resolve, 450));
-      await authService.signOut();
+      await authService.deleteAccount();
+      track.$.$.auth.deleteAccount();
       onDeleteFinished?.();
-      globalDialogService.open('deleted-account', {});
     } catch (err) {
       console.error(err);
       const error = UserFriendlyError.fromAny(err);
       notify.error(error);
       setIsLoading(false);
     }
-  }, [authService, globalDialogService, onDeleteFinished]);
+  }, [authService, onDeleteFinished]);
 
   const handleDeleteAccountClick = useCallback(() => {
     handleDeleteAccount().catch(console.error);

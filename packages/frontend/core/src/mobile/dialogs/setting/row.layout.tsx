@@ -16,22 +16,17 @@ export const RowLayout = ({
   href?: string;
   onClick?: () => void;
 }>) => {
-  const isInteractive = !!href || !!onClick;
+  const isLinkRow = !!href && !onClick;
+  const isButtonRow = !!onClick;
+  const isInteractive = isLinkRow || isButtonRow;
 
   const handleTrigger = useCallback(() => {
-    if (onClick) {
-      onClick();
-      return;
-    }
-
-    if (href) {
-      window.open(href, '_blank', 'noopener,noreferrer');
-    }
-  }, [href, onClick]);
+    onClick?.();
+  }, [onClick]);
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent<HTMLDivElement>) => {
-      if (!isInteractive) {
+      if (!isButtonRow) {
         return;
       }
 
@@ -42,7 +37,19 @@ export const RowLayout = ({
       event.preventDefault();
       handleTrigger();
     },
-    [handleTrigger, isInteractive]
+    [handleTrigger, isButtonRow]
+  );
+
+  const content = (
+    <>
+      <div className={styles.baseSettingItemName}>{label}</div>
+      <div className={styles.baseSettingItemAction}>
+        {children ??
+          (isInteractive ? (
+            <ArrowRightSmallIcon className={styles.linkIcon} />
+          ) : null)}
+      </div>
+    </>
   );
 
   return (
@@ -51,18 +58,23 @@ export const RowLayout = ({
       className={clsx(styles.baseSettingItem, {
         [styles.interactiveRow]: isInteractive,
       })}
-      onClick={isInteractive ? handleTrigger : undefined}
-      onKeyDown={isInteractive ? handleKeyDown : undefined}
-      role={isInteractive ? 'button' : undefined}
-      tabIndex={isInteractive ? 0 : undefined}
+      onClick={isButtonRow ? handleTrigger : undefined}
+      onKeyDown={isButtonRow ? handleKeyDown : undefined}
+      role={isButtonRow ? 'button' : undefined}
+      tabIndex={isButtonRow ? 0 : undefined}
     >
-      <div className={styles.baseSettingItemName}>{label}</div>
-      <div className={styles.baseSettingItemAction}>
-        {children ??
-          (isInteractive ? (
-            <ArrowRightSmallIcon className={styles.linkIcon} />
-          ) : null)}
-      </div>
+      {isLinkRow ? (
+        <a
+          className={styles.linkRowContent}
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {content}
+        </a>
+      ) : (
+        content
+      )}
     </ConfigModal.Row>
   );
 };

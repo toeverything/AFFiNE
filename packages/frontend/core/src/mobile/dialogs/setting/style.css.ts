@@ -71,6 +71,22 @@ export const baseSettingItemAction = style([
   },
 ]);
 
+export const linkRowContent = style({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: 12,
+  width: '100%',
+  minWidth: 0,
+  color: 'inherit',
+  textDecoration: 'none',
+  selectors: {
+    '&:visited': {
+      color: 'inherit',
+    },
+  },
+});
+
 export const linkIcon = style({
   fontSize: 17,
   color: cssVarV2('icon/secondary'),

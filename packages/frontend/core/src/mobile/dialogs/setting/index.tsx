@@ -130,7 +130,9 @@ const MobileSetting = ({
 }) => {
   const session = useService(AuthService).session;
 
-  useEffect(() => session.revalidate(), [session]);
+  useEffect(() => {
+    session.revalidate();
+  }, [session]);
 
   return (
     <div className={styles.root}>
