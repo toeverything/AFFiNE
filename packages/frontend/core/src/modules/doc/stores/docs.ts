@@ -265,8 +265,11 @@ export class DocsStore extends Store {
     );
   }
 
-  waitForDocLoadReady(id: string) {
-    return this.workspaceService.workspace.engine.doc.waitForDocLoaded(id);
+  waitForDocLoadReady(id: string, signal?: AbortSignal) {
+    return this.workspaceService.workspace.engine.doc.waitForDocLoaded(
+      id,
+      signal
+    );
   }
 
   addPriorityLoad(id: string, priority: number) {

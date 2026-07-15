@@ -26,22 +26,26 @@ function extensionFromName(name: string) {
   return /^[a-z0-9]{1,12}$/.test(extension) ? extension : 'blob';
 }
 
-function containsRichOnlyContent(snapshot: DocSnapshot) {
-  const visit = (block: DocSnapshot['blocks']): boolean => {
-    if (block.flavour === 'affine:surface') {
-      const elements = block.props.elements;
-      if (
-        (Array.isArray(elements) && elements.length > 0) ||
-        (elements &&
-          typeof elements === 'object' &&
-          Object.keys(elements).length > 0)
-      ) {
-        return true;
-      }
-    }
-    return block.children.some(visit);
+const MARKDOWN_FLAVOURS = new Set([
+  'affine:page',
+  'affine:note',
+  'affine:paragraph',
+  'affine:list',
+  'affine:code',
+  'affine:divider',
+  'affine:image',
+  'affine:attachment',
+  'affine:bookmark',
+]);
+
+export function collectRichOnlyFlavours(snapshot: DocSnapshot) {
+  const flavours = new Set<string>();
+  const visit = (block: BlockSnapshot) => {
+    if (!MARKDOWN_FLAVOURS.has(block.flavour)) flavours.add(block.flavour);
+    block.children.forEach(visit);
   };
-  return visit(snapshot.blocks);
+  visit(snapshot.blocks);
+  return [...flavours].sort();
 }
 
 function collectAttachments(snapshot: DocSnapshot) {
@@ -127,12 +131,16 @@ export class LocalMirrorSerializer extends Service {
       markdown += '\n';
     }
 
-    if (
-      metadata.primaryMode === 'edgeless' ||
-      containsRichOnlyContent(snapshot)
-    ) {
-      markdown +=
-        '\n\n> [!NOTE]\n> This document contains AFFiNE canvas content that is preserved in its generated snapshot sidecar.\n';
+    const richFlavours = collectRichOnlyFlavours(snapshot);
+    if (metadata.primaryMode === 'edgeless' || richFlavours.length > 0) {
+      markdown += '\n\n## AFFiNE rich content\n';
+      for (const flavour of richFlavours) {
+        markdown += `\n> [!NOTE]\n> AFFiNE rich block \`${flavour}\` is preserved in the generated snapshot sidecar.\n`;
+      }
+      if (metadata.primaryMode === 'edgeless' && richFlavours.length === 0) {
+        markdown +=
+          '\n> [!NOTE]\n> AFFiNE canvas content is preserved in the generated snapshot sidecar.\n';
+      }
     }
 
     files.unshift(

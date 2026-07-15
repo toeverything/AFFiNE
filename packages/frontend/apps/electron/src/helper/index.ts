@@ -3,8 +3,11 @@ import { AsyncCall } from 'async-call-rpc';
 import type { RendererToHelper } from '../shared/type';
 import { events, handlers } from './exposed';
 import { logger } from './logger';
+import { abortGeneration } from './mirror/mirror';
 
 function setupRendererConnection(rendererPort: Electron.MessagePortMain) {
+  const mirrorLeases = new Set<string>();
+  let connectionClosed = false;
   const flattenedHandlers = Object.entries(handlers).flatMap(
     ([namespace, namespaceHandlers]) => {
       return Object.entries(namespaceHandlers).map(([name, handler]) => {
@@ -12,6 +15,34 @@ function setupRendererConnection(rendererPort: Electron.MessagePortMain) {
           try {
             const start = performance.now();
             const result = await handler(...args);
+            if (
+              namespace === 'mirror' &&
+              name === 'beginGeneration' &&
+              result &&
+              typeof result === 'object' &&
+              'lease' in result &&
+              typeof result.lease === 'string'
+            ) {
+              if (connectionClosed) {
+                await abortGeneration({ lease: result.lease });
+                throw new Error('Renderer disconnected during mirror setup');
+              }
+              mirrorLeases.add(result.lease);
+            }
+            if (namespace === 'mirror' && name === 'abortGeneration') {
+              mirrorLeases.delete(args[0]?.lease);
+            }
+            if (
+              namespace === 'mirror' &&
+              name === 'finalizeGeneration' &&
+              result &&
+              typeof result === 'object' &&
+              'conflicts' in result &&
+              Array.isArray(result.conflicts) &&
+              result.conflicts.length === 0
+            ) {
+              mirrorLeases.delete(args[0]?.lease);
+            }
             logger.debug(
               '[async-api]',
               `${namespace}.${name}`,
@@ -34,6 +65,16 @@ function setupRendererConnection(rendererPort: Electron.MessagePortMain) {
       });
     }
   );
+
+  rendererPort.once('close', () => {
+    connectionClosed = true;
+    for (const lease of mirrorLeases) {
+      abortGeneration({ lease }).catch(error => {
+        logger.error('[mirror] failed to abort disconnected lease', error);
+      });
+    }
+    mirrorLeases.clear();
+  });
   const rpc = AsyncCall<RendererToHelper>(
     Object.fromEntries(flattenedHandlers),
     {

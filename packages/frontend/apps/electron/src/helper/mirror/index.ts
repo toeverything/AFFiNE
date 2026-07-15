@@ -1,4 +1,6 @@
 import {
+  abortGeneration,
+  beginGeneration,
   finalizeGeneration,
   inspectTarget,
   revealMirror,
@@ -9,6 +11,8 @@ import {
 export const mirrorHandlers = {
   selectProjectDirectory,
   inspectTarget,
+  beginGeneration,
+  abortGeneration,
   writeBatch,
   finalizeGeneration,
   revealMirror,

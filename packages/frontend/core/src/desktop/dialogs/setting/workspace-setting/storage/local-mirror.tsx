@@ -1,47 +1,70 @@
 import { Button, notify, Switch, useConfirmModal } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
-import {
-  LocalMirrorService,
-  type LocalMirrorStatus,
-} from '@affine/core/modules/local-mirror';
+import { LocalMirrorService } from '@affine/core/modules/local-mirror';
+import { useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback } from 'react';
 
-function statusLabel(status: LocalMirrorStatus) {
-  switch (status.type) {
-    case 'syncing':
-      return `Syncing ${status.completed}/${status.total}`;
-    case 'idle':
-      return status.lastCompletedAt
-        ? `Up to date · ${new Date(status.lastCompletedAt).toLocaleString()}`
-        : 'Ready';
-    case 'conflict':
-      return `${status.paths.length} local change${status.paths.length === 1 ? '' : 's'} need attention`;
-    case 'error':
-      return `Error: ${status.message}`;
-    case 'not-configured':
-      return 'Choose a project directory';
-    case 'permission-denied':
-      return 'Export permission denied';
-    case 'feature-disabled':
-      return 'Experiment disabled';
-    default:
-      return 'Disabled';
-  }
-}
-
 export const DesktopLocalMirrorPanel = () => {
+  const t = useI18n();
   const service = useService(LocalMirrorService);
   const config = useLiveData(service.config$);
   const status = useLiveData(service.status$);
   const { openConfirmModal } = useConfirmModal();
 
-  const reportError = useCallback((error: unknown) => {
-    notify.error({
-      title: 'Local workspace mirror failed',
-      message: (error as Error).message,
-    });
-  }, []);
+  const statusText = (() => {
+    switch (status.type) {
+      case 'syncing':
+        return t[
+          'com.affine.settings.workspace.storage.local-mirror.status.syncing'
+        ]({
+          completed: String(status.completed),
+          total: String(status.total),
+        });
+      case 'idle':
+        return status.lastCompletedAt
+          ? t[
+              'com.affine.settings.workspace.storage.local-mirror.status.up-to-date'
+            ]({ time: new Date(status.lastCompletedAt).toLocaleString() })
+          : t[
+              'com.affine.settings.workspace.storage.local-mirror.status.ready'
+            ]();
+      case 'conflict':
+        return t[
+          'com.affine.settings.workspace.storage.local-mirror.status.conflict'
+        ]({ count: String(status.paths.length) });
+      case 'error':
+        return t[
+          'com.affine.settings.workspace.storage.local-mirror.status.error'
+        ]({ message: status.message });
+      case 'not-configured':
+        return t[
+          'com.affine.settings.workspace.storage.local-mirror.status.not-configured'
+        ]();
+      case 'permission-denied':
+        return t[
+          'com.affine.settings.workspace.storage.local-mirror.status.permission-denied'
+        ]();
+      case 'feature-disabled':
+        return t[
+          'com.affine.settings.workspace.storage.local-mirror.status.feature-disabled'
+        ]();
+      default:
+        return t[
+          'com.affine.settings.workspace.storage.local-mirror.status.disabled'
+        ]();
+    }
+  })();
+
+  const reportError = useCallback(
+    (error: unknown) => {
+      notify.error({
+        title: t['com.affine.settings.workspace.storage.local-mirror.failed'](),
+        message: (error as Error).message,
+      });
+    },
+    [t]
+  );
 
   const chooseDirectory = useCallback(async () => {
     try {
@@ -67,39 +90,57 @@ export const DesktopLocalMirrorPanel = () => {
         return;
       }
       openConfirmModal({
-        title: 'Enable local workspace mirror?',
+        title:
+          t[
+            'com.affine.settings.workspace.storage.local-mirror.enable.title'
+          ](),
         children:
-          'AFFiNE will write this workspace into a .affine folder. These files may be included in Git commits or published with the project, so review the repository visibility first.',
-        confirmText: 'Enable mirror',
-        cancelText: 'Cancel',
+          t[
+            'com.affine.settings.workspace.storage.local-mirror.enable.warning'
+          ](),
+        confirmText:
+          t[
+            'com.affine.settings.workspace.storage.local-mirror.enable.confirm'
+          ](),
+        cancelText: t['Cancel'](),
         onConfirm: enable,
         confirmButtonOptions: { variant: 'primary' },
       });
     },
-    [enable, openConfirmModal, service]
+    [enable, openConfirmModal, service, t]
   );
 
   const replace = useCallback(() => {
     openConfirmModal({
-      title: 'Replace local changes?',
+      title:
+        t['com.affine.settings.workspace.storage.local-mirror.replace.title'](),
       children:
-        'All locally modified files managed by this AFFiNE mirror will be replaced by the current workspace content. Unknown files are preserved.',
-      confirmText: 'Replace local changes',
-      cancelText: 'Cancel',
+        t[
+          'com.affine.settings.workspace.storage.local-mirror.replace.warning'
+        ](),
+      confirmText:
+        t[
+          'com.affine.settings.workspace.storage.local-mirror.replace.confirm'
+        ](),
+      cancelText: t['Cancel'](),
       onConfirm: () => service.replaceLocalChanges(),
       confirmButtonOptions: { variant: 'error' },
     });
-  }, [openConfirmModal, service]);
+  }, [openConfirmModal, service, t]);
 
   const mirrorPath = config.projectRoot
     ? `${config.projectRoot.replace(/[\\/]$/, '')}/.affine`
-    : 'No project directory selected';
+    : t[
+        'com.affine.settings.workspace.storage.local-mirror.no-project-directory'
+      ]();
 
   return (
     <>
       <SettingRow
-        name="Local workspace mirror"
-        desc="Keep an agent-readable, one-way copy of this workspace on disk. AFFiNE remains canonical."
+        name={t['com.affine.settings.workspace.storage.local-mirror.name']()}
+        desc={t[
+          'com.affine.settings.workspace.storage.local-mirror.description'
+        ]()}
       >
         <Switch
           checked={config.enabled}
@@ -107,19 +148,29 @@ export const DesktopLocalMirrorPanel = () => {
           data-testid="local-workspace-mirror-enabled"
         />
       </SettingRow>
-      <SettingRow name="Project directory" desc={mirrorPath}>
+      <SettingRow
+        name={t[
+          'com.affine.settings.workspace.storage.local-mirror.project-directory'
+        ]()}
+        desc={mirrorPath}
+      >
         <Button
           onClick={() => {
             chooseDirectory().catch(reportError);
           }}
         >
-          Choose folder
+          {t[
+            'com.affine.settings.workspace.storage.local-mirror.choose-folder'
+          ]()}
         </Button>
       </SettingRow>
-      <SettingRow name="Mirror status" desc={statusLabel(status)}>
+      <SettingRow
+        name={t['com.affine.settings.workspace.storage.local-mirror.status']()}
+        desc={statusText}
+      >
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <Button disabled={!config.enabled} onClick={() => service.syncNow()}>
-            Sync now
+            {t['com.affine.settings.workspace.storage.local-mirror.sync-now']()}
           </Button>
           <Button
             disabled={!config.projectRoot}
@@ -127,11 +178,15 @@ export const DesktopLocalMirrorPanel = () => {
               service.revealMirror().catch(reportError);
             }}
           >
-            Open folder
+            {t[
+              'com.affine.settings.workspace.storage.local-mirror.open-folder'
+            ]()}
           </Button>
           {status.type === 'conflict' ? (
             <Button variant="error" onClick={replace}>
-              Replace local changes
+              {t[
+                'com.affine.settings.workspace.storage.local-mirror.replace.confirm'
+              ]()}
             </Button>
           ) : null}
         </div>
@@ -145,7 +200,7 @@ export const DesktopLocalMirrorPanel = () => {
           overflow: 'hidden',
         }}
       >
-        {statusLabel(status)}
+        {statusText}
       </div>
     </>
   );

@@ -5,3 +5,8 @@ This document is intended for developers who want to contribute to AFFiNE. It co
 ### The Infrastructure of AFFiNE
 
 see {@link @toeverything/infra!}
+
+### Desktop local workspace mirror
+
+See [Local workspace mirror](./local-workspace-mirror.md) for the experimental,
+read-only filesystem projection used by local tools and AI agents.

@@ -493,8 +493,9 @@ Implementation evidence (2026-07-15):
 
 - Added a typed `mirror` helper namespace for selection, inspection, bounded batch writes, manifest-last finalization, and reveal.
 - Canonical project/mirror validation rejects filesystem roots, app-data locations, traversal, foreign ownership, and symlinked mirror paths; child paths are constrained to the v1 contract.
-- Atomic sibling writes, SHA-256 baselines, generation journals, unchanged-file skipping, managed stale deletion, and explicit conflict replacement preserve unknown and locally modified files.
-- Verification: five real-temporary-directory Electron helper tests cover writes/finalization, conflicts, traversal, foreign ownership, symlink rejection, and reveal; Electron/API TypeScript builds passed.
+- Atomic sibling writes, streamed SHA-256 baselines, exclusive generation leases, app-private transaction records, unchanged-file skipping, managed stale deletion, and explicit conflict replacement preserve unknown and locally modified files.
+- Crash recovery verifies backups and live generation hashes before rollback; renderer disconnect, gate loss, or permission loss aborts the owned lease before it can finalize.
+- Verification: seven real-temporary-directory Electron helper tests cover writes/finalization, incremental partial staging, exclusive leases, conflicts, traversal, foreign ownership, symlink rejection, and reveal; Electron/core/renderer TypeScript builds passed.
 
 Plan update required after this phase: yes. Record platform-specific path behavior.
 
@@ -613,6 +614,16 @@ Verification:
 Completion signal: all automated and manual acceptance criteria pass, benchmark evidence is recorded, reviews find no unresolved data-loss/security issue, and the plan filename can move to `.completed.md` only after upstream-ready implementation and verification.
 
 Plan update required after this phase: yes. Capture final verification evidence and rename the plan status only when all phases and review gates are complete.
+
+Implementation evidence (2026-07-16):
+
+- Added localized documentation and linked the experimental feature reference from the developer reference index.
+- Added Electron `powerMonitor.resume` convergence, root-document readiness, abortable document loading, real tag metadata, general rich-block snapshot-sidecar notices, and runtime-gated folder reveal.
+- Replaced live journal writes with a bounded, manifest-CAS transaction protocol using app-private staging, same-directory atomic target replacement, verified backups, mutation-specific rollback, local deletion conflicts, and renderer-port-owned leases.
+- Independent security, lifecycle, and plan-vs-diff reviews report no remaining P0/P1, critical/high, or code-level blockers.
+- Verification passed: generated i18n resources; Prettier; focused Oxlint; TypeScript project builds for core, Electron main, and Electron renderer; five Vitest files with 17 passing tests; native Windows release build; Electron renderer production assets; packaged Windows x64 app; NSIS installer build.
+- Windows installer: `packages/frontend/apps/electron/out/canary/make/nsis.windows/x64/AFFiNE-canary Setup 0.27.0.exe` (163,324,621 bytes, SHA-256 `405F975BAD9400383FE8D2C98AE012A91716EC5F88D6EBEAF8114A05F848B21A`). The local artifact is unsigned.
+- Remaining rollout evidence before renaming this plan to `.completed.md`: interactive packaged workflow smoke with a real cloud workspace, representative workspace performance/memory benchmarks, and macOS/Linux path/build coverage through CI or maintainers.
 
 ## Review Plan
 

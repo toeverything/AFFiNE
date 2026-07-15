@@ -9,6 +9,7 @@ import { DesktopApiService } from '@affine/core/modules/desktop-api';
 import { DocsService } from '@affine/core/modules/doc';
 import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { WorkspacePermissionService } from '@affine/core/modules/permissions';
+import { TagService } from '@affine/core/modules/tag';
 import {
   WorkspaceLocalState,
   WorkspaceScope,
@@ -29,6 +30,7 @@ export function configureDesktopLocalMirrorModule(framework: Framework) {
       WorkspaceService,
       DocsService,
       WorkspaceDBService,
+      TagService,
       WorkspaceLocalState,
       DesktopApiService,
       LocalMirrorSerializer,

@@ -6831,6 +6831,111 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.workspace.storage.subtitle"](): string;
     /**
+      * `Local workspace mirror`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.name"](): string;
+    /**
+      * `Keep an agent-readable, one-way copy of this workspace on disk. AFFiNE remains canonical.`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.description"](): string;
+    /**
+      * `Project directory`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.project-directory"](): string;
+    /**
+      * `No project directory selected`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.no-project-directory"](): string;
+    /**
+      * `Choose folder`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.choose-folder"](): string;
+    /**
+      * `Mirror status`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.status"](): string;
+    /**
+      * `Syncing {{completed}}/{{total}}`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.status.syncing"](options: Readonly<{
+        completed: string;
+        total: string;
+    }>): string;
+    /**
+      * `Up to date · {{time}}`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.status.up-to-date"](options: {
+        readonly time: string;
+    }): string;
+    /**
+      * `Ready`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.status.ready"](): string;
+    /**
+      * `{{count}} local change(s) need attention`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.status.conflict"](options: {
+        readonly count: string;
+    }): string;
+    /**
+      * `Error: {{message}}`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.status.error"](options: {
+        readonly message: string;
+    }): string;
+    /**
+      * `Choose a project directory`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.status.not-configured"](): string;
+    /**
+      * `Export permission denied`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.status.permission-denied"](): string;
+    /**
+      * `Experiment disabled`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.status.feature-disabled"](): string;
+    /**
+      * `Disabled`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.status.disabled"](): string;
+    /**
+      * `Local workspace mirror failed`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.failed"](): string;
+    /**
+      * `Enable local workspace mirror?`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.enable.title"](): string;
+    /**
+      * `AFFiNE will write this workspace into a .affine folder. These files may be included in Git commits or published with the project, so review the repository visibility first.`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.enable.warning"](): string;
+    /**
+      * `Enable mirror`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.enable.confirm"](): string;
+    /**
+      * `Replace local changes?`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.replace.title"](): string;
+    /**
+      * `All locally modified files managed by this AFFiNE mirror will be replaced by the current workspace content. Unknown files are preserved.`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.replace.warning"](): string;
+    /**
+      * `Replace local changes`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.replace.confirm"](): string;
+    /**
+      * `Sync now`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.sync-now"](): string;
+    /**
+      * `Open folder`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.open-folder"](): string;
+    /**
       * `Enable AFFiNE Sync to publish this workspace`
       */
     ["com.affine.settings.workspace.publish-tooltip"](): string;

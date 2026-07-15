@@ -3,6 +3,7 @@ import type { DesktopApiService } from '@affine/core/modules/desktop-api';
 import type { DocsService } from '@affine/core/modules/doc';
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import type { WorkspacePermissionService } from '@affine/core/modules/permissions';
+import type { TagService } from '@affine/core/modules/tag';
 import type {
   WorkspaceLocalState,
   WorkspaceService,
@@ -47,6 +48,7 @@ function createService(options: {
     engine: {
       doc: {
         state$: engineState$,
+        waitForDocLoaded: vi.fn(async () => undefined),
         storage: { subscribeDocUpdate },
       },
     },
@@ -58,6 +60,9 @@ function createService(options: {
   const workspaceDB = {
     db: { folders: { find: () => [] } },
   } as unknown as WorkspaceDBService;
+  const tagService = {
+    tagList: { tagMetas$: new LiveData([]) },
+  } as unknown as TagService;
   let config: LocalMirrorConfig = {
     enabled: true,
     projectRoot: 'C:/project',
@@ -82,9 +87,18 @@ function createService(options: {
       (async () => ({ conflicts: [], hashes: { 'index.md': 'hash' } }))
   );
   const finalizeGeneration = vi.fn(async () => ({ conflicts: [] }));
+  const beginGeneration = vi.fn(async () => ({ lease: 'lease' }));
+  const abortGeneration = vi.fn(async () => undefined);
   const desktopApi = {
+    events: { power: { resume: vi.fn(() => () => undefined) } },
     handler: {
-      mirror: { inspectTarget, writeBatch, finalizeGeneration },
+      mirror: {
+        inspectTarget,
+        beginGeneration,
+        abortGeneration,
+        writeBatch,
+        finalizeGeneration,
+      },
     },
   } as unknown as DesktopApiService;
   const serializer = {} as LocalMirrorSerializer;
@@ -99,6 +113,7 @@ function createService(options: {
         workspaceService,
         docs,
         workspaceDB,
+        tagService,
         localState,
         desktopApi,
         serializer
