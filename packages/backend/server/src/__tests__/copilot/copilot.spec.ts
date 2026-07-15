@@ -5,7 +5,6 @@ import { ProjectRoot } from '@affine-tools/utils/path';
 import { McpAccessMode, PrismaClient } from '@prisma/client';
 import type { TestFn } from 'ava';
 import ava from 'ava';
-import type { Request, Response } from 'express';
 import { nanoid } from 'nanoid';
 import Sinon from 'sinon';
 import { z } from 'zod';
@@ -43,7 +42,6 @@ import {
   CopilotEmbeddingJob,
   MockEmbeddingClient,
 } from '../../plugins/copilot/embedding';
-import { WorkspaceMcpController } from '../../plugins/copilot/mcp/controller';
 import { McpCredentialService } from '../../plugins/copilot/mcp/credential';
 import { WorkspaceMcpProvider } from '../../plugins/copilot/mcp/provider';
 import { PromptService } from '../../plugins/copilot/prompt';
@@ -84,12 +82,12 @@ import { SubscriptionService } from '../../plugins/payment/service';
 import { SubscriptionStatus } from '../../plugins/payment/types';
 import { installMockCopilotRuntime, MockCopilotProvider } from '../mocks';
 import { TestingPromptService } from '../mocks/prompt-service.mock';
-import { createTestingModule, TestingModule } from '../utils';
+import { createTestingApp, TestingApp } from '../utils';
 import { singleUserPromptMessages, systemPrompt } from './prompt-test-helper';
 
 type Context = {
   auth: AuthService;
-  module: TestingModule;
+  module: TestingApp;
   db: PrismaClient;
   event: EventBus;
   models: Models;
@@ -143,7 +141,7 @@ let restoreMockCopilotNativeRuntime: (() => void) | undefined;
 
 test.before(async t => {
   restoreMockCopilotNativeRuntime = installMockCopilotRuntime();
-  const module = await createTestingModule({
+  const module = await createTestingApp({
     imports: [
       ConfigModule.override({
         copilot: {
@@ -278,28 +276,12 @@ test('MCP credentials stay bound to their endpoint, workspace, and profile', asy
   t.is(authenticated.userId, userId);
   await t.throwsAsync(mcpCredentials.authenticate(issued.token, other.id));
 
-  let responseStatus: number | undefined;
-  let responseBody: unknown;
-  const request = {
-    body: { jsonrpc: '2.0', id: 1, method: 'initialize', params: {} },
-    get: () => `Bearer ${issued.token}`,
-    on: () => request,
-  } as unknown as Request;
-  const response = {
-    status: (status: number) => {
-      responseStatus = status;
-      return response;
-    },
-    json: (body: unknown) => {
-      responseBody = body;
-      return response;
-    },
-  } as unknown as Response;
-  await t.context.module
-    .get(WorkspaceMcpController)
-    .mcp(request, response, ws.id);
-  t.is(responseStatus, 200);
-  t.like(responseBody as object, {
+  const response = await t.context.module
+    .POST(`/api/workspaces/${ws.id}/mcp`)
+    .set('Authorization', `Bearer ${issued.token}`)
+    .send({ jsonrpc: '2.0', id: 1, method: 'initialize', params: {} })
+    .expect(200);
+  t.like(response.body, {
     jsonrpc: '2.0',
     id: 1,
   });
