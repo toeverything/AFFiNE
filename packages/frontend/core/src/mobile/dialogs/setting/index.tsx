@@ -27,7 +27,7 @@ import { UserUsage } from './user-usage';
 const AFFINE_APP_STORE_URL =
   'https://apps.apple.com/app/notes-whiteboard-ai-affine/id6736937980';
 const AFFINE_DOWNLOAD_URL = 'https://affine.pro/download';
-const AFFINE_TEAM_URL = 'https://affine.pro/pricing';
+const AFFINE_TEAM_URL = 'https://affine.pro/teamhub';
 
 const openExternal = (url: string) => {
   window.open(url, '_blank', 'noopener,noreferrer');

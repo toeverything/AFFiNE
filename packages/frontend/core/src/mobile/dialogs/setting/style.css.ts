@@ -95,8 +95,8 @@ export const linkIcon = style({
 export const promoCard = style({
   position: 'relative',
   overflow: 'hidden',
-  border: 'none',
-  borderRadius: 12,
+  border: '0.5px solid rgba(255,255,255,0.14)',
+  borderRadius: 14,
   padding: '12px 14px',
   width: '100%',
   display: 'flex',
@@ -104,9 +104,45 @@ export const promoCard = style({
   gap: 4,
   boxSizing: 'border-box',
   textAlign: 'left',
-  background: cssVarV2('button/primary'),
+  backgroundColor: cssVarV2('button/primary'),
+  backgroundImage:
+    'linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.04) 32%, rgba(6,59,151,0.08) 100%)',
   color: cssVarV2('button/pureWhiteText'),
   cursor: 'pointer',
+  isolation: 'isolate',
+  transition: 'transform 180ms ease, box-shadow 180ms ease',
+  boxShadow:
+    '0 8px 18px rgba(13, 40, 99, 0.12), 0 1px 3px rgba(13, 40, 99, 0.08), inset 0 1px 0 rgba(255,255,255,0.14)',
+  selectors: {
+    '&::before': {
+      content: '""',
+      position: 'absolute',
+      inset: 0,
+      background:
+        'linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0) 44%)',
+      pointerEvents: 'none',
+      zIndex: 0,
+    },
+    '&::after': {
+      content: '""',
+      position: 'absolute',
+      right: -6,
+      bottom: -10,
+      width: 78,
+      height: 78,
+      borderRadius: '50%',
+      background:
+        'radial-gradient(circle, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 70%)',
+      opacity: 0.38,
+      pointerEvents: 'none',
+      zIndex: 0,
+    },
+    '&:active': {
+      transform: 'scale(0.995)',
+      boxShadow:
+        '0 5px 12px rgba(13, 40, 99, 0.1), 0 1px 2px rgba(13, 40, 99, 0.07), inset 0 1px 0 rgba(255,255,255,0.12)',
+    },
+  },
 });
 
 export const promoCardEyebrow = style([
@@ -125,6 +161,7 @@ export const promoCardTitle = style({
   color: cssVarV2('button/pureWhiteText'),
   position: 'relative',
   zIndex: 1,
+  textShadow: '0 0.5px 1px rgba(7, 48, 121, 0.14)',
 });
 
 export const promoCardDescription = style({
@@ -135,16 +172,20 @@ export const promoCardDescription = style({
   opacity: 0.92,
   position: 'relative',
   zIndex: 1,
+  textShadow: '0 0.5px 1px rgba(7, 48, 121, 0.1)',
 });
 
 export const promoCardArt = style({
   position: 'absolute',
-  right: 10,
-  bottom: 9,
-  width: 58,
+  right: 8,
+  bottom: 6,
+  width: 64,
   height: 'auto',
   objectFit: 'contain',
   pointerEvents: 'none',
+  zIndex: 1,
+  filter: 'drop-shadow(0 4px 8px rgba(7, 48, 121, 0.14))',
+  opacity: 0.96,
 });
 
 export const dangerZoneTitle = style({

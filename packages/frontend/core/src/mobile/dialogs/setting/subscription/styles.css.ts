@@ -15,7 +15,7 @@ export const content = style({
   display: 'flex',
   flexDirection: 'column',
   gap: 6,
-  alignItems: 'center',
+  alignItems: 'stretch',
 });
 
 export const title = style({
@@ -23,7 +23,7 @@ export const title = style({
   lineHeight: '22px',
   fontWeight: 600,
   color: cssVarV2('text/primary'),
-  textAlign: 'center',
+  textAlign: 'left',
 });
 
 export const perkRow = style({

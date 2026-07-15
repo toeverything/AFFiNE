@@ -2,7 +2,6 @@ import { useI18n } from '@affine/i18n';
 
 import { SettingGroup } from '../group';
 import { RowLayout } from '../row.layout';
-import { hotTag } from './index.css';
 
 export const OthersGroup = () => {
   const t = useI18n();
@@ -10,12 +9,7 @@ export const OthersGroup = () => {
   return (
     <SettingGroup title={t['com.affine.mobile.setting.others.title']()}>
       <RowLayout
-        label={
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            {t['com.affine.mobile.setting.others.discord']()}
-            <div className={hotTag}>Hot</div>
-          </div>
-        }
+        label={t['com.affine.mobile.setting.others.discord']()}
         href="https://discord.com/invite/whd5mjYqVw"
       />
       <RowLayout
