@@ -2,7 +2,6 @@ import { useI18n } from '@affine/i18n';
 
 import { SettingGroup } from '../group';
 import { RowLayout } from '../row.layout';
-import { DeleteAccount } from './delete-account';
 import { hotTag } from './index.css';
 
 export const OthersGroup = () => {
@@ -38,7 +37,6 @@ export const OthersGroup = () => {
         label={t['com.affine.mobile.setting.others.terms']()}
         href="https://affine.pro/terms"
       />
-      <DeleteAccount />
     </SettingGroup>
   );
 };

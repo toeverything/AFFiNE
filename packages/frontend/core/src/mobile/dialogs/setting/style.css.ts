@@ -11,7 +11,12 @@ export const pageTitle = style([bodyEmphasized]);
 export const root = style({
   display: 'flex',
   flexDirection: 'column',
-  gap: 14,
+  gap: 12,
+  paddingTop: 0,
+  paddingRight: 16,
+  paddingBottom: 'calc(env(safe-area-inset-bottom) + 20px)',
+  paddingLeft: 16,
+  boxSizing: 'border-box',
 });
 
 export const baseSettingItem = style({
@@ -21,7 +26,7 @@ export const baseSettingItem = style({
   gap: 12,
   width: '100%',
   minHeight: 44,
-  padding: '11px 14px',
+  padding: '10px 14px',
   boxSizing: 'border-box',
   selectors: {
     '&:not(:last-child)': {
@@ -67,7 +72,7 @@ export const baseSettingItemAction = style([
 ]);
 
 export const linkIcon = style({
-  fontSize: 18,
+  fontSize: 17,
   color: cssVarV2('icon/secondary'),
 });
 
@@ -75,12 +80,12 @@ export const promoCard = style({
   position: 'relative',
   overflow: 'hidden',
   border: 'none',
-  borderRadius: 14,
-  padding: '14px 16px',
+  borderRadius: 12,
+  padding: '12px 14px',
   width: '100%',
   display: 'flex',
   flexDirection: 'column',
-  gap: 6,
+  gap: 4,
   boxSizing: 'border-box',
   textAlign: 'left',
   background: cssVarV2('button/primary'),
@@ -97,41 +102,35 @@ export const promoCardEyebrow = style([
 ]);
 
 export const promoCardTitle = style({
-  fontSize: 18,
-  lineHeight: '22px',
+  fontSize: 17,
+  lineHeight: '21px',
   fontWeight: 600,
-  maxWidth: '68%',
+  maxWidth: '74%',
   color: cssVarV2('button/pureWhiteText'),
   position: 'relative',
   zIndex: 1,
 });
 
 export const promoCardDescription = style({
-  fontSize: 12,
-  lineHeight: '16px',
-  maxWidth: '70%',
+  fontSize: 11,
+  lineHeight: '15px',
+  maxWidth: '74%',
   color: cssVarV2('button/pureWhiteText'),
   opacity: 0.92,
   position: 'relative',
   zIndex: 1,
 });
 
-export const promoCardDecoration = style({
+export const promoCardArt = style({
   position: 'absolute',
-  right: -10,
-  bottom: -16,
-  width: 84,
-  height: 84,
-  borderRadius: '50%',
-  background: 'rgba(255, 255, 255, 0.18)',
+  right: 10,
+  bottom: 9,
+  width: 58,
+  height: 'auto',
+  objectFit: 'contain',
+  pointerEvents: 'none',
 });
 
-export const promoCardDecorationSecondary = style({
-  position: 'absolute',
-  right: 22,
-  bottom: 10,
-  width: 28,
-  height: 28,
-  borderRadius: '50%',
-  background: 'rgba(255, 255, 255, 0.2)',
+export const dangerZoneTitle = style({
+  color: cssVarV2('status/error'),
 });

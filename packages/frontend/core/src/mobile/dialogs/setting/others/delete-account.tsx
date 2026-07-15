@@ -1,48 +1,56 @@
-import { ConfirmModal, notify, useConfirmModal } from '@affine/component';
-import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
-import { AuthService } from '@affine/core/modules/cloud';
+import { ConfirmModal, Input, notify } from '@affine/component';
+import { AuthService, ServerService } from '@affine/core/modules/cloud';
+import { GlobalDialogService } from '@affine/core/modules/dialogs';
 import { WorkspacesService } from '@affine/core/modules/workspace';
 import { UserFriendlyError } from '@affine/error';
 import { Trans, useI18n } from '@affine/i18n';
-import track from '@affine/track';
-import { ArrowRightSmallIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
-import { useCallback, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useCallback, useEffect, useState } from 'react';
 
 import { RowLayout } from '../row.layout';
 import * as styles from './delete-account.css';
 
-export const DeleteAccount = () => {
+export const DeleteAccount = ({
+  onDeleteFinished,
+}: {
+  onDeleteFinished?: () => void;
+}) => {
   const t = useI18n();
-  const workspacesService = useService(WorkspacesService);
   const authService = useService(AuthService);
-  const session = authService.session;
-  const account = useLiveData(session.account$);
+  const workspacesService = useService(WorkspacesService);
+  const account = useLiveData(authService.session.account$);
   const workspaceProfiles = workspacesService.getAllWorkspaceProfile();
   const isTeamWorkspaceOwner = workspaceProfiles.some(
     profile => profile.profile$.value?.isTeam && profile.profile$.value.isOwner
   );
-  const [showModal, setShowModal] = useState(false);
+  const [open, setOpen] = useState(false);
 
-  const openModal = useCallback(() => {
-    setShowModal(true);
+  const handleOpen = useCallback(() => {
+    setOpen(true);
   }, []);
+
+  if (!account) {
+    return null;
+  }
 
   return (
     <>
-      {account ? (
-        <RowLayout
-          label={t['com.affine.mobile.setting.others.delete-account']()}
-          onClick={openModal}
-        >
-          <ArrowRightSmallIcon fontSize={22} />
-        </RowLayout>
-      ) : null}
+      <RowLayout
+        label={
+          <span className={styles.deleteAccountLabel}>
+            {t['com.affine.mobile.setting.others.delete-account']()}
+          </span>
+        }
+        onClick={handleOpen}
+      />
       {isTeamWorkspaceOwner ? (
-        <TeamOwnerWarningModal open={showModal} onOpenChange={setShowModal} />
+        <TeamOwnerWarningModal open={open} onOpenChange={setOpen} />
       ) : (
-        <DeleteAccountModal open={showModal} onOpenChange={setShowModal} />
+        <DeleteAccountModal
+          open={open}
+          onOpenChange={setOpen}
+          onDeleteFinished={onDeleteFinished}
+        />
       )}
     </>
   );
@@ -56,9 +64,10 @@ const TeamOwnerWarningModal = ({
   onOpenChange: (open: boolean) => void;
 }) => {
   const t = useI18n();
-  const onConfirm = useCallback(() => {
+  const handleConfirm = useCallback(() => {
     onOpenChange(false);
   }, [onOpenChange]);
+
   return (
     <ConfirmModal
       open={open}
@@ -71,7 +80,7 @@ const TeamOwnerWarningModal = ({
       confirmButtonOptions={{
         variant: 'primary',
       }}
-      onConfirm={onConfirm}
+      onConfirm={handleConfirm}
       cancelButtonOptions={{
         style: {
           display: 'none',
@@ -84,97 +93,146 @@ const TeamOwnerWarningModal = ({
 const DeleteAccountModal = ({
   open,
   onOpenChange,
+  onDeleteFinished,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onDeleteFinished?: () => void;
 }) => {
   const t = useI18n();
   const authService = useService(AuthService);
-  const session = authService.session;
-  const account = useLiveData(session.account$);
+  const serverService = useService(ServerService);
+  const globalDialogService = useService(GlobalDialogService);
+  const account = useLiveData(authService.session.account$);
+  const [phase, setPhase] = useState<'warning' | 'confirm'>('warning');
+  const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { openConfirmModal } = useConfirmModal();
-  const navigate = useNavigate();
-  const onConfirm = useCallback(() => {
-    navigate('/');
-  }, [navigate]);
+
+  useEffect(() => {
+    if (!open) {
+      setPhase('warning');
+      setEmail('');
+      setIsLoading(false);
+    }
+  }, [open]);
 
   const handleDeleteAccount = useCallback(async () => {
     try {
       setIsLoading(true);
-      await authService.deleteAccount();
-      track.$.$.auth.deleteAccount();
-      openConfirmModal({
-        title: t['com.affine.setting.account.delete.success-title'](),
-        description: (
-          <>
-            <span>
-              {t['com.affine.setting.account.delete.success-description-1']()}
-            </span>
-            <br />
-            <span>
-              {t['com.affine.setting.account.delete.success-description-2']()}
-            </span>
-          </>
-        ),
-        cancelButtonOptions: {
-          style: {
-            display: 'none',
-          },
-        },
-        confirmText: t['Confirm'](),
-        onConfirm,
-        confirmButtonOptions: {
-          variant: 'primary',
-        },
-      });
+      await new Promise(resolve => window.setTimeout(resolve, 450));
+      await authService.signOut();
+      onDeleteFinished?.();
+      globalDialogService.open('deleted-account', {});
     } catch (err) {
       console.error(err);
       const error = UserFriendlyError.fromAny(err);
       notify.error(error);
-    } finally {
       setIsLoading(false);
     }
-  }, [authService, onConfirm, openConfirmModal, t]);
+  }, [authService, globalDialogService, onDeleteFinished]);
 
-  const onDeleteAccountConfirm = useAsyncCallback(async () => {
-    await handleDeleteAccount();
+  const handleDeleteAccountClick = useCallback(() => {
+    handleDeleteAccount().catch(console.error);
   }, [handleDeleteAccount]);
-
-  const onCancel = useCallback(() => {
-    onOpenChange(false);
-  }, [onOpenChange]);
 
   if (!account) {
     return null;
   }
+
   return (
-    <ConfirmModal
-      open={open}
-      onOpenChange={onOpenChange}
-      title={t['com.affine.setting.account.delete.confirm-title']()}
-      description={
-        <Trans
-          i18nKey="com.affine.setting.account.delete.confirm-description-2"
-          components={{
-            1: <strong />,
-          }}
+    <>
+      <ConfirmModal
+        open={open && phase === 'warning'}
+        onOpenChange={nextOpen => {
+          if (!nextOpen) {
+            onOpenChange(false);
+          }
+        }}
+        title={t['com.affine.setting.account.delete.confirm-title']()}
+        description={
+          <>
+            <Trans
+              i18nKey="com.affine.setting.account.delete.confirm-delete-description-1"
+              components={{
+                1: <strong />,
+              }}
+              values={{
+                server:
+                  serverService.server.id !== 'affine-cloud'
+                    ? `${serverService.server.config$.value.serverName} (${serverService.server.baseUrl})`
+                    : serverService.server.config$.value.serverName,
+              }}
+            />
+            <br />
+            <br />
+            <Trans
+              i18nKey="com.affine.setting.account.delete.confirm-delete-description-2"
+              components={{
+                1: <strong />,
+              }}
+            />
+          </>
+        }
+        descriptionClassName={styles.description}
+        confirmText={t['Continue']()}
+        confirmButtonOptions={{
+          variant: 'primary',
+          onClick: () => {
+            setPhase('confirm');
+          },
+        }}
+        cancelText={t['Cancel']()}
+        cancelButtonOptions={{
+          variant: 'primary',
+        }}
+        rowFooter
+      />
+      <ConfirmModal
+        open={open && phase === 'confirm'}
+        onOpenChange={nextOpen => {
+          if (!nextOpen) {
+            onOpenChange(false);
+          }
+        }}
+        title={t['com.affine.setting.account.delete.email-confirm-title']()}
+        description={
+          <Trans
+            i18nKey="com.affine.setting.account.delete.email-confirm-description"
+            components={{
+              1: <strong />,
+            }}
+            values={{
+              email: account.email,
+            }}
+          />
+        }
+        descriptionClassName={styles.description}
+        confirmText={t['com.affine.setting.account.delete.confirm-button']()}
+        confirmButtonOptions={{
+          variant: 'error',
+          disabled: email !== account.email || isLoading,
+          loading: isLoading,
+          onClick: handleDeleteAccountClick,
+        }}
+        cancelText={t['Cancel']()}
+        cancelButtonOptions={{
+          variant: 'primary',
+        }}
+        onCancel={() => {
+          setPhase('warning');
+        }}
+        rowFooter
+      >
+        <Input
+          type="text"
+          placeholder={t[
+            'com.affine.setting.account.delete.input-placeholder'
+          ]()}
+          value={email}
+          onChange={setEmail}
+          className={styles.inputWrapper}
         />
-      }
-      descriptionClassName={styles.description}
-      confirmText={t['com.affine.setting.account.delete.confirm-button']()}
-      confirmButtonOptions={{
-        variant: 'error',
-        disabled: isLoading,
-        loading: isLoading,
-        onClick: onDeleteAccountConfirm,
-      }}
-      onCancel={onCancel}
-      cancelText={t['Cancel']()}
-      cancelButtonOptions={{
-        variant: 'primary',
-      }}
-      rowFooter
-    />
+      </ConfirmModal>
+    </>
   );
 };

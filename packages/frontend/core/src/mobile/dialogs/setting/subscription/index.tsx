@@ -6,6 +6,7 @@ import { useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback } from 'react';
 
+import proDiamond from '../assets/pro-diamond.png';
 import * as styles from './styles.css';
 
 export const UserSubscription = () => {
@@ -41,7 +42,7 @@ export const UserSubscription = () => {
           {t['com.affine.mobile.setting.subscription.title']()}
         </div>
         <div className={styles.perkRow}>
-          <span className={styles.perkIcon} />
+          <img className={styles.perkIcon} src={proDiamond} alt="" />
           <div className={styles.description}>
             {t['com.affine.mobile.setting.subscription.description']()}
           </div>

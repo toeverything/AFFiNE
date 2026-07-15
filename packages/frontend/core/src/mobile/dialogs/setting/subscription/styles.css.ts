@@ -4,9 +4,9 @@ import { style } from '@vanilla-extract/css';
 export const root = style({
   display: 'flex',
   flexDirection: 'column',
-  gap: 12,
-  borderRadius: 14,
-  padding: '14px',
+  gap: 10,
+  borderRadius: 12,
+  padding: '12px 14px',
   backgroundColor: cssVarV2('layer/background/primary'),
   boxSizing: 'border-box',
 });
@@ -14,13 +14,13 @@ export const root = style({
 export const content = style({
   display: 'flex',
   flexDirection: 'column',
-  gap: 8,
+  gap: 6,
   alignItems: 'center',
 });
 
 export const title = style({
-  fontSize: '18px',
-  lineHeight: '24px',
+  fontSize: '17px',
+  lineHeight: '22px',
   fontWeight: 600,
   color: cssVarV2('text/primary'),
   textAlign: 'center',
@@ -29,23 +29,21 @@ export const title = style({
 export const perkRow = style({
   display: 'flex',
   alignItems: 'flex-start',
-  gap: 10,
+  gap: 8,
   width: '100%',
 });
 
 export const perkIcon = style({
-  width: 12,
-  height: 12,
-  marginTop: 3,
+  width: 16,
+  height: 16,
+  marginTop: 1,
   flexShrink: 0,
-  borderRadius: 3,
-  transform: 'rotate(45deg)',
-  background: 'linear-gradient(135deg, #F8D12F 0%, #F5A524 100%)',
+  objectFit: 'contain',
 });
 
 export const description = style({
-  fontSize: '13px',
-  lineHeight: '18px',
+  fontSize: '12px',
+  lineHeight: '16px',
   fontWeight: 400,
   color: cssVarV2('text/secondary'),
 });
@@ -53,6 +51,6 @@ export const description = style({
 export const button = style({
   width: '100%',
   minHeight: 36,
-  fontSize: '14px',
+  fontSize: '13px',
   borderRadius: 999,
 });

@@ -6,15 +6,17 @@ import type {
 } from '@affine/core/modules/dialogs';
 import { copyTextToClipboard } from '@affine/core/utils/clipboard';
 import { useI18n } from '@affine/i18n';
-import { useService } from '@toeverything/infra';
+import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback, useEffect } from 'react';
 
 import { AboutGroup } from './about';
 import { AppearanceGroup } from './appearance';
+import teamPeople from './assets/team-people.png';
 import { DevicesGroup } from './devices';
 import { ExperimentalFeatureSetting } from './experimental';
 import { SettingGroup } from './group';
 import { OthersGroup } from './others';
+import { DeleteAccount } from './others/delete-account';
 import { RowLayout } from './row.layout';
 import * as styles from './style.css';
 import { UserSubscription } from './subscription';
@@ -90,13 +92,42 @@ const TeamPromotionCard = () => {
       <span className={styles.promoCardDescription}>
         {t['com.affine.mobile.setting.promo.description']()}
       </span>
-      <span className={styles.promoCardDecoration} />
-      <span className={styles.promoCardDecorationSecondary} />
+      <img className={styles.promoCardArt} src={teamPeople} alt="" />
     </button>
   );
 };
 
-const MobileSetting = () => {
+const DangerZoneGroup = ({
+  onDeleteFinished,
+}: {
+  onDeleteFinished?: () => void;
+}) => {
+  const t = useI18n();
+  const authService = useService(AuthService);
+  const account = useLiveData(authService.session.account$);
+
+  if (!account) {
+    return null;
+  }
+
+  return (
+    <SettingGroup
+      title={
+        <span className={styles.dangerZoneTitle}>
+          {t['com.affine.mobile.setting.danger-zone.title']()}
+        </span>
+      }
+    >
+      <DeleteAccount onDeleteFinished={onDeleteFinished} />
+    </SettingGroup>
+  );
+};
+
+const MobileSetting = ({
+  onDeleteFinished,
+}: {
+  onDeleteFinished?: () => void;
+}) => {
   const session = useService(AuthService).session;
 
   useEffect(() => session.revalidate(), [session]);
@@ -113,6 +144,7 @@ const MobileSetting = () => {
       <OthersGroup />
       <UserUsage />
       <DevicesGroup />
+      <DangerZoneGroup onDeleteFinished={onDeleteFinished} />
     </div>
   );
 };
@@ -128,7 +160,7 @@ export const SettingDialog = ({
       open
       onOpenChange={() => close()}
     >
-      <MobileSetting />
+      <MobileSetting onDeleteFinished={close} />
     </SwipeDialog>
   );
 };

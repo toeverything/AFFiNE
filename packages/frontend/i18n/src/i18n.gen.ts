@@ -2927,9 +2927,13 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.mobile.setting.others.website"](): string;
     /**
-      * `Delete my account`
+      * `Delete Account`
       */
     ["com.affine.mobile.setting.others.delete-account"](): string;
+    /**
+      * `Danger Zone`
+      */
+    ["com.affine.mobile.setting.danger-zone.title"](): string;
     /**
       * `Collaborate seamlessly with AFFiNE team, available in Cloud and Self-Hosted versions.`
       */
@@ -2963,7 +2967,7 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.mobile.setting.support.invite-message"](): string;
     /**
-      * `Rate AFFiNE`
+      * `Rate AFFINE`
       */
     ["com.affine.mobile.setting.support.rate"](): string;
     /**
@@ -5129,6 +5133,10 @@ export function useAFFiNEI18N(): {
       * `Delete your account?`
       */
     ["com.affine.setting.account.delete.confirm-title"](): string;
+    /**
+      * `Confirm your email`
+      */
+    ["com.affine.setting.account.delete.email-confirm-title"](): string;
     /**
       * `Please type your email to confirm`
       */
@@ -10411,6 +10419,14 @@ export const TypedTrans: {
       * `Your account will be inaccessible, and your personal space on the server will be permanently deleted. You can remove local data by uninstalling the app or clearing your browser storage. <1>This action is irreversible.</1>`
       */
     ["com.affine.setting.account.delete.confirm-delete-description-2"]: ComponentType<TypedTransProps<Readonly<{}>, {
+        ["1"]: JSX.Element;
+    }>>;
+    /**
+      * `Type <1>{{email}}</1> to confirm account deletion.`
+      */
+    ["com.affine.setting.account.delete.email-confirm-description"]: ComponentType<TypedTransProps<{
+        readonly email: string;
+    }, {
         ["1"]: JSX.Element;
     }>>;
     /**
