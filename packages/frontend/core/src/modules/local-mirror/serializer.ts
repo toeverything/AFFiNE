@@ -1,0 +1,160 @@
+import {
+  type BlockSnapshot,
+  type DocSnapshot,
+  DocSnapshotSchema,
+  getAssetName,
+  type Store,
+} from '@blocksuite/affine/store';
+import { MarkdownTransformer } from '@blocksuite/affine/widgets/linked-doc';
+
+import {
+  createMirrorFrontmatter,
+  encodeMirrorId,
+  getMirrorDocPath,
+  getMirrorSnapshotPath,
+  hashText,
+  stableJson,
+} from './format';
+import type {
+  LocalMirrorDocMetadata,
+  LocalMirrorSerializedDocument,
+} from './types';
+
+function extensionFromName(name: string) {
+  const extension = name.split('.').at(-1)?.toLowerCase() ?? 'blob';
+  return /^[a-z0-9]{1,12}$/.test(extension) ? extension : 'blob';
+}
+
+function containsRichOnlyContent(snapshot: DocSnapshot) {
+  const visit = (block: DocSnapshot['blocks']): boolean => {
+    if (block.flavour === 'affine:surface') {
+      const elements = block.props.elements;
+      if (
+        (Array.isArray(elements) && elements.length > 0) ||
+        (elements &&
+          typeof elements === 'object' &&
+          Object.keys(elements).length > 0)
+      ) {
+        return true;
+      }
+    }
+    return block.children.some(visit);
+  };
+  return visit(snapshot.blocks);
+}
+
+function collectAttachments(snapshot: DocSnapshot) {
+  const attachments: Array<{ sourceId: string; name: string }> = [];
+  const visit = (block: BlockSnapshot) => {
+    const sourceId = block.props.sourceId;
+    if (block.flavour === 'affine:attachment' && typeof sourceId === 'string') {
+      attachments.push({
+        sourceId,
+        name:
+          typeof block.props.name === 'string' && block.props.name.length > 0
+            ? block.props.name
+            : 'Attachment',
+      });
+    }
+    block.children.forEach(visit);
+  };
+  visit(snapshot.blocks);
+  return attachments;
+}
+
+function rewriteDocumentLinks(markdown: string, docIds: readonly string[]) {
+  let output = markdown;
+  for (const docId of docIds) {
+    const source = `affine-mirror://doc/${docId}`;
+    const target = `./${encodeMirrorId(docId)}.md`;
+    output = output.replaceAll(source, target);
+  }
+  return output;
+}
+
+export class LocalMirrorSerializer {
+  async serialize(
+    doc: Store,
+    metadata: LocalMirrorDocMetadata,
+    allDocIds: readonly string[]
+  ): Promise<LocalMirrorSerializedDocument> {
+    const serialized = await MarkdownTransformer.serializeDoc(doc, {
+      docLinkBaseUrl: 'affine-mirror://doc',
+    });
+    if (!serialized) {
+      throw new Error(`Failed to serialize AFFiNE document ${metadata.id}`);
+    }
+
+    const snapshot = DocSnapshotSchema.parse(serialized.snapshot);
+    const snapshotJson = stableJson(snapshot);
+    const sourceHash = await hashText(stableJson({ snapshot, metadata }));
+    let markdown = rewriteDocumentLinks(serialized.file, allDocIds);
+    const files: LocalMirrorSerializedDocument['files'] = [];
+    const assetPaths = new Map<string, string>();
+
+    for (const assetId of [...new Set(serialized.assetsIds)].sort()) {
+      const blob = serialized.assets.get(assetId);
+      if (!blob) {
+        throw new Error(
+          `Document ${metadata.id} references unavailable asset ${assetId}`
+        );
+      }
+      const exportedName = getAssetName(serialized.assets, assetId);
+      const mirrorName = `${encodeMirrorId(assetId)}.${extensionFromName(exportedName)}`;
+      assetPaths.set(assetId, `../assets/${mirrorName}`);
+      markdown = markdown.replaceAll(
+        `assets/${exportedName}`,
+        `../assets/${mirrorName}`
+      );
+      files.push({
+        path: `assets/${mirrorName}`,
+        kind: 'asset',
+        content: new Uint8Array(await blob.arrayBuffer()),
+        docId: metadata.id,
+      });
+    }
+
+    const attachments = collectAttachments(snapshot);
+    if (attachments.length > 0) {
+      markdown += '\n\n## Attachments\n';
+      for (const attachment of attachments) {
+        const path = assetPaths.get(attachment.sourceId);
+        markdown += path
+          ? `\n- [${attachment.name.replace(/([\\[\]])/g, '\\$1')}](${path})`
+          : `\n- ${attachment.name} _(asset unavailable)_`;
+      }
+      markdown += '\n';
+    }
+
+    if (
+      metadata.primaryMode === 'edgeless' ||
+      containsRichOnlyContent(snapshot)
+    ) {
+      markdown +=
+        '\n\n> [!NOTE]\n> This document contains AFFiNE canvas content that is preserved in its generated snapshot sidecar.\n';
+    }
+
+    files.unshift(
+      {
+        path: getMirrorDocPath(metadata.id),
+        kind: 'markdown',
+        content: `${createMirrorFrontmatter(
+          doc.workspace.id,
+          metadata,
+          sourceHash
+        )}${markdown.trimEnd()}\n`,
+        docId: metadata.id,
+        sourceHash,
+      },
+      {
+        path: getMirrorSnapshotPath(metadata.id),
+        kind: 'snapshot',
+        content: snapshotJson,
+        docId: metadata.id,
+        sourceHash,
+      }
+    );
+
+    return { docId: metadata.id, sourceHash, files };
+  }
+}
