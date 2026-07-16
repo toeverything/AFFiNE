@@ -145,17 +145,20 @@ Flag transition behavior:
 <selected-project>/
   .affine/
     index.md
-    workspace.json
-    mirror.json
     docs/
-      <stable-doc-id>.md
-    snapshots/
-      <stable-doc-id>.snapshot.json
-    assets/
-      <blob-id>.<extension>
+      <readable-title>.md
+    .metadata/
+      workspace.json
+      mirror.json
+      snapshots/
+        <stable-doc-id>.snapshot.json
+      assets/
+        <blob-id>.<extension>
 ```
 
-### `mirror.json`
+The root presents only the agent-facing index and readable documents. Machine-owned fidelity, ownership, and asset data live under `.metadata/` so they remain available without dominating normal browsing.
+
+### `.metadata/mirror.json`
 
 Versioned ownership and baseline manifest:
 
@@ -183,9 +186,9 @@ type MirrorManifestV1 = {
 - `files` is the exclusive list of paths AFFiNE may replace or delete.
 - `sha256` is the last generated file baseline used to detect external edits.
 - `sourceHash` records the serialized remote/source version needed by a future three-way comparison.
-- Commit `mirror.json` last so it identifies only a completed generation.
+- Commit `.metadata/mirror.json` last so it identifies only a completed generation.
 
-### `workspace.json`
+### `.metadata/workspace.json`
 
 Contains stable workspace metadata that Markdown cannot faithfully encode:
 
@@ -201,11 +204,11 @@ Do not include authentication tokens, server credentials, session data, local ab
 
 - Provides the workspace title and generation timestamp.
 - Renders the folder/link graph as a navigable Markdown tree.
-- Links every appearance of a document to the same `docs/<doc-id>.md` file.
+- Links every appearance of a document to the same human-readable file under `docs/`.
 - Includes explicit Unfiled and Trash sections.
 - Represents cycles or malformed folder records defensively instead of recursing forever.
 
-### `docs/<doc-id>.md`
+### `docs/<readable-title>.md`
 
 Each document starts with stable YAML frontmatter:
 
@@ -225,20 +228,23 @@ generated: true
 ---
 ```
 
-- Use stable IDs for filenames; title changes must not cause file renames.
-- Rewrite AFFiNE document links to relative `./<target-doc-id>.md` links.
-- Rewrite asset references to `../assets/<blob-id>.<extension>`.
+- Derive filenames from document titles, for example `How to use folder and Tags` becomes `How-to-use-folder-and-Tags.md`.
+- Normalize unsafe characters, Windows-reserved names, Unicode case-equivalent names, and filesystem component limits portably. Use `Untitled.md` when no readable stem remains.
+- When two readable names collide, add a deterministic short document-ID hash suffix; disambiguate even the rare case where those hashes collide.
+- Keep stable document identity in frontmatter and `.metadata/workspace.json`. A title/path change performs a safe full reconciliation so every index/document link updates and the previous managed path is removed only if unmodified.
+- Rewrite AFFiNE document links to the resolved relative readable filename.
+- Rewrite asset references to `../.metadata/assets/<blob-id>.<extension>`.
 - Preserve meaningful text for unsupported rich blocks and emit an explicit placeholder when Markdown cannot represent the block.
 - Use the current synced-document embedding behavior only where it does not make navigation ambiguous; retain the source snapshot in all cases.
 
-### `snapshots/<doc-id>.snapshot.json`
+### `.metadata/snapshots/<doc-id>.snapshot.json`
 
 - Generate with `docToSnapshot` while preserving original workspace, document, and block IDs.
 - Do not use `replaceIdMiddleware`, which is intended for importing copies.
 - Serialize deterministically enough for stable hashing and reviewable Git diffs.
 - Treat it as app-owned fidelity data; v1 never reads it back into the workspace.
 
-### `assets/`
+### `.metadata/assets/`
 
 - Export only blobs referenced by mirrored documents.
 - Deduplicate by blob ID/content address across documents.
@@ -253,7 +259,7 @@ Create `packages/frontend/core/src/modules/local-mirror/` with narrow responsibi
 
 - `LocalMirrorService`: feature/permission gate, lifecycle, queue, reconciliation, status, and commands.
 - `LocalMirrorSerializer`: one loaded BlockSuite document -> Markdown, snapshot, asset references, metadata, and hashes.
-- `LocalMirrorProjection`: workspace/folder metadata -> `workspace.json` and `index.md`.
+- `LocalMirrorProjection`: workspace/folder metadata -> `.metadata/workspace.json` and `index.md`.
 - Manifest/domain types and typed status/error values.
 
 Register `configureDesktopLocalMirrorModule` only from Electron renderer module setup. Scope `LocalMirrorService` to `WorkspaceScope` and inject `FeatureFlagService`, `WorkspacePermissionService`, `WorkspaceService`, `DocsService`, `WorkspaceDBService`, `WorkspaceLocalState`, and `DesktopApiService` as required.
@@ -285,7 +291,7 @@ type LocalMirrorConfig = {
 };
 ```
 
-Keep operational status in memory. Keep file baselines in `mirror.json`, where they travel with the mirror and remain available for future bidirectional comparison.
+Keep operational status in memory. Keep file baselines in `.metadata/mirror.json`, where they travel with the mirror and remain available for future bidirectional comparison.
 
 ## Reconciliation and Update Algorithm
 
@@ -297,9 +303,9 @@ Keep operational status in memory. Keep file baselines in `mirror.json`, where t
 4. Snapshot the current document metadata, folders, tags, properties, and trash state.
 5. Open one user document at a time through `DocsService`, add temporary priority, wait for sync readiness, serialize, write a bounded batch, and release the document in `finally`.
 6. Fetch/write only assets referenced by the current document; skip assets already present with the expected hash.
-7. Generate `workspace.json` and `index.md` after document serialization succeeds.
+7. Generate `.metadata/workspace.json` and `index.md` after document serialization succeeds.
 8. Compare previously managed paths with the new generation. Remove only unmodified stale paths.
-9. Commit `mirror.json` last.
+9. Commit `.metadata/mirror.json` last.
 10. Report success, cached-offline success, conflicts, or a structured error.
 
 ### Incremental updates
@@ -309,7 +315,7 @@ Keep operational status in memory. Keep file baselines in `mirror.json`, where t
 - User-document changes enqueue that document.
 - Workspace root changes trigger doc-list and metadata reconciliation.
 - `db$` changes regenerate workspace metadata/index but are not exported as pages.
-- Document removal/trash/folder/title/tag changes update projection metadata and the affected page.
+- Document removal/trash/folder/tag changes update projection metadata and the affected page. A title or collision-map change runs a full reconciliation so all readable paths and cross-document links remain coherent.
 - A full reconciliation runs on startup, reconnect, workspace resume, and Sync now; do not add a periodic timer in v1.
 - If a new update arrives while a document is serializing, enqueue one additional pass after the current pass rather than allowing concurrent writes.
 
@@ -318,7 +324,7 @@ Keep operational status in memory. Keep file baselines in `mirror.json`, where t
 Before replacing or deleting any previously managed path:
 
 1. Hash the current file.
-2. Compare it with the last generated `mirror.json` hash.
+2. Compare it with the last generated `.metadata/mirror.json` hash.
 3. If equal, the operation is safe.
 4. If different, leave the file untouched, record a conflict, and omit a successful new manifest baseline for that path.
 
@@ -360,7 +366,7 @@ Snapshots must not be blindly imported over live documents; they are fidelity ev
 - **Accidental deletion:** a broad stale-file sweep could remove user files. Mitigation: delete only paths in the prior ownership manifest whose hashes still match.
 - **Flag only hides UI:** previously enabled mirrors could keep writing after opt-out. Mitigation: the coordinator's reactive gate is authoritative and covered by runtime tests.
 - **Permission changes:** a former team owner could continue exporting. Mitigation: subscribe to permission state and abort immediately when export access is lost.
-- **Folder graph ambiguity:** multiple links cannot map to one canonical directory. Mitigation: stable flat document files plus exact graph projection in `index.md`/`workspace.json`.
+- **Folder graph ambiguity:** multiple links cannot map to one canonical directory. Mitigation: one flat readable document file per stable frontmatter ID plus exact graph projection in `index.md`/`.metadata/workspace.json`.
 - **Concurrent generations:** overlapping updates can produce stale commits. Mitigation: a single workspace queue, generation tokens, cancellation, and manifest-last semantics.
 
 ## Implementation Phases
@@ -402,7 +408,7 @@ Completion signal: pure serialization needs no active editor DOM, all fixtures r
 Implementation evidence (2026-07-15):
 
 - Added a DOM-free `MarkdownTransformer.serializeDoc` primitive and retained manual download export as its consumer.
-- Added versioned manifest/workspace schemas, deterministic JSON/frontmatter, stable document/snapshot paths, folder/index projection, Markdown/snapshot/asset serialization, attachment links, and edgeless/canvas fidelity notices.
+- Added versioned manifest/workspace schemas, deterministic JSON/frontmatter, document/snapshot path mapping, folder/index projection, Markdown/snapshot/asset serialization, attachment links, and edgeless/canvas fidelity notices.
 - Immediate fixes from discovery: asset IDs now include transformer path references, source hashes include document metadata, snapshots and workspace JSON are runtime-validated, malformed/unreachable folder links remain discoverable, synced-doc inlining is not relied on, and IPC-bound bytes use `Uint8Array`.
 - Verification: 3 focused Vitest files passed (6 tests); linked-doc plus core TypeScript project build passed; focused Prettier check passed.
 
@@ -556,7 +562,7 @@ Steps:
 1. Subscribe to document-storage updates only while `canRun$` is true.
 2. Add per-document debounce/coalescing and a single serialized generation queue.
 3. Classify user document, root document, internal DB, metadata-only, trash, and deletion changes.
-4. Regenerate only the affected document/assets plus workspace projection when possible.
+4. Regenerate only the affected document/assets plus workspace projection when possible; fall back to a full reconciliation when the readable path map changes.
 5. Add generation tokens so stale jobs cannot finalize after disable, path change, workspace disposal, or a newer full reconciliation.
 6. Surface local-edit and deletion conflicts in the settings panel.
 7. Implement explicitly confirmed Replace local changes and re-run reconciliation afterward.
@@ -566,7 +572,7 @@ Verification:
 
 - Rapid edits to one document cause one trailing export, not one export per CRDT update.
 - Concurrent edits to different documents remain serialized and end with the latest content.
-- Rename changes frontmatter/index without moving the stable document path.
+- Rename updates the readable filename, frontmatter, index, workspace metadata, and all cross-document links while preserving the stable document ID and local-edit conflict rules.
 - Folder relink updates the graph without duplicating documents.
 - Remote delete removes only an unchanged managed file; a locally modified file remains and reports a conflict.
 - Disable/path switch during a queue leaves no stale manifest commit.
@@ -577,7 +583,7 @@ Completion signal: normal cloud/in-app changes converge automatically, and every
 Implementation evidence (2026-07-15):
 
 - Added a single serialized queue with 750 ms coalescing, full reconciliation for root/database/reconnect/manual events, and targeted document reconciliation for ordinary document updates.
-- Targeted updates preserve unaffected manifest entries, update the workspace projection, use stable document paths, and remove only unchanged obsolete managed page/snapshot files; a later full reconciliation reclaims conservatively retained historical assets.
+- Targeted updates preserve unaffected manifest entries and update the workspace projection. Readable path-map changes fall back to a full reconciliation, which updates every cross-document link and removes only unchanged obsolete managed page/snapshot files; a later full reconciliation also reclaims conservatively retained historical assets.
 - Destination changes and gate loss invalidate active generations. New updates arriving during a run schedule one trailing pass.
 - Locally divergent files surface as conflicts and require the explicit Replace local changes confirmation before overwrite or deletion.
 
@@ -609,7 +615,7 @@ Verification:
 - `yarn typecheck`
 - Relevant lint/prettier checks for all changed files.
 - Packaged Electron smoke: flag off, flag on/setup, initial mirror, remote update, offline cached export, reconnect, local conflict, permission loss, flag disable/re-enable, restart, and destination change.
-- Inspect the generated `.affine` fixture with an AI/code agent and confirm every page is discoverable from `index.md` or `workspace.json` without AFFiNE access.
+- Inspect the generated `.affine` fixture with an AI/code agent and confirm every page is discoverable from `index.md` or `.metadata/workspace.json` without AFFiNE access.
 
 Completion signal: all automated and manual acceptance criteria pass, benchmark evidence is recorded, reviews find no unresolved data-loss/security issue, and the plan filename can move to `.completed.md` only after upstream-ready implementation and verification.
 
@@ -617,6 +623,11 @@ Plan update required after this phase: yes. Capture final verification evidence 
 
 Implementation evidence (2026-07-16):
 
+- Improved the agent-facing disk layout: only `index.md` and `docs/` remain prominent, while ownership metadata, workspace projection, snapshots, and assets now live under `.metadata/`.
+- Replaced ID-named Markdown pages with portable human-readable title filenames. The mapping handles unsafe/reserved names, Unicode caseless collisions, UTF-8/UTF-16 component limits, duplicate titles, and rare stable-hash collisions while retaining stable identity in frontmatter and workspace metadata.
+- Title/path-map changes now trigger a safe full reconciliation so index entries, cross-document links, manifest paths, and stale-file conflict handling remain coherent. Existing root-layout mirrors migrate automatically; changed legacy files remain conflict-protected.
+- Hardened migration/recovery after independent review: nested `.metadata` symlinks are rejected for manifest I/O, interrupted initial generations clean nested metadata directories, legacy `mirror.json` cleanup is baseline-gated and non-recursive, and unrelated root `mirror.json` content is preserved.
+- Focused post-change verification: 5 mirror Vitest files passed with 30 tests and the opt-in benchmark skipped. New regressions cover the exact readable-title example, unsafe/Windows names, duplicate and hash-colliding titles, Unicode case folding, multibyte length limits, rewritten links/assets, path-map-triggered reconciliation, legacy migration, migration-time edits, unmanaged legacy-named files, nested metadata symlinks, and interrupted nested-metadata recovery.
 - Added localized documentation and linked the experimental feature reference from the developer reference index.
 - Added Electron `powerMonitor.resume` convergence, root-document readiness, abortable document loading, real tag metadata, general rich-block snapshot-sidecar notices, and runtime-gated folder reveal.
 - Replaced live journal writes with a bounded, manifest-CAS transaction protocol using app-private staging, same-directory atomic target replacement, verified backups, mutation-specific rollback, local deletion conflicts, and renderer-port-owned leases.

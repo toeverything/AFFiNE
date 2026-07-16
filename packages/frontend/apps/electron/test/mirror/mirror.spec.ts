@@ -110,6 +110,192 @@ describe('local mirror helper', () => {
     expect(
       await readFile(join(projectRoot, '.affine', 'index.md'), 'utf8')
     ).toBe('survived');
+    expect(
+      JSON.parse(
+        await readFile(
+          join(projectRoot, '.affine', '.metadata', 'mirror.json'),
+          'utf8'
+        )
+      ).generation
+    ).toBe('generation-1');
+  });
+
+  test('migrates the legacy root layout into the internal metadata directory', async () => {
+    const mirrorPath = join(projectRoot, '.affine');
+    const legacyDoc = 'legacy markdown';
+    const legacyWorkspace = '{}\n';
+    const legacyManifest = manifest('legacy-generation', {
+      'docs/doc-id.md': {
+        kind: 'markdown',
+        sha256: hash(legacyDoc),
+        docId: 'doc-id',
+      },
+      'workspace.json': {
+        kind: 'workspace',
+        sha256: hash(legacyWorkspace),
+      },
+    });
+    await mkdir(join(mirrorPath, 'docs'), { recursive: true });
+    await writeFile(join(mirrorPath, 'docs', 'doc-id.md'), legacyDoc);
+    await writeFile(join(mirrorPath, 'workspace.json'), legacyWorkspace);
+    await writeFile(
+      join(mirrorPath, 'mirror.json'),
+      `${JSON.stringify(legacyManifest)}\n`
+    );
+
+    const { lease } = await beginGeneration({
+      projectRoot,
+      workspaceId: 'workspace-1',
+      generation: 'generation-2',
+    });
+    const files = [
+      {
+        path: 'docs/Readable-title.md',
+        kind: 'markdown' as const,
+        content: 'readable markdown',
+        docId: 'doc-id',
+      },
+      {
+        path: '.metadata/workspace.json',
+        kind: 'workspace' as const,
+        content: legacyWorkspace,
+      },
+      {
+        path: '.metadata/snapshots/doc-id.snapshot.json',
+        kind: 'snapshot' as const,
+        content: '{"id":"doc-id"}\n',
+        docId: 'doc-id',
+      },
+    ];
+    const batch = await writeBatch({
+      lease,
+      projectRoot,
+      workspaceId: 'workspace-1',
+      generation: 'generation-2',
+      files,
+    });
+    await finalizeGeneration({
+      lease,
+      projectRoot,
+      workspaceId: 'workspace-1',
+      manifest: manifest(
+        'generation-2',
+        Object.fromEntries(
+          files.map(file => [
+            file.path,
+            {
+              kind: file.kind,
+              sha256: batch.hashes[file.path],
+              docId: file.docId,
+            },
+          ])
+        )
+      ),
+      stalePaths: ['docs/doc-id.md', 'workspace.json'],
+    });
+
+    expect(
+      await readFile(join(mirrorPath, 'docs', 'Readable-title.md'), 'utf8')
+    ).toBe('readable markdown');
+    expect(
+      await readFile(join(mirrorPath, '.metadata', 'workspace.json'), 'utf8')
+    ).toBe(legacyWorkspace);
+    await expect(
+      readFile(join(mirrorPath, 'mirror.json'))
+    ).rejects.toMatchObject({ code: 'ENOENT' });
+    await expect(
+      readFile(join(mirrorPath, 'docs', 'doc-id.md'))
+    ).rejects.toMatchObject({ code: 'ENOENT' });
+  });
+
+  test('preserves a legacy manifest changed while migration is running', async () => {
+    const mirrorPath = join(projectRoot, '.affine');
+    const legacyManifest = manifest('legacy-generation', {});
+    await mkdir(mirrorPath, { recursive: true });
+    await writeFile(
+      join(mirrorPath, 'mirror.json'),
+      JSON.stringify(legacyManifest)
+    );
+
+    const { lease } = await beginGeneration({
+      projectRoot,
+      workspaceId: 'workspace-1',
+      generation: 'generation-2',
+    });
+    const locallyReformatted = `${JSON.stringify(legacyManifest, null, 2)}\n`;
+    await writeFile(join(mirrorPath, 'mirror.json'), locallyReformatted);
+    const batch = await writeBatch({
+      lease,
+      projectRoot,
+      workspaceId: 'workspace-1',
+      generation: 'generation-2',
+      files: [{ path: 'index.md', kind: 'index', content: '# Workspace\n' }],
+    });
+    await finalizeGeneration({
+      lease,
+      projectRoot,
+      workspaceId: 'workspace-1',
+      manifest: manifest('generation-2', {
+        'index.md': { kind: 'index', sha256: batch.hashes['index.md'] },
+      }),
+      stalePaths: [],
+    });
+
+    expect(await readFile(join(mirrorPath, 'mirror.json'), 'utf8')).toBe(
+      locallyReformatted
+    );
+  });
+
+  test('does not remove an unmanaged root mirror.json after migration', async () => {
+    const mirrorPath = join(projectRoot, '.affine');
+    const firstLease = await beginGeneration({
+      projectRoot,
+      workspaceId: 'workspace-1',
+      generation: 'generation-1',
+    });
+    const first = await writeBatch({
+      lease: firstLease.lease,
+      projectRoot,
+      workspaceId: 'workspace-1',
+      generation: 'generation-1',
+      files: [{ path: 'index.md', kind: 'index', content: 'first' }],
+    });
+    await finalizeGeneration({
+      lease: firstLease.lease,
+      projectRoot,
+      workspaceId: 'workspace-1',
+      manifest: manifest('generation-1', {
+        'index.md': { kind: 'index', sha256: first.hashes['index.md'] },
+      }),
+      stalePaths: [],
+    });
+    await writeFile(join(mirrorPath, 'mirror.json'), 'user file');
+
+    const secondLease = await beginGeneration({
+      projectRoot,
+      workspaceId: 'workspace-1',
+      generation: 'generation-2',
+    });
+    const second = await writeBatch({
+      lease: secondLease.lease,
+      projectRoot,
+      workspaceId: 'workspace-1',
+      generation: 'generation-2',
+      files: [{ path: 'index.md', kind: 'index', content: 'second' }],
+    });
+    await finalizeGeneration({
+      lease: secondLease.lease,
+      projectRoot,
+      workspaceId: 'workspace-1',
+      manifest: manifest('generation-2', {
+        'index.md': { kind: 'index', sha256: second.hashes['index.md'] },
+      }),
+      stalePaths: [],
+    });
+
+    expect(await readFile(join(mirrorPath, 'mirror.json'), 'utf8')).toBe(
+      'user file'
+    );
   });
 
   test('retains verified unchanged files during an incremental generation', async () => {
@@ -347,6 +533,13 @@ describe('local mirror helper', () => {
     await mkdir(transactionPath, { recursive: true });
     await mkdir(mirrorPath, { recursive: true });
     await writeFile(join(mirrorPath, 'index.md'), 'partial');
+    await mkdir(join(mirrorPath, '.metadata', 'snapshots'), {
+      recursive: true,
+    });
+    await writeFile(
+      join(mirrorPath, '.metadata', 'snapshots', 'doc.snapshot.json'),
+      'partial snapshot'
+    );
     await writeFile(
       join(transactionPath, 'transaction.json'),
       JSON.stringify({
@@ -355,9 +548,15 @@ describe('local mirror helper', () => {
         generation: 'generation-1',
         previousGeneration: null,
         state: 'committing',
-        paths: ['index.md'],
-        baselines: { 'index.md': null },
-        planned: { 'index.md': hash('partial') },
+        paths: ['index.md', '.metadata/snapshots/doc.snapshot.json'],
+        baselines: {
+          'index.md': null,
+          '.metadata/snapshots/doc.snapshot.json': null,
+        },
+        planned: {
+          'index.md': hash('partial'),
+          '.metadata/snapshots/doc.snapshot.json': hash('partial snapshot'),
+        },
       })
     );
 
@@ -369,6 +568,9 @@ describe('local mirror helper', () => {
 
     expect(inspection.state).toBe('empty');
     await expect(readFile(join(mirrorPath, 'index.md'))).rejects.toMatchObject({
+      code: 'ENOENT',
+    });
+    await expect(readFile(mirrorPath)).rejects.toMatchObject({
       code: 'ENOENT',
     });
   });
@@ -390,7 +592,11 @@ describe('local mirror helper', () => {
         workspaceId: 'workspace-1',
         generation: 'generation-1',
         files: [
-          { path: 'assets/large.bin', kind: 'asset', content: oversized },
+          {
+            path: '.metadata/assets/large.bin',
+            kind: 'asset',
+            content: oversized,
+          },
         ],
       })
     ).rejects.toThrow('Mirror file is too large');
@@ -424,16 +630,22 @@ describe('local mirror helper', () => {
       projectRoot,
       workspaceId: 'workspace-1',
       generation: 'generation-1',
-      files: [{ path: 'workspace.json', kind: 'workspace', content: '{}' }],
+      files: [
+        {
+          path: '.metadata/workspace.json',
+          kind: 'workspace',
+          content: '{}',
+        },
+      ],
     });
     await finalizeGeneration({
       lease: firstLease.lease,
       projectRoot,
       workspaceId: 'workspace-1',
       manifest: manifest('generation-1', {
-        'workspace.json': {
+        '.metadata/workspace.json': {
           kind: 'workspace',
-          sha256: first.hashes['workspace.json'],
+          sha256: first.hashes['.metadata/workspace.json'],
         },
       }),
       stalePaths: [],
@@ -454,6 +666,24 @@ describe('local mirror helper', () => {
       await symlink(
         outside,
         join(projectRoot, '.affine'),
+        process.platform === 'win32' ? 'junction' : 'dir'
+      );
+      await expect(
+        inspectTarget({ projectRoot, workspaceId: 'workspace-1' })
+      ).rejects.toThrow('must not be a symlink');
+    } finally {
+      await rm(outside, { recursive: true, force: true });
+    }
+  });
+
+  test('rejects a symlinked internal metadata directory', async () => {
+    const outside = await mkdtemp(join(tmpdir(), 'affine-metadata-outside-'));
+    try {
+      const mirrorPath = join(projectRoot, '.affine');
+      await mkdir(mirrorPath, { recursive: true });
+      await symlink(
+        outside,
+        join(mirrorPath, '.metadata'),
         process.platform === 'win32' ? 'junction' : 'dir'
       );
       await expect(
@@ -530,7 +760,7 @@ describe('local mirror helper', () => {
           documentIds.map(id => `- [${id}](./docs/${id}.md)`).join('\n') + '\n'
         );
         await writeOne(
-          'workspace.json',
+          '.metadata/workspace.json',
           'workspace',
           `${JSON.stringify({
             formatVersion: 1,
@@ -538,19 +768,23 @@ describe('local mirror helper', () => {
             documents: documentIds.map(id => ({
               id,
               markdownPath: `docs/${id}.md`,
-              snapshotPath: `snapshots/${id}.snapshot.json`,
+              snapshotPath: `.metadata/snapshots/${id}.snapshot.json`,
             })),
           })}\n`
         );
         for (let index = 0; index < tier.docs; index++) {
           await writeOne(`docs/doc-${index}.md`, 'markdown', markdown);
           await writeOne(
-            `snapshots/doc-${index}.snapshot.json`,
+            `.metadata/snapshots/doc-${index}.snapshot.json`,
             'snapshot',
             snapshot
           );
           if (index % 10 === 0) {
-            await writeOne(`assets/asset-${index}.bin`, 'asset', asset);
+            await writeOne(
+              `.metadata/assets/asset-${index}.bin`,
+              'asset',
+              asset
+            );
           }
         }
         await finalizeGeneration({

@@ -35,8 +35,9 @@ describe('LocalMirrorSerializer', () => {
       tags: ['research'],
       primaryMode: 'page' as const,
     };
-    const first = await serializer.serialize(store, metadata, ['page0']);
-    const second = await serializer.serialize(store, metadata, ['page0']);
+    const docPaths = new Map([['page0', 'docs/Agent-notes.md']]);
+    const first = await serializer.serialize(store, metadata, docPaths);
+    const second = await serializer.serialize(store, metadata, docPaths);
 
     expect(first.sourceHash).toBe(second.sourceHash);
     expect(first.files).toEqual(second.files);
@@ -44,6 +45,8 @@ describe('LocalMirrorSerializer', () => {
     const snapshot = first.files.find(file => file.kind === 'snapshot');
     expect(markdown?.content).toContain('Visible to the agent');
     expect(markdown?.content).toContain('docId: "page0"');
+    expect(markdown?.path).toBe('docs/Agent-notes.md');
+    expect(snapshot?.path).toBe('.metadata/snapshots/page0.snapshot.json');
     expect(snapshot?.content).toContain('"id": "page0"');
   });
 
@@ -106,7 +109,10 @@ describe('LocalMirrorSerializer', () => {
         tags: [],
         primaryMode: 'edgeless',
       },
-      ['rich-page', 'linked-page']
+      new Map([
+        ['rich-page', 'docs/Rich-project-notes.md'],
+        ['linked-page', 'docs/Linked-project-note.md'],
+      ])
     );
 
     const markdown = result.files.find(file => file.kind === 'markdown');
@@ -116,12 +122,13 @@ describe('LocalMirrorSerializer', () => {
     expect(markdown?.content).toContain('`affine:database`');
     expect(markdown?.content).toContain('`affine:surface`');
     expect(markdown?.content).toContain('## Attachments');
-    expect(markdown?.content).toContain('../assets/');
+    expect(markdown?.content).toContain('../.metadata/assets/');
     expect(snapshot?.content).toContain('"flavour": "affine:database"');
     expect(snapshot?.content).toContain('"flavour": "affine:bookmark"');
     expect(snapshot?.content).toContain('"flavour": "affine:embed-linked-doc"');
     expect(snapshot?.content).toContain('"flavour": "affine:attachment"');
     expect(asset?.content).toBeInstanceOf(Uint8Array);
+    expect(asset?.path).toMatch(/^\.metadata\/assets\//);
     expect(new TextDecoder().decode(asset?.content as Uint8Array)).toBe(
       'attachment body'
     );

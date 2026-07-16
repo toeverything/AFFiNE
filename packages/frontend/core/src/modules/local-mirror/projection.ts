@@ -1,4 +1,8 @@
-import { getMirrorDocPath, getMirrorSnapshotPath, stableJson } from './format';
+import {
+  createMirrorDocPathMap,
+  getMirrorSnapshotPath,
+  stableJson,
+} from './format';
 import {
   LOCAL_MIRROR_FORMAT_VERSION,
   type LocalMirrorDocMetadata,
@@ -11,6 +15,7 @@ export type CreateLocalMirrorProjectionOptions = {
   workspace: LocalMirrorWorkspaceProjection['workspace'];
   generatedAt: string;
   docs: LocalMirrorDocMetadata[];
+  docPaths?: ReadonlyMap<string, string>;
   folders: LocalMirrorFolderRecord[];
   tags: LocalMirrorWorkspaceProjection['tags'];
 };
@@ -29,14 +34,27 @@ function markdownText(value: string, fallback: string) {
   return normalized.replace(/([\\[\]*_])/g, '\\$1');
 }
 
-function documentLink(doc: LocalMirrorDocMetadata) {
-  return `[${markdownText(doc.title, 'Untitled')}](${getMirrorDocPath(doc.id)})`;
+function documentLink(
+  doc: LocalMirrorDocMetadata,
+  docPaths: ReadonlyMap<string, string>
+) {
+  return `[${markdownText(doc.title, 'Untitled')}](${documentPath(
+    doc.id,
+    docPaths
+  )})`;
+}
+
+function documentPath(docId: string, docPaths: ReadonlyMap<string, string>) {
+  const path = docPaths.get(docId);
+  if (!path) throw new Error(`Missing local mirror path for ${docId}`);
+  return path;
 }
 
 export function createLocalMirrorProjection({
   workspace,
   generatedAt,
   docs,
+  docPaths: suppliedDocPaths,
   folders,
   tags,
 }: CreateLocalMirrorProjectionOptions) {
@@ -44,6 +62,7 @@ export function createLocalMirrorProjection({
     (left, right) =>
       left.title.localeCompare(right.title) || left.id.localeCompare(right.id)
   );
+  const docPaths = suppliedDocPaths ?? createMirrorDocPathMap(sortedDocs);
   const sortedFolders = [...folders].sort(compareFolderRecords);
   const projection: LocalMirrorWorkspaceProjection = {
     formatVersion: LOCAL_MIRROR_FORMAT_VERSION,
@@ -51,7 +70,7 @@ export function createLocalMirrorProjection({
     generatedAt,
     docs: sortedDocs.map(doc => ({
       ...doc,
-      path: getMirrorDocPath(doc.id),
+      path: documentPath(doc.id, docPaths),
       snapshotPath: getMirrorSnapshotPath(doc.id),
     })),
     folders: sortedFolders,
@@ -101,7 +120,7 @@ export function createLocalMirrorProjection({
       } else if (record.type === 'doc') {
         const doc = docsById.get(record.data);
         if (doc && !doc.trash) {
-          lines.push(`${indentation}- ${documentLink(doc)}`);
+          lines.push(`${indentation}- ${documentLink(doc, docPaths)}`);
           renderedDocIds.add(doc.id);
         }
       }
@@ -141,13 +160,13 @@ export function createLocalMirrorProjection({
     '## Unfiled',
     '',
     ...(unfiled.length > 0
-      ? unfiled.map(doc => `- ${documentLink(doc)}`)
+      ? unfiled.map(doc => `- ${documentLink(doc, docPaths)}`)
       : ['_No unfiled documents._']),
     '',
     '## Trash',
     '',
     ...(trash.length > 0
-      ? trash.map(doc => `- ${documentLink(doc)}`)
+      ? trash.map(doc => `- ${documentLink(doc, docPaths)}`)
       : ['_Trash is empty._']),
     '',
   ];

@@ -13,8 +13,12 @@ import { BehaviorSubject } from 'rxjs';
 import { describe, expect, test, vi } from 'vitest';
 
 import type { LocalMirrorSerializer } from '../serializer';
-import { canUseLocalMirror, LocalMirrorService } from '../service';
-import type { LocalMirrorConfig } from '../types';
+import {
+  canUseLocalMirror,
+  haveMirrorDocumentPathsChanged,
+  LocalMirrorService,
+} from '../service';
+import type { LocalMirrorConfig, LocalMirrorManifest } from '../types';
 
 function createService(options: {
   flagEnabled: boolean;
@@ -131,6 +135,37 @@ function createService(options: {
 }
 
 describe('local mirror permission gate', () => {
+  test('requires a full reconciliation when readable document paths change', () => {
+    const manifest: LocalMirrorManifest = {
+      formatVersion: 1,
+      workspaceId: 'workspace-1',
+      workspaceFlavour: 'affine',
+      generation: 'generation-1',
+      lastCompletedAt: new Date(0).toISOString(),
+      sourceSyncState: 'synced',
+      files: {
+        'docs/Old-title.md': {
+          kind: 'markdown',
+          sha256: 'hash',
+          docId: 'doc-1',
+        },
+      },
+    };
+
+    expect(
+      haveMirrorDocumentPathsChanged(
+        manifest,
+        new Map([['doc-1', 'docs/Old-title.md']])
+      )
+    ).toBe(false);
+    expect(
+      haveMirrorDocumentPathsChanged(
+        manifest,
+        new Map([['doc-1', 'docs/New-title.md']])
+      )
+    ).toBe(true);
+  });
+
   test('allows local and non-team workspaces', () => {
     expect(canUseLocalMirror('local', null, null)).toBe(true);
     expect(canUseLocalMirror('affine', false, false)).toBe(true);

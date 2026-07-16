@@ -18,6 +18,7 @@ import {
   take,
 } from 'rxjs';
 
+import { createMirrorDocPathMap, LOCAL_MIRROR_WORKSPACE_PATH } from './format';
 import { createLocalMirrorProjection } from './projection';
 import type { LocalMirrorSerializer } from './serializer';
 import {
@@ -50,6 +51,21 @@ export function canUseLocalMirror(
     workspaceFlavour === 'local' ||
     isTeam === false ||
     (isTeam === true && isOwner === true)
+  );
+}
+
+export function haveMirrorDocumentPathsChanged(
+  manifest: LocalMirrorManifest,
+  docPaths: ReadonlyMap<string, string>
+) {
+  const markdownEntries = Object.entries(manifest.files).filter(
+    ([, file]) => file.kind === 'markdown' && file.docId
+  );
+  return (
+    markdownEntries.length !== docPaths.size ||
+    markdownEntries.some(
+      ([path, file]) => !file.docId || docPaths.get(file.docId) !== path
+    )
   );
 }
 
@@ -367,7 +383,6 @@ export class LocalMirrorService extends Service {
     const records = [...this.docs.list.docs$.value].sort((left, right) =>
       left.id.localeCompare(right.id)
     );
-    const docIds = records.map(record => record.id);
     const metadata: LocalMirrorDocMetadata[] = records.map(record => ({
       id: record.id,
       title: record.title$.value,
@@ -378,6 +393,7 @@ export class LocalMirrorService extends Service {
       primaryMode: record.primaryMode$.value,
       properties: record.properties$.value,
     }));
+    const docPaths = createMirrorDocPathMap(metadata);
     const files: LocalMirrorManifest['files'] = {};
     this.status$.setValue({
       type: 'syncing',
@@ -396,7 +412,7 @@ export class LocalMirrorService extends Service {
         const serialized = await this.serializer.serialize(
           opened.doc.blockSuiteDoc,
           metadata[index],
-          docIds
+          docPaths
         );
         await this.writeFiles(
           token,
@@ -434,6 +450,7 @@ export class LocalMirrorService extends Service {
       },
       generatedAt,
       docs: metadata,
+      docPaths,
       folders,
       tags,
     });
@@ -444,7 +461,7 @@ export class LocalMirrorService extends Service {
       [
         { path: 'index.md', kind: 'index', content: projection.indexMarkdown },
         {
-          path: 'workspace.json',
+          path: LOCAL_MIRROR_WORKSPACE_PATH,
           kind: 'workspace',
           content: projection.workspaceJson,
         },
@@ -517,13 +534,10 @@ export class LocalMirrorService extends Service {
     }
     this.assertCanRun(token);
 
-    const generation = nanoid();
-    const signal = await this.startGeneration(projectRoot, generation);
     const generatedAt = new Date().toISOString();
     const records = [...this.docs.list.docs$.value].sort((left, right) =>
       left.id.localeCompare(right.id)
     );
-    const docIds = records.map(record => record.id);
     const metadata: LocalMirrorDocMetadata[] = records.map(record => ({
       id: record.id,
       title: record.title$.value,
@@ -534,6 +548,13 @@ export class LocalMirrorService extends Service {
       primaryMode: record.primaryMode$.value,
       properties: record.properties$.value,
     }));
+    const docPaths = createMirrorDocPathMap(metadata);
+    if (haveMirrorDocumentPathsChanged(inspection.manifest, docPaths)) {
+      await this.reconcile(replaceConflicts);
+      return;
+    }
+    const generation = nanoid();
+    const signal = await this.startGeneration(projectRoot, generation);
     const recordsById = new Map(records.map(record => [record.id, record]));
     const metadataById = new Map(metadata.map(doc => [doc.id, doc]));
     const files: LocalMirrorManifest['files'] = {
@@ -569,7 +590,7 @@ export class LocalMirrorService extends Service {
           const serialized = await this.serializer.serialize(
             opened.doc.blockSuiteDoc,
             docMetadata,
-            docIds
+            docPaths
           );
           const nextPaths = new Set(serialized.files.map(file => file.path));
           for (const path of existingDocPaths) {
@@ -615,6 +636,7 @@ export class LocalMirrorService extends Service {
       },
       generatedAt,
       docs: metadata,
+      docPaths,
       folders,
       tags,
     });
@@ -625,7 +647,7 @@ export class LocalMirrorService extends Service {
       [
         { path: 'index.md', kind: 'index', content: projection.indexMarkdown },
         {
-          path: 'workspace.json',
+          path: LOCAL_MIRROR_WORKSPACE_PATH,
           kind: 'workspace',
           content: projection.workspaceJson,
         },

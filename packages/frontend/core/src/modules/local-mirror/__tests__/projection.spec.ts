@@ -38,14 +38,15 @@ describe('local mirror workspace projection', () => {
       tags: [],
     });
 
-    expect(result.indexMarkdown.match(/docs\/a\.md/g)).toHaveLength(2);
-    expect(result.indexMarkdown).toContain('## Unfiled\n\n- [Beta](docs/b.md)');
+    expect(result.indexMarkdown.match(/docs\/Alpha\.md/g)).toHaveLength(2);
     expect(result.indexMarkdown).toContain(
-      '## Trash\n\n- [Old](docs/trash.md)'
+      '## Unfiled\n\n- [Beta](docs/Beta.md)'
     );
+    expect(result.indexMarkdown).toContain('## Trash\n\n- [Old](docs/Old.md)');
     expect(result.workspaceJson).toContain(
-      '"snapshotPath": "snapshots/a.snapshot.json"'
+      '"snapshotPath": ".metadata/snapshots/a.snapshot.json"'
     );
+    expect(result.workspaceJson).toContain('"path": "docs/Alpha.md"');
   });
 
   test('does not recurse forever through malformed folder cycles', () => {

@@ -8,7 +8,9 @@ import { isPathInsideBase } from '../../shared/utils';
 import { mainRPC } from '../main-rpc';
 
 const MIRROR_DIR = '.affine';
-const MANIFEST_FILE = 'mirror.json';
+const METADATA_DIR = '.metadata';
+const MANIFEST_FILE = `${METADATA_DIR}/mirror.json`;
+const LEGACY_MANIFEST_FILE = 'mirror.json';
 const TRANSACTION_DIR = 'local-mirror-transactions';
 const MAX_FILE_BYTES = 128 * 1024 * 1024;
 const MAX_BATCH_BYTES = 128 * 1024 * 1024;
@@ -53,6 +55,7 @@ type Lease = {
   workspaceId: string;
   generation: string;
   previousGeneration: string | null;
+  legacyManifestSha256: string | null;
   aborted: boolean;
   committing: boolean;
   txPath: string;
@@ -117,10 +120,19 @@ function isManagedRelativePath(path: string) {
   const normalized = path.replaceAll('\\', '/');
   if (normalized !== path || normalized.includes('\0')) return false;
   const match = /^(docs|snapshots|assets)\/([^/]+)$/.exec(path);
-  if (!match || match[2] === '.' || match[2] === '..') return false;
-  if (match[1] === 'docs') return match[2].endsWith('.md');
-  if (match[1] === 'snapshots') return match[2].endsWith('.snapshot.json');
-  return true;
+  if (match && match[2] !== '.' && match[2] !== '..') {
+    if (match[1] === 'docs') return match[2].endsWith('.md');
+    if (match[1] === 'snapshots') return match[2].endsWith('.snapshot.json');
+    return true;
+  }
+  if (path === `${METADATA_DIR}/workspace.json`) return true;
+  const metadataMatch = /^\.metadata\/(snapshots|assets)\/([^/]+)$/.exec(path);
+  if (!metadataMatch || metadataMatch[2] === '.' || metadataMatch[2] === '..') {
+    return false;
+  }
+  return metadataMatch[1] === 'assets'
+    ? true
+    : metadataMatch[2].endsWith('.snapshot.json');
 }
 
 async function readJson(path: string): Promise<unknown> {
@@ -129,6 +141,20 @@ async function readJson(path: string): Promise<unknown> {
     if (stat.size > MAX_FILE_BYTES)
       throw new Error('Mirror metadata is too large');
     return JSON.parse(await fs.readFile(path, 'utf8'));
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null;
+    throw error;
+  }
+}
+
+async function readJsonWithHash(path: string) {
+  try {
+    const stat = await fs.stat(path);
+    if (!stat.isFile()) throw new Error('Mirror metadata is not a file');
+    if (stat.size > MAX_FILE_BYTES)
+      throw new Error('Mirror metadata is too large');
+    const content = await fs.readFile(path, 'utf8');
+    return { value: JSON.parse(content) as unknown, sha256: sha256(content) };
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null;
     throw error;
@@ -260,11 +286,31 @@ async function currentHash(path: string) {
 }
 
 async function loadManifest(mirrorPath: string) {
-  const value = await readJson(resolve(mirrorPath, MANIFEST_FILE));
-  if (value === null) return null;
-  const manifest = parseManifest(value);
+  const currentPath = await safeChild(mirrorPath, MANIFEST_FILE);
+  const legacyPath = await safeChild(mirrorPath, LEGACY_MANIFEST_FILE);
+  const current = await readJsonWithHash(currentPath);
+  const source = current ? ('current' as const) : ('legacy' as const);
+  const loaded = current ?? (await readJsonWithHash(legacyPath));
+  if (loaded === null) return null;
+  const manifest = parseManifest(loaded.value);
   if (!manifest) throw new Error('Invalid mirror manifest');
-  return manifest;
+  return { manifest, source, sha256: loaded.sha256 };
+}
+
+async function removeLegacyManifestIfUnchanged(
+  mirrorPath: string,
+  expectedSha256: string | null
+) {
+  if (!expectedSha256) return;
+  const legacyPath = await safeChild(mirrorPath, LEGACY_MANIFEST_FILE);
+  try {
+    const stat = await fs.lstat(legacyPath);
+    if (!stat.isFile() || stat.isSymbolicLink()) return;
+    if ((await currentHash(legacyPath)) !== expectedSha256) return;
+    await fs.unlink(legacyPath);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+  }
 }
 
 function transactionPath(transactionRoot: string, leaseId: string) {
@@ -349,7 +395,14 @@ async function recoverTransactions(
     }
     await fs.remove(tx);
     if (!manifest && record.previousGeneration === null) {
-      for (const name of ['docs', 'snapshots', 'assets']) {
+      for (const name of [
+        'docs',
+        `${METADATA_DIR}/snapshots`,
+        `${METADATA_DIR}/assets`,
+        METADATA_DIR,
+        'snapshots',
+        'assets',
+      ]) {
         await fs.rmdir(resolve(mirrorPath, name)).catch(error => {
           const code = (error as NodeJS.ErrnoException).code;
           if (code !== 'ENOENT' && code !== 'ENOTEMPTY') throw error;
@@ -400,7 +453,8 @@ export async function inspectTarget(input: {
   recoverInterrupted?: boolean;
 }) {
   const { projectRoot, mirrorPath } = await validateMirror(input.projectRoot);
-  const existingManifest = await loadManifest(mirrorPath);
+  const existingManifestInfo = await loadManifest(mirrorPath);
+  const existingManifest = existingManifestInfo?.manifest ?? null;
   if (input.recoverInterrupted) {
     await recoverTransactions(
       projectRoot,
@@ -410,11 +464,26 @@ export async function inspectTarget(input: {
     );
   }
   if (!(await fs.pathExists(mirrorPath))) {
-    return { state: 'empty' as const, projectRoot, mirrorPath, manifest: null };
+    return {
+      state: 'empty' as const,
+      projectRoot,
+      mirrorPath,
+      manifest: null,
+      manifestSource: null,
+      manifestSha256: null,
+    };
   }
-  const manifest = await loadManifest(mirrorPath);
+  const manifestInfo = await loadManifest(mirrorPath);
+  const manifest = manifestInfo?.manifest ?? null;
   if (manifest && manifest.workspaceId !== input.workspaceId) {
-    return { state: 'foreign' as const, projectRoot, mirrorPath, manifest };
+    return {
+      state: 'foreign' as const,
+      projectRoot,
+      mirrorPath,
+      manifest,
+      manifestSource: manifestInfo?.source ?? null,
+      manifestSha256: manifestInfo?.sha256 ?? null,
+    };
   }
   const entries = await fs.readdir(mirrorPath);
   if (!manifest && entries.length > 0) {
@@ -423,6 +492,8 @@ export async function inspectTarget(input: {
       projectRoot,
       mirrorPath,
       manifest: null,
+      manifestSource: null,
+      manifestSha256: null,
     };
   }
   return {
@@ -430,6 +501,8 @@ export async function inspectTarget(input: {
     projectRoot,
     mirrorPath,
     manifest,
+    manifestSource: manifestInfo?.source ?? null,
+    manifestSha256: manifestInfo?.sha256 ?? null,
   };
 }
 
@@ -485,6 +558,8 @@ export async function beginGeneration(input: {
     workspaceId: input.workspaceId,
     generation: input.generation,
     previousGeneration: inspection.manifest?.generation ?? null,
+    legacyManifestSha256:
+      inspection.manifestSource === 'legacy' ? inspection.manifestSha256 : null,
     aborted: false,
     committing: false,
     txPath: tx,
@@ -555,7 +630,8 @@ export async function finalizeGeneration(input: {
   if (!parsed || parsed.workspaceId !== input.workspaceId) {
     throw new Error('Invalid mirror manifest');
   }
-  const previous = await loadManifest(lease.mirrorPath);
+  const previousInfo = await loadManifest(lease.mirrorPath);
+  const previous = previousInfo?.manifest ?? null;
   if (previous && previous.workspaceId !== input.workspaceId) {
     throw new Error('Mirror belongs to another workspace');
   }
@@ -679,13 +755,20 @@ export async function finalizeGeneration(input: {
     }
     getLease(input.lease, input.workspaceId, parsed.generation);
     await atomicWrite(
-      resolve(lease.mirrorPath, MANIFEST_FILE),
+      await safeChild(lease.mirrorPath, MANIFEST_FILE),
       `${JSON.stringify(parsed, null, 2)}\n`,
       () => {
         getLease(input.lease, input.workspaceId, parsed.generation);
       }
     );
     committed = true;
+    await removeLegacyManifestIfUnchanged(
+      lease.mirrorPath,
+      previousInfo?.source === 'legacy' ? lease.legacyManifestSha256 : null
+    ).catch(() => undefined);
+    for (const name of ['snapshots', 'assets']) {
+      await fs.rmdir(resolve(lease.mirrorPath, name)).catch(() => undefined);
+    }
   } catch (error) {
     if (!committed)
       for (const childPath of mutated) {

@@ -11,9 +11,9 @@ import { Service } from '@toeverything/infra';
 import {
   createMirrorFrontmatter,
   encodeMirrorId,
-  getMirrorDocPath,
   getMirrorSnapshotPath,
   hashText,
+  LOCAL_MIRROR_METADATA_DIR,
   stableJson,
 } from './format';
 import type {
@@ -67,21 +67,30 @@ function collectAttachments(snapshot: DocSnapshot) {
   return attachments;
 }
 
-function rewriteDocumentLinks(markdown: string, docIds: readonly string[]) {
+function rewriteDocumentLinks(
+  markdown: string,
+  docPaths: ReadonlyMap<string, string>
+) {
   let output = markdown;
-  for (const docId of docIds) {
+  for (const [docId, path] of docPaths) {
     const source = `affine-mirror://doc/${docId}`;
-    const target = `./${encodeMirrorId(docId)}.md`;
+    const target = `./${path.replace(/^docs\//, '')}`;
     output = output.replaceAll(source, target);
   }
   return output;
+}
+
+function documentPath(docId: string, docPaths: ReadonlyMap<string, string>) {
+  const path = docPaths.get(docId);
+  if (!path) throw new Error(`Missing local mirror path for ${docId}`);
+  return path;
 }
 
 export class LocalMirrorSerializer extends Service {
   async serialize(
     doc: Store,
     metadata: LocalMirrorDocMetadata,
-    allDocIds: readonly string[]
+    docPaths: ReadonlyMap<string, string>
   ): Promise<LocalMirrorSerializedDocument> {
     const serialized = await MarkdownTransformer.serializeDoc(doc, {
       docLinkBaseUrl: 'affine-mirror://doc',
@@ -93,7 +102,7 @@ export class LocalMirrorSerializer extends Service {
     const snapshot = DocSnapshotSchema.parse(serialized.snapshot);
     const snapshotJson = stableJson(snapshot);
     const sourceHash = await hashText(stableJson({ snapshot, metadata }));
-    let markdown = rewriteDocumentLinks(serialized.file, allDocIds);
+    let markdown = rewriteDocumentLinks(serialized.file, docPaths);
     const files: LocalMirrorSerializedDocument['files'] = [];
     const assetPaths = new Map<string, string>();
 
@@ -106,13 +115,14 @@ export class LocalMirrorSerializer extends Service {
       }
       const exportedName = getAssetName(serialized.assets, assetId);
       const mirrorName = `${encodeMirrorId(assetId)}.${extensionFromName(exportedName)}`;
-      assetPaths.set(assetId, `../assets/${mirrorName}`);
+      const relativeAssetPath = `../${LOCAL_MIRROR_METADATA_DIR}/assets/${mirrorName}`;
+      assetPaths.set(assetId, relativeAssetPath);
       markdown = markdown.replaceAll(
         `assets/${exportedName}`,
-        `../assets/${mirrorName}`
+        relativeAssetPath
       );
       files.push({
-        path: `assets/${mirrorName}`,
+        path: `${LOCAL_MIRROR_METADATA_DIR}/assets/${mirrorName}`,
         kind: 'asset',
         content: new Uint8Array(await blob.arrayBuffer()),
         docId: metadata.id,
@@ -145,7 +155,7 @@ export class LocalMirrorSerializer extends Service {
 
     files.unshift(
       {
-        path: getMirrorDocPath(metadata.id),
+        path: documentPath(metadata.id, docPaths),
         kind: 'markdown',
         content: `${createMirrorFrontmatter(
           doc.workspace.id,
