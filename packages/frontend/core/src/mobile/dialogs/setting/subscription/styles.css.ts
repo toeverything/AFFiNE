@@ -4,9 +4,9 @@ import { style } from '@vanilla-extract/css';
 export const root = style({
   display: 'flex',
   flexDirection: 'column',
-  gap: 10,
-  borderRadius: 12,
-  padding: '12px 14px',
+  gap: 18,
+  borderRadius: 24,
+  padding: '24px',
   backgroundColor: cssVarV2('layer/background/primary'),
   boxSizing: 'border-box',
 });
@@ -14,43 +14,63 @@ export const root = style({
 export const content = style({
   display: 'flex',
   flexDirection: 'column',
-  gap: 6,
   alignItems: 'stretch',
 });
 
+export const headerRow = style({
+  display: 'flex',
+  alignItems: 'center',
+  gap: 16,
+  width: '100%',
+});
+
+export const perkIconWrapper = style({
+  width: 42,
+  height: 42,
+  borderRadius: '50%',
+  backgroundColor: cssVarV2('layer/background/secondary'),
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  flexShrink: 0,
+});
+
+export const textBlock = style({
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'center',
+  gap: 8,
+  minWidth: 0,
+  flex: 1,
+});
+
 export const title = style({
-  fontSize: '17px',
+  fontSize: '18px',
   lineHeight: '22px',
   fontWeight: 600,
   color: cssVarV2('text/primary'),
   textAlign: 'left',
 });
 
-export const perkRow = style({
-  display: 'flex',
-  alignItems: 'flex-start',
-  gap: 8,
-  width: '100%',
-});
-
 export const perkIcon = style({
-  width: 16,
-  height: 16,
-  marginTop: 1,
+  width: 18,
+  height: 18,
   flexShrink: 0,
   objectFit: 'contain',
 });
 
 export const description = style({
-  fontSize: '12px',
-  lineHeight: '16px',
+  fontSize: '14px',
+  lineHeight: '19px',
   fontWeight: 400,
   color: cssVarV2('text/secondary'),
+  maxWidth: 250,
 });
 
 export const button = style({
   width: '100%',
-  minHeight: 36,
-  fontSize: '13px',
+  minHeight: 56,
+  fontSize: '17px',
+  fontWeight: 600,
   borderRadius: 999,
 });

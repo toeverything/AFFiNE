@@ -38,13 +38,17 @@ export const UserSubscription = () => {
   return (
     <div className={styles.root}>
       <div className={styles.content}>
-        <div className={styles.title}>
-          {t['com.affine.mobile.setting.subscription.title']()}
-        </div>
-        <div className={styles.perkRow}>
-          <img className={styles.perkIcon} src={proDiamond} alt="" />
-          <div className={styles.description}>
-            {t['com.affine.mobile.setting.subscription.description']()}
+        <div className={styles.headerRow}>
+          <div className={styles.perkIconWrapper}>
+            <img className={styles.perkIcon} src={proDiamond} alt="" />
+          </div>
+          <div className={styles.textBlock}>
+            <div className={styles.title}>
+              {t['com.affine.mobile.setting.subscription.title']()}
+            </div>
+            <div className={styles.description}>
+              {t['com.affine.mobile.setting.subscription.description']()}
+            </div>
           </div>
         </div>
       </div>

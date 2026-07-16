@@ -6,12 +6,18 @@ import {
 import { cssVarV2 } from '@toeverything/theme/v2';
 import { style } from '@vanilla-extract/css';
 
-export const pageTitle = style([bodyEmphasized]);
+export const pageTitle = style([
+  bodyEmphasized,
+  {
+    fontSize: 19,
+    lineHeight: '24px',
+  },
+]);
 
 export const root = style({
   display: 'flex',
   flexDirection: 'column',
-  gap: 12,
+  gap: 22,
   paddingTop: 0,
   paddingRight: 16,
   paddingBottom: 'calc(env(safe-area-inset-bottom) + 20px)',
@@ -51,6 +57,8 @@ export const baseSettingItemName = style([
     color: cssVarV2('text/primary'),
     minWidth: 0,
     flex: 1,
+    fontSize: 19,
+    lineHeight: '24px',
   },
 ]);
 
@@ -68,6 +76,8 @@ export const baseSettingItemAction = style([
     whiteSpace: 'nowrap',
     textOverflow: 'ellipsis',
     overflow: 'hidden',
+    fontSize: 19,
+    lineHeight: '24px',
   },
 ]);
 
@@ -154,8 +164,8 @@ export const promoCardEyebrow = style([
 ]);
 
 export const promoCardTitle = style({
-  fontSize: 17,
-  lineHeight: '21px',
+  fontSize: 19,
+  lineHeight: '24px',
   fontWeight: 600,
   maxWidth: '74%',
   color: cssVarV2('button/pureWhiteText'),
@@ -165,8 +175,8 @@ export const promoCardTitle = style({
 });
 
 export const promoCardDescription = style({
-  fontSize: 11,
-  lineHeight: '15px',
+  fontSize: 13,
+  lineHeight: '18px',
   maxWidth: '74%',
   color: cssVarV2('button/pureWhiteText'),
   opacity: 0.92,
