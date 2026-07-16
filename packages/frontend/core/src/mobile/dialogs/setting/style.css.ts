@@ -107,9 +107,9 @@ export const promoCard = style({
   overflow: 'hidden',
   border: '0.5px solid rgba(255,255,255,0.14)',
   borderRadius: 30,
-  padding: '28px 28px 26px',
+  padding: '16px 20px 14px',
   width: '100%',
-  minHeight: 156,
+  minHeight: 116,
   display: 'flex',
   alignItems: 'flex-start',
   justifyContent: 'flex-start',
@@ -155,9 +155,9 @@ export const promoCardContent = style({
   zIndex: 1,
   display: 'flex',
   flexDirection: 'column',
-  gap: 14,
+  gap: 6,
   width: '66%',
-  maxWidth: 236,
+  maxWidth: 212,
 });
 
 export const promoCardTitle = style({
@@ -178,9 +178,9 @@ export const promoCardDescription = style({
 
 export const promoCardArt = style({
   position: 'absolute',
-  right: 20,
-  bottom: 22,
-  width: 98,
+  right: 14,
+  bottom: 10,
+  width: 80,
   height: 'auto',
   objectFit: 'contain',
   pointerEvents: 'none',
