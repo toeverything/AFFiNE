@@ -46,4 +46,84 @@ describe('LocalMirrorSerializer', () => {
     expect(markdown?.content).toContain('docId: "page0"');
     expect(snapshot?.content).toContain('"id": "page0"');
   });
+
+  test('keeps mixed rich content and attachments agent-readable', async () => {
+    const workspace = new TestWorkspace({ id: 'workspace' });
+    workspace.meta.initialize();
+    const attachment = new Blob(['attachment body'], { type: 'text/plain' });
+    const sourceId = await workspace.blobSync.set(attachment);
+    const linkedStore = workspace
+      .createDoc('linked-page')
+      .getStore({ extensions });
+    linkedStore.load();
+    linkedStore.addBlock('affine:page', {
+      title: new Text('Linked project note'),
+    });
+    const store = workspace.createDoc('rich-page').getStore({ extensions });
+    store.load();
+    const rootId = store.addBlock('affine:page', {
+      title: new Text('Rich project notes'),
+    });
+    const noteId = store.addBlock('affine:note', {}, rootId);
+    store.addBlock(
+      'affine:database',
+      { columns: [], titleColumn: 'Title' },
+      noteId
+    );
+    store.addBlock(
+      'affine:bookmark',
+      {
+        url: 'https://example.com/reference',
+        title: 'Project reference',
+      },
+      noteId
+    );
+    store.addBlock(
+      'affine:embed-linked-doc',
+      { pageId: 'linked-page' },
+      noteId
+    );
+    store.addBlock(
+      'affine:attachment',
+      {
+        name: 'brief.txt',
+        sourceId,
+        type: 'text/plain',
+        size: attachment.size,
+      },
+      noteId
+    );
+    store.addBlock('affine:surface', {}, rootId);
+
+    const framework = new Framework();
+    framework.service(LocalMirrorSerializer);
+    const serializer = framework.provider().get(LocalMirrorSerializer);
+    const result = await serializer.serialize(
+      store,
+      {
+        id: 'rich-page',
+        title: 'Rich project notes',
+        tags: [],
+        primaryMode: 'edgeless',
+      },
+      ['rich-page', 'linked-page']
+    );
+
+    const markdown = result.files.find(file => file.kind === 'markdown');
+    const snapshot = result.files.find(file => file.kind === 'snapshot');
+    const asset = result.files.find(file => file.kind === 'asset');
+    expect(markdown?.content).toContain('AFFiNE rich content');
+    expect(markdown?.content).toContain('`affine:database`');
+    expect(markdown?.content).toContain('`affine:surface`');
+    expect(markdown?.content).toContain('## Attachments');
+    expect(markdown?.content).toContain('../assets/');
+    expect(snapshot?.content).toContain('"flavour": "affine:database"');
+    expect(snapshot?.content).toContain('"flavour": "affine:bookmark"');
+    expect(snapshot?.content).toContain('"flavour": "affine:embed-linked-doc"');
+    expect(snapshot?.content).toContain('"flavour": "affine:attachment"');
+    expect(asset?.content).toBeInstanceOf(Uint8Array);
+    expect(new TextDecoder().decode(asset?.content as Uint8Array)).toBe(
+      'attachment body'
+    );
+  });
 });
