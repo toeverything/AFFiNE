@@ -57,8 +57,8 @@ export const baseSettingItemName = style([
     color: cssVarV2('text/primary'),
     minWidth: 0,
     flex: 1,
-    fontSize: 19,
-    lineHeight: '24px',
+    fontSize: 17,
+    lineHeight: '22px',
   },
 ]);
 
@@ -76,8 +76,8 @@ export const baseSettingItemAction = style([
     whiteSpace: 'nowrap',
     textOverflow: 'ellipsis',
     overflow: 'hidden',
-    fontSize: 19,
-    lineHeight: '24px',
+    fontSize: 17,
+    lineHeight: '22px',
   },
 ]);
 
@@ -106,51 +106,38 @@ export const promoCard = style({
   position: 'relative',
   overflow: 'hidden',
   border: '0.5px solid rgba(255,255,255,0.14)',
-  borderRadius: 14,
-  padding: '12px 14px',
+  borderRadius: 30,
+  padding: '28px 28px 26px',
   width: '100%',
+  minHeight: 156,
   display: 'flex',
-  flexDirection: 'column',
-  gap: 4,
+  alignItems: 'flex-start',
+  justifyContent: 'flex-start',
   boxSizing: 'border-box',
   textAlign: 'left',
   backgroundColor: cssVarV2('button/primary'),
   backgroundImage:
-    'linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.04) 32%, rgba(6,59,151,0.08) 100%)',
+    'linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.04) 34%, rgba(255,255,255,0.02) 100%)',
   color: cssVarV2('button/pureWhiteText'),
   cursor: 'pointer',
   isolation: 'isolate',
   transition: 'transform 180ms ease, box-shadow 180ms ease',
   boxShadow:
-    '0 8px 18px rgba(13, 40, 99, 0.12), 0 1px 3px rgba(13, 40, 99, 0.08), inset 0 1px 0 rgba(255,255,255,0.14)',
+    '0 10px 20px rgba(13, 40, 99, 0.12), inset 0 1px 0 rgba(255,255,255,0.12)',
   selectors: {
     '&::before': {
       content: '""',
       position: 'absolute',
       inset: 0,
       background:
-        'linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0) 44%)',
-      pointerEvents: 'none',
-      zIndex: 0,
-    },
-    '&::after': {
-      content: '""',
-      position: 'absolute',
-      right: -6,
-      bottom: -10,
-      width: 78,
-      height: 78,
-      borderRadius: '50%',
-      background:
-        'radial-gradient(circle, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 70%)',
-      opacity: 0.38,
+        'linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0) 48%)',
       pointerEvents: 'none',
       zIndex: 0,
     },
     '&:active': {
       transform: 'scale(0.995)',
       boxShadow:
-        '0 5px 12px rgba(13, 40, 99, 0.1), 0 1px 2px rgba(13, 40, 99, 0.07), inset 0 1px 0 rgba(255,255,255,0.12)',
+        '0 6px 12px rgba(13, 40, 99, 0.1), inset 0 1px 0 rgba(255,255,255,0.1)',
     },
   },
 });
@@ -163,39 +150,43 @@ export const promoCardEyebrow = style([
   },
 ]);
 
-export const promoCardTitle = style({
-  fontSize: 19,
-  lineHeight: '24px',
-  fontWeight: 600,
-  maxWidth: '74%',
-  color: cssVarV2('button/pureWhiteText'),
+export const promoCardContent = style({
   position: 'relative',
   zIndex: 1,
-  textShadow: '0 0.5px 1px rgba(7, 48, 121, 0.14)',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 14,
+  width: '66%',
+  maxWidth: 236,
+});
+
+export const promoCardTitle = style({
+  fontSize: 20,
+  lineHeight: '26px',
+  fontWeight: 600,
+  color: cssVarV2('button/pureWhiteText'),
+  textShadow: '0 0.5px 1px rgba(7, 48, 121, 0.12)',
 });
 
 export const promoCardDescription = style({
-  fontSize: 13,
-  lineHeight: '18px',
-  maxWidth: '74%',
+  fontSize: 16,
+  lineHeight: '21px',
   color: cssVarV2('button/pureWhiteText'),
-  opacity: 0.92,
-  position: 'relative',
-  zIndex: 1,
-  textShadow: '0 0.5px 1px rgba(7, 48, 121, 0.1)',
+  opacity: 0.94,
+  textShadow: '0 0.5px 1px rgba(7, 48, 121, 0.08)',
 });
 
 export const promoCardArt = style({
   position: 'absolute',
-  right: 8,
-  bottom: 6,
-  width: 64,
+  right: 20,
+  bottom: 22,
+  width: 98,
   height: 'auto',
   objectFit: 'contain',
   pointerEvents: 'none',
   zIndex: 1,
-  filter: 'drop-shadow(0 4px 8px rgba(7, 48, 121, 0.14))',
-  opacity: 0.96,
+  filter: 'drop-shadow(0 6px 12px rgba(7, 48, 121, 0.12))',
+  opacity: 0.9,
 });
 
 export const dangerZoneTitle = style({

@@ -86,11 +86,13 @@ const TeamPromotionCard = () => {
       className={styles.promoCard}
       onClick={() => openExternal(AFFINE_TEAM_URL)}
     >
-      <span className={styles.promoCardTitle}>
-        {t['com.affine.mobile.setting.promo.title']()}
-      </span>
-      <span className={styles.promoCardDescription}>
-        {t['com.affine.mobile.setting.promo.description']()}
+      <span className={styles.promoCardContent}>
+        <span className={styles.promoCardTitle}>
+          {t['com.affine.mobile.setting.promo.title']()}
+        </span>
+        <span className={styles.promoCardDescription}>
+          {t['com.affine.mobile.setting.promo.description']()}
+        </span>
       </span>
       <img className={styles.promoCardArt} src={teamPeople} alt="" />
     </button>

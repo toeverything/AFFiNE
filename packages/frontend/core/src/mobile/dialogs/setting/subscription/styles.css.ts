@@ -69,8 +69,8 @@ export const description = style({
 
 export const button = style({
   width: '100%',
-  minHeight: 56,
-  fontSize: '17px',
+  minHeight: 48,
+  fontSize: '15px',
   fontWeight: 600,
   borderRadius: 999,
 });
