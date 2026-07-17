@@ -8,9 +8,10 @@ import {
   type AuthTokenResponse,
   classifyAuthError,
 } from '@affine/auth';
-import { app, net, safeStorage } from 'electron';
+import { app, safeStorage } from 'electron';
 
 import { logger } from '../logger';
+import { authFetch } from './transport';
 
 const FILEPATH = path.join(app.getPath('userData'), 'auth-sessions.json');
 const TEMP_FILEPATH = `${FILEPATH}.tmp`;
@@ -105,7 +106,7 @@ function storage(endpoint: string) {
 }
 
 async function refresh(endpoint: string, refreshToken: string) {
-  const response = await net.fetch(
+  const response = await authFetch(
     new URL('/api/auth/session/refresh', endpoint).toString(),
     {
       method: 'POST',
@@ -192,7 +193,7 @@ export async function revokeAuthSession(endpoint: string) {
   await getAuthSessionBroker(normalized).revoke(
     'sign-out',
     async (refreshToken: string) => {
-      const response = await net.fetch(
+      const response = await authFetch(
         new URL('/api/auth/session/revoke', normalized).toString(),
         {
           method: 'POST',

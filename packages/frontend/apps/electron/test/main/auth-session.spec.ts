@@ -11,6 +11,7 @@ const runtime = vi.hoisted(() => ({
   failWrite: false,
   files: new Map<string, string>(),
   fetch: vi.fn(),
+  fromPartition: vi.fn(),
   rename: vi.fn(),
 }));
 
@@ -41,7 +42,12 @@ vi.mock('node:fs/promises', () => ({
 
 vi.mock('electron', () => ({
   app: { getPath: () => '/test-user-data' },
-  net: { fetch: runtime.fetch },
+  session: {
+    fromPartition: (...args: unknown[]) => {
+      runtime.fromPartition(...args);
+      return { fetch: runtime.fetch };
+    },
+  },
   safeStorage: {
     isEncryptionAvailable: () => runtime.encryptionAvailable,
     getSelectedStorageBackend: () => runtime.backend,
@@ -68,6 +74,7 @@ beforeEach(() => {
   runtime.backend = 'unknown';
   runtime.failWrite = false;
   runtime.fetch.mockReset();
+  runtime.fromPartition.mockClear();
   runtime.rename.mockClear();
 });
 
@@ -138,6 +145,9 @@ test('shares one refresh across concurrent main-process callers', async () => {
 
   expect(tokens.every(token => token === 'fresh')).toBe(true);
   expect(runtime.fetch).toHaveBeenCalledTimes(1);
+  expect(runtime.fromPartition).toHaveBeenCalledWith('affine-auth-transport', {
+    cache: false,
+  });
 });
 
 test('preserves credentials for unknown refresh errors', async () => {

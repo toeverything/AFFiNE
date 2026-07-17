@@ -9312,9 +9312,11 @@ export function useAFFiNEI18N(): {
         readonly message: string;
     }): string;
     /**
-      * `Invalid URL`
+      * `URL blocked by SSRF protection: {{reason}}`
       */
-    ["error.SSRF_BLOCKED_ERROR"](): string;
+    ["error.SSRF_BLOCKED_ERROR"](options: {
+        readonly reason: string;
+    }): string;
     /**
       * `Response too large ({{receivedBytes}} bytes), limit is {{limitBytes}} bytes`
       */

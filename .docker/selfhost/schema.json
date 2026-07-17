@@ -1612,7 +1612,7 @@
         },
         "providers.oidc": {
           "type": "object",
-          "description": "OIDC OAuth provider config\n@default {\"clientId\":\"\",\"clientSecret\":\"\",\"issuer\":\"\",\"args\":{}}\n@link https://openid.net/specs/openid-connect-core-1_0.html",
+          "description": "OIDC OAuth provider config. Private network access requires allowPrivateNetwork: true\n@default {\"clientId\":\"\",\"clientSecret\":\"\",\"issuer\":\"\",\"allowPrivateNetwork\":false,\"args\":{}}\n@link https://openid.net/specs/openid-connect-core-1_0.html",
           "properties": {
             "clientId": {
               "type": "string"
@@ -1622,12 +1622,21 @@
             },
             "args": {
               "type": "object"
+            },
+            "issuer": {
+              "type": "string",
+              "description": "OIDC issuer URL"
+            },
+            "allowPrivateNetwork": {
+              "type": "boolean",
+              "description": "Allow the OIDC issuer origin to resolve to private network addresses"
             }
           },
           "default": {
             "clientId": "",
             "clientSecret": "",
             "issuer": "",
+            "allowPrivateNetwork": false,
             "args": {}
           }
         },

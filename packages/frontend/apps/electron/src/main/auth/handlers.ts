@@ -1,7 +1,7 @@
 import os from 'node:os';
 
 import type { AuthTokenResponse } from '@affine/auth';
-import { net, session } from 'electron';
+import { session } from 'electron';
 
 import { logger } from '../logger';
 import type { NamespaceHandlers } from '../type';
@@ -12,6 +12,7 @@ import {
   revokeAuthSession,
   setAuthSession,
 } from './auth-session';
+import { authFetch, getAuthTransportSession } from './transport';
 
 export interface SignInResponse {
   id?: string;
@@ -47,14 +48,21 @@ function authUrl(endpoint: string, path: string) {
 async function readJson<T>(response: Response): Promise<T> {
   const text = await response.text();
   if (!response.ok) {
-    throw new Error(text || response.statusText);
+    let message = text || response.statusText;
+    try {
+      const error = JSON.parse(text);
+      if (typeof error.message === 'string') {
+        message = error.message;
+      }
+    } catch {}
+    throw new Error(message);
   }
 
   return text ? JSON.parse(text) : ({} as T);
 }
 
 async function fetchAuth(endpoint: string, path: string, body?: unknown) {
-  return await net.fetch(authUrl(endpoint, path), {
+  return await authFetch(authUrl(endpoint, path), {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
@@ -66,18 +74,21 @@ async function fetchAuth(endpoint: string, path: string, body?: unknown) {
 }
 
 async function clearAuthCookies(endpoint: string) {
+  const sessions = [session.defaultSession, getAuthTransportSession()];
   await Promise.all(
-    authCookieNames.map(name =>
-      session.defaultSession.cookies
-        .remove(endpoint, name)
-        .catch(error =>
-          logger.debug(
-            'failed to clear native auth cookie',
-            endpoint,
-            name,
-            error
+    sessions.flatMap(authSession =>
+      authCookieNames.map(name =>
+        authSession.cookies
+          .remove(endpoint, name)
+          .catch(error =>
+            logger.debug(
+              'failed to clear native auth cookie',
+              endpoint,
+              name,
+              error
+            )
           )
-        )
+      )
     )
   );
 }
@@ -148,7 +159,7 @@ export const authHandlers = {
       challenge?: string;
     }
   ) => {
-    const response = await net.fetch(authUrl(endpoint, '/api/auth/sign-in'), {
+    const response = await authFetch(authUrl(endpoint, '/api/auth/sign-in'), {
       method: 'POST',
       headers: {
         'content-type': 'application/json',

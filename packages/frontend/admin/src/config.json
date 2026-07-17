@@ -482,7 +482,7 @@
     },
     "providers.oidc": {
       "type": "Object",
-      "desc": "OIDC OAuth provider config",
+      "desc": "OIDC OAuth provider config. Private network access requires allowPrivateNetwork: true",
       "link": "https://openid.net/specs/openid-connect-core-1_0.html"
     },
     "providers.apple": {

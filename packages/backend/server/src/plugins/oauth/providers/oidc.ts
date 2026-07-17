@@ -13,6 +13,8 @@ import {
   InvalidAuthState,
   InvalidOauthResponse,
   safeFetch,
+  type SafeFetchOptions,
+  SsrfBlockedError,
   URLHelper,
 } from '../../../base';
 import { OAuthOIDCProviderConfig, OAuthProviderName } from '../config';
@@ -65,13 +67,6 @@ type OIDCConfiguration = z.infer<typeof OIDCConfigurationSchema>;
 
 const OIDC_DISCOVERY_INITIAL_RETRY_DELAY = 1000;
 const OIDC_DISCOVERY_MAX_RETRY_DELAY = 60_000;
-const OIDC_FETCH_OPTIONS = {
-  timeoutMs: 10_000,
-  maxRedirects: 3,
-  maxBytes: 1024 * 1024,
-  allowedHeaders: ['accept'],
-};
-
 @Injectable()
 export class OIDCProvider extends OAuthProvider implements OnModuleDestroy {
   override provider = OAuthProviderName.OIDC;
@@ -94,6 +89,24 @@ export class OIDCProvider extends OAuthProvider implements OnModuleDestroy {
 
   override get requiresPkce() {
     return true;
+  }
+
+  protected override fetchOptions(rawUrl: string | URL): SafeFetchOptions {
+    const options = super.fetchOptions(rawUrl);
+    const config = this.config as OAuthOIDCProviderConfig;
+    if (!config.allowPrivateNetwork) {
+      return options;
+    }
+    try {
+      const issuer = new URL(config.issuer);
+      const target = new URL(rawUrl);
+      if (target.origin === issuer.origin) {
+        return { ...options, allowPrivateTargetOrigin: true };
+      }
+    } catch {
+      return options;
+    }
+    return options;
   }
 
   private get endpoints() {
@@ -145,10 +158,11 @@ export class OIDCProvider extends OAuthProvider implements OnModuleDestroy {
     }
 
     try {
+      const discoveryUrl = `${this.normalizeIssuer(config.issuer)}/.well-known/openid-configuration`;
       const res = await this.oidcFetch(
-        `${config.issuer}/.well-known/openid-configuration`,
+        discoveryUrl,
         { method: 'GET', headers: { Accept: 'application/json' } },
-        OIDC_FETCH_OPTIONS
+        this.fetchOptions(discoveryUrl)
       );
 
       if (generation !== this.#validationGeneration) {
@@ -176,7 +190,7 @@ export class OIDCProvider extends OAuthProvider implements OnModuleDestroy {
       this.#endpoints = configuration;
       this.#jwks = createRemoteJWKSet(new URL(configuration.jwks_uri), {
         [customFetch]: (url, init) =>
-          this.oidcFetch(url, init, OIDC_FETCH_OPTIONS),
+          this.oidcFetch(url, init, this.fetchOptions(url)),
       });
       this.#retryScheduler.reset();
       super.setup();
@@ -184,7 +198,14 @@ export class OIDCProvider extends OAuthProvider implements OnModuleDestroy {
       if (generation !== this.#validationGeneration) {
         return;
       }
-      this.logger.error('Failed to validate OIDC configuration', e);
+      const reason = e instanceof SsrfBlockedError ? e.data?.reason : undefined;
+      const message =
+        reason === 'blocked_ip' && !config.allowPrivateNetwork
+          ? 'Failed to validate OIDC configuration: issuer resolves to a private network address; set oauth.providers.oidc.allowPrivateNetwork to true to trust this origin'
+          : reason
+            ? `Failed to validate OIDC configuration: ${reason}`
+            : 'Failed to validate OIDC configuration';
+      this.logger.error(message, e);
       this.onValidationFailure(generation);
     }
   }
