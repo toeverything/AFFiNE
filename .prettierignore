@@ -2,7 +2,7 @@
 **/node_modules
 .yarn
 .github/helm
-charts
+charts/**/templates/**
 .git
 .vscode
 .context

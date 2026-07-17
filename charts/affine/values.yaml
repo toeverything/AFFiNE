@@ -34,6 +34,13 @@ persistence:
 
 migration:
   enabled: true
+  ttlSecondsAfterFinished: 86400
+  resources:
+    requests:
+      cpu: 50m
+      memory: 256Mi
+    limits:
+      memory: 512Mi
 
 service:
   type: ClusterIP
@@ -61,6 +68,19 @@ startupProbe:
     port: http
   failureThreshold: 30
   periodSeconds: 10
+
+# The image writes to /root/.affine — keep runAsNonRoot disabled unless you adjust paths.
+podSecurityContext: {}
+# podSecurityContext:
+#   seccompProfile:
+#     type: RuntimeDefault
+
+securityContext: {}
+# securityContext:
+#   allowPrivilegeEscalation: false
+#   capabilities:
+#     drop:
+#       - ALL
 
 podAnnotations: {}
 podLabels: {}

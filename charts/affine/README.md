@@ -61,6 +61,22 @@ config:
 | `migration.enabled` | `true` | Run DB migrations on install/upgrade |
 | `service.port` | `3010` | Service port |
 | `replicaCount` | `1` | Replicas (use `1` with RWO volume) |
+| `service.type` | `ClusterIP` | Kubernetes Service type |
+| `resources` | see `values.yaml` | CPU/memory requests and limits |
+| `podSecurityContext` / `securityContext` | `{}` | Optional pod/container hardening |
+| `nodeSelector` / `tolerations` / `affinity` | `{}` / `[]` / `{}` | Scheduling constraints |
+
+_See `values.yaml` for the complete list of configurable parameters._
+
+## Migration
+
+On every `helm install` and `helm upgrade`, a pre-install/pre-upgrade Job runs `self-host-predeploy.js` to apply database migrations. The release completes only when this Job succeeds.
+
+The hook deletes itself on success. If it fails, inspect the retained pod:
+
+```bash
+kubectl logs -n affine -l app.kubernetes.io/component=migration
+```
 
 ## Verify
 
@@ -72,7 +88,7 @@ kubectl port-forward -n affine svc/affine 3010:3010
 
 ## Upgrade
 
-Bump `version` in `Chart.yaml` before merging chart changes — CI publishes a new release on push to `main` or `canary`.
+Bump `version` in `Chart.yaml` before merging chart changes — CI publishes a new release on push to `main` or `canary`. Reusing the same version fails because the GitHub tag `affine-${version}` already exists.
 
 Pushes to `canary` publish prerelease chart versions (`0.1.0-canary.<run>`) so they do not collide with stable releases from `main`.
 
