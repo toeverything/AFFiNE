@@ -152,23 +152,31 @@ export const promoCardEyebrow = style([
 
 export const promoCardContent = style({
   position: 'relative',
-  zIndex: 1,
+  zIndex: 2,
   display: 'flex',
   flexDirection: 'column',
   gap: 6,
-  width: '66%',
-  maxWidth: 212,
+  width: '100%',
+  maxWidth: 'none',
+  paddingRight: 0,
 });
 
 export const promoCardTitle = style({
+  display: 'block',
+  paddingRight: 72,
   fontSize: 20,
   lineHeight: '26px',
   fontWeight: 600,
   color: cssVarV2('button/pureWhiteText'),
+  whiteSpace: 'nowrap',
   textShadow: '0 0.5px 1px rgba(7, 48, 121, 0.12)',
 });
 
 export const promoCardDescription = style({
+  display: 'block',
+  width: '100%',
+  maxWidth: 'none',
+  paddingRight: 96,
   fontSize: 16,
   lineHeight: '21px',
   color: cssVarV2('button/pureWhiteText'),
@@ -179,7 +187,7 @@ export const promoCardDescription = style({
 export const promoCardArt = style({
   position: 'absolute',
   right: 14,
-  bottom: 10,
+  bottom: 8,
   width: 80,
   height: 'auto',
   objectFit: 'contain',
