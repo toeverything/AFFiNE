@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 export const LOCAL_MIRROR_FORMAT_VERSION = 1 as const;
+export const LOCAL_MIRROR_MAX_FILE_BYTES = 128 * 1024 * 1024;
 
 export const LocalMirrorFileKindSchema = z.enum([
   'index',
@@ -94,10 +95,18 @@ export type LocalMirrorSerializedFile = {
   sourceHash?: string;
 };
 
+export type LocalMirrorSerializedAsset = {
+  assetId: string;
+  path: string;
+  kind: 'asset';
+  docId: string;
+};
+
 export type LocalMirrorSerializedDocument = {
   docId: string;
   sourceHash: string;
   files: LocalMirrorSerializedFile[];
+  assets: LocalMirrorSerializedAsset[];
 };
 
 export type LocalMirrorStatus =

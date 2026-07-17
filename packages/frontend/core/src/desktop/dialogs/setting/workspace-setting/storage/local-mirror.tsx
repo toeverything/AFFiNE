@@ -143,6 +143,9 @@ export const DesktopLocalMirrorPanel = () => {
         ]()}
       >
         <Switch
+          aria-label={t[
+            'com.affine.settings.workspace.storage.local-mirror.name'
+          ]()}
           checked={config.enabled}
           onChange={toggle}
           data-testid="local-workspace-mirror-enabled"

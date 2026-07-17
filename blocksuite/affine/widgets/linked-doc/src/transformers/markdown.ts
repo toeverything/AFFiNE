@@ -54,6 +54,8 @@ export type SerializeMarkdownDocOptions = {
   docLinkBaseUrl?: string;
   /** Inline synced-document content in addition to retaining its link. */
   embedSyncedDocs?: boolean;
+  /** Load all referenced blobs into the returned asset map. Defaults to true. */
+  loadAssets?: boolean;
 };
 
 const FRONTMATTER_KEYS = {
@@ -625,9 +627,11 @@ async function serializeDoc(
       ...job.assetsManager.getPathBlobIdMap().values(),
     ]),
   ];
-  await Promise.all(
-    assetsIds.map(assetId => job.assetsManager.readFromBlob(assetId))
-  );
+  if (options.loadAssets !== false) {
+    await Promise.all(
+      assetsIds.map(assetId => job.assetsManager.readFromBlob(assetId))
+    );
+  }
 
   return {
     ...markdownResult,

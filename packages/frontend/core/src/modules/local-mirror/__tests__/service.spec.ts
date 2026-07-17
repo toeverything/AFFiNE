@@ -17,12 +17,17 @@ import {
   canUseLocalMirror,
   haveMirrorDocumentPathsChanged,
   LocalMirrorService,
+  materializeLocalMirrorAsset,
 } from '../service';
-import type { LocalMirrorConfig, LocalMirrorManifest } from '../types';
+import {
+  LOCAL_MIRROR_MAX_FILE_BYTES,
+  type LocalMirrorConfig,
+  type LocalMirrorManifest,
+} from '../types';
 
 function createService(options: {
   flagEnabled: boolean;
-  writeBatch?: () => Promise<{
+  writeBatch?: (input: { files: Array<{ path: string }> }) => Promise<{
     conflicts: string[];
     hashes: Record<string, string>;
   }>;
@@ -44,7 +49,13 @@ function createService(options: {
     permission: { isTeam$, isOwner$ },
   } as unknown as WorkspacePermissionService;
   const engineState$ = new BehaviorSubject({ synced: true });
-  const subscribeDocUpdate = vi.fn(() => () => undefined);
+  let emitDocUpdate: ((update: { docId: string }) => void) | null = null;
+  const subscribeDocUpdate = vi.fn(
+    (callback: (update: { docId: string }) => void) => {
+      emitDocUpdate = callback;
+      return () => undefined;
+    }
+  );
   const workspace = {
     id: 'workspace-1',
     flavour: 'affine',
@@ -88,7 +99,12 @@ function createService(options: {
   }));
   const writeBatch = vi.fn(
     options.writeBatch ??
-      (async () => ({ conflicts: [], hashes: { 'index.md': 'hash' } }))
+      (async (input: { files: Array<{ path: string }> }) => ({
+        conflicts: [],
+        hashes: Object.fromEntries(
+          input.files.map(file => [file.path, 'hash'])
+        ),
+      }))
   );
   const finalizeGeneration = vi.fn(async () => ({ conflicts: [] }));
   const beginGeneration = vi.fn(async () => ({ lease: 'lease' }));
@@ -131,10 +147,32 @@ function createService(options: {
     writeBatch,
     finalizeGeneration,
     subscribeDocUpdate,
+    emitDocUpdate: (docId: string) => emitDocUpdate?.({ docId }),
   };
 }
 
 describe('local mirror permission gate', () => {
+  test('rejects an oversized asset before materializing its bytes', async () => {
+    const arrayBuffer = vi.fn(async () => new ArrayBuffer(0));
+    const blob = {
+      size: LOCAL_MIRROR_MAX_FILE_BYTES + 1,
+      arrayBuffer,
+    } as unknown as Blob;
+
+    await expect(
+      materializeLocalMirrorAsset(
+        {
+          assetId: 'large-asset',
+          path: '.metadata/assets/large.bin',
+          kind: 'asset',
+          docId: 'doc-1',
+        },
+        blob
+      )
+    ).rejects.toThrow('Mirror file is too large');
+    expect(arrayBuffer).not.toHaveBeenCalled();
+  });
+
   test('requires a full reconciliation when readable document paths change', () => {
     const manifest: LocalMirrorManifest = {
       formatVersion: 1,
@@ -187,6 +225,25 @@ describe('local mirror permission gate', () => {
     expect(context.service.status$.value).toEqual({
       type: 'feature-disabled',
     });
+    context.service.dispose();
+  });
+
+  test('uses a trailing debounce for document updates', async () => {
+    const context = createService({ flagEnabled: true });
+    context.service.onWorkspaceInitialized();
+    await vi.waitFor(() =>
+      expect(context.finalizeGeneration).toHaveBeenCalledTimes(1)
+    );
+    context.finalizeGeneration.mockClear();
+
+    context.emitDocUpdate('doc-1');
+    await new Promise(resolve => setTimeout(resolve, 500));
+    context.emitDocUpdate('doc-1');
+    await new Promise(resolve => setTimeout(resolve, 400));
+    expect(context.finalizeGeneration).not.toHaveBeenCalled();
+    await vi.waitFor(() =>
+      expect(context.finalizeGeneration).toHaveBeenCalledTimes(1)
+    );
     context.service.dispose();
   });
 

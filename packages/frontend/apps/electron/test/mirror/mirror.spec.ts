@@ -10,6 +10,7 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
+import fs from 'fs-extra';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 const { appPathState, getPath, showItemInFolder } = vi.hoisted(() => {
@@ -573,6 +574,80 @@ describe('local mirror helper', () => {
     await expect(readFile(mirrorPath)).rejects.toMatchObject({
       code: 'ENOENT',
     });
+  });
+
+  test('preserves the previous generation when manifest replacement fails', async () => {
+    const firstLease = await beginGeneration({
+      projectRoot,
+      workspaceId: 'workspace-1',
+      generation: 'generation-1',
+    });
+    const firstBatch = await writeBatch({
+      lease: firstLease.lease,
+      projectRoot,
+      workspaceId: 'workspace-1',
+      generation: 'generation-1',
+      files: [{ path: 'index.md', kind: 'index', content: 'first' }],
+    });
+    await finalizeGeneration({
+      lease: firstLease.lease,
+      projectRoot,
+      workspaceId: 'workspace-1',
+      manifest: manifest('generation-1', {
+        'index.md': { kind: 'index', sha256: firstBatch.hashes['index.md'] },
+      }),
+      stalePaths: [],
+    });
+
+    const secondLease = await beginGeneration({
+      projectRoot,
+      workspaceId: 'workspace-1',
+      generation: 'generation-2',
+    });
+    const secondBatch = await writeBatch({
+      lease: secondLease.lease,
+      projectRoot,
+      workspaceId: 'workspace-1',
+      generation: 'generation-2',
+      files: [{ path: 'index.md', kind: 'index', content: 'second' }],
+    });
+    const rename = fs.rename.bind(fs);
+    const renameSpy = vi.spyOn(fs, 'rename').mockImplementation((from, to) => {
+      if (String(to).endsWith(join('.metadata', 'mirror.json'))) {
+        return Promise.reject(
+          new Error('simulated manifest replacement failure')
+        );
+      }
+      return rename(from, to);
+    });
+
+    await expect(
+      finalizeGeneration({
+        lease: secondLease.lease,
+        projectRoot,
+        workspaceId: 'workspace-1',
+        manifest: manifest('generation-2', {
+          'index.md': {
+            kind: 'index',
+            sha256: secondBatch.hashes['index.md'],
+          },
+        }),
+        stalePaths: [],
+      })
+    ).rejects.toThrow('simulated manifest replacement failure');
+    renameSpy.mockRestore();
+
+    expect(
+      JSON.parse(
+        await readFile(
+          join(projectRoot, '.affine', '.metadata', 'mirror.json'),
+          'utf8'
+        )
+      ).generation
+    ).toBe('generation-1');
+    expect(
+      await readFile(join(projectRoot, '.affine', 'index.md'), 'utf8')
+    ).toBe('first');
   });
 
   test('rejects an oversized file before writing it to the transaction', async () => {

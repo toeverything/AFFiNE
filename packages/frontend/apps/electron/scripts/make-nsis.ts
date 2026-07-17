@@ -1,4 +1,3 @@
-import { createRequire } from 'node:module';
 import path from 'node:path';
 
 import { buildForge } from 'app-builder-lib';
@@ -18,12 +17,8 @@ import {
 } from './make-env.js';
 
 const log = debug('affine:make-nsis');
-const require = createRequire(import.meta.url);
 
 async function make() {
-  const electronVersion = (
-    await fs.readJson(require.resolve('electron/package.json'))
-  ).version as string;
   const appName = productName;
   const makeDir = path.resolve(ROOT, 'out', buildType, 'make');
   const outPath = path.resolve(makeDir, `nsis.windows/${arch}`);
@@ -52,7 +47,6 @@ async function make() {
       // @ts-expect-error - upstream type is wrong
       publish: null, // buildForge will incorrectly publish the build
       config: {
-        electronVersion,
         appId: appIdMap[buildType],
         productName,
         executableName: productName,

@@ -9,6 +9,7 @@ import {
   type WorkspaceLocalState,
   type WorkspaceService,
 } from '@affine/core/modules/workspace';
+import type { Store } from '@blocksuite/affine/store';
 import { LiveData, OnEvent, Service } from '@toeverything/infra';
 import { nanoid } from 'nanoid';
 import {
@@ -22,10 +23,13 @@ import { createMirrorDocPathMap, LOCAL_MIRROR_WORKSPACE_PATH } from './format';
 import { createLocalMirrorProjection } from './projection';
 import type { LocalMirrorSerializer } from './serializer';
 import {
+  LOCAL_MIRROR_MAX_FILE_BYTES,
   type LocalMirrorConfig,
   type LocalMirrorDocMetadata,
   type LocalMirrorManifest,
   LocalMirrorManifestSchema,
+  type LocalMirrorSerializedAsset,
+  type LocalMirrorSerializedDocument,
   type LocalMirrorSerializedFile,
   type LocalMirrorStatus,
 } from './types';
@@ -67,6 +71,20 @@ export function haveMirrorDocumentPathsChanged(
       ([path, file]) => !file.docId || docPaths.get(file.docId) !== path
     )
   );
+}
+
+export async function materializeLocalMirrorAsset(
+  asset: LocalMirrorSerializedAsset,
+  blob: Blob
+): Promise<LocalMirrorSerializedFile> {
+  if (blob.size > LOCAL_MIRROR_MAX_FILE_BYTES) {
+    throw new Error('Mirror file is too large');
+  }
+  const content = new Uint8Array(await blob.arrayBuffer());
+  if (content.byteLength > LOCAL_MIRROR_MAX_FILE_BYTES) {
+    throw new Error('Mirror file is too large');
+  }
+  return { ...asset, content };
 }
 
 @OnEvent(WorkspaceInitialized, service => service.onWorkspaceInitialized)
@@ -243,7 +261,12 @@ export class LocalMirrorService extends Service {
       this.dirtyDocIds.add(docId);
     }
     this.replaceConflicts ||= replaceConflicts;
-    if (this.running || this.updateTimer) return;
+    if (this.running) return;
+    this.armReconciliation(delay);
+  }
+
+  private armReconciliation(delay: number) {
+    if (this.updateTimer) clearTimeout(this.updateTimer);
     this.updateTimer = setTimeout(() => {
       this.updateTimer = null;
       this.drainQueue().catch(console.error);
@@ -254,7 +277,7 @@ export class LocalMirrorService extends Service {
     if (this.running) return;
     this.running = true;
     try {
-      while (this.pending && this.runtimeActive) {
+      if (this.pending && this.runtimeActive) {
         this.pending = false;
         const replaceConflicts = this.replaceConflicts;
         const full = this.fullPending;
@@ -283,7 +306,7 @@ export class LocalMirrorService extends Service {
       }
     } finally {
       this.running = false;
-      if (this.pending && this.runtimeActive) this.scheduleReconciliation(0);
+      if (this.pending && this.runtimeActive) this.armReconciliation(750);
     }
   }
 
@@ -320,6 +343,44 @@ export class LocalMirrorService extends Service {
         docId: file.docId,
         sourceHash: file.sourceHash,
       };
+    }
+  }
+
+  private async writeSerializedDocument(
+    token: number,
+    generation: string,
+    projectRoot: string,
+    doc: Store,
+    serialized: LocalMirrorSerializedDocument,
+    manifestFiles: LocalMirrorManifest['files'],
+    replaceConflicts: boolean
+  ) {
+    await this.writeFiles(
+      token,
+      generation,
+      projectRoot,
+      serialized.files,
+      manifestFiles,
+      replaceConflicts
+    );
+    for (const asset of serialized.assets) {
+      this.assertCanRun(token);
+      const blob = await doc.blobSync.get(asset.assetId);
+      if (!blob) {
+        throw new Error(
+          `Document ${serialized.docId} references unavailable asset ${asset.assetId}`
+        );
+      }
+      const file = await materializeLocalMirrorAsset(asset, blob);
+      this.assertCanRun(token);
+      await this.writeFiles(
+        token,
+        generation,
+        projectRoot,
+        [file],
+        manifestFiles,
+        replaceConflicts
+      );
     }
   }
 
@@ -414,11 +475,12 @@ export class LocalMirrorService extends Service {
           metadata[index],
           docPaths
         );
-        await this.writeFiles(
+        await this.writeSerializedDocument(
           token,
           generation,
           projectRoot,
-          serialized.files,
+          opened.doc.blockSuiteDoc,
+          serialized,
           files,
           replaceConflicts
         );
@@ -571,10 +633,19 @@ export class LocalMirrorService extends Service {
       const docId = changedDocIds[index];
       this.assertCanRun(token);
       const record = recordsById.get(docId);
-      const existingDocPaths = Object.entries(files)
-        .filter(([, file]) => file.docId === docId && file.kind !== 'asset')
-        .map(([path]) => path);
+      const existingDocEntries = Object.entries(files).filter(
+        ([, file]) => file.docId === docId
+      );
+      const existingDocPaths = existingDocEntries.map(([path]) => path);
+      const hasExistingAssets = existingDocEntries.some(
+        ([, file]) => file.kind === 'asset'
+      );
       if (!record) {
+        if (hasExistingAssets) {
+          await this.abortActiveGeneration();
+          await this.reconcile(replaceConflicts);
+          return;
+        }
         for (const path of existingDocPaths) {
           delete files[path];
           stalePaths.add(path);
@@ -584,6 +655,7 @@ export class LocalMirrorService extends Service {
         if (!docMetadata) throw new Error(`Missing metadata for ${docId}`);
         const opened = this.docs.open(docId);
         const releasePriority = opened.doc.addPriorityLoad(100);
+        let requiresFullReconciliation = false;
         try {
           await opened.doc.waitForSyncReady(signal);
           this.assertCanRun(token);
@@ -592,24 +664,34 @@ export class LocalMirrorService extends Service {
             docMetadata,
             docPaths
           );
-          const nextPaths = new Set(serialized.files.map(file => file.path));
-          for (const path of existingDocPaths) {
-            if (!nextPaths.has(path)) {
-              delete files[path];
-              stalePaths.add(path);
+          if (hasExistingAssets || serialized.assets.length > 0) {
+            requiresFullReconciliation = true;
+          } else {
+            const nextPaths = new Set(serialized.files.map(file => file.path));
+            for (const path of existingDocPaths) {
+              if (!nextPaths.has(path)) {
+                delete files[path];
+                stalePaths.add(path);
+              }
             }
+            await this.writeSerializedDocument(
+              token,
+              generation,
+              projectRoot,
+              opened.doc.blockSuiteDoc,
+              serialized,
+              files,
+              replaceConflicts
+            );
           }
-          await this.writeFiles(
-            token,
-            generation,
-            projectRoot,
-            serialized.files,
-            files,
-            replaceConflicts
-          );
         } finally {
           releasePriority();
           opened.release();
+        }
+        if (requiresFullReconciliation) {
+          await this.abortActiveGeneration();
+          await this.reconcile(replaceConflicts);
+          return;
         }
       }
       this.status$.setValue({

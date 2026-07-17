@@ -117,7 +117,7 @@ describe('LocalMirrorSerializer', () => {
 
     const markdown = result.files.find(file => file.kind === 'markdown');
     const snapshot = result.files.find(file => file.kind === 'snapshot');
-    const asset = result.files.find(file => file.kind === 'asset');
+    const asset = result.assets[0];
     expect(markdown?.content).toContain('AFFiNE rich content');
     expect(markdown?.content).toContain('`affine:database`');
     expect(markdown?.content).toContain('`affine:surface`');
@@ -127,10 +127,7 @@ describe('LocalMirrorSerializer', () => {
     expect(snapshot?.content).toContain('"flavour": "affine:bookmark"');
     expect(snapshot?.content).toContain('"flavour": "affine:embed-linked-doc"');
     expect(snapshot?.content).toContain('"flavour": "affine:attachment"');
-    expect(asset?.content).toBeInstanceOf(Uint8Array);
     expect(asset?.path).toMatch(/^\.metadata\/assets\//);
-    expect(new TextDecoder().decode(asset?.content as Uint8Array)).toBe(
-      'attachment body'
-    );
+    expect(asset?.assetId).toBe(sourceId);
   });
 });

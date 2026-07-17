@@ -94,6 +94,7 @@ export class LocalMirrorSerializer extends Service {
   ): Promise<LocalMirrorSerializedDocument> {
     const serialized = await MarkdownTransformer.serializeDoc(doc, {
       docLinkBaseUrl: 'affine-mirror://doc',
+      loadAssets: false,
     });
     if (!serialized) {
       throw new Error(`Failed to serialize AFFiNE document ${metadata.id}`);
@@ -104,16 +105,23 @@ export class LocalMirrorSerializer extends Service {
     const sourceHash = await hashText(stableJson({ snapshot, metadata }));
     let markdown = rewriteDocumentLinks(serialized.file, docPaths);
     const files: LocalMirrorSerializedDocument['files'] = [];
+    const assets: LocalMirrorSerializedDocument['assets'] = [];
     const assetPaths = new Map<string, string>();
 
     for (const assetId of [...new Set(serialized.assetsIds)].sort()) {
-      const blob = serialized.assets.get(assetId);
+      const blob =
+        serialized.assets.get(assetId) ?? (await doc.blobSync.get(assetId));
       if (!blob) {
         throw new Error(
           `Document ${metadata.id} references unavailable asset ${assetId}`
         );
       }
-      const exportedName = getAssetName(serialized.assets, assetId);
+      const exportedName = getAssetName(
+        serialized.assets.has(assetId)
+          ? serialized.assets
+          : new Map([[assetId, blob]]),
+        assetId
+      );
       const mirrorName = `${encodeMirrorId(assetId)}.${extensionFromName(exportedName)}`;
       const relativeAssetPath = `../${LOCAL_MIRROR_METADATA_DIR}/assets/${mirrorName}`;
       assetPaths.set(assetId, relativeAssetPath);
@@ -121,10 +129,10 @@ export class LocalMirrorSerializer extends Service {
         `assets/${exportedName}`,
         relativeAssetPath
       );
-      files.push({
+      assets.push({
+        assetId,
         path: `${LOCAL_MIRROR_METADATA_DIR}/assets/${mirrorName}`,
         kind: 'asset',
-        content: new Uint8Array(await blob.arrayBuffer()),
         docId: metadata.id,
       });
     }
@@ -174,6 +182,6 @@ export class LocalMirrorSerializer extends Service {
       }
     );
 
-    return { docId: metadata.id, sourceHash, files };
+    return { docId: metadata.id, sourceHash, files, assets };
   }
 }

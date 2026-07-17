@@ -241,7 +241,7 @@ async function atomicWrite(
   try {
     await fs.writeFile(tempPath, content);
     await beforeMove?.();
-    await fs.move(tempPath, path, { overwrite: true });
+    await fs.rename(tempPath, path);
   } finally {
     await fs.remove(tempPath).catch(() => undefined);
   }
@@ -257,7 +257,7 @@ async function atomicCopy(
   try {
     await fs.copy(source, tempPath, { overwrite: false });
     await beforeMove?.();
-    await fs.move(tempPath, target, { overwrite: true });
+    await fs.rename(tempPath, target);
   } finally {
     await fs.remove(tempPath).catch(() => undefined);
   }
