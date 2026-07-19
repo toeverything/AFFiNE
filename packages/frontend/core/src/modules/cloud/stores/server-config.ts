@@ -8,9 +8,12 @@ import {
   ServerFeature,
 } from '@affine/graphql';
 import { Store } from '@toeverything/infra';
+import semver from 'semver';
 
 export type ServerConfigType = ServerConfigQuery['serverConfig'] &
   OauthProvidersQuery['serverConfig'];
+
+export const MIN_SUPPORTED_SERVER_VERSION = '0.27.0';
 
 const NETWORK_ERROR_PATTERNS = [
   /failed to fetch/i,
@@ -24,6 +27,42 @@ const NETWORK_ERROR_PATTERNS = [
   /err_[a-z_]+/i,
 ];
 
+const MISSING_SERVER_VERSION_PATTERNS = [
+  /cannot query field ["']?version["']? on type ["']?serverconfigtype["']?/i,
+  /field ["']?version["']? is not defined by type ["']?serverconfigtype["']?/i,
+];
+
+export function createUnsupportedServerVersionError(version?: string | null) {
+  const receivedVersion = version || 'unknown';
+  return new UserFriendlyError({
+    status: 426,
+    code: 'UNSUPPORTED_SERVER_VERSION',
+    type: 'UNSUPPORTED_SERVER_VERSION',
+    name: 'UNSUPPORTED_SERVER_VERSION',
+    message: `Unsupported server with version [${receivedVersion}], required version is [>=${MIN_SUPPORTED_SERVER_VERSION}].`,
+    data: {
+      serverVersion: receivedVersion,
+      requiredVersion: `>=${MIN_SUPPORTED_SERVER_VERSION}`,
+    },
+  });
+}
+
+export function isSupportedServerVersion(version?: string | null) {
+  const normalized = version && semver.valid(version, { loose: true });
+  return (
+    !!normalized &&
+    semver.gte(normalized, `${MIN_SUPPORTED_SERVER_VERSION}-0`, {
+      loose: true,
+    })
+  );
+}
+
+export function assertSupportedServerVersion(version?: string | null) {
+  if (!isSupportedServerVersion(version)) {
+    throw createUnsupportedServerVersionError(version);
+  }
+}
+
 function mapServerConfigError(error: unknown) {
   const userFriendlyError = UserFriendlyError.fromAny(error);
   if (
@@ -36,6 +75,10 @@ function mapServerConfigError(error: unknown) {
 
   if (error instanceof Error) {
     const detail = `${error.name}: ${error.message}`;
+    if (MISSING_SERVER_VERSION_PATTERNS.some(pattern => pattern.test(detail))) {
+      return createUnsupportedServerVersionError();
+    }
+
     if (NETWORK_ERROR_PATTERNS.some(pattern => pattern.test(detail))) {
       return new UserFriendlyError({
         status: 504,
@@ -74,6 +117,7 @@ export class ServerConfigStore extends Store {
           },
         },
       });
+      assertSupportedServerVersion(serverConfigData.serverConfig.version);
       if (
         serverConfigData.serverConfig.features.includes(ServerFeature.OAuth)
       ) {

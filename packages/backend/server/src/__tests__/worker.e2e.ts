@@ -12,6 +12,7 @@ type TestContext = {
 const test = ava.serial as TestFn<TestContext>;
 
 let safeFetchStub: Sinon.SinonStub | undefined;
+let originalDeploymentType: typeof env.DEPLOYMENT_TYPE;
 let safeFetchHandler:
   | ((request: { url: string; method?: 'get' | 'head' }) => {
       status?: number;
@@ -38,6 +39,7 @@ const stubSafeFetch = (
 };
 
 test.before(async t => {
+  originalDeploymentType = env.DEPLOYMENT_TYPE;
   // @ts-expect-error test
   env.DEPLOYMENT_TYPE = 'selfhosted';
 
@@ -73,6 +75,8 @@ test.afterEach.always(() => {
 });
 
 test.after.always(async t => {
+  // @ts-expect-error test
+  env.DEPLOYMENT_TYPE = originalDeploymentType;
   safeFetchStub?.restore();
   await t.context.app.close();
 });

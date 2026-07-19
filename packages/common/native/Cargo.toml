@@ -6,93 +6,21 @@ publish      = false
 version      = "0.1.0"
 
 [features]
-default = []
-doc-loader = [
-  "docx-parser",
-  "infer",
-  "path-ext",
-  "pdf-extract",
-  "readability",
-  "serde",
-  "serde_json",
-  "strum_macros",
-  "text-splitter",
-  "thiserror",
-  "tiktoken-rs",
-  "tree-sitter",
-  "url",
-]
-hashcash = ["chrono", "sha3", "rand"]
-napi = ["dep:napi"]
-tree-sitter = [
-  "cc",
-  "dep:tree-sitter",
-  "dep:tree-sitter-c",
-  "dep:tree-sitter-c-sharp",
-  "dep:tree-sitter-cpp",
-  "dep:tree-sitter-go",
-  "dep:tree-sitter-java",
-  "dep:tree-sitter-javascript",
-  "dep:tree-sitter-kotlin-ng",
-  "dep:tree-sitter-python",
-  "dep:tree-sitter-rust",
-  "dep:tree-sitter-scala",
-  "dep:tree-sitter-typescript",
-]
-ydoc-loader = [
-  "assert-json-diff",
-  "nanoid",
-  "pulldown-cmark",
-  "serde",
-  "serde_json",
-  "thiserror",
-  "y-octo",
-]
+default  = []
+hashcash = ["chrono", "hex", "sha3", "rand"]
+napi     = ["dep:napi"]
 
 [dependencies]
-assert-json-diff = { workspace = true, optional = true }
 chrono = { workspace = true, optional = true }
-docx-parser = { workspace = true, optional = true }
-infer = { workspace = true, optional = true }
-nanoid = { workspace = true, optional = true }
-napi = { workspace = true, optional = true }
-path-ext = { workspace = true, optional = true }
-pdf-extract = { workspace = true, optional = true }
-pulldown-cmark = { workspace = true, optional = true }
-rand = { workspace = true, optional = true }
-readability = { workspace = true, optional = true, default-features = false }
-serde = { workspace = true, optional = true, features = ["derive"] }
-serde_json = { workspace = true, optional = true }
-sha3 = { workspace = true, optional = true }
-strum_macros = { workspace = true, optional = true }
-text-splitter = { workspace = true, features = [
-  "markdown",
-  "tiktoken-rs",
-], optional = true }
-thiserror = { workspace = true, optional = true }
-tiktoken-rs = { workspace = true, optional = true }
-tree-sitter = { workspace = true, optional = true }
-tree-sitter-c = { workspace = true, optional = true }
-tree-sitter-c-sharp = { workspace = true, optional = true }
-tree-sitter-cpp = { workspace = true, optional = true }
-tree-sitter-go = { workspace = true, optional = true }
-tree-sitter-java = { workspace = true, optional = true }
-tree-sitter-javascript = { workspace = true, optional = true }
-tree-sitter-kotlin-ng = { workspace = true, optional = true }
-tree-sitter-python = { workspace = true, optional = true }
-tree-sitter-rust = { workspace = true, optional = true }
-tree-sitter-scala = { workspace = true, optional = true }
-tree-sitter-typescript = { workspace = true, optional = true }
-url = { workspace = true, optional = true }
-y-octo = { workspace = true, optional = true }
+hex    = { workspace = true, optional = true }
+napi   = { workspace = true, optional = true }
+rand   = { workspace = true, optional = true }
+sha3   = { workspace = true, optional = true }
 
 [dev-dependencies]
 criterion = { workspace = true }
 rayon     = { workspace = true }
 tempfile  = "3"
-
-[build-dependencies]
-cc = { version = "1", optional = true }
 
 [[bench]]
 harness = false

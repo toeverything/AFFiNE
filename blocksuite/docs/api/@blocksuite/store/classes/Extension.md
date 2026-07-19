@@ -4,7 +4,7 @@
 
 [BlockSuite API Documentation](../../../README.md) / [@blocksuite/store](../README.md) / Extension
 
-# Class: `abstract` Extension
+# Abstract Class: Extension
 
 # Understanding Extensions
 

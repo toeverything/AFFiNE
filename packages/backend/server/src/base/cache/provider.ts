@@ -7,6 +7,22 @@ export interface CacheSetOptions {
   ttl?: number;
 }
 
+const GET_AND_DELETE_LUA = `
+local value = redis.call("GET", KEYS[1])
+if value then
+  redis.call("DEL", KEYS[1])
+end
+return value
+`;
+
+const INCREASE_WITH_TTL_LUA = `
+local value = redis.call("INCRBY", KEYS[1], ARGV[1])
+if value == tonumber(ARGV[1]) or redis.call("PTTL", KEYS[1]) == -1 then
+  redis.call("PEXPIRE", KEYS[1], ARGV[2])
+end
+return value
+`;
+
 export function isValidCacheTtl(ttl: unknown): ttl is number {
   return typeof ttl === 'number' && Number.isSafeInteger(ttl) && ttl > 0;
 }
@@ -32,11 +48,14 @@ export class CacheProvider {
     value: T,
     opts: CacheSetOptions = {}
   ): Promise<boolean> {
-    if (opts.ttl) {
+    if (isValidCacheTtl(opts.ttl)) {
       return this.redis
         .set(key, JSON.stringify(value), 'PX', opts.ttl)
         .then(() => true)
         .catch(() => false);
+    }
+    if (opts.ttl !== undefined) {
+      return false;
     }
 
     return this.redis
@@ -49,6 +68,18 @@ export class CacheProvider {
     return this.redis.incrby(key, count).catch(() => 0);
   }
 
+  async increaseWithTtl(
+    key: string,
+    ttl: number,
+    count: number = 1
+  ): Promise<number> {
+    if (!isValidCacheTtl(ttl)) return 0;
+    return this.redis
+      .eval(INCREASE_WITH_TTL_LUA, 1, key, count, ttl)
+      .then(value => Number(value))
+      .catch(() => 0);
+  }
+
   async decrease(key: string, count: number = 1): Promise<number> {
     return this.redis.decrby(key, count).catch(() => 0);
   }
@@ -58,11 +89,14 @@ export class CacheProvider {
     value: T,
     opts: CacheSetOptions = {}
   ): Promise<boolean> {
-    if (opts.ttl) {
+    if (isValidCacheTtl(opts.ttl)) {
       return this.redis
         .set(key, JSON.stringify(value), 'PX', opts.ttl, 'NX')
         .then(v => !!v)
         .catch(() => false);
+    }
+    if (opts.ttl !== undefined) {
+      return false;
     }
 
     return this.redis
@@ -76,6 +110,13 @@ export class CacheProvider {
       .del(key)
       .then(v => v > 0)
       .catch(() => false);
+  }
+
+  async getAndDelete<T = unknown>(key: string): Promise<T | undefined> {
+    return this.redis
+      .eval(GET_AND_DELETE_LUA, 1, key)
+      .then(v => (typeof v === 'string' ? JSON.parse(v) : undefined))
+      .catch(() => undefined);
   }
 
   async has(key: string): Promise<boolean> {

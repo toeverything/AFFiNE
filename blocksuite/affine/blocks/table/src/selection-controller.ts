@@ -527,6 +527,9 @@ export class SelectionController implements ReactiveController {
     removeNativeSelection = true
   ) {
     if (selection) {
+      if (this.hasExternalNativeSelection()) {
+        return;
+      }
       const previous = this.getSelected();
       if (TableSelectionData.equals(previous, selection)) {
         return;
@@ -550,5 +553,25 @@ export class SelectionController implements ReactiveController {
       selection => selection.blockId === this.host.model.id
     );
     return selection?.is(TableSelection) ? selection.data : undefined;
+  }
+
+  private hasExternalNativeSelection() {
+    const selection = getSelection();
+    if (!selection || selection.isCollapsed || selection.rangeCount === 0) {
+      return false;
+    }
+
+    const range = selection.getRangeAt(0);
+    if (!range.intersectsNode(this.host)) {
+      return false;
+    }
+
+    const anchorNode = selection.anchorNode;
+    const focusNode = selection.focusNode;
+    return (
+      !!anchorNode &&
+      !!focusNode &&
+      (!this.host.contains(anchorNode) || !this.host.contains(focusNode))
+    );
   }
 }

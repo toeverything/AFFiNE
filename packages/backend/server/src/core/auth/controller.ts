@@ -1,12 +1,13 @@
-import { resolveMx, resolveTxt, setServers } from 'node:dns/promises';
+import { setServers } from 'node:dns/promises';
 
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Header,
   HttpStatus,
-  Logger,
+  Param,
   Post,
   Query,
   Req,
@@ -17,56 +18,65 @@ import type { Request, Response } from 'express';
 import {
   ActionForbidden,
   Config,
-  CryptoHelper,
   EmailTokenNotFound,
+  getClientVersionFromRequest,
+  getRequestCookie,
   InvalidAuthState,
   InvalidEmail,
-  InvalidEmailToken,
-  SignUpForbidden,
   Throttle,
-  URLHelper,
   UseNamedGuard,
   WrongSignInCredentials,
 } from '../../base';
-import { Models, TokenType } from '../../models';
+import { Models } from '../../models';
 import { validators } from '../utils/validators';
+import { getAbuseRequestSource } from '../workspaces/abuse';
+import { AuthSessionService } from './auth-session';
 import { Public } from './guard';
-import { AuthService } from './service';
-import { CurrentUser, Session } from './session';
+import {
+  AuthPreflightBodySchema,
+  AuthSessionExchangeBodySchema,
+  AuthSessionRefreshBodySchema,
+  isNativeClientRequest,
+  MagicLinkBodySchema,
+  OpenAppSignInBodySchema,
+  SessionIdSchema,
+  SignInBodySchema,
+} from './input';
+import { MagicLinkAuthService } from './magic-link';
+import { AuthMethodsService } from './methods';
+import { OpenAppAuthService } from './open-app';
+import { AuthService, sessionUser } from './service';
+import { AuthSessionPrincipal, CurrentUser, Session } from './session';
+import { SessionExchangeService } from './session-exchange';
+import { SessionIssuer } from './session-issuer';
 
 interface PreflightResponse {
   registered: boolean;
-  hasPassword: boolean;
+  methods: {
+    password: { available: boolean };
+    magicLink: { available: boolean };
+    oauth: { available: boolean; providers: string[] };
+    passkey: { available: boolean; discoverable: boolean };
+  };
 }
 
-interface SignInCredential {
-  email: string;
-  password?: string;
-  callbackUrl?: string;
-  client_nonce?: string;
-}
-
-interface MagicLinkCredential {
-  email: string;
-  token: string;
-  client_nonce?: string;
-}
-
-interface OpenAppSignInCredential {
-  code: string;
-}
+type SignInResponse = CurrentUser & {
+  exchangeCode?: string;
+};
 
 @Throttle('strict')
 @Controller('/api/auth')
 export class AuthController {
-  private readonly logger = new Logger(AuthController.name);
-
   constructor(
-    private readonly url: URLHelper,
     private readonly auth: AuthService,
+    private readonly sessionIssuer: SessionIssuer,
+    private readonly magicLink: MagicLinkAuthService,
+    private readonly openApp: OpenAppAuthService,
+    private readonly authMethods: AuthMethodsService,
+    private readonly sessionExchange: SessionExchangeService,
+    private readonly authSessions: AuthSessionService,
     private readonly models: Models,
-    private readonly config: Config,
-    private readonly crypto: CryptoHelper
+    private readonly config: Config
   ) {
     if (env.dev) {
       // set DNS servers in dev mode
@@ -81,27 +91,20 @@ export class AuthController {
   @Public()
   @UseNamedGuard('version')
   @Post('/preflight')
-  async preflight(
-    @Body() params?: { email: string }
-  ): Promise<PreflightResponse> {
-    if (!params?.email) {
+  async preflight(@Body() body?: unknown): Promise<PreflightResponse> {
+    const input = AuthPreflightBodySchema.safeParse(body);
+    if (!input.success) {
       throw new InvalidEmail({ email: 'not provided' });
     }
-    validators.assertValidEmail(params.email);
+    validators.assertValidEmail(input.data.email);
 
-    const user = await this.models.user.getUserByEmail(params.email);
+    return this.authMethods.loginPreflight(input.data.email);
+  }
 
-    if (!user) {
-      return {
-        registered: false,
-        hasPassword: false,
-      };
-    }
-
-    return {
-      registered: user.registered,
-      hasPassword: !!user.password,
-    };
+  @UseNamedGuard('version')
+  @Get('/methods')
+  async boundMethods(@CurrentUser() user: CurrentUser) {
+    return this.authMethods.boundMethods(user.id);
   }
 
   @Public()
@@ -111,8 +114,9 @@ export class AuthController {
   async signIn(
     @Req() req: Request,
     @Res() res: Response,
-    @Body() credential: SignInCredential
+    @Body() body?: unknown
   ) {
+    const credential = SignInBodySchema.parse(body);
     validators.assertValidEmail(credential.email);
     const canSignIn = await this.auth.canSignIn(credential.email);
     if (!canSignIn) {
@@ -128,6 +132,7 @@ export class AuthController {
       );
     } else {
       await this.sendMagicLink(
+        req,
         res,
         credential.email,
         credential.callbackUrl,
@@ -142,122 +147,37 @@ export class AuthController {
     email: string,
     password: string
   ) {
-    const user = await this.auth.signIn(email, password);
+    const identity = await this.auth.verifyPassword(email, password);
 
-    await this.auth.setCookies(req, res, user.id);
-    res.status(HttpStatus.OK).send(user);
+    const { exchangeCode } = await this.sessionIssuer.issue(req, res, identity);
+    const user = await this.models.user.get(identity.userId);
+    if (!user) {
+      throw new WrongSignInCredentials({ email });
+    }
+    res.status(HttpStatus.OK).send({
+      ...sessionUser(user),
+      exchangeCode,
+    } satisfies SignInResponse);
   }
 
   async sendMagicLink(
+    req: Request,
     res: Response,
     email: string,
     callbackUrl = '/magic-link',
     clientNonce?: string
   ) {
-    if (!this.url.isAllowedCallbackUrl(callbackUrl)) {
-      throw new ActionForbidden();
-    }
-
-    const callbackUrlObj = this.url.url(callbackUrl);
-    const redirectUriInCallback =
-      callbackUrlObj.searchParams.get('redirect_uri');
-    if (
-      redirectUriInCallback &&
-      !this.url.isAllowedRedirectUri(redirectUriInCallback)
-    ) {
-      throw new ActionForbidden();
-    }
-
-    // send email magic link
-    const user = await this.models.user.getUserByEmail(email, {
-      withDisabled: true,
+    const payload = await this.magicLink.send(email, callbackUrl, clientNonce, {
+      source: getAbuseRequestSource(req, this.config),
     });
-
-    if (!user) {
-      if (!this.config.auth.allowSignup) {
-        throw new SignUpForbidden();
-      }
-
-      if (this.config.auth.requireEmailDomainVerification) {
-        // verify domain has MX, SPF, DMARC records
-        const [name, domain, ...rest] = email.split('@');
-        if (rest.length || !domain) {
-          throw new InvalidEmail({ email });
-        }
-        const [mx, spf, dmarc] = await Promise.allSettled([
-          resolveMx(domain).then(t => t.map(mx => mx.exchange).filter(Boolean)),
-          resolveTxt(domain).then(t =>
-            t.map(([k]) => k).filter(txt => txt.includes('v=spf1'))
-          ),
-          resolveTxt('_dmarc.' + domain).then(t =>
-            t.map(([k]) => k).filter(txt => txt.includes('v=DMARC1'))
-          ),
-        ]).then(t => t.filter(t => t.status === 'fulfilled').map(t => t.value));
-        if (!mx?.length || !spf?.length || !dmarc?.length) {
-          throw new InvalidEmail({ email });
-        }
-        // filter out alias emails
-        if (name.includes('+')) {
-          throw new InvalidEmail({ email });
-        }
-      }
-    } else if (user.disabled) {
-      throw new WrongSignInCredentials({ email });
-    }
-
-    const ttlInSec = 30 * 60;
-    const token = await this.models.verificationToken.create(
-      TokenType.SignIn,
-      email,
-      ttlInSec
-    );
-
-    const otp = this.crypto.otp();
-    await this.models.magicLinkOtp.upsert(email, otp, token, clientNonce);
-
-    const magicLink = this.url.link(callbackUrl, { token: otp, email });
-    if (env.dev) {
-      // make it easier to test in dev mode
-      this.logger.debug(`Magic link: ${magicLink}`);
-    }
-
-    await this.auth.sendSignInEmail(email, magicLink, otp, !user);
-
-    res.status(HttpStatus.OK).send({
-      email: email,
-    });
+    res.status(HttpStatus.OK).send(payload);
   }
 
-  @Public()
-  /**
-   * @deprecated Kept for 0.25 clients that still call GET `/api/auth/sign-out`.
-   * Use POST `/api/auth/sign-out` instead.
-   */
-  @Get('/sign-out')
-  async signOutDeprecated(
-    @Res() res: Response,
-    @Session() session: Session | undefined,
-    @Query('user_id') userId: string | undefined
-  ) {
-    res.setHeader('Deprecation', 'true');
-
-    if (!session) {
-      res.status(HttpStatus.OK).send({});
-      return;
-    }
-
-    await this.auth.signOut(session.sessionId, userId);
-    await this.auth.refreshCookies(res, session.sessionId);
-
-    res.status(HttpStatus.OK).send({});
-  }
-
-  @Public()
   @Post('/sign-out')
   async signOut(
     @Req() req: Request,
     @Res() res: Response,
-    @Session() session: Session | undefined,
+    @Session() session: Session | AuthSessionPrincipal | undefined,
     @Query('user_id') userId: string | undefined
   ) {
     if (!session) {
@@ -265,14 +185,23 @@ export class AuthController {
       return;
     }
 
-    const csrfCookie = req.cookies?.[AuthService.csrfCookieName] as
-      | string
-      | undefined;
+    if (req.authType === 'jwt') {
+      const authSessionId = (session as Partial<AuthSessionPrincipal>)
+        .authSessionId;
+      if (authSessionId) {
+        await this.authSessions.revoke(
+          authSessionId,
+          'current_device_sign_out',
+          session.user.id
+        );
+      }
+      res.status(HttpStatus.OK).send({});
+      return;
+    }
+
+    const csrfCookie = getRequestCookie(req, AuthService.csrfCookieName);
     const csrfHeader = req.get('x-affine-csrf-token');
-    if (
-      csrfHeader && // optional for backward compatibility, drop after 0.25.0 outdated
-      (!csrfCookie || csrfCookie !== csrfHeader)
-    ) {
+    if (!csrfHeader || !csrfCookie || csrfCookie !== csrfHeader) {
       throw new ActionForbidden();
     }
 
@@ -286,17 +215,8 @@ export class AuthController {
   @UseNamedGuard('version')
   @Post('/open-app/sign-in-code')
   async openAppSignInCode(@CurrentUser() user?: CurrentUser) {
-    if (!user) {
-      throw new ActionForbidden();
-    }
-
-    // short-lived one-time code for handing off the authenticated session
-    const code = await this.models.verificationToken.create(
-      TokenType.OpenAppSignIn,
-      user.id,
-      5 * 60
-    );
-
+    if (!user) throw new ActionForbidden();
+    const code = await this.openApp.createSignInCode(user);
     return { code };
   }
 
@@ -306,23 +226,105 @@ export class AuthController {
   async openAppSignIn(
     @Req() req: Request,
     @Res() res: Response,
-    @Body() credential: OpenAppSignInCredential
+    @Body() body?: unknown
   ) {
-    if (!credential?.code) {
-      throw new InvalidAuthState();
-    }
+    const credential = OpenAppSignInBodySchema.safeParse(body);
+    if (!credential.success) throw new InvalidAuthState();
+    const identity = await this.openApp.verifySignInCode(credential.data.code);
+    const { exchangeCode } = await this.sessionIssuer.issue(req, res, identity);
+    res.send({ id: identity.userId, exchangeCode });
+  }
 
-    const tokenRecord = await this.models.verificationToken.get(
-      TokenType.OpenAppSignIn,
-      credential.code
+  @Public()
+  @UseNamedGuard('version')
+  @Post('/session/exchange')
+  @Header('Cache-Control', 'no-store')
+  @Header('Pragma', 'no-cache')
+  async exchangeSession(@Req() req: Request, @Body() body?: unknown) {
+    const input = AuthSessionExchangeBodySchema.parse(body);
+    return await this.sessionExchange.exchange(req, input.code, {
+      installationId: input.installationId,
+      platform: input.platform,
+      deviceName: input.deviceName,
+      appVersion: getClientVersionFromRequest(req) ?? undefined,
+    });
+  }
+
+  @Public()
+  @UseNamedGuard('version')
+  @Throttle('default', { limit: 120, ttl: 60_000 })
+  @Post('/session/refresh')
+  @Header('Cache-Control', 'no-store')
+  @Header('Pragma', 'no-cache')
+  async refreshAuthSession(@Req() req: Request, @Body() body?: unknown) {
+    const input = AuthSessionRefreshBodySchema.parse(body);
+    return await this.sessionExchange.refresh(
+      req,
+      input.refreshToken,
+      getClientVersionFromRequest(req) ?? undefined
     );
+  }
 
-    if (!tokenRecord?.credential) {
-      throw new InvalidAuthState();
+  @Public()
+  @UseNamedGuard('version')
+  @Post('/session/revoke')
+  @Header('Cache-Control', 'no-store')
+  @Header('Pragma', 'no-cache')
+  async revokeCurrentAuthSession(@Req() req: Request, @Body() body?: unknown) {
+    if (!isNativeClientRequest(req)) {
+      throw new ActionForbidden();
     }
+    const input = AuthSessionRefreshBodySchema.parse(body);
+    await this.authSessions.revokeWithRefreshToken(input.refreshToken);
+    return {};
+  }
 
-    await this.auth.setCookies(req, res, tokenRecord.credential);
-    res.send({ id: tokenRecord.credential });
+  @Get('/sessions')
+  @Header('Cache-Control', 'no-store')
+  @Header('Pragma', 'no-cache')
+  async listAuthSessions(
+    @CurrentUser() user: CurrentUser,
+    @Session() session: Session | AuthSessionPrincipal | undefined
+  ) {
+    const currentId = (session as Partial<AuthSessionPrincipal> | undefined)
+      ?.authSessionId;
+    return (await this.authSessions.list(user.id)).map(item => ({
+      ...item,
+      current: item.id === currentId,
+    }));
+  }
+
+  @Post('/sessions/revoke-all')
+  @Header('Cache-Control', 'no-store')
+  @Header('Pragma', 'no-cache')
+  async revokeAllAuthSessions(
+    @Req() req: Request,
+    @CurrentUser() user: CurrentUser,
+    @Session() session: Session | AuthSessionPrincipal | undefined
+  ) {
+    this.assertSessionMutationAuthorized(req, session);
+    await this.auth.revokeUserSessions(user.id);
+    return {};
+  }
+
+  @Delete('/sessions/:id')
+  @Header('Cache-Control', 'no-store')
+  @Header('Pragma', 'no-cache')
+  async revokeAuthSession(
+    @Req() req: Request,
+    @CurrentUser() user: CurrentUser,
+    @Session() session: Session | AuthSessionPrincipal | undefined,
+    @Param('id') authSessionId: string
+  ) {
+    const parsedSessionId = SessionIdSchema.safeParse(authSessionId);
+    if (!parsedSessionId.success) throw new InvalidAuthState();
+    this.assertSessionMutationAuthorized(req, session);
+    await this.authSessions.revoke(
+      parsedSessionId.data,
+      'user_action',
+      user.id
+    );
+    return {};
   }
 
   @Public()
@@ -331,70 +333,39 @@ export class AuthController {
   async magicLinkSignIn(
     @Req() req: Request,
     @Res() res: Response,
-    @Body()
-    { email, token: otp, client_nonce: clientNonce }: MagicLinkCredential
+    @Body() body?: unknown
   ) {
-    if (!otp || !email) {
-      throw new EmailTokenNotFound();
-    }
-
+    const credential = MagicLinkBodySchema.safeParse(body);
+    if (!credential.success) throw new EmailTokenNotFound();
+    const { email, token: otp, client_nonce: clientNonce } = credential.data;
+    if (!email) throw new EmailTokenNotFound();
     validators.assertValidEmail(email);
-
-    const consumed = await this.models.magicLinkOtp.consume(
-      email,
-      otp,
-      clientNonce
-    );
-    if (!consumed.ok) {
-      if (consumed.reason === 'nonce_mismatch') {
-        throw new InvalidAuthState();
-      }
-      throw new InvalidEmailToken();
-    }
-
-    const token = consumed.token;
-
-    const tokenRecord = await this.models.verificationToken.verify(
-      TokenType.SignIn,
-      token,
-      {
-        credential: email,
-      }
-    );
-
-    if (!tokenRecord) {
-      throw new InvalidEmailToken();
-    }
-
-    const user = await this.models.user.fulfill(email);
-
-    await this.auth.setCookies(req, res, user.id);
-    res.send({ id: user.id });
+    const identity = await this.magicLink.verify(email, otp, clientNonce);
+    const { exchangeCode } = await this.sessionIssuer.issue(req, res, identity);
+    res.send({ id: identity.userId, exchangeCode });
   }
 
   @UseNamedGuard('version')
   @Throttle('default', { limit: 1200 })
   @Public()
   @Get('/session')
+  @Header('Cache-Control', 'no-store')
   async currentSessionUser(@CurrentUser() user?: CurrentUser) {
-    return {
-      user,
-    };
+    return { user };
   }
 
-  @Throttle('default', { limit: 1200 })
-  @Public()
-  @Get('/sessions')
-  async currentSessionUsers(@Req() req: Request) {
-    const token = req.cookies[AuthService.sessionCookieName];
-    if (!token) {
-      return {
-        users: [],
-      };
+  private assertSessionMutationAuthorized(
+    req: Request,
+    session: Session | AuthSessionPrincipal | undefined
+  ) {
+    if (req.authType === 'jwt') {
+      const principal = session as Partial<AuthSessionPrincipal> | undefined;
+      if (principal?.authSessionId) return;
+    } else if (req.authType === 'session') {
+      const csrfCookie = getRequestCookie(req, AuthService.csrfCookieName);
+      const csrfHeader = req.get('x-affine-csrf-token');
+      if (csrfHeader && csrfCookie && csrfCookie === csrfHeader) return;
     }
-
-    return {
-      users: await this.auth.getUserList(token),
-    };
+    throw new ActionForbidden();
   }
 }

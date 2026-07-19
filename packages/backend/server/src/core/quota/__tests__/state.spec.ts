@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 
 import { PrismaClient } from '@prisma/client';
 import ava, { ExecutionContext, TestFn } from 'ava';
+import Sinon from 'sinon';
 
 import {
   createTestingModule,
@@ -52,54 +53,15 @@ test.before(async t => {
   t.context.state = module.get(QuotaStateService);
 });
 
-test('quota service ignores dirty legacy commercial features', async t => {
-  const { owner, workspace } = await createWorkspace(t);
-  await t.context.models.userFeature.add(
-    owner.id,
-    'pro_plan_v1',
-    'dirty legacy feature'
-  );
-  await t.context.models.userFeature.add(
-    owner.id,
-    'unlimited_copilot',
-    'dirty legacy feature'
-  );
-  await t.context.models.workspaceFeature.add(
-    workspace.id,
-    'team_plan_v1',
-    'dirty legacy feature',
-    {
-      memberLimit: 100,
-    }
-  );
-
-  const userQuota = await t.context.quota.getUserQuota(owner.id);
-  const workspaceSeats = await t.context.quota.getWorkspaceSeatQuota(
-    workspace.id
-  );
-
-  t.is(userQuota.name, 'Free');
-  t.is(userQuota.copilotActionLimit, 10);
-  t.is(workspaceSeats.memberLimit, 3);
+test.beforeEach(async t => {
+  await t.context.module.initTestingDB();
 });
 
-test('workspace quota state ignores dirty legacy readonly feature', async t => {
-  const { workspace } = await createWorkspace(t);
-  await t.context.models.workspaceFeature.add(
-    workspace.id,
-    'quota_exceeded_readonly_workspace_v1',
-    'dirty legacy feature'
-  );
-
-  const state = await t.context.state.reconcileWorkspaceQuotaState(
-    workspace.id
-  );
-
-  t.false(state.readonly);
-  t.deepEqual(state.readonlyReasons, []);
+test.after.always(async t => {
+  await t.context.module.close();
 });
 
-test('workspace quota state ignores dirty legacy permission rows', async t => {
+test('workspace quota state uses current member rows', async t => {
   const { workspace } = await createWorkspace(t);
   const member = await t.context.models.user.create({
     email: `${randomUUID()}@affine.pro`,
@@ -112,23 +74,26 @@ test('workspace quota state ignores dirty legacy permission rows', async t => {
       status: WorkspaceMemberStatus.Accepted,
     }
   );
-  await t.context.db.$transaction(async tx => {
-    await tx.$executeRaw`
-      SELECT set_config('affine.permission_projection.enabled', 'off', true)
-    `;
-    await tx.workspaceMember.deleteMany({
-      where: {
-        workspaceId: workspace.id,
-        userId: member.id,
-      },
-    });
+  await t.context.db.workspaceMember.deleteMany({
+    where: {
+      workspaceId: workspace.id,
+      userId: member.id,
+    },
   });
 
-  const state = await t.context.state.reconcileWorkspaceQuotaState(
-    workspace.id
+  const resolveWorkspaceEntitlement = Sinon.spy(
+    t.context.entitlement,
+    'resolveWorkspaceEntitlement'
   );
+  const [state] = await Promise.all([
+    t.context.state.reconcileWorkspaceQuotaState(workspace.id),
+    t.context.state.reconcileWorkspaceQuotaState(workspace.id),
+    t.context.state.reconcileWorkspaceQuotaState(workspace.id),
+  ]);
 
   t.is(state.memberCount, 1);
+  t.is(resolveWorkspaceEntitlement.callCount, 2);
+  resolveWorkspaceEntitlement.restore();
 });
 
 test('quota service exposes history period in seconds', async t => {
@@ -155,7 +120,6 @@ test('quota service exposes history period in seconds', async t => {
       usedStorageQuota: 0,
       memberCount: 1,
       overcapacityMemberCount: 0,
-      usedSize: 0,
     }).historyPeriod,
     '30 days'
   );
@@ -176,24 +140,29 @@ test('quota state reconcile does not publish unchanged snapshots', async t => {
     }
   });
 
-  await t.context.state.reconcileUserQuotaState(user.id);
+  const getActiveEntitlements = Sinon.spy(
+    t.context.entitlement,
+    'getActiveEntitlements'
+  );
+  await Promise.all([
+    t.context.state.reconcileUserQuotaState(user.id),
+    t.context.state.reconcileUserQuotaState(user.id),
+    t.context.state.reconcileUserQuotaState(user.id),
+  ]);
   await t.context.state.reconcileUserQuotaState(user.id);
 
   t.is(changes, 1);
+  t.is(getActiveEntitlements.callCount, 2);
+  getActiveEntitlements.restore();
 });
 
 test('workspace quota state requires owner from new permission table', async t => {
   const { owner, workspace } = await createWorkspace(t);
-  await t.context.db.$transaction(async tx => {
-    await tx.$executeRaw`
-      SELECT set_config('affine.permission_projection.enabled', 'off', true)
-    `;
-    await tx.workspaceMember.deleteMany({
-      where: {
-        workspaceId: workspace.id,
-        userId: owner.id,
-      },
-    });
+  await t.context.db.workspaceMember.deleteMany({
+    where: {
+      workspaceId: workspace.id,
+      userId: owner.id,
+    },
   });
 
   await t.throwsAsync(
@@ -207,16 +176,11 @@ test('user quota state aggregates owned storage from new permission table only',
   await addBlob(t, workspace, 'blob', ONE_GB);
 
   const first = await t.context.state.reconcileUserQuotaState(owner.id);
-  await t.context.db.$transaction(async tx => {
-    await tx.$executeRaw`
-      SELECT set_config('affine.permission_projection.enabled', 'off', true)
-    `;
-    await tx.workspaceMember.deleteMany({
-      where: {
-        workspaceId: workspace.id,
-        userId: owner.id,
-      },
-    });
+  await t.context.db.workspaceMember.deleteMany({
+    where: {
+      workspaceId: workspace.id,
+      userId: owner.id,
+    },
   });
   const second = await t.context.state.reconcileUserQuotaState(owner.id);
 
@@ -247,6 +211,46 @@ test('user quota state keeps ai capability alongside pro entitlement', async t =
   t.is(quota.copilotActionLimit, undefined);
 });
 
+test('user quota state restores ai overlay after stale expiry is cleared', async t => {
+  const { owner } = await createWorkspace(t);
+  await t.context.entitlement.upsertFromCloudSubscription({
+    targetId: owner.id,
+    plan: SubscriptionPlan.Pro,
+    recurring: SubscriptionRecurring.Yearly,
+    status: 'active',
+  });
+  await t.context.db.entitlement.create({
+    data: {
+      targetType: 'user',
+      targetId: owner.id,
+      source: 'cloud_subscription',
+      plan: 'ai',
+      status: 'active',
+      subjectId: `${owner.id}:${SubscriptionPlan.AI}`,
+      metadata: {},
+      expiresAt: new Date('2020-01-01T00:00:00Z'),
+    },
+  });
+
+  await t.context.entitlement.upsertFromCloudSubscription({
+    targetId: owner.id,
+    plan: SubscriptionPlan.AI,
+    recurring: SubscriptionRecurring.Monthly,
+    status: 'active',
+  });
+  const state = await t.context.state.reconcileUserQuotaState(owner.id);
+  const ai = await t.context.db.entitlement.findFirstOrThrow({
+    where: {
+      targetId: owner.id,
+      source: 'cloud_subscription',
+      plan: 'ai',
+    },
+  });
+
+  t.is(ai.expiresAt, null);
+  t.deepEqual(state.flags, { unlimitedCopilot: true });
+});
+
 test('ai entitlement is a capability overlay on free quota', async t => {
   const { owner } = await createWorkspace(t);
   await t.context.entitlement.upsertFromCloudSubscription({
@@ -265,16 +269,9 @@ test('ai entitlement is a capability overlay on free quota', async t => {
   t.is(quota.copilotActionLimit, undefined);
 });
 
-test('workspace team status ignores dirty legacy feature', async t => {
+test('workspace team status follows entitlement', async t => {
   const { workspace } = await createWorkspace(t);
-  await t.context.models.workspaceFeature.add(
-    workspace.id,
-    'team_plan_v1',
-    'dirty legacy feature',
-    {
-      memberLimit: 100,
-    }
-  );
+  await t.context.state.reconcileWorkspaceQuotaState(workspace.id);
 
   t.false(await t.context.models.workspace.isTeamWorkspace(workspace.id));
 
@@ -285,6 +282,7 @@ test('workspace team status ignores dirty legacy feature', async t => {
     status: 'active',
     quantity: 5,
   });
+  await t.context.state.reconcileWorkspaceQuotaState(workspace.id);
 
   t.true(await t.context.models.workspace.isTeamWorkspace(workspace.id));
 });
@@ -318,15 +316,10 @@ test('selfhosted builtin free has cloud pro quota rights', async t => {
   }
 });
 
-test.beforeEach(async t => {
-  await t.context.module.initTestingDB();
-});
-
-test.after.always(async t => {
-  await t.context.module.close();
-});
-
 test('reconciles quota states from entitlements and business tables', async t => {
+  const previousDeploymentType = globalThis.env.DEPLOYMENT_TYPE;
+  // @ts-expect-error test mutates env singleton for cloud entitlement semantics
+  globalThis.env.DEPLOYMENT_TYPE = 'affine';
   const cases = [
     {
       name: 'owner fallback uses user entitlement and owner storage usage',
@@ -444,10 +437,15 @@ test('reconciles quota states from entitlements and business tables', async t =>
     },
   ];
 
-  for (const item of cases) {
-    await t.context.module.initTestingDB();
-    const state = await item.setup();
-    await item.assert(state);
+  try {
+    for (const item of cases) {
+      await t.context.module.initTestingDB();
+      const state = await item.setup();
+      await item.assert(state);
+    }
+  } finally {
+    // @ts-expect-error restore mutable test env singleton
+    globalThis.env.DEPLOYMENT_TYPE = previousDeploymentType;
   }
 });
 

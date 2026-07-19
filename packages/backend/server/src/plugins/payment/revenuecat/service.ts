@@ -100,6 +100,7 @@ const zRcV2RawCustomerAliasEnvelope = z
 
 // v2 minimal, simplified structure exposed to callers
 export const Subscription = z.object({
+  externalRef: z.string().optional(),
   identifier: z.string(),
   isTrial: z.boolean(),
   isActive: z.boolean(),
@@ -351,6 +352,7 @@ export class RevenueCatService {
     }
 
     return {
+      externalRef: sub.id,
       identifier: product.display_name,
       isTrial: sub.status === 'trialing',
       isActive:

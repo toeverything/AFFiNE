@@ -55,7 +55,6 @@ import {
   SubscriptionPlan,
   SubscriptionRecurring,
   SubscriptionStatus,
-  SubscriptionVariant,
 } from './types';
 
 export const CheckoutExtraArgs = z.union([
@@ -402,16 +401,30 @@ export class SubscriptionService {
       throw new InvalidLicenseSessionId();
     }
 
-    let subInDB = await this.db.subscription.findUnique({
+    let subInDB = await this.db.providerSubscription.findUnique({
       where: {
-        stripeSubscriptionId: subscription.id,
+        provider_externalSubscriptionId: {
+          provider: 'stripe',
+          externalSubscriptionId: subscription.id,
+        },
       },
     });
 
     // subscription not found in db
     if (!subInDB) {
-      subInDB =
-        await this.selfhostManager.saveStripeSubscription(knownSubscription);
+      await this.selfhostManager.saveStripeSubscription(knownSubscription);
+      subInDB = await this.db.providerSubscription.findUnique({
+        where: {
+          provider_externalSubscriptionId: {
+            provider: 'stripe',
+            externalSubscriptionId: subscription.id,
+          },
+        },
+      });
+    }
+
+    if (!subInDB) {
+      throw new InvalidLicenseSessionId();
     }
 
     const license = await this.db.license.findUnique({
@@ -536,9 +549,8 @@ export class SubscriptionService {
         reason === 'dispute_open' ||
         reason === 'dispute_lost';
       const restore = reason === 'dispute_won';
-      const isOneTimeOrLifetime =
-        knownInvoice.lookupKey.recurring === SubscriptionRecurring.Lifetime ||
-        knownInvoice.lookupKey.variant === SubscriptionVariant.Onetime;
+      const isLifetime =
+        knownInvoice.lookupKey.recurring === SubscriptionRecurring.Lifetime;
 
       if (restore) {
         if (invoice.subscription) {
@@ -564,11 +576,11 @@ export class SubscriptionService {
         }
 
         if (
-          isOneTimeOrLifetime &&
+          isLifetime &&
           (knownInvoice.lookupKey.plan === SubscriptionPlan.Pro ||
             knownInvoice.lookupKey.plan === SubscriptionPlan.AI)
         ) {
-          await this.userManager.restoreOnetimeOrLifetime(knownInvoice);
+          await this.userManager.restoreLifetime(knownInvoice);
         }
 
         return;
@@ -615,11 +627,11 @@ export class SubscriptionService {
       }
 
       if (
-        isOneTimeOrLifetime &&
+        isLifetime &&
         (knownInvoice.lookupKey.plan === SubscriptionPlan.Pro ||
           knownInvoice.lookupKey.plan === SubscriptionPlan.AI)
       ) {
-        await this.userManager.revokeOnetimeOrLifetime(knownInvoice);
+        await this.userManager.revokeLifetime(knownInvoice);
         return;
       }
 
@@ -631,6 +643,7 @@ export class SubscriptionService {
         `Failed to handle ${reason} for invoice ${invoiceId}`,
         e
       );
+      throw e;
     }
   }
 

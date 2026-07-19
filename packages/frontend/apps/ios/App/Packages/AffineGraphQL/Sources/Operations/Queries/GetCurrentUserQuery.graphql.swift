@@ -57,7 +57,7 @@ public class GetCurrentUserQuery: GraphQLQuery {
       public var emailVerified: Bool { __data["emailVerified"] }
       /// User avatar url
       public var avatarUrl: String? { __data["avatarUrl"] }
-      @available(*, deprecated, message: "use [/api/auth/sign-in?native=true] instead")
+      @available(*, deprecated, message: "use native session exchange instead")
       public var token: Token { __data["token"] }
 
       /// CurrentUser.Token

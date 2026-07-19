@@ -54,9 +54,9 @@ type Cell = {
   value: string | { delta: DeltaInsert[] };
 };
 export const processTable = (
-  columns: ColumnDataType[],
-  children: BlockSnapshot[],
-  cells: SerializedCells
+  columns: ColumnDataType[] = [],
+  children: BlockSnapshot[] = [],
+  cells: SerializedCells = {}
 ): Table => {
   const table: Table = {
     headers: columns,
@@ -90,13 +90,17 @@ export const processTable = (
         return;
       }
       let value: string | { delta: DeltaInsert[] };
-      if (isDelta(cell.value)) {
-        value = cell.value;
-      } else {
-        value = property.config.rawValue.toString({
-          value: cell.value,
-          data: col.data,
-        });
+      try {
+        if (isDelta(cell.value)) {
+          value = cell.value;
+        } else {
+          value = property.config.rawValue.toString({
+            value: cell.value,
+            data: col.data,
+          });
+        }
+      } catch {
+        value = '';
       }
       row.cells.push({
         value,

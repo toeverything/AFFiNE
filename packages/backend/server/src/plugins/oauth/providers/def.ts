@@ -5,6 +5,8 @@ import {
   InvalidOauthCallbackCode,
   InvalidOauthResponse,
   OnEvent,
+  safeFetch,
+  type SafeFetchOptions,
 } from '../../../base';
 import { OAuthProviderName } from '../config';
 import { OAuthProviderFactory } from '../factory';
@@ -78,15 +80,25 @@ export abstract class OAuthProvider {
     return false;
   }
 
+  protected fetchOptions(_url: string | URL): SafeFetchOptions {
+    return {
+      timeoutMs: 10_000,
+      maxRedirects: 3,
+      maxBytes: 1024 * 1024,
+      allowedHeaders: ['authorization', 'content-type', 'accept'],
+    };
+  }
+
   protected async fetchJson<T>(
     url: string,
     init?: RequestInit,
     options?: { treatServerErrorAsInvalid?: boolean }
   ) {
-    const response = await fetch(url, {
-      ...init,
-      headers: { ...init?.headers, Accept: 'application/json' },
-    });
+    const response = await safeFetch(
+      url,
+      { ...init, headers: { ...init?.headers, Accept: 'application/json' } },
+      this.fetchOptions(url)
+    );
 
     const body = await response.text();
     if (!response.ok) {

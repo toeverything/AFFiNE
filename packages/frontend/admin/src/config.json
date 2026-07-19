@@ -46,6 +46,14 @@
     "queues.nightly": {
       "type": "Object",
       "desc": "The config for nightly job queue"
+    },
+    "queues.backendRuntime": {
+      "type": "Object",
+      "desc": "The config for backend runtime job queue"
+    },
+    "queues.inviteAbuse": {
+      "type": "Object",
+      "desc": "The config for invite abuse disposition job queue"
     }
   },
   "throttle": {
@@ -79,6 +87,22 @@
       "type": "Boolean",
       "desc": "Whether require email verification before accessing restricted resources(not implemented)."
     },
+    "newAccountShareActionDelay": {
+      "type": "Number",
+      "desc": "Minimum account age in seconds before new accounts can invite members or create share links."
+    },
+    "trustedCloudflareHeaders": {
+      "type": "Boolean",
+      "desc": "Whether request abuse source facts should trust Cloudflare headers from the origin edge."
+    },
+    "inviteQuotaShadowMode": {
+      "type": "Boolean",
+      "desc": "Whether workspace invite quota should record would-block decisions without rejecting requests or executing abuse actions."
+    },
+    "inviteQuotaFailOpenOnRuntimeError": {
+      "type": "Boolean",
+      "desc": "Whether workspace invite quota should fail open when native runtime admission is unavailable. Keep disabled for production."
+    },
     "passwordRequirements": {
       "type": "Object",
       "desc": "The password strength requirements when set new password."
@@ -90,6 +114,26 @@
     "session.ttr": {
       "type": "Number",
       "desc": "Application auth time to refresh in seconds."
+    },
+    "token.accessTokenTtl": {
+      "type": "Number",
+      "desc": "Access JWT expiration time in seconds."
+    },
+    "token.refreshIdleTtl": {
+      "type": "Number",
+      "desc": "Auth refresh session inactivity expiration in seconds."
+    },
+    "token.refreshAbsoluteTtl": {
+      "type": "Number",
+      "desc": "Auth refresh session absolute expiration in seconds."
+    },
+    "token.refreshGracePeriod": {
+      "type": "Number",
+      "desc": "One-use refresh rotation concurrency grace period in seconds."
+    },
+    "token.refreshRetention": {
+      "type": "Number",
+      "desc": "Retention for expired auth refresh generations in seconds."
     }
   },
   "mailer": {
@@ -132,6 +176,18 @@
       "type": "Array",
       "desc": "The emails from these domains are always sent using the fallback SMTP server."
     },
+    "deliveryWorker.batchSize": {
+      "type": "Number",
+      "desc": "Number of mail delivery rows claimed by each worker tick."
+    },
+    "deliveryWorker.leaseMs": {
+      "type": "Number",
+      "desc": "Mail delivery worker lease duration in milliseconds."
+    },
+    "deliveryWorker.retentionDays": {
+      "type": "Number",
+      "desc": "Days to retain anonymized terminal mail delivery ledger rows."
+    },
     "fallbackSMTP.name": {
       "type": "String",
       "desc": "Hostname used for fallback SMTP HELO/EHLO (e.g. mail.example.com). Leave empty to use the system hostname."
@@ -169,18 +225,6 @@
     "history.interval": {
       "type": "Number",
       "desc": "The minimum time interval in milliseconds of creating a new history snapshot when doc get updated."
-    }
-  },
-  "permission": {
-    "readModel": {
-      "type": "String",
-      "desc": "Permission data source for Rust evaluation",
-      "env": "AFFINE_PERMISSION_READ_MODEL"
-    },
-    "fallbackLegacyLoader": {
-      "type": "Boolean",
-      "desc": "Fallback from projection loader to legacy loader when projection input loading fails",
-      "env": "AFFINE_PERMISSION_FALLBACK_LEGACY_LOADER"
     }
   },
   "storages": {
@@ -425,16 +469,6 @@
       "desc": "Number of workspaces automatically indexed per batch"
     }
   },
-  "customerIo": {
-    "enabled": {
-      "type": "Boolean",
-      "desc": "Enable customer.io integration"
-    },
-    "token": {
-      "type": "String",
-      "desc": "Customer.io token"
-    }
-  },
   "oauth": {
     "providers.google": {
       "type": "Object",
@@ -448,7 +482,7 @@
     },
     "providers.oidc": {
       "type": "Object",
-      "desc": "OIDC OAuth provider config",
+      "desc": "OIDC OAuth provider config. Private network access requires allowPrivateNetwork: true",
       "link": "https://openid.net/specs/openid-connect-core-1_0.html"
     },
     "providers.apple": {
@@ -465,16 +499,6 @@
     "showLifetimePrice": {
       "type": "Boolean",
       "desc": "Whether enable lifetime price and allow user to pay for it."
-    },
-    "apiKey": {
-      "type": "String",
-      "desc": "[Deprecated] Stripe API key. Use payment.stripe.apiKey instead.",
-      "env": "STRIPE_API_KEY"
-    },
-    "webhookKey": {
-      "type": "String",
-      "desc": "[Deprecated] Stripe webhook key. Use payment.stripe.webhookKey instead.",
-      "env": "STRIPE_WEBHOOK_KEY"
     },
     "stripe": {
       "type": "Object",

@@ -294,10 +294,12 @@ export class BundleCommand extends PackageCommand {
       throw new Error('Failed to create rspack compiler');
     }
 
-    const devServer = new RspackDevServer(
-      merge({}, DEFAULT_DEV_SERVER_CONFIG, devServerConfig),
-      compiler
-    );
+    const serverConfig = merge({}, DEFAULT_DEV_SERVER_CONFIG, devServerConfig);
+    if (devServerConfig?.proxy) {
+      serverConfig.proxy = devServerConfig.proxy;
+    }
+
+    const devServer = new RspackDevServer(serverConfig, compiler);
 
     await devServer.start();
   }

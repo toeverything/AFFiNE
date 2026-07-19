@@ -6,6 +6,7 @@ import Sinon from 'sinon';
 import { OneDay } from '../../base';
 import { StorageModule, WorkspaceBlobStorage } from '../../core/storage';
 import { BlobUploadCleanupJob } from '../../core/storage/job';
+import { StorageRuntimeProvider } from '../../core/storage-runtime';
 import { MockUser, MockWorkspace } from '../mocks';
 import { createTestingModule, TestingModule } from '../utils';
 
@@ -14,13 +15,22 @@ interface Context {
   db: PrismaClient;
   job: BlobUploadCleanupJob;
   storage: WorkspaceBlobStorage;
+  runtime: { cleanupExpiredPendingBlobs: Sinon.SinonStub };
 }
 
 const test = ava as TestFn<Context>;
 
 test.before(async t => {
+  t.context.runtime = {
+    cleanupExpiredPendingBlobs: Sinon.stub(),
+  };
   t.context.module = await createTestingModule({
     imports: [ScheduleModule.forRoot(), StorageModule],
+    tapModule: builder => {
+      builder
+        .overrideProvider(StorageRuntimeProvider)
+        .useValue(t.context.runtime);
+    },
   });
 
   t.context.db = t.context.module.get(PrismaClient);
@@ -30,6 +40,7 @@ test.before(async t => {
 
 test.beforeEach(async t => {
   await t.context.module.initTestingDB();
+  t.context.runtime.cleanupExpiredPendingBlobs.reset();
 });
 
 test.after.always(async t => {
@@ -86,24 +97,14 @@ test('should cleanup expired pending blobs', async t => {
     ],
   });
 
-  const abortSpy = Sinon.stub(
-    t.context.storage,
-    'abortMultipartUpload'
-  ).resolves();
-  const deleteSpy = Sinon.spy(t.context.storage, 'delete');
-  t.teardown(() => {
-    abortSpy.restore();
-    deleteSpy.restore();
+  t.context.runtime.cleanupExpiredPendingBlobs.resolves({
+    scanned: 2,
+    deleted: 2,
+    abortedMultipart: 1,
+    workspaceIds: [workspace.id],
   });
 
   await t.context.job.cleanExpiredPendingBlobs();
 
-  t.is(abortSpy.callCount, 1);
-  t.is(deleteSpy.callCount, 2);
-
-  const remaining = await t.context.db.blob.findMany({
-    where: { workspaceId: workspace.id },
-  });
-  const remainingKeys = remaining.map(record => record.key).sort();
-  t.deepEqual(remainingKeys, ['completed-keep', 'pending-active']);
+  t.true(t.context.runtime.cleanupExpiredPendingBlobs.calledOnce);
 });

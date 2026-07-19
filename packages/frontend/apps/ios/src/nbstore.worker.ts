@@ -18,19 +18,56 @@ import {
 import { type MessageCommunicapable, OpConsumer } from '@toeverything/infra/op';
 import { AsyncCall } from 'async-call-rpc';
 
-import { readEndpointToken } from './proxy';
+let authTokenPort: MessagePort | undefined;
+const terminalAuthErrors = new Set([
+  'ACCESS_TOKEN_INVALID',
+  'AUTH_SESSION_EXPIRED',
+  'AUTH_SESSION_REVOKED',
+  'REFRESH_TOKEN_INVALID',
+  'REFRESH_TOKEN_REUSED',
+  'UNSUPPORTED_CLIENT_VERSION',
+  'AUTH_SESSION_EMPTY',
+]);
+const pendingTokenRequests = new Map<
+  string,
+  {
+    resolve: (token: string | null) => void;
+    reject: (error: Error) => void;
+  }
+>();
 
 configureSocketAuthMethod((endpoint, cb) => {
-  readEndpointToken(endpoint)
-    .then(token => {
-      cb({ token });
-    })
-    .catch(e => {
-      console.error(e);
-    });
+  getValidAccessToken(endpoint)
+    .then(token => cb(token ? { token, tokenType: 'jwt' } : {}))
+    .catch(() => cb({ error: 'AUTH_SESSION_TEMPORARILY_UNAVAILABLE' }));
 });
 
 globalThis.addEventListener('message', e => {
+  if (e.data.type === 'auth-access-token-channel') {
+    authTokenPort = e.ports[0] as MessagePort;
+    authTokenPort.addEventListener('message', e => {
+      const { id, token, error } = e.data as {
+        id?: string;
+        token?: string | null;
+        error?: string;
+      };
+      if (!id) return;
+      const pending = pendingTokenRequests.get(id);
+      if (error) {
+        if (terminalAuthErrors.has(error)) {
+          pending?.resolve(null);
+        } else {
+          pending?.reject(new Error(error));
+        }
+      } else {
+        pending?.resolve(token ?? null);
+      }
+      pendingTokenRequests.delete(id);
+    });
+    authTokenPort.start();
+    return;
+  }
+
   if (e.data.type === 'native-db-api-channel') {
     const port = e.ports[0] as MessagePort;
     const rpc = AsyncCall<NativeDBApis>(
@@ -56,6 +93,31 @@ globalThis.addEventListener('message', e => {
     port.start();
   }
 });
+
+function getValidAccessToken(endpoint: string) {
+  if (!authTokenPort) {
+    return Promise.resolve(null);
+  }
+
+  const id = `${Date.now()}:${Math.random()}`;
+  return new Promise<string | null>((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      pendingTokenRequests.delete(id);
+      reject(new Error('AUTH_SESSION_TEMPORARILY_UNAVAILABLE'));
+    }, 5000);
+    pendingTokenRequests.set(id, {
+      resolve: token => {
+        clearTimeout(timeout);
+        resolve(token);
+      },
+      reject: error => {
+        clearTimeout(timeout);
+        reject(error);
+      },
+    });
+    authTokenPort?.postMessage({ id, endpoint });
+  });
+}
 
 const consumer = new OpConsumer<WorkerManagerOps>(
   globalThis as MessageCommunicapable

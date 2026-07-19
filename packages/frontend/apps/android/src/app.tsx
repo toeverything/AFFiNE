@@ -57,7 +57,7 @@ import { Auth } from './plugins/auth';
 import { HashCash } from './plugins/hashcash';
 import { NbStoreNativeDBApis } from './plugins/nbstore';
 import { Preview } from './plugins/preview';
-import { writeEndpointToken } from './proxy';
+import { clearEndpointSession, getValidAccessToken } from './proxy';
 
 const storeManagerClient = createStoreManagerClient();
 setTelemetryTransport(storeManagerClient.telemetry);
@@ -181,35 +181,43 @@ framework.scope(ServerScope).override(AuthProvider, resolver => {
   const endpoint = serverService.server.baseUrl;
   return {
     async signInMagicLink(email, linkToken, clientNonce) {
-      const { token } = await Auth.signInMagicLink({
+      await Auth.signInMagicLink({
         endpoint,
         email,
         token: linkToken,
         clientNonce,
       });
-      await writeEndpointToken(endpoint, token);
     },
     async signInOauth(code, state, _provider, clientNonce) {
-      const { token } = await Auth.signInOauth({
+      await Auth.signInOauth({
         endpoint,
         code,
         state,
         clientNonce,
       });
-      await writeEndpointToken(endpoint, token);
       return {};
     },
     async signInPassword(credential) {
-      const { token } = await Auth.signInPassword({
+      await Auth.signInPassword({
         endpoint,
         ...credential,
       });
-      await writeEndpointToken(endpoint, token);
+    },
+    async signInOpenAppSignInCode(code) {
+      await Auth.signInOpenApp({
+        endpoint,
+        code,
+      });
     },
     async signOut() {
-      await Auth.signOut({
-        endpoint,
-      });
+      try {
+        await Auth.signOut({ endpoint });
+      } finally {
+        await clearEndpointSession(endpoint);
+      }
+    },
+    async clearSession() {
+      await clearEndpointSession(endpoint);
     },
   };
 });
@@ -296,6 +304,13 @@ window.addEventListener('focus', () => {
   frameworkProvider.get(LifecycleService).applicationFocus();
 });
 frameworkProvider.get(LifecycleService).applicationStart();
+CapacitorApp.addListener('appStateChange', ({ isActive }) => {
+  if (!isActive) return;
+  const servers = frameworkProvider.get(ServersService).servers$.value;
+  Promise.allSettled(
+    servers.map(server => getValidAccessToken(server.baseUrl))
+  ).catch(console.error);
+}).catch(console.error);
 
 const getErrorMessage = (error: unknown, fallback: string) => {
   if (typeof error === 'string' && error) {
@@ -441,6 +456,29 @@ function createStoreManagerClient() {
       port: nativeDBApiChannelClient,
     },
     [nativeDBApiChannelClient]
+  );
+
+  const { port1: authTokenChannelServer, port2: authTokenChannelClient } =
+    new MessageChannel();
+  authTokenChannelServer.addEventListener('message', event => {
+    const { id, endpoint } = event.data as { id?: string; endpoint?: string };
+    if (!id || !endpoint) return;
+    getValidAccessToken(endpoint)
+      .then(token => authTokenChannelServer.postMessage({ id, token }))
+      .catch(error =>
+        authTokenChannelServer.postMessage({
+          id,
+          error:
+            typeof error === 'object' && error && 'code' in error
+              ? error.code
+              : 'AUTH_SESSION_TEMPORARILY_UNAVAILABLE',
+        })
+      );
+  });
+  authTokenChannelServer.start();
+  worker.postMessage(
+    { type: 'auth-access-token-channel', port: authTokenChannelClient },
+    [authTokenChannelClient]
   );
   return new StoreManagerClient(new OpClient(worker));
 }

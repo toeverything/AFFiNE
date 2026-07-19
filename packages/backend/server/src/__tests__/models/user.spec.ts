@@ -1,4 +1,5 @@
-import ava, { TestFn } from 'ava';
+import { PrismaClient } from '@prisma/client';
+import ava, { type TestFn } from 'ava';
 import Sinon from 'sinon';
 
 import { EmailAlreadyUsed, EventBus } from '../../base';
@@ -9,6 +10,7 @@ import { createTestingModule, sleep, type TestingModule } from '../utils';
 interface Context {
   module: TestingModule;
   models: Models;
+  db: PrismaClient;
   user: UserModel;
 }
 
@@ -19,6 +21,7 @@ test.before(async t => {
 
   t.context.user = module.get(UserModel);
   t.context.models = module.get(Models);
+  t.context.db = module.get(PrismaClient);
   t.context.module = module;
 });
 
@@ -260,6 +263,38 @@ test('should delete user', async t => {
   const user2 = await t.context.user.get(user.id);
 
   t.is(user2, null);
+});
+
+test('should delete user with pending invitation missing normalized email', async t => {
+  const owner = await t.context.user.create({
+    email: 'owner@affine.pro',
+  });
+  const invitee = await t.context.user.create({
+    email: 'invitee@affine.pro',
+    registered: false,
+  });
+  const workspace = await t.context.models.workspace.create(owner.id);
+
+  const invitation = await t.context.db.workspaceInvitation.create({
+    data: {
+      workspaceId: workspace.id,
+      inviteeUserId: invitee.id,
+      inviterUserId: owner.id,
+      requestedRole: 'member',
+      status: 'pending',
+      kind: 'email',
+    },
+  });
+
+  await t.context.user.delete(invitee.id);
+
+  t.is(
+    await t.context.db.workspaceInvitation.findUnique({
+      where: { id: invitation.id },
+    }),
+    null
+  );
+  t.is(await t.context.user.get(invitee.id), null);
 });
 
 test('should trigger user.deleted event', async t => {

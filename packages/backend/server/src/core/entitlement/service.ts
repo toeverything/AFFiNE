@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Entitlement, Prisma, PrismaClient } from '@prisma/client';
 
 import { BadRequest, CryptoHelper, EventBus } from '../../base';
-import { resolveEntitlementV1 } from '../../native';
+import { checkLicenseHealth, resolveEntitlementV1 } from '../../native';
 import {
   SubscriptionPlan,
   SubscriptionRecurring,
@@ -47,15 +47,7 @@ export interface SelfhostLicenseEntitlementInput {
   license?: Buffer | null;
 }
 
-interface RemoteSelfhostLicense {
-  plan: string;
-  recurring: string;
-  quantity: number;
-  endAt: number;
-}
-
 const REMOTE_SELFHOST_LICENSE_REVALIDATE_INTERVAL = 1000 * 60 * 10;
-const REMOTE_SELFHOST_LICENSE_HEALTH_TIMEOUT = 10_000;
 
 declare global {
   interface Events {
@@ -68,10 +60,6 @@ declare global {
 
 @Injectable()
 export class EntitlementService {
-  private readonly legacyCloudSubscriptionSyncs = new Map<
-    string,
-    Promise<void>
-  >();
   private readonly remoteSelfhostLicenseVerifications = new Map<
     string,
     Promise<Entitlement | null>
@@ -110,7 +98,6 @@ export class EntitlementService {
   }
 
   async getBestEntitlement(targetType: TargetType, targetId: string) {
-    await this.syncLegacyCloudSubscriptionEntitlements(targetType, targetId);
     const entitlements = await this.db.entitlement.findMany({
       where: {
         targetType,
@@ -146,7 +133,6 @@ export class EntitlementService {
   }
 
   async getActiveEntitlements(targetType: TargetType, targetId: string) {
-    await this.syncLegacyCloudSubscriptionEntitlements(targetType, targetId);
     return this.db.entitlement.findMany({
       where: {
         targetType,
@@ -162,7 +148,7 @@ export class EntitlementService {
 
   async upsertFromCloudSubscription(
     input: CloudSubscriptionEntitlementInput,
-    options: { emit?: boolean; legacySync?: boolean } = {}
+    options: { emit?: boolean } = {}
   ) {
     const emit = options.emit ?? true;
     const targetType = this.targetTypeForPlan(input.plan);
@@ -183,17 +169,16 @@ export class EntitlementService {
       quantity:
         targetType === 'workspace'
           ? this.normalizedQuantity(input.quantity)
-          : undefined,
+          : null,
       metadata: {
         provider: input.provider ?? 'stripe',
         recurring: input.recurring,
         variant: input.variant ?? null,
         subscriptionId: input.subscriptionId ?? null,
         stripeSubscriptionId: input.stripeSubscriptionId ?? null,
-        legacySync: options.legacySync ?? false,
       },
-      startsAt: input.start ?? undefined,
-      expiresAt: input.end ?? undefined,
+      startsAt: input.start ?? null,
+      expiresAt: input.end ?? null,
       graceUntil:
         status === 'grace' ? (input.trialEnd ?? input.end ?? new Date()) : null,
       validatedAt: new Date(),
@@ -302,37 +287,11 @@ export class EntitlementService {
     );
   }
 
-  async syncLegacyCloudSubscriptionEntitlements(
-    targetType: TargetType,
-    targetId: string
+  async upsertFromSelfhostLicense(
+    input: SelfhostLicenseEntitlementInput,
+    options: { emit?: boolean } = {}
   ) {
-    if (env.selfhosted || targetType === 'instance') {
-      return;
-    }
-
-    const key = `${targetType}:${targetId}`;
-    const existing = this.legacyCloudSubscriptionSyncs.get(key);
-    if (existing) {
-      return existing;
-    }
-
-    const task = this.doSyncLegacyCloudSubscriptionEntitlements(
-      targetType,
-      targetId
-    )
-      .then(changed => {
-        if (changed) {
-          this.event.emit('entitlement.changed', { targetType, targetId });
-        }
-      })
-      .finally(() => {
-        this.legacyCloudSubscriptionSyncs.delete(key);
-      });
-    this.legacyCloudSubscriptionSyncs.set(key, task);
-    return task;
-  }
-
-  async upsertFromSelfhostLicense(input: SelfhostLicenseEntitlementInput) {
+    const emit = options.emit ?? true;
     const resolved = input.license
       ? resolveEntitlementV1({
           deploymentType: 'selfhosted',
@@ -380,12 +339,16 @@ export class EntitlementService {
         where: { id: entitlement.id },
         data,
       });
-      await this.emitEntitlementChanged(updated);
+      if (emit) {
+        await this.emitEntitlementChanged(updated);
+      }
       return updated;
     }
 
     const created = await this.db.entitlement.create({ data });
-    await this.emitEntitlementChanged(created);
+    if (emit) {
+      await this.emitEntitlementChanged(created);
+    }
     return created;
   }
 
@@ -393,8 +356,10 @@ export class EntitlementService {
     input: Omit<SelfhostLicenseEntitlementInput, 'license'> & {
       licenseKey: string;
       quantity: number;
-    }
+    },
+    options: { emit?: boolean } = {}
   ) {
+    const emit = options.emit ?? true;
     const entitlement = await this.findBySubject(
       'selfhost_license',
       input.licenseKey
@@ -423,20 +388,28 @@ export class EntitlementService {
         where: { id: entitlement.id },
         data,
       });
-      await this.emitEntitlementChanged(updated);
+      if (emit) {
+        await this.emitEntitlementChanged(updated);
+      }
       return updated;
     }
 
     const created = await this.db.entitlement.create({ data });
-    await this.emitEntitlementChanged(created);
+    if (emit) {
+      await this.emitEntitlementChanged(created);
+    }
     return created;
   }
 
-  async markSelfhostLicenseNeedsReupload(input: {
-    workspaceId?: string;
-    licenseKey: string;
-    reason: string;
-  }) {
+  async markSelfhostLicenseNeedsReupload(
+    input: {
+      workspaceId?: string;
+      licenseKey: string;
+      reason: string;
+    },
+    options: { emit?: boolean } = {}
+  ) {
+    const emit = options.emit ?? true;
     const entitlement = await this.findBySubject(
       'selfhost_license',
       input.licenseKey
@@ -462,12 +435,16 @@ export class EntitlementService {
         where: { id: entitlement.id },
         data,
       });
-      await this.emitEntitlementChanged(updated);
+      if (emit) {
+        await this.emitEntitlementChanged(updated);
+      }
       return updated;
     }
 
     const created = await this.db.entitlement.create({ data });
-    await this.emitEntitlementChanged(created);
+    if (emit) {
+      await this.emitEntitlementChanged(created);
+    }
     return created;
   }
 
@@ -490,16 +467,6 @@ export class EntitlementService {
     subscriptionId?: string | number | null;
     stripeSubscriptionId?: string | null;
   }) {
-    await this.db.subscription.updateMany({
-      where: {
-        targetId: input.targetId,
-        plan: input.plan,
-      },
-      data: {
-        status: SubscriptionStatus.Canceled,
-        end: new Date(),
-      },
-    });
     await this.revokeBySubject(
       'cloud_subscription',
       this.cloudSubjectId(input)
@@ -595,86 +562,6 @@ export class EntitlementService {
     }
   }
 
-  private async doSyncLegacyCloudSubscriptionEntitlements(
-    targetType: Exclude<TargetType, 'instance'>,
-    targetId: string
-  ) {
-    let changed = false;
-    const legacyPlans =
-      targetType === 'user'
-        ? [SubscriptionPlan.Pro, SubscriptionPlan.AI]
-        : [SubscriptionPlan.Team];
-    const entitlementPlans =
-      targetType === 'user' ? ['pro', 'lifetime_pro', 'ai'] : ['team'];
-    const subscriptions = await this.db.subscription.findMany({
-      where: {
-        targetId,
-        plan: { in: legacyPlans },
-      },
-      orderBy: { updatedAt: 'asc' },
-    });
-    const legacySubjects = new Set(
-      subscriptions.map(subscription => this.cloudSubjectId(subscription))
-    );
-    const legacySubscriptionPlans = new Set(
-      subscriptions.map(subscription => subscription.plan)
-    );
-
-    for (const subscription of subscriptions) {
-      const before = await this.findBySubject(
-        'cloud_subscription',
-        this.cloudSubjectId(subscription)
-      );
-      const entitlement = await this.upsertFromCloudSubscription(subscription, {
-        emit: false,
-        legacySync: true,
-      });
-      changed =
-        changed ||
-        !before ||
-        before.targetType !== entitlement.targetType ||
-        before.targetId !== entitlement.targetId ||
-        before.plan !== entitlement.plan ||
-        before.status !== entitlement.status ||
-        before.quantity !== entitlement.quantity ||
-        before.expiresAt?.getTime() !== entitlement.expiresAt?.getTime() ||
-        before.graceUntil?.getTime() !== entitlement.graceUntil?.getTime();
-    }
-
-    const staleEntitlements = await this.db.entitlement.findMany({
-      where: {
-        targetType,
-        targetId,
-        source: 'cloud_subscription',
-        plan: { in: entitlementPlans },
-        status: { in: ['active', 'grace'] },
-        OR: [
-          { metadata: { path: ['legacySync'], equals: true } },
-          { metadata: { path: ['legacyProjected'], equals: true } },
-        ],
-      },
-    });
-    const staleIds = staleEntitlements
-      .filter(
-        entitlement =>
-          !legacySubjects.has(entitlement.subjectId ?? '') &&
-          !legacySubscriptionPlans.has(
-            this.legacySubscriptionPlan(entitlement.plan)
-          )
-      )
-      .map(entitlement => entitlement.id);
-
-    if (staleIds.length) {
-      await this.db.entitlement.updateMany({
-        where: { id: { in: staleIds } },
-        data: { status: 'revoked' },
-      });
-      changed = true;
-    }
-
-    return changed;
-  }
-
   private cloudSubjectId(
     input: Pick<
       CloudSubscriptionEntitlementInput,
@@ -687,19 +574,6 @@ export class EntitlementService {
         ? input.subscriptionId
         : `${input.targetId}:${input.plan}`)
     );
-  }
-
-  private legacySubscriptionPlan(plan: string) {
-    if (plan === 'pro' || plan === 'lifetime_pro') {
-      return SubscriptionPlan.Pro;
-    }
-    if (plan === 'ai') {
-      return SubscriptionPlan.AI;
-    }
-    if (plan === 'team') {
-      return SubscriptionPlan.Team;
-    }
-    return plan;
   }
 
   private async revokeCloudSubscriptionByLegacyTarget(input: {
@@ -844,44 +718,25 @@ export class EntitlementService {
       return cached.entitlement;
     }
 
-    const endpoint =
-      process.env.AFFINE_PRO_SERVER_ENDPOINT ?? 'https://app.affine.pro';
-    const signal = AbortSignal.timeout(REMOTE_SELFHOST_LICENSE_HEALTH_TIMEOUT);
     try {
-      const res = await fetch(
-        `${endpoint}/api/team/licenses/${entitlement.subjectId}/health`,
-        {
-          signal,
-          headers: {
-            'Content-Type': 'application/json',
-            'x-validate-key': metadata.validateKey,
-          },
-        }
-      );
-      if (!res.ok) {
-        if (res.status >= 500) {
+      const res = await checkLicenseHealth({
+        licenseKey: entitlement.subjectId,
+        validateKey: metadata.validateKey,
+      });
+      if (res.error) {
+        if (res.error.status >= 500) {
           return this.remoteSelfhostFallbackEntitlement(entitlement);
         }
 
         await this.markRemoteSelfhostLicenseNeedsReupload(
           entitlement,
-          `Remote license health check failed: ${res.status}`
+          `Remote license health check failed: ${res.error.status}`
         );
         return null;
       }
 
-      const payload = (await res
-        .json()
-        .catch(() => null)) as RemoteSelfhostLicense | null;
-      if (!payload) {
-        return this.remoteSelfhostFallbackEntitlement(entitlement);
-      }
-      const expiresAt = this.remoteSelfhostLicenseExpiresAt(payload.endAt);
-      if (
-        payload.plan !== SubscriptionPlan.SelfHostedTeam ||
-        payload.quantity < 1 ||
-        !expiresAt
-      ) {
+      const license = res.license;
+      if (!license || license.plan !== SubscriptionPlan.SelfHostedTeam) {
         await this.markRemoteSelfhostLicenseNeedsReupload(
           entitlement,
           'Remote license health payload is invalid.'
@@ -889,39 +744,25 @@ export class EntitlementService {
         return null;
       }
 
-      const validateKey =
-        res.headers.get('x-next-validate-key') ?? metadata.validateKey;
-      const [updated] = await Promise.all([
-        this.db.entitlement.update({
-          where: { id: entitlement.id },
-          data: {
-            status: 'active',
-            quantity: this.normalizedQuantity(payload.quantity),
-            metadata: {
-              ...metadata,
-              recurring: payload.recurring,
-              validateKey,
-              remoteValidated: true,
-              errorCode: null,
-              errorMessage: null,
-            },
-            expiresAt,
-            validatedAt: new Date(),
+      const expiresAt = new Date(license.expiresAt);
+      const validateKey = license.validateKey || metadata.validateKey;
+      const updated = await this.db.entitlement.update({
+        where: { id: entitlement.id },
+        data: {
+          status: 'active',
+          quantity: this.normalizedQuantity(license.quantity),
+          metadata: {
+            ...metadata,
+            recurring: license.recurring,
+            validateKey,
+            remoteValidated: true,
+            errorCode: null,
+            errorMessage: null,
           },
-        }),
-        this.db.installedLicense
-          .updateMany({
-            where: { key: entitlement.subjectId },
-            data: {
-              quantity: this.normalizedQuantity(payload.quantity),
-              recurring: payload.recurring,
-              validateKey,
-              validatedAt: new Date(),
-              expiredAt: expiresAt,
-            },
-          })
-          .catch(() => null),
-      ]);
+          expiresAt,
+          validatedAt: new Date(),
+        },
+      });
       this.event.emit('entitlement.changed', {
         targetType: 'workspace',
         targetId: entitlement.targetId,
@@ -948,14 +789,6 @@ export class EntitlementService {
     }
 
     return cached.entitlement;
-  }
-
-  private remoteSelfhostLicenseExpiresAt(endAt: unknown) {
-    const expiresAt = new Date(endAt as string | number | Date);
-    if (!Number.isFinite(expiresAt.getTime()) || expiresAt <= new Date()) {
-      return null;
-    }
-    return expiresAt;
   }
 
   private async markRemoteSelfhostLicenseNeedsReupload(

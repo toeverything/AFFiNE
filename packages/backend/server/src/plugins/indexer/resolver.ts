@@ -188,10 +188,7 @@ export class IndexerResolver {
       docIdColumn: Prisma.raw('candidate_docs.doc_id'),
     } as const;
     const predicate = this.permission.docReadableSqlPredicate(input);
-    const fallbackPredicate =
-      this.permission.fallbackDocReadableSqlPredicate(input);
-    const query = (predicate: Prisma.Sql) =>
-      this.db.$queryRaw<{ docId: string }[]>`
+    const rows = await this.db.$queryRaw<{ docId: string }[]>`
         WITH candidate_docs AS (
           SELECT "workspace_pages"."page_id" AS doc_id
           FROM "workspace_pages"
@@ -205,12 +202,6 @@ export class IndexerResolver {
         FROM candidate_docs
         WHERE ${predicate}
       `;
-    const rows = await query(predicate).catch(error => {
-      if (!fallbackPredicate) {
-        throw error;
-      }
-      return query(fallbackPredicate);
-    });
     return rows.map(row => row.docId);
   }
 }

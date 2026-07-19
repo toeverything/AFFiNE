@@ -20,7 +20,6 @@ import {
   type ToSliceSnapshotPayload,
   type Transformer,
 } from '@blocksuite/store';
-import DOMPurify from 'dompurify';
 import pdfMake from 'pdfmake/build/pdfmake';
 import type {
   Content,
@@ -29,6 +28,7 @@ import type {
 } from 'pdfmake/interfaces';
 
 import { getNumberPrefix } from '../../utils';
+import { sanitizeSvg } from '../../utils/svg.js';
 import { resolveCssVariable } from './css-utils.js';
 import { extractTextWithInline } from './delta-converter.js';
 import {
@@ -746,9 +746,8 @@ export class PdfAdapter extends BaseAdapter<PdfAdapterFile> {
       const trimmedText = text.trim();
 
       if (trimmedText.startsWith('<svg')) {
-        const svgContent = DOMPurify.sanitize(trimmedText, {
-          USE_PROFILES: { svg: true },
-        });
+        const svgContent = sanitizeSvg(trimmedText);
+        if (!svgContent) throw new Error('Invalid SVG image asset');
         const svgDimensions = extractSvgDimensions(svgContent);
         const dimensions = calculateImageDimensions(
           blockWidth,

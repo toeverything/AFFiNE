@@ -19,12 +19,14 @@ import type {
   SurfaceBlockModel,
   Viewport,
 } from '@blocksuite/std/gfx';
+import { viewportRuntimeConfig } from '@blocksuite/std/gfx';
 import { Subject } from 'rxjs';
 
 import type { SurfaceElementModel } from '../element-model/base.js';
 import type { DomElementRenderer } from './dom-elements/index.js';
 import { DomElementRendererIdentifier } from './dom-elements/index.js';
 import type { Overlay } from './overlay.js';
+import { resolveSurfacePlaceholderColor } from './placeholder-style.js';
 
 type EnvProvider = {
   generateColorProperty: (color: Color, fallback?: Color) => string;
@@ -222,6 +224,12 @@ export class DomRenderer {
   private _initViewport() {
     this._disposables.add(
       this.viewport.viewportUpdated.subscribe(() => {
+        if (
+          this.viewport.SKIP_REFRESH_DURING_GESTURE &&
+          (this.viewport.panning$.value || this.viewport.zooming$.value)
+        ) {
+          return;
+        }
         this._markViewportDirty();
         this.refresh();
       })
@@ -242,6 +250,9 @@ export class DomRenderer {
 
     this._disposables.add(
       this.viewport.zooming$.subscribe(isZooming => {
+        if (this.viewport.SKIP_REFRESH_DURING_GESTURE) {
+          return;
+        }
         const shouldRenderPlaceholders = this._turboEnabled() && isZooming;
 
         if (this.usePlaceholder !== shouldRenderPlaceholders) {
@@ -251,6 +262,43 @@ export class DomRenderer {
         }
       })
     );
+
+    // Post-gesture refresh for SKIP mode
+    if (this.viewport.SKIP_REFRESH_DURING_GESTURE) {
+      let pendingTimerId: ReturnType<typeof setTimeout> | null = null;
+
+      const cancelRefresh = () => {
+        if (pendingTimerId !== null) {
+          clearTimeout(pendingTimerId);
+          pendingTimerId = null;
+        }
+      };
+
+      const scheduleRefresh = () => {
+        cancelRefresh();
+        pendingTimerId = setTimeout(() => {
+          pendingTimerId = null;
+          if (!this.viewport.panning$.value && !this.viewport.zooming$.value) {
+            this._markViewportDirty();
+            this.refresh();
+          }
+        }, viewportRuntimeConfig.POST_GESTURE_REFRESH_DELAY);
+      };
+
+      this._disposables.add(
+        this.viewport.panning$.subscribe(panning => {
+          if (panning) cancelRefresh();
+          else if (!this.viewport.zooming$.value) scheduleRefresh();
+        })
+      );
+      this._disposables.add(
+        this.viewport.zooming$.subscribe(zooming => {
+          if (zooming) cancelRefresh();
+          else if (!this.viewport.panning$.value) scheduleRefresh();
+        })
+      );
+      this._disposables.add({ dispose: cancelRefresh });
+    }
 
     this.usePlaceholder = false;
   }
@@ -292,11 +340,14 @@ export class DomRenderer {
       domElement = document.createElement('div');
       domElement.dataset.elementId = elementModel.id;
       domElement.style.position = 'absolute';
-      domElement.style.backgroundColor = 'rgba(200, 200, 200, 0.5)';
       this._elementsMap.set(elementModel.id, domElement);
       this.rootElement.append(domElement);
       addedElements.push(domElement);
     }
+
+    domElement.style.backgroundColor = resolveSurfacePlaceholderColor(
+      this.getColorScheme()
+    );
 
     const geometricStyles = calculatePlaceholderRect(
       elementModel,

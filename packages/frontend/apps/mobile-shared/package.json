@@ -1,11 +1,12 @@
 {
   "name": "@affine/mobile-shared",
-  "version": "0.26.3",
+  "version": "0.27.0",
   "type": "module",
   "private": true,
   "sideEffects": false,
   "exports": {
     ".": "./src/index.ts",
+    "./auth/endpoint": "./src/auth/endpoint.ts",
     "./nbstore/payload": "./src/nbstore/payload.ts"
   },
   "dependencies": {
@@ -14,6 +15,6 @@
   },
   "devDependencies": {
     "typescript": "^5.9.3",
-    "vitest": "^4.0.18"
+    "vitest": "^4.1.8"
   }
 }

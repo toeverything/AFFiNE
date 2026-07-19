@@ -77,12 +77,18 @@ export function createHTMLTargetConfig(
   deps?: string[]
 ): RspackConfiguration {
   entry = typeof entry === 'string' ? { index: entry } : entry;
+  const tailwindConfigPath = pkg.join('tailwind.config.js');
+  const hasTailwind = tailwindConfigPath.exists();
+  const tailwindPlugin = tailwindConfigPath.exists()
+    ? ['@tailwindcss/postcss', require(tailwindConfigPath.value)]
+    : ['@tailwindcss/postcss'];
 
   htmlConfig = merge(
     {},
     {
       filename: 'index.html',
       additionalEntryForSelfhost: true,
+      copySharedPublicAssets: true,
       injectGlobalErrorHandler: true,
       emitAssetsManifest: true,
     },
@@ -268,12 +274,9 @@ export function createHTMLTargetConfig(
                   loader: 'postcss-loader',
                   options: {
                     postcssOptions: {
-                      plugins: pkg.join('tailwind.config.js').exists()
+                      plugins: hasTailwind
                         ? [
-                            [
-                              '@tailwindcss/postcss',
-                              require(pkg.join('tailwind.config.js').value),
-                            ],
+                            tailwindPlugin,
                             ['autoprefixer'],
                             ...(buildConfig.isAdmin
                               ? [queuedashScopePostcssPlugin()]
@@ -318,6 +321,7 @@ export function createHTMLTargetConfig(
         }),
       new VanillaExtractPlugin(),
       !buildConfig.isAdmin &&
+        htmlConfig.copySharedPublicAssets &&
         new rspack.CopyRspackPlugin({
           patterns: [
             {

@@ -37,14 +37,6 @@ export interface Scalars {
   Upload: { input: File; output: File };
 }
 
-export interface AccessToken {
-  __typename?: 'AccessToken';
-  createdAt: Scalars['DateTime']['output'];
-  expiresAt: Maybe<Scalars['DateTime']['output']>;
-  id: Scalars['String']['output'];
-  name: Scalars['String']['output'];
-}
-
 export interface AddContextBlobInput {
   blobId: Scalars['String']['input'];
   contextId: Scalars['String']['input'];
@@ -102,6 +94,7 @@ export interface AdminDashboard {
   blobStorageBytes: Scalars['SafeInt']['output'];
   blobStorageHistory: Array<AdminDashboardValueDayPoint>;
   copilotConversations: Scalars['SafeInt']['output'];
+  copilotWindow: TimeWindow;
   generatedAt: Scalars['DateTime']['output'];
   storageWindow: TimeWindow;
   syncActiveUsers: Scalars['Int']['output'];
@@ -114,6 +107,7 @@ export interface AdminDashboard {
 }
 
 export interface AdminDashboardInput {
+  copilotWindowDays?: InputMaybe<Scalars['Int']['input']>;
   sharedLinkWindowDays?: InputMaybe<Scalars['Int']['input']>;
   storageHistoryDays?: InputMaybe<Scalars['Int']['input']>;
   syncHistoryHours?: InputMaybe<Scalars['Int']['input']>;
@@ -145,6 +139,46 @@ export interface AdminLicensePreview {
   recurring: SubscriptionRecurring;
   valid: Scalars['Boolean']['output'];
   workspaceId: Scalars['String']['output'];
+}
+
+export interface AdminMailDeliveriesInput {
+  hours?: Scalars['Int']['input'];
+}
+
+export interface AdminMailDeliveryAnalytics {
+  __typename?: 'AdminMailDeliveryAnalytics';
+  byOutcome: Array<AdminMailDeliverySeries>;
+  byStatus: Array<AdminMailDeliverySeries>;
+  byType: Array<AdminMailDeliverySeries>;
+  summary: AdminMailDeliverySummary;
+  window: TimeWindow;
+}
+
+export interface AdminMailDeliveryPoint {
+  __typename?: 'AdminMailDeliveryPoint';
+  bucket: Scalars['DateTime']['output'];
+  count: Scalars['Int']['output'];
+}
+
+export interface AdminMailDeliverySeries {
+  __typename?: 'AdminMailDeliverySeries';
+  key: Scalars['String']['output'];
+  label: Scalars['String']['output'];
+  points: Array<AdminMailDeliveryPoint>;
+  total: Scalars['Int']['output'];
+}
+
+export interface AdminMailDeliverySummary {
+  __typename?: 'AdminMailDeliverySummary';
+  canceled: Scalars['Int']['output'];
+  failed: Scalars['Int']['output'];
+  queued: Scalars['Int']['output'];
+  retryWait: Scalars['Int']['output'];
+  sending: Scalars['Int']['output'];
+  sent: Scalars['Int']['output'];
+  skipped: Scalars['Int']['output'];
+  successRate: Scalars['Float']['output'];
+  total: Scalars['Int']['output'];
 }
 
 export interface AdminSharedLinkTopItem {
@@ -187,7 +221,6 @@ export interface AdminWorkspace {
   enableDocEmbedding: Scalars['Boolean']['output'];
   enableSharing: Scalars['Boolean']['output'];
   enableUrlPreview: Scalars['Boolean']['output'];
-  features: Array<FeatureType>;
   id: Scalars['String']['output'];
   memberCount: Scalars['Int']['output'];
   /** Members of workspace */
@@ -213,8 +246,14 @@ export interface AdminWorkspaceMember {
   email: Scalars['String']['output'];
   id: Scalars['String']['output'];
   name: Scalars['String']['output'];
-  role: Permission;
+  role: AdminWorkspaceMemberRole;
   status: WorkspaceMemberStatus;
+}
+
+export enum AdminWorkspaceMemberRole {
+  Admin = 'Admin',
+  Collaborator = 'Collaborator',
+  Owner = 'Owner',
 }
 
 export interface AdminWorkspaceSharedLink {
@@ -315,6 +354,17 @@ export interface AudioSliceManifestItemType {
   index: Scalars['Int']['output'];
   mimeType: Scalars['String']['output'];
   startSec: Scalars['Float']['output'];
+}
+
+export interface AuthSigningKeyType {
+  __typename?: 'AuthSigningKeyType';
+  canDelete: Scalars['Boolean']['output'];
+  createdAt: Maybe<Scalars['DateTime']['output']>;
+  id: Scalars['String']['output'];
+  retiredAt: Maybe<Scalars['DateTime']['output']>;
+  source: Scalars['String']['output'];
+  status: Scalars['String']['output'];
+  verifyUntil: Maybe<Scalars['DateTime']['output']>;
 }
 
 export interface BlobNotFoundDataType {
@@ -895,6 +945,13 @@ export interface CreateCheckoutSessionInput {
   variant?: InputMaybe<SubscriptionVariant>;
 }
 
+export interface CreateMcpCredentialInput {
+  accessMode?: McpAccessMode;
+  expirationDays?: Scalars['Int']['input'];
+  name: Scalars['String']['input'];
+  workspaceId: Scalars['String']['input'];
+}
+
 export interface CreateUserInput {
   email: Scalars['String']['input'];
   name?: InputMaybe<Scalars['String']['input']>;
@@ -1165,6 +1222,7 @@ export type ErrorDataUnion =
   | SubscriptionPlanNotFoundDataType
   | UnknownOauthProviderDataType
   | UnsupportedClientVersionDataType
+  | UnsupportedServerVersionDataType
   | UnsupportedSubscriptionPlanDataType
   | ValidationErrorDataType
   | VersionRejectedDataType
@@ -1173,10 +1231,15 @@ export type ErrorDataUnion =
 
 export enum ErrorNames {
   ACCESS_DENIED = 'ACCESS_DENIED',
+  ACCESS_TOKEN_EXPIRED = 'ACCESS_TOKEN_EXPIRED',
+  ACCESS_TOKEN_INVALID = 'ACCESS_TOKEN_INVALID',
   ACTION_FORBIDDEN = 'ACTION_FORBIDDEN',
   ACTION_FORBIDDEN_ON_NON_TEAM_WORKSPACE = 'ACTION_FORBIDDEN_ON_NON_TEAM_WORKSPACE',
   ALREADY_IN_SPACE = 'ALREADY_IN_SPACE',
   AUTHENTICATION_REQUIRED = 'AUTHENTICATION_REQUIRED',
+  AUTH_SESSION_EXPIRED = 'AUTH_SESSION_EXPIRED',
+  AUTH_SESSION_REVOKED = 'AUTH_SESSION_REVOKED',
+  AUTH_SESSION_TEMPORARILY_UNAVAILABLE = 'AUTH_SESSION_TEMPORARILY_UNAVAILABLE',
   BAD_REQUEST = 'BAD_REQUEST',
   BLOB_INVALID = 'BLOB_INVALID',
   BLOB_NOT_FOUND = 'BLOB_NOT_FOUND',
@@ -1283,6 +1346,8 @@ export enum ErrorNames {
   OWNER_CAN_NOT_LEAVE_WORKSPACE = 'OWNER_CAN_NOT_LEAVE_WORKSPACE',
   PASSWORD_REQUIRED = 'PASSWORD_REQUIRED',
   QUERY_TOO_LONG = 'QUERY_TOO_LONG',
+  REFRESH_TOKEN_INVALID = 'REFRESH_TOKEN_INVALID',
+  REFRESH_TOKEN_REUSED = 'REFRESH_TOKEN_REUSED',
   REPLY_NOT_FOUND = 'REPLY_NOT_FOUND',
   RESPONSE_TOO_LARGE_ERROR = 'RESPONSE_TOO_LARGE_ERROR',
   RUNTIME_CONFIG_NOT_FOUND = 'RUNTIME_CONFIG_NOT_FOUND',
@@ -1306,6 +1371,7 @@ export enum ErrorNames {
   UNKNOWN_OAUTH_PROVIDER = 'UNKNOWN_OAUTH_PROVIDER',
   UNSPLASH_IS_NOT_CONFIGURED = 'UNSPLASH_IS_NOT_CONFIGURED',
   UNSUPPORTED_CLIENT_VERSION = 'UNSUPPORTED_CLIENT_VERSION',
+  UNSUPPORTED_SERVER_VERSION = 'UNSUPPORTED_SERVER_VERSION',
   UNSUPPORTED_SUBSCRIPTION_PLAN = 'UNSUPPORTED_SUBSCRIPTION_PLAN',
   USER_AVATAR_NOT_FOUND = 'USER_AVATAR_NOT_FOUND',
   USER_NOT_FOUND = 'USER_NOT_FOUND',
@@ -1338,16 +1404,7 @@ export interface ExpectToUpdateDocUserRoleDataType {
 }
 
 export enum FeatureType {
-  AIEarlyAccess = 'AIEarlyAccess',
   Admin = 'Admin',
-  EarlyAccess = 'EarlyAccess',
-  FreePlan = 'FreePlan',
-  LifetimeProPlan = 'LifetimeProPlan',
-  ProPlan = 'ProPlan',
-  QuotaExceededReadonlyWorkspace = 'QuotaExceededReadonlyWorkspace',
-  TeamPlan = 'TeamPlan',
-  UnlimitedCopilot = 'UnlimitedCopilot',
-  UnlimitedWorkspace = 'UnlimitedWorkspace',
 }
 
 export interface ForkChatSessionInput {
@@ -1356,11 +1413,6 @@ export interface ForkChatSessionInput {
   latestMessageId?: InputMaybe<Scalars['String']['input']>;
   sessionId: Scalars['String']['input'];
   workspaceId: Scalars['String']['input'];
-}
-
-export interface GenerateAccessTokenInput {
-  expiresAt?: InputMaybe<Scalars['DateTime']['input']>;
-  name: Scalars['String']['input'];
 }
 
 export interface GrantDocUserRolesInput {
@@ -1564,11 +1616,6 @@ export interface InviteResult {
   error: Maybe<Scalars['JSONObject']['output']>;
   /** Invite id, null if invite record create failed */
   inviteId: Maybe<Scalars['String']['output']>;
-  /**
-   * Invite email sent success
-   * @deprecated Notification will be sent asynchronously
-   */
-  sentSuccess: Scalars['Boolean']['output'];
 }
 
 export interface InviteUserType {
@@ -1617,8 +1664,6 @@ export interface InvoiceType {
   amount: Scalars['Int']['output'];
   createdAt: Scalars['DateTime']['output'];
   currency: Scalars['String']['output'];
-  /** @deprecated removed */
-  id: Maybe<Scalars['String']['output']>;
   lastPaymentError: Maybe<Scalars['String']['output']>;
   link: Maybe<Scalars['String']['output']>;
   /** @deprecated removed */
@@ -1672,7 +1717,6 @@ export interface ListWorkspaceInput {
   enableDocEmbedding?: InputMaybe<Scalars['Boolean']['input']>;
   enableSharing?: InputMaybe<Scalars['Boolean']['input']>;
   enableUrlPreview?: InputMaybe<Scalars['Boolean']['input']>;
-  features?: InputMaybe<Array<FeatureType>>;
   first?: Scalars['Int']['input'];
   keyword?: InputMaybe<Scalars['String']['input']>;
   orderBy?: InputMaybe<AdminWorkspaceSort>;
@@ -1693,6 +1737,34 @@ export interface ManageUserInput {
   email?: InputMaybe<Scalars['String']['input']>;
   /** User name */
   name?: InputMaybe<Scalars['String']['input']>;
+}
+
+export enum McpAccessMode {
+  READ_ONLY = 'READ_ONLY',
+  READ_WRITE = 'READ_WRITE',
+}
+
+export enum McpCredentialStatus {
+  ACTIVE = 'ACTIVE',
+  EXPIRED = 'EXPIRED',
+  EXPIRING = 'EXPIRING',
+  REVOKED = 'REVOKED',
+  ROTATING = 'ROTATING',
+}
+
+export interface McpCredentialType {
+  __typename?: 'McpCredentialType';
+  accessMode: McpAccessMode;
+  createdAt: Scalars['DateTime']['output'];
+  expiresAt: Scalars['DateTime']['output'];
+  fingerprint: Scalars['String']['output'];
+  graceEndsAt: Maybe<Scalars['DateTime']['output']>;
+  id: Scalars['ID']['output'];
+  lastUsedAt: Maybe<Scalars['DateTime']['output']>;
+  name: Scalars['String']['output'];
+  revokedAt: Maybe<Scalars['DateTime']['output']>;
+  status: McpCredentialStatus;
+  workspaceId: Scalars['String']['output'];
 }
 
 export interface MeetingActionItemType {
@@ -1811,6 +1883,7 @@ export interface Mutation {
   /** Create a stripe customer portal to manage payment methods */
   createCustomerPortal: Scalars['String']['output'];
   createInviteLink: InviteLink;
+  createMcpCredential: RevealedMcpCredentialType;
   createReply: ReplyObjectType;
   createSelfhostWorkspaceCustomerPortal: Scalars['String']['output'];
   /** Create a new user */
@@ -1820,6 +1893,7 @@ export interface Mutation {
   createWorkspaceByokLocalLease: CreateWorkspaceByokLocalLeaseResultType;
   deactivateLicense: Scalars['Boolean']['output'];
   deleteAccount: DeleteAccount;
+  deleteAuthSigningKey: Array<AuthSigningKeyType>;
   deleteBlob: Scalars['Boolean']['output'];
   /** Delete a comment */
   deleteComment: Scalars['Boolean']['output'];
@@ -1834,7 +1908,6 @@ export interface Mutation {
   /** Create a chat session */
   forkCopilotSession: Scalars['String']['output'];
   generateLicenseKey: Scalars['String']['output'];
-  generateUserAccessToken: RevealedAccessToken;
   grantCommercialEntitlement: Scalars['Boolean']['output'];
   grantDocUserRoles: Scalars['Boolean']['output'];
   grantMember: Scalars['Boolean']['output'];
@@ -1881,9 +1954,11 @@ export interface Mutation {
   revokeCommercialEntitlement: Scalars['Boolean']['output'];
   revokeDocUserRoles: Scalars['Boolean']['output'];
   revokeInviteLink: Scalars['Boolean']['output'];
+  revokeMcpCredential: Scalars['Boolean']['output'];
   revokeMember: Scalars['Boolean']['output'];
   revokePublicDoc: DocType;
-  revokeUserAccessToken: Scalars['Boolean']['output'];
+  rotateAuthSigningKey: Array<AuthSigningKeyType>;
+  rotateMcpCredential: RevealedMcpCredentialType;
   sendChangeEmail: Scalars['Boolean']['output'];
   sendChangePasswordEmail: Scalars['Boolean']['output'];
   sendSetPasswordEmail: Scalars['Boolean']['output'];
@@ -2054,6 +2129,10 @@ export interface MutationCreateInviteLinkArgs {
   workspaceId: Scalars['String']['input'];
 }
 
+export interface MutationCreateMcpCredentialArgs {
+  input: CreateMcpCredentialInput;
+}
+
 export interface MutationCreateReplyArgs {
   input: ReplyCreateInput;
 }
@@ -2076,6 +2155,10 @@ export interface MutationCreateWorkspaceByokLocalLeaseArgs {
 
 export interface MutationDeactivateLicenseArgs {
   workspaceId: Scalars['String']['input'];
+}
+
+export interface MutationDeleteAuthSigningKeyArgs {
+  id: Scalars['String']['input'];
 }
 
 export interface MutationDeleteBlobArgs {
@@ -2116,10 +2199,6 @@ export interface MutationForkCopilotSessionArgs {
 
 export interface MutationGenerateLicenseKeyArgs {
   sessionId: Scalars['String']['input'];
-}
-
-export interface MutationGenerateUserAccessTokenArgs {
-  input: GenerateAccessTokenInput;
 }
 
 export interface MutationGrantCommercialEntitlementArgs {
@@ -2257,6 +2336,11 @@ export interface MutationRevokeInviteLinkArgs {
   workspaceId: Scalars['String']['input'];
 }
 
+export interface MutationRevokeMcpCredentialArgs {
+  id: Scalars['ID']['input'];
+  workspaceId: Scalars['String']['input'];
+}
+
 export interface MutationRevokeMemberArgs {
   userId: Scalars['String']['input'];
   workspaceId: Scalars['String']['input'];
@@ -2267,13 +2351,18 @@ export interface MutationRevokePublicDocArgs {
   workspaceId: Scalars['String']['input'];
 }
 
-export interface MutationRevokeUserAccessTokenArgs {
-  id: Scalars['String']['input'];
+export interface MutationRotateAuthSigningKeyArgs {
+  expectedActiveKeyId: Scalars['String']['input'];
+}
+
+export interface MutationRotateMcpCredentialArgs {
+  expirationDays?: Scalars['Int']['input'];
+  id: Scalars['ID']['input'];
+  workspaceId: Scalars['String']['input'];
 }
 
 export interface MutationSendChangeEmailArgs {
   callbackUrl: Scalars['String']['input'];
-  email?: InputMaybe<Scalars['String']['input']>;
 }
 
 export interface MutationSendChangePasswordEmailArgs {
@@ -2622,6 +2711,8 @@ export interface Query {
   adminAllSharedLinks: PaginatedAdminAllSharedLink;
   /** Get aggregated dashboard metrics for admin panel */
   adminDashboard: AdminDashboard;
+  /** Aggregate mail delivery timeline facts for admin panel */
+  adminMailDeliveries: AdminMailDeliveryAnalytics;
   /** Get workspace detail for admin */
   adminWorkspace: Maybe<AdminWorkspace>;
   /** List workspaces for admin */
@@ -2630,11 +2721,14 @@ export interface Query {
   adminWorkspacesCount: Scalars['Int']['output'];
   /** get the whole app configuration */
   appConfig: Scalars['JSONObject']['output'];
+  authSigningKeys: Array<AuthSigningKeyType>;
   /** Get current user */
   currentUser: Maybe<UserType>;
   error: ErrorDataUnion;
   /** get workspace invitation info */
   getInviteInfo: InvitationType;
+  mcpCredentialReadWriteAvailable: Scalars['Boolean']['output'];
+  mcpCredentials: Array<McpCredentialType>;
   prices: Array<SubscriptionPrice>;
   /** Get public user by id */
   publicUserById: Maybe<PublicUserType>;
@@ -2643,8 +2737,6 @@ export interface Query {
    * @deprecated Use realtime subscription "workspace.embedding.progress.changed" instead.
    */
   queryWorkspaceEmbeddingStatus: ContextWorkspaceEmbeddingStatus;
-  /** @deprecated use currentUser.revealedAccessTokens */
-  revealedAccessTokens: Array<RevealedAccessToken>;
   /** server config */
   serverConfig: ServerConfigType;
   /** Get user by email */
@@ -2679,6 +2771,10 @@ export interface QueryAdminDashboardArgs {
   input?: InputMaybe<AdminDashboardInput>;
 }
 
+export interface QueryAdminMailDeliveriesArgs {
+  input?: InputMaybe<AdminMailDeliveriesInput>;
+}
+
 export interface QueryAdminWorkspaceArgs {
   id: Scalars['String']['input'];
 }
@@ -2697,6 +2793,10 @@ export interface QueryErrorArgs {
 
 export interface QueryGetInviteInfoArgs {
   inviteId: Scalars['String']['input'];
+}
+
+export interface QueryMcpCredentialsArgs {
+  workspaceId: Scalars['String']['input'];
 }
 
 export interface QueryPublicUserByIdArgs {
@@ -2839,12 +2939,9 @@ export interface ResponseTooLargeErrorDataType {
   receivedBytes: Scalars['Int']['output'];
 }
 
-export interface RevealedAccessToken {
-  __typename?: 'RevealedAccessToken';
-  createdAt: Scalars['DateTime']['output'];
-  expiresAt: Maybe<Scalars['DateTime']['output']>;
-  id: Scalars['String']['output'];
-  name: Scalars['String']['output'];
+export interface RevealedMcpCredentialType {
+  __typename?: 'RevealedMcpCredentialType';
+  credential: McpCredentialType;
   token: Scalars['String']['output'];
 }
 
@@ -2965,8 +3062,6 @@ export interface ServerConfigType {
   availableUpgrade: Maybe<ReleaseVersionType>;
   /** Features for user that can be configured */
   availableUserFeatures: Array<FeatureType>;
-  /** Workspace features available for admin configuration */
-  availableWorkspaceFeatures: Array<FeatureType>;
   /** server base url */
   baseUrl: Scalars['String']['output'];
   calendarCalDAVProviders: Array<CalendarCalDavProviderPresetObjectType>;
@@ -3124,7 +3219,6 @@ export interface SubscriptionType {
 }
 
 export enum SubscriptionVariant {
-  EA = 'EA',
   Onetime = 'Onetime',
 }
 
@@ -3146,6 +3240,7 @@ export interface TestWorkspaceByokConfigResultType {
 
 export enum TimeBucket {
   Day = 'Day',
+  Hour = 'Hour',
   Minute = 'Minute',
 }
 
@@ -3236,6 +3331,11 @@ export interface UnknownOauthProviderDataType {
 export interface UnsupportedClientVersionDataType {
   __typename?: 'UnsupportedClientVersionDataType';
   clientVersion: Scalars['String']['output'];
+  requiredVersion: Scalars['String']['output'];
+}
+
+export interface UnsupportedServerVersionDataType {
+  __typename?: 'UnsupportedServerVersionDataType';
   requiredVersion: Scalars['String']['output'];
 }
 
@@ -3370,7 +3470,6 @@ export interface UserSettingsType {
 
 export interface UserType {
   __typename?: 'UserType';
-  accessTokens: Array<AccessToken>;
   /** User avatar url */
   avatarUrl: Maybe<Scalars['String']['output']>;
   calendarAccounts: Array<CalendarAccountObjectType>;
@@ -3396,20 +3495,14 @@ export interface UserType {
   invoices: Array<InvoiceType>;
   /** User name */
   name: Scalars['String']['output'];
-  /**
-   * Get user notification count
-   * @deprecated Use realtime subscription "notification.count.changed" instead.
-   */
-  notificationCount: Scalars['Int']['output'];
   /** Get current user notifications */
   notifications: PaginatedNotificationObjectType;
   quota: UserQuotaType;
   quotaUsage: UserQuotaUsageType;
-  revealedAccessTokens: Array<RevealedAccessToken>;
   /** Get user settings */
   settings: UserSettingsType;
   subscriptions: Array<SubscriptionType>;
-  /** @deprecated use [/api/auth/sign-in?native=true] instead */
+  /** @deprecated use auth session exchange instead */
   token: TokenType;
 }
 
@@ -3597,8 +3690,6 @@ export interface WorkspaceQuotaType {
   name: Scalars['String']['output'];
   overcapacityMemberCount: Scalars['Int']['output'];
   storageQuota: Scalars['SafeInt']['output'];
-  /** @deprecated use `usedStorageQuota` instead */
-  usedSize: Scalars['SafeInt']['output'];
   usedStorageQuota: Scalars['SafeInt']['output'];
 }
 
@@ -3769,31 +3860,6 @@ export interface TokenType {
   token: Scalars['String']['output'];
 }
 
-export type GenerateUserAccessTokenMutationVariables = Exact<{
-  input: GenerateAccessTokenInput;
-}>;
-
-export type GenerateUserAccessTokenMutation = {
-  __typename?: 'Mutation';
-  generateUserAccessToken: {
-    __typename?: 'RevealedAccessToken';
-    id: string;
-    name: string;
-    token: string;
-    createdAt: string;
-    expiresAt: string | null;
-  };
-};
-
-export type RevokeUserAccessTokenMutationVariables = Exact<{
-  id: Scalars['String']['input'];
-}>;
-
-export type RevokeUserAccessTokenMutation = {
-  __typename?: 'Mutation';
-  revokeUserAccessToken: boolean;
-};
-
 export type AdminAllSharedLinksQueryVariables = Exact<{
   pagination: PaginationInput;
   filter?: InputMaybe<AdminAllSharedLinksFilterInput>;
@@ -3869,6 +3935,15 @@ export type AdminDashboardQuery = {
       requestedSize: number;
       effectiveSize: number;
     };
+    copilotWindow: {
+      __typename?: 'TimeWindow';
+      from: string;
+      to: string;
+      timezone: string;
+      bucket: TimeBucket;
+      requestedSize: number;
+      effectiveSize: number;
+    };
     workspaceStorageHistory: Array<{
       __typename?: 'AdminDashboardValueDayPoint';
       date: string;
@@ -3912,6 +3987,71 @@ export type AdminDashboardQuery = {
   };
 };
 
+export type AdminMailDeliveriesQueryVariables = Exact<{
+  input?: InputMaybe<AdminMailDeliveriesInput>;
+}>;
+
+export type AdminMailDeliveriesQuery = {
+  __typename?: 'Query';
+  adminMailDeliveries: {
+    __typename?: 'AdminMailDeliveryAnalytics';
+    window: {
+      __typename?: 'TimeWindow';
+      from: string;
+      to: string;
+      timezone: string;
+      bucket: TimeBucket;
+      requestedSize: number;
+      effectiveSize: number;
+    };
+    summary: {
+      __typename?: 'AdminMailDeliverySummary';
+      total: number;
+      sent: number;
+      failed: number;
+      skipped: number;
+      canceled: number;
+      queued: number;
+      sending: number;
+      retryWait: number;
+      successRate: number;
+    };
+    byStatus: Array<{
+      __typename?: 'AdminMailDeliverySeries';
+      key: string;
+      label: string;
+      total: number;
+      points: Array<{
+        __typename?: 'AdminMailDeliveryPoint';
+        bucket: string;
+        count: number;
+      }>;
+    }>;
+    byType: Array<{
+      __typename?: 'AdminMailDeliverySeries';
+      key: string;
+      label: string;
+      total: number;
+      points: Array<{
+        __typename?: 'AdminMailDeliveryPoint';
+        bucket: string;
+        count: number;
+      }>;
+    }>;
+    byOutcome: Array<{
+      __typename?: 'AdminMailDeliverySeries';
+      key: string;
+      label: string;
+      total: number;
+      points: Array<{
+        __typename?: 'AdminMailDeliveryPoint';
+        bucket: string;
+        count: number;
+      }>;
+    }>;
+  };
+};
+
 export type AdminServerConfigQueryVariables = Exact<{ [key: string]: never }>;
 
 export type AdminServerConfigQuery = {
@@ -3925,7 +4065,6 @@ export type AdminServerConfigQuery = {
     type: ServerDeploymentType;
     initialized: boolean;
     availableUserFeatures: Array<FeatureType>;
-    availableWorkspaceFeatures: Array<FeatureType>;
     credentialsRequirement: {
       __typename?: 'CredentialsRequirementType';
       password: {
@@ -3961,7 +4100,6 @@ export type AdminUpdateWorkspaceMutation = {
     enableSharing: boolean;
     enableUrlPreview: boolean;
     enableDocEmbedding: boolean;
-    features: Array<FeatureType>;
     memberCount: number;
     publicPageCount: number;
     snapshotCount: number;
@@ -3998,7 +4136,6 @@ export type AdminWorkspaceQuery = {
     enableSharing: boolean;
     enableUrlPreview: boolean;
     enableDocEmbedding: boolean;
-    features: Array<FeatureType>;
     memberCount: number;
     publicPageCount: number;
     snapshotCount: number;
@@ -4024,7 +4161,7 @@ export type AdminWorkspaceQuery = {
       name: string;
       email: string;
       avatarUrl: string | null;
-      role: Permission;
+      role: AdminWorkspaceMemberRole;
       status: WorkspaceMemberStatus;
     }>;
   } | null;
@@ -4047,7 +4184,6 @@ export type AdminWorkspacesQuery = {
     enableSharing: boolean;
     enableUrlPreview: boolean;
     enableDocEmbedding: boolean;
-    features: Array<FeatureType>;
     memberCount: number;
     publicPageCount: number;
     snapshotCount: number;
@@ -4073,6 +4209,22 @@ export type AdminWorkspacesCountQuery = {
   adminWorkspacesCount: number;
 };
 
+export type AuthSigningKeysQueryVariables = Exact<{ [key: string]: never }>;
+
+export type AuthSigningKeysQuery = {
+  __typename?: 'Query';
+  authSigningKeys: Array<{
+    __typename?: 'AuthSigningKeyType';
+    id: string;
+    status: string;
+    source: string;
+    createdAt: string | null;
+    retiredAt: string | null;
+    verifyUntil: string | null;
+    canDelete: boolean;
+  }>;
+};
+
 export type CreateChangePasswordUrlMutationVariables = Exact<{
   callbackUrl: Scalars['String']['input'];
   userId: Scalars['String']['input'];
@@ -4094,6 +4246,24 @@ export type CreateUserMutationVariables = Exact<{
 export type CreateUserMutation = {
   __typename?: 'Mutation';
   createUser: { __typename?: 'UserType'; id: string };
+};
+
+export type DeleteAuthSigningKeyMutationVariables = Exact<{
+  id: Scalars['String']['input'];
+}>;
+
+export type DeleteAuthSigningKeyMutation = {
+  __typename?: 'Mutation';
+  deleteAuthSigningKey: Array<{
+    __typename?: 'AuthSigningKeyType';
+    id: string;
+    status: string;
+    source: string;
+    createdAt: string | null;
+    retiredAt: string | null;
+    verifyUntil: string | null;
+    canDelete: boolean;
+  }>;
 };
 
 export type DeleteUserMutationVariables = Exact<{
@@ -4171,6 +4341,24 @@ export type ListUsersQuery = {
     hasPassword: boolean | null;
     emailVerified: boolean;
     avatarUrl: string | null;
+  }>;
+};
+
+export type RotateAuthSigningKeyMutationVariables = Exact<{
+  expectedActiveKeyId: Scalars['String']['input'];
+}>;
+
+export type RotateAuthSigningKeyMutation = {
+  __typename?: 'Mutation';
+  rotateAuthSigningKey: Array<{
+    __typename?: 'AuthSigningKeyType';
+    id: string;
+    status: string;
+    source: string;
+    createdAt: string | null;
+    retiredAt: string | null;
+    verifyUntil: string | null;
+    canDelete: boolean;
   }>;
 };
 
@@ -6874,7 +7062,6 @@ export type InvoicesQuery = {
     invoiceCount: number;
     invoices: Array<{
       __typename?: 'InvoiceType';
-      id: string | null;
       status: InvoiceStatus;
       currency: string;
       amount: number;
@@ -7027,6 +7214,93 @@ export type ListNotificationsQuery = {
       };
     };
   } | null;
+};
+
+export type CreateMcpCredentialMutationVariables = Exact<{
+  input: CreateMcpCredentialInput;
+}>;
+
+export type CreateMcpCredentialMutation = {
+  __typename?: 'Mutation';
+  createMcpCredential: {
+    __typename?: 'RevealedMcpCredentialType';
+    token: string;
+    credential: {
+      __typename?: 'McpCredentialType';
+      id: string;
+      name: string;
+      workspaceId: string;
+      accessMode: McpAccessMode;
+      fingerprint: string;
+      createdAt: string;
+      expiresAt: string;
+      lastUsedAt: string | null;
+      revokedAt: string | null;
+      graceEndsAt: string | null;
+      status: McpCredentialStatus;
+    };
+  };
+};
+
+export type McpCredentialsQueryVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+}>;
+
+export type McpCredentialsQuery = {
+  __typename?: 'Query';
+  mcpCredentialReadWriteAvailable: boolean;
+  mcpCredentials: Array<{
+    __typename?: 'McpCredentialType';
+    id: string;
+    name: string;
+    workspaceId: string;
+    accessMode: McpAccessMode;
+    fingerprint: string;
+    createdAt: string;
+    expiresAt: string;
+    lastUsedAt: string | null;
+    revokedAt: string | null;
+    graceEndsAt: string | null;
+    status: McpCredentialStatus;
+  }>;
+};
+
+export type RevokeMcpCredentialMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  workspaceId: Scalars['String']['input'];
+}>;
+
+export type RevokeMcpCredentialMutation = {
+  __typename?: 'Mutation';
+  revokeMcpCredential: boolean;
+};
+
+export type RotateMcpCredentialMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  workspaceId: Scalars['String']['input'];
+  expirationDays: Scalars['Int']['input'];
+}>;
+
+export type RotateMcpCredentialMutation = {
+  __typename?: 'Mutation';
+  rotateMcpCredential: {
+    __typename?: 'RevealedMcpCredentialType';
+    token: string;
+    credential: {
+      __typename?: 'McpCredentialType';
+      id: string;
+      name: string;
+      workspaceId: string;
+      accessMode: McpAccessMode;
+      fingerprint: string;
+      createdAt: string;
+      expiresAt: string;
+      lastUsedAt: string | null;
+      revokedAt: string | null;
+      graceEndsAt: string | null;
+      status: McpCredentialStatus;
+    };
+  };
 };
 
 export type MentionUserMutationVariables = Exact<{
@@ -7598,7 +7872,6 @@ export type InviteByEmailsMutation = {
     __typename?: 'InviteResult';
     email: string;
     inviteId: string | null;
-    sentSuccess: boolean;
   }>;
 };
 
@@ -7648,7 +7921,6 @@ export type WorkspaceInvoicesQuery = {
     invoiceCount: number;
     invoices: Array<{
       __typename?: 'InvoiceType';
-      id: string | null;
       status: InvoiceStatus;
       currency: string;
       amount: number;
@@ -7727,6 +7999,11 @@ export type Queries =
       response: AdminDashboardQuery;
     }
   | {
+      name: 'adminMailDeliveriesQuery';
+      variables: AdminMailDeliveriesQueryVariables;
+      response: AdminMailDeliveriesQuery;
+    }
+  | {
       name: 'adminServerConfigQuery';
       variables: AdminServerConfigQueryVariables;
       response: AdminServerConfigQuery;
@@ -7745,6 +8022,11 @@ export type Queries =
       name: 'adminWorkspacesCountQuery';
       variables: AdminWorkspacesCountQueryVariables;
       response: AdminWorkspacesCountQuery;
+    }
+  | {
+      name: 'authSigningKeysQuery';
+      variables: AuthSigningKeysQueryVariables;
+      response: AuthSigningKeysQuery;
     }
   | {
       name: 'appConfigQuery';
@@ -8057,6 +8339,11 @@ export type Queries =
       response: ListNotificationsQuery;
     }
   | {
+      name: 'mcpCredentialsQuery';
+      variables: McpCredentialsQueryVariables;
+      response: McpCredentialsQuery;
+    }
+  | {
       name: 'pricesQuery';
       variables: PricesQueryVariables;
       response: PricesQuery;
@@ -8099,16 +8386,6 @@ export type Queries =
 
 export type Mutations =
   | {
-      name: 'generateUserAccessTokenMutation';
-      variables: GenerateUserAccessTokenMutationVariables;
-      response: GenerateUserAccessTokenMutation;
-    }
-  | {
-      name: 'revokeUserAccessTokenMutation';
-      variables: RevokeUserAccessTokenMutationVariables;
-      response: RevokeUserAccessTokenMutation;
-    }
-  | {
       name: 'adminUpdateWorkspaceMutation';
       variables: AdminUpdateWorkspaceMutationVariables;
       response: AdminUpdateWorkspaceMutation;
@@ -8122,6 +8399,11 @@ export type Mutations =
       name: 'createUserMutation';
       variables: CreateUserMutationVariables;
       response: CreateUserMutation;
+    }
+  | {
+      name: 'deleteAuthSigningKeyMutation';
+      variables: DeleteAuthSigningKeyMutationVariables;
+      response: DeleteAuthSigningKeyMutation;
     }
   | {
       name: 'deleteUserMutation';
@@ -8142,6 +8424,11 @@ export type Mutations =
       name: 'importUsersMutation';
       variables: ImportUsersMutationVariables;
       response: ImportUsersMutation;
+    }
+  | {
+      name: 'rotateAuthSigningKeyMutation';
+      variables: RotateAuthSigningKeyMutationVariables;
+      response: RotateAuthSigningKeyMutation;
     }
   | {
       name: 'sendTestEmailMutation';
@@ -8452,6 +8739,21 @@ export type Mutations =
       name: 'previewLicenseMutation';
       variables: PreviewLicenseMutationVariables;
       response: PreviewLicenseMutation;
+    }
+  | {
+      name: 'createMcpCredentialMutation';
+      variables: CreateMcpCredentialMutationVariables;
+      response: CreateMcpCredentialMutation;
+    }
+  | {
+      name: 'revokeMcpCredentialMutation';
+      variables: RevokeMcpCredentialMutationVariables;
+      response: RevokeMcpCredentialMutation;
+    }
+  | {
+      name: 'rotateMcpCredentialMutation';
+      variables: RotateMcpCredentialMutationVariables;
+      response: RotateMcpCredentialMutation;
     }
   | {
       name: 'mentionUserMutation';

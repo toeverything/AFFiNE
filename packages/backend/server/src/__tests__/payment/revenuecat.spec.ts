@@ -9,6 +9,7 @@ import {
   SubscriptionAlreadyExists,
 } from '../../base';
 import { ConfigModule } from '../../base/config';
+import { EntitlementService } from '../../core/entitlement';
 import { FeatureService } from '../../core/features';
 import { Models } from '../../models';
 import { PaymentModule } from '../../plugins/payment';
@@ -27,6 +28,7 @@ import { SubscriptionService } from '../../plugins/payment/service';
 import {
   SubscriptionPlan,
   SubscriptionRecurring,
+  SubscriptionStatus,
 } from '../../plugins/payment/types';
 import { createTestingApp, TestingApp } from '../utils';
 
@@ -106,12 +108,20 @@ test.beforeEach(async t => {
     Sinon.stub(rc, 'getCustomerAlias').resolves([appUserId]);
   t.context.mockSub = subs =>
     Sinon.stub(rc, 'getSubscriptions').resolves(
-      subs.map(s => ({ ...s, customerId: customerId }))
+      subs.map(s => ({
+        ...s,
+        customerId,
+        externalRef: s.externalRef ?? `rc:${s.productId}`,
+      }))
     );
   t.context.mockSubSeq = sequences => {
     const stub = Sinon.stub(rc, 'getSubscriptions');
     sequences.forEach((seq, idx) => {
-      const subs = seq.map(s => ({ ...s, customerId: customerId }));
+      const subs = seq.map(s => ({
+        ...s,
+        customerId,
+        externalRef: s.externalRef ?? `rc:${s.productId}`,
+      }));
       if (idx === 0) stub.onFirstCall().resolves(subs);
       else if (idx === 1) stub.onSecondCall().resolves(subs);
       else stub.onCall(idx).resolves(subs);
@@ -188,7 +198,7 @@ test('should resolve product mapping consistently (whitelist, override, unknown)
 test('should standardize RC subscriber response and upsert subscription with observability fields', async t => {
   const { webhook, collectEvents, mockAlias, mockSub } = t.context;
 
-  mockAlias(user.id);
+  const alias = mockAlias(user.id);
   const subscriber = mockSub([
     {
       identifier: 'Pro',
@@ -216,14 +226,14 @@ test('should standardize RC subscriber response and upsert subscription with obs
   });
   const { activatedCount, canceledCount, events } = collectEvents();
 
-  const record = await t.context.db.subscription.findUnique({
-    where: { targetId_plan: { targetId: user.id, plan: 'pro' } },
+  const record = await t.context.db.providerSubscription.findFirst({
+    where: { targetType: 'user', targetId: user.id, plan: 'pro' },
     select: {
       provider: true,
       iapStore: true,
-      rcEntitlement: true,
-      rcProductId: true,
-      rcExternalRef: true,
+      metadata: true,
+      externalProductId: true,
+      externalRef: true,
     },
   });
 
@@ -240,20 +250,65 @@ test('should standardize RC subscriber response and upsert subscription with obs
     },
     'should standardize payload and have events'
   );
+
+  const transferred = await t.context.models.user.create({
+    email: 'revenuecat-transfer@affine.pro',
+  });
+  alias.resolves([transferred.id]);
+  await webhook.onWebhook({
+    appUserId: transferred.id,
+    event: {
+      id: 'evt_1_transfer',
+      environment: 'PRODUCTION',
+      app_id: 'app.affine.pro',
+      type: 'TRANSFER',
+      store: 'app_store',
+      original_transaction_id: 'orig-tx-1',
+    },
+  });
+  t.is(
+    (
+      await t.context.db.providerSubscription.findFirstOrThrow({
+        where: {
+          provider: 'revenuecat',
+          externalRef: 'rc:app.affine.pro.Annual',
+        },
+      })
+    ).targetId,
+    transferred.id
+  );
+  t.true(
+    t.context.event.emit.calledWith('entitlement.changed', {
+      targetType: 'user',
+      targetId: user.id,
+    })
+  );
+  t.true(
+    t.context.event.emit.calledWith('user.subscription.canceled', {
+      userId: user.id,
+      plan: SubscriptionPlan.Pro,
+      recurring: SubscriptionRecurring.Yearly,
+    })
+  );
 });
 
-test('should process expiration/refund by deleting subscription and emitting canceled', async t => {
+test('should process expiration/refund by canceling subscription and emitting canceled', async t => {
   const { db, collectEvents, mockAlias, mockSub, triggerWebhook } = t.context;
 
   mockAlias(user.id);
-  await db.subscription.create({
+  await db.providerSubscription.create({
     data: {
+      targetType: 'user',
       targetId: user.id,
       plan: 'pro',
       status: 'active',
       provider: 'revenuecat',
       recurring: 'yearly',
-      start: new Date('2025-01-01T00:00:00.000Z'),
+      periodStart: new Date('2025-01-01T00:00:00.000Z'),
+      iapStore: 'app_store',
+      externalCustomerId: 'cust',
+      externalProductId: 'app.affine.pro.Annual',
+      externalRef: 'rc:app.affine.pro.Annual',
     },
   });
 
@@ -278,7 +333,7 @@ test('should process expiration/refund by deleting subscription and emitting can
     original_transaction_id: 'orig-tx-2',
   });
 
-  const finalDBCount = await db.subscription.count({
+  const finalDBCount = await db.providerSubscription.count({
     where: { targetId: user.id, plan: 'pro' },
   });
 
@@ -303,33 +358,47 @@ test('should enqueue per-user reconciliation jobs for existing RC active/trialin
 
   const cron = module.get(SubscriptionCronJobs);
 
-  const common = { provider: 'revenuecat', start: new Date() } as const;
-  await db.subscription.createMany({
+  const common = { provider: 'revenuecat', periodStart: new Date() } as const;
+  await db.providerSubscription.createMany({
     data: [
       {
+        targetType: 'user',
         targetId: 'u1',
         plan: 'pro',
         status: 'active',
         recurring: 'monthly',
+        iapStore: 'app_store',
+        externalCustomerId: 'c1',
+        externalProductId: 'pro-monthly',
+        externalRef: 'r1',
         ...common,
       },
       {
+        targetType: 'user',
         targetId: 'u2',
         plan: 'ai',
         status: 'trialing',
         recurring: 'yearly',
+        iapStore: 'app_store',
+        externalCustomerId: 'c2',
+        externalProductId: 'ai-yearly',
+        externalRef: 'r2',
         ...common,
       },
       {
+        targetType: 'user',
         targetId: 'u1',
         plan: 'ai',
         status: 'past_due',
         recurring: 'monthly',
+        iapStore: 'play_store',
+        externalCustomerId: 'c1',
+        externalProductId: 'ai-monthly',
+        externalRef: 'r3',
         ...common,
       },
     ],
   });
-
   await cron.reconcileRevenueCatSubscriptions();
 
   const calls = module.queue.add.getCalls().map(c => ({
@@ -410,17 +479,21 @@ test('should activate subscriptions via webhook for whitelisted products across 
     // reset event history between scenarios for clean counts
     event.emit.resetHistory?.();
     await triggerWebhook(user.id, s.event);
-    const rec = await db.subscription.findUnique({
-      where: { targetId_plan: { targetId: user.id, plan: s.expectedPlan } },
+    const rec = await db.providerSubscription.findFirst({
+      where: {
+        targetType: 'user',
+        targetId: user.id,
+        plan: s.expectedPlan,
+      },
       select: {
         plan: true,
         recurring: true,
         status: true,
         provider: true,
         iapStore: true,
-        rcEntitlement: true,
-        rcProductId: true,
-        rcExternalRef: true,
+        metadata: true,
+        externalProductId: true,
+        externalRef: true,
       },
     });
     const { activatedCount } = collectEvents();
@@ -478,9 +551,9 @@ test('should keep active and advance period dates when a trialing subscription r
     store: 'app_store',
   });
 
-  const rec = await db.subscription.findUnique({
-    where: { targetId_plan: { targetId: user.id, plan: 'pro' } },
-    select: { status: true, start: true, end: true },
+  const rec = await db.providerSubscription.findFirst({
+    where: { targetType: 'user', targetId: user.id, plan: 'pro' },
+    select: { status: true, periodStart: true, periodEnd: true },
   });
   const { activatedCount, canceledCount } = collectEvents();
   t.snapshot(
@@ -534,7 +607,7 @@ test('should remove or cancel the record and revoke entitlement when a trialing 
     store: 'app_store',
   });
 
-  const finalDBCount = await db.subscription.count({
+  const finalDBCount = await db.providerSubscription.count({
     where: { targetId: user.id, plan: 'pro' },
   });
   const { canceledCount } = collectEvents();
@@ -563,8 +636,8 @@ test('should set canceledAt and keep active until expiration when will_renew is 
     type: 'CANCELLATION',
     store: 'app_store',
   });
-  const rec = await db.subscription.findUnique({
-    where: { targetId_plan: { targetId: user.id, plan: 'pro' } },
+  const rec = await db.providerSubscription.findFirst({
+    where: { targetType: 'user', targetId: user.id, plan: 'pro' },
     select: { status: true, canceledAt: true },
   });
   const { activatedCount, canceledCount } = collectEvents();
@@ -601,8 +674,8 @@ test('should retain record as past_due (inactive but not expired) and NOT emit c
     store: 'app_store',
   });
 
-  const rec = await db.subscription.findUnique({
-    where: { targetId_plan: { targetId: user.id, plan: 'pro' } },
+  const rec = await db.providerSubscription.findFirst({
+    where: { targetType: 'user', targetId: user.id, plan: 'pro' },
     select: { status: true },
   });
   const { canceledCount } = collectEvents();
@@ -616,18 +689,25 @@ test('should block checkout when an existing subscription of the same plan is ac
   const { module, db } = t.context;
 
   const manager = module.get(UserSubscriptionManager);
+  let subscriptionId: string;
 
   {
-    await db.subscription.create({
+    const subscription = await db.providerSubscription.create({
       data: {
+        targetType: 'user',
         targetId: user.id,
         plan: 'pro',
         status: 'active',
         provider: 'revenuecat',
         recurring: 'monthly',
-        start: new Date('2025-01-01T00:00:00.000Z'),
+        periodStart: new Date('2025-01-01T00:00:00.000Z'),
+        iapStore: 'app_store',
+        externalCustomerId: 'cust',
+        externalProductId: 'app.affine.pro.Monthly',
+        externalRef: 'rc:app.affine.pro.Monthly',
       },
     });
+    subscriptionId = subscription.id;
 
     await t.throwsAsync(
       manager.checkout(
@@ -648,9 +728,16 @@ test('should block checkout when an existing subscription of the same plan is ac
   }
 
   {
-    await db.subscription.update({
-      where: { targetId_plan: { targetId: user.id, plan: 'pro' } },
-      data: { provider: 'stripe' },
+    await db.providerSubscription.update({
+      where: { id: subscriptionId },
+      data: {
+        provider: 'stripe',
+        externalSubscriptionId: 'sub_existing',
+        iapStore: null,
+        externalCustomerId: null,
+        externalProductId: null,
+        externalRef: null,
+      },
     });
 
     await t.throwsAsync(
@@ -676,17 +763,18 @@ test('should block checkout when an existing subscription of the same plan is ac
 test('should skip RC upsert when Stripe active already exists for same plan', async t => {
   const { db, collectEvents, mockAlias, mockSub, triggerWebhook } = t.context;
   mockAlias(user.id);
-  await db.subscription.create({
+  await db.providerSubscription.create({
     data: {
+      targetType: 'user',
       targetId: user.id,
       plan: 'pro',
       status: 'active',
       provider: 'stripe',
       recurring: 'monthly',
-      start: new Date('2025-01-01T00:00:00.000Z'),
+      periodStart: new Date('2025-01-01T00:00:00.000Z'),
+      externalSubscriptionId: 'sub_conflict',
     },
   });
-
   mockSub([
     {
       identifier: 'Pro',
@@ -707,7 +795,7 @@ test('should skip RC upsert when Stripe active already exists for same plan', as
     store: 'app_store',
   });
 
-  const rcRec = await db.subscription.findFirst({
+  const rcRec = await db.providerSubscription.findFirst({
     where: { targetId: user.id, plan: 'pro', provider: 'revenuecat' },
   });
   const { activatedCount } = collectEvents();
@@ -719,19 +807,23 @@ test('should skip RC upsert when Stripe active already exists for same plan', as
 
 test('should block read-write ops on revenuecat-managed record (cancel/resume/updateRecurring)', async t => {
   const { db, service } = t.context;
-  await db.subscription.create({
+  await db.providerSubscription.create({
     data: {
+      targetType: 'user',
       targetId: user.id,
       plan: 'pro',
       status: 'active',
       provider: 'revenuecat',
       recurring: 'monthly',
-      start: new Date(),
+      periodStart: new Date(),
+      iapStore: 'app_store',
+      externalCustomerId: 'cust',
+      externalProductId: 'app.affine.pro.Monthly',
+      externalRef: 'rc:managed',
     },
   });
 
-  // local helper used multiple times within this test
-  const expectManaged = async (fn: () => Promise<any>) =>
+  const expectManaged = async (fn: () => Promise<unknown>) =>
     t.throwsAsync(() => fn(), { instanceOf: ManagedByAppStoreOrPlay });
 
   await expectManaged(() =>
@@ -751,29 +843,83 @@ test('should block read-write ops on revenuecat-managed record (cancel/resume/up
 });
 
 test('should reconcile and fix missing or out-of-order states for revenuecat Active/Trialing/PastDue records', async t => {
-  const { webhook, collectEvents, mockAlias, mockSub } = t.context;
+  const { webhook, db, collectEvents, mockAlias, mockSubSeq } = t.context;
 
   mockAlias(user.id);
-  const subscriber = mockSub([
-    {
-      identifier: 'Pro',
-      isTrial: false,
-      isActive: true,
-      latestPurchaseDate: new Date('2025-03-01T00:00:00.000Z'),
-      expirationDate: new Date('2026-03-01T00:00:00.000Z'),
-      productId: 'app.affine.pro.Annual',
-      store: 'play_store',
-      willRenew: true,
-      duration: null,
+  const placeholder = await db.providerSubscription.create({
+    data: {
+      targetType: 'user',
+      targetId: user.id,
+      plan: 'pro',
+      status: 'active',
+      provider: 'revenuecat',
+      recurring: 'yearly',
+      periodStart: new Date('2025-01-01T00:00:00.000Z'),
+      periodEnd: new Date('2999-01-01T00:00:00.000Z'),
+      iapStore: 'app_store',
+      externalCustomerId: user.id,
+      externalProductId: 'legacy_product:1',
+      externalRef: 'legacy_subscription:1',
+      metadata: { legacyRevenueCatIdentityIncomplete: true },
     },
-  ]);
+  });
+  const subscription = {
+    identifier: 'Pro',
+    isTrial: false,
+    isActive: true,
+    latestPurchaseDate: new Date('2025-03-01T00:00:00.000Z'),
+    expirationDate: new Date('2026-03-01T00:00:00.000Z'),
+    productId: 'app.affine.pro.Annual',
+    store: 'play_store',
+    willRenew: true,
+    duration: null,
+  } as const;
+  const subscriber = mockSubSeq([[subscription], [subscription]]);
 
+  await webhook.syncAppUser(user.id);
+  await db.providerSubscription.create({
+    data: {
+      targetType: 'user',
+      targetId: user.id,
+      plan: 'pro',
+      status: 'active',
+      provider: 'revenuecat',
+      recurring: 'yearly',
+      periodEnd: new Date('2999-01-01T00:00:00.000Z'),
+      iapStore: 'app_store',
+      externalCustomerId: user.id,
+      externalProductId: 'legacy_product:2',
+      externalRef: 'legacy_subscription:2',
+      metadata: { legacyRevenueCatIdentityIncomplete: true },
+    },
+  });
   await webhook.syncAppUser(user.id);
   const { activatedCount, canceledCount } = collectEvents();
   const subscriberCount = subscriber.getCalls()?.length || 0;
+  const records = await db.providerSubscription.findMany({
+    where: { targetId: user.id, plan: 'pro', provider: 'revenuecat' },
+    select: { id: true, externalRef: true, metadata: true },
+  });
+  const normalizedRecords = records.map(({ id: _, ...record }) => record);
+  const activeEntitlement = await db.entitlement.findFirst({
+    where: {
+      targetType: 'user',
+      targetId: user.id,
+      source: 'cloud_subscription',
+      status: 'active',
+      subjectId: placeholder.id,
+    },
+  });
 
   t.snapshot(
-    { subscriberCount, activatedCount, canceledCount },
+    {
+      subscriberCount,
+      activatedCount,
+      canceledCount,
+      records: normalizedRecords,
+      reusedPlaceholder: records[0]?.id === placeholder.id,
+      hasActiveEntitlement: !!activeEntitlement,
+    },
     'should reconcile and fix missing or out-of-order states for revenuecat records'
   );
 });
@@ -782,14 +928,19 @@ test('should treat refund as early expiration and revoke immediately', async t =
   const { db, collectEvents, mockAlias, mockSub, triggerWebhook } = t.context;
 
   mockAlias(user.id);
-  await db.subscription.create({
+  await db.providerSubscription.create({
     data: {
+      targetType: 'user',
       targetId: user.id,
       plan: 'pro',
       status: 'active',
       provider: 'revenuecat',
       recurring: 'monthly',
-      start: new Date('2025-01-01T00:00:00.000Z'),
+      periodStart: new Date('2025-01-01T00:00:00.000Z'),
+      iapStore: 'app_store',
+      externalCustomerId: 'cust',
+      externalProductId: 'app.affine.pro.Monthly',
+      externalRef: 'rc:app.affine.pro.Monthly',
     },
   });
 
@@ -813,13 +964,13 @@ test('should treat refund as early expiration and revoke immediately', async t =
     store: 'app_store',
   });
 
-  const count = await db.subscription.count({
+  const count = await db.providerSubscription.count({
     where: { targetId: user.id, plan: 'pro' },
   });
   const { canceledCount } = collectEvents();
   t.snapshot(
     { finalDBCount: count, canceledEventCount: canceledCount },
-    'should delete record and emit canceled on refund'
+    'should cancel record and emit canceled on refund'
   );
 });
 
@@ -845,7 +996,9 @@ test('should ignore non-whitelisted productId and not write to DB', async t => {
     type: 'INITIAL_PURCHASE',
     store: 'app_store',
   });
-  const dbCount = await db.subscription.count({ where: { targetId: user.id } });
+  const dbCount = await db.providerSubscription.count({
+    where: { targetId: user.id },
+  });
   const { activatedCount, canceledCount } = collectEvents();
   t.snapshot(
     { dbCount, activatedCount, canceledCount },
@@ -900,8 +1053,8 @@ test('should map via entitlement+duration when productId not whitelisted (P1M/P1
     type: 'INITIAL_PURCHASE',
     store: 'app_store',
   });
-  const r1 = await db.subscription.findUnique({
-    where: { targetId_plan: { targetId: user.id, plan: 'pro' } },
+  const r1 = await db.providerSubscription.findFirst({
+    where: { targetType: 'user', targetId: user.id, plan: 'pro' },
     select: { plan: true, recurring: true, provider: true },
   });
   const s1 = collectEvents();
@@ -912,8 +1065,8 @@ test('should map via entitlement+duration when productId not whitelisted (P1M/P1
     type: 'INITIAL_PURCHASE',
     store: 'play_store',
   });
-  const r2 = await db.subscription.findUnique({
-    where: { targetId_plan: { targetId: user.id, plan: 'ai' } },
+  const r2 = await db.providerSubscription.findFirst({
+    where: { targetType: 'user', targetId: user.id, plan: 'ai' },
     select: { plan: true, recurring: true, provider: true },
   });
   const s2 = collectEvents();
@@ -924,7 +1077,9 @@ test('should map via entitlement+duration when productId not whitelisted (P1M/P1
     type: 'INITIAL_PURCHASE',
     store: 'app_store',
   });
-  const count = await db.subscription.count({ where: { targetId: user.id } });
+  const count = await db.providerSubscription.count({
+    where: { targetId: user.id },
+  });
   const s3 = collectEvents();
 
   t.snapshot(
@@ -1024,18 +1179,19 @@ test('should refresh user subscriptions (empty / revenuecat / stripe-only)', asy
 
   // case3: only stripe subscription -> should NOT sync (call count remains 2)
   {
-    await db.subscription.deleteMany({
+    await db.providerSubscription.deleteMany({
       where: { targetId: user.id, provider: 'revenuecat' },
     });
-    await db.subscription.create({
+    await db.providerSubscription.create({
       data: {
+        targetType: 'user',
         targetId: user.id,
         plan: 'pro',
         provider: 'stripe',
         status: 'active',
         recurring: 'monthly',
-        start: new Date('2025-01-01T00:00:00.000Z'),
-        stripeSubscriptionId: 'sub_123',
+        periodStart: new Date('2025-01-01T00:00:00.000Z'),
+        externalSubscriptionId: 'sub_123',
       },
     });
     const subs = await subResolver.refreshUserSubscriptions(currentUser);
@@ -1047,29 +1203,48 @@ test('should refresh user subscriptions (empty / revenuecat / stripe-only)', asy
 test('user subscriptions ignore active rows after their current period ended', async t => {
   const { db, subResolver } = t.context;
 
-  await db.subscription.createMany({
+  await db.providerSubscription.createMany({
     data: [
       {
+        targetType: 'user',
         targetId: user.id,
         plan: 'ai',
         provider: 'stripe',
         status: 'active',
         recurring: 'yearly',
-        start: new Date('2025-01-01T00:00:00.000Z'),
-        end: new Date('2025-01-08T00:00:00.000Z'),
-        stripeSubscriptionId: 'sub_expired_ai',
+        periodStart: new Date('2025-01-01T00:00:00.000Z'),
+        periodEnd: new Date('2025-01-08T00:00:00.000Z'),
+        externalSubscriptionId: 'sub_expired_ai',
       },
       {
+        targetType: 'user',
         targetId: user.id,
         plan: 'pro',
         provider: 'stripe',
         status: 'active',
         recurring: 'yearly',
-        start: new Date('2025-01-01T00:00:00.000Z'),
-        end: new Date('2099-01-01T00:00:00.000Z'),
-        stripeSubscriptionId: 'sub_current_pro',
+        periodStart: new Date('2025-01-01T00:00:00.000Z'),
+        periodEnd: new Date('2099-01-01T00:00:00.000Z'),
+        externalSubscriptionId: 'sub_current_pro',
       },
     ],
+  });
+  const entitlement = t.context.module.get(EntitlementService);
+  await entitlement.upsertFromCloudSubscription({
+    targetId: user.id,
+    plan: SubscriptionPlan.AI,
+    recurring: SubscriptionRecurring.Yearly,
+    status: SubscriptionStatus.Active,
+    subscriptionId: 'sub_expired_ai',
+    end: new Date('2025-01-08T00:00:00.000Z'),
+  });
+  await entitlement.upsertFromCloudSubscription({
+    targetId: user.id,
+    plan: SubscriptionPlan.Pro,
+    recurring: SubscriptionRecurring.Yearly,
+    status: SubscriptionStatus.Active,
+    subscriptionId: 'sub_current_pro',
+    end: new Date('2099-01-01T00:00:00.000Z'),
   });
 
   const subscriptions = await subResolver.subscriptions(user, user);
@@ -1083,4 +1258,37 @@ test('user subscriptions ignore active rows after their current period ended', a
     plan: SubscriptionPlan.AI,
   });
   t.is(activeAI, null);
+});
+
+test('user subscriptions preserve provider trialing status', async t => {
+  const { db, models, subResolver } = t.context;
+  const trialUser = await models.user.create({
+    email: `${Date.now()}-trial-status@affine.pro`,
+  });
+
+  await db.providerSubscription.create({
+    data: {
+      provider: 'stripe',
+      targetType: 'user',
+      targetId: trialUser.id,
+      plan: SubscriptionPlan.Pro,
+      recurring: SubscriptionRecurring.Yearly,
+      status: SubscriptionStatus.Trialing,
+      externalSubscriptionId: 'sub_trialing_status',
+      periodStart: new Date('2026-01-01T00:00:00.000Z'),
+      periodEnd: new Date('2099-01-01T00:00:00.000Z'),
+    },
+  });
+  await t.context.module.get(EntitlementService).upsertFromCloudSubscription({
+    targetId: trialUser.id,
+    plan: SubscriptionPlan.Pro,
+    recurring: SubscriptionRecurring.Yearly,
+    status: SubscriptionStatus.Trialing,
+    subscriptionId: 'sub_trialing_status',
+    end: new Date('2099-01-01T00:00:00.000Z'),
+  });
+
+  const subscriptions = await subResolver.subscriptions(trialUser, trialUser);
+
+  t.is(subscriptions[0]?.status, SubscriptionStatus.Trialing);
 });

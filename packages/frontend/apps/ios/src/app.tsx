@@ -54,9 +54,11 @@ import {
   MarkdownAdapter,
   titleMiddleware,
 } from '@blocksuite/affine/shared/adapters';
+import { registerNativeImageFilesPicker } from '@blocksuite/affine/shared/utils';
 import { MarkdownTransformer } from '@blocksuite/affine/widgets/linked-doc';
 import { App as CapacitorApp } from '@capacitor/app';
 import { Browser } from '@capacitor/browser';
+import { Capacitor } from '@capacitor/core';
 import { Haptics } from '@capacitor/haptics';
 import { Keyboard, KeyboardStyle } from '@capacitor/keyboard';
 import { Framework, FrameworkRoot, getCurrentStore } from '@toeverything/infra';
@@ -69,12 +71,14 @@ import { RouterProvider } from 'react-router-dom';
 
 import { BlocksuiteMenuConfigProvider } from './bs-menu-config';
 import { ModalConfigProvider } from './modal-config';
+import { AffineTheme } from './plugins/affine-theme';
 import { Auth } from './plugins/auth';
 import { Hashcash } from './plugins/hashcash';
+import { ImagePicker } from './plugins/image-picker';
 import { NbStoreNativeDBApis } from './plugins/nbstore';
 import { PayWall } from './plugins/paywall';
 import { Preview } from './plugins/preview';
-import { writeEndpointToken } from './proxy';
+import { clearEndpointSession, getValidAccessToken } from './proxy';
 import { enableNavigationGesture$ } from './web-navigation-control';
 
 const storeManagerClient = createStoreManagerClient();
@@ -179,35 +183,43 @@ framework.scope(ServerScope).override(AuthProvider, resolver => {
   const endpoint = serverService.server.baseUrl;
   return {
     async signInMagicLink(email, linkToken, clientNonce) {
-      const { token } = await Auth.signInMagicLink({
+      await Auth.signInMagicLink({
         endpoint,
         email,
         token: linkToken,
         clientNonce,
       });
-      await writeEndpointToken(endpoint, token);
     },
     async signInOauth(code, state, _provider, clientNonce) {
-      const { token } = await Auth.signInOauth({
+      await Auth.signInOauth({
         endpoint,
         code,
         state,
         clientNonce,
       });
-      await writeEndpointToken(endpoint, token);
       return {};
     },
     async signInPassword(credential) {
-      const { token } = await Auth.signInPassword({
+      await Auth.signInPassword({
         endpoint,
         ...credential,
       });
-      await writeEndpointToken(endpoint, token);
+    },
+    async signInOpenAppSignInCode(code) {
+      await Auth.signInOpenApp({
+        endpoint,
+        code,
+      });
     },
     async signOut() {
-      await Auth.signOut({
-        endpoint,
-      });
+      try {
+        await Auth.signOut({ endpoint });
+      } finally {
+        await clearEndpointSession(endpoint);
+      }
+    },
+    async clearSession() {
+      await clearEndpointSession(endpoint);
     },
   };
 });
@@ -223,6 +235,39 @@ registerNativePreviewHandlers({
   renderMermaidSvg: request => Preview.renderMermaidSvg(request),
   renderTypstSvg: request => Preview.renderTypstSvg(request),
 });
+registerNativeImageFilesPicker(async () => {
+  const result = await ImagePicker.pickImages({ multiple: true });
+  if (result.canceled || result.files.length === 0) {
+    return [];
+  }
+
+  const settled = await Promise.allSettled(
+    result.files.map(async file => {
+      const filePath = file.path.startsWith('file://')
+        ? file.path
+        : `file://${file.path}`;
+      const response = await fetch(Capacitor.convertFileSrc(filePath));
+      if (!response.ok) {
+        throw new Error(
+          `Failed to read image picker file: ${file.name} (status ${response.status})`
+        );
+      }
+
+      const blob = await response.blob();
+      return new File([blob], file.name, {
+        type: file.mimeType || blob.type || 'image/*',
+        lastModified: file.lastModified,
+      });
+    })
+  );
+
+  return settled
+    .filter(
+      (settledResult): settledResult is PromiseFulfilledResult<File> =>
+        settledResult.status === 'fulfilled'
+    )
+    .map(settledResult => settledResult.value);
+});
 
 // ------ some apis for native ------
 (window as any).getCurrentServerBaseUrl = () => {
@@ -237,6 +282,9 @@ registerNativePreviewHandlers({
 };
 (window as any).getCurrentI18nLocale = () => {
   return I18n.language;
+};
+(window as any).getCurrentThemeMode = () => {
+  return 'system';
 };
 (window as any).getAiButtonFeatureFlag = () => {
   const featureFlagService = frameworkProvider.get(FeatureFlagService);
@@ -409,6 +457,13 @@ window.addEventListener('focus', () => {
   frameworkProvider.get(LifecycleService).applicationFocus();
 });
 frameworkProvider.get(LifecycleService).applicationStart();
+CapacitorApp.addListener('appStateChange', ({ isActive }) => {
+  if (!isActive) return;
+  const servers = frameworkProvider.get(ServersService).servers$.value;
+  Promise.allSettled(
+    servers.map(server => getValidAccessToken(server.baseUrl))
+  ).catch(console.error);
+}).catch(console.error);
 
 const getErrorMessage = (error: unknown, fallback: string) => {
   if (typeof error === 'string' && error) {
@@ -508,6 +563,18 @@ const KeyboardThemeProvider = () => {
     });
   }, [resolvedTheme]);
 
+  useEffect(() => {
+    const themeMode = resolvedTheme === 'dark' ? 'dark' : 'light';
+    (window as any).getCurrentThemeMode = () => {
+      return themeMode;
+    };
+    AffineTheme.onThemeChanged({
+      themeMode,
+    }).catch(e => {
+      console.error(`Failed to sync app theme: ${e}`);
+    });
+  }, [resolvedTheme]);
+
   return null;
 };
 
@@ -541,13 +608,9 @@ function createStoreManagerClient() {
   AsyncCall<typeof NbStoreNativeDBApis>(NbStoreNativeDBApis, {
     channel: {
       on(listener) {
-        const f = (e: MessageEvent<any>) => {
-          listener(e.data);
-        };
+        const f = (e: MessageEvent<any>) => listener(e.data);
         nativeDBApiChannelServer.addEventListener('message', f);
-        return () => {
-          nativeDBApiChannelServer.removeEventListener('message', f);
-        };
+        return () => nativeDBApiChannelServer.removeEventListener('message', f);
       },
       send(data) {
         nativeDBApiChannelServer.postMessage(data);
@@ -557,11 +620,31 @@ function createStoreManagerClient() {
   });
   nativeDBApiChannelServer.start();
   worker.postMessage(
-    {
-      type: 'native-db-api-channel',
-      port: nativeDBApiChannelClient,
-    },
+    { type: 'native-db-api-channel', port: nativeDBApiChannelClient },
     [nativeDBApiChannelClient]
+  );
+
+  const { port1: authTokenChannelServer, port2: authTokenChannelClient } =
+    new MessageChannel();
+  authTokenChannelServer.addEventListener('message', event => {
+    const { id, endpoint } = event.data as { id?: string; endpoint?: string };
+    if (!id || !endpoint) return;
+    getValidAccessToken(endpoint)
+      .then(token => authTokenChannelServer.postMessage({ id, token }))
+      .catch(error =>
+        authTokenChannelServer.postMessage({
+          id,
+          error:
+            typeof error === 'object' && error && 'code' in error
+              ? error.code
+              : 'AUTH_SESSION_TEMPORARILY_UNAVAILABLE',
+        })
+      );
+  });
+  authTokenChannelServer.start();
+  worker.postMessage(
+    { type: 'auth-access-token-channel', port: authTokenChannelClient },
+    [authTokenChannelClient]
   );
   return new StoreManagerClient(new OpClient(worker));
 }

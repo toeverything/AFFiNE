@@ -8,7 +8,20 @@ export const cellContainerStyle = css({
   borderColor: cssVarV2.table.border,
   borderCollapse: 'collapse',
   isolation: 'auto',
-  // textAlign and verticalAlign are applied dynamically per cell via inline style
+  textAlign: 'start',
+  verticalAlign: 'top',
+  'affine-table[data-internal-range-selection="true"] &': {
+    userSelect: 'text',
+    WebkitUserSelect: 'text',
+  },
+  'affine-table[data-internal-range-selection="true"] & rich-text': {
+    userSelect: 'text',
+    WebkitUserSelect: 'text',
+  },
+  'affine-table[data-internal-range-selection="true"] & rich-text *': {
+    userSelect: 'text',
+    WebkitUserSelect: 'text',
+  },
 });
 
 export const columnOptionsCellStyle = css({

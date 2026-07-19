@@ -50,11 +50,19 @@ export class RealtimeRegistry {
     return handler;
   }
 
+  hasRequest(name: RealtimeRequestName) {
+    return this.requests.has(name);
+  }
+
   getTopic(name: RealtimeTopicName) {
     const handler = this.topics.get(name);
     if (!handler) {
       throw new Error(`Realtime topic handler not found: ${name}`);
     }
     return handler;
+  }
+
+  hasTopic(name: RealtimeTopicName) {
+    return this.topics.has(name);
   }
 }

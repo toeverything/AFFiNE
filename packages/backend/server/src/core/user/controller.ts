@@ -16,9 +16,10 @@ export class UserAvatarController {
 
   @Get('/:id')
   async getAvatar(@Res() res: Response, @Param('id') id: string) {
-    if (this.storage.config.storage.provider !== 'fs') {
+    const provider = this.storage.config.storage.provider;
+    if (!['assetpack', 'fs'].includes(provider)) {
       throw new ActionForbidden(
-        'Only available when avatar storage provider set to fs.'
+        'Only available when avatar storage provider is fs or assetpack.'
       );
     }
 

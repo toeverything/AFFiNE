@@ -43,13 +43,15 @@ declare global {
     };
 
     'workspace.file.embed.finished': {
-      contextId: string;
+      contextId?: string;
+      workspaceId: string;
       fileId: string;
       chunkSize: number;
     };
 
     'workspace.file.embed.failed': {
-      contextId: string;
+      contextId?: string;
+      workspaceId: string;
       fileId: string;
       error: string;
     };

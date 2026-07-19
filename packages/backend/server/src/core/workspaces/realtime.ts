@@ -23,6 +23,7 @@ import {
   PermissionAccess,
   WorkspaceRole,
 } from '../permission';
+import { QuotaStateService } from '../quota';
 import { registerRealtimeLiveQuery } from '../realtime/provider';
 import { RealtimePublisher } from '../realtime/publisher';
 import { RealtimeRegistry } from '../realtime/registry';
@@ -32,7 +33,6 @@ import {
   realtimeWorkspaceInviteLinkRoom,
   realtimeWorkspaceMembersRoom,
 } from '../realtime/rooms';
-import { WorkspaceService } from './service';
 
 const workspaceInput = z.object({ workspaceId: z.string() }).strict();
 
@@ -48,7 +48,7 @@ function serializeWorkspaceMember(
     avatarUrl: row.user.avatarUrl ?? null,
     permission: role,
     role,
-    inviteId: row.id,
+    inviteId: row.user.id,
     emailVerified: null,
     status: row.status,
   };
@@ -58,7 +58,7 @@ function serializeWorkspaceMember(
 export class WorkspaceAccessRealtimeProvider implements OnModuleInit {
   constructor(
     private readonly ac: PermissionAccess,
-    private readonly workspaceService: WorkspaceService,
+    private readonly quotaState: QuotaStateService,
     @Optional() private readonly registry?: RealtimeRegistry,
     @Optional() private readonly publisher?: RealtimePublisher
   ) {}
@@ -125,8 +125,14 @@ export class WorkspaceAccessRealtimeProvider implements OnModuleInit {
     return {
       role: role ? WorkspaceRole[role] : WorkspaceRole[WorkspaceRole.External],
       permissions: mapPermissionsToGraphqlPermissions(permissions),
-      team: await this.workspaceService.isTeamWorkspace(workspaceId),
+      team: await this.isTeamWorkspace(workspaceId),
     };
+  }
+
+  private async isTeamWorkspace(workspaceId: string) {
+    const state = await this.quotaState.getWorkspaceQuotaState(workspaceId);
+    if (!state?.known) return false;
+    return ['team', 'selfhost_team'].includes(state.plan);
   }
 
   private publish(workspaceId: string, reason: string) {

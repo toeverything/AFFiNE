@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Transactional } from '@nestjs-cls/transactional';
-import type { Update } from '@prisma/client';
+import type { Update, WorkspaceDoc } from '@prisma/client';
 import { Prisma } from '@prisma/client';
 
 import { EventBus, PaginationInput } from '../base';
@@ -33,7 +33,10 @@ declare global {
 export type DocMetaUpsertInput = Omit<
   Prisma.WorkspaceDocUncheckedCreateInput,
   'workspaceId' | 'docId'
->;
+> & {
+  public?: boolean;
+  defaultRole?: DocRole;
+};
 
 /**
  * Workspace Doc Model
@@ -48,6 +51,24 @@ export type DocMetaUpsertInput = Omit<
 export class DocModel extends BaseModel {
   constructor(private readonly event: EventBus) {
     super();
+  }
+
+  private docRoleFromPolicy(role: string | null | undefined) {
+    switch (role) {
+      case 'none':
+        return DocRole.None;
+      case 'reader':
+        return DocRole.Reader;
+      case 'commenter':
+        return DocRole.Commenter;
+      case 'editor':
+        return DocRole.Editor;
+      case 'owner':
+        return DocRole.Owner;
+      case 'manager':
+      default:
+        return DocRole.Manager;
+    }
   }
 
   // #region Update
@@ -365,56 +386,64 @@ export class DocModel extends BaseModel {
     docId: string,
     data?: DocMetaUpsertInput
   ) {
-    if (
-      data &&
-      ('public' in data || 'defaultRole' in data || 'publishedAt' in data)
-    ) {
+    const { public: isPublic, defaultRole, ...meta } = data ?? {};
+    if (data && ('public' in data || 'defaultRole' in data)) {
       await this.models.docAccessPolicy.upsert(workspaceId, docId, {
-        public: data.public,
-        defaultRole: data.defaultRole,
-        publishedAt:
-          typeof data.publishedAt === 'string'
-            ? new Date(data.publishedAt)
-            : data.publishedAt,
+        public: isPublic,
+        defaultRole,
       });
     }
 
-    const doc = await this.withPermissionProjectionMetric(
-      this.db.workspaceDoc.upsert({
-        where: {
-          workspaceId_docId: {
-            workspaceId,
-            docId,
-          },
-        },
-        update: {
-          ...data,
-        },
-        create: {
-          ...data,
+    const doc = await this.db.workspaceDoc.upsert({
+      where: {
+        workspaceId_docId: {
           workspaceId,
           docId,
         },
-      })
-    );
+      },
+      update: {
+        ...meta,
+      },
+      create: {
+        ...meta,
+        workspaceId,
+        docId,
+      },
+    });
     this.event.emit('doc.updated', {
       workspaceId,
       docId,
     });
-    return doc;
+    const policy = await this.db.docAccessPolicy.findUnique({
+      where: { workspaceId_docId: { workspaceId, docId } },
+    });
+    return {
+      ...doc,
+      public: policy?.visibility === 'public',
+      defaultRole: this.docRoleFromPolicy(policy?.memberDefaultRole),
+    };
   }
 
   /**
    * Get the doc meta.
    */
+  async getMeta(
+    workspaceId: string,
+    docId: string
+  ): Promise<(WorkspaceDoc & { public: boolean; defaultRole: DocRole }) | null>;
   async getMeta<Select extends Prisma.WorkspaceDocSelect>(
     workspaceId: string,
     docId: string,
-    options?: {
-      select?: Select;
+    options: {
+      select: Select;
     }
-  ) {
-    return (await this.db.workspaceDoc.findUnique({
+  ): Promise<Prisma.WorkspaceDocGetPayload<{ select: Select }> | null>;
+  async getMeta(
+    workspaceId: string,
+    docId: string,
+    options?: { select: Prisma.WorkspaceDocSelect }
+  ): Promise<unknown> {
+    const doc = await this.db.workspaceDoc.findUnique({
       where: {
         workspaceId_docId: {
           workspaceId,
@@ -422,7 +451,18 @@ export class DocModel extends BaseModel {
         },
       },
       select: options?.select,
-    })) as Prisma.WorkspaceDocGetPayload<{ select: Select }> | null;
+    });
+    if (!doc || options?.select) {
+      return doc;
+    }
+    const policy = await this.db.docAccessPolicy.findUnique({
+      where: { workspaceId_docId: { workspaceId, docId } },
+    });
+    return {
+      ...doc,
+      public: policy?.visibility === 'public',
+      defaultRole: this.docRoleFromPolicy(policy?.memberDefaultRole),
+    };
   }
 
   async setDefaultRole(workspaceId: string, docId: string, role: DocRole) {
@@ -432,22 +472,15 @@ export class DocModel extends BaseModel {
   }
 
   async findDefaultRoles(workspaceId: string, docIds: string[]) {
-    const docs = await this.findMetas(
-      docIds.map(docId => ({
-        workspaceId,
-        docId,
-      })),
-      {
-        select: {
-          defaultRole: true,
-          public: true,
-        },
-      }
-    );
+    const policies = await this.db.docAccessPolicy.findMany({
+      where: { workspaceId, docId: { in: docIds } },
+    });
+    const byDocId = new Map(policies.map(policy => [policy.docId, policy]));
 
-    return docs.map(doc => ({
-      external: doc?.public ? DocRole.External : null,
-      workspace: doc?.defaultRole ?? DocRole.Manager,
+    return docIds.map(docId => ({
+      external:
+        byDocId.get(docId)?.publicRole === 'external' ? DocRole.External : null,
+      workspace: this.docRoleFromPolicy(byDocId.get(docId)?.memberDefaultRole),
     }));
   }
 
@@ -509,21 +542,29 @@ export class DocModel extends BaseModel {
    * Find the workspace public doc metas.
    */
   async findPublics(workspaceId: string, order: 'asc' | 'desc' = 'asc') {
-    return await this.db.workspaceDoc.findMany({
-      where: { workspaceId, public: true },
+    const policies = await this.db.docAccessPolicy.findMany({
+      where: { workspaceId, visibility: 'public', publicRole: 'external' },
+    });
+    const byDocId = new Map(policies.map(policy => [policy.docId, policy]));
+    const metas = await this.db.workspaceDoc.findMany({
+      where: { workspaceId, docId: { in: [...byDocId.keys()] } },
       orderBy: { publishedAt: order },
     });
+    return metas.map(meta => ({
+      ...meta,
+      public: true,
+      defaultRole: this.docRoleFromPolicy(
+        byDocId.get(meta.docId)?.memberDefaultRole
+      ),
+    }));
   }
 
   /**
    * Get the workspace public docs count.
    */
   async getPublicsCount(workspaceId: string) {
-    return await this.db.workspaceDoc.count({
-      where: {
-        workspaceId,
-        public: true,
-      },
+    return await this.db.docAccessPolicy.count({
+      where: { workspaceId, visibility: 'public', publicRole: 'external' },
     });
   }
 
@@ -552,8 +593,7 @@ export class DocModel extends BaseModel {
 
   @Transactional()
   async unpublish(workspaceId: string, docId: string) {
-    const docMeta = await this.getMeta(workspaceId, docId);
-    if (!docMeta?.public) {
+    if (!(await this.isPublic(workspaceId, docId))) {
       throw new DocIsNotPublic();
     }
 
@@ -567,12 +607,11 @@ export class DocModel extends BaseModel {
    * Check if the doc is public.
    */
   async isPublic(workspaceId: string, docId: string) {
-    const docMeta = await this.getMeta(workspaceId, docId, {
-      select: {
-        public: true,
-      },
+    const policy = await this.db.docAccessPolicy.findUnique({
+      where: { workspaceId_docId: { workspaceId, docId } },
+      select: { visibility: true, publicRole: true },
     });
-    return docMeta?.public ?? false;
+    return policy?.visibility === 'public' && policy.publicRole === 'external';
   }
 
   async getDocInfo(workspaceId: string, docId: string) {
@@ -582,7 +621,7 @@ export class DocModel extends BaseModel {
         docId: string;
         mode: PublicDocMode;
         public: boolean;
-        defaultRole: DocRole;
+        defaultRolePolicy: string;
         title: string | null;
         summary: string | null;
         createdAt: Date;
@@ -595,8 +634,8 @@ export class DocModel extends BaseModel {
      "workspace_pages"."workspace_id" as "workspaceId",
      "workspace_pages"."page_id" as "docId",
      "workspace_pages"."mode" as "mode",
-     "workspace_pages"."public" as "public",
-     "workspace_pages"."defaultRole" as "defaultRole",
+     (dap.visibility = 'public' AND dap.public_role = 'external') as "public",
+     COALESCE(dap.member_default_role, 'manager') as "defaultRolePolicy",
      "workspace_pages"."title" as "title",
      "workspace_pages"."summary" as "summary",
      "snapshots"."created_at" as "createdAt",
@@ -607,13 +646,24 @@ export class DocModel extends BaseModel {
     INNER JOIN "snapshots"
     ON "workspace_pages"."workspace_id" = "snapshots"."workspace_id"
     AND "workspace_pages"."page_id" = "snapshots"."guid"
+    LEFT JOIN "doc_access_policies" dap
+    ON "workspace_pages"."workspace_id" = dap.workspace_id
+    AND "workspace_pages"."page_id" = dap.doc_id
     WHERE
       "workspace_pages"."workspace_id" = ${workspaceId}
       AND "workspace_pages"."page_id" = ${docId}
     LIMIT 1;
   `;
 
-    return rows.at(0) ?? null;
+    const row = rows.at(0);
+    if (!row) {
+      return null;
+    }
+    const { defaultRolePolicy, ...doc } = row;
+    return {
+      ...doc,
+      defaultRole: this.docRoleFromPolicy(defaultRolePolicy),
+    };
   }
 
   async paginateDocInfo(workspaceId: string, pagination: PaginationInput) {
@@ -633,7 +683,7 @@ export class DocModel extends BaseModel {
         docId: string;
         mode: PublicDocMode;
         public: boolean;
-        defaultRole: DocRole;
+        defaultRolePolicy: string;
         createdAt: Date;
         updatedAt: Date;
         creatorId?: string;
@@ -644,8 +694,8 @@ export class DocModel extends BaseModel {
        "workspace_pages"."workspace_id" as "workspaceId",
        "workspace_pages"."page_id" as "docId",
        "workspace_pages"."mode" as "mode",
-       "workspace_pages"."public" as "public",
-       "workspace_pages"."defaultRole" as "defaultRole",
+       (dap.visibility = 'public' AND dap.public_role = 'external') as "public",
+       COALESCE(dap.member_default_role, 'manager') as "defaultRolePolicy",
        "snapshots"."created_at" as "createdAt",
        "snapshots"."updated_at" as "updatedAt",
        "snapshots"."created_by" as "creatorId",
@@ -654,6 +704,9 @@ export class DocModel extends BaseModel {
       INNER JOIN "snapshots"
       ON "workspace_pages"."workspace_id" = "snapshots"."workspace_id"
       AND "workspace_pages"."page_id" = "snapshots"."guid"
+      LEFT JOIN "doc_access_policies" dap
+      ON "workspace_pages"."workspace_id" = dap.workspace_id
+      AND "workspace_pages"."page_id" = dap.doc_id
       WHERE
         "workspace_pages"."workspace_id" = ${workspaceId}
         ${after}
@@ -663,7 +716,13 @@ export class DocModel extends BaseModel {
       OFFSET ${pagination.offset}
     `;
 
-    return [count, rows] as const;
+    return [
+      count,
+      rows.map(({ defaultRolePolicy, ...doc }) => ({
+        ...doc,
+        defaultRole: this.docRoleFromPolicy(defaultRolePolicy),
+      })),
+    ] as const;
   }
 
   async paginateDocInfoByUpdatedAt(
@@ -690,7 +749,7 @@ export class DocModel extends BaseModel {
         docId: string;
         mode: PublicDocMode;
         public: boolean;
-        defaultRole: DocRole;
+        defaultRolePolicy: string;
         title: string | null;
         createdAt: Date;
         updatedAt: Date;
@@ -702,8 +761,8 @@ export class DocModel extends BaseModel {
        "workspace_pages"."workspace_id" as "workspaceId",
        "workspace_pages"."page_id" as "docId",
        "workspace_pages"."mode" as "mode",
-       "workspace_pages"."public" as "public",
-       "workspace_pages"."defaultRole" as "defaultRole",
+       (dap.visibility = 'public' AND dap.public_role = 'external') as "public",
+       COALESCE(dap.member_default_role, 'manager') as "defaultRolePolicy",
        "workspace_pages"."title" as "title",
        "snapshots"."created_at" as "createdAt",
        "snapshots"."updated_at" as "updatedAt",
@@ -713,6 +772,9 @@ export class DocModel extends BaseModel {
       INNER JOIN "snapshots"
       ON "workspace_pages"."workspace_id" = "snapshots"."workspace_id"
       AND "workspace_pages"."page_id" = "snapshots"."guid"
+      LEFT JOIN "doc_access_policies" dap
+      ON "workspace_pages"."workspace_id" = dap.workspace_id
+      AND "workspace_pages"."page_id" = dap.doc_id
       WHERE
         "workspace_pages"."workspace_id" = ${workspaceId}
         AND ${readablePredicate}
@@ -723,7 +785,13 @@ export class DocModel extends BaseModel {
       OFFSET ${pagination.offset}
     `;
 
-    return [count, rows] as const;
+    return [
+      count,
+      rows.map(({ defaultRolePolicy, ...doc }) => ({
+        ...doc,
+        defaultRole: this.docRoleFromPolicy(defaultRolePolicy),
+      })),
+    ] as const;
   }
 
   async findEmptySummaryDocIds(workspaceId: string) {

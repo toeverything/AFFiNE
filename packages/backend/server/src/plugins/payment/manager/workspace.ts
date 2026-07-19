@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaClient, Provider, UserStripeCustomer } from '@prisma/client';
-import { omit, pick } from 'lodash-es';
+import { omit } from 'lodash-es';
 import { z } from 'zod';
 
 import {
@@ -72,7 +72,7 @@ export class WorkspaceSubscriptionManager extends SubscriptionManager {
     params: z.infer<typeof CheckoutParams>,
     args: z.infer<typeof WorkspaceSubscriptionCheckoutArgs>
   ) {
-    const subscription = await this.getSubscription({
+    const subscription = await this.getActiveSubscription({
       plan: SubscriptionPlan.Team,
       workspaceId: args.workspaceId,
     });
@@ -139,6 +139,11 @@ export class WorkspaceSubscriptionManager extends SubscriptionManager {
     }
 
     const subscriptionData = this.transformSubscription(subscription);
+    const saved = await this.upsertStripeProviderSubscription(
+      workspaceId,
+      subscription,
+      subscriptionData
+    );
 
     if (
       stripeSubscription.status === SubscriptionStatus.Active ||
@@ -158,28 +163,13 @@ export class WorkspaceSubscriptionManager extends SubscriptionManager {
       });
     }
 
-    const saved = await this.db.subscription.upsert({
-      where: {
-        provider: Provider.stripe,
-        stripeSubscriptionId: stripeSubscription.id,
-      },
-      update: {
-        ...pick(subscriptionData, [
-          'status',
-          'stripeScheduleId',
-          'nextBillAt',
-          'canceledAt',
-          'quantity',
-          'end',
-        ]),
-      },
-      create: {
-        targetId: workspaceId,
-        ...omit(subscriptionData, 'provider', 'iapStore'),
-      },
+    const result = this.transformProviderSubscription(saved);
+    await this.entitlement.upsertFromCloudSubscription({
+      ...result,
+      targetId: saved.targetId,
+      subscriptionId: saved.id,
     });
-    await this.entitlement.upsertFromCloudSubscription(saved);
-    return saved;
+    return result;
   }
 
   async deleteStripeSubscription({
@@ -194,10 +184,17 @@ export class WorkspaceSubscriptionManager extends SubscriptionManager {
       );
     }
 
-    const result = await this.db.subscription.deleteMany({
-      where: { stripeSubscriptionId: stripeSubscription.id },
+    const result = await this.db.providerSubscription.updateMany({
+      where: {
+        provider: Provider.stripe,
+        externalSubscriptionId: stripeSubscription.id,
+      },
+      data: {
+        status: SubscriptionStatus.Canceled,
+        canceledAt: new Date(),
+        periodEnd: new Date(),
+      },
     });
-
     if (result.count > 0) {
       await this.entitlement.revokeCloudSubscription({
         targetId: workspaceId,
@@ -213,61 +210,104 @@ export class WorkspaceSubscriptionManager extends SubscriptionManager {
   }
 
   getSubscription(identity: z.infer<typeof WorkspaceSubscriptionIdentity>) {
-    return this.db.subscription.findFirst({
-      where: {
-        targetId: identity.workspaceId,
-      },
-    });
+    return this.db.providerSubscription
+      .findFirst({
+        where: {
+          targetType: 'workspace',
+          targetId: identity.workspaceId,
+          plan: identity.plan,
+        },
+        orderBy: { updatedAt: 'desc' },
+      })
+      .then(subscription =>
+        subscription ? this.transformProviderSubscription(subscription) : null
+      );
   }
 
   getActiveSubscription(
     identity: z.infer<typeof WorkspaceSubscriptionIdentity>
   ) {
-    return this.db.subscription.findFirst({
-      where: {
-        targetId: identity.workspaceId,
-        ...activeSubscriptionWhere(),
-      },
-    });
+    return this.db.providerSubscription
+      .findFirst({
+        where: {
+          targetType: 'workspace',
+          targetId: identity.workspaceId,
+          plan: identity.plan,
+          ...activeSubscriptionWhere(),
+        },
+        orderBy: { updatedAt: 'desc' },
+      })
+      .then(subscription =>
+        subscription ? this.transformProviderSubscription(subscription) : null
+      );
   }
 
   async cancelSubscription(subscription: Subscription) {
-    return await this.db.subscription.update({
+    const current = await this.db.providerSubscription.findUniqueOrThrow({
       where: {
-        // @ts-expect-error checked outside
-        stripeSubscriptionId: subscription.stripeSubscriptionId,
+        provider_externalSubscriptionId: {
+          provider: Provider.stripe,
+          externalSubscriptionId: this.requireStripeSubscriptionId(
+            subscription.stripeSubscriptionId
+          ),
+        },
       },
+    });
+    await this.db.providerSubscription.update({
+      where: { id: current.id },
       data: {
         canceledAt: new Date(),
-        nextBillAt: null,
       },
     });
+    const saved = await this.patchProviderSubscriptionMetadata(current.id, {
+      variant: subscription.variant,
+      stripeScheduleId: subscription.stripeScheduleId,
+      nextBillAt: null,
+    });
+    return this.transformProviderSubscription(saved);
   }
 
-  resumeSubscription(subscription: Subscription): Promise<Subscription> {
-    return this.db.subscription.update({
+  async resumeSubscription(subscription: Subscription) {
+    const current = await this.db.providerSubscription.findUniqueOrThrow({
       where: {
-        // @ts-expect-error checked outside
-        stripeSubscriptionId: subscription.stripeSubscriptionId,
+        provider_externalSubscriptionId: {
+          provider: Provider.stripe,
+          externalSubscriptionId: this.requireStripeSubscriptionId(
+            subscription.stripeSubscriptionId
+          ),
+        },
       },
+    });
+    await this.db.providerSubscription.update({
+      where: { id: current.id },
       data: {
         canceledAt: null,
-        nextBillAt: subscription.end,
       },
     });
+    const saved = await this.patchProviderSubscriptionMetadata(current.id, {
+      variant: subscription.variant,
+      stripeScheduleId: subscription.stripeScheduleId,
+      nextBillAt: subscription.end?.toISOString() ?? null,
+    });
+    return this.transformProviderSubscription(saved);
   }
 
-  updateSubscriptionRecurring(
+  async updateSubscriptionRecurring(
     subscription: Subscription,
     recurring: SubscriptionRecurring
-  ): Promise<Subscription> {
-    return this.db.subscription.update({
+  ) {
+    const saved = await this.db.providerSubscription.update({
       where: {
-        // @ts-expect-error checked outside
-        stripeSubscriptionId: subscription.stripeSubscriptionId,
+        provider_externalSubscriptionId: {
+          provider: Provider.stripe,
+          externalSubscriptionId: this.requireStripeSubscriptionId(
+            subscription.stripeSubscriptionId
+          ),
+        },
       },
       data: { recurring },
     });
+    return this.transformProviderSubscription(saved);
   }
 
   async saveInvoice(knownInvoice: KnownStripeInvoice): Promise<Invoice> {
@@ -336,5 +376,81 @@ export class WorkspaceSubscriptionManager extends SubscriptionManager {
       );
       await schedule.updateQuantity(count);
     }
+  }
+
+  private async upsertStripeProviderSubscription(
+    workspaceId: string,
+    known: KnownStripeSubscription,
+    subscriptionData: Subscription
+  ) {
+    const { lookupKey, stripeSubscription } = known;
+    const price = stripeSubscription.items.data[0]?.price;
+    const metadata = {
+      ...known.metadata,
+      variant: lookupKey.variant,
+      stripeScheduleId: subscriptionData.stripeScheduleId,
+      nextBillAt: subscriptionData.nextBillAt?.toISOString() ?? null,
+    };
+
+    return this.db.providerSubscription.upsert({
+      where: {
+        provider_externalSubscriptionId: {
+          provider: Provider.stripe,
+          externalSubscriptionId: stripeSubscription.id,
+        },
+      },
+      update: {
+        targetType: 'workspace',
+        targetId: workspaceId,
+        plan: lookupKey.plan,
+        recurring: lookupKey.recurring,
+        status: stripeSubscription.status,
+        externalCustomerId:
+          typeof stripeSubscription.customer === 'string'
+            ? stripeSubscription.customer
+            : stripeSubscription.customer.id,
+        externalProductId:
+          typeof price?.product === 'string'
+            ? price.product
+            : price?.product?.id,
+        externalPriceId: price?.id,
+        currency: price?.currency,
+        amount: price?.unit_amount ?? null,
+        quantity: known.quantity,
+        periodStart: subscriptionData.start,
+        periodEnd: subscriptionData.end,
+        trialStart: subscriptionData.trialStart,
+        trialEnd: subscriptionData.trialEnd,
+        canceledAt: subscriptionData.canceledAt,
+        metadata,
+      },
+      create: {
+        provider: Provider.stripe,
+        targetType: 'workspace',
+        targetId: workspaceId,
+        plan: lookupKey.plan,
+        recurring: lookupKey.recurring,
+        status: stripeSubscription.status,
+        externalCustomerId:
+          typeof stripeSubscription.customer === 'string'
+            ? stripeSubscription.customer
+            : stripeSubscription.customer.id,
+        externalSubscriptionId: stripeSubscription.id,
+        externalProductId:
+          typeof price?.product === 'string'
+            ? price.product
+            : price?.product?.id,
+        externalPriceId: price?.id,
+        currency: price?.currency,
+        amount: price?.unit_amount ?? null,
+        quantity: known.quantity,
+        periodStart: subscriptionData.start,
+        periodEnd: subscriptionData.end,
+        trialStart: subscriptionData.trialStart,
+        trialEnd: subscriptionData.trialEnd,
+        canceledAt: subscriptionData.canceledAt,
+        metadata,
+      },
+    });
   }
 }

@@ -9,6 +9,28 @@ import {
 } from '../utils/actions/index.js';
 import { scoped, test } from '../utils/playwright.js';
 
+const currentMonthAnchor = () => {
+  const date = new Date();
+  date.setHours(0, 0, 0, 0);
+  date.setDate(1);
+  return date.getTime();
+};
+
+const timestampFromMonthAnchor = ({
+  monthAnchor,
+  day,
+}: {
+  monthAnchor: number;
+  day: number;
+}) => {
+  const date = new Date(monthAnchor);
+  date.setDate(day);
+  return date.getTime();
+};
+
+const getMonthTimestamp = (page: Page, monthAnchor: number, day: number) =>
+  page.evaluate(timestampFromMonthAnchor, { monthAnchor, day });
+
 const createCalendarDatabase = async (
   page: Page,
   options?: {
@@ -20,6 +42,10 @@ const createCalendarDatabase = async (
     withEndDateColumn?: boolean;
   }
 ) => {
+  const monthAnchor = await page.evaluate(currentMonthAnchor);
+  const dateTimestamp = await getMonthTimestamp(page, monthAnchor, 15);
+  const endDateTimestamp = await getMonthTimestamp(page, monthAnchor, 17);
+
   return page.evaluate(
     ({
       withDateColumn,
@@ -28,6 +54,9 @@ const createCalendarDatabase = async (
       rowCount,
       linkedDocTitle,
       withEndDateColumn,
+      dateTimestamp,
+      endDateTimestamp,
+      monthAnchor,
     }) => {
       const { doc } = window;
       const rows = rowCount ?? 1;
@@ -93,20 +122,12 @@ const createCalendarDatabase = async (
             name: 'End Date',
           })
         : undefined;
-      if (dateColumnId) {
-        for (const id of rowIds) {
-          datasource.cellValueChange(
-            id,
-            dateColumnId,
-            new Date('2026-05-15T00:00:00').getTime()
-          );
-          if (endDateColumnId) {
-            datasource.cellValueChange(
-              id,
-              endDateColumnId,
-              new Date('2026-05-17T00:00:00').getTime()
-            );
-          }
+      for (const id of rowIds) {
+        if (dateColumnId) {
+          datasource.cellValueChange(id, dateColumnId, dateTimestamp);
+        }
+        if (endDateColumnId) {
+          datasource.cellValueChange(id, endDateColumnId, endDateTimestamp);
         }
       }
       const viewId = datasource.viewManager.viewAdd('calendar');
@@ -135,9 +156,10 @@ const createCalendarDatabase = async (
         endDateColumnId,
         viewId,
         linkedDocId,
+        monthAnchor,
       };
     },
-    options ?? {}
+    { ...options, dateTimestamp, endDateTimestamp, monthAnchor }
   );
 };
 
@@ -212,9 +234,7 @@ test(scoped`database calendar creates row from empty day`, async ({ page }) => {
 
   await expect(page.locator('affine-data-view-record-detail')).toBeVisible();
 
-  const expectedDate = await page.evaluate(() =>
-    new Date('2026-05-20T00:00:00').getTime()
-  );
+  const expectedDate = await getMonthTimestamp(page, ids.monthAnchor, 20);
   await expect
     .poll(() =>
       page.evaluate(
@@ -327,9 +347,7 @@ test(
       .first();
     await entry.dragTo(targetDay);
 
-    const expectedDate = await page.evaluate(() =>
-      new Date('2026-05-20T00:00:00').getTime()
-    );
+    const expectedDate = await getMonthTimestamp(page, ids.monthAnchor, 20);
     await expect
       .poll(async () =>
         page.evaluate(({ databaseId, rowId, dateColumnId }) => {
@@ -390,12 +408,8 @@ test(
       .first();
     await entry.dragTo(targetDay);
 
-    const expectedStart = await page.evaluate(() =>
-      new Date('2026-05-20T00:00:00').getTime()
-    );
-    const expectedEnd = await page.evaluate(() =>
-      new Date('2026-05-22T00:00:00').getTime()
-    );
+    const expectedStart = await getMonthTimestamp(page, ids.monthAnchor, 20);
+    const expectedEnd = await getMonthTimestamp(page, ids.monthAnchor, 22);
     await expect
       .poll(() =>
         page.evaluate(
@@ -456,9 +470,7 @@ test(scoped`database calendar resizes row range end date`, async ({ page }) => {
   await page.mouse.move(targetBox.x + targetBox.width / 2, targetBox.y + 16);
   await page.mouse.up();
 
-  const expectedEnd = await page.evaluate(() =>
-    new Date('2026-05-20T00:00:00').getTime()
-  );
+  const expectedEnd = await getMonthTimestamp(page, ids.monthAnchor, 20);
   await expect
     .poll(() =>
       page.evaluate(({ databaseId, rowId, endDateColumnId }) => {

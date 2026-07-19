@@ -1,7 +1,10 @@
 import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
 import { css } from 'lit';
 
-import { DRAG_HANDLE_CONTAINER_WIDTH } from './config.js';
+import {
+  ADD_BLOCK_WIDGET_WIDTH,
+  DRAG_HANDLE_CONTAINER_WIDTH,
+} from './config.js';
 
 export const styles = css`
   .affine-drag-handle-widget {
@@ -10,6 +13,20 @@ export const styles = css`
     left: 0;
     top: 0;
     contain: size layout;
+    pointer-events: none;
+  }
+
+  .affine-add-block-widget-container {
+    top: 0;
+    left: 0;
+    position: absolute;
+    display: flex;
+    justify-content: center;
+    width: ${ADD_BLOCK_WIDGET_WIDTH}px;
+    min-height: 12px;
+    pointer-events: none;
+    user-select: none;
+    box-sizing: border-box;
   }
 
   .affine-drag-handle-container {

@@ -212,7 +212,7 @@ export class EdgelessRootBlockComponent extends BlockComponent<
           currentCenter.y
         );
 
-        viewport.setZoom(zoom, new Point(baseX, baseY));
+        viewport.setZoom(zoom, new Point(baseX, baseY), false, true, true);
 
         return false;
       })
@@ -351,7 +351,7 @@ export class EdgelessRootBlockComponent extends BlockComponent<
           );
 
           const zoom = normalizeWheelDeltaY(e.deltaY, viewport.zoom);
-          viewport.setZoom(zoom, new Point(baseX, baseY), true);
+          viewport.setZoom(zoom, new Point(baseX, baseY), true, true, true);
           e.stopPropagation();
         }
         // pan
@@ -484,7 +484,7 @@ export class EdgelessRootBlockComponent extends BlockComponent<
           .viewport=${this.gfx.viewport}
           .getModelsInViewport=${() => {
             const blocks = this.gfx.grid.search(
-              this.gfx.viewport.viewportBounds,
+              this.gfx.viewport.overscanBlockBounds,
               {
                 useSet: true,
                 filter: ['block'],

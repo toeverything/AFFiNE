@@ -16,6 +16,7 @@ import {
   selectAllByKeyboard,
   setSelection,
   SHORT_KEY,
+  strikethrough,
   switchReadonly,
   type,
   waitNextFrame,
@@ -420,4 +421,36 @@ test('convert link to embed', async ({ page }, testInfo) => {
   await linkLocator.hover();
   await waitNextFrame(page);
   await expect(toolbar).toBeVisible();
+});
+
+test('strikethrough applies to a link', async ({ page }) => {
+  const linkText = 'linkText';
+  const link = 'http://example.com';
+  await enterPlaygroundRoom(page);
+  await initEmptyParagraphState(page);
+  await focusRichText(page);
+  await type(page, linkText);
+
+  // turn the selected text into a link
+  await dragBetweenIndices(page, [0, 0], [0, 8]);
+  await pressCreateLinkShortCut(page);
+  await page.mouse.move(0, 0);
+  const linkPopoverInput = page.locator('.affine-link-popover-input');
+  await expect(linkPopoverInput).toBeVisible();
+  await type(page, link);
+  await pressEnter(page);
+
+  const linkLocator = page.locator('affine-link a');
+  await expect(linkLocator).toHaveAttribute('href', link);
+
+  // a plain link keeps no text-decoration (preserve the default of no underline)
+  await expect(linkLocator).toHaveCSS('text-decoration-line', 'none');
+
+  // re-select the link text and strike it through
+  await dragBetweenIndices(page, [0, 0], [0, 8]);
+  await strikethrough(page);
+  await page.mouse.move(0, 0);
+
+  // regression for #15106: the strike must actually render on the link
+  await expect(linkLocator).toHaveCSS('text-decoration-line', 'line-through');
 });

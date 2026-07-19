@@ -42,19 +42,6 @@ export async function listNotifications(
   return res.currentUser.notifications;
 }
 
-export async function getNotificationCount(app: TestingApp): Promise<number> {
-  const res = await app.gql(
-    `
-    query notificationCount {
-      currentUser {
-        notificationCount
-      }
-    }
-    `
-  );
-  return res.currentUser.notificationCount;
-}
-
 export async function mentionUser(
   app: TestingApp,
   input: MentionInput

@@ -6,7 +6,6 @@ import {
   WorkspaceMember,
   WorkspaceMemberSource,
   WorkspaceMemberStatus,
-  WorkspaceUserRole,
 } from '@prisma/client';
 import { groupBy } from 'lodash-es';
 
@@ -17,7 +16,16 @@ import {
   workspaceStatusFromNew,
 } from './permission-write';
 
-export type WorkspaceUserCompat = WorkspaceUserRole & {
+export type WorkspaceUserCompat = {
+  id: string;
+  workspaceId: string;
+  userId: string;
+  type: WorkspaceRole;
+  status: WorkspaceMemberStatus;
+  source: WorkspaceMemberSource;
+  inviterId: string | null;
+  createdAt: Date;
+  updatedAt: Date;
   user?: Pick<User, keyof typeof workspaceUserSelect>;
 };
 
@@ -53,7 +61,7 @@ export function workspaceMemberToCompat(
   member: WorkspaceMemberWithUser
 ): WorkspaceUserCompat {
   return {
-    id: member.legacyPermissionId ?? member.id,
+    id: member.id,
     workspaceId: member.workspaceId,
     userId: member.userId,
     type: workspaceRoleFromNew(member.role as never),
@@ -70,7 +78,7 @@ export function workspaceInvitationToCompat(
   invitation: WorkspaceInvitationWithUser
 ): WorkspaceUserCompat {
   return {
-    id: invitation.legacyPermissionId ?? invitation.id,
+    id: invitation.id,
     workspaceId: invitation.workspaceId,
     userId: invitation.inviteeUserId ?? '',
     type: workspaceRoleFromNew(invitation.requestedRole as never),
@@ -117,7 +125,7 @@ export async function queryCompatRows(
     SELECT *
     FROM (
       SELECT
-        COALESCE(wm.legacy_permission_id, wm.id) AS id,
+        wm.id AS id,
         wm.workspace_id AS "workspaceId",
         wm.user_id AS "userId",
         CASE wm.role
@@ -143,7 +151,7 @@ export async function queryCompatRows(
         AND wm.state = 'active'
       UNION ALL
       SELECT
-        COALESCE(wi.legacy_permission_id, wi.id) AS id,
+        wi.id AS id,
         wi.workspace_id AS "workspaceId",
         wi.invitee_user_id AS "userId",
         CASE wi.requested_role
@@ -192,7 +200,7 @@ export async function searchCompatRows(
     SELECT *
     FROM (
       SELECT
-        COALESCE(wm.legacy_permission_id, wm.id) AS id,
+        wm.id AS id,
         wm.workspace_id AS "workspaceId",
         wm.user_id AS "userId",
         CASE wm.role
@@ -218,7 +226,7 @@ export async function searchCompatRows(
         AND wm.state = 'active'
       UNION ALL
       SELECT
-        COALESCE(wi.legacy_permission_id, wi.id) AS id,
+        wi.id AS id,
         wi.workspace_id AS "workspaceId",
         wi.invitee_user_id AS "userId",
         CASE wi.requested_role
@@ -329,7 +337,6 @@ export async function hasSharedWorkspace(
 export async function allocateWorkspaceSeats(
   db: WorkspaceUserCompatDb,
   models: {
-    permissionProjection: { markNewWriteOrigin(): Promise<void> };
     workspaceMember: {
       setActive(
         workspaceId: string,
@@ -341,7 +348,6 @@ export async function allocateWorkspaceSeats(
   workspaceId: string,
   limit: number
 ) {
-  await models.permissionProjection.markNewWriteOrigin();
   const [activeCount, pendingCount] = await Promise.all([
     db.workspaceMember.count({
       where: {

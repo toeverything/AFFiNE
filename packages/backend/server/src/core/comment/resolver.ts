@@ -26,6 +26,7 @@ import { Comment, DocMode, Models, Reply } from '../../models';
 import { CurrentUser } from '../auth/session';
 import { ServerFeature, ServerService } from '../config';
 import { DocAction, PermissionAccess } from '../permission';
+import { QuotaService } from '../quota';
 import { RealtimePublisher } from '../realtime';
 import { CommentAttachmentStorage } from '../storage';
 import { UserType } from '../user';
@@ -56,6 +57,7 @@ export class CommentResolver {
     private readonly service: CommentService,
     private readonly ac: PermissionAccess,
     private readonly commentAttachmentStorage: CommentAttachmentStorage,
+    private readonly quota: QuotaService,
     private readonly queue: JobQueue,
     private readonly models: Models,
     private readonly server: ServerService,
@@ -299,18 +301,13 @@ export class CommentResolver {
     @CurrentUser() me: UserType,
     @Parent() workspace: WorkspaceType,
     @Args('docId') docId: string,
-    @Args({
-      name: 'pagination',
-    })
+    @Args({ name: 'pagination' })
     pagination: PaginationInput
   ): Promise<PaginatedCommentChangeObjectType> {
     // DEPRECATED-0.26-COMPAT(realtime): remove after server no longer supports 0.26.x clients.
     await this.assertPermission(
       me,
-      {
-        workspaceId: workspace.id,
-        docId,
-      },
+      { workspaceId: workspace.id, docId },
       'Doc.Comments.Read'
     );
 
@@ -359,10 +356,16 @@ export class CommentResolver {
       'Doc.Comments.Create'
     );
 
-    // TODO(@fengmk2): should check total attachment quota in the future version
     const buffer = await readableToBuffer(attachment.createReadStream());
     // max attachment size is 10MB
     if (buffer.length > 10 * 1024 * 1024) {
+      throw new CommentAttachmentQuotaExceeded();
+    }
+
+    const checkExceeded =
+      await this.quota.getWorkspaceQuotaCalculator(workspaceId);
+    const result = checkExceeded(buffer.length);
+    if (result?.blobQuotaExceeded || result?.storageQuotaExceeded) {
       throw new CommentAttachmentQuotaExceeded();
     }
 

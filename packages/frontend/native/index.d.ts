@@ -18,13 +18,6 @@ export declare class ApplicationStateChangedSubscriber {
   unsubscribe(): void
 }
 
-export declare class AudioCaptureSession {
-  stop(): void
-  get sampleRate(): number
-  get channels(): number
-  get actualSampleRate(): number
-}
-
 export declare class ShareableContent {
   static onApplicationListChanged(callback: ((err: Error | null, ) => void)): ApplicationListChangedSubscriber
   static onAppStateChanged(app: ApplicationInfo, callback: ((err: Error | null, ) => void)): ApplicationStateChangedSubscriber
@@ -32,8 +25,6 @@ export declare class ShareableContent {
   static applications(): Array<ApplicationInfo>
   static applicationWithProcessId(processId: number): ApplicationInfo | null
   static isUsingMicrophone(processId: number): boolean
-  static tapAudio(processId: number, audioStreamCallback: ((err: Error | null, arg: Float32Array) => void)): AudioCaptureSession
-  static tapGlobalAudio(excludedProcesses: Array<ApplicationInfo> | undefined | null, audioStreamCallback: ((err: Error | null, arg: Float32Array) => void)): AudioCaptureSession
 }
 
 export declare function abortRecording(id: string): Promise<void>
@@ -75,6 +66,29 @@ export interface RecordingStartOptions {
 export declare function startRecording(opts: RecordingStartOptions): Promise<RecordingSessionMeta>
 
 export declare function stopRecording(id: string): Promise<RecordingArtifact>
+export declare function cancelImportSession(sessionId: string): void
+
+export interface CreateImportBatchLimits {
+  maxDocs?: number
+  maxBlobs?: number
+  maxBlobBytes?: number
+}
+
+export declare function createImportSession(options: CreateImportSessionOptions): string
+
+export interface CreateImportSessionOptions {
+  format: string
+  source: CreateImportSessionSource
+  batchLimits?: CreateImportBatchLimits
+}
+
+export interface CreateImportSessionSource {
+  kind: string
+  path: string
+}
+
+export declare function disposeImportSession(sessionId: string): void
+
 export interface MermaidRenderOptions {
   theme?: string
   fontFamily?: string
@@ -91,6 +105,8 @@ export interface MermaidRenderResult {
 }
 
 export declare function mintChallengeResponse(resource: string, bits?: number | undefined | null): Promise<string>
+
+export declare function nextImportBatch(sessionId: string): string | null
 
 export declare function renderMermaidSvg(request: MermaidRenderRequest): MermaidRenderResult
 

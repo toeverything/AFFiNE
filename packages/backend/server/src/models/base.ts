@@ -19,13 +19,4 @@ export class BaseModel {
     // See https://papooch.github.io/nestjs-cls/plugins/available-plugins/transactional#using-the-injecttransaction-decorator
     return this.txHost.tx;
   }
-
-  protected async withPermissionProjectionMetric<T>(operation: Promise<T>) {
-    try {
-      return await operation;
-    } catch (err) {
-      this.models.permissionProjection.recordTriggerErrorMetric(err);
-      throw err;
-    }
-  }
 }

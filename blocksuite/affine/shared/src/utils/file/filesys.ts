@@ -14,8 +14,14 @@ interface OpenFilePickerOptions {
   multiple?: boolean | undefined;
 }
 
+export type NativeImageFilesPicker = () => Promise<File[] | null>;
+
+const NATIVE_IMAGE_FILES_PICKER_KEY =
+  '__AFFINE_NATIVE_IMAGE_FILES_PICKER__' as const;
+
 declare global {
   interface Window {
+    [NATIVE_IMAGE_FILES_PICKER_KEY]?: NativeImageFilesPicker;
     // Window API: showOpenFilePicker
     showOpenFilePicker?: (
       options?: OpenFilePickerOptions
@@ -27,6 +33,17 @@ declare global {
       startIn?: FileSystemHandle | string;
     }) => Promise<FileSystemDirectoryHandle>;
   }
+}
+
+export function registerNativeImageFilesPicker(
+  picker: NativeImageFilesPicker | null
+) {
+  if (picker) {
+    window[NATIVE_IMAGE_FILES_PICKER_KEY] = picker;
+    return;
+  }
+
+  delete window[NATIVE_IMAGE_FILES_PICKER_KEY];
 }
 
 // Minimal polyfill for FileSystemDirectoryHandle to iterate over files
@@ -121,6 +138,12 @@ const FileTypes: NonNullable<OpenFilePickerOptions['types']> = [
     },
   },
   {
+    description: 'OneNote',
+    accept: {
+      'application/onenote': ['.one', '.onetoc2', '.onepkg'],
+    },
+  },
+  {
     description: 'MindMap',
     accept: {
       'text/xml': ['.mm', '.opml', '.xml'],
@@ -140,7 +163,68 @@ type AcceptTypes =
   | 'Html'
   | 'Zip'
   | 'Docx'
+  | 'OneNote'
   | 'MindMap';
+
+type OpenFileOptions = {
+  fileSystemAccess?: boolean;
+  snapshot?: boolean;
+};
+
+function copyToArrayBuffer(bytes: Uint8Array) {
+  const copy = new Uint8Array(bytes.byteLength);
+  copy.set(bytes);
+  return copy.buffer;
+}
+
+function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+export async function snapshotFile(file: File, relativePath?: string) {
+  let bytes: Uint8Array | null = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      bytes = new Uint8Array(await file.arrayBuffer());
+      break;
+    } catch (error) {
+      if (!isNotReadableError(error) || attempt === 2) {
+        throw error;
+      }
+      await sleep(100 * (attempt + 1));
+    }
+  }
+  if (!bytes) {
+    throw new DOMException('File could not be read', 'NotReadableError');
+  }
+  const snapshot = new File([copyToArrayBuffer(bytes)], file.name, {
+    type: file.type,
+    lastModified: file.lastModified,
+  });
+  const path = relativePath ?? file.webkitRelativePath;
+  if (path) {
+    Object.defineProperty(snapshot, 'webkitRelativePath', {
+      value: path,
+      writable: false,
+    });
+  }
+  return snapshot;
+}
+
+export async function snapshotFiles(files: File[]) {
+  const results = await Promise.allSettled(
+    files.map(file => snapshotFile(file))
+  );
+  const snapshots: File[] = [];
+  for (const result of results) {
+    if (result.status === 'fulfilled') {
+      snapshots.push(result.value);
+    } else {
+      console.error('Failed to snapshot file', result.reason);
+    }
+  }
+  return snapshots;
+}
 
 function canUseFileSystemAccessAPI(
   api: 'showOpenFilePicker' | 'showDirectoryPicker'
@@ -157,11 +241,21 @@ function canUseFileSystemAccessAPI(
   );
 }
 
+function isAbortError(error: unknown) {
+  return error instanceof Error && error.name === 'AbortError';
+}
+
+function isNotReadableError(error: unknown) {
+  return error instanceof Error && error.name === 'NotReadableError';
+}
+
 export async function openFilesWith(
   acceptType: AcceptTypes = 'Any',
-  multiple: boolean = true
+  multiple: boolean = true,
+  options?: OpenFileOptions
 ): Promise<File[] | null> {
   const supportsFileSystemAccess =
+    options?.fileSystemAccess !== false &&
     canUseFileSystemAccessAPI('showOpenFilePicker');
 
   // If the File System Access API is supported…
@@ -180,15 +274,19 @@ export async function openFilesWith(
       // Show the file picker, optionally allowing multiple files.
       const handles = await window.showOpenFilePicker(pickerOpts);
 
-      return await Promise.all(handles.map(handle => handle.getFile()));
+      const files = await Promise.all(handles.map(handle => handle.getFile()));
+      return options?.snapshot ? await snapshotFiles(files) : files;
     } catch (err) {
+      if (options?.snapshot && !isAbortError(err)) {
+        throw err;
+      }
       console.error(err);
       return null;
     }
   }
 
   // Fallback if the File System Access API is not supported.
-  return new Promise(resolve => {
+  return new Promise((resolve, reject) => {
     // Append a new `<input type="file" multiple? />` and hide it.
     const input = document.createElement('input');
     input.classList.add('affine-upload-input');
@@ -205,13 +303,27 @@ export async function openFilesWith(
     document.body.append(input);
     // The `change` event fires when the user interacts with the dialog.
     input.addEventListener('change', () => {
-      // Remove the `<input type="file" multiple? />` again from the DOM.
-      input.remove();
+      const files = input.files ? Array.from(input.files) : null;
+      const finish = (result: File[] | null) => {
+        // Remove the `<input type="file" multiple? />` again from the DOM.
+        input.remove();
+        resolve(result);
+      };
 
-      resolve(input.files ? Array.from(input.files) : null);
+      if (files && options?.snapshot) {
+        snapshotFiles(files).then(finish, error => {
+          input.remove();
+          reject(error);
+        });
+      } else {
+        finish(files);
+      }
     });
     // The `cancel` event fires when the user cancels the dialog.
-    input.addEventListener('cancel', () => resolve(null));
+    input.addEventListener('cancel', () => {
+      input.remove();
+      resolve(null);
+    });
     // Show the picker.
     if ('showPicker' in HTMLInputElement.prototype) {
       input.showPicker();
@@ -221,12 +333,18 @@ export async function openFilesWith(
   });
 }
 
-export async function openDirectory(): Promise<File[] | null> {
+export async function openDirectory(
+  options?: OpenFileOptions
+): Promise<File[] | null> {
   const supportsFileSystemAccess = canUseFileSystemAccessAPI(
     'showDirectoryPicker'
   );
 
-  if (supportsFileSystemAccess && window.showDirectoryPicker) {
+  if (
+    options?.fileSystemAccess !== false &&
+    supportsFileSystemAccess &&
+    window.showDirectoryPicker
+  ) {
     try {
       const dirHandle = await window.showDirectoryPicker();
       const files: File[] = [];
@@ -241,11 +359,19 @@ export async function openDirectory(): Promise<File[] | null> {
             const fileHandle = handle as FileSystemFileHandle;
             if (fileHandle.getFile) {
               const file = await fileHandle.getFile();
-              Object.defineProperty(file, 'webkitRelativePath', {
-                value: relativePath,
-                writable: false,
-              });
-              files.push(file);
+              if (options?.snapshot) {
+                try {
+                  files.push(await snapshotFile(file, relativePath));
+                } catch (error) {
+                  console.error('Failed to snapshot file', relativePath, error);
+                }
+              } else {
+                Object.defineProperty(file, 'webkitRelativePath', {
+                  value: relativePath,
+                  writable: false,
+                });
+                files.push(file);
+              }
             }
           } else if (handle.kind === 'directory') {
             await readDirectory(
@@ -259,12 +385,15 @@ export async function openDirectory(): Promise<File[] | null> {
       await readDirectory(dirHandle, '');
       return files;
     } catch (err) {
+      if (options?.snapshot && !isAbortError(err)) {
+        throw err;
+      }
       console.error(err);
       return null;
     }
   }
 
-  return new Promise(resolve => {
+  return new Promise((resolve, reject) => {
     const input = document.createElement('input');
     input.classList.add('affine-upload-input');
     input.style.display = 'none';
@@ -276,11 +405,26 @@ export async function openDirectory(): Promise<File[] | null> {
     document.body.append(input);
 
     input.addEventListener('change', () => {
-      input.remove();
-      resolve(input.files ? Array.from(input.files) : null);
+      const files = input.files ? Array.from(input.files) : null;
+      const finish = (result: File[] | null) => {
+        input.remove();
+        resolve(result);
+      };
+
+      if (files && options?.snapshot) {
+        snapshotFiles(files).then(finish, error => {
+          input.remove();
+          reject(error);
+        });
+      } else {
+        finish(files);
+      }
     });
 
-    input.addEventListener('cancel', () => resolve(null));
+    input.addEventListener('cancel', () => {
+      input.remove();
+      resolve(null);
+    });
 
     if ('showPicker' in HTMLInputElement.prototype) {
       input.showPicker();
@@ -298,6 +442,15 @@ export async function openSingleFileWith(
 }
 
 export async function getImageFilesFromLocal() {
+  const nativePicker = window[NATIVE_IMAGE_FILES_PICKER_KEY];
+  if (nativePicker) {
+    try {
+      return (await nativePicker()) ?? [];
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
   const files = await openFilesWith('Images');
   return files ?? [];
 }

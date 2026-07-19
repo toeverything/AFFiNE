@@ -2,6 +2,7 @@ import serverNativeModule, {
   type ActionEvent as NativeActionEventContract,
   type ActionRuntimeInput as NativeActionRuntimeInputContract,
   type AssertSafeUrlRequest,
+  type BackendRuntimeHealth,
   type BuiltInPromptRenderContract,
   type BuiltInPromptSessionContract,
   type BuiltInPromptSpec,
@@ -9,8 +10,18 @@ import serverNativeModule, {
   type CanonicalStructuredRequestContract,
   type CapabilityAttachmentContract,
   type CapabilityModelCapability,
+  type CommandResponse,
+  type ContentPolicyScanInput,
+  type ContentPolicyScanResult,
   type ImageInspection,
   type ImageInspectionOptions,
+  type LicenseError,
+  type LicenseHealthRequest,
+  type LicenseInfo,
+  type LicenseKeyRequest,
+  type LicenseRecurringRequest,
+  type LicenseResponse,
+  type LicenseSeatsRequest,
   type LlmCoreMessage,
   type LlmEmbeddingRequestContract,
   type LlmImageRequestContract,
@@ -20,6 +31,7 @@ import serverNativeModule, {
   type ModelConditionsContract,
   type ModelRegistryMatchResponse,
   type ModelRegistryResolveResponse,
+  type PortalResponse,
   type PromptMessageContract,
   type PromptMetadataContract,
   type PromptMetadataResult,
@@ -36,18 +48,51 @@ import serverNativeModule, {
   type RequestedModelMatchResponse,
   type ResolvedEntitlement,
   type ResolveEntitlementInput,
+  type RuntimeBlobCleanupExecuteResult,
+  type RuntimeBlobCleanupPlanResult,
+  type RuntimeBlobCleanupResult,
+  type RuntimeBlobCompleteResult,
+  type RuntimeBlobMetadataBackfillResult,
+  type RuntimeByokLocalLeaseRecord,
+  type RuntimeDocBlobRefsResult,
+  type RuntimeDocCompactionResult,
+  type RuntimeMagicLinkOtpConsumeResult,
+  type RuntimeMultipartUploadInit,
+  type RuntimeMultipartUploadPart,
+  type RuntimeObjectGetResult,
+  type RuntimeObjectListEntry,
+  type RuntimeObjectMetadata,
+  type RuntimeObjectStoragePutOptions,
+  type RuntimePresignedObjectRequest,
+  type RuntimeVerificationTokenRecord,
+  type RuntimeWorkspaceInviteLinkRecord,
+  type RuntimeWorkspaceStatsDailyRecalibrationResult,
   type SafeFetchRequest,
   type SafeFetchResponse,
+  type StorageProviderCapabilities,
+  type StorageRuntimeHealth,
   type Tokenizer,
 } from '@affine/server-native';
 
 export type {
   AssertSafeUrlRequest,
+  BackendRuntimeHealth,
   CapabilityAttachmentContract,
   CapabilityModelCapability,
+  CommandResponse,
+  ContentPolicyScanInput,
+  ContentPolicyScanResult,
   ImageInspection,
   ImageInspectionOptions,
+  LicenseError,
+  LicenseHealthRequest,
+  LicenseInfo,
+  LicenseKeyRequest,
+  LicenseRecurringRequest,
+  LicenseResponse,
+  LicenseSeatsRequest,
   ModelConditionsContract,
+  PortalResponse,
   PromptMessageContract,
   PromptStructuredResponseContract,
   RemoteAttachmentFetchRequest,
@@ -55,8 +100,29 @@ export type {
   RemoteMimeTypeRequest,
   ResolvedEntitlement,
   ResolveEntitlementInput,
+  RuntimeBlobCleanupExecuteResult,
+  RuntimeBlobCleanupPlanResult,
+  RuntimeBlobCleanupResult,
+  RuntimeBlobCompleteResult,
+  RuntimeBlobMetadataBackfillResult,
+  RuntimeByokLocalLeaseRecord,
+  RuntimeDocBlobRefsResult,
+  RuntimeDocCompactionResult,
+  RuntimeMagicLinkOtpConsumeResult,
+  RuntimeMultipartUploadInit,
+  RuntimeMultipartUploadPart,
+  RuntimeObjectGetResult,
+  RuntimeObjectListEntry,
+  RuntimeObjectMetadata,
+  RuntimeObjectStoragePutOptions,
+  RuntimePresignedObjectRequest,
+  RuntimeVerificationTokenRecord,
+  RuntimeWorkspaceInviteLinkRecord,
+  RuntimeWorkspaceStatsDailyRecalibrationResult,
   SafeFetchRequest,
   SafeFetchResponse,
+  StorageProviderCapabilities,
+  StorageRuntimeHealth,
 };
 
 export type ActionEventType =
@@ -101,6 +167,67 @@ import type {
 } from './plugins/copilot/runtime/contracts/tool-contract';
 
 export const mergeUpdatesInApplyWay = serverNativeModule.mergeUpdatesInApplyWay;
+export const authSessionAccessTokenKeyId =
+  serverNativeModule.authSessionAccessTokenKeyId;
+export const createAuthSessionRefreshToken =
+  serverNativeModule.createAuthSessionRefreshToken;
+export const parseAuthSessionRefreshToken =
+  serverNativeModule.parseAuthSessionRefreshToken;
+export const signAuthSessionAccessToken =
+  serverNativeModule.signAuthSessionAccessToken;
+export const verifyAuthSessionAccessToken =
+  serverNativeModule.verifyAuthSessionAccessToken;
+
+export async function validateDocUpdate(
+  update: Buffer,
+  options: { signal?: AbortSignal; timeoutMs?: number } = {}
+): Promise<boolean> {
+  const signals = [];
+  if (options.signal) {
+    signals.push(options.signal);
+  }
+  if (options.timeoutMs !== undefined) {
+    signals.push(AbortSignal.timeout(options.timeoutMs));
+  }
+  const signal =
+    signals.length === 0
+      ? undefined
+      : signals.length === 1
+        ? signals[0]
+        : AbortSignal.any(signals);
+
+  if (signal?.aborted) {
+    throw signal.reason;
+  }
+
+  return await new Promise<boolean>((resolve, reject) => {
+    let settled = false;
+    const settle = (callback: () => void) => {
+      if (settled) return;
+      settled = true;
+      callback();
+    };
+    const onAbort = () => {
+      settle(() =>
+        reject(
+          signal?.reason instanceof Error
+            ? signal.reason
+            : new Error('Doc update validation aborted')
+        )
+      );
+    };
+    signal?.addEventListener('abort', onAbort, { once: true });
+    serverNativeModule
+      .validateDocUpdate(update)
+      .then(
+        result => settle(() => resolve(result)),
+        error => settle(() => reject(error))
+      )
+      .finally(() => {
+        signal?.removeEventListener('abort', onAbort);
+      });
+  });
+}
 
 export const verifyChallengeResponse = async (
   response: any,
@@ -142,7 +269,15 @@ export const inspectImageForProxy = serverNativeModule.inspectImageForProxy;
 export const fetchRemoteAttachment = serverNativeModule.fetchRemoteAttachment;
 export const inferRemoteMimeType = serverNativeModule.inferRemoteMimeType;
 export const assertSafeUrl = serverNativeModule.assertSafeUrl;
+export const scanContentPolicyV1 = serverNativeModule.scanContentPolicyV1;
 export const safeFetch = serverNativeModule.safeFetch;
+export const activateLicense = serverNativeModule.activateLicense;
+export const checkLicenseHealth = serverNativeModule.checkLicenseHealth;
+export const createCustomerPortal =
+  serverNativeModule.createLicenseCustomerPortal;
+export const deactivateLicense = serverNativeModule.deactivateLicense;
+export const updateLicenseRecurring = serverNativeModule.updateLicenseRecurring;
+export const updateLicenseSeats = serverNativeModule.updateLicenseSeats;
 export const parseDoc = serverNativeModule.parseDoc;
 export const htmlSanitize = serverNativeModule.htmlSanitize;
 export const processImage = serverNativeModule.processImage;
@@ -155,6 +290,8 @@ export const readAllDocIdsFromRootDoc =
 export const AFFINE_PRO_PUBLIC_KEY = serverNativeModule.AFFINE_PRO_PUBLIC_KEY;
 export const AFFINE_PRO_LICENSE_AES_KEY =
   serverNativeModule.AFFINE_PRO_LICENSE_AES_KEY;
+export const BackendRuntime = serverNativeModule.BackendRuntime;
+export const StorageRuntime = serverNativeModule.StorageRuntime;
 
 export type PermissionWorkspaceRole = 'external' | 'member' | 'admin' | 'owner';
 export type PermissionDocRole =
@@ -380,6 +517,7 @@ export type LlmBackendConfig = {
   request_layer?:
     | 'anthropic'
     | 'chat_completions'
+    | 'chat_completions_no_v1'
     | 'cloudflare_workers_ai'
     | 'responses'
     | 'openai_images'

@@ -1,8 +1,11 @@
 import { randomBytes } from 'node:crypto';
 
+import { PrismaClient } from '@prisma/client';
 import type { TestFn } from 'ava';
 import ava from 'ava';
+import supertest from 'supertest';
 
+import { AuthService, AuthSessionService } from '../../core/auth';
 import {
   changeEmail,
   changePassword,
@@ -33,7 +36,11 @@ test('change email', async t => {
   const u2Email = 'u2@affine.pro';
 
   const user = await app.signupV1(u1Email);
-  await sendChangeEmail(app, u1Email, '/email-change');
+  const signedIn = await currentUser(app);
+  const jwt = signedIn?.token.token;
+  t.truthy(jwt);
+
+  await sendChangeEmail(app, '/email-change');
 
   const changeMail = app.mails.last('ChangeEmail');
 
@@ -77,7 +84,16 @@ test('change email', async t => {
   t.is(changedMail.to, u2Email);
   t.is(changedMail.props.to, u2Email);
 
-  await app.logout();
+  const revokedCookieSession = await currentUser(app);
+  t.is(revokedCookieSession, null);
+
+  const revokedJwtSession = await supertest(app.getHttpServer())
+    .get('/api/auth/session')
+    .set('Authorization', `Bearer ${jwt}`)
+    .expect(200);
+  t.falsy(revokedJwtSession.body.user);
+
+  app.clearAuth();
   await app.login({
     ...user,
     email: u2Email,
@@ -94,9 +110,15 @@ test('set and change password', async t => {
   const u1Email = 'u1@affine.pro';
 
   const u1 = await app.signupV1(u1Email);
+  const parent = await app.get(AuthService).createUserSession(u1.id);
+  const authSession = await app.get(AuthSessionService).create({
+    userSessionId: parent.id,
+    installationId: 'password-change-device',
+    platform: 'ios',
+  });
   await sendSetPasswordEmail(app, u1Email, '/password-change');
 
-  const setPasswordMail = app.mails.last('ChangePassword');
+  const setPasswordMail = app.mails.last('SetPassword');
   const link = new URL(setPasswordMail.props.url);
   const setPasswordToken = link.searchParams.get('token');
 
@@ -116,6 +138,12 @@ test('set and change password', async t => {
   );
 
   t.true(success, 'failed to change password');
+  t.is(
+    await app.get(PrismaClient).authSession.count({
+      where: { id: authSession.session.id },
+    }),
+    0
+  );
 
   let user = await currentUser(app);
 
@@ -143,12 +171,11 @@ test('should forbid graphql callbackUrl to external origin', async t => {
     .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
     .send({
       query: `
-        mutation($email: String!, $callbackUrl: String!) {
-          sendChangeEmail(email: $email, callbackUrl: $callbackUrl)
+        mutation($callbackUrl: String!) {
+          sendChangeEmail(callbackUrl: $callbackUrl)
         }
       `,
       variables: {
-        email: u1Email,
         callbackUrl: 'https://evil.example',
       },
     })

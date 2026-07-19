@@ -280,12 +280,24 @@ export const USER_FRIENDLY_ERRORS = {
     args: { reason: 'string' },
     message: ({ reason }) => {
       switch (reason) {
+        case 'invalid_url':
+          return 'Invalid URL';
+        case 'disallowed_protocol':
+          return 'URL protocol is not allowed';
+        case 'url_has_credentials':
+          return 'URL must not contain credentials';
+        case 'blocked_hostname':
+          return 'URL hostname is not allowed';
+        case 'host_not_allowed':
+          return 'URL hostname is outside the allowed hosts';
         case 'unresolvable_hostname':
           return 'Failed to resolve hostname';
+        case 'blocked_ip':
+          return 'URL resolves to a private or reserved IP address';
         case 'too_many_redirects':
           return 'Too many redirects';
         default:
-          return 'Invalid URL';
+          return `URL blocked by SSRF protection: ${reason}`;
       }
     },
   },
@@ -421,6 +433,34 @@ export const USER_FRIENDLY_ERRORS = {
   authentication_required: {
     type: 'authentication_required',
     message: 'You must sign in first to access this resource.',
+  },
+  access_token_expired: {
+    type: 'authentication_required',
+    message: 'The access token has expired.',
+  },
+  access_token_invalid: {
+    type: 'authentication_required',
+    message: 'The access token is invalid.',
+  },
+  auth_session_expired: {
+    type: 'authentication_required',
+    message: 'The auth session has expired.',
+  },
+  auth_session_revoked: {
+    type: 'authentication_required',
+    message: 'The auth session has been revoked.',
+  },
+  refresh_token_invalid: {
+    type: 'authentication_required',
+    message: 'The refresh token is invalid.',
+  },
+  refresh_token_reused: {
+    type: 'authentication_required',
+    message: 'The refresh token has already been used.',
+  },
+  auth_session_temporarily_unavailable: {
+    type: 'network_error',
+    message: 'Auth session service is temporarily unavailable.',
   },
   action_forbidden: {
     type: 'action_forbidden',
@@ -906,6 +946,14 @@ export const USER_FRIENDLY_ERRORS = {
     },
     message: ({ clientVersion, requiredVersion }) =>
       `Unsupported client with version [${clientVersion}], required version is [${requiredVersion}].`,
+  },
+  unsupported_server_version: {
+    type: 'action_forbidden',
+    args: {
+      requiredVersion: 'string',
+    },
+    message: ({ requiredVersion }) =>
+      `This AFFiNE server is too old for this client. Please upgrade the server to ${requiredVersion}.`,
   },
 
   // Notification Errors

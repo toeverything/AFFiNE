@@ -5,17 +5,66 @@ import test from 'ava';
 
 import { createModule } from '../../../__tests__/create-module';
 import { Mockers } from '../../../__tests__/mocks';
+import { initTestingDB } from '../../../__tests__/utils';
 import { Models } from '../../../models';
+import { getMime } from '../../../native';
+import { StorageRuntimeProvider } from '../../storage-runtime';
 import { CommentAttachmentStorage, StorageModule } from '../index';
+
+const objects = new Map<
+  string,
+  {
+    body: Buffer;
+    metadata: {
+      contentType: string;
+      contentLength: number;
+      lastModified: Date;
+    };
+  }
+>();
+const storageRuntime = {
+  putObject: async (
+    _scope: string,
+    key: string,
+    body: Buffer,
+    _metadata?: { contentType?: string; contentLength?: number }
+  ) => {
+    const object = {
+      body,
+      metadata: {
+        contentType: getMime(body),
+        contentLength: body.length,
+        lastModified: new Date(),
+      },
+    };
+    objects.set(key, object);
+    return object.metadata;
+  },
+  headObject: async (_scope: string, key: string) => objects.get(key)?.metadata,
+  getObject: async (_scope: string, key: string) => {
+    const object = objects.get(key);
+    return object
+      ? { body: Readable.from(object.body), metadata: object.metadata }
+      : {};
+  },
+  deleteObject: async (_scope: string, key: string) => {
+    objects.delete(key);
+  },
+  presignGet: async () => undefined,
+};
 
 const module = await createModule({
   imports: [StorageModule],
+  tapModule: builder => {
+    builder.overrideProvider(StorageRuntimeProvider).useValue(storageRuntime);
+  },
 });
 const storage = module.get(CommentAttachmentStorage);
 const models = module.get(Models);
 
-test.before(async () => {
-  await storage.onConfigInit();
+test.beforeEach(async () => {
+  await initTestingDB(module);
+  objects.clear();
 });
 
 test.after.always(async () => {

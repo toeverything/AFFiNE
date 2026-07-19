@@ -1,31 +1,39 @@
-import { Models, UserFeatureName, WorkspaceFeatureName } from '../../models';
+import { Models } from '../../models';
+import {
+  SubscriptionRecurring,
+  SubscriptionStatus,
+} from '../../plugins/payment/types';
+import { EntitlementService } from '../entitlement';
 
-export async function createDevUsers(models: Models) {
+export async function createDevUsers(
+  models: Models,
+  entitlement: EntitlementService
+) {
   const devUsers: {
     email: string;
     name: string;
     password: string;
-    features: UserFeatureName[];
-    workspaceFeatures?: WorkspaceFeatureName[];
+    plans: Array<'pro' | 'ai'>;
+    teamWorkspace?: boolean;
   }[] = [
     {
       email: 'dev@affine.pro',
       name: 'Dev User',
       password: 'dev',
-      features: ['free_plan_v1', 'unlimited_copilot', 'administrator'],
+      plans: ['ai'],
     },
     {
       email: 'pro@affine.pro',
       name: 'Pro User',
       password: 'pro',
-      features: ['pro_plan_v1', 'unlimited_copilot', 'administrator'],
+      plans: ['pro', 'ai'],
     },
     {
       email: 'team@affine.pro',
       name: 'Team User',
       password: 'team',
-      features: ['pro_plan_v1', 'unlimited_copilot', 'administrator'],
-      workspaceFeatures: ['team_plan_v1'],
+      plans: ['pro', 'ai'],
+      teamWorkspace: true,
     },
   ];
   const devWorkspaceBlob = Buffer.from(
@@ -33,13 +41,7 @@ export async function createDevUsers(models: Models) {
     'base64'
   );
 
-  for (const {
-    email,
-    name,
-    password,
-    features,
-    workspaceFeatures,
-  } of devUsers) {
+  for (const { email, name, password, plans, teamWorkspace } of devUsers) {
     try {
       let devUser = await models.user.getUserByEmail(email);
       if (!devUser) {
@@ -49,40 +51,47 @@ export async function createDevUsers(models: Models) {
           password,
         });
       }
-      for (const feature of features) {
-        if (feature.includes('plan')) {
-          await models.userFeature.switchQuota(devUser.id, feature, name);
-        } else {
-          await models.userFeature.add(devUser.id, feature, name);
-        }
+      await models.userFeature.add(devUser.id, 'administrator', name);
+      for (const plan of plans) {
+        await entitlement.upsertFromCloudSubscription({
+          targetId: devUser.id,
+          plan,
+          recurring: SubscriptionRecurring.Monthly,
+          status: SubscriptionStatus.Active,
+          provider: 'dev',
+          subscriptionId: `dev:${devUser.id}:${plan}`,
+        });
       }
-      if (workspaceFeatures) {
-        for (const feature of workspaceFeatures) {
-          const workspaceIds = (
-            await models.workspaceUser.getUserActiveRoles(devUser.id)
-          ).map(row => row.workspaceId);
-          const workspaces = await models.workspace.findMany(workspaceIds);
-          let hasFeatureWorkspace = false;
-          for (const workspace of workspaces) {
-            if (await models.workspaceFeature.has(workspace.id, feature)) {
-              hasFeatureWorkspace = true;
-              break;
-            }
-          }
-          if (!hasFeatureWorkspace) {
-            // create a new workspace with the feature
-            const workspace = await models.workspace.create(devUser.id);
-            await models.doc.upsert({
-              spaceId: workspace.id,
-              docId: workspace.id,
-              blob: devWorkspaceBlob,
-              timestamp: Date.now(),
-              editorId: devUser.id,
-            });
-            await models.workspaceFeature.add(workspace.id, feature, name, {
-              memberLimit: 10,
-            });
-          }
+      if (teamWorkspace) {
+        const workspaceIds = (
+          await models.workspaceUser.getUserActiveRoles(devUser.id)
+        ).map(row => row.workspaceId);
+        const workspaces = await models.workspace.findMany(workspaceIds);
+        const hasTeamWorkspace = (
+          await Promise.all(
+            workspaces.map(workspace =>
+              entitlement.resolveWorkspaceEntitlement(workspace.id)
+            )
+          )
+        ).some(resolved => resolved.plan === 'team');
+        if (!hasTeamWorkspace) {
+          const workspace = await models.workspace.create(devUser.id);
+          await models.doc.upsert({
+            spaceId: workspace.id,
+            docId: workspace.id,
+            blob: devWorkspaceBlob,
+            timestamp: Date.now(),
+            editorId: devUser.id,
+          });
+          await entitlement.upsertFromCloudSubscription({
+            targetId: workspace.id,
+            plan: 'team',
+            recurring: SubscriptionRecurring.Monthly,
+            status: SubscriptionStatus.Active,
+            quantity: 10,
+            provider: 'dev',
+            subscriptionId: `dev:${workspace.id}:team`,
+          });
         }
       }
     } catch {

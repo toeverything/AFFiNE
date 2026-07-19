@@ -25,11 +25,10 @@ import { MetricsModule } from './base/metrics';
 import { MutexModule } from './base/mutex';
 import { PrismaModule } from './base/prisma';
 import { RedisModule } from './base/redis';
-import { StorageProviderModule } from './base/storage';
 import { RateLimiterModule } from './base/throttler';
 import { WebSocketModule } from './base/websocket';
-import { AccessTokenModule } from './core/access-token';
 import { AuthModule } from './core/auth';
+import { BackendRuntimeModule } from './core/backend-runtime';
 import { CommentModule } from './core/comment';
 import { ServerConfigModule, ServerConfigResolverModule } from './core/config';
 import { DocStorageModule } from './core/doc';
@@ -46,6 +45,7 @@ import { RealtimeModule } from './core/realtime';
 import { SelfhostModule } from './core/selfhost';
 import { StaticFileModule } from './core/static-files';
 import { StorageModule } from './core/storage';
+import { StorageRuntimeModule } from './core/storage-runtime';
 import { SyncModule } from './core/sync';
 import { TelemetryModule } from './core/telemetry';
 import { UserModule } from './core/user';
@@ -55,14 +55,14 @@ import { Env } from './env';
 import { ModelsModule } from './models';
 import { CalendarModule } from './plugins/calendar';
 import { CaptchaModule } from './plugins/captcha';
-import { CopilotModule, CopilotRealtimeModule } from './plugins/copilot';
-import { CustomerIoModule } from './plugins/customerio';
+import { CopilotModule } from './plugins/copilot';
 import { GCloudModule } from './plugins/gcloud';
 import { IndexerModule } from './plugins/indexer';
 import { LicenseModule } from './plugins/license';
 import { OAuthModule } from './plugins/oauth';
 import { PaymentModule } from './plugins/payment';
 import { WorkerModule } from './plugins/worker';
+import { ServerRealtimeHandlersModule } from './realtime-handlers.module';
 
 export const FunctionalityModules = [
   ClsModule.forRoot({
@@ -113,13 +113,14 @@ export const FunctionalityModules = [
   MutexModule,
   MetricsModule,
   RateLimiterModule,
-  StorageProviderModule,
   HelpersModule,
   ErrorModule,
   WebSocketModule,
   JobModule.forRoot(),
   RealtimeModule,
   ModelsModule,
+  BackendRuntimeModule,
+  StorageRuntimeModule,
   ScheduleModule.forRoot(),
   MonitorModule,
 ];
@@ -189,7 +190,7 @@ export function buildAppModule(env: Env) {
     )
     .useIf(
       () => !env.flavors.graphql && (env.flavors.sync || env.flavors.front),
-      CopilotRealtimeModule
+      ServerRealtimeHandlersModule
     )
     // graphql server only
     .useIf(
@@ -205,10 +206,8 @@ export function buildAppModule(env: Env) {
       CaptchaModule,
       OAuthModule,
       CalendarModule,
-      CustomerIoModule,
       TelemetryModule,
       CommentModule,
-      AccessTokenModule,
       QueueDashboardModule
     )
     // doc service and front service

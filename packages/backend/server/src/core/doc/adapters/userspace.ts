@@ -55,6 +55,9 @@ export class PgUserspaceDocStorageAdapter extends DocStorageAdapter {
       return 0;
     }
 
+    updates = await this.filterValidDocUpdates(userId, docId, updates);
+    if (!updates.length) return 0;
+
     await using _lock = await this.lockDocForUpdate(userId, docId);
     const snapshot = await this.getDocSnapshot(userId, docId);
     const now = Date.now();

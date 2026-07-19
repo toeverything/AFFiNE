@@ -13,6 +13,7 @@ import {
   AFFiNELogger,
   CacheInterceptor,
   CloudThrottlerGuard,
+  ConfigFactory,
   EventBus,
   GlobalExceptionFilter,
   JobQueue,
@@ -61,6 +62,14 @@ export class TestingApp extends NestApplication {
 
   async [Symbol.asyncDispose]() {
     await this.close();
+  }
+
+  clearAuth() {
+    this.resetRateLimit();
+    this.sessionCookie = null;
+    this.currentUserCookie = null;
+    this.csrfCookie = null;
+    this.userCookies.clear();
   }
 
   request(
@@ -242,6 +251,31 @@ export async function createApp(
   }
 
   const module = await builder.compile();
+  module.get(ConfigFactory).override({
+    storages: {
+      avatar: {
+        storage: {
+          provider: 'assetpack',
+          bucket: 'avatars',
+          config: { path: '/tmp/affine-test-storage' },
+        },
+      },
+      blob: {
+        storage: {
+          provider: 'assetpack',
+          bucket: 'blobs',
+          config: { path: '/tmp/affine-test-storage' },
+        },
+      },
+    },
+    copilot: {
+      storage: {
+        provider: 'assetpack',
+        bucket: 'copilot',
+        config: { path: '/tmp/affine-test-storage' },
+      },
+    },
+  });
 
   module.useCustomApplicationConstructor(TestingApp);
 

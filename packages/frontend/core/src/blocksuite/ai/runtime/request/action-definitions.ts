@@ -184,7 +184,10 @@ Could you make a new website based on these notes and send back just the html fi
         ? filterStyleToPromptName.get(options.style)
         : undefined,
     actionVersion: 'v1',
-    buildContent: options => options.input,
+    buildContent: options =>
+      !options.input && options.attachments
+        ? `Apply the ${options.style} to this image.`
+        : options.input,
   },
   processImage: {
     id: 'processImage',
@@ -200,7 +203,10 @@ Could you make a new website based on these notes and send back just the html fi
     },
     responseType: 'image',
     timeout: 180000,
-    buildContent: options => options.input,
+    buildContent: options =>
+      !options.input && options.attachments
+        ? `Apply ${options.type} processing to this image.`
+        : options.input,
   },
   generateCaption: textAction('generateCaption', 'Generate a caption'),
   continueWriting: textAction('continueWriting', 'Continue writing'),

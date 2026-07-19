@@ -109,9 +109,13 @@ export const COPILOT_RUNTIME_PROVIDERS = [
   TurnPersistence,
 ];
 
+export const COPILOT_CONTEXT_REALTIME_PROVIDERS = [
+  CopilotEmbeddingRealtimeProvider,
+];
+
 export const COPILOT_CONTEXT_PROVIDERS = [
   CopilotContextResolver,
-  CopilotEmbeddingRealtimeProvider,
+  ...COPILOT_CONTEXT_REALTIME_PROVIDERS,
 ];
 
 export const COPILOT_TRANSCRIPT_REALTIME_PROVIDERS = [

@@ -21,6 +21,19 @@ const removableJobStates = [
 ] as const;
 const removeWhereBatchSize = 100;
 
+function normalizeJobId(jobId: string) {
+  return encodeURIComponent(jobId);
+}
+
+function normalizedJobIds(jobId: string) {
+  const normalized = normalizeJobId(jobId);
+  if (jobId.includes(':')) {
+    return [normalized];
+  }
+
+  return normalized === jobId ? [jobId] : [jobId, normalized];
+}
+
 @Injectable()
 export class JobQueue {
   private readonly logger = new Logger(JobQueue.name);
@@ -30,6 +43,9 @@ export class JobQueue {
   async add<T extends JobName>(name: T, payload: Jobs[T], opts?: JobsOptions) {
     const ns = namespace(name);
     const queue = this.getQueue(ns);
+    const normalizedOpts = opts?.jobId
+      ? { ...opts, jobId: normalizeJobId(opts.jobId) }
+      : opts;
     const job = await queue.add(
       name,
       {
@@ -37,7 +53,7 @@ export class JobQueue {
           ClsServiceManager.getClsService().getId() ?? genRequestId('job'),
         payload,
       } as JobData<T>,
-      opts
+      normalizedOpts
     );
     this.logger.debug(`Job [${name}] added; id=${job.id}`);
     return job;
@@ -49,15 +65,16 @@ export class JobQueue {
   ): Promise<Jobs[T] | undefined> {
     const ns = namespace(jobName);
     const queue = this.getQueue(ns);
-    const job = (await queue.getJob(jobId)) as Job<JobData<T>> | undefined;
+    const job = await this.get(jobId, jobName);
 
     if (!job) {
       return;
     }
 
-    const removed = await queue.remove(jobId);
+    if (!job.id) return;
+    const removed = await queue.remove(job.id);
     if (removed) {
-      this.logger.log(`Job ${jobName}(id=${jobId}) removed from queue ${ns}`);
+      this.logger.log(`Job ${jobName}(id=${job.id}) removed from queue ${ns}`);
       return job.data.payload;
     }
 
@@ -120,7 +137,14 @@ export class JobQueue {
   async get<T extends JobName>(jobId: string, jobName: T) {
     const ns = namespace(jobName);
     const queue = this.getQueue(ns);
-    return (await queue.getJob(jobId)) as Job<JobData<T>> | undefined;
+    for (const id of normalizedJobIds(jobId)) {
+      const job = (await queue.getJob(id)) as Job<JobData<T>> | undefined;
+      if (job) {
+        return job;
+      }
+    }
+
+    return undefined;
   }
 
   private getQueue(ns: string): Queue {

@@ -55,8 +55,11 @@ export const BillingHistory = () => {
             {t['com.affine.payment.billing-setting.no-invoice']()}
           </p>
         ) : (
-          pageInvoices?.map(invoice => (
-            <InvoiceLine key={invoice.id} invoice={invoice} />
+          pageInvoices?.map((invoice, index) => (
+            <InvoiceLine
+              key={`${invoice.createdAt}:${invoice.status}:${invoice.amount}:${index}`}
+              invoice={invoice}
+            />
           ))
         )}
       </div>
@@ -89,7 +92,6 @@ const InvoiceLine = ({
 
   return (
     <SettingRow
-      key={invoice.id}
       name={new Date(invoice.createdAt).toLocaleDateString()}
       desc={`${
         invoice.status === InvoiceStatus.Paid

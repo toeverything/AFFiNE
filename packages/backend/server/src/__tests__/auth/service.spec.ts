@@ -1,8 +1,10 @@
 import { PrismaClient } from '@prisma/client';
 import ava, { TestFn } from 'ava';
+import Sinon from 'sinon';
 
-import { CurrentUser } from '../../core/auth';
+import { AuthSessionService, CurrentUser } from '../../core/auth';
 import { AuthService } from '../../core/auth/service';
+import { EntitlementModule } from '../../core/entitlement';
 import { FeatureModule } from '../../core/features';
 import { QuotaModule } from '../../core/quota';
 import { UserModule } from '../../core/user';
@@ -11,6 +13,7 @@ import { createTestingModule, type TestingModule } from '../utils';
 
 const test = ava as TestFn<{
   auth: AuthService;
+  authSessions: AuthSessionService;
   models: Models;
   u1: CurrentUser;
   db: PrismaClient;
@@ -19,11 +22,12 @@ const test = ava as TestFn<{
 
 test.before(async t => {
   const m = await createTestingModule({
-    imports: [QuotaModule, FeatureModule, UserModule],
+    imports: [EntitlementModule, QuotaModule, FeatureModule, UserModule],
     providers: [AuthService],
   });
 
   t.context.auth = m.get(AuthService);
+  t.context.authSessions = m.get(AuthSessionService);
   t.context.models = m.get(Models);
   t.context.db = m.get(PrismaClient);
   t.context.m = m;
@@ -93,6 +97,57 @@ test('should be able to change password', async t => {
 
   signedInU1 = await auth.signIn('u1@affine.pro', 'hello world affine');
   t.is(signedInU1.email, u1.email);
+});
+
+test('rolls back password change when session revocation fails', async t => {
+  const { auth, authSessions, u1 } = t.context;
+  const revoke = Sinon.stub(authSessions, 'revokeUserSessions').rejects(
+    new Error('revocation failed')
+  );
+
+  await t.throwsAsync(() =>
+    auth.changePasswordAndRevokeSessions(u1.id, 'new password')
+  );
+  revoke.restore();
+
+  await t.notThrowsAsync(() => auth.signIn(u1.email, '1'));
+  await t.throwsAsync(() => auth.signIn(u1.email, 'new password'));
+});
+
+test('rolls back email change when session revocation fails', async t => {
+  const { auth, authSessions, u1, models } = t.context;
+  const revoke = Sinon.stub(authSessions, 'revokeUserSessions').rejects(
+    new Error('revocation failed')
+  );
+
+  await t.throwsAsync(() =>
+    auth.changeEmailAndRevokeSessions(u1.id, 'replacement@affine.pro')
+  );
+  revoke.restore();
+
+  t.is((await models.user.get(u1.id))?.email, u1.email);
+});
+
+test('rolls back auth-session revocation when cookie revocation fails', async t => {
+  const { auth, authSessions, db, models, u1 } = t.context;
+  const userSession = await auth.createUserSession(u1.id);
+  const issued = await authSessions.create({
+    userSessionId: userSession.id,
+    installationId: 'transactional-revocation',
+    platform: 'ios',
+  });
+  const revokeCookies = Sinon.stub(
+    models.session,
+    'deleteUserSessions'
+  ).rejects(new Error('cookie revocation failed'));
+
+  await t.throwsAsync(() => auth.revokeUserSessions(u1.id));
+  revokeCookies.restore();
+
+  const session = await db.authSession.findUniqueOrThrow({
+    where: { id: issued.session.id },
+  });
+  t.is(session.revokedAt, null);
 });
 
 test('should be able to change email', async t => {

@@ -7,7 +7,7 @@ public class InvoicesQuery: GraphQLQuery {
   public static let operationName: String = "invoices"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"query invoices($take: Int!, $skip: Int!) { currentUser { __typename invoiceCount invoices(take: $take, skip: $skip) { __typename id status currency amount reason lastPaymentError link createdAt } } }"#
+      #"query invoices($take: Int!, $skip: Int!) { currentUser { __typename invoiceCount invoices(take: $take, skip: $skip) { __typename status currency amount reason lastPaymentError link createdAt } } }"#
     ))
 
   public var take: Int
@@ -75,7 +75,6 @@ public class InvoicesQuery: GraphQLQuery {
         public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.InvoiceType }
         public static var __selections: [ApolloAPI.Selection] { [
           .field("__typename", String.self),
-          .field("id", String?.self),
           .field("status", GraphQLEnum<AffineGraphQL.InvoiceStatus>.self),
           .field("currency", String.self),
           .field("amount", Int.self),
@@ -88,8 +87,6 @@ public class InvoicesQuery: GraphQLQuery {
           InvoicesQuery.Data.CurrentUser.Invoice.self
         ] }
 
-        @available(*, deprecated, message: "removed")
-        public var id: String? { __data["id"] }
         public var status: GraphQLEnum<AffineGraphQL.InvoiceStatus> { __data["status"] }
         public var currency: String { __data["currency"] }
         public var amount: Int { __data["amount"] }

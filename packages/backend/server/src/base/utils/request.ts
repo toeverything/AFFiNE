@@ -7,11 +7,15 @@ import { GqlArgumentsHost } from '@nestjs/graphql';
 import type { Request, Response } from 'express';
 import { ClsServiceManager } from 'nestjs-cls';
 import type { Socket } from 'socket.io';
+import { z } from 'zod';
 
 type RequestResponse = {
   req: Request;
   res?: Response;
 };
+
+const RequestCookieValueSchema = z.string().min(1);
+const RequestHeaderValueSchema = z.string().min(1);
 
 export function getRequestResponseFromHost(
   host: ArgumentsHost
@@ -68,9 +72,7 @@ export function getRequestResponseFromContext(
 export function parseCookies(
   req: IncomingMessage & { cookies?: Record<string, string> }
 ) {
-  if (req.cookies) {
-    return;
-  }
+  if (req.cookies) return;
 
   const cookieStr = req.headers.cookie ?? '';
   req.cookies = cookieStr.split(';').reduce(
@@ -101,6 +103,25 @@ export function parseCookies(
     },
     {} as Record<string, string>
   );
+}
+
+export function getRequestCookie(
+  req: IncomingMessage & { cookies?: Record<string, unknown> },
+  name: string
+) {
+  parseCookies(req as IncomingMessage & { cookies?: Record<string, string> });
+
+  const value = req.cookies?.[name];
+
+  const parsed = RequestCookieValueSchema.safeParse(value);
+  return parsed.success ? parsed.data : undefined;
+}
+
+export function getRequestHeader(req: IncomingMessage, name: string) {
+  const value = req.headers[name.toLowerCase()];
+
+  const parsed = RequestHeaderValueSchema.safeParse(value);
+  return parsed.success ? parsed.data : undefined;
 }
 
 /**

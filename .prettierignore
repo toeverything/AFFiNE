@@ -5,6 +5,7 @@
 .git
 .vscode
 .context
+.codex
 .yarnrc.yml
 .docker
 **/.storybook

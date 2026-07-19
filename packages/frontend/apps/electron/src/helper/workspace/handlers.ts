@@ -31,7 +31,7 @@ async function deleteWorkspaceV1(workspaceId: string) {
   try {
     await ensureSQLiteDisconnected('workspace', workspaceId);
     const basePath = await getWorkspaceBasePathV1('workspace', workspaceId);
-    await fs.rmdir(basePath, { recursive: true });
+    await fs.remove(basePath);
   } catch (error) {
     logger.error('deleteWorkspaceV1', error);
   }
@@ -47,7 +47,7 @@ export async function deleteWorkspace(universalId: string) {
   const dbPath = await getSpaceDBPath(peer, type, id);
   try {
     await getDocStoragePool().disconnect(universalId);
-    await fs.rmdir(path.dirname(dbPath), { recursive: true });
+    await fs.remove(path.dirname(dbPath));
   } catch (e) {
     logger.error('deleteWorkspace', e);
   }
@@ -78,7 +78,7 @@ export async function trashWorkspace(universalId: string) {
     await fs.copy(path.dirname(dbPath), movedPath, {
       overwrite: true,
     });
-    await fs.rmdir(path.dirname(dbPath), { recursive: true });
+    await fs.remove(path.dirname(dbPath));
   } catch (error) {
     logger.error('trashWorkspace', error);
   }
@@ -331,7 +331,7 @@ async function importWorkspaceDb(originalPath: string) {
 export async function deleteBackupWorkspace(id: string) {
   const basePath = await getDeletedWorkspacesBasePath();
   const workspacePath = path.join(basePath, normalizeWorkspaceIdForPath(id));
-  await fs.rmdir(workspacePath, { recursive: true });
+  await fs.remove(workspacePath);
   logger.info(
     'deleteBackupWorkspace',
     `Deleted backup workspace: ${workspacePath}`

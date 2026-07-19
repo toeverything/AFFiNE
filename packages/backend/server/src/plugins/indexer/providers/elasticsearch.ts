@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import {
   InternalServerError,
   InvalidSearchProviderRequest,
+  safeFetch,
 } from '../../../base';
 import { SearchProviderType } from '../config';
 import { DateFieldNames, SearchTable, SearchTableUniqueId } from '../tables';
@@ -60,6 +61,14 @@ interface ESAggregateResponse extends ESSearchResponse {
     };
   };
 }
+
+const INDEXER_FETCH_OPTIONS = {
+  timeoutMs: 30_000,
+  maxRedirects: 0,
+  maxBytes: 50 * 1024 * 1024,
+  allowedHeaders: ['authorization', 'content-type'],
+  allowPrivateTargetOrigin: true,
+};
 
 @Injectable()
 export class ElasticsearchProvider extends SearchProvider {
@@ -278,11 +287,11 @@ export class ElasticsearchProvider extends SearchProvider {
     } else if (this.config.provider.password) {
       headers.Authorization = `Basic ${Buffer.from(`${this.config.provider.username}:${this.config.provider.password}`).toString('base64')}`;
     }
-    const response = await fetch(url, {
-      method,
-      body,
-      headers,
-    });
+    const response = await safeFetch(
+      url,
+      { method, body, headers },
+      INDEXER_FETCH_OPTIONS
+    );
     const data = await response.json();
     if (ignoreErrorStatus?.includes(response.status)) {
       return data;

@@ -61,6 +61,9 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
       return 0;
     }
 
+    updates = await this.filterValidDocUpdates(workspaceId, docId, updates);
+    if (!updates.length) return 0;
+
     const isNewDoc = !(await this.models.doc.exists(workspaceId, docId));
 
     let pendings = updates;

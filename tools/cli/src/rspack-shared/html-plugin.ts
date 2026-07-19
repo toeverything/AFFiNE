@@ -83,6 +83,8 @@ const currentDir = Path.dir(import.meta.url);
 
 export interface CreateHTMLPluginConfig {
   filename?: string;
+  template?: string;
+  copySharedPublicAssets?: boolean;
   additionalEntryForSelfhost?: boolean;
   selfhostPublicPath?: string;
   injectGlobalErrorHandler?: boolean;
@@ -209,7 +211,10 @@ export function createHTMLPlugins(
   config: CreateHTMLPluginConfig
 ): (HtmlRspackPluginInstance | PluginLike)[] {
   const publicPath = getPublicPath(BUILD_CONFIG);
-  const htmlPluginOptions = getHTMLPluginOptions(BUILD_CONFIG);
+  const htmlPluginOptions = {
+    ...getHTMLPluginOptions(BUILD_CONFIG),
+    ...(config.template ? { template: config.template } : {}),
+  };
   const selfhostPublicPath = config.selfhostPublicPath ?? '/';
 
   const plugins: (HtmlRspackPluginInstance | PluginLike)[] = [];

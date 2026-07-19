@@ -1,7 +1,13 @@
 import keywords from '@blocksuite/icons/keywords/en.json';
 import * as allIcons from '@blocksuite/icons/rc';
 import { cssVarV2 } from '@toeverything/theme/v2';
-import { startTransition, useCallback, useEffect, useState } from 'react';
+import {
+  type KeyboardEvent,
+  startTransition,
+  useCallback,
+  useEffect,
+  useState,
+} from 'react';
 
 import { IconButton } from '../../../button';
 import Input from '../../../input';
@@ -89,6 +95,13 @@ export const AffineIconPicker = ({
     [addRecentIcon, onSelect, color]
   );
 
+  const handleSearchKeyDown = useCallback(
+    (e: KeyboardEvent<HTMLInputElement>) => {
+      e.stopPropagation();
+    },
+    []
+  );
+
   return (
     <div className={pickerStyles.root}>
       {/* Search */}
@@ -96,6 +109,7 @@ export const AffineIconPicker = ({
         <Input
           value={keyword}
           onChange={setKeyword}
+          onKeyDown={handleSearchKeyDown}
           className={pickerStyles.searchInput}
           preFix={
             <div style={{ marginLeft: 10, lineHeight: 0 }}>

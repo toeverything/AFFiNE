@@ -60,6 +60,8 @@ function toBadRequestReason(reason: SSRFBlockReason) {
       return 'Failed to resolve hostname';
     case 'too_many_redirects':
       return 'Too many redirects';
+    default:
+      return 'Blocked by SSRF protection';
   }
 }
 

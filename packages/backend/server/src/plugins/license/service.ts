@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { Transactional } from '@nestjs-cls/transactional';
 import { InstalledLicense, PrismaClient } from '@prisma/client';
 
 import {
@@ -17,21 +18,34 @@ import { EntitlementService } from '../../core/entitlement';
 import { WorkspacePolicyService } from '../../core/permission';
 import { QuotaStateService } from '../../core/quota/state';
 import { Models } from '../../models';
-import { ResolvedEntitlement, resolveEntitlementV1 } from '../../native';
+import {
+  activateLicense,
+  checkLicenseHealth,
+  type CommandResponse,
+  createCustomerPortal,
+  deactivateLicense,
+  type LicenseError,
+  type LicenseResponse,
+  type PortalResponse,
+  type ResolvedEntitlement,
+  resolveEntitlementV1,
+  updateLicenseRecurring,
+  updateLicenseSeats,
+} from '../../native';
 import {
   SubscriptionPlan,
   SubscriptionRecurring,
   SubscriptionVariant,
 } from '../payment/types';
 
-interface License {
-  plan: SubscriptionPlan;
-  recurring: SubscriptionRecurring;
-  quantity: number;
-  endAt: number;
-}
-
-const AFFINE_PRO_REQUEST_TIMEOUT = 10_000;
+export const licenseClient = {
+  activate: activateLicense,
+  checkHealth: checkLicenseHealth,
+  createCustomerPortal,
+  deactivate: deactivateLicense,
+  updateRecurring: updateLicenseRecurring,
+  updateSeats: updateLicenseSeats,
+};
 
 export interface LicensePreview {
   id: string;
@@ -91,6 +105,7 @@ export class LicenseService {
     });
   }
 
+  @Transactional()
   async installLicense(workspaceId: string, license: Buffer) {
     const resolved = this.resolveWorkspaceTeamLicense(workspaceId, license);
     if (!resolved.valid) {
@@ -98,13 +113,37 @@ export class LicenseService {
     }
 
     const validatedAt = new Date();
-
-    await this.event.emitAsync('workspace.subscription.activated', {
-      workspaceId,
-      plan: SubscriptionPlan.SelfHostedTeam,
-      recurring: this.licenseRecurring(resolved),
-      quantity: this.licenseQuantity(resolved),
+    const previous = await this.db.installedLicense.findUnique({
+      where: { workspaceId },
     });
+
+    const installed = await this.db.installedLicense.upsert({
+      where: { workspaceId },
+      update: {
+        key: this.licenseSubjectId(resolved),
+        quantity: this.licenseQuantity(resolved),
+        recurring: this.licenseRecurring(resolved),
+        variant: SubscriptionVariant.Onetime,
+        validateKey: '',
+        validatedAt,
+        expiredAt: this.licenseExpiresAt(resolved),
+        license,
+      },
+      create: {
+        workspaceId,
+        key: this.licenseSubjectId(resolved),
+        quantity: this.licenseQuantity(resolved),
+        recurring: this.licenseRecurring(resolved),
+        variant: SubscriptionVariant.Onetime,
+        validateKey: '',
+        validatedAt,
+        expiredAt: this.licenseExpiresAt(resolved),
+        license,
+      },
+    });
+    if (previous && previous.key !== installed.key) {
+      await this.entitlement.revokeBySubject('selfhost_license', previous.key);
+    }
     await this.entitlement.upsertFromSelfhostLicense({
       workspaceId,
       recurring: this.licenseRecurring(resolved),
@@ -114,10 +153,14 @@ export class LicenseService {
       variant: SubscriptionVariant.Onetime,
       license,
     });
-
-    return this.db.installedLicense.findUniqueOrThrow({
-      where: { workspaceId },
+    await this.event.emitAsync('workspace.subscription.activated', {
+      workspaceId,
+      plan: SubscriptionPlan.SelfHostedTeam,
+      recurring: this.licenseRecurring(resolved),
+      quantity: this.licenseQuantity(resolved),
     });
+
+    return installed;
   }
 
   previewLicense(license: Buffer): LicensePreview {
@@ -144,6 +187,7 @@ export class LicenseService {
     };
   }
 
+  @Transactional()
   async activateTeamLicense(workspaceId: string, licenseKey: string) {
     const installedLicense = await this.getLicense(workspaceId);
 
@@ -157,57 +201,42 @@ export class LicenseService {
       throw new WorkspaceLicenseAlreadyExists();
     }
 
-    const data = await this.fetchAffinePro<License>(
-      `/api/team/licenses/${licenseKey}/activate`,
-      {
-        method: 'POST',
-      }
+    const data = this.remoteLicense(
+      await licenseClient.activate({ licenseKey })
     );
 
     const validatedAt = new Date();
-    const expiresAt = this.remoteLicenseExpiresAt(data);
-    const validateKey = data.res.headers.get('x-next-validate-key') ?? '';
+    const expiresAt = new Date(data.expiresAt);
 
-    this.event.emit('workspace.subscription.activated', {
-      workspaceId,
-      plan: data.plan,
-      recurring: data.recurring,
-      quantity: data.quantity,
+    const installed = await this.db.installedLicense.create({
+      data: {
+        workspaceId,
+        key: licenseKey,
+        quantity: data.quantity,
+        recurring: data.recurring as SubscriptionRecurring,
+        variant: null,
+        validateKey: data.validateKey,
+        validatedAt,
+        expiredAt: expiresAt,
+        license: null,
+      },
     });
     await this.entitlement.upsertFromValidatedSelfhostLicense({
       workspaceId,
       licenseKey,
-      recurring: data.recurring,
+      recurring: data.recurring as SubscriptionRecurring,
       quantity: data.quantity,
       expiresAt,
       validatedAt,
-      validateKey,
+      validateKey: data.validateKey,
     });
-
-    return this.db.installedLicense.upsert({
-      where: { workspaceId },
-      update: {
-        key: licenseKey,
-        quantity: data.quantity,
-        recurring: data.recurring,
-        variant: null,
-        validateKey,
-        validatedAt,
-        expiredAt: expiresAt,
-        license: null,
-      },
-      create: {
-        workspaceId,
-        key: licenseKey,
-        quantity: data.quantity,
-        recurring: data.recurring,
-        variant: null,
-        validateKey,
-        validatedAt,
-        expiredAt: expiresAt,
-        license: null,
-      },
+    this.event.emit('workspace.subscription.activated', {
+      workspaceId,
+      plan: data.plan as SubscriptionPlan,
+      recurring: data.recurring as SubscriptionRecurring,
+      quantity: data.quantity,
     });
+    return installed;
   }
 
   async removeTeamLicense(workspaceId: string) {
@@ -242,18 +271,18 @@ export class LicenseService {
   }
 
   async deactivateTeamLicense(license: InstalledLicense) {
-    await this.fetchAffinePro(`/api/team/licenses/${license.key}/deactivate`, {
-      method: 'POST',
-    });
+    this.remoteCommand(
+      await licenseClient.deactivate({ licenseKey: license.key })
+    );
   }
 
   async updateTeamRecurring(key: string, recurring: SubscriptionRecurring) {
-    await this.fetchAffinePro(`/api/team/licenses/${key}/recurring`, {
-      method: 'POST',
-      body: JSON.stringify({
+    this.remoteCommand(
+      await licenseClient.updateRecurring({
+        licenseKey: key,
         recurring,
-      }),
-    });
+      })
+    );
   }
 
   async createCustomerPortal(workspaceId: string) {
@@ -267,12 +296,12 @@ export class LicenseService {
       throw new LicenseNotFound();
     }
 
-    return this.fetchAffinePro<{ url: string }>(
-      `/api/team/licenses/${license.key}/create-customer-portal`,
-      {
-        method: 'POST',
-      }
+    const portal = this.remotePortal(
+      await licenseClient.createCustomerPortal({
+        licenseKey: license.key,
+      })
     );
+    return { url: portal.url };
   }
 
   @OnEvent('workspace.members.updated')
@@ -301,12 +330,12 @@ export class LicenseService {
     }
 
     const count = await this.models.workspaceUser.chargedCount(workspaceId);
-    await this.fetchAffinePro(`/api/team/licenses/${license.key}/seats`, {
-      method: 'POST',
-      body: JSON.stringify({
+    this.remoteCommand(
+      await licenseClient.updateSeats({
+        licenseKey: license.key,
         seats: count,
-      }),
-    });
+      })
+    );
 
     // stripe payment is async, we can't directly the charge result in update calling
     await this.waitUntilLicenseUpdated(license, count);
@@ -356,30 +385,28 @@ export class LicenseService {
 
   private async revalidateRecurringLicense(license: InstalledLicense) {
     try {
-      const res = await this.fetchAffinePro<License>(
-        `/api/team/licenses/${license.key}/health`,
-        {
-          headers: {
-            'x-validate-key': license.validateKey,
-          },
-        }
+      const res = this.remoteLicense(
+        await licenseClient.checkHealth({
+          licenseKey: license.key,
+          validateKey: license.validateKey,
+        })
       );
 
       const validatedAt = new Date();
-      const expiresAt = this.remoteLicenseExpiresAt(res);
-      const validateKey = res.res.headers.get('x-next-validate-key') ?? '';
+      const expiresAt = new Date(res.expiresAt);
+      const validateKey = res.validateKey || license.validateKey;
 
       this.event.emit('workspace.subscription.activated', {
         workspaceId: license.workspaceId,
-        plan: res.plan,
-        recurring: res.recurring,
+        plan: res.plan as SubscriptionPlan,
+        recurring: res.recurring as SubscriptionRecurring,
         quantity: res.quantity,
       });
       await this.db.installedLicense.update({
         where: { key: license.key },
         data: {
           quantity: res.quantity,
-          recurring: res.recurring,
+          recurring: res.recurring as SubscriptionRecurring,
           validateKey,
           validatedAt,
           expiredAt: expiresAt,
@@ -390,7 +417,7 @@ export class LicenseService {
         await this.entitlement.upsertFromSelfhostLicense({
           workspaceId: license.workspaceId,
           licenseKey: license.key,
-          recurring: res.recurring,
+          recurring: res.recurring as SubscriptionRecurring,
           quantity: res.quantity,
           expiresAt,
           validatedAt,
@@ -401,7 +428,7 @@ export class LicenseService {
         await this.entitlement.upsertFromValidatedSelfhostLicense({
           workspaceId: license.workspaceId,
           licenseKey: license.key,
-          recurring: res.recurring,
+          recurring: res.recurring as SubscriptionRecurring,
           quantity: res.quantity,
           expiresAt,
           validatedAt,
@@ -430,55 +457,38 @@ export class LicenseService {
     }
   }
 
-  private remoteLicenseExpiresAt(license: Pick<License, 'endAt'>) {
-    const expiresAt = new Date(license.endAt);
-    if (!Number.isFinite(expiresAt.getTime()) || expiresAt <= new Date()) {
-      throw new LicenseExpired();
+  private remoteLicense(response: LicenseResponse) {
+    this.throwRemoteLicenseError(response.error);
+    if (!response.license) {
+      throw new InternalServerError('Invalid AFFiNE Pro license response.');
     }
-    return expiresAt;
+    return response.license;
   }
 
-  private async fetchAffinePro<T = any>(
-    path: string,
-    init?: RequestInit
-  ): Promise<T & { res: Response }> {
-    const endpoint =
-      process.env.AFFINE_PRO_SERVER_ENDPOINT ?? 'https://app.affine.pro';
+  private remoteCommand(response: CommandResponse) {
+    this.throwRemoteLicenseError(response.error);
+  }
 
+  private remotePortal(response: PortalResponse) {
+    this.throwRemoteLicenseError(response.error);
+    if (!response.url) {
+      throw new InternalServerError('Invalid AFFiNE Pro portal response.');
+    }
+    return { url: response.url };
+  }
+
+  private throwRemoteLicenseError(
+    error?: LicenseError | null
+  ): asserts error is null | undefined {
+    if (!error) return;
     try {
-      const signal =
-        init?.signal ??
-        (AbortSignal.timeout
-          ? AbortSignal.timeout(AFFINE_PRO_REQUEST_TIMEOUT)
-          : undefined);
-      const res = await fetch(endpoint + path, {
-        ...init,
-        signal,
-        headers: {
-          'Content-Type': 'application/json',
-          ...init?.headers,
-        },
-      });
-
-      if (!res.ok) {
-        const body = (await res.json()) as UserFriendlyError;
-        throw UserFriendlyError.fromUserFriendlyErrorJSON(body);
-      }
-
-      const data = (await res.json()) as T;
-      return {
-        ...data,
-        res,
-      };
+      throw UserFriendlyError.fromUserFriendlyErrorJSON(JSON.parse(error.body));
     } catch (e) {
       if (e instanceof UserFriendlyError) {
         throw e;
       }
-
       throw new InternalServerError(
-        e instanceof Error
-          ? e.message
-          : 'Failed to contact with https://app.affine.pro'
+        'Failed to contact with https://app.affine.pro'
       );
     }
   }
@@ -497,18 +507,33 @@ export class LicenseService {
         if (!resolved.valid) {
           valid = false;
         } else {
+          const recurring = this.licenseRecurring(resolved);
+          const quantity = this.licenseQuantity(resolved);
+          const expiresAt = this.licenseExpiresAt(resolved);
+          const validatedAt = new Date();
+
+          await this.db.installedLicense.update({
+            where: { key: license.key },
+            data: {
+              recurring,
+              quantity,
+              expiredAt: expiresAt,
+              validatedAt,
+            },
+          });
           this.event.emit('workspace.subscription.activated', {
             workspaceId: license.workspaceId,
             plan: SubscriptionPlan.SelfHostedTeam,
-            recurring: this.licenseRecurring(resolved),
-            quantity: this.licenseQuantity(resolved),
+            recurring,
+            quantity,
           });
           await this.entitlement.upsertFromSelfhostLicense({
             workspaceId: license.workspaceId,
-            recurring: this.licenseRecurring(resolved),
-            quantity: this.licenseQuantity(resolved),
-            expiresAt: this.licenseExpiresAt(resolved),
-            validatedAt: new Date(),
+            recurring,
+            quantity,
+            expiresAt,
+            validatedAt,
+            variant: SubscriptionVariant.Onetime,
             license: Buffer.from(buf),
           });
         }

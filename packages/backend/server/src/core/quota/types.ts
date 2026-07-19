@@ -118,12 +118,4 @@ export class WorkspaceQuotaType implements Partial<WorkspaceQuota> {
 
   @Field()
   humanReadable!: WorkspaceQuotaHumanReadableType;
-
-  /**
-   * @deprecated
-   */
-  @Field(() => SafeIntResolver, {
-    deprecationReason: 'use `usedStorageQuota` instead',
-  })
-  usedSize!: number;
 }

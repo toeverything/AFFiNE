@@ -10,21 +10,24 @@ crate-type = ["cdylib"]
 
 [dependencies]
 aes-gcm = { workspace = true }
-affine_common = { workspace = true, features = [
-  "doc-loader",
-  "hashcash",
-  "napi",
-  "ydoc-loader",
-] }
+affine_common = { workspace = true, features = ["hashcash", "napi"] }
+affine_doc_loader = { workspace = true }
 anyhow = { workspace = true }
-base64-simd = { workspace = true }
+assetpack-core = "0.1.0"
+assetpack-transform-precomp2 = "0.1.0"
+base64 = { workspace = true }
 chrono = { workspace = true }
+crc32fast = "1.5.0"
+doc_extractor = { workspace = true }
 file-format = { workspace = true }
 hex = { workspace = true }
+hmac = "0.13"
+homedir = { workspace = true }
 image = { workspace = true }
 infer = { workspace = true }
-jsonschema = "0.46"
-libwebp-sys = { workspace = true }
+instant-xml = "0.7.5"
+jsonschema = "0.47"
+libwebp-sys = "0.9.6"
 little_exif = { workspace = true }
 llm_adapter = { workspace = true, features = ["schema", "ureq-client"] }
 llm_runtime = { workspace = true, features = ["schema", "ureq-client"] }
@@ -34,20 +37,38 @@ napi = { workspace = true, features = ["async", "serde-json"] }
 napi-derive = { workspace = true }
 p256 = { workspace = true }
 rand = { workspace = true }
-reqwest = { version = "0.13.3", default-features = false, features = [
-  "blocking",
+reqwest = { version = "0.13.4", default-features = false, features = [
   "rustls",
 ] }
-rustls = "0.23"
+rustls = { version = "0.23", default-features = false, features = [
+  "aws-lc-rs",
+  "std",
+  "tls12",
+] }
+rusty-s3 = "0.10.0"
+safefetch = { workspace = true }
 schemars = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 sha2 = { workspace = true }
 sha3 = { workspace = true }
+sqlx = { workspace = true, default-features = false, features = [
+  "chrono",
+  "json",
+  "macros",
+  "migrate",
+  "postgres",
+  "runtime-tokio",
+] }
+thiserror.workspace = true
 tiktoken-rs = { workspace = true }
+tokio = { workspace = true, features = ["rt-multi-thread", "sync", "time"] }
+unicode-normalization = "0.1"
+unicode_skeleton = "0.1.1"
 url = { workspace = true }
+uuid = { workspace = true, features = ["v4"] }
 v_htmlescape = { workspace = true }
-webpki-roots = "1"
+webpki-roots = "1.0"
 y-octo = { workspace = true, features = ["large_refs"] }
 
 [target.'cfg(not(target_os = "linux"))'.dependencies]
@@ -57,8 +78,9 @@ mimalloc = { workspace = true }
 mimalloc = { workspace = true, features = ["local_dynamic_tls"] }
 
 [dev-dependencies]
-rayon = { workspace = true }
-tokio = { workspace = true }
+rayon    = { workspace = true }
+tempfile = "3.27.0"
+tokio    = { workspace = true, features = ["macros", "rt-multi-thread"] }
 
 [build-dependencies]
 napi-build = { workspace = true }

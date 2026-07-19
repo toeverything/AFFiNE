@@ -20,7 +20,6 @@ export enum SubscriptionPlan {
 }
 
 export enum SubscriptionVariant {
-  EA = 'earlyaccess',
   Onetime = 'onetime',
 }
 
@@ -42,12 +41,6 @@ export enum InvoiceStatus {
   Void = 'void',
   Paid = 'paid',
   Uncollectible = 'uncollectible',
-}
-
-export enum CouponType {
-  ProEarlyAccessOneYearFree = 'pro_ea_one_year_free',
-  AIEarlyAccessOneYearFree = 'ai_ea_one_year_free',
-  ProEarlyAccessAIOneYearFree = 'ai_pro_ea_one_year_free',
 }
 
 declare global {
@@ -199,11 +192,6 @@ export const DEFAULT_PRICES = new Map([
       price: 8100,
     },
   ],
-  // only EA for yearly pro
-  [
-    `${SubscriptionPlan.Pro}_${SubscriptionRecurring.Yearly}_${SubscriptionVariant.EA}`,
-    { product: 'AFFiNE Pro', price: 5000 },
-  ],
   [
     `${SubscriptionPlan.Pro}_${SubscriptionRecurring.Lifetime}`,
     {
@@ -211,28 +199,10 @@ export const DEFAULT_PRICES = new Map([
       price: 49900,
     },
   ],
-  [
-    `${SubscriptionPlan.Pro}_${SubscriptionRecurring.Monthly}_${SubscriptionVariant.Onetime}`,
-    { product: 'AFFiNE Pro - One Month', price: 799 },
-  ],
-  [
-    `${SubscriptionPlan.Pro}_${SubscriptionRecurring.Yearly}_${SubscriptionVariant.Onetime}`,
-    { product: 'AFFiNE Pro - One Year', price: 8100 },
-  ],
-
   // ai
   [
     `${SubscriptionPlan.AI}_${SubscriptionRecurring.Yearly}`,
     { product: 'AFFiNE AI', price: 10680 },
-  ],
-  // only EA for yearly AI
-  [
-    `${SubscriptionPlan.AI}_${SubscriptionRecurring.Yearly}_${SubscriptionVariant.EA}`,
-    { product: 'AFFiNE AI', price: 9900 },
-  ],
-  [
-    `${SubscriptionPlan.AI}_${SubscriptionRecurring.Yearly}_${SubscriptionVariant.Onetime}`,
-    { product: 'AFFiNE AI - One Year', price: 10680 },
   ],
 
   // team
@@ -284,7 +254,7 @@ export function decodeLookupKey(key: string): LookupKey {
   return {
     plan: plan as SubscriptionPlan,
     recurring: recurring as SubscriptionRecurring,
-    variant: variant as SubscriptionVariant,
+    variant: (variant as SubscriptionVariant) ?? null,
   };
 }
 

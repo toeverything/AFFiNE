@@ -30,7 +30,7 @@ public class AdminUpdateWorkspaceMutation: GraphQLMutation {
       AdminUpdateWorkspaceMutation.Data.self
     ] }
 
-    /// Update workspace flags and features for admin
+    /// Update workspace flags for admin
     public var adminUpdateWorkspace: AdminUpdateWorkspace? { __data["adminUpdateWorkspace"] }
 
     /// AdminUpdateWorkspace

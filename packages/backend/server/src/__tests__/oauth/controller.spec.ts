@@ -6,7 +6,13 @@ import ava, { TestFn } from 'ava';
 import Sinon from 'sinon';
 
 import { AppModule } from '../../app.module';
-import { ConfigFactory, InvalidOauthResponse, URLHelper } from '../../base';
+import {
+  ConfigFactory,
+  InvalidOauthResponse,
+  type SafeFetchOptions,
+  URLHelper,
+} from '../../base';
+import { SessionCache } from '../../base/cache';
 import { ConfigModule } from '../../base/config';
 import { CurrentUser } from '../../core/auth';
 import { AuthService } from '../../core/auth/service';
@@ -23,6 +29,7 @@ import { createTestingApp, currentUser, TestingApp } from '../utils';
 const test = ava as TestFn<{
   auth: AuthService;
   oauth: OAuthService;
+  cache: SessionCache;
   models: Models;
   u1: CurrentUser;
   db: PrismaClient;
@@ -62,6 +69,7 @@ test.before(async t => {
 
   t.context.auth = app.get(AuthService);
   t.context.oauth = app.get(OAuthService);
+  t.context.cache = app.get(SessionCache);
   t.context.models = app.get(Models);
   t.context.db = app.get(PrismaClient);
   t.context.app = app;
@@ -90,7 +98,7 @@ test("should be able to redirect to oauth provider's login page", async t => {
 
   const res = await app
     .POST('/api/oauth/preflight')
-    .send({ provider: 'Google', client_nonce: 'test-nonce' })
+    .send({ provider: 'Google', client: 'web', client_nonce: 'test-nonce' })
     .expect(HttpStatus.OK);
 
   const { url } = res.body;
@@ -122,7 +130,7 @@ test('should be able to redirect to oauth provider with multiple hosts', async t
   const res = await app
     .POST('/api/oauth/preflight')
     .set('host', 'test.affine.dev')
-    .send({ provider: 'Google', client_nonce: 'test-nonce' })
+    .send({ provider: 'Google', client: 'web', client_nonce: 'test-nonce' })
     .expect(HttpStatus.OK);
 
   const { url } = res.body;
@@ -178,6 +186,17 @@ test('should be able to redirect to oauth provider with client_nonce', async t =
   t.truthy(state.state);
 });
 
+test('should reject unsupported oauth client identifiers', async t => {
+  const { app } = t.context;
+  const res = await app.POST('/api/oauth/preflight').send({
+    provider: 'Google',
+    client: 'untrusted-client',
+    client_nonce: 'test-nonce',
+  });
+
+  t.is(res.status, 403);
+});
+
 test('should record sign in client version from oauth preflight state', async t => {
   const { app, db } = t.context;
 
@@ -194,7 +213,7 @@ test('should record sign in client version from oauth preflight state', async t 
   const preflightRes = await app
     .POST('/api/oauth/preflight')
     .set('x-affine-version', '0.25.3')
-    .send({ provider: 'Google', client_nonce: 'test-nonce' })
+    .send({ provider: 'Google', client: 'web', client_nonce: 'test-nonce' })
     .expect(HttpStatus.OK);
 
   const redirect = new URL(preflightRes.body.url as string);
@@ -235,6 +254,7 @@ test('should forbid preflight with untrusted redirect_uri', async t => {
     .POST('/api/oauth/preflight')
     .send({
       provider: 'Google',
+      client: 'web',
       redirect_uri: 'https://evil.example',
       client_nonce: 'test-nonce',
     })
@@ -244,10 +264,11 @@ test('should forbid preflight with untrusted redirect_uri', async t => {
 
 test('should throw if client_nonce is missing in preflight', async t => {
   const { app } = t.context;
+  app.clearAuth();
 
   await app
     .POST('/api/oauth/preflight')
-    .send({ provider: 'Google' })
+    .send({ provider: 'Google', client: 'web' })
     .expect(HttpStatus.BAD_REQUEST)
     .expect({
       status: 400,
@@ -266,7 +287,7 @@ test('should throw if provider is invalid', async t => {
 
   await app
     .POST('/api/oauth/preflight')
-    .send({ provider: 'Invalid', client_nonce: 'test-nonce' })
+    .send({ provider: 'Invalid', client: 'web', client_nonce: 'test-nonce' })
     .expect(HttpStatus.BAD_REQUEST)
     .expect({
       status: 400,
@@ -291,6 +312,19 @@ test('should be able to save oauth state', async t => {
 
   t.truthy(state);
   t.is(state!.provider, OAuthProviderName.Google);
+});
+
+test('should save oauth state with three hour ttl', async t => {
+  const { cache, oauth } = t.context;
+
+  const id = await oauth.saveOAuthState({
+    provider: OAuthProviderName.Google,
+  });
+
+  const ttl = await cache.ttl(`auth_challenge:oauth_state:${id}`);
+
+  t.true(ttl > 2 * 3600);
+  t.true(ttl <= 3 * 3600);
 });
 
 test('should be able to get registered oauth providers', async t => {
@@ -502,6 +536,7 @@ function createOidcRegistrationHarness(config?: {
   clientId?: string;
   clientSecret?: string;
   issuer?: string;
+  allowPrivateNetwork?: boolean;
 }) {
   const server = {
     enableFeature: Sinon.spy(),
@@ -522,6 +557,7 @@ function createOidcRegistrationHarness(config?: {
           clientId: config?.clientId ?? 'oidc-client-id',
           clientSecret: config?.clientSecret ?? 'oidc-client-secret',
           issuer: config?.issuer ?? 'https://issuer.affine.dev',
+          allowPrivateNetwork: config?.allowPrivateNetwork ?? false,
           args: {},
         },
       },
@@ -536,6 +572,12 @@ function createOidcRegistrationHarness(config?: {
     provider,
     factory,
     server,
+    fetchOptions: (url: string) =>
+      (
+        provider as unknown as {
+          fetchOptions(url: string): SafeFetchOptions;
+        }
+      ).fetchOptions(url),
   };
 }
 
@@ -550,12 +592,45 @@ test('should be able to sign up with oauth', async t => {
 
   const clientNonce = mockOAuthProvider(app, 'u2@affine.pro');
 
-  await app
+  const res = await app
     .POST('/api/oauth/callback')
+    .set('x-affine-client-kind', 'native')
     .send({ code: '1', state: '1', client_nonce: clientNonce })
     .expect(HttpStatus.OK);
 
-  const sessionUser = await currentUser(app);
+  t.truthy(res.body.exchangeCode);
+  const tokenRes = await app
+    .POST('/api/auth/session/exchange')
+    .set('x-affine-client-kind', 'native')
+    .send({
+      code: res.body.exchangeCode,
+      installationId: '00000000-0000-4000-8000-000000000005',
+      platform: 'electron',
+    })
+    .expect(201);
+  t.truthy(tokenRes.body.accessToken);
+  t.is(tokenRes.body.expiresIn, 15 * 60);
+  t.truthy(tokenRes.body.refreshToken);
+  const setCookies = res.get('Set-Cookie') ?? [];
+  for (const name of [
+    AuthService.sessionCookieName,
+    AuthService.userCookieName,
+    AuthService.csrfCookieName,
+  ]) {
+    t.true(
+      setCookies.some(
+        cookie =>
+          cookie.startsWith(`${name}=;`) &&
+          /Expires=Thu, 01 Jan 1970/i.test(cookie)
+      )
+    );
+  }
+
+  const sessionUserRes = await app
+    .GET('/api/auth/session')
+    .set('Authorization', `Bearer ${tokenRes.body.accessToken}`)
+    .expect(200);
+  const sessionUser = sessionUserRes.body.user;
 
   t.truthy(sessionUser);
   t.is(sessionUser!.email, 'u2@affine.pro');
@@ -878,8 +953,17 @@ test('oidc should not fall back to default email claim when custom claim is conf
 });
 
 test('oidc discovery should remove oauth feature on failure and restore it after backoff retry succeeds', async t => {
-  const { provider, factory, server } = createOidcRegistrationHarness();
-  const fetchStub = Sinon.stub(globalThis, 'fetch');
+  const issuer = 'https://auth.internal/application/o/affine/';
+  const { fetchOptions: defaultFetchOptions } = createOidcRegistrationHarness({
+    issuer,
+  });
+  t.falsy(defaultFetchOptions(issuer).allowPrivateTargetOrigin);
+
+  const { provider, factory, server } = createOidcRegistrationHarness({
+    issuer,
+    allowPrivateNetwork: true,
+  });
+  const fetchStub = Sinon.stub(provider as any, 'oidcFetch');
   const scheduledRetries: Array<() => void> = [];
   const retryDelays: number[] = [];
   const setTimeoutStub = Sinon.stub(globalThis, 'setTimeout').callsFake(((
@@ -905,11 +989,11 @@ test('oidc discovery should remove oauth feature on failure and restore it after
     .resolves(
       new Response(
         JSON.stringify({
-          authorization_endpoint: 'https://issuer.affine.dev/auth',
-          token_endpoint: 'https://issuer.affine.dev/token',
-          userinfo_endpoint: 'https://issuer.affine.dev/userinfo',
-          issuer: 'https://issuer.affine.dev',
-          jwks_uri: 'https://issuer.affine.dev/jwks',
+          authorization_endpoint: `${issuer}authorize`,
+          token_endpoint: `${issuer}token`,
+          userinfo_endpoint: `${issuer}userinfo`,
+          issuer,
+          jwks_uri: `${issuer}jwks`,
         }),
         {
           status: 200,
@@ -924,6 +1008,11 @@ test('oidc discovery should remove oauth feature on failure and restore it after
   t.deepEqual(factory.providers, []);
   t.true(server.disableFeature.calledWith(ServerFeature.OAuth));
   t.is(fetchStub.callCount, 1);
+  t.is(
+    fetchStub.firstCall.args[0],
+    `${issuer.replace(/\/+$/, '')}/.well-known/openid-configuration`
+  );
+  t.true(fetchStub.firstCall.args[2].allowPrivateTargetOrigin);
   t.deepEqual(retryDelays, [1000]);
 
   const firstRetry = scheduledRetries.shift();

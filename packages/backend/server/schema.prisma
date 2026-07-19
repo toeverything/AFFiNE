@@ -27,15 +27,13 @@ model User {
 
   features                    UserFeature[]
   userStripeCustomer          UserStripeCustomer?
-  workspaces                  WorkspaceUserRole[]
   workspaceMembers            WorkspaceMember[]
   workspaceInvitations        WorkspaceInvitation[]          @relation("workspace_invitation_invitee")
   createdWorkspaceInvitations WorkspaceInvitation[]          @relation("workspace_invitation_inviter")
   // Invite others to join the workspace
-  WorkspaceInvitations        WorkspaceUserRole[]            @relation("inviter")
-  docPermissions              WorkspaceDocUserRole[]
   connectedAccounts           ConnectedAccount[]
   calendarAccounts            CalendarAccount[]
+  mcpCredentials              McpCredential[]
   sessions                    UserSession[]
   aiSessions                  AiSession[]
   appConfigs                  AppConfig[]
@@ -51,7 +49,6 @@ model User {
   comments                    Comment[]
   replies                     Reply[]
   commentAttachments          CommentAttachment[]            @relation("createdCommentAttachments")
-  AccessToken                 AccessToken[]
   workspaceCalendars          WorkspaceCalendar[]
   workspaceMemberLastAccesses WorkspaceMemberLastAccess[]
   quotaState                  EffectiveUserQuotaState?
@@ -97,11 +94,59 @@ model UserSession {
   refreshClientVersion String?   @map("refresh_client_version") @db.VarChar
   createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
 
-  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session     Session      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  authSession AuthSession?
 
   @@unique([sessionId, userId])
   @@map("user_sessions")
+}
+
+model AuthSession {
+  id                String    @id @default(uuid()) @db.VarChar
+  userSessionId     String    @unique @map("user_session_id") @db.VarChar
+  installationId    String    @map("installation_id") @db.VarChar
+  platform          String    @db.VarChar
+  deviceName        String?   @map("device_name") @db.VarChar
+  appVersion        String?   @map("app_version") @db.VarChar
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  lastSeenAt        DateTime  @default(now()) @map("last_seen_at") @db.Timestamptz(3)
+  idleExpiresAt     DateTime  @map("idle_expires_at") @db.Timestamptz(3)
+  absoluteExpiresAt DateTime  @map("absolute_expires_at") @db.Timestamptz(3)
+  revokedAt         DateTime? @map("revoked_at") @db.Timestamptz(3)
+  revokeReason      String?   @map("revoke_reason") @db.VarChar
+  lastIpHash        String?   @map("last_ip_hash") @db.VarChar
+  lastUserAgent     String?   @map("last_user_agent") @db.VarChar
+
+  userSession   UserSession        @relation(fields: [userSessionId], references: [id], onDelete: Cascade)
+  refreshTokens AuthRefreshToken[]
+
+  @@index([installationId])
+  @@index([idleExpiresAt])
+  @@index([absoluteExpiresAt])
+  @@map("auth_sessions")
+}
+
+model AuthRefreshToken {
+  id            String    @id @db.VarChar
+  authSessionId String    @map("auth_session_id") @db.VarChar
+  generation    Int
+  secretHash    String    @map("secret_hash") @db.VarChar
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt     DateTime  @map("expires_at") @db.Timestamptz(3)
+  usedAt        DateTime? @map("used_at") @db.Timestamptz(3)
+  replacedById  String?   @unique @map("replaced_by_id") @db.VarChar
+  graceUsedAt   DateTime? @map("grace_used_at") @db.Timestamptz(3)
+  revokedAt     DateTime? @map("revoked_at") @db.Timestamptz(3)
+
+  authSession AuthSession       @relation(fields: [authSessionId], references: [id], onDelete: Cascade)
+  replacedBy  AuthRefreshToken? @relation("AuthRefreshRotation", fields: [replacedById], references: [id], onDelete: SetNull)
+  replaces    AuthRefreshToken? @relation("AuthRefreshRotation")
+
+  @@unique([authSessionId, generation])
+  @@index([authSessionId, usedAt])
+  @@index([expiresAt])
+  @@map("auth_refresh_tokens")
 }
 
 model VerificationToken {
@@ -133,12 +178,9 @@ model Workspace {
   // NOTE: manually set this column type to identity in migration file
   sid                 Int      @unique @default(autoincrement())
   id                  String   @id @default(uuid()) @db.VarChar
-  public              Boolean
   createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   // workspace level feature flags
   enableAi            Boolean  @default(true) @map("enable_ai")
-  enableSharing       Boolean  @default(true) @map("enable_sharing")
-  enableUrlPreview    Boolean  @default(false) @map("enable_url_preview")
   enableDocEmbedding  Boolean  @default(true) @map("enable_doc_embedding")
   name                String?  @db.VarChar
   avatarKey           String?  @map("avatar_key") @db.VarChar
@@ -147,8 +189,6 @@ model Workspace {
 
   features                   WorkspaceFeature[]
   docs                       WorkspaceDoc[]
-  permissions                WorkspaceUserRole[]
-  docPermissions             WorkspaceDocUserRole[]
   blobs                      Blob[]
   ignoredDocs                AiWorkspaceIgnoredDocs[]
   embedFiles                 AiWorkspaceFiles[]
@@ -162,32 +202,17 @@ model Workspace {
   workspaceAdminStatsDaily   WorkspaceAdminStatsDaily[]
   workspaceDocViewDaily      WorkspaceDocViewDaily[]
   workspaceMemberLastAccess  WorkspaceMemberLastAccess[]
-  runtimeState               WorkspaceRuntimeState?
   quotaState                 EffectiveWorkspaceQuotaState?
   accessPolicy               WorkspaceAccessPolicy?
-  projectedMembers           WorkspaceMember[]
-  projectedInvitations       WorkspaceInvitation[]
+  members                    WorkspaceMember[]
+  invitations                WorkspaceInvitation[]
   docAccessPolicies          DocAccessPolicy[]
   docGrants                  DocGrant[]
+  mcpCredentials             McpCredential[]
 
   @@index([lastCheckEmbeddings])
   @@index([createdAt])
   @@map("workspaces")
-}
-
-model WorkspaceRuntimeState {
-  workspaceId      String    @id @map("workspace_id") @db.VarChar
-  known            Boolean   @default(false)
-  readonly         Boolean   @default(false)
-  readonlyReasons  String[]  @default([]) @map("readonly_reasons")
-  lastReconciledAt DateTime? @map("last_reconciled_at") @db.Timestamptz(3)
-  staleAfter       DateTime? @map("stale_after") @db.Timestamptz(3)
-  updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
-  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-
-  @@map("workspace_runtime_states")
 }
 
 model Entitlement {
@@ -279,15 +304,14 @@ model EffectiveWorkspaceQuotaState {
 }
 
 model WorkspaceMember {
-  id                 String   @id @default(dbgenerated()) @db.VarChar
-  workspaceId        String   @map("workspace_id") @db.VarChar
-  userId             String   @map("user_id") @db.VarChar
-  role               String   @db.Text
-  state              String   @default("active") @db.Text
-  source             String   @default("legacy") @db.Text
-  legacyPermissionId String?  @map("legacy_permission_id") @db.VarChar
-  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt          DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+  id          String   @id @default(dbgenerated()) @db.VarChar
+  workspaceId String   @map("workspace_id") @db.VarChar
+  userId      String   @map("user_id") @db.VarChar
+  role        String   @db.Text
+  state       String   @default("active") @db.Text
+  source      String   @default("legacy") @db.Text
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -299,21 +323,20 @@ model WorkspaceMember {
 }
 
 model WorkspaceInvitation {
-  id                 String    @id @default(dbgenerated()) @db.VarChar
-  workspaceId        String    @map("workspace_id") @db.VarChar
-  inviteeUserId      String?   @map("invitee_user_id") @db.VarChar
-  normalizedEmail    String?   @map("normalized_email") @db.VarChar
-  inviterUserId      String?   @map("inviter_user_id") @db.VarChar
-  requestedRole      String    @default("member") @map("requested_role") @db.Text
-  status             String    @db.Text
-  kind               String    @default("email") @db.Text
+  id              String    @id @default(dbgenerated()) @db.VarChar
+  workspaceId     String    @map("workspace_id") @db.VarChar
+  inviteeUserId   String?   @map("invitee_user_id") @db.VarChar
+  normalizedEmail String?   @map("normalized_email") @db.VarChar
+  inviterUserId   String?   @map("inviter_user_id") @db.VarChar
+  requestedRole   String    @default("member") @map("requested_role") @db.Text
+  status          String    @db.Text
+  kind            String    @default("email") @db.Text
   // Partial unique index exists in migration: token_hash WHERE token_hash IS NOT NULL.
-  tokenHash          String?   @map("token_hash") @db.Text
-  legacyPermissionId String?   @map("legacy_permission_id") @db.VarChar
-  expiresAt          DateTime? @map("expires_at") @db.Timestamptz(3)
-  acceptedAt         DateTime? @map("accepted_at") @db.Timestamptz(3)
-  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+  tokenHash       String?   @map("token_hash") @db.Text
+  expiresAt       DateTime? @map("expires_at") @db.Timestamptz(3)
+  acceptedAt      DateTime? @map("accepted_at") @db.Timestamptz(3)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   inviteeUser User?     @relation("workspace_invitation_invitee", fields: [inviteeUserId], references: [id], onDelete: SetNull)
@@ -360,23 +383,71 @@ model DocAccessPolicy {
   @@map("doc_access_policies")
 }
 
+model MailDelivery {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  mailName           String    @map("mail_name") @db.Text
+  mailClass          String    @map("mail_class") @db.Text
+  priority           String    @default("normal") @db.Text
+  status             String    @db.Text
+  dedupeKey          String?   @map("dedupe_key") @db.Text
+  recipientEmail     String?   @map("recipient_email") @db.Text
+  recipientHash      String    @map("recipient_hash") @db.Text
+  recipientDomain    String    @map("recipient_domain") @db.Text
+  recipientUserId    String?   @map("recipient_user_id") @db.VarChar
+  actorUserId        String?   @map("actor_user_id") @db.VarChar
+  workspaceId        String?   @map("workspace_id") @db.VarChar
+  notificationId     String?   @map("notification_id") @db.VarChar
+  abuseSubjectKey    String?   @map("abuse_subject_key") @db.Text
+  quotaReservationId String?   @map("quota_reservation_id") @db.Uuid
+  quotaDecision      Json?     @map("quota_decision") @db.JsonB
+  payload            Json?     @db.JsonB
+  sendAfter          DateTime  @default(now()) @map("send_after") @db.Timestamptz(3)
+  expiresAt          DateTime? @map("expires_at") @db.Timestamptz(3)
+  attemptCount       Int       @default(0) @map("attempt_count") @db.Integer
+  maxAttempts        Int       @default(3) @map("max_attempts") @db.Integer
+  lockedBy           String?   @map("locked_by") @db.Text
+  lockedUntil        DateTime? @map("locked_until") @db.Timestamptz(3)
+  firstAttemptAt     DateTime? @map("first_attempt_at") @db.Timestamptz(3)
+  lastAttemptAt      DateTime? @map("last_attempt_at") @db.Timestamptz(3)
+  sentAt             DateTime? @map("sent_at") @db.Timestamptz(3)
+  settledAt          DateTime? @map("settled_at") @db.Timestamptz(3)
+  canceledAt         DateTime? @map("canceled_at") @db.Timestamptz(3)
+  failedAt           DateTime? @map("failed_at") @db.Timestamptz(3)
+  providerMessageId  String?   @map("provider_message_id") @db.Text
+  providerResponse   String?   @map("provider_response") @db.Text
+  lastErrorCode      String?   @map("last_error_code") @db.Text
+  lastError          String?   @map("last_error") @db.Text
+  retentionState     String    @default("full") @map("retention_state") @db.Text
+  anonymizedAt       DateTime? @map("anonymized_at") @db.Timestamptz(3)
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([createdAt])
+  @@index([mailName, status, createdAt])
+  @@index([mailClass, status, createdAt])
+  @@index([status, createdAt])
+  @@index([status, sendAfter, lockedUntil], map: "mail_deliveries_ready_idx")
+  @@index([settledAt])
+  @@index([recipientDomain, createdAt])
+  @@index([workspaceId, createdAt])
+  @@index([actorUserId, createdAt])
+  @@index([abuseSubjectKey, createdAt])
+  @@map("mail_deliveries")
+}
+
 model DocGrant {
-  workspaceId       String   @map("workspace_id") @db.VarChar
-  docId             String   @map("doc_id") @db.VarChar
-  principalType     String   @map("principal_type") @db.Text
-  principalId       String   @map("principal_id") @db.VarChar
-  role              String   @db.Text
-  grantedBy         String?  @map("granted_by") @db.VarChar
-  legacyWorkspaceId String?  @map("legacy_workspace_id") @db.VarChar
-  legacyDocId       String?  @map("legacy_doc_id") @db.VarChar
-  legacyUserId      String?  @map("legacy_user_id") @db.VarChar
-  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+  workspaceId   String   @map("workspace_id") @db.VarChar
+  docId         String   @map("doc_id") @db.VarChar
+  principalType String   @map("principal_type") @db.Text
+  principalId   String   @map("principal_id") @db.VarChar
+  role          String   @db.Text
+  grantedBy     String?  @map("granted_by") @db.VarChar
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@id([workspaceId, docId, principalType, principalId])
-  // Partial unique index exists in migration for non-null legacy ids.
   @@index([principalType, principalId, role])
   @@index([workspaceId, docId, role])
   @@map("doc_grants")
@@ -390,9 +461,6 @@ model DocGrant {
 model WorkspaceDoc {
   workspaceId String    @map("workspace_id") @db.VarChar
   docId       String    @map("page_id") @db.VarChar
-  public      Boolean   @default(false)
-  // Workspace user's default role in this page, default is `Manager`
-  defaultRole Int       @default(30) @db.SmallInt
   // Page/Edgeless
   mode        Int       @default(0) @db.SmallInt
   // Whether the doc is blocked
@@ -404,8 +472,6 @@ model WorkspaceDoc {
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@id([workspaceId, docId])
-  @@index([workspaceId, public])
-  @@index([public, publishedAt])
   @@map("workspace_pages")
 }
 
@@ -429,45 +495,6 @@ enum WorkspaceMemberSource {
   Email
   /// Invited by link
   Link
-}
-
-model WorkspaceUserRole {
-  id          String                @id @default(uuid()) @db.VarChar
-  workspaceId String                @map("workspace_id") @db.VarChar
-  userId      String                @map("user_id") @db.VarChar
-  // Workspace Role, Owner/Admin/Collaborator/External
-  type        Int                   @db.SmallInt
-  /// the invite status of the workspace member
-  status      WorkspaceMemberStatus @default(Pending)
-  source      WorkspaceMemberSource @default(Email)
-  inviterId   String?               @map("inviter_id") @db.VarChar
-  createdAt   DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt   DateTime              @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
-
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  inviter   User?     @relation(name: "inviter", fields: [inviterId], references: [id], onDelete: SetNull)
-
-  @@unique([workspaceId, userId])
-  // optimize for querying user's workspace permissions
-  @@index([workspaceId, type, status])
-  @@index(userId)
-  @@map("workspace_user_permissions")
-}
-
-model WorkspaceDocUserRole {
-  workspaceId String   @map("workspace_id") @db.VarChar
-  docId       String   @map("page_id") @db.VarChar
-  userId      String   @map("user_id") @db.VarChar
-  // External/Reader/Editor/Manager/Owner
-  type        Int      @db.SmallInt
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-
-  @@id([workspaceId, docId, userId])
-  @@map("workspace_page_user_permissions")
 }
 
 model UserFeature {
@@ -522,7 +549,6 @@ model WorkspaceAdminStats {
   blobSize        BigInt   @default(0) @map("blob_size") @db.BigInt
   memberCount     BigInt   @default(0) @map("member_count") @db.BigInt
   publicPageCount BigInt   @default(0) @map("public_page_count") @db.BigInt
-  features        String[] @default([]) @db.Text
   updatedAt       DateTime @default(now()) @map("updated_at") @db.Timestamptz(3)
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -1073,48 +1099,37 @@ model UserStripeCustomer {
   @@map("user_stripe_customers")
 }
 
-model Subscription {
-  id                   Int       @id @default(autoincrement()) @db.Integer
-  targetId             String    @map("target_id") @db.VarChar
-  plan                 String    @db.VarChar(20)
-  // yearly/monthly/lifetime
-  recurring            String    @db.VarChar(20)
-  // onetime subscription or anything else
-  variant              String?   @db.VarChar(20)
-  quantity             Int       @default(1) @db.Integer
-  // subscription.id, null for lifetime payment or one time payment subscription
-  stripeSubscriptionId String?   @unique @map("stripe_subscription_id")
-  // stripe schedule id
-  stripeScheduleId     String?   @map("stripe_schedule_id") @db.VarChar
-  // subscription provider: stripe or revenuecat
-  provider             Provider  @default(stripe)
-  // iap store for revenuecat subscriptions
-  iapStore             IapStore? @map("iap_store")
-  // revenuecat entitlement name like "Pro" / "AI"
-  rcEntitlement        String?   @map("rc_entitlement") @db.VarChar
-  // revenuecat product id like "app.affine.pro.Annual"
-  rcProductId          String?   @map("rc_product_id") @db.VarChar
-  // external reference, appstore originalTransactionId or play purchaseToken
-  rcExternalRef        String?   @map("rc_external_ref") @db.VarChar
-  // subscription.status, active/past_due/canceled/unpaid...
-  status               String    @db.VarChar(20)
-  // subscription.current_period_start
-  start                DateTime  @map("start") @db.Timestamptz(3)
-  // subscription.current_period_end, null for lifetime payment
-  end                  DateTime? @map("end") @db.Timestamptz(3)
-  // subscription.billing_cycle_anchor
-  nextBillAt           DateTime? @map("next_bill_at") @db.Timestamptz(3)
-  // subscription.canceled_at
-  canceledAt           DateTime? @map("canceled_at") @db.Timestamptz(3)
-  // subscription.trial_start
-  trialStart           DateTime? @map("trial_start") @db.Timestamptz(3)
-  // subscription.trial_end
-  trialEnd             DateTime? @map("trial_end") @db.Timestamptz(3)
-  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt            DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+model ProviderSubscription {
+  id                     String    @id @default(uuid()) @db.VarChar
+  provider               Provider
+  targetType             String    @map("target_type") @db.Text
+  targetId               String    @map("target_id") @db.VarChar
+  plan                   String    @db.VarChar(20)
+  recurring              String?   @db.VarChar(20)
+  status                 String    @db.VarChar(20)
+  externalCustomerId     String?   @map("external_customer_id") @db.VarChar
+  externalSubscriptionId String?   @map("external_subscription_id") @db.VarChar
+  externalProductId      String?   @map("external_product_id") @db.VarChar
+  externalPriceId        String?   @map("external_price_id") @db.VarChar
+  iapStore               IapStore? @map("iap_store")
+  externalRef            String?   @map("external_ref") @db.VarChar
+  currency               String?   @db.VarChar(3)
+  amount                 Int?      @db.Integer
+  quantity               Int?      @db.Integer
+  periodStart            DateTime? @map("period_start") @db.Timestamptz(3)
+  periodEnd              DateTime? @map("period_end") @db.Timestamptz(3)
+  trialStart             DateTime? @map("trial_start") @db.Timestamptz(3)
+  trialEnd               DateTime? @map("trial_end") @db.Timestamptz(3)
+  canceledAt             DateTime? @map("canceled_at") @db.Timestamptz(3)
+  metadata               Json      @default("{}") @db.JsonB
+  createdAt              DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt              DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  @@unique([targetId, plan])
-  @@map("subscriptions")
+  @@unique([provider, externalSubscriptionId])
+  @@unique([provider, iapStore, externalRef, externalProductId, externalCustomerId])
+  @@index([targetType, targetId, plan, status])
+  @@index([provider, externalCustomerId])
+  @@map("provider_subscriptions")
 }
 
 enum Provider {
@@ -1146,6 +1161,50 @@ model Invoice {
 
   @@index([targetId])
   @@map("invoices")
+}
+
+model PaymentEvent {
+  id                 String    @id @default(uuid()) @db.VarChar
+  provider           Provider
+  eventType          String    @map("event_type") @db.VarChar
+  externalEventId    String    @map("external_event_id") @db.VarChar
+  targetType         String?   @map("target_type") @db.Text
+  targetId           String?   @map("target_id") @db.VarChar
+  externalInvoiceId  String?   @map("external_invoice_id") @db.VarChar
+  externalPaymentId  String?   @map("external_payment_id") @db.VarChar
+  plan               String?   @db.VarChar(20)
+  amount             Int?      @db.Integer
+  currency           String?   @db.VarChar(3)
+  occurredAt         DateTime? @map("occurred_at") @db.Timestamptz(3)
+  processingStatus   String    @default("pending") @map("processing_status") @db.VarChar(20)
+  processingAttempts Int       @default(0) @map("processing_attempts") @db.Integer
+  processedAt        DateTime? @map("processed_at") @db.Timestamptz(3)
+  lastError          String?   @map("last_error") @db.Text
+  metadata           Json      @default("{}") @db.JsonB
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([provider, externalEventId])
+  @@index([processingStatus, updatedAt])
+  @@index([targetType, targetId])
+  @@map("payment_events")
+}
+
+model SubscriptionTrialUsage {
+  id          String   @id @default(uuid()) @db.VarChar
+  targetType  String   @map("target_type") @db.Text
+  targetId    String   @map("target_id") @db.VarChar
+  plan        String   @db.VarChar(20)
+  provider    Provider
+  externalRef String?  @map("external_ref") @db.VarChar
+  firstUsedAt DateTime @default(now()) @map("first_used_at") @db.Timestamptz(3)
+  metadata    Json     @default("{}") @db.JsonB
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([targetType, targetId, plan])
+  @@index([provider, externalRef])
+  @@map("subscription_trial_usages")
 }
 
 model License {
@@ -1318,18 +1377,35 @@ model CommentAttachment {
   @@map("comment_attachments")
 }
 
-model AccessToken {
-  id        String    @id @default(uuid()) @db.VarChar
-  name      String    @db.VarChar
-  token     String    @unique @db.VarChar
-  userId    String    @map("user_id") @db.VarChar
-  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  expiresAt DateTime? @map("expires_at") @db.Timestamptz(3)
+enum McpAccessMode {
+  READ_ONLY
+  READ_WRITE
+}
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+model McpCredential {
+  id           String        @id @default(uuid()) @db.VarChar
+  familyId     String        @map("family_id") @db.VarChar
+  generation   Int           @default(0)
+  name         String        @db.VarChar
+  secretHash   String        @unique @map("secret_hash") @db.VarChar
+  fingerprint  String        @db.VarChar
+  userId       String        @map("user_id") @db.VarChar
+  workspaceId  String        @map("workspace_id") @db.VarChar
+  accessMode   McpAccessMode @default(READ_ONLY) @map("access_mode")
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt    DateTime      @map("expires_at") @db.Timestamptz(3)
+  lastUsedAt   DateTime?     @map("last_used_at") @db.Timestamptz(3)
+  revokedAt    DateTime?     @map("revoked_at") @db.Timestamptz(3)
+  replacedById String?       @map("replaced_by_id") @db.VarChar
+  graceEndsAt  DateTime?     @map("grace_ends_at") @db.Timestamptz(3)
 
-  @@index([userId])
-  @@map("access_tokens")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([familyId, generation])
+  @@index([userId, workspaceId])
+  @@index([expiresAt])
+  @@map("mcp_credentials")
 }
 
 model CalendarAccount {

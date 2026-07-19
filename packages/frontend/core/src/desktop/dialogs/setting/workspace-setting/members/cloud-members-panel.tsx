@@ -1,4 +1,4 @@
-import { Button, Loading, notify, useConfirmModal } from '@affine/component';
+import { Button, notify, useConfirmModal } from '@affine/component';
 import {
   InviteTeamMemberModal,
   type InviteTeamMemberModalProps,
@@ -31,7 +31,7 @@ import { nanoid } from 'nanoid';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import type { SettingState } from '../../types';
-import { MemberList } from './member-list';
+import { MemberList, MemberListError, MemberListFallback } from './member-list';
 import * as styles from './styles.css';
 
 const parseCSV = async (blob: Blob): Promise<string[]> => {
@@ -213,21 +213,12 @@ export const CloudWorkspaceMembersPanel = ({
         return;
       }
       const results = await membersService.inviteMembers(uniqueEmails);
-      const unSuccessInvites = results.reduce<string[]>((acc, result) => {
-        if (!result.sentSuccess) {
-          acc.push(result.email);
-        }
-        return acc;
-      }, []);
       if (results) {
         notify({
           title: t['com.affine.payment.member.team.invite.notify.title']({
-            successCount: (
-              uniqueEmails.length - unSuccessInvites.length
-            ).toString(),
-            failedCount: unSuccessInvites.length.toString(),
+            count: results.length.toString(),
           }),
-          message: <NotifyMessage unSuccessInvites={unSuccessInvites} />,
+          message: t['Invitation sent hint'](),
         });
         setOpenInvite(false);
         membersService.members.revalidate();
@@ -299,13 +290,7 @@ export const CloudWorkspaceMembersPanel = ({
     if (isLoading) {
       return <MembersPanelFallback />;
     } else {
-      return (
-        <span className={styles.errorStyle}>
-          {error
-            ? UserFriendlyError.fromAny(error).message
-            : 'Failed to load members'}
-        </span>
-      );
+      return <MemberListError error={error} memberCount={1} />;
     }
   }
 
@@ -351,27 +336,6 @@ export const CloudWorkspaceMembersPanel = ({
   );
 };
 
-const NotifyMessage = ({
-  unSuccessInvites,
-}: {
-  unSuccessInvites: string[];
-}) => {
-  const t = useI18n();
-
-  if (unSuccessInvites.length === 0) {
-    return t['Invitation sent hint']();
-  }
-
-  return (
-    <div>
-      {t['com.affine.payment.member.team.invite.notify.fail-message']()}
-      {unSuccessInvites.map((email, index) => (
-        <div key={`${index}:${email}`}>{email}</div>
-      ))}
-    </div>
-  );
-};
-
 export const MembersPanelFallback = () => {
   const t = useI18n();
 
@@ -385,30 +349,6 @@ export const MembersPanelFallback = () => {
         <MemberListFallback memberCount={1} />
       </div>
     </>
-  );
-};
-
-const MemberListFallback = ({ memberCount }: { memberCount?: number }) => {
-  // prevent page jitter
-  const height = useMemo(() => {
-    if (memberCount) {
-      // height and margin-bottom
-      return memberCount * 58 + (memberCount - 1) * 6;
-    }
-    return 'auto';
-  }, [memberCount]);
-  const t = useI18n();
-
-  return (
-    <div
-      style={{
-        height,
-      }}
-      className={styles.membersFallback}
-    >
-      <Loading size={20} />
-      <span>{t['com.affine.settings.member.loading']()}</span>
-    </div>
   );
 };
 

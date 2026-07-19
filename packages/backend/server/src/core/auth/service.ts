@@ -1,17 +1,24 @@
 import { randomUUID } from 'node:crypto';
 
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
+import { Transactional } from '@nestjs-cls/transactional';
 import type { CookieOptions, Request, Response } from 'express';
 import { assign, pick } from 'lodash-es';
 
-import {
-  Config,
-  getClientVersionFromRequest,
-  SignUpForbidden,
-} from '../../base';
+import { Config, OnEvent, SignUpForbidden } from '../../base';
 import { Models, type User, type UserSession } from '../../models';
+import { EntitlementService } from '../entitlement';
 import { Mailer } from '../mail/mailer';
+import type { MailDeliveryMetadata } from '../mail/types';
+import { AuthSessionService } from './auth-session';
 import { createDevUsers } from './dev';
+import type { VerifiedIdentity } from './identity';
+import {
+  CSRF_COOKIE_NAME,
+  getSessionOptionsFromRequest,
+  SESSION_COOKIE_NAME,
+  USER_COOKIE_NAME,
+} from './input';
 import type { CurrentUser } from './session';
 
 export function sessionUser(
@@ -27,25 +34,19 @@ export function sessionUser(
   });
 }
 
-function extractTokenFromHeader(authorization: string) {
-  if (!/^Bearer\s/i.test(authorization)) {
-    return;
-  }
-
-  return authorization.substring(7);
-}
-
 @Injectable()
 export class AuthService implements OnApplicationBootstrap {
   readonly cookieOptions: CookieOptions;
-  static readonly sessionCookieName = 'affine_session';
-  static readonly userCookieName = 'affine_user_id';
-  static readonly csrfCookieName = 'affine_csrf_token';
+  static readonly sessionCookieName = SESSION_COOKIE_NAME;
+  static readonly userCookieName = USER_COOKIE_NAME;
+  static readonly csrfCookieName = CSRF_COOKIE_NAME;
 
   constructor(
     private readonly config: Config,
     private readonly models: Models,
-    private readonly mailer: Mailer
+    private readonly mailer: Mailer,
+    private readonly authSessions: AuthSessionService,
+    private readonly entitlement: EntitlementService
   ) {
     this.cookieOptions = {
       sameSite: 'lax',
@@ -55,9 +56,16 @@ export class AuthService implements OnApplicationBootstrap {
     };
   }
 
+  private getServerName() {
+    return (
+      this.config.server.name ??
+      (env.selfhosted ? 'AFFiNE Self-hosted' : 'AFFiNE Cloud')
+    );
+  }
+
   async onApplicationBootstrap() {
     if (env.dev) {
-      await createDevUsers(this.models);
+      await createDevUsers(this.models, this.entitlement);
     }
   }
 
@@ -90,6 +98,14 @@ export class AuthService implements OnApplicationBootstrap {
     return this.models.user.signIn(email, password).then(sessionUser);
   }
 
+  async verifyPassword(
+    email: string,
+    password: string
+  ): Promise<VerifiedIdentity> {
+    const user = await this.models.user.signIn(email, password);
+    return { userId: user.id, method: 'password' };
+  }
+
   async signOut(sessionId: string, userId?: string) {
     // sign out all users in the session
     if (!userId) {
@@ -104,10 +120,7 @@ export class AuthService implements OnApplicationBootstrap {
     userId?: string
   ): Promise<{ user: CurrentUser; session: UserSession } | null> {
     const sessions = await this.getUserSessions(sessionId);
-
-    if (!sessions.length) {
-      return null;
-    }
+    if (!sessions.length) return null;
 
     let userSession: UserSession | undefined;
 
@@ -197,57 +210,22 @@ export class AuthService implements OnApplicationBootstrap {
     return true;
   }
 
-  async revokeUserSessions(userId: string) {
-    return await this.models.session.deleteUserSessions(userId);
-  }
-
-  getSessionOptionsFromRequest(req: Request) {
-    let sessionId: string | undefined =
-      req.cookies[AuthService.sessionCookieName];
-
-    if (!sessionId && req.headers.authorization) {
-      sessionId = extractTokenFromHeader(req.headers.authorization);
-    }
-
-    const userId: string | undefined =
-      req.cookies[AuthService.userCookieName] ||
-      req.headers[AuthService.userCookieName.replaceAll('_', '-')];
-
-    return {
-      sessionId,
+  @Transactional()
+  async revokeUserSessions(userId: string, reason = 'security_action') {
+    const authSessions = await this.authSessions.revokeUserSessions(
       userId,
-    };
-  }
-
-  async setCookies(
-    req: Request,
-    res: Response,
-    userId: string,
-    clientVersion?: string
-  ) {
-    const { sessionId } = this.getSessionOptionsFromRequest(req);
-
-    const signInClientVersion =
-      clientVersion ?? getClientVersionFromRequest(req);
-    const userSession = await this.createUserSession(
-      userId,
-      sessionId,
-      undefined,
-      signInClientVersion
+      reason
     );
+    const cookieSessions = await this.models.session.deleteUserSessions(userId);
+    return cookieSessions + authSessions;
+  }
 
-    res.cookie(AuthService.sessionCookieName, userSession.sessionId, {
-      ...this.cookieOptions,
-      expires: userSession.expiresAt ?? void 0,
-    });
-
-    res.cookie(AuthService.csrfCookieName, randomUUID(), {
-      ...this.cookieOptions,
-      httpOnly: false,
-      expires: userSession.expiresAt ?? void 0,
-    });
-
-    this.setUserCookie(res, userId);
+  @OnEvent('auth.sessions.revoke_requested')
+  async onRevokeRequested({
+    userId,
+    reason,
+  }: Events['auth.sessions.revoke_requested']) {
+    await this.revokeUserSessions(userId, reason);
   }
 
   async refreshCookies(res: Response, sessionId?: string) {
@@ -264,7 +242,7 @@ export class AuthService implements OnApplicationBootstrap {
     this.clearCookies(res);
   }
 
-  private clearCookies(res: Response<any, Record<string, any>>) {
+  clearCookies(res: Response<any, Record<string, any>>) {
     res.clearCookie(AuthService.sessionCookieName);
     res.clearCookie(AuthService.userCookieName);
     res.clearCookie(AuthService.csrfCookieName);
@@ -281,12 +259,8 @@ export class AuthService implements OnApplicationBootstrap {
   }
 
   async getUserSessionFromRequest(req: Request, res?: Response) {
-    const { sessionId, userId } = this.getSessionOptionsFromRequest(req);
-
-    if (!sessionId) {
-      return null;
-    }
-
+    const { sessionId, userId } = getSessionOptionsFromRequest(req);
+    if (!sessionId) return null;
     const session = await this.getUserSession(sessionId, userId);
 
     if (res) {
@@ -304,41 +278,18 @@ export class AuthService implements OnApplicationBootstrap {
     return session;
   }
 
-  async getTokenSessionFromRequest(req: Request) {
-    const tokenHeader = req.headers.authorization;
-    if (!tokenHeader) {
-      return null;
-    }
-
-    const tokenValue = extractTokenFromHeader(tokenHeader);
-
-    if (!tokenValue) {
-      return null;
-    }
-
-    const token = await this.models.accessToken.getByToken(tokenValue);
-
-    if (token) {
-      const user = await this.models.user.get(token.userId);
-
-      if (!user) {
-        return null;
-      }
-
-      return {
-        token,
-        user: sessionUser(user),
-      };
-    }
-
-    return null;
-  }
-
   async changePassword(
     id: string,
     newPassword: string
   ): Promise<Omit<User, 'password'>> {
     return this.models.user.update(id, { password: newPassword });
+  }
+
+  @Transactional()
+  async changePasswordAndRevokeSessions(id: string, newPassword: string) {
+    const user = await this.changePassword(id, newPassword);
+    await this.revokeUserSessions(id);
+    return user;
   }
 
   async changeEmail(
@@ -351,55 +302,87 @@ export class AuthService implements OnApplicationBootstrap {
     });
   }
 
+  @Transactional()
+  async changeEmailAndRevokeSessions(id: string, newEmail: string) {
+    const user = await this.changeEmail(id, newEmail);
+    await this.revokeUserSessions(id);
+    return user;
+  }
+
   async setEmailVerified(id: string) {
     return await this.models.user.update(id, {
       emailVerifiedAt: new Date(),
     });
   }
 
-  async sendChangePasswordEmail(email: string, callbackUrl: string) {
+  async sendChangePasswordEmail(
+    email: string,
+    callbackUrl: string,
+    metadata?: MailDeliveryMetadata
+  ) {
     return await this.mailer.send({
       name: 'ChangePassword',
       to: email,
       props: {
         url: callbackUrl,
       },
+      metadata,
     });
   }
-  async sendSetPasswordEmail(email: string, callbackUrl: string) {
+  async sendSetPasswordEmail(
+    email: string,
+    callbackUrl: string,
+    metadata?: MailDeliveryMetadata
+  ) {
     return await this.mailer.send({
       name: 'SetPassword',
       to: email,
       props: {
         url: callbackUrl,
       },
+      metadata,
     });
   }
-  async sendChangeEmail(email: string, callbackUrl: string) {
+  async sendChangeEmail(
+    email: string,
+    callbackUrl: string,
+    metadata?: MailDeliveryMetadata
+  ) {
     return await this.mailer.send({
       name: 'ChangeEmail',
       to: email,
       props: {
         url: callbackUrl,
       },
+      metadata,
     });
   }
-  async sendVerifyChangeEmail(email: string, callbackUrl: string) {
+  async sendVerifyChangeEmail(
+    email: string,
+    callbackUrl: string,
+    metadata?: MailDeliveryMetadata
+  ) {
     return await this.mailer.send({
       name: 'VerifyChangeEmail',
       to: email,
       props: {
         url: callbackUrl,
       },
+      metadata,
     });
   }
-  async sendVerifyEmail(email: string, callbackUrl: string) {
+  async sendVerifyEmail(
+    email: string,
+    callbackUrl: string,
+    metadata?: MailDeliveryMetadata
+  ) {
     return await this.mailer.send({
       name: 'VerifyEmail',
       to: email,
       props: {
         url: callbackUrl,
       },
+      metadata,
     });
   }
   async sendNotificationChangeEmail(email: string) {
@@ -416,7 +399,8 @@ export class AuthService implements OnApplicationBootstrap {
     email: string,
     link: string,
     otp: string,
-    signUp: boolean
+    signUp: boolean,
+    metadata?: MailDeliveryMetadata
   ) {
     return await this.mailer.send({
       name: signUp ? 'SignUp' : 'SignIn',
@@ -424,7 +408,9 @@ export class AuthService implements OnApplicationBootstrap {
       props: {
         url: link,
         otp,
+        serverName: this.getServerName(),
       },
+      metadata,
     });
   }
 }

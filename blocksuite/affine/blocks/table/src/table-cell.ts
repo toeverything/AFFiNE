@@ -751,12 +751,9 @@ export class TableCell extends SignalWatcher(
   }
 
   private readonly _handleKeyDown = (e: KeyboardEvent) => {
-    if (e.key !== 'Escape') {
-      if (e.key === 'Tab') {
-        e.preventDefault();
-        return;
-      }
-      e.stopPropagation();
+    if (e.key !== 'Escape' && e.key === 'Tab') {
+      e.preventDefault();
+      return;
     }
   };
 

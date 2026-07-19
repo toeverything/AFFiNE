@@ -1,6 +1,6 @@
 use jsonschema::Draft;
 use napi::{Error, Result, Status};
-use schemars::{JsonSchema, r#gen::SchemaSettings};
+use schemars::{JsonSchema, generate::SchemaSettings};
 use serde_json::Value;
 
 use super::{
@@ -61,15 +61,18 @@ fn mark_property_nullable(schema: &mut Value, property: &str) {
 }
 
 fn mark_definition_property_nullable(schema: &mut Value, definition: &str, property: &str) {
-  if let Some(property_schema) = schema
-    .get_mut("definitions")
-    .and_then(Value::as_object_mut)
-    .and_then(|definitions| definitions.get_mut(definition))
-    .and_then(|schema| schema.get_mut("properties"))
-    .and_then(Value::as_object_mut)
-    .and_then(|properties| properties.get_mut(property))
-  {
-    mark_schema_nullable(property_schema);
+  for definitions_key in ["definitions", "$defs"] {
+    if let Some(property_schema) = schema
+      .get_mut(definitions_key)
+      .and_then(Value::as_object_mut)
+      .and_then(|definitions| definitions.get_mut(definition))
+      .and_then(|schema| schema.get_mut("properties"))
+      .and_then(Value::as_object_mut)
+      .and_then(|properties| properties.get_mut(property))
+    {
+      mark_schema_nullable(property_schema);
+      return;
+    }
   }
 }
 

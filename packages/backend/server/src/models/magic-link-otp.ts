@@ -36,6 +36,7 @@ export class MagicLinkOtpModel extends BaseModel {
       create: { email, otpHash, token, clientNonce, expiresAt, attempts: 0 },
       update: { otpHash, token, clientNonce, expiresAt, attempts: 0 },
     });
+    return { expiresAt };
   }
 
   @Transactional()

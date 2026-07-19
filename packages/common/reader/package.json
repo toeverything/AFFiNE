@@ -1,7 +1,7 @@
 {
   "name": "@affine/reader",
   "type": "module",
-  "version": "0.26.3",
+  "version": "0.27.0",
   "private": true,
   "sideEffects": false,
   "module": "./src/index.ts",
@@ -19,7 +19,7 @@
   },
   "devDependencies": {
     "@blocksuite/affine": "workspace:*",
-    "vitest": "^4.0.18"
+    "vitest": "^4.1.8"
   },
   "peerDependencies": {
     "@blocksuite/affine": "workspace:*"

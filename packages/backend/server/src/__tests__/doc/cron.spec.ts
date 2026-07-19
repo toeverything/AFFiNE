@@ -1,7 +1,9 @@
 import { ScheduleModule } from '@nestjs/schedule';
 import { PrismaClient } from '@prisma/client';
 import ava, { TestFn } from 'ava';
+import Sinon from 'sinon';
 
+import { BackendRuntimeProvider } from '../../core/backend-runtime';
 import { DocStorageModule } from '../../core/doc';
 import { DocStorageCronJob } from '../../core/doc/job';
 import { createTestingModule, type TestingModule } from '../utils';
@@ -10,14 +12,23 @@ interface Context {
   module: TestingModule;
   db: PrismaClient;
   cronJob: DocStorageCronJob;
+  runtime: { cleanupExpiredSnapshotHistories: Sinon.SinonStub };
 }
 
 const test = ava as TestFn<Context>;
 
 // cleanup database before each test
 test.before(async t => {
+  t.context.runtime = {
+    cleanupExpiredSnapshotHistories: Sinon.stub(),
+  };
   t.context.module = await createTestingModule({
     imports: [ScheduleModule.forRoot(), DocStorageModule],
+    tapModule: builder => {
+      builder
+        .overrideProvider(BackendRuntimeProvider)
+        .useValue(t.context.runtime);
+    },
   });
 
   t.context.db = t.context.module.get(PrismaClient);
@@ -26,6 +37,7 @@ test.before(async t => {
 
 test.beforeEach(async t => {
   await t.context.module.initTestingDB();
+  t.context.runtime.cleanupExpiredSnapshotHistories.reset();
 });
 
 test.after.always(async t => {
@@ -33,7 +45,7 @@ test.after.always(async t => {
 });
 
 test('should be able to cleanup expired history', async t => {
-  const { db } = t.context;
+  const { db, runtime } = t.context;
   const timestamp = Date.now();
 
   // insert expired data
@@ -65,12 +77,10 @@ test('should be able to cleanup expired history', async t => {
   let count = await db.snapshotHistory.count();
   t.is(count, 20);
 
+  runtime.cleanupExpiredSnapshotHistories.onCall(0).resolves(1000);
+  runtime.cleanupExpiredSnapshotHistories.onCall(1).resolves(10);
+
   await t.context.cronJob.cleanExpiredHistories();
 
-  count = await db.snapshotHistory.count();
-  t.is(count, 10);
-
-  const example = await db.snapshotHistory.findFirst();
-  t.truthy(example);
-  t.true(example!.expiredAt > new Date());
+  t.is(runtime.cleanupExpiredSnapshotHistories.callCount, 2);
 });

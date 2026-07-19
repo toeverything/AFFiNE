@@ -105,31 +105,6 @@ test('should list blobs', async t => {
   t.is(blobs[1].key, blob2.key);
 });
 
-test('should list deleted blobs', async t => {
-  const workspace = await module.create(Mockers.Workspace);
-  const blob = await models.blob.upsert({
-    workspaceId: workspace.id,
-    key: 'test-key',
-    mime: 'text/plain',
-    size: 100,
-  });
-
-  await models.blob.delete(workspace.id, blob.key);
-
-  const blobs = await models.blob.listDeleted(workspace.id);
-
-  t.is(blobs.length, 1);
-  t.is(blobs[0].key, blob.key);
-  t.truthy(blobs[0].deletedAt);
-
-  // delete permanently
-  await models.blob.delete(workspace.id, blob.key, true);
-
-  const blobs2 = await models.blob.listDeleted(workspace.id);
-
-  t.is(blobs2.length, 0);
-});
-
 test('should get blob', async t => {
   const workspace = await module.create(Mockers.Workspace);
   const blob = await models.blob.upsert({

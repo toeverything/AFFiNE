@@ -33,6 +33,7 @@ import {
   SpaceStorage,
 } from '../storage';
 import { Sync } from '../sync';
+import { DocSyncPeer } from '../sync/doc/peer';
 import { IndexerSyncImpl } from '../sync/indexer';
 import { expectYjsEqual } from './utils';
 
@@ -110,6 +111,64 @@ class TestDocStorage implements DocStorage {
   async crawlDocData(docId: string): Promise<CrawlResult | null> {
     return this.crawlDocDataImpl(docId);
   }
+}
+
+class PermissionDeniedRemoteDocStorage implements DocStorage {
+  readonly storageType = 'doc' as const;
+  readonly connection = new DummyConnection();
+  readonly isReadonly = false;
+  pushCount = 0;
+
+  constructor(readonly spaceId: string) {}
+
+  async getDoc(_docId: string): Promise<DocRecord | null> {
+    return null;
+  }
+
+  async getDocDiff(
+    _docId: string,
+    _state?: Uint8Array
+  ): Promise<DocDiff | null> {
+    return null;
+  }
+
+  async pushDocUpdate(_update: DocUpdate): Promise<DocClock> {
+    this.pushCount++;
+    const error = new Error('No permission to update doc');
+    error.name = 'DOC_ACTION_DENIED';
+    throw error;
+  }
+
+  async getDocTimestamp(_docId: string): Promise<DocClock | null> {
+    return null;
+  }
+
+  async getDocTimestamps(): Promise<DocClocks> {
+    return {};
+  }
+
+  async deleteDoc(_docId: string): Promise<void> {
+    return;
+  }
+
+  subscribeDocUpdate(_callback: (update: DocRecord, origin?: string) => void) {
+    return () => {};
+  }
+}
+
+class PermissionDeniedConnection extends DummyConnection {
+  waitCount = 0;
+
+  override async waitForConnected(_signal?: AbortSignal): Promise<void> {
+    this.waitCount++;
+    const error = new Error('No permission to access space');
+    error.name = 'SPACE_ACCESS_DENIED';
+    throw error;
+  }
+}
+
+class PermissionDeniedConnectionDocStorage extends PermissionDeniedRemoteDocStorage {
+  override readonly connection = new PermissionDeniedConnection();
 }
 
 class TrackingIndexerStorage extends IndexerStorageBase {
@@ -422,6 +481,201 @@ test('blob', async () => {
     const c = await peerC.get('blob').get('test2');
     expect(c).not.toBeNull();
     expect(c?.data).toEqual(new Uint8Array([4, 3, 2, 1]));
+  }
+});
+
+test('doc sync peer stops retrying a doc when remote denies permission', async () => {
+  const local = new IndexedDBDocStorage({
+    id: 'ws-denied',
+    flavour: 'local-denied',
+    type: 'workspace',
+  });
+  const syncMetadata = new IndexedDBDocSyncStorage({
+    id: 'ws-denied',
+    flavour: 'local-denied',
+    type: 'workspace',
+  });
+  const remote = new PermissionDeniedRemoteDocStorage('ws-denied');
+  const peer = new DocSyncPeer('remote-denied', local, syncMetadata, remote);
+  const abort = new AbortController();
+
+  local.connection.connect();
+  syncMetadata.connection.connect();
+  await local.connection.waitForConnected();
+  await syncMetadata.connection.waitForConnected();
+
+  const doc = new YDoc();
+  doc.getMap('test').set('hello', 'world');
+  await local.pushDocUpdate({
+    docId: 'doc-denied',
+    bin: encodeStateAsUpdate(doc),
+  });
+
+  try {
+    void peer.mainLoop(abort.signal);
+
+    await vi.waitFor(() => {
+      expect(remote.pushCount).toBe(1);
+    });
+
+    await vi.waitFor(() => {
+      let state:
+        | {
+            syncing: boolean;
+            synced: boolean;
+            retrying: boolean;
+            errorMessage: string | null;
+          }
+        | undefined;
+      const dispose = peer.docState$('doc-denied').subscribe(next => {
+        state = next;
+      });
+      dispose.unsubscribe();
+
+      expect(state).toMatchObject({
+        syncing: false,
+        synced: false,
+        retrying: false,
+        errorMessage: expect.stringContaining('No permission'),
+      });
+    });
+
+    await vi.waitFor(() => {
+      let state:
+        | {
+            synced: boolean;
+            errorMessage: string | null;
+          }
+        | undefined;
+      const dispose = peer.peerState$.subscribe(next => {
+        state = next;
+      });
+      dispose.unsubscribe();
+
+      expect(state).toMatchObject({
+        synced: false,
+        errorMessage: expect.stringContaining('No permission'),
+      });
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 1200));
+    expect(remote.pushCount).toBe(1);
+  } finally {
+    abort.abort();
+    local.connection.disconnect();
+    syncMetadata.connection.disconnect();
+  }
+});
+
+test('doc sync peer stops retrying when remote connection denies permission', async () => {
+  const local = new IndexedDBDocStorage({
+    id: 'ws-connection-denied',
+    flavour: 'local-connection-denied',
+    type: 'workspace',
+  });
+  const syncMetadata = new IndexedDBDocSyncStorage({
+    id: 'ws-connection-denied',
+    flavour: 'local-connection-denied',
+    type: 'workspace',
+  });
+  const remote = new PermissionDeniedConnectionDocStorage(
+    'ws-connection-denied'
+  );
+  const peer = new DocSyncPeer(
+    'remote-connection-denied',
+    local,
+    syncMetadata,
+    remote
+  );
+  const abort = new AbortController();
+
+  local.connection.connect();
+  syncMetadata.connection.connect();
+  await local.connection.waitForConnected();
+  await syncMetadata.connection.waitForConnected();
+
+  try {
+    void peer.mainLoop(abort.signal);
+
+    await vi.waitFor(() => {
+      expect(remote.connection.waitCount).toBe(1);
+    });
+
+    await vi.waitFor(() => {
+      let state:
+        | {
+            retrying: boolean;
+            errorMessage: string | null;
+          }
+        | undefined;
+      const dispose = peer.peerState$.subscribe(next => {
+        state = next;
+      });
+      dispose.unsubscribe();
+
+      expect(state).toMatchObject({
+        retrying: false,
+        errorMessage: expect.stringContaining('No permission'),
+      });
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 1200));
+    expect(remote.connection.waitCount).toBe(1);
+  } finally {
+    abort.abort();
+    local.connection.disconnect();
+    syncMetadata.connection.disconnect();
+  }
+});
+
+test('doc sync peer resolves on terminal permission error without abort signal', async () => {
+  const local = new IndexedDBDocStorage({
+    id: 'ws-connection-denied-no-signal',
+    flavour: 'local-connection-denied-no-signal',
+    type: 'workspace',
+  });
+  const syncMetadata = new IndexedDBDocSyncStorage({
+    id: 'ws-connection-denied-no-signal',
+    flavour: 'local-connection-denied-no-signal',
+    type: 'workspace',
+  });
+  const remote = new PermissionDeniedConnectionDocStorage(
+    'ws-connection-denied-no-signal'
+  );
+  const peer = new DocSyncPeer(
+    'remote-connection-denied-no-signal',
+    local,
+    syncMetadata,
+    remote
+  );
+
+  local.connection.connect();
+  syncMetadata.connection.connect();
+  await local.connection.waitForConnected();
+  await syncMetadata.connection.waitForConnected();
+
+  try {
+    await expect(peer.mainLoop()).resolves.toBeUndefined();
+    expect(remote.connection.waitCount).toBe(1);
+
+    let state:
+      | {
+          retrying: boolean;
+          errorMessage: string | null;
+        }
+      | undefined;
+    const dispose = peer.peerState$.subscribe(next => {
+      state = next;
+    });
+    dispose.unsubscribe();
+
+    expect(state).toMatchObject({
+      retrying: false,
+      errorMessage: expect.stringContaining('No permission'),
+    });
+  } finally {
+    local.connection.disconnect();
+    syncMetadata.connection.disconnect();
   }
 });
 

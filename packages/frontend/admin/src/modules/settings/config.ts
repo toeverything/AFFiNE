@@ -3,6 +3,7 @@ import type { ComponentType } from 'react';
 
 import CONFIG_DESCRIPTORS from '../../config.json';
 import type { ConfigInputProps } from './config-input-row';
+import { AuthSigningKeys } from './operations/auth-signing-keys';
 import { SendTestEmail } from './operations/send-test-email';
 export type ConfigType = 'String' | 'Number' | 'Boolean' | 'JSON' | 'Enum';
 
@@ -37,13 +38,7 @@ type ConfigGroup<T extends AppConfigModule> = {
 const IGNORED_MODULES: (keyof AppConfig)[] = [];
 
 if (environment.isSelfHosted) {
-  IGNORED_MODULES.push(
-    'payment',
-    'customerIo',
-    'captcha',
-    'telemetry',
-    'metrics'
-  );
+  IGNORED_MODULES.push('payment', 'captcha', 'telemetry', 'metrics');
 }
 
 const ALL_CONFIGURABLE_MODULES = Object.keys(CONFIG_DESCRIPTORS).filter(
@@ -62,6 +57,11 @@ export const KNOWN_CONFIG_GROUPS = [
     fields: [
       'allowSignup',
       'allowSignupForOauth',
+      {
+        key: 'newAccountShareActionDelay',
+        type: 'Number',
+        desc: 'Minimum account age in seconds before new accounts can invite members or create share links.',
+      },
       // nested json object
       {
         key: 'passwordRequirements',
@@ -76,6 +76,7 @@ export const KNOWN_CONFIG_GROUPS = [
         desc: 'Maximum length requirement of password',
       },
     ],
+    operations: [AuthSigningKeys],
   } as ConfigGroup<'auth'>,
   {
     name: 'Notification',

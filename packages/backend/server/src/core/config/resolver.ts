@@ -14,7 +14,7 @@ import { GraphQLJSON, GraphQLJSONObject } from 'graphql-scalars';
 
 import { Config, hasNewerVersion, URLHelper } from '../../base';
 import { Namespace } from '../../env';
-import { Feature, type WorkspaceFeatureName } from '../../models';
+import { Feature } from '../../models';
 import { CurrentUser, Public } from '../auth';
 import { Admin } from '../common';
 import { AvailableUserFeatureConfig } from '../features';
@@ -75,7 +75,7 @@ export class ServerConfigResolver {
       name:
         this.config.server.name ??
         (env.selfhosted
-          ? 'AFFiNE SelfHosted Cloud'
+          ? 'AFFiNE Self-hosted'
           : env.namespaces.canary
             ? 'AFFiNE Canary Cloud'
             : env.namespaces.beta
@@ -138,7 +138,7 @@ export class ServerConfigResolver {
       const releases = (await response.json()) as Array<{
         name: string;
         url: string;
-        body: string;
+        body: string | null;
         published_at: string;
       }>;
 
@@ -150,7 +150,7 @@ export class ServerConfigResolver {
       return {
         version: latest.name,
         url: latest.url,
-        changelog: latest.body,
+        changelog: latest.body ?? '',
         publishedAt: new Date(latest.published_at),
       };
     } catch (e) {
@@ -167,13 +167,6 @@ export class ServerFeatureConfigResolver extends AvailableUserFeatureConfig {
   })
   override availableUserFeatures() {
     return super.availableUserFeatures();
-  }
-
-  @ResolveField(() => [Feature], {
-    description: 'Workspace features available for admin configuration',
-  })
-  availableWorkspaceFeatures(): WorkspaceFeatureName[] {
-    return [];
   }
 }
 

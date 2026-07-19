@@ -354,6 +354,7 @@ export class CopilotContextService implements OnApplicationBootstrap {
     fileId,
     chunkSize,
   }: Events['workspace.file.embed.finished']) {
+    if (!contextId) return;
     const context = await this.get(contextId);
     await context.saveFileRecord(fileId, file => ({
       ...(file as ContextFile),
@@ -368,6 +369,7 @@ export class CopilotContextService implements OnApplicationBootstrap {
     fileId,
     error,
   }: Events['workspace.file.embed.failed']) {
+    if (!contextId) return;
     const context = await this.get(contextId);
     await context.saveFileRecord(fileId, file => ({
       ...(file as ContextFile),

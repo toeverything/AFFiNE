@@ -7,7 +7,7 @@ public class InviteByEmailsMutation: GraphQLMutation {
   public static let operationName: String = "inviteByEmails"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"mutation inviteByEmails($workspaceId: String!, $emails: [String!]!) { inviteMembers(workspaceId: $workspaceId, emails: $emails) { __typename email inviteId sentSuccess } }"#
+      #"mutation inviteByEmails($workspaceId: String!, $emails: [String!]!) { inviteMembers(workspaceId: $workspaceId, emails: $emails) { __typename email inviteId } }"#
     ))
 
   public var workspaceId: String
@@ -55,7 +55,6 @@ public class InviteByEmailsMutation: GraphQLMutation {
         .field("__typename", String.self),
         .field("email", String.self),
         .field("inviteId", String?.self),
-        .field("sentSuccess", Bool.self),
       ] }
       public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
         InviteByEmailsMutation.Data.InviteMember.self
@@ -64,9 +63,6 @@ public class InviteByEmailsMutation: GraphQLMutation {
       public var email: String { __data["email"] }
       /// Invite id, null if invite record create failed
       public var inviteId: String? { __data["inviteId"] }
-      /// Invite email sent success
-      @available(*, deprecated, message: "Notification will be sent asynchronously")
-      public var sentSuccess: Bool { __data["sentSuccess"] }
     }
   }
 }

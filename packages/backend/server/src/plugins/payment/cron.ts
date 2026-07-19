@@ -21,6 +21,7 @@ declare global {
     'nightly.reconcileRevenueCatSubscriptions': {};
     'nightly.reconcileStripeSubscriptions': {};
     'nightly.reconcileStripeRefunds': {};
+    'nightly.replayStripeWebhookEvents': {};
     'nightly.revenuecat.syncUser': { userId: string };
   }
 }
@@ -78,6 +79,12 @@ export class SubscriptionCronJobs {
       { jobId: 'nightly-payment-reconcile-stripe-refunds' }
     );
 
+    await this.queue.add(
+      'nightly.replayStripeWebhookEvents',
+      {},
+      { jobId: 'nightly-payment-replay-stripe-webhook-events' }
+    );
+
     // FIXME(@forehalo): the strategy is totally wrong, for monthly plan. redesign required
     // await this.queue.add(
     //   'nightly.notifyAboutToExpireWorkspaceSubscriptions',
@@ -98,21 +105,22 @@ export class SubscriptionCronJobs {
     const { start: before180DaysStart, end: before180DaysEnd } =
       this.getDateRange(-180);
 
-    const subscriptions = await this.db.subscription.findMany({
+    const subscriptions = await this.db.providerSubscription.findMany({
       where: {
+        targetType: 'workspace',
         plan: SubscriptionPlan.Team,
         OR: [
           {
             // subscription will cancel after 30 days
             status: 'active',
             canceledAt: { not: null },
-            end: { gte: after30DayStart, lte: after30DayEnd },
+            periodEnd: { gte: after30DayStart, lte: after30DayEnd },
           },
           {
             // subscription will cancel today
             status: 'active',
             canceledAt: { not: null },
-            end: { gte: todayStart, lte: todayEnd },
+            periodEnd: { gte: todayStart, lte: todayEnd },
           },
           {
             // subscription has been canceled for 150 days
@@ -131,13 +139,13 @@ export class SubscriptionCronJobs {
     });
 
     for (const subscription of subscriptions) {
-      const end = subscription.end;
+      const end = subscription.periodEnd;
       if (!end) {
         // should not reach here
         continue;
       }
 
-      if (!subscription.nextBillAt) {
+      if (subscription.canceledAt) {
         this.event.emit('workspace.subscription.notify', {
           workspaceId: subscription.targetId,
           expirationDate: end,
@@ -149,10 +157,14 @@ export class SubscriptionCronJobs {
 
   @OnJob('nightly.cleanExpiredOnetimeSubscriptions')
   async cleanExpiredOnetimeSubscriptions() {
-    const subscriptions = await this.db.subscription.findMany({
+    const subscriptions = await this.db.providerSubscription.findMany({
       where: {
-        variant: SubscriptionVariant.Onetime,
-        end: {
+        targetType: 'user',
+        metadata: {
+          path: ['variant'],
+          equals: SubscriptionVariant.Onetime,
+        },
+        periodEnd: {
           lte: new Date(),
         },
       },
@@ -163,21 +175,16 @@ export class SubscriptionCronJobs {
         targetId: subscription.targetId,
         plan: subscription.plan,
         subscriptionId: subscription.id,
-        stripeSubscriptionId: subscription.stripeSubscriptionId,
+        stripeSubscriptionId: subscription.externalSubscriptionId,
       });
-      await this.db.subscription.delete({
-        where: {
-          targetId_plan: {
-            targetId: subscription.targetId,
-            plan: subscription.plan,
-          },
-        },
+      await this.db.providerSubscription.delete({
+        where: { id: subscription.id },
       });
 
       this.event.emit('user.subscription.canceled', {
         userId: subscription.targetId,
         plan: subscription.plan as SubscriptionPlan,
-        recurring: subscription.variant as SubscriptionRecurring,
+        recurring: subscription.recurring as SubscriptionRecurring,
       });
     }
   }
@@ -185,9 +192,10 @@ export class SubscriptionCronJobs {
   @OnJob('nightly.reconcileRevenueCatSubscriptions')
   async reconcileRevenueCatSubscriptions() {
     // Find active/trialing/past_due RC subscriptions and resync via RC REST
-    const subs = await this.db.subscription.findMany({
+    const subs = await this.db.providerSubscription.findMany({
       where: {
         provider: Provider.revenuecat,
+        targetType: 'user',
         status: {
           in: [
             SubscriptionStatus.Active,
@@ -219,13 +227,72 @@ export class SubscriptionCronJobs {
     await this.rcHandler.syncAppUser(payload.userId);
   }
 
+  @OnJob('nightly.replayStripeWebhookEvents')
+  async replayStripeWebhookEvents() {
+    const stuckBefore = new Date(Date.now() - OneHour);
+    const events = await this.db.paymentEvent.findMany({
+      where: {
+        provider: Provider.stripe,
+        OR: [
+          { processingStatus: { in: ['pending', 'failed'] } },
+          { processingStatus: 'processing', updatedAt: { lt: stuckBefore } },
+        ],
+      },
+      orderBy: { createdAt: 'asc' },
+      take: 100,
+    });
+
+    for (const event of events) {
+      const locked = await this.db.paymentEvent.updateMany({
+        where: {
+          id: event.id,
+          OR: [
+            { processingStatus: { in: ['pending', 'failed'] } },
+            { processingStatus: 'processing', updatedAt: { lt: stuckBefore } },
+          ],
+        },
+        data: {
+          processingStatus: 'processing',
+          processingAttempts: { increment: 1 },
+        },
+      });
+      if (locked.count === 0) {
+        continue;
+      }
+
+      try {
+        await this.event.emitAsync(
+          `stripe.${event.eventType}` as keyof Events,
+          event.metadata as never
+        );
+        await this.db.paymentEvent.update({
+          where: { id: event.id },
+          data: {
+            processingStatus: 'processed',
+            processedAt: new Date(),
+            lastError: null,
+          },
+        });
+      } catch (e) {
+        await this.db.paymentEvent.update({
+          where: { id: event.id },
+          data: {
+            processingStatus: 'failed',
+            lastError: e instanceof Error ? e.message : String(e),
+          },
+        });
+      }
+    }
+  }
+
   @OnJob('nightly.reconcileStripeSubscriptions')
   async reconcileStripeSubscriptions() {
     const stripe = this.stripeFactory.stripe;
-    const subs = await this.db.subscription.findMany({
+    const subs = await this.db.providerSubscription.findMany({
       where: {
         provider: Provider.stripe,
-        stripeSubscriptionId: { not: null },
+        externalSubscriptionId: { not: null },
+        recurring: { not: SubscriptionRecurring.Lifetime },
         status: {
           in: [
             SubscriptionStatus.Active,
@@ -234,13 +301,13 @@ export class SubscriptionCronJobs {
           ],
         },
       },
-      select: { stripeSubscriptionId: true },
+      select: { externalSubscriptionId: true },
     });
 
     const subscriptionIds = Array.from(
       new Set(
         subs
-          .map(sub => sub.stripeSubscriptionId)
+          .map(sub => sub.externalSubscriptionId)
           .filter((id): id is string => !!id)
       )
     );

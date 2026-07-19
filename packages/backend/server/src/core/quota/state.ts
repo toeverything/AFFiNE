@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import {
+  type EffectiveUserQuotaState,
+  type EffectiveWorkspaceQuotaState,
+  PrismaClient,
+} from '@prisma/client';
 
 import { EventBus, OnEvent } from '../../base';
 import { EntitlementService } from '../entitlement';
@@ -23,13 +27,41 @@ declare global {
 
 @Injectable()
 export class QuotaStateService {
+  private readonly userReconciliations = new Map<
+    string,
+    Promise<EffectiveUserQuotaState>
+  >();
+  private readonly workspaceReconciliations = new Map<
+    string,
+    Promise<EffectiveWorkspaceQuotaState>
+  >();
+
   constructor(
     private readonly db: PrismaClient,
     private readonly entitlement: EntitlementService,
     private readonly event: EventBus
   ) {}
 
-  async reconcileUserQuotaState(userId: string) {
+  async getWorkspaceQuotaState(workspaceId: string) {
+    return await this.db.effectiveWorkspaceQuotaState.findUnique({
+      where: { workspaceId },
+    });
+  }
+
+  async reconcileUserQuotaState(
+    userId: string,
+    options: { emit?: boolean } = {}
+  ) {
+    const key = `${userId}:${options.emit ?? true}`;
+    return await this.reconcileOnce(this.userReconciliations, key, () =>
+      this.reconcileUserQuotaStateNow(userId, options)
+    );
+  }
+
+  private async reconcileUserQuotaStateNow(
+    userId: string,
+    options: { emit?: boolean }
+  ) {
     const [previous, entitlement, entitlements, resolved, usedStorageQuota] =
       await Promise.all([
         this.db.effectiveUserQuotaState.findUnique({ where: { userId } }),
@@ -46,39 +78,63 @@ export class QuotaStateService {
     };
     const now = new Date();
 
+    const update = {
+      plan: resolved.plan,
+      sourceEntitlementId: entitlement?.id ?? null,
+      ...this.quotaData(resolved.quota),
+      usedStorageQuota,
+      flags,
+      known: true,
+      stale: false,
+      lastReconciledAt: now,
+      staleAfter: this.staleAfter(now),
+    };
     const state = await this.db.effectiveUserQuotaState.upsert({
       where: { userId },
-      update: {
-        plan: resolved.plan,
-        sourceEntitlementId: entitlement?.id ?? null,
-        ...this.quotaData(resolved.quota),
-        usedStorageQuota,
-        flags,
-        known: true,
-        stale: false,
-        lastReconciledAt: now,
-        staleAfter: this.staleAfter(now),
-      },
-      create: {
-        userId,
-        plan: resolved.plan,
-        sourceEntitlementId: entitlement?.id ?? null,
-        ...this.quotaData(resolved.quota),
-        usedStorageQuota,
-        flags,
-        known: true,
-        stale: false,
-        lastReconciledAt: now,
-        staleAfter: this.staleAfter(now),
-      },
+      update,
+      create: { userId, ...update },
     });
-    if (this.userQuotaStateChanged(previous, state)) {
+    if ((options.emit ?? true) && this.userQuotaStateChanged(previous, state)) {
       await this.event.emitAsync('user.quota_state.changed', { userId });
     }
     return state;
   }
 
-  async reconcileWorkspaceQuotaState(workspaceId: string) {
+  async reconcileWorkspaceQuotaState(
+    workspaceId: string,
+    options: { emit?: boolean } = {}
+  ) {
+    const key = `${workspaceId}:${options.emit ?? true}`;
+    return await this.reconcileOnce(this.workspaceReconciliations, key, () =>
+      this.reconcileWorkspaceQuotaStateNow(workspaceId, options)
+    );
+  }
+
+  private async reconcileOnce<T>(
+    reconciliations: Map<string, Promise<T>>,
+    key: string,
+    reconcile: () => Promise<T>
+  ) {
+    const existing = reconciliations.get(key);
+    if (existing) {
+      return await existing;
+    }
+
+    const reconciliation = reconcile();
+    reconciliations.set(key, reconciliation);
+    try {
+      return await reconciliation;
+    } finally {
+      if (reconciliations.get(key) === reconciliation) {
+        reconciliations.delete(key);
+      }
+    }
+  }
+
+  private async reconcileWorkspaceQuotaStateNow(
+    workspaceId: string,
+    options: { emit?: boolean }
+  ) {
     const owner = await this.getWorkspaceOwner(workspaceId);
     const [
       previous,
@@ -98,7 +154,7 @@ export class QuotaStateService {
     const usesOwnerQuota = !this.hasStandaloneWorkspaceQuota(resolved.plan);
     const [ownerState, ownerEntitlement] = usesOwnerQuota
       ? await Promise.all([
-          this.reconcileUserQuotaState(owner.id),
+          this.reconcileUserQuotaState(owner.id, options),
           this.entitlement.resolveUserEntitlement(owner.id),
         ])
       : [null, null];
@@ -116,47 +172,33 @@ export class QuotaStateService {
     ].filter((reason): reason is string => !!reason);
     const now = new Date();
 
+    const update = {
+      plan,
+      sourceEntitlementId: entitlement?.id ?? null,
+      ownerUserId: owner.id,
+      usesOwnerQuota,
+      seatLimit,
+      memberCount,
+      overcapacityMemberCount,
+      ...this.workspaceQuotaData(quota),
+      usedStorageQuota,
+      readonly: readonlyReasons.length > 0,
+      readonlyReasons,
+      flags: resolved.flags,
+      known: true,
+      stale: false,
+      lastReconciledAt: now,
+      staleAfter: this.staleAfter(now),
+    };
     const state = await this.db.effectiveWorkspaceQuotaState.upsert({
       where: { workspaceId },
-      update: {
-        plan,
-        sourceEntitlementId: entitlement?.id ?? null,
-        ownerUserId: owner.id,
-        usesOwnerQuota,
-        seatLimit,
-        memberCount,
-        overcapacityMemberCount,
-        ...this.workspaceQuotaData(quota),
-        usedStorageQuota,
-        readonly: readonlyReasons.length > 0,
-        readonlyReasons,
-        flags: resolved.flags,
-        known: true,
-        stale: false,
-        lastReconciledAt: now,
-        staleAfter: this.staleAfter(now),
-      },
-      create: {
-        workspaceId,
-        plan,
-        sourceEntitlementId: entitlement?.id ?? null,
-        ownerUserId: owner.id,
-        usesOwnerQuota,
-        seatLimit,
-        memberCount,
-        overcapacityMemberCount,
-        ...this.workspaceQuotaData(quota),
-        usedStorageQuota,
-        readonly: readonlyReasons.length > 0,
-        readonlyReasons,
-        flags: resolved.flags,
-        known: true,
-        stale: false,
-        lastReconciledAt: now,
-        staleAfter: this.staleAfter(now),
-      },
+      update,
+      create: { workspaceId, ...update },
     });
-    if (this.workspaceQuotaStateChanged(previous, state)) {
+    if (
+      (options.emit ?? true) &&
+      this.workspaceQuotaStateChanged(previous, state)
+    ) {
       await this.event.emitAsync('workspace.quota_state.changed', {
         workspaceId,
       });
@@ -299,17 +341,30 @@ export class QuotaStateService {
   }
 
   private async getWorkspaceStorageUsage(workspaceId: string) {
-    const sum = await this.db.blob.aggregate({
-      where: {
-        workspaceId,
-        deletedAt: null,
-      },
-      _sum: {
-        size: true,
-      },
-    });
+    const [blobSum, commentAttachmentSum] = await Promise.all([
+      this.db.blob.aggregate({
+        where: {
+          workspaceId,
+          deletedAt: null,
+        },
+        _sum: {
+          size: true,
+        },
+      }),
+      this.db.commentAttachment.aggregate({
+        where: {
+          workspaceId,
+        },
+        _sum: {
+          size: true,
+        },
+      }),
+    ]);
 
-    return BigInt(sum._sum.size ?? 0);
+    return (
+      BigInt(blobSum._sum.size ?? 0) +
+      BigInt(commentAttachmentSum._sum.size ?? 0)
+    );
   }
 
   private hasStandaloneWorkspaceQuota(plan: string) {

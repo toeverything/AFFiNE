@@ -9,7 +9,7 @@ import {
 import { PrismaClient } from '@prisma/client';
 
 import { buildAppModule, FunctionalityModules } from '../../app.module';
-import { AFFiNELogger, JobQueue } from '../../base';
+import { AFFiNELogger, ConfigFactory, JobModule, JobQueue } from '../../base';
 import { GqlModule } from '../../base/graphql';
 import { ServerConfigModule } from '../../core';
 import { AuthGuard, AuthModule } from '../../core/auth';
@@ -18,7 +18,7 @@ import { ModelsModule } from '../../models';
 // for jsdoc inference
 // oxlint-disable-next-line no-unused-vars
 import type { createModule } from '../create-module';
-import { createFactory, MockJobQueue } from '../mocks';
+import { createFactory, MockJobModule, MockJobQueue } from '../mocks';
 import { MockMailer } from '../mocks/mailer.mock';
 import { initTestingDB, TEST_LOG_LEVEL } from './utils';
 
@@ -48,6 +48,16 @@ function dedupeModules(modules: NonNullable<ModuleMetadata['imports']>) {
   return Array.from(map.values());
 }
 
+function testingFunctionalityModules() {
+  return [
+    ...FunctionalityModules.filter(module => {
+      const moduleType = 'module' in module ? module.module : module;
+      return moduleType !== JobModule;
+    }),
+    MockJobModule,
+  ];
+}
+
 @Resolver(() => String)
 class MockResolver {
   @Query(() => String)
@@ -70,7 +80,7 @@ export async function createTestingModule(
     imports[0].module?.name === 'AppModule'
       ? imports
       : dedupeModules([
-          ...FunctionalityModules,
+          ...testingFunctionalityModules(),
           ModelsModule,
           AuthModule,
           GqlModule,
@@ -99,6 +109,31 @@ export async function createTestingModule(
   }
 
   const module = await builder.compile();
+  module.get(ConfigFactory).override({
+    storages: {
+      avatar: {
+        storage: {
+          provider: 'assetpack',
+          bucket: 'avatars',
+          config: { path: '/tmp/affine-test-storage' },
+        },
+      },
+      blob: {
+        storage: {
+          provider: 'assetpack',
+          bucket: 'blobs',
+          config: { path: '/tmp/affine-test-storage' },
+        },
+      },
+    },
+    copilot: {
+      storage: {
+        provider: 'assetpack',
+        bucket: 'copilot',
+        config: { path: '/tmp/affine-test-storage' },
+      },
+    },
+  });
 
   const testingModule = module as TestingModule;
 

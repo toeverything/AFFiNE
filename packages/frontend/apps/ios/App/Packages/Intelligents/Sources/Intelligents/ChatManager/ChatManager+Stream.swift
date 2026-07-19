@@ -171,16 +171,16 @@ private extension ChatManager {
     let uploadableAttachments: [CopilotAttachmentUpload] = [
       editorData.fileAttachments.map { file -> CopilotAttachmentUpload in
         .init(
-          originalName: file.name,
+          data: file.data ?? .init(),
           mimeType: mimeType(text: file.name),
-          data: file.data ?? .init()
+          originalName: file.name
         )
       },
       editorData.imageAttachments.map { image -> CopilotAttachmentUpload in
         .init(
-          originalName: "image.jpg",
+          data: image.imageData,
           mimeType: mimeType(pathExtension: "jpg"),
-          data: image.imageData
+          originalName: "image.jpg"
         )
       },
     ].flatMap(\.self)
