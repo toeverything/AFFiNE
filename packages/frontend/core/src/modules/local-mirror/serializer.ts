@@ -6,17 +6,26 @@ import {
   type Store,
 } from '@blocksuite/affine/store';
 import { MarkdownTransformer } from '@blocksuite/affine/widgets/linked-doc';
+import {
+  type MarkdownAdapter,
+  MarkdownAdapterFactoryIdentifier,
+} from '@blocksuite/affine-shared/adapters';
 import { Service } from '@toeverything/infra';
 
 import {
+  createMirrorBlockMarker,
   createMirrorFrontmatter,
   encodeMirrorId,
+  getMirrorBaselineDescriptorPath,
+  getMirrorBaselinePath,
   getMirrorSnapshotPath,
   hashText,
+  LOCAL_MIRROR_EDITABLE_FLAVOURS,
   LOCAL_MIRROR_METADATA_DIR,
   stableJson,
 } from './format';
 import type {
+  LocalMirrorBaselineDescriptor,
   LocalMirrorDocMetadata,
   LocalMirrorSerializedDocument,
 } from './types';
@@ -29,28 +38,48 @@ function extensionFromName(name: string) {
 const MARKDOWN_FLAVOURS = new Set([
   'affine:page',
   'affine:note',
-  'affine:paragraph',
-  'affine:list',
-  'affine:code',
-  'affine:divider',
+  ...LOCAL_MIRROR_EDITABLE_FLAVOURS,
   'affine:image',
   'affine:attachment',
   'affine:bookmark',
 ]);
 
-export function collectRichOnlyFlavours(snapshot: DocSnapshot) {
-  const flavours = new Set<string>();
-  const visit = (block: BlockSnapshot) => {
-    if (!MARKDOWN_FLAVOURS.has(block.flavour)) flavours.add(block.flavour);
-    block.children.forEach(visit);
-  };
-  visit(snapshot.blocks);
-  return [...flavours].sort();
+type EditableDirectBlock = {
+  block: BlockSnapshot;
+  parentId: string;
+  siblingIndex: number;
+};
+
+function getEditableDirectBlocks(snapshot: DocSnapshot) {
+  const notes = snapshot.blocks.children.filter(
+    block => block.flavour === 'affine:note'
+  );
+  const blocks: EditableDirectBlock[] = [];
+  let hasProtectedContent =
+    notes.length !== 1 || snapshot.blocks.children.length !== notes.length;
+  for (const note of notes) {
+    for (const [siblingIndex, block] of note.children.entries()) {
+      if (
+        block.id.startsWith('new:') ||
+        block.children.length !== 0 ||
+        !LOCAL_MIRROR_EDITABLE_FLAVOURS.has(block.flavour)
+      ) {
+        hasProtectedContent = true;
+        continue;
+      }
+      blocks.push({ block, parentId: note.id, siblingIndex });
+    }
+  }
+  return { blocks, hasProtectedContent };
 }
 
-function collectAttachments(snapshot: DocSnapshot) {
+function inspectSnapshot(snapshot: DocSnapshot) {
+  const richFlavours = new Set<string>();
   const attachments: Array<{ sourceId: string; name: string }> = [];
   const visit = (block: BlockSnapshot) => {
+    if (!MARKDOWN_FLAVOURS.has(block.flavour)) {
+      richFlavours.add(block.flavour);
+    }
     const sourceId = block.props.sourceId;
     if (block.flavour === 'affine:attachment' && typeof sourceId === 'string') {
       attachments.push({
@@ -64,7 +93,7 @@ function collectAttachments(snapshot: DocSnapshot) {
     block.children.forEach(visit);
   };
   visit(snapshot.blocks);
-  return attachments;
+  return { attachments, richFlavours: [...richFlavours].sort() };
 }
 
 function rewriteDocumentLinks(
@@ -104,7 +133,6 @@ export class LocalMirrorSerializer extends Service {
     const snapshotJson = stableJson(snapshot);
     const sourceHash = await hashText(stableJson({ snapshot, metadata }));
     let markdown = rewriteDocumentLinks(serialized.file, docPaths);
-    const files: LocalMirrorSerializedDocument['files'] = [];
     const assets: LocalMirrorSerializedDocument['assets'] = [];
     const assetPaths = new Map<string, string>();
 
@@ -137,7 +165,7 @@ export class LocalMirrorSerializer extends Service {
       });
     }
 
-    const attachments = collectAttachments(snapshot);
+    const { attachments, richFlavours } = inspectSnapshot(snapshot);
     if (attachments.length > 0) {
       markdown += '\n\n## Attachments\n';
       for (const attachment of attachments) {
@@ -149,8 +177,49 @@ export class LocalMirrorSerializer extends Service {
       markdown += '\n';
     }
 
-    const richFlavours = collectRichOnlyFlavours(snapshot);
-    if (metadata.primaryMode === 'edgeless' || richFlavours.length > 0) {
+    const editableBlocks =
+      metadata.primaryMode === 'page'
+        ? getEditableDirectBlocks(snapshot)
+        : null;
+    const protectedReasons: string[] = [];
+    if (!editableBlocks || editableBlocks.blocks.length === 0)
+      protectedReasons.push('no editable direct leaf blocks');
+    if (editableBlocks?.hasProtectedContent)
+      protectedReasons.push('non-round-trippable block tree');
+    if (metadata.primaryMode === 'edgeless') protectedReasons.push('edgeless');
+    protectedReasons.push(...richFlavours.map(flavour => `rich:${flavour}`));
+    let projectedBlocks: Array<
+      EditableDirectBlock & { content: string }
+    > | null = null;
+    if (editableBlocks && editableBlocks.blocks.length > 0) {
+      const adapter = doc
+        .get(MarkdownAdapterFactoryIdentifier)
+        .get(doc.getTransformer()) as MarkdownAdapter;
+      projectedBlocks = [];
+      for (const candidate of editableBlocks.blocks) {
+        const model = doc.getModelById(candidate.block.id);
+        const result = model ? await adapter.fromBlock(model) : undefined;
+        if (!result) {
+          protectedReasons.push(`cannot serialize ${candidate.block.flavour}`);
+          continue;
+        }
+        projectedBlocks.push({ ...candidate, content: result.file.trimEnd() });
+      }
+      if (projectedBlocks.length > 0) {
+        markdown = projectedBlocks
+          .flatMap(({ block, content }) => [
+            createMirrorBlockMarker(block.id, block.flavour),
+            content,
+          ])
+          .join('\n\n');
+      } else {
+        projectedBlocks = null;
+      }
+    }
+    if (
+      !projectedBlocks &&
+      (metadata.primaryMode === 'edgeless' || richFlavours.length > 0)
+    ) {
       markdown += '\n\n## AFFiNE rich content\n';
       for (const flavour of richFlavours) {
         markdown += `\n> [!NOTE]\n> AFFiNE rich block \`${flavour}\` is preserved in the generated snapshot sidecar.\n`;
@@ -161,15 +230,46 @@ export class LocalMirrorSerializer extends Service {
       }
     }
 
-    files.unshift(
+    const markdownPath = documentPath(metadata.id, docPaths);
+    const canonicalMarkdown = `${createMirrorFrontmatter(
+      doc.workspace.id,
+      metadata,
+      sourceHash
+    )}${markdown.trimEnd()}\n`;
+    const baselinePath = getMirrorBaselinePath(metadata.id);
+    const descriptorBlocks = projectedBlocks
+      ? await Promise.all(
+          projectedBlocks.map(
+            async ({ block, parentId, siblingIndex, content }) => {
+              return {
+                id: block.id,
+                flavour: block.flavour,
+                parentId,
+                siblingIndex,
+                projectionHash: await hashText(content),
+                protected: false,
+              };
+            }
+          )
+        )
+      : [];
+    const descriptor: LocalMirrorBaselineDescriptor = {
+      formatVersion: 2,
+      docId: metadata.id,
+      markdownPath,
+      baselinePath,
+      markerGrammarVersion: 1,
+      sourceHash,
+      protected: !projectedBlocks,
+      protectedReasons: [...new Set(protectedReasons)],
+      blocks: descriptorBlocks,
+    };
+
+    const files: LocalMirrorSerializedDocument['files'] = [
       {
-        path: documentPath(metadata.id, docPaths),
+        path: markdownPath,
         kind: 'markdown',
-        content: `${createMirrorFrontmatter(
-          doc.workspace.id,
-          metadata,
-          sourceHash
-        )}${markdown.trimEnd()}\n`,
+        content: canonicalMarkdown,
         docId: metadata.id,
         sourceHash,
       },
@@ -179,8 +279,22 @@ export class LocalMirrorSerializer extends Service {
         content: snapshotJson,
         docId: metadata.id,
         sourceHash,
-      }
-    );
+      },
+      {
+        path: baselinePath,
+        kind: 'baseline',
+        content: canonicalMarkdown,
+        docId: metadata.id,
+        sourceHash,
+      },
+      {
+        path: getMirrorBaselineDescriptorPath(metadata.id),
+        kind: 'baseline',
+        content: stableJson(descriptor),
+        docId: metadata.id,
+        sourceHash,
+      },
+    ];
 
     return { docId: metadata.id, sourceHash, files, assets };
   }

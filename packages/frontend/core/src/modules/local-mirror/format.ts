@@ -4,6 +4,15 @@ import type { LocalMirrorDocMetadata } from './types';
 
 export const LOCAL_MIRROR_METADATA_DIR = '.metadata';
 export const LOCAL_MIRROR_WORKSPACE_PATH = `${LOCAL_MIRROR_METADATA_DIR}/workspace.json`;
+export const LOCAL_MIRROR_BLOCK_MARKER_GRAMMAR_VERSION = 1 as const;
+export const LOCAL_MIRROR_BLOCK_MARKER_PATTERN =
+  /^<!-- affine-mirror:block id="([^"\r\n]+)" flavour="([^"\r\n]+)" -->$/;
+export const LOCAL_MIRROR_EDITABLE_FLAVOURS: ReadonlySet<string> = new Set([
+  'affine:paragraph',
+  'affine:list',
+  'affine:code',
+  'affine:divider',
+]);
 
 const MAX_DOC_FILENAME_STEM_BYTES = 200;
 const MAX_DOC_FILENAME_STEM_UTF16_UNITS = 200;
@@ -87,10 +96,6 @@ export function createMirrorDocFilename(title: string) {
   return `${safeStem || 'Untitled'}.md`;
 }
 
-export function getMirrorDocPath(title: string) {
-  return `docs/${createMirrorDocFilename(title)}`;
-}
-
 export function createMirrorDocPathMap(
   docs: readonly Pick<LocalMirrorDocMetadata, 'id' | 'title'>[]
 ) {
@@ -104,7 +109,7 @@ export function createMirrorDocPathMap(
   const usedPaths = new Set<string>();
   for (const group of groups.values()) {
     if (group.length !== 1) continue;
-    const path = getMirrorDocPath(group[0].title);
+    const path = `docs/${createMirrorDocFilename(group[0].title)}`;
     paths.set(group[0].id, path);
     usedPaths.add(portableCaseFold(path));
   }
@@ -135,6 +140,28 @@ export function getMirrorSnapshotPath(docId: string) {
   return `${LOCAL_MIRROR_METADATA_DIR}/snapshots/${encodeMirrorId(docId)}.snapshot.json`;
 }
 
+export function getMirrorBaselinePath(docId: string) {
+  return `${LOCAL_MIRROR_METADATA_DIR}/baselines/${encodeMirrorId(docId)}.md`;
+}
+
+export function getMirrorBaselineDescriptorPath(docId: string) {
+  return `${LOCAL_MIRROR_METADATA_DIR}/baselines/${encodeMirrorId(docId)}.json`;
+}
+
+export function createMirrorBlockMarker(id: string, flavour: string) {
+  if (!id || !flavour || /["\r\n]/.test(id) || /["\r\n]/.test(flavour)) {
+    throw new Error('Invalid local mirror block marker fields');
+  }
+  return `<!-- affine-mirror:block id="${id}" flavour="${flavour}" -->`;
+}
+
+export function createMirrorNewBlockMarker(token: string, flavour: string) {
+  if (!token || /["\r\n]/.test(token)) {
+    throw new Error('Invalid local mirror new-block token');
+  }
+  return createMirrorBlockMarker(`new:${token}`, flavour);
+}
+
 function yamlScalar(value: unknown) {
   return JSON.stringify(value ?? null);
 }
@@ -146,7 +173,8 @@ export function createMirrorFrontmatter(
 ) {
   return [
     '---',
-    'affineFormatVersion: 1',
+    'affineFormatVersion: 2',
+    `markerGrammarVersion: ${LOCAL_MIRROR_BLOCK_MARKER_GRAMMAR_VERSION}`,
     `workspaceId: ${yamlScalar(workspaceId)}`,
     `docId: ${yamlScalar(metadata.id)}`,
     `title: ${yamlScalar(metadata.title)}`,

@@ -1,11 +1,14 @@
 import { describe, expect, test } from 'vitest';
 
 import {
+  createMirrorBlockMarker,
   createMirrorDocFilename,
   createMirrorDocPathMap,
   createMirrorFrontmatter,
+  createMirrorNewBlockMarker,
   encodeMirrorId,
-  getMirrorDocPath,
+  getMirrorBaselineDescriptorPath,
+  getMirrorBaselinePath,
   getMirrorSnapshotPath,
   stableJson,
 } from '../format';
@@ -19,8 +22,8 @@ describe('local mirror format', () => {
 
   test('creates safe human-readable document paths', () => {
     expect(encodeMirrorId('../doc:name*')).toBe('..%2Fdoc%3Aname%2A');
-    expect(getMirrorDocPath('How to use folder and Tags')).toBe(
-      'docs/How-to-use-folder-and-Tags.md'
+    expect(createMirrorDocFilename('How to use folder and Tags')).toBe(
+      'How-to-use-folder-and-Tags.md'
     );
     expect(createMirrorDocFilename('../CON')).toBe('_CON.md');
     expect(getMirrorSnapshotPath('../doc:name*')).toBe(
@@ -90,5 +93,25 @@ describe('local mirror format', () => {
     expect(frontmatter).toContain('title: "A: title"');
     expect(frontmatter).toContain('tags: ["tag"]');
     expect(frontmatter).toContain('sourceHash: "source-hash"');
+    expect(frontmatter).toContain('affineFormatVersion: 2');
+    expect(frontmatter).toContain('markerGrammarVersion: 1');
+  });
+
+  test('creates versioned baseline paths and strict block markers', () => {
+    expect(getMirrorBaselinePath('../doc:name*')).toBe(
+      '.metadata/baselines/..%2Fdoc%3Aname%2A.md'
+    );
+    expect(getMirrorBaselineDescriptorPath('../doc:name*')).toBe(
+      '.metadata/baselines/..%2Fdoc%3Aname%2A.json'
+    );
+    expect(createMirrorBlockMarker('block-1', 'affine:paragraph')).toBe(
+      '<!-- affine-mirror:block id="block-1" flavour="affine:paragraph" -->'
+    );
+    expect(createMirrorNewBlockMarker('draft-1', 'affine:paragraph')).toBe(
+      '<!-- affine-mirror:block id="new:draft-1" flavour="affine:paragraph" -->'
+    );
+    expect(() =>
+      createMirrorBlockMarker('bad\nid', 'affine:paragraph')
+    ).toThrow('Invalid local mirror block marker fields');
   });
 });

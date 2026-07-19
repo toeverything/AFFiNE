@@ -4,9 +4,14 @@ import {
   finalizeGeneration,
   inspectTarget,
   revealMirror,
+  scanTarget,
+  scanVersion1Migration,
   selectProjectDirectory,
   writeBatch,
 } from './mirror';
+import { startMirrorWatcher, stopMirrorWatcher } from './watcher';
+
+export { mirrorEvents } from './watcher';
 
 export const mirrorHandlers = {
   selectProjectDirectory,
@@ -16,4 +21,8 @@ export const mirrorHandlers = {
   writeBatch,
   finalizeGeneration,
   revealMirror,
+  scanTarget,
+  scanVersion1Migration,
+  startWatching: startMirrorWatcher,
+  stopWatching: stopMirrorWatcher,
 };

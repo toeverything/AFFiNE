@@ -2,7 +2,10 @@ import type { WorkspaceDBService } from '@affine/core/modules/db';
 import type { DesktopApiService } from '@affine/core/modules/desktop-api';
 import type { DocsService } from '@affine/core/modules/doc';
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
-import type { WorkspacePermissionService } from '@affine/core/modules/permissions';
+import type {
+  GuardService,
+  WorkspacePermissionService,
+} from '@affine/core/modules/permissions';
 import type { TagService } from '@affine/core/modules/tag';
 import {
   WorkspaceInitialized,
@@ -19,15 +22,32 @@ import {
   take,
 } from 'rxjs';
 
-import { createMirrorDocPathMap, LOCAL_MIRROR_WORKSPACE_PATH } from './format';
+import {
+  createMirrorDocPathMap,
+  getMirrorBaselineDescriptorPath,
+  getMirrorBaselinePath,
+  LOCAL_MIRROR_BLOCK_MARKER_GRAMMAR_VERSION,
+  LOCAL_MIRROR_WORKSPACE_PATH,
+} from './format';
 import { createLocalMirrorProjection } from './projection';
+import {
+  applyMirrorReconciliation,
+  LocalMirrorPermissionError,
+  LocalMirrorSourceRaceError,
+  parseMirrorMarkdown,
+  planMirrorReconciliation,
+} from './reconciler';
 import type { LocalMirrorSerializer } from './serializer';
 import {
+  LOCAL_MIRROR_FORMAT_VERSION,
   LOCAL_MIRROR_MAX_FILE_BYTES,
+  LocalMirrorBaselineDescriptorSchema,
   type LocalMirrorConfig,
   type LocalMirrorDocMetadata,
+  type LocalMirrorFileKind,
   type LocalMirrorManifest,
   LocalMirrorManifestSchema,
+  type LocalMirrorManifestV2,
   type LocalMirrorSerializedAsset,
   type LocalMirrorSerializedDocument,
   type LocalMirrorSerializedFile,
@@ -44,6 +64,95 @@ class LocalMirrorConflictError extends Error {
   constructor(readonly paths: string[]) {
     super('Local mirror contains modified files');
   }
+}
+
+class LocalMirrorMigrationConflictError extends LocalMirrorConflictError {
+  override name = 'LocalMirrorMigrationConflictError';
+}
+
+class LocalMirrorMergeConflictError extends Error {
+  constructor(
+    readonly path: string,
+    readonly reason: string
+  ) {
+    super(reason);
+  }
+}
+
+class LocalMirrorUnsupportedChangeError extends Error {
+  constructor(
+    readonly paths: string[],
+    message: string
+  ) {
+    super(message);
+  }
+}
+
+class LocalMirrorImportPermissionError extends LocalMirrorPermissionError {
+  constructor(
+    readonly docId: string,
+    readonly path: string
+  ) {
+    super('Document update permission denied');
+  }
+}
+
+type LocalMirrorDraftManifestFiles = Record<
+  string,
+  {
+    kind: LocalMirrorFileKind;
+    sha256: string;
+    docId?: string;
+    sourceHash?: string;
+  }
+>;
+
+export function decodeMirrorText(
+  content: Uint8Array | undefined,
+  path: string
+): string {
+  if (!content) {
+    throw new LocalMirrorUnsupportedChangeError(
+      [path],
+      'A managed mirror file was deleted or could not be read'
+    );
+  }
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(content);
+  } catch {
+    throw new LocalMirrorUnsupportedChangeError(
+      [path],
+      'A managed mirror file is not valid UTF-8'
+    );
+  }
+}
+
+function completeLocalMirrorV2ManifestFiles(
+  files: LocalMirrorDraftManifestFiles
+): LocalMirrorManifestV2['files'] {
+  return Object.fromEntries(
+    Object.entries(files).map(([path, entry]) => {
+      if (entry.kind !== 'markdown') return [path, entry];
+      if (!entry.docId || !entry.sourceHash) {
+        throw new Error(`Missing mirror identity for ${path}`);
+      }
+      const baselinePath = getMirrorBaselinePath(entry.docId);
+      const baseline = files[baselinePath];
+      if (!baseline || baseline.kind !== 'baseline') {
+        throw new Error(`Missing mirror baseline for ${path}`);
+      }
+      return [
+        path,
+        {
+          ...entry,
+          baselinePath,
+          markerGrammarVersion: LOCAL_MIRROR_BLOCK_MARKER_GRAMMAR_VERSION,
+          baseMarkdownHash: baseline.sha256,
+          baseSourceHash: entry.sourceHash,
+        },
+      ];
+    })
+  ) as LocalMirrorManifestV2['files'];
 }
 
 export function canUseLocalMirror(
@@ -107,6 +216,10 @@ export class LocalMirrorService extends Service {
   private replaceConflicts = false;
   private activeLease: string | null = null;
   private activeAbort: AbortController | null = null;
+  private watcherId: string | null = null;
+  private mirrorEventDispose: (() => void) | null = null;
+  private inboundDirty = false;
+  private readonly importingDocIds = new Set<string>();
 
   constructor(
     private readonly featureFlags: FeatureFlagService,
@@ -117,7 +230,8 @@ export class LocalMirrorService extends Service {
     private readonly tagService: TagService,
     private readonly localState: WorkspaceLocalState,
     private readonly desktopApi: DesktopApiService,
-    private readonly serializer: LocalMirrorSerializer
+    private readonly serializer: LocalMirrorSerializer,
+    private readonly guard: GuardService
   ) {
     super();
   }
@@ -200,8 +314,26 @@ export class LocalMirrorService extends Service {
     }
     if (this.runtimeActive) return;
     this.runtimeActive = true;
+    this.mirrorEventDispose = this.desktopApi.events.mirror.changed(event => {
+      if (
+        event.workspaceId === this.workspace.id &&
+        event.watcherId === this.watcherId
+      ) {
+        this.inboundDirty = true;
+        this.scheduleReconciliation(750, false, false);
+      }
+    });
     this.updateDispose = this.workspace.engine.doc.storage.subscribeDocUpdate(
       update => {
+        if (this.importingDocIds.has(update.docId)) return;
+        if (
+          this.importingDocIds.size > 0 &&
+          (update.docId === this.workspace.id ||
+            update.docId.startsWith('db$') ||
+            update.docId.startsWith('userdata$'))
+        ) {
+          return;
+        }
         if (
           update.docId === this.workspace.id ||
           update.docId.startsWith('db$') ||
@@ -221,9 +353,12 @@ export class LocalMirrorService extends Service {
     this.generationToken++;
     this.updateDispose?.();
     this.updateDispose = null;
+    this.mirrorEventDispose?.();
+    this.mirrorEventDispose = null;
     this.pending = false;
     this.fullPending = false;
     this.dirtyDocIds.clear();
+    this.inboundDirty = false;
     this.replaceConflicts = false;
     if (this.updateTimer) clearTimeout(this.updateTimer);
     this.updateTimer = null;
@@ -236,7 +371,31 @@ export class LocalMirrorService extends Service {
         .abortGeneration({ lease })
         .catch(console.error);
     }
+    const watcherId = this.watcherId;
+    this.watcherId = null;
+    if (watcherId) {
+      Promise.resolve(
+        this.desktopApi.handler.mirror.stopWatching({ watcherId })
+      ).catch(console.error);
+    }
     this.status$.setValue(status);
+  }
+
+  private async ensureWatcher(projectRoot: string) {
+    if (this.watcherId) return;
+    const result = await this.desktopApi.handler.mirror.startWatching({
+      projectRoot,
+      workspaceId: this.workspace.id,
+    });
+    if (!this.runtimeActive || this.config.projectRoot !== projectRoot) {
+      this.desktopApi.handler.mirror.stopWatching({
+        watcherId: result.watcherId,
+      });
+      return;
+    }
+    this.watcherId = result.watcherId;
+    this.inboundDirty = true;
+    this.scheduleReconciliation(0, false, false);
   }
 
   private assertCanRun(token: number) {
@@ -286,14 +445,52 @@ export class LocalMirrorService extends Service {
         this.fullPending = false;
         this.dirtyDocIds.clear();
         try {
-          if (full || dirtyDocIds.length === 0) {
+          if (this.inboundDirty) {
+            const inbound = await this.reconcileInbound();
+            if (inbound.completed) {
+              this.inboundDirty = false;
+              if (full && !inbound.reconciled) {
+                this.scheduleReconciliation(0, replaceConflicts, true);
+              }
+            }
+          } else if (full || dirtyDocIds.length === 0) {
             await this.reconcile(replaceConflicts);
           } else {
             await this.reconcileDocuments(dirtyDocIds, replaceConflicts);
           }
         } catch (error) {
-          if (error instanceof LocalMirrorConflictError) {
+          if (error instanceof LocalMirrorMigrationConflictError) {
+            this.status$.setValue({
+              type: 'migration-conflict',
+              paths: error.paths,
+            });
+          } else if (error instanceof LocalMirrorConflictError) {
             this.status$.setValue({ type: 'conflict', paths: error.paths });
+          } else if (error instanceof LocalMirrorMergeConflictError) {
+            this.status$.setValue({
+              type: 'merge-conflict',
+              path: error.path,
+              reason: error.reason,
+            });
+          } else if (error instanceof LocalMirrorUnsupportedChangeError) {
+            this.status$.setValue({
+              type: 'unsupported-local-change',
+              paths: error.paths,
+              message: error.message,
+            });
+          } else if (error instanceof LocalMirrorImportPermissionError) {
+            this.status$.setValue({
+              type: 'permission-denied',
+              docId: error.docId,
+              path: error.path,
+            });
+          } else if (error instanceof LocalMirrorPermissionError) {
+            this.status$.setValue({ type: 'permission-denied' });
+          } else if (error instanceof LocalMirrorSourceRaceError) {
+            this.status$.setValue({
+              type: 'external-change-pending',
+              message: error.message,
+            });
           } else if ((error as Error).name !== 'AbortError') {
             this.status$.setValue({
               type: 'error',
@@ -310,13 +507,54 @@ export class LocalMirrorService extends Service {
     }
   }
 
+  private getMirrorDocuments(sorted = false) {
+    const records = [...this.docs.list.docs$.value];
+    if (sorted) records.sort((left, right) => left.id.localeCompare(right.id));
+    const metadata: LocalMirrorDocMetadata[] = records.map(record => ({
+      id: record.id,
+      title: record.title$.value,
+      createDate: record.createdAt$.value,
+      updatedDate: record.updatedAt$.value,
+      trash: record.trash$.value,
+      tags: record.meta$.value.tags ?? [],
+      primaryMode: record.primaryMode$.value,
+      properties: record.properties$.value,
+    }));
+    return { records, metadata, docPaths: createMirrorDocPathMap(metadata) };
+  }
+
+  private createWorkspaceProjection(
+    generatedAt: string,
+    docs: LocalMirrorDocMetadata[],
+    docPaths: ReadonlyMap<string, string>
+  ) {
+    return createLocalMirrorProjection({
+      workspace: {
+        id: this.workspace.id,
+        name: this.workspace.name$.value ?? 'Untitled workspace',
+        flavour: this.workspace.flavour,
+      },
+      generatedAt,
+      docs,
+      docPaths,
+      folders: this.workspaceDB.db.folders.find().map(folder => ({
+        ...folder,
+        parentId: folder.parentId ?? null,
+      })),
+      tags: this.tagService.tagList.tagMetas$.value.map(tag => ({
+        id: tag.id,
+        value: tag.name,
+        color: tag.color,
+      })),
+    });
+  }
+
   private async writeFiles(
     token: number,
     generation: string,
     projectRoot: string,
     files: LocalMirrorSerializedFile[],
-    manifestFiles: LocalMirrorManifest['files'],
-    replaceConflicts: boolean
+    manifestFiles: LocalMirrorDraftManifestFiles
   ) {
     const lease = this.activeLease;
     if (!lease)
@@ -329,11 +567,7 @@ export class LocalMirrorService extends Service {
         workspaceId: this.workspace.id,
         generation,
         files: [file],
-        replaceConflicts,
       });
-      if (result.conflicts.length > 0) {
-        throw new LocalMirrorConflictError(result.conflicts);
-      }
       const hashes = result.hashes as Record<string, string>;
       const hash = hashes[file.path];
       if (!hash) throw new Error(`Mirror helper did not hash ${file.path}`);
@@ -352,16 +586,14 @@ export class LocalMirrorService extends Service {
     projectRoot: string,
     doc: Store,
     serialized: LocalMirrorSerializedDocument,
-    manifestFiles: LocalMirrorManifest['files'],
-    replaceConflicts: boolean
+    manifestFiles: LocalMirrorDraftManifestFiles
   ) {
     await this.writeFiles(
       token,
       generation,
       projectRoot,
       serialized.files,
-      manifestFiles,
-      replaceConflicts
+      manifestFiles
     );
     for (const asset of serialized.assets) {
       this.assertCanRun(token);
@@ -378,8 +610,7 @@ export class LocalMirrorService extends Service {
         generation,
         projectRoot,
         [file],
-        manifestFiles,
-        replaceConflicts
+        manifestFiles
       );
     }
   }
@@ -411,7 +642,298 @@ export class LocalMirrorService extends Service {
     if (lease) await this.desktopApi.handler.mirror.abortGeneration({ lease });
   }
 
-  private async reconcile(replaceConflicts: boolean) {
+  private async reconcileInbound(): Promise<{
+    completed: boolean;
+    reconciled: boolean;
+  }> {
+    const token = this.generationToken;
+    const projectRoot = this.config.projectRoot;
+    if (!projectRoot) return { completed: true, reconciled: false };
+    this.assertCanRun(token);
+
+    const engineState = await firstValueFrom(
+      this.workspace.engine.doc.state$.pipe(take(1))
+    );
+    if (!engineState.synced) {
+      this.status$.setValue({
+        type: 'external-change-pending',
+        message: 'Local edits will be applied after AFFiNE finishes syncing',
+      });
+      return { completed: false, reconciled: false };
+    }
+
+    const scan = await this.desktopApi.handler.mirror.scanTarget({
+      projectRoot,
+      workspaceId: this.workspace.id,
+      includeContent: true,
+    });
+    if (scan.state !== 'owned' || !scan.manifest) {
+      throw new LocalMirrorUnsupportedChangeError(
+        [],
+        'The mirror target is no longer owned by this workspace'
+      );
+    }
+    if (scan.manifest.formatVersion !== LOCAL_MIRROR_FORMAT_VERSION) {
+      const migration =
+        await this.desktopApi.handler.mirror.scanVersion1Migration({
+          projectRoot,
+          workspaceId: this.workspace.id,
+        });
+      throw new LocalMirrorMigrationConflictError(migration.conflicts);
+    }
+
+    const changedPaths = Object.entries(scan.manifest.files)
+      .filter(([path, entry]) => scan.files[path]?.sha256 !== entry.sha256)
+      .map(([path]) => path);
+    if (changedPaths.length === 0) {
+      await this.ensureWatcher(projectRoot);
+      this.status$.setValue({
+        type: 'idle',
+        lastCompletedAt: scan.manifest.lastCompletedAt,
+      });
+      return { completed: true, reconciled: false };
+    }
+    const unsupportedPaths = changedPaths.filter(
+      path => scan.manifest?.files[path]?.kind !== 'markdown'
+    );
+    if (unsupportedPaths.length > 0) {
+      throw new LocalMirrorUnsupportedChangeError(
+        unsupportedPaths,
+        'Only existing supported document Markdown can be edited locally'
+      );
+    }
+
+    const readiness = new AbortController();
+    this.activeAbort = readiness;
+    await this.workspace.engine.doc.waitForDocLoaded(
+      this.workspace.id,
+      readiness.signal
+    );
+    this.assertCanRun(token);
+
+    const { records, metadata, docPaths } = this.getMirrorDocuments();
+    const recordsById = new Map(records.map(record => [record.id, record]));
+    const metadataById = new Map(metadata.map(doc => [doc.id, doc]));
+    const observedLiveHashes: Record<string, string | null> = {};
+    this.status$.setValue({
+      type: 'importing',
+      completed: 0,
+      total: changedPaths.length,
+    });
+
+    for (const [index, path] of changedPaths.entries()) {
+      this.assertCanRun(token);
+      const entry = scan.manifest.files[path];
+      if (entry.kind !== 'markdown' || !entry.docId) {
+        throw new LocalMirrorUnsupportedChangeError(
+          [path],
+          'The changed file is not an importable document'
+        );
+      }
+      const docId = entry.docId;
+      const record = recordsById.get(docId);
+      const docMetadata = metadataById.get(docId);
+      if (!record || !docMetadata) {
+        throw new LocalMirrorUnsupportedChangeError(
+          [path],
+          'Creating or restoring documents from local files is not supported'
+        );
+      }
+      const descriptorPath = getMirrorBaselineDescriptorPath(docId);
+      const descriptorFile = scan.files[descriptorPath];
+      let descriptor;
+      try {
+        descriptor = LocalMirrorBaselineDescriptorSchema.parse(
+          JSON.parse(decodeMirrorText(descriptorFile?.content, descriptorPath))
+        );
+      } catch (error) {
+        if (error instanceof LocalMirrorUnsupportedChangeError) throw error;
+        throw new LocalMirrorUnsupportedChangeError(
+          [descriptorPath],
+          'The document baseline descriptor is invalid'
+        );
+      }
+      if (
+        descriptor.docId !== docId ||
+        descriptor.markdownPath !== path ||
+        descriptor.baselinePath !== entry.baselinePath ||
+        descriptor.protected
+      ) {
+        throw new LocalMirrorUnsupportedChangeError(
+          [path],
+          descriptor.protected
+            ? 'This document contains protected content and is read-only in the mirror'
+            : 'The document baseline identity does not match the manifest'
+        );
+      }
+
+      const opened = this.docs.open(docId);
+      const releasePriority = opened.doc.addPriorityLoad(100);
+      try {
+        await this.workspace.engine.doc.waitForDocLoaded(
+          docId,
+          readiness.signal
+        );
+        this.assertCanRun(token);
+        const remoteSerialized = await this.serializer.serialize(
+          opened.doc.blockSuiteDoc,
+          docMetadata,
+          docPaths
+        );
+        const remoteFile = remoteSerialized.files.find(
+          file => file.kind === 'markdown'
+        );
+        if (!remoteFile || typeof remoteFile.content !== 'string') {
+          throw new Error('AFFiNE did not produce canonical document Markdown');
+        }
+        const base = parseMirrorMarkdown(
+          decodeMirrorText(
+            scan.files[entry.baselinePath]?.content,
+            entry.baselinePath
+          )
+        );
+        if (
+          scan.files[entry.baselinePath]?.sha256 !== entry.baseMarkdownHash ||
+          descriptor.sourceHash !== entry.baseSourceHash ||
+          base.sourceHash !== entry.baseSourceHash
+        ) {
+          throw new LocalMirrorUnsupportedChangeError(
+            [path],
+            'The document baseline controls do not match the manifest'
+          );
+        }
+        let local: ReturnType<typeof parseMirrorMarkdown>;
+        try {
+          local = parseMirrorMarkdown(
+            decodeMirrorText(scan.files[path]?.content, path)
+          );
+        } catch (error) {
+          if (error instanceof LocalMirrorUnsupportedChangeError) throw error;
+          throw new LocalMirrorUnsupportedChangeError(
+            [path],
+            (error as Error).message
+          );
+        }
+        const remote = parseMirrorMarkdown(remoteFile.content);
+        const result = planMirrorReconciliation(base, local, remote);
+        if (result.type === 'conflict') {
+          throw new LocalMirrorMergeConflictError(path, result.reason);
+        }
+        if (result.type === 'unsupported') {
+          throw new LocalMirrorUnsupportedChangeError([path], result.reason);
+        }
+        if (result.type === 'apply') {
+          const structuralOperations = result.operations.filter(
+            operation => operation.type !== 'update'
+          );
+          if (
+            descriptor.protectedReasons.length > 0 &&
+            structuralOperations.length > 0
+          ) {
+            throw new LocalMirrorUnsupportedChangeError(
+              [path],
+              'Only text edits are supported when protected content is present'
+            );
+          }
+          const descriptorBlocksById = new Map(
+            descriptor.blocks.map(block => [block.id, block])
+          );
+          if (
+            descriptorBlocksById.size !== descriptor.blocks.length ||
+            descriptor.blocks.some(block => {
+              const parent = opened.doc.blockSuiteDoc.getModelById(
+                block.parentId
+              );
+              return (
+                !parent ||
+                parent.flavour !== 'affine:note' ||
+                !parent.children.some(child => child.id === block.id)
+              );
+            })
+          ) {
+            throw new LocalMirrorUnsupportedChangeError(
+              [path],
+              'The document body hierarchy changed'
+            );
+          }
+          const parentId = descriptor.blocks[0]?.parentId;
+          if (!parentId) {
+            throw new LocalMirrorUnsupportedChangeError(
+              [path],
+              'The document has no editable body blocks'
+            );
+          }
+          if (
+            structuralOperations.length > 0 &&
+            descriptor.blocks.some(block => block.parentId !== parentId)
+          ) {
+            throw new LocalMirrorUnsupportedChangeError(
+              [path],
+              'Structural edits across multiple body notes are unsupported'
+            );
+          }
+          this.importingDocIds.add(docId);
+          try {
+            try {
+              await applyMirrorReconciliation({
+                doc: opened.doc.blockSuiteDoc,
+                parentId,
+                expectedParentIds: new Map(
+                  descriptor.blocks.map(block => [block.id, block.parentId])
+                ),
+                result,
+                canUpdate: async () =>
+                  this.workspace.flavour === 'local' ||
+                  this.guard.can('Doc_Update', docId),
+                sourceStillCurrent: async () => {
+                  const current = await this.serializer.serialize(
+                    opened.doc.blockSuiteDoc,
+                    {
+                      ...docMetadata,
+                      title: record.title$.value,
+                      updatedDate: record.updatedAt$.value,
+                      trash: record.trash$.value,
+                      tags: record.meta$.value.tags ?? [],
+                      primaryMode: record.primaryMode$.value,
+                      properties: record.properties$.value,
+                    },
+                    docPaths
+                  );
+                  return current.sourceHash === remoteSerialized.sourceHash;
+                },
+                changeTitle: title => opened.doc.changeDocTitle(title),
+              });
+            } catch (error) {
+              if (error instanceof LocalMirrorPermissionError) {
+                throw new LocalMirrorImportPermissionError(docId, path);
+              }
+              throw error;
+            }
+          } finally {
+            this.importingDocIds.delete(docId);
+          }
+        }
+        observedLiveHashes[path] = scan.files[path]?.sha256 ?? null;
+      } finally {
+        releasePriority();
+        opened.release();
+      }
+      this.status$.setValue({
+        type: 'importing',
+        completed: index + 1,
+        total: changedPaths.length,
+      });
+    }
+
+    this.assertCanRun(token);
+    await this.reconcile(false, observedLiveHashes);
+    return { completed: true, reconciled: true };
+  }
+
+  private async reconcile(
+    replaceConflicts: boolean,
+    observedLiveHashes?: Record<string, string | null>
+  ) {
     const token = this.generationToken;
     const projectRoot = this.config.projectRoot;
     if (!projectRoot) return;
@@ -436,26 +958,35 @@ export class LocalMirrorService extends Service {
     if (inspection.state === 'unowned') {
       throw new Error('The selected .affine folder contains unmanaged files');
     }
+    if (
+      inspection.state === 'owned' &&
+      inspection.manifest?.formatVersion === 1
+    ) {
+      const migration =
+        await this.desktopApi.handler.mirror.scanVersion1Migration({
+          projectRoot,
+          workspaceId: this.workspace.id,
+        });
+      if (migration.conflicts.length > 0 && !replaceConflicts) {
+        throw new LocalMirrorMigrationConflictError(migration.conflicts);
+      }
+    }
+    if (
+      inspection.state === 'owned' &&
+      inspection.manifest?.formatVersion === LOCAL_MIRROR_FORMAT_VERSION &&
+      !this.watcherId
+    ) {
+      await this.ensureWatcher(projectRoot);
+      this.scheduleReconciliation(0, false, true);
+      return;
+    }
     this.assertCanRun(token);
 
     const generation = nanoid();
     const signal = await this.startGeneration(projectRoot, generation);
     const generatedAt = new Date().toISOString();
-    const records = [...this.docs.list.docs$.value].sort((left, right) =>
-      left.id.localeCompare(right.id)
-    );
-    const metadata: LocalMirrorDocMetadata[] = records.map(record => ({
-      id: record.id,
-      title: record.title$.value,
-      createDate: record.createdAt$.value,
-      updatedDate: record.updatedAt$.value,
-      trash: record.trash$.value,
-      tags: record.meta$.value.tags ?? [],
-      primaryMode: record.primaryMode$.value,
-      properties: record.properties$.value,
-    }));
-    const docPaths = createMirrorDocPathMap(metadata);
-    const files: LocalMirrorManifest['files'] = {};
+    const { records, metadata, docPaths } = this.getMirrorDocuments(true);
+    const files: LocalMirrorDraftManifestFiles = {};
     this.status$.setValue({
       type: 'syncing',
       completed: 0,
@@ -468,7 +999,7 @@ export class LocalMirrorService extends Service {
       const opened = this.docs.open(record.id);
       const releasePriority = opened.doc.addPriorityLoad(100);
       try {
-        await opened.doc.waitForSyncReady(signal);
+        await this.workspace.engine.doc.waitForDocLoaded(record.id, signal);
         this.assertCanRun(token);
         const serialized = await this.serializer.serialize(
           opened.doc.blockSuiteDoc,
@@ -481,8 +1012,7 @@ export class LocalMirrorService extends Service {
           projectRoot,
           opened.doc.blockSuiteDoc,
           serialized,
-          files,
-          replaceConflicts
+          files
         );
       } finally {
         releasePriority();
@@ -495,27 +1025,11 @@ export class LocalMirrorService extends Service {
       });
     }
 
-    const folders = this.workspaceDB.db.folders.find().map(folder => ({
-      ...folder,
-      parentId: folder.parentId ?? null,
-    }));
-    const tags = this.tagService.tagList.tagMetas$.value.map(tag => ({
-      id: tag.id,
-      value: tag.name,
-      color: tag.color,
-    }));
-    const projection = createLocalMirrorProjection({
-      workspace: {
-        id: this.workspace.id,
-        name: this.workspace.name$.value ?? 'Untitled workspace',
-        flavour: this.workspace.flavour,
-      },
+    const projection = this.createWorkspaceProjection(
       generatedAt,
-      docs: metadata,
-      docPaths,
-      folders,
-      tags,
-    });
+      metadata,
+      docPaths
+    );
     await this.writeFiles(
       token,
       generation,
@@ -528,8 +1042,7 @@ export class LocalMirrorService extends Service {
           content: projection.workspaceJson,
         },
       ],
-      files,
-      replaceConflicts
+      files
     );
     this.assertCanRun(token);
 
@@ -538,13 +1051,13 @@ export class LocalMirrorService extends Service {
     );
     const sourceState = engineState.synced ? 'synced' : 'cached-offline';
     const manifest = LocalMirrorManifestSchema.parse({
-      formatVersion: 1,
+      formatVersion: LOCAL_MIRROR_FORMAT_VERSION,
       workspaceId: this.workspace.id,
       workspaceFlavour: this.workspace.flavour,
       generation,
       lastCompletedAt: generatedAt,
       sourceSyncState: sourceState,
-      files,
+      files: completeLocalMirrorV2ManifestFiles(files),
     });
     const stalePaths = Object.keys(inspection.manifest?.files ?? {}).filter(
       path => !files[path]
@@ -560,6 +1073,7 @@ export class LocalMirrorService extends Service {
       manifest,
       stalePaths,
       replaceConflicts,
+      observedLiveHashes,
     });
     if (final.conflicts.length > 0) {
       throw new LocalMirrorConflictError(final.conflicts);
@@ -567,6 +1081,7 @@ export class LocalMirrorService extends Service {
     this.activeLease = null;
     this.activeAbort = null;
     this.assertCanRun(token);
+    await this.ensureWatcher(projectRoot);
     this.status$.setValue({ type: 'idle', lastCompletedAt: generatedAt });
   }
 
@@ -594,23 +1109,14 @@ export class LocalMirrorService extends Service {
       await this.reconcile(replaceConflicts);
       return;
     }
+    if (inspection.manifest.formatVersion !== LOCAL_MIRROR_FORMAT_VERSION) {
+      await this.reconcile(replaceConflicts);
+      return;
+    }
     this.assertCanRun(token);
 
     const generatedAt = new Date().toISOString();
-    const records = [...this.docs.list.docs$.value].sort((left, right) =>
-      left.id.localeCompare(right.id)
-    );
-    const metadata: LocalMirrorDocMetadata[] = records.map(record => ({
-      id: record.id,
-      title: record.title$.value,
-      createDate: record.createdAt$.value,
-      updatedDate: record.updatedAt$.value,
-      trash: record.trash$.value,
-      tags: record.meta$.value.tags ?? [],
-      primaryMode: record.primaryMode$.value,
-      properties: record.properties$.value,
-    }));
-    const docPaths = createMirrorDocPathMap(metadata);
+    const { records, metadata, docPaths } = this.getMirrorDocuments(true);
     if (haveMirrorDocumentPathsChanged(inspection.manifest, docPaths)) {
       await this.reconcile(replaceConflicts);
       return;
@@ -619,7 +1125,7 @@ export class LocalMirrorService extends Service {
     const signal = await this.startGeneration(projectRoot, generation);
     const recordsById = new Map(records.map(record => [record.id, record]));
     const metadataById = new Map(metadata.map(doc => [doc.id, doc]));
-    const files: LocalMirrorManifest['files'] = {
+    const files: LocalMirrorDraftManifestFiles = {
       ...inspection.manifest.files,
     };
     const stalePaths = new Set<string>();
@@ -657,7 +1163,7 @@ export class LocalMirrorService extends Service {
         const releasePriority = opened.doc.addPriorityLoad(100);
         let requiresFullReconciliation = false;
         try {
-          await opened.doc.waitForSyncReady(signal);
+          await this.workspace.engine.doc.waitForDocLoaded(docId, signal);
           this.assertCanRun(token);
           const serialized = await this.serializer.serialize(
             opened.doc.blockSuiteDoc,
@@ -680,8 +1186,7 @@ export class LocalMirrorService extends Service {
               projectRoot,
               opened.doc.blockSuiteDoc,
               serialized,
-              files,
-              replaceConflicts
+              files
             );
           }
         } finally {
@@ -701,27 +1206,11 @@ export class LocalMirrorService extends Service {
       });
     }
 
-    const folders = this.workspaceDB.db.folders.find().map(folder => ({
-      ...folder,
-      parentId: folder.parentId ?? null,
-    }));
-    const tags = this.tagService.tagList.tagMetas$.value.map(tag => ({
-      id: tag.id,
-      value: tag.name,
-      color: tag.color,
-    }));
-    const projection = createLocalMirrorProjection({
-      workspace: {
-        id: this.workspace.id,
-        name: this.workspace.name$.value ?? 'Untitled workspace',
-        flavour: this.workspace.flavour,
-      },
+    const projection = this.createWorkspaceProjection(
       generatedAt,
-      docs: metadata,
-      docPaths,
-      folders,
-      tags,
-    });
+      metadata,
+      docPaths
+    );
     await this.writeFiles(
       token,
       generation,
@@ -734,8 +1223,7 @@ export class LocalMirrorService extends Service {
           content: projection.workspaceJson,
         },
       ],
-      files,
-      replaceConflicts
+      files
     );
     const engineState = await firstValueFrom(
       this.workspace.engine.doc.state$.pipe(take(1))
@@ -745,7 +1233,7 @@ export class LocalMirrorService extends Service {
       generation,
       lastCompletedAt: generatedAt,
       sourceSyncState: engineState.synced ? 'synced' : 'cached-offline',
-      files,
+      files: completeLocalMirrorV2ManifestFiles(files),
     });
     this.assertCanRun(token);
     const activeLease = this.activeLease;
@@ -765,6 +1253,7 @@ export class LocalMirrorService extends Service {
     this.activeLease = null;
     this.activeAbort = null;
     this.assertCanRun(token);
+    await this.ensureWatcher(projectRoot);
     this.status$.setValue({ type: 'idle', lastCompletedAt: generatedAt });
   }
 
@@ -809,12 +1298,14 @@ export class LocalMirrorService extends Service {
   syncNow() {
     const reason = this.runtimeReason();
     if (reason) throw new Error(`Local mirror is not runnable: ${reason.type}`);
+    if (this.watcherId) this.inboundDirty = true;
     this.scheduleReconciliation(0, false, true);
   }
 
   replaceLocalChanges() {
     const reason = this.runtimeReason();
     if (reason) throw new Error(`Local mirror is not runnable: ${reason.type}`);
+    this.inboundDirty = false;
     this.scheduleReconciliation(0, true, true);
   }
 

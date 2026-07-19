@@ -2,7 +2,10 @@ import type { WorkspaceDBService } from '@affine/core/modules/db';
 import type { DesktopApiService } from '@affine/core/modules/desktop-api';
 import type { DocsService } from '@affine/core/modules/doc';
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
-import type { WorkspacePermissionService } from '@affine/core/modules/permissions';
+import type {
+  GuardService,
+  WorkspacePermissionService,
+} from '@affine/core/modules/permissions';
 import type { TagService } from '@affine/core/modules/tag';
 import type {
   WorkspaceLocalState,
@@ -15,6 +18,7 @@ import { describe, expect, test, vi } from 'vitest';
 import type { LocalMirrorSerializer } from '../serializer';
 import {
   canUseLocalMirror,
+  decodeMirrorText,
   haveMirrorDocumentPathsChanged,
   LocalMirrorService,
   materializeLocalMirrorAsset,
@@ -27,8 +31,10 @@ import {
 
 function createService(options: {
   flagEnabled: boolean;
+  engineSynced?: boolean;
+  initialManifest?: LocalMirrorManifest;
+  migrationConflicts?: string[];
   writeBatch?: (input: { files: Array<{ path: string }> }) => Promise<{
-    conflicts: string[];
     hashes: Record<string, string>;
   }>;
 }) {
@@ -48,7 +54,9 @@ function createService(options: {
   const permissions = {
     permission: { isTeam$, isOwner$ },
   } as unknown as WorkspacePermissionService;
-  const engineState$ = new BehaviorSubject({ synced: true });
+  const engineState$ = new BehaviorSubject({
+    synced: options.engineSynced ?? true,
+  });
   let emitDocUpdate: ((update: { docId: string }) => void) | null = null;
   const subscribeDocUpdate = vi.fn(
     (callback: (update: { docId: string }) => void) => {
@@ -91,26 +99,75 @@ function createService(options: {
       config$.next(value);
     },
   } as unknown as WorkspaceLocalState;
-  const inspectTarget = vi.fn(async () => ({
-    state: 'empty' as const,
-    projectRoot: config.projectRoot,
-    mirrorPath: `${config.projectRoot}/.affine`,
-    manifest: null,
-  }));
+  let currentManifest: LocalMirrorManifest | null =
+    options.initialManifest ?? null;
+  const inspectTarget = vi.fn(async () =>
+    currentManifest
+      ? {
+          state: 'owned' as const,
+          projectRoot: config.projectRoot,
+          mirrorPath: `${config.projectRoot}/.affine`,
+          manifest: currentManifest,
+        }
+      : {
+          state: 'empty' as const,
+          projectRoot: config.projectRoot,
+          mirrorPath: `${config.projectRoot}/.affine`,
+          manifest: null,
+        }
+  );
   const writeBatch = vi.fn(
     options.writeBatch ??
       (async (input: { files: Array<{ path: string }> }) => ({
-        conflicts: [],
         hashes: Object.fromEntries(
           input.files.map(file => [file.path, 'hash'])
         ),
       }))
   );
-  const finalizeGeneration = vi.fn(async () => ({ conflicts: [] }));
+  const finalizeGeneration = vi.fn(
+    async (input: { manifest: LocalMirrorManifest }) => {
+      currentManifest = input.manifest;
+      return { conflicts: [] };
+    }
+  );
+  const scanTarget = vi.fn(async () => ({
+    state: 'owned' as const,
+    projectRoot: config.projectRoot,
+    mirrorPath: `${config.projectRoot}/.affine`,
+    manifest: currentManifest,
+    files: Object.fromEntries(
+      Object.entries(currentManifest?.files ?? {}).map(([path, entry]) => [
+        path,
+        { sha256: entry.sha256 },
+      ])
+    ),
+  }));
+  const scanVersion1Migration = vi.fn(async () => ({
+    conflicts: options.migrationConflicts ?? [],
+  }));
   const beginGeneration = vi.fn(async () => ({ lease: 'lease' }));
   const abortGeneration = vi.fn(async () => undefined);
+  const startWatching = vi.fn(async () => ({ watcherId: 'watcher' }));
+  const stopWatching = vi.fn(async () => undefined);
+  let emitMirrorChanged:
+    | ((event: { watcherId: string; workspaceId: string }) => void)
+    | null = null;
+  const changed = vi.fn(
+    (callback: (event: { watcherId: string; workspaceId: string }) => void) => {
+      emitMirrorChanged = callback;
+      return () => {
+        emitMirrorChanged = null;
+      };
+    }
+  );
+  const guard = {
+    can: vi.fn(async () => true),
+  } as unknown as GuardService;
   const desktopApi = {
-    events: { power: { resume: vi.fn(() => () => undefined) } },
+    events: {
+      power: { resume: vi.fn(() => () => undefined) },
+      mirror: { changed },
+    },
     handler: {
       mirror: {
         inspectTarget,
@@ -118,6 +175,10 @@ function createService(options: {
         abortGeneration,
         writeBatch,
         finalizeGeneration,
+        scanTarget,
+        scanVersion1Migration,
+        startWatching,
+        stopWatching,
       },
     },
   } as unknown as DesktopApiService;
@@ -136,7 +197,8 @@ function createService(options: {
         tagService,
         localState,
         desktopApi,
-        serializer
+        serializer,
+        guard
       )
   );
   const service = framework.provider().get(LocalMirrorService);
@@ -146,12 +208,28 @@ function createService(options: {
     inspectTarget,
     writeBatch,
     finalizeGeneration,
+    scanTarget,
+    scanVersion1Migration,
+    changed,
+    startWatching,
+    stopWatching,
     subscribeDocUpdate,
     emitDocUpdate: (docId: string) => emitDocUpdate?.({ docId }),
+    emitMirrorChanged: () =>
+      emitMirrorChanged?.({
+        watcherId: 'watcher',
+        workspaceId: 'workspace-1',
+      }),
   };
 }
 
 describe('local mirror permission gate', () => {
+  test('rejects malformed UTF-8 before parsing local Markdown', () => {
+    expect(() =>
+      decodeMirrorText(new Uint8Array([0xc3, 0x28]), 'docs/Notes.md')
+    ).toThrow('not valid UTF-8');
+  });
+
   test('rejects an oversized asset before materializing its bytes', async () => {
     const arrayBuffer = vi.fn(async () => new ArrayBuffer(0));
     const blob = {
@@ -221,6 +299,7 @@ describe('local mirror permission gate', () => {
     await Promise.resolve();
 
     expect(context.subscribeDocUpdate).not.toHaveBeenCalled();
+    expect(context.changed).not.toHaveBeenCalled();
     expect(context.inspectTarget).not.toHaveBeenCalled();
     expect(context.service.status$.value).toEqual({
       type: 'feature-disabled',
@@ -234,6 +313,9 @@ describe('local mirror permission gate', () => {
     await vi.waitFor(() =>
       expect(context.finalizeGeneration).toHaveBeenCalledTimes(1)
     );
+    await vi.waitFor(() => expect(context.scanTarget).toHaveBeenCalled());
+    await new Promise(resolve => setTimeout(resolve, 800));
+    expect(context.finalizeGeneration).toHaveBeenCalledTimes(1);
     context.finalizeGeneration.mockClear();
 
     context.emitDocUpdate('doc-1');
@@ -247,14 +329,56 @@ describe('local mirror permission gate', () => {
     context.service.dispose();
   });
 
+  test('scans an existing v2 mirror before the first outbound generation', async () => {
+    const initialManifest: LocalMirrorManifest = {
+      formatVersion: 2,
+      workspaceId: 'workspace-1',
+      workspaceFlavour: 'affine',
+      generation: 'generation-1',
+      lastCompletedAt: new Date(0).toISOString(),
+      sourceSyncState: 'synced',
+      files: {
+        'index.md': { kind: 'index', sha256: 'old-hash' },
+      },
+    };
+    const context = createService({ flagEnabled: true, initialManifest });
+    context.service.onWorkspaceInitialized();
+
+    await vi.waitFor(
+      () => expect(context.finalizeGeneration).toHaveBeenCalledTimes(1),
+      { timeout: 3000 }
+    );
+    expect(context.startWatching).toHaveBeenCalledTimes(1);
+    expect(context.scanTarget).toHaveBeenCalled();
+    expect(context.scanTarget.mock.invocationCallOrder[0]).toBeLessThan(
+      context.finalizeGeneration.mock.invocationCallOrder[0]
+    );
+    context.service.dispose();
+  });
+
+  test('does not drop an outbound update when a watcher rescan is pending', async () => {
+    const context = createService({ flagEnabled: true });
+    context.service.onWorkspaceInitialized();
+    await vi.waitFor(() =>
+      expect(context.service.status$.value.type).toBe('idle')
+    );
+    context.finalizeGeneration.mockClear();
+    context.scanTarget.mockClear();
+
+    context.emitDocUpdate('workspace-1');
+    context.emitMirrorChanged();
+
+    await vi.waitFor(() => expect(context.scanTarget).toHaveBeenCalled());
+    await vi.waitFor(() =>
+      expect(context.finalizeGeneration).toHaveBeenCalledTimes(1)
+    );
+    context.service.dispose();
+  });
+
   test('does not finalize a generation disabled during a write', async () => {
     let finishWrite: (value: {
-      conflicts: string[];
       hashes: Record<string, string>;
-    }) => void = (_value: {
-      conflicts: string[];
-      hashes: Record<string, string>;
-    }) => {
+    }) => void = (_value: { hashes: Record<string, string> }) => {
       throw new Error('Write was not started');
     };
     const context = createService({
@@ -268,7 +392,7 @@ describe('local mirror permission gate', () => {
     await vi.waitFor(() => expect(context.writeBatch).toHaveBeenCalled());
 
     context.flag$.setValue(false);
-    finishWrite({ conflicts: [], hashes: { 'index.md': 'hash' } });
+    finishWrite({ hashes: { 'index.md': 'hash' } });
     await vi.waitFor(() =>
       expect(context.service.status$.value).toEqual({
         type: 'feature-disabled',
@@ -276,6 +400,77 @@ describe('local mirror permission gate', () => {
     );
 
     expect(context.finalizeGeneration).not.toHaveBeenCalled();
+    context.service.dispose();
+  });
+
+  test('keeps local edits pending while workspace sync is offline', async () => {
+    const context = createService({
+      flagEnabled: true,
+      engineSynced: false,
+    });
+    context.service.onWorkspaceInitialized();
+    await vi.waitFor(() =>
+      expect(context.startWatching).toHaveBeenCalledTimes(1)
+    );
+
+    context.emitMirrorChanged();
+    await vi.waitFor(() =>
+      expect(context.service.status$.value).toEqual({
+        type: 'external-change-pending',
+        message: 'Local edits will be applied after AFFiNE finishes syncing',
+      })
+    );
+    context.service.dispose();
+  });
+
+  test('stops its watcher when the workspace runtime is disposed', async () => {
+    const context = createService({ flagEnabled: true });
+    context.service.onWorkspaceInitialized();
+    await vi.waitFor(() =>
+      expect(context.startWatching).toHaveBeenCalledTimes(1)
+    );
+
+    context.service.dispose();
+    await vi.waitFor(() =>
+      expect(context.stopWatching).toHaveBeenCalledWith({
+        watcherId: 'watcher',
+      })
+    );
+  });
+
+  test('uses confirmed AFFiNE replacement to resolve a v1 migration conflict', async () => {
+    const initialManifest: LocalMirrorManifest = {
+      formatVersion: 1,
+      workspaceId: 'workspace-1',
+      workspaceFlavour: 'affine',
+      generation: 'generation-1',
+      lastCompletedAt: new Date(0).toISOString(),
+      sourceSyncState: 'synced',
+      files: {
+        'index.md': { kind: 'index', sha256: 'old-hash' },
+      },
+    };
+    const context = createService({
+      flagEnabled: true,
+      initialManifest,
+      migrationConflicts: ['index.md'],
+    });
+    context.service.onWorkspaceInitialized();
+    await vi.waitFor(() =>
+      expect(context.service.status$.value).toEqual({
+        type: 'migration-conflict',
+        paths: ['index.md'],
+      })
+    );
+    expect(context.finalizeGeneration).not.toHaveBeenCalled();
+
+    context.service.replaceLocalChanges();
+    await vi.waitFor(() =>
+      expect(context.finalizeGeneration).toHaveBeenCalledTimes(1)
+    );
+    expect(context.finalizeGeneration).toHaveBeenCalledWith(
+      expect.objectContaining({ replaceConflicts: true })
+    );
     context.service.dispose();
   });
 });

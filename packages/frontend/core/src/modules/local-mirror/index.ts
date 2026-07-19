@@ -1,14 +1,14 @@
-export * from './format';
-export * from './projection';
-export * from './serializer';
-export * from './service';
-export * from './types';
+export { canUseLocalMirror, LocalMirrorService } from './service';
+export type { LocalMirrorStatus } from './types';
 
 import { WorkspaceDBService } from '@affine/core/modules/db';
 import { DesktopApiService } from '@affine/core/modules/desktop-api';
 import { DocsService } from '@affine/core/modules/doc';
 import { FeatureFlagService } from '@affine/core/modules/feature-flag';
-import { WorkspacePermissionService } from '@affine/core/modules/permissions';
+import {
+  GuardService,
+  WorkspacePermissionService,
+} from '@affine/core/modules/permissions';
 import { TagService } from '@affine/core/modules/tag';
 import {
   WorkspaceLocalState,
@@ -34,5 +34,6 @@ export function configureDesktopLocalMirrorModule(framework: Framework) {
       WorkspaceLocalState,
       DesktopApiService,
       LocalMirrorSerializer,
+      GuardService,
     ]);
 }

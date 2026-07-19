@@ -1,5 +1,5 @@
 import { dialogHandlers } from './dialog';
-import { mirrorHandlers } from './mirror';
+import { mirrorEvents, mirrorHandlers } from './mirror';
 import { dbEventsV1, dbHandlersV1, nbstoreHandlers } from './nbstore';
 import { previewHandlers } from './preview';
 import { provideExposed } from './provide';
@@ -17,6 +17,7 @@ export const handlers = {
 export const events = {
   db: dbEventsV1,
   workspace: workspaceEvents,
+  mirror: mirrorEvents,
 };
 
 const getExposedMeta = () => {

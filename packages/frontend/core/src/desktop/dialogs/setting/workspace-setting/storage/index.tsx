@@ -3,6 +3,7 @@ import {
   SettingWrapper,
 } from '@affine/component/setting-components';
 import { FeatureFlagService } from '@affine/core/modules/feature-flag';
+import { canUseLocalMirror } from '@affine/core/modules/local-mirror';
 import { WorkspacePermissionService } from '@affine/core/modules/permissions';
 import { WorkspaceService } from '@affine/core/modules/workspace';
 import { useI18n } from '@affine/i18n';
@@ -31,10 +32,7 @@ export const WorkspaceSettingStorage = ({
   );
 
   const canExport = !isTeam || isOwner;
-  const canMirror =
-    workspace.flavour === 'local' ||
-    isTeam === false ||
-    (isTeam === true && isOwner === true);
+  const canMirror = canUseLocalMirror(workspace.flavour, isTeam, isOwner);
   return (
     <>
       <SettingHeader

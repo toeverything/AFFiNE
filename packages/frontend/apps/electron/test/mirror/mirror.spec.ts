@@ -40,9 +40,18 @@ import {
   finalizeGeneration,
   inspectTarget,
   type MirrorManifest,
+  type MirrorManifestV2,
   revealMirror,
+  scanTarget,
+  scanVersion1Migration,
   writeBatch,
 } from '@affine/electron/helper/mirror/mirror';
+import {
+  mirrorEvents,
+  startMirrorWatcher,
+  stopAllMirrorWatchers,
+  stopMirrorWatcher,
+} from '@affine/electron/helper/mirror/watcher';
 
 let projectRoot: string;
 let appDataRoot: string;
@@ -54,6 +63,7 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
+  stopAllMirrorWatchers();
   await rm(projectRoot, { recursive: true, force: true });
   await rm(appDataRoot, { recursive: true, force: true });
   vi.clearAllMocks();
@@ -78,7 +88,350 @@ function manifest(
   };
 }
 
+function v2Manifest(
+  generation: string,
+  files: MirrorManifestV2['files']
+): MirrorManifestV2 {
+  return {
+    formatVersion: 2,
+    workspaceId: 'workspace-1',
+    workspaceFlavour: 'affine',
+    generation,
+    lastCompletedAt: new Date(0).toISOString(),
+    sourceSyncState: 'synced',
+    files,
+  };
+}
+
 describe('local mirror helper', () => {
+  test('rejects baseline entries in a version 1 manifest', async () => {
+    const mirrorPath = join(projectRoot, '.affine');
+    await mkdir(join(mirrorPath, '.metadata'), { recursive: true });
+    await writeFile(
+      join(mirrorPath, '.metadata', 'mirror.json'),
+      JSON.stringify(
+        manifest('generation-1', {
+          '.metadata/baselines/doc-1.md': {
+            kind: 'baseline',
+            sha256: hash('base'),
+          },
+        })
+      )
+    );
+
+    await expect(
+      inspectTarget({ projectRoot, workspaceId: 'workspace-1' })
+    ).rejects.toThrow('Invalid mirror manifest');
+  });
+
+  test('rejects v2 kind/path and baseline hash mismatches', async () => {
+    const mirrorPath = join(projectRoot, '.affine');
+    const manifestPath = join(mirrorPath, '.metadata', 'mirror.json');
+    await mkdir(join(mirrorPath, '.metadata'), { recursive: true });
+    const invalidKind = {
+      ...v2Manifest('generation-1', {}),
+      files: {
+        'docs/Notes.md': { kind: 'baseline', sha256: hash('notes') },
+      },
+    };
+    await writeFile(manifestPath, JSON.stringify(invalidKind));
+    await expect(
+      inspectTarget({ projectRoot, workspaceId: 'workspace-1' })
+    ).rejects.toThrow('Invalid mirror manifest');
+
+    const baselinePath = '.metadata/baselines/doc-1.md';
+    const invalidBaseline = v2Manifest('generation-1', {
+      'docs/Notes.md': {
+        kind: 'markdown',
+        sha256: hash('notes'),
+        docId: 'doc-1',
+        sourceHash: 'source-1',
+        baselinePath,
+        markerGrammarVersion: 1,
+        baseMarkdownHash: hash('different'),
+        baseSourceHash: 'source-1',
+      },
+      [baselinePath]: {
+        kind: 'baseline',
+        sha256: hash('base'),
+        docId: 'doc-1',
+        sourceHash: 'source-1',
+      },
+    });
+    await writeFile(manifestPath, JSON.stringify(invalidBaseline));
+    await expect(
+      inspectTarget({ projectRoot, workspaceId: 'workspace-1' })
+    ).rejects.toThrow('Invalid mirror manifest');
+  });
+
+  test('coalesces nested managed-file changes and stops cleanly', async () => {
+    const markdownPath = 'docs/Notes.md';
+    const baselinePath = '.metadata/baselines/doc-1.md';
+    const initial = await beginGeneration({
+      projectRoot,
+      workspaceId: 'workspace-1',
+      generation: 'generation-1',
+    });
+    const batch = await writeBatch({
+      lease: initial.lease,
+      projectRoot,
+      workspaceId: 'workspace-1',
+      generation: 'generation-1',
+      files: [
+        {
+          path: markdownPath,
+          kind: 'markdown',
+          content: 'base',
+          docId: 'doc-1',
+        },
+        {
+          path: baselinePath,
+          kind: 'baseline',
+          content: 'base',
+          docId: 'doc-1',
+        },
+      ],
+    });
+    await finalizeGeneration({
+      lease: initial.lease,
+      projectRoot,
+      workspaceId: 'workspace-1',
+      manifest: v2Manifest('generation-1', {
+        [markdownPath]: {
+          kind: 'markdown',
+          sha256: batch.hashes[markdownPath],
+          docId: 'doc-1',
+          sourceHash: 'source-1',
+          baselinePath,
+          markerGrammarVersion: 1,
+          baseMarkdownHash: batch.hashes[baselinePath],
+          baseSourceHash: 'source-1',
+        },
+        [baselinePath]: {
+          kind: 'baseline',
+          sha256: batch.hashes[baselinePath],
+          docId: 'doc-1',
+          sourceHash: 'source-1',
+        },
+      }),
+      stalePaths: [],
+    });
+
+    const events: Array<{ watcherId: string; workspaceId: string }> = [];
+    const unsubscribe = mirrorEvents.changed(event => events.push(event));
+    const first = await startMirrorWatcher({
+      projectRoot,
+      workspaceId: 'workspace-1',
+    });
+    const second = await startMirrorWatcher({
+      projectRoot,
+      workspaceId: 'workspace-1',
+    });
+    expect(second.watcherId).not.toBe(first.watcherId);
+    await vi.waitFor(() => expect(events.length).toBeGreaterThanOrEqual(2));
+    events.length = 0;
+
+    await writeFile(join(projectRoot, '.affine', 'docs', 'Notes.md'), 'edit 1');
+    await writeFile(
+      join(projectRoot, '.affine', '.metadata', 'baselines', 'doc-1.md'),
+      'edit 2'
+    );
+    await vi.waitFor(
+      () =>
+        expect(
+          events.filter(event => event.watcherId === second.watcherId)
+        ).toHaveLength(1),
+      { timeout: 3000 }
+    );
+    await new Promise(resolve => setTimeout(resolve, 900));
+    expect(
+      events.filter(event => event.watcherId === second.watcherId)
+    ).toHaveLength(1);
+
+    stopMirrorWatcher({ watcherId: first.watcherId });
+    stopMirrorWatcher({ watcherId: second.watcherId });
+    events.length = 0;
+    await writeFile(join(projectRoot, '.affine', 'docs', 'Notes.md'), 'edit 3');
+    await new Promise(resolve => setTimeout(resolve, 900));
+    expect(events).toEqual([]);
+    unsubscribe();
+  });
+
+  test('does not watch an empty or unowned target', async () => {
+    await expect(
+      startMirrorWatcher({ projectRoot, workspaceId: 'workspace-1' })
+    ).rejects.toThrow('not owned');
+  });
+
+  test('scans v1 migration baselines and detects modified managed files', async () => {
+    const { lease } = await beginGeneration({
+      projectRoot,
+      workspaceId: 'workspace-1',
+      generation: 'generation-1',
+    });
+    const batch = await writeBatch({
+      lease,
+      projectRoot,
+      workspaceId: 'workspace-1',
+      generation: 'generation-1',
+      files: [
+        {
+          path: 'docs/Notes.md',
+          kind: 'markdown',
+          content: 'base markdown',
+          docId: 'doc-1',
+        },
+      ],
+    });
+    await finalizeGeneration({
+      lease,
+      projectRoot,
+      workspaceId: 'workspace-1',
+      manifest: manifest('generation-1', {
+        'docs/Notes.md': {
+          kind: 'markdown',
+          sha256: batch.hashes['docs/Notes.md'],
+          docId: 'doc-1',
+        },
+      }),
+      stalePaths: [],
+    });
+
+    expect(
+      (await scanVersion1Migration({ projectRoot, workspaceId: 'workspace-1' }))
+        .conflicts
+    ).toEqual([]);
+    await writeFile(join(projectRoot, '.affine', 'docs', 'Notes.md'), 'edited');
+    expect(
+      (await scanVersion1Migration({ projectRoot, workspaceId: 'workspace-1' }))
+        .conflicts
+    ).toEqual(['docs/Notes.md']);
+  });
+
+  test('publishes accepted inbound bytes only when the observed hash still matches', async () => {
+    const markdownPath = 'docs/Notes.md';
+    const baselinePath = '.metadata/baselines/doc-1.md';
+    const initial = await beginGeneration({
+      projectRoot,
+      workspaceId: 'workspace-1',
+      generation: 'generation-1',
+    });
+    const initialBatch = await writeBatch({
+      lease: initial.lease,
+      projectRoot,
+      workspaceId: 'workspace-1',
+      generation: 'generation-1',
+      files: [
+        {
+          path: markdownPath,
+          kind: 'markdown',
+          content: 'base',
+          docId: 'doc-1',
+        },
+        {
+          path: baselinePath,
+          kind: 'baseline',
+          content: 'base',
+          docId: 'doc-1',
+        },
+      ],
+    });
+    await finalizeGeneration({
+      lease: initial.lease,
+      projectRoot,
+      workspaceId: 'workspace-1',
+      manifest: v2Manifest('generation-1', {
+        [markdownPath]: {
+          kind: 'markdown',
+          sha256: initialBatch.hashes[markdownPath],
+          docId: 'doc-1',
+          sourceHash: 'source-1',
+          baselinePath,
+          markerGrammarVersion: 1,
+          baseMarkdownHash: initialBatch.hashes[baselinePath],
+          baseSourceHash: 'source-1',
+        },
+        [baselinePath]: {
+          kind: 'baseline',
+          sha256: initialBatch.hashes[baselinePath],
+          docId: 'doc-1',
+          sourceHash: 'source-1',
+        },
+      }),
+      stalePaths: [],
+    });
+
+    await writeFile(
+      join(projectRoot, '.affine', 'docs', 'Notes.md'),
+      'local edit'
+    );
+    const scan = await scanTarget({
+      projectRoot,
+      workspaceId: 'workspace-1',
+      paths: [markdownPath],
+      includeContent: true,
+    });
+    const acceptedHash = scan.files[markdownPath].sha256;
+    expect(new TextDecoder().decode(scan.files[markdownPath].content)).toBe(
+      'local edit'
+    );
+
+    const next = await beginGeneration({
+      projectRoot,
+      workspaceId: 'workspace-1',
+      generation: 'generation-2',
+    });
+    const nextBatch = await writeBatch({
+      lease: next.lease,
+      projectRoot,
+      workspaceId: 'workspace-1',
+      generation: 'generation-2',
+      files: [
+        {
+          path: markdownPath,
+          kind: 'markdown',
+          content: 'canonical edit',
+          docId: 'doc-1',
+        },
+        {
+          path: baselinePath,
+          kind: 'baseline',
+          content: 'canonical edit',
+          docId: 'doc-1',
+        },
+      ],
+    });
+    const result = await finalizeGeneration({
+      lease: next.lease,
+      projectRoot,
+      workspaceId: 'workspace-1',
+      manifest: v2Manifest('generation-2', {
+        [markdownPath]: {
+          kind: 'markdown',
+          sha256: nextBatch.hashes[markdownPath],
+          docId: 'doc-1',
+          sourceHash: 'source-2',
+          baselinePath,
+          markerGrammarVersion: 1,
+          baseMarkdownHash: nextBatch.hashes[baselinePath],
+          baseSourceHash: 'source-2',
+        },
+        [baselinePath]: {
+          kind: 'baseline',
+          sha256: nextBatch.hashes[baselinePath],
+          docId: 'doc-1',
+          sourceHash: 'source-2',
+        },
+      }),
+      stalePaths: [],
+      observedLiveHashes: { [markdownPath]: acceptedHash },
+    });
+    expect(result.conflicts).toEqual([]);
+    expect(
+      await readFile(join(projectRoot, '.affine', 'docs', 'Notes.md'), 'utf8')
+    ).toBe('canonical edit');
+  });
+
   test('allows only one active generation per mirror', async () => {
     const first = await beginGeneration({
       projectRoot,
@@ -376,7 +729,7 @@ describe('local mirror helper', () => {
       generation: 'generation-1',
       files: [{ path: 'index.md', kind: 'index', content: '# Workspace\n' }],
     });
-    expect(batch.conflicts).toEqual([]);
+    expect(batch.hashes['index.md']).toBeTruthy();
 
     await finalizeGeneration({
       lease,
@@ -574,6 +927,75 @@ describe('local mirror helper', () => {
     await expect(readFile(mirrorPath)).rejects.toMatchObject({
       code: 'ENOENT',
     });
+  });
+
+  test('recovers accepted inbound bytes instead of the previous manifest bytes', async () => {
+    const markdownPath = 'docs/Notes.md';
+    const initial = await beginGeneration({
+      projectRoot,
+      workspaceId: 'workspace-1',
+      generation: 'generation-1',
+    });
+    const batch = await writeBatch({
+      lease: initial.lease,
+      projectRoot,
+      workspaceId: 'workspace-1',
+      generation: 'generation-1',
+      files: [
+        {
+          path: markdownPath,
+          kind: 'markdown',
+          content: 'previous manifest bytes',
+        },
+      ],
+    });
+    await finalizeGeneration({
+      lease: initial.lease,
+      projectRoot,
+      workspaceId: 'workspace-1',
+      manifest: manifest('generation-1', {
+        [markdownPath]: {
+          kind: 'markdown',
+          sha256: batch.hashes[markdownPath],
+        },
+      }),
+      stalePaths: [],
+    });
+
+    const accepted = 'accepted inbound bytes';
+    const planned = 'canonical bytes';
+    const transactionPath = join(
+      appDataRoot,
+      'sessionData',
+      'local-mirror-transactions',
+      'interrupted-inbound'
+    );
+    await mkdir(join(transactionPath, 'backup', 'docs'), { recursive: true });
+    await writeFile(join(transactionPath, 'backup', markdownPath), accepted);
+    await writeFile(join(projectRoot, '.affine', markdownPath), planned);
+    await writeFile(
+      join(transactionPath, 'transaction.json'),
+      JSON.stringify({
+        workspaceId: 'workspace-1',
+        projectRoot,
+        generation: 'generation-2',
+        previousGeneration: 'generation-1',
+        state: 'committing',
+        paths: [markdownPath],
+        baselines: { [markdownPath]: hash(accepted) },
+        planned: { [markdownPath]: hash(planned) },
+        observed: { [markdownPath]: hash(accepted) },
+      })
+    );
+
+    await inspectTarget({
+      projectRoot,
+      workspaceId: 'workspace-1',
+      recoverInterrupted: true,
+    });
+    expect(
+      await readFile(join(projectRoot, '.affine', markdownPath), 'utf8')
+    ).toBe(accepted);
   });
 
   test('preserves the previous generation when manifest replacement fails', async () => {

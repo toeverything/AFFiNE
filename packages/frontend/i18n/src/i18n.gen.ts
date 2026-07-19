@@ -6878,6 +6878,35 @@ export function useAFFiNEI18N(): {
         readonly count: string;
     }): string;
     /**
+      * `Local changes are waiting for AFFiNE to finish syncing`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.status.external-change-pending"](): string;
+    /**
+      * `Importing local changes ({{completed}}/{{total}})`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.status.importing"](options: Readonly<{
+        completed: string;
+        total: string;
+    }>): string;
+    /**
+      * `{{path}} conflicts with a newer AFFiNE change`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.status.merge-conflict"](options: {
+        readonly path: string;
+    }): string;
+    /**
+      * `This local change cannot be imported safely: {{message}}`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.status.unsupported-local-change"](options: {
+        readonly message: string;
+    }): string;
+    /**
+      * `{{count}} existing mirror change(s) must be reconciled before upgrade`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.status.migration-conflict"](options: {
+        readonly count: string;
+    }): string;
+    /**
       * `Error: {{message}}`
       */
     ["com.affine.settings.workspace.storage.local-mirror.status.error"](options: {
@@ -6891,6 +6920,12 @@ export function useAFFiNEI18N(): {
       * `Export permission denied`
       */
     ["com.affine.settings.workspace.storage.local-mirror.status.permission-denied"](): string;
+    /**
+      * `AFFiNE does not allow changes to {{path}}`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.status.document-permission-denied"](options: {
+        readonly path: string;
+    }): string;
     /**
       * `Experiment disabled`
       */
@@ -6916,21 +6951,25 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.workspace.storage.local-mirror.enable.confirm"](): string;
     /**
-      * `Replace local changes?`
+      * `Use the AFFiNE version?`
       */
-    ["com.affine.settings.workspace.storage.local-mirror.replace.title"](): string;
+    ["com.affine.settings.workspace.storage.local-mirror.use-affine.title"](): string;
     /**
-      * `All locally modified files managed by this AFFiNE mirror will be replaced by the current workspace content. Unknown files are preserved.`
+      * `The conflicting mirror files will be replaced by the current AFFiNE content. Unknown files are preserved.`
       */
-    ["com.affine.settings.workspace.storage.local-mirror.replace.warning"](): string;
+    ["com.affine.settings.workspace.storage.local-mirror.use-affine.warning"](): string;
     /**
-      * `Replace local changes`
+      * `Use AFFiNE version`
       */
-    ["com.affine.settings.workspace.storage.local-mirror.replace.confirm"](): string;
+    ["com.affine.settings.workspace.storage.local-mirror.use-affine.confirm"](): string;
     /**
       * `Sync now`
       */
     ["com.affine.settings.workspace.storage.local-mirror.sync-now"](): string;
+    /**
+      * `Retry`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.retry"](): string;
     /**
       * `Open folder`
       */

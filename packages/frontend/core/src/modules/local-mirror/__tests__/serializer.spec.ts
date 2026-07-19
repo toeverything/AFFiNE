@@ -25,6 +25,11 @@ describe('LocalMirrorSerializer', () => {
       { text: new Text('Visible to the agent') },
       noteId
     );
+    store.addBlock(
+      'affine:paragraph',
+      { type: 'h2', text: new Text('Second stable block') },
+      noteId
+    );
 
     const framework = new Framework();
     framework.service(LocalMirrorSerializer);
@@ -44,10 +49,114 @@ describe('LocalMirrorSerializer', () => {
     const markdown = first.files.find(file => file.kind === 'markdown');
     const snapshot = first.files.find(file => file.kind === 'snapshot');
     expect(markdown?.content).toContain('Visible to the agent');
+    expect(markdown?.content).toContain('Second stable block');
+    expect(markdown?.content).toContain('<!-- affine-mirror:block id="');
     expect(markdown?.content).toContain('docId: "page0"');
     expect(markdown?.path).toBe('docs/Agent-notes.md');
     expect(snapshot?.path).toBe('.metadata/snapshots/page0.snapshot.json');
     expect(snapshot?.content).toContain('"id": "page0"');
+    const baseline = first.files.find(
+      file => file.path === '.metadata/baselines/page0.md'
+    );
+    const descriptor = first.files.find(
+      file => file.path === '.metadata/baselines/page0.json'
+    );
+    expect(baseline?.kind).toBe('baseline');
+    expect(baseline?.content).toBe(markdown?.content);
+    expect(descriptor?.kind).toBe('baseline');
+    expect(descriptor?.content).toContain('"protected": false');
+    expect(descriptor?.content).toContain('"siblingIndex": 1');
+  });
+
+  test('keeps supported leaves editable in a mixed multi-note page', async () => {
+    const workspace = new TestWorkspace({ id: 'workspace' });
+    workspace.meta.initialize();
+    const store = workspace.createDoc('mixed-page').getStore({ extensions });
+    store.load();
+    const rootId = store.addBlock('affine:page', {
+      title: new Text('Getting Started'),
+    });
+    const firstNoteId = store.addBlock('affine:note', {}, rootId);
+    const welcomeId = store.addBlock(
+      'affine:paragraph',
+      { text: new Text('Welcome to AFFiNE!') },
+      firstNoteId
+    );
+    const nestedListId = store.addBlock(
+      'affine:list',
+      { type: 'bulleted', text: new Text('Protected parent') },
+      firstNoteId
+    );
+    store.addBlock(
+      'affine:list',
+      { type: 'bulleted', text: new Text('Protected child') },
+      nestedListId
+    );
+    const secondNoteId = store.addBlock('affine:note', {}, rootId);
+    const secondId = store.addBlock(
+      'affine:paragraph',
+      { text: new Text('Second note') },
+      secondNoteId
+    );
+    store.addBlock('affine:surface', {}, rootId);
+
+    const framework = new Framework();
+    framework.service(LocalMirrorSerializer);
+    const serializer = framework.provider().get(LocalMirrorSerializer);
+    const result = await serializer.serialize(
+      store,
+      {
+        id: 'mixed-page',
+        title: 'Getting Started',
+        tags: [],
+        primaryMode: 'page',
+      },
+      new Map([['mixed-page', 'docs/Getting-Started.md']])
+    );
+
+    const markdown = result.files.find(file => file.kind === 'markdown');
+    const descriptorFile = result.files.find(
+      file => file.path === '.metadata/baselines/mixed-page.json'
+    );
+    expect(markdown?.content).toContain(
+      `<!-- affine-mirror:block id="${welcomeId}" flavour="affine:paragraph" -->`
+    );
+    expect(markdown?.content).toContain('Welcome to AFFiNE!');
+    expect(markdown?.content).toContain(
+      `<!-- affine-mirror:block id="${secondId}" flavour="affine:paragraph" -->`
+    );
+    expect(markdown?.content).not.toContain('Protected parent');
+    if (typeof descriptorFile?.content !== 'string') {
+      throw new Error('Expected a text baseline descriptor');
+    }
+    const descriptor = JSON.parse(descriptorFile.content) as {
+      protected: boolean;
+      protectedReasons: string[];
+      blocks: Array<{
+        id: string;
+        parentId: string;
+        siblingIndex: number;
+      }>;
+    };
+    expect(descriptor.protected).toBe(false);
+    expect(descriptor.protectedReasons).toEqual(
+      expect.arrayContaining([
+        'non-round-trippable block tree',
+        'rich:affine:surface',
+      ])
+    );
+    expect(descriptor.blocks).toEqual([
+      expect.objectContaining({
+        id: welcomeId,
+        parentId: firstNoteId,
+        siblingIndex: 0,
+      }),
+      expect.objectContaining({
+        id: secondId,
+        parentId: secondNoteId,
+        siblingIndex: 0,
+      }),
+    ]);
   });
 
   test('keeps mixed rich content and attachments agent-readable', async () => {
@@ -129,5 +238,9 @@ describe('LocalMirrorSerializer', () => {
     expect(snapshot?.content).toContain('"flavour": "affine:attachment"');
     expect(asset?.path).toMatch(/^\.metadata\/assets\//);
     expect(asset?.assetId).toBe(sourceId);
+    const descriptor = result.files.find(
+      file => file.path === '.metadata/baselines/rich-page.json'
+    );
+    expect(descriptor?.content).toContain('"protected": true');
   });
 });

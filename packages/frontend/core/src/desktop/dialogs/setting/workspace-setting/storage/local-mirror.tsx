@@ -1,9 +1,31 @@
 import { Button, notify, Switch, useConfirmModal } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
-import { LocalMirrorService } from '@affine/core/modules/local-mirror';
+import {
+  LocalMirrorService,
+  type LocalMirrorStatus,
+} from '@affine/core/modules/local-mirror';
 import { useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback } from 'react';
+
+export function canUseAffineVersion(status: LocalMirrorStatus) {
+  return (
+    status.type === 'conflict' ||
+    status.type === 'merge-conflict' ||
+    status.type === 'unsupported-local-change' ||
+    status.type === 'migration-conflict'
+  );
+}
+
+export function canRetryLocalMirror(status: LocalMirrorStatus) {
+  return (
+    status.type === 'external-change-pending' ||
+    status.type === 'merge-conflict' ||
+    status.type === 'unsupported-local-change' ||
+    status.type === 'migration-conflict' ||
+    status.type === 'error'
+  );
+}
 
 export const DesktopLocalMirrorPanel = () => {
   const t = useI18n();
@@ -21,6 +43,29 @@ export const DesktopLocalMirrorPanel = () => {
           completed: String(status.completed),
           total: String(status.total),
         });
+      case 'importing':
+        return t[
+          'com.affine.settings.workspace.storage.local-mirror.status.importing'
+        ]({
+          completed: String(status.completed),
+          total: String(status.total),
+        });
+      case 'external-change-pending':
+        return t[
+          'com.affine.settings.workspace.storage.local-mirror.status.external-change-pending'
+        ]();
+      case 'merge-conflict':
+        return t[
+          'com.affine.settings.workspace.storage.local-mirror.status.merge-conflict'
+        ]({ path: status.path });
+      case 'unsupported-local-change':
+        return t[
+          'com.affine.settings.workspace.storage.local-mirror.status.unsupported-local-change'
+        ]({ message: status.message });
+      case 'migration-conflict':
+        return t[
+          'com.affine.settings.workspace.storage.local-mirror.status.migration-conflict'
+        ]({ count: String(status.paths.length) });
       case 'idle':
         return status.lastCompletedAt
           ? t[
@@ -42,9 +87,13 @@ export const DesktopLocalMirrorPanel = () => {
           'com.affine.settings.workspace.storage.local-mirror.status.not-configured'
         ]();
       case 'permission-denied':
-        return t[
-          'com.affine.settings.workspace.storage.local-mirror.status.permission-denied'
-        ]();
+        return status.path
+          ? t[
+              'com.affine.settings.workspace.storage.local-mirror.status.document-permission-denied'
+            ]({ path: status.path })
+          : t[
+              'com.affine.settings.workspace.storage.local-mirror.status.permission-denied'
+            ]();
       case 'feature-disabled':
         return t[
           'com.affine.settings.workspace.storage.local-mirror.status.feature-disabled'
@@ -66,13 +115,10 @@ export const DesktopLocalMirrorPanel = () => {
     [t]
   );
 
-  const chooseDirectory = useCallback(async () => {
-    try {
-      await service.selectProjectRoot();
-    } catch (error) {
-      reportError(error);
-    }
-  }, [reportError, service]);
+  const chooseDirectory = useCallback(
+    () => void service.selectProjectRoot().catch(reportError),
+    [reportError, service]
+  );
 
   const enable = useCallback(async () => {
     try {
@@ -110,23 +156,36 @@ export const DesktopLocalMirrorPanel = () => {
     [enable, openConfirmModal, service, t]
   );
 
-  const replace = useCallback(() => {
+  const useAffineVersion = useCallback(() => {
     openConfirmModal({
       title:
-        t['com.affine.settings.workspace.storage.local-mirror.replace.title'](),
+        t[
+          'com.affine.settings.workspace.storage.local-mirror.use-affine.title'
+        ](),
       children:
         t[
-          'com.affine.settings.workspace.storage.local-mirror.replace.warning'
+          'com.affine.settings.workspace.storage.local-mirror.use-affine.warning'
         ](),
       confirmText:
         t[
-          'com.affine.settings.workspace.storage.local-mirror.replace.confirm'
+          'com.affine.settings.workspace.storage.local-mirror.use-affine.confirm'
         ](),
       cancelText: t['Cancel'](),
       onConfirm: () => service.replaceLocalChanges(),
       confirmButtonOptions: { variant: 'error' },
     });
   }, [openConfirmModal, service, t]);
+
+  const retry = useCallback(() => {
+    try {
+      service.syncNow();
+    } catch (error) {
+      reportError(error);
+    }
+  }, [reportError, service]);
+
+  const showUseAffineVersion = canUseAffineVersion(status);
+  const showRetry = canRetryLocalMirror(status);
 
   const mirrorPath = config.projectRoot
     ? `${config.projectRoot.replace(/[\\/]$/, '')}/.affine`
@@ -157,11 +216,7 @@ export const DesktopLocalMirrorPanel = () => {
         ]()}
         desc={mirrorPath}
       >
-        <Button
-          onClick={() => {
-            chooseDirectory().catch(reportError);
-          }}
-        >
+        <Button onClick={chooseDirectory}>
           {t[
             'com.affine.settings.workspace.storage.local-mirror.choose-folder'
           ]()}
@@ -172,8 +227,12 @@ export const DesktopLocalMirrorPanel = () => {
         desc={statusText}
       >
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <Button disabled={!config.enabled} onClick={() => service.syncNow()}>
-            {t['com.affine.settings.workspace.storage.local-mirror.sync-now']()}
+          <Button disabled={!config.enabled} onClick={retry}>
+            {t[
+              showRetry
+                ? 'com.affine.settings.workspace.storage.local-mirror.retry'
+                : 'com.affine.settings.workspace.storage.local-mirror.sync-now'
+            ]()}
           </Button>
           <Button
             disabled={!config.projectRoot}
@@ -185,10 +244,10 @@ export const DesktopLocalMirrorPanel = () => {
               'com.affine.settings.workspace.storage.local-mirror.open-folder'
             ]()}
           </Button>
-          {status.type === 'conflict' ? (
-            <Button variant="error" onClick={replace}>
+          {showUseAffineVersion ? (
+            <Button variant="error" onClick={useAffineVersion}>
               {t[
-                'com.affine.settings.workspace.storage.local-mirror.replace.confirm'
+                'com.affine.settings.workspace.storage.local-mirror.use-affine.confirm'
               ]()}
             </Button>
           ) : null}

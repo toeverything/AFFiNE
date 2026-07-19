@@ -127,8 +127,8 @@ export class Doc extends Entity {
     return this.record.restoreFromTrash();
   }
 
-  waitForSyncReady(signal?: AbortSignal) {
-    return this.store.waitForDocLoadReady(this.id, signal);
+  waitForSyncReady() {
+    return this.store.waitForDocLoadReady(this.id);
   }
 
   addPriorityLoad(priority: number) {

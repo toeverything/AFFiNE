@@ -20,25 +20,49 @@ export type MirrorFileKind =
   | 'workspace'
   | 'markdown'
   | 'snapshot'
-  | 'asset';
+  | 'asset'
+  | 'baseline';
 
-export type MirrorManifest = {
-  formatVersion: 1;
+type MirrorManifestFileBase = {
+  sha256: string;
+  docId?: string;
+  sourceHash?: string;
+};
+
+type MirrorManifestBase = {
   workspaceId: string;
   workspaceFlavour: string;
   generation: string;
   lastCompletedAt: string;
   sourceSyncState: 'synced' | 'cached-offline';
+};
+
+export type MirrorManifestV1 = MirrorManifestBase & {
+  formatVersion: 1;
   files: Record<
     string,
-    {
-      kind: MirrorFileKind;
-      sha256: string;
-      docId?: string;
-      sourceHash?: string;
+    MirrorManifestFileBase & {
+      kind: Exclude<MirrorFileKind, 'baseline'>;
     }
   >;
 };
+export type MirrorManifestV2 = MirrorManifestBase & {
+  formatVersion: 2;
+  files: Record<
+    string,
+    | (MirrorManifestFileBase & {
+        kind: 'markdown';
+        baselinePath: string;
+        markerGrammarVersion: 1;
+        baseMarkdownHash: string;
+        baseSourceHash: string;
+      })
+    | (MirrorManifestFileBase & {
+        kind: Exclude<MirrorFileKind, 'markdown'>;
+      })
+  >;
+};
+export type MirrorManifest = MirrorManifestV1 | MirrorManifestV2;
 
 export type MirrorWriteFile = {
   path: string;
@@ -70,6 +94,8 @@ type TransactionRecord = {
   paths: string[];
   baselines?: Record<string, string | null>;
   planned?: Record<string, string | null>;
+  /** Hashes observed immediately before this generation was committed. */
+  observed?: Record<string, string | null>;
 };
 
 const leases = new Map<string, Lease>();
@@ -83,10 +109,26 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value);
 }
 
+function expectedKindForManagedPath(path: string): MirrorFileKind | null {
+  if (path === 'index.md') return 'index';
+  if (path === 'workspace.json' || path === `${METADATA_DIR}/workspace.json`) {
+    return 'workspace';
+  }
+  if (/^docs\/[^/]+\.md$/.test(path)) return 'markdown';
+  if (/^(?:\.metadata\/)?snapshots\/[^/]+\.snapshot\.json$/.test(path)) {
+    return 'snapshot';
+  }
+  if (/^(?:\.metadata\/)?assets\/[^/]+$/.test(path)) return 'asset';
+  if (/^\.metadata\/baselines\/[^/]+\.(?:md|json)$/.test(path)) {
+    return 'baseline';
+  }
+  return null;
+}
+
 function parseManifest(value: unknown): MirrorManifest | null {
   if (
     !isRecord(value) ||
-    value.formatVersion !== 1 ||
+    (value.formatVersion !== 1 && value.formatVersion !== 2) ||
     typeof value.workspaceId !== 'string' ||
     typeof value.workspaceFlavour !== 'string' ||
     typeof value.generation !== 'string' ||
@@ -101,15 +143,50 @@ function parseManifest(value: unknown): MirrorManifest | null {
     if (
       !isManagedRelativePath(path) ||
       !isRecord(entry) ||
+      entry.kind !== expectedKindForManagedPath(path) ||
       typeof entry.sha256 !== 'string' ||
       !/^[a-f\d]{64}$/.test(entry.sha256) ||
-      !['index', 'workspace', 'markdown', 'snapshot', 'asset'].includes(
-        String(entry.kind)
-      ) ||
+      ![
+        'index',
+        'workspace',
+        'markdown',
+        'snapshot',
+        'asset',
+        'baseline',
+      ].includes(String(entry.kind)) ||
       (entry.docId !== undefined && typeof entry.docId !== 'string') ||
       (entry.sourceHash !== undefined && typeof entry.sourceHash !== 'string')
     ) {
       return null;
+    }
+    if (value.formatVersion === 1 && entry.kind === 'baseline') return null;
+    if (
+      value.formatVersion === 2 &&
+      entry.kind === 'markdown' &&
+      (typeof entry.baselinePath !== 'string' ||
+        !/^\.metadata\/baselines\/[^/]+\.md$/.test(entry.baselinePath) ||
+        entry.markerGrammarVersion !== 1 ||
+        typeof entry.baseMarkdownHash !== 'string' ||
+        !/^[a-f\d]{64}$/.test(entry.baseMarkdownHash) ||
+        typeof entry.baseSourceHash !== 'string')
+    ) {
+      return null;
+    }
+  }
+  if (value.formatVersion === 2) {
+    for (const entry of Object.values(value.files)) {
+      if (!isRecord(entry) || entry.kind !== 'markdown') continue;
+      const baseline = value.files[entry.baselinePath as string];
+      if (
+        !isRecord(baseline) ||
+        baseline.kind !== 'baseline' ||
+        baseline.docId !== entry.docId ||
+        baseline.sha256 !== entry.baseMarkdownHash ||
+        typeof entry.sourceHash !== 'string' ||
+        entry.sourceHash !== entry.baseSourceHash
+      ) {
+        return null;
+      }
     }
   }
   return value as MirrorManifest;
@@ -127,12 +204,13 @@ function isManagedRelativePath(path: string) {
   }
   if (path === `${METADATA_DIR}/workspace.json`) return true;
   const metadataMatch = /^\.metadata\/(snapshots|assets)\/([^/]+)$/.exec(path);
-  if (!metadataMatch || metadataMatch[2] === '.' || metadataMatch[2] === '..') {
-    return false;
+  if (metadataMatch && metadataMatch[2] !== '.' && metadataMatch[2] !== '..') {
+    return metadataMatch[1] === 'assets'
+      ? true
+      : metadataMatch[2].endsWith('.snapshot.json');
   }
-  return metadataMatch[1] === 'assets'
-    ? true
-    : metadataMatch[2].endsWith('.snapshot.json');
+  const baselineMatch = /^\.metadata\/baselines\/([^/]+)$/.exec(path);
+  return !!baselineMatch && /\.(md|json)$/.test(baselineMatch[1]);
 }
 
 async function readJson(path: string): Promise<unknown> {
@@ -506,6 +584,77 @@ export async function inspectTarget(input: {
   };
 }
 
+/** Safely snapshots hashes (and optionally bytes) for manifest-owned paths. */
+export async function scanTarget(input: {
+  projectRoot: string;
+  workspaceId: string;
+  paths?: string[];
+  includeContent?: boolean;
+}) {
+  const inspection = await inspectTarget(input);
+  if (inspection.state !== 'owned' || !inspection.manifest) {
+    return {
+      ...inspection,
+      files: {} as Record<
+        string,
+        { sha256: string | null; content?: Uint8Array }
+      >,
+    };
+  }
+  const paths = input.paths ?? Object.keys(inspection.manifest.files);
+  const files: Record<string, { sha256: string | null; content?: Uint8Array }> =
+    {};
+  for (const childPath of paths) {
+    if (!isManagedRelativePath(childPath))
+      throw new Error(`Invalid mirror file path: ${childPath}`);
+    if (
+      !Object.prototype.hasOwnProperty.call(
+        inspection.manifest.files,
+        childPath
+      )
+    ) {
+      throw new Error(`Mirror file is not owned by the manifest: ${childPath}`);
+    }
+    const target = await managedPath(inspection.mirrorPath, childPath);
+    const sha = await currentHash(target);
+    const entry: { sha256: string | null; content?: Uint8Array } = {
+      sha256: sha,
+    };
+    if (
+      input.includeContent &&
+      sha !== null &&
+      (inspection.manifest.files[childPath]?.kind === 'markdown' ||
+        inspection.manifest.files[childPath]?.kind === 'baseline')
+    ) {
+      const bytes = await fs.readFile(target);
+      if (bytes.byteLength > MAX_FILE_BYTES)
+        throw new Error('Mirror file is too large');
+      entry.content = new Uint8Array(bytes);
+    }
+    files[childPath] = entry;
+  }
+  return { ...inspection, files };
+}
+
+/** Returns paths whose live bytes no longer match a v1 manifest baseline. */
+export async function scanVersion1Migration(input: {
+  projectRoot: string;
+  workspaceId: string;
+}) {
+  const result = await scanTarget(input);
+  if (
+    result.state !== 'owned' ||
+    !result.manifest ||
+    result.manifest.formatVersion !== 1
+  ) {
+    return { ...result, conflicts: [] as string[] };
+  }
+  const conflicts = Object.entries(result.manifest.files)
+    .filter(([path, entry]) => result.files[path]?.sha256 !== entry.sha256)
+    .map(([path]) => path);
+  return { ...result, conflicts };
+}
+
 export async function beginGeneration(input: {
   projectRoot: string;
   workspaceId: string;
@@ -584,7 +733,6 @@ export async function writeBatch(input: {
   workspaceId: string;
   generation: string;
   files: MirrorWriteFile[];
-  replaceConflicts?: boolean;
 }) {
   const lease = getLease(input.lease, input.workspaceId, input.generation);
   if (resolve(input.projectRoot) !== resolve(lease.projectRoot)) {
@@ -607,7 +755,7 @@ export async function writeBatch(input: {
     await atomicWrite(staged, file.content);
     hashes[file.path] = sha256(file.content);
   }
-  return { conflicts: [] as string[], hashes };
+  return { hashes };
 }
 
 export async function finalizeGeneration(input: {
@@ -617,6 +765,8 @@ export async function finalizeGeneration(input: {
   manifest: MirrorManifest;
   stalePaths: string[];
   replaceConflicts?: boolean;
+  /** Live hashes captured by a validated inbound scan. */
+  observedLiveHashes?: Record<string, string | null>;
 }) {
   const lease = getLease(
     input.lease,
@@ -682,7 +832,12 @@ export async function finalizeGeneration(input: {
   for (const childPath of paths) {
     const target = await managedPath(lease.mirrorPath, childPath);
     const existing = await currentHash(target);
-    const baseline = previous?.files[childPath]?.sha256 ?? null;
+    const observed = input.observedLiveHashes;
+    const hasObserved =
+      observed && Object.prototype.hasOwnProperty.call(observed, childPath);
+    const baseline = hasObserved
+      ? (observed[childPath] ?? null)
+      : (previous?.files[childPath]?.sha256 ?? null);
     baselines.set(childPath, existing);
     const planned = parsed.files[childPath]?.sha256 ?? null;
     if (existing === baseline || existing === planned) continue;
@@ -704,6 +859,7 @@ export async function finalizeGeneration(input: {
     paths,
     baselines: baselineRecord,
     planned: plannedRecord,
+    observed: input.observedLiveHashes,
   };
   const backupRoot = resolve(tx, 'backup');
   const mutated = new Set<string>();

@@ -1,7 +1,6 @@
 import {
   defaultImageProxyMiddleware,
   docLinkBaseURLMiddleware,
-  embedSyncedDocMiddleware,
   fileNameMiddleware,
   filePathMiddleware,
   FULL_FILE_PATH_KEY,
@@ -52,8 +51,6 @@ export type SerializedMarkdownDoc = {
 export type SerializeMarkdownDocOptions = {
   /** Override the URL prefix used for AFFiNE document references. */
   docLinkBaseUrl?: string;
-  /** Inline synced-document content in addition to retaining its link. */
-  embedSyncedDocs?: boolean;
   /** Load all referenced blobs into the returned asset map. Defaults to true. */
   loadAssets?: boolean;
 };
@@ -605,10 +602,6 @@ async function serializeDoc(
         },
     titleMiddleware(doc.workspace.meta.docMetas),
   ];
-  if (options.embedSyncedDocs) {
-    middlewares.push(embedSyncedDocMiddleware('content'));
-  }
-
   const job = doc.getTransformer(middlewares);
   const snapshot = job.docToSnapshot(doc);
 

@@ -11,7 +11,7 @@ import {
   LocalMirrorWorkspaceProjectionSchema,
 } from './types';
 
-export type CreateLocalMirrorProjectionOptions = {
+type CreateLocalMirrorProjectionOptions = {
   workspace: LocalMirrorWorkspaceProjection['workspace'];
   generatedAt: string;
   docs: LocalMirrorDocMetadata[];
@@ -88,8 +88,6 @@ export function createLocalMirrorProjection({
     children.push(record);
     childrenByParent.set(parentId, children);
   }
-  childrenByParent.forEach(children => children.sort(compareFolderRecords));
-
   const renderedDocIds = new Set<string>();
   const emittedFolders = new Set<string>();
 
@@ -171,8 +169,8 @@ export function createLocalMirrorProjection({
     '',
   ];
 
+  LocalMirrorWorkspaceProjectionSchema.parse(projection);
   return {
-    projection: LocalMirrorWorkspaceProjectionSchema.parse(projection),
     workspaceJson: stableJson(projection),
     indexMarkdown: indexLines.join('\n'),
   };
