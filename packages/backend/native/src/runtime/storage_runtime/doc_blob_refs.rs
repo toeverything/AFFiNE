@@ -1,25 +1,12 @@
 use affine_doc_loader as doc_loader;
-use chrono::{DateTime, Utc};
-use sqlx::{FromRow, PgPool};
-use y_octo::Doc;
+use sqlx::PgPool;
 
-use super::{RuntimeDocBlobRefsResult, RuntimeError, RuntimeResult, StorageRuntime, napi_error};
+use super::{
+  CurrentDoc, RuntimeDocBlobRefsResult, RuntimeError, RuntimeResult, StorageRuntime, load_current_doc,
+  load_workspace_live_doc_ids, napi_error,
+};
 
 const PARSER_VERSION: i32 = 1;
-
-#[derive(FromRow)]
-struct SnapshotRow {
-  workspace_id: String,
-  doc_id: String,
-  blob: Vec<u8>,
-  updated_at: DateTime<Utc>,
-}
-
-#[derive(FromRow)]
-struct UpdateRow {
-  blob: Vec<u8>,
-  created_at: DateTime<Utc>,
-}
 
 struct ExtractedRef {
   blob_key: String,
@@ -27,85 +14,19 @@ struct ExtractedRef {
   flavour: String,
 }
 
-async fn load_snapshot(pool: &PgPool, workspace_id: &str, doc_id: &str) -> RuntimeResult<Option<SnapshotRow>> {
-  sqlx::query_as::<_, SnapshotRow>(
-    r#"
-    SELECT workspace_id, guid AS doc_id, blob, updated_at
-    FROM snapshots
-    WHERE workspace_id = $1 AND guid = $2
-    "#,
+async fn load_workspace_doc_ids(pool: &PgPool, workspace_id: &str) -> RuntimeResult<Vec<String>> {
+  let mut ids = load_workspace_live_doc_ids(pool, workspace_id).await?;
+  let retained = sqlx::query_scalar::<_, String>(
+    "SELECT doc_id FROM document_cleanup_candidates WHERE workspace_id = $1 AND status IN ('marked', 'failed') ORDER \
+     BY doc_id",
   )
   .bind(workspace_id)
-  .bind(doc_id)
-  .fetch_optional(pool)
-  .await
-  .map_err(|err| RuntimeError::database("Doc blob refs load snapshot failed", err))
-}
-
-async fn load_updates(pool: &PgPool, workspace_id: &str, doc_id: &str) -> RuntimeResult<Vec<UpdateRow>> {
-  sqlx::query_as::<_, UpdateRow>(
-    r#"
-    SELECT blob, created_at
-    FROM updates
-    WHERE workspace_id = $1 AND guid = $2
-    ORDER BY created_at ASC
-    "#,
-  )
-  .bind(workspace_id)
-  .bind(doc_id)
   .fetch_all(pool)
   .await
-  .map_err(|err| RuntimeError::database("Doc blob refs load updates failed", err))
-}
-
-fn apply_doc_updates(updates: impl IntoIterator<Item = Vec<u8>>) -> RuntimeResult<Vec<u8>> {
-  let mut doc = Doc::default();
-  for update in updates {
-    doc
-      .apply_update_from_binary_v1(&update)
-      .map_err(|err| RuntimeError::invalid_state(format!("Doc blob refs merge failed: {err}")))?;
-  }
-  doc
-    .encode_update_v1()
-    .map_err(|err| RuntimeError::invalid_state(format!("Doc blob refs encode failed: {err}")))
-}
-
-async fn load_current_doc(pool: &PgPool, workspace_id: &str, doc_id: &str) -> RuntimeResult<Option<SnapshotRow>> {
-  let snapshot = load_snapshot(pool, workspace_id, doc_id).await?;
-  let updates = load_updates(pool, workspace_id, doc_id).await?;
-  if snapshot.is_none() && updates.is_empty() {
-    return Ok(None);
-  }
-
-  let mut merge_inputs = Vec::with_capacity(updates.len() + usize::from(snapshot.is_some()));
-  let mut updated_at = snapshot
-    .as_ref()
-    .map(|snapshot| snapshot.updated_at)
-    .unwrap_or_else(Utc::now);
-  if let Some(snapshot) = snapshot {
-    merge_inputs.push(snapshot.blob);
-  }
-  for update in updates {
-    updated_at = update.created_at;
-    merge_inputs.push(update.blob);
-  }
-
-  Ok(Some(SnapshotRow {
-    workspace_id: workspace_id.to_string(),
-    doc_id: doc_id.to_string(),
-    blob: apply_doc_updates(merge_inputs)?,
-    updated_at,
-  }))
-}
-
-async fn load_workspace_doc_ids(pool: &PgPool, workspace_id: &str) -> RuntimeResult<Vec<String>> {
-  let Some(root) = load_current_doc(pool, workspace_id, workspace_id).await? else {
-    return Ok(Vec::new());
-  };
-  let ids = doc_loader::get_doc_ids_from_binary(root.blob, true)
-    .map_err(|err| RuntimeError::invalid_state(format!("Doc blob refs root doc parse failed: {err}")))?;
-  let mut ids = ids;
+  .map_err(|err| RuntimeError::database("Doc blob refs candidate load failed", err))?;
+  ids.extend(retained);
   ids.sort();
+  ids.dedup();
   Ok(ids)
 }
 
@@ -124,7 +45,7 @@ async fn upsert_projection_checkpoint(
   };
   sqlx::query(
     r#"
-    INSERT INTO blob_reconciliation_checkpoints
+    INSERT INTO storage_reconciliation_checkpoints
       (kind, scope, status, cursor, completed_at, metadata)
     VALUES ('doc_blob_refs', $1, $2, $3, CASE WHEN $4 THEN CURRENT_TIMESTAMP ELSE NULL END, $5)
     ON CONFLICT (kind, scope) DO UPDATE
@@ -151,7 +72,7 @@ async fn upsert_projection_checkpoint(
 async fn upsert_projection_failure_checkpoint(pool: &PgPool, workspace_id: &str, error: &str) -> RuntimeResult<()> {
   sqlx::query(
     r#"
-    INSERT INTO blob_reconciliation_checkpoints
+    INSERT INTO storage_reconciliation_checkpoints
       (kind, scope, status, cursor, completed_at, metadata)
     VALUES ('doc_blob_refs', $1, 'failed', '{}', NULL, $2)
     ON CONFLICT (kind, scope) DO UPDATE
@@ -174,14 +95,17 @@ async fn upsert_projection_failure_checkpoint(pool: &PgPool, workspace_id: &str,
 }
 
 async fn load_projection_cursor(pool: &PgPool, workspace_id: &str) -> RuntimeResult<Option<String>> {
-  let cursor = sqlx::query_scalar::<_, serde_json::Value>(
-    "SELECT cursor FROM blob_reconciliation_checkpoints WHERE kind = 'doc_blob_refs' AND scope = $1",
+  let checkpoint = sqlx::query_as::<_, (String, serde_json::Value)>(
+    "SELECT status, cursor FROM storage_reconciliation_checkpoints WHERE kind = 'doc_blob_refs' AND scope = $1",
   )
   .bind(workspace_id)
   .fetch_optional(pool)
   .await
   .map_err(|err| RuntimeError::database("Doc blob refs checkpoint load failed", err))?;
-  Ok(cursor.and_then(|cursor| {
+  Ok(checkpoint.and_then(|(status, cursor)| {
+    if status != "running" {
+      return None;
+    }
     cursor
       .get("lastDocId")
       .and_then(|value| value.as_str())
@@ -205,7 +129,7 @@ async fn purge_removed_doc_refs(pool: &PgPool, workspace_id: &str, current_doc_i
   Ok(result.rows_affected() as i64)
 }
 
-fn extract_refs(snapshot: &SnapshotRow) -> RuntimeResult<Vec<ExtractedRef>> {
+fn extract_refs(snapshot: &CurrentDoc) -> RuntimeResult<Vec<ExtractedRef>> {
   let parsed = doc_loader::parse_doc_from_binary(snapshot.blob.clone(), snapshot.doc_id.clone())
     .map_err(|err| RuntimeError::invalid_state(format!("Doc blob refs parse failed: {err}")))?;
   let mut refs = Vec::new();
@@ -226,6 +150,9 @@ fn extract_refs(snapshot: &SnapshotRow) -> RuntimeResult<Vec<ExtractedRef>> {
 
 #[cfg(test)]
 mod tests {
+  use chrono::Utc;
+  use y_octo::Doc;
+
   use super::*;
 
   #[test]
@@ -233,7 +160,7 @@ mod tests {
     let doc_id = "doc-blob-ref-test".to_string();
     let blob =
       doc_loader::build_full_doc("Doc", "![Alt](blob://image-blob-key)", &doc_id).expect("doc fixture should build");
-    let snapshot = SnapshotRow {
+    let snapshot = CurrentDoc {
       workspace_id: "workspace".to_string(),
       doc_id,
       blob,
@@ -272,9 +199,21 @@ mod tests {
     let ids = doc_loader::get_doc_ids_from_binary(root, true).expect("root doc ids should parse");
     assert_eq!(ids, vec!["active-doc", "trashed-doc"]);
   }
+
+  #[test]
+  fn doc_blob_refs_rejects_corrupt_docs() {
+    let snapshot = CurrentDoc {
+      workspace_id: "workspace".to_string(),
+      doc_id: "corrupt".to_string(),
+      blob: vec![0xff],
+      updated_at: Utc::now(),
+    };
+
+    assert!(extract_refs(&snapshot).is_err());
+  }
 }
 
-async fn replace_doc_refs(pool: &PgPool, snapshot: &SnapshotRow, refs: Vec<ExtractedRef>) -> RuntimeResult<(i64, i64)> {
+async fn replace_doc_refs(pool: &PgPool, snapshot: &CurrentDoc, refs: Vec<ExtractedRef>) -> RuntimeResult<(i64, i64)> {
   let mut tx = pool
     .begin()
     .await

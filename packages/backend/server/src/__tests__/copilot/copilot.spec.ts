@@ -28,7 +28,7 @@ import {
   WorkspaceModel,
   WorkspaceRole,
 } from '../../models';
-import type { LlmToolCallbackRequest } from '../../native';
+import { addDocToRootDoc, type LlmToolCallbackRequest } from '../../native';
 import { CopilotModule } from '../../plugins/copilot';
 import { CopilotContextService } from '../../plugins/copilot/context';
 import { CopilotContextResolver } from '../../plugins/copilot/context/resolver';
@@ -258,6 +258,80 @@ test.beforeEach(async t => {
 test.after.always(async t => {
   restoreMockCopilotNativeRuntime?.();
   await t.context.module?.close();
+});
+
+test('document cleanup reconciles missing and restored copilot state before ack', async t => {
+  const { db, jobs, models, module, workspace } = t.context;
+  const queue = module.get(JobQueue);
+  const deleteEmbedding = Sinon.spy(
+    models.copilotContext,
+    'purgeWorkspaceEmbedding'
+  );
+  const scheduleEmbedding = Sinon.stub(
+    jobs,
+    'addDocEmbeddingQueueFromEvent'
+  ).resolves();
+
+  for (const [docId, restored, cleanupVersion] of [
+    ['missing-doc', false, 'missing-version'],
+    ['restored-doc', true, 'restored-version'],
+  ] as const) {
+    const ws = await workspace.create(userId);
+    const root = addDocToRootDoc(Buffer.from([0, 0]), docId, docId);
+    const missingRoot = addDocToRootDoc(
+      Buffer.from([0, 0]),
+      'live-doc',
+      'Live'
+    );
+    await db.snapshot.create({
+      data: {
+        workspaceId: ws.id,
+        id: ws.id,
+        blob: restored ? root : missingRoot,
+        state: Buffer.from([0, 0]),
+        updatedAt: new Date(),
+        createdAt: new Date(),
+      },
+    });
+    if (restored) {
+      await db.snapshot.create({
+        data: {
+          workspaceId: ws.id,
+          id: docId,
+          blob: addDocToRootDoc(Buffer.from([0, 0]), 'content', 'Content'),
+          state: Buffer.from([0, 0]),
+          updatedAt: new Date(),
+          createdAt: new Date(),
+        },
+      });
+    }
+
+    await jobs.reconcileDocumentCleanup({
+      workspaceId: ws.id,
+      docId,
+      cleanupVersion,
+    });
+
+    if (restored) {
+      t.true(scheduleEmbedding.calledOnceWith({ workspaceId: ws.id, docId }));
+      t.false(deleteEmbedding.called);
+    } else {
+      t.true(deleteEmbedding.calledOnceWith(ws.id, docId));
+      t.false(scheduleEmbedding.called);
+    }
+    const { payload } = await module.queue.waitFor(
+      'backendRuntime.ackDocumentCleanupEffect'
+    );
+    t.deepEqual(payload, {
+      workspaceId: ws.id,
+      docId,
+      cleanupVersion,
+      effect: 'copilot',
+    });
+    deleteEmbedding.resetHistory();
+    scheduleEmbedding.resetHistory();
+    (queue.add as Sinon.SinonStub).resetHistory();
+  }
 });
 
 test('MCP credentials stay bound to their endpoint, workspace, and profile', async t => {

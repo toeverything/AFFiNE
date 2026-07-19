@@ -258,6 +258,33 @@ export class StorageRuntimeProvider
     );
   }
 
+  async reconcileWorkspaceDocuments(workspaceId: string) {
+    return await this.measured('reconcileWorkspaceDocuments', rt =>
+      rt.reconcileWorkspaceDocuments(workspaceId)
+    );
+  }
+
+  async executeDocumentCleanupCandidates(
+    workspaceId: string | null | undefined,
+    gracePeriodDays: number,
+    limit: number
+  ) {
+    return await this.measured('executeDocumentCleanupCandidates', rt =>
+      rt.executeDocumentCleanupCandidates(workspaceId, gracePeriodDays, limit)
+    );
+  }
+
+  async ackDocumentCleanupEffect(
+    workspaceId: string,
+    docId: string,
+    cleanupVersion: string,
+    effect: 'search' | 'copilot'
+  ) {
+    return await this.measured('ackDocumentCleanupEffect', rt =>
+      rt.ackDocumentCleanupEffect(workspaceId, docId, cleanupVersion, effect)
+    );
+  }
+
   async planUnreferencedWorkspaceBlobs(
     workspaceId: string,
     gracePeriodDays: number,

@@ -671,7 +671,7 @@ test('active users metric should dedupe multiple sockets for one user', async t 
 test('workspace sync delete-doc should enforce doc permissions', async t => {
   const db = app.get(PrismaClient);
   const models = app.get(Models);
-  const { user: owner } = await login(app);
+  const { user: owner, cookieHeader: ownerCookieHeader } = await login(app);
   const { user: collaborator, cookieHeader } = await login(app);
   const workspace = await models.workspace.create(owner.id);
   const docId = 'private-doc';
@@ -692,9 +692,10 @@ test('workspace sync delete-doc should enforce doc permissions', async t => {
   });
 
   const socket = createClient(url, cookieHeader);
+  const ownerSocket = createClient(url, ownerCookieHeader);
 
   try {
-    await waitForConnect(socket);
+    await Promise.all([waitForConnect(socket), waitForConnect(ownerSocket)]);
 
     const join = unwrapResponse(
       t,
@@ -719,8 +720,37 @@ test('workspace sync delete-doc should enforce doc permissions', async t => {
       })
     );
     t.true(error.message.includes('Doc.Delete'));
+
+    const ownerJoin = unwrapResponse(
+      t,
+      await emitWithAck<{ clientId: string; success: boolean }>(
+        ownerSocket,
+        'space:join',
+        {
+          spaceType: 'workspace',
+          spaceId: workspace.id,
+          clientVersion: '0.26.0',
+        }
+      )
+    );
+    t.true(ownerJoin.success);
+    unwrapResponse(
+      t,
+      await emitWithAck(ownerSocket, 'space:delete-doc', {
+        spaceType: 'workspace',
+        spaceId: workspace.id,
+        docId,
+      })
+    );
+    t.is(
+      await db.snapshot.count({
+        where: { workspaceId: workspace.id, id: docId },
+      }),
+      1
+    );
   } finally {
     socket.disconnect();
+    ownerSocket.disconnect();
   }
 });
 

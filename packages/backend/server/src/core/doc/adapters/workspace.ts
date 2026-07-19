@@ -137,8 +137,8 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
     }));
   }
 
-  async deleteDoc(workspaceId: string, docId: string) {
-    await this.models.doc.delete(workspaceId, docId);
+  async deleteDoc(_workspaceId: string, _docId: string) {
+    return;
   }
 
   async deleteSpace(workspaceId: string) {
