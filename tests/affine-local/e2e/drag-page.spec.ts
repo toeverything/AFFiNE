@@ -30,7 +30,11 @@ const dragToFavourites = async (
   const favourites = page.getByTestId(
     'navigation-panel-favorite-category-divider'
   );
-  await dragTo(page, dragItem, favourites);
+  if (type === 'collection') {
+    await dragItem.dragTo(favourites);
+  } else {
+    await dragTo(page, dragItem, favourites);
+  }
   const item = page
     .getByTestId(`navigation-panel-favorites`)
     .locator(`[data-testid="navigation-panel-${type}-${id}"]`);
@@ -168,7 +172,12 @@ test('drag a collection to favourites', async ({ page }) => {
   await page.waitForTimeout(500);
   const collection = await createCollection(page, 'test collection');
   const collectionId = getCurrentCollectionIdFromUrl(page);
-  await dragToFavourites(page, collection, collectionId, 'collection');
+  await dragToFavourites(
+    page,
+    collection.locator('[data-affine-draggable]'),
+    collectionId,
+    'collection'
+  );
 });
 
 test('items in favourites can be reordered by dragging', async ({ page }) => {
@@ -183,7 +192,12 @@ test('items in favourites can be reordered by dragging', async ({ page }) => {
   {
     const collection = await createCollection(page, 'test collection');
     const collectionId = getCurrentCollectionIdFromUrl(page);
-    await dragToFavourites(page, collection, collectionId, 'collection');
+    await dragToFavourites(
+      page,
+      collection.locator('[data-affine-draggable]'),
+      collectionId,
+      'collection'
+    );
   }
 
   // assert the order of the items in favourites

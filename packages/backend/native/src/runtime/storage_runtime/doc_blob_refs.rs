@@ -102,7 +102,7 @@ async fn load_workspace_doc_ids(pool: &PgPool, workspace_id: &str) -> RuntimeRes
   let Some(root) = load_current_doc(pool, workspace_id, workspace_id).await? else {
     return Ok(Vec::new());
   };
-  let ids = doc_loader::get_doc_ids_from_binary(root.blob, false)
+  let ids = doc_loader::get_doc_ids_from_binary(root.blob, true)
     .map_err(|err| RuntimeError::invalid_state(format!("Doc blob refs root doc parse failed: {err}")))?;
   let mut ids = ids;
   ids.sort();
@@ -229,7 +229,7 @@ mod tests {
   use super::*;
 
   #[test]
-  fn doc_blob_refs_extracts_image_refs() {
+  fn doc_blob_refs_projection_semantics() {
     let doc_id = "doc-blob-ref-test".to_string();
     let blob =
       doc_loader::build_full_doc("Doc", "![Alt](blob://image-blob-key)", &doc_id).expect("doc fixture should build");
@@ -247,6 +247,30 @@ mod tests {
         .iter()
         .any(|reference| { reference.blob_key == "image-blob-key" && reference.flavour == "affine:image" })
     );
+
+    let root = Doc::default();
+    let mut meta = root.get_or_create_map("meta").expect("root meta should build");
+    let mut pages = root.create_array().expect("root pages should build");
+    let mut active = root.create_map().expect("active doc meta should build");
+    active
+      .insert("id".to_string(), "active-doc")
+      .expect("active doc id should insert");
+    pages.push(active).expect("active doc should insert");
+    let mut trashed = root.create_map().expect("trashed doc meta should build");
+    trashed
+      .insert("id".to_string(), "trashed-doc")
+      .expect("trashed doc id should insert");
+    trashed
+      .insert("trash".to_string(), true)
+      .expect("trash flag should insert");
+    pages.push(trashed).expect("trashed doc should insert");
+    meta
+      .insert("pages".to_string(), pages)
+      .expect("root pages should insert");
+
+    let root = root.encode_update_v1().expect("root doc should encode");
+    let ids = doc_loader::get_doc_ids_from_binary(root, true).expect("root doc ids should parse");
+    assert_eq!(ids, vec!["active-doc", "trashed-doc"]);
   }
 }
 
