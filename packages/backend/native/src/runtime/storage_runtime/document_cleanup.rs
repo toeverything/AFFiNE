@@ -660,7 +660,8 @@ async fn complete_effect(
   };
   if completed {
     sqlx::query(
-      "DELETE FROM document_cleanup_candidates WHERE workspace_id = $1 AND doc_id = $2 AND cleanup_payload->>'cleanupVersion' = $3",
+      "DELETE FROM document_cleanup_candidates WHERE workspace_id = $1 AND doc_id = $2 AND \
+       cleanup_payload->>'cleanupVersion' = $3",
     )
     .bind(workspace_id)
     .bind(doc_id)
