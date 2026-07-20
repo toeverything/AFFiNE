@@ -79,20 +79,24 @@ export class IndexerJob {
     docId,
     cleanupVersion,
   }: Jobs['indexer.reconcileDocumentCleanup']) {
-    const root = await this.doc.getDoc(workspaceId, workspaceId);
-    if (!root) {
-      throw new Error(`workspace root ${workspaceId} not found`);
-    }
-    const live = readAllDocIdsFromWorkspaceSnapshot(root.bin, true).includes(
-      docId
-    );
-    if (live) {
-      if (!(await this.doc.getDoc(workspaceId, docId))) {
-        throw new Error(`restored document ${workspaceId}/${docId} not found`);
+    if (this.config.indexer.enabled) {
+      const root = await this.doc.getDoc(workspaceId, workspaceId);
+      if (!root) {
+        throw new Error(`workspace root ${workspaceId} not found`);
       }
-      await this.service.indexDoc(workspaceId, docId);
-    } else {
-      await this.service.deleteDoc(workspaceId, docId);
+      const live = readAllDocIdsFromWorkspaceSnapshot(root.bin, true).includes(
+        docId
+      );
+      if (live) {
+        if (!(await this.doc.getDoc(workspaceId, docId))) {
+          throw new Error(
+            `restored document ${workspaceId}/${docId} not found`
+          );
+        }
+        await this.service.indexDoc(workspaceId, docId);
+      } else {
+        await this.service.deleteDoc(workspaceId, docId);
+      }
     }
     await this.queue.add('backendRuntime.ackDocumentCleanupEffect', {
       workspaceId,

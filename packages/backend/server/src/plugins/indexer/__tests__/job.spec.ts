@@ -6,7 +6,7 @@ import Sinon from 'sinon';
 
 import { createModule } from '../../../__tests__/create-module';
 import { Mockers } from '../../../__tests__/mocks';
-import { JOB_SIGNAL } from '../../../base';
+import { Config, JOB_SIGNAL } from '../../../base';
 import { ConfigModule } from '../../../base/config';
 import { ServerConfigModule } from '../../../core/config';
 import { DocReader } from '../../../core/doc';
@@ -36,6 +36,7 @@ const searchProviderFactory = module.get(SearchProviderFactory);
 const manticoresearch = module.get(ManticoresearchProvider);
 const models = module.get(Models);
 const docReader = module.get(DocReader);
+const config = module.get(Config);
 
 const user = await module.create(Mockers.User);
 const workspace = await module.create(Mockers.Workspace, {
@@ -198,6 +199,32 @@ test('document cleanup reconcile reindexes restored doc before ack', async t => 
     workspaceId: cleanupWorkspace.id,
     docId: 'restored-doc',
     cleanupVersion: 'version-2',
+    effect: 'search',
+  });
+});
+
+test('document cleanup reconcile only acknowledges when indexer is disabled', async t => {
+  Sinon.stub(config.indexer, 'enabled').value(false);
+  const deleteSpy = Sinon.spy(indexerService, 'deleteDoc');
+  const indexSpy = Sinon.spy(indexerService, 'indexDoc');
+  const getDocSpy = Sinon.spy(docReader, 'getDoc');
+
+  await indexerJob.reconcileDocumentCleanup({
+    workspaceId: workspace.id,
+    docId: 'disabled-doc',
+    cleanupVersion: 'version-disabled',
+  });
+
+  t.false(deleteSpy.called);
+  t.false(indexSpy.called);
+  t.false(getDocSpy.called);
+  const { payload } = await module.queue.waitFor(
+    'backendRuntime.ackDocumentCleanupEffect'
+  );
+  t.deepEqual(payload, {
+    workspaceId: workspace.id,
+    docId: 'disabled-doc',
+    cleanupVersion: 'version-disabled',
     effect: 'search',
   });
 });

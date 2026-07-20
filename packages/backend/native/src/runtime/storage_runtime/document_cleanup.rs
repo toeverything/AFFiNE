@@ -629,48 +629,97 @@ fn payload_effect(effect: PendingEffect) -> RuntimeResult<RuntimeDocumentCleanup
   })
 }
 
+async fn complete_effect(
+  tx: &mut Transaction<'_, Postgres>,
+  workspace_id: &str,
+  doc_id: &str,
+  cleanup_version: &str,
+  path: &str,
+) -> RuntimeResult<bool> {
+  let completed = sqlx::query_scalar::<_, bool>(
+    r#"
+    UPDATE document_cleanup_candidates
+    SET cleanup_payload = jsonb_set(cleanup_payload, ARRAY[$4], 'true'),
+        error = NULL, updated_at = CURRENT_TIMESTAMP
+    WHERE workspace_id = $1 AND doc_id = $2 AND status = 'effects_pending'
+      AND cleanup_payload->>'cleanupVersion' = $3
+    RETURNING COALESCE((cleanup_payload->>'commentObjectsDone')::boolean, false)
+          AND COALESCE((cleanup_payload->>'searchDone')::boolean, false)
+          AND COALESCE((cleanup_payload->>'copilotDone')::boolean, false)
+    "#,
+  )
+  .bind(workspace_id)
+  .bind(doc_id)
+  .bind(cleanup_version)
+  .bind(path)
+  .fetch_optional(&mut **tx)
+  .await
+  .map_err(|err| RuntimeError::database("Document cleanup effect completion failed", err))?;
+  let Some(completed) = completed else {
+    return Ok(true);
+  };
+  if completed {
+    sqlx::query(
+      "DELETE FROM document_cleanup_candidates WHERE workspace_id = $1 AND doc_id = $2 AND cleanup_payload->>'cleanupVersion' = $3",
+    )
+    .bind(workspace_id)
+    .bind(doc_id)
+    .bind(cleanup_version)
+    .execute(&mut **tx)
+    .await
+    .map_err(|err| RuntimeError::database("Document cleanup completed candidate delete failed", err))?;
+  }
+  Ok(completed)
+}
+
 async fn process_comment_objects(runtime: &StorageRuntime, effect: &PendingEffect) -> RuntimeResult<()> {
-  if effect
+  let cleanup_version = effect
+    .cleanup_payload
+    .get("cleanupVersion")
+    .and_then(Value::as_str)
+    .ok_or_else(|| RuntimeError::invalid_state("Document cleanup effect is missing cleanupVersion"))?;
+  let comment_objects_done = effect
     .cleanup_payload
     .get("commentObjectsDone")
     .and_then(Value::as_bool)
-    .unwrap_or(false)
-  {
-    return Ok(());
-  }
-  let keys = effect
-    .cleanup_payload
-    .get("commentAttachmentKeys")
-    .and_then(Value::as_array)
-    .into_iter()
-    .flatten()
-    .filter_map(Value::as_str)
-    .map(|key| format!("comment-attachments/{}/{}/{key}", effect.workspace_id, effect.doc_id))
-    .collect::<Vec<_>>();
-  if !keys.is_empty() {
-    let outcomes = runtime.object_storage_delete_many(keys).await?;
-    if let Some(failed) = outcomes.iter().find(|outcome| outcome.error.is_some()) {
-      return Err(RuntimeError::invalid_state(format!(
-        "Comment attachment object delete failed for {}: {}",
-        failed.key,
-        failed.error.as_deref().unwrap_or("unknown")
-      )));
+    .unwrap_or(false);
+  if !comment_objects_done {
+    let keys = effect
+      .cleanup_payload
+      .get("commentAttachmentKeys")
+      .and_then(Value::as_array)
+      .into_iter()
+      .flatten()
+      .filter_map(Value::as_str)
+      .map(|key| format!("comment-attachments/{}/{}/{key}", effect.workspace_id, effect.doc_id))
+      .collect::<Vec<_>>();
+    if !keys.is_empty() {
+      let outcomes = runtime.object_storage_delete_many(keys).await?;
+      if let Some(failed) = outcomes.iter().find(|outcome| outcome.error.is_some()) {
+        return Err(RuntimeError::invalid_state(format!(
+          "Comment attachment object delete failed for {}: {}",
+          failed.key,
+          failed.error.as_deref().unwrap_or("unknown")
+        )));
+      }
     }
   }
   let pool = runtime.pool().await?;
-  sqlx::query(
-    r#"
-    UPDATE document_cleanup_candidates
-    SET cleanup_payload = jsonb_set(cleanup_payload, '{commentObjectsDone}', 'true'),
-        error = NULL, updated_at = CURRENT_TIMESTAMP
-    WHERE workspace_id = $1 AND doc_id = $2 AND status = 'effects_pending'
-    "#,
+  let mut tx = pool
+    .begin()
+    .await
+    .map_err(|err| RuntimeError::database("Document cleanup object effect transaction failed", err))?;
+  complete_effect(
+    &mut tx,
+    &effect.workspace_id,
+    &effect.doc_id,
+    cleanup_version,
+    "commentObjectsDone",
   )
-  .bind(&effect.workspace_id)
-  .bind(&effect.doc_id)
-  .execute(&pool)
-  .await
-  .map_err(|err| RuntimeError::database("Document cleanup object effect update failed", err))?;
+  .await?;
+  tx.commit()
+    .await
+    .map_err(|err| RuntimeError::database("Document cleanup object effect commit failed", err))?;
   Ok(())
 }
 
@@ -818,45 +867,7 @@ impl StorageRuntime {
     if current_version != cleanup_version {
       return Err(napi_error("document cleanup effect candidate version mismatch"));
     }
-    let updated = sqlx::query(
-      r#"
-      UPDATE document_cleanup_candidates
-      SET cleanup_payload = jsonb_set(cleanup_payload, ARRAY[$4], 'true'),
-          error = NULL, updated_at = CURRENT_TIMESTAMP
-      WHERE workspace_id = $1 AND doc_id = $2 AND status = 'effects_pending'
-        AND cleanup_payload->>'cleanupVersion' = $3
-      "#,
-    )
-    .bind(&workspace_id)
-    .bind(&doc_id)
-    .bind(&cleanup_version)
-    .bind(path)
-    .execute(&mut *tx)
-    .await
-    .map_err(|err| RuntimeError::database("Document cleanup effect ack failed", err))?;
-    debug_assert_eq!(updated.rows_affected(), 1);
-    let completed = sqlx::query_scalar::<_, bool>(
-      r#"
-      SELECT COALESCE((cleanup_payload->>'commentObjectsDone')::boolean, false)
-         AND COALESCE((cleanup_payload->>'searchDone')::boolean, false)
-         AND COALESCE((cleanup_payload->>'copilotDone')::boolean, false)
-      FROM document_cleanup_candidates
-      WHERE workspace_id = $1 AND doc_id = $2
-      "#,
-    )
-    .bind(&workspace_id)
-    .bind(&doc_id)
-    .fetch_one(&mut *tx)
-    .await
-    .map_err(|err| RuntimeError::database("Document cleanup ack completion check failed", err))?;
-    if completed {
-      sqlx::query("DELETE FROM document_cleanup_candidates WHERE workspace_id = $1 AND doc_id = $2")
-        .bind(&workspace_id)
-        .bind(&doc_id)
-        .execute(&mut *tx)
-        .await
-        .map_err(|err| RuntimeError::database("Document cleanup completed candidate delete failed", err))?;
-    }
+    let completed = complete_effect(&mut tx, &workspace_id, &doc_id, &cleanup_version, path).await?;
     tx.commit()
       .await
       .map_err(|err| RuntimeError::database("Document cleanup ack commit failed", err))?;
@@ -1452,6 +1463,19 @@ mod tests {
     assert!(retained.get::<Option<String>, _>("error").is_some());
     let retry_cleanup_version = retained.get::<String, _>("cleanup_version");
 
+    for effect in ["search", "copilot"] {
+      let ack = runtime
+        .ack_document_cleanup_effect(
+          workspace_id.clone(),
+          retry_doc_id.to_string(),
+          retry_cleanup_version.clone(),
+          effect.to_string(),
+        )
+        .await
+        .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+      assert!(!ack.completed);
+    }
+
     sqlx::query(
       "UPDATE document_cleanup_candidates SET cleanup_payload = jsonb_set(cleanup_payload, '{commentAttachmentKeys}', \
        '[\"already-missing\"]') WHERE workspace_id = $1 AND doc_id = $2",
@@ -1466,18 +1490,7 @@ mod tests {
       .map_err(|err| anyhow::anyhow!(err.to_string()))?;
     assert_eq!(retried.executed, 0);
     assert_eq!(retried.failed, 0);
-    assert!(retried.effects[0].comment_objects_done);
-    for effect in ["search", "copilot"] {
-      runtime
-        .ack_document_cleanup_effect(
-          workspace_id.clone(),
-          retry_doc_id.to_string(),
-          retry_cleanup_version.clone(),
-          effect.to_string(),
-        )
-        .await
-        .map_err(|err| anyhow::anyhow!(err.to_string()))?;
-    }
+    assert!(retried.effects.is_empty());
     let retry_candidate_count = sqlx::query_scalar::<_, i64>(
       "SELECT COUNT(*) FROM document_cleanup_candidates WHERE workspace_id = $1 AND doc_id = $2",
     )
