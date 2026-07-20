@@ -22,7 +22,6 @@ export declare class BackendRuntime {
   compactPendingDocUpdates(workspaceId: string, docId: string, batchLimit: number, historyMinIntervalMs: number, historyMaxAgeSeconds: number, owner: string, leaseTtlMs: number): Promise<RuntimeDocCompactionResult>
   upsertDocSnapshot(workspaceId: string, docId: string, blob: Buffer, timestampMs: number, editorId?: string | undefined | null): Promise<boolean>
   createDocHistory(input: RuntimeDocHistoryInput): Promise<boolean>
-  deleteDocStorage(workspaceId: string, docId: string): Promise<void>
   putRuntimeGateIfAbsent(key: string, ttlMs: number): Promise<boolean>
   cleanupExpiredRuntimeGates(limit: number): Promise<number>
   cleanupExpiredUserSessions(limit: number): Promise<number>
@@ -78,6 +77,9 @@ export declare class StorageRuntime {
   backfillMissingBlobMetadata(workspaceId: string | undefined | null, limit: number): Promise<RuntimeBlobMetadataBackfillResult>
   rebuildDocBlobRefs(workspaceId: string, docId: string): Promise<RuntimeDocBlobRefsResult>
   rebuildWorkspaceDocBlobRefs(workspaceId: string, limit: number): Promise<RuntimeDocBlobRefsResult>
+  reconcileWorkspaceDocuments(workspaceId: string): Promise<RuntimeDocumentCleanupReconcileResult>
+  executeDocumentCleanupCandidates(workspaceId: string | undefined | null, gracePeriodDays: number, limit: number): Promise<RuntimeDocumentCleanupExecuteResult>
+  ackDocumentCleanupEffect(workspaceId: string, docId: string, cleanupVersion: string, effect: string): Promise<RuntimeDocumentCleanupAckResult>
   constructor()
   start(): Promise<void>
   configure(configJson: string): void
@@ -974,6 +976,37 @@ export interface RuntimeDocHistoryInput {
   force: boolean
   historyMinIntervalMs: number
   historyMaxAgeMs: number
+}
+
+export interface RuntimeDocumentCleanupAckResult {
+  completed: boolean
+}
+
+export interface RuntimeDocumentCleanupEffect {
+  workspaceId: string
+  docId: string
+  cleanupVersion: string
+  commentObjectsDone: boolean
+  searchDone: boolean
+  copilotDone: boolean
+}
+
+export interface RuntimeDocumentCleanupExecuteResult {
+  scannedCandidates: number
+  serializationRetries: number
+  executed: number
+  recovered: number
+  reset: number
+  failed: number
+  deletedRows: number
+  effects: Array<RuntimeDocumentCleanupEffect>
+}
+
+export interface RuntimeDocumentCleanupReconcileResult {
+  scannedDocs: number
+  marked: number
+  reset: number
+  recovered: number
 }
 
 export interface RuntimeInviteAbuseActionRequired {
