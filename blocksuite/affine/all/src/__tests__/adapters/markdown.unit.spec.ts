@@ -871,11 +871,15 @@ Hello world
     const entryMeta = collection.meta.docMetas.find(
       meta => meta.title === 'alias-links-entry'
     );
-    const targetMeta = collection.meta.docMetas.find(meta => meta.title === 'target');
+    const targetMeta = collection.meta.docMetas.find(
+      meta => meta.title === 'target'
+    );
     expect(entryMeta).toBeTruthy();
     expect(targetMeta).toBeTruthy();
 
-    const entryDoc = collection.getDoc(entryMeta!.id)?.getStore({ id: entryMeta!.id });
+    const entryDoc = collection
+      .getDoc(entryMeta!.id)
+      ?.getStore({ id: entryMeta!.id });
     expect(entryDoc).toBeTruthy();
 
     const rawDeltas = collectSnapshotDeltas(exportSnapshot(entryDoc!).blocks);
@@ -908,7 +912,9 @@ Hello world
       },
     });
 
-    const targetDoc = collection.getDoc(targetMeta!.id)?.getStore({ id: targetMeta!.id });
+    const targetDoc = collection
+      .getDoc(targetMeta!.id)
+      ?.getStore({ id: targetMeta!.id });
     expect(targetDoc).toBeTruthy();
     const targetSnapshot = exportSnapshot(targetDoc!);
     const targetNote = targetSnapshot.blocks.children.find(
@@ -950,9 +956,13 @@ Hello world
         schema,
         importedFiles: [
           withRelativePath(
-            new File(['# Keeping mantras internally\n'], 'Keeping mantras internally.md', {
-              type: 'text/markdown',
-            }),
+            new File(
+              ['# Keeping mantras internally\n'],
+              'Keeping mantras internally.md',
+              {
+                type: 'text/markdown',
+              }
+            ),
             'vault/F1/Keeping mantras internally.md'
           ),
           withRelativePath(
@@ -1005,9 +1015,13 @@ Hello world
         schema,
         importedFiles: [
           withRelativePath(
-            new File(['first line\nsecond line\n\nthird paragraph'], 'line-breaks.md', {
-              type: 'text/markdown',
-            }),
+            new File(
+              ['first line\nsecond line\n\nthird paragraph'],
+              'line-breaks.md',
+              {
+                type: 'text/markdown',
+              }
+            ),
             'vault/line-breaks.md'
           ),
         ],
@@ -1027,6 +1041,55 @@ Hello world
     expect(simplifiedDeltas).toContainEqual({
       insert: 'third paragraph',
     });
+  });
+
+  test('imports obsidian internal images from wikilink embeds and markdown image syntax', async () => {
+    const schema = new Schema().register(AffineSchemas);
+    const collection = new TestWorkspace();
+    collection.storeExtensions = testStoreExtensions;
+    collection.meta.initialize();
+
+    const imageBytes = new Uint8Array([
+      0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+    ]);
+
+    const { docIds } = await commitPlannedImport(
+      collection,
+      schema,
+      await ObsidianTransformer.planObsidianVault({
+        collection,
+        schema,
+        importedFiles: [
+          withRelativePath(
+            new File(
+              ['![[PCI Environment.png]]\n\n![](change-management.png)'],
+              'images-test.md',
+              { type: 'text/markdown' }
+            ),
+            'vault/images-test.md'
+          ),
+          withRelativePath(
+            new File([imageBytes], 'PCI Environment.png', {
+              type: 'image/png',
+            }),
+            'vault/PCI Environment.png'
+          ),
+          withRelativePath(
+            new File([imageBytes], 'change-management.png', {
+              type: 'image/png',
+            }),
+            'vault/change-management.png'
+          ),
+        ],
+        extensions: testStoreExtensions,
+      })
+    );
+    expect(docIds).toHaveLength(1);
+
+    const titles = titleMap(collection);
+    const snapshot = snapshotDocByTitle(collection, 'images-test', titles);
+    const snapshotJson = JSON.stringify(snapshot);
+    expect(snapshotJson.match(/"sourceId":"<asset>"/g)).toHaveLength(2);
   });
 
   test('resolves obsidian heading refs and self refs', async () => {
@@ -1095,12 +1158,16 @@ Hello world
     );
     expect(docIds).toHaveLength(2);
 
-    const testMeta = collection.meta.docMetas.find(meta => meta.title === 'test');
+    const testMeta = collection.meta.docMetas.find(
+      meta => meta.title === 'test'
+    );
     const iamMeta = collection.meta.docMetas.find(meta => meta.title === 'iam');
     expect(testMeta).toBeTruthy();
     expect(iamMeta).toBeTruthy();
 
-    const iamDoc = collection.getDoc(iamMeta!.id)?.getStore({ id: iamMeta!.id });
+    const iamDoc = collection
+      .getDoc(iamMeta!.id)
+      ?.getStore({ id: iamMeta!.id });
     expect(iamDoc).toBeTruthy();
     const iamSnapshot = exportSnapshot(iamDoc!);
     const iamNote = iamSnapshot.blocks.children.find(
@@ -1110,13 +1177,21 @@ Hello world
       block => block.flavour === 'affine:paragraph'
     );
     const block2Id = iamParagraphs?.find(block => {
-      const text = (block.props.text as { delta?: DeltaInsert<AffineTextAttributes>[] } | undefined)?.delta
+      const text = (
+        block.props.text as
+          | { delta?: DeltaInsert<AffineTextAttributes>[] }
+          | undefined
+      )?.delta
         ?.map(item => (typeof item.insert === 'string' ? item.insert : ''))
         .join('');
       return text === 'Block 2';
     })?.id;
     const block3Id = iamParagraphs?.find(block => {
-      const text = (block.props.text as { delta?: DeltaInsert<AffineTextAttributes>[] } | undefined)?.delta
+      const text = (
+        block.props.text as
+          | { delta?: DeltaInsert<AffineTextAttributes>[] }
+          | undefined
+      )?.delta
         ?.map(item => (typeof item.insert === 'string' ? item.insert : ''))
         .join('');
       return text === 'Block 3';
@@ -1124,9 +1199,13 @@ Hello world
     expect(block2Id).toBeTruthy();
     expect(block3Id).toBeTruthy();
 
-    const testDoc = collection.getDoc(testMeta!.id)?.getStore({ id: testMeta!.id });
+    const testDoc = collection
+      .getDoc(testMeta!.id)
+      ?.getStore({ id: testMeta!.id });
     expect(testDoc).toBeTruthy();
-    const testRawDeltas = collectSnapshotDeltas(exportSnapshot(testDoc!).blocks);
+    const testRawDeltas = collectSnapshotDeltas(
+      exportSnapshot(testDoc!).blocks
+    );
     expect(testRawDeltas).toContainEqual({
       insert: ' ',
       attributes: {
@@ -1394,6 +1473,27 @@ Hello world
                 },
                 {
                   type: 'block',
+                  id: 'C0sH2Ee6cz-MysVNLNrBt',
+                  flavour: 'affine:embed-linked-doc',
+                  props: {
+                    index: 'a0',
+                    xywh: '[0,0,0,0]',
+                    rotate: 0,
+                    pageId: '4T5ObMgEIMII-4Bexyta1',
+                    style: 'horizontal',
+                    caption: null,
+                    params: {
+                      mode: 'page',
+                      blockIds: ['abc', '123'],
+                      elementIds: ['def', '456'],
+                      databaseId: 'deadbeef',
+                      databaseRowId: '123',
+                    },
+                  },
+                  children: [],
+                },
+                {
+                  type: 'block',
                   id: 'block:f-Z6nRrGK_',
                   flavour: 'affine:paragraph',
                   props: {
@@ -1436,6 +1536,31 @@ Hello world
                           delta: [
                             {
                               insert: 'eee',
+                            },
+                            {
+                              insert: '',
+                              attributes: {
+                                reference: {
+                                  type: 'LinkedPage',
+                                  pageId: 'deadbeef',
+                                  params: {
+                                    mode: 'page',
+                                    blockIds: ['abc', '123'],
+                                    elementIds: ['def', '456'],
+                                    databaseId: 'deadbeef',
+                                    databaseRowId: '123',
+                                  },
+                                },
+                              },
+                            },
+                            {
+                              insert: ' ',
+                              attributes: {
+                                reference: {
+                                  type: 'LinkedPage',
+                                  pageId: 'foobar',
+                                },
+                              },
                             },
                           ],
                         },
@@ -2079,7 +2204,7 @@ hhh
                       '$blocksuite:internal:text$': true,
                       delta: [
                         {
-                          insert: 'ddd',
+                          insert
                         },
                       ],
                     },
@@ -3156,7 +3281,7 @@ hhh
 
 &#x20;       ddd
 
-&#x20;       eee[test](https://example.com/deadbeef?mode=page\\&blockIds=abc%2C123\\&elementIds=def%2C456\\&databaseId=deadbeef\\&databaseRowId=123)[](https://example.com/foobar)
+&#x20;       eee[test](https://example.com/deadbeef?mode=page\\&blockIds=abc%2C123\\&elementIds=def%2C456)[](https://example.com/foobar)
 
 &#x20;       fff
 

@@ -95,7 +95,8 @@ function preprocessObsidianBlockAnchors(markdown: string): string {
     const fenceMatch = line.match(/^\s*(`{3,}|~{3,})/);
     if (fenceMatch) {
       const fenceChar = fenceMatch[1][0] as '`' | '~';
-      activeFence = activeFence === fenceChar ? null : activeFence ?? fenceChar;
+      activeFence =
+        activeFence === fenceChar ? null : (activeFence ?? fenceChar);
       output.push(line);
       continue;
     }
@@ -149,7 +150,8 @@ function preprocessObsidianSoftLineBreaks(markdown: string): string {
     const fenceMatch = line.match(/^\s*(`{3,}|~{3,})/);
     if (fenceMatch) {
       const fenceChar = fenceMatch[1][0] as '`' | '~';
-      activeFence = activeFence === fenceChar ? null : activeFence ?? fenceChar;
+      activeFence =
+        activeFence === fenceChar ? null : (activeFence ?? fenceChar);
       output.push(line);
       continue;
     }
@@ -170,7 +172,9 @@ function preprocessObsidianSoftLineBreaks(markdown: string): string {
       isObsidianParagraphLine(lines[index + 1])
     ) {
       const currentLine = paragraphLines[paragraphLines.length - 1];
-      paragraphLines[paragraphLines.length - 1] = hasExplicitLineBreak(currentLine)
+      paragraphLines[paragraphLines.length - 1] = hasExplicitLineBreak(
+        currentLine
+      )
         ? currentLine
         : `${currentLine}<br>`;
       paragraphLines.push(lines[index + 1]);
@@ -358,9 +362,7 @@ function parseObsidianTarget(rawTarget: string): {
       ? normalizedTarget
       : normalizedTarget.slice(0, fragmentStartIndex);
   const fragmentSource =
-    fragmentStartIndex === -1
-      ? ''
-      : normalizedTarget.slice(fragmentStartIndex);
+    fragmentStartIndex === -1 ? '' : normalizedTarget.slice(fragmentStartIndex);
 
   let fragment: string | null = null;
   let fragmentType: 'heading' | 'block' | null = null;
@@ -826,7 +828,7 @@ function preprocessObsidianEmbeds(
     if (!path) return raw;
 
     const assetPath = getImageFullPath(filePath, path);
-    const encodedPath = encodeMarkdownPath(assetPath);
+    const encodedPath = encodeMarkdownPath(path);
 
     if (isImageAssetPath(path)) {
       const alt = getEmbedLabel(rawAlias, path, false);
@@ -863,9 +865,8 @@ function preprocessObsidianMarkdown(
   const normalizedMarkdown = preprocessTitleHeader(
     preprocessObsidianCallouts(content)
   );
-  const markdownWithSoftBreaks = preprocessObsidianSoftLineBreaks(
-    normalizedMarkdown
-  );
+  const markdownWithSoftBreaks =
+    preprocessObsidianSoftLineBreaks(normalizedMarkdown);
   const markdownWithBlockAnchors = preprocessObsidianBlockAnchors(
     markdownWithSoftBreaks
   );
