@@ -828,6 +828,363 @@ Hello world
     }).toMatchSnapshot();
   });
 
+  test('imports obsidian alias and block wikilinks', async () => {
+    const schema = new Schema().register(AffineSchemas);
+    const collection = new TestWorkspace();
+    collection.storeExtensions = testStoreExtensions;
+    collection.meta.initialize();
+
+    const { docIds } = await commitPlannedImport(
+      collection,
+      schema,
+      await ObsidianTransformer.planObsidianVault({
+        collection,
+        schema,
+        importedFiles: [
+          markdownFixture('alias-links-entry.md'),
+          withRelativePath(
+            new File(['target body\n^block-id-123\n'], 'target.md', {
+              type: 'text/markdown',
+            }),
+            'vault/target.md'
+          ),
+        ],
+        extensions: testStoreExtensions,
+      })
+    );
+    expect(docIds).toHaveLength(2);
+
+    const titles = titleMap(collection);
+    const simplifiedDeltas = collectSimplifiedDeltas(
+      snapshotDocByTitle(collection, 'alias-links-entry', titles)
+    );
+
+    expect(simplifiedDeltas).toContainEqual({
+      insert: ' ',
+      reference: {
+        type: 'LinkedPage',
+        page: 'target',
+        title: 'Shown Label',
+      },
+    });
+
+    const entryMeta = collection.meta.docMetas.find(
+      meta => meta.title === 'alias-links-entry'
+    );
+    const targetMeta = collection.meta.docMetas.find(meta => meta.title === 'target');
+    expect(entryMeta).toBeTruthy();
+    expect(targetMeta).toBeTruthy();
+
+    const entryDoc = collection.getDoc(entryMeta!.id)?.getStore({ id: entryMeta!.id });
+    expect(entryDoc).toBeTruthy();
+
+    const rawDeltas = collectSnapshotDeltas(exportSnapshot(entryDoc!).blocks);
+    expect(rawDeltas).not.toContainEqual({
+      insert: ' ',
+      attributes: {
+        reference: {
+          type: 'LinkedPage',
+          pageId: targetMeta!.id,
+          title: 'Block Label',
+          params: {
+            mode: 'page',
+            blockIds: ['block-id-123'],
+          },
+        },
+      },
+    });
+
+    expect(rawDeltas).toContainEqual({
+      insert: ' ',
+      attributes: {
+        reference: {
+          type: 'LinkedPage',
+          pageId: targetMeta!.id,
+          title: 'Hash Block Label',
+          params: expect.objectContaining({
+            mode: 'page',
+          }),
+        },
+      },
+    });
+
+    const targetDoc = collection.getDoc(targetMeta!.id)?.getStore({ id: targetMeta!.id });
+    expect(targetDoc).toBeTruthy();
+    const targetSnapshot = exportSnapshot(targetDoc!);
+    const targetNote = targetSnapshot.blocks.children.find(
+      block => block.flavour === 'affine:note'
+    );
+    const targetParagraph = targetNote?.children.find(
+      block => block.flavour === 'affine:paragraph'
+    );
+    expect(targetParagraph?.id).toBeTruthy();
+
+    expect(rawDeltas).toContainEqual({
+      insert: ' ',
+      attributes: {
+        reference: {
+          type: 'LinkedPage',
+          pageId: targetMeta!.id,
+          title: 'Hash Block Label',
+          params: {
+            mode: 'page',
+            blockIds: [targetParagraph!.id],
+          },
+        },
+      },
+    });
+    expect(JSON.stringify(targetSnapshot)).not.toContain('block-id-123');
+  });
+
+  test('resolves obsidian wikilinks across sibling folders by basename', async () => {
+    const schema = new Schema().register(AffineSchemas);
+    const collection = new TestWorkspace();
+    collection.storeExtensions = testStoreExtensions;
+    collection.meta.initialize();
+
+    const { docIds } = await commitPlannedImport(
+      collection,
+      schema,
+      await ObsidianTransformer.planObsidianVault({
+        collection,
+        schema,
+        importedFiles: [
+          withRelativePath(
+            new File(['# Keeping mantras internally\n'], 'Keeping mantras internally.md', {
+              type: 'text/markdown',
+            }),
+            'vault/F1/Keeping mantras internally.md'
+          ),
+          withRelativePath(
+            new File(['[[Keeping mantras internally]]'], 'Psychotherapy.md', {
+              type: 'text/markdown',
+            }),
+            'vault/F2/Psychotherapy.md'
+          ),
+        ],
+        extensions: testStoreExtensions,
+      })
+    );
+    expect(docIds).toHaveLength(2);
+
+    const titles = titleMap(collection);
+    const simplifiedDeltas = collectSimplifiedDeltas(
+      snapshotDocByTitle(collection, 'Psychotherapy', titles)
+    );
+
+    expect(simplifiedDeltas).toContainEqual({
+      insert: ' ',
+      reference: {
+        type: 'LinkedPage',
+        page: 'Keeping mantras internally',
+      },
+    });
+
+    const psychotherapyMeta = collection.meta.docMetas.find(
+      meta => meta.title === 'Psychotherapy'
+    );
+    expect(psychotherapyMeta).toBeTruthy();
+    const psychotherapyDoc = collection
+      .getDoc(psychotherapyMeta!.id)
+      ?.getStore({ id: psychotherapyMeta!.id });
+    expect(psychotherapyDoc).toBeTruthy();
+    expect(exportSnapshot(psychotherapyDoc!).meta.title).toBe('Psychotherapy');
+  });
+
+  test('preserves obsidian paragraph newlines as line breaks', async () => {
+    const schema = new Schema().register(AffineSchemas);
+    const collection = new TestWorkspace();
+    collection.storeExtensions = testStoreExtensions;
+    collection.meta.initialize();
+
+    const { docIds } = await commitPlannedImport(
+      collection,
+      schema,
+      await ObsidianTransformer.planObsidianVault({
+        collection,
+        schema,
+        importedFiles: [
+          withRelativePath(
+            new File(['first line\nsecond line\n\nthird paragraph'], 'line-breaks.md', {
+              type: 'text/markdown',
+            }),
+            'vault/line-breaks.md'
+          ),
+        ],
+        extensions: testStoreExtensions,
+      })
+    );
+    expect(docIds).toHaveLength(1);
+
+    const titles = titleMap(collection);
+    const simplifiedDeltas = collectSimplifiedDeltas(
+      snapshotDocByTitle(collection, 'line-breaks', titles)
+    );
+
+    expect(simplifiedDeltas).toContainEqual({
+      insert: 'first line\nsecond line',
+    });
+    expect(simplifiedDeltas).toContainEqual({
+      insert: 'third paragraph',
+    });
+  });
+
+  test('resolves obsidian heading refs and self refs', async () => {
+    const schema = new Schema().register(AffineSchemas);
+    const collection = new TestWorkspace();
+    collection.storeExtensions = testStoreExtensions;
+    collection.meta.initialize();
+
+    const { docIds } = await commitPlannedImport(
+      collection,
+      schema,
+      await ObsidianTransformer.planObsidianVault({
+        collection,
+        schema,
+        importedFiles: [
+          withRelativePath(
+            new File(
+              [
+                [
+                  'Test123 [[iam]]',
+                  '',
+                  '# [[iam|My Doc]] should be an alias',
+                  '',
+                  'Here is a [[iam#^841f26]] block ref',
+                  'And here one with an [[iam#^841f26|alias]]',
+                  '..',
+                  '',
+                  'Heading ref: [[iam#Block 3]]',
+                ].join('\n'),
+              ],
+              'test.md',
+              { type: 'text/markdown' }
+            ),
+            'vault/test.md'
+          ),
+          withRelativePath(
+            new File(
+              [
+                [
+                  '# Block 1',
+                  '',
+                  '# Block 2',
+                  '^841f26',
+                  '',
+                  '# Block 3',
+                  '',
+                  'Self-ref: [[#^841f26]]',
+                  '',
+                  'Self-ref-head: [[#Block 2]]',
+                  '',
+                  '',
+                  'Self-ref-head alias: [[#Block 2|My Alias]]',
+                  '',
+                  'Self-ref with name:',
+                  '[[iam#Block 2]]',
+                ].join('\n'),
+              ],
+              'iam.md',
+              { type: 'text/markdown' }
+            ),
+            'vault/iam.md'
+          ),
+        ],
+        extensions: testStoreExtensions,
+      })
+    );
+    expect(docIds).toHaveLength(2);
+
+    const testMeta = collection.meta.docMetas.find(meta => meta.title === 'test');
+    const iamMeta = collection.meta.docMetas.find(meta => meta.title === 'iam');
+    expect(testMeta).toBeTruthy();
+    expect(iamMeta).toBeTruthy();
+
+    const iamDoc = collection.getDoc(iamMeta!.id)?.getStore({ id: iamMeta!.id });
+    expect(iamDoc).toBeTruthy();
+    const iamSnapshot = exportSnapshot(iamDoc!);
+    const iamNote = iamSnapshot.blocks.children.find(
+      block => block.flavour === 'affine:note'
+    );
+    const iamParagraphs = iamNote?.children.filter(
+      block => block.flavour === 'affine:paragraph'
+    );
+    const block2Id = iamParagraphs?.find(block => {
+      const text = (block.props.text as { delta?: DeltaInsert<AffineTextAttributes>[] } | undefined)?.delta
+        ?.map(item => (typeof item.insert === 'string' ? item.insert : ''))
+        .join('');
+      return text === 'Block 2';
+    })?.id;
+    const block3Id = iamParagraphs?.find(block => {
+      const text = (block.props.text as { delta?: DeltaInsert<AffineTextAttributes>[] } | undefined)?.delta
+        ?.map(item => (typeof item.insert === 'string' ? item.insert : ''))
+        .join('');
+      return text === 'Block 3';
+    })?.id;
+    expect(block2Id).toBeTruthy();
+    expect(block3Id).toBeTruthy();
+
+    const testDoc = collection.getDoc(testMeta!.id)?.getStore({ id: testMeta!.id });
+    expect(testDoc).toBeTruthy();
+    const testRawDeltas = collectSnapshotDeltas(exportSnapshot(testDoc!).blocks);
+    expect(testRawDeltas).toContainEqual({
+      insert: ' ',
+      attributes: {
+        reference: {
+          type: 'LinkedPage',
+          pageId: iamMeta!.id,
+          params: {
+            mode: 'page',
+            blockIds: [block3Id!],
+          },
+        },
+      },
+    });
+    expect(testRawDeltas).toContainEqual({
+      insert: ' ',
+      attributes: {
+        reference: {
+          type: 'LinkedPage',
+          pageId: iamMeta!.id,
+          title: 'alias',
+          params: {
+            mode: 'page',
+            blockIds: [block2Id!],
+          },
+        },
+      },
+    });
+
+    const iamRawDeltas = collectSnapshotDeltas(iamSnapshot.blocks);
+    expect(iamRawDeltas).toContainEqual({
+      insert: ' ',
+      attributes: {
+        reference: {
+          type: 'LinkedPage',
+          pageId: iamMeta!.id,
+          params: {
+            mode: 'page',
+            blockIds: [block2Id!],
+          },
+        },
+      },
+    });
+    expect(iamRawDeltas).toContainEqual({
+      insert: ' ',
+      attributes: {
+        reference: {
+          type: 'LinkedPage',
+          pageId: iamMeta!.id,
+          title: 'My Alias',
+          params: {
+            mode: 'page',
+            blockIds: [block2Id!],
+          },
+        },
+      },
+    });
+  });
+
   test('imports notion html zip golden baseline', async () => {
     const schema = new Schema().register(AffineSchemas);
     const collection = new TestWorkspace();

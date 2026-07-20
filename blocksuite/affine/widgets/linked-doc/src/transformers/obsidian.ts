@@ -11,6 +11,7 @@ import {
 } from '@blocksuite/affine-shared/adapters';
 import type { AffineTextAttributes } from '@blocksuite/affine-shared/types';
 import type {
+  BlockSnapshot,
   DeltaInsert,
   ExtensionType,
   Schema,
@@ -25,6 +26,7 @@ import {
   type ImportDoc,
 } from './import-batch.js';
 import {
+  applySnapshotTitle,
   bindImportedAssetsToJob,
   createMarkdownImportJob,
   getProvider,
@@ -71,6 +73,257 @@ const AMBIGUOUS_PAGE_LOOKUP = '__ambiguous__';
 const DEFAULT_CALLOUT_EMOJI = '💡';
 const OBSIDIAN_TEXT_FOOTNOTE_URL_PREFIX = 'data:text/plain;charset=utf-8,';
 const OBSIDIAN_ATTACHMENT_EMBED_TAG = 'obsidian-attachment';
+const OBSIDIAN_BLOCK_ANCHOR_MARKER_PREFIX = '<<AFFINE_OBSIDIAN_BLOCK_ANCHOR:';
+const OBSIDIAN_BLOCK_ANCHOR_MARKER_RE =
+  / ?<<AFFINE_OBSIDIAN_BLOCK_ANCHOR:([^>]+)>>/g;
+
+function createObsidianBlockAnchorMarker(anchorId: string): string {
+  return `${OBSIDIAN_BLOCK_ANCHOR_MARKER_PREFIX}${encodeURIComponent(anchorId)}>>`;
+}
+
+function parseObsidianBlockAnchorLine(line: string): string | null {
+  const match = line.match(/^\s*\^([A-Za-z0-9][A-Za-z0-9-]*)\s*$/);
+  return match?.[1] ?? null;
+}
+
+function preprocessObsidianBlockAnchors(markdown: string): string {
+  const lines = markdown.split('\n');
+  const output: string[] = [];
+  let activeFence: '`' | '~' | null = null;
+
+  for (const line of lines) {
+    const fenceMatch = line.match(/^\s*(`{3,}|~{3,})/);
+    if (fenceMatch) {
+      const fenceChar = fenceMatch[1][0] as '`' | '~';
+      activeFence = activeFence === fenceChar ? null : activeFence ?? fenceChar;
+      output.push(line);
+      continue;
+    }
+
+    if (!activeFence) {
+      const anchorId = parseObsidianBlockAnchorLine(line);
+      if (anchorId) {
+        for (let index = output.length - 1; index >= 0; index -= 1) {
+          if (!output[index].trim()) {
+            continue;
+          }
+          output[index] += ` ${createObsidianBlockAnchorMarker(anchorId)}`;
+          break;
+        }
+        continue;
+      }
+    }
+
+    output.push(line);
+  }
+
+  return output.join('\n');
+}
+
+function isObsidianParagraphLine(line: string): boolean {
+  const trimmed = line.trim();
+  if (!trimmed) {
+    return false;
+  }
+
+  if (parseObsidianBlockAnchorLine(trimmed)) {
+    return false;
+  }
+
+  return !/^(?:#{1,6}\s|>\s?|[-*+]\s|\d+[.)]\s|```|~~~|\|(?:[^|]|$)|-{3,}$|_{3,}$|\*{3,}$)/.test(
+    trimmed
+  );
+}
+
+function hasExplicitLineBreak(line: string): boolean {
+  return /(?: {2,}|\\|<br\s*\/?>)\s*$/i.test(line);
+}
+
+function preprocessObsidianSoftLineBreaks(markdown: string): string {
+  const lines = markdown.split('\n');
+  const output: string[] = [];
+  let activeFence: '`' | '~' | null = null;
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    const fenceMatch = line.match(/^\s*(`{3,}|~{3,})/);
+    if (fenceMatch) {
+      const fenceChar = fenceMatch[1][0] as '`' | '~';
+      activeFence = activeFence === fenceChar ? null : activeFence ?? fenceChar;
+      output.push(line);
+      continue;
+    }
+
+    if (activeFence) {
+      output.push(line);
+      continue;
+    }
+
+    if (!isObsidianParagraphLine(line)) {
+      output.push(line);
+      continue;
+    }
+
+    const paragraphLines = [line];
+    while (
+      index + 1 < lines.length &&
+      isObsidianParagraphLine(lines[index + 1])
+    ) {
+      const currentLine = paragraphLines[paragraphLines.length - 1];
+      paragraphLines[paragraphLines.length - 1] = hasExplicitLineBreak(currentLine)
+        ? currentLine
+        : `${currentLine}<br>`;
+      paragraphLines.push(lines[index + 1]);
+      index += 1;
+    }
+
+    output.push(paragraphLines.join(''));
+  }
+
+  return output.join('\n');
+}
+
+function stripObsidianBlockAnchorMarkers(value: string): {
+  value: string;
+  anchorIds: string[];
+} {
+  const anchorIds: string[] = [];
+  const stripped = value.replace(
+    OBSIDIAN_BLOCK_ANCHOR_MARKER_RE,
+    (_, encodedAnchorId: string) => {
+      anchorIds.push(decodeURIComponent(encodedAnchorId));
+      return '';
+    }
+  );
+
+  return {
+    value: stripped,
+    anchorIds,
+  };
+}
+
+function collectObsidianBlockAnchorMap(
+  block: BlockSnapshot,
+  anchorMap: Map<string, string>
+) {
+  const text = block.props.text as
+    | { delta?: DeltaInsert<AffineTextAttributes>[] }
+    | undefined;
+
+  for (const delta of text?.delta ?? []) {
+    if (typeof delta.insert !== 'string') {
+      continue;
+    }
+
+    const { value, anchorIds } = stripObsidianBlockAnchorMarkers(delta.insert);
+    if (anchorIds.length === 0) {
+      continue;
+    }
+
+    delta.insert = value;
+    for (const anchorId of anchorIds) {
+      anchorMap.set(anchorId, block.id);
+    }
+  }
+
+  for (const child of block.children ?? []) {
+    collectObsidianBlockAnchorMap(child, anchorMap);
+  }
+}
+
+function normalizeObsidianHeadingKey(value: string): string {
+  return value.trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
+function getBlockText(block: BlockSnapshot): string {
+  const text = block.props.text as
+    | { delta?: DeltaInsert<AffineTextAttributes>[] }
+    | undefined;
+
+  return (text?.delta ?? [])
+    .map(delta => (typeof delta.insert === 'string' ? delta.insert : ''))
+    .join('');
+}
+
+function collectObsidianHeadingMap(
+  block: BlockSnapshot,
+  headingMap: Map<string, string>
+) {
+  if (
+    block.flavour === 'affine:paragraph' &&
+    typeof block.props.type === 'string' &&
+    /^h[1-6]$/.test(block.props.type)
+  ) {
+    const headingText = normalizeObsidianHeadingKey(getBlockText(block));
+    if (headingText && !headingMap.has(headingText)) {
+      headingMap.set(headingText, block.id);
+    }
+  }
+
+  for (const child of block.children ?? []) {
+    collectObsidianHeadingMap(child, headingMap);
+  }
+}
+
+function resolveObsidianFragmentBlockId(
+  rawFragment: string,
+  blockAnchorMap: ReadonlyMap<string, string> | undefined,
+  headingMap: ReadonlyMap<string, string> | undefined
+): string | null {
+  return (
+    blockAnchorMap?.get(rawFragment) ??
+    headingMap?.get(normalizeObsidianHeadingKey(rawFragment)) ??
+    null
+  );
+}
+
+function remapObsidianBlockReferences(
+  block: BlockSnapshot,
+  pageBlockAnchorMaps: ReadonlyMap<string, ReadonlyMap<string, string>>,
+  pageHeadingMaps: ReadonlyMap<string, ReadonlyMap<string, string>>
+) {
+  const text = block.props.text as
+    | { delta?: DeltaInsert<AffineTextAttributes>[] }
+    | undefined;
+
+  for (const delta of text?.delta ?? []) {
+    const reference = delta.attributes?.reference;
+    if (reference?.type !== 'LinkedPage') {
+      continue;
+    }
+
+    const blockIds = reference.params?.blockIds;
+    if (!blockIds?.length) {
+      continue;
+    }
+
+    const anchorMap = pageBlockAnchorMaps.get(reference.pageId);
+    const headingMap = pageHeadingMaps.get(reference.pageId);
+    const remappedBlockIds = blockIds
+      .map(blockId =>
+        resolveObsidianFragmentBlockId(blockId, anchorMap, headingMap)
+      )
+      .filter((blockId): blockId is string => !!blockId);
+
+    if (remappedBlockIds.length > 0) {
+      reference.params = {
+        ...reference.params,
+        blockIds: remappedBlockIds,
+      };
+      continue;
+    }
+
+    const { blockIds: _ignored, ...restParams } = reference.params ?? {};
+    reference.params = restParams;
+    if (Object.keys(restParams).length === 0) {
+      delete reference.params;
+    }
+  }
+
+  for (const child of block.children ?? []) {
+    remapObsidianBlockReferences(child, pageBlockAnchorMaps, pageHeadingMaps);
+  }
+}
 
 function normalizeLookupKey(value: string): string {
   return normalizeFilePathReference(value).toLowerCase();
@@ -87,13 +340,53 @@ function basename(value: string): string {
 function parseObsidianTarget(rawTarget: string): {
   path: string;
   fragment: string | null;
+  fragmentType: 'heading' | 'block' | null;
+  fragmentValue: string | null;
 } {
   const normalizedTarget = normalizeFilePathReference(rawTarget);
-  const match = normalizedTarget.match(/^([^#^]+)([#^].*)?$/);
+  const hashIndex = normalizedTarget.indexOf('#');
+  const caretIndex = normalizedTarget.indexOf('^');
+  const fragmentStartIndex =
+    hashIndex === -1
+      ? caretIndex
+      : caretIndex === -1
+        ? hashIndex
+        : Math.min(hashIndex, caretIndex);
+
+  const path =
+    fragmentStartIndex === -1
+      ? normalizedTarget
+      : normalizedTarget.slice(0, fragmentStartIndex);
+  const fragmentSource =
+    fragmentStartIndex === -1
+      ? ''
+      : normalizedTarget.slice(fragmentStartIndex);
+
+  let fragment: string | null = null;
+  let fragmentType: 'heading' | 'block' | null = null;
+  let fragmentValue: string | null = null;
+
+  if (fragmentSource.startsWith('#^')) {
+    const blockId = fragmentSource.slice(2).trim();
+    if (blockId) {
+      fragment = `#^${blockId}`;
+      fragmentType = 'block';
+      fragmentValue = blockId;
+    }
+  } else if (fragmentSource.startsWith('#')) {
+    const heading = fragmentSource.slice(1).trim();
+    if (heading) {
+      fragment = `#${heading}`;
+      fragmentType = 'heading';
+      fragmentValue = heading;
+    }
+  }
 
   return {
-    path: match?.[1]?.trim() ?? normalizedTarget,
-    fragment: match?.[2] ?? null,
+    path: path.trim(),
+    fragment,
+    fragmentType,
+    fragmentValue,
   };
 }
 
@@ -331,7 +624,8 @@ function resolvePageIdFromLookup(
   currentFilePath?: string
 ): string | null {
   const { path } = parseObsidianTarget(rawTarget);
-  for (const key of buildLookupKeys(path, currentFilePath)) {
+  const lookupTargetPath = path || currentFilePath;
+  for (const key of buildLookupKeys(lookupTargetPath ?? '', currentFilePath)) {
     const targetPageId = pageLookupMap.get(key);
     if (!targetPageId || targetPageId === AMBIGUOUS_PAGE_LOOKUP) {
       continue;
@@ -358,6 +652,21 @@ function resolveWikilinkDisplayTitle(
   }
 
   return rawAlias;
+}
+
+function resolveObsidianReferenceParams(rawTarget: string): {
+  mode: 'page';
+  blockIds: string[];
+} | null {
+  const { fragmentType, fragmentValue } = parseObsidianTarget(rawTarget);
+  if (!fragmentType || !fragmentValue) {
+    return null;
+  }
+
+  return {
+    mode: 'page',
+    blockIds: [fragmentValue],
+  };
 }
 
 function isImageAssetPath(path: string): boolean {
@@ -554,12 +863,18 @@ function preprocessObsidianMarkdown(
   const normalizedMarkdown = preprocessTitleHeader(
     preprocessObsidianCallouts(content)
   );
+  const markdownWithSoftBreaks = preprocessObsidianSoftLineBreaks(
+    normalizedMarkdown
+  );
+  const markdownWithBlockAnchors = preprocessObsidianBlockAnchors(
+    markdownWithSoftBreaks
+  );
 
   if (extractedFootnotes.length === 0) {
-    return normalizedMarkdown;
+    return markdownWithBlockAnchors;
   }
 
-  const trimmedMarkdown = normalizedMarkdown.replace(/\s+$/, '');
+  const trimmedMarkdown = markdownWithBlockAnchors.replace(/\s+$/, '');
   return `${trimmedMarkdown}\n\n${extractedFootnotes.join('\n\n')}\n`;
 }
 
@@ -658,6 +973,7 @@ export const obsidianWikilinkToDeltaMatcher = MarkdownASTToDeltaExtension({
           'obsidian:pageEmoji:' + targetPageId
         );
         const displayTitle = resolveWikilinkDisplayTitle(alias, pageEmoji);
+        const referenceParams = resolveObsidianReferenceParams(targetPageName);
 
         deltas.push({
           insert: ' ',
@@ -666,6 +982,7 @@ export const obsidianWikilinkToDeltaMatcher = MarkdownASTToDeltaExtension({
               type: 'LinkedPage',
               pageId: targetPageId,
               ...(displayTitle ? { title: displayTitle } : {}),
+              ...(referenceParams ? { params: referenceParams } : {}),
             },
           },
         });
@@ -715,6 +1032,8 @@ export async function planObsidianVault({
   const pendingPathBlobIdMap: PathBlobIdMap = new Map();
   const markdownBlobs: MarkdownFileImportEntry[] = [];
   const pageLookupMap = new Map<string, string>();
+  const pageBlockAnchorMaps = new Map<string, Map<string, string>>();
+  const pageHeadingMaps = new Map<string, Map<string, string>>();
 
   for (const file of importedFiles) {
     const filePath = file.webkitRelativePath || file.name;
@@ -822,6 +1141,13 @@ export async function planObsidianVault({
 
       if (snapshot) {
         snapshot.meta.id = predefinedId;
+        applySnapshotTitle(snapshot, preferredTitle);
+        const blockAnchorMap = new Map<string, string>();
+        const headingMap = new Map<string, string>();
+        collectObsidianBlockAnchorMap(snapshot.blocks, blockAnchorMap);
+        collectObsidianHeadingMap(snapshot.blocks, headingMap);
+        pageBlockAnchorMaps.set(predefinedId, blockAnchorMap);
+        pageHeadingMaps.set(predefinedId, headingMap);
         docs.push({
           id: predefinedId,
           snapshot,
@@ -831,6 +1157,14 @@ export async function planObsidianVault({
       }
     })
   );
+
+  for (const doc of docs) {
+    remapObsidianBlockReferences(
+      doc.snapshot.blocks,
+      pageBlockAnchorMaps,
+      pageHeadingMaps
+    );
+  }
 
   return {
     docIds,
