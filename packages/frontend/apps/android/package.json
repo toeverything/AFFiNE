@@ -19,9 +19,9 @@
     "@affine/nbstore": "workspace:*",
     "@affine/track": "workspace:*",
     "@blocksuite/affine": "workspace:*",
-    "@capacitor/android": "^7.0.0",
+    "@capacitor/android": "^8.0.0",
     "@capacitor/app": "^7.0.0",
-    "@capacitor/core": "^7.0.0",
+    "@capacitor/core": "^8.0.0",
     "@capacitor/keyboard": "^7.0.0",
     "@capacitor/status-bar": "^7.0.0",
     "@capgo/inappbrowser": "^8.0.0",
@@ -34,7 +34,7 @@
     "react-router-dom": "^6.30.4"
   },
   "devDependencies": {
-    "@capacitor/cli": "^7.6.5",
+    "@capacitor/cli": "^8.0.0",
     "@types/react": "^19.0.1",
     "@types/react-dom": "^19.0.2",
     "typescript": "^5.9.3"

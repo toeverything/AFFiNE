@@ -25,9 +25,9 @@
     "@blocksuite/affine": "workspace:*",
     "@capacitor/app": "^7.0.0",
     "@capacitor/browser": "^7.0.0",
-    "@capacitor/core": "^7.0.0",
+    "@capacitor/core": "^8.0.0",
     "@capacitor/haptics": "^7.0.0",
-    "@capacitor/ios": "^7.0.0",
+    "@capacitor/ios": "^8.0.0",
     "@capacitor/keyboard": "^7.0.0",
     "@toeverything/infra": "workspace:^",
     "async-call-rpc": "^6.4.2",
@@ -41,7 +41,7 @@
   "devDependencies": {
     "@affine-tools/cli": "workspace:*",
     "@affine-tools/utils": "workspace:*",
-    "@capacitor/cli": "^7.6.5",
+    "@capacitor/cli": "^8.0.0",
     "@types/react": "^19.0.1",
     "@types/react-dom": "^19.0.2",
     "typescript": "^5.9.3"
