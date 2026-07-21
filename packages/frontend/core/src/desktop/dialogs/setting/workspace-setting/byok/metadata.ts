@@ -24,6 +24,26 @@ export function storageLabel(t: I18nInstance, storage: ByokStorage) {
     : byokT(t, 'storage.server');
 }
 
+export function endpointHintKey(
+  customEndpointSupported: boolean,
+  privateEndpointSupported: boolean
+) {
+  if (!customEndpointSupported) {
+    return 'endpoint.custom-disabled';
+  }
+  if (!privateEndpointSupported) {
+    return 'endpoint.private-disabled';
+  }
+  return null;
+}
+
+export function shouldShowEndpoint(
+  isSelfHosted: boolean,
+  customEndpointSupported: boolean
+) {
+  return isSelfHosted || customEndpointSupported;
+}
+
 export function capabilitiesFor(provider: ByokProvider, storage: ByokStorage) {
   switch (provider) {
     case ByokProvider.openai:

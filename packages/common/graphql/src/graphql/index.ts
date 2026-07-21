@@ -1967,12 +1967,10 @@ export const getCurrentUserQuery = {
     email
     emailVerified
     avatarUrl
-    token {
-      sessionToken
-    }
+    hasPassword
+    features
   }
 }`,
-  deprecations: ["'token' is deprecated: use auth session exchange instead"],
 };
 
 export const getDocCreatedByUpdatedByListQuery = {
@@ -3062,6 +3060,7 @@ export const workspaceByokSettingsQuery = {
       allowedProviders
       localStorageSupported
       customEndpointSupported
+      privateEndpointSupported
       hasAiPlan
       keys {
         id

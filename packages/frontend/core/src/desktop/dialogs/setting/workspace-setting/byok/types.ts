@@ -53,6 +53,7 @@ export type ByokSettings = {
   allowedProviders: ByokProvider[];
   localStorageSupported: boolean;
   customEndpointSupported: boolean;
+  privateEndpointSupported: boolean;
   hasAiPlan: boolean;
   warnings: Array<{
     featureKind: string;

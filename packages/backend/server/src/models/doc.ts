@@ -634,7 +634,10 @@ export class DocModel extends BaseModel {
      "workspace_pages"."workspace_id" as "workspaceId",
      "workspace_pages"."page_id" as "docId",
      "workspace_pages"."mode" as "mode",
-     (dap.visibility = 'public' AND dap.public_role = 'external') as "public",
+     COALESCE(
+       dap.visibility = 'public' AND dap.public_role = 'external',
+       false
+     ) as "public",
      COALESCE(dap.member_default_role, 'manager') as "defaultRolePolicy",
      "workspace_pages"."title" as "title",
      "workspace_pages"."summary" as "summary",
@@ -694,7 +697,10 @@ export class DocModel extends BaseModel {
        "workspace_pages"."workspace_id" as "workspaceId",
        "workspace_pages"."page_id" as "docId",
        "workspace_pages"."mode" as "mode",
-       (dap.visibility = 'public' AND dap.public_role = 'external') as "public",
+       COALESCE(
+         dap.visibility = 'public' AND dap.public_role = 'external',
+         false
+       ) as "public",
        COALESCE(dap.member_default_role, 'manager') as "defaultRolePolicy",
        "snapshots"."created_at" as "createdAt",
        "snapshots"."updated_at" as "updatedAt",
@@ -761,7 +767,10 @@ export class DocModel extends BaseModel {
        "workspace_pages"."workspace_id" as "workspaceId",
        "workspace_pages"."page_id" as "docId",
        "workspace_pages"."mode" as "mode",
-       (dap.visibility = 'public' AND dap.public_role = 'external') as "public",
+       COALESCE(
+         dap.visibility = 'public' AND dap.public_role = 'external',
+         false
+       ) as "public",
        COALESCE(dap.member_default_role, 'manager') as "defaultRolePolicy",
        "workspace_pages"."title" as "title",
        "snapshots"."created_at" as "createdAt",

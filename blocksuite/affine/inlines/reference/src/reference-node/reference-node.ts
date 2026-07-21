@@ -49,10 +49,6 @@ export class AffineReference extends WithDisposable(ShadowlessElement) {
       cursor: pointer;
       user-select: none;
       padding: 1px 2px 1px 0;
-
-      svg {
-        margin-bottom: 0.1em;
-      }
     }
     .affine-reference:hover {
       background: var(--affine-hover-color);
