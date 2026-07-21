@@ -2308,6 +2308,8 @@
   "com.affine.docIconPicker.placeholder": "添加图标",
   "error.INTERNAL_SERVER_ERROR": "发生内部错误。",
   "error.NETWORK_ERROR": "网络错误。",
+  "com.affine.realtime.connection-error.title": "实时同步连接失败",
+  "com.affine.realtime.connection-error.message": "请检查服务器反向代理是否通过 WebSocket 或 HTTP polling 正确转发 /socket.io。",
   "error.TOO_MANY_REQUEST": "请求过多。",
   "error.SSRF_BLOCKED_ERROR": "无效的 URL",
   "error.RESPONSE_TOO_LARGE_ERROR": "响应过大（{{receivedBytes}} 字节），限制为 {{limitBytes}} 字节",

@@ -1,5 +1,6 @@
 import {
   deleteAccountMutation,
+  getCurrentUserQuery,
   removeAvatarMutation,
   ServerDeploymentType,
   updateUserProfileMutation,
@@ -101,12 +102,11 @@ export class AuthStore extends Store {
     const session = await this.fetchAuthSession();
     if (!session.user) return { user: null };
 
-    const { user } = await this.nbstoreService.realtime.request(
-      'user.profile.get',
-      {}
-    );
+    const { currentUser: user } = await this.gqlService.gql({
+      query: getCurrentUserQuery,
+    });
     if (!user || user.id !== session.user.id) {
-      throw new Error('Realtime user profile does not match auth session');
+      throw new Error('User profile does not match auth session');
     }
     const authMethods = await this.fetchAuthMethods();
     return { user: { ...user, authMethods } };
