@@ -1650,31 +1650,6 @@ Hello world
                             {
                               insert: 'eee',
                             },
-                            {
-                              insert: '',
-                              attributes: {
-                                reference: {
-                                  type: 'LinkedPage',
-                                  pageId: 'deadbeef',
-                                  params: {
-                                    mode: 'page',
-                                    blockIds: ['abc', '123'],
-                                    elementIds: ['def', '456'],
-                                    databaseId: 'deadbeef',
-                                    databaseRowId: '123',
-                                  },
-                                },
-                              },
-                            },
-                            {
-                              insert: ' ',
-                              attributes: {
-                                reference: {
-                                  type: 'LinkedPage',
-                                  pageId: 'foobar',
-                                },
-                              },
-                            },
                           ],
                         },
                       },
@@ -2317,7 +2292,7 @@ hhh
                       '$blocksuite:internal:text$': true,
                       delta: [
                         {
-                          insert
+                          insert: 'ddd',
                         },
                       ],
                     },
@@ -3394,7 +3369,7 @@ hhh
 
 &#x20;       ddd
 
-&#x20;       eee[test](https://example.com/deadbeef?mode=page\\&blockIds=abc%2C123\\&elementIds=def%2C456)[](https://example.com/foobar)
+&#x20;       eee[test](https://example.com/deadbeef?mode=page\\&blockIds=abc%2C123\\&elementIds=def%2C456\\&databaseId=deadbeef\\&databaseRowId=123)[]
 
 &#x20;       fff
 
