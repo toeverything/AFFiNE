@@ -25,6 +25,7 @@ import {
   TocIcon,
 } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
+import { truncate } from 'lodash-es';
 import { useCallback, useEffect, useState } from 'react';
 
 import { JournalConflictsMenuItem } from './menu/journal-conflicts';
@@ -98,7 +99,7 @@ export const PageHeaderMenuButton = () => {
     openConfirmModal({
       title: t['com.affine.moveToTrash.title'](),
       description: t['com.affine.moveToTrash.confirmModal.description']({
-        title: doc.title$.value,
+        title: truncate(doc.title$.value, { length: 64 }),
       }),
       confirmText: t['com.affine.moveToTrash.confirmModal.confirm'](),
       cancelText: t['com.affine.moveToTrash.confirmModal.cancel'](),
