@@ -10,6 +10,12 @@ import type { ServersService } from './servers';
 
 @OnEvent(ApplicationStarted, service => service.onApplicationStarted)
 export class RealtimeService extends Service {
+  readonly connectionError$ = new LiveData<{
+    endpoint: string;
+    error: unknown;
+  } | null>(null);
+  private contextGeneration = 0;
+
   private readonly currentServer$ =
     this.globalContextService.globalContext.serverId.$.selector(id =>
       id
@@ -43,7 +49,8 @@ export class RealtimeService extends Service {
     super();
 
     const subscription = this.currentServer$.subscribe(context => {
-      this.nbstoreService.realtime.configure(context).catch(error => {
+      const generation = ++this.contextGeneration;
+      this.configure(context, generation).catch(error => {
         console.error('Failed to configure realtime context', error);
       });
     });
@@ -51,4 +58,35 @@ export class RealtimeService extends Service {
   }
 
   onApplicationStarted() {}
+
+  private async configure(
+    context: {
+      endpoint: string;
+      authenticated: boolean;
+      isSelfHosted: boolean;
+    },
+    generation: number
+  ) {
+    await this.nbstoreService.realtime.configure(context);
+    if (generation !== this.contextGeneration) return;
+    if (!context.endpoint || !context.authenticated) {
+      this.connectionError$.next(null);
+      return;
+    }
+
+    try {
+      await this.nbstoreService.realtime.request(
+        'user.profile.get',
+        {},
+        { timeoutMs: 10_000 }
+      );
+      if (generation === this.contextGeneration) {
+        this.connectionError$.next(null);
+      }
+    } catch (error) {
+      if (generation === this.contextGeneration) {
+        this.connectionError$.next({ endpoint: context.endpoint, error });
+      }
+    }
+  }
 }

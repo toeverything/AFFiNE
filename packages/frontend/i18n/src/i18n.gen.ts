@@ -9279,6 +9279,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.devices.sign-out-all-failed"](): string;
     /**
+      * `Real-time connection failed`
+      */
+    ["com.affine.realtime.connection-error.title"](): string;
+    /**
+      * `Check that your server proxy forwards /socket.io over WebSocket or HTTP polling.`
+      */
+    ["com.affine.realtime.connection-error.message"](): string;
+    /**
       * `An internal error occurred.`
       */
     ["error.INTERNAL_SERVER_ERROR"](): string;

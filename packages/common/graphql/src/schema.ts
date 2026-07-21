@@ -6519,7 +6519,8 @@ export type GetCurrentUserQuery = {
     email: string;
     emailVerified: boolean;
     avatarUrl: string | null;
-    token: { __typename?: 'tokenType'; sessionToken: string | null };
+    hasPassword: boolean | null;
+    features: Array<FeatureType>;
   } | null;
 };
 
