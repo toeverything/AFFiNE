@@ -237,7 +237,11 @@ export class AuthController {
 
   @Public()
   @UseNamedGuard('version')
-  @Post('/session/exchange')
+  // `/native/exchange` is the legacy path used by already-released native apps
+  // (iOS/Android). The route was renamed to `/session/exchange`, which breaks every
+  // shipped app (they 404 on token exchange right after a successful sign-in). Keep the
+  // old path as an alias so those clients keep working without an app-store update.
+  @Post(['/session/exchange', '/native/exchange'])
   @Header('Cache-Control', 'no-store')
   @Header('Pragma', 'no-cache')
   async exchangeSession(@Req() req: Request, @Body() body?: unknown) {
