@@ -10,6 +10,7 @@ query workspaceByokSettings($id: String!, $from: DateTime!, $to: DateTime!) {
       allowedProviders
       localStorageSupported
       customEndpointSupported
+      privateEndpointSupported
       hasAiPlan
       keys {
         id

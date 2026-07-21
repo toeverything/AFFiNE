@@ -1532,6 +1532,8 @@
   "com.affine.settings.workspace.byok.field.storage": "Key storage",
   "com.affine.settings.workspace.byok.field.api-key": "API key",
   "com.affine.settings.workspace.byok.field.endpoint": "Endpoint",
+  "com.affine.settings.workspace.byok.endpoint.custom-disabled": "Custom endpoints are disabled by the server administrator. In Self-hosted Admin, enable copilot.byok.allowCustomEndpoint.",
+  "com.affine.settings.workspace.byok.endpoint.private-disabled": "Private network endpoints additionally require the server administrator to enable copilot.byok.allowPrivateEndpoint.",
   "com.affine.settings.workspace.byok.placeholder.key-name": "Primary",
   "com.affine.settings.workspace.byok.placeholder.description": "Workspace fallback key",
   "com.affine.settings.workspace.byok.action.add-key": "Add key",

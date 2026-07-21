@@ -11,7 +11,13 @@ import { useCallback, useEffect, useState } from 'react';
 import { logByokError } from './errors';
 import * as styles from './index.css';
 import { readLocalKeys, upsertLocalKey } from './local-storage';
-import { byokT, providerLabels, storageLabel } from './metadata';
+import {
+  byokT,
+  endpointHintKey,
+  providerLabels,
+  shouldShowEndpoint,
+  storageLabel,
+} from './metadata';
 import type {
   ByokKey,
   ByokSettings,
@@ -32,6 +38,7 @@ export const AddKeyModal = ({
   localStorageSupported,
   canAddServerKey,
   canAddLocalKey,
+  isSelfHosted,
   gql,
 }: {
   workspaceId: string;
@@ -45,6 +52,7 @@ export const AddKeyModal = ({
   localStorageSupported: boolean;
   canAddServerKey: boolean;
   canAddLocalKey: boolean;
+  isSelfHosted: boolean;
   gql?: GqlFn;
 }) => {
   const t = useI18n();
@@ -61,6 +69,10 @@ export const AddKeyModal = ({
     editingKey?.storage === ByokKeyStorage.server &&
     editingKey.provider === provider;
   const canTest = !!apiKey || canTestStoredConfig;
+  const endpointHint = endpointHintKey(
+    settings.customEndpointSupported,
+    settings.privateEndpointSupported
+  );
 
   useEffect(() => {
     if (!open) {
@@ -275,19 +287,23 @@ export const AddKeyModal = ({
             }}
             type="password"
           />
-        </label>
-        {settings.customEndpointSupported ? (
-          <label className={styles.field}>
+        </label>{' '}
+        {shouldShowEndpoint(isSelfHosted, settings.customEndpointSupported) ? (
+          <label className={styles.endpointField}>
             <span className={styles.label}>{byokT(t, 'field.endpoint')}</span>
             <input
               className={styles.input}
               value={endpoint}
+              disabled={!settings.customEndpointSupported}
               onChange={event => {
                 setEndpoint(event.target.value);
                 setTestResult(null);
               }}
               placeholder="https://api.example.com/v1"
             />
+            {endpointHint ? (
+              <span className={styles.fieldHint}>{byokT(t, endpointHint)}</span>
+            ) : null}
           </label>
         ) : null}
         <div className={styles.modalActions}>

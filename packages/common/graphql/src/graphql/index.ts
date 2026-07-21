@@ -3060,6 +3060,7 @@ export const workspaceByokSettingsQuery = {
       allowedProviders
       localStorageSupported
       customEndpointSupported
+      privateEndpointSupported
       hasAiPlan
       keys {
         id

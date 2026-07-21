@@ -1532,6 +1532,8 @@
   "com.affine.settings.workspace.byok.field.storage": "密钥存储",
   "com.affine.settings.workspace.byok.field.api-key": "API key",
   "com.affine.settings.workspace.byok.field.endpoint": "Endpoint",
+  "com.affine.settings.workspace.byok.endpoint.custom-disabled": "服务器管理员已禁用自定义端点。请在自托管管理后台启用 copilot.byok.allowCustomEndpoint。",
+  "com.affine.settings.workspace.byok.endpoint.private-disabled": "私有网络端点还需要服务器管理员启用 copilot.byok.allowPrivateEndpoint。",
   "com.affine.settings.workspace.byok.placeholder.key-name": "Primary",
   "com.affine.settings.workspace.byok.placeholder.description": "工作区回退密钥",
   "com.affine.settings.workspace.byok.action.add-key": "添加密钥",

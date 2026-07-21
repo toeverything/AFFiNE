@@ -47,6 +47,10 @@ const ByokKeyTestStatus = vi.hoisted(() => ({
   passed: 'passed',
   failed: 'failed',
 }));
+const ServerDeploymentType = vi.hoisted(() => ({
+  Affine: 'Affine',
+  Selfhosted: 'Selfhosted',
+}));
 
 const workspaceByokSettingsQuery = vi.hoisted(() =>
   Symbol('workspaceByokSettingsQuery')
@@ -130,6 +134,7 @@ vi.mock('@affine/graphql', () => ({
   ByokKeyStorage,
   ByokKeyTestStatus,
   ByokProvider,
+  ServerDeploymentType,
   clearWorkspaceByokConfigsMutation,
   deleteWorkspaceByokConfigMutation,
   testWorkspaceByokConfigMutation,
@@ -220,6 +225,7 @@ vi.mock('@toeverything/infra', async importOriginal => {
       if (token === WorkspaceServerServiceToken) {
         return {
           server: {
+            ['config$']: { value: { type: ServerDeploymentType.Affine } },
             gql: gqlMock,
           },
         };
