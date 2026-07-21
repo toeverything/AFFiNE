@@ -18,6 +18,8 @@ import {
 import { type MessageCommunicapable, OpConsumer } from '@toeverything/infra/op';
 import { AsyncCall } from 'async-call-rpc';
 
+import { setWorkerAccessTokenProvider } from './proxy';
+
 let authTokenPort: MessagePort | undefined;
 const terminalAuthErrors = new Set([
   'ACCESS_TOKEN_INVALID',
@@ -41,6 +43,12 @@ configureSocketAuthMethod((endpoint, cb) => {
     .then(token => cb(token ? { token, tokenType: 'jwt' } : {}))
     .catch(() => cb({ error: 'AUTH_SESSION_TEMPORARILY_UNAVAILABLE' }));
 });
+
+// The shared fetch/XHR proxy (proxy.ts) can't use the Capacitor Auth plugin here (it
+// hangs in a worker), so let it obtain the access token through this worker's
+// auth-access-token-channel instead — keeping authenticated HTTP requests from the
+// worker's cloud storages (blob / indexer / static-doc) working.
+setWorkerAccessTokenProvider(getValidAccessToken);
 
 globalThis.addEventListener('message', e => {
   if (e.data.type === 'auth-access-token-channel') {

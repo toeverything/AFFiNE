@@ -411,7 +411,15 @@ public class AuthPlugin: CAPPlugin, CAPBridgedPlugin {
         }
 
         try await self.exchangeSession(endpoint, data)
-        call.resolve(["ok": true])
+        // Return the signed-in user so the JS AuthProvider can optimistically flip
+        // the client session to `authenticated` (matching web/desktop). Without this
+        // the session only completes via a realtime-gated revalidation, which stalls
+        // on self-hosted servers and leaves the app stuck on the sign-in screen.
+        if let user = self.userFromSignInResponse(data) {
+          call.resolve(["user": user])
+        } else {
+          call.resolve(["ok": true])
+        }
       } catch {
         call.reject("Failed to sign in, \(error)", nil, error)
       }
@@ -463,6 +471,26 @@ public class AuthPlugin: CAPPlugin, CAPBridgedPlugin {
     }
 
     return code
+  }
+
+  // Extracts the SignInUserInfo fields from the /api/auth/sign-in response body
+  // (which is `{ ...sessionUser, exchangeCode }`), for the JS AuthProvider to return.
+  private func userFromSignInResponse(_ data: Data) -> [String: Any]? {
+    guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+      let id = json["id"] as? String,
+      let email = json["email"] as? String
+    else {
+      return nil
+    }
+    var user: [String: Any] = [
+      "id": id,
+      "email": email,
+      "name": json["name"] as? String ?? "",
+      "emailVerified": json["emailVerified"] as? Bool ?? false,
+    ]
+    user["hasPassword"] = (json["hasPassword"] as? Bool).map { $0 as Any } ?? NSNull()
+    user["avatarUrl"] = (json["avatarUrl"] as? String).map { $0 as Any } ?? NSNull()
+    return user
   }
 
   private func exchangeSession(_ endpoint: String, _ signInData: Data) async throws {
