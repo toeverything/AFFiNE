@@ -6141,6 +6141,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.workspace.byok.field.endpoint"](): string;
     /**
+      * `Custom endpoints are disabled by the server administrator. In Self-hosted Admin, enable copilot.byok.allowCustomEndpoint.`
+      */
+    ["com.affine.settings.workspace.byok.endpoint.custom-disabled"](): string;
+    /**
+      * `Private network endpoints additionally require the server administrator to enable copilot.byok.allowPrivateEndpoint.`
+      */
+    ["com.affine.settings.workspace.byok.endpoint.private-disabled"](): string;
+    /**
       * `Primary`
       */
     ["com.affine.settings.workspace.byok.placeholder.key-name"](): string;

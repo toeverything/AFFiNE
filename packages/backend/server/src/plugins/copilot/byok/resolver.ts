@@ -118,6 +118,9 @@ class WorkspaceByokSettingsType {
   customEndpointSupported!: boolean;
 
   @Field(() => Boolean)
+  privateEndpointSupported!: boolean;
+
+  @Field(() => Boolean)
   hasAiPlan!: boolean;
 
   @Field(() => [WorkspaceByokCapabilityWarningType])

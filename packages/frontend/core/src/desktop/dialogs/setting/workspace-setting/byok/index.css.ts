@@ -186,8 +186,16 @@ export const field = style({
   height: '3em',
 });
 
+export const endpointField = style([field, { height: 'auto' }]);
+
 export const label = style({
   fontSize: cssVar('fontXs'),
+  color: cssVarV2('text/secondary'),
+});
+
+export const fieldHint = style({
+  fontSize: cssVar('fontXs'),
+  lineHeight: '18px',
   color: cssVarV2('text/secondary'),
 });
 

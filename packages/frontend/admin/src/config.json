@@ -381,6 +381,10 @@
       "type": "Boolean",
       "desc": "Whether workspace BYOK custom endpoints are accepted."
     },
+    "byok.allowPrivateEndpoint": {
+      "type": "Boolean",
+      "desc": "Whether workspace BYOK custom endpoints may resolve to private network targets. Enabling this allows workspace owners and admins to send provider probe requests to the private network."
+    },
     "providers.profiles": {
       "type": "Array",
       "desc": "The profile list for copilot providers."

@@ -13,6 +13,7 @@ import {
 import { Models } from '../../../models';
 import type { CopilotProviderProfile } from '../config';
 import { ByokEntitlementPolicy } from './policy';
+import { runProviderProbe } from './probe';
 import {
   BYOK_ALLOWED_PROVIDERS,
   type ByokFeatureKind,
@@ -27,7 +28,6 @@ import {
 const LOCAL_LEASE_TTL_MS = 10 * 60 * 1000;
 const BYOK_PROFILE_PRIORITY_BASE = 10_000;
 const SERVER_PROFILE_PRIORITY_OFFSET = 2_000;
-const TEST_TIMEOUT_MS = 10_000;
 
 export type ByokProviderRequestContext = {
   userId?: string;
@@ -71,6 +71,7 @@ export type ByokSettings = {
   allowedProviders: ByokProvider[];
   localStorageSupported: boolean;
   customEndpointSupported: boolean;
+  privateEndpointSupported: boolean;
   hasAiPlan: boolean;
   warnings: Array<{
     featureKind: string;
@@ -124,6 +125,13 @@ export class ByokService {
     return env.selfhosted && this.config.copilot.byok.allowCustomEndpoint;
   }
 
+  get privateEndpointSupported() {
+    return (
+      this.customEndpointSupported &&
+      this.config.copilot.byok.allowPrivateEndpoint
+    );
+  }
+
   async getSettings(
     workspaceId: string,
     userId?: string
@@ -139,6 +147,7 @@ export class ByokService {
         allowedProviders: [...BYOK_ALLOWED_PROVIDERS],
         localStorageSupported: false,
         customEndpointSupported: this.customEndpointSupported,
+        privateEndpointSupported: this.privateEndpointSupported,
         hasAiPlan: await this.entitlement.hasAiPlan(userId),
         warnings: [],
       };
@@ -158,6 +167,7 @@ export class ByokService {
         allowedProviders: [...BYOK_ALLOWED_PROVIDERS],
         localStorageSupported: false,
         customEndpointSupported: this.customEndpointSupported,
+        privateEndpointSupported: this.privateEndpointSupported,
         hasAiPlan: await this.entitlement.hasAiPlan(userId),
         warnings: [],
       };
@@ -178,6 +188,7 @@ export class ByokService {
       allowedProviders: [...BYOK_ALLOWED_PROVIDERS],
       localStorageSupported: false,
       customEndpointSupported: this.customEndpointSupported,
+      privateEndpointSupported: this.privateEndpointSupported,
       hasAiPlan: await this.entitlement.hasAiPlan(userId),
       warnings: this.buildWarnings(keys),
     };
@@ -332,7 +343,13 @@ export class ByokService {
     }
 
     try {
-      await this.runProviderProbe(input.provider, apiKey, endpoint);
+      await runProviderProbe(
+        this.probeFetch,
+        input.provider,
+        apiKey,
+        endpoint,
+        this.privateEndpointSupported
+      );
       if (input.configId && input.storage === ByokKeyStorage.server) {
         await this.models.copilotWorkspaceByokConfig.markValidated(
           input.workspaceId,
@@ -760,68 +777,6 @@ export class ByokService {
     }
   }
 
-  private async runProviderProbe(
-    provider: ByokProvider,
-    apiKey: string,
-    endpoint: string | null
-  ) {
-    const request = this.buildProbeRequest(provider, apiKey, endpoint);
-    const response = await this.probeFetch(
-      request.url,
-      {
-        method: request.method,
-        headers: request.headers as unknown as Record<string, string>,
-      },
-      {
-        timeoutMs: TEST_TIMEOUT_MS,
-        maxRedirects: 3,
-        maxBytes: 1024,
-        allowedHeaders: Object.keys(request.headers),
-      }
-    );
-    if (!response.ok) {
-      throw new BadRequestException(
-        this.providerProbeFailureMessage(response.status)
-      );
-    }
-  }
-
-  private buildProbeRequest(
-    provider: ByokProvider,
-    apiKey: string,
-    endpoint: string | null
-  ) {
-    switch (provider) {
-      case ByokProvider.openai:
-        return {
-          method: 'GET',
-          url: `${endpoint ?? 'https://api.openai.com/v1'}/models`,
-          headers: { Authorization: `Bearer ${apiKey}` },
-        };
-      case ByokProvider.anthropic:
-        return {
-          method: 'GET',
-          url: `${endpoint ?? 'https://api.anthropic.com/v1'}/models`,
-          headers: {
-            'x-api-key': apiKey,
-            'anthropic-version': '2023-06-01',
-          },
-        };
-      case ByokProvider.gemini:
-        return {
-          method: 'GET',
-          url: `${endpoint ?? 'https://generativelanguage.googleapis.com/v1beta'}/models`,
-          headers: { 'x-goog-api-key': apiKey },
-        };
-      case ByokProvider.fal:
-        return {
-          method: 'GET',
-          url: 'https://api.fal.ai/v1/models?limit=10',
-          headers: { Authorization: `Key ${apiKey}` },
-        };
-    }
-  }
-
   private sanitizeError(error: unknown) {
     if (error instanceof Error && error.name === 'AbortError') {
       return 'Provider key test timed out.';
@@ -830,23 +785,6 @@ export class ByokService {
       return error.message.slice(0, 300);
     }
     return 'Provider request failed.';
-  }
-
-  private providerProbeFailureMessage(status: number) {
-    switch (status) {
-      case 401:
-        return 'Provider rejected the BYOK key.';
-      case 403:
-        return 'Provider rejected the BYOK key permissions.';
-      case 404:
-        return 'Provider probe endpoint was not found.';
-      case 429:
-        return 'Provider rate limit exceeded while testing the key.';
-      default:
-        return status >= 500
-          ? 'Provider service is unavailable.'
-          : `Provider key test failed with HTTP ${status}.`;
-    }
   }
 
   private workspaceHash(workspaceId: string) {
