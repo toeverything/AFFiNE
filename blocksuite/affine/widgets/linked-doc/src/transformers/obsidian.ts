@@ -2,6 +2,7 @@ import { FootNoteReferenceParamsSchema } from '@blocksuite/affine-model';
 import {
   BlockMarkdownAdapterExtension,
   createAttachmentBlockSnapshot,
+  FetchUtils,
   FULL_FILE_PATH_KEY,
   getImageFullPath,
   MarkdownAdapter,
@@ -75,6 +76,7 @@ const DEFAULT_CALLOUT_EMOJI = '💡';
 const OBSIDIAN_TEXT_FOOTNOTE_URL_PREFIX = 'data:text/plain;charset=utf-8,';
 const OBSIDIAN_ATTACHMENT_EMBED_TAG = 'obsidian-attachment';
 const OBSIDIAN_BLOCK_ANCHOR_MARKER_PREFIX = '<<AFFINE_OBSIDIAN_BLOCK_ANCHOR:';
+const OBSIDIAN_SOFT_LINE_BREAK_MARKER = '<<AFFINE_OBSIDIAN_SOFT_LINE_BREAK>>';
 const OBSIDIAN_BLOCK_ANCHOR_MARKER_RE =
   / ?<<AFFINE_OBSIDIAN_BLOCK_ANCHOR:([^>]+)>>/g;
 
@@ -177,7 +179,7 @@ function preprocessObsidianSoftLineBreaks(markdown: string): string {
         currentLine
       )
         ? currentLine
-        : `${currentLine}<br>`;
+        : `${currentLine}${OBSIDIAN_SOFT_LINE_BREAK_MARKER}`;
       paragraphLines.push(lines[index + 1]);
       index += 1;
     }
@@ -233,6 +235,25 @@ function collectObsidianBlockAnchorMap(
 
   for (const child of block.children ?? []) {
     collectObsidianBlockAnchorMap(child, anchorMap);
+  }
+}
+
+function restoreObsidianSoftLineBreaks(block: BlockSnapshot) {
+  const text = block.props.text as
+    | { delta?: DeltaInsert<AffineTextAttributes>[] }
+    | undefined;
+
+  for (const delta of text?.delta ?? []) {
+    if (typeof delta.insert === 'string') {
+      delta.insert = delta.insert.replaceAll(
+        OBSIDIAN_SOFT_LINE_BREAK_MARKER,
+        '\n'
+      );
+    }
+  }
+
+  for (const child of block.children ?? []) {
+    restoreObsidianSoftLineBreaks(child);
   }
 }
 
@@ -916,6 +937,53 @@ function preprocessObsidianEmbeds(
   });
 }
 
+function preprocessObsidianMarkdownImages(
+  markdown: string,
+  filePath: string,
+  assetLookup: ObsidianAssetLookup
+): string {
+  const lines = markdown.split('\n');
+  const output: string[] = [];
+  let activeFence: '`' | '~' | null = null;
+
+  for (const line of lines) {
+    const fenceMatch = line.match(/^\s*(`{3,}|~{3,})/);
+    if (fenceMatch) {
+      const fenceChar = fenceMatch[1][0] as '`' | '~';
+      activeFence =
+        activeFence === fenceChar ? null : (activeFence ?? fenceChar);
+      output.push(line);
+      continue;
+    }
+
+    if (activeFence) {
+      output.push(line);
+      continue;
+    }
+
+    output.push(
+      line.replace(
+        /!\[([^\]]*)\]\(([^)\s]+)(\s+"[^"]*")?\)/g,
+        (match, alt: string, rawUrl: string, titleSuffix = '') => {
+          if (FetchUtils.fetchable(rawUrl)) {
+            return match;
+          }
+
+          const resolvedAsset = assetLookup.resolve(rawUrl, filePath);
+          if (!resolvedAsset) {
+            return match;
+          }
+
+          const encodedPath = encodeMarkdownPath(`/${resolvedAsset.path}`);
+          return `![${alt}](${encodedPath}${titleSuffix})`;
+        }
+      )
+    );
+  }
+
+  return output.join('\n');
+}
+
 function preprocessObsidianMarkdown(
   markdown: string,
   filePath: string,
@@ -930,8 +998,13 @@ function preprocessObsidianMarkdown(
     pageLookupMap,
     assetLookup
   );
+  const contentWithResolvedImages = preprocessObsidianMarkdownImages(
+    content,
+    filePath,
+    assetLookup
+  );
   const normalizedMarkdown = preprocessTitleHeader(
-    preprocessObsidianCallouts(content)
+    preprocessObsidianCallouts(contentWithResolvedImages)
   );
   const markdownWithSoftBreaks =
     preprocessObsidianSoftLineBreaks(normalizedMarkdown);
@@ -1201,6 +1274,18 @@ export async function planObsidianVault({
         stripMarkdownExtension(filePath),
         newPageId
       );
+      const normalizedFilePath = normalizeFilePathReference(filePath);
+      if (vaultRoot && normalizedFilePath.startsWith(`${vaultRoot}/`)) {
+        const vaultRelativePath = normalizedFilePath.slice(
+          vaultRoot.length + 1
+        );
+        registerPageLookup(pageLookupMap, vaultRelativePath, newPageId);
+        registerPageLookup(
+          pageLookupMap,
+          stripMarkdownExtension(vaultRelativePath),
+          newPageId
+        );
+      }
       registerPageLookup(pageLookupMap, file.name, newPageId);
       registerPageLookup(pageLookupMap, fileNameWithoutExt, newPageId);
       registerPageLookup(pageLookupMap, documentTitleCandidate, newPageId);
@@ -1238,11 +1323,14 @@ export async function planObsidianVault({
 
   for (const existingDocMeta of collection.meta.docMetas) {
     if (existingDocMeta.title) {
-      registerPageLookup(
-        pageLookupMap,
-        existingDocMeta.title,
-        existingDocMeta.id
-      );
+      const existingTitleKey = normalizeLookupKey(existingDocMeta.title);
+      if (!pageLookupMap.has(existingTitleKey)) {
+        registerPageLookup(
+          pageLookupMap,
+          existingDocMeta.title,
+          existingDocMeta.id
+        );
+      }
     }
   }
 
@@ -1290,6 +1378,7 @@ export async function planObsidianVault({
       if (snapshot) {
         snapshot.meta.id = predefinedId;
         applySnapshotTitle(snapshot, preferredTitle);
+        restoreObsidianSoftLineBreaks(snapshot.blocks);
         const blockAnchorMap = new Map<string, string>();
         const headingMap = new Map<string, string>();
         collectObsidianBlockAnchorMap(snapshot.blocks, blockAnchorMap);

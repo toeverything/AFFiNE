@@ -1001,6 +1001,10 @@ Hello world
     const collection = new TestWorkspace();
     collection.storeExtensions = testStoreExtensions;
     collection.meta.initialize();
+    collection.createDoc('previous-import');
+    collection.meta.setDocMeta('previous-import', {
+      title: 'Keeping mantras internally',
+    });
 
     const { docIds } = await commitPlannedImport(
       collection,
@@ -1052,6 +1056,19 @@ Hello world
       .getDoc(psychotherapyMeta!.id)
       ?.getStore({ id: psychotherapyMeta!.id });
     expect(psychotherapyDoc).toBeTruthy();
+    const psychotherapyDeltas = collectSnapshotDeltas(
+      exportSnapshot(psychotherapyDoc!).blocks
+    );
+    expect(psychotherapyDeltas).toContainEqual({
+      insert: ' ',
+      attributes: {
+        reference: expect.objectContaining({
+          type: 'LinkedPage',
+          pageId: expect.not.stringMatching(/^previous-import$/),
+        }),
+      },
+    });
+
     expect(exportSnapshot(psychotherapyDoc!).meta.title).toBe('Psychotherapy');
   });
 
@@ -1097,7 +1114,7 @@ Hello world
     });
   });
 
-  test('imports obsidian internal images from wikilink embeds and markdown image syntax', async () => {
+  test('imports obsidian markdown image syntax from configured attachment folder', async () => {
     const schema = new Schema().register(AffineSchemas);
     const collection = new TestWorkspace();
     collection.storeExtensions = testStoreExtensions;
@@ -1115,24 +1132,26 @@ Hello world
         schema,
         importedFiles: [
           withRelativePath(
+            new File(['![[SPI.png]]\n\n![](UART.png)'], 'images-test.md', {
+              type: 'text/markdown',
+            }),
+            'vault/notes/images-test.md'
+          ),
+          withRelativePath(
             new File(
-              ['![[PCI Environment.png]]\n\n![](change-management.png)'],
-              'images-test.md',
-              { type: 'text/markdown' }
+              [JSON.stringify({ attachmentFolderPath: 'attachments' })],
+              'app.json',
+              { type: 'application/json' }
             ),
-            'vault/images-test.md'
+            'vault/.obsidian/app.json'
           ),
           withRelativePath(
-            new File([imageBytes], 'PCI Environment.png', {
-              type: 'image/png',
-            }),
-            'vault/PCI Environment.png'
+            new File([imageBytes], 'SPI.png', { type: 'image/png' }),
+            'vault/attachments/SPI.png'
           ),
           withRelativePath(
-            new File([imageBytes], 'change-management.png', {
-              type: 'image/png',
-            }),
-            'vault/change-management.png'
+            new File([imageBytes], 'UART.png', { type: 'image/png' }),
+            'vault/attachments/UART.png'
           ),
         ],
         extensions: testStoreExtensions,
@@ -1257,9 +1276,49 @@ Hello world
       .getDoc(testMeta!.id)
       ?.getStore({ id: testMeta!.id });
     expect(testDoc).toBeTruthy();
-    const testRawDeltas = collectSnapshotDeltas(
-      exportSnapshot(testDoc!).blocks
+    const testSnapshot = exportSnapshot(testDoc!);
+    const testNote = testSnapshot.blocks.children.find(
+      block => block.flavour === 'affine:note'
     );
+    const testParagraphs = testNote?.children.filter(
+      block => block.flavour === 'affine:paragraph'
+    );
+    expect(testParagraphs).toHaveLength(4);
+    const paragraphText = (block: BlockSnapshot) =>
+      (
+        block.props.text as
+          | { delta?: DeltaInsert<AffineTextAttributes>[] }
+          | undefined
+      )?.delta
+        ?.map(item => (typeof item.insert === 'string' ? item.insert : ''))
+        .join('');
+    expect(testParagraphs?.map(paragraphText)).toEqual([
+      'Test123  ',
+      '  should be an alias',
+      'Here is a   block ref\nAnd here one with an  \n..',
+      'Heading ref:  ',
+    ]);
+    const testRawDeltas = collectSnapshotDeltas(testSnapshot.blocks);
+    const testTextContent = testRawDeltas
+      .map(delta => (typeof delta.insert === 'string' ? delta.insert : ''))
+      .join('')
+      .replace(/\s+/g, ' ')
+      .trim();
+    expect(testTextContent).toContain('Here is a block ref');
+    expect(testTextContent).toContain('And here one with an');
+    expect(testRawDeltas).toContainEqual({
+      insert: ' ',
+      attributes: {
+        reference: {
+          type: 'LinkedPage',
+          pageId: iamMeta!.id,
+          params: {
+            mode: 'page',
+            blockIds: [block2Id!],
+          },
+        },
+      },
+    });
     expect(testRawDeltas).toContainEqual({
       insert: ' ',
       attributes: {
