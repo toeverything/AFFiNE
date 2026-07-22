@@ -13,11 +13,10 @@ import { NotificationIcon, SettingsIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import { cssVarV2 } from '@toeverything/theme/v2';
 import clsx from 'clsx';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { SearchInput, WorkspaceSelector } from '../../components';
 import { searchVTScope } from '../../components/search-input/style.css';
-import { useGlobalEvent } from '../../hooks/use-global-events';
 import * as styles from './styles.css';
 
 /**
@@ -30,11 +29,11 @@ export const HomeHeader = () => {
   const workspaceDialogService = useService(WorkspaceDialogService);
 
   const workspaceCardRef = useRef<HTMLDivElement>(null);
-  const floatWorkspaceCardRef = useRef<HTMLDivElement>(null);
   const t = useI18n();
   const workbench = useService(WorkbenchService).workbench;
   const notificationCountService = useService(NotificationCountService);
   const notificationCount = useLiveData(notificationCountService.count$);
+  const loggedIn = useLiveData(notificationCountService.loggedIn$);
 
   const navSearch = useCallback(() => {
     startScopedViewTransition(searchVTScope, () => {
@@ -44,16 +43,16 @@ export const HomeHeader = () => {
 
   const [dense, setDense] = useState(false);
 
-  useGlobalEvent(
-    'scroll',
-    useCallback(() => {
-      if (!workspaceCardRef.current || !floatWorkspaceCardRef.current) return;
-      const inFlowTop = workspaceCardRef.current.getBoundingClientRect().top;
-      const floatTop =
-        floatWorkspaceCardRef.current.getBoundingClientRect().top;
-      setDense(inFlowTop <= floatTop);
-    }, [])
-  );
+  useEffect(() => {
+    const workspaceCard = workspaceCardRef.current;
+    if (!workspaceCard) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setDense(!entry.isIntersecting),
+      { threshold: 0.01 }
+    );
+    observer.observe(workspaceCard);
+    return () => observer.disconnect();
+  }, []);
 
   const openSetting = useCallback(() => {
     workspaceDialogService.open('setting', {
@@ -72,20 +71,23 @@ export const HomeHeader = () => {
       </SafeArea>
       {/* float */}
       <SafeArea top className={clsx(styles.root, styles.float, { dense })}>
-        <WorkspaceSelector
-          className={styles.floatWsSelector}
-          ref={floatWorkspaceCardRef}
-        />
+        <WorkspaceSelector className={styles.floatWsSelector} />
         <Menu items={<NotificationList />}>
-          <div
+          <button
+            type="button"
+            aria-label={t['com.affine.rootAppSidebar.notifications']()}
+            data-testid="notification-button"
             style={{
               position: 'relative',
               lineHeight: 0,
               color: cssVarV2.icon.primary,
+              border: 0,
+              padding: 0,
+              background: 'none',
             }}
           >
             <NotificationIcon width={28} height={28} />
-            {notificationCount > 0 && (
+            {loggedIn && notificationCount > 0 && (
               <div
                 className={styles.notificationBadge}
                 style={{
@@ -95,7 +97,7 @@ export const HomeHeader = () => {
                 {notificationCount > 99 ? '99+' : notificationCount}
               </div>
             )}
-          </div>
+          </button>
         </Menu>
         <IconButton
           style={{ transition: 'none' }}

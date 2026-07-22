@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 
-import { canonicalAuthEndpoint } from './endpoint';
+import { canonicalAuthEndpoint, shouldRefreshAccessToken } from './endpoint';
 
 describe('canonicalAuthEndpoint', () => {
   test.each([
@@ -13,4 +13,20 @@ describe('canonicalAuthEndpoint', () => {
   ])('normalizes %s', (endpoint, expected) => {
     expect(canonicalAuthEndpoint(endpoint)).toBe(expected);
   });
+});
+
+describe('shouldRefreshAccessToken', () => {
+  test.each(['ACCESS_TOKEN_EXPIRED', 'ACCESS_TOKEN_INVALID'])(
+    'refreshes for %s',
+    code => {
+      expect(shouldRefreshAccessToken(code)).toBe(true);
+    }
+  );
+
+  test.each(['INVALID_REFRESH_TOKEN', undefined, null])(
+    'does not refresh for %s',
+    code => {
+      expect(shouldRefreshAccessToken(code)).toBe(false);
+    }
+  );
 });

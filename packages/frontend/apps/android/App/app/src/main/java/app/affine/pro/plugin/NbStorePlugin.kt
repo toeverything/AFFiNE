@@ -7,6 +7,7 @@ import com.getcapacitor.PluginCall
 import com.getcapacitor.PluginMethod
 import com.getcapacitor.annotation.CapacitorPlugin
 import kotlinx.coroutines.Dispatchers
+import org.json.JSONObject
 import timber.log.Timber
 import uniffi.affine_mobile_native.DocRecord
 import uniffi.affine_mobile_native.SetBlob
@@ -683,7 +684,7 @@ class NbStorePlugin : Plugin() {
         val indexName = call.getStringEnsure("indexName")
         val docId = call.getStringEnsure("docId")
         val text = docStoragePool.ftsGetDocument(id, indexName, docId)
-        call.resolve(JSObject().put("text", text))
+        call.resolve(JSObject().put("text", text ?: JSONObject.NULL))
       } catch (e: Exception) {
         call.reject("Failed to get fts document: ${e.message}", null, e)
       }

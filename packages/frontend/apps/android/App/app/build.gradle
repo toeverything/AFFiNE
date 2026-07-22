@@ -50,6 +50,12 @@ android {
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
+        profile {
+            initWith release
+            profileable true
+            signingConfig signingConfigs.debug
+            matchingFallbacks = ['release']
+        }
         debug {
             minifyEnabled false
             debuggable true

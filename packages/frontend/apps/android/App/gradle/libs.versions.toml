@@ -1,6 +1,6 @@
 [versions]
 android-gradle-plugin          = "8.13.2"
-androidx-activity-compose      = "1.10.1"
+androidx-activity-compose      = "1.13.0"
 androidx-appcompat             = "1.7.0"
 androidx-browser               = "1.8.0"
 androidx-compose-bom           = "2025.05.00"
@@ -36,7 +36,7 @@ mozilla-rust-android = "0.9.6"
 okhttp-bom           = "5.0.0-alpha.14"
 richtext             = "1.0.0-alpha02"
 # @keep
-targetSdk              = "35"
+targetSdk              = "36"
 timber                 = "5.0.1"
 version-catalog-update = "1.0.0"
 

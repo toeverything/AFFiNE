@@ -1,4 +1,7 @@
-import { canonicalAuthEndpoint } from '@affine/mobile-shared/auth/endpoint';
+import {
+  canonicalAuthEndpoint,
+  shouldRefreshAccessToken,
+} from '@affine/mobile-shared/auth/endpoint';
 
 import { Auth } from './plugins/auth';
 
@@ -35,7 +38,7 @@ globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
     .clone()
     .json()
     .catch(() => null);
-  if (body?.code !== 'ACCESS_TOKEN_EXPIRED') return response;
+  if (!shouldRefreshAccessToken(body?.code)) return response;
   const { token: refreshed } = await Auth.refreshAccessToken({
     endpoint: origin,
   });
@@ -88,7 +91,7 @@ globalThis.XMLHttpRequest = class extends rawXMLHttpRequest {
         } catch {
           return;
         }
-        if (code !== 'ACCESS_TOKEN_EXPIRED') return;
+        if (!shouldRefreshAccessToken(code)) return;
         event.stopImmediatePropagation();
         this.replaying = true;
         this.hasReplayed = true;

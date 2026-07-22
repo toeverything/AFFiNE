@@ -2,7 +2,9 @@ import { notify } from '@affine/component';
 import { getStoreManager } from '@affine/core/blocksuite/manager/store';
 import { AffineContext } from '@affine/core/components/context';
 import { AppFallback } from '@affine/core/mobile/components/app-fallback';
+import { MobileModalConfigProvider } from '@affine/core/mobile/components/mobile-modal-config-provider';
 import { configureMobileModules } from '@affine/core/mobile/modules';
+import { MobileBackCoordinator } from '@affine/core/mobile/modules/back-coordinator';
 import { VirtualKeyboardProvider } from '@affine/core/mobile/modules/virtual-keyboard';
 import { router } from '@affine/core/mobile/router';
 import { configureCommonModules } from '@affine/core/modules';
@@ -44,7 +46,13 @@ import { App as CapacitorApp } from '@capacitor/app';
 import { Keyboard } from '@capacitor/keyboard';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { InAppBrowser } from '@capgo/inappbrowser';
-import { Framework, FrameworkRoot, getCurrentStore } from '@toeverything/infra';
+import {
+  Framework,
+  FrameworkRoot,
+  getCurrentStore,
+  useLiveData,
+  useService,
+} from '@toeverything/infra';
 import { OpClient } from '@toeverything/infra/op';
 import { AsyncCall } from 'async-call-rpc';
 import { useTheme } from 'next-themes';
@@ -55,6 +63,7 @@ import { AffineTheme } from './plugins/affine-theme';
 import { AIButton } from './plugins/ai-button';
 import { Auth } from './plugins/auth';
 import { HashCash } from './plugins/hashcash';
+import { MobileBack } from './plugins/mobile-back';
 import { NbStoreNativeDBApis } from './plugins/nbstore';
 import { Preview } from './plugins/preview';
 import { clearEndpointSession, getValidAccessToken } from './proxy';
@@ -409,19 +418,67 @@ const ThemeProvider = () => {
   return null;
 };
 
+const AndroidCapacitorApp = CapacitorApp as typeof CapacitorApp & {
+  toggleBackButtonHandler(options: { enabled: boolean }): Promise<void>;
+};
+
+const AndroidBackAdapter = () => {
+  const coordinator = useService(MobileBackCoordinator);
+  const canHandle = useLiveData(coordinator.canHandle$);
+
+  useEffect(() => {
+    Promise.all([
+      AndroidCapacitorApp.toggleBackButtonHandler({ enabled: !canHandle }),
+      MobileBack.setEnabled({ enabled: canHandle }),
+    ]).catch(console.error);
+  }, [canHandle]);
+
+  useEffect(() => {
+    let disposed = false;
+    let remove = () => {};
+    MobileBack.addListener('back', event => {
+      const handled = coordinator.handleInteractivePhase(event.phase);
+      if (event.phase === 'commit' && !handled) {
+        coordinator.request('system-back');
+      }
+    })
+      .then(handle => {
+        if (disposed) handle.remove().catch(console.error);
+        else
+          remove = () => {
+            handle.remove().catch(console.error);
+          };
+      })
+      .catch(console.error);
+    return () => {
+      disposed = true;
+      remove();
+      Promise.all([
+        AndroidCapacitorApp.toggleBackButtonHandler({ enabled: true }),
+        MobileBack.setEnabled({ enabled: false }),
+      ]).catch(console.error);
+    };
+  }, [coordinator]);
+
+  return null;
+};
+
 export function App() {
   return (
     <Suspense>
       <FrameworkRoot framework={frameworkProvider}>
         <I18nProvider>
-          <AffineContext store={getCurrentStore()}>
-            <ThemeProvider />
-            <RouterProvider
-              fallbackElement={<AppFallback />}
-              router={router}
-              future={future}
-            />
-          </AffineContext>
+          <MobileModalConfigProvider>
+            <AffineContext store={getCurrentStore()}>
+              <ThemeProvider />
+              <AndroidBackAdapter />
+              <RouterProvider
+                fallbackElement={<AppFallback />}
+                router={router}
+                future={future}
+              />
+            </AffineContext>
+          </MobileModalConfigProvider>
         </I18nProvider>
       </FrameworkRoot>
     </Suspense>

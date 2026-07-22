@@ -92,7 +92,7 @@ export class SqliteIndexerStorage extends IndexerStorageBase {
         `${table}:${field as string}`,
         id
       );
-      if (text) {
+      if (typeof text === 'string' && text.length > 0) {
         let values: string[] = [text];
         const parsed = tryParseArrayField(text);
         if (parsed) {
@@ -129,6 +129,13 @@ export class SqliteIndexerStorage extends IndexerStorageBase {
             }
           }
         }
+      } else if (text != null && typeof text !== 'string') {
+        console.warn('[nbstore] invalid indexed aggregate type', {
+          table,
+          field: field as string,
+          id,
+          type: typeof text,
+        });
       }
     }
 

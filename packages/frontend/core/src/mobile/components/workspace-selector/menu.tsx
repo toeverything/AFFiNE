@@ -13,6 +13,7 @@ import { GlobalDialogService } from '@affine/core/modules/dialogs';
 import { GlobalContextService } from '@affine/core/modules/global-context';
 import {
   type WorkspaceMetadata,
+  WorkspaceService,
   WorkspacesService,
 } from '@affine/core/modules/workspace';
 import { useI18n } from '@affine/i18n';
@@ -275,6 +276,7 @@ const AddServer = () => {
 };
 
 export const SelectorMenu = ({ onClose }: { onClose?: () => void }) => {
+  const currentWorkspace = useService(WorkspaceService).workspace;
   const workspacesService = useService(WorkspacesService);
   const workspaces = useLiveData(workspacesService.list.workspaces$);
   const serversService = useService(ServersService);
@@ -314,7 +316,7 @@ export const SelectorMenu = ({ onClose }: { onClose?: () => void }) => {
       }
       onClose?.();
     },
-    [onClose, jumpToPage]
+    [currentWorkspace.id, jumpToPage, onClose]
   );
 
   return (
