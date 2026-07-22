@@ -71,41 +71,44 @@ export const HomeHeader = () => {
       </SafeArea>
       {/* float */}
       <SafeArea top className={clsx(styles.root, styles.float, { dense })}>
-        <WorkspaceSelector className={styles.floatWsSelector} />
-        <Menu items={<NotificationList />}>
-          <button
-            type="button"
-            aria-label={t['com.affine.rootAppSidebar.notifications']()}
-            data-testid="notification-button"
-            style={{
-              position: 'relative',
-              lineHeight: 0,
-              color: cssVarV2.icon.primary,
-              border: 0,
-              padding: 0,
-              background: 'none',
-            }}
-          >
-            <NotificationIcon width={28} height={28} />
-            {loggedIn && notificationCount > 0 && (
-              <div
-                className={styles.notificationBadge}
-                style={{
-                  fontSize: notificationCount > 99 ? '8px' : '12px',
-                }}
-              >
-                {notificationCount > 99 ? '99+' : notificationCount}
-              </div>
-            )}
-          </button>
-        </Menu>
-        <IconButton
-          style={{ transition: 'none' }}
-          onClick={openSetting}
-          size={28}
-          icon={<SettingsIcon />}
-          data-testid="settings-button"
-        />
+        <div className={styles.floatContent}>
+          <WorkspaceSelector className={styles.floatWsSelector} />
+          <Menu items={<NotificationList />}>
+            <button
+              type="button"
+              aria-label={t['com.affine.rootAppSidebar.notifications']()}
+              data-testid="notification-button"
+              className={styles.headerAction}
+              style={{
+                position: 'relative',
+                lineHeight: 0,
+                color: cssVarV2.icon.primary,
+                border: 0,
+                background: 'none',
+              }}
+            >
+              <NotificationIcon width={28} height={28} />
+              {loggedIn && notificationCount > 0 && (
+                <div
+                  className={styles.notificationBadge}
+                  style={{
+                    fontSize: notificationCount > 99 ? '8px' : '12px',
+                  }}
+                >
+                  {notificationCount > 99 ? '99+' : notificationCount}
+                </div>
+              )}
+            </button>
+          </Menu>
+          <IconButton
+            className={styles.headerAction}
+            style={{ transition: 'none' }}
+            onClick={openSetting}
+            size={28}
+            icon={<SettingsIcon />}
+            data-testid="settings-button"
+          />
+        </div>
       </SafeArea>
     </>
   );

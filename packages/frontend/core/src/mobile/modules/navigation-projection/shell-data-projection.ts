@@ -204,6 +204,7 @@ export class MobileShellDataProjection extends Service {
     if (kind === 'doc') {
       let entry$ = this.docNavigationEntries.get(id);
       if (!entry$) {
+        let cached: MobileShellNavigationEntry | undefined;
         const created$ = LiveData.computed<
           MobileShellNavigationEntry | undefined
         >(get => {
@@ -219,7 +220,6 @@ export class MobileShellDataProjection extends Service {
             canRead: doc.canRead,
             canUpdate: doc.canUpdate,
           };
-          const cached = this.navigationEntryCache.get(key);
           if (
             cached &&
             cached.name === candidate.name &&
@@ -229,7 +229,7 @@ export class MobileShellDataProjection extends Service {
           ) {
             return cached;
           }
-          this.navigationEntryCache.set(key, candidate);
+          cached = candidate;
           return candidate;
         }).distinctUntilChanged((previous, current) => previous === current);
         this.docNavigationEntries.set(id, created$);
@@ -483,10 +483,14 @@ export class MobileShellDataProjection extends Service {
   private collectionDocsFor(id: string) {
     let docs$ = this.collectionDocs.get(id);
     if (!docs$) {
-      const collection = this.collections.collection$(id).value;
-      docs$ = collection
-        ? LiveData.from(collection.watch(), [])
-        : new LiveData<string[]>([]);
+      docs$ = LiveData.from(
+        this.collections
+          .collection$(id)
+          .pipe(
+            switchMap(collection => (collection ? collection.watch() : of([])))
+          ),
+        []
+      );
       this.collectionDocs.set(id, docs$);
     }
     return docs$;

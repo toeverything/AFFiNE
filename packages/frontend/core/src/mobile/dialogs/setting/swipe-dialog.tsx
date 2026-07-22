@@ -207,6 +207,9 @@ export const SwipeDialog = ({
           cancel(overlay, dialog, prev, deltaX);
         }
       },
+      onSwipeCancel: () => {
+        reset(overlay, dialog, prev);
+      },
     });
   }, [handleClose, open, prev]);
 

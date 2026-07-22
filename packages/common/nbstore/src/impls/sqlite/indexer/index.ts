@@ -20,6 +20,8 @@ import { createNode } from './node-builder';
 import { queryRaw } from './query';
 import { getText, tryParseArrayField } from './utils';
 
+const SQLITE_INDEXER_VERSION_OFFSET = 1;
+
 export class SqliteIndexerStorage extends IndexerStorageBase {
   static readonly identifier = 'SqliteIndexerStorage';
   override readonly recommendRefreshInterval = 30 * 1000; // 5 seconds
@@ -251,6 +253,9 @@ export class SqliteIndexerStorage extends IndexerStorageBase {
   }
 
   async indexVersion(): Promise<number> {
-    return this.connection.apis.ftsIndexVersion();
+    return (
+      (await this.connection.apis.ftsIndexVersion()) +
+      SQLITE_INDEXER_VERSION_OFFSET
+    );
   }
 }

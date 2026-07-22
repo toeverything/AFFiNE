@@ -23,8 +23,10 @@ public class NavigationGesturePlugin: CAPPlugin, CAPBridgedPlugin {
   }
 
   @objc func isEnabled(_ call: CAPPluginCall) {
-    let enabled = edgePan?.isEnabled ?? false
-    call.resolve(["value": enabled])
+    DispatchQueue.main.async {
+      let enabled = self.edgePan?.isEnabled ?? false
+      call.resolve(["value": enabled])
+    }
   }
 
   @objc func enable(_ call: CAPPluginCall) {

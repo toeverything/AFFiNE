@@ -7,6 +7,10 @@ import { AppFallback } from '../components/app-fallback';
 export const Component = () => {
   // TODO: replace with a mobile version
   return (
-    <IndexComponent defaultIndexRoute={'home'} fallback={<AppFallback />} />
+    <IndexComponent
+      defaultIndexRoute={'home'}
+      fallback={<AppFallback />}
+      createErrorFallback={retry => <AppFallback onRetry={retry} />}
+    />
   );
 };

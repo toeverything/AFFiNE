@@ -74,6 +74,7 @@ export const MobileWorkbenchRoot = ({ routes }: { routes: RouteObject[] }) => {
 
   useEffect(() => {
     const kind = destinationKind(viewLocation.pathname);
+    const currentLocation = `${viewLocation.pathname}${viewLocation.search}${viewLocation.hash}`;
     const previous = previousLocation.current;
     const index = view.history.index;
     if (index > previous.index && !isMobileRootDestination(kind)) {
@@ -90,13 +91,13 @@ export const MobileWorkbenchRoot = ({ routes }: { routes: RouteObject[] }) => {
     }
     if (
       isMobileRootDestination(kind) &&
-      previous.location !== viewLocation.pathname
+      previous.location !== currentLocation
     ) {
       backCoordinator.discardSources();
     }
     previousLocation.current = {
       index,
-      location: `${viewLocation.pathname}${viewLocation.search}${viewLocation.hash}`,
+      location: currentLocation,
       kind,
     };
     const canGoBack = backCoordinator.hasSource(workspaceId);

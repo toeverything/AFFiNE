@@ -3,8 +3,73 @@ import { expect } from '@playwright/test';
 
 import { expandCollapsibleSection, pageBack } from './utils';
 
+declare global {
+  interface Window {
+    currentWorkspace?: {
+      meta: { id: string; flavour: string };
+    };
+  }
+}
+
 test('after loaded, will land on the home page', async ({ page }) => {
   await expect(page).toHaveURL(/.*\/home/);
+});
+
+test('stale first-open state still restores one local workspace', async ({
+  browser,
+}) => {
+  const context = await browser.newContext();
+  await context.addInitScript(() => {
+    window.localStorage.setItem('app_config', '{"onBoarding":false}');
+    window.localStorage.setItem('is-first-open', 'false');
+  });
+  const page = await context.newPage();
+
+  await page.goto('http://localhost:8080/');
+  await page.waitForFunction(() => window.currentWorkspace !== undefined);
+  const firstWorkspace = await page.evaluate(async () => {
+    if (!window.currentWorkspace) {
+      await new Promise<void>(resolve => {
+        window.addEventListener('affine:workspace:change', () => resolve(), {
+          once: true,
+        });
+      });
+    }
+    return window.currentWorkspace?.meta;
+  });
+
+  expect(firstWorkspace?.flavour).toBe('local');
+  await page.goto(
+    `http://localhost:8080/workspace/${firstWorkspace?.id ?? ''}/home`
+  );
+  await expect(page.getByRole('searchbox')).toBeVisible();
+  await page
+    .locator('[data-testid="workspace-selector-trigger"]:visible')
+    .click();
+  await expect(
+    page.getByRole('dialog').getByTestId('workspace-avatar')
+  ).toHaveCount(1);
+
+  await page.reload();
+  await page.waitForFunction(() => window.currentWorkspace !== undefined);
+  const reloadedWorkspace = await page.evaluate(
+    () => window.currentWorkspace?.meta
+  );
+  expect(reloadedWorkspace?.id).toBe(firstWorkspace?.id);
+
+  await context.close();
+});
+
+test('workspace selector does not offer workspace creation', async ({
+  page,
+}) => {
+  await expect(page.getByRole('searchbox')).toBeVisible();
+  await page
+    .locator('[data-testid="workspace-selector-trigger"]:visible')
+    .click();
+  await expect(page.getByText('Workspace', { exact: true })).toBeVisible();
+  await expect(page.getByTestId('new-workspace')).toHaveCount(0);
+  await expect(page.getByText('Name your workspace')).toHaveCount(0);
 });
 
 test('app tabs is visible', async ({ page }) => {

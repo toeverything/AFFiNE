@@ -103,7 +103,8 @@ export const modalContentWrapper = style({
   selectors: {
     '&[data-mobile]': {
       alignItems: 'flex-end',
-      paddingBottom: 'env(safe-area-inset-bottom, 20px)',
+      paddingBottom:
+        'var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 20px))',
     },
     '&[data-full-screen="true"]': {
       alignItems: 'flex-start',

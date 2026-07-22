@@ -1,7 +1,7 @@
 /* eslint-disable rxjs/finnish */
 
 import { Framework, LiveData } from '@toeverything/infra';
-import { Observable, of, Subject } from 'rxjs';
+import { Observable, Subject } from 'rxjs';
 import { describe, expect, it, vi } from 'vitest';
 
 import { MobileShellDataProjection } from './shell-data-projection';
@@ -37,7 +37,10 @@ describe('MobileShellDataProjection', () => {
     const missingFolder$ = new LiveData(undefined);
     const collectionId = 'empty-collection';
     const tagId = 'empty-tag';
-    const collection$ = new LiveData({ watch: () => of([]) });
+    const collectionDocs$ = new LiveData<string[]>([]);
+    const collection$ = new LiveData<
+      { watch: () => Observable<string[]> } | undefined
+    >(undefined);
     const tag = { id: tagId, pageIds$: new LiveData<string[]>([]) };
     const watchRefsFrom = vi.fn(
       () =>
@@ -63,7 +66,13 @@ describe('MobileShellDataProjection', () => {
         },
       },
       { favoriteList: { sortedList$: favorites$ } },
-      { globalContext: { docId: { $: activeDoc$ } } },
+      {
+        globalContext: {
+          docId: { $: activeDoc$ },
+          collectionId: { $: new LiveData(null) },
+          tagId: { $: new LiveData(null) },
+        },
+      },
       { can$ },
       {
         workspace: {
@@ -102,6 +111,11 @@ describe('MobileShellDataProjection', () => {
     const entryB$ = projection.entry$('b');
     const entryASubscription = entryA$.subscribe();
     const entryBSubscription = entryB$.subscribe();
+    const navigationEntryA$ = projection.navigationEntry$('doc', 'a');
+    const navigationEntryASubscription = navigationEntryA$.subscribe();
+    const navigationEntriesSubscription =
+      projection.navigationEntries$.subscribe();
+    const firstNavigationEntryA = navigationEntryA$.value;
     const sectionsChanged = vi.fn();
     const sectionsSubscription =
       projection.navigationSections$.subscribe(sectionsChanged);
@@ -133,6 +147,15 @@ describe('MobileShellDataProjection', () => {
       expandable: true,
       children: [{ kind: 'action', entityId: tagId, action: 'tag-new-doc' }],
     });
+    collection$.next({ watch: () => collectionDocs$ });
+    collectionDocs$.next(['a']);
+    expect(
+      projection.navigationSections$.value[2].children[0].children?.[0]
+    ).toMatchObject({ kind: 'doc', entityId: 'a' });
+    navigationEntryASubscription.unsubscribe();
+    const resumedNavigationEntryASubscription = navigationEntryA$.subscribe();
+    expect(navigationEntryA$.value).toBe(firstNavigationEntryA);
+    sectionsChanged.mockClear();
     const firstA = entryA$.value;
     const entryAChanged = vi.fn();
     const entryAChangeSubscription = entryA$.subscribe(entryAChanged);
@@ -140,7 +163,7 @@ describe('MobileShellDataProjection', () => {
     metaB$.next({ title: 'B2' });
     expect(entryA$.value).toBe(firstA);
     expect(entryB$.value?.title).toBe('B2');
-    expect(sectionsChanged).toHaveBeenCalledOnce();
+    expect(sectionsChanged).not.toHaveBeenCalled();
     favorites$.next([{ type: 'folder', id: 'missing' }]);
     expect(projection.navigationSections$.value[0].children).toEqual([
       { kind: 'action', entityId: 'favorites', action: 'section' },
@@ -196,6 +219,8 @@ describe('MobileShellDataProjection', () => {
     entryASubscription.unsubscribe();
     entryAChangeSubscription.unsubscribe();
     entryBSubscription.unsubscribe();
+    resumedNavigationEntryASubscription.unsubscribe();
+    navigationEntriesSubscription.unsubscribe();
     sectionsSubscription.unsubscribe();
   });
 

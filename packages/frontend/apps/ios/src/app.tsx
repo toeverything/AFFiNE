@@ -47,6 +47,7 @@ import {
   requestApplySubscriptionMutation,
 } from '@affine/graphql';
 import { I18n } from '@affine/i18n';
+import { serveAuthRequests } from '@affine/mobile-shared/auth/channel';
 import { StoreManagerClient } from '@affine/nbstore/worker/client';
 import { setTelemetryTransport } from '@affine/track';
 import { Container } from '@blocksuite/affine/global/di';
@@ -85,7 +86,11 @@ import { NavigationGesture } from './plugins/navigation-gesture';
 import { NbStoreNativeDBApis } from './plugins/nbstore';
 import { PayWall } from './plugins/paywall';
 import { Preview } from './plugins/preview';
-import { clearEndpointSession, getValidAccessToken } from './proxy';
+import {
+  authRequestProvider,
+  clearEndpointSession,
+  getValidAccessToken,
+} from './proxy';
 
 const storeManagerClient = createStoreManagerClient();
 setTelemetryTransport(storeManagerClient.telemetry);
@@ -662,22 +667,7 @@ function createStoreManagerClient() {
 
   const { port1: authTokenChannelServer, port2: authTokenChannelClient } =
     new MessageChannel();
-  authTokenChannelServer.addEventListener('message', event => {
-    const { id, endpoint } = event.data as { id?: string; endpoint?: string };
-    if (!id || !endpoint) return;
-    getValidAccessToken(endpoint)
-      .then(token => authTokenChannelServer.postMessage({ id, token }))
-      .catch(error =>
-        authTokenChannelServer.postMessage({
-          id,
-          error:
-            typeof error === 'object' && error && 'code' in error
-              ? error.code
-              : 'AUTH_SESSION_TEMPORARILY_UNAVAILABLE',
-        })
-      );
-  });
-  authTokenChannelServer.start();
+  serveAuthRequests(authTokenChannelServer, authRequestProvider);
   worker.postMessage(
     { type: 'auth-access-token-channel', port: authTokenChannelClient },
     [authTokenChannelClient]

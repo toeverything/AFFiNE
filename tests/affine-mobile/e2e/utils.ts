@@ -54,20 +54,23 @@ export async function swipeNavigationPanelNode(page: Page, node: Locator) {
   const box = await node.boundingBox();
   if (!box) throw new Error('Navigation row is not visible');
   const session = await page.context().newCDPSession(page);
-  const y = box.y + box.height / 2;
-  await session.send('Input.dispatchTouchEvent', {
-    type: 'touchStart',
-    touchPoints: [{ x: box.x + box.width - 20, y }],
-  });
-  await session.send('Input.dispatchTouchEvent', {
-    type: 'touchMove',
-    touchPoints: [{ x: box.x, y }],
-  });
-  await session.send('Input.dispatchTouchEvent', {
-    type: 'touchEnd',
-    touchPoints: [],
-  });
-  await session.detach();
+  try {
+    const y = box.y + box.height / 2;
+    await session.send('Input.dispatchTouchEvent', {
+      type: 'touchStart',
+      touchPoints: [{ x: box.x + box.width - 20, y }],
+    });
+    await session.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: [{ x: box.x, y }],
+    });
+    await session.send('Input.dispatchTouchEvent', {
+      type: 'touchEnd',
+      touchPoints: [],
+    });
+  } finally {
+    await session.detach();
+  }
 }
 
 export async function openTab(

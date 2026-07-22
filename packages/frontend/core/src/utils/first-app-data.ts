@@ -67,16 +67,32 @@ export async function buildShowcaseWorkspace(
 
 const logger = new DebugLogger('createFirstAppData');
 
+let firstAppDataPromise:
+  | Promise<Awaited<ReturnType<typeof buildShowcaseWorkspace>>>
+  | undefined;
+
 export async function createFirstAppData(workspacesService: WorkspacesService) {
-  if (localStorage.getItem('is-first-open') !== null) {
+  if (workspacesService.list.workspaces$.value.length > 0) {
     return;
   }
-  localStorage.setItem('is-first-open', 'false');
-  const { meta, defaultDocId } = await buildShowcaseWorkspace(
+
+  if (
+    !BUILD_CONFIG.isMobileEdition &&
+    localStorage.getItem('is-first-open') !== null
+  ) {
+    return;
+  }
+
+  firstAppDataPromise ??= buildShowcaseWorkspace(
     workspacesService,
     'local',
     DEFAULT_WORKSPACE_NAME
-  );
+  ).finally(() => {
+    firstAppDataPromise = undefined;
+  });
+
+  const { meta, defaultDocId } = await firstAppDataPromise;
+  localStorage.setItem('is-first-open', 'false');
   logger.info('create first workspace', defaultDocId);
   return { meta, defaultPageId: defaultDocId };
 }

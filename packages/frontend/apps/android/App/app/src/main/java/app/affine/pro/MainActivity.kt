@@ -6,9 +6,11 @@ import android.os.Bundle
 import android.view.Gravity
 import android.view.View
 import android.webkit.WebSettings
+import androidx.activity.enableEdgeToEdge
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.DrawableCompat
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updateMargins
@@ -86,6 +88,8 @@ class MainActivity : BridgeActivity(), AIButtonPlugin.Callback, AFFiNEThemePlugi
     private var navHeight = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         ViewCompat.setOnApplyWindowInsetsListener(window.decorView) { v, insets ->
             navHeight = px2dp(insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom)
@@ -99,10 +103,9 @@ class MainActivity : BridgeActivity(), AIButtonPlugin.Callback, AFFiNEThemePlugi
         configureEditorWebView()
     }
 
-    @Suppress("DEPRECATION")
     override fun onTrimMemory(level: Int) {
         super.onTrimMemory(level)
-        if (level >= ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW) {
+        if (level >= ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN) {
             bridge.webView.evaluateJavascript(
                 "window.dispatchEvent(new Event('affine:memory-pressure'))",
                 null,

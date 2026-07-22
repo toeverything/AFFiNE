@@ -137,10 +137,12 @@ export const NotificationList = () => {
                 </li>
               ))}
               {userFriendlyError && (
-                <NotificationError
-                  message={userFriendlyError.message}
-                  onRetry={() => notificationListService.retry()}
-                />
+                <li>
+                  <NotificationError
+                    message={userFriendlyError.message}
+                    onRetry={() => notificationListService.retry()}
+                  />
+                </li>
               )}
             </ul>
           ) : isLoading ? (
