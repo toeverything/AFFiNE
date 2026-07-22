@@ -100,7 +100,9 @@ test('loads and atomically persists one encrypted token-pair record', async () =
           version: 1,
           tokenType: pair.tokenType,
           accessToken: pair.accessToken,
-          accessExpiresAt: '2030-01-01T00:00:00.000Z',
+          accessExpiresAt: new Date(
+            Date.now() + pair.expiresIn * 1000
+          ).toISOString(),
           refreshToken: pair.refreshToken,
           refreshExpiresAt: pair.refreshExpiresAt,
           session: pair.session,
