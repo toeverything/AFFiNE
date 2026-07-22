@@ -2,6 +2,17 @@ import { canonicalAuthEndpoint } from '@affine/mobile-shared/auth/endpoint';
 
 import { Auth } from './plugins/auth';
 
+// Capacitor plugins are only available on the main thread — calling them from a Web
+// Worker posts to a native bridge that does not exist there, so the promise hangs
+// FOREVER. The nbstore worker imports this file (via setup-worker) to patch fetch/XHR;
+// without this guard the self-hosted socket.io *polling* transport (which goes through
+// the patched XHR) hangs on the Auth plugin call, the doc-sync socket never connects
+// ("connecting timeout"), and the workspace loads forever. The worker authenticates its
+// socket via the auth-token-channel instead, so skip the plugin calls in a worker.
+const isWorkerScope =
+  typeof (globalThis as { importScripts?: unknown }).importScripts ===
+  'function';
+
 function authEndpointForUrl(url: string | URL) {
   try {
     const parsed = new URL(url, globalThis.location.origin);
@@ -30,7 +41,7 @@ globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
   }
 
   const response = await rawFetch(request);
-  if (response.status !== 401 || !origin) return response;
+  if (response.status !== 401 || !origin || isWorkerScope) return response;
   const body = await response
     .clone()
     .json()
@@ -88,7 +99,7 @@ globalThis.XMLHttpRequest = class extends rawXMLHttpRequest {
         } catch {
           return;
         }
-        if (code !== 'ACCESS_TOKEN_EXPIRED') return;
+        if (code !== 'ACCESS_TOKEN_EXPIRED' || isWorkerScope) return;
         event.stopImmediatePropagation();
         this.replaying = true;
         this.hasReplayed = true;
@@ -184,9 +195,29 @@ globalThis.XMLHttpRequest = class extends rawXMLHttpRequest {
   }
 };
 
+// In a Web Worker the Capacitor bridge is unavailable, so calling the Auth plugin would
+// hang forever. The nbstore worker registers a channel-based provider (the
+// auth-access-token-channel to the main thread) so the worker's patched fetch/XHR still
+// get a valid Bearer for its cloud HTTP storages (blob / indexer / static-doc), which have
+// no cookie fallback and would otherwise 401 on self-hosted.
+let workerAccessTokenProvider:
+  | ((endpoint: string) => Promise<string | null>)
+  | undefined;
+
+export function setWorkerAccessTokenProvider(
+  provider: (endpoint: string) => Promise<string | null>
+) {
+  workerAccessTokenProvider = provider;
+}
+
 export async function getValidAccessToken(
   endpoint: string
 ): Promise<string | null> {
+  if (isWorkerScope) {
+    return workerAccessTokenProvider
+      ? await workerAccessTokenProvider(endpoint)
+      : null;
+  }
   const { token } = await Auth.getValidAccessToken({
     endpoint: canonicalAuthEndpoint(endpoint),
   });

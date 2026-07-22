@@ -17,7 +17,16 @@ export interface AuthPlugin {
     password: string;
     verifyToken?: string;
     challenge?: string;
-  }): Promise<void>;
+  }): Promise<{
+    user?: {
+      id: string;
+      email: string;
+      name: string;
+      hasPassword: boolean | null;
+      avatarUrl: string | null;
+      emailVerified: boolean;
+    };
+  }>;
   signInOpenApp(options: { endpoint: string; code: string }): Promise<void>;
   signOut(options: { endpoint: string }): Promise<void>;
   getValidAccessToken(options: {

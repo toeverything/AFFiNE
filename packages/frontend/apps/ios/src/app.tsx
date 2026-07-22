@@ -200,10 +200,11 @@ framework.scope(ServerScope).override(AuthProvider, resolver => {
       return {};
     },
     async signInPassword(credential) {
-      await Auth.signInPassword({
+      const { user } = await Auth.signInPassword({
         endpoint,
         ...credential,
       });
+      return user;
     },
     async signInOpenAppSignInCode(code) {
       await Auth.signInOpenApp({
