@@ -73,7 +73,7 @@ export class ServerService implements OnApplicationBootstrap {
     user: string,
     updates: Array<{ module: string; key: string; value: any }>
   ): Promise<DeepPartial<AppConfig>> {
-    const errors = this.configFactory.validate(updates);
+    const errors = this.validateConfig(updates);
 
     if (errors?.length) {
       throw new InvalidAppConfigInput({
@@ -127,13 +127,15 @@ export class ServerService implements OnApplicationBootstrap {
     const overrides = await this.loadDbOverrides();
     this.configFactory.override(overrides);
     await this.event.emitAsync('config.init', {
-      config: this.configFactory.config,
+      config: this.getConfig(),
     });
     this.onFlagsChanged();
   }
 
   private async loadDbOverrides() {
-    const configs = await this.models.appConfig.load();
+    const configs = await this.models.appConfig.load([
+      'auth.session.signingKeys',
+    ]);
     const overrides: DeepPartial<AppConfig> = {};
 
     configs.forEach(config => {

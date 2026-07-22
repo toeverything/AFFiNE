@@ -30,11 +30,6 @@ export { Lock, Locker, Mutex, RequestMutex } from './mutex';
 export * from './nestjs';
 export { type PrismaTransaction } from './prisma';
 export * from './storage';
-export {
-  autoMetadata,
-  type StorageProvider,
-  type StorageProviderConfig,
-  StorageProviderFactory,
-} from './storage';
+export { type StorageProviderConfig } from './storage';
 export { CloudThrottlerGuard, SkipThrottle, Throttle } from './throttler';
 export * from './utils';

@@ -8,7 +8,11 @@ import {
 } from '@affine/component/auth-components';
 import { OAuth } from '@affine/core/components/affine/auth/oauth';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
-import { AuthService, ServerService } from '@affine/core/modules/cloud';
+import {
+  AuthService,
+  getSelfHostedServerName,
+  ServerService,
+} from '@affine/core/modules/cloud';
 import type { AuthSessionStatus } from '@affine/core/modules/cloud/entities/session';
 import { ServerDeploymentType } from '@affine/graphql';
 import { Trans, useI18n } from '@affine/i18n';
@@ -61,6 +65,9 @@ export const SignInStep = ({
       c => c.type === ServerDeploymentType.Selfhosted
     )
   );
+  const signInServerName = isSelfhosted
+    ? getSelfHostedServerName(serverName)
+    : serverName;
   const authService = useService(AuthService);
   const [isMutating, setIsMutating] = useState(false);
 
@@ -139,7 +146,7 @@ export const SignInStep = ({
       <AuthContainer>
         <AuthHeader
           title={t['com.affine.auth.sign.in']()}
-          subTitle={serverName}
+          subTitle={signInServerName}
         />
         <AuthContent>
           <div>{versionError}</div>
@@ -152,7 +159,7 @@ export const SignInStep = ({
     <AuthContainer>
       <AuthHeader
         title={t['com.affine.auth.sign.in']()}
-        subTitle={serverName}
+        subTitle={signInServerName}
       />
 
       <AuthContent>

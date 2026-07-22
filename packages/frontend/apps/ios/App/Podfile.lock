@@ -10,7 +10,7 @@ PODS:
     - Capacitor
   - CapacitorKeyboard (7.0.4):
     - Capacitor
-  - CapacitorPluginAppTrackingTransparency (2.0.5):
+  - CapacitorPluginAppTrackingTransparency (3.0.0):
     - Capacitor
   - CryptoSwift (1.8.3)
 
@@ -51,7 +51,7 @@ SPEC CHECKSUMS:
   CapacitorCordova: 31bbe4466000c6b86d9b7f1181ee286cff0205aa
   CapacitorHaptics: ce15be8f287fa2c61c7d2d9e958885b90cf0bebc
   CapacitorKeyboard: 5660c760113bfa48962817a785879373cf5339c3
-  CapacitorPluginAppTrackingTransparency: 92ae9c1cfb5cf477753db9269689332a686f675a
+  CapacitorPluginAppTrackingTransparency: f0df8fe65d07d3854de3dad832caf192262bbaa5
   CryptoSwift: 967f37cea5a3294d9cce358f78861652155be483
 
 PODFILE CHECKSUM: 2c1e4be82121f2d9724ecf7e31dd14e165aeb082

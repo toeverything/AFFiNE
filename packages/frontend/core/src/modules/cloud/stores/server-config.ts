@@ -47,16 +47,18 @@ export function createUnsupportedServerVersionError(version?: string | null) {
   });
 }
 
-export function assertSupportedServerVersion(version?: string | null) {
-  if (!version) {
-    throw createUnsupportedServerVersionError(version);
-  }
+export function isSupportedServerVersion(version?: string | null) {
+  const normalized = version && semver.valid(version, { loose: true });
+  return (
+    !!normalized &&
+    semver.gte(normalized, `${MIN_SUPPORTED_SERVER_VERSION}-0`, {
+      loose: true,
+    })
+  );
+}
 
-  const normalized = semver.valid(version, { loose: true });
-  if (
-    !normalized ||
-    semver.lt(normalized, MIN_SUPPORTED_SERVER_VERSION, { loose: true })
-  ) {
+export function assertSupportedServerVersion(version?: string | null) {
+  if (!isSupportedServerVersion(version)) {
     throw createUnsupportedServerVersionError(version);
   }
 }

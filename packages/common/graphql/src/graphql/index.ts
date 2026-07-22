@@ -67,28 +67,6 @@ export const licenseBodyFragment = `fragment licenseBody on License {
   validatedAt
   variant
 }`;
-export const generateUserAccessTokenMutation = {
-  id: 'generateUserAccessTokenMutation' as const,
-  op: 'generateUserAccessToken',
-  query: `mutation generateUserAccessToken($input: GenerateAccessTokenInput!) {
-  generateUserAccessToken(input: $input) {
-    id
-    name
-    token
-    createdAt
-    expiresAt
-  }
-}`,
-};
-
-export const revokeUserAccessTokenMutation = {
-  id: 'revokeUserAccessTokenMutation' as const,
-  op: 'revokeUserAccessToken',
-  query: `mutation revokeUserAccessToken($id: String!) {
-  revokeUserAccessToken(id: $id)
-}`,
-};
-
 export const adminAllSharedLinksQuery = {
   id: 'adminAllSharedLinksQuery' as const,
   op: 'adminAllSharedLinks',
@@ -149,6 +127,14 @@ export const adminDashboardQuery = {
       effectiveSize
     }
     copilotConversations
+    copilotWindow {
+      from
+      to
+      timezone
+      bucket
+      requestedSize
+      effectiveSize
+    }
     workspaceStorageBytes
     blobStorageBytes
     workspaceStorageHistory {
@@ -191,6 +177,61 @@ export const adminDashboardQuery = {
 }`,
 };
 
+export const adminMailDeliveriesQuery = {
+  id: 'adminMailDeliveriesQuery' as const,
+  op: 'adminMailDeliveries',
+  query: `query adminMailDeliveries($input: AdminMailDeliveriesInput) {
+  adminMailDeliveries(input: $input) {
+    window {
+      from
+      to
+      timezone
+      bucket
+      requestedSize
+      effectiveSize
+    }
+    summary {
+      total
+      sent
+      failed
+      skipped
+      canceled
+      queued
+      sending
+      retryWait
+      successRate
+    }
+    byStatus {
+      key
+      label
+      total
+      points {
+        bucket
+        count
+      }
+    }
+    byType {
+      key
+      label
+      total
+      points {
+        bucket
+        count
+      }
+    }
+    byOutcome {
+      key
+      label
+      total
+      points {
+        bucket
+        count
+      }
+    }
+  }
+}`,
+};
+
 export const adminServerConfigQuery = {
   id: 'adminServerConfigQuery' as const,
   op: 'adminServerConfig',
@@ -212,7 +253,6 @@ export const adminServerConfigQuery = {
       url
     }
     availableUserFeatures
-    availableWorkspaceFeatures
   }
 }
 ${passwordLimitsFragment}
@@ -233,7 +273,6 @@ export const adminUpdateWorkspaceMutation = {
     enableSharing
     enableUrlPreview
     enableDocEmbedding
-    features
     owner {
       id
       name
@@ -264,7 +303,6 @@ export const adminWorkspaceQuery = {
     enableSharing
     enableUrlPreview
     enableDocEmbedding
-    features
     owner {
       id
       name
@@ -308,7 +346,6 @@ export const adminWorkspacesQuery = {
     enableSharing
     enableUrlPreview
     enableDocEmbedding
-    features
     owner {
       id
       name
@@ -330,6 +367,22 @@ export const adminWorkspacesCountQuery = {
   op: 'adminWorkspacesCount',
   query: `query adminWorkspacesCount($filter: ListWorkspaceInput!) {
   adminWorkspacesCount(filter: $filter)
+}`,
+};
+
+export const authSigningKeysQuery = {
+  id: 'authSigningKeysQuery' as const,
+  op: 'authSigningKeys',
+  query: `query authSigningKeys {
+  authSigningKeys {
+    id
+    status
+    source
+    createdAt
+    retiredAt
+    verifyUntil
+    canDelete
+  }
 }`,
 };
 
@@ -355,6 +408,22 @@ export const createUserMutation = {
   query: `mutation createUser($input: CreateUserInput!) {
   createUser(input: $input) {
     id
+  }
+}`,
+};
+
+export const deleteAuthSigningKeyMutation = {
+  id: 'deleteAuthSigningKeyMutation' as const,
+  op: 'deleteAuthSigningKey',
+  query: `mutation deleteAuthSigningKey($id: String!) {
+  deleteAuthSigningKey(id: $id) {
+    id
+    status
+    source
+    createdAt
+    retiredAt
+    verifyUntil
+    canDelete
   }
 }`,
 };
@@ -442,6 +511,22 @@ export const listUsersQuery = {
     avatarUrl
   }
   usersCount(filter: $filter)
+}`,
+};
+
+export const rotateAuthSigningKeyMutation = {
+  id: 'rotateAuthSigningKeyMutation' as const,
+  op: 'rotateAuthSigningKey',
+  query: `mutation rotateAuthSigningKey($expectedActiveKeyId: String!) {
+  rotateAuthSigningKey(expectedActiveKeyId: $expectedActiveKeyId) {
+    id
+    status
+    source
+    createdAt
+    retiredAt
+    verifyUntil
+    canDelete
+  }
 }`,
 };
 
@@ -1882,12 +1967,10 @@ export const getCurrentUserQuery = {
     email
     emailVerified
     avatarUrl
-    token {
-      sessionToken
-    }
+    hasPassword
+    features
   }
 }`,
-  deprecations: ["'token' is deprecated: use native session exchange instead"],
 };
 
 export const getDocCreatedByUpdatedByListQuery = {
@@ -2463,6 +2546,85 @@ export const listNotificationsQuery = {
 }`,
 };
 
+export const createMcpCredentialMutation = {
+  id: 'createMcpCredentialMutation' as const,
+  op: 'createMcpCredential',
+  query: `mutation createMcpCredential($input: CreateMcpCredentialInput!) {
+  createMcpCredential(input: $input) {
+    credential {
+      id
+      name
+      workspaceId
+      accessMode
+      fingerprint
+      createdAt
+      expiresAt
+      lastUsedAt
+      revokedAt
+      graceEndsAt
+      status
+    }
+    token
+  }
+}`,
+};
+
+export const mcpCredentialsQuery = {
+  id: 'mcpCredentialsQuery' as const,
+  op: 'mcpCredentials',
+  query: `query mcpCredentials($workspaceId: String!) {
+  mcpCredentialReadWriteAvailable
+  mcpCredentials(workspaceId: $workspaceId) {
+    id
+    name
+    workspaceId
+    accessMode
+    fingerprint
+    createdAt
+    expiresAt
+    lastUsedAt
+    revokedAt
+    graceEndsAt
+    status
+  }
+}`,
+};
+
+export const revokeMcpCredentialMutation = {
+  id: 'revokeMcpCredentialMutation' as const,
+  op: 'revokeMcpCredential',
+  query: `mutation revokeMcpCredential($id: ID!, $workspaceId: String!) {
+  revokeMcpCredential(id: $id, workspaceId: $workspaceId)
+}`,
+};
+
+export const rotateMcpCredentialMutation = {
+  id: 'rotateMcpCredentialMutation' as const,
+  op: 'rotateMcpCredential',
+  query: `mutation rotateMcpCredential($id: ID!, $workspaceId: String!, $expirationDays: Int!) {
+  rotateMcpCredential(
+    id: $id
+    workspaceId: $workspaceId
+    expirationDays: $expirationDays
+  ) {
+    credential {
+      id
+      name
+      workspaceId
+      accessMode
+      fingerprint
+      createdAt
+      expiresAt
+      lastUsedAt
+      revokedAt
+      graceEndsAt
+      status
+    }
+    token
+  }
+}`,
+};
+
 export const mentionUserMutation = {
   id: 'mentionUserMutation' as const,
   op: 'mentionUser',
@@ -2898,6 +3060,7 @@ export const workspaceByokSettingsQuery = {
       allowedProviders
       localStorageSupported
       customEndpointSupported
+      privateEndpointSupported
       hasAiPlan
       keys {
         id

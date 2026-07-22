@@ -2,7 +2,15 @@ import os from 'node:os';
 import path from 'node:path';
 
 import fs from 'fs-extra';
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  test,
+  vi,
+} from 'vitest';
 
 const electronMock = vi.hoisted(() => ({
   tmpDir: '',
@@ -31,6 +39,13 @@ vi.mock('../../src/main/logger', () => ({
     error: vi.fn(),
   },
 }));
+
+// Warm the handler module's transform once so the first per-test dynamic
+// import doesn't race the default 60s test timeout on loaded CI shards, where
+// cold-transforming the heavy `@toeverything/infra` graph can starve.
+beforeAll(async () => {
+  await import('@affine/electron/main/byok-storage/handlers');
+}, 120_000);
 
 beforeEach(async () => {
   vi.useRealTimers();

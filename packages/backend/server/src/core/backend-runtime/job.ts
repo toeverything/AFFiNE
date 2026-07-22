@@ -38,9 +38,12 @@ export class BackendRuntimeHousekeepingJob {
     const gates = await this.cleanBatches(() =>
       this.rt.cleanupExpiredRuntimeGates(1000)
     );
+    const rollingQuota = await this.cleanBatches(() =>
+      this.rt.cleanupExpiredRollingQuota(1000)
+    );
 
     this.logger.log(
-      `cleaned runtime housekeeping states=${states} gates=${gates}`
+      `cleaned runtime housekeeping states=${states} gates=${gates} rollingQuota=${rollingQuota}`
     );
   }
 

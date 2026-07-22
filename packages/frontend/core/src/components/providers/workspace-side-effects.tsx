@@ -1,4 +1,4 @@
-import { toast } from '@affine/component';
+import { notify, toast } from '@affine/component';
 import {
   pushGlobalLoadingEventAtom,
   resolveGlobalLoadingEventAtom,
@@ -15,6 +15,7 @@ import {
   AuthService,
   EventSourceService,
   GraphQLService,
+  RealtimeService,
 } from '@affine/core/modules/cloud';
 import {
   GlobalDialogService,
@@ -39,6 +40,7 @@ import {
   fromPromise,
   onStart,
   throwIfAborted,
+  useLiveData,
   useService,
   useServices,
 } from '@toeverything/infra';
@@ -142,6 +144,20 @@ export const WorkspaceSideEffects = () => {
   const eventSourceService = useService(EventSourceService);
   const authService = useService(AuthService);
   const nbstoreService = useService(NbstoreService);
+  const realtimeConnectionError = useLiveData(
+    useService(RealtimeService).connectionError$
+  );
+
+  useEffect(() => {
+    if (!realtimeConnectionError) return;
+    notify.warning(
+      {
+        title: t['com.affine.realtime.connection-error.title'](),
+        message: t['com.affine.realtime.connection-error.message'](),
+      },
+      { id: `realtime-connection-error:${realtimeConnectionError.endpoint}` }
+    );
+  }, [realtimeConnectionError, t]);
 
   useEffect(() => {
     const dispose = setupAIProvider(

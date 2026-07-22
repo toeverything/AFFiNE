@@ -5,6 +5,7 @@ import {
 import test from 'ava';
 import { z } from 'zod';
 
+import { CANARY_CLIENT_VERSION_MAX_AGE_DAYS } from '../../../base';
 import { Flavor } from '../../../env';
 import { PublicDocMode } from '../../../models';
 import { CopilotEmbeddingRealtimeProvider } from '../../../plugins/copilot/context';
@@ -39,7 +40,6 @@ import {
   realtimeDocShareStateRoom,
   realtimeNotificationRoom,
   realtimeTranscriptTaskRoom,
-  realtimeUserAccessTokensRoom,
   realtimeUserProfileRoom,
   realtimeUserSettingsRoom,
   realtimeWorkspaceAccessRoom,
@@ -62,6 +62,10 @@ const user: CurrentUser = {
   hasPassword: true,
   emailVerified: true,
 };
+
+function makeCanaryDateVersion(date: Date, build = '015') {
+  return `${date.getUTCFullYear()}.${date.getUTCMonth() + 1}.${date.getUTCDate()}-canary.${build}`;
+}
 
 function createGateway(registry: RealtimeRegistry) {
   return new RealtimeGateway(registry, {
@@ -140,6 +144,73 @@ test('gateway handles registered request with version gate', async t => {
     }),
     { error: { code: 'UNSUPPORTED_CLIENT_VERSION' } }
   );
+});
+
+test('gateway accepts canary date client version in canary namespace', async t => {
+  const originalNamespace = env.NAMESPACE;
+  // @ts-expect-error test
+  env.NAMESPACE = 'dev';
+  try {
+    const registry = new RealtimeRegistry();
+    registry.registerRequest({
+      name: 'notification.count.get',
+      input: z.object({}).strict(),
+      handle: async () => ({ count: 1 }),
+    });
+    const gateway = createGateway(registry);
+
+    t.deepEqual(
+      await gateway.onRequest(user, {
+        op: 'notification.count.get',
+        input: {},
+        clientVersion: makeCanaryDateVersion(new Date(), '040'),
+      }),
+      { data: { count: 1 } }
+    );
+
+    const old = new Date(
+      Date.now() -
+        (CANARY_CLIENT_VERSION_MAX_AGE_DAYS + 1) * 24 * 60 * 60 * 1000
+    );
+    t.like(
+      await gateway.onRequest(user, {
+        op: 'notification.count.get',
+        input: {},
+        clientVersion: makeCanaryDateVersion(old, '040'),
+      }),
+      { error: { code: 'UNSUPPORTED_CLIENT_VERSION' } }
+    );
+  } finally {
+    // @ts-expect-error test
+    env.NAMESPACE = originalNamespace;
+  }
+});
+
+test('gateway rejects canary date client version outside canary namespace', async t => {
+  const originalNamespace = env.NAMESPACE;
+  // @ts-expect-error test
+  env.NAMESPACE = 'production';
+  try {
+    const registry = new RealtimeRegistry();
+    registry.registerRequest({
+      name: 'notification.count.get',
+      input: z.object({}).strict(),
+      handle: async () => ({ count: 1 }),
+    });
+    const gateway = createGateway(registry);
+
+    t.like(
+      await gateway.onRequest(user, {
+        op: 'notification.count.get',
+        input: {},
+        clientVersion: makeCanaryDateVersion(new Date(), '40'),
+      }),
+      { error: { code: 'UNSUPPORTED_CLIENT_VERSION' } }
+    );
+  } finally {
+    // @ts-expect-error test
+    env.NAMESPACE = originalNamespace;
+  }
 });
 
 test('gateway authorizes subscription and joins room', async t => {
@@ -226,7 +297,6 @@ test('room helpers produce stable realtime room names', t => {
   t.is(realtimeDocGrantsRoom('space', 'doc'), 'workspace:space:doc:doc:grants');
   t.is(realtimeUserProfileRoom('u1'), 'user:u1:profile');
   t.is(realtimeUserSettingsRoom('u1'), 'user:u1:settings');
-  t.is(realtimeUserAccessTokensRoom('u1'), 'user:u1:access-tokens');
   t.is(
     realtimeTranscriptTaskRoom('space', 'task'),
     'copilot:transcript:space:task'
@@ -703,16 +773,6 @@ test('user realtime provider snapshots private profile settings and access token
     userFeature: {
       list: async () => ['administrator'],
     },
-    accessToken: {
-      list: async () => [
-        {
-          id: 'token',
-          name: 'Token',
-          createdAt: new Date('2026-01-01T00:00:00.000Z'),
-          expiresAt: null,
-        },
-      ],
-    },
   };
 
   new UserRealtimeProvider(models as never, registry).onModuleInit();
@@ -742,10 +802,6 @@ test('user realtime provider snapshots private profile settings and access token
     registry.getTopic('user.settings.changed').room(user, {}),
     realtimeUserSettingsRoom('u1')
   );
-  t.is(
-    registry.getTopic('user.access-tokens.changed').room(user, {}),
-    realtimeUserAccessTokensRoom('u1')
-  );
   t.deepEqual(await registry.getRequest('user.settings.get').handle(user, {}), {
     settings: {
       receiveInvitationEmail: true,
@@ -753,19 +809,6 @@ test('user realtime provider snapshots private profile settings and access token
       receiveCommentEmail: true,
     },
   });
-  t.deepEqual(
-    await registry.getRequest('user.access-tokens.get').handle(user, {}),
-    {
-      tokens: [
-        {
-          id: 'token',
-          name: 'Token',
-          createdAt: '2026-01-01T00:00:00.000Z',
-          expiresAt: null,
-        },
-      ],
-    }
-  );
 });
 
 test('new realtime providers publish changed events from domain events', t => {
@@ -822,13 +865,6 @@ test('new realtime providers publish changed events from domain events', t => {
     userId: 'u2',
   });
 
-  const userProvider = new UserRealtimeProvider(
-    {} as never,
-    undefined,
-    publisher
-  );
-  userProvider.onUserAccessTokenCreated({ userId: 'u1' });
-
   t.deepEqual(
     published.map(args => args[0]),
     [
@@ -837,7 +873,6 @@ test('new realtime providers publish changed events from domain events', t => {
       'workspace.invite-link.changed',
       'doc.share-state.changed',
       'doc.grants.changed',
-      'user.access-tokens.changed',
     ]
   );
 });

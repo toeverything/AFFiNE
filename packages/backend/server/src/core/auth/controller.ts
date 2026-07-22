@@ -3,9 +3,11 @@ import { setServers } from 'node:dns/promises';
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Header,
   HttpStatus,
+  Param,
   Post,
   Query,
   Req,
@@ -15,7 +17,9 @@ import type { Request, Response } from 'express';
 
 import {
   ActionForbidden,
+  Config,
   EmailTokenNotFound,
+  getClientVersionFromRequest,
   getRequestCookie,
   InvalidAuthState,
   InvalidEmail,
@@ -25,13 +29,25 @@ import {
 } from '../../base';
 import { Models } from '../../models';
 import { validators } from '../utils/validators';
+import { getAbuseRequestSource } from '../workspaces/abuse';
+import { AuthSessionService } from './auth-session';
 import { Public } from './guard';
+import {
+  AuthPreflightBodySchema,
+  AuthSessionExchangeBodySchema,
+  AuthSessionRefreshBodySchema,
+  isNativeClientRequest,
+  MagicLinkBodySchema,
+  OpenAppSignInBodySchema,
+  SessionIdSchema,
+  SignInBodySchema,
+} from './input';
 import { MagicLinkAuthService } from './magic-link';
 import { AuthMethodsService } from './methods';
-import { SessionExchangeService } from './native-exchange';
 import { OpenAppAuthService } from './open-app';
 import { AuthService, sessionUser } from './service';
-import { CurrentUser, Session } from './session';
+import { AuthSessionPrincipal, CurrentUser, Session } from './session';
+import { SessionExchangeService } from './session-exchange';
 import { SessionIssuer } from './session-issuer';
 
 interface PreflightResponse {
@@ -42,27 +58,6 @@ interface PreflightResponse {
     oauth: { available: boolean; providers: string[] };
     passkey: { available: boolean; discoverable: boolean };
   };
-}
-
-interface SignInCredential {
-  email: string;
-  password?: string;
-  callbackUrl?: string;
-  client_nonce?: string;
-}
-
-interface MagicLinkCredential {
-  email: string;
-  token: string;
-  client_nonce?: string;
-}
-
-interface OpenAppSignInCredential {
-  code: string;
-}
-
-interface NativeSessionExchangeCredential {
-  code: string;
 }
 
 type SignInResponse = CurrentUser & {
@@ -79,7 +74,9 @@ export class AuthController {
     private readonly openApp: OpenAppAuthService,
     private readonly authMethods: AuthMethodsService,
     private readonly sessionExchange: SessionExchangeService,
-    private readonly models: Models
+    private readonly authSessions: AuthSessionService,
+    private readonly models: Models,
+    private readonly config: Config
   ) {
     if (env.dev) {
       // set DNS servers in dev mode
@@ -94,15 +91,14 @@ export class AuthController {
   @Public()
   @UseNamedGuard('version')
   @Post('/preflight')
-  async preflight(
-    @Body() params?: { email: string }
-  ): Promise<PreflightResponse> {
-    if (!params?.email) {
+  async preflight(@Body() body?: unknown): Promise<PreflightResponse> {
+    const input = AuthPreflightBodySchema.safeParse(body);
+    if (!input.success) {
       throw new InvalidEmail({ email: 'not provided' });
     }
-    validators.assertValidEmail(params.email);
+    validators.assertValidEmail(input.data.email);
 
-    return this.authMethods.loginPreflight(params.email);
+    return this.authMethods.loginPreflight(input.data.email);
   }
 
   @UseNamedGuard('version')
@@ -118,8 +114,9 @@ export class AuthController {
   async signIn(
     @Req() req: Request,
     @Res() res: Response,
-    @Body() credential: SignInCredential
+    @Body() body?: unknown
   ) {
+    const credential = SignInBodySchema.parse(body);
     validators.assertValidEmail(credential.email);
     const canSignIn = await this.auth.canSignIn(credential.email);
     if (!canSignIn) {
@@ -135,6 +132,7 @@ export class AuthController {
       );
     } else {
       await this.sendMagicLink(
+        req,
         res,
         credential.email,
         credential.callbackUrl,
@@ -163,12 +161,15 @@ export class AuthController {
   }
 
   async sendMagicLink(
+    req: Request,
     res: Response,
     email: string,
     callbackUrl = '/magic-link',
     clientNonce?: string
   ) {
-    const payload = await this.magicLink.send(email, callbackUrl, clientNonce);
+    const payload = await this.magicLink.send(email, callbackUrl, clientNonce, {
+      source: getAbuseRequestSource(req, this.config),
+    });
     res.status(HttpStatus.OK).send(payload);
   }
 
@@ -176,7 +177,7 @@ export class AuthController {
   async signOut(
     @Req() req: Request,
     @Res() res: Response,
-    @Session() session: Session | undefined,
+    @Session() session: Session | AuthSessionPrincipal | undefined,
     @Query('user_id') userId: string | undefined
   ) {
     if (!session) {
@@ -185,7 +186,15 @@ export class AuthController {
     }
 
     if (req.authType === 'jwt') {
-      await this.auth.signOut(session.sessionId, session.user.id);
+      const authSessionId = (session as Partial<AuthSessionPrincipal>)
+        .authSessionId;
+      if (authSessionId) {
+        await this.authSessions.revoke(
+          authSessionId,
+          'current_device_sign_out',
+          session.user.id
+        );
+      }
       res.status(HttpStatus.OK).send({});
       return;
     }
@@ -217,23 +226,105 @@ export class AuthController {
   async openAppSignIn(
     @Req() req: Request,
     @Res() res: Response,
-    @Body() credential: OpenAppSignInCredential
+    @Body() body?: unknown
   ) {
-    if (!credential?.code) throw new InvalidAuthState();
-    const identity = await this.openApp.verifySignInCode(credential.code);
+    const credential = OpenAppSignInBodySchema.safeParse(body);
+    if (!credential.success) throw new InvalidAuthState();
+    const identity = await this.openApp.verifySignInCode(credential.data.code);
     const { exchangeCode } = await this.sessionIssuer.issue(req, res, identity);
     res.send({ id: identity.userId, exchangeCode });
   }
 
   @Public()
   @UseNamedGuard('version')
-  @Post('/native/exchange')
-  async exchangeSession(
-    @Req() req: Request,
-    @Body() credential: NativeSessionExchangeCredential
+  @Post('/session/exchange')
+  @Header('Cache-Control', 'no-store')
+  @Header('Pragma', 'no-cache')
+  async exchangeSession(@Req() req: Request, @Body() body?: unknown) {
+    const input = AuthSessionExchangeBodySchema.parse(body);
+    return await this.sessionExchange.exchange(req, input.code, {
+      installationId: input.installationId,
+      platform: input.platform,
+      deviceName: input.deviceName,
+      appVersion: getClientVersionFromRequest(req) ?? undefined,
+    });
+  }
+
+  @Public()
+  @UseNamedGuard('version')
+  @Throttle('default', { limit: 120, ttl: 60_000 })
+  @Post('/session/refresh')
+  @Header('Cache-Control', 'no-store')
+  @Header('Pragma', 'no-cache')
+  async refreshAuthSession(@Req() req: Request, @Body() body?: unknown) {
+    const input = AuthSessionRefreshBodySchema.parse(body);
+    return await this.sessionExchange.refresh(
+      req,
+      input.refreshToken,
+      getClientVersionFromRequest(req) ?? undefined
+    );
+  }
+
+  @Public()
+  @UseNamedGuard('version')
+  @Post('/session/revoke')
+  @Header('Cache-Control', 'no-store')
+  @Header('Pragma', 'no-cache')
+  async revokeCurrentAuthSession(@Req() req: Request, @Body() body?: unknown) {
+    if (!isNativeClientRequest(req)) {
+      throw new ActionForbidden();
+    }
+    const input = AuthSessionRefreshBodySchema.parse(body);
+    await this.authSessions.revokeWithRefreshToken(input.refreshToken);
+    return {};
+  }
+
+  @Get('/sessions')
+  @Header('Cache-Control', 'no-store')
+  @Header('Pragma', 'no-cache')
+  async listAuthSessions(
+    @CurrentUser() user: CurrentUser,
+    @Session() session: Session | AuthSessionPrincipal | undefined
   ) {
-    if (!credential?.code) throw new InvalidAuthState();
-    return await this.sessionExchange.exchange(req, credential.code);
+    const currentId = (session as Partial<AuthSessionPrincipal> | undefined)
+      ?.authSessionId;
+    return (await this.authSessions.list(user.id)).map(item => ({
+      ...item,
+      current: item.id === currentId,
+    }));
+  }
+
+  @Post('/sessions/revoke-all')
+  @Header('Cache-Control', 'no-store')
+  @Header('Pragma', 'no-cache')
+  async revokeAllAuthSessions(
+    @Req() req: Request,
+    @CurrentUser() user: CurrentUser,
+    @Session() session: Session | AuthSessionPrincipal | undefined
+  ) {
+    this.assertSessionMutationAuthorized(req, session);
+    await this.auth.revokeUserSessions(user.id);
+    return {};
+  }
+
+  @Delete('/sessions/:id')
+  @Header('Cache-Control', 'no-store')
+  @Header('Pragma', 'no-cache')
+  async revokeAuthSession(
+    @Req() req: Request,
+    @CurrentUser() user: CurrentUser,
+    @Session() session: Session | AuthSessionPrincipal | undefined,
+    @Param('id') authSessionId: string
+  ) {
+    const parsedSessionId = SessionIdSchema.safeParse(authSessionId);
+    if (!parsedSessionId.success) throw new InvalidAuthState();
+    this.assertSessionMutationAuthorized(req, session);
+    await this.authSessions.revoke(
+      parsedSessionId.data,
+      'user_action',
+      user.id
+    );
+    return {};
   }
 
   @Public()
@@ -242,10 +333,12 @@ export class AuthController {
   async magicLinkSignIn(
     @Req() req: Request,
     @Res() res: Response,
-    @Body()
-    { email, token: otp, client_nonce: clientNonce }: MagicLinkCredential
+    @Body() body?: unknown
   ) {
-    if (!otp || !email) throw new EmailTokenNotFound();
+    const credential = MagicLinkBodySchema.safeParse(body);
+    if (!credential.success) throw new EmailTokenNotFound();
+    const { email, token: otp, client_nonce: clientNonce } = credential.data;
+    if (!email) throw new EmailTokenNotFound();
     validators.assertValidEmail(email);
     const identity = await this.magicLink.verify(email, otp, clientNonce);
     const { exchangeCode } = await this.sessionIssuer.issue(req, res, identity);
@@ -259,5 +352,20 @@ export class AuthController {
   @Header('Cache-Control', 'no-store')
   async currentSessionUser(@CurrentUser() user?: CurrentUser) {
     return { user };
+  }
+
+  private assertSessionMutationAuthorized(
+    req: Request,
+    session: Session | AuthSessionPrincipal | undefined
+  ) {
+    if (req.authType === 'jwt') {
+      const principal = session as Partial<AuthSessionPrincipal> | undefined;
+      if (principal?.authSessionId) return;
+    } else if (req.authType === 'session') {
+      const csrfCookie = getRequestCookie(req, AuthService.csrfCookieName);
+      const csrfHeader = req.get('x-affine-csrf-token');
+      if (csrfHeader && csrfCookie && csrfCookie === csrfHeader) return;
+    }
+    throw new ActionForbidden();
   }
 }

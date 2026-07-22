@@ -205,18 +205,47 @@ export class CopilotEmbeddingJob {
     );
   }
 
-  @OnJob('copilot.embedding.deleteDoc')
-  async deleteDocEmbeddingQueueFromEvent(
-    doc: Jobs['copilot.embedding.deleteDoc']
-  ) {
+  private async deleteDocEmbedding(doc: {
+    workspaceId: string;
+    docId: string;
+  }) {
     await this.queue.remove(
       `workspace:embedding:${doc.workspaceId}:${doc.docId}`,
       'copilot.embedding.docs'
     );
-    await this.models.copilotContext.deleteWorkspaceEmbedding(
+    await this.models.copilotContext.purgeWorkspaceEmbedding(
       doc.workspaceId,
       doc.docId
     );
+  }
+
+  @OnJob('copilot.embedding.reconcileDocumentCleanup')
+  async reconcileDocumentCleanup({
+    workspaceId,
+    docId,
+    cleanupVersion,
+  }: Jobs['copilot.embedding.reconcileDocumentCleanup']) {
+    const root = await this.doc.getDoc(workspaceId, workspaceId);
+    if (!root) {
+      throw new Error(`workspace root ${workspaceId} not found`);
+    }
+    const live = readAllDocIdsFromWorkspaceSnapshot(root.bin, true).includes(
+      docId
+    );
+    if (live) {
+      if (!(await this.doc.getDoc(workspaceId, docId))) {
+        throw new Error(`restored document ${workspaceId}/${docId} not found`);
+      }
+      await this.addDocEmbeddingQueueFromEvent({ workspaceId, docId });
+    } else {
+      await this.deleteDocEmbedding({ workspaceId, docId });
+    }
+    await this.queue.add('backendRuntime.ackDocumentCleanupEffect', {
+      workspaceId,
+      docId,
+      cleanupVersion,
+      effect: 'copilot',
+    });
   }
 
   private async readCopilotBlob(

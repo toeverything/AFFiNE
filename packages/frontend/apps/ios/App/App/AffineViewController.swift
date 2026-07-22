@@ -3,8 +3,13 @@ import Intelligents
 import UIKit
 import WebKit
 
-class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate {
+class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate, AffineThemeConfigurable {
   var intelligentsButton: IntelligentsButton?
+  var appThemeUserInterfaceStyle: UIUserInterfaceStyle = .unspecified {
+    didSet {
+      overrideUserInterfaceStyle = appThemeUserInterfaceStyle
+    }
+  }
 
   override func viewDidLoad() {
     super.viewDidLoad()
@@ -52,9 +57,11 @@ class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate {
 
   override func capacitorDidLoad() {
     let plugins: [CAPPlugin] = [
+      AffineThemePlugin(associatedController: self),
       AuthPlugin(),
       CookiePlugin(),
       HashcashPlugin(),
+      ImagePickerPlugin(associatedController: self),
       NavigationGesturePlugin(),
       NbStorePlugin(),
       PayWallPlugin(associatedController: self),
@@ -108,12 +115,6 @@ class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate {
 
   func scrollViewDidZoom(_ scrollView: UIScrollView) {
     scrollView.zoomScale = 1.0
-  }
-
-  func scrollViewDidScroll(_ scrollView: UIScrollView) {
-    if scrollView.contentOffset != .zero {
-      scrollView.contentOffset = .zero
-    }
   }
 
   // MARK: - Web Content Process Crash Recovery

@@ -18,6 +18,36 @@ if (isDev) {
   protocol = 'affine-dev';
 }
 
+const authMethods = new Set(['magic-link', 'oauth', 'open-app-signin']);
+
+function summarizeDeepLink(rawUrl: string) {
+  try {
+    const url = new URL(rawUrl);
+    const method = url.searchParams.get('method');
+    const server = url.searchParams.get('server');
+    let serverOrigin: string | undefined;
+    try {
+      serverOrigin = server ? new URL(server).origin : undefined;
+    } catch {
+      serverOrigin = undefined;
+    }
+    return {
+      protocol: url.protocol,
+      action: url.hostname,
+      method: method && authMethods.has(method) ? method : undefined,
+      serverOrigin,
+    };
+  } catch {
+    return { valid: false };
+  }
+}
+
+function logDeepLinkFailure(rawUrl: string, error: unknown) {
+  logger.error('failed to handle affine url', summarizeDeepLink(rawUrl), {
+    error: error instanceof Error ? error.name : typeof error,
+  });
+}
+
 export function setupDeepLink(app: App) {
   if (process.defaultApp) {
     if (process.argv.length >= 2) {
@@ -30,14 +60,14 @@ export function setupDeepLink(app: App) {
   }
 
   app.on('open-url', (event, url) => {
-    logger.log('open-url', url);
+    logger.log('open-url', summarizeDeepLink(url));
     if (url.startsWith(`${protocol}://`)) {
       event.preventDefault();
       app
         .whenReady()
         .then(() => handleAffineUrl(url))
         .catch(e => {
-          logger.error('failed to handle affine url', e);
+          logDeepLinkFailure(url, e);
         });
     }
   });
@@ -55,7 +85,7 @@ export function setupDeepLink(app: App) {
         if (url?.startsWith(`${protocol}://`)) {
           event.preventDefault();
           handleAffineUrl(url).catch(e => {
-            logger.error('failed to handle affine url', e);
+            logDeepLinkFailure(url, e);
           });
         }
       })
@@ -66,10 +96,15 @@ export function setupDeepLink(app: App) {
     // app may be brought up without having a running instance
     // need to read the url from the command line
     const url = process.argv.at(-1);
-    logger.log('url from argv', process.argv, url);
+    logger.log(
+      'url from argv',
+      url?.startsWith(`${protocol}://`)
+        ? summarizeDeepLink(url)
+        : { deepLink: false, argumentCount: process.argv.length }
+    );
     if (url?.startsWith(`${protocol}://`)) {
       handleAffineUrl(url).catch(e => {
-        logger.error('failed to handle affine url', e);
+        logDeepLinkFailure(url, e);
       });
     }
   });
@@ -78,7 +113,7 @@ export function setupDeepLink(app: App) {
 async function handleAffineUrl(url: string) {
   await showMainWindow();
 
-  logger.info('open affine url', url);
+  logger.info('open affine url', summarizeDeepLink(url));
   const urlObj = new URL(url);
 
   if (urlObj.hostname === 'authentication') {
@@ -93,7 +128,7 @@ async function handleAffineUrl(url: string) {
         method !== 'open-app-signin') ||
       !payload
     ) {
-      logger.error('Invalid authentication url', url);
+      logger.error('Invalid authentication url', summarizeDeepLink(url));
       return;
     }
 

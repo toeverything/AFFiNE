@@ -18,11 +18,13 @@ export async function expectActiveTab(
 export async function expectTabTitle(
   page: Page,
   index: number,
-  title: string | string[]
+  title: string | string[],
+  timeout?: number
 ) {
   if (typeof title === 'string') {
     await expect(page.getByTestId('workbench-tab').nth(index)).toContainText(
-      title
+      title,
+      { timeout }
     );
   } else {
     for (let i = 0; i < title.length; i++) {
@@ -32,7 +34,7 @@ export async function expectTabTitle(
           .nth(index)
           .getByTestId('split-view-label')
           .nth(i)
-      ).toContainText(title[i]);
+      ).toContainText(title[i], { timeout });
     }
   }
 }

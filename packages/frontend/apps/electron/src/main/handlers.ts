@@ -7,6 +7,7 @@ import { byokStorageHandlers } from './byok-storage/handlers';
 import { clipboardHandlers } from './clipboard';
 import { configStorageHandlers } from './config-storage';
 import { findInPageHandlers } from './find-in-page';
+import { importHandlers } from './import';
 import { getLogFilePath, logger, revealLogFile } from './logger';
 import { recordingHandlers } from './recording';
 import { checkSource } from './security-restrictions';
@@ -39,6 +40,7 @@ export const allHandlers = {
   updater: updaterHandlers,
   configStorage: configStorageHandlers,
   findInPage: findInPageHandlers,
+  import: importHandlers,
   sharedStorage: sharedStorageHandlers,
   worker: workerHandlers,
   recording: recordingHandlers,
@@ -97,7 +99,7 @@ export const registerHandlers = () => {
       return await handleIpcMessage(e, ...args);
     } catch (error) {
       logger.error(`error in ipc handler when calling ${args[0]}`, error);
-      return null;
+      throw error;
     }
   });
 

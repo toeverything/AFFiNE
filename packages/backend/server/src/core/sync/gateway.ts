@@ -85,14 +85,16 @@ type SyncProtocolRoomType = Extract<RoomType, 'sync-025' | 'sync-026'>;
 const SOCKET_PRESENCE_USER_ID_KEY = 'affinePresenceUserId';
 
 function normalizeWsClientVersion(clientVersion: string): string | null {
-  if (env.namespaces.canary) {
-    const canaryCheck = checkCanaryDateClientVersion(clientVersion);
-    if (canaryCheck.matched) {
-      return canaryCheck.allowed ? canaryCheck.normalized : null;
-    }
+  const canaryCheck = checkCanaryDateClientVersion(clientVersion);
+  if (!canaryCheck.matched) {
+    return clientVersion;
   }
 
-  return clientVersion;
+  if (!env.namespaces.canary) {
+    return null;
+  }
+
+  return canaryCheck.allowed ? canaryCheck.normalized : null;
 }
 
 function isSupportedWsClientVersion(clientVersion: string): boolean {
@@ -351,7 +353,7 @@ export class SpaceSyncGateway
 
   private attachPresenceUserId(client: Socket): string | null {
     const request = client.request as Request;
-    const userId = request.session?.user.id ?? request.token?.user.id;
+    const userId = request.session?.user.id;
     if (typeof userId !== 'string' || !userId) {
       this.logger.warn(
         `Unable to resolve authenticated user id for socket ${client.id}`

@@ -11,6 +11,7 @@ import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hoo
 import {
   AuthService,
   CaptchaService,
+  getSelfHostedServerName,
   ServerService,
 } from '@affine/core/modules/cloud';
 import type { AuthSessionStatus } from '@affine/core/modules/cloud/entities/session';
@@ -58,6 +59,9 @@ export const SignInWithPasswordStep = ({
   const serverName = useLiveData(
     serverService.server.config$.selector(c => c.serverName)
   );
+  const signInServerName = isSelfhosted
+    ? getSelfHostedServerName(serverName)
+    : serverName;
 
   const verifyToken = useLiveData(captchaService.verifyToken$);
   const needCaptcha = useLiveData(captchaService.needCaptcha$);
@@ -134,7 +138,7 @@ export const SignInWithPasswordStep = ({
     <AuthContainer>
       <AuthHeader
         title={t['com.affine.auth.sign.in']()}
-        subTitle={serverName}
+        subTitle={signInServerName}
       />
 
       <AuthContent>

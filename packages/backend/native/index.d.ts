@@ -5,18 +5,9 @@ declare const _default: typeof import('./index')
 export default _default
 
 export declare class BackendRuntime {
-  planUnreferencedWorkspaceBlobs(workspaceId: string, gracePeriodDays: number, limit: number): Promise<RuntimeBlobCleanupPlanResult>
-  executeBlobCleanupCandidates(runId: string, gracePeriodDays: number, limit: number): Promise<RuntimeBlobCleanupExecuteResult>
-  completeBlobUpload(workspaceId: string, key: string, expectedSize: number, expectedMime: string): Promise<RuntimeBlobCompleteResult>
-  completeFsBlobUpload(root: string, bucket: string, workspaceId: string, key: string, expectedSize: number, expectedMime: string): Promise<RuntimeBlobCompleteResult>
-  cleanupExpiredPendingBlobs(cutoffMs: number, limit: number): Promise<RuntimeBlobCleanupResult>
-  releaseDeletedBlobs(workspaceId: string, limit: number): Promise<RuntimeBlobCleanupResult>
-  backfillMissingBlobMetadata(workspaceId: string | undefined | null, limit: number): Promise<RuntimeBlobMetadataBackfillResult>
   acquireCoordinationLease(key: string, owner: string, ttlMs: number): Promise<CoordinationLeaseGrant | null>
   releaseCoordinationLease(key: string, owner: string, fencingToken: bigint | number): Promise<boolean>
   renewCoordinationLease(key: string, owner: string, fencingToken: bigint | number, ttlMs: number): Promise<boolean>
-  rebuildDocBlobRefs(workspaceId: string, docId: string): Promise<RuntimeDocBlobRefsResult>
-  rebuildWorkspaceDocBlobRefs(workspaceId: string, limit: number): Promise<RuntimeDocBlobRefsResult>
   /**
    * Merge pending doc updates with y-octo and persist the merged snapshot.
    *
@@ -31,23 +22,22 @@ export declare class BackendRuntime {
   compactPendingDocUpdates(workspaceId: string, docId: string, batchLimit: number, historyMinIntervalMs: number, historyMaxAgeSeconds: number, owner: string, leaseTtlMs: number): Promise<RuntimeDocCompactionResult>
   upsertDocSnapshot(workspaceId: string, docId: string, blob: Buffer, timestampMs: number, editorId?: string | undefined | null): Promise<boolean>
   createDocHistory(input: RuntimeDocHistoryInput): Promise<boolean>
-  deleteDocStorage(workspaceId: string, docId: string): Promise<void>
   putRuntimeGateIfAbsent(key: string, ttlMs: number): Promise<boolean>
   cleanupExpiredRuntimeGates(limit: number): Promise<number>
   cleanupExpiredUserSessions(limit: number): Promise<number>
   cleanupExpiredSnapshotHistories(limit: number): Promise<number>
-  objectStorageHealth(): RuntimeObjectStorageHealth
-  objectStoragePut(key: string, body: Buffer, metadata?: RuntimeObjectStoragePutOptions | undefined | null): Promise<void>
-  objectStoragePresignPut(key: string, metadata?: RuntimeObjectStoragePutOptions | undefined | null): Promise<RuntimePresignedObjectRequest>
-  objectStorageCreateMultipartUpload(key: string, metadata?: RuntimeObjectStoragePutOptions | undefined | null): Promise<RuntimeMultipartUploadInit | null>
-  objectStoragePresignUploadPart(key: string, uploadId: string, partNumber: number): Promise<RuntimePresignedObjectRequest>
-  objectStorageListMultipartUploadParts(key: string, uploadId: string): Promise<Array<RuntimeMultipartUploadPart>>
-  objectStorageCompleteMultipartUpload(key: string, uploadId: string, parts: Array<RuntimeMultipartUploadPart>): Promise<void>
-  objectStorageAbortMultipartUpload(key: string, uploadId: string): Promise<void>
-  objectStorageHead(key: string): Promise<RuntimeObjectMetadata | null>
-  objectStorageGet(key: string): Promise<RuntimeObjectGetResult | null>
-  objectStorageList(prefix?: string | undefined | null): Promise<Array<RuntimeObjectListEntry>>
-  objectStorageDelete(key: string): Promise<void>
+  isInviteAbuseUserQuarantinedOrBanned(userId: string): Promise<boolean>
+  isInviteAbuseWorkspaceQuarantined(workspaceId: string): Promise<boolean>
+  claimInviteAbuseAction(actionId: string, workerId: string): Promise<boolean>
+  claimRetryableInviteAbuseActions(workerId: string, limit: number): Promise<Array<RuntimeInviteAbuseClaimedAction>>
+  markInviteAbuseAction(actionId: string, workerId: string, status: string, error?: string | undefined | null): Promise<boolean>
+  assertWorkspaceInviteQuotaV1(input: RuntimeWorkspaceInviteQuotaInput): Promise<RuntimeWorkspaceInviteQuotaDecision>
+  commitWorkspaceInviteQuotaV1(reservationId: string, usage: RuntimeWorkspaceInviteQuotaUsage): Promise<boolean>
+  releaseWorkspaceInviteQuotaV1(reservationId: string): Promise<boolean>
+  assertMailDeliveryQuotaV1(input: RuntimeMailDeliveryQuotaInput): Promise<RuntimeMailDeliveryQuotaDecision>
+  commitMailDeliveryQuotaV1(reservationId: string): Promise<boolean>
+  releaseMailDeliveryQuotaV1(reservationId: string): Promise<boolean>
+  cleanupExpiredRollingQuota(limit: number): Promise<number>
   createAuthChallenge(purpose: string, token: string, payload: any, ttlMs: number): Promise<boolean>
   getAuthChallenge(purpose: string, token: string): Promise<any | null>
   consumeAuthChallenge(purpose: string, token: string): Promise<any | null>
@@ -77,6 +67,40 @@ export declare class BackendRuntime {
 
 export declare class LlmStreamHandle {
   abort(): void
+}
+
+export declare class StorageRuntime {
+  planUnreferencedWorkspaceBlobs(workspaceId: string, gracePeriodDays: number, limit: number): Promise<RuntimeBlobCleanupPlanResult>
+  executeBlobCleanupCandidates(runId: string, gracePeriodDays: number, limit: number): Promise<RuntimeBlobCleanupExecuteResult>
+  cleanupExpiredPendingBlobs(cutoffMs: number, limit: number): Promise<RuntimeBlobCleanupResult>
+  releaseDeletedBlobs(workspaceId: string, limit: number): Promise<RuntimeBlobCleanupResult>
+  backfillMissingBlobMetadata(workspaceId: string | undefined | null, limit: number): Promise<RuntimeBlobMetadataBackfillResult>
+  rebuildDocBlobRefs(workspaceId: string, docId: string): Promise<RuntimeDocBlobRefsResult>
+  rebuildWorkspaceDocBlobRefs(workspaceId: string, limit: number): Promise<RuntimeDocBlobRefsResult>
+  reconcileWorkspaceDocuments(workspaceId: string): Promise<RuntimeDocumentCleanupReconcileResult>
+  executeDocumentCleanupCandidates(workspaceId: string | undefined | null, gracePeriodDays: number, limit: number): Promise<RuntimeDocumentCleanupExecuteResult>
+  ackDocumentCleanupEffect(workspaceId: string, docId: string, cleanupVersion: string, effect: string): Promise<RuntimeDocumentCleanupAckResult>
+  constructor()
+  start(): Promise<void>
+  configure(configJson: string): void
+  stop(): Promise<void>
+  runMigrations(): Promise<void>
+  health(): Promise<StorageRuntimeHealth>
+  providerCapabilities(scope: string): Promise<StorageProviderCapabilities>
+  putObject(scope: string, key: string, body: Buffer, metadata?: RuntimeObjectStoragePutOptions | undefined | null): Promise<RuntimeObjectMetadata>
+  headObject(scope: string, key: string): Promise<RuntimeObjectMetadata | null>
+  getObject(scope: string, key: string): Promise<RuntimeObjectGetResult | null>
+  listObjects(scope: string, prefix?: string | undefined | null): Promise<Array<RuntimeObjectListEntry>>
+  deleteObject(scope: string, key: string): Promise<void>
+  presignPut(scope: string, key: string, metadata?: RuntimeObjectStoragePutOptions | undefined | null): Promise<RuntimePresignedObjectRequest | null>
+  presignGet(scope: string, key: string): Promise<RuntimePresignedObjectRequest | null>
+  createMultipartUpload(scope: string, key: string, metadata?: RuntimeObjectStoragePutOptions | undefined | null): Promise<RuntimeMultipartUploadInit | null>
+  presignUploadPart(scope: string, key: string, uploadId: string, partNumber: number): Promise<RuntimePresignedObjectRequest | null>
+  proxyUploadPart(scope: string, key: string, uploadId: string, partNumber: number, body: Buffer, contentLength?: number | undefined | null): Promise<string | null>
+  listMultipartUploadParts(scope: string, key: string, uploadId: string): Promise<Array<RuntimeMultipartUploadPart> | null>
+  completeMultipartUpload(scope: string, key: string, uploadId: string, parts: Array<RuntimeMultipartUploadPart>): Promise<boolean>
+  abortMultipartUpload(scope: string, key: string, uploadId: string): Promise<boolean>
+  completeWorkspaceBlobUpload(workspaceId: string, key: string, expectedSize: number, expectedMime: string): Promise<RuntimeBlobCompleteResult>
 }
 
 export declare class Tokenizer {
@@ -149,10 +173,23 @@ export interface AssertSafeUrlRequest {
   url: string
 }
 
+export declare function authSessionAccessTokenKeyId(token: string): string | null
+
+export interface AuthSessionAccessTokenVerification {
+  status: string
+  userId?: string
+  authSessionId?: string
+}
+
+export interface AuthSessionRefreshToken {
+  token: string
+  id: string
+  secretHash: string
+}
+
 export interface BackendRuntimeHealth {
   started: boolean
   databaseConnected: boolean
-  objectStorageConfigured: boolean
 }
 
 export declare function buildPublicRootDoc(rootDocBin: Buffer, docMetas: Array<PublicDocMetaInput>): Buffer
@@ -245,11 +282,40 @@ export interface CommandResponse {
   error?: LicenseError
 }
 
+export interface ContentPolicyMatch {
+  type: string
+  reason: string
+  value?: string
+  span?: ContentPolicyMatchSpan
+}
+
+export interface ContentPolicyMatchSpan {
+  start: number
+  end: number
+}
+
+export interface ContentPolicyScanInput {
+  value: string
+  checks?: Array<string>
+}
+
+export interface ContentPolicyScanResult {
+  version: number
+  original: string
+  normalized: string
+  skeleton: string
+  matched: boolean
+  matches: Array<ContentPolicyMatch>
+  flags: Array<string>
+}
+
 export interface CoordinationLeaseGrant {
   key: string
   owner: string
   fencingToken: bigint | number
 }
+
+export declare function createAuthSessionRefreshToken(): AuthSessionRefreshToken
 
 /**
  * Converts markdown content to AFFiNE-compatible y-octo document binary.
@@ -514,12 +580,6 @@ export declare function llmValidateJsonSchema(schema: any, value: any): any
  */
 export declare function mergeUpdatesInApplyWay(updates: Array<Buffer>): Buffer
 
-/**
- * Check whether a Yjs update binary can be decoded without applying it to a
- * document state.
- */
-export declare function validateDocUpdate(update: Buffer): Promise<boolean>
-
 export declare function mintChallengeResponse(resource: string, bits?: number | undefined | null): Promise<string>
 
 export interface ModelConditionsContract {
@@ -532,7 +592,7 @@ export interface ModelConditionsContract {
 }
 
 export interface ModelRegistryMatchRequest {
-  backendKind: 'openai_chat' | 'openai_responses' | 'anthropic' | 'cloudflare_workers_ai' | 'gemini_api' | 'gemini_vertex' | 'fal' | 'anthropic_vertex'
+  backendKind: 'openai_chat' | 'openai_responses' | 'anthropic' | 'cloudflare_workers_ai' | 'gemini_api' | 'gemini_vertex' | 'fal' | 'anthropic_vertex' | 'deepseek' | 'kimi' | 'opencode_go' | 'opencode_zen'
   cond: ModelConditionsContract
 }
 
@@ -541,7 +601,7 @@ export interface ModelRegistryMatchResponse {
 }
 
 export interface ModelRegistryResolveRequest {
-  backendKind?: 'openai_chat' | 'openai_responses' | 'anthropic' | 'cloudflare_workers_ai' | 'gemini_api' | 'gemini_vertex' | 'fal' | 'anthropic_vertex'
+  backendKind?: 'openai_chat' | 'openai_responses' | 'anthropic' | 'cloudflare_workers_ai' | 'gemini_api' | 'gemini_vertex' | 'fal' | 'anthropic_vertex' | 'deepseek' | 'kimi' | 'opencode_go' | 'opencode_zen'
   modelId: string
 }
 
@@ -552,11 +612,11 @@ export interface ModelRegistryResolveResponse {
 
 export interface ModelRegistryRouteContract {
   protocol?: 'openai_chat' | 'openai_responses' | 'openai_images' | 'anthropic' | 'gemini' | 'fal_image'
-  requestLayer?: 'anthropic' | 'chat_completions' | 'cloudflare_workers_ai' | 'responses' | 'openai_images' | 'fal' | 'vertex' | 'vertex_anthropic' | 'gemini_api' | 'gemini_vertex'
+  requestLayer?: 'anthropic' | 'chat_completions' | 'chat_completions_no_v1' | 'cloudflare_workers_ai' | 'responses' | 'openai_images' | 'fal' | 'vertex' | 'vertex_anthropic' | 'gemini_api' | 'gemini_vertex'
 }
 
 export interface ModelRegistryVariantContract {
-  backendKind: 'openai_chat' | 'openai_responses' | 'anthropic' | 'cloudflare_workers_ai' | 'gemini_api' | 'gemini_vertex' | 'fal' | 'anthropic_vertex'
+  backendKind: 'openai_chat' | 'openai_responses' | 'anthropic' | 'cloudflare_workers_ai' | 'gemini_api' | 'gemini_vertex' | 'fal' | 'anthropic_vertex' | 'deepseek' | 'kimi' | 'opencode_go' | 'opencode_zen'
   canonicalKey: string
   rawModelId: string
   displayName?: string
@@ -564,7 +624,7 @@ export interface ModelRegistryVariantContract {
   legacyAliases?: Array<string>
   capabilities: Array<CapabilityModelCapability>
   protocol?: 'openai_chat' | 'openai_responses' | 'openai_images' | 'anthropic' | 'gemini' | 'fal_image'
-  requestLayer?: 'anthropic' | 'chat_completions' | 'cloudflare_workers_ai' | 'responses' | 'openai_images' | 'fal' | 'vertex' | 'vertex_anthropic' | 'gemini_api' | 'gemini_vertex'
+  requestLayer?: 'anthropic' | 'chat_completions' | 'chat_completions_no_v1' | 'cloudflare_workers_ai' | 'responses' | 'openai_images' | 'fal' | 'vertex' | 'vertex_anthropic' | 'gemini_api' | 'gemini_vertex'
   routeOverrides?: Record<string, ModelRegistryRouteContract>
   behaviorFlags?: Array<string>
 }
@@ -602,6 +662,13 @@ export interface NativePageDocContent {
 export interface NativeWorkspaceDocContent {
   name: string
   avatarKey: string
+}
+
+export declare function parseAuthSessionRefreshToken(token: string): ParsedAuthSessionRefreshToken | null
+
+export interface ParsedAuthSessionRefreshToken {
+  id: string
+  secretHash: string
 }
 
 export interface ParsedDoc {
@@ -911,10 +978,91 @@ export interface RuntimeDocHistoryInput {
   historyMaxAgeMs: number
 }
 
+export interface RuntimeDocumentCleanupAckResult {
+  completed: boolean
+}
+
+export interface RuntimeDocumentCleanupEffect {
+  workspaceId: string
+  docId: string
+  cleanupVersion: string
+  commentObjectsDone: boolean
+  searchDone: boolean
+  copilotDone: boolean
+}
+
+export interface RuntimeDocumentCleanupExecuteResult {
+  scannedCandidates: number
+  serializationRetries: number
+  executed: number
+  recovered: number
+  reset: number
+  failed: number
+  deletedRows: number
+  effects: Array<RuntimeDocumentCleanupEffect>
+}
+
+export interface RuntimeDocumentCleanupReconcileResult {
+  scannedDocs: number
+  marked: number
+  reset: number
+  recovered: number
+}
+
+export interface RuntimeInviteAbuseActionRequired {
+  action: string
+  subjectKey: string
+  evidenceId: string
+  actionId: string
+}
+
+export interface RuntimeInviteAbuseClaimedAction {
+  action: string
+  subjectKey: string
+  evidenceId: string
+  actionId: string
+  actorUserId: string
+  workspaceId: string
+}
+
 export interface RuntimeMagicLinkOtpConsumeResult {
   ok: boolean
   token?: string
   reason?: string
+}
+
+export interface RuntimeMailDeliveryQuotaDecision {
+  allowed: boolean
+  reservationId?: string
+  mailClass: string
+  retryAfterSeconds?: number
+  reason?: string
+  scopeKey?: string
+  windowSeconds?: number
+  limit?: number
+  current?: number
+  requested?: number
+}
+
+export interface RuntimeMailDeliveryQuotaInput {
+  requestId?: string
+  mailName: string
+  recipient: RuntimeMailDeliveryQuotaRecipientInput
+  metadata: RuntimeMailDeliveryQuotaMetadataInput
+  source?: RuntimeQuotaSourceInput
+}
+
+export interface RuntimeMailDeliveryQuotaMetadataInput {
+  actorUserId?: string
+  workspaceId?: string
+  notificationId?: string
+  abuseSubjectKey?: string
+}
+
+export interface RuntimeMailDeliveryQuotaRecipientInput {
+  email: string
+  domain: string
+  userId?: string
 }
 
 export interface RuntimeMultipartUploadInit {
@@ -945,22 +1093,6 @@ export interface RuntimeObjectMetadata {
   checksumCrc32?: string
 }
 
-export interface RuntimeObjectStorageHealth {
-  configured: boolean
-  provider?: string
-  bucket?: string
-  endpoint?: string
-  region?: string
-  hasCredentials: boolean
-  forcePathStyle: boolean
-  requestTimeoutMs?: number
-  minPartSize?: number
-  presignExpiresInSeconds?: number
-  presignSignContentTypeForPut?: boolean
-  usePresignedUrl: boolean
-  clientBuildable: boolean
-}
-
 export interface RuntimeObjectStoragePutOptions {
   contentType?: string
   contentLength?: number
@@ -971,6 +1103,19 @@ export interface RuntimePresignedObjectRequest {
   url: string
   headersJson: string
   expiresAtMs: number
+}
+
+export interface RuntimeQuotaSourceInput {
+  trusted: boolean
+  ip?: string
+  country?: string
+  asn?: number
+  rayId?: string
+}
+
+export interface RuntimeQuotaTargetDomainInput {
+  domain: string
+  count: number
 }
 
 export interface RuntimeVerificationTokenRecord {
@@ -985,6 +1130,33 @@ export interface RuntimeWorkspaceInviteLinkRecord {
   inviteId: string
   inviterUserId: string
   expiresAtMs: number
+}
+
+export interface RuntimeWorkspaceInviteQuotaDecision {
+  allowed: boolean
+  reservationId?: string
+  retryAfterSeconds?: number
+  reason?: string
+  scopeKey?: string
+  windowSeconds?: number
+  limit?: number
+  current?: number
+  requested?: number
+  actionRequired?: RuntimeInviteAbuseActionRequired
+}
+
+export interface RuntimeWorkspaceInviteQuotaInput {
+  actorUserId: string
+  workspaceId: string
+  requestId?: string
+  targetCount: number
+  targetDomains: Array<RuntimeQuotaTargetDomainInput>
+  source?: RuntimeQuotaSourceInput
+}
+
+export interface RuntimeWorkspaceInviteQuotaUsage {
+  targetCount: number
+  targetDomains: Array<RuntimeQuotaTargetDomainInput>
 }
 
 export interface RuntimeWorkspaceStatsDailyRecalibrationResult {
@@ -1041,6 +1213,32 @@ export interface SafeFetchResponse {
   finalUrl: string
   headers: Record<string, string>
   body: Buffer
+}
+
+export declare function scanContentPolicyV1(input: ContentPolicyScanInput): ContentPolicyScanResult
+
+export declare function signAuthSessionAccessToken(userId: string, authSessionId: string, keyId: string, secret: Buffer, issuedAt: number, expiresAt: number): string
+
+export interface StorageProviderCapabilities {
+  put: boolean
+  get: boolean
+  head: boolean
+  list: boolean
+  delete: boolean
+  presignPut: boolean
+  presignGet: boolean
+  multipartDirect: boolean
+  proxyUpload: boolean
+  assetpack: boolean
+  serverMediatedOnly: boolean
+}
+
+export interface StorageRuntimeHealth {
+  started: boolean
+  databaseConnected: boolean
+  providerConfigured: boolean
+  provider?: string
+  bucket?: string
 }
 
 export interface ToolContract {
@@ -1108,5 +1306,13 @@ export declare function updateLicenseSeats(request: LicenseSeatsRequest): Promis
  * A Buffer containing the y-octo update binary to apply to the root doc
  */
 export declare function updateRootDocMetaTitle(rootDocBin: Buffer, docId: string, title: string): Buffer
+
+/**
+ * Check whether a Yjs update binary can be decoded without applying it to a
+ * document state.
+ */
+export declare function validateDocUpdate(update: Buffer): Promise<boolean>
+
+export declare function verifyAuthSessionAccessToken(token: string, expectedKeyId: string, secret: Buffer, now: number): AuthSessionAccessTokenVerification
 
 export declare function verifyChallengeResponse(response: string, bits: number, resource: string): Promise<boolean>

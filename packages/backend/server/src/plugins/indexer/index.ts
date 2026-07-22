@@ -3,6 +3,7 @@ import './config';
 import { Module } from '@nestjs/common';
 
 import { ServerConfigModule } from '../../core/config';
+import { DocStorageModule } from '../../core/doc';
 import { PermissionModule } from '../../core/permission';
 import { QuotaServiceModule } from '../../core/quota';
 import { IndexerEvent } from './event';
@@ -13,7 +14,12 @@ import { IndexerResolver } from './resolver';
 import { IndexerService } from './service';
 
 @Module({
-  imports: [ServerConfigModule, PermissionModule, QuotaServiceModule],
+  imports: [
+    ServerConfigModule,
+    DocStorageModule,
+    PermissionModule,
+    QuotaServiceModule,
+  ],
   providers: [
     IndexerResolver,
     IndexerService,

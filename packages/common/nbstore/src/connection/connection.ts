@@ -186,17 +186,27 @@ export abstract class AutoReconnectConnection<
         return;
       }
 
+      if (signal?.aborted) {
+        reject(signal.reason);
+        return;
+      }
+
       const off = this.onStatusChanged(status => {
         if (status === 'connected') {
           resolve();
-          off();
+          cleanup();
         }
       });
 
-      signal?.addEventListener('abort', reason => {
-        reject(reason);
+      const onAbort = () => {
+        reject(signal?.reason);
+        cleanup();
+      };
+      const cleanup = () => {
         off();
-      });
+        signal?.removeEventListener('abort', onAbort);
+      };
+      signal?.addEventListener('abort', onAbort, { once: true });
     });
   }
 

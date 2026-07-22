@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import {
+  type EffectiveUserQuotaState,
+  type EffectiveWorkspaceQuotaState,
+  PrismaClient,
+} from '@prisma/client';
 
 import { EventBus, OnEvent } from '../../base';
 import { EntitlementService } from '../entitlement';
@@ -23,6 +27,15 @@ declare global {
 
 @Injectable()
 export class QuotaStateService {
+  private readonly userReconciliations = new Map<
+    string,
+    Promise<EffectiveUserQuotaState>
+  >();
+  private readonly workspaceReconciliations = new Map<
+    string,
+    Promise<EffectiveWorkspaceQuotaState>
+  >();
+
   constructor(
     private readonly db: PrismaClient,
     private readonly entitlement: EntitlementService,
@@ -38,6 +51,16 @@ export class QuotaStateService {
   async reconcileUserQuotaState(
     userId: string,
     options: { emit?: boolean } = {}
+  ) {
+    const key = `${userId}:${options.emit ?? true}`;
+    return await this.reconcileOnce(this.userReconciliations, key, () =>
+      this.reconcileUserQuotaStateNow(userId, options)
+    );
+  }
+
+  private async reconcileUserQuotaStateNow(
+    userId: string,
+    options: { emit?: boolean }
   ) {
     const [previous, entitlement, entitlements, resolved, usedStorageQuota] =
       await Promise.all([
@@ -80,6 +103,37 @@ export class QuotaStateService {
   async reconcileWorkspaceQuotaState(
     workspaceId: string,
     options: { emit?: boolean } = {}
+  ) {
+    const key = `${workspaceId}:${options.emit ?? true}`;
+    return await this.reconcileOnce(this.workspaceReconciliations, key, () =>
+      this.reconcileWorkspaceQuotaStateNow(workspaceId, options)
+    );
+  }
+
+  private async reconcileOnce<T>(
+    reconciliations: Map<string, Promise<T>>,
+    key: string,
+    reconcile: () => Promise<T>
+  ) {
+    const existing = reconciliations.get(key);
+    if (existing) {
+      return await existing;
+    }
+
+    const reconciliation = reconcile();
+    reconciliations.set(key, reconciliation);
+    try {
+      return await reconciliation;
+    } finally {
+      if (reconciliations.get(key) === reconciliation) {
+        reconciliations.delete(key);
+      }
+    }
+  }
+
+  private async reconcileWorkspaceQuotaStateNow(
+    workspaceId: string,
+    options: { emit?: boolean }
   ) {
     const owner = await this.getWorkspaceOwner(workspaceId);
     const [

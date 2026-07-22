@@ -311,7 +311,7 @@ mod tests {
     storage
       .set_blob(crate::SetBlob {
         key: "large-blob".to_string(),
-        data: vec![7; 1024 * 1024],
+        data: Into::<crate::Data>::into(vec![7; 1024 * 1024]),
         mime: "application/octet-stream".to_string(),
       })
       .await

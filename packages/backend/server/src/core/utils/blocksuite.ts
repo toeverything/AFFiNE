@@ -45,8 +45,11 @@ export function parsePageDoc(
   );
 }
 
-export function readAllDocIdsFromWorkspaceSnapshot(snapshot: Uint8Array) {
-  return readAllDocIdsFromRootDoc(Buffer.from(snapshot), false);
+export function readAllDocIdsFromWorkspaceSnapshot(
+  snapshot: Uint8Array,
+  includeTrash = false
+) {
+  return readAllDocIdsFromRootDoc(Buffer.from(snapshot), includeTrash);
 }
 
 function safeParseJson<T>(str: string): T | undefined {

@@ -12,7 +12,6 @@ test('backend-runtime provider starts once, runs migrations once, and reports he
     health: Sinon.stub().resolves({
       started: true,
       databaseConnected: true,
-      objectStorageConfigured: true,
     }),
   };
   (provider as any).runtime = runtime;
@@ -25,7 +24,6 @@ test('backend-runtime provider starts once, runs migrations once, and reports he
   t.is(runtime.start.callCount, 2);
   t.is(runtime.runMigrations.callCount, 1);
   t.true(health.databaseConnected);
-  t.true(health.objectStorageConfigured);
   t.is(runtime.stop.callCount, 1);
 });
 

@@ -1,12 +1,8 @@
 import { ModuleRef } from '@nestjs/core';
 import { PrismaClient } from '@prisma/client';
 
-import { Models } from '../../models';
-
 export class BackfillPermissionProjection1765500000000 {
-  static async up(db: PrismaClient, ref: ModuleRef) {
-    const models = ref.get(Models, { strict: false });
-    await models.permissionProjection.backfillLegacyProjection();
+  static async up(db: PrismaClient, _ref: ModuleRef) {
     await ensureWorkspaceAdminStatsDirtyTriggerGuard(db);
     await repairOwnerlessWorkspaces(db);
     await backfillUnknownQuotaRuntimeStates(db);
@@ -133,29 +129,6 @@ async function backfillUnknownQuotaRuntimeStates(db: PrismaClient) {
     DO UPDATE SET
       stale = true,
       updated_at = now()
-  `;
-
-  await db.$executeRaw`
-    INSERT INTO workspace_runtime_states (
-      workspace_id,
-      known,
-      readonly,
-      readonly_reasons,
-      last_reconciled_at,
-      stale_after,
-      updated_at
-    )
-    SELECT
-      workspace_id,
-      false,
-      false,
-      ARRAY[]::text[],
-      NULL,
-      NULL,
-      now()
-    FROM effective_workspace_quota_states
-    ON CONFLICT (workspace_id)
-    DO NOTHING
   `;
 }
 

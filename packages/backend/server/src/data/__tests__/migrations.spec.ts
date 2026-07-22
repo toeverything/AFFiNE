@@ -30,13 +30,13 @@ test.after.always(async t => {
 
 test('permission backfill repairs ownerless workspaces before runtime state projection', async t => {
   const emptyWorkspace = await t.context.db.workspace.create({
-    data: { public: false },
+    data: { accessPolicy: { create: {} } },
   });
   const member = await t.context.models.user.create({
     email: 'member@affine.pro',
   });
   const memberWorkspace = await t.context.db.workspace.create({
-    data: { public: false },
+    data: { accessPolicy: { create: {} } },
   });
   await t.context.db.workspaceMember.create({
     data: {
@@ -79,14 +79,5 @@ test('permission backfill repairs ownerless workspaces before runtime state proj
       },
     }),
     { role: 'owner' }
-  );
-  t.like(
-    await t.context.db.workspaceUserRole.findFirstOrThrow({
-      where: {
-        workspaceId: memberWorkspace.id,
-        userId: member.id,
-      },
-    }),
-    { type: 99 }
   );
 });

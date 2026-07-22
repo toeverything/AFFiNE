@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, createHmac } from 'node:crypto';
 import { mock } from 'node:test';
 
 import {
@@ -6,22 +6,13 @@ import {
   ConfigFactory,
   PROXY_MULTIPART_PATH,
   PROXY_UPLOAD_PATH,
-  StorageProviderConfig,
-  StorageProviderFactory,
-  toBuffer,
+  type R2StorageConfig,
+  SIGNED_URL_EXPIRED,
+  type StorageProviderConfig,
 } from '../../../base';
-import {
-  R2StorageConfig,
-  R2StorageProvider,
-} from '../../../base/storage/providers/r2';
-import { SIGNED_URL_EXPIRED } from '../../../base/storage/providers/utils';
 import { EntitlementService } from '../../../core/entitlement';
-import {
-  CommentAttachmentStorage,
-  WorkspaceBlobStorage,
-} from '../../../core/storage';
 import { MULTIPART_THRESHOLD } from '../../../core/storage/constants';
-import { R2UploadController } from '../../../core/storage/r2-proxy';
+import { StorageRuntimeProvider } from '../../../core/storage-runtime';
 import {
   SubscriptionPlan,
   SubscriptionRecurring,
@@ -29,7 +20,7 @@ import {
 } from '../../../plugins/payment/types';
 import { app, e2e, Mockers } from '../test';
 
-class MockR2Provider extends R2StorageProvider {
+class MockStorageRuntime {
   createMultipartCalls = 0;
   putCalls: {
     key: string;
@@ -46,45 +37,72 @@ class MockR2Provider extends R2StorageProvider {
     contentLength?: number;
   }[] = [];
 
-  constructor(config: R2StorageConfig, bucket: string) {
-    super(config, bucket);
+  async providerCapabilities() {
+    const storage = app.get(Config).storages.blob.storage;
+    const usePresignedURL = (storage.config as R2StorageConfig).usePresignedURL;
+    if (storage.provider !== 'cloudflare-r2') {
+      return {
+        put: true,
+        get: true,
+        head: true,
+        list: true,
+        delete: true,
+        presignPut: false,
+        presignGet: false,
+        multipartDirect: false,
+        proxyUpload: false,
+        assetpack: false,
+        serverMediatedOnly: true,
+      };
+    }
+    return {
+      put: true,
+      get: true,
+      head: true,
+      list: true,
+      delete: true,
+      presignPut: true,
+      presignGet: false,
+      multipartDirect: true,
+      proxyUpload: !!usePresignedURL?.enabled,
+      assetpack: false,
+      serverMediatedOnly: false,
+    };
   }
 
-  destroy() {}
-
-  override async proxyPutObject(
+  async presignPut(
+    _scope: string,
     key: string,
-    body: any,
-    options: { contentType?: string; contentLength?: number } = {}
+    metadata: { contentType?: string; contentLength?: number } = {}
   ) {
-    this.putCalls.push({
-      key,
-      body: await toBuffer(body),
-      contentType: options.contentType,
-      contentLength: options.contentLength,
-    });
+    const storage = app.get(Config).storages.blob.storage;
+    const r2 = storage.config as R2StorageConfig;
+    if (!r2.usePresignedURL?.enabled) {
+      return {
+        url: 'https://test-bucket.r2.example.com/object?X-Amz-Algorithm=AWS4-HMAC-SHA256',
+        headers: {},
+        expiresAt: new Date(Date.now() + SIGNED_URL_EXPIRED * 1000),
+      };
+    }
+    const [workspaceId, blobKey] = key.split('/');
+    return createProxyUrl(
+      PROXY_UPLOAD_PATH,
+      [
+        workspaceId,
+        blobKey,
+        metadata.contentType ?? 'application/octet-stream',
+        metadata.contentLength,
+      ],
+      {
+        workspaceId,
+        key: blobKey,
+        contentType: metadata.contentType ?? 'application/octet-stream',
+        contentLength: metadata.contentLength,
+      }
+    );
   }
 
-  override async proxyUploadPart(
-    key: string,
-    uploadId: string,
-    partNumber: number,
-    body: any,
-    options: { contentLength?: number } = {}
-  ) {
-    const etag = `etag-${partNumber}`;
-    this.partCalls.push({
-      key,
-      uploadId,
-      partNumber,
-      etag,
-      body: await toBuffer(body),
-      contentLength: options.contentLength,
-    });
-    return etag;
-  }
-
-  override async createMultipartUpload() {
+  async createMultipartUpload() {
     this.createMultipartCalls += 1;
     return {
       uploadId: 'upload-id',
@@ -92,7 +110,30 @@ class MockR2Provider extends R2StorageProvider {
     };
   }
 
-  override async listMultipartUploadParts(key: string, uploadId: string) {
+  async presignUploadPart(
+    _scope: string,
+    key: string,
+    uploadId: string,
+    partNumber: number
+  ) {
+    const [workspaceId, blobKey] = key.split('/');
+    return createProxyUrl(
+      PROXY_MULTIPART_PATH,
+      [workspaceId, blobKey, uploadId, partNumber],
+      {
+        workspaceId,
+        key: blobKey,
+        uploadId,
+        partNumber,
+      }
+    );
+  }
+
+  async listMultipartUploadParts(
+    _scope: string,
+    key: string,
+    uploadId: string
+  ) {
     const latest = new Map<number, string>();
     for (const part of this.partCalls) {
       if (part.key !== key || part.uploadId !== uploadId) {
@@ -103,6 +144,45 @@ class MockR2Provider extends R2StorageProvider {
     return [...latest.entries()]
       .sort((left, right) => left[0] - right[0])
       .map(([partNumber, etag]) => ({ partNumber, etag }));
+  }
+
+  async putObject(
+    _scope: string,
+    key: string,
+    body: Buffer,
+    options: { contentType?: string; contentLength?: number } = {}
+  ) {
+    this.putCalls.push({
+      key,
+      body,
+      contentType: options.contentType,
+      contentLength: options.contentLength,
+    });
+    return {
+      contentType: options.contentType ?? 'application/octet-stream',
+      contentLength: options.contentLength ?? body.length,
+      lastModified: new Date(),
+    };
+  }
+
+  async proxyUploadPart(
+    _scope: string,
+    key: string,
+    uploadId: string,
+    partNumber: number,
+    body: Buffer,
+    contentLength?: number
+  ) {
+    const etag = `etag-${partNumber}`;
+    this.partCalls.push({
+      key,
+      uploadId,
+      partNumber,
+      etag,
+      body,
+      contentLength,
+    });
+    return etag;
   }
 }
 
@@ -125,55 +205,40 @@ const baseR2Storage: StorageProviderConfig = {
 };
 
 let defaultBlobStorage: StorageProviderConfig;
-let provider: MockR2Provider | null = null;
-let factoryCreateUnmocked: StorageProviderFactory['create'];
+let runtime: MockStorageRuntime;
 
 e2e.before(() => {
   defaultBlobStorage = structuredClone(app.get(Config).storages.blob.storage);
-  const factory = app.get(StorageProviderFactory);
-  factoryCreateUnmocked = factory.create.bind(factory);
 });
 
 e2e.beforeEach(async () => {
-  provider?.destroy();
-  provider = null;
-
-  const factory = app.get(StorageProviderFactory);
-  mock.method(factory, 'create', (config: StorageProviderConfig) => {
-    if (config.provider === 'cloudflare-r2') {
-      if (!provider) {
-        provider = new MockR2Provider(
-          config.config as R2StorageConfig,
-          config.bucket
-        );
-      }
-      return provider;
-    }
-    return factoryCreateUnmocked(config);
-  });
+  runtime = new MockStorageRuntime();
+  const rt = app.get(StorageRuntimeProvider);
+  for (const method of [
+    'providerCapabilities',
+    'presignPut',
+    'createMultipartUpload',
+    'presignUploadPart',
+    'listMultipartUploadParts',
+    'putObject',
+    'proxyUploadPart',
+  ] as const) {
+    mock.method(rt, method, (...args: any[]) =>
+      (runtime[method] as any)(...args)
+    );
+  }
 
   await useR2Storage();
 });
 
 e2e.afterEach.always(async () => {
   await setBlobStorage(defaultBlobStorage);
-  provider?.destroy();
-  provider = null;
   mock.reset();
 });
 
 async function setBlobStorage(storage: StorageProviderConfig) {
-  provider?.destroy();
-  provider = null;
   const configFactory = app.get(ConfigFactory);
   configFactory.override({ storages: { blob: { storage } } });
-  const blobStorage = app.get(WorkspaceBlobStorage);
-  await blobStorage.onConfigInit();
-  const commentAttachmentStorage = app.get(CommentAttachmentStorage);
-  await commentAttachmentStorage.onConfigInit();
-  const controller = app.get(R2UploadController);
-  // reset cached provider in controller
-  (controller as any).provider = null;
 }
 
 async function useR2Storage(
@@ -193,11 +258,8 @@ async function useR2Storage(
   return storage;
 }
 
-function getProvider(): MockR2Provider {
-  if (!provider) {
-    throw new Error('R2 provider is not initialized');
-  }
-  return provider;
+function getRuntime(): MockStorageRuntime {
+  return runtime;
 }
 
 async function createBlobUpload(
@@ -285,7 +347,7 @@ async function gql<QueryData = any>(
   return res.body.data;
 }
 
-e2e('should proxy single upload with valid signature', async t => {
+e2e.serial('should proxy single upload with valid signature', async t => {
   const { workspace } = await setupWorkspace();
   const buffer = Buffer.from('r2-proxy');
   const key = sha256Base64urlWithPadding(buffer);
@@ -300,6 +362,7 @@ e2e('should proxy single upload with valid signature', async t => {
   t.is(init.method, 'PRESIGNED');
   t.truthy(init.uploadUrl);
   const uploadUrl = new URL(init.uploadUrl, app.url);
+  t.is(uploadUrl.origin, 'https://cdn.example.com');
   t.is(uploadUrl.pathname, PROXY_UPLOAD_PATH);
 
   const res = await app
@@ -309,7 +372,7 @@ e2e('should proxy single upload with valid signature', async t => {
     .send(buffer);
 
   t.is(res.status, 200);
-  const calls = getProvider().putCalls;
+  const calls = getRuntime().putCalls;
   t.is(calls.length, 1);
   t.is(calls[0].key, `${workspace.id}/${key}`);
   t.is(calls[0].contentType, 'text/plain');
@@ -317,7 +380,7 @@ e2e('should proxy single upload with valid signature', async t => {
   t.deepEqual(calls[0].body, buffer);
 });
 
-e2e('should proxy multipart upload and return etag', async t => {
+e2e.serial('should proxy multipart upload and return etag', async t => {
   const { workspace } = await setupWorkspace();
   const key = 'multipart-object';
   const totalSize = MULTIPART_THRESHOLD + 1024;
@@ -329,6 +392,7 @@ e2e('should proxy multipart upload and return etag', async t => {
 
   const part = await getBlobUploadPartUrl(workspace.id, key, init.uploadId, 1);
   const partUrl = new URL(part.uploadUrl, app.url);
+  t.is(partUrl.origin, 'https://cdn.example.com');
   t.is(partUrl.pathname, PROXY_MULTIPART_PATH);
 
   const payload = Buffer.from('part-body');
@@ -340,7 +404,7 @@ e2e('should proxy multipart upload and return etag', async t => {
   t.is(res.status, 200);
   t.is(res.get('etag'), 'etag-1');
 
-  const calls = getProvider().partCalls;
+  const calls = getRuntime().partCalls;
   t.is(calls.length, 1);
   t.is(calls[0].key, `${workspace.id}/${key}`);
   t.is(calls[0].uploadId, 'upload-id');
@@ -349,34 +413,42 @@ e2e('should proxy multipart upload and return etag', async t => {
   t.deepEqual(calls[0].body, payload);
 });
 
-e2e('should resume multipart upload and return uploaded parts', async t => {
-  const { workspace } = await setupWorkspace();
-  const key = 'multipart-resume';
-  const totalSize = MULTIPART_THRESHOLD + 1024;
+e2e.serial(
+  'should resume multipart upload and return uploaded parts',
+  async t => {
+    const { workspace } = await setupWorkspace();
+    const key = 'multipart-resume';
+    const totalSize = MULTIPART_THRESHOLD + 1024;
 
-  const init1 = await createBlobUpload(workspace.id, key, totalSize, 'bin');
-  t.is(init1.method, 'MULTIPART');
-  t.is(init1.uploadId, 'upload-id');
-  t.deepEqual(init1.uploadedParts, []);
-  t.is(getProvider().createMultipartCalls, 1);
+    const init1 = await createBlobUpload(workspace.id, key, totalSize, 'bin');
+    t.is(init1.method, 'MULTIPART');
+    t.is(init1.uploadId, 'upload-id');
+    t.deepEqual(init1.uploadedParts, []);
+    t.is(getRuntime().createMultipartCalls, 1);
 
-  const part = await getBlobUploadPartUrl(workspace.id, key, init1.uploadId, 1);
-  const payload = Buffer.from('part-body');
-  const partUrl = new URL(part.uploadUrl, app.url);
-  await app
-    .PUT(partUrl.pathname + partUrl.search)
-    .set('content-length', payload.length.toString())
-    .send(payload)
-    .expect(200);
+    const part = await getBlobUploadPartUrl(
+      workspace.id,
+      key,
+      init1.uploadId,
+      1
+    );
+    const payload = Buffer.from('part-body');
+    const partUrl = new URL(part.uploadUrl, app.url);
+    await app
+      .PUT(partUrl.pathname + partUrl.search)
+      .set('content-length', payload.length.toString())
+      .send(payload)
+      .expect(200);
 
-  const init2 = await createBlobUpload(workspace.id, key, totalSize, 'bin');
-  t.is(init2.method, 'MULTIPART');
-  t.is(init2.uploadId, 'upload-id');
-  t.deepEqual(init2.uploadedParts, [{ partNumber: 1, etag: 'etag-1' }]);
-  t.is(getProvider().createMultipartCalls, 1);
-});
+    const init2 = await createBlobUpload(workspace.id, key, totalSize, 'bin');
+    t.is(init2.method, 'MULTIPART');
+    t.is(init2.uploadId, 'upload-id');
+    t.deepEqual(init2.uploadedParts, [{ partNumber: 1, etag: 'etag-1' }]);
+    t.is(getRuntime().createMultipartCalls, 1);
+  }
+);
 
-e2e('should reject upload when token is invalid', async t => {
+e2e.serial('should reject upload when token is invalid', async t => {
   const { workspace } = await setupWorkspace();
   const buffer = Buffer.from('payload');
   const init = await createBlobUpload(
@@ -396,10 +468,10 @@ e2e('should reject upload when token is invalid', async t => {
 
   t.is(res.status, 400);
   t.is(res.body.message, 'Invalid upload token');
-  t.is(getProvider().putCalls.length, 0);
+  t.is(getRuntime().putCalls.length, 0);
 });
 
-e2e('should reject upload when url is expired', async t => {
+e2e.serial('should reject upload when url is expired', async t => {
   const { workspace } = await setupWorkspace();
   const buffer = Buffer.from('expired');
   const init = await createBlobUpload(
@@ -422,10 +494,10 @@ e2e('should reject upload when url is expired', async t => {
 
   t.is(res.status, 400);
   t.is(res.body.message, 'Upload URL expired');
-  t.is(getProvider().putCalls.length, 0);
+  t.is(getRuntime().putCalls.length, 0);
 });
 
-e2e(
+e2e.serial(
   'should fall back to direct presign when custom domain is disabled',
   async t => {
     await useR2Storage({
@@ -449,7 +521,7 @@ e2e(
   }
 );
 
-e2e(
+e2e.serial(
   'should still fallback to graphql when provider does not support presign',
   async t => {
     await setBlobStorage({
@@ -472,6 +544,40 @@ e2e(
     t.is(init.method, 'GRAPHQL');
   }
 );
+
+function createProxyUrl(
+  path: string,
+  canonicalFields: (string | number | undefined)[],
+  query: Record<string, string | number | undefined>
+) {
+  const signKey = (
+    app.get(Config).storages.blob.storage.config as R2StorageConfig
+  ).usePresignedURL?.signKey;
+  if (!signKey) {
+    throw new Error('missing R2 proxy sign key');
+  }
+  const exp = Math.floor(Date.now() / 1000) + SIGNED_URL_EXPIRED;
+  const canonical = [
+    path,
+    ...canonicalFields.map(field =>
+      field === undefined ? '' : field.toString()
+    ),
+    exp.toString(),
+  ].join('\n');
+  const token = createHmac('sha256', signKey)
+    .update(canonical)
+    .digest('base64');
+
+  const url = new URL(`http://localhost${path}`);
+  for (const [key, value] of Object.entries(query)) {
+    if (value !== undefined) {
+      url.searchParams.set(key, value.toString());
+    }
+  }
+  url.searchParams.set('exp', exp.toString());
+  url.searchParams.set('token', `${exp}-${token}`);
+  return { url: url.pathname + url.search, expiresAt: new Date(exp * 1000) };
+}
 
 function sha256Base64urlWithPadding(buffer: Buffer) {
   return createHash('sha256')

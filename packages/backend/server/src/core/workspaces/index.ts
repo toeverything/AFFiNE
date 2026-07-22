@@ -9,6 +9,10 @@ import { PermissionModule } from '../permission';
 import { QuotaModule } from '../quota';
 import { StorageModule } from '../storage';
 import { UserModule } from '../user';
+import {
+  InviteAbuseDispositionService,
+  InviteQuotaAssertService,
+} from './abuse';
 import { WorkspacesController } from './controller';
 import { WorkspaceEvents } from './event';
 import { WorkspaceRealtimeModule } from './realtime.module';
@@ -46,6 +50,8 @@ import { WorkspaceStatsJob } from './stats.job';
     DocHistoryResolver,
     WorkspaceBlobResolver,
     WorkspaceService,
+    InviteAbuseDispositionService,
+    InviteQuotaAssertService,
     WorkspaceEvents,
     AdminWorkspaceResolver,
     WorkspaceStatsJob,
@@ -54,6 +60,11 @@ import { WorkspaceStatsJob } from './stats.job';
 })
 export class WorkspaceModule {}
 
+export {
+  getAbuseRequestSource,
+  InviteAbuseDispositionService,
+  InviteQuotaAssertService,
+} from './abuse';
 export { WorkspaceRealtimeModule } from './realtime.module';
 export { WorkspaceService } from './service';
 export { InvitationType, WorkspaceType } from './types';

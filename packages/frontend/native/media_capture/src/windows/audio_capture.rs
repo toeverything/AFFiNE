@@ -200,7 +200,6 @@ fn emit_mixed_frames(
   }
 }
 
-#[napi]
 pub struct AudioCaptureSession {
   mic_stream: Option<cpal::Stream>,
   lb_stream: Option<cpal::Stream>,
@@ -258,25 +257,20 @@ where
   }
 }
 
-#[napi]
 impl AudioCaptureSession {
-  #[napi(getter)]
   pub fn get_sample_rate(&self) -> f64 {
     self.sample_rate.0 as f64
   }
 
-  #[napi(getter)]
   pub fn get_channels(&self) -> u32 {
     self.channels
   }
 
-  #[napi(getter)]
   pub fn get_actual_sample_rate(&self) -> f64 {
     // For CPAL we always operate at the target rate which is sample_rate
     self.sample_rate.0 as f64
   }
 
-  #[napi]
   pub fn stop(&mut self) -> Result<()> {
     teardown_audio_capture_resources(
       &mut self.mic_stream,

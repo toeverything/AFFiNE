@@ -1,18 +1,24 @@
 import { Global, Module } from '@nestjs/common';
 
-import { BackendRuntimeBlobJob } from './blob-job';
 import { BackendRuntimeHousekeepingJob } from './job';
 import { BackendRuntimeProvider } from './provider';
 
 @Global()
 @Module({
-  providers: [
-    BackendRuntimeProvider,
-    BackendRuntimeBlobJob,
-    BackendRuntimeHousekeepingJob,
-  ],
-  exports: [BackendRuntimeProvider, BackendRuntimeBlobJob],
+  providers: [BackendRuntimeProvider, BackendRuntimeHousekeepingJob],
+  exports: [BackendRuntimeProvider],
 })
 export class BackendRuntimeModule {}
 
-export { BackendRuntimeProvider } from './provider';
+export {
+  BackendRuntimeProvider,
+  type RuntimeInviteAbuseAction,
+  type RuntimeInviteAbuseClaimedAction,
+  type RuntimeMailDeliveryQuotaDecision,
+  type RuntimeMailDeliveryQuotaInput,
+  type RuntimeQuotaSourceInput,
+  type RuntimeQuotaTargetDomainInput,
+  type RuntimeWorkspaceInviteQuotaDecision,
+  type RuntimeWorkspaceInviteQuotaInput,
+  type RuntimeWorkspaceInviteQuotaUsage,
+} from './provider';
