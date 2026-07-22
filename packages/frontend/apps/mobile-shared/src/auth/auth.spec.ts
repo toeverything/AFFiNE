@@ -1,8 +1,70 @@
-import { describe, expect, test, vi } from 'vitest';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 
 import { MessagePortAuthProvider, serveAuthRequests } from './channel';
 import { canonicalAuthEndpoint, shouldRefreshAccessToken } from './endpoint';
-import { createAuthFetch } from './request';
+import { createAuthFetch, installAuthRequestProxy } from './request';
+
+function stubXMLHttpRequest(completeOnSend = false) {
+  const send = vi.fn();
+  const abort = vi.fn();
+  const instances = new Set<FakeXMLHttpRequest>();
+
+  class FakeXMLHttpRequest extends EventTarget {
+    static readonly DONE = 4;
+    readyState = 0;
+    status = 0;
+    responseType: XMLHttpRequestResponseType = '';
+    response: unknown;
+    responseText = '';
+    timeout = 0;
+    withCredentials = false;
+
+    constructor() {
+      super();
+      instances.add(this);
+    }
+
+    open() {
+      this.readyState = 1;
+    }
+
+    setRequestHeader() {}
+
+    send(body?: Document | XMLHttpRequestBodyInit | null) {
+      send(body);
+      if (completeOnSend) {
+        this.readyState = FakeXMLHttpRequest.DONE;
+        this.dispatchEvent(new Event('loadend'));
+      }
+    }
+
+    abort() {
+      abort();
+      this.dispatchEvent(new Event('abort'));
+      this.dispatchEvent(new Event('loadend'));
+    }
+  }
+
+  vi.stubGlobal('XMLHttpRequest', FakeXMLHttpRequest);
+  return {
+    send,
+    abort,
+    respond(status: number, responseText: string) {
+      const current = [...instances].at(-1);
+      if (!current) throw new Error('No XMLHttpRequest instance');
+      current.status = status;
+      current.responseText = responseText;
+      current.readyState = FakeXMLHttpRequest.DONE;
+      current.dispatchEvent(new Event('readystatechange'));
+      current.dispatchEvent(new Event('load'));
+      current.dispatchEvent(new Event('loadend'));
+    },
+  };
+}
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 describe('canonicalAuthEndpoint', () => {
   test.each([
@@ -98,6 +160,108 @@ describe('auth request fetch', () => {
     expect(
       (rawFetch.mock.calls[0][0] as Request).headers.has('Authorization')
     ).toBe(false);
+  });
+});
+
+describe('auth request XMLHttpRequest', () => {
+  test('does not send after abort while waiting for a token', async () => {
+    let resolveToken: (token: string | null) => void = () => {};
+    const token = new Promise<string | null>(resolve => {
+      resolveToken = resolve;
+    });
+    const xhrCalls = stubXMLHttpRequest();
+    installAuthRequestProxy({
+      getValidAccessToken: vi.fn(() => token),
+      refreshAccessToken: vi.fn(async () => 'refreshed-token'),
+    });
+    const xhr = new XMLHttpRequest();
+
+    xhr.open('POST', 'https://example.com/graphql');
+    xhr.send('body');
+    xhr.abort();
+    resolveToken('access-token');
+    await Promise.resolve();
+
+    expect(xhrCalls.abort).toHaveBeenCalledOnce();
+    expect(xhrCalls.send).not.toHaveBeenCalled();
+  });
+
+  test('does not send a stale body after reopening', async () => {
+    const tokenResolvers: ((token: string | null) => void)[] = [];
+    const xhrCalls = stubXMLHttpRequest();
+    installAuthRequestProxy({
+      getValidAccessToken: vi.fn(
+        () =>
+          new Promise<string | null>(resolve => {
+            tokenResolvers.push(resolve);
+          })
+      ),
+      refreshAccessToken: vi.fn(async () => 'refreshed-token'),
+    });
+    const xhr = new XMLHttpRequest();
+
+    xhr.open('POST', 'https://example.com/first');
+    xhr.send('first-body');
+    xhr.open('POST', 'https://example.com/second');
+    xhr.send('second-body');
+    tokenResolvers[1](null);
+    tokenResolvers[0](null);
+    await Promise.resolve();
+
+    expect(xhrCalls.send).toHaveBeenCalledOnce();
+    expect(xhrCalls.send).toHaveBeenCalledWith('second-body');
+  });
+
+  test('uses the native lifecycle when token lookup fails', async () => {
+    const xhrCalls = stubXMLHttpRequest(true);
+    installAuthRequestProxy({
+      getValidAccessToken: vi.fn(async () => {
+        throw new Error('token lookup failed');
+      }),
+      refreshAccessToken: vi.fn(async () => 'refreshed-token'),
+    });
+    const xhr = new XMLHttpRequest();
+    const loadend = vi.fn();
+    xhr.addEventListener('loadend', loadend);
+
+    xhr.open('POST', 'https://example.com/graphql');
+    xhr.send('body');
+    await vi.waitFor(() => expect(xhrCalls.send).toHaveBeenCalledWith('body'));
+
+    expect(xhr.readyState).toBe(XMLHttpRequest.DONE);
+    expect(loadend).toHaveBeenCalledOnce();
+  });
+
+  test('preserves abort lifecycle while waiting to replay', async () => {
+    let resolveRefresh: (token: string) => void = () => {};
+    const refresh = new Promise<string>(resolve => {
+      resolveRefresh = resolve;
+    });
+    const xhrCalls = stubXMLHttpRequest();
+    const provider = {
+      getValidAccessToken: vi.fn(async () => null),
+      refreshAccessToken: vi.fn(() => refresh),
+    };
+    installAuthRequestProxy(provider);
+    const xhr = new XMLHttpRequest();
+    const loadend = vi.fn();
+    xhr.addEventListener('loadend', loadend);
+
+    xhr.open('POST', 'https://example.com/graphql');
+    xhr.send('body');
+    await vi.waitFor(() => expect(xhrCalls.send).toHaveBeenCalledOnce());
+    xhrCalls.respond(
+      401,
+      JSON.stringify({ code: 'ACCESS_TOKEN_EXPIRED' })
+    );
+    expect(provider.refreshAccessToken).toHaveBeenCalledOnce();
+
+    xhr.abort();
+    resolveRefresh('refreshed-token');
+    await Promise.resolve();
+
+    expect(loadend).toHaveBeenCalledOnce();
+    expect(xhrCalls.send).toHaveBeenCalledOnce();
   });
 });
 

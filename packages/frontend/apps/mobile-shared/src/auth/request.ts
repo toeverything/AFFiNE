@@ -70,6 +70,7 @@ export function installAuthRequestProxy(provider: AuthRequestProvider) {
     private requestBody?: Document | XMLHttpRequestBodyInit | null;
     private replaying = false;
     private hasReplayed = false;
+    private sendVersion = 0;
 
     constructor() {
       super();
@@ -116,6 +117,7 @@ export function installAuthRequestProxy(provider: AuthRequestProvider) {
       username?: string | null,
       password?: string | null
     ): void {
+      this.sendVersion++;
       this.request = { method, url, async, username, password };
       this.headers.clear();
       this.requestBody = undefined;
@@ -142,21 +144,26 @@ export function installAuthRequestProxy(provider: AuthRequestProvider) {
       const endpoint = authEndpointForUrl(
         requestUrl ?? globalThis.location.href
       );
+      const sendVersion = this.sendVersion;
+
+      const sendWithToken = (token: string | null) => {
+        if (sendVersion !== this.sendVersion) return;
+        if (token) {
+          super.setRequestHeader('Authorization', `Bearer ${token}`);
+        }
+        super.send(body);
+      };
 
       (endpoint
         ? provider.getValidAccessToken(endpoint)
         : Promise.resolve(null)
-      )
-        .then(token => {
-          if (token) {
-            super.setRequestHeader('Authorization', `Bearer ${token}`);
-          }
-          return super.send(body);
-        })
-        .catch(() => {
-          this.dispatchEvent(new Event('error'));
-          this.dispatchEvent(new Event('loadend'));
-        });
+      ).then(sendWithToken, () => sendWithToken(null));
+    }
+
+    override abort(): void {
+      this.sendVersion++;
+      this.replaying = false;
+      super.abort();
     }
 
     private async replayWithFreshToken() {
@@ -164,8 +171,10 @@ export function installAuthRequestProxy(provider: AuthRequestProvider) {
       if (!request) return this.failReplay();
       const endpoint = authEndpointForUrl(request.url);
       if (!endpoint) return this.failReplay();
+      const sendVersion = this.sendVersion;
       try {
         const token = await provider.refreshAccessToken(endpoint);
+        if (sendVersion !== this.sendVersion) return;
         const responseType = this.responseType;
         const timeout = this.timeout;
         const withCredentials = this.withCredentials;
@@ -188,7 +197,9 @@ export function installAuthRequestProxy(provider: AuthRequestProvider) {
         this.withCredentials = withCredentials;
         super.send(this.requestBody);
       } catch {
-        this.failReplay();
+        if (sendVersion === this.sendVersion) {
+          this.failReplay();
+        }
       }
     }
 

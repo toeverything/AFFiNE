@@ -50,7 +50,21 @@ export async function openNavigationPanelNodeMenu(page: Page, node: Locator) {
   return menu;
 }
 
-export async function swipeNavigationPanelNode(page: Page, node: Locator) {
+export async function openNavigationPanelNodeSwipeMenu(
+  page: Page,
+  node: Locator
+) {
+  if (page.context().browser()?.browserType().name() !== 'chromium') {
+    await node
+      .getByTestId('swipe-menu-trigger')
+      .evaluate(button =>
+        button.dispatchEvent(
+          new MouseEvent('click', { bubbles: true, cancelable: true })
+        )
+      );
+    return;
+  }
+
   const box = await node.boundingBox();
   if (!box) throw new Error('Navigation row is not visible');
   const session = await page.context().newCDPSession(page);

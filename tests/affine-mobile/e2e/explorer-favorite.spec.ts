@@ -5,8 +5,8 @@ import { expect } from '@playwright/test';
 
 import {
   expandCollapsibleSection,
+  openNavigationPanelNodeSwipeMenu,
   pageBack,
-  swipeNavigationPanelNode,
 } from './utils';
 
 test('Create new doc in favorites', async ({ page }) => {
@@ -33,7 +33,7 @@ test('Create new doc in favorites', async ({ page }) => {
     page.getByTestId('navigation-panel-doc-add-linked-page')
   ).toBeVisible();
 
-  await swipeNavigationPanelNode(page, node);
+  await openNavigationPanelNodeSwipeMenu(page, node);
   const menu = page.getByRole('dialog');
   await expect(menu).toBeVisible();
   await expect(menu.getByRole('button', { name: 'Duplicate' })).toBeVisible();
