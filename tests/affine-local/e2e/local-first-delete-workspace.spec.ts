@@ -32,9 +32,8 @@ test('Create new workspace, then delete it', async ({ page, workspace }) => {
     .getByTestId('delete-workspace-input')
     .pressSequentially(currentWorkspaceName);
   const promise = page
-    .locator('.affine-notification-center')
-    .first()
-    .waitFor({ state: 'attached' });
+    .getByText('Successfully deleted', { exact: true })
+    .waitFor({ state: 'visible' });
   await page.getByTestId('delete-workspace-confirm-button').click();
   await promise;
   await page.reload();
@@ -61,7 +60,11 @@ test('Delete last workspace', async ({ page }) => {
   await page
     .getByTestId('delete-workspace-input')
     .pressSequentially(currentWorkspaceName as string);
+  const deleted = page
+    .getByText('Successfully deleted', { exact: true })
+    .waitFor({ state: 'visible' });
   await page.getByTestId('delete-workspace-confirm-button').click();
+  await deleted;
   await openHomePage(page);
   await expect(page.getByTestId('new-workspace')).toBeVisible();
   await createLocalWorkspace({ name: 'Test Workspace' }, page, true);

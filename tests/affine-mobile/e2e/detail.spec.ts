@@ -5,7 +5,14 @@ const openDocInfoModal = async (page: Page) => {
   await page.click('[data-testid="detail-page-header-more-button"]');
   await expect(page.getByRole('dialog')).toBeVisible();
 
-  await page.getByRole('menuitem', { name: 'view info' }).click();
+  const viewInfo = page.getByRole('button', { name: 'view info' });
+  const viewInfoBox = await viewInfo.boundingBox();
+  expect(viewInfoBox).not.toBeNull();
+  if (!viewInfoBox) throw new Error('View info action has no layout box');
+  await page.touchscreen.tap(
+    viewInfoBox.x + viewInfoBox.width / 2,
+    viewInfoBox.y + viewInfoBox.height / 2
+  );
   await expect(page.getByTestId('mobile-menu-back-button')).toBeVisible();
 };
 
@@ -26,9 +33,7 @@ test('switch to edgeless mode', async ({ page }) => {
   await page.click('[data-testid="detail-page-header-more-button"]');
   await expect(page.getByRole('dialog')).toBeVisible();
 
-  await page
-    .getByRole('menuitem', { name: 'Default to Edgeless mode' })
-    .click();
+  await page.getByRole('button', { name: 'Default to Edgeless mode' }).click();
   await expect(page.locator('.affine-edgeless-viewport')).toBeVisible();
 });
 
@@ -46,7 +51,7 @@ test('can add text property', async ({ page }) => {
   ).toBeVisible();
 
   await page.getByRole('button', { name: 'Add property' }).click();
-  await page.getByRole('menuitem', { name: 'Text' }).click();
+  await page.getByRole('button', { name: 'Text' }).click();
 
   await expect(
     page.getByTestId('mobile-menu-back-button').last()

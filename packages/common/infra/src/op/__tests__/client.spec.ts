@@ -11,6 +11,7 @@ interface TestOps extends OpSchema {
   bin: [Uint8Array, Uint8Array];
   sub: [Uint8Array, number];
   init: [{ fastText?: boolean } | undefined, { ok: true }];
+  any: [undefined, unknown];
 }
 
 declare module 'vitest' {
@@ -240,6 +241,41 @@ describe('op client', () => {
     expect(data.byteLength).toBe(0);
 
     sub.unsubscribe();
+  });
+
+  it('hydrates worker stacks for calls and observables', async ctx => {
+    const marker = 'WORKER_STACK_MARKER';
+    const remoteError = {
+      name: 'TypeError',
+      message: marker,
+      stacktrace: `TypeError: ${marker}\n    at workerTask (worker.ts:42:7)`,
+    } as unknown as Error;
+
+    const call = ctx.producer.call('any', undefined);
+    ctx.handlers.return({
+      type: 'return',
+      id: 'any:1',
+      error: remoteError,
+    });
+    await expect(call).rejects.toMatchObject({
+      name: 'TypeError',
+      message: marker,
+      stack: expect.stringContaining('worker.ts:42:7'),
+    });
+
+    const observableError = new Promise<unknown>(resolve => {
+      ctx.producer.ob$('any').subscribe({ error: resolve });
+    });
+    ctx.handlers.error({
+      type: 'error',
+      id: 'any:2',
+      error: remoteError,
+    });
+    await expect(observableError).resolves.toMatchObject({
+      name: 'TypeError',
+      message: marker,
+      stack: expect.stringContaining('worker.ts:42:7'),
+    });
   });
 
   it('should unsubscribe subscription op', ctx => {

@@ -51,7 +51,7 @@
   },
   "devDependencies": {
     "@affine-tools/cli": "workspace:*",
-    "@capacitor/cli": "^7.6.5",
+    "@capacitor/cli": "^8.4.2",
     "@eslint/js": "^9.39.2",
     "@faker-js/faker": "^10.1.0",
     "@istanbuljs/schema": "^0.1.3",

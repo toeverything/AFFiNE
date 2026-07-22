@@ -6,12 +6,15 @@
   "sideEffects": false,
   "exports": {
     ".": "./src/index.ts",
+    "./auth/channel": "./src/auth/channel.ts",
     "./auth/endpoint": "./src/auth/endpoint.ts",
+    "./auth/request": "./src/auth/request.ts",
+    "./nbstore/optional": "./src/nbstore/optional.ts",
     "./nbstore/payload": "./src/nbstore/payload.ts"
   },
   "dependencies": {
     "@affine/core": "workspace:*",
-    "@capacitor/core": "^7.0.0"
+    "@capacitor/core": "^8.4.2"
   },
   "devDependencies": {
     "typescript": "^5.9.3",
