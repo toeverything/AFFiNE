@@ -71,7 +71,7 @@ let firstAppDataPromise:
   | Promise<Awaited<ReturnType<typeof buildShowcaseWorkspace>>>
   | undefined;
 
-export async function createFirstAppData(workspacesService: WorkspacesService) {
+export function createFirstAppData(workspacesService: WorkspacesService) {
   if (workspacesService.list.workspaces$.value.length > 0) {
     return;
   }
@@ -91,8 +91,9 @@ export async function createFirstAppData(workspacesService: WorkspacesService) {
     firstAppDataPromise = undefined;
   });
 
-  const { meta, defaultDocId } = await firstAppDataPromise;
-  localStorage.setItem('is-first-open', 'false');
-  logger.info('create first workspace', defaultDocId);
-  return { meta, defaultPageId: defaultDocId };
+  return firstAppDataPromise.then(({ meta, defaultDocId }) => {
+    localStorage.setItem('is-first-open', 'false');
+    logger.info('create first workspace', defaultDocId);
+    return { meta, defaultPageId: defaultDocId };
+  });
 }

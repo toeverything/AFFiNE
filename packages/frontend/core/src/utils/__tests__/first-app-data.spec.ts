@@ -138,7 +138,7 @@ describe('createFirstAppData', () => {
     const { createFirstAppData } = await import('../first-app-data');
     const { service, createMock } = createWorkspacesService();
 
-    await expect(createFirstAppData(service as never)).resolves.toBeUndefined();
+    expect(createFirstAppData(service as never)).toBeUndefined();
     expect(createMock).not.toHaveBeenCalled();
   });
 
@@ -169,7 +169,7 @@ describe('createFirstAppData', () => {
       existing: [{ id: 'existing-workspace', flavour: 'local' }],
     });
 
-    await expect(createFirstAppData(service as never)).resolves.toBeUndefined();
+    expect(createFirstAppData(service as never)).toBeUndefined();
     expect(createMock).not.toHaveBeenCalled();
   });
 

@@ -158,9 +158,12 @@ export const Component = ({
       return;
     }
 
+    const creation = createFirstAppData(workspacesService);
+    if (!creation) return;
+
     setCreateError(false);
     setCreating(true);
-    createFirstAppData(workspacesService)
+    creation
       .then(createdWorkspace => {
         if (createdWorkspace) {
           if (createdWorkspace.defaultPageId) {
