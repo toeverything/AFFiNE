@@ -14,6 +14,7 @@ import {
 import {
   executeAuthSessionRequest,
   getAccessTokenForUrl,
+  initializeAuthSessions,
   isManagedAuthEndpoint,
 } from './auth/auth-session';
 import { buildType, isDev } from './config';
@@ -213,7 +214,9 @@ function allowCors(
   );
 }
 
-export function registerProtocol() {
+export async function registerProtocol() {
+  await initializeAuthSessions();
+
   protocol.handle('assets', request => {
     return handleFileRequest(request);
   });
