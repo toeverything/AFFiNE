@@ -15,10 +15,6 @@ import { SettingDialog } from './setting';
 import { SignInDialog } from './sign-in';
 
 const GLOBAL_DIALOGS = {
-  //   'create-workspace': CreateWorkspaceDialog,
-  //   'import-workspace': ImportWorkspaceDialog,
-  //   'import-template': ImportTemplateDialog,
-  //   import: ImportDialog,
   'sign-in': SignInDialog,
 } satisfies {
   [key in keyof GLOBAL_DIALOG_SCHEMA]?: React.FC<

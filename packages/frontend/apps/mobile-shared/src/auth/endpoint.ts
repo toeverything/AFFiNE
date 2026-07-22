@@ -8,3 +8,7 @@ export function canonicalAuthEndpoint(endpoint: string) {
     return endpoint;
   }
 }
+
+export function shouldRefreshAccessToken(code: unknown) {
+  return code === 'ACCESS_TOKEN_EXPIRED' || code === 'ACCESS_TOKEN_INVALID';
+}
