@@ -250,10 +250,7 @@ describe('auth request XMLHttpRequest', () => {
     xhr.open('POST', 'https://example.com/graphql');
     xhr.send('body');
     await vi.waitFor(() => expect(xhrCalls.send).toHaveBeenCalledOnce());
-    xhrCalls.respond(
-      401,
-      JSON.stringify({ code: 'ACCESS_TOKEN_EXPIRED' })
-    );
+    xhrCalls.respond(401, JSON.stringify({ code: 'ACCESS_TOKEN_EXPIRED' }));
     expect(provider.refreshAccessToken).toHaveBeenCalledOnce();
 
     xhr.abort();
