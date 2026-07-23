@@ -14,6 +14,12 @@ struct ExtractedRef {
   flavour: String,
 }
 
+#[derive(Default)]
+struct ProjectionState {
+  cursor: Option<String>,
+  failed_docs: i64,
+}
+
 async fn load_workspace_doc_ids(pool: &PgPool, workspace_id: &str) -> RuntimeResult<Vec<String>> {
   let mut ids = load_workspace_live_doc_ids(pool, workspace_id).await?;
   let retained = sqlx::query_scalar::<_, String>(
@@ -34,15 +40,16 @@ async fn upsert_projection_checkpoint(
   pool: &PgPool,
   workspace_id: &str,
   result: &RuntimeDocBlobRefsResult,
+  failed_docs: i64,
 ) -> RuntimeResult<()> {
-  let completed = result.next_cursor.is_none();
-  let status = if completed && result.failed_docs == 0 {
-    "completed"
-  } else if result.failed_docs > 0 {
+  let status = if result.next_cursor.is_some() {
+    "running"
+  } else if failed_docs > 0 {
     "failed"
   } else {
-    "running"
+    "completed"
   };
+  let completed = status == "completed";
   sqlx::query(
     r#"
     INSERT INTO storage_reconciliation_checkpoints
@@ -59,9 +66,10 @@ async fn upsert_projection_checkpoint(
   .bind(workspace_id)
   .bind(status)
   .bind(serde_json::json!({ "lastDocId": result.next_cursor }))
-  .bind(completed && result.failed_docs == 0)
+  .bind(completed)
   .bind(serde_json::json!({
     "parserVersion": PARSER_VERSION,
+    "failedDocs": failed_docs,
   }))
   .execute(pool)
   .await
@@ -94,23 +102,39 @@ async fn upsert_projection_failure_checkpoint(pool: &PgPool, workspace_id: &str,
   Ok(())
 }
 
-async fn load_projection_cursor(pool: &PgPool, workspace_id: &str) -> RuntimeResult<Option<String>> {
-  let checkpoint = sqlx::query_as::<_, (String, serde_json::Value)>(
-    "SELECT status, cursor FROM storage_reconciliation_checkpoints WHERE kind = 'doc_blob_refs' AND scope = $1",
+async fn load_projection_state(pool: &PgPool, workspace_id: &str) -> RuntimeResult<ProjectionState> {
+  let checkpoint = sqlx::query_as::<_, (String, serde_json::Value, serde_json::Value)>(
+    "SELECT status, cursor, metadata FROM storage_reconciliation_checkpoints WHERE kind = 'doc_blob_refs' AND scope = \
+     $1",
   )
   .bind(workspace_id)
   .fetch_optional(pool)
   .await
   .map_err(|err| RuntimeError::database("Doc blob refs checkpoint load failed", err))?;
-  Ok(checkpoint.and_then(|(status, cursor)| {
-    if status != "running" {
-      return None;
-    }
-    cursor
-      .get("lastDocId")
-      .and_then(|value| value.as_str())
-      .map(ToString::to_string)
-  }))
+  let Some((status, cursor, metadata)) = checkpoint else {
+    return Ok(ProjectionState::default());
+  };
+  if status != "running" && status != "failed" {
+    return Ok(ProjectionState::default());
+  }
+  if metadata.get("parserVersion").and_then(serde_json::Value::as_i64) != Some(i64::from(PARSER_VERSION)) {
+    return Ok(ProjectionState::default());
+  }
+  let cursor = cursor
+    .get("lastDocId")
+    .and_then(|value| value.as_str())
+    .map(ToString::to_string);
+  let Some(cursor) = cursor else {
+    return Ok(ProjectionState::default());
+  };
+  let failed_docs = metadata
+    .get("failedDocs")
+    .and_then(serde_json::Value::as_i64)
+    .unwrap_or(i64::from(status == "failed"));
+  Ok(ProjectionState {
+    cursor: Some(cursor),
+    failed_docs,
+  })
 }
 
 async fn purge_removed_doc_refs(pool: &PgPool, workspace_id: &str, current_doc_ids: &[String]) -> RuntimeResult<i64> {
@@ -351,11 +375,11 @@ impl StorageRuntime {
         return Err(err.into());
       }
     };
-    let cursor = load_projection_cursor(&pool, &workspace_id).await?;
+    let state = load_projection_state(&pool, &workspace_id).await?;
     let current_doc_ids = doc_ids.clone();
     let doc_ids = doc_ids
       .into_iter()
-      .filter(|doc_id| cursor.as_ref().is_none_or(|cursor| doc_id > cursor))
+      .filter(|doc_id| state.cursor.as_ref().is_none_or(|cursor| doc_id > cursor))
       .collect::<Vec<_>>();
     let has_more = doc_ids.len() > limit as usize;
     let mut total = RuntimeDocBlobRefsResult {
@@ -377,13 +401,14 @@ impl StorageRuntime {
       total.refs_deleted += result.refs_deleted;
       total.failed_docs += result.failed_docs;
     }
+    let failed_docs = state.failed_docs + total.failed_docs;
     if has_more {
       total.next_cursor = last_doc_id;
-    } else if total.failed_docs == 0 {
+    } else if failed_docs == 0 {
       total.refs_deleted += purge_removed_doc_refs(&pool, &workspace_id, &current_doc_ids).await?;
     }
 
-    upsert_projection_checkpoint(&pool, &workspace_id, &total).await?;
+    upsert_projection_checkpoint(&pool, &workspace_id, &total, failed_docs).await?;
 
     Ok(total)
   }
