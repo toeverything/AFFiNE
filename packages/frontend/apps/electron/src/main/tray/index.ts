@@ -25,7 +25,7 @@ import {
 } from '../recording/feature';
 import { MenubarStateKey, MenubarStateSchema } from '../shared-state-schema';
 import { globalStateStorage } from '../shared-storage/storage';
-import { getMainWindow } from '../windows-manager';
+import { showMainWindow } from '../windows-manager';
 import { icons } from './icons';
 export interface TrayMenuConfigItem {
   label: string;
@@ -43,12 +43,10 @@ interface TrayMenuProvider {
   getConfig(): TrayMenuConfig;
 }
 
-function showMainWindow() {
-  getMainWindow()
-    .then(w => {
-      w.show();
-    })
-    .catch(err => logger.error('Failed to show main window:', err));
+function activateMainWindow() {
+  void showMainWindow().catch(err => {
+    logger.error('Failed to show main window:', err);
+  });
 }
 
 function buildMenuConfig(config: TrayMenuConfig): MenuItemConstructorOptions[] {
@@ -109,7 +107,7 @@ class TrayState implements Disposable {
           icon: icons.journal,
           click: () => {
             logger.info('User action: Open Journal');
-            showMainWindow();
+            activateMainWindow();
             applicationMenuSubjects.openJournal$.next();
           },
         },
@@ -118,7 +116,7 @@ class TrayState implements Disposable {
           icon: icons.page,
           click: () => {
             logger.info('User action: New Page');
-            showMainWindow();
+            activateMainWindow();
             applicationMenuSubjects.newPageAction$.next('page');
           },
         },
@@ -127,7 +125,7 @@ class TrayState implements Disposable {
           icon: icons.edgeless,
           click: () => {
             logger.info('User action: New Edgeless');
-            showMainWindow();
+            activateMainWindow();
             applicationMenuSubjects.newPageAction$.next('edgeless');
           },
         },
@@ -232,7 +230,7 @@ class TrayState implements Disposable {
         items.push({
           label: `Meetings Settings...`,
           click: () => {
-            showMainWindow();
+            activateMainWindow();
             applicationMenuSubjects.openInSettingModal$.next({
               activeTab: 'meetings',
             });
@@ -257,19 +255,13 @@ class TrayState implements Disposable {
           label: 'Open AFFiNE',
           click: () => {
             logger.info('User action: Open AFFiNE');
-            getMainWindow()
-              .then(w => {
-                w.show();
-              })
-              .catch(err => {
-                logger.error('Failed to open AFFiNE:', err);
-              });
+            activateMainWindow();
           },
         },
         {
           label: 'Menubar settings...',
           click: () => {
-            showMainWindow();
+            activateMainWindow();
             applicationMenuSubjects.openInSettingModal$.next({
               activeTab: 'appearance',
               scrollAnchor: 'menubar',
@@ -279,7 +271,7 @@ class TrayState implements Disposable {
         {
           label: `About ${app.getName()}`,
           click: () => {
-            showMainWindow();
+            activateMainWindow();
             applicationMenuSubjects.openInSettingModal$.next({
               activeTab: 'about',
             });
@@ -329,7 +321,7 @@ class TrayState implements Disposable {
             TraySettingsState.value.enabled &&
             TraySettingsState.value.openOnLeftClick
           ) {
-            showMainWindow();
+            activateMainWindow();
           } else {
             this.tray?.popUpContextMenu();
           }

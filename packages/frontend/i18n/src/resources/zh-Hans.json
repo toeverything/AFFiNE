@@ -246,7 +246,7 @@
   "com.affine.appearanceSettings.menubar.title": "菜单栏",
   "com.affine.appearanceSettings.menubar.toggle": "启用菜单栏应用",
   "com.affine.appearanceSettings.menubar.description": "在托盘中显示菜单栏应用程序，以便快速访问 AFFiNE 或会议记录。",
-  "com.affine.appearanceSettings.menubar.windowBehavior.title": "Windows行为",
+  "com.affine.appearanceSettings.menubar.windowBehavior.title": "窗口行为",
   "com.affine.appearanceSettings.menubar.windowBehavior.openOnLeftClick.toggle": "点击托盘图标时启动",
   "com.affine.appearanceSettings.menubar.windowBehavior.openOnLeftClick.description": "点击AFFiNE的系统托盘图标时启动AFFiNE。",
   "com.affine.appearanceSettings.menubar.windowBehavior.minimizeToTray.toggle": "最小化到托盘",
