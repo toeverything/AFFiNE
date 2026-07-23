@@ -1089,6 +1089,28 @@ mod tests {
       "completed"
     );
 
+    sqlx::query(
+      "UPDATE storage_reconciliation_checkpoints SET status = 'failed', cursor = '{\"lastDocId\":\"live-doc\"}', \
+       metadata = '{\"parserVersion\":0,\"failedDocs\":99}' WHERE kind = 'doc_blob_refs' AND scope = $1",
+    )
+    .bind(&workspace_id)
+    .execute(&pool)
+    .await?;
+    let parser_upgrade = runtime
+      .rebuild_workspace_doc_blob_refs(workspace_id.clone(), 100)
+      .await
+      .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+    assert_eq!((parser_upgrade.scanned_docs, parser_upgrade.failed_docs), (2, 0));
+    assert_eq!(
+      sqlx::query_scalar::<_, String>(
+        "SELECT status FROM storage_reconciliation_checkpoints WHERE kind = 'doc_blob_refs' AND scope = $1",
+      )
+      .bind(&workspace_id)
+      .fetch_one(&pool)
+      .await?,
+      "completed"
+    );
+
     let second = reconcile_workspace(&runtime, &workspace_id).await?;
     assert_eq!((second.marked, second.reset, second.recovered), (0, 0, 0));
     let unchanged_missing_since = sqlx::query_scalar::<_, DateTime<Utc>>(

@@ -117,6 +117,9 @@ async fn load_projection_state(pool: &PgPool, workspace_id: &str) -> RuntimeResu
   if status != "running" && status != "failed" {
     return Ok(ProjectionState::default());
   }
+  if metadata.get("parserVersion").and_then(serde_json::Value::as_i64) != Some(i64::from(PARSER_VERSION)) {
+    return Ok(ProjectionState::default());
+  }
   let cursor = cursor
     .get("lastDocId")
     .and_then(|value| value.as_str())
