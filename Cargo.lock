@@ -165,6 +165,7 @@ dependencies = [
  "affine_nbstore",
  "affine_preview",
  "affine_sqlite_v1",
+ "bytes",
  "chrono",
  "hex",
  "infer",

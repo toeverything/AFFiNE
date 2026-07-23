@@ -36,6 +36,9 @@ typed-path = { workspace = true }
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 affine_preview = { workspace = true, features = ["mermaid", "typst"] }
 
+[target.'cfg(windows)'.dependencies]
+bytes = { workspace = true }
+
 [target.'cfg(not(target_os = "linux"))'.dependencies]
 mimalloc = { workspace = true }
 
