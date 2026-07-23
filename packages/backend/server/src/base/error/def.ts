@@ -58,6 +58,7 @@ const IncludedEvents = new Set([
   'invalid_oauth_state',
   'oauth_state_expired',
   'oauth_account_already_connected',
+  'oauth_email_domain_not_allowed',
 ]);
 
 export class UserFriendlyError extends Error {
@@ -391,6 +392,12 @@ export const USER_FRIENDLY_ERRORS = {
     type: 'bad_request',
     args: { reason: 'string' },
     message: ({ reason }) => `Invalid OAuth response: ${reason}.`,
+  },
+  oauth_email_domain_not_allowed: {
+    type: 'action_forbidden',
+    args: { domain: 'string' },
+    message: ({ domain }) =>
+      `Email domain \`${domain}\` is not allowed to sign in via OAuth.`,
   },
   invalid_email: {
     type: 'invalid_input',

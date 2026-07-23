@@ -6,6 +6,11 @@ export interface OAuthProviderConfig {
   clientId: string;
   clientSecret?: string;
   args?: Record<string, string>;
+  /**
+   * Only allow sign-in for accounts whose email domain is in this list.
+   * Leave empty/undefined to allow any domain.
+   */
+  allowedDomains?: string[];
 }
 
 export type OIDCArgs = {
@@ -47,6 +52,12 @@ const schema: JSONSchema = {
     clientId: { type: 'string' },
     clientSecret: { type: 'string' },
     args: { type: 'object' },
+    allowedDomains: {
+      type: 'array',
+      items: { type: 'string' },
+      description:
+        'Only allow sign-in for accounts whose email domain is in this list. Leave empty to allow any domain.',
+    },
   },
 };
 

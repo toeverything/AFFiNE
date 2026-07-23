@@ -8,6 +8,7 @@ import {
   InvalidAuthState,
   InvalidOauthCallbackState,
   MissingOauthQueryParameter,
+  OauthEmailDomainNotAllowed,
   OauthStateExpired,
   SignUpForbidden,
   UnknownOauthProvider,
@@ -176,6 +177,7 @@ export class OAuthService {
     }
 
     const externalAccount = await provider.getUser(tokens, state);
+    this.assertAllowedDomain(state.provider, externalAccount.email);
     const user = await this.getOrCreateUserFromOauth(
       state.provider,
       externalAccount,
@@ -187,6 +189,23 @@ export class OAuthService {
       method: 'oauth',
       clientVersion: state.clientVersion,
     };
+  }
+
+  private assertAllowedDomain(provider: OAuthProviderName, email: string) {
+    const allowedDomains =
+      this.config.oauth.providers[provider]?.allowedDomains;
+    if (!allowedDomains || allowedDomains.length === 0) {
+      return;
+    }
+
+    const domain = email.split('@').at(-1)?.toLowerCase();
+    const allowed = allowedDomains.some(
+      allowedDomain => allowedDomain.toLowerCase() === domain
+    );
+
+    if (!domain || !allowed) {
+      throw new OauthEmailDomainNotAllowed({ domain: domain ?? email });
+    }
   }
 
   private async getOrCreateUserFromOauth(

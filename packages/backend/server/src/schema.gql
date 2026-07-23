@@ -1000,7 +1000,7 @@ type EditorType {
   name: String!
 }
 
-union ErrorDataUnion = AlreadyInSpaceDataType | BlobNotFoundDataType | CalendarProviderRequestErrorDataType | CopilotContextFileNotSupportedDataType | CopilotDocNotFoundDataType | CopilotFailedToAddWorkspaceFileEmbeddingDataType | CopilotFailedToGenerateEmbeddingDataType | CopilotFailedToMatchContextDataType | CopilotFailedToMatchGlobalContextDataType | CopilotFailedToModifyContextDataType | CopilotInvalidContextDataType | CopilotMessageNotFoundDataType | CopilotPromptNotFoundDataType | CopilotProviderNotSupportedDataType | CopilotProviderSideErrorDataType | DocActionDeniedDataType | DocHistoryNotFoundDataType | DocNotFoundDataType | DocUpdateBlockedDataType | ExpectToGrantDocUserRolesDataType | ExpectToRevokeDocUserRolesDataType | ExpectToUpdateDocUserRoleDataType | GraphqlBadRequestDataType | HttpRequestErrorDataType | ImageFormatNotSupportedDataType | InvalidAppConfigDataType | InvalidAppConfigInputDataType | InvalidEmailDataType | InvalidHistoryTimestampDataType | InvalidIndexerInputDataType | InvalidLicenseToActivateDataType | InvalidLicenseUpdateParamsDataType | InvalidOauthCallbackCodeDataType | InvalidOauthResponseDataType | InvalidPasswordLengthDataType | InvalidRuntimeConfigTypeDataType | InvalidSearchProviderRequestDataType | MemberNotFoundInSpaceDataType | MentionUserDocAccessDeniedDataType | MissingOauthQueryParameterDataType | NoCopilotProviderAvailableDataType | NoMoreSeatDataType | NotInSpaceDataType | QueryTooLongDataType | ResponseTooLargeErrorDataType | RuntimeConfigNotFoundDataType | SameSubscriptionRecurringDataType | SpaceAccessDeniedDataType | SpaceNotFoundDataType | SpaceOwnerNotFoundDataType | SpaceShouldHaveOnlyOneOwnerDataType | SsrfBlockedErrorDataType | SubscriptionAlreadyExistsDataType | SubscriptionNotExistsDataType | SubscriptionPlanNotFoundDataType | UnknownOauthProviderDataType | UnsupportedClientVersionDataType | UnsupportedServerVersionDataType | UnsupportedSubscriptionPlanDataType | ValidationErrorDataType | VersionRejectedDataType | WorkspacePermissionNotFoundDataType | WrongSignInCredentialsDataType
+union ErrorDataUnion = AlreadyInSpaceDataType | BlobNotFoundDataType | CalendarProviderRequestErrorDataType | CopilotContextFileNotSupportedDataType | CopilotDocNotFoundDataType | CopilotFailedToAddWorkspaceFileEmbeddingDataType | CopilotFailedToGenerateEmbeddingDataType | CopilotFailedToMatchContextDataType | CopilotFailedToMatchGlobalContextDataType | CopilotFailedToModifyContextDataType | CopilotInvalidContextDataType | CopilotMessageNotFoundDataType | CopilotPromptNotFoundDataType | CopilotProviderNotSupportedDataType | CopilotProviderSideErrorDataType | DocActionDeniedDataType | DocHistoryNotFoundDataType | DocNotFoundDataType | DocUpdateBlockedDataType | ExpectToGrantDocUserRolesDataType | ExpectToRevokeDocUserRolesDataType | ExpectToUpdateDocUserRoleDataType | GraphqlBadRequestDataType | HttpRequestErrorDataType | ImageFormatNotSupportedDataType | InvalidAppConfigDataType | InvalidAppConfigInputDataType | InvalidEmailDataType | InvalidHistoryTimestampDataType | InvalidIndexerInputDataType | InvalidLicenseToActivateDataType | InvalidLicenseUpdateParamsDataType | InvalidOauthCallbackCodeDataType | InvalidOauthResponseDataType | InvalidPasswordLengthDataType | InvalidRuntimeConfigTypeDataType | InvalidSearchProviderRequestDataType | MemberNotFoundInSpaceDataType | MentionUserDocAccessDeniedDataType | MissingOauthQueryParameterDataType | NoCopilotProviderAvailableDataType | NoMoreSeatDataType | NotInSpaceDataType | OauthEmailDomainNotAllowedDataType | QueryTooLongDataType | ResponseTooLargeErrorDataType | RuntimeConfigNotFoundDataType | SameSubscriptionRecurringDataType | SpaceAccessDeniedDataType | SpaceNotFoundDataType | SpaceOwnerNotFoundDataType | SpaceShouldHaveOnlyOneOwnerDataType | SsrfBlockedErrorDataType | SubscriptionAlreadyExistsDataType | SubscriptionNotExistsDataType | SubscriptionPlanNotFoundDataType | UnknownOauthProviderDataType | UnsupportedClientVersionDataType | UnsupportedServerVersionDataType | UnsupportedSubscriptionPlanDataType | ValidationErrorDataType | VersionRejectedDataType | WorkspacePermissionNotFoundDataType | WrongSignInCredentialsDataType
 
 enum ErrorNames {
   ACCESS_DENIED
@@ -1115,6 +1115,7 @@ enum ErrorNames {
   NO_COPILOT_PROVIDER_AVAILABLE
   NO_MORE_SEAT
   OAUTH_ACCOUNT_ALREADY_CONNECTED
+  OAUTH_EMAIL_DOMAIN_NOT_ALLOWED
   OAUTH_STATE_EXPIRED
   OWNER_CAN_NOT_LEAVE_WORKSPACE
   PASSWORD_REQUIRED
@@ -1910,6 +1911,10 @@ enum OAuthProviderType {
   GitHub
   Google
   OIDC
+}
+
+type OauthEmailDomainNotAllowedDataType {
+  domain: String!
 }
 
 type PageInfo {

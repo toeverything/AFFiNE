@@ -952,6 +952,93 @@ test('oidc should not fall back to default email claim when custom claim is conf
   );
 });
 
+test('should reject oauth callback when email domain is not allowed', async t => {
+  const { app } = t.context;
+
+  const config = app.get(ConfigFactory);
+  config.override({
+    oauth: {
+      providers: {
+        google: {
+          clientId: 'google-client-id',
+          clientSecret: 'google-client-secret',
+          allowedDomains: ['allowed.example'],
+        },
+      },
+    },
+  });
+  t.teardown(() => {
+    config.override({
+      oauth: {
+        providers: {
+          google: {
+            clientId: 'google-client-id',
+            clientSecret: 'google-client-secret',
+          },
+        },
+      },
+    });
+  });
+
+  const clientNonce = mockOAuthProvider(app, 'someone@blocked.example');
+
+  await app
+    .POST('/api/oauth/callback')
+    .send({ code: '1', state: '1', client_nonce: clientNonce })
+    .expect(HttpStatus.FORBIDDEN)
+    .expect({
+      status: 403,
+      code: 'Forbidden',
+      type: 'ACTION_FORBIDDEN',
+      name: 'OAUTH_EMAIL_DOMAIN_NOT_ALLOWED',
+      message:
+        'Email domain `blocked.example` is not allowed to sign in via OAuth.',
+      data: { domain: 'blocked.example' },
+    });
+
+  t.pass();
+});
+
+test('should allow oauth callback when email domain is in the allowed list', async t => {
+  const { app, db } = t.context;
+
+  const config = app.get(ConfigFactory);
+  config.override({
+    oauth: {
+      providers: {
+        google: {
+          clientId: 'google-client-id',
+          clientSecret: 'google-client-secret',
+          allowedDomains: ['allowed.example'],
+        },
+      },
+    },
+  });
+  t.teardown(() => {
+    config.override({
+      oauth: {
+        providers: {
+          google: {
+            clientId: 'google-client-id',
+            clientSecret: 'google-client-secret',
+          },
+        },
+      },
+    });
+  });
+
+  const email = 'someone@allowed.example';
+  const clientNonce = mockOAuthProvider(app, email);
+
+  await app
+    .POST('/api/oauth/callback')
+    .send({ code: '1', state: '1', client_nonce: clientNonce })
+    .expect(HttpStatus.OK);
+
+  const user = await db.user.findFirst({ where: { email } });
+  t.truthy(user);
+});
+
 test('oidc discovery should remove oauth feature on failure and restore it after backoff retry succeeds', async t => {
   const issuer = 'https://auth.internal/application/o/affine/';
   const { fetchOptions: defaultFetchOptions } = createOidcRegistrationHarness({
