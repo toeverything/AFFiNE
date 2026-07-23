@@ -18,6 +18,7 @@ import { buildWebPreferences } from '../web-preferences';
 const IS_DEV: boolean =
   process.env.NODE_ENV === 'development' && !process.env.CI;
 const DOCK_VISIBILITY_THROTTLE_MS = 1100;
+const FULL_SCREEN_EXIT_TIMEOUT_MS = 2000;
 
 const TraySettingsState = {
   $: globalStateStorage.watch<MenubarStateSchema>(MenubarStateKey).pipe(
@@ -120,6 +121,7 @@ export class MainWindowManager {
   }
 
   private scheduleDockHide(mainWindow: BrowserWindow) {
+    this.cancelPendingDockHide();
     if (!app.dock || !this.shouldHideDock()) {
       return;
     }
@@ -149,7 +151,15 @@ export class MainWindowManager {
 
     if (mainWindow.isFullScreen()) {
       await new Promise<void>(resolve => {
-        mainWindow.once('leave-full-screen', resolve);
+        const done = () => {
+          clearTimeout(timeout);
+          mainWindow.removeListener('leave-full-screen', done);
+          mainWindow.removeListener('closed', done);
+          resolve();
+        };
+        const timeout = setTimeout(done, FULL_SCREEN_EXIT_TIMEOUT_MS);
+        mainWindow.once('leave-full-screen', done);
+        mainWindow.once('closed', done);
         mainWindow.setFullScreen(false);
       });
     }
