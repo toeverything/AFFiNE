@@ -19,22 +19,31 @@ enum ApplicationBridgedWindowScript: String {
   case getCurrentDocId = "window.getCurrentDocId();"
   case getCurrentI18nLocale = "window.getCurrentI18nLocale();"
   case getCurrentThemeMode = "window.getCurrentThemeMode();"
-  case createNewDocByMarkdownInCurrentWorkspace = "return await window.createNewDocByMarkdownInCurrentWorkspace(markdown, title);"
+  case createNewDocByMarkdownInCurrentWorkspace = "return await window.createNewDocByMarkdownInCurrentWorkspace(markdown, title, workspaceId);"
+  case getShareWorkspaceCache = "return await window.getShareWorkspaceCache();"
 
   var requiresAsyncContext: Bool {
     switch self {
-    case .getCurrentDocContentInMarkdown, .createNewDocByMarkdownInCurrentWorkspace: true
-    default: false
+    case .getCurrentDocContentInMarkdown,
+         .createNewDocByMarkdownInCurrentWorkspace,
+         .getShareWorkspaceCache:
+      true
+    default:
+      false
     }
   }
 }
 
 extension WKWebView {
-  func evaluateScript(_ script: ApplicationBridgedWindowScript, callback: @escaping (Any?) -> Void) {
+  func evaluateScript(
+    _ script: ApplicationBridgedWindowScript,
+    arguments: [String: Any] = [:],
+    callback: @escaping (Any?) -> Void
+  ) {
     if script.requiresAsyncContext {
       callAsyncJavaScript(
         script.rawValue,
-        arguments: [:],
+        arguments: arguments,
         in: nil,
         in: .page
       ) { result in
@@ -48,5 +57,29 @@ extension WKWebView {
     } else {
       evaluateJavaScript(script.rawValue) { output, _ in callback(output) }
     }
+  }
+
+  @discardableResult
+  func createDocByMarkdown(
+    markdown: String,
+    title: String,
+    workspaceId: String? = nil,
+    callback: ((Any?) -> Void)? = nil
+  ) -> Bool {
+    var arguments: [String: Any] = [
+      "markdown": markdown,
+      "title": title,
+    ]
+    if let workspaceId, !workspaceId.isEmpty {
+      arguments["workspaceId"] = workspaceId
+    } else {
+      arguments["workspaceId"] = NSNull()
+    }
+    evaluateScript(
+      .createNewDocByMarkdownInCurrentWorkspace,
+      arguments: arguments,
+      callback: { callback?($0) }
+    )
+    return true
   }
 }

@@ -371,14 +371,19 @@ registerNativeImageFilesPicker(async () => {
 };
 (window as any).createNewDocByMarkdownInCurrentWorkspace = async (
   markdown: string,
-  title: string
+  title: string,
+  workspaceId?: string
 ) => {
   const globalContextService = frameworkProvider.get(GlobalContextService);
   const currentWorkspaceId =
     globalContextService.globalContext.workspaceId.get();
+  const targetWorkspaceId =
+    typeof workspaceId === 'string' && workspaceId.length > 0
+      ? workspaceId
+      : currentWorkspaceId;
   const workspacesService = frameworkProvider.get(WorkspacesService);
-  const workspaceRef = currentWorkspaceId
-    ? workspacesService.openByWorkspaceId(currentWorkspaceId)
+  const workspaceRef = targetWorkspaceId
+    ? workspacesService.openByWorkspaceId(targetWorkspaceId)
     : null;
 
   try {
@@ -408,6 +413,24 @@ registerNativeImageFilesPicker(async () => {
   } finally {
     workspaceRef?.dispose();
   }
+};
+(window as any).getShareWorkspaceCache = async () => {
+  const globalContextService = frameworkProvider.get(GlobalContextService);
+  const workspacesService = frameworkProvider.get(WorkspacesService);
+  const lastWorkspaceId =
+    globalContextService.globalContext.workspaceId.get() ?? null;
+  const workspaces = workspacesService.list.workspaces$.value.map(meta => {
+    const profile = workspacesService.getProfile(meta);
+    const name = profile.name$.value || meta.id;
+    return {
+      id: meta.id,
+      name,
+    };
+  });
+  return {
+    lastWorkspaceId,
+    workspaces,
+  };
 };
 (window as any).getSubscriptionState = async () => {
   const globalContextService = frameworkProvider.get(GlobalContextService);
