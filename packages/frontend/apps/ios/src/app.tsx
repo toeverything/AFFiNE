@@ -375,23 +375,48 @@ registerNativeImageFilesPicker(async () => {
   workspaceId?: string
 ) => {
   const globalContextService = frameworkProvider.get(GlobalContextService);
-  const currentWorkspaceId =
-    globalContextService.globalContext.workspaceId.get();
-  const targetWorkspaceId =
-    typeof workspaceId === 'string' && workspaceId.length > 0
-      ? workspaceId
-      : currentWorkspaceId;
   const workspacesService = frameworkProvider.get(WorkspacesService);
-  const workspaceRef = targetWorkspaceId
-    ? workspacesService.openByWorkspaceId(targetWorkspaceId)
-    : null;
+
+  const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+  const resolveTargetWorkspaceId = async (): Promise<string | null> => {
+    const preferred =
+      typeof workspaceId === 'string' && workspaceId.length > 0
+        ? workspaceId
+        : null;
+    // Cold start: wait until workspace list / current context is ready.
+    for (let i = 0; i < 40; i++) {
+      if (preferred) {
+        const meta = workspacesService.list.workspace$(preferred).value;
+        if (meta) {
+          return preferred;
+        }
+      }
+      const current = globalContextService.globalContext.workspaceId.get();
+      if (current) {
+        return preferred ?? current;
+      }
+      const first = workspacesService.list.workspaces$.value[0]?.id;
+      if (!preferred && first) {
+        return first;
+      }
+      await wait(500);
+    }
+    return preferred ?? globalContextService.globalContext.workspaceId.get();
+  };
+
+  const targetWorkspaceId = await resolveTargetWorkspaceId();
+  if (!targetWorkspaceId) {
+    return null;
+  }
+
+  const workspaceRef = workspacesService.openByWorkspaceId(targetWorkspaceId);
+  if (!workspaceRef) {
+    return null;
+  }
 
   try {
-    const workspace = workspaceRef?.workspace;
-    if (!workspace) {
-      return;
-    }
-
+    const workspace = workspaceRef.workspace;
     const workbench = workspace.scope.get(WorkbenchService).workbench;
     await workspace.engine.doc.waitForDocReady(workspace.id); // wait for root doc ready
     const docId = await MarkdownTransformer.importMarkdownToDoc({
@@ -406,12 +431,21 @@ registerNativeImageFilesPicker(async () => {
       await docsService.changeDocTitle(docId, title);
       docsService.list.setPrimaryMode(docId, 'page');
       workbench.openDoc(docId);
+      // Ensure UI navigates into the new doc on cold start / workspace home.
+      try {
+        await router.navigate(`/workspace/${targetWorkspaceId}/${docId}`);
+      } catch (error) {
+        console.error('Failed to navigate to shared doc', error);
+      }
+      // Delay release so route mount can retain the pooled workspace.
+      setTimeout(() => workspaceRef.dispose(), 1500);
       return docId;
     } else {
       throw new Error('Failed to import doc');
     }
-  } finally {
-    workspaceRef?.dispose();
+  } catch (error) {
+    workspaceRef.dispose();
+    throw error;
   }
 };
 (window as any).getShareWorkspaceCache = async () => {

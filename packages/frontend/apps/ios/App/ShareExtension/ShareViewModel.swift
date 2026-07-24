@@ -40,8 +40,8 @@ final class ShareViewModel: ObservableObject {
     title = built.title
     previewText = built.previewText
     markdown = built.markdown
-    if let imageData = built.imageData {
-      previewImage = UIImage(data: imageData)
+    if let imageFile = built.files.first(where: { $0.embedInMarkdownAsImage }) {
+      previewImage = UIImage(data: imageFile.data)
     }
   }
 
@@ -64,16 +64,16 @@ final class ShareViewModel: ObservableObject {
     var attachments: [ShareInboxAttachment] = []
     var attachmentData: [(ShareInboxAttachment, Data)] = []
 
-    if let imageData = draft.imageData {
-      let fileName = draft.imageFileName ?? "shared.jpg"
-      let relativePath = "\(UUID().uuidString)/\(fileName)"
+    for file in draft.files {
+      let relativePath = "\(UUID().uuidString)/\(file.fileName)"
       let attachment = ShareInboxAttachment(
-        fileName: fileName,
-        mimeType: draft.imageMimeType ?? "image/jpeg",
-        relativePath: relativePath
+        fileName: file.fileName,
+        mimeType: file.mimeType,
+        relativePath: relativePath,
+        placeholder: file.placeholder
       )
       attachments.append(attachment)
-      attachmentData.append((attachment, imageData))
+      attachmentData.append((attachment, file.data))
     }
 
     let item = ShareInboxItem(

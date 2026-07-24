@@ -92,12 +92,8 @@ class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate, Affin
 
   func processShareInboxIfNeeded() {
     ShareInboxImporter.shared.syncWorkspaceCache(from: webView)
-    // Delay slightly so JS bridge APIs are mounted after web content loads.
-    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
-      guard let self else { return }
-      ShareInboxImporter.shared.syncWorkspaceCache(from: self.webView)
-      ShareInboxImporter.shared.processPendingItems(using: self.webView)
-    }
+    // Cold start needs retries until workspace/JS bridge are ready.
+    ShareInboxImporter.shared.processPendingItems(using: webView)
   }
 
   private func checkEligibilityOfIntelligent() {

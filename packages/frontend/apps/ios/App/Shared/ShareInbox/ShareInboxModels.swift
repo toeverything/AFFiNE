@@ -14,6 +14,8 @@ struct ShareInboxAttachment: Codable, Equatable {
   var fileName: String
   var mimeType: String
   var relativePath: String
+  /// Placeholder token embedded in markdown, e.g. attachment://shared-image
+  var placeholder: String
 }
 
 struct ShareInboxItem: Codable, Equatable, Identifiable {
@@ -44,11 +46,17 @@ struct ShareInboxItem: Codable, Equatable, Identifiable {
   }
 }
 
+struct SharePayloadFile: Equatable {
+  var data: Data
+  var mimeType: String
+  var fileName: String
+  var placeholder: String
+  var embedInMarkdownAsImage: Bool
+}
+
 struct SharePayloadDraft: Equatable {
   var title: String
   var markdown: String
   var previewText: String
-  var imageData: Data?
-  var imageMimeType: String?
-  var imageFileName: String?
+  var files: [SharePayloadFile]
 }

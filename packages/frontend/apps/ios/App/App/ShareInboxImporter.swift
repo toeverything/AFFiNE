@@ -13,6 +13,7 @@ final class ShareInboxImporter {
 
   private let store = ShareInboxStore.shared
   private var isProcessing = false
+  private var retryTask: Task<Void, Never>?
 
   private init() {}
 
@@ -34,18 +35,63 @@ final class ShareInboxImporter {
     }
   }
 
+  /// Drain inbox with retries so cold-start has time for JS bridge + workspace bootstrap.
   func processPendingItems(using webView: WKWebView?) {
-    guard let webView, !isProcessing else { return }
-    let items = store.pendingItems()
-    guard !items.isEmpty else { return }
+    guard let webView else { return }
+    guard !store.pendingItems().isEmpty else { return }
+    guard !isProcessing else { return }
 
-    isProcessing = true
-    Task { @MainActor in
+    retryTask?.cancel()
+    retryTask = Task { @MainActor in
+      isProcessing = true
       defer { isProcessing = false }
-      for item in items {
-        let success = await importItem(item, using: webView)
-        if success {
-          store.remove(item)
+
+      // ~30s total budget for cold launch (workspace list + doc engine ready).
+      let maxAttempts = 20
+      for attempt in 0..<maxAttempts {
+        if Task.isCancelled { return }
+
+        syncWorkspaceCache(from: webView)
+
+        let ready = await isBridgeReady(webView)
+        if ready {
+          let items = store.pendingItems()
+          if items.isEmpty { return }
+
+          var remaining = false
+          for item in items {
+            let success = await importItem(item, using: webView)
+            if success {
+              store.remove(item)
+            } else {
+              remaining = true
+            }
+          }
+          if !remaining { return }
+        }
+
+        let delaySeconds = attempt < 5 ? 1.0 : 2.0
+        try? await Task.sleep(nanoseconds: UInt64(delaySeconds * 1_000_000_000))
+      }
+    }
+  }
+
+  private func isBridgeReady(_ webView: WKWebView) async -> Bool {
+    await withCheckedContinuation { continuation in
+      webView.callAsyncJavaScript(
+        """
+        return typeof window.createNewDocByMarkdownInCurrentWorkspace === 'function'
+          && typeof window.getShareWorkspaceCache === 'function';
+        """,
+        arguments: [:],
+        in: nil,
+        in: .page
+      ) { result in
+        switch result {
+        case let .success(value):
+          continuation.resume(returning: (value as? Bool) ?? false)
+        case .failure:
+          continuation.resume(returning: false)
         }
       }
     }
@@ -71,7 +117,12 @@ final class ShareInboxImporter {
       ) { result in
         switch result {
         case let .success(value):
-          continuation.resume(returning: value != nil)
+          // Treat non-empty string docId as success.
+          if let docId = value as? String, !docId.isEmpty {
+            continuation.resume(returning: true)
+          } else {
+            continuation.resume(returning: false)
+          }
         case .failure:
           continuation.resume(returning: false)
         }
