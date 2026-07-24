@@ -86,6 +86,7 @@ export const PromptModal = ({
 
   return (
     <Modal
+      preserveEditingFocusOnAction={BUILD_CONFIG.isMobileEdition}
       contentOptions={{
         className: styles.container,
         onPointerDownOutside: e => {

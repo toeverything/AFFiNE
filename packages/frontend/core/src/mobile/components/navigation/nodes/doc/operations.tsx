@@ -29,34 +29,41 @@ import { useLiveData, useService, useServices } from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
 
 import { DocFrameScope, DocInfoSheet } from '../../../doc-info';
+import { MobileNavigationMenuItems } from '../../menu-host';
 import { DocRenameSubMenu } from './dialog';
 
-export const useNavigationPanelDocNodeOperations = (
+export const useNavigationPanelDocNodeAddLinkedPage = (
   docId: string,
-  options: {
-    openNodeCollapsed: () => void;
-  }
+  openNodeCollapsed: () => void
 ) => {
-  const t = useI18n();
-  const {
-    workbenchService,
-    workspaceService,
-    docsService,
-    compatibleFavoriteItemsAdapter,
-  } = useServices({
+  const { docsService, workspaceService } = useServices({
     DocsService,
-    WorkbenchService,
     WorkspaceService,
-    CompatibleFavoriteItemsAdapter,
   });
+  const { createPage } = usePageHelper(
+    workspaceService.workspace.docCollection
+  );
+  return useAsyncCallback(async () => {
+    const newDoc = createPage();
+    await docsService.addLinkedDoc(docId, newDoc.id);
+    track.$.navigationPanel.docs.createDoc({ control: 'linkDoc' });
+    track.$.navigationPanel.docs.linkDoc({ control: 'createDoc' });
+    openNodeCollapsed();
+  }, [createPage, docId, docsService, openNodeCollapsed]);
+};
+
+export const useNavigationPanelDocNodeOperations = (docId: string) => {
+  const t = useI18n();
+  const { workbenchService, docsService, compatibleFavoriteItemsAdapter } =
+    useServices({
+      DocsService,
+      WorkbenchService,
+      CompatibleFavoriteItemsAdapter,
+    });
 
   const { openConfirmModal } = useConfirmModal();
 
   const docRecord = useLiveData(docsService.list.doc$(docId));
-
-  const { createPage } = usePageHelper(
-    workspaceService.workspace.docCollection
-  );
 
   const favorite = useLiveData(
     useMemo(() => {
@@ -112,15 +119,6 @@ export const useNavigationPanelDocNodeOperations = (
     });
   }, [docId, workbenchService.workbench]);
 
-  const handleAddLinkedPage = useAsyncCallback(async () => {
-    const newDoc = createPage();
-    // TODO: handle timeout & error
-    await docsService.addLinkedDoc(docId, newDoc.id);
-    track.$.navigationPanel.docs.createDoc({ control: 'linkDoc' });
-    track.$.navigationPanel.docs.linkDoc({ control: 'createDoc' });
-    options.openNodeCollapsed();
-  }, [createPage, docId, docsService, options]);
-
   const handleToggleFavoriteDoc = useCallback(() => {
     compatibleFavoriteItemsAdapter.toggle(docId, 'doc');
     track.$.navigationPanel.organize.toggleFavorite({
@@ -139,7 +137,6 @@ export const useNavigationPanelDocNodeOperations = (
   return useMemo(
     () => ({
       favorite,
-      handleAddLinkedPage,
       handleDuplicate,
       handleToggleFavoriteDoc,
       handleOpenInSplitView,
@@ -149,7 +146,6 @@ export const useNavigationPanelDocNodeOperations = (
     }),
     [
       favorite,
-      handleAddLinkedPage,
       handleDuplicate,
       handleMoveToTrash,
       handleOpenInNewTab,
@@ -163,26 +159,28 @@ export const useNavigationPanelDocNodeOperations = (
 export const useNavigationPanelDocNodeOperationsMenu = (
   docId: string,
   options: {
-    openInfoModal: () => void;
-    openNodeCollapsed: () => void;
+    handleAddLinkedPage: () => void;
   }
-): NodeOperation[] => {
+): {
+  operations: NodeOperation[];
+  handleAddLinkedPage: () => void;
+} => {
   const t = useI18n();
+  const { handleAddLinkedPage } = options;
   const {
     favorite,
-    handleAddLinkedPage,
     handleDuplicate,
     handleToggleFavoriteDoc,
     handleOpenInNewTab,
     handleMoveToTrash,
     handleRename,
-  } = useNavigationPanelDocNodeOperations(docId, options);
+  } = useNavigationPanelDocNodeOperations(docId);
 
   const docService = useService(DocsService);
   const docRecord = useLiveData(docService.list.doc$(docId));
   const title = useLiveData(docRecord?.title$);
 
-  return useMemo(
+  const operations = useMemo(
     () => [
       {
         index: 10,
@@ -301,4 +299,28 @@ export const useNavigationPanelDocNodeOperationsMenu = (
       title,
     ]
   );
+
+  return useMemo(
+    () => ({ operations, handleAddLinkedPage }),
+    [handleAddLinkedPage, operations]
+  );
+};
+
+export const NavigationPanelDocNodeMenu = ({
+  docId,
+  handleAddLinkedPage,
+  additionalOperations,
+}: {
+  docId: string;
+  handleAddLinkedPage: () => void;
+  additionalOperations?: NodeOperation[];
+}) => {
+  const { operations } = useNavigationPanelDocNodeOperationsMenu(docId, {
+    handleAddLinkedPage,
+  });
+  const allOperations = useMemo(
+    () => [...operations, ...(additionalOperations ?? [])],
+    [additionalOperations, operations]
+  );
+  return <MobileNavigationMenuItems operations={allOperations} />;
 };

@@ -3,10 +3,10 @@ import { keyframes, style } from '@vanilla-extract/css';
 
 const shineAnimation = keyframes({
   '0%': {
-    backgroundPosition: 'calc(var(--shine-size) * -1) 0, 0 0',
+    transform: 'translateX(-100%)',
   },
   '100%': {
-    backgroundPosition: 'calc(100% + var(--shine-size)) 0, 0 0',
+    transform: 'translateX(100%)',
   },
 });
 export const hotTag = style({
@@ -24,7 +24,6 @@ export const hotTag = style({
   boxShadow: '0px 2px 3px rgba(0,0,0,0.1), 0px 0px 3px rgba(255,0,0, 0.5)',
 
   vars: {
-    '--shine-size': '100px',
     '--shine-color': 'rgba(255,255,255,0.5)',
   },
 
@@ -37,13 +36,22 @@ export const hotTag = style({
       pointerEvents: 'none',
       width: '100%',
       height: '100%',
-      // animate a shine effect
-      animation: `${shineAnimation} 3.6s infinite`,
+      transform: 'translateX(-100%)',
+      animation: `${shineAnimation} 900ms ease-out`,
+      animationFillMode: 'forwards',
 
       backgroundImage: `linear-gradient(90deg, transparent 0%, var(--shine-color) 50%, transparent 100%)`,
       backgroundRepeat: 'no-repeat, no-repeat',
       backgroundSize: '100% 100%',
-      backgroundPosition: 'calc(var(--shine-size) * -1) 0, 0 0',
+    },
+  },
+  '@media': {
+    '(prefers-reduced-motion: reduce)': {
+      selectors: {
+        '&::after': {
+          animation: 'none',
+        },
+      },
     },
   },
 });

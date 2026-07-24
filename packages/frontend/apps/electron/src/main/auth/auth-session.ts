@@ -143,6 +143,16 @@ export function getAuthSessionBroker(endpoint: string) {
   return broker;
 }
 
+export async function initializeAuthSessions() {
+  for (const endpoint of Object.keys(await readStore())) {
+    try {
+      getAuthSessionBroker(endpoint);
+    } catch (error) {
+      logger.error('failed to initialize auth session', endpoint, error);
+    }
+  }
+}
+
 export function isManagedAuthEndpoint(url: string) {
   try {
     const parsed = new URL(url);

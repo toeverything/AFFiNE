@@ -7,10 +7,13 @@ import com.getcapacitor.PluginCall
 import com.getcapacitor.PluginMethod
 import com.getcapacitor.annotation.CapacitorPlugin
 import kotlinx.coroutines.Dispatchers
+import org.json.JSONObject
 import timber.log.Timber
 import uniffi.affine_mobile_native.DocRecord
 import uniffi.affine_mobile_native.SetBlob
 import uniffi.affine_mobile_native.newDocStoragePool
+
+private const val ANDROID_INDEXER_VERSION_OFFSET = 1u
 
 @CapacitorPlugin(name = "NbStoreDocStorage")
 class NbStorePlugin : Plugin() {
@@ -598,10 +601,10 @@ class NbStorePlugin : Plugin() {
             JSObject()
               .put("blockId", block.blockId)
               .put("flavour", block.flavour)
-              .put("content", block.content)
-              .put("blob", block.blob)
-              .put("refDocId", block.refDocId)
-              .put("refInfo", block.refInfo)
+              .put("content", block.content?.let(::JSArray))
+              .put("blob", block.blob?.let(::JSArray))
+              .put("refDocId", block.refDocId?.let(::JSArray))
+              .put("refInfo", block.refInfo?.let(::JSArray))
               .put("parentFlavour", block.parentFlavour)
               .put("parentBlockId", block.parentBlockId)
               .put("additional", block.additional)
@@ -683,7 +686,7 @@ class NbStorePlugin : Plugin() {
         val indexName = call.getStringEnsure("indexName")
         val docId = call.getStringEnsure("docId")
         val text = docStoragePool.ftsGetDocument(id, indexName, docId)
-        call.resolve(JSObject().put("text", text))
+        call.resolve(JSObject().put("text", text ?: JSONObject.NULL))
       } catch (e: Exception) {
         call.reject("Failed to get fts document: ${e.message}", null, e)
       }
@@ -728,7 +731,7 @@ class NbStorePlugin : Plugin() {
   fun ftsIndexVersion(call: PluginCall) {
     launch(Dispatchers.IO) {
       try {
-        val version = docStoragePool.ftsIndexVersion()
+        val version = docStoragePool.ftsIndexVersion() + ANDROID_INDEXER_VERSION_OFFSET
         call.resolve(JSObject().put("indexVersion", version))
       } catch (e: Exception) {
         call.reject("Failed to get fts index version: ${e.message}", null, e)
