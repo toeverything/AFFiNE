@@ -2,6 +2,36 @@ import { canonicalAuthEndpoint } from '@affine/mobile-shared/auth/endpoint';
 
 import { Auth } from './plugins/auth';
 
+type AccessTokenProvider = {
+  getValidAccessToken: (endpoint: string) => Promise<string | null>;
+  refreshAccessToken: (endpoint: string) => Promise<string>;
+};
+
+const defaultAccessTokenProvider: AccessTokenProvider = {
+  async getValidAccessToken(endpoint: string) {
+    const { token } = await Auth.getValidAccessToken({
+      endpoint: canonicalAuthEndpoint(endpoint),
+    });
+    return token ?? null;
+  },
+  async refreshAccessToken(endpoint: string) {
+    const { token } = await Auth.refreshAccessToken({
+      endpoint: canonicalAuthEndpoint(endpoint),
+    });
+    return token;
+  },
+};
+
+let accessTokenProvider: AccessTokenProvider = defaultAccessTokenProvider;
+
+/**
+ * Workers cannot call Capacitor plugins reliably. The nbstore worker should
+ * replace this provider with a MessagePort bridge back to the main thread.
+ */
+export function configureAccessTokenProvider(provider: AccessTokenProvider) {
+  accessTokenProvider = provider;
+}
+
 function authEndpointForUrl(url: string | URL) {
   try {
     const parsed = new URL(url, globalThis.location.origin);
@@ -11,6 +41,37 @@ function authEndpointForUrl(url: string | URL) {
   } catch {
     return null;
   }
+}
+
+function shouldSkipStoredAuthToken(url: string | URL) {
+  try {
+    const { pathname } = new URL(url, globalThis.location.origin);
+    // Socket.IO authenticates via handshake.auth, not Authorization headers.
+    // Skipping avoids hanging worker XHR when Capacitor Auth is unavailable.
+    if (pathname.startsWith('/socket.io')) {
+      return true;
+    }
+    return [
+      '/api/auth/captcha',
+      '/api/auth/magic-link',
+      '/api/auth/open-app/sign-in',
+      '/api/auth/preflight',
+      '/api/auth/session/exchange',
+      '/api/auth/sign-in',
+      '/api/oauth/callback',
+      '/api/oauth/preflight',
+    ].includes(pathname);
+  } catch {
+    return false;
+  }
+}
+
+async function accessTokenForRequest(url: string | URL) {
+  const origin = authEndpointForUrl(url);
+  if (!origin || shouldSkipStoredAuthToken(url)) {
+    return null;
+  }
+  return getValidAccessToken(origin);
 }
 
 /**
@@ -24,21 +85,25 @@ globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
 
   const origin = authEndpointForUrl(request.url);
 
-  const token = origin ? await getValidAccessToken(origin) : null;
+  const token = await accessTokenForRequest(request.url);
   if (token) {
     request.headers.set('Authorization', `Bearer ${token}`);
   }
 
   const response = await rawFetch(request);
-  if (response.status !== 401 || !origin) return response;
+  if (
+    response.status !== 401 ||
+    !origin ||
+    shouldSkipStoredAuthToken(request.url)
+  ) {
+    return response;
+  }
   const body = await response
     .clone()
     .json()
     .catch(() => null);
   if (body?.code !== 'ACCESS_TOKEN_EXPIRED') return response;
-  const { token: refreshed } = await Auth.refreshAccessToken({
-    endpoint: origin,
-  });
+  const refreshed = await accessTokenProvider.refreshAccessToken(origin);
   retry.headers.set('Authorization', `Bearer ${refreshed}`);
   return rawFetch(retry);
 };
@@ -128,9 +193,9 @@ globalThis.XMLHttpRequest = class extends rawXMLHttpRequest {
   override send(body?: Document | XMLHttpRequestBodyInit | null): void {
     this.requestBody = body;
     const requestUrl = xhrRequestUrls.get(this);
-    const origin = authEndpointForUrl(requestUrl ?? globalThis.location.href);
+    const targetUrl = requestUrl ?? globalThis.location.href;
 
-    (origin ? getValidAccessToken(origin) : Promise.resolve(null))
+    accessTokenForRequest(targetUrl)
       .then(token => {
         if (token) {
           super.setRequestHeader('Authorization', `Bearer ${token}`);
@@ -149,7 +214,7 @@ globalThis.XMLHttpRequest = class extends rawXMLHttpRequest {
     const origin = authEndpointForUrl(request.url);
     if (!origin) return this.failReplay();
     try {
-      const { token } = await Auth.refreshAccessToken({ endpoint: origin });
+      const token = await accessTokenProvider.refreshAccessToken(origin);
       const responseType = this.responseType;
       const timeout = this.timeout;
       const withCredentials = this.withCredentials;
@@ -187,10 +252,9 @@ globalThis.XMLHttpRequest = class extends rawXMLHttpRequest {
 export async function getValidAccessToken(
   endpoint: string
 ): Promise<string | null> {
-  const { token } = await Auth.getValidAccessToken({
-    endpoint: canonicalAuthEndpoint(endpoint),
-  });
-  return token ?? null;
+  return accessTokenProvider.getValidAccessToken(
+    canonicalAuthEndpoint(endpoint)
+  );
 }
 
 export async function clearEndpointSession(endpoint: string) {

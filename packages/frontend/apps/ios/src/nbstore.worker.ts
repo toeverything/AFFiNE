@@ -18,7 +18,13 @@ import {
 import { type MessageCommunicapable, OpConsumer } from '@toeverything/infra/op';
 import { AsyncCall } from 'async-call-rpc';
 
+import { configureAccessTokenProvider } from './proxy';
+
+const AUTH_TOKEN_PORT_TIMEOUT_MS = 10_000;
+const AUTH_TOKEN_REQUEST_TIMEOUT_MS = 15_000;
+
 let authTokenPort: MessagePort | undefined;
+const pendingAuthTokenPortResolvers = new Set<(port: MessagePort) => void>();
 const terminalAuthErrors = new Set([
   'ACCESS_TOKEN_INVALID',
   'AUTH_SESSION_EXPIRED',
@@ -36,16 +42,88 @@ const pendingTokenRequests = new Map<
   }
 >();
 
+function waitForAuthTokenPort(timeoutMs = AUTH_TOKEN_PORT_TIMEOUT_MS) {
+  if (authTokenPort) {
+    return Promise.resolve(authTokenPort);
+  }
+
+  return new Promise<MessagePort>((resolve, reject) => {
+    const onReady = (port: MessagePort) => {
+      clearTimeout(timeout);
+      pendingAuthTokenPortResolvers.delete(onReady);
+      resolve(port);
+    };
+    const timeout = setTimeout(() => {
+      pendingAuthTokenPortResolvers.delete(onReady);
+      reject(new Error('AUTH_SESSION_TEMPORARILY_UNAVAILABLE'));
+    }, timeoutMs);
+    pendingAuthTokenPortResolvers.add(onReady);
+  });
+}
+
+function requestAccessToken(
+  endpoint: string,
+  action: 'get' | 'refresh' = 'get'
+) {
+  const id = `${Date.now()}:${Math.random()}`;
+  return waitForAuthTokenPort().then(
+    port =>
+      new Promise<string | null>((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          pendingTokenRequests.delete(id);
+          reject(new Error('AUTH_SESSION_TEMPORARILY_UNAVAILABLE'));
+        }, AUTH_TOKEN_REQUEST_TIMEOUT_MS);
+        pendingTokenRequests.set(id, {
+          resolve: token => {
+            clearTimeout(timeout);
+            resolve(token);
+          },
+          reject: error => {
+            clearTimeout(timeout);
+            reject(error);
+          },
+        });
+        port.postMessage({ id, endpoint, action });
+      })
+  );
+}
+
+async function getValidAccessToken(endpoint: string) {
+  return requestAccessToken(endpoint, 'get');
+}
+
+async function refreshAccessToken(endpoint: string) {
+  const token = await requestAccessToken(endpoint, 'refresh');
+  if (!token) {
+    throw new Error('AUTH_SESSION_TEMPORARILY_UNAVAILABLE');
+  }
+  return token;
+}
+
+// Capacitor plugins are unavailable inside the worker. Route all token reads
+// and refreshes through the main-thread MessagePort bridge.
+configureAccessTokenProvider({
+  getValidAccessToken,
+  refreshAccessToken,
+});
+
 configureSocketAuthMethod((endpoint, cb) => {
   getValidAccessToken(endpoint)
-    .then(token => cb(token ? { token, tokenType: 'jwt' } : {}))
-    .catch(() => cb({ error: 'AUTH_SESSION_TEMPORARILY_UNAVAILABLE' }));
+    .then(token => {
+      cb(token ? { token, tokenType: 'jwt' } : {});
+    })
+    .catch(() => {
+      cb({ error: 'AUTH_SESSION_TEMPORARILY_UNAVAILABLE' });
+    });
 });
 
 globalThis.addEventListener('message', e => {
   if (e.data.type === 'auth-access-token-channel') {
-    authTokenPort = e.ports[0] as MessagePort;
-    authTokenPort.addEventListener('message', e => {
+    const port = e.ports[0] as MessagePort;
+    authTokenPort = port;
+    pendingAuthTokenPortResolvers.forEach(resolve => resolve(port));
+    pendingAuthTokenPortResolvers.clear();
+    port.addEventListener('message', e => {
       const { id, token, error } = e.data as {
         id?: string;
         token?: string | null;
@@ -64,7 +142,7 @@ globalThis.addEventListener('message', e => {
       }
       pendingTokenRequests.delete(id);
     });
-    authTokenPort.start();
+    port.start();
     return;
   }
 
@@ -93,31 +171,6 @@ globalThis.addEventListener('message', e => {
     port.start();
   }
 });
-
-function getValidAccessToken(endpoint: string) {
-  if (!authTokenPort) {
-    return Promise.resolve(null);
-  }
-
-  const id = `${Date.now()}:${Math.random()}`;
-  return new Promise<string | null>((resolve, reject) => {
-    const timeout = setTimeout(() => {
-      pendingTokenRequests.delete(id);
-      reject(new Error('AUTH_SESSION_TEMPORARILY_UNAVAILABLE'));
-    }, 5000);
-    pendingTokenRequests.set(id, {
-      resolve: token => {
-        clearTimeout(timeout);
-        resolve(token);
-      },
-      reject: error => {
-        clearTimeout(timeout);
-        reject(error);
-      },
-    });
-    authTokenPort?.postMessage({ id, endpoint });
-  });
-}
 
 const consumer = new OpConsumer<WorkerManagerOps>(
   globalThis as MessageCommunicapable

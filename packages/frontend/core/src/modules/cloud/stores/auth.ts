@@ -1,5 +1,6 @@
 import {
   deleteAccountMutation,
+  getCurrentUserFeaturesQuery,
   removeAvatarMutation,
   ServerDeploymentType,
   updateUserProfileMutation,
@@ -101,15 +102,21 @@ export class AuthStore extends Store {
     const session = await this.fetchAuthSession();
     if (!session.user) return { user: null };
 
-    const { user } = await this.nbstoreService.realtime.request(
-      'user.profile.get',
-      {}
-    );
-    if (!user || user.id !== session.user.id) {
-      throw new Error('Realtime user profile does not match auth session');
+    const [{ currentUser }, authMethods] = await Promise.all([
+      this.gqlService.gql({ query: getCurrentUserFeaturesQuery }),
+      this.fetchAuthMethods(),
+    ]);
+    if (!currentUser || currentUser.id !== session.user.id) {
+      throw new Error('Current user does not match auth session');
     }
-    const authMethods = await this.fetchAuthMethods();
-    return { user: { ...user, authMethods } };
+
+    return {
+      user: {
+        ...currentUser,
+        hasPassword: authMethods?.password?.bound ?? null,
+        authMethods,
+      },
+    };
   }
 
   private async fetchAuthSession(): Promise<{ user: { id: string } | null }> {

@@ -1,3 +1,4 @@
+import { toast } from '@affine/component';
 import { usePageHelper } from '@affine/core/blocksuite/block-suite-page-list/utils';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { DocsService } from '@affine/core/modules/doc';
@@ -10,6 +11,8 @@ import { useLiveData, useService } from '@toeverything/infra';
 
 import { TabItem } from './tab-item';
 import type { AppTabCustomFCProps } from './type';
+
+const ROOT_DOC_READY_TIMEOUT_MS = 8_000;
 
 export const AppTabCreate = ({ tab }: AppTabCustomFCProps) => {
   const workbench = useService(WorkbenchService).workbench;
@@ -26,9 +29,23 @@ export const AppTabCreate = ({ tab }: AppTabCustomFCProps) => {
     templateDocService.setting.pageTemplateDocId$
   );
 
-  const createPage = useAsyncCallback(
-    async (isActive: boolean) => {
-      if (isActive) return;
+  const createPage = useAsyncCallback(async () => {
+    try {
+      await Promise.race([
+        currentWorkspace.engine.doc.waitForDocLoaded(currentWorkspace.id),
+        new Promise((_, reject) =>
+          window.setTimeout(
+            () => reject(new Error('Workspace root doc is not loaded')),
+            ROOT_DOC_READY_TIMEOUT_MS
+          )
+        ),
+      ]).catch(error => {
+        console.warn(
+          'Workspace root doc is not loaded before creating doc',
+          error
+        );
+      });
+
       if (enablePageTemplate && pageTemplateDocId) {
         const docId =
           await docsService.duplicateFromTemplate(pageTemplateDocId);
@@ -38,9 +55,19 @@ export const AppTabCreate = ({ tab }: AppTabCustomFCProps) => {
         workbench.openDoc({ docId: doc.id, fromTab: 'true' });
       }
       track.$.navigationPanel.$.createDoc();
-    },
-    [docsService, enablePageTemplate, pageHelper, pageTemplateDocId, workbench]
-  );
+    } catch (error) {
+      console.error('Failed to create mobile doc', error);
+      toast('Failed to create doc. Please try again.');
+    }
+  }, [
+    currentWorkspace.engine.doc,
+    currentWorkspace.id,
+    docsService,
+    enablePageTemplate,
+    pageHelper,
+    pageTemplateDocId,
+    workbench,
+  ]);
 
   return (
     <TabItem id={tab.key} onClick={createPage} label="New Page">

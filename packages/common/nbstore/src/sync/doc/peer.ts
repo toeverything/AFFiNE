@@ -177,6 +177,7 @@ export class DocSyncPeer {
     errorMessage: null,
   };
   private readonly statusUpdatedSubject$ = new Subject<string | true>();
+  private activeSignal: AbortSignal | undefined;
 
   private get currentErrorMessage() {
     return (
@@ -280,10 +281,11 @@ export class DocSyncPeer {
           (await this.syncMetadata.getPeerPulledRemoteClock(this.peerId, docId))
             ?.timestamp ?? null;
         const remoteClock = this.status.remoteClocks.get(docId);
-        if (
-          remoteClock &&
-          (pulled === null || pulled.getTime() < remoteClock.getTime())
-        ) {
+        const hasPulled = pulled !== null && pulled.getTime() > 0;
+        const shouldPull = remoteClock
+          ? !hasPulled || pulled.getTime() < remoteClock.getTime()
+          : this.isPriorityDoc(docId) && (!clock || !hasPulled);
+        if (shouldPull) {
           await this.jobs.pull(docId, signal);
         }
       }
@@ -491,6 +493,10 @@ export class DocSyncPeer {
     },
   });
 
+  private isPriorityDoc(docId: string) {
+    return (this.prioritySettings.get(docId) ?? 0) > 0;
+  }
+
   private readonly actions = {
     updateRemoteClock: (docId: string, remoteClock: Date) => {
       if (this.status.docErrors.has(docId)) {
@@ -564,44 +570,61 @@ export class DocSyncPeer {
   };
 
   async mainLoop(signal?: AbortSignal) {
-    while (true) {
-      let shouldRetry = true;
+    this.activeSignal = signal;
+    this.status = {
+      docs: new Set(),
+      connectedDocs: new Set(),
+      docErrors: new Map(),
+      jobDocQueue: new AsyncPriorityQueue(),
+      jobMap: new Map(),
+      remoteClocks: new ClockMap(new Map()),
+      syncing: false,
+      skipped: false,
+      retrying: false,
+      errorMessage: null,
+    };
+    this.statusUpdatedSubject$.next(true);
+    while (this.activeSignal === signal) {
+      let shouldRetry = false;
+      let errorMessage: string | null = null;
       try {
         await this.retryLoop(signal);
       } catch (err) {
-        if (signal?.aborted) {
+        if (signal?.aborted || this.activeSignal !== signal) {
           return;
         }
         shouldRetry = !isRemotePermissionError(err);
+        errorMessage = err instanceof Error ? err.message : `${err}`;
         console.warn(
           shouldRetry
             ? 'Sync error, retry in 5s'
             : 'Sync stopped due to remote permission error',
           err
         );
-        this.status.errorMessage =
-          err instanceof Error ? err.message : `${err}`;
+        this.status.errorMessage = errorMessage;
         this.status.retrying = shouldRetry;
         this.statusUpdatedSubject$.next(true);
       } finally {
-        // reset all status
-        this.status = {
-          docs: new Set(),
-          connectedDocs: new Set(),
-          docErrors: new Map(),
-          jobDocQueue: new AsyncPriorityQueue(),
-          jobMap: new Map(),
-          remoteClocks: new ClockMap(new Map()),
-          syncing: false,
-          skipped: false,
-          // tell ui to show retrying status
-          retrying: shouldRetry,
-          // error message from last retry
-          errorMessage: this.status.errorMessage,
-        };
-        this.statusUpdatedSubject$.next(true);
+        if (!signal?.aborted && this.activeSignal === signal) {
+          // reset all status
+          this.status = {
+            docs: new Set(),
+            connectedDocs: new Set(),
+            docErrors: new Map(),
+            jobDocQueue: new AsyncPriorityQueue(),
+            jobMap: new Map(),
+            remoteClocks: new ClockMap(new Map()),
+            syncing: false,
+            skipped: false,
+            // tell ui to show retrying status
+            retrying: shouldRetry,
+            // error message from last retry
+            errorMessage,
+          };
+          this.statusUpdatedSubject$.next(true);
+        }
       }
-      if (!shouldRetry) {
+      if (signal?.aborted || this.activeSignal !== signal || !shouldRetry) {
         return;
       }
       // wait for 5s before next retry
@@ -623,6 +646,7 @@ export class DocSyncPeer {
   }
 
   private async retryLoop(signal?: AbortSignal) {
+    const rootSignal = signal;
     throwIfAborted(signal);
     if (this.local.isReadonly) {
       // Local is readonly, skip sync
@@ -754,6 +778,14 @@ export class DocSyncPeer {
         this.actions.addDoc(docId);
       }
 
+      // Priority docs, such as the workspace root doc and database docs, must be
+      // bootstrapped even when the remote timestamp list is empty or stale.
+      for (const [docId, priority] of this.prioritySettings) {
+        if (priority > 0) {
+          this.actions.addDoc(docId);
+        }
+      }
+
       // begin to process jobs
 
       while (true) {
@@ -837,7 +869,9 @@ export class DocSyncPeer {
       for (const dispose of disposes) {
         dispose();
       }
-      this.status.syncing = false;
+      if (!rootSignal?.aborted && this.activeSignal === rootSignal) {
+        this.status.syncing = false;
+      }
       console.info('Remote sync ended');
     }
   }
@@ -887,13 +921,18 @@ export class DocSyncPeer {
 
   addPriority(id: string, priority: number) {
     const oldPriority = this.prioritySettings.get(id) ?? 0;
-    this.prioritySettings.set(id, priority);
-    this.status.jobDocQueue.setPriority(id, oldPriority + priority);
+    const newPriority = oldPriority + priority;
+    this.prioritySettings.set(id, newPriority);
+    this.status.jobDocQueue.setPriority(id, newPriority);
+    if (newPriority > 0 && this.status.syncing) {
+      this.actions.addDoc(id);
+    }
 
     return () => {
       const currentPriority = this.prioritySettings.get(id) ?? 0;
-      this.prioritySettings.set(id, currentPriority - priority);
-      this.status.jobDocQueue.setPriority(id, currentPriority - priority);
+      const restoredPriority = currentPriority - priority;
+      this.prioritySettings.set(id, restoredPriority);
+      this.status.jobDocQueue.setPriority(id, restoredPriority);
     };
   }
 

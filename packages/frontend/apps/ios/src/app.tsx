@@ -46,6 +46,7 @@ import {
   requestApplySubscriptionMutation,
 } from '@affine/graphql';
 import { I18n } from '@affine/i18n';
+import { SocketConnection } from '@affine/nbstore/cloud';
 import { StoreManagerClient } from '@affine/nbstore/worker/client';
 import { setTelemetryTransport } from '@affine/track';
 import { Container } from '@blocksuite/affine/global/di';
@@ -86,7 +87,6 @@ setTelemetryTransport(storeManagerClient.telemetry);
 window.addEventListener('beforeunload', () => {
   storeManagerClient.dispose();
 });
-
 const future = {
   v7_startTransition: true,
 } as const;
@@ -178,48 +178,174 @@ framework.impl(HapticProvider, {
   selectionChanged: () => Haptics.selectionChanged(),
   selectionEnd: () => Haptics.selectionEnd(),
 });
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
+const isUserFriendlyErrorResponse = (value: unknown) =>
+  isRecord(value) &&
+  typeof value.type === 'string' &&
+  typeof value.name === 'string' &&
+  typeof value.message === 'string';
+
+const isLocalNetworkProhibitedMessage = (message: string) =>
+  /local network prohibited/i.test(message) ||
+  (/NSURLErrorDomain Code=-1009/i.test(message) &&
+    /192\.168\.|10\.|172\.(1[6-9]|2\d|3[01])\./.test(message));
+
+const localNetworkProhibitedError = () => ({
+  status: 0,
+  code: 'NETWORK_ERROR',
+  type: 'NETWORK_ERROR',
+  name: 'NETWORK_ERROR',
+  message:
+    'iOS is blocking AFFiNE from accessing your local network. Enable Settings > AFFiNE > Local Network, then reopen AFFiNE and connect to the self-hosted server again.',
+});
+
+const parseNativeAuthErrorMessage = (message: string): unknown => {
+  try {
+    const parsed = JSON.parse(message) as unknown;
+    if (isUserFriendlyErrorResponse(parsed)) {
+      return parsed;
+    }
+
+    if (isRecord(parsed)) {
+      const nestedMessage = parsed.message ?? parsed.errorMessage;
+      if (typeof nestedMessage === 'string' && nestedMessage !== message) {
+        return parseNativeAuthErrorMessage(nestedMessage) ?? parsed;
+      }
+    }
+
+    return parsed;
+  } catch {
+    return null;
+  }
+};
+
+const normalizeNativeAuthError = (error: unknown) => {
+  if (isUserFriendlyErrorResponse(error)) {
+    return error;
+  }
+
+  const messages = [
+    typeof error === 'string' ? error : null,
+    error instanceof Error ? error.message : null,
+    isRecord(error) && typeof error.message === 'string' ? error.message : null,
+    isRecord(error) && typeof error.errorMessage === 'string'
+      ? error.errorMessage
+      : null,
+  ].filter((message): message is string => !!message);
+
+  if (messages.some(isLocalNetworkProhibitedMessage)) {
+    return localNetworkProhibitedError();
+  }
+
+  for (const message of messages) {
+    const parsed = parseNativeAuthErrorMessage(message);
+    if (isUserFriendlyErrorResponse(parsed)) {
+      return parsed;
+    }
+  }
+
+  return error;
+};
+
+const runNativeAuth = async <T,>(operation: () => Promise<T>) => {
+  try {
+    return await operation();
+  } catch (error) {
+    throw normalizeNativeAuthError(error);
+  }
+};
+
+const logIOSSync = (event: string, payload?: Record<string, unknown>) => {
+  const message = `[AFFiNE][iOS sync] ${event}`;
+  console.warn(message, payload ?? {});
+  void Auth.debugLog({ message, payload: payload ?? null }).catch(
+    console.error
+  );
+};
+
+const REMOTE_DOC_SYNC_RESET_INTERVAL_MS = 30_000;
+let lastRemoteDocSyncResetAt = 0;
+
 framework.scope(ServerScope).override(AuthProvider, resolver => {
   const serverService = resolver.get(ServerService);
   const endpoint = serverService.server.baseUrl;
+  const resetServerSockets = () => {
+    SocketConnection.resetSharedConnection(endpoint, true);
+    SocketConnection.resetSharedConnection(endpoint, false);
+  };
+  const resetServerSocketsWhenTokenReady = () => {
+    void getValidAccessToken(endpoint)
+      .catch(() => null)
+      .then(token => {
+        resetServerSockets();
+        serverService.server.scope.get(AuthService).session.revalidate();
+        frameworkProvider.get(WorkspacesService).list.revalidate();
+        if (token) {
+          resetCurrentRemoteDocSync('auth-token-ready');
+        }
+      })
+      .catch(console.error);
+  };
   return {
     async signInMagicLink(email, linkToken, clientNonce) {
-      await Auth.signInMagicLink({
-        endpoint,
-        email,
-        token: linkToken,
-        clientNonce,
-      });
+      await runNativeAuth(() =>
+        Auth.signInMagicLink({
+          endpoint,
+          email,
+          token: linkToken,
+          clientNonce,
+        })
+      );
+      resetServerSockets();
+      resetServerSocketsWhenTokenReady();
     },
     async signInOauth(code, state, _provider, clientNonce) {
-      await Auth.signInOauth({
-        endpoint,
-        code,
-        state,
-        clientNonce,
-      });
+      await runNativeAuth(() =>
+        Auth.signInOauth({
+          endpoint,
+          code,
+          state,
+          clientNonce,
+        })
+      );
+      resetServerSockets();
+      resetServerSocketsWhenTokenReady();
       return {};
     },
     async signInPassword(credential) {
-      await Auth.signInPassword({
-        endpoint,
-        ...credential,
-      });
+      const user = await runNativeAuth(() =>
+        Auth.signInPassword({
+          endpoint,
+          ...credential,
+        })
+      );
+      resetServerSockets();
+      resetServerSocketsWhenTokenReady();
+      return user;
     },
     async signInOpenAppSignInCode(code) {
-      await Auth.signInOpenApp({
-        endpoint,
-        code,
-      });
+      await runNativeAuth(() =>
+        Auth.signInOpenApp({
+          endpoint,
+          code,
+        })
+      );
+      resetServerSockets();
+      resetServerSocketsWhenTokenReady();
     },
     async signOut() {
       try {
-        await Auth.signOut({ endpoint });
+        await runNativeAuth(() => Auth.signOut({ endpoint }));
       } finally {
         await clearEndpointSession(endpoint);
+        resetServerSockets();
       }
     },
     async clearSession() {
       await clearEndpointSession(endpoint);
+      resetServerSockets();
     },
   };
 });
@@ -230,6 +356,243 @@ framework.impl(NativePaywallProvider, {
 });
 
 const frameworkProvider = framework.provider();
+
+function getCurrentRemoteWorkspaceContext() {
+  const globalContextService = frameworkProvider.get(GlobalContextService);
+  const globalContext = globalContextService.globalContext;
+  const workspaceId = globalContext.workspaceId.get();
+  const workspaceFlavour = globalContext.workspaceFlavour.get();
+  if (!workspaceId || !workspaceFlavour || workspaceFlavour === 'local') {
+    return null;
+  }
+  const serversService = frameworkProvider.get(ServersService);
+  const server = serversService.server$(workspaceFlavour).value;
+  return { workspaceId, workspaceFlavour, server };
+}
+
+function softReconnectCurrentRemoteSockets(reason: string) {
+  const context = getCurrentRemoteWorkspaceContext();
+  if (!context) {
+    logIOSSync('skip soft reconnect sockets: no remote workspace', { reason });
+    return;
+  }
+  if (!context.server) {
+    logIOSSync('skip soft reconnect sockets: server not found', {
+      reason,
+      workspaceId: context.workspaceId,
+      workspaceFlavour: context.workspaceFlavour,
+    });
+    return;
+  }
+
+  logIOSSync('soft reconnect current workspace sockets', {
+    reason,
+    workspaceId: context.workspaceId,
+    workspaceFlavour: context.workspaceFlavour,
+    serverBaseUrl: context.server.baseUrl,
+  });
+  SocketConnection.resetSharedConnection(context.server.baseUrl, true);
+  SocketConnection.resetSharedConnection(context.server.baseUrl, false);
+}
+
+function resetCurrentRemoteDocSync(reason: string) {
+  const now = Date.now();
+  if (now - lastRemoteDocSyncResetAt < REMOTE_DOC_SYNC_RESET_INTERVAL_MS) {
+    logIOSSync('skip reset current workspace doc sync: cooldown', {
+      reason,
+      remainingMs:
+        REMOTE_DOC_SYNC_RESET_INTERVAL_MS - (now - lastRemoteDocSyncResetAt),
+    });
+    return;
+  }
+
+  const context = getCurrentRemoteWorkspaceContext();
+  if (!context) {
+    logIOSSync('skip reset current workspace doc sync: no remote workspace', {
+      reason,
+    });
+    return;
+  }
+
+  const {
+    workspaceId: currentWorkspaceId,
+    workspaceFlavour: currentWorkspaceFlavour,
+    server: currentServer,
+  } = context;
+  if (currentServer) {
+    SocketConnection.resetSharedConnection(currentServer.baseUrl, true);
+    SocketConnection.resetSharedConnection(currentServer.baseUrl, false);
+  }
+
+  const workspaceRef = frameworkProvider
+    .get(WorkspacesService)
+    .openByWorkspaceId(currentWorkspaceId, currentWorkspaceFlavour);
+  if (!workspaceRef) {
+    logIOSSync('skip reset current workspace doc sync: workspace not found', {
+      reason,
+      workspaceId: currentWorkspaceId,
+      workspaceFlavour: currentWorkspaceFlavour,
+      serverBaseUrl: currentServer?.baseUrl ?? null,
+    });
+    return;
+  }
+
+  lastRemoteDocSyncResetAt = now;
+  logIOSSync('reset current workspace doc sync', {
+    reason,
+    workspaceId: currentWorkspaceId,
+    workspaceFlavour: currentWorkspaceFlavour,
+    serverBaseUrl: currentServer?.baseUrl ?? null,
+  });
+  workspaceRef.workspace.engine.doc
+    .resetSync()
+    .catch(error => {
+      logIOSSync('reset current workspace doc sync failed', {
+        reason,
+        workspaceId: currentWorkspaceId,
+        workspaceFlavour: currentWorkspaceFlavour,
+        error: String(error),
+      });
+      console.error(error);
+    })
+    .finally(workspaceRef.dispose);
+}
+
+let disposeCurrentWorkspaceSyncProbe: (() => void) | null = null;
+
+function getCurrentWorkspaceSyncContext() {
+  const globalContextService = frameworkProvider.get(GlobalContextService);
+  const globalContext = globalContextService.globalContext;
+  const workspaceId = globalContext.workspaceId.get();
+  const workspaceFlavour = globalContext.workspaceFlavour.get();
+  const serverId = globalContext.serverId.get();
+  const serversService = frameworkProvider.get(ServersService);
+  const server =
+    workspaceFlavour && workspaceFlavour !== 'local'
+      ? serversService.server$(workspaceFlavour).value
+      : serverId
+        ? serversService.server$(serverId).value
+        : null;
+
+  return {
+    workspaceId,
+    workspaceFlavour,
+    serverId,
+    server,
+    serverBaseUrl: server?.baseUrl ?? null,
+    href: window.location.href,
+  };
+}
+
+function installCurrentWorkspaceSyncProbe(reason: string) {
+  disposeCurrentWorkspaceSyncProbe?.();
+  disposeCurrentWorkspaceSyncProbe = null;
+
+  const context = getCurrentWorkspaceSyncContext();
+  logIOSSync('workspace context', {
+    reason,
+    workspaceId: context.workspaceId,
+    workspaceFlavour: context.workspaceFlavour,
+    serverId: context.serverId,
+    serverBaseUrl: context.serverBaseUrl,
+    href: context.href,
+  });
+
+  if (!context.workspaceId || !context.workspaceFlavour) {
+    return;
+  }
+
+  if (context.workspaceFlavour === 'local') {
+    logIOSSync('workspace is local; remote sync disabled', {
+      reason,
+      workspaceId: context.workspaceId,
+      workspaceFlavour: context.workspaceFlavour,
+      href: context.href,
+    });
+    return;
+  }
+
+  const workspaceRef = frameworkProvider
+    .get(WorkspacesService)
+    .openByWorkspaceId(context.workspaceId, context.workspaceFlavour);
+  if (!workspaceRef) {
+    logIOSSync('workspace sync probe skipped: workspace not found', {
+      reason,
+      workspaceId: context.workspaceId,
+      workspaceFlavour: context.workspaceFlavour,
+      serverBaseUrl: context.serverBaseUrl,
+    });
+    return;
+  }
+
+  logIOSSync('workspace sync probe installed', {
+    reason,
+    workspaceId: context.workspaceId,
+    workspaceFlavour: context.workspaceFlavour,
+    serverBaseUrl: context.serverBaseUrl,
+  });
+
+  let lastStateKey = '';
+  const subscription = workspaceRef.workspace.engine.doc.state$.subscribe(
+    state => {
+      const syncState = {
+        total: state.total,
+        loaded: state.loaded,
+        syncing: state.syncing,
+        synced: state.synced,
+        retrying: state.syncRetrying,
+        error: state.syncErrorMessage,
+      };
+      const stateKey = JSON.stringify(syncState);
+      if (stateKey === lastStateKey) {
+        return;
+      }
+      lastStateKey = stateKey;
+      logIOSSync('workspace sync state', {
+        workspaceId: context.workspaceId,
+        workspaceFlavour: context.workspaceFlavour,
+        serverBaseUrl: context.serverBaseUrl,
+        ...syncState,
+      });
+    }
+  );
+
+  disposeCurrentWorkspaceSyncProbe = () => {
+    subscription.unsubscribe();
+    workspaceRef.dispose();
+  };
+}
+
+function setupIOSSyncDiagnostics() {
+  logIOSSync('js bootstrap', {
+    href: window.location.href,
+    userAgent: navigator.userAgent,
+  });
+
+  const globalContextService = frameworkProvider.get(GlobalContextService);
+  const globalContext = globalContextService.globalContext;
+  const updateDiagnostics = (reason: string) => {
+    installCurrentWorkspaceSyncProbe(reason);
+    resetCurrentRemoteDocSync(reason);
+  };
+
+  globalContext.workspaceId.$.subscribe(() =>
+    updateDiagnostics('workspace-id-change')
+  );
+  globalContext.workspaceFlavour.$.subscribe(() =>
+    updateDiagnostics('workspace-flavour-change')
+  );
+  globalContext.serverId.$.subscribe(() =>
+    updateDiagnostics('server-id-change')
+  );
+  window.addEventListener('affine:workspace:change', () =>
+    updateDiagnostics('workspace-change-event')
+  );
+  window.setTimeout(() => updateDiagnostics('startup-delay-0'), 0);
+  window.setTimeout(() => updateDiagnostics('startup-delay-3000'), 3000);
+}
+
+setupIOSSyncDiagnostics();
 
 registerNativePreviewHandlers({
   renderMermaidSvg: request => Preview.renderMermaidSvg(request),
@@ -270,15 +633,31 @@ registerNativeImageFilesPicker(async () => {
 });
 
 // ------ some apis for native ------
-(window as any).getCurrentServerBaseUrl = () => {
+const getCurrentServerForNative = () => {
   const globalContextService = frameworkProvider.get(GlobalContextService);
-  const currentServerId = globalContextService.globalContext.serverId.get();
+  const globalContext = globalContextService.globalContext;
+  const currentServerId = globalContext.serverId.get();
+  const currentWorkspaceFlavour = globalContext.workspaceFlavour.get();
   const serversService = frameworkProvider.get(ServersService);
   const defaultServerService = frameworkProvider.get(DefaultServerService);
-  const currentServer =
-    (currentServerId ? serversService.server$(currentServerId).value : null) ??
-    defaultServerService.server;
-  return currentServer.baseUrl;
+
+  const workspaceServer =
+    currentWorkspaceFlavour && currentWorkspaceFlavour !== 'local'
+      ? serversService.server$(currentWorkspaceFlavour).value
+      : null;
+  if (workspaceServer) {
+    return workspaceServer;
+  }
+
+  if (currentServerId && currentServerId !== defaultServerService.server.id) {
+    return serversService.server$(currentServerId).value ?? null;
+  }
+
+  return null;
+};
+
+(window as any).getCurrentServerBaseUrl = () => {
+  return getCurrentServerForNative()?.baseUrl ?? '';
 };
 (window as any).getCurrentI18nLocale = () => {
   return I18n.language;
@@ -299,23 +678,21 @@ registerNativeImageFilesPicker(async () => {
   return globalContextService.globalContext.docId.get();
 };
 (window as any).getCurrentUserIdentifier = () => {
-  const globalContextService = frameworkProvider.get(GlobalContextService);
-  const currentServerId = globalContextService.globalContext.serverId.get();
-  const serversService = frameworkProvider.get(ServersService);
-  const defaultServerService = frameworkProvider.get(DefaultServerService);
-  const currentServer =
-    (currentServerId ? serversService.server$(currentServerId).value : null) ??
-    defaultServerService.server;
-  return currentServer.account$.value?.id;
+  return getCurrentServerForNative()?.account$.value?.id;
 };
 (window as any).getCurrentDocContentInMarkdown = async () => {
   const globalContextService = frameworkProvider.get(GlobalContextService);
   const currentWorkspaceId =
     globalContextService.globalContext.workspaceId.get();
   const currentDocId = globalContextService.globalContext.docId.get();
+  const currentWorkspaceFlavour =
+    globalContextService.globalContext.workspaceFlavour.get();
   const workspacesService = frameworkProvider.get(WorkspacesService);
   const workspaceRef = currentWorkspaceId
-    ? workspacesService.openByWorkspaceId(currentWorkspaceId)
+    ? workspacesService.openByWorkspaceId(
+        currentWorkspaceId,
+        currentWorkspaceFlavour
+      )
     : null;
   if (!workspaceRef) {
     return;
@@ -370,9 +747,14 @@ registerNativeImageFilesPicker(async () => {
   const globalContextService = frameworkProvider.get(GlobalContextService);
   const currentWorkspaceId =
     globalContextService.globalContext.workspaceId.get();
+  const currentWorkspaceFlavour =
+    globalContextService.globalContext.workspaceFlavour.get();
   const workspacesService = frameworkProvider.get(WorkspacesService);
   const workspaceRef = currentWorkspaceId
-    ? workspacesService.openByWorkspaceId(currentWorkspaceId)
+    ? workspacesService.openByWorkspaceId(
+        currentWorkspaceId,
+        currentWorkspaceFlavour
+      )
     : null;
 
   try {
@@ -460,9 +842,12 @@ frameworkProvider.get(LifecycleService).applicationStart();
 CapacitorApp.addListener('appStateChange', ({ isActive }) => {
   if (!isActive) return;
   const servers = frameworkProvider.get(ServersService).servers$.value;
-  Promise.allSettled(
-    servers.map(server => getValidAccessToken(server.baseUrl))
-  ).catch(console.error);
+  // Resume only refreshes tokens and soft-reconnects sockets.
+  // Full resetSync clears clocks and aborts in-flight remote connects,
+  // which repeatedly surfaces "Connect to remote timeout" on iOS.
+  Promise.allSettled(servers.map(server => getValidAccessToken(server.baseUrl)))
+    .then(() => softReconnectCurrentRemoteSockets('app-active'))
+    .catch(console.error);
 }).catch(console.error);
 
 const getErrorMessage = (error: unknown, fallback: string) => {
@@ -627,9 +1012,17 @@ function createStoreManagerClient() {
   const { port1: authTokenChannelServer, port2: authTokenChannelClient } =
     new MessageChannel();
   authTokenChannelServer.addEventListener('message', event => {
-    const { id, endpoint } = event.data as { id?: string; endpoint?: string };
+    const { id, endpoint, action } = event.data as {
+      id?: string;
+      endpoint?: string;
+      action?: 'get' | 'refresh';
+    };
     if (!id || !endpoint) return;
-    getValidAccessToken(endpoint)
+    const tokenPromise =
+      action === 'refresh'
+        ? Auth.refreshAccessToken({ endpoint }).then(({ token }) => token)
+        : getValidAccessToken(endpoint);
+    tokenPromise
       .then(token => authTokenChannelServer.postMessage({ id, token }))
       .catch(error =>
         authTokenChannelServer.postMessage({

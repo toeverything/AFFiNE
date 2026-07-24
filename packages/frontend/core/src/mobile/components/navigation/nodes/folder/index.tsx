@@ -7,6 +7,7 @@ import {
   notify,
 } from '@affine/component';
 import { usePageHelper } from '@affine/core/blocksuite/block-suite-page-list/utils';
+import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import type {
   NavigationPanelTreeNodeIcon,
   NodeOperation,
@@ -43,6 +44,8 @@ import { NavigationPanelDocNode } from '../doc';
 import { NavigationPanelTagNode } from '../tag';
 import { FolderCreateTip, FolderRenameSubMenu } from './dialog';
 import { FavoriteFolderOperation } from './operations';
+
+const ROOT_DOC_READY_TIMEOUT_MS = 8_000;
 
 export const NavigationPanelFolderNode = ({
   nodeId,
@@ -188,16 +191,41 @@ const NavigationPanelFolderNodeFolder = ({
     [node]
   );
 
-  const handleNewDoc = useCallback(() => {
-    const newDoc = createPage();
-    node.createLink('doc', newDoc.id, node.indexAt('before'));
-    track.$.navigationPanel.folders.createDoc();
-    track.$.navigationPanel.organize.createOrganizeItem({
-      type: 'link',
-      target: 'doc',
-    });
-    setCollapsed(false);
-  }, [createPage, node, setCollapsed]);
+  const handleNewDoc = useAsyncCallback(async () => {
+    try {
+      await Promise.race([
+        workspaceService.workspace.engine.doc.waitForDocLoaded(
+          workspaceService.workspace.id
+        ),
+        new Promise((_, reject) =>
+          window.setTimeout(
+            () => reject(new Error('Workspace root doc is not loaded')),
+            ROOT_DOC_READY_TIMEOUT_MS
+          )
+        ),
+      ]).catch(error => {
+        console.warn(
+          'Workspace root doc is not loaded before creating doc',
+          error
+        );
+      });
+
+      const newDoc = createPage();
+      node.createLink('doc', newDoc.id, node.indexAt('before'));
+      track.$.navigationPanel.folders.createDoc();
+      track.$.navigationPanel.organize.createOrganizeItem({
+        type: 'link',
+        target: 'doc',
+      });
+      setCollapsed(false);
+    } catch (error) {
+      console.error('Failed to create folder doc', error);
+      notify.error({
+        title: 'Failed to create doc',
+        message: 'Please try again.',
+      });
+    }
+  }, [createPage, node, setCollapsed, workspaceService.workspace]);
 
   const handleCreateSubfolder = useCallback(
     (name: string) => {

@@ -267,10 +267,20 @@ class StoreConsumer {
           this.blobSync
             .fullDownload(peerId ?? undefined, abortController.signal)
             .then(() => {
+              if (subscriber.closed) {
+                return;
+              }
               subscriber.next();
               subscriber.complete();
             })
             .catch(error => {
+              if (subscriber.closed) {
+                return;
+              }
+              if (error === MANUALLY_STOP) {
+                subscriber.complete();
+                return;
+              }
               subscriber.error(error);
             });
           return () => abortController.abort(MANUALLY_STOP);
@@ -373,6 +383,9 @@ export class StoreManagerConsumer {
           storeRef.refCount--;
           if (storeRef.refCount === 0) {
             storeRef.store.destroy().catch(error => {
+              if (error === MANUALLY_STOP) {
+                return;
+              }
               console.error(error);
             });
             this.storePool.delete(key);

@@ -103,10 +103,20 @@ export function fromPromise<T>(
 
     rawPromise
       .then(value => {
+        if (subscriber.closed) {
+          return;
+        }
         subscriber.next(value);
         subscriber.complete();
       })
       .catch(error => {
+        if (subscriber.closed) {
+          return;
+        }
+        if (error === MANUALLY_STOP) {
+          subscriber.complete();
+          return;
+        }
         subscriber.error(error);
       });
 

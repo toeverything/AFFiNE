@@ -3,6 +3,7 @@ import { DebugLogger } from '@affine/debug';
 import {
   createWorkspaceMutation,
   deleteWorkspaceMutation,
+  getWorkspaceRolePermissionsQuery,
   getWorkspacesQuery,
   ServerDeploymentType,
   ServerFeature,
@@ -271,16 +272,20 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
             },
           });
 
-          const ids = workspaces.map(({ id, initialized }) => ({
+          const ids = workspaces.map(({ id, initialized, owner, team }) => ({
             id,
             initialized,
+            ownerId: owner?.id,
+            team,
           }));
           return {
             accountId,
-            workspaces: ids.map(({ id, initialized }) => ({
+            workspaces: ids.map(({ id, initialized, ownerId, team }) => ({
               id,
               flavour: this.server.id,
               initialized,
+              ownerId,
+              team,
             })),
           };
         }).pipe(
@@ -445,6 +450,28 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
   }
 
   private async getWorkspaceInfo(workspaceId: string, signal?: AbortSignal) {
+    try {
+      const { workspaceRolePermissions } = await this.graphqlService.gql({
+        query: getWorkspaceRolePermissionsQuery,
+        variables: { id: workspaceId },
+        context: { signal },
+      });
+      const permissions = workspaceRolePermissions?.permissions;
+      if (permissions) {
+        return {
+          workspace: {
+            permissions,
+            team:
+              this.workspaces$.value.find(
+                workspace => workspace.id === workspaceId
+              )?.team ?? false,
+          },
+        };
+      }
+    } catch (error) {
+      logger.error('error to get workspace permissions with graphql', error);
+    }
+
     const { access } = await this.nbstoreService.realtime.request(
       'workspace.access.get',
       { workspaceId },

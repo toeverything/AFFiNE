@@ -14,22 +14,14 @@ import type {
   WorkspaceMetadata,
 } from '@affine/core/modules/workspace';
 import { WorkspacesService } from '@affine/core/modules/workspace';
-import {
-  FrameworkScope,
-  LiveData,
-  useLiveData,
-  useServices,
-} from '@toeverything/infra';
+import { FrameworkScope, useServices } from '@toeverything/infra';
 import {
   type PropsWithChildren,
   useEffect,
   useLayoutEffect,
-  useMemo,
   useState,
 } from 'react';
-import { map } from 'rxjs';
 
-import { AppFallback } from '../../components/app-fallback';
 import { WorkspaceDialogs } from '../../dialogs';
 
 // TODO(@forehalo): reuse the global context with [core/electron]
@@ -83,6 +75,7 @@ export const WorkspaceLayout = ({
         })
       );
       localStorage.setItem('last_workspace_id', workspace.id);
+      localStorage.setItem('last_workspace_flavour', workspace.flavour);
       globalContextService.globalContext.workspaceId.set(workspace.id);
       if (workspaceServer) {
         globalContextService.globalContext.serverId.set(workspaceServer.id);
@@ -109,26 +102,69 @@ export const WorkspaceLayout = ({
     workspaceServer,
   ]);
 
-  const rootDocReady$ = useMemo(
-    () =>
-      workspace
-        ? LiveData.from(
-            workspace.engine.doc
-              .docState$(workspace.id)
-              .pipe(map(v => v.ready)),
-            false
-          )
-        : null,
-    [workspace]
-  );
-  const isRootDocReady = useLiveData(rootDocReady$) ?? false;
+  useEffect(() => {
+    if (!BUILD_CONFIG.isIOS || !workspace) {
+      return;
+    }
+
+    const syncContext = {
+      workspaceId: workspace.id,
+      workspaceFlavour: workspace.flavour,
+      serverBaseUrl: workspaceServer?.baseUrl ?? null,
+    };
+    console.warn('[AFFiNE][iOS sync] workspace mounted', syncContext);
+
+    if (workspace.flavour === 'local') {
+      console.warn(
+        '[AFFiNE][iOS sync] workspace is local; remote sync disabled',
+        syncContext
+      );
+      return;
+    }
+
+    let lastStateKey = '';
+    const subscription = workspace.engine.doc.state$.subscribe(state => {
+      const syncState = {
+        total: state.total,
+        loaded: state.loaded,
+        syncing: state.syncing,
+        synced: state.synced,
+        retrying: state.syncRetrying,
+        error: state.syncErrorMessage,
+      };
+      const stateKey = JSON.stringify(syncState);
+      if (stateKey !== lastStateKey) {
+        lastStateKey = stateKey;
+        console.warn('[AFFiNE][iOS sync] workspace sync state', {
+          ...syncContext,
+          ...syncState,
+        });
+      }
+    });
+
+    const timers = [0, 5_000, 15_000].map(delay =>
+      window.setTimeout(() => {
+        console.warn('[AFFiNE][iOS sync] reset workspace sync', {
+          ...syncContext,
+          delay,
+        });
+        workspace.engine.doc.resetSync().catch(error => {
+          console.warn('[AFFiNE][iOS sync] reset workspace sync failed', {
+            ...syncContext,
+            error,
+          });
+        });
+      }, delay)
+    );
+
+    return () => {
+      subscription.unsubscribe();
+      timers.forEach(timer => window.clearTimeout(timer));
+    };
+  }, [workspace, workspaceServer]);
 
   if (!workspace) {
     return null; // skip this, workspace will be set in layout effect
-  }
-
-  if (!isRootDocReady) {
-    return <AppFallback />;
   }
 
   return (

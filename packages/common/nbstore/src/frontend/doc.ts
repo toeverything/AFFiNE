@@ -222,6 +222,9 @@ export class DocFrontend {
       throw new Error('doc frontend can only start once');
     }
     this.mainLoop(this.abort.signal).catch(error => {
+      if (error === MANUALLY_STOP) {
+        return;
+      }
       console.error(error);
     });
   }
@@ -477,6 +480,11 @@ ${changedList}
     }
     if (!this.status.docs.has(doc.guid)) {
       return;
+    }
+
+    if (!isEmptyUpdate(update)) {
+      this.status.readyDocs.add(doc.guid);
+      this.statusUpdatedSubject$.next(doc.guid);
     }
 
     this.schedule({

@@ -237,6 +237,7 @@ export class AuthController {
 
   @Public()
   @UseNamedGuard('version')
+  @Throttle('default', { limit: 120, ttl: 60_000 })
   @Post('/session/exchange')
   @Header('Cache-Control', 'no-store')
   @Header('Pragma', 'no-cache')

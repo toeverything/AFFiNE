@@ -176,10 +176,22 @@ export class DocSyncImpl implements DocSync {
 
   async resetSync() {
     const running = this.abort !== null;
+    const shouldConnectSyncStorage =
+      this.sync.connection.status === 'idle' ||
+      this.sync.connection.status === 'closed';
     this.stop();
-    await this.sync.clearClocks();
-    if (running) {
-      this.start();
+    if (shouldConnectSyncStorage) {
+      this.sync.connection.connect();
+    }
+    try {
+      await this.sync.connection.waitForConnected();
+      await this.sync.clearClocks();
+    } finally {
+      if (running) {
+        this.start();
+      } else if (shouldConnectSyncStorage) {
+        this.sync.connection.disconnect();
+      }
     }
   }
 }

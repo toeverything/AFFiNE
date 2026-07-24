@@ -1,7 +1,7 @@
 import { DefaultServerService, type Server } from '@affine/core/modules/cloud';
 import type { AuthSessionStatus } from '@affine/core/modules/cloud/entities/session';
 import { FrameworkScope, useService } from '@toeverything/infra';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import { AddSelfhostedStep } from './add-selfhosted';
 import { SignInStep } from './sign-in';
@@ -29,7 +29,7 @@ export const SignInPanel = ({
   initStep,
   onAuthenticated,
 }: {
-  onAuthenticated?: (status: AuthSessionStatus) => void;
+  onAuthenticated?: (status: AuthSessionStatus, server: Server) => void;
   onSkip: () => void;
   server?: string;
   initStep?: SignInStep | undefined;
@@ -47,6 +47,12 @@ export const SignInPanel = ({
 
   const step = state.step;
   const server = state.server ?? defaultServerService.server;
+  const handleAuthenticated = useCallback(
+    (status: AuthSessionStatus) => {
+      onAuthenticated?.(status, server);
+    },
+    [onAuthenticated, server]
+  );
 
   return (
     <FrameworkScope scope={server.scope}>
@@ -55,19 +61,19 @@ export const SignInPanel = ({
           state={state}
           changeState={setState}
           onSkip={onSkip}
-          onAuthenticated={onAuthenticated}
+          onAuthenticated={handleAuthenticated}
         />
       ) : step === 'signInWithEmail' ? (
         <SignInWithEmailStep
           state={state}
           changeState={setState}
-          onAuthenticated={onAuthenticated}
+          onAuthenticated={handleAuthenticated}
         />
       ) : step === 'signInWithPassword' ? (
         <SignInWithPasswordStep
           state={state}
           changeState={setState}
-          onAuthenticated={onAuthenticated}
+          onAuthenticated={handleAuthenticated}
         />
       ) : step === 'addSelfhosted' ? (
         <AddSelfhostedStep state={state} changeState={setState} />

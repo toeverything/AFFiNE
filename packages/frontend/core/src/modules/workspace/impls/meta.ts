@@ -140,6 +140,9 @@ export class WorkspaceMetaImpl implements WorkspaceMeta {
   addDocMeta(doc: DocMeta, index?: number) {
     this._doc.transact(() => {
       if (!this.docs) {
+        this.initialize();
+      }
+      if (!this.docs) {
         return;
       }
       const docs = this.docs as unknown[];

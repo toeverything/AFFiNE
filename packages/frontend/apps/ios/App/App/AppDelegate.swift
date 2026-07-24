@@ -1,13 +1,53 @@
 import Capacitor
+import Network
 import UIKit
+
+private final class LocalNetworkAccess: NSObject, NetServiceDelegate {
+  static let shared = LocalNetworkAccess()
+
+  private var browser: NWBrowser?
+  private var service: NetService?
+  private var hasStarted = false
+
+  func preflight() {
+    guard !hasStarted else { return }
+    hasStarted = true
+
+    let parameters = NWParameters()
+    parameters.includePeerToPeer = true
+
+    let browser = NWBrowser(for: .bonjour(type: "_http._tcp", domain: "local."), using: parameters)
+    browser.stateUpdateHandler = { state in
+      if case let .failed(error) = state {
+        NSLog("[AFFiNE] Local network preflight browser failed: \(error)")
+      }
+    }
+    browser.start(queue: .main)
+    self.browser = browser
+
+    let service = NetService(
+      domain: "local.",
+      type: "_affine-local-network._tcp.",
+      name: "AFFiNE Local Network Preflight",
+      port: 9
+    )
+    service.delegate = self
+    service.publish(options: .listenForConnections)
+    self.service = service
+  }
+
+  func netService(_ sender: NetService, didNotPublish errorDict: [String: NSNumber]) {
+    NSLog("[AFFiNE] Local network preflight service failed: \(errorDict)")
+  }
+}
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
   var window: UIWindow?
 
   func application(_: UIApplication, didFinishLaunchingWithOptions _: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-    // Override point for customization after application launch.
-    true
+    LocalNetworkAccess.shared.preflight()
+    return true
   }
 
   func applicationWillResignActive(_: UIApplication) {
