@@ -15,14 +15,13 @@ import { PencilInput } from './index';
 const MATCH_DISTANCE_PX = 44;
 const MATCH_WINDOW_MS = 300;
 
-// A non-pencil contact is treated as an incidental palm while a Pencil is (or
-// was just) active. The grace period keeps rejecting stray touches across the
-// brief gaps between consecutive pencil strokes.
+// A Pencil stays the active instrument briefly after lift so routing can keep
+// Pencil-priority behavior across short gaps between consecutive strokes.
 const PENCIL_ACTIVE_GRACE_MS = 700;
 
-// Contact radius above which a `finger` touch is treated as a palm even when no
-// Pencil is active. Conservative and device-tuned; the Simulator reports 0.
-const PALM_MAJOR_RADIUS = 30;
+// Contact radius above which a native `finger` touch is treated as a palm.
+// Keep this above normal fingertip radii so Pencil-priority finger pans survive.
+const PALM_MAJOR_RADIUS = 45;
 
 interface RecentTouch {
   kind: ClassifiedTouch['kind'];
@@ -73,10 +72,6 @@ class NativePointerClassifier implements PointerInputClassifier {
     }
     if (event.pointerType !== 'touch') {
       return undefined;
-    }
-    // Any finger/palm contact during Pencil use is incidental -> reject it.
-    if (this.isPencilActive()) {
-      return 'palm';
     }
     if (match) {
       return match.majorRadius >= PALM_MAJOR_RADIUS ? 'palm' : 'finger';
