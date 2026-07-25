@@ -1,6 +1,6 @@
-import { SafeArea, Skeleton } from '@affine/component';
-
-import { WorkspaceSelector } from '../workspace-selector';
+import { Button, SafeArea, Skeleton } from '@affine/component';
+import { useI18n } from '@affine/i18n';
+import { cssVarV2 } from '@toeverything/theme/v2';
 
 const SectionTitleFallback = () => {
   return (
@@ -49,7 +49,9 @@ const Section = () => {
   );
 };
 
-export const AppFallback = () => {
+export const AppFallback = ({ onRetry }: { onRetry?: () => void }) => {
+  const t = useI18n();
+
   return (
     <SafeArea top bottom style={{ height: '100dvh', overflow: 'hidden' }}>
       {/* notification and setting */}
@@ -73,7 +75,10 @@ export const AppFallback = () => {
       </div>
       {/* workspace card */}
       <div style={{ padding: '4px 16px' }}>
-        <WorkspaceSelector />
+        <Skeleton
+          animation="wave"
+          style={{ width: 220, height: 40, borderRadius: 8 }}
+        />
       </div>
       {/* search */}
       <div style={{ padding: '10px 16px 15px' }}>
@@ -92,6 +97,33 @@ export const AppFallback = () => {
       </div>
       <Section />
       <Section />
+      {onRetry ? (
+        <div
+          role="alert"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 16,
+            padding: 24,
+            background: cssVarV2('layer/background/mobile/primary'),
+          }}
+        >
+          <div style={{ maxWidth: 320, textAlign: 'center' }}>
+            {t['error.INTERNAL_SERVER_ERROR']()}
+          </div>
+          <Button
+            variant="primary"
+            style={{ minWidth: 104, height: 44 }}
+            onClick={onRetry}
+          >
+            {t['Retry']()}
+          </Button>
+        </div>
+      ) : null}
     </SafeArea>
   );
 };

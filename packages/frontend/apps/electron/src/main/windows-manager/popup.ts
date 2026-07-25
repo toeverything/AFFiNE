@@ -1,17 +1,14 @@
 import { join } from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
-import {
-  app,
-  BrowserWindow,
-  type BrowserWindowConstructorOptions,
-} from 'electron';
+import { BrowserWindow, type BrowserWindowConstructorOptions } from 'electron';
 import { BehaviorSubject } from 'rxjs';
 
 import { popupViewUrl } from '../../shared/internal-origin';
 import { logger } from '../logger';
 import type { MainEventRegister, NamespaceHandlers } from '../type';
 import { buildWebPreferences } from '../web-preferences';
+import { ensureDockVisible } from './main-window';
 import { getCurrentDisplay } from './utils';
 
 type PopupWindowType = 'notification' | 'recording';
@@ -97,8 +94,7 @@ abstract class PopupWindow {
       }),
     });
 
-    // it seems that the dock will disappear when popup windows are shown
-    await app.dock?.show();
+    await ensureDockVisible();
 
     // required to make the window transparent
     browserWindow.setBackgroundColor('#00000000');

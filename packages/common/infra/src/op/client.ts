@@ -32,6 +32,18 @@ export interface OpClientOptions {
   timeout?: number;
 }
 
+function hydrateRemoteError(error: Error) {
+  const hydrated = Object.assign(new Error(), error);
+  if (
+    'stacktrace' in error &&
+    typeof error.stacktrace === 'string' &&
+    error.stacktrace.length > 0
+  ) {
+    hydrated.stack = error.stacktrace;
+  }
+  return hydrated;
+}
+
 export class OpClient<Ops extends OpSchema> extends AutoMessageHandler {
   private readonly callIds = new Map<OpNames<Ops>, number>();
   private readonly pendingCalls = new Map<string, PendingCall>();
@@ -61,7 +73,7 @@ export class OpClient<Ops extends OpSchema> extends AutoMessageHandler {
     }
 
     if ('error' in msg) {
-      pending.reject(Object.assign(new Error(), msg.error));
+      pending.reject(hydrateRemoteError(msg.error));
     } else {
       pending.resolve(msg.data);
     }
@@ -86,7 +98,7 @@ export class OpClient<Ops extends OpSchema> extends AutoMessageHandler {
         return;
       }
 
-      ob.error(Object.assign(new Error(), msg.error));
+      ob.error(hydrateRemoteError(msg.error));
     };
 
   private readonly handleSubscriptionCompleteMessage: MessageHandlers['complete'] =

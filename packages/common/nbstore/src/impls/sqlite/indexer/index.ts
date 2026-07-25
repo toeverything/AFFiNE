@@ -20,6 +20,8 @@ import { createNode } from './node-builder';
 import { queryRaw } from './query';
 import { getText, tryParseArrayField } from './utils';
 
+const SQLITE_INDEXER_VERSION_OFFSET = 1;
+
 export class SqliteIndexerStorage extends IndexerStorageBase {
   static readonly identifier = 'SqliteIndexerStorage';
   override readonly recommendRefreshInterval = 30 * 1000; // 5 seconds
@@ -92,7 +94,7 @@ export class SqliteIndexerStorage extends IndexerStorageBase {
         `${table}:${field as string}`,
         id
       );
-      if (text) {
+      if (typeof text === 'string' && text.length > 0) {
         let values: string[] = [text];
         const parsed = tryParseArrayField(text);
         if (parsed) {
@@ -129,6 +131,13 @@ export class SqliteIndexerStorage extends IndexerStorageBase {
             }
           }
         }
+      } else if (text != null && typeof text !== 'string') {
+        console.warn('[nbstore] invalid indexed aggregate type', {
+          table,
+          field: field as string,
+          id,
+          type: typeof text,
+        });
       }
     }
 
@@ -244,6 +253,9 @@ export class SqliteIndexerStorage extends IndexerStorageBase {
   }
 
   async indexVersion(): Promise<number> {
-    return this.connection.apis.ftsIndexVersion();
+    return (
+      (await this.connection.apis.ftsIndexVersion()) +
+      SQLITE_INDEXER_VERSION_OFFSET
+    );
   }
 }

@@ -242,13 +242,13 @@ __metadata:
     "@affine/nbstore": "workspace:*"
     "@affine/track": "workspace:*"
     "@blocksuite/affine": "workspace:*"
-    "@capacitor/android": "npm:^7.0.0"
-    "@capacitor/app": "npm:^7.0.0"
-    "@capacitor/cli": "npm:^7.6.5"
-    "@capacitor/core": "npm:^7.0.0"
-    "@capacitor/keyboard": "npm:^7.0.0"
-    "@capacitor/status-bar": "npm:^7.0.0"
-    "@capgo/inappbrowser": "npm:^8.0.0"
+    "@capacitor/android": "npm:^8.4.2"
+    "@capacitor/app": "npm:^8.0.0"
+    "@capacitor/cli": "npm:^8.4.2"
+    "@capacitor/core": "npm:^8.4.2"
+    "@capacitor/keyboard": "npm:^8.0.0"
+    "@capacitor/status-bar": "npm:^8.0.0"
+    "@capgo/inappbrowser": "npm:^8.6.14"
     "@toeverything/infra": "workspace:*"
     "@types/react": "npm:^19.0.1"
     "@types/react-dom": "npm:^19.0.2"
@@ -676,13 +676,13 @@ __metadata:
     "@affine/nbstore": "workspace:*"
     "@affine/track": "workspace:*"
     "@blocksuite/affine": "workspace:*"
-    "@capacitor/app": "npm:^7.0.0"
-    "@capacitor/browser": "npm:^7.0.0"
-    "@capacitor/cli": "npm:^7.6.5"
-    "@capacitor/core": "npm:^7.0.0"
-    "@capacitor/haptics": "npm:^7.0.0"
-    "@capacitor/ios": "npm:^7.0.0"
-    "@capacitor/keyboard": "npm:^7.0.0"
+    "@capacitor/app": "npm:^8.0.0"
+    "@capacitor/browser": "npm:^8.0.0"
+    "@capacitor/cli": "npm:^8.4.2"
+    "@capacitor/core": "npm:^8.4.2"
+    "@capacitor/haptics": "npm:^8.0.0"
+    "@capacitor/ios": "npm:^8.4.2"
+    "@capacitor/keyboard": "npm:^8.0.0"
     "@toeverything/infra": "workspace:^"
     "@types/react": "npm:^19.0.1"
     "@types/react-dom": "npm:^19.0.2"
@@ -702,7 +702,7 @@ __metadata:
   resolution: "@affine/mobile-shared@workspace:packages/frontend/apps/mobile-shared"
   dependencies:
     "@affine/core": "workspace:*"
-    "@capacitor/core": "npm:^7.0.0"
+    "@capacitor/core": "npm:^8.4.2"
     typescript: "npm:^5.9.3"
     vitest: "npm:^4.1.8"
   languageName: unknown
@@ -733,7 +733,7 @@ __metadata:
   resolution: "@affine/monorepo@workspace:."
   dependencies:
     "@affine-tools/cli": "workspace:*"
-    "@capacitor/cli": "npm:^7.6.5"
+    "@capacitor/cli": "npm:^8.4.2"
     "@eslint/js": "npm:^9.39.2"
     "@faker-js/faker": "npm:^10.1.0"
     "@istanbuljs/schema": "npm:^0.1.3"
@@ -3497,36 +3497,36 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@capacitor/android@npm:^7.0.0":
-  version: 7.4.5
-  resolution: "@capacitor/android@npm:7.4.5"
+"@capacitor/android@npm:^8.4.2":
+  version: 8.4.2
+  resolution: "@capacitor/android@npm:8.4.2"
   peerDependencies:
-    "@capacitor/core": ^7.4.0
-  checksum: 10/c960f3dae60ab8d1b9a1848af72741dc05eca246399426eea32e36915696d42e29d82be0ddf350f3edd92b235cd58d03705ae00a38a25edbc410290ae8f44702
+    "@capacitor/core": ^8.4.0
+  checksum: 10/892510a8db66400c8123d6d15538fb4d13db738365dd235109b6deed0390694de2f5466b0343b030a53ca082bb5eb8892f42cc86fdf2dd4c2eff2453b2cfa926
   languageName: node
   linkType: hard
 
-"@capacitor/app@npm:^7.0.0":
-  version: 7.1.1
-  resolution: "@capacitor/app@npm:7.1.1"
+"@capacitor/app@npm:^8.0.0":
+  version: 8.1.1
+  resolution: "@capacitor/app@npm:8.1.1"
   peerDependencies:
-    "@capacitor/core": ">=7.0.0"
-  checksum: 10/0892bb3d0e159fe808bb25ca862d17c9c24b7c8baf2e77f5f1294ee38131502f70729f7770e7b90086f2a86ec2105a8ed32aee5153c6a964cbfb0fc01c97ff3e
+    "@capacitor/core": ">=8.0.0"
+  checksum: 10/a445083463304998a3d128b3a6375fe14987db4d880b66d8adbfb8322c0c2ff5317804bb6ef65ad612038d8a2ed816c6fd37a2519241198a2798d58e619f315d
   languageName: node
   linkType: hard
 
-"@capacitor/browser@npm:^7.0.0":
-  version: 7.0.3
-  resolution: "@capacitor/browser@npm:7.0.3"
+"@capacitor/browser@npm:^8.0.0":
+  version: 8.0.4
+  resolution: "@capacitor/browser@npm:8.0.4"
   peerDependencies:
-    "@capacitor/core": ">=7.0.0"
-  checksum: 10/be0443146d00e727f66b610d4e364312702f4f1d968ce0f12a2b17f06238843f6057e523f720de709f7b8d2cd96b77e1a37038e6c935c66226e393ca1f4684f2
+    "@capacitor/core": ">=8.0.0"
+  checksum: 10/69fdb5fdfe1cb6b9cc6f6b5d06fab209d46da55e9feb5a59684c7d382f76b2b60264fa621d8fa1ad9b965349811022408409320b3e4d83f7a083405b3ea245b7
   languageName: node
   linkType: hard
 
-"@capacitor/cli@npm:^7.6.5":
-  version: 7.6.5
-  resolution: "@capacitor/cli@npm:7.6.5"
+"@capacitor/cli@npm:^8.4.2":
+  version: 8.4.2
+  resolution: "@capacitor/cli@npm:8.4.2"
   dependencies:
     "@ionic/cli-framework-output": "npm:^2.2.8"
     "@ionic/utils-subprocess": "npm:^3.0.1"
@@ -3548,61 +3548,61 @@ __metadata:
   bin:
     cap: bin/capacitor
     capacitor: bin/capacitor
-  checksum: 10/a937d30396360fc0ab47d73c2a43ee7c6bbf203f22f0691022d460f41c66f875d1dd8bb2bc4b78e8fdd38144f2fe09374eeefdb623615b85cf89c79f799e2f47
+  checksum: 10/f583142b64b700c913956f55ec7dc6aa22d9d661e2ea458b048ca2f0ae17bf210a318e9060a6eb709108a2ae8e38497f33e7bfb2efe0702e941eaa88a1cbaf36
   languageName: node
   linkType: hard
 
-"@capacitor/core@npm:^7.0.0":
-  version: 7.4.5
-  resolution: "@capacitor/core@npm:7.4.5"
+"@capacitor/core@npm:^8.4.2":
+  version: 8.4.2
+  resolution: "@capacitor/core@npm:8.4.2"
   dependencies:
     tslib: "npm:^2.1.0"
-  checksum: 10/22d83d386199b08e0ef7ee59bb44863b5aef89edeb40377deeabf7bf28cbaeded041677813dee58a6a585311ba9b3b82658336300d7239b663c5c4d499eda9ae
+  checksum: 10/dc1f1cf89de2bbdce1fa4b7b8f9eac81886bed6c9956038cd9463c057aba189d1eca938acba798ba039e86ef51e8d7b0eb70db2be08994ddbbd5aa6a35a2deb6
   languageName: node
   linkType: hard
 
-"@capacitor/haptics@npm:^7.0.0":
-  version: 7.0.3
-  resolution: "@capacitor/haptics@npm:7.0.3"
-  peerDependencies:
-    "@capacitor/core": ">=7.0.0"
-  checksum: 10/46c1e5943b773f404dd4667d09ad6225b3b4319705d371673fc3dab4308c9fb498f822a3a8bad98f3d4ae9d49ec5259c8d678e1214a0f550853f1a1a598d1628
-  languageName: node
-  linkType: hard
-
-"@capacitor/ios@npm:^7.0.0":
-  version: 7.4.5
-  resolution: "@capacitor/ios@npm:7.4.5"
-  peerDependencies:
-    "@capacitor/core": ^7.4.0
-  checksum: 10/248dafcd68ddd759e76da15fe4ce68654a9e39d12edda5f6cec071a9c33ae6508d10a777f789db906688f4baf0e83058cd04713e1e15132f38d8a13777672d43
-  languageName: node
-  linkType: hard
-
-"@capacitor/keyboard@npm:^7.0.0":
-  version: 7.0.4
-  resolution: "@capacitor/keyboard@npm:7.0.4"
-  peerDependencies:
-    "@capacitor/core": ">=7.0.0"
-  checksum: 10/0faff0fea73d1922a1c5c5c206cd892f4de4935b821890b7032dfc1545e38b7181ec0787c10109f83a66e6389c6eda0a490551fe205192d9e77ad81f18f1c840
-  languageName: node
-  linkType: hard
-
-"@capacitor/status-bar@npm:^7.0.0":
-  version: 7.0.4
-  resolution: "@capacitor/status-bar@npm:7.0.4"
-  peerDependencies:
-    "@capacitor/core": ">=7.0.0"
-  checksum: 10/b6b4356a63ad01214d3b3f9816df970dc9acaf330a6bb6d99c7822b777eb70592157caab4ab5ffb08b9e6c3f5faa441a4e69e2a3176188ef9215d290572f27fd
-  languageName: node
-  linkType: hard
-
-"@capgo/inappbrowser@npm:^8.0.0":
-  version: 8.1.11
-  resolution: "@capgo/inappbrowser@npm:8.1.11"
+"@capacitor/haptics@npm:^8.0.0":
+  version: 8.0.2
+  resolution: "@capacitor/haptics@npm:8.0.2"
   peerDependencies:
     "@capacitor/core": ">=8.0.0"
-  checksum: 10/50f6ae52da60aede8eda1717c53869548b8ea44379469f817f482747f7ad72e0d460edede8aff27f208c781560b01fc65a9c24269d19755870161e0718586ad8
+  checksum: 10/cf8a685300119a2e6316b41f372fa00ba92ddae53e9ee2ed33a4e0ab154c83f4bf8d1fd6034326d477f41949bf018d0074d6db4417f44dd6a62da782196ced91
+  languageName: node
+  linkType: hard
+
+"@capacitor/ios@npm:^8.4.2":
+  version: 8.4.2
+  resolution: "@capacitor/ios@npm:8.4.2"
+  peerDependencies:
+    "@capacitor/core": ^8.4.0
+  checksum: 10/afecf7636eef0949a772663274098c2cddf973bbf16abd63105a495cc816369cfd1e79cf3a99f4022944a34d9cac0c4231845a2f9494fb11b00c0b779f637b4c
+  languageName: node
+  linkType: hard
+
+"@capacitor/keyboard@npm:^8.0.0":
+  version: 8.0.5
+  resolution: "@capacitor/keyboard@npm:8.0.5"
+  peerDependencies:
+    "@capacitor/core": ">=8.0.0"
+  checksum: 10/46d7adcfdf500d7652e3d684f6ce93a93058c395acc4da54f024c6b9987f6517e900e3cc4a765435e118472b2dde71b33e662c063f16d8c31cf2df34566b5fe2
+  languageName: node
+  linkType: hard
+
+"@capacitor/status-bar@npm:^8.0.0":
+  version: 8.0.3
+  resolution: "@capacitor/status-bar@npm:8.0.3"
+  peerDependencies:
+    "@capacitor/core": ">=8.0.0"
+  checksum: 10/2fe7e2f0139efd2917c2693fa21e757698113e95607bb5ad0d8a8e571ccdaf7dda353f4336ea024a85f2ef7342c555d59bdfb5dfa01d62aa56ad22dfcc496f80
+  languageName: node
+  linkType: hard
+
+"@capgo/inappbrowser@npm:^8.6.14":
+  version: 8.6.14
+  resolution: "@capgo/inappbrowser@npm:8.6.14"
+  peerDependencies:
+    "@capacitor/core": ">=8.0.0"
+  checksum: 10/dfdf8b247c12491f43394c3d652f0465fa75b634716d57b8ec634d66402bbc82031f37f69400d30a9fadce77c262ffb7c9db765b55fc380844dba8c3b2f9aa82
   languageName: node
   linkType: hard
 
@@ -22181,14 +22181,14 @@ __metadata:
   linkType: hard
 
 "dompurify@npm:^3.3.1, dompurify@npm:^3.4.11":
-  version: 3.4.11
-  resolution: "dompurify@npm:3.4.11"
+  version: 3.4.12
+  resolution: "dompurify@npm:3.4.12"
   dependencies:
     "@types/trusted-types": "npm:^2.0.7"
   dependenciesMeta:
     "@types/trusted-types":
       optional: true
-  checksum: 10/d0473e1a22ed9cc23d86ef426717bce866913d1a725512a9478985bd917b272e0faba5f1d6ad8b2e37f3f4219206c4385162d7c984cfedcd23396e1e6ae0bc5e
+  checksum: 10/f826b68920887eb75115a162facb42380d1c3fac441548217b30068c9fadeed14f63fa1f7a1d2ab6f63613e5a0f897aa245c9224d4abf7939cd8ae58c04646af
   languageName: node
   linkType: hard
 
