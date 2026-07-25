@@ -20,6 +20,15 @@ final class ShareViewModel: ObservableObject {
 
   var hasWorkspaceCache: Bool { !workspaces.isEmpty }
 
+  var selectedWorkspaceName: String {
+    if let selectedWorkspaceId,
+       let match = workspaces.first(where: { $0.id == selectedWorkspaceId })
+    {
+      return match.name
+    }
+    return workspaces.first?.name ?? "Workspace"
+  }
+
   private var draft: SharePayloadDraft?
   private let store: ShareInboxStore
 
@@ -34,15 +43,69 @@ final class ShareViewModel: ObservableObject {
     workspaces = store.recentWorkspaces()
     selectedWorkspaceId = store.lastWorkspaceId() ?? workspaces.first?.id
 
-    let items = extensionContext?.inputItems.compactMap { $0 as? NSExtensionItem } ?? []
-    let built = await SharePayloadBuilder.build(from: items)
+    // Safari may attach the JS preprocessing result slightly after launch.
+    // For YouTube, JS also fetches captions asynchronously — wait before network enrich.
+    var built = SharePayloadDraft(
+      title: "Shared",
+      markdown: "",
+      previewText: "",
+      files: []
+    )
+    for attempt in 0..<8 {
+      let items = extensionContext?.inputItems.compactMap { $0 as? NSExtensionItem } ?? []
+      // Probe without YouTube network work so we can detect URL + wait for Safari JS.
+      let probe = await SharePayloadBuilder.build(from: items, enrichYouTube: false)
+      let looksLikeYouTube =
+        markdownLooksLikeYouTube(probe.markdown) || markdownLooksLikeYouTube(probe.title)
+
+      if looksLikeYouTube, attempt < 3 {
+        // Give Safari JS ~1s to finish async caption fetch before network enrich.
+        built = probe
+        try? await Task.sleep(nanoseconds: 350_000_000)
+        continue
+      }
+
+      built =
+        looksLikeYouTube
+        ? await SharePayloadBuilder.build(from: items, enrichYouTube: true)
+        : probe
+
+      let hasYouTubeEnrichment =
+        built.markdown.contains("attachment://youtube-thumbnail")
+        || built.markdown.contains("## Transcript")
+      let hasTranscript = built.markdown.contains("## Transcript")
+      let hasBody = built.markdown.count > 40 || !(built.previewText.isEmpty)
+      let hasTitleOrURL =
+        built.title != "Shared"
+        || built.markdown.contains("http://")
+        || built.markdown.contains("https://")
+
+      if hasTranscript || hasYouTubeEnrichment {
+        break
+      }
+      if (hasBody && hasTitleOrURL) || attempt == 7 {
+        break
+      }
+      try? await Task.sleep(nanoseconds: 350_000_000)
+    }
+
     draft = built
     title = built.title
     previewText = built.previewText
     markdown = built.markdown
+    if markdown.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+      markdown = built.previewText
+    }
     if let imageFile = built.files.first(where: { $0.embedInMarkdownAsImage }) {
       previewImage = UIImage(data: imageFile.data)
     }
+
+    NSLog(
+      "[AFFiNE Share] loaded title=%@ markdownChars=%d files=%d",
+      title,
+      markdown.count,
+      built.files.count
+    )
   }
 
   func save() async -> Bool {
@@ -58,6 +121,12 @@ final class ShareViewModel: ObservableObject {
 
     guard let draft else {
       errorMessage = "Nothing to share"
+      return false
+    }
+
+    let body = markdown.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !body.isEmpty else {
+      errorMessage = "Shared content is empty"
       return false
     }
 
@@ -78,9 +147,9 @@ final class ShareViewModel: ObservableObject {
 
     let item = ShareInboxItem(
       title: trimmedTitle,
-      markdown: markdown.isEmpty ? draft.markdown : markdown,
+      markdown: body,
       workspaceId: selectedWorkspaceId,
-      previewText: previewText,
+      previewText: String(body.prefix(280)),
       attachments: attachments
     )
 
@@ -91,5 +160,13 @@ final class ShareViewModel: ObservableObject {
       errorMessage = "Failed to save shared content"
       return false
     }
+  }
+
+  private func markdownLooksLikeYouTube(_ value: String) -> Bool {
+    let lower = value.lowercased()
+    return lower.contains("youtube.com/")
+      || lower.contains("youtu.be/")
+      || lower.contains("youtube.com/watch")
+      || lower.contains("m.youtube.com/")
   }
 }

@@ -8,15 +8,72 @@ import UIKit
 import UniformTypeIdentifiers
 
 enum SharePayloadBuilder {
-  static func build(from extensionItems: [NSExtensionItem]) async -> SharePayloadDraft {
+  static func build(
+    from extensionItems: [NSExtensionItem],
+    enrichYouTube: Bool = true
+  ) async -> SharePayloadDraft {
     var title = "Shared"
     var urlString: String?
     var textBody: String?
+    var pageContent: String?
+    var safariDescription: String?
+    var safariTranscript: String?
     var files: [SharePayloadFile] = []
 
     for item in extensionItems {
       guard let attachments = item.attachments else { continue }
       for provider in attachments {
+        let typeIds = Set(provider.registeredTypeIdentifiers)
+        NSLog(
+          "[AFFiNE Share] provider types=%@",
+          typeIds.sorted().joined(separator: ",")
+        )
+
+        // Safari JS preprocessing results (title / url / page body).
+        // Try whenever the provider claims property-list support.
+        if typeIds.contains(UTType.propertyList.identifier)
+          || provider.hasItemConformingToTypeIdentifier(UTType.propertyList.identifier)
+        {
+          if let results = try? await loadSafariJavaScriptResults(from: provider) {
+            if let safariTitle = results.title, !safariTitle.isEmpty {
+              title = safariTitle
+            }
+            if let safariURL = results.url, !safariURL.isEmpty {
+              urlString = safariURL
+            }
+            if let content = results.content {
+              let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
+              // Accept any meaningful page body; do not require a large minimum.
+              if trimmed.count >= 1, pageContent == nil || trimmed.count > (pageContent?.count ?? 0) {
+                pageContent = trimmed
+              }
+            }
+            if let description = results.description {
+              let trimmed = description.trimmingCharacters(in: .whitespacesAndNewlines)
+              if !trimmed.isEmpty {
+                safariDescription = trimmed
+                if pageContent == nil || trimmed.count > (pageContent?.count ?? 0) {
+                  pageContent = trimmed
+                }
+              }
+            }
+            if let transcript = results.transcript {
+              let trimmed = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
+              if !trimmed.isEmpty {
+                safariTranscript = trimmed
+              }
+            }
+            NSLog(
+              "[AFFiNE Share] safari js titleChars=%d url=%@ contentChars=%d descChars=%d transcriptChars=%d",
+              results.title?.count ?? 0,
+              results.url ?? "(nil)",
+              results.content?.count ?? 0,
+              results.description?.count ?? 0,
+              results.transcript?.count ?? 0
+            )
+          }
+        }
+
         // Safari PDF/webpage shares often include both a remote URL and a file payload.
         if urlString == nil, provider.hasItemConformingToTypeIdentifier(UTType.url.identifier) {
           if let url = try? await loadURL(from: provider, typeIdentifier: UTType.url.identifier) {
@@ -26,6 +83,16 @@ enum SharePayloadBuilder {
               if title == "Shared" {
                 title = url.host ?? url.absoluteString
               }
+            }
+          }
+        }
+
+        // public.html fallback when JS preprocessing is unavailable.
+        if provider.hasItemConformingToTypeIdentifier(UTType.html.identifier) {
+          if let html = try? await loadHTMLString(from: provider) {
+            let plain = htmlToPlainText(html)
+            if plain.count > (pageContent?.count ?? 0) {
+              pageContent = plain
             }
           }
         }
@@ -42,9 +109,16 @@ enum SharePayloadBuilder {
         // Prefer PDF / webarchive / image file payloads even when a URL is also present.
         if files.isEmpty {
           if let file = await loadPreferredFile(from: provider) {
-            files.append(file)
-            if title == "Shared" || title == (urlString.flatMap { URL(string: $0)?.host } ?? "") {
-              title = file.fileName
+            // Avoid treating HTML/property-list blobs as generic shared files.
+            let lowerName = file.fileName.lowercased()
+            let isGenericBlob = file.mimeType == "application/octet-stream" && !lowerName.hasSuffix(".pdf")
+            if !isGenericBlob || lowerName.hasSuffix(".webarchive") || lowerName.hasSuffix(".pdf") {
+              files.append(file)
+              if title == "Shared" || title == (urlString.flatMap { URL(string: $0)?.host } ?? "") {
+                if !file.embedInMarkdownAsImage {
+                  title = file.fileName
+                }
+              }
             }
           }
         }
@@ -55,15 +129,67 @@ enum SharePayloadBuilder {
       }
     }
 
+    // YouTube: replace noisy mobile DOM with thumbnail + description + transcript.
+    // Caller may defer enrichYouTube briefly so Safari JS can finish async caption fetch.
+    if enrichYouTube,
+       let urlString, YouTubeShareEnricher.isYouTubeURL(urlString),
+       let enriched = await YouTubeShareEnricher.enrich(
+         urlString: urlString,
+         seed: .init(
+           title: title == "Shared" ? nil : title,
+           description: safariDescription,
+           transcriptMarkdown: safariTranscript
+         )
+       )
+    {
+      var youtubeFiles = files
+      if let thumb = YouTubeShareEnricher.thumbnailFile(from: enriched) {
+        youtubeFiles.removeAll { $0.placeholder == thumb.placeholder }
+        youtubeFiles.insert(thumb, at: 0)
+      }
+      let markdown = YouTubeShareEnricher.buildMarkdown(from: enriched)
+      let previewSeed =
+        enriched.description.isEmpty
+        ? enriched.transcriptMarkdown
+        : enriched.description
+      NSLog(
+        "[AFFiNE Share] youtube enrich titleChars=%d descChars=%d transcriptChars=%d thumb=%d",
+        enriched.title.count,
+        enriched.description.count,
+        enriched.transcriptMarkdown.count,
+        enriched.thumbnailData?.count ?? 0
+      )
+      return SharePayloadDraft(
+        title: sanitizeTitle(enriched.title.isEmpty ? title : enriched.title),
+        markdown: markdown,
+        previewText: String(previewSeed.prefix(280)),
+        files: youtubeFiles
+      )
+    }
+
+    // Prefer full page body over short share-sheet title text.
+    let body: String?
+    if let pageContent, !pageContent.isEmpty {
+      body = pageContent
+    } else if let textBody,
+              textBody != urlString,
+              textBody != title,
+              textBody.count > max(title.count + 8, 24)
+    {
+      body = textBody
+    } else {
+      body = nil
+    }
+
     var markdownParts: [String] = []
     if let urlString {
-      markdownParts.append("[\(title)](\(urlString))")
-      markdownParts.append(urlString)
+      markdownParts.append("[Source](\(urlString))")
     }
-    if let textBody {
-      if urlString == nil || textBody != urlString {
-        markdownParts.append(textBody)
-      }
+    if let body {
+      markdownParts.append(body)
+    } else if let urlString {
+      // Keep a visible editable body even when only the link is available.
+      markdownParts.append(urlString)
     }
     for file in files {
       if file.embedInMarkdownAsImage {
@@ -80,7 +206,11 @@ enum SharePayloadBuilder {
       .joined(separator: "\n\n")
 
     let preview: String
-    if let urlString {
+    if let body, !body.isEmpty {
+      preview = body
+    } else if !markdown.isEmpty {
+      preview = markdown
+    } else if let urlString {
       preview = urlString
     } else if let textBody {
       preview = textBody
@@ -93,7 +223,7 @@ enum SharePayloadBuilder {
     return SharePayloadDraft(
       title: sanitizeTitle(title),
       markdown: markdown.isEmpty ? preview : markdown,
-      previewText: String(preview.prefix(200)),
+      previewText: String(preview.prefix(280)),
       files: files
     )
   }
@@ -129,6 +259,171 @@ enum SharePayloadBuilder {
     return markdown.trimmingCharacters(in: .whitespacesAndNewlines)
   }
 
+  private struct SafariJavaScriptResults {
+    var title: String?
+    var url: String?
+    var content: String?
+    var description: String?
+    var transcript: String?
+
+    var hasUsefulPayload: Bool {
+      let titleOK = !(title?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true)
+      let urlOK = !(url?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true)
+      let contentOK = !(content?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true)
+      let descriptionOK = !(description?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true)
+      let transcriptOK = !(transcript?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true)
+      return titleOK || urlOK || contentOK || descriptionOK || transcriptOK
+    }
+  }
+
+  private static func loadSafariJavaScriptResults(
+    from provider: NSItemProvider
+  ) async throws -> SafariJavaScriptResults {
+    // Apple's sample uses loadItem forTypeIdentifier: property-list.
+    // Prefer that first; only fall back to dataRepresentation if needed.
+    if let item = try? await loadPropertyListItem(from: provider),
+       let parsed = parseSafariJavaScriptResults(from: item),
+       parsed.hasUsefulPayload
+    {
+      return parsed
+    }
+
+    if let data = try? await loadDataRepresentation(
+      from: provider,
+      typeIdentifier: UTType.propertyList.identifier
+    ),
+      let parsed = parseSafariJavaScriptResults(from: data),
+      parsed.hasUsefulPayload
+    {
+      return parsed
+    }
+
+    throw ShareInboxError.invalidPayload
+  }
+
+  private static func parseSafariJavaScriptResults(from item: Any) -> SafariJavaScriptResults? {
+    guard let dictionary = dictionary(from: item) else { return nil }
+    let results =
+      dictionary[NSExtensionJavaScriptPreprocessingResultsKey] as? [String: Any]
+      ?? dictionary
+
+    // Some hosts may use alternate keys; keep title/url/content as primary.
+    let content =
+      (results["content"] as? String)
+      ?? (results["body"] as? String)
+      ?? (results["text"] as? String)
+
+    return SafariJavaScriptResults(
+      title: results["title"] as? String,
+      url: results["url"] as? String ?? results["baseURI"] as? String,
+      content: content,
+      description: results["description"] as? String,
+      transcript: results["transcript"] as? String
+    )
+  }
+
+  private static func dictionary(from item: Any) -> [String: Any]? {
+    if let dictionary = item as? [String: Any] {
+      return dictionary
+    }
+    if let nested = item as? NSDictionary {
+      var dictionary: [String: Any] = [:]
+      for (key, value) in nested {
+        if let key = key as? String {
+          dictionary[key] = value
+        }
+      }
+      return dictionary
+    }
+    if let data = item as? Data,
+       let plist = try? PropertyListSerialization.propertyList(
+         from: data,
+         options: [],
+         format: nil
+       ) as? [String: Any]
+    {
+      return plist
+    }
+    return nil
+  }
+
+  private static func loadDataRepresentation(
+    from provider: NSItemProvider,
+    typeIdentifier: String
+  ) async throws -> Data {
+    try await withCheckedThrowingContinuation { continuation in
+      provider.loadDataRepresentation(forTypeIdentifier: typeIdentifier) { data, error in
+        if let error {
+          continuation.resume(throwing: error)
+          return
+        }
+        if let data {
+          continuation.resume(returning: data)
+        } else {
+          continuation.resume(throwing: ShareInboxError.invalidPayload)
+        }
+      }
+    }
+  }
+
+  private static func loadPropertyListItem(from provider: NSItemProvider) async throws -> Any {
+    try await withCheckedThrowingContinuation { continuation in
+      provider.loadItem(forTypeIdentifier: UTType.propertyList.identifier, options: nil) { item, error in
+        if let error {
+          continuation.resume(throwing: error)
+          return
+        }
+        if let item {
+          continuation.resume(returning: item)
+        } else {
+          continuation.resume(throwing: ShareInboxError.invalidPayload)
+        }
+      }
+    }
+  }
+
+  private static func loadHTMLString(from provider: NSItemProvider) async throws -> String {
+    try await withCheckedThrowingContinuation { continuation in
+      provider.loadItem(forTypeIdentifier: UTType.html.identifier, options: nil) { item, error in
+        if let error {
+          continuation.resume(throwing: error)
+          return
+        }
+        if let string = item as? String {
+          continuation.resume(returning: string)
+        } else if let data = item as? Data,
+                  let string = String(data: data, encoding: .utf8)
+                    ?? String(data: data, encoding: .utf16)
+        {
+          continuation.resume(returning: string)
+        } else if let attributed = item as? NSAttributedString {
+          continuation.resume(returning: attributed.string)
+        } else {
+          continuation.resume(throwing: ShareInboxError.invalidPayload)
+        }
+      }
+    }
+  }
+
+  private static func htmlToPlainText(_ html: String) -> String {
+    guard let data = html.data(using: .utf8) else { return html }
+    let options: [NSAttributedString.DocumentReadingOptionKey: Any] = [
+      .documentType: NSAttributedString.DocumentType.html,
+      .characterEncoding: String.Encoding.utf8.rawValue,
+    ]
+    guard let attributed = try? NSAttributedString(
+      data: data,
+      options: options,
+      documentAttributes: nil
+    ) else {
+      return html
+    }
+    return attributed.string
+      .replacingOccurrences(of: "\u{00a0}", with: " ")
+      .replacingOccurrences(of: #"\n{3,}"#, with: "\n\n", options: .regularExpression)
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+  }
+
   private static func loadPreferredFile(from provider: NSItemProvider) async -> SharePayloadFile? {
     let candidates: [(UTType, Bool)] = [
       (UTType.pdf, false),
@@ -139,7 +434,6 @@ enum SharePayloadBuilder {
       (.heic, true),
       (.webP, true),
       (.fileURL, false),
-      (.data, false),
     ]
 
     for (type, isImage) in candidates {

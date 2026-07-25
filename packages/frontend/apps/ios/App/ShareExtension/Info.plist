@@ -23,34 +23,25 @@
 		<key>NSExtensionAttributes</key>
 		<dict>
 			<!--
-			  Dictionary MaxCount rules fail for Safari PDF/webpage shares because Safari
-			  often attaches BOTH a URL and a PDF/file. Use a predicate that activates when
-			  any supported attachment is present.
+			  Apple only runs NSExtensionJavaScriptPreprocessingFile when the activation
+			  rule is a dictionary that includes SupportsWebPageWithMaxCount > 0.
+			  Use MaxCount >= 10 so Safari PDF/webpage shares (URL + file) still match.
 			-->
 			<key>NSExtensionActivationRule</key>
-			<string>
-				SUBQUERY (
-					extensionItems,
-					$extensionItem,
-					SUBQUERY (
-						$extensionItem.attachments,
-						$attachment,
-						ANY $attachment.registeredTypeIdentifiers UTI-CONFORMS-TO "public.url" ||
-						ANY $attachment.registeredTypeIdentifiers UTI-CONFORMS-TO "public.plain-text" ||
-						ANY $attachment.registeredTypeIdentifiers UTI-CONFORMS-TO "public.text" ||
-						ANY $attachment.registeredTypeIdentifiers UTI-CONFORMS-TO "public.image" ||
-						ANY $attachment.registeredTypeIdentifiers UTI-CONFORMS-TO "public.jpeg" ||
-						ANY $attachment.registeredTypeIdentifiers UTI-CONFORMS-TO "public.png" ||
-						ANY $attachment.registeredTypeIdentifiers UTI-CONFORMS-TO "public.heic" ||
-						ANY $attachment.registeredTypeIdentifiers UTI-CONFORMS-TO "com.adobe.pdf" ||
-						ANY $attachment.registeredTypeIdentifiers UTI-CONFORMS-TO "public.file-url" ||
-						ANY $attachment.registeredTypeIdentifiers UTI-CONFORMS-TO "public.html" ||
-						ANY $attachment.registeredTypeIdentifiers UTI-CONFORMS-TO "public.xhtml" ||
-						ANY $attachment.registeredTypeIdentifiers UTI-CONFORMS-TO "com.apple.webarchive" ||
-						ANY $attachment.registeredTypeIdentifiers UTI-CONFORMS-TO "public.data"
-					).@count &gt;= 1
-				).@count &gt;= 1
-			</string>
+			<dict>
+				<key>NSExtensionActivationSupportsText</key>
+				<true/>
+				<key>NSExtensionActivationSupportsWebURLWithMaxCount</key>
+				<integer>10</integer>
+				<key>NSExtensionActivationSupportsWebPageWithMaxCount</key>
+				<integer>10</integer>
+				<key>NSExtensionActivationSupportsImageWithMaxCount</key>
+				<integer>10</integer>
+				<key>NSExtensionActivationSupportsFileWithMaxCount</key>
+				<integer>10</integer>
+			</dict>
+			<key>NSExtensionJavaScriptPreprocessingFile</key>
+			<string>SafariPageCapture</string>
 		</dict>
 		<key>NSExtensionPointIdentifier</key>
 		<string>com.apple.share-services</string>
