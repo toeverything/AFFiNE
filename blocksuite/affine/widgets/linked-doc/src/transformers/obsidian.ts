@@ -139,10 +139,6 @@ function isObsidianParagraphLine(line: string): boolean {
   );
 }
 
-function hasExplicitLineBreak(line: string): boolean {
-  return /(?: {2,}|\\|<br\s*\/?>)\s*$/i.test(line);
-}
-
 function preprocessObsidianSoftLineBreaks(markdown: string): string {
   const lines = markdown.split('\n');
   const output: string[] = [];
@@ -175,11 +171,8 @@ function preprocessObsidianSoftLineBreaks(markdown: string): string {
       isObsidianParagraphLine(lines[index + 1])
     ) {
       const currentLine = paragraphLines[paragraphLines.length - 1];
-      paragraphLines[paragraphLines.length - 1] = hasExplicitLineBreak(
-        currentLine
-      )
-        ? currentLine
-        : `${currentLine}${OBSIDIAN_SOFT_LINE_BREAK_MARKER}`;
+      paragraphLines[paragraphLines.length - 1] =
+        `${currentLine}${OBSIDIAN_SOFT_LINE_BREAK_MARKER}`;
       paragraphLines.push(lines[index + 1]);
       index += 1;
     }
