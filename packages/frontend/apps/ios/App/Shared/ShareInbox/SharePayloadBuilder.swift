@@ -18,6 +18,8 @@ enum SharePayloadBuilder {
     var pageContent: String?
     var safariDescription: String?
     var safariTranscript: String?
+    var safariMediaURL: String?
+    var safariSourceType: String?
     var files: [SharePayloadFile] = []
 
     for item in extensionItems {
@@ -63,13 +65,26 @@ enum SharePayloadBuilder {
                 safariTranscript = trimmed
               }
             }
+            if let mediaURL = results.mediaURL {
+              let trimmed = mediaURL.trimmingCharacters(in: .whitespacesAndNewlines)
+              if !trimmed.isEmpty {
+                safariMediaURL = trimmed
+              }
+            }
+            if let sourceType = results.sourceType {
+              let trimmed = sourceType.trimmingCharacters(in: .whitespacesAndNewlines)
+              if !trimmed.isEmpty {
+                safariSourceType = trimmed
+              }
+            }
             NSLog(
-              "[AFFiNE Share] safari js titleChars=%d url=%@ contentChars=%d descChars=%d transcriptChars=%d",
+              "[AFFiNE Share] safari js titleChars=%d url=%@ contentChars=%d descChars=%d transcriptChars=%d media=%@",
               results.title?.count ?? 0,
               results.url ?? "(nil)",
               results.content?.count ?? 0,
               results.description?.count ?? 0,
-              results.transcript?.count ?? 0
+              results.transcript?.count ?? 0,
+              results.mediaURL ?? "(nil)"
             )
           }
         }
@@ -88,7 +103,9 @@ enum SharePayloadBuilder {
         }
 
         // public.html fallback when JS preprocessing is unavailable.
-        if provider.hasItemConformingToTypeIdentifier(UTType.html.identifier) {
+        if safariSourceType == nil,
+           provider.hasItemConformingToTypeIdentifier(UTType.html.identifier)
+        {
           if let html = try? await loadHTMLString(from: provider) {
             let plain = htmlToPlainText(html)
             if plain.count > (pageContent?.count ?? 0) {
@@ -167,6 +184,21 @@ enum SharePayloadBuilder {
       )
     }
 
+    if let safariMediaURL,
+       let mediaFile = await loadRemoteImageFile(
+         from: safariMediaURL,
+         placeholder: "attachment://x-post-media",
+         fileNamePrefix: "x-post-media"
+       )
+    {
+      files.removeAll { $0.placeholder == mediaFile.placeholder }
+      files.insert(mediaFile, at: 0)
+      pageContent = pageContent?.replacingOccurrences(
+        of: safariMediaURL,
+        with: mediaFile.placeholder
+      )
+    }
+
     // Prefer full page body over short share-sheet title text.
     let body: String?
     if let pageContent, !pageContent.isEmpty {
@@ -192,8 +224,11 @@ enum SharePayloadBuilder {
       markdownParts.append(urlString)
     }
     for file in files {
+      let alreadyReferenced = markdownParts.contains { $0.contains(file.placeholder) }
       if file.embedInMarkdownAsImage {
-        markdownParts.append("![Shared Image](\(file.placeholder))")
+        if !alreadyReferenced {
+          markdownParts.append("![Shared Image](\(file.placeholder))")
+        }
       } else {
         markdownParts.append("Shared file: \(file.fileName)")
         markdownParts.append("(\(file.mimeType))")
@@ -265,6 +300,8 @@ enum SharePayloadBuilder {
     var content: String?
     var description: String?
     var transcript: String?
+    var mediaURL: String?
+    var sourceType: String?
 
     var hasUsefulPayload: Bool {
       let titleOK = !(title?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true)
@@ -272,7 +309,8 @@ enum SharePayloadBuilder {
       let contentOK = !(content?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true)
       let descriptionOK = !(description?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true)
       let transcriptOK = !(transcript?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true)
-      return titleOK || urlOK || contentOK || descriptionOK || transcriptOK
+      let mediaOK = !(mediaURL?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true)
+      return titleOK || urlOK || contentOK || descriptionOK || transcriptOK || mediaOK
     }
   }
 
@@ -318,7 +356,9 @@ enum SharePayloadBuilder {
       url: results["url"] as? String ?? results["baseURI"] as? String,
       content: content,
       description: results["description"] as? String,
-      transcript: results["transcript"] as? String
+      transcript: results["transcript"] as? String,
+      mediaURL: results["mediaURL"] as? String,
+      sourceType: results["sourceType"] as? String
     )
   }
 
@@ -490,6 +530,50 @@ enum SharePayloadBuilder {
     return nil
   }
 
+  private static func loadRemoteImageFile(
+    from urlString: String,
+    placeholder: String,
+    fileNamePrefix: String
+  ) async -> SharePayloadFile? {
+    guard let url = URL(string: urlString),
+          let scheme = url.scheme?.lowercased(),
+          scheme == "http" || scheme == "https"
+    else {
+      return nil
+    }
+    var request = URLRequest(url: url)
+    request.timeoutInterval = 10
+    request.setValue(
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+      forHTTPHeaderField: "User-Agent"
+    )
+    do {
+      let (data, response) = try await URLSession.shared.data(for: request)
+      guard !data.isEmpty,
+            let http = response as? HTTPURLResponse,
+            (200...299).contains(http.statusCode)
+      else {
+        return nil
+      }
+      let mimeType = http.value(forHTTPHeaderField: "Content-Type")?
+        .components(separatedBy: ";")
+        .first?
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+        ?? mimeType(forFileName: url.lastPathComponent)
+      guard mimeType.hasPrefix("image/") else { return nil }
+      let ext = fileExtension(forMimeType: mimeType)
+      return SharePayloadFile(
+        data: data,
+        mimeType: mimeType,
+        fileName: "\(fileNamePrefix).\(ext)",
+        placeholder: placeholder,
+        embedInMarkdownAsImage: true
+      )
+    } catch {
+      return nil
+    }
+  }
+
   private static func sanitizeTitle(_ title: String) -> String {
     let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
     if trimmed.isEmpty { return "Shared" }
@@ -587,5 +671,15 @@ enum SharePayloadBuilder {
     if type.conforms(to: .pdf) { return "pdf" }
     if type.identifier.contains("webarchive") { return "webarchive" }
     return type.preferredFilenameExtension ?? "bin"
+  }
+
+  private static func fileExtension(forMimeType mimeType: String) -> String {
+    switch mimeType.lowercased() {
+    case "image/png": return "png"
+    case "image/webp": return "webp"
+    case "image/gif": return "gif"
+    case "image/heic": return "heic"
+    default: return "jpg"
+    }
   }
 }
