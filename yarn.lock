@@ -19551,13 +19551,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"builder-util-runtime@npm:9.5.1, builder-util-runtime@npm:^9.5.1":
+"builder-util-runtime@npm:9.5.1":
   version: 9.5.1
   resolution: "builder-util-runtime@npm:9.5.1"
   dependencies:
     debug: "npm:^4.3.4"
     sax: "npm:^1.2.4"
   checksum: 10/65ecde74ae480e7c7983bccb2db3c0a33e18ecf038c7af87acdf533c365e76c5cd922d13a6f7dad99f151ab508a1366bf8944d7b9651254d56a0dadb3c4bec98
+  languageName: node
+  linkType: hard
+
+"builder-util-runtime@npm:^9.5.1":
+  version: 9.7.0
+  resolution: "builder-util-runtime@npm:9.7.0"
+  dependencies:
+    debug: "npm:^4.3.4"
+    sax: "npm:^1.2.4"
+  checksum: 10/ec27cdce62f85aa1dde3c6f924d40f45df4574058483c9d70b25816c6cfb89f9369a1994bf4163c1aa21829e8b337165b6047b9cc8948394a05237efb478878c
   languageName: node
   linkType: hard
 
