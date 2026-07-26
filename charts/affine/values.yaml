@@ -1,0 +1,92 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/toeverything/affine
+  tag: stable
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+# All runtime configuration as plain env vars (see .docker/selfhost/compose.yml).
+# External Postgres and Redis are not deployed by this chart — set connection strings here.
+env:
+  DATABASE_URL: postgresql://affine:change-me@postgres.example.com:5432/affine
+  REDIS_SERVER_HOST: redis.example.com
+  AFFINE_INDEXER_ENABLED: "false"
+  # AFFINE_SERVER_EXTERNAL_URL: https://affine.example.com
+
+# Optional config.json mounted to /root/.affine/config/config.json
+# https://docs.affine.pro/self-host-affine/install/configuration
+config: {}
+# config:
+#   server:
+#     name: AFFiNE Self Hosted Server
+
+# Use an existing Secret with the same keys as env instead of values.env
+existingSecret: ""
+
+persistence:
+  enabled: true
+  size: 10Gi
+  storageClass: ""
+  accessModes:
+    - ReadWriteOnce
+
+migration:
+  enabled: true
+  ttlSecondsAfterFinished: 86400
+  resources:
+    requests:
+      cpu: 50m
+      memory: 256Mi
+    limits:
+      memory: 512Mi
+
+service:
+  type: ClusterIP
+  port: 3010
+
+resources:
+  limits:
+    memory: 1Gi
+  requests:
+    cpu: 100m
+    memory: 512Mi
+
+livenessProbe:
+  tcpSocket:
+    port: http
+  periodSeconds: 30
+
+readinessProbe:
+  tcpSocket:
+    port: http
+  periodSeconds: 10
+
+startupProbe:
+  tcpSocket:
+    port: http
+  failureThreshold: 30
+  periodSeconds: 10
+
+# The image writes to /root/.affine — keep runAsNonRoot disabled unless you adjust paths.
+podSecurityContext: {}
+# podSecurityContext:
+#   seccompProfile:
+#     type: RuntimeDefault
+
+securityContext: {}
+# securityContext:
+#   allowPrivilegeEscalation: false
+#   capabilities:
+#     drop:
+#       - ALL
+
+podAnnotations: {}
+podLabels: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+strategy:
+  type: Recreate
