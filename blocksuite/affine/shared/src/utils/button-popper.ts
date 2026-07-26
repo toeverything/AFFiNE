@@ -169,7 +169,7 @@ export function createButtonPopper(options: ButtonPopperOptions) {
     hide,
     toggle,
     dispose: () => {
-      cleanup?.();
+      hide();
       clickAway.dispose();
     },
   };

@@ -256,6 +256,17 @@ test('should format quick bar be able to change background color', async ({
       .evaluate(menu => menu.matches(':popover-open'))
   ).toBe(true);
 
+  const highlightMenu = formatBar.locator(
+    'affine-highlight-dropdown-menu editor-menu-button'
+  );
+  await highlightMenu.evaluate(menu => {
+    Reflect.set(menu, 'popperOptions', { mainAxis: 1 });
+  });
+  await expect(highlightMenu).not.toHaveAttribute('data-open', 'true');
+
+  await highlight.highlightBtn.click();
+  await expect(highlight.redForegroundBtn).toBeVisible();
+
   // TODO(@fundon): these recent settings should be added to the dropdown menu.
   // await expect(highlight.highlightBtn).toHaveAttribute(
   //   'data-last-used',
