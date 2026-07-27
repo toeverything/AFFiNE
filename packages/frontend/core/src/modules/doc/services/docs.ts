@@ -2,7 +2,7 @@ import { DebugLogger } from '@affine/debug';
 import { Unreachable } from '@affine/env/constant';
 import { replaceIdMiddleware } from '@blocksuite/affine/shared/adapters';
 import type { AffineTextAttributes } from '@blocksuite/affine/shared/types';
-import type { DeltaInsert } from '@blocksuite/affine/store';
+import type { BlockModel, DeltaInsert } from '@blocksuite/affine/store';
 import { Slice, Text, Transformer } from '@blocksuite/affine/store';
 import { ObjectPool, Service } from '@toeverything/infra';
 import { combineLatest, map } from 'rxjs';
@@ -201,6 +201,63 @@ export class DocsService extends Service {
         frame.id
       );
     release();
+  }
+
+  /**
+   * Remove all references to linkedDocId from the content of targetDocId —
+   * the inverse of addLinkedDoc. Reference deltas are deleted from their
+   * text; paragraph blocks left empty afterwards are removed as well.
+   * Returns the number of removed references.
+   */
+  async removeLinkedDoc(targetDocId: string, linkedDocId: string) {
+    const { doc, release } = this.open(targetDocId);
+    const disposePriorityLoad = doc.addPriorityLoad(10);
+    await doc.waitForSyncReady();
+    disposePriorityLoad();
+
+    const bsDoc = doc.blockSuiteDoc;
+    let removed = 0;
+
+    try {
+      const walk = (models: readonly BlockModel[]) => {
+        for (const model of models) {
+          const text = model.text;
+          if (text) {
+            const removedBefore = removed;
+            const delta = text.toDelta();
+            let offset = 0;
+            for (const op of delta) {
+              const len = typeof op.insert === 'string' ? op.insert.length : 0;
+              const ref = op.attributes?.reference;
+              if (ref && ref.pageId === linkedDocId) {
+                text.delete(offset, len);
+                removed++;
+              } else {
+                offset += len;
+              }
+            }
+            if (
+              removed > removedBefore &&
+              text.length === 0 &&
+              model.flavour === 'affine:paragraph'
+            ) {
+              bsDoc.deleteBlock(model.id);
+            }
+          }
+          if (model.children.length > 0) {
+            walk(model.children);
+          }
+        }
+      };
+
+      const root = bsDoc.root;
+      if (root) {
+        walk(root.children);
+      }
+    } finally {
+      release();
+    }
+    return removed;
   }
 
   async changeDocTitle(docId: string, newTitle: string) {

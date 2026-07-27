@@ -4939,6 +4939,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.rootAppSidebar.doc.link-doc-only"](): string;
     /**
+      * `Unlink`
+      */
+    ["com.affine.rootAppSidebar.doc.unlink"](): string;
+    /**
+      * `Unlinked`
+      */
+    ["com.affine.rootAppSidebar.doc.unlinked"](): string;
+    /**
       * `No linked docs`
       */
     ["com.affine.rootAppSidebar.docs.no-subdoc"](): string;
