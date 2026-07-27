@@ -1,0 +1,62 @@
+# Real-yjs decode check + tests for tools/affine-cli.
+#
+# affine-cli writes CRDT updates with y-octo; the app reads them with the real yjs library.
+# y-octo's own reader normalizes encodings that real yjs decodes differently (the labelXYWH
+# incident — docs/affine-cli-edgeless-render-postmortem.md), so the only trustworthy guard is
+# to decode CLI-written binaries with the actual yjs package in CI. The fixtures are emitted
+# by the crate's own library code (examples/emit_yjs_fixtures.rs) and asserted by
+# tools/affine-cli/yjs-compat/check.mjs.
+
+name: affine-cli yjs compat
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - canary
+    paths:
+      - 'tools/affine-cli/**'
+      - 'packages/frontend/native/nbstore/**'
+      - '.github/workflows/affine-cli-yjs-compat.yml'
+  pull_request:
+    paths:
+      - 'tools/affine-cli/**'
+      - 'packages/frontend/native/nbstore/**'
+      - '.github/workflows/affine-cli-yjs-compat.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  yjs-compat:
+    name: real-yjs decode check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: affine-cli
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Emit fixtures with the CLI's own writers
+        run: cargo run -p affine-cli --example emit_yjs_fixtures -- /tmp/yjs-fixtures
+
+      - name: Decode fixtures with real yjs
+        working-directory: tools/affine-cli/yjs-compat
+        run: |
+          npm ci --no-audit --no-fund
+          node check.mjs /tmp/yjs-fixtures
+
+      - name: Rust unit + e2e tests
+        run: cargo test -p affine-cli
