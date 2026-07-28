@@ -1495,7 +1495,7 @@
   "com.affine.settings.workspace.license.benefit.team.g4": "Membri del team illimitati (10+ posti)",
   "com.affine.settings.workspace.license.benefit.team.g5": "Ruoli amministrativi multipli",
   "com.affine.settings.workspace.license.benefit.team.g6": "Supporto clienti prioritario",
-  "com.affine.settings.workspace.license.lean-more": "Maggiori informazioni",
+  "com.affine.settings.workspace.license.learn-more": "Maggiori informazioni",
   "com.affine.settings.workspace.license.self-host": "Spazio di lavoro autogestito",
   "com.affine.settings.workspace.license.self-host-team": "Spazio di lavoro del team autogestito",
   "com.affine.settings.workspace.license.self-host-team.team.description": "Questa licenza scadrà il {{expirationDate}}, con {{leftDays}} giorni rimanenti.",

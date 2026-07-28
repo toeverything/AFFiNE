@@ -47,10 +47,15 @@ export const SignInDialog = ({
     didRequestNativeSignIn.current = true;
     let isActive = true;
     showNativeSignIn()
-      .then(() => {
-        if (isActive) {
-          closeRef.current();
+      .then(accountId => {
+        if (!isActive) {
+          return;
         }
+        if (accountId) {
+          closeRef.current();
+          return;
+        }
+        setUseWebFallback(true);
       })
       .catch((error: unknown) => {
         console.error('Failed to show native sign-in', error);

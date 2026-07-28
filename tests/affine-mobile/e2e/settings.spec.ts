@@ -9,6 +9,7 @@ const openSettings = async (page: Page) => {
 
 test('can open settings', async ({ page }) => {
   await openSettings(page);
+  await expect(page.getByText('Devices', { exact: true })).toHaveCount(0);
 });
 
 test('can change theme', async ({ page }) => {

@@ -953,7 +953,7 @@
   "com.affine.settings.workspace.license.self-host-team.replace-license.upload": "Last opp lisensfil",
   "com.affine.settings.workspace.license.self-host-team.replace-license.title": "Erstatt lisensfil",
   "com.affine.settings.workspace.license.self-host-team.deactivate-license": "Deaktivér",
-  "com.affine.settings.workspace.license.lean-more": "Lær mer",
+  "com.affine.settings.workspace.license.learn-more": "Lær mer",
   "com.affine.settings.workspace.license.deactivate-modal.title": "Bekrefte deaktivering?",
   "com.affine.settings.workspace.license.activate-modal.title": "Aktivér lisens",
   "com.affine.settings.workspace.license": "Lisens",

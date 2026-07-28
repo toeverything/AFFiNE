@@ -180,7 +180,7 @@ export interface NbStorePlugin {
     id: string;
     indexName: string;
     docId: string;
-  }) => Promise<{ text: string | null }>;
+  }) => Promise<{ text?: string | null }>;
   ftsGetMatches: (options: {
     id: string;
     indexName: string;

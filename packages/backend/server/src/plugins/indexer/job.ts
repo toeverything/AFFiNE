@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { Config, JOB_SIGNAL, JobQueue, OnJob } from '../../base';
+import { DocReader } from '../../core/doc';
 import { readAllDocIdsFromWorkspaceSnapshot } from '../../core/utils/blocksuite';
 import { Models } from '../../models';
 import { IndexerService } from './service';
@@ -24,6 +25,11 @@ declare global {
     'indexer.autoIndexWorkspaces': {
       lastIndexedWorkspaceSid?: number;
     };
+    'indexer.reconcileDocumentCleanup': {
+      workspaceId: string;
+      docId: string;
+      cleanupVersion: string;
+    };
   }
 }
 
@@ -35,7 +41,8 @@ export class IndexerJob {
     private readonly models: Models,
     private readonly service: IndexerService,
     private readonly queue: JobQueue,
-    private readonly config: Config
+    private readonly config: Config,
+    private readonly doc: DocReader
   ) {}
 
   @OnJob('indexer.indexDoc')
@@ -66,6 +73,39 @@ export class IndexerJob {
     await this.service.deleteDoc(workspaceId, docId);
   }
 
+  @OnJob('indexer.reconcileDocumentCleanup')
+  async reconcileDocumentCleanup({
+    workspaceId,
+    docId,
+    cleanupVersion,
+  }: Jobs['indexer.reconcileDocumentCleanup']) {
+    if (this.config.indexer.enabled) {
+      const root = await this.doc.getDoc(workspaceId, workspaceId);
+      if (!root) {
+        throw new Error(`workspace root ${workspaceId} not found`);
+      }
+      const live = readAllDocIdsFromWorkspaceSnapshot(root.bin, true).includes(
+        docId
+      );
+      if (live) {
+        if (!(await this.doc.getDoc(workspaceId, docId))) {
+          throw new Error(
+            `restored document ${workspaceId}/${docId} not found`
+          );
+        }
+        await this.service.indexDoc(workspaceId, docId);
+      } else {
+        await this.service.deleteDoc(workspaceId, docId);
+      }
+    }
+    await this.queue.add('backendRuntime.ackDocumentCleanupEffect', {
+      workspaceId,
+      docId,
+      cleanupVersion,
+      effect: 'search',
+    });
+  }
+
   @OnJob('indexer.indexWorkspace')
   async indexWorkspace({ workspaceId }: Jobs['indexer.indexWorkspace']) {
     if (!this.config.indexer.enabled) {
@@ -79,16 +119,13 @@ export class IndexerJob {
       return;
     }
 
-    const snapshot = await this.models.doc.getSnapshot(
-      workspaceId,
-      workspaceId
-    );
-    if (!snapshot) {
+    const root = await this.doc.getDoc(workspaceId, workspaceId);
+    if (!root) {
       this.logger.warn(`workspace snapshot ${workspaceId} not found`);
       return;
     }
 
-    const docIdsInWorkspace = readAllDocIdsFromWorkspaceSnapshot(snapshot.blob);
+    const docIdsInWorkspace = readAllDocIdsFromWorkspaceSnapshot(root.bin);
     const docIdsInIndexer = await this.service.listDocIds(workspaceId);
 
     const docIdsInWorkspaceSet = new Set(docIdsInWorkspace);

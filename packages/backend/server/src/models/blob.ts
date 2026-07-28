@@ -11,7 +11,7 @@ export type CreateBlobInput = Prisma.BlobUncheckedCreateInput;
 @Injectable()
 export class BlobModel extends BaseModel {
   async upsert(blob: CreateBlobInput) {
-    return await this.db.blob.upsert({
+    const result = await this.db.blob.upsert({
       where: {
         workspaceId_key: {
           workspaceId: blob.workspaceId,
@@ -33,6 +33,8 @@ export class BlobModel extends BaseModel {
         uploadId: blob.uploadId,
       },
     });
+    await this.markQuotaStateStale(blob.workspaceId);
+    return result;
   }
 
   async delete(workspaceId: string, key: string, permanently = false) {
@@ -43,6 +45,7 @@ export class BlobModel extends BaseModel {
           key,
         },
       });
+      await this.markQuotaStateStale(workspaceId);
       this.logger.log(`deleted blob ${workspaceId}/${key} permanently`);
       return;
     }
@@ -58,6 +61,7 @@ export class BlobModel extends BaseModel {
         deletedAt: new Date(),
       },
     });
+    await this.markQuotaStateStale(workspaceId);
   }
 
   async get(workspaceId: string, key: string) {
@@ -108,5 +112,12 @@ export class BlobModel extends BaseModel {
     });
 
     return sum._sum.size ?? 0;
+  }
+
+  private async markQuotaStateStale(workspaceId: string) {
+    await this.db.effectiveWorkspaceQuotaState.updateMany({
+      where: { workspaceId },
+      data: { stale: true },
+    });
   }
 }

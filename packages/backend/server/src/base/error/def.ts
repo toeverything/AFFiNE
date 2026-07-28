@@ -280,12 +280,24 @@ export const USER_FRIENDLY_ERRORS = {
     args: { reason: 'string' },
     message: ({ reason }) => {
       switch (reason) {
+        case 'invalid_url':
+          return 'Invalid URL';
+        case 'disallowed_protocol':
+          return 'URL protocol is not allowed';
+        case 'url_has_credentials':
+          return 'URL must not contain credentials';
+        case 'blocked_hostname':
+          return 'URL hostname is not allowed';
+        case 'host_not_allowed':
+          return 'URL hostname is outside the allowed hosts';
         case 'unresolvable_hostname':
           return 'Failed to resolve hostname';
+        case 'blocked_ip':
+          return 'URL resolves to a private or reserved IP address';
         case 'too_many_redirects':
           return 'Too many redirects';
         default:
-          return 'Invalid URL';
+          return `URL blocked by SSRF protection: ${reason}`;
       }
     },
   },

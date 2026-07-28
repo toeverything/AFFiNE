@@ -1472,7 +1472,7 @@
   "com.affine.settings.workspace.license.benefit.team.g4": "Απεριόριστα μέλη ομάδας (10+ θέσεις)",
   "com.affine.settings.workspace.license.benefit.team.g5": "Πολλαπλοί ρόλοι διαχειριστών",
   "com.affine.settings.workspace.license.benefit.team.g6": "Προτεραιότητα υποστήριξης πελατών",
-  "com.affine.settings.workspace.license.lean-more": "Μάθετε περισσότερα",
+  "com.affine.settings.workspace.license.learn-more": "Μάθετε περισσότερα",
   "com.affine.settings.workspace.license.self-host": "Αυτοδιαχειριζόμενος χώρος εργασίας",
   "com.affine.settings.workspace.license.self-host-team": "Αυτοδιαχειριζόμενος χώρος εργασίας ομάδας",
   "com.affine.settings.workspace.license.self-host-team.team.description": "Η άδεια αυτή θα λήξει στις {{expirationDate}}, με {{leftDays}} ημέρες να απομένουν.",

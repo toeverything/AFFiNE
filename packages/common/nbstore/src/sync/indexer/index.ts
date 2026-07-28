@@ -568,9 +568,7 @@ export class IndexerSyncImpl implements IndexerSync {
         const title = node.fields.title;
         return [
           node.id,
-          {
-            title: typeof title === 'string' ? title : title.at(0),
-          },
+          { title: typeof title === 'string' ? title : undefined },
         ];
       })
     );

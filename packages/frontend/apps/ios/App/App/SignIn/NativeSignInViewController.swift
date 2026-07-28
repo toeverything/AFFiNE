@@ -762,7 +762,7 @@ private final class NativeSignInWebBridge {
 
   private func currentUserIdentifier() async throws -> String? {
     let result = try await call(
-      "return window.getCurrentUserIdentifier?.();",
+      "return await window.getCurrentUserIdentifier?.();",
       arguments: [:]
     )
     return userIdentifier(from: result)

@@ -4,7 +4,7 @@ import { PrismaClient, WorkspaceMemberStatus } from '@prisma/client';
 import ava, { type ExecutionContext, type TestFn } from 'ava';
 import Sinon from 'sinon';
 
-import { Cache, CryptoHelper } from '../../base';
+import { Cache, ConfigFactory, CryptoHelper } from '../../base';
 import { EntitlementService } from '../../core/entitlement';
 import { Models, WorkspaceRole } from '../../models';
 import { CopilotAccessPolicy } from '../../plugins/copilot/access';
@@ -553,11 +553,16 @@ test('local leases are short lived and do not persist keys to server configs', a
 });
 
 test('local leases persist normalized custom endpoints', async t => {
-  const customEndpointSupported = Sinon.stub(
-    t.context.byok,
-    'customEndpointSupported'
-  ).get(() => true);
-  t.teardown(() => customEndpointSupported.restore());
+  const config = t.context.module.get(ConfigFactory);
+  const deploymentType = globalThis.env.DEPLOYMENT_TYPE;
+  Object.assign(globalThis.env, { DEPLOYMENT_TYPE: 'selfhosted' });
+  t.false(t.context.byok.customEndpointSupported);
+  config.override({ copilot: { byok: { allowCustomEndpoint: true } } });
+  t.true(t.context.byok.customEndpointSupported);
+  t.teardown(() => {
+    config.override({ copilot: { byok: { allowCustomEndpoint: false } } });
+    Object.assign(globalThis.env, { DEPLOYMENT_TYPE: deploymentType });
+  });
   const { user, workspace } = await createUserWorkspace(t);
   await grantUserPlan(t, user.id);
 

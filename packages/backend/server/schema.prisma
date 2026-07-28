@@ -27,13 +27,10 @@ model User {
 
   features                    UserFeature[]
   userStripeCustomer          UserStripeCustomer?
-  workspaces                  WorkspaceUserRole[]
   workspaceMembers            WorkspaceMember[]
   workspaceInvitations        WorkspaceInvitation[]          @relation("workspace_invitation_invitee")
   createdWorkspaceInvitations WorkspaceInvitation[]          @relation("workspace_invitation_inviter")
   // Invite others to join the workspace
-  WorkspaceInvitations        WorkspaceUserRole[]            @relation("inviter")
-  docPermissions              WorkspaceDocUserRole[]
   connectedAccounts           ConnectedAccount[]
   calendarAccounts            CalendarAccount[]
   mcpCredentials              McpCredential[]
@@ -181,12 +178,9 @@ model Workspace {
   // NOTE: manually set this column type to identity in migration file
   sid                 Int      @unique @default(autoincrement())
   id                  String   @id @default(uuid()) @db.VarChar
-  public              Boolean
   createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   // workspace level feature flags
   enableAi            Boolean  @default(true) @map("enable_ai")
-  enableSharing       Boolean  @default(true) @map("enable_sharing")
-  enableUrlPreview    Boolean  @default(false) @map("enable_url_preview")
   enableDocEmbedding  Boolean  @default(true) @map("enable_doc_embedding")
   name                String?  @db.VarChar
   avatarKey           String?  @map("avatar_key") @db.VarChar
@@ -195,8 +189,6 @@ model Workspace {
 
   features                   WorkspaceFeature[]
   docs                       WorkspaceDoc[]
-  permissions                WorkspaceUserRole[]
-  docPermissions             WorkspaceDocUserRole[]
   blobs                      Blob[]
   ignoredDocs                AiWorkspaceIgnoredDocs[]
   embedFiles                 AiWorkspaceFiles[]
@@ -210,11 +202,10 @@ model Workspace {
   workspaceAdminStatsDaily   WorkspaceAdminStatsDaily[]
   workspaceDocViewDaily      WorkspaceDocViewDaily[]
   workspaceMemberLastAccess  WorkspaceMemberLastAccess[]
-  runtimeState               WorkspaceRuntimeState?
   quotaState                 EffectiveWorkspaceQuotaState?
   accessPolicy               WorkspaceAccessPolicy?
-  projectedMembers           WorkspaceMember[]
-  projectedInvitations       WorkspaceInvitation[]
+  members                    WorkspaceMember[]
+  invitations                WorkspaceInvitation[]
   docAccessPolicies          DocAccessPolicy[]
   docGrants                  DocGrant[]
   mcpCredentials             McpCredential[]
@@ -222,21 +213,6 @@ model Workspace {
   @@index([lastCheckEmbeddings])
   @@index([createdAt])
   @@map("workspaces")
-}
-
-model WorkspaceRuntimeState {
-  workspaceId      String    @id @map("workspace_id") @db.VarChar
-  known            Boolean   @default(false)
-  readonly         Boolean   @default(false)
-  readonlyReasons  String[]  @default([]) @map("readonly_reasons")
-  lastReconciledAt DateTime? @map("last_reconciled_at") @db.Timestamptz(3)
-  staleAfter       DateTime? @map("stale_after") @db.Timestamptz(3)
-  updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
-  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-
-  @@map("workspace_runtime_states")
 }
 
 model Entitlement {
@@ -328,15 +304,14 @@ model EffectiveWorkspaceQuotaState {
 }
 
 model WorkspaceMember {
-  id                 String   @id @default(dbgenerated()) @db.VarChar
-  workspaceId        String   @map("workspace_id") @db.VarChar
-  userId             String   @map("user_id") @db.VarChar
-  role               String   @db.Text
-  state              String   @default("active") @db.Text
-  source             String   @default("legacy") @db.Text
-  legacyPermissionId String?  @map("legacy_permission_id") @db.VarChar
-  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt          DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+  id          String   @id @default(dbgenerated()) @db.VarChar
+  workspaceId String   @map("workspace_id") @db.VarChar
+  userId      String   @map("user_id") @db.VarChar
+  role        String   @db.Text
+  state       String   @default("active") @db.Text
+  source      String   @default("legacy") @db.Text
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -348,21 +323,20 @@ model WorkspaceMember {
 }
 
 model WorkspaceInvitation {
-  id                 String    @id @default(dbgenerated()) @db.VarChar
-  workspaceId        String    @map("workspace_id") @db.VarChar
-  inviteeUserId      String?   @map("invitee_user_id") @db.VarChar
-  normalizedEmail    String?   @map("normalized_email") @db.VarChar
-  inviterUserId      String?   @map("inviter_user_id") @db.VarChar
-  requestedRole      String    @default("member") @map("requested_role") @db.Text
-  status             String    @db.Text
-  kind               String    @default("email") @db.Text
+  id              String    @id @default(dbgenerated()) @db.VarChar
+  workspaceId     String    @map("workspace_id") @db.VarChar
+  inviteeUserId   String?   @map("invitee_user_id") @db.VarChar
+  normalizedEmail String?   @map("normalized_email") @db.VarChar
+  inviterUserId   String?   @map("inviter_user_id") @db.VarChar
+  requestedRole   String    @default("member") @map("requested_role") @db.Text
+  status          String    @db.Text
+  kind            String    @default("email") @db.Text
   // Partial unique index exists in migration: token_hash WHERE token_hash IS NOT NULL.
-  tokenHash          String?   @map("token_hash") @db.Text
-  legacyPermissionId String?   @map("legacy_permission_id") @db.VarChar
-  expiresAt          DateTime? @map("expires_at") @db.Timestamptz(3)
-  acceptedAt         DateTime? @map("accepted_at") @db.Timestamptz(3)
-  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+  tokenHash       String?   @map("token_hash") @db.Text
+  expiresAt       DateTime? @map("expires_at") @db.Timestamptz(3)
+  acceptedAt      DateTime? @map("accepted_at") @db.Timestamptz(3)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   inviteeUser User?     @relation("workspace_invitation_invitee", fields: [inviteeUserId], references: [id], onDelete: SetNull)
@@ -462,22 +436,18 @@ model MailDelivery {
 }
 
 model DocGrant {
-  workspaceId       String   @map("workspace_id") @db.VarChar
-  docId             String   @map("doc_id") @db.VarChar
-  principalType     String   @map("principal_type") @db.Text
-  principalId       String   @map("principal_id") @db.VarChar
-  role              String   @db.Text
-  grantedBy         String?  @map("granted_by") @db.VarChar
-  legacyWorkspaceId String?  @map("legacy_workspace_id") @db.VarChar
-  legacyDocId       String?  @map("legacy_doc_id") @db.VarChar
-  legacyUserId      String?  @map("legacy_user_id") @db.VarChar
-  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+  workspaceId   String   @map("workspace_id") @db.VarChar
+  docId         String   @map("doc_id") @db.VarChar
+  principalType String   @map("principal_type") @db.Text
+  principalId   String   @map("principal_id") @db.VarChar
+  role          String   @db.Text
+  grantedBy     String?  @map("granted_by") @db.VarChar
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@id([workspaceId, docId, principalType, principalId])
-  // Partial unique index exists in migration for non-null legacy ids.
   @@index([principalType, principalId, role])
   @@index([workspaceId, docId, role])
   @@map("doc_grants")
@@ -491,9 +461,6 @@ model DocGrant {
 model WorkspaceDoc {
   workspaceId String    @map("workspace_id") @db.VarChar
   docId       String    @map("page_id") @db.VarChar
-  public      Boolean   @default(false)
-  // Workspace user's default role in this page, default is `Manager`
-  defaultRole Int       @default(30) @db.SmallInt
   // Page/Edgeless
   mode        Int       @default(0) @db.SmallInt
   // Whether the doc is blocked
@@ -505,8 +472,6 @@ model WorkspaceDoc {
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@id([workspaceId, docId])
-  @@index([workspaceId, public])
-  @@index([public, publishedAt])
   @@map("workspace_pages")
 }
 
@@ -530,45 +495,6 @@ enum WorkspaceMemberSource {
   Email
   /// Invited by link
   Link
-}
-
-model WorkspaceUserRole {
-  id          String                @id @default(uuid()) @db.VarChar
-  workspaceId String                @map("workspace_id") @db.VarChar
-  userId      String                @map("user_id") @db.VarChar
-  // Workspace Role, Owner/Admin/Collaborator/External
-  type        Int                   @db.SmallInt
-  /// the invite status of the workspace member
-  status      WorkspaceMemberStatus @default(Pending)
-  source      WorkspaceMemberSource @default(Email)
-  inviterId   String?               @map("inviter_id") @db.VarChar
-  createdAt   DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt   DateTime              @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
-
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  inviter   User?     @relation(name: "inviter", fields: [inviterId], references: [id], onDelete: SetNull)
-
-  @@unique([workspaceId, userId])
-  // optimize for querying user's workspace permissions
-  @@index([workspaceId, type, status])
-  @@index(userId)
-  @@map("workspace_user_permissions")
-}
-
-model WorkspaceDocUserRole {
-  workspaceId String   @map("workspace_id") @db.VarChar
-  docId       String   @map("page_id") @db.VarChar
-  userId      String   @map("user_id") @db.VarChar
-  // External/Reader/Editor/Manager/Owner
-  type        Int      @db.SmallInt
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-
-  @@id([workspaceId, docId, userId])
-  @@map("workspace_page_user_permissions")
 }
 
 model UserFeature {
@@ -623,7 +549,6 @@ model WorkspaceAdminStats {
   blobSize        BigInt   @default(0) @map("blob_size") @db.BigInt
   memberCount     BigInt   @default(0) @map("member_count") @db.BigInt
   publicPageCount BigInt   @default(0) @map("public_page_count") @db.BigInt
-  features        String[] @default([]) @db.Text
   updatedAt       DateTime @default(now()) @map("updated_at") @db.Timestamptz(3)
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -1172,50 +1097,6 @@ model UserStripeCustomer {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_stripe_customers")
-}
-
-model Subscription {
-  id                   Int       @id @default(autoincrement()) @db.Integer
-  targetId             String    @map("target_id") @db.VarChar
-  plan                 String    @db.VarChar(20)
-  // yearly/monthly/lifetime
-  recurring            String    @db.VarChar(20)
-  // onetime subscription or anything else
-  variant              String?   @db.VarChar(20)
-  quantity             Int       @default(1) @db.Integer
-  // subscription.id, null for lifetime payment or one time payment subscription
-  stripeSubscriptionId String?   @unique @map("stripe_subscription_id")
-  // stripe schedule id
-  stripeScheduleId     String?   @map("stripe_schedule_id") @db.VarChar
-  // subscription provider: stripe or revenuecat
-  provider             Provider  @default(stripe)
-  // iap store for revenuecat subscriptions
-  iapStore             IapStore? @map("iap_store")
-  // revenuecat entitlement name like "Pro" / "AI"
-  rcEntitlement        String?   @map("rc_entitlement") @db.VarChar
-  // revenuecat product id like "app.affine.pro.Annual"
-  rcProductId          String?   @map("rc_product_id") @db.VarChar
-  // external reference, appstore originalTransactionId or play purchaseToken
-  rcExternalRef        String?   @map("rc_external_ref") @db.VarChar
-  // subscription.status, active/past_due/canceled/unpaid...
-  status               String    @db.VarChar(20)
-  // subscription.current_period_start
-  start                DateTime  @map("start") @db.Timestamptz(3)
-  // subscription.current_period_end, null for lifetime payment
-  end                  DateTime? @map("end") @db.Timestamptz(3)
-  // subscription.billing_cycle_anchor
-  nextBillAt           DateTime? @map("next_bill_at") @db.Timestamptz(3)
-  // subscription.canceled_at
-  canceledAt           DateTime? @map("canceled_at") @db.Timestamptz(3)
-  // subscription.trial_start
-  trialStart           DateTime? @map("trial_start") @db.Timestamptz(3)
-  // subscription.trial_end
-  trialEnd             DateTime? @map("trial_end") @db.Timestamptz(3)
-  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt            DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
-
-  @@unique([targetId, plan])
-  @@map("subscriptions")
 }
 
 model ProviderSubscription {

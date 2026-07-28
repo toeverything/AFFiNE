@@ -44,7 +44,7 @@ enum PaywallAuthGuard {
   static func currentUserIdentifier(in webView: WKWebView) async -> String? {
     do {
       let result = try await webView.callAsyncJavaScript(
-        "return window.getCurrentUserIdentifier?.();",
+        "return await window.getCurrentUserIdentifier?.();",
         contentWorld: .page
       )
       return userIdentifier(from: result)

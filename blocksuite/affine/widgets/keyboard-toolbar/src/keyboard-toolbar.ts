@@ -25,9 +25,11 @@ import type {
 } from './config';
 import { keyboardToolbarStyles } from './styles';
 import {
+  consumeKeyboardToolbarClick,
   isKeyboardSubToolBarConfig,
   isKeyboardToolBarActionItem,
   isKeyboardToolPanelConfig,
+  rememberKeyboardToolbarActivation,
 } from './utils';
 
 export const AFFINE_KEYBOARD_TOOLBAR = 'affine-keyboard-toolbar';
@@ -41,8 +43,6 @@ export class AffineKeyboardToolbar extends SignalWatcher(
 ) {
   static override styles = keyboardToolbarStyles;
 
-  private readonly _expanded$ = signal(false);
-
   get std() {
     return this.rootComponent.std;
   }
@@ -52,13 +52,17 @@ export class AffineKeyboardToolbar extends SignalWatcher(
   }
 
   private get panelHeight() {
-    return this._expanded$.value
-      ? `${
-          this.keyboard.staticHeight$.value !== 0
-            ? this.keyboard.staticHeight$.value
-            : 330
-        }px`
-      : this.keyboard.appTabSafeArea$.value;
+    if (this.keyboard.visible$.value) {
+      return `${this.keyboard.height$.value}px`;
+    }
+    if (this.panelOpened) {
+      return `${
+        this.keyboard.staticHeight$.value !== 0
+          ? this.keyboard.staticHeight$.value
+          : 330
+      }px`;
+    }
+    return this.keyboard.appTabSafeArea$.value;
   }
 
   /**
@@ -79,6 +83,7 @@ export class AffineKeyboardToolbar extends SignalWatcher(
   };
 
   private readonly _currentPanelIndex$ = signal(-1);
+  private readonly _clickSuppressionState = { suppressNextClick: false };
 
   private readonly _goPrevToolbar = () => {
     if (!this._isSubToolbarOpened) return;
@@ -224,14 +229,25 @@ export class AffineKeyboardToolbar extends SignalWatcher(
       @pointerdown=${(event: PointerEvent) => {
         event.preventDefault();
         if (!this._isPrimaryPointerEvent(event) || disabled) return;
+        rememberKeyboardToolbarActivation(this._clickSuppressionState);
         this._handleItemClick(item, index);
       }}
       @keydown=${(event: KeyboardEvent) => {
         if (!this._isKeyboardActivation(event) || disabled) return;
         event.preventDefault();
+        rememberKeyboardToolbarActivation(this._clickSuppressionState);
         this._handleItemClick(item, index);
       }}
-      @click=${(event: MouseEvent) => event.preventDefault()}
+      @click=${(event: MouseEvent) => {
+        if (!consumeKeyboardToolbarClick(this._clickSuppressionState)) {
+          event.preventDefault();
+          return;
+        }
+        if (disabled) {
+          return;
+        }
+        this._handleItemClick(item, index);
+      }}
     >
       ${this._renderIcon(icon)}
     </icon-button>`;
@@ -249,14 +265,22 @@ export class AffineKeyboardToolbar extends SignalWatcher(
           @pointerdown=${(event: PointerEvent) => {
             event.preventDefault();
             if (!this._isPrimaryPointerEvent(event)) return;
+            rememberKeyboardToolbarActivation(this._clickSuppressionState);
             this._goPrevToolbar();
           }}
           @keydown=${(event: KeyboardEvent) => {
             if (!this._isKeyboardActivation(event)) return;
             event.preventDefault();
+            rememberKeyboardToolbarActivation(this._clickSuppressionState);
             this._goPrevToolbar();
           }}
-          @click=${(event: MouseEvent) => event.preventDefault()}
+          @click=${(event: MouseEvent) => {
+            if (!consumeKeyboardToolbarClick(this._clickSuppressionState)) {
+              event.preventDefault();
+              return;
+            }
+            this._goPrevToolbar();
+          }}
         >
           ${ArrowLeftBigIcon()}
         </icon-button>`
@@ -277,6 +301,7 @@ export class AffineKeyboardToolbar extends SignalWatcher(
         @pointerdown=${(event: PointerEvent) => {
           event.preventDefault();
           if (!this._isPrimaryPointerEvent(event)) return;
+          rememberKeyboardToolbarActivation(this._clickSuppressionState);
           if (this.keyboard.staticHeight$.value === 0) {
             this._closeToolPanel();
             return;
@@ -290,6 +315,7 @@ export class AffineKeyboardToolbar extends SignalWatcher(
         @keydown=${(event: KeyboardEvent) => {
           if (!this._isKeyboardActivation(event)) return;
           event.preventDefault();
+          rememberKeyboardToolbarActivation(this._clickSuppressionState);
           if (this.keyboard.staticHeight$.value === 0) {
             this._closeToolPanel();
             return;
@@ -300,7 +326,21 @@ export class AffineKeyboardToolbar extends SignalWatcher(
             this.keyboard.show();
           }
         }}
-        @click=${(event: MouseEvent) => event.preventDefault()}
+        @click=${(event: MouseEvent) => {
+          if (!consumeKeyboardToolbarClick(this._clickSuppressionState)) {
+            event.preventDefault();
+            return;
+          }
+          if (this.keyboard.staticHeight$.value === 0) {
+            this._closeToolPanel();
+            return;
+          }
+          if (this.keyboard.visible$.peek()) {
+            this.keyboard.hide();
+          } else {
+            this.keyboard.show();
+          }
+        }}
       >
         ${KeyboardIcon()}
       </icon-button>
@@ -311,20 +351,13 @@ export class AffineKeyboardToolbar extends SignalWatcher(
     super.connectedCallback();
     this.setAttribute(RANGE_SYNC_EXCLUDE_ATTR, 'true');
 
-    // There are two cases that `_expanded$` will be true:
-    // 1. when virtual keyboard is opened, the panel need to be expanded and overlapped by the keyboard,
-    // so that the toolbar will be on the top of the keyboard.
-    // 2. the panel is opened, whether the keyboard is closed or not exists (e.g. a physical keyboard connected)
-    //
-    // There is one case that `_expanded$` will be false:
-    // 1. the panel is closed, and the keyboard is closed, the toolbar will be rendered at the bottom of the viewport
     this._disposables.add(
       effect(() => {
-        if (this.keyboard.visible$.value || this.panelOpened) {
-          this._expanded$.value = true;
-        } else {
-          this._expanded$.value = false;
-        }
+        this.toggleAttribute(
+          'data-keyboard-visible',
+          this.keyboard.visible$.value
+        );
+        this.toggleAttribute('data-panel-open', this.panelOpened);
       })
     );
 

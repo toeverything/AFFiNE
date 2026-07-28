@@ -10,6 +10,7 @@ import {
   clearWorkspaceByokConfigsMutation as clearByokMutation,
   deleteWorkspaceByokConfigMutation as deleteByokMutation,
   type GraphQLQuery,
+  ServerDeploymentType,
   workspaceByokSettingsQuery as byokSettingsQuery,
 } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
@@ -114,6 +115,9 @@ export const WorkspaceByokSetting = () => {
     (settings?.localEntitled ?? false) &&
     (settings?.localStorageSupported ?? false);
   const canManageKeys = canAddServerKey || canAddLocalKey;
+  const isSelfHosted =
+    workspaceServer.server?.config$.value.type ===
+    ServerDeploymentType.Selfhosted;
 
   const clearAll = useCallback(async () => {
     if (!settings) {
@@ -356,6 +360,7 @@ export const WorkspaceByokSetting = () => {
         localStorageSupported={settings.localStorageSupported}
         canAddServerKey={canAddServerKey}
         canAddLocalKey={canAddLocalKey}
+        isSelfHosted={isSelfHosted}
         gql={workspaceServer.server?.gql as GqlFn | undefined}
       />
     </>

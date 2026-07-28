@@ -7,6 +7,7 @@ import { assign, pick } from 'lodash-es';
 
 import { Config, OnEvent, SignUpForbidden } from '../../base';
 import { Models, type User, type UserSession } from '../../models';
+import { EntitlementService } from '../entitlement';
 import { Mailer } from '../mail/mailer';
 import type { MailDeliveryMetadata } from '../mail/types';
 import { AuthSessionService } from './auth-session';
@@ -44,7 +45,8 @@ export class AuthService implements OnApplicationBootstrap {
     private readonly config: Config,
     private readonly models: Models,
     private readonly mailer: Mailer,
-    private readonly authSessions: AuthSessionService
+    private readonly authSessions: AuthSessionService,
+    private readonly entitlement: EntitlementService
   ) {
     this.cookieOptions = {
       sameSite: 'lax',
@@ -63,7 +65,7 @@ export class AuthService implements OnApplicationBootstrap {
 
   async onApplicationBootstrap() {
     if (env.dev) {
-      await createDevUsers(this.models);
+      await createDevUsers(this.models, this.entitlement);
     }
   }
 

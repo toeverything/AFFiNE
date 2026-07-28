@@ -29,7 +29,7 @@
     "yjs": "^13.6.27"
   },
   "devDependencies": {
-    "@vitest/browser-playwright": "^4.1.8",
+    "@vitest/browser-playwright": "^4.1.10",
     "playwright": "=1.58.2",
     "vitest": "^4.1.8"
   },

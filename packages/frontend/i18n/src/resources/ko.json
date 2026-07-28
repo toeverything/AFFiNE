@@ -1482,7 +1482,7 @@
   "com.affine.settings.workspace.license.benefit.team.g4": "무제한 팀 멤버(10개 이상의 좌석)",
   "com.affine.settings.workspace.license.benefit.team.g5": "다중 관리자 역할",
   "com.affine.settings.workspace.license.benefit.team.g6": "우선순위 고객 지원",
-  "com.affine.settings.workspace.license.lean-more": "자세히 알아보기",
+  "com.affine.settings.workspace.license.learn-more": "자세히 알아보기",
   "com.affine.settings.workspace.license.self-host": "Self-Host 워크스페이스",
   "com.affine.settings.workspace.license.self-host-team": "Self-Host 팀 워크스페이스",
   "com.affine.settings.workspace.license.self-host-team.team.description": "이 라이선스는 {{expirationDate}}에 만료되며, {{leftDays}}일 남았습니다.",

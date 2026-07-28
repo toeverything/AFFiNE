@@ -18,8 +18,9 @@ fn migrations_include_runtime_tables_without_worker_heartbeats() {
   assert!(RUNTIME_MIGRATIONS.contains("runtime_states"));
   assert!(RUNTIME_MIGRATIONS.contains("runtime_gates"));
   assert!(RUNTIME_MIGRATIONS.contains("runtime_leases"));
-  assert!(RUNTIME_MIGRATIONS.contains("blob_reconciliation_runs"));
-  assert!(RUNTIME_MIGRATIONS.contains("blob_reconciliation_checkpoints"));
+  assert!(RUNTIME_MIGRATIONS.contains("storage_reconciliation_runs"));
+  assert!(RUNTIME_MIGRATIONS.contains("storage_reconciliation_checkpoints"));
+  assert!(RUNTIME_MIGRATIONS.contains("document_cleanup_candidates"));
   assert!(RUNTIME_MIGRATIONS.contains("doc_blob_refs"));
   assert!(RUNTIME_MIGRATIONS.contains("blob_cleanup_candidates"));
   assert!(!RUNTIME_MIGRATIONS.contains("runtime_worker_heartbeats"));
@@ -136,12 +137,10 @@ async fn insert_invite_quota_fixture(
   .bind(email)
   .execute(&pool)
   .await?;
-  sqlx::query(
-    "INSERT INTO workspaces (id, public, created_at) VALUES ($1, false, clock_timestamp() - interval '60 days')",
-  )
-  .bind(&workspace_id)
-  .execute(&pool)
-  .await?;
+  sqlx::query("INSERT INTO workspaces (id, created_at) VALUES ($1, clock_timestamp() - interval '60 days')")
+    .bind(&workspace_id)
+    .execute(&pool)
+    .await?;
   sqlx::query(
     r#"
     INSERT INTO effective_workspace_quota_states (

@@ -6,7 +6,7 @@ import { globalVars } from './variables.css';
 globalStyle(':root', {
   vars: {
     [globalVars.appTabHeight]: BUILD_CONFIG.isIOS ? '49px' : '62px',
-    [globalVars.appTabSafeArea]: `calc(${globalVars.appTabHeight} + env(safe-area-inset-bottom))`,
+    [globalVars.appTabSafeArea]: `calc(${globalVars.appTabHeight} + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)))`,
     '--affine-edgeless-zoom-toolbar-bottom': `calc(10px + ${globalVars.appTabSafeArea})`,
   },
   userSelect: 'none',
@@ -22,6 +22,12 @@ globalStyle('body:has(>#app-tabs):not(:has(affine-keyboard-toolbar))', {
   paddingBottom: globalVars.appTabSafeArea,
 });
 globalStyle('body:has(affine-keyboard-toolbar)', {
+  paddingBottom: `calc(${globalVars.appTabSafeArea} + 46px)`,
+});
+globalStyle('body:has(affine-keyboard-toolbar[data-keyboard-visible])', {
+  paddingBottom: `calc(${globalVars.appKeyboardHeight} + 46px)`,
+});
+globalStyle('body:has(affine-keyboard-toolbar[data-panel-open])', {
   paddingBottom: `calc(${globalVars.appKeyboardStaticHeight} + 46px)`,
 });
 globalStyle('body:has(>#app-tabs) edgeless-toolbar-widget', {

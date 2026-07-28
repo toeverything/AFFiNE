@@ -79,6 +79,12 @@ export class NotificationListService extends Service {
     this.loadMore.reset();
   }
 
+  retry() {
+    this.error$.setValue(null);
+    this.loadMore.reset();
+    this.loadMore();
+  }
+
   async readNotification(id: string) {
     await this.store.readNotification(id);
     this.notifications$.next(

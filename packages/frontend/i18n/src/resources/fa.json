@@ -1472,7 +1472,7 @@
   "com.affine.settings.workspace.license.benefit.team.g4": "اعضای تیم نامحدود (10+ صندلی)",
   "com.affine.settings.workspace.license.benefit.team.g5": "نقش‌های مدیریتی متعدد",
   "com.affine.settings.workspace.license.benefit.team.g6": "پشتیبانی مشتری اولویت‌دار",
-  "com.affine.settings.workspace.license.lean-more": "بیشتر بیاموزید",
+  "com.affine.settings.workspace.license.learn-more": "بیشتر بیاموزید",
   "com.affine.settings.workspace.license.self-host": "فضای کاری خود میزبان",
   "com.affine.settings.workspace.license.self-host-team": "فضای کاری تیم خود میزبان",
   "com.affine.settings.workspace.license.self-host-team.team.description": "این مجوز در تاریخ {{expirationDate}} منقضی می‌شود و {{leftDays}} روز باقی مانده است.",

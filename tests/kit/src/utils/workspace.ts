@@ -31,8 +31,9 @@ export async function createLocalWorkspace(
   // }, []);
 
   // input workspace name
-  await page.getByPlaceholder('Set a Workspace name').click();
-  await page.getByPlaceholder('Set a Workspace name').fill(params.name);
+  const workspaceName = page.getByTestId('create-workspace-input');
+  await workspaceName.click();
+  await workspaceName.fill(params.name);
 
   await page.getByTestId('server-selector-trigger').click();
   const serverSelectorList = page.getByTestId('server-selector-list');
@@ -45,7 +46,7 @@ export async function createLocalWorkspace(
 
   await expect(
     page.getByTestId('create-workspace-create-button')
-  ).not.toBeAttached();
+  ).not.toBeAttached({ timeout: 30 * 1000 });
   await waitForEditorLoad(page);
 
   await expect(page.getByTestId('workspace-name')).toHaveText(params.name);

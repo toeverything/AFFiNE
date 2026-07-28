@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
 import { IapStore, PrismaClient, Provider } from '@prisma/client';
 
 import {
@@ -18,11 +19,20 @@ import {
   SubscriptionStatus,
 } from '../types';
 import { RcEvent } from './controller';
-import { ProductMapping, resolveProductMapping } from './map';
+import { resolveProductMapping } from './map';
 import { RevenueCatService, Subscription } from './service';
 
 const REFRESH_INTERVAL = 5 * 1000; // 5 seconds
 const REFRESH_MAX_TIMES = 10 * OneMinute;
+
+function isLegacyIdentityPlaceholder(metadata: Prisma.JsonValue) {
+  return (
+    typeof metadata === 'object' &&
+    metadata !== null &&
+    !Array.isArray(metadata) &&
+    metadata.legacyRevenueCatIdentityIncomplete === true
+  );
+}
 
 @Injectable()
 export class RevenueCatWebhookHandler {
@@ -114,20 +124,18 @@ export class RevenueCatWebhookHandler {
     externalRef?: string,
     overrideExpirationDate?: Date
   ): Promise<boolean> {
-    const cond = { targetId: appUserId, provider: Provider.revenuecat };
-    const toBeCleanup = await this.db.subscription.findMany({
-      where: cond,
+    const toBeCleanup = await this.db.providerSubscription.findMany({
+      where: {
+        provider: Provider.revenuecat,
+        targetType: 'user',
+        targetId: appUserId,
+      },
     });
     const productOverride = this.config.payment.revenuecat?.productMap;
-    const removeExists = (mapping: ProductMapping, sub: Subscription) => {
-      // Remove from cleanup list
-      const index = toBeCleanup.findIndex(s => {
-        return (
-          s.targetId === appUserId &&
-          s.rcProductId === sub.productId &&
-          s.plan === mapping.plan
-        );
-      });
+    const removeExists = (id: string) => {
+      const index = toBeCleanup.findIndex(
+        subscription => subscription.id === id
+      );
       if (index >= 0) {
         toBeCleanup.splice(index, 1);
       }
@@ -159,65 +167,77 @@ export class RevenueCatWebhookHandler {
         overrideExpirationDate
       );
 
-      const rcExternalRef = externalRef || this.pickExternalRef(event);
-      // Upsert by unique (targetId, plan) for idempotency
+      const rcExternalRef =
+        externalRef || sub.externalRef || this.pickExternalRef(event);
+      if (!rcExternalRef || !iapStore) {
+        this.logger.warn('RevenueCat subscription missing external identity', {
+          subscription: sub,
+        });
+        continue;
+      }
       const start = sub.latestPurchaseDate || new Date();
       const end = overrideExpirationDate || sub.expirationDate || null;
-      const nextBillAt = end; // period end serves as next bill anchor for IAP
-
-      if (rcExternalRef && iapStore) {
-        await this.db.providerSubscription.upsert({
-          where: {
-            provider_iapStore_externalRef_externalProductId_externalCustomerId:
-              {
-                provider: Provider.revenuecat,
-                iapStore,
-                externalRef: rcExternalRef,
-                externalProductId: sub.productId,
-                externalCustomerId: sub.customerId,
-              },
-          },
-          update: {
-            targetType: 'user',
-            targetId: appUserId,
-            plan: mapping.plan,
-            recurring: mapping.recurring,
-            status,
-            externalCustomerId: sub.customerId,
-            externalProductId: sub.productId,
-            iapStore,
-            externalRef: rcExternalRef,
-            periodStart: start,
-            periodEnd: end,
-            canceledAt,
-            metadata: {
-              entitlement: sub.identifier,
-              isTrial: sub.isTrial,
-              willRenew: sub.willRenew,
+      const matched = await this.db.providerSubscription.findFirst({
+        where: {
+          provider: Provider.revenuecat,
+          iapStore,
+          externalRef: rcExternalRef,
+          externalProductId: sub.productId,
+          externalCustomerId: sub.customerId,
+        },
+      });
+      const existing =
+        matched ??
+        toBeCleanup.find(
+          subscription =>
+            subscription.plan === mapping.plan &&
+            isLegacyIdentityPlaceholder(subscription.metadata)
+        );
+      const data = {
+        targetType: 'user',
+        targetId: appUserId,
+        plan: mapping.plan,
+        recurring: mapping.recurring,
+        status,
+        quantity: 1,
+        externalCustomerId: sub.customerId,
+        externalProductId: sub.productId,
+        iapStore,
+        externalRef: rcExternalRef,
+        periodStart: start,
+        periodEnd: end,
+        trialStart: sub.isTrial ? start : null,
+        trialEnd: sub.isTrial ? end : null,
+        canceledAt: canceledAt ?? null,
+        metadata: {
+          entitlement: sub.identifier,
+          isTrial: sub.isTrial,
+          willRenew: sub.willRenew,
+        },
+      };
+      const saved = existing
+        ? await this.db.providerSubscription.update({
+            where: { id: existing.id },
+            data,
+          })
+        : await this.db.providerSubscription.upsert({
+            where: {
+              provider_iapStore_externalRef_externalProductId_externalCustomerId:
+                {
+                  provider: Provider.revenuecat,
+                  iapStore,
+                  externalRef: rcExternalRef,
+                  externalProductId: sub.productId,
+                  externalCustomerId: sub.customerId,
+                },
             },
-          },
-          create: {
-            provider: Provider.revenuecat,
-            targetType: 'user',
-            targetId: appUserId,
-            plan: mapping.plan,
-            recurring: mapping.recurring,
-            status,
-            externalCustomerId: sub.customerId,
-            externalProductId: sub.productId,
-            iapStore,
-            externalRef: rcExternalRef,
-            periodStart: start,
-            periodEnd: end,
-            canceledAt,
-            metadata: {
-              entitlement: sub.identifier,
-              isTrial: sub.isTrial,
-              willRenew: sub.willRenew,
+            update: data,
+            create: {
+              provider: Provider.revenuecat,
+              ...data,
             },
-          },
-        });
-      }
+          });
+      removeExists(saved.id);
 
       if (mapping.plan === SubscriptionPlan.AI && sub.isTrial) {
         await this.db.subscriptionTrialUsage.upsert({
@@ -245,8 +265,10 @@ export class RevenueCatWebhookHandler {
       }
 
       // Mutual exclusion: skip if Stripe already active for the same plan
-      const conflict = await this.db.subscription.findFirst({
+      const conflicts = await this.db.providerSubscription.findMany({
         where: {
+          id: { not: saved.id },
+          targetType: 'user',
           targetId: appUserId,
           plan: mapping.plan,
           status: {
@@ -254,13 +276,21 @@ export class RevenueCatWebhookHandler {
           },
         },
       });
+      const conflict = conflicts.find(
+        subscription => !isLegacyIdentityPlaceholder(subscription.metadata)
+      );
       if (conflict) {
+        await this.entitlement.revokeCloudSubscription({
+          targetId: appUserId,
+          plan: mapping.plan,
+          subscriptionId: saved.id,
+        });
         if (conflict.provider === Provider.stripe) {
           this.logger.warn(
             `Skip RC upsert: Stripe active exists. user=${appUserId} plan=${mapping.plan}`
           );
           continue;
-        } else if (conflict.end && end && conflict.end > end) {
+        } else if (conflict.periodEnd && end && conflict.periodEnd > end) {
           this.logger.warn(
             `Skip RC upsert: newer subscription exists. user=${appUserId} plan=${mapping.plan}`
           );
@@ -269,89 +299,66 @@ export class RevenueCatWebhookHandler {
       }
 
       if (deleteInstead) {
-        // delete record and emit cancellation if any record removed
-        const result = await this.db.subscription.deleteMany({
-          where: {
-            targetId: appUserId,
-            plan: mapping.plan,
-            provider: Provider.revenuecat,
-          },
+        await this.entitlement.revokeCloudSubscription({
+          targetId: appUserId,
+          plan: mapping.plan,
+          subscriptionId: saved.id,
         });
-        if (result.count > 0) {
-          await this.entitlement.revokeCloudSubscription({
-            targetId: appUserId,
-            plan: mapping.plan,
-          });
+        if (existing && existing.status !== SubscriptionStatus.Canceled) {
           this.event.emit('user.subscription.canceled', {
             userId: appUserId,
             plan: mapping.plan,
             recurring: mapping.recurring,
           });
         }
-        removeExists(mapping, sub);
         continue;
       }
 
-      const saved = await this.db.subscription.upsert({
-        // TODO(stable-upgrade): remove legacy subscriptions dual-write after stable supports provider facts.
-        // TODO(stable-upgrade): remove reliance on target_id_plan unique slot after contract cleanup.
-        where: {
-          targetId_plan: { targetId: appUserId, plan: mapping.plan },
-        },
-        update: {
-          recurring: mapping.recurring,
-          variant: null,
-          quantity: 1,
-          stripeSubscriptionId: null,
-          stripeScheduleId: null,
-          provider: Provider.revenuecat,
-          iapStore: iapStore,
-          rcEntitlement: sub.identifier ?? null,
-          rcProductId: sub.productId || null,
-          rcExternalRef: rcExternalRef,
-          status: status,
-          start,
-          end,
-          nextBillAt,
-          canceledAt: canceledAt ?? null,
-          trialStart: null,
-          trialEnd: null,
-        },
-        create: {
-          targetId: appUserId,
-          plan: mapping.plan,
-          recurring: mapping.recurring,
-          variant: null,
-          quantity: 1,
-          stripeSubscriptionId: null,
-          stripeScheduleId: null,
-          provider: Provider.revenuecat,
-          iapStore: iapStore,
-          rcEntitlement: sub.identifier ?? null,
-          rcProductId: sub.productId || null,
-          rcExternalRef: rcExternalRef,
-          status: status,
-          start,
-          end,
-          nextBillAt,
-          canceledAt: canceledAt ?? null,
-          trialStart: null,
-          trialEnd: null,
-        },
+      await this.entitlement.upsertFromCloudSubscription({
+        targetId: saved.targetId,
+        plan: saved.plan,
+        recurring: saved.recurring ?? mapping.recurring,
+        status: saved.status,
+        quantity: saved.quantity,
+        provider: saved.provider,
+        subscriptionId: saved.id,
+        start: saved.periodStart,
+        end: saved.periodEnd,
+        trialStart: saved.trialStart,
+        trialEnd: saved.trialEnd,
+        canceledAt: saved.canceledAt,
       });
-      await this.entitlement.upsertFromCloudSubscription(saved);
+      if (existing && existing.targetId !== saved.targetId) {
+        this.event.emit('entitlement.changed', {
+          targetType: 'user',
+          targetId: existing.targetId,
+        });
+        this.event.emit('user.subscription.canceled', {
+          userId: existing.targetId,
+          plan: existing.plan as SubscriptionPlan,
+          recurring: existing.recurring as SubscriptionRecurring,
+        });
+      }
 
       if (
         status === SubscriptionStatus.Active ||
         status === SubscriptionStatus.Trialing
       ) {
-        this.event.emit('user.subscription.activated', {
-          userId: appUserId,
-          plan: mapping.plan,
-          recurring: mapping.recurring,
-        });
+        if (
+          existing?.status !== SubscriptionStatus.Active &&
+          existing?.status !== SubscriptionStatus.Trialing
+        ) {
+          this.event.emit('user.subscription.activated', {
+            userId: appUserId,
+            plan: mapping.plan,
+            recurring: mapping.recurring,
+          });
+        }
         success += 1;
-      } else if (status !== SubscriptionStatus.PastDue) {
+      } else if (
+        status !== SubscriptionStatus.PastDue &&
+        existing?.status !== status
+      ) {
         // Do not emit canceled for PastDue (still within retry/grace window)
         this.event.emit('user.subscription.canceled', {
           userId: appUserId,
@@ -359,24 +366,23 @@ export class RevenueCatWebhookHandler {
           recurring: mapping.recurring,
         });
       }
-
-      removeExists(mapping, sub);
     }
 
     if (toBeCleanup.length) {
       for (const sub of toBeCleanup) {
-        await this.db.subscription.deleteMany({ where: { id: sub.id } });
         await this.entitlement.revokeCloudSubscription({
           targetId: appUserId,
           plan: sub.plan as SubscriptionPlan,
           subscriptionId: sub.id,
-          stripeSubscriptionId: sub.stripeSubscriptionId,
         });
-        this.event.emit('user.subscription.canceled', {
-          userId: appUserId,
-          plan: sub.plan as SubscriptionPlan,
-          recurring: sub.recurring as SubscriptionRecurring,
-        });
+        await this.db.providerSubscription.delete({ where: { id: sub.id } });
+        if (!isLegacyIdentityPlaceholder(sub.metadata)) {
+          this.event.emit('user.subscription.canceled', {
+            userId: appUserId,
+            plan: sub.plan as SubscriptionPlan,
+            recurring: sub.recurring as SubscriptionRecurring,
+          });
+        }
       }
       this.logger.log(
         `Cleanup ${toBeCleanup.length} subscriptions for ${appUserId}`,
@@ -385,7 +391,7 @@ export class RevenueCatWebhookHandler {
           subscriptions: toBeCleanup.map(s => ({
             plan: s.plan,
             recurring: s.recurring,
-            end: s.end,
+            end: s.periodEnd,
           })),
         }
       );

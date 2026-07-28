@@ -384,22 +384,6 @@
         }
       }
     },
-    "permission": {
-      "type": "object",
-      "description": "Configuration for permission module",
-      "properties": {
-        "readModel": {
-          "type": "string",
-          "description": "Permission data source for Rust evaluation\n@default \"projection\"\n@environment `AFFINE_PERMISSION_READ_MODEL`",
-          "default": "projection"
-        },
-        "fallbackLegacyLoader": {
-          "type": "boolean",
-          "description": "Fallback from projection loader to legacy loader when projection input loading fails\n@default false\n@environment `AFFINE_PERMISSION_FALLBACK_LEGACY_LOADER`",
-          "default": false
-        }
-      }
-    },
     "storages": {
       "type": "object",
       "description": "Configuration for storages module",
@@ -499,6 +483,24 @@
                           "type": "string"
                         }
                       }
+                    },
+                    "usePresignedURL": {
+                      "type": "object",
+                      "description": "Controls browser upload URLs. Disabled or unavailable modes fall back to server uploads.",
+                      "properties": {
+                        "enabled": {
+                          "type": "boolean",
+                          "description": "Whether browser upload URLs are enabled."
+                        },
+                        "urlPrefix": {
+                          "type": "string",
+                          "description": "Optional custom origin for browser upload URLs. Provider presigned URLs also use this origin when signKey is not configured."
+                        },
+                        "signKey": {
+                          "type": "string",
+                          "description": "Optional HMAC key for signed upload URLs. Without urlPrefix, upload URLs use the server origin."
+                        }
+                      }
                     }
                   }
                 }
@@ -565,6 +567,24 @@
                         }
                       }
                     },
+                    "usePresignedURL": {
+                      "type": "object",
+                      "description": "Controls browser upload URLs. Disabled or unavailable modes fall back to server uploads.",
+                      "properties": {
+                        "enabled": {
+                          "type": "boolean",
+                          "description": "Whether browser upload URLs are enabled."
+                        },
+                        "urlPrefix": {
+                          "type": "string",
+                          "description": "Optional custom origin for browser upload URLs. Provider presigned URLs also use this origin when signKey is not configured."
+                        },
+                        "signKey": {
+                          "type": "string",
+                          "description": "Optional HMAC key for signed upload URLs. Without urlPrefix, upload URLs use the server origin."
+                        }
+                      }
+                    },
                     "accountId": {
                       "type": "string",
                       "description": "The account id for the cloudflare r2 storage provider."
@@ -576,24 +596,6 @@
                         "eu"
                       ],
                       "description": "Optional jurisdiction for the cloudflare r2 endpoint. Set to \"eu\" for EU buckets."
-                    },
-                    "usePresignedURL": {
-                      "type": "object",
-                      "description": "The presigned url config for the cloudflare r2 storage provider.",
-                      "properties": {
-                        "enabled": {
-                          "type": "boolean",
-                          "description": "Whether to use presigned url for the cloudflare r2 storage provider."
-                        },
-                        "urlPrefix": {
-                          "type": "string",
-                          "description": "The custom domain URL prefix for the cloudflare r2 storage provider.\nWhen `enabled=true` and `urlPrefix` + `signKey` are provided, the server will:\n- Redirect GET requests to this custom domain with an HMAC token.\n- Return upload URLs under `/api/storage/*` for uploads.\nPresigned/upload proxy TTL is 1 hour.\nsee https://developers.cloudflare.com/waf/custom-rules/use-cases/configure-token-authentication/ to configure it.\nExample value: \"https://storage.example.com\"\nExample rule: is_timed_hmac_valid_v0(\"your_secret\", http.request.uri, 10800, http.request.timestamp.sec, 6)"
-                        },
-                        "signKey": {
-                          "type": "string",
-                          "description": "The presigned key for the cloudflare r2 storage provider."
-                        }
-                      }
                     }
                   }
                 }
@@ -728,6 +730,24 @@
                           "type": "string"
                         }
                       }
+                    },
+                    "usePresignedURL": {
+                      "type": "object",
+                      "description": "Controls browser upload URLs. Disabled or unavailable modes fall back to server uploads.",
+                      "properties": {
+                        "enabled": {
+                          "type": "boolean",
+                          "description": "Whether browser upload URLs are enabled."
+                        },
+                        "urlPrefix": {
+                          "type": "string",
+                          "description": "Optional custom origin for browser upload URLs. Provider presigned URLs also use this origin when signKey is not configured."
+                        },
+                        "signKey": {
+                          "type": "string",
+                          "description": "Optional HMAC key for signed upload URLs. Without urlPrefix, upload URLs use the server origin."
+                        }
+                      }
                     }
                   }
                 }
@@ -794,6 +814,24 @@
                         }
                       }
                     },
+                    "usePresignedURL": {
+                      "type": "object",
+                      "description": "Controls browser upload URLs. Disabled or unavailable modes fall back to server uploads.",
+                      "properties": {
+                        "enabled": {
+                          "type": "boolean",
+                          "description": "Whether browser upload URLs are enabled."
+                        },
+                        "urlPrefix": {
+                          "type": "string",
+                          "description": "Optional custom origin for browser upload URLs. Provider presigned URLs also use this origin when signKey is not configured."
+                        },
+                        "signKey": {
+                          "type": "string",
+                          "description": "Optional HMAC key for signed upload URLs. Without urlPrefix, upload URLs use the server origin."
+                        }
+                      }
+                    },
                     "accountId": {
                       "type": "string",
                       "description": "The account id for the cloudflare r2 storage provider."
@@ -805,24 +843,6 @@
                         "eu"
                       ],
                       "description": "Optional jurisdiction for the cloudflare r2 endpoint. Set to \"eu\" for EU buckets."
-                    },
-                    "usePresignedURL": {
-                      "type": "object",
-                      "description": "The presigned url config for the cloudflare r2 storage provider.",
-                      "properties": {
-                        "enabled": {
-                          "type": "boolean",
-                          "description": "Whether to use presigned url for the cloudflare r2 storage provider."
-                        },
-                        "urlPrefix": {
-                          "type": "string",
-                          "description": "The custom domain URL prefix for the cloudflare r2 storage provider.\nWhen `enabled=true` and `urlPrefix` + `signKey` are provided, the server will:\n- Redirect GET requests to this custom domain with an HMAC token.\n- Return upload URLs under `/api/storage/*` for uploads.\nPresigned/upload proxy TTL is 1 hour.\nsee https://developers.cloudflare.com/waf/custom-rules/use-cases/configure-token-authentication/ to configure it.\nExample value: \"https://storage.example.com\"\nExample rule: is_timed_hmac_valid_v0(\"your_secret\", http.request.uri, 10800, http.request.timestamp.sec, 6)"
-                        },
-                        "signKey": {
-                          "type": "string",
-                          "description": "The presigned key for the cloudflare r2 storage provider."
-                        }
-                      }
                     }
                   }
                 }
@@ -1156,17 +1176,17 @@
       "properties": {
         "enabled": {
           "type": "boolean",
-          "description": "Whether to enable the copilot plugin. <br> Document: <a href=\"https://docs.affine.pro/self-host-affine/administer/ai\" target=\"_blank\">https://docs.affine.pro/self-host-affine/administer/ai</a>\n@default false",
+          "description": "Enable AI features. Workspace owners configure provider keys in Workspace Settings → Integrations → AI BYOK.\n@default false",
           "default": false
         },
         "byok.enabled": {
           "type": "boolean",
-          "description": "Whether to enable workspace BYOK.\n@default true",
+          "description": "Allow workspace owners and admins to configure AI provider keys through AI BYOK.\n@default true",
           "default": true
         },
         "byok.allowedProviders": {
           "type": "array",
-          "description": "The allowlist for workspace BYOK providers.\n@default [\"openai\",\"anthropic\",\"gemini\",\"fal\"]",
+          "description": "AI providers that workspace owners and admins may add through AI BYOK.\n@default [\"openai\",\"anthropic\",\"gemini\",\"fal\"]",
           "default": [
             "openai",
             "anthropic",
@@ -1176,7 +1196,12 @@
         },
         "byok.allowCustomEndpoint": {
           "type": "boolean",
-          "description": "Whether workspace BYOK custom endpoints are accepted.\n@default false",
+          "description": "Allow AI BYOK keys to use a custom provider endpoint.\n@default false",
+          "default": false
+        },
+        "byok.allowPrivateEndpoint": {
+          "type": "boolean",
+          "description": "Whether workspace BYOK custom endpoints may resolve to private network targets. Enabling this allows workspace owners and admins to send provider probe requests to the private network.\n@default false",
           "default": false
         },
         "providers.profiles": {
@@ -1402,6 +1427,24 @@
                           "type": "string"
                         }
                       }
+                    },
+                    "usePresignedURL": {
+                      "type": "object",
+                      "description": "Controls browser upload URLs. Disabled or unavailable modes fall back to server uploads.",
+                      "properties": {
+                        "enabled": {
+                          "type": "boolean",
+                          "description": "Whether browser upload URLs are enabled."
+                        },
+                        "urlPrefix": {
+                          "type": "string",
+                          "description": "Optional custom origin for browser upload URLs. Provider presigned URLs also use this origin when signKey is not configured."
+                        },
+                        "signKey": {
+                          "type": "string",
+                          "description": "Optional HMAC key for signed upload URLs. Without urlPrefix, upload URLs use the server origin."
+                        }
+                      }
                     }
                   }
                 }
@@ -1468,6 +1511,24 @@
                         }
                       }
                     },
+                    "usePresignedURL": {
+                      "type": "object",
+                      "description": "Controls browser upload URLs. Disabled or unavailable modes fall back to server uploads.",
+                      "properties": {
+                        "enabled": {
+                          "type": "boolean",
+                          "description": "Whether browser upload URLs are enabled."
+                        },
+                        "urlPrefix": {
+                          "type": "string",
+                          "description": "Optional custom origin for browser upload URLs. Provider presigned URLs also use this origin when signKey is not configured."
+                        },
+                        "signKey": {
+                          "type": "string",
+                          "description": "Optional HMAC key for signed upload URLs. Without urlPrefix, upload URLs use the server origin."
+                        }
+                      }
+                    },
                     "accountId": {
                       "type": "string",
                       "description": "The account id for the cloudflare r2 storage provider."
@@ -1479,24 +1540,6 @@
                         "eu"
                       ],
                       "description": "Optional jurisdiction for the cloudflare r2 endpoint. Set to \"eu\" for EU buckets."
-                    },
-                    "usePresignedURL": {
-                      "type": "object",
-                      "description": "The presigned url config for the cloudflare r2 storage provider.",
-                      "properties": {
-                        "enabled": {
-                          "type": "boolean",
-                          "description": "Whether to use presigned url for the cloudflare r2 storage provider."
-                        },
-                        "urlPrefix": {
-                          "type": "string",
-                          "description": "The custom domain URL prefix for the cloudflare r2 storage provider.\nWhen `enabled=true` and `urlPrefix` + `signKey` are provided, the server will:\n- Redirect GET requests to this custom domain with an HMAC token.\n- Return upload URLs under `/api/storage/*` for uploads.\nPresigned/upload proxy TTL is 1 hour.\nsee https://developers.cloudflare.com/waf/custom-rules/use-cases/configure-token-authentication/ to configure it.\nExample value: \"https://storage.example.com\"\nExample rule: is_timed_hmac_valid_v0(\"your_secret\", http.request.uri, 10800, http.request.timestamp.sec, 6)"
-                        },
-                        "signKey": {
-                          "type": "string",
-                          "description": "The presigned key for the cloudflare r2 storage provider."
-                        }
-                      }
                     }
                   }
                 }
@@ -1628,7 +1671,7 @@
         },
         "providers.oidc": {
           "type": "object",
-          "description": "OIDC OAuth provider config\n@default {\"clientId\":\"\",\"clientSecret\":\"\",\"issuer\":\"\",\"args\":{}}\n@link https://openid.net/specs/openid-connect-core-1_0.html",
+          "description": "OIDC OAuth provider config. Private network access requires allowPrivateNetwork: true\n@default {\"clientId\":\"\",\"clientSecret\":\"\",\"issuer\":\"\",\"allowPrivateNetwork\":false,\"args\":{}}\n@link https://openid.net/specs/openid-connect-core-1_0.html",
           "properties": {
             "clientId": {
               "type": "string"
@@ -1638,12 +1681,21 @@
             },
             "args": {
               "type": "object"
+            },
+            "issuer": {
+              "type": "string",
+              "description": "OIDC issuer URL"
+            },
+            "allowPrivateNetwork": {
+              "type": "boolean",
+              "description": "Allow the OIDC issuer origin to resolve to private network addresses"
             }
           },
           "default": {
             "clientId": "",
             "clientSecret": "",
             "issuer": "",
+            "allowPrivateNetwork": false,
             "args": {}
           }
         },

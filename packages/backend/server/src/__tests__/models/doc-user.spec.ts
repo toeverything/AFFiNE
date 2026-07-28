@@ -31,7 +31,7 @@ test.after(async () => {
 
 async function create() {
   return db.workspace.create({
-    data: { public: false },
+    data: { accessPolicy: { create: {} } },
   });
 }
 
@@ -142,12 +142,13 @@ test('should paginate doc user roles', async t => {
     })),
   });
 
-  await db.workspaceDocUserRole.createMany({
+  await db.docGrant.createMany({
     data: Array.from({ length: 200 }, (_, i) => ({
       workspaceId: workspace.id,
       docId,
-      userId: String(i),
-      type: DocRole.Editor,
+      principalType: 'user',
+      principalId: String(i),
+      role: 'editor',
       createdAt: new Date(Date.now() + i * 1000),
     })),
   });

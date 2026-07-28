@@ -2,11 +2,13 @@ import { notify } from '@affine/component';
 import { getStoreManager } from '@affine/core/blocksuite/manager/store';
 import { AffineContext } from '@affine/core/components/context';
 import { AppFallback } from '@affine/core/mobile/components/app-fallback';
+import { MobileModalConfigProvider } from '@affine/core/mobile/components/mobile-modal-config-provider';
 import { configureMobileModules } from '@affine/core/mobile/modules';
+import { MobileBackCoordinator } from '@affine/core/mobile/modules/back-coordinator';
 import { HapticProvider } from '@affine/core/mobile/modules/haptics';
-import { NavigationGestureProvider } from '@affine/core/mobile/modules/navigation-gesture';
 import { VirtualKeyboardProvider } from '@affine/core/mobile/modules/virtual-keyboard';
 import { router } from '@affine/core/mobile/router';
+import { getCurrentNativeUserIdentifier } from '@affine/core/mobile/utils/native-user-identifier';
 import { configureCommonModules } from '@affine/core/modules';
 import {
   AuthProvider,
@@ -48,6 +50,7 @@ import {
   requestApplySubscriptionMutation,
 } from '@affine/graphql';
 import { I18n } from '@affine/i18n';
+import { serveAuthRequests } from '@affine/mobile-shared/auth/channel';
 import { StoreManagerClient } from '@affine/nbstore/worker/client';
 import { setTelemetryTransport } from '@affine/track';
 import { Container } from '@blocksuite/affine/global/di';
@@ -63,7 +66,13 @@ import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
 import { Haptics } from '@capacitor/haptics';
 import { Keyboard, KeyboardStyle } from '@capacitor/keyboard';
-import { Framework, FrameworkRoot, getCurrentStore } from '@toeverything/infra';
+import {
+  Framework,
+  FrameworkRoot,
+  getCurrentStore,
+  useLiveData,
+  useService,
+} from '@toeverything/infra';
 import { OpClient } from '@toeverything/infra/op';
 import { AsyncCall } from 'async-call-rpc';
 import { AppTrackingTransparency } from 'capacitor-plugin-app-tracking-transparency';
@@ -72,16 +81,19 @@ import { Suspense, useEffect } from 'react';
 import { RouterProvider } from 'react-router-dom';
 
 import { BlocksuiteMenuConfigProvider } from './bs-menu-config';
-import { ModalConfigProvider } from './modal-config';
 import { AffineTheme } from './plugins/affine-theme';
 import { Auth } from './plugins/auth';
 import { Hashcash } from './plugins/hashcash';
 import { ImagePicker } from './plugins/image-picker';
+import { NavigationGesture } from './plugins/navigation-gesture';
 import { NbStoreNativeDBApis } from './plugins/nbstore';
 import { PayWall } from './plugins/paywall';
 import { Preview } from './plugins/preview';
-import { clearEndpointSession, getValidAccessToken } from './proxy';
-import { enableNavigationGesture$ } from './web-navigation-control';
+import {
+  authRequestProvider,
+  clearEndpointSession,
+  getValidAccessToken,
+} from './proxy';
 
 const storeManagerClient = createStoreManagerClient();
 setTelemetryTransport(storeManagerClient.telemetry);
@@ -221,11 +233,6 @@ framework.impl(VirtualKeyboardProvider, {
     };
   },
 });
-framework.impl(NavigationGestureProvider, {
-  isEnabled: () => enableNavigationGesture$.value,
-  enable: () => enableNavigationGesture$.next(true),
-  disable: () => enableNavigationGesture$.next(false),
-});
 framework.impl(HapticProvider, {
   impact: options => Haptics.impact(options as any),
   vibrate: options => Haptics.vibrate(options as any),
@@ -355,15 +362,9 @@ registerNativeImageFilesPicker(async () => {
   const globalContextService = frameworkProvider.get(GlobalContextService);
   return globalContextService.globalContext.docId.get();
 };
-(window as any).getCurrentUserIdentifier = () => {
-  const globalContextService = frameworkProvider.get(GlobalContextService);
-  const currentServerId = globalContextService.globalContext.serverId.get();
-  const serversService = frameworkProvider.get(ServersService);
-  const defaultServerService = frameworkProvider.get(DefaultServerService);
-  const currentServer =
-    (currentServerId ? serversService.server$(currentServerId).value : null) ??
-    defaultServerService.server;
-  return currentServer.account$.value?.id;
+(window as any).getCurrentUserIdentifier = async () => {
+  const { authService } = getCurrentNativeSignInContext();
+  return await getCurrentNativeUserIdentifier(authService);
 };
 (window as any).cancelRequestSignIn = () => {
   if (!cancelActiveRequestSignIn) {
@@ -748,14 +749,49 @@ const KeyboardThemeProvider = () => {
   return null;
 };
 
+const IOSBackAdapter = () => {
+  const coordinator = useService(MobileBackCoordinator);
+  const enabled = useLiveData(coordinator.canInteractivePop$);
+
+  useEffect(() => {
+    (enabled ? NavigationGesture.enable() : NavigationGesture.disable()).catch(
+      console.error
+    );
+  }, [enabled]);
+
+  useEffect(() => {
+    let disposed = false;
+    let remove = () => {};
+    NavigationGesture.addListener('gesture', event => {
+      coordinator.handleInteractivePhase(event.phase);
+    })
+      .then(handle => {
+        if (disposed) handle.remove().catch(console.error);
+        else
+          remove = () => {
+            handle.remove().catch(console.error);
+          };
+      })
+      .catch(console.error);
+    return () => {
+      disposed = true;
+      remove();
+      NavigationGesture.disable().catch(console.error);
+    };
+  }, [coordinator]);
+
+  return null;
+};
+
 export function App() {
   return (
     <Suspense>
       <FrameworkRoot framework={frameworkProvider}>
         <I18nProvider>
-          <AffineContext store={getCurrentStore()}>
-            <KeyboardThemeProvider />
-            <ModalConfigProvider>
+          <MobileModalConfigProvider>
+            <AffineContext store={getCurrentStore()}>
+              <KeyboardThemeProvider />
+              <IOSBackAdapter />
               <BlocksuiteMenuConfigProvider>
                 <RouterProvider
                   fallbackElement={<AppFallback />}
@@ -763,8 +799,8 @@ export function App() {
                   future={future}
                 />
               </BlocksuiteMenuConfigProvider>
-            </ModalConfigProvider>
-          </AffineContext>
+            </AffineContext>
+          </MobileModalConfigProvider>
         </I18nProvider>
       </FrameworkRoot>
     </Suspense>
@@ -796,22 +832,7 @@ function createStoreManagerClient() {
 
   const { port1: authTokenChannelServer, port2: authTokenChannelClient } =
     new MessageChannel();
-  authTokenChannelServer.addEventListener('message', event => {
-    const { id, endpoint } = event.data as { id?: string; endpoint?: string };
-    if (!id || !endpoint) return;
-    getValidAccessToken(endpoint)
-      .then(token => authTokenChannelServer.postMessage({ id, token }))
-      .catch(error =>
-        authTokenChannelServer.postMessage({
-          id,
-          error:
-            typeof error === 'object' && error && 'code' in error
-              ? error.code
-              : 'AUTH_SESSION_TEMPORARILY_UNAVAILABLE',
-        })
-      );
-  });
-  authTokenChannelServer.start();
+  serveAuthRequests(authTokenChannelServer, authRequestProvider);
   worker.postMessage(
     { type: 'auth-access-token-channel', port: authTokenChannelClient },
     [authTokenChannelClient]

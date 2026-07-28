@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { Transactional } from '@nestjs-cls/transactional';
 import { InstalledLicense, PrismaClient } from '@prisma/client';
 
 import {
@@ -104,6 +105,7 @@ export class LicenseService {
     });
   }
 
+  @Transactional()
   async installLicense(workspaceId: string, license: Buffer) {
     const resolved = this.resolveWorkspaceTeamLicense(workspaceId, license);
     if (!resolved.valid) {
@@ -111,13 +113,37 @@ export class LicenseService {
     }
 
     const validatedAt = new Date();
-
-    await this.event.emitAsync('workspace.subscription.activated', {
-      workspaceId,
-      plan: SubscriptionPlan.SelfHostedTeam,
-      recurring: this.licenseRecurring(resolved),
-      quantity: this.licenseQuantity(resolved),
+    const previous = await this.db.installedLicense.findUnique({
+      where: { workspaceId },
     });
+
+    const installed = await this.db.installedLicense.upsert({
+      where: { workspaceId },
+      update: {
+        key: this.licenseSubjectId(resolved),
+        quantity: this.licenseQuantity(resolved),
+        recurring: this.licenseRecurring(resolved),
+        variant: SubscriptionVariant.Onetime,
+        validateKey: '',
+        validatedAt,
+        expiredAt: this.licenseExpiresAt(resolved),
+        license,
+      },
+      create: {
+        workspaceId,
+        key: this.licenseSubjectId(resolved),
+        quantity: this.licenseQuantity(resolved),
+        recurring: this.licenseRecurring(resolved),
+        variant: SubscriptionVariant.Onetime,
+        validateKey: '',
+        validatedAt,
+        expiredAt: this.licenseExpiresAt(resolved),
+        license,
+      },
+    });
+    if (previous && previous.key !== installed.key) {
+      await this.entitlement.revokeBySubject('selfhost_license', previous.key);
+    }
     await this.entitlement.upsertFromSelfhostLicense({
       workspaceId,
       recurring: this.licenseRecurring(resolved),
@@ -127,10 +153,14 @@ export class LicenseService {
       variant: SubscriptionVariant.Onetime,
       license,
     });
-
-    return this.db.installedLicense.findUniqueOrThrow({
-      where: { workspaceId },
+    await this.event.emitAsync('workspace.subscription.activated', {
+      workspaceId,
+      plan: SubscriptionPlan.SelfHostedTeam,
+      recurring: this.licenseRecurring(resolved),
+      quantity: this.licenseQuantity(resolved),
     });
+
+    return installed;
   }
 
   previewLicense(license: Buffer): LicensePreview {
@@ -157,6 +187,7 @@ export class LicenseService {
     };
   }
 
+  @Transactional()
   async activateTeamLicense(workspaceId: string, licenseKey: string) {
     const installedLicense = await this.getLicense(workspaceId);
 
@@ -177,35 +208,8 @@ export class LicenseService {
     const validatedAt = new Date();
     const expiresAt = new Date(data.expiresAt);
 
-    this.event.emit('workspace.subscription.activated', {
-      workspaceId,
-      plan: data.plan as SubscriptionPlan,
-      recurring: data.recurring as SubscriptionRecurring,
-      quantity: data.quantity,
-    });
-    await this.entitlement.upsertFromValidatedSelfhostLicense({
-      workspaceId,
-      licenseKey,
-      recurring: data.recurring as SubscriptionRecurring,
-      quantity: data.quantity,
-      expiresAt,
-      validatedAt,
-      validateKey: data.validateKey,
-    });
-
-    return this.db.installedLicense.upsert({
-      where: { workspaceId },
-      update: {
-        key: licenseKey,
-        quantity: data.quantity,
-        recurring: data.recurring as SubscriptionRecurring,
-        variant: null,
-        validateKey: data.validateKey,
-        validatedAt,
-        expiredAt: expiresAt,
-        license: null,
-      },
-      create: {
+    const installed = await this.db.installedLicense.create({
+      data: {
         workspaceId,
         key: licenseKey,
         quantity: data.quantity,
@@ -217,6 +221,22 @@ export class LicenseService {
         license: null,
       },
     });
+    await this.entitlement.upsertFromValidatedSelfhostLicense({
+      workspaceId,
+      licenseKey,
+      recurring: data.recurring as SubscriptionRecurring,
+      quantity: data.quantity,
+      expiresAt,
+      validatedAt,
+      validateKey: data.validateKey,
+    });
+    this.event.emit('workspace.subscription.activated', {
+      workspaceId,
+      plan: data.plan as SubscriptionPlan,
+      recurring: data.recurring as SubscriptionRecurring,
+      quantity: data.quantity,
+    });
+    return installed;
   }
 
   async removeTeamLicense(workspaceId: string) {
@@ -487,18 +507,33 @@ export class LicenseService {
         if (!resolved.valid) {
           valid = false;
         } else {
+          const recurring = this.licenseRecurring(resolved);
+          const quantity = this.licenseQuantity(resolved);
+          const expiresAt = this.licenseExpiresAt(resolved);
+          const validatedAt = new Date();
+
+          await this.db.installedLicense.update({
+            where: { key: license.key },
+            data: {
+              recurring,
+              quantity,
+              expiredAt: expiresAt,
+              validatedAt,
+            },
+          });
           this.event.emit('workspace.subscription.activated', {
             workspaceId: license.workspaceId,
             plan: SubscriptionPlan.SelfHostedTeam,
-            recurring: this.licenseRecurring(resolved),
-            quantity: this.licenseQuantity(resolved),
+            recurring,
+            quantity,
           });
           await this.entitlement.upsertFromSelfhostLicense({
             workspaceId: license.workspaceId,
-            recurring: this.licenseRecurring(resolved),
-            quantity: this.licenseQuantity(resolved),
-            expiresAt: this.licenseExpiresAt(resolved),
-            validatedAt: new Date(),
+            recurring,
+            quantity,
+            expiresAt,
+            validatedAt,
+            variant: SubscriptionVariant.Onetime,
             license: Buffer.from(buf),
           });
         }

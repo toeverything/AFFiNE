@@ -9,14 +9,14 @@ import { describe, expect, test, vi } from 'vitest';
 
 function createStore({
   fetch,
-  request,
+  gql = vi.fn(),
 }: {
   fetch: (input: string, init?: RequestInit) => Promise<Response>;
-  request: (op: string, input: object) => Promise<unknown>;
+  gql?: () => Promise<unknown>;
 }) {
   const framework = new Framework();
   framework.service(FetchService, { fetch } as any);
-  framework.service(GraphQLService, {} as any);
+  framework.service(GraphQLService, { gql } as any);
   framework.impl(GlobalState, {} as any);
   framework.service(ServerService, {
     server: {
@@ -26,7 +26,7 @@ function createStore({
   } as any);
   framework.impl(AuthProvider, {} as any);
   framework.service(NbstoreService, {
-    realtime: { request },
+    realtime: {},
   } as any);
   framework.store(AuthStore, [
     FetchService,
@@ -57,7 +57,7 @@ describe('AuthStore', () => {
         ok: true,
         json: async () => ({ registered: true, methods: {} }),
       });
-    const store = createStore({ fetch, request: vi.fn() });
+    const store = createStore({ fetch });
 
     await expect(store.checkUserByEmail('user@affine.pro')).resolves.toEqual(
       validResponse
@@ -70,7 +70,7 @@ describe('AuthStore', () => {
     });
   });
 
-  test('loads account profile from realtime after auth session bootstrap', async () => {
+  test('loads account profile from scoped GraphQL after auth session bootstrap', async () => {
     const authMethods = {
       password: { bound: true },
       oauth: { bound: false, providers: [] },
@@ -90,8 +90,8 @@ describe('AuthStore', () => {
       }
       throw new Error(`Unexpected request: ${input}`);
     });
-    const request = vi.fn(async () => ({
-      user: {
+    const gql = vi.fn(async () => ({
+      currentUser: {
         id: 'u1',
         email: 'u1@affine.pro',
         name: 'User',
@@ -101,7 +101,7 @@ describe('AuthStore', () => {
         features: ['Admin'],
       },
     }));
-    const store = createStore({ fetch, request });
+    const store = createStore({ fetch, gql });
 
     await expect(store.fetchSession()).resolves.toEqual({
       user: {
@@ -115,17 +115,17 @@ describe('AuthStore', () => {
         authMethods,
       },
     });
-    expect(request).toHaveBeenCalledWith('user.profile.get', {});
+    expect(gql).toHaveBeenCalledOnce();
   });
 
-  test('rejects mismatched realtime profile and auth session', async () => {
+  test('rejects mismatched GraphQL profile and auth session', async () => {
     const fetch = vi.fn(async () => {
       return {
         json: async () => ({ user: { id: 'u1' } }),
       } as Response;
     });
-    const request = vi.fn(async () => ({
-      user: {
+    const gql = vi.fn(async () => ({
+      currentUser: {
         id: 'u2',
         email: 'u2@affine.pro',
         name: 'User',
@@ -135,10 +135,10 @@ describe('AuthStore', () => {
         features: [],
       },
     }));
-    const store = createStore({ fetch, request });
+    const store = createStore({ fetch, gql });
 
     await expect(store.fetchSession()).rejects.toThrow(
-      'Realtime user profile does not match auth session'
+      'User profile does not match auth session'
     );
   });
 });

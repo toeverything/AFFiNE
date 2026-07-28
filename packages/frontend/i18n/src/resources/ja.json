@@ -1472,7 +1472,7 @@
   "com.affine.settings.workspace.license.benefit.team.g4": "無制限のチームメンバー(10+席)",
   "com.affine.settings.workspace.license.benefit.team.g5": "複数の管理者役割",
   "com.affine.settings.workspace.license.benefit.team.g6": "優先カスタマーサポート",
-  "com.affine.settings.workspace.license.lean-more": "詳細を知る",
+  "com.affine.settings.workspace.license.learn-more": "詳細を知る",
   "com.affine.settings.workspace.license.self-host": "セルフホスト型ワークスペース",
   "com.affine.settings.workspace.license.self-host-team": "セルフホスト型チームワークスペース",
   "com.affine.settings.workspace.license.self-host-team.team.description": "このライセンスは{{expirationDate}}に失効し、あと{{leftDays}}日残っています。",

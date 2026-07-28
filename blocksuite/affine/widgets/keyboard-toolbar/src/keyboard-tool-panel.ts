@@ -16,6 +16,10 @@ import type {
   KeyboardToolPanelGroup,
 } from './config.js';
 import { keyboardToolPanelStyles } from './styles.js';
+import {
+  consumeKeyboardToolbarClick,
+  rememberKeyboardToolbarActivation,
+} from './utils.js';
 
 export const AFFINE_KEYBOARD_TOOL_PANEL = 'affine-keyboard-tool-panel';
 
@@ -26,6 +30,8 @@ export class AffineKeyboardToolPanel extends SignalWatcher(
   WithDisposable(ShadowlessElement)
 ) {
   static override styles = keyboardToolPanelStyles;
+
+  private readonly _clickSuppressionState = { suppressNextClick: false };
 
   private readonly _handleItemClick = (item: KeyboardToolbarActionItem) => {
     if (item.disableWhen && item.disableWhen(this.context)) return;
@@ -70,14 +76,22 @@ export class AffineKeyboardToolPanel extends SignalWatcher(
         @pointerdown=${(event: PointerEvent) => {
           event.preventDefault();
           if (!this._isPrimaryPointerEvent(event)) return;
+          rememberKeyboardToolbarActivation(this._clickSuppressionState);
           this._handleItemClick(item);
         }}
         @keydown=${(event: KeyboardEvent) => {
           if (!this._isKeyboardActivation(event)) return;
           event.preventDefault();
+          rememberKeyboardToolbarActivation(this._clickSuppressionState);
           this._handleItemClick(item);
         }}
-        @click=${(event: MouseEvent) => event.preventDefault()}
+        @click=${(event: MouseEvent) => {
+          if (!consumeKeyboardToolbarClick(this._clickSuppressionState)) {
+            event.preventDefault();
+            return;
+          }
+          this._handleItemClick(item);
+        }}
       >
         ${this._renderIcon(item.icon)}
       </button>

@@ -9,11 +9,7 @@ import {
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
-import {
-  WorkspaceMemberSource,
-  WorkspaceMemberStatus,
-  WorkspaceUserRole,
-} from '@prisma/client';
+import { WorkspaceMemberSource, WorkspaceMemberStatus } from '@prisma/client';
 import { nanoid } from 'nanoid';
 
 import {
@@ -41,7 +37,7 @@ import {
   UserNotFound,
 } from '../../../base';
 import type { GraphqlContext } from '../../../base/graphql';
-import { Models } from '../../../models';
+import { Models, type WorkspaceUserCompat } from '../../../models';
 import { CurrentUser, Public } from '../../auth';
 import { BackendRuntimeProvider } from '../../backend-runtime';
 import { containsUrlOrDomain } from '../../content-policy';
@@ -788,7 +784,7 @@ export class WorkspaceMemberResolver {
     return true;
   }
 
-  private async acceptInvitationByEmail(role: WorkspaceUserRole) {
+  private async acceptInvitationByEmail(role: WorkspaceUserCompat) {
     await this.assertWorkspaceAcceptsMemberChange(role.workspaceId);
 
     const hasSeat = await this.quota.tryCheckSeat(role.workspaceId, true);

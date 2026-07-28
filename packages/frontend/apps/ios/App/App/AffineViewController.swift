@@ -55,6 +55,11 @@ class AFFiNEViewController: CAPBridgeViewController, UIScrollViewDelegate, Affin
     dismissIntelligentsButton()
   }
 
+  override func didReceiveMemoryWarning() {
+    super.didReceiveMemoryWarning()
+    webView?.evaluateJavaScript("window.dispatchEvent(new Event('affine:memory-pressure'))")
+  }
+
   override func capacitorDidLoad() {
     let plugins: [CAPPlugin] = [
       AffineThemePlugin(associatedController: self),

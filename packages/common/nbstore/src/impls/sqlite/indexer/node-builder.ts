@@ -20,14 +20,22 @@ export async function createNode(
         `${table}:${field as string}`,
         id
       );
-      if (text !== null) {
+      if (typeof text === 'string') {
         const parsed = tryParseArrayField(text);
         if (parsed) {
           fields[field as string] = parsed;
         } else {
           fields[field as string] = text;
         }
+      } else if (text == null) {
+        fields[field as string] = '';
       } else {
+        console.warn('[nbstore] invalid indexed field type', {
+          table,
+          field: field as string,
+          id,
+          type: typeof text,
+        });
         fields[field as string] = '';
       }
     }
@@ -43,7 +51,7 @@ export async function createNode(
         `${table}:${h.field as string}`,
         id
       );
-      if (text) {
+      if (typeof text === 'string' && text.length > 0) {
         const queryString = Array.from(queryStrings).join(' ');
         const matches = await connection.apis.ftsGetMatches(
           `${table}:${h.field as string}`,
@@ -67,6 +75,14 @@ export async function createNode(
           highlights[h.field as string] = [];
         }
       } else {
+        if (text != null && typeof text !== 'string') {
+          console.warn('[nbstore] invalid indexed highlight type', {
+            table,
+            field: h.field as string,
+            id,
+            type: typeof text,
+          });
+        }
         highlights[h.field as string] = [];
       }
     }

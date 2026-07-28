@@ -2,8 +2,14 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { installLicenseMutation, SubscriptionVariant } from '@affine/graphql';
+import { PrismaClient } from '@prisma/client';
 
 import { Workspace, WorkspaceRole } from '../../../models';
+import { LicenseService } from '../../../plugins/license/service';
+import {
+  SubscriptionRecurring,
+  SubscriptionVariant as PaymentSubscriptionVariant,
+} from '../../../plugins/payment/types';
 import {
   createApp,
   e2e,
@@ -70,6 +76,59 @@ e2e('should install file license', async t => {
   });
 
   t.is(res.installLicense.variant, SubscriptionVariant.Onetime);
+
+  const db = app.get(PrismaClient);
+  const installed = await db.installedLicense.findUniqueOrThrow({
+    where: { workspaceId: workspace.id },
+  });
+
+  const staleAt = new Date(0);
+  await db.installedLicense.update({
+    where: { key: installed.key },
+    data: {
+      quantity: installed.quantity + 10,
+      recurring:
+        installed.recurring === SubscriptionRecurring.Monthly
+          ? SubscriptionRecurring.Yearly
+          : SubscriptionRecurring.Monthly,
+      validatedAt: staleAt,
+      expiredAt: staleAt,
+    },
+  });
+  await db.entitlement.updateMany({
+    where: {
+      source: 'selfhost_license',
+      targetType: 'workspace',
+      targetId: workspace.id,
+    },
+    data: {
+      quantity: installed.quantity + 20,
+      validatedAt: staleAt,
+      expiresAt: staleAt,
+    },
+  });
+
+  await app.get(LicenseService).licensesHealthCheck();
+
+  const revalidated = await db.installedLicense.findUniqueOrThrow({
+    where: { key: installed.key },
+  });
+  t.is(revalidated.variant, PaymentSubscriptionVariant.Onetime);
+  t.is(revalidated.quantity, installed.quantity);
+  t.is(revalidated.recurring, installed.recurring);
+  t.is(revalidated.expiredAt?.getTime(), installed.expiredAt?.getTime());
+  t.true(revalidated.validatedAt.getTime() > staleAt.getTime());
+
+  const entitlement = await db.entitlement.findFirstOrThrow({
+    where: {
+      source: 'selfhost_license',
+      targetType: 'workspace',
+      targetId: workspace.id,
+    },
+  });
+  t.is(entitlement.quantity, installed.quantity);
+  t.is(entitlement.expiresAt?.getTime(), installed.expiredAt?.getTime());
+  t.true((entitlement.validatedAt?.getTime() ?? 0) > staleAt.getTime());
 });
 
 e2e('should not allow to install license if not owner', async t => {

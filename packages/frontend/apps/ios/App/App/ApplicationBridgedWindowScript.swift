@@ -18,14 +18,14 @@ enum ApplicationBridgedWindowScript: String {
   case getCurrentWorkspaceId = "window.getCurrentWorkspaceId();"
   case getCurrentDocId = "window.getCurrentDocId();"
   case getCurrentI18nLocale = "window.getCurrentI18nLocale();"
-  case getCurrentUserIdentifier = "window.getCurrentUserIdentifier();"
+  case getCurrentUserIdentifier = "return await window.getCurrentUserIdentifier();"
   case requestSignIn = "return await window.requestSignIn();"
   case getCurrentThemeMode = "window.getCurrentThemeMode();"
   case createNewDocByMarkdownInCurrentWorkspace = "return await window.createNewDocByMarkdownInCurrentWorkspace(markdown, title);"
 
   var requiresAsyncContext: Bool {
     switch self {
-    case .getCurrentDocContentInMarkdown, .requestSignIn, .createNewDocByMarkdownInCurrentWorkspace: true
+    case .getCurrentDocContentInMarkdown, .getCurrentUserIdentifier, .requestSignIn, .createNewDocByMarkdownInCurrentWorkspace: true
     default: false
     }
   }

@@ -311,6 +311,7 @@ export const TagsEditor = ({
                 onClick: () => onSelectTagOption(tag),
                 onMouseEnter: () => setFocusedIndex(idx),
                 ['data-testid']: 'tag-selector-item',
+                ['data-modal-action']: '',
                 ['data-focused']: safeFocusedIndex === idx,
                 className: styles.tagSelectorItem,
               };

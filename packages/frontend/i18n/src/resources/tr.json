@@ -1612,7 +1612,7 @@
   "com.affine.settings.workspace.license.benefit.team.g4": "Sınırsız ekip üyesi (10+ koltuk)",
   "com.affine.settings.workspace.license.benefit.team.g5": "Çoklu yönetici rolleri",
   "com.affine.settings.workspace.license.benefit.team.g6": "Öncelikli müşteri desteği",
-  "com.affine.settings.workspace.license.lean-more": "Daha fazla bilgi edinin",
+  "com.affine.settings.workspace.license.learn-more": "Daha fazla bilgi edinin",
   "com.affine.settings.workspace.license.self-host": "Kendi kendine barındırılan çalışma alanı",
   "com.affine.settings.workspace.license.self-host-team": "Kendi Kendine Barındırılan Ekip Çalışma Alanı",
   "com.affine.settings.workspace.license.self-host-team.team.description": "Bu lisansın süresi {{expirationDate}} tarihinde sona erecek ve {{leftDays}} gün kalacak.",

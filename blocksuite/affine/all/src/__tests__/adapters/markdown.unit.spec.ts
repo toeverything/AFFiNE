@@ -826,6 +826,60 @@ Hello world
         .sort((a, b) => (a ?? '').localeCompare(b ?? '')),
       entry: snapshotDocByTitle(collection, 'entry', titleById),
     }).toMatchSnapshot();
+
+    const nestedCollection = new TestWorkspace();
+    nestedCollection.storeExtensions = testStoreExtensions;
+    nestedCollection.meta.initialize();
+    const nestedPlan = await ObsidianTransformer.planObsidianVault({
+      collection: nestedCollection,
+      schema,
+      importedFiles: [
+        withRelativePath(
+          new File(['![[logo.png]]'], 'entry.md', {
+            type: 'text/markdown',
+          }),
+          'vault/notes/entry.md'
+        ),
+        withRelativePath(
+          new File(
+            [JSON.stringify({ attachmentFolderPath: 'attachments' })],
+            'app.json',
+            { type: 'application/json' }
+          ),
+          'vault/.obsidian/app.json'
+        ),
+        withRelativePath(
+          new File([new Uint8Array([137, 80, 78, 71])], 'logo.png', {
+            type: 'image/png',
+          }),
+          'vault/attachments/logo.png'
+        ),
+        withRelativePath(
+          new File([new Uint8Array([137, 80, 78, 72])], 'logo.png', {
+            type: 'image/png',
+          }),
+          'vault/other/logo.png'
+        ),
+      ],
+      extensions: testStoreExtensions,
+    });
+    const configuredLogo = nestedPlan.batch.blobs.find(
+      blob => blob.sourcePath === 'vault/attachments/logo.png'
+    );
+    expect(configuredLogo).toBeTruthy();
+    expect(JSON.stringify(nestedPlan.batch.docs)).toContain(
+      configuredLogo!.blobId
+    );
+    expect(nestedPlan.batch.blobs).toHaveLength(2);
+    expect(nestedPlan.batch.folders).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ path: 'notes', name: 'notes' }),
+        expect.objectContaining({
+          parentPath: 'notes',
+          pageId: nestedPlan.docIds[0],
+        }),
+      ])
+    );
   });
 
   test('imports notion html zip golden baseline', async () => {

@@ -23,6 +23,25 @@ export function isKeyboardToolPanelConfig(
   return 'groups' in item;
 }
 
+export interface KeyboardToolbarClickState {
+  suppressNextClick: boolean;
+}
+
+export function rememberKeyboardToolbarActivation(
+  state: KeyboardToolbarClickState
+) {
+  state.suppressNextClick = true;
+}
+
+export function consumeKeyboardToolbarClick(state: KeyboardToolbarClickState) {
+  if (!state.suppressNextClick) {
+    return true;
+  }
+
+  state.suppressNextClick = false;
+  return false;
+}
+
 export function formatDate(date: Date) {
   // yyyy-mm-dd
   const year = date.getFullYear();
