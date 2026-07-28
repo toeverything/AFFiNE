@@ -3,7 +3,7 @@ use memory_indexer::{SearchHit, SnapshotData};
 use napi_derive::napi;
 use serde::Serialize;
 use sqlx::Row;
-use y_octo::DocOptions;
+use y_octo::merge_updates_v1;
 
 // Increment this whenever there is a breaking change in the index format or how
 // updates are applied
@@ -120,7 +120,7 @@ impl SqliteDocStorage {
     }
     segments.extend(updates.into_iter().map(|update| update.bin.to_vec()));
 
-    merge_updates(segments, doc_id).map(Some)
+    merge_updates(segments).map(Some)
   }
 
   pub async fn init_index(&self) -> Result<()> {
@@ -249,7 +249,7 @@ impl SqliteDocStorage {
   }
 }
 
-fn merge_updates(mut segments: Vec<Vec<u8>>, guid: &str) -> Result<Vec<u8>> {
+fn merge_updates(mut segments: Vec<Vec<u8>>) -> Result<Vec<u8>> {
   if segments.is_empty() {
     return Err(ParseError::DocNotFound.into());
   }
@@ -258,15 +258,9 @@ fn merge_updates(mut segments: Vec<Vec<u8>>, guid: &str) -> Result<Vec<u8>> {
     return segments.pop().ok_or(ParseError::DocNotFound.into());
   }
 
-  let mut doc = DocOptions::new().with_guid(guid.to_string()).build();
-  for update in segments.iter() {
-    doc
-      .apply_update_from_binary_v1(update)
-      .map_err(|_| ParseError::InvalidBinary)?;
-  }
-
-  let buffer = doc
-    .encode_update_v1()
+  let update = merge_updates_v1(segments).map_err(|_| ParseError::InvalidBinary)?;
+  let buffer = update
+    .encode_v1()
     .map_err(|err| ParseError::ParserError(err.to_string()))?;
 
   Ok(buffer)
@@ -313,6 +307,13 @@ mod tests {
     sqlx::query(r#"INSERT INTO snapshots (doc_id, data, updated_at) VALUES (?, ?, ?)"#)
       .bind("demo-doc")
       .bind(DEMO_BIN)
+      .bind(Utc::now().naive_utc())
+      .execute(&storage.pool)
+      .await
+      .unwrap();
+    sqlx::query(r#"INSERT INTO updates (doc_id, data, created_at) VALUES (?, ?, ?)"#)
+      .bind("demo-doc")
+      .bind(&[0, 0][..])
       .bind(Utc::now().naive_utc())
       .execute(&storage.pool)
       .await
