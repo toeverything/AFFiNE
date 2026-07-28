@@ -237,9 +237,10 @@ const DeleteAccountModal = ({
         cancelText={t['Cancel']()}
         cancelButtonOptions={{
           variant: 'primary',
-        }}
-        onCancel={() => {
-          setPhase('warning');
+          onClick: event => {
+            event.preventDefault();
+            setPhase('warning');
+          },
         }}
         rowFooter
       >
