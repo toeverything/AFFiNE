@@ -53,8 +53,8 @@
     "@sentry/esbuild-plugin": "^5.3.0",
     "@toeverything/infra": "workspace:*",
     "@types/set-cookie-parser": "^2.4.10",
-    "app-builder-lib": "^26.8.1",
-    "builder-util-runtime": "^9.5.1",
+    "app-builder-lib": "^26.15.0",
+    "builder-util-runtime": "^9.7.0",
     "cross-env": "^10.1.0",
     "debug": "^4.4.0",
     "electron": "^39.0.0",
@@ -77,7 +77,7 @@
   },
   "dependencies": {
     "async-call-rpc": "^6.4.2",
-    "electron-updater": "^6.8.3",
+    "electron-updater": "^6.8.9",
     "link-preview-js": "^4.0.0",
     "set-cookie-parser": "^2.7.1",
     "yjs": "^13.6.27"

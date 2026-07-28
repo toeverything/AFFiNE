@@ -326,6 +326,8 @@ export class WorkspaceAnalyticsModel extends BaseModel {
             COALESCE(v.guest_views, 0) AS "guestViews",
             v.last_accessed_at AS "lastAccessedAt"
           FROM workspace_pages wp
+          INNER JOIN doc_access_policies dap
+            ON dap.workspace_id = wp.workspace_id AND dap.doc_id = wp.page_id
           LEFT JOIN snapshots sn
             ON sn.workspace_id = wp.workspace_id AND sn.guid = wp.page_id
           LEFT JOIN view_agg v
@@ -339,7 +341,7 @@ export class WorkspaceAnalyticsModel extends BaseModel {
             ORDER BY created_at ASC, id ASC
             LIMIT 1
           ) owner ON TRUE
-          WHERE wp.public = TRUE
+          WHERE dap.visibility = 'public' AND dap.public_role = 'external'
           ORDER BY views DESC, "uniqueViews" DESC, "workspaceId" ASC, "docId" ASC
           LIMIT 10
         `
@@ -642,6 +644,8 @@ export class WorkspaceAnalyticsModel extends BaseModel {
           COALESCE(wp.published_at, to_timestamp(0)) AS "sortValueDatePublishedAt",
           COALESCE(v.views, 0) AS "sortValueViews"
         FROM workspace_pages wp
+        INNER JOIN doc_access_policies dap
+          ON dap.workspace_id = wp.workspace_id AND dap.doc_id = wp.page_id
         LEFT JOIN snapshots sn
           ON sn.workspace_id = wp.workspace_id AND sn.guid = wp.page_id
         LEFT JOIN view_agg v
@@ -655,7 +659,7 @@ export class WorkspaceAnalyticsModel extends BaseModel {
           ORDER BY created_at ASC, id ASC
           LIMIT 1
         ) owner ON TRUE
-        WHERE wp.public = TRUE
+        WHERE dap.visibility = 'public' AND dap.public_role = 'external'
         ${keywordCondition}
         ${workspaceCondition}
         ${updatedAfterCondition}
@@ -1101,7 +1105,9 @@ export class WorkspaceAnalyticsModel extends BaseModel {
     const [row] = await this.db.$queryRaw<{ total: bigint | number }[]>`
       SELECT COUNT(*) AS total
       FROM workspace_pages wp
-      WHERE wp.public = TRUE
+      INNER JOIN doc_access_policies dap
+        ON dap.workspace_id = wp.workspace_id AND dap.doc_id = wp.page_id
+      WHERE dap.visibility = 'public' AND dap.public_role = 'external'
       ${keywordCondition}
       ${workspaceCondition}
       ${updatedAfterCondition}

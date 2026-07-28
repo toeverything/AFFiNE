@@ -6205,6 +6205,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.workspace.byok.field.endpoint"](): string;
     /**
+      * `Custom endpoints are disabled by the server administrator. In Self-hosted Admin, enable copilot.byok.allowCustomEndpoint.`
+      */
+    ["com.affine.settings.workspace.byok.endpoint.custom-disabled"](): string;
+    /**
+      * `Private network endpoints additionally require the server administrator to enable copilot.byok.allowPrivateEndpoint.`
+      */
+    ["com.affine.settings.workspace.byok.endpoint.private-disabled"](): string;
+    /**
       * `Primary`
       */
     ["com.affine.settings.workspace.byok.placeholder.key-name"](): string;
@@ -9343,6 +9351,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.devices.sign-out-all-failed"](): string;
     /**
+      * `Real-time connection failed`
+      */
+    ["com.affine.realtime.connection-error.title"](): string;
+    /**
+      * `Check that your server proxy forwards /socket.io over WebSocket or HTTP polling.`
+      */
+    ["com.affine.realtime.connection-error.message"](): string;
+    /**
       * `An internal error occurred.`
       */
     ["error.INTERNAL_SERVER_ERROR"](): string;
@@ -9376,9 +9392,11 @@ export function useAFFiNEI18N(): {
         readonly message: string;
     }): string;
     /**
-      * `Invalid URL`
+      * `URL blocked by SSRF protection: {{reason}}`
       */
-    ["error.SSRF_BLOCKED_ERROR"](): string;
+    ["error.SSRF_BLOCKED_ERROR"](options: {
+        readonly reason: string;
+    }): string;
     /**
       * `Response too large ({{receivedBytes}} bytes), limit is {{limitBytes}} bytes`
       */

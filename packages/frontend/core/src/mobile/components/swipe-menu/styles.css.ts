@@ -4,6 +4,7 @@ import { style } from '@vanilla-extract/css';
 export const container = style({
   position: 'relative',
   overflow: 'hidden',
+  touchAction: 'pan-y',
 });
 export const content = style({
   position: 'relative',

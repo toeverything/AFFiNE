@@ -1,16 +1,35 @@
-import type { WorkspaceDocUserRole } from '@prisma/client';
-import { Prisma } from '@prisma/client';
-
+import { DocRole } from '../../models';
 import { Mocker } from './factory';
 
-export type MockDocUserInput = Prisma.WorkspaceDocUserRoleUncheckedCreateInput;
+export type MockDocUserInput = {
+  workspaceId: string;
+  docId: string;
+  userId: string;
+  type: DocRole;
+};
 
-export type MockedDocUser = WorkspaceDocUserRole;
+export type MockedDocUser = MockDocUserInput & { createdAt: Date };
 
 export class MockDocUser extends Mocker<MockDocUserInput, MockedDocUser> {
   override async create(input: MockDocUserInput) {
-    return await this.db.workspaceDocUserRole.create({
-      data: input,
+    const grant = await this.db.docGrant.create({
+      data: {
+        workspaceId: input.workspaceId,
+        docId: input.docId,
+        principalType: 'user',
+        principalId: input.userId,
+        role:
+          input.type === DocRole.Owner
+            ? 'owner'
+            : input.type === DocRole.Manager
+              ? 'manager'
+              : input.type === DocRole.Editor
+                ? 'editor'
+                : input.type === DocRole.Commenter
+                  ? 'commenter'
+                  : 'reader',
+      },
     });
+    return { ...input, createdAt: grant.createdAt };
   }
 }

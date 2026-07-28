@@ -244,6 +244,41 @@ pub struct RuntimeDocBlobRefsResult {
 }
 
 #[napi_derive::napi(object)]
+pub struct RuntimeDocumentCleanupReconcileResult {
+  pub scanned_docs: i64,
+  pub marked: i64,
+  pub reset: i64,
+  pub recovered: i64,
+}
+
+#[napi_derive::napi(object)]
+pub struct RuntimeDocumentCleanupEffect {
+  pub workspace_id: String,
+  pub doc_id: String,
+  pub cleanup_version: String,
+  pub comment_objects_done: bool,
+  pub search_done: bool,
+  pub copilot_done: bool,
+}
+
+#[napi_derive::napi(object)]
+pub struct RuntimeDocumentCleanupExecuteResult {
+  pub scanned_candidates: i64,
+  pub serialization_retries: i64,
+  pub executed: i64,
+  pub recovered: i64,
+  pub reset: i64,
+  pub failed: i64,
+  pub deleted_rows: i64,
+  pub effects: Vec<RuntimeDocumentCleanupEffect>,
+}
+
+#[napi_derive::napi(object)]
+pub struct RuntimeDocumentCleanupAckResult {
+  pub completed: bool,
+}
+
+#[napi_derive::napi(object)]
 pub struct RuntimeBlobCleanupPlanResult {
   pub run_id: Option<String>,
   pub scanned_blobs: i64,

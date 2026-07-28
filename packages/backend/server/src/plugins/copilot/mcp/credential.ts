@@ -9,9 +9,9 @@ import { Transactional } from '@nestjs-cls/transactional';
 import type { McpAccessMode } from '@prisma/client';
 
 import { CryptoHelper, EventBus } from '../../../base';
+import { MCP_CREDENTIAL_TOKEN_PREFIX } from '../../../core/auth/token';
 import { Models } from '../../../models';
 
-const TOKEN_PREFIX = 'aff_mcp_v1';
 const ALLOWED_EXPIRATION_DAYS = new Set([30, 90, 365]);
 const ROTATION_GRACE_MS = 24 * 60 * 60 * 1000;
 const LAST_USED_WRITE_INTERVAL_MS = 5 * 60 * 1000;
@@ -220,7 +220,7 @@ export class McpCredentialService {
     });
     return {
       credential: { ...credential, status: this.status(credential) },
-      token: `${TOKEN_PREFIX}.${id}.${secret}`,
+      token: `${MCP_CREDENTIAL_TOKEN_PREFIX}.${id}.${secret}`,
     };
   }
 
@@ -228,7 +228,7 @@ export class McpCredentialService {
     const parts = token.split('.');
     if (
       parts.length !== 3 ||
-      parts[0] !== TOKEN_PREFIX ||
+      parts[0] !== MCP_CREDENTIAL_TOKEN_PREFIX ||
       !parts[1] ||
       !parts[2]
     ) {

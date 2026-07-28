@@ -56,7 +56,20 @@ private data class TokenPair(
     val json: String,
 )
 
-private class AuthServerException(val code: String?, val status: Int) : Exception(code)
+private class AuthServerException(
+    val code: String?,
+    val status: Int,
+    override val message: String,
+) : Exception(message)
+
+private fun authServerException(status: Int, text: String): AuthServerException {
+    val body = runCatching { JSONObject(text) }.getOrNull()
+    val code = body?.optString("code")?.takeIf { it.isNotEmpty() }
+        ?: body?.optString("name")?.takeIf { it.isNotEmpty() }
+    val message = body?.optString("message")?.takeIf { it.isNotEmpty() }
+        ?: "Authentication request failed with status $status"
+    return AuthServerException(code, status, message)
+}
 
 private val permanentAuthErrors = setOf(
     "ACCESS_TOKEN_INVALID", "AUTH_SESSION_EXPIRED", "AUTH_SESSION_REVOKED",
@@ -183,8 +196,7 @@ internal class AuthSessionBroker(
                 AuthHttp.client.newCall(request).executeAsync().use { response ->
                     val text = response.body.string()
                     if (response.code < 400) return text
-                    val code = runCatching { JSONObject(text).optString("code").ifEmpty { null } }.getOrNull()
-                    val error = AuthServerException(code, response.code)
+                    val error = authServerException(response.code, text)
                     if (response.code < 500 || attempt == 2) throw error
                     last = error
                 }
@@ -338,7 +350,7 @@ class AuthPlugin : Plugin() {
             .build()
         val exchangeCode = AuthHttp.client.newCall(request).executeAsync().use { response ->
             val text = response.body.string()
-            if (response.code >= 400) throw IllegalStateException(text)
+            if (response.code >= 400) throw authServerException(response.code, text)
             JSONObject(text).getString("exchangeCode")
         }
         val exchangeBody = JSONObject()
@@ -353,7 +365,7 @@ class AuthPlugin : Plugin() {
             .build()
         val tokenResponse = AuthHttp.client.newCall(exchangeRequest).executeAsync().use { response ->
             val text = response.body.string()
-            if (response.code >= 400) throw IllegalStateException(text)
+            if (response.code >= 400) throw authServerException(response.code, text)
             text
         }
         broker.store(endpoint, tokenResponse)
@@ -385,7 +397,8 @@ class AuthPlugin : Plugin() {
                         ?: "AUTH_SESSION_TEMPORARILY_UNAVAILABLE"
                     else -> "AUTH_SESSION_TEMPORARILY_UNAVAILABLE"
                 }
-                call.reject("Auth operation failed", code, error)
+                val message = if (error is AuthServerException) error.message else "Auth operation failed"
+                call.reject(message, code, error)
             }
         }
     }

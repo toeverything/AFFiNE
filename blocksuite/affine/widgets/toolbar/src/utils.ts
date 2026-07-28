@@ -56,7 +56,7 @@ export function autoUpdatePosition(
   flavour: string,
   placement: ToolbarPlacement,
   sideOptions: Partial<SideObject> | null,
-  options: AutoUpdateOptions = { elementResize: false, animationFrame: true }
+  options: AutoUpdateOptions = { elementResize: false }
 ) {
   const isInline = flavour === 'affine:note';
   const hasSurfaceScope = flavour.includes('surface');
@@ -147,7 +147,7 @@ export function autoUpdatePosition(
     () => {
       update().catch(console.error);
     },
-    options
+    { animationFrame: hasSurfaceScope, ...options }
   );
 }
 

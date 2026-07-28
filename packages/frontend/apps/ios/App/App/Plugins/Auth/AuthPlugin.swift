@@ -29,11 +29,16 @@ private struct StoredAuthTokenPair: Codable {
 
 private struct AuthErrorResponse: Decodable {
   let code: String?
+  let name: String?
+  let message: String?
 }
 
-private struct AuthServerError: Error {
+private struct AuthServerError: Error, CustomStringConvertible {
   let code: String?
   let statusCode: Int
+  let message: String
+
+  var description: String { message }
 
   var permanentlyInvalidatesSession: Bool {
     switch code {
@@ -44,6 +49,14 @@ private struct AuthServerError: Error {
       return false
     }
   }
+}
+
+private func authServerError(_ data: Data, statusCode: Int) -> AuthServerError {
+  let response = try? JSONDecoder().decode(AuthErrorResponse.self, from: data)
+  return AuthServerError(
+    code: response?.code ?? response?.name,
+    statusCode: statusCode,
+    message: response?.message ?? "Authentication request failed with status \(statusCode)")
 }
 
 private struct AuthOperationCancelled: Error {}
@@ -63,7 +76,8 @@ private actor AuthSessionBroker {
     try write(endpoint, tokenPair(response))
   }
 
-  func validAccessToken(_ endpoint: String, minValidity: TimeInterval = 120) async throws -> String? {
+  func validAccessToken(_ endpoint: String, minValidity: TimeInterval = 120) async throws -> String?
+  {
     guard let pair = try read(endpoint) else { return nil }
     if pair.accessExpiresAt.timeIntervalSinceNow > minValidity {
       return pair.accessToken
@@ -149,7 +163,9 @@ private actor AuthSessionBroker {
       session: response.session)
   }
 
-  private func request(_ endpoint: String, action: String, body: [String: String]) async throws -> Data {
+  private func request(_ endpoint: String, action: String, body: [String: String]) async throws
+    -> Data
+  {
     guard let url = URL(string: "\(canonicalEndpoint(endpoint))\(action)") else {
       throw AuthError.invalidEndpoint
     }
@@ -168,9 +184,7 @@ private actor AuthSessionBroker {
           throw AuthError.internalError
         }
         if response.statusCode < 400 { return data }
-        let error = AuthServerError(
-          code: try? JSONDecoder().decode(AuthErrorResponse.self, from: data).code,
-          statusCode: response.statusCode)
+        let error = authServerError(data, statusCode: response.statusCode)
         guard response.statusCode >= 500, attempt < 2 else { throw error }
       } catch let error as AuthServerError {
         if error.statusCode < 500 || attempt == 2 { throw error }
@@ -336,12 +350,7 @@ public class AuthPlugin: CAPPlugin, CAPBridgedPlugin {
           ], body: ["email": email, "token": token, "client_nonce": clientNonce])
 
         if response.statusCode >= 400 {
-          if let textBody = String(data: data, encoding: .utf8) {
-            call.reject(textBody)
-          } else {
-            call.reject("Failed to sign in")
-          }
-          return
+          throw authServerError(data, statusCode: response.statusCode)
         }
 
         try await self.exchangeSession(endpoint, data)
@@ -367,12 +376,7 @@ public class AuthPlugin: CAPPlugin, CAPBridgedPlugin {
           ], body: ["code": code, "state": state, "client_nonce": clientNonce])
 
         if response.statusCode >= 400 {
-          if let textBody = String(data: data, encoding: .utf8) {
-            call.reject(textBody)
-          } else {
-            call.reject("Failed to sign in")
-          }
-          return
+          throw authServerError(data, statusCode: response.statusCode)
         }
 
         try await self.exchangeSession(endpoint, data)
@@ -398,16 +402,12 @@ public class AuthPlugin: CAPPlugin, CAPBridgedPlugin {
             "x-affine-client-kind": "native",
             "x-captcha-token": verifyToken,
             "x-captcha-challenge": challenge,
-            "x-captcha-provider": verifyToken == nil ? nil : (challenge == nil ? "turnstile" : "hashcash"),
+            "x-captcha-provider": verifyToken == nil
+              ? nil : (challenge == nil ? "turnstile" : "hashcash"),
           ], body: ["email": email, "password": password])
 
         if response.statusCode >= 400 {
-          if let textBody = String(data: data, encoding: .utf8) {
-            call.reject(textBody)
-          } else {
-            call.reject("Failed to sign in")
-          }
-          return
+          throw authServerError(data, statusCode: response.statusCode)
         }
 
         try await self.exchangeSession(endpoint, data)
@@ -431,12 +431,7 @@ public class AuthPlugin: CAPPlugin, CAPBridgedPlugin {
           ], body: ["code": code])
 
         if response.statusCode >= 400 {
-          if let textBody = String(data: data, encoding: .utf8) {
-            call.reject(textBody)
-          } else {
-            call.reject("Failed to sign in")
-          }
-          return
+          throw authServerError(data, statusCode: response.statusCode)
         }
 
         try await self.exchangeSession(endpoint, data)
@@ -476,7 +471,8 @@ public class AuthPlugin: CAPPlugin, CAPBridgedPlugin {
       endpoint, method: "POST", action: "/api/auth/session/exchange",
       headers: [
         "x-affine-client-kind": "native"
-      ], body: [
+      ],
+      body: [
         "code": code,
         "installationId": self.installationId(),
         "platform": "ios",
@@ -484,10 +480,11 @@ public class AuthPlugin: CAPPlugin, CAPBridgedPlugin {
       ])
 
     if response.statusCode >= 400 {
-      throw AuthError.exchangeFailed
+      throw authServerError(data, statusCode: response.statusCode)
     }
 
-    try await broker.store(endpoint, response: JSONDecoder().decode(AuthTokenResponse.self, from: data))
+    try await broker.store(
+      endpoint, response: JSONDecoder().decode(AuthTokenResponse.self, from: data))
     self.clearAuthCookies(endpoint)
   }
 
@@ -506,7 +503,8 @@ public class AuthPlugin: CAPPlugin, CAPBridgedPlugin {
     let normalizedHost = host.lowercased()
 
     HTTPCookieStorage.shared.cookies?.forEach { cookie in
-      let domain = cookie.domain.lowercased().trimmingCharacters(in: CharacterSet(charactersIn: "."))
+      let domain = cookie.domain.lowercased().trimmingCharacters(
+        in: CharacterSet(charactersIn: "."))
       let domainMatches = normalizedHost == domain || normalizedHost.hasSuffix(".\(domain)")
       if domainMatches && authCookieNames.contains(cookie.name) {
         HTTPCookieStorage.shared.deleteCookie(cookie)

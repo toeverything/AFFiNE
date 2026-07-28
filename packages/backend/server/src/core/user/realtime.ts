@@ -117,7 +117,13 @@ export class UserRealtimeProvider
       emailVerified: current.emailVerified,
       hasPassword: current.hasPassword,
       avatarUrl: current.avatarUrl ?? null,
-      features: (await this.models.userFeature.list(userId))
+      features: (
+        await this.models.userFeature.list(
+          userId,
+          undefined,
+          Array.from(this.availableUserFeatures())
+        )
+      )
         .filter(feature => this.availableUserFeatures().has(feature))
         .map(feature => this.serializeFeature(feature)),
     };

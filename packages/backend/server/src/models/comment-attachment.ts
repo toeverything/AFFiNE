@@ -12,7 +12,7 @@ export type CreateCommentAttachmentInput =
 @Injectable()
 export class CommentAttachmentModel extends BaseModel {
   async upsert(input: CreateCommentAttachmentInput) {
-    return await this.db.commentAttachment.upsert({
+    const result = await this.db.commentAttachment.upsert({
       where: {
         workspaceId_docId_key: {
           workspaceId: input.workspaceId,
@@ -35,6 +35,8 @@ export class CommentAttachmentModel extends BaseModel {
         createdBy: input.createdBy,
       },
     });
+    await this.markQuotaStateStale(input.workspaceId);
+    return result;
   }
 
   async delete(workspaceId: string, docId: string, key: string) {
@@ -45,6 +47,7 @@ export class CommentAttachmentModel extends BaseModel {
         key,
       },
     });
+    await this.markQuotaStateStale(workspaceId);
     this.logger.log(`deleted comment attachment ${workspaceId}/${key}`);
   }
 
@@ -66,6 +69,13 @@ export class CommentAttachmentModel extends BaseModel {
         workspaceId,
         docId,
       },
+    });
+  }
+
+  private async markQuotaStateStale(workspaceId: string) {
+    await this.db.effectiveWorkspaceQuotaState.updateMany({
+      where: { workspaceId },
+      data: { stale: true },
     });
   }
 }

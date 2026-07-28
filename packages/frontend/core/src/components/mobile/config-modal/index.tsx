@@ -36,6 +36,7 @@ export const ConfigModal = ({
   const t = useI18n();
   return (
     <Modal
+      preserveEditingFocusOnAction
       onOpenChange={onOpenChange}
       open={open}
       fullScreen={variant === 'page'}

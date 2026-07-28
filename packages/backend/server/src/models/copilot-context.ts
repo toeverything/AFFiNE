@@ -337,10 +337,14 @@ export class CopilotContextModel extends BaseModel {
   }
 
   async deleteWorkspaceEmbedding(workspaceId: string, docId: string) {
+    await this.purgeWorkspaceEmbedding(workspaceId, docId);
+    await this.fulfillEmptyEmbedding(workspaceId, docId);
+  }
+
+  async purgeWorkspaceEmbedding(workspaceId: string, docId: string) {
     await this.db.aiWorkspaceEmbedding.deleteMany({
       where: { workspaceId, docId },
     });
-    await this.fulfillEmptyEmbedding(workspaceId, docId);
   }
 
   async matchWorkspaceEmbedding(

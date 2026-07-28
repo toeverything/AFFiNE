@@ -227,18 +227,6 @@
       "desc": "The minimum time interval in milliseconds of creating a new history snapshot when doc get updated."
     }
   },
-  "permission": {
-    "readModel": {
-      "type": "String",
-      "desc": "Permission data source for Rust evaluation",
-      "env": "AFFINE_PERMISSION_READ_MODEL"
-    },
-    "fallbackLegacyLoader": {
-      "type": "Boolean",
-      "desc": "Fallback from projection loader to legacy loader when projection input loading fails",
-      "env": "AFFINE_PERMISSION_FALLBACK_LEGACY_LOADER"
-    }
-  },
   "storages": {
     "avatar.publicPath": {
       "type": "String",
@@ -379,19 +367,23 @@
   "copilot": {
     "enabled": {
       "type": "Boolean",
-      "desc": "Whether to enable the copilot plugin. <br> Document: <a href=\"https://docs.affine.pro/self-host-affine/administer/ai\" target=\"_blank\">https://docs.affine.pro/self-host-affine/administer/ai</a>"
+      "desc": "Enable AI features. Workspace owners configure provider keys in Workspace Settings → Integrations → AI BYOK."
     },
     "byok.enabled": {
       "type": "Boolean",
-      "desc": "Whether to enable workspace BYOK."
+      "desc": "Allow workspace owners and admins to configure AI provider keys through AI BYOK."
     },
     "byok.allowedProviders": {
       "type": "Array",
-      "desc": "The allowlist for workspace BYOK providers."
+      "desc": "AI providers that workspace owners and admins may add through AI BYOK."
     },
     "byok.allowCustomEndpoint": {
       "type": "Boolean",
-      "desc": "Whether workspace BYOK custom endpoints are accepted."
+      "desc": "Allow AI BYOK keys to use a custom provider endpoint."
+    },
+    "byok.allowPrivateEndpoint": {
+      "type": "Boolean",
+      "desc": "Whether workspace BYOK custom endpoints may resolve to private network targets. Enabling this allows workspace owners and admins to send provider probe requests to the private network."
     },
     "providers.profiles": {
       "type": "Array",
@@ -494,7 +486,7 @@
     },
     "providers.oidc": {
       "type": "Object",
-      "desc": "OIDC OAuth provider config",
+      "desc": "OIDC OAuth provider config. Private network access requires allowPrivateNetwork: true",
       "link": "https://openid.net/specs/openid-connect-core-1_0.html"
     },
     "providers.apple": {

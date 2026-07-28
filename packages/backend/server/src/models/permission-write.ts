@@ -55,19 +55,6 @@ export function workspaceStatusFromNew(
   }
 }
 
-export function workspaceSourceToNew(
-  source?: WorkspaceMemberSource
-): PermissionSource {
-  switch (source) {
-    case WorkspaceMemberSource.Email:
-      return 'email';
-    case WorkspaceMemberSource.Link:
-      return 'link';
-    default:
-      return 'legacy';
-  }
-}
-
 export function workspaceSourceFromNew(
   source?: PermissionSource | WorkspaceInvitationKind
 ): WorkspaceMemberSource {
@@ -141,10 +128,8 @@ export class WorkspaceMemberModel extends BaseModel {
     userId: string,
     fallbackRole: WorkspaceRole
   ) {
-    await this.models.permissionProjection.markNewWriteOrigin();
-    await this.models.permissionProjection.lockWorkspaceOwnerTransfer(
-      workspaceId
-    );
+    await this.db
+      .$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`permission:workspace-owner:${workspaceId}`}, 0))`;
     const ownerCount = await this.db.workspaceMember.count({
       where: { workspaceId, role: 'owner', state: 'active' },
     });
@@ -197,13 +182,20 @@ export class WorkspaceMemberModel extends BaseModel {
     workspaceId: string,
     userId: string,
     role: WorkspaceRole,
-    data: { legacyPermissionId?: string | null; source?: PermissionSource } = {}
+    data: { source?: PermissionSource } = {}
   ) {
-    await this.models.permissionProjection.markNewWriteOrigin();
     if (role === WorkspaceRole.Owner) {
       throw new Error('Cannot grant Owner role of a workspace to a user.');
     }
 
+    const invitation = await this.db.workspaceInvitation.findUnique({
+      where: {
+        workspaceId_inviteeUserId: {
+          workspaceId,
+          inviteeUserId: userId,
+        },
+      },
+    });
     await this.db.workspaceInvitation.deleteMany({
       where: { workspaceId, inviteeUserId: userId },
     });
@@ -218,23 +210,21 @@ export class WorkspaceMemberModel extends BaseModel {
       },
       update: {
         role: workspaceRoleToNew(role),
-        legacyPermissionId: data.legacyPermissionId,
         source: data.source,
       },
       create: {
+        id: invitation?.id,
         workspaceId,
         userId,
         role: workspaceRoleToNew(role),
         state: 'active',
-        source: data.source ?? 'legacy',
-        legacyPermissionId: data.legacyPermissionId,
+        source: data.source ?? invitation?.kind ?? 'legacy',
       },
     });
   }
 
   @Transactional()
   async delete(workspaceId: string, userId: string) {
-    await this.models.permissionProjection.markNewWriteOrigin();
     await this.db.$queryRaw`
       SELECT id
       FROM workspace_members
@@ -272,8 +262,6 @@ export class WorkspaceMemberModel extends BaseModel {
 
 @Injectable()
 export class WorkspaceInvitationModel extends BaseModel {
-  private hasCurrentColumns?: Promise<boolean>;
-
   @Transactional()
   async set(
     workspaceId: string,
@@ -285,7 +273,6 @@ export class WorkspaceInvitationModel extends BaseModel {
       inviterId?: string;
     } = {}
   ): Promise<void> {
-    await this.models.permissionProjection.markNewWriteOrigin();
     if (role === WorkspaceRole.Owner) {
       throw new Error('Cannot grant Owner role of a workspace to a user.');
     }
@@ -307,7 +294,6 @@ export class WorkspaceInvitationModel extends BaseModel {
       requestedRole: role === WorkspaceRole.Admin ? 'admin' : 'member',
       status: invitationStatus,
       kind: workspaceInvitationKindToNew(data.source),
-      source: workspaceSourceToNew(data.source),
     });
   }
 
@@ -320,7 +306,6 @@ export class WorkspaceInvitationModel extends BaseModel {
       inviterId?: string;
     } = {}
   ) {
-    await this.models.permissionProjection.markNewWriteOrigin();
     const invitationStatus = workspaceStatusToInvitationState(status);
     if (!invitationStatus) {
       const invitation = await this.findInvitation(workspaceId, userId);
@@ -335,10 +320,7 @@ export class WorkspaceInvitationModel extends BaseModel {
         workspaceId,
         userId,
         role,
-        {
-          legacyPermissionId: invitation.legacyPermissionId,
-          source: invitation.source,
-        }
+        { source: invitation.source }
       );
     }
 
@@ -352,7 +334,6 @@ export class WorkspaceInvitationModel extends BaseModel {
 
   @Transactional()
   async deleteNonAccepted(workspaceId: string) {
-    await this.models.permissionProjection.markNewWriteOrigin();
     return await this.db.workspaceInvitation.deleteMany({
       where: { workspaceId },
     });
@@ -360,7 +341,6 @@ export class WorkspaceInvitationModel extends BaseModel {
 
   @Transactional()
   async cancelPendingByActor(actorUserId: string) {
-    await this.models.permissionProjection.markNewWriteOrigin();
     return await this.db.workspaceInvitation.deleteMany({
       where: {
         inviterUserId: actorUserId,
@@ -373,7 +353,6 @@ export class WorkspaceInvitationModel extends BaseModel {
 
   @Transactional()
   async cancelPendingByWorkspace(workspaceId: string) {
-    await this.models.permissionProjection.markNewWriteOrigin();
     return await this.db.workspaceInvitation.deleteMany({
       where: {
         workspaceId,
@@ -384,18 +363,6 @@ export class WorkspaceInvitationModel extends BaseModel {
     });
   }
 
-  private async supportsCurrentInvitationColumns() {
-    this.hasCurrentColumns ??= this.db.$queryRaw<Array<{ exists: boolean }>>`
-        SELECT EXISTS (
-          SELECT 1
-          FROM information_schema.columns
-          WHERE table_name = 'workspace_invitations'
-            AND column_name = 'requested_role'
-        ) AS "exists"
-      `.then(rows => rows[0]?.exists ?? false);
-    return await this.hasCurrentColumns;
-  }
-
   private async upsertInvitation(input: {
     workspaceId: string;
     userId: string;
@@ -403,99 +370,41 @@ export class WorkspaceInvitationModel extends BaseModel {
     requestedRole: 'admin' | 'member';
     status: WorkspaceInvitationStatus;
     kind: WorkspaceInvitationKind;
-    source: PermissionSource;
   }) {
-    if (await this.supportsCurrentInvitationColumns()) {
-      return await this.db.$executeRaw`
-        INSERT INTO workspace_invitations (
-          workspace_id,
-          invitee_user_id,
-          inviter_user_id,
-          requested_role,
-          status,
-          kind,
-          updated_at
-        )
-        VALUES (
-          ${input.workspaceId},
-          ${input.userId},
-          ${input.inviterId ?? null},
-          ${input.requestedRole},
-          ${input.status},
-          ${input.kind},
-          now()
-        )
-        ON CONFLICT (workspace_id, invitee_user_id)
-        DO UPDATE SET
-          inviter_user_id = EXCLUDED.inviter_user_id,
-          requested_role = EXCLUDED.requested_role,
-          status = EXCLUDED.status,
-          kind = EXCLUDED.kind,
-          updated_at = now()
-      `;
-    }
-
-    return await this.db.$executeRaw`
-      INSERT INTO workspace_invitations (
-        workspace_id,
-        invitee_user_id,
-        inviter_id,
-        role,
-        state,
-        source,
-        updated_at
-      )
-      VALUES (
-        ${input.workspaceId},
-        ${input.userId},
-        ${input.inviterId ?? null},
-        ${input.requestedRole},
-        ${input.status},
-        ${input.source},
-        now()
-      )
-      ON CONFLICT (workspace_id, invitee_user_id)
-      DO UPDATE SET
-        inviter_id = EXCLUDED.inviter_id,
-        role = EXCLUDED.role,
-        state = EXCLUDED.state,
-        source = EXCLUDED.source,
-        updated_at = now()
-    `;
+    return await this.db.workspaceInvitation.upsert({
+      where: {
+        workspaceId_inviteeUserId: {
+          workspaceId: input.workspaceId,
+          inviteeUserId: input.userId,
+        },
+      },
+      update: {
+        inviterUserId: input.inviterId,
+        requestedRole: input.requestedRole,
+        status: input.status,
+        kind: input.kind,
+      },
+      create: {
+        workspaceId: input.workspaceId,
+        inviteeUserId: input.userId,
+        inviterUserId: input.inviterId,
+        requestedRole: input.requestedRole,
+        status: input.status,
+        kind: input.kind,
+      },
+    });
   }
 
   private async findInvitation(workspaceId: string, userId: string) {
-    if (await this.supportsCurrentInvitationColumns()) {
-      const rows = await this.db.$queryRaw<
-        Array<{
-          requestedRole: 'admin' | 'member';
-          legacyPermissionId: string | null;
-          source: PermissionSource;
-        }>
-      >`
-        SELECT
-          requested_role AS "requestedRole",
-          legacy_permission_id AS "legacyPermissionId",
-          kind AS source
-        FROM workspace_invitations
-        WHERE workspace_id = ${workspaceId}
-          AND invitee_user_id = ${userId}
-        LIMIT 1
-      `;
-      return rows[0] ?? null;
-    }
-
     const rows = await this.db.$queryRaw<
       Array<{
         requestedRole: 'admin' | 'member';
-        legacyPermissionId: string | null;
         source: PermissionSource;
       }>
     >`
       SELECT
-        role AS "requestedRole",
-        legacy_permission_id AS "legacyPermissionId",
-        source
+        requested_role AS "requestedRole",
+        kind AS source
       FROM workspace_invitations
       WHERE workspace_id = ${workspaceId}
         AND invitee_user_id = ${userId}
@@ -510,27 +419,16 @@ export class WorkspaceInvitationModel extends BaseModel {
     status: WorkspaceInvitationStatus;
     inviterId?: string;
   }) {
-    if (await this.supportsCurrentInvitationColumns()) {
-      return await this.db.$executeRaw`
-        UPDATE workspace_invitations
-        SET
-          status = ${input.status},
-          inviter_user_id = ${input.inviterId ?? null},
-          updated_at = now()
-        WHERE workspace_id = ${input.workspaceId}
-          AND invitee_user_id = ${input.userId}
-      `;
-    }
-
-    return await this.db.$executeRaw`
-      UPDATE workspace_invitations
-      SET
-        state = ${input.status},
-        inviter_id = ${input.inviterId ?? null},
-        updated_at = now()
-      WHERE workspace_id = ${input.workspaceId}
-        AND invitee_user_id = ${input.userId}
-    `;
+    return await this.db.workspaceInvitation.updateMany({
+      where: {
+        workspaceId: input.workspaceId,
+        inviteeUserId: input.userId,
+      },
+      data: {
+        status: input.status,
+        inviterUserId: input.inviterId,
+      },
+    });
   }
 }
 
@@ -545,7 +443,6 @@ export class WorkspaceAccessPolicyModel extends BaseModel {
       enableUrlPreview?: boolean;
     }
   ) {
-    await this.models.permissionProjection.markNewWriteOrigin();
     return await this.db.workspaceAccessPolicy.upsert({
       where: { workspaceId },
       update: {
@@ -592,7 +489,6 @@ export class DocAccessPolicyModel extends BaseModel {
       urlPreviewEnabled?: boolean;
     }
   ) {
-    await this.models.permissionProjection.markNewWriteOrigin();
     const publicRole = policy.public ? 'external' : null;
     return await this.db.docAccessPolicy.upsert({
       where: { workspaceId_docId: { workspaceId, docId } },
@@ -635,11 +531,8 @@ export class DocAccessPolicyModel extends BaseModel {
 export class DocGrantModel extends BaseModel {
   @Transactional()
   async setOwner(workspaceId: string, docId: string, userId: string) {
-    await this.models.permissionProjection.markNewWriteOrigin();
-    await this.models.permissionProjection.lockDocOwnerTransfer(
-      workspaceId,
-      docId
-    );
+    await this.db
+      .$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`permission:doc-owner:${workspaceId}:${docId}`}, 0))`;
     await this.db.docGrant.updateMany({
       where: {
         workspaceId,
@@ -656,7 +549,6 @@ export class DocGrantModel extends BaseModel {
 
   @Transactional()
   async set(workspaceId: string, docId: string, userId: string, role: DocRole) {
-    await this.models.permissionProjection.markNewWriteOrigin();
     assert(role !== DocRole.None && role !== DocRole.External);
 
     return await this.db.docGrant.upsert({
@@ -688,7 +580,6 @@ export class DocGrantModel extends BaseModel {
     userIds: string[],
     role: DocRole
   ) {
-    await this.models.permissionProjection.markNewWriteOrigin();
     if (role === DocRole.Owner) {
       throw new CanNotBatchGrantDocOwnerPermissions();
     }
@@ -724,7 +615,6 @@ export class DocGrantModel extends BaseModel {
 
   @Transactional()
   async delete(workspaceId: string, docId: string, userId: string) {
-    await this.models.permissionProjection.markNewWriteOrigin();
     await this.db.$queryRaw`
       SELECT 1
       FROM doc_grants

@@ -5,10 +5,11 @@ import test from 'ava';
 import Sinon from 'sinon';
 
 import { ConfigFactory } from '../../base';
+import { EntitlementService } from '../../core/entitlement';
 import { QuotaStateService } from '../../core/quota/state';
 import { WorkspaceBlobStorage } from '../../core/storage/wrappers/blob';
 import { StorageRuntimeProvider } from '../../core/storage-runtime';
-import { BlobModel, WorkspaceFeatureModel } from '../../models';
+import { BlobModel } from '../../models';
 import { getMime } from '../../native';
 import {
   collectAllBlobSizes,
@@ -34,7 +35,6 @@ const RESTRICTED_QUOTA = {
 };
 
 let app: TestingApp;
-let model: WorkspaceFeatureModel;
 type CompleteResult =
   | {
       ok: true;
@@ -146,7 +146,6 @@ test.before(async () => {
       builder.overrideProvider(StorageRuntimeProvider).useValue(storageRuntime);
     },
   });
-  model = app.get(WorkspaceFeatureModel);
   app.get(ConfigFactory).override({
     storages: {
       blob: {
@@ -172,22 +171,20 @@ test.after.always(async () => {
 
 async function withRestrictedWorkspaceQuota(workspaceId: string) {
   const quotaState = app.get(QuotaStateService);
-  const blobModel = app.get(BlobModel);
-  const base = await quotaState.reconcileWorkspaceQuotaState(workspaceId);
-  return Sinon.stub(quotaState, 'reconcileWorkspaceQuotaState').callsFake(
-    async id => {
-      if (id !== workspaceId) {
-        return base;
-      }
-
+  const entitlement = app.get(EntitlementService);
+  const resolveUserEntitlement =
+    entitlement.resolveUserEntitlement.bind(entitlement);
+  const stub = Sinon.stub(entitlement, 'resolveUserEntitlement').callsFake(
+    async userId => {
+      const resolved = await resolveUserEntitlement(userId);
       return {
-        ...base,
-        blobLimit: BigInt(RESTRICTED_QUOTA.blobLimit),
-        storageQuota: BigInt(RESTRICTED_QUOTA.storageQuota),
-        usedStorageQuota: BigInt(await blobModel.totalSize(workspaceId)),
+        ...resolved,
+        quota: { ...resolved.quota, ...RESTRICTED_QUOTA },
       };
     }
   );
+  await quotaState.reconcileWorkspaceQuotaState(workspaceId);
+  return stub;
 }
 
 test('should set blobs', async t => {
@@ -445,18 +442,6 @@ test('should reject blob exceeded storage quota', async t => {
   await t.throwsAsync(setBlob(app, workspace.id, buffer), {
     message: 'You have exceeded your storage quota.',
   });
-});
-
-test('should accept blob even storage out of quota if workspace has unlimited feature', async t => {
-  await app.signupV1('u1@affine.pro');
-
-  const workspace = await createWorkspace(app);
-  await model.add(workspace.id, 'team_plan_v1', 'test', RESTRICTED_QUOTA);
-  await model.add(workspace.id, 'unlimited_workspace', 'test');
-
-  const buffer = Buffer.from(Array.from({ length: OneMB }, () => 0));
-  await t.notThrowsAsync(setBlob(app, workspace.id, buffer));
-  await t.notThrowsAsync(setBlob(app, workspace.id, buffer));
 });
 
 test('should throw error when blob size large than max file size', async t => {

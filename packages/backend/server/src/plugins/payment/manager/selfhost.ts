@@ -1,8 +1,12 @@
 import { randomUUID } from 'node:crypto';
 
 import { Injectable } from '@nestjs/common';
-import { PrismaClient, Provider, UserStripeCustomer } from '@prisma/client';
-import { omit } from 'lodash-es';
+import {
+  Prisma,
+  PrismaClient,
+  Provider,
+  UserStripeCustomer,
+} from '@prisma/client';
 import { z } from 'zod';
 
 import { SubscriptionPlanNotFound, URLHelper } from '../../../base';
@@ -119,70 +123,44 @@ export class SelfhostTeamSubscriptionManager extends SubscriptionManager {
 
   async saveStripeSubscription(subscription: KnownStripeSubscription) {
     const { stripeSubscription, userEmail } = subscription;
-
     const subscriptionData = this.transformSubscription(subscription);
-
-    const existingSubscription = await this.db.subscription.findFirst({
+    const existingSubscription = await this.db.providerSubscription.findUnique({
       where: {
-        stripeSubscriptionId: stripeSubscription.id,
+        provider_externalSubscriptionId: {
+          provider: Provider.stripe,
+          externalSubscriptionId: stripeSubscription.id,
+        },
       },
+    });
+    const key = existingSubscription?.targetId ?? randomUUID();
+    const saved = await this.db.$transaction(async db => {
+      const saved = await this.upsertStripeProviderSubscription(
+        key,
+        subscription,
+        subscriptionData,
+        db
+      );
+      await db.license.upsert({
+        where: { key: saved.targetId },
+        update: {},
+        create: { key: saved.targetId },
+      });
+      return saved;
     });
 
     if (!existingSubscription) {
-      const key = randomUUID();
-      const [saved] = await this.db.$transaction([
-        this.db.subscription.create({
-          // TODO(stable-upgrade): remove legacy subscriptions dual-write after stable supports provider facts.
-          data: {
-            provider: Provider.stripe,
-            targetId: key,
-            ...omit(subscriptionData, 'provider', 'iapStore'),
-          },
-        }),
-        this.db.license.create({
-          data: { key },
-        }),
-      ]);
-
       await this.mailer.send({
         name: 'TeamLicense',
         to: userEmail,
-        props: { license: key },
+        props: { license: saved.targetId },
         metadata: {
-          dedupeKey: `selfhost-license:${key}`,
+          dedupeKey: `selfhost-license:${saved.targetId}`,
           source: { trusted: false },
         },
       });
-
-      await this.upsertStripeProviderSubscription(
-        key,
-        subscription,
-        subscriptionData
-      );
-
-      return saved;
-    } else {
-      const saved = await this.db.subscription.update({
-        // TODO(stable-upgrade): remove legacy subscriptions dual-write after stable supports provider facts.
-        where: {
-          stripeSubscriptionId: stripeSubscription.id,
-        },
-        data: {
-          ...omit(subscriptionData, ['provider', 'iapStore']),
-          provider: Provider.stripe,
-          iapStore: null,
-          rcEntitlement: null,
-          rcProductId: null,
-          rcExternalRef: null,
-        },
-      });
-      await this.upsertStripeProviderSubscription(
-        saved.targetId,
-        subscription,
-        subscriptionData
-      );
-      return saved;
     }
+
+    return this.transformProviderSubscription(saved);
   }
 
   async deleteStripeSubscription({
@@ -199,80 +177,111 @@ export class SelfhostTeamSubscriptionManager extends SubscriptionManager {
         periodEnd: new Date(),
       },
     });
-
-    const subscription = await this.db.subscription.findFirst({
-      where: { stripeSubscriptionId: stripeSubscription.id },
-    });
-
-    if (!subscription) {
-      return;
-    }
-
-    await this.db.$transaction([
-      this.db.subscription.deleteMany({
-        where: { stripeSubscriptionId: stripeSubscription.id },
-      }),
-      this.db.license.deleteMany({
-        where: { key: subscription.targetId },
-      }),
-    ]);
   }
 
-  getSubscription(identity: z.infer<typeof SelfhostTeamSubscriptionIdentity>) {
-    return this.db.subscription.findFirst({
-      where: { targetId: identity.key },
+  async getSubscription(
+    identity: z.infer<typeof SelfhostTeamSubscriptionIdentity>
+  ) {
+    const subscription = await this.db.providerSubscription.findFirst({
+      where: {
+        provider: Provider.stripe,
+        targetType: 'instance',
+        targetId: identity.key,
+        plan: identity.plan,
+      },
+      orderBy: { updatedAt: 'desc' },
     });
+    return subscription
+      ? this.transformProviderSubscription(subscription)
+      : null;
   }
 
   getActiveSubscription(
     identity: z.infer<typeof SelfhostTeamSubscriptionIdentity>
   ) {
-    return this.db.subscription.findFirst({
-      where: {
-        targetId: identity.key,
-        plan: identity.plan,
-        ...activeSubscriptionWhere(),
-      },
-    });
+    return this.db.providerSubscription
+      .findFirst({
+        where: {
+          provider: Provider.stripe,
+          targetType: 'instance',
+          targetId: identity.key,
+          plan: identity.plan,
+          ...activeSubscriptionWhere(),
+        },
+        orderBy: { updatedAt: 'desc' },
+      })
+      .then(subscription =>
+        subscription ? this.transformProviderSubscription(subscription) : null
+      );
   }
 
   async cancelSubscription(subscription: Subscription) {
-    return await this.db.subscription.update({
+    const current = await this.db.providerSubscription.findUniqueOrThrow({
       where: {
-        // @ts-expect-error checked outside
-        stripeSubscriptionId: subscription.stripeSubscriptionId,
+        provider_externalSubscriptionId: {
+          provider: Provider.stripe,
+          externalSubscriptionId: this.requireStripeSubscriptionId(
+            subscription.stripeSubscriptionId
+          ),
+        },
       },
+    });
+    await this.db.providerSubscription.update({
+      where: { id: current.id },
       data: {
         canceledAt: new Date(),
-        nextBillAt: null,
       },
     });
+    const saved = await this.patchProviderSubscriptionMetadata(current.id, {
+      variant: subscription.variant,
+      stripeScheduleId: subscription.stripeScheduleId,
+      nextBillAt: null,
+    });
+    return this.transformProviderSubscription(saved);
   }
 
-  resumeSubscription(subscription: Subscription): Promise<Subscription> {
-    return this.db.subscription.update({
+  async resumeSubscription(subscription: Subscription) {
+    const current = await this.db.providerSubscription.findUniqueOrThrow({
       where: {
-        // @ts-expect-error checked outside
-        stripeSubscriptionId: subscription.stripeSubscriptionId,
-      },
-      data: {
-        canceledAt: null,
-        nextBillAt: subscription.end,
+        provider_externalSubscriptionId: {
+          provider: Provider.stripe,
+          externalSubscriptionId: this.requireStripeSubscriptionId(
+            subscription.stripeSubscriptionId
+          ),
+        },
       },
     });
+    await this.db.providerSubscription.update({
+      where: { id: current.id },
+      data: {
+        canceledAt: null,
+      },
+    });
+    const saved = await this.patchProviderSubscriptionMetadata(current.id, {
+      variant: subscription.variant,
+      stripeScheduleId: subscription.stripeScheduleId,
+      nextBillAt: subscription.end?.toISOString() ?? null,
+    });
+    return this.transformProviderSubscription(saved);
   }
 
   updateSubscriptionRecurring(
     subscription: Subscription,
     recurring: SubscriptionRecurring
-  ): Promise<Subscription> {
-    return this.db.subscription.update({
-      where: {
-        // @ts-expect-error checked outside
-        stripeSubscriptionId: subscription.stripeSubscriptionId,
-      },
-      data: { recurring },
-    });
+  ) {
+    return this.db.providerSubscription
+      .update({
+        where: {
+          provider_externalSubscriptionId: {
+            provider: Provider.stripe,
+            externalSubscriptionId: this.requireStripeSubscriptionId(
+              subscription.stripeSubscriptionId
+            ),
+          },
+        },
+        data: { recurring },
+      })
+      .then(subscription => this.transformProviderSubscription(subscription));
   }
 
   async saveInvoice(knownInvoice: KnownStripeInvoice): Promise<Invoice> {
@@ -284,12 +293,13 @@ export class SelfhostTeamSubscriptionManager extends SubscriptionManager {
   private async upsertStripeProviderSubscription(
     targetId: string,
     known: KnownStripeSubscription,
-    subscriptionData: Subscription
+    subscriptionData: Subscription,
+    db: Prisma.TransactionClient = this.db
   ) {
     const { lookupKey, stripeSubscription } = known;
     const price = stripeSubscription.items.data[0]?.price;
 
-    await this.db.providerSubscription.upsert({
+    return db.providerSubscription.upsert({
       where: {
         provider_externalSubscriptionId: {
           provider: Provider.stripe,
@@ -297,8 +307,6 @@ export class SelfhostTeamSubscriptionManager extends SubscriptionManager {
         },
       },
       update: {
-        targetType: 'instance',
-        targetId,
         plan: lookupKey.plan,
         recurring: lookupKey.recurring,
         status: stripeSubscription.status,
@@ -319,7 +327,12 @@ export class SelfhostTeamSubscriptionManager extends SubscriptionManager {
         trialStart: subscriptionData.trialStart,
         trialEnd: subscriptionData.trialEnd,
         canceledAt: subscriptionData.canceledAt,
-        metadata: known.metadata,
+        metadata: {
+          ...known.metadata,
+          variant: subscriptionData.variant,
+          stripeScheduleId: subscriptionData.stripeScheduleId,
+          nextBillAt: subscriptionData.nextBillAt?.toISOString() ?? null,
+        },
       },
       create: {
         provider: Provider.stripe,
@@ -346,7 +359,12 @@ export class SelfhostTeamSubscriptionManager extends SubscriptionManager {
         trialStart: subscriptionData.trialStart,
         trialEnd: subscriptionData.trialEnd,
         canceledAt: subscriptionData.canceledAt,
-        metadata: known.metadata,
+        metadata: {
+          ...known.metadata,
+          variant: subscriptionData.variant,
+          stripeScheduleId: subscriptionData.stripeScheduleId,
+          nextBillAt: subscriptionData.nextBillAt?.toISOString() ?? null,
+        },
       },
     });
   }

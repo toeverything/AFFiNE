@@ -37,8 +37,21 @@ export class WorkspacePolicyService {
   ) {}
 
   async getWorkspaceState(workspaceId: string): Promise<WorkspaceState> {
+    const current = await this.quotaState.getWorkspaceQuotaState(workspaceId);
     const quota =
-      await this.quotaState.reconcileWorkspaceQuotaState(workspaceId);
+      current?.known &&
+      !current.stale &&
+      (!current.staleAfter || current.staleAfter > new Date())
+        ? current
+        : await this.quotaState.reconcileWorkspaceQuotaState(workspaceId);
+    return this.toWorkspaceState(quota);
+  }
+
+  private toWorkspaceState(
+    quota: Awaited<
+      ReturnType<QuotaStateService['reconcileWorkspaceQuotaState']>
+    >
+  ): WorkspaceState {
     const quotaSnapshot = quota as WorkspaceQuotaSnapshot;
 
     const readonlyReasons = quotaSnapshot.readonlyReasons;
@@ -67,7 +80,9 @@ export class WorkspacePolicyService {
   }
 
   async reconcileWorkspaceQuotaState(workspaceId: string) {
-    return await this.getWorkspaceState(workspaceId);
+    return this.toWorkspaceState(
+      await this.quotaState.reconcileWorkspaceQuotaState(workspaceId)
+    );
   }
 
   async handleTeamPlanCanceled(workspaceId: string) {
@@ -79,7 +94,6 @@ export class WorkspacePolicyService {
   private async cleanupTeamPlanCanceled(workspaceId: string) {
     await this.models.workspaceUser.deleteNonAccepted(workspaceId);
     await this.models.workspaceUser.demoteAcceptedAdmins(workspaceId);
-    await this.models.workspaceFeature.remove(workspaceId, 'team_plan_v1');
   }
 
   @OnEvent('workspace.members.updated')

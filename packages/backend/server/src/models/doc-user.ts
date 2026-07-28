@@ -3,7 +3,7 @@ import assert from 'node:assert';
 import { Injectable } from '@nestjs/common';
 import { Transactional } from '@nestjs-cls/transactional';
 import type { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
-import { DocGrant, WorkspaceDocUserRole } from '@prisma/client';
+import { DocGrant } from '@prisma/client';
 
 import { CanNotBatchGrantDocOwnerPermissions, PaginationInput } from '../base';
 import { BaseModel } from './base';
@@ -82,20 +82,12 @@ export class DocUserModel extends BaseModel {
 
   @Transactional()
   async deleteByUserId(userId: string) {
-    await this.models.permissionProjection.markNewWriteOrigin();
     await this.db.docGrant.deleteMany({
       where: {
         principalType: 'user',
         principalId: userId,
       },
     });
-    await this.withPermissionProjectionMetric(
-      this.db.workspaceDocUserRole.deleteMany({
-        where: {
-          userId,
-        },
-      })
-    );
   }
 
   async getOwner(workspaceId: string, docId: string) {
@@ -160,7 +152,7 @@ export class DocUserModel extends BaseModel {
     workspaceId: string,
     docId: string,
     pagination: PaginationInput
-  ): Promise<[WorkspaceDocUserRole[], number]> {
+  ): Promise<[DocUserCompat[], number]> {
     const [grants, total] = await Promise.all([
       this.db.docGrant.findMany({
         where: {
@@ -184,7 +176,7 @@ export class DocUserModel extends BaseModel {
     return [grants.map(grant => this.docGrantToCompat(grant)), total];
   }
 
-  private docGrantToCompat(grant: DocGrant): WorkspaceDocUserRole {
+  private docGrantToCompat(grant: DocGrant): DocUserCompat {
     return {
       workspaceId: grant.workspaceId,
       docId: grant.docId,
@@ -194,3 +186,11 @@ export class DocUserModel extends BaseModel {
     };
   }
 }
+
+type DocUserCompat = {
+  workspaceId: string;
+  docId: string;
+  userId: string;
+  type: DocRole;
+  createdAt: Date;
+};
