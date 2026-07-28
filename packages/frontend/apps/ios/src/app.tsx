@@ -394,15 +394,19 @@ registerNativeImageFilesPicker(async () => {
       }
       const current = globalContextService.globalContext.workspaceId.get();
       if (current) {
-        return preferred ?? current;
+        return current;
       }
       const first = workspacesService.list.workspaces$.value[0]?.id;
-      if (!preferred && first) {
+      if (first) {
         return first;
       }
       await wait(500);
     }
-    return preferred ?? globalContextService.globalContext.workspaceId.get();
+    return (
+      globalContextService.globalContext.workspaceId.get() ??
+      workspacesService.list.workspaces$.value[0]?.id ??
+      null
+    );
   };
 
   const targetWorkspaceId = await resolveTargetWorkspaceId();

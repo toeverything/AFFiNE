@@ -81,16 +81,30 @@ final class ShareInboxStore {
       throw ShareInboxError.containerUnavailable
     }
 
-    for (attachment, data) in attachmentData {
-      let destination = attachmentsDirectoryURL.appendingPathComponent(attachment.relativePath)
-      let parent = destination.deletingLastPathComponent()
-      try fileManager.createDirectory(at: parent, withIntermediateDirectories: true)
-      try data.write(to: destination, options: .atomic)
-    }
+    var writtenURLs: [URL] = []
+    var writtenParentURLs: [URL] = []
+    do {
+      for (attachment, data) in attachmentData {
+        let destination = attachmentsDirectoryURL.appendingPathComponent(attachment.relativePath)
+        let parent = destination.deletingLastPathComponent()
+        try fileManager.createDirectory(at: parent, withIntermediateDirectories: true)
+        writtenParentURLs.append(parent)
+        try data.write(to: destination, options: .atomic)
+        writtenURLs.append(destination)
+      }
 
-    let fileURL = inboxDirectoryURL.appendingPathComponent("\(item.id).json")
-    let data = try encoder.encode(item)
-    try data.write(to: fileURL, options: .atomic)
+      let fileURL = inboxDirectoryURL.appendingPathComponent("\(item.id).json")
+      let data = try encoder.encode(item)
+      try data.write(to: fileURL, options: .atomic)
+    } catch {
+      for url in writtenURLs {
+        try? fileManager.removeItem(at: url)
+      }
+      for url in writtenParentURLs.reversed() {
+        try? fileManager.removeItem(at: url)
+      }
+      throw error
+    }
   }
 
   func pendingItems() -> [ShareInboxItem] {
@@ -125,6 +139,7 @@ final class ShareInboxStore {
     for attachment in item.attachments {
       if let url = attachmentURL(for: attachment) {
         try? fileManager.removeItem(at: url)
+        try? fileManager.removeItem(at: url.deletingLastPathComponent())
       }
     }
   }

@@ -46,12 +46,11 @@ final class ShareViewController: UIViewController {
   }
 
   private func save() {
-    Task {
+    Task { [weak self] in
+      guard let self else { return }
       let success = await viewModel.save()
       guard success else { return }
-      // Open host app before dismissing the share sheet.
-      // Share extensions cannot use extensionContext.open(_:) — that API is a no-op here.
-      openMainAppIfPossible()
+      await openMainAppIfPossible()
       extensionContext?.completeRequest(returningItems: nil, completionHandler: nil)
     }
   }
@@ -59,13 +58,16 @@ final class ShareViewController: UIViewController {
   /// Walk the responder chain to reach UIApplication and open the host app URL scheme.
   /// `UIApplication.shared` is unavailable in app extensions at compile time.
   @discardableResult
-  private func openMainAppIfPossible() -> Bool {
+  private func openMainAppIfPossible() async -> Bool {
     let url = ShareInboxConstants.openInboxURL
     var responder: UIResponder? = self
     while let current = responder {
       if let application = current as? UIApplication {
-        application.open(url, options: [:], completionHandler: nil)
-        return true
+        return await withCheckedContinuation { continuation in
+          application.open(url, options: [:]) { success in
+            continuation.resume(returning: success)
+          }
+        }
       }
       responder = current.next
     }

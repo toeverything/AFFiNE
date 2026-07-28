@@ -107,7 +107,7 @@ enum SharePayloadBuilder {
            provider.hasItemConformingToTypeIdentifier(UTType.html.identifier)
         {
           if let html = try? await loadHTMLString(from: provider) {
-            let plain = htmlToPlainText(html)
+            let plain = await htmlToPlainText(html)
             if plain.count > (pageContent?.count ?? 0) {
               pageContent = plain
             }
@@ -445,6 +445,7 @@ enum SharePayloadBuilder {
     }
   }
 
+  @MainActor
   private static func htmlToPlainText(_ html: String) -> String {
     guard let data = html.data(using: .utf8) else { return html }
     let options: [NSAttributedString.DocumentReadingOptionKey: Any] = [

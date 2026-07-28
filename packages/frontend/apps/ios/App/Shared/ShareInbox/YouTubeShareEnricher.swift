@@ -264,21 +264,7 @@ enum YouTubeShareEnricher {
        let renderer = captions["playerCaptionsTracklistRenderer"] as? [String: Any],
        let captionTracks = renderer["captionTracks"] as? [[String: Any]]
     {
-      tracks = captionTracks.compactMap { track in
-        guard let baseURL = track["baseUrl"] as? String, !baseURL.isEmpty else { return nil }
-        let name: String
-        if let simple = (track["name"] as? [String: Any])?["simpleText"] as? String {
-          name = simple
-        } else {
-          name = track["languageCode"] as? String ?? "unknown"
-        }
-        return CaptionTrack(
-          baseURL: baseURL.replacingOccurrences(of: "\\u0026", with: "&"),
-          languageCode: (track["languageCode"] as? String ?? "").lowercased(),
-          kind: track["kind"] as? String,
-          name: name
-        )
-      }
+      tracks = parseCaptionTracks(captionTracks)
     }
 
     return PlayerPayload(
@@ -292,7 +278,17 @@ enum YouTubeShareEnricher {
 
   private static func extractChapters(from object: [String: Any]) -> [Chapter] {
     var chapters: [Chapter] = []
-    collectChapters(from: object, into: &chapters)
+    let roots = [
+      object["playerOverlays"],
+      object["playerOverlayRenderer"],
+      object["engagementPanels"],
+      object["decoratedPlayerBarRenderer"],
+      object["macroMarkersListRenderer"],
+    ].compactMap { $0 }
+
+    for root in roots {
+      collectChapters(from: root, maxDepth: 8, into: &chapters)
+    }
 
     var seen = Set<String>()
     return chapters
@@ -306,7 +302,8 @@ enum YouTubeShareEnricher {
       }
   }
 
-  private static func collectChapters(from value: Any, into chapters: inout [Chapter]) {
+  private static func collectChapters(from value: Any, maxDepth: Int, into chapters: inout [Chapter]) {
+    guard maxDepth >= 0 else { return }
     if let dictionary = value as? [String: Any] {
       if let renderer = dictionary["chapterRenderer"] as? [String: Any],
          let chapter = parseChapterRenderer(renderer)
@@ -321,15 +318,33 @@ enum YouTubeShareEnricher {
       if let chapter = parseChapterRenderer(dictionary) {
         chapters.append(chapter)
       }
-      for nested in dictionary.values {
-        collectChapters(from: nested, into: &chapters)
+
+      for key in chapterContainerKeys {
+        if let nested = dictionary[key] {
+          collectChapters(from: nested, maxDepth: maxDepth - 1, into: &chapters)
+        }
       }
     } else if let array = value as? [Any] {
       for nested in array {
-        collectChapters(from: nested, into: &chapters)
+        collectChapters(from: nested, maxDepth: maxDepth - 1, into: &chapters)
       }
     }
   }
+
+  private static let chapterContainerKeys = [
+    "playerOverlayRenderer",
+    "decoratedPlayerBarRenderer",
+    "playerBar",
+    "multiMarkersPlayerBarRenderer",
+    "markersMap",
+    "macroMarkersListRenderer",
+    "contents",
+    "items",
+    "value",
+    "chapters",
+    "chapterRenderer",
+    "macroMarkersListItemRenderer",
+  ]
 
   private static func parseChapterRenderer(_ renderer: [String: Any]) -> Chapter? {
     guard let title = textValue(renderer["title"]), !title.isEmpty,
@@ -421,10 +436,6 @@ enum YouTubeShareEnricher {
     "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
   private static let desktopUserAgent =
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15"
-  private static let iosYouTubeUserAgent =
-    "com.google.ios.youtube/20.10.38 (iPhone16,2; U; CPU iOS 17_5_1 like Mac OS X)"
-  private static let iosInnerTubeAPIKey = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8"
-
   private static func fetchData(
     from urlString: String,
     userAgent: String = mobileUserAgent
@@ -445,45 +456,13 @@ enum YouTubeShareEnricher {
     }
   }
 
-  private static func postJSON(
-    to urlString: String,
-    body: [String: Any],
-    userAgent: String
-  ) async -> [String: Any]? {
-    guard let url = URL(string: urlString),
-          JSONSerialization.isValidJSONObject(body),
-          let payload = try? JSONSerialization.data(withJSONObject: body)
-    else {
-      return nil
-    }
-    var request = URLRequest(url: url)
-    request.httpMethod = "POST"
-    request.timeoutInterval = 12
-    request.httpBody = payload
-    request.setValue(userAgent, forHTTPHeaderField: "User-Agent")
-    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-    request.setValue("en-US,en;q=0.9", forHTTPHeaderField: "Accept-Language")
-    do {
-      let (data, response) = try await URLSession.shared.data(for: request)
-      if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
-        return nil
-      }
-      return try JSONSerialization.jsonObject(with: data) as? [String: Any]
-    } catch {
-      return nil
-    }
-  }
-
   // MARK: - Captions
 
   private static func fetchBestTranscript(
     videoId: String,
     player: PlayerPayload?
   ) async -> String? {
-    var tracks = player?.captionTracks ?? []
-    if let iosTracks = await fetchIOSCaptionTracks(videoId: videoId), !iosTracks.isEmpty {
-      tracks = iosTracks
-    }
+    let tracks = player?.captionTracks ?? []
     guard let selected = selectCaptionTrack(tracks),
           let lines = await fetchTranscript(from: selected),
           !lines.isEmpty
@@ -491,34 +470,6 @@ enum YouTubeShareEnricher {
       return nil
     }
     return formatTranscript(lines, chapters: player?.chapters ?? [])
-  }
-
-  private static func fetchIOSCaptionTracks(videoId: String) async -> [CaptionTrack]? {
-    let body: [String: Any] = [
-      "context": [
-        "client": [
-          "clientName": "IOS",
-          "clientVersion": "20.10.38",
-          "hl": "en",
-          "gl": "US",
-        ],
-      ],
-      "videoId": videoId,
-      "contentCheckOk": true,
-      "racyCheckOk": true,
-    ]
-    guard let json = await postJSON(
-      to: "https://www.youtube.com/youtubei/v1/player?key=\(iosInnerTubeAPIKey)",
-      body: body,
-      userAgent: iosYouTubeUserAgent
-    ),
-      let captions = json["captions"] as? [String: Any],
-      let renderer = captions["playerCaptionsTracklistRenderer"] as? [String: Any],
-      let captionTracks = renderer["captionTracks"] as? [[String: Any]]
-    else {
-      return nil
-    }
-    return parseCaptionTracks(captionTracks)
   }
 
   private static func parseCaptionTracks(_ captionTracks: [[String: Any]]) -> [CaptionTrack] {
@@ -545,7 +496,7 @@ enum YouTubeShareEnricher {
       candidates.append(track.baseURL)
     }
     for candidate in candidates {
-      guard let data = await fetchData(from: candidate, userAgent: iosYouTubeUserAgent),
+      guard let data = await fetchData(from: candidate, userAgent: desktopUserAgent),
             let lines = parseCaptions(data: data),
             !lines.isEmpty
       else {

@@ -41,10 +41,14 @@ final class ShareViewModel: ObservableObject {
     defer { isLoading = false }
 
     workspaces = store.recentWorkspaces()
-    selectedWorkspaceId = store.lastWorkspaceId() ?? workspaces.first?.id
+    let cachedLastId = store.lastWorkspaceId()
+    if let cachedLastId, workspaces.contains(where: { $0.id == cachedLastId }) {
+      selectedWorkspaceId = cachedLastId
+    } else {
+      selectedWorkspaceId = workspaces.first?.id
+    }
 
-    // Safari may attach the JS preprocessing result slightly after launch.
-    // For YouTube, JS also fetches captions asynchronously — wait before network enrich.
+    let items = extensionContext?.inputItems.compactMap { $0 as? NSExtensionItem } ?? []
     var built = SharePayloadDraft(
       title: "Shared",
       markdown: "",
@@ -52,37 +56,29 @@ final class ShareViewModel: ObservableObject {
       files: []
     )
     for attempt in 0..<8 {
-      let items = extensionContext?.inputItems.compactMap { $0 as? NSExtensionItem } ?? []
-      // Probe without YouTube network work so we can detect URL + wait for Safari JS.
       let probe = await SharePayloadBuilder.build(from: items, enrichYouTube: false)
       let looksLikeYouTube =
         markdownLooksLikeYouTube(probe.markdown) || markdownLooksLikeYouTube(probe.title)
 
       if looksLikeYouTube, attempt < 3 {
-        // Give Safari JS ~1s to finish async caption fetch before network enrich.
         built = probe
         try? await Task.sleep(nanoseconds: 350_000_000)
         continue
       }
 
-      built =
-        looksLikeYouTube
-        ? await SharePayloadBuilder.build(from: items, enrichYouTube: true)
-        : probe
+      if looksLikeYouTube {
+        built = await SharePayloadBuilder.build(from: items, enrichYouTube: true)
+        break
+      }
 
-      let hasYouTubeEnrichment =
-        built.markdown.contains("attachment://youtube-thumbnail")
-        || built.markdown.contains("## Transcript")
-      let hasTranscript = built.markdown.contains("## Transcript")
+      built = probe
+
       let hasBody = built.markdown.count > 40 || !(built.previewText.isEmpty)
       let hasTitleOrURL =
         built.title != "Shared"
         || built.markdown.contains("http://")
         || built.markdown.contains("https://")
 
-      if hasTranscript || hasYouTubeEnrichment {
-        break
-      }
       if (hasBody && hasTitleOrURL) || attempt == 7 {
         break
       }
@@ -97,7 +93,8 @@ final class ShareViewModel: ObservableObject {
       markdown = built.previewText
     }
     if let imageFile = built.files.first(where: { $0.embedInMarkdownAsImage }) {
-      previewImage = UIImage(data: imageFile.data)
+      previewImage = UIImage(data: imageFile.data)?
+        .preparingThumbnail(of: CGSize(width: 480, height: 480))
     }
 
     NSLog(
