@@ -1140,17 +1140,17 @@
       "properties": {
         "enabled": {
           "type": "boolean",
-          "description": "Whether to enable the copilot plugin. <br> Document: <a href=\"https://docs.affine.pro/self-host-affine/administer/ai\" target=\"_blank\">https://docs.affine.pro/self-host-affine/administer/ai</a>\n@default false",
+          "description": "Enable AI features. Workspace owners configure provider keys in Workspace Settings → Integrations → AI BYOK.\n@default false",
           "default": false
         },
         "byok.enabled": {
           "type": "boolean",
-          "description": "Whether to enable workspace BYOK.\n@default true",
+          "description": "Allow workspace owners and admins to configure AI provider keys through AI BYOK.\n@default true",
           "default": true
         },
         "byok.allowedProviders": {
           "type": "array",
-          "description": "The allowlist for workspace BYOK providers.\n@default [\"openai\",\"anthropic\",\"gemini\",\"fal\"]",
+          "description": "AI providers that workspace owners and admins may add through AI BYOK.\n@default [\"openai\",\"anthropic\",\"gemini\",\"fal\"]",
           "default": [
             "openai",
             "anthropic",
@@ -1160,7 +1160,7 @@
         },
         "byok.allowCustomEndpoint": {
           "type": "boolean",
-          "description": "Whether workspace BYOK custom endpoints are accepted.\n@default false",
+          "description": "Allow AI BYOK keys to use a custom provider endpoint.\n@default false",
           "default": false
         },
         "byok.allowPrivateEndpoint": {
