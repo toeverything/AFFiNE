@@ -311,9 +311,12 @@ async fn current_activity(
 }
 
 fn root_contains(root: CurrentDoc, doc_id: &str) -> RuntimeResult<bool> {
-  let ids = affine_doc_loader::get_doc_ids_from_binary(root.blob, true)
+  let projection = affine_doc_loader::project_workspace_root(root.blob, true)
     .map_err(|err| RuntimeError::invalid_state(format!("Document cleanup root parse failed: {err}")))?;
-  Ok(ids.iter().any(|id| id == doc_id))
+  if !projection.complete {
+    return Err(RuntimeError::invalid_state("Document cleanup root doc is incomplete"));
+  }
+  Ok(projection.doc_ids.iter().any(|id| id == doc_id))
 }
 
 async fn delete_doc_rows(tx: &mut Transaction<'_, Postgres>, candidate: &Candidate) -> RuntimeResult<i64> {

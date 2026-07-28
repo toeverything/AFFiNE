@@ -22,6 +22,12 @@ globalStyle('body:has(>#app-tabs):not(:has(affine-keyboard-toolbar))', {
   paddingBottom: globalVars.appTabSafeArea,
 });
 globalStyle('body:has(affine-keyboard-toolbar)', {
+  paddingBottom: `calc(${globalVars.appTabSafeArea} + 46px)`,
+});
+globalStyle('body:has(affine-keyboard-toolbar[data-keyboard-visible])', {
+  paddingBottom: `calc(${globalVars.appKeyboardHeight} + 46px)`,
+});
+globalStyle('body:has(affine-keyboard-toolbar[data-panel-open])', {
   paddingBottom: `calc(${globalVars.appKeyboardStaticHeight} + 46px)`,
 });
 globalStyle('body:has(>#app-tabs) edgeless-toolbar-widget', {

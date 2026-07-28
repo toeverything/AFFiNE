@@ -239,7 +239,30 @@ test('should format quick bar be able to change background color', async ({
   // select `456` paragraph by dragging
   await dragBetweenIndices(page, [1, 0], [1, 3]);
 
-  const { highlight } = getFormatBar(page);
+  const { formatBar, highlight } = getFormatBar(page);
+
+  await formatBar.evaluate(toolbar => {
+    toolbar.style.overflowX = 'auto';
+  });
+
+  await highlight.highlightBtn.click();
+  await expect(highlight.redForegroundBtn).toBeVisible();
+  await expect(
+    formatBar.locator('editor-menu-content[data-show]')
+  ).toHaveAttribute('popover', 'manual');
+  expect(
+    await formatBar
+      .locator('editor-menu-content[data-show]')
+      .evaluate(menu => menu.matches(':popover-open'))
+  ).toBe(true);
+
+  const highlightMenu = formatBar.locator(
+    'affine-highlight-dropdown-menu editor-menu-button'
+  );
+  await highlightMenu.evaluate(menu => {
+    Reflect.set(menu, 'popperOptions', { mainAxis: 1 });
+  });
+  await expect(highlightMenu).not.toHaveAttribute('data-open', 'true');
 
   await highlight.highlightBtn.click();
   await expect(highlight.redForegroundBtn).toBeVisible();

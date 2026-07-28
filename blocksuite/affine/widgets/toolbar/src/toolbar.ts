@@ -146,7 +146,16 @@ export class AffineToolbarWidget extends WidgetComponent {
   }
 
   setReferenceElementWithBlocks(blocks: BlockComponent[]) {
-    const getClientRects = () => blocks.map(e => e.getBoundingClientRect());
+    let cachedClientRects: DOMRect[] | null = null;
+    const getClientRects = () => {
+      if (!cachedClientRects) {
+        cachedClientRects = blocks.map(e => e.getBoundingClientRect());
+        requestAnimationFrame(() => {
+          cachedClientRects = null;
+        });
+      }
+      return cachedClientRects;
+    };
 
     this.referenceElement$.value = blocks.length
       ? () => ({

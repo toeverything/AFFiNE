@@ -1,4 +1,5 @@
 import { ThemeProvider } from '@blocksuite/affine-shared/services';
+import { watch } from '@blocksuite/global/lit';
 import { BlockComponent, type BlockService } from '@blocksuite/std';
 import type { BlockModel } from '@blocksuite/store';
 import { html, nothing } from 'lit';
@@ -59,7 +60,7 @@ export class CaptionedBlockComponent<
         : nothing}
       ${this.selectedStyle === SelectedStyle.Background
         ? html`<affine-block-selection
-            .selected=${this.selected$.value}
+            .selected=${watch(this.selected$)}
           ></affine-block-selection>`
         : null}
       ${this.useZeroWidth && !this.store.readonly

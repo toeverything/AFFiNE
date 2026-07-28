@@ -41,8 +41,6 @@ export class AffineKeyboardToolbar extends SignalWatcher(
 ) {
   static override styles = keyboardToolbarStyles;
 
-  private readonly _expanded$ = signal(false);
-
   get std() {
     return this.rootComponent.std;
   }
@@ -52,13 +50,17 @@ export class AffineKeyboardToolbar extends SignalWatcher(
   }
 
   private get panelHeight() {
-    return this._expanded$.value
-      ? `${
-          this.keyboard.staticHeight$.value !== 0
-            ? this.keyboard.staticHeight$.value
-            : 330
-        }px`
-      : this.keyboard.appTabSafeArea$.value;
+    if (this.keyboard.visible$.value) {
+      return `${this.keyboard.height$.value}px`;
+    }
+    if (this.panelOpened) {
+      return `${
+        this.keyboard.staticHeight$.value !== 0
+          ? this.keyboard.staticHeight$.value
+          : 330
+      }px`;
+    }
+    return this.keyboard.appTabSafeArea$.value;
   }
 
   /**
@@ -266,20 +268,13 @@ export class AffineKeyboardToolbar extends SignalWatcher(
     super.connectedCallback();
     this.setAttribute(RANGE_SYNC_EXCLUDE_ATTR, 'true');
 
-    // There are two cases that `_expanded$` will be true:
-    // 1. when virtual keyboard is opened, the panel need to be expanded and overlapped by the keyboard,
-    // so that the toolbar will be on the top of the keyboard.
-    // 2. the panel is opened, whether the keyboard is closed or not exists (e.g. a physical keyboard connected)
-    //
-    // There is one case that `_expanded$` will be false:
-    // 1. the panel is closed, and the keyboard is closed, the toolbar will be rendered at the bottom of the viewport
     this._disposables.add(
       effect(() => {
-        if (this.keyboard.visible$.value || this.panelOpened) {
-          this._expanded$.value = true;
-        } else {
-          this._expanded$.value = false;
-        }
+        this.toggleAttribute(
+          'data-keyboard-visible',
+          this.keyboard.visible$.value
+        );
+        this.toggleAttribute('data-panel-open', this.panelOpened);
       })
     );
 
