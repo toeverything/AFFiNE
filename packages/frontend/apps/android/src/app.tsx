@@ -149,6 +149,9 @@ framework.impl(VirtualKeyboardProvider, {
             // even though the `keyboardWillShow` event is still triggered.
             visible: info.keyboardHeight !== 0,
             height: info.keyboardHeight - navBarHeight,
+            // SystemBars applies the IME inset to the WebView parent, so the
+            // keyboard no longer overlaps the web content on Android.
+            overlaysContent: false,
           });
         })().catch(console.error);
       }),
