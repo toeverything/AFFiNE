@@ -168,14 +168,14 @@ export class WorkspaceBlobStorage {
     uploadId: string,
     partNumber: number
   ) {
+    const config = this.uploadURLConfig();
+    if (!config) return;
     const contentLength = await this.multipartPartContentLength(
       workspaceId,
       key,
       uploadId,
       partNumber
     );
-    const config = this.uploadURLConfig();
-    if (!config) return;
     if (config.signKey) {
       return this.createProxyMultipartUrl(
         workspaceId,
