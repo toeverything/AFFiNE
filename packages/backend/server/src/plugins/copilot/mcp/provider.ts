@@ -437,7 +437,84 @@ export class WorkspaceMcpProvider {
         },
       });
 
-      tools.push(createDocument, updateDocument, updateDocumentMeta);
+      const appendDatabaseRowTool = defineTool({
+        name: 'append_database_row',
+        title: 'Append Database Row',
+        description:
+          'Append one row to an existing AFFiNE database block. Supports title and validated primitive cells only; it cannot create schemas, attachments, relations, or delete rows.',
+        parser: z.object({
+          docId: z.string(),
+          databaseBlockId: z.string(),
+          title: z.string().min(1).max(500),
+          cells: z
+            .record(z.union([z.string(), z.number(), z.boolean()]))
+            .optional(),
+        }),
+        inputSchema: {
+          type: 'object',
+          properties: {
+            docId: {
+              type: 'string',
+              description: 'The document containing the database block',
+            },
+            databaseBlockId: {
+              type: 'string',
+              description: 'The target affine:database block ID',
+            },
+            title: { type: 'string', description: 'The new row title' },
+            cells: {
+              type: 'object',
+              description:
+                'Optional values keyed by existing database column ID. V1 only accepts validated primitive values.',
+              additionalProperties: { type: ['string', 'number', 'boolean'] },
+            },
+          },
+          required: ['docId', 'databaseBlockId', 'title'],
+          additionalProperties: false,
+        },
+        execute: async ({ docId, databaseBlockId, title, cells }, options) => {
+          const notFoundError = toolError(`Doc with id ${docId} not found.`);
+          const accessible = await this.ac
+            .user(userId)
+            .workspace(workspaceId)
+            .doc(docId)
+            .can('Doc.Update');
+          if (!accessible) return notFoundError;
+
+          const abortedBeforeWrite = abortIfNeeded(options.signal);
+          if (abortedBeforeWrite) return abortedBeforeWrite;
+
+          try {
+            const sanitizedTitle = title.replace(/[\r\n]+/g, ' ').trim();
+            if (!sanitizedTitle) throw new Error('Title cannot be empty');
+            const result = await this.writer.appendDatabaseRow(
+              workspaceId,
+              docId,
+              { databaseBlockId, title: sanitizedTitle, cells },
+              userId
+            );
+            return toolText(
+              JSON.stringify({
+                success: true,
+                docId,
+                databaseBlockId,
+                rowId: result.rowId,
+              })
+            );
+          } catch (error) {
+            return toolError(
+              `Failed to append database row: ${error instanceof Error ? error.message : 'Unknown error'}`
+            );
+          }
+        },
+      });
+
+      tools.push(
+        createDocument,
+        updateDocument,
+        updateDocumentMeta,
+        appendDatabaseRowTool
+      );
     }
 
     return {

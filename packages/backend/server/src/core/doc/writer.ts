@@ -11,6 +11,7 @@ import {
   updateRootDocMetaTitle,
 } from '../../native';
 import { PgWorkspaceDocStorageAdapter } from './adapters/workspace';
+import { appendDatabaseRow, type AppendDatabaseRowInput } from './database-row';
 
 export interface CreateDocResult {
   docId: string;
@@ -196,6 +197,53 @@ export class DocWriter {
     );
 
     return { success: true };
+  }
+
+  async appendDatabaseRow(
+    workspaceId: string,
+    docId: string,
+    input: Omit<AppendDatabaseRowInput, 'rowId'>,
+    editorId?: string
+  ): Promise<{ rowId: string }> {
+    const existingDoc = await this.storage.getDoc(workspaceId, docId);
+    if (!existingDoc?.bin) {
+      throw new NotFoundException(`Document ${docId} not found`);
+    }
+
+    const existingBinary = Buffer.isBuffer(existingDoc.bin)
+      ? existingDoc.bin
+      : Buffer.from(
+          existingDoc.bin.buffer,
+          existingDoc.bin.byteOffset,
+          existingDoc.bin.byteLength
+        );
+    const result = appendDatabaseRow(existingBinary, {
+      ...input,
+      rowId: nanoid(),
+    });
+
+    const timestamp = await this.storage.pushDocUpdates(
+      workspaceId,
+      docId,
+      [result.update],
+      editorId
+    );
+    this.emitDocUpdatesPushed({
+      spaceId: workspaceId,
+      docId,
+      updates: [result.update],
+      timestamp,
+      editor: editorId,
+    });
+
+    await this.updateDocProperties(
+      workspaceId,
+      docId,
+      { updatedBy: editorId },
+      editorId
+    );
+
+    return { rowId: result.rowId };
   }
 
   /**
