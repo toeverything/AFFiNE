@@ -113,6 +113,9 @@ function mergeCaptionLines(lines) {
   for (var i = 0; i < lines.length; i++) {
     var line = lines[i];
     var last = merged[merged.length - 1];
+    if (last && Math.abs(last.start - line.start) < 0.05 && last.text === line.text) {
+      continue;
+    }
     if (
       last &&
       line.start - last.start < 4.5 &&
@@ -518,9 +521,14 @@ function extractXMedia(article) {
       if (a.type !== b.type) return a.type === 'video' ? -1 : 1;
       return b.score - a.score;
     });
-  if (candidates[0]) return candidates[0];
-
   var ogVideo = metaContent('og:video') || metaContent('og:video:url') || metaContent('twitter:player:stream');
+  if (candidates[0]) {
+    if (candidates[0].type === 'video' && !candidates[0].videoURL && ogVideo) {
+      candidates[0].videoURL = ogVideo;
+    }
+    return candidates[0];
+  }
+
   var ogImage = metaContent('og:image');
   if (ogVideo) {
     return {
@@ -578,7 +586,8 @@ function parseCaptionBody(body) {
   var text = String(body || '');
   if (!text.trim()) return [];
   if (text.indexOf('<text') !== -1) return parseTimedTextXml(text);
-  if (/WEBVTT|-->/.test(text) && text.indexOf(',') === -1) return parseVtt(text);
+  var hasVttTiming = /(?:^|\n)\s*(?:(?:\d+:)?\d{2}:\d{2}\.\d{3})\s+-->/m.test(text);
+  if (/^\uFEFF?\s*WEBVTT/.test(text) || hasVttTiming) return parseVtt(text);
   return parseSrt(text);
 }
 
@@ -846,7 +855,18 @@ SafariPageCapture.prototype = {
         if (xPost.payload.mediaType === 'video') {
           withTimeout(loadXVideoTranscript(xPost.article), 1800, '')
             .then(function (transcript) {
-              complete(buildXPostPayload(xPost.article, xPost.payload.url, transcript));
+              if (!transcript) {
+                complete(xPost.payload);
+                return;
+              }
+              var payload = Object.assign({}, xPost.payload);
+              payload.content = payload.content.replace(
+                'No captions or timeline metadata exposed by X for this video.',
+                function () {
+                  return transcript;
+                }
+              );
+              complete(payload);
             })
             .catch(function () {
               complete(xPost.payload);
