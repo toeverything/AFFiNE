@@ -95,6 +95,7 @@ export function installAuthRequestProxy(provider: AuthRequestProvider) {
     private requestBody?: Document | XMLHttpRequestBodyInit | null;
     private replaying = false;
     private hasReplayed = false;
+    private skipStoredAuth = false;
     private sendVersion = 0;
 
     constructor() {
@@ -112,6 +113,7 @@ export function installAuthRequestProxy(provider: AuthRequestProvider) {
             this.status !== 401 ||
             this.replaying ||
             this.hasReplayed ||
+            this.skipStoredAuth ||
             !this.request?.async
           ) {
             return;
@@ -148,6 +150,7 @@ export function installAuthRequestProxy(provider: AuthRequestProvider) {
       this.requestBody = undefined;
       this.replaying = false;
       this.hasReplayed = false;
+      this.skipStoredAuth = shouldSkipStoredAuthToken(url.toString());
       xhrRequestUrls.set(this, url.toString());
       return super.open(
         method,
@@ -167,7 +170,8 @@ export function installAuthRequestProxy(provider: AuthRequestProvider) {
       this.requestBody = body;
       const requestUrl = xhrRequestUrls.get(this);
       const targetUrl = requestUrl ?? globalThis.location.href;
-      const endpoint = shouldSkipStoredAuthToken(targetUrl)
+      this.skipStoredAuth = shouldSkipStoredAuthToken(targetUrl);
+      const endpoint = this.skipStoredAuth
         ? null
         : authEndpointForUrl(targetUrl);
       const sendVersion = this.sendVersion;
@@ -194,7 +198,7 @@ export function installAuthRequestProxy(provider: AuthRequestProvider) {
 
     private async replayWithFreshToken() {
       const request = this.request;
-      if (!request) return this.failReplay();
+      if (!request || this.skipStoredAuth) return this.failReplay();
       const endpoint = authEndpointForUrl(request.url);
       if (!endpoint) return this.failReplay();
       const sendVersion = this.sendVersion;

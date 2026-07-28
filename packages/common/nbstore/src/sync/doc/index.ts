@@ -195,6 +195,9 @@ export class DocSyncImpl implements DocSync {
     try {
       await this.sync.connection.waitForConnected(abort.signal);
       await this.sync.clearClocks();
+    } catch (error) {
+      console.error('Failed to reset sync', error);
+      throw error;
     } finally {
       clearTimeout(timeoutId);
       if (running) {
