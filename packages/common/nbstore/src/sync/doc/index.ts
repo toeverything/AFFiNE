@@ -34,6 +34,8 @@ export interface DocSyncDocState {
   errorMessage: string | null;
 }
 
+const RESET_SYNC_CONNECT_TIMEOUT_MS = 30_000;
+
 export interface DocSync {
   readonly state$: Observable<DocSyncState>;
   docState$(docId: string): Observable<DocSyncDocState>;
@@ -183,10 +185,18 @@ export class DocSyncImpl implements DocSync {
     if (shouldConnectSyncStorage) {
       this.sync.connection.connect();
     }
+    const abort = new AbortController();
+    const timeoutId = setTimeout(() => {
+      abort.abort(new Error('Connect to remote timeout'));
+    }, RESET_SYNC_CONNECT_TIMEOUT_MS) as ReturnType<typeof setTimeout> & {
+      unref?: () => void;
+    };
+    timeoutId.unref?.();
     try {
-      await this.sync.connection.waitForConnected();
+      await this.sync.connection.waitForConnected(abort.signal);
       await this.sync.clearClocks();
     } finally {
+      clearTimeout(timeoutId);
       if (running) {
         this.start();
       } else if (shouldConnectSyncStorage) {

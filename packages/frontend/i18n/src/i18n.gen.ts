@@ -1411,6 +1411,12 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.auth.toast.message.failed"](): string;
     /**
+      * `iOS auth: {{message}}`
+      */
+    ["com.affine.auth.toast.message.ios-auth"](options: {
+        readonly message: string;
+    }): string;
+    /**
       * `You have signed in to AFFiNE.`
       */
     ["com.affine.auth.toast.message.signed-in"](): string;
@@ -1418,6 +1424,12 @@ export function useAFFiNEI18N(): {
       * `Unable to sign in`
       */
     ["com.affine.auth.toast.title.failed"](): string;
+    /**
+      * `iOS auth: {{name}}`
+      */
+    ["com.affine.auth.toast.title.ios-auth"](options: {
+        readonly name: string;
+    }): string;
     /**
       * `Signed in`
       */
@@ -2851,6 +2863,18 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.menu.rename"](): string;
     /**
+      * `Please try again.`
+      */
+    ["com.affine.mobile.create-doc.error.message"](): string;
+    /**
+      * `Failed to create doc`
+      */
+    ["com.affine.mobile.create-doc.error.title"](): string;
+    /**
+      * `Failed to create doc. Please try again.`
+      */
+    ["com.affine.mobile.create-doc.error.toast"](): string;
+    /**
       * `No results found`
       */
     ["com.affine.mobile.search.empty"](): string;
@@ -2951,9 +2975,17 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.mobile.setting.subscription.button"](): string;
     /**
-      * `Unlimited space for your notes and boards.`
+      * `Get 100 GB of cloud storage for your notes and boards.`
       */
     ["com.affine.mobile.setting.subscription.description"](): string;
+    /**
+      * `Please try again later.`
+      */
+    ["com.affine.mobile.setting.subscription.open-failed.message"](): string;
+    /**
+      * `Unable to open Pro upgrade`
+      */
+    ["com.affine.mobile.setting.subscription.open-failed.title"](): string;
     /**
       * `Unlock Pro Features`
       */
@@ -2982,6 +3014,16 @@ export function useAFFiNEI18N(): {
       * `Start AFFiNE without an account`
       */
     ["com.affine.mobile.sign-in.skip.link"](): string;
+    /**
+      * `Setting up workspace`
+      */
+    ["com.affine.mobile.workspace-selector.setting-up"](): string;
+    /**
+      * `Workspace {{id}}`
+      */
+    ["com.affine.mobile.workspace-selector.untitled"](options: {
+        readonly id: string;
+    }): string;
     /**
       * `Older than a month`
       */
@@ -6205,6 +6247,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.workspace.byok.field.endpoint"](): string;
     /**
+      * `Custom endpoints are disabled by the server administrator. In Self-hosted Admin, enable copilot.byok.allowCustomEndpoint.`
+      */
+    ["com.affine.settings.workspace.byok.endpoint.custom-disabled"](): string;
+    /**
+      * `Private network endpoints additionally require the server administrator to enable copilot.byok.allowPrivateEndpoint.`
+      */
+    ["com.affine.settings.workspace.byok.endpoint.private-disabled"](): string;
+    /**
       * `Primary`
       */
     ["com.affine.settings.workspace.byok.placeholder.key-name"](): string;
@@ -9343,9 +9393,21 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.devices.sign-out-all-failed"](): string;
     /**
+      * `Real-time connection failed`
+      */
+    ["com.affine.realtime.connection-error.title"](): string;
+    /**
+      * `Check that your server proxy forwards /socket.io over WebSocket or HTTP polling.`
+      */
+    ["com.affine.realtime.connection-error.message"](): string;
+    /**
       * `An internal error occurred.`
       */
     ["error.INTERNAL_SERVER_ERROR"](): string;
+    /**
+      * `iOS native auth failed.`
+      */
+    ["error.IOS_NATIVE_AUTH_FAILED"](): string;
     /**
       * `Network error.`
       */
@@ -9376,9 +9438,11 @@ export function useAFFiNEI18N(): {
         readonly message: string;
     }): string;
     /**
-      * `Invalid URL`
+      * `URL blocked by SSRF protection: {{reason}}`
       */
-    ["error.SSRF_BLOCKED_ERROR"](): string;
+    ["error.SSRF_BLOCKED_ERROR"](options: {
+        readonly reason: string;
+    }): string;
     /**
       * `Response too large ({{receivedBytes}} bytes), limit is {{limitBytes}} bytes`
       */
@@ -10111,25 +10175,25 @@ export const TypedTrans: {
     ["com.affine.ai-onboarding.general.5.description"]: ComponentType<TypedTransProps<{
         readonly link: string;
     }, {
-        a: JSX.Element;
+        a: React.JSX.Element;
     }>>;
     /**
       * `By continuing, you are agreeing to our <a>AI Terms</a>.`
       */
     ["com.affine.ai-onboarding.general.privacy"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        a: JSX.Element;
+        a: React.JSX.Element;
     }>>;
     /**
       * `Opening <1>AFFiNE</1> app now`
       */
     ["com.affine.auth.open.affine.prompt"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        ["1"]: JSX.Element;
+        ["1"]: React.JSX.Element;
     }>>;
     /**
       * `This doc is now opened in <1>AFFiNE</1> app`
       */
     ["com.affine.auth.open.affine.open-doc-prompt"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        ["1"]: JSX.Element;
+        ["1"]: React.JSX.Element;
     }>>;
     /**
       * `To continue signing in, please enter the code that was sent to <a>{{email}}</a>.`
@@ -10137,32 +10201,32 @@ export const TypedTrans: {
     ["com.affine.auth.sign.auth.code.hint"]: ComponentType<TypedTransProps<{
         readonly email: string;
     }, {
-        a: JSX.Element;
+        a: React.JSX.Element;
     }>>;
     /**
       * `Or <1>sign in with password</1> instead.`
       */
     ["com.affine.auth.sign.auth.code.message.password"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        ["1"]: JSX.Element;
+        ["1"]: React.JSX.Element;
     }>>;
     /**
       * `This is an AFFiNE server hosted by you or your team. After signing in, workspace data is saved to the AFFiNE server you enter, not to AFFiNE Cloud. <1>Learn more about self-hosting.</1>`
       */
     ["com.affine.auth.sign.add-selfhosted.description"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        ["1"]: JSX.Element;
+        ["1"]: React.JSX.Element;
     }>>;
     /**
       * `By clicking “Continue with Google/Email” above, you acknowledge that you agree to AFFiNE's <1>Terms of Conditions</1> and <3>Privacy Policy</3>.`
       */
     ["com.affine.auth.sign.message"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        ["1"]: JSX.Element;
-        ["3"]: JSX.Element;
+        ["1"]: React.JSX.Element;
+        ["3"]: React.JSX.Element;
     }>>;
     /**
       * `This demo is limited. <1>Download the AFFiNE Client</1> for the latest features and Performance.`
       */
     ["com.affine.banner.content"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        ["1"]: JSX.Element;
+        ["1"]: React.JSX.Element;
     }>>;
     /**
       * `<0>{{count}}</0> selected`
@@ -10174,7 +10238,7 @@ export const TypedTrans: {
     ["com.affine.collection.toolbar.selected"]: ComponentType<TypedTransProps<{
         readonly count: string | number | bigint;
     }, {
-        ["0"]: JSX.Element;
+        ["0"]: React.JSX.Element;
     }>>;
     /**
       * `<0>{{count}}</0> collection selected`
@@ -10182,7 +10246,7 @@ export const TypedTrans: {
     ["com.affine.collection.toolbar.selected_one"]: ComponentType<TypedTransProps<{
         readonly count: string | number | bigint;
     }, {
-        ["0"]: JSX.Element;
+        ["0"]: React.JSX.Element;
     }>>;
     /**
       * `<0>{{count}}</0> collection(s) selected`
@@ -10190,7 +10254,7 @@ export const TypedTrans: {
     ["com.affine.collection.toolbar.selected_other"]: ComponentType<TypedTransProps<{
         readonly count: string | number | bigint;
     }, {
-        ["0"]: JSX.Element;
+        ["0"]: React.JSX.Element;
     }>>;
     /**
       * `<0>{{count}}</0> collection(s) selected`
@@ -10198,7 +10262,7 @@ export const TypedTrans: {
     ["com.affine.collection.toolbar.selected_others"]: ComponentType<TypedTransProps<{
         readonly count: string;
     }, {
-        ["0"]: JSX.Element;
+        ["0"]: React.JSX.Element;
     }>>;
     /**
       * `Deleting <1>{{tag}}</1> cannot be undone, please proceed with caution.`
@@ -10206,7 +10270,7 @@ export const TypedTrans: {
     ["com.affine.delete-tags.confirm.description"]: ComponentType<TypedTransProps<{
         readonly tag: string;
     }, {
-        ["1"]: JSX.Element;
+        ["1"]: React.JSX.Element;
     }>>;
     /**
       * `Selected <1>{{selectedCount}}</1>, filtered <3>{{filteredCount}}</3>`
@@ -10215,8 +10279,8 @@ export const TypedTrans: {
         selectedCount: string;
         filteredCount: string;
     }>, {
-        ["1"]: JSX.Element;
-        ["3"]: JSX.Element;
+        ["1"]: React.JSX.Element;
+        ["3"]: React.JSX.Element;
     }>>;
     /**
       * `Showing <1>{{count}}</1> docs.`
@@ -10224,7 +10288,7 @@ export const TypedTrans: {
     ["com.affine.editCollection.rules.countTips.more"]: ComponentType<TypedTransProps<{
         readonly count: string;
     }, {
-        ["1"]: JSX.Element;
+        ["1"]: React.JSX.Element;
     }>>;
     /**
       * `Showing <1>{{count}}</1> doc.`
@@ -10232,7 +10296,7 @@ export const TypedTrans: {
     ["com.affine.editCollection.rules.countTips.one"]: ComponentType<TypedTransProps<{
         readonly count: string;
     }, {
-        ["1"]: JSX.Element;
+        ["1"]: React.JSX.Element;
     }>>;
     /**
       * `Showing <1>{{count}}</1> docs.`
@@ -10240,14 +10304,14 @@ export const TypedTrans: {
     ["com.affine.editCollection.rules.countTips.zero"]: ComponentType<TypedTransProps<{
         readonly count: string;
     }, {
-        ["1"]: JSX.Element;
+        ["1"]: React.JSX.Element;
     }>>;
     /**
       * `Please <1>add rules</1> to save this collection or switch to <3>Docs</3>, use manual selection mode`
       */
     ["com.affine.editCollection.rules.empty.noRules.tips"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        ["1"]: JSX.Element;
-        ["3"]: JSX.Element;
+        ["1"]: React.JSX.Element;
+        ["3"]: React.JSX.Element;
     }>>;
     /**
       * `Docs that meet the rules will be added to the current collection <2>{{highlight}}</2>`
@@ -10255,25 +10319,25 @@ export const TypedTrans: {
     ["com.affine.editCollection.rules.tips"]: ComponentType<TypedTransProps<{
         readonly highlight: string;
     }, {
-        ["2"]: JSX.Element;
+        ["2"]: React.JSX.Element;
     }>>;
     /**
       * `If you are still experiencing this issue, please <1>contact us through the community</1>.`
       */
     ["com.affine.error.contact-us"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        ["1"]: JSX.Element;
+        ["1"]: React.JSX.Element;
     }>>;
     /**
       * `With the workspace creator's free account, every member can access up to <1>7 days<1> of version history.`
       */
     ["com.affine.history.confirm-restore-modal.free-plan-prompt.description"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        ["1"]: JSX.Element;
+        ["1"]: React.JSX.Element;
     }>>;
     /**
       * `With the workspace creator's Pro account, every member enjoys the privilege of accessing up to <1>30 days<1> of version history.`
       */
     ["com.affine.history.confirm-restore-modal.pro-plan-prompt.description"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        ["1"]: JSX.Element;
+        ["1"]: React.JSX.Element;
     }>>;
     /**
       * `<0>{{count}}</0> selected`
@@ -10285,7 +10349,7 @@ export const TypedTrans: {
     ["com.affine.page.toolbar.selected"]: ComponentType<TypedTransProps<{
         readonly count: string | number | bigint;
     }, {
-        ["0"]: JSX.Element;
+        ["0"]: React.JSX.Element;
     }>>;
     /**
       * `<0>{{count}}</0> doc selected`
@@ -10293,7 +10357,7 @@ export const TypedTrans: {
     ["com.affine.page.toolbar.selected_one"]: ComponentType<TypedTransProps<{
         readonly count: string | number | bigint;
     }, {
-        ["0"]: JSX.Element;
+        ["0"]: React.JSX.Element;
     }>>;
     /**
       * `<0>{{count}}</0> doc(s) selected`
@@ -10301,7 +10365,7 @@ export const TypedTrans: {
     ["com.affine.page.toolbar.selected_other"]: ComponentType<TypedTransProps<{
         readonly count: string | number | bigint;
     }, {
-        ["0"]: JSX.Element;
+        ["0"]: React.JSX.Element;
     }>>;
     /**
       * `<0>{{count}}</0> doc(s) selected`
@@ -10309,19 +10373,19 @@ export const TypedTrans: {
     ["com.affine.page.toolbar.selected_others"]: ComponentType<TypedTransProps<{
         readonly count: string;
     }, {
-        ["0"]: JSX.Element;
+        ["0"]: React.JSX.Element;
     }>>;
     /**
       * `You are currently on the <a>free plan</a>.`
       */
     ["com.affine.payment.billing-setting.ai.free-desc"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        a: JSX.Element;
+        a: React.JSX.Element;
     }>>;
     /**
       * `You have purchased <a>Believer plan</a>. Enjoy with your benefits!`
       */
     ["com.affine.payment.billing-setting.believer.description"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        a: JSX.Element;
+        a: React.JSX.Element;
     }>>;
     /**
       * `You are currently on the <1>{{planName}} plan</1>.`
@@ -10329,7 +10393,7 @@ export const TypedTrans: {
     ["com.affine.payment.billing-setting.current-plan.description"]: ComponentType<TypedTransProps<{
         readonly planName: string;
     }, {
-        ["1"]: JSX.Element;
+        ["1"]: React.JSX.Element;
     }>>;
     /**
       * `You are currently on the believer <1>{{planName}} plan</1>.`
@@ -10337,7 +10401,7 @@ export const TypedTrans: {
     ["com.affine.payment.billing-setting.current-plan.description.lifetime"]: ComponentType<TypedTransProps<{
         readonly planName: string;
     }, {
-        ["1"]: JSX.Element;
+        ["1"]: React.JSX.Element;
     }>>;
     /**
       * `You are currently on the monthly <1>{{planName}} plan</1>.`
@@ -10345,7 +10409,7 @@ export const TypedTrans: {
     ["com.affine.payment.billing-setting.current-plan.description.monthly"]: ComponentType<TypedTransProps<{
         readonly planName: string;
     }, {
-        ["1"]: JSX.Element;
+        ["1"]: React.JSX.Element;
     }>>;
     /**
       * `You are currently on the annually <1>{{planName}} plan</1>.`
@@ -10353,13 +10417,13 @@ export const TypedTrans: {
     ["com.affine.payment.billing-setting.current-plan.description.yearly"]: ComponentType<TypedTransProps<{
         readonly planName: string;
     }, {
-        ["1"]: JSX.Element;
+        ["1"]: React.JSX.Element;
     }>>;
     /**
       * `One-time Purchase. Personal use rights for up to 150 years. <a>Fair Usage Policies</a> may apply.`
       */
     ["com.affine.payment.lifetime.caption-2"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        a: JSX.Element;
+        a: React.JSX.Element;
     }>>;
     /**
       * `You are currently on the {{currentPlan}} plan. If you have any questions, please contact our <3>customer support</3>.`
@@ -10367,37 +10431,37 @@ export const TypedTrans: {
     ["com.affine.payment.subtitle-active"]: ComponentType<TypedTransProps<{
         readonly currentPlan: string;
     }, {
-        ["3"]: JSX.Element;
+        ["3"]: React.JSX.Element;
     }>>;
     /**
       * `If you have any questions, please contact our <1> customer support</1>.`
       */
     ["com.affine.payment.upgrade-success-page.support"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        ["1"]: JSX.Element;
+        ["1"]: React.JSX.Element;
     }>>;
     /**
       * `If you have any questions, please contact our <1>customer support</1>.`
       */
     ["com.affine.payment.upgrade-success-page.team.text-2"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        ["1"]: JSX.Element;
+        ["1"]: React.JSX.Element;
     }>>;
     /**
       * `If you have any questions, please contact our <1>customer support</1>.`
       */
     ["com.affine.payment.license-success.text-2"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        ["1"]: JSX.Element;
+        ["1"]: React.JSX.Element;
     }>>;
     /**
       * `This action deletes the old Favorites section. <b>Your documents are safe</b>, ensure you've moved your frequently accessed documents to the new personal Favorites section.`
       */
     ["com.affine.rootAppSidebar.migration-data.clean-all.description"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        b: JSX.Element;
+        b: React.JSX.Element;
     }>>;
     /**
       * `<b>Your documents are safe</b>, but you'll need to re-pin your most-used ones. "Favorites" are now personal. Move items from the old shared section to your new personal section or remove the old one by clicking "Empty the old favorites" now.`
       */
     ["com.affine.rootAppSidebar.migration-data.help.description"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        b: JSX.Element;
+        b: React.JSX.Element;
     }>>;
     /**
       * `No doc titles contain <1>{{search}}</1>`
@@ -10405,7 +10469,7 @@ export const TypedTrans: {
     ["com.affine.selectPage.empty.tips"]: ComponentType<TypedTransProps<{
         readonly search: string;
     }, {
-        ["1"]: JSX.Element;
+        ["1"]: React.JSX.Element;
     }>>;
     /**
       * `Are you sure you want to delete your account from <1>{{server}}</1>?`
@@ -10413,13 +10477,13 @@ export const TypedTrans: {
     ["com.affine.setting.account.delete.confirm-delete-description-1"]: ComponentType<TypedTransProps<{
         readonly server: string;
     }, {
-        ["1"]: JSX.Element;
+        ["1"]: React.JSX.Element;
     }>>;
     /**
       * `Your account will be inaccessible, and your personal space on the server will be permanently deleted. You can remove local data by uninstalling the app or clearing your browser storage. <1>This action is irreversible.</1>`
       */
     ["com.affine.setting.account.delete.confirm-delete-description-2"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        ["1"]: JSX.Element;
+        ["1"]: React.JSX.Element;
     }>>;
     /**
       * `Type <1>{{email}}</1> to confirm account deletion.`
@@ -10427,71 +10491,71 @@ export const TypedTrans: {
     ["com.affine.setting.account.delete.email-confirm-description"]: ComponentType<TypedTransProps<{
         readonly email: string;
     }, {
-        ["1"]: JSX.Element;
+        ["1"]: React.JSX.Element;
     }>>;
     /**
       * `Don't have the app? <1>Click to download</1>.`
       */
     ["com.affine.open-in-app.card.subtitle"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        ["1"]: JSX.Element;
+        ["1"]: React.JSX.Element;
     }>>;
     /**
       * `Settings changed; please restart the app. <1>Restart</1>`
       */
     ["com.affine.settings.editorSettings.general.spell-check.restart-hint"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        ["1"]: JSX.Element;
+        ["1"]: React.JSX.Element;
     }>>;
     /**
       * `Love our app? <1>Star us on GitHub</1> and <2>create issues</2> for your valuable feedback!`
       */
     ["com.affine.settings.suggestion-2"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        ["1"]: JSX.Element;
-        ["2"]: JSX.Element;
+        ["1"]: React.JSX.Element;
+        ["2"]: React.JSX.Element;
     }>>;
     /**
       * `Meeting Features Available <strong>Free</strong> in Beta Phase`
       */
     ["com.affine.settings.meetings.setting.prompt.2"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        strong: JSX.Element;
+        strong: React.JSX.Element;
     }>>;
     /**
       * `<strong>Where AI meets your meetings - affine your collaboration.</strong>
     <ul><li>Extract Action Items & Key Insights Instantly</li><li>Smart Auto-Capture Starts With Your Meeting</li><li>Seamless Integration Across All Meeting Platforms</li><li>One Unified Space for All Your Meeting's Context</li><li>Your AI Assistant with Every Meeting Context Preserved</li></ul>`
       */
     ["com.affine.settings.meetings.setting.welcome.hints"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        strong: JSX.Element;
-        ul: JSX.Element;
-        li: JSX.Element;
+        strong: React.JSX.Element;
+        ul: React.JSX.Element;
+        li: React.JSX.Element;
     }>>;
     /**
       * `Utilize the meeting notes and AI summarization features provided by AFFiNE. <1>Discuss more in the community</1>.`
       */
     ["com.affine.settings.meetings.enable.description"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        ["1"]: JSX.Element;
+        ["1"]: React.JSX.Element;
     }>>;
     /**
       * `Activate using the local key from <1>Toeverything.Inc</1>`
       */
     ["com.affine.settings.workspace.license.self-host-team.team.license"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        ["1"]: JSX.Element;
+        ["1"]: React.JSX.Element;
     }>>;
     /**
       * `Copy your workspace id and <1>reach out to us</1>.`
       */
     ["com.affine.settings.workspace.license.self-host-team.upload-license-file.tips.content"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        ["1"]: JSX.Element;
+        ["1"]: React.JSX.Element;
     }>>;
     /**
       * `If you encounter any issues, contact support@toeverything.info. No license yet? <1>Click to purchase</1>.`
       */
     ["com.affine.settings.workspace.license.activate-modal.tips"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        ["1"]: JSX.Element;
+        ["1"]: React.JSX.Element;
     }>>;
     /**
       * `This will make the workspace read-only. Your key remains usable elsewhere. Deactivation doesn't cancel your Team plan. To cancel, go to <1>Manage Payment</1>.`
       */
     ["com.affine.settings.workspace.license.deactivate-modal.description"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        ["1"]: JSX.Element;
+        ["1"]: React.JSX.Element;
     }>>;
     /**
       * `The "<1>{{ name }}</1>" property will be removed. This action cannot be undone.`
@@ -10499,7 +10563,7 @@ export const TypedTrans: {
     ["com.affine.settings.workspace.properties.delete-property-desc"]: ComponentType<TypedTransProps<{
         readonly name: string;
     }, {
-        ["1"]: JSX.Element;
+        ["1"]: React.JSX.Element;
     }>>;
     /**
       * `<0>{{count}}</0> doc`
@@ -10507,7 +10571,7 @@ export const TypedTrans: {
     ["com.affine.settings.workspace.properties.doc"]: ComponentType<TypedTransProps<{
         readonly count: string;
     }, {
-        ["0"]: JSX.Element;
+        ["0"]: React.JSX.Element;
     }>>;
     /**
       * `<0>{{count}}</0> docs`
@@ -10515,7 +10579,7 @@ export const TypedTrans: {
     ["com.affine.settings.workspace.properties.doc_others"]: ComponentType<TypedTransProps<{
         readonly count: string;
     }, {
-        ["0"]: JSX.Element;
+        ["0"]: React.JSX.Element;
     }>>;
     /**
       * `Manage workspace <1>{{name}}</1> properties`
@@ -10523,7 +10587,7 @@ export const TypedTrans: {
     ["com.affine.settings.workspace.properties.header.subtitle"]: ComponentType<TypedTransProps<{
         readonly name: string;
     }, {
-        ["1"]: JSX.Element;
+        ["1"]: React.JSX.Element;
     }>>;
     /**
       * `<0>{{count}}</0> selected`
@@ -10535,7 +10599,7 @@ export const TypedTrans: {
     ["com.affine.tag.toolbar.selected"]: ComponentType<TypedTransProps<{
         readonly count: string | number | bigint;
     }, {
-        ["0"]: JSX.Element;
+        ["0"]: React.JSX.Element;
     }>>;
     /**
       * `<0>{{count}}</0> tag selected`
@@ -10543,7 +10607,7 @@ export const TypedTrans: {
     ["com.affine.tag.toolbar.selected_one"]: ComponentType<TypedTransProps<{
         readonly count: string | number | bigint;
     }, {
-        ["0"]: JSX.Element;
+        ["0"]: React.JSX.Element;
     }>>;
     /**
       * `<0>{{count}}</0> tag(s) selected`
@@ -10551,7 +10615,7 @@ export const TypedTrans: {
     ["com.affine.tag.toolbar.selected_other"]: ComponentType<TypedTransProps<{
         readonly count: string | number | bigint;
     }, {
-        ["0"]: JSX.Element;
+        ["0"]: React.JSX.Element;
     }>>;
     /**
       * `<0>{{count}}</0> tag(s) selected`
@@ -10559,7 +10623,7 @@ export const TypedTrans: {
     ["com.affine.tag.toolbar.selected_others"]: ComponentType<TypedTransProps<{
         readonly count: string;
     }, {
-        ["0"]: JSX.Element;
+        ["0"]: React.JSX.Element;
     }>>;
     /**
       * `Deleting <1>{{workspace}}</1> cannot be undone, please proceed with caution. All contents will be lost.`
@@ -10567,7 +10631,7 @@ export const TypedTrans: {
     ["com.affine.workspaceDelete.description"]: ComponentType<TypedTransProps<{
         readonly workspace: string;
     }, {
-        ["1"]: JSX.Element;
+        ["1"]: React.JSX.Element;
     }>>;
     /**
       * `Deleting <1>{{workspace}}</1> will delete both local data and synced server data. This cannot be undone, so please proceed with caution.`
@@ -10575,13 +10639,13 @@ export const TypedTrans: {
     ["com.affine.workspaceDelete.description2"]: ComponentType<TypedTransProps<{
         readonly workspace: string;
     }, {
-        ["1"]: JSX.Element;
+        ["1"]: React.JSX.Element;
     }>>;
     /**
       * ` We recommend the <1>Chrome</1> browser for optimal experience.`
       */
     recommendBrowser: ComponentType<TypedTransProps<Readonly<{}>, {
-        ["1"]: JSX.Element;
+        ["1"]: React.JSX.Element;
     }>>;
     /**
       * `Are you sure you want to upgrade <1>{{workspaceName}}</1> to a Team Workspace? This will allow unlimited members to collaborate in this workspace.`
@@ -10589,7 +10653,7 @@ export const TypedTrans: {
     ["com.affine.upgrade-to-team-page.upgrade-confirm.description"]: ComponentType<TypedTransProps<{
         readonly workspaceName: string;
     }, {
-        ["1"]: JSX.Element;
+        ["1"]: React.JSX.Element;
     }>>;
     /**
       * `<1>{{username}}</1> mentioned you in <2>{{docTitle}}</2>`
@@ -10598,8 +10662,8 @@ export const TypedTrans: {
         username: string;
         docTitle: string;
     }>, {
-        ["1"]: JSX.Element;
-        ["2"]: JSX.Element;
+        ["1"]: React.JSX.Element;
+        ["2"]: React.JSX.Element;
     }>>;
     /**
       * `<1>{{username}}</1> commented in <2>{{docTitle}}</2>`
@@ -10608,8 +10672,8 @@ export const TypedTrans: {
         username: string;
         docTitle: string;
     }>, {
-        ["1"]: JSX.Element;
-        ["2"]: JSX.Element;
+        ["1"]: React.JSX.Element;
+        ["2"]: React.JSX.Element;
     }>>;
     /**
       * `<1>{{username}}</1> mentioned you in a comment in <2>{{docTitle}}</2>`
@@ -10618,8 +10682,8 @@ export const TypedTrans: {
         username: string;
         docTitle: string;
     }>, {
-        ["1"]: JSX.Element;
-        ["2"]: JSX.Element;
+        ["1"]: React.JSX.Element;
+        ["2"]: React.JSX.Element;
     }>>;
     /**
       * `<1>{{username}}</1> has accepted your invitation`
@@ -10627,7 +10691,7 @@ export const TypedTrans: {
     ["com.affine.notification.invitation-accepted"]: ComponentType<TypedTransProps<{
         readonly username: string;
     }, {
-        ["1"]: JSX.Element;
+        ["1"]: React.JSX.Element;
     }>>;
     /**
       * `<1>{{username}}</1> has requested to join <2>{{workspaceName}}</2>`
@@ -10636,8 +10700,8 @@ export const TypedTrans: {
         username: string;
         workspaceName: string;
     }>, {
-        ["1"]: JSX.Element;
-        ["2"]: JSX.Element;
+        ["1"]: React.JSX.Element;
+        ["2"]: React.JSX.Element;
     }>>;
     /**
       * `<1>{{username}}</1> has declined your request to join <2>{{workspaceName}}</2>`
@@ -10646,8 +10710,8 @@ export const TypedTrans: {
         username: string;
         workspaceName: string;
     }>, {
-        ["1"]: JSX.Element;
-        ["2"]: JSX.Element;
+        ["1"]: React.JSX.Element;
+        ["2"]: React.JSX.Element;
     }>>;
     /**
       * `<1>{{username}}</1> has approved your request to join <2>{{workspaceName}}</2>`
@@ -10656,8 +10720,8 @@ export const TypedTrans: {
         username: string;
         workspaceName: string;
     }>, {
-        ["1"]: JSX.Element;
-        ["2"]: JSX.Element;
+        ["1"]: React.JSX.Element;
+        ["2"]: React.JSX.Element;
     }>>;
     /**
       * `There is an issue regarding your invitation to <1>{{workspaceName}}</1> `
@@ -10665,7 +10729,7 @@ export const TypedTrans: {
     ["com.affine.notification.invitation-blocked"]: ComponentType<TypedTransProps<{
         readonly workspaceName: string;
     }, {
-        ["1"]: JSX.Element;
+        ["1"]: React.JSX.Element;
     }>>;
     /**
       * `<1>{{username}}</1> invited you to join <2>{{workspaceName}}</2>`
@@ -10674,8 +10738,8 @@ export const TypedTrans: {
         username: string;
         workspaceName: string;
     }>, {
-        ["1"]: JSX.Element;
-        ["2"]: JSX.Element;
+        ["1"]: React.JSX.Element;
+        ["2"]: React.JSX.Element;
     }>>;
     /**
       * `Unable to join <1/> <2>{{workspaceName}}</2> due to insufficient seats available.`
@@ -10683,8 +10747,8 @@ export const TypedTrans: {
     ["com.affine.fail-to-join-workspace.description-1"]: ComponentType<TypedTransProps<{
         readonly workspaceName: string;
     }, {
-        ["1"]: JSX.Element;
-        ["2"]: JSX.Element;
+        ["1"]: React.JSX.Element;
+        ["2"]: React.JSX.Element;
     }>>;
     /**
       * `You requested to join <1/> <2>{{workspaceName}}</2> with <3>{{userEmail}}</3>, the workspace owner and team admins will review your request.`
@@ -10693,9 +10757,9 @@ export const TypedTrans: {
         workspaceName: string;
         userEmail: string;
     }>, {
-        ["1"]: JSX.Element;
-        ["2"]: JSX.Element;
-        ["3"]: JSX.Element;
+        ["1"]: React.JSX.Element;
+        ["2"]: React.JSX.Element;
+        ["3"]: React.JSX.Element;
     }>>;
     /**
       * `Unable to process your request to join <1/> <2>{{workspaceName}}</2> with <3>{{userEmail}}</3>, the workspace has reached its member limit. Please contact the workspace owner for available seats.`
@@ -10704,16 +10768,16 @@ export const TypedTrans: {
         workspaceName: string;
         userEmail: string;
     }>, {
-        ["1"]: JSX.Element;
-        ["2"]: JSX.Element;
-        ["3"]: JSX.Element;
+        ["1"]: React.JSX.Element;
+        ["2"]: React.JSX.Element;
+        ["3"]: React.JSX.Element;
     }>>;
     /**
       * `Import your Readwise highlights to AFFiNE. Please visit Readwise, <br />click <a>"Get Access Token"</a>, and paste the token below.`
       */
     ["com.affine.integration.readwise.connect.desc"]: ComponentType<TypedTransProps<Readonly<{}>, {
-        br: JSX.Element;
-        a: JSX.Element;
+        br: React.JSX.Element;
+        a: React.JSX.Element;
     }>>;
     /**
       * `Updates to be imported since last successful import on {{lastImportedAt}} <a>Import everything instead</a>`
@@ -10721,7 +10785,7 @@ export const TypedTrans: {
     ["com.affine.integration.readwise.import.desc-from-last"]: ComponentType<TypedTransProps<{
         readonly lastImportedAt: string;
     }, {
-        a: JSX.Element;
+        a: React.JSX.Element;
     }>>;
     /**
       * `Please contact <1>{{user}}</1> to upgrade AI rights or resend the attachment.`
@@ -10729,6 +10793,6 @@ export const TypedTrans: {
     ["com.affine.audio.transcribe.non-owner.confirm.message"]: ComponentType<TypedTransProps<{
         readonly user: string;
     }, {
-        ["1"]: JSX.Element;
+        ["1"]: React.JSX.Element;
     }>>;
 } = /*#__PURE__*/ createProxy(createComponent);

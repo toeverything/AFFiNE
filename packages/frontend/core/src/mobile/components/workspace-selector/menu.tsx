@@ -39,12 +39,15 @@ const WorkspaceItem = ({
   className,
   ...attrs
 }: { workspace: WorkspaceMetadata } & HTMLAttributes<HTMLButtonElement>) => {
+  const t = useI18n();
   const info = useWorkspaceInfo(workspace);
   const name =
     info?.name?.trim() ||
     (workspace.initialized === false
-      ? 'Setting up workspace'
-      : `Workspace ${workspace.id.slice(0, 6)}`);
+      ? t['com.affine.mobile.workspace-selector.setting-up']()
+      : t['com.affine.mobile.workspace-selector.untitled']({
+          id: workspace.id.slice(0, 6),
+        }));
   const isOwner = info?.isOwner;
 
   return (

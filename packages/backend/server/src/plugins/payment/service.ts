@@ -401,16 +401,30 @@ export class SubscriptionService {
       throw new InvalidLicenseSessionId();
     }
 
-    let subInDB = await this.db.subscription.findUnique({
+    let subInDB = await this.db.providerSubscription.findUnique({
       where: {
-        stripeSubscriptionId: subscription.id,
+        provider_externalSubscriptionId: {
+          provider: 'stripe',
+          externalSubscriptionId: subscription.id,
+        },
       },
     });
 
     // subscription not found in db
     if (!subInDB) {
-      subInDB =
-        await this.selfhostManager.saveStripeSubscription(knownSubscription);
+      await this.selfhostManager.saveStripeSubscription(knownSubscription);
+      subInDB = await this.db.providerSubscription.findUnique({
+        where: {
+          provider_externalSubscriptionId: {
+            provider: 'stripe',
+            externalSubscriptionId: subscription.id,
+          },
+        },
+      });
+    }
+
+    if (!subInDB) {
+      throw new InvalidLicenseSessionId();
     }
 
     const license = await this.db.license.findUnique({

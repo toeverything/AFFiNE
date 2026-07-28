@@ -107,7 +107,11 @@ function preserveWorkspaceContextSearch(
   const currentFlavour = currentParams.get('flavour');
   const nextFlavour = nextParams.get('flavour');
 
-  if (!nextParams.has('flavour') && currentFlavour) {
+  if (
+    !nextParams.has('flavour') &&
+    !nextParams.has('server') &&
+    currentFlavour
+  ) {
     nextParams.set('flavour', currentFlavour);
   }
 

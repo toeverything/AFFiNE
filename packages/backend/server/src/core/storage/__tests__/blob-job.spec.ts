@@ -6,10 +6,13 @@ import { StorageBlobJob } from '../blob-job';
 interface Context {
   runtime: {
     health: Sinon.SinonStub;
+    reconcileWorkspaceDocuments: Sinon.SinonStub;
     backfillMissingBlobMetadata: Sinon.SinonStub;
     rebuildWorkspaceDocBlobRefs: Sinon.SinonStub;
     planUnreferencedWorkspaceBlobs: Sinon.SinonStub;
     executeBlobCleanupCandidates: Sinon.SinonStub;
+    executeDocumentCleanupCandidates: Sinon.SinonStub;
+    ackDocumentCleanupEffect: Sinon.SinonStub;
   };
   event: {
     emitAsync: Sinon.SinonStub;
@@ -35,10 +38,18 @@ test.beforeEach(t => {
       providerConfigured: true,
       provider: 'fs',
     }),
+    reconcileWorkspaceDocuments: Sinon.stub().resolves({
+      scannedDocs: 1,
+      marked: 0,
+      reset: 0,
+      recovered: 0,
+    }),
     backfillMissingBlobMetadata: Sinon.stub(),
     rebuildWorkspaceDocBlobRefs: Sinon.stub(),
     planUnreferencedWorkspaceBlobs: Sinon.stub(),
     executeBlobCleanupCandidates: Sinon.stub(),
+    executeDocumentCleanupCandidates: Sinon.stub(),
+    ackDocumentCleanupEffect: Sinon.stub(),
   };
   t.context.event = {
     emitAsync: Sinon.stub().resolves(undefined),
@@ -47,7 +58,18 @@ test.beforeEach(t => {
     add: Sinon.stub().resolves(undefined),
   };
   t.context.db = {
-    $queryRaw: Sinon.stub(),
+    $queryRaw: Sinon.stub().resolves([
+      {
+        marked: 0n,
+        failed: 0n,
+        effectsPending: 0n,
+        failedWorkspaceCheckpoints: 0n,
+        rootFailureCheckpoints: 0n,
+        staleProjectionBlocks: 0n,
+        oldestFailedSeconds: null,
+        oldestEffectsPendingSeconds: null,
+      },
+    ]),
     workspace: {
       findMany: Sinon.stub(),
     },
@@ -129,46 +151,6 @@ for (const scenario of objectStorageRequiredCases) {
   });
 }
 
-test('doc blob refs sweep continues after one workspace fails', async t => {
-  t.context.db.workspace.findMany.resolves([
-    { id: 'workspace-1', sid: 1 },
-    { id: 'workspace-2', sid: 2 },
-  ]);
-  t.context.runtime.rebuildWorkspaceDocBlobRefs
-    .onFirstCall()
-    .rejects(new Error('bad root doc'))
-    .onSecondCall()
-    .resolves({
-      scannedDocs: 1,
-      parsedDocs: 1,
-      refsWritten: 0,
-      refsDeleted: 0,
-      failedDocs: 0,
-      nextCursor: null,
-    });
-
-  await t.context.job.rebuildWorkspaceDocBlobRefsBySid({
-    workspaceLimit: 2,
-    docLimit: 100,
-  });
-
-  t.is(t.context.runtime.rebuildWorkspaceDocBlobRefs.callCount, 2);
-  t.deepEqual(t.context.runtime.rebuildWorkspaceDocBlobRefs.firstCall.args, [
-    'workspace-1',
-    100,
-  ]);
-  t.deepEqual(t.context.runtime.rebuildWorkspaceDocBlobRefs.secondCall.args, [
-    'workspace-2',
-    100,
-  ]);
-  t.true(
-    t.context.queue.add.calledWith(
-      'backendRuntime.rebuildWorkspaceDocBlobRefsBySid',
-      { lastSid: 2, workspaceLimit: 2, docLimit: 100 }
-    )
-  );
-});
-
 test('blob cleanup planning drains each workspace cursor before continuing', async t => {
   t.context.db.workspace.findMany.resolves([
     { id: 'workspace-1', sid: 1 },
@@ -231,11 +213,144 @@ test('daily blob cleanup execution uses a fixed job id', async t => {
 
   t.true(
     t.context.queue.add.calledWith(
+      'backendRuntime.executeDocumentCleanupCandidates',
+      {},
+      { jobId: 'daily-backend-runtime-document-cleanup-execution' }
+    )
+  );
+  t.true(
+    t.context.queue.add.calledWith(
       'backendRuntime.executeBlobCleanupCandidatesByMarkedRuns',
       {},
       { jobId: 'daily-backend-runtime-blob-cleanup-execution' }
     )
   );
+});
+
+test('daily storage reconciliation uses a fixed job id', async t => {
+  await t.context.job.dailyStorageReconciliation();
+
+  t.true(
+    t.context.queue.add.calledWith(
+      'backendRuntime.reconcileWorkspaceStorageBySid',
+      {},
+      { jobId: 'daily-backend-runtime-storage-reconciliation' }
+    )
+  );
+});
+
+test('storage reconciliation orders document retention before blob cleanup', async t => {
+  t.context.db.workspace.findMany.resolves([{ id: 'workspace-1', sid: 1 }]);
+  t.context.runtime.rebuildWorkspaceDocBlobRefs.resolves({
+    scannedDocs: 1,
+    parsedDocs: 1,
+    refsWritten: 1,
+    refsDeleted: 0,
+    failedDocs: 0,
+    nextCursor: null,
+  });
+  t.context.runtime.planUnreferencedWorkspaceBlobs.resolves({
+    runId: 'run-1',
+    scannedBlobs: 1,
+    candidatesMarked: 0,
+    nextCursor: null,
+  });
+
+  await t.context.job.reconcileWorkspaceStorageBySid({ workspaceLimit: 10 });
+
+  Sinon.assert.callOrder(
+    t.context.runtime.reconcileWorkspaceDocuments,
+    t.context.runtime.rebuildWorkspaceDocBlobRefs,
+    t.context.runtime.planUnreferencedWorkspaceBlobs
+  );
+  t.pass();
+});
+
+test('storage reconciliation still refreshes document retention without object storage', async t => {
+  t.context.runtime.health.resolves({
+    databaseConnected: true,
+    providerConfigured: true,
+    provider: undefined,
+  });
+  t.context.db.workspace.findMany.resolves([{ id: 'workspace-1', sid: 1 }]);
+  t.context.runtime.rebuildWorkspaceDocBlobRefs.resolves({
+    scannedDocs: 1,
+    parsedDocs: 1,
+    refsWritten: 0,
+    refsDeleted: 0,
+    failedDocs: 0,
+    nextCursor: null,
+  });
+
+  await t.context.job.reconcileWorkspaceStorageBySid({});
+
+  t.true(t.context.runtime.reconcileWorkspaceDocuments.calledOnce);
+  t.true(t.context.runtime.rebuildWorkspaceDocBlobRefs.calledOnce);
+  t.false(t.context.runtime.planUnreferencedWorkspaceBlobs.called);
+});
+
+test('document cleanup dispatches independent stable search and copilot effects', async t => {
+  t.context.runtime.executeDocumentCleanupCandidates.resolves({
+    scannedCandidates: 1,
+    serializationRetries: 0,
+    executed: 1,
+    recovered: 0,
+    reset: 0,
+    failed: 0,
+    deletedRows: 3,
+    effects: [
+      {
+        workspaceId: 'workspace-1',
+        docId: 'doc-1',
+        cleanupVersion: 'version-1',
+        commentObjectsDone: true,
+        searchDone: false,
+        copilotDone: false,
+      },
+    ],
+  });
+
+  await t.context.job.executeDocumentCleanupCandidates({});
+
+  t.true(
+    t.context.queue.add.calledWith(
+      'indexer.reconcileDocumentCleanup',
+      Sinon.match({ docId: 'doc-1' }),
+      {
+        jobId: 'document-cleanup:search:workspace-1:doc-1:version-1',
+      }
+    )
+  );
+  t.true(
+    t.context.queue.add.calledWith(
+      'copilot.embedding.reconcileDocumentCleanup',
+      Sinon.match({ docId: 'doc-1' }),
+      {
+        jobId: 'document-cleanup:copilot:workspace-1:doc-1:version-1',
+      }
+    )
+  );
+  t.true(
+    t.context.event.emitAsync.calledWith('workspace.blobs.updated', {
+      workspaceId: 'workspace-1',
+    })
+  );
+});
+
+test('document cleanup effect ack delegates to storage runtime', async t => {
+  await t.context.job.ackDocumentCleanupEffect({
+    workspaceId: 'workspace-1',
+    docId: 'doc-1',
+    cleanupVersion: 'version-1',
+    effect: 'search',
+  });
+
+  t.deepEqual(t.context.runtime.ackDocumentCleanupEffect.firstCall.args, [
+    'workspace-1',
+    'doc-1',
+    'version-1',
+    'search',
+  ]);
 });
 
 test('blob cleanup execution sweep drains marked runs and continues by page', async t => {

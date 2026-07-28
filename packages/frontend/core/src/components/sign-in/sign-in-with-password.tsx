@@ -29,7 +29,7 @@ import { Captcha } from './captcha';
 import * as styles from './style.css';
 
 const MIN_SIGN_IN_LOADING_MS = 350;
-const RATE_LIMIT_SIGN_IN_COOLDOWN_SECONDS = 30;
+const RATE_LIMIT_SIGN_IN_COOLDOWN_SECONDS = 60;
 
 export const SignInWithPasswordStep = ({
   state,
@@ -151,13 +151,14 @@ export const SignInWithPasswordStep = ({
         const shouldExposeNativeAuthError =
           BUILD_CONFIG.isNative &&
           isSelfhosted &&
-          error.is('INTERNAL_SERVER_ERROR') &&
-          diagnosticMessage.includes('iOS native auth failed');
+          error.is('IOS_NATIVE_AUTH_FAILED');
         const selfhostedMessage = shouldExposeNativeAuthError
-          ? `iOS auth: ${diagnosticMessage}`
+          ? t['com.affine.auth.toast.message.ios-auth']({
+              message: diagnosticMessage,
+            })
           : (nativeNetworkMessage ?? visibleMessage);
         const failedTitle = shouldExposeNativeAuthError
-          ? `iOS auth: ${error.name}`
+          ? t['com.affine.auth.toast.title.ios-auth']({ name: error.name })
           : t['com.affine.auth.toast.title.failed']();
 
         if (isRateLimited) {

@@ -60,10 +60,6 @@ declare global {
 
 @Injectable()
 export class EntitlementService {
-  private readonly legacyCloudSubscriptionSyncs = new Map<
-    string,
-    Promise<void>
-  >();
   private readonly remoteSelfhostLicenseVerifications = new Map<
     string,
     Promise<Entitlement | null>
@@ -102,7 +98,6 @@ export class EntitlementService {
   }
 
   async getBestEntitlement(targetType: TargetType, targetId: string) {
-    await this.syncLegacyCloudSubscriptionEntitlements(targetType, targetId);
     const entitlements = await this.db.entitlement.findMany({
       where: {
         targetType,
@@ -138,7 +133,6 @@ export class EntitlementService {
   }
 
   async getActiveEntitlements(targetType: TargetType, targetId: string) {
-    await this.syncLegacyCloudSubscriptionEntitlements(targetType, targetId);
     return this.db.entitlement.findMany({
       where: {
         targetType,
@@ -154,7 +148,7 @@ export class EntitlementService {
 
   async upsertFromCloudSubscription(
     input: CloudSubscriptionEntitlementInput,
-    options: { emit?: boolean; legacySync?: boolean } = {}
+    options: { emit?: boolean } = {}
   ) {
     const emit = options.emit ?? true;
     const targetType = this.targetTypeForPlan(input.plan);
@@ -182,7 +176,6 @@ export class EntitlementService {
         variant: input.variant ?? null,
         subscriptionId: input.subscriptionId ?? null,
         stripeSubscriptionId: input.stripeSubscriptionId ?? null,
-        legacySync: options.legacySync ?? false,
       },
       startsAt: input.start ?? null,
       expiresAt: input.end ?? null,
@@ -292,37 +285,6 @@ export class EntitlementService {
     await Promise.all(
       entitlements.map(entitlement => this.emitEntitlementChanged(entitlement))
     );
-  }
-
-  async syncLegacyCloudSubscriptionEntitlements(
-    targetType: TargetType,
-    targetId: string
-  ) {
-    // TODO(stable-upgrade): remove legacy subscription import after stable no longer writes old subscriptions.
-    if (env.selfhosted || targetType === 'instance') {
-      return;
-    }
-
-    const key = `${targetType}:${targetId}`;
-    const existing = this.legacyCloudSubscriptionSyncs.get(key);
-    if (existing) {
-      return existing;
-    }
-
-    const task = this.doSyncLegacyCloudSubscriptionEntitlements(
-      targetType,
-      targetId
-    )
-      .then(changed => {
-        if (changed) {
-          this.event.emit('entitlement.changed', { targetType, targetId });
-        }
-      })
-      .finally(() => {
-        this.legacyCloudSubscriptionSyncs.delete(key);
-      });
-    this.legacyCloudSubscriptionSyncs.set(key, task);
-    return task;
   }
 
   async upsertFromSelfhostLicense(
@@ -505,16 +467,6 @@ export class EntitlementService {
     subscriptionId?: string | number | null;
     stripeSubscriptionId?: string | null;
   }) {
-    await this.db.subscription.updateMany({
-      where: {
-        targetId: input.targetId,
-        plan: input.plan,
-      },
-      data: {
-        status: SubscriptionStatus.Canceled,
-        end: new Date(),
-      },
-    });
     await this.revokeBySubject(
       'cloud_subscription',
       this.cloudSubjectId(input)
@@ -610,86 +562,6 @@ export class EntitlementService {
     }
   }
 
-  private async doSyncLegacyCloudSubscriptionEntitlements(
-    targetType: Exclude<TargetType, 'instance'>,
-    targetId: string
-  ) {
-    let changed = false;
-    const legacyPlans =
-      targetType === 'user'
-        ? [SubscriptionPlan.Pro, SubscriptionPlan.AI]
-        : [SubscriptionPlan.Team];
-    const entitlementPlans =
-      targetType === 'user' ? ['pro', 'lifetime_pro', 'ai'] : ['team'];
-    const subscriptions = await this.db.subscription.findMany({
-      where: {
-        targetId,
-        plan: { in: legacyPlans },
-      },
-      orderBy: { updatedAt: 'asc' },
-    });
-    const legacySubjects = new Set(
-      subscriptions.map(subscription => this.cloudSubjectId(subscription))
-    );
-    const legacySubscriptionPlans = new Set(
-      subscriptions.map(subscription => subscription.plan)
-    );
-
-    for (const subscription of subscriptions) {
-      const before = await this.findBySubject(
-        'cloud_subscription',
-        this.cloudSubjectId(subscription)
-      );
-      const entitlement = await this.upsertFromCloudSubscription(subscription, {
-        emit: false,
-        legacySync: true,
-      });
-      changed =
-        changed ||
-        !before ||
-        before.targetType !== entitlement.targetType ||
-        before.targetId !== entitlement.targetId ||
-        before.plan !== entitlement.plan ||
-        before.status !== entitlement.status ||
-        before.quantity !== entitlement.quantity ||
-        before.expiresAt?.getTime() !== entitlement.expiresAt?.getTime() ||
-        before.graceUntil?.getTime() !== entitlement.graceUntil?.getTime();
-    }
-
-    const staleEntitlements = await this.db.entitlement.findMany({
-      where: {
-        targetType,
-        targetId,
-        source: 'cloud_subscription',
-        plan: { in: entitlementPlans },
-        status: { in: ['active', 'grace'] },
-        OR: [
-          { metadata: { path: ['legacySync'], equals: true } },
-          { metadata: { path: ['legacyProjected'], equals: true } },
-        ],
-      },
-    });
-    const staleIds = staleEntitlements
-      .filter(
-        entitlement =>
-          !legacySubjects.has(entitlement.subjectId ?? '') &&
-          !legacySubscriptionPlans.has(
-            this.legacySubscriptionPlan(entitlement.plan)
-          )
-      )
-      .map(entitlement => entitlement.id);
-
-    if (staleIds.length) {
-      await this.db.entitlement.updateMany({
-        where: { id: { in: staleIds } },
-        data: { status: 'revoked' },
-      });
-      changed = true;
-    }
-
-    return changed;
-  }
-
   private cloudSubjectId(
     input: Pick<
       CloudSubscriptionEntitlementInput,
@@ -702,19 +574,6 @@ export class EntitlementService {
         ? input.subscriptionId
         : `${input.targetId}:${input.plan}`)
     );
-  }
-
-  private legacySubscriptionPlan(plan: string) {
-    if (plan === 'pro' || plan === 'lifetime_pro') {
-      return SubscriptionPlan.Pro;
-    }
-    if (plan === 'ai') {
-      return SubscriptionPlan.AI;
-    }
-    if (plan === 'team') {
-      return SubscriptionPlan.Team;
-    }
-    return plan;
   }
 
   private async revokeCloudSubscriptionByLegacyTarget(input: {
@@ -887,37 +746,23 @@ export class EntitlementService {
 
       const expiresAt = new Date(license.expiresAt);
       const validateKey = license.validateKey || metadata.validateKey;
-      const [updated] = await Promise.all([
-        this.db.entitlement.update({
-          where: { id: entitlement.id },
-          data: {
-            status: 'active',
-            quantity: this.normalizedQuantity(license.quantity),
-            metadata: {
-              ...metadata,
-              recurring: license.recurring,
-              validateKey,
-              remoteValidated: true,
-              errorCode: null,
-              errorMessage: null,
-            },
-            expiresAt,
-            validatedAt: new Date(),
+      const updated = await this.db.entitlement.update({
+        where: { id: entitlement.id },
+        data: {
+          status: 'active',
+          quantity: this.normalizedQuantity(license.quantity),
+          metadata: {
+            ...metadata,
+            recurring: license.recurring,
+            validateKey,
+            remoteValidated: true,
+            errorCode: null,
+            errorMessage: null,
           },
-        }),
-        this.db.installedLicense
-          .updateMany({
-            where: { key: entitlement.subjectId },
-            data: {
-              quantity: this.normalizedQuantity(license.quantity),
-              recurring: license.recurring,
-              validateKey,
-              validatedAt: new Date(),
-              expiredAt: expiresAt,
-            },
-          })
-          .catch(() => null),
-      ]);
+          expiresAt,
+          validatedAt: new Date(),
+        },
+      });
       this.event.emit('entitlement.changed', {
         targetType: 'workspace',
         targetId: entitlement.targetId,

@@ -48,6 +48,7 @@ export interface SwipeHelperOptions {
   onSwipeStart?: () => void;
   onSwipe?: (info: SwipeInfo) => void;
   onSwipeEnd?: (info: SwipeInfo) => void;
+  onSwipeCancel?: () => void;
 }
 const defaultOptions = Object.freeze({
   scope: 'global',
@@ -63,6 +64,7 @@ export class SwipeHelper {
   private _lastInfo: SwipeInfo | null = null;
   private _startTime: number = 0;
   private _lastTime: number = 0;
+  private _active = false;
 
   get scopeElement() {
     return this._options.scope === 'inside'
@@ -79,7 +81,7 @@ export class SwipeHelper {
    */
   public init(trigger: HTMLElement, options?: SwipeHelperOptions) {
     this.destroy();
-    this._options = { ...this._options, ...options };
+    this._options = { ...defaultOptions, ...options };
     this._trigger = trigger;
     const handler = this._handleTouchStart.bind(this);
     trigger.addEventListener('touchstart', handler, {
@@ -97,10 +99,11 @@ export class SwipeHelper {
    */
   public destroy() {
     this._dragStartCleanup();
-    this._clearDrag();
+    this._cancelActiveDrag(false);
   }
 
   private _handleTouchStart(e: TouchEvent) {
+    this._cancelActiveDrag();
     const touch = e.touches[0];
     this._startPos = {
       x: touch.clientX,
@@ -108,13 +111,19 @@ export class SwipeHelper {
     };
     this._lastTime = Date.now();
     this._startTime = this._lastTime;
+    this._isFirst = true;
+    this._active = true;
     this._options.onSwipeStart?.();
     const moveHandler = this._handleTouchMove.bind(this);
     this.scopeElement.addEventListener('touchmove', moveHandler, {
       passive: !this._options.preventScroll,
     });
     const endHandler = this._handleTouchEnd.bind(this);
+    const cancelHandler = this._handleTouchCancel.bind(this);
     this.scopeElement.addEventListener('touchend', endHandler, {
+      passive: !this._options.preventScroll,
+    });
+    this.scopeElement.addEventListener('touchcancel', cancelHandler, {
       passive: !this._options.preventScroll,
     });
     this._dragMoveCleanup = () => {
@@ -122,6 +131,7 @@ export class SwipeHelper {
     };
     this._dragEndCleanup = () => {
       this.scopeElement.removeEventListener('touchend', endHandler);
+      this.scopeElement.removeEventListener('touchcancel', cancelHandler);
     };
   }
 
@@ -129,12 +139,9 @@ export class SwipeHelper {
     const info = this._getInfo(e);
     if (
       this._options.preventScroll &&
-      // direction is not detected
-      (!this._direction ||
-        // direction is not specified
-        !this._options.direction ||
-        // direction is same as specified
-        this._direction === this._options.direction)
+      // iOS cannot resume native scrolling once an early touchmove is
+      // cancelled, so constrained swipes wait for a matching direction.
+      (!this._options.direction || this._direction === this._options.direction)
     ) {
       e.preventDefault();
     }
@@ -144,16 +151,30 @@ export class SwipeHelper {
   }
 
   private _handleTouchEnd() {
-    if (
-      !this._lastInfo ||
-      (Math.abs(this._lastInfo.deltaY) < 1 &&
-        Math.abs(this._lastInfo.deltaX) < 1)
-    ) {
-      this._options.onTap?.();
-    } else {
-      this._options.onSwipeEnd?.(this._lastInfo);
-    }
+    if (!this._active) return;
+    const info = this._lastInfo;
+    const isTap =
+      !info || (Math.abs(info.deltaY) < 1 && Math.abs(info.deltaX) < 1);
+    this._active = false;
     this._clearDrag();
+    if (isTap) {
+      this._options.onTap?.();
+    } else if (info) {
+      this._options.onSwipeEnd?.(info);
+    }
+  }
+
+  private _handleTouchCancel() {
+    this._cancelActiveDrag();
+  }
+
+  private _cancelActiveDrag(notify = true) {
+    const wasActive = this._active;
+    this._active = false;
+    this._clearDrag();
+    if (wasActive && notify) {
+      this._options.onSwipeCancel?.();
+    }
   }
 
   private _getInfo(e: TouchEvent): SwipeInfo {

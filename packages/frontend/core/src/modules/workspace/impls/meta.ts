@@ -137,7 +137,14 @@ export class WorkspaceMetaImpl implements WorkspaceMeta {
     this.docMetaUpdated.next();
   }
 
+  private _assertValidDocTitle(meta: Partial<DocMeta>) {
+    if (meta.title !== undefined && typeof meta.title !== 'string') {
+      throw new TypeError('Document title must be a string');
+    }
+  }
+
   addDocMeta(doc: DocMeta, index?: number) {
+    this._assertValidDocTitle(doc);
     this._doc.transact(() => {
       if (!this.docs) {
         this.initialize();
@@ -184,6 +191,7 @@ export class WorkspaceMetaImpl implements WorkspaceMeta {
   }
 
   setDocMeta(id: string, props: Partial<DocMeta>) {
+    this._assertValidDocTitle(props);
     const docs = (this.docs as DocMeta[]) ?? [];
     const index = docs.findIndex((doc: DocMeta) => id === doc.id);
 

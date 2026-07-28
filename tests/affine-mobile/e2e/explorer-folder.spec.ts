@@ -44,7 +44,7 @@ const createSubFolder = async (page: Page, parent: Locator, name: string) => {
   await page.keyboard.type(name);
   await dialog.getByTestId('rename-confirm').tap();
   await expect(dialog).not.toBeVisible();
-  const node = await locateFolder(parent, name);
+  const node = await locateFolder(page, name);
   return node;
 };
 

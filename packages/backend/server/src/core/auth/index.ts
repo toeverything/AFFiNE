@@ -3,6 +3,7 @@ import './config';
 import { Module } from '@nestjs/common';
 
 import { BackendRuntimeModule } from '../backend-runtime';
+import { EntitlementModule } from '../entitlement';
 import { FeatureModule } from '../features';
 import { MailModule } from '../mail';
 import { QuotaModule } from '../quota';
@@ -27,6 +28,7 @@ import { AuthSigningKeyResolver } from './signing-key-resolver';
   imports: [
     BackendRuntimeModule,
     FeatureModule,
+    EntitlementModule,
     UserModule,
     QuotaModule,
     MailModule,

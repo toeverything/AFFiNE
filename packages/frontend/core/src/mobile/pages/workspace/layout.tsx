@@ -14,15 +14,26 @@ import type {
   WorkspaceMetadata,
 } from '@affine/core/modules/workspace';
 import { WorkspacesService } from '@affine/core/modules/workspace';
-import { FrameworkScope, useServices } from '@toeverything/infra';
+import {
+  FrameworkScope,
+  LiveData,
+  useLiveData,
+  useService,
+  useServices,
+} from '@toeverything/infra';
 import {
   type PropsWithChildren,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useState,
 } from 'react';
+import { map } from 'rxjs';
 
+import { AppFallback } from '../../components/app-fallback';
+import { MobileShellHost } from '../../components/mobile-shell-host';
 import { WorkspaceDialogs } from '../../dialogs';
+import { MobileBackCoordinator } from '../../modules/back-coordinator';
 
 // TODO(@forehalo): reuse the global context with [core/electron]
 declare global {
@@ -163,26 +174,56 @@ export const WorkspaceLayout = ({
     };
   }, [workspace, workspaceServer]);
 
+  const rootDocReady$ = useMemo(
+    () =>
+      workspace
+        ? LiveData.from(
+            workspace.engine.doc
+              .docState$(workspace.id)
+              .pipe(map(v => v.ready)),
+            false
+          )
+        : null,
+    [workspace]
+  );
+  const isRootDocReady = useLiveData(rootDocReady$) ?? false;
+
   if (!workspace) {
     return null; // skip this, workspace will be set in layout effect
+  }
+
+  if (!isRootDocReady) {
+    return <AppFallback />;
   }
 
   return (
     <FrameworkScope scope={workspaceServer?.scope}>
       <FrameworkScope scope={workspace.scope}>
+        <WorkspaceBackReset workspaceId={workspace.id} />
         <AffineErrorBoundary height="100dvh">
           <SWRConfigProvider>
-            <WorkspaceDialogs />
+            <MobileShellHost>
+              <WorkspaceDialogs />
 
-            {/* ---- some side-effect components ---- */}
-            <PeekViewManagerModal />
-            <AiLoginRequiredModal />
-            <uniReactRoot.Root />
-            <WorkspaceSideEffects />
-            {children}
+              {/* ---- some side-effect components ---- */}
+              <PeekViewManagerModal />
+              <AiLoginRequiredModal />
+              <uniReactRoot.Root />
+              <WorkspaceSideEffects />
+              {children}
+            </MobileShellHost>
           </SWRConfigProvider>
         </AffineErrorBoundary>
       </FrameworkScope>
     </FrameworkScope>
   );
+};
+
+const WorkspaceBackReset = ({ workspaceId }: { workspaceId: string }) => {
+  const coordinator = useService(MobileBackCoordinator);
+  useEffect(() => {
+    coordinator.reset();
+    return () => coordinator.reset();
+  }, [coordinator, workspaceId]);
+  return null;
 };

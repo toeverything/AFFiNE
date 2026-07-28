@@ -1,13 +1,16 @@
 package app.affine.pro
 
 import android.content.res.ColorStateList
+import android.content.ComponentCallbacks2
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
 import android.webkit.WebSettings
+import androidx.activity.enableEdgeToEdge
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.DrawableCompat
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updateMargins
@@ -19,6 +22,7 @@ import app.affine.pro.plugin.AFFiNEThemePlugin
 import app.affine.pro.plugin.AuthPlugin
 import app.affine.pro.plugin.HashCashPlugin
 import app.affine.pro.plugin.NbStorePlugin
+import app.affine.pro.plugin.MobileBackPlugin
 import app.affine.pro.plugin.PreviewPlugin
 import app.affine.pro.service.GraphQLService
 import app.affine.pro.service.SSEService
@@ -53,6 +57,7 @@ class MainActivity : BridgeActivity(), AIButtonPlugin.Callback, AFFiNEThemePlugi
                 AuthPlugin::class.java,
                 HashCashPlugin::class.java,
                 NbStorePlugin::class.java,
+                MobileBackPlugin::class.java,
                 PreviewPlugin::class.java,
             )
         )
@@ -83,6 +88,8 @@ class MainActivity : BridgeActivity(), AIButtonPlugin.Callback, AFFiNEThemePlugi
     private var navHeight = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         ViewCompat.setOnApplyWindowInsetsListener(window.decorView) { v, insets ->
             navHeight = px2dp(insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom)
@@ -94,6 +101,16 @@ class MainActivity : BridgeActivity(), AIButtonPlugin.Callback, AFFiNEThemePlugi
         super.load()
         AuthInitializer.initialize(bridge)
         configureEditorWebView()
+    }
+
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        if (level >= ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN) {
+            bridge.webView.evaluateJavascript(
+                "window.dispatchEvent(new Event('affine:memory-pressure'))",
+                null,
+            )
+        }
     }
 
     private fun configureEditorWebView() {

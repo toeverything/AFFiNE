@@ -166,7 +166,7 @@ export class AuthService extends Service {
     try {
       await this.store.signInMagicLink(email, token);
 
-      this.session.revalidate();
+      await this.session.revalidateOnce();
       track.$.$.auth.signedIn({ method });
     } catch (e) {
       track.$.$.auth.signInFail({
@@ -218,7 +218,7 @@ export class AuthService extends Service {
         provider
       );
 
-      this.session.revalidate();
+      await this.session.revalidateOnce();
 
       track.$.$.auth.signedIn({ method: 'oauth', provider });
       return { redirectUri };
@@ -251,7 +251,7 @@ export class AuthService extends Service {
   async signInOpenAppSignInCode(code: string) {
     await this.store.signInOpenAppSignInCode(code);
 
-    this.session.revalidate();
+    await this.session.revalidateOnce();
   }
 
   async signInPassword(credential: {
@@ -266,8 +266,10 @@ export class AuthService extends Service {
       const user = await this.store.signInPassword(credential);
       if (user) {
         this.store.setCachedSignInUser(user);
+        this.session.revalidate();
+      } else {
+        await this.session.revalidateOnce();
       }
-      this.session.revalidate();
       track.$.$.auth.signedIn({ method: 'password' });
     } catch (e) {
       track.$.$.auth.signInFail({

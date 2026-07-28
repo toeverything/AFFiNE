@@ -79,8 +79,8 @@ export class RealtimeManager {
     input: RealtimeRequestInputOf<Op>,
     options?: { timeoutMs?: number; signal?: AbortSignal }
   ): Promise<RealtimeRequestOutputOf<Op>> {
-    const socket = await this.connect(op === 'user.profile.get');
     const timeoutMs = options?.timeoutMs ?? DEFAULT_REQUEST_TIMEOUT;
+    const connectAbort = new AbortController();
     let timeoutId: ReturnType<typeof setTimeout> | undefined;
     let abortHandler: (() => void) | undefined;
     const abort = () => {
@@ -104,28 +104,36 @@ export class RealtimeManager {
       options?.signal?.addEventListener('abort', abortHandler, { once: true });
     });
 
-    const ack = await Promise.race([
-      socket.emitWithAck('realtime:request', {
-        op,
-        input,
-        clientVersion: BUILD_CONFIG.appVersion,
-      }),
-      timeout,
-      aborted,
-    ]).finally(() => {
+    try {
+      const socket = await Promise.race([
+        this.connect(op === 'user.profile.get', connectAbort.signal),
+        timeout,
+        aborted,
+      ]);
+      const ack = await Promise.race([
+        socket.emitWithAck('realtime:request', {
+          op,
+          input,
+          clientVersion: BUILD_CONFIG.appVersion,
+        }),
+        timeout,
+        aborted,
+      ]);
+
+      if ('error' in ack) {
+        throw rejectAck(ack.error);
+      }
+
+      return ack.data as unknown as RealtimeRequestOutputOf<Op>;
+    } finally {
+      connectAbort.abort();
       if (timeoutId) {
         clearTimeout(timeoutId);
       }
       if (abortHandler) {
         options?.signal?.removeEventListener('abort', abortHandler);
       }
-    });
-
-    if ('error' in ack) {
-      throw rejectAck(ack.error);
     }
-
-    return ack.data as unknown as RealtimeRequestOutputOf<Op>;
   }
 
   subscribe<Topic extends RealtimeTopicName>(
@@ -224,7 +232,7 @@ export class RealtimeManager {
     };
   }
 
-  private async connect(allowUnauthenticated = false) {
+  private async connect(allowUnauthenticated = false, signal?: AbortSignal) {
     if (
       !this.context?.endpoint ||
       (!this.context.authenticated && !allowUnauthenticated)
@@ -245,7 +253,7 @@ export class RealtimeManager {
       this.socketConnection.connect();
     }
 
-    await this.socketConnection.waitForConnected();
+    await this.socketConnection.waitForConnected(signal);
     this.socketConnection.inner.socket.off('realtime:event', this.handleEvent);
     this.socketConnection.inner.socket.on('realtime:event', this.handleEvent);
     this.socketConnection.inner.socket.off('connect', this.handleReconnect);

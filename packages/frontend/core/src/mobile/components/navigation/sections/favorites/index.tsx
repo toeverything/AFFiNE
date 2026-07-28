@@ -2,6 +2,7 @@ import { toast } from '@affine/component';
 import { usePageHelper } from '@affine/core/blocksuite/block-suite-page-list/utils';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { NavigationPanelTreeRoot } from '@affine/core/desktop/components/navigation-panel';
+import { waitForRootDocReady } from '@affine/core/mobile/utils';
 import type { FavoriteSupportTypeUnion } from '@affine/core/modules/favorite';
 import { FavoriteService } from '@affine/core/modules/favorite';
 import { NavigationPanelService } from '@affine/core/modules/navigation-panel';
@@ -16,8 +17,6 @@ import { NavigationPanelCollectionNode } from '../../nodes/collection';
 import { NavigationPanelDocNode } from '../../nodes/doc';
 import { NavigationPanelFolderNode } from '../../nodes/folder';
 import { NavigationPanelTagNode } from '../../nodes/tag';
-
-const ROOT_DOC_READY_TIMEOUT_MS = 8_000;
 
 export const NavigationPanelFavorites = () => {
   const { favoriteService, workspaceService, navigationPanelService } =
@@ -37,22 +36,7 @@ export const NavigationPanelFavorites = () => {
 
   const handleCreateNewFavoriteDoc = useAsyncCallback(async () => {
     try {
-      await Promise.race([
-        workspaceService.workspace.engine.doc.waitForDocLoaded(
-          workspaceService.workspace.id
-        ),
-        new Promise((_, reject) =>
-          window.setTimeout(
-            () => reject(new Error('Workspace root doc is not loaded')),
-            ROOT_DOC_READY_TIMEOUT_MS
-          )
-        ),
-      ]).catch(error => {
-        console.warn(
-          'Workspace root doc is not loaded before creating doc',
-          error
-        );
-      });
+      await waitForRootDocReady(workspaceService.workspace);
 
       const newDoc = createPage();
       favoriteService.favoriteList.add(
@@ -63,13 +47,14 @@ export const NavigationPanelFavorites = () => {
       navigationPanelService.setCollapsed(path, false);
     } catch (error) {
       console.error('Failed to create favorite doc', error);
-      toast('Failed to create doc. Please try again.');
+      toast(t['com.affine.mobile.create-doc.error.toast']());
     }
   }, [
     createPage,
     favoriteService.favoriteList,
     navigationPanelService,
     path,
+    t,
     workspaceService.workspace,
   ]);
 

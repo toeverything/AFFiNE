@@ -32,7 +32,6 @@ import { MagicLinkOtpModel } from './magic-link-otp';
 import { MailDeliveryModel } from './mail-delivery';
 import { McpCredentialModel } from './mcp-credential';
 import { NotificationModel } from './notification';
-import { PermissionProjectionModel } from './permission-projection';
 import {
   DocAccessPolicyModel,
   DocGrantModel,
@@ -50,8 +49,6 @@ import { VerificationTokenModel } from './verification-token';
 import { WorkspaceModel } from './workspace';
 import { WorkspaceAnalyticsModel } from './workspace-analytics';
 import { WorkspaceCalendarModel } from './workspace-calendar';
-import { WorkspaceFeatureModel } from './workspace-feature';
-import { WorkspaceRuntimeStateModel } from './workspace-runtime-state';
 import { WorkspaceUserModel } from './workspace-user';
 
 const MODELS = {
@@ -64,15 +61,12 @@ const MODELS = {
   feature: FeatureModel,
   workspace: WorkspaceModel,
   userFeature: UserFeatureModel,
-  workspaceFeature: WorkspaceFeatureModel,
-  workspaceRuntimeState: WorkspaceRuntimeStateModel,
   doc: DocModel,
   userDoc: UserDocModel,
   workspaceUser: WorkspaceUserModel,
   docUser: DocUserModel,
   history: HistoryModel,
   notification: NotificationModel,
-  permissionProjection: PermissionProjectionModel,
   workspaceMember: WorkspaceMemberModel,
   workspaceInvitation: WorkspaceInvitationModel,
   workspaceAccessPolicy: WorkspaceAccessPolicyModel,
@@ -172,7 +166,6 @@ export * from './history';
 export * from './magic-link-otp';
 export * from './mail-delivery';
 export * from './notification';
-export * from './permission-projection';
 export * from './permission-write';
 export * from './session';
 export * from './user';
@@ -183,6 +176,5 @@ export * from './verification-token';
 export * from './workspace';
 export * from './workspace-analytics';
 export * from './workspace-calendar';
-export * from './workspace-feature';
-export * from './workspace-runtime-state';
 export * from './workspace-user';
+export type { WorkspaceUserCompat } from './workspace-user-compat';

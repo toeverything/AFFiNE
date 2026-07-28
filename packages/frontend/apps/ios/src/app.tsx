@@ -2,9 +2,10 @@ import { notify } from '@affine/component';
 import { getStoreManager } from '@affine/core/blocksuite/manager/store';
 import { AffineContext } from '@affine/core/components/context';
 import { AppFallback } from '@affine/core/mobile/components/app-fallback';
+import { MobileModalConfigProvider } from '@affine/core/mobile/components/mobile-modal-config-provider';
 import { configureMobileModules } from '@affine/core/mobile/modules';
+import { MobileBackCoordinator } from '@affine/core/mobile/modules/back-coordinator';
 import { HapticProvider } from '@affine/core/mobile/modules/haptics';
-import { NavigationGestureProvider } from '@affine/core/mobile/modules/navigation-gesture';
 import { VirtualKeyboardProvider } from '@affine/core/mobile/modules/virtual-keyboard';
 import { router } from '@affine/core/mobile/router';
 import { configureCommonModules } from '@affine/core/modules';
@@ -46,6 +47,7 @@ import {
   requestApplySubscriptionMutation,
 } from '@affine/graphql';
 import { I18n } from '@affine/i18n';
+import { serveAuthRequests } from '@affine/mobile-shared/auth/channel';
 import { SocketConnection } from '@affine/nbstore/cloud';
 import { StoreManagerClient } from '@affine/nbstore/worker/client';
 import { setTelemetryTransport } from '@affine/track';
@@ -62,7 +64,13 @@ import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
 import { Haptics } from '@capacitor/haptics';
 import { Keyboard, KeyboardStyle } from '@capacitor/keyboard';
-import { Framework, FrameworkRoot, getCurrentStore } from '@toeverything/infra';
+import {
+  Framework,
+  FrameworkRoot,
+  getCurrentStore,
+  useLiveData,
+  useService,
+} from '@toeverything/infra';
 import { OpClient } from '@toeverything/infra/op';
 import { AsyncCall } from 'async-call-rpc';
 import { AppTrackingTransparency } from 'capacitor-plugin-app-tracking-transparency';
@@ -71,16 +79,19 @@ import { Suspense, useEffect } from 'react';
 import { RouterProvider } from 'react-router-dom';
 
 import { BlocksuiteMenuConfigProvider } from './bs-menu-config';
-import { ModalConfigProvider } from './modal-config';
 import { AffineTheme } from './plugins/affine-theme';
 import { Auth } from './plugins/auth';
 import { Hashcash } from './plugins/hashcash';
 import { ImagePicker } from './plugins/image-picker';
+import { NavigationGesture } from './plugins/navigation-gesture';
 import { NbStoreNativeDBApis } from './plugins/nbstore';
 import { PayWall } from './plugins/paywall';
 import { Preview } from './plugins/preview';
-import { clearEndpointSession, getValidAccessToken } from './proxy';
-import { enableNavigationGesture$ } from './web-navigation-control';
+import {
+  authRequestProvider,
+  clearEndpointSession,
+  getValidAccessToken,
+} from './proxy';
 
 const storeManagerClient = createStoreManagerClient();
 setTelemetryTransport(storeManagerClient.telemetry);
@@ -164,11 +175,6 @@ framework.impl(VirtualKeyboardProvider, {
       disposeRef.dispose();
     };
   },
-});
-framework.impl(NavigationGestureProvider, {
-  isEnabled: () => enableNavigationGesture$.value,
-  enable: () => enableNavigationGesture$.next(true),
-  disable: () => enableNavigationGesture$.next(false),
 });
 framework.impl(HapticProvider, {
   impact: options => Haptics.impact(options as any),
@@ -266,7 +272,7 @@ const logIOSSync = (event: string, payload?: Record<string, unknown>) => {
 };
 
 const REMOTE_DOC_SYNC_RESET_INTERVAL_MS = 30_000;
-let lastRemoteDocSyncResetAt = 0;
+const lastRemoteDocSyncResetAt = new Map<string, number>();
 
 framework.scope(ServerScope).override(AuthProvider, resolver => {
   const serverService = resolver.get(ServerService);
@@ -396,16 +402,6 @@ function softReconnectCurrentRemoteSockets(reason: string) {
 }
 
 function resetCurrentRemoteDocSync(reason: string) {
-  const now = Date.now();
-  if (now - lastRemoteDocSyncResetAt < REMOTE_DOC_SYNC_RESET_INTERVAL_MS) {
-    logIOSSync('skip reset current workspace doc sync: cooldown', {
-      reason,
-      remainingMs:
-        REMOTE_DOC_SYNC_RESET_INTERVAL_MS - (now - lastRemoteDocSyncResetAt),
-    });
-    return;
-  }
-
   const context = getCurrentRemoteWorkspaceContext();
   if (!context) {
     logIOSSync('skip reset current workspace doc sync: no remote workspace', {
@@ -419,6 +415,24 @@ function resetCurrentRemoteDocSync(reason: string) {
     workspaceFlavour: currentWorkspaceFlavour,
     server: currentServer,
   } = context;
+  const cooldownKey = [
+    currentServer?.baseUrl ?? 'local',
+    currentWorkspaceFlavour,
+    currentWorkspaceId,
+  ].join(':');
+  const now = Date.now();
+  const lastResetAt = lastRemoteDocSyncResetAt.get(cooldownKey) ?? 0;
+  if (now - lastResetAt < REMOTE_DOC_SYNC_RESET_INTERVAL_MS) {
+    logIOSSync('skip reset current workspace doc sync: cooldown', {
+      reason,
+      workspaceId: currentWorkspaceId,
+      workspaceFlavour: currentWorkspaceFlavour,
+      serverBaseUrl: currentServer?.baseUrl ?? null,
+      remainingMs: REMOTE_DOC_SYNC_RESET_INTERVAL_MS - (now - lastResetAt),
+    });
+    return;
+  }
+
   if (currentServer) {
     SocketConnection.resetSharedConnection(currentServer.baseUrl, true);
     SocketConnection.resetSharedConnection(currentServer.baseUrl, false);
@@ -437,7 +451,7 @@ function resetCurrentRemoteDocSync(reason: string) {
     return;
   }
 
-  lastRemoteDocSyncResetAt = now;
+  lastRemoteDocSyncResetAt.set(cooldownKey, now);
   logIOSSync('reset current workspace doc sync', {
     reason,
     workspaceId: currentWorkspaceId,
@@ -963,14 +977,49 @@ const KeyboardThemeProvider = () => {
   return null;
 };
 
+const IOSBackAdapter = () => {
+  const coordinator = useService(MobileBackCoordinator);
+  const enabled = useLiveData(coordinator.canInteractivePop$);
+
+  useEffect(() => {
+    (enabled ? NavigationGesture.enable() : NavigationGesture.disable()).catch(
+      console.error
+    );
+  }, [enabled]);
+
+  useEffect(() => {
+    let disposed = false;
+    let remove = () => {};
+    NavigationGesture.addListener('gesture', event => {
+      coordinator.handleInteractivePhase(event.phase);
+    })
+      .then(handle => {
+        if (disposed) handle.remove().catch(console.error);
+        else
+          remove = () => {
+            handle.remove().catch(console.error);
+          };
+      })
+      .catch(console.error);
+    return () => {
+      disposed = true;
+      remove();
+      NavigationGesture.disable().catch(console.error);
+    };
+  }, [coordinator]);
+
+  return null;
+};
+
 export function App() {
   return (
     <Suspense>
       <FrameworkRoot framework={frameworkProvider}>
         <I18nProvider>
-          <AffineContext store={getCurrentStore()}>
-            <KeyboardThemeProvider />
-            <ModalConfigProvider>
+          <MobileModalConfigProvider>
+            <AffineContext store={getCurrentStore()}>
+              <KeyboardThemeProvider />
+              <IOSBackAdapter />
               <BlocksuiteMenuConfigProvider>
                 <RouterProvider
                   fallbackElement={<AppFallback />}
@@ -978,8 +1027,8 @@ export function App() {
                   future={future}
                 />
               </BlocksuiteMenuConfigProvider>
-            </ModalConfigProvider>
-          </AffineContext>
+            </AffineContext>
+          </MobileModalConfigProvider>
         </I18nProvider>
       </FrameworkRoot>
     </Suspense>
@@ -1011,30 +1060,7 @@ function createStoreManagerClient() {
 
   const { port1: authTokenChannelServer, port2: authTokenChannelClient } =
     new MessageChannel();
-  authTokenChannelServer.addEventListener('message', event => {
-    const { id, endpoint, action } = event.data as {
-      id?: string;
-      endpoint?: string;
-      action?: 'get' | 'refresh';
-    };
-    if (!id || !endpoint) return;
-    const tokenPromise =
-      action === 'refresh'
-        ? Auth.refreshAccessToken({ endpoint }).then(({ token }) => token)
-        : getValidAccessToken(endpoint);
-    tokenPromise
-      .then(token => authTokenChannelServer.postMessage({ id, token }))
-      .catch(error =>
-        authTokenChannelServer.postMessage({
-          id,
-          error:
-            typeof error === 'object' && error && 'code' in error
-              ? error.code
-              : 'AUTH_SESSION_TEMPORARILY_UNAVAILABLE',
-        })
-      );
-  });
-  authTokenChannelServer.start();
+  serveAuthRequests(authTokenChannelServer, authRequestProvider);
   worker.postMessage(
     { type: 'auth-access-token-channel', port: authTokenChannelClient },
     [authTokenChannelClient]

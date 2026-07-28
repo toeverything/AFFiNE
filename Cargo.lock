@@ -76,9 +76,9 @@ dependencies = [
 
 [[package]]
 name = "affine_doc_loader"
-version = "0.1.2"
+version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6af9fa0b8359900e4c150b717e837eec813f29ee6981fa72d83e671974c0f78f"
+checksum = "1bd208d52725dd0c63583b171ffc3121a60d7686bacedfee5c135f9c0c58d00b"
 dependencies = [
  "nanoid 0.5.0",
  "pulldown-cmark 0.13.1",
@@ -90,13 +90,14 @@ dependencies = [
 
 [[package]]
 name = "affine_importer"
-version = "0.1.1"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0a698069c4f0ae26bbc3c07deaf84bb0d55b0ed80dae44d6879ca1bf63eee8e9"
+checksum = "5826d670f6d43faa7809ef6a06d4a8c5ff493b970399c5c3c5659d25e572746b"
 dependencies = [
  "affine_doc_loader",
  "chrono",
  "nanoid 0.5.0",
+ "pulldown-cmark 0.13.1",
  "serde",
  "serde_json",
  "sha2 0.11.0",
@@ -164,6 +165,7 @@ dependencies = [
  "affine_nbstore",
  "affine_preview",
  "affine_sqlite_v1",
+ "bytes",
  "chrono",
  "hex",
  "infer",

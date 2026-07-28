@@ -1,6 +1,5 @@
 import {
   AnimatedFolderIcon,
-  IconButton,
   MenuItem,
   MenuSeparator,
   MenuSub,
@@ -12,8 +11,8 @@ import type {
   NavigationPanelTreeNodeIcon,
   NodeOperation,
 } from '@affine/core/desktop/components/navigation-panel';
+import { waitForRootDocReady } from '@affine/core/mobile/utils';
 import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
-import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/favorite';
 import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { NavigationPanelService } from '@affine/core/modules/navigation-panel';
 import {
@@ -28,24 +27,22 @@ import {
   FolderIcon,
   LayerIcon,
   PageIcon,
-  PlusIcon,
   PlusThickIcon,
   RemoveFolderIcon,
   TagsIcon,
 } from '@blocksuite/icons/rc';
 import { useLiveData, useService, useServices } from '@toeverything/infra';
 import { difference } from 'lodash-es';
-import { useCallback, useMemo } from 'react';
+import { type ReactNode, useCallback, useMemo } from 'react';
 
 import { AddItemPlaceholder } from '../../layouts/add-item-placeholder';
+import { MobileNavigationMenuItems } from '../../menu-host';
 import { NavigationPanelTreeNode } from '../../tree/node';
 import { NavigationPanelCollectionNode } from '../collection';
 import { NavigationPanelDocNode } from '../doc';
 import { NavigationPanelTagNode } from '../tag';
 import { FolderCreateTip, FolderRenameSubMenu } from './dialog';
 import { FavoriteFolderOperation } from './operations';
-
-const ROOT_DOC_READY_TIMEOUT_MS = 8_000;
 
 export const NavigationPanelFolderNode = ({
   nodeId,
@@ -132,194 +129,39 @@ const NavigationPanelFolderIcon: NavigationPanelTreeNodeIcon = ({
   />
 );
 
-const NavigationPanelFolderNodeFolder = ({
-  node,
-  operations: additionalOperations,
-  parentPath,
+const NavigationPanelFolderMenu = ({
+  nodeId,
+  name,
+  handleDelete,
+  handleRename,
+  handleCreateSubfolder,
+  handleAddToFolder,
+  createSubTipRenderer,
+  additionalOperations,
 }: {
-  node: FolderNode;
-  operations?: NodeOperation[];
-  parentPath: string[];
+  nodeId: string;
+  name: string;
+  handleDelete: () => void;
+  handleRename: (name: string) => void;
+  handleCreateSubfolder: (name: string) => void;
+  handleAddToFolder: (type: 'doc' | 'collection' | 'tag') => void;
+  createSubTipRenderer: (props: { input: string }) => ReactNode;
+  additionalOperations?: NodeOperation[];
 }) => {
   const t = useI18n();
-  const { workspaceService, featureFlagService, workspaceDialogService } =
-    useServices({
-      WorkspaceService,
-      CompatibleFavoriteItemsAdapter,
-      FeatureFlagService,
-      WorkspaceDialogService,
-    });
-  const name = useLiveData(node.name$);
-  const enableEmojiIcon = useLiveData(
-    featureFlagService.flags.enable_emoji_folder_icon.$
-  );
-  const navigationPanelService = useService(NavigationPanelService);
-  const path = useMemo(
-    () => [...parentPath, `folder-${node.id}`],
-    [parentPath, node.id]
-  );
-  const collapsed = useLiveData(navigationPanelService.collapsed$(path));
-  const setCollapsed = useCallback(
-    (value: boolean) => {
-      navigationPanelService.setCollapsed(path, value);
-    },
-    [navigationPanelService, path]
-  );
-
-  const { createPage } = usePageHelper(
-    workspaceService.workspace.docCollection
-  );
-  const handleDelete = useCallback(() => {
-    node.delete();
-    track.$.navigationPanel.organize.deleteOrganizeItem({
-      type: 'folder',
-    });
-    notify.success({
-      title: t['com.affine.rootAppSidebar.organize.delete.notify-title']({
-        name,
-      }),
-      message: t['com.affine.rootAppSidebar.organize.delete.notify-message'](),
-    });
-  }, [name, node, t]);
-
-  const children = useLiveData(node.sortedChildren$);
-
-  const handleRename = useCallback(
-    (newName: string) => {
-      node.rename(newName);
-    },
-    [node]
-  );
-
-  const handleNewDoc = useAsyncCallback(async () => {
-    try {
-      await Promise.race([
-        workspaceService.workspace.engine.doc.waitForDocLoaded(
-          workspaceService.workspace.id
-        ),
-        new Promise((_, reject) =>
-          window.setTimeout(
-            () => reject(new Error('Workspace root doc is not loaded')),
-            ROOT_DOC_READY_TIMEOUT_MS
-          )
-        ),
-      ]).catch(error => {
-        console.warn(
-          'Workspace root doc is not loaded before creating doc',
-          error
-        );
-      });
-
-      const newDoc = createPage();
-      node.createLink('doc', newDoc.id, node.indexAt('before'));
-      track.$.navigationPanel.folders.createDoc();
-      track.$.navigationPanel.organize.createOrganizeItem({
-        type: 'link',
-        target: 'doc',
-      });
-      setCollapsed(false);
-    } catch (error) {
-      console.error('Failed to create folder doc', error);
-      notify.error({
-        title: 'Failed to create doc',
-        message: 'Please try again.',
-      });
-    }
-  }, [createPage, node, setCollapsed, workspaceService.workspace]);
-
-  const handleCreateSubfolder = useCallback(
-    (name: string) => {
-      node.createFolder(name, node.indexAt('before'));
-      track.$.navigationPanel.organize.createOrganizeItem({ type: 'folder' });
-      setCollapsed(false);
-    },
-    [node, setCollapsed]
-  );
-
-  const handleAddToFolder = useCallback(
-    (type: 'doc' | 'collection' | 'tag') => {
-      const initialIds = children
-        .filter(node => node.type$.value === type)
-        .map(node => node.data$.value)
-        .filter(Boolean) as string[];
-      const selector =
-        type === 'doc'
-          ? 'doc-selector'
-          : type === 'collection'
-            ? 'collection-selector'
-            : 'tag-selector';
-      workspaceDialogService.open(
-        selector,
-        {
-          init: initialIds,
-        },
-        selectedIds => {
-          if (selectedIds === undefined) {
-            return;
-          }
-          const newItemIds = difference(selectedIds, initialIds);
-          const removedItemIds = difference(initialIds, selectedIds);
-          const removedItems = children.filter(
-            node =>
-              !!node.data$.value && removedItemIds.includes(node.data$.value)
-          );
-
-          newItemIds.forEach(id => {
-            node.createLink(type, id, node.indexAt('after'));
-          });
-          removedItems.forEach(node => node.delete());
-          const updated = newItemIds.length + removedItems.length;
-          updated && setCollapsed(false);
-        }
-      );
-      track.$.navigationPanel.organize.createOrganizeItem({
-        type: 'link',
-        target: type,
-      });
-    },
-    [children, node, setCollapsed, workspaceDialogService]
-  );
-
-  const createSubTipRenderer = useCallback(
-    ({ input }: { input: string }) => {
-      return <FolderCreateTip input={input} parentName={name} />;
-    },
-    [name]
-  );
-
-  const folderOperations = useMemo(() => {
-    return [
-      {
-        index: 0,
-        inline: true,
-        view: (
-          <IconButton
-            size="16"
-            onClick={handleNewDoc}
-            tooltip={t[
-              'com.affine.rootAppSidebar.explorer.organize-add-tooltip'
-            ]()}
-          >
-            <PlusIcon />
-          </IconButton>
-        ),
-      },
+  const operations = useMemo(
+    () => [
       {
         index: 98,
         view: (
           <FolderRenameSubMenu
             initialName={name}
             onConfirm={handleRename}
-            menuProps={{
-              triggerOptions: { 'data-testid': 'rename-folder' },
-            }}
+            menuProps={{ triggerOptions: { 'data-testid': 'rename-folder' } }}
           />
         ),
       },
-      {
-        index: 99,
-        view: <MenuSeparator />,
-      },
+      { index: 99, view: <MenuSeparator /> },
       {
         index: 100,
         view: (
@@ -343,9 +185,7 @@ const NavigationPanelFolderNodeFolder = ({
         index: 102,
         view: (
           <MenuSub
-            triggerOptions={{
-              prefixIcon: <PlusThickIcon />,
-            }}
+            triggerOptions={{ prefixIcon: <PlusThickIcon /> }}
             items={
               <>
                 <MenuItem
@@ -355,14 +195,14 @@ const NavigationPanelFolderNodeFolder = ({
                   {t['com.affine.rootAppSidebar.organize.folder.add-docs']()}
                 </MenuItem>
                 <MenuItem
-                  onClick={() => handleAddToFolder('tag')}
                   prefixIcon={<TagsIcon />}
+                  onClick={() => handleAddToFolder('tag')}
                 >
                   {t['com.affine.rootAppSidebar.organize.folder.add-tags']()}
                 </MenuItem>
                 <MenuItem
-                  onClick={() => handleAddToFolder('collection')}
                   prefixIcon={<LayerIcon />}
+                  onClick={() => handleAddToFolder('collection')}
                 >
                   {t[
                     'com.affine.rootAppSidebar.organize.folder.add-collections'
@@ -375,21 +215,16 @@ const NavigationPanelFolderNodeFolder = ({
           </MenuSub>
         ),
       },
-
       {
         index: 200,
-        view: node.id ? <FavoriteFolderOperation id={node.id} /> : null,
+        view: nodeId ? <FavoriteFolderOperation id={nodeId} /> : null,
       },
-
-      {
-        index: 9999,
-        view: <MenuSeparator key="menu-separator" />,
-      },
+      { index: 9999, view: <MenuSeparator /> },
       {
         index: 10000,
         view: (
           <MenuItem
-            type={'danger'}
+            type="danger"
             prefixIcon={<DeleteIcon />}
             onClick={handleDelete}
           >
@@ -397,25 +232,191 @@ const NavigationPanelFolderNodeFolder = ({
           </MenuItem>
         ),
       },
-    ];
-  }, [
-    createSubTipRenderer,
-    handleAddToFolder,
-    handleCreateSubfolder,
-    handleDelete,
-    handleNewDoc,
-    handleRename,
-    name,
-    node.id,
-    t,
-  ]);
+    ],
+    [
+      createSubTipRenderer,
+      handleAddToFolder,
+      handleCreateSubfolder,
+      handleDelete,
+      handleRename,
+      name,
+      nodeId,
+      t,
+    ]
+  );
+  return (
+    <MobileNavigationMenuItems
+      operations={[...(additionalOperations ?? []), ...operations]}
+    />
+  );
+};
 
-  const finalOperations = useMemo(() => {
-    if (additionalOperations) {
-      return [...additionalOperations, ...folderOperations];
+export const NavigationPanelFolderNodeMenu = ({
+  nodeId,
+  additionalOperations,
+}: {
+  nodeId: string;
+  additionalOperations?: NodeOperation[];
+}) => {
+  const t = useI18n();
+  const { organizeService, workspaceDialogService } = useServices({
+    OrganizeService,
+    WorkspaceDialogService,
+  });
+  const node = useLiveData(organizeService.folderTree.folderNode$(nodeId));
+  const name = useLiveData(node?.name$) ?? '';
+  const children = useLiveData(node?.sortedChildren$);
+
+  const handleDelete = useCallback(() => {
+    if (!node) return;
+    node.delete();
+    track.$.navigationPanel.organize.deleteOrganizeItem({ type: 'folder' });
+    notify.success({
+      title: t['com.affine.rootAppSidebar.organize.delete.notify-title']({
+        name,
+      }),
+      message: t['com.affine.rootAppSidebar.organize.delete.notify-message'](),
+    });
+  }, [name, node, t]);
+  const handleRename = useCallback(
+    (newName: string) => node?.rename(newName),
+    [node]
+  );
+  const handleCreateSubfolder = useCallback(
+    (newName: string) => {
+      if (!node) return;
+      node.createFolder(newName, node.indexAt('before'));
+      track.$.navigationPanel.organize.createOrganizeItem({ type: 'folder' });
+    },
+    [node]
+  );
+  const handleAddToFolder = useCallback(
+    (type: 'doc' | 'collection' | 'tag') => {
+      if (!node) return;
+      const currentChildren = children ?? [];
+      const initialIds = currentChildren
+        .filter(child => child.type$.value === type)
+        .map(child => child.data$.value)
+        .filter(Boolean) as string[];
+      const selector =
+        type === 'doc'
+          ? 'doc-selector'
+          : type === 'collection'
+            ? 'collection-selector'
+            : 'tag-selector';
+      workspaceDialogService.open(
+        selector,
+        { init: initialIds },
+        selectedIds => {
+          if (selectedIds === undefined) return;
+          const newItemIds = difference(selectedIds, initialIds);
+          const removedItemIds = difference(initialIds, selectedIds);
+          newItemIds.forEach(id =>
+            node.createLink(type, id, node.indexAt('after'))
+          );
+          currentChildren
+            .filter(
+              child =>
+                !!child.data$.value &&
+                removedItemIds.includes(child.data$.value)
+            )
+            .forEach(child => child.delete());
+        }
+      );
+      track.$.navigationPanel.organize.createOrganizeItem({
+        type: 'link',
+        target: type,
+      });
+    },
+    [children, node, workspaceDialogService]
+  );
+  const createSubTipRenderer = useCallback(
+    ({ input }: { input: string }) => (
+      <FolderCreateTip input={input} parentName={name} />
+    ),
+    [name]
+  );
+
+  if (!node) return null;
+  return (
+    <NavigationPanelFolderMenu
+      nodeId={nodeId}
+      name={name}
+      handleDelete={handleDelete}
+      handleRename={handleRename}
+      handleCreateSubfolder={handleCreateSubfolder}
+      handleAddToFolder={handleAddToFolder}
+      createSubTipRenderer={createSubTipRenderer}
+      additionalOperations={additionalOperations}
+    />
+  );
+};
+
+const NavigationPanelFolderNodeFolder = ({
+  node,
+  operations: additionalOperations,
+  parentPath,
+}: {
+  node: FolderNode;
+  operations?: NodeOperation[];
+  parentPath: string[];
+}) => {
+  const t = useI18n();
+  const { workspaceService, featureFlagService } = useServices({
+    WorkspaceService,
+    FeatureFlagService,
+  });
+  const name = useLiveData(node.name$);
+  const enableEmojiIcon = useLiveData(
+    featureFlagService.flags.enable_emoji_folder_icon.$
+  );
+  const navigationPanelService = useService(NavigationPanelService);
+  const path = useMemo(
+    () => [...parentPath, `folder-${node.id}`],
+    [parentPath, node.id]
+  );
+  const collapsed = useLiveData(navigationPanelService.collapsed$(path));
+  const setCollapsed = useCallback(
+    (value: boolean) => {
+      navigationPanelService.setCollapsed(path, value);
+    },
+    [navigationPanelService, path]
+  );
+
+  const { createPage } = usePageHelper(
+    workspaceService.workspace.docCollection
+  );
+  const children = useLiveData(node.sortedChildren$);
+
+  const handleNewDoc = useAsyncCallback(async () => {
+    try {
+      await waitForRootDocReady(workspaceService.workspace);
+      const newDoc = createPage();
+      node.createLink('doc', newDoc.id, node.indexAt('before'));
+      track.$.navigationPanel.folders.createDoc();
+      track.$.navigationPanel.organize.createOrganizeItem({
+        type: 'link',
+        target: 'doc',
+      });
+      setCollapsed(false);
+    } catch (error) {
+      console.error('Failed to create folder doc', error);
+      notify.error({
+        title: t['com.affine.mobile.create-doc.error.title'](),
+        message: t['com.affine.mobile.create-doc.error.message'](),
+      });
     }
-    return folderOperations;
-  }, [additionalOperations, folderOperations]);
+  }, [createPage, node, setCollapsed, t, workspaceService.workspace]);
+
+  const menuTarget = useMemo(
+    () => (
+      <NavigationPanelFolderNodeMenu
+        nodeId={node.id ?? ''}
+        additionalOperations={additionalOperations}
+      />
+    ),
+    [additionalOperations, node.id]
+  );
 
   const childrenOperations = useCallback(
     (type: string, node: FolderNode) => {
@@ -460,7 +461,7 @@ const NavigationPanelFolderNodeFolder = ({
       extractEmojiAsIcon={enableEmojiIcon}
       collapsed={collapsed}
       setCollapsed={handleCollapsedChange}
-      operations={finalOperations}
+      menuTarget={menuTarget}
       data-testid={`navigation-panel-folder-${node.id}`}
       aria-label={name}
       data-role="navigation-panel-folder"

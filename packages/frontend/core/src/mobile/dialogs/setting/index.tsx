@@ -131,23 +131,21 @@ const MobileSetting = ({
   onDeleteFinished?: () => void;
 }) => {
   const session = useService(AuthService).session;
-
-  useEffect(() => {
-    session.revalidate();
-  }, [session]);
+  const status = useLiveData(session.status$);
+  useEffect(() => session.revalidate(), [session]);
 
   return (
     <div className={styles.root}>
-      <UserSubscription />
       <UserProfile />
+      <UserSubscription />
+      <UserUsage />
+      {status === 'authenticated' ? <DevicesGroup /> : null}
       <AppearanceGroup />
       <AboutGroup />
       <ExperimentalFeatureSetting />
       <TeamPromotionCard />
       <SupportGroup />
       <OthersGroup />
-      <UserUsage />
-      <DevicesGroup />
       <DangerZoneGroup onDeleteFinished={onDeleteFinished} />
     </div>
   );

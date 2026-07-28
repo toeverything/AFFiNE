@@ -1,20 +1,19 @@
 import { canonicalAuthEndpoint } from '@affine/mobile-shared/auth/endpoint';
+import {
+  type AuthRequestProvider,
+  installAuthRequestProxy,
+} from '@affine/mobile-shared/auth/request';
 
 import { Auth } from './plugins/auth';
 
-type AccessTokenProvider = {
-  getValidAccessToken: (endpoint: string) => Promise<string | null>;
-  refreshAccessToken: (endpoint: string) => Promise<string>;
-};
-
-const defaultAccessTokenProvider: AccessTokenProvider = {
-  async getValidAccessToken(endpoint: string) {
+export const authRequestProvider: AuthRequestProvider = {
+  async getValidAccessToken(endpoint) {
     const { token } = await Auth.getValidAccessToken({
       endpoint: canonicalAuthEndpoint(endpoint),
     });
     return token ?? null;
   },
-  async refreshAccessToken(endpoint: string) {
+  async refreshAccessToken(endpoint) {
     const { token } = await Auth.refreshAccessToken({
       endpoint: canonicalAuthEndpoint(endpoint),
     });
@@ -22,239 +21,10 @@ const defaultAccessTokenProvider: AccessTokenProvider = {
   },
 };
 
-let accessTokenProvider: AccessTokenProvider = defaultAccessTokenProvider;
+installAuthRequestProxy(authRequestProvider);
 
-/**
- * Workers cannot call Capacitor plugins reliably. The nbstore worker should
- * replace this provider with a MessagePort bridge back to the main thread.
- */
-export function configureAccessTokenProvider(provider: AccessTokenProvider) {
-  accessTokenProvider = provider;
-}
-
-function authEndpointForUrl(url: string | URL) {
-  try {
-    const parsed = new URL(url, globalThis.location.origin);
-    return parsed.protocol === 'http:' || parsed.protocol === 'https:'
-      ? parsed.origin
-      : null;
-  } catch {
-    return null;
-  }
-}
-
-function shouldSkipStoredAuthToken(url: string | URL) {
-  try {
-    const { pathname } = new URL(url, globalThis.location.origin);
-    // Socket.IO authenticates via handshake.auth, not Authorization headers.
-    // Skipping avoids hanging worker XHR when Capacitor Auth is unavailable.
-    if (pathname.startsWith('/socket.io')) {
-      return true;
-    }
-    return [
-      '/api/auth/captcha',
-      '/api/auth/magic-link',
-      '/api/auth/open-app/sign-in',
-      '/api/auth/preflight',
-      '/api/auth/session/exchange',
-      '/api/auth/sign-in',
-      '/api/oauth/callback',
-      '/api/oauth/preflight',
-    ].includes(pathname);
-  } catch {
-    return false;
-  }
-}
-
-async function accessTokenForRequest(url: string | URL) {
-  const origin = authEndpointForUrl(url);
-  if (!origin || shouldSkipStoredAuthToken(url)) {
-    return null;
-  }
-  return getValidAccessToken(origin);
-}
-
-/**
- * the below code includes the custom fetch and xmlhttprequest implementation for ios webview.
- * should be included in the entry file of the app or webworker.
- */
-const rawFetch = globalThis.fetch;
-globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
-  const request = new Request(input, init);
-  const retry = request.clone();
-
-  const origin = authEndpointForUrl(request.url);
-
-  const token = await accessTokenForRequest(request.url);
-  if (token) {
-    request.headers.set('Authorization', `Bearer ${token}`);
-  }
-
-  const response = await rawFetch(request);
-  if (
-    response.status !== 401 ||
-    !origin ||
-    shouldSkipStoredAuthToken(request.url)
-  ) {
-    return response;
-  }
-  const body = await response
-    .clone()
-    .json()
-    .catch(() => null);
-  if (body?.code !== 'ACCESS_TOKEN_EXPIRED') return response;
-  const refreshed = await accessTokenProvider.refreshAccessToken(origin);
-  retry.headers.set('Authorization', `Bearer ${refreshed}`);
-  return rawFetch(retry);
-};
-
-const rawXMLHttpRequest = globalThis.XMLHttpRequest;
-const xhrRequestUrls = new WeakMap<XMLHttpRequest, string>();
-globalThis.XMLHttpRequest = class extends rawXMLHttpRequest {
-  private request:
-    | {
-        method: string;
-        url: string | URL;
-        async: boolean;
-        username?: string | null;
-        password?: string | null;
-      }
-    | undefined;
-  private readonly headers = new Map<string, string>();
-  private requestBody?: Document | XMLHttpRequestBodyInit | null;
-  private replaying = false;
-  private hasReplayed = false;
-
-  constructor() {
-    super();
-    const suppressExpiredResponse = (event: Event) => {
-      if (this.replaying) event.stopImmediatePropagation();
-    };
-    this.addEventListener('load', suppressExpiredResponse, true);
-    this.addEventListener('loadend', suppressExpiredResponse, true);
-    this.addEventListener(
-      'readystatechange',
-      event => {
-        if (
-          this.readyState !== rawXMLHttpRequest.DONE ||
-          this.status !== 401 ||
-          this.replaying ||
-          this.hasReplayed ||
-          !this.request?.async
-        ) {
-          return;
-        }
-        let code: unknown;
-        try {
-          code =
-            this.responseType === 'json'
-              ? this.response?.code
-              : JSON.parse(this.responseText)?.code;
-        } catch {
-          return;
-        }
-        if (code !== 'ACCESS_TOKEN_EXPIRED') return;
-        event.stopImmediatePropagation();
-        this.replaying = true;
-        this.hasReplayed = true;
-        this.replayWithFreshToken().catch(() => {});
-      },
-      true
-    );
-  }
-
-  override open(
-    method: string,
-    url: string | URL,
-    async: boolean = true,
-    username?: string | null,
-    password?: string | null
-  ): void {
-    this.request = { method, url, async, username, password };
-    this.headers.clear();
-    this.requestBody = undefined;
-    this.replaying = false;
-    this.hasReplayed = false;
-    xhrRequestUrls.set(this, url.toString());
-    return super.open(
-      method,
-      url,
-      async,
-      username ?? undefined,
-      password ?? undefined
-    );
-  }
-
-  override setRequestHeader(name: string, value: string): void {
-    this.headers.set(name, value);
-    super.setRequestHeader(name, value);
-  }
-
-  override send(body?: Document | XMLHttpRequestBodyInit | null): void {
-    this.requestBody = body;
-    const requestUrl = xhrRequestUrls.get(this);
-    const targetUrl = requestUrl ?? globalThis.location.href;
-
-    accessTokenForRequest(targetUrl)
-      .then(token => {
-        if (token) {
-          super.setRequestHeader('Authorization', `Bearer ${token}`);
-        }
-        return super.send(body);
-      })
-      .catch(() => {
-        this.dispatchEvent(new Event('error'));
-        this.dispatchEvent(new Event('loadend'));
-      });
-  }
-
-  private async replayWithFreshToken() {
-    const request = this.request;
-    if (!request) return this.failReplay();
-    const origin = authEndpointForUrl(request.url);
-    if (!origin) return this.failReplay();
-    try {
-      const token = await accessTokenProvider.refreshAccessToken(origin);
-      const responseType = this.responseType;
-      const timeout = this.timeout;
-      const withCredentials = this.withCredentials;
-      super.open(
-        request.method,
-        request.url,
-        true,
-        request.username ?? undefined,
-        request.password ?? undefined
-      );
-      this.replaying = false;
-      this.headers.forEach((value, name) => {
-        if (name.toLowerCase() !== 'authorization') {
-          super.setRequestHeader(name, value);
-        }
-      });
-      super.setRequestHeader('Authorization', `Bearer ${token}`);
-      this.responseType = responseType;
-      this.timeout = timeout;
-      this.withCredentials = withCredentials;
-      super.send(this.requestBody);
-    } catch {
-      this.failReplay();
-    }
-  }
-
-  private failReplay() {
-    this.replaying = false;
-    this.dispatchEvent(new Event('readystatechange'));
-    this.dispatchEvent(new Event('error'));
-    this.dispatchEvent(new Event('loadend'));
-  }
-};
-
-export async function getValidAccessToken(
-  endpoint: string
-): Promise<string | null> {
-  return accessTokenProvider.getValidAccessToken(
-    canonicalAuthEndpoint(endpoint)
-  );
+export function getValidAccessToken(endpoint: string) {
+  return authRequestProvider.getValidAccessToken(endpoint);
 }
 
 export async function clearEndpointSession(endpoint: string) {

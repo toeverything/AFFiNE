@@ -1,5 +1,6 @@
 import { LinkExtension } from '@blocksuite/affine-inline-link';
 import { textKeymap } from '@blocksuite/affine-inline-preset';
+import type { AffineReference } from '@blocksuite/affine-inline-reference';
 import type {
   ListBlockModel,
   ParagraphBlockModel,
@@ -312,6 +313,16 @@ describe('hotkey/bracket/linked-page', () => {
     const richText = getRichTextByBlockId(paragraphId);
     expect(richText.querySelectorAll('affine-reference').length).toBe(2);
     expect(richText.inlineEditor.yTextString.length).toBe(2);
+
+    collection.removeDoc(linkedDoc.id);
+    await wait();
+    expect(collection.docs.has(linkedDoc.id)).toBe(false);
+    const danglingReferences =
+      richText.querySelectorAll<AffineReference>('affine-reference');
+    expect(danglingReferences.length).toBe(2);
+    expect([...danglingReferences].every(reference => !reference.refMeta)).toBe(
+      true
+    );
   });
 });
 

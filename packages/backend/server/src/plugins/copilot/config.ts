@@ -191,6 +191,7 @@ declare global {
           Array<'openai' | 'anthropic' | 'gemini' | 'fal'>
         >;
         allowCustomEndpoint: ConfigItem<boolean>;
+        allowPrivateEndpoint: ConfigItem<boolean>;
       };
       unsplash: ConfigItem<{
         key: string;
@@ -231,6 +232,11 @@ defineModuleConfig('copilot', {
   },
   'byok.allowCustomEndpoint': {
     desc: 'Whether workspace BYOK custom endpoints are accepted.',
+    default: false,
+    shape: z.boolean(),
+  },
+  'byok.allowPrivateEndpoint': {
+    desc: 'Whether workspace BYOK custom endpoints may resolve to private network targets. Enabling this allows workspace owners and admins to send provider probe requests to the private network.',
     default: false,
     shape: z.boolean(),
   },

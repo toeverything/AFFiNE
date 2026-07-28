@@ -29,11 +29,16 @@ private struct StoredAuthTokenPair: Codable {
 
 private struct AuthErrorResponse: Decodable {
   let code: String?
+  let name: String?
+  let message: String?
 }
 
-private struct AuthServerError: Error {
+private struct AuthServerError: Error, CustomStringConvertible {
   let code: String?
   let statusCode: Int
+  let message: String
+
+  var description: String { message }
 
   var permanentlyInvalidatesSession: Bool {
     switch code {
@@ -44,6 +49,14 @@ private struct AuthServerError: Error {
       return false
     }
   }
+}
+
+private func authServerError(_ data: Data, statusCode: Int) -> AuthServerError {
+  let response = try? JSONDecoder().decode(AuthErrorResponse.self, from: data)
+  return AuthServerError(
+    code: response?.code ?? response?.name,
+    statusCode: statusCode,
+    message: response?.message ?? "Authentication request failed with status \(statusCode)")
 }
 
 private struct AuthOperationCancelled: Error {}
@@ -247,9 +260,7 @@ private actor AuthSessionBroker {
           throw AuthError.internalError
         }
         if response.statusCode < 400 { return data }
-        let error = AuthServerError(
-          code: try? JSONDecoder().decode(AuthErrorResponse.self, from: data).code,
-          statusCode: response.statusCode)
+        let error = authServerError(data, statusCode: response.statusCode)
         if (response.statusCode == 429 || response.statusCode >= 500) && attempt < maxAttempts - 1 {
           try await Task.sleep(nanoseconds: retryDelayNanoseconds(response, attempt: attempt))
           continue
@@ -418,13 +429,12 @@ public class AuthPlugin: CAPPlugin, CAPBridgedPlugin {
   }
 
   private func nativeAuthErrorData(code: String?, statusCode: Int) -> Data {
-    let name = statusCode == 429 ? "TOO_MANY_REQUEST" : (code ?? "INTERNAL_SERVER_ERROR")
-    let type = statusCode == 429 ? "TOO_MANY_REQUESTS" : name
+    let name = statusCode == 429 ? "TOO_MANY_REQUEST" : (code ?? "IOS_NATIVE_AUTH_FAILED")
     let message = statusCode == 429 ? "Too many requests." : "iOS native auth failed."
     let response: [String: Any] = [
       "status": statusCode,
-      "code": code ?? name,
-      "type": type,
+      "code": name,
+      "type": name,
       "name": name,
       "message": message,
     ]
@@ -448,7 +458,7 @@ public class AuthPlugin: CAPPlugin, CAPBridgedPlugin {
     if statusCode == nil && !isResponseError {
       name = "NETWORK_ERROR"
     } else {
-      name = "INTERNAL_SERVER_ERROR"
+      name = "IOS_NATIVE_AUTH_FAILED"
     }
     let message = "iOS native auth failed at \(action)" + (statusCode.map { " (HTTP \($0))" } ?? "") + ": \(rawDetail)"
     let response: [String: Any] = [
@@ -584,12 +594,7 @@ public class AuthPlugin: CAPPlugin, CAPBridgedPlugin {
           ], body: ["email": email, "token": token, "client_nonce": clientNonce])
 
         if response.statusCode >= 400 {
-          if let textBody = String(data: data, encoding: .utf8) {
-            call.reject(textBody)
-          } else {
-            call.reject("Failed to sign in")
-          }
-          return
+          throw authServerError(data, statusCode: response.statusCode)
         }
 
         try await self.exchangeSession(endpoint, data)
@@ -615,12 +620,7 @@ public class AuthPlugin: CAPPlugin, CAPBridgedPlugin {
           ], body: ["code": code, "state": state, "client_nonce": clientNonce])
 
         if response.statusCode >= 400 {
-          if let textBody = String(data: data, encoding: .utf8) {
-            call.reject(textBody)
-          } else {
-            call.reject("Failed to sign in")
-          }
-          return
+          throw authServerError(data, statusCode: response.statusCode)
         }
 
         try await self.exchangeSession(endpoint, data)
@@ -646,7 +646,8 @@ public class AuthPlugin: CAPPlugin, CAPBridgedPlugin {
             "x-affine-client-kind": "native",
             "x-captcha-token": verifyToken,
             "x-captcha-challenge": challenge,
-            "x-captcha-provider": verifyToken == nil ? nil : (challenge == nil ? "turnstile" : "hashcash"),
+            "x-captcha-provider": verifyToken == nil
+              ? nil : (challenge == nil ? "turnstile" : "hashcash"),
           ], body: ["email": email, "password": password])
 
         if response.statusCode >= 400 {
@@ -695,12 +696,7 @@ public class AuthPlugin: CAPPlugin, CAPBridgedPlugin {
           ], body: ["code": code])
 
         if response.statusCode >= 400 {
-          if let textBody = String(data: data, encoding: .utf8) {
-            call.reject(textBody)
-          } else {
-            call.reject("Failed to sign in")
-          }
-          return
+          throw authServerError(data, statusCode: response.statusCode)
         }
 
         try await self.exchangeSession(endpoint, data)
@@ -812,7 +808,8 @@ public class AuthPlugin: CAPPlugin, CAPBridgedPlugin {
     let normalizedHost = host.lowercased()
 
     HTTPCookieStorage.shared.cookies?.forEach { cookie in
-      let domain = cookie.domain.lowercased().trimmingCharacters(in: CharacterSet(charactersIn: "."))
+      let domain = cookie.domain.lowercased().trimmingCharacters(
+        in: CharacterSet(charactersIn: "."))
       let domainMatches = normalizedHost == domain || normalizedHost.hasSuffix(".\(domain)")
       if domainMatches && authCookieNames.contains(cookie.name) {
         HTTPCookieStorage.shared.deleteCookie(cookie)

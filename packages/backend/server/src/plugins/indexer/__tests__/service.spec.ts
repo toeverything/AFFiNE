@@ -1887,12 +1887,9 @@ test('should delete doc work', async t => {
   t.is(result4.nodes.length, 1);
   t.deepEqual(result4.nodes[0].fields.docId, [docId2]);
 
-  const count = module.queue.count('copilot.embedding.deleteDoc');
-
   await indexerService.deleteDoc(workspaceId, docId1, {
     refresh: true,
   });
-  t.is(module.queue.count('copilot.embedding.deleteDoc'), count + 1);
 
   // make sure the docId1 is deleted
   result1 = await indexerService.search({

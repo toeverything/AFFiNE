@@ -227,18 +227,6 @@
       "desc": "The minimum time interval in milliseconds of creating a new history snapshot when doc get updated."
     }
   },
-  "permission": {
-    "readModel": {
-      "type": "String",
-      "desc": "Permission data source for Rust evaluation",
-      "env": "AFFINE_PERMISSION_READ_MODEL"
-    },
-    "fallbackLegacyLoader": {
-      "type": "Boolean",
-      "desc": "Fallback from projection loader to legacy loader when projection input loading fails",
-      "env": "AFFINE_PERMISSION_FALLBACK_LEGACY_LOADER"
-    }
-  },
   "storages": {
     "avatar.publicPath": {
       "type": "String",
@@ -393,6 +381,10 @@
       "type": "Boolean",
       "desc": "Whether workspace BYOK custom endpoints are accepted."
     },
+    "byok.allowPrivateEndpoint": {
+      "type": "Boolean",
+      "desc": "Whether workspace BYOK custom endpoints may resolve to private network targets. Enabling this allows workspace owners and admins to send provider probe requests to the private network."
+    },
     "providers.profiles": {
       "type": "Array",
       "desc": "The profile list for copilot providers."
@@ -494,7 +486,7 @@
     },
     "providers.oidc": {
       "type": "Object",
-      "desc": "OIDC OAuth provider config",
+      "desc": "OIDC OAuth provider config. Private network access requires allowPrivateNetwork: true",
       "link": "https://openid.net/specs/openid-connect-core-1_0.html"
     },
     "providers.apple": {

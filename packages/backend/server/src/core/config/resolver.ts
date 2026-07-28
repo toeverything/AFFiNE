@@ -14,7 +14,7 @@ import { GraphQLJSON, GraphQLJSONObject } from 'graphql-scalars';
 
 import { Config, hasNewerVersion, URLHelper } from '../../base';
 import { Namespace } from '../../env';
-import { Feature, type WorkspaceFeatureName } from '../../models';
+import { Feature } from '../../models';
 import { CurrentUser, Public } from '../auth';
 import { Admin } from '../common';
 import { AvailableUserFeatureConfig } from '../features';
@@ -167,13 +167,6 @@ export class ServerFeatureConfigResolver extends AvailableUserFeatureConfig {
   })
   override availableUserFeatures() {
     return super.availableUserFeatures();
-  }
-
-  @ResolveField(() => [Feature], {
-    description: 'Workspace features available for admin configuration',
-  })
-  availableWorkspaceFeatures(): WorkspaceFeatureName[] {
-    return [];
   }
 }
 

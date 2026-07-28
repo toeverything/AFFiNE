@@ -281,9 +281,11 @@ export class DocSyncPeer {
           (await this.syncMetadata.getPeerPulledRemoteClock(this.peerId, docId))
             ?.timestamp ?? null;
         const remoteClock = this.status.remoteClocks.get(docId);
+        const hasRemoteClock = remoteClock.getTime() > 0;
         const hasPulled = pulled !== null && pulled.getTime() > 0;
-        const shouldPull = remoteClock
-          ? !hasPulled || pulled.getTime() < remoteClock.getTime()
+        const shouldPull = hasRemoteClock
+          ? !hasPulled ||
+            (pulled !== null && pulled.getTime() < remoteClock.getTime())
           : this.isPriorityDoc(docId) && (!clock || !hasPulled);
         if (shouldPull) {
           await this.jobs.pull(docId, signal);

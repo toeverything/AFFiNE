@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS runtime_leases (
 CREATE INDEX IF NOT EXISTS runtime_leases_expires_at_idx
   ON runtime_leases (expires_at);
 
-CREATE TABLE IF NOT EXISTS blob_reconciliation_runs (
+CREATE TABLE IF NOT EXISTS storage_reconciliation_runs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   kind TEXT NOT NULL,
   mode TEXT NOT NULL,
@@ -54,10 +54,10 @@ CREATE TABLE IF NOT EXISTS blob_reconciliation_runs (
   metadata JSONB NOT NULL DEFAULT '{}'
 );
 
-CREATE INDEX IF NOT EXISTS blob_reconciliation_runs_workspace_idx
-  ON blob_reconciliation_runs (workspace_id, started_at DESC);
+CREATE INDEX IF NOT EXISTS storage_reconciliation_runs_workspace_idx
+  ON storage_reconciliation_runs (workspace_id, started_at DESC);
 
-CREATE TABLE IF NOT EXISTS blob_reconciliation_checkpoints (
+CREATE TABLE IF NOT EXISTS storage_reconciliation_checkpoints (
   kind TEXT NOT NULL,
   scope TEXT NOT NULL,
   status TEXT NOT NULL,
@@ -70,8 +70,28 @@ CREATE TABLE IF NOT EXISTS blob_reconciliation_checkpoints (
   PRIMARY KEY (kind, scope)
 );
 
-CREATE INDEX IF NOT EXISTS blob_reconciliation_checkpoints_status_idx
-  ON blob_reconciliation_checkpoints (kind, status, updated_at DESC);
+CREATE INDEX IF NOT EXISTS storage_reconciliation_checkpoints_status_idx
+  ON storage_reconciliation_checkpoints (kind, status, updated_at DESC);
+
+CREATE TABLE IF NOT EXISTS document_cleanup_candidates (
+  workspace_id TEXT NOT NULL,
+  doc_id TEXT NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('marked', 'effects_pending', 'failed')),
+  missing_since TIMESTAMPTZ(3) NOT NULL,
+  last_observed_missing_at TIMESTAMPTZ(3) NOT NULL,
+  last_doc_activity_at TIMESTAMPTZ(3),
+  cleanup_payload JSONB NOT NULL DEFAULT '{}',
+  attempt_count INTEGER NOT NULL DEFAULT 0 CHECK (attempt_count >= 0),
+  error TEXT,
+  updated_at TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (workspace_id, doc_id)
+);
+
+CREATE INDEX IF NOT EXISTS document_cleanup_candidates_status_missing_idx
+  ON document_cleanup_candidates (status, missing_since);
+
+CREATE INDEX IF NOT EXISTS document_cleanup_candidates_workspace_status_idx
+  ON document_cleanup_candidates (workspace_id, status, updated_at DESC);
 
 CREATE TABLE IF NOT EXISTS doc_blob_refs (
   workspace_id TEXT NOT NULL,
