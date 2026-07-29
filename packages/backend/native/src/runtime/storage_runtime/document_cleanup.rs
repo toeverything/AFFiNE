@@ -311,9 +311,12 @@ async fn current_activity(
 }
 
 fn root_contains(root: CurrentDoc, doc_id: &str) -> RuntimeResult<bool> {
-  let ids = affine_doc_loader::get_doc_ids_from_binary(root.blob, true)
+  let projection = affine_doc_loader::project_workspace_root(root.blob, true)
     .map_err(|err| RuntimeError::invalid_state(format!("Document cleanup root parse failed: {err}")))?;
-  Ok(ids.iter().any(|id| id == doc_id))
+  if !projection.complete {
+    return Err(RuntimeError::invalid_state("Document cleanup root doc is incomplete"));
+  }
+  Ok(projection.doc_ids.iter().any(|id| id == doc_id))
 }
 
 async fn delete_doc_rows(tx: &mut Transaction<'_, Postgres>, candidate: &Candidate) -> RuntimeResult<i64> {
@@ -1024,6 +1027,91 @@ mod tests {
       .fetch_one(&pool)
       .await?,
       1
+    );
+
+    sqlx::query("UPDATE snapshots SET blob = $2 WHERE workspace_id = $1 AND guid = 'live-doc'")
+      .bind(&workspace_id)
+      .bind(vec![0xff_u8])
+      .execute(&pool)
+      .await?;
+    let partial = runtime
+      .rebuild_workspace_doc_blob_refs(workspace_id.clone(), 1)
+      .await
+      .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+    assert_eq!(
+      (partial.failed_docs, partial.next_cursor.as_deref()),
+      (1, Some("live-doc"))
+    );
+    let partial_checkpoint = sqlx::query(
+      "SELECT status, metadata FROM storage_reconciliation_checkpoints WHERE kind = 'doc_blob_refs' AND scope = $1",
+    )
+    .bind(&workspace_id)
+    .fetch_one(&pool)
+    .await?;
+    assert_eq!(partial_checkpoint.get::<String, _>("status"), "running");
+    assert_eq!(partial_checkpoint.get::<Value, _>("metadata")["failedDocs"], 1);
+
+    sqlx::query(
+      "UPDATE storage_reconciliation_checkpoints SET status = 'failed', metadata = '{\"parserVersion\":1}' WHERE kind \
+       = 'doc_blob_refs' AND scope = $1",
+    )
+    .bind(&workspace_id)
+    .execute(&pool)
+    .await?;
+    let resumed = runtime
+      .rebuild_workspace_doc_blob_refs(workspace_id.clone(), 1)
+      .await
+      .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+    assert_eq!((resumed.failed_docs, resumed.next_cursor), (0, None));
+    let resumed_checkpoint = sqlx::query(
+      "SELECT status, metadata FROM storage_reconciliation_checkpoints WHERE kind = 'doc_blob_refs' AND scope = $1",
+    )
+    .bind(&workspace_id)
+    .fetch_one(&pool)
+    .await?;
+    assert_eq!(resumed_checkpoint.get::<String, _>("status"), "failed");
+    assert_eq!(resumed_checkpoint.get::<Value, _>("metadata")["failedDocs"], 1);
+
+    sqlx::query("UPDATE snapshots SET blob = $2 WHERE workspace_id = $1 AND guid = 'live-doc'")
+      .bind(&workspace_id)
+      .bind(affine_doc_loader::build_full_doc("Live", "", "live-doc")?)
+      .execute(&pool)
+      .await?;
+    let recovered_projection = runtime
+      .rebuild_workspace_doc_blob_refs(workspace_id.clone(), 100)
+      .await
+      .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+    assert_eq!(recovered_projection.failed_docs, 0);
+    assert_eq!(
+      sqlx::query_scalar::<_, String>(
+        "SELECT status FROM storage_reconciliation_checkpoints WHERE kind = 'doc_blob_refs' AND scope = $1",
+      )
+      .bind(&workspace_id)
+      .fetch_one(&pool)
+      .await?,
+      "completed"
+    );
+
+    sqlx::query(
+      "UPDATE storage_reconciliation_checkpoints SET status = 'failed', cursor = '{\"lastDocId\":\"live-doc\"}', \
+       metadata = '{\"parserVersion\":0,\"failedDocs\":99}' WHERE kind = 'doc_blob_refs' AND scope = $1",
+    )
+    .bind(&workspace_id)
+    .execute(&pool)
+    .await?;
+    let parser_upgrade = runtime
+      .rebuild_workspace_doc_blob_refs(workspace_id.clone(), 100)
+      .await
+      .map_err(|err| anyhow::anyhow!(err.to_string()))?;
+    assert_eq!((parser_upgrade.scanned_docs, parser_upgrade.failed_docs), (2, 0));
+    assert_eq!(
+      sqlx::query_scalar::<_, String>(
+        "SELECT status FROM storage_reconciliation_checkpoints WHERE kind = 'doc_blob_refs' AND scope = $1",
+      )
+      .bind(&workspace_id)
+      .fetch_one(&pool)
+      .await?,
+      "completed"
     );
 
     let second = reconcile_workspace(&runtime, &workspace_id).await?;

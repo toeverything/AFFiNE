@@ -101,6 +101,9 @@ fn merge_current_doc(
   if snapshot.is_none() && updates.is_empty() {
     return Ok(None);
   }
+  if updates.is_empty() {
+    return Ok(snapshot);
+  }
   let mut doc = Doc::default();
   let mut updated_at = snapshot
     .as_ref()
@@ -136,8 +139,12 @@ async fn load_workspace_live_doc_ids(pool: &PgPool, workspace_id: &str) -> Runti
 
 fn workspace_live_doc_ids(root: Option<CurrentDoc>) -> RuntimeResult<Vec<String>> {
   let root = root.ok_or_else(|| RuntimeError::invalid_state("Workspace root doc is missing"))?;
-  let mut ids = affine_doc_loader::get_doc_ids_from_binary(root.blob, true)
+  let projection = affine_doc_loader::project_workspace_root(root.blob, true)
     .map_err(|err| RuntimeError::invalid_state(format!("Workspace root doc parse failed: {err}")))?;
+  if !projection.complete {
+    return Err(RuntimeError::invalid_state("Workspace root doc is incomplete"));
+  }
+  let mut ids = projection.doc_ids;
   ids.sort();
   ids.dedup();
   Ok(ids)
@@ -1552,6 +1559,18 @@ mod tests {
         workspace_id: "workspace".to_string(),
         doc_id: "workspace".to_string(),
         blob: vec![0xff],
+        updated_at: Utc::now(),
+      }))
+      .is_err()
+    );
+    assert!(
+      workspace_live_doc_ids(Some(CurrentDoc {
+        workspace_id: "workspace".to_string(),
+        doc_id: "workspace".to_string(),
+        blob: vec![
+          1, 1, 1, 1, 40, 0, 1, 0, 11, 115, 117, 98, 95, 109, 97, 112, 95, 107, 101, 121, 1, 119, 13, 115, 117, 98, 95,
+          109, 97, 112, 95, 118, 97, 108, 117, 101, 0,
+        ],
         updated_at: Utc::now(),
       }))
       .is_err()

@@ -248,63 +248,70 @@ export class WorkspaceBlobResolver {
     }
 
     const metadata = { contentType: mime, contentLength: size };
-    const capabilities = await this.storage.capabilities();
     let init: BlobUploadInit | null = null;
     let uploadIdForRecord: string | null = null;
 
-    // try to resume multipart uploads
-    if (capabilities.multipartDirect && record && record.uploadId) {
-      const uploadedParts = await this.storage.listMultipartUploadParts(
-        workspaceId,
-        key,
-        record.uploadId
-      );
+    try {
+      const capabilities = await this.storage.capabilities();
 
-      if (uploadedParts) {
-        return {
-          method: BlobUploadMethod.MULTIPART,
-          blobKey: key,
-          uploadId: record.uploadId,
-          partSize: MULTIPART_PART_SIZE,
-          uploadedParts,
-        };
-      }
-    }
+      // try to resume multipart uploads
+      if (capabilities.multipartDirect && record && record.uploadId) {
+        const uploadedParts = await this.storage.listMultipartUploadParts(
+          workspaceId,
+          key,
+          record.uploadId
+        );
 
-    if (capabilities.multipartDirect && size >= MULTIPART_THRESHOLD) {
-      const multipart = await this.storage.createMultipartUpload(
-        workspaceId,
-        key,
-        metadata
-      );
-      if (multipart) {
-        uploadIdForRecord = multipart.uploadId;
-        init = {
-          method: BlobUploadMethod.MULTIPART,
-          blobKey: key,
-          uploadId: multipart.uploadId,
-          partSize: MULTIPART_PART_SIZE,
-          expiresAt: multipart.expiresAt,
-          uploadedParts: [],
-        };
+        if (uploadedParts) {
+          return {
+            method: BlobUploadMethod.MULTIPART,
+            blobKey: key,
+            uploadId: record.uploadId,
+            partSize: MULTIPART_PART_SIZE,
+            uploadedParts,
+          };
+        }
       }
-    }
 
-    if (!init && capabilities.presignPut) {
-      const presigned = await this.storage.presignPut(
-        workspaceId,
-        key,
-        metadata
-      );
-      if (presigned) {
-        init = {
-          method: BlobUploadMethod.PRESIGNED,
-          blobKey: key,
-          uploadUrl: presigned.url,
-          headers: presigned.headers,
-          expiresAt: presigned.expiresAt,
-        };
+      if (capabilities.multipartDirect && size >= MULTIPART_THRESHOLD) {
+        const multipart = await this.storage.createMultipartUpload(
+          workspaceId,
+          key,
+          metadata
+        );
+        if (multipart) {
+          uploadIdForRecord = multipart.uploadId;
+          init = {
+            method: BlobUploadMethod.MULTIPART,
+            blobKey: key,
+            uploadId: multipart.uploadId,
+            partSize: MULTIPART_PART_SIZE,
+            expiresAt: multipart.expiresAt,
+            uploadedParts: [],
+          };
+        }
       }
+
+      if (!init && capabilities.presignPut) {
+        const presigned = await this.storage.presignPut(
+          workspaceId,
+          key,
+          metadata
+        );
+        if (presigned) {
+          init = {
+            method: BlobUploadMethod.PRESIGNED,
+            blobKey: key,
+            uploadUrl: presigned.url,
+            headers: presigned.headers,
+            expiresAt: presigned.expiresAt,
+          };
+        }
+      }
+    } catch (error) {
+      this.logger.warn('Failed to initialize direct blob upload', error);
+      init = null;
+      uploadIdForRecord = null;
     }
 
     if (!init) {
