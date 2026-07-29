@@ -58,7 +58,7 @@ mod tests {
   use crate::llm::core::contracts::{ModelConditionsContract, ModelRegistryMatchRequest, ModelRegistryResolveRequest};
 
   #[test]
-  fn should_resolve_backend_scoped_alias() {
+  fn should_resolve_current_chat_models() {
     let response = llm_resolve_model_registry_variant(ModelRegistryResolveRequest {
       backend_kind: Some("anthropic_vertex".to_string()),
       model_id: "claude-sonnet-4.6".to_string(),
@@ -67,6 +67,26 @@ mod tests {
 
     assert_eq!(response.matched_by.as_deref(), Some("canonical"));
     assert_eq!(response.variant.unwrap().raw_model_id, "claude-sonnet-4-6");
+
+    for model_id in ["gpt-5.6-luna", "gpt-5.6-terra"] {
+      let response = llm_resolve_model_registry_variant(ModelRegistryResolveRequest {
+        backend_kind: Some("openai_responses".to_string()),
+        model_id: model_id.to_string(),
+      })
+      .unwrap();
+
+      assert_eq!(response.matched_by.as_deref(), Some("raw_model_id"));
+      assert_eq!(response.variant.unwrap().raw_model_id, model_id);
+    }
+
+    let response = llm_resolve_model_registry_variant(ModelRegistryResolveRequest {
+      backend_kind: Some("gemini_api".to_string()),
+      model_id: "gemini-3.6-flash".to_string(),
+    })
+    .unwrap();
+
+    assert_eq!(response.matched_by.as_deref(), Some("raw_model_id"));
+    assert_eq!(response.variant.unwrap().raw_model_id, "gemini-3.6-flash");
   }
 
   #[test]
@@ -181,7 +201,7 @@ mod tests {
     .unwrap();
     let variant = response.variant.unwrap();
 
-    assert_eq!(variant.raw_model_id, "kimi-k2.7-code");
+    assert_eq!(variant.raw_model_id, "kimi-k3");
     assert_eq!(variant.backend_kind, "opencode_zen");
   }
 
