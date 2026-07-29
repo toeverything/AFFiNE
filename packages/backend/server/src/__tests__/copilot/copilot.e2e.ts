@@ -1915,7 +1915,7 @@ test('should be able to transcript', async t => {
     const route = input.input?.preparedRoutes?.transcribe?.[0] ?? {};
     const result = buildTranscriptActionResult(
       route,
-      'gemini-2.5-flash',
+      'gemini-3.5-flash-lite',
       input.input ?? {}
     );
     const actionVersion = input.recipeVersion ?? 'v1';

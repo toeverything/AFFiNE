@@ -221,7 +221,7 @@ mod tests {
   }
 
   #[test]
-  fn should_keep_same_raw_id_as_two_backend_variants() {
+  fn should_keep_legacy_model_raw_id_across_backend_variants() {
     let api_variant = llm_resolve_model_registry_variant(ModelRegistryResolveRequest {
       backend_kind: Some("gemini_api".to_string()),
       model_id: "gemini-2.5-flash".to_string(),
@@ -301,7 +301,7 @@ mod tests {
         attachment_kinds: None,
         attachment_source_kinds: None,
         has_remote_attachments: None,
-        model_id: Some("gemini-2.5-flash".to_string()),
+        model_id: Some("gemini-3.6-flash".to_string()),
         output_type: Some("image".to_string()),
       },
     })

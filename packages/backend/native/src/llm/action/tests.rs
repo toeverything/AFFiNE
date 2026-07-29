@@ -67,7 +67,7 @@ fn built_in_transcript_action_final_result_is_schema_checked() {
           "openQuestions": [],
           "blockers": []
         },
-        "providerMeta": { "provider": "gemini", "model": "gemini-2.5-flash" }
+        "providerMeta": { "provider": "gemini", "model": "gemini-3.5-flash-lite" }
       }
     })),
   )
@@ -97,7 +97,7 @@ fn built_in_transcript_action_rejects_malformed_summary() {
       "transcribe": {
         "normalizedTranscript": "00:00:01 A: Hello",
         "summaryJson": { "title": "Sync" },
-        "providerMeta": { "provider": "gemini", "model": "gemini-2.5-flash" }
+        "providerMeta": { "provider": "gemini", "model": "gemini-3.5-flash-lite" }
       }
     })),
   )

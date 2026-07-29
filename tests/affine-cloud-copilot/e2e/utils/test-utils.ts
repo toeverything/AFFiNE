@@ -63,7 +63,7 @@ export class TestUtils {
 
   public async setupTestEnvironment(page: Page, defaultModel?: string) {
     const hasExplicitModel = defaultModel !== undefined;
-    const selectedModel = defaultModel ?? 'gemini-2.5-flash';
+    const selectedModel = defaultModel ?? 'gpt-5.6-luna';
     await switchDefaultChatModel(selectedModel);
 
     await skipOnboarding(page.context());

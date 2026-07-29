@@ -1443,9 +1443,9 @@ test('checkParams should infer remote image capability from url extension withou
 test('llmResolveRequestedModelMatch should preserve provider-prefixed optional matches', t => {
   const request = parseRequestedModelMatchRequest({
     providerIds: ['openai-default', 'gemini-default'],
-    defaultModel: 'gemini-2.5-flash',
-    optionalModels: ['gemini-2.5-flash', 'gemini-2.5-pro'],
-    requestedModelId: 'openai-default/gemini-2.5-pro',
+    defaultModel: 'gpt-5.6-luna',
+    optionalModels: ['gpt-5.6-luna', 'gpt-5.6-terra'],
+    requestedModelId: 'openai-default/gpt-5.6-terra',
   });
 
   t.snapshot(llmResolveRequestedModelMatch(request), 'prefixed optional hit');
