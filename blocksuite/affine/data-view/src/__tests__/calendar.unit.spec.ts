@@ -27,6 +27,7 @@ const createCalendarView = (options?: {
   linkedDocTitles?: Record<string, string>;
   visiblePropertyIds?: string[];
   externalFactories?: Map<unknown, unknown>;
+  weekStartsOn?: 0 | 1;
 }) => {
   const rows = signal(options?.rows ?? ['row-1']);
   const columns = signal(['title', 'date', 'end-date', 'status']);
@@ -65,6 +66,9 @@ const createCalendarView = (options?: {
         enabled: true,
       },
     },
+    ...(options?.weekStartsOn !== undefined
+      ? { weekStartsOn: options.weekStartsOn }
+      : {}),
   });
   const values = new Map<string, unknown>([
     ['row-1:date', day('2026-05-15')],
@@ -226,8 +230,7 @@ describe('CalendarSingleView', () => {
   });
 
   it('reads weekStartsOn=1 from stored view data on construction', () => {
-    const { view, viewData } = createCalendarView();
-    viewData.value = { ...viewData.value, weekStartsOn: 1 };
+    const { view } = createCalendarView({ weekStartsOn: 1 });
 
     expect(view.weekStartsOn$.value).toBe(1);
   });

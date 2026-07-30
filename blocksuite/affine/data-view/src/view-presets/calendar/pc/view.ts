@@ -15,6 +15,7 @@ import {
   PlusIcon,
   TodayIcon,
 } from '@blocksuite/icons/lit';
+import { effect } from '@preact/signals-core';
 import { html, nothing, type TemplateResult } from 'lit';
 import { ref } from 'lit/directives/ref.js';
 import { repeat } from 'lit/directives/repeat.js';
@@ -113,6 +114,8 @@ export class CalendarViewUILogic extends DataViewUILogicBase<CalendarSingleView>
 
   private cleanupResize?: () => void;
 
+  private cleanupWeekStartEffect?: () => void;
+
   getPreviewRange(): { start: number; end: number } | undefined {
     const state = this.interactionState;
     const target = state?.targetDay;
@@ -202,11 +205,24 @@ export class CalendarViewUILogic extends DataViewUILogicBase<CalendarSingleView>
   attach(ui: CalendarViewUI) {
     this.ui = ui;
     this.loadExternalEntries();
+    // Reactively reload external entries whenever weekStartsOn changes so the
+    // fetch window stays aligned with the current grid layout.
+    let isFirst = true;
+    this.cleanupWeekStartEffect = effect(() => {
+      void this.view.weekStartsOn$.value; // subscribe
+      if (isFirst) {
+        isFirst = false;
+        return; // initial load already handled above
+      }
+      this.loadExternalEntries();
+    });
   }
 
   detach(ui: CalendarViewUI) {
     if (this.ui !== ui) return;
     this.cleanupResizeInteraction();
+    this.cleanupWeekStartEffect?.();
+    this.cleanupWeekStartEffect = undefined;
     this.dnd.cleanup();
     this.endInteraction();
     this.ui = undefined;
@@ -506,7 +522,6 @@ export class CalendarViewUILogic extends DataViewUILogicBase<CalendarSingleView>
                     select: () => {
                       this.view.setWeekStartsOn(value);
                       this.ui?.requestUpdate();
-                      this.loadExternalEntries();
                       goBack();
                     },
                   })
