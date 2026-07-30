@@ -35,7 +35,7 @@
   {
     "name": "Generate a caption",
     "action": "Generate a caption",
-    "model": "gpt-5.6-luna",
+    "model": "gemini-3.5-flash-lite",
     "config": {
       "requireContent": false,
       "requireAttachment": true
@@ -125,7 +125,7 @@
   {
     "name": "Explain this image",
     "action": "Explain this image",
-    "model": "gpt-5.6-luna",
+    "model": "gemini-3.5-flash-lite",
     "config": {
       "requireContent": false,
       "requireAttachment": true
@@ -144,7 +144,7 @@
   {
     "name": "Explain this code",
     "action": "Explain this code",
-    "model": "gpt-5.6-luna",
+    "model": "gemini-3.5-flash-lite",
     "messages": [
       {
         "role": "system",
@@ -159,7 +159,7 @@
   {
     "name": "Translate to",
     "action": "Translate",
-    "model": "gpt-5.6-luna",
+    "model": "gemini-3.5-flash-lite",
     "params": {
       "language": {
         "default": "English",
@@ -252,7 +252,7 @@
   {
     "name": "Write a twitter about this",
     "action": "Write a twitter about this",
-    "model": "gpt-5.6-luna",
+    "model": "gemini-3.5-flash-lite",
     "messages": [
       {
         "role": "system",
@@ -267,7 +267,7 @@
   {
     "name": "Write a poem about this",
     "action": "Write a poem about this",
-    "model": "gpt-5.6-luna",
+    "model": "gemini-3.5-flash-lite",
     "messages": [
       {
         "role": "system",
@@ -297,7 +297,7 @@
   {
     "name": "Write outline",
     "action": "Write outline",
-    "model": "gpt-5.6-luna",
+    "model": "gemini-3.5-flash-lite",
     "messages": [
       {
         "role": "system",
@@ -312,7 +312,7 @@
   {
     "name": "Change tone to",
     "action": "Change tone",
-    "model": "gpt-5.6-luna",
+    "model": "gemini-3.5-flash-lite",
     "params": {
       "tone": {
         "default": "professional",
@@ -333,7 +333,7 @@
   {
     "name": "Brainstorm ideas about this",
     "action": "Brainstorm ideas about this",
-    "model": "gpt-5.6-luna",
+    "model": "gemini-3.5-flash-lite",
     "messages": [
       {
         "role": "system",
@@ -382,7 +382,7 @@
   {
     "name": "Improve writing for it",
     "action": "Improve writing for it",
-    "model": "gpt-5.6-luna",
+    "model": "gemini-3.5-flash-lite",
     "messages": [
       {
         "role": "system",
@@ -412,7 +412,7 @@
   {
     "name": "Fix spelling for it",
     "action": "Fix spelling for it",
-    "model": "gpt-5.6-luna",
+    "model": "gemini-3.5-flash-lite",
     "messages": [
       {
         "role": "system",
@@ -472,7 +472,7 @@
   {
     "name": "Create headings",
     "action": "Create headings",
-    "model": "gpt-5.6-luna",
+    "model": "gemini-3.5-flash-lite",
     "messages": [
       {
         "role": "system",
@@ -487,7 +487,7 @@
   {
     "name": "Make it real",
     "action": "Make it real",
-    "model": "claude-sonnet-4-5@20250929",
+    "model": "claude-sonnet-4-6",
     "messages": [
       {
         "role": "system",
@@ -502,7 +502,7 @@
   {
     "name": "Make it real with text",
     "action": "Make it real with text",
-    "model": "claude-sonnet-4-5@20250929",
+    "model": "claude-sonnet-4-6",
     "messages": [
       {
         "role": "system",
@@ -517,7 +517,7 @@
   {
     "name": "Make it longer",
     "action": "Make it longer",
-    "model": "gpt-5.6-luna",
+    "model": "gemini-3.5-flash-lite",
     "messages": [
       {
         "role": "system",
@@ -532,7 +532,7 @@
   {
     "name": "Make it shorter",
     "action": "Make it shorter",
-    "model": "gpt-5.6-luna",
+    "model": "gemini-3.5-flash-lite",
     "messages": [
       {
         "role": "system",
@@ -547,7 +547,7 @@
   {
     "name": "Continue writing",
     "action": "Continue writing",
-    "model": "gpt-5.6-luna",
+    "model": "gemini-3.5-flash-lite",
     "messages": [
       {
         "role": "system",
@@ -562,7 +562,7 @@
   {
     "name": "Section Edit",
     "action": "Section Edit",
-    "model": "claude-sonnet-4@20250514",
+    "model": "claude-sonnet-4-6",
     "messages": [
       {
         "role": "system",
@@ -675,7 +675,7 @@
   },
   {
     "name": "Code Artifact",
-    "model": "claude-sonnet-4-5@20250929",
+    "model": "claude-sonnet-4-6",
     "messages": [
       {
         "role": "system",
