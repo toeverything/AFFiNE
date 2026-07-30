@@ -441,7 +441,7 @@ The term **“CRDT”** was first introduced by Marc Shapiro, Nuno Preguiça, Ca
     messages: singleUserPromptMessages(
       'In one short sentence, explain what AFFiNE AI is and mention AFFiNE by name.'
     ),
-    config: { model: 'gemini-2.5-flash' },
+    config: { model: 'gemini-3.6-flash' },
     verifier: (t: ExecutionContext<Tester>, result: string) => {
       assertNotWrappedInCodeBlock(t, result);
       t.assert(
@@ -458,7 +458,7 @@ The term **“CRDT”** was first introduced by Marc Shapiro, Nuno Preguiça, Ca
     messages: singleUserPromptMessages(
       'Respond with one short sentence about AFFiNE AI and mention AFFiNE by name.'
     ),
-    config: { model: 'gemini-2.5-flash' },
+    config: { model: 'gemini-3.6-flash' },
     verifier: (t: ExecutionContext<Tester>, result: string) => {
       t.truthy(checkStreamObjects(result), 'should be valid stream objects');
       const assembledText = getStreamObjectText(result);
@@ -985,19 +985,19 @@ const TRANSCRIPT_AUDIO_CASES = [
     name: 'short audio',
     url: 'https://cdn.affine.pro/copilot-test/MP9qDGuYgnY+ILoEAmHpp3h9Npuw2403EAYMEA.mp3',
     mimeType: 'audio/mpeg',
-    modelId: 'gemini-2.5-flash',
+    modelId: 'gemini-3.5-flash-lite',
   },
   {
     name: 'middle audio',
     url: 'https://cdn.affine.pro/copilot-test/2ed05eo1KvZ2tWB_BAjFo67EAPZZY-w4LylUAw.m4a',
     mimeType: 'audio/m4a',
-    modelId: 'gemini-2.5-flash',
+    modelId: 'gemini-3.5-flash-lite',
   },
   {
     name: 'long audio',
     url: 'https://cdn.affine.pro/copilot-test/nC9-e7P85PPI2rU29QWwf8slBNRMy92teLIIMw.opus',
     mimeType: 'audio/opus',
-    modelId: 'gemini-2.5-pro',
+    modelId: 'gemini-3.6-flash',
   },
 ];
 

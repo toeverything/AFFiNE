@@ -237,7 +237,7 @@ mod tests {
   fn should_materialize_structured_request_with_response_contract() {
     let response = llm_build_canonical_structured_request(
       serde_json::from_value::<CanonicalStructuredRequestContract>(json!({
-        "model": "gemini-2.5-flash",
+        "model": "gemini-3.6-flash",
         "messages": [
           { "role": "user", "content": "hello" }
         ],
@@ -253,7 +253,7 @@ mod tests {
     assert_eq!(
       response,
       json!({
-        "model": "gemini-2.5-flash",
+        "model": "gemini-3.6-flash",
         "messages": [
           {
             "role": "user",

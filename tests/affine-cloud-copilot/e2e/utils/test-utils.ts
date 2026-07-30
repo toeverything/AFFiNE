@@ -62,19 +62,16 @@ export class TestUtils {
   }
 
   public async setupTestEnvironment(page: Page, defaultModel?: string) {
-    const hasExplicitModel = defaultModel !== undefined;
-    const selectedModel = defaultModel ?? 'gemini-2.5-flash';
+    const selectedModel = defaultModel ?? 'gpt-5.6-luna';
     await switchDefaultChatModel(selectedModel);
 
     await skipOnboarding(page.context());
-    if (hasExplicitModel) {
-      await page.context().addInitScript(model => {
-        window.localStorage.setItem(
-          'global-state:AIModelId',
-          JSON.stringify(model)
-        );
-      }, selectedModel);
-    }
+    await page.context().addInitScript(model => {
+      window.localStorage.setItem(
+        'global-state:AIModelId',
+        JSON.stringify(model)
+      );
+    }, selectedModel);
     await openHomePage(page);
     await this.createNewPage(page);
   }

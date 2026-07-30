@@ -103,7 +103,7 @@ async function buildNativeTranscriptResult(input: any, runId: string) {
         openQuestions: [],
         blockers: [],
       },
-      providerMeta: { provider: 'gemini', model: 'gemini-2.5-flash' },
+      providerMeta: { provider: 'gemini', model: 'gemini-3.5-flash-lite' },
       version: 'transcript-result-v1',
       strategy: 'gemini',
     },
@@ -319,7 +319,7 @@ test('retryTask reuses failed task and queues a new action attempt', async t => 
   const payload = TranscriptPayloadSchema.parse({
     normalizedTranscript: '00:00:05 A: Kickoff',
     summaryJson: null,
-    providerMeta: { provider: 'gemini', model: 'gemini-2.5-flash' },
+    providerMeta: { provider: 'gemini', model: 'gemini-3.5-flash-lite' },
   });
   const service = createCopilotTranscriptionService(
     {
@@ -341,7 +341,7 @@ test('retryTask reuses failed task and queues a new action attempt', async t => 
     } as never,
     {} as never,
     {
-      resolveTranscriptionModel: Sinon.stub().resolves('gemini-2.5-flash'),
+      resolveTranscriptionModel: Sinon.stub().resolves('gemini-3.5-flash-lite'),
     } as never,
     {} as never,
     {} as never
@@ -382,7 +382,7 @@ test('retryTask prechecks quota or BYOK before queueing provider work', async t 
     { add } as never,
     {} as never,
     {
-      resolveTranscriptionModel: Sinon.stub().resolves('gemini-2.5-flash'),
+      resolveTranscriptionModel: Sinon.stub().resolves('gemini-3.5-flash-lite'),
     } as never,
     {} as never,
     {} as never,
@@ -427,7 +427,9 @@ for (const status of ['ready', 'settled']) {
       } as never,
       {} as never,
       {
-        resolveTranscriptionModel: Sinon.stub().resolves('gemini-2.5-flash'),
+        resolveTranscriptionModel: Sinon.stub().resolves(
+          'gemini-3.5-flash-lite'
+        ),
       } as never,
       {} as never,
       {} as never
@@ -453,7 +455,9 @@ for (const status of ['ready', 'settled']) {
 
 test('submitTask prechecks quota or BYOK before persisting uploads', async t => {
   const assertQuotaOrByok = Sinon.stub().rejects(new Error('quota exceeded'));
-  const resolveTranscriptionModel = Sinon.stub().resolves('gemini-2.5-flash');
+  const resolveTranscriptionModel = Sinon.stub().resolves(
+    'gemini-3.5-flash-lite'
+  );
   const service = createCopilotTranscriptionService(
     {
       copilotTranscriptTask: {
@@ -492,7 +496,7 @@ test('submitTask rejects unavailable transcript strategy', async t => {
     {} as never,
     {} as never,
     {
-      resolveTranscriptionModel: Sinon.stub().resolves('gemini-2.5-flash'),
+      resolveTranscriptionModel: Sinon.stub().resolves('gemini-3.5-flash-lite'),
     } as never,
     {} as never,
     {} as never
@@ -555,7 +559,7 @@ test('transcriptTask runs native transcript recipe through action bridge when av
   await service.transcriptTask({
     taskId: 'task-1',
     payload,
-    modelId: 'gemini-2.5-flash',
+    modelId: 'gemini-3.5-flash-lite',
   });
 
   t.like(bridgeInputs[0] as Record<string, unknown>, {
@@ -567,7 +571,7 @@ test('transcriptTask runs native transcript recipe through action bridge when av
       .prepareStructuredRoutes,
     {
       stepId: 'transcribe',
-      modelId: 'gemini-2.5-flash',
+      modelId: 'gemini-3.5-flash-lite',
     }
   );
   const messages = (
@@ -641,7 +645,7 @@ test('transcriptTask fails task when native action bridge reports an error event
       service.transcriptTask({
         taskId: 'task-1',
         payload,
-        modelId: 'gemini-2.5-flash',
+        modelId: 'gemini-3.5-flash-lite',
       }),
     { message: /native_failed/ }
   );
