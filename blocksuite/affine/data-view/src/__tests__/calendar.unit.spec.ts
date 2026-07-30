@@ -209,6 +209,69 @@ describe('CalendarSingleView', () => {
     });
   });
 
+  it('defaults weekStartsOn to 0 (Sunday) in defaultData', () => {
+    const data = calendarViewModel.model.defaultData({
+      dataSource: {
+        properties$: signal(['title', 'date']),
+        propertyTypeGet: (id: string) => (id === 'title' ? 'title' : 'date'),
+      },
+    } as any);
+
+    expect(data.weekStartsOn).toBe(0);
+  });
+
+  it('defaults weekStartsOn$ to 0 (Sunday) when field is absent in stored view data', () => {
+    const { view } = createCalendarView();
+    expect(view.weekStartsOn$.value).toBe(0);
+  });
+
+  it('reads weekStartsOn=1 from stored view data on construction', () => {
+    const { view, viewData } = createCalendarView();
+    viewData.value = { ...viewData.value, weekStartsOn: 1 };
+
+    expect(view.weekStartsOn$.value).toBe(1);
+  });
+
+  it('persists weekStartsOn when set to Monday (1)', () => {
+    const { view, viewData } = createCalendarView();
+
+    view.setWeekStartsOn(1);
+
+    expect(view.weekStartsOn$.value).toBe(1);
+    expect(viewData.value.weekStartsOn).toBe(1);
+  });
+
+  it('persists weekStartsOn when set back to Sunday (0)', () => {
+    const { view, viewData } = createCalendarView();
+
+    view.setWeekStartsOn(1);
+    view.setWeekStartsOn(0);
+
+    expect(view.weekStartsOn$.value).toBe(0);
+    expect(viewData.value.weekStartsOn).toBe(0);
+  });
+
+  it('does not overwrite other view fields when setWeekStartsOn is called', () => {
+    const { view, viewData } = createCalendarView({ startColumnId: 'date' });
+    const filterBefore = JSON.stringify(viewData.value.filter);
+    const dateBefore = JSON.stringify(viewData.value.date);
+
+    view.setWeekStartsOn(1);
+
+    expect(JSON.stringify(viewData.value.filter)).toBe(filterBefore);
+    expect(JSON.stringify(viewData.value.date)).toBe(dateBefore);
+  });
+
+  it('weekStartsOn$ is reactive - returns the updated value immediately after setWeekStartsOn', () => {
+    const { view } = createCalendarView();
+
+    expect(view.weekStartsOn$.value).toBe(0);
+    view.setWeekStartsOn(1);
+    expect(view.weekStartsOn$.value).toBe(1);
+    view.setWeekStartsOn(0);
+    expect(view.weekStartsOn$.value).toBe(0);
+  });
+
   it('enters setup state without a start date property', () => {
     const { view } = createCalendarView();
 

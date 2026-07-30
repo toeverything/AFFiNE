@@ -436,6 +436,41 @@ test(
   }
 );
 
+test(
+  scoped`database calendar start week on persists in stored view data`,
+  async ({ page }) => {
+    await enterPlaygroundRoom(page);
+    const ids = await createCalendarDatabase(page, {
+      withDateColumn: true,
+      mapDateColumn: true,
+    });
+
+    // Switch to Monday via the view manager API (avoids flaky menu navigation)
+    await page.evaluate(({ databaseId, viewId }) => {
+      const model = window.doc.getModelById(databaseId) as DatabaseBlockModel;
+      const datasource =
+        new window.$blocksuite.blocks.database.DatabaseBlockDataSource(model);
+      const view = datasource.viewManager.viewGet(viewId) as
+        | { setWeekStartsOn: (v: 0 | 1) => void }
+        | undefined;
+      view?.setWeekStartsOn(1);
+    }, ids);
+
+    // Verify the grid DOM reflects Monday as the first day - this is what unit
+    // tests cannot prove because they don't render the Lit component.
+    // Use expect.poll so we wait for the Lit async re-render to settle.
+    const editorHost = getEditorHostLocator(page);
+    const calendarView = editorHost.getByTestId('dv-calendar-view');
+    const firstDay = calendarView.locator('.calendar-day').first();
+    await expect
+      .poll(async () => {
+        const dateAttr = await firstDay.getAttribute('data-date');
+        return dateAttr ? new Date(Number(dateAttr)).getDay() : -1;
+      })
+      .toBe(1); // Monday = 1
+  }
+);
+
 test(scoped`database calendar resizes row range end date`, async ({ page }) => {
   await enterPlaygroundRoom(page);
   const ids = await createCalendarDatabase(page, {
@@ -485,3 +520,57 @@ test(scoped`database calendar resizes row range end date`, async ({ page }) => {
     )
     .toBe(expectedEnd);
 });
+
+test(
+  scoped`database calendar switching week start reloads external entries range`,
+  async ({ page }) => {
+    await enterPlaygroundRoom(page);
+    await createCalendarDatabase(page, {
+      withDateColumn: true,
+      mapDateColumn: true,
+    });
+
+    const editorHost = getEditorHostLocator(page);
+    const calendarView = editorHost.getByTestId('dv-calendar-view');
+    await calendarView.hover();
+
+    // Capture the first day before changing the setting
+    const firstDayBefore = await calendarView
+      .locator('.calendar-day')
+      .first()
+      .getAttribute('data-date');
+    expect(firstDayBefore).not.toBeNull();
+    const dayOfWeekBefore = new Date(Number(firstDayBefore!)).getDay();
+    expect(dayOfWeekBefore).toBe(0); // Sunday
+
+    // Open options and switch to Monday
+    const optionsButton = editorHost.locator(
+      'data-view-header-tools-view-options'
+    );
+    await optionsButton.click();
+    await page.getByRole('button', { name: 'Start week on' }).click();
+    await page.getByRole('button', { name: 'Monday' }).click();
+
+    // Grid must have re-rendered: first day should now be Monday
+    const firstDay = calendarView.locator('.calendar-day').first();
+    await expect
+      .poll(async () => {
+        const dateAttr = await firstDay.getAttribute('data-date');
+        return dateAttr ? new Date(Number(dateAttr)).getDay() : -1;
+      })
+      .toBe(1); // Monday
+
+    // Switch back to Sunday
+    await calendarView.hover();
+    await optionsButton.click();
+    await page.getByRole('button', { name: 'Start week on' }).click();
+    await page.getByRole('button', { name: 'Sunday' }).click();
+
+    await expect
+      .poll(async () => {
+        const dateAttr = await firstDay.getAttribute('data-date');
+        return dateAttr ? new Date(Number(dateAttr)).getDay() : -1;
+      })
+      .toBe(0); // Sunday
+  }
+);

@@ -405,6 +405,10 @@ export class CalendarViewUILogic extends DataViewUILogicBase<CalendarSingleView>
   ): MenuConfig[] {
     const selectedStart = this.view.startDateMapping$.value.propertyId;
     const selectedEnd = this.view.endDateMapping$.value.propertyId;
+    // Read the signal value at render time for the postfix label only.
+    // The submenu factory re-reads it fresh on each open via the lambda below.
+    const weekStartsOn = this.view.weekStartsOn$.value;
+    const weekStartLabel = weekStartsOn === 1 ? 'Monday' : 'Sunday';
     return [
       menu.group({
         name: 'Date range',
@@ -472,6 +476,42 @@ export class CalendarViewUILogic extends DataViewUILogicBase<CalendarSingleView>
                   }
                 )
               );
+            },
+          }),
+          menu.action({
+            name: 'Start week on',
+            prefix: TodayIcon(),
+            closeOnSelect: false,
+            postfix: html`<div
+                style="font-size:14px;color:var(--affine-text-secondary-color);"
+              >
+                ${weekStartLabel}
+              </div>
+              ${ArrowRightSmallIcon()}`,
+            select: () => {
+              navigateToSubPage('Start week on', () => {
+                // Re-read the signal so isSelected is accurate when the
+                // sub-page renders (e.g. after the user changed the value).
+                const current = this.view.weekStartsOn$.value;
+                return (
+                  [
+                    ['Sunday', 0],
+                    ['Monday', 1],
+                  ] as [string, 0 | 1][]
+                ).map(([label, value]) =>
+                  menu.action({
+                    name: label,
+                    isSelected: current === value,
+                    closeOnSelect: false,
+                    select: () => {
+                      this.view.setWeekStartsOn(value);
+                      this.ui?.requestUpdate();
+                      this.loadExternalEntries();
+                      goBack();
+                    },
+                  })
+                );
+              });
             },
           }),
           menu.action({
@@ -679,7 +719,10 @@ export class CalendarViewUILogic extends DataViewUILogicBase<CalendarSingleView>
   }
 
   private loadExternalEntries() {
-    const range = getCalendarVisibleMonthRange(this.currentMonth);
+    const range = getCalendarVisibleMonthRange(
+      this.currentMonth,
+      this.view.weekStartsOn$.value
+    );
     this.view
       .loadExternalEntries({ from: range.from, to: range.to })
       .catch(() => {
@@ -943,9 +986,11 @@ export class CalendarViewUI extends DataViewUIBase<CalendarViewUILogic> {
 
   private renderCalendar(skeleton = false) {
     const entries = skeleton ? [] : this.logic.view.entries$.value;
+    const weekStartsOn = this.logic.view.weekStartsOn$.value;
     const layout = createCalendarMonthLayout({
       month: this.logic.currentMonth,
       entries,
+      weekStartsOn,
     });
     const weekdays = layout.weeks[0] ?? [];
     const today = startOfDay(Date.now());

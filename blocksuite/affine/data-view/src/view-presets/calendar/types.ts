@@ -36,6 +36,8 @@ type CalendarViewDataShape = {
     workspaceCalendar?: CalendarWorkspaceSourceConfig;
   };
   ui?: CalendarUiData;
+  /** 0 = Sunday, 1 = Monday. Defaults to 0 when absent. */
+  weekStartsOn?: 0 | 1;
 };
 
 export type CalendarViewData = BasicViewDataType<
