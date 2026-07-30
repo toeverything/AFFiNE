@@ -25,9 +25,10 @@ export const initCodeBlockByOneStep = async (page: Page) => {
 /**
  * Opens the "More" menu on the first code block and returns locators for
  * the line-number toggle buttons inside it.
+ * Uses .first() to stay deterministic when multiple code blocks are present.
  */
 export const openCodeBlockMoreMenu = async (page: Page) => {
-  const codeBlock = page.locator('affine-code');
+  const codeBlock = page.locator('affine-code').first();
   await codeBlock.hover();
 
   const moreButton = page
