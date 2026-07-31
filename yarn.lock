@@ -107,7 +107,7 @@ __metadata:
   dependencies:
     "@affine-tools/utils": "workspace:*"
     "@affine/s3-compat": "workspace:*"
-    "@napi-rs/simple-git": "npm:^0.1.22"
+    "@napi-rs/simple-git": "npm:^1.0.0"
     "@rspack/core": "npm:^2.0.8"
     "@rspack/dev-server": "npm:^2.1.0"
     "@sentry/webpack-plugin": "npm:^5.3.0"
@@ -267,7 +267,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/changelog@workspace:tools/changelog"
   dependencies:
-    "@napi-rs/simple-git": "npm:^0.1.22"
+    "@napi-rs/simple-git": "npm:^1.0.0"
     "@slack/web-api": "npm:^7.15.1"
     "@types/node": "npm:^22.0.0"
     changelogithub: "npm:^13.0.0"
@@ -8204,130 +8204,130 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@napi-rs/simple-git-android-arm-eabi@npm:0.1.22":
-  version: 0.1.22
-  resolution: "@napi-rs/simple-git-android-arm-eabi@npm:0.1.22"
+"@napi-rs/simple-git-android-arm-eabi@npm:1.1.0":
+  version: 1.1.0
+  resolution: "@napi-rs/simple-git-android-arm-eabi@npm:1.1.0"
   conditions: os=android & cpu=arm
   languageName: node
   linkType: hard
 
-"@napi-rs/simple-git-android-arm64@npm:0.1.22":
-  version: 0.1.22
-  resolution: "@napi-rs/simple-git-android-arm64@npm:0.1.22"
+"@napi-rs/simple-git-android-arm64@npm:1.1.0":
+  version: 1.1.0
+  resolution: "@napi-rs/simple-git-android-arm64@npm:1.1.0"
   conditions: os=android & cpu=arm64
   languageName: node
   linkType: hard
 
-"@napi-rs/simple-git-darwin-arm64@npm:0.1.22":
-  version: 0.1.22
-  resolution: "@napi-rs/simple-git-darwin-arm64@npm:0.1.22"
+"@napi-rs/simple-git-darwin-arm64@npm:1.1.0":
+  version: 1.1.0
+  resolution: "@napi-rs/simple-git-darwin-arm64@npm:1.1.0"
   conditions: os=darwin & cpu=arm64
   languageName: node
   linkType: hard
 
-"@napi-rs/simple-git-darwin-x64@npm:0.1.22":
-  version: 0.1.22
-  resolution: "@napi-rs/simple-git-darwin-x64@npm:0.1.22"
+"@napi-rs/simple-git-darwin-x64@npm:1.1.0":
+  version: 1.1.0
+  resolution: "@napi-rs/simple-git-darwin-x64@npm:1.1.0"
   conditions: os=darwin & cpu=x64
   languageName: node
   linkType: hard
 
-"@napi-rs/simple-git-freebsd-x64@npm:0.1.22":
-  version: 0.1.22
-  resolution: "@napi-rs/simple-git-freebsd-x64@npm:0.1.22"
+"@napi-rs/simple-git-freebsd-x64@npm:1.1.0":
+  version: 1.1.0
+  resolution: "@napi-rs/simple-git-freebsd-x64@npm:1.1.0"
   conditions: os=freebsd & cpu=x64
   languageName: node
   linkType: hard
 
-"@napi-rs/simple-git-linux-arm-gnueabihf@npm:0.1.22":
-  version: 0.1.22
-  resolution: "@napi-rs/simple-git-linux-arm-gnueabihf@npm:0.1.22"
+"@napi-rs/simple-git-linux-arm-gnueabihf@npm:1.1.0":
+  version: 1.1.0
+  resolution: "@napi-rs/simple-git-linux-arm-gnueabihf@npm:1.1.0"
   conditions: os=linux & cpu=arm
   languageName: node
   linkType: hard
 
-"@napi-rs/simple-git-linux-arm64-gnu@npm:0.1.22":
-  version: 0.1.22
-  resolution: "@napi-rs/simple-git-linux-arm64-gnu@npm:0.1.22"
+"@napi-rs/simple-git-linux-arm64-gnu@npm:1.1.0":
+  version: 1.1.0
+  resolution: "@napi-rs/simple-git-linux-arm64-gnu@npm:1.1.0"
   conditions: os=linux & cpu=arm64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@napi-rs/simple-git-linux-arm64-musl@npm:0.1.22":
-  version: 0.1.22
-  resolution: "@napi-rs/simple-git-linux-arm64-musl@npm:0.1.22"
+"@napi-rs/simple-git-linux-arm64-musl@npm:1.1.0":
+  version: 1.1.0
+  resolution: "@napi-rs/simple-git-linux-arm64-musl@npm:1.1.0"
   conditions: os=linux & cpu=arm64 & libc=musl
   languageName: node
   linkType: hard
 
-"@napi-rs/simple-git-linux-ppc64-gnu@npm:0.1.22":
-  version: 0.1.22
-  resolution: "@napi-rs/simple-git-linux-ppc64-gnu@npm:0.1.22"
+"@napi-rs/simple-git-linux-ppc64-gnu@npm:1.1.0":
+  version: 1.1.0
+  resolution: "@napi-rs/simple-git-linux-ppc64-gnu@npm:1.1.0"
   conditions: os=linux & cpu=ppc64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@napi-rs/simple-git-linux-s390x-gnu@npm:0.1.22":
-  version: 0.1.22
-  resolution: "@napi-rs/simple-git-linux-s390x-gnu@npm:0.1.22"
+"@napi-rs/simple-git-linux-s390x-gnu@npm:1.1.0":
+  version: 1.1.0
+  resolution: "@napi-rs/simple-git-linux-s390x-gnu@npm:1.1.0"
   conditions: os=linux & cpu=s390x & libc=glibc
   languageName: node
   linkType: hard
 
-"@napi-rs/simple-git-linux-x64-gnu@npm:0.1.22":
-  version: 0.1.22
-  resolution: "@napi-rs/simple-git-linux-x64-gnu@npm:0.1.22"
+"@napi-rs/simple-git-linux-x64-gnu@npm:1.1.0":
+  version: 1.1.0
+  resolution: "@napi-rs/simple-git-linux-x64-gnu@npm:1.1.0"
   conditions: os=linux & cpu=x64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@napi-rs/simple-git-linux-x64-musl@npm:0.1.22":
-  version: 0.1.22
-  resolution: "@napi-rs/simple-git-linux-x64-musl@npm:0.1.22"
+"@napi-rs/simple-git-linux-x64-musl@npm:1.1.0":
+  version: 1.1.0
+  resolution: "@napi-rs/simple-git-linux-x64-musl@npm:1.1.0"
   conditions: os=linux & cpu=x64 & libc=musl
   languageName: node
   linkType: hard
 
-"@napi-rs/simple-git-win32-arm64-msvc@npm:0.1.22":
-  version: 0.1.22
-  resolution: "@napi-rs/simple-git-win32-arm64-msvc@npm:0.1.22"
+"@napi-rs/simple-git-win32-arm64-msvc@npm:1.1.0":
+  version: 1.1.0
+  resolution: "@napi-rs/simple-git-win32-arm64-msvc@npm:1.1.0"
   conditions: os=win32 & cpu=arm64
   languageName: node
   linkType: hard
 
-"@napi-rs/simple-git-win32-ia32-msvc@npm:0.1.22":
-  version: 0.1.22
-  resolution: "@napi-rs/simple-git-win32-ia32-msvc@npm:0.1.22"
+"@napi-rs/simple-git-win32-ia32-msvc@npm:1.1.0":
+  version: 1.1.0
+  resolution: "@napi-rs/simple-git-win32-ia32-msvc@npm:1.1.0"
   conditions: os=win32 & cpu=ia32
   languageName: node
   linkType: hard
 
-"@napi-rs/simple-git-win32-x64-msvc@npm:0.1.22":
-  version: 0.1.22
-  resolution: "@napi-rs/simple-git-win32-x64-msvc@npm:0.1.22"
+"@napi-rs/simple-git-win32-x64-msvc@npm:1.1.0":
+  version: 1.1.0
+  resolution: "@napi-rs/simple-git-win32-x64-msvc@npm:1.1.0"
   conditions: os=win32 & cpu=x64
   languageName: node
   linkType: hard
 
-"@napi-rs/simple-git@npm:^0.1.22":
-  version: 0.1.22
-  resolution: "@napi-rs/simple-git@npm:0.1.22"
+"@napi-rs/simple-git@npm:^1.0.0":
+  version: 1.1.0
+  resolution: "@napi-rs/simple-git@npm:1.1.0"
   dependencies:
-    "@napi-rs/simple-git-android-arm-eabi": "npm:0.1.22"
-    "@napi-rs/simple-git-android-arm64": "npm:0.1.22"
-    "@napi-rs/simple-git-darwin-arm64": "npm:0.1.22"
-    "@napi-rs/simple-git-darwin-x64": "npm:0.1.22"
-    "@napi-rs/simple-git-freebsd-x64": "npm:0.1.22"
-    "@napi-rs/simple-git-linux-arm-gnueabihf": "npm:0.1.22"
-    "@napi-rs/simple-git-linux-arm64-gnu": "npm:0.1.22"
-    "@napi-rs/simple-git-linux-arm64-musl": "npm:0.1.22"
-    "@napi-rs/simple-git-linux-ppc64-gnu": "npm:0.1.22"
-    "@napi-rs/simple-git-linux-s390x-gnu": "npm:0.1.22"
-    "@napi-rs/simple-git-linux-x64-gnu": "npm:0.1.22"
-    "@napi-rs/simple-git-linux-x64-musl": "npm:0.1.22"
-    "@napi-rs/simple-git-win32-arm64-msvc": "npm:0.1.22"
-    "@napi-rs/simple-git-win32-ia32-msvc": "npm:0.1.22"
-    "@napi-rs/simple-git-win32-x64-msvc": "npm:0.1.22"
+    "@napi-rs/simple-git-android-arm-eabi": "npm:1.1.0"
+    "@napi-rs/simple-git-android-arm64": "npm:1.1.0"
+    "@napi-rs/simple-git-darwin-arm64": "npm:1.1.0"
+    "@napi-rs/simple-git-darwin-x64": "npm:1.1.0"
+    "@napi-rs/simple-git-freebsd-x64": "npm:1.1.0"
+    "@napi-rs/simple-git-linux-arm-gnueabihf": "npm:1.1.0"
+    "@napi-rs/simple-git-linux-arm64-gnu": "npm:1.1.0"
+    "@napi-rs/simple-git-linux-arm64-musl": "npm:1.1.0"
+    "@napi-rs/simple-git-linux-ppc64-gnu": "npm:1.1.0"
+    "@napi-rs/simple-git-linux-s390x-gnu": "npm:1.1.0"
+    "@napi-rs/simple-git-linux-x64-gnu": "npm:1.1.0"
+    "@napi-rs/simple-git-linux-x64-musl": "npm:1.1.0"
+    "@napi-rs/simple-git-win32-arm64-msvc": "npm:1.1.0"
+    "@napi-rs/simple-git-win32-ia32-msvc": "npm:1.1.0"
+    "@napi-rs/simple-git-win32-x64-msvc": "npm:1.1.0"
   dependenciesMeta:
     "@napi-rs/simple-git-android-arm-eabi":
       optional: true
@@ -8359,7 +8359,7 @@ __metadata:
       optional: true
     "@napi-rs/simple-git-win32-x64-msvc":
       optional: true
-  checksum: 10/222965373b229f5364875678b1d8c88e069cecd041d49203ab6549287b235a94c77dcf1d201a77c76970bbe8fdbd97c15cb39b21ad724c2cd344601d3f2b1307
+  checksum: 10/730f09d1f52e33ced0ecadf149925e8878bed1c3fc9cdba20906ad1d0a29ad96759dec6c753b71fa70e7ad38e6fcefae3bcf9f01bbd6adfab780cb70cd5308b1
   languageName: node
   linkType: hard
 
