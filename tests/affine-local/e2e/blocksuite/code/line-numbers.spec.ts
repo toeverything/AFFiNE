@@ -1,16 +1,16 @@
 import { test } from '@affine-test/kit/playwright';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
-import { addCodeBlock, waitForEditorLoad } from '@affine-test/kit/utils/page-logic';
+import {
+  addCodeBlock,
+  waitForEditorLoad,
+} from '@affine-test/kit/utils/page-logic';
 import {
   closeSettingModal,
   openEditorSetting,
 } from '@affine-test/kit/utils/setting';
 import { expect, type Page } from '@playwright/test';
 
-import {
-  initCodeBlockByOneStep,
-  openCodeBlockMoreMenu,
-} from './utils';
+import { initCodeBlockByOneStep, openCodeBlockMoreMenu } from './utils';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -75,24 +75,25 @@ test.describe('Global code block line numbers setting', () => {
     await expect(lineNumber).toBeVisible();
   });
 
-  test('per-block toggle can override global setting to show line numbers', async ({
-    page,
-  }) => {
-    await initCodeBlockByOneStep(page);
+  test(
+    'per-block toggle can override global setting to show line numbers',
+    async ({ page }) => {
+      await initCodeBlockByOneStep(page);
 
-    const lineNumber = page.locator('affine-code .line-number');
+      const lineNumber = page.locator('affine-code .line-number');
 
-    // Turn global setting OFF
-    const toggle = await openLineNumbersSetting(page);
-    await toggle.click();
-    await closeSettingModal(page);
-    await expect(lineNumber).toBeHidden();
+      // Turn global setting OFF
+      const toggle = await openLineNumbersSetting(page);
+      await toggle.click();
+      await closeSettingModal(page);
+      await expect(lineNumber).toBeHidden();
 
-    // Per-block: explicitly enable for this block
-    const { lineNumberButton } = await openCodeBlockMoreMenu(page);
-    await lineNumberButton.click();
-    await expect(lineNumber).toBeVisible();
-  });
+      // Per-block: explicitly enable for this block
+      const { lineNumberButton } = await openCodeBlockMoreMenu(page);
+      await lineNumberButton.click();
+      await expect(lineNumber).toBeVisible();
+    }
+  );
 
   test('per-block toggle can hide line numbers when global is on', async ({
     page,
