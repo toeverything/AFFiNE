@@ -296,7 +296,7 @@ __metadata:
     "@affine/graphql": "workspace:*"
     "@affine/i18n": "workspace:*"
     "@atlaskit/pragmatic-drag-and-drop": "npm:^2.0.0"
-    "@atlaskit/pragmatic-drag-and-drop-hitbox": "npm:^1.1.0"
+    "@atlaskit/pragmatic-drag-and-drop-hitbox": "npm:^2.0.0"
     "@blocksuite/icons": "npm:^2.2.17"
     "@emotion/react": "npm:^11.14.0"
     "@emotion/styled": "npm:^11.14.0"
@@ -1528,13 +1528,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@atlaskit/pragmatic-drag-and-drop-hitbox@npm:^1.1.0":
-  version: 1.1.0
-  resolution: "@atlaskit/pragmatic-drag-and-drop-hitbox@npm:1.1.0"
+"@atlaskit/pragmatic-drag-and-drop-hitbox@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "@atlaskit/pragmatic-drag-and-drop-hitbox@npm:2.0.0"
   dependencies:
-    "@atlaskit/pragmatic-drag-and-drop": "npm:^1.6.0"
+    "@atlaskit/pragmatic-drag-and-drop": "npm:^2.0.0"
     "@babel/runtime": "npm:^7.0.0"
-  checksum: 10/47669b2d19eba8a3a7de787fa0d6ab8b171b7e7465249afe3ab28f5e522abacc2acf5e07e3661ce781ad9171ca08a2e0ce269413d18dfe0c5f3f858995d2b783
+  checksum: 10/6627299f1ff218237693bd5fb9cd278f19921a9510e04893aeee8fce8e97cbb0e3c3e72a0dcd8b7f7784b273c6de9c23fdef13937bc972e5d8e89073f3bd4aa2
   languageName: node
   linkType: hard
 
@@ -3419,7 +3419,7 @@ __metadata:
   dependencies:
     "@atlaskit/pragmatic-drag-and-drop": "npm:^2.0.0"
     "@atlaskit/pragmatic-drag-and-drop-auto-scroll": "npm:^2.1.2"
-    "@atlaskit/pragmatic-drag-and-drop-hitbox": "npm:^1.1.0"
+    "@atlaskit/pragmatic-drag-and-drop-hitbox": "npm:^2.0.0"
     "@blocksuite/global": "workspace:*"
     "@blocksuite/store": "workspace:*"
     "@lit/context": "npm:^1.1.2"
