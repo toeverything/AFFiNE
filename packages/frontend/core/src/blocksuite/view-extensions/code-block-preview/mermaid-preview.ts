@@ -63,6 +63,16 @@ export class MermaidPreview extends SignalWatcher(
       cursor: grab;
     }
 
+    .mermaid-preview-container:fullscreen {
+      box-sizing: border-box;
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+      border: 0;
+      border-radius: 0;
+      padding: 32px;
+    }
+
     .mermaid-preview-container:active {
       cursor: grabbing;
     }
@@ -284,10 +294,25 @@ export class MermaidPreview extends SignalWatcher(
     this._updateTransform();
   }
 
+  private _toggleFullscreen() {
+    const action =
+      document.fullscreenElement === this.container
+        ? document.exitFullscreen()
+        : this.container.requestFullscreen();
+
+    action.catch(error => {
+      console.error('Failed to toggle Mermaid preview fullscreen:', error);
+    });
+  }
+
   private _updateTransform() {
     // trigger re-render to update transform
     this.requestUpdate();
   }
+
+  private readonly _handleControlsMouseDown = (event: MouseEvent) => {
+    event.stopPropagation();
+  };
 
   private readonly _handleMouseDown = (event: MouseEvent) => {
     if (event.button !== 0) return; // only handle left click
@@ -491,11 +516,15 @@ export class MermaidPreview extends SignalWatcher(
                     ? html`<div .innerHTML=${this.svgContent}></div>`
                     : nothing}
                 </div>
-                <div class="mermaid-controls">
+                <div
+                  class="mermaid-controls"
+                  @mousedown=${this._handleControlsMouseDown}
+                >
                   <button
                     class="mermaid-control-button"
                     @click=${this._zoomIn}
                     title="Zoom in"
+                    aria-label="Zoom in"
                   >
                     +
                   </button>
@@ -503,6 +532,7 @@ export class MermaidPreview extends SignalWatcher(
                     class="mermaid-control-button"
                     @click=${this._zoomOut}
                     title="Zoom out"
+                    aria-label="Zoom out"
                   >
                     −
                   </button>
@@ -510,8 +540,17 @@ export class MermaidPreview extends SignalWatcher(
                     class="mermaid-control-button"
                     @click=${this._resetTransform}
                     title="Reset view"
+                    aria-label="Reset view"
                   >
                     ⟳
+                  </button>
+                  <button
+                    class="mermaid-control-button"
+                    @click=${this._toggleFullscreen}
+                    title="Toggle fullscreen"
+                    aria-label="Toggle fullscreen"
+                  >
+                    ⛶
                   </button>
                 </div>
                 <div class="mermaid-scale-info">
