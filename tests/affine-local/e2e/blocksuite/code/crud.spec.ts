@@ -73,7 +73,7 @@ test.describe('Code Block Preview', () => {
       });
     });
 
-    await page.getByRole('button', { name: 'Toggle fullscreen' }).click();
+    await mermaidContainer.locator('[title="Toggle fullscreen"]').click();
     await expect(mermaidContainer).toHaveAttribute(
       'data-fullscreen-requested',
       'true'
