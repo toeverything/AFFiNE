@@ -310,10 +310,6 @@ export class MermaidPreview extends SignalWatcher(
     this.requestUpdate();
   }
 
-  private readonly _handleControlsMouseDown = (event: MouseEvent) => {
-    event.stopPropagation();
-  };
-
   private readonly _handleMouseDown = (event: MouseEvent) => {
     if (event.button !== 0) return; // only handle left click
     this.isDragging = true;
@@ -516,15 +512,11 @@ export class MermaidPreview extends SignalWatcher(
                     ? html`<div .innerHTML=${this.svgContent}></div>`
                     : nothing}
                 </div>
-                <div
-                  class="mermaid-controls"
-                  @mousedown=${this._handleControlsMouseDown}
-                >
+                <div class="mermaid-controls">
                   <button
                     class="mermaid-control-button"
                     @click=${this._zoomIn}
                     title="Zoom in"
-                    aria-label="Zoom in"
                   >
                     +
                   </button>
@@ -532,7 +524,6 @@ export class MermaidPreview extends SignalWatcher(
                     class="mermaid-control-button"
                     @click=${this._zoomOut}
                     title="Zoom out"
-                    aria-label="Zoom out"
                   >
                     −
                   </button>
@@ -540,7 +531,6 @@ export class MermaidPreview extends SignalWatcher(
                     class="mermaid-control-button"
                     @click=${this._resetTransform}
                     title="Reset view"
-                    aria-label="Reset view"
                   >
                     ⟳
                   </button>
@@ -548,7 +538,6 @@ export class MermaidPreview extends SignalWatcher(
                     class="mermaid-control-button"
                     @click=${this._toggleFullscreen}
                     title="Toggle fullscreen"
-                    aria-label="Toggle fullscreen"
                   >
                     ⛶
                   </button>
