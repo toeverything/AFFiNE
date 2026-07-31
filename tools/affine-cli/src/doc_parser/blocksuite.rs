@@ -129,8 +129,13 @@ pub(super) fn get_list_depth(
 ) -> usize {
     let mut depth = 0;
     let mut current_id = block_id.to_string();
+    // A corrupt doc can make sys:children parent chains cyclic; stop instead of hanging.
+    let mut visited: HashSet<String> = HashSet::new();
 
     while let Some(parent_id) = parent_lookup.get(&current_id) {
+        if !visited.insert(parent_id.clone()) {
+            break;
+        }
         if let Some(parent_block) = blocks.get(parent_id)
             && get_flavour(parent_block).as_deref() == Some("affine:list")
         {
@@ -150,7 +155,12 @@ pub(super) fn nearest_by_flavour(
     blocks: &HashMap<String, Map>,
 ) -> Option<Map> {
     let mut cursor = Some(start.to_string());
+    // A corrupt doc can make sys:children parent chains cyclic; stop instead of hanging.
+    let mut visited: HashSet<String> = HashSet::new();
     while let Some(node) = cursor {
+        if !visited.insert(node.clone()) {
+            break;
+        }
         if let Some(block) = blocks.get(&node)
             && get_flavour(block).as_deref() == Some(flavour)
         {

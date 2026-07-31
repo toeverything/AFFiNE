@@ -159,7 +159,12 @@ fn has_skipped_markdown_ancestor(
     skipped_subtrees: &HashSet<String>,
 ) -> bool {
     let mut cursor = parent_lookup.get(block_id).cloned();
+    // A corrupt doc can make sys:children parent chains cyclic; stop instead of hanging.
+    let mut visited: HashSet<String> = HashSet::new();
     while let Some(parent_id) = cursor {
+        if !visited.insert(parent_id.clone()) {
+            return false;
+        }
         if skipped_subtrees.contains(&parent_id) {
             return true;
         }
@@ -608,7 +613,12 @@ pub fn get_doc_ids_from_binary(doc_bin: Vec<u8>, include_trash: bool) -> Result<
 fn block_level(block_id: &str, root_id: &str, parent_lookup: &HashMap<String, String>) -> usize {
     let mut level = 0;
     let mut cursor = block_id;
+    // A corrupt doc can make sys:children parent chains cyclic; stop instead of hanging.
+    let mut visited: HashSet<&str> = HashSet::new();
     while let Some(parent) = parent_lookup.get(cursor) {
+        if !visited.insert(parent) {
+            break;
+        }
         level += 1;
         if parent == root_id {
             break;
@@ -733,6 +743,18 @@ mod tests {
 
     use super::*;
     use crate::doc_parser::build_full_doc;
+
+    #[test]
+    fn test_cyclic_parent_chain_terminates() {
+        // a → b → a: sys:children corruption must terminate the ancestor walks, not hang.
+        let mut parent_lookup: HashMap<String, String> = HashMap::new();
+        parent_lookup.insert("a".to_string(), "b".to_string());
+        parent_lookup.insert("b".to_string(), "a".to_string());
+
+        let skipped: HashSet<String> = HashSet::new();
+        assert!(!has_skipped_markdown_ancestor("a", &parent_lookup, &skipped));
+        assert_eq!(block_level("a", "unreachable-root", &parent_lookup), 2);
+    }
 
     #[test]
     fn test_parse_doc_from_binary() {

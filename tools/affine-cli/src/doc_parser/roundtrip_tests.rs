@@ -1,4 +1,4 @@
-use super::{build_full_doc, parse_doc_to_markdown};
+use super::{build_full_doc, parse_doc_to_markdown, update_doc};
 
 fn assert_markdown_roundtrip(markdown: &str, expected: &str) {
     let doc_id = "roundtrip-doc";
@@ -127,6 +127,54 @@ fn test_roundtrip_literal_dollar_text_stays_literal() {
     let markdown = "The set \\$S\\$ is closed.";
     let expected = "The set \\$S$ is closed.\n\n";
     assert_markdown_roundtrip(markdown, expected);
+}
+
+#[test]
+fn test_table_update_preserves_row_and_column_ids() {
+    use y_octo::DocOptions;
+
+    use super::blocksuite::get_string;
+
+    // Regression: a one-cell table edit must reuse the stored row/column ids (an O(cells)
+    // clear-and-remint would drop concurrent app edits and invalidate id-keyed app state).
+    let doc_id = "table-id-stability";
+    let initial = build_full_doc("T", "| A | B |\n| --- | --- |\n| 1 | 2 |", doc_id).expect("create doc");
+    let delta = update_doc(&initial, "| A | B |\n| --- | --- |\n| 1 | changed |", doc_id).expect("update doc");
+
+    let table_meta_keys = |doc: &y_octo::Doc| -> Vec<String> {
+        let blocks = doc.get_map("blocks").expect("blocks map");
+        for (_, value) in blocks.iter() {
+            if let Some(block) = value.to_map()
+                && get_string(&block, "sys:flavour").as_deref() == Some("affine:table")
+            {
+                let mut keys: Vec<String> = block
+                    .keys()
+                    .filter(|k| k.starts_with("prop:rows.") || k.starts_with("prop:columns."))
+                    .map(|s| s.to_string())
+                    .collect();
+                keys.sort();
+                return keys;
+            }
+        }
+        panic!("no table block found");
+    };
+
+    let mut doc = DocOptions::new().with_guid(doc_id.to_string()).build();
+    doc.apply_update_from_binary_v1(&initial).expect("apply initial");
+    let ids_before = table_meta_keys(&doc);
+    assert!(!ids_before.is_empty());
+
+    doc.apply_update_from_binary_v1(&delta).expect("apply delta");
+    let ids_after = table_meta_keys(&doc);
+    assert_eq!(ids_before, ids_after, "row/column ids must survive a cell edit");
+
+    let merged = doc.encode_update_v1().expect("encode merged");
+    let result = parse_doc_to_markdown(merged, doc_id.to_string(), false, None).expect("parse doc");
+    assert!(
+        result.markdown.contains("changed"),
+        "cell edit lost: {}",
+        result.markdown
+    );
 }
 
 #[test]

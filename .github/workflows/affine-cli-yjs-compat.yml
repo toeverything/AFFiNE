@@ -32,9 +32,14 @@ jobs:
   yjs-compat:
     name: real-yjs decode check
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+        with:
+          # The job builds and runs PR-authored code; it only needs to read the repo.
+          persist-credentials: false
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable

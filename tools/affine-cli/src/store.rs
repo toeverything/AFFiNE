@@ -89,6 +89,22 @@ impl LocalBackend {
         Ok(LocalBackend { pool, universal_id })
     }
 
+    /// Open an EXISTING workspace store; errors when the database file is absent.
+    ///
+    /// `open` materializes the workspace directory + DB as a side effect, so routing every
+    /// command except `workspace create` through this variant keeps a typo'd `--workspace`
+    /// id from silently creating an empty workspace that `workspace list` then reports.
+    pub async fn open_existing(base: &Path, peer: &str, workspace_id: &str) -> Result<Self, CliError> {
+        let db_path = paths::workspace_db_path(base, peer, workspace_id);
+        if !db_path.is_file() {
+            return Err(CliError::config(format!(
+                "workspace not found: {workspace_id} (no database at {})",
+                db_path.display()
+            )));
+        }
+        Self::open(base, peer, workspace_id).await
+    }
+
     pub fn db_path(base: &Path, peer: &str, workspace_id: &str) -> std::path::PathBuf {
         paths::workspace_db_path(base, peer, workspace_id)
     }

@@ -197,6 +197,28 @@ fn workspace_list_empty_when_no_dir() {
 }
 
 #[test]
+fn unknown_workspace_id_errors_without_creating_it() {
+    // Regression: a typo'd --workspace id must NOT materialize an empty workspace DB on disk
+    // (which `workspace list` would then report as a real workspace).
+    let base = TempBase::new("nosuchws");
+    let err = run_err(base.path(), &["doc", "list", "--workspace", "no-such-workspace"]);
+    assert_eq!(err["error"], "config", "expected config error, got {err:?}");
+
+    let err = run_err(
+        base.path(),
+        &["doc", "create", "--workspace", "no-such-workspace", "--title", "T"],
+    );
+    assert_eq!(err["error"], "config", "expected config error, got {err:?}");
+
+    let list = run_ok(base.path(), &["workspace", "list"]);
+    assert_eq!(
+        list.as_array().expect("array").len(),
+        0,
+        "failed commands must not create workspaces: {list:?}"
+    );
+}
+
+#[test]
 fn doc_list_shows_created_docs() {
     let base = TempBase::new("doclist");
     let ws = create_ws(base.path(), "WS");

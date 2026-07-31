@@ -90,53 +90,43 @@ pub fn add_doc_to_root_doc(root_doc_bin: Vec<u8>, doc_id: &str, title: Option<&s
     });
 
     if !doc_exists {
-        let page_map = doc.create_map()?;
-
-        let idx = pages.len();
-        pages.insert(idx, Value::Map(page_map))?;
-
-        if let Some(mut inserted_page) = pages.get(idx).and_then(|v| v.to_map()) {
-            inserted_page.insert("id".to_string(), Any::String(doc_id.to_string()))?;
-
-            let page_title = title.unwrap_or(DEFAULT_DOC_TITLE);
-            inserted_page.insert("title".to_string(), Any::String(page_title.to_string()))?;
-
-            let timestamp = std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .map(|d| d.as_millis() as i64)
-                .unwrap_or(0);
-            inserted_page.insert("createDate".to_string(), Any::Float64((timestamp as f64).into()))?;
-
-            let tags = doc.create_array()?;
-            inserted_page.insert("tags".to_string(), Value::Array(tags))?;
-        }
+        insert_page_stub(&doc, &mut pages, doc_id, title)?;
     }
 
     // Encode only the changes (delta) since state_before
     Ok(doc.encode_state_as_update_v1(&state_before)?)
 }
 
-fn insert_page_stub(doc: &Doc, pages: &mut Array, doc_id: &str, title: Option<&str>) -> Result<(), ParseError> {
+pub(super) fn insert_page_stub(
+    doc: &Doc,
+    pages: &mut Array,
+    doc_id: &str,
+    title: Option<&str>,
+) -> Result<(), ParseError> {
     let page_map = doc.create_map()?;
     let idx = pages.len();
     pages.insert(idx, Value::Map(page_map))?;
 
-    if let Some(mut inserted_page) = pages.get(idx).and_then(|v| v.to_map()) {
-        inserted_page.insert("id".to_string(), Any::String(doc_id.to_string()))?;
-        inserted_page.insert(
-            "title".to_string(),
-            Any::String(title.unwrap_or(DEFAULT_DOC_TITLE).to_string()),
-        )?;
+    // Failing to read the entry back must be an error: returning Ok would leave an id-less
+    // page stub in meta.pages that every reader silently skips.
+    let mut inserted_page = pages
+        .get(idx)
+        .and_then(|v| v.to_map())
+        .ok_or_else(|| ParseError::ParserError("failed to read back inserted page map".into()))?;
+    inserted_page.insert("id".to_string(), Any::String(doc_id.to_string()))?;
+    inserted_page.insert(
+        "title".to_string(),
+        Any::String(title.unwrap_or(DEFAULT_DOC_TITLE).to_string()),
+    )?;
 
-        let timestamp = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_millis() as i64)
-            .unwrap_or(0);
-        inserted_page.insert("createDate".to_string(), Any::Float64((timestamp as f64).into()))?;
+    let timestamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_millis() as i64)
+        .unwrap_or(0);
+    inserted_page.insert("createDate".to_string(), Any::Float64((timestamp as f64).into()))?;
 
-        let tags = doc.create_array()?;
-        inserted_page.insert("tags".to_string(), Value::Array(tags))?;
-    }
+    let tags = doc.create_array()?;
+    inserted_page.insert("tags".to_string(), Value::Array(tags))?;
 
     Ok(())
 }
@@ -168,9 +158,12 @@ fn insert_page_from_any(doc: &Doc, pages: &mut Array, page: Any) -> Result<Optio
     let idx = pages.len();
     pages.insert(idx, Value::Map(page_map))?;
 
-    let Some(mut inserted_page) = pages.get(idx).and_then(|v| v.to_map()) else {
-        return Ok(None);
-    };
+    // The empty map is already inserted at this point, so a failed read-back must error
+    // rather than leave an id-less page entry behind.
+    let mut inserted_page = pages
+        .get(idx)
+        .and_then(|v| v.to_map())
+        .ok_or_else(|| ParseError::ParserError("failed to read back inserted page map".into()))?;
 
     for key in SIMPLE_PAGE_META_KEYS {
         let Some(value) = page.get(*key) else {

@@ -1,12 +1,14 @@
+use std::collections::HashSet;
+
 use y_octo::{TextDeltaOp, TextInsert};
 
 use super::{
     super::schema::{
         PROP_CAPTION, PROP_CELLS_PREFIX, PROP_CHECKED, PROP_COLUMNS_PREFIX, PROP_HEIGHT, PROP_INDEX, PROP_LANGUAGE,
-        PROP_LATEX, PROP_LOCKED_BY_SELF, PROP_ORDER, PROP_ROTATE, PROP_ROWS_PREFIX, PROP_SCALE, PROP_SOURCE_ID,
-        PROP_TEXT, PROP_TYPE, PROP_URL, PROP_VIDEO_ID, PROP_WIDTH, PROP_XYWH, SYS_CHILDREN, SYS_FLAVOUR, SYS_ID,
-        SYS_VERSION, table_cell_text_key, table_column_id_key, table_column_order_key, table_row_id_key,
-        table_row_order_key,
+        PROP_LATEX, PROP_LOCKED_BY_SELF, PROP_ORDER, PROP_ORDER_SUFFIX, PROP_ROTATE, PROP_ROWS_PREFIX, PROP_SCALE,
+        PROP_SOURCE_ID, PROP_TEXT, PROP_TYPE, PROP_URL, PROP_VIDEO_ID, PROP_WIDTH, PROP_XYWH, SYS_CHILDREN,
+        SYS_FLAVOUR, SYS_ID, SYS_VERSION, table_cell_text_key, table_column_id_key, table_column_order_key,
+        table_row_id_key, table_row_order_key,
     },
     *,
 };
@@ -294,34 +296,95 @@ pub(super) fn apply_embed_iframe_block_props(
     Ok(())
 }
 
+/// Write a table's rows/columns/cells INCREMENTALLY: existing row and column ids are reused
+/// by position (order key), ids are minted only for rows/columns beyond the current size, and
+/// a key is only touched when its value actually changes. A clear-and-remint here would turn
+/// every one-cell edit into an O(cells) delta, drop concurrent app edits to other cells, and
+/// invalidate app-side state keyed on row/column ids.
 pub(super) fn apply_table_block_props(block: &mut Map, rows: &[Vec<String>]) -> Result<(), ParseError> {
-    clear_table_props(block);
-
-    if rows.is_empty() {
-        return Ok(());
-    }
+    let prior_rows = existing_table_ids(block, PROP_ROWS_PREFIX);
+    let prior_columns = existing_table_ids(block, PROP_COLUMNS_PREFIX);
 
     let column_count = rows.iter().map(|row| row.len()).max().unwrap_or(0);
-    let column_ids: Vec<String> = (0..column_count).map(|_| nanoid::nanoid!()).collect();
+    let row_ids: Vec<String> = (0..rows.len())
+        .map(|i| prior_rows.get(i).cloned().unwrap_or_else(|| nanoid::nanoid!()))
+        .collect();
+    let column_ids: Vec<String> = (0..column_count)
+        .map(|i| prior_columns.get(i).cloned().unwrap_or_else(|| nanoid::nanoid!()))
+        .collect();
+
+    // Remove every table key that is not part of the grid we are about to write (metadata of
+    // dropped rows/columns and their cells).
+    let mut expected: HashSet<String> = HashSet::new();
+    for column_id in &column_ids {
+        expected.insert(table_column_id_key(column_id));
+        expected.insert(table_column_order_key(column_id));
+    }
+    for row_id in &row_ids {
+        expected.insert(table_row_id_key(row_id));
+        expected.insert(table_row_order_key(row_id));
+        for column_id in &column_ids {
+            expected.insert(table_cell_text_key(row_id, column_id));
+        }
+    }
+    let stale: Vec<String> = block
+        .keys()
+        .filter(|key| {
+            (key.starts_with(PROP_ROWS_PREFIX)
+                || key.starts_with(PROP_COLUMNS_PREFIX)
+                || key.starts_with(PROP_CELLS_PREFIX))
+                && !expected.contains(*key)
+        })
+        .map(|s| s.to_string())
+        .collect();
+    for key in stale {
+        block.remove(&key);
+    }
 
     for (col_idx, column_id) in column_ids.iter().enumerate() {
-        let order = format_table_order(col_idx);
-        block.insert(table_column_id_key(column_id), Any::String(column_id.to_string()))?;
-        block.insert(table_column_order_key(column_id), Any::String(order))?;
+        insert_string_if_changed(block, table_column_id_key(column_id), column_id)?;
+        insert_string_if_changed(block, table_column_order_key(column_id), &format_table_order(col_idx))?;
     }
 
     for (row_idx, row) in rows.iter().enumerate() {
-        let row_id = nanoid::nanoid!();
-        let order = format_table_order(row_idx);
-        block.insert(table_row_id_key(&row_id), Any::String(row_id.to_string()))?;
-        block.insert(table_row_order_key(&row_id), Any::String(order))?;
+        let row_id = &row_ids[row_idx];
+        insert_string_if_changed(block, table_row_id_key(row_id), row_id)?;
+        insert_string_if_changed(block, table_row_order_key(row_id), &format_table_order(row_idx))?;
 
         for (col_idx, column_id) in column_ids.iter().enumerate() {
-            let cell_text = row.get(col_idx).cloned().unwrap_or_default();
-            block.insert(table_cell_text_key(&row_id, column_id), Any::String(cell_text))?;
+            let cell_text = row.get(col_idx).map(String::as_str).unwrap_or_default();
+            insert_string_if_changed(block, table_cell_text_key(row_id, column_id), cell_text)?;
         }
     }
 
+    Ok(())
+}
+
+/// Row or column ids currently stored on the block under `prefix`, sorted by their `.order`
+/// value (i.e. display position).
+fn existing_table_ids(block: &Map, prefix: &str) -> Vec<String> {
+    let order_keys: Vec<String> = block
+        .keys()
+        .filter(|key| key.starts_with(prefix) && key.ends_with(PROP_ORDER_SUFFIX))
+        .map(|s| s.to_string())
+        .collect();
+    let mut entries: Vec<(String, String)> = order_keys
+        .into_iter()
+        .filter_map(|key| {
+            let id = key[prefix.len()..key.len() - PROP_ORDER_SUFFIX.len()].to_string();
+            let order = get_string(block, &key)?;
+            Some((order, id))
+        })
+        .collect();
+    entries.sort();
+    entries.into_iter().map(|(_, id)| id).collect()
+}
+
+fn insert_string_if_changed(block: &mut Map, key: String, value: &str) -> Result<(), ParseError> {
+    if get_string(block, &key).as_deref() == Some(value) {
+        return Ok(());
+    }
+    block.insert(key, Any::String(value.to_string()))?;
     Ok(())
 }
 
@@ -445,21 +508,6 @@ pub(super) fn insert_block_tree(doc: &Doc, blocks_map: &mut Map, node: &BlockNod
     insert_children(doc, &mut block_map, &child_ids)?;
 
     Ok(block_id)
-}
-
-fn clear_table_props(block: &mut Map) {
-    let keys = block
-        .keys()
-        .filter(|key| {
-            key.starts_with(PROP_ROWS_PREFIX)
-                || key.starts_with(PROP_COLUMNS_PREFIX)
-                || key.starts_with(PROP_CELLS_PREFIX)
-        })
-        .map(|s| s.to_string())
-        .collect::<Vec<_>>();
-    for key in keys {
-        block.remove(&key);
-    }
 }
 
 fn format_table_order(index: usize) -> String {

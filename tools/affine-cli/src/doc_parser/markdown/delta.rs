@@ -335,19 +335,44 @@ struct Group {
 /// followed by an ASCII digit (currency: `$5`), whitespace, or end-of-text can never OPEN an
 /// inline equation, and with every possible opener escaped no closer can pair either — those
 /// stay verbatim so currency text is byte-stable across round-trips.
-fn escape_math_dollars(text: &str) -> std::borrow::Cow<'_, str> {
+/// `next_char` is the first character that will follow `text` in the final rendered markdown
+/// (the next delta op's leading char, a style marker, or a newline) — without it a `$` that
+/// ends one op but is followed by more inline content in the next would escape wrongly.
+fn escape_math_dollars(text: &str, next_char: Option<char>) -> std::borrow::Cow<'_, str> {
     if !text.contains('$') {
         return std::borrow::Cow::Borrowed(text);
     }
     let mut out = String::with_capacity(text.len() + 4);
     let mut chars = text.chars().peekable();
     while let Some(c) = chars.next() {
-        if c == '$' && chars.peek().is_some_and(|n| !n.is_ascii_digit() && !n.is_whitespace()) {
+        let following = chars.peek().copied().or(next_char);
+        if c == '$' && following.is_some_and(|n| !n.is_ascii_digit() && !n.is_whitespace()) {
             out.push('\\');
         }
         out.push(c);
     }
     std::borrow::Cow::Owned(out)
+}
+
+/// First character the given op will contribute to the rendered markdown, used to judge a `$`
+/// that ends the preceding op. Conservative: styled ops report a marker char (`*`), which can
+/// only over-escape (a `\$` still round-trips as a literal `$`), never under-escape.
+fn op_leading_char(op: &DeltaOp) -> Option<char> {
+    if op
+        .attributes
+        .get(InlineStyle::Latex.key())
+        .and_then(any_as_string)
+        .is_some_and(|latex| !latex.is_empty())
+    {
+        return Some('$');
+    }
+    if !op.attributes.is_empty() {
+        return Some('*');
+    }
+    match &op.insert {
+        DeltaInsert::Text(text) => text.chars().next(),
+        DeltaInsert::Embed(_) => Some('['),
+    }
 }
 
 fn convert_delta_ops(ops: &[DeltaOp], options: &DeltaToMdOptions) -> Rc<RefCell<Node>> {
@@ -363,6 +388,13 @@ fn convert_delta_ops(ops: &[DeltaOp], options: &DeltaToMdOptions) -> Rc<RefCell<
     for index in 0..ops.len() {
         let op = &ops[index];
         let next_attrs = ops.get(index + 1).map(|next| &next.attributes);
+        // What follows this op's text in the rendered output, for the trailing-`$` escape
+        // decision: a close marker if this op is styled, else the next op's leading char.
+        let next_op_char = if !op.attributes.is_empty() {
+            Some('*')
+        } else {
+            ops.get(index + 1).and_then(op_leading_char)
+        };
 
         // Inline math: an op carrying a non-empty `latex` attribute renders as `$…$`, discarding the
         // placeholder space insert (mirrors BlockSuite's inlineMath markdown adapter). Close any open
@@ -495,7 +527,12 @@ fn convert_delta_ops(ops: &[DeltaOp], options: &DeltaToMdOptions) -> Rc<RefCell<
                         if op.attributes.contains_key(InlineStyle::Code.key()) {
                             Node::append(&el, Node::new_text(segment));
                         } else {
-                            Node::append(&el, Node::new_text(&escape_math_dollars(segment)));
+                            let boundary = if line_index + 1 < lines.len() {
+                                Some('\n')
+                            } else {
+                                next_op_char
+                            };
+                            Node::append(&el, Node::new_text(&escape_math_dollars(segment, boundary)));
                         }
                         if line_index + 1 < lines.len() {
                             new_line(&root, &mut line, &mut el, &mut active_inline);
@@ -810,6 +847,40 @@ mod tests {
     use y_octo::{Any, TextAttributes, TextDeltaOp, TextInsert};
 
     use super::*;
+
+    #[test]
+    fn test_trailing_dollar_before_styled_op_is_escaped() {
+        // A `$` that ends one op must consider what the NEXT op contributes: here bold text
+        // follows immediately, so the `$` could open a math span on re-parse and must escape.
+        let mut bold = TextAttributes::new();
+        bold.insert(InlineStyle::Bold.key().into(), Any::True);
+
+        let delta = vec![
+            TextDeltaOp::Insert {
+                insert: TextInsert::Text("the price is $".into()),
+                format: None,
+            },
+            TextDeltaOp::Insert {
+                insert: TextInsert::Text("note".into()),
+                format: Some(bold),
+            },
+            TextDeltaOp::Insert {
+                insert: TextInsert::Text(" plus $5 tax".into()),
+                format: None,
+            },
+        ];
+
+        let options = DeltaToMdOptions::new(None);
+        let rendered = delta_to_markdown_with_options(&delta, &options, false);
+        assert!(
+            rendered.contains("the price is \\$**note**"),
+            "trailing $ before styled run must escape: {rendered}"
+        );
+        assert!(
+            rendered.contains(" plus $5 tax") && !rendered.contains("\\$5"),
+            "currency must stay literal: {rendered}"
+        );
+    }
 
     #[test]
     fn test_delta_to_inline_markdown_link() {

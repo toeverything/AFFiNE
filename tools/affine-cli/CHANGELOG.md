@@ -4,6 +4,32 @@ All notable changes to the `affine-cli` crate (and its skill, compat harness, an
 loosely follows [Keep a Changelog](https://keepachangelog.com); the crate is unpublished
 (`0.0.0`), so entries are grouped by date / branch state rather than versions.
 
+## 2026-07-31
+
+Fixes for the CodeRabbit review findings on upstream PR #15374.
+
+### Fixed
+
+- **Table updates are now incremental.**
+  Row and column ids are reused by position and only changed keys are written.
+  Previously every table write cleared and re-minted all ids, so a one-cell edit produced an O(cells) delta, dropped concurrent app edits to other cells, and invalidated app state keyed on row/column ids.
+- **`generate_key_between` no longer panics on malformed fraction digits.**
+  An order key with a non-base-62 fraction char (for example a corrupt element `index` read from a foreign doc) now returns an error envelope; `digit_index(...).unwrap()` used to panic.
+  The `midpoint` digit lookups and `b_chars[i]` index are fallible/bounded as defense in depth.
+- **Parent-chain walks are cycle-safe.**
+  `get_list_depth`, `nearest_by_flavour`, `has_skipped_markdown_ancestor`, and `block_level` carry a visited set, so a corrupt doc with a cyclic `sys:children` chain terminates instead of hanging the CLI.
+- **`$` escaping sees across delta-op boundaries.**
+  A `$` ending one op is now judged against the first character the next op renders (or the close marker of the current style), closing an under-escape where `...is $` followed by a styled run could re-parse as math.
+- **Page-stub inserts fail loudly.**
+  `insert_page_stub` (and its two former near-copies in `add_doc_to_root_doc` / `update_root_doc_meta_title`, which now call the one shared helper) propagate a failed read-back as an error instead of leaving an id-less page entry in `meta.pages` that every reader silently skips.
+- **Unknown `--workspace` ids no longer create workspaces.**
+  Every command except `workspace create` opens the store via the new `LocalBackend::open_existing`, which errors (`"error":"config"`) when the database file is absent.
+  Previously a typo'd id materialized an empty workspace directory that `workspace list` then reported as real.
+
+### Changed
+
+- CI workflow hardened per zizmor: job-level `permissions: contents: read` and checkout with `persist-credentials: false`.
+
 ## 2026-07-27
 
 Rebased onto current upstream/canary as the self-contained `feat/affine-cli` branch.

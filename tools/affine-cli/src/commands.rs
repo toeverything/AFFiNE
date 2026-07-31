@@ -148,7 +148,7 @@ pub async fn doc_create(global: &GlobalArgs, args: &DocCreateArgs) -> Result<Val
     let bin = engine::build_full_doc(&args.title, &markdown, &doc_id)?;
 
     // Step B: open the (existing) workspace store and persist the doc.
-    let backend = LocalBackend::open(&base, &global.peer, &workspace_id).await?;
+    let backend = LocalBackend::open_existing(&base, &global.peer, &workspace_id).await?;
     backend.push_update(&doc_id, &bin).await?;
 
     // Step C: load + merge the existing root doc (snapshot + updates).
@@ -177,7 +177,7 @@ pub async fn doc_read(global: &GlobalArgs, args: &DocReadArgs) -> Result<Value, 
     let base = base(global)?;
     let workspace_id = resolve_workspace(args.workspace.as_deref(), global)?;
 
-    let backend = LocalBackend::open(&base, &global.peer, &workspace_id).await?;
+    let backend = LocalBackend::open_existing(&base, &global.peer, &workspace_id).await?;
     let merged = merge_target(&backend, &args.doc).await?;
     if merged.is_empty() {
         return Err(CliError::other(format!("doc not found: {}", args.doc)));
@@ -276,7 +276,7 @@ async fn read_workspace_entry(
     global: &GlobalArgs,
     id: &str,
 ) -> Result<(String, usize), CliError> {
-    let backend = LocalBackend::open(base, &global.peer, id).await?;
+    let backend = LocalBackend::open_existing(base, &global.peer, id).await?;
     let root_bin = merge_target(&backend, id).await?;
     if root_bin.is_empty() {
         return Ok((String::new(), 0));
@@ -291,7 +291,7 @@ pub async fn doc_list(global: &GlobalArgs, args: &DocListArgs) -> Result<Value, 
     let base = base(global)?;
     let workspace_id = resolve_workspace(args.workspace.as_deref(), global)?;
 
-    let backend = LocalBackend::open(&base, &global.peer, &workspace_id).await?;
+    let backend = LocalBackend::open_existing(&base, &global.peer, &workspace_id).await?;
     let root_bin = merge_target(&backend, &workspace_id).await?;
     if root_bin.is_empty() {
         return Err(CliError::other(format!("workspace not found: {workspace_id}")));
@@ -310,7 +310,7 @@ pub async fn doc_update(global: &GlobalArgs, args: &DocUpdateArgs) -> Result<Val
     guard_workspace_writable(global, &base, &workspace_id)?;
     let markdown = read_markdown(args.content.as_deref(), args.md_file.as_deref())?;
 
-    let backend = LocalBackend::open(&base, &global.peer, &workspace_id).await?;
+    let backend = LocalBackend::open_existing(&base, &global.peer, &workspace_id).await?;
     let existing = merge_target(&backend, &args.doc).await?;
     if existing.is_empty() {
         return Err(CliError::other(format!("doc not found: {}", args.doc)));
@@ -339,7 +339,7 @@ pub async fn doc_set_title(global: &GlobalArgs, args: &DocSetTitleArgs) -> Resul
     validate_doc_target(&args.doc, &workspace_id)?;
     guard_workspace_writable(global, &base, &workspace_id)?;
 
-    let backend = LocalBackend::open(&base, &global.peer, &workspace_id).await?;
+    let backend = LocalBackend::open_existing(&base, &global.peer, &workspace_id).await?;
 
     // (a) Page doc title.
     let existing = merge_target(&backend, &args.doc).await?;
@@ -378,7 +378,7 @@ pub async fn doc_set_mode(global: &GlobalArgs, args: &DocSetModeArgs) -> Result<
     validate_doc_target(&args.doc, &workspace_id)?;
     guard_workspace_writable(global, &base, &workspace_id)?;
 
-    let backend = LocalBackend::open(&base, &global.peer, &workspace_id).await?;
+    let backend = LocalBackend::open_existing(&base, &global.peer, &workspace_id).await?;
 
     // Load the existing properties doc (preserving other docs' rows + other fields on this row).
     let props_bin = merge_target(&backend, "db$docProperties").await?;
@@ -400,7 +400,7 @@ pub async fn doc_delete(global: &GlobalArgs, args: &DocDeleteArgs) -> Result<Val
     validate_doc_target(&args.doc, &workspace_id)?;
     guard_workspace_writable(global, &base, &workspace_id)?;
 
-    let backend = LocalBackend::open(&base, &global.peer, &workspace_id).await?;
+    let backend = LocalBackend::open_existing(&base, &global.peer, &workspace_id).await?;
 
     // (a) Remove the entry from root meta.pages (compute from the merged root, push a delta).
     let root_bin = merge_target(&backend, &workspace_id).await?;
@@ -469,7 +469,7 @@ pub async fn search(global: &GlobalArgs, args: &SearchArgs) -> Result<Value, Cli
     // workspace DB, so it takes the same open-workspace guard as every mutating command.
     guard_workspace_writable(global, &base, &workspace_id)?;
 
-    let backend = LocalBackend::open(&base, &global.peer, &workspace_id).await?;
+    let backend = LocalBackend::open_existing(&base, &global.peer, &workspace_id).await?;
     // connect() (inside open) already ran init_index, loading any desktop-app snapshots.
 
     let root_bin = merge_target(&backend, &workspace_id).await?;
@@ -536,7 +536,7 @@ pub async fn blob_put(global: &GlobalArgs, args: &BlobPutArgs) -> Result<Value, 
         .clone()
         .unwrap_or_else(|| "application/octet-stream".to_string());
 
-    let backend = LocalBackend::open(&base, &global.peer, &workspace_id).await?;
+    let backend = LocalBackend::open_existing(&base, &global.peer, &workspace_id).await?;
     backend.set_blob(&key, &data, &mime).await?;
 
     Ok(json!({
@@ -554,7 +554,7 @@ pub async fn blob_get(global: &GlobalArgs, args: &BlobGetArgs) -> Result<Value, 
     let base = base(global)?;
     let workspace_id = resolve_workspace(args.workspace.as_deref(), global)?;
 
-    let backend = LocalBackend::open(&base, &global.peer, &workspace_id).await?;
+    let backend = LocalBackend::open_existing(&base, &global.peer, &workspace_id).await?;
     let blob = backend
         .get_blob(&args.key)
         .await?
@@ -590,7 +590,7 @@ pub async fn blob_list(global: &GlobalArgs, args: &BlobListArgs) -> Result<Value
     let base = base(global)?;
     let workspace_id = resolve_workspace(args.workspace.as_deref(), global)?;
 
-    let backend = LocalBackend::open(&base, &global.peer, &workspace_id).await?;
+    let backend = LocalBackend::open_existing(&base, &global.peer, &workspace_id).await?;
     let blobs = backend.list_blobs().await?;
 
     let out: Vec<Value> = blobs
@@ -660,7 +660,7 @@ pub async fn diagram_add_shape(global: &GlobalArgs, args: &DiagramAddShapeArgs) 
     validate_doc_target(&args.doc, &workspace_id)?;
     guard_workspace_writable(global, &base, &workspace_id)?;
 
-    let backend = LocalBackend::open(&base, &global.peer, &workspace_id).await?;
+    let backend = LocalBackend::open_existing(&base, &global.peer, &workspace_id).await?;
     let existing = merge_target(&backend, &args.doc).await?;
     if existing.is_empty() {
         return Err(CliError::other(format!("doc not found: {}", args.doc)));
@@ -694,7 +694,7 @@ pub async fn diagram_add_text(global: &GlobalArgs, args: &DiagramAddTextArgs) ->
     validate_doc_target(&args.doc, &workspace_id)?;
     guard_workspace_writable(global, &base, &workspace_id)?;
 
-    let backend = LocalBackend::open(&base, &global.peer, &workspace_id).await?;
+    let backend = LocalBackend::open_existing(&base, &global.peer, &workspace_id).await?;
     let existing = merge_target(&backend, &args.doc).await?;
     if existing.is_empty() {
         return Err(CliError::other(format!("doc not found: {}", args.doc)));
@@ -726,7 +726,7 @@ pub async fn diagram_add_connector(global: &GlobalArgs, args: &DiagramAddConnect
     validate_doc_target(&args.doc, &workspace_id)?;
     guard_workspace_writable(global, &base, &workspace_id)?;
 
-    let backend = LocalBackend::open(&base, &global.peer, &workspace_id).await?;
+    let backend = LocalBackend::open_existing(&base, &global.peer, &workspace_id).await?;
     let existing = merge_target(&backend, &args.doc).await?;
     if existing.is_empty() {
         return Err(CliError::other(format!("doc not found: {}", args.doc)));
@@ -777,7 +777,7 @@ pub async fn diagram_repair_labels(
         validate_doc_target(doc, &workspace_id)?;
     }
     guard_workspace_writable(global, &base, &workspace_id)?;
-    let backend = LocalBackend::open(&base, &global.peer, &workspace_id).await?;
+    let backend = LocalBackend::open_existing(&base, &global.peer, &workspace_id).await?;
 
     // Resolve the target doc list.
     let doc_ids: Vec<String> = match &args.doc {
@@ -996,7 +996,7 @@ pub async fn diagram_create(global: &GlobalArgs, args: &DiagramCreateArgs) -> Re
         })
         .collect::<Result<_, CliError>>()?;
 
-    let backend = LocalBackend::open(&base, &global.peer, &workspace_id).await?;
+    let backend = LocalBackend::open_existing(&base, &global.peer, &workspace_id).await?;
     let current = merge_target(&backend, &args.doc).await?;
     if current.is_empty() {
         return Err(CliError::other(format!("doc not found: {}", args.doc)));
@@ -1042,7 +1042,7 @@ pub async fn doc_add_latex(global: &GlobalArgs, args: &DocAddLatexArgs) -> Resul
     validate_doc_target(&args.doc, &workspace_id)?;
     guard_workspace_writable(global, &base, &workspace_id)?;
 
-    let backend = LocalBackend::open(&base, &global.peer, &workspace_id).await?;
+    let backend = LocalBackend::open_existing(&base, &global.peer, &workspace_id).await?;
     let existing = merge_target(&backend, &args.doc).await?;
     if existing.is_empty() {
         return Err(CliError::other(format!("doc not found: {}", args.doc)));

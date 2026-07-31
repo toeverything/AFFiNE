@@ -82,6 +82,11 @@ fn validate_order_key(key: &str) -> Result<(), FracIndexError> {
     if fraction.ends_with(ZERO) {
         return err(format!("invalid order key: {key}"));
     }
+    // Reject non-base-62 fraction digits here so a corrupt `index` read from a foreign doc
+    // becomes an error envelope instead of reaching midpoint() (never-panic contract).
+    if let Some(c) = fraction.chars().find(|&c| digit_index(c).is_none()) {
+        return err(format!("invalid digit {c:?} in order key: {key}"));
+    }
     Ok(())
 }
 
@@ -190,7 +195,9 @@ fn midpoint(a: &str, b: &str) -> Result<String, FracIndexError> {
         let mut i = 0usize;
         loop {
             let ca = a_chars.get(i).copied().unwrap_or(ZERO);
-            let cb = b_chars[i];
+            // JS `b.charAt(i)` yields "" past the end, which never equals `ca` — so exhausting
+            // b ends the prefix walk there too.
+            let Some(&cb) = b_chars.get(i) else { break };
             if ca == cb {
                 i += 1;
                 continue;
@@ -204,8 +211,11 @@ fn midpoint(a: &str, b: &str) -> Result<String, FracIndexError> {
             return Ok(format!("{prefix}{}", midpoint(&a_rest, &b_rest)?));
         }
         // Digits differ at position 0.
-        let digit_a = a_chars.first().map(|&c| digit_index(c).unwrap()).unwrap_or(0);
-        let digit_b = digit_index(b_chars[0]).unwrap();
+        let digit_a = match a_chars.first() {
+            Some(&c) => digit_index(c).ok_or_else(|| FracIndexError(format!("bad digit: {c}")))?,
+            None => 0,
+        };
+        let digit_b = digit_index(b_chars[0]).ok_or_else(|| FracIndexError(format!("bad digit: {}", b_chars[0])))?;
         if digit_b - digit_a > 1 {
             let mid_digit = round_half_up(digit_a + digit_b, 2);
             Ok(digit_char(mid_digit).to_string())
@@ -222,7 +232,10 @@ fn midpoint(a: &str, b: &str) -> Result<String, FracIndexError> {
     } else {
         // b is open: midpoint between a and the implicit "all-max".
         let a_chars: Vec<char> = a.chars().collect();
-        let digit_a = a_chars.first().map(|&c| digit_index(c).unwrap()).unwrap_or(0);
+        let digit_a = match a_chars.first() {
+            Some(&c) => digit_index(c).ok_or_else(|| FracIndexError(format!("bad digit: {c}")))?,
+            None => 0,
+        };
         if digit_a + 1 < n {
             let mid_digit = round_half_up(digit_a + n, 2);
             Ok(digit_char(mid_digit).to_string())
@@ -446,5 +459,13 @@ mod tests {
     #[test]
     fn errors_on_smallest_integer_bound() {
         assert!(generate_key_between(None, Some(SMALLEST_INTEGER)).is_err());
+    }
+
+    #[test]
+    fn malformed_fraction_digit_errors_instead_of_panicking() {
+        // A corrupt element index from a foreign doc must yield Err, not a digit_index panic.
+        assert!(generate_key_between(Some("a0$"), None).is_err());
+        assert!(generate_key_between(None, Some("a0$")).is_err());
+        assert!(generate_key_between(Some("a0$"), Some("a1")).is_err());
     }
 }
