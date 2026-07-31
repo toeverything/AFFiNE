@@ -315,7 +315,11 @@ const BacklinkLinks = () => {
   const backlinkCount = backlinks?.length;
 
   return (
-    <div className={styles.linksContainer} ref={containerRef}>
+    <div
+      className={styles.linksContainer}
+      ref={containerRef}
+      data-testid="bi-directional-link-panel-backlinks"
+    >
       <div className={styles.linksTitles}>
         {t['com.affine.page-properties.backlinks']()}{' '}
         {backlinkCount !== undefined ? `· ${backlinkCount}` : ''}
@@ -407,7 +411,11 @@ export const LinkPreview = ({
   );
 };
 
-export const BiDirectionalLinkPanel = () => {
+export const BiDirectionalLinkPanel = ({
+  displayLinkedDocs = true,
+}: {
+  displayLinkedDocs?: boolean;
+}) => {
   const { docLinksService, docService } = useServices({
     DocLinksService,
     DocService,
@@ -420,7 +428,9 @@ export const BiDirectionalLinkPanel = () => {
   );
 
   const links = useLiveData(
-    show ? docLinksService.links.links$ : new LiveData([] as Link[])
+    show && displayLinkedDocs
+      ? docLinksService.links.links$
+      : new LiveData([] as Link[])
   );
 
   const handleClickShow = useCallback(() => {
@@ -431,11 +441,13 @@ export const BiDirectionalLinkPanel = () => {
   }, [show, setShow]);
 
   return (
-    <div className={styles.container}>
+    <div className={styles.container} data-testid="bi-directional-link-panel">
       {!show && <Divider size="thinner" />}
 
       <div className={styles.titleLine}>
-        <div className={styles.title}>Bi-Directional Links</div>
+        <div className={styles.title}>
+          {t['com.affine.editor.bi-directional-link-panel.title']()}
+        </div>
         <Button className={styles.showButton} onClick={handleClickShow}>
           {show
             ? t['com.affine.editor.bi-directional-link-panel.hide']()
@@ -448,20 +460,25 @@ export const BiDirectionalLinkPanel = () => {
           <Divider size="thinner" />
 
           <BacklinkLinks />
-          <div className={styles.linksContainer}>
-            <div className={styles.linksTitles}>
-              {t['com.affine.page-properties.outgoing-links']()} ·{' '}
-              {links.length}
-            </div>
-            {links.map((link, i) => (
-              <div
-                key={`${link.docId}-${link.params?.toString()}-${i}`}
-                className={styles.link}
-              >
-                <AffinePageReference pageId={link.docId} params={link.params} />
+          {displayLinkedDocs && (
+            <div
+              className={styles.linksContainer}
+              data-testid="bi-directional-link-panel-linked-docs"
+            >
+              <div className={styles.linksTitles}>
+                {t['com.affine.page-properties.outgoing-links']()} ·{' '}
+                {links.length}
               </div>
-            ))}
-          </div>
+              {links.map((link, i) => (
+                <div
+                  key={`${link.docId}-${link.params?.toString()}-${i}`}
+                  className={styles.link}
+                >
+                  <AffinePageReference pageId={link.docId} params={link.params} />
+                </div>
+              ))}
+            </div>
+          )}
         </>
       )}
     </div>

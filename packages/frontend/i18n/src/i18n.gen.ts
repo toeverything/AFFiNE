@@ -5614,6 +5614,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.editorSettings.page.display-bi-link.title"](): string;
     /**
+      * `Display linked documents at the bottom of the doc. Requires bi-directional links to be enabled.`
+      */
+    ["com.affine.settings.editorSettings.page.display-linked-docs.description"](): string;
+    /**
+      * `Display linked docs`
+      */
+    ["com.affine.settings.editorSettings.page.display-linked-docs.title"](): string;
+    /**
       * `Display document information on the doc.`
       */
     ["com.affine.settings.editorSettings.page.display-doc-info.description"](): string;
@@ -8180,6 +8188,10 @@ export function useAFFiNEI18N(): {
     ["com.affine.editor.at-menu.access-needed-message"](options: {
         readonly username: string;
     }): string;
+    /**
+      * `Bi-Directional Links`
+      */
+    ["com.affine.editor.bi-directional-link-panel.title"](): string;
     /**
       * `Show`
       */
