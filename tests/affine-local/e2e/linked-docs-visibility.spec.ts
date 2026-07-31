@@ -186,7 +186,7 @@ test('settings persist when navigating to another doc and back', async ({
 
   // Navigate back (use browser back)
   await page.goBack();
-  await page.waitForTimeout(300);
+  await waitForEmptyEditor(page);
 
   // Expand panel
   await expandBiDirectionalPanel(page);

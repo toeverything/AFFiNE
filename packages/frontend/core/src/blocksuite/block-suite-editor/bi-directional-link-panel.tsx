@@ -56,6 +56,10 @@ import * as styles from './bi-directional-link-panel.css';
 
 const PREFIX = 'bi-directional-link-panel-collapse:';
 
+// Stable empty list reused whenever outgoing-links data is not needed,
+// avoiding a new LiveData allocation on every render.
+const EMPTY_LINKS = new LiveData([] as Link[]);
+
 type BacklinkGroups = {
   docId: string;
   title: string;
@@ -430,7 +434,7 @@ export const BiDirectionalLinkPanel = ({
   const links = useLiveData(
     show && displayLinkedDocs
       ? docLinksService.links.links$
-      : new LiveData([] as Link[])
+      : EMPTY_LINKS
   );
 
   const handleClickShow = useCallback(() => {
