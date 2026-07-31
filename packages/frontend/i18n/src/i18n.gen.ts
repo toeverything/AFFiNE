@@ -2249,6 +2249,30 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.filter.last 30 days"](): string;
     /**
+      * `last 30 minutes`
+      */
+    ["com.affine.filter.last 30 minutes"](): string;
+    /**
+      * `last 1 hour`
+      */
+    ["com.affine.filter.last 1 hour"](): string;
+    /**
+      * `last 3 hours`
+      */
+    ["com.affine.filter.last 3 hours"](): string;
+    /**
+      * `last 6 hours`
+      */
+    ["com.affine.filter.last 6 hours"](): string;
+    /**
+      * `last 12 hours`
+      */
+    ["com.affine.filter.last 12 hours"](): string;
+    /**
+      * `last 24 hours`
+      */
+    ["com.affine.filter.last 24 hours"](): string;
+    /**
       * `this week`
       */
     ["com.affine.filter.this week"](): string;
