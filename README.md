@@ -116,7 +116,7 @@ AFFiNE now provides pre-built [templates](https://affine.pro/templates) from our
 - [free editable lesson plan template for pre k](https://affine.pro/templates/free-editable-lesson-plan-template-for-pre-k)
 - [high note collection planners](https://affine.pro/templates/high-note-collection-planners)
 - [digital planner](https://affine.pro/templates/category-digital-planner)
-- [ADHD Planner](https://affine.pro/templates/adhd-planner)
+- [ADHD Planner](http://web.archive.org/web/20260513210736/https://affine.pro/templates/adhd-planner)
 - [Reading Log](https://affine.pro/templates/reading-log)
 - [Cornell Notes Template](https://affine.pro/templates/category-cornell-notes-template)
 
