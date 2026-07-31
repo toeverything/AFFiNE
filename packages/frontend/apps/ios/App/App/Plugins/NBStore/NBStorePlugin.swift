@@ -664,7 +664,7 @@ public class NbStorePlugin: CAPPlugin, CAPBridgedPlugin {
           indexName: indexName,
           docId: docId
         )
-        call.resolve(["text": text as Any])
+        call.resolve(["text": text ?? NSNull()])
       } catch {
         call.reject("Failed to get fts document, \(error)", nil, error)
       }

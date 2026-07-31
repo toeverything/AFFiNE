@@ -362,7 +362,7 @@ class TestGeminiProvider extends GeminiProvider<{ apiKey: string }> {
   structuredFactory: (request: LlmStructuredRequest) => LlmStructuredResponse =
     () => ({
       id: 'structured_1',
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.6-flash',
       output_text: '{"summary":"AFFiNE native"}',
       output_json: { summary: 'AFFiNE native' },
       usage: {
@@ -1070,7 +1070,7 @@ test('buildCanonicalNativeStructuredRequest should honor explicit structured opt
 test('buildCanonicalNativeStructuredRequest should honor explicit responseSchema for array outputs', async t => {
   const schema = z.array(z.object({ speaker: z.string(), text: z.string() }));
   const { request } = await buildCanonicalNativeStructuredRequest({
-    model: 'gemini-2.5-flash',
+    model: 'gemini-3.6-flash',
     messages: jsonOnlyPromptMessages('Transcribe this audio.'),
     options: {},
     responseContract: buildStructuredResponseContract(schema),
@@ -1083,7 +1083,7 @@ test('buildCanonicalNativeStructuredRequest should consume explicit structured r
   const schema = z.object({ summary: z.string() });
   const responseContract = buildStructuredResponseContract(schema);
   const { request } = await buildCanonicalNativeStructuredRequest({
-    model: 'gemini-2.5-flash',
+    model: 'gemini-3.6-flash',
     messages: jsonOnlyPromptMessages('Summarize AFFiNE.'),
     options: { strict: false },
     responseContract,
@@ -1120,7 +1120,7 @@ test('buildNativeRequest should canonicalize Gemini attachments', async t => {
     {
       title: 'remote file url',
       input: {
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3.6-flash',
         messages: [
           {
             role: 'user' as const,
@@ -1134,7 +1134,7 @@ test('buildNativeRequest should canonicalize Gemini attachments', async t => {
     {
       title: 'remote image url',
       input: {
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3.6-flash',
         messages: [
           {
             role: 'user' as const,
@@ -1147,7 +1147,7 @@ test('buildNativeRequest should canonicalize Gemini attachments', async t => {
     {
       title: 'data url',
       input: {
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3.6-flash',
         messages: [
           {
             role: 'user' as const,
@@ -1161,7 +1161,7 @@ test('buildNativeRequest should canonicalize Gemini attachments', async t => {
     {
       title: 'remote audio url',
       input: {
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3.6-flash',
         messages: [
           {
             role: 'user' as const,
@@ -1175,7 +1175,7 @@ test('buildNativeRequest should canonicalize Gemini attachments', async t => {
     {
       title: 'bytes and file handle',
       input: {
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3.6-flash',
         messages: [
           {
             role: 'user' as const,
@@ -1316,7 +1316,7 @@ test('buildNativeRequest should preserve tool schemas and defer Gemini rewrite t
   const [{ request: geminiRequest }, { request: openaiRequest }] =
     await Promise.all([
       buildNativeRequest({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3.6-flash',
         messages: promptMessages(userPrompt('read doc')),
         toolContracts: buildToolContracts({
           doc_read: defineTool({
@@ -1371,7 +1371,7 @@ test('buildNativeStructuredRequest should preserve schemas and defer Gemini rewr
   const [{ request: geminiRequest }, { request: openaiRequest }] =
     await Promise.all([
       buildNativeStructuredRequest({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3.6-flash',
         messages: promptMessages(userPrompt('Summarize AFFiNE.')),
         responseContract: buildStructuredResponseContract(schema),
       }),
@@ -1418,7 +1418,7 @@ test('GeminiProvider should use native path for text-only requests', async t => 
   const provider = new TestGeminiProvider();
 
   const result = await getProviderRuntimeHost(provider).run.text(
-    { modelId: 'gemini-2.5-flash' },
+    { modelId: 'gemini-3.6-flash' },
     promptMessages(userPrompt('hello')),
     { reasoning: true }
   );
@@ -1439,7 +1439,7 @@ test('GeminiProvider should use native path for structured requests', async t =>
 
   const schema = z.object({ summary: z.string() });
   const result = await getProviderRuntimeHost(provider).run.structured(
-    { modelId: 'gemini-2.5-flash' },
+    { modelId: 'gemini-3.6-flash' },
     jsonOnlyPromptMessages('Summarize AFFiNE in one short sentence.'),
     structuredOptions(schema),
     structuredContract(schema)
@@ -1468,7 +1468,7 @@ test('GeminiProvider should retry when native structured dispatch returns invali
     }
     return {
       id: `structured_retry_${attempts}`,
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.6-flash',
       output_text: '{"summary":"ok"}',
       output_json: { summary: 'ok' },
       usage: {
@@ -1481,7 +1481,7 @@ test('GeminiProvider should retry when native structured dispatch returns invali
   };
 
   const result = await getProviderRuntimeHost(provider).run.structured(
-    { modelId: 'gemini-2.5-flash' },
+    { modelId: 'gemini-3.6-flash' },
     jsonOnlyPromptMessages('Summarize AFFiNE in one short sentence.'),
     structuredOptions(z.object({ summary: z.string() }), { maxRetries: 2 }),
     structuredContract(z.object({ summary: z.string() }))
@@ -1502,7 +1502,7 @@ test('GeminiProvider should treat maxRetries as retry count for backend failures
 
   const error = await t.throwsAsync(
     getProviderRuntimeHost(provider).run.structured(
-      { modelId: 'gemini-2.5-flash' },
+      { modelId: 'gemini-3.6-flash' },
       jsonOnlyPromptMessages('Summarize AFFiNE in one short sentence.'),
       structuredOptions(z.object({ summary: z.string() }), { maxRetries: 2 }),
       structuredContract(z.object({ summary: z.string() }))
@@ -1524,7 +1524,7 @@ test('GeminiProvider should use native structured path for audio attachments', a
   });
   provider.structuredFactory = () => ({
     id: 'structured_audio_1',
-    model: 'gemini-2.5-flash',
+    model: 'gemini-3.6-flash',
     output_text: '[{"a":"Speaker 1","s":0,"e":1,"t":"Hello"}]',
     output_json: [{ a: 'Speaker 1', s: 0, e: 1, t: 'Hello' }],
     usage: { prompt_tokens: 4, completion_tokens: 3, total_tokens: 7 },
@@ -1532,7 +1532,7 @@ test('GeminiProvider should use native structured path for audio attachments', a
   });
 
   const result = await getProviderRuntimeHost(provider).run.structured(
-    { modelId: 'gemini-2.5-flash' },
+    { modelId: 'gemini-3.6-flash' },
     promptMessages(
       systemPrompt('Return JSON only.'),
       userPrompt('transcribe the audio', {
@@ -1653,7 +1653,7 @@ test('GeminiProvider should canonicalize native text attachments', async t => {
     testCase.setup(provider);
 
     const result = await getProviderRuntimeHost(provider).run.text(
-      { modelId: 'gemini-2.5-flash' },
+      { modelId: 'gemini-3.6-flash' },
       testCase.messages
     );
 
@@ -1677,7 +1677,7 @@ test('GeminiProvider should pass abort signal to remote attachment prefetch', as
   const controller = new AbortController();
 
   await getProviderRuntimeHost(provider).run.text(
-    { modelId: 'gemini-2.5-flash' },
+    { modelId: 'gemini-3.6-flash' },
     [
       {
         role: 'user',
@@ -1701,7 +1701,7 @@ test('GeminiProvider should not pass materialized inline attachment URL to nativ
   });
 
   await getProviderRuntimeHost(provider).run.text(
-    { modelId: 'gemini-2.5-flash' },
+    { modelId: 'gemini-3.6-flash' },
     [
       {
         role: 'user',
@@ -1733,7 +1733,7 @@ test('GeminiProvider should reject unsupported attachment schemes at input valid
 
   const error = await t.throwsAsync(
     getProviderRuntimeHost(provider).run.text(
-      { modelId: 'gemini-2.5-flash' },
+      { modelId: 'gemini-3.6-flash' },
       [
         {
           role: 'user',
@@ -1756,7 +1756,7 @@ test('GeminiProvider should validate malformed attachments before canonicalizati
 
   const error = await t.throwsAsync(
     getProviderRuntimeHost(provider).run.text(
-      { modelId: 'gemini-2.5-flash' },
+      { modelId: 'gemini-3.6-flash' },
       [
         {
           role: 'user',
@@ -1804,7 +1804,7 @@ test('GeminiProvider should drive tool loop on native path', async t => {
   };
 
   const result = await getProviderRuntimeHost(provider).run.text(
-    { modelId: 'gemini-2.5-flash' },
+    { modelId: 'gemini-3.6-flash' },
     [{ role: 'user', content: 'read doc a1' }],
     {}
   );
@@ -1859,7 +1859,7 @@ test('GeminiVertexProvider should materialize remote attachments before native t
     });
 
     const result = await getProviderRuntimeHost(provider).run.text(
-      { modelId: 'gemini-2.5-flash' },
+      { modelId: 'gemini-3.6-flash' },
       [
         {
           role: 'user',

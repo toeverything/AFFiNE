@@ -16,7 +16,6 @@
     "vitest": "^4.1.8"
   },
   "peerDependencies": {
-    "react": "^19.2.1",
-    "react-router-dom": "^7.18.0"
+    "react": "^19.2.1"
   }
 }

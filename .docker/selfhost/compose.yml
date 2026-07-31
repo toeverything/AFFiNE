@@ -1,10 +1,10 @@
 name: affine
 services:
   affine:
-    image: ghcr.io/toeverything/affine:${AFFINE_REVISION:-stable}
+    image: ghcr.io/toeverything/affine:stable
     container_name: affine_server
     ports:
-      - '${PORT:-3010}:3010'
+      - '3010:3010'
     depends_on:
       redis:
         condition: service_healthy
@@ -13,30 +13,24 @@ services:
       affine_migration:
         condition: service_completed_successfully
     volumes:
-      # custom configurations
-      - ${UPLOAD_LOCATION}:/root/.affine/storage
-      - ${CONFIG_LOCATION}:/root/.affine/config
-    env_file:
-      - .env
+      - ./data/storage:/root/.affine/storage
+      - ./config:/root/.affine/config
     environment:
       - REDIS_SERVER_HOST=redis
-      - DATABASE_URL=postgresql://${DB_USERNAME}:${DB_PASSWORD}@postgres:5432/${DB_DATABASE:-affine}
+      - DATABASE_URL=postgresql://affine@postgres:5432/affine
       - AFFINE_INDEXER_ENABLED=false
     restart: unless-stopped
 
   affine_migration:
-    image: ghcr.io/toeverything/affine:${AFFINE_REVISION:-stable}
+    image: ghcr.io/toeverything/affine:stable
     container_name: affine_migration_job
     volumes:
-      # custom configurations
-      - ${UPLOAD_LOCATION}:/root/.affine/storage
-      - ${CONFIG_LOCATION}:/root/.affine/config
+      - ./data/storage:/root/.affine/storage
+      - ./config:/root/.affine/config
     command: ['sh', '-c', 'node ./scripts/self-host-predeploy.js']
-    env_file:
-      - .env
     environment:
       - REDIS_SERVER_HOST=redis
-      - DATABASE_URL=postgresql://${DB_USERNAME}:${DB_PASSWORD}@postgres:5432/${DB_DATABASE:-affine}
+      - DATABASE_URL=postgresql://affine@postgres:5432/affine
       - AFFINE_INDEXER_ENABLED=false
     depends_on:
       postgres:
@@ -58,18 +52,14 @@ services:
     image: pgvector/pgvector:pg16
     container_name: affine_postgres
     volumes:
-      - ${DB_DATA_LOCATION}:/var/lib/postgresql/data
+      - ./data/postgres:/var/lib/postgresql/data
     environment:
-      POSTGRES_USER: ${DB_USERNAME}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_DATABASE:-affine}
+      POSTGRES_USER: affine
+      POSTGRES_DB: affine
       POSTGRES_INITDB_ARGS: '--data-checksums'
-      # you better set a password for you database
-      # or you may add 'POSTGRES_HOST_AUTH_METHOD=trust' to ignore postgres security policy
       POSTGRES_HOST_AUTH_METHOD: trust
     healthcheck:
-      test:
-        ['CMD', 'pg_isready', '-U', "${DB_USERNAME}", '-d', "${DB_DATABASE:-affine}"]
+      test: ['CMD', 'pg_isready', '-U', 'affine', '-d', 'affine']
       interval: 10s
       timeout: 5s
       retries: 5

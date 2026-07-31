@@ -32,7 +32,7 @@
     "jsonc-parser": "^3.3.1",
     "lodash-es": "^4.17.23",
     "mime-types": "^3.0.0",
-    "postcss": "^8.4.49",
+    "postcss": "^8.5.18",
     "postcss-loader": "^8.2.1",
     "postcss-selector-parser": "^7.1.0",
     "prettier": "^3.7.4",

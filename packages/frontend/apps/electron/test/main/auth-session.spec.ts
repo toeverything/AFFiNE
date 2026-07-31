@@ -64,6 +64,8 @@ import {
   clearAuthSession,
   executeAuthSessionRequest,
   getValidAccessToken,
+  initializeAuthSessions,
+  isManagedAuthEndpoint,
   normalizeEndpoint,
   revokeAuthSession,
   setAuthSession,
@@ -87,9 +89,32 @@ test.each([
   expect(normalizeEndpoint(endpoint)).toBe(expected);
 });
 
-test('atomically persists one encrypted token-pair record', async () => {
+test('loads and atomically persists one encrypted token-pair record', async () => {
   const endpoint = 'https://persistent.example';
   const pair = tokenResponse('access-persistent', 'p', 900);
+  runtime.files.set(
+    sessionFile,
+    JSON.stringify({
+      [endpoint]: Buffer.from(
+        JSON.stringify({
+          version: 1,
+          tokenType: pair.tokenType,
+          accessToken: pair.accessToken,
+          accessExpiresAt: new Date(
+            Date.now() + pair.expiresIn * 1000
+          ).toISOString(),
+          refreshToken: pair.refreshToken,
+          refreshExpiresAt: pair.refreshExpiresAt,
+          session: pair.session,
+        })
+      ).toString('base64'),
+    })
+  );
+
+  expect(isManagedAuthEndpoint(endpoint)).toBe(false);
+  await initializeAuthSessions();
+  expect(isManagedAuthEndpoint(endpoint)).toBe(true);
+  expect(await getValidAccessToken(endpoint)).toBe('access-persistent');
 
   await expect(setAuthSession(endpoint, pair)).resolves.toEqual({
     persistent: true,

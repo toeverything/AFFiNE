@@ -2414,63 +2414,47 @@ test('model selection policy should resolve requested optional models consistent
 
   t.deepEqual(
     modelSelection.resolveRequestedModel({
-      defaultModel: 'gemini-2.5-flash',
-      optionalModels: [
-        'gemini-2.5-flash',
-        'gemini-2.5-pro',
-        'claude-sonnet-4-5@20250929',
-      ],
-      requestedModelId: 'gemini-2.5-pro',
+      defaultModel: 'gpt-5.6-luna',
+      optionalModels: ['gpt-5.6-luna', 'gpt-5.6-terra', 'claude-sonnet-4-6'],
+      requestedModelId: 'gpt-5.6-terra',
     }),
     {
-      selectedModel: 'gemini-2.5-pro',
+      selectedModel: 'gpt-5.6-terra',
       matchedOptionalModel: true,
     }
   );
 
   t.deepEqual(
     modelSelection.resolveRequestedModel({
-      defaultModel: 'gemini-2.5-flash',
-      optionalModels: [
-        'gemini-2.5-flash',
-        'gemini-2.5-pro',
-        'claude-sonnet-4-5@20250929',
-      ],
-      requestedModelId: 'openai-default/gemini-2.5-pro',
+      defaultModel: 'gpt-5.6-luna',
+      optionalModels: ['gpt-5.6-luna', 'gpt-5.6-terra', 'claude-sonnet-4-6'],
+      requestedModelId: 'openai-default/gpt-5.6-terra',
     }),
     {
-      selectedModel: 'openai-default/gemini-2.5-pro',
+      selectedModel: 'openai-default/gpt-5.6-terra',
       matchedOptionalModel: true,
     }
   );
 
   t.deepEqual(
     modelSelection.resolveRequestedModel({
-      defaultModel: 'gemini-2.5-flash',
-      optionalModels: [
-        'gemini-2.5-flash',
-        'gemini-2.5-pro',
-        'claude-sonnet-4-5@20250929',
-      ],
+      defaultModel: 'gpt-5.6-luna',
+      optionalModels: ['gpt-5.6-luna', 'gpt-5.6-terra', 'claude-sonnet-4-6'],
       requestedModelId: 'not-in-optional',
     }),
     {
-      selectedModel: 'gemini-2.5-flash',
+      selectedModel: 'gpt-5.6-luna',
       matchedOptionalModel: false,
     }
   );
 
   t.is(
     modelSelection.resolveRequestedModel({
-      defaultModel: 'gemini-2.5-flash',
-      optionalModels: [
-        'gemini-2.5-flash',
-        'gemini-2.5-pro',
-        'claude-sonnet-4-5@20250929',
-      ],
+      defaultModel: 'gpt-5.6-luna',
+      optionalModels: ['gpt-5.6-luna', 'gpt-5.6-terra', 'claude-sonnet-4-6'],
       requestedModelId: 'not-in-optional',
     }).selectedModel,
-    'gemini-2.5-flash'
+    'gpt-5.6-luna'
   );
 });
 
@@ -2494,45 +2478,33 @@ test('capability policy host should gate pro model requests by subscription stat
   {
     const model1 = await capabilityPolicy.resolveChatModel({
       userId,
-      defaultModel: 'gemini-2.5-flash',
-      optionalModels: [
-        'gemini-2.5-flash',
-        'gemini-2.5-pro',
-        'claude-sonnet-4-5@20250929',
-      ],
-      proModels: ['gemini-2.5-pro', 'claude-sonnet-4-5@20250929'],
-      requestedModelId: 'gemini-2.5-pro',
+      defaultModel: 'gpt-5.6-luna',
+      optionalModels: ['gpt-5.6-luna', 'gpt-5.6-terra', 'claude-sonnet-4-6'],
+      proModels: ['gpt-5.6-terra', 'claude-sonnet-4-6'],
+      requestedModelId: 'gpt-5.6-terra',
       paymentEnabled: false,
     });
     t.snapshot(model1, 'should honor requested pro model');
 
     const model1WithPrefix = await capabilityPolicy.resolveChatModel({
       userId,
-      defaultModel: 'gemini-2.5-flash',
-      optionalModels: [
-        'gemini-2.5-flash',
-        'gemini-2.5-pro',
-        'claude-sonnet-4-5@20250929',
-      ],
-      proModels: ['gemini-2.5-pro', 'claude-sonnet-4-5@20250929'],
-      requestedModelId: 'openai-default/gemini-2.5-pro',
+      defaultModel: 'gpt-5.6-luna',
+      optionalModels: ['gpt-5.6-luna', 'gpt-5.6-terra', 'claude-sonnet-4-6'],
+      proModels: ['gpt-5.6-terra', 'claude-sonnet-4-6'],
+      requestedModelId: 'openai-default/gpt-5.6-terra',
       paymentEnabled: false,
     });
     t.is(
       model1WithPrefix,
-      'openai-default/gemini-2.5-pro',
+      'openai-default/gpt-5.6-terra',
       'should honor requested prefixed pro model'
     );
 
     const model2 = await capabilityPolicy.resolveChatModel({
       userId,
-      defaultModel: 'gemini-2.5-flash',
-      optionalModels: [
-        'gemini-2.5-flash',
-        'gemini-2.5-pro',
-        'claude-sonnet-4-5@20250929',
-      ],
-      proModels: ['gemini-2.5-pro', 'claude-sonnet-4-5@20250929'],
+      defaultModel: 'gpt-5.6-luna',
+      optionalModels: ['gpt-5.6-luna', 'gpt-5.6-terra', 'claude-sonnet-4-6'],
+      proModels: ['gpt-5.6-terra', 'claude-sonnet-4-6'],
       requestedModelId: 'not-in-optional',
       paymentEnabled: false,
     });
@@ -2544,14 +2516,10 @@ test('capability policy host should gate pro model requests by subscription stat
     mockStatus(SubscriptionStatus.Trialing);
     const model3 = await capabilityPolicy.resolveChatModel({
       userId,
-      defaultModel: 'gemini-2.5-flash',
-      optionalModels: [
-        'gemini-2.5-flash',
-        'gemini-2.5-pro',
-        'claude-sonnet-4-5@20250929',
-      ],
-      proModels: ['gemini-2.5-pro', 'claude-sonnet-4-5@20250929'],
-      requestedModelId: 'gemini-2.5-pro',
+      defaultModel: 'gpt-5.6-luna',
+      optionalModels: ['gpt-5.6-luna', 'gpt-5.6-terra', 'claude-sonnet-4-6'],
+      proModels: ['gpt-5.6-terra', 'claude-sonnet-4-6'],
+      requestedModelId: 'gpt-5.6-terra',
       paymentEnabled: true,
     });
     t.snapshot(
@@ -2561,45 +2529,33 @@ test('capability policy host should gate pro model requests by subscription stat
 
     const model3WithPrefix = await capabilityPolicy.resolveChatModel({
       userId,
-      defaultModel: 'gemini-2.5-flash',
-      optionalModels: [
-        'gemini-2.5-flash',
-        'gemini-2.5-pro',
-        'claude-sonnet-4-5@20250929',
-      ],
-      proModels: ['gemini-2.5-pro', 'claude-sonnet-4-5@20250929'],
-      requestedModelId: 'openai-default/gemini-2.5-pro',
+      defaultModel: 'gpt-5.6-luna',
+      optionalModels: ['gpt-5.6-luna', 'gpt-5.6-terra', 'claude-sonnet-4-6'],
+      proModels: ['gpt-5.6-terra', 'claude-sonnet-4-6'],
+      requestedModelId: 'openai-default/gpt-5.6-terra',
       paymentEnabled: true,
     });
     t.is(
       model3WithPrefix,
-      'gemini-2.5-flash',
+      'gpt-5.6-luna',
       'should fallback to default model when requesting prefixed pro model during trialing'
     );
 
     const model4 = await capabilityPolicy.resolveChatModel({
       userId,
-      defaultModel: 'gemini-2.5-flash',
-      optionalModels: [
-        'gemini-2.5-flash',
-        'gemini-2.5-pro',
-        'claude-sonnet-4-5@20250929',
-      ],
-      proModels: ['gemini-2.5-pro', 'claude-sonnet-4-5@20250929'],
-      requestedModelId: 'gemini-2.5-flash',
+      defaultModel: 'gpt-5.6-luna',
+      optionalModels: ['gpt-5.6-luna', 'gpt-5.6-terra', 'claude-sonnet-4-6'],
+      proModels: ['gpt-5.6-terra', 'claude-sonnet-4-6'],
+      requestedModelId: 'gpt-5.6-luna',
       paymentEnabled: true,
     });
     t.snapshot(model4, 'should honor requested non-pro model during trialing');
 
     const model5 = await capabilityPolicy.resolveChatModel({
       userId,
-      defaultModel: 'gemini-2.5-flash',
-      optionalModels: [
-        'gemini-2.5-flash',
-        'gemini-2.5-pro',
-        'claude-sonnet-4-5@20250929',
-      ],
-      proModels: ['gemini-2.5-pro', 'claude-sonnet-4-5@20250929'],
+      defaultModel: 'gpt-5.6-luna',
+      optionalModels: ['gpt-5.6-luna', 'gpt-5.6-terra', 'claude-sonnet-4-6'],
+      proModels: ['gpt-5.6-terra', 'claude-sonnet-4-6'],
       paymentEnabled: true,
     });
     t.snapshot(
@@ -2613,13 +2569,9 @@ test('capability policy host should gate pro model requests by subscription stat
     mockStatus(SubscriptionStatus.Active);
     const model6 = await capabilityPolicy.resolveChatModel({
       userId,
-      defaultModel: 'gemini-2.5-flash',
-      optionalModels: [
-        'gemini-2.5-flash',
-        'gemini-2.5-pro',
-        'claude-sonnet-4-5@20250929',
-      ],
-      proModels: ['gemini-2.5-pro', 'claude-sonnet-4-5@20250929'],
+      defaultModel: 'gpt-5.6-luna',
+      optionalModels: ['gpt-5.6-luna', 'gpt-5.6-terra', 'claude-sonnet-4-6'],
+      proModels: ['gpt-5.6-terra', 'claude-sonnet-4-6'],
       paymentEnabled: true,
     });
     t.snapshot(
@@ -2629,45 +2581,33 @@ test('capability policy host should gate pro model requests by subscription stat
 
     const model7 = await capabilityPolicy.resolveChatModel({
       userId,
-      defaultModel: 'gemini-2.5-flash',
-      optionalModels: [
-        'gemini-2.5-flash',
-        'gemini-2.5-pro',
-        'claude-sonnet-4-5@20250929',
-      ],
-      proModels: ['gemini-2.5-pro', 'claude-sonnet-4-5@20250929'],
-      requestedModelId: 'claude-sonnet-4-5@20250929',
+      defaultModel: 'gpt-5.6-luna',
+      optionalModels: ['gpt-5.6-luna', 'gpt-5.6-terra', 'claude-sonnet-4-6'],
+      proModels: ['gpt-5.6-terra', 'claude-sonnet-4-6'],
+      requestedModelId: 'claude-sonnet-4-6',
       paymentEnabled: true,
     });
     t.snapshot(model7, 'should honor requested pro model during active');
 
     const model7WithPrefix = await capabilityPolicy.resolveChatModel({
       userId,
-      defaultModel: 'gemini-2.5-flash',
-      optionalModels: [
-        'gemini-2.5-flash',
-        'gemini-2.5-pro',
-        'claude-sonnet-4-5@20250929',
-      ],
-      proModels: ['gemini-2.5-pro', 'claude-sonnet-4-5@20250929'],
-      requestedModelId: 'openai-default/claude-sonnet-4-5@20250929',
+      defaultModel: 'gpt-5.6-luna',
+      optionalModels: ['gpt-5.6-luna', 'gpt-5.6-terra', 'claude-sonnet-4-6'],
+      proModels: ['gpt-5.6-terra', 'claude-sonnet-4-6'],
+      requestedModelId: 'openai-default/claude-sonnet-4-6',
       paymentEnabled: true,
     });
     t.is(
       model7WithPrefix,
-      'openai-default/claude-sonnet-4-5@20250929',
+      'openai-default/claude-sonnet-4-6',
       'should honor requested prefixed pro model during active'
     );
 
     const model8 = await capabilityPolicy.resolveChatModel({
       userId,
-      defaultModel: 'gemini-2.5-flash',
-      optionalModels: [
-        'gemini-2.5-flash',
-        'gemini-2.5-pro',
-        'claude-sonnet-4-5@20250929',
-      ],
-      proModels: ['gemini-2.5-pro', 'claude-sonnet-4-5@20250929'],
+      defaultModel: 'gpt-5.6-luna',
+      optionalModels: ['gpt-5.6-luna', 'gpt-5.6-terra', 'claude-sonnet-4-6'],
+      proModels: ['gpt-5.6-terra', 'claude-sonnet-4-6'],
       requestedModelId: 'not-in-optional',
       paymentEnabled: true,
     });
@@ -2684,10 +2624,10 @@ test('prompt runtime should resolve prefixed optional models consistently', asyn
   const promptName = randomUUID().replaceAll('-', '');
   await prompt.set(
     promptName,
-    'gemini-2.5-flash',
+    'gpt-5.6-luna',
     [{ role: 'user', content: '{{content}}' }],
-    { proModels: ['gemini-2.5-pro'] },
-    { optionalModels: ['gemini-2.5-pro'] }
+    { proModels: ['gpt-5.6-terra'] },
+    { optionalModels: ['gpt-5.6-terra'] }
   );
 
   const textStub = Sinon.stub(chatRuntime, 'text').resolves('ok');
@@ -2695,11 +2635,11 @@ test('prompt runtime should resolve prefixed optional models consistently', asyn
   await promptRuntime.runText(
     promptName,
     { content: 'hello' },
-    { modelId: 'openai-default/gemini-2.5-pro' }
+    { modelId: 'openai-default/gpt-5.6-terra' }
   );
   t.is(
     textStub.firstCall.args[0].modelId,
-    'openai-default/gemini-2.5-pro',
+    'openai-default/gpt-5.6-terra',
     'should preserve accepted provider-prefixed optional model'
   );
 
@@ -2710,7 +2650,7 @@ test('prompt runtime should resolve prefixed optional models consistently', asyn
   );
   t.is(
     textStub.secondCall.args[0].modelId,
-    'gemini-2.5-flash',
+    'gpt-5.6-luna',
     'should fallback to default model for non-optional prefixed model'
   );
 });
@@ -2722,10 +2662,10 @@ test('resolver models should use resolved provider metadata for display names', 
   const promptName = randomUUID().replaceAll('-', '');
   await prompt.set(
     promptName,
-    'gemini-2.5-flash',
+    'gpt-5.6-luna',
     [{ role: 'system', content: 'test' }],
-    { proModels: ['gemini-2.5-pro'] },
-    { optionalModels: ['gemini-2.5-flash', 'gemini-2.5-pro'] }
+    { proModels: ['gpt-5.6-terra'] },
+    { optionalModels: ['gpt-5.6-luna', 'gpt-5.6-terra'] }
   );
 
   const resolveProvider = Sinon.stub(factory, 'resolveProvider').callsFake(
@@ -2754,11 +2694,11 @@ test('resolver models should use resolved provider metadata for display names', 
   const models = await resolver.models(promptName);
 
   t.deepEqual(models.optionalModels, [
-    { id: 'gemini-2.5-flash', name: 'Resolved gemini-2.5-flash' },
-    { id: 'gemini-2.5-pro', name: 'Resolved gemini-2.5-pro' },
+    { id: 'gpt-5.6-luna', name: 'Resolved gpt-5.6-luna' },
+    { id: 'gpt-5.6-terra', name: 'Resolved gpt-5.6-terra' },
   ]);
   t.deepEqual(models.proModels, [
-    { id: 'gemini-2.5-pro', name: 'Resolved gemini-2.5-pro' },
+    { id: 'gpt-5.6-terra', name: 'Resolved gpt-5.6-terra' },
   ]);
   t.true(
     resolveProvider.alwaysCalledWithMatch({

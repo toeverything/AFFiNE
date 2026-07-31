@@ -76,11 +76,11 @@ dependencies = [
 
 [[package]]
 name = "affine_doc_loader"
-version = "0.1.3"
+version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1bd208d52725dd0c63583b171ffc3121a60d7686bacedfee5c135f9c0c58d00b"
+checksum = "1344b7af4cfa7e4c17c676281db8f4244914779a59250fbe71c06b5219b15952"
 dependencies = [
- "nanoid 0.5.0",
+ "nanoid",
  "pulldown-cmark 0.13.1",
  "serde",
  "serde_json",
@@ -96,7 +96,7 @@ checksum = "5826d670f6d43faa7809ef6a06d4a8c5ff493b970399c5c3c5659d25e572746b"
 dependencies = [
  "affine_doc_loader",
  "chrono",
- "nanoid 0.5.0",
+ "nanoid",
  "pulldown-cmark 0.13.1",
  "serde",
  "serde_json",
@@ -165,6 +165,7 @@ dependencies = [
  "affine_nbstore",
  "affine_preview",
  "affine_sqlite_v1",
+ "bytes",
  "chrono",
  "hex",
  "infer",
@@ -2929,7 +2930,7 @@ dependencies = [
  "libc",
  "log",
  "rustversion",
- "windows-link 0.2.1",
+ "windows-link 0.1.3",
  "windows-result 0.4.1",
 ]
 
@@ -4711,9 +4712,9 @@ dependencies = [
 
 [[package]]
 name = "llm_adapter"
-version = "0.2.8"
+version = "0.2.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b5edfe10ad51d5301468a395532cb0068caac1057fbda942edebe423fe585509"
+checksum = "c44c287854e9dbe2a92e14b1a41590859a47570e328ec3fbc382645f5cc06e94"
 dependencies = [
  "base64",
  "jsonschema",
@@ -4728,9 +4729,9 @@ dependencies = [
 
 [[package]]
 name = "llm_runtime"
-version = "0.2.6"
+version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2705eff96fcd8e21cb9f23245da8f6da260133dfaa9e6280840f426a6290cb9e"
+checksum = "85273703c62321335888c3417462b4ace530d38479bcb4c920760808a953707f"
 dependencies = [
  "jsonschema",
  "llm_adapter",
@@ -5206,15 +5207,6 @@ dependencies = [
  "num-traits",
  "simba",
  "typenum",
-]
-
-[[package]]
-name = "nanoid"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3ffa00dec017b5b1a8b7cf5e2c008bfda1aa7e0697ac1508b491fdf2622fb4d8"
-dependencies = [
- "rand 0.8.6",
 ]
 
 [[package]]
@@ -6503,9 +6495,9 @@ dependencies = [
 
 [[package]]
 name = "quinn"
-version = "0.11.9"
+version = "0.11.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b9e20a958963c291dc322d98411f541009df2ced7b5a4f2bd52337638cfccf20"
+checksum = "0c1a41e437b6bbd489372cd4971de128e85c855f56c57f283d20ff016cf7c0a8"
 dependencies = [
  "bytes",
  "cfg_aliases",
@@ -6523,15 +6515,16 @@ dependencies = [
 
 [[package]]
 name = "quinn-proto"
-version = "0.11.14"
+version = "0.11.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "434b42fec591c96ef50e21e886936e66d3cc3f737104fdb9b737c40ffb94c098"
+checksum = "2f4bfc015262b9df63c8845072ce59068853ff5872180c2ce2f13038b970e560"
 dependencies = [
  "aws-lc-rs",
  "bytes",
- "getrandom 0.3.4",
+ "getrandom 0.4.2",
  "lru-slab",
- "rand 0.9.4",
+ "rand 0.10.1",
+ "rand_pcg",
  "ring",
  "rustc-hash 2.1.1",
  "rustls",
@@ -6656,12 +6649,21 @@ checksum = "63b8176103e19a2643978565ca18b50549f6101881c443590420e4dc998a3c69"
 
 [[package]]
 name = "rand_distr"
-version = "0.5.1"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6a8615d50dcf34fa31f7ab52692afec947c4dd0ab803cc87cb3b0b4570ff7463"
+checksum = "4d431c2703ccf129de4d45253c03f49ebb22b97d6ad79ee3ecfc7e3f4862c1d8"
 dependencies = [
  "num-traits",
- "rand 0.9.4",
+ "rand 0.10.1",
+]
+
+[[package]]
+name = "rand_pcg"
+version = "0.10.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "caa0f4137e1c0a72f4c651489402276c8e8e1cf081f3b0ba156d2cbeef09e86a"
+dependencies = [
+ "rand_core 0.10.1",
 ]
 
 [[package]]
@@ -10156,7 +10158,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
@@ -10729,9 +10731,9 @@ checksum = "ec7a2a501ed189703dba8b08142f057e887dfc4b2cc4db2d343ac6376ba3e0b9"
 
 [[package]]
 name = "y-octo"
-version = "0.0.3"
+version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bb412cb21b56fe2b48f460b009b230343f3e0f30b18aaaf97e6a67739a6ec0e7"
+checksum = "b72d63c74097d8d9f79237787d714a18ef0203a5da7a8bdb75e99db2db26cf78"
 dependencies = [
  "ahash",
  "arbitrary",
@@ -10739,11 +10741,10 @@ dependencies = [
  "byteorder",
  "log",
  "loom",
- "nanoid 0.4.0",
+ "nanoid",
  "nom 8.0.0",
  "ordered-float",
- "rand 0.9.4",
- "rand_chacha 0.9.0",
+ "rand 0.10.1",
  "rand_distr",
  "serde",
  "serde_json",

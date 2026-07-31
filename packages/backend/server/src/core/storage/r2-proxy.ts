@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from 'node:crypto';
+import { timingSafeEqual } from 'node:crypto';
 
 import { Controller, Logger, Put, Req, Res } from '@nestjs/common';
 import type { Request, Response } from 'express';
@@ -7,9 +7,10 @@ import {
   BlobInvalid,
   CallMetric,
   Config,
+  createStorageUploadToken,
   PROXY_MULTIPART_PATH,
   PROXY_UPLOAD_PATH,
-  type R2StorageConfig,
+  type S3StorageConfig,
   STORAGE_PROXY_ROOT,
   type StorageProviderConfig,
   toBuffer,
@@ -19,15 +20,9 @@ import { Public } from '../auth/guard';
 import { StorageRuntimeProvider } from '../storage-runtime';
 import { MULTIPART_PART_SIZE } from './constants';
 
-type R2BlobStorageConfig = StorageProviderConfig & {
-  provider: 'cloudflare-r2';
-  config: R2StorageConfig;
-};
-
 type QueryValue = Request['query'][string];
 
-type R2Config = {
-  storage: R2BlobStorageConfig;
+type UploadProxyConfig = {
   signKey: string;
 };
 
@@ -41,25 +36,17 @@ export class R2UploadController {
     private readonly rt: StorageRuntimeProvider
   ) {}
 
-  private getR2Config(): R2Config {
+  private getUploadProxyConfig(): UploadProxyConfig {
     const storage = this.config.storages.blob.storage as StorageProviderConfig;
-    if (storage.provider !== 'cloudflare-r2') {
+    if (storage.provider !== 'cloudflare-r2' && storage.provider !== 'aws-s3') {
       throw new BlobInvalid('Invalid endpoint');
     }
-    const r2Config = storage.config as R2StorageConfig;
-    const signKey = r2Config.usePresignedURL?.signKey;
-    if (
-      !r2Config.usePresignedURL?.enabled ||
-      !r2Config.usePresignedURL.urlPrefix ||
-      !signKey
-    ) {
+    const uploadConfig = (storage.config as S3StorageConfig).usePresignedURL;
+    const signKey = uploadConfig?.signKey;
+    if (!uploadConfig?.enabled || !signKey) {
       throw new BlobInvalid('Invalid endpoint');
     }
-    return { storage: storage as R2BlobStorageConfig, signKey };
-  }
-
-  private sign(canonical: string, signKey: string) {
-    return createHmac('sha256', signKey).update(canonical).digest('base64');
+    return { signKey };
   }
 
   private safeEqual(expected: string, actual: string) {
@@ -75,55 +62,32 @@ export class R2UploadController {
 
   private verifyToken(
     path: string,
-    canonicalFields: (string | number | undefined)[],
-    exp: number,
+    canonicalFields: (string | number)[],
+    expiresAt: number,
     token: string,
     signKey: string
   ) {
-    const canonical = [
+    const expected = createStorageUploadToken(
       path,
-      ...canonicalFields.map(field =>
-        field === undefined ? '' : field.toString()
-      ),
-      exp.toString(),
-    ].join('\n');
-    const expected = `${exp}-${this.sign(canonical, signKey)}`;
+      canonicalFields,
+      expiresAt,
+      signKey
+    );
 
     return this.safeEqual(expected, token);
   }
 
   private expectString(value: QueryValue, field: string): string {
-    if (Array.isArray(value)) {
-      return String(value[0]);
-    }
     if (typeof value === 'string' && value.length > 0) {
       return value;
     }
     throw new BlobInvalid(`Missing ${field}.`);
   }
 
-  private optionalString(value: QueryValue) {
-    if (Array.isArray(value)) {
-      return String(value[0]);
-    }
-    return typeof value === 'string' && value.length > 0 ? value : undefined;
-  }
-
   private number(value: QueryValue, field: string): number {
     const str = this.expectString(value, field);
     const num = Number(str);
-    if (!Number.isFinite(num)) {
-      throw new BlobInvalid(`Invalid ${field}.`);
-    }
-    return num;
-  }
-
-  private optionalNumber(value: QueryValue, field: string): number | undefined {
-    if (value === undefined) {
-      return undefined;
-    }
-    const num = Number(Array.isArray(value) ? value[0] : value);
-    if (!Number.isFinite(num)) {
+    if (!Number.isSafeInteger(num)) {
       throw new BlobInvalid(`Invalid ${field}.`);
     }
     return num;
@@ -135,15 +99,15 @@ export class R2UploadController {
       return undefined;
     }
     const num = Number(raw);
-    if (!Number.isFinite(num) || num < 0) {
+    if (!Number.isSafeInteger(num) || num < 0) {
       throw new BlobInvalid('Invalid Content-Length header');
     }
     return num;
   }
 
-  private ensureNotExpired(exp: number) {
+  private ensureNotExpired(expiresAt: number) {
     const now = Math.floor(Date.now() / 1000);
-    if (exp < now) {
+    if (expiresAt < now) {
       throw new BlobInvalid('Upload URL expired');
     }
   }
@@ -152,25 +116,31 @@ export class R2UploadController {
   @Put('upload')
   @CallMetric('controllers', 'r2_proxy_upload')
   async upload(@Req() req: Request, @Res() res: Response) {
-    const { signKey } = this.getR2Config();
+    const { signKey } = this.getUploadProxyConfig();
 
     const workspaceId = this.expectString(req.query.workspaceId, 'workspaceId');
     const key = this.expectString(req.query.key, 'key');
     const token = this.expectString(req.query.token, 'token');
-    const exp = this.number(req.query.exp, 'exp');
-    const contentType = this.optionalString(req.query.contentType);
-    const contentLengthFromQuery = this.optionalNumber(
+    const expiresAt = this.number(req.query.expiresAt, 'expiresAt');
+    const contentType = this.expectString(req.query.contentType, 'contentType');
+    const contentLengthFromQuery = this.number(
       req.query.contentLength,
       'contentLength'
     );
+    if (
+      !Number.isInteger(contentLengthFromQuery) ||
+      contentLengthFromQuery < 0
+    ) {
+      throw new BlobInvalid('Invalid content length');
+    }
 
-    this.ensureNotExpired(exp);
+    this.ensureNotExpired(expiresAt);
 
     if (
       !this.verifyToken(
         PROXY_UPLOAD_PATH,
         [workspaceId, key, contentType, contentLengthFromQuery],
-        exp,
+        expiresAt,
         token,
         signKey
       )
@@ -188,7 +158,6 @@ export class R2UploadController {
 
     const contentLengthHeader = this.parseContentLength(req);
     if (
-      contentLengthFromQuery !== undefined &&
       contentLengthHeader !== undefined &&
       contentLengthFromQuery !== contentLengthHeader
     ) {
@@ -196,15 +165,11 @@ export class R2UploadController {
     }
 
     const contentLength = contentLengthHeader ?? contentLengthFromQuery;
-    if (contentLength === undefined) {
-      throw new BlobInvalid('Missing Content-Length header');
-    }
     if (record.size && contentLength !== record.size) {
       throw new BlobInvalid('Content length does not match upload metadata');
     }
 
-    const mime = contentType ?? record.mime;
-    if (record.mime && mime && record.mime !== mime) {
+    if (record.mime && contentType && record.mime !== contentType) {
       throw new BlobInvalid('Mime type mismatch');
     }
 
@@ -213,10 +178,7 @@ export class R2UploadController {
         'blob',
         `${workspaceId}/${key}`,
         await toBuffer(req),
-        {
-          contentType: mime,
-          contentLength,
-        }
+        { contentType, contentLength }
       );
     } catch (error) {
       this.logger.error('Failed to proxy upload', error as Error);
@@ -230,26 +192,36 @@ export class R2UploadController {
   @Put('multipart')
   @CallMetric('controllers', 'r2_proxy_multipart')
   async uploadPart(@Req() req: Request, @Res() res: Response) {
-    const { signKey } = this.getR2Config();
+    const { signKey } = this.getUploadProxyConfig();
 
     const workspaceId = this.expectString(req.query.workspaceId, 'workspaceId');
     const key = this.expectString(req.query.key, 'key');
     const uploadId = this.expectString(req.query.uploadId, 'uploadId');
     const token = this.expectString(req.query.token, 'token');
-    const exp = this.number(req.query.exp, 'exp');
+    const expiresAt = this.number(req.query.expiresAt, 'expiresAt');
     const partNumber = this.number(req.query.partNumber, 'partNumber');
+    const contentLengthFromQuery = this.number(
+      req.query.contentLength,
+      'contentLength'
+    );
 
     if (partNumber < 1) {
       throw new BlobInvalid('Invalid part number');
     }
+    if (
+      !Number.isInteger(contentLengthFromQuery) ||
+      contentLengthFromQuery < 1
+    ) {
+      throw new BlobInvalid('Invalid content length');
+    }
 
-    this.ensureNotExpired(exp);
+    this.ensureNotExpired(expiresAt);
 
     if (
       !this.verifyToken(
         PROXY_MULTIPART_PATH,
-        [workspaceId, key, uploadId, partNumber],
-        exp,
+        [workspaceId, key, uploadId, partNumber, contentLengthFromQuery],
+        expiresAt,
         token,
         signKey
       )
@@ -271,6 +243,9 @@ export class R2UploadController {
     const contentLength = this.parseContentLength(req);
     if (contentLength === undefined || contentLength === 0) {
       throw new BlobInvalid('Missing Content-Length header');
+    }
+    if (contentLength !== contentLengthFromQuery) {
+      throw new BlobInvalid('Content length mismatch');
     }
 
     const maxPartNumber = Math.ceil(record.size / MULTIPART_PART_SIZE);

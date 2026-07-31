@@ -2,33 +2,20 @@
   {
     "name": "Transcript audio",
     "action": "Transcript audio",
-    "model": "gemini-2.5-flash",
-    "optionalModels": [
-      "gemini-2.5-flash",
-      "gemini-2.5-pro",
-      "gemini-3.1-pro-preview"
-    ],
+    "model": "gemini-3.5-flash-lite",
+    "optionalModels": ["gemini-3.5-flash-lite", "gemini-3.6-flash"],
     "config": {
       "requireContent": false,
       "requireAttachment": true,
       "maxRetries": 1
     },
-    "messages": [
-      {
-        "role": "system",
-        "template": "\nConvert a multi-speaker audio recording into a structured JSON format by transcribing the speech and identifying individual speakers.\n\n1. Analyze the audio to detect the presence of multiple speakers using distinct microphone inputs.\n2. Transcribe the audio content for each speaker and note the time intervals of speech.\n\n# Examples\n\n**Example Input:**\n- A multi-speaker audio file\n\n**Example Output:**\n\n[{\"a\":\"A\",\"s\":30,\"e\":45,\"t\":\"Hello, everyone.\"},{\"a\":\"B\",\"s\":46,\"e\":70,\"t\":\"Hi, thank you for joining the meeting today.\"}]\n\n# Notes\n\n- Ensure the accurate differentiation of speakers even if multiple speakers overlap slightly or switch rapidly.\n- Maintain a consistent speaker labeling system throughout the transcription.\n- If the provided audio or data does not contain valid talk, you should return an empty JSON array.\n"
-      }
-    ]
+    "messages": []
   },
   {
     "name": "Transcript audio structured",
     "action": "Transcript audio structured",
-    "model": "gemini-2.5-flash",
-    "optionalModels": [
-      "gemini-2.5-flash",
-      "gemini-2.5-pro",
-      "gemini-3.1-pro-preview"
-    ],
+    "model": "gemini-3.5-flash-lite",
+    "optionalModels": ["gemini-3.5-flash-lite", "gemini-3.6-flash"],
     "config": {
       "requireContent": false,
       "requireAttachment": true,
@@ -48,7 +35,7 @@
   {
     "name": "Generate a caption",
     "action": "Generate a caption",
-    "model": "gemini-2.5-flash",
+    "model": "gemini-3.5-flash-lite",
     "config": {
       "requireContent": false,
       "requireAttachment": true
@@ -63,7 +50,7 @@
   {
     "name": "Conversation Summary",
     "action": "Conversation Summary",
-    "model": "gpt-5-mini",
+    "model": "gpt-5.6-luna",
     "config": {
       "requireContent": false
     },
@@ -81,7 +68,7 @@
   {
     "name": "Summary",
     "action": "Summary",
-    "model": "gpt-5-mini",
+    "model": "gpt-5.6-luna",
     "messages": [
       {
         "role": "system",
@@ -96,7 +83,7 @@
   {
     "name": "Summary as title",
     "action": "Summary as title",
-    "model": "gpt-5-mini",
+    "model": "gpt-5.6-luna",
     "messages": [
       {
         "role": "system",
@@ -111,7 +98,7 @@
   {
     "name": "Summary the webpage",
     "action": "Summary the webpage",
-    "model": "gpt-5-mini",
+    "model": "gpt-5.6-luna",
     "messages": [
       {
         "role": "user",
@@ -122,7 +109,7 @@
   {
     "name": "Explain this",
     "action": "Explain this",
-    "model": "gpt-5-mini",
+    "model": "gpt-5.6-luna",
     "builtins": ["language"],
     "messages": [
       {
@@ -138,7 +125,7 @@
   {
     "name": "Explain this image",
     "action": "Explain this image",
-    "model": "gemini-2.5-flash",
+    "model": "gemini-3.5-flash-lite",
     "config": {
       "requireContent": false,
       "requireAttachment": true
@@ -157,7 +144,7 @@
   {
     "name": "Explain this code",
     "action": "Explain this code",
-    "model": "gemini-2.5-flash",
+    "model": "gemini-3.5-flash-lite",
     "messages": [
       {
         "role": "system",
@@ -172,7 +159,7 @@
   {
     "name": "Translate to",
     "action": "Translate",
-    "model": "gemini-2.5-flash",
+    "model": "gemini-3.5-flash-lite",
     "params": {
       "language": {
         "default": "English",
@@ -205,7 +192,7 @@
   {
     "name": "Summarize the meeting structured",
     "action": "Summarize the meeting structured",
-    "model": "gpt-5-mini",
+    "model": "gpt-5.6-luna",
     "messages": [
       {
         "role": "system",
@@ -220,7 +207,7 @@
   {
     "name": "Summarize the meeting",
     "action": "Summarize the meeting",
-    "model": "gpt-5-mini",
+    "model": "gpt-5.6-luna",
     "messages": [
       {
         "role": "system",
@@ -235,7 +222,7 @@
   {
     "name": "Find action for summary",
     "action": "Find action for summary",
-    "model": "gpt-5-mini",
+    "model": "gpt-5.6-luna",
     "messages": [
       {
         "role": "system",
@@ -250,7 +237,7 @@
   {
     "name": "Write an article about this",
     "action": "Write an article about this",
-    "model": "gemini-2.5-pro",
+    "model": "gpt-5.6-luna",
     "messages": [
       {
         "role": "system",
@@ -265,7 +252,7 @@
   {
     "name": "Write a twitter about this",
     "action": "Write a twitter about this",
-    "model": "gemini-2.5-flash",
+    "model": "gemini-3.5-flash-lite",
     "messages": [
       {
         "role": "system",
@@ -280,7 +267,7 @@
   {
     "name": "Write a poem about this",
     "action": "Write a poem about this",
-    "model": "gemini-2.5-flash",
+    "model": "gemini-3.5-flash-lite",
     "messages": [
       {
         "role": "system",
@@ -295,7 +282,7 @@
   {
     "name": "Write a blog post about this",
     "action": "Write a blog post about this",
-    "model": "gemini-2.5-pro",
+    "model": "gpt-5.6-luna",
     "messages": [
       {
         "role": "system",
@@ -310,7 +297,7 @@
   {
     "name": "Write outline",
     "action": "Write outline",
-    "model": "gemini-2.5-flash",
+    "model": "gemini-3.5-flash-lite",
     "messages": [
       {
         "role": "system",
@@ -325,7 +312,7 @@
   {
     "name": "Change tone to",
     "action": "Change tone",
-    "model": "gemini-2.5-flash",
+    "model": "gemini-3.5-flash-lite",
     "params": {
       "tone": {
         "default": "professional",
@@ -346,7 +333,7 @@
   {
     "name": "Brainstorm ideas about this",
     "action": "Brainstorm ideas about this",
-    "model": "gemini-2.5-flash",
+    "model": "gemini-3.5-flash-lite",
     "messages": [
       {
         "role": "system",
@@ -361,7 +348,7 @@
   {
     "name": "Brainstorm mindmap",
     "action": "Brainstorm mindmap",
-    "model": "gpt-5-mini",
+    "model": "gpt-5.6-luna",
     "messages": [
       {
         "role": "system",
@@ -376,7 +363,7 @@
   {
     "name": "Expand mind map",
     "action": "Expand mind map",
-    "model": "gpt-5-mini",
+    "model": "gpt-5.6-luna",
     "messages": [
       {
         "role": "system",
@@ -395,7 +382,7 @@
   {
     "name": "Improve writing for it",
     "action": "Improve writing for it",
-    "model": "gemini-2.5-flash",
+    "model": "gemini-3.5-flash-lite",
     "messages": [
       {
         "role": "system",
@@ -410,7 +397,7 @@
   {
     "name": "Improve grammar for it",
     "action": "Improve grammar for it",
-    "model": "gpt-5-mini",
+    "model": "gpt-5.6-luna",
     "messages": [
       {
         "role": "system",
@@ -425,7 +412,7 @@
   {
     "name": "Fix spelling for it",
     "action": "Fix spelling for it",
-    "model": "gemini-2.5-flash",
+    "model": "gemini-3.5-flash-lite",
     "messages": [
       {
         "role": "system",
@@ -440,7 +427,7 @@
   {
     "name": "Find action items from it",
     "action": "Find action items from it",
-    "model": "gpt-5-mini",
+    "model": "gpt-5.6-luna",
     "messages": [
       {
         "role": "system",
@@ -455,7 +442,7 @@
   {
     "name": "Check code error",
     "action": "Check code error",
-    "model": "gpt-5-mini",
+    "model": "gpt-5.6-luna",
     "messages": [
       {
         "role": "system",
@@ -470,7 +457,7 @@
   {
     "name": "Create a presentation",
     "action": "Create a presentation",
-    "model": "gpt-5-mini",
+    "model": "gpt-5.6-luna",
     "messages": [
       {
         "role": "system",
@@ -485,7 +472,7 @@
   {
     "name": "Create headings",
     "action": "Create headings",
-    "model": "gemini-2.5-flash",
+    "model": "gemini-3.5-flash-lite",
     "messages": [
       {
         "role": "system",
@@ -500,7 +487,7 @@
   {
     "name": "Make it real",
     "action": "Make it real",
-    "model": "claude-sonnet-4-5@20250929",
+    "model": "claude-sonnet-4-6",
     "messages": [
       {
         "role": "system",
@@ -515,7 +502,7 @@
   {
     "name": "Make it real with text",
     "action": "Make it real with text",
-    "model": "claude-sonnet-4-5@20250929",
+    "model": "claude-sonnet-4-6",
     "messages": [
       {
         "role": "system",
@@ -530,7 +517,7 @@
   {
     "name": "Make it longer",
     "action": "Make it longer",
-    "model": "gemini-2.5-flash",
+    "model": "gemini-3.5-flash-lite",
     "messages": [
       {
         "role": "system",
@@ -545,7 +532,7 @@
   {
     "name": "Make it shorter",
     "action": "Make it shorter",
-    "model": "gemini-2.5-flash",
+    "model": "gemini-3.5-flash-lite",
     "messages": [
       {
         "role": "system",
@@ -560,7 +547,7 @@
   {
     "name": "Continue writing",
     "action": "Continue writing",
-    "model": "gemini-2.5-flash",
+    "model": "gemini-3.5-flash-lite",
     "messages": [
       {
         "role": "system",
@@ -575,7 +562,7 @@
   {
     "name": "Section Edit",
     "action": "Section Edit",
-    "model": "claude-sonnet-4@20250514",
+    "model": "claude-sonnet-4-6",
     "messages": [
       {
         "role": "system",
@@ -688,7 +675,7 @@
   },
   {
     "name": "Code Artifact",
-    "model": "claude-sonnet-4-5@20250929",
+    "model": "claude-sonnet-4-6",
     "messages": [
       {
         "role": "system",
@@ -702,11 +689,11 @@
   },
   {
     "name": "Chat With AFFiNE AI",
-    "model": "gemini-2.5-flash",
+    "model": "gpt-5.6-luna",
     "optionalModels": [
-      "gemini-2.5-flash",
-      "gemini-2.5-pro",
-      "gemini-3.5-flash",
+      "gpt-5.6-luna",
+      "gpt-5.6-terra",
+      "gemini-3.6-flash",
       "claude-sonnet-4-6"
     ],
     "config": {
@@ -722,7 +709,7 @@
         "codeArtifact",
         "blobRead"
       ],
-      "proModels": ["gemini-2.5-pro", "gemini-3.5-flash", "claude-sonnet-4-6"]
+      "proModels": ["gpt-5.6-terra", "gemini-3.6-flash", "claude-sonnet-4-6"]
     },
     "builtins": [
       "date",
@@ -747,7 +734,7 @@
   {
     "name": "mindmap.generate",
     "action": "mindmap.generate",
-    "model": "gpt-5-mini",
+    "model": "gpt-5.6-luna",
     "config": {
       "frequencyPenalty": 0.5,
       "presencePenalty": 0.5,
@@ -772,7 +759,7 @@
   {
     "name": "slides.outline",
     "action": "slides.outline",
-    "model": "gpt-5-mini",
+    "model": "gpt-5.6-luna",
     "messages": [
       {
         "role": "system",
@@ -877,7 +864,7 @@
   {
     "name": "workflow:presentation:step1",
     "action": "workflow:presentation:step1",
-    "model": "gpt-5-mini",
+    "model": "gpt-5.6-luna",
     "config": {
       "temperature": 0.7
     },
@@ -895,7 +882,7 @@
   {
     "name": "workflow:presentation:step2",
     "action": "workflow:presentation:step2",
-    "model": "gpt-5-mini",
+    "model": "gpt-5.6-luna",
     "messages": [
       {
         "role": "system",
@@ -914,7 +901,7 @@
   {
     "name": "workflow:presentation:step4",
     "action": "workflow:presentation:step4",
-    "model": "gpt-5-mini",
+    "model": "gpt-5.6-luna",
     "messages": [
       {
         "role": "system",
@@ -939,7 +926,7 @@
   {
     "name": "workflow:brainstorm:step1",
     "action": "workflow:brainstorm:step1",
-    "model": "gpt-5-mini",
+    "model": "gpt-5.6-luna",
     "config": {
       "temperature": 0.7
     },
@@ -957,7 +944,7 @@
   {
     "name": "workflow:brainstorm:step2",
     "action": "workflow:brainstorm:step2",
-    "model": "gpt-5-mini",
+    "model": "gpt-5.6-luna",
     "config": {
       "frequencyPenalty": 0.5,
       "presencePenalty": 0.5,

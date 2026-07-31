@@ -335,7 +335,7 @@ mod tests {
   use super::*;
 
   #[test]
-  fn should_expand_partials_and_collect_prompt_params() {
+  fn should_load_prompt_catalog() {
     let prompt = built_in_prompt("Translate to").expect("translate prompt");
     let user_message = prompt
       .messages
@@ -352,6 +352,29 @@ mod tests {
         .and_then(Value::as_array)
         .map(|values| values.len()),
       Some(11)
+    );
+
+    let chat = built_in_prompt("Chat With AFFiNE AI").expect("chat prompt");
+    assert_eq!(chat.model, "gpt-5.6-luna");
+    assert_eq!(
+      chat
+        .optional_models
+        .as_ref()
+        .map(|models| models.iter().map(String::as_str).collect::<Vec<_>>()),
+      Some(vec![
+        "gpt-5.6-luna",
+        "gpt-5.6-terra",
+        "gemini-3.6-flash",
+        "claude-sonnet-4-6"
+      ])
+    );
+    assert_eq!(
+      chat.config.as_ref().and_then(|config| config.get("proModels")),
+      Some(&serde_json::json!([
+        "gpt-5.6-terra",
+        "gemini-3.6-flash",
+        "claude-sonnet-4-6"
+      ]))
     );
   }
 }
