@@ -85,13 +85,19 @@ export function basicDateFilter(
           );
         }
 
-        if (method === 'after' && filterValues.length >= 1) {
+        if (method === 'after') {
+          if (filterValues.length < 1) {
+            return new Set<string>();
+          }
           return handleDateRangeFilter(o, parsed =>
             isStrictlyAfter(parsed, filterValues[0])
           );
         }
 
-        if (method === 'before' && filterValues.length >= 1) {
+        if (method === 'before') {
+          if (filterValues.length < 1) {
+            return new Set<string>();
+          }
           return handleDateRangeFilter(o, parsed =>
             isStrictlyBefore(parsed, filterValues[0])
           );
