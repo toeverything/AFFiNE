@@ -674,6 +674,36 @@ const MiddleClickPasteSettings = () => {
   );
 };
 
+const DefaultCodeBlockLineNumberSettings = () => {
+  const t = useI18n();
+  const editorSettingService = useService(EditorSettingService);
+  const settings = useLiveData(editorSettingService.editorSetting.settings$);
+
+  const onToggle = useCallback(
+    (checked: boolean) => {
+      editorSettingService.editorSetting.set('codeBlockLineNumbers', checked);
+    },
+    [editorSettingService.editorSetting]
+  );
+
+  return (
+    <SettingRow
+      name={t[
+        'com.affine.settings.editorSettings.general.default-code-block.line-numbers.title'
+      ]()}
+      desc={t[
+        'com.affine.settings.editorSettings.general.default-code-block.line-numbers.description'
+      ]()}
+    >
+      <Switch
+        data-testid="code-block-line-numbers-trigger"
+        checked={settings.codeBlockLineNumbers}
+        onChange={onToggle}
+      />
+    </SettingRow>
+  );
+};
+
 export const General = () => {
   const t = useI18n();
 
@@ -685,11 +715,9 @@ export const General = () => {
       <FontSizeSettings />
       <NewDocDefaultModeSettings />
       <NewDocDateTitleSettings />
+      <DefaultCodeBlockLineNumberSettings />
       {BUILD_CONFIG.isElectron && <SpellCheckSettings />}
       {environment.isLinux && <MiddleClickPasteSettings />}
-      {/* // TODO(@akumatus): implement these settings
-        <DeFaultCodeBlockSettings />
-       */}
     </SettingWrapper>
   );
 };
