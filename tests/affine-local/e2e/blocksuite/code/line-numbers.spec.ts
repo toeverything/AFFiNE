@@ -75,25 +75,24 @@ test.describe('Global code block line numbers setting', () => {
     await expect(lineNumber).toBeVisible();
   });
 
-  test(
-    'per-block toggle can override global setting to show line numbers',
-    async ({ page }) => {
-      await initCodeBlockByOneStep(page);
+  test('per-block toggle shows line numbers when global is off', async ({
+    page,
+  }) => {
+    await initCodeBlockByOneStep(page);
 
-      const lineNumber = page.locator('affine-code .line-number');
+    const lineNumber = page.locator('affine-code .line-number');
 
-      // Turn global setting OFF
-      const toggle = await openLineNumbersSetting(page);
-      await toggle.click();
-      await closeSettingModal(page);
-      await expect(lineNumber).toBeHidden();
+    // Turn global setting OFF
+    const toggle = await openLineNumbersSetting(page);
+    await toggle.click();
+    await closeSettingModal(page);
+    await expect(lineNumber).toBeHidden();
 
-      // Per-block: explicitly enable for this block
-      const { lineNumberButton } = await openCodeBlockMoreMenu(page);
-      await lineNumberButton.click();
-      await expect(lineNumber).toBeVisible();
-    }
-  );
+    // Per-block: explicitly enable for this block
+    const { lineNumberButton } = await openCodeBlockMoreMenu(page);
+    await lineNumberButton.click();
+    await expect(lineNumber).toBeVisible();
+  });
 
   test('per-block toggle can hide line numbers when global is on', async ({
     page,
@@ -111,7 +110,7 @@ test.describe('Global code block line numbers setting', () => {
     await page.mouse.click(300, 300);
     await expect(lineNumber).toBeHidden();
 
-    // Turn global setting OFF and then ON – per-block override persists
+    // Turn global setting OFF and then ON - per-block override persists
     const toggle = await openLineNumbersSetting(page);
     await toggle.click(); // OFF
     await toggle.click(); // ON
