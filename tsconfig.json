@@ -63,6 +63,7 @@
     { "path": "./blocksuite/affine/blocks/frame" },
     { "path": "./blocksuite/affine/blocks/image" },
     { "path": "./blocksuite/affine/blocks/latex" },
+    { "path": "./blocksuite/affine/blocks/layout" },
     { "path": "./blocksuite/affine/blocks/list" },
     { "path": "./blocksuite/affine/blocks/note" },
     { "path": "./blocksuite/affine/blocks/paragraph" },

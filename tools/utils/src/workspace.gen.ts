@@ -290,6 +290,18 @@ export const PackageList = [
     ],
   },
   {
+    location: 'blocksuite/affine/blocks/layout',
+    name: '@blocksuite/affine-block-layout',
+    workspaceDependencies: [
+      'blocksuite/affine/components',
+      'blocksuite/affine/ext-loader',
+      'blocksuite/affine/model',
+      'blocksuite/affine/shared',
+      'blocksuite/framework/std',
+      'blocksuite/framework/store',
+    ],
+  },
+  {
     location: 'blocksuite/affine/blocks/list',
     name: '@blocksuite/affine-block-list',
     workspaceDependencies: [
@@ -1466,6 +1478,7 @@ export type PackageName =
   | '@blocksuite/affine-block-frame'
   | '@blocksuite/affine-block-image'
   | '@blocksuite/affine-block-latex'
+  | '@blocksuite/affine-block-layout'
   | '@blocksuite/affine-block-list'
   | '@blocksuite/affine-block-note'
   | '@blocksuite/affine-block-paragraph'

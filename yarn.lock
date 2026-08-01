@@ -2100,6 +2100,20 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@blocksuite/affine-block-layout@workspace:blocksuite/affine/blocks/layout":
+  version: 0.0.0-use.local
+  resolution: "@blocksuite/affine-block-layout@workspace:blocksuite/affine/blocks/layout"
+  dependencies:
+    "@blocksuite/affine-components": "workspace:*"
+    "@blocksuite/affine-ext-loader": "workspace:*"
+    "@blocksuite/affine-model": "workspace:*"
+    "@blocksuite/affine-shared": "workspace:*"
+    "@blocksuite/std": "workspace:*"
+    "@blocksuite/store": "workspace:*"
+    lit: "npm:^3.2.0"
+  languageName: unknown
+  linkType: soft
+
 "@blocksuite/affine-block-list@workspace:*, @blocksuite/affine-block-list@workspace:blocksuite/affine/blocks/list":
   version: 0.0.0-use.local
   resolution: "@blocksuite/affine-block-list@workspace:blocksuite/affine/blocks/list"

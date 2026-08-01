@@ -22,7 +22,7 @@ import {
 } from '@blocksuite/affine-widget-slash-menu';
 import { HeadingsIcon } from '@blocksuite/icons/lit';
 import { BlockSelection } from '@blocksuite/std';
-
+import type { LayoutRowBlockModel } from '@blocksuite/affine-model';
 import { updateBlockAlign, updateBlockType } from '../commands';
 import { tooltips } from './tooltips';
 
@@ -75,6 +75,35 @@ const noteSlashMenuConfig: SlashMenuConfig = {
       .map((config, index) =>
         createTextFormatItem(config, `2_Style@${index++}`)
       ),
+
+    // Layout Columns
+    ...[2, 3, 4, 5].map((cols, index) => ({
+      name: `${cols} Columns`,
+      group: `3_Layout@${index}`,
+      description: `Create a ${cols}-column layout`,
+      // icon: columnsIcon, // Assuming an icon exists, we can leave this undefined or use a generic one
+      action: ({ std, model }: any) => {
+        const { store } = model;
+        const parent = store.getParent(model);
+        if (!parent) return;
+
+        const rowId = store.addBlock(
+          'affine:layout-row',
+          { columns: cols },
+          parent.id,
+          parent.children.indexOf(model)
+        );
+        for (let i = 0; i < cols; i++) {
+          const colId = store.addBlock(
+            'affine:layout-column',
+            { width: `${100 / cols}%` },
+            rowId
+          );
+          store.addBlock('affine:paragraph', {}, colId);
+        }
+        store.deleteBlock(model);
+      },
+    })),
   ],
 };
 
