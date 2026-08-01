@@ -407,7 +407,7 @@ jobs:
         with:
           name: affine-linux-x64-builds
           path: ./release
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 20
       - name: Copy Selfhost Release Files
