@@ -2248,7 +2248,7 @@
   "com.affine.integration.mcp-server.meta.never-used": "Noch nie benutzt",
   "com.affine.integration.mcp-server.meta.grace-until": "Altes Token gültig bis {{date}}",
   "com.affine.integration.mcp-server.status.active": "Aktiv",
-  "com.affine.integration.mcp-server.status.rotating": "Rotiert",
+  "com.affine.integration.mcp-server.status.rotating": "Wird rotiert",
   "com.affine.integration.mcp-server.status.expiring": "Läuft ab",
   "com.affine.integration.mcp-server.status.expired": "Abgelaufen",
   "com.affine.integration.mcp-server.status.revoked": "Widerrufen",
