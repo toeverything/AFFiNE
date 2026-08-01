@@ -2261,7 +2261,7 @@
   "com.affine.integration.mcp-server.reveal.title": "MCP-Zugangsdaten erstellt",
   "com.affine.integration.mcp-server.reveal.warning": "Kopiere diese Zugangsdaten jetzt. Du kannst sie später nicht mehr einsehen.",
   "com.affine.integration.mcp-server.reveal.old-valid-until": "Das alte Token bleibt bis zum {{date}} gültig.",
-  "com.affine.integration.mcp-server.reveal.token": "Zugangsdaten",
+  "com.affine.integration.mcp-server.reveal.token": "Token",
   "com.affine.integration.mcp-server.reveal.config": "MCP-Konfiguration",
   "com.affine.integration.mcp-server.rotate.title": "Diese Zugangsdaten rotieren?",
   "com.affine.integration.mcp-server.rotate.description": "Es wird sofort ein neues Token erstellt. Das alte Token bleibt bis zu 24 Stunden lang gültig, sodass du den MCP-Client aktualisieren kannst.",
