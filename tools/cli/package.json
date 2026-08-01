@@ -17,7 +17,7 @@
   "dependencies": {
     "@affine-tools/utils": "workspace:*",
     "@affine/s3-compat": "workspace:*",
-    "@napi-rs/simple-git": "^0.1.22",
+    "@napi-rs/simple-git": "^1.0.0",
     "@rspack/core": "^2.0.8",
     "@rspack/dev-server": "^2.1.0",
     "@sentry/webpack-plugin": "^5.3.0",
