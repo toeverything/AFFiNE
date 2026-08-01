@@ -234,15 +234,13 @@ export const toggleGroup: MenuItemGroup<CodeBlockToolbarContext> = {
         return {
           action: () => {},
           render: () => {
-            const lineNumber = blockComponent.model.props.lineNumber ?? true;
+            const lineNumber = blockComponent.showLineNumbers;
             const label = lineNumber ? 'Cancel line number' : 'Line number';
             return html`
               <editor-menu-action
                 @click=${() => {
-                  const currentLineNumber =
-                    blockComponent.model.props.lineNumber ?? true;
                   blockComponent.store.updateBlock(blockComponent.model, {
-                    lineNumber: !currentLineNumber,
+                    lineNumber: !blockComponent.showLineNumbers,
                   });
                 }}
                 aria-label=${label}
