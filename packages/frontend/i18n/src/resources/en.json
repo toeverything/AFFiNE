@@ -1385,6 +1385,8 @@
   "com.affine.settings.editorSettings.general.ai.title": "AFFiNE AI",
   "com.affine.settings.editorSettings.general.default-code-block.language.description": "Set a default programming language.",
   "com.affine.settings.editorSettings.general.default-code-block.language.title": "Code blocks default language",
+  "com.affine.settings.editorSettings.general.default-code-block.line-numbers.description": "Show line numbers in all code blocks by default.",
+  "com.affine.settings.editorSettings.general.default-code-block.line-numbers.title": "Show line numbers in code blocks",
   "com.affine.settings.editorSettings.general.default-code-block.wrap.description": "Encapsulate code snippets for better readability.",
   "com.affine.settings.editorSettings.general.default-code-block.wrap.title": "Wrap code in code blocks",
   "com.affine.settings.editorSettings.general.default-new-doc.description": "Default mode for new doc.",

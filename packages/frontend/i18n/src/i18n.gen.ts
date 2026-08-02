@@ -5562,6 +5562,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.editorSettings.general.default-code-block.language.title"](): string;
     /**
+      * `Show line numbers in all code blocks by default.`
+      */
+    ["com.affine.settings.editorSettings.general.default-code-block.line-numbers.description"](): string;
+    /**
+      * `Show line numbers in code blocks`
+      */
+    ["com.affine.settings.editorSettings.general.default-code-block.line-numbers.title"](): string;
+    /**
       * `Encapsulate code snippets for better readability.`
       */
     ["com.affine.settings.editorSettings.general.default-code-block.wrap.description"](): string;

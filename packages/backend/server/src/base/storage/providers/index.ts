@@ -27,6 +27,11 @@ export interface S3StorageConfig {
     expiresInSeconds?: number;
     signContentTypeForPut?: boolean;
   };
+  usePresignedURL?: {
+    enabled: boolean;
+    urlPrefix?: string;
+    signKey?: string;
+  };
 }
 
 export const R2_JURISDICTIONS = ['default', 'eu'] as const;
@@ -34,11 +39,6 @@ export const R2_JURISDICTIONS = ['default', 'eu'] as const;
 export interface R2StorageConfig extends Omit<S3StorageConfig, 'endpoint'> {
   accountId: string;
   jurisdiction?: (typeof R2_JURISDICTIONS)[number];
-  usePresignedURL?: {
-    enabled: boolean;
-    urlPrefix?: string;
-    signKey?: string;
-  };
 }
 
 export type StorageProviderConfig = { bucket: string } & (
@@ -115,6 +115,27 @@ const S3ConfigSchema: JSONSchema = {
         },
       },
     },
+    usePresignedURL: {
+      type: 'object',
+      description:
+        'Controls browser upload URLs. Disabled or unavailable modes fall back to server uploads.',
+      properties: {
+        enabled: {
+          type: 'boolean',
+          description: 'Whether browser upload URLs are enabled.',
+        },
+        urlPrefix: {
+          type: 'string',
+          description:
+            'Optional custom origin for browser upload URLs. Provider presigned URLs also use this origin when signKey is not configured.',
+        },
+        signKey: {
+          type: 'string',
+          description:
+            'Optional HMAC key for signed upload URLs. Without urlPrefix, upload URLs use the server origin.',
+        },
+      },
+    },
   },
 };
 
@@ -188,28 +209,6 @@ export const StorageJSONSchema: JSONSchema = {
               enum: [...R2_JURISDICTIONS],
               description:
                 'Optional jurisdiction for the cloudflare r2 endpoint. Set to "eu" for EU buckets.',
-            },
-            usePresignedURL: {
-              type: 'object' as const,
-              description:
-                'The presigned url config for the cloudflare r2 storage provider.',
-              properties: {
-                enabled: {
-                  type: 'boolean' as const,
-                  description:
-                    'Whether to use presigned url for the cloudflare r2 storage provider.',
-                },
-                urlPrefix: {
-                  type: 'string' as const,
-                  description:
-                    'The custom domain URL prefix for the cloudflare r2 storage provider.\nWhen `enabled=true` and `urlPrefix` + `signKey` are provided, the server will:\n- Redirect GET requests to this custom domain with an HMAC token.\n- Return upload URLs under `/api/storage/*` for uploads.\nPresigned/upload proxy TTL is 1 hour.\nsee https://developers.cloudflare.com/waf/custom-rules/use-cases/configure-token-authentication/ to configure it.\nExample value: "https://storage.example.com"\nExample rule: is_timed_hmac_valid_v0("your_secret", http.request.uri, 10800, http.request.timestamp.sec, 6)',
-                },
-                signKey: {
-                  type: 'string' as const,
-                  description:
-                    'The presigned key for the cloudflare r2 storage provider.',
-                },
-              },
             },
           },
         },

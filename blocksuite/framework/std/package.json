@@ -10,9 +10,9 @@
   "author": "toeverything",
   "license": "MIT",
   "dependencies": {
-    "@atlaskit/pragmatic-drag-and-drop": "^1.7.7",
+    "@atlaskit/pragmatic-drag-and-drop": "^2.0.0",
     "@atlaskit/pragmatic-drag-and-drop-auto-scroll": "^2.1.2",
-    "@atlaskit/pragmatic-drag-and-drop-hitbox": "^1.1.0",
+    "@atlaskit/pragmatic-drag-and-drop-hitbox": "^2.0.0",
     "@blocksuite/global": "workspace:*",
     "@blocksuite/store": "workspace:*",
     "@lit/context": "^1.1.2",

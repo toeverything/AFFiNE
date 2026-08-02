@@ -1,17 +1,17 @@
-import { createHmac } from 'node:crypto';
-
 import { Injectable, Logger } from '@nestjs/common';
 
 import {
+  BlobInvalid,
   type BlobOutputType,
   Config,
+  createStorageUploadToken,
   EventBus,
   type GetObjectMetadata,
   OnEvent,
   PROXY_MULTIPART_PATH,
   PROXY_UPLOAD_PATH,
   type PutObjectMetadata,
-  type R2StorageConfig,
+  type S3StorageConfig,
   SIGNED_URL_EXPIRED,
   type StorageProviderConfig,
   URLHelper,
@@ -19,6 +19,7 @@ import {
 import { Models } from '../../../models';
 import type { StorageProviderCapabilities } from '../../../native';
 import { StorageRuntimeProvider } from '../../storage-runtime';
+import { MULTIPART_PART_SIZE } from '../constants';
 
 declare global {
   interface Events {
@@ -50,7 +51,12 @@ type BlobGetResult = {
   metadata?: GetObjectMetadata;
 };
 
-type R2ProxyConfig = {
+type UploadURLConfig = {
+  signKey?: string;
+  urlPrefix?: string;
+};
+
+type UploadProxyConfig = {
   signKey: string;
   urlPrefix: string;
 };
@@ -82,7 +88,17 @@ export class WorkspaceBlobStorage {
 
   async capabilities(): Promise<StorageProviderCapabilities> {
     const capabilities = await this.rt.providerCapabilities('blob');
-    if (!this.r2ProxyConfig()) {
+    const config = this.uploadURLConfig();
+    if (!config) {
+      return {
+        ...capabilities,
+        presignPut: false,
+        multipartDirect: false,
+        proxyUpload: false,
+        serverMediatedOnly: true,
+      };
+    }
+    if (!config.signKey) {
       return capabilities;
     }
     return {
@@ -116,11 +132,22 @@ export class WorkspaceBlobStorage {
     key: string,
     metadata?: PutObjectMetadata
   ) {
-    const proxy = this.r2ProxyConfig();
-    if (proxy) {
-      return this.createProxyUploadUrl(workspaceId, key, metadata, proxy);
+    const config = this.uploadURLConfig();
+    if (!config) return;
+    if (config.signKey) {
+      return this.createProxyUploadUrl(workspaceId, key, metadata, {
+        signKey: config.signKey,
+        urlPrefix: config.urlPrefix ?? this.url.baseUrl,
+      });
     }
-    return this.rt.presignPut('blob', `${workspaceId}/${key}`, metadata);
+    const presigned = await this.rt.presignPut(
+      'blob',
+      `${workspaceId}/${key}`,
+      metadata
+    );
+    return config.urlPrefix && presigned
+      ? this.withURLPrefix(presigned, config.urlPrefix)
+      : presigned;
   }
 
   async createMultipartUpload(
@@ -141,22 +168,36 @@ export class WorkspaceBlobStorage {
     uploadId: string,
     partNumber: number
   ) {
-    const proxy = this.r2ProxyConfig();
-    if (proxy) {
+    const config = this.uploadURLConfig();
+    if (!config) return;
+    const contentLength = await this.multipartPartContentLength(
+      workspaceId,
+      key,
+      uploadId,
+      partNumber
+    );
+    if (config.signKey) {
       return this.createProxyMultipartUrl(
         workspaceId,
         key,
         uploadId,
         partNumber,
-        proxy
+        contentLength,
+        {
+          signKey: config.signKey,
+          urlPrefix: config.urlPrefix ?? this.url.baseUrl,
+        }
       );
     }
-    return this.rt.presignUploadPart(
+    const presigned = await this.rt.presignUploadPart(
       'blob',
       `${workspaceId}/${key}`,
       uploadId,
       partNumber
     );
+    return config.urlPrefix && presigned
+      ? this.withURLPrefix(presigned, config.urlPrefix)
+      : presigned;
   }
 
   async listMultipartUploadParts(
@@ -308,56 +349,38 @@ export class WorkspaceBlobStorage {
     await this.delete(workspaceId, key, true);
   }
 
-  private r2ProxyConfig() {
+  private uploadURLConfig(): UploadURLConfig | undefined {
     const storage = this.config.storages.blob.storage as StorageProviderConfig;
-    if (storage.provider !== 'cloudflare-r2') {
+    if (storage.provider !== 'cloudflare-r2' && storage.provider !== 'aws-s3') {
       return;
     }
-    const r2 = storage.config as R2StorageConfig;
-    const usePresignedURL = r2.usePresignedURL;
-    if (
-      !usePresignedURL?.enabled ||
-      !usePresignedURL.urlPrefix ||
-      !usePresignedURL.signKey
-    ) {
+    const usePresignedURL = (storage.config as S3StorageConfig).usePresignedURL;
+    if (!usePresignedURL?.enabled) {
       return;
     }
     return {
-      signKey: usePresignedURL.signKey,
-      urlPrefix: usePresignedURL.urlPrefix,
+      signKey: usePresignedURL.signKey || undefined,
+      urlPrefix: usePresignedURL.urlPrefix || undefined,
     };
-  }
-
-  private signProxy(
-    path: string,
-    canonicalFields: (string | number | undefined)[],
-    exp: number,
-    signKey: string
-  ) {
-    const canonical = [
-      path,
-      ...canonicalFields.map(field =>
-        field === undefined ? '' : field.toString()
-      ),
-      exp.toString(),
-    ].join('\n');
-    return `${exp}-${createHmac('sha256', signKey).update(canonical).digest('base64')}`;
   }
 
   private createProxyUploadUrl(
     workspaceId: string,
     key: string,
     metadata: PutObjectMetadata | undefined,
-    proxy: R2ProxyConfig
+    proxy: UploadProxyConfig
   ) {
     const contentType = metadata?.contentType ?? 'application/octet-stream';
     const contentLength = metadata?.contentLength;
+    if (contentLength === undefined) {
+      throw new BlobInvalid('Missing upload content length');
+    }
     const expiresAt = new Date(Date.now() + SIGNED_URL_EXPIRED * 1000);
-    const exp = Math.floor(expiresAt.getTime() / 1000);
-    const token = this.signProxy(
+    const expiresAtSeconds = Math.floor(expiresAt.getTime() / 1000);
+    const token = createStorageUploadToken(
       PROXY_UPLOAD_PATH,
       [workspaceId, key, contentType, contentLength],
-      exp,
+      expiresAtSeconds,
       proxy.signKey
     );
     return {
@@ -366,7 +389,7 @@ export class WorkspaceBlobStorage {
         key,
         contentType,
         contentLength,
-        exp,
+        expiresAt: expiresAtSeconds,
         token,
       }),
       headers: {},
@@ -379,14 +402,15 @@ export class WorkspaceBlobStorage {
     key: string,
     uploadId: string,
     partNumber: number,
-    proxy: R2ProxyConfig
+    contentLength: number,
+    proxy: UploadProxyConfig
   ) {
     const expiresAt = new Date(Date.now() + SIGNED_URL_EXPIRED * 1000);
-    const exp = Math.floor(expiresAt.getTime() / 1000);
-    const token = this.signProxy(
+    const expiresAtSeconds = Math.floor(expiresAt.getTime() / 1000);
+    const token = createStorageUploadToken(
       PROXY_MULTIPART_PATH,
-      [workspaceId, key, uploadId, partNumber],
-      exp,
+      [workspaceId, key, uploadId, partNumber, contentLength],
+      expiresAtSeconds,
       proxy.signKey
     );
     return {
@@ -395,7 +419,8 @@ export class WorkspaceBlobStorage {
         key,
         uploadId,
         partNumber,
-        exp,
+        contentLength,
+        expiresAt: expiresAtSeconds,
         token,
       }),
       headers: {},
@@ -417,5 +442,43 @@ export class WorkspaceBlobStorage {
       }
     }
     return url.toString();
+  }
+
+  private withURLPrefix<T extends { url: string }>(
+    presigned: T,
+    urlPrefix: string
+  ): T {
+    const url = new URL(presigned.url);
+    const prefix = new URL(urlPrefix);
+    if (prefix.pathname !== '/' || prefix.search || prefix.hash) {
+      throw new BlobInvalid('Upload URL prefix must contain only an origin');
+    }
+    url.protocol = prefix.protocol;
+    url.host = prefix.host;
+    return { ...presigned, url: url.toString() };
+  }
+
+  private async multipartPartContentLength(
+    workspaceId: string,
+    key: string,
+    uploadId: string,
+    partNumber: number
+  ) {
+    const record = await this.models.blob.get(workspaceId, key);
+    if (!record || record.status === 'completed') {
+      throw new BlobInvalid('Multipart upload is not pending');
+    }
+    if (record.uploadId !== uploadId) {
+      throw new BlobInvalid('Upload id mismatch');
+    }
+    const offset = (partNumber - 1) * MULTIPART_PART_SIZE;
+    if (
+      !Number.isInteger(partNumber) ||
+      partNumber < 1 ||
+      offset >= record.size
+    ) {
+      throw new BlobInvalid('Invalid part number');
+    }
+    return Math.min(MULTIPART_PART_SIZE, record.size - offset);
   }
 }

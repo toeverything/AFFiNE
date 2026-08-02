@@ -588,7 +588,7 @@ test('should be able to chat with api', async t => {
     t.is(
       array2sse(sse2array(ret3).filter(e => e.event !== 'event')),
       textToEventStream(
-        ['https://example.com/gpt-image-1.jpg'],
+        ['https://example.com/gpt-image-2.jpg'],
         messageId,
         'attachment'
       ),
@@ -717,14 +717,13 @@ test('should map action stream preparation errors to SSE error events', async t 
 });
 
 test('should be able to chat with special image model', async t => {
-  const { app, prompt, storage } = t.context;
+  const { app, storage } = t.context;
 
   Sinon.stub(storage, 'handleRemoteLink').resolvesArg(2);
 
   const { id } = await createWorkspace(app);
 
   const testWithModel = async (promptName: string, finalPrompt: string) => {
-    const model = (await prompt.get(promptName))?.model;
     const sessionId = await createCopilotSession(
       app,
       id,
@@ -739,7 +738,7 @@ test('should be able to chat with special image model', async t => {
       ret3,
       textToEventStream(
         [
-          `https://example.com/${model}.jpg`,
+          'https://example.com/gpt-image-2.jpg',
           `https://example.com/generated/${encodeURIComponent(finalPrompt)}.jpg`,
         ],
         messageId,
@@ -1915,7 +1914,7 @@ test('should be able to transcript', async t => {
     const route = input.input?.preparedRoutes?.transcribe?.[0] ?? {};
     const result = buildTranscriptActionResult(
       route,
-      'gemini-2.5-flash',
+      'gemini-3.5-flash-lite',
       input.input ?? {}
     );
     const actionVersion = input.recipeVersion ?? 'v1';
