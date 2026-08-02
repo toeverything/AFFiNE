@@ -46,7 +46,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
@@ -67,9 +67,9 @@ jobs:
     name: Lint
     runs-on: ubuntu-24.04-arm
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup Go (for actionlint)
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v7
         with:
           go-version: 'stable'
       - name: Install actionlint
@@ -107,7 +107,7 @@ jobs:
     env:
       NODE_OPTIONS: --max-old-space-size=14384
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
@@ -142,7 +142,7 @@ jobs:
       run-android: ${{ steps.mobile-native-filter.outputs.android }}
       run-ios: ${{ steps.mobile-native-filter.outputs.ios }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: dorny/paths-filter@v3
         id: mobile-native-filter
@@ -176,7 +176,7 @@ jobs:
       CARGO_PROFILE_RELEASE_DEBUG: '1'
       CARGO_PROFILE_RELEASE_LTO: 'thin'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
@@ -256,7 +256,7 @@ jobs:
       CARGO_PROFILE_RELEASE_DEBUG: '1'
       CARGO_PROFILE_RELEASE_LTO: 'thin'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
@@ -342,7 +342,7 @@ jobs:
     needs:
       - mobile-native-build-filter
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
@@ -409,7 +409,7 @@ jobs:
     outputs:
       run-rust: ${{ steps.rust-filter.outputs.rust }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: dorny/paths-filter@v3
         id: rust-filter
@@ -430,7 +430,7 @@ jobs:
     needs:
       - rust-test-filter
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/build-rust
         with:
           target: x86_64-unknown-linux-gnu
@@ -453,7 +453,7 @@ jobs:
     needs:
       - build-server-native
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
@@ -483,7 +483,7 @@ jobs:
     name: Check yarn binary
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Run check
         run: |
           set -euo pipefail
@@ -499,7 +499,7 @@ jobs:
       matrix:
         shard: [1, 2, 3, 4, 5]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
@@ -527,7 +527,7 @@ jobs:
     name: E2E BlockSuite Cross Browser Test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
@@ -568,7 +568,7 @@ jobs:
       matrix:
         shard: [1, 2, 3, 4, 5]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
@@ -600,7 +600,7 @@ jobs:
       matrix:
         shard: [1, 2]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
@@ -632,7 +632,7 @@ jobs:
       matrix:
         shard: [1, 2, 3, 4, 5]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
@@ -667,7 +667,7 @@ jobs:
       CARGO_PROFILE_RELEASE_DEBUG: '1'
       CARGO_PROFILE_RELEASE_LTO: 'thin'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
@@ -708,7 +708,7 @@ jobs:
           - { os: macos-latest, target: aarch64-apple-darwin }
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
@@ -751,7 +751,7 @@ jobs:
           - { os: windows-latest, target: aarch64-pc-windows-msvc }
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: samypr100/setup-dev-drive@v3
         with:
           workspace-copy: true
@@ -793,7 +793,7 @@ jobs:
       CARGO_PROFILE_RELEASE_DEBUG: '1'
       CARGO_PROFILE_RELEASE_LTO: 'thin'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
@@ -816,7 +816,7 @@ jobs:
     name: Build @affine/electron renderer
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
@@ -843,7 +843,7 @@ jobs:
     needs:
       - build-native-linux
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
@@ -897,7 +897,7 @@ jobs:
         ports:
           - 9308:9308
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
@@ -978,7 +978,7 @@ jobs:
           stack-version: 9.0.1
           security-enabled: false
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
@@ -1041,7 +1041,7 @@ jobs:
         ports:
           - 9308:9308
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
@@ -1080,7 +1080,7 @@ jobs:
     env:
       CARGO_TERM_COLOR: always
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup Rust
         uses: ./.github/actions/build-rust
         with:
@@ -1103,7 +1103,7 @@ jobs:
       run-api: ${{ steps.decision.outputs.run_api }}
       run-e2e: ${{ steps.decision.outputs.run_e2e }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: dorny/paths-filter@v3
         id: copilot-filter
@@ -1172,7 +1172,7 @@ jobs:
         ports:
           - 9308:9308
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
@@ -1245,7 +1245,7 @@ jobs:
         ports:
           - 9308:9308
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
@@ -1328,7 +1328,7 @@ jobs:
         ports:
           - 9308:9308
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
@@ -1409,7 +1409,7 @@ jobs:
               test: true,
             }
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         timeout-minutes: 10

@@ -107,7 +107,7 @@ __metadata:
   dependencies:
     "@affine-tools/utils": "workspace:*"
     "@affine/s3-compat": "workspace:*"
-    "@napi-rs/simple-git": "npm:^0.1.22"
+    "@napi-rs/simple-git": "npm:^1.0.0"
     "@rspack/core": "npm:^2.0.8"
     "@rspack/dev-server": "npm:^2.1.0"
     "@sentry/webpack-plugin": "npm:^5.3.0"
@@ -267,8 +267,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/changelog@workspace:tools/changelog"
   dependencies:
-    "@napi-rs/simple-git": "npm:^0.1.22"
-    "@slack/web-api": "npm:^7.15.1"
+    "@napi-rs/simple-git": "npm:^1.0.0"
+    "@slack/web-api": "npm:^8.0.0"
     "@types/node": "npm:^22.0.0"
     changelogithub: "npm:^13.0.0"
     jsx-slack: "npm:^6.1.2"
@@ -296,7 +296,7 @@ __metadata:
     "@affine/graphql": "workspace:*"
     "@affine/i18n": "workspace:*"
     "@atlaskit/pragmatic-drag-and-drop": "npm:^2.0.0"
-    "@atlaskit/pragmatic-drag-and-drop-hitbox": "npm:^1.1.0"
+    "@atlaskit/pragmatic-drag-and-drop-hitbox": "npm:^2.0.0"
     "@blocksuite/icons": "npm:^2.2.17"
     "@emotion/react": "npm:^11.14.0"
     "@emotion/styled": "npm:^11.14.0"
@@ -363,7 +363,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/copilot-result@workspace:tools/copilot-result"
   dependencies:
-    "@slack/web-api": "npm:^7.15.1"
+    "@slack/web-api": "npm:^8.0.0"
     "@types/node": "npm:^22.0.0"
     jsx-slack: "npm:^6.1.2"
     marked: "npm:^15.0.12"
@@ -1528,13 +1528,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@atlaskit/pragmatic-drag-and-drop-hitbox@npm:^1.1.0":
-  version: 1.1.0
-  resolution: "@atlaskit/pragmatic-drag-and-drop-hitbox@npm:1.1.0"
+"@atlaskit/pragmatic-drag-and-drop-hitbox@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "@atlaskit/pragmatic-drag-and-drop-hitbox@npm:2.0.0"
   dependencies:
-    "@atlaskit/pragmatic-drag-and-drop": "npm:^1.6.0"
+    "@atlaskit/pragmatic-drag-and-drop": "npm:^2.0.0"
     "@babel/runtime": "npm:^7.0.0"
-  checksum: 10/47669b2d19eba8a3a7de787fa0d6ab8b171b7e7465249afe3ab28f5e522abacc2acf5e07e3661ce781ad9171ca08a2e0ce269413d18dfe0c5f3f858995d2b783
+  checksum: 10/6627299f1ff218237693bd5fb9cd278f19921a9510e04893aeee8fce8e97cbb0e3c3e72a0dcd8b7f7784b273c6de9c23fdef13937bc972e5d8e89073f3bd4aa2
   languageName: node
   linkType: hard
 
@@ -3419,7 +3419,7 @@ __metadata:
   dependencies:
     "@atlaskit/pragmatic-drag-and-drop": "npm:^2.0.0"
     "@atlaskit/pragmatic-drag-and-drop-auto-scroll": "npm:^2.1.2"
-    "@atlaskit/pragmatic-drag-and-drop-hitbox": "npm:^1.1.0"
+    "@atlaskit/pragmatic-drag-and-drop-hitbox": "npm:^2.0.0"
     "@blocksuite/global": "workspace:*"
     "@blocksuite/store": "workspace:*"
     "@lit/context": "npm:^1.1.2"
@@ -8204,130 +8204,130 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@napi-rs/simple-git-android-arm-eabi@npm:0.1.22":
-  version: 0.1.22
-  resolution: "@napi-rs/simple-git-android-arm-eabi@npm:0.1.22"
+"@napi-rs/simple-git-android-arm-eabi@npm:1.1.0":
+  version: 1.1.0
+  resolution: "@napi-rs/simple-git-android-arm-eabi@npm:1.1.0"
   conditions: os=android & cpu=arm
   languageName: node
   linkType: hard
 
-"@napi-rs/simple-git-android-arm64@npm:0.1.22":
-  version: 0.1.22
-  resolution: "@napi-rs/simple-git-android-arm64@npm:0.1.22"
+"@napi-rs/simple-git-android-arm64@npm:1.1.0":
+  version: 1.1.0
+  resolution: "@napi-rs/simple-git-android-arm64@npm:1.1.0"
   conditions: os=android & cpu=arm64
   languageName: node
   linkType: hard
 
-"@napi-rs/simple-git-darwin-arm64@npm:0.1.22":
-  version: 0.1.22
-  resolution: "@napi-rs/simple-git-darwin-arm64@npm:0.1.22"
+"@napi-rs/simple-git-darwin-arm64@npm:1.1.0":
+  version: 1.1.0
+  resolution: "@napi-rs/simple-git-darwin-arm64@npm:1.1.0"
   conditions: os=darwin & cpu=arm64
   languageName: node
   linkType: hard
 
-"@napi-rs/simple-git-darwin-x64@npm:0.1.22":
-  version: 0.1.22
-  resolution: "@napi-rs/simple-git-darwin-x64@npm:0.1.22"
+"@napi-rs/simple-git-darwin-x64@npm:1.1.0":
+  version: 1.1.0
+  resolution: "@napi-rs/simple-git-darwin-x64@npm:1.1.0"
   conditions: os=darwin & cpu=x64
   languageName: node
   linkType: hard
 
-"@napi-rs/simple-git-freebsd-x64@npm:0.1.22":
-  version: 0.1.22
-  resolution: "@napi-rs/simple-git-freebsd-x64@npm:0.1.22"
+"@napi-rs/simple-git-freebsd-x64@npm:1.1.0":
+  version: 1.1.0
+  resolution: "@napi-rs/simple-git-freebsd-x64@npm:1.1.0"
   conditions: os=freebsd & cpu=x64
   languageName: node
   linkType: hard
 
-"@napi-rs/simple-git-linux-arm-gnueabihf@npm:0.1.22":
-  version: 0.1.22
-  resolution: "@napi-rs/simple-git-linux-arm-gnueabihf@npm:0.1.22"
+"@napi-rs/simple-git-linux-arm-gnueabihf@npm:1.1.0":
+  version: 1.1.0
+  resolution: "@napi-rs/simple-git-linux-arm-gnueabihf@npm:1.1.0"
   conditions: os=linux & cpu=arm
   languageName: node
   linkType: hard
 
-"@napi-rs/simple-git-linux-arm64-gnu@npm:0.1.22":
-  version: 0.1.22
-  resolution: "@napi-rs/simple-git-linux-arm64-gnu@npm:0.1.22"
+"@napi-rs/simple-git-linux-arm64-gnu@npm:1.1.0":
+  version: 1.1.0
+  resolution: "@napi-rs/simple-git-linux-arm64-gnu@npm:1.1.0"
   conditions: os=linux & cpu=arm64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@napi-rs/simple-git-linux-arm64-musl@npm:0.1.22":
-  version: 0.1.22
-  resolution: "@napi-rs/simple-git-linux-arm64-musl@npm:0.1.22"
+"@napi-rs/simple-git-linux-arm64-musl@npm:1.1.0":
+  version: 1.1.0
+  resolution: "@napi-rs/simple-git-linux-arm64-musl@npm:1.1.0"
   conditions: os=linux & cpu=arm64 & libc=musl
   languageName: node
   linkType: hard
 
-"@napi-rs/simple-git-linux-ppc64-gnu@npm:0.1.22":
-  version: 0.1.22
-  resolution: "@napi-rs/simple-git-linux-ppc64-gnu@npm:0.1.22"
+"@napi-rs/simple-git-linux-ppc64-gnu@npm:1.1.0":
+  version: 1.1.0
+  resolution: "@napi-rs/simple-git-linux-ppc64-gnu@npm:1.1.0"
   conditions: os=linux & cpu=ppc64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@napi-rs/simple-git-linux-s390x-gnu@npm:0.1.22":
-  version: 0.1.22
-  resolution: "@napi-rs/simple-git-linux-s390x-gnu@npm:0.1.22"
+"@napi-rs/simple-git-linux-s390x-gnu@npm:1.1.0":
+  version: 1.1.0
+  resolution: "@napi-rs/simple-git-linux-s390x-gnu@npm:1.1.0"
   conditions: os=linux & cpu=s390x & libc=glibc
   languageName: node
   linkType: hard
 
-"@napi-rs/simple-git-linux-x64-gnu@npm:0.1.22":
-  version: 0.1.22
-  resolution: "@napi-rs/simple-git-linux-x64-gnu@npm:0.1.22"
+"@napi-rs/simple-git-linux-x64-gnu@npm:1.1.0":
+  version: 1.1.0
+  resolution: "@napi-rs/simple-git-linux-x64-gnu@npm:1.1.0"
   conditions: os=linux & cpu=x64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@napi-rs/simple-git-linux-x64-musl@npm:0.1.22":
-  version: 0.1.22
-  resolution: "@napi-rs/simple-git-linux-x64-musl@npm:0.1.22"
+"@napi-rs/simple-git-linux-x64-musl@npm:1.1.0":
+  version: 1.1.0
+  resolution: "@napi-rs/simple-git-linux-x64-musl@npm:1.1.0"
   conditions: os=linux & cpu=x64 & libc=musl
   languageName: node
   linkType: hard
 
-"@napi-rs/simple-git-win32-arm64-msvc@npm:0.1.22":
-  version: 0.1.22
-  resolution: "@napi-rs/simple-git-win32-arm64-msvc@npm:0.1.22"
+"@napi-rs/simple-git-win32-arm64-msvc@npm:1.1.0":
+  version: 1.1.0
+  resolution: "@napi-rs/simple-git-win32-arm64-msvc@npm:1.1.0"
   conditions: os=win32 & cpu=arm64
   languageName: node
   linkType: hard
 
-"@napi-rs/simple-git-win32-ia32-msvc@npm:0.1.22":
-  version: 0.1.22
-  resolution: "@napi-rs/simple-git-win32-ia32-msvc@npm:0.1.22"
+"@napi-rs/simple-git-win32-ia32-msvc@npm:1.1.0":
+  version: 1.1.0
+  resolution: "@napi-rs/simple-git-win32-ia32-msvc@npm:1.1.0"
   conditions: os=win32 & cpu=ia32
   languageName: node
   linkType: hard
 
-"@napi-rs/simple-git-win32-x64-msvc@npm:0.1.22":
-  version: 0.1.22
-  resolution: "@napi-rs/simple-git-win32-x64-msvc@npm:0.1.22"
+"@napi-rs/simple-git-win32-x64-msvc@npm:1.1.0":
+  version: 1.1.0
+  resolution: "@napi-rs/simple-git-win32-x64-msvc@npm:1.1.0"
   conditions: os=win32 & cpu=x64
   languageName: node
   linkType: hard
 
-"@napi-rs/simple-git@npm:^0.1.22":
-  version: 0.1.22
-  resolution: "@napi-rs/simple-git@npm:0.1.22"
+"@napi-rs/simple-git@npm:^1.0.0":
+  version: 1.1.0
+  resolution: "@napi-rs/simple-git@npm:1.1.0"
   dependencies:
-    "@napi-rs/simple-git-android-arm-eabi": "npm:0.1.22"
-    "@napi-rs/simple-git-android-arm64": "npm:0.1.22"
-    "@napi-rs/simple-git-darwin-arm64": "npm:0.1.22"
-    "@napi-rs/simple-git-darwin-x64": "npm:0.1.22"
-    "@napi-rs/simple-git-freebsd-x64": "npm:0.1.22"
-    "@napi-rs/simple-git-linux-arm-gnueabihf": "npm:0.1.22"
-    "@napi-rs/simple-git-linux-arm64-gnu": "npm:0.1.22"
-    "@napi-rs/simple-git-linux-arm64-musl": "npm:0.1.22"
-    "@napi-rs/simple-git-linux-ppc64-gnu": "npm:0.1.22"
-    "@napi-rs/simple-git-linux-s390x-gnu": "npm:0.1.22"
-    "@napi-rs/simple-git-linux-x64-gnu": "npm:0.1.22"
-    "@napi-rs/simple-git-linux-x64-musl": "npm:0.1.22"
-    "@napi-rs/simple-git-win32-arm64-msvc": "npm:0.1.22"
-    "@napi-rs/simple-git-win32-ia32-msvc": "npm:0.1.22"
-    "@napi-rs/simple-git-win32-x64-msvc": "npm:0.1.22"
+    "@napi-rs/simple-git-android-arm-eabi": "npm:1.1.0"
+    "@napi-rs/simple-git-android-arm64": "npm:1.1.0"
+    "@napi-rs/simple-git-darwin-arm64": "npm:1.1.0"
+    "@napi-rs/simple-git-darwin-x64": "npm:1.1.0"
+    "@napi-rs/simple-git-freebsd-x64": "npm:1.1.0"
+    "@napi-rs/simple-git-linux-arm-gnueabihf": "npm:1.1.0"
+    "@napi-rs/simple-git-linux-arm64-gnu": "npm:1.1.0"
+    "@napi-rs/simple-git-linux-arm64-musl": "npm:1.1.0"
+    "@napi-rs/simple-git-linux-ppc64-gnu": "npm:1.1.0"
+    "@napi-rs/simple-git-linux-s390x-gnu": "npm:1.1.0"
+    "@napi-rs/simple-git-linux-x64-gnu": "npm:1.1.0"
+    "@napi-rs/simple-git-linux-x64-musl": "npm:1.1.0"
+    "@napi-rs/simple-git-win32-arm64-msvc": "npm:1.1.0"
+    "@napi-rs/simple-git-win32-ia32-msvc": "npm:1.1.0"
+    "@napi-rs/simple-git-win32-x64-msvc": "npm:1.1.0"
   dependenciesMeta:
     "@napi-rs/simple-git-android-arm-eabi":
       optional: true
@@ -8359,7 +8359,7 @@ __metadata:
       optional: true
     "@napi-rs/simple-git-win32-x64-msvc":
       optional: true
-  checksum: 10/222965373b229f5364875678b1d8c88e069cecd041d49203ab6549287b235a94c77dcf1d201a77c76970bbe8fdbd97c15cb39b21ad724c2cd344601d3f2b1307
+  checksum: 10/730f09d1f52e33ced0ecadf149925e8878bed1c3fc9cdba20906ad1d0a29ad96759dec6c753b71fa70e7ad38e6fcefae3bcf9f01bbd6adfab780cb70cd5308b1
   languageName: node
   linkType: hard
 
@@ -15306,39 +15306,42 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@slack/logger@npm:^4.0.1":
-  version: 4.0.1
-  resolution: "@slack/logger@npm:4.0.1"
+"@slack/logger@npm:^5.0.0":
+  version: 5.0.0
+  resolution: "@slack/logger@npm:5.0.0"
   dependencies:
-    "@types/node": "npm:>=18"
-  checksum: 10/17e51749aa484262baa6cd8b057b7b2331ea6b140040d371c05ebe57ba61895c53b87e7e5bbfb1687c8e56199a78b36d675f06c35d8e20a363eabd9632cc8e96
+    "@types/node": "npm:>=20"
+  checksum: 10/1205051e827a048e12467c3c78a3f93880522dcc92450c25bb12771dc17f72831daae0cff98778919c9b5b3d41ec884de9a968681d6ea0cdc9ab02785adc09c4
   languageName: node
   linkType: hard
 
-"@slack/types@npm:^2.11.0, @slack/types@npm:^2.20.1":
+"@slack/types@npm:^2.11.0":
   version: 2.20.1
   resolution: "@slack/types@npm:2.20.1"
   checksum: 10/5d13017df8c8468f34e4d24579a26f5ada934a6b7139e88d894c7d1d14f47da826a20c08e2537c6ab74d7624a4b193dc2b34458bae6466173fad1fd5c053b6f6
   languageName: node
   linkType: hard
 
-"@slack/web-api@npm:^7.15.1":
-  version: 7.15.1
-  resolution: "@slack/web-api@npm:7.15.1"
+"@slack/types@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "@slack/types@npm:3.0.0"
+  checksum: 10/30ae3fc5b28f7275f155edc1628284099ec814fd80843d76d410b4c36317f4aefc4f35938bbacc0aaff4ca9dbd8777ededb241f771c7e02e835828a07c376f85
+  languageName: node
+  linkType: hard
+
+"@slack/web-api@npm:^8.0.0":
+  version: 8.0.0
+  resolution: "@slack/web-api@npm:8.0.0"
   dependencies:
-    "@slack/logger": "npm:^4.0.1"
-    "@slack/types": "npm:^2.20.1"
-    "@types/node": "npm:>=18"
+    "@slack/logger": "npm:^5.0.0"
+    "@slack/types": "npm:^3.0.0"
+    "@types/node": "npm:>=20"
     "@types/retry": "npm:0.12.0"
-    axios: "npm:^1.15.0"
     eventemitter3: "npm:^5.0.1"
-    form-data: "npm:^4.0.4"
-    is-electron: "npm:2.2.2"
-    is-stream: "npm:^2"
     p-queue: "npm:^6"
     p-retry: "npm:^4"
     retry: "npm:^0.13.1"
-  checksum: 10/adcb05f19109756a0f2a4cd1f3706ec04a3a304449d1f96f74e39bc2b2d8026730cb688aca09884462f829f92b652408e0495e1dc9aa31f653c6a75ba4489544
+  checksum: 10/88526cee2502f279ed42160d0f8710e5adfbfe6b28a41151ed8978f8bb090914b749b4f5b14fe7f03cbb5ae666df36d650c6e3275f7b03b21929dce751c65f7f
   languageName: node
   linkType: hard
 
@@ -16974,12 +16977,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*, @types/node@npm:>=10.0.0, @types/node@npm:>=13.7.0, @types/node@npm:>=18, @types/node@npm:>=20.0.0, @types/node@npm:>=8.1.0":
-  version: 25.6.0
-  resolution: "@types/node@npm:25.6.0"
+"@types/node@npm:*, @types/node@npm:>=10.0.0, @types/node@npm:>=13.7.0, @types/node@npm:>=20, @types/node@npm:>=20.0.0, @types/node@npm:>=8.1.0":
+  version: 26.1.2
+  resolution: "@types/node@npm:26.1.2"
   dependencies:
-    undici-types: "npm:~7.19.0"
-  checksum: 10/99b18690a4be55904cbf8f6a6ac8eed5ec5b8d791fdd8ee2ae598b46c0fa9b83cda7b70dd7f00dbfb18189dcfc67648fdc7fdd3fcced2619a5a6453d9aec107d
+    undici-types: "npm:~8.3.0"
+  checksum: 10/2dd6d75b80c006deab4e381acc8cb2e3d634f10141f05fd6cadaabddd80a95f04aef7b00a574bd8fd5e08e940b899c23b91dd09a70b11a34a2762203b5eea25e
   languageName: node
   linkType: hard
 
@@ -19087,18 +19090,6 @@ __metadata:
   version: 1.13.2
   resolution: "aws4@npm:1.13.2"
   checksum: 10/290b9f84facbad013747725bfd8b4c42d0b3b04b5620d8418f0219832ef95a7dc597a4af7b1589ae7fce18bacde96f40911c3cda36199dd04d9f8e01f72fa50a
-  languageName: node
-  linkType: hard
-
-"axios@npm:^1.15.0":
-  version: 1.18.1
-  resolution: "axios@npm:1.18.1"
-  dependencies:
-    follow-redirects: "npm:^1.16.0"
-    form-data: "npm:^4.0.5"
-    https-proxy-agent: "npm:^5.0.1"
-    proxy-from-env: "npm:^2.1.0"
-  checksum: 10/c4cdced3ee0a9bf7dcae189fbc74a124aa079d4f04dbd995e602d39c1419476e8d021f87ee39ac8d8398e5a55e6d0b986238b3645f0d9177ac80de87c2a73f18
   languageName: node
   linkType: hard
 
@@ -23972,7 +23963,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"follow-redirects@npm:^1.0.0, follow-redirects@npm:^1.16.0":
+"follow-redirects@npm:^1.0.0":
   version: 1.16.0
   resolution: "follow-redirects@npm:1.16.0"
   peerDependenciesMeta:
@@ -25238,7 +25229,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"https-proxy-agent@npm:^5.0.0, https-proxy-agent@npm:^5.0.1":
+"https-proxy-agent@npm:^5.0.0":
   version: 5.0.1
   resolution: "https-proxy-agent@npm:5.0.1"
   dependencies:
@@ -25740,13 +25731,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"is-electron@npm:2.2.2":
-  version: 2.2.2
-  resolution: "is-electron@npm:2.2.2"
-  checksum: 10/de5aa8bd8d72c96675b8d0f93fab4cc21f62be5440f65bc05c61338ca27bd851a64200f31f1bf9facbaa01b3dbfed7997b2186741d84b93b63e0aff1db6a9494
-  languageName: node
-  linkType: hard
-
 "is-extglob@npm:^2.1.1":
   version: 2.1.1
   resolution: "is-extglob@npm:2.1.1"
@@ -25933,7 +25917,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"is-stream@npm:^2, is-stream@npm:^2.0.0":
+"is-stream@npm:^2.0.0":
   version: 2.0.1
   resolution: "is-stream@npm:2.0.1"
   checksum: 10/b8e05ccdf96ac330ea83c12450304d4a591f9958c11fd17bed240af8d5ffe08aedafa4c0f4cfccd4d28dc9d4d129daca1023633d5c11601a6cbc77521f6fae66
@@ -30993,13 +30977,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"proxy-from-env@npm:^2.1.0":
-  version: 2.1.0
-  resolution: "proxy-from-env@npm:2.1.0"
-  checksum: 10/fbbaf4dab2a6231dc9e394903a5f66f20475e36b734335790b46feb9da07c37d6b32e2c02e3e2ea4d4b23774c53d8562e5b7cc73282cb43f4a597b7eacaee2ee
-  languageName: node
-  linkType: hard
-
 "pstree.remy@npm:^1.1.8":
   version: 1.1.8
   resolution: "pstree.remy@npm:1.1.8"
@@ -34637,10 +34614,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"undici-types@npm:~7.19.0":
-  version: 7.19.2
-  resolution: "undici-types@npm:7.19.2"
-  checksum: 10/05c34c63444c8caca7137f122b29ed50c1d7d05d1e0b2337f423575d3264054c4a0139e47e82e65723d09b97fcad6d8b0223b3550430a9006cc00e72a1e035bf
+"undici-types@npm:~8.3.0":
+  version: 8.3.0
+  resolution: "undici-types@npm:8.3.0"
+  checksum: 10/6681d2837ac75a75ac1cc46090aa2b8ddc7c6b8ecc295a6cdb06838752a730da3d8afeecf05e5ab7903160eafad3a8b6ffa1927e5ded260590f4d4fef18646d5
   languageName: node
   linkType: hard
 
