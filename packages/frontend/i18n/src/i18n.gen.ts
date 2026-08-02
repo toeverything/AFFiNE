@@ -2967,7 +2967,7 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.mobile.setting.support.invite-message"](): string;
     /**
-      * `Rate AFFINE`
+      * `Rate AFFiNE`
       */
     ["com.affine.mobile.setting.support.rate"](): string;
     /**
