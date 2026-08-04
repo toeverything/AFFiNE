@@ -4,6 +4,10 @@ import { powerMonitor } from 'electron';
  * Power-related event handlers for the Electron main process.
  */
 export const powerEvents = {
+  resume: (emit: () => void) => {
+    powerMonitor.on('resume', emit);
+    return () => powerMonitor.off('resume', emit);
+  },
   /**
    * Subscribes to system power source changes.
    * Emits the initial state immediately upon subscription.

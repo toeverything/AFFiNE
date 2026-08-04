@@ -6409,6 +6409,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.workspace.experimental-features.enable-emoji-folder-icon.description"](): string;
     /**
+      * `Local workspace mirror`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-local-workspace-mirror.name"](): string;
+    /**
+      * `Mirror this device's AFFiNE workspaces to local, agent-readable files. Configure each workspace in Storage settings.`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-local-workspace-mirror.description"](): string;
+    /**
       * `Emoji Doc Icon`
       */
     ["com.affine.settings.workspace.experimental-features.enable-emoji-doc-icon.name"](): string;
@@ -6838,6 +6846,150 @@ export function useAFFiNEI18N(): {
       * `You can view current workspace's storage and files here.`
       */
     ["com.affine.settings.workspace.storage.subtitle"](): string;
+    /**
+      * `Local workspace mirror`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.name"](): string;
+    /**
+      * `Keep an agent-readable, one-way copy of this workspace on disk. AFFiNE remains canonical.`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.description"](): string;
+    /**
+      * `Project directory`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.project-directory"](): string;
+    /**
+      * `No project directory selected`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.no-project-directory"](): string;
+    /**
+      * `Choose folder`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.choose-folder"](): string;
+    /**
+      * `Mirror status`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.status"](): string;
+    /**
+      * `Syncing {{completed}}/{{total}}`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.status.syncing"](options: Readonly<{
+        completed: string;
+        total: string;
+    }>): string;
+    /**
+      * `Up to date · {{time}}`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.status.up-to-date"](options: {
+        readonly time: string;
+    }): string;
+    /**
+      * `Ready`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.status.ready"](): string;
+    /**
+      * `{{count}} local change(s) need attention`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.status.conflict"](options: {
+        readonly count: string;
+    }): string;
+    /**
+      * `Local changes are waiting for AFFiNE to finish syncing`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.status.external-change-pending"](): string;
+    /**
+      * `Importing local changes ({{completed}}/{{total}})`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.status.importing"](options: Readonly<{
+        completed: string;
+        total: string;
+    }>): string;
+    /**
+      * `{{path}} conflicts with a newer AFFiNE change`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.status.merge-conflict"](options: {
+        readonly path: string;
+    }): string;
+    /**
+      * `This local change cannot be imported safely: {{message}}`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.status.unsupported-local-change"](options: {
+        readonly message: string;
+    }): string;
+    /**
+      * `{{count}} existing mirror change(s) must be reconciled before upgrade`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.status.migration-conflict"](options: {
+        readonly count: string;
+    }): string;
+    /**
+      * `Error: {{message}}`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.status.error"](options: {
+        readonly message: string;
+    }): string;
+    /**
+      * `Choose a project directory`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.status.not-configured"](): string;
+    /**
+      * `Export permission denied`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.status.permission-denied"](): string;
+    /**
+      * `AFFiNE does not allow changes to {{path}}`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.status.document-permission-denied"](options: {
+        readonly path: string;
+    }): string;
+    /**
+      * `Experiment disabled`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.status.feature-disabled"](): string;
+    /**
+      * `Disabled`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.status.disabled"](): string;
+    /**
+      * `Local workspace mirror failed`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.failed"](): string;
+    /**
+      * `Enable local workspace mirror?`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.enable.title"](): string;
+    /**
+      * `AFFiNE will write this workspace into a .affine folder. These files may be included in Git commits or published with the project, so review the repository visibility first.`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.enable.warning"](): string;
+    /**
+      * `Enable mirror`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.enable.confirm"](): string;
+    /**
+      * `Use the AFFiNE version?`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.use-affine.title"](): string;
+    /**
+      * `The conflicting mirror files will be replaced by the current AFFiNE content. Unknown files are preserved.`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.use-affine.warning"](): string;
+    /**
+      * `Use AFFiNE version`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.use-affine.confirm"](): string;
+    /**
+      * `Sync now`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.sync-now"](): string;
+    /**
+      * `Retry`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.retry"](): string;
+    /**
+      * `Open folder`
+      */
+    ["com.affine.settings.workspace.storage.local-mirror.open-folder"](): string;
     /**
       * `Enable AFFiNE Sync to publish this workspace`
       */

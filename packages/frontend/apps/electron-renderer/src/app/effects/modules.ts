@@ -18,6 +18,7 @@ import {
   configureTraySettingModule,
 } from '@affine/core/modules/editor-setting';
 import { configureFindInPageModule } from '@affine/core/modules/find-in-page';
+import { configureDesktopLocalMirrorModule } from '@affine/core/modules/local-mirror';
 import {
   ClientSchemeProvider,
   PopupWindowProvider,
@@ -45,6 +46,7 @@ export function setupModules() {
   configureAppTabsHeaderModule(framework);
   configureFindInPageModule(framework);
   configureDesktopApiModule(framework);
+  configureDesktopLocalMirrorModule(framework);
   configureSpellCheckSettingModule(framework);
   configureTraySettingModule(framework);
   configureDesktopBackupModule(framework);

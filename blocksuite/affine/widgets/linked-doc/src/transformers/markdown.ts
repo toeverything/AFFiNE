@@ -12,7 +12,7 @@ import {
   titleMiddleware,
 } from '@blocksuite/affine-shared/adapters';
 import { Container } from '@blocksuite/global/di';
-import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
+import { BlockSuiteError } from '@blocksuite/global/exceptions';
 import { sha } from '@blocksuite/global/utils';
 import type {
   DocMeta,
@@ -20,6 +20,7 @@ import type {
   ExtensionType,
   Schema,
   Store,
+  TransformerMiddleware,
   Workspace,
 } from '@blocksuite/store';
 import { extMimeMap, Transformer } from '@blocksuite/store';
@@ -39,6 +40,20 @@ export type ParsedFrontmatterMeta = Partial<
     'title' | 'createDate' | 'updatedDate' | 'tags' | 'favorite' | 'trash'
   >
 >;
+
+export type SerializedMarkdownDoc = {
+  file: string;
+  assetsIds: string[];
+  snapshot: DocSnapshot;
+  assets: Map<string, Blob>;
+};
+
+export type SerializeMarkdownDocOptions = {
+  /** Override the URL prefix used for AFFiNE document references. */
+  docLinkBaseUrl?: string;
+  /** Load all referenced blobs into the returned asset map. Defaults to true. */
+  loadAssets?: boolean;
+};
 
 const FRONTMATTER_KEYS = {
   title: ['title', 'name'],
@@ -574,12 +589,20 @@ function registerMarkdownZipPagePath(
  * @param doc The doc to export
  * @returns A Promise that resolves when the export is complete
  */
-async function exportDoc(doc: Store) {
+async function serializeDoc(
+  doc: Store,
+  options: SerializeMarkdownDocOptions = {}
+): Promise<SerializedMarkdownDoc | undefined> {
   const provider = doc.provider;
-  const job = doc.getTransformer([
-    docLinkBaseURLMiddleware(doc.workspace.id),
+  const middlewares: TransformerMiddleware[] = [
+    options.docLinkBaseUrl === undefined
+      ? docLinkBaseURLMiddleware(doc.workspace.id)
+      : ({ adapterConfigs }) => {
+          adapterConfigs.set('docLinkBaseUrl', options.docLinkBaseUrl);
+        },
     titleMiddleware(doc.workspace.meta.docMetas),
-  ]);
+  ];
+  const job = doc.getTransformer(middlewares);
   const snapshot = job.docToSnapshot(doc);
 
   const adapter = new MarkdownAdapter(job, provider);
@@ -591,16 +614,41 @@ async function exportDoc(doc: Store) {
     snapshot,
     assets: job.assetsManager,
   });
+  const assetsIds = [
+    ...new Set([
+      ...markdownResult.assetsIds,
+      ...job.assetsManager.getPathBlobIdMap().values(),
+    ]),
+  ];
+  if (options.loadAssets !== false) {
+    await Promise.all(
+      assetsIds.map(assetId => job.assetsManager.readFromBlob(assetId))
+    );
+  }
+
+  return {
+    ...markdownResult,
+    assetsIds,
+    snapshot,
+    assets: job.assets,
+  };
+}
+
+async function exportDoc(doc: Store) {
+  const serialized = await serializeDoc(doc);
+  if (!serialized) {
+    return;
+  }
 
   let downloadBlob: Blob;
   const docTitle = doc.meta?.title || 'Untitled';
   let name: string;
-  const contentBlob = new Blob([markdownResult.file], { type: 'plain/text' });
-  if (markdownResult.assetsIds.length > 0) {
-    if (!job.assets) {
-      throw new BlockSuiteError(ErrorCode.ValueNotExists, 'No assets found');
-    }
-    const zip = await createAssetsArchive(job.assets, markdownResult.assetsIds);
+  const contentBlob = new Blob([serialized.file], { type: 'plain/text' });
+  if (serialized.assetsIds.length > 0) {
+    const zip = await createAssetsArchive(
+      serialized.assets,
+      serialized.assetsIds
+    );
 
     await zip.file('index.md', contentBlob);
 
@@ -979,6 +1027,7 @@ function flattenFolderHierarchy(root: FolderHierarchy): ImportFolder[] {
 
 export const MarkdownTransformer = {
   exportDoc,
+  serializeDoc,
   importMarkdownToBlock,
   importMarkdownToDoc,
   planMarkdownZip,
