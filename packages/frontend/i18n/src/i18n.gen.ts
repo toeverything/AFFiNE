@@ -6302,6 +6302,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.workspace.byok.action.test-connection"](): string;
     /**
+      * `Test`
+      */
+    ["com.affine.settings.workspace.byok.action.test"](): string;
+    /**
+      * `Testing…`
+      */
+    ["com.affine.settings.workspace.byok.action.testing"](): string;
+    /**
       * `Cancel`
       */
     ["com.affine.settings.workspace.byok.action.cancel"](): string;
@@ -6409,6 +6417,14 @@ export function useAFFiNEI18N(): {
       * `BYOK keys not cleared`
       */
     ["com.affine.settings.workspace.byok.notify.clear-failed.title"](): string;
+    /**
+      * `BYOK settings changed`
+      */
+    ["com.affine.settings.workspace.byok.notify.reload-required.title"](): string;
+    /**
+      * `Reload the settings and try again.`
+      */
+    ["com.affine.settings.workspace.byok.notify.reload-required.message"](): string;
     /**
       * `Please try again.`
       */

@@ -44,6 +44,7 @@ export const WorkspaceByokSetting = () => {
   const [localKeys, setLocalKeys] = useState<ByokKey[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingKey, setEditingKey] = useState<ByokKey | null>(null);
+  const [testingKeyId, setTestingKeyId] = useState<string | null>(null);
   const [draggingKey, setDraggingKey] = useState<{
     id: string;
     storage: ByokStorage;
@@ -127,10 +128,11 @@ export const WorkspaceByokSetting = () => {
     if (!settings) {
       return;
     }
+    const deletions: Promise<unknown>[] = [];
     if (settings.serverEntitled && workspaceServer.server) {
       const gql = workspaceServer.server.gql as GqlFn;
-      await Promise.all(
-        settings.keys.map(key =>
+      deletions.push(
+        ...settings.keys.map(key =>
           gql({
             query: deleteWorkspaceByokProfileMutation,
             variables: { workspaceId: workspace.id, profileId: key.id },
@@ -139,10 +141,17 @@ export const WorkspaceByokSetting = () => {
       );
     }
     if (settings.localStorageSupported) {
-      await clearLocalKeys(workspace.id);
+      deletions.push(clearLocalKeys(workspace.id));
     }
-    setLocalKeys([]);
+    const results = await Promise.allSettled(deletions);
     await load();
+    if (
+      results.some(
+        result => result.status === 'rejected' || result.value === false
+      )
+    ) {
+      throw new Error('Some BYOK profiles could not be deleted');
+    }
   }, [load, settings, workspace.id, workspaceServer.server]);
 
   const deleteKey = useCallback(
@@ -172,17 +181,22 @@ export const WorkspaceByokSetting = () => {
       if (key.storage !== ByokStorage.server || !workspaceServer.server) {
         return;
       }
-      await (workspaceServer.server.gql as GqlFn)({
-        query: probeWorkspaceByokProfileMutation,
-        variables: {
-          input: {
-            workspaceId: workspace.id,
-            profileId: key.id,
-            checks: probeChecks(key.definition.models, false),
+      setTestingKeyId(key.id);
+      try {
+        await (workspaceServer.server.gql as GqlFn)({
+          query: probeWorkspaceByokProfileMutation,
+          variables: {
+            input: {
+              workspaceId: workspace.id,
+              profileId: key.id,
+              checks: probeChecks(key.definition.models, false),
+            },
           },
-        },
-      });
-      await load();
+        });
+        await load();
+      } finally {
+        setTestingKeyId(null);
+      }
     },
     [load, workspace.id, workspaceServer.server]
   );
@@ -215,15 +229,29 @@ export const WorkspaceByokSetting = () => {
       if (targetKey.storage === ByokStorage.local) {
         setLocalKeys(await reorderLocalKeys(workspace.id, nextBucketIds));
       } else if (workspaceServer.server) {
+        if (nextBucket.some(key => key.revision === undefined)) {
+          notify.error({
+            title: byokT(t, 'notify.reload-required.title'),
+            message: byokT(t, 'notify.reload-required.message'),
+          });
+          await load();
+          return;
+        }
         await (workspaceServer.server.gql as GqlFn)({
           query: reorderWorkspaceByokProfilesMutation,
           variables: {
             input: {
               workspaceId: workspace.id,
-              profiles: nextBucket.map(key => ({
-                profileId: key.id,
-                expectedRevision: key.revision ?? 1,
-              })),
+              profiles: nextBucket.flatMap(key =>
+                key.revision === undefined
+                  ? []
+                  : [
+                      {
+                        profileId: key.id,
+                        expectedRevision: key.revision,
+                      },
+                    ]
+              ),
             },
           },
         });
@@ -288,6 +316,7 @@ export const WorkspaceByokSetting = () => {
             {keys.length ? (
               <KeyList
                 keys={keys}
+                testingKeyId={testingKeyId}
                 onEdit={key => {
                   setEditingKey(key);
                   setModalOpen(true);

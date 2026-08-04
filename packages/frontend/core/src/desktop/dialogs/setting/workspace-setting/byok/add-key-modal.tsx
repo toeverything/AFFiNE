@@ -6,7 +6,7 @@ import {
   replaceWorkspaceByokProfileMutation,
 } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { logByokError } from './errors';
 import * as styles from './index.css';
@@ -73,6 +73,7 @@ export const AddKeyModal = ({
   );
   const [includeImageProbe, setIncludeImageProbe] = useState(false);
   const [busy, setBusy] = useState(false);
+  const busyRef = useRef(false);
   const localStorageUnavailable = !localStorageSupported || !canAddLocalKey;
   const localStorageDisabled = !!editingKey || localStorageUnavailable;
   const showCustomEndpoint = shouldShowEndpoint(
@@ -112,57 +113,53 @@ export const AddKeyModal = ({
 
   const definition = useMemo<ByokDefinition>(
     () => ({
-      version: 1,
+      version: editingKey?.definition.version ?? 1,
       endpoint: customEndpoint
         ? { kind: 'custom', url: endpoint }
         : { kind: 'provider_default', url: null },
       models,
     }),
-    [customEndpoint, endpoint, models]
+    [customEndpoint, editingKey?.definition.version, endpoint, models]
   );
 
   const invalidateTest = () => setTestStatus(null);
   const runProbe = useCallback(async () => {
     if (!gql) return false;
-    setBusy(true);
-    try {
-      const canReuseServerCredential =
-        editingKey?.storage === ByokStorage.server && !apiKey;
-      const checks = probeChecks(models, includeImageProbe);
-      const result = await gql({
-        query: probeWorkspaceByokDraftMutation,
-        variables: {
-          input: {
-            workspaceId,
-            provider,
-            credential: apiKey || null,
-            profileId: canReuseServerCredential ? editingKey.id : null,
-            expectedRevision: canReuseServerCredential
-              ? (editingKey.revision ?? null)
-              : null,
-            definition,
-            checks,
-          },
+    const canReuseServerCredential =
+      editingKey?.storage === ByokStorage.server && !apiKey;
+    const checks = probeChecks(models, includeImageProbe);
+    const result = await gql({
+      query: probeWorkspaceByokDraftMutation,
+      variables: {
+        input: {
+          workspaceId,
+          provider,
+          credential: apiKey || null,
+          profileId: canReuseServerCredential ? editingKey.id : null,
+          expectedRevision: canReuseServerCredential
+            ? (editingKey.revision ?? null)
+            : null,
+          definition,
+          checks,
         },
-      });
-      const probe = result.probeWorkspaceByokDraft;
-      const verifiedChecks = new Set(
-        probe.models.flatMap(model =>
-          model.checks
-            .filter(check => check.status.kind === 'verified')
-            .map(check => `${model.modelId}\0${check.operation}`)
-        )
+      },
+    });
+    const probe = result.probeWorkspaceByokDraft;
+    const verifiedChecks = new Set(
+      probe.models.flatMap(model =>
+        model.checks
+          .filter(check => check.status.kind === 'verified')
+          .map(check => `${model.modelId}\0${check.operation}`)
+      )
+    );
+    const passed =
+      checks.length > 0 &&
+      probe.connection.kind === 'verified' &&
+      checks.every(check =>
+        verifiedChecks.has(`${check.modelId}\0${check.operation}`)
       );
-      const passed =
-        probe.connection.kind === 'verified' &&
-        checks.every(check =>
-          verifiedChecks.has(`${check.modelId}\0${check.operation}`)
-        );
-      setTestStatus(passed ? 'passed' : 'failed');
-      return passed;
-    } finally {
-      setBusy(false);
-    }
+    setTestStatus(passed ? 'passed' : 'failed');
+    return passed;
   }, [
     apiKey,
     definition,
@@ -202,13 +199,20 @@ export const AddKeyModal = ({
       }
       setLocalKeys(await readLocalKeys(workspaceId));
     } else if (editingKey?.storage === ByokStorage.server) {
+      if (editingKey.revision === undefined) {
+        notify.error({
+          title: byokT(t, 'notify.reload-required.title'),
+          message: byokT(t, 'notify.reload-required.message'),
+        });
+        return;
+      }
       await gql({
         query: replaceWorkspaceByokProfileMutation,
         variables: {
           input: {
             workspaceId,
             profileId: editingKey.id,
-            expectedRevision: editingKey.revision ?? 1,
+            expectedRevision: editingKey.revision,
             name,
             description: description || null,
             credential: apiKey || null,
@@ -255,21 +259,36 @@ export const AddKeyModal = ({
   ]);
 
   const connect = useCallback(async () => {
-    const passed = testStatus === 'passed' || (await runProbe());
-    if (!passed) {
-      notify.error({
-        title: byokT(t, 'notify.test-failed.title'),
-        message: byokT(t, 'notify.operation-failed.message'),
-      });
-      return;
-    }
+    if (busyRef.current) return;
+    busyRef.current = true;
     setBusy(true);
     try {
+      const passed = testStatus === 'passed' || (await runProbe());
+      if (!passed) {
+        notify.error({
+          title: byokT(t, 'notify.test-failed.title'),
+          message: byokT(t, 'notify.operation-failed.message'),
+        });
+        return;
+      }
       await persist();
     } finally {
+      busyRef.current = false;
       setBusy(false);
     }
   }, [persist, runProbe, t, testStatus]);
+
+  const testConnection = useCallback(async () => {
+    if (busyRef.current) return;
+    busyRef.current = true;
+    setBusy(true);
+    try {
+      await runProbe();
+    } finally {
+      busyRef.current = false;
+      setBusy(false);
+    }
+  }, [runProbe]);
 
   const hasCredential = !!apiKey || editingKey?.storage === ByokStorage.server;
   const valid =
@@ -325,6 +344,7 @@ export const AddKeyModal = ({
               <input
                 className={styles.storageRadio}
                 type="radio"
+                name="byok-storage"
                 checked={storage === ByokStorage.server}
                 disabled={!!editingKey || !canAddServerKey}
                 onChange={() => setStorage(ByokStorage.server)}
@@ -343,6 +363,7 @@ export const AddKeyModal = ({
               <input
                 className={styles.storageRadio}
                 type="radio"
+                name="byok-storage"
                 checked={storage === ByokStorage.local}
                 disabled={localStorageDisabled}
                 onChange={() => setStorage(ByokStorage.local)}
@@ -370,7 +391,9 @@ export const AddKeyModal = ({
               }}
               type="password"
               placeholder={
-                editingKey ? byokT(t, 'placeholder.keep-current-key') : ''
+                editingKey?.storage === ByokStorage.server
+                  ? byokT(t, 'placeholder.keep-current-key')
+                  : ''
               }
             />
             {storage === ByokStorage.local ? (
@@ -511,7 +534,7 @@ export const AddKeyModal = ({
             variant="secondary"
             disabled={!valid || busy}
             onClick={() => {
-              runProbe().catch(error => {
+              testConnection().catch(error => {
                 logByokError('Failed to test BYOK provider', error);
                 setTestStatus('failed');
               });

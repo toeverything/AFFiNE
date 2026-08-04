@@ -86,7 +86,7 @@ export const capabilityIcon = style({
 
 export const capabilityIconActive = style({
   color: cssVarV2('button/primary'),
-  background: '#f0f7ff',
+  background: cssVarV2('chip/label/blue'),
 });
 
 export const capabilityIconSvg = style({
@@ -387,7 +387,7 @@ export const recommended = style({
   padding: '2px 6px',
   borderRadius: 999,
   color: cssVarV2('button/primary'),
-  background: '#f0f7ff',
+  background: cssVarV2('chip/label/blue'),
   fontSize: 11,
   fontWeight: 400,
   lineHeight: '16px',
@@ -452,7 +452,7 @@ export const catalogChoice = style({
   selectors: {
     '&[data-selected="true"]': {
       borderColor: cssVarV2('button/primary'),
-      background: '#f0f7ff',
+      background: cssVarV2('chip/label/blue'),
     },
   },
 });

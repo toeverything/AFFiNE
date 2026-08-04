@@ -15,20 +15,24 @@ export type ByokStorage = (typeof ByokStorage)[keyof typeof ByokStorage];
 export type ByokDefinition =
   WorkspaceByokSettingsQuery['workspace']['byokSettings']['profiles'][number]['definition'];
 
-export type ByokKey = {
+type ByokKeyBase = {
   id: string;
   provider: ByokProvider;
   name: string;
   description?: string | null;
-  storage: ByokStorage;
   configured: boolean;
   enabled: boolean;
   sortOrder: number;
-  revision?: number;
   definition: ByokDefinition;
   capabilities: string[];
   validation?: WorkspaceByokSettingsQuery['workspace']['byokSettings']['profiles'][number]['validation'];
 };
+
+export type ByokKey = ByokKeyBase &
+  (
+    | { storage: typeof ByokStorage.server; revision: number }
+    | { storage: typeof ByokStorage.local; revision?: never }
+  );
 
 export type LocalByokKeyInput = Pick<
   ByokKey,

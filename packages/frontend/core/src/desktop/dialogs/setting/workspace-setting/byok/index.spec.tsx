@@ -364,4 +364,127 @@ describe('BYOK settings behavior', () => {
       },
     ]);
   });
+
+  test('does not accept a verified connection when no model check ran', async () => {
+    const gql = vi.fn(async ({ query }: { query: symbol }) => {
+      if (query === probeMutation) {
+        return {
+          probeWorkspaceByokDraft: {
+            definitionFingerprint: 'fingerprint',
+            stale: false,
+            connection: { kind: 'verified' },
+            models: [],
+          },
+        };
+      }
+      if (query === createMutation) {
+        return { createWorkspaceByokProfile: { profileId: 'profile-1' } };
+      }
+      throw new Error('Unexpected GraphQL operation');
+    });
+    render(
+      <AddKeyModal
+        workspaceId="workspace-1"
+        settings={settings() as never}
+        editingKey={null}
+        open
+        onOpenChange={vi.fn()}
+        onSaved={vi.fn()}
+        localKeys={[]}
+        setLocalKeys={vi.fn()}
+        localStorageSupported={false}
+        canAddServerKey
+        canAddLocalKey={false}
+        isSelfHosted={false}
+        gql={gql as never}
+      />
+    );
+
+    fireEvent.change(document.querySelector('input[type="password"]')!, {
+      target: { value: 'secret' },
+    });
+    fireEvent.click(screen.getByRole('checkbox', { name: 'disable-model' }));
+    fireEvent.click(screen.getByText('connect'));
+
+    await waitFor(() => expect(gql).toHaveBeenCalledTimes(1));
+    expect(gql.mock.calls[0][0].query).toBe(probeMutation);
+  });
+
+  test('preserves definition version and server revision while editing', async () => {
+    type MockOperation = {
+      query: symbol;
+      variables?: { input?: Record<string, unknown> };
+    };
+    const gql = vi.fn(async ({ query }: MockOperation) => {
+      if (query === probeMutation) {
+        return {
+          probeWorkspaceByokDraft: {
+            definitionFingerprint: 'fingerprint',
+            stale: false,
+            connection: { kind: 'verified' },
+            models: [
+              {
+                modelId: 'model-a',
+                checks: [{ operation: 'chat', status: { kind: 'verified' } }],
+              },
+            ],
+          },
+        };
+      }
+      if (query === replaceMutation) {
+        return { replaceWorkspaceByokProfile: { profileId: 'profile-1' } };
+      }
+      throw new Error('Unexpected GraphQL operation');
+    });
+    render(
+      <AddKeyModal
+        workspaceId="workspace-1"
+        settings={settings() as never}
+        editingKey={
+          {
+            id: 'profile-1',
+            provider: ByokProvider.openai,
+            name: 'OpenAI',
+            storage: 'server',
+            configured: true,
+            enabled: true,
+            sortOrder: 0,
+            revision: 7,
+            definition: {
+              version: 3,
+              endpoint: { kind: 'provider_default', url: null },
+              models: [
+                {
+                  modelId: 'model-a',
+                  enabled: true,
+                  capabilities: [textCapability],
+                },
+              ],
+            },
+            capabilities: ['Text'],
+          } as never
+        }
+        open
+        onOpenChange={vi.fn()}
+        onSaved={vi.fn()}
+        localKeys={[]}
+        setLocalKeys={vi.fn()}
+        localStorageSupported={false}
+        canAddServerKey
+        canAddLocalKey={false}
+        isSelfHosted={false}
+        gql={gql as never}
+      />
+    );
+
+    fireEvent.click(screen.getByText('save-changes'));
+    await waitFor(() => expect(gql).toHaveBeenCalledTimes(2));
+    const replaceCall = gql.mock.calls.find(
+      call => call[0].query === replaceMutation
+    );
+    expect(replaceCall?.[0].variables?.input).toMatchObject({
+      expectedRevision: 7,
+      definition: { version: 3 },
+    });
+  });
 });

@@ -209,13 +209,17 @@ export const ModelSelector = ({
         catalog={catalog}
         models={models}
         editingModel={editingIndex === null ? null : models[editingIndex]}
-        onOpenChange={setEditorOpen}
+        onOpenChange={open => {
+          setEditorOpen(open);
+          if (!open) setEditingIndex(null);
+        }}
         onSubmit={next => {
           if (editingIndex === null) {
             onChange([...models, ...next]);
-          } else {
+          } else if (next[0]) {
             update(editingIndex, next[0]);
           }
+          setEditingIndex(null);
         }}
       />
     </>

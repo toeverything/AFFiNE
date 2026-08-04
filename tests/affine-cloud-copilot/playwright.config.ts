@@ -29,9 +29,9 @@ const config: PlaywrightTestConfig = {
   webServer: [
     {
       command: 'yarn run -T affine dev -p @affine/web',
-      stdout: 'ignore',
-      stderr: 'ignore',
-      timeout: 120 * 1000,
+      stdout: 'pipe',
+      stderr: 'pipe',
+      timeout: 240 * 1000,
       reuseExistingServer: !process.env.CI,
       env: {
         COVERAGE: process.env.COVERAGE || 'false',
@@ -40,10 +40,10 @@ const config: PlaywrightTestConfig = {
     },
     {
       command: 'yarn run -T affine dev -p @affine/server',
-      timeout: 120 * 1000,
+      timeout: 240 * 1000,
       reuseExistingServer: !process.env.CI,
-      stdout: 'ignore',
-      stderr: 'ignore',
+      stdout: 'pipe',
+      stderr: 'pipe',
       env: {
         DATABASE_URL:
           process.env.DATABASE_URL ??

@@ -41,6 +41,8 @@ export class AIModelService extends Service {
     if (workspaceId === this.workspaceId && routeId === this.routeId) return;
     this.workspaceId = workspaceId;
     this.routeId = routeId;
+    this.models.value = [];
+    this.modelId.value = undefined;
     this.load(workspaceId, routeId).catch(console.error);
   }
 

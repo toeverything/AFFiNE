@@ -77,10 +77,8 @@ function matchesCapability(value: Capability, useCase: UseCase) {
     'attachmentKinds',
     'attachmentSources',
   ] as const;
-  return fields.every(
-    field =>
-      value[field].length === expected[field].length &&
-      value[field].every((item, index) => item === expected[field][index])
+  return fields.every(field =>
+    expected[field].every(item => value[field].includes(item))
   );
 }
 
@@ -90,6 +88,31 @@ export function modelUseCases(model: ModelDeclaration) {
       model.capabilities.some(item => matchesCapability(item, id))
     )
     .map(({ id }) => id);
+}
+
+export function capabilitiesForUseCases(
+  model: ModelDeclaration | null,
+  selectedUseCases: UseCase[]
+) {
+  const selected = new Set(selectedUseCases);
+  const capabilities = (model?.capabilities ?? []).filter(capability => {
+    const represented = useCases
+      .map(({ id }) => id)
+      .filter(useCase => matchesCapability(capability, useCase));
+    return (
+      represented.length > 0 &&
+      represented.every(useCase => selected.has(useCase))
+    );
+  });
+
+  for (const useCase of selectedUseCases) {
+    if (
+      !capabilities.some(capability => matchesCapability(capability, useCase))
+    ) {
+      capabilities.push(capabilityForUseCase(useCase));
+    }
+  }
+  return capabilities;
 }
 
 export function probeChecks(models: ModelDeclaration[], includeImage: boolean) {

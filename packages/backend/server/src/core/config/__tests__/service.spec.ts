@@ -111,6 +111,16 @@ test('should revalidate config', async t => {
   t.is(service.getConfig().server.externalUrl, newValue);
 });
 
+test('should reject overlapping app config paths in one update', async t => {
+  await t.throwsAsync(
+    models.appConfig.save(user.id, [
+      { key: 'testOverlapRoot.branch', value: { enabled: true } },
+      { key: 'testOverlapRoot.branch.enabled', value: false },
+    ]),
+    { message: /must not overlap/ }
+  );
+});
+
 test('should emit config changed event', async t => {
   const newUrl = faker.internet.url();
 

@@ -45,8 +45,8 @@ export function shouldShowEndpoint(
 }
 
 export function capabilitiesFor(key: Pick<ByokKey, 'definition'>) {
-  const capabilities = key.definition.models.flatMap(
-    model => model.capabilities
+  const capabilities = key.definition.models.flatMap(model =>
+    model.enabled ? model.capabilities : []
   );
   const labels = new Set<string>();
   for (const capability of capabilities) {
@@ -143,7 +143,7 @@ export function rowDescription(t: I18nInstance, key: ByokKey) {
   const activity =
     key.validation?.connection.kind === 'failed'
       ? byokT(t, 'row.activity.failed', { date: tested ?? '' })
-      : tested
+      : key.validation?.connection.kind === 'verified'
         ? byokT(t, 'status.key-verified')
         : byokT(t, 'row.activity.unused');
 

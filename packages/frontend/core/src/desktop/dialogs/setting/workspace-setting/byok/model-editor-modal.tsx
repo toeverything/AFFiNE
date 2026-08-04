@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import * as styles from './index.css';
 import { byokT } from './metadata';
 import {
-  capabilityForUseCase,
+  capabilitiesForUseCases,
   type catalogModels,
   type ModelDeclaration,
   modelUseCases,
@@ -67,7 +67,7 @@ export const ModelEditorModal = ({
         {
           modelId: modelId.trim(),
           enabled: editingModel?.enabled ?? true,
-          capabilities: selectedUseCases.map(capabilityForUseCase),
+          capabilities: capabilitiesForUseCases(editingModel, selectedUseCases),
         },
       ]);
     } else {

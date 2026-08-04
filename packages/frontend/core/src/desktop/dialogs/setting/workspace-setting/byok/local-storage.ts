@@ -35,7 +35,7 @@ function toLocalByokKey(key: LocalByokPublicKey): ByokKey {
     enabled: key.enabled ?? true,
     sortOrder: key.sortOrder ?? 0,
     definition: key.definition,
-    capabilities: capabilitiesFor(key as ByokKey),
+    capabilities: capabilitiesFor(key),
   };
 }
 
