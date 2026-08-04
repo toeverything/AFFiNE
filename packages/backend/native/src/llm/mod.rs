@@ -6,6 +6,16 @@ mod ffi;
 mod prompt_catalog;
 pub(crate) mod route;
 
+pub use action::copilot_action_recipe;
+pub use byok::{
+  ByokCapabilityInput, ByokCatalogModelOutput, ByokCatalogOutput, ByokCatalogProviderOutput, ByokEndpointInput,
+  ByokLocalLeaseOutput, ByokModelDeclarationInput, ByokModelProbeCheckOutput, ByokModelProbeOutput,
+  ByokProbeCheckInput, ByokProbeResultOutput, ByokProbeStatusOutput, ByokProfileDefinitionInput, ByokProfileOutput,
+  ByokValidationOutput, CreateByokLocalLeaseInput, CreateByokLocalLeaseProviderInput, CreateByokProfileInput,
+  ProbeByokDraftInput, ProbeByokProfileInput, ReorderByokProfilesInput, ReplaceByokProfileInput,
+  RotateByokCredentialInput, byok_catalog,
+};
+
 pub use self::core::{
   capability::llm_match_model_capabilities,
   model_registry::{llm_match_model_registry, llm_resolve_model_registry_variant},
@@ -18,16 +28,6 @@ pub use self::core::{
     llm_build_image_request_from_messages, llm_build_rerank_request, llm_infer_prompt_model_conditions,
   },
   structured_output::{llm_canonical_json_schema_hash, llm_validate_json_schema},
-};
-
-pub use action::copilot_action_recipe;
-pub use byok::{
-  ByokCapabilityInput, ByokCatalogModelOutput, ByokCatalogOutput, ByokCatalogProviderOutput, ByokEndpointInput,
-  ByokLocalLeaseOutput, ByokModelDeclarationInput, ByokModelProbeCheckOutput, ByokModelProbeOutput,
-  ByokProbeCheckInput, ByokProbeResultOutput, ByokProbeStatusOutput, ByokProfileDefinitionInput, ByokProfileOutput,
-  ByokValidationOutput, CreateByokLocalLeaseInput, CreateByokLocalLeaseProviderInput, CreateByokProfileInput,
-  ProbeByokDraftInput, ProbeByokProfileInput, ReorderByokProfilesInput, ReplaceByokProfileInput,
-  RotateByokCredentialInput, byok_catalog,
 };
 
 #[napi_derive::napi(catch_unwind)]

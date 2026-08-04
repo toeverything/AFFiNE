@@ -366,7 +366,11 @@ describe('BYOK settings behavior', () => {
   });
 
   test('does not accept a verified connection when no model check ran', async () => {
-    const gql = vi.fn(async ({ query }: { query: symbol }) => {
+    type MockOperation = {
+      query: symbol;
+      variables?: { input?: { checks?: unknown[] } };
+    };
+    const gql = vi.fn(async ({ query }: MockOperation) => {
       if (query === probeMutation) {
         return {
           probeWorkspaceByokDraft: {
@@ -406,8 +410,15 @@ describe('BYOK settings behavior', () => {
     fireEvent.click(screen.getByRole('checkbox', { name: 'disable-model' }));
     fireEvent.click(screen.getByText('connect'));
 
-    await waitFor(() => expect(gql).toHaveBeenCalledTimes(1));
-    expect(gql.mock.calls[0][0].query).toBe(probeMutation);
+    await waitFor(() => expect(screen.getByText('failed')).toBeTruthy());
+
+    const probeCall = gql.mock.calls.find(
+      ([operation]) => operation.query === probeMutation
+    );
+    expect(probeCall?.[0].variables?.input?.checks).toEqual([]);
+    expect(
+      gql.mock.calls.some(([operation]) => operation.query === createMutation)
+    ).toBe(false);
   });
 
   test('preserves definition version and server revision while editing', async () => {

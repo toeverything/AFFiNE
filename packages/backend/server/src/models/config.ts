@@ -15,6 +15,8 @@ export class AppConfigModel extends BaseModel {
 
   @Transactional()
   async save(user: string, updates: Array<{ key: string; value: any }>) {
+    await this.db
+      .$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${'app-config-paths'}, 0))`;
     const existing = await this.db.appConfig.findMany({
       select: { id: true },
     });

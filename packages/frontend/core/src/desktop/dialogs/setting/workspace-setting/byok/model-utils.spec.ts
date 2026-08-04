@@ -2,8 +2,8 @@ import { describe, expect, test } from 'vitest';
 
 import {
   capabilitiesForUseCases,
-  modelUseCases,
   type ModelDeclaration,
+  modelUseCases,
 } from './model-utils';
 
 describe('BYOK model capabilities', () => {

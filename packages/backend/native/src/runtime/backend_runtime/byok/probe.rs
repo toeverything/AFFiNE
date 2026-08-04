@@ -432,8 +432,9 @@ fn backend_error_kind(error: &BackendError) -> &'static str {
 
 #[cfg(test)]
 mod tests {
-  use super::*;
   use llm_adapter::target::BackendEndpoint;
+
+  use super::*;
 
   #[test]
   fn connection_probe_errors_are_low_information() {
