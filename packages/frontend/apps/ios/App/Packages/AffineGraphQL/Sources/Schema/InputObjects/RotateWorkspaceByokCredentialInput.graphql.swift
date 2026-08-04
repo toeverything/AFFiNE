@@ -3,7 +3,7 @@
 
 import ApolloAPI
 
-public struct ReorderWorkspaceByokConfigsInput: InputObject {
+public struct RotateWorkspaceByokCredentialInput: InputObject {
   public private(set) var __data: InputDict
 
   public init(_ data: InputDict) {
@@ -11,25 +11,25 @@ public struct ReorderWorkspaceByokConfigsInput: InputObject {
   }
 
   public init(
-    ids: [ID],
-    storage: GraphQLEnum<ByokKeyStorage>,
+    credential: String,
+    profileId: ID,
     workspaceId: String
   ) {
     __data = InputDict([
-      "ids": ids,
-      "storage": storage,
+      "credential": credential,
+      "profileId": profileId,
       "workspaceId": workspaceId
     ])
   }
 
-  public var ids: [ID] {
-    get { __data["ids"] }
-    set { __data["ids"] = newValue }
+  public var credential: String {
+    get { __data["credential"] }
+    set { __data["credential"] = newValue }
   }
 
-  public var storage: GraphQLEnum<ByokKeyStorage> {
-    get { __data["storage"] }
-    set { __data["storage"] = newValue }
+  public var profileId: ID {
+    get { __data["profileId"] }
+    set { __data["profileId"] = newValue }
   }
 
   public var workspaceId: String {

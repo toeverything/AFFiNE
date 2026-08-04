@@ -20,14 +20,32 @@ type WorkspaceByokKey = {
   provider: 'openai' | 'anthropic' | 'gemini' | 'fal';
   name: string;
   description?: string | null;
-  apiKey: string;
-  endpoint?: string | null;
+  credential: string;
+  definition: {
+    version: number;
+    endpoint: { kind: string; url?: string | null };
+    models: Array<{
+      modelId: string;
+      enabled: boolean;
+      capabilities: Array<{
+        input: string[];
+        output: string[];
+        features: string[];
+        attachmentKinds: string[];
+        attachmentSources: string[];
+      }>;
+    }>;
+  };
   sortOrder?: number | null;
   enabled?: boolean | null;
 };
 
-type WorkspaceByokKeyInput = Omit<WorkspaceByokKey, 'apiKey'> & {
-  apiKey?: string | null;
+type WorkspaceByokKeyInput = Omit<
+  WorkspaceByokKey,
+  'credential' | 'definition'
+> & {
+  credential?: string | null;
+  definition?: WorkspaceByokKey['definition'];
 };
 
 function assertSupported() {
@@ -51,8 +69,20 @@ function normalizeKey(
   if (!allowedProviders.has(key.provider)) {
     throw new Error('Unsupported BYOK provider.');
   }
-  const apiKey = key.apiKey ?? existing?.apiKey;
-  if (!key.id || !key.name || !apiKey) {
+  const credential = key.credential ?? existing?.credential;
+  const definition = key.definition ?? existing?.definition;
+  if (
+    !key.id ||
+    !key.name ||
+    !credential ||
+    !definition?.models.length ||
+    definition.models.some(
+      model =>
+        !model.modelId ||
+        typeof model.enabled !== 'boolean' ||
+        !model.capabilities.length
+    )
+  ) {
     throw new Error('Invalid BYOK key.');
   }
   return {
@@ -62,10 +92,8 @@ function normalizeKey(
     description: hasOwnField(key, 'description')
       ? (key.description ?? null)
       : (existing?.description ?? null),
-    apiKey,
-    endpoint: hasOwnField(key, 'endpoint')
-      ? (key.endpoint ?? null)
-      : (existing?.endpoint ?? null),
+    credential,
+    definition,
     sortOrder: hasOwnField(key, 'sortOrder')
       ? (key.sortOrder ?? defaultSortOrder)
       : (existing?.sortOrder ?? defaultSortOrder),
@@ -111,13 +139,11 @@ function writeWorkspaceKeys(workspaceId: string, keys: WorkspaceByokKey[]) {
   byokStorage.set(workspaceId, keys.map(encryptKey));
 }
 
-function toPublicKey({ apiKey: _, ...key }: WorkspaceByokKey) {
+function toPublicKey({ credential: _, ...key }: WorkspaceByokKey) {
   return {
     ...key,
     storage: 'local',
     configured: true,
-    endpointEditable: false,
-    testStatus: 'passed',
   };
 }
 

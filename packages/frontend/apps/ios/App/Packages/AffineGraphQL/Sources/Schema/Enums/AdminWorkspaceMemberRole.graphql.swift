@@ -3,6 +3,8 @@
 
 import ApolloAPI
 
-public enum FeatureType: String, EnumType {
+public enum AdminWorkspaceMemberRole: String, EnumType {
   case admin = "Admin"
+  case collaborator = "Collaborator"
+  case owner = "Owner"
 }

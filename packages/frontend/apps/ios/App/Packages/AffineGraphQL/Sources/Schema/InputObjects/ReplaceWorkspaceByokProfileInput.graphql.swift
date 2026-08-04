@@ -3,7 +3,7 @@
 
 import ApolloAPI
 
-public struct CreateWorkspaceByokLocalLeaseProviderInput: InputObject {
+public struct ReplaceWorkspaceByokProfileInput: InputObject {
   public private(set) var __data: InputDict
 
   public init(_ data: InputDict) {
@@ -11,26 +11,21 @@ public struct CreateWorkspaceByokLocalLeaseProviderInput: InputObject {
   }
 
   public init(
-    credential: String,
     definition: WorkspaceByokProfileDefinitionInput,
     description: GraphQLNullable<String> = nil,
     enabled: Bool,
     name: String,
-    provider: GraphQLEnum<ByokProvider>
+    profileId: ID,
+    workspaceId: String
   ) {
     __data = InputDict([
-      "credential": credential,
       "definition": definition,
       "description": description,
       "enabled": enabled,
       "name": name,
-      "provider": provider
+      "profileId": profileId,
+      "workspaceId": workspaceId
     ])
-  }
-
-  public var credential: String {
-    get { __data["credential"] }
-    set { __data["credential"] = newValue }
   }
 
   public var definition: WorkspaceByokProfileDefinitionInput {
@@ -53,8 +48,13 @@ public struct CreateWorkspaceByokLocalLeaseProviderInput: InputObject {
     set { __data["name"] = newValue }
   }
 
-  public var provider: GraphQLEnum<ByokProvider> {
-    get { __data["provider"] }
-    set { __data["provider"] = newValue }
+  public var profileId: ID {
+    get { __data["profileId"] }
+    set { __data["profileId"] = newValue }
+  }
+
+  public var workspaceId: String {
+    get { __data["workspaceId"] }
+    set { __data["workspaceId"] = newValue }
   }
 }

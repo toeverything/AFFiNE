@@ -4,8 +4,8 @@
 import ApolloAPI
 
 public extension Objects {
-  static let CopilotModelsType = ApolloAPI.Object(
-    typename: "CopilotModelsType",
+  static let CopilotRouteTarget = ApolloAPI.Object(
+    typename: "CopilotRouteTarget",
     implementedInterfaces: [],
     keyFields: nil
   )

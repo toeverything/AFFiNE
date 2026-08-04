@@ -4,8 +4,8 @@
 import ApolloAPI
 
 public extension Objects {
-  static let TokenType = ApolloAPI.Object(
-    typename: "tokenType",
+  static let RevealedMcpCredentialType = ApolloAPI.Object(
+    typename: "RevealedMcpCredentialType",
     implementedInterfaces: [],
     keyFields: nil
   )

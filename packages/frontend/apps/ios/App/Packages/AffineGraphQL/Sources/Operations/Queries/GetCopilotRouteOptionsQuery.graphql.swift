@@ -3,11 +3,11 @@
 
 @_exported import ApolloAPI
 
-public class GetPromptModelsQuery: GraphQLQuery {
-  public static let operationName: String = "getPromptModels"
+public class GetCopilotRouteOptionsQuery: GraphQLQuery {
+  public static let operationName: String = "getCopilotRouteOptions"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"query getPromptModels($promptName: String!) { currentUser { __typename copilot { __typename models(promptName: $promptName) { __typename defaultModel optionalModels { __typename id name } proModels { __typename id name } } } } }"#
+      #"query getCopilotRouteOptions($promptName: String!) { currentUser { __typename copilot { __typename routeOptions(promptName: $promptName) { __typename routeId defaultTargetId choices { __typename id displayName minimumTier available } } } } }"#
     ))
 
   public var promptName: String
@@ -27,7 +27,7 @@ public class GetPromptModelsQuery: GraphQLQuery {
       .field("currentUser", CurrentUser?.self),
     ] }
     public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
-      GetPromptModelsQuery.Data.self
+      GetCopilotRouteOptionsQuery.Data.self
     ] }
 
     /// Get current user
@@ -46,7 +46,7 @@ public class GetPromptModelsQuery: GraphQLQuery {
         .field("copilot", Copilot.self),
       ] }
       public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
-        GetPromptModelsQuery.Data.CurrentUser.self
+        GetCopilotRouteOptionsQuery.Data.CurrentUser.self
       ] }
 
       public var copilot: Copilot { __data["copilot"] }
@@ -61,77 +61,60 @@ public class GetPromptModelsQuery: GraphQLQuery {
         public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.Copilot }
         public static var __selections: [ApolloAPI.Selection] { [
           .field("__typename", String.self),
-          .field("models", Models.self, arguments: ["promptName": .variable("promptName")]),
+          .field("routeOptions", RouteOptions?.self, arguments: ["promptName": .variable("promptName")]),
         ] }
         public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
-          GetPromptModelsQuery.Data.CurrentUser.Copilot.self
+          GetCopilotRouteOptionsQuery.Data.CurrentUser.Copilot.self
         ] }
 
-        /// List available models for a prompt, with human-readable names
-        public var models: Models { __data["models"] }
+        /// List native built-in route choices for a prompt
+        public var routeOptions: RouteOptions? { __data["routeOptions"] }
 
-        /// CurrentUser.Copilot.Models
+        /// CurrentUser.Copilot.RouteOptions
         ///
-        /// Parent Type: `CopilotModelsType`
-        public struct Models: AffineGraphQL.SelectionSet {
+        /// Parent Type: `CopilotRouteOptions`
+        public struct RouteOptions: AffineGraphQL.SelectionSet {
           public let __data: DataDict
           public init(_dataDict: DataDict) { __data = _dataDict }
 
-          public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.CopilotModelsType }
+          public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.CopilotRouteOptions }
           public static var __selections: [ApolloAPI.Selection] { [
             .field("__typename", String.self),
-            .field("defaultModel", String.self),
-            .field("optionalModels", [OptionalModel].self),
-            .field("proModels", [ProModel].self),
+            .field("routeId", String.self),
+            .field("defaultTargetId", String?.self),
+            .field("choices", [Choice].self),
           ] }
           public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
-            GetPromptModelsQuery.Data.CurrentUser.Copilot.Models.self
+            GetCopilotRouteOptionsQuery.Data.CurrentUser.Copilot.RouteOptions.self
           ] }
 
-          public var defaultModel: String { __data["defaultModel"] }
-          public var optionalModels: [OptionalModel] { __data["optionalModels"] }
-          public var proModels: [ProModel] { __data["proModels"] }
+          public var routeId: String { __data["routeId"] }
+          public var defaultTargetId: String? { __data["defaultTargetId"] }
+          public var choices: [Choice] { __data["choices"] }
 
-          /// CurrentUser.Copilot.Models.OptionalModel
+          /// CurrentUser.Copilot.RouteOptions.Choice
           ///
-          /// Parent Type: `CopilotModelType`
-          public struct OptionalModel: AffineGraphQL.SelectionSet {
+          /// Parent Type: `CopilotRouteTarget`
+          public struct Choice: AffineGraphQL.SelectionSet {
             public let __data: DataDict
             public init(_dataDict: DataDict) { __data = _dataDict }
 
-            public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.CopilotModelType }
+            public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.CopilotRouteTarget }
             public static var __selections: [ApolloAPI.Selection] { [
               .field("__typename", String.self),
               .field("id", String.self),
-              .field("name", String.self),
+              .field("displayName", String.self),
+              .field("minimumTier", String.self),
+              .field("available", Bool.self),
             ] }
             public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
-              GetPromptModelsQuery.Data.CurrentUser.Copilot.Models.OptionalModel.self
+              GetCopilotRouteOptionsQuery.Data.CurrentUser.Copilot.RouteOptions.Choice.self
             ] }
 
             public var id: String { __data["id"] }
-            public var name: String { __data["name"] }
-          }
-
-          /// CurrentUser.Copilot.Models.ProModel
-          ///
-          /// Parent Type: `CopilotModelType`
-          public struct ProModel: AffineGraphQL.SelectionSet {
-            public let __data: DataDict
-            public init(_dataDict: DataDict) { __data = _dataDict }
-
-            public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.CopilotModelType }
-            public static var __selections: [ApolloAPI.Selection] { [
-              .field("__typename", String.self),
-              .field("id", String.self),
-              .field("name", String.self),
-            ] }
-            public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
-              GetPromptModelsQuery.Data.CurrentUser.Copilot.Models.ProModel.self
-            ] }
-
-            public var id: String { __data["id"] }
-            public var name: String { __data["name"] }
+            public var displayName: String { __data["displayName"] }
+            public var minimumTier: String { __data["minimumTier"] }
+            public var available: Bool { __data["available"] }
           }
         }
       }

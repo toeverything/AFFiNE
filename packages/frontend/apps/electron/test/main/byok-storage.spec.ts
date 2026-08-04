@@ -75,6 +75,25 @@ afterEach(async () => {
 });
 
 describe('byok storage handlers', () => {
+  const definition = {
+    version: 1,
+    endpoint: { kind: 'provider_default' },
+    models: [
+      {
+        modelId: 'model-1',
+        enabled: true,
+        capabilities: [
+          {
+            input: ['text'],
+            output: ['text'],
+            features: [],
+            attachmentKinds: [],
+            attachmentSources: [],
+          },
+        ],
+      },
+    ],
+  };
   test('stores encrypted local keys and keeps lease providers sorted', async () => {
     const { byokStorageHandlers, disposeWorkspaceByokStorage: dispose } =
       await import('@affine/electron/main/byok-storage/handlers');
@@ -85,14 +104,16 @@ describe('byok storage handlers', () => {
       id: 'local-openai',
       provider: 'openai',
       name: 'OpenAI',
-      apiKey: 'sk-openai',
+      credential: 'sk-openai',
+      definition,
       sortOrder: 1,
     });
     await byokStorageHandlers.upsertWorkspaceKey(ipcEvent, 'workspace-1', {
       id: 'local-gemini',
       provider: 'gemini',
       name: 'Gemini',
-      apiKey: 'sk-gemini',
+      credential: 'sk-gemini',
+      definition,
       sortOrder: 0,
     });
 
@@ -117,7 +138,7 @@ describe('byok storage handlers', () => {
       ipcEvent,
       'workspace-1'
     );
-    expect(leaseProviders.map(key => key.apiKey)).toEqual([
+    expect(leaseProviders.map(key => key.credential)).toEqual([
       'sk-openai',
       'sk-gemini',
     ]);
@@ -142,7 +163,8 @@ describe('byok storage handlers', () => {
         id: 'local-openai',
         provider: 'openai',
         name: 'OpenAI',
-        apiKey: 'sk-openai',
+        credential: 'sk-openai',
+        definition,
       })
     ).rejects.toThrow('Secure BYOK key storage is not available.');
     expect(electronMock.encryptString).not.toHaveBeenCalled();
@@ -159,8 +181,11 @@ describe('byok storage handlers', () => {
       provider: 'openai',
       name: 'OpenAI',
       description: 'Primary key',
-      apiKey: 'sk-openai',
-      endpoint: 'https://api.openai.example/v1',
+      credential: 'sk-openai',
+      definition: {
+        ...definition,
+        endpoint: { kind: 'custom', url: 'https://api.openai.example/v1' },
+      },
       sortOrder: 4,
       enabled: false,
     });
@@ -169,7 +194,7 @@ describe('byok storage handlers', () => {
       id: 'local-openai',
       provider: 'openai',
       name: 'OpenAI renamed',
-      apiKey: 'sk-openai-next',
+      credential: 'sk-openai-next',
     });
 
     const [publicKey] = await byokStorageHandlers.listWorkspaceKeys(
@@ -180,7 +205,10 @@ describe('byok storage handlers', () => {
       id: 'local-openai',
       name: 'OpenAI renamed',
       description: 'Primary key',
-      endpoint: 'https://api.openai.example/v1',
+      definition: {
+        ...definition,
+        endpoint: { kind: 'custom', url: 'https://api.openai.example/v1' },
+      },
       sortOrder: 4,
       enabled: false,
     });
@@ -206,8 +234,11 @@ describe('byok storage handlers', () => {
       );
     expect(enabledLeaseProvider).toMatchObject({
       name: 'OpenAI renamed again',
-      apiKey: 'sk-openai-next',
-      endpoint: 'https://api.openai.example/v1',
+      credential: 'sk-openai-next',
+      definition: {
+        ...definition,
+        endpoint: { kind: 'custom', url: 'https://api.openai.example/v1' },
+      },
       sortOrder: 4,
       enabled: true,
     });

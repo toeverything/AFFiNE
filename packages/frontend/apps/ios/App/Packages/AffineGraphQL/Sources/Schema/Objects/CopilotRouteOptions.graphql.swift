@@ -4,8 +4,8 @@
 import ApolloAPI
 
 public extension Objects {
-  static let TestWorkspaceByokConfigResultType = ApolloAPI.Object(
-    typename: "TestWorkspaceByokConfigResultType",
+  static let CopilotRouteOptions = ApolloAPI.Object(
+    typename: "CopilotRouteOptions",
     implementedInterfaces: [],
     keyFields: nil
   )

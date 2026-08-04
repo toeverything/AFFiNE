@@ -4,8 +4,8 @@
 import ApolloAPI
 
 public extension Objects {
-  static let WorkspaceByokCapabilityWarningType = ApolloAPI.Object(
-    typename: "WorkspaceByokCapabilityWarningType",
+  static let McpCredentialType = ApolloAPI.Object(
+    typename: "McpCredentialType",
     implementedInterfaces: [],
     keyFields: nil
   )

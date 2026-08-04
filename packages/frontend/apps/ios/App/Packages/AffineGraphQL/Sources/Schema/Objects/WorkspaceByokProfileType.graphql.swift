@@ -4,8 +4,8 @@
 import ApolloAPI
 
 public extension Objects {
-  static let WorkspaceByokKeyConfigType = ApolloAPI.Object(
-    typename: "WorkspaceByokKeyConfigType",
+  static let WorkspaceByokProfileType = ApolloAPI.Object(
+    typename: "WorkspaceByokProfileType",
     implementedInterfaces: [],
     keyFields: nil
   )

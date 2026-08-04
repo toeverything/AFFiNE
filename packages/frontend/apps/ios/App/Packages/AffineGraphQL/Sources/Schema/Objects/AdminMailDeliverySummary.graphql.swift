@@ -4,8 +4,8 @@
 import ApolloAPI
 
 public extension Objects {
-  static let RevealedAccessToken = ApolloAPI.Object(
-    typename: "RevealedAccessToken",
+  static let AdminMailDeliverySummary = ApolloAPI.Object(
+    typename: "AdminMailDeliverySummary",
     implementedInterfaces: [],
     keyFields: nil
   )

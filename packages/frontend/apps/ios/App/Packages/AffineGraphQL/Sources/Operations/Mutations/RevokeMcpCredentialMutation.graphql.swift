@@ -3,27 +3,27 @@
 
 @_exported import ApolloAPI
 
-public class DeleteWorkspaceByokConfigMutation: GraphQLMutation {
-  public static let operationName: String = "deleteWorkspaceByokConfig"
+public class RevokeMcpCredentialMutation: GraphQLMutation {
+  public static let operationName: String = "revokeMcpCredential"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"mutation deleteWorkspaceByokConfig($workspaceId: String!, $id: ID!) { deleteWorkspaceByokConfig(workspaceId: $workspaceId, id: $id) }"#
+      #"mutation revokeMcpCredential($id: ID!, $workspaceId: String!) { revokeMcpCredential(id: $id, workspaceId: $workspaceId) }"#
     ))
 
-  public var workspaceId: String
   public var id: ID
+  public var workspaceId: String
 
   public init(
-    workspaceId: String,
-    id: ID
+    id: ID,
+    workspaceId: String
   ) {
-    self.workspaceId = workspaceId
     self.id = id
+    self.workspaceId = workspaceId
   }
 
   public var __variables: Variables? { [
-    "workspaceId": workspaceId,
-    "id": id
+    "id": id,
+    "workspaceId": workspaceId
   ] }
 
   public struct Data: AffineGraphQL.SelectionSet {
@@ -32,15 +32,15 @@ public class DeleteWorkspaceByokConfigMutation: GraphQLMutation {
 
     public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.Mutation }
     public static var __selections: [ApolloAPI.Selection] { [
-      .field("deleteWorkspaceByokConfig", Bool.self, arguments: [
-        "workspaceId": .variable("workspaceId"),
-        "id": .variable("id")
+      .field("revokeMcpCredential", Bool.self, arguments: [
+        "id": .variable("id"),
+        "workspaceId": .variable("workspaceId")
       ]),
     ] }
     public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
-      DeleteWorkspaceByokConfigMutation.Data.self
+      RevokeMcpCredentialMutation.Data.self
     ] }
 
-    public var deleteWorkspaceByokConfig: Bool { __data["deleteWorkspaceByokConfig"] }
+    public var revokeMcpCredential: Bool { __data["revokeMcpCredential"] }
   }
 }
