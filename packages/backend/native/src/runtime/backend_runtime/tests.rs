@@ -97,10 +97,12 @@ async fn runtime_from_database_url() -> AnyResult<Option<BackendRuntime>> {
   .context("cleanup invite abuse subjects for backend runtime tests")?;
 
   Ok(Some(BackendRuntime {
-    config: std::sync::RwLock::new(BackendRuntimeConfig {
+    config: std::sync::RwLock::new(std::sync::Arc::new(BackendRuntimeConfig {
       database_url,
       invite_quota: Default::default(),
-    }),
+      private_key: std::sync::Arc::new(zeroize::Zeroizing::new("test-private-key".to_string())),
+      copilot: Default::default(),
+    })),
     pool: Mutex::new(Some(pool)),
   }))
 }

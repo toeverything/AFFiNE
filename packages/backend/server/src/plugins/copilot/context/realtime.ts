@@ -1,7 +1,8 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { z } from 'zod';
 
-import { OnEvent } from '../../../base';
+import { Config } from '../../../base/config';
+import { OnEvent } from '../../../base/event';
 import { PermissionAccess } from '../../../core/permission';
 import {
   RealtimePublisher,
@@ -10,6 +11,7 @@ import {
   registerRealtimeLiveQuery,
 } from '../../../core/realtime';
 import { Models } from '../../../models';
+import { assertCopilotEnabled } from '../availability';
 
 export function workspaceEmbeddingRoom(workspaceId: string) {
   return realtimeWorkspaceEmbeddingProgressRoom(workspaceId);
@@ -21,7 +23,8 @@ export class CopilotEmbeddingRealtimeProvider implements OnModuleInit {
     private readonly ac: PermissionAccess,
     private readonly models: Models,
     private readonly registry: RealtimeRegistry,
-    private readonly publisher: RealtimePublisher
+    private readonly publisher: RealtimePublisher,
+    private readonly config: Config
   ) {}
 
   onModuleInit() {
@@ -118,6 +121,7 @@ export class CopilotEmbeddingRealtimeProvider implements OnModuleInit {
   }
 
   private async assertCopilot(userId: string, workspaceId: string) {
+    assertCopilotEnabled(this.config);
     await this.ac
       .user(userId)
       .workspace(workspaceId)

@@ -5,32 +5,9 @@ import {
   StorageJSONSchema,
   StorageProviderConfig,
 } from '../../base';
-import {
-  AnthropicOfficialConfig,
-  AnthropicVertexConfig,
-} from './providers/anthropic';
-import { CloudflareWorkersAIConfig } from './providers/cloudflare';
-import type { FalConfig } from './providers/fal';
-import { GeminiGenerativeConfig, GeminiVertexConfig } from './providers/gemini';
-import { OpenAIConfig } from './providers/openai';
-import {
-  CopilotProviderType,
-  ModelOutputType,
-  VertexSchema,
-} from './providers/types';
+import { CopilotProviderType } from './providers/types';
 
-export type CopilotProviderConfigMap = {
-  [CopilotProviderType.OpenAI]: OpenAIConfig;
-  [CopilotProviderType.CloudflareWorkersAi]: CloudflareWorkersAIConfig;
-  [CopilotProviderType.FAL]: FalConfig;
-  [CopilotProviderType.Gemini]: GeminiGenerativeConfig;
-  [CopilotProviderType.GeminiVertex]: GeminiVertexConfig;
-  [CopilotProviderType.Anthropic]: AnthropicOfficialConfig;
-  [CopilotProviderType.AnthropicVertex]: AnthropicVertexConfig;
-};
-
-export type ProviderSpecificConfig =
-  CopilotProviderConfigMap[keyof CopilotProviderConfigMap];
+export type ProviderSpecificConfig = Record<string, unknown>;
 
 export const RustRequestMiddlewareValues = [
   'normalize_messages',
@@ -65,24 +42,13 @@ type CopilotProviderProfileCommon = {
   displayName?: string;
   priority?: number;
   enabled?: boolean;
-  models?: string[];
+  models: string[];
   middleware?: ProviderMiddlewareConfig;
 };
 
-type CopilotProviderProfileVariant<T extends CopilotProviderType> = {
-  type: T;
-  config: CopilotProviderConfigMap[T];
-};
-
-export type CopilotProviderProfile = CopilotProviderProfileCommon &
-  {
-    [Type in CopilotProviderType]: CopilotProviderProfileVariant<Type>;
-  }[CopilotProviderType];
-
-export type CopilotProviderDefaults = Partial<
-  Record<Exclude<ModelOutputType, typeof ModelOutputType.Rerank>, string>
-> & {
-  fallback?: string;
+export type CopilotProviderProfile = CopilotProviderProfileCommon & {
+  type: CopilotProviderType;
+  config: ProviderSpecificConfig;
 };
 
 const CopilotProviderProfileBaseShape = z.object({
@@ -90,7 +56,7 @@ const CopilotProviderProfileBaseShape = z.object({
   displayName: z.string().optional(),
   priority: z.number().optional(),
   enabled: z.boolean().optional(),
-  models: z.array(z.string()).optional(),
+  models: z.array(z.string().min(1)).min(1),
   middleware: z
     .object({
       rust: z
@@ -106,79 +72,9 @@ const CopilotProviderProfileBaseShape = z.object({
     .optional(),
 });
 
-const OpenAIConfigShape = z.object({
-  apiKey: z.string(),
-  baseURL: z.string().optional(),
-  oldApiStyle: z.boolean().optional(),
-});
-
-const FalConfigShape = z.object({
-  apiKey: z.string(),
-});
-
-const CloudflareWorkersAIConfigShape = z.object({
-  apiToken: z.string(),
-  accountId: z.string().optional(),
-  baseURL: z.string().optional(),
-});
-
-const GeminiGenerativeConfigShape = z.object({
-  apiKey: z.string(),
-  baseURL: z.string().optional(),
-});
-
-const VertexProviderConfigShape = z.object({
-  location: z.string().optional(),
-  project: z.string().optional(),
-  baseURL: z.string().optional(),
-  googleAuthOptions: z.any().optional(),
-  fetch: z.any().optional(),
-});
-
-const AnthropicOfficialConfigShape = z.object({
-  apiKey: z.string(),
-  baseURL: z.string().optional(),
-});
-
-const CopilotProviderProfileShape = z.discriminatedUnion('type', [
-  CopilotProviderProfileBaseShape.extend({
-    type: z.literal(CopilotProviderType.OpenAI),
-    config: OpenAIConfigShape,
-  }),
-  CopilotProviderProfileBaseShape.extend({
-    type: z.literal(CopilotProviderType.FAL),
-    config: FalConfigShape,
-  }),
-  CopilotProviderProfileBaseShape.extend({
-    type: z.literal(CopilotProviderType.CloudflareWorkersAi),
-    config: CloudflareWorkersAIConfigShape,
-  }),
-  CopilotProviderProfileBaseShape.extend({
-    type: z.literal(CopilotProviderType.Gemini),
-    config: GeminiGenerativeConfigShape,
-  }),
-  CopilotProviderProfileBaseShape.extend({
-    type: z.literal(CopilotProviderType.GeminiVertex),
-    config: VertexProviderConfigShape,
-  }),
-  CopilotProviderProfileBaseShape.extend({
-    type: z.literal(CopilotProviderType.Anthropic),
-    config: AnthropicOfficialConfigShape,
-  }),
-  CopilotProviderProfileBaseShape.extend({
-    type: z.literal(CopilotProviderType.AnthropicVertex),
-    config: VertexProviderConfigShape,
-  }),
-]);
-
-const CopilotProviderDefaultsShape = z.object({
-  [ModelOutputType.Text]: z.string().optional(),
-  [ModelOutputType.Object]: z.string().optional(),
-  [ModelOutputType.Embedding]: z.string().optional(),
-  [ModelOutputType.Image]: z.string().optional(),
-  [ModelOutputType.Rerank]: z.string().optional(),
-  [ModelOutputType.Structured]: z.string().optional(),
-  fallback: z.string().optional(),
+const CopilotProviderProfileShape = CopilotProviderProfileBaseShape.extend({
+  type: z.nativeEnum(CopilotProviderType),
+  config: z.record(z.string(), z.unknown()),
 });
 
 declare global {
@@ -202,14 +98,6 @@ declare global {
       storage: ConfigItem<StorageProviderConfig>;
       providers: {
         profiles: ConfigItem<CopilotProviderProfile[]>;
-        defaults: ConfigItem<CopilotProviderDefaults>;
-        openai: ConfigItem<OpenAIConfig>;
-        cloudflareWorkersAi: ConfigItem<CloudflareWorkersAIConfig>;
-        fal: ConfigItem<FalConfig>;
-        gemini: ConfigItem<GeminiGenerativeConfig>;
-        geminiVertex: ConfigItem<GeminiVertexConfig>;
-        anthropic: ConfigItem<AnthropicOfficialConfig>;
-        anthropicVertex: ConfigItem<AnthropicVertexConfig>;
       };
     };
   }
@@ -244,56 +132,6 @@ defineModuleConfig('copilot', {
     desc: 'The profile list for copilot providers.',
     default: [],
     shape: z.array(CopilotProviderProfileShape),
-  },
-  'providers.defaults': {
-    desc: 'The default provider ids for model output types and global fallback.',
-    default: {},
-    shape: CopilotProviderDefaultsShape,
-  },
-  'providers.openai': {
-    desc: 'The config for the openai provider.',
-    default: {
-      apiKey: '',
-      baseURL: 'https://api.openai.com/v1',
-    },
-    link: 'https://github.com/openai/openai-node',
-  },
-  'providers.cloudflareWorkersAi': {
-    desc: 'The config for the Cloudflare Workers AI provider.',
-    default: {
-      apiToken: '',
-      accountId: '',
-    },
-  },
-  'providers.fal': {
-    desc: 'The config for the fal provider.',
-    default: {
-      apiKey: '',
-    },
-  },
-  'providers.gemini': {
-    desc: 'The config for the gemini provider.',
-    default: {
-      apiKey: '',
-      baseURL: 'https://generativelanguage.googleapis.com/v1beta',
-    },
-  },
-  'providers.geminiVertex': {
-    desc: 'The config for the gemini provider in Google Vertex AI.',
-    default: {},
-    schema: VertexSchema,
-  },
-  'providers.anthropic': {
-    desc: 'The config for the anthropic provider.',
-    default: {
-      apiKey: '',
-      baseURL: 'https://api.anthropic.com/v1',
-    },
-  },
-  'providers.anthropicVertex': {
-    desc: 'The config for the anthropic provider in Google Vertex AI.',
-    default: {},
-    schema: VertexSchema,
   },
   unsplash: {
     desc: 'The config for the unsplash key.',

@@ -734,7 +734,6 @@ type ChatMessage = {
 type History = {
   sessionId: string;
   pinned: boolean;
-  tokens: number;
   action: string | null;
   createdAt: string;
   messages: ChatMessage[];
@@ -773,7 +772,6 @@ export async function getHistories(
           histories(docId: $docId, options: $options) {
             sessionId
             pinned
-            tokens
             action
             createdAt
             messages {
@@ -811,7 +809,6 @@ export async function getWorkspaceSessions(
             histories(docId: null, options: $options) {
               sessionId
               pinned
-              tokens
               action
               createdAt
               messages {
@@ -858,7 +855,6 @@ export async function getDocSessions(
             histories(docId: $docId, options: $options) {
               sessionId
               pinned
-              tokens
               action
               createdAt
               messages {
@@ -912,7 +908,6 @@ export async function getPinnedSessions(
             }) {
               sessionId
               pinned
-              tokens
               action
               createdAt
               messages {

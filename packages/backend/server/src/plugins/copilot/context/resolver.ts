@@ -50,6 +50,7 @@ import {
   Models,
 } from '../../../models';
 import { CopilotEmbeddingJob } from '../embedding/job';
+import { CopilotEnabled } from '../feature';
 import { COPILOT_LOCKER, CopilotType } from '../resolver';
 import { ChatSessionService } from '../session';
 import { CopilotStorage } from '../storage';
@@ -286,6 +287,7 @@ class ContextMatchedDocChunk implements DocChunkSimilarity {
 }
 
 @Throttle()
+@CopilotEnabled()
 @Resolver(() => CopilotType)
 export class CopilotContextRootResolver {
   constructor(
@@ -435,6 +437,7 @@ export class CopilotContextRootResolver {
 }
 
 @Throttle()
+@CopilotEnabled()
 @Resolver(() => CopilotContextType)
 export class CopilotContextResolver {
   constructor(

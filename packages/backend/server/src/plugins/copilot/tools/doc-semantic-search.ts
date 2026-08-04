@@ -1,3 +1,4 @@
+/* oxlint-disable import/no-cycle -- Semantic search uses the shared embedding runtime. */
 import { omit } from 'lodash-es';
 import { z } from 'zod';
 

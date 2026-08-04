@@ -24,12 +24,7 @@ export class CopilotTranscriptTaskModel extends BaseModel {
   async create(
     input: Pick<
       Prisma.AiTranscriptTaskCreateArgs['data'],
-      | 'userId'
-      | 'workspaceId'
-      | 'blobId'
-      | 'strategy'
-      | 'recipeId'
-      | 'recipeVersion'
+      'userId' | 'workspaceId' | 'blobId' | 'recipeId' | 'recipeVersion'
     > &
       Partial<Prisma.AiTranscriptTaskCreateArgs['data']>
   ) {
@@ -39,7 +34,6 @@ export class CopilotTranscriptTaskModel extends BaseModel {
         workspaceId: input.workspaceId,
         blobId: input.blobId,
         status: 'pending',
-        strategy: input.strategy,
         recipeId: input.recipeId,
         recipeVersion: input.recipeVersion,
         inputSnapshot: nullableJson(input.inputSnapshot),

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Transactional } from '@nestjs-cls/transactional';
-import { AiPromptRole, Prisma } from '@prisma/client';
+import { AiSessionMessageRole, Prisma } from '@prisma/client';
 import { omit } from 'lodash-es';
 
 import {
@@ -9,7 +9,6 @@ import {
   CopilotSessionInvalidInput,
   CopilotSessionNotFound,
 } from '../base';
-import { getTokenEncoder } from '../native';
 import type { PromptAttachment } from '../plugins/copilot/providers/types';
 import {
   type ChatMessage as CopilotChatMessage,
@@ -26,7 +25,6 @@ export enum SessionType {
 type ChatPrompt = {
   name: string;
   action?: string | null;
-  model: string;
 };
 
 type ChatAttachment = PromptAttachment;
@@ -95,12 +93,11 @@ export type ForkSessionOptions = Omit<
   ChatSession,
   'messages' | 'promptName' | 'promptAction'
 > & {
-  prompt: { name: string; action: string | null | undefined; model: string };
+  prompt: { name: string; action: string | null | undefined };
   messages: ChatMessage[];
 };
 
 type UpdateChatSessionMessage = ChatSessionBaseState & {
-  prompt: { model: string };
   messages: ChatMessage[];
 };
 
@@ -108,7 +105,7 @@ export type UpdateChatSessionOptions = ChatSessionBaseState &
   Pick<
     Partial<ChatSession>,
     'docId' | 'pinned' | 'promptName' | 'promptAction' | 'title'
-  > & { promptModel?: string };
+  >;
 
 export type UpdateChatSession = ChatSessionBaseState & UpdateChatSessionOptions;
 
@@ -142,20 +139,6 @@ export class CopilotSessionModel extends BaseModel {
     return {
       OR: [{ promptAction: null }, { promptAction: '' }],
     };
-  }
-
-  private async ensurePromptCompatRecord(prompt: ChatPrompt) {
-    await this.db.aiPrompt.upsert({
-      where: { name: prompt.name },
-      update: {},
-      create: {
-        name: prompt.name,
-        action: prompt.action,
-        model: prompt.model,
-        optionalModels: [],
-        config: {},
-      },
-    });
   }
 
   private sanitizeString<T extends string | null | undefined>(value: T): T {
@@ -354,7 +337,7 @@ export class CopilotSessionModel extends BaseModel {
   private isCountedUserMessage(
     message: Pick<StoredChatMessage, 'role'>
   ): boolean {
-    return message.role === AiPromptRole.user;
+    return message.role === AiSessionMessageRole.user;
   }
 
   getSessionType(session: Pick<ChatSession, 'docId' | 'pinned'>): SessionType {
@@ -418,7 +401,6 @@ export class CopilotSessionModel extends BaseModel {
     reuseChat = false
   ): Promise<string> {
     const { prompt, ...rest } = state;
-    await this.ensurePromptCompatRecord(prompt);
     return await this.models.copilotSession.create(
       { ...rest, promptName: prompt.name, promptAction: prompt.action ?? null },
       reuseChat
@@ -507,7 +489,6 @@ export class CopilotSessionModel extends BaseModel {
       pinned: true,
       title: true,
       promptName: true,
-      tokenCost: true,
       createdAt: true,
       updatedAt: true,
       messages: {
@@ -536,7 +517,6 @@ export class CopilotSessionModel extends BaseModel {
       pinned: true,
       title: true,
       promptName: true,
-      tokenCost: true,
       createdAt: true,
       updatedAt: true,
     });
@@ -605,7 +585,6 @@ export class CopilotSessionModel extends BaseModel {
         pinned: true,
         title: true,
         promptName: true,
-        tokenCost: true,
         createdAt: true,
         updatedAt: true,
         messages: options.withMessages
@@ -682,25 +661,11 @@ export class CopilotSessionModel extends BaseModel {
 
     let nextPromptAction: string | null | undefined;
     if (promptName) {
-      if (options.promptModel) {
-        await this.ensurePromptCompatRecord({
-          name: promptName,
-          action: options.promptAction,
-          model: options.promptModel,
-        });
-      }
       nextPromptAction = options.promptAction;
       if (nextPromptAction === undefined) {
-        const prompt = await this.db.aiPrompt.findFirst({
-          where: { name: promptName },
-          select: { action: true },
-        });
-        if (!prompt) {
-          throw new CopilotSessionInvalidInput(
-            `Prompt ${promptName} not found or not available for session ${sessionId}`
-          );
-        }
-        nextPromptAction = prompt.action ?? null;
+        throw new CopilotSessionInvalidInput(
+          `Prompt action is required when changing prompt ${promptName}`
+        );
       }
       if (nextPromptAction) {
         throw new CopilotSessionInvalidInput(
@@ -809,12 +774,6 @@ export class CopilotSessionModel extends BaseModel {
     return message ? this.toPublicMessage(message) : null;
   }
 
-  private calculateTokenSize(messages: any[], model: string): number {
-    const encoder = getTokenEncoder(model);
-    const content = messages.map(m => m.content).join('');
-    return encoder?.count(content) || 0;
-  }
-
   @Transactional()
   async updateMessages(state: UpdateChatSessionMessage) {
     const { sessionId, userId, messages } = state;
@@ -825,10 +784,6 @@ export class CopilotSessionModel extends BaseModel {
 
     if (messages.length) {
       const sanitizedMessages = messages.map(m => this.sanitizeMessage(m));
-      const tokenCost = this.calculateTokenSize(
-        sanitizedMessages,
-        state.prompt.model
-      );
       await this.db.aiSessionMessage.createMany({
         data: sanitizedMessages.map(m => ({
           compatSubmissionId: m.compatSubmissionId || undefined,
@@ -848,7 +803,6 @@ export class CopilotSessionModel extends BaseModel {
         where: { id: sessionId },
         data: {
           messageCost: { increment: userMessages.length },
-          tokenCost: { increment: tokenCost },
         },
       });
     }
@@ -858,7 +812,6 @@ export class CopilotSessionModel extends BaseModel {
   async appendMessage(state: {
     sessionId: string;
     userId: string;
-    prompt: { model: string };
     message: ChatMessage;
   }) {
     const haveSession = await this.has(state.sessionId, state.userId);
@@ -867,8 +820,6 @@ export class CopilotSessionModel extends BaseModel {
     }
 
     const message = this.sanitizeMessage(state.message);
-    const tokenCost = this.calculateTokenSize([message], state.prompt.model);
-
     const created = await this.db.aiSessionMessage.create({
       data: {
         sessionId: state.sessionId,
@@ -896,8 +847,9 @@ export class CopilotSessionModel extends BaseModel {
       where: { id: state.sessionId },
       data: {
         messageCost:
-          message.role === AiPromptRole.user ? { increment: 1 } : undefined,
-        tokenCost: { increment: tokenCost },
+          message.role === AiSessionMessageRole.user
+            ? { increment: 1 }
+            : undefined,
       },
     });
 
@@ -970,8 +922,9 @@ export class CopilotSessionModel extends BaseModel {
     });
     const ids = messages
       .slice(
-        messages.findLastIndex(({ role }) => role === AiPromptRole.user) +
-          (removeLatestUserMessage ? 0 : 1)
+        messages.findLastIndex(
+          ({ role }) => role === AiSessionMessageRole.user
+        ) + (removeLatestUserMessage ? 0 : 1)
       )
       .map(({ id }) => id);
 

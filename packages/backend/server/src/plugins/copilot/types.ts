@@ -36,7 +36,9 @@ export type ToolsConfig = z.infer<typeof ToolsConfigSchema>;
 export const ChatQuerySchema = z
   .object({
     messageId: zMaybeString,
+    profileId: zMaybeString,
     modelId: zMaybeString,
+    routeTargetId: zMaybeString,
     byokLeaseId: zMaybeString,
     retry: zBool,
     reasoning: zBool,
@@ -44,10 +46,29 @@ export const ChatQuerySchema = z
     toolsConfig: ToolsConfigSchema,
   })
   .catchall(z.string())
+  .superRefine((value, context) => {
+    if (!!value.profileId !== !!value.modelId) {
+      context.addIssue({
+        code: 'custom',
+        message: 'profileId and modelId must be provided together',
+      });
+    }
+    for (const field of ['requirements', 'deployment', 'profiles', 'presets']) {
+      if (Object.hasOwn(value, field)) {
+        context.addIssue({
+          code: 'custom',
+          path: [field],
+          message: `${field} is owned by the native route policy`,
+        });
+      }
+    }
+  })
   .transform(
     ({
       messageId,
+      profileId,
       modelId,
+      routeTargetId,
       byokLeaseId,
       retry,
       reasoning,
@@ -56,7 +77,9 @@ export const ChatQuerySchema = z
       ...params
     }) => ({
       messageId,
+      profileId,
       modelId,
+      routeTargetId,
       byokLeaseId,
       retry,
       reasoning,
@@ -85,11 +108,7 @@ export const ChatHistorySchema = z
     title: z.string().nullable(),
 
     action: z.string().nullable(),
-    model: z.string(),
-    optionalModels: z.array(z.string()),
     promptName: z.string(),
-
-    tokens: z.number(),
     messages: z.array(ChatMessageSchema),
     createdAt: z.date(),
     updatedAt: z.date(),

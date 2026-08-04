@@ -127,6 +127,7 @@ export async function createTestingModule(
       },
     },
     copilot: {
+      enabled: true,
       storage: {
         provider: 'assetpack',
         bucket: 'copilot',

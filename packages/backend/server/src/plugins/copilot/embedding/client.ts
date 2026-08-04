@@ -1,6 +1,7 @@
+/* oxlint-disable import/no-cycle -- Embedding delegates to the shared capability runtime. */
 import { createHash } from 'node:crypto';
 
-import { Injectable, Logger } from '@nestjs/common';
+import { forwardRef, Inject, Injectable, Logger } from '@nestjs/common';
 
 import { CopilotFailedToGenerateEmbedding } from '../../../base/error/errors.gen';
 import {
@@ -10,7 +11,6 @@ import {
 } from '../../../models';
 import { type CopilotRerankRequest } from '../providers/types';
 import { CapabilityRuntime } from '../runtime/capability-runtime';
-import { TaskPolicy } from '../runtime/task-policy';
 import {
   type EmbeddingCallOptionsInput,
   EmbeddingClient,
@@ -18,20 +18,20 @@ import {
   type ReRankResult,
 } from './types';
 
+type EmbeddingRuntime = Pick<
+  CapabilityRuntime,
+  'embeddingConfigured' | 'embed' | 'rerank'
+>;
+
 class ProductionEmbeddingClient extends EmbeddingClient {
   private readonly logger = new Logger(ProductionEmbeddingClient.name);
 
-  constructor(
-    private readonly taskPolicy: TaskPolicy,
-    private readonly runtime: CapabilityRuntime
-  ) {
+  constructor(private readonly runtime: EmbeddingRuntime) {
     super();
   }
 
   override async configured(): Promise<boolean> {
-    const result = await this.runtime.embeddingConfigured(
-      this.taskPolicy.resolveEmbeddingModelId()
-    );
+    const result = await this.runtime.embeddingConfigured('route-selected');
     if (!result) {
       this.logger.warn(
         'Copilot embedding client is not configured properly, please check your configuration.'
@@ -45,7 +45,7 @@ class ProductionEmbeddingClient extends EmbeddingClient {
     options?: EmbeddingCallOptionsInput
   ): Promise<Embedding[]> {
     const normalizedOptions = normalizeEmbeddingCallOptions(options);
-    const modelId = this.taskPolicy.resolveEmbeddingModelId();
+    const modelId = 'route-selected';
     const embeddings = await this.runtime.embed(modelId, input, {
       dimensions: EMBEDDING_DIMENSIONS,
       signal: normalizedOptions.signal,
@@ -94,17 +94,13 @@ class ProductionEmbeddingClient extends EmbeddingClient {
       })),
     };
 
-    const ranks = await this.runtime.rerank(
-      this.taskPolicy.resolveRerankModelId(),
-      rerankRequest,
-      {
-        signal: normalizedOptions.signal,
-        user: normalizedOptions.userId,
-        workspace: normalizedOptions.workspaceId,
-        byokLeaseId: normalizedOptions.byokLeaseId,
-        featureKind: 'rerank',
-      }
-    );
+    const ranks = await this.runtime.rerank('route-selected', rerankRequest, {
+      signal: normalizedOptions.signal,
+      user: normalizedOptions.userId,
+      workspace: normalizedOptions.workspaceId,
+      byokLeaseId: normalizedOptions.byokLeaseId,
+      featureKind: 'rerank',
+    });
 
     try {
       return ranks.map((score, i) => {
@@ -206,12 +202,12 @@ export class CopilotEmbeddingClientService {
   private client: EmbeddingClient | undefined;
 
   constructor(
-    private readonly taskPolicy: TaskPolicy,
-    private readonly runtime: CapabilityRuntime
+    @Inject(forwardRef(() => CapabilityRuntime))
+    private readonly runtime: EmbeddingRuntime
   ) {}
 
   async refresh() {
-    const client = new ProductionEmbeddingClient(this.taskPolicy, this.runtime);
+    const client = new ProductionEmbeddingClient(this.runtime);
     await client.configured();
     this.client = client;
     return this.client;

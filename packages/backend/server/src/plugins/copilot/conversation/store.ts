@@ -83,7 +83,6 @@ export class ConversationStore {
         conversation: Conversation;
         turns: Turn[];
         promptName: string;
-        tokenCost: number;
       }
     | undefined
   > {
@@ -96,7 +95,6 @@ export class ConversationStore {
       conversation: this.toConversation(session),
       turns: this.toTurns(session),
       promptName: session.promptName,
-      tokenCost: session.tokenCost,
     };
   }
 
@@ -104,7 +102,6 @@ export class ConversationStore {
     | {
         conversation: Conversation;
         promptName: string;
-        tokenCost: number;
       }
     | undefined
   > {
@@ -124,7 +121,6 @@ export class ConversationStore {
         updatedAt: session.updatedAt,
       },
       promptName: session.promptName,
-      tokenCost: session.tokenCost,
     };
   }
 
@@ -146,7 +142,6 @@ export class ConversationStore {
         turnFromChatMessage(message, session.id)
       ),
       promptName: session.promptName,
-      tokenCost: session.tokenCost,
     }));
   }
 
@@ -168,14 +163,12 @@ export class ConversationStore {
         updatedAt: session.updatedAt,
       } satisfies Conversation,
       promptName: session.promptName,
-      tokenCost: session.tokenCost,
     }));
   }
 
   async appendTurns(input: {
     sessionId: string;
     userId: string;
-    prompt: { model: string };
     turns: Turn[];
   }) {
     return await this.models.copilotSession.updateMessages({
@@ -190,14 +183,12 @@ export class ConversationStore {
   async appendTurn(input: {
     sessionId: string;
     userId: string;
-    prompt: { model: string };
     turn: Turn;
     compatSubmissionId?: string;
   }) {
     const message = await this.models.copilotSession.appendMessage({
       sessionId: input.sessionId,
       userId: input.userId,
-      prompt: input.prompt,
       message: (() => {
         const { id: _id, ...message } = chatMessageFromTurn(input.turn);
         return { ...message, compatSubmissionId: input.compatSubmissionId };

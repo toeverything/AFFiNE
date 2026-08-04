@@ -14,11 +14,9 @@ import {
   realtimeTranscriptTaskRoom,
 } from '../../../core/realtime';
 import { Models } from '../../../models';
-import { CopilotAccessPolicy } from '../access';
 import { PromptService } from '../prompt';
-import { CopilotProviderType } from '../providers/types';
 import { ActionRuntimeBridge } from '../runtime/action-runtime-bridge';
-import { TaskPolicy } from '../runtime/task-policy';
+import { CapabilityRuntime } from '../runtime/capability-runtime';
 import { CopilotStorage } from '../storage';
 import { taskToJob, type TranscriptionJob } from './job';
 import {
@@ -32,9 +30,9 @@ import type {
 } from './types';
 import { readStream } from './utils';
 
-const TRANSCRIPT_ACTION_ID = 'transcript.audio.gemini';
+const TRANSCRIPT_ACTION_ID = 'transcript.audio';
+const TRANSCRIPT_PROMPT_REF = 'Transcript audio structured';
 const TRANSCRIPT_ACTION_VERSION = 'v1';
-const TRANSCRIPT_STRATEGY = 'gemini';
 
 @Injectable()
 export class CopilotTranscriptionService {
@@ -42,10 +40,9 @@ export class CopilotTranscriptionService {
     private readonly models: Models,
     private readonly job: JobQueue,
     private readonly storage: CopilotStorage,
-    private readonly tasks: TaskPolicy,
     private readonly prompts: PromptService,
     private readonly actionBridge: ActionRuntimeBridge,
-    private readonly access: CopilotAccessPolicy,
+    private readonly runtime: CapabilityRuntime,
     private readonly realtime: RealtimePublisher
   ) {}
 
@@ -58,25 +55,8 @@ export class CopilotTranscriptionService {
       sourceAudio: payload.sourceAudio,
       quality: payload.quality,
       sliceManifest: payload.sliceManifest,
-      providerMeta: payload.providerMeta,
       version: 'transcript-result-v1',
-      strategy: TRANSCRIPT_STRATEGY,
     };
-  }
-
-  private async resolveTranscriptStrategy(userId: string, strategy?: string) {
-    if (strategy && strategy !== TRANSCRIPT_STRATEGY) {
-      throw new BadRequestException(
-        `Transcript strategy ${strategy} is not available`
-      );
-    }
-    const model = await this.tasks.resolveTranscriptionModel(userId);
-    if (!model) {
-      throw new BadRequestException(
-        'Transcript strategy gemini is not available'
-      );
-    }
-    return { model, strategy: TRANSCRIPT_STRATEGY };
   }
 
   private async persistUploads(
@@ -123,11 +103,8 @@ export class CopilotTranscriptionService {
     } satisfies TranscriptionPayloadV2;
   }
 
-  private async buildTranscriptActionMessages(
-    payload: TranscriptionPayloadV2,
-    modelId?: string
-  ) {
-    const prompt = await this.prompts.get('Transcript audio structured');
+  private async buildTranscriptActionMessages(payload: TranscriptionPayloadV2) {
+    const prompt = await this.prompts.get(TRANSCRIPT_PROMPT_REF);
     if (!prompt) {
       throw new Error('Transcript action prompt not found');
     }
@@ -140,10 +117,6 @@ export class CopilotTranscriptionService {
           mimeType: info.mimeType,
           index: info.index ?? null,
         })) ?? null,
-      providerMeta: {
-        provider: CopilotProviderType.Gemini,
-        model: modelId ?? payload.providerMeta?.model ?? null,
-      },
     };
     const attachments =
       payload.infos?.map(info => ({
@@ -165,7 +138,7 @@ export class CopilotTranscriptionService {
     workspaceId: string,
     blobId: string,
     blobs: FileUpload[],
-    input?: TranscriptionSubmitInput & { strategy?: string | null }
+    input?: TranscriptionSubmitInput
   ): Promise<TranscriptionJob> {
     const existingTask = await this.models.copilotTranscriptTask.getWithUser(
       userId,
@@ -180,15 +153,15 @@ export class CopilotTranscriptionService {
       throw new CopilotTranscriptionJobExists();
     }
 
-    await this.access.assertQuotaOrByok({
-      userId,
-      workspaceId,
-      featureKind: 'transcript',
-    });
-
-    const { model, strategy } = await this.resolveTranscriptStrategy(
-      userId,
-      input?.strategy ?? undefined
+    await this.runtime.assertRoute(
+      'transcript.audio',
+      {},
+      {
+        user: userId,
+        workspace: workspaceId,
+        featureKind: 'transcript',
+        builtInRouteId: TRANSCRIPT_PROMPT_REF,
+      }
     );
     const infos = await this.persistUploads(userId, workspaceId, blobId, blobs);
     const payload = this.createCanonicalPayload(blobId, infos, input);
@@ -196,7 +169,6 @@ export class CopilotTranscriptionService {
       userId,
       workspaceId,
       blobId,
-      strategy,
       recipeId: TRANSCRIPT_ACTION_ID,
       recipeVersion: TRANSCRIPT_ACTION_VERSION,
       inputSnapshot: payload,
@@ -206,7 +178,6 @@ export class CopilotTranscriptionService {
     await this.job.add('copilot.transcript.task.submit', {
       taskId: task.id,
       payload,
-      modelId: model,
     });
     await this.models.copilotTranscriptTask.markRunning(task.id);
     this.publishTaskChanged(workspaceId, task.id, AiJobStatus.running);
@@ -234,21 +205,20 @@ export class CopilotTranscriptionService {
       );
     }
 
-    await this.access.assertQuotaOrByok({
-      userId,
-      workspaceId,
-      featureKind: 'transcript',
-    });
-
     const payload = this.parseTaskPayload(task.protectedResult);
-    const { model } = await this.resolveTranscriptStrategy(
-      userId,
-      task.strategy
+    await this.runtime.assertRoute(
+      'transcript.audio',
+      {},
+      {
+        user: userId,
+        workspace: workspaceId,
+        featureKind: 'transcript',
+        builtInRouteId: TRANSCRIPT_PROMPT_REF,
+      }
     );
     await this.job.add('copilot.transcript.task.submit', {
       taskId,
       payload,
-      modelId: model,
       retryOf: task.actionRunId ?? undefined,
     });
     await this.models.copilotTranscriptTask.markRunning(taskId);
@@ -282,12 +252,6 @@ export class CopilotTranscriptionService {
       return taskToJob(task);
     }
 
-    await this.access.assertQuotaOrByok({
-      userId,
-      workspaceId,
-      featureKind: 'transcript',
-    });
-
     const settled = await this.models.copilotTranscriptTask.settle(task.id);
     return taskToJob(settled);
   }
@@ -311,7 +275,6 @@ export class CopilotTranscriptionService {
   async transcriptTask({
     taskId,
     payload,
-    modelId,
     retryOf,
   }: Jobs['copilot.transcript.task.submit']) {
     const task = await this.models.copilotTranscriptTask.get(taskId);
@@ -324,10 +287,7 @@ export class CopilotTranscriptionService {
       let bridgeFailed = false;
       let bridgeError = 'transcript native recipe failed';
       let finalResult: unknown = null;
-      const messages = await this.buildTranscriptActionMessages(
-        payload,
-        modelId
-      );
+      const messages = await this.buildTranscriptActionMessages(payload);
       for await (const event of this.actionBridge.runStream({
         userId: task.userId,
         workspaceId: task.workspaceId,
@@ -335,14 +295,6 @@ export class CopilotTranscriptionService {
         actionVersion: TRANSCRIPT_ACTION_VERSION,
         retryOf: retryOf ?? null,
         inputSnapshot: payload,
-        nativeInput: {
-          input: {
-            sourceAudio: payload.sourceAudio ?? null,
-            quality: payload.quality ?? null,
-            infos: payload.infos ?? null,
-            sliceManifest: payload.sliceManifest ?? null,
-          },
-        },
         onRunCreated: async ({ runId }) => {
           await this.models.copilotTranscriptTask.markRunning(taskId, runId);
           this.publishTaskChanged(
@@ -351,9 +303,9 @@ export class CopilotTranscriptionService {
             AiJobStatus.running
           );
         },
-        prepareStructuredRoutes: {
-          stepId: 'transcribe',
-          modelId,
+        step: {
+          slot: 'transcript.audio',
+          builtInRouteId: TRANSCRIPT_PROMPT_REF,
           messages,
           options: {
             user: task.userId,
@@ -362,7 +314,6 @@ export class CopilotTranscriptionService {
             billingUnitId: taskId,
             featureKind: 'transcript',
           },
-          prefer: CopilotProviderType.Gemini,
           responseContract: TranscriptActionResultContract,
         },
       })) {
