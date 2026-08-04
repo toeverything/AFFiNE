@@ -30,6 +30,12 @@ struct ProfileRow {
   validation: Option<serde_json::Value>,
 }
 
+#[derive(FromRow)]
+struct ProfileAdmissionRow {
+  provider: String,
+  revision: i32,
+}
+
 pub(in super::super) async fn list(pool: &PgPool, workspace_id: &str) -> RuntimeResult<Vec<ByokProfileOutput>> {
   let rows = sqlx::query_as::<_, ProfileRow>(
     r#"
@@ -126,11 +132,23 @@ pub(in super::super) async fn replace(
   policy: &CopilotByokRuntimeConfig,
   input: ReplaceByokProfileInput,
 ) -> RuntimeResult<ByokProfileOutput> {
+  require_text(&input.workspace_id, "workspaceId")?;
   require_text(&input.name, "name")?;
   require_text(&input.actor_user_id, "actorUserId")?;
+  if let Some(credential) = input.credential.as_deref() {
+    require_text(credential, "credential")?;
+  }
   if input.expected_revision < 1 {
     return Err(RuntimeError::invalid_input("expectedRevision is required"));
   }
+  let admission = select_profile_for_admission(pool, &input.workspace_id, &input.profile_id).await?;
+  if admission.revision != input.expected_revision {
+    return Err(RuntimeError::invalid_input("byok_revision_conflict"));
+  }
+  let definition = validate_definition(&admission.provider, input.definition)
+    .map_err(|error| RuntimeError::invalid_input(error.to_string()))?;
+  admit_endpoint(&definition, policy).await?;
+
   let mut tx = pool
     .begin()
     .await
@@ -140,13 +158,9 @@ pub(in super::super) async fn replace(
     return Err(RuntimeError::invalid_input("byok_revision_conflict"));
   }
   let old_definition = parse_definition(old.definition.clone())?;
-  let definition = validate_definition(&old.provider, input.definition)
-    .map_err(|error| RuntimeError::invalid_input(error.to_string()))?;
-  admit_endpoint(&definition, policy).await?;
   let key = envelope_key(root_secret)?;
   let credential_changed = input.credential.is_some();
   let credential = if let Some(credential) = input.credential {
-    require_text(&credential, "credential")?;
     SensitiveCredential::new(credential.into_bytes())
   } else {
     key
@@ -215,6 +229,22 @@ pub(in super::super) async fn replace(
     .await
     .map_err(|error| RuntimeError::database("replace BYOK profile commit failed", error))?;
   profile_output(row)
+}
+
+async fn select_profile_for_admission(
+  pool: &PgPool,
+  workspace_id: &str,
+  profile_id: &str,
+) -> RuntimeResult<ProfileAdmissionRow> {
+  sqlx::query_as::<_, ProfileAdmissionRow>(
+    "SELECT provider, revision FROM ai_workspace_byok_configs WHERE workspace_id = $1 AND id = $2",
+  )
+  .bind(workspace_id)
+  .bind(profile_id)
+  .fetch_optional(pool)
+  .await
+  .map_err(|error| RuntimeError::database("load BYOK profile admission data failed", error))?
+  .ok_or_else(|| RuntimeError::invalid_input("BYOK profile not found"))
 }
 
 pub(in super::super) async fn rotate(

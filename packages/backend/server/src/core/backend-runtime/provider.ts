@@ -34,6 +34,10 @@ class RuntimeEventStream<T> implements AsyncIterableIterator<T> {
   private abort?: () => void;
 
   attach(abort: () => void) {
+    if (this.ended) {
+      abort();
+      return;
+    }
     this.abort = abort;
   }
 

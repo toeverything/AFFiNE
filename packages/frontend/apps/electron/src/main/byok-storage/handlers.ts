@@ -14,6 +14,23 @@ export function disposeWorkspaceByokStorage() {
 }
 
 const allowedProviders = new Set(['openai', 'anthropic', 'gemini', 'fal']);
+const allowedInputs = new Set(['text', 'image', 'audio', 'file']);
+const allowedOutputs = new Set([
+  'text',
+  'object',
+  'structured',
+  'embedding',
+  'rerank',
+  'image',
+]);
+const allowedFeatures = new Set(['tool_calling', 'reasoning', 'web_search']);
+const allowedAttachmentKinds = new Set(['image', 'audio', 'file']);
+const allowedAttachmentSources = new Set([
+  'url',
+  'data',
+  'bytes',
+  'file_handle',
+]);
 
 type WorkspaceByokKey = {
   id: string;
@@ -61,6 +78,73 @@ function hasOwnField(
   return Object.prototype.hasOwnProperty.call(key, field);
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isAllowedStringArray(
+  value: unknown,
+  allowed: Set<string>
+): value is string[] {
+  return (
+    Array.isArray(value) &&
+    value.every(item => typeof item === 'string' && allowed.has(item))
+  );
+}
+
+function isValidEndpoint(value: unknown) {
+  if (!isRecord(value) || typeof value.kind !== 'string') return false;
+  if (value.kind === 'provider_default') return value.url == null;
+  if (value.kind !== 'custom' || typeof value.url !== 'string') return false;
+  try {
+    const endpoint = new URL(value.url);
+    return (
+      (endpoint.protocol === 'http:' || endpoint.protocol === 'https:') &&
+      !!endpoint.hostname &&
+      !endpoint.username &&
+      !endpoint.password
+    );
+  } catch {
+    return false;
+  }
+}
+
+function isValidCapability(value: unknown) {
+  return (
+    isRecord(value) &&
+    isAllowedStringArray(value.input, allowedInputs) &&
+    value.input.length > 0 &&
+    isAllowedStringArray(value.output, allowedOutputs) &&
+    value.output.length > 0 &&
+    isAllowedStringArray(value.features, allowedFeatures) &&
+    isAllowedStringArray(value.attachmentKinds, allowedAttachmentKinds) &&
+    isAllowedStringArray(value.attachmentSources, allowedAttachmentSources)
+  );
+}
+
+function isValidDefinition(
+  value: unknown
+): value is WorkspaceByokKey['definition'] {
+  return (
+    isRecord(value) &&
+    value.version === 1 &&
+    isValidEndpoint(value.endpoint) &&
+    Array.isArray(value.models) &&
+    value.models.length > 0 &&
+    value.models.every(
+      model =>
+        isRecord(model) &&
+        typeof model.modelId === 'string' &&
+        model.modelId.trim().length > 0 &&
+        model.modelId.length <= 512 &&
+        typeof model.enabled === 'boolean' &&
+        Array.isArray(model.capabilities) &&
+        model.capabilities.length > 0 &&
+        model.capabilities.every(isValidCapability)
+    )
+  );
+}
+
 function normalizeKey(
   key: WorkspaceByokKeyInput,
   existing?: WorkspaceByokKey,
@@ -71,18 +155,7 @@ function normalizeKey(
   }
   const credential = key.credential ?? existing?.credential;
   const definition = key.definition ?? existing?.definition;
-  if (
-    !key.id ||
-    !key.name ||
-    !credential ||
-    !definition?.models.length ||
-    definition.models.some(
-      model =>
-        !model.modelId ||
-        typeof model.enabled !== 'boolean' ||
-        !model.capabilities.length
-    )
-  ) {
+  if (!key.id || !key.name || !credential || !isValidDefinition(definition)) {
     throw new Error('Invalid BYOK key.');
   }
   return {

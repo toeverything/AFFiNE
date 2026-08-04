@@ -6,7 +6,7 @@ mod ffi;
 mod prompt_catalog;
 pub(crate) mod route;
 
-pub use core::{
+pub use self::core::{
   capability::llm_match_model_capabilities,
   model_registry::{llm_match_model_registry, llm_resolve_model_registry_variant},
   prompt::{

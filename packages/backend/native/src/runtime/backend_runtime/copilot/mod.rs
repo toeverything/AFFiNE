@@ -2,15 +2,32 @@ mod context;
 mod dispatch;
 mod stream;
 
+use std::{
+  collections::HashMap,
+  sync::{Arc, RwLock},
+  time::Duration,
+};
+
+use gcp_auth::TokenProvider;
+use sha2::{Digest, Sha256};
+use tokio::sync::OnceCell;
+use zeroize::Zeroizing;
+
 pub(in crate::runtime::backend_runtime) use dispatch::{
   endpoint as byok_endpoint, protocol as executable_protocol, provider as backend_provider,
 };
 
 use super::{BackendRuntime, RuntimeError, RuntimeResult, to_napi_error};
 use crate::{
-  llm::{CopilotExecuteInput, CopilotRouteCheckInput, route},
-  runtime::BackendRuntimeConfig,
+  llm::{
+    CopilotExecuteInput, CopilotRouteCheckInput,
+    route::{self, AuthorizedProfileRef, AuthorizedTargetRef, CredentialRef},
+  },
+  runtime::{BackendRuntimeConfig, CopilotManagedProfileConfig},
 };
+
+pub(super) type ManagedTokenProviderCache = RwLock<HashMap<String, Arc<OnceCell<Arc<dyn TokenProvider>>>>>;
+pub(super) const COPILOT_REQUEST_TIMEOUT: Duration = Duration::from_secs(30 * 60);
 
 struct AuthorizedCopilotRoute {
   config: std::sync::Arc<BackendRuntimeConfig>,
@@ -80,8 +97,9 @@ impl BackendRuntime {
         slot,
       )
       .await?;
-    let managed_credentials =
-      dispatch::resolve_managed_credentials(&authorized.config, &authorized.profiles, &authorized.candidates).await?;
+    let managed_credentials = self
+      .resolve_managed_credentials(&authorized.config, &authorized.profiles, &authorized.candidates)
+      .await?;
     Ok((
       authorized.config,
       authorized.slot,
@@ -90,6 +108,62 @@ impl BackendRuntime {
       authorized.candidates,
       managed_credentials,
     ))
+  }
+
+  async fn resolve_managed_credentials(
+    &self,
+    config: &BackendRuntimeConfig,
+    profiles: &[AuthorizedProfileRef],
+    candidates: &[AuthorizedTargetRef],
+  ) -> RuntimeResult<HashMap<String, Zeroizing<String>>> {
+    let mut credentials = HashMap::new();
+    for candidate in candidates {
+      let profile = profiles
+        .get(candidate.profile_index)
+        .ok_or_else(|| RuntimeError::invalid_state("invalid authorized route profile"))?;
+      let CredentialRef::Managed { profile_id } = &profile.credential_ref else {
+        continue;
+      };
+      if credentials.contains_key(profile_id) {
+        continue;
+      }
+      let managed = context::managed_profile(&config.copilot, profile_id)?;
+      let token_provider = if matches!(managed.provider.as_str(), "geminiVertex" | "anthropicVertex") {
+        Some(self.managed_token_provider(managed).await?)
+      } else {
+        None
+      };
+      credentials.insert(
+        profile_id.clone(),
+        Zeroizing::new(dispatch::managed_credential(managed, token_provider).await?),
+      );
+    }
+    Ok(credentials)
+  }
+
+  async fn managed_token_provider(
+    &self,
+    profile: &CopilotManagedProfileConfig,
+  ) -> RuntimeResult<Arc<dyn TokenProvider>> {
+    let config = serde_json::to_vec(&profile.config)
+      .map_err(|error| RuntimeError::json("serialize managed Vertex profile failed", error))?;
+    let cache_key = format!(
+      "{}:{}:{}",
+      profile.id,
+      profile.provider,
+      hex::encode(Sha256::digest(config))
+    );
+    let cell = {
+      let mut providers = self
+        .managed_token_providers
+        .write()
+        .map_err(|_| RuntimeError::invalid_state("managed token provider cache lock poisoned"))?;
+      Arc::clone(providers.entry(cache_key).or_insert_with(|| Arc::new(OnceCell::new())))
+    };
+    cell
+      .get_or_try_init(|| dispatch::create_vertex_token_provider(profile))
+      .await
+      .map(Arc::clone)
   }
 
   async fn authorize_copilot_route(

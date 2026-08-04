@@ -1,10 +1,15 @@
-use std::net::{IpAddr, Ipv4Addr};
+use std::{
+  net::{IpAddr, Ipv4Addr},
+  time::Duration,
+};
 
 use super::{RuntimeError, RuntimeResult};
 use crate::{
   llm::byok::{ByokEndpoint, ByokProfileDefinition},
   runtime::config::CopilotByokRuntimeConfig,
 };
+
+const DNS_RESOLUTION_TIMEOUT: Duration = Duration::from_secs(5);
 
 pub(super) async fn admit_endpoint(
   definition: &ByokProfileDefinition,
@@ -27,8 +32,9 @@ pub(super) async fn admit_endpoint(
     return Err(RuntimeError::invalid_input("private BYOK endpoints are disabled"));
   }
   let port = parsed.port_or_known_default().unwrap_or(443);
-  let addresses = tokio::net::lookup_host((host, port))
+  let addresses = tokio::time::timeout(DNS_RESOLUTION_TIMEOUT, tokio::net::lookup_host((host, port)))
     .await
+    .map_err(|_| RuntimeError::invalid_input("BYOK endpoint DNS resolution timed out"))?
     .map_err(|_| RuntimeError::invalid_input("BYOK endpoint DNS resolution failed"))?;
   let mut resolved = false;
   for address in addresses {

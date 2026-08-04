@@ -43,6 +43,7 @@ pub(super) fn token_hash(token: &str) -> String {
 pub struct BackendRuntime {
   config: RwLock<Arc<BackendRuntimeConfig>>,
   pool: Mutex<Option<PgPool>>,
+  managed_token_providers: copilot::ManagedTokenProviderCache,
 }
 
 #[napi_derive::napi]
@@ -53,6 +54,7 @@ impl BackendRuntime {
     Ok(Self {
       config: RwLock::new(Arc::new(config)),
       pool: Mutex::new(None),
+      managed_token_providers: Default::default(),
     })
   }
 
@@ -100,7 +102,8 @@ impl BackendRuntime {
   #[napi]
   pub async fn reload_config(&self, private_key: Option<String>) -> Result<()> {
     let pool = self.pool().await.map_err(to_napi_error)?;
-    let config = BackendRuntimeConfig::from_config_files(private_key)
+    let active_private_key = self.config().map_err(to_napi_error)?.private_key.to_string();
+    let config = BackendRuntimeConfig::from_config_files(private_key.or(Some(active_private_key)))
       .map_err(to_napi_error)?
       .with_db_overrides(&pool)
       .await
@@ -243,6 +246,11 @@ impl BackendRuntime {
   }
 
   fn update_config(&self, config: BackendRuntimeConfig) -> RuntimeResult<()> {
+    self
+      .managed_token_providers
+      .write()
+      .map_err(|_| RuntimeError::invalid_state("managed token provider cache lock poisoned"))?
+      .clear();
     *self
       .config
       .write()

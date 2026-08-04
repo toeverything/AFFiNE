@@ -170,6 +170,53 @@ describe('byok storage handlers', () => {
     expect(electronMock.encryptString).not.toHaveBeenCalled();
   });
 
+  test.each([
+    [
+      'custom endpoint without URL',
+      { ...definition, endpoint: { kind: 'custom' } },
+    ],
+    [
+      'unsupported endpoint protocol',
+      { ...definition, endpoint: { kind: 'custom', url: 'file:///tmp/api' } },
+    ],
+    [
+      'malformed capability object',
+      {
+        ...definition,
+        models: [{ ...definition.models[0], capabilities: [{}] }],
+      },
+    ],
+    [
+      'unknown capability value',
+      {
+        ...definition,
+        models: [
+          {
+            ...definition.models[0],
+            capabilities: [
+              { ...definition.models[0].capabilities[0], input: ['video'] },
+            ],
+          },
+        ],
+      },
+    ],
+  ])('rejects %s from IPC input', async (_name, malformedDefinition) => {
+    const { byokStorageHandlers, disposeWorkspaceByokStorage: dispose } =
+      await import('@affine/electron/main/byok-storage/handlers');
+    disposeWorkspaceByokStorage = dispose;
+
+    await expect(
+      byokStorageHandlers.upsertWorkspaceKey(undefined, 'workspace-1', {
+        id: 'local-openai',
+        provider: 'openai',
+        name: 'OpenAI',
+        credential: 'sk-openai',
+        definition: malformedDefinition as typeof definition,
+      })
+    ).rejects.toThrow('Invalid BYOK key.');
+    expect(electronMock.encryptString).not.toHaveBeenCalled();
+  });
+
   test('preserves existing local key fields during partial updates', async () => {
     const { byokStorageHandlers, disposeWorkspaceByokStorage: dispose } =
       await import('@affine/electron/main/byok-storage/handlers');

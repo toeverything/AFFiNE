@@ -19,7 +19,7 @@ use serde::Serialize;
 use uuid::Uuid;
 use zeroize::Zeroizing;
 
-use super::{RuntimeError, RuntimeResult, context};
+use super::{COPILOT_REQUEST_TIMEOUT, RuntimeError, RuntimeResult, context};
 use crate::{
   llm::{
     byok::{ByokEndpoint, CredentialEnvelopeKey},
@@ -144,7 +144,7 @@ pub(super) fn compile_execution(
       endpoint: endpoint(&profile.provider, &profile.definition.endpoint),
       model: model.model_id.clone(),
       credential: BackendCredential::new(credential),
-      timeout_ms: None,
+      timeout_ms: Some(COPILOT_REQUEST_TIMEOUT.as_millis() as u64),
       egress_policy: if profile.source != crate::llm::route::ProfileSource::Managed
         && config.copilot.byok.allow_private_endpoint
       {
@@ -267,58 +267,13 @@ fn resolve_credential(
   }
 }
 
-pub(super) async fn resolve_managed_credentials(
-  config: &BackendRuntimeConfig,
-  profiles: &[AuthorizedProfileRef],
-  candidates: &[AuthorizedTargetRef],
-) -> RuntimeResult<HashMap<String, Zeroizing<String>>> {
-  let mut credentials = HashMap::new();
-  for candidate in candidates {
-    let profile = profiles
-      .get(candidate.profile_index)
-      .ok_or_else(|| RuntimeError::invalid_state("invalid authorized route profile"))?;
-    let CredentialRef::Managed { profile_id } = &profile.credential_ref else {
-      continue;
-    };
-    if credentials.contains_key(profile_id) {
-      continue;
-    }
-    let managed = context::managed_profile(&config.copilot, profile_id)?;
-    credentials.insert(profile_id.clone(), Zeroizing::new(managed_credential(managed).await?));
-  }
-  Ok(credentials)
-}
-
-async fn managed_credential(profile: &CopilotManagedProfileConfig) -> RuntimeResult<String> {
+pub(super) async fn managed_credential(
+  profile: &CopilotManagedProfileConfig,
+  token_provider: Option<Arc<dyn TokenProvider>>,
+) -> RuntimeResult<String> {
   if matches!(profile.provider.as_str(), "geminiVertex" | "anthropicVertex") {
-    let provider: Arc<dyn TokenProvider> =
-      if let Some(credentials) = profile.config.pointer("/googleAuthOptions/credentials") {
-        let project = context::required_config_text(profile, "project")?.to_string();
-        let mut credentials = credentials.clone();
-        let object = credentials
-          .as_object_mut()
-          .ok_or_else(|| RuntimeError::invalid_state("managed Vertex credentials must be an object"))?;
-        object
-          .entry("type")
-          .or_insert_with(|| serde_json::Value::String("service_account".to_string()));
-        object
-          .entry("project_id")
-          .or_insert_with(|| serde_json::Value::String(project));
-        object
-          .entry("token_uri")
-          .or_insert_with(|| serde_json::Value::String("https://oauth2.googleapis.com/token".to_string()));
-        let json = serde_json::to_string(&credentials)
-          .map_err(|error| RuntimeError::json("serialize managed Vertex credentials failed", error))?;
-        Arc::new(
-          CustomServiceAccount::from_json(&json)
-            .map_err(|_| RuntimeError::invalid_state("managed Vertex credential unavailable"))?,
-        )
-      } else {
-        gcp_auth::provider()
-          .await
-          .map_err(|_| RuntimeError::invalid_state("managed Vertex credential unavailable"))?
-      };
-    return provider
+    return token_provider
+      .ok_or_else(|| RuntimeError::invalid_state("managed Vertex credential unavailable"))?
       .token(&["https://www.googleapis.com/auth/cloud-platform"])
       .await
       .map(|token| token.as_str().to_string())
@@ -330,6 +285,35 @@ async fn managed_credential(profile: &CopilotManagedProfileConfig) -> RuntimeRes
     "apiKey"
   };
   Ok(context::required_config_text(profile, field)?.to_string())
+}
+
+pub(super) async fn create_vertex_token_provider(
+  profile: &CopilotManagedProfileConfig,
+) -> RuntimeResult<Arc<dyn TokenProvider>> {
+  if let Some(credentials) = profile.config.pointer("/googleAuthOptions/credentials") {
+    let project = context::required_config_text(profile, "project")?.to_string();
+    let mut credentials = credentials.clone();
+    let object = credentials
+      .as_object_mut()
+      .ok_or_else(|| RuntimeError::invalid_state("managed Vertex credentials must be an object"))?;
+    object
+      .entry("type")
+      .or_insert_with(|| serde_json::Value::String("service_account".to_string()));
+    object
+      .entry("project_id")
+      .or_insert_with(|| serde_json::Value::String(project));
+    object
+      .entry("token_uri")
+      .or_insert_with(|| serde_json::Value::String("https://oauth2.googleapis.com/token".to_string()));
+    let json = serde_json::to_string(&credentials)
+      .map_err(|error| RuntimeError::json("serialize managed Vertex credentials failed", error))?;
+    return CustomServiceAccount::from_json(&json)
+      .map(|provider| Arc::new(provider) as Arc<dyn TokenProvider>)
+      .map_err(|_| RuntimeError::invalid_state("managed Vertex credential unavailable"));
+  }
+  gcp_auth::provider()
+    .await
+    .map_err(|_| RuntimeError::invalid_state("managed Vertex credential unavailable"))
 }
 
 pub(in crate::runtime::backend_runtime) fn provider(value: &str) -> RuntimeResult<BackendProvider> {

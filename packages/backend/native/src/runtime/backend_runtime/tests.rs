@@ -104,6 +104,7 @@ async fn runtime_from_database_url() -> AnyResult<Option<BackendRuntime>> {
       copilot: Default::default(),
     })),
     pool: Mutex::new(Some(pool)),
+    managed_token_providers: Default::default(),
   }))
 }
 
@@ -250,6 +251,7 @@ async fn runtime_gate_sql_semantics_are_atomic_and_ttl_bound() {
     let runtime = BackendRuntime {
       config: std::sync::RwLock::new(runtime.config().unwrap()),
       pool: Mutex::new(Some(runtime.pool().await.unwrap())),
+      managed_token_providers: Default::default(),
     };
     tasks.push(tokio::spawn(async move {
       runtime
@@ -581,6 +583,7 @@ async fn coordination_lease_sql_semantics_are_fenced_and_ttl_bound() {
     let runtime = BackendRuntime {
       config: std::sync::RwLock::new(runtime.config().unwrap()),
       pool: Mutex::new(Some(runtime.pool().await.unwrap())),
+      managed_token_providers: Default::default(),
     };
     tasks.push(tokio::spawn(async move {
       runtime
@@ -785,6 +788,7 @@ async fn verification_token_sql_state_machine_handles_keep_verify_and_cleanup() 
     let runtime = BackendRuntime {
       config: std::sync::RwLock::new(runtime.config().unwrap()),
       pool: Mutex::new(Some(runtime.pool().await.unwrap())),
+      managed_token_providers: Default::default(),
     };
     let token = concurrent_token.clone();
     tasks.push(tokio::spawn(async move {

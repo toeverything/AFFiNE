@@ -5,6 +5,7 @@ use std::{
     atomic::{AtomicBool, Ordering},
     mpsc,
   },
+  time::{Duration, Instant},
 };
 
 use llm_adapter::{
@@ -23,7 +24,7 @@ use napi::{
 };
 use zeroize::Zeroizing;
 
-use super::{BackendRuntime, RuntimeError, dispatch, to_napi_error};
+use super::{BackendRuntime, COPILOT_REQUEST_TIMEOUT, RuntimeError, dispatch, to_napi_error};
 use crate::{
   llm::{
     CopilotExecuteInput,
@@ -42,6 +43,8 @@ pub(super) type PreparedCopilotExecution = (
 );
 
 const STREAM_END: &str = "__AFFINE_COPILOT_STREAM_END__";
+const TOOL_CALLBACK_TIMEOUT: Duration = Duration::from_secs(5 * 60);
+const TOOL_CALLBACK_POLL_INTERVAL: Duration = Duration::from_millis(100);
 
 #[napi_derive::napi]
 pub struct CopilotStreamHandle {
@@ -81,7 +84,8 @@ impl BackendRuntime {
         .map_err(to_napi_error)?;
     let aborted = Arc::new(AtomicBool::new(false));
     let worker_aborted = aborted.clone();
-    std::thread::spawn(move || {
+    tokio::task::spawn_blocking(move || {
+      let deadline = Instant::now() + COPILOT_REQUEST_TIMEOUT;
       let result = run_stream(
         &mut execution,
         messages,
@@ -89,6 +93,7 @@ impl BackendRuntime {
         &callback,
         &tool_callback,
         &worker_aborted,
+        deadline,
       );
       if let Err(message) = result
         && !worker_aborted.load(Ordering::Relaxed)
@@ -102,7 +107,7 @@ impl BackendRuntime {
           }),
         );
       }
-      let _ = callback.call(Ok(STREAM_END.to_string()), ThreadsafeFunctionCallMode::NonBlocking);
+      let _ = callback.call(Ok(STREAM_END.to_string()), ThreadsafeFunctionCallMode::Blocking);
     });
     Ok(CopilotStreamHandle { aborted })
   }
@@ -115,8 +120,9 @@ fn run_stream(
   callback: &ThreadsafeFunction<String, ()>,
   tool_callback: &ThreadsafeFunction<String, PromiseRaw<'static, String>>,
   aborted: &AtomicBool,
+  deadline: Instant,
 ) -> std::result::Result<(), String> {
-  run_tool_loop(
+  let result = run_tool_loop(
     &mut messages,
     max_steps,
     |messages| {
@@ -125,7 +131,7 @@ fn run_stream(
         &DefaultHttpClient::default(),
         &mut execution.plan,
         messages,
-        || aborted.load(Ordering::Relaxed),
+        || aborted.load(Ordering::Relaxed) || Instant::now() >= deadline,
         |event| emit_json(callback, event).map_err(transport_error),
         |event: RuntimeRouteEvent| route_events.push(event),
       );
@@ -135,10 +141,15 @@ fn run_stream(
       }
       result.map_err(|error| error.to_string())
     },
-    |call: &AccumulatedToolCall| execute_tool(tool_callback, call),
+    |call: &AccumulatedToolCall| execute_tool(tool_callback, call, aborted, deadline),
     |event: &ToolLoopEvent| emit_json(callback, event),
     || "tool loop reached max steps".to_string(),
-  )
+  );
+  if !aborted.load(Ordering::Relaxed) && Instant::now() >= deadline {
+    Err("copilot stream deadline exceeded".to_string())
+  } else {
+    result
+  }
 }
 
 fn emit_json(
@@ -146,7 +157,7 @@ fn emit_json(
   value: &impl serde::Serialize,
 ) -> std::result::Result<(), String> {
   let value = serde_json::to_string(value).map_err(|error| error.to_string())?;
-  let status = callback.call(Ok(value), ThreadsafeFunctionCallMode::NonBlocking);
+  let status = callback.call(Ok(value), ThreadsafeFunctionCallMode::Blocking);
   if status == Status::Ok {
     Ok(())
   } else {
@@ -161,6 +172,8 @@ fn transport_error(message: String) -> BackendError {
 fn execute_tool(
   callback: &ThreadsafeFunction<String, PromiseRaw<'static, String>>,
   call: &AccumulatedToolCall,
+  aborted: &AtomicBool,
+  stream_deadline: Instant,
 ) -> std::result::Result<ToolExecutionResult, String> {
   let request = serde_json::to_string(&ToolCallbackRequest {
     call_id: call.id.clone(),
@@ -181,19 +194,24 @@ fn execute_tool(
         Ok(promise) => {
           let success_sender = callback_sender.clone();
           let failure_sender = callback_sender.clone();
-          promise
-            .then(move |ctx| {
-              send_tool_result(
-                &success_sender,
-                serde_json::from_str::<ToolCallbackResponse>(&ctx.value).map_err(|error| error.to_string()),
-              );
-              Ok(())
-            })?
-            .catch(move |ctx: CallbackContext<Unknown>| {
-              let message = ctx.value.coerce_to_string()?.into_utf8()?.as_str()?.to_string();
-              send_tool_result(&failure_sender, Err(message));
-              Ok(())
-            })?;
+          match promise.then(move |ctx| {
+            send_tool_result(
+              &success_sender,
+              serde_json::from_str::<ToolCallbackResponse>(&ctx.value).map_err(|error| error.to_string()),
+            );
+            Ok(())
+          }) {
+            Ok(promise) => {
+              if let Err(error) = promise.catch(move |ctx: CallbackContext<Unknown>| {
+                let message = ctx.value.coerce_to_string()?.into_utf8()?.as_str()?.to_string();
+                send_tool_result(&failure_sender, Err(message));
+                Ok(())
+              }) {
+                send_tool_result(&callback_sender, Err(error.to_string()));
+              }
+            }
+            Err(error) => send_tool_result(&callback_sender, Err(error.to_string())),
+          }
         }
         Err(error) => send_tool_result(&callback_sender, Err(error.to_string())),
       }
@@ -203,9 +221,23 @@ fn execute_tool(
   if status != Status::Ok {
     return Err(format!("copilot tool callback failed: {status}"));
   }
-  let response = receiver
-    .recv()
-    .map_err(|_| "copilot tool callback closed before completion".to_string())??;
+  let tool_deadline = std::cmp::min(stream_deadline, Instant::now() + TOOL_CALLBACK_TIMEOUT);
+  let response = loop {
+    if aborted.load(Ordering::Relaxed) {
+      return Err("copilot stream aborted".to_string());
+    }
+    let now = Instant::now();
+    if now >= tool_deadline {
+      return Err("copilot tool callback deadline exceeded".to_string());
+    }
+    match receiver.recv_timeout(std::cmp::min(TOOL_CALLBACK_POLL_INTERVAL, tool_deadline - now)) {
+      Ok(response) => break response?,
+      Err(mpsc::RecvTimeoutError::Timeout) => continue,
+      Err(mpsc::RecvTimeoutError::Disconnected) => {
+        return Err("copilot tool callback closed before completion".to_string());
+      }
+    }
+  };
   if !response.args.is_object() {
     return Err("copilot tool callback args must be an object".to_string());
   }

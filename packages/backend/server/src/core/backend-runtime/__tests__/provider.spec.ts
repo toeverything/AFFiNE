@@ -63,3 +63,26 @@ test('backend-runtime provider measures explicit typed methods', async t => {
   t.true(runtime.cleanupExpiredRuntimeStates.calledOnceWithExactly(1000));
   t.true(runtime.assertCopilotRoute.calledOnceWithExactly(routeInput));
 });
+
+test('backend-runtime provider aborts a stream handle that resolves after iterator cancellation', async t => {
+  const provider = new BackendRuntimeProvider(config);
+  const abort = Sinon.stub();
+  let resolveHandle!: (handle: { abort: () => void }) => void;
+  const runtime = {
+    executeCopilotStream: Sinon.stub().returns(
+      new Promise<{ abort: () => void }>(resolve => {
+        resolveHandle = resolve;
+      })
+    ),
+  };
+  (provider as unknown as { runtime: typeof runtime }).runtime = runtime;
+
+  const stream = provider.streamCopilot({} as never, async () => '', {
+    maxSteps: 1,
+  });
+  await stream.return?.();
+  resolveHandle({ abort });
+  await Promise.resolve();
+
+  t.true(abort.calledOnce);
+});
