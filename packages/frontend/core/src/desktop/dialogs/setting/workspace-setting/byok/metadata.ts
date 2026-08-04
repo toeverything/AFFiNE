@@ -1,7 +1,7 @@
-import { ByokKeyStorage, ByokProvider } from '@affine/graphql';
+import { ByokProvider } from '@affine/graphql';
 import type { I18nInstance } from '@affine/i18n';
 
-import type { ByokKey, ByokStorage } from './types';
+import { type ByokKey, ByokStorage } from './types';
 
 export function byokT(
   t: I18nInstance,
@@ -19,7 +19,7 @@ export const providerLabels: Record<ByokProvider, string> = {
 };
 
 export function storageLabel(t: I18nInstance, storage: ByokStorage) {
-  return storage === ByokKeyStorage.local
+  return storage === ByokStorage.local
     ? byokT(t, 'storage.local')
     : byokT(t, 'storage.server');
 }
@@ -44,26 +44,20 @@ export function shouldShowEndpoint(
   return isSelfHosted || customEndpointSupported;
 }
 
-export function capabilitiesFor(provider: ByokProvider, storage: ByokStorage) {
-  switch (provider) {
-    case ByokProvider.openai:
-      return ['Text', 'Image input', 'Actions', 'Image generate'];
-    case ByokProvider.anthropic:
-      return ['Text', 'Image input'];
-    case ByokProvider.gemini:
-      return storage === ByokKeyStorage.server
-        ? [
-            'Text',
-            'Image input',
-            'Actions',
-            'Image generate',
-            'Transcript',
-            'Indexing',
-          ]
-        : ['Text', 'Image input', 'Actions', 'Image generate'];
-    case ByokProvider.fal:
-      return ['Image generate'];
+export function capabilitiesFor(key: Pick<ByokKey, 'definition'>) {
+  const capabilities = key.definition.models.flatMap(
+    model => model.capabilities
+  );
+  const labels = new Set<string>();
+  for (const capability of capabilities) {
+    if (capability.output.includes('text')) labels.add('Text');
+    if (capability.input.includes('image')) labels.add('Image input');
+    if (capability.output.includes('image')) labels.add('Image generate');
+    if (capability.features.includes('tools')) labels.add('Actions');
+    if (capability.input.includes('audio')) labels.add('Transcript');
+    if (capability.output.includes('embedding')) labels.add('Indexing');
   }
+  return [...labels];
 }
 
 export function capabilityLabel(t: I18nInstance, capability: string) {
@@ -121,7 +115,7 @@ export const capabilityRows = [
     icon: 'transcript',
     providers: [ByokProvider.gemini],
     coverageCapabilities: ['Transcript'],
-    storage: ByokKeyStorage.server,
+    storage: ByokStorage.server,
   },
   {
     titleKey: 'feature.workspace-indexing.title',
@@ -130,7 +124,7 @@ export const capabilityRows = [
     icon: 'indexing',
     providers: [ByokProvider.gemini],
     coverageCapabilities: ['Indexing'],
-    storage: ByokKeyStorage.server,
+    storage: ByokStorage.server,
   },
 ] as const;
 
@@ -145,16 +139,13 @@ function formatDate(value?: string | null) {
 }
 
 export function rowDescription(t: I18nInstance, key: ByokKey) {
-  const failed = formatDate(key.lastErrorAt);
-  const used = formatDate(key.lastUsedAt);
-  const today = formatDate(new Date().toISOString());
-  const activity = failed
-    ? byokT(t, 'row.activity.failed', { date: failed })
-    : used
-      ? used === today
-        ? byokT(t, 'row.activity.used-today')
-        : byokT(t, 'row.activity.used', { date: used })
-      : byokT(t, 'row.activity.unused');
+  const tested = formatDate(key.validation?.connection.testedAt);
+  const activity =
+    key.validation?.connection.kind === 'failed'
+      ? byokT(t, 'row.activity.failed', { date: tested ?? '' })
+      : tested
+        ? byokT(t, 'status.key-verified')
+        : byokT(t, 'row.activity.unused');
 
   return [storageLabel(t, key.storage), activity, key.description]
     .filter(Boolean)

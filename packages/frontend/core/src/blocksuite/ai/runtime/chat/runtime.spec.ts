@@ -34,8 +34,6 @@ function session(
     parentSessionId: null,
     promptName: 'Chat With AFFiNE AI',
     action: null,
-    optionalModels: null,
-    tokens: 0,
     ...overrides,
   } as CopilotChatHistoryFragment;
 }

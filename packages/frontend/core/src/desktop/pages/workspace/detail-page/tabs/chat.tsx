@@ -23,9 +23,9 @@ import { useAISpecs } from '@affine/core/components/hooks/affine/use-ai-specs';
 import { useAISubscribe } from '@affine/core/components/hooks/affine/use-ai-subscribe';
 import {
   AIDraftService,
+  AIModelService,
   AIToolsConfigService,
 } from '@affine/core/modules/ai-button';
-import { AIModelService } from '@affine/core/modules/ai-button/services/models';
 import {
   EventSourceService,
   GraphQLService,
@@ -283,9 +283,9 @@ export const EditorChatPanel = ({
       content.notificationService = notificationService;
       content.aiDraftService = framework.get(AIDraftService);
       content.aiToolsConfigService = framework.get(AIToolsConfigService);
+      content.aiModelService = framework.get(AIModelService);
       content.peekViewService = framework.get(PeekViewService);
       content.subscriptionService = framework.get(SubscriptionService);
-      content.aiModelService = framework.get(AIModelService);
       content.onAISubscribe = handleAISubscribe;
       content.width = sidebarWidthSignal;
       content.onOpenDoc = (docId: string, sessionId?: string) => {
@@ -399,8 +399,8 @@ export const EditorChatPanel = ({
         .notificationService=${notificationService}
         .affineWorkspaceDialogService=${framework.get(WorkspaceDialogService)}
         .aiToolsConfigService=${framework.get(AIToolsConfigService)}
-        .subscriptionService=${framework.get(SubscriptionService)}
         .aiModelService=${framework.get(AIModelService)}
+        .subscriptionService=${framework.get(SubscriptionService)}
       ></playground-content>
     `;
 

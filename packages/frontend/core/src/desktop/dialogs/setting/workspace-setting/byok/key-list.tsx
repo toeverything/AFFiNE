@@ -1,4 +1,4 @@
-import { DragHandle, IconButton } from '@affine/component';
+import { Button, DragHandle, IconButton } from '@affine/component';
 import { useI18n } from '@affine/i18n';
 import { DeleteIcon, EditIcon } from '@blocksuite/icons/rc';
 import type { DragEvent } from 'react';
@@ -17,6 +17,7 @@ export const KeyList = ({
   keys,
   onEdit,
   onDelete,
+  onTest,
   onDragStart,
   onDragEnd,
   onDrop,
@@ -24,6 +25,7 @@ export const KeyList = ({
   keys: ByokKey[];
   onEdit: (key: ByokKey) => void;
   onDelete: (key: ByokKey) => void;
+  onTest: (key: ByokKey) => void;
   onDragStart: (key: ByokKey) => void;
   onDragEnd: () => void;
   onDrop: (key: ByokKey) => void;
@@ -72,6 +74,11 @@ export const KeyList = ({
             </div>
           </div>
           <div className={styles.rowActions}>
+            {key.storage === 'server' ? (
+              <Button variant="plain" onClick={() => onTest(key)}>
+                Test
+              </Button>
+            ) : null}
             <IconButton
               size="20"
               title={byokT(t, 'action.edit')}

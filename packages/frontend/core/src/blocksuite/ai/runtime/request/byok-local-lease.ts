@@ -67,9 +67,8 @@ export async function createWorkspaceByokLocalLease(
               provider: gqlProvider,
               name: provider.name,
               description: provider.description ?? null,
-              apiKey: provider.apiKey,
-              endpoint: provider.endpoint ?? null,
-              sortOrder: provider.sortOrder ?? 0,
+              credential: provider.credential,
+              definition: provider.definition,
               enabled: provider.enabled ?? true,
             },
           ]

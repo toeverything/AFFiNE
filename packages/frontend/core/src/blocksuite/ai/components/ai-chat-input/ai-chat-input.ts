@@ -1,8 +1,8 @@
 import type {
   AIDraftService,
+  AIModelService,
   AIToolsConfigService,
 } from '@affine/core/modules/ai-button';
-import type { AIModelService } from '@affine/core/modules/ai-button/services/models';
 import type {
   ServerService,
   SubscriptionService,
@@ -400,6 +400,9 @@ export class AIChatInput extends SignalWatcher(
   accessor aiToolsConfigService!: AIToolsConfigService;
 
   @property({ attribute: false })
+  accessor aiModelService!: AIModelService;
+
+  @property({ attribute: false })
   accessor affineFeatureFlagService!: FeatureFlagService;
 
   @property({ attribute: false })
@@ -407,9 +410,6 @@ export class AIChatInput extends SignalWatcher(
 
   @property({ attribute: false })
   accessor subscriptionService!: SubscriptionService;
-
-  @property({ attribute: false })
-  accessor aiModelService!: AIModelService;
 
   @property({ attribute: false })
   accessor onAISubscribe!: () => Promise<void>;
@@ -481,6 +481,12 @@ export class AIChatInput extends SignalWatcher(
     window.addEventListener('dragleave', this._handleWindowDragLeave);
     window.addEventListener('drop', this._resetDragState);
     window.addEventListener('dragend', this._resetDragState);
+  }
+
+  protected override updated(changedProperties: PropertyValues<this>) {
+    if (changedProperties.has('workspaceId')) {
+      this.aiModelService.setScope(this.workspaceId, 'Chat With AFFiNE AI');
+    }
   }
 
   protected override firstUpdated(changedProperties: PropertyValues): void {
@@ -631,9 +637,9 @@ export class AIChatInput extends SignalWatcher(
           .onExtendedThinkingChange=${this._toggleReasoning}
           .serverService=${this.serverService}
           .toolsConfigService=${this.aiToolsConfigService}
+          .aiModelService=${this.aiModelService}
           .notificationService=${this.notificationService}
           .subscriptionService=${this.subscriptionService}
-          .aiModelService=${this.aiModelService}
           .onAISubscribe=${this.onAISubscribe}
         ></chat-input-preference>
         ${status === 'transmitting' || status === 'loading'
@@ -858,7 +864,7 @@ export class AIChatInput extends SignalWatcher(
       control: this.trackOptions?.control,
       reasoning: this._isReasoningActive,
       toolsConfig: this.aiToolsConfigService.config.value,
-      modelId: this.aiModelService.modelId.value,
+      routeTargetId: this.aiModelService.modelId.value,
       userInfo: {
         userId: userInfo?.id,
         userName: userInfo?.name,

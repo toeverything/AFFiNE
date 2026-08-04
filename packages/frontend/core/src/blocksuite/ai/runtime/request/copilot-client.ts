@@ -467,7 +467,9 @@ export class CopilotClient {
       sessionId,
       messageId,
       reasoning,
+      profileId,
       modelId,
+      routeTargetId,
       toolsConfig,
       actionId,
       actionVersion,
@@ -478,7 +480,9 @@ export class CopilotClient {
       sessionId: string;
       messageId?: string;
       reasoning?: boolean;
+      profileId?: string;
       modelId?: string;
+      routeTargetId?: string;
       toolsConfig?: AIToolsConfig;
       actionId?: string;
       actionVersion?: string;
@@ -495,7 +499,9 @@ export class CopilotClient {
     const queryString = this.paramsToQueryString({
       messageId,
       reasoning,
+      profileId,
       modelId,
+      routeTargetId,
       toolsConfig,
       actionId,
       actionVersion,
