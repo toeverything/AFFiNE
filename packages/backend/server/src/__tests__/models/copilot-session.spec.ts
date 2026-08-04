@@ -57,18 +57,6 @@ const TEST_PROMPTS = {
 } as const;
 
 // Helper functions
-const createTestPrompts = async (
-  _copilotSession: CopilotSessionModel,
-  db: PrismaClient
-) => {
-  await db.aiPrompt.create({
-    data: { name: TEST_PROMPTS.NORMAL, model: 'gpt-5-mini', action: null },
-  });
-  await db.aiPrompt.create({
-    data: { name: TEST_PROMPTS.ACTION, model: 'gpt-5-mini', action: 'edit' },
-  });
-};
-
 const createTestSession = async (
   t: ExecutionContext<Context>,
   overrides: Partial<{
@@ -121,7 +109,6 @@ const addMessagesToSession = async (
   await copilotSession.updateMessages({
     sessionId,
     userId: user.id,
-    prompt: { model: 'gpt-5-mini' },
     messages: [
       {
         role: 'user',
@@ -154,9 +141,7 @@ const createSessionWithMessages = async (
 type UpdateData = Omit<UpdateChatSessionOptions, 'userId' | 'sessionId'>;
 
 test('should list and filter session type', async t => {
-  const { copilotSession, db } = t.context;
-
-  await createTestPrompts(copilotSession, db);
+  const { copilotSession } = t.context;
 
   const docId = 'doc-id-1';
   await createTestSession(t, { sessionId: randomUUID() });
@@ -206,7 +191,7 @@ test('should list and filter session type', async t => {
         docSessions.toSorted((a, b) =>
           a.promptName.localeCompare(b.promptName)
         ),
-        ['id', 'userId', 'workspaceId', 'createdAt', 'updatedAt', 'tokenCost']
+        ['id', 'userId', 'workspaceId', 'createdAt', 'updatedAt']
       ),
       'doc sessions should only include sessions with matching docId'
     );
@@ -232,8 +217,7 @@ test('should list and filter session type', async t => {
 });
 
 test('should validate session prompt compatibility', async t => {
-  const { copilotSession, db } = t.context;
-  await createTestPrompts(copilotSession, db);
+  const { copilotSession } = t.context;
 
   const sessionTypes = [
     { name: 'workspace', session: { docId: null, pinned: false } },
@@ -287,8 +271,6 @@ test('should validate session prompt compatibility', async t => {
 
 test('should pin and unpin sessions', async t => {
   const { copilotSession, db } = t.context;
-
-  await createTestPrompts(copilotSession, db);
 
   const firstSessionId = 'first-session-id';
   const secondSessionId = 'second-session-id';
@@ -368,7 +350,6 @@ test('should pin and unpin sessions', async t => {
 
 test('should handle session updates and type conversions', async t => {
   const { copilotSession, db } = t.context;
-  await createTestPrompts(copilotSession, db);
 
   const sessionId = randomUUID();
   const actionSessionId = randomUUID();
@@ -414,7 +395,11 @@ test('should handle session updates and type conversions', async t => {
       sessionId: forkedSessionId,
       updates: [
         { pinned: true, expected: 'allow' },
-        { promptName: TEST_PROMPTS.NORMAL, expected: 'allow' },
+        {
+          promptName: TEST_PROMPTS.NORMAL,
+          promptAction: null,
+          expected: 'allow',
+        },
         { docId: 'new-doc', expected: 'reject' },
       ],
     },
@@ -422,8 +407,16 @@ test('should handle session updates and type conversions', async t => {
     {
       sessionId,
       updates: [
-        { promptName: TEST_PROMPTS.NORMAL, expected: 'allow' },
-        { promptName: TEST_PROMPTS.ACTION, expected: 'reject' },
+        {
+          promptName: TEST_PROMPTS.NORMAL,
+          promptAction: null,
+          expected: 'allow',
+        },
+        {
+          promptName: TEST_PROMPTS.ACTION,
+          promptAction: 'edit',
+          expected: 'reject',
+        },
         { promptName: 'non-existent-prompt', expected: 'reject' },
       ],
     },
@@ -517,7 +510,6 @@ test('should handle session updates and type conversions', async t => {
 
 test('should handle session queries, ordering, and filtering', async t => {
   const { copilotSession, db } = t.context;
-  await createTestPrompts(copilotSession, db);
 
   const docId = randomUUID();
   const sessionIds: string[] = [];
@@ -764,7 +756,6 @@ test('should handle session queries, ordering, and filtering', async t => {
 
 test('should handle fork and session attachment operations', async t => {
   const { copilotSession } = t.context;
-  await createTestPrompts(copilotSession, t.context.db);
 
   const parentSessionId = randomUUID();
   const docId = randomUUID();
@@ -812,7 +803,7 @@ test('should handle fork and session attachment operations', async t => {
       pinned: forkConfig.pinned,
       title: null,
       parentSessionId,
-      prompt: { name: TEST_PROMPTS.NORMAL, action: null, model: 'gpt-5-mini' },
+      prompt: { name: TEST_PROMPTS.NORMAL, action: null },
       messages: [
         {
           role: 'user',
@@ -925,7 +916,6 @@ test('should handle fork and session attachment operations', async t => {
 
 test('should cleanup empty sessions correctly', async t => {
   const { copilotSession, db } = t.context;
-  await createTestPrompts(copilotSession, db);
 
   const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
   const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
@@ -971,20 +961,23 @@ test('should cleanup empty sessions correctly', async t => {
   );
 
   const result = await copilotSession.cleanupEmptySessions(oneDayAgo);
+  const orderedSessionIds = [
+    ...neverUsedSessionIds,
+    ...emptySessionIds,
+    recentSessionId,
+    sessionWithMsgId,
+  ];
 
   const remainingSessions = await db.aiSession.findMany({
     where: {
-      id: {
-        in: [
-          ...neverUsedSessionIds,
-          ...emptySessionIds,
-          recentSessionId,
-          sessionWithMsgId,
-        ],
-      },
+      id: { in: orderedSessionIds },
     },
     select: { id: true, deletedAt: true, pinned: true },
   });
+  remainingSessions.sort(
+    (left, right) =>
+      orderedSessionIds.indexOf(left.id) - orderedSessionIds.indexOf(right.id)
+  );
 
   t.snapshot(
     {
@@ -1005,15 +998,13 @@ test('should cleanup empty sessions correctly', async t => {
   );
 });
 
-test('should append durable message and account durable costs', async t => {
+test('should append durable message and account message cost', async t => {
   const { copilotSession, db } = t.context;
-  await createTestPrompts(copilotSession, db);
 
   const { sessionId } = await createTestSession(t);
   const appended = await copilotSession.appendMessage({
     sessionId,
     userId: user.id,
-    prompt: { model: 'gpt-5-mini' },
     message: {
       role: 'user',
       content: 'hello durable world',
@@ -1024,18 +1015,16 @@ test('should append durable message and account durable costs', async t => {
 
   const afterAppend = await db.aiSession.findUniqueOrThrow({
     where: { id: sessionId },
-    select: { messageCost: true, tokenCost: true },
+    select: { messageCost: true },
   });
 
   t.truthy(appended.id);
   t.is(afterAppend.messageCost, 1);
-  t.true(afterAppend.tokenCost > 0);
   t.deepEqual(appended.params, { foo: 'bar' });
 
   const appendedBare = await copilotSession.appendMessage({
     sessionId,
     userId: user.id,
-    prompt: { model: 'gpt-5-mini' },
     message: {
       role: 'assistant',
       content: 'assistant reply',
@@ -1070,14 +1059,12 @@ test('should append durable message and account durable costs', async t => {
 });
 
 test('should count action runs without double-counting legacy action sessions', async t => {
-  const { copilotSession, db, models } = t.context;
-  await createTestPrompts(copilotSession, db);
+  const { copilotSession, models } = t.context;
 
   const regular = await createTestSession(t);
   await copilotSession.appendMessage({
     sessionId: regular.sessionId,
     userId: user.id,
-    prompt: { model: 'gpt-5-mini' },
     message: {
       role: 'user',
       content: 'regular message',
@@ -1124,8 +1111,7 @@ test('should count action runs without double-counting legacy action sessions', 
     userId: user.id,
     workspaceId: workspace.id,
     blobId: 'audio-1',
-    strategy: 'gemini',
-    recipeId: 'transcript.audio.gemini',
+    recipeId: 'transcript.audio',
     recipeVersion: 'v1',
   });
   await models.copilotTranscriptTask.complete(transcriptTask.id, {
@@ -1146,14 +1132,12 @@ test('should count action runs without double-counting legacy action sessions', 
 });
 
 test('should exclude BYOK provider usage from copilot quota cost', async t => {
-  const { copilotSession, db, models } = t.context;
-  await createTestPrompts(copilotSession, db);
+  const { copilotSession, models } = t.context;
 
   const regular = await createTestSession(t);
   const firstMessage = await copilotSession.appendMessage({
     sessionId: regular.sessionId,
     userId: user.id,
-    prompt: { model: 'gpt-5-mini' },
     message: {
       role: 'user',
       content: 'regular message',
@@ -1163,7 +1147,6 @@ test('should exclude BYOK provider usage from copilot quota cost', async t => {
   const secondMessage = await copilotSession.appendMessage({
     sessionId: regular.sessionId,
     userId: user.id,
-    prompt: { model: 'gpt-5-mini' },
     message: {
       role: 'user',
       content: 'second BYOK message',
@@ -1173,7 +1156,6 @@ test('should exclude BYOK provider usage from copilot quota cost', async t => {
   await copilotSession.appendMessage({
     sessionId: regular.sessionId,
     userId: user.id,
-    prompt: { model: 'gpt-5-mini' },
     message: {
       role: 'user',
       content: 'quota-backed message',
@@ -1194,8 +1176,7 @@ test('should exclude BYOK provider usage from copilot quota cost', async t => {
     userId: user.id,
     workspaceId: workspace.id,
     blobId: 'pending-audio',
-    strategy: 'gemini',
-    recipeId: 'transcript.audio.gemini',
+    recipeId: 'transcript.audio',
     recipeVersion: 'v1',
   });
   await models.copilotUsage.create({
@@ -1251,7 +1232,6 @@ test('should exclude BYOK provider usage from copilot quota cost', async t => {
 
 test('should get sessions for title generation correctly', async t => {
   const { copilotSession, db } = t.context;
-  await createTestPrompts(copilotSession, db);
 
   // create valid sessions with messages
   const sessionIds: string[] = [randomUUID(), randomUUID()];

@@ -1,3 +1,4 @@
+/* oxlint-disable import/no-cycle -- Context embedding reuses the shared capability runtime. */
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 
 import {

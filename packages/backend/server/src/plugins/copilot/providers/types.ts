@@ -1,4 +1,4 @@
-import { AiPromptRole } from '@prisma/client';
+import { AiSessionMessageRole } from '@prisma/client';
 import { z } from 'zod';
 
 import { JSONSchema } from '../../../base';
@@ -7,7 +7,6 @@ import type {
   CapabilityModelCapability,
   ModelConditionsContract,
 } from '../../../native';
-import type { CopilotModelBackendKind } from '../runtime/contracts';
 import {
   type StreamObject,
   StreamObjectSchema,
@@ -97,7 +96,6 @@ export const PromptToolsSchema = z
 
 export const PromptConfigStrictSchema = z.object({
   tools: PromptToolsSchema.nullable().optional(),
-  proModels: z.array(z.string()).nullable().optional(),
   // params requirements
   requireContent: z.boolean().nullable().optional(),
   requireAttachment: z.boolean().nullable().optional(),
@@ -108,7 +106,7 @@ export const PromptConfigStrictSchema = z.object({
   presencePenalty: z.number().nullable().optional(),
   temperature: z.number().nullable().optional(),
   topP: z.number().nullable().optional(),
-  maxTokens: z.number().nullable().optional(),
+  maxOutputTokens: z.number().nullable().optional(),
   // fal
   modelName: z.string().nullable().optional(),
   loras: z
@@ -132,7 +130,7 @@ export type PromptTools = z.infer<typeof PromptToolsSchema>;
 
 export const EmbeddingMessage = z.array(z.string().trim().min(1)).min(1);
 
-export const ChatMessageRole = Object.values(AiPromptRole) as [
+export const ChatMessageRole = Object.values(AiSessionMessageRole) as [
   'system',
   'assistant',
   'user',
@@ -268,6 +266,8 @@ const CopilotProviderOptionsSchema = z.object({
   billingUnitId: z.string().optional(),
   taskId: z.string().optional(),
   actionId: z.string().optional(),
+  builtInRouteId: z.string().optional(),
+  managedTargetId: z.string().optional(),
   quotaBackedRoutesAllowed: z.boolean().optional(),
   featureKind: z
     .enum([
@@ -380,8 +380,8 @@ export interface CopilotProviderModel {
   capabilities: ModelCapability[];
 }
 
-export type { CopilotModelBackendKind };
-
-export type ModelConditions = Omit<ModelConditionsContract, 'outputType'>;
+export type ModelConditions = Omit<ModelConditionsContract, 'outputType'> & {
+  profileId?: string;
+};
 
 export type ModelFullConditions = ModelConditionsContract;

@@ -5,6 +5,7 @@ import { JOB_SIGNAL, JobQueue, OneDay, OnJob } from '../../base';
 import { Models } from '../../models';
 
 const CLEANUP_EMBEDDING_JOB_BATCH_SIZE = 100;
+const BACKGROUND_COPILOT_JOB_PRIORITY = 100;
 
 declare global {
   interface Jobs {
@@ -71,9 +72,11 @@ export class CopilotCronJobs {
     const sessions = await this.models.copilotSession.toBeGenerateTitle();
 
     for (const session of sessions) {
-      await this.jobs.add('copilot.session.generateTitle', {
-        sessionId: session.id,
-      });
+      await this.jobs.add(
+        'copilot.session.generateTitle',
+        { sessionId: session.id },
+        { priority: BACKGROUND_COPILOT_JOB_PRIORITY }
+      );
     }
     this.logger.log(
       `Scheduled title generation for ${sessions.length} sessions`

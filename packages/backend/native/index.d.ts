@@ -8,6 +8,9 @@ export declare class BackendRuntime {
   acquireCoordinationLease(key: string, owner: string, ttlMs: number): Promise<CoordinationLeaseGrant | null>
   releaseCoordinationLease(key: string, owner: string, fencingToken: bigint | number): Promise<boolean>
   renewCoordinationLease(key: string, owner: string, fencingToken: bigint | number, ttlMs: number): Promise<boolean>
+  executeCopilotStream(input: CopilotExecuteInput, maxSteps: number, callback: ((err: Error | null, arg: string) => void), toolCallback: ((err: Error | null, arg: string) => Promise<string>)): Promise<CopilotStreamHandle>
+  executeCopilot(input: CopilotExecuteInput): Promise<string>
+  assertCopilotRoute(input: CopilotRouteCheckInput): Promise<void>
   /**
    * Merge pending doc updates with y-octo and persist the merged snapshot.
    *
@@ -51,21 +54,29 @@ export declare class BackendRuntime {
   getWorkspaceInviteLink(workspaceId: string): Promise<RuntimeWorkspaceInviteLinkRecord | null>
   getWorkspaceInviteLinkById(inviteId: string): Promise<RuntimeWorkspaceInviteLinkRecord | null>
   revokeWorkspaceInviteLink(workspaceId: string): Promise<boolean>
-  createByokLocalLease(activeKey: string, leaseId: string, payload: any, ttlMs: number): Promise<RuntimeByokLocalLeaseRecord>
-  getByokLocalLease(leaseId: string): Promise<RuntimeByokLocalLeaseRecord | null>
   cleanupExpiredRuntimeStates(limit: number): Promise<number>
   refreshWorkspaceAdminStatsDirty(batchLimit: number, owner: string, leaseTtlMs: number): Promise<RuntimeWorkspaceStatsRefreshResult>
   recalibrateWorkspaceAdminStats(lastSid: number, batchLimit: number, owner: string, leaseTtlMs: number): Promise<RuntimeWorkspaceStatsRecalibrationResult>
   writeWorkspaceAdminStatsDailySnapshot(owner: string, leaseTtlMs: number): Promise<RuntimeWorkspaceStatsSnapshotResult>
   recalibrateWorkspaceAdminStatsDaily(batchLimit: number, owner: string, leaseTtlMs: number, lockRetryTimes: number, lockRetryDelayMs: number): Promise<RuntimeWorkspaceStatsDailyRecalibrationResult>
-  constructor()
+  constructor(privateKey?: string | undefined | null)
   start(): Promise<void>
   stop(): Promise<void>
+  reloadConfig(privateKey?: string | undefined | null): Promise<void>
   health(): Promise<BackendRuntimeHealth>
   runMigrations(): Promise<void>
+  listByokProfiles(workspaceId: string): Promise<Array<ByokProfileOutput>>
+  createByokProfile(input: CreateByokProfileInput): Promise<ByokProfileOutput>
+  replaceByokProfile(input: ReplaceByokProfileInput): Promise<ByokProfileOutput>
+  rotateByokCredential(input: RotateByokCredentialInput): Promise<ByokProfileOutput>
+  probeByokProfile(input: ProbeByokProfileInput): Promise<ByokProbeResultOutput>
+  probeByokDraft(input: ProbeByokDraftInput): Promise<ByokProbeResultOutput>
+  deleteByokProfile(workspaceId: string, profileId: string): Promise<boolean>
+  reorderByokProfiles(input: ReorderByokProfilesInput): Promise<Array<ByokProfileOutput>>
+  createByokLocalLease(input: CreateByokLocalLeaseInput): Promise<ByokLocalLeaseOutput>
 }
 
-export declare class LlmStreamHandle {
+export declare class CopilotStreamHandle {
   abort(): void
 }
 
@@ -105,46 +116,6 @@ export declare class StorageRuntime {
 
 export declare class Tokenizer {
   count(content: string, allowedSpecial?: Array<string> | undefined | null): number
-}
-
-export interface ActionEvent {
-  type: ActionEventType
-  actionId: string
-  actionVersion: string
-  stepId?: string
-  status?: ActionRunStatus
-  attachment?: any
-  result?: any
-  errorCode?: string
-  errorMessage?: string
-  trace?: ActionTrace
-}
-
-export type ActionEventType =  'action_start'|
-'step_start'|
-'attachment'|
-'step_end'|
-'action_done'|
-'error';
-
-export type ActionRunStatus =  'created'|
-'running'|
-'succeeded'|
-'failed'|
-'aborted';
-
-export interface ActionRuntimeInput {
-  recipeId: string
-  recipeVersion?: string
-  input: any
-}
-
-export interface ActionTrace {
-  actionId: string
-  actionVersion: string
-  status: ActionRunStatus
-  lightweight: Array<any>
-  errorCode?: string
 }
 
 export declare function activateLicense(request: LicenseKeyRequest): Promise<LicenseResponse>
@@ -194,6 +165,15 @@ export interface BackendRuntimeHealth {
 
 export declare function buildPublicRootDoc(rootDocBin: Buffer, docMetas: Array<PublicDocMetaInput>): Buffer
 
+export interface BuiltInManagedTarget {
+  id: string
+  displayName: string
+  minimumTier: BuiltInManagedTargetTier
+}
+
+export type BuiltInManagedTargetTier =  'Standard'|
+'Premium';
+
 export interface BuiltInPromptRenderContract {
   name: string
   renderParams: Record<string, any>
@@ -203,18 +183,122 @@ export interface BuiltInPromptSessionContract {
   name: string
   turns: Array<PromptMessageContract>
   renderParams: Record<string, any>
-  maxTokenSize: number
 }
 
 export interface BuiltInPromptSpec {
   name: string
   action?: string
-  model: string
-  optionalModels?: Array<string>
   config?: any
   params?: Record<string, PromptParamSpec>
   builtins?: Array<PromptBuiltin>
   messages: Array<PromptSpecMessage>
+}
+
+export interface BuiltInRouteOptions {
+  routeId: string
+  standardDefaultTargetId?: string
+  premiumDefaultTargetId?: string
+  choices: Array<BuiltInManagedTarget>
+}
+
+export interface ByokCapabilityInput {
+  input: Array<string>
+  output: Array<string>
+  features: Array<string>
+  attachmentKinds: Array<string>
+  attachmentSources: Array<string>
+}
+
+export interface ByokCatalogModelOutput {
+  modelId: string
+  displayName: string
+  recommended: boolean
+  capabilities: Array<ByokCapabilityInput>
+}
+
+export interface ByokCatalogOutput {
+  version: string
+  providers: Array<ByokCatalogProviderOutput>
+}
+
+export interface ByokCatalogProviderOutput {
+  provider: string
+  models: Array<ByokCatalogModelOutput>
+}
+
+export interface ByokEndpointInput {
+  kind: string
+  url?: string
+}
+
+export interface ByokLocalLeaseOutput {
+  leaseId: string
+  expiresAtMs: number
+}
+
+export interface ByokModelDeclarationInput {
+  modelId: string
+  enabled: boolean
+  capabilities: Array<ByokCapabilityInput>
+}
+
+export interface ByokModelProbeCheckOutput {
+  operation: string
+  status: ByokProbeStatusOutput
+}
+
+export interface ByokModelProbeOutput {
+  modelId: string
+  checks: Array<ByokModelProbeCheckOutput>
+}
+
+export interface ByokProbeCheckInput {
+  modelId: string
+  operation: string
+}
+
+export interface ByokProbeResultOutput {
+  definitionFingerprint: string
+  stale: boolean
+  connection: ByokProbeStatusOutput
+  models: Array<ByokModelProbeOutput>
+}
+
+export interface ByokProbeStatusOutput {
+  kind: string
+  testedAtMs?: number
+  errorKind?: string
+}
+
+export interface ByokProfileDefinitionInput {
+  version: number
+  endpoint: ByokEndpointInput
+  models: Array<ByokModelDeclarationInput>
+}
+
+export interface ByokProfileOrderInput {
+  profileId: string
+  expectedRevision: number
+}
+
+export interface ByokProfileOutput {
+  profileId: string
+  workspaceId: string
+  provider: string
+  name: string
+  description?: string
+  definition: ByokProfileDefinitionInput
+  enabled: boolean
+  sortOrder: number
+  revision: number
+  validation?: ByokValidationOutput
+}
+
+export interface ByokValidationOutput {
+  definitionFingerprint: string
+  credentialGeneration: number
+  connection: ByokProbeStatusOutput
+  models: Array<ByokModelProbeOutput>
 }
 
 export interface CanonicalChatRequestContract {
@@ -315,7 +399,73 @@ export interface CoordinationLeaseGrant {
   fencingToken: bigint | number
 }
 
+export interface CopilotAccessProjection {
+  routeAllowed: boolean
+  managedTier: CopilotManagedTier
+  serverByok: boolean
+  localByok: boolean
+}
+
+export declare function copilotActionRecipe(actionId: string, actionVersion?: string | undefined | null): string
+
+export interface CopilotExecuteInput {
+  slot: string
+  builtInRouteId?: string
+  workspaceId?: string
+  userId?: string
+  localLeaseId?: string
+  access: CopilotAccessProjection
+  managedTargetId?: string
+  targetOverride?: CopilotTargetOverrideInput
+  request: unknown
+}
+
+export type CopilotManagedTier =  'Standard'|
+'Premium';
+
+export interface CopilotRouteCheckInput {
+  slot: string
+  builtInRouteId?: string
+  workspaceId?: string
+  userId?: string
+  localLeaseId?: string
+  access: CopilotAccessProjection
+  managedTargetId?: string
+  targetOverride?: CopilotTargetOverrideInput
+}
+
+export interface CopilotTargetOverrideInput {
+  profileId: string
+  modelId: string
+}
+
 export declare function createAuthSessionRefreshToken(): AuthSessionRefreshToken
+
+export interface CreateByokLocalLeaseInput {
+  workspaceId: string
+  userId: string
+  providers: Array<CreateByokLocalLeaseProviderInput>
+}
+
+export interface CreateByokLocalLeaseProviderInput {
+  provider: string
+  name: string
+  description?: string
+  credential: string
+  definition: ByokProfileDefinitionInput
+  enabled: boolean
+}
+
+export interface CreateByokProfileInput {
+  workspaceId: string
+  provider: string
+  name: string
+  description?: string
+  credential: string
+  definition: ByokProfileDefinitionInput
+  enabled: boolean
+  actorUserId: string
+}
 
 /**
  * Converts markdown content to AFFiNE-compatible y-octo document binary.
@@ -409,30 +559,10 @@ export declare function llmBuildRerankRequest(request: LlmRerankRequestContract)
 
 export declare function llmCanonicalJsonSchemaHash(schema: any): string
 
-export declare function llmCollectPromptMetadata(request: PromptMetadataContract): PromptMetadataResult
-
-export declare function llmCompileExecutionPlan(value: any): any
-
 export interface LlmCoreMessage {
   role: string
   content: Array<any>
 }
-
-export declare function llmCountPromptTokens(request: PromptTokenCountContract): PromptTokenCountResult
-
-export declare function llmDispatchPrepared(routesJson: string): Promise<string>
-
-export declare function llmDispatchPreparedStream(routesJson: string, callback: ((err: Error | null, arg: string) => void)): LlmStreamHandle
-
-export declare function llmDispatchToolLoopStream(protocol: string, backendConfigJson: string, requestJson: string, maxSteps: number, callback: ((err: Error | null, arg: string) => void), toolCallback: ((err: Error | null, arg: string) => Promise<string>)): LlmStreamHandle
-
-export declare function llmDispatchToolLoopStreamPrepared(routesJson: string, maxSteps: number, callback: ((err: Error | null, arg: string) => void), toolCallback: ((err: Error | null, arg: string) => Promise<string>)): LlmStreamHandle
-
-export declare function llmDispatchToolLoopStreamRouted(routesJson: string, requestJson: string, maxSteps: number, callback: ((err: Error | null, arg: string) => void), toolCallback: ((err: Error | null, arg: string) => Promise<string>)): LlmStreamHandle
-
-export declare function llmEmbeddingDispatch(protocol: string, backendConfigJson: string, requestJson: string): Promise<string>
-
-export declare function llmEmbeddingDispatchPrepared(routesJson: string): Promise<string>
 
 export interface LlmEmbeddingRequestContract {
   model: string
@@ -443,9 +573,11 @@ export interface LlmEmbeddingRequestContract {
 
 export declare function llmGetBuiltInPromptSpec(name: string): BuiltInPromptSpec | null
 
-export declare function llmGetContractSchema(name: string): any
+export declare function llmGetBuiltInRouteOptions(name: string): BuiltInRouteOptions | null
 
-export declare function llmImageDispatchPrepared(routesJson: string): Promise<string>
+export declare function llmGetByokCatalog(): ByokCatalogOutput
+
+export declare function llmGetContractSchema(name: string): any
 
 export interface LlmImageInputContract {
   kind: 'url' | 'data' | 'bytes'
@@ -488,7 +620,6 @@ export interface LlmImageProviderOptionsContract {
 
 export interface LlmImageRequestBuildContract {
   model: string
-  protocol: 'openai_chat' | 'openai_responses' | 'openai_images' | 'anthropic' | 'gemini' | 'fal_image'
   messages: Array<PromptMessageContract>
   options?: any
 }
@@ -511,17 +642,9 @@ export declare function llmMatchModelCapabilities(payload: CapabilityMatchReques
 
 export declare function llmMatchModelRegistry(request: ModelRegistryMatchRequest): ModelRegistryMatchResponse
 
-export declare function llmNormalizePreparedRoutes(value: any): any
-
-export declare function llmPlanAttachmentReference(protocol: string, backendConfigJson: string, sourceJson: string): string
-
 export declare function llmRenderBuiltInPrompt(request: BuiltInPromptRenderContract): PromptRenderResult
 
 export declare function llmRenderBuiltInSessionPrompt(request: BuiltInPromptSessionContract): PromptSessionResult
-
-export declare function llmRenderPrompt(request: PromptRenderContract): PromptRenderResult
-
-export declare function llmRenderSessionPrompt(request: PromptSessionContract): PromptSessionResult
 
 export interface LlmRequestContract {
   model: string
@@ -537,10 +660,6 @@ export interface LlmRequestContract {
   middleware?: any
 }
 
-export declare function llmRerankDispatch(protocol: string, backendConfigJson: string, requestJson: string): Promise<string>
-
-export declare function llmRerankDispatchPrepared(routesJson: string): Promise<string>
-
 export interface LlmRerankRequestContract {
   model: string
   query: string
@@ -549,14 +668,6 @@ export interface LlmRerankRequestContract {
 }
 
 export declare function llmResolveModelRegistryVariant(request: ModelRegistryResolveRequest): ModelRegistryResolveResponse
-
-export declare function llmResolveRequestedModelMatch(payload: RequestedModelMatchRequest): RequestedModelMatchResponse
-
-export declare function llmResolveRequestIntent(protocol: string, backendConfigJson: string, intentJson: string): string
-
-export declare function llmStructuredDispatch(protocol: string, backendConfigJson: string, requestJson: string): Promise<string>
-
-export declare function llmStructuredDispatchPrepared(routesJson: string): Promise<string>
 
 export interface LlmStructuredRequestContract {
   model: string
@@ -695,6 +806,22 @@ export interface PortalResponse {
   error?: LicenseError
 }
 
+export interface ProbeByokDraftInput {
+  workspaceId: string
+  provider: string
+  credential?: string
+  profileId?: string
+  expectedRevision?: number
+  definition: ByokProfileDefinitionInput
+  checks: Array<ByokProbeCheckInput>
+}
+
+export interface ProbeByokProfileInput {
+  workspaceId: string
+  profileId: string
+  checks: Array<ByokProbeCheckInput>
+}
+
 export declare function processImage(input: Buffer, maxEdge: number, keepExif: boolean): Promise<Buffer>
 
 export type PromptBuiltin =  'Date'|
@@ -705,10 +832,6 @@ export type PromptBuiltin =  'Date'|
 'HasSelected'|
 'HasCurrentDoc';
 
-export interface PromptCountMessage {
-  content: string
-}
-
 export interface PromptMessageContract {
   role: 'system' | 'assistant' | 'user'
   content: string
@@ -717,44 +840,14 @@ export interface PromptMessageContract {
   responseFormat?: PromptStructuredResponseContract
 }
 
-export interface PromptMetadataContract {
-  messages: Array<PromptMessageContract>
-}
-
-export interface PromptMetadataResult {
-  paramKeys: Array<string>
-  templateParams: Record<string, any>
-}
-
 export interface PromptParamSpec {
   default?: string
   enumValues?: Array<string>
 }
 
-export interface PromptRenderContract {
-  messages: Array<PromptMessageContract>
-  templateParams: Record<string, any>
-  renderParams: Record<string, any>
-}
-
 export interface PromptRenderResult {
   messages: Array<PromptMessageContract>
   warnings: Array<string>
-}
-
-export interface PromptSessionContract {
-  prompt: PromptSessionPrompt
-  turns: Array<PromptMessageContract>
-  renderParams: Record<string, any>
-  maxTokenSize: number
-}
-
-export interface PromptSessionPrompt {
-  action?: string
-  model?: string
-  promptTokens: number
-  templateParams: Record<string, any>
-  messages: Array<PromptMessageContract>
 }
 
 export interface PromptSessionResult {
@@ -773,15 +866,6 @@ export interface PromptStructuredResponseContract {
   responseSchemaJson: Record<string, unknown>
   schemaHash: string
   strict?: boolean
-}
-
-export interface PromptTokenCountContract {
-  model?: string
-  messages: Array<PromptCountMessage>
-}
-
-export interface PromptTokenCountResult {
-  tokens: number
 }
 
 export interface ProviderDriverSpec {
@@ -838,16 +922,22 @@ export interface RemoteMimeTypeRequest {
   timeoutMs?: number
 }
 
-export interface RequestedModelMatchRequest {
-  providerIds: Array<string>
-  optionalModels: Array<string>
-  requestedModelId?: string
-  defaultModel?: string
+export interface ReorderByokProfilesInput {
+  workspaceId: string
+  profiles: Array<ByokProfileOrderInput>
+  actorUserId: string
 }
 
-export interface RequestedModelMatchResponse {
-  selectedModel?: string
-  matchedOptionalModel: boolean
+export interface ReplaceByokProfileInput {
+  workspaceId: string
+  profileId: string
+  expectedRevision: number
+  name: string
+  description?: string
+  definition: ByokProfileDefinitionInput
+  credential?: string
+  enabled: boolean
+  actorUserId: string
 }
 
 export interface RerankCandidate {
@@ -896,7 +986,13 @@ export interface ResolveEntitlementInput {
 
 export declare function resolveEntitlementV1(input: ResolveEntitlementInput): ResolvedEntitlement
 
-export declare function runNativeActionRecipePreparedStream(input: ActionRuntimeInput, callback: ((err: Error | null, arg: string) => void)): LlmStreamHandle
+export interface RotateByokCredentialInput {
+  workspaceId: string
+  profileId: string
+  expectedRevision: number
+  credential: string
+  actorUserId: string
+}
 
 export interface RuntimeBlobCleanupExecuteResult {
   scannedCandidates: number
@@ -941,12 +1037,6 @@ export interface RuntimeBlobMetadataBackfillResult {
   failed: number
   nextCursor?: string
   workspaceIds: Array<string>
-}
-
-export interface RuntimeByokLocalLeaseRecord {
-  leaseId: string
-  payload: any
-  expiresAtMs: number
 }
 
 export interface RuntimeDocBlobRefsResult {

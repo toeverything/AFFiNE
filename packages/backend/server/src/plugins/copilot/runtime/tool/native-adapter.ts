@@ -7,9 +7,7 @@ import {
   CitationFootnoteFormatter,
   TextStreamParser,
 } from '../../providers/utils';
-import type { CopilotToolSet } from '../../tools';
 import { projectRuntimeEventToStreamObject } from '../contracts/runtime-event-contract';
-import { createToolLoopBridge, type ToolLoopBackend } from './bridge';
 import {
   type EnrichedToolCallEvent,
   type EnrichedToolResultEvent,
@@ -424,15 +422,4 @@ export class NativeProviderAdapter {
       }
     }
   }
-}
-
-export function createNativeToolLoopAdapter(
-  backend: ToolLoopBackend,
-  tools: CopilotToolSet,
-  options: NativeProviderAdapterOptions = {}
-) {
-  return new NativeProviderAdapter(
-    createToolLoopBridge(backend, tools, options.maxSteps),
-    options
-  );
 }

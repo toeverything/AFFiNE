@@ -3,12 +3,75 @@ import {
   Logger,
   type OnApplicationBootstrap,
   type OnApplicationShutdown,
+  Optional,
 } from '@nestjs/common';
 
+import { Config, OnEvent } from '../../base';
 import { wrapCallMetric } from '../../base/metrics';
-import { BackendRuntime, type BackendRuntimeHealth } from '../../native';
+import {
+  BackendRuntime,
+  type BackendRuntimeHealth,
+  type ByokLocalLeaseOutput,
+  type ByokProbeResultOutput,
+  type ByokProfileOutput,
+  type CopilotExecuteInput,
+  type CopilotRouteCheckInput,
+  type CreateByokLocalLeaseInput,
+  type CreateByokProfileInput,
+  type ProbeByokDraftInput,
+  type ProbeByokProfileInput,
+  type ReorderByokProfilesInput,
+  type ReplaceByokProfileInput,
+  type RotateByokCredentialInput,
+} from '../../native';
 
 type RuntimeInstance = InstanceType<typeof BackendRuntime>;
+
+class RuntimeEventStream<T> implements AsyncIterableIterator<T> {
+  private readonly values: T[] = [];
+  private readonly readers: Array<(result: IteratorResult<T>) => void> = [];
+  private ended = false;
+  private abort?: () => void;
+
+  attach(abort: () => void) {
+    if (this.ended) {
+      abort();
+      return;
+    }
+    this.abort = abort;
+  }
+
+  push(value?: T) {
+    if (this.ended) return;
+    if (value === undefined) {
+      this.ended = true;
+      for (const reader of this.readers.splice(0)) {
+        reader({ value: undefined, done: true });
+      }
+      return;
+    }
+    const reader = this.readers.shift();
+    if (reader) reader({ value, done: false });
+    else this.values.push(value);
+  }
+
+  [Symbol.asyncIterator]() {
+    return this;
+  }
+
+  async next(): Promise<IteratorResult<T>> {
+    const value = this.values.shift();
+    if (value !== undefined) return { value, done: false };
+    if (this.ended) return { value: undefined, done: true };
+    return await new Promise(resolve => this.readers.push(resolve));
+  }
+
+  async return(): Promise<IteratorResult<T>> {
+    this.abort?.();
+    this.push();
+    return { value: undefined, done: true };
+  }
+}
 
 export type RuntimeQuotaTargetDomainInput = {
   domain: string;
@@ -196,8 +259,12 @@ export class BackendRuntimeProvider
   implements OnApplicationBootstrap, OnApplicationShutdown
 {
   private readonly logger = new Logger(BackendRuntimeProvider.name);
-  private readonly runtime: RuntimeInstance = new BackendRuntime();
+  private readonly runtime: RuntimeInstance;
   private migrationsStarted = false;
+
+  constructor(@Optional() private readonly config?: Config) {
+    this.runtime = new BackendRuntime(this.config?.crypto.privateKey);
+  }
 
   async onApplicationBootstrap() {
     await this.start();
@@ -217,6 +284,14 @@ export class BackendRuntimeProvider
   async stop() {
     await this.runtime.stop();
     this.logger.log('backend runtime stopped');
+  }
+
+  @OnEvent('config.changed')
+  async onConfigChanged({ updates }: Events['config.changed']) {
+    if (!updates.copilot && !updates.crypto && !updates.db) {
+      return;
+    }
+    await this.runtime.reloadConfig(this.config?.crypto.privateKey);
   }
 
   async health(): Promise<BackendRuntimeHealth> {
@@ -296,6 +371,148 @@ export class BackendRuntimeProvider
     return await this.measured('cleanupExpiredRollingQuota', rt =>
       this.quotaRuntime(rt).cleanupExpiredRollingQuota(limit)
     );
+  }
+
+  async listByokProfiles(workspaceId: string): Promise<ByokProfileOutput[]> {
+    return await this.measured('listByokProfiles', runtime =>
+      runtime.listByokProfiles(workspaceId)
+    );
+  }
+
+  async createByokProfile(
+    input: CreateByokProfileInput
+  ): Promise<ByokProfileOutput> {
+    return await this.measured('createByokProfile', runtime =>
+      runtime.createByokProfile(input)
+    );
+  }
+
+  async replaceByokProfile(
+    input: ReplaceByokProfileInput
+  ): Promise<ByokProfileOutput> {
+    return await this.measured('replaceByokProfile', runtime =>
+      runtime.replaceByokProfile(input)
+    );
+  }
+
+  async rotateByokCredential(
+    input: RotateByokCredentialInput
+  ): Promise<ByokProfileOutput> {
+    return await this.measured('rotateByokCredential', runtime =>
+      runtime.rotateByokCredential(input)
+    );
+  }
+
+  async probeByokProfile(
+    input: ProbeByokProfileInput
+  ): Promise<ByokProbeResultOutput> {
+    return await this.measured('probeByokProfile', runtime =>
+      runtime.probeByokProfile(input)
+    );
+  }
+
+  async probeByokDraft(
+    input: ProbeByokDraftInput
+  ): Promise<ByokProbeResultOutput> {
+    return await this.measured('probeByokDraft', runtime =>
+      runtime.probeByokDraft(input)
+    );
+  }
+
+  async deleteByokProfile(workspaceId: string, profileId: string) {
+    return await this.measured('deleteByokProfile', runtime =>
+      runtime.deleteByokProfile(workspaceId, profileId)
+    );
+  }
+
+  async reorderByokProfiles(
+    input: ReorderByokProfilesInput
+  ): Promise<ByokProfileOutput[]> {
+    return await this.measured('reorderByokProfiles', runtime =>
+      runtime.reorderByokProfiles(input)
+    );
+  }
+
+  async createByokLocalLease(
+    input: CreateByokLocalLeaseInput
+  ): Promise<ByokLocalLeaseOutput> {
+    return await this.measured('createByokLocalLease', runtime =>
+      runtime.createByokLocalLease(input)
+    );
+  }
+
+  async executeCopilot(input: CopilotExecuteInput) {
+    const output = await this.measured('executeCopilot', runtime =>
+      runtime.executeCopilot(input)
+    );
+    return JSON.parse(output) as {
+      events: Array<{
+        type: 'route_selected' | 'route_failed' | 'usage';
+        route: {
+          profileId: string;
+          source: 'server' | 'local' | 'affine_cloud';
+          provider: string;
+          model: string;
+        };
+        errorKind?: string;
+        usage?: unknown;
+      }>;
+      result: unknown;
+    };
+  }
+
+  async assertCopilotRoute(input: CopilotRouteCheckInput) {
+    await this.measured('assertCopilotRoute', runtime =>
+      runtime.assertCopilotRoute(input)
+    );
+  }
+
+  streamCopilot<TEvent>(
+    input: CopilotExecuteInput,
+    toolCallback: (request: string) => Promise<string>,
+    options: { maxSteps: number; signal?: AbortSignal }
+  ): AsyncIterableIterator<TEvent> {
+    const stream = new RuntimeEventStream<TEvent>();
+    const endMarker = '__AFFINE_COPILOT_STREAM_END__';
+    void this.runtime
+      .executeCopilotStream(
+        input,
+        options.maxSteps,
+        (error, value) => {
+          if (error) {
+            stream.push({
+              type: 'error',
+              errorKind: 'callback',
+              message: error.message,
+            } as TEvent);
+          } else if (value === endMarker) {
+            stream.push();
+          } else {
+            stream.push(JSON.parse(value) as TEvent);
+          }
+        },
+        async (error, request) => {
+          if (error) throw error;
+          return await toolCallback(request);
+        }
+      )
+      .then(handle => {
+        stream.attach(() => handle.abort());
+        if (options.signal?.aborted) handle.abort();
+        else
+          options.signal?.addEventListener('abort', () => handle.abort(), {
+            once: true,
+          });
+      })
+      .catch(error => {
+        stream.push({
+          type: 'error',
+          errorKind: 'setup',
+          message: error instanceof Error ? error.message : String(error),
+        } as TEvent);
+        stream.push();
+      });
+    return stream;
   }
 
   async isInviteAbuseUserQuarantinedOrBanned(userId: string) {

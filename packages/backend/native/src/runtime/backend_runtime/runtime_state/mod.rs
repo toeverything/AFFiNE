@@ -1,18 +1,14 @@
 use super::{BackendRuntime, RuntimeError, RuntimeResult, napi_error};
 pub(super) use super::{
   constants::{
-    BYOK_LOCAL_LEASE_ACTIVE_PURPOSE, BYOK_LOCAL_LEASE_PURPOSE, MAGIC_LINK_OTP_PURPOSE, MAX_MAGIC_LINK_OTP_ATTEMPTS,
-    WORKSPACE_INVITE_LINK_ID_PURPOSE, WORKSPACE_INVITE_LINK_WORKSPACE_PURPOSE,
+    MAGIC_LINK_OTP_PURPOSE, MAX_MAGIC_LINK_OTP_ATTEMPTS, WORKSPACE_INVITE_LINK_ID_PURPOSE,
+    WORKSPACE_INVITE_LINK_WORKSPACE_PURPOSE,
   },
   token_hash,
-  types::{
-    RuntimeByokLocalLeaseRecord, RuntimeMagicLinkOtpConsumeResult, RuntimeVerificationTokenRecord,
-    RuntimeWorkspaceInviteLinkRecord,
-  },
+  types::{RuntimeMagicLinkOtpConsumeResult, RuntimeVerificationTokenRecord, RuntimeWorkspaceInviteLinkRecord},
 };
 
 mod auth_challenge;
-mod byok_local_lease;
 mod dto;
 mod invite_link;
 mod magic_link_otp;
@@ -193,28 +189,6 @@ impl BackendRuntime {
   pub async fn revoke_workspace_invite_link(&self, workspace_id: String) -> napi::Result<bool> {
     RuntimeStateStore::new(self.pool().await?)
       .revoke_workspace_invite_link(workspace_id)
-      .await
-      .map_err(napi::Error::from)
-  }
-
-  #[napi]
-  pub async fn create_byok_local_lease(
-    &self,
-    active_key: String,
-    lease_id: String,
-    payload: serde_json::Value,
-    ttl_ms: i64,
-  ) -> napi::Result<RuntimeByokLocalLeaseRecord> {
-    RuntimeStateStore::new(self.pool().await?)
-      .create_byok_local_lease(active_key, lease_id, payload, ttl_ms)
-      .await
-      .map_err(napi::Error::from)
-  }
-
-  #[napi]
-  pub async fn get_byok_local_lease(&self, lease_id: String) -> napi::Result<Option<RuntimeByokLocalLeaseRecord>> {
-    RuntimeStateStore::new(self.pool().await?)
-      .get_byok_local_lease(lease_id)
       .await
       .map_err(napi::Error::from)
   }

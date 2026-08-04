@@ -20,7 +20,9 @@ chrono = { workspace = true }
 crc32fast = "1.5.0"
 doc_extractor = { workspace = true }
 file-format = { workspace = true }
+gcp_auth = "0.12.7"
 hex = { workspace = true }
+hkdf = { workspace = true }
 hmac = "0.13"
 homedir = { workspace = true }
 image = { workspace = true }
@@ -62,7 +64,12 @@ sqlx = { workspace = true, default-features = false, features = [
 ] }
 thiserror.workspace = true
 tiktoken-rs = { workspace = true }
-tokio = { workspace = true, features = ["rt-multi-thread", "sync", "time"] }
+tokio = { workspace = true, features = [
+  "net",
+  "rt-multi-thread",
+  "sync",
+  "time",
+] }
 unicode-normalization = "0.1"
 unicode_skeleton = "0.1.1"
 url = { workspace = true }
@@ -70,6 +77,7 @@ uuid = { workspace = true, features = ["v4"] }
 v_htmlescape = { workspace = true }
 webpki-roots = "1.0"
 y-octo = { workspace = true, features = ["large_refs"] }
+zeroize = { workspace = true }
 
 [target.'cfg(not(target_os = "linux"))'.dependencies]
 mimalloc = { workspace = true }

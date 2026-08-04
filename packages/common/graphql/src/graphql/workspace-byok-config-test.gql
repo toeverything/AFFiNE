@@ -1,7 +1,23 @@
-mutation testWorkspaceByokConfig($input: TestWorkspaceByokConfigInput!) {
-  testWorkspaceByokConfig(input: $input) {
-    ok
-    status
-    message
+mutation probeWorkspaceByokProfile($input: ProbeWorkspaceByokProfileInput!) {
+  probeWorkspaceByokProfile(input: $input) {
+    definitionFingerprint
+    stale
+    connection { kind testedAt errorKind }
+    models {
+      modelId
+      checks { operation status { kind testedAt errorKind } }
+    }
+  }
+}
+
+mutation probeWorkspaceByokDraft($input: ProbeWorkspaceByokDraftInput!) {
+  probeWorkspaceByokDraft(input: $input) {
+    definitionFingerprint
+    stale
+    connection { kind testedAt errorKind }
+    models {
+      modelId
+      checks { operation status { kind testedAt errorKind } }
+    }
   }
 }

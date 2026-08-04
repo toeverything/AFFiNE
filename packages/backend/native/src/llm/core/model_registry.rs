@@ -21,7 +21,7 @@ pub fn llm_resolve_model_registry_variant(
     request.backend_kind.as_deref(),
     request.model_id.as_str(),
   )
-  .map_err(crate::llm::host::invalid_arg)?
+  .map_err(crate::llm::invalid_arg)?
   {
     Some((variant, matched_by)) => ModelRegistryResolveResponse {
       variant: Some(to_contract_variant(variant)?),
@@ -44,7 +44,7 @@ pub fn llm_match_model_registry(request: ModelRegistryMatchRequest) -> Result<Mo
     .map_err(crate::llm::map_json_error)?;
   let response = ModelRegistryMatchResponse {
     variant: llm_adapter::core::select_model_registry_variant(&variants, request.backend_kind.as_str(), &cond)
-      .map_err(crate::llm::host::invalid_arg)?
+      .map_err(crate::llm::invalid_arg)?
       .map(to_contract_variant)
       .transpose()?,
   };

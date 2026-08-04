@@ -1,9 +1,4 @@
-import { CopilotAccessPolicy } from './access';
-import {
-  ByokEntitlementPolicy,
-  ByokService,
-  WorkspaceByokResolver,
-} from './byok';
+import { ByokEntitlementPolicy, WorkspaceByokResolver } from './byok';
 import { HistoryAttachmentUrlProjector } from './compat/history-attachment-url-projector';
 import { CompatHistoryProjector } from './compat/history-projector';
 import { HistoryPromptPreloadProjector } from './compat/history-prompt-preload-projector';
@@ -25,30 +20,18 @@ import {
 } from './embedding';
 import { WorkspaceMcpProvider } from './mcp/provider';
 import { PromptService } from './prompt';
-import {
-  CopilotProviderFactory,
-  CopilotProviderLifecycleService,
-  CopilotProviderRegistryService,
-  CopilotProviders,
-} from './providers';
 import { CopilotResolver, UserCopilotResolver } from './resolver';
 import { ActionRuntimeBridge } from './runtime/action-runtime-bridge';
 import { CapabilityRuntime } from './runtime/capability-runtime';
-import { CopilotExecutionMetrics } from './runtime/execution-metrics';
-import { ExecutionPlanBuilder } from './runtime/execution-plan';
+import { CopilotRuntimeEventConsumer } from './runtime/copilot-runtime-event-consumer';
 import { ActionStreamHost } from './runtime/hosts/action-stream-host';
 import { AttachmentAdmissionHost } from './runtime/hosts/attachment-admission';
 import { AttachmentMaterializer } from './runtime/hosts/attachment-materializer';
-import { CapabilityPolicyHost } from './runtime/hosts/capability-policy-host';
 import { ConversationHost } from './runtime/hosts/conversation-host';
 import { ImageResultHost } from './runtime/hosts/image-result-host';
 import { ResponsePostprocessor } from './runtime/hosts/response-postprocessor';
-import { ToolExecutorHost } from './runtime/hosts/tool-executor-host';
 import { TurnPersistence } from './runtime/hosts/turn-persistence';
-import { ModelSelectionPolicy } from './runtime/model-selection-policy';
-import { NativeExecutionEngine } from './runtime/native-execution-engine';
 import { PromptRuntime } from './runtime/prompt-runtime';
-import { TaskPolicy } from './runtime/task-policy';
 import { ToolRuntime } from './runtime/tool-runtime';
 import { TurnOrchestrator } from './runtime/turn-orchestrator';
 import { ChatSessionService } from './session';
@@ -65,21 +48,14 @@ import {
   CopilotWorkspaceService,
 } from './workspace';
 
-export const COPILOT_PROVIDER_PROVIDERS = [
-  ...CopilotProviders,
-  CopilotProviderRegistryService,
-  CopilotProviderFactory,
-  CopilotProviderLifecycleService,
-];
+export const COPILOT_PROVIDER_PROVIDERS: [] = [];
 
 export const COPILOT_RUNTIME_PROVIDERS = [
   ByokEntitlementPolicy,
-  ByokService,
   ChatSessionService,
   ConversationStore,
   ConversationInboxService,
   ConversationPolicy,
-  CopilotAccessPolicy,
   HistoryAttachmentUrlProjector,
   CompatHistoryProjector,
   HistoryPromptPreloadProjector,
@@ -88,18 +64,12 @@ export const COPILOT_RUNTIME_PROVIDERS = [
   CopilotContextService,
   CopilotEmbeddingClientService,
   PromptService,
-  ModelSelectionPolicy,
   ActionRuntimeBridge,
-  CopilotExecutionMetrics,
-  ExecutionPlanBuilder,
+  CopilotRuntimeEventConsumer,
   PromptRuntime,
-  CapabilityPolicyHost,
   ConversationHost,
   CapabilityRuntime,
-  NativeExecutionEngine,
-  TaskPolicy,
   ToolRuntime,
-  ToolExecutorHost,
   AttachmentMaterializer,
   AttachmentAdmissionHost,
   ActionStreamHost,

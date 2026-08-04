@@ -8,9 +8,9 @@ import { z } from 'zod';
 import { CANARY_CLIENT_VERSION_MAX_AGE_DAYS } from '../../../base';
 import { Flavor } from '../../../env';
 import { PublicDocMode } from '../../../models';
-import { CopilotEmbeddingRealtimeProvider } from '../../../plugins/copilot/context';
-import type { CopilotTranscriptionReader } from '../../../plugins/copilot/transcript';
-import { CopilotTranscriptRealtimeProvider } from '../../../plugins/copilot/transcript';
+import { CopilotEmbeddingRealtimeProvider } from '../../../plugins/copilot/context/realtime';
+import type { CopilotTranscriptionReader } from '../../../plugins/copilot/transcript/reader';
+import { CopilotTranscriptRealtimeProvider } from '../../../plugins/copilot/transcript/realtime';
 import type { CurrentUser } from '../../auth';
 import { CommentRealtimeProvider } from '../../comment/realtime';
 import { NotificationRealtimeProvider } from '../../notification/realtime';
@@ -440,12 +440,14 @@ test('front and sync realtime gateway required handlers are registered by lightw
     {} as never,
     {} as never,
     registry,
+    {} as never,
     {} as never
   ).onModuleInit();
   new CopilotTranscriptRealtimeProvider(
     {} as never,
     {} as never,
-    registry
+    registry,
+    {} as never
   ).onModuleInit();
   new QuotaStateRealtimeProvider(
     {} as never,
@@ -1000,12 +1002,14 @@ test('copilot embedding realtime provider uses lightweight model reads', async t
   const publisher = {
     publish: (...args: unknown[]) => published.push(args),
   } as unknown as RealtimePublisher;
+  const config = { copilot: { enabled: true } };
 
   const provider = new CopilotEmbeddingRealtimeProvider(
     ac,
     models as never,
     registry,
-    publisher
+    publisher,
+    config as never
   );
   provider.onModuleInit();
 
@@ -1017,6 +1021,13 @@ test('copilot embedding realtime provider uses lightweight model reads', async t
       total: 5,
       embedded: 3,
     }
+  );
+  config.copilot.enabled = false;
+  await t.throwsAsync(
+    registry
+      .getRequest('workspace.embedding.progress.get')
+      .handle(user, { workspaceId: 'space' }),
+    { message: 'Copilot is disabled.' }
   );
   t.is(
     registry
@@ -1068,11 +1079,9 @@ test('copilot transcript realtime provider registers task live query handlers', 
     },
   } as unknown as CopilotTranscriptionReader;
 
-  new CopilotTranscriptRealtimeProvider(
-    ac,
-    transcript,
-    registry
-  ).onModuleInit();
+  new CopilotTranscriptRealtimeProvider(ac, transcript, registry, {
+    copilot: { enabled: true },
+  } as never).onModuleInit();
 
   t.deepEqual(
     await registry.getRequest('copilot.transcript.task.get').handle(user, {

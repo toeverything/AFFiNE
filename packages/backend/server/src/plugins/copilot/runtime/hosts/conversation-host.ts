@@ -5,8 +5,8 @@ import {
   CopilotSessionNotFound,
   Mutex,
 } from '../../../../base';
-import { CopilotAccessPolicy } from '../../access';
 import { CompatSubmissionStore } from '../../compat/submission-store';
+import { ConversationPolicy } from '../../conversation/policy';
 import {
   canonicalizeTurnTrace,
   type Turn,
@@ -35,7 +35,7 @@ export class ConversationHost {
     private readonly sessions: ChatSessionService,
     private readonly submissions: CompatSubmissionStore,
     private readonly mutex: Mutex,
-    private readonly access: CopilotAccessPolicy
+    private readonly policy: ConversationPolicy
   ) {}
 
   private async loadAcceptedTurn(
@@ -109,31 +109,22 @@ export class ConversationHost {
     session: ChatSession,
     sessionId: string,
     messageId?: string,
-    retry = false,
-    byokLeaseId?: string
+    retry = false
   ): Promise<AppendedSessionMessage> {
-    const resolveChatRouteAccess = () =>
-      this.access.resolveTurnRouteAccess({
-        userId,
-        workspaceId: session.config.workspaceId,
-        byokLeaseId,
-        featureKind: 'chat',
-      });
+    const quotaBackedRoutesAllowed = () => this.policy.hasQuota(userId);
 
     if (!messageId) {
       await this.sessions.revertLatestMessage(sessionId, false);
       session.revertLatestMessage(false);
       if (!session.latestUserTurn) {
-        const routeAccess = await resolveChatRouteAccess();
         return {
           turn: session.latestUserTurn,
-          quotaBackedRoutesAllowed: routeAccess.quotaBackedRoutesAllowed,
+          quotaBackedRoutesAllowed: await quotaBackedRoutesAllowed(),
         };
       }
-      const routeAccess = await resolveChatRouteAccess();
       return {
         turn: session.latestUserTurn,
-        quotaBackedRoutesAllowed: routeAccess.quotaBackedRoutesAllowed,
+        quotaBackedRoutesAllowed: await quotaBackedRoutesAllowed(),
       };
     }
 
@@ -177,7 +168,7 @@ export class ConversationHost {
       };
     }
 
-    const routeAccess = await resolveChatRouteAccess();
+    const quotaAllowed = await quotaBackedRoutesAllowed();
 
     const submission = await this.submissions.get(messageId);
     if (!submission || submission.sessionId !== sessionId) {
@@ -192,7 +183,6 @@ export class ConversationHost {
     const turn = await this.sessions.appendTurn({
       sessionId,
       userId: session.config.userId,
-      prompt: { model: session.model },
       compatSubmissionId: messageId,
       turn: {
         conversationId: sessionId,
@@ -213,7 +203,7 @@ export class ConversationHost {
     session.pushPersistedTurn(turn);
     return {
       turn,
-      quotaBackedRoutesAllowed: routeAccess.quotaBackedRoutesAllowed,
+      quotaBackedRoutesAllowed: quotaAllowed,
     };
   }
 
@@ -222,8 +212,7 @@ export class ConversationHost {
     sessionId: string,
     query: Record<string, string | string[]>
   ): Promise<PreparedConversationTurn> {
-    const { messageId, retry, params, byokLeaseId } =
-      ChatQuerySchema.parse(query);
+    const { messageId, retry, params } = ChatQuerySchema.parse(query);
     const session = await this.sessions.get(sessionId);
     if (!session || session.config.userId !== userId) {
       throw new CopilotSessionNotFound();
@@ -233,8 +222,7 @@ export class ConversationHost {
       session,
       sessionId,
       messageId,
-      retry,
-      byokLeaseId
+      retry
     );
     const currentUserMessage =
       session.stashTurns.findLast(turn => turn.role === 'user') ??
@@ -280,7 +268,6 @@ export class ConversationHost {
     const persisted = await this.sessions.appendTurn({
       sessionId: session.config.sessionId,
       userId: session.config.userId,
-      prompt: { model: session.model },
       turn: assistantTurn,
     });
     session.pushPersistedTurn(persisted);
