@@ -34,6 +34,7 @@ pub use self::core::{
 pub fn llm_get_byok_catalog() -> ByokCatalogOutput {
   byok_catalog()
 }
+pub(crate) use self::core::contracts::LlmImageRequestContract;
 pub(crate) use byok::{ByokProfileDefinition, validate_definition};
 pub use contract_schema::{llm_get_contract_schema, llm_validate_contract};
 pub(crate) use ffi::{

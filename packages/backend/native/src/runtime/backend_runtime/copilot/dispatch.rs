@@ -22,6 +22,7 @@ use zeroize::Zeroizing;
 use super::{COPILOT_REQUEST_TIMEOUT, RuntimeError, RuntimeResult, context};
 use crate::{
   llm::{
+    LlmImageRequestContract,
     byok::{ByokEndpoint, CredentialEnvelopeKey},
     route::{
       AuthorizedProfileRef, AuthorizedTargetRef, CatalogSlot, CredentialRef, RouteOperation, with_request_requirements,
@@ -83,7 +84,14 @@ pub(super) fn request_and_slot(
     }
     RouteOperation::Embedding => ExecutableRequest::Embedding(parse_request(request)?),
     RouteOperation::Rerank => ExecutableRequest::Rerank(parse_request(request)?),
-    RouteOperation::Image => ExecutableRequest::Image(Box::new(parse_request(request)?)),
+    RouteOperation::Image => {
+      let request = parse_request::<LlmImageRequestContract>(request)?;
+      ExecutableRequest::Image(Box::new(
+        request
+          .try_into()
+          .map_err(|error: napi::Error| RuntimeError::invalid_input(error.reason.clone()))?,
+      ))
+    }
   };
   let (needs_tools, attachment_kinds, attachment_sources) = request_requirements(&executable);
   Ok((
@@ -403,5 +411,48 @@ fn serialize_response(value: impl Serialize) -> RuntimeResult<serde_json::Value>
 impl From<BackendError> for RuntimeError {
   fn from(error: BackendError) -> Self {
     RuntimeError::invalid_state(error.to_string())
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use serde_json::json;
+
+  use super::*;
+  use crate::llm::route::slot;
+
+  #[test]
+  fn image_dispatch_accepts_napi_request_contract() {
+    let (_, request) = request_and_slot(
+      slot("action.image.filter.pixel").unwrap(),
+      json!({
+        "model": "gpt-image-1",
+        "prompt": "apply pixel filter",
+        "operation": "edit",
+        "images": [{
+          "kind": "data",
+          "dataBase64": "aW1n",
+          "mediaType": "image/png",
+          "fileName": "in.png"
+        }],
+        "options": {
+          "outputFormat": "webp",
+          "outputCompression": 80
+        },
+        "providerOptions": {
+          "provider": "openai",
+          "options": {
+            "input_fidelity": "high"
+          }
+        }
+      }),
+    )
+    .unwrap();
+
+    let ExecutableRequest::Image(request) = request else {
+      panic!("image slot produced a non-image request");
+    };
+    assert!(request.is_edit());
+    assert_eq!(request.images()[0].media_type(), Some("image/png"));
   }
 }
