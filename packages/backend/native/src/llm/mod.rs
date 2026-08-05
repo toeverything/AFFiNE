@@ -34,7 +34,6 @@ pub use self::core::{
 pub fn llm_get_byok_catalog() -> ByokCatalogOutput {
   byok_catalog()
 }
-pub(crate) use self::core::contracts::LlmImageRequestContract;
 pub(crate) use byok::{ByokProfileDefinition, validate_definition};
 pub use contract_schema::{llm_get_contract_schema, llm_validate_contract};
 pub(crate) use ffi::{
@@ -44,6 +43,8 @@ pub use prompt_catalog::llm_get_built_in_route_options;
 pub use route::{
   CopilotAccessProjection, CopilotExecuteInput, CopilotManagedTier, CopilotRouteCheckInput, CopilotTargetOverrideInput,
 };
+
+pub(crate) use self::core::contracts::LlmImageRequestContract;
 
 pub(crate) fn invalid_arg(message: impl Into<String>) -> napi::Error {
   napi::Error::new(napi::Status::InvalidArg, message.into())
