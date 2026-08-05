@@ -330,7 +330,10 @@ fn default_mail_class_mapping() -> BTreeMap<String, String> {
 }
 
 async fn load_app_config_overrides_from_db(pool: &PgPool) -> RuntimeResult<serde_json::Value> {
-  let rows = match sqlx::query("SELECT id, value FROM app_configs").fetch_all(pool).await {
+  let rows = match sqlx::query("SELECT id, value FROM app_configs ORDER BY id ASC")
+    .fetch_all(pool)
+    .await
+  {
     Ok(rows) => rows,
     Err(sqlx::Error::Database(err)) if err.code().as_deref() == Some("42P01") => {
       return Ok(serde_json::Value::Object(Map::new()));
@@ -360,6 +363,8 @@ where
   S: AsRef<str>,
 {
   let mut root = Map::new();
+  let mut rows = rows.into_iter().collect::<Vec<_>>();
+  rows.sort_by(|(left, _), (right, _)| left.as_ref().cmp(right.as_ref()));
   for (path, value) in rows {
     insert_flat_override(&mut root, path.as_ref(), value);
   }
@@ -510,6 +515,22 @@ mod tests {
     assert!(copilot.byok.allow_custom_endpoint);
     assert_eq!(copilot.providers.profiles.len(), 1);
     assert_eq!(copilot.providers.profiles[0].id, "managed-openai");
+  }
+
+  #[test]
+  fn nested_database_config_overrides_are_order_independent() {
+    let app_config = app_config_from_flat_overrides([
+      ("copilot.byok.enabled", serde_json::json!(false)),
+      (
+        "copilot.byok",
+        serde_json::json!({ "enabled": true, "allowCustomEndpoint": true }),
+      ),
+    ])
+    .unwrap();
+    let byok = app_config.copilot.unwrap().byok;
+
+    assert!(!byok.enabled);
+    assert!(byok.allow_custom_endpoint);
   }
 
   #[test]

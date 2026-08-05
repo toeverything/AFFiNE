@@ -24,7 +24,9 @@ export type TextToTextOptions = {
   runId?: string;
   isRootSession?: boolean;
   reasoning?: boolean;
+  profileId?: string;
   modelId?: string;
+  routeTargetId?: string;
   toolsConfig?: AIToolsConfig;
 };
 
@@ -127,7 +129,9 @@ export function textToText({
   actionVersion,
   runId,
   reasoning,
+  profileId,
   modelId,
+  routeTargetId,
   toolsConfig,
 }: TextToTextOptions) {
   let messageId: string | undefined;
@@ -161,7 +165,9 @@ export function textToText({
             sessionId,
             messageId,
             reasoning,
+            profileId,
             modelId,
+            routeTargetId,
             toolsConfig,
             actionId,
             actionVersion,
@@ -229,7 +235,9 @@ export function textToText({
           sessionId,
           messageId,
           reasoning,
+          profileId,
           modelId,
+          routeTargetId,
           toolsConfig,
           actionId,
           actionVersion,

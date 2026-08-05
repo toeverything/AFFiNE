@@ -136,7 +136,7 @@ export type AIChatComposerState = {
   context: AIChatContextState;
   reasoning: boolean;
   toolsConfig?: AIToolsConfig;
-  modelId?: string;
+  routeTargetId?: string;
 };
 
 export type AIChatNavigationRequest = {

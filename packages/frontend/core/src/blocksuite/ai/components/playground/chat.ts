@@ -1,5 +1,7 @@
-import type { AIToolsConfigService } from '@affine/core/modules/ai-button';
-import type { AIModelService } from '@affine/core/modules/ai-button/services/models';
+import type {
+  AIModelService,
+  AIToolsConfigService,
+} from '@affine/core/modules/ai-button';
 import type {
   ServerService,
   SubscriptionService,
@@ -185,10 +187,10 @@ export class PlaygroundChat extends SignalWatcher(
   accessor aiToolsConfigService!: AIToolsConfigService;
 
   @property({ attribute: false })
-  accessor subscriptionService!: SubscriptionService;
+  accessor aiModelService!: AIModelService;
 
   @property({ attribute: false })
-  accessor aiModelService!: AIModelService;
+  accessor subscriptionService!: SubscriptionService;
 
   @property({ attribute: false })
   accessor onAISubscribe: (() => Promise<void>) | undefined;

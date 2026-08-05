@@ -8,14 +8,13 @@ use std::{
   time::Duration,
 };
 
+pub(in crate::runtime::backend_runtime) use dispatch::{
+  endpoint as byok_endpoint, protocol as executable_protocol, provider as backend_provider,
+};
 use gcp_auth::TokenProvider;
 use sha2::{Digest, Sha256};
 use tokio::sync::OnceCell;
 use zeroize::Zeroizing;
-
-pub(in crate::runtime::backend_runtime) use dispatch::{
-  endpoint as byok_endpoint, protocol as executable_protocol, provider as backend_provider,
-};
 
 use super::{BackendRuntime, RuntimeError, RuntimeResult, to_napi_error};
 use crate::{

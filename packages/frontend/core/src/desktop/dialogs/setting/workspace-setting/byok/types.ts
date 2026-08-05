@@ -1,34 +1,38 @@
 import {
-  type ByokKeyStorage,
-  type ByokKeyTestStatus,
   type ByokProvider,
   type GraphQLQuery,
   type QueryOptions,
   type QueryResponse,
+  type WorkspaceByokSettingsQuery,
 } from '@affine/graphql';
 
-export type ByokStorage = ByokKeyStorage;
+export const ByokStorage = {
+  server: 'server',
+  local: 'local',
+} as const;
+export type ByokStorage = (typeof ByokStorage)[keyof typeof ByokStorage];
 
-export type ByokKey = {
+export type ByokDefinition =
+  WorkspaceByokSettingsQuery['workspace']['byokSettings']['profiles'][number]['definition'];
+
+type ByokKeyBase = {
   id: string;
   provider: ByokProvider;
   name: string;
   description?: string | null;
-  storage: ByokStorage;
   configured: boolean;
   enabled: boolean;
-  endpoint?: string | null;
-  endpointEditable: boolean;
   sortOrder: number;
+  definition: ByokDefinition;
   capabilities: string[];
-  testStatus: ByokKeyTestStatus;
-  disabledReason?: string | null;
-  lastTestedAt?: string | null;
-  lastTestError?: string | null;
-  lastUsedAt?: string | null;
-  lastErrorAt?: string | null;
-  lastError?: string | null;
+  validation?: WorkspaceByokSettingsQuery['workspace']['byokSettings']['profiles'][number]['validation'];
 };
+
+export type ByokKey = ByokKeyBase &
+  (
+    | { storage: typeof ByokStorage.server; revision: number }
+    | { storage: typeof ByokStorage.local; revision?: never }
+  );
 
 export type LocalByokKeyInput = Pick<
   ByokKey,
@@ -36,41 +40,25 @@ export type LocalByokKeyInput = Pick<
   | 'provider'
   | 'name'
   | 'description'
-  | 'endpoint'
   | 'sortOrder'
   | 'enabled'
+  | 'definition'
+> & { credential: string };
+
+export type ByokSettings = Omit<
+  WorkspaceByokSettingsQuery['workspace']['byokSettings'],
+  'profiles'
 > & {
-  apiKey: string;
-};
-
-export type ByokSettings = {
-  workspaceId: string;
-  entitled: boolean;
-  serverEntitled: boolean;
-  localEntitled: boolean;
-  entitlementRequired: string[];
   keys: ByokKey[];
-  allowedProviders: ByokProvider[];
   localStorageSupported: boolean;
-  customEndpointSupported: boolean;
-  privateEndpointSupported: boolean;
-  hasAiPlan: boolean;
-  warnings: Array<{
-    featureKind: string;
-    reason: string;
-    requiredProviders: ByokProvider[];
-  }>;
 };
 
-export type ByokUsagePoint = {
-  date: string;
-  featureKind: string;
-  totalTokens: number;
-};
+export type ByokUsagePoint =
+  WorkspaceByokSettingsQuery['workspace']['byokUsage'][number];
 
 export type ByokTestResult = {
   ok: boolean;
-  status: ByokKey['testStatus'];
+  status: string;
   message?: string | null;
 };
 
@@ -78,15 +66,6 @@ export type GqlFn = <Query extends GraphQLQuery>(
   input: QueryOptions<Query>
 ) => Promise<QueryResponse<Query>>;
 
-export type LocalByokPublicKey = {
-  id: string;
-  provider: ByokProvider;
-  name: string;
-  description?: string | null;
-  endpoint?: string | null;
-  endpointEditable?: boolean;
-  sortOrder?: number | null;
-  enabled?: boolean | null;
+export type LocalByokPublicKey = Omit<LocalByokKeyInput, 'credential'> & {
   configured?: boolean;
-  testStatus?: ByokKey['testStatus'];
 };

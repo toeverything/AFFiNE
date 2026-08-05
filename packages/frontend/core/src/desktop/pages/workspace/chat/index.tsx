@@ -19,9 +19,9 @@ import { useAISpecs } from '@affine/core/components/hooks/affine/use-ai-specs';
 import { useAISubscribe } from '@affine/core/components/hooks/affine/use-ai-subscribe';
 import {
   AIDraftService,
+  AIModelService,
   AIToolsConfigService,
 } from '@affine/core/modules/ai-button';
-import { AIModelService } from '@affine/core/modules/ai-button/services/models';
 import {
   EventSourceService,
   GraphQLService,
@@ -197,9 +197,9 @@ export const Component = () => {
       content.notificationService = notificationService;
       content.aiDraftService = framework.get(AIDraftService);
       content.aiToolsConfigService = framework.get(AIToolsConfigService);
+      content.aiModelService = framework.get(AIModelService);
       content.serverService = framework.get(ServerService);
       content.subscriptionService = framework.get(SubscriptionService);
-      content.aiModelService = framework.get(AIModelService);
       content.onAISubscribe = handleAISubscribe;
       content.onOpenDoc = onOpenDoc;
     },

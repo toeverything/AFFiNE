@@ -18,7 +18,7 @@ export type AIChatSendOptions = {
   control?: BlockSuitePresets.TrackerControl;
   reasoning?: boolean;
   toolsConfig?: unknown;
-  modelId?: string;
+  routeTargetId?: string;
   userInfo?: {
     userId?: string;
     userName?: string;
@@ -45,7 +45,7 @@ export type AIChatAction =
   | { type: 'clearError' }
   | { type: 'setComposerText'; text: string }
   | { type: 'setReasoning'; reasoning: boolean }
-  | { type: 'setModel'; modelId?: string }
+  | { type: 'setRouteTarget'; routeTargetId?: string }
   | { type: 'addAttachment'; attachment: string | Blob | File }
   | { type: 'removeAttachment'; index: number }
   | { type: 'addContextItem'; item: AIChatContextItem }

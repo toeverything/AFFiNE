@@ -398,13 +398,13 @@ export class CapabilityRuntime {
     _filter?: ProviderFilter,
     slot = 'image.generate'
   ): AsyncIterableIterator<NativeImageArtifact> {
-    const { quality, seed } = options;
+    const { quality, seed, modelName, loras } = options;
     const result = (await this.execute(
       slot,
       buildLlmImageRequestFromMessages({
         model: 'route-selected',
         messages: preparePromptMessagesForNativeRequest(messages, true),
-        options: { quality, seed },
+        options: { quality, seed, modelName, loras },
       }),
       cond,
       options

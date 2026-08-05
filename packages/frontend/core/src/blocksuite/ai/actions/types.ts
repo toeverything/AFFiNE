@@ -367,7 +367,6 @@ declare global {
     // TODO(@Peng): should be refactored to get rid of implement details (like messages, action, role, etc.)
     interface AIHistory {
       sessionId: string;
-      tokens: number;
       action: string | null;
       createdAt: string;
       messages: {

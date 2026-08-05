@@ -144,6 +144,8 @@ test('image request builder receives only serializable request options', async t
     runtime.streamImageArtifacts({}, [{ role: 'user', content: 'draw' }], {
       quality: 'high',
       seed: 42,
+      modelName: 'stabilityai/stable-diffusion-xl-base-1.0',
+      loras: [{ path: 'https://example.com/sketch.safetensors', scale: 1 }],
       signal: controller.signal,
       user: 'user-1',
     })
@@ -157,6 +159,13 @@ test('image request builder receives only serializable request options', async t
       quality: 'high',
       outputFormat: 'webp',
       seed: 42,
+    },
+    providerOptions: {
+      provider: 'fal',
+      options: {
+        model_name: 'stabilityai/stable-diffusion-xl-base-1.0',
+        loras: [{ path: 'https://example.com/sketch.safetensors', scale: 1 }],
+      },
     },
   });
 });
