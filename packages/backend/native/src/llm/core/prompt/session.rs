@@ -135,9 +135,25 @@ fn estimated_message_bytes(message: &PromptMessageContract) -> usize {
   let mut size = MESSAGE_FRAMING_BYTES
     .saturating_add(message.role.len())
     .saturating_add(message.content.len());
+  if let Some(attachments) = &message.attachments {
+    size = attachments.iter().fold(size, |size, attachment| {
+      size.saturating_add(
+        serde_json::to_vec(&attachment_metadata(attachment))
+          .map(|bytes| bytes.len())
+          .unwrap_or(usize::MAX),
+      )
+    });
+  }
   for value in [
-    message.attachments.as_ref().map(serde_json::to_vec),
-    message.params.as_ref().map(serde_json::to_vec),
+    message.params.as_ref().map(|params| {
+      let mut metadata = params.clone();
+      if let Some(Value::Array(attachments)) = metadata.get_mut("attachments") {
+        for attachment in attachments {
+          *attachment = attachment_metadata(attachment);
+        }
+      }
+      serde_json::to_vec(&metadata)
+    }),
     message.response_format.as_ref().map(serde_json::to_vec),
   ]
   .into_iter()
@@ -146,6 +162,32 @@ fn estimated_message_bytes(message: &PromptMessageContract) -> usize {
     size = size.saturating_add(value.map(|bytes| bytes.len()).unwrap_or(usize::MAX));
   }
   size
+}
+
+fn attachment_metadata(attachment: &Value) -> Value {
+  if attachment.as_str().is_some_and(|value| value.starts_with("data:")) {
+    return Value::String("data:".to_string());
+  }
+  let Some(object) = attachment.as_object() else {
+    return attachment.clone();
+  };
+  let inline = matches!(object.get("kind").and_then(Value::as_str), Some("data" | "bytes"));
+  let metadata = object
+    .iter()
+    .map(|(key, value)| {
+      let value = if inline && key == "data" {
+        Value::Null
+      } else if matches!(key.as_str(), "url" | "attachment")
+        && value.as_str().is_some_and(|value| value.starts_with("data:"))
+      {
+        Value::String("data:".to_string())
+      } else {
+        value.clone()
+      };
+      (key.clone(), value)
+    })
+    .collect::<Map<_, _>>();
+  Value::Object(metadata)
 }
 
 fn select_history_turns(
@@ -266,6 +308,64 @@ mod tests {
     let emoji = estimated_message_bytes(&message("user", "😀😀😀"));
     assert!(ascii < cjk);
     assert!(cjk < emoji);
+
+    let small = serde_json::from_value(json!({
+      "role": "user",
+      "content": "describe",
+      "attachments": [{ "kind": "bytes", "data": "aW1n", "mimeType": "image/png" }]
+    }))
+    .unwrap();
+    let large = serde_json::from_value(json!({
+      "role": "user",
+      "content": "describe",
+      "attachments": [{ "kind": "bytes", "data": "aW1n".repeat(100_000), "mimeType": "image/png" }]
+    }))
+    .unwrap();
+    assert_eq!(estimated_message_bytes(&small), estimated_message_bytes(&large));
+
+    let legacy_small = serde_json::from_value(json!({
+      "role": "user",
+      "content": "describe",
+      "attachments": ["data:image/png;base64,aW1n"]
+    }))
+    .unwrap();
+    let legacy_large = serde_json::from_value(json!({
+      "role": "user",
+      "content": "describe",
+      "attachments": [format!("data:image/png;base64,{}", "aW1n".repeat(100_000))]
+    }))
+    .unwrap();
+    assert_eq!(
+      estimated_message_bytes(&legacy_small),
+      estimated_message_bytes(&legacy_large)
+    );
+
+    let params_small = serde_json::from_value(json!({
+      "role": "user",
+      "content": "describe",
+      "params": {
+        "attachments": [{
+          "attachment": "data:image/png;base64,aW1n",
+          "mimeType": "image/png"
+        }]
+      }
+    }))
+    .unwrap();
+    let params_large = serde_json::from_value(json!({
+      "role": "user",
+      "content": "describe",
+      "params": {
+        "attachments": [{
+          "attachment": format!("data:image/png;base64,{}", "aW1n".repeat(100_000)),
+          "mimeType": "image/png"
+        }]
+      }
+    }))
+    .unwrap();
+    assert_eq!(
+      estimated_message_bytes(&params_small),
+      estimated_message_bytes(&params_large)
+    );
   }
 
   #[test]
