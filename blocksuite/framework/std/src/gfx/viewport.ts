@@ -16,6 +16,24 @@ function cutoff(value: number, ref: number, sign: number) {
   return value;
 }
 
+/** iOS doc-open / gesture diagnostics. Opt out: localStorage['affine:viewport-lifecycle']='0' */
+function viewportLifecycleLog(event: string, detail?: Record<string, unknown>) {
+  try {
+    if (
+      typeof localStorage !== 'undefined' &&
+      localStorage.getItem('affine:viewport-lifecycle') === '0'
+    ) {
+      return;
+    }
+  } catch {
+    // ignore
+  }
+  // Always log skips (the freeze signature); emit logs stay quieter.
+  if (event === 'setCenter.skip' || event.startsWith('doc.')) {
+    console.warn(`[viewport-lifecycle] ${event}`, detail ?? '');
+  }
+}
+
 export const ZOOM_MAX = 6.0;
 export const ZOOM_MIN = 0.1;
 export const ZOOM_STEP = 0.25;
@@ -294,6 +312,11 @@ export class Viewport {
     this.panning$.next(false);
   }, 200);
 
+  /** Last time a pan/zoom gesture frame ran — used to clear stuck gesture mode. */
+  private _lastGestureAt = 0;
+
+  private _gestureWatchdog: ReturnType<typeof setInterval> | null = null;
+
   constructor() {
     const subscription = this.elementReady.subscribe(el => {
       this._element = el;
@@ -301,6 +324,48 @@ export class Viewport {
     });
 
     this._setupResizeObserver();
+  }
+
+  private _armGestureWatchdog() {
+    this._lastGestureAt = performance.now();
+    if (typeof window !== 'undefined') {
+      (
+        window as unknown as {
+          __affineGestureDebug?: { panning: boolean; zooming: boolean };
+        }
+      ).__affineGestureDebug = {
+        panning: this.panning$.value,
+        zooming: this.zooming$.value,
+      };
+    }
+    if (this._gestureWatchdog !== null || !this.SKIP_REFRESH_DURING_GESTURE) {
+      return;
+    }
+    // If pointercancel is lost or debounce is starved, panning$/zooming$ can
+    // stay true forever under SKIP_REFRESH — UI looks frozen while timers still
+    // run. Force-clear after 1s without a new gesture frame.
+    this._gestureWatchdog = setInterval(() => {
+      if (typeof window !== 'undefined') {
+        (
+          window as unknown as {
+            __affineGestureDebug?: { panning: boolean; zooming: boolean };
+          }
+        ).__affineGestureDebug = {
+          panning: this.panning$.value,
+          zooming: this.zooming$.value,
+        };
+      }
+      if (!this.panning$.value && !this.zooming$.value) return;
+      const idleMs = performance.now() - this._lastGestureAt;
+      if (idleMs < 1000) return;
+      viewportLifecycleLog('gesture.force-clear', {
+        idleMs: Math.round(idleMs),
+        panning: this.panning$.value,
+        zooming: this.zooming$.value,
+      });
+      if (this.panning$.value) this.panning$.next(false);
+      if (this.zooming$.value) this.zooming$.next(false);
+    }, 500);
   }
 
   private _setupResizeObserver() {
@@ -503,7 +568,15 @@ export class Viewport {
   }
 
   applyDeltaCenter(deltaX: number, deltaY: number) {
-    this.setCenter(this.centerX + deltaX, this.centerY + deltaY);
+    // Enter gesture mode before setCenter so SKIP_REFRESH_DURING_GESTURE
+    // suppresses viewportUpdated from the first pan frame. Passing
+    // signalPanning=false avoids the setCenter path that would otherwise emit
+    // once before panning$ flips (and must not be used to silence programmatic
+    // setCenter callers that rely on that emission).
+    this._armGestureWatchdog();
+    this.panning$.next(true);
+    this.setCenter(this.centerX + deltaX, this.centerY + deltaY, true, false);
+    this._resetPanning();
   }
 
   clearViewportElement() {
@@ -518,6 +591,10 @@ export class Viewport {
   }
 
   dispose() {
+    if (this._gestureWatchdog !== null) {
+      clearInterval(this._gestureWatchdog);
+      this._gestureWatchdog = null;
+    }
     this.clearViewportElement();
     this.sizeUpdated.complete();
     this.resizeStarted.complete();
@@ -601,12 +678,16 @@ export class Viewport {
    * @param centerX The new x coordinate of the center of the viewport.
    * @param centerY The new y coordinate of the center of the viewport.
    * @param forceUpdate Whether to force complete any pending resize operations before setting the viewport.
+   * @param signalPanning When true, mark this as a pan gesture. Must stay **false** for
+   *   programmatic callers (doc load, fit, anchoring). Defaulting this to true previously
+   *   left `panning$` true for the 200ms debounce window, so a second setCenter under
+   *   SKIP_REFRESH_DURING_GESTURE was silenced and froze iOS doc open.
    */
   setCenter(
     centerX: number,
     centerY: number,
     forceUpdate = true,
-    signalPanning = true
+    signalPanning = false
   ) {
     if (forceUpdate && this._isResizing) {
       this._forceCompleteResize();
@@ -615,6 +696,11 @@ export class Viewport {
     this._center.x = centerX;
     this._center.y = centerY;
 
+    // Read gesture state BEFORE optionally marking this call as a pan. Programmatic
+    // setCenter (default signalPanning=false) must still emit viewportUpdated —
+    // silencing those on iOS SKIP_REFRESH freezes doc load.
+    // Continuous pans go through applyDeltaCenter, which sets panning$ first so
+    // gestureActive is already true here and heavy refresh is skipped.
     const gestureActive = this.panning$.value || this.zooming$.value;
 
     if (signalPanning) {
@@ -626,7 +712,16 @@ export class Viewport {
     // per-block transforms) would otherwise fire on every gesture event.
     // Instead, the viewport-element applies a lightweight container-level
     // CSS transform to keep visuals in sync with zero per-block overhead.
-    if (!(this.SKIP_REFRESH_DURING_GESTURE && gestureActive)) {
+    const skipRefresh = this.SKIP_REFRESH_DURING_GESTURE && gestureActive;
+    if (skipRefresh) {
+      viewportLifecycleLog('setCenter.skip', {
+        centerX,
+        centerY,
+        signalPanning,
+        panning: this.panning$.value,
+        zooming: this.zooming$.value,
+      });
+    } else {
       this.viewportUpdated.next({
         zoom: this.zoom,
         center: Vec.toVec(this.center) as IVec,
@@ -794,6 +889,7 @@ export class Viewport {
     // Programmatic viewport changes should use the normal refresh path without
     // entering low-zoom gesture survival mode.
     if (signalGesture) {
+      this._armGestureWatchdog();
       this.zooming$.next(true);
     }
     this.setCenter(newCenter[0], newCenter[1], forceUpdate, signalGesture);

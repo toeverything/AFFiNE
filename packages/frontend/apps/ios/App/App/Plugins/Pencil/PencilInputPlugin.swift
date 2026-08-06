@@ -1,6 +1,9 @@
 import Capacitor
 import Foundation
+import OSLog
 import UIKit
+
+private let pencilLog = Logger(subsystem: "app.affine.pro", category: "pencil")
 
 /// Bridges native `UITouch.TouchType` classification to the web layer so the
 /// whiteboard can distinguish Apple Pencil from finger/palm input.
@@ -62,6 +65,18 @@ public class PencilInputPlugin: CAPPlugin, CAPBridgedPlugin {
   private func emit(_ touches: [ClassifiedTouch]) {
     guard !touches.isEmpty else { return }
     let payload = touches.map { $0.asDictionary }
+    // Compact native breadcrumb for Pencil freeze joint-debugging.
+    // Include finger began/ended too — after a "freeze", if native still sees
+    // finger/pencil but the web pointer counters stall, WebKit stopped
+    // delivering input to the page.
+    if touches.contains(where: {
+      ($0.kind == .pencil || $0.kind == .finger)
+        && ($0.phase == .began || $0.phase == .ended || $0.phase == .cancelled)
+    }) {
+      let summary = touches.map { "\($0.kind.rawValue):\($0.phase.rawValue)" }.joined(separator: ",")
+      // Use Logger so idevicesyslog captures it (stdout print is often dropped).
+      pencilLog.warning("affine-pencil \(summary, privacy: .public)")
+    }
     notifyListeners("touchClassified", data: ["touches": payload])
   }
 }

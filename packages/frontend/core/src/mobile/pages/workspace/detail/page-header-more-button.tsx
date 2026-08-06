@@ -25,7 +25,7 @@ import {
   TocIcon,
 } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
-import { useCallback, useEffect, useState } from 'react';
+import { type PointerEvent, useCallback, useEffect, useState } from 'react';
 
 import { JournalConflictsMenuItem } from './menu/journal-conflicts';
 import { JournalTodayActivityMenuItem } from './menu/journal-today-activity';
@@ -117,6 +117,19 @@ export const PageHeaderMenuButton = () => {
     });
   }, [doc, openConfirmModal, t]);
 
+  const handleMorePointerDown = useCallback(
+    (event: PointerEvent<HTMLButtonElement>) => {
+      // Don't preventDefault — that cancels the subsequent click that opens
+      // MobileMenu. Only stop bubbling and blur so WKWebView doesn't focus the
+      // editor under the header (which opens the keyboard instead).
+      event.stopPropagation();
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+    },
+    []
+  );
+
   const EditMenu = (
     <>
       <EditorModeSwitch />
@@ -181,6 +194,7 @@ export const PageHeaderMenuButton = () => {
   if (isInTrash) {
     return null;
   }
+
   return (
     <MobileMenu
       items={EditMenu}
@@ -196,6 +210,7 @@ export const PageHeaderMenuButton = () => {
         size={24}
         data-testid="detail-page-header-more-button"
         className={styles.iconButton}
+        onPointerDown={handleMorePointerDown}
       >
         <MoreHorizontalIcon />
       </IconButton>

@@ -32,6 +32,34 @@ enum TouchKind: String {
   }
 }
 
+/// Allocates small, JSON-safe touch ids.
+///
+/// `ObjectIdentifier.hashValue` is a 64-bit pointer hash that loses precision
+/// when serialized to JS `number`, so began/ended ids stop matching and the web
+/// classifier's `_activePencilIds` leaks — after the first Pencil stroke
+/// `isPencilActive()` stays true forever and the UI appears frozen.
+final class TouchIdAllocator {
+  static let shared = TouchIdAllocator()
+
+  private var map: [ObjectIdentifier: Int] = [:]
+  private var nextId = 1
+
+  func id(for touch: UITouch) -> Int {
+    let key = ObjectIdentifier(touch)
+    if let existing = map[key] {
+      return existing
+    }
+    let id = nextId
+    nextId += 1
+    map[key] = id
+    return id
+  }
+
+  func release(_ touch: UITouch) {
+    map.removeValue(forKey: ObjectIdentifier(touch))
+  }
+}
+
 /// A single native touch snapshot, normalized into CSS-pixel coordinates that
 /// line up with the web `PointerEvent` space (the WKWebView renders at
 /// `initial-scale=1`, so UIKit points map 1:1 to CSS pixels).
@@ -46,13 +74,17 @@ struct ClassifiedTouch {
 
   init(touch: UITouch, phase: TouchPhase, in view: UIView) {
     let location = touch.location(in: view)
-    identifier = ObjectIdentifier(touch).hashValue
+    identifier = TouchIdAllocator.shared.id(for: touch)
     kind = TouchKind(touchType: touch.type)
     self.phase = phase
     x = location.x
     y = location.y
     majorRadius = touch.majorRadius
     timestamp = touch.timestamp
+
+    if phase == .ended || phase == .cancelled {
+      TouchIdAllocator.shared.release(touch)
+    }
   }
 
   var asDictionary: [String: Any] {

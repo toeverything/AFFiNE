@@ -7,7 +7,13 @@ export const iconButton = style({
       backgroundColor: cssVar('hoverColor'),
     },
   },
+  // Expand hit target to ~44pt for reliable taps on iPad.
   padding: '10px',
+  minWidth: 44,
+  minHeight: 44,
+  touchAction: 'manipulation',
+  position: 'relative',
+  zIndex: 1,
 });
 
 export const outlinePanel = style({

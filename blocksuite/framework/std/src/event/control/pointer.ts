@@ -198,6 +198,10 @@ class DragController extends PointerControllerBase {
       return;
     }
 
+    // Ensure we never stack document listeners across strokes (Pencil often
+    // ends with pointercancel; a previous incomplete reset used to leak handlers).
+    this._detachDocumentListeners();
+
     const pointerState = new PointerEventState({
       event,
       rect: this._getRect(),
@@ -207,17 +211,20 @@ class DragController extends PointerControllerBase {
     });
     this._startPointerState = pointerState;
 
-    this._dispatcher.disposables.addFromEvent(
-      document,
-      'pointermove',
-      this._move
-    );
-    this._dispatcher.disposables.addFromEvent(document, 'pointerup', this._up);
+    // Ephemeral listeners — must be removed on up/cancel. Do NOT use
+    // disposables.addFromEvent here: that permanently retains dispose entries
+    // on every pointerdown and previously paired poorly with pointercancel.
+    document.addEventListener('pointermove', this._move);
+    document.addEventListener('pointerup', this._up);
+    document.addEventListener('pointercancel', this._up);
+    document.addEventListener('lostpointercapture', this._up);
   };
 
   private _dragging = false;
 
   private _lastPointerState: PointerEventState | null = null;
+
+  private _startPointerState: PointerEventState | null = null;
 
   private readonly _move = (event: PointerEvent) => {
     if (
@@ -310,16 +317,19 @@ class DragController extends PointerControllerBase {
     );
   };
 
+  private _detachDocumentListeners() {
+    document.removeEventListener('pointermove', this._move);
+    document.removeEventListener('pointerup', this._up);
+    document.removeEventListener('pointercancel', this._up);
+    document.removeEventListener('lostpointercapture', this._up);
+  }
+
   private readonly _reset = () => {
     this._dragging = false;
     this._startPointerState = null;
     this._lastPointerState = null;
-
-    document.removeEventListener('pointermove', this._move);
-    document.removeEventListener('pointerup', this._up);
+    this._detachDocumentListeners();
   };
-
-  private _startPointerState: PointerEventState | null = null;
 
   private readonly _up = (event: PointerEvent) => {
     if (
@@ -327,6 +337,14 @@ class DragController extends PointerControllerBase {
       this._startPointerState.raw.pointerId !== event.pointerId
     )
       return;
+
+    if (event.type === 'pointercancel' || event.type === 'lostpointercapture') {
+      console.warn('[viewport-lifecycle] drag.end-via-cancel', {
+        type: event.type,
+        pointerType: event.pointerType,
+        wasDragging: this._dragging,
+      });
+    }
 
     const start = this._startPointerState;
     const last = this._lastPointerState;

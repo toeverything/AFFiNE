@@ -486,6 +486,7 @@ export class InteractivityManager extends GfxExtension {
 
       host.removeEventListener('pointermove', onDragMove, false);
       host.removeEventListener('pointerup', onDragEnd, false);
+      host.removeEventListener('pointercancel', onDragEnd, false);
       viewportWatcher.unsubscribe();
       flushPendingDragMove();
 
@@ -528,6 +529,9 @@ export class InteractivityManager extends GfxExtension {
     const listenEvent = () => {
       host.addEventListener('pointermove', onDragMove, false);
       host.addEventListener('pointerup', onDragEnd, false);
+      // iPad Pencil frequently ends strokes with pointercancel instead of
+      // pointerup. Without this, activeInteraction$ stays set and the UI freezes.
+      host.addEventListener('pointercancel', onDragEnd, false);
     };
     const dragStart = () => {
       this.activeInteraction$.value = {

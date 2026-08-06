@@ -2,23 +2,14 @@ import '@affine/core/bootstrap/browser';
 import '@affine/core/bootstrap/cleanup';
 import './proxy';
 
-import { IS_IPAD } from '@blocksuite/affine/global/env';
 import { viewportRuntimeConfig } from '@blocksuite/affine/std/gfx';
 
-import { setupPencilInputClassifier } from './plugins/pencil-input/classifier';
-import { setupPencilInputDebug } from './plugins/pencil-input/debug';
-
-// Opt-in native touch-classification logger (no-op unless explicitly enabled).
-setupPencilInputDebug();
-
-// On iPad, feed the native UITouch classification into the edgeless pointer
-// routing so a resting palm can't hijack or terminate an Apple Pencil stroke.
-// No-op elsewhere; falls back to default pointerType handling if it can't start.
-if (IS_IPAD) {
-  setupPencilInputClassifier().catch(() => {
-    // startup is best-effort; failures are already logged inside.
-  });
-}
+// iPad Pencil routing uses WebKit `pointerType: 'pen'` (see blocksuite pointer /
+// pan-tool). Do NOT call `setupPencilInputClassifier()` / attach
+// `TouchClassifyingGestureRecognizer` to the WKWebView: on-device A/B showed that
+// observer leaves the page unresponsive after the first Pencil stroke while the
+// JS event loop stays alive. Palm rejection via native UITouch.type needs a
+// non-WKWebView-GR approach before it can be re-enabled.
 
 // iOS WKWebView terminates the web content process when edgeless compositing
 // memory (GPU-side IOSurface tiles) spikes. Two distinct triggers exist:

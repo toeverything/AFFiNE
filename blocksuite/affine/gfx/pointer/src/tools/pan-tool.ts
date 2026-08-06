@@ -114,6 +114,7 @@ export class PanTool extends BaseTool<PanToolOption> {
     this.addHook('dragStart', evt => {
       if (!this._shouldFingerPan(evt)) return;
       this._iPadFingerPanLast = [evt.x, evt.y];
+      this._pendingDelta = [0, 0];
       // Suppress the drawing tool for this finger drag.
       return false;
     });
@@ -124,15 +125,17 @@ export class PanTool extends BaseTool<PanToolOption> {
       const { viewport } = this.gfx;
       const [lastX, lastY] = this._iPadFingerPanLast;
       this._iPadFingerPanLast = [evt.x, evt.y];
-      viewport.applyDeltaCenter(
-        (lastX - evt.x) / viewport.zoom,
-        (lastY - evt.y) / viewport.zoom
-      );
+      // Coalesce like PanTool.dragMove — Pencil/finger streams are high-rate
+      // and synchronous applyDeltaCenter per event still churns setCenter.
+      this._pendingDelta[0] += (lastX - evt.x) / viewport.zoom;
+      this._pendingDelta[1] += (lastY - evt.y) / viewport.zoom;
+      this._deltaFlushCoalescer.schedule(undefined);
       return false;
     });
 
     this.addHook('dragEnd', () => {
       if (!this._iPadFingerPanLast) return;
+      this._deltaFlushCoalescer.flush();
       this._iPadFingerPanLast = null;
       return false;
     });

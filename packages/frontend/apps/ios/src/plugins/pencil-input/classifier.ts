@@ -19,6 +19,10 @@ const MATCH_WINDOW_MS = 300;
 // Pencil-priority behavior across short gaps between consecutive strokes.
 const PENCIL_ACTIVE_GRACE_MS = 700;
 
+// Hard cap so a mismatched began/ended id can never leave isPencilActive true
+// forever (the "one Pencil stroke then UI frozen" failure mode).
+const ACTIVE_PENCIL_MAX_MS = 5000;
+
 // Contact radius above which a native `finger` touch is treated as a palm.
 // Keep this above normal fingertip radii so Pencil-priority finger pans survive.
 const PALM_MAJOR_RADIUS = 45;
@@ -38,7 +42,7 @@ interface RecentTouch {
  */
 class NativePointerClassifier implements PointerInputClassifier {
   private readonly _recent: RecentTouch[] = [];
-  private readonly _activePencilIds = new Set<number>();
+  private readonly _activePencilIds = new Map<number, number>();
   private _lastPencilAt = 0;
 
   ingest(touches: ClassifiedTouch[]): void {
@@ -47,9 +51,19 @@ class NativePointerClassifier implements PointerInputClassifier {
       if (touch.kind === 'pencil') {
         this._lastPencilAt = now;
         if (touch.phase === 'began') {
-          this._activePencilIds.add(touch.id);
+          this._activePencilIds.set(touch.id, now);
         } else {
-          this._activePencilIds.delete(touch.id);
+          // ended / cancelled — drop this id, and if the set is still non-empty
+          // because of a prior id mismatch, force-clear on lift.
+          const deleted = this._activePencilIds.delete(touch.id);
+          if (!deleted && this._activePencilIds.size > 0) {
+            console.warn('[viewport-lifecycle] pencil.active-id-mismatch', {
+              id: touch.id,
+              phase: touch.phase,
+              stuck: [...this._activePencilIds.keys()],
+            });
+            this._activePencilIds.clear();
+          }
         }
       }
       if (touch.phase === 'began') {
@@ -68,6 +82,15 @@ class NativePointerClassifier implements PointerInputClassifier {
   classify(event: PointerEvent): InputTouchKind | undefined {
     const match = this._correlate(event);
     if (match?.kind === 'pencil' || event.pointerType === 'pen') {
+      if (event.type === 'pointerdown') {
+        console.warn('[viewport-lifecycle] pencil.pointerdown', {
+          x: Math.round(event.clientX),
+          y: Math.round(event.clientY),
+          pointerType: event.pointerType,
+          matched: match?.kind ?? 'pointerType-pen',
+          activePencilIds: this._activePencilIds.size,
+        });
+      }
       return 'pencil';
     }
     if (event.pointerType !== 'touch') {
@@ -80,8 +103,24 @@ class NativePointerClassifier implements PointerInputClassifier {
   }
 
   isPencilActive(): boolean {
+    this._prune(performance.now());
     if (this._activePencilIds.size > 0) return true;
     return performance.now() - this._lastPencilAt < PENCIL_ACTIVE_GRACE_MS;
+  }
+
+  /** Debug snapshot for heartbeat / syslog. */
+  debugState() {
+    this._prune(performance.now());
+    return {
+      activePencilIds: this._activePencilIds.size,
+      pencilGraceMs: Math.max(
+        0,
+        Math.round(
+          PENCIL_ACTIVE_GRACE_MS - (performance.now() - this._lastPencilAt)
+        )
+      ),
+      pencilActive: this.isPencilActive(),
+    };
   }
 
   private _correlate(event: PointerEvent): RecentTouch | undefined {
@@ -102,12 +141,18 @@ class NativePointerClassifier implements PointerInputClassifier {
     return best;
   }
 
-  private _prune(now: number): void {
+  private _prune(now: number) {
     while (
       this._recent.length > 0 &&
       now - this._recent[0].at > MATCH_WINDOW_MS
     ) {
       this._recent.shift();
+    }
+    for (const [id, startedAt] of this._activePencilIds) {
+      if (now - startedAt > ACTIVE_PENCIL_MAX_MS) {
+        this._activePencilIds.delete(id);
+        console.warn('[viewport-lifecycle] pencil.active-id-expired', { id });
+      }
     }
   }
 }
@@ -128,6 +173,13 @@ export async function setupPencilInputClassifier(): Promise<void> {
     });
     classifier = instance;
     pointerInputClassifierRuntime.classifier = instance;
+    (
+      window as unknown as {
+        __affinePencilDebug?: () => ReturnType<
+          NativePointerClassifier['debugState']
+        >;
+      }
+    ).__affinePencilDebug = () => instance.debugState();
   } catch (err) {
     console.warn('[pencil-input] failed to start classifier', err);
   }
