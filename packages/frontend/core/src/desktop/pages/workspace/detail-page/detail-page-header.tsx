@@ -1,6 +1,7 @@
 import {
   Divider,
   DragHandle,
+  IconButton,
   type InlineEditHandle,
   observeResize,
   useDraggable,
@@ -27,6 +28,7 @@ import type { AffineDNDData } from '@affine/core/types/dnd';
 import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
 import type { Store } from '@blocksuite/affine/store';
+import { EditIcon, ViewIcon as ViewIconBlocksuite } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import clsx from 'clsx';
 import {
@@ -80,6 +82,8 @@ const TemplateMark = memo(function TemplateMark({
 interface PageHeaderProps {
   page: Store;
   workspace: Workspace;
+  isReadOnlyMode?: boolean;
+  onToggleReadOnly?: () => void;
 }
 export function JournalPageHeader({ page, workspace }: PageHeaderProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -122,7 +126,7 @@ export function JournalPageHeader({ page, workspace }: PageHeaderProps) {
   );
 }
 
-export function NormalPageHeader({ page, workspace }: PageHeaderProps) {
+export function NormalPageHeader({ page, workspace, isReadOnlyMode, onToggleReadOnly }: PageHeaderProps) {
   const titleInputHandleRef = useRef<InlineEditHandle>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [containerWidth, setContainerWidth] = useState(0);
@@ -134,6 +138,8 @@ export function NormalPageHeader({ page, workspace }: PageHeaderProps) {
       setContainerWidth(entry.contentRect.width);
     });
   }, []);
+
+  const t = useI18n();
 
   const { hideCollect, hideShare, hidePresent, showDivider } =
     useDetailPageHeaderResponsive(containerWidth);
@@ -159,6 +165,14 @@ export function NormalPageHeader({ page, workspace }: PageHeaderProps) {
       <BlocksuiteHeaderTitle inputHandleRef={titleInputHandleRef} />
       <TemplateMark />
       <div className={styles.iconButtonContainer}>
+        {onToggleReadOnly && (
+          <IconButton
+            onClick={onToggleReadOnly}
+            icon={isReadOnlyMode ? <ViewIconBlocksuite /> : <EditIcon />}
+            tooltip={isReadOnlyMode ? t['Read Only']() : t['Editing']()}
+            style={{ marginRight: 8 }}
+          />
+        )}
         {hideCollect ? null : (
           <>
             <FavoriteButton pageId={page?.id} />

@@ -1,4 +1,4 @@
-import { useThemeColorV2 } from '@affine/component';
+import { IconButton, useThemeColorV2 } from '@affine/component';
 import { PageDetailLoading } from '@affine/component/page-detail-skeleton';
 import type { AffineEditorContainer } from '@affine/core/blocksuite/block-suite-editor';
 import { AffineErrorBoundary } from '@affine/core/components/affine/affine-error-boundary';
@@ -22,6 +22,7 @@ import { WorkspaceService } from '@affine/core/modules/workspace';
 import { i18nTime } from '@affine/i18n';
 import { DisposableGroup } from '@blocksuite/affine/global/disposable';
 import { RefNodeSlotsProvider } from '@blocksuite/affine/inlines/reference';
+import { EditIcon, ViewIcon as ViewIconBlocksuite } from '@blocksuite/icons/rc';
 import {
   customImageProxyMiddleware,
   ImageProxyService,
@@ -68,10 +69,12 @@ const DetailPageImpl = ({
   immersive,
   chromeVisible,
   immersiveTapHandlers,
+  isReadOnlyMode,
 }: {
   immersive: boolean;
   chromeVisible: boolean;
   immersiveTapHandlers?: ImmersiveTapHandlers;
+  isReadOnlyMode?: boolean;
 }) => {
   const {
     editorService,
@@ -213,7 +216,8 @@ const DetailPageImpl = ({
     !canEdit ||
     isInTrash ||
     !enableKeyboardToolbar ||
-    (mode === 'edgeless' && !enableEdgelessEditing);
+    (mode === 'edgeless' && !enableEdgelessEditing) ||
+    isReadOnlyMode;
 
   const immersiveZoomToolbarBottom = getImmersiveZoomToolbarBottom({
     immersive,
@@ -289,12 +293,16 @@ const MobileDetailPageHeader = ({
   allJournalDates,
   handleDateChange,
   trackScrollTitle,
+  isReadOnlyMode,
+  onToggleReadOnly,
 }: {
   date?: string;
   title?: string;
   allJournalDates: Set<string | null | undefined>;
   handleDateChange: (date: string) => void;
   trackScrollTitle: boolean;
+  isReadOnlyMode?: boolean;
+  onToggleReadOnly?: () => void;
 }) => {
   const [showTitle, setShowTitle] = useState(getShouldShowTitle);
 
@@ -339,6 +347,14 @@ const MobileDetailPageHeader = ({
       contentClassName={styles.headerContent}
       suffix={
         <>
+          {onToggleReadOnly && (
+            <IconButton
+              size="24"
+              onClick={onToggleReadOnly}
+              icon={isReadOnlyMode ? <ViewIconBlocksuite /> : <EditIcon />}
+              style={{ marginRight: 8 }}
+            />
+          )}
           <PageHeaderShareButton />
           <PageHeaderMenuButton />
         </>
@@ -381,6 +397,7 @@ const MobileDetailPageContent = ({
   const mode = useLiveData(editor.mode$);
   const [isLandscape, setIsLandscape] = useState(getIsLandscape);
   const [chromeVisible, setChromeVisible] = useState(true);
+  const [isReadOnlyMode, setIsReadOnlyMode] = useState(false);
   const tapStateRef = useRef<{
     pointerId: number;
     clientX: number;
@@ -511,6 +528,8 @@ const MobileDetailPageContent = ({
           allJournalDates={allJournalDates}
           handleDateChange={handleDateChange}
           trackScrollTitle={trackScrollTitle}
+          isReadOnlyMode={isReadOnlyMode}
+          onToggleReadOnly={() => setIsReadOnlyMode(prev => !prev)}
         />
       )}
       <JournalConflictBlock date={date} />
@@ -518,6 +537,7 @@ const MobileDetailPageContent = ({
         immersive={immersive}
         chromeVisible={chromeVisible}
         immersiveTapHandlers={immersiveTapHandlers}
+        isReadOnlyMode={isReadOnlyMode}
       />
     </>
   );
