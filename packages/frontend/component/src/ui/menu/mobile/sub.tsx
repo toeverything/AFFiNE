@@ -2,6 +2,7 @@ import { ArrowRightSmallPlusIcon } from '@blocksuite/icons/rc';
 import { Slot } from '@radix-ui/react-slot';
 import { type MouseEvent, useCallback, useEffect, useId, useMemo } from 'react';
 
+import { createPenClickCompatHandlers } from '../../../utils/pen-click-compat';
 import type { MenuSubProps } from '../menu.types';
 import { useMenuItem } from '../use-menu-item';
 import { useMobileSubMenuHelper } from './context';
@@ -79,5 +80,10 @@ export const MobileMenuSubRaw = ({
     }
   }, [doAddSubMenu, subOptions]);
 
-  return <Slot onClick={onItemClick}>{children}</Slot>;
+  const penClickCompat = useMemo(
+    () => createPenClickCompatHandlers(onItemClick),
+    [onItemClick]
+  );
+
+  return <Slot {...penClickCompat}>{children}</Slot>;
 };

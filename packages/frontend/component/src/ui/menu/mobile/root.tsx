@@ -11,7 +11,7 @@ import {
   useState,
 } from 'react';
 
-import { observeResize } from '../../../utils';
+import { createPenClickCompatHandlers, observeResize } from '../../../utils';
 import { Button } from '../../button';
 import { Modal } from '../../modal';
 import { Scrollable } from '../../scrollbar';
@@ -125,6 +125,12 @@ export const MobileMenu = ({
     [onOpenChange, open]
   );
 
+  // Pencil taps often skip synthesized `click` on the menu trigger.
+  const triggerPenClickCompat = useMemo(
+    () => createPenClickCompatHandlers(onItemClick),
+    [onItemClick]
+  );
+
   const t = useI18n();
 
   /**
@@ -149,7 +155,7 @@ export const MobileMenu = ({
 
   return (
     <>
-      <Slot onClick={onItemClick}>{children}</Slot>
+      <Slot {...triggerPenClickCompat}>{children}</Slot>
       <MobileMenuContext.Provider value={mobileMenuContextValue}>
         <Modal
           open={finalOpen}
