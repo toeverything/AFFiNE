@@ -55,8 +55,12 @@ function isKdeSession(): boolean {
 }
 
 function getDesktopTokens(): string[] {
-  const raw =
-    process.env.XDG_CURRENT_DESKTOP ?? process.env.XDG_SESSION_DESKTOP ?? '';
+  const raw = [
+    process.env.XDG_CURRENT_DESKTOP,
+    process.env.XDG_SESSION_DESKTOP,
+  ]
+    .filter((desktop): desktop is string => Boolean(desktop))
+    .join(':');
   if (!raw) {
     return [];
   }
