@@ -273,7 +273,7 @@ test('should create pending blob upload with graphql fallback', async t => {
   await app.signupV1('u1@affine.pro');
 
   const workspace = await createWorkspace(app);
-  const key = `upload-${Math.random().toString(16).slice(2, 8)}`;
+  const key = sha256Base64urlWithPadding(Buffer.from('pending-upload'));
   const size = 4;
   const mime = 'text/plain';
 
@@ -351,7 +351,14 @@ test('should reject multipart upload part url on fs provider', async t => {
   const workspace = await createWorkspace(app);
 
   await t.throwsAsync(
-    () => getBlobUploadPartUrl(app, workspace.id, 'blob-key', 'upload', 1),
+    () =>
+      getBlobUploadPartUrl(
+        app,
+        workspace.id,
+        sha256Base64urlWithPadding(Buffer.from('blob-key')),
+        'upload',
+        1
+      ),
     {
       message: 'Multipart upload is not supported',
     }

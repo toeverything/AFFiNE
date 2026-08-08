@@ -879,6 +879,47 @@ export function useAFFiNEI18N(): {
         total: string;
     }>): string;
     /**
+      * `Local workspaces don't support attachments or references.`
+      */
+    ["com.affine.ai.chat-panel.local-workspace-context-unavailable"](): string;
+    /**
+      * `Reading canvas`
+      */
+    ["com.affine.ai.chat-panel.tool.canvas.reading"](): string;
+    /**
+      * `Read canvas of "{{title}}"`
+      */
+    ["com.affine.ai.chat-panel.tool.canvas.read"](options: {
+        readonly title: string;
+    }): string;
+    /**
+      * `Read canvas`
+      */
+    ["com.affine.ai.chat-panel.tool.canvas.read-untitled"](): string;
+    /**
+      * `Canvas read failed`
+      */
+    ["com.affine.ai.chat-panel.tool.canvas.failed"](): string;
+    /**
+      * `Working… · {{count}} actions`
+      */
+    ["com.affine.ai.chat-panel.tool-group.running"](options: {
+        readonly count: string;
+    }): string;
+    /**
+      * `Completed {{count}} actions`
+      */
+    ["com.affine.ai.chat-panel.tool-group.completed"](options: {
+        readonly count: string;
+    }): string;
+    /**
+      * `Completed {{count}} actions · {{failed}} failed`
+      */
+    ["com.affine.ai.chat-panel.tool-group.failed"](options: Readonly<{
+        count: string;
+        failed: string;
+    }>): string;
+    /**
       * `Delete this history?`
       */
     ["com.affine.ai.chat-panel.session.delete.confirm.title"](): string;
@@ -6187,6 +6228,10 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.workspace.byok.field.endpoint"](): string;
     /**
+      * `API dialect`
+      */
+    ["com.affine.settings.workspace.byok.field.dialect"](): string;
+    /**
       * `Model ID`
       */
     ["com.affine.settings.workspace.byok.field.model-id"](): string;
@@ -6211,9 +6256,21 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.workspace.byok.placeholder.search-models"](): string;
     /**
+      * `Select an API dialect`
+      */
+    ["com.affine.settings.workspace.byok.placeholder.dialect"](): string;
+    /**
       * `Use a custom API-compatible endpoint`
       */
     ["com.affine.settings.workspace.byok.endpoint.use-custom"](): string;
+    /**
+      * `Responses API`
+      */
+    ["com.affine.settings.workspace.byok.dialect.responses"](): string;
+    /**
+      * `Chat Completions API`
+      */
+    ["com.affine.settings.workspace.byok.dialect.chat-completions"](): string;
     /**
       * `Include an image generation request when testing (provider charges may apply)`
       */
@@ -10045,40 +10102,6 @@ export function useAFFiNEI18N(): {
         message: string;
     }>): string;
     /**
-      * `Invalid copilot context {{contextId}}.`
-      */
-    ["error.COPILOT_INVALID_CONTEXT"](options: {
-        readonly contextId: string;
-    }): string;
-    /**
-      * `File {{fileName}} is not supported to use as context: {{message}}`
-      */
-    ["error.COPILOT_CONTEXT_FILE_NOT_SUPPORTED"](options: Readonly<{
-        fileName: string;
-        message: string;
-    }>): string;
-    /**
-      * `Failed to modify context {{contextId}}: {{message}}`
-      */
-    ["error.COPILOT_FAILED_TO_MODIFY_CONTEXT"](options: Readonly<{
-        contextId: string;
-        message: string;
-    }>): string;
-    /**
-      * `Failed to match context {{contextId}} with "%7B%7Bcontent%7D%7D": {{message}}`
-      */
-    ["error.COPILOT_FAILED_TO_MATCH_CONTEXT"](options: Readonly<{
-        contextId: string;
-        message: string;
-    }>): string;
-    /**
-      * `Failed to match context in workspace {{workspaceId}} with "%7B%7Bcontent%7D%7D": {{message}}`
-      */
-    ["error.COPILOT_FAILED_TO_MATCH_GLOBAL_CONTEXT"](options: Readonly<{
-        workspaceId: string;
-        message: string;
-    }>): string;
-    /**
       * `Embedding feature is disabled, please contact the administrator to enable it in the workspace settings.`
       */
     ["error.COPILOT_EMBEDDING_DISABLED"](): string;
@@ -10086,6 +10109,12 @@ export function useAFFiNEI18N(): {
       * `Embedding feature not available, you may need to install pgvector extension to your database`
       */
     ["error.COPILOT_EMBEDDING_UNAVAILABLE"](): string;
+    /**
+      * `Failed to add workspace artifact: {{message}}`
+      */
+    ["error.COPILOT_FAILED_TO_ADD_WORKSPACE_ARTIFACT"](options: {
+        readonly message: string;
+    }): string;
     /**
       * `Transcription job already exists`
       */
@@ -10098,12 +10127,6 @@ export function useAFFiNEI18N(): {
       * `Audio not provided.`
       */
     ["error.COPILOT_TRANSCRIPTION_AUDIO_NOT_PROVIDED"](): string;
-    /**
-      * `Failed to add workspace file embedding: {{message}}`
-      */
-    ["error.COPILOT_FAILED_TO_ADD_WORKSPACE_FILE_EMBEDDING"](options: {
-        readonly message: string;
-    }): string;
     /**
       * `You have exceeded your blob size quota.`
       */

@@ -325,19 +325,15 @@ export class PlaygroundChat extends SignalWatcher(
   }
 
   override render() {
-    const embeddingCount =
-      this.runtimeSnapshot?.composer.context.embeddingCount;
-    const done = embeddingCount?.finished ?? 0;
-    const total =
-      done + (embeddingCount?.processing ?? 0) + (embeddingCount?.failed ?? 0);
-    const isEmbedding = total > 0 && done < total;
+    const isSynchronizing =
+      this.runtimeSnapshot?.composer.scopeSelection.syncing ?? false;
 
     return html`<div class="chat-panel-container">
       <div class="chat-panel-title">
         <div class="chat-panel-title-text">
-          ${isEmbedding
+          ${isSynchronizing
             ? html`<span data-testid="chat-panel-embedding-progress"
-                >Embedding ${done}/${total}</span
+                >Synchronizing sources</span
               >`
             : 'AFFiNE AI'}
         </div>

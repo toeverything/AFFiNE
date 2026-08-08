@@ -4,14 +4,11 @@ use sha2::Sha256;
 use sqlx::{PgPool, Row};
 use uuid::Uuid;
 
-use super::{RuntimeError, RuntimeResult, admit_endpoint, envelope_key, require_text, token_hash};
-use crate::{
-  llm::{
-    ByokLocalLeaseOutput, ByokProfileDefinition, CreateByokLocalLeaseInput,
-    byok::{SensitiveCredential, local_aad},
-    validate_definition,
-  },
-  runtime::config::CopilotByokRuntimeConfig,
+use super::{RuntimeError, RuntimeResult, envelope_key, require_text, token_hash};
+use crate::llm::{
+  ByokLocalLeaseOutput, ByokProfileDefinition, CreateByokLocalLeaseInput,
+  byok::{ByokPolicy, SensitiveCredential, local_aad},
+  validate_definition,
 };
 
 const LOCAL_LEASE_PURPOSE: &str = "copilot_byok_local_lease";
@@ -21,7 +18,6 @@ const LOCAL_LEASE_TTL_MS: i64 = 10 * 60 * 1000;
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub(crate) struct LocalLeasePayload {
-  pub(crate) version: u32,
   pub(crate) workspace_id: String,
   pub(crate) user_id: String,
   pub(crate) providers: Vec<LocalLeaseProvider>,
@@ -41,7 +37,7 @@ pub(crate) struct LocalLeaseProvider {
 pub(in super::super) async fn create(
   pool: &PgPool,
   root_secret: &[u8],
-  policy: &CopilotByokRuntimeConfig,
+  policy: &ByokPolicy,
   input: CreateByokLocalLeaseInput,
 ) -> RuntimeResult<ByokLocalLeaseOutput> {
   require_text(&input.workspace_id, "workspaceId")?;
@@ -63,7 +59,7 @@ pub(in super::super) async fn create(
     require_text(&provider.credential, "credential")?;
     let definition = validate_definition(&provider.provider, provider.definition)
       .map_err(|error| RuntimeError::invalid_input(error.to_string()))?;
-    admit_endpoint(&definition, policy).await?;
+    policy.admit(&provider.provider, &definition.endpoint).await?;
     fingerprint.update(&[0]);
     fingerprint.update(provider.provider.as_bytes());
     fingerprint.update(&[0]);
@@ -98,7 +94,6 @@ pub(in super::super) async fn create(
 
   let active_key = hex::encode(fingerprint.finalize().into_bytes());
   let payload = serde_json::to_value(LocalLeasePayload {
-    version: 1,
     workspace_id: input.workspace_id,
     user_id: input.user_id,
     providers,

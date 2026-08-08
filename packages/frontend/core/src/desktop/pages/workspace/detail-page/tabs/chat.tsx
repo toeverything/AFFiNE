@@ -3,6 +3,7 @@ import {
   AIAppEvents,
   AIChatRuntime,
   createAIRequestService,
+  DelegatedEditorHost,
   DocAIChatSessionStrategy,
   useAIChatElement,
   useAIChatRuntime,
@@ -39,6 +40,7 @@ import { PeekViewService } from '@affine/core/modules/peek-view';
 import { NbstoreService } from '@affine/core/modules/storage';
 import { AppThemeService } from '@affine/core/modules/theme';
 import { WorkbenchService } from '@affine/core/modules/workbench';
+import { WorkspaceService } from '@affine/core/modules/workspace';
 import { useI18n } from '@affine/i18n';
 import { RefNodeSlotsProvider } from '@blocksuite/affine/inlines/reference';
 import { DocModeProvider } from '@blocksuite/affine/shared/services';
@@ -78,6 +80,7 @@ export const EditorChatPanel = ({
   const eventSourceService = useService(EventSourceService);
   const nbstoreService = useService(NbstoreService);
   const workbench = useService(WorkbenchService).workbench;
+  const workspace = useService(WorkspaceService).workspace;
   const t = useI18n();
 
   const { closeConfirmModal, openConfirmModal } = useConfirmModal();
@@ -111,9 +114,19 @@ export const EditorChatPanel = ({
       createAIRequestService(
         graphqlService.gql,
         eventSourceService.eventSource,
-        nbstoreService.realtime
+        nbstoreService.realtime,
+        async () => {
+          await workspace.engine.doc.waitForSynced(workspace.id);
+          await workspace.engine.doc.waitForSynced('db$docProperties');
+          await workspace.engine.doc.waitForSynced();
+        }
       ),
-    [eventSourceService.eventSource, graphqlService.gql, nbstoreService]
+    [
+      eventSourceService.eventSource,
+      graphqlService.gql,
+      nbstoreService,
+      workspace,
+    ]
   );
 
   const [pendingSessionId] = useState(() => {
@@ -148,6 +161,32 @@ export const EditorChatPanel = ({
     snapshot?.sessions.find(
       item => item.sessionId === snapshot.activeSessionId
     ) ?? null;
+  useEffect(() => {
+    if (!host || !workspaceId) return;
+    requestService.setActiveEditorFactory(
+      sessionId =>
+        new DelegatedEditorHost({
+          realtime: nbstoreService.realtime,
+          host,
+          sessionId,
+          workspaceId,
+          docId: doc.id,
+        })
+    );
+    if (session?.sessionId) {
+      void requestService
+        .activateEditor(session.sessionId)
+        .catch(console.error);
+    }
+    return () => requestService.setActiveEditorFactory(undefined);
+  }, [
+    doc.id,
+    host,
+    nbstoreService.realtime,
+    requestService,
+    session?.sessionId,
+    workspaceId,
+  ]);
   const appSidebarConfig = useMemo<AppSidebarConfig>(() => {
     return {
       getWidth: () =>
@@ -438,11 +477,7 @@ export const EditorChatPanel = ({
     chatTabsContainerRef.current = node;
   }, []);
 
-  const embeddingCount = snapshot?.composer.context.embeddingCount;
-  const done = embeddingCount?.finished ?? 0;
-  const total =
-    done + (embeddingCount?.processing ?? 0) + (embeddingCount?.failed ?? 0);
-  const isEmbedding = total > 0 && done < total;
+  const isSynchronizing = snapshot?.composer.scopeSelection.syncing ?? false;
   const hasRuntimeSnapshot = !!snapshot;
 
   return (
@@ -460,12 +495,9 @@ export const EditorChatPanel = ({
         <div className={styles.container}>
           <div className={styles.header}>
             <div className={styles.title}>
-              {isEmbedding ? (
+              {isSynchronizing ? (
                 <span data-testid="chat-panel-embedding-progress">
-                  {t.t('com.affine.ai.chat-panel.embedding-progress', {
-                    done,
-                    total,
-                  })}
+                  Synchronizing sources
                 </span>
               ) : (
                 t['com.affine.ai.chat-panel.title']()

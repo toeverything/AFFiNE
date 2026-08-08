@@ -75,7 +75,7 @@ const ErrorItem: React.FC<{ attachment: ErrorAttachmentFile }> = ({
 const PersistedItem: React.FC<{ attachment: PersistedAttachmentFile }> = ({
   attachment,
 }) => {
-  const Icon = getAttachmentFileIconRC(attachment.mimeType);
+  const Icon = getAttachmentFileIconRC(attachment.mediaType);
   return (
     <div
       className={attachmentTitle}

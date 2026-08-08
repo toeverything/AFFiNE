@@ -3,12 +3,7 @@ import type { AIToolsConfig } from '@affine/core/modules/ai-button';
 import type { NbstoreService } from '@affine/core/modules/storage';
 import { UserFriendlyError } from '@affine/error';
 import {
-  addContextBlobMutation,
-  addContextCategoryMutation,
-  addContextDocMutation,
-  addContextFileMutation,
   cleanupCopilotSessionMutation,
-  createCopilotContextMutation,
   createCopilotMessageMutation,
   createCopilotSessionMutation,
   createCopilotSessionWithHistoryMutation,
@@ -19,16 +14,9 @@ import {
   getCopilotSessionQuery,
   getCopilotSessionsQuery,
   type GraphQLQuery,
-  listContextObjectQuery,
-  listContextQuery,
-  matchContextQuery,
   type PaginationInput,
   type QueryOptions,
   type QueryResponse,
-  removeContextBlobMutation,
-  removeContextCategoryMutation,
-  removeContextDocMutation,
-  removeContextFileMutation,
   type RequestOptions,
   updateCopilotSessionMutation,
 } from '@affine/graphql';
@@ -326,141 +314,6 @@ export class CopilotClient {
     }
   }
 
-  async createContext(workspaceId: string, sessionId: string) {
-    const res = await this.gql({
-      query: createCopilotContextMutation,
-      variables: {
-        workspaceId,
-        sessionId,
-      },
-    });
-    return res.createCopilotContext;
-  }
-
-  async getContextId(workspaceId: string, sessionId: string) {
-    const res = await this.gql({
-      query: listContextQuery,
-      variables: {
-        workspaceId,
-        sessionId,
-      },
-    });
-    return res.currentUser?.copilot?.contexts?.[0]?.id || undefined;
-  }
-
-  async addContextDoc(options: OptionsField<typeof addContextDocMutation>) {
-    const res = await this.gql({
-      query: addContextDocMutation,
-      variables: {
-        options,
-      },
-    });
-    return res.addContextDoc;
-  }
-
-  async removeContextDoc(
-    options: OptionsField<typeof removeContextDocMutation>
-  ) {
-    const res = await this.gql({
-      query: removeContextDocMutation,
-      variables: {
-        options,
-      },
-    });
-    return res.removeContextDoc;
-  }
-
-  async addContextFile(
-    content: File,
-    options: OptionsField<typeof addContextFileMutation>
-  ) {
-    const res = await this.gql({
-      query: addContextFileMutation,
-      variables: {
-        content,
-        options,
-      },
-      timeout: 60000,
-    });
-    return res.addContextFile;
-  }
-
-  async removeContextFile(
-    options: OptionsField<typeof removeContextFileMutation>
-  ) {
-    const res = await this.gql({
-      query: removeContextFileMutation,
-      variables: {
-        options,
-      },
-    });
-    return res.removeContextFile;
-  }
-
-  async addContextCategory(
-    options: OptionsField<typeof addContextCategoryMutation>
-  ) {
-    const res = await this.gql({
-      query: addContextCategoryMutation,
-      variables: {
-        options,
-      },
-    });
-    return res.addContextCategory;
-  }
-
-  async removeContextCategory(
-    options: OptionsField<typeof removeContextCategoryMutation>
-  ) {
-    const res = await this.gql({
-      query: removeContextCategoryMutation,
-      variables: {
-        options,
-      },
-    });
-    return res.removeContextCategory;
-  }
-
-  async getContextDocsAndFiles(
-    workspaceId: string,
-    sessionId: string,
-    contextId: string
-  ) {
-    const res = await this.gql({
-      query: listContextObjectQuery,
-      variables: {
-        workspaceId,
-        sessionId,
-        contextId,
-      },
-    });
-    return res.currentUser?.copilot?.contexts?.[0];
-  }
-
-  async matchContext(
-    content: string,
-    contextId?: string,
-    workspaceId?: string,
-    limit?: number,
-    scopedThreshold?: number,
-    threshold?: number
-  ) {
-    const res = await this.gql({
-      query: matchContextQuery,
-      variables: {
-        content,
-        contextId,
-        workspaceId,
-        limit,
-        scopedThreshold,
-        threshold,
-      },
-    });
-    const { matchFiles: files, matchWorkspaceDocs: docs } =
-      res.currentUser?.copilot?.contexts?.[0] || {};
-    return { files, docs };
-  }
-
   // Text or image to text
   chatTextStream(
     {
@@ -562,23 +415,5 @@ export class CopilotClient {
       { workspaceId },
       { timeoutMs: 10000 }
     );
-  }
-
-  addContextBlob(options: OptionsField<typeof addContextBlobMutation>) {
-    return this.gql({
-      query: addContextBlobMutation,
-      variables: {
-        options,
-      },
-    }).then(res => res.addContextBlob);
-  }
-
-  removeContextBlob(options: OptionsField<typeof removeContextBlobMutation>) {
-    return this.gql({
-      query: removeContextBlobMutation,
-      variables: {
-        options,
-      },
-    }).then(res => res.removeContextBlob);
   }
 }

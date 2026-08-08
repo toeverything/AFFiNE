@@ -90,6 +90,7 @@ export function useAIChatConfig() {
   };
 
   const searchMenuConfig = {
+    addContextAvailable: workspaceService.workspace.flavour !== 'local',
     getDocMenuGroup: (
       query: string,
       action: SearchDocMenuAction,

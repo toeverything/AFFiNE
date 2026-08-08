@@ -1,5 +1,4 @@
 import { STATUS_CODES } from 'node:http';
-import { escape } from 'node:querystring';
 
 import { HttpStatus, Logger } from '@nestjs/common';
 import { ClsServiceManager } from 'nestjs-cls';
@@ -791,35 +790,6 @@ export const USER_FRIENDLY_ERRORS = {
     message: ({ provider, kind, message }) =>
       `Provider ${provider} failed with ${kind} error: ${message || 'unknown'}`,
   },
-  copilot_invalid_context: {
-    type: 'invalid_input',
-    args: { contextId: 'string' },
-    message: ({ contextId }) => `Invalid copilot context ${contextId}.`,
-  },
-  copilot_context_file_not_supported: {
-    type: 'bad_request',
-    args: { fileName: 'string', message: 'string' },
-    message: ({ fileName, message }) =>
-      `File ${fileName} is not supported to use as context: ${message}`,
-  },
-  copilot_failed_to_modify_context: {
-    type: 'internal_server_error',
-    args: { contextId: 'string', message: 'string' },
-    message: ({ contextId, message }) =>
-      `Failed to modify context ${contextId}: ${message}`,
-  },
-  copilot_failed_to_match_context: {
-    type: 'internal_server_error',
-    args: { contextId: 'string', content: 'string', message: 'string' },
-    message: ({ contextId, content, message }) =>
-      `Failed to match context ${contextId} with "${escape(content)}": ${message}`,
-  },
-  copilot_failed_to_match_global_context: {
-    type: 'internal_server_error',
-    args: { workspaceId: 'string', content: 'string', message: 'string' },
-    message: ({ workspaceId, content, message }) =>
-      `Failed to match context in workspace ${workspaceId} with "${escape(content)}": ${message}`,
-  },
   copilot_embedding_disabled: {
     type: 'action_forbidden',
     message: `Embedding feature is disabled, please contact the administrator to enable it in the workspace settings.`,
@@ -827,6 +797,11 @@ export const USER_FRIENDLY_ERRORS = {
   copilot_embedding_unavailable: {
     type: 'action_forbidden',
     message: `Embedding feature not available, you may need to install pgvector extension to your database`,
+  },
+  copilot_failed_to_add_workspace_artifact: {
+    type: 'internal_server_error',
+    args: { message: 'string' },
+    message: ({ message }) => `Failed to add workspace artifact: ${message}`,
   },
   copilot_transcription_job_exists: {
     type: 'bad_request',
@@ -840,13 +815,6 @@ export const USER_FRIENDLY_ERRORS = {
     type: 'bad_request',
     message: `Audio not provided.`,
   },
-  copilot_failed_to_add_workspace_file_embedding: {
-    type: 'internal_server_error',
-    args: { message: 'string' },
-    message: ({ message }) =>
-      `Failed to add workspace file embedding: ${message}`,
-  },
-
   // Quota & Limit errors
   blob_quota_exceeded: {
     type: 'quota_exceeded',

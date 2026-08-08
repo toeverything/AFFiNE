@@ -70,10 +70,19 @@ export class ChatSession implements AsyncDisposable {
       userId,
       workspaceId,
       docId,
+      focus,
       prompt: { name: promptName, config: promptConfig },
     } = this.state;
 
-    return { sessionId, userId, workspaceId, docId, promptName, promptConfig };
+    return {
+      sessionId,
+      userId,
+      workspaceId,
+      docId,
+      focus,
+      promptName,
+      promptConfig,
+    };
   }
 
   get stashTurns() {
@@ -144,11 +153,13 @@ export class ChatSession implements AsyncDisposable {
 export type ConversationState = {
   conversation: Conversation;
   turns: Turn[];
+  focus: ChatSessionState['focus'];
   prompt: ResolvedPrompt;
 };
 
 export type ConversationMetaState = {
   conversation: Conversation;
+  focus: ChatSessionState['focus'];
   prompt: ResolvedPrompt;
 };
 
@@ -196,6 +207,7 @@ export class ChatSessionService {
     return {
       conversation,
       turns: session.turns,
+      focus: session.focus,
       prompt,
     };
   }
@@ -208,6 +220,7 @@ export class ChatSessionService {
 
     return {
       conversation: session.conversation,
+      focus: session.focus,
       prompt,
     };
   }
@@ -417,6 +430,13 @@ export class ChatSessionService {
     userId: string;
     turn: Turn;
     compatSubmissionId?: string;
+    focus?: ChatSessionState['focus'];
+    artifacts?: Array<{
+      artifactId: string;
+      role: string;
+      displayName?: string;
+      metadata?: Record<string, unknown>;
+    }>;
   }) {
     return await this.store.appendTurn(input);
   }
@@ -463,6 +483,7 @@ export class ChatSessionService {
           workspaceId: state.conversation.workspaceId,
           docId: state.conversation.docId,
           turns: state.turns,
+          focus: state.focus,
           prompt: state.prompt,
         },
         (prompt, turns, params, sessionId) =>

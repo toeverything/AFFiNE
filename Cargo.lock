@@ -76,14 +76,16 @@ dependencies = [
 
 [[package]]
 name = "affine_doc_loader"
-version = "0.1.4"
+version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1344b7af4cfa7e4c17c676281db8f4244914779a59250fbe71c06b5219b15952"
+checksum = "33e16da813ebb55e6b58690c12eaf2acdb0cc76039ad768f0503f5a0df61c629"
 dependencies = [
+ "chrono",
  "nanoid",
  "pulldown-cmark 0.13.1",
  "serde",
  "serde_json",
+ "sha2 0.11.0",
  "thiserror 2.0.18",
  "y-octo",
 ]
@@ -4753,9 +4755,9 @@ dependencies = [
 
 [[package]]
 name = "llm_adapter"
-version = "0.2.16"
+version = "0.2.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5cfb4eab8636c2e3ac87a221630f6b458e1a7ffb32e3701576840871b98d1bc6"
+checksum = "49df35c253da1563c33f0733ef3a46da3194299807cbd7e03c48dfa12a89a72f"
 dependencies = [
  "base64",
  "jsonschema",
@@ -4771,9 +4773,9 @@ dependencies = [
 
 [[package]]
 name = "llm_runtime"
-version = "0.2.9"
+version = "0.2.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "35d70efcecaf49ea990fb9596664cf9c146c0260e0a0ed5a643ab47673a0521a"
+checksum = "7390d9129578a2bac44e0e78a964f39e290d6678cbc5e508803a128d5b2ae5c1"
 dependencies = [
  "jsonschema",
  "llm_adapter",
@@ -7825,6 +7827,7 @@ dependencies = [
  "tokio-stream",
  "tracing",
  "url",
+ "uuid",
  "webpki-roots 0.26.11",
 ]
 
@@ -7906,6 +7909,7 @@ dependencies = [
  "stringprep",
  "thiserror 2.0.18",
  "tracing",
+ "uuid",
  "whoami",
 ]
 
@@ -7944,6 +7948,7 @@ dependencies = [
  "stringprep",
  "thiserror 2.0.18",
  "tracing",
+ "uuid",
  "whoami",
 ]
 
@@ -7970,6 +7975,7 @@ dependencies = [
  "thiserror 2.0.18",
  "tracing",
  "url",
+ "uuid",
 ]
 
 [[package]]

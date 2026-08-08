@@ -1,0 +1,25 @@
+query getWorkspaceArtifacts(
+  $workspaceId: String!
+  $pagination: PaginationInput!
+) {
+  workspace(id: $workspaceId) {
+    embedding {
+      artifacts(pagination: $pagination) {
+        totalCount
+        pageInfo {
+          endCursor
+          hasNextPage
+        }
+        edges {
+          node {
+            artifactId
+            contentHash
+            mediaType
+            size
+            createdAt
+          }
+        }
+      }
+    }
+  }
+}

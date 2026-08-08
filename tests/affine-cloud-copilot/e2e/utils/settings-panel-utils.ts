@@ -1,4 +1,4 @@
-import { cleanupWorkspace, runPrisma } from '@affine-test/kit/utils/cloud';
+import { cleanupWorkspace } from '@affine-test/kit/utils/cloud';
 import { expect, type Page } from '@playwright/test';
 
 const WORKSPACE_EMBEDDING_SWITCH_TEST_ID = 'workspace-embedding-setting-switch';
@@ -266,17 +266,11 @@ export class SettingsPanelUtils {
         'workspace-embedding-setting-attachment-item'
       );
       await expect(attachmentItems).toHaveCount(expectedFileCount);
-    }).toPass({ timeout });
-
-    const workspaceId = page.url().split('/').slice(-2)[0] || '';
-    await cleanupWorkspace(workspaceId);
-    await expect(async () => {
-      const embeddedFileCount = await runPrisma(client =>
-        client.aiWorkspaceFiles.count({
-          where: { workspaceId, embeddings: { some: {} } },
-        })
-      );
-      expect(embeddedFileCount).toBe(expectedFileCount);
+      await expect(
+        attachmentList.getByTestId(
+          'workspace-embedding-setting-attachment-uploading-item'
+        )
+      ).toHaveCount(0);
     }).toPass({ timeout });
   }
 }

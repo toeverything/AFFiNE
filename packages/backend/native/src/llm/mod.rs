@@ -9,7 +9,7 @@ pub(crate) mod route;
 pub use action::copilot_action_recipe;
 pub use byok::{
   ByokCapabilityInput, ByokCatalogModelOutput, ByokCatalogOutput, ByokCatalogProviderOutput, ByokEndpointInput,
-  ByokLocalLeaseOutput, ByokModelDeclarationInput, ByokModelProbeCheckOutput, ByokModelProbeOutput,
+  ByokLocalLeaseOutput, ByokModelDeclarationInput, ByokModelProbeCheckOutput, ByokModelProbeOutput, ByokPolicyOutput,
   ByokProbeCheckInput, ByokProbeResultOutput, ByokProbeStatusOutput, ByokProfileDefinitionInput, ByokProfileOutput,
   ByokValidationOutput, CreateByokLocalLeaseInput, CreateByokLocalLeaseProviderInput, CreateByokProfileInput,
   ProbeByokDraftInput, ProbeByokProfileInput, ReorderByokProfilesInput, ReplaceByokProfileInput,
@@ -40,6 +40,7 @@ pub(crate) use ffi::{
   LlmDispatchPayload, LlmMiddlewarePayload, LlmRerankDispatchPayload, LlmStructuredDispatchPayload,
 };
 pub use prompt_catalog::llm_get_built_in_route_options;
+pub(crate) use route::Deployment;
 pub use route::{
   CopilotAccessProjection, CopilotExecuteInput, CopilotManagedTier, CopilotRouteCheckInput, CopilotTargetOverrideInput,
 };

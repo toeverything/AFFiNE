@@ -57,15 +57,21 @@ function useAIRequestService() {
   const graphqlService = useService(GraphQLService);
   const eventSourceService = useService(EventSourceService);
   const nbstoreService = useService(NbstoreService);
+  const workspace = useService(WorkspaceService).workspace;
 
   return useMemo(
     () =>
       createAIRequestService(
         graphqlService.gql,
         eventSourceService.eventSource,
-        nbstoreService.realtime
+        nbstoreService.realtime,
+        async () => {
+          await workspace.engine.doc.waitForSynced(workspace.id);
+          await workspace.engine.doc.waitForSynced('db$docProperties');
+          await workspace.engine.doc.waitForSynced();
+        }
       ),
-    [graphqlService, eventSourceService, nbstoreService]
+    [graphqlService, eventSourceService, nbstoreService, workspace]
   );
 }
 

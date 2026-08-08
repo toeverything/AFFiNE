@@ -31,6 +31,14 @@ export class ChatMessageUser extends WithDisposable(ShadowlessElement) {
     .text-content-wrapper {
       align-self: flex-end;
     }
+
+    .scope-receipt {
+      align-self: flex-end;
+      margin-top: 6px;
+      color: var(--affine-text-secondary-color);
+      font-size: 11px;
+      text-align: right;
+    }
   `;
 
   @property({ attribute: false })
@@ -41,6 +49,10 @@ export class ChatMessageUser extends WithDisposable(ShadowlessElement) {
 
   renderContent() {
     const { item } = this;
+    const receipt = item.scopeSnapshot;
+    const resolvedCount = receipt
+      ? receipt.requiredDocIds.length + receipt.requiredArtifactIds.length
+      : 0;
 
     return html`
       ${item.attachments
@@ -56,6 +68,17 @@ export class ChatMessageUser extends WithDisposable(ShadowlessElement) {
       >
         <chat-content-pure-text .text=${item.content}></chat-content-pure-text>
       </div>
+      ${receipt
+        ? html`<div class="scope-receipt" data-testid="chat-scope-receipt">
+            ${receipt.selectors
+              .map(
+                selector => selector.name ?? `${selector.kind}:${selector.id}`
+              )
+              .join(', ')}
+            · ${resolvedCount} sources ·
+            ${new Date(receipt.resolvedAt).toLocaleString()}
+          </div>`
+        : nothing}
     `;
   }
 

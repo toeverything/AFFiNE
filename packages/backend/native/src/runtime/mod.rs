@@ -4,6 +4,7 @@ pub mod storage_runtime;
 pub(crate) mod config;
 pub(crate) mod error;
 pub(crate) mod migrations;
+pub(crate) mod object_storage;
 pub(crate) mod types;
 
 pub(crate) use config::{BackendRuntimeConfig, CopilotManagedProfileConfig, CopilotRuntimeConfig, InviteQuotaConfig};

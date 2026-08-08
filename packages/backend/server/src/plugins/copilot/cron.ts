@@ -1,19 +1,15 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
-import { JOB_SIGNAL, JobQueue, OneDay, OnJob } from '../../base';
+import { JobQueue, OneDay, OnJob } from '../../base';
 import { Models } from '../../models';
 
-const CLEANUP_EMBEDDING_JOB_BATCH_SIZE = 100;
 const BACKGROUND_COPILOT_JOB_PRIORITY = 100;
 
 declare global {
   interface Jobs {
     'copilot.session.cleanupEmptySessions': {};
     'copilot.session.generateMissingTitles': {};
-    'copilot.workspace.cleanupTrashedDocEmbeddings': {
-      nextSid?: number;
-    };
   }
 }
 
@@ -38,12 +34,6 @@ export class CopilotCronJobs {
       'copilot.session.generateMissingTitles',
       {},
       { jobId: 'daily-copilot-generate-missing-titles' }
-    );
-
-    await this.jobs.add(
-      'copilot.workspace.cleanupTrashedDocEmbeddings',
-      {},
-      { jobId: 'daily-copilot-cleanup-trashed-doc-embeddings' }
     );
   }
 
@@ -81,31 +71,5 @@ export class CopilotCronJobs {
     this.logger.log(
       `Scheduled title generation for ${sessions.length} sessions`
     );
-  }
-
-  @OnJob('copilot.workspace.cleanupTrashedDocEmbeddings')
-  async cleanupTrashedDocEmbeddings(
-    params: Jobs['copilot.workspace.cleanupTrashedDocEmbeddings']
-  ) {
-    const nextSid = params.nextSid ?? 0;
-    // only consider workspaces that cleared their embeddings more than 24 hours ago
-    const oneDayAgo = new Date(Date.now() - OneDay);
-    const workspaces = await this.models.workspace.list(
-      { sid: { gt: nextSid }, lastCheckEmbeddings: { lt: oneDayAgo } },
-      { id: true, sid: true },
-      CLEANUP_EMBEDDING_JOB_BATCH_SIZE
-    );
-    if (!workspaces.length) {
-      return JOB_SIGNAL.Done;
-    }
-    for (const { id: workspaceId } of workspaces) {
-      await this.jobs.add(
-        'copilot.embedding.cleanupTrashedDocEmbeddings',
-        { workspaceId },
-        { jobId: `cleanup-trashed-doc-embeddings-${workspaceId}` }
-      );
-    }
-    params.nextSid = workspaces[workspaces.length - 1].sid;
-    return JOB_SIGNAL.Repeat;
   }
 }

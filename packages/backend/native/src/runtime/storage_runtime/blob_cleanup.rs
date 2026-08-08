@@ -117,6 +117,8 @@ async fn has_doc_ref(pool: &PgPool, workspace_id: &str, key: &str) -> RuntimeRes
 }
 
 async fn has_other_ref(pool: &PgPool, workspace_id: &str, key: &str) -> RuntimeResult<bool> {
+  // Remove the ai_contexts branch after stable and beta no longer run binaries
+  // built with the 115-migration schema.
   let required_ref = sqlx::query_scalar::<_, bool>(
     r#"
     SELECT EXISTS(SELECT 1 FROM workspaces WHERE id = $1 AND avatar_key = $2)
@@ -143,39 +145,7 @@ async fn has_other_ref(pool: &PgPool, workspace_id: &str, key: &str) -> RuntimeR
   if required_ref {
     return Ok(true);
   }
-  if table_exists(pool, "ai_workspace_files").await?
-    && sqlx::query_scalar::<_, bool>(
-      "SELECT EXISTS(SELECT 1 FROM ai_workspace_files WHERE workspace_id = $1 AND blob_id = $2)",
-    )
-    .bind(workspace_id)
-    .bind(key)
-    .fetch_one(pool)
-    .await
-    .map_err(|err| RuntimeError::database("Blob cleanup workspace file ref check failed", err))?
-  {
-    return Ok(true);
-  }
-  if table_exists(pool, "ai_workspace_blob_embeddings").await?
-    && sqlx::query_scalar::<_, bool>(
-      "SELECT EXISTS(SELECT 1 FROM ai_workspace_blob_embeddings WHERE workspace_id = $1 AND blob_id = $2)",
-    )
-    .bind(workspace_id)
-    .bind(key)
-    .fetch_one(pool)
-    .await
-    .map_err(|err| RuntimeError::database("Blob cleanup workspace blob embedding ref check failed", err))?
-  {
-    return Ok(true);
-  }
   Ok(false)
-}
-
-async fn table_exists(pool: &PgPool, table: &str) -> RuntimeResult<bool> {
-  sqlx::query_scalar::<_, bool>("SELECT to_regclass($1) IS NOT NULL")
-    .bind(format!("public.{table}"))
-    .fetch_one(pool)
-    .await
-    .map_err(|err| RuntimeError::database("Blob cleanup table existence check failed", err))
 }
 
 async fn load_completed_blobs(
@@ -646,7 +616,7 @@ impl StorageRuntime {
         Ok(outcomes) => outcomes,
         Err(err) => object_keys
           .into_iter()
-          .map(|key| super::object_storage::types::ObjectDeleteOutcome {
+          .map(|key| crate::runtime::object_storage::types::ObjectDeleteOutcome {
             key,
             error: Some(err.to_string()),
           })

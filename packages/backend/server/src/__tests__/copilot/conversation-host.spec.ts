@@ -29,7 +29,10 @@ function fixture(
         sessionId,
         content: 'hello',
         attachments: [],
-        params: { tone: 'brief' },
+        params: {
+          tone: 'brief',
+          scopeSelectors: [{ kind: 'document', id: 'doc-2' }],
+        },
         createdAt: new Date('2026-01-01T00:00:00.000Z'),
       },
     ],
@@ -43,6 +46,7 @@ function fixture(
       userId: 'user-1',
       workspaceId: 'workspace-1',
       docId: 'doc-1',
+      focus: { selectors: [] },
       prompt: {
         name: 'Chat With AFFiNE AI',
         config: {},
@@ -96,9 +100,41 @@ function fixture(
   const policy = {
     hasQuota: async () => quota,
   } as unknown as ConversationPolicy;
+  const runtime = {
+    putWorkspaceArtifact: async () => {
+      throw new Error('unexpected attachment');
+    },
+    compileTurnScope: async (input: {
+      selectors: unknown[];
+      preferredSourceIds?: string[];
+    }) => ({
+      version: 1,
+      resolvedAt: '2026-01-01T00:00:00.000Z',
+      selectors: input.selectors,
+      requiredDocIds: [],
+      requiredArtifactIds: [],
+      preferredSourceIds: input.preferredSourceIds ?? [],
+      retrieval: {
+        mode: input.selectors.length ? 'required' : 'workspace',
+        requiredDocIds: [],
+        requiredArtifactIds: [],
+        preferredSourceIds: input.preferredSourceIds ?? [],
+      },
+    }),
+  };
+  const attachmentAdmission = {
+    admitPromptAttachments: async () => [],
+  };
 
   return {
-    host: new ConversationHost(sessions, submissionStore, mutex, policy),
+    host: new ConversationHost(
+      sessions,
+      submissionStore,
+      mutex,
+      policy,
+      runtime as never,
+      attachmentAdmission as never
+    ),
     sessionId,
     token,
     durable,
@@ -119,6 +155,9 @@ test('compat submission becomes one durable user turn and replays idempotently',
   });
   t.is(first.latestTurn?.content, 'hello');
   t.deepEqual(first.latestTurn?.metadata, { tone: 'brief' });
+  t.deepEqual(first.latestTurn?.scopeSnapshot?.selectors, [
+    { kind: 'document', id: 'doc-2', source: 'draft' },
+  ]);
   t.is(state.appendCount(), 1);
   t.false(state.submissions.has(state.token));
   t.truthy(state.accepted.get(state.token));
@@ -179,7 +218,7 @@ test('compat submission cannot be consumed by another session', async t => {
     sessionId: 'session-other',
     content: 'secret',
     attachments: [],
-    params: { tone: 'brief' },
+    params: { tone: 'brief', scopeSelectors: [] },
     createdAt: new Date(),
   });
 

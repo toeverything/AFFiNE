@@ -2,6 +2,7 @@ import '../../plugins/copilot';
 
 import { randomUUID } from 'node:crypto';
 
+import { createCopilotMessageMutation } from '@affine/graphql';
 import { McpAccessMode, PrismaClient } from '@prisma/client';
 import type { TestFn } from 'ava';
 import ava from 'ava';
@@ -9,24 +10,15 @@ import ava from 'ava';
 import { Config } from '../../base';
 import { ServerFeature, ServerService } from '../../core';
 import { AuthService } from '../../core/auth';
-import {
-  ContextCategories,
-  DocRole,
-  Models,
-  WorkspaceMemberStatus,
-  WorkspaceRole,
-} from '../../models';
+import { Models } from '../../models';
 import { CopilotFeatureService } from '../../plugins/copilot/feature';
 import { McpCredentialService } from '../../plugins/copilot/mcp/credential';
 import { WorkspaceMcpProvider } from '../../plugins/copilot/mcp/provider';
-import { installMockCopilotRuntime, Mockers } from '../mocks';
+import { installMockCopilotRuntime } from '../mocks';
 import { createTestingApp, createWorkspace, type TestingApp } from '../utils';
 import {
-  addContextCategory,
-  addContextFile,
   chatWithImages,
   chatWithText,
-  createCopilotContext,
   createCopilotMessage,
   createCopilotSession,
   getCopilotSession,
@@ -89,7 +81,7 @@ test('disabled copilot hides its server feature and rejects every API transport'
   }
 });
 
-test('session, compat message, text SSE and durable history share one public contract', async t => {
+test('session, message, local context restriction and durable history share one public contract', async t => {
   const { app } = t.context;
   await app.signupV1();
   const workspace = await createWorkspace(app);
@@ -139,6 +131,49 @@ test('session, compat message, text SSE and durable history share one public con
   );
   t.is(history.messages.filter(message => message.role === 'user').length, 1);
   t.not(history.messages[0].id, token);
+
+  const localSessionId = await createCopilotSession(
+    app,
+    randomUUID(),
+    null,
+    'Chat With AFFiNE AI'
+  );
+  t.truthy(await createCopilotMessage(app, localSessionId, 'local hello'));
+  const localContextResponse = await app
+    .POST('/graphql')
+    .set('x-operation-name', createCopilotMessageMutation.op)
+    .send({
+      query: createCopilotMessageMutation.query,
+      variables: {
+        options: {
+          sessionId: localSessionId,
+          content: 'local context',
+          params: {
+            scopeSelectors: [{ kind: 'document', id: randomUUID() }],
+          },
+        },
+      },
+    })
+    .expect(200);
+  t.is(
+    localContextResponse.body.errors?.[0]?.message,
+    "Local workspaces don't support attachments or references."
+  );
+  await t.throwsAsync(
+    app.gql({
+      query: createCopilotMessageMutation,
+      variables: {
+        options: {
+          sessionId: localSessionId,
+          content: 'local attachment',
+          blobs: [new File(['attachment'], 'attachment.txt')],
+        },
+      },
+    }),
+    {
+      message: "Local workspaces don't support attachments or references.",
+    }
+  );
 });
 
 test('chat and history endpoints reject a different user', async t => {
@@ -181,73 +216,6 @@ test('image SSE emits persisted attachment events for action sessions', async t 
   t.truthy(attachment?.data);
 });
 
-test('context API rechecks write access and filters unreadable category docs', async t => {
-  const { app } = t.context;
-  const models = app.get(Models);
-  const owner = await app.signupV1();
-  const workspace = await createWorkspace(app);
-  const member = await app.signupV1();
-  await models.workspaceUser.set(
-    workspace.id,
-    member.id,
-    WorkspaceRole.Collaborator,
-    { status: WorkspaceMemberStatus.Accepted }
-  );
-
-  const sessionId = await createCopilotSession(
-    app,
-    workspace.id,
-    randomUUID(),
-    'Chat With AFFiNE AI'
-  );
-  const contextId = await createCopilotContext(app, workspace.id, sessionId);
-  await models.workspaceUser.set(
-    workspace.id,
-    member.id,
-    WorkspaceRole.External
-  );
-  await t.throwsAsync(
-    addContextFile(app, contextId, 'sample.txt', Buffer.from('test'))
-  );
-
-  await models.workspaceUser.set(
-    workspace.id,
-    member.id,
-    WorkspaceRole.Collaborator,
-    { status: WorkspaceMemberStatus.Accepted }
-  );
-  const readable = await app.create(Mockers.DocSnapshot, {
-    workspaceId: workspace.id,
-    user: owner,
-  });
-  const hidden = await app.create(Mockers.DocSnapshot, {
-    workspaceId: workspace.id,
-    user: owner,
-  });
-  await app.create(Mockers.DocMeta, {
-    workspaceId: workspace.id,
-    docId: readable.id,
-    title: 'readable',
-  });
-  await app.create(Mockers.DocMeta, {
-    workspaceId: workspace.id,
-    docId: hidden.id,
-    title: 'hidden',
-    defaultRole: DocRole.None,
-  });
-  const category = await addContextCategory(
-    app,
-    contextId,
-    ContextCategories.Collection,
-    'favorites',
-    [readable.id, hidden.id]
-  );
-  t.deepEqual(
-    category.docs.map(doc => doc.id),
-    [readable.id]
-  );
-});
-
 test('MCP credentials remain endpoint-bound through rotate, revoke and expiry', async t => {
   const { app } = t.context;
   const auth = app.get(AuthService);
@@ -282,7 +250,7 @@ test('MCP credentials remain endpoint-bound through rotate, revoke and expiry', 
     (await provider.for(user.id, target.id, McpAccessMode.READ_ONLY)).tools.map(
       tool => tool.name
     ),
-    ['read_document', 'semantic_search', 'keyword_search']
+    ['read_document', 'doc_search']
   );
 
   const rotated = await credentials.rotate(

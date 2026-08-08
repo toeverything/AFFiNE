@@ -1,7 +1,7 @@
 export interface PersistedAttachmentFile {
-  fileId: string;
+  artifactId: string;
   fileName: string;
-  mimeType: string;
+  mediaType: string;
   size: number;
   createdAt: string;
   status: 'uploaded';

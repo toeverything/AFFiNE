@@ -1,10 +1,15 @@
 import { EventEmitter } from 'node:events';
 
+import type { DelegatedToolRequest } from '@affine/realtime';
 import ava from 'ava';
 import { firstValueFrom } from 'rxjs';
 
-import type { Config, JobQueue } from '../../base';
+import type { Config, EventBus, JobQueue } from '../../base';
 import { ServerFeature, type ServerService } from '../../core';
+import type { DocReader } from '../../core/doc';
+import type { PermissionAccess } from '../../core/permission';
+import { type RealtimePublisher, RealtimeRegistry } from '../../core/realtime';
+import type { CanvasProjectionV1 } from '../../core/utils/blocksuite';
 import type { Models } from '../../models';
 import { HistoryPromptPreloadProjector } from '../../plugins/copilot/compat/history-prompt-preload-projector';
 import { CopilotController } from '../../plugins/copilot/controller';
@@ -15,6 +20,9 @@ import {
   turnFromChatMessage,
 } from '../../plugins/copilot/core';
 import { CopilotCronJobs } from '../../plugins/copilot/cron';
+import { DelegatedEditorRealtimeProvider } from '../../plugins/copilot/delegated/realtime';
+import { DelegatedEditorService } from '../../plugins/copilot/delegated/service';
+import type { NativeEmbeddingService } from '../../plugins/copilot/embedding/native';
 import {
   CopilotFeatureGuard,
   CopilotFeatureService,
@@ -22,16 +30,567 @@ import {
 import type { PromptService } from '../../plugins/copilot/prompt';
 import type { ResolvedPrompt } from '../../plugins/copilot/prompt/spec';
 import { TextStreamParser } from '../../plugins/copilot/providers/utils';
+import { ArtifactRetrievalService } from '../../plugins/copilot/retrieval/artifact';
+import { DocumentRetrievalService } from '../../plugins/copilot/retrieval/document';
 import {
   projectActionEventToChatEvent,
   projectActionResultToAssistantTurn,
 } from '../../plugins/copilot/runtime/action-output-projector';
 import type { ActionStreamHost } from '../../plugins/copilot/runtime/hosts/action-stream-host';
+import { formatDocumentFootnotes } from '../../plugins/copilot/runtime/tool/footnotes';
 import type { TurnOrchestrator } from '../../plugins/copilot/runtime/turn-orchestrator';
-import { ChatSession } from '../../plugins/copilot/session';
+import {
+  ChatSession,
+  type ChatSessionService,
+} from '../../plugins/copilot/session';
 import type { CopilotStorage } from '../../plugins/copilot/storage';
+import {
+  createArtifactReadTool,
+  createArtifactSearchTool,
+} from '../../plugins/copilot/tools/artifact';
+import { buildDocCanvasGetter } from '../../plugins/copilot/tools/doc-canvas-read';
+import { buildDocumentSearch } from '../../plugins/copilot/tools/doc-search';
+import type { IndexerService } from '../../plugins/indexer/service';
 
 const test = ava;
+
+test('delegated editor requests require exact identity and cancel on interruption', async t => {
+  const published: Array<{ event: Record<string, unknown> }> = [];
+  const publisher = {
+    publish: (
+      _topic: string,
+      _input: unknown,
+      event: Record<string, unknown>
+    ) => published.push({ event }),
+  } as unknown as RealtimePublisher;
+  const delegated = new DelegatedEditorService(publisher);
+  delegated.upsert('user-1', 'connection-1', {
+    clientId: 'client-1',
+    sessionId: 'session-1',
+    workspaceId: 'workspace-1',
+    docId: 'doc-1',
+    editorStateId: 'state-1',
+    mode: 'page',
+    readonly: false,
+    focused: true,
+    capabilities: ['frontend_get_editor_state'],
+  });
+
+  const result = delegated.execute(
+    {
+      user: 'user-1',
+      session: 'session-1',
+      workspace: 'workspace-1',
+    },
+    'frontend_get_editor_state',
+    {},
+    undefined,
+    {
+      runId: '3e476e0f-5841-4ab5-afca-610eca612ef1',
+      toolCallId: 'call_provider_1',
+    }
+  );
+  const request = published[0].event as unknown as DelegatedToolRequest;
+  t.is(request.toolCallId, 'call_provider_1');
+  const registry = new RealtimeRegistry();
+  new DelegatedEditorRealtimeProvider(
+    registry,
+    { broadcast: () => {} } as unknown as EventBus,
+    {} as ChatSessionService,
+    delegated
+  ).onModuleInit();
+  t.notThrows(() =>
+    registry.getRequest('copilot.delegated.tool.respond').input.parse({
+      requestId: request.requestId,
+      runId: request.runId,
+      toolCallId: request.toolCallId,
+      sessionId: request.sessionId,
+      workspaceId: request.workspaceId,
+      docId: request.docId,
+      clientId: request.clientId,
+      editorStateId: request.editorStateId,
+      result: { mode: 'page' },
+    })
+  );
+  t.false(
+    delegated.receive('user-1', {
+      ...request,
+      editorStateId: 'stale-state',
+      result: { mode: 'page' },
+    })
+  );
+  t.false(
+    delegated.receive('user-1', {
+      ...request,
+      workspaceId: 'workspace-2',
+      result: { editor_state_id: 'state-1', mode: 'page' },
+    })
+  );
+  t.true(
+    delegated.receive('user-1', {
+      ...request,
+      result: { editor_state_id: 'state-1', mode: 'page' },
+    })
+  );
+  t.deepEqual(await result, {
+    editor_state_id: 'state-1',
+    mode: 'page',
+  });
+
+  const controller = new AbortController();
+  const aborted = delegated.execute(
+    {
+      user: 'user-1',
+      session: 'session-1',
+      workspace: 'workspace-1',
+    },
+    'frontend_get_editor_state',
+    {},
+    controller.signal
+  );
+  controller.abort();
+  t.like(await aborted, { error: { code: 'ABORTED', retryable: false } });
+  t.is(published.at(-1)?.event.type, 'cancel');
+
+  const preAbortedController = new AbortController();
+  preAbortedController.abort();
+  const preAborted = await delegated.execute(
+    {
+      user: 'user-1',
+      session: 'session-1',
+      workspace: 'workspace-1',
+    },
+    'frontend_get_editor_state',
+    {},
+    preAbortedController.signal
+  );
+  t.like(preAborted, { error: { code: 'ABORTED', retryable: false } });
+
+  const disconnected = delegated.execute(
+    {
+      user: 'user-1',
+      session: 'session-1',
+      workspace: 'workspace-1',
+    },
+    'frontend_get_editor_state',
+    {}
+  );
+  delegated.onDisconnect({ connectionId: 'connection-1' });
+  t.like(await disconnected, {
+    error: { code: 'FRONTEND_DISCONNECTED', retryable: true },
+  });
+  t.like(published.at(-1)?.event, { type: 'cancel', reason: 'disconnect' });
+});
+
+test('canvas reads expose top-level and frame-owned canvas blocks', async t => {
+  const projection: CanvasProjectionV1 = {
+    version: 1,
+    docId: 'doc-1',
+    revision: 'revision-1',
+    title: 'Canvas',
+    counts: {},
+    warnings: [],
+    blocks: [
+      {
+        id: 'page-1',
+        type: 'paragraph',
+        visibility: 'page',
+        text: 'Page only',
+        childIds: [],
+      },
+      {
+        id: 'frame-1',
+        type: 'frame',
+        visibility: 'edgeless',
+        childIds: ['edgeless-1', 'shape-1'],
+      },
+      {
+        id: 'edgeless-1',
+        type: 'edgeless-text',
+        visibility: 'edgeless',
+        text: 'Frame text',
+        childIds: [],
+      },
+      {
+        id: 'edgeless-2',
+        type: 'edgeless-text',
+        visibility: 'edgeless',
+        text: 'Top-level text',
+        childIds: [],
+      },
+    ],
+    elements: [
+      { id: 'shape-1', type: 'shape', frameId: 'frame-1', childIds: [] },
+      { id: 'shape-2', type: 'shape', childIds: [] },
+    ],
+  };
+  const getter = buildDocCanvasGetter(
+    {
+      user: () => ({
+        workspace: () => ({ doc: () => ({ can: async () => true }) }),
+      }),
+    } as unknown as PermissionAccess,
+    { getDocCanvas: async () => projection } as unknown as DocReader,
+    {
+      workspace: { get: async () => ({ id: 'workspace-1' }) },
+    } as unknown as Models
+  );
+  const options = { user: 'user-1', workspace: 'workspace-1' };
+  const overview = await getter(
+    options,
+    'doc-1',
+    { kind: 'overview' },
+    undefined,
+    50
+  );
+  t.deepEqual(
+    'blocks' in overview ? overview.blocks.map(block => block.id) : [],
+    ['edgeless-2', 'frame-1']
+  );
+  t.deepEqual(
+    'elements' in overview ? overview.elements.map(element => element.id) : [],
+    ['shape-2']
+  );
+
+  const frame = await getter(
+    options,
+    'doc-1',
+    { kind: 'frame', frame_id: 'frame-1' },
+    undefined,
+    50
+  );
+  t.deepEqual('blocks' in frame ? frame.blocks.map(block => block.id) : [], [
+    'edgeless-1',
+    'frame-1',
+  ]);
+  t.deepEqual(
+    'elements' in frame ? frame.elements.map(element => element.id) : [],
+    ['shape-1']
+  );
+
+  const scopedGetter = buildDocCanvasGetter(
+    {} as PermissionAccess,
+    {} as DocReader,
+    {} as Models,
+    { mode: 'selected', allowedDocIds: ['doc-2'] }
+  );
+  const outsideScope = await scopedGetter(
+    options,
+    'doc-1',
+    { kind: 'overview' },
+    undefined,
+    50
+  );
+  t.like(outsideScope, { code: 'DOC_SCOPE_DENIED' });
+});
+
+test('document tools enforce the user-selected hard scope', async t => {
+  const hit = {
+    docId: 'doc-1',
+    title: 'Doc',
+    excerpt: 'excerpt',
+    visibility: 'page' as const,
+    score: 1,
+    unitId: 'block:1',
+  };
+  const searchCalls: Array<string[] | undefined> = [];
+  const retrieval = {
+    search: async (
+      _options: unknown,
+      _query: string,
+      docIds: string[] | undefined,
+      _limit: number
+    ) => {
+      searchCalls.push(docIds);
+      return {
+        retrievalMode: 'hybrid',
+        degradedReason: undefined,
+        hits: [hit],
+      };
+    },
+  } as unknown as DocumentRetrievalService;
+  const options = { user: 'user-1', workspace: 'workspace-1' };
+
+  const readableAc = {
+    user: () => ({
+      workspace: () => ({
+        docs: async <T extends { docId: string }>(candidates: T[]) =>
+          candidates.filter(candidate => candidate.docId !== 'hidden-doc'),
+      }),
+    }),
+  } as unknown as PermissionAccess;
+  const documentModels = {
+    doc: {
+      findMetas: async (ids: Array<{ docId: string }>) =>
+        ids.map(({ docId }) => ({
+          docId,
+          title: `title-${docId}`,
+          updatedAt: new Date(1),
+        })),
+    },
+  } as unknown as Models;
+  const lexicalIndexer = {
+    searchDocsByKeyword: async () => [
+      {
+        docId: 'shared-doc',
+        title: 'Lexical title',
+        highlight: 'lexical passage',
+        unitId: 'block:shared',
+        visibility: 'page',
+        projectionVersion: '1',
+        sourceHash: 'hash',
+      },
+    ],
+  } as unknown as IndexerService;
+  const vectorSearch = {
+    canEmbedding: true,
+    matchWorkspaceDocCandidates: async () => [
+      {
+        docId: 'shared-doc',
+        chunk: 0,
+        content: 'vector passage',
+        distance: 0.1,
+        unitId: 'block:shared',
+        visibility: 'page' as const,
+      },
+      {
+        docId: 'hidden-doc',
+        chunk: 0,
+        content: 'hidden passage',
+        distance: 0.2,
+        unitId: 'block:hidden',
+        visibility: 'page' as const,
+      },
+    ],
+    rerankWorkspaceDocs: async (
+      _workspaceId: string,
+      _query: string,
+      candidates: Array<{
+        docId: string;
+        chunk: number;
+        content: string;
+        distance: number;
+        unitId: string;
+        visibility: 'page';
+      }>
+    ) => candidates,
+  };
+  const hybrid = new DocumentRetrievalService(
+    { indexer: { enabled: true } } as Config,
+    readableAc,
+    lexicalIndexer,
+    vectorSearch,
+    documentModels
+  );
+  const hybridResult = await hybrid.search(options, 'query', undefined, 10);
+  t.is(hybridResult.retrievalMode, 'hybrid');
+  t.deepEqual(
+    hybridResult.hits.map(result => result.docId),
+    ['shared-doc']
+  );
+  t.true(hybridResult.hits[0].score > 1 / 61);
+
+  const lexicalOnly = new DocumentRetrievalService(
+    { indexer: { enabled: true } } as Config,
+    readableAc,
+    lexicalIndexer,
+    { ...vectorSearch, canEmbedding: false },
+    documentModels
+  );
+  const lexicalResult = await lexicalOnly.search(
+    options,
+    'query',
+    undefined,
+    10
+  );
+  t.is(lexicalResult.retrievalMode, 'lexical');
+  t.is(lexicalResult.degradedReason, 'VECTOR_UNAVAILABLE');
+
+  const vectorOnly = new DocumentRetrievalService(
+    { indexer: { enabled: false } } as Config,
+    readableAc,
+    lexicalIndexer,
+    vectorSearch,
+    documentModels
+  );
+  const vectorResult = await vectorOnly.search(options, 'query', undefined, 10);
+  t.is(vectorResult.retrievalMode, 'vector');
+  t.is(vectorResult.degradedReason, 'LEXICAL_UNAVAILABLE');
+  t.deepEqual(
+    vectorResult.hits.map(result => result.docId),
+    ['shared-doc']
+  );
+
+  // model omits doc_ids: pinned scope applies
+  let search = buildDocumentSearch(retrieval, options, {
+    mode: 'selected',
+    allowedDocIds: ['pinned-1'],
+  });
+  let result: any = await search('query', undefined, 10);
+  t.deepEqual(searchCalls.pop(), ['pinned-1']);
+  t.is(result.hits[0].doc_id, 'doc-1');
+  t.is(result.hits[0].source.doc_id, 'doc-1');
+
+  // model cannot expand the pinned scope
+  search = buildDocumentSearch(retrieval, options, {
+    mode: 'selected',
+    allowedDocIds: ['pinned-1'],
+  });
+  result = await search('query', ['other-1'], 10);
+  t.is(searchCalls.length, 0);
+  t.deepEqual(result.hits, []);
+
+  // an empty array keeps the pinned scope
+  search = buildDocumentSearch(retrieval, options, {
+    mode: 'selected',
+    allowedDocIds: ['pinned-1'],
+  });
+  await search('query', [], 10);
+  t.deepEqual(searchCalls.pop(), ['pinned-1']);
+
+  // an explicitly selected empty category remains an empty hard scope
+  search = buildDocumentSearch(retrieval, options, {
+    mode: 'selected',
+    allowedDocIds: [],
+  });
+  result = await search('query', undefined, 10);
+  t.is(searchCalls.length, 0);
+  t.is(result.scope_mode, 'selected');
+  t.is(result.scope_doc_count, 0);
+  t.deepEqual(result.hits, []);
+
+  // no pinned scope: omission searches the whole workspace
+  search = buildDocumentSearch(retrieval, options);
+  await search('query', undefined, 10);
+  t.is(searchCalls.pop(), undefined);
+
+  // missing identity is a non-retryable tool error
+  const unauthenticated: any = await buildDocumentSearch(retrieval, undefined, {
+    mode: 'selected',
+    allowedDocIds: ['pinned-1'],
+  })('query', undefined, 10);
+  t.is(unauthenticated.code, 'INVALID_CONTEXT');
+  t.is(searchCalls.length, 0);
+
+  const artifactCalls: Array<{
+    kind: string;
+    sourceKey?: string;
+    requiredArtifactIds: string[];
+  }> = [];
+  const artifactScope = {
+    mode: 'required' as const,
+    requiredDocIds: [],
+    requiredArtifactIds: ['6ba7b810-9dad-11d1-80b4-00c04fd430c8'],
+    preferredSourceIds: [],
+  };
+  const artifactEmbedding = {
+    match: async (
+      _workspaceId: string,
+      _query: string,
+      kind: string,
+      retrievalScope: typeof artifactScope,
+      _limit: number,
+      signal?: AbortSignal
+    ) => {
+      signal?.throwIfAborted();
+      artifactCalls.push({
+        kind,
+        requiredArtifactIds: retrievalScope.requiredArtifactIds,
+      });
+      return [
+        {
+          artifactId: artifactScope.requiredArtifactIds[0],
+          content: 'artifact excerpt',
+          distance: 0.1,
+          chunk: 0,
+        },
+      ];
+    },
+    readSourceContent: async (
+      _workspaceId: string,
+      kind: string,
+      sourceKey: string,
+      retrievalScope: typeof artifactScope
+    ) => {
+      artifactCalls.push({
+        kind,
+        sourceKey,
+        requiredArtifactIds: retrievalScope.requiredArtifactIds,
+      });
+      if (!retrievalScope.requiredArtifactIds.includes(sourceKey)) {
+        throw new Error('embedding_source_out_of_scope');
+      }
+      return {
+        content: 'artifact body',
+        revision: 'revision-1',
+        mimeType: 'text/plain',
+        name: 'note.txt',
+        truncated: false,
+      };
+    },
+  } as unknown as NativeEmbeddingService;
+  const artifactRetrieval = new ArtifactRetrievalService(
+    {
+      user: () => ({
+        workspace: () => ({
+          allowLocal: () => ({ can: async () => true }),
+        }),
+      }),
+    } as unknown as PermissionAccess,
+    artifactEmbedding
+  );
+  const artifactOptions = {
+    user: 'user-1',
+    workspace: 'workspace-1',
+    retrievalScope: artifactScope,
+  };
+  const artifactSearch = createArtifactSearchTool(
+    artifactRetrieval,
+    artifactOptions
+  );
+  const artifactSearchResult = await artifactSearch.execute?.(
+    { query: 'query' },
+    {}
+  );
+  t.deepEqual(artifactCalls.shift(), {
+    kind: 'artifact',
+    requiredArtifactIds: artifactScope.requiredArtifactIds,
+  });
+  t.like(artifactSearchResult, {
+    hits: [{ source: { type: 'artifact' } }],
+  });
+
+  const artifactRead = createArtifactReadTool(
+    artifactRetrieval,
+    artifactOptions
+  );
+  const artifactReadResult = await artifactRead.execute?.(
+    { artifact_id: artifactScope.requiredArtifactIds[0] },
+    {}
+  );
+  t.like(artifactReadResult, {
+    source: { artifact_id: artifactScope.requiredArtifactIds[0] },
+  });
+  const deniedArtifactRead = await artifactRead.execute?.(
+    { artifact_id: '6ba7b811-9dad-11d1-80b4-00c04fd430c8' },
+    {}
+  );
+  t.like(deniedArtifactRead, { code: 'ARTIFACT_UNAVAILABLE' });
+
+  const abortedSearch = new AbortController();
+  abortedSearch.abort();
+  await t.throwsAsync(
+    artifactRetrieval.search({
+      userId: 'user-1',
+      workspaceId: 'workspace-1',
+      query: 'query',
+      retrieval: artifactScope,
+      limit: 5,
+      signal: abortedSearch.signal,
+    }),
+    { name: 'AbortError' }
+  );
+});
 
 test('copilot config controls the server feature and request admission', t => {
   const config = { copilot: { enabled: false } } as Config;
@@ -91,6 +650,7 @@ test('chat session preserves prompt params, attachments, stash and revert semant
       userId: 'user-1',
       workspaceId: 'workspace-1',
       docId: 'doc-1',
+      focus: { selectors: [] },
       prompt,
       turns: [turn('session-1', 'user', 'persisted')],
     },
@@ -205,6 +765,7 @@ test('chat message adapters preserve and canonicalize assistant render trace', t
   t.deepEqual(chatMessageFromTurn(converted), {
     ...message,
     attachments: undefined,
+    scopeSnapshot: undefined,
     streamObjects: converted.renderTrace,
   });
 });
@@ -216,6 +777,7 @@ test('action output projection preserves public SSE and assistant-turn contracts
       userId: 'user-1',
       workspaceId: 'workspace-1',
       docId: 'doc-1',
+      focus: { selectors: [] },
       prompt,
       turns: [],
     },
@@ -255,6 +817,28 @@ test('action output projection preserves public SSE and assistant-turn contracts
       wasAborted: false,
     }),
     null
+  );
+  t.is(
+    formatDocumentFootnotes([
+      {
+        type: 'document',
+        workspace_id: 'workspace-1',
+        doc_id: 'doc-1',
+        title: 'Getting Started',
+        revision: 'revision-1',
+        visibility: 'edgeless',
+      },
+      {
+        type: 'document',
+        workspace_id: 'workspace-1',
+        doc_id: 'doc-1',
+        title: 'Getting Started',
+        revision: 'revision-1',
+        visibility: 'edgeless',
+        element_id: 'element-1',
+      },
+    ]),
+    '\n\n[^doc-1]\n\n[^doc-1]: {"type":"doc","docId":"doc-1","title":"Getting Started"}'
   );
 });
 
@@ -363,11 +947,6 @@ test('title policy and cron scheduling retain background-job invariants', async 
       'copilot.session.generateMissingTitles',
       {},
       { jobId: 'daily-copilot-generate-missing-titles' },
-    ],
-    [
-      'copilot.workspace.cleanupTrashedDocEmbeddings',
-      {},
-      { jobId: 'daily-copilot-cleanup-trashed-doc-embeddings' },
     ],
     [
       'copilot.session.generateTitle',

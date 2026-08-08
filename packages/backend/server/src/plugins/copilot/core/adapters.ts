@@ -82,6 +82,7 @@ export const turnFromChatMessage = (
     renderTrace: trace.renderTrace,
     toolEvents: trace.toolEvents,
     metadata: message.params ?? {},
+    scopeSnapshot: message.scopeSnapshot,
     createdAt: message.createdAt,
   });
 };
@@ -95,6 +96,7 @@ export const chatMessageFromTurn = (turn: Turn): ChatMessage => {
     content: turn.content,
     attachments: turn.attachments.length ? turn.attachments : undefined,
     params: turn.metadata,
+    scopeSnapshot: turn.scopeSnapshot,
     streamObjects: renderTrace.length ? renderTrace : undefined,
     createdAt: turn.createdAt,
   };

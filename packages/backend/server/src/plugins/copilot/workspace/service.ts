@@ -1,16 +1,11 @@
-import { createHash } from 'node:crypto';
-
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
+import { PrismaClient } from '@prisma/client';
 
-import {
-  FileUpload,
-  JobQueue,
-  PaginationInput,
-  sniffMime,
-} from '../../../base';
+import { FileUpload, PaginationInput, sniffMime } from '../../../base';
 import { ServerFeature, ServerService } from '../../../core';
+import { BackendRuntimeProvider } from '../../../core/backend-runtime';
 import { Models } from '../../../models';
-import { CopilotStorage } from '../storage';
+import { NativeEmbeddingService } from '../embedding/native';
 import { readStream } from '../utils';
 
 @Injectable()
@@ -20,14 +15,14 @@ export class CopilotWorkspaceService implements OnApplicationBootstrap {
   constructor(
     private readonly server: ServerService,
     private readonly models: Models,
-    private readonly queue: JobQueue,
-    private readonly storage: CopilotStorage
+    private readonly embedding: NativeEmbeddingService,
+    private readonly runtime: BackendRuntimeProvider,
+    private readonly db: PrismaClient
   ) {}
 
   async onApplicationBootstrap() {
-    const supportEmbedding =
-      await this.models.copilotWorkspace.checkEmbeddingAvailable();
-    if (supportEmbedding) {
+    const health = await this.embedding.health();
+    if (health.enabled) {
       this.server.enableFeature(ServerFeature.CopilotEmbedding);
       this.supportEmbedding = true;
     }
@@ -61,48 +56,73 @@ export class CopilotWorkspaceService implements OnApplicationBootstrap {
     ]);
   }
 
-  async addFile(userId: string, workspaceId: string, content: FileUpload) {
-    const fileName = content.filename;
+  async addArtifact(workspaceId: string, content: FileUpload) {
     const buffer = await readStream(content.createReadStream());
-    const blobId = createHash('sha256').update(buffer).digest('base64url');
-    await this.storage.put(userId, workspaceId, blobId, buffer);
-    const file = await this.models.copilotWorkspace.addFile(workspaceId, {
-      fileName,
-      blobId,
-      mimeType: sniffMime(buffer, content.mimetype) || content.mimetype,
-      size: buffer.length,
+    const artifact = await this.runtime.putWorkspaceArtifact(
+      {
+        workspaceId,
+        mimeType: sniffMime(buffer, content.mimetype) || content.mimetype,
+        libraryOwned: true,
+      },
+      buffer
+    );
+    return await this.getArtifact(workspaceId, artifact.id);
+  }
+
+  async getArtifact(workspaceId: string, artifactId: string) {
+    const artifact = await this.db.workspaceArtifact.findUniqueOrThrow({
+      where: {
+        id: artifactId,
+        workspaceId,
+        libraryOwned: true,
+        status: 'ready',
+      },
     });
-    return { blobId, file };
+    return this.projectArtifact(artifact);
   }
 
-  async getFile(workspaceId: string, fileId: string) {
-    return await this.models.copilotWorkspace.getFile(workspaceId, fileId);
-  }
-
-  async listFiles(
+  async listArtifacts(
     workspaceId: string,
     pagination?: {
       includeRead?: boolean;
     } & PaginationInput
   ) {
-    return await Promise.all([
-      this.models.copilotWorkspace.listFiles(workspaceId, pagination),
-      this.models.copilotWorkspace.countFiles(workspaceId),
+    const where = { workspaceId, libraryOwned: true, status: 'ready' };
+    const [artifacts, count] = await Promise.all([
+      this.db.workspaceArtifact.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: pagination?.offset,
+        take: pagination?.first,
+      }),
+      this.db.workspaceArtifact.count({ where }),
     ]);
+    return [
+      artifacts.map(artifact => this.projectArtifact(artifact)),
+      count,
+    ] as const;
   }
 
-  async queueFileEmbedding(file: Jobs['copilot.embedding.files']) {
-    const { userId, workspaceId, blobId, fileId, fileName } = file;
-    await this.queue.add('copilot.embedding.files', {
-      userId,
-      workspaceId,
-      blobId,
-      fileId,
-      fileName,
-    });
+  async removeArtifact(workspaceId: string, artifactId: string) {
+    await this.runtime.setArtifactLibraryOwned(workspaceId, artifactId, false);
+    return true;
   }
 
-  async removeFile(workspaceId: string, fileId: string) {
-    return await this.models.copilotWorkspace.removeFile(workspaceId, fileId);
+  private projectArtifact(artifact: {
+    id: string;
+    workspaceId: string;
+    contentHash: string;
+    canonicalMediaType: string;
+    sizeBytes: bigint;
+    createdAt: Date;
+  }) {
+    return {
+      workspaceId: artifact.workspaceId,
+      artifactId: artifact.id,
+      contentHash: artifact.contentHash,
+      mediaType: artifact.canonicalMediaType,
+      size: Number(artifact.sizeBytes),
+      createdAt: artifact.createdAt,
+    };
   }
 }

@@ -1,4 +1,10 @@
-import { ByokProvider } from '@affine/graphql';
+import {
+  ByokCustomEndpointMode,
+  ByokModelFeature,
+  ByokModelInput,
+  ByokModelOutput,
+  ByokProvider,
+} from '@affine/graphql';
 import type { I18nInstance } from '@affine/i18n';
 
 import { type ByokKey, ByokStorage } from './types';
@@ -25,10 +31,10 @@ export function storageLabel(t: I18nInstance, storage: ByokStorage) {
 }
 
 export function endpointHintKey(
-  customEndpointSupported: boolean,
+  mode: ByokCustomEndpointMode,
   privateEndpointSupported: boolean
 ) {
-  if (!customEndpointSupported) {
+  if (mode === ByokCustomEndpointMode.disabled) {
     return 'endpoint.custom-disabled';
   }
   if (!privateEndpointSupported) {
@@ -37,25 +43,23 @@ export function endpointHintKey(
   return null;
 }
 
-export function shouldShowEndpoint(
-  isSelfHosted: boolean,
-  customEndpointSupported: boolean
-) {
-  return isSelfHosted || customEndpointSupported;
-}
-
 export function capabilitiesFor(key: Pick<ByokKey, 'definition'>) {
   const capabilities = key.definition.models.flatMap(model =>
     model.enabled ? model.capabilities : []
   );
   const labels = new Set<string>();
   for (const capability of capabilities) {
-    if (capability.output.includes('text')) labels.add('Text');
-    if (capability.input.includes('image')) labels.add('Image input');
-    if (capability.output.includes('image')) labels.add('Image generate');
-    if (capability.features.includes('tools')) labels.add('Actions');
-    if (capability.input.includes('audio')) labels.add('Transcript');
-    if (capability.output.includes('embedding')) labels.add('Indexing');
+    if (capability.output.includes(ByokModelOutput.text)) labels.add('Text');
+    if (capability.input.includes(ByokModelInput.image))
+      labels.add('Image input');
+    if (capability.output.includes(ByokModelOutput.image))
+      labels.add('Image generate');
+    if (capability.features.includes(ByokModelFeature.tool_calling))
+      labels.add('Actions');
+    if (capability.input.includes(ByokModelInput.audio))
+      labels.add('Transcript');
+    if (capability.output.includes(ByokModelOutput.embedding))
+      labels.add('Indexing');
   }
   return [...labels];
 }

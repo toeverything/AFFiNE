@@ -895,13 +895,13 @@ test('should handle fork and session attachment operations', async t => {
 
   t.snapshot(
     {
-      attachPhase: {
+      afterAttach: {
         docSessionCount: docSessionsAfterAttach.length,
         bothSessionsPresent:
           docSessionsAfterAttach.some(s => s.id === workspaceSessionId) &&
           docSessionsAfterAttach.some(s => s.id === existingDocSessionId),
       },
-      detachPhase: {
+      afterDetach: {
         workspaceSessionExists: workspaceSessionsAfterDetach.some(
           s => s.id === workspaceSessionId && !s.pinned
         ),
@@ -1000,8 +1000,45 @@ test('should cleanup empty sessions correctly', async t => {
 
 test('should append durable message and account message cost', async t => {
   const { copilotSession, db } = t.context;
+  const workspaceId = workspace.id;
+  if (!workspaceId) {
+    t.fail('Test workspace ID is missing');
+    return;
+  }
 
   const { sessionId } = await createTestSession(t);
+  const artifact = await db.workspaceArtifact.create({
+    data: {
+      workspaceId,
+      contentHash: `test-${sessionId}`,
+      canonicalMediaType: 'text/plain',
+      sizeBytes: 5,
+      storageScope: 'copilot',
+      storageKey: `artifacts/${sessionId}`,
+      status: 'ready',
+      readyAt: new Date(),
+    },
+  });
+  const scopeSnapshot = {
+    version: 1,
+    resolvedAt: new Date().toISOString(),
+    selectors: [
+      {
+        kind: 'artifact' as const,
+        id: artifact.id,
+        source: 'message' as const,
+      },
+    ],
+    requiredDocIds: [],
+    requiredArtifactIds: [artifact.id],
+    preferredSourceIds: [],
+    retrieval: {
+      mode: 'required' as const,
+      requiredDocIds: [],
+      requiredArtifactIds: [artifact.id],
+      preferredSourceIds: [],
+    },
+  };
   const appended = await copilotSession.appendMessage({
     sessionId,
     userId: user.id,
@@ -1009,18 +1046,48 @@ test('should append durable message and account message cost', async t => {
       role: 'user',
       content: 'hello durable world',
       params: { foo: 'bar' },
+      scopeSnapshot,
       createdAt: new Date(),
     },
+    focus: {
+      selectors: [{ kind: 'document', id: 'doc-1', source: 'focus' }],
+    },
+    artifacts: [
+      {
+        artifactId: artifact.id,
+        role: 'attachment',
+        displayName: 'note.txt',
+      },
+    ],
   });
 
   const afterAppend = await db.aiSession.findUniqueOrThrow({
     where: { id: sessionId },
-    select: { messageCost: true },
+    select: { messageCost: true, focus: true },
   });
 
-  t.truthy(appended.id);
+  const messageId = appended.id;
+  if (!messageId) {
+    t.fail('Appended message ID is missing');
+    return;
+  }
   t.is(afterAppend.messageCost, 1);
   t.deepEqual(appended.params, { foo: 'bar' });
+  t.deepEqual(appended.scopeSnapshot, scopeSnapshot);
+  t.deepEqual(afterAppend.focus, {
+    selectors: [{ kind: 'document', id: 'doc-1', source: 'focus' }],
+  });
+  const artifactReference = await db.aiMessageArtifact.findUniqueOrThrow({
+    where: {
+      messageId_artifactId_role: {
+        messageId,
+        artifactId: artifact.id,
+        role: 'attachment',
+      },
+    },
+  });
+  t.is(artifactReference.workspaceId, workspaceId);
+  t.is(artifactReference.displayName, 'note.txt');
 
   const appendedBare = await copilotSession.appendMessage({
     sessionId,

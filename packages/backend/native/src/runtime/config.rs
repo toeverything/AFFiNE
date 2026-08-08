@@ -12,11 +12,13 @@ use sqlx::{PgPool, Row};
 use zeroize::Zeroizing;
 
 use super::{RuntimeError, RuntimeResult};
+use crate::llm::{Deployment, byok::ByokPolicy};
 
 pub(crate) struct BackendRuntimeConfig {
   pub(crate) database_url: String,
   pub(crate) invite_quota: InviteQuotaConfig,
   pub(crate) private_key: Arc<Zeroizing<String>>,
+  pub(crate) deployment: Deployment,
   pub(crate) copilot: CopilotRuntimeConfig,
 }
 
@@ -32,6 +34,8 @@ pub(crate) struct CopilotRuntimeConfig {
 #[serde(rename_all = "camelCase", default)]
 pub(crate) struct CopilotByokRuntimeConfig {
   pub(crate) enabled: bool,
+  #[serde(default = "default_allowed_providers")]
+  pub(crate) allowed_providers: Vec<String>,
   pub(crate) allow_custom_endpoint: bool,
   pub(crate) allow_private_endpoint: bool,
 }
@@ -40,10 +44,18 @@ impl Default for CopilotByokRuntimeConfig {
   fn default() -> Self {
     Self {
       enabled: true,
+      allowed_providers: default_allowed_providers(),
       allow_custom_endpoint: false,
       allow_private_endpoint: false,
     }
   }
+}
+
+fn default_allowed_providers() -> Vec<String> {
+  ["openai", "anthropic", "gemini", "fal"]
+    .into_iter()
+    .map(str::to_string)
+    .collect()
 }
 
 #[derive(Clone, Default, Deserialize)]
@@ -98,6 +110,10 @@ impl Default for InviteQuotaConfig {
 }
 
 impl BackendRuntimeConfig {
+  pub(crate) fn byok_policy(&self) -> ByokPolicy {
+    ByokPolicy::from(self.deployment, &self.copilot.byok)
+  }
+
   pub(crate) fn from_config_files(private_key: Option<String>) -> RuntimeResult<Self> {
     let app_config = app_config_from_config_files()?;
     let database_url = database_url_from_env()
@@ -113,6 +129,7 @@ impl BackendRuntimeConfig {
           .or_else(|| app_config.crypto.as_ref().and_then(|crypto| crypto.private_key.clone()))
           .unwrap_or_default(),
       )),
+      deployment: deployment_from_env(),
       copilot: app_config.copilot.unwrap_or_default(),
     }
     .validated()
@@ -144,6 +161,7 @@ impl BackendRuntimeConfig {
       private_key: db_private_key
         .map(|key| Arc::new(Zeroizing::new(key)))
         .unwrap_or_else(|| Arc::clone(&self.private_key)),
+      deployment: self.deployment,
       copilot: app_config.copilot.unwrap_or_else(|| self.copilot.clone()),
     }
     .validated()
@@ -161,6 +179,16 @@ impl BackendRuntimeConfig {
 }
 
 fn validate_copilot_config(config: &CopilotRuntimeConfig) -> RuntimeResult<()> {
+  let mut allowed_providers = std::collections::HashSet::new();
+  for provider in &config.byok.allowed_providers {
+    if !matches!(provider.as_str(), "openai" | "anthropic" | "gemini" | "fal")
+      || !allowed_providers.insert(provider.as_str())
+    {
+      return Err(RuntimeError::invalid_state(
+        "copilot BYOK allowed providers must be supported and unique",
+      ));
+    }
+  }
   let mut profile_ids = std::collections::HashSet::new();
   for profile in &config.providers.profiles {
     if profile.id.trim().is_empty() || !profile_ids.insert(profile.id.as_str()) {
@@ -190,6 +218,14 @@ fn validate_copilot_config(config: &CopilotRuntimeConfig) -> RuntimeResult<()> {
     }
   }
   Ok(())
+}
+
+fn deployment_from_env() -> Deployment {
+  if env::var("DEPLOYMENT_TYPE").as_deref() == Ok("selfhosted") {
+    Deployment::SelfHosted
+  } else {
+    Deployment::Cloud
+  }
 }
 
 #[derive(Default, Deserialize)]
@@ -390,7 +426,7 @@ fn insert_flat_override(root: &mut Map<String, serde_json::Value>, path: &str, v
   }
 }
 
-pub(super) fn config_json_paths() -> Vec<PathBuf> {
+pub(in crate::runtime) fn config_json_paths() -> Vec<PathBuf> {
   let mut paths = Vec::new();
   if let Ok(exe) = env::current_exe()
     && let Some(dir) = exe.parent()
@@ -539,6 +575,7 @@ mod tests {
       database_url: "postgresql://active".to_string(),
       invite_quota: InviteQuotaConfig::default(),
       private_key: Arc::new(Zeroizing::new("active-private-key".to_string())),
+      deployment: Deployment::Cloud,
       copilot: CopilotRuntimeConfig::default(),
     };
     let empty = serde_json::Value::Object(Map::new());

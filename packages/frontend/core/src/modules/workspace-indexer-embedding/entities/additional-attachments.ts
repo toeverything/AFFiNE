@@ -69,13 +69,20 @@ export class AdditionalAttachments extends Entity {
         mergeMap(value => {
           const patched = {
             ...value,
-            edges: value.edges.map(edge => ({
-              ...edge,
-              node: {
-                ...edge.node,
-                status: 'uploaded' as const,
-              },
-            })),
+            edges: value.edges.map(
+              (edge: {
+                node: Omit<PersistedAttachmentFile, 'fileName' | 'status'> & {
+                  contentHash: string;
+                };
+              }) => ({
+                ...edge,
+                node: {
+                  ...edge.node,
+                  fileName: edge.node.contentHash.slice(0, 12),
+                  status: 'uploaded' as const,
+                },
+              })
+            ),
           };
           this.attachments$.next(patched);
           return EMPTY;

@@ -12,6 +12,216 @@ pub struct RuntimeVerificationTokenRecord {
 pub struct BackendRuntimeHealth {
   pub started: bool,
   pub database_connected: bool,
+  pub embedding: EmbeddingHealth,
+}
+
+#[napi_derive::napi(object)]
+#[derive(Clone, Debug)]
+pub struct EmbeddingHealth {
+  pub enabled: bool,
+  pub state: String,
+  pub reason: Option<String>,
+  pub pgvector_version: Option<String>,
+  pub schema_version: Option<i32>,
+  pub worker_running: bool,
+}
+
+impl EmbeddingHealth {
+  pub(crate) fn disabled(reason: &str, pgvector_version: Option<String>) -> Self {
+    Self {
+      enabled: false,
+      state: "disabled".to_string(),
+      reason: Some(reason.to_string()),
+      pgvector_version,
+      schema_version: None,
+      worker_running: false,
+    }
+  }
+}
+
+#[napi_derive::napi(object)]
+pub struct RuntimeEmbeddingWorkspaceState {
+  pub workspace_id: String,
+  pub active_index_id: Option<String>,
+  #[napi(ts_type = "bigint | number")]
+  pub index_epoch: i64,
+  pub runtime_state: String,
+  pub reason_code: Option<String>,
+}
+
+#[napi_derive::napi(object)]
+#[derive(Clone, serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DocumentEmbeddingUnitInput {
+  pub unit_id: String,
+  pub visibility: String,
+  pub text: String,
+  pub block_id: Option<String>,
+  pub element_id: Option<String>,
+  pub frame_id: Option<String>,
+}
+
+#[napi_derive::napi(object)]
+#[derive(Clone, serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DocumentEmbeddingProjectionInput {
+  pub doc_id: String,
+  pub revision: String,
+  pub source_hash: String,
+  pub units: Vec<DocumentEmbeddingUnitInput>,
+  pub deleted: Option<bool>,
+}
+
+#[napi_derive::napi(object)]
+pub struct SyncEmbeddingStateInput {
+  pub workspace_id: String,
+  pub enabled: bool,
+  pub documents: Option<Vec<DocumentEmbeddingProjectionInput>>,
+  pub reconcile_documents: Option<bool>,
+}
+
+#[napi_derive::napi(object)]
+pub struct RuntimeEmbeddingQueueCounts {
+  #[napi(ts_type = "bigint | number")]
+  pub pending: i64,
+  #[napi(ts_type = "bigint | number")]
+  pub running: i64,
+  #[napi(ts_type = "bigint | number")]
+  pub retry_wait: i64,
+  #[napi(ts_type = "bigint | number")]
+  pub ready: i64,
+  #[napi(ts_type = "bigint | number")]
+  pub failed: i64,
+  #[napi(ts_type = "bigint | number")]
+  pub expired_leases: i64,
+  #[napi(ts_type = "bigint | number")]
+  pub oldest_pending_seconds: i64,
+  #[napi(ts_type = "bigint | number")]
+  pub active_vector_rows: i64,
+  #[napi(ts_type = "bigint | number")]
+  pub inactive_vector_rows: i64,
+  #[napi(ts_type = "bigint | number")]
+  pub index_bytes: i64,
+  #[napi(ts_type = "bigint | number")]
+  pub retrying_indexes: i64,
+  #[napi(ts_type = "bigint | number")]
+  pub max_index_retry_seconds: i64,
+}
+
+#[napi_derive::napi(object)]
+pub struct PutWorkspaceArtifactInput {
+  pub workspace_id: String,
+  pub mime_type: String,
+  pub library_owned: Option<bool>,
+}
+
+#[napi_derive::napi(object)]
+pub struct EnsureWorkspaceBlobArtifactInput {
+  pub workspace_id: String,
+  pub blob_id: String,
+  pub mime_type: String,
+  pub library_owned: Option<bool>,
+}
+
+#[napi_derive::napi(object)]
+pub struct RuntimeWorkspaceArtifact {
+  pub id: String,
+  pub workspace_id: String,
+  pub content_hash: String,
+  pub canonical_media_type: String,
+  #[napi(ts_type = "bigint | number")]
+  pub size: i64,
+  pub storage_scope: String,
+  pub storage_key: String,
+  pub status: String,
+  pub library_owned: bool,
+}
+
+#[napi_derive::napi(object)]
+#[derive(Clone, serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScopeSelectorInput {
+  pub kind: String,
+  pub id: String,
+  pub name: Option<String>,
+  pub source: String,
+}
+
+#[napi_derive::napi(object)]
+pub struct CompileScopeInput {
+  pub workspace_id: String,
+  pub user_id: String,
+  pub selectors: Vec<ScopeSelectorInput>,
+  pub preferred_source_ids: Option<Vec<String>>,
+}
+
+#[napi_derive::napi(object)]
+#[derive(Clone, serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeRetrievalScope {
+  pub mode: String,
+  pub required_doc_ids: Vec<String>,
+  pub required_artifact_ids: Vec<String>,
+  pub preferred_source_ids: Vec<String>,
+}
+
+#[napi_derive::napi(object)]
+pub struct RuntimeTurnScopeSnapshot {
+  pub version: u32,
+  pub resolved_at: String,
+  pub selectors: Vec<ScopeSelectorInput>,
+  pub required_doc_ids: Vec<String>,
+  pub required_artifact_ids: Vec<String>,
+  pub preferred_source_ids: Vec<String>,
+  pub retrieval: RuntimeRetrievalScope,
+}
+
+#[napi_derive::napi(object)]
+pub struct ReadEmbeddingSourceContentInput {
+  pub workspace_id: String,
+  pub source_kind: String,
+  pub source_key: String,
+  pub retrieval: RuntimeRetrievalScope,
+  pub max_chars: Option<u32>,
+  pub cursor: Option<String>,
+}
+
+#[napi_derive::napi(object)]
+pub struct RuntimeEmbeddingSourceContent {
+  pub content: String,
+  /// Active materialization token. Changes whenever extracted content is
+  /// replaced.
+  pub revision: String,
+  pub mime_type: Option<String>,
+  pub name: Option<String>,
+  pub truncated: bool,
+  pub next_cursor: Option<String>,
+}
+
+#[napi_derive::napi(object)]
+pub struct MatchEmbeddingCandidatesInput {
+  pub request_id: Option<String>,
+  pub workspace_id: String,
+  pub query: String,
+  pub source_kind: String,
+  pub retrieval: RuntimeRetrievalScope,
+  pub limit: Option<u32>,
+}
+
+#[napi_derive::napi(object)]
+pub struct RuntimeEmbeddingCandidate {
+  pub source_kind: String,
+  pub source_key: String,
+  pub content: String,
+  pub distance: f64,
+  pub doc_id: Option<String>,
+  pub artifact_id: Option<String>,
+  pub unit_id: Option<String>,
+  pub visibility: Option<String>,
+  pub block_id: Option<String>,
+  pub element_id: Option<String>,
+  pub frame_id: Option<String>,
+  pub chunk: i32,
 }
 
 #[napi_derive::napi(object)]
@@ -251,7 +461,6 @@ pub struct RuntimeDocumentCleanupEffect {
   pub cleanup_version: String,
   pub comment_objects_done: bool,
   pub search_done: bool,
-  pub copilot_done: bool,
 }
 
 #[napi_derive::napi(object)]
@@ -328,4 +537,10 @@ pub struct RuntimeWorkspaceStatsDailyRecalibrationResult {
   pub last_sid: i64,
   pub snapshotted: i64,
   pub skipped: bool,
+}
+
+#[napi_derive::napi(object)]
+pub struct RuntimeEmbeddingProgress {
+  pub total: i64,
+  pub embedded: i64,
 }

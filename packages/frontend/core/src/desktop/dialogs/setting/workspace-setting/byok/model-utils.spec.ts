@@ -1,3 +1,10 @@
+import {
+  ByokAttachmentKind,
+  ByokAttachmentSource,
+  ByokModelFeature,
+  ByokModelInput,
+  ByokModelOutput,
+} from '@affine/graphql';
 import { describe, expect, test } from 'vitest';
 
 import {
@@ -13,11 +20,16 @@ describe('BYOK model capabilities', () => {
       enabled: true,
       capabilities: [
         {
-          input: ['text', 'image'],
-          output: ['text'],
-          features: ['tools'],
-          attachmentKinds: ['image'],
-          attachmentSources: ['url', 'data', 'bytes', 'file_handle'],
+          input: [ByokModelInput.text, ByokModelInput.image],
+          output: [ByokModelOutput.text],
+          features: [ByokModelFeature.tool_calling],
+          attachmentKinds: [ByokAttachmentKind.image],
+          attachmentSources: [
+            ByokAttachmentSource.url,
+            ByokAttachmentSource.data,
+            ByokAttachmentSource.bytes,
+            ByokAttachmentSource.file_handle,
+          ],
         },
       ],
     };
@@ -27,11 +39,16 @@ describe('BYOK model capabilities', () => {
 
   test('preserves a rich capability when its represented uses stay selected', () => {
     const capability = {
-      input: ['text', 'image'],
-      output: ['text'],
-      features: ['tools'],
-      attachmentKinds: ['image'],
-      attachmentSources: ['url', 'data', 'bytes', 'file_handle'],
+      input: [ByokModelInput.text, ByokModelInput.image],
+      output: [ByokModelOutput.text],
+      features: [ByokModelFeature.tool_calling],
+      attachmentKinds: [ByokAttachmentKind.image],
+      attachmentSources: [
+        ByokAttachmentSource.url,
+        ByokAttachmentSource.data,
+        ByokAttachmentSource.bytes,
+        ByokAttachmentSource.file_handle,
+      ],
     };
     const model: ModelDeclaration = {
       modelId: 'multimodal-tools',

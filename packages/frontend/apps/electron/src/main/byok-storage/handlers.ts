@@ -39,8 +39,11 @@ type WorkspaceByokKey = {
   description?: string | null;
   credential: string;
   definition: {
-    version: number;
-    endpoint: { kind: string; url?: string | null };
+    endpoint: {
+      kind: 'provider_default' | 'openai_compatible';
+      url?: string | null;
+      dialect?: 'responses' | 'chat_completions' | null;
+    };
     models: Array<{
       modelId: string;
       enabled: boolean;
@@ -94,8 +97,14 @@ function isAllowedStringArray(
 
 function isValidEndpoint(value: unknown) {
   if (!isRecord(value) || typeof value.kind !== 'string') return false;
-  if (value.kind === 'provider_default') return value.url == null;
-  if (value.kind !== 'custom' || typeof value.url !== 'string') return false;
+  if (value.kind === 'provider_default')
+    return value.url == null && value.dialect == null;
+  if (
+    value.kind !== 'openai_compatible' ||
+    typeof value.url !== 'string' ||
+    !['responses', 'chat_completions'].includes(String(value.dialect))
+  )
+    return false;
   try {
     const endpoint = new URL(value.url);
     return (
@@ -127,7 +136,6 @@ function isValidDefinition(
 ): value is WorkspaceByokKey['definition'] {
   return (
     isRecord(value) &&
-    value.version === 1 &&
     isValidEndpoint(value.endpoint) &&
     Array.isArray(value.models) &&
     value.models.length > 0 &&
@@ -155,6 +163,12 @@ function normalizeKey(
   }
   const credential = key.credential ?? existing?.credential;
   const definition = key.definition ?? existing?.definition;
+  if (
+    definition?.endpoint.kind === 'openai_compatible' &&
+    key.provider !== 'openai'
+  ) {
+    throw new Error('OpenAI-compatible endpoints require OpenAI provider.');
+  }
   if (!key.id || !key.name || !credential || !isValidDefinition(definition)) {
     throw new Error('Invalid BYOK key.');
   }

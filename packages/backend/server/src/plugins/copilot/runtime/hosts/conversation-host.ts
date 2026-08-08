@@ -5,6 +5,7 @@ import {
   CopilotSessionNotFound,
   Mutex,
 } from '../../../../base';
+import { BackendRuntimeProvider } from '../../../../core/backend-runtime';
 import { CompatSubmissionStore } from '../../compat/submission-store';
 import { ConversationPolicy } from '../../conversation/policy';
 import {
@@ -15,6 +16,13 @@ import {
 import type { PromptParams } from '../../providers/types';
 import { ChatSession, ChatSessionService } from '../../session';
 import { ChatQuerySchema } from '../../types';
+import {
+  type ScopeSelector,
+  ScopeSelectorSchema,
+  type SessionFocus,
+  TurnScopeSnapshotSchema,
+} from '../contracts/shared';
+import { AttachmentAdmissionHost } from './attachment-admission';
 
 export type PreparedConversationTurn = {
   messageId?: string;
@@ -35,8 +43,99 @@ export class ConversationHost {
     private readonly sessions: ChatSessionService,
     private readonly submissions: CompatSubmissionStore,
     private readonly mutex: Mutex,
-    private readonly policy: ConversationPolicy
+    private readonly policy: ConversationPolicy,
+    private readonly runtime: BackendRuntimeProvider,
+    private readonly attachmentAdmission: AttachmentAdmissionHost
   ) {}
+
+  private selectors(
+    value: unknown,
+    source: ScopeSelector['source']
+  ): ScopeSelector[] {
+    if (value === undefined) return [];
+    return ScopeSelectorSchema.omit({ source: true })
+      .array()
+      .parse(value)
+      .map(selector => ({ ...selector, source }));
+  }
+
+  private mergeSelectors(...groups: ScopeSelector[][]): ScopeSelector[] {
+    const merged = new Map<string, ScopeSelector>();
+    for (const selector of groups.flat()) {
+      merged.set(`${selector.kind}:${selector.id}`, selector);
+    }
+    return [...merged.values()];
+  }
+
+  private async prepareMessageState(
+    session: ChatSession,
+    params: Record<string, any>,
+    attachments: NonNullable<
+      Parameters<AttachmentAdmissionHost['admitPromptAttachments']>[0]
+    >
+  ) {
+    const {
+      scopeSelectors: rawSelectors,
+      focusSelectors: rawFocus,
+      preferredSourceIds: rawPreferred,
+      ...metadata
+    } = params;
+    const focus: SessionFocus =
+      rawFocus === undefined
+        ? session.config.focus
+        : { selectors: this.selectors(rawFocus, 'focus') };
+    const admitted = await this.attachmentAdmission.admitPromptAttachments(
+      attachments,
+      {
+        userId: session.config.userId,
+        workspaceId: session.config.workspaceId,
+        sessionId: session.config.sessionId,
+      }
+    );
+    const artifacts = await Promise.all(
+      admitted.map(async source => {
+        const artifact = await this.runtime.putWorkspaceArtifact(
+          {
+            workspaceId: session.config.workspaceId,
+            mimeType: source.mimeType,
+            libraryOwned: false,
+          },
+          Buffer.from(source.data, 'base64')
+        );
+        return {
+          artifactId: artifact.id,
+          role: 'attachment',
+          displayName: source.fileName,
+          metadata: { mimeType: artifact.canonicalMediaType },
+        };
+      })
+    );
+    const artifactSelectors = artifacts.map(
+      ({ artifactId }): ScopeSelector => ({
+        kind: 'artifact',
+        id: artifactId,
+        source: 'message',
+      })
+    );
+    const selectors = this.mergeSelectors(
+      focus.selectors,
+      this.selectors(rawSelectors, 'draft'),
+      artifactSelectors
+    );
+    const preferredSourceIds =
+      rawPreferred === undefined
+        ? []
+        : ScopeSelectorSchema.shape.id.array().parse(rawPreferred);
+    const scopeSnapshot = TurnScopeSnapshotSchema.parse(
+      await this.runtime.compileTurnScope({
+        workspaceId: session.config.workspaceId,
+        userId: session.config.userId,
+        selectors,
+        preferredSourceIds,
+      })
+    );
+    return { artifacts, focus, metadata, scopeSnapshot };
+  }
 
   private async loadAcceptedTurn(
     session: ChatSession,
@@ -180,16 +279,25 @@ export class ConversationHost {
       session.revertLatestMessage(true);
     }
 
+    const prepared = await this.prepareMessageState(
+      session,
+      submission.params ?? {},
+      submission.attachments ?? []
+    );
+
     const turn = await this.sessions.appendTurn({
       sessionId,
       userId: session.config.userId,
       compatSubmissionId: messageId,
+      focus: prepared.focus,
+      artifacts: prepared.artifacts,
       turn: {
         conversationId: sessionId,
         role: 'user',
         content: submission.content ?? '',
         attachments: submission.attachments ?? [],
-        metadata: submission.params ?? {},
+        metadata: prepared.metadata,
+        scopeSnapshot: prepared.scopeSnapshot,
         renderTrace: [],
         toolEvents: [],
         createdAt: submission.createdAt,
