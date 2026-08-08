@@ -270,6 +270,9 @@ fn is_digits(value: &str) -> bool {
 
 /// Plain content hash, or a transcript slice key `<sha256b64>-<index>`.
 fn is_hash_or_slice(value: &str) -> bool {
+  if !value.is_ascii() {
+    return false;
+  }
   if is_sha256_base64url(value) {
     return true;
   }

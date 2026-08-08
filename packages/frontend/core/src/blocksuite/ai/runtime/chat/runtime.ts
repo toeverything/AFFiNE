@@ -617,17 +617,19 @@ export class AIChatRuntime {
   private getScopeSelectorKey(item: AIChatScopeSelector) {
     switch (item.kind) {
       case 'doc':
-        return `document:`;
-      case 'file':
-        return `file::`;
+        return `document:${item.docId}`;
+      case 'file': {
+        const id = item.fileId ?? item.blobId;
+        return id ? `file:${id}` : item.file;
+      }
       case 'tag':
-        return `tag:`;
+        return `tag:${item.tagId}`;
       case 'collection':
-        return `collection:`;
+        return `collection:${item.collectionId}`;
       case 'blob':
-        return `blob:`;
+        return `blob:${item.blobId}`;
       case 'favorite':
-        return `favorite:`;
+        return `favorite:${item.favoriteId}`;
     }
   }
 

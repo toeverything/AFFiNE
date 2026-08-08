@@ -4,11 +4,15 @@ import {
   BackendRuntimeEmbeddingJob,
   BackendRuntimeHousekeepingJob,
 } from './job';
-import { BackendRuntimeProvider } from './provider';
+import {
+  BACKEND_RUNTIME_CONFIG_PATH,
+  BackendRuntimeProvider,
+} from './provider';
 
 @Global()
 @Module({
   providers: [
+    { provide: BACKEND_RUNTIME_CONFIG_PATH, useValue: undefined },
     BackendRuntimeProvider,
     BackendRuntimeEmbeddingJob,
     BackendRuntimeHousekeepingJob,
@@ -18,6 +22,7 @@ import { BackendRuntimeProvider } from './provider';
 export class BackendRuntimeModule {}
 
 export {
+  BACKEND_RUNTIME_CONFIG_PATH,
   BackendRuntimeProvider,
   type RuntimeInviteAbuseAction,
   type RuntimeInviteAbuseClaimedAction,

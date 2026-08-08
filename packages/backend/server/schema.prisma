@@ -804,7 +804,7 @@ model AiMessageArtifact {
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   message  AiSessionMessage  @relation(fields: [messageId], references: [id], onDelete: Cascade)
-  artifact WorkspaceArtifact @relation(fields: [workspaceId, artifactId], references: [workspaceId, id], onDelete: Restrict)
+  artifact WorkspaceArtifact @relation(fields: [workspaceId, artifactId], references: [workspaceId, id], onDelete: Cascade)
 
   @@id([messageId, artifactId, role])
   @@index([workspaceId, artifactId])

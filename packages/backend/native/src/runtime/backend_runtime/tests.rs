@@ -99,6 +99,7 @@ async fn runtime_from_database_url() -> AnyResult<Option<BackendRuntime>> {
   .context("cleanup invite abuse subjects for backend runtime tests")?;
 
   Ok(Some(BackendRuntime {
+    config_source: Default::default(),
     config: Arc::new(RwLock::new(Arc::new(BackendRuntimeConfig {
       database_url,
       invite_quota: Default::default(),
@@ -106,6 +107,7 @@ async fn runtime_from_database_url() -> AnyResult<Option<BackendRuntime>> {
       deployment: crate::llm::Deployment::Cloud,
       copilot: Default::default(),
     }))),
+    config_reload: Mutex::new(()),
     pool: Mutex::new(Some(pool)),
     embedding_health: RwLock::new(super::EmbeddingHealth::disabled("test", None)),
     object_storage: RwLock::new(Arc::new(
@@ -257,7 +259,9 @@ async fn runtime_gate_sql_semantics_are_atomic_and_ttl_bound() {
   let mut tasks = Vec::new();
   for _ in 0..16 {
     let runtime = BackendRuntime {
+      config_source: Default::default(),
       config: Arc::new(RwLock::new(runtime.config().unwrap())),
+      config_reload: Mutex::new(()),
       pool: Mutex::new(Some(runtime.pool().await.unwrap())),
       embedding_health: RwLock::new(super::EmbeddingHealth::disabled("test", None)),
       object_storage: RwLock::new(runtime.object_storage().unwrap()),
@@ -592,7 +596,9 @@ async fn coordination_lease_sql_semantics_are_fenced_and_ttl_bound() {
   let mut tasks = Vec::new();
   for index in 0..16 {
     let runtime = BackendRuntime {
+      config_source: Default::default(),
       config: Arc::new(RwLock::new(runtime.config().unwrap())),
+      config_reload: Mutex::new(()),
       pool: Mutex::new(Some(runtime.pool().await.unwrap())),
       embedding_health: RwLock::new(super::EmbeddingHealth::disabled("test", None)),
       object_storage: RwLock::new(runtime.object_storage().unwrap()),
@@ -800,7 +806,9 @@ async fn verification_token_sql_state_machine_handles_keep_verify_and_cleanup() 
   let mut tasks = Vec::new();
   for _ in 0..16 {
     let runtime = BackendRuntime {
+      config_source: Default::default(),
       config: Arc::new(RwLock::new(runtime.config().unwrap())),
+      config_reload: Mutex::new(()),
       pool: Mutex::new(Some(runtime.pool().await.unwrap())),
       embedding_health: RwLock::new(super::EmbeddingHealth::disabled("test", None)),
       object_storage: RwLock::new(runtime.object_storage().unwrap()),

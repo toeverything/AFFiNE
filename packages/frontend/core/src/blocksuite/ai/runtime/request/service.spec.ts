@@ -2,7 +2,7 @@
  * @vitest-environment happy-dom
  */
 import { readFileSync } from 'node:fs';
-import path from 'node:path';
+import { join } from 'node:path';
 
 import { UserFriendlyError } from '@affine/error';
 import type { EditorHost } from '@blocksuite/affine/std';
@@ -340,9 +340,9 @@ describe('AIRequestService action definitions', () => {
 
     const fixture = JSON.parse(
       readFileSync(
-        path.join(
+        join(
           process.cwd(),
-          '.context/rfc45/fixtures/anonymous-contract-v1.json'
+          'packages/frontend/core/src/blocksuite/ai/runtime/request/__fixtures__/live-projection-contract.json'
         ),
         'utf8'
       )

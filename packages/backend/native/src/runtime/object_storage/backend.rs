@@ -5,7 +5,7 @@ use serde_json::{Map, Value};
 use sqlx::{PgPool, Row};
 
 use super::{config::ObjectStorageConfig, types::StorageProviderConfig};
-use crate::runtime::{RuntimeError, RuntimeResult, config::config_json_paths};
+use crate::runtime::{ConfigSource, RuntimeError, RuntimeResult};
 
 #[derive(Clone, Debug)]
 pub(in crate::runtime) enum StorageBackendConfig {
@@ -124,9 +124,21 @@ impl ObjectStorageAppConfig {
 }
 
 pub(super) fn backends_from_config_files() -> RuntimeResult<HashMap<String, StorageBackendConfig>> {
+  backends_from_config_source(&ConfigSource::default())
+}
+
+pub(super) fn backends_from_config_source(
+  source: &ConfigSource,
+) -> RuntimeResult<HashMap<String, StorageBackendConfig>> {
   let mut merged = ObjectStorageAppConfig::default();
-  for path in config_json_paths() {
+  for path in source.paths() {
     if !path.exists() {
+      if source.exact() {
+        return Err(RuntimeError::config(format!(
+          "config file does not exist: {}",
+          path.display()
+        )));
+      }
       continue;
     }
     let raw = fs::read_to_string(&path).map_err(|err| RuntimeError::io("failed to read config file", err))?;

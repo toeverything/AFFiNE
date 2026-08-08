@@ -1,4 +1,5 @@
 import {
+  Inject,
   Injectable,
   Logger,
   type OnApplicationBootstrap,
@@ -36,6 +37,10 @@ import {
 } from '../../native';
 
 type RuntimeInstance = InstanceType<typeof BackendRuntime>;
+
+export const BACKEND_RUNTIME_CONFIG_PATH = Symbol(
+  'BACKEND_RUNTIME_CONFIG_PATH'
+);
 
 class RuntimeEventStream<T> implements AsyncIterableIterator<T> {
   private readonly values: T[] = [];
@@ -272,8 +277,16 @@ export class BackendRuntimeProvider
   private readonly runtime: RuntimeInstance;
   private migrationsStarted = false;
 
-  constructor(@Optional() private readonly config?: Config) {
-    this.runtime = new BackendRuntime(this.config?.crypto.privateKey);
+  constructor(
+    @Optional() private readonly config?: Config,
+    @Optional()
+    @Inject(BACKEND_RUNTIME_CONFIG_PATH)
+    configPath?: string
+  ) {
+    this.runtime = new BackendRuntime(
+      this.config?.crypto.privateKey,
+      configPath
+    );
   }
 
   async onApplicationBootstrap() {
@@ -298,7 +311,12 @@ export class BackendRuntimeProvider
 
   @OnEvent('config.changed')
   async onConfigChanged({ updates }: Events['config.changed']) {
-    if (!updates.copilot && !updates.crypto && !updates.db) {
+    if (
+      !updates.copilot &&
+      !updates.crypto &&
+      !updates.db &&
+      !updates.storages
+    ) {
       return;
     }
     await this.runtime.reloadConfig(this.config?.crypto.privateKey);

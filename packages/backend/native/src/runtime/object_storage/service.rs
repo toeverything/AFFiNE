@@ -5,7 +5,7 @@ use tokio::task::JoinSet;
 
 use super::{
   StorageBackendConfig, assetpack,
-  backend::{backends_from_config_files, backends_from_config_json, backends_from_db},
+  backend::{backends_from_config_files, backends_from_config_json, backends_from_config_source, backends_from_db},
   fs::{delete_many_fs, fs_delete, fs_get, fs_head, fs_list, fs_put},
   types::{
     MultipartUploadInitResult, MultipartUploadPart, ObjectDeleteOutcome, ObjectGetResult, ObjectKey, ObjectListEntry,
@@ -13,7 +13,7 @@ use super::{
     StorageScope,
   },
 };
-use crate::runtime::{RuntimeError, RuntimeResult};
+use crate::runtime::{ConfigSource, RuntimeError, RuntimeResult};
 
 const DELETE_MANY_CHUNK_SIZE: usize = 500;
 const DELETE_MANY_CONCURRENCY: usize = 3;
@@ -27,6 +27,12 @@ impl ObjectStorageService {
   pub(crate) fn from_config_files() -> RuntimeResult<Self> {
     Ok(Self {
       backends: backends_from_config_files()?,
+    })
+  }
+
+  pub(crate) fn from_config_source(source: &ConfigSource) -> RuntimeResult<Self> {
+    Ok(Self {
+      backends: backends_from_config_source(source)?,
     })
   }
 

@@ -31,7 +31,7 @@ use self::types::{BackendRuntimeHealth, EmbeddingHealth};
 use super::object_storage::ObjectStorageService;
 pub(crate) use super::types;
 pub(super) use super::{
-  BackendRuntimeConfig, InviteQuotaConfig, RuntimeError, RuntimeResult,
+  BackendRuntimeConfig, ConfigSource, InviteQuotaConfig, RuntimeError, RuntimeResult,
   migrations::{migrate_embedding_tables, migrate_runtime_tables},
   napi_error, to_napi_error,
 };
@@ -47,7 +47,9 @@ pub(super) fn token_hash(token: &str) -> String {
 
 #[napi_derive::napi]
 pub struct BackendRuntime {
+  config_source: ConfigSource,
   config: Arc<RwLock<Arc<BackendRuntimeConfig>>>,
+  config_reload: Mutex<()>,
   pool: Mutex<Option<PgPool>>,
   embedding_health: RwLock<EmbeddingHealth>,
   object_storage: RwLock<Arc<ObjectStorageService>>,
@@ -58,11 +60,14 @@ pub struct BackendRuntime {
 #[napi_derive::napi]
 impl BackendRuntime {
   #[napi(constructor)]
-  pub fn new(private_key: Option<String>) -> Result<Self> {
-    let config = BackendRuntimeConfig::from_config_files(private_key).map_err(to_napi_error)?;
-    let object_storage = ObjectStorageService::from_config_files().map_err(to_napi_error)?;
+  pub fn new(private_key: Option<String>, config_path: Option<String>) -> Result<Self> {
+    let config_source = ConfigSource::new(config_path);
+    let config = BackendRuntimeConfig::from_config_source(private_key, &config_source).map_err(to_napi_error)?;
+    let object_storage = ObjectStorageService::from_config_source(&config_source).map_err(to_napi_error)?;
     Ok(Self {
+      config_source,
       config: Arc::new(RwLock::new(Arc::new(config))),
+      config_reload: Mutex::new(()),
       pool: Mutex::new(None),
       embedding_health: RwLock::new(EmbeddingHealth::disabled("runtime_not_started", None)),
       object_storage: RwLock::new(Arc::new(object_storage)),
@@ -96,7 +101,7 @@ impl BackendRuntime {
       .await
       .map_err(|err| RuntimeError::database("BackendRuntime postgres health check failed", err))?;
 
-    let config = self.config()?.with_db_overrides(&pool).await?;
+    let config = self.config()?.with_db_overrides(&pool, &self.config_source).await?;
     self.update_config(config)?;
     let object_storage = self.object_storage()?.with_db_overrides(&pool).await?;
     *self
@@ -148,14 +153,16 @@ impl BackendRuntime {
 
   #[napi]
   pub async fn reload_config(&self, private_key: Option<String>) -> Result<()> {
+    let _reload = self.config_reload.lock().await;
     let pool = self.pool().await.map_err(to_napi_error)?;
     let active_private_key = self.config().map_err(to_napi_error)?.private_key.to_string();
-    let config = BackendRuntimeConfig::from_config_files(private_key.or(Some(active_private_key)))
-      .map_err(to_napi_error)?
-      .with_db_overrides(&pool)
-      .await
-      .map_err(to_napi_error)?;
-    let object_storage = ObjectStorageService::from_config_files()
+    let config =
+      BackendRuntimeConfig::from_config_source(private_key.or(Some(active_private_key)), &self.config_source)
+        .map_err(to_napi_error)?
+        .with_db_overrides(&pool, &self.config_source)
+        .await
+        .map_err(to_napi_error)?;
+    let object_storage = ObjectStorageService::from_config_source(&self.config_source)
       .map_err(to_napi_error)?
       .with_db_overrides(&pool)
       .await

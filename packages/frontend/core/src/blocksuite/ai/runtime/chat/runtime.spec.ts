@@ -806,10 +806,26 @@ describe('AIChatRuntime', () => {
     await runtime.dispatch({ type: 'initialize' });
     await runtime.dispatch({
       type: 'addScopeSelector',
+      item: { kind: 'doc', docId: 'doc-1' },
+    });
+    await runtime.dispatch({
+      type: 'addScopeSelector',
       item: { kind: 'doc', docId: 'doc-2' },
     });
     await runtime.dispatch({
+      type: 'removeScopeSelector',
+      item: { kind: 'doc', docId: 'doc-1' },
+    });
+    await runtime.dispatch({
       type: 'addFocusSelector',
+      item: { kind: 'tag', tagId: 'tag-1', docIds: [] },
+    });
+    await runtime.dispatch({
+      type: 'addFocusSelector',
+      item: { kind: 'tag', tagId: 'tag-2', docIds: [] },
+    });
+    await runtime.dispatch({
+      type: 'removeFocusSelector',
       item: { kind: 'tag', tagId: 'tag-1', docIds: [] },
     });
 
@@ -820,12 +836,12 @@ describe('AIChatRuntime', () => {
       'chat',
       expect.objectContaining({
         scopeSelectors: [{ kind: 'document', id: 'doc-2' }],
-        focusSelectors: [{ kind: 'tag', id: 'tag-1' }],
+        focusSelectors: [{ kind: 'tag', id: 'tag-2' }],
       })
     );
     expect(runtime.getSnapshot().composer.scopeSelection.items).toEqual([]);
     expect(runtime.getSnapshot().composer.focus.items).toEqual([
-      { kind: 'tag', tagId: 'tag-1', docIds: [] },
+      { kind: 'tag', tagId: 'tag-2', docIds: [] },
     ]);
   });
 

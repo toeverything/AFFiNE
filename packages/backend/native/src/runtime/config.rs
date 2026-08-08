@@ -22,6 +22,30 @@ pub(crate) struct BackendRuntimeConfig {
   pub(crate) copilot: CopilotRuntimeConfig,
 }
 
+#[derive(Clone, Debug, Default)]
+pub(crate) struct ConfigSource {
+  exact_path: Option<PathBuf>,
+}
+
+impl ConfigSource {
+  pub(crate) fn new(exact_path: Option<String>) -> Self {
+    Self {
+      exact_path: exact_path.filter(|path| !path.trim().is_empty()).map(PathBuf::from),
+    }
+  }
+
+  pub(crate) fn paths(&self) -> Vec<PathBuf> {
+    self
+      .exact_path
+      .clone()
+      .map_or_else(config_json_paths, |path| vec![path])
+  }
+
+  pub(crate) fn exact(&self) -> bool {
+    self.exact_path.is_some()
+  }
+}
+
 #[derive(Clone, Default, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub(crate) struct CopilotRuntimeConfig {
@@ -114,8 +138,8 @@ impl BackendRuntimeConfig {
     ByokPolicy::from(self.deployment, &self.copilot.byok)
   }
 
-  pub(crate) fn from_config_files(private_key: Option<String>) -> RuntimeResult<Self> {
-    let app_config = app_config_from_config_files()?;
+  pub(crate) fn from_config_source(private_key: Option<String>, source: &ConfigSource) -> RuntimeResult<Self> {
+    let app_config = app_config_from_config_source(source)?;
     let database_url = database_url_from_env()
       .or(app_config.database_url())
       .unwrap_or_else(|| "postgresql://localhost:5432/affine".to_string());
@@ -135,8 +159,8 @@ impl BackendRuntimeConfig {
     .validated()
   }
 
-  pub(crate) async fn with_db_overrides(&self, pool: &PgPool) -> RuntimeResult<Self> {
-    let app_config_value = app_config_value_from_config_files()?;
+  pub(crate) async fn with_db_overrides(&self, pool: &PgPool, source: &ConfigSource) -> RuntimeResult<Self> {
+    let app_config_value = app_config_value_from_config_source(source)?;
     let db_overrides = load_app_config_overrides_from_db(pool).await?;
     self.apply_db_overrides(app_config_value, db_overrides)
   }
@@ -273,14 +297,20 @@ fn non_empty_string(value: String) -> Option<String> {
   if value.trim().is_empty() { None } else { Some(value) }
 }
 
-fn app_config_from_config_files() -> RuntimeResult<AppConfigFile> {
-  deserialize_app_config(app_config_value_from_config_files()?)
+fn app_config_from_config_source(source: &ConfigSource) -> RuntimeResult<AppConfigFile> {
+  deserialize_app_config(app_config_value_from_config_source(source)?)
 }
 
-fn app_config_value_from_config_files() -> RuntimeResult<serde_json::Value> {
+fn app_config_value_from_config_source(source: &ConfigSource) -> RuntimeResult<serde_json::Value> {
   let mut merged = serde_json::Value::Object(Map::new());
-  for path in config_json_paths() {
+  for path in source.paths() {
     if !path.exists() {
+      if source.exact() {
+        return Err(RuntimeError::config(format!(
+          "config file does not exist: {}",
+          path.display()
+        )));
+      }
       continue;
     }
     let raw = fs::read_to_string(&path).map_err(|err| RuntimeError::io("failed to read config file", err))?;

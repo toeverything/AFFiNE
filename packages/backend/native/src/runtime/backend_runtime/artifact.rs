@@ -200,8 +200,8 @@ impl ArtifactService {
     sqlx::query_as::<_, ArtifactRow>(
       r#"INSERT INTO workspace_artifacts(
         id,workspace_id,content_hash,canonical_media_type,size_bytes,storage_scope,storage_key,status,
-        library_owned,reservation_expires_at)
-      VALUES($1,$2,$3,$4,$5,$6,$7,'reserving',$8,now()+interval '24 hours')
+        library_owned,reservation_expires_at,created_at,updated_at)
+      VALUES($1,$2,$3,$4,$5,$6,$7,'reserving',$8,now()+interval '24 hours',now(),now())
       ON CONFLICT(workspace_id,content_hash) DO UPDATE SET
         library_owned=workspace_artifacts.library_owned OR EXCLUDED.library_owned,
         reservation_expires_at=CASE WHEN workspace_artifacts.status='ready' THEN NULL ELSE EXCLUDED.reservation_expires_at END,

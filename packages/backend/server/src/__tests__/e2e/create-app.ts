@@ -3,7 +3,11 @@ import assert from 'node:assert';
 import { gqlFetcherFactory } from '@affine/graphql';
 import { INestApplication, ModuleMetadata } from '@nestjs/common';
 import { NestApplication } from '@nestjs/core';
-import { Test, TestingModuleBuilder } from '@nestjs/testing';
+import {
+  Test,
+  type TestingModule,
+  TestingModuleBuilder,
+} from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
 import cookieParser from 'cookie-parser';
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
@@ -22,6 +26,7 @@ import {
 import { ThrottlerStorage } from '../../base/throttler';
 import { SocketIoAdapter } from '../../base/websocket';
 import { AuthGuard, AuthService } from '../../core/auth';
+import { BACKEND_RUNTIME_CONFIG_PATH } from '../../core/backend-runtime';
 import { Mailer } from '../../core/mail';
 import { Models } from '../../models';
 import {
@@ -33,6 +38,7 @@ import {
   MockUserInput,
 } from '../mocks';
 import { parseCookies, TEST_LOG_LEVEL } from '../utils';
+import { createTestRuntimeConfig } from '../utils/runtime-config';
 
 interface TestingAppMetadata {
   tapModule?(m: TestingModuleBuilder): void;
@@ -235,6 +241,9 @@ export class TestingApp extends NestApplication {
 export async function createApp(
   metadata: TestingAppMetadata = {}
 ): Promise<TestingApp> {
+  const runtimeConfig = await createTestRuntimeConfig(
+    new ConfigFactory().config.db.datasourceUrl
+  );
   const { buildAppModule } = await import('../../app.module');
   const { tapModule, tapApp } = metadata;
 
@@ -244,27 +253,36 @@ export async function createApp(
 
   builder.overrideProvider(Mailer).useValue(new MockMailer());
   builder.overrideProvider(JobQueue).useValue(new MockJobQueue());
+  builder
+    .overrideProvider(BACKEND_RUNTIME_CONFIG_PATH)
+    .useValue(runtimeConfig.configPath);
 
   // when custom override happens
   if (tapModule) {
     tapModule(builder);
   }
 
-  const module = await builder.compile();
+  let module: TestingModule;
+  try {
+    module = await builder.compile();
+  } catch (error) {
+    await runtimeConfig.cleanup();
+    throw error;
+  }
   module.get(ConfigFactory).override({
     storages: {
       avatar: {
         storage: {
           provider: 'assetpack',
           bucket: 'avatars',
-          config: { path: '/tmp/affine-test-storage' },
+          config: { path: runtimeConfig.storagePath },
         },
       },
       blob: {
         storage: {
           provider: 'assetpack',
           bucket: 'blobs',
-          config: { path: '/tmp/affine-test-storage' },
+          config: { path: runtimeConfig.storagePath },
         },
       },
     },
@@ -272,7 +290,7 @@ export async function createApp(
       storage: {
         provider: 'assetpack',
         bucket: 'copilot',
-        config: { path: '/tmp/affine-test-storage' },
+        config: { path: runtimeConfig.storagePath },
       },
     },
   });
@@ -284,6 +302,18 @@ export async function createApp(
     bodyParser: true,
     rawBody: true,
   });
+  const close = app.close.bind(app);
+  let closed = false;
+  app.close = async () => {
+    try {
+      await close();
+    } finally {
+      if (!closed) {
+        closed = true;
+        await runtimeConfig.cleanup();
+      }
+    }
+  };
 
   const logger = new AFFiNELogger();
   logger.setLogLevels([TEST_LOG_LEVEL]);
@@ -309,7 +339,12 @@ export async function createApp(
     tapApp(app);
   }
 
-  await app.init();
+  try {
+    await app.init();
+  } catch (error) {
+    await app.close();
+    throw error;
+  }
 
   return app;
 }

@@ -76,6 +76,7 @@ fn scoped_write_keys_are_closed() {
     (StorageScope::Copilot, format!("{UUID}/{NANOID}/not-a-hash")),
     (StorageScope::Copilot, format!("{UUID}/{NANOID}/{HASH}-")),
     (StorageScope::Copilot, format!("{UUID}/{NANOID}/{HASH}-x")),
+    (StorageScope::Copilot, format!("{UUID}/{NANOID}/{}", "é".repeat(30))),
     (StorageScope::Copilot, format!("context-files/{NANOID}/{UUID}/{HASH}")),
     (StorageScope::Copilot, format!("workspace-files/{NANOID}/{UUID}")),
     (StorageScope::Avatar, format!("{UUID}/avatar-1700000000000")),

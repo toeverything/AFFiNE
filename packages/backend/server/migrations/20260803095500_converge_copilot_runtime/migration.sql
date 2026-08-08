@@ -58,7 +58,7 @@ CREATE TABLE "ai_message_artifacts" (
   "created_at" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT "ai_message_artifacts_pkey" PRIMARY KEY ("message_id", "artifact_id", "role"),
   CONSTRAINT "ai_message_artifacts_message_id_fkey" FOREIGN KEY ("message_id") REFERENCES "ai_sessions_messages"("id") ON DELETE CASCADE,
-  CONSTRAINT "ai_message_artifacts_workspace_id_artifact_id_fkey" FOREIGN KEY ("workspace_id", "artifact_id") REFERENCES "workspace_artifacts"("workspace_id", "id") ON DELETE RESTRICT
+  CONSTRAINT "ai_message_artifacts_workspace_id_artifact_id_fkey" FOREIGN KEY ("workspace_id", "artifact_id") REFERENCES "workspace_artifacts"("workspace_id", "id") ON DELETE CASCADE
 );
 
 CREATE INDEX "ai_message_artifacts_workspace_id_artifact_id_idx" ON "ai_message_artifacts"("workspace_id", "artifact_id");

@@ -111,6 +111,32 @@ test('workspace artifacts deduplicate bytes and remain workspace isolated', asyn
     2
   );
 
+  const session = await t.context.db.aiSession.create({
+    data: {
+      userId: user.id,
+      workspaceId: otherWorkspace.id,
+      promptName: 'Chat With AFFiNE AI',
+    },
+  });
+  const message = await t.context.db.aiSessionMessage.create({
+    data: { sessionId: session.id, role: 'user', content: 'attachment' },
+  });
+  await t.context.db.aiMessageArtifact.create({
+    data: {
+      messageId: message.id,
+      workspaceId: otherWorkspace.id,
+      artifactId: isolated.id,
+      role: 'attachment',
+    },
+  });
+  await t.context.workspace.delete(otherWorkspace.id);
+  t.is(
+    await t.context.db.aiMessageArtifact.count({
+      where: { artifactId: isolated.id },
+    }),
+    0
+  );
+
   await t.context.runtime.setArtifactLibraryOwned(
     workspace.id,
     first.id,

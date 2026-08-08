@@ -1,4 +1,8 @@
-use std::{collections::BTreeSet, net::IpAddr, time::Duration};
+use std::{
+  collections::BTreeSet,
+  net::{IpAddr, Ipv4Addr, Ipv6Addr},
+  time::Duration,
+};
 
 use llm_adapter::target::EgressPolicy;
 
@@ -125,26 +129,59 @@ impl ByokPolicy {
 
 fn is_public(address: IpAddr) -> bool {
   match address {
-    IpAddr::V4(address) => {
-      !(address.is_private()
-        || address.is_loopback()
-        || address.is_link_local()
-        || address.is_broadcast()
-        || address.is_documentation()
-        || address.is_unspecified()
-        || address.octets()[0] == 0
-        || (100..=127).contains(&address.octets()[1]) && address.octets()[0] == 100)
-    }
+    IpAddr::V4(address) => is_public_ipv4(address),
     IpAddr::V6(address) => {
-      !(address.is_loopback()
+      if address.is_loopback()
         || address.is_unspecified()
         || address.is_unique_local()
         || address.is_unicast_link_local()
-        || address
-          .to_ipv4_mapped()
-          .is_some_and(|address| !is_public(IpAddr::V4(address))))
+        || address.is_multicast()
+      {
+        return false;
+      }
+      embedded_ipv4(address).is_none_or(is_public_ipv4)
     }
   }
+}
+
+fn is_public_ipv4(address: Ipv4Addr) -> bool {
+  let [first, second, third, _] = address.octets();
+  !(address.is_private()
+    || address.is_loopback()
+    || address.is_link_local()
+    || address.is_broadcast()
+    || address.is_documentation()
+    || address.is_unspecified()
+    || address.is_multicast()
+    || first == 0
+    || first >= 240
+    || first == 100 && (64..=127).contains(&second)
+    || first == 192 && second == 0 && third == 0
+    || first == 198 && matches!(second, 18 | 19))
+}
+
+fn embedded_ipv4(address: Ipv6Addr) -> Option<Ipv4Addr> {
+  if let Some(address) = address.to_ipv4_mapped() {
+    return Some(address);
+  }
+  let segments = address.segments();
+  if segments[..6] == [0x64, 0xff9b, 0, 0, 0, 0] {
+    return Some(Ipv4Addr::new(
+      (segments[6] >> 8) as u8,
+      segments[6] as u8,
+      (segments[7] >> 8) as u8,
+      segments[7] as u8,
+    ));
+  }
+  if segments[0] == 0x2002 {
+    return Some(Ipv4Addr::new(
+      (segments[1] >> 8) as u8,
+      segments[1] as u8,
+      (segments[2] >> 8) as u8,
+      segments[2] as u8,
+    ));
+  }
+  None
 }
 
 #[cfg(test)]
@@ -193,5 +230,49 @@ mod tests {
     restricted.enabled = false;
     let policy = ByokPolicy::from(Deployment::SelfHosted, &restricted);
     assert!(!policy.allows("anthropic", &ByokEndpoint::ProviderDefault));
+  }
+
+  #[test]
+  fn classifies_public_endpoints() {
+    for address in [
+      "1.1.1.1",
+      "100.63.255.255",
+      "100.128.0.1",
+      "192.0.1.1",
+      "198.17.255.255",
+      "198.20.0.1",
+      "2606:4700:4700::1111",
+      "64:ff9b::101:101",
+      "2002:0101:0101::",
+    ] {
+      assert!(is_public(address.parse().unwrap()), "{address}");
+    }
+
+    for address in [
+      "0.1.2.3",
+      "10.0.0.1",
+      "100.64.0.1",
+      "100.99.255.255",
+      "100.127.255.255",
+      "127.0.0.1",
+      "169.254.0.1",
+      "192.0.0.1",
+      "192.0.2.1",
+      "198.18.0.1",
+      "198.19.255.255",
+      "198.51.100.1",
+      "224.0.0.1",
+      "240.0.0.1",
+      "::",
+      "::1",
+      "fc00::1",
+      "fe80::1",
+      "ff02::1",
+      "::ffff:10.0.0.1",
+      "64:ff9b::a00:1",
+      "2002:0a00:0001::",
+    ] {
+      assert!(!is_public(address.parse().unwrap()), "{address}");
+    }
   }
 }
