@@ -9,14 +9,23 @@ type ActivateEvent =
   | MouseEvent
   | PointerEvent;
 
-type PenDown = {
+export type PenDownPoint = {
   pointerId: number;
   x: number;
   y: number;
 };
 
 // ~10px — Pencil taps routinely jitter a few px between down/up on iPad.
-const PEN_TAP_SLOP_SQ = 100;
+export const PEN_TAP_SLOP_SQ = 100;
+
+export function isWithinPenTapSlop(
+  down: Pick<PenDownPoint, 'x' | 'y'>,
+  up: Pick<PointerEvent, 'clientX' | 'clientY'>
+): boolean {
+  const dx = up.clientX - down.x;
+  const dy = up.clientY - down.y;
+  return dx * dx + dy * dy <= PEN_TAP_SLOP_SQ;
+}
 
 /**
  * Apple Pencil taps inside WKWebView modal/dialog surfaces often skip the
@@ -31,7 +40,7 @@ export function createPenClickCompatHandlers(
   activate: (event: ActivateEvent) => void
 ) {
   let ignoreNextClick = false;
-  let penDown: PenDown | null = null;
+  let penDown: PenDownPoint | null = null;
 
   return {
     onPointerDown: (event: ReactPointerEvent<Element> | PointerEvent) => {
@@ -54,16 +63,19 @@ export function createPenClickCompatHandlers(
       if (event.pointerId !== penDown.pointerId) {
         return;
       }
-      const dx = event.clientX - penDown.x;
-      const dy = event.clientY - penDown.y;
+      const down = penDown;
       penDown = null;
-      if (dx * dx + dy * dy > PEN_TAP_SLOP_SQ) {
+      if (!isWithinPenTapSlop(down, event)) {
         return;
       }
       ignoreNextClick = true;
       activate(event);
       // Clear even when the browser never synthesizes click after pointerup.
-      requestAnimationFrame(() => {
+      const scheduleClear =
+        typeof requestAnimationFrame === 'function'
+          ? requestAnimationFrame
+          : (cb: () => void) => setTimeout(cb, 0);
+      scheduleClear(() => {
         ignoreNextClick = false;
       });
     },

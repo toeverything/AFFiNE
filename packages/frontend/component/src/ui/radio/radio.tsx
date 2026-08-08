@@ -11,6 +11,10 @@ import {
   useRef,
 } from 'react';
 
+import {
+  isWithinPenTapSlop,
+  type PenDownPoint,
+} from '../../utils/pen-click-compat';
 import { withUnit } from '../../utils/with-unit';
 import * as styles from './styles.css';
 import type { RadioItem, RadioProps } from './types';
@@ -154,14 +158,10 @@ export const RadioGroup = memo(function RadioGroup({
   }, [animate, value]);
 
   // Pencil taps inside mobile modals often skip synthesized `click`. Call
-  // onChange directly (don't rely on programmatic click during an in-flight
-  // pen gesture — that can flash the indicator then snap back).
-  const penDownRef = useRef<{
-    pointerId: number;
-    x: number;
-    y: number;
-    itemValue: string;
-  } | null>(null);
+  // onChange directly using the shared pen-tap slop helper (same as menus).
+  const penDownRef = useRef<(PenDownPoint & { itemValue: string }) | null>(
+    null
+  );
 
   const onPenPointerDown = useCallback(
     (itemValue: string) => (event: ReactPointerEvent<HTMLButtonElement>) => {
@@ -191,9 +191,7 @@ export const RadioGroup = memo(function RadioGroup({
       ) {
         return;
       }
-      const dx = event.clientX - penDown.x;
-      const dy = event.clientY - penDown.y;
-      if (dx * dx + dy * dy > 100) {
+      if (!isWithinPenTapSlop(penDown, event)) {
         return;
       }
       if (itemValue === value) {
