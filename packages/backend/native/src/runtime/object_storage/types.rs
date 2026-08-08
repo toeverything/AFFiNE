@@ -167,8 +167,11 @@ pub(super) fn validate_scoped_write_key(scope: StorageScope, key: &str) -> Objec
 fn validate_blob_key(key: &str) -> bool {
   let segments: Vec<&str> = key.split('/').collect();
   match segments.as_slice() {
-    // workspace blob: <workspaceId>/<sha256b64>
-    [workspace_id, hash] => is_id_segment(workspace_id) && is_sha256_base64url(hash),
+    // Existing workspaces may contain blob identifiers created before canonical
+    // content hashes were required. New uploads still use WorkspaceBlobKey.
+    [workspace_id, blob_id] => {
+      is_id_segment(workspace_id) && validate_single_segment(blob_id, "workspace blob id").is_ok()
+    }
     // comment attachment: comment-attachments/<workspaceId>/<docId>/<uuid>
     ["comment-attachments", workspace_id, doc_id, attachment_key] => {
       [workspace_id, doc_id, attachment_key].iter().all(|s| is_id_segment(s))

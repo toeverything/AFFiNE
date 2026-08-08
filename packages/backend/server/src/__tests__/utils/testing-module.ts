@@ -13,7 +13,7 @@ import { AFFiNELogger, ConfigFactory, JobModule, JobQueue } from '../../base';
 import { GqlModule } from '../../base/graphql';
 import { ServerConfigModule } from '../../core';
 import { AuthGuard, AuthModule } from '../../core/auth';
-import { BACKEND_RUNTIME_CONFIG_PATH } from '../../core/backend-runtime';
+import { BACKEND_RUNTIME_CONFIG_PATHS } from '../../core/backend-runtime';
 import { Mailer, MailModule } from '../../core/mail';
 import { ModelsModule } from '../../models';
 // for jsdoc inference
@@ -110,8 +110,8 @@ export async function createTestingModule(
   builder.overrideProvider(Mailer).useClass(MockMailer);
   builder.overrideProvider(JobQueue).useClass(MockJobQueue);
   builder
-    .overrideProvider(BACKEND_RUNTIME_CONFIG_PATH)
-    .useValue(runtimeConfig.configPath);
+    .overrideProvider(BACKEND_RUNTIME_CONFIG_PATHS)
+    .useValue([runtimeConfig.configPath]);
   if (moduleDef.tapModule) {
     moduleDef.tapModule(builder);
   }
@@ -161,16 +161,15 @@ export async function createTestingModule(
   );
 
   const close = testingModule.close.bind(testingModule);
-  let closed = false;
-  testingModule.close = async () => {
-    try {
-      await close();
-    } finally {
-      if (!closed) {
-        closed = true;
+  let closePromise: Promise<void> | undefined;
+  testingModule.close = () => {
+    return (closePromise ??= (async () => {
+      try {
+        await close();
+      } finally {
         await runtimeConfig.cleanup();
       }
-    }
+    })());
   };
   testingModule[Symbol.asyncDispose] = () => testingModule.close();
 

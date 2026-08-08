@@ -51,6 +51,7 @@ fn scoped_write_keys_are_closed() {
   for (scope, key) in [
     (StorageScope::Blob, format!("{NANOID}/{HASH}")),
     (StorageScope::Blob, format!("{UUID}/{HASH}=")),
+    (StorageScope::Blob, format!("{UUID}/legacy-image.png")),
     (
       StorageScope::Blob,
       format!("comment-attachments/{NANOID}/{NANOID}/{UUID}"),
@@ -69,8 +70,8 @@ fn scoped_write_keys_are_closed() {
   }
 
   for (scope, key) in [
-    (StorageScope::Blob, format!("{NANOID}/not-a-hash")),
     (StorageScope::Blob, format!("{NANOID}/{HASH}/extra")),
+    (StorageScope::Blob, format!("{NANOID}/..")),
     (StorageScope::Blob, format!("comment-attachments/{NANOID}/{NANOID}")),
     (StorageScope::Blob, format!("other-prefix/{NANOID}/{NANOID}/{UUID}")),
     (StorageScope::Copilot, format!("{UUID}/{NANOID}/not-a-hash")),

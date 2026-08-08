@@ -60,8 +60,8 @@ pub struct BackendRuntime {
 #[napi_derive::napi]
 impl BackendRuntime {
   #[napi(constructor)]
-  pub fn new(private_key: Option<String>, config_path: Option<String>) -> Result<Self> {
-    let config_source = ConfigSource::new(config_path);
+  pub fn new(private_key: Option<String>, config_paths: Option<Vec<String>>) -> Result<Self> {
+    let config_source = ConfigSource::new(config_paths);
     let config = BackendRuntimeConfig::from_config_source(private_key, &config_source).map_err(to_napi_error)?;
     let object_storage = ObjectStorageService::from_config_source(&config_source).map_err(to_napi_error)?;
     Ok(Self {

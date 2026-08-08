@@ -59,7 +59,7 @@ export declare class BackendRuntime {
   recalibrateWorkspaceAdminStats(lastSid: number, batchLimit: number, owner: string, leaseTtlMs: number): Promise<RuntimeWorkspaceStatsRecalibrationResult>
   writeWorkspaceAdminStatsDailySnapshot(owner: string, leaseTtlMs: number): Promise<RuntimeWorkspaceStatsSnapshotResult>
   recalibrateWorkspaceAdminStatsDaily(batchLimit: number, owner: string, leaseTtlMs: number, lockRetryTimes: number, lockRetryDelayMs: number): Promise<RuntimeWorkspaceStatsDailyRecalibrationResult>
-  constructor(privateKey?: string | undefined | null, configPath?: string | undefined | null)
+  constructor(privateKey?: string | undefined | null, configPaths?: Array<string> | undefined | null)
   start(): Promise<void>
   stop(): Promise<void>
   reloadConfig(privateKey?: string | undefined | null): Promise<void>

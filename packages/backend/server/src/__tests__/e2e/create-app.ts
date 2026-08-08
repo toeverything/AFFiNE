@@ -26,7 +26,7 @@ import {
 import { ThrottlerStorage } from '../../base/throttler';
 import { SocketIoAdapter } from '../../base/websocket';
 import { AuthGuard, AuthService } from '../../core/auth';
-import { BACKEND_RUNTIME_CONFIG_PATH } from '../../core/backend-runtime';
+import { BACKEND_RUNTIME_CONFIG_PATHS } from '../../core/backend-runtime';
 import { Mailer } from '../../core/mail';
 import { Models } from '../../models';
 import {
@@ -254,8 +254,8 @@ export async function createApp(
   builder.overrideProvider(Mailer).useValue(new MockMailer());
   builder.overrideProvider(JobQueue).useValue(new MockJobQueue());
   builder
-    .overrideProvider(BACKEND_RUNTIME_CONFIG_PATH)
-    .useValue(runtimeConfig.configPath);
+    .overrideProvider(BACKEND_RUNTIME_CONFIG_PATHS)
+    .useValue([runtimeConfig.configPath]);
 
   // when custom override happens
   if (tapModule) {
@@ -303,16 +303,15 @@ export async function createApp(
     rawBody: true,
   });
   const close = app.close.bind(app);
-  let closed = false;
-  app.close = async () => {
-    try {
-      await close();
-    } finally {
-      if (!closed) {
-        closed = true;
+  let closePromise: Promise<void> | undefined;
+  app.close = () => {
+    return (closePromise ??= (async () => {
+      try {
+        await close();
+      } finally {
         await runtimeConfig.cleanup();
       }
-    }
+    })());
   };
 
   const logger = new AFFiNELogger();

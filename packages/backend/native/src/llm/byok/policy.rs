@@ -161,7 +161,7 @@ fn is_public_ipv4(address: Ipv4Addr) -> bool {
 }
 
 fn embedded_ipv4(address: Ipv6Addr) -> Option<Ipv4Addr> {
-  if let Some(address) = address.to_ipv4_mapped() {
+  if let Some(address) = address.to_ipv4() {
     return Some(address);
   }
   let segments = address.segments();
@@ -268,6 +268,7 @@ mod tests {
       "fc00::1",
       "fe80::1",
       "ff02::1",
+      "::a00:1",
       "::ffff:10.0.0.1",
       "64:ff9b::a00:1",
       "2002:0a00:0001::",

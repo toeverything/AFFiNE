@@ -38,8 +38,8 @@ import {
 
 type RuntimeInstance = InstanceType<typeof BackendRuntime>;
 
-export const BACKEND_RUNTIME_CONFIG_PATH = Symbol(
-  'BACKEND_RUNTIME_CONFIG_PATH'
+export const BACKEND_RUNTIME_CONFIG_PATHS = Symbol(
+  'BACKEND_RUNTIME_CONFIG_PATHS'
 );
 
 class RuntimeEventStream<T> implements AsyncIterableIterator<T> {
@@ -280,12 +280,12 @@ export class BackendRuntimeProvider
   constructor(
     @Optional() private readonly config?: Config,
     @Optional()
-    @Inject(BACKEND_RUNTIME_CONFIG_PATH)
-    configPath?: string
+    @Inject(BACKEND_RUNTIME_CONFIG_PATHS)
+    configPaths?: string[]
   ) {
     this.runtime = new BackendRuntime(
       this.config?.crypto.privateKey,
-      configPath
+      configPaths
     );
   }
 

@@ -200,17 +200,18 @@ fn load_managed_profiles(
         .iter()
         .filter(|profile| profile.enabled && profile.models.iter().any(|model| model == model_id))
         .collect::<Vec<_>>();
-      let [profile] = matches.as_slice() else {
-        return Err(RuntimeError::invalid_state(if matches.is_empty() {
-          "built-in managed route model is unavailable"
-        } else {
-          "built-in managed route model matches multiple profiles"
-        }));
+      let Some(profile) = matches.first() else {
+        return Ok(None);
       };
+      if matches.len() > 1 {
+        return Err(RuntimeError::invalid_state(
+          "built-in managed route model matches multiple profiles",
+        ));
+      }
       let capabilities = provider_default_capability_upper_bound(&profile.provider, model_id)
         .ok_or_else(|| RuntimeError::invalid_state("built-in managed route model is incompatible with its profile"))?;
       let endpoint = managed_endpoint(profile)?;
-      Ok(AuthorizedProviderProfile {
+      Ok(Some(AuthorizedProviderProfile {
         profile_id: profile.id.clone(),
         source: ProfileSource::Managed,
         provider: profile.provider.clone(),
@@ -226,8 +227,9 @@ fn load_managed_profiles(
         credential_ref: CredentialRef::Managed {
           profile_id: profile.id.clone(),
         },
-      })
+      }))
     })
+    .filter_map(|profile| profile.transpose())
     .collect()
 }
 

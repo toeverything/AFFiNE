@@ -24,25 +24,30 @@ pub(crate) struct BackendRuntimeConfig {
 
 #[derive(Clone, Debug, Default)]
 pub(crate) struct ConfigSource {
-  exact_path: Option<PathBuf>,
+  exact_paths: Option<Vec<PathBuf>>,
 }
 
 impl ConfigSource {
-  pub(crate) fn new(exact_path: Option<String>) -> Self {
+  pub(crate) fn new(exact_paths: Option<Vec<String>>) -> Self {
     Self {
-      exact_path: exact_path.filter(|path| !path.trim().is_empty()).map(PathBuf::from),
+      exact_paths: exact_paths.map(|paths| {
+        dedupe_paths(
+          paths
+            .into_iter()
+            .filter(|path| !path.trim().is_empty())
+            .map(PathBuf::from)
+            .collect(),
+        )
+      }),
     }
   }
 
   pub(crate) fn paths(&self) -> Vec<PathBuf> {
-    self
-      .exact_path
-      .clone()
-      .map_or_else(config_json_paths, |path| vec![path])
+    self.exact_paths.clone().unwrap_or_else(config_json_paths)
   }
 
   pub(crate) fn exact(&self) -> bool {
-    self.exact_path.is_some()
+    self.exact_paths.is_some()
   }
 }
 
@@ -503,6 +508,9 @@ mod tests {
         .iter()
         .all(|path| !path.to_string_lossy().contains("packages/backend/server"))
     );
+    let exact_empty = ConfigSource::new(Some(Vec::new()));
+    assert!(exact_empty.exact());
+    assert!(exact_empty.paths().is_empty());
   }
 
   #[test]
@@ -553,6 +561,23 @@ mod tests {
     assert!(!copilot.byok.enabled);
     assert_eq!(copilot.providers.profiles.len(), 1);
     assert_eq!(copilot.providers.profiles[0].id, "managed-openai");
+
+    let directory = tempfile::tempdir().unwrap();
+    let base_path = directory.path().join("base.json");
+    let override_path = directory.path().join("override.json");
+    fs::write(
+      &base_path,
+      r#"{"copilot":{"enabled":true,"byok.enabled":true,"byok.allowCustomEndpoint":true}}"#,
+    )
+    .unwrap();
+    fs::write(&override_path, r#"{"copilot":{"byok.enabled":false}}"#).unwrap();
+    let source = ConfigSource::new(Some(vec![
+      base_path.to_string_lossy().into_owned(),
+      override_path.to_string_lossy().into_owned(),
+    ]));
+    let copilot = app_config_from_config_source(&source).unwrap().copilot.unwrap();
+    assert!(!copilot.byok.enabled);
+    assert!(copilot.byok.allow_custom_endpoint);
   }
 
   #[test]

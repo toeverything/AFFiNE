@@ -49,7 +49,13 @@ export class BackendRuntimeEmbeddingJob {
   }
 
   private async queueDocument(workspaceId: string, docId: string) {
-    if (workspaceId === docId) return;
+    if (
+      workspaceId === docId ||
+      docId.startsWith('db$') ||
+      docId.startsWith('userdata$')
+    ) {
+      return;
+    }
     await this.queue.add(
       'backendRuntime.syncDocumentEmbedding',
       { workspaceId, docId },

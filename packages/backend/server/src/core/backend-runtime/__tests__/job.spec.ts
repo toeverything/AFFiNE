@@ -121,6 +121,19 @@ test('backend-runtime jobs ingest documents and clean runtime state', async t =>
       .length > 0
   );
 
+  const documentJobCount = t.context.module.queue.count(
+    'backendRuntime.syncDocumentEmbedding'
+  );
+  await t.context.embeddingJob.onDocSnapshotUpdated({
+    workspaceId: 'workspace-1',
+    docId: 'db$docProperties',
+    blob: Buffer.alloc(0),
+  });
+  t.is(
+    t.context.module.queue.count('backendRuntime.syncDocumentEmbedding'),
+    documentJobCount
+  );
+
   await t.context.embeddingJob.onDocSnapshotUpdated({
     workspaceId: 'workspace-1',
     docId: 'workspace-1',
