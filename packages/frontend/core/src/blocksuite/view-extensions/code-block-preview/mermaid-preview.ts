@@ -63,6 +63,16 @@ export class MermaidPreview extends SignalWatcher(
       cursor: grab;
     }
 
+    .mermaid-preview-container:fullscreen {
+      box-sizing: border-box;
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+      border: 0;
+      border-radius: 0;
+      padding: 32px;
+    }
+
     .mermaid-preview-container:active {
       cursor: grabbing;
     }
@@ -282,6 +292,17 @@ export class MermaidPreview extends SignalWatcher(
   private _zoomOut() {
     this.scale = Math.max(this.scale / 1.2, 0.1);
     this._updateTransform();
+  }
+
+  private _toggleFullscreen() {
+    const action =
+      document.fullscreenElement === this.container
+        ? document.exitFullscreen()
+        : this.container.requestFullscreen();
+
+    action.catch(error => {
+      console.error('Failed to toggle Mermaid preview fullscreen:', error);
+    });
   }
 
   private _updateTransform() {
@@ -512,6 +533,13 @@ export class MermaidPreview extends SignalWatcher(
                     title="Reset view"
                   >
                     ⟳
+                  </button>
+                  <button
+                    class="mermaid-control-button"
+                    @click=${this._toggleFullscreen}
+                    title="Toggle fullscreen"
+                  >
+                    ⛶
                   </button>
                 </div>
                 <div class="mermaid-scale-info">
