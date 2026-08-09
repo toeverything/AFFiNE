@@ -117,9 +117,33 @@ impl ObjectStorageAppConfig {
     {
       self.storages.get_or_insert_with(HashMap::new).extend(storages);
     }
-    if config.copilot.is_some() {
-      self.copilot = config.copilot;
+    if let Some(storage) = config.copilot.and_then(|copilot| copilot.storage) {
+      self.copilot.get_or_insert_default().storage = Some(storage);
     }
+  }
+}
+
+fn default_object_storage_config() -> ObjectStorageAppConfig {
+  let storage = |bucket: &str| {
+    serde_json::json!({
+      "provider": "fs",
+      "bucket": bucket,
+      "config": { "path": "~/.affine/storage" }
+    })
+  };
+
+  ObjectStorageAppConfig {
+    storages: Some(HashMap::from([
+      ("blob.storage".to_string(), storage("blobs")),
+      ("avatar.storage".to_string(), storage("avatars")),
+    ])),
+    copilot: Some(CopilotConfigFile {
+      storage: Some(StorageProviderConfig {
+        provider: "fs".to_string(),
+        bucket: "copilot".to_string(),
+        config: serde_json::json!({ "path": "~/.affine/storage" }),
+      }),
+    }),
   }
 }
 
@@ -130,7 +154,7 @@ pub(super) fn backends_from_config_files() -> RuntimeResult<HashMap<String, Stor
 pub(super) fn backends_from_config_source(
   source: &ConfigSource,
 ) -> RuntimeResult<HashMap<String, StorageBackendConfig>> {
-  let mut merged = ObjectStorageAppConfig::default();
+  let mut merged = default_object_storage_config();
   for path in source.paths() {
     if !path.exists() {
       if source.exact() {
@@ -151,7 +175,9 @@ pub(super) fn backends_from_config_source(
 pub(super) fn backends_from_config_json(config_json: &str) -> RuntimeResult<HashMap<String, StorageBackendConfig>> {
   let config = serde_json::from_str::<ObjectStorageAppConfig>(config_json)
     .map_err(|err| RuntimeError::json("invalid object storage config", err))?;
-  config.storage_backends()
+  let mut merged = default_object_storage_config();
+  merged.merge(config);
+  merged.storage_backends()
 }
 
 pub(super) async fn backends_from_db(pool: &PgPool) -> RuntimeResult<HashMap<String, StorageBackendConfig>> {

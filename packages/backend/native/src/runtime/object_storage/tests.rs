@@ -1,6 +1,7 @@
 use reqwest::StatusCode;
 
 use super::{
+  backend::backends_from_config_json,
   config::ObjectStorageConfig,
   error::ObjectStorageError,
   types::{
@@ -98,7 +99,20 @@ fn storage_config(provider: &str, config: serde_json::Value) -> StorageProviderC
 }
 
 #[test]
-fn resolves_r2_config_from_config_json_shape() {
+fn resolves_storage_config_from_config_json_shape() {
+  let defaults = backends_from_config_json("{}").unwrap();
+  for (scope, bucket) in [("blob", "blobs"), ("avatar", "avatars"), ("copilot", "copilot")] {
+    let backend = defaults.get(scope).unwrap();
+    assert_eq!(backend.provider(), "fs");
+    assert_eq!(backend.bucket(), bucket);
+  }
+  let configured = backends_from_config_json(
+    r#"{"storages":{"avatar.publicPath":"/avatars/","blob.storage":{"provider":"fs","bucket":"custom-blobs","config":{"path":"/tmp/storage"}}},"copilot":{"enabled":true}}"#,
+  )
+  .unwrap();
+  assert_eq!(configured.get("blob").unwrap().bucket(), "custom-blobs");
+  assert_eq!(configured.get("copilot").unwrap().bucket(), "copilot");
+
   let storage = StorageProviderConfig {
     provider: "cloudflare-r2".to_string(),
     bucket: "workspace-blobs".to_string(),
@@ -156,6 +170,18 @@ fn resolves_r2_endpoint_cases_from_config_json_shape() {
       Some("https://account.r2.cloudflarestorage.com"),
     ),
     (
+      "explicit default jurisdiction",
+      serde_json::json!({
+        "accountId": "account",
+        "jurisdiction": "default",
+        "credentials": {
+          "accessKeyId": "key",
+          "secretAccessKey": "secret"
+        }
+      }),
+      Some("https://account.r2.cloudflarestorage.com"),
+    ),
+    (
       "eu jurisdiction",
       serde_json::json!({
         "accountId": "account",
@@ -183,6 +209,16 @@ fn resolves_r2_endpoint_cases_from_config_json_shape() {
           "accessKeyId": "key",
           "secretAccessKey": "secret"
         }
+      })
+    ))
+    .is_err()
+  );
+  assert!(
+    ObjectStorageConfig::from_r2_config(storage_config(
+      "cloudflare-r2",
+      serde_json::json!({
+        "accountId": "account",
+        "jurisdiction": "unknown"
       })
     ))
     .is_err()

@@ -308,6 +308,7 @@ export async function enableCloudWorkspace(page: Page) {
   await waitForAllPagesLoad(page);
   await dismissBlockingModal(page);
   await clickNewPageButton(page);
+  await waitForWorkspaceSynced(page);
 }
 
 export async function enableCloudWorkspaceFromShareButton(page: Page) {
@@ -324,6 +325,44 @@ export async function enableCloudWorkspaceFromShareButton(page: Page) {
   await waitForEditorLoad(page);
   await dismissBlockingModal(page);
   await clickNewPageButton(page);
+  await waitForWorkspaceSynced(page);
+}
+
+async function waitForWorkspaceSynced(page: Page) {
+  await page.evaluate(async () => {
+    const { currentWorkspace } = window as typeof window & {
+      currentWorkspace?: {
+        id: string;
+        engine: {
+          doc: {
+            waitForSynced(docId?: string, abort?: AbortSignal): Promise<void>;
+          };
+        };
+      };
+    };
+    if (!currentWorkspace) {
+      throw new Error('Current workspace is unavailable');
+    }
+    const abort = AbortSignal.timeout(60_000);
+    try {
+      await currentWorkspace.engine.doc.waitForSynced(
+        currentWorkspace.id,
+        abort
+      );
+      await currentWorkspace.engine.doc.waitForSynced(
+        'db$docProperties',
+        abort
+      );
+      await currentWorkspace.engine.doc.waitForSynced(undefined, abort);
+    } catch (error) {
+      if (abort.aborted) {
+        throw new Error(
+          `Timed out waiting for workspace ${currentWorkspace.id} to sync`
+        );
+      }
+      throw error;
+    }
+  });
 }
 
 export async function enableShare(page: Page) {

@@ -59,7 +59,7 @@ pub(crate) struct CopilotRuntimeConfig {
   pub(crate) providers: CopilotProvidersRuntimeConfig,
 }
 
-#[derive(Clone, Deserialize)]
+#[derive(Clone, Deserialize, serde::Serialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
 pub(crate) struct CopilotByokRuntimeConfig {
   pub(crate) enabled: bool,
@@ -80,11 +80,10 @@ impl Default for CopilotByokRuntimeConfig {
   }
 }
 
+pub(super) const SUPPORTED_BYOK_PROVIDERS: [&str; 4] = ["openai", "anthropic", "gemini", "fal"];
+
 fn default_allowed_providers() -> Vec<String> {
-  ["openai", "anthropic", "gemini", "fal"]
-    .into_iter()
-    .map(str::to_string)
-    .collect()
+  SUPPORTED_BYOK_PROVIDERS.into_iter().map(str::to_string).collect()
 }
 
 #[derive(Clone, Default, Deserialize)]
@@ -108,6 +107,152 @@ pub(crate) struct CopilotManagedProfileConfig {
 
 fn enabled_by_default() -> bool {
   true
+}
+
+#[derive(Clone, Default, Deserialize, serde::Serialize, schemars::JsonSchema)]
+#[serde(rename_all = "camelCase", default)]
+pub(crate) struct CopilotRuntimeConfigFile {
+  pub(super) enabled: bool,
+  pub(super) byok: CopilotByokRuntimeConfig,
+  pub(super) providers: CopilotProvidersRuntimeConfigFile,
+}
+
+#[derive(Clone, Default, Deserialize, serde::Serialize, schemars::JsonSchema)]
+#[serde(rename_all = "camelCase", default)]
+pub(super) struct CopilotProvidersRuntimeConfigFile {
+  pub(super) profiles: Vec<CopilotManagedProfileConfigFile>,
+}
+
+#[derive(Clone, Deserialize, serde::Serialize, schemars::JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct CopilotManagedProfileConfigFile {
+  id: String,
+  #[serde(rename = "type")]
+  provider: CopilotManagedProvider,
+  display_name: Option<String>,
+  priority: Option<f64>,
+  #[serde(default = "enabled_by_default")]
+  enabled: bool,
+  models: Vec<String>,
+  middleware: Option<CopilotProviderMiddlewareConfigFile>,
+  config: Map<String, serde_json::Value>,
+}
+
+#[derive(Clone, Copy, Deserialize, serde::Serialize, schemars::JsonSchema)]
+enum CopilotManagedProvider {
+  #[serde(rename = "anthropic")]
+  Anthropic,
+  #[serde(rename = "anthropicVertex")]
+  AnthropicVertex,
+  #[serde(rename = "cloudflareWorkersAi")]
+  CloudflareWorkersAi,
+  #[serde(rename = "fal")]
+  Fal,
+  #[serde(rename = "gemini")]
+  Gemini,
+  #[serde(rename = "geminiVertex")]
+  GeminiVertex,
+  #[serde(rename = "openai")]
+  OpenAi,
+}
+
+impl CopilotManagedProvider {
+  fn as_str(self) -> &'static str {
+    match self {
+      Self::Anthropic => "anthropic",
+      Self::AnthropicVertex => "anthropicVertex",
+      Self::CloudflareWorkersAi => "cloudflareWorkersAi",
+      Self::Fal => "fal",
+      Self::Gemini => "gemini",
+      Self::GeminiVertex => "geminiVertex",
+      Self::OpenAi => "openai",
+    }
+  }
+}
+
+#[derive(Clone, Deserialize, serde::Serialize, schemars::JsonSchema)]
+struct CopilotProviderMiddlewareConfigFile {
+  rust: Option<CopilotRustMiddlewareConfigFile>,
+  node: Option<CopilotNodeMiddlewareConfigFile>,
+}
+
+#[derive(Clone, Deserialize, serde::Serialize, schemars::JsonSchema)]
+struct CopilotRustMiddlewareConfigFile {
+  request: Option<Vec<CopilotRustRequestMiddleware>>,
+  stream: Option<Vec<CopilotRustStreamMiddleware>>,
+}
+
+#[derive(Clone, Deserialize, serde::Serialize, schemars::JsonSchema)]
+struct CopilotNodeMiddlewareConfigFile {
+  text: Option<Vec<CopilotNodeTextMiddleware>>,
+}
+
+#[derive(Clone, Deserialize, serde::Serialize, schemars::JsonSchema)]
+#[serde(rename_all = "snake_case")]
+enum CopilotRustRequestMiddleware {
+  NormalizeMessages,
+  ClampMaxTokens,
+  ToolSchemaRewrite,
+  OpenaiRequestCompat,
+  OmitToolChoice,
+}
+
+#[derive(Clone, Deserialize, serde::Serialize, schemars::JsonSchema)]
+#[serde(rename_all = "snake_case")]
+enum CopilotRustStreamMiddleware {
+  StreamEventNormalize,
+  CitationIndexing,
+}
+
+#[derive(Clone, Deserialize, serde::Serialize, schemars::JsonSchema)]
+#[serde(rename_all = "snake_case")]
+enum CopilotNodeTextMiddleware {
+  CitationFootnote,
+  Callout,
+  ThinkingFormat,
+}
+
+impl TryFrom<CopilotRuntimeConfigFile> for CopilotRuntimeConfig {
+  type Error = RuntimeError;
+
+  fn try_from(value: CopilotRuntimeConfigFile) -> Result<Self, Self::Error> {
+    Ok(Self {
+      enabled: value.enabled,
+      byok: value.byok,
+      providers: CopilotProvidersRuntimeConfig {
+        profiles: value
+          .providers
+          .profiles
+          .into_iter()
+          .map(TryInto::try_into)
+          .collect::<RuntimeResult<_>>()?,
+      },
+    })
+  }
+}
+
+impl TryFrom<CopilotManagedProfileConfigFile> for CopilotManagedProfileConfig {
+  type Error = RuntimeError;
+
+  fn try_from(value: CopilotManagedProfileConfigFile) -> Result<Self, Self::Error> {
+    if value.id.is_empty()
+      || !value
+        .id
+        .bytes()
+        .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_'))
+    {
+      return Err(RuntimeError::invalid_state(
+        "managed copilot profile id must contain only letters, numbers, hyphens, and underscores",
+      ));
+    }
+    Ok(Self {
+      id: value.id,
+      provider: value.provider.as_str().to_string(),
+      enabled: value.enabled,
+      models: value.models,
+      config: serde_json::Value::Object(value.config),
+    })
+  }
 }
 
 #[derive(Clone, Debug)]
@@ -144,7 +289,7 @@ impl BackendRuntimeConfig {
   }
 
   pub(crate) fn from_config_source(private_key: Option<String>, source: &ConfigSource) -> RuntimeResult<Self> {
-    let app_config = app_config_from_config_source(source)?;
+    let mut app_config = app_config_from_config_source(source)?;
     let database_url = database_url_from_env()
       .or(app_config.database_url())
       .unwrap_or_else(|| "postgresql://localhost:5432/affine".to_string());
@@ -159,7 +304,12 @@ impl BackendRuntimeConfig {
           .unwrap_or_default(),
       )),
       deployment: deployment_from_env(),
-      copilot: app_config.copilot.unwrap_or_default(),
+      copilot: app_config
+        .copilot
+        .take()
+        .map(TryInto::try_into)
+        .transpose()?
+        .unwrap_or_default(),
     }
     .validated()
   }
@@ -181,7 +331,7 @@ impl BackendRuntimeConfig {
       .map(str::to_string)
       .and_then(non_empty_string);
     merge_config_value(&mut app_config_value, db_overrides);
-    let app_config = deserialize_app_config(app_config_value)?;
+    let mut app_config = deserialize_app_config(app_config_value)?;
     Self {
       // The DB override is loaded after this connection already exists, so it
       // must not rewrite the active datasource URL.
@@ -191,7 +341,12 @@ impl BackendRuntimeConfig {
         .map(|key| Arc::new(Zeroizing::new(key)))
         .unwrap_or_else(|| Arc::clone(&self.private_key)),
       deployment: self.deployment,
-      copilot: app_config.copilot.unwrap_or_else(|| self.copilot.clone()),
+      copilot: app_config
+        .copilot
+        .take()
+        .map(TryInto::try_into)
+        .transpose()?
+        .unwrap_or_else(|| self.copilot.clone()),
     }
     .validated()
   }
@@ -207,12 +362,10 @@ impl BackendRuntimeConfig {
   }
 }
 
-fn validate_copilot_config(config: &CopilotRuntimeConfig) -> RuntimeResult<()> {
+pub(super) fn validate_copilot_config(config: &CopilotRuntimeConfig) -> RuntimeResult<()> {
   let mut allowed_providers = std::collections::HashSet::new();
   for provider in &config.byok.allowed_providers {
-    if !matches!(provider.as_str(), "openai" | "anthropic" | "gemini" | "fal")
-      || !allowed_providers.insert(provider.as_str())
-    {
+    if !SUPPORTED_BYOK_PROVIDERS.contains(&provider.as_str()) || !allowed_providers.insert(provider.as_str()) {
       return Err(RuntimeError::invalid_state(
         "copilot BYOK allowed providers must be supported and unique",
       ));
@@ -261,7 +414,7 @@ fn deployment_from_env() -> Deployment {
 struct AppConfigFile {
   db: Option<DbConfigFile>,
   crypto: Option<CryptoConfigFile>,
-  copilot: Option<CopilotRuntimeConfig>,
+  copilot: Option<CopilotRuntimeConfigFile>,
 }
 
 #[derive(Default, Deserialize)]
@@ -555,7 +708,7 @@ mod tests {
       }
     }))
     .unwrap();
-    let copilot = app_config.copilot.unwrap();
+    let copilot: CopilotRuntimeConfig = app_config.copilot.unwrap().try_into().unwrap();
 
     assert!(copilot.enabled);
     assert!(!copilot.byok.enabled);
@@ -575,7 +728,12 @@ mod tests {
       base_path.to_string_lossy().into_owned(),
       override_path.to_string_lossy().into_owned(),
     ]));
-    let copilot = app_config_from_config_source(&source).unwrap().copilot.unwrap();
+    let copilot: CopilotRuntimeConfig = app_config_from_config_source(&source)
+      .unwrap()
+      .copilot
+      .unwrap()
+      .try_into()
+      .unwrap();
     assert!(!copilot.byok.enabled);
     assert!(copilot.byok.allow_custom_endpoint);
   }
@@ -599,7 +757,12 @@ mod tests {
     let database_config = app_config_value_from_flat_overrides([("copilot.byok.enabled", serde_json::json!(false))]);
 
     merge_config_value(&mut file_config, database_config);
-    let copilot = deserialize_app_config(file_config).unwrap().copilot.unwrap();
+    let copilot: CopilotRuntimeConfig = deserialize_app_config(file_config)
+      .unwrap()
+      .copilot
+      .unwrap()
+      .try_into()
+      .unwrap();
 
     assert!(copilot.enabled);
     assert!(!copilot.byok.enabled);
@@ -618,7 +781,9 @@ mod tests {
       ),
     ])
     .unwrap();
-    let byok = app_config.copilot.unwrap().byok;
+    let byok = CopilotRuntimeConfig::try_from(app_config.copilot.unwrap())
+      .unwrap()
+      .byok;
 
     assert!(!byok.enabled);
     assert!(byok.allow_custom_endpoint);

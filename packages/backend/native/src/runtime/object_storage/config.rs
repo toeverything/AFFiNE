@@ -44,7 +44,7 @@ struct S3ConfigFile {
 #[serde(rename_all = "camelCase")]
 struct R2ConfigFile {
   account_id: String,
-  jurisdiction: Option<String>,
+  jurisdiction: Option<R2Jurisdiction>,
   region: Option<String>,
   credentials: Option<S3CredentialsConfigFile>,
   request_timeout_ms: Option<u64>,
@@ -52,6 +52,13 @@ struct R2ConfigFile {
   presign: Option<S3PresignConfigFile>,
   #[serde(rename = "usePresignedURL")]
   use_presigned_url: Option<UsePresignedUrlConfigFile>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "lowercase")]
+enum R2Jurisdiction {
+  Default,
+  Eu,
 }
 
 #[derive(Debug, Deserialize, Default)]
@@ -124,8 +131,8 @@ impl ObjectStorageConfig {
     let config: R2ConfigFile = serde_json::from_value(storage.config)
       .map_err(|err| ObjectStorageError::Config(format!("invalid cloudflare-r2 blob storage config: {err}")))?;
     let account = match config.jurisdiction {
-      Some(jurisdiction) => format!("{}.{}", config.account_id, jurisdiction),
-      None => config.account_id,
+      Some(R2Jurisdiction::Eu) => format!("{}.eu", config.account_id),
+      Some(R2Jurisdiction::Default) | None => config.account_id,
     };
     let credentials = config.credentials.unwrap_or_default();
     let (use_presigned_url, proxy_upload) = config

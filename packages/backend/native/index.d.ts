@@ -152,6 +152,16 @@ export const AFFINE_PRO_LICENSE_AES_KEY: string | undefined | null
 
 export const AFFINE_PRO_PUBLIC_KEY: string | undefined | null
 
+export interface AppConfigDescriptor {
+  key: string
+  description: string
+  defaultValue: any
+  schema: any
+  internal: boolean
+}
+
+export declare function appConfigDescriptors(module: string): Array<AppConfigDescriptor>
+
 export declare function assertSafeUrl(request: AssertSafeUrlRequest): void
 
 export interface AssertSafeUrlRequest {
@@ -1645,6 +1655,8 @@ export declare function updateLicenseSeats(request: LicenseSeatsRequest): Promis
  * A Buffer containing the y-octo update binary to apply to the root doc
  */
 export declare function updateRootDocMetaTitle(rootDocBin: Buffer, docId: string, title: string): Buffer
+
+export declare function validateAppConfigValue(module: string, key: string, value: any): Array<string>
 
 /**
  * Check whether a Yjs update binary can be decoded without applying it to a
