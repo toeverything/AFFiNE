@@ -171,6 +171,47 @@ describe('ensureSecureLinuxPasswordStore', () => {
     );
   });
 
+  test('sets kwallet for i3 when KDE session variables are present', () => {
+    platformSpy = vi.spyOn(process, 'platform', 'get').mockReturnValue('linux');
+    vi.stubEnv('XDG_CURRENT_DESKTOP', 'i3');
+    vi.stubEnv('KDE_SESSION_VERSION', '6');
+
+    ensureSecureLinuxPasswordStore();
+
+    expect(commandLine.appendSwitch).toHaveBeenCalledWith(
+      'password-store',
+      'kwallet6'
+    );
+  });
+
+  test('combines differing XDG_CURRENT_DESKTOP and XDG_SESSION_DESKTOP values, keeping KWallet precedence', () => {
+    platformSpy = vi.spyOn(process, 'platform', 'get').mockReturnValue('linux');
+    vi.stubEnv('XDG_CURRENT_DESKTOP', 'gnome');
+    vi.stubEnv('XDG_SESSION_DESKTOP', 'kde');
+    vi.stubEnv('KDE_SESSION_VERSION', '6');
+
+    ensureSecureLinuxPasswordStore();
+
+    expect(commandLine.appendSwitch).toHaveBeenCalledWith(
+      'password-store',
+      'kwallet6'
+    );
+  });
+
+  test('ignores an empty XDG_CURRENT_DESKTOP and still selects KWallet via XDG_SESSION_DESKTOP', () => {
+    platformSpy = vi.spyOn(process, 'platform', 'get').mockReturnValue('linux');
+    vi.stubEnv('XDG_CURRENT_DESKTOP', '');
+    vi.stubEnv('XDG_SESSION_DESKTOP', 'KDE');
+    vi.stubEnv('KDE_SESSION_VERSION', '6');
+
+    ensureSecureLinuxPasswordStore();
+
+    expect(commandLine.appendSwitch).toHaveBeenCalledWith(
+      'password-store',
+      'kwallet6'
+    );
+  });
+
   test('is case-insensitive', () => {
     platformSpy = vi.spyOn(process, 'platform', 'get').mockReturnValue('linux');
     vi.stubEnv('XDG_CURRENT_DESKTOP', 'SWAY:Wlroots');
