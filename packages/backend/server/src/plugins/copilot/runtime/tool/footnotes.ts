@@ -25,7 +25,7 @@ function pickAttachmentFootnote(value: unknown): AttachmentFootnote | null {
       ? record.fileName
       : typeof record.name === 'string'
         ? record.name
-        : undefined;
+        : 'Attachment';
   const fileType =
     typeof record.fileType === 'string'
       ? record.fileType
@@ -34,7 +34,7 @@ function pickAttachmentFootnote(value: unknown): AttachmentFootnote | null {
         : typeof record.mime_type === 'string'
           ? record.mime_type
           : 'application/octet-stream';
-  return artifactId && fileName ? { artifactId, fileName, fileType } : null;
+  return artifactId ? { artifactId, fileName, fileType } : null;
 }
 
 export function collectAttachmentFootnotes(
@@ -59,12 +59,12 @@ export function formatAttachmentFootnotes(
   const references =
     options.includeReferences === false
       ? ''
-      : attachments.map((_, index) => `[^${index + 1}]`).join('');
+      : attachments.map((_, index) => `[^attachment-${index + 1}]`).join('');
   const definitions = attachments
     .map(
       (attachment, index) =>
-        `[^${index + 1}]: ${JSON.stringify({
-          type: 'artifact',
+        `[^attachment-${index + 1}]: ${JSON.stringify({
+          type: 'attachment',
           artifactId: attachment.artifactId,
           fileName: attachment.fileName,
           fileType: attachment.fileType,
@@ -82,12 +82,7 @@ function pickDocumentFootnote(value: unknown): DocSource | null {
   if (source.type !== 'document') return null;
   const workspaceId = source.workspace_id ?? source.workspaceId;
   const docId = source.doc_id ?? source.docId;
-  if (
-    typeof workspaceId !== 'string' ||
-    typeof docId !== 'string' ||
-    typeof source.title !== 'string'
-  )
-    return null;
+  if (typeof workspaceId !== 'string' || typeof docId !== 'string') return null;
   const optional = (snake: string, camel: string) => {
     const candidate = source[snake] ?? source[camel];
     return typeof candidate === 'string' ? candidate : undefined;
@@ -96,7 +91,7 @@ function pickDocumentFootnote(value: unknown): DocSource | null {
     type: 'document',
     workspace_id: workspaceId,
     doc_id: docId,
-    title: source.title,
+    title: typeof source.title === 'string' ? source.title : '',
     revision: optional('revision', 'revision'),
     visibility: optional('visibility', 'visibility') as
       | DocSource['visibility']
@@ -108,7 +103,16 @@ function pickDocumentFootnote(value: unknown): DocSource | null {
 }
 
 export function collectDocumentFootnotes(event: EnrichedToolResultEvent) {
-  if (!['doc_read', 'doc_canvas_read', 'doc_search'].includes(event.name))
+  if (
+    ![
+      'doc_read',
+      'doc_canvas_read',
+      'doc_search',
+      'frontend_read_selection',
+      'frontend_read_nodes',
+      'frontend_snapshot_document',
+    ].includes(event.name)
+  )
     return [];
   if (!event.output || typeof event.output !== 'object') return [];
   const output = event.output as Record<string, unknown>;
@@ -134,7 +138,7 @@ export function formatDocumentFootnotes(documents: DocSource[]) {
         `[^doc-${index + 1}]: ${JSON.stringify({
           type: 'doc',
           docId: document.doc_id,
-          title: document.title,
+          ...(document.title ? { title: document.title } : {}),
         })}`
     )
     .join('\n');

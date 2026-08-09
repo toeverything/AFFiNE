@@ -1045,6 +1045,20 @@ test('should append durable message and account message cost', async t => {
     message: {
       role: 'user',
       content: 'hello durable world',
+      attachments: [
+        {
+          kind: 'file_handle',
+          fileHandle: artifact.id,
+          mimeType: 'text/plain',
+          fileName: 'note.txt',
+        },
+        {
+          kind: 'file_handle',
+          fileHandle: artifact.id,
+          mimeType: 'text/plain',
+          fileName: 'duplicate-name.txt',
+        },
+      ],
       params: { foo: 'bar' },
       scopeSnapshot,
       createdAt: new Date(),
@@ -1057,6 +1071,11 @@ test('should append durable message and account message cost', async t => {
         artifactId: artifact.id,
         role: 'attachment',
         displayName: 'note.txt',
+      },
+      {
+        artifactId: artifact.id,
+        role: 'attachment',
+        displayName: 'duplicate-name.txt',
       },
     ],
   });
@@ -1072,6 +1091,7 @@ test('should append durable message and account message cost', async t => {
     return;
   }
   t.is(afterAppend.messageCost, 1);
+  t.is(appended.attachments?.length, 2);
   t.deepEqual(appended.params, { foo: 'bar' });
   t.deepEqual(appended.scopeSnapshot, scopeSnapshot);
   t.deepEqual(afterAppend.focus, {
@@ -1088,6 +1108,12 @@ test('should append durable message and account message cost', async t => {
   });
   t.is(artifactReference.workspaceId, workspaceId);
   t.is(artifactReference.displayName, 'note.txt');
+  t.is(
+    await db.aiMessageArtifact.count({
+      where: { messageId, artifactId: artifact.id, role: 'attachment' },
+    }),
+    1
+  );
 
   const appendedBare = await copilotSession.appendMessage({
     sessionId,

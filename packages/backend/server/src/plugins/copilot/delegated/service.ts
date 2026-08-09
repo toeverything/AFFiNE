@@ -190,7 +190,24 @@ export class DelegatedEditorService {
         { room: realtimeUserRoom(lease.userId, `copilot:${lease.clientId}`) }
       );
     }
-    return result.error ? { error: result.error } : result.result;
+    if (result.error) return { error: result.error };
+    if (
+      tool === 'frontend_get_editor_state' ||
+      !result.result ||
+      typeof result.result !== 'object' ||
+      Array.isArray(result.result)
+    ) {
+      return result.result;
+    }
+    return {
+      ...result.result,
+      source: {
+        type: 'document',
+        workspace_id: lease.workspaceId,
+        doc_id: lease.docId,
+        revision: lease.editorStateId,
+      },
+    };
   }
 
   receive(userId: string, response: DelegatedToolResponse) {

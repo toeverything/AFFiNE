@@ -109,7 +109,9 @@ export class NativeProviderAdapter {
     const citationFormatter = this.#enableCitationFootnote
       ? new CitationFootnoteFormatter()
       : null;
+    const attachmentFootnotes = new Map<string, AttachmentFootnote>();
     const documentFootnotes = new Map<string, DocSource>();
+    let hasAttachmentFootnoteReference = false;
     let streamPartId = 0;
     const usageState: {
       model?: string;
@@ -140,6 +142,9 @@ export class NativeProviderAdapter {
         }
         case 'text_delta': {
           const textEvent = event as unknown as { text: string };
+          if (textEvent.text.includes('[^attachment-')) {
+            hasAttachmentFootnoteReference = true;
+          }
           if (textParser) {
             yield textParser.parse({
               type: 'text-delta',
@@ -178,6 +183,9 @@ export class NativeProviderAdapter {
         }
         case 'tool_result': {
           const normalized = event as EnrichedToolResultEvent;
+          collectAttachmentFootnotes(normalized).forEach(attachment => {
+            attachmentFootnotes.set(attachment.artifactId, attachment);
+          });
           collectDocumentFootnotes(normalized).forEach(document => {
             documentFootnotes.set(JSON.stringify(document), document);
           });
@@ -213,10 +221,15 @@ export class NativeProviderAdapter {
           usageState.usage = doneEvent.usage ?? usageState.usage;
           const footnotes = textParser?.end() ?? '';
           const citations = citationFormatter?.end() ?? '';
+          const attachments = attachmentFootnotes.size
+            ? formatAttachmentFootnotes([...attachmentFootnotes.values()], {
+                includeReferences: !hasAttachmentFootnoteReference,
+              })
+            : '';
           const documents = documentFootnotes.size
             ? formatDocumentFootnotes([...documentFootnotes.values()])
             : '';
-          const tails = [citations, documents, footnotes]
+          const tails = [citations, attachments, documents, footnotes]
             .filter(Boolean)
             .join('\n');
           if (tails) {
@@ -249,7 +262,7 @@ export class NativeProviderAdapter {
       : null;
     const fallbackAttachmentFootnotes = new Map<string, AttachmentFootnote>();
     const fallbackDocumentFootnotes = new Map<string, DocSource>();
-    let hasFootnoteReference = false;
+    let hasAttachmentFootnoteReference = false;
     const usageState: {
       model?: string;
       usage?: Extract<LlmToolLoopStreamEvent, { type: 'usage' }>['usage'];
@@ -279,8 +292,8 @@ export class NativeProviderAdapter {
         }
         case 'text_delta': {
           const textEvent = event as unknown as { text: string };
-          if (textEvent.text.includes('[^')) {
-            hasFootnoteReference = true;
+          if (textEvent.text.includes('[^attachment-')) {
+            hasAttachmentFootnoteReference = true;
           }
           yield { type: 'text-delta', textDelta: textEvent.text };
           break;
@@ -336,15 +349,14 @@ export class NativeProviderAdapter {
           usageState.usage = doneEvent.usage ?? usageState.usage;
           const citations = citationFormatter?.end() ?? '';
           if (citations) {
-            hasFootnoteReference = true;
             yield { type: 'text-delta', textDelta: `\n${citations}` };
           }
-          if (!citations && fallbackAttachmentFootnotes.size > 0) {
+          if (fallbackAttachmentFootnotes.size > 0) {
             yield {
               type: 'text-delta',
               textDelta: formatAttachmentFootnotes(
                 Array.from(fallbackAttachmentFootnotes.values()),
-                { includeReferences: !hasFootnoteReference }
+                { includeReferences: !hasAttachmentFootnoteReference }
               ),
             };
           }

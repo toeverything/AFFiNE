@@ -37,7 +37,13 @@ import {
   projectActionResultToAssistantTurn,
 } from '../../plugins/copilot/runtime/action-output-projector';
 import type { ActionStreamHost } from '../../plugins/copilot/runtime/hosts/action-stream-host';
-import { formatDocumentFootnotes } from '../../plugins/copilot/runtime/tool/footnotes';
+import {
+  collectAttachmentFootnotes,
+  collectDocumentFootnotes,
+  formatAttachmentFootnotes,
+  formatDocumentFootnotes,
+} from '../../plugins/copilot/runtime/tool/footnotes';
+import { NativeProviderAdapter } from '../../plugins/copilot/runtime/tool/native-adapter';
 import type { TurnOrchestrator } from '../../plugins/copilot/runtime/turn-orchestrator';
 import {
   ChatSession,
@@ -73,7 +79,7 @@ test('delegated editor requests require exact identity and cancel on interruptio
     mode: 'page',
     readonly: false,
     focused: true,
-    capabilities: ['frontend_get_editor_state'],
+    capabilities: ['frontend_get_editor_state', 'frontend_read_selection'],
   });
 
   const result = delegated.execute(
@@ -135,6 +141,34 @@ test('delegated editor requests require exact identity and cancel on interruptio
   t.deepEqual(await result, {
     editor_state_id: 'state-1',
     mode: 'page',
+  });
+
+  const selection = delegated.execute(
+    {
+      user: 'user-1',
+      session: 'session-1',
+      workspace: 'workspace-1',
+    },
+    'frontend_read_selection',
+    {}
+  );
+  const selectionRequest = published.at(-1)
+    ?.event as unknown as DelegatedToolRequest;
+  t.true(
+    delegated.receive('user-1', {
+      ...selectionRequest,
+      result: { editor_state_id: 'state-1', text: 'live content' },
+    })
+  );
+  t.deepEqual(await selection, {
+    editor_state_id: 'state-1',
+    text: 'live content',
+    source: {
+      type: 'document',
+      workspace_id: 'workspace-1',
+      doc_id: 'doc-1',
+      revision: 'state-1',
+    },
   });
 
   const controller = new AbortController();
@@ -840,9 +874,74 @@ test('action output projection preserves public SSE and assistant-turn contracts
     ]),
     '\n\n[^doc-1]\n\n[^doc-1]: {"type":"doc","docId":"doc-1","title":"Getting Started"}'
   );
+  t.is(
+    formatAttachmentFootnotes([
+      {
+        artifactId: 'artifact-1',
+        fileName: 'notes.txt',
+        fileType: 'text/plain',
+      },
+    ]),
+    '\n\n[^attachment-1]\n\n[^attachment-1]: {"type":"attachment","artifactId":"artifact-1","fileName":"notes.txt","fileType":"text/plain"}'
+  );
+  t.deepEqual(
+    collectDocumentFootnotes({
+      type: 'tool_result',
+      call_id: 'call-1',
+      name: 'frontend_read_selection',
+      arguments: {},
+      output: {
+        source: {
+          type: 'document',
+          workspace_id: 'workspace-1',
+          doc_id: 'doc-1',
+          revision: 'state-1',
+        },
+      },
+    }),
+    [
+      {
+        type: 'document',
+        workspace_id: 'workspace-1',
+        doc_id: 'doc-1',
+        title: '',
+        revision: 'state-1',
+        visibility: undefined,
+        block_id: undefined,
+        element_id: undefined,
+        frame_id: undefined,
+      },
+    ]
+  );
+  t.deepEqual(
+    collectAttachmentFootnotes({
+      type: 'tool_result',
+      call_id: 'call-2',
+      name: 'artifact_search',
+      arguments: {},
+      output: {
+        hits: [
+          {
+            source: {
+              type: 'artifact',
+              workspace_id: 'workspace-1',
+              artifact_id: 'artifact-1',
+            },
+          },
+        ],
+      },
+    }),
+    [
+      {
+        artifactId: 'artifact-1',
+        fileName: 'Attachment',
+        fileType: 'application/octet-stream',
+      },
+    ]
+  );
 });
 
-test('text stream parser keeps reasoning and tool output distinct from answer text', t => {
+test('text stream parser keeps reasoning and tool output distinct from answer text', async t => {
   const parser = new TextStreamParser();
   const output = [
     parser.parse({ type: 'reasoning-delta', text: 'Think' }),
@@ -870,6 +969,83 @@ test('text stream parser keeps reasoning and tool output distinct from answer te
     () => parser.parse({ type: 'error', error: { message: 'failed' } }),
     { message: 'failed' }
   );
+
+  const adapter = new NativeProviderAdapter(async function* () {
+    yield {
+      type: 'citation',
+      index: 1,
+      url: 'https://affine.pro',
+    };
+    yield {
+      type: 'tool_result',
+      call_id: 'call-1',
+      name: 'artifact_read',
+      arguments: {},
+      output: {
+        artifactId: 'artifact-1',
+        fileName: 'notes.txt',
+        fileType: 'text/plain',
+      },
+    };
+    yield {
+      type: 'tool_result',
+      call_id: 'call-2',
+      name: 'frontend_read_selection',
+      arguments: {},
+      output: {
+        text: 'live content',
+        source: {
+          type: 'document',
+          workspace_id: 'workspace-1',
+          doc_id: 'doc-1',
+          revision: 'state-1',
+        },
+      },
+    };
+    yield { type: 'done' };
+  });
+  const streamObjects = [];
+  for await (const item of adapter.streamObject({
+    model: 'test',
+    messages: [],
+  })) {
+    streamObjects.push(item);
+  }
+  t.deepEqual(streamObjects.at(-1), {
+    type: 'text-delta',
+    textDelta: '\n\n[^doc-1]\n\n[^doc-1]: {"type":"doc","docId":"doc-1"}',
+  });
+  const streamOutput = streamObjects
+    .filter(item => item.type === 'text-delta')
+    .map(item => item.textDelta)
+    .join('');
+  t.true(streamOutput.includes('"url":"https%3A%2F%2Faffine.pro"'));
+  t.true(streamOutput.includes('[^attachment-1]'));
+  t.true(streamOutput.includes('"artifactId":"artifact-1"'));
+
+  const textAdapter = new NativeProviderAdapter(async function* () {
+    yield {
+      type: 'tool_result',
+      call_id: 'call-1',
+      name: 'artifact_read',
+      arguments: {},
+      output: {
+        artifactId: 'artifact-1',
+        fileName: 'notes.txt',
+        fileType: 'text/plain',
+      },
+    };
+    yield { type: 'done' };
+  });
+  let textOutput = '';
+  for await (const chunk of textAdapter.streamText({
+    model: 'test',
+    messages: [],
+  })) {
+    textOutput += chunk;
+  }
+  t.true(textOutput.includes('[^attachment-1]'));
+  t.true(textOutput.includes('"artifactId":"artifact-1"'));
 });
 
 test('history prompt preload excludes system messages and precedes durable history', t => {

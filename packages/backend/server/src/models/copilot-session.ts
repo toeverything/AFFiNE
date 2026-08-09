@@ -846,6 +846,14 @@ export class CopilotSessionModel extends BaseModel {
     }
 
     const message = this.sanitizeMessage(state.message);
+    const artifacts = [];
+    const artifactKeys = new Set<string>();
+    for (const artifact of state.artifacts ?? []) {
+      const key = `${artifact.artifactId}:${artifact.role}`;
+      if (artifactKeys.has(key)) continue;
+      artifactKeys.add(key);
+      artifacts.push(artifact);
+    }
     const created = await this.db.aiSessionMessage.create({
       data: {
         sessionId: state.sessionId,
@@ -857,9 +865,9 @@ export class CopilotSessionModel extends BaseModel {
         scopeSnapshot: message.scopeSnapshot || undefined,
         streamObjects: message.streamObjects || undefined,
         createdAt: message.createdAt,
-        artifacts: state.artifacts?.length
+        artifacts: artifacts.length
           ? {
-              create: state.artifacts.map(artifact => ({
+              create: artifacts.map(artifact => ({
                 role: artifact.role,
                 displayName: this.sanitizeString(artifact.displayName),
                 metadata: this.sanitizeJsonValue(artifact.metadata) as

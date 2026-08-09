@@ -57,7 +57,8 @@ fn descriptors() -> Vec<AppConfigDescriptor> {
     },
     AppConfigDescriptor {
       key: "byok.allowPrivateEndpoint".to_string(),
-      description: "Whether workspace BYOK custom endpoints may resolve to private network targets. Enabling this allows workspace owners and admins to send provider probe requests to the private network."
+      description: "Whether workspace BYOK custom endpoints may resolve to private network targets. Enabling this \
+                    allows workspace owners and admins to send provider probe requests to the private network."
         .to_string(),
       default_value: json!(defaults.byok.allow_private_endpoint),
       schema: schema_for::<bool>(),

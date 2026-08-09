@@ -728,7 +728,8 @@
         "docRead",
         "docCanvasRead",
         "docSearch",
-        "contextSearch",
+        "artifactRead",
+        "artifactSearch",
         "frontendGetEditorState",
         "frontendReadSelection",
         "frontendReadNodes",
@@ -738,8 +739,7 @@
         "docUpdateMeta",
         "webSearch",
         "docCompose",
-        "codeArtifact",
-        "blobRead"
+        "codeArtifact"
       ]
     },
     "builtins": [
