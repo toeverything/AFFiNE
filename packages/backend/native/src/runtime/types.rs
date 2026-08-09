@@ -139,13 +139,6 @@ pub struct RuntimeWorkspaceInviteLinkRecord {
 }
 
 #[napi_derive::napi(object)]
-pub struct RuntimeByokLocalLeaseRecord {
-  pub lease_id: String,
-  pub payload: serde_json::Value,
-  pub expires_at_ms: i64,
-}
-
-#[napi_derive::napi(object)]
 pub struct RuntimeDocHistoryInput {
   pub workspace_id: String,
   pub doc_id: String,

@@ -1,13 +1,15 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { z } from 'zod';
 
-import { CopilotTranscriptionJobNotFound } from '../../../base';
+import { Config } from '../../../base/config';
+import { CopilotTranscriptionJobNotFound } from '../../../base/error/errors.gen';
 import { PermissionAccess } from '../../../core/permission';
 import {
   RealtimeRegistry,
   realtimeTranscriptTaskRoom,
   registerRealtimeLiveQuery,
 } from '../../../core/realtime';
+import { assertCopilotEnabled } from '../availability';
 import { CopilotTranscriptionReader } from './reader';
 
 @Injectable()
@@ -15,7 +17,8 @@ export class CopilotTranscriptRealtimeProvider implements OnModuleInit {
   constructor(
     private readonly ac: PermissionAccess,
     private readonly transcript: CopilotTranscriptionReader,
-    private readonly registry: RealtimeRegistry
+    private readonly registry: RealtimeRegistry,
+    private readonly config: Config
   ) {}
 
   onModuleInit() {
@@ -68,6 +71,7 @@ export class CopilotTranscriptRealtimeProvider implements OnModuleInit {
   }
 
   private async assertCopilot(userId: string, workspaceId: string) {
+    assertCopilotEnabled(this.config);
     await this.ac
       .user(userId)
       .workspace(workspaceId)

@@ -26,6 +26,7 @@ import {
 import { CurrentUser } from '../../../core/auth';
 import { PermissionAccess } from '../../../core/permission';
 import { WorkspaceType } from '../../../core/workspaces';
+import { CopilotEnabled } from '../feature';
 import { COPILOT_LOCKER } from '../resolver';
 import { MAX_EMBEDDABLE_SIZE } from '../utils';
 import { CopilotWorkspaceService } from './service';
@@ -47,6 +48,7 @@ export class CopilotWorkspaceConfigType {
  * Public apis rate limit: 10 req/m
  * Other rate limit: 120 req/m
  */
+@CopilotEnabled()
 @Resolver(() => WorkspaceType)
 export class CopilotWorkspaceEmbeddingResolver {
   constructor(private readonly ac: PermissionAccess) {}
@@ -67,6 +69,7 @@ export class CopilotWorkspaceEmbeddingResolver {
   }
 }
 
+@CopilotEnabled()
 @Resolver(() => CopilotWorkspaceConfigType)
 export class CopilotWorkspaceEmbeddingConfigResolver {
   constructor(

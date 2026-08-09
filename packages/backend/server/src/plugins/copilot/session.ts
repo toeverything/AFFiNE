@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 
 import { Injectable, Logger } from '@nestjs/common';
 import { Transactional } from '@nestjs-cls/transactional';
-import { AiPromptRole } from '@prisma/client';
+import { AiSessionMessageRole } from '@prisma/client';
 
 import {
   CopilotActionTaken,
@@ -20,7 +20,6 @@ import {
   type UpdateChatSession,
   UpdateChatSessionOptions,
 } from '../../models';
-import { CopilotAccessPolicy } from './access';
 import { ConversationPolicy } from './conversation/policy';
 import { ConversationStore } from './conversation/store';
 import { type Conversation, promptMessageFromTurn, type Turn } from './core';
@@ -50,7 +49,6 @@ export class ChatSession implements AsyncDisposable {
     prompt: ResolvedPrompt,
     turns: PromptMessage[],
     params: PromptParams,
-    maxTokenSize: number,
     sessionId?: string
   ) => PromptMessage[];
   constructor(
@@ -59,21 +57,11 @@ export class ChatSession implements AsyncDisposable {
       prompt: ResolvedPrompt,
       turns: PromptMessage[],
       params: PromptParams,
-      maxTokenSize: number,
       sessionId?: string
     ) => PromptMessage[],
-    private readonly dispose?: (state: ChatSessionState) => Promise<void>,
-    private readonly maxTokenSize = state.prompt.config?.maxTokens || 128 * 1024
+    private readonly dispose?: (state: ChatSessionState) => Promise<void>
   ) {
     this.renderPromptSession = renderPromptSession;
-  }
-
-  get model() {
-    return this.state.prompt.model;
-  }
-
-  get optionalModels() {
-    return this.state.prompt.optionalModels;
   }
 
   get config() {
@@ -126,7 +114,7 @@ export class ChatSession implements AsyncDisposable {
   revertLatestMessage(removeLatestUserMessage: boolean) {
     const turns = this.state.turns;
     turns.splice(
-      turns.findLastIndex(({ role }) => role === AiPromptRole.user) +
+      turns.findLastIndex(({ role }) => role === AiSessionMessageRole.user) +
         (removeLatestUserMessage ? 0 : 1)
     );
   }
@@ -136,7 +124,6 @@ export class ChatSession implements AsyncDisposable {
       this.state.prompt,
       this.state.turns.map(turn => promptMessageFromTurn(turn)),
       params,
-      this.maxTokenSize,
       this.state.sessionId
     );
   }
@@ -158,13 +145,11 @@ export type ConversationState = {
   conversation: Conversation;
   turns: Turn[];
   prompt: ResolvedPrompt;
-  tokenCost: number;
 };
 
 export type ConversationMetaState = {
   conversation: Conversation;
   prompt: ResolvedPrompt;
-  tokenCost: number;
 };
 
 type StoredConversation = NonNullable<
@@ -183,7 +168,6 @@ export class ChatSessionService {
     private readonly models: Models,
     private readonly jobs: JobQueue,
     private readonly store: ConversationStore,
-    private readonly access: CopilotAccessPolicy,
     private readonly conversationPolicy: ConversationPolicy,
     private readonly prompts: PromptService,
     private readonly promptRuntime: PromptRuntime
@@ -206,14 +190,13 @@ export class ChatSessionService {
   private async toConversationState(
     session: StoredConversation
   ): Promise<ConversationState> {
-    const { conversation, prompt, tokenCost } =
+    const { conversation, prompt } =
       await this.toConversationMetaState(session);
 
     return {
       conversation,
       turns: session.turns,
       prompt,
-      tokenCost,
     };
   }
 
@@ -226,7 +209,6 @@ export class ChatSessionService {
     return {
       conversation: session.conversation,
       prompt,
-      tokenCost: session.tokenCost,
     };
   }
 
@@ -296,11 +278,11 @@ export class ChatSessionService {
   }
 
   async getQuota(userId: string) {
-    return await this.access.getQuota(userId);
+    return await this.conversationPolicy.getQuota(userId);
   }
 
   async checkQuota(userId: string) {
-    await this.access.checkQuota(userId);
+    await this.conversationPolicy.checkQuota(userId);
   }
 
   async create(options: ChatSessionOptions): Promise<string> {
@@ -360,7 +342,6 @@ export class ChatSessionService {
       );
       finalData.promptName = prompt.name;
       finalData.promptAction = prompt.action ?? null;
-      finalData.promptModel = prompt.model;
     }
     finalData.pinned = options.pinned;
     finalData.docId = options.docId;
@@ -389,7 +370,8 @@ export class ChatSessionService {
     if (options.latestMessageId) {
       const lastMessageIdx = state.turns.findLastIndex(
         ({ id, role }) =>
-          role === AiPromptRole.assistant && id === options.latestMessageId
+          role === AiSessionMessageRole.assistant &&
+          id === options.latestMessageId
       );
       if (lastMessageIdx < 0) {
         throw new CopilotMessageNotFound({
@@ -410,7 +392,6 @@ export class ChatSessionService {
       prompt: {
         name: state.prompt.name,
         action: state.prompt.action,
-        model: state.prompt.model,
       },
       turns,
     });
@@ -434,7 +415,6 @@ export class ChatSessionService {
   async appendTurn(input: {
     sessionId: string;
     userId: string;
-    prompt: { model: string };
     turn: Turn;
     compatSubmissionId?: string;
   }) {
@@ -485,14 +465,8 @@ export class ChatSessionService {
           turns: state.turns,
           prompt: state.prompt,
         },
-        (prompt, turns, params, maxTokenSize, sessionId) =>
-          this.prompts.renderSession(
-            prompt,
-            turns,
-            params,
-            maxTokenSize,
-            sessionId
-          ),
+        (prompt, turns, params, sessionId) =>
+          this.prompts.renderSession(prompt, turns, params, sessionId),
         async state => {
           await this.store.appendTurns(state);
           if (this.conversationPolicy.shouldScheduleTitle(state.prompt)) {
@@ -538,9 +512,18 @@ export class ChatSessionService {
       const promptContent =
         this.conversationPolicy.buildTitlePromptContent(turns);
       const generatedTitle = this.stripNullBytes(
-        await this.promptRuntime.runText('Summary as title', {
-          content: promptContent,
-        })
+        await this.promptRuntime.runText(
+          'Summary as title',
+          { content: promptContent },
+          {
+            providerOptions: {
+              user: conversation.userId,
+              workspace: conversation.workspaceId,
+              featureKind: 'chat',
+              quotaBackedRoutesAllowed: true,
+            },
+          }
+        )
       ).trim();
 
       if (!generatedTitle) {

@@ -69,10 +69,7 @@ describe('AudioTranscriptionJobStore transcript task API', () => {
       .mockResolvedValueOnce({ submitTranscriptTask: { id: 'task-1' } })
       .mockResolvedValueOnce({ retryTranscriptTask: { id: 'task-2' } })
       .mockResolvedValueOnce({ settleTranscriptTask: { id: 'task-2' } });
-    const store = createStore(gql, async () => ({
-      files: [file],
-      input: { strategy: 'gemini' },
-    }));
+    const store = createStore(gql, async () => ({ files: [file] }));
 
     await store.submitTranscriptTask();
     await store.retryTranscriptTask('task-1');
@@ -87,7 +84,7 @@ describe('AudioTranscriptionJobStore transcript task API', () => {
           workspaceId: 'workspace-1',
           blobId: 'blob-1',
           blobs: [file],
-          input: { strategy: 'gemini' },
+          input: undefined,
         },
       })
     );

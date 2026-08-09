@@ -75,8 +75,9 @@ impl BackendRuntime {
     &self,
     input: RuntimeMailDeliveryQuotaInput,
   ) -> Result<RuntimeMailDeliveryQuotaDecision> {
-    let config = self.config()?.invite_quota;
-    let Some(class) = mail_class(&input.mail_name, &config) else {
+    let runtime_config = self.config()?;
+    let config = &runtime_config.invite_quota;
+    let Some(class) = mail_class(&input.mail_name, config) else {
       return Ok(RuntimeMailDeliveryQuotaDecision {
         allowed: false,
         reservation_id: None,
@@ -91,7 +92,7 @@ impl BackendRuntime {
       });
     };
     let pool = self.pool().await?;
-    let scopes = build_mail_scopes(&input, class, &config);
+    let scopes = build_mail_scopes(&input, class, config);
     match reserve_scopes(&pool, "mail_delivery", input.request_id.as_deref(), scopes).await? {
       Ok(reservation) => Ok(RuntimeMailDeliveryQuotaDecision {
         allowed: true,

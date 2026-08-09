@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { AiPromptRole } from '@prisma/client';
+import { AiSessionMessageRole } from '@prisma/client';
 
 import { PromptService } from '../prompt/service';
 import type { ChatMessage } from '../types';
@@ -24,7 +24,9 @@ export class HistoryPromptPreloadProjector {
         history.turns[0] ? history.turns[0].metadata : {},
         history.conversation.id
       )
-      .filter(({ role }) => role !== AiPromptRole.system) as ChatMessage[];
+      .filter(
+        ({ role }) => role !== AiSessionMessageRole.system
+      ) as ChatMessage[];
 
     preload.forEach((message, index) => {
       message.createdAt = new Date(

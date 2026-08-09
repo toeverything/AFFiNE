@@ -1,3 +1,4 @@
+import { BadRequestException } from '@nestjs/common';
 import {
   Args,
   Field,
@@ -11,18 +12,139 @@ import {
 } from '@nestjs/graphql';
 import { SafeIntResolver } from 'graphql-scalars';
 
-import { Throttle } from '../../../base';
+import { Config, Throttle } from '../../../base';
 import { CurrentUser } from '../../../core/auth';
+import { BackendRuntimeProvider } from '../../../core/backend-runtime';
 import { PermissionAccess } from '../../../core/permission';
 import { WorkspaceType } from '../../../core/workspaces';
+import { Models } from '../../../models';
+import { llmGetByokCatalog } from '../../../native';
+import { CopilotEnabled } from '../feature';
 import { ByokEntitlementPolicy } from './policy';
-import { ByokKeyConfig, ByokLocalLeaseProvider, ByokService } from './service';
-import { ByokKeyStorage, ByokKeyTestStatus, ByokProvider } from './types';
+import {
+  BYOK_ALLOWED_PROVIDERS,
+  ByokProvider,
+  ByokProviderSource,
+} from './types';
 
 @ObjectType()
-export class WorkspaceByokKeyConfigType implements ByokKeyConfig {
+class WorkspaceByokCapabilityType {
+  @Field(() => [String])
+  input!: string[];
+
+  @Field(() => [String])
+  output!: string[];
+
+  @Field(() => [String])
+  features!: string[];
+
+  @Field(() => [String])
+  attachmentKinds!: string[];
+
+  @Field(() => [String])
+  attachmentSources!: string[];
+}
+
+@ObjectType()
+class WorkspaceByokModelDeclarationType {
+  @Field(() => String)
+  modelId!: string;
+
+  @Field(() => Boolean)
+  enabled!: boolean;
+
+  @Field(() => [WorkspaceByokCapabilityType])
+  capabilities!: WorkspaceByokCapabilityType[];
+}
+
+@ObjectType()
+class WorkspaceByokEndpointType {
+  @Field(() => String)
+  kind!: string;
+
+  @Field(() => String, { nullable: true })
+  url!: string | null;
+}
+
+@ObjectType()
+class WorkspaceByokProfileDefinitionType {
+  @Field(() => SafeIntResolver)
+  version!: number;
+
+  @Field(() => WorkspaceByokEndpointType)
+  endpoint!: WorkspaceByokEndpointType;
+
+  @Field(() => [WorkspaceByokModelDeclarationType])
+  models!: WorkspaceByokModelDeclarationType[];
+}
+
+@ObjectType()
+class WorkspaceByokProbeStatusType {
+  @Field(() => String)
+  kind!: string;
+
+  @Field(() => Date, { nullable: true })
+  testedAt!: Date | null;
+
+  @Field(() => String, { nullable: true })
+  errorKind!: string | null;
+}
+
+@ObjectType()
+class WorkspaceByokModelProbeCheckType {
+  @Field(() => String)
+  operation!: string;
+
+  @Field(() => WorkspaceByokProbeStatusType)
+  status!: WorkspaceByokProbeStatusType;
+}
+
+@ObjectType()
+class WorkspaceByokModelProbeType {
+  @Field(() => String)
+  modelId!: string;
+
+  @Field(() => [WorkspaceByokModelProbeCheckType])
+  checks!: WorkspaceByokModelProbeCheckType[];
+}
+
+@ObjectType()
+class WorkspaceByokValidationType {
+  @Field(() => String)
+  definitionFingerprint!: string;
+
+  @Field(() => SafeIntResolver)
+  credentialGeneration!: number;
+
+  @Field(() => WorkspaceByokProbeStatusType)
+  connection!: WorkspaceByokProbeStatusType;
+
+  @Field(() => [WorkspaceByokModelProbeType])
+  models!: WorkspaceByokModelProbeType[];
+}
+
+@ObjectType()
+class WorkspaceByokProbeResultType {
+  @Field(() => String)
+  definitionFingerprint!: string;
+
+  @Field(() => Boolean)
+  stale!: boolean;
+
+  @Field(() => WorkspaceByokProbeStatusType)
+  connection!: WorkspaceByokProbeStatusType;
+
+  @Field(() => [WorkspaceByokModelProbeType])
+  models!: WorkspaceByokModelProbeType[];
+}
+
+@ObjectType()
+export class WorkspaceByokProfileType {
   @Field(() => ID)
-  id!: string;
+  profileId!: string;
+
+  @Field(() => String)
+  workspaceId!: string;
 
   @Field(() => ByokProvider)
   provider!: ByokProvider;
@@ -33,59 +155,53 @@ export class WorkspaceByokKeyConfigType implements ByokKeyConfig {
   @Field(() => String, { nullable: true })
   description!: string | null;
 
-  @Field(() => ByokKeyStorage)
-  storage!: ByokKeyStorage;
-
-  @Field(() => Boolean)
-  configured!: boolean;
+  @Field(() => WorkspaceByokProfileDefinitionType)
+  definition!: WorkspaceByokProfileDefinitionType;
 
   @Field(() => Boolean)
   enabled!: boolean;
 
-  @Field(() => String, { nullable: true })
-  endpoint!: string | null;
-
-  @Field(() => Boolean)
-  endpointEditable!: boolean;
-
   @Field(() => SafeIntResolver)
   sortOrder!: number;
 
-  @Field(() => [String])
-  capabilities!: string[];
+  @Field(() => SafeIntResolver)
+  revision!: number;
 
-  @Field(() => ByokKeyTestStatus)
-  testStatus!: ByokKeyTestStatus;
-
-  @Field(() => String, { nullable: true })
-  disabledReason!: string | null;
-
-  @Field(() => Date, { nullable: true })
-  lastTestedAt!: Date | null;
-
-  @Field(() => String, { nullable: true })
-  lastTestError!: string | null;
-
-  @Field(() => Date, { nullable: true })
-  lastUsedAt!: Date | null;
-
-  @Field(() => Date, { nullable: true })
-  lastErrorAt!: Date | null;
-
-  @Field(() => String, { nullable: true })
-  lastError!: string | null;
+  @Field(() => WorkspaceByokValidationType, { nullable: true })
+  validation!: WorkspaceByokValidationType | null;
 }
 
 @ObjectType()
-class WorkspaceByokCapabilityWarningType {
+class WorkspaceByokCatalogModelType {
   @Field(() => String)
-  featureKind!: string;
+  modelId!: string;
 
   @Field(() => String)
-  reason!: string;
+  displayName!: string;
 
-  @Field(() => [ByokProvider])
-  requiredProviders!: ByokProvider[];
+  @Field(() => Boolean)
+  recommended!: boolean;
+
+  @Field(() => [WorkspaceByokCapabilityType])
+  capabilities!: WorkspaceByokCapabilityType[];
+}
+
+@ObjectType()
+class WorkspaceByokCatalogProviderType {
+  @Field(() => ByokProvider)
+  provider!: ByokProvider;
+
+  @Field(() => [WorkspaceByokCatalogModelType])
+  models!: WorkspaceByokCatalogModelType[];
+}
+
+@ObjectType()
+class WorkspaceByokCatalogType {
+  @Field(() => String)
+  version!: string;
+
+  @Field(() => [WorkspaceByokCatalogProviderType])
+  providers!: WorkspaceByokCatalogProviderType[];
 }
 
 @ObjectType()
@@ -102,17 +218,11 @@ class WorkspaceByokSettingsType {
   @Field(() => Boolean)
   localEntitled!: boolean;
 
-  @Field(() => [String])
-  entitlementRequired!: string[];
-
-  @Field(() => [WorkspaceByokKeyConfigType])
-  keys!: WorkspaceByokKeyConfigType[];
+  @Field(() => [WorkspaceByokProfileType])
+  profiles!: WorkspaceByokProfileType[];
 
   @Field(() => [ByokProvider])
   allowedProviders!: ByokProvider[];
-
-  @Field(() => Boolean)
-  localStorageSupported!: boolean;
 
   @Field(() => Boolean)
   customEndpointSupported!: boolean;
@@ -120,11 +230,8 @@ class WorkspaceByokSettingsType {
   @Field(() => Boolean)
   privateEndpointSupported!: boolean;
 
-  @Field(() => Boolean)
-  hasAiPlan!: boolean;
-
-  @Field(() => [WorkspaceByokCapabilityWarningType])
-  warnings!: WorkspaceByokCapabilityWarningType[];
+  @Field(() => WorkspaceByokCatalogType)
+  catalog!: WorkspaceByokCatalogType;
 }
 
 @ObjectType()
@@ -140,18 +247,6 @@ class WorkspaceByokUsagePointType {
 }
 
 @ObjectType()
-class TestWorkspaceByokConfigResultType {
-  @Field(() => Boolean)
-  ok!: boolean;
-
-  @Field(() => ByokKeyTestStatus)
-  status!: ByokKeyTestStatus;
-
-  @Field(() => String, { nullable: true })
-  message!: string | null;
-}
-
-@ObjectType()
 class CreateWorkspaceByokLocalLeaseResultType {
   @Field(() => String)
   leaseId!: string;
@@ -161,10 +256,58 @@ class CreateWorkspaceByokLocalLeaseResultType {
 }
 
 @InputType()
-class UpsertWorkspaceByokConfigInput {
-  @Field(() => ID, { nullable: true })
-  id?: string;
+class WorkspaceByokCapabilityInput {
+  @Field(() => [String])
+  input!: string[];
 
+  @Field(() => [String])
+  output!: string[];
+
+  @Field(() => [String])
+  features!: string[];
+
+  @Field(() => [String])
+  attachmentKinds!: string[];
+
+  @Field(() => [String])
+  attachmentSources!: string[];
+}
+
+@InputType()
+class WorkspaceByokModelDeclarationInput {
+  @Field(() => String)
+  modelId!: string;
+
+  @Field(() => Boolean)
+  enabled!: boolean;
+
+  @Field(() => [WorkspaceByokCapabilityInput])
+  capabilities!: WorkspaceByokCapabilityInput[];
+}
+
+@InputType()
+class WorkspaceByokEndpointInput {
+  @Field(() => String)
+  kind!: string;
+
+  @Field(() => String, { nullable: true })
+  url!: string | null;
+}
+
+@InputType()
+class WorkspaceByokProfileDefinitionInput {
+  @Field(() => SafeIntResolver)
+  version!: number;
+
+  @Field(() => WorkspaceByokEndpointInput)
+  endpoint!: WorkspaceByokEndpointInput;
+
+  @Field(() => [WorkspaceByokModelDeclarationInput])
+  models!: WorkspaceByokModelDeclarationInput[];
+}
+
+@InputType()
+class CreateWorkspaceByokProfileInput {
   @Field(() => String)
   workspaceId!: string;
 
@@ -175,59 +318,125 @@ class UpsertWorkspaceByokConfigInput {
   name!: string;
 
   @Field(() => String, { nullable: true })
-  description?: string | null;
+  description!: string | null;
 
-  @Field(() => ByokKeyStorage)
-  storage!: ByokKeyStorage;
+  @Field(() => String)
+  credential!: string;
 
-  @Field(() => String, { nullable: true })
-  apiKey?: string | null;
+  @Field(() => WorkspaceByokProfileDefinitionInput)
+  definition!: WorkspaceByokProfileDefinitionInput;
 
-  @Field(() => String, { nullable: true })
-  endpoint?: string | null;
-
-  @Field(() => SafeIntResolver, { nullable: true })
-  sortOrder?: number | null;
-
-  @Field(() => Boolean, { nullable: true })
-  enabled?: boolean | null;
+  @Field(() => Boolean)
+  enabled!: boolean;
 }
 
 @InputType()
-class TestWorkspaceByokConfigInput {
+class ReplaceWorkspaceByokProfileInput {
+  @Field(() => String)
+  workspaceId!: string;
+
+  @Field(() => ID)
+  profileId!: string;
+
+  @Field(() => SafeIntResolver)
+  expectedRevision!: number;
+
+  @Field(() => String)
+  name!: string;
+
+  @Field(() => String, { nullable: true })
+  description!: string | null;
+
+  @Field(() => WorkspaceByokProfileDefinitionInput)
+  definition!: WorkspaceByokProfileDefinitionInput;
+
+  @Field(() => String, { nullable: true })
+  credential!: string | null;
+
+  @Field(() => Boolean)
+  enabled!: boolean;
+}
+
+@InputType()
+class RotateWorkspaceByokCredentialInput {
+  @Field(() => String)
+  workspaceId!: string;
+
+  @Field(() => ID)
+  profileId!: string;
+
+  @Field(() => SafeIntResolver)
+  expectedRevision!: number;
+
+  @Field(() => String)
+  credential!: string;
+}
+
+@InputType()
+class WorkspaceByokProbeCheckInput {
+  @Field(() => String)
+  modelId!: string;
+
+  @Field(() => String)
+  operation!: string;
+}
+
+@InputType()
+class ProbeWorkspaceByokProfileInput {
+  @Field(() => String)
+  workspaceId!: string;
+
+  @Field(() => ID)
+  profileId!: string;
+
+  @Field(() => [WorkspaceByokProbeCheckInput])
+  checks!: WorkspaceByokProbeCheckInput[];
+}
+
+@InputType()
+class ProbeWorkspaceByokDraftInput {
   @Field(() => String)
   workspaceId!: string;
 
   @Field(() => ByokProvider)
   provider!: ByokProvider;
 
-  @Field(() => ByokKeyStorage)
-  storage!: ByokKeyStorage;
-
   @Field(() => String, { nullable: true })
-  apiKey?: string | null;
-
-  @Field(() => String, { nullable: true })
-  endpoint?: string | null;
+  credential!: string | null;
 
   @Field(() => ID, { nullable: true })
-  configId?: string | null;
+  profileId!: string | null;
+
+  @Field(() => SafeIntResolver, { nullable: true })
+  expectedRevision!: number | null;
+
+  @Field(() => WorkspaceByokProfileDefinitionInput)
+  definition!: WorkspaceByokProfileDefinitionInput;
+
+  @Field(() => [WorkspaceByokProbeCheckInput])
+  checks!: WorkspaceByokProbeCheckInput[];
 }
 
 @InputType()
-class ReorderWorkspaceByokConfigsInput {
+class WorkspaceByokProfileOrderInput {
+  @Field(() => ID)
+  profileId!: string;
+
+  @Field(() => SafeIntResolver)
+  expectedRevision!: number;
+}
+
+@InputType()
+class ReorderWorkspaceByokProfilesInput {
   @Field(() => String)
   workspaceId!: string;
 
-  @Field(() => ByokKeyStorage)
-  storage!: ByokKeyStorage;
-
-  @Field(() => [ID])
-  ids!: string[];
+  @Field(() => [WorkspaceByokProfileOrderInput])
+  profiles!: WorkspaceByokProfileOrderInput[];
 }
 
 @InputType()
-class CreateWorkspaceByokLocalLeaseProviderInput implements ByokLocalLeaseProvider {
+class CreateWorkspaceByokLocalLeaseProviderInput {
   @Field(() => ByokProvider)
   provider!: ByokProvider;
 
@@ -235,19 +444,16 @@ class CreateWorkspaceByokLocalLeaseProviderInput implements ByokLocalLeaseProvid
   name!: string;
 
   @Field(() => String, { nullable: true })
-  description?: string | null;
+  description!: string | null;
 
   @Field(() => String)
-  apiKey!: string;
+  credential!: string;
 
-  @Field(() => String, { nullable: true })
-  endpoint?: string | null;
+  @Field(() => WorkspaceByokProfileDefinitionInput)
+  definition!: WorkspaceByokProfileDefinitionInput;
 
-  @Field(() => SafeIntResolver, { nullable: true })
-  sortOrder?: number | null;
-
-  @Field(() => Boolean, { nullable: true })
-  enabled?: boolean | null;
+  @Field(() => Boolean)
+  enabled!: boolean;
 }
 
 @InputType()
@@ -259,12 +465,15 @@ class CreateWorkspaceByokLocalLeaseInput {
   providers!: CreateWorkspaceByokLocalLeaseProviderInput[];
 }
 
+@CopilotEnabled()
 @Resolver(() => WorkspaceType)
 export class WorkspaceByokResolver {
   constructor(
     private readonly ac: PermissionAccess,
     private readonly entitlement: ByokEntitlementPolicy,
-    private readonly byok: ByokService
+    private readonly runtime: BackendRuntimeProvider,
+    private readonly models: Models,
+    private readonly config: Config
   ) {}
 
   @ResolveField(() => WorkspaceByokSettingsType, {
@@ -275,13 +484,35 @@ export class WorkspaceByokResolver {
     @CurrentUser() user: CurrentUser,
     @Parent() workspace: WorkspaceType
   ) {
-    await this.ac
-      .user(user.id)
-      .workspace(workspace.id)
-      .allowLocal()
-      .assert('Workspace.Settings.Read');
+    await this.assertRead(user.id, workspace.id);
     await this.entitlement.assertManagementAccess(workspace.id, user.id);
-    return await this.byok.getSettings(workspace.id, user.id);
+    const [serverEntitled, localEntitled] =
+      await this.entitlement.hasEntitlement(workspace.id, user.id);
+    const profiles = serverEntitled
+      ? await this.runtime.listByokProfiles(workspace.id)
+      : [];
+    const customEndpointSupported =
+      this.config.copilot.byok.allowCustomEndpoint;
+    const catalog = llmGetByokCatalog();
+    return {
+      workspaceId: workspace.id,
+      entitled: serverEntitled || localEntitled,
+      serverEntitled,
+      localEntitled,
+      profiles: profiles.map(profile => projectProfile(profile)),
+      allowedProviders: [...BYOK_ALLOWED_PROVIDERS],
+      customEndpointSupported,
+      privateEndpointSupported:
+        customEndpointSupported &&
+        this.config.copilot.byok.allowPrivateEndpoint,
+      catalog: {
+        ...catalog,
+        providers: catalog.providers.map(provider => ({
+          ...provider,
+          provider: provider.provider as ByokProvider,
+        })),
+      },
+    };
   }
 
   @ResolveField(() => [WorkspaceByokUsagePointType], {
@@ -294,100 +525,131 @@ export class WorkspaceByokResolver {
     @Args('from', { type: () => Date }) from: Date,
     @Args('to', { type: () => Date }) to: Date
   ) {
-    await this.ac
-      .user(user.id)
-      .workspace(workspace.id)
-      .allowLocal()
-      .assert('Workspace.Settings.Read');
+    await this.assertRead(user.id, workspace.id);
     await this.entitlement.assertManagementAccess(workspace.id, user.id);
-    return await this.byok.getUsage(workspace.id, from, to);
+    return await this.models.copilotUsage.aggregateByDay({
+      workspaceId: workspace.id,
+      from,
+      to,
+      providerSources: [ByokProviderSource.Server, ByokProviderSource.Local],
+    });
   }
 
+  @Mutation(() => WorkspaceByokProfileType)
   @Throttle('strict')
-  @Mutation(() => TestWorkspaceByokConfigResultType)
-  async testWorkspaceByokConfig(
+  async createWorkspaceByokProfile(
     @CurrentUser() user: CurrentUser,
-    @Args('input') input: TestWorkspaceByokConfigInput
+    @Args('input') input: CreateWorkspaceByokProfileInput
   ) {
-    await this.ac
-      .user(user.id)
-      .workspace(input.workspaceId)
-      .allowLocal()
-      .assert('Workspace.Settings.Update');
-    await this.entitlement.assertManagementAccess(input.workspaceId, user.id);
-    if (input.storage === ByokKeyStorage.server) {
+    await this.assertUpdate(user.id, input.workspaceId);
+    await this.entitlement.assertServerEntitled(input.workspaceId);
+    requireExplicitDescription(input);
+    return projectProfile(
+      await this.runtime.createByokProfile({
+        ...input,
+        description: input.description ?? undefined,
+        definition: nativeDefinition(input.definition),
+        actorUserId: user.id,
+      })
+    );
+  }
+
+  @Mutation(() => WorkspaceByokProfileType)
+  @Throttle('strict')
+  async replaceWorkspaceByokProfile(
+    @CurrentUser() user: CurrentUser,
+    @Args('input') input: ReplaceWorkspaceByokProfileInput
+  ) {
+    await this.assertUpdate(user.id, input.workspaceId);
+    await this.entitlement.assertServerEntitled(input.workspaceId);
+    requireExplicitDescription(input);
+    return projectProfile(
+      await this.runtime.replaceByokProfile({
+        ...input,
+        description: input.description ?? undefined,
+        credential: input.credential ?? undefined,
+        definition: nativeDefinition(input.definition),
+        actorUserId: user.id,
+      })
+    );
+  }
+
+  @Mutation(() => WorkspaceByokProfileType)
+  @Throttle('strict')
+  async rotateWorkspaceByokCredential(
+    @CurrentUser() user: CurrentUser,
+    @Args('input') input: RotateWorkspaceByokCredentialInput
+  ) {
+    await this.assertUpdate(user.id, input.workspaceId);
+    await this.entitlement.assertServerEntitled(input.workspaceId);
+    return projectProfile(
+      await this.runtime.rotateByokCredential({
+        ...input,
+        actorUserId: user.id,
+      })
+    );
+  }
+
+  @Mutation(() => WorkspaceByokProbeResultType)
+  @Throttle('strict')
+  async probeWorkspaceByokProfile(
+    @CurrentUser() user: CurrentUser,
+    @Args('input') input: ProbeWorkspaceByokProfileInput
+  ) {
+    await this.assertUpdate(user.id, input.workspaceId);
+    await this.entitlement.assertServerEntitled(input.workspaceId);
+    return projectProbeResult(await this.runtime.probeByokProfile(input));
+  }
+
+  @Mutation(() => WorkspaceByokProbeResultType)
+  @Throttle('strict')
+  async probeWorkspaceByokDraft(
+    @CurrentUser() user: CurrentUser,
+    @Args('input') input: ProbeWorkspaceByokDraftInput
+  ) {
+    await this.assertUpdate(user.id, input.workspaceId);
+    if (input.profileId) {
       await this.entitlement.assertServerEntitled(input.workspaceId);
     } else {
-      await this.entitlement.assertLocalEntitled(input.workspaceId, user.id);
+      await this.entitlement.assertEntitled(input.workspaceId, user.id);
     }
-    return await this.byok.testConfig({ ...input, userId: user.id });
-  }
-
-  @Mutation(() => WorkspaceByokKeyConfigType)
-  @Throttle('strict')
-  async upsertWorkspaceByokConfig(
-    @CurrentUser() user: CurrentUser,
-    @Args('input') input: UpsertWorkspaceByokConfigInput
-  ) {
-    await this.ac
-      .user(user.id)
-      .workspace(input.workspaceId)
-      .allowLocal()
-      .assert('Workspace.Settings.Update');
-    await this.entitlement.assertManagementAccess(input.workspaceId, user.id);
-    await this.entitlement.assertServerEntitled(input.workspaceId);
-    return await this.byok.upsertConfig({ ...input, userId: user.id });
-  }
-
-  @Mutation(() => [WorkspaceByokKeyConfigType])
-  @Throttle('strict')
-  async reorderWorkspaceByokConfigs(
-    @CurrentUser() user: CurrentUser,
-    @Args('input') input: ReorderWorkspaceByokConfigsInput
-  ) {
-    await this.ac
-      .user(user.id)
-      .workspace(input.workspaceId)
-      .allowLocal()
-      .assert('Workspace.Settings.Update');
-    await this.entitlement.assertManagementAccess(input.workspaceId, user.id);
-    await this.entitlement.assertServerEntitled(input.workspaceId);
-    return await this.byok.reorderConfigs({ ...input, userId: user.id });
+    return projectProbeResult(
+      await this.runtime.probeByokDraft({
+        ...input,
+        credential: input.credential ?? undefined,
+        profileId: input.profileId ?? undefined,
+        expectedRevision: input.expectedRevision ?? undefined,
+        definition: nativeDefinition(input.definition),
+      })
+    );
   }
 
   @Mutation(() => Boolean)
   @Throttle('strict')
-  async deleteWorkspaceByokConfig(
+  async deleteWorkspaceByokProfile(
     @CurrentUser() user: CurrentUser,
-    @Args('id', { type: () => ID }) id: string,
+    @Args('profileId', { type: () => ID }) profileId: string,
     @Args('workspaceId', { type: () => String }) workspaceId: string
   ) {
-    await this.ac
-      .user(user.id)
-      .workspace(workspaceId)
-      .allowLocal()
-      .assert('Workspace.Settings.Update');
-    await this.entitlement.assertManagementAccess(workspaceId, user.id);
+    await this.assertUpdate(user.id, workspaceId);
     await this.entitlement.assertServerEntitled(workspaceId);
-    return await this.byok.deleteConfig(workspaceId, id, user.id);
+    return await this.runtime.deleteByokProfile(workspaceId, profileId);
   }
 
-  @Mutation(() => Boolean)
+  @Mutation(() => [WorkspaceByokProfileType])
   @Throttle('strict')
-  async clearWorkspaceByokConfigs(
+  async reorderWorkspaceByokProfiles(
     @CurrentUser() user: CurrentUser,
-    @Args('workspaceId', { type: () => String }) workspaceId: string,
-    @Args('provider', { type: () => ByokProvider, nullable: true })
-    provider?: ByokProvider | null
+    @Args('input') input: ReorderWorkspaceByokProfilesInput
   ) {
-    await this.ac
-      .user(user.id)
-      .workspace(workspaceId)
-      .allowLocal()
-      .assert('Workspace.Settings.Update');
-    await this.entitlement.assertManagementAccess(workspaceId, user.id);
-    await this.entitlement.assertServerEntitled(workspaceId);
-    return await this.byok.clearConfigs(workspaceId, provider, user.id);
+    await this.assertUpdate(user.id, input.workspaceId);
+    await this.entitlement.assertServerEntitled(input.workspaceId);
+    return (
+      await this.runtime.reorderByokProfiles({
+        ...input,
+        actorUserId: user.id,
+      })
+    ).map(profile => projectProfile(profile));
   }
 
   @Mutation(() => CreateWorkspaceByokLocalLeaseResultType)
@@ -403,6 +665,119 @@ export class WorkspaceByokResolver {
       .assert('Workspace.Copilot');
     await this.entitlement.assertManagementAccess(input.workspaceId, user.id);
     await this.entitlement.assertLocalEntitled(input.workspaceId, user.id);
-    return await this.byok.createLocalLease({ ...input, userId: user.id });
+    input.providers.forEach(requireExplicitDescription);
+    const result = await this.runtime.createByokLocalLease({
+      ...input,
+      providers: input.providers.map(provider => ({
+        ...provider,
+        description: provider.description ?? undefined,
+        definition: nativeDefinition(provider.definition),
+      })),
+      userId: user.id,
+    });
+    return {
+      leaseId: result.leaseId,
+      expiresAt: new Date(result.expiresAtMs),
+    };
   }
+
+  private async assertRead(userId: string, workspaceId: string) {
+    await this.ac
+      .user(userId)
+      .workspace(workspaceId)
+      .allowLocal()
+      .assert('Workspace.Settings.Read');
+  }
+
+  private async assertUpdate(userId: string, workspaceId: string) {
+    await this.ac
+      .user(userId)
+      .workspace(workspaceId)
+      .allowLocal()
+      .assert('Workspace.Settings.Update');
+    await this.entitlement.assertManagementAccess(workspaceId, userId);
+  }
+}
+
+function requireExplicitDescription(input: { description: string | null }) {
+  if (!Object.hasOwn(input, 'description')) {
+    throw new BadRequestException('description must be provided explicitly.');
+  }
+}
+
+function nativeDefinition(input: WorkspaceByokProfileDefinitionInput) {
+  return {
+    ...input,
+    endpoint: {
+      ...input.endpoint,
+      url: input.endpoint.url ?? undefined,
+    },
+  };
+}
+
+function projectProbe(probe: {
+  kind: string;
+  testedAtMs?: number;
+  errorKind?: string;
+}) {
+  return {
+    kind: probe.kind,
+    testedAt: probe.testedAtMs ? new Date(probe.testedAtMs) : null,
+    errorKind: probe.errorKind ?? null,
+  };
+}
+
+function projectProbeResult(result: {
+  definitionFingerprint: string;
+  stale: boolean;
+  connection: {
+    kind: string;
+    testedAtMs?: number;
+    errorKind?: string;
+  };
+  models: Array<{
+    modelId: string;
+    checks: Array<{
+      operation: string;
+      status: {
+        kind: string;
+        testedAtMs?: number;
+        errorKind?: string;
+      };
+    }>;
+  }>;
+}) {
+  return {
+    ...result,
+    connection: projectProbe(result.connection),
+    models: result.models.map(model => ({
+      ...model,
+      checks: model.checks.map(check => ({
+        ...check,
+        status: projectProbe(check.status),
+      })),
+    })),
+  };
+}
+
+function projectProfile(
+  profile: Awaited<ReturnType<BackendRuntimeProvider['createByokProfile']>>
+) {
+  return {
+    ...profile,
+    provider: profile.provider as ByokProvider,
+    validation: profile.validation
+      ? {
+          ...profile.validation,
+          connection: projectProbe(profile.validation.connection),
+          models: profile.validation.models.map(model => ({
+            ...model,
+            checks: model.checks.map(check => ({
+              ...check,
+              status: projectProbe(check.status),
+            })),
+          })),
+        }
+      : null,
+  };
 }

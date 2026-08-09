@@ -73,11 +73,6 @@ export const TranscriptionQualitySchema = z.object({
   overflowCount: z.number().nullable().optional(),
 });
 
-export const TranscriptProviderMetaSchema = z.object({
-  provider: z.string().nullable().optional(),
-  model: z.string().nullable().optional(),
-});
-
 export const TranscriptionLegacyProjectionSchema = z.object({
   title: z.string().nullable().optional(),
   summary: z.string().nullable().optional(),
@@ -96,9 +91,7 @@ export const TranscriptionPayloadV2Schema = z.object({
     .optional(),
   normalizedTranscript: z.string().nullable().optional(),
   summaryJson: MeetingSummaryV2Schema.nullable().optional(),
-  providerMeta: TranscriptProviderMetaSchema.nullable().optional(),
   version: z.string().optional(),
-  strategy: z.string().optional(),
 });
 
 export const TranscriptionSubmitInputSchema = TranscriptionPayloadV2Schema.pick(
@@ -135,9 +128,7 @@ const CanonicalTranscriptPayloadSchema = TranscriptionPayloadV2Schema.refine(
     payload.normalizedSegments !== undefined ||
     payload.normalizedTranscript !== undefined ||
     payload.summaryJson !== undefined ||
-    payload.providerMeta !== undefined ||
-    payload.version !== undefined ||
-    payload.strategy !== undefined,
+    payload.version !== undefined,
   {
     message:
       'canonical transcript payload must contain canonical transcript fields',

@@ -2,9 +2,9 @@ import './ai-chat-composer-tip';
 
 import type {
   AIDraftService,
+  AIModelService,
   AIToolsConfigService,
 } from '@affine/core/modules/ai-button';
-import type { AIModelService } from '@affine/core/modules/ai-button/services/models';
 import type {
   ServerService,
   SubscriptionService,
@@ -129,13 +129,13 @@ export class AIChatComposer extends SignalWatcher(
   accessor aiToolsConfigService!: AIToolsConfigService;
 
   @property({ attribute: false })
+  accessor aiModelService!: AIModelService;
+
+  @property({ attribute: false })
   accessor affineFeatureFlagService!: FeatureFlagService;
 
   @property({ attribute: false })
   accessor subscriptionService!: SubscriptionService;
-
-  @property({ attribute: false })
-  accessor aiModelService!: AIModelService;
 
   @property({ attribute: false })
   accessor onAISubscribe!: () => Promise<void>;
@@ -183,9 +183,9 @@ export class AIChatComposer extends SignalWatcher(
         .affineFeatureFlagService=${this.affineFeatureFlagService}
         .aiDraftService=${this.aiDraftService}
         .aiToolsConfigService=${this.aiToolsConfigService}
+        .aiModelService=${this.aiModelService}
         .notificationService=${this.notificationService}
         .subscriptionService=${this.subscriptionService}
-        .aiModelService=${this.aiModelService}
         .onAISubscribe=${this.onAISubscribe}
         .portalContainer=${this.portalContainer}
         .onChatSuccess=${this.onChatSuccess}

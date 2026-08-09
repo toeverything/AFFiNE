@@ -1,3 +1,4 @@
+/* oxlint-disable import/no-cycle -- Tools can invoke nested prompts and semantic search. */
 import { Injectable } from '@nestjs/common';
 
 import { Config } from '../../../base';
@@ -5,7 +6,6 @@ import { DocReader, DocWriter } from '../../../core/doc';
 import { PermissionAccess } from '../../../core/permission';
 import { Models } from '../../../models';
 import { IndexerService } from '../../indexer';
-import type { NodeTextMiddleware } from '../config';
 import { CopilotContextService } from '../context/service';
 import {
   type CopilotChatOptions,
@@ -36,8 +36,6 @@ import {
   createSectionEditTool,
 } from '../tools';
 import { PromptRuntime } from './prompt-runtime';
-import type { ToolLoopBackend } from './tool/bridge';
-import { createNativeToolLoopAdapter } from './tool/native-adapter';
 
 export type ProviderSpecificToolResolver = (
   toolName: CopilotChatTools,
@@ -191,16 +189,5 @@ export class ToolRuntime {
     }
 
     return tools;
-  }
-
-  createNativeAdapter(
-    backend: ToolLoopBackend,
-    tools: CopilotToolSet,
-    options: {
-      maxSteps?: number;
-      nodeTextMiddleware?: NodeTextMiddleware[];
-    } = {}
-  ) {
-    return createNativeToolLoopAdapter(backend, tools, options);
   }
 }

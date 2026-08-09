@@ -3,14 +3,15 @@ import { Injectable } from '@nestjs/common';
 import { CopilotContextService } from '../context/service';
 import { type Turn } from '../core';
 import {
+  type ModelConditions,
   ModelInputType,
   type PromptParams,
   type StreamObject,
 } from '../providers/types';
 import { ChatSession } from '../session';
 import { ChatQuerySchema } from '../types';
+import { getTools } from '../utils';
 import { CapabilityRuntime } from './capability-runtime';
-import { CapabilityPolicyHost } from './hosts/capability-policy-host';
 import { ConversationHost } from './hosts/conversation-host';
 import { ImageResultHost } from './hosts/image-result-host';
 import { TurnPersistence } from './hosts/turn-persistence';
@@ -20,7 +21,6 @@ export class TurnOrchestrator {
   constructor(
     private readonly conversations: ConversationHost,
     private readonly context: CopilotContextService,
-    private readonly capabilityPolicy: CapabilityPolicyHost,
     private readonly runtime: CapabilityRuntime,
     private readonly imageResults: ImageResultHost,
     private readonly turnPersistence: TurnPersistence
@@ -62,8 +62,15 @@ export class TurnOrchestrator {
       sessionId,
       query
     );
-    const { modelId, reasoning, webSearch, toolsConfig, byokLeaseId } =
-      ChatQuerySchema.parse(query);
+    const {
+      profileId,
+      modelId,
+      routeTargetId,
+      reasoning,
+      webSearch,
+      toolsConfig,
+      byokLeaseId,
+    } = ChatQuerySchema.parse(query);
     const promptParams = await this.buildPromptParams(sessionId, {
       latestTurn: prepared.latestTurn,
       includeContextFiles: selection.includeContextFiles,
@@ -76,22 +83,34 @@ export class TurnOrchestrator {
     return {
       prepared,
       finalMessage,
-      selection: await this.capabilityPolicy.selectChat(prepared.session, {
-        responseMode: selection.responseMode,
-        modelId,
-        reasoning,
-        webSearch,
-        toolsConfig,
-        byokLeaseId,
-        billingUnitId: prepared.latestTurn?.id,
-        quotaBackedRoutesAllowed: prepared.quotaBackedRoutesAllowed,
-        featureKind:
-          selection.responseMode === 'image'
-            ? 'image'
-            : selection.responseMode === 'object'
-              ? 'action'
-              : 'chat',
-      }),
+      selection: {
+        model: profileId && modelId ? modelId : 'route-selected',
+        conditions: { profileId, modelId },
+        providerOptions: {
+          ...prepared.session.config.promptConfig,
+          user: prepared.session.config.userId,
+          session: prepared.session.config.sessionId,
+          workspace: prepared.session.config.workspaceId,
+          profileId,
+          byokLeaseId,
+          billingUnitId: prepared.latestTurn?.id,
+          builtInRouteId: prepared.session.config.promptName,
+          managedTargetId: routeTargetId,
+          quotaBackedRoutesAllowed: prepared.quotaBackedRoutesAllowed,
+          featureKind:
+            selection.responseMode === 'image'
+              ? 'image'
+              : selection.responseMode === 'object'
+                ? 'action'
+                : 'chat',
+          reasoning,
+          webSearch,
+          tools: getTools(
+            prepared.session.config.promptConfig?.tools,
+            toolsConfig
+          ),
+        },
+      },
     };
   }
 
@@ -110,7 +129,7 @@ export class TurnOrchestrator {
 
     const stream = this.streamTextResult(
       prepared.session,
-      selection.model,
+      selection.conditions,
       finalMessage,
       {
         ...selection.providerOptions,
@@ -129,14 +148,14 @@ export class TurnOrchestrator {
 
   private async *streamTextResult(
     session: ChatSession,
-    model: string,
+    conditions: ModelConditions,
     finalMessage: ReturnType<ChatSession['finish']>,
     options: Record<string, unknown>,
     wasAborted: () => boolean
   ) {
     let buffer = '';
     for await (const chunk of this.runtime.streamText(
-      { modelId: model },
+      conditions,
       finalMessage,
       options
     )) {
@@ -165,7 +184,7 @@ export class TurnOrchestrator {
       finalMessage,
       stream: this.streamObjectResult(
         prepared.session,
-        selection.model,
+        selection.conditions,
         finalMessage,
         {
           ...selection.providerOptions,
@@ -178,14 +197,14 @@ export class TurnOrchestrator {
 
   private async *streamObjectResult(
     session: ChatSession,
-    model: string,
+    conditions: ModelConditions,
     finalMessage: ReturnType<ChatSession['finish']>,
     options: Record<string, unknown>,
     wasAborted: () => boolean
   ): AsyncIterableIterator<StreamObject> {
     const chunks: StreamObject[] = [];
     for await (const chunk of this.runtime.streamObject(
-      { modelId: model },
+      conditions,
       finalMessage,
       options
     )) {
@@ -223,7 +242,7 @@ export class TurnOrchestrator {
         userId,
         sessionId,
         prepared.session,
-        undefined,
+        selection.conditions,
         hasAttachment,
         finalMessage,
         {
@@ -244,7 +263,7 @@ export class TurnOrchestrator {
     userId: string,
     sessionId: string,
     session: ChatSession,
-    model: string | undefined,
+    conditions: ModelConditions,
     hasAttachment: boolean,
     finalMessage: ReturnType<ChatSession['finish']>,
     options: Record<string, unknown>,
@@ -253,7 +272,7 @@ export class TurnOrchestrator {
     const attachments: string[] = [];
     for await (const artifact of this.runtime.streamImageArtifacts(
       {
-        modelId: model,
+        ...conditions,
         inputTypes: hasAttachment
           ? [ModelInputType.Image]
           : [ModelInputType.Text],

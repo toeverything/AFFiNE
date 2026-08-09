@@ -5925,10 +5925,6 @@ export function useAFFiNEI18N(): {
     /**
       * `AI BYOK (Beta)`
       */
-    ["com.affine.settings.workspace.byok.title-beta"](): string;
-    /**
-      * `AI BYOK`
-      */
     ["com.affine.settings.workspace.byok.title"](): string;
     /**
       * `Loading provider keys.`
@@ -5950,14 +5946,6 @@ export function useAFFiNEI18N(): {
       * `Upgrade this workspace to add provider keys and route AFFiNE AI through your own OpenAI, Anthropic, Gemini, or FAL account.`
       */
     ["com.affine.settings.workspace.byok.locked.description"](): string;
-    /**
-      * `AI plan stays available`
-      */
-    ["com.affine.settings.workspace.byok.notice.title"](): string;
-    /**
-      * `Local keys on this device are tried first. Workspace server keys follow, then AFFiNE AI plan routes when quota is available.`
-      */
-    ["com.affine.settings.workspace.byok.notice.description"](): string;
     /**
       * `Provider keys`
       */
@@ -5983,13 +5971,25 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.workspace.byok.storage.server"](): string;
     /**
-      * `Local (this device)`
+      * `Available to workspace members.`
       */
-    ["com.affine.settings.workspace.byok.storage.local-this-device"](): string;
+    ["com.affine.settings.workspace.byok.storage.server.description"](): string;
     /**
-      * `Local (Desktop only)`
+      * `Kept in this desktop device’s secure storage.`
       */
-    ["com.affine.settings.workspace.byok.storage.local-desktop-only"](): string;
+    ["com.affine.settings.workspace.byok.storage.local.description"](): string;
+    /**
+      * `Available in the AFFiNE desktop app.`
+      */
+    ["com.affine.settings.workspace.byok.storage.local.desktop-only"](): string;
+    /**
+      * `Secure local storage is not available on this device.`
+      */
+    ["com.affine.settings.workspace.byok.storage.local.unavailable"](): string;
+    /**
+      * `Testing sends this key to the workspace server for this request only; it is not stored there.`
+      */
+    ["com.affine.settings.workspace.byok.storage.local.test-disclosure"](): string;
     /**
       * `Disabled after failure`
       */
@@ -5998,10 +5998,6 @@ export function useAFFiNEI18N(): {
       * `Key verified`
       */
     ["com.affine.settings.workspace.byok.status.key-verified"](): string;
-    /**
-      * `Key test failed`
-      */
-    ["com.affine.settings.workspace.byok.status.key-test-failed"](): string;
     /**
       * `Text`
       */
@@ -6032,16 +6028,6 @@ export function useAFFiNEI18N(): {
     ["com.affine.settings.workspace.byok.row.activity.failed"](options: {
         readonly date: string;
     }): string;
-    /**
-      * `used {{date}}`
-      */
-    ["com.affine.settings.workspace.byok.row.activity.used"](options: {
-        readonly date: string;
-    }): string;
-    /**
-      * `used today`
-      */
-    ["com.affine.settings.workspace.byok.row.activity.used-today"](): string;
     /**
       * `not used yet`
       */
@@ -6113,17 +6099,69 @@ export function useAFFiNEI18N(): {
         readonly count: string;
     }): string;
     /**
-      * `Add provider key`
+      * `Connect AI provider`
       */
-    ["com.affine.settings.workspace.byok.modal.add-title"](): string;
+    ["com.affine.settings.workspace.byok.modal.connect-title"](): string;
     /**
-      * `Edit provider key`
+      * `Manage provider`
       */
-    ["com.affine.settings.workspace.byok.modal.edit-title"](): string;
+    ["com.affine.settings.workspace.byok.modal.manage-title"](): string;
     /**
-      * `Re-enter the API key and test it before saving changes.`
+      * `Choose where the key is stored, then select the models AFFiNE may use.`
       */
-    ["com.affine.settings.workspace.byok.modal.description"](): string;
+    ["com.affine.settings.workspace.byok.modal.connect-description"](): string;
+    /**
+      * `Add models`
+      */
+    ["com.affine.settings.workspace.byok.modal.add-model-title"](): string;
+    /**
+      * `Add custom model`
+      */
+    ["com.affine.settings.workspace.byok.modal.add-custom-model-title"](): string;
+    /**
+      * `Edit model`
+      */
+    ["com.affine.settings.workspace.byok.modal.edit-model-title"](): string;
+    /**
+      * `Choose one or more models this key may use.`
+      */
+    ["com.affine.settings.workspace.byok.modal.catalog-model-description"](): string;
+    /**
+      * `Enter the endpoint model ID and choose its uses.`
+      */
+    ["com.affine.settings.workspace.byok.modal.custom-model-description"](): string;
+    /**
+      * `Connection`
+      */
+    ["com.affine.settings.workspace.byok.section.connection"](): string;
+    /**
+      * `Models`
+      */
+    ["com.affine.settings.workspace.byok.section.models"](): string;
+    /**
+      * `Advanced details`
+      */
+    ["com.affine.settings.workspace.byok.section.advanced"](): string;
+    /**
+      * `Models this key may use.`
+      */
+    ["com.affine.settings.workspace.byok.models.description.selected"](): string;
+    /**
+      * `Among compatible models, enabled models are tried from top to bottom.`
+      */
+    ["com.affine.settings.workspace.byok.models.description.order"](): string;
+    /**
+      * `No models added yet.`
+      */
+    ["com.affine.settings.workspace.byok.models.empty"](): string;
+    /**
+      * `All available models have been added.`
+      */
+    ["com.affine.settings.workspace.byok.models.all-added"](): string;
+    /**
+      * `No matching models.`
+      */
+    ["com.affine.settings.workspace.byok.models.no-search-results"](): string;
     /**
       * `Provider`
       */
@@ -6137,9 +6175,9 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.workspace.byok.field.description"](): string;
     /**
-      * `Key storage`
+      * `Provider enabled`
       */
-    ["com.affine.settings.workspace.byok.field.storage"](): string;
+    ["com.affine.settings.workspace.byok.field.provider-enabled"](): string;
     /**
       * `API key`
       */
@@ -6149,6 +6187,10 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.workspace.byok.field.endpoint"](): string;
     /**
+      * `Model ID`
+      */
+    ["com.affine.settings.workspace.byok.field.model-id"](): string;
+    /**
       * `Custom endpoints are disabled by the server administrator. In Self-hosted Admin, enable copilot.byok.allowCustomEndpoint.`
       */
     ["com.affine.settings.workspace.byok.endpoint.custom-disabled"](): string;
@@ -6157,29 +6199,176 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.workspace.byok.endpoint.private-disabled"](): string;
     /**
-      * `Primary`
+      * `Leave blank to keep the current key`
       */
-    ["com.affine.settings.workspace.byok.placeholder.key-name"](): string;
+    ["com.affine.settings.workspace.byok.placeholder.keep-current-key"](): string;
     /**
-      * `Workspace fallback key`
+      * `Model ID`
       */
-    ["com.affine.settings.workspace.byok.placeholder.description"](): string;
+    ["com.affine.settings.workspace.byok.placeholder.model-id"](): string;
+    /**
+      * `Search models…`
+      */
+    ["com.affine.settings.workspace.byok.placeholder.search-models"](): string;
+    /**
+      * `Use a custom API-compatible endpoint`
+      */
+    ["com.affine.settings.workspace.byok.endpoint.use-custom"](): string;
+    /**
+      * `Include an image generation request when testing (provider charges may apply)`
+      */
+    ["com.affine.settings.workspace.byok.probe.include-image"](): string;
+    /**
+      * `Connection verified`
+      */
+    ["com.affine.settings.workspace.byok.probe.verified"](): string;
+    /**
+      * `Connection failed`
+      */
+    ["com.affine.settings.workspace.byok.probe.failed"](): string;
+    /**
+      * `Recommended`
+      */
+    ["com.affine.settings.workspace.byok.model.recommended"](): string;
+    /**
+      * `This model has already been added.`
+      */
+    ["com.affine.settings.workspace.byok.model.duplicate-id"](): string;
+    /**
+      * `Not tested`
+      */
+    ["com.affine.settings.workspace.byok.model.status.not-tested"](): string;
+    /**
+      * `Verified`
+      */
+    ["com.affine.settings.workspace.byok.model.status.verified"](): string;
+    /**
+      * `Failed`
+      */
+    ["com.affine.settings.workspace.byok.model.status.failed"](): string;
+    /**
+      * `Partially verified · {{verified}} of {{total}}`
+      */
+    ["com.affine.settings.workspace.byok.model.status.partially-verified"](options: Readonly<{
+        verified: string;
+        total: string;
+    }>): string;
+    /**
+      * `Disabled`
+      */
+    ["com.affine.settings.workspace.byok.model.status.disabled"](): string;
+    /**
+      * `Use this model for`
+      */
+    ["com.affine.settings.workspace.byok.model.use-this-for"](): string;
+    /**
+      * `Chat & writing`
+      */
+    ["com.affine.settings.workspace.byok.model.use.chat"](): string;
+    /**
+      * `Actions`
+      */
+    ["com.affine.settings.workspace.byok.model.use.actions"](): string;
+    /**
+      * `Structured output`
+      */
+    ["com.affine.settings.workspace.byok.model.use.structured"](): string;
+    /**
+      * `Image understanding`
+      */
+    ["com.affine.settings.workspace.byok.model.use.vision"](): string;
+    /**
+      * `Image generation`
+      */
+    ["com.affine.settings.workspace.byok.model.use.image"](): string;
+    /**
+      * `Transcription`
+      */
+    ["com.affine.settings.workspace.byok.model.use.transcript"](): string;
+    /**
+      * `Workspace indexing`
+      */
+    ["com.affine.settings.workspace.byok.model.use.embedding"](): string;
+    /**
+      * `Search reranking`
+      */
+    ["com.affine.settings.workspace.byok.model.use.rerank"](): string;
     /**
       * `Add key`
       */
     ["com.affine.settings.workspace.byok.action.add-key"](): string;
     /**
-      * `Test key`
+      * `Test connection`
       */
-    ["com.affine.settings.workspace.byok.action.test-key"](): string;
+    ["com.affine.settings.workspace.byok.action.test-connection"](): string;
+    /**
+      * `Test`
+      */
+    ["com.affine.settings.workspace.byok.action.test"](): string;
+    /**
+      * `Testing…`
+      */
+    ["com.affine.settings.workspace.byok.action.testing"](): string;
     /**
       * `Cancel`
       */
     ["com.affine.settings.workspace.byok.action.cancel"](): string;
     /**
-      * `Save key`
+      * `Connect`
       */
-    ["com.affine.settings.workspace.byok.action.save-key"](): string;
+    ["com.affine.settings.workspace.byok.action.connect"](): string;
+    /**
+      * `Connecting…`
+      */
+    ["com.affine.settings.workspace.byok.action.connecting"](): string;
+    /**
+      * `Save changes`
+      */
+    ["com.affine.settings.workspace.byok.action.save-changes"](): string;
+    /**
+      * `Add model`
+      */
+    ["com.affine.settings.workspace.byok.action.add-model"](): string;
+    /**
+      * `Add {{count}} models`
+      */
+    ["com.affine.settings.workspace.byok.action.add-selected-models"](options: {
+        readonly count: string;
+    }): string;
+    /**
+      * `Save model`
+      */
+    ["com.affine.settings.workspace.byok.action.save-model"](): string;
+    /**
+      * `Enable {{model}}`
+      */
+    ["com.affine.settings.workspace.byok.action.enable-model"](options: {
+        readonly model: string;
+    }): string;
+    /**
+      * `Disable {{model}}`
+      */
+    ["com.affine.settings.workspace.byok.action.disable-model"](options: {
+        readonly model: string;
+    }): string;
+    /**
+      * `Options for {{model}}`
+      */
+    ["com.affine.settings.workspace.byok.action.model-options"](options: {
+        readonly model: string;
+    }): string;
+    /**
+      * `Move up`
+      */
+    ["com.affine.settings.workspace.byok.action.move-up"](): string;
+    /**
+      * `Move down`
+      */
+    ["com.affine.settings.workspace.byok.action.move-down"](): string;
+    /**
+      * `Remove`
+      */
+    ["com.affine.settings.workspace.byok.action.remove"](): string;
     /**
       * `Clear all BYOK keys`
       */
@@ -6228,6 +6417,14 @@ export function useAFFiNEI18N(): {
       * `BYOK keys not cleared`
       */
     ["com.affine.settings.workspace.byok.notify.clear-failed.title"](): string;
+    /**
+      * `BYOK settings changed`
+      */
+    ["com.affine.settings.workspace.byok.notify.reload-required.title"](): string;
+    /**
+      * `Reload the settings and try again.`
+      */
+    ["com.affine.settings.workspace.byok.notify.reload-required.message"](): string;
     /**
       * `Please try again.`
       */

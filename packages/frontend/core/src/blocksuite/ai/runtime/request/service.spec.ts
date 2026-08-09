@@ -23,9 +23,13 @@ const electronApis = vi.hoisted(() => ({
           Array<{
             provider: string;
             name: string;
-            apiKey: string;
+            credential: string;
+            definition: {
+              version: number;
+              endpoint: { kind: string; url?: string | null };
+              models: unknown[];
+            };
             description?: string | null;
-            endpoint?: string | null;
             sortOrder?: number | null;
             enabled?: boolean | null;
           }>
@@ -117,7 +121,12 @@ describe('runtime request transport BYOK local lease handling', () => {
         {
           provider: 'openai',
           name: 'OpenAI',
-          apiKey: 'sk-local',
+          credential: 'sk-local',
+          definition: {
+            version: 1,
+            endpoint: { kind: 'provider_default' },
+            models: [{ modelId: 'model-1', capabilities: [] }],
+          },
         },
       ]),
     };

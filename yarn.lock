@@ -1518,13 +1518,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@atlaskit/pragmatic-drag-and-drop-auto-scroll@npm:^2.1.2":
-  version: 2.1.2
-  resolution: "@atlaskit/pragmatic-drag-and-drop-auto-scroll@npm:2.1.2"
+"@atlaskit/pragmatic-drag-and-drop-auto-scroll@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "@atlaskit/pragmatic-drag-and-drop-auto-scroll@npm:3.0.0"
   dependencies:
-    "@atlaskit/pragmatic-drag-and-drop": "npm:^1.7.0"
+    "@atlaskit/pragmatic-drag-and-drop": "npm:^2.0.0"
     "@babel/runtime": "npm:^7.0.0"
-  checksum: 10/037271d0d436cbfb6dfc053bea4f7cd724091e2046819d04df75286a09b802f2826d1a4e6c421f0131c9e96de259eb55dd9795aac193835139ea72f7140f3e9e
+  checksum: 10/9710d02b8c7769c0db001bd95ed2c45e9032d808838a6a24200d18c0a6f2acd5f544ec18146920ce906cf13ab1b7ce3a8130cfe82f30095c507431e276f8933e
   languageName: node
   linkType: hard
 
@@ -3418,7 +3418,7 @@ __metadata:
   resolution: "@blocksuite/std@workspace:blocksuite/framework/std"
   dependencies:
     "@atlaskit/pragmatic-drag-and-drop": "npm:^2.0.0"
-    "@atlaskit/pragmatic-drag-and-drop-auto-scroll": "npm:^2.1.2"
+    "@atlaskit/pragmatic-drag-and-drop-auto-scroll": "npm:^3.0.0"
     "@atlaskit/pragmatic-drag-and-drop-hitbox": "npm:^2.0.0"
     "@blocksuite/global": "workspace:*"
     "@blocksuite/store": "workspace:*"
@@ -22344,15 +22344,15 @@ __metadata:
   linkType: hard
 
 "electron@npm:^39.0.0":
-  version: 39.8.6
-  resolution: "electron@npm:39.8.6"
+  version: 39.8.10
+  resolution: "electron@npm:39.8.10"
   dependencies:
     "@electron/get": "npm:^2.0.0"
     "@types/node": "npm:^22.7.7"
     extract-zip: "npm:^2.0.1"
   bin:
     electron: cli.js
-  checksum: 10/52f1aa1362831ec5410a39bde2a7db548d07047bec04bc70c0c3bbba81d53c21074c46db9ff12638587d793ba841713a28b009afadadbe0492e3bd9bc448948d
+  checksum: 10/d85c8a86d6213885a8b0f22e8d18ad28147913510d0c89838567e9f7a244538945c292724ede3e5110b49a7ae71430600e181709cdbc37decdb4a0197d5394aa
   languageName: node
   linkType: hard
 

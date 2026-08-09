@@ -152,8 +152,8 @@ export class AIChatRuntime {
       case 'setReasoning':
         this.updateComposer({ reasoning: action.reasoning });
         return;
-      case 'setModel':
-        this.updateComposer({ modelId: action.modelId });
+      case 'setRouteTarget':
+        this.updateComposer({ routeTargetId: action.routeTargetId });
         return;
       case 'addAttachment':
         this.updateComposer({
@@ -388,7 +388,8 @@ export class AIChatRuntime {
         contextId: this.snapshot.composer.context.contextId,
         reasoning: options.reasoning ?? this.snapshot.composer.reasoning,
         toolsConfig: options.toolsConfig ?? this.snapshot.composer.toolsConfig,
-        modelId: options.modelId ?? this.snapshot.composer.modelId,
+        routeTargetId:
+          options.routeTargetId ?? this.snapshot.composer.routeTargetId,
         isRootSession: options.isRootSession,
         where: options.where,
         control: options.control,
