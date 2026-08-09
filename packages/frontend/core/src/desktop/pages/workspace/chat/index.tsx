@@ -65,10 +65,12 @@ function useAIRequestService() {
         graphqlService.gql,
         eventSourceService.eventSource,
         nbstoreService.realtime,
-        async () => {
-          await workspace.engine.doc.waitForSynced(workspace.id);
-          await workspace.engine.doc.waitForSynced('db$docProperties');
-          await workspace.engine.doc.waitForSynced();
+        async docIds => {
+          await Promise.all(
+            [workspace.id, 'db$docProperties', ...docIds].map(docId =>
+              workspace.engine.doc.waitForSynced(docId)
+            )
+          );
         }
       ),
     [graphqlService, eventSourceService, nbstoreService, workspace]

@@ -165,10 +165,12 @@ export const WorkspaceSideEffects = () => {
         graphqlService.gql,
         eventSourceService.eventSource,
         nbstoreService.realtime,
-        async () => {
-          await currentWorkspace.engine.doc.waitForSynced(currentWorkspace.id);
-          await currentWorkspace.engine.doc.waitForSynced('db$docProperties');
-          await currentWorkspace.engine.doc.waitForSynced();
+        async docIds => {
+          await Promise.all(
+            [currentWorkspace.id, 'db$docProperties', ...docIds].map(docId =>
+              currentWorkspace.engine.doc.waitForSynced(docId)
+            )
+          );
         }
       ),
       globalDialogService,

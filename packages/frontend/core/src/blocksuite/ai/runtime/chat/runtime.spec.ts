@@ -822,7 +822,7 @@ describe('AIChatRuntime', () => {
     });
     await runtime.dispatch({
       type: 'addFocusSelector',
-      item: { kind: 'tag', tagId: 'tag-2', docIds: [] },
+      item: { kind: 'tag', tagId: 'tag-2', docIds: ['doc-3'] },
     });
     await runtime.dispatch({
       type: 'removeFocusSelector',
@@ -832,6 +832,10 @@ describe('AIChatRuntime', () => {
     await runtime.dispatch({ type: 'send', input: 'question' });
 
     expect(request.waitForSelectedSources).toHaveBeenCalledTimes(1);
+    expect(request.waitForSelectedSources).toHaveBeenCalledWith([
+      'doc-2',
+      'doc-3',
+    ]);
     expect(request.executeAction).toHaveBeenCalledWith(
       'chat',
       expect.objectContaining({
@@ -841,7 +845,7 @@ describe('AIChatRuntime', () => {
     );
     expect(runtime.getSnapshot().composer.scopeSelection.items).toEqual([]);
     expect(runtime.getSnapshot().composer.focus.items).toEqual([
-      { kind: 'tag', tagId: 'tag-2', docIds: [] },
+      { kind: 'tag', tagId: 'tag-2', docIds: ['doc-3'] },
     ]);
   });
 

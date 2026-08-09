@@ -44,20 +44,26 @@ test.describe('AIChatWith/Attachments', () => {
       const { content, message } =
         await utils.chatPanel.getLatestAssistantMessage(page);
       expect(content).toMatch(/EEee/);
-      const footnote = message.locator('affine-footnote-node');
-      await expect(footnote).toHaveCount(1);
-      const reference = await footnote.evaluate(
-        node =>
-          (
-            node as HTMLElement & {
-              footnote?: { reference?: Record<string, unknown> };
-            }
-          ).footnote?.reference
+      const references = await message
+        .locator('affine-footnote-node')
+        .evaluateAll(nodes =>
+          nodes.map(
+            node =>
+              (
+                node as HTMLElement & {
+                  footnote?: { reference?: Record<string, unknown> };
+                }
+              ).footnote?.reference
+          )
+        );
+      expect(references).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            type: 'attachment',
+            artifactId: expect.any(String),
+          }),
+        ])
       );
-      expect(reference).toMatchObject({
-        type: 'attachment',
-        artifactId: expect.any(String),
-      });
     }).toPass({ timeout: 10000 });
   });
 

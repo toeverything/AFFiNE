@@ -345,15 +345,10 @@ async function waitForWorkspaceSynced(page: Page) {
     }
     const abort = AbortSignal.timeout(60_000);
     try {
-      await currentWorkspace.engine.doc.waitForSynced(
-        currentWorkspace.id,
-        abort
-      );
-      await currentWorkspace.engine.doc.waitForSynced(
-        'db$docProperties',
-        abort
-      );
-      await currentWorkspace.engine.doc.waitForSynced(undefined, abort);
+      await Promise.all([
+        currentWorkspace.engine.doc.waitForSynced(currentWorkspace.id, abort),
+        currentWorkspace.engine.doc.waitForSynced('db$docProperties', abort),
+      ]);
     } catch (error) {
       if (abort.aborted) {
         throw new Error(

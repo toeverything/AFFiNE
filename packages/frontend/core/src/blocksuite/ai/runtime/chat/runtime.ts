@@ -368,7 +368,23 @@ export class AIChatRuntime {
         .filter(selector => selector !== null);
       if (scopeSelectors.length || focusSelectors.length) {
         this.updateScopeSelection({ syncing: true, error: null });
-        await this.options.request.waitForSelectedSources();
+        const selectedDocIds = [
+          ...this.snapshot.composer.scopeSelection.items,
+          ...this.snapshot.composer.focus.items,
+        ].flatMap(item => {
+          switch (item.kind) {
+            case 'doc':
+              return [item.docId];
+            case 'tag':
+            case 'collection':
+              return item.docIds;
+            default:
+              return [];
+          }
+        });
+        await this.options.request.waitForSelectedSources([
+          ...new Set(selectedDocIds),
+        ]);
         if (seq !== this.requestSeq) return;
         this.updateScopeSelection({ syncing: false });
       }

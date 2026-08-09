@@ -56,17 +56,17 @@ export class AIRequestService {
 
   constructor(
     readonly client: CopilotClientType,
-    private readonly syncSelectedSources?: () => Promise<void>
+    private readonly syncSelectedSources?: (docIds: string[]) => Promise<void>
   ) {}
 
-  async waitForSelectedSources() {
+  async waitForSelectedSources(docIds: string[]) {
     if (!this.syncSelectedSources) {
       throw new Error('Selected sources cannot be synchronized');
     }
     let timeout: ReturnType<typeof setTimeout> | undefined;
     try {
       await Promise.race([
-        this.syncSelectedSources(),
+        this.syncSelectedSources(docIds),
         new Promise<never>((_, reject) => {
           timeout = setTimeout(
             () =>
@@ -362,7 +362,7 @@ export function createAIRequestService(
     eventSourceInitDict?: EventSourceInit
   ) => EventSource,
   realtime: Pick<NbstoreService['realtime'], 'request'>,
-  syncSelectedSources?: () => Promise<void>
+  syncSelectedSources?: (docIds: string[]) => Promise<void>
 ) {
   return new AIRequestService(
     new CopilotClient(gql, eventSource, realtime),
