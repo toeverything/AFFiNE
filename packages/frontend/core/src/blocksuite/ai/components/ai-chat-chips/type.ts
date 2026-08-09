@@ -83,5 +83,6 @@ export interface DocDisplayConfig {
     signal: Signal<{ id: string; name: string }[]>;
     cleanup: () => void;
   };
+  getCollectionTitle: (collectionId: string) => string;
   getCollectionPageIds: (collectionId: string) => string[];
 }

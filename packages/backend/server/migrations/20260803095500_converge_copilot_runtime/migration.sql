@@ -29,6 +29,7 @@ CREATE TABLE "workspace_artifacts" (
   "id" UUID NOT NULL,
   "workspace_id" VARCHAR NOT NULL,
   "content_hash" VARCHAR NOT NULL,
+  "display_name" VARCHAR,
   "canonical_media_type" VARCHAR NOT NULL,
   "size_bytes" BIGINT NOT NULL,
   "storage_scope" VARCHAR NOT NULL,
@@ -40,6 +41,8 @@ CREATE TABLE "workspace_artifacts" (
   "created_at" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "updated_at" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT "workspace_artifacts_pkey" PRIMARY KEY ("id"),
+  CONSTRAINT "workspace_artifacts_library_display_name_check"
+    CHECK (NOT "library_owned" OR NULLIF(BTRIM("display_name"), '') IS NOT NULL),
   CONSTRAINT "workspace_artifacts_workspace_id_fkey" FOREIGN KEY ("workspace_id") REFERENCES "workspaces"("id") ON DELETE CASCADE
 );
 

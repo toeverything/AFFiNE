@@ -48,6 +48,12 @@ export class CopilotWorkspaceArtifactType implements CopilotWorkspaceArtifact {
   contentHash!: string;
 
   @Field(() => String)
+  fileName!: string;
+
+  @Field(() => String)
+  embeddingStatus!: 'processing' | 'ready' | 'failed';
+
+  @Field(() => String)
   mediaType!: string;
 
   @Field(() => SafeIntResolver)

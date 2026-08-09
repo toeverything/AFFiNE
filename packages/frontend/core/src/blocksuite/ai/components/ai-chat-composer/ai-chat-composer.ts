@@ -338,7 +338,12 @@ export class AIChatComposer extends SignalWatcher(
     chip: ChatChip
   ): AIChatSnapshot['composer']['scopeSelection']['items'][number] | null => {
     if (isDocChip(chip)) {
-      return { kind: 'doc', docId: chip.docId, state: chip.state };
+      return {
+        kind: 'doc',
+        docId: chip.docId,
+        name: this.docDisplayConfig.getTitle(chip.docId),
+        state: chip.state,
+      };
     }
     if (isFileChip(chip)) {
       return {
@@ -353,6 +358,7 @@ export class AIChatComposer extends SignalWatcher(
       return {
         kind: 'tag',
         tagId: chip.tagId,
+        name: this.docDisplayConfig.getTagTitle(chip.tagId),
         docIds: this.docDisplayConfig.getTagPageIds(chip.tagId),
         state: chip.state,
       };
@@ -361,6 +367,7 @@ export class AIChatComposer extends SignalWatcher(
       return {
         kind: 'collection',
         collectionId: chip.collectionId,
+        name: this.docDisplayConfig.getCollectionTitle(chip.collectionId),
         docIds: this.docDisplayConfig.getCollectionPageIds(chip.collectionId),
         state: chip.state,
       };
@@ -486,7 +493,12 @@ export class AIChatComposer extends SignalWatcher(
     try {
       await this.runtime?.dispatch({
         type: 'addScopeSelector',
-        item: { kind: 'doc', docId: chip.docId, state: chip.state },
+        item: {
+          kind: 'doc',
+          docId: chip.docId,
+          name: this.docDisplayConfig.getTitle(chip.docId),
+          state: chip.state,
+        },
       });
       this.syncChipsFromRuntime();
     } catch (e) {
@@ -525,6 +537,7 @@ export class AIChatComposer extends SignalWatcher(
         item: {
           kind: 'tag',
           tagId: chip.tagId,
+          name: this.docDisplayConfig.getTagTitle(chip.tagId),
           docIds: this.docDisplayConfig.getTagPageIds(chip.tagId),
           state: chip.state,
         },
@@ -545,6 +558,7 @@ export class AIChatComposer extends SignalWatcher(
         item: {
           kind: 'collection',
           collectionId: chip.collectionId,
+          name: this.docDisplayConfig.getCollectionTitle(chip.collectionId),
           docIds: this.docDisplayConfig.getCollectionPageIds(chip.collectionId),
           state: chip.state,
         },

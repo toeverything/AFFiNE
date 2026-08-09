@@ -195,6 +195,11 @@ async fn workspace_candidates(
       AND projection.active_generation_token=chunk.generation_token
       AND projection.status='ready'
     WHERE chunk.workspace_id=$1 AND chunk.index_id=$2 AND chunk.source_kind=$3 AND source.deleted_at IS NULL
+      AND ($3<>'artifact' OR EXISTS(
+        SELECT 1 FROM workspace_artifacts artifact
+        WHERE artifact.workspace_id=chunk.workspace_id AND artifact.id=chunk.artifact_id
+          AND artifact.status='ready' AND artifact.library_owned
+      ))
     ORDER BY (source.source_key=ANY($5::text[])) DESC,chunk.embedding <=> $4::vector,
       source.source_key,chunk.chunk_index LIMIT $6"#,
   )

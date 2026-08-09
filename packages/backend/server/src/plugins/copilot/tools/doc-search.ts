@@ -30,16 +30,14 @@ export const buildDocumentSearch = (
       ? new Set(documentScope.allowedDocIds)
       : undefined;
     const effectiveDocIds = allowed
-      ? docIds?.length
-        ? docIds.filter(docId => allowed.has(docId))
-        : [...allowed]
+      ? [...allowed]
       : docIds?.length
         ? docIds
         : undefined;
-    if (allowed && effectiveDocIds?.length === 0) {
+    if (allowed?.size === 0) {
       return {
         scope_mode: 'selected' as const,
-        scope_doc_count: allowed.size,
+        scope_doc_count: 0,
         retrieval_mode: 'scoped',
         degraded_reason: undefined,
         hits: [],
@@ -124,7 +122,7 @@ export const createDocSearchTool = (
           .max(50)
           .optional()
           .describe(
-            'Restrict the search to these document ids. When the user pinned documents above the chat input, that scope is mandatory; supplied ids can only narrow it.'
+            'Restrict workspace search to these document ids. When the user selected documents above the chat input, the complete selected scope is always searched instead.'
           ),
         limit: z.number().int().min(1).max(20).optional(),
       })

@@ -1,6 +1,7 @@
 import { EventEmitter } from 'node:events';
 
 import type { DelegatedToolRequest } from '@affine/realtime';
+import type { PrismaClient } from '@prisma/client';
 import ava from 'ava';
 import { firstValueFrom } from 'rxjs';
 
@@ -16,6 +17,7 @@ import { CopilotController } from '../../plugins/copilot/controller';
 import { ConversationPolicy } from '../../plugins/copilot/conversation/policy';
 import {
   chatMessageFromTurn,
+  promptMessageFromTurn,
   type Turn,
   turnFromChatMessage,
 } from '../../plugins/copilot/core';
@@ -465,14 +467,14 @@ test('document tools enforce the user-selected hard scope', async t => {
   t.is(result.hits[0].doc_id, 'doc-1');
   t.is(result.hits[0].source.doc_id, 'doc-1');
 
-  // model cannot expand the pinned scope
+  // model-provided ids cannot replace the complete user-selected scope
   search = buildDocumentSearch(retrieval, options, {
     mode: 'selected',
     allowedDocIds: ['pinned-1'],
   });
   result = await search('query', ['other-1'], 10);
-  t.is(searchCalls.length, 0);
-  t.deepEqual(result.hits, []);
+  t.deepEqual(searchCalls.pop(), ['pinned-1']);
+  t.is(result.hits[0].doc_id, 'doc-1');
 
   // an empty array keeps the pinned scope
   search = buildDocumentSearch(retrieval, options, {
@@ -531,14 +533,7 @@ test('document tools enforce the user-selected hard scope', async t => {
         kind,
         requiredArtifactIds: retrievalScope.requiredArtifactIds,
       });
-      return [
-        {
-          artifactId: artifactScope.requiredArtifactIds[0],
-          content: 'artifact excerpt',
-          distance: 0.1,
-          chunk: 0,
-        },
-      ];
+      return [];
     },
     readSourceContent: async (
       _workspaceId: string,
@@ -571,11 +566,31 @@ test('document tools enforce the user-selected hard scope', async t => {
         }),
       }),
     } as unknown as PermissionAccess,
-    artifactEmbedding
+    artifactEmbedding,
+    {
+      workspaceArtifact: {
+        findMany: async () => [
+          {
+            id: artifactScope.requiredArtifactIds[0],
+            displayName: null,
+            canonicalMediaType: 'text/plain',
+          },
+        ],
+      },
+      aiMessageArtifact: {
+        findMany: async () => [
+          {
+            artifactId: artifactScope.requiredArtifactIds[0],
+            displayName: 'original-note.txt',
+          },
+        ],
+      },
+    } as unknown as PrismaClient
   );
   const artifactOptions = {
     user: 'user-1',
     workspace: 'workspace-1',
+    billingUnitId: 'message-1',
     retrievalScope: artifactScope,
   };
   const artifactSearch = createArtifactSearchTool(
@@ -590,8 +605,18 @@ test('document tools enforce the user-selected hard scope', async t => {
     kind: 'artifact',
     requiredArtifactIds: artifactScope.requiredArtifactIds,
   });
+  t.deepEqual(artifactCalls.shift(), {
+    kind: 'artifact',
+    sourceKey: artifactScope.requiredArtifactIds[0],
+    requiredArtifactIds: artifactScope.requiredArtifactIds,
+  });
   t.like(artifactSearchResult, {
-    hits: [{ source: { type: 'artifact' } }],
+    hits: [
+      {
+        excerpt: 'artifact body',
+        source: { type: 'artifact', name: 'original-note.txt' },
+      },
+    ],
   });
 
   const artifactRead = createArtifactReadTool(
@@ -603,7 +628,10 @@ test('document tools enforce the user-selected hard scope', async t => {
     {}
   );
   t.like(artifactReadResult, {
-    source: { artifact_id: artifactScope.requiredArtifactIds[0] },
+    source: {
+      artifact_id: artifactScope.requiredArtifactIds[0],
+      name: 'original-note.txt',
+    },
   });
   const deniedArtifactRead = await artifactRead.execute?.(
     { artifact_id: '6ba7b811-9dad-11d1-80b4-00c04fd430c8' },
@@ -721,13 +749,7 @@ test('chat session preserves prompt params, attachments, stash and revert semant
     {
       role: 'assistant',
       content: 'answer',
-      attachments: [
-        {
-          kind: 'file_handle',
-          fileHandle: 'file-1',
-          mimeType: 'application/pdf',
-        },
-      ],
+      attachments: undefined,
       params: { word: 'world' },
     },
   ]);
@@ -738,6 +760,13 @@ test('chat session preserves prompt params, attachments, stash and revert semant
     saved[0].map(item => item.content),
     ['answer']
   );
+  t.deepEqual(saved[0][0].attachments, [
+    {
+      kind: 'file_handle',
+      fileHandle: 'file-1',
+      mimeType: 'application/pdf',
+    },
+  ]);
 
   session.pushTurn(turn('session-1', 'user', 'retry'));
   session.pushTurn(turn('session-1', 'assistant', 'retry answer'));
@@ -802,6 +831,20 @@ test('chat message adapters preserve and canonicalize assistant render trace', t
     scopeSnapshot: undefined,
     streamObjects: converted.renderTrace,
   });
+
+  t.deepEqual(
+    promptMessageFromTurn({
+      ...converted,
+      attachments: [
+        {
+          attachment: 'data:text/plain;base64,dGV4dA==',
+          mimeType: 'text/plain',
+        },
+        { attachment: 'data:image/png;base64,aW1hZ2U=', mimeType: 'image/png' },
+      ],
+    }).attachments,
+    [{ attachment: 'data:image/png;base64,aW1hZ2U=', mimeType: 'image/png' }]
+  );
 });
 
 test('action output projection preserves public SSE and assistant-turn contracts', t => {

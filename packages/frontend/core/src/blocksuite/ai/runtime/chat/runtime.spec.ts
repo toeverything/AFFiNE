@@ -4,6 +4,7 @@
 import type { CopilotChatHistoryFragment } from '@affine/graphql';
 import { describe, expect, test, vi } from 'vitest';
 
+import { SelectedSourcesProcessingError } from '../../provider/error';
 import type { AIRequestService } from '../request';
 import { AIChatRuntime } from './runtime';
 import {
@@ -583,7 +584,7 @@ describe('AIChatRuntime', () => {
   });
 
   test('retry failure commits error status and keeps the retried assistant placeholder', async () => {
-    const error = new Error('retry failed');
+    const error = new SelectedSourcesProcessingError('retry failed');
     const request = createRequest({
       executeAction: vi.fn().mockRejectedValue(error),
     });
@@ -803,6 +804,10 @@ describe('AIChatRuntime', () => {
   test('selected sources stay local, synchronize before send, and clear after success', async () => {
     const request = createRequest();
     const runtime = createRuntime(request);
+    const file = new File(['attachment'], 'attachment.txt', {
+      type: 'text/plain',
+    });
+    const image = new File(['image'], 'image.png', { type: 'image/png' });
     await runtime.dispatch({ type: 'initialize' });
     await runtime.dispatch({
       type: 'addScopeSelector',
@@ -828,8 +833,16 @@ describe('AIChatRuntime', () => {
       type: 'removeFocusSelector',
       item: { kind: 'tag', tagId: 'tag-1', docIds: [] },
     });
+    await runtime.dispatch({
+      type: 'addScopeSelector',
+      item: { kind: 'file', file },
+    });
 
-    await runtime.dispatch({ type: 'send', input: 'question' });
+    await runtime.dispatch({
+      type: 'send',
+      input: 'question',
+      attachments: [image],
+    });
 
     expect(request.waitForSelectedSources).toHaveBeenCalledTimes(1);
     expect(request.waitForSelectedSources).toHaveBeenCalledWith([
@@ -841,6 +854,7 @@ describe('AIChatRuntime', () => {
       expect.objectContaining({
         scopeSelectors: [{ kind: 'document', id: 'doc-2' }],
         focusSelectors: [{ kind: 'tag', id: 'tag-2' }],
+        attachments: [file, image],
       })
     );
     expect(runtime.getSnapshot().composer.scopeSelection.items).toEqual([]);

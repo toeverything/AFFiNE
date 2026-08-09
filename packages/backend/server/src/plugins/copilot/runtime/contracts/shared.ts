@@ -42,6 +42,15 @@ export const ScopeSelectorSchema = z
   })
   .strict();
 
+export const ScopeSelectorsSchema = ScopeSelectorSchema.array().max(100);
+
+export const ClientScopeSelectorSchema = ScopeSelectorSchema.omit({
+  kind: true,
+  source: true,
+}).extend({
+  kind: z.enum(['document', 'tag', 'collection', 'favorite']),
+});
+
 export const RetrievalScopeSchema = z
   .object({
     mode: z.enum(['workspace', 'required']),
@@ -55,7 +64,7 @@ export const TurnScopeSnapshotSchema = z
   .object({
     version: z.number().int().positive(),
     resolvedAt: z.string(),
-    selectors: z.array(ScopeSelectorSchema),
+    selectors: ScopeSelectorsSchema,
     requiredDocIds: z.array(z.string()),
     requiredArtifactIds: z.array(z.string()),
     preferredSourceIds: z.array(z.string()),
@@ -65,7 +74,7 @@ export const TurnScopeSnapshotSchema = z
 
 export const SessionFocusSchema = z
   .object({
-    selectors: z.array(ScopeSelectorSchema),
+    selectors: ScopeSelectorsSchema,
   })
   .strict();
 

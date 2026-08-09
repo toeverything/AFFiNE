@@ -19,6 +19,18 @@ use types::*;
 use super::{RuntimeError, RuntimeResult, copilot::BackgroundEmbeddingProvider};
 use crate::runtime::object_storage::ObjectStorageService;
 
+fn extraction_file_name(mime_type: &str) -> String {
+  let extension = match mime_type {
+    "application/pdf" => "pdf",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document" => "docx",
+    "text/csv" => "csv",
+    "text/markdown" => "md",
+    "text/plain" => "txt",
+    _ => "bin",
+  };
+  format!("artifact.{extension}")
+}
+
 pub(super) struct EmbeddingService {
   pool: PgPool,
   object_storage: RwLock<Arc<ObjectStorageService>>,
@@ -81,10 +93,36 @@ impl EmbeddingService {
     workspace_id: &str,
     documents: &[crate::runtime::types::DocumentEmbeddingProjectionInput],
     reconcile: bool,
+    priority: i32,
   ) -> RuntimeResult<()> {
-    source::sync_documents(&self.pool, workspace_id, documents, reconcile).await?;
+    source::sync_documents(&self.pool, workspace_id, documents, reconcile, priority).await?;
     self.wake();
     Ok(())
+  }
+
+  pub(super) async fn wait_for_documents(
+    &self,
+    workspace_id: &str,
+    documents: &[crate::runtime::types::DocumentEmbeddingProjectionInput],
+    timeout: std::time::Duration,
+  ) -> RuntimeResult<()> {
+    if documents.is_empty() {
+      return Ok(());
+    }
+    let deadline = tokio::time::Instant::now() + timeout;
+    loop {
+      let (ready, failed) = source::document_readiness(&self.pool, workspace_id, documents).await?;
+      if failed > 0 {
+        return Err(RuntimeError::invalid_state("embedding_selected_sources_failed"));
+      }
+      if ready == documents.len() as i64 {
+        return Ok(());
+      }
+      if tokio::time::Instant::now() >= deadline {
+        return Err(RuntimeError::invalid_state("embedding_selected_sources_processing"));
+      }
+      tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+    }
   }
 
   pub(super) async fn reconcile_documents(&self, workspace_id: &str) -> RuntimeResult<()> {

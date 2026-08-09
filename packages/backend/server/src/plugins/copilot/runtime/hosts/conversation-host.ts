@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 
 import {
   CopilotMessageNotFound,
+  CopilotSelectedSourcesLimitExceeded,
   CopilotSessionNotFound,
   Mutex,
 } from '../../../../base';
@@ -10,6 +11,7 @@ import { CompatSubmissionStore } from '../../compat/submission-store';
 import { ConversationPolicy } from '../../conversation/policy';
 import {
   canonicalizeTurnTrace,
+  promptMessageFromTurn,
   type Turn,
   turnFromChatMessage,
 } from '../../core';
@@ -17,6 +19,7 @@ import type { PromptParams } from '../../providers/types';
 import { ChatSession, ChatSessionService } from '../../session';
 import { ChatQuerySchema } from '../../types';
 import {
+  ClientScopeSelectorSchema,
   type ScopeSelector,
   ScopeSelectorSchema,
   type SessionFocus,
@@ -53,8 +56,8 @@ export class ConversationHost {
     source: ScopeSelector['source']
   ): ScopeSelector[] {
     if (value === undefined) return [];
-    return ScopeSelectorSchema.omit({ source: true })
-      .array()
+    return ClientScopeSelectorSchema.array()
+      .max(100)
       .parse(value)
       .map(selector => ({ ...selector, source }));
   }
@@ -111,9 +114,10 @@ export class ConversationHost {
       })
     );
     const artifactSelectors = artifacts.map(
-      ({ artifactId }): ScopeSelector => ({
+      ({ artifactId, displayName }): ScopeSelector => ({
         kind: 'artifact',
         id: artifactId,
+        name: displayName,
         source: 'message',
       })
     );
@@ -125,15 +129,27 @@ export class ConversationHost {
     const preferredSourceIds =
       rawPreferred === undefined
         ? []
-        : ScopeSelectorSchema.shape.id.array().parse(rawPreferred);
-    const scopeSnapshot = TurnScopeSnapshotSchema.parse(
-      await this.runtime.compileTurnScope({
+        : ScopeSelectorSchema.shape.id.array().max(100).parse(rawPreferred);
+    let compiledScope: Awaited<
+      ReturnType<BackendRuntimeProvider['compileTurnScope']>
+    >;
+    try {
+      compiledScope = await this.runtime.compileTurnScope({
         workspaceId: session.config.workspaceId,
         userId: session.config.userId,
         selectors,
         preferredSourceIds,
-      })
-    );
+      });
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message.includes('scope_required_document_limit_exceeded')
+      ) {
+        throw new CopilotSelectedSourcesLimitExceeded();
+      }
+      throw error;
+    }
+    const scopeSnapshot = TurnScopeSnapshotSchema.parse(compiledScope);
     return { artifacts, focus, metadata, scopeSnapshot };
   }
 
@@ -353,7 +369,7 @@ export class ConversationHost {
     return {
       ...latestTurn.metadata,
       content: latestTurn.content,
-      attachments: latestTurn.attachments,
+      attachments: promptMessageFromTurn(latestTurn).attachments ?? [],
     };
   }
 

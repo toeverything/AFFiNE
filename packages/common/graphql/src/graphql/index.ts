@@ -1503,6 +1503,8 @@ export const getWorkspaceArtifactsQuery = {
           node {
             artifactId
             contentHash
+            fileName
+            embeddingStatus
             mediaType
             size
             createdAt

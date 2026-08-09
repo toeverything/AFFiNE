@@ -95,6 +95,7 @@ export type AIChatScopeSelector =
   | {
       kind: 'doc';
       docId: string;
+      name?: string;
       state?: string;
       createdAt?: number;
       tooltip?: string;
@@ -111,6 +112,7 @@ export type AIChatScopeSelector =
   | {
       kind: 'tag';
       tagId: string;
+      name?: string;
       docIds: string[];
       state?: string;
       createdAt?: number;
@@ -119,6 +121,7 @@ export type AIChatScopeSelector =
   | {
       kind: 'collection';
       collectionId: string;
+      name?: string;
       docIds: string[];
       state?: string;
       createdAt?: number;

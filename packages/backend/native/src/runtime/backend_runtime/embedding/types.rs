@@ -116,7 +116,9 @@ pub(super) fn validate_vectors(chunks: &[MaterializedChunk]) -> bool {
 pub(super) fn failure_class(code: &str) -> FailureClass {
   match code {
     "provider_unavailable" | "provider_unauthorized" | "provider_rate_limited" => FailureClass::RetryableIndex,
-    "object_not_found" | "object_changed" | "storage_unavailable" => FailureClass::RetryableProjection,
+    "object_not_found" | "object_changed" | "storage_unavailable" | "commit_failed" => {
+      FailureClass::RetryableProjection
+    }
     _ => FailureClass::Terminal,
   }
 }

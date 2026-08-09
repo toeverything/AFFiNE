@@ -4,7 +4,7 @@ export interface PersistedAttachmentFile {
   mediaType: string;
   size: number;
   createdAt: string;
-  status: 'uploaded';
+  status: 'processing' | 'ready' | 'failed';
 }
 
 export interface LocalAttachmentFile {

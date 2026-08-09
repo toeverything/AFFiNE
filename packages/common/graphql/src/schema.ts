@@ -759,6 +759,8 @@ export interface CopilotWorkspaceArtifact {
   artifactId: Scalars['String']['output'];
   contentHash: Scalars['String']['output'];
   createdAt: Scalars['DateTime']['output'];
+  embeddingStatus: Scalars['String']['output'];
+  fileName: Scalars['String']['output'];
   mediaType: Scalars['String']['output'];
   size: Scalars['SafeInt']['output'];
   workspaceId: Scalars['String']['output'];
@@ -1164,6 +1166,10 @@ export enum ErrorNames {
   COPILOT_PROVIDER_NOT_SUPPORTED = 'COPILOT_PROVIDER_NOT_SUPPORTED',
   COPILOT_PROVIDER_SIDE_ERROR = 'COPILOT_PROVIDER_SIDE_ERROR',
   COPILOT_QUOTA_EXCEEDED = 'COPILOT_QUOTA_EXCEEDED',
+  COPILOT_SELECTED_SOURCES_FAILED = 'COPILOT_SELECTED_SOURCES_FAILED',
+  COPILOT_SELECTED_SOURCES_LIMIT_EXCEEDED = 'COPILOT_SELECTED_SOURCES_LIMIT_EXCEEDED',
+  COPILOT_SELECTED_SOURCES_PROCESSING = 'COPILOT_SELECTED_SOURCES_PROCESSING',
+  COPILOT_SELECTED_SOURCES_UNAVAILABLE = 'COPILOT_SELECTED_SOURCES_UNAVAILABLE',
   COPILOT_SESSION_DELETED = 'COPILOT_SESSION_DELETED',
   COPILOT_SESSION_INVALID_INPUT = 'COPILOT_SESSION_INVALID_INPUT',
   COPILOT_SESSION_NOT_FOUND = 'COPILOT_SESSION_NOT_FOUND',
@@ -5776,6 +5782,8 @@ export type GetWorkspaceArtifactsQuery = {
             __typename?: 'CopilotWorkspaceArtifact';
             artifactId: string;
             contentHash: string;
+            fileName: string;
+            embeddingStatus: string;
             mediaType: string;
             size: number;
             createdAt: string;

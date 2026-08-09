@@ -108,7 +108,12 @@ export class ConversationInboxService {
         filename,
         attachmentBuffer
       );
-      attachments.push({ attachment, mimeType: attachmentMimeType });
+      attachments.push({
+        kind: 'url',
+        url: attachment,
+        mimeType: attachmentMimeType,
+        fileName: blob.filename,
+      });
     }
 
     return await this.submissions.create({

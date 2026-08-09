@@ -9,6 +9,8 @@ use sqlx::{PgPool, Row};
 use super::{RuntimeError, RuntimeResult, types};
 use crate::{runtime::storage_runtime::load_current_doc, userdata_acl};
 
+const REQUIRED_DOCUMENT_LIMIT: usize = 64;
+
 pub(super) struct ScopeCompiler {
   pool: PgPool,
 }
@@ -113,6 +115,9 @@ impl ScopeCompiler {
         }
         _ => return Err(RuntimeError::invalid_input("scope_selector_unsupported")),
       }
+    }
+    if required_docs.len() > REQUIRED_DOCUMENT_LIMIT {
+      return Err(RuntimeError::invalid_input("scope_required_document_limit_exceeded"));
     }
     Ok(snapshot(
       input.selectors,
@@ -234,6 +239,9 @@ fn snapshot(
 }
 
 fn validate_selectors(selectors: &[types::ScopeSelectorInput]) -> RuntimeResult<()> {
+  if selectors.len() > 100 {
+    return Err(RuntimeError::invalid_input("scope_selector_limit_exceeded"));
+  }
   for selector in selectors {
     if selector.id.is_empty()
       || selector.id.starts_with("userdata$")

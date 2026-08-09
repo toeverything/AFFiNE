@@ -1,9 +1,15 @@
 /**
  * @vitest-environment happy-dom
  */
+import { render } from 'lit';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { ChatMessageUser } from '../../chat-panel/message/user';
+import { AIChatErrorRenderer, AIErrorWrapper } from '../../messages/error';
+import {
+  SelectedSourcesLimitExceededError,
+  SelectedSourcesProcessingError,
+} from '../../provider/error';
 import { ChatContentStreamObjects } from '../ai-message-content/stream-objects';
 import { ToolFailedCard } from '../ai-tools/tool-failed-card';
 import { ToolResultCard } from '../ai-tools/tool-result-card';
@@ -163,6 +169,12 @@ describe('AIChatMessages scrolling', () => {
       role: 'user',
       content: 'new question',
       createdAt: new Date().toISOString(),
+      scopeSnapshot: {
+        resolvedAt: '2026-08-08T10:00:00.000Z',
+        selectors: [],
+        requiredDocIds: [],
+        requiredArtifactIds: [],
+      },
     };
     document.body.append(userMessageWithoutReceipt);
     await userMessageWithoutReceipt.updateComplete;
@@ -280,5 +292,47 @@ describe('AIChatMessages scrolling', () => {
       liveRead.querySelector('.tool-group-summary')?.textContent
     ).toContain('3 actions · 1 failed');
     liveRead.remove();
+
+    if (!customElements.get('ai-error-wrapper')) {
+      customElements.define('ai-error-wrapper', AIErrorWrapper);
+    }
+    const retry = vi.fn();
+    const errorContainer = document.createElement('div');
+    document.body.append(errorContainer);
+    render(
+      AIChatErrorRenderer(
+        new SelectedSourcesProcessingError('processing'),
+        null,
+        retry
+      ),
+      errorContainer
+    );
+    const error =
+      errorContainer.querySelector<AIErrorWrapper>('ai-error-wrapper');
+    await error?.updateComplete;
+    expect(error?.text).toContain('still processing');
+    error?.shadowRoot
+      ?.querySelector<HTMLElement>('[data-testid="ai-error-action-button"]')
+      ?.click();
+    expect(retry).toHaveBeenCalledOnce();
+
+    render(
+      AIChatErrorRenderer(new SelectedSourcesProcessingError('processing')),
+      errorContainer
+    );
+    const processingWithoutRetry =
+      errorContainer.querySelector<AIErrorWrapper>('ai-error-wrapper');
+    await processingWithoutRetry?.updateComplete;
+    expect(processingWithoutRetry?.showAction).toBe(false);
+
+    render(
+      AIChatErrorRenderer(new SelectedSourcesLimitExceededError('limit')),
+      errorContainer
+    );
+    const limitError =
+      errorContainer.querySelector<AIErrorWrapper>('ai-error-wrapper');
+    await limitError?.updateComplete;
+    expect(limitError?.showAction).toBe(false);
+    errorContainer.remove();
   });
 });

@@ -880,6 +880,30 @@ export class CopilotEmbeddingUnavailable extends UserFriendlyError {
     super('action_forbidden', 'copilot_embedding_unavailable', message);
   }
 }
+
+export class CopilotSelectedSourcesProcessing extends UserFriendlyError {
+  constructor(message?: string) {
+    super('internal_server_error', 'copilot_selected_sources_processing', message);
+  }
+}
+
+export class CopilotSelectedSourcesFailed extends UserFriendlyError {
+  constructor(message?: string) {
+    super('internal_server_error', 'copilot_selected_sources_failed', message);
+  }
+}
+
+export class CopilotSelectedSourcesUnavailable extends UserFriendlyError {
+  constructor(message?: string) {
+    super('action_forbidden', 'copilot_selected_sources_unavailable', message);
+  }
+}
+
+export class CopilotSelectedSourcesLimitExceeded extends UserFriendlyError {
+  constructor(message?: string) {
+    super('invalid_input', 'copilot_selected_sources_limit_exceeded', message);
+  }
+}
 @ObjectType()
 class CopilotFailedToAddWorkspaceArtifactDataType {
   @Field() message!: string
@@ -1263,6 +1287,10 @@ export enum ErrorNames {
   COPILOT_PROVIDER_SIDE_ERROR,
   COPILOT_EMBEDDING_DISABLED,
   COPILOT_EMBEDDING_UNAVAILABLE,
+  COPILOT_SELECTED_SOURCES_PROCESSING,
+  COPILOT_SELECTED_SOURCES_FAILED,
+  COPILOT_SELECTED_SOURCES_UNAVAILABLE,
+  COPILOT_SELECTED_SOURCES_LIMIT_EXCEEDED,
   COPILOT_FAILED_TO_ADD_WORKSPACE_ARTIFACT,
   COPILOT_TRANSCRIPTION_JOB_EXISTS,
   COPILOT_TRANSCRIPTION_JOB_NOT_FOUND,

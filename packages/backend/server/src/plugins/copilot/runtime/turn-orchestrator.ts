@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
+import { BackendRuntimeEmbeddingJob } from '../../../core/backend-runtime';
 import { type Turn } from '../core';
 import {
   type ModelConditions,
@@ -21,7 +22,8 @@ export class TurnOrchestrator {
     private readonly conversations: ConversationHost,
     private readonly runtime: CapabilityRuntime,
     private readonly imageResults: ImageResultHost,
-    private readonly turnPersistence: TurnPersistence
+    private readonly turnPersistence: TurnPersistence,
+    private readonly embeddings: BackendRuntimeEmbeddingJob
   ) {}
 
   private buildPromptParams(latestTurn?: Turn): Record<string, unknown> {
@@ -51,11 +53,17 @@ export class TurnOrchestrator {
       byokLeaseId,
     } = ChatQuerySchema.parse(query);
     const promptParams = this.buildPromptParams(prepared.latestTurn);
+    const scope = prepared.latestTurn?.scopeSnapshot?.retrieval;
+    if (scope?.mode === 'required' && scope.requiredDocIds.length) {
+      await this.embeddings.prepareSelectedDocuments(
+        prepared.session.config.workspaceId,
+        scope.requiredDocIds
+      );
+    }
     const finalMessage = prepared.session.finish({
       ...prepared.params,
       ...promptParams,
     });
-
     return {
       prepared,
       finalMessage,

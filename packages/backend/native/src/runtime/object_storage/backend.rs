@@ -157,7 +157,7 @@ pub(super) fn backends_from_config_source(
   let mut merged = default_object_storage_config();
   for path in source.paths() {
     if !path.exists() {
-      if source.exact() {
+      if source.required(&path) {
         return Err(RuntimeError::config(format!(
           "config file does not exist: {}",
           path.display()

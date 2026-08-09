@@ -1,7 +1,10 @@
+import { createHash } from 'node:crypto';
+
 import { PrismaClient, User, Workspace } from '@prisma/client';
 import ava, { TestFn } from 'ava';
 
 import { BackendRuntimeProvider } from '../../core/backend-runtime';
+import { WorkspaceBlobStorage } from '../../core/storage';
 import { CopilotWorkspaceConfigModel } from '../../models/copilot-workspace';
 import { UserModel } from '../../models/user';
 import { WorkspaceModel } from '../../models/workspace';
@@ -14,6 +17,7 @@ interface Context {
   copilotWorkspace: CopilotWorkspaceConfigModel;
   runtime: BackendRuntimeProvider;
   db: PrismaClient;
+  storage: WorkspaceBlobStorage;
 }
 
 const test = ava as TestFn<Context>;
@@ -25,6 +29,7 @@ test.before(async t => {
   t.context.copilotWorkspace = module.get(CopilotWorkspaceConfigModel);
   t.context.runtime = module.get(BackendRuntimeProvider);
   t.context.db = module.get(PrismaClient);
+  t.context.storage = module.get(WorkspaceBlobStorage);
   t.context.module = module;
 });
 
@@ -83,15 +88,54 @@ test('should manage workspace ignored documents', async t => {
 test('workspace artifacts deduplicate bytes and remain workspace isolated', async t => {
   const body = Buffer.from('shared artifact');
   const first = await t.context.runtime.putWorkspaceArtifact(
-    { workspaceId: workspace.id, mimeType: 'text/plain', libraryOwned: false },
+    {
+      workspaceId: workspace.id,
+      mimeType: 'text/plain',
+      displayName: 'first.txt',
+      libraryOwned: false,
+    },
     body
   );
   const repeated = await t.context.runtime.putWorkspaceArtifact(
-    { workspaceId: workspace.id, mimeType: 'text/plain', libraryOwned: true },
+    {
+      workspaceId: workspace.id,
+      mimeType: 'text/plain',
+      displayName: 'repeated.txt',
+      libraryOwned: true,
+    },
     body
   );
   t.is(repeated.id, first.id);
+  t.is(repeated.displayName, 'repeated.txt');
   t.true(repeated.libraryOwned);
+
+  const blobId = createHash('sha256').update(body).digest('base64url');
+  await t.context.storage.put(workspace.id, blobId, body);
+  await t.throwsAsync(
+    t.context.runtime.ensureWorkspaceBlobArtifact({
+      workspaceId: workspace.id,
+      blobId,
+      mimeType: 'text/plain',
+      libraryOwned: true,
+    }),
+    { message: 'artifact_library_display_name_required' }
+  );
+  await t.context.db.workspaceArtifact.update({
+    where: { id: first.id },
+    data: {
+      status: 'reserving',
+      reservationExpiresAt: new Date(Date.now() + 60_000),
+    },
+  });
+  const aliased = await t.context.runtime.ensureWorkspaceBlobArtifact({
+    workspaceId: workspace.id,
+    blobId,
+    mimeType: 'text/plain',
+    libraryOwned: false,
+  });
+  t.is(aliased.id, first.id);
+  t.is(aliased.status, 'ready');
+  t.is(aliased.storageScope, 'copilot');
 
   const otherWorkspace = await t.context.workspace.create(user.id);
   const isolated = await t.context.runtime.putWorkspaceArtifact(
@@ -142,9 +186,47 @@ test('workspace artifacts deduplicate bytes and remain workspace isolated', asyn
     first.id,
     false
   );
-  await t.context.db.workspaceArtifact.update({
-    where: { id: first.id },
-    data: { createdAt: new Date('2026-01-01T00:00:00.000Z') },
+  await t.context.db.$executeRaw`UPDATE workspace_artifacts
+    SET created_at='2026-01-01T00:00:00.000Z', updated_at='2026-01-01T00:00:00.000Z'
+    WHERE id=${first.id}::uuid`;
+  const reused = await t.context.runtime.putWorkspaceArtifact(
+    {
+      workspaceId: workspace.id,
+      mimeType: 'text/plain',
+      displayName: 'reused.txt',
+      libraryOwned: false,
+    },
+    body
+  );
+  t.is(reused.id, first.id);
+  t.is(await t.context.runtime.cleanupUnreferencedArtifacts(1), 0);
+  await t.context.db.$executeRaw`UPDATE workspace_artifacts
+    SET updated_at='2026-01-01T00:00:00.000Z'
+    WHERE id=${first.id}::uuid`;
+  const retainedSession = await t.context.db.aiSession.create({
+    data: {
+      userId: user.id,
+      workspaceId: workspace.id,
+      promptName: 'Chat With AFFiNE AI',
+    },
+  });
+  const retainedMessage = await t.context.db.aiSessionMessage.create({
+    data: {
+      sessionId: retainedSession.id,
+      role: 'user',
+      content: 'retained attachment',
+      artifacts: {
+        create: {
+          workspaceId: workspace.id,
+          artifactId: first.id,
+          role: 'attachment',
+        },
+      },
+    },
+  });
+  t.is(await t.context.runtime.cleanupUnreferencedArtifacts(1), 0);
+  await t.context.db.aiSessionMessage.delete({
+    where: { id: retainedMessage.id },
   });
   t.is(await t.context.runtime.cleanupUnreferencedArtifacts(1), 1);
   const [source] = await t.context.db.$queryRaw<
@@ -154,6 +236,29 @@ test('workspace artifacts deduplicate bytes and remain workspace isolated', asyn
   t.truthy(source?.deletedAt);
   t.is(
     await t.context.db.workspaceArtifact.count({ where: { id: first.id } }),
+    0
+  );
+
+  const deletingBody = Buffer.from('cleanup retry');
+  const deletingBlobId = createHash('sha256')
+    .update(deletingBody)
+    .digest('base64url');
+  await t.context.storage.put(workspace.id, deletingBlobId, deletingBody);
+  const deleting = await t.context.runtime.ensureWorkspaceBlobArtifact({
+    workspaceId: workspace.id,
+    blobId: deletingBlobId,
+    mimeType: 'text/plain',
+    libraryOwned: false,
+  });
+  t.is(deleting.storageScope, 'blob');
+  await t.context.db.workspaceArtifact.update({
+    where: { id: deleting.id },
+    data: { status: 'deleting' },
+  });
+  await t.context.storage.delete(workspace.id, deletingBlobId, true);
+  t.is(await t.context.runtime.cleanupUnreferencedArtifacts(1), 1);
+  t.is(
+    await t.context.db.workspaceArtifact.count({ where: { id: deleting.id } }),
     0
   );
 });

@@ -901,6 +901,134 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.ai.chat-panel.tool.canvas.failed"](): string;
     /**
+      * `Canvas content`
+      */
+    ["com.affine.ai.chat-panel.tool.canvas.content"](): string;
+    /**
+      * `Current document`
+      */
+    ["com.affine.ai.chat-panel.tool.live.current-document"](): string;
+    /**
+      * `Checking editor state`
+      */
+    ["com.affine.ai.chat-panel.tool.live.state-checking"](): string;
+    /**
+      * `Checked editor state`
+      */
+    ["com.affine.ai.chat-panel.tool.live.state-checked"](): string;
+    /**
+      * `Reading selection`
+      */
+    ["com.affine.ai.chat-panel.tool.live.selection-reading"](): string;
+    /**
+      * `Read selection`
+      */
+    ["com.affine.ai.chat-panel.tool.live.selection-read"](): string;
+    /**
+      * `Reading editor content`
+      */
+    ["com.affine.ai.chat-panel.tool.live.content-reading"](): string;
+    /**
+      * `Read editor content`
+      */
+    ["com.affine.ai.chat-panel.tool.live.content-read"](): string;
+    /**
+      * `Reading outline of "{{title}}"`
+      */
+    ["com.affine.ai.chat-panel.tool.live.outline-reading"](options: {
+        readonly title: string;
+    }): string;
+    /**
+      * `Read outline of "{{title}}"`
+      */
+    ["com.affine.ai.chat-panel.tool.live.outline-read"](options: {
+        readonly title: string;
+    }): string;
+    /**
+      * `Reading canvas of "{{title}}"`
+      */
+    ["com.affine.ai.chat-panel.tool.live.canvas-reading"](options: {
+        readonly title: string;
+    }): string;
+    /**
+      * `Read canvas of "{{title}}"`
+      */
+    ["com.affine.ai.chat-panel.tool.live.canvas-read"](options: {
+        readonly title: string;
+    }): string;
+    /**
+      * `This view is not available in the current editor mode`
+      */
+    ["com.affine.ai.chat-panel.tool.live.view-unavailable"](): string;
+    /**
+      * `Live editor read failed`
+      */
+    ["com.affine.ai.chat-panel.tool.live.failed"](): string;
+    /**
+      * `{{mode}} mode`
+      */
+    ["com.affine.ai.chat-panel.tool.live.mode"](options: {
+        readonly mode: string;
+    }): string;
+    /**
+      * `{{count}} blocks`
+      */
+    ["com.affine.ai.chat-panel.tool.live.blocks"](options: {
+        readonly count: string;
+    }): string;
+    /**
+      * `{{count}} elements`
+      */
+    ["com.affine.ai.chat-panel.tool.live.elements"](options: {
+        readonly count: string;
+    }): string;
+    /**
+      * `Document`
+      */
+    ["com.affine.ai.chat-panel.scope.document"](): string;
+    /**
+      * `Tag`
+      */
+    ["com.affine.ai.chat-panel.scope.tag"](): string;
+    /**
+      * `Collection`
+      */
+    ["com.affine.ai.chat-panel.scope.collection"](): string;
+    /**
+      * `Favorites`
+      */
+    ["com.affine.ai.chat-panel.scope.favorite"](): string;
+    /**
+      * `Attachment`
+      */
+    ["com.affine.ai.chat-panel.scope.artifact"](): string;
+    /**
+      * `{{count}} sources`
+      */
+    ["com.affine.ai.chat-panel.scope.sources"](options: {
+        readonly count: string;
+    }): string;
+    /**
+      * `Your selected sources are still processing. Try again shortly.`
+      */
+    ["com.affine.ai.error.selectedSourcesProcessing"](): string;
+    /**
+      * `Some selected sources could not be processed. Try again; if the problem continues, remove them and send a new message.`
+      */
+    ["com.affine.ai.error.selectedSourcesFailed"](): string;
+    /**
+      * `One or more selected sources are unavailable. Check the sources or workspace AI indexing settings, then retry.`
+      */
+    ["com.affine.ai.error.selectedSourcesUnavailable"](): string;
+    /**
+      * `Too many sources or too much content was selected. Select fewer sources and send a new message.`
+      */
+    ["com.affine.ai.error.selectedSourcesLimitExceeded"](): string;
+    /**
+      * `Retry`
+      */
+    ["com.affine.ai.error.retry"](): string;
+    /**
       * `Working… · {{count}} actions`
       */
     ["com.affine.ai.chat-panel.tool-group.running"](options: {
@@ -10109,6 +10237,22 @@ export function useAFFiNEI18N(): {
       * `Embedding feature not available, you may need to install pgvector extension to your database`
       */
     ["error.COPILOT_EMBEDDING_UNAVAILABLE"](): string;
+    /**
+      * `Selected sources are still processing. Try again shortly.`
+      */
+    ["error.COPILOT_SELECTED_SOURCES_PROCESSING"](): string;
+    /**
+      * `Selected sources could not be processed. Remove the failed source or try again.`
+      */
+    ["error.COPILOT_SELECTED_SOURCES_FAILED"](): string;
+    /**
+      * `Selected sources are not available for AI retrieval.`
+      */
+    ["error.COPILOT_SELECTED_SOURCES_UNAVAILABLE"](): string;
+    /**
+      * `Too many or too much content was selected. Select fewer sources and try again.`
+      */
+    ["error.COPILOT_SELECTED_SOURCES_LIMIT_EXCEEDED"](): string;
     /**
       * `Failed to add workspace artifact: {{message}}`
       */

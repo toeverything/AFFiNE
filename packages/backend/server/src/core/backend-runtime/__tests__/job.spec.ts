@@ -9,6 +9,12 @@ import {
   createTestingModule,
   type TestingModule,
 } from '../../../__tests__/utils';
+import {
+  CopilotSelectedSourcesFailed,
+  CopilotSelectedSourcesLimitExceeded,
+  CopilotSelectedSourcesProcessing,
+  CopilotSelectedSourcesUnavailable,
+} from '../../../base';
 import { Models } from '../../../models';
 import { BackendRuntimeModule, BackendRuntimeProvider } from '../index';
 import {
@@ -148,6 +154,69 @@ test('backend-runtime jobs ingest documents and clean runtime state', async t =>
     enabled: true,
     reconcileDocuments: true,
   });
+
+  await t.context.embeddingJob.prepareSelectedDocuments('workspace-1', [
+    'doc-1',
+    'doc-1',
+  ]);
+  t.like(t.context.runtime.syncEmbeddingState.thirdCall.args[0], {
+    workspaceId: 'workspace-1',
+    enabled: true,
+    reconcileDocuments: false,
+    priority: 1000,
+    waitForReadyMs: 90_000,
+  });
+  t.is(
+    t.context.runtime.syncEmbeddingState.thirdCall.args[0].documents.length,
+    1
+  );
+
+  for (const [nativeError, expectedError] of [
+    ['embedding_selected_sources_processing', CopilotSelectedSourcesProcessing],
+    ['embedding_selected_sources_failed', CopilotSelectedSourcesFailed],
+    [
+      'embedding_selected_sources_unavailable',
+      CopilotSelectedSourcesUnavailable,
+    ],
+  ] as const) {
+    t.context.runtime.syncEmbeddingState.rejects(new Error(nativeError));
+    const error = await t.throwsAsync(() =>
+      t.context.embeddingJob.prepareSelectedDocuments('workspace-1', ['doc-1'])
+    );
+    t.true(error instanceof expectedError);
+  }
+  t.context.runtime.syncEmbeddingState.resolves(undefined);
+
+  await t.throwsAsync(
+    () =>
+      t.context.embeddingJob.prepareSelectedDocuments(
+        'workspace-1',
+        Array.from({ length: 65 }, (_, index) => `doc-${index}`)
+      ),
+    { instanceOf: CopilotSelectedSourcesLimitExceeded }
+  );
+  t.context.getSnapshot.resolves(null);
+  await t.throwsAsync(
+    () =>
+      t.context.embeddingJob.prepareSelectedDocuments('workspace-1', [
+        'missing-doc',
+      ]),
+    { instanceOf: CopilotSelectedSourcesUnavailable }
+  );
+  const callsBeforeMissingBackgroundDoc =
+    t.context.runtime.syncEmbeddingState.callCount;
+  await t.context.embeddingJob.syncDocument({
+    workspaceId: 'workspace-1',
+    docId: 'missing-doc',
+  });
+  t.is(
+    t.context.runtime.syncEmbeddingState.callCount,
+    callsBeforeMissingBackgroundDoc + 1
+  );
+  t.deepEqual(
+    t.context.runtime.syncEmbeddingState.lastCall.args[0].documents,
+    []
+  );
 
   t.context.runtime.cleanupExpiredRuntimeStates.onCall(0).resolves(1000);
   t.context.runtime.cleanupExpiredRuntimeStates.onCall(1).resolves(2);

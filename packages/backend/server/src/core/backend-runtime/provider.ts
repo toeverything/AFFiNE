@@ -402,10 +402,16 @@ export class BackendRuntimeProvider
   async setArtifactLibraryOwned(
     workspaceId: string,
     artifactId: string,
-    libraryOwned: boolean
+    libraryOwned: boolean,
+    displayName?: string
   ) {
     return await this.measured('setArtifactLibraryOwned', runtime =>
-      runtime.setArtifactLibraryOwned(workspaceId, artifactId, libraryOwned)
+      runtime.setArtifactLibraryOwned(
+        workspaceId,
+        artifactId,
+        libraryOwned,
+        displayName
+      )
     );
   }
 

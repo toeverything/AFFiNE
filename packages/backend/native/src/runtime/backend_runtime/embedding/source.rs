@@ -1,7 +1,7 @@
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use super::{RuntimeError, RuntimeResult};
+use super::{RuntimeError, RuntimeResult, extraction_file_name};
 use crate::runtime::{
   storage_runtime::load_current_doc,
   types::{DocumentEmbeddingProjectionInput, RuntimeWorkspaceArtifact},
@@ -15,6 +15,7 @@ pub(super) async fn sync_documents(
   workspace_id: &str,
   documents: &[DocumentEmbeddingProjectionInput],
   reconcile: bool,
+  priority: i32,
 ) -> RuntimeResult<()> {
   let live_doc_ids = if reconcile {
     Some(load_live_doc_ids(pool, workspace_id).await?)
@@ -64,7 +65,7 @@ pub(super) async fn sync_documents(
     .fetch_one(&mut *transaction)
     .await
     .map_err(|error| RuntimeError::database("upsert document embedding source failed", error))?;
-    queue_active_projection(&mut transaction, workspace_id, source_id, 100).await?;
+    queue_active_projection(&mut transaction, workspace_id, source_id, priority).await?;
   }
   if let Some(live_doc_ids) = live_doc_ids {
     reconcile_document_sources(&mut transaction, workspace_id, &live_doc_ids).await?;
@@ -74,6 +75,43 @@ pub(super) async fn sync_documents(
     .await
     .map_err(|error| RuntimeError::database("sync document sources commit failed", error))?;
   Ok(())
+}
+
+pub(super) async fn document_readiness(
+  pool: &PgPool,
+  workspace_id: &str,
+  documents: &[DocumentEmbeddingProjectionInput],
+) -> RuntimeResult<(i64, i64)> {
+  let doc_ids = documents
+    .iter()
+    .map(|document| document.doc_id.as_str())
+    .collect::<Vec<_>>();
+  let revisions = documents
+    .iter()
+    .map(|document| document.revision.as_str())
+    .collect::<Vec<_>>();
+  sqlx::query_as(
+    r#"WITH requested AS(
+      SELECT * FROM unnest($2::text[],$3::text[]) AS item(doc_id,revision)
+    ) SELECT
+      count(*) FILTER(WHERE projection.status='ready'
+        AND projection.applied_content_revision=requested.revision)::bigint AS ready,
+      count(*) FILTER(WHERE projection.status='failed')::bigint AS failed
+    FROM requested
+    LEFT JOIN embedding_sources source ON source.workspace_id=$1
+      AND source.source_kind='document' AND source.source_key=requested.doc_id
+      AND source.content_revision=requested.revision AND source.deleted_at IS NULL
+    LEFT JOIN embedding_workspace_states state ON state.workspace_id=$1
+      AND state.runtime_state='active'
+    LEFT JOIN embedding_projections projection ON projection.source_id=source.id
+      AND projection.index_id=state.active_index_id"#,
+  )
+  .bind(workspace_id)
+  .bind(doc_ids)
+  .bind(revisions)
+  .fetch_one(pool)
+  .await
+  .map_err(|error| RuntimeError::database("load document embedding readiness failed", error))
 }
 
 pub(super) async fn reconcile_documents(pool: &PgPool, workspace_id: &str) -> RuntimeResult<()> {
@@ -148,17 +186,19 @@ pub(super) async fn register_artifact(pool: &PgPool, artifact: &RuntimeWorkspace
     .await
     .map_err(|error| RuntimeError::database("register artifact source transaction failed", error))?;
   let descriptor_revision = format!("{}:{}", artifact.canonical_media_type, artifact.size);
+  let file_name = extraction_file_name(&artifact.canonical_media_type);
   let source_id = sqlx::query_scalar::<_, Uuid>(
     r#"INSERT INTO embedding_sources(
       id,workspace_id,source_kind,source_key,content_revision,descriptor_revision,
-      recipe_revision,storage_scope,storage_key,mime_type,size_bytes,deleted_at
-    ) VALUES($1,$2,'artifact',$3,$4,$5,$6,$7,$8,$9,$10,NULL)
+      recipe_revision,storage_scope,storage_key,file_name,mime_type,size_bytes,deleted_at
+    ) VALUES($1,$2,'artifact',$3,$4,$5,$6,$7,$8,$9,$10,$11,NULL)
     ON CONFLICT(workspace_id,source_kind,source_key) DO UPDATE SET
       content_revision=excluded.content_revision,
       descriptor_revision=excluded.descriptor_revision,
       recipe_revision=excluded.recipe_revision,
       storage_scope=excluded.storage_scope,
       storage_key=excluded.storage_key,
+      file_name=excluded.file_name,
       mime_type=excluded.mime_type,
       size_bytes=excluded.size_bytes,
       deleted_at=NULL,
@@ -173,6 +213,7 @@ pub(super) async fn register_artifact(pool: &PgPool, artifact: &RuntimeWorkspace
   .bind(ARTIFACT_RECIPE)
   .bind(&artifact.storage_scope)
   .bind(&artifact.storage_key)
+  .bind(file_name)
   .bind(&artifact.canonical_media_type)
   .bind(artifact.size)
   .fetch_one(&mut *transaction)

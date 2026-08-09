@@ -151,15 +151,12 @@ export class DocumentRetrievalService {
       }
     }
     if (signal?.aborted) throw new Error('SEARCH_ABORTED');
-    if (lexicalResult === null && vector === null) {
-      throw new Error('SEARCH_UNAVAILABLE');
-    }
     const metas = await this.models.doc.findMetas(
       (vector ?? []).map(candidate => ({
         workspaceId,
         docId: candidate.docId,
       })),
-      { select: { title: true, updatedAt: true } }
+      { select: { title: true } }
     );
     const metaByDoc = new Map(
       metas
@@ -197,7 +194,6 @@ export class DocumentRetrievalService {
           blockId: hit.blockId,
           elementId: hit.elementId,
           frameId: hit.frameId,
-          updatedAt: meta?.updatedAt,
           score: 0,
           unitId: hit.unitId,
         },
@@ -205,6 +201,9 @@ export class DocumentRetrievalService {
         index + 1
       );
     });
+    if (lexicalResult === null && vector === null) {
+      throw new Error('SEARCH_UNAVAILABLE');
+    }
 
     const perDoc = new Map<string, number>();
     const hits = [...candidates.values()]
@@ -220,8 +219,9 @@ export class DocumentRetrievalService {
       })
       .slice(0, limit)
       .map(({ channels: _, ...hit }) => hit);
+    const hasLexical = lexicalResult !== null;
     const retrievalMode =
-      lexicalResult && vector ? 'hybrid' : lexicalResult ? 'lexical' : 'vector';
+      hasLexical && vector ? 'hybrid' : hasLexical ? 'lexical' : 'vector';
     return {
       retrievalMode,
       degradedReason:

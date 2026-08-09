@@ -1,3 +1,4 @@
+import { I18n } from '@affine/i18n';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
 import { ShadowlessElement } from '@blocksuite/affine/std';
 import { css, html, nothing } from 'lit';
@@ -50,9 +51,14 @@ export class ChatMessageUser extends WithDisposable(ShadowlessElement) {
   renderContent() {
     const { item } = this;
     const receipt = item.scopeSnapshot;
+    const showReceipt = receipt && receipt.selectors.length > 0;
     const resolvedCount = receipt
       ? receipt.requiredDocIds.length + receipt.requiredArtifactIds.length
       : 0;
+    const selectorNames = receipt?.selectors.map(selector => {
+      if (selector.name) return selector.name;
+      return I18n[`com.affine.ai.chat-panel.scope.${selector.kind}`]();
+    });
 
     return html`
       ${item.attachments
@@ -68,15 +74,13 @@ export class ChatMessageUser extends WithDisposable(ShadowlessElement) {
       >
         <chat-content-pure-text .text=${item.content}></chat-content-pure-text>
       </div>
-      ${receipt
+      ${showReceipt
         ? html`<div class="scope-receipt" data-testid="chat-scope-receipt">
-            ${receipt.selectors
-              .map(
-                selector => selector.name ?? `${selector.kind}:${selector.id}`
-              )
-              .join(', ')}
-            · ${resolvedCount} sources ·
-            ${new Date(receipt.resolvedAt).toLocaleString()}
+            ${selectorNames?.join(', ')} ·
+            ${I18n['com.affine.ai.chat-panel.scope.sources']({
+              count: String(resolvedCount),
+            })}
+            · ${new Date(receipt.resolvedAt).toLocaleString()}
           </div>`
         : nothing}
     `;

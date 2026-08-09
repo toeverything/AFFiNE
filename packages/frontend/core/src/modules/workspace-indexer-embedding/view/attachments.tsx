@@ -79,9 +79,15 @@ const PersistedItem: React.FC<{ attachment: PersistedAttachmentFile }> = ({
   return (
     <div
       className={attachmentTitle}
-      data-testid="workspace-embedding-setting-attachment-persisted-item"
+      data-testid={`workspace-embedding-setting-attachment-${attachment.status}-item`}
     >
-      <Icon style={{ marginRight: 4 }} />
+      {attachment.status === 'processing' ? (
+        <Loading />
+      ) : attachment.status === 'failed' ? (
+        <WarningIcon />
+      ) : (
+        <Icon style={{ marginRight: 4 }} />
+      )}
       <span className="attachment-title-text">{attachment.fileName}</span>
     </div>
   );

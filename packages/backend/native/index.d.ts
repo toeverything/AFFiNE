@@ -73,7 +73,7 @@ export declare class BackendRuntime {
   putWorkspaceArtifact(input: PutWorkspaceArtifactInput, body: Buffer): Promise<RuntimeWorkspaceArtifact>
   ensureWorkspaceBlobArtifact(input: EnsureWorkspaceBlobArtifactInput): Promise<RuntimeWorkspaceArtifact>
   cleanupUnreferencedArtifacts(limit: number): Promise<number>
-  setArtifactLibraryOwned(workspaceId: string, artifactId: string, libraryOwned: boolean): Promise<RuntimeWorkspaceArtifact>
+  setArtifactLibraryOwned(workspaceId: string, artifactId: string, libraryOwned: boolean, displayName?: string | undefined | null): Promise<RuntimeWorkspaceArtifact>
   compileTurnScope(input: CompileScopeInput): Promise<RuntimeTurnScopeSnapshot>
   readEmbeddingSourceContent(input: ReadEmbeddingSourceContentInput): Promise<RuntimeEmbeddingSourceContent>
   matchEmbeddingCandidates(input: MatchEmbeddingCandidatesInput): Promise<Array<RuntimeEmbeddingCandidate>>
@@ -555,6 +555,7 @@ export interface EnsureWorkspaceBlobArtifactInput {
   workspaceId: string
   blobId: string
   mimeType: string
+  displayName?: string
   libraryOwned?: boolean
 }
 
@@ -1047,6 +1048,7 @@ export interface PublicDocMetaInput {
 export interface PutWorkspaceArtifactInput {
   workspaceId: string
   mimeType: string
+  displayName?: string
   libraryOwned?: boolean
 }
 
@@ -1452,6 +1454,7 @@ export interface RuntimeWorkspaceArtifact {
   id: string
   workspaceId: string
   contentHash: string
+  displayName?: string
   canonicalMediaType: string
   size: bigint | number
   storageScope: string
@@ -1588,6 +1591,8 @@ export interface SyncEmbeddingStateInput {
   enabled: boolean
   documents?: Array<DocumentEmbeddingProjectionInput>
   reconcileDocuments?: boolean
+  priority?: number
+  waitForReadyMs?: number
 }
 
 export interface ToolContract {

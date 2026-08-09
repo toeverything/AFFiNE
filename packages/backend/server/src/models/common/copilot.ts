@@ -51,6 +51,8 @@ export type CopilotWorkspaceArtifact = {
   workspaceId: string;
   artifactId: string;
   contentHash: string;
+  fileName: string;
+  embeddingStatus: 'processing' | 'ready' | 'failed';
   mediaType: string;
   size: number;
   createdAt: Date;

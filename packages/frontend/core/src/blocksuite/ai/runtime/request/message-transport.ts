@@ -99,12 +99,18 @@ async function createMessage({
     options.attachments = stringAttachments;
     options.blobs = (
       await Promise.all(
-        blobs.map(resizeImage).map(async blob => {
-          const file = await blob;
+        blobs.map(async blob => {
+          const file = blob.type.startsWith('image/')
+            ? await resizeImage(blob)
+            : blob;
           if (!file) return null;
-          return new File([file], sessionId, {
-            type: file.type,
-          });
+          return new File(
+            [file],
+            blob instanceof File ? blob.name : sessionId,
+            {
+              type: file.type,
+            }
+          );
         })
       )
     ).filter(Boolean) as File[];

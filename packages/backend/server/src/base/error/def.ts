@@ -798,6 +798,22 @@ export const USER_FRIENDLY_ERRORS = {
     type: 'action_forbidden',
     message: `Embedding feature not available, you may need to install pgvector extension to your database`,
   },
+  copilot_selected_sources_processing: {
+    type: 'internal_server_error',
+    message: `Selected sources are still processing. Try again shortly.`,
+  },
+  copilot_selected_sources_failed: {
+    type: 'internal_server_error',
+    message: `Selected sources could not be processed. Remove the failed source or try again.`,
+  },
+  copilot_selected_sources_unavailable: {
+    type: 'action_forbidden',
+    message: `Selected sources are not available for AI retrieval.`,
+  },
+  copilot_selected_sources_limit_exceeded: {
+    type: 'invalid_input',
+    message: `Too many or too much content was selected. Select fewer sources and try again.`,
+  },
   copilot_failed_to_add_workspace_artifact: {
     type: 'internal_server_error',
     args: { message: 'string' },

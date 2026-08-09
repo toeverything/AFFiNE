@@ -4,7 +4,7 @@ use doc_extractor::Doc;
 use sqlx::{FromRow, PgPool};
 use uuid::Uuid;
 
-use super::{RuntimeError, RuntimeResult};
+use super::{RuntimeError, RuntimeResult, extraction_file_name};
 use crate::runtime::{
   object_storage::{
     ObjectStorageService,
@@ -39,11 +39,17 @@ pub(super) async fn read_source_content(
     LEFT JOIN embedding_projections projection ON projection.source_id=source.id
       AND projection.index_id=state.active_index_id AND projection.status='ready'
     WHERE source.workspace_id=$1 AND source.source_kind=$2 AND source.source_key=$3
-      AND source.deleted_at IS NULL"#,
+      AND source.deleted_at IS NULL
+      AND ($4<>'workspace' OR $2<>'artifact' OR EXISTS(
+        SELECT 1 FROM workspace_artifacts artifact
+        WHERE artifact.workspace_id=source.workspace_id AND artifact.id::text=source.source_key
+          AND artifact.status='ready' AND artifact.library_owned
+      ))"#,
   )
   .bind(&input.workspace_id)
   .bind(&input.source_kind)
   .bind(&input.source_key)
+  .bind(&input.retrieval.mode)
   .fetch_optional(pool)
   .await
   .map_err(|error| RuntimeError::database("load embedding source content failed", error))?
@@ -129,10 +135,11 @@ async fn extract_artifact(storage: Arc<ObjectStorageService>, source: &SourceRow
     .get_limited(&locator, MAX_INPUT_BYTES)
     .await?
     .ok_or_else(|| RuntimeError::invalid_state("artifact_object_missing"))?;
-  let mut file_name = source.file_name.clone().unwrap_or_else(|| "artifact".to_string());
-  if !file_name.contains('.') && source.mime_type.as_deref() == Some("text/markdown") {
-    file_name.push_str(".md");
-  }
+  let file_name = source
+    .file_name
+    .clone()
+    .or_else(|| source.mime_type.as_deref().map(extraction_file_name))
+    .unwrap_or_else(|| "artifact".to_string());
   let body = object.body;
   let parsed = tokio::time::timeout(
     Duration::from_secs(120),

@@ -59,28 +59,31 @@ function frontendReadPreview(result: unknown) {
   const items = [
     value.outline,
     value.selection_neighborhood,
+    value.items,
     value.nodes,
     value.blocks,
     value.elements,
     viewport?.elements,
-  ].find(Array.isArray);
+  ].find((item): item is unknown[] => Array.isArray(item) && item.length > 0);
   const preview = items
     ?.map(projectedText)
     .filter((text): text is string => !!text)
     .slice(0, 4)
     .join('\n');
   if (preview) return preview;
-  return typeof value.mode === 'string' ? `${value.mode} mode` : undefined;
+  return typeof value.mode === 'string'
+    ? I18n['com.affine.ai.chat-panel.tool.live.mode']({ mode: value.mode })
+    : undefined;
 }
 
 function frontendReadError(result: Record<string, unknown>) {
   const error = object(result.error);
   if (error?.code === 'VIEW_NOT_AVAILABLE') {
-    return 'This view is not available in the current editor mode';
+    return I18n['com.affine.ai.chat-panel.tool.live.view-unavailable']();
   }
   if (typeof error?.message === 'string') return error.message;
   if (typeof result.message === 'string') return result.message;
-  return 'Live editor read failed';
+  return I18n['com.affine.ai.chat-panel.tool.live.failed']();
 }
 
 function canvasReadPreview(result: Record<string, unknown>) {
@@ -89,10 +92,18 @@ function canvasReadPreview(result: Record<string, unknown>) {
   const counts = object(result.counts);
   const parts: string[] = [];
   if (typeof counts?.blocks === 'number') {
-    parts.push(`${counts.blocks} blocks`);
+    parts.push(
+      I18n['com.affine.ai.chat-panel.tool.live.blocks']({
+        count: String(counts.blocks),
+      })
+    );
   }
   if (typeof counts?.elements === 'number') {
-    parts.push(`${counts.elements} elements`);
+    parts.push(
+      I18n['com.affine.ai.chat-panel.tool.live.elements']({
+        count: String(counts.elements),
+      })
+    );
   }
   return parts.join(' · ') || undefined;
 }
@@ -294,17 +305,39 @@ export class ChatContentStreamObjects extends WithDisposable(
     ) {
       return nothing;
     }
-    const title = this.host?.std.store.meta?.title || 'Current document';
+    const title =
+      this.host?.std.store.meta?.title ||
+      I18n['com.affine.ai.chat-panel.tool.live.current-document']();
+    const result =
+      streamObject.type === 'tool-result'
+        ? object(streamObject.result)
+        : undefined;
+    const isCanvasSnapshot =
+      streamObject.toolName === 'frontend_snapshot_document' &&
+      (!!object(result?.viewport) ||
+        object(streamObject.args)?.view === 'viewport');
     const labels = {
       frontend_get_editor_state: [
-        'Checking editor state',
-        'Checked editor state',
+        I18n['com.affine.ai.chat-panel.tool.live.state-checking'](),
+        I18n['com.affine.ai.chat-panel.tool.live.state-checked'](),
       ],
-      frontend_read_selection: ['Reading selection', 'Read selection'],
-      frontend_read_nodes: ['Reading editor content', 'Read editor content'],
+      frontend_read_selection: [
+        I18n['com.affine.ai.chat-panel.tool.live.selection-reading'](),
+        I18n['com.affine.ai.chat-panel.tool.live.selection-read'](),
+      ],
+      frontend_read_nodes: [
+        I18n['com.affine.ai.chat-panel.tool.live.content-reading'](),
+        I18n['com.affine.ai.chat-panel.tool.live.content-read'](),
+      ],
       frontend_snapshot_document: [
-        `Reading outline of "${title}"`,
-        `Read outline of "${title}"`,
+        isCanvasSnapshot
+          ? I18n['com.affine.ai.chat-panel.tool.live.canvas-reading']({ title })
+          : I18n['com.affine.ai.chat-panel.tool.live.outline-reading']({
+              title,
+            }),
+        isCanvasSnapshot
+          ? I18n['com.affine.ai.chat-panel.tool.live.canvas-read']({ title })
+          : I18n['com.affine.ai.chat-panel.tool.live.outline-read']({ title }),
       ],
     } as const;
     const [callLabel, resultLabel] =
@@ -316,10 +349,11 @@ export class ChatContentStreamObjects extends WithDisposable(
         .width=${this.width}
       ></tool-call-card>`;
     }
-    const result = object(streamObject.result);
     if (!result || result.error || result.type === 'error') {
       return html`<tool-call-failed
-        .name=${result ? frontendReadError(result) : 'Live editor read failed'}
+        .name=${result
+          ? frontendReadError(result)
+          : I18n['com.affine.ai.chat-panel.tool.live.failed']()}
         .icon=${ViewIcon()}
       ></tool-call-failed>`;
     }
@@ -375,7 +409,10 @@ export class ChatContentStreamObjects extends WithDisposable(
       .width=${this.width}
       .results=${[
         {
-          title: typeof title === 'string' ? title : 'Canvas content',
+          title:
+            typeof title === 'string'
+              ? title
+              : I18n['com.affine.ai.chat-panel.tool.canvas.content'](),
           icon: EdgelessIcon(),
           content: canvasReadPreview(result),
         },

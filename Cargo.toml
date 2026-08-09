@@ -16,7 +16,7 @@ resolver = "3"
   [workspace.dependencies]
   aes-gcm = "0.10"
   affine_common = { path = "./packages/common/native" }
-  affine_doc_loader = "0.1.6"
+  affine_doc_loader = "0.1.7"
   affine_importer = "0.1.2"
   affine_nbstore = { path = "./packages/frontend/native/nbstore" }
   affine_preview = { version = "0.1.0", default-features = false }

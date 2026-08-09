@@ -78,6 +78,8 @@ pub struct SyncEmbeddingStateInput {
   pub enabled: bool,
   pub documents: Option<Vec<DocumentEmbeddingProjectionInput>>,
   pub reconcile_documents: Option<bool>,
+  pub priority: Option<i32>,
+  pub wait_for_ready_ms: Option<u32>,
 }
 
 #[napi_derive::napi(object)]
@@ -112,6 +114,7 @@ pub struct RuntimeEmbeddingQueueCounts {
 pub struct PutWorkspaceArtifactInput {
   pub workspace_id: String,
   pub mime_type: String,
+  pub display_name: Option<String>,
   pub library_owned: Option<bool>,
 }
 
@@ -120,6 +123,7 @@ pub struct EnsureWorkspaceBlobArtifactInput {
   pub workspace_id: String,
   pub blob_id: String,
   pub mime_type: String,
+  pub display_name: Option<String>,
   pub library_owned: Option<bool>,
 }
 
@@ -128,6 +132,7 @@ pub struct RuntimeWorkspaceArtifact {
   pub id: String,
   pub workspace_id: String,
   pub content_hash: String,
+  pub display_name: Option<String>,
   pub canonical_media_type: String,
   #[napi(ts_type = "bigint | number")]
   pub size: i64,

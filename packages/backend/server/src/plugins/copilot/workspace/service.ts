@@ -1,5 +1,5 @@
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 
 import { FileUpload, PaginationInput, sniffMime } from '../../../base';
 import { ServerFeature, ServerService } from '../../../core';
@@ -62,6 +62,7 @@ export class CopilotWorkspaceService implements OnApplicationBootstrap {
       {
         workspaceId,
         mimeType: sniffMime(buffer, content.mimetype) || content.mimetype,
+        displayName: content.filename,
         libraryOwned: true,
       },
       buffer
@@ -78,7 +79,11 @@ export class CopilotWorkspaceService implements OnApplicationBootstrap {
         status: 'ready',
       },
     });
-    return this.projectArtifact(artifact);
+    const statuses = await this.embeddingStatuses(workspaceId, [artifact.id]);
+    return this.projectArtifact(
+      artifact,
+      statuses.get(artifact.id) ?? 'processing'
+    );
   }
 
   async listArtifacts(
@@ -97,8 +102,17 @@ export class CopilotWorkspaceService implements OnApplicationBootstrap {
       }),
       this.db.workspaceArtifact.count({ where }),
     ]);
+    const statuses = await this.embeddingStatuses(
+      workspaceId,
+      artifacts.map(artifact => artifact.id)
+    );
     return [
-      artifacts.map(artifact => this.projectArtifact(artifact)),
+      artifacts.map(artifact =>
+        this.projectArtifact(
+          artifact,
+          statuses.get(artifact.id) ?? 'processing'
+        )
+      ),
       count,
     ] as const;
   }
@@ -108,18 +122,57 @@ export class CopilotWorkspaceService implements OnApplicationBootstrap {
     return true;
   }
 
-  private projectArtifact(artifact: {
-    id: string;
-    workspaceId: string;
-    contentHash: string;
-    canonicalMediaType: string;
-    sizeBytes: bigint;
-    createdAt: Date;
-  }) {
+  private async embeddingStatuses(workspaceId: string, artifactIds: string[]) {
+    if (artifactIds.length === 0)
+      return new Map<string, 'processing' | 'ready' | 'failed'>();
+    const rows = await this.db.$queryRaw<
+      { artifactId: string; status: 'processing' | 'ready' | 'failed' }[]
+    >`
+      SELECT artifact.id::text AS "artifactId",
+        CASE
+          WHEN projection.status='ready'
+            AND projection.applied_content_revision=source.content_revision THEN 'ready'
+          WHEN projection.status='failed' THEN 'failed'
+          ELSE 'processing'
+        END AS status
+      FROM workspace_artifacts artifact
+      LEFT JOIN embedding_sources source
+        ON source.workspace_id=artifact.workspace_id
+        AND source.source_kind='artifact'
+        AND source.source_key=artifact.id::text
+        AND source.deleted_at IS NULL
+      LEFT JOIN embedding_workspace_states state
+        ON state.workspace_id=artifact.workspace_id
+      LEFT JOIN embedding_projections projection
+        ON projection.source_id=source.id
+        AND projection.index_id=state.active_index_id
+      WHERE artifact.workspace_id=${workspaceId}
+        AND artifact.id::text IN (${Prisma.join(artifactIds)})
+    `;
+    return new Map(rows.map(row => [row.artifactId, row.status]));
+  }
+
+  private projectArtifact(
+    artifact: {
+      id: string;
+      workspaceId: string;
+      contentHash: string;
+      displayName: string | null;
+      canonicalMediaType: string;
+      sizeBytes: bigint;
+      createdAt: Date;
+    },
+    embeddingStatus: 'processing' | 'ready' | 'failed'
+  ) {
+    if (!artifact.displayName) {
+      throw new Error('Library artifact display name is missing');
+    }
     return {
       workspaceId: artifact.workspaceId,
       artifactId: artifact.id,
       contentHash: artifact.contentHash,
+      fileName: artifact.displayName,
+      embeddingStatus,
       mediaType: artifact.canonicalMediaType,
       size: Number(artifact.sizeBytes),
       createdAt: artifact.createdAt,

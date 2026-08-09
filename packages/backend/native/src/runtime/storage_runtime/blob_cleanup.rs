@@ -125,6 +125,13 @@ async fn has_other_ref(pool: &PgPool, workspace_id: &str, key: &str) -> RuntimeR
       OR EXISTS(SELECT 1 FROM ai_transcript_tasks WHERE workspace_id = $1 AND blob_id = $2)
       OR EXISTS(SELECT 1 FROM ai_jobs WHERE workspace_id = $1 AND blob_id = $2)
       OR EXISTS(
+        SELECT 1 FROM workspace_artifacts
+        WHERE workspace_id = $1
+          AND storage_scope = 'blob'
+          AND storage_key = concat($1, '/', $2)
+          AND status IN ('reserving', 'ready')
+      )
+      OR EXISTS(
         SELECT 1
         FROM ai_contexts c
         JOIN ai_sessions_metadata s ON s.id = c.session_id
@@ -693,5 +700,67 @@ impl StorageRuntime {
 
     finish_execute_run(&pool, &run_id, &result).await?;
     Ok(result)
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use uuid::Uuid;
+
+  use super::*;
+
+  #[tokio::test]
+  async fn artifact_blob_alias_is_a_cleanup_reference_until_deleting() {
+    let Ok(database_url) = std::env::var("DATABASE_URL") else {
+      return;
+    };
+    let _guard = crate::runtime::migrations::EMBEDDING_TEST_LOCK.lock().await;
+    let pool = PgPool::connect(&database_url).await.unwrap();
+    let suffix = Uuid::new_v4().simple().to_string();
+    let workspace_id = format!("blob-cleanup-ws-{suffix}");
+    let blob_key = format!("blob-{suffix}");
+    let artifact_id = Uuid::new_v4();
+
+    sqlx::query("INSERT INTO workspaces (id, created_at) VALUES ($1, CURRENT_TIMESTAMP)")
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+    sqlx::query(
+      r#"
+      INSERT INTO workspace_artifacts (
+        id, workspace_id, content_hash, canonical_media_type, size_bytes,
+        storage_scope, storage_key, status, ready_at
+      )
+      VALUES ($1, $2, $3, 'application/octet-stream', 1, 'blob', $4, 'reserving', NULL)
+      "#,
+    )
+    .bind(artifact_id)
+    .bind(&workspace_id)
+    .bind(format!("sha256-{suffix}"))
+    .bind(format!("{workspace_id}/{blob_key}"))
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    assert!(has_other_ref(&pool, &workspace_id, &blob_key).await.unwrap());
+    sqlx::query("UPDATE workspace_artifacts SET status = 'ready', ready_at = CURRENT_TIMESTAMP WHERE id = $1")
+      .bind(artifact_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+    assert!(has_other_ref(&pool, &workspace_id, &blob_key).await.unwrap());
+    sqlx::query("UPDATE workspace_artifacts SET status = 'deleting' WHERE id = $1")
+      .bind(artifact_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+    assert!(!has_other_ref(&pool, &workspace_id, &blob_key).await.unwrap());
+
+    sqlx::query("DELETE FROM workspaces WHERE id = $1")
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await
+      .unwrap();
   }
 }

@@ -330,33 +330,26 @@ export async function enableCloudWorkspaceFromShareButton(page: Page) {
 
 async function waitForWorkspaceSynced(page: Page) {
   await page.evaluate(async () => {
-    const { currentWorkspace } = window as typeof window & {
-      currentWorkspace?: {
-        id: string;
-        engine: {
-          doc: {
-            waitForSynced(docId?: string, abort?: AbortSignal): Promise<void>;
+    const workspaceId = location.pathname.split('/')[2];
+    const workspace = (
+      window as typeof window & {
+        currentWorkspace?: {
+          engine: {
+            doc: {
+              waitForSynced(docId: string, abort: AbortSignal): Promise<void>;
+            };
           };
         };
-      };
-    };
-    if (!currentWorkspace) {
-      throw new Error('Current workspace is unavailable');
+      }
+    ).currentWorkspace;
+    if (!workspaceId || !workspace) {
+      throw new Error('Cloud workspace is unavailable');
     }
     const abort = AbortSignal.timeout(60_000);
-    try {
-      await Promise.all([
-        currentWorkspace.engine.doc.waitForSynced(currentWorkspace.id, abort),
-        currentWorkspace.engine.doc.waitForSynced('db$docProperties', abort),
-      ]);
-    } catch (error) {
-      if (abort.aborted) {
-        throw new Error(
-          `Timed out waiting for workspace ${currentWorkspace.id} to sync`
-        );
-      }
-      throw error;
-    }
+    await Promise.all([
+      workspace.engine.doc.waitForSynced(workspaceId, abort),
+      workspace.engine.doc.waitForSynced('db$docProperties', abort),
+    ]);
   });
 }
 

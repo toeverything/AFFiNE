@@ -272,11 +272,31 @@ impl BackendRuntime {
       .await
       .map_err(to_napi_error)?;
     let reconcile_documents = input.reconcile_documents.unwrap_or(false);
+    let priority = input.priority.unwrap_or(100);
+    if !(0..=1000).contains(&priority) {
+      return Err(napi_error("embedding_priority_invalid"));
+    }
     if let Some(documents) = input.documents {
+      if input.wait_for_ready_ms.is_some() && state.active_index_id.is_none() {
+        return Err(napi_error("embedding_selected_sources_unavailable"));
+      }
       embedding
-        .sync_documents(&input.workspace_id, &documents, reconcile_documents)
+        .sync_documents(&input.workspace_id, &documents, reconcile_documents, priority)
         .await
         .map_err(to_napi_error)?;
+      if let Some(wait_ms) = input.wait_for_ready_ms {
+        if wait_ms == 0 || wait_ms > 120_000 {
+          return Err(napi_error("embedding_wait_timeout_invalid"));
+        }
+        embedding
+          .wait_for_documents(
+            &input.workspace_id,
+            &documents,
+            Duration::from_millis(u64::from(wait_ms)),
+          )
+          .await
+          .map_err(to_napi_error)?;
+      }
     } else if reconcile_documents {
       embedding
         .reconcile_documents(&input.workspace_id)
@@ -400,9 +420,10 @@ impl BackendRuntime {
     workspace_id: String,
     artifact_id: String,
     library_owned: bool,
+    display_name: Option<String>,
   ) -> Result<types::RuntimeWorkspaceArtifact> {
     artifact::ArtifactService::new(self.pool().await?, self.object_storage()?)
-      .set_library_owned(&workspace_id, &artifact_id, library_owned)
+      .set_library_owned(&workspace_id, &artifact_id, library_owned, display_name)
       .await
       .map_err(to_napi_error)
   }
@@ -564,6 +585,8 @@ impl BackendRuntime {
         enabled,
         documents: None,
         reconcile_documents: None,
+        priority: None,
+        wait_for_ready_ms: None,
       })
       .await?;
     Ok(())

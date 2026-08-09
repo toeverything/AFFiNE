@@ -25,6 +25,10 @@ import { getCurrentStore } from '@toeverything/infra';
 import {
   GeneralNetworkError,
   PaymentRequiredError,
+  SelectedSourcesFailedError,
+  SelectedSourcesLimitExceededError,
+  SelectedSourcesProcessingError,
+  SelectedSourcesUnavailableError,
   UnauthorizedError,
 } from '../../provider/error';
 
@@ -52,6 +56,18 @@ function isAbortError(error: UserFriendlyError) {
 }
 
 function codeToError(error: UserFriendlyError) {
+  if (error.name === 'COPILOT_SELECTED_SOURCES_PROCESSING') {
+    return new SelectedSourcesProcessingError(error.message);
+  }
+  if (error.name === 'COPILOT_SELECTED_SOURCES_FAILED') {
+    return new SelectedSourcesFailedError(error.message);
+  }
+  if (error.name === 'COPILOT_SELECTED_SOURCES_UNAVAILABLE') {
+    return new SelectedSourcesUnavailableError(error.message);
+  }
+  if (error.name === 'COPILOT_SELECTED_SOURCES_LIMIT_EXCEEDED') {
+    return new SelectedSourcesLimitExceededError(error.message);
+  }
   switch (error.status) {
     case 401:
       return new UnauthorizedError();

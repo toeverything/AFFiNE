@@ -7,7 +7,8 @@ use tokio::{sync::watch, task::JoinHandle};
 use uuid::Uuid;
 
 use super::{
-  ChunkLocator, EmbeddingFailure, EmbeddingService, MaterializedChunk, ProjectionClaim, RuntimeError, failure_class,
+  ChunkLocator, EmbeddingFailure, EmbeddingService, MaterializedChunk, ProjectionClaim, RuntimeError,
+  extraction_file_name, failure_class,
 };
 use crate::runtime::object_storage::types::{ObjectKey, ObjectLocator, StorageScope};
 
@@ -72,7 +73,11 @@ pub(super) fn start(service: Arc<EmbeddingService>) -> WorkerHandle {
       };
       match materialize(&service, &claim).await {
         Ok(chunks) => {
-          let _ = service.commit(&claim, &chunks).await;
+          if let Err(error) = service.commit(&claim, &chunks).await {
+            let _ = service
+              .fail(&claim, failure("commit_failed", Some(error.to_string())))
+              .await;
+          }
         }
         Err(failure) => {
           let _ = service.fail(&claim, failure).await;
@@ -144,10 +149,11 @@ async fn materialize(
     if revision != claim.content_revision {
       return Err(failure("object_changed", None));
     }
-    let mut file_name = claim.file_name.clone().unwrap_or_else(|| claim.source_key.clone());
-    if !file_name.contains('.') && claim.mime_type.as_deref() == Some("text/markdown") {
-      file_name.push_str(".md");
-    }
+    let file_name = claim
+      .file_name
+      .clone()
+      .or_else(|| claim.mime_type.as_deref().map(extraction_file_name))
+      .unwrap_or_else(|| claim.source_key.clone());
     let body = object.body;
     let parsed = tokio::time::timeout(
       Duration::from_secs(120),

@@ -282,6 +282,27 @@ pub(super) async fn fail_projection(
   failure: EmbeddingFailure,
 ) -> RuntimeResult<()> {
   if failure.class == FailureClass::RetryableIndex {
+    let mut transaction = pool
+      .begin()
+      .await
+      .map_err(|error| RuntimeError::database("begin embedding index failure transaction failed", error))?;
+    let released = sqlx::query(
+      r#"UPDATE embedding_projections SET status='pending',lease_owner=NULL,lease_until=NULL,
+      last_error_code=$4,last_error_detail=$5,updated_at=now()
+      WHERE source_id=$1 AND index_id=$2 AND lease_token=$3 AND status='running'"#,
+    )
+    .bind(claim.source_id)
+    .bind(claim.index_id)
+    .bind(claim.lease_token)
+    .bind(failure.code)
+    .bind(failure.detail)
+    .execute(&mut *transaction)
+    .await
+    .map_err(|error| RuntimeError::database("release embedding projection after index failure failed", error))?
+    .rows_affected();
+    if released == 0 {
+      return Ok(());
+    }
     sqlx::query(
       r#"UPDATE embedding_indexes SET health_status='retry_wait',failure_count=failure_count+1,
       next_probe_at=clock_timestamp()+least(interval '6 hours',interval '5 seconds'*
@@ -289,9 +310,13 @@ pub(super) async fn fail_projection(
     )
     .bind(claim.index_id)
     .bind(failure.code)
-    .execute(pool)
+    .execute(&mut *transaction)
     .await
     .map_err(|error| RuntimeError::database("update embedding index retry gate failed", error))?;
+    transaction
+      .commit()
+      .await
+      .map_err(|error| RuntimeError::database("commit embedding index failure transaction failed", error))?;
     return Ok(());
   }
   let retryable = failure.class == FailureClass::RetryableProjection;
@@ -302,7 +327,7 @@ pub(super) async fn fail_projection(
       next_attempt_at=CASE WHEN $4 AND attempt_count+1<10 THEN
         clock_timestamp()+least(interval '6 hours',interval '5 seconds'*power(2,least(attempt_count,12))) ELSE NULL END,
       lease_owner=NULL,lease_until=NULL,last_error_code=$5,last_error_detail=$6,updated_at=now()
-    WHERE source_id=$1 AND index_id=$2 AND lease_token=$3"#,
+    WHERE source_id=$1 AND index_id=$2 AND lease_token=$3 AND status='running'"#,
   )
   .bind(claim.source_id)
   .bind(claim.index_id)
@@ -453,7 +478,74 @@ mod tests {
       },
     };
     assert!(commit_token(&pool, &stale, &[chunk("stale")]).await.is_err());
+    fail_projection(
+      &pool,
+      &stale,
+      EmbeddingFailure {
+        code: "provider_unavailable",
+        detail: None,
+        class: FailureClass::RetryableIndex,
+      },
+    )
+    .await
+    .unwrap();
+    let current_state: (String, Option<String>, String) = sqlx::query_as(
+      r#"SELECT projection.status,projection.lease_owner,index.health_status
+      FROM embedding_projections projection
+      JOIN embedding_indexes index ON index.id=projection.index_id
+      WHERE projection.source_id=$1 AND projection.index_id=$2"#,
+    )
+    .bind(source_id)
+    .bind(index_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(
+      current_state,
+      ("running".to_string(), Some("worker-b".to_string()), "ready".to_string())
+    );
     let first_token = commit_token(&pool, &current, &[chunk("first")]).await.unwrap();
+    let requested = [crate::runtime::types::DocumentEmbeddingProjectionInput {
+      doc_id: "doc".to_string(),
+      revision: "content-1".to_string(),
+      source_hash: "descriptor".to_string(),
+      units: Vec::new(),
+      deleted: None,
+    }];
+    assert_eq!(
+      super::super::source::document_readiness(&pool, &workspace_id, &requested)
+        .await
+        .unwrap(),
+      (1, 0)
+    );
+    sqlx::query("UPDATE embedding_projections SET status='failed' WHERE source_id=$1 AND index_id=$2")
+      .bind(source_id)
+      .bind(index_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+    assert_eq!(
+      super::super::source::document_readiness(&pool, &workspace_id, &requested)
+        .await
+        .unwrap(),
+      (0, 1)
+    );
+    sqlx::query("UPDATE embedding_projections SET status='ready' WHERE source_id=$1 AND index_id=$2")
+      .bind(source_id)
+      .bind(index_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+    let unavailable = [crate::runtime::types::DocumentEmbeddingProjectionInput {
+      revision: "not-current".to_string(),
+      ..requested[0].clone()
+    }];
+    assert_eq!(
+      super::super::source::document_readiness(&pool, &workspace_id, &unavailable)
+        .await
+        .unwrap(),
+      (0, 0)
+    );
 
     sqlx::query("UPDATE embedding_sources SET content_revision='content-2' WHERE id=$1")
       .bind(source_id)
@@ -489,6 +581,16 @@ mod tests {
       .execute(&pool)
       .await
       .unwrap();
+    let unavailable = [crate::runtime::types::DocumentEmbeddingProjectionInput {
+      revision: "content-2".to_string(),
+      ..requested[0].clone()
+    }];
+    assert_eq!(
+      super::super::source::document_readiness(&pool, &workspace_id, &unavailable)
+        .await
+        .unwrap(),
+      (0, 0)
+    );
     sqlx::query("DELETE FROM embedding_sources WHERE workspace_id=$1")
       .bind(&workspace_id)
       .execute(&pool)

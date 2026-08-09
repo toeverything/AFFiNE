@@ -22,13 +22,26 @@ pub(crate) struct BackendRuntimeConfig {
   pub(crate) copilot: CopilotRuntimeConfig,
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub(crate) struct ConfigSource {
   exact_paths: Option<Vec<PathBuf>>,
+  override_path: Option<PathBuf>,
+}
+
+impl Default for ConfigSource {
+  fn default() -> Self {
+    Self::new(None)
+  }
 }
 
 impl ConfigSource {
   pub(crate) fn new(exact_paths: Option<Vec<String>>) -> Self {
+    let override_path = exact_paths
+      .is_none()
+      .then(|| env::var("AFFINE_BACKEND_RUNTIME_CONFIG_PATH").ok())
+      .flatten()
+      .and_then(non_empty_string)
+      .map(PathBuf::from);
     Self {
       exact_paths: exact_paths.map(|paths| {
         dedupe_paths(
@@ -39,15 +52,27 @@ impl ConfigSource {
             .collect(),
         )
       }),
+      override_path,
     }
   }
 
   pub(crate) fn paths(&self) -> Vec<PathBuf> {
-    self.exact_paths.clone().unwrap_or_else(config_json_paths)
+    if let Some(paths) = &self.exact_paths {
+      return paths.clone();
+    }
+    let mut paths = config_json_paths();
+    if let Some(path) = &self.override_path {
+      paths.push(path.clone());
+    }
+    dedupe_paths(paths)
   }
 
   pub(crate) fn exact(&self) -> bool {
     self.exact_paths.is_some()
+  }
+
+  pub(crate) fn required(&self, path: &Path) -> bool {
+    self.exact() || self.override_path.as_deref() == Some(path)
   }
 }
 
@@ -463,7 +488,7 @@ fn app_config_value_from_config_source(source: &ConfigSource) -> RuntimeResult<s
   let mut merged = serde_json::Value::Object(Map::new());
   for path in source.paths() {
     if !path.exists() {
-      if source.exact() {
+      if source.required(&path) {
         return Err(RuntimeError::config(format!(
           "config file does not exist: {}",
           path.display()

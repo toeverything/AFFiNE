@@ -401,7 +401,10 @@ export class AIChatRuntime {
         scopeSelectors,
         focusSelectors,
         liveEditorContext,
-        attachments: options.attachments ?? this.snapshot.composer.attachments,
+        attachments: [
+          ...this.snapshot.composer.attachments,
+          ...(options.attachments ?? []),
+        ],
         reasoning: options.reasoning ?? this.snapshot.composer.reasoning,
         toolsConfig: options.toolsConfig ?? this.snapshot.composer.toolsConfig,
         routeTargetId:
@@ -617,11 +620,11 @@ export class AIChatRuntime {
   private selectorInput(item: AIChatScopeSelector) {
     switch (item.kind) {
       case 'doc':
-        return { kind: 'document', id: item.docId };
+        return { kind: 'document', id: item.docId, name: item.name };
       case 'tag':
-        return { kind: 'tag', id: item.tagId };
+        return { kind: 'tag', id: item.tagId, name: item.name };
       case 'collection':
-        return { kind: 'collection', id: item.collectionId };
+        return { kind: 'collection', id: item.collectionId, name: item.name };
       case 'favorite':
         return { kind: 'favorite', id: item.favoriteId, name: item.name };
       case 'file':

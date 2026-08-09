@@ -34,6 +34,7 @@ export const createArtifactSearchTool = (
         query,
         retrieval: options.retrievalScope,
         limit: limit ?? 5,
+        messageId: options.billingUnitId,
         signal: execution.signal,
       });
       return {
@@ -47,6 +48,8 @@ export const createArtifactSearchTool = (
             type: 'artifact',
             workspace_id: options.workspace as string,
             artifact_id: hit.artifactId as string,
+            name: hit.name,
+            mime_type: hit.mimeType,
           } satisfies ArtifactSource,
         })),
       };
@@ -80,6 +83,7 @@ export const createArtifactReadTool = (
           workspaceId: options.workspace,
           artifactId: artifact_id,
           retrieval: options.retrievalScope,
+          messageId: options.billingUnitId,
           maxChars: max_chars,
           cursor,
         });

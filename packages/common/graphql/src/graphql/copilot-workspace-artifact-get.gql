@@ -14,6 +14,8 @@ query getWorkspaceArtifacts(
           node {
             artifactId
             contentHash
+            fileName
+            embeddingStatus
             mediaType
             size
             createdAt
