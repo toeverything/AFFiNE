@@ -77,14 +77,14 @@ function detectLinuxPasswordStore(): string | null {
     return getKWalletFlag();
   }
 
-  if (tokens.some(token => GNOME_LIBSECRET_DESKTOPS.has(token))) {
-    return 'gnome-libsecret';
-  }
-
   // When the desktop is unknown, fall back on KDE session variables so we do
   // not force gnome-libsecret on a Plasma/i3 hybrid that uses KWallet.
   if (tokens.length > 0 && isKdeSession()) {
     return getKWalletFlag();
+  }
+
+  if (tokens.some(token => GNOME_LIBSECRET_DESKTOPS.has(token))) {
+    return 'gnome-libsecret';
   }
 
   return null;
