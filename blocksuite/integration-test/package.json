@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc",
+    "build": "yarn run -T tsc",
     "test:unit": "vitest --browser.headless --run",
     "test:debug": "PWDEBUG=1 npx vitest --browser.headless=false"
   },
