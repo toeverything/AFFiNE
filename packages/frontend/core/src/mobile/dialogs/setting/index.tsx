@@ -17,6 +17,7 @@ import { UserSubscription } from './subscription';
 import { SwipeDialog } from './swipe-dialog';
 import { UserProfile } from './user-profile';
 import { UserUsage } from './user-usage';
+import { WorkspaceGroup } from './workspace';
 
 const MobileSetting = () => {
   const session = useService(AuthService).session;
@@ -28,6 +29,7 @@ const MobileSetting = () => {
       <UserProfile />
       <UserSubscription />
       <UserUsage />
+      <WorkspaceGroup />
       {status === 'authenticated' ? <DevicesGroup /> : null}
       <AppearanceGroup />
       <AboutGroup />
