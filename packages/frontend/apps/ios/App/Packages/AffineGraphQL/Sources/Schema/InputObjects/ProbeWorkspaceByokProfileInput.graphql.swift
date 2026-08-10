@@ -3,7 +3,7 @@
 
 import ApolloAPI
 
-public struct RotateWorkspaceByokCredentialInput: InputObject {
+public struct ProbeWorkspaceByokProfileInput: InputObject {
   public private(set) var __data: InputDict
 
   public init(_ data: InputDict) {
@@ -11,27 +11,20 @@ public struct RotateWorkspaceByokCredentialInput: InputObject {
   }
 
   public init(
-    credential: String,
-    expectedRevision: SafeInt,
+    checks: [WorkspaceByokProbeCheckInput],
     profileId: ID,
     workspaceId: String
   ) {
     __data = InputDict([
-      "credential": credential,
-      "expectedRevision": expectedRevision,
+      "checks": checks,
       "profileId": profileId,
       "workspaceId": workspaceId
     ])
   }
 
-  public var credential: String {
-    get { __data["credential"] }
-    set { __data["credential"] = newValue }
-  }
-
-  public var expectedRevision: SafeInt {
-    get { __data["expectedRevision"] }
-    set { __data["expectedRevision"] = newValue }
+  public var checks: [WorkspaceByokProbeCheckInput] {
+    get { __data["checks"] }
+    set { __data["checks"] = newValue }
   }
 
   public var profileId: ID {

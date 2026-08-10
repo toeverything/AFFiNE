@@ -12,13 +12,11 @@ public struct WorkspaceByokProfileDefinitionInput: InputObject {
 
   public init(
     endpoint: WorkspaceByokEndpointInput,
-    models: [WorkspaceByokModelDeclarationInput],
-    version: SafeInt
+    models: [WorkspaceByokModelDeclarationInput]
   ) {
     __data = InputDict([
       "endpoint": endpoint,
-      "models": models,
-      "version": version
+      "models": models
     ])
   }
 
@@ -30,10 +28,5 @@ public struct WorkspaceByokProfileDefinitionInput: InputObject {
   public var models: [WorkspaceByokModelDeclarationInput] {
     get { __data["models"] }
     set { __data["models"] = newValue }
-  }
-
-  public var version: SafeInt {
-    get { __data["version"] }
-    set { __data["version"] = newValue }
   }
 }

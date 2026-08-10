@@ -3,16 +3,16 @@
 
 @_exported import ApolloAPI
 
-public class ProbeWorkspaceByokProfileMutation: GraphQLMutation {
-  public static let operationName: String = "probeWorkspaceByokProfile"
+public class ProbeWorkspaceByokDraftMutation: GraphQLMutation {
+  public static let operationName: String = "probeWorkspaceByokDraft"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"mutation probeWorkspaceByokProfile($input: ProbeWorkspaceByokProfileInput!) { probeWorkspaceByokProfile(input: $input) { __typename definitionFingerprint stale connection { __typename kind testedAt errorKind } models { __typename modelId checks { __typename operation status { __typename kind testedAt errorKind } } } } }"#
+      #"mutation probeWorkspaceByokDraft($input: ProbeWorkspaceByokDraftInput!) { probeWorkspaceByokDraft(input: $input) { __typename definitionFingerprint stale connection { __typename kind testedAt errorKind } models { __typename modelId checks { __typename operation status { __typename kind testedAt errorKind } } } } }"#
     ))
 
-  public var input: ProbeWorkspaceByokProfileInput
+  public var input: ProbeWorkspaceByokDraftInput
 
-  public init(input: ProbeWorkspaceByokProfileInput) {
+  public init(input: ProbeWorkspaceByokDraftInput) {
     self.input = input
   }
 
@@ -24,18 +24,18 @@ public class ProbeWorkspaceByokProfileMutation: GraphQLMutation {
 
     public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.Mutation }
     public static var __selections: [ApolloAPI.Selection] { [
-      .field("probeWorkspaceByokProfile", ProbeWorkspaceByokProfile.self, arguments: ["input": .variable("input")]),
+      .field("probeWorkspaceByokDraft", ProbeWorkspaceByokDraft.self, arguments: ["input": .variable("input")]),
     ] }
     public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
-      ProbeWorkspaceByokProfileMutation.Data.self
+      ProbeWorkspaceByokDraftMutation.Data.self
     ] }
 
-    public var probeWorkspaceByokProfile: ProbeWorkspaceByokProfile { __data["probeWorkspaceByokProfile"] }
+    public var probeWorkspaceByokDraft: ProbeWorkspaceByokDraft { __data["probeWorkspaceByokDraft"] }
 
-    /// ProbeWorkspaceByokProfile
+    /// ProbeWorkspaceByokDraft
     ///
     /// Parent Type: `WorkspaceByokProbeResultType`
-    public struct ProbeWorkspaceByokProfile: AffineGraphQL.SelectionSet {
+    public struct ProbeWorkspaceByokDraft: AffineGraphQL.SelectionSet {
       public let __data: DataDict
       public init(_dataDict: DataDict) { __data = _dataDict }
 
@@ -48,7 +48,7 @@ public class ProbeWorkspaceByokProfileMutation: GraphQLMutation {
         .field("models", [Model].self),
       ] }
       public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
-        ProbeWorkspaceByokProfileMutation.Data.ProbeWorkspaceByokProfile.self
+        ProbeWorkspaceByokDraftMutation.Data.ProbeWorkspaceByokDraft.self
       ] }
 
       public var definitionFingerprint: String { __data["definitionFingerprint"] }
@@ -56,7 +56,7 @@ public class ProbeWorkspaceByokProfileMutation: GraphQLMutation {
       public var connection: Connection { __data["connection"] }
       public var models: [Model] { __data["models"] }
 
-      /// ProbeWorkspaceByokProfile.Connection
+      /// ProbeWorkspaceByokDraft.Connection
       ///
       /// Parent Type: `WorkspaceByokProbeStatusType`
       public struct Connection: AffineGraphQL.SelectionSet {
@@ -71,7 +71,7 @@ public class ProbeWorkspaceByokProfileMutation: GraphQLMutation {
           .field("errorKind", String?.self),
         ] }
         public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
-          ProbeWorkspaceByokProfileMutation.Data.ProbeWorkspaceByokProfile.Connection.self
+          ProbeWorkspaceByokDraftMutation.Data.ProbeWorkspaceByokDraft.Connection.self
         ] }
 
         public var kind: GraphQLEnum<AffineGraphQL.ByokProbeStatusKind> { __data["kind"] }
@@ -79,7 +79,7 @@ public class ProbeWorkspaceByokProfileMutation: GraphQLMutation {
         public var errorKind: String? { __data["errorKind"] }
       }
 
-      /// ProbeWorkspaceByokProfile.Model
+      /// ProbeWorkspaceByokDraft.Model
       ///
       /// Parent Type: `WorkspaceByokModelProbeType`
       public struct Model: AffineGraphQL.SelectionSet {
@@ -93,13 +93,13 @@ public class ProbeWorkspaceByokProfileMutation: GraphQLMutation {
           .field("checks", [Check].self),
         ] }
         public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
-          ProbeWorkspaceByokProfileMutation.Data.ProbeWorkspaceByokProfile.Model.self
+          ProbeWorkspaceByokDraftMutation.Data.ProbeWorkspaceByokDraft.Model.self
         ] }
 
         public var modelId: String { __data["modelId"] }
         public var checks: [Check] { __data["checks"] }
 
-        /// ProbeWorkspaceByokProfile.Model.Check
+        /// ProbeWorkspaceByokDraft.Model.Check
         ///
         /// Parent Type: `WorkspaceByokModelProbeCheckType`
         public struct Check: AffineGraphQL.SelectionSet {
@@ -113,13 +113,13 @@ public class ProbeWorkspaceByokProfileMutation: GraphQLMutation {
             .field("status", Status.self),
           ] }
           public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
-            ProbeWorkspaceByokProfileMutation.Data.ProbeWorkspaceByokProfile.Model.Check.self
+            ProbeWorkspaceByokDraftMutation.Data.ProbeWorkspaceByokDraft.Model.Check.self
           ] }
 
           public var operation: GraphQLEnum<AffineGraphQL.ByokProbeOperation> { __data["operation"] }
           public var status: Status { __data["status"] }
 
-          /// ProbeWorkspaceByokProfile.Model.Check.Status
+          /// ProbeWorkspaceByokDraft.Model.Check.Status
           ///
           /// Parent Type: `WorkspaceByokProbeStatusType`
           public struct Status: AffineGraphQL.SelectionSet {
@@ -134,7 +134,7 @@ public class ProbeWorkspaceByokProfileMutation: GraphQLMutation {
               .field("errorKind", String?.self),
             ] }
             public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
-              ProbeWorkspaceByokProfileMutation.Data.ProbeWorkspaceByokProfile.Model.Check.Status.self
+              ProbeWorkspaceByokDraftMutation.Data.ProbeWorkspaceByokDraft.Model.Check.Status.self
             ] }
 
             public var kind: GraphQLEnum<AffineGraphQL.ByokProbeStatusKind> { __data["kind"] }

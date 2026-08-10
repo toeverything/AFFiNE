@@ -3,7 +3,7 @@
 
 import ApolloAPI
 
-public struct ReplaceWorkspaceByokProfileInput: InputObject {
+public struct ProbeWorkspaceByokDraftInput: InputObject {
   public private(set) var __data: InputDict
 
   public init(_ data: InputDict) {
@@ -11,25 +11,28 @@ public struct ReplaceWorkspaceByokProfileInput: InputObject {
   }
 
   public init(
+    checks: [WorkspaceByokProbeCheckInput],
     credential: GraphQLNullable<String> = nil,
     definition: WorkspaceByokProfileDefinitionInput,
-    description: GraphQLNullable<String> = nil,
-    enabled: Bool,
-    expectedRevision: SafeInt,
-    name: String,
-    profileId: ID,
+    expectedRevision: GraphQLNullable<SafeInt> = nil,
+    profileId: GraphQLNullable<ID> = nil,
+    provider: GraphQLEnum<ByokProvider>,
     workspaceId: String
   ) {
     __data = InputDict([
+      "checks": checks,
       "credential": credential,
       "definition": definition,
-      "description": description,
-      "enabled": enabled,
       "expectedRevision": expectedRevision,
-      "name": name,
       "profileId": profileId,
+      "provider": provider,
       "workspaceId": workspaceId
     ])
+  }
+
+  public var checks: [WorkspaceByokProbeCheckInput] {
+    get { __data["checks"] }
+    set { __data["checks"] = newValue }
   }
 
   public var credential: GraphQLNullable<String> {
@@ -42,29 +45,19 @@ public struct ReplaceWorkspaceByokProfileInput: InputObject {
     set { __data["definition"] = newValue }
   }
 
-  public var description: GraphQLNullable<String> {
-    get { __data["description"] }
-    set { __data["description"] = newValue }
-  }
-
-  public var enabled: Bool {
-    get { __data["enabled"] }
-    set { __data["enabled"] = newValue }
-  }
-
-  public var expectedRevision: SafeInt {
+  public var expectedRevision: GraphQLNullable<SafeInt> {
     get { __data["expectedRevision"] }
     set { __data["expectedRevision"] = newValue }
   }
 
-  public var name: String {
-    get { __data["name"] }
-    set { __data["name"] = newValue }
-  }
-
-  public var profileId: ID {
+  public var profileId: GraphQLNullable<ID> {
     get { __data["profileId"] }
     set { __data["profileId"] = newValue }
+  }
+
+  public var provider: GraphQLEnum<ByokProvider> {
+    get { __data["provider"] }
+    set { __data["provider"] = newValue }
   }
 
   public var workspaceId: String {
