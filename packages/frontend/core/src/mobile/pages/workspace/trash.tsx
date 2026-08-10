@@ -65,7 +65,7 @@ const Trash = () => {
 
   return (
     <DocExplorerContext.Provider value={explorerContextValue}>
-      <DocsExplorer />
+      <DocsExplorer disableMultiSelectToolbar />
     </DocExplorerContext.Provider>
   );
 };
