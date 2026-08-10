@@ -14,7 +14,7 @@ resolver = "3"
   edition = "2024"
 
   [workspace.dependencies]
-  aes-gcm = "0.10"
+  aes-gcm = "0.11"
   affine_common = { path = "./packages/common/native" }
   affine_doc_loader = "0.1.7"
   affine_importer = "0.1.2"
@@ -22,21 +22,21 @@ resolver = "3"
   affine_preview = { version = "0.1.0", default-features = false }
   anyhow = "1"
   assert-json-diff = "2.0"
-  base64 = "0.22.1"
+  base64 = "0.23.0"
   base64-simd = "0.8"
   block2 = "0.6"
   bytes = "1"
   chrono = "0.4"
   core-foundation = "0.10"
-  coreaudio-rs = "0.12"
-  cpal = "0.15"
-  criterion = { version = "0.5", features = ["html_reports"] }
+  coreaudio-rs = "0.14"
+  cpal = "0.18"
+  criterion = { version = "0.8", features = ["html_reports"] }
   criterion2 = { version = "3", default-features = false }
   crossbeam-channel = "0.5"
   dispatch2 = "0.3"
   doc_extractor = "0.1.1"
   dotenvy = "0.15"
-  file-format = { version = "0.28", features = ["reader"] }
+  file-format = { version = "0.29", features = ["reader"] }
   hex = "0.4"
   hkdf = "0.13"
   homedir = "0.3"
@@ -47,17 +47,17 @@ resolver = "3"
     "png",
     "webp",
   ] }
-  infer = { version = "0.19.0" }
+  infer = { version = "0.22.0" }
   libc = "0.2"
   little_exif = "0.6.23"
   llm_adapter = { version = "0.2", default-features = false }
   llm_runtime = { version = "0.2", default-features = false }
-  lru = "0.16"
+  lru = "0.18"
   matroska = "0.30"
   memory-indexer = "0.3.1"
   mimalloc = "0.1"
   mp4parse = "0.17"
-  nanoid = "0.4"
+  nanoid = "0.5"
   napi = { version = "3.7.0", features = [
     "async",
     "chrono_date",
@@ -74,34 +74,34 @@ resolver = "3"
   onenote_parser = { git = "https://github.com/msiemens/onenote.rs", rev = "5138a39a3f4e72b840932f9872fecde52fa9da60", package = "onenote_parser", features = [
     "onepkg",
   ] }
-  p256 = { version = "0.13", features = ["ecdsa", "pem"] }
+  p256 = { version = "0.14", features = ["ecdsa", "pem"] }
   pulldown-cmark = "0.13"
-  rand = "0.9"
+  rand = "0.10"
   rayon = "1.10"
   rubato = "0.16"
   safefetch = "0.1.0"
   schemars = "1.2"
-  screencapturekit = "0.3"
+  screencapturekit = "0.4"
   serde = "1"
   serde_json = "1"
   sha2 = "0.11"
   sha3 = "0.12"
-  sqlx = { version = "0.8", default-features = false, features = [
+  sqlx = { version = "0.9", default-features = false, features = [
     "chrono",
     "macros",
     "migrate",
     "runtime-tokio",
     "sqlite",
   ] }
-  symphonia = { version = "0.5", features = ["all", "opt-simd"] }
+  symphonia = { version = "0.6", features = ["all", "opt-simd"] }
   thiserror = "2"
-  tiktoken-rs = "0.7"
+  tiktoken-rs = "0.12"
   tokio = "1.45"
   typed-path = "0.12.3"
-  uniffi = "0.29"
+  uniffi = "0.32"
   url = { version = "2.5" }
   uuid = "1.8"
-  v_htmlescape = "0.15"
+  v_htmlescape = "0.17"
   windows = { version = "0.62", features = [
     "Win32_Devices_FunctionDiscovery",
     "Win32_Foundation",
