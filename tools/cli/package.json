@@ -42,7 +42,7 @@
     "tailwindcss": "^4.1.17",
     "tsx": "^4.21.0",
     "typanion": "^3.14.0",
-    "typescript": "^5.9.3"
+    "typescript": "npm:@typescript/typescript6@6.0.2"
   },
   "devDependencies": {
     "@types/lodash-es": "^4.17.12",

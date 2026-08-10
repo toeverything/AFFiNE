@@ -1400,6 +1400,11 @@ export const PackageList = [
     ],
   },
   {
+    location: 'tools/@types/assets',
+    name: '@types/assets',
+    workspaceDependencies: [],
+  },
+  {
     location: 'tools/@types/build-config',
     name: '@types/build-config',
     workspaceDependencies: [],
@@ -1563,6 +1568,7 @@ export type PackageName =
   | '@affine-test/affine-mobile'
   | '@affine-test/blocksuite'
   | '@affine-test/kit'
+  | '@types/assets'
   | '@types/build-config'
   | '@types/affine__env'
   | '@affine/changelog'
