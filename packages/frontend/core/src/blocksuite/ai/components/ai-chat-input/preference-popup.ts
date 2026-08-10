@@ -139,9 +139,9 @@ export class ChatInputPreference extends SignalWatcher(
                 name: 'Auto',
                 prefix: html`
                   <div class="ai-model-prefix">
-                    ${this.aiModelService.modelId.value
-                      ? undefined
-                      : DoneIcon()}
+                    ${
+                      this.aiModelService.modelId.value ? undefined : DoneIcon()
+                    }
                   </div>
                 `,
                 select: () => this.aiModelService.resetModel(),
@@ -154,9 +154,11 @@ export class ChatInputPreference extends SignalWatcher(
                   `,
                   prefix: html`
                     <div class="ai-model-prefix">
-                      ${model.id === this.aiModelService.modelId.value
-                        ? DoneIcon()
-                        : undefined}
+                      ${
+                        model.id === this.aiModelService.modelId.value
+                          ? DoneIcon()
+                          : undefined
+                      }
                     </div>
                   `,
                   postfix: html`

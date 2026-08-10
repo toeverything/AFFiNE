@@ -132,32 +132,36 @@ export class LinkCell extends BaseCellRenderer<string, string> {
     return html`
       <div>
         <div class="${linkContainerStyle}">
-          ${isDoc
-            ? html`<span class="${linkedDocStyle}" @click="${this.openDoc}"
-                >${docName}</span
-              >`
-            : isValidUrl(linkText)
-              ? html`<a
-                  data-testid="property-link-a"
-                  class="${inlineLinkNodeStyle}"
-                  href="${linkText}"
-                  rel="noopener noreferrer"
-                  target="_blank"
-                  >${linkText}</a
+          ${
+            isDoc
+              ? html`<span class="${linkedDocStyle}" @click="${this.openDoc}"
+                  >${docName}</span
                 >`
-              : html`<span class="${normalTextStyle}">${linkText}</span>`}
+              : isValidUrl(linkText)
+                ? html`<a
+                    data-testid="property-link-a"
+                    class="${inlineLinkNodeStyle}"
+                    href="${linkText}"
+                    rel="noopener noreferrer"
+                    target="_blank"
+                    >${linkText}</a
+                  >`
+                : html`<span class="${normalTextStyle}">${linkText}</span>`
+          }
         </div>
-        ${hasLink
-          ? html` <div class="${linkIconContainerStyle} ${showLinkIconStyle}">
-              <div
-                class="${linkIconStyle}"
-                data-testid="edit-link-button"
-                @click="${this._onEdit}"
-              >
-                ${EditIcon()}
-              </div>
-            </div>`
-          : nothing}
+        ${
+          hasLink
+            ? html` <div class="${linkIconContainerStyle} ${showLinkIconStyle}">
+                <div
+                  class="${linkIconStyle}"
+                  data-testid="edit-link-button"
+                  @click="${this._onEdit}"
+                >
+                  ${EditIcon()}
+                </div>
+              </div>`
+            : nothing
+        }
       </div>
     `;
   }

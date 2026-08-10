@@ -180,9 +180,11 @@ export class EdgelessShapeMenu extends SignalWatcher(
                     .iconSize=${'20px'}
                     @click=${() => this.onChange(name)}
                   >
-                    ${shapeStyle === ShapeStyle.General
-                      ? generalIcon
-                      : scribbledIcon}
+                    ${
+                      shapeStyle === ShapeStyle.General
+                        ? generalIcon
+                        : scribbledIcon
+                    }
                   </edgeless-tool-icon-button>
                 `;
               }

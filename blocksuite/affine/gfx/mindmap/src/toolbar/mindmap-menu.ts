@@ -278,14 +278,16 @@ export class EdgelessMindmapMenu extends EdgelessToolbarToolMixin(
     return html`<edgeless-slide-menu .height=${'64px'}>
       <div class="text-and-mindmap">
         <div class="media-item">
-          ${isDraggingMedia
-            ? html`<button
-                class="next"
-                style="transform: translateY(${showNextText ? 0 : 64}px)"
-              >
-                ${mediaItem.icon}
-              </button>`
-            : nothing}
+          ${
+            isDraggingMedia
+              ? html`<button
+                  class="next"
+                  style="transform: translateY(${showNextText ? 0 : 64}px)"
+                >
+                  ${mediaItem.icon}
+                </button>`
+              : nothing
+          }
           <button
             style="opacity: ${isDraggingMedia ? 0 : 1}"
             @mousedown=${(e: MouseEvent) =>
@@ -309,14 +311,16 @@ export class EdgelessMindmapMenu extends EdgelessToolbarToolMixin(
         </div>
         <div class="thin-divider"></div>
         <div class="text-item">
-          ${isDraggingText
-            ? html`<button
-                class="next"
-                style="transform: translateY(${showNextText ? 0 : 64}px)"
-              >
-                ${textItem.icon}
-              </button>`
-            : nothing}
+          ${
+            isDraggingText
+              ? html`<button
+                  class="next"
+                  style="transform: translateY(${showNextText ? 0 : 64}px)"
+                >
+                  ${textItem.icon}
+                </button>`
+              : nothing
+          }
           <button
             style="opacity: ${isDraggingText ? 0 : 1}"
             @mousedown=${(e: MouseEvent) =>
@@ -350,14 +354,16 @@ export class EdgelessMindmapMenu extends EdgelessToolbarToolMixin(
           const isActive = this._style$.value === mindMap.style;
           return html`
             <div class="mindmap-item" data-is-active=${isActive}>
-              ${isBeingDragged
-                ? html`<button
-                    style="transform: translateY(${showNext ? 0 : 64}px)"
-                    class="next"
-                  >
-                    ${mindMap.icon}
-                  </button>`
-                : nothing}
+              ${
+                isBeingDragged
+                  ? html`<button
+                      style="transform: translateY(${showNext ? 0 : 64}px)"
+                      class="next"
+                    >
+                      ${mindMap.icon}
+                    </button>`
+                  : nothing
+              }
               <button
                 style="opacity: ${isBeingDragged ? 0 : 1}"
                 @mousedown=${(e: MouseEvent) => {
@@ -387,11 +393,13 @@ export class EdgelessMindmapMenu extends EdgelessToolbarToolMixin(
             </div>
           `;
         })}
-        ${this.std.store
-          .get(FeatureFlagService)
-          .getFlag('enable_mind_map_import')
-          ? this._importMindMapEntry()
-          : nothing}
+        ${
+          this.std.store
+            .get(FeatureFlagService)
+            .getFlag('enable_mind_map_import')
+            ? this._importMindMapEntry()
+            : nothing
+        }
       </div>
     </edgeless-slide-menu>`;
   }

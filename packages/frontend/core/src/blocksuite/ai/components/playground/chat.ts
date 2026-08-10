@@ -331,11 +331,13 @@ export class PlaygroundChat extends SignalWatcher(
     return html`<div class="chat-panel-container">
       <div class="chat-panel-title">
         <div class="chat-panel-title-text">
-          ${isSynchronizing
-            ? html`<span data-testid="chat-panel-embedding-progress"
-                >Synchronizing sources</span
-              >`
-            : 'AFFiNE AI'}
+          ${
+            isSynchronizing
+              ? html`<span data-testid="chat-panel-embedding-progress"
+                  >Synchronizing sources</span
+                >`
+              : 'AFFiNE AI'
+          }
         </div>
         <div class="chat-panel-add" @click=${this.addChat}>
           ${NewPageIcon()}

@@ -128,46 +128,56 @@ export class AIErrorWrapper extends SignalWatcher(WithDisposable(LitElement)) {
         <div class="icon">${InformationIcon()}</div>
         <div class="text-container">
           <div>${this.text}</div>
-          ${this.showDetailPanel
-            ? html`<div class="detail-container">
-                <div
-                  class="detail-title"
-                  @click=${() =>
-                    (this._showDetailContent.value =
-                      !this._showDetailContent.value)}
-                >
-                  <span>Show detail</span>
-                  <span
-                    class="toggle ${this._showDetailContent.value
-                      ? 'down'
-                      : 'up'}"
+          ${
+            this.showDetailPanel
+              ? html`<div class="detail-container">
+                  <div
+                    class="detail-title"
+                    @click=${() =>
+                      (this._showDetailContent.value =
+                        !this._showDetailContent.value)}
                   >
-                    ${ToggleDownIcon({ width: '16px', height: '16px' })}
-                  </span>
-                </div>
-                ${this._showDetailContent.value
-                  ? html`<div class="detail-content">${this.errorMessage}</div>`
-                  : nothing}
-              </div>`
-            : nothing}
+                    <span>Show detail</span>
+                    <span
+                      class="toggle ${
+                        this._showDetailContent.value ? 'down' : 'up'
+                      }"
+                    >
+                      ${ToggleDownIcon({ width: '16px', height: '16px' })}
+                    </span>
+                  </div>
+                  ${
+                    this._showDetailContent.value
+                      ? html`<div class="detail-content">
+                          ${this.errorMessage}
+                        </div>`
+                      : nothing
+                  }
+                </div>`
+              : nothing
+          }
         </div>
       </div>
-      ${this.showAction
-        ? html`<div class="action">
-            <span
-              class="action-button"
-              @click=${this.onClick}
-              data-testid="ai-error-action-button"
-            >
-              ${this.actionText}
-              ${this.actionTooltip
-                ? html`<affine-tooltip tip-position="top">
-                    ${this.actionTooltip}
-                  </affine-tooltip>`
-                : nothing}
-            </span>
-          </div>`
-        : nothing}
+      ${
+        this.showAction
+          ? html`<div class="action">
+              <span
+                class="action-button"
+                @click=${this.onClick}
+                data-testid="ai-error-action-button"
+              >
+                ${this.actionText}
+                ${
+                  this.actionTooltip
+                    ? html`<affine-tooltip tip-position="top">
+                        ${this.actionTooltip}
+                      </affine-tooltip>`
+                    : nothing
+                }
+              </span>
+            </div>`
+          : nothing
+      }
     </div>`;
   }
 

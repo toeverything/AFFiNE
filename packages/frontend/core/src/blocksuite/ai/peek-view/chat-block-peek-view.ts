@@ -433,29 +433,33 @@ export class AIChatBlockPeekView extends LitElement {
             .textRendererOptions=${this._textRendererOptions}
           ></ai-chat-block-message>
           ${shouldRenderError ? AIChatErrorRenderer(error, host) : nothing}
-          ${shouldRenderCopyMore
-            ? html` <chat-copy-more
-                .host=${host}
-                .session=${this.forkSession}
-                .actions=${actions}
-                .content=${markdown}
-                .isLast=${isLastReply}
-                .messageId=${message.id ?? undefined}
-                .retry=${() => this.retry()}
-                .notificationService=${notificationService}
-              ></chat-copy-more>`
-            : nothing}
-          ${shouldRenderActions
-            ? html`<chat-action-list
-                .host=${host}
-                .session=${this.forkSession}
-                .actions=${actions}
-                .content=${markdown}
-                .messageId=${message.id ?? undefined}
-                .layoutDirection=${'horizontal'}
-                .notificationService=${notificationService}
-              ></chat-action-list>`
-            : nothing}
+          ${
+            shouldRenderCopyMore
+              ? html` <chat-copy-more
+                  .host=${host}
+                  .session=${this.forkSession}
+                  .actions=${actions}
+                  .content=${markdown}
+                  .isLast=${isLastReply}
+                  .messageId=${message.id ?? undefined}
+                  .retry=${() => this.retry()}
+                  .notificationService=${notificationService}
+                ></chat-copy-more>`
+              : nothing
+          }
+          ${
+            shouldRenderActions
+              ? html`<chat-action-list
+                  .host=${host}
+                  .session=${this.forkSession}
+                  .actions=${actions}
+                  .content=${markdown}
+                  .messageId=${message.id ?? undefined}
+                  .layoutDirection=${'horizontal'}
+                  .notificationService=${notificationService}
+                ></chat-action-list>`
+              : nothing
+          }
         </div>`;
       }
     )}`;

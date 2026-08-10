@@ -191,9 +191,9 @@ export class FramePanelHeader extends WithDisposable(LitElement) {
       <div class="all-frames-setting">
         <span class="all-frames-setting-label">All frames</span>
         <edgeless-tool-icon-button
-          class="all-frames-setting-button ${this._settingPopperShow
-            ? 'active'
-            : ''}"
+          class="all-frames-setting-button ${
+            this._settingPopperShow ? 'active' : ''
+          }"
           .tooltip=${this._settingPopperShow ? '' : 'All Frames Settings'}
           .tipPosition=${'top'}
           .active=${this._settingPopperShow}
