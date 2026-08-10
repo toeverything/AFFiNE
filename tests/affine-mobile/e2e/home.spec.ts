@@ -1,7 +1,7 @@
 import { test } from '@affine-test/kit/mobile';
 import { expect } from '@playwright/test';
 
-import { expandCollapsibleSection, pageBack } from './utils';
+import { expandCollapsibleSection, openTab, pageBack } from './utils';
 
 declare global {
   interface Window {
@@ -126,6 +126,37 @@ test('all tab', async ({ page }) => {
   const todayDocs = page.getByTestId('doc-list-item');
   await expect(todayDocs.first()).toBeVisible();
   expect(await todayDocs.count()).toBeGreaterThan(0);
+});
+
+test('trash tab', async ({ page }) => {
+  await openTab(page, 'all');
+  await page.getByRole('link', { name: 'Trash', exact: true }).click();
+
+  await expect(page).toHaveURL(/\/trash$/);
+  await expect(page.getByText('Deleted docs will appear here.')).toBeVisible();
+});
+
+test('a trashed doc can be found and restored from trash', async ({ page }) => {
+  await openTab(page, 'all');
+  const doc = page.getByTestId('doc-list-item').first();
+  await expect(doc).toBeVisible();
+  const title = await doc.getByTestId('doc-list-item-title').textContent();
+  expect(title).toBeTruthy();
+
+  await doc.click();
+  await expect(page.locator('.affine-page-viewport')).toBeVisible();
+  await page.getByTestId('detail-page-header-more-button').click();
+  await page.getByRole('button', { name: 'Move to trash' }).click();
+  await page.getByRole('button', { name: 'Delete', exact: true }).click();
+
+  await openTab(page, 'all');
+  await page.getByRole('link', { name: 'Trash', exact: true }).click();
+  const trashed = page.getByTestId('doc-list-item').first();
+  await expect(trashed).toBeVisible();
+  await expect(trashed).toContainText(title ?? '');
+
+  await trashed.getByTestId('restore-page-button').click();
+  await expect(page.getByText('Deleted docs will appear here.')).toBeVisible();
 });
 
 test('search restores query and results without reopening the keyboard', async ({
