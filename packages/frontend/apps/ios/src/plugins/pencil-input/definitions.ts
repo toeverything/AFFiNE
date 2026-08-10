@@ -27,6 +27,18 @@ export interface TouchClassifiedEvent {
   touches: ClassifiedTouch[];
 }
 
+export interface ScribbleRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface ScribbleWillBeginEvent {
+  x: number;
+  y: number;
+}
+
 /**
  * Forwards native `UITouch.TouchType` classification to the web layer.
  *
@@ -42,8 +54,22 @@ export interface PencilInputPlugin {
   /** Detach the observer. */
   stop: () => Promise<{ value: boolean }>;
   isObserving: () => Promise<{ value: boolean }>;
-  addListener: (
+  /**
+   * Keep the native iPadOS Scribble gate in sync with Web editable regions.
+   *
+   * Coordinates are CSS viewport pixels from `getBoundingClientRect()`, which
+   * align with WKWebView point coordinates for the non-zoomed iOS shell.
+   */
+  updateScribbleState: (options: {
+    enabled: boolean;
+    rects: ScribbleRect[];
+  }) => Promise<{ value: boolean }>;
+  addListener(
     eventName: 'touchClassified',
     listenerFunc: (event: TouchClassifiedEvent) => void
-  ) => Promise<PluginListenerHandle>;
+  ): Promise<PluginListenerHandle>;
+  addListener(
+    eventName: 'scribbleWillBegin',
+    listenerFunc: (event: ScribbleWillBeginEvent) => void
+  ): Promise<PluginListenerHandle>;
 }

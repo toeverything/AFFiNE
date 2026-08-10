@@ -31,6 +31,23 @@ function createContext(
 
 const POLL_INTERVAL = 1000;
 
+export function isEditableScribbleTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) {
+    return false;
+  }
+
+  if (target.closest('input, textarea')) {
+    return true;
+  }
+
+  const inlineEditor = target.closest('[data-v-root="true"]');
+  return inlineEditor?.getAttribute('contenteditable') === 'true';
+}
+
+function isPencilScribbleEvent(event: PointerEvent): boolean {
+  return event.pointerType === 'pen' && isEditableScribbleTarget(event.target);
+}
+
 abstract class PointerControllerBase {
   constructor(
     protected _dispatcher: UIEventDispatcher,
@@ -44,6 +61,11 @@ class PointerEventForward extends PointerControllerBase {
   private readonly _down = (event: PointerEvent) => {
     const { pointerId } = event;
 
+    if (isPencilScribbleEvent(event)) {
+      this._ignoredPointerIds.add(pointerId);
+      return;
+    }
+
     const pointerState = new PointerEventState({
       event,
       rect: this._getRect(),
@@ -56,10 +78,20 @@ class PointerEventForward extends PointerControllerBase {
     this._dispatcher.run('pointerDown', createContext(event, pointerState));
   };
 
+  private readonly _ignoredPointerIds = new Set<PointerId>();
+
   private readonly _lastStates = new Map<PointerId, PointerEventState>();
 
   private readonly _move = (event: PointerEvent) => {
     const { pointerId } = event;
+
+    if (
+      this._ignoredPointerIds.has(pointerId) ||
+      isPencilScribbleEvent(event)
+    ) {
+      this._ignoredPointerIds.add(pointerId);
+      return;
+    }
 
     const start = this._startStates.get(pointerId) ?? null;
     const last = this._lastStates.get(pointerId) ?? null;
@@ -80,6 +112,14 @@ class PointerEventForward extends PointerControllerBase {
 
   private readonly _upOrOut = (up: boolean) => (event: PointerEvent) => {
     const { pointerId } = event;
+
+    if (
+      this._ignoredPointerIds.has(pointerId) ||
+      isPencilScribbleEvent(event)
+    ) {
+      this._ignoredPointerIds.delete(pointerId);
+      return;
+    }
 
     const start = this._startStates.get(pointerId) ?? null;
     const last = this._lastStates.get(pointerId) ?? null;
@@ -115,6 +155,13 @@ class ClickController extends PointerControllerBase {
     // disable for secondary pointer
     if (event.isPrimary === false) return;
 
+    if (isPencilScribbleEvent(event)) {
+      this._ignoredPointerIds.add(event.pointerId);
+      this._downPointerState = null;
+      this._pointerDownCount = 0;
+      return;
+    }
+
     if (
       this._downPointerState &&
       event.pointerId === this._downPointerState.raw.pointerId &&
@@ -137,9 +184,16 @@ class ClickController extends PointerControllerBase {
 
   private _downPointerState: PointerEventState | null = null;
 
+  private readonly _ignoredPointerIds = new Set<PointerId>();
+
   private _pointerDownCount = 0;
 
   private readonly _up = (event: PointerEvent) => {
+    if (this._ignoredPointerIds.has(event.pointerId)) {
+      this._ignoredPointerIds.delete(event.pointerId);
+      return;
+    }
+
     if (!this._downPointerState) return;
 
     if (isFarEnough(this._downPointerState.raw, event)) {
@@ -181,6 +235,11 @@ class ClickController extends PointerControllerBase {
 class DragController extends PointerControllerBase {
   private readonly _down = (event: PointerEvent) => {
     if (this._nativeDragging) return;
+
+    if (isPencilScribbleEvent(event)) {
+      this._reset();
+      return;
+    }
 
     // iPad Apple Pencil routing: a palm contact must never start or terminate a
     // stroke, and an incidental second contact must not interrupt an active pen
@@ -393,6 +452,10 @@ class DragController extends PointerControllerBase {
 
     const { host, disposables } = this._dispatcher;
     disposables.addFromEvent(host, 'touchmove', (event: TouchEvent) => {
+      if (isEditableScribbleTarget(event.target)) {
+        return;
+      }
+
       if (
         this._dragging &&
         this._startPointerState &&
