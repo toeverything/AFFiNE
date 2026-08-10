@@ -45,7 +45,7 @@ import {
   useServices,
 } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { catchError, EMPTY, finalize, switchMap, tap, timeout } from 'rxjs';
 
 /**
@@ -147,16 +147,9 @@ export const WorkspaceSideEffects = () => {
   const realtimeConnectionError = useLiveData(
     useService(RealtimeService).connectionError$
   );
-  const realtimeConnectionErrorId = useRef<string | number | null>(null);
 
   useEffect(() => {
-    if (!realtimeConnectionError) {
-      if (realtimeConnectionErrorId.current !== null) {
-        notify.dismiss(realtimeConnectionErrorId.current);
-        realtimeConnectionErrorId.current = null;
-      }
-      return;
-    }
+    if (!realtimeConnectionError) return;
     const message = {
       authentication:
         t['com.affine.realtime.connection-error.authentication'](),
@@ -164,13 +157,16 @@ export const WorkspaceSideEffects = () => {
       server: t['com.affine.realtime.connection-error.server'](),
       timeout: t['com.affine.realtime.connection-error.timeout'](),
     }[realtimeConnectionError.type];
-    realtimeConnectionErrorId.current = notify.warning(
+    const id = notify.warning(
       {
         title: t['com.affine.realtime.connection-error.title'](),
         message,
       },
       { id: `realtime-connection-error:${realtimeConnectionError.endpoint}` }
     );
+    return () => {
+      notify.dismiss(id);
+    };
   }, [realtimeConnectionError, t]);
 
   useEffect(() => {
