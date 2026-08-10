@@ -3,7 +3,7 @@
   "description": "BlockSuite data store built for general purpose state management.",
   "type": "module",
   "scripts": {
-    "build": "tsc"
+    "build": "yarn run -T tsc"
   },
   "sideEffects": false,
   "keywords": [],
