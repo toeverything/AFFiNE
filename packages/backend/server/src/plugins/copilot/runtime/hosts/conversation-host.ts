@@ -101,6 +101,7 @@ export class ConversationHost {
           {
             workspaceId: session.config.workspaceId,
             mimeType: source.mimeType,
+            fileName: source.fileName,
             libraryOwned: false,
           },
           Buffer.from(source.data, 'base64')

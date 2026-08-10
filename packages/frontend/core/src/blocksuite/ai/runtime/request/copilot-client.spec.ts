@@ -58,7 +58,7 @@ describe('CopilotClient action streams', () => {
     expect(
       resolveError({
         name: 'COPILOT_SELECTED_SOURCES_PROCESSING',
-        type: 'INTERNAL_SERVER_ERROR',
+        type: 'BAD_REQUEST',
         message: 'processing',
       })
     ).toBeInstanceOf(SelectedSourcesProcessingError);

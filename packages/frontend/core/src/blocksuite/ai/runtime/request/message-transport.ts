@@ -65,6 +65,11 @@ async function resizeImage(blob: Blob | File): Promise<Blob | null> {
   return null;
 }
 
+function jpegFileName(name: string) {
+  const stem = name.replace(/\.[^./\\]+$/, '');
+  return `${stem || 'image'}.jpg`;
+}
+
 interface CreateMessageOptions {
   client: CopilotClient;
   sessionId: string;
@@ -104,12 +109,15 @@ async function createMessage({
             ? await resizeImage(blob)
             : blob;
           if (!file) return null;
+          const resized = file !== blob;
           return new File(
             [file],
-            blob instanceof File ? blob.name : sessionId,
-            {
-              type: file.type,
-            }
+            resized
+              ? jpegFileName(blob instanceof File ? blob.name : sessionId)
+              : blob instanceof File
+                ? blob.name
+                : sessionId,
+            { type: file.type }
           );
         })
       )

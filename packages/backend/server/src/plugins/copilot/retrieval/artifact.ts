@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 
+import { AccessDenied } from '../../../base';
 import { PermissionAccess } from '../../../core/permission';
 import type { RuntimeRetrievalScope } from '../../../native';
 import { NativeEmbeddingService } from '../embedding/native';
@@ -31,7 +32,7 @@ export class ArtifactRetrievalService {
     signal?: AbortSignal;
   }) {
     if (!(await this.authorize(options.userId, options.workspaceId))) {
-      throw new Error('ARTIFACT_ACCESS_DENIED');
+      throw new AccessDenied();
     }
     let degraded = false;
     let matched: Awaited<ReturnType<NativeEmbeddingService['match']>> = [];
@@ -104,7 +105,7 @@ export class ArtifactRetrievalService {
     cursor?: string;
   }) {
     if (!(await this.authorize(options.userId, options.workspaceId))) {
-      throw new Error('ARTIFACT_ACCESS_DENIED');
+      throw new AccessDenied();
     }
     const [result, metadata] = await Promise.all([
       this.embedding.readSourceContent(
@@ -124,7 +125,7 @@ export class ArtifactRetrievalService {
     ]);
     return {
       ...result,
-      name: metadata.get(options.artifactId)?.name,
+      name: metadata.get(options.artifactId)?.name ?? result.name,
       mimeType: metadata.get(options.artifactId)?.mimeType ?? result.mimeType,
     };
   }

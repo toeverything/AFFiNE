@@ -185,8 +185,11 @@ pub(super) async fn register_artifact(pool: &PgPool, artifact: &RuntimeWorkspace
     .begin()
     .await
     .map_err(|error| RuntimeError::database("register artifact source transaction failed", error))?;
-  let descriptor_revision = format!("{}:{}", artifact.canonical_media_type, artifact.size);
-  let file_name = extraction_file_name(&artifact.canonical_media_type);
+  let file_name = artifact
+    .file_name
+    .clone()
+    .unwrap_or_else(|| extraction_file_name(&artifact.canonical_media_type));
+  let descriptor_revision = format!("{}:{}:{file_name}", artifact.canonical_media_type, artifact.size);
   let source_id = sqlx::query_scalar::<_, Uuid>(
     r#"INSERT INTO embedding_sources(
       id,workspace_id,source_kind,source_key,content_revision,descriptor_revision,

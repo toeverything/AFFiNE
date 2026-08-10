@@ -774,6 +774,7 @@ model WorkspaceArtifact {
   workspaceId          String    @map("workspace_id") @db.VarChar
   contentHash          String    @map("content_hash") @db.VarChar
   displayName          String?   @map("display_name") @db.VarChar
+  fileName             String?   @map("file_name") @db.VarChar
   canonicalMediaType   String    @map("canonical_media_type") @db.VarChar
   sizeBytes            BigInt    @map("size_bytes")
   storageScope         String    @map("storage_scope") @db.VarChar

@@ -115,6 +115,7 @@ pub struct PutWorkspaceArtifactInput {
   pub workspace_id: String,
   pub mime_type: String,
   pub display_name: Option<String>,
+  pub file_name: Option<String>,
   pub library_owned: Option<bool>,
 }
 
@@ -124,6 +125,7 @@ pub struct EnsureWorkspaceBlobArtifactInput {
   pub blob_id: String,
   pub mime_type: String,
   pub display_name: Option<String>,
+  pub file_name: Option<String>,
   pub library_owned: Option<bool>,
 }
 
@@ -133,6 +135,7 @@ pub struct RuntimeWorkspaceArtifact {
   pub workspace_id: String,
   pub content_hash: String,
   pub display_name: Option<String>,
+  pub file_name: Option<String>,
   pub canonical_media_type: String,
   #[napi(ts_type = "bigint | number")]
   pub size: i64,

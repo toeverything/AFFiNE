@@ -30,6 +30,7 @@ CREATE TABLE "workspace_artifacts" (
   "workspace_id" VARCHAR NOT NULL,
   "content_hash" VARCHAR NOT NULL,
   "display_name" VARCHAR,
+  "file_name" VARCHAR,
   "canonical_media_type" VARCHAR NOT NULL,
   "size_bytes" BIGINT NOT NULL,
   "storage_scope" VARCHAR NOT NULL,

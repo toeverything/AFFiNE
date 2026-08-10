@@ -253,6 +253,7 @@ export function AIChatErrorRenderer(
     return GeneralErrorRenderer({
       text: I18n['com.affine.ai.error.selectedSourcesProcessing'](),
       actionText: I18n['com.affine.ai.error.retry'](),
+      actionTooltip: '',
       onClick: retry,
       showAction: !!retry,
     });
@@ -260,6 +261,7 @@ export function AIChatErrorRenderer(
     return GeneralErrorRenderer({
       text: I18n['com.affine.ai.error.selectedSourcesFailed'](),
       actionText: I18n['com.affine.ai.error.retry'](),
+      actionTooltip: '',
       onClick: retry,
       showAction: !!retry,
     });
@@ -267,6 +269,7 @@ export function AIChatErrorRenderer(
     return GeneralErrorRenderer({
       text: I18n['com.affine.ai.error.selectedSourcesUnavailable'](),
       actionText: I18n['com.affine.ai.error.retry'](),
+      actionTooltip: '',
       onClick: retry,
       showAction: !!retry,
     });

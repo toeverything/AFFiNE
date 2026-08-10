@@ -24,6 +24,7 @@ struct ArtifactRow {
   workspace_id: String,
   content_hash: String,
   display_name: Option<String>,
+  file_name: Option<String>,
   canonical_media_type: String,
   size_bytes: i64,
   storage_scope: String,
@@ -36,6 +37,7 @@ struct ArtifactReservation<'a> {
   workspace_id: &'a str,
   content_hash: &'a str,
   display_name: Option<&'a str>,
+  file_name: Option<&'a str>,
   media_type: &'a str,
   size: i64,
   locator: &'a ObjectLocator,
@@ -65,6 +67,7 @@ impl ArtifactService {
         workspace_id: &input.workspace_id,
         content_hash: &content_hash,
         display_name: input.display_name.as_deref(),
+        file_name: input.file_name.as_deref(),
         media_type: &media_type,
         size: body.len() as i64,
         locator: &locator,
@@ -117,6 +120,7 @@ impl ArtifactService {
         workspace_id: &input.workspace_id,
         content_hash: &content_hash,
         display_name: input.display_name.as_deref(),
+        file_name: input.file_name.as_deref(),
         media_type: &media_type,
         size: object.body.len() as i64,
         locator: &locator,
@@ -177,7 +181,7 @@ impl ArtifactService {
           OR artifact.status='ready' AND NOT artifact.library_owned
             AND artifact.updated_at<clock_timestamp()-interval '24 hours'
             AND NOT EXISTS(SELECT 1 FROM ai_message_artifacts reference WHERE reference.artifact_id=artifact.id)
-        ) RETURNING id,workspace_id,content_hash,display_name,canonical_media_type,size_bytes,
+        ) RETURNING id,workspace_id,content_hash,display_name,file_name,canonical_media_type,size_bytes,
           storage_scope,storage_key,status,library_owned"#,
       )
       .bind(artifact_id)
@@ -221,13 +225,27 @@ impl ArtifactService {
     display_name: Option<String>,
   ) -> RuntimeResult<types::RuntimeWorkspaceArtifact> {
     let artifact_id = Uuid::parse_str(artifact_id).map_err(|_| RuntimeError::invalid_input("artifact_id_invalid"))?;
+    let current = sqlx::query_as::<_, ArtifactRow>(
+      r#"SELECT id,workspace_id,content_hash,display_name,file_name,canonical_media_type,size_bytes,
+        storage_scope,storage_key,status,library_owned
+      FROM workspace_artifacts WHERE workspace_id=$1 AND id=$2 AND status='ready'"#,
+    )
+    .bind(workspace_id)
+    .bind(artifact_id)
+    .fetch_optional(&self.pool)
+    .await
+    .map_err(|error| RuntimeError::database("load artifact library ownership failed", error))?
+    .ok_or_else(|| RuntimeError::invalid_input("artifact_not_found"))?;
+    validate_library_display_name(
+      library_owned,
+      display_name.as_deref().or(current.display_name.as_deref()),
+    )?;
     sqlx::query_as::<_, ArtifactRow>(
       r#"UPDATE workspace_artifacts SET library_owned=$3,
         display_name=CASE WHEN $3 THEN coalesce($4,display_name) ELSE display_name END,
         updated_at=now()
       WHERE workspace_id=$1 AND id=$2 AND status='ready'
-        AND (NOT $3 OR nullif(btrim(coalesce($4,display_name)),'') IS NOT NULL)
-      RETURNING id,workspace_id,content_hash,display_name,canonical_media_type,size_bytes,
+      RETURNING id,workspace_id,content_hash,display_name,file_name,canonical_media_type,size_bytes,
         storage_scope,storage_key,status,library_owned"#,
     )
     .bind(workspace_id)
@@ -238,9 +256,7 @@ impl ArtifactService {
     .await
     .map(Into::into)
     .map_err(|error| match error {
-      sqlx::Error::RowNotFound if library_owned => {
-        RuntimeError::invalid_input("artifact_library_display_name_required")
-      }
+      sqlx::Error::RowNotFound => RuntimeError::invalid_input("artifact_not_found"),
       error => RuntimeError::database("update artifact library ownership failed", error),
     })
   }
@@ -248,24 +264,26 @@ impl ArtifactService {
   async fn reserve(&self, input: ArtifactReservation<'_>) -> RuntimeResult<ArtifactRow> {
     sqlx::query_as::<_, ArtifactRow>(
       r#"INSERT INTO workspace_artifacts(
-        id,workspace_id,content_hash,display_name,canonical_media_type,size_bytes,storage_scope,storage_key,status,
+        id,workspace_id,content_hash,display_name,file_name,canonical_media_type,size_bytes,storage_scope,storage_key,status,
         library_owned,reservation_expires_at,created_at,updated_at)
-      VALUES($1,$2,$3,$4,$5,$6,$7,$8,'reserving',$9,now()+interval '24 hours',now(),now())
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,'reserving',$10,now()+interval '24 hours',now(),now())
       ON CONFLICT(workspace_id,content_hash) DO UPDATE SET
         library_owned=workspace_artifacts.library_owned OR EXCLUDED.library_owned,
         display_name=CASE
           WHEN EXCLUDED.library_owned AND EXCLUDED.display_name IS NOT NULL THEN EXCLUDED.display_name
           ELSE coalesce(workspace_artifacts.display_name,EXCLUDED.display_name)
         END,
+        file_name=coalesce(workspace_artifacts.file_name,EXCLUDED.file_name),
         reservation_expires_at=CASE WHEN workspace_artifacts.status='ready' THEN NULL ELSE EXCLUDED.reservation_expires_at END,
         updated_at=now()
       WHERE workspace_artifacts.status<>'deleting'
-      RETURNING id,workspace_id,content_hash,display_name,canonical_media_type,size_bytes,storage_scope,storage_key,status,library_owned"#,
+      RETURNING id,workspace_id,content_hash,display_name,file_name,canonical_media_type,size_bytes,storage_scope,storage_key,status,library_owned"#,
     )
     .bind(Uuid::new_v4())
     .bind(input.workspace_id)
     .bind(input.content_hash)
     .bind(input.display_name)
+    .bind(input.file_name)
     .bind(input.media_type)
     .bind(input.size)
     .bind(input.locator.scope.as_str())
@@ -312,7 +330,7 @@ impl ArtifactService {
 
   async fn get(&self, workspace_id: &str, content_hash: &str) -> RuntimeResult<types::RuntimeWorkspaceArtifact> {
     sqlx::query_as::<_, ArtifactRow>(
-      r#"SELECT id,workspace_id,content_hash,display_name,canonical_media_type,size_bytes,storage_scope,storage_key,status,library_owned
+      r#"SELECT id,workspace_id,content_hash,display_name,file_name,canonical_media_type,size_bytes,storage_scope,storage_key,status,library_owned
       FROM workspace_artifacts WHERE workspace_id=$1 AND content_hash=$2"#,
     )
     .bind(workspace_id)
@@ -366,6 +384,7 @@ impl From<ArtifactRow> for types::RuntimeWorkspaceArtifact {
       workspace_id: row.workspace_id,
       content_hash: row.content_hash,
       display_name: row.display_name,
+      file_name: row.file_name,
       canonical_media_type: row.canonical_media_type,
       size: row.size_bytes,
       storage_scope: row.storage_scope,

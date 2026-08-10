@@ -63,6 +63,7 @@ export class CopilotWorkspaceService implements OnApplicationBootstrap {
         workspaceId,
         mimeType: sniffMime(buffer, content.mimetype) || content.mimetype,
         displayName: content.filename,
+        fileName: content.filename,
         libraryOwned: true,
       },
       buffer

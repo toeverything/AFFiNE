@@ -311,6 +311,7 @@ describe('AIChatMessages scrolling', () => {
       errorContainer.querySelector<AIErrorWrapper>('ai-error-wrapper');
     await error?.updateComplete;
     expect(error?.text).toContain('still processing');
+    expect(error?.actionTooltip).toBe('');
     error?.shadowRoot
       ?.querySelector<HTMLElement>('[data-testid="ai-error-action-button"]')
       ?.click();

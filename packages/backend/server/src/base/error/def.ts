@@ -799,11 +799,11 @@ export const USER_FRIENDLY_ERRORS = {
     message: `Embedding feature not available, you may need to install pgvector extension to your database`,
   },
   copilot_selected_sources_processing: {
-    type: 'internal_server_error',
+    type: 'bad_request',
     message: `Selected sources are still processing. Try again shortly.`,
   },
   copilot_selected_sources_failed: {
-    type: 'internal_server_error',
+    type: 'bad_request',
     message: `Selected sources could not be processed. Remove the failed source or try again.`,
   },
   copilot_selected_sources_unavailable: {

@@ -92,6 +92,7 @@ test('workspace artifacts deduplicate bytes and remain workspace isolated', asyn
       workspaceId: workspace.id,
       mimeType: 'text/plain',
       displayName: 'first.txt',
+      fileName: 'first.txt',
       libraryOwned: false,
     },
     body
@@ -101,13 +102,36 @@ test('workspace artifacts deduplicate bytes and remain workspace isolated', asyn
       workspaceId: workspace.id,
       mimeType: 'text/plain',
       displayName: 'repeated.txt',
+      fileName: 'repeated.txt',
       libraryOwned: true,
     },
     body
   );
   t.is(repeated.id, first.id);
   t.is(repeated.displayName, 'repeated.txt');
+  t.is(repeated.fileName, 'first.txt');
   t.true(repeated.libraryOwned);
+
+  const unnamed = await t.context.runtime.putWorkspaceArtifact(
+    {
+      workspaceId: workspace.id,
+      mimeType: 'application/octet-stream',
+      libraryOwned: false,
+    },
+    Buffer.from('unnamed artifact')
+  );
+  await t.throwsAsync(
+    t.context.runtime.setArtifactLibraryOwned(workspace.id, unnamed.id, true),
+    { message: 'artifact_library_display_name_required' }
+  );
+  await t.throwsAsync(
+    t.context.runtime.setArtifactLibraryOwned(
+      workspace.id,
+      '6ba7b811-9dad-11d1-80b4-00c04fd430c8',
+      false
+    ),
+    { message: 'artifact_not_found' }
+  );
 
   const blobId = createHash('sha256').update(body).digest('base64url');
   await t.context.storage.put(workspace.id, blobId, body);
@@ -142,6 +166,7 @@ test('workspace artifacts deduplicate bytes and remain workspace isolated', asyn
     {
       workspaceId: otherWorkspace.id,
       mimeType: 'text/plain',
+      fileName: 'isolated.txt',
       libraryOwned: false,
     },
     body
@@ -194,6 +219,7 @@ test('workspace artifacts deduplicate bytes and remain workspace isolated', asyn
       workspaceId: workspace.id,
       mimeType: 'text/plain',
       displayName: 'reused.txt',
+      fileName: 'reused.txt',
       libraryOwned: false,
     },
     body

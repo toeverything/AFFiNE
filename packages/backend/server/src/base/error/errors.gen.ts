@@ -883,13 +883,13 @@ export class CopilotEmbeddingUnavailable extends UserFriendlyError {
 
 export class CopilotSelectedSourcesProcessing extends UserFriendlyError {
   constructor(message?: string) {
-    super('internal_server_error', 'copilot_selected_sources_processing', message);
+    super('bad_request', 'copilot_selected_sources_processing', message);
   }
 }
 
 export class CopilotSelectedSourcesFailed extends UserFriendlyError {
   constructor(message?: string) {
-    super('internal_server_error', 'copilot_selected_sources_failed', message);
+    super('bad_request', 'copilot_selected_sources_failed', message);
   }
 }
 

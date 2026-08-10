@@ -556,6 +556,7 @@ export interface EnsureWorkspaceBlobArtifactInput {
   blobId: string
   mimeType: string
   displayName?: string
+  fileName?: string
   libraryOwned?: boolean
 }
 
@@ -1049,6 +1050,7 @@ export interface PutWorkspaceArtifactInput {
   workspaceId: string
   mimeType: string
   displayName?: string
+  fileName?: string
   libraryOwned?: boolean
 }
 
@@ -1455,6 +1457,7 @@ export interface RuntimeWorkspaceArtifact {
   workspaceId: string
   contentHash: string
   displayName?: string
+  fileName?: string
   canonicalMediaType: string
   size: bigint | number
   storageScope: string

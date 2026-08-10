@@ -5,7 +5,12 @@ import type { PrismaClient } from '@prisma/client';
 import ava from 'ava';
 import { firstValueFrom } from 'rxjs';
 
-import type { Config, EventBus, JobQueue } from '../../base';
+import {
+  AccessDenied,
+  type Config,
+  type EventBus,
+  type JobQueue,
+} from '../../base';
 import { ServerFeature, type ServerService } from '../../core';
 import type { DocReader } from '../../core/doc';
 import type { PermissionAccess } from '../../core/permission';
@@ -633,6 +638,49 @@ test('document tools enforce the user-selected hard scope', async t => {
       name: 'original-note.txt',
     },
   });
+  const fallbackArtifactRetrieval = new ArtifactRetrievalService(
+    {
+      user: () => ({
+        workspace: () => ({
+          allowLocal: () => ({ can: async () => true }),
+        }),
+      }),
+    } as unknown as PermissionAccess,
+    artifactEmbedding,
+    {
+      workspaceArtifact: { findMany: async () => [] },
+      aiMessageArtifact: { findMany: async () => [] },
+    } as unknown as PrismaClient
+  );
+  t.like(
+    await fallbackArtifactRetrieval.read({
+      userId: 'user-1',
+      workspaceId: 'workspace-1',
+      artifactId: artifactScope.requiredArtifactIds[0],
+      retrieval: artifactScope,
+    }),
+    { name: 'note.txt', mimeType: 'text/plain' }
+  );
+  const deniedArtifactRetrieval = new ArtifactRetrievalService(
+    {
+      user: () => ({
+        workspace: () => ({
+          allowLocal: () => ({ can: async () => false }),
+        }),
+      }),
+    } as unknown as PermissionAccess,
+    artifactEmbedding,
+    {} as PrismaClient
+  );
+  await t.throwsAsync(
+    deniedArtifactRetrieval.read({
+      userId: 'user-1',
+      workspaceId: 'workspace-1',
+      artifactId: artifactScope.requiredArtifactIds[0],
+      retrieval: artifactScope,
+    }),
+    { instanceOf: AccessDenied }
+  );
   const deniedArtifactRead = await artifactRead.execute?.(
     { artifact_id: '6ba7b811-9dad-11d1-80b4-00c04fd430c8' },
     {}
