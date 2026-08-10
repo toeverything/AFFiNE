@@ -3,7 +3,7 @@
   "description": "BlockSuite for Affine",
   "type": "module",
   "scripts": {
-    "build": "tsc --build --verbose"
+    "build": "yarn run -T tsc --build --verbose"
   },
   "sideEffects": false,
   "keywords": [],
