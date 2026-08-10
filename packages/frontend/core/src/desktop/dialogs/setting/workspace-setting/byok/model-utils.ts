@@ -1,4 +1,12 @@
-import type { ByokProvider } from '@affine/graphql';
+import {
+  ByokAttachmentKind,
+  ByokAttachmentSource,
+  ByokModelFeature,
+  ByokModelInput,
+  ByokModelOutput,
+  ByokProbeOperation,
+  type ByokProvider,
+} from '@affine/graphql';
 
 import type { ByokDefinition, ByokSettings } from './types';
 
@@ -28,42 +36,62 @@ export const useCases: { id: UseCase; labelKey: string }[] = [
 export function capabilityForUseCase(useCase: UseCase): Capability {
   switch (useCase) {
     case 'actions':
-      return modelCapability(['text'], ['text'], ['tools']);
+      return modelCapability(
+        [ByokModelInput.text],
+        [ByokModelOutput.text],
+        [ByokModelFeature.tool_calling]
+      );
     case 'structured':
-      return modelCapability(['text'], ['structured']);
+      return modelCapability(
+        [ByokModelInput.text],
+        [ByokModelOutput.structured]
+      );
     case 'vision':
       return modelCapability(
-        ['text', 'image'],
-        ['text'],
+        [ByokModelInput.text, ByokModelInput.image],
+        [ByokModelOutput.text],
         [],
-        ['image'],
-        ['url', 'data', 'bytes', 'file_handle']
+        [ByokAttachmentKind.image],
+        [
+          ByokAttachmentSource.url,
+          ByokAttachmentSource.data,
+          ByokAttachmentSource.bytes,
+          ByokAttachmentSource.file_handle,
+        ]
       );
     case 'image':
-      return modelCapability(['text'], ['image']);
+      return modelCapability([ByokModelInput.text], [ByokModelOutput.image]);
     case 'transcript':
       return modelCapability(
-        ['audio'],
-        ['structured'],
+        [ByokModelInput.audio],
+        [ByokModelOutput.structured],
         [],
-        ['audio'],
-        ['url', 'data', 'bytes', 'file_handle']
+        [ByokAttachmentKind.audio],
+        [
+          ByokAttachmentSource.url,
+          ByokAttachmentSource.data,
+          ByokAttachmentSource.bytes,
+          ByokAttachmentSource.file_handle,
+        ]
       );
     case 'embedding':
-      return modelCapability(['text'], ['embedding']);
+      return modelCapability(
+        [ByokModelInput.text],
+        [ByokModelOutput.embedding]
+      );
     case 'rerank':
-      return modelCapability(['text'], ['rerank']);
+      return modelCapability([ByokModelInput.text], [ByokModelOutput.rerank]);
     default:
-      return modelCapability(['text'], ['text']);
+      return modelCapability([ByokModelInput.text], [ByokModelOutput.text]);
   }
 }
 
 function modelCapability(
-  input: string[],
-  output: string[],
-  features: string[] = [],
-  attachmentKinds: string[] = [],
-  attachmentSources: string[] = []
+  input: ByokModelInput[],
+  output: ByokModelOutput[],
+  features: ByokModelFeature[] = [],
+  attachmentKinds: ByokAttachmentKind[] = [],
+  attachmentSources: ByokAttachmentSource[] = []
 ): Capability {
   return { input, output, features, attachmentKinds, attachmentSources };
 }
@@ -78,7 +106,7 @@ function matchesCapability(value: Capability, useCase: UseCase) {
     'attachmentSources',
   ] as const;
   return fields.every(field =>
-    expected[field].every(item => value[field].includes(item))
+    expected[field].every(item => new Set<string>(value[field]).has(item))
   );
 }
 
@@ -127,7 +155,10 @@ export function probeChecks(models: ModelDeclaration[], includeImage: boolean) {
         )
         .map(useCase => ({
           modelId: model.modelId,
-          operation: useCase === 'actions' ? 'tools' : useCase,
+          operation:
+            useCase === 'actions'
+              ? ByokProbeOperation.tool_calling
+              : ByokProbeOperation[useCase],
         }))
     );
 }

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-import { CopilotContextService } from '../context/service';
+import { BackendRuntimeEmbeddingJob } from '../../../core/backend-runtime';
 import { type Turn } from '../core';
 import {
   type ModelConditions,
@@ -20,32 +20,14 @@ import { TurnPersistence } from './hosts/turn-persistence';
 export class TurnOrchestrator {
   constructor(
     private readonly conversations: ConversationHost,
-    private readonly context: CopilotContextService,
     private readonly runtime: CapabilityRuntime,
     private readonly imageResults: ImageResultHost,
-    private readonly turnPersistence: TurnPersistence
+    private readonly turnPersistence: TurnPersistence,
+    private readonly embeddings: BackendRuntimeEmbeddingJob
   ) {}
 
-  private async buildPromptParams(
-    sessionId: string,
-    options: {
-      latestTurn?: Turn;
-      includeContextFiles?: boolean;
-    } = {}
-  ): Promise<Record<string, unknown>> {
-    const current = await this.context.getBySessionId(sessionId);
-    const contextFiles =
-      options.includeContextFiles &&
-      current &&
-      (current.files.length > 0 || current.blobs.length > 0)
-        ? [...current.files, ...(await current.getBlobMetadata())]
-        : [];
-    const latestTurn = options.latestTurn;
-
-    return {
-      ...this.conversations.buildLatestTurnPromptParams(latestTurn),
-      ...(contextFiles.length ? { contextFiles } : {}),
-    };
+  private buildPromptParams(latestTurn?: Turn): Record<string, unknown> {
+    return this.conversations.buildLatestTurnPromptParams(latestTurn);
   }
 
   private async prepareChatSelection(
@@ -54,7 +36,6 @@ export class TurnOrchestrator {
     query: Record<string, string | string[]>,
     selection: {
       responseMode: 'text' | 'object' | 'image';
-      includeContextFiles?: boolean;
     }
   ) {
     const prepared = await this.conversations.prepareTurn(
@@ -71,15 +52,18 @@ export class TurnOrchestrator {
       toolsConfig,
       byokLeaseId,
     } = ChatQuerySchema.parse(query);
-    const promptParams = await this.buildPromptParams(sessionId, {
-      latestTurn: prepared.latestTurn,
-      includeContextFiles: selection.includeContextFiles,
-    });
+    const promptParams = this.buildPromptParams(prepared.latestTurn);
+    const scope = prepared.latestTurn?.scopeSnapshot?.retrieval;
+    if (scope?.mode === 'required' && scope.requiredDocIds.length) {
+      await this.embeddings.prepareSelectedDocuments(
+        prepared.session.config.workspaceId,
+        scope.requiredDocIds
+      );
+    }
     const finalMessage = prepared.session.finish({
       ...prepared.params,
       ...promptParams,
     });
-
     return {
       prepared,
       finalMessage,
@@ -97,6 +81,7 @@ export class TurnOrchestrator {
           builtInRouteId: prepared.session.config.promptName,
           managedTargetId: routeTargetId,
           quotaBackedRoutesAllowed: prepared.quotaBackedRoutesAllowed,
+          retrievalScope: prepared.latestTurn?.scopeSnapshot?.retrieval,
           featureKind:
             selection.responseMode === 'image'
               ? 'image'
@@ -124,7 +109,6 @@ export class TurnOrchestrator {
     const { prepared, finalMessage, selection } =
       await this.prepareChatSelection(userId, sessionId, query, {
         responseMode: 'text',
-        includeContextFiles: true,
       });
 
     const stream = this.streamTextResult(
@@ -175,7 +159,6 @@ export class TurnOrchestrator {
     const { prepared, finalMessage, selection } =
       await this.prepareChatSelection(userId, sessionId, query, {
         responseMode: 'object',
-        includeContextFiles: true,
       });
 
     return {

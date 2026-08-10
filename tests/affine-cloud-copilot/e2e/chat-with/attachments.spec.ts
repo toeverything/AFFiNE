@@ -6,7 +6,7 @@ test.describe.configure({ mode: 'serial' });
 
 test.describe('AIChatWith/Attachments', () => {
   test.beforeEach(async ({ loggedInPage: page, utils }) => {
-    await utils.testUtils.setupTestEnvironment(page, 'claude-sonnet-4-6');
+    await utils.testUtils.setupTestEnvironment(page);
     await utils.chatPanel.openChatPanel(page);
   });
 
@@ -26,13 +26,13 @@ test.describe('AIChatWith/Attachments', () => {
           buffer: buffer,
         },
       ],
-      'What is AttachmentEEee?'
+      'What is AttachmentEEee? Answer with a citation.'
     );
 
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content: 'What is AttachmentEEee?',
+        content: 'What is AttachmentEEee? Answer with a citation.',
       },
       {
         role: 'assistant',
@@ -41,8 +41,29 @@ test.describe('AIChatWith/Attachments', () => {
     ]);
 
     await expect(async () => {
-      const { content } = await utils.chatPanel.getLatestAssistantMessage(page);
+      const { content, message } =
+        await utils.chatPanel.getLatestAssistantMessage(page);
       expect(content).toMatch(/EEee/);
+      const references = await message
+        .locator('affine-footnote-node')
+        .evaluateAll(nodes =>
+          nodes.map(
+            node =>
+              (
+                node as HTMLElement & {
+                  footnote?: { reference?: Record<string, unknown> };
+                }
+              ).footnote?.reference
+          )
+        );
+      expect(references).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            type: 'attachment',
+            artifactId: expect.any(String),
+          }),
+        ])
+      );
     }).toPass({ timeout: 10000 });
   });
 

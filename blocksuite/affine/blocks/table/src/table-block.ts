@@ -268,12 +268,14 @@ export class TableBlockComponent extends CaptionedBlockComponent<TableBlockModel
                 }
               )}
             </tbody>
-            ${IS_MOBILE || this.dataManager.readonly$.value
-              ? nothing
-              : html`<affine-table-add-button
-                  style="display: contents;"
-                  .dataManager=${this.dataManager}
-                ></affine-table-add-button>`}
+            ${
+              IS_MOBILE || this.dataManager.readonly$.value
+                ? nothing
+                : html`<affine-table-add-button
+                    style="display: contents;"
+                    .dataManager=${this.dataManager}
+                  ></affine-table-add-button>`
+            }
             ${html`<affine-table-selection-layer
               style="display: contents;"
               .selectionController=${this.selectionController}

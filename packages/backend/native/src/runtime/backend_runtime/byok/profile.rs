@@ -3,15 +3,12 @@ use std::collections::{HashMap, HashSet};
 use sqlx::{FromRow, PgPool};
 use uuid::Uuid;
 
-use super::{RuntimeError, RuntimeResult, admit_endpoint};
-use crate::{
-  llm::{
-    ByokProfileDefinition, ByokProfileOutput, ByokValidationOutput, CreateByokProfileInput, ProbeByokDraftInput,
-    ProbeByokProfileInput, ReorderByokProfilesInput, ReplaceByokProfileInput, RotateByokCredentialInput,
-    byok::{CredentialEnvelopeKey, SensitiveCredential, reconcile_validation, server_aad},
-    validate_definition,
-  },
-  runtime::config::CopilotByokRuntimeConfig,
+use super::{RuntimeError, RuntimeResult};
+use crate::llm::{
+  ByokProfileDefinition, ByokProfileOutput, ByokValidationOutput, CreateByokProfileInput, ProbeByokDraftInput,
+  ProbeByokProfileInput, ReorderByokProfilesInput, ReplaceByokProfileInput, RotateByokCredentialInput,
+  byok::{ByokPolicy, CredentialEnvelopeKey, SensitiveCredential, reconcile_validation, server_aad},
+  validate_definition,
 };
 
 #[derive(FromRow)]
@@ -50,13 +47,16 @@ pub(in super::super) async fn list(pool: &PgPool, workspace_id: &str) -> Runtime
   .fetch_all(pool)
   .await
   .map_err(|error| RuntimeError::database("list BYOK profiles failed", error))?;
-  rows.into_iter().map(profile_output).collect()
+  // Rows written by the previous release while it shares the database carry
+  // only the database-default definition and fail to parse; skip them until
+  // that release is retired.
+  Ok(rows.into_iter().filter_map(|row| profile_output(row).ok()).collect())
 }
 
 pub(in super::super) async fn create(
   pool: &PgPool,
   root_secret: &[u8],
-  policy: &CopilotByokRuntimeConfig,
+  policy: &ByokPolicy,
   input: CreateByokProfileInput,
 ) -> RuntimeResult<ByokProfileOutput> {
   require_text(&input.workspace_id, "workspaceId")?;
@@ -65,7 +65,7 @@ pub(in super::super) async fn create(
   require_text(&input.actor_user_id, "actorUserId")?;
   let definition = validate_definition(&input.provider, input.definition)
     .map_err(|error| RuntimeError::invalid_input(error.to_string()))?;
-  admit_endpoint(&definition, policy).await?;
+  policy.admit(&input.provider, &definition.endpoint).await?;
   let key = envelope_key(root_secret)?;
   let profile_id = Uuid::new_v4().to_string();
   let aad = server_aad(
@@ -129,7 +129,7 @@ pub(in super::super) async fn create(
 pub(in super::super) async fn replace(
   pool: &PgPool,
   root_secret: &[u8],
-  policy: &CopilotByokRuntimeConfig,
+  policy: &ByokPolicy,
   input: ReplaceByokProfileInput,
 ) -> RuntimeResult<ByokProfileOutput> {
   require_text(&input.workspace_id, "workspaceId")?;
@@ -147,7 +147,7 @@ pub(in super::super) async fn replace(
   }
   let definition = validate_definition(&admission.provider, input.definition)
     .map_err(|error| RuntimeError::invalid_input(error.to_string()))?;
-  admit_endpoint(&definition, policy).await?;
+  policy.admit(&admission.provider, &definition.endpoint).await?;
 
   let mut tx = pool
     .begin()
@@ -401,7 +401,7 @@ pub(in super::super) async fn reorder(
 pub(in super::super) async fn probe_profile(
   pool: &PgPool,
   root_secret: &[u8],
-  policy: &CopilotByokRuntimeConfig,
+  policy: &ByokPolicy,
   input: ProbeByokProfileInput,
 ) -> RuntimeResult<crate::llm::ByokProbeResultOutput> {
   let profile = sqlx::query_as::<_, ProfileRow>(
@@ -419,7 +419,7 @@ pub(in super::super) async fn probe_profile(
   .map_err(|error| RuntimeError::database("read BYOK profile for probe failed", error))?
   .ok_or_else(|| RuntimeError::invalid_input("BYOK profile not found"))?;
   let definition = parse_definition(profile.definition.clone())?;
-  admit_endpoint(&definition, policy).await?;
+  policy.admit(&profile.provider, &definition.endpoint).await?;
   let credential = envelope_key(root_secret)?
     .decrypt(
       &profile.encrypted_api_key,
@@ -461,12 +461,12 @@ pub(in super::super) async fn probe_profile(
 pub(in super::super) async fn probe_draft(
   pool: &PgPool,
   root_secret: &[u8],
-  policy: &CopilotByokRuntimeConfig,
+  policy: &ByokPolicy,
   input: ProbeByokDraftInput,
 ) -> RuntimeResult<crate::llm::ByokProbeResultOutput> {
   let definition = validate_definition(&input.provider, input.definition)
     .map_err(|error| RuntimeError::invalid_input(error.to_string()))?;
-  admit_endpoint(&definition, policy).await?;
+  policy.admit(&input.provider, &definition.endpoint).await?;
   let credential = match (input.credential, input.profile_id, input.expected_revision) {
     (Some(credential), None, None) => {
       require_text(&credential, "credential")?;
@@ -573,5 +573,61 @@ pub(super) fn require_text(value: &str, field: &'static str) -> RuntimeResult<()
     Err(RuntimeError::invalid_input(format!("{field} is required")))
   } else {
     Ok(())
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::{PgPool, Uuid, list};
+
+  #[tokio::test]
+  async fn list_skips_rows_with_unparseable_legacy_definition() {
+    let Ok(database_url) = std::env::var("DATABASE_URL") else {
+      return;
+    };
+    let pool = PgPool::connect(&database_url).await.unwrap();
+    let workspace_id = format!("byok-legacy-{}", Uuid::new_v4());
+    sqlx::query("INSERT INTO workspaces (id) VALUES ($1)")
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+    // a row as written by the previous release while it shares the database:
+    // definition is left at the database default and cannot be parsed
+    for (id, name, definition) in [
+      (Uuid::new_v4().to_string(), "legacy", "{}"),
+      (
+        Uuid::new_v4().to_string(),
+        "valid",
+        r#"{"endpoint":{"kind":"provider_default"},"models":[]}"#,
+      ),
+    ] {
+      sqlx::query(
+        "INSERT INTO ai_workspace_byok_configs (id, workspace_id, provider, name, encrypted_api_key, definition, \
+         created_at, updated_at) VALUES ($1, $2, 'openai', $3, 'x', $4::jsonb, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+      )
+      .bind(&id)
+      .bind(&workspace_id)
+      .bind(name)
+      .bind(definition)
+      .execute(&pool)
+      .await
+      .unwrap();
+    }
+
+    let profiles = list(&pool, &workspace_id).await.unwrap();
+    assert_eq!(profiles.len(), 1);
+    assert_eq!(profiles[0].name, "valid");
+
+    sqlx::query("DELETE FROM ai_workspace_byok_configs WHERE workspace_id = $1")
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+    sqlx::query("DELETE FROM workspaces WHERE id = $1")
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await
+      .unwrap();
   }
 }

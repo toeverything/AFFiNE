@@ -11,16 +11,23 @@ public struct WorkspaceByokEndpointInput: InputObject {
   }
 
   public init(
-    kind: String,
+    dialect: GraphQLNullable<GraphQLEnum<ByokOpenAiDialect>> = nil,
+    kind: GraphQLEnum<ByokEndpointKind>,
     url: GraphQLNullable<String> = nil
   ) {
     __data = InputDict([
+      "dialect": dialect,
       "kind": kind,
       "url": url
     ])
   }
 
-  public var kind: String {
+  public var dialect: GraphQLNullable<GraphQLEnum<ByokOpenAiDialect>> {
+    get { __data["dialect"] }
+    set { __data["dialect"] = newValue }
+  }
+
+  public var kind: GraphQLEnum<ByokEndpointKind> {
     get { __data["kind"] }
     set { __data["kind"] = newValue }
   }

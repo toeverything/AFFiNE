@@ -10,6 +10,6 @@ pub use contract::{
   CopilotAccessProjection, CopilotExecuteInput, CopilotManagedTier, CopilotRouteCheckInput, CopilotTargetOverrideInput,
 };
 pub(crate) use policy::{
-  AuthorizedProfileRef, AuthorizedTargetRef, CredentialRef, Deployment, ProfileSource, RouteDecision,
+  AuthorizedProviderProfile, AuthorizedTargetRef, CredentialRef, Deployment, ProfileSource, RouteDecision,
   RouteDecisionReason, RoutePolicyInput, TargetOverride, decide,
 };

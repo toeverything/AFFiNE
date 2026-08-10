@@ -58,16 +58,8 @@ export class TestUtils {
     await waitForEditorLoad(page);
   }
 
-  public async setupTestEnvironment(page: Page, defaultModel?: string) {
-    const selectedModel = defaultModel ?? 'gpt-5.6-luna';
-
+  public async setupTestEnvironment(page: Page) {
     await skipOnboarding(page.context());
-    await page.context().addInitScript(model => {
-      window.localStorage.setItem(
-        'global-state:AIModelId',
-        JSON.stringify(model)
-      );
-    }, selectedModel);
     await openHomePage(page);
     await this.createNewPage(page);
   }

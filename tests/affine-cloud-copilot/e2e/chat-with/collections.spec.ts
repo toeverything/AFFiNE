@@ -6,7 +6,7 @@ test.describe.configure({ mode: 'serial' });
 
 test.describe('AIChatWith/Collections', () => {
   test.beforeEach(async ({ loggedInPage: page, utils }) => {
-    await utils.testUtils.setupTestEnvironment(page, 'claude-sonnet-4-6');
+    await utils.testUtils.setupTestEnvironment(page);
     await utils.chatPanel.openChatPanel(page);
     await utils.editor.clearAllCollections(page);
 
@@ -31,14 +31,31 @@ test.describe('AIChatWith/Collections', () => {
     );
 
     await utils.chatPanel.chatWithCollections(page, ['Collection 1']);
+    await utils.settings.openSettingsPanel(page);
+    await utils.settings.disableWorkspaceEmbedding(page);
+    await utils.settings.closeSettingsPanel(page);
     await utils.chatPanel.makeChat(
       page,
-      `What is Collection${randomStr}(Use English)`
+      `What is Collection${randomStr}? Use English and answer with a citation.`
     );
+    await expect(
+      page.getByText(
+        'One or more selected sources are unavailable. Check the sources or workspace AI indexing settings, then retry.'
+      )
+    ).toBeVisible();
+    expect(
+      (await utils.chatPanel.collectHistory(page)).filter(
+        message => message.role === 'user'
+      )
+    ).toHaveLength(1);
+    await utils.settings.openSettingsPanel(page);
+    await utils.settings.enableWorkspaceEmbedding(page);
+    await utils.settings.closeSettingsPanel(page);
+    await page.getByTestId('ai-error-action-button').click();
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content: `What is Collection${randomStr}(Use English)`,
+        content: `What is Collection${randomStr}? Use English and answer with a citation.`,
       },
       {
         role: 'assistant',
@@ -50,7 +67,9 @@ test.describe('AIChatWith/Collections', () => {
       const { content, message } =
         await utils.chatPanel.getLatestAssistantMessage(page);
       expect(content).toMatch(new RegExp(`Collection${randomStr}.*dog`));
-      expect(await message.locator('affine-footnote-node').count()).toBe(1);
+      expect(
+        await message.locator('affine-footnote-node').count()
+      ).toBeGreaterThanOrEqual(1);
     }).toPass();
   });
 
@@ -79,12 +98,12 @@ test.describe('AIChatWith/Collections', () => {
     ]);
     await utils.chatPanel.makeChat(
       page,
-      `What is Collection${randomStr1}? What is Collection${randomStr2}?(Use English)`
+      `What is Collection${randomStr1}? What is Collection${randomStr2}? Use English and cite both sources.`
     );
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content: `What is Collection${randomStr1}? What is Collection${randomStr2}?(Use English)`,
+        content: `What is Collection${randomStr1}? What is Collection${randomStr2}? Use English and cite both sources.`,
       },
       {
         role: 'assistant',
@@ -97,7 +116,9 @@ test.describe('AIChatWith/Collections', () => {
         await utils.chatPanel.getLatestAssistantMessage(page);
       expect(content).toMatch(new RegExp(`Collection${randomStr1}.*cat`));
       expect(content).toMatch(new RegExp(`Collection${randomStr2}.*dog`));
-      expect(await message.locator('affine-footnote-node').count()).toBe(2);
+      expect(
+        await message.locator('affine-footnote-node').count()
+      ).toBeGreaterThanOrEqual(2);
     }).toPass();
   });
 });

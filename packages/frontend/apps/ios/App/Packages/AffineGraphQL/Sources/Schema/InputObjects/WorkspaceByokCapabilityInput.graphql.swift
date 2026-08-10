@@ -11,11 +11,11 @@ public struct WorkspaceByokCapabilityInput: InputObject {
   }
 
   public init(
-    attachmentKinds: [String],
-    attachmentSources: [String],
-    features: [String],
-    input: [String],
-    output: [String]
+    attachmentKinds: [GraphQLEnum<ByokAttachmentKind>],
+    attachmentSources: [GraphQLEnum<ByokAttachmentSource>],
+    features: [GraphQLEnum<ByokModelFeature>],
+    input: [GraphQLEnum<ByokModelInput>],
+    output: [GraphQLEnum<ByokModelOutput>]
   ) {
     __data = InputDict([
       "attachmentKinds": attachmentKinds,
@@ -26,27 +26,27 @@ public struct WorkspaceByokCapabilityInput: InputObject {
     ])
   }
 
-  public var attachmentKinds: [String] {
+  public var attachmentKinds: [GraphQLEnum<ByokAttachmentKind>] {
     get { __data["attachmentKinds"] }
     set { __data["attachmentKinds"] = newValue }
   }
 
-  public var attachmentSources: [String] {
+  public var attachmentSources: [GraphQLEnum<ByokAttachmentSource>] {
     get { __data["attachmentSources"] }
     set { __data["attachmentSources"] = newValue }
   }
 
-  public var features: [String] {
+  public var features: [GraphQLEnum<ByokModelFeature>] {
     get { __data["features"] }
     set { __data["features"] = newValue }
   }
 
-  public var input: [String] {
+  public var input: [GraphQLEnum<ByokModelInput>] {
     get { __data["input"] }
     set { __data["input"] = newValue }
   }
 
-  public var output: [String] {
+  public var output: [GraphQLEnum<ByokModelOutput>] {
     get { __data["output"] }
     set { __data["output"] = newValue }
   }

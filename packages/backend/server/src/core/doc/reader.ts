@@ -13,10 +13,13 @@ import {
 import { Models } from '../../models';
 import { WorkspaceBlobStorage } from '../storage';
 import {
+  type CanvasProjectionV1,
   type PageDocContent,
+  parseCanvasProjection,
   parseDocToMarkdownFromDocSnapshot,
   parsePageDoc,
   parseWorkspaceDoc,
+  projectDocCanvas,
   type WorkspaceDocContent,
 } from '../utils/blocksuite';
 import { PgWorkspaceDocStorageAdapter } from './adapters/workspace';
@@ -34,6 +37,7 @@ export interface WorkspaceDocInfo {
 export interface DocMarkdown {
   title: string;
   markdown: string;
+  revision: string;
   knownUnsupportedBlocks: string[];
   unknownBlocks: string[];
 }
@@ -67,6 +71,11 @@ export abstract class DocReader {
     docId: string,
     aiEditable: boolean
   ): Promise<DocMarkdown | null>;
+
+  abstract getDocCanvas(
+    workspaceId: string,
+    docId: string
+  ): Promise<CanvasProjectionV1 | null>;
 
   abstract getDocDiff(
     spaceId: string,
@@ -205,11 +214,22 @@ export class DatabaseDocReader extends DocReader {
         );
       }
 
-      return markdown;
+      return { ...markdown, revision: doc.timestamp.toString() };
     } catch (error) {
       this.logger.error(`Failed to parse ${workspaceId}/${docId}.`, error);
       throw error;
     }
+  }
+
+  async getDocCanvas(
+    workspaceId: string,
+    docId: string
+  ): Promise<CanvasProjectionV1 | null> {
+    const doc = await this.workspace.getDoc(workspaceId, docId);
+    if (!doc) {
+      return null;
+    }
+    return projectDocCanvas(doc.bin, docId, doc.timestamp.toString());
   }
 
   async getDocDiff(
@@ -384,6 +404,29 @@ export class RpcDocReader extends DatabaseDocReader {
       );
       // fallback to database doc reader if the error is not user friendly, like network error
       return await super.getDocMarkdown(workspaceId, docId, aiEditable);
+    }
+  }
+
+  override async getDocCanvas(
+    workspaceId: string,
+    docId: string
+  ): Promise<CanvasProjectionV1 | null> {
+    const url = `${this.config.docService.endpoint}/rpc/workspaces/${workspaceId}/docs/${docId}/canvas`;
+    try {
+      const res = await this.fetch(url, 'GET');
+      if (!res) {
+        return null;
+      }
+      return parseCanvasProjection(await res.json());
+    } catch (e) {
+      if (e instanceof UserFriendlyError) {
+        throw e;
+      }
+      this.logger.error(
+        `Failed to fetch doc canvas ${url}, fallback to database doc reader`,
+        e as Error
+      );
+      return await super.getDocCanvas(workspaceId, docId);
     }
   }
 

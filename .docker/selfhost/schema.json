@@ -1179,36 +1179,6 @@
           "description": "Enable AI features. Workspace owners configure provider keys in Workspace Settings → Integrations → AI BYOK.\n@default false",
           "default": false
         },
-        "byok.enabled": {
-          "type": "boolean",
-          "description": "Allow workspace owners and admins to configure AI provider keys through AI BYOK.\n@default true",
-          "default": true
-        },
-        "byok.allowedProviders": {
-          "type": "array",
-          "description": "AI providers that workspace owners and admins may add through AI BYOK.\n@default [\"openai\",\"anthropic\",\"gemini\",\"fal\"]",
-          "default": [
-            "openai",
-            "anthropic",
-            "gemini",
-            "fal"
-          ]
-        },
-        "byok.allowCustomEndpoint": {
-          "type": "boolean",
-          "description": "Allow AI BYOK keys to use a custom provider endpoint.\n@default false",
-          "default": false
-        },
-        "byok.allowPrivateEndpoint": {
-          "type": "boolean",
-          "description": "Whether workspace BYOK custom endpoints may resolve to private network targets. Enabling this allows workspace owners and admins to send provider probe requests to the private network.\n@default false",
-          "default": false
-        },
-        "providers.profiles": {
-          "type": "array",
-          "description": "The profile list for copilot providers.\n@default []",
-          "default": []
-        },
         "unsplash": {
           "type": "object",
           "description": "The config for the unsplash key.\n@default {\"key\":\"\"}",
@@ -1469,6 +1439,48 @@
               "path": "~/.affine/storage"
             }
           }
+        },
+        "byok.enabled": {
+          "type": "boolean",
+          "description": "Allow workspace owners and admins to configure AI provider keys through AI BYOK.\n@default true",
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "boolean",
+          "default": true
+        },
+        "byok.allowedProviders": {
+          "type": "array",
+          "description": "AI providers that workspace owners and admins may add through AI BYOK.\n@default [\"openai\",\"anthropic\",\"gemini\",\"fal\"]",
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "items": {
+            "enum": [
+              "openai",
+              "anthropic",
+              "gemini",
+              "fal"
+            ],
+            "type": "string"
+          },
+          "title": "Array_of_string",
+          "default": [
+            "openai",
+            "anthropic",
+            "gemini",
+            "fal"
+          ]
+        },
+        "byok.allowCustomEndpoint": {
+          "type": "boolean",
+          "description": "Allow AI BYOK keys to use a custom provider endpoint.\n@default false",
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "boolean",
+          "default": false
+        },
+        "byok.allowPrivateEndpoint": {
+          "type": "boolean",
+          "description": "Whether workspace BYOK custom endpoints may resolve to private network targets. Enabling this allows workspace owners and admins to send provider probe requests to the private network.\n@default false",
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "boolean",
+          "default": false
         }
       }
     },

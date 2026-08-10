@@ -46,7 +46,6 @@ mod tests {
 
   fn definition(models: &[&str]) -> ByokProfileDefinition {
     ByokProfileDefinition {
-      version: 1,
       endpoint: ByokEndpoint::ProviderDefault,
       models: models
         .iter()

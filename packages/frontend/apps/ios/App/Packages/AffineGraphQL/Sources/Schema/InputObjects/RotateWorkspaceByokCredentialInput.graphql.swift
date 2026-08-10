@@ -12,11 +12,13 @@ public struct RotateWorkspaceByokCredentialInput: InputObject {
 
   public init(
     credential: String,
+    expectedRevision: SafeInt,
     profileId: ID,
     workspaceId: String
   ) {
     __data = InputDict([
       "credential": credential,
+      "expectedRevision": expectedRevision,
       "profileId": profileId,
       "workspaceId": workspaceId
     ])
@@ -25,6 +27,11 @@ public struct RotateWorkspaceByokCredentialInput: InputObject {
   public var credential: String {
     get { __data["credential"] }
     set { __data["credential"] = newValue }
+  }
+
+  public var expectedRevision: SafeInt {
+    get { __data["expectedRevision"] }
+    set { __data["expectedRevision"] = newValue }
   }
 
   public var profileId: ID {

@@ -5,7 +5,7 @@ use llm_adapter::{
     AttachmentKind, AttachmentSource, DeclaredModelCapability, ModelFeature, ModelInput, ModelOutput,
     provider_default_capability_upper_bound, validate_capability_upper_bound, validate_declared_capability,
   },
-  target::canonicalize_endpoint,
+  target::{OpenAiDialect, canonicalize_endpoint},
 };
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -36,13 +36,13 @@ pub struct ByokModelDeclarationInput {
 pub struct ByokEndpointInput {
   pub kind: String,
   pub url: Option<String>,
+  pub dialect: Option<String>,
 }
 
 #[derive(Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 #[napi_derive::napi(object)]
 pub struct ByokProfileDefinitionInput {
-  pub version: u32,
   pub endpoint: ByokEndpointInput,
   pub models: Vec<ByokModelDeclarationInput>,
 }
@@ -224,7 +224,7 @@ pub struct ByokProbeResultOutput {
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub(crate) enum ByokEndpoint {
   ProviderDefault,
-  Custom { url: String },
+  OpenAiCompatible { url: String, dialect: OpenAiDialect },
 }
 
 #[derive(Clone, PartialEq, Eq, Deserialize, Serialize)]
@@ -238,15 +238,12 @@ pub(crate) struct ByokModelDeclaration {
 #[derive(Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub(crate) struct ByokProfileDefinition {
-  pub(crate) version: u32,
   pub(crate) endpoint: ByokEndpoint,
   pub(crate) models: Vec<ByokModelDeclaration>,
 }
 
 #[derive(Debug, Error)]
 pub(crate) enum ByokContractError {
-  #[error("unsupported BYOK definition version")]
-  Version,
   #[error("unsupported BYOK provider")]
   Provider,
   #[error("{0} is required")]
@@ -265,7 +262,7 @@ impl ByokProfileDefinition {
   pub(crate) fn endpoint_identity(&self) -> &str {
     match &self.endpoint {
       ByokEndpoint::ProviderDefault => "default",
-      ByokEndpoint::Custom { url } => url,
+      ByokEndpoint::OpenAiCompatible { url, .. } => url,
     }
   }
 }
@@ -274,17 +271,25 @@ pub(crate) fn validate_definition(
   provider: &str,
   input: ByokProfileDefinitionInput,
 ) -> Result<ByokProfileDefinition, ByokContractError> {
-  if input.version != 1 {
-    return Err(ByokContractError::Version);
-  }
   if !matches!(provider, "openai" | "anthropic" | "gemini" | "fal") {
     return Err(ByokContractError::Provider);
   }
-  let endpoint = match (input.endpoint.kind.as_str(), input.endpoint.url) {
-    ("provider_default", None) => ByokEndpoint::ProviderDefault,
-    ("custom", Some(url)) if !url.trim().is_empty() => ByokEndpoint::Custom {
-      url: canonicalize_endpoint(&url).map_err(|_| ByokContractError::Endpoint)?,
-    },
+  let endpoint = match (
+    input.endpoint.kind.as_str(),
+    input.endpoint.url,
+    input.endpoint.dialect.as_deref(),
+  ) {
+    ("provider_default", None, None) => ByokEndpoint::ProviderDefault,
+    ("openai_compatible", Some(url), Some(dialect)) if provider == "openai" && !url.trim().is_empty() => {
+      ByokEndpoint::OpenAiCompatible {
+        url: canonicalize_endpoint(&url).map_err(|_| ByokContractError::Endpoint)?,
+        dialect: match dialect {
+          "responses" => OpenAiDialect::Responses,
+          "chat_completions" => OpenAiDialect::ChatCompletions,
+          _ => return Err(ByokContractError::Endpoint),
+        },
+      }
+    }
     _ => return Err(ByokContractError::Endpoint),
   };
   if input.models.is_empty() {
@@ -317,11 +322,7 @@ pub(crate) fn validate_definition(
     });
   }
 
-  Ok(ByokProfileDefinition {
-    version: 1,
-    endpoint,
-    models,
-  })
+  Ok(ByokProfileDefinition { endpoint, models })
 }
 
 fn parse_capability(input: ByokCapabilityInput) -> Result<DeclaredModelCapability, ByokContractError> {
@@ -390,7 +391,7 @@ fn validate_upper_bound(
   {
     return Err(ByokContractError::CapabilityUpperBound);
   }
-  if matches!(endpoint, ByokEndpoint::Custom { .. }) {
+  if matches!(endpoint, ByokEndpoint::OpenAiCompatible { .. }) {
     return Ok(());
   }
 
@@ -442,15 +443,22 @@ fn attachment_source_name(value: &AttachmentSource) -> &'static str {
 impl From<ByokProfileDefinition> for ByokProfileDefinitionInput {
   fn from(definition: ByokProfileDefinition) -> Self {
     Self {
-      version: definition.version,
       endpoint: match definition.endpoint {
         ByokEndpoint::ProviderDefault => ByokEndpointInput {
           kind: "provider_default".to_string(),
           url: None,
+          dialect: None,
         },
-        ByokEndpoint::Custom { url } => ByokEndpointInput {
-          kind: "custom".to_string(),
+        ByokEndpoint::OpenAiCompatible { url, dialect } => ByokEndpointInput {
+          kind: "openai_compatible".to_string(),
           url: Some(url),
+          dialect: Some(
+            match dialect {
+              OpenAiDialect::Responses => "responses",
+              OpenAiDialect::ChatCompletions => "chat_completions",
+            }
+            .to_string(),
+          ),
         },
       },
       models: definition
@@ -501,10 +509,10 @@ mod tests {
 
   fn definition(model_id: &str, capabilities: Vec<ByokCapabilityInput>) -> ByokProfileDefinitionInput {
     ByokProfileDefinitionInput {
-      version: 1,
       endpoint: ByokEndpointInput {
-        kind: "custom".to_string(),
+        kind: "openai_compatible".to_string(),
         url: Some("https://example.com/v1/".to_string()),
+        dialect: Some("responses".to_string()),
       },
       models: vec![ByokModelDeclarationInput {
         model_id: model_id.to_string(),
@@ -561,14 +569,17 @@ mod tests {
       ByokEndpointInput {
         kind: "provider_default".to_string(),
         url: Some("https://example.com".to_string()),
+        dialect: None,
       },
       ByokEndpointInput {
-        kind: "custom".to_string(),
+        kind: "openai_compatible".to_string(),
         url: None,
+        dialect: Some("responses".to_string()),
       },
       ByokEndpointInput {
-        kind: "custom".to_string(),
+        kind: "openai_compatible".to_string(),
         url: Some(" ".to_string()),
+        dialect: Some("responses".to_string()),
       },
     ] {
       let mut input = definition("model", vec![text_capability()]);

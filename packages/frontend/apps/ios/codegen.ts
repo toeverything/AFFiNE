@@ -9,7 +9,7 @@ const PackageRoot = iosPackage.path;
 
 console.log('[*] PackageRoot', PackageRoot);
 
-const version = process.argv[2] || '1.25.4'; // Default to 1.25.4 if no version provided
+const version = process.argv[2] || '1.25.7';
 
 console.log('[*] graphql...');
 execSync(`${PackageRoot}/apollo-codegen-chore.sh "${version}"`, {

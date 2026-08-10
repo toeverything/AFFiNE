@@ -440,11 +440,13 @@ export const popViewOptions = (
           closeOnSelect: false,
           postfix: html`
             <div style="font-size: 14px;">
-              ${filterCount === 0
-                ? ''
-                : filterCount === 1
-                  ? '1 active'
-                  : `${filterCount} active`}
+              ${
+                filterCount === 0
+                  ? ''
+                  : filterCount === 1
+                    ? '1 active'
+                    : `${filterCount} active`
+              }
             </div>
             ${ArrowRightSmallIcon()}
           `,
@@ -466,11 +468,13 @@ export const popViewOptions = (
           closeOnSelect: false,
           postfix: html`
             <div style="font-size: 14px;">
-              ${sortCount === 0
-                ? ''
-                : sortCount === 1
-                  ? '1 active'
-                  : `${sortCount} active`}
+              ${
+                sortCount === 0
+                  ? ''
+                  : sortCount === 1
+                    ? '1 active'
+                    : `${sortCount} active`
+              }
             </div>
             ${ArrowRightSmallIcon()}
           `,

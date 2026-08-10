@@ -123,15 +123,17 @@ export class EmbedEdgelessSyncedDocBlockComponent extends toEdgelessEmbedBlock(
             ${header}
           </div>
           <div class="affine-embed-synced-doc-editor">
-            ${this.isPageMode && this._isEmptySyncedDoc
-              ? html`
-                  <div class="affine-embed-synced-doc-editor-empty">
-                    <span>
-                      This is a linked doc, you can add content here.
-                    </span>
-                  </div>
-                `
-              : guard([editorMode, syncedDoc], renderEditor)}
+            ${
+              this.isPageMode && this._isEmptySyncedDoc
+                ? html`
+                    <div class="affine-embed-synced-doc-editor-empty">
+                      <span>
+                        This is a linked doc, you can add content here.
+                      </span>
+                    </div>
+                  `
+                : guard([editorMode, syncedDoc], renderEditor)
+            }
           </div>
           <div class="affine-embed-synced-doc-editor-overlay"></div>
         </div>

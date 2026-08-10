@@ -321,11 +321,11 @@ export class PlaygroundContent extends SignalWatcher(
       }
     };
 
-    // oxlint-disable-next-line @typescript-eslint/no-misused-promises
+    // oxlint-disable-next-line typescript/no-misused-promises
     button.addEventListener('click', handleSendClick);
 
     this._disposables.add(() => {
-      // oxlint-disable-next-line @typescript-eslint/no-misused-promises
+      // oxlint-disable-next-line typescript/no-misused-promises
       button.removeEventListener('click', handleSendClick);
     });
   }
@@ -383,8 +383,9 @@ export class PlaygroundContent extends SignalWatcher(
                 .notificationService=${this.notificationService}
                 .aiToolsConfigService=${this.aiToolsConfigService}
                 .aiModelService=${this.aiModelService}
-                .affineWorkspaceDialogService=${this
-                  .affineWorkspaceDialogService}
+                .affineWorkspaceDialogService=${
+                  this.affineWorkspaceDialogService
+                }
                 .subscriptionService=${this.subscriptionService}
                 .addChat=${this.addChat}
               ></playground-chat>

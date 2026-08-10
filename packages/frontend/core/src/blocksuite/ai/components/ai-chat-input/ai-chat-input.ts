@@ -199,6 +199,10 @@ export class AIChatInput extends SignalWatcher(
           color: ${unsafeCSSVarV2('icon/secondary')} !important;
         }
       }
+
+      .chat-input-icon[aria-disabled='true']:hover {
+        background-color: transparent;
+      }
     }
 
     .chat-panel-input {
@@ -340,9 +344,6 @@ export class AIChatInput extends SignalWatcher(
 
   @property({ attribute: false })
   accessor runtimeSnapshot: AIChatSnapshot | null | undefined;
-
-  @property({ attribute: false })
-  accessor isContextProcessing!: boolean | undefined;
 
   @query('image-preview-grid')
   accessor imagePreviewGrid: HTMLDivElement | null = null;
@@ -544,7 +545,7 @@ export class AIChatInput extends SignalWatcher(
         if (entity?.type === 'doc' && entity.id) {
           this.addChip({
             docId: entity.id,
-            state: 'processing',
+            state: 'finished',
           }).catch(console.error);
           this._trackDragDrop('doc');
         }
@@ -573,37 +574,45 @@ export class AIChatInput extends SignalWatcher(
       @dragleave=${this._handleDragLeave}
       @drop=${this._handleDrop}
     >
-      ${this.isDragOver
-        ? html`<div class="chat-panel-input-drop-overlay">Drop to attach</div>`
-        : nothing}
-      ${hasImages
-        ? html`
-            <image-preview-grid
-              .images=${images}
-              .onImageRemove=${this._handleImageRemove}
-            ></image-preview-grid>
-          `
-        : nothing}
-      ${this.chatContextValue.quote
-        ? html`<div
-            class="chat-selection-quote"
-            data-testid="chat-selection-quote"
-          >
-            ${repeat(
-              getFirstTwoLines(this.chatContextValue.quote),
-              line => line,
-              line => html`<div>${line}</div>`
-            )}
-            <div
-              class="chat-quote-close"
-              @click=${() => {
-                this.updateContext({ quote: '', markdown: '' });
-              }}
+      ${
+        this.isDragOver
+          ? html`<div class="chat-panel-input-drop-overlay">
+              Drop to attach
+            </div>`
+          : nothing
+      }
+      ${
+        hasImages
+          ? html`
+              <image-preview-grid
+                .images=${images}
+                .onImageRemove=${this._handleImageRemove}
+              ></image-preview-grid>
+            `
+          : nothing
+      }
+      ${
+        this.chatContextValue.quote
+          ? html`<div
+              class="chat-selection-quote"
+              data-testid="chat-selection-quote"
             >
-              ${CloseIcon()}
-            </div>
-          </div>`
-        : nothing}
+              ${repeat(
+                getFirstTwoLines(this.chatContextValue.quote),
+                line => line,
+                line => html`<div>${line}</div>`
+              )}
+              <div
+                class="chat-quote-close"
+                @click=${() => {
+                  this.updateContext({ quote: '', markdown: '' });
+                }}
+              >
+                ${CloseIcon()}
+              </div>
+            </div>`
+          : nothing
+      }
       <textarea
         rows="1"
         placeholder="What are your thoughts?"
@@ -619,7 +628,10 @@ export class AIChatInput extends SignalWatcher(
         data-testid="chat-panel-input"
       ></textarea>
       <div class="chat-panel-input-actions">
-        <div class="chat-input-icon">
+        <div
+          class="chat-input-icon"
+          aria-disabled=${!this.searchMenuConfig.addContextAvailable}
+        >
           <ai-chat-add-context
             .docId=${this.docId}
             .independentMode=${this.independentMode}
@@ -642,22 +654,24 @@ export class AIChatInput extends SignalWatcher(
           .subscriptionService=${this.subscriptionService}
           .onAISubscribe=${this.onAISubscribe}
         ></chat-input-preference>
-        ${status === 'transmitting' || status === 'loading'
-          ? html`<button
-              class="chat-panel-stop"
-              @click=${this._handleAbort}
-              data-testid="chat-panel-stop"
-            >
-              ${ChatAbortIcon}
-            </button>`
-          : html`<button
-              @click="${this._onTextareaSend}"
-              class="chat-panel-send"
-              aria-disabled=${this.isSendDisabled}
-              data-testid="chat-panel-send"
-            >
-              ${ArrowUpBigIcon()}
-            </button>`}
+        ${
+          status === 'transmitting' || status === 'loading'
+            ? html`<button
+                class="chat-panel-stop"
+                @click=${this._handleAbort}
+                data-testid="chat-panel-stop"
+              >
+                ${ChatAbortIcon}
+              </button>`
+            : html`<button
+                @click="${this._onTextareaSend}"
+                class="chat-panel-send"
+                aria-disabled=${this.isSendDisabled}
+                data-testid="chat-panel-send"
+              >
+                ${ArrowUpBigIcon()}
+              </button>`
+        }
       </div>
     </div>`;
   }
@@ -668,10 +682,6 @@ export class AIChatInput extends SignalWatcher(
     }
 
     if (this.runtimeSnapshot && !this.runtimeSnapshot.uiPolicy.canSend) {
-      return true;
-    }
-
-    if (this.isContextProcessing) {
       return true;
     }
 
@@ -827,16 +837,11 @@ export class AIChatInput extends SignalWatcher(
 
   send = async (text: string) => {
     if (!this.runtime) return;
-    const { markdown, images, snapshot, combinedElementsMarkdown, html } =
-      this.chatContextValue;
-    const userInput = (markdown ? `${markdown}\n` : '') + text;
+    const { images } = this.chatContextValue;
     const imageAttachments = await Promise.all(
       images?.map(image => readBlobAsURL(image))
     );
     const contexts = await this._getMatchedContexts();
-    const enableSendDetailedObject =
-      this.affineFeatureFlagService.flags.enable_send_detailed_object_to_ai
-        .value;
     const userInfo = AIAppEvents.userInfo.value;
 
     this.updateContext({
@@ -846,17 +851,8 @@ export class AIChatInput extends SignalWatcher(
     });
     await this.runtime.dispatch({
       type: 'send',
-      input: userInput,
-      contexts: {
-        ...contexts,
-        selectedSnapshot:
-          snapshot && enableSendDetailedObject ? snapshot : undefined,
-        selectedMarkdown:
-          combinedElementsMarkdown && enableSendDetailedObject
-            ? combinedElementsMarkdown
-            : undefined,
-        html: html || undefined,
-      },
+      input: text,
+      contexts,
       attachments: images,
       attachmentPreviews: imageAttachments,
       isRootSession: this.isRootSession,
@@ -875,43 +871,31 @@ export class AIChatInput extends SignalWatcher(
   };
 
   private async _getMatchedContexts() {
-    const docContexts = new Map<
-      string,
-      { docId: string; docContent: string }
-    >();
+    const docIds = new Set(
+      this.chips
+        .filter(isDocChip)
+        .filter(chip => chip.state !== 'candidate')
+        .map(chip => chip.docId)
+    );
 
-    this.chips.forEach(chip => {
-      if (isDocChip(chip) && !!chip.markdown?.value) {
-        docContexts.set(chip.docId, {
-          docId: chip.docId,
-          docContent: chip.markdown.value,
-        });
-      }
-    });
-
-    const docs: BlockSuitePresets.AIDocContextOption[] = Array.from(
-      docContexts.values()
-    ).map(doc => {
-      const docMeta = this.docDisplayConfig.getDocMeta(doc.docId);
-      const docTitle = this.docDisplayConfig.getTitle(doc.docId);
-      const tags = docMeta?.tags
-        ? docMeta.tags
-            .map(tagId => this.docDisplayConfig.getTagTitle(tagId))
-            .join(',')
-        : '';
-      return {
-        docId: doc.docId,
-        docContent: doc.docContent,
-        docTitle,
-        tags,
-        createDate: docMeta?.createDate
+    const docs: BlockSuitePresets.AIDocContextOption[] = Array.from(docIds).map(
+      docId => {
+        const docMeta = this.docDisplayConfig.getDocMeta(docId);
+        const docTitle = this.docDisplayConfig.getTitle(docId);
+        const tags = docMeta?.tags
+          ? docMeta.tags
+              .map(tagId => this.docDisplayConfig.getTagTitle(tagId))
+              .join(',')
+          : '';
+        const createDate = docMeta?.createDate
           ? new Date(docMeta.createDate).toISOString()
-          : '',
-        updatedDate: docMeta?.updatedDate
+          : '';
+        const updatedDate = docMeta?.updatedDate
           ? new Date(docMeta.updatedDate).toISOString()
-          : '',
-      };
-    });
+          : '';
+        return { docId, docTitle, tags, createDate, updatedDate };
+      }
+    );
 
     return { docs, files: [] };
   }

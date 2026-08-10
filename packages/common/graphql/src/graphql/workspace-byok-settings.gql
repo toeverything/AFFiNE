@@ -6,9 +6,12 @@ query workspaceByokSettings($id: String!, $from: DateTime!, $to: DateTime!) {
       entitled
       serverEntitled
       localEntitled
-      allowedProviders
-      customEndpointSupported
-      privateEndpointSupported
+      policy {
+        enabled
+        allowedProviders
+        customEndpointMode
+        privateEndpointSupported
+      }
       catalog {
         version
         providers {
@@ -36,8 +39,7 @@ query workspaceByokSettings($id: String!, $from: DateTime!, $to: DateTime!) {
         sortOrder
         revision
         definition {
-          version
-          endpoint { kind url }
+          endpoint { kind url dialect }
           models {
             modelId
             enabled

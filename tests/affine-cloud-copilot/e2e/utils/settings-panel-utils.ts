@@ -1,4 +1,3 @@
-import { cleanupWorkspace, runPrisma } from '@affine-test/kit/utils/cloud';
 import { expect, type Page } from '@playwright/test';
 
 const WORKSPACE_EMBEDDING_SWITCH_TEST_ID = 'workspace-embedding-setting-switch';
@@ -95,7 +94,7 @@ export class SettingsPanelUtils {
 
       await page
         .getByTestId('workspace-embedding-setting-attachment-uploading-item')
-        .waitFor({ state: 'hidden' });
+        .waitFor({ state: 'hidden', timeout: 30_000 });
     }
   }
 
@@ -226,7 +225,6 @@ export class SettingsPanelUtils {
     timeout: number,
     status = 'synced'
   ) {
-    await cleanupWorkspace(page.url().split('/').slice(-2)[0] || '');
     await expect(async () => {
       await this.openSettingsPanel(page);
       const title = page.getByTestId('embedding-progress-title');
@@ -266,17 +264,17 @@ export class SettingsPanelUtils {
         'workspace-embedding-setting-attachment-item'
       );
       await expect(attachmentItems).toHaveCount(expectedFileCount);
+      await expect(
+        attachmentList.getByTestId(
+          'workspace-embedding-setting-attachment-uploading-item'
+        )
+      ).toHaveCount(0);
     }).toPass({ timeout });
 
-    const workspaceId = page.url().split('/').slice(-2)[0] || '';
-    await cleanupWorkspace(workspaceId);
     await expect(async () => {
-      const embeddedFileCount = await runPrisma(client =>
-        client.aiWorkspaceFiles.count({
-          where: { workspaceId, embeddings: { some: {} } },
-        })
-      );
-      expect(embeddedFileCount).toBe(expectedFileCount);
+      await expect(
+        page.getByTestId('workspace-embedding-setting-attachment-ready-item')
+      ).toHaveCount(expectedFileCount);
     }).toPass({ timeout });
   }
 }

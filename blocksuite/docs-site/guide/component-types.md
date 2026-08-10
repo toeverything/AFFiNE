@@ -46,7 +46,12 @@ export class SimplePageEditor extends LitElement {
   doc!: Doc;
 
   override render() {
-    return html` <editor-host .doc=${this.doc} .specs=${PageEditorBlockSpecs}></editor-host> `;
+    return html`
+      <editor-host
+        .doc=${this.doc}
+        .specs=${PageEditorBlockSpecs}
+      ></editor-host>
+    `;
   }
 }
 ```

@@ -3,9 +3,27 @@
   "jsPlugins": [
     "eslint-plugin-simple-import-sort",
     "eslint-plugin-sonarjs",
-    "eslint-plugin-lit"
+    "eslint-plugin-lit",
+    {
+      "name": "import-x-js",
+      "specifier": "eslint-plugin-import-x"
+    },
+    {
+      "name": "react-js",
+      "specifier": "eslint-plugin-react"
+    },
+    {
+      "name": "react-hooks-js",
+      "specifier": "eslint-plugin-react-hooks"
+    }
   ],
   "plugins": ["import", "react", "typescript", "unicorn", "promise"],
+  "settings": {
+    "_comment": "TODO: Restore rxjs/finnish when Oxlint JS plugins support type-aware rules.",
+    "react": {
+      "version": "19.2.1"
+    }
+  },
   "categories": {
     "correctness": "error",
     "perf": "error"
@@ -66,8 +84,19 @@
     "no-unused-private-class-members": "error",
     "no-useless-backreference": "error",
     "react/display-name": "error",
+    "react-js/no-deprecated": "error",
     "react/rules-of-hooks": "error",
     "react/exhaustive-deps": "warn",
+    "react-hooks-js/component-hook-factories": "error",
+    "react-hooks-js/preserve-manual-memoization": "error",
+    "react-hooks-js/incompatible-library": "warn",
+    "react-hooks-js/globals": "error",
+    "react-hooks-js/error-boundaries": "error",
+    "react-hooks-js/purity": "error",
+    "react-hooks-js/set-state-in-render": "error",
+    "react-hooks-js/unsupported-syntax": "warn",
+    "react-hooks-js/config": "error",
+    "react-hooks-js/gating": "error",
     "typescript/prefer-for-of": "error",
     "typescript/no-unsafe-function-type": "error",
     "typescript/no-wrapper-object-types": "error",
@@ -162,6 +191,7 @@
     "no-useless-catch": "error",
     "no-async-promise-executor": "error",
     "no-unreachable": "error",
+    "no-unreachable-loop": "error",
     "no-duplicate-case": "error",
     "no-empty-pattern": "error",
     "no-unused-labels": "error",
@@ -398,6 +428,67 @@
       "rules": {
         "lit/binding-positions": "off",
         "lit/no-invalid-html": "off"
+      }
+    },
+    {
+      "files": [
+        "packages/**/*.{ts,tsx}",
+        "tools/**/*.{ts,tsx}",
+        "blocksuite/**/*.{ts,tsx}"
+      ],
+      "rules": {
+        "import-x-js/no-extraneous-dependencies": [
+          "error",
+          {
+            "includeInternal": true
+          }
+        ]
+      }
+    },
+    {
+      "files": ["packages/frontend/admin/**/*"],
+      "rules": {
+        "import-x-js/no-extraneous-dependencies": [
+          "error",
+          {
+            "includeInternal": true,
+            "whitelist": ["@affine/admin"]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["packages/frontend/core/**/*"],
+      "rules": {
+        "import-x-js/no-extraneous-dependencies": [
+          "error",
+          {
+            "includeInternal": true,
+            "whitelist": ["@affine/core"]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["packages/frontend/component/**/*"],
+      "rules": {
+        "import-x-js/no-extraneous-dependencies": [
+          "error",
+          {
+            "includeInternal": true,
+            "whitelist": ["@affine/component"]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "packages/frontend/apps/electron/scripts/**/*",
+        "tests/blocksuite/**/*.{ts,tsx}",
+        "blocksuite/**/__tests__/**/*.{ts,tsx}"
+      ],
+      "rules": {
+        "import-x-js/no-extraneous-dependencies": "off"
       }
     }
   ]
