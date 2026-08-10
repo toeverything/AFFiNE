@@ -129,7 +129,7 @@ type StreamGroup =
 
 function groupStreamObjects(answer: StreamObject[]): StreamGroup[] {
   const groups: StreamGroup[] = [];
-  for (let index = 0; index < answer.length; ) {
+  for (let index = 0; index < answer.length;) {
     if (!isToolObject(answer[index])) {
       groups.push({ type: 'item', item: answer[index] });
       index += 1;
@@ -351,9 +351,11 @@ export class ChatContentStreamObjects extends WithDisposable(
     }
     if (!result || result.error || result.type === 'error') {
       return html`<tool-call-failed
-        .name=${result
-          ? frontendReadError(result)
-          : I18n['com.affine.ai.chat-panel.tool.live.failed']()}
+        .name=${
+          result
+            ? frontendReadError(result)
+            : I18n['com.affine.ai.chat-panel.tool.live.failed']()
+        }
         .icon=${ViewIcon()}
       ></tool-call-failed>`;
     }
@@ -392,9 +394,11 @@ export class ChatContentStreamObjects extends WithDisposable(
     const result = object(streamObject.result);
     if (!result || result.error || result.type === 'error') {
       return html`<tool-call-failed
-        .name=${result
-          ? frontendReadError(result)
-          : I18n['com.affine.ai.chat-panel.tool.canvas.failed']()}
+        .name=${
+          result
+            ? frontendReadError(result)
+            : I18n['com.affine.ai.chat-panel.tool.canvas.failed']()
+        }
         .icon=${ViewIcon()}
       ></tool-call-failed>`;
     }

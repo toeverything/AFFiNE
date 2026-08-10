@@ -1,4 +1,4 @@
-// eslint-disable no-var-requires
+// oxlint-disable typescript/no-var-requires
 
 // Should not load @affine/native for unsupported platforms
 

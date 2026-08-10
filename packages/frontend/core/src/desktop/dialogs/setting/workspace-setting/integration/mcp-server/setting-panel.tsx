@@ -69,7 +69,7 @@ export const McpServerSettingPanel = () => {
   );
 
   const revalidate = useCallback(() => {
-    // oxlint-disable-next-line @typescript-eslint/no-floating-promises
+    // oxlint-disable-next-line typescript/no-floating-promises
     credentialsService.revalidate(workspaceId);
   }, [credentialsService, workspaceId]);
 

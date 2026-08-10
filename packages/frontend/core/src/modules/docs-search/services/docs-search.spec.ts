@@ -1,5 +1,4 @@
 /** @vitest-environment happy-dom */
-/* eslint-disable rxjs/finnish */
 
 import { Framework } from '@toeverything/infra';
 import { firstValueFrom, of } from 'rxjs';
