@@ -94,16 +94,13 @@ export async function blobsFromAssets(
   }
 
   return Promise.all(
-    Array.from(
-      assets,
-      async ([blobId, file]): Promise<ImportBlob> => ({
-        blobId,
-        sourcePath: sourcePathByBlobId.get(blobId) ?? file.name,
-        fileName: file.name,
-        mime: file.type,
-        bytes: new Uint8Array(await file.arrayBuffer()),
-      })
-    )
+    Array.from(assets, async ([blobId, file]): Promise<ImportBlob> => ({
+      blobId,
+      sourcePath: sourcePathByBlobId.get(blobId) ?? file.name,
+      fileName: file.name,
+      mime: file.type,
+      bytes: new Uint8Array(await file.arrayBuffer()),
+    }))
   );
 }
 

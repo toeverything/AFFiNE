@@ -51,7 +51,7 @@ export const imageProcessingTypes = [
 ] as const;
 
 declare global {
-  // oxlint-disable-next-line @typescript-eslint/no-namespace
+  // oxlint-disable-next-line typescript/no-namespace
   namespace BlockSuitePresets {
     type TrackerControl =
       | 'format-bar'

@@ -21,7 +21,9 @@ type ImportPreloadHandlers = {
 };
 type MainClientHandlers = {
   [namespace in keyof MainHandlers]: {
-    [method in keyof MainHandlers[namespace]]: MainHandlers[namespace][method] extends (
+    [
+      method in keyof MainHandlers[namespace]
+    ]: MainHandlers[namespace][method] extends (
       arg0: any,
       ...rest: infer A
     ) => any

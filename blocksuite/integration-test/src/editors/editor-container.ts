@@ -186,18 +186,22 @@ export class TestAffineEditorContainer extends SignalWatcher(
       html`
         <div
           data-theme=${mode === 'page' ? appTheme : edgelessTheme}
-          class=${mode === 'page'
-            ? 'affine-page-viewport'
-            : 'affine-edgeless-viewport'}
+          class=${
+            mode === 'page'
+              ? 'affine-page-viewport'
+              : 'affine-edgeless-viewport'
+          }
         >
           ${when(
             mode === 'page',
             () => html` <doc-title .doc=${this.doc}></doc-title> `
           )}
           <div
-            class=${mode === 'page'
-              ? 'page-editor playground-page-editor-container'
-              : 'edgeless-editor-container'}
+            class=${
+              mode === 'page'
+                ? 'page-editor playground-page-editor-container'
+                : 'edgeless-editor-container'
+            }
           >
             ${this._editorTemplate.value}
           </div>

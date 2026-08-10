@@ -250,9 +250,11 @@ export const menuButtonItems = {
       }
       const data: MenuButtonData = {
         content: () => html`
-          ${config.checked.value
-            ? CheckBoxCheckSolidIcon({ style: `color:#1E96EB` })
-            : CheckBoxUnIcon()}
+          ${
+            config.checked.value
+              ? CheckBoxCheckSolidIcon({ style: `color:#1E96EB` })
+              : CheckBoxUnIcon()
+          }
           <div class="affine-menu-action-text">
             ${config.label?.() ?? config.name}
           </div>
