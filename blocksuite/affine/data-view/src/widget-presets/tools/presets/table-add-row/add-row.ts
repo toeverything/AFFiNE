@@ -36,9 +36,11 @@ export class DataViewHeaderToolsAddRow extends WidgetBase {
       class="affine-database-toolbar-item new-record"
       .onClick="${this.onAddNewRecord}"
       .icon="${PlusIcon()}"
-      .text="${IS_MOBILE
-        ? html`<span style="font-weight: 500">New</span>`
-        : html`<span style="font-weight: 500">New Record</span>`}"
+      .text="${
+        IS_MOBILE
+          ? html`<span style="font-weight: 500">New</span>`
+          : html`<span style="font-weight: 500">New Record</span>`
+      }"
     >
     </data-view-component-button>`;
   }

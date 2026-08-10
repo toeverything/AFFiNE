@@ -188,7 +188,11 @@ export class RootService extends BlockService<RootBlockModel> {
     // Introducing commands!
     this.std.command
       .chain()
-      .tryAll(chain => [chain.getTextSelection(), chain.getImageSelections(), chain.getBlockSelections()])
+      .tryAll(chain => [
+        chain.getTextSelection(),
+        chain.getImageSelections(),
+        chain.getBlockSelections(),
+      ])
       .getSelectedBlocks()
       .inline(({ selectedBlocks }) => {
         if (!selectedBlocks) return;

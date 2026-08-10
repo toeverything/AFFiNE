@@ -12,7 +12,6 @@ export type Flag<F extends FlagInfo = FlagInfo> = {
     ? boolean
     : boolean | undefined;
   set: (value: boolean) => void;
-  // eslint-disable-next-line rxjs/finnish
   $: F['defaultState'] extends boolean
     ? LiveData<boolean>
     : LiveData<boolean> | LiveData<boolean | undefined>;

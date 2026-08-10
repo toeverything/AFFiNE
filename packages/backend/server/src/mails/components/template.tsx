@@ -165,7 +165,7 @@ function fetchContent(
 
   if (Array.isArray(content.props.children)) {
     return content.props.children.map((child, i) => {
-      /* oxlint-disable-next-line eslint-plugin-react/no-array-index-key */
+      /* oxlint-disable-next-line react/no-array-index-key */
       return <Row key={i}>{child}</Row>;
     });
   }

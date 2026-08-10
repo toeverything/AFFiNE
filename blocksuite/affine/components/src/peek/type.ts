@@ -40,7 +40,7 @@ export interface PeekViewService {
    * @returns A promise that resolves when the peek view is closed.
    */
   peek(
-    // oxlint-disable-next-line @typescript-eslint/unified-signatures
+    // oxlint-disable-next-line typescript/unified-signatures
     element: { target: HTMLElement; template?: TemplateResult },
     options?: PeekOptions
   ): Promise<void>;

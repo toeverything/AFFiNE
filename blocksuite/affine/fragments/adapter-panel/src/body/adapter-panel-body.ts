@@ -134,13 +134,15 @@ export class AdapterPanelBody extends SignalWatcher(LitElement) {
 
   private _renderHtmlPanel() {
     return html`
-      ${this.isHtmlPreview
-        ? html`<iframe
-            class="html-preview-container"
-            .srcdoc=${this.htmlContent}
-            sandbox="allow-same-origin"
-          ></iframe>`
-        : html`<div class="html-panel-content">${this.htmlContent}</div>`}
+      ${
+        this.isHtmlPreview
+          ? html`<iframe
+              class="html-preview-container"
+              .srcdoc=${this.htmlContent}
+              sandbox="allow-same-origin"
+            ></iframe>`
+          : html`<div class="html-panel-content">${this.htmlContent}</div>`
+      }
       <div class="html-panel-footer">
         <div class="html-toggle-container">
           <span
