@@ -75,18 +75,6 @@ private extension ChatManager {
     assert(!Thread.isMainThread)
     print("[+] starting copilot response for session: \(sessionId)")
 
-    let messageParameters: AffineGraphQL.JSON = [
-      // packages/frontend/core/src/blocksuite/ai/provider/setup-provider.tsx
-      "scopeSelectors": editorData.documentAttachments.map { attachment in
-        [
-          "kind": "document",
-          "id": attachment.documentID,
-          "name": attachment.title,
-          "source": "draft",
-        ]
-      },
-      "searchMode": editorData.isSearchEnabled ? "MUST" : "AUTO",
-    ]
     let uploadableAttachments: [CopilotAttachmentUpload] = [
       editorData.fileAttachments.map { file -> CopilotAttachmentUpload in
         .init(
@@ -106,6 +94,22 @@ private extension ChatManager {
     assert(uploadableAttachments.allSatisfy { !$0.data.isEmpty })
     Task {
       do {
+        let selectedDocumentIds = editorData.documentAttachments.map(\.documentID)
+        if !selectedDocumentIds.isEmpty {
+          try await IntelligentContext.shared.waitForSelectedSources(selectedDocumentIds)
+        }
+        let messageParameters: AffineGraphQL.JSON = [
+          // packages/frontend/core/src/blocksuite/ai/provider/setup-provider.tsx
+          "scopeSelectors": editorData.documentAttachments.map { attachment in
+            [
+              "kind": "document",
+              "id": attachment.documentID,
+              "name": attachment.title,
+              "source": "draft",
+            ]
+          },
+          "searchMode": editorData.isSearchEnabled ? "MUST" : "AUTO",
+        ]
         let messageIdentifier = try await QLService.shared.createCopilotMessage(
           workspaceId: workspaceId,
           sessionId: sessionId,
